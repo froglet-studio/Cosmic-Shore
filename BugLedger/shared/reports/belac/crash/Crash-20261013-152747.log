@@ -1,0 +1,887 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-13 15:27:47 (next editor launch after the abnormal exit)
+session:        20261013-164043042  (pid 60480, Unity 6000.3.17f1)
+started:        2026-10-13T16:40:43.048Z UTC
+last heartbeat: 2026-10-13T22:26:06.983Z UTC
+last state:     PlayMode
+main thread:    unresponsive for ~94s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261013-164043042.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261013-164043042
+started: 2026-10-13T16:40:43.048Z UTC
+unity:   6000.3.17f1
+pid:     60480
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[09:55:12.342] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261013-164043042.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[09:55:13.499] ---- domain reload begins (script compilation / play-mode transition) ----
+[09:55:37.076] ---- domain reload complete — session re-adopted ----
+[09:55:48.436] [EditMode] Error: Problem detected while importing the Prefab file: 'Assets/_Prefabs/Spacevessels/Stoat.prefab'.
+The file might be corrupt or have a missing Variant parent or nested Prefabs. See details below.
+Errors:
+	Found a Transform component that is not assigned to a GameObject. The dangling Component has been deleted and saving the scene will remove the component permanently.
+FileID: 440103224039929245
+
+        0x00007ffd61ed4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd6370f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd6370fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd61e8587f (Unity) DebugStringToFile
+        0x00007ffd62065848 (Unity) ErrorsAndWarningsCapture::LogAsOneMessage
+        0x00007ffd62f72a91 (Unity) PrefabImporter::GenerateAssetData
+        0x00007ffd6462f88e (Unity) ImportToObjects
+        0x00007ffd6462e712 (Unity) ImportAsset
+        ...
+[09:58:28.768] ---- domain reload begins (script compilation / play-mode transition) ----
+[09:58:34.452] ---- domain reload complete — session re-adopted ----
+[13:44:17.252] ---- domain reload begins (script compilation / play-mode transition) ----
+[13:44:51.011] ---- domain reload complete — session re-adopted ----
+[14:41:32.962] ---- domain reload begins (script compilation / play-mode transition) ----
+[14:41:39.927] ---- domain reload complete — session re-adopted ----
+[14:42:41.655] ---- entering play mode ----
+[14:42:45.790] ---- play mode running ----
+[14:43:04.987] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-12'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ffd61ed4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd6370f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd6370fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd61e8587f (Unity) DebugStringToFile
+        0x00007ffd61d41b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000018a3e68695d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000018a3e686813 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000018a3e68642b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:52:27.072] ---- leaving play mode ----
+[14:52:28.536] ---- edit mode restored ----
+[15:22:01.977] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261013-164043042.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[15:22:58.614] ---- domain reload begins (script compilation / play-mode transition) ----
+[15:23:15.089] ---- domain reload complete — session re-adopted ----
+[15:24:11.194] ---- entering play mode ----
+[15:24:13.976] ---- play mode running ----
+[15:24:23.439] [PlayMode] Exception: SessionException: HTTP 429: (429) HTTP/1.1 429 Too Many Requests
+        Unity.Services.Multiplayer.LobbyHandler.CreateLobbyAsync (System.String lobbyName, System.Int32 maxPlayers, Unity.Services.Lobbies.CreateLobbyOptions options) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:364)
+        Unity.Services.Multiplayer.SessionManager.CreateAsync (Unity.Services.Multiplayer.SessionOptions sessionOptions) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionManager.cs:77)
+        Unity.Services.Multiplayer.WrappedMultiplayerService.CreateSessionAsync (Unity.Services.Multiplayer.SessionOptions sessionOptions) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/WrappedMultiplayerService.cs:63)
+        CosmicShore.Utility.UniTaskExtensions.AsMainThread[T] (System.Threading.Tasks.Task`1[TResult] task) (at Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs:66)
+        CosmicShore.Utility.UniTaskExtensions.AsMainThread[T] (System.Threading.Tasks.Task`1[TResult] task) (at Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs:67)
+        Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`2[TStateMachine,T].GetResult (System.Int16 token) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:342)
+        CosmicShore.Gameplay.PartySessionService+<>c__DisplayClass26_0.<CreateAsync>b__0 () (at Assets/_Scripts/Controller/Party/Services/PartySessionService.cs:198)
+        Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`2[TStateMachine,T].GetResult (System.Int16 token) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:342)
+        ...
+[15:24:32.010] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fdcbba (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Networking.Transport.NetworkDriver.InternalUpdate (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@6e74a0e6481d/Runtime/NetworkDriver.cs:745)
+        0x00007ffdf3fd949d (41af6d3d4f8cb4af2aa122c91301e9d) f00744ec48cd0864aed85ed9873e2356
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.034] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fd8f09 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.DTLSLayer.ReceiveJob>.Execute(ref Unity.Networking.Transport.DTLSLayer.ReceiveJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fd42cd (41af6d3d4f8cb4af2aa122c91301e9d) a9d0a42f2dfcb16378e06497479fa08c
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.036] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf4003d07 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>.ProcessReceivedMessages (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@6e74a0e6481d/Runtime/Layers/RelayLayer.cs:194)
+        0x00007ffdf4002793 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>>.Execute(ref Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList> data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf400249d (41af6d3d4f8cb4af2aa122c91301e9d) 8de023688c1b71ddd3534988b741c831
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        ...
+[15:24:32.039] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3feb871 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Networking.Transport.SimpleConnectionLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>.ProcessReceivedMessages (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@6e74a0e6481d/Runtime/Layers/SimpleConnectionLayer.cs:458)
+        0x00007ffdf3fecfd3 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.SimpleConnectionLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>>.Execute(ref Unity.Networking.Transport.SimpleConnectionLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList> data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fe57bd (41af6d3d4f8cb4af2aa122c91301e9d) b8df407bf464a693fa68a357811a2690
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        ...
+[15:24:32.042] [PlayMode] Exception: System::InvalidOperationException: The UnityEditor.ObjectChangeEventStream has been declared as [WriteOnly] in the job, but you are reading from it.
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffd62566cbb (Unity) burst_abort
+        0x00007ffd627312f5 (Unity) scripting_raise_exception
+        0x00007ffd61ccf960 (Unity) AtomicSafetyHandle_CUSTOM_CheckReadAndThrowNoEarlyOut
+        0x00007ffdf3fd3c9f (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.TopLayer.CompleteReceiveJob>.Execute(ref Unity.Networking.Transport.TopLayer.CompleteReceiveJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fce56d (41af6d3d4f8cb4af2aa122c91301e9d) d7d08c149e8ff16267f542be6f8a2420
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        ...
+[15:24:32.044] [PlayMode] Exception: System::InvalidOperationException: The UnityEditor.ObjectChangeEventStream has been declared as [WriteOnly] in the job, but you are reading from it.
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffd62566cbb (Unity) burst_abort
+        0x00007ffd627312f5 (Unity) scripting_raise_exception
+        0x00007ffd61ccf960 (Unity) AtomicSafetyHandle_CUSTOM_CheckReadAndThrowNoEarlyOut
+        0x00007ffdf3fe4308 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.SimpleConnectionLayer.SendJob>.Execute(ref Unity.Networking.Transport.SimpleConnectionLayer.SendJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fe3cdd (41af6d3d4f8cb4af2aa122c91301e9d) eaabe93b959d5b6b0127c8295a52fb39
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        ...
+[15:24:32.046] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fc7ca4 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.SendJob>.Execute(ref Unity.Networking.Transport.RelayLayer.SendJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fc7aed (41af6d3d4f8cb4af2aa122c91301e9d) 736810714a8d1226ddc072a151e45c56
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.073] [PlayMode] Exception: System::InvalidOperationException: The UnityEditor.ObjectChangeEventStream has been declared as [WriteOnly] in the job, but you are reading from it.
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffd62566cbb (Unity) burst_abort
+        0x00007ffd627312f5 (Unity) scripting_raise_exception
+        0x00007ffd61ccf960 (Unity) AtomicSafetyHandle_CUSTOM_CheckReadAndThrowNoEarlyOut
+        0x00007ffdf3fe4308 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.SimpleConnectionLayer.SendJob>.Execute(ref Unity.Networking.Transport.SimpleConnectionLayer.SendJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fe3cdd (41af6d3d4f8cb4af2aa122c91301e9d) eaabe93b959d5b6b0127c8295a52fb39
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        ...
+[15:24:32.075] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fc7ca4 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.SendJob>.Execute(ref Unity.Networking.Transport.RelayLayer.SendJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fc7aed (41af6d3d4f8cb4af2aa122c91301e9d) 736810714a8d1226ddc072a151e45c56
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.083] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fdcbba (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Networking.Transport.NetworkDriver.InternalUpdate (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@6e74a0e6481d/Runtime/NetworkDriver.cs:745)
+        0x00007ffdf3fd949d (41af6d3d4f8cb4af2aa122c91301e9d) f00744ec48cd0864aed85ed9873e2356
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.084] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fd8f09 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.DTLSLayer.ReceiveJob>.Execute(ref Unity.Networking.Transport.DTLSLayer.ReceiveJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fd42cd (41af6d3d4f8cb4af2aa122c91301e9d) a9d0a42f2dfcb16378e06497479fa08c
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.086] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf4003d07 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>.ProcessReceivedMessages (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@6e74a0e6481d/Runtime/Layers/RelayLayer.cs:194)
+        0x00007ffdf4002793 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>>.Execute(ref Unity.Networking.Transport.RelayLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList> data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf400249d (41af6d3d4f8cb4af2aa122c91301e9d) 8de023688c1b71ddd3534988b741c831
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        ...
+[15:24:32.087] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3feb871 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Networking.Transport.SimpleConnectionLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>.ProcessReceivedMessages (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@6e74a0e6481d/Runtime/Layers/SimpleConnectionLayer.cs:458)
+        0x00007ffdf3fecfd3 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.SimpleConnectionLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList>>.Execute(ref Unity.Networking.Transport.SimpleConnectionLayer.ReceiveJob`1<Unity.Networking.Transport.UnderlyingConnectionList> data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fe57bd (41af6d3d4f8cb4af2aa122c91301e9d) b8df407bf464a693fa68a357811a2690
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        ...
+[15:24:32.090] [PlayMode] Exception: System::InvalidOperationException: The UnityEditor.ObjectChangeEventStream has been declared as [WriteOnly] in the job, but you are reading from it.
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffd62566cbb (Unity) burst_abort
+        0x00007ffd627312f5 (Unity) scripting_raise_exception
+        0x00007ffd61ccf960 (Unity) AtomicSafetyHandle_CUSTOM_CheckReadAndThrowNoEarlyOut
+        0x00007ffdf3fd3c9f (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.TopLayer.CompleteReceiveJob>.Execute(ref Unity.Networking.Transport.TopLayer.CompleteReceiveJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fce56d (41af6d3d4f8cb4af2aa122c91301e9d) d7d08c149e8ff16267f542be6f8a2420
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        ...
+[15:24:32.091] [PlayMode] Exception: System::InvalidOperationException: The UnityEditor.ObjectChangeEventStream has been declared as [WriteOnly] in the job, but you are reading from it.
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffd62566cbb (Unity) burst_abort
+        0x00007ffd627312f5 (Unity) scripting_raise_exception
+        0x00007ffd61ccf960 (Unity) AtomicSafetyHandle_CUSTOM_CheckReadAndThrowNoEarlyOut
+        0x00007ffdf3fe4308 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.SimpleConnectionLayer.SendJob>.Execute(ref Unity.Networking.Transport.SimpleConnectionLayer.SendJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fe3cdd (41af6d3d4f8cb4af2aa122c91301e9d) eaabe93b959d5b6b0127c8295a52fb39
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        ...
+[15:24:32.093] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fc7ca4 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.SendJob>.Execute(ref Unity.Networking.Transport.RelayLayer.SendJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fc7aed (41af6d3d4f8cb4af2aa122c91301e9d) 736810714a8d1226ddc072a151e45c56
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.100] [PlayMode] Exception: System::InvalidOperationException: The UnityEditor.ObjectChangeEventStream has been declared as [WriteOnly] in the job, but you are reading from it.
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffd62566cbb (Unity) burst_abort
+        0x00007ffd627312f5 (Unity) scripting_raise_exception
+        0x00007ffd61ccf960 (Unity) AtomicSafetyHandle_CUSTOM_CheckReadAndThrowNoEarlyOut
+        0x00007ffdf3fe4308 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.SimpleConnectionLayer.SendJob>.Execute(ref Unity.Networking.Transport.SimpleConnectionLayer.SendJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fe3cdd (41af6d3d4f8cb4af2aa122c91301e9d) eaabe93b959d5b6b0127c8295a52fb39
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        ...
+[15:24:32.102] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fc7ca4 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.RelayLayer.SendJob>.Execute(ref Unity.Networking.Transport.RelayLayer.SendJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fc7aed (41af6d3d4f8cb4af2aa122c91301e9d) 736810714a8d1226ddc072a151e45c56
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.110] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fdcbba (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Networking.Transport.NetworkDriver.InternalUpdate (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/Library/PackageCache/com.unity.transport@6e74a0e6481d/Runtime/NetworkDriver.cs:745)
+        0x00007ffdf3fd949d (41af6d3d4f8cb4af2aa122c91301e9d) f00744ec48cd0864aed85ed9873e2356
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:24:32.112] [PlayMode] Exception: System.NullReferenceException: Object reference not set to an instance of an object
+This Exception was thrown from a job compiled with Burst, which has limited exception support.
+        0x00007ffe8b2e4e3e (ntdll) KiUserExceptionDispatcher
+        0x00007ffdf3fd8f09 (41af6d3d4f8cb4af2aa122c91301e9d) Unity.Jobs.IJobExtensions.JobStruct`1<Unity.Networking.Transport.DTLSLayer.ReceiveJob>.Execute(ref Unity.Networking.Transport.DTLSLayer.ReceiveJob data, System.IntPtr additionalPtr, System.IntPtr bufferRangePatchData, ref Unity.Jobs.LowLevel.Unsafe.JobRanges ranges, int jobIndex) -> void_1a17c9416545ae7079718413b8a5101d from UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null (at C:/Users/belac/source/repos/Cosmic-Shore/Library/PackageCache/com.unity.burst@6bb9aca3ef38/.Runtime/unknown/unknown:0)
+        0x00007ffdf3fd42cd (41af6d3d4f8cb4af2aa122c91301e9d) a9d0a42f2dfcb16378e06497479fa08c
+        0x00007ffd625633a6 (Unity) ExecuteJob
+        0x00007ffd6256445d (Unity) ForwardJobToManaged
+        0x00007ffd6255fb31 (Unity) ujob_execute_job
+        0x00007ffd62561e4e (Unity) ujob_wait_for
+        0x00007ffd6255b037 (Unity) CompleteFenceInternal
+        ...
+[15:25:18.927] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261013-164043042.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027ab996f203 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x0000027ab996ee7b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x0000027ab996ebab (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:167)
+0x0000027ab99c4523 (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:488)
+0x0000027ab99c3c73 (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:459)
+0x0000027ab99c38db (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:279)
+0x0000027ab99bf143 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:886)
+0x0000027ab99768e3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:830)
+0x0000027ab9975a3b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027ab996f203 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x0000027ab996ee7b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x0000027ab996ebab (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:167)
+0x0000027ab99c4523 (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:488)
+0x0000027ab99c3c73 (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:459)
+0x0000027ab99c38db (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:279)
+0x0000027ab99bee6b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:872)
+0x0000027ab99768e3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:830)
+0x0000027ab9975a3b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027ab996f203 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x0000027ab996ee7b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x0000027ab996ebab (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:167)
+0x0000027ab99c4523 (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:488)
+0x0000027ab99c3c73 (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:459)
+0x0000027ab99c38db (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:279)
+0x0000027ab99bf143 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:886)
+0x0000027ab99768e3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:830)
+0x0000027ab9975a3b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027ab996f203 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x0000027ab996ee7b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x0000027ab996ebab (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:167)
+0x0000027ab99c4523 (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:488)
+0x0000027ab99c3c73 (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:459)
+0x0000027ab99c38db (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:279)
+0x0000027ab99bee6b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:872)
+0x0000027ab99768e3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:830)
+0x0000027ab9975a3b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027ab996f203 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x0000027ab996ee7b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x0000027ab996ebab (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:167)
+0x0000027ab99c4523 (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:488)
+0x0000027ab99c3c73 (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:459)
+0x0000027ab99c38db (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:279)
+0x0000027ab99bee6b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:872)
+0x0000027ab99768e3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:830)
+0x0000027ab9975a3b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+Curl error 28: Operation timed out after 10000 milliseconds with 0 bytes received
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027ab996f203 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x0000027ab996ee7b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x0000027ab996ebab (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:167)
+0x0000027ab99c4523 (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:488)
+0x0000027ab99c3c73 (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:459)
+0x0000027ab99c38db (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:279)
+0x0000027ab99bee6b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:872)
+0x0000027ab99768e3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:830)
+0x0000027ab9975a3b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000027a711794c1 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x0000027ab883b0ad (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x0000027ab883a853 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:EnsureLoopStarted () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:431)
+0x0000027a93fea893 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:HandleBoostChanged (CosmicShore.UI.BoostChangedPayload) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:364)
+0x0000027a93fea672 (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<CosmicShore.UI.BoostChangedPayload>:invoke_void_T (CosmicShore.UI.BoostChangedPayload)
+0x0000027a93fea485 (Mono JIT Code) Obvious.Soap.ScriptableEvent`1<CosmicShore.UI.BoostChangedPayload>:Raise (CosmicShore.UI.BoostChangedPayload) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEvent.cs:77)
+0x0000027a152bf2bb (Mono JIT Code) CosmicShore.Gameplay.SkimmerBoostPrismEffectSO:Execute (CosmicShore.Gameplay.SkimmerImpactor,CosmicShore.Gameplay.PrismImpactor) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffect.cs:87)
+0x0000027a152becfc (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor/<>c__DisplayClass25_2:<AcceptImpactee>b__1 () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:303)
+0x0000027ab87f368c (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:RunEffectIsolated (System.Action,UnityEngine.Object) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:129)
+0x0000027a9425691b (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor:AcceptImpactee (CosmicShore.Gameplay.IImpactor) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:297)
+0x0000027a152be4d0 (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:AcceptImpacteeFromShellContact (CosmicShore.Gameplay.IImpactor) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:185)
+0x0000027a9422fc13 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:ResolveContacts (CosmicShore.Gameplay.PrismSpatialIndex) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:467)
+0x0000027a9422b283 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:321)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027ab996f203 (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:110)
+0x0000027ab996ee7b (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x0000027ab996ebab (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:167)
+0x0000027ab99c4523 (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:488)
+0x0000027ab99c3c73 (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:459)
+0x0000027ab99c38db (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:279)
+0x0000027ab99bee6b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:872)
+0x0000027ab99768e3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:830)
+0x0000027ab9975a3b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000027a711794c1 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x0000027ab883b0ad (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x0000027ab883a853 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:EnsureLoopStarted () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:431)
+0x0000027a93fea893 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:HandleBoostChanged (CosmicShore.UI.BoostChangedPayload) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:364)
+0x0000027a93fea672 (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<CosmicShore.UI.BoostChangedPayload>:invoke_void_T (CosmicShore.UI.BoostChangedPayload)
+0x0000027a93fea485 (Mono JIT Code) Obvious.Soap.ScriptableEvent`1<CosmicShore.UI.BoostChangedPayload>:Raise (CosmicShore.UI.BoostChangedPayload) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEvent.cs:77)
+0x0000027a152bf2bb (Mono JIT Code) CosmicShore.Gameplay.SkimmerBoostPrismEffectSO:Execute (CosmicShore.Gameplay.SkimmerImpactor,CosmicShore.Gameplay.PrismImpactor) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffect.cs:87)
+0x0000027a152becfc (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor/<>c__DisplayClass25_2:<AcceptImpactee>b__1 () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:303)
+0x0000027ab87f368c (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:RunEffectIsolated (System.Action,UnityEngine.Object) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:129)
+0x0000027a9425691b (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor:AcceptImpactee (CosmicShore.Gameplay.IImpactor) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:297)
+0x0000027a152be4d0 (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:AcceptImpacteeFromShellContact (CosmicShore.Gameplay.IImpactor) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:185)
+0x0000027a9422fc13 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:ResolveContacts (CosmicShore.Gameplay.PrismSpatialIndex) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:467)
+0x0000027a9422b283 (Mono JIT Code) CosmicShore.Gameplay.PrismShellContactManager:Update () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Managers/PrismShellContactManager.cs:321)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd98be1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd9878308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ffd98789f1a (Unity) BehaviourManager::Update
+0x00007ffd98b9c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ffd98b7abef (Unity) ExecutePlayerLoop
+0x00007ffd98b7ad65 (Unity) ExecutePlayerLoop
+0x00007ffd98b7fc0f (Unity) PlayerLoop
+0x00007ffd994f5635 (Unity) EditorPlayerLoop::Execute
+0x00007ffd9950c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd9950e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd9950866d (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+Analytics Dispatcher is already flushing.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027a71a5fe23 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x0000027a71a5fd9e (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x0000027ab9c3d4c6 (Mono JIT Code) CosmicShore.Core.UgsAnalyticsSink:Flush () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs:121)
+0x0000027ab9c3d3f7 (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:Flush () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:602)
+0x0000027ab9c3cf9b (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:HandleAppQuitting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:806)
+0x0000027985941072 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x0000027a0d0532c0 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:75)
+0x0000027ab9c3ceeb (Mono JIT Code) CosmicShore.Core.ApplicationLifecycleManager:OnApplicationQuit () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Bootstrap/ApplicationLifecycleManager.cs:86)
+0x00000278c3bdd048 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98be6f51 (Unity) MonoBehaviour::HandleNotifications
+0x00007ffd98645010 (Unity) GameObject::SendMessageAny
+0x00007ffd98b6bc42 (Unity) SendMessageToEveryone
+0x00007ffd98b9f65a (Unity) NotifyPlayerQuit
+0x00007ffd9950b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffd9950d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffd9950896c (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+Container Menu_Main (1189551230) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007ffd98494e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd99ccf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd99ccfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd9844587f (Unity) DebugStringToFile
+0x00007ffd98301b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000278d8161a3d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000278d8161903 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000278d816153b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x0000027a711724b5 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x00000278d81612c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000278d8161188 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x0000027a71a5fe23 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x0000027a71a5fd9e (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x0000027ab9c3e12b (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:326)
+0x0000027ab9c3dffb (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:111)
+0x0000027985941072 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x0000027ab9c3d863 (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x0000027a76e31de5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffd9fd76c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd9fcb8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd9fcb8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd98ccfdd4 (Unity) scripting_method_invoke
+0x00007ffd98cd6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd98cd2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffd981aab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffd98b9f689 (Unity) NotifyPlayerQuit
+0x00007ffd9950b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffd9950d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffd9950896c (Unity) Application::TickTimer
+0x00007ffd992e9f7c (Unity) MainMessageLoop
+0x00007ffd992f1a12 (Unity) UnityMain
+0x00007ff677f42f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+Unloading 253 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            5.065 ms
+	Integration:            582.440 ms
+	Integration of assets:  0.003 ms
+	Thread Wait Time:       0.012 ms
+	Total Operation Time:   587.520 ms
+Unloading 1788 unused Assets / (41.2 MB). Loaded Objects now: 31241.
+Memory consumption went from 0.72 GB to 0.68 GB.
+Total: 78.614600 ms (FindLiveObjects: 1.694800 ms CreateObjectMapping: 2.131800 ms MarkObjects: 71.328800 ms  DeleteObjects: 3.458200 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[LAYOUT] About to save layout C:\Users\belac\source\repos\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/belac/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+Pipeline Server stopped
+Unloading 129 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-45772-jk8set
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 91944 (child process of PID 88832) has been terminated.
+SUCCESS: The process with PID 88832 (child process of PID 45772) has been terminated.
+Killing ADB server in 0.0461176 seconds.
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: 'bc84e9597a511027ad7421f142608adc') in 0.0021507 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: 'd66219ff6f8aa67e2d57c9fc1e4c9fd3') in 0.0018745 seconds
+Refreshing native plugins compatible for Editor in 23.70 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=c478efbc434f6a44e9c20bc579d4b2e6): Total: 0.219 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Unloading 195 unused Assets / (57.1 KB). Loaded Objects now: 31396.
+Memory consumption went from 0.71 GB to 0.71 GB.
+Total: 86.649900 ms (FindLiveObjects: 1.842200 ms CreateObjectMapping: 1.800800 ms MarkObjects: 82.732600 ms  DeleteObjects: 0.273200 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Shut down.
+abort_threads: Failed aborting id: 00000000000171D8, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000015ED0, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 00000000000171D8, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000015ED0, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 5000
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1791850182348,"processId":45772,"allocatedMemory":34027151,"memoryLabels":[{"Default":29317},{"Permanent":15236},{"NewDelete":74481},{"Thread":4245128},{"Manager":3110224},{"VertexData":8},{"Geometry":816},{"Texture":704},{"Shader":90645},{"Material":24},{"GfxDevice":57912},{"GfxThread":21504},{"Animation":392},{"Audio":2664},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":272592},{"Input":14984},{"JobScheduler":33024},{"TextLib":38488},{"Mono":32},{"MonoCode":704},{"ScriptingNativeRuntime":155060},{"BaseObject":1620688},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":18570},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":11815},{"DynamicArray":719378},{"HashMap":158679},{"Utility":2662098},{"PoolAlloc":10072},{"AI":80},{"TypeTree":305841},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":7056},{"WebRequest":8562},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"NativeArray":1312},{"Camera":17},{"Secure":353},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":560},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":186},{"EditorUtility":361779},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19465778},{"EditorGi":328},{"UnityConnect":29472},{"Upm":1972},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2867},{"TLS":3446},{"Licensing":792},{"AssetReference":32},{"IPCStream":32}]}
+

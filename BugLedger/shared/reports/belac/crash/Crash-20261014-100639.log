@@ -1,0 +1,742 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-14 10:06:39 (next editor launch after the abnormal exit)
+session:        20261013-235559681  (pid 72480, Unity 6000.3.17f1)
+started:        2026-10-13T23:55:59.687Z UTC
+last heartbeat: 2026-10-14T01:01:54.737Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~3955s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261013-235559681.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261013-222747316
+started: 2026-10-13T22:27:47.316Z UTC
+unity:   6000.3.17f1
+pid:     88616
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[15:28:26.092] ---- entering play mode ----
+[15:28:28.471] ---- play mode running ----
+[15:28:40.873] [PlayMode] Error: [WeeklyChallengeLeaderboard] 'weekly_challenge' is serving 1 row(s) from another period - this week is '2026-10-12'. They have been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd66f3587f (Unity) DebugStringToFile
+        0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000021245a7d82d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000021245a7d6f3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000021245a7d32b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:34:30.632] [PlayMode] Error: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-shot. A looping instance never stops, so release() never frees it and one immortal voice leaks PER CALL - which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. Fix by removing the loop region in FMOD Studio, or give the ability its own EventReference and own the instance (start on begin, stop on end).
+        0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd66f3587f (Unity) DebugStringToFile
+        0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000021245a7d82d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000021245a7d6f3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000021245a7d32b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[16:38:02.557] ---- leaving play mode ----
+[16:38:03.693] [PlayMode] Exception: MissingReferenceException: The object of type 'CosmicShore.Gameplay.VesselController' has been destroyed but you are still trying to access it.
+Your script should either check if it is null or you should not destroy the object.
+        UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.Component.get_transform () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        CosmicShore.Gameplay.VesselController.get_Transform () (at Assets/_Scripts/Controller/Vessel/VesselController.cs:226)
+        CosmicShore.UI.DomainVolumeIndicator.ResolveCell () (at Assets/_Scripts/UI/DomainVolumeIndicator.cs:370)
+        CosmicShore.UI.DomainVolumeIndicator.SampleTargets () (at Assets/_Scripts/UI/DomainVolumeIndicator.cs:207)
+        CosmicShore.UI.DomainVolumeIndicator.Update () (at Assets/_Scripts/UI/DomainVolumeIndicator.cs:135)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        ...
+[16:38:07.881] ---- edit mode restored ----
+[16:54:56.120] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261013-222747316.dmp (open in Visual Studio or WinDbg; the main thread's stack names the dead[16:55:54.847] ---- domain reload begins (script compilation / play-mode transition) ----
+tion) ----
+[16:56:45.562] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\belac\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261013-235559748.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+e been hidden rather than ranked against this week's challenge, so the board will read as short or empty. The board is not being reset: give it a RECURRING WEEKLY reset with ARCHIVING ON, aligned to UTC Monday 00:00, in the UGS dashboard (Leaderboards > this board > Resets), the UGS CLI, or the Leaderboards Admin API. Nothing in the game can reset a board - the client SDK has no such call.
+        0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd66f3587f (Unity) DebugStringToFile
+        0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:35:39.616] [PlayMode] Error: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activate)' is a LOOPING (or sustaining) FMOD event but is being played as a fire-and-forget one-shot. A looping instance never stops, so release() never frees it and one immortal voice leaks PER CALL - which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. Fix by removing the loop region in FMOD Studio, or give the ability its own EventReference and own the instance (start on begin, stop on end).
+        0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd66f3587f (Unity) DebugStringToFile
+        0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:44:42.257] [PlayMode] Error: [SkimmerImpactor] 'Urchin(Clone)/OrientationHandle/Skimmer'.skimmerImpactorDataContainer is not assigned — this impactor dispatches no effects until it is wired (reported once; contacts are skipped, not thrown). Run FrogletTools > Vessels > Audit Vessel Skimmers to see every unwired skimmer.
+        0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd66f3587f (Unity) DebugStringToFile
+        0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:47:22.899] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.Skimmer.get_Domain () (at Assets/_Scripts/Controller/Vessel/Skimmer.cs:37)
+        CosmicShore.Gameplay.SkimmerImpactor.get_OwnDomain () (at Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:32)
+        CosmicShore.Gameplay.OmniCrystalImpactor.AcceptImpactee (CosmicShore.Gameplay.IImpactor impactee) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs:43)
+        CosmicShore.Gameplay.ImpactorBase.OnTriggerEnter (UnityEngine.Collider other) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:260)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[17:47:23.302] [PlayMode] Exception: MissingReferenceException: The object of type 'CosmicShore.Gameplay.VesselController' has been destroyed but you are still trying to access it.
+Your script should either check if it is null or you should not destroy the object.
+        UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException (System.Object obj) (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        UnityEngine.Component.get_transform () (at <f75b90f651a84d3889ac5b03cf1fde1a>:0)
+        CosmicShore.Gameplay.VesselController.get_Transform () (at Assets/_Scripts/Controller/Vessel/VesselController.cs:226)
+        CosmicShore.Gameplay.ElementalTransfer.RelayOf (CosmicShore.Gameplay.IVesselStatus status) (at Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/ElementalTransfer.cs:363)
+        CosmicShore.Gameplay.ElementalTransfer.IsDecidedHere (CosmicShore.Gameplay.IVesselStatus attacker) (at Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/ElementalTransfer.cs:169)
+        CosmicShore.Gameplay.VesselCombatHitByExplosionEffectSO.Execute (CosmicShore.Gameplay.VesselImpactor impactor, CosmicShore.Gameplay.ExplosionImpactor impactee) (at Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Explosion Effects/VesselCombatHitByExplosionEffectSO.cs:82)
+        CosmicShore.Gameplay.ExplosionImpactor.AcceptImpactee (CosmicShore.Gameplay.IImpactor impactee) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/ExplosionImpactor.cs:629)
+        ...
+[17:52:57.553] [PlayMode] Error: [SkimmerImpactor] 'Urchin(Clone)/OrientationHandle/Skimmer'.skimmerImpactorDataContainer is not assigned — this impactor dispatches no effects until it is wired (reported once; contacts are skipped, not thrown). Run FrogletTools > Vessels > Audit Vessel Skimmers to see every unwired skimmer.
+        0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffd66f3587f (Unity) DebugStringToFile
+        0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:57:23.459] ---- leaving play mode ----
+[17:57:38.152] ---- edit mode restored ----
+[18:01:52.306] ---- editor quitting (clean exit) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x000002158329cb2b (Mono JIT Code) CosmicShore.Gameplay.Projectile/<MoveProjectileAsync>d__154:MoveNext () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Projectiles/Projectile.cs:1049)
+0x00000214ce94ffbb (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTaskVoid`1<CosmicShore.Gameplay.Projectile/<MoveProjectileAsync>d__154>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:105)
+0x00000213f19cf1ca (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x00000213f19cf156 (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<TResult_REF>:TrySetResult (TResult_REF) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:139)
+0x00000213f19ceee3 (Mono JIT Code) Cysharp.Threading.Tasks.UniTask/YieldPromise:MoveNext () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.Delay.cs:293)
+0x00000212b1185ee3 (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:RunCore () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:203)
+0x00000212b11869eb (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:PreLateUpdate () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:147)
+0x00000212b11855bb (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:111)
+0x00000213fddb72b8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd6766ad44 (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+No projectile factory found to release projectile!
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000215832d5cc3 (Mono JIT Code) CosmicShore.Gameplay.Projectile:ReturnToFactory () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Projectiles/Projectile.cs:821)
+0x00000215832d5a0b (Mono JIT Code) CosmicShore.Gameplay.DetonateSparrowProjectileEndEffectSO:Execute (CosmicShore.Gameplay.ProjectileImpactor,CosmicShore.Gameplay.ImpactorBase) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Projectile End Effects/DetonateSparrowProjectileEndEffectSO.cs:14)
+0x00000215832d59c4 (Mono JIT Code) CosmicShore.Gameplay.ProjectileImpactor/<>c__DisplayClass8_0:<ExecuteEndEffects>b__0 () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ProjectileImpactor.cs:29)
+0x000002141d863a7c (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:RunEffectIsolated (System.Action,UnityEngine.Object) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:129)
+0x00000215832d5913 (Mono JIT Code) CosmicShore.Gameplay.ProjectileImpactor:ExecuteEndEffects () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ProjectileImpactor.cs:29)
+0x000002158329cb2b (Mono JIT Code) CosmicShore.Gameplay.Projectile/<MoveProjectileAsync>d__154:MoveNext () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Projectiles/Projectile.cs:1049)
+0x00000214ce94ffbb (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTaskVoid`1<CosmicShore.Gameplay.Projectile/<MoveProjectileAsync>d__154>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:105)
+0x00000213f19cf1ca (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x00000213f19cf156 (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<TResult_REF>:TrySetResult (TResult_REF) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:139)
+0x00000213f19ceee3 (Mono JIT Code) Cysharp.Threading.Tasks.UniTask/YieldPromise:MoveNext () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.Delay.cs:293)
+0x00000212b1185ee3 (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:RunCore () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:203)
+0x00000212b11869eb (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:PreLateUpdate () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:147)
+0x00000212b11855bb (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:111)
+0x00000213fddb72b8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd6766ad44 (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+No projectile factory found to release projectile!
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000215832d5cc3 (Mono JIT Code) CosmicShore.Gameplay.Projectile:ReturnToFactory () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Projectiles/Projectile.cs:821)
+0x000002114285c0d3 (Mono JIT Code) CosmicShore.Gameplay.ProjectileDetonatorSO/<DetonateAsync>d__2:MoveNext () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/ProjectileDetonatorSO.cs:188)
+0x00000211428a56cb (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTaskVoid`1<CosmicShore.Gameplay.ProjectileDetonatorSO/<DetonateAsync>d__2>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:105)
+0x00000213f19cf1ca (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x00000213f19cf156 (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<TResult_REF>:TrySetResult (TResult_REF) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:139)
+0x000002141d713f63 (Mono JIT Code) Cysharp.Threading.Tasks.UniTask/DelayPromise:MoveNext () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.Delay.cs:811)
+0x00000212b1185ee3 (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:RunCore () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:203)
+0x00000212b118696b (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:Update () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:145)
+0x00000212b118558b (Mono JIT Code) Cysharp.Threading.Tasks.Internal.PlayerLoopRunner:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/PlayerLoopRunner.cs:105)
+0x00000213fddb72b8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd6766ad44 (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (0 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002141d9a18c3 (Mono JIT Code) CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:287)
+0x000002141d98ce60 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:TickWaiting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:344)
+0x000002141d88ec13 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:LateUpdate () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:274)
+0x0000021406e1ae68 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd676d1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd676d1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd672734cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ffd6727a21a (Unity) LateBehaviourManager::Update
+0x00007ffd6768c5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ffd6766abef (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (0 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002141d9a18c3 (Mono JIT Code) CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:287)
+0x000002141d98ce60 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:TickWaiting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:344)
+0x000002141d88ec13 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:LateUpdate () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:274)
+0x0000021406e1ae68 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd676d1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd676d1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd672734cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ffd6727a21a (Unity) LateBehaviourManager::Update
+0x00007ffd6768c5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ffd6766abef (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (0 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002141d9a18c3 (Mono JIT Code) CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:287)
+0x000002141d98ce60 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:TickWaiting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:344)
+0x000002141d88ec13 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:LateUpdate () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:274)
+0x0000021406e1ae68 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd676d1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd676d1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd672734cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ffd6727a21a (Unity) LateBehaviourManager::Update
+0x00007ffd6768c5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ffd6766abef (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (0 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002141d9a18c3 (Mono JIT Code) CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:287)
+0x000002141d98ce60 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:TickWaiting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:344)
+0x000002141d88ec13 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:LateUpdate () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:274)
+0x0000021406e1ae68 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd676d1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd676d1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd672734cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ffd6727a21a (Unity) LateBehaviourManager::Update
+0x00007ffd6768c5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ffd6766abef (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (0 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002141d9a18c3 (Mono JIT Code) CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:287)
+0x000002141d98ce60 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:TickWaiting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:344)
+0x000002141d88ec13 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:LateUpdate () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:274)
+0x0000021406e1ae68 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd676d1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd676d1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd672734cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ffd6727a21a (Unity) LateBehaviourManager::Update
+0x00007ffd6768c5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ffd6766abef (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[SquirrelCrystalMorph] no usable Shielded boost ring arrived within 1.50s (0 ring(s) seen), so the crystal is fading out instead of morphing. The ring is laid by a SIBLING effect (SquirrelVesselExplosionByCrystalEffect → AOEShieldedRingSpawner), whose anti-spam cooldown skips a second pickup inside 0.15 s — check it is still in the Squirrel's VesselCrystalEffects. Trace with FrogletTools ▸ Toolbox ▸ Logging ▸ CrystalMorph.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002141d9a18c3 (Mono JIT Code) CosmicShore.Gameplay.SquirrelCrystalMorph:OnGaveUp () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/SquirrelCrystalMorph.cs:287)
+0x000002141d98ce60 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:TickWaiting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:344)
+0x000002141d88ec13 (Mono JIT Code) CosmicShore.Gameplay.CrystalMorphRunner:LateUpdate () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs:274)
+0x0000021406e1ae68 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd676d1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd676d1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd672734cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ffd6727a21a (Unity) LateBehaviourManager::Update
+0x00007ffd6768c5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ffd6766abef (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[CustomCameraController] The player camera lost its follow target while on screen, so it stopped following the ship. No live player vessel to re-latch onto. The Transform it was following was DESTROYED without the camera being re-pointed.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x000002126c93d731 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x000002141d893b0d (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x00000213f2cc3a63 (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:RecoverLostFollowTarget () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:780)
+0x00000213f2cc0fe3 (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:UpdateCamera () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:492)
+0x00000213f2cc0dfb (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:LateUpdate () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:485)
+0x0000021406e1ae68 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd676d1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ffd676d1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ffd672734cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ffd6727a21a (Unity) LateBehaviourManager::Update
+0x00007ffd6768c5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ffd6766abef (Unity) ExecutePlayerLoop
+0x00007ffd6766ad65 (Unity) ExecutePlayerLoop
+0x00007ffd6766fc0f (Unity) PlayerLoop
+0x00007ffd67fe56da (Unity) EditorPlayerLoop::Execute
+0x00007ffd67ffc7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffd67ffe78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffd67ff866d (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+Analytics Dispatcher is already flushing.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000213f3daac43 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x00000213f3daab7e (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x0000021146ae3de6 (Mono JIT Code) CosmicShore.Core.UgsAnalyticsSink:Flush () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs:121)
+0x0000021146ae3d17 (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:Flush () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:602)
+0x0000021146ae391b (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:HandleAppQuitting () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:806)
+0x00000212980cb5b2 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x00000213f3da4bc0 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:75)
+0x0000021146ae386b (Mono JIT Code) CosmicShore.Core.ApplicationLifecycleManager:OnApplicationQuit () (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/System/Bootstrap/ApplicationLifecycleManager.cs:86)
+0x0000021406e1ae68 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd676d6f51 (Unity) MonoBehaviour::HandleNotifications
+0x00007ffd67135010 (Unity) GameObject::SendMessageAny
+0x00007ffd6765bc42 (Unity) SendMessageToEveryone
+0x00007ffd6768f65a (Unity) NotifyPlayerQuit
+0x00007ffd67ffb7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffd67ffd4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffd67ff896c (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+Container Menu_Main (1842695520) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021243556cc0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x0000021243556b88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000213f3daac43 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x00000213f3daab7e (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x0000021146ae575b (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:326)
+0x0000021146ae562b (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:111)
+0x00000212980cb5b2 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x0000021146ae4343 (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x0000021415e71de5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd677c2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffd66c9ab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffd6768f689 (Unity) NotifyPlayerQuit
+0x00007ffd67ffb7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffd67ffd4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffd67ff896c (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+[Multiplayer]: NetworkManagerSession.StopAsync: Called after dispose.
+0x00007ffd66f84e2e (Unity) StackWalker::ShowCallstack
+0x00007ffd687bf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffd687bfbee (Unity) Stacktrace::GetStacktrace
+0x00007ffd66f3587f (Unity) DebugStringToFile
+0x00007ffd66df1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000002124355743d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x0000021243557303 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x0000021243556f3b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000213d06b9415 (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/belac/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:56)
+0x0000021146aee78c (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,string,object,UnityEngine.Object)
+0x0000021146aee68f (Mono JIT Code) Unity.Services.Multiplayer.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:19)
+0x0000021146aee5fb (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogWarning (object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:39)
+0x0000021146aee58b (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,UnityEngine.Object,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:49)
+0x0000021146aee41b (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:44)
+0x0000021146aedbd3 (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/NetworkManagerSession.cs:251)
+0x0000021146aeda63 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29> (Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29&)
+0x0000021146aed92b (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession:StopAsync (System.Threading.CancellationToken)
+0x0000021146aed823 (Mono JIT Code) Unity.Services.Multiplayer.GameObjectsNetcodeNetworkHandler:StopAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/GameObjectsNetcodeNetworkHandler.cs:121)
+0x0000021146ae9ae7 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:727)
+0x0000021146ae99bb (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83> (Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83&)
+0x0000021146ae9883 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:ResetAsync ()
+0x0000021146ae95b3 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:129)
+0x0000021146ae94bb (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59> (Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59&)
+0x0000021146ae9383 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:Unity.Services.Multiplayer.IModule.LeaveAsync ()
+0x0000021146ae8db1 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:776)
+0x0000021146ae8a5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132> (Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132&)
+0x0000021146ae8913 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveModulesAsync ()
+0x0000021146ae755b (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:818)
+0x0000021146ae6a4b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133> (Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133&)
+0x0000021146ae6913 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveAsync ()
+0x0000021146ae65f3 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:1234)
+0x0000021146ae64f3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncVoidMethodBuilder:Start<Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166> (Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166&)
+0x0000021146ae63d3 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:OnQuitting ()
+0x00000212980cb5b2 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x0000021146ae4343 (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x0000021415e71de5 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffd963e6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffd96328984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffd96328a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffd677bfdd4 (Unity) scripting_method_invoke
+0x00007ffd677c6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffd677c2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffd66c9ab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffd6768f689 (Unity) NotifyPlayerQuit
+0x00007ffd67ffb7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffd67ffd4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffd67ff896c (Unity) Application::TickTimer
+0x00007ffd67dd9f7c (Unity) MainMessageLoop
+0x00007ffd67de1a12 (Unity) UnityMain
+0x00007ff660b32f2a (Unity) __scrt_common_main_seh
+0x00007ffe89a1cd87 (KERNEL32) BaseThreadInitThunk
+0x00007ffe8b22caec (ntdll) RtlUserThreadStart
+
+Unloading 58 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            8.485 ms
+	Integration:            1464.790 ms
+	Integration of assets:  0.004 ms
+	Thread Wait Time:       0.008 ms
+	Total Operation Time:   1473.287 ms
+Unloading 1969 unused Assets / (23.5 MB). Loaded Objects now: 30541.
+Memory consumption went from 1.19 GB to 1.16 GB.
+Total: 668.722000 ms (FindLiveObjects: 1.978700 ms CreateObjectMapping: 2.395500 ms MarkObjects: 658.233500 ms  DeleteObjects: 6.112800 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Asset Pipeline Refresh (id=dab45e04eb0af12458e291936e3e12c6): Total: 0.009 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[LAYOUT] About to save layout C:\Users\belac\source\repos\Cosmic-Shore\UserSettings\Layouts\default-6000.dwlt
+[LAYOUT] About to save layout C:/Users/belac/AppData/Roaming/Unity/Editor-5.x/Preferences\Layouts\current\default-6000.dwlt
+Pipeline Server stopped
+Clearing [Electronic Highway Sign SDF] dynamic font asset data.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+TMPro.EditorEventCallbacks/<>c:<InitializeFontAssetResourceChangeCallBacks>b__0_0 () (at ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Editor/TMP/TMP_EditorResourceManager.cs:36)
+UnityEditor.EditorApplication:Internal_EditorApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.unity.ugui@05e8dec4ac02/Editor/TMP/TMP_EditorResourceManager.cs Line: 36)
+
+Unloading 13 Unused Serialized files (Serialized files now loaded: 0)
+[INFO ] [relay] log Shutdown request received from client editor-88616-vlcdk3
+[INFO ] [relay] log Unity client requested immediate shutdown - shutting down now, reason: Shutdown requested by client
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Shutdown requested by client
+SUCCESS: The process with PID 25696 (child process of PID 87864) has been terminated.
+SUCCESS: The process with PID 87864 (child process of PID 88616) has been terminated.
+Killing ADB server in 0.041594 seconds.
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: '7131d28b88909d7df82b26b831b49911') in 0.0027668 seconds
+Start importing Assets/_Graphics/Materials/GreenSpikeMaterial.mat using Guid(77e1afb46629cc7469cfccbdae90a628) (NativeFormatImporter) -> (artifact id: '81c354f7f137b2a21291510e77b86c21') in 0.0077047 seconds
+Start importing Assets/_Graphics/RenderTextures/PipRenderTexture.renderTexture using Guid(b8866c52528ed6249b98cfb065a3ce13) (NativeFormatImporter) -> (artifact id: '5202d4e21548bbbd597d7e3441d8aa3a') in 0.0058384 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedPlayerCount.asset using Guid(15256dcf0be30b4489190913d1f305db) (NativeFormatImporter) -> (artifact id: '0a06f472a8a92a02e09c75f594e15deb') in 0.0016134 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime IntSelectedVesselClass.asset using Guid(669b1e817c2158c40940e62d07c68356) (NativeFormatImporter) -> (artifact id: '1e9a63e6f97a8dedb377269ef18f3c37') in 0.001461 seconds
+Start importing Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/Electronic Highway Sign SDF.asset using Guid(dc36b3fdc14f47ebb36fd484a67e268a) (NativeFormatImporter) -> (artifact id: '312f08daa344cf2766f46fa6782e1895') in 0.0014453 seconds
+Start importing Assets/_SO_Assets/Game Data/Runtime VesselClassTypeSelectedVesselClass.asset using Guid(2d283def54f402042be238144cb9428d) (NativeFormatImporter) -> (artifact id: 'd66219ff6f8aa67e2d57c9fc1e4c9fd3') in 0.0012828 seconds
+Refreshing native plugins compatible for Editor in 19.21 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.07 ms.
+Asset Pipeline Refresh (id=fec2dd2cae4c8ef44adc2466bffb1728): Total: 0.251 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Unloading 200 unused Assets / (63.2 KB). Loaded Objects now: 30691.
+Memory consumption went from 1.20 GB to 1.20 GB.
+Total: 771.239600 ms (FindLiveObjects: 1.536900 ms CreateObjectMapping: 0.830300 ms MarkObjects: 768.538400 ms  DeleteObjects: 0.332800 ms)
+
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread stopped.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-belac-6000.3.17 channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Shut down.
+abort_threads: Failed aborting id: 000000000001478C, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 000000000001478C, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 4972
+Checking for leaked weakptr:
+  Found no leaked weakptrs.
+[Package Manager] Server process was shutdown
+##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1791939719385,"processId":88616,"allocatedMemory":41251486,"memoryLabels":[{"Default":29317},{"Permanent":15236},{"NewDelete":256901},{"Thread":4256904},{"Manager":3111016},{"VertexData":8},{"Geometry":816},{"Texture":840},{"Shader":92053},{"Material":24},{"GfxDevice":57992},{"GfxThread":56832},{"Audio":3040},{"FreeType":8},{"FontEngine":736},{"Physics":2090},{"Physics2D":16},{"Serialization":211504},{"Input":14984},{"JobScheduler":33024},{"TextLib":38488},{"Mono":32},{"MonoCode":704},{"ScriptingNativeRuntime":155060},{"BaseObject":1622320},{"Resource":1336},{"Renderer":3008},{"Transform":4685},{"File":24412},{"WebCam":616},{"Culling":32},{"Terrain":11394},{"Wind":24},{"STL":40},{"String":11825},{"DynamicArray":7474175},{"HashMap":254623},{"Utility":2662146},{"PoolAlloc":10216},{"AI":80},{"TypeTree":312361},{"ScriptManager":512},{"RuntimeInitializeOnLoadManager":64},{"SpriteAtlas":112},{"GI":7792},{"Director":8240},{"CloudService":7056},{"WebRequest":29558},{"VR":47994},{"SceneManager":504},{"Video":208},{"LazyScriptCache":32},{"NativeArray":1312},{"Camera":17},{"Secure":1761},{"SerializationCache":1576},{"APIUpdating":10320},{"Subsystems":336},{"VirtualTexturing":57888},{"StaticSafetyDebugInfo":278528},{"Analytics":560},{"Hierarchy":608},{"CoreStats":13112},{"Identifiers":12960},{"Gui":202},{"EditorUtility":559733},{"VersionControl":4},{"Undo":947},{"AssetDatabase":19465030},{"EditorGi":328},{"UnityConnect":29472},{"Upm":1972},{"AssetCompliance":64},{"DrivenProperties":72},{"ChannelService":384},{"LocalIPC":211},{"ProfilerEditor":9746},{"CoreBusinessMetrics":2867},{"TLS":17230},{"Licensing":792},{"AssetReference":32},{"IPCStream":32}]}
+
