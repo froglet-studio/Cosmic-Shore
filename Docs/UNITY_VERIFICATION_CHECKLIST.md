@@ -10324,3 +10324,15 @@ counts, same effects fire), the logging and conditional-compilation gates.
 2. Temporarily make one effect SO throw (or use an unwired slot): expect ONE red console line naming the effect and
    the impactor, and the rest of that contact's effects still running - the same as before.
 
+
+## 🔴 2026-10-16 — Menu rev 3, Home (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No editor in the session. Checked offline: `unity_refcompile` (no project errors), the logging / conditional / using
+gates, every `author_*.py --check`, and the changed generators' `--self-test` negative controls.
+
+1. **Nav glyphs** (`author_nav_glyphs.py`, `author_menu_topnav.py`, KitTopNavTab): Menu_Main shows the old Hangar /
+   Ark / Home / Port / Profile icons LEFT of each word, grey when idle, white when lit, brightening on hover; the
+   blue underline sits under the word. Glyph + word look centred on each tab; PORT's lock still clears its glyph.
+   **Fail:** a white square (sprite not imported as Sprite), an icon over the word, or tabs overlapping.
+2. **Focus ring** (KitSelectableBase.focusRingToken): move through any menu with a pad - the focus ring is WHITE, not
+   green. Clicking with the mouse still hides it.
