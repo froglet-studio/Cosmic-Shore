@@ -367,23 +367,26 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 Status
 
-### T-20261016-e585 · open · test · Grizzly
+### T-20261016-e585 · done · test · Grizzly
 - **Task:** Playtest the Grizzly trigger bombs at the new 250 u/s launch speed (grizzly-v3): fire a bomb ahead, freeze it, fly past it, release with it behind you - you should be thrown forward, and chaining bombs should carry you to top speed
 - **Done when:** A bomb frozen a moment after firing is clearly ahead of the ship, its blast no longer swallows the ship, and fly-past-then-detonate launches you forward
 - **Who can take it:** Jonathan (Grizzly design owner); Yash (offered)
 - **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md
+- **Done:** 2026-10-16, Tested by the Grizzly design owner on grizzly-v3 at 6e6028e5c (2026-10-16): bombs, launch momentum, LB cycle, claw cones + cells, PiP sniper scope all confirmed.
 
-### T-20261016-3ba5 · open · test · Grizzly
+### T-20261016-3ba5 · done · test · Grizzly
 - **Task:** Playtest grizzly-v3 bombs on a pad: 180 u/s bombs, blasts launch along the nose and the speed carries ~2 s (chain LT/RT without slowing), X does nothing in Explosives mode, LB cycles weapons; then run GrizzlyTimeCourseTests + GrizzlyTriggerBombTests in the Test Runner
 - **Done when:** Bomb feel confirmed by the Grizzly driver and both edit-mode suites green in Unity
 - **Who can take it:** Grizzly driver (glory.jones1) or Yash
 - **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md
+- **Done:** 2026-10-16, Tested by the Grizzly design owner on grizzly-v3 at 6e6028e5c (2026-10-16): bombs, launch momentum, LB cycle, claw cones + cells, PiP sniper scope all confirmed.
 
-### T-20261016-e80b · open · test · Grizzly
+### T-20261016-e80b · done · test · Grizzly
 - **Task:** Playtest the Grizzly trigger layouts on grizzly-v3: LB to PLASMA CLAW (LT left-front cone, RT right-front cone, pressure sizes them), LB to SNIPER (hold LT = full-screen scope that rides the round while held, RT fires, 3 s cooldown), bombs vanish when you leave Explosives; check the full-screen scope layout on GrizzlyHUD (toggle scopeFillsScreen if it looks wrong); run GrizzlyTriggerWeaponsTests
 - **Done when:** Grizzly driver confirms both layouts feel right and the suite is green in Unity
 - **Who can take it:** Grizzly driver (glory.jones1) or Yash
 - **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md
+- **Done:** 2026-10-16, Tested by the Grizzly design owner on grizzly-v3 at 6e6028e5c (2026-10-16): bombs, launch momentum, LB cycle, claw cones + cells, PiP sniper scope all confirmed.
