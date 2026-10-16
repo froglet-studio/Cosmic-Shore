@@ -141,7 +141,8 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
   finish"`.
 - **`buttonEvents`** `[t, InputEvents value, 1 pressed / 0 released]`, with a `buttonNames` map. It holds the pilot's
   own presses (abilities, stick actions, flip), with no IdleAction and nothing while the AI holds the hull.
-- **`flightrec tag <word>`** in the HUD console labels the next flights (`"tag"`); `flightrec tag` alone clears it.
+- **No labels are typed.** `racing_line.py` reads each leg's style (rail, drift, ability, boost, plain, rival
+  difficulty) from the recording.
 
 `learn_from_flights.py` counts older 23/24 flights as finished when the race ended on its own and the last sample is
 within 30 u of the last ring. `Tools/Build/racing_line.py` is new (`Docs/AI_SYSTEM/RACING_LINE.md`).
@@ -151,8 +152,8 @@ within 30 u of the last ring. `Tools/Build/racing_line.py` is new (`Docs/AI_SYST
 **Verify in editor:**
 1. Regatta, Squirrel, fly to the finish and store the record: `"rings":24`, `"finished":true`, `"ended":"race over"`.
 2. Press an ability or two mid-race: `buttonEvents` has rows for them (pressed then released). No new Console warning.
-3. HUD console `flightrec tag drift`, fly a race: the file has `"tag":"drift"`. `flightrec` shows the tag; `flightrec
-   tag` clears it.
+3. Drift through a few turns and ride your own rail for a stretch: `python3 Tools/Build/racing_line.py --dir <Flights folder>`
+   shows those legs under `drift` and `rail` in its styles table.
 4. Start a race and go back to the menu mid-way: if it is stored, its hull is `Squirrel` (not Unknown), `raceTarget` is
    24, and `ended` is `race left before the finish`.
 

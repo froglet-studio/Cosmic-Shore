@@ -85,7 +85,6 @@ namespace CosmicShore.Gameplay
         static int s_count;
         static float s_countAt = -1f;
         static HumanFlightRecorder s_instance;
-        static string s_tag = "";   // flightrec tag <word>: what the pilot is practising, written into each flight
 
         struct Sample
         {
@@ -160,16 +159,8 @@ namespace CosmicShore.Gameplay
         /// <summary>The console command: what the recorder is doing, how many flights are saved, and where.</summary>
         public static string Handle(string[] args)
         {
-            // flightrec tag <word>: label the next flights with what you are practising (rail, drift, abilities, rivals...),
-            // so the learners can tell a style session from an ordinary race. "flightrec tag" alone clears it.
-            if (args is { Length: > 0 } && args[0].ToLowerInvariant() == "tag")
-            {
-                s_tag = args.Length > 1 ? string.Join("-", args, 1, args.Length - 1).ToLowerInvariant() : "";
-                return string.IsNullOrEmpty(s_tag) ? "flight tag cleared" : $"next flights are tagged \"{s_tag}\"";
-            }
-            string tag = string.IsNullOrEmpty(s_tag) ? "" : $" | tag: {s_tag}";
             string last = string.IsNullOrEmpty(LastFile) ? "" : $" | last: {Path.GetFileName(LastFile)}";
-            return $"AI training recorder (automatic, every mode): {Status} | {SavedCount} stored in {Folder}{tag}{last}";
+            return $"AI training recorder (automatic, every mode): {Status} | {SavedCount} stored in {Folder}{last}";
         }
 
         void Update()
@@ -644,7 +635,6 @@ namespace CosmicShore.Gameplay
             sb.Append("\"mode\":\"").Append(_modeName).Append("\",\"hull\":\"").Append(hull).Append("\",");
             sb.Append("\"source\":\"unity\",\"hullKey\":\"").Append(hull.ToLowerInvariant()).Append("\",");
             sb.Append("\"training\":\"").Append(TrainingType).Append("\",");
-            sb.Append("\"tag\":\"").Append(Esc(s_tag)).Append("\",");
             sb.Append("\"domain\":\"").Append(_domainName).Append("\",");
             sb.Append("\"intensity\":").Append(intensity).Append(',');
             sb.Append("\"rivalDifficulty\":\"").Append(_gameData ? _gameData.RequestedAIDifficulty.ToString() : "").Append("\",");

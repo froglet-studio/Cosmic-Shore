@@ -6,7 +6,7 @@ best way to create the AI... boosters, all the other abilities, the drifting... 
 with another human being."*
 
 This page records three things: what the 14 races recorded so far teach, how the line is built, and the captures that
-come next. The tools are `Tools/Build/racing_line.py` (the line), `situation_features.py` (situations, labels and
+come next. The tools are `Tools/Build/racing_line.py` (the line, and each leg's style read automatically), `situation_features.py` (situations, labels and
 choices) and `learn_from_flights.py` (the Skim Race pilot's numbers). None of them changes the game. A learned value
 reaches the AI only through a reviewed Unity port that is tested against today's AI in the editor
 (`AI_TRAINING_PLAN.md` L4).
@@ -60,6 +60,31 @@ goes in the mistakes and in the legs where you slow down, not in the line.
   reports is the Squirrel's skim speed-up being on, not a button press.
 - **Unknown until more captures (§4):** riding your own rail, drifting and abilities, because they are not in the data.
 
+### 2.1 Re-measured on all 46 stored Squirrel flights (2026-10-16 evening)
+
+The flights: 38 at I1 (Yash) and 8 at I3 (Yash and belac), every one against Medium rivals.
+
+**Lap times:**
+
+| | I1 | I3 |
+|---|---:|---:|
+| Ideal lap | 19.8 s | 26.7 s |
+| Best actual lap | 24.2 s | 30.3 s |
+| Median lap | 33.0 s | 38.6 s |
+
+**Styles at I1, read from the recording.** Rail-riding legs are slightly slower when clean, but much safer:
+
+| Leg | Plain: hits | Rail: hits | Rail when clean |
+|---|---:|---:|---|
+| 2 | 35% | 0% | 0.1 s slower |
+| 7 | 39% | 3% | 0.5 s slower |
+
+On average, with mistakes included, the safer style wins on legs 0, 2, 3 and 7. The report's `-> fly ...` lines name
+the style per leg. The drift results rest on only 3-4 runs per leg, so take them as a hint until more drift legs are
+recorded.
+
+**Ability buttons** were never pressed in the five flights that record buttons.
+
 ## 3. How the AI is built from this (proposed; nothing ported yet)
 
 | Layer | Learned from | What it gives the AI |
@@ -85,28 +110,43 @@ The recorder already records, ten times a second:
 - every rival's position, velocity and rings;
 - the 12 nearest crystals.
 
-Once per race it records every ring, every rail and each rail prism destroyed or restored. **New (2026-10-16):**
+Once per race it records every ring, every rail, each rail prism destroyed or restored, and the rival difficulty
+picked in the lobby. **New (2026-10-16):**
 - **Button presses** (`buttonEvents`): every ability and stick action pressed or released, with its time.
-- **Labels** (`flightrec tag <word>` in the HUD console): every flight after the command carries `"tag"` until you clear
-  it with `flightrec tag`.
 - **The last ring is counted** (finished races read 24/24).
 - **The hull and the race target are named when recording starts**, so leaving mid-race no longer writes hull "Unknown".
 
-What to fly, in order:
+**Nothing is labelled by hand** (Yash, 2026-10-16: *"I cannot type commands and fly at the same time; rail riding,
+drifting, abilities, hard AIs can all be recorded automatically"*). `racing_line.py` reads each leg's style from the
+recording itself:
 
-| # | Tag | What to fly | How many | Teaches |
-|---|---|---|---:|---|
-| 1 | *(none)* | Your normal best racing, Squirrel, I1, to the finish | 20 more | a line from about 15+ kept runs per leg, and how your choices vary |
-| 2 | `rail` | Deliberately ride your own rail and skim it as long as you can | 10 | rail riding: skim height, the commit point, the rail guard margins (unlearnable today) |
-| 3 | `drift` | Use drift through every turn, even if it is slower at first | 10 | whether drift lines are faster on any leg; the AI only uses drift where your drift legs beat your plain ones |
-| 4 | `abilities` | Use every button the Squirrel has, whenever it might help | 10 | when each ability pays (needs the new `buttonEvents`) |
-| 5 | `hard` | Normal racing with the rivals on **Hard** | 10 | racing close to fast rivals: passing, giving way, the line under pressure |
-| 6 | *(none)* | I2, I3, I4 (different courses) | 10 each | a line per course, and what carries over between courses |
+| Style | Read from | Rule |
+|---|---|---|
+| `rail` | the distance to your own rail's recorded prisms, each sample | within 20 u of your own rail for at least 40% of the leg |
+| `drift` | the Drifting state bit | on for at least 20% of the leg |
+| `ability` | `buttonEvents` | an ability button (Button1-3) pressed during the leg |
+| `boost` | the left trigger | held during the leg |
+| `plain` | | none of the above |
+| rivals | `rivalDifficulty` in the header | whatever was picked in the lobby (Easy, Medium or Hard) |
+
+For every leg it compares the styles by their **expected** time (the clean median plus the chance of a hit times what a
+hit costs on that leg), each with at least 3 clean runs, and names the style to fly there. A safe style can beat a
+faster but riskier one. A style you never flew has no row, and the report says
+which legs still have none.
+
+**What to fly: just race.** Every race is recorded and sorted on its own. Mix it up across races whenever you feel like
+it:
+- ride and skim your own rail on some legs;
+- drift through some turns;
+- press the Squirrel's ability buttons where they might help;
+- pick **Hard** rivals in the lobby for some races, and Easy for a few;
+- play some races at I2, I3 and I4.
 
 - **Store every race when Unity asks**, including the bad ones. Mistakes are measured too (they tune Easy and Medium);
   they are just never averaged into the line.
-- **Rough budget:** about 100 races in all, the "100 gameplays" Yash offered.
-- **Where to stop:** when adding 5 more races moves no leg's line by more than its spread, that course is learned.
+- **Rough budget:** about 100 races.
+- **Where to stop:** when adding 5 more races moves no leg's line by more than its spread, that course is learned. The
+  report shows each leg's runs per style, so it is clear what is missing.
 
 **Two things recordings cannot teach:**
 1. **A technique nobody flew.** If drift is never flown well, no amount of data finds the drift line. That needs the AI
