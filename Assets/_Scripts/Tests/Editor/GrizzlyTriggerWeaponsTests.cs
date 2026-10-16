@@ -53,6 +53,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ClawCellEmptiesHalfAgainFasterForTheLargestFlame()
+        {
+            // Design ask 2026-10-16: each cone's energy cell empties 1.5x faster for larger flames.
+            Assert.AreEqual(1.5f, _claw.CellDrainPerSecond(1f) / _claw.CellDrainPerSecond(0f), 1e-4f);
+            Assert.Greater(_claw.CellDrainPerSecond(0.5f), _claw.CellDrainPerSecond(0f));
+            Assert.Less(_claw.CellDrainPerSecond(0.5f), _claw.CellDrainPerSecond(1f));
+            Assert.Greater(_claw.CellRechargePerSecond, 0f, "an idle cell must refill");
+        }
+
+        [Test]
+        public void ClawConesSpreadApart()
+        {
+            Assert.Greater(_claw.SplayDegrees, 0f, "the two cones turn outward, LT left and RT right");
+            Assert.Less(_claw.SplayDegrees, _claw.ConeHalfAngle, "splayed past its half-angle a cone no longer reads as forward");
+        }
+
+        [Test]
         public void ClawIsAlwaysTheShortestReach()
         {
             float sniperReach = _sniper.ProjectileSpeed * _sniper.ProjectileTime;

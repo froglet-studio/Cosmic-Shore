@@ -59,9 +59,17 @@ momentum."*
 | **Sniper** | hold = **scope**; a round fired while held takes the view with it until LT is let go | **fire** (sniper cooldown 3 s, energy 0.5) |
 
 - **Claw:** `GrizzlyFlamethrowerActionSO` — live pressure sizes the cone from `minRange` /
-  `minConeHalfAngle` (25 u / 12°) to `range` / `coneHalfAngle` (60 u / 25°); no analog = full.
-  Apexes sit `sideOffset` 3 to each side and `noseOffset` 4 ahead. Each cone ignites on its own.
-  60 u is the Grizzly's shortest reach on purpose.
+  `minConeHalfAngle` (18 u / 10°) to `range` / `coneHalfAngle` (45 u / 20°); no analog = full.
+  Apexes sit `sideOffset` 6 to each side and `noseOffset` 4 ahead, each turned `splayDegrees` 6°
+  outward so the two spread apart (shrunk and spread, 2026-10-16). Each cone ignites on its own.
+  45 u is the Grizzly's shortest reach on purpose.
+- **Claw energy cells** (2026-10-16: *"give each of them a small energy cell that recharges when
+  its not being fired and empties 1.5 times faster for larger flames"*): one cell per cone. A full
+  cell lasts `cellSeconds` 3 s at the smallest cone and empties `largeFlameDrainMultiplier` 1.5×
+  faster at full pressure. It refills in `cellRechargeSeconds` 2 s from empty, starting
+  `cellRechargeDelay` 0.25 s after that cone stops. An empty cell cuts its cone out until you
+  pull again with charge in it. The cone **dims as its cell empties**, which is the read for now.
+  `GrizzlyFlamethrowerActionExecutor.CellFill(side)` is there for a HUD bar.
 - **Sniper:** pressure is ignored. The scope is the HUD's **PiP** (picture-in-picture), not the
   main view (design owner, 2026-10-16: "the scope is supposed to be a PiP"). Releasing LT closes
   it, and the round flies on unwatched.
@@ -345,7 +353,8 @@ Not run in the editor — no Unity in the authoring sessions. Steps:
 10. **Turn end** with a bomb cruising or frozen: it disappears with no blast.
 11. **X does nothing** in any mode (2026-10-16).
 11b. **Claw:** LB to PLASMA CLAW. Feather LT: a small cone from the left front; squeeze: the full
-    60 u cone. RT the same on the right. Both at once: two cones. Enemy prisms in them burn.
+    45 u cone. RT the same on the right; the two splay apart. Enemy prisms in them burn. Hold
+    one: it dims and cuts out after ~2-3 s; let go and it refills in ~2 s.
 11c. **Sniper:** LB to SNIPER. Hold LT: the scope PiP opens. RT: a round; the PiP rides it
     while LT is held; let go and the PiP closes. RT again within 3 s does nothing.
 11d. **Bombs off:** fire a bomb, switch to the claw: the bomb vanishes without a blast; the

@@ -21,6 +21,17 @@ namespace CosmicShore.Gameplay
     /// trigger sprays the full cone. A spray started with no side (the legacy single-button
     /// path) opens from the hull's centre at full size.</para>
     ///
+    /// <para><b>Each cone has its own energy cell</b> (design ask, 2026-10-16). Spraying drains it -
+    /// a full cell lasts <c>cellSeconds</c> at the smallest cone and empties
+    /// <c>largeFlameDrainMultiplier</c> (1.5x) faster at full pressure - and it refills while that
+    /// cone is not spraying, after <c>cellRechargeDelay</c>. An empty cell cuts its cone out until
+    /// the trigger is pulled again with charge in it. The cone dims as its cell empties
+    /// (<see cref="GrizzlyClawConeVisual.SetCharge"/>); <see cref="CellFill"/> is the HUD read.
+    /// Simulated on every peer from the replicated presses and analog, like the spray itself.</para>
+    ///
+    /// <para>The two cones sit <c>sideOffset</c> to each side and are turned <c>splayDegrees</c>
+    /// outward, so they spread apart rather than overlapping ahead of the nose.</para>
+    ///
     /// <para>Every spray ends when the active weapon changes away from the claw.</para>
     /// </summary>
     public sealed class GrizzlyFlamethrowerActionExecutor : ShipActionExecutorBase
@@ -32,6 +43,9 @@ namespace CosmicShore.Gameplay
         {
             public CancellationTokenSource Cts;
             public GrizzlyClawConeVisual Cone;
+            public float Fill = 1f;                 // energy cell, 0..1
+            public float IdleSince = float.NegativeInfinity;
+            public GrizzlyFlamethrowerActionSO Config;   // last config sprayed, for the recharge
         }
 
         // 0 = LT (left front), 1 = RT (right front), 2 = centre (no side).
@@ -45,6 +59,7 @@ namespace CosmicShore.Gameplay
         {
             _status = shipStatus;
             EndAll();
+            foreach (var spray in _sprays) spray.Fill = 1f;
 
             if (_modes != null) _modes.OnModeChanged -= HandleModeChanged;
             _modes = TryGetComponent<ActionExecutorRegistry>(out var registry)
@@ -67,6 +82,22 @@ namespace CosmicShore.Gameplay
 
         static int SlotOf(GrizzlyBombActionSO.TriggerSide? side) => side.HasValue ? (int)side.Value : 2;
 
+        /// <summary>HUD read: a trigger's claw cell, 0 (empty) .. 1 (full).</summary>
+        public float CellFill(GrizzlyBombActionSO.TriggerSide side) => _sprays[(int)side].Fill;
+
+        /// <summary>Idle cells refill here; spraying cells drain in <see cref="SprayAsync"/>.</summary>
+        void Update()
+        {
+            float dt = Time.deltaTime;
+            foreach (var spray in _sprays)
+            {
+                if (spray.Cts != null || spray.Fill >= 1f || !spray.Config) continue;
+                if (Time.time - spray.IdleSince < spray.Config.CellRechargeDelay) continue;
+                spray.Fill = Mathf.Min(1f, spray.Fill + spray.Config.CellRechargePerSecond * dt);
+                spray.Cone?.SetCharge(spray.Fill);
+            }
+        }
+
         public void BeginSpray(GrizzlyFlamethrowerActionSO so, IVesselStatus status, GrizzlyBombActionSO.TriggerSide? side)
         {
             if (!so || status == null) return;
@@ -74,6 +105,8 @@ namespace CosmicShore.Gameplay
             EndSpray(side);
 
             var spray = _sprays[slot];
+            spray.Config = so;
+            if (spray.Fill <= 0f) return;   // empty cell: nothing until it recharges
             spray.Cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
             // Draw the reach. The cone is built from the same Range and half-angle IgniteCone
@@ -81,7 +114,8 @@ namespace CosmicShore.Gameplay
             var vesselTf = status.Transform;
             if (vesselTf != null)
             {
-                spray.Cone = GrizzlyClawConeVisual.EnsureFor(vesselTf, ConeName(slot), LocalApex(so, slot));
+                spray.Cone = GrizzlyClawConeVisual.EnsureFor(vesselTf, ConeName(slot), LocalApex(so, slot), Yaw(so, slot));
+                spray.Cone?.SetCharge(spray.Fill);
                 float pressure = PressureOf(status, side);
                 spray.Cone?.Show(so.RangeForPressure(pressure), so.HalfAngleForPressure(pressure));
             }
@@ -99,6 +133,7 @@ namespace CosmicShore.Gameplay
             spray.Cts.Cancel();
             spray.Cts.Dispose();
             spray.Cts = null;
+            spray.IdleSince = Time.time;
             if (!AnySpraying(-1)) OnSprayChanged?.Invoke(false);
         }
 
@@ -130,6 +165,14 @@ namespace CosmicShore.Gameplay
             return new Vector3(x, 0f, slot == 2 ? 0f : so.NoseOffset);
         }
 
+        /// <summary>The cone's outward turn about the hull's up, degrees: LT left, RT right.</summary>
+        static float Yaw(GrizzlyFlamethrowerActionSO so, int slot) => slot switch
+        {
+            0 => -so.SplayDegrees,
+            1 => so.SplayDegrees,
+            _ => 0f,
+        };
+
         /// <summary>The trigger's live pressure, 0..1. A device with no analog trigger (mouse,
         /// keyboard, touch, an autopilot) and the centred legacy spray are a FULL pull.</summary>
         static float PressureOf(IVesselStatus status, GrizzlyBombActionSO.TriggerSide? side)
@@ -160,6 +203,15 @@ namespace CosmicShore.Gameplay
                     float halfAngle = so.HalfAngleForPressure(pressure);
                     spray.Cone?.Show(range, halfAngle);
 
+                    // The cell: bigger flames burn it faster. Empty cuts the cone out.
+                    spray.Fill = Mathf.Max(0f, spray.Fill - so.CellDrainPerSecond(pressure) * Time.deltaTime);
+                    spray.Cone?.SetCharge(spray.Fill);
+                    if (spray.Fill <= 0f)
+                    {
+                        EndSpray(side);
+                        return;
+                    }
+
                     sinceIgnite += Time.deltaTime;
                     if (sinceIgnite >= tickSeconds)
                     {
@@ -181,7 +233,7 @@ namespace CosmicShore.Gameplay
             if (index == null || burn == null || vesselTf == null) return;
 
             var origin = vesselTf.TransformPoint(LocalApex(so, slot));
-            var forward = vesselTf.forward;
+            var forward = vesselTf.rotation * (Quaternion.Euler(0f, Yaw(so, slot), 0f) * Vector3.forward);
 
             // Sphere centered mid-cone, then angle-filter — QuerySphere is the only
             // spatial primitive and this keeps the scan cheap.

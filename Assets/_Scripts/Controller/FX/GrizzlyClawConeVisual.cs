@@ -31,9 +31,16 @@ namespace CosmicShore.Gameplay
         // Hot plasma: additive, so it can only ADD light and never darkens what it sweeps.
         static readonly Color CoreColor = new Color(1f, 0.45f, 0.12f, 1f);
 
+        // Kept dim on purpose: the cone is a reach indicator drawn over live mass.
+        const float BaseBrightness = 0.22f;
+        // An empty cell leaves a quarter of the glow, so a drained claw still shows its reach.
+        const float EmptyBrightness = 0.25f;
+        float _shownCharge = 1f;
+
         /// <summary>Gets (or creates) the claw cone called <paramref name="coneName"/> hanging
-        /// off this vessel, its apex at <paramref name="localApex"/> in the vessel's space.</summary>
-        public static GrizzlyClawConeVisual EnsureFor(Transform vessel, string coneName, Vector3 localApex)
+        /// off this vessel, its apex at <paramref name="localApex"/> in the vessel's space, turned
+        /// <paramref name="yawDegrees"/> about the vessel's up (the claws splay outward).</summary>
+        public static GrizzlyClawConeVisual EnsureFor(Transform vessel, string coneName, Vector3 localApex, float yawDegrees = 0f)
         {
             if (vessel == null) return null;
 
@@ -51,6 +58,7 @@ namespace CosmicShore.Gameplay
             }
 
             cone.transform.localPosition = localApex;
+            cone.transform.localRotation = Quaternion.Euler(0f, yawDegrees, 0f);
             return cone;
         }
 
@@ -86,6 +94,20 @@ namespace CosmicShore.Gameplay
                 range / Mathf.Max(1e-4f, parentScale.z));
 
             if (_renderer) _renderer.enabled = true;
+        }
+
+        /// <summary>Dim the cone as its energy cell empties: full brightness at a full cell,
+        /// <c>EmptyBrightness</c> of it at an empty one, so the cell reads on the flame itself.</summary>
+        public void SetCharge(float fill01)
+        {
+            if (!_material) return;
+            float q = Mathf.Round(Mathf.Clamp01(fill01) * 32f) / 32f;   // skip sub-visible changes
+            if (Mathf.Approximately(q, _shownCharge)) return;
+            _shownCharge = q;
+            var c = CoreColor * (BaseBrightness * Mathf.Lerp(EmptyBrightness, 1f, q));
+            c.a = 1f;
+            if (_material.HasProperty("_BaseColor")) _material.SetColor("_BaseColor", c);
+            if (_material.HasProperty("_Color")) _material.SetColor("_Color", c);
         }
 
         public void Hide()
@@ -144,7 +166,7 @@ namespace CosmicShore.Gameplay
 
             // Kept dim on purpose: the cone is a reach indicator drawn over live mass,
             // and at full strength it washes out the prisms it is telling you about.
-            var c = CoreColor * 0.22f;
+            var c = CoreColor * BaseBrightness;
             c.a = 1f;
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", c);

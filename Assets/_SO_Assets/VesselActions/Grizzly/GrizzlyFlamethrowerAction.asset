@@ -12,11 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbd60402e57555b42b6deb16a8ff7759, type: 3}
   m_Name: GrizzlyFlamethrowerAction
   m_EditorClassIdentifier: 
-  range: 60
-  coneHalfAngle: 25
-  minRange: 25
-  minConeHalfAngle: 12
+  range: 45
+  coneHalfAngle: 20
+  minRange: 18
+  minConeHalfAngle: 10
   igniteTicksPerSecond: 4
   ignitesPerTick: 3
-  sideOffset: 3
+  sideOffset: 6
   noseOffset: 4
+  splayDegrees: 6
+  cellSeconds: 3
+  largeFlameDrainMultiplier: 1.5
+  cellRechargeSeconds: 2
+  cellRechargeDelay: 0.25
