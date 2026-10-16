@@ -305,7 +305,7 @@
             <li>Straight boost: the Rhino's ramp (<code>RhinoRampBoostAction.asset</code>: up at 220 u/s², bleed 300 u/s²) to a lab-only ceiling of ×4, against the Rhino's ×16.8 ("like the Rhino's but less").</li>
             <li>Swap: <code>PilotSwap</code> (cooldown 0.75 s) on <code>PilotSwapGesture</code>'s keys: D-pad left / right, 1 / 2.</li>
             <li>AI levels: Hard is the skilled pilot; Medium and Easy notice each new target late (0.25 / 0.5 s mean) and misjudge 4.5% / 9.9% of them (<code>SkimRaceDifficulty.asset</code>, the Vessel Studio's universal levels).</li>
-            <li>Everything else is lab-only: the closeness boost, the primer, heat and flares, the Pistol's gravity, dive, launch, Snap (the vortex ring) and ghost, its vision band and body, the hills, and the world (clusters of flora, fauna, enemy walls and friendly blocks, seeded per intensity).</li>
+            <li>Everything else is lab-only: the straight boost, the primer, heat and flares, the Pistol's gravity, dive, launch, Snap (the vortex ring) and ghost, its vision band and body, the hills, and the world (clusters of flora, fauna, enemy walls and friendly blocks, seeded per intensity).</li>
             <li>Not modelled: rival ships (the brief says ships are hot by default), the element meter and its mappings, network ownership of the two halves, co-op (two humans: the offer / accept swap), death and respawn, sound, the real game's prisms and their shields, the phone flip (a Swap button stands in).</li>
             <li>The Pistol's world is drawn by the same rules as the game's side view (<code>GobyPistolDuo</code>, <code>PistolWarp</code>, <code>PistolWorldMesh</code>, <code>PistolWorld.shader</code>; the artifact is the source of truth, Unity its clone): every prism in a depth window of &minus;0.5 to 3 &times; the parallax depth is drawn by its depth zone: what the Pistol can reach is vivid, <b>warped</b> through the unroll (its eight corners mapped through the ribbon round its own segment, as far along the path as the bend there stretches it) and solid; the near field behind the plane fogs a little; the deep background is rigid boxes sinking into the fog, as glass; the foreground is see-through; a prism the Goby loops round holds the loop's centre and is drawn as the <b>bar</b> of the whole run of path it is beside; the forecast past the Goby extrapolates the ribbon's last segment. Everything is laid on an orthographic screen with 2.5D parallax about the Pistol. The Goby's trail is the ground: its line (downslopes warm) and its tiles, rigid on the line at their own depth (no floor, no curtain); the sky and stars are turned by the frame at the Pistol. Not mapped: the drifting background field. The Snap is a vortex ring (the self-explosion was dropped, Garrett 2026-10-15): prisms near its core are pulled into a toroidal flow and carried, then broken when it collapses (lab-only, a setting). The world keeps seeding clusters just ahead of the Goby (lab-only, Trail and hills).</li>
             <li>The lab's prisms are plain boxes, so the warped box is the warped prism; the game deforms each prism's own mesh inside the same box. Near tight turns two passes of the path compete for a point: the Unroll test counts how often (the view's fast map may pick the other pass at such a fold; the sim's map never does).</li>
@@ -335,7 +335,7 @@
   // A READER of the shipped numbers (D1): every value the game has names its asset; the rest is lab-only.
   const SHIPPED = {
     // the Goby is a two-thumb flier like the Squirrel (Garrett, 2026-10-14): the Squirrel's flight numbers and stick mix
-    gCruise: 60,          // Squirrel.prefab VesselTransformer DefaultThrottleScaler 60
+    gCruise: 160,         // Goby.prefab VesselTransformer DefaultThrottleScaler 160: the Goby zips, almost impossible to catch (Garrett, 2026-10-16; was the Squirrel's 60)
     gMinSpeed: 10,        // lab-only floor (the Squirrel studio has none; the Goby must keep laying path)
     gPitchRate: 120,      // Squirrel.prefab PitchScaler 120
     gYawRate: 120,        // Squirrel.prefab YawScaler 120
@@ -343,8 +343,8 @@
     gStraightMax: 4,      // lab-only ("like the Rhino's but less": RhinoRampBoostAction.asset maxBoostMultiplier 16.8)
     gStraightAccel: 220,  // RhinoRampBoostAction.asset accelerationPerSecond 220
     gStraightBleed: 300,  // RhinoRampBoostAction.asset bleedPerSecond 300
-    gCloseMax: 1.8,       // lab-only: the Goby's speed with the Pistol right behind it
-    gCloseRange: 320,     // lab-only: the gap (u along the ribbon) at which closeness stops counting
+    gCloseMax: 2.4,       // GobyPistolConfig.asset gCloseMax: the Goby's speed with the Pistol right behind it (2.4: it pulls away, Garrett 2026-10-16)
+    gCloseRange: 320,     // GobyPistolConfig.asset gCloseRange: the gap (u along the ribbon) at which closeness stops counting
     gPrimerCharges: 6,    // lab-only ("generous charges")
     gPrimerCd: 1.5,       // lab-only ("relatively short cooldown"), seconds per charge
     gPrimerRange: 380,    // lab-only
@@ -366,8 +366,8 @@
     pParallax: 160,       // lab-only: depth at which a layer draws at half size
     pLaunchRange: 240,    // lab-only
     pLaunchSpeed: 280,    // lab-only
-    pLaunchCharges: 2,    // lab-only
-    pLaunchCd: 4,         // lab-only
+    pLaunchCharges: 1,    // GobyPistolConfig.asset pLaunchCharges: one launch, then wait (Garrett, 2026-10-16: a significant cooldown)
+    pLaunchCd: 9,         // GobyPistolConfig.asset pLaunchCd
     pGhostTime: 2.5,      // lab-only
     pGhostCd: 8,          // lab-only
     pChain: 40,           // lab-only: a detonating primed block sets off primed blocks this close
@@ -389,7 +389,7 @@
     tHillEvery: 4,        // lab-only: every Nth block is a hinge (a control point)
     tHillAmp: 26,         // lab-only: how far a hinge lifts or drops the ground
     tAngle: 22,           // lab-only: the hinge's tilt, degrees (what you see in 3D)
-    aiMaxGap: 260,        // lab-only: the Goby AI eases off beyond this gap
+    aiMaxGap: 260,        // GobyPistolConfig.asset aiMaxGap: the Goby AI eases off beyond this gap
     aiCrystalSeek: 520,   // lab-only
     aiWeave: 50,          // lab-only: the Goby AI's height weave (hills for the Pistol)
     aiWeaveHz: 0.18,      // lab-only
@@ -399,12 +399,12 @@
   };
   // Sliders are data: [group, key, lo, hi, step, label, tip]
   const SPEC = [
-    ['Goby', 'gCruise', 20, 120, 1, 'Cruise u/s', 'Squirrel.prefab DefaultThrottleScaler (60).'],
+    ['Goby', 'gCruise', 20, 320, 1, 'Cruise u/s', 'Goby.prefab DefaultThrottleScaler (160: it zips; the Squirrel cruises at 60).'],
     ['Goby', 'gYawRate', 30, 200, 1, 'Yaw °/s', 'Squirrel.prefab YawScaler (120).'],
     ['Goby', 'gPitchRate', 30, 200, 1, 'Pitch °/s', 'Squirrel.prefab PitchScaler (120).'],
     ['Goby', 'gStraightMax', 1, 8, 0.1, 'Straight boost ×', 'Lab-only. The Rhino ramps to ×16.8; the brief says "like the Rhino but less".'],
-    ['Goby', 'gCloseMax', 1, 3, 0.05, 'Closeness ×', 'Lab-only. The Goby\'s speed with the Pistol right on its tail.'],
-    ['Goby', 'gCloseRange', 60, 800, 10, 'Closeness range u', 'Lab-only. Beyond this gap the Pistol adds no speed.'],
+    ['Goby', 'gCloseMax', 1, 3, 0.05, 'Closeness ×', 'GobyPistolConfig.asset. The Goby\'s speed with the Pistol right on its tail.'],
+    ['Goby', 'gCloseRange', 60, 800, 10, 'Closeness range u', 'GobyPistolConfig.asset. Beyond this gap the Pistol adds no speed.'],
     ['Goby', 'gPrimerCharges', 1, 12, 1, 'Primer charges', 'Lab-only. "Generous charges".'],
     ['Goby', 'gPrimerCd', 0.3, 6, 0.1, 'Primer s / charge', 'Lab-only. "A relatively short cooldown".'],
     ['Goby', 'gPrimeSplash', 10, 80, 1, 'Oil splash u', 'Lab-only. Everything this close to the hit is primed.'],
@@ -420,7 +420,7 @@
     ['Pistol', 'pViewWidth', 200, 1000, 10, 'Screen width u', 'Lab-only. How much ribbon the Pistol\'s screen shows.'],
     ['Pistol', 'pParallax', 40, 600, 10, 'Parallax depth', 'Lab-only. Layers this deep draw at half size.'],
     ['Pistol', 'pLaunchRange', 80, 500, 5, 'Launch range', 'Lab-only.'],
-    ['Pistol', 'pLaunchCd', 0.5, 12, 0.5, 'Launch s / charge', 'Lab-only.'],
+    ['Pistol', 'pLaunchCd', 0.5, 12, 0.5, 'Launch s / charge', 'GobyPistolConfig.asset. One charge, nine seconds: a launch is a commitment.'],
     ['Pistol', 'pGhostTime', 0.5, 6, 0.1, 'Ghost s', 'Lab-only.'],
     ['Pistol', 'pChain', 10, 120, 1, 'Chain u', 'Lab-only. Primed blocks this close go up together.'],
     ['Pistol', 'pHotRing', 20, 200, 1, 'Heat ring u', 'Lab-only. Unprimed blocks this close to a detonation turn hot.'],
@@ -439,7 +439,7 @@
     ['Trail', 'tHillEvery', 1, 12, 1, 'Hinge every N', 'Lab-only. Every Nth block is a hinge, alternately up and down.'],
     ['Trail', 'tHillAmp', 0, 90, 1, 'Hill height u', 'Lab-only. How far a hinge lifts or drops the ground. 0: the path alone.'],
     ['Trail', 'tAngle', 0, 60, 1, 'Hinge tilt °', 'Lab-only. What the hinge looks like in 3D.'],
-    ['AI', 'aiMaxGap', 60, 800, 10, 'Goby waits beyond u', 'Lab-only. The Goby AI eases off when the Pistol is further behind than this.'],
+    ['AI', 'aiMaxGap', 60, 800, 10, 'Goby waits beyond u', 'GobyPistolConfig.asset. The Goby AI eases off when the Pistol is further behind than this.'],
     ['AI', 'aiWeave', 0, 160, 2, 'Goby weave u', 'Lab-only. The Goby AI weaves in height to give the Pistol hills.'],
     ['AI', 'aiWeaveHz', 0.02, 1, 0.01, 'Weave Hz', 'Lab-only.'],
     ['AI', 'runSecs', 20, 300, 5, 'Run s', 'Lab-only. One run of the lab.'],
@@ -796,6 +796,10 @@
     W.blocks.push({ x, hinge, sign, pos: V(p.x, p.y, p.z), f: g.f, u: g.u, r: g.r });
     if (W.blocks.length > 2600) W.blocks.shift();
   }
+  // the Goby's speed with the Pistol behind it (GobyMath.Closeness in Unity): x1 at gCloseRange and beyond, x gCloseMax on its tail
+  function closeness(P, gap) { return 1 + (P.gCloseMax - 1) * clamp(1 - gap / P.gCloseRange, 0, 1); }
+  // the Goby AI's throttle by the gap (GobyMath.AiGapThrottle in Unity): it eases off beyond aiMaxGap so the Pistol has a world
+  function aiGapThrottle(P, gap) { return gap > P.aiMaxGap ? 0.3 : 1; }
   function layPath(W, a, b) {   // the Goby moved a -> b: a ribbon sample every tSampleGap, a block every tBlockGap
     const g = W.g, P = W.P, L = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2 + (b.z - a.z) ** 2); if (L <= 0) return;
     const gap = P.tSampleGap; let d = gap - g.acc;
@@ -845,7 +849,7 @@
     const target = W.o.noStraight ? 1 : 1 + (P.gStraightMax - 1) * clamp((straight - 0.85) / 0.15, 0, 1);
     g.sm = target > g.sm ? Math.min(target, g.sm + P.gStraightAccel / P.gCruise * dt) : Math.max(target, g.sm - P.gStraightBleed / P.gCruise * dt);
     const gap = W.p ? W.gx - W.p.x : Infinity;
-    g.cm = W.o.noClose || !W.p ? 1 : 1 + (P.gCloseMax - 1) * clamp(1 - gap / P.gCloseRange, 0, 1);
+    g.cm = W.o.noClose || !W.p ? 1 : closeness(P, gap);
     const want = Math.max(P.gMinSpeed, P.gCruise * g.thr) * g.sm * g.cm;
     g.speed += (want - g.speed) * (1 - Math.exp(-1.5 * dt));   // the Squirrel's speed ease
     const a = g.pos; g.pos = vadd(a, vscl(g.f, g.speed * dt)); layPath(W, a, g.pos); gobyEnds(W);
@@ -1012,7 +1016,7 @@
     B.want = want;
     const dir = vnorm(vsub(want, g.pos)), lx = vdot(dir, g.r), ly = vdot(dir, g.u), lz = vdot(dir, g.f);
     const yaw = clamp(Math.atan2(lx, lz) * 1.6, -1, 1), pitch = clamp(Math.atan2(ly, lz) * 1.6, -1, 1), roll = clamp(g.r.y * 2, -1, 1);
-    const gap = W.p ? W.gx - W.p.x : 0, thr = gap > P.aiMaxGap ? 0.3 : 1;
+    const gap = W.p ? W.gx - W.p.x : 0, thr = aiGapThrottle(P, gap);
     const pt = g.primer > 0 && t - g.lastPrimerAt > 0.8 && !W.o.noPrimer ? primerTarget(W) : -1;
     const wantPrimer = pt >= 0 && W.kind[pt] !== 3 && !(W.primed[pt] > t);
     let hot = 0; if (g.flare > 0) for (let i = 0; i < W.N; i++) if (isHot(W, i) && (W.px[i] - g.pos.x) ** 2 + (W.py[i] - g.pos.y) ** 2 + (W.pz[i] - g.pos.z) ** 2 <= P.gFlareRange ** 2) hot++;
@@ -2093,7 +2097,7 @@
     get manualClock() { return manualClock; }, set manualClock(v) { manualClock = !!v; },
     startRace, stopRace, swap: () => { lastSwapAt = -9; swap(); }, tick, reset, score, runBatch, runDuo, unrollTest, duoScorecard,
     world: () => W, ribbon: { makeRibbon, ribAdd, ribMap, ribUnmap, groundAt },
-    core: { mulberry32, makeRibbon, ribAdd, ribMap, ribUnmap, ribFrame, ribFrameAt, groundAt, cpCount, layPath, addBlock, gobyEnds, flyScripted, PATHS, makeWorld, stepWorld, pistolStep, fireVortex, vortexStep, pistolAI, mix, unmix, get GS() { return GS; } },   // the golden source for the Unity port (Tools/Build/goby_pistol_goldens.cjs)
+    core: { mulberry32, makeRibbon, ribAdd, ribMap, ribUnmap, ribFrame, ribFrameAt, groundAt, cpCount, layPath, addBlock, gobyEnds, flyScripted, closeness, aiGapThrottle, PATHS, makeWorld, stepWorld, pistolStep, fireVortex, vortexStep, pistolAI, mix, unmix, get GS() { return GS; } },   // the golden source for the Unity port (Tools/Build/goby_pistol_goldens.cjs)
     view: { ribMapFast, ribMapNear, ribCurvature, ribLapExtent, boxCorners, classify, cornerWindow, centreDistance, warpBox, tearBound, xRange, rigidCorners, barCorners, barExtent, trilinear, scale: pScale, parallax, onScreen, zoneOf, zone, forecast, tileCorners, diveTint, list: () => vis2d.map((v) => ({ i: v.i, x: v.x, h: v.h, d: v.d, k: v.k, dz: v.dz })), get mesh() { return { vertices: PW.vertexCount, indices: PW.indexCount, solid: PW.solidIndexCount, glass: PW.glassIndexCount }; } },   // the side view's drawing-only maths (PistolWarp.cs, PistolRibbon.MapFast / MapNear / Curvature / LapExtent): the view golden's source
     SHIPPED, SPEC, P, PLATFORM, ide: IDE,
   };

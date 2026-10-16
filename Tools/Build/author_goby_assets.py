@@ -11,7 +11,8 @@ WHAT IT MAKES (the duo brief: .claude/skills/duo-vessel/references/designs/goby-
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
           (a disk copy keeps the donor's hash and Netcode then keys two prefabs on one entry)
         - GobyPistolDuo on the root, wired to GobyPistolConfig.asset (the Pistol: the second half of the duo)
-      Everything else is the Squirrel's: the Goby flies on its numbers and its abilities [stated, 2026-10-14];
+      DefaultThrottleScaler = the lab's gCruise (the Goby zips, Garrett 2026-10-16; studio_to_unity maps the same line);
+      everything else is the Squirrel's: the Goby turns on its numbers and has its abilities [stated, 2026-10-14];
       the duo's own element row (primer, flares) is an open design question, not filled here.
     SO_Class_Goby (owned from the start, the Squirrel's icons as placeholders) + its entry in
     SO_Classlist_All / _Classes; one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and
@@ -30,6 +31,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from author_stoat_assets import global_object_id_hash, replace_once  # noqa: E402  (the shared Netcode hash)
+from studio_to_unity import parse_shipped  # noqa: E402  (the lab's SHIPPED block: the Goby's own cruise)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 VESSELS = os.path.join(ROOT, "Assets", "_Prefabs", "Spacevessels")
@@ -94,6 +96,9 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
     text = replace_once(text, "  m_Name: Squirrel\n", "  m_Name: Goby\n", "root GameObject name")
     text = replace_once(text, "  _name: Squirrel\n", "  _name: Goby\n", "VesselStatus _name")
     text = replace_once(text, f"  vesselType: {SQUIRREL_CLASS_ID}\n", f"  vesselType: {GOBY_CLASS_ID}\n", "vesselType")
+    # the Goby zips (Garrett, 2026-10-16): its cruise is the lab's gCruise, not the donor's 60. studio_to_unity.py maps the
+    # same key to this line, so a re-author and a clone agree and --check reports a hand edit as drift
+    text = replace_once(text, "  DefaultThrottleScaler: 60\n", f"  DefaultThrottleScaler: {cruise_text()}\n", "DefaultThrottleScaler")
     text = re.sub(r"(--- !u!114 &%s\n(?:.*\n)*?  GlobalObjectIdHash: )\d+\n" % NETWORK_OBJECT_ID,
                   lambda m: f"{m.group(1)}{global_object_id_hash(PREFAB_GUID, NETWORK_OBJECT_ID)}\n", text, count=1)
     text = re.sub(r"(--- !u!114 &%s\n(?:.*\n)*?  InScenePlacedSourceGlobalObjectIdHash: )\d+\n" % NETWORK_OBJECT_ID,
@@ -201,11 +206,22 @@ def register_fusion(text: str) -> str:
 
 
 # ----------------------------------------------------------------------------- checks
+LAB = os.path.join(ROOT, "Docs", "Studios", "VesselStudio", "goby.html")
+
+
+def cruise_text() -> str:
+    """The lab's SHIPPED gCruise as the prefab writes it (an integer prints without a point, as Unity does)."""
+    v = parse_shipped(read(LAB))["gCruise"]
+    return str(int(v)) if v == int(v) else repr(v)
+
+
 def check_prefab(text: str, script_guid: str, config_guid: str):
     errs = []
     def want(cond, msg):
         if not cond:
             errs.append(msg)
+    want(f"  DefaultThrottleScaler: {cruise_text()}\n" in text,
+         f"Goby.prefab: DefaultThrottleScaler is not the lab's gCruise ({cruise_text()}): the Goby flies on its own cruise, not the donor's")
     want("  m_Name: Goby\n" in text, "Goby.prefab: the root is not named Goby")
     want("  _name: Goby\n" in text, "Goby.prefab: VesselStatus _name is not Goby")
     want(f"  vesselType: {GOBY_CLASS_ID}\n" in text, f"Goby.prefab: vesselType is not {GOBY_CLASS_ID}")
@@ -297,6 +313,7 @@ def self_test():
             fails.append(f"{what}: {errs}")
     expect(check_prefab(good, script_guid, config_guid), 0, "a fresh clone passes")
     expect(check_prefab(good.replace(f"  vesselType: {GOBY_CLASS_ID}\n", f"  vesselType: {SQUIRREL_CLASS_ID}\n"), script_guid, config_guid), 1, "the Squirrel's vesselType")
+    expect(check_prefab(good.replace(f"  DefaultThrottleScaler: {cruise_text()}\n", "  DefaultThrottleScaler: 60\n"), script_guid, config_guid), 1, "the donor's cruise")
     expect(check_prefab(re.sub(r"(  GlobalObjectIdHash: )\d+", r"\g<1>2256742461", good, count=1), script_guid, config_guid), 1, "the donor's hash")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {DUO_ID}}}\n", ""), script_guid, config_guid), 1, "the duo off the root")
     expect(check_prefab(good.replace(f"guid: {config_guid}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid, config_guid), 1, "the duo's config unwired")

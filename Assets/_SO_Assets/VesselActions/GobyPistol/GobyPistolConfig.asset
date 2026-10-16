@@ -23,6 +23,8 @@ MonoBehaviour:
   gFlareRange: 420
   gFlareMax: 10
   gFlareSpeed: 240
+  gCloseMax: 2.4
+  gCloseRange: 320
   pGravity: 140
   pDiveMul: 3.2
   pMinSpeed: 35
@@ -34,8 +36,8 @@ MonoBehaviour:
   pParallax: 160
   pLaunchRange: 240
   pLaunchSpeed: 280
-  pLaunchCharges: 2
-  pLaunchCd: 4
+  pLaunchCharges: 1
+  pLaunchCd: 9
   pGhostTime: 2.5
   pGhostCd: 8
   pChain: 40
@@ -54,3 +56,4 @@ MonoBehaviour:
   tHillEvery: 4
   tHillAmp: 26
   aiHighDive: 120
+  aiMaxGap: 260

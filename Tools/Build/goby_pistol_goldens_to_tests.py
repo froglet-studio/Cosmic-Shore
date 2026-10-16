@@ -76,7 +76,7 @@ for k in ['pVortexR','pVortexSpeed','pVortexLife','pVortexCapture','pVortexSpin'
 for k, n in [('tSampleGap','SampleGap'),('tBlockGap','BlockGap'),('tHillEvery','HillEvery'),('tHillAmp','HillAmp')]:
     w('            Assert.AreEqual(%s, l.%s, 1e-6f, "%s");' % (f(sh[k]), n, k))
 w('            Assert.AreEqual(%s, ai.aiHighDive, 1e-6f, "aiHighDive");' % f(sh['aiHighDive']))
-for k, n in [('gPrimerCharges','PrimerCharges'),('gPrimerCd','PrimerCd'),('gPrimerRange','PrimerRange'),('gPrimeSplash','PrimeSplash'),('gPrimeLife','PrimeLife'),('gFlareCharges','FlareCharges'),('gFlareCd','FlareCd'),('gFlareRange','FlareRange'),('gFlareMax','FlareMax'),('gFlareSpeed','FlareSpeed'),('pVision','Vision'),('pBodyR','BodyR'),('pViewWidth','ViewWidth'),('pParallax','Parallax'),('pChain','Chain'),('pHotRing','HotRing'),('pHotLife','HotLife')]:
+for k, n in [('gCloseMax','CloseMax'),('gCloseRange','CloseRange'),('aiMaxGap','AiMaxGap'),('gPrimerCharges','PrimerCharges'),('gPrimerCd','PrimerCd'),('gPrimerRange','PrimerRange'),('gPrimeSplash','PrimeSplash'),('gPrimeLife','PrimeLife'),('gFlareCharges','FlareCharges'),('gFlareCd','FlareCd'),('gFlareRange','FlareRange'),('gFlareMax','FlareMax'),('gFlareSpeed','FlareSpeed'),('pVision','Vision'),('pBodyR','BodyR'),('pViewWidth','ViewWidth'),('pParallax','Parallax'),('pChain','Chain'),('pHotRing','HotRing'),('pHotLife','HotLife')]:
     w('            Assert.AreEqual(%s, c.%s, 1e-6f, "%s");' % (f(sh[k]), n, k))
 w('            Object.DestroyImmediate(c);\n        }\n')
 for mode, cs in modes.items():
@@ -98,6 +98,14 @@ for mode, cs in modes.items():
     for i, fr in enumerate(r['frames']):
         w('            { rb.FrameAt(%s, out var T, out var U, out var R); Near(%s, T, Tol, "T%d"); Near(%s, U, Tol, "U%d"); Near(%s, R, Tol, "R%d"); }' % (f(fr['x']), v3(fr['T']), i, v3(fr['U']), i, v3(fr['R']), i))
     w('        }\n')
+# the Goby's speed with the Pistol behind it
+w('''        [Test]
+        public void GobySpeed_ClosenessAndAiGap_MatchTheLab()
+        {
+            var c = Shipped(); float cm = c.CloseMax, cr = c.CloseRange, mg = c.AiMaxGap; Object.DestroyImmediate(c);''')
+for q in g['goby']:
+    w('            Near(%s, GobyMath.Closeness(%s, cm, cr), 1e-6f, "closeness at gap %s"); Near(%s, GobyMath.AiGapThrottle(%s, mg), 1e-6f, "AI throttle at gap %s");' % (f(q['cm']), f(q['gap']), f(q['gap']), f(q['thr']), f(q['gap']), f(q['gap'])))
+w('        }\n')
 # body
 w('''        [Test]
         public void PistolBody_RideAndLaunch_MatchesTheLab()

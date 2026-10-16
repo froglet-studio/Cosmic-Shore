@@ -61,8 +61,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(28.0f, b.pGoodLand, 1e-6f, "pGoodLand");
             Assert.AreEqual(240.0f, b.pLaunchRange, 1e-6f, "pLaunchRange");
             Assert.AreEqual(280.0f, b.pLaunchSpeed, 1e-6f, "pLaunchSpeed");
-            Assert.AreEqual(2.0f, b.pLaunchCharges, 1e-6f, "pLaunchCharges");
-            Assert.AreEqual(4.0f, b.pLaunchCd, 1e-6f, "pLaunchCd");
+            Assert.AreEqual(1.0f, b.pLaunchCharges, 1e-6f, "pLaunchCharges");
+            Assert.AreEqual(9.0f, b.pLaunchCd, 1e-6f, "pLaunchCd");
             Assert.AreEqual(2.5f, b.pGhostTime, 1e-6f, "pGhostTime");
             Assert.AreEqual(8.0f, b.pGhostCd, 1e-6f, "pGhostCd");
             Assert.AreEqual(4.0f, b.pVortexCd, 1e-6f, "pVortexCd");
@@ -78,6 +78,9 @@ namespace CosmicShore.Tests
             Assert.AreEqual(4.0f, l.HillEvery, 1e-6f, "tHillEvery");
             Assert.AreEqual(26.0f, l.HillAmp, 1e-6f, "tHillAmp");
             Assert.AreEqual(120.0f, ai.aiHighDive, 1e-6f, "aiHighDive");
+            Assert.AreEqual(2.4f, c.CloseMax, 1e-6f, "gCloseMax");
+            Assert.AreEqual(320.0f, c.CloseRange, 1e-6f, "gCloseRange");
+            Assert.AreEqual(260.0f, c.AiMaxGap, 1e-6f, "aiMaxGap");
             Assert.AreEqual(6.0f, c.PrimerCharges, 1e-6f, "gPrimerCharges");
             Assert.AreEqual(1.5f, c.PrimerCd, 1e-6f, "gPrimerCd");
             Assert.AreEqual(380.0f, c.PrimerRange, 1e-6f, "gPrimerRange");
@@ -216,6 +219,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void GobySpeed_ClosenessAndAiGap_MatchTheLab()
+        {
+            var c = Shipped(); float cm = c.CloseMax, cr = c.CloseRange, mg = c.AiMaxGap; Object.DestroyImmediate(c);
+            Near(2.4f, GobyMath.Closeness(0.0f, cm, cr), 1e-6f, "closeness at gap 0.0f"); Near(1.0f, GobyMath.AiGapThrottle(0.0f, mg), 1e-6f, "AI throttle at gap 0.0f");
+            Near(2.18125f, GobyMath.Closeness(50.0f, cm, cr), 1e-6f, "closeness at gap 50.0f"); Near(1.0f, GobyMath.AiGapThrottle(50.0f, mg), 1e-6f, "AI throttle at gap 50.0f");
+            Near(1.7f, GobyMath.Closeness(160.0f, cm, cr), 1e-6f, "closeness at gap 160.0f"); Near(1.0f, GobyMath.AiGapThrottle(160.0f, mg), 1e-6f, "AI throttle at gap 160.0f");
+            Near(1.004375f, GobyMath.Closeness(319.0f, cm, cr), 1e-6f, "closeness at gap 319.0f"); Near(0.3f, GobyMath.AiGapThrottle(319.0f, mg), 1e-6f, "AI throttle at gap 319.0f");
+            Near(1.0f, GobyMath.Closeness(320.0f, cm, cr), 1e-6f, "closeness at gap 320.0f"); Near(0.3f, GobyMath.AiGapThrottle(320.0f, mg), 1e-6f, "AI throttle at gap 320.0f");
+            Near(1.0f, GobyMath.Closeness(400.0f, cm, cr), 1e-6f, "closeness at gap 400.0f"); Near(0.3f, GobyMath.AiGapThrottle(400.0f, mg), 1e-6f, "AI throttle at gap 400.0f");
+            Near(1.0f, GobyMath.Closeness(800.0f, cm, cr), 1e-6f, "closeness at gap 800.0f"); Near(0.3f, GobyMath.AiGapThrottle(800.0f, mg), 1e-6f, "AI throttle at gap 800.0f");
+        }
+
+        [Test]
         public void PistolBody_RideAndLaunch_MatchesTheLab()
         {
             var c = Shipped(); var rb = Build(PistolUnroll.WorldUp, c.Lay); var s = c.Body; Object.DestroyImmediate(c);
@@ -226,15 +242,15 @@ namespace CosmicShore.Tests
             {
                 switch (k)
                 {
-                    case 0: Near(40.0f, p.x, BodyTol, "x@0"); Near(2.079765f, p.y, BodyTol, "y@0"); Assert.AreEqual(true, p.grounded, "grounded@0"); Near(60.0f, p.v, BodyTol, "v@0"); Near(0.0f, p.vx, BodyTol, "vx@0"); Near(0.0f, p.vy, BodyTol, "vy@0"); Assert.AreEqual(2, p.launch, "launch@0"); break;
-                    case 30: Near(67.455556f, p.x, BodyTol, "x@30"); Near(7.128116f, p.y, BodyTol, "y@30"); Assert.AreEqual(true, p.grounded, "grounded@30"); Near(35.0f, p.v, BodyTol, "v@30"); Near(0.0f, p.vx, BodyTol, "vx@30"); Near(0.0f, p.vy, BodyTol, "vy@30"); Assert.AreEqual(2, p.launch, "launch@30"); break;
-                    case 60: Near(78.519118f, p.x, BodyTol, "x@60"); Near(20.738965f, p.y, BodyTol, "y@60"); Assert.AreEqual(true, p.grounded, "grounded@60"); Near(35.0f, p.v, BodyTol, "v@60"); Near(0.0f, p.vx, BodyTol, "vx@60"); Near(0.0f, p.vy, BodyTol, "vy@60"); Assert.AreEqual(2, p.launch, "launch@60"); break;
-                    case 90: Near(88.269402f, p.x, BodyTol, "x@90"); Near(35.286065f, p.y, BodyTol, "y@90"); Assert.AreEqual(true, p.grounded, "grounded@90"); Near(35.0f, p.v, BodyTol, "v@90"); Near(0.0f, p.vx, BodyTol, "vx@90"); Near(0.0f, p.vy, BodyTol, "vy@90"); Assert.AreEqual(2, p.launch, "launch@90"); break;
-                    case 120: Near(148.699412f, p.x, BodyTol, "x@120"); Near(114.960093f, p.y, BodyTol, "y@120"); Assert.AreEqual(false, p.grounded, "grounded@120"); Near(306.109387f, p.v, BodyTol, "v@120"); Near(177.150545f, p.vx, BodyTol, "vx@120"); Near(209.974358f, p.vy, BodyTol, "vy@120"); Assert.AreEqual(1, p.launch, "launch@120"); break;
-                    case 150: Near(237.274685f, p.x, BodyTol, "x@150"); Near(163.363939f, p.y, BodyTol, "y@150"); Assert.AreEqual(false, p.grounded, "grounded@150"); Near(306.109387f, p.v, BodyTol, "v@150"); Near(177.150545f, p.vx, BodyTol, "vx@150"); Near(11.641024f, p.vy, BodyTol, "vy@150"); Assert.AreEqual(1, p.launch, "launch@150"); break;
-                    case 180: Near(325.849957f, p.x, BodyTol, "x@180"); Near(151.101117f, p.y, BodyTol, "y@180"); Assert.AreEqual(false, p.grounded, "grounded@180"); Near(306.109387f, p.v, BodyTol, "v@180"); Near(177.150545f, p.vx, BodyTol, "vx@180"); Near(-58.358976f, p.vy, BodyTol, "vy@180"); Assert.AreEqual(1, p.launch, "launch@180"); break;
-                    case 210: Near(414.42523f, p.x, BodyTol, "x@210"); Near(65.338296f, p.y, BodyTol, "y@210"); Assert.AreEqual(false, p.grounded, "grounded@210"); Near(306.109387f, p.v, BodyTol, "v@210"); Near(177.150545f, p.vx, BodyTol, "vx@210"); Near(-256.692309f, p.vy, BodyTol, "vy@210"); Assert.AreEqual(1, p.launch, "launch@210"); break;
-                    case 240: Near(451.902226f, p.x, BodyTol, "x@240"); Near(29.969781f, p.y, BodyTol, "y@240"); Assert.AreEqual(true, p.grounded, "grounded@240"); Near(35.0f, p.v, BodyTol, "v@240"); Near(177.150545f, p.vx, BodyTol, "vx@240"); Near(-282.358976f, p.vy, BodyTol, "vy@240"); Assert.AreEqual(1, p.launch, "launch@240"); break;
+                    case 0: Near(40.0f, p.x, BodyTol, "x@0"); Near(2.079765f, p.y, BodyTol, "y@0"); Assert.AreEqual(true, p.grounded, "grounded@0"); Near(60.0f, p.v, BodyTol, "v@0"); Near(0.0f, p.vx, BodyTol, "vx@0"); Near(0.0f, p.vy, BodyTol, "vy@0"); Assert.AreEqual(1, p.launch, "launch@0"); break;
+                    case 30: Near(67.455556f, p.x, BodyTol, "x@30"); Near(7.128116f, p.y, BodyTol, "y@30"); Assert.AreEqual(true, p.grounded, "grounded@30"); Near(35.0f, p.v, BodyTol, "v@30"); Near(0.0f, p.vx, BodyTol, "vx@30"); Near(0.0f, p.vy, BodyTol, "vy@30"); Assert.AreEqual(1, p.launch, "launch@30"); break;
+                    case 60: Near(78.519118f, p.x, BodyTol, "x@60"); Near(20.738965f, p.y, BodyTol, "y@60"); Assert.AreEqual(true, p.grounded, "grounded@60"); Near(35.0f, p.v, BodyTol, "v@60"); Near(0.0f, p.vx, BodyTol, "vx@60"); Near(0.0f, p.vy, BodyTol, "vy@60"); Assert.AreEqual(1, p.launch, "launch@60"); break;
+                    case 90: Near(88.269402f, p.x, BodyTol, "x@90"); Near(35.286065f, p.y, BodyTol, "y@90"); Assert.AreEqual(true, p.grounded, "grounded@90"); Near(35.0f, p.v, BodyTol, "v@90"); Near(0.0f, p.vx, BodyTol, "vx@90"); Near(0.0f, p.vy, BodyTol, "vy@90"); Assert.AreEqual(1, p.launch, "launch@90"); break;
+                    case 120: Near(148.699412f, p.x, BodyTol, "x@120"); Near(114.960093f, p.y, BodyTol, "y@120"); Assert.AreEqual(false, p.grounded, "grounded@120"); Near(306.109387f, p.v, BodyTol, "v@120"); Near(177.150545f, p.vx, BodyTol, "vx@120"); Near(209.974358f, p.vy, BodyTol, "vy@120"); Assert.AreEqual(0, p.launch, "launch@120"); break;
+                    case 150: Near(237.274685f, p.x, BodyTol, "x@150"); Near(163.363939f, p.y, BodyTol, "y@150"); Assert.AreEqual(false, p.grounded, "grounded@150"); Near(306.109387f, p.v, BodyTol, "v@150"); Near(177.150545f, p.vx, BodyTol, "vx@150"); Near(11.641024f, p.vy, BodyTol, "vy@150"); Assert.AreEqual(0, p.launch, "launch@150"); break;
+                    case 180: Near(325.849957f, p.x, BodyTol, "x@180"); Near(151.101117f, p.y, BodyTol, "y@180"); Assert.AreEqual(false, p.grounded, "grounded@180"); Near(306.109387f, p.v, BodyTol, "v@180"); Near(177.150545f, p.vx, BodyTol, "vx@180"); Near(-58.358976f, p.vy, BodyTol, "vy@180"); Assert.AreEqual(0, p.launch, "launch@180"); break;
+                    case 210: Near(414.42523f, p.x, BodyTol, "x@210"); Near(65.338296f, p.y, BodyTol, "y@210"); Assert.AreEqual(false, p.grounded, "grounded@210"); Near(306.109387f, p.v, BodyTol, "v@210"); Near(177.150545f, p.vx, BodyTol, "vx@210"); Near(-256.692309f, p.vy, BodyTol, "vy@210"); Assert.AreEqual(0, p.launch, "launch@210"); break;
+                    case 240: Near(451.902226f, p.x, BodyTol, "x@240"); Near(29.969781f, p.y, BodyTol, "y@240"); Assert.AreEqual(true, p.grounded, "grounded@240"); Near(35.0f, p.v, BodyTol, "v@240"); Near(177.150545f, p.vx, BodyTol, "vx@240"); Near(-282.358976f, p.vy, BodyTol, "vy@240"); Assert.AreEqual(0, p.launch, "launch@240"); break;
                 }
                 if (k == 240) break;
                 t += 1f / 60f;

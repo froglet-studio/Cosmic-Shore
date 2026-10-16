@@ -12,8 +12,10 @@ namespace CosmicShore.ScriptableObjects
     /// (never edit a mapped number by hand; <c>--check</c> reports it as drift). Units are the lab's: world units and
     /// seconds; the Pistol's numbers are in its unrolled plane (x along the Goby's path, h up).
     ///
-    /// <para>The Goby flies on the Squirrel's own prefab numbers (two thumbs), so its cruise and turn rates have no
-    /// field here. Read by <c>GobyPistolDuo</c> (on <c>Goby.prefab</c>, or added to any hull from the Play-mode menu).</para>
+    /// <para>The Goby's cruise is <c>Goby.prefab</c>'s own DefaultThrottleScaler (the artifact's gCruise, cloned by the same
+    /// script); its turn rates are the Squirrel's (two thumbs). The closeness speed and the AI's gap easing live here and
+    /// scale that cruise (<c>GobyMath</c>). Read by <c>GobyPistolDuo</c> (on <c>Goby.prefab</c>, or added to any hull from
+    /// the Play-mode menu).</para>
     /// </summary>
     [CreateAssetMenu(fileName = "GobyPistolConfig", menuName = "ScriptableObjects/Vessel Actions/Goby Pistol Config")]
     public sealed class GobyPistolConfigSO : ScriptableObject
@@ -54,6 +56,13 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("gFlareSpeed")]
         [SerializeField] float gFlareSpeed = 240f;
 
+        [Header("Goby: speed with the Pistol behind it (the artifact's Goby section)")]
+        [Tooltip("Closeness ×. The Goby's speed with the Pistol right on its tail.")]
+        [SerializeField] float gCloseMax = 2.4f;
+
+        [Tooltip("Closeness range u. Beyond this gap the Pistol adds no speed.")]
+        [SerializeField] float gCloseRange = 320f;
+
         [Header("Pistol: the ride (the artifact's Pistol section)")]
         [Tooltip("Pull u/s². The magnet that holds the Pistol to the ground line.")]
         [SerializeField] float pGravity = 140f;
@@ -91,10 +100,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float pLaunchSpeed = 280f;
 
         [Tooltip("pLaunchCharges")]
-        [SerializeField] float pLaunchCharges = 2f;
+        [SerializeField] float pLaunchCharges = 1f;
 
         [Tooltip("Launch s / charge")]
-        [SerializeField] float pLaunchCd = 4f;
+        [SerializeField] float pLaunchCd = 9f;
 
         [Tooltip("Ghost s")]
         [SerializeField] float pGhostTime = 2.5f;
@@ -154,6 +163,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("aiHighDive. The Pistol AI dives when this far above the ground")]
         [SerializeField] float aiHighDive = 120f;
 
+        [Tooltip("Goby waits beyond u. The Goby AI eases off when the Pistol is further behind than this.")]
+        [SerializeField] float aiMaxGap = 260f;
+
         public PistolUnroll Unroll => unroll;
         public float PrimerCharges => gPrimerCharges;
         public float PrimerCd => gPrimerCd;
@@ -165,6 +177,9 @@ namespace CosmicShore.ScriptableObjects
         public float FlareRange => gFlareRange;
         public float FlareMax => gFlareMax;
         public float FlareSpeed => gFlareSpeed;
+        public float CloseMax => gCloseMax;
+        public float CloseRange => gCloseRange;
+        public float AiMaxGap => aiMaxGap;
         public float Vision => pVision;
         public float BodyR => pBodyR;
         public float ViewWidth => pViewWidth;

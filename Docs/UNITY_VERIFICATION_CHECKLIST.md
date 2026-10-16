@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Goby zips, the Pistol's launch is a commitment (`cece/sharp-tesla-j0kd7z`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-16: "make the shrimp launch have a significant cooldown; make the goby zip around crazy fast so it is
+almost impossible to catch up with." Decided in the lab (the private prototype artifact v8) and cloned: `pLaunchCharges`
+2 → **1**, `pLaunchCd` 4 → **9** s; `gCruise` 60 → **160** (now mapped to `Goby.prefab` `DefaultThrottleScaler`, the first
+number the Goby does not share with the Squirrel; `author_goby_assets.py` writes and checks it from the lab's SHIPPED block);
+the closeness speed is now in the game — `gCloseMax` 1.8 → **2.4**, `gCloseRange` 320 — and so is the AI Goby's easing,
+`aiMaxGap` 260 (`GobyMath.Closeness` / `AiGapThrottle`, the lab's `closeness` / `aiGapThrottle` line for line; the duo
+scales the transformer's live `ThrottleScaler` by them every step and restores it on unbind). No editor, no `unity` CLI, so
+`/verify-unity` did NOT run. Headless: 49/49 outside Unity (the new `GobySpeed_ClosenessAndAiGap_MatchTheLab` golden),
+refcompile player + editor 0 errors in project code, `studio_to_unity --check` 45 mapped 0 drift, `author_goby_assets --check`
+ok (negative control: the donor's 60 fails), gates green.
+
+1. **Vessel Changer ▸ Goby, fly it:** it is FAST — 160 u/s at full throttle against the Squirrel's 60 (watch the speed read-out
+   or race a Squirrel); the turn rates are still the Squirrel's.
+2. **Press 2 (the Pistol):** the HUD reads **Launch 1/1**. Launch once: it reads 0/1 and takes **9 s** to come back. Dive and
+   the vortex ring are unchanged.
+3. **Catch-up:** as the Pistol closes on the Goby (gap under 320 u on the line) the Goby pulls away harder — up to x2.4 right
+   on its tail — so you cannot ride up its back; the AI-flown Goby eases to 0.3 throttle when the Pistol falls more than 260 u
+   behind, so a run never leaves you in empty forecast fog for long.
+4. **Swap back to the Goby (1) and leave the vessel (Vessel Changer station or quit):** the hull's cruise is its own again (no
+   lingering multiplier on the next hull).
+
 ### 🔴 The Pistol's world: warped prisms, 2.5D depth, the trail as the ground (`cece/sharp-tesla-j0kd7z`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `GobyPistolDuo`'s side view rebuilt as one mesh a frame in two passes (`PistolWorldMesh`; `CosmicShore/PistolWorld` via

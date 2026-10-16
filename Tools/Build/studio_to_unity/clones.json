@@ -8,10 +8,10 @@
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
   },
   "Goby & Pistol": {
-    "artifactVersion": "private prototype https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up v5 (1792038928-3593; the lab is not on the shared Vessel Studio artifact yet)",
+    "artifactVersion": "private prototype https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up v8 (the lab is not on the shared Vessel Studio artifact yet)",
     "pageSha": "6a814aff",
     "decisionsThrough": "none (the prototype's decision log is empty)",
-    "clonedAt": "2026-10-15",
-    "result": "41 mapped parameters match the artifact (studio_to_unity.py --check; pParallax is now read by both the lab and the game). Cloned the lab's maths line for line (PistolRibbon, PistolBodyMath, VortexRing, PistolAI; GobyPistolMathTests hold them to the page's goldens) and the Pistol's VIEW (PistolWarp, PistolWorldMesh, PistolWorld.shader; the lab's own view golden holds the warp, the bar, the zones and the parallax): the Goby.prefab flies it from the vessel changer, the dev-only GobyPistolHarness still works. 20 keys stay lab-only (--unmapped): the Goby's flight numbers are the Squirrel prefab's own; straight/closeness boosts wait for the duo vessel; seeding, hinge tilt, Goby AI weave, run length, swapCd (= PilotSwap.CooldownSeconds)."
+    "clonedAt": "2026-10-16",
+    "result": "45 mapped parameters match the artifact (studio_to_unity.py --check). 2026-10-16: gCruise is mapped to Goby.prefab DefaultThrottleScaler (160, the Goby's own cruise; author_goby_assets.py writes and checks it from the lab), the closeness speed (gCloseMax 2.4, gCloseRange 320) and the AI Goby's easing (aiMaxGap 260) are cloned as GobyMath, the launch is 1 charge / 9 s. Earlier: the lab's maths line for line (PistolRibbon, PistolBodyMath, VortexRing, PistolAI) and the Pistol's VIEW (PistolWarp, PistolWorldMesh, PistolWorld.shader), held to the page's goldens. 16 keys stay lab-only (--unmapped): the Goby's turn rates are the Squirrel prefab's own; the straight boost waits; seeding, hinge tilt, Goby AI weave, run length, swapCd."
   }
 }

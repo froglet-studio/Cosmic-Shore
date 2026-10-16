@@ -125,7 +125,9 @@ const page = path.resolve(__dirname, '../../Docs/Studios/VesselStudio/goby.html'
     // the projection about the Pistol: p.x = 100, the camera at (192, 40) with a lift of 23, P = 160, for the point (100, 40 - 23 + 10, d)
     const par = [-80, -49, 0, 49, 160, 480].map((d) => ({ d, p: rv(VV.parallax(100, 40 - 23 + 10, d, 192, 40, 100, 40 - 23, 160, V(0, 0, 0))) }));
     const view = { lap: { n: rbL.n, lastX: r6(rbL.sig[rbL.n - 1]), gx: r6(VW.gx) }, boxes, zones, parallax: par };
-    return { shipped: P, ribbon, body, vring, rngSeq, ai, mixes, view };
+    // the Goby's speed with the Pistol behind it, and the Goby AI's throttle by the gap (GobyMath in Unity)
+    const goby = [0, 50, 160, 319, 320, 400, 800].map((gap) => ({ gap, cm: r6(C.closeness(P, gap)), thr: r6(C.aiGapThrottle(P, gap)) }));
+    return { shipped: P, ribbon, body, vring, rngSeq, ai, mixes, view, goby };
   });
   if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
   process.stdout.write(JSON.stringify(out, null, 1) + '\n');

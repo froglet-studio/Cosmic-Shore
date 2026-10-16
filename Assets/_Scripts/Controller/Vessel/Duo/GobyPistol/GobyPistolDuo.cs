@@ -91,6 +91,7 @@ namespace CosmicShore.Gameplay
         readonly Vector3[] _corners = new Vector3[8], _xhd = new Vector3[8];
         readonly Dictionary<Domains, Color32> _domainColor = new();
         readonly Dictionary<Prism, int> _lastK = new(2048);        // where each prism mapped last frame (the coherence cache)
+        VesselTransformer _tf;                                      // the Goby's transformer: its ThrottleScaler is ours while bound
         readonly Dictionary<Prism, float> _barSince = new();         // when a prism became a bar (hysteresis, grow-in)
         readonly List<Prism> _expiredK = new();
         readonly PistolWorldMesh _world = new();
@@ -125,7 +126,7 @@ namespace CosmicShore.Gameplay
 
         void Bind(IVessel vessel)
         {
-            _goby = vessel; _gt = transform;
+            _goby = vessel; _gt = transform; _tf = vessel.VesselStatus != null ? vessel.VesselStatus.VesselTransformer : null;
             if (!config) config = ScriptableObject.CreateInstance<GobyPistolConfigSO>();
             _body = Config.Body; _vs = Config.Vortex; _ais = Config.AI; _lay = Config.Lay;
             _primer = Mathf.RoundToInt(Config.PrimerCharges); _flare = Mathf.RoundToInt(Config.FlareCharges);
@@ -146,7 +147,8 @@ namespace CosmicShore.Gameplay
             _world.Dispose(); _fx.Clear(); _tail.Clear(); _seen.Clear(); _foreground.Clear(); _lastK.Clear(); _barSince.Clear();
             foreach (var o in new UnityEngine.Object[] { _torus, _ringMat, _flareMat })
                 if (o) Destroy(o);
-            _goby = null; _gt = null; _rb = null; _cam = null; _view = null;
+            if (_tf) _tf.ThrottleScaler = _tf.DefaultThrottleScaler;   // the Goby's cruise is its own again
+            _goby = null; _gt = null; _rb = null; _cam = null; _view = null; _tf = null;
         }
 
         void ResetWorld()
@@ -180,6 +182,9 @@ namespace CosmicShore.Gameplay
             _rb.Lay(_lastPos, pos, f, u, r, _lay);
             _lastPos = pos;
             float gobySpeed = moved / dt;
+            // the lab's closeness (and the AI's easing beyond aiMaxGap when the duo's AI flies the Goby) scale the Goby's cruise:
+            // ThrottleScaler is the transformer's live copy of DefaultThrottleScaler and nothing else writes it in play
+            if (_tf) _tf.ThrottleScaler = _tf.DefaultThrottleScaler * GobyMath.SpeedScale(_rb.GobyX - _p.x, Config.CloseMax, Config.CloseRange, _human == Half.Pistol, Config.AiMaxGap);
 
             PollSwap();
             var inp = _human == Half.Pistol ? HumanPistol() : _ai.Think(_p, _rb, _t, Level(), _ais, Scan);

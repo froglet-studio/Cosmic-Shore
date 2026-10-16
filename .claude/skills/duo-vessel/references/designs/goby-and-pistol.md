@@ -368,3 +368,12 @@ the line it settled.
   mesh would drop the Pistol's own body first (the shipped meshes stay well under it; a reservation is one line should a
   bigger prism ever ship). **[read] for Garrett:** none of these change what the lab shows; the artifact (v7) carries
   the two lab-side guards.
+- 2026-10-16, Garrett: **"make the shrimp launch have a significant cooldown; make the goby zip around crazy fast so it
+  is almost impossible to catch up with."** Decided in the lab (private prototype v8) and cloned: `pLaunchCharges` 2 → 1,
+  `pLaunchCd` 4 → 9 s (one launch is a commitment); `gCruise` 60 → 160, now the Goby's OWN prefab number (mapped to
+  `Goby.prefab DefaultThrottleScaler`; the generator writes and checks it from the lab) — the first way the Goby departs
+  from "the Squirrel's numbers" [stated, 2026-10-14; the turn rates still are]; the closeness speed (§5) is in the game at
+  last (`gCloseMax` 2.4, `gCloseRange` 320) along with the AI Goby's easing (`aiMaxGap` 260), both as `GobyMath`, the lab's
+  `closeness` / `aiGapThrottle` factored into named functions and held by a golden. The straight boost stays lab-only.
+  **[read] for Garrett:** with 160 u/s and x2.4 the human Goby outruns the Pistol outright (35 u/s on the ground, 280 at
+  launch): the Pistol's game is the world the Goby lays, not the chase; the AI Goby still waits beyond 260 u.
