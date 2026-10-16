@@ -41,7 +41,8 @@ KEEP_SHARE = 0.5     # the faster half of the clean legs make the line
 STATE_BOOST, STATE_DRIFT, STATE_SLOWED = 1, 4, 8
 # A leg's STYLE is read from what the recorder already writes, so the pilot never labels anything (Yash, 2026-10-16:
 # "I cannot type commands and fly at the same time; record rail riding, drifting, abilities, hard AIs automatically"):
-RAIL_SHARE = 0.4     # rail: within skim reach of the pilot's OWN rail for this share of the leg
+RAIL_SHARE = 0.4     # rail: riding the pilot's OWN rail for this share of the leg...
+RAIL_NEAR = 20.0     # ...within this many u of one of its prisms (people skim ~14 u from its centre: |SkimHeight| + lift)
 DRIFT_SHARE = 0.2    # drift: the Drifting state bit on for this share of the leg
 ABILITY_EVENTS = ("Button1Action", "Button2Action", "Button3Action")   # ability buttons pressed during the leg
 STYLES = ("plain", "rail", "drift", "ability", "boost")
@@ -68,6 +69,23 @@ def resample(pts, vals, n=POINTS):
     return out_p, out_v, total
 
 
+def own_rail_near(f, pts):
+    """For each point: is it within RAIL_NEAR of a prism of the pilot's own rail, as the recorder copied it (flight/3)?
+    The flight's own rails, not the generated course: they are what was really there."""
+    rails, own = (f or {}).get("rails") or [], (f or {}).get("ownRail", -1)
+    if not (0 <= own < len(rails)):
+        return None
+    cell, grid = RAIL_NEAR, {}
+    for q in rails[own]["prisms"]:
+        grid.setdefault((int(q[0] // cell), int(q[1] // cell), int(q[2] // cell)), []).append(q[:3])
+    out = []
+    for p in pts:
+        cx, cy, cz = int(p[0] // cell), int(p[1] // cell), int(p[2] // cell)
+        out.append(any(math.dist(p, q) <= RAIL_NEAR for dx in (-1, 0, 1) for dy in (-1, 0, 1) for dz in (-1, 0, 1)
+                       for q in grid.get((cx + dx, cy + dy, cz + dz), ())))
+    return out
+
+
 def leg_runs(A, flight_name):
     """Every leg of one analysed flight, with its resampled path and the pilot's actions along it."""
     N, ev = A["norm"], A["events"]
@@ -77,8 +95,7 @@ def leg_runs(A, flight_name):
         k = f["columns"].index("state")
         state = [int(r[k] or 0) for r in f["samples"]]
     skims = set(ev.get("skim", []))
-    F = A["feats"]
-    reach = N["skimReach"] or 7.5
+    near = own_rail_near(f, N["p"])
     presses = []   # (t, name) of the pilot's own presses (flight/3 buttonEvents, 2026-10-16 on)
     if f and f.get("buttonEvents"):
         names = {v: k for k, v in (f.get("buttonNames") or {}).items()}
@@ -98,7 +115,7 @@ def leg_runs(A, flight_name):
         rp, (rs, rb, rd, rk), length = resample(pts, [spd, boost, drift, skim])
         key = "start" if n == 0 and i0 == 0 else str(g["ring"])
         t0, t1 = N["t"][i0], N["t"][i1]
-        on_rail = sum(1 for i in idx if F[i].get("gapOwnRail") and 0 <= F[i]["gap"] < reach) / len(idx)
+        on_rail = sum(1 for i in idx if near[i]) / len(idx) if near else 0.0
         pressed = [name for (t, name) in presses if t0 <= t < t1]
         styles = [s for s, on in (("rail", on_rail >= RAIL_SHARE), ("drift", sum(drift) / len(drift) >= DRIFT_SHARE),
                                   ("ability", any(p in ABILITY_EVENTS for p in pressed)),
@@ -153,8 +170,14 @@ def build(runs):
             if all_st:
                 by_style.setdefault(st, {})["hitShare"] = round(sum(1 for r in all_st if r["rams"]) / len(all_st), 2)
                 by_style[st]["runs"] = len(all_st)
-        leg["styles"] = by_style
         dirty = [r for r in mine if not r["clean"]]
+        cost = statistics.mean(r["time"] for r in dirty) - statistics.median(r["time"] for r in clean) if dirty and clean else 0.0
+        for st, d in by_style.items():
+            # What a run of this style costs ON AVERAGE, mistakes included: the clean median plus the chance of a hit
+            # times what a hit costs on this leg. A safe style can beat a faster but riskier one here.
+            if "median" in d:
+                d["expected"] = round(d["median"] + d.get("hitShare", 0) * max(0.0, cost), 2)
+        leg["styles"] = by_style
         if dirty and clean:
             leg["mistakeCost"] = round(statistics.mean(r["time"] for r in dirty) - statistics.median(r["time"] for r in clean), 2)
         legs.append(leg)
@@ -227,11 +250,14 @@ def report(analyses, skipped, write):
                 cells.append("-" if not d else f"{d.get('clean', 0)} / {d.get('median', '-')} s, hits {int(d.get('hitShare', 0) * 100)}%")
             print(f"  | {l['key']} | " + " | ".join(cells) + " |")
         for l in legs:
-            p = l["styles"].get("plain", {})
-            for st in ("rail", "drift", "ability", "boost"):
-                d = l["styles"].get(st, {})
-                if d.get("clean", 0) >= 3 and p.get("clean", 0) >= 3 and d["median"] < p["median"]:
-                    print(f"  -> leg {l['key']}: {st} is faster than plain ({d['median']} s vs {p['median']} s, {d['clean']} clean runs)")
+            ok = {st: d for st, d in l["styles"].items() if d.get("clean", 0) >= 3 and "expected" in d}
+            if len(ok) < 2:
+                continue
+            fast = min(ok, key=lambda st: ok[st]["median"])
+            best = min(ok, key=lambda st: ok[st]["expected"])
+            l["bestStyle"] = best
+            note = "" if best == fast else f" (clean, {fast} is faster: {ok[fast]['median']} s, but it hits {int(ok[fast].get('hitShare', 0) * 100)}% of the time)"
+            print(f"  -> leg {l['key']}: fly {best}: {ok[best]['expected']} s on average with mistakes, hits {int(ok[best].get('hitShare', 0) * 100)}%{note}")
         diffs = {}
         for r in runs:
             diffs[r["rivals"]] = diffs.get(r["rivals"], set()) | {r["flight"]}

@@ -60,6 +60,31 @@ goes in the mistakes and in the legs where you slow down, not in the line.
   reports is the Squirrel's skim speed-up being on, not a button press.
 - **Unknown until more captures (§4):** riding your own rail, drifting and abilities, because they are not in the data.
 
+### 2.1 Re-measured on all 46 stored Squirrel flights (2026-10-16 evening)
+
+The flights: 38 at I1 (Yash) and 8 at I3 (Yash and belac), every one against Medium rivals.
+
+**Lap times:**
+
+| | I1 | I3 |
+|---|---:|---:|
+| Ideal lap | 19.8 s | 26.7 s |
+| Best actual lap | 24.2 s | 30.3 s |
+| Median lap | 33.0 s | 38.6 s |
+
+**Styles at I1, read from the recording.** Rail-riding legs are slightly slower when clean, but much safer:
+
+| Leg | Plain: hits | Rail: hits | Rail when clean |
+|---|---:|---:|---|
+| 2 | 35% | 0% | 0.1 s slower |
+| 7 | 39% | 3% | 0.5 s slower |
+
+On average, with mistakes included, the safer style wins on legs 0, 2, 3 and 7. The report's `-> fly ...` lines name
+the style per leg. The drift results rest on only 3-4 runs per leg, so take them as a hint until more drift legs are
+recorded.
+
+**Ability buttons** were never pressed in the five flights that record buttons.
+
 ## 3. How the AI is built from this (proposed; nothing ported yet)
 
 | Layer | Learned from | What it gives the AI |
@@ -97,15 +122,16 @@ recording itself:
 
 | Style | Read from | Rule |
 |---|---|---|
-| `rail` | the distance to your own rail, each sample | within skim reach of your own rail for at least 40% of the leg |
+| `rail` | the distance to your own rail's recorded prisms, each sample | within 20 u of your own rail for at least 40% of the leg |
 | `drift` | the Drifting state bit | on for at least 20% of the leg |
 | `ability` | `buttonEvents` | an ability button (Button1-3) pressed during the leg |
 | `boost` | the left trigger | held during the leg |
 | `plain` | | none of the above |
 | rivals | `rivalDifficulty` in the header | whatever was picked in the lobby (Easy, Medium or Hard) |
 
-For every leg it compares each style's clean times with plain ones. When a style is faster on a leg (at least 3 clean
-runs of each), it says so, and the AI uses that style there. A style you never flew has no row, and the report says
+For every leg it compares the styles by their **expected** time (the clean median plus the chance of a hit times what a
+hit costs on that leg), each with at least 3 clean runs, and names the style to fly there. A safe style can beat a
+faster but riskier one. A style you never flew has no row, and the report says
 which legs still have none.
 
 **What to fly: just race.** Every race is recorded and sorted on its own. Mix it up across races whenever you feel like
