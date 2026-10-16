@@ -1,0 +1,964 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-08 02:35:47 (next editor launch after the abnormal exit)
+session:          (pid -1, Unity )
+started:         UTC
+last heartbeat:  UTC
+last state:     unknown
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261008-041739685
+started: 2026-10-08T04:17:39.685Z UTC
+unity:   6000.3.17f1
+pid:     34436
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[00:19:27.001] ---- entering play mode ----
+[00:19:29.715] ---- play mode running ----
+[00:24:20.334] ---- leaving play mode ----
+[00:24:24.239] ---- edit mode restored ----
+[00:38:22.667] ---- domain reload begins (script compilation / play-mode transition) ----
+itor.ProjectDataStore..ctor (System.String directory) [0x00076] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000223ba13473e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000223ba134543 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000223ba1341fb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:19:08.522] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-041822580.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:39:24.002] ---- entering play mode ----
+[00:39:47.532] ---- play mode running ----
+[00:41:16.692] ---- leaving play mode ----
+[00:41:20.112] ---- edit mode restored ----
+[00:41:29.408] ---- entering play mode ----
+[00:41:33.221] ---- play mode running ----
+[00:44:34.931] ---- leaving play mode ----
+[00:44:38.667] ---- edit mode restored ----
+[00:46:29.517] ---- domain reload begins (script compilation / play-mode transition) ----
+he\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000223b4aee95e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000223b4aee763 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000223b4aee41b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:39:54.737] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-043909189.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[00:46:50.814] ---- entering play mode ----
+[00:46:54.339] ---- play mode running ----
+[00:49:15.511] ---- leaving play mode ----
+[00:49:17.202] ---- edit mode restored ----
+[01:13:23.315] ---- domain reload begins (script compilation / play-mode transition) ----
+ reference not set to an instance of an object
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore..ctor (System.String directory) [0x00076] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000223b8c00f5e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000223b8c00d63 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000223b8c00a1b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:47:39.080] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-044653710.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:13:37.049] ---- domain reload begins (script compilation / play-mode transition) ----
+Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000015530f5339e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000015530f531a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000015530f52e5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:47:42.779] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-044657351.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:13:37.097] ---- domain reload begins (script compilation / play-mode transition) ----
+Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002195031339e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000219503131a3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000021950312e5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[00:47:50.610] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-044705064.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:15:01.228] ---- entering play mode ----
+[01:15:04.293] ---- play mode running ----
+[01:15:31.396] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.Skimmer.get_Domain () (at Assets/_Scripts/Controller/Vessel/Skimmer.cs:37)
+        CosmicShore.Gameplay.SkimmerImpactor.get_OwnDomain () (at Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:32)
+        CosmicShore.Gameplay.OmniCrystalImpactor.AcceptImpactee (CosmicShore.Gameplay.IImpactor impactee) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs:43)
+        CosmicShore.Gameplay.ImpactorBase.OnTriggerEnter (UnityEngine.Collider other) (at Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:260)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:44)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[01:23:49.006] ---- leaving play mode ----
+[01:23:53.054] ---- edit mode restored ----
+[01:30:20.483] ---- domain reload begins (script compilation / play-mode transition) ----
+itor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001552fcb646e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001552fcb6273 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001552fcb5f2b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:14:27.146] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-051341487.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:30:33.776] ---- domain reload begins (script compilation / play-mode transition) ----
+Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000002523a58cace (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000002523a58c8d3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002523a58c58b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:14:34.631] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-051349273.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:52:57.608] ---- entering play mode ----
+[01:53:43.932] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-053026252.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[01:57:28.752] ---- play mode running ----
+[01:57:29.252] ---- main thread stalled ~272s and RECOVERED — slow, not hung ----
+[02:00:55.469] ---- leaving play mode ----
+[02:00:59.330] ---- edit mode restored ----
+[02:05:23.821] ---- domain reload begins (script compilation / play-mode transition) ----
+ectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001552e84f96e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001552e84f773 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001552e84f42b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:31:23.582] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-053038233.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:05:38.101] ---- domain reload begins (script compilation / play-mode transition) ----
+Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001f43118cace (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001f43118c8d3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001f43118c58b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:31:29.922] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-053044629.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:05:55.768] ---- entering play mode ----
+[02:05:57.923] ---- play mode running ----
+[02:12:45.191] ---- leaving play mode ----
+[02:12:47.432] ---- edit mode restored ----
+[02:26:29.433] ---- domain reload begins (script compilation / play-mode transition) ----
+itor.ProjectDataStore..ctor (System.String directory) [0x00076] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025237f33e8e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025237f33c93 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025237f3394b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[02:06:28.350] ---- main thread unresponsive ~46s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-060542563.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:26:50.929] ---- domain reload begins (script compilation / play-mode transition) ----
+Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001c13c40cace (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001c13c40c8d3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001c13c40c58b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[02:06:35.834] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-060550101.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:29:07.244] ---- entering play mode ----
+[02:29:09.526] ---- play mode running ----
+[02:31:16.551] [PlayMode] Assert: d3d12: failed to wait for fence (258).
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbff453be (Unity) AssertImplementation
+        0x00007fffbffeba00 (Unity) D3D12Fence::Wait
+        0x00007fffc004b464 (Unity) GfxDeviceD3D12::WaitForLastPresentationAndGetTimestamp
+        0x00007fffc069c734 (Unity) `InitPlayerLoopCallbacks'::`2'::TimeUpdateWaitForLastPresentationAndUpdateTimeRegistrator::Forward
+        ...
+[02:31:32.380] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-062639757.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:31:46.553] [PlayMode] Assert: d3d12: failed to wait for fence (258).
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbff453be (Unity) AssertImplementation
+        0x00007fffbffeba00 (Unity) D3D12Fence::Wait
+        0x00007fffc004b464 (Unity) GfxDeviceD3D12::WaitForLastPresentationAndGetTimestamp
+        0x00007fffc069c734 (Unity) `InitPlayerLoopCallbacks'::`2'::TimeUpdateWaitForLastPresentationAndUpdateTimeRegistrator::Forward
+        ...
+[02:32:16.555] [PlayMode] Assert: d3d12: failed to wait for fence (258).
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbff453be (Unity) AssertImplementation
+        0x00007fffbffeba00 (Unity) D3D12Fence::Wait
+        0x00007fffc004b464 (Unity) GfxDeviceD3D12::WaitForLastPresentationAndGetTimestamp
+        0x00007fffc069c734 (Unity) `InitPlayerLoopCallbacks'::`2'::TimeUpdateWaitForLastPresentationAndUpdateTimeRegistrator::Forward
+        ...
+CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000025237db4c2e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000025237db4a33 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000025237db46eb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[02:27:44.390] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-062658612.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+r.Playmode.Workflow.Editor.ProjectDataStore..ctor (System.String directory) [0x00076] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:55 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.ProjectDataStore.GetMain () [0x00001] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Configuration\ProjectDataStore.cs:36 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.WorkflowMainEditorContext..ctor (Unity.Multiplayer.Playmode.VirtualProjects.Editor.MainEditorContext mainEditorContext) [0x00030] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Contexts\WorkflowMainEditorContext.cs:15 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow.InitializeMPPMContexts () [0x0001e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:204 
+  at Unity.Multiplayer.Playmode.Workflow.Editor.VirtualProjectWorkflow+<>c.<.cctor>b__22_0 () [0x0003e] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\Workflow\Editor\Workflow\VirtualProjectWorkflow.cs:85 
+  at Unity.Multiplayer.Playmode.VirtualProjects.Editor.EditorContexts.SendReadyEvent () [0x00050] in .\Library\PackageCache\com.unity.multiplayer.playmode@3acaa705f0f9\VirtualProjects\Editor\Contexts\EditorContexts.cs:56 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+   --- End of inner exception stack trace ---
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at UnityEditor.EditorAssemblies.ProcessInitializeOnLoadMethodAttributes () [0x00087] in <8740d1a42447456fb4d6b16f148b70d3>:0 
+        0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+        0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+        0x00007fffbff4587f (Unity) DebugStringToFile
+        0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x0000024f36dee05e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x0000024f36dede83 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x0000024f36dedb5b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[02:27:51.975] ---- main thread unresponsive ~46s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261008-062706201.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f27abfb (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaWithDomain (CosmicShore.Gameplay.Cell,CosmicShore.Gameplay.Fauna,UnityEngine.Vector3,CosmicShore.Data.Domains,System.Nullable`1<UnityEngine.Vector3>,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:362)
+0x000002242f279f2b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaBanded (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO,CosmicShore.Data.Domains,UnityEngine.Vector3,System.Nullable`1<UnityEngine.Vector3>) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:538)
+0x000002242f27872b (Mono JIT Code) CosmicShore.Gameplay.RandomLifeSpawner/<SpawnFaunaPopulation>d__8:MoveNext () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs:302)
+0x00000223da2d6d51 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x00000223da2d6f60 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06c483b (Unity) Coroutine::Run
+0x00007fffc06f033c (Unity) MonoBehaviour::TryCreateAndRunCoroutine
+0x00007fffc06c35a8 (Unity) Coroutine::HandleIEnumerableCurrentReturnValue
+0x00007fffc06c4647 (Unity) Coroutine::ProcessCoroutineCurrent
+0x00007fffc06c4989 (Unity) Coroutine::Run
+0x00007fffc06c26a2 (Unity) Coroutine::ContinueCoroutine
+0x00007fffc028a0f8 (Unity) DelayedCallManager::Update
+0x00007fffc069c86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f27abfb (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaWithDomain (CosmicShore.Gameplay.Cell,CosmicShore.Gameplay.Fauna,UnityEngine.Vector3,CosmicShore.Data.Domains,System.Nullable`1<UnityEngine.Vector3>,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:362)
+0x000002242f279f2b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaBanded (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO,CosmicShore.Data.Domains,UnityEngine.Vector3,System.Nullable`1<UnityEngine.Vector3>) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:538)
+0x000002242f27872b (Mono JIT Code) CosmicShore.Gameplay.RandomLifeSpawner/<SpawnFaunaPopulation>d__8:MoveNext () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs:302)
+0x00000223da2d6d51 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x00000223da2d6f60 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06c483b (Unity) Coroutine::Run
+0x00007fffc06f033c (Unity) MonoBehaviour::TryCreateAndRunCoroutine
+0x00007fffc06c35a8 (Unity) Coroutine::HandleIEnumerableCurrentReturnValue
+0x00007fffc06c4647 (Unity) Coroutine::ProcessCoroutineCurrent
+0x00007fffc06c4989 (Unity) Coroutine::Run
+0x00007fffc06c26a2 (Unity) Coroutine::ContinueCoroutine
+0x00007fffc028a0f8 (Unity) DelayedCallManager::Update
+0x00007fffc069c86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f27abfb (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaWithDomain (CosmicShore.Gameplay.Cell,CosmicShore.Gameplay.Fauna,UnityEngine.Vector3,CosmicShore.Data.Domains,System.Nullable`1<UnityEngine.Vector3>,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:362)
+0x000002242f279f2b (Mono JIT Code) CosmicShore.Gameplay.CellLifeSpawnerBase:SpawnFaunaBanded (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO,CosmicShore.Data.Domains,UnityEngine.Vector3,System.Nullable`1<UnityEngine.Vector3>) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs:538)
+0x000002242f27872b (Mono JIT Code) CosmicShore.Gameplay.RandomLifeSpawner/<SpawnFaunaPopulation>d__8:MoveNext () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs:302)
+0x00000223da2d6d51 (Mono JIT Code) UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+0x00000223da2d6f60 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object_intptr (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06c483b (Unity) Coroutine::Run
+0x00007fffc06f033c (Unity) MonoBehaviour::TryCreateAndRunCoroutine
+0x00007fffc06c35a8 (Unity) Coroutine::HandleIEnumerableCurrentReturnValue
+0x00007fffc06c4647 (Unity) Coroutine::ProcessCoroutineCurrent
+0x00007fffc06c4989 (Unity) Coroutine::Run
+0x00007fffc06c26a2 (Unity) Coroutine::ContinueCoroutine
+0x00007fffc028a0f8 (Unity) DelayedCallManager::Update
+0x00007fffc069c86b (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunDelayedDynamicFrameRateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+Burst is disabled for `Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.ECS.PrismRenderService+WriteLocalToWorldJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.ECS.PrismRenderService+WriteLocalToWorldJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)` due to a failure to resolve one or more `extern` methods called by this entry-point.
+Burst is disabled for `Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.FindDensestRegionJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.FindDensestRegionJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)` due to a failure to resolve one or more `extern` methods called by this entry-point.
+[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.CreatureBlockHit. Wire it on the AudioSystem GameObject. (This warning fires once per category.)
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002240e221f03 (Mono JIT Code) CosmicShore.Core.AudioSystem:PlayGameplaySFXInternal (CosmicShore.Core.GameplaySFXCategory,bool,UnityEngine.Vector3) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/Audio/AudioSystem.cs:764)
+0x000002240f2131ab (Mono JIT Code) CosmicShore.Core.AudioSystem:PlayGameplaySFX (CosmicShore.Core.GameplaySFXCategory,UnityEngine.Vector3) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/System/Audio/AudioSystem.cs:740)
+0x000002242f6fef73 (Mono JIT Code) CosmicShore.Gameplay.Prism:PlayDestructionSFX () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Vessel/Prism.cs:1468)
+0x000002242f6fc123 (Mono JIT Code) CosmicShore.Gameplay.Prism:Implode (UnityEngine.Transform,CosmicShore.Data.Domains,string,bool) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Vessel/Prism.cs:1517)
+0x000002242f6fbca3 (Mono JIT Code) CosmicShore.Gameplay.Prism:Consume (UnityEngine.Transform,CosmicShore.Data.Domains,string,bool,bool) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Vessel/Prism.cs:1624)
+0x000002242f6fb153 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:870)
+0x000002242f2c6c0b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:829)
+0x000002242f2c530b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x0000022271360ac8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fffc06e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fffc028308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fffc0289f1a (Unity) BehaviourManager::Update
+0x00007fffc069c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f73348b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:487)
+0x000002242f703f7b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:465)
+0x000002242f70358b (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:278)
+0x000002242f6fb703 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:885)
+0x000002242f2c6c0b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:829)
+0x000002242f2c530b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x0000022271360ac8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fffc06e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fffc028308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fffc0289f1a (Unity) BehaviourManager::Update
+0x00007fffc069c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f73348b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:487)
+0x000002242f703f7b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:465)
+0x000002242f70358b (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:278)
+0x000002242f6fb703 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:885)
+0x000002242f2c6c0b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:829)
+0x000002242f2c530b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x0000022271360ac8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fffc06e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fffc028308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fffc0289f1a (Unity) BehaviourManager::Update
+0x00007fffc069c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f73348b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:487)
+0x000002242f703f7b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:465)
+0x000002242f70358b (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:278)
+0x000002242f6fb1a3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:871)
+0x000002242f2c6c0b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:829)
+0x000002242f2c530b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x0000022271360ac8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fffc06e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fffc028308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fffc0289f1a (Unity) BehaviourManager::Update
+0x00007fffc069c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f73348b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:487)
+0x000002242f703f7b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:465)
+0x000002242f70358b (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:278)
+0x000002242f6fb1a3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:871)
+0x000002242f2c6c0b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:829)
+0x000002242f2c530b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x0000022271360ac8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fffc06e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fffc028308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fffc0289f1a (Unity) BehaviourManager::Update
+0x00007fffc069c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f73348b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:487)
+0x000002242f703f7b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:465)
+0x000002242f70358b (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:278)
+0x000002242f6fb1a3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:871)
+0x000002242f2c6c0b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:829)
+0x000002242f2c530b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x0000022271360ac8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fffc06e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fffc028308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fffc0289f1a (Unity) BehaviourManager::Update
+0x00007fffc069c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f73348b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:487)
+0x000002242f703f7b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:465)
+0x000002242f70358b (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:278)
+0x000002242f6fb1a3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:871)
+0x000002242f2c6c0b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:829)
+0x000002242f2c530b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x0000022271360ac8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fffc06e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fffc028308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fffc0289f1a (Unity) BehaviourManager::Update
+0x00007fffc069c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'QuadFish(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbfe01b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000222c8321e1e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000222c8321c23 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x00000222c83218db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000223dca8efde (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000222c8320d5e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000222c83209fd (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000223dca8ee2b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Utility/CSDebug.cs:467)
+0x000002242f2b9bfb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x000002242f2b92db (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x000002242f2b8b7b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x000002242f73348b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:487)
+0x000002242f703f7b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:465)
+0x000002242f70358b (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:278)
+0x000002242f6fb1a3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:871)
+0x000002242f2c6c0b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:829)
+0x000002242f2c530b (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/gradi/source/repos/Star-Writer2/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1040)
+0x0000022271360ac8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007fffb7176c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007fffb70b8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007fffb70b8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007fffc07cfdd4 (Unity) scripting_method_invoke
+0x00007fffc07d6c93 (Unity) ScriptingInvocation::Invoke
+0x00007fffc06e1aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007fffc06e1bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007fffc028308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007fffc0289f1a (Unity) BehaviourManager::Update
+0x00007fffc069c7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+d3d12: failed to wait for fence (258).
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbff453be (Unity) AssertImplementation
+0x00007fffbffeba00 (Unity) D3D12Fence::Wait
+0x00007fffc0037089 (Unity) GfxDeviceD3D12::EndCurrentRenderSubPass
+0x00007fffc0037d7d (Unity) GfxDeviceD3D12::EndRenderPassImpl
+0x00007fffc02b59d2 (Unity) GfxDevice::EndRenderPass
+0x00007fffbfef9406 (Unity) GfxDeviceWorker::RunCommand
+0x00007fffbff0490c (Unity) GfxDeviceWorker::RunExt
+0x00007fffbff04a3f (Unity) GfxDeviceWorker::RunGfxDeviceWorker
+0x00007fffc17c2b80 (Unity) Thread::RunThreadWrapper
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+D3D12Fence::Wait(423524) error: got 423522. May cause crash or visual artifacts
+d3d12: failed to wait for fence (258).
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbff453be (Unity) AssertImplementation
+0x00007fffbffeba00 (Unity) D3D12Fence::Wait
+0x00007fffc004b464 (Unity) GfxDeviceD3D12::WaitForLastPresentationAndGetTimestamp
+0x00007fffc069c734 (Unity) `InitPlayerLoopCallbacks'::`2'::TimeUpdateWaitForLastPresentationAndUpdateTimeRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+D3D12Fence::Wait(107650) error: got 107649. May cause crash or visual artifacts
+d3d12: failed to wait for fence (258).
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbff453be (Unity) AssertImplementation
+0x00007fffbffeba00 (Unity) D3D12Fence::Wait
+0x00007fffc004b464 (Unity) GfxDeviceD3D12::WaitForLastPresentationAndGetTimestamp
+0x00007fffc069c734 (Unity) `InitPlayerLoopCallbacks'::`2'::TimeUpdateWaitForLastPresentationAndUpdateTimeRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+D3D12Fence::Wait(107650) error: got 107649. May cause crash or visual artifacts
+d3d12: failed to wait for fence (258).
+0x00007fffbff94e2e (Unity) StackWalker::ShowCallstack
+0x00007fffc17cf369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007fffc17cfbee (Unity) Stacktrace::GetStacktrace
+0x00007fffbff4587f (Unity) DebugStringToFile
+0x00007fffbff453be (Unity) AssertImplementation
+0x00007fffbffeba00 (Unity) D3D12Fence::Wait
+0x00007fffc004b464 (Unity) GfxDeviceD3D12::WaitForLastPresentationAndGetTimestamp
+0x00007fffc069c734 (Unity) `InitPlayerLoopCallbacks'::`2'::TimeUpdateWaitForLastPresentationAndUpdateTimeRegistrator::Forward
+0x00007fffc067abef (Unity) ExecutePlayerLoop
+0x00007fffc067ad65 (Unity) ExecutePlayerLoop
+0x00007fffc067fc0f (Unity) PlayerLoop
+0x00007fffc0ff56da (Unity) EditorPlayerLoop::Execute
+0x00007fffc100c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007fffc100e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007fffc100866d (Unity) Application::TickTimer
+0x00007fffc0de9f7c (Unity) MainMessageLoop
+0x00007fffc0df1a12 (Unity) UnityMain
+0x00007ff772ea2f2a (Unity) __scrt_common_main_seh
+0x00007fffffbc7374 (KERNEL32) BaseThreadInitThunk
+0x00007ff8019dcc91 (ntdll) RtlUserThreadStart
+
+D3D12Fence::Wait(107650) error: got 107649. May cause crash or visual artifacts
+
