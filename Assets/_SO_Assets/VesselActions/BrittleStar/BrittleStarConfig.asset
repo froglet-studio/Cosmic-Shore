@@ -23,14 +23,14 @@ MonoBehaviour:
     Floor: 4
   speedModeSpacingFollow: 1
   speedModeStretch: 1
-  creationBlockScale:
+  prismWidthScale:
     Enabled: 1
     Value: 1
     Min: 1
-    Max: 1.8
+    Max: 2
     element: 2
     UseFloor: 1
-    Floor: 0.6
+    Floor: 1
   creationSpacing: 6
   creationRadiusScale: 1
   creationOffset: 2
@@ -63,6 +63,14 @@ MonoBehaviour:
   aimDeadzone: 0.25
   ringTurnRate: 540
   heatPerRound: 0.0012
+  heatCapacity:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 3
+    element: 3
+    UseFloor: 1
+    Floor: 1
   coolRate: 0.12
   chargeCoolRate: 0.6
   overheatRecoverBelow: 0.35
@@ -70,11 +78,12 @@ MonoBehaviour:
   cordLooseLengthScale: 1.5
   cordLinks: 16
   cordCutRadius: 0.6
-  cordLooseWave: 180
+  cordLooseWave: 144
   cordRigidWave: 2500
   cordLooseDamping: 0.4
   cordRigidDamping: 14
   cordPose: 1600
+  cordMaxRigidity: 0.7
   cordRigidityRate: 12
   cordDebrisRestitution: 0.5
   cordDebrisSpeedLimit: 200
@@ -98,7 +107,7 @@ MonoBehaviour:
     Floor: 1
   ringBlastBandWidth: 6
   maxSpareRings: 2
-  rebuildSeconds: 0.5
+  rebuildSeconds: 3
   ringBlastHitClass: 3
   ringBlastHitCooldown: 0.5
   cordHitCooldown: 0.5

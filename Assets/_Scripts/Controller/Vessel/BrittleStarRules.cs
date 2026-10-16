@@ -83,8 +83,14 @@ namespace CosmicShore.Gameplay
         /// The guns' HEAT (Garrett, 2026-10-16: "shooting should over heat… the amount of heat produced is proportional to
         /// firing rate (trigger pull) and number of guns firing… using charge lasers cools the guns"). Every round fired adds
         /// <c>heatPerRound</c>, so heat rises with rounds per second × guns; it bleeds off at a cooling rate the caller
-        /// passes in (faster with Charge Mode's cords out). At 1 the guns OVERHEAT and cannot fire until heat falls to
-        /// <c>recoverBelow</c>. Pure: no clock, no randomness.
+        /// passes in (faster with Charge Mode's cords out). At full the guns OVERHEAT and cannot fire until they cool.
+        ///
+        /// <para><b>Capacity</b> (Garrett, 2026-10-16: "overheat 3x slower at max… have the maximum heat scale with
+        /// space"): how much heat the guns hold, in Space 0 capacities (1 = the base). Heat and cooling are in those same
+        /// units, so a capacity of 3 takes exactly three times as long to fill at any firing rate, and
+        /// <see cref="Heat01"/> stays the share of the CURRENT capacity (what the HUD draws). Recovery comes after shedding
+        /// the same heat at every capacity, <c>1 − recoverBelow</c>, so the lockout is as long at Space 10 as at Space 0;
+        /// only the run to overheat grows. Pure: no clock, no randomness.</para>
         /// </summary>
         public sealed class HeatState
         {
@@ -97,24 +103,34 @@ namespace CosmicShore.Gameplay
                 Overheated = false;
             }
 
-            /// <summary>Rounds fired: heat rises. Returns true on the round that overheats the guns.</summary>
-            public bool AddRounds(int rounds, float heatPerRound)
+            /// <summary>Rounds fired: heat rises by <paramref name="heatPerRound"/> each, out of
+            /// <paramref name="capacity"/>. Returns true on the round that overheats the guns.</summary>
+            public bool AddRounds(int rounds, float heatPerRound, float capacity = 1f)
             {
                 if (rounds <= 0) return false;
-                Heat01 = Mathf.Min(1f, Heat01 + rounds * Mathf.Max(0f, heatPerRound));
+                Heat01 = Mathf.Min(1f, Heat01 + rounds * Mathf.Max(0f, heatPerRound) / Capacity(capacity));
                 if (Overheated || Heat01 < 1f) return false;
                 Overheated = true;
                 return true;
             }
 
-            /// <summary>Cooling over <paramref name="dt"/>. Returns true on the frame the guns recover.</summary>
-            public bool Cool(float coolPerSecond, float recoverBelow, float dt)
+            /// <summary>Cooling over <paramref name="dt"/>, out of <paramref name="capacity"/>. Overheated guns recover
+            /// once they have shed <c>1 − recoverBelow</c> of heat (the Space 0 mark at capacity 1). Returns true on the
+            /// frame the guns recover.</summary>
+            public bool Cool(float coolPerSecond, float recoverBelow, float dt, float capacity = 1f)
             {
-                Heat01 = Mathf.Max(0f, Heat01 - Mathf.Max(0f, coolPerSecond) * Mathf.Max(0f, dt));
-                if (!Overheated || Heat01 > recoverBelow) return false;
+                float c = Capacity(capacity);
+                Heat01 = Mathf.Max(0f, Heat01 - Mathf.Max(0f, coolPerSecond) * Mathf.Max(0f, dt) / c);
+                if (!Overheated || Heat01 > RecoverMark(recoverBelow, c)) return false;
                 Overheated = false;
                 return true;
             }
+
+            /// <summary>The <see cref="Heat01"/> overheated guns recover at: the same heat shed at every capacity.</summary>
+            public static float RecoverMark(float recoverBelow, float capacity) =>
+                1f - (1f - Mathf.Clamp01(recoverBelow)) / Capacity(capacity);
+
+            static float Capacity(float capacity) => Mathf.Max(1e-3f, capacity);
         }
 
         /// <summary>Is <paramref name="mode"/>'s effect on? The selected mode while the ring is mounted.</summary>

@@ -9635,3 +9635,22 @@ verification, steps 2-9. The short version:
 4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
+
+## 🔴 Brittle Star tuning pass — 3 s regrow, 70% rigid sabers, softer whip, Space heat capacity, slim long blocks with Mass girth (`cece/gallant-bell-eq7kul`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+No `unity` CLI in the session (`/verify-unity` could not run). Proved offline: player `unity_refcompile` (0 errors in
+project code) and editor (3 errors, all the known `AuthenticationServiceFacade` reds, 0 in changed files); the 33
+`BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`, three negative controls, plus a
+hand control: the new full-pull test fails with `FullPullRigidity` 1); `author_brittlestar_assets.py --check` /
+`--self-test` (11/11); `element_ability_table.py BrittleStar` (0 disagreements); `studio_to_unity.py --vessel
+BrittleStar --check` (48 mapped, 0 drift); `check_studio.cjs` and `verify_lab.cjs` on the studio page. Task
+T-20261016-e2fb. In Play mode:
+1. **LT** with a spare: the new ring blooms back over **3 s** (was 0.5 s); the modes return only when it has.
+2. **RB** Charge Mode: released, the cords whip a little slower and softer (`cordLooseWave` 144, was 180); a FULL RT
+   pull shortens them to 80 u but a ring flick still flexes them visibly (`cordMaxRigidity` 0.7: 30% of the give kept).
+3. **X** Space Mode, full pull: Space 0 overheats in ~2.4 s as before; raise Space to 10 (the Space test harness on the
+   prefab's resource system): ~7.1 s (`heatCapacity` ×3). The Space card still fills to full; the lockout is still ~5 s.
+4. **Trails**: blocks are long and slim — the base trail 0.5 × 1 × 6 (the spawner halves x for a single trail), the
+   Creation corners 1 × 1 × 6 — meeting end to end at cruise. Raise Mass: every block widens and thickens up to ×2 at
+   Mass 10, never lengthens (`prismWidthScale`). Speed Mode still stretches them along the path.
+5. Profile a Space 10 burst with 3-4 AI Brittle Stars: up to ~3,200 rounds alive against the pool's 2,400 (T-20261016-acc7).

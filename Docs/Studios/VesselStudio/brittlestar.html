@@ -327,7 +327,7 @@
         <details open>
           <summary>Where the numbers come from, and what is not modelled</summary>
           <ul>
-            <li><b>The Unity build</b> (the default set, round 2): <code>VesselClassType.BrittleStar = 16</code>'s rules and numbers, ported line for line from <code>BrittleStarExecutor</code> / <code>BrittleStarRules</code> (contract: <code>R_VesselActions/BRITTLE_STAR.md</code>). Cruise 45 u/s; A / B / X select Speed (cruise x6, x8 at Time 10), Creation (x0.5, the slowest; a trail behind each ring corner) or Space (X: the five guns, RT's pull setting their rate, heating as they fire; overheated, they stop and the trail lays danger prisms) or Charge (RB: five cords, 2026-10-16 - 120 u whips with RT released that carry slow waves from every turn and ring flick, shortening to 80 u straight sabers as RT is pulled; they slice every prism they touch and cool the guns), and press again for Cruise; in every other mode RT fires the one aimed turret, no spread; LT throws a spare ring (one per crystal, two at most) and the mounted ring regrows; the stick's direction turns the ring in every mode. RT outside Destruction: 12 rounds/s at 70 u/s from the aimed turret or the cockpit. LT throws the ring (+240 u/s, 1.1 s fuse): a flat disk in its plane, as thick as the ring (0.22 u x Charge 1 to 4) and as wide as the nucleus (392 u here), swept out over 0.7 s, breaking every prism it passes and scoring one petal hit per rival hull. A stored charge or a crystal rebuilds the ring over 0.5 s; a crystal while charged is 6 s of Overdrive. Camera straight behind, no height. Every number is in <code>SHIPPED</code> (the Unity build numbers card).</li>
+            <li><b>The Unity build</b> (the default set, round 2): <code>VesselClassType.BrittleStar = 16</code>'s rules and numbers, ported line for line from <code>BrittleStarExecutor</code> / <code>BrittleStarRules</code> (contract: <code>R_VesselActions/BRITTLE_STAR.md</code>). Cruise 45 u/s; A / B / X select Speed (cruise x6, x8 at Time 10), Creation (x0.5, the slowest; a trail behind each ring corner) or Space (X: the five guns, RT's pull setting their rate, heating as they fire; overheated, they stop and the trail lays danger prisms) or Charge (RB: five cords, 2026-10-16 - 120 u whips with RT released that carry slow waves from every turn and ring flick, shortening to 80 u sabers as RT is pulled (a full pull keeps 30% of the whip's give); they slice every prism they touch and cool the guns), and press again for Cruise; in every other mode RT fires the one aimed turret, no spread; LT throws a spare ring (one per crystal, two at most) and the mounted ring regrows; the stick's direction turns the ring in every mode. RT outside Destruction: 12 rounds/s at 70 u/s from the aimed turret or the cockpit. LT throws the ring (+240 u/s, 1.1 s fuse): a flat disk in its plane, as thick as the ring (0.22 u x Charge 1 to 4) and as wide as the nucleus (392 u here), swept out over 0.7 s, breaking every prism it passes and scoring one petal hit per rival hull. The mounted ring regrows over 3 s after a throw. Camera straight behind, no height. Every number is in <code>SHIPPED</code> (the Unity build numbers card).</li>
             <li><b>Flight</b> (round 1's design sets; Vessel Config &gt; Flight numbers picks the source). The branch's <code>BrittleStar.prefab</code> (<code>origin/claude/falcon-brittlestar-reintro-oyx1q1</code>): <code>SingleStickVesselTransformer</code>, speed = 10 + 25 × boost, so 35 u/s cruise and 110 u/s in Speed mode (<code>VesselStatus.boostMultiplier</code> 4); there is no throttle axis. Pitch and yaw 80°/s, bank into the turn 30°/s, each plus 0.1 × speed (<code>RotationThrottleScaler</code>). <code>Falcon.prefab</code>: 60 u/s cruise, 210 boosted, pitch 60°/s, yaw 40°/s, bank 15°/s. Both: the nose follows the stick's command at 1.5/s (<code>VesselTransformer.LERP_AMOUNT</code>) and speed eases at the same rate; the stick eases as the game's gamepad strategy does, <code>1 − cos(x·π/2)</code>.</li>
             <li><b>Gun</b> (authored, the branch): <code>FullAutoAction</code> 30 rounds/s per muzzle; round speed 1500 → 4000 u/s with Space (its <code>speedValue</code> ElementalFloat) and a 0.3 s life. The round decelerates as the game's <code>Projectile</code> does (<code>cos(πt/2T)</code>), so its range is <code>v·2T/π</code>: 286 u at Space 0, 764 u at Space 10. Hit radius 0.5 (<code>FalconProjectile.prefab</code>). The five guns ride <code>GunRingTransformer</code>: the ring spins 20°/s and the guns converge 70 + 300 |right stick|² u ahead. Trail: <code>SparrowPrismController</code>, a (2, 2, 5) block every 7 u, 4 u behind; camera <code>SparrowCameraSettingsSO</code>, 50 u behind and 10 up.</li>
             <li><b>Modes, the gun's turrets, Ring Detonation, the crystal charge and overdrive, the element parameters, the personas and both minigames</b>: the design document "Class - Brittle Star" (Notion, Class Design Documents). Its words are quoted in <code>Docs/Studios/BRITTLE_STAR.md</code>; every number it does not give is lab-only and sits in The kit or Barricades and fauna.</li>
@@ -368,12 +368,14 @@
     armFocusDistance: 120, armSplayDegrees: 25, aimDeadzone: 0.25, ringTurnRate: 540,
     heatPerRound: 0.0012, coolRate: 0.12, chargeCoolRate: 0.6, overheatRecoverBelow: 0.35,
     // Charge Mode's five CORDS (BrittleStarCord): whips at 150% with RT released, sabers at 100% pulled, analog between
-    cordLength: 80, cordLooseLengthScale: 1.5, cordLinks: 16, cordCutRadius: 0.6, cordLooseWave: 180, cordRigidWave: 2500,
-    cordLooseDamping: 0.4, cordRigidDamping: 14, cordPose: 1600, cordRigidityRate: 12, cordHitCooldown: 0.5,
+    cordLength: 80, cordLooseLengthScale: 1.5, cordLinks: 16, cordCutRadius: 0.6, cordLooseWave: 144, cordRigidWave: 2500,
+    // (2026-10-16, after round 4: the whip at 80% of round 4's stiffness; a full pull stops at 70% rigid, keeping 30% of the give)
+    cordLooseDamping: 0.4, cordRigidDamping: 14, cordPose: 1600, cordMaxRigidity: 0.7, cordRigidityRate: 12, cordHitCooldown: 0.5,
     ringLaunchSpeed: 240, ringFuseSeconds: 1.1, ringContactRadiusScale: 1,
-    ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, ringBlastBandWidth: 6, rebuildSeconds: 0.5, maxSpareRings: 2, ringBlastHitCooldown: 0.5,
+    ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, ringBlastBandWidth: 6, rebuildSeconds: 3, maxSpareRings: 2, ringBlastHitCooldown: 0.5,
     // its ElementalFloats, level 0 -> 10 (nested in the asset: the map cannot write them, so a change here is made there by hand)
-    speedModeAt0: 6, speedModeAt10: 8, creationBlockAt10: 1.8, rangeAt10: 2, projectileScaleAt10: 1.8, blastScaleAt10: 4,
+    // prismWidthAt10: MASS on every trail block's x and y, never its length; heatCapacityAt10: SPACE on the heat the guns hold
+    speedModeAt0: 6, speedModeAt10: 8, prismWidthAt10: 2, rangeAt10: 2, heatCapacityAt10: 3, projectileScaleAt10: 1.8, blastScaleAt10: 4,
     // BrittleStar.prefab: the Sparrow's one-thumb transformer block, BrittleStarHullBuilder, the trail spawner
     minimumSpeed: 10, throttleScaler: 35, pitchScaler: 80, yawScaler: 80, rollScaler: 30, rotationThrottleScaler: 0.1,
     ringRadius: 6, ringHalfThickness: 0.22, trailWavelength: 6, trailOffset: 2,
@@ -385,7 +387,7 @@
   };
   const U = SHIPPED, SHIPPED_AT_LOAD = Object.assign({}, SHIPPED);
   const LAB = { manualClock: false };   // window.__lab (filled at the end of setup)
-  const CREATION_BLOCK = [1.5, 1.5, 3];   // BrittleStar.prefab's spawner BaseScale: the base trail's block, and every corner trail's (2026-10-16; a Vector3: not a map row)
+  const CREATION_BLOCK = [1, 1, 6];   // BrittleStar.prefab's spawner BaseScale: the base trail's block, and every corner trail's (2026-10-16: long in z, slim in x and y, Mass widening x and y; a Vector3: not a map row)
   // ================= the older sources, flown on the design document's kit (round 1) =================
   // Neither ships (the game has no Brittle Star yet). "branch" is the last Brittle Star anyone built:
   // BrittleStar.prefab on origin/claude/falcon-brittlestar-reintro-oyx1q1 (= Bleeding-Edge-Reintroduce-Falcon, Philip
@@ -492,7 +494,7 @@
     if (SHIP.unity) {   // BrittleStarConfigSO's four dials, one per element (R_VesselActions/BRITTLE_STAR.md section 5)
       const speedMode = lerp(U.speedModeAt0, U.speedModeAt10, f('time'));
       return Object.assign({ shot: lerp(1, U.projectileScaleAt10, f('charge')), blast: lerp(1, U.blastScaleAt10, f('charge')),
-        block: lerp(1, U.creationBlockAt10, f('mass')), range: lerp(1, U.rangeAt10, f('space')), shotSpeed: U.projectileSpeed,
+        block: lerp(1, U.prismWidthAt10, f('mass')), range: lerp(1, U.rangeAt10, f('space')), heatCap: lerp(1, U.heatCapacityAt10, f('space')), shotSpeed: U.projectileSpeed,
         speedMode, speedBonus: speedMode - 1 }, look);
     }
     return {
@@ -901,7 +903,8 @@
     const links = Math.max(2, Math.round(U.cordLinks));
     if (!P.cords || P.cords[0].n !== links) P.cords = [0, 1, 2, 3, 4].map(() => Cord(links));
     const splay = spread01(am);
-    for (let k = 0; k < 5; k++) { const L = armLine(P, f, k, splay); cordStep(P.cords[k], L.m, L.d, len, P.rigid, dt); }
+    const rigidity = P.rigid * U.cordMaxRigidity;   // a full pull shortens all the way but stiffens only to cordMaxRigidity
+    for (let k = 0; k < 5; k++) { const L = armLine(P, f, k, splay); cordStep(P.cords[k], L.m, L.d, len, rigidity, dt); }
     // the cut: every prism a link touches (friendly fire; never your own fresh trail; super-shielded refuses; a shield pops first)
     const cut = U.cordCutRadius * P.m.shot, seen = new Set();
     for (const c of P.cords) for (let s = 0; s < c.n; s++) {
@@ -928,6 +931,7 @@
   }
   // ---- the guns and their heat (BrittleStarExecutor.UpdateGuns / UpdateHeat, line for line) ----
   function fireUnity(W, P, inp, f, M, am, dt) {
+    const cap = Math.max(1e-3, P.m.heatCap || 1);   // HeatState's capacity: heat and cooling in Space 0 units, P.heat the share of it
     const depth = typeof inp.fire === 'number' ? clamp(inp.fire, 0, 1) : inp.fire ? 1 : 0;   // RT's pull; a key or the AI reads full
     stepCords(W, P, f, M, am, depth, dt);
     P.firing = P.cordsOn || depth > 0;
@@ -941,12 +945,12 @@
         const lines = guns > 1 ? [0, 1, 2, 3, 4].map((k) => armLine(P, f, k, splay))
           : [{ m: P.ring ? podWorld(P, P.aimedPoint < 0 ? 0 : P.aimedPoint, P.quat) : P.pos.clone().addScaledVector(f, 4), d: f.clone() }];   // the aimed turret, no spread
         for (const L of lines) W.shots.push({ p: L.m, d: L.d, v: U.projectileSpeed + P.speed, t: 0, T, r, r0: r, g: U.roundGrowthFactor, owner: P.i, disable: guns > 1, big: guns > 1, dead: false });
-        P.heat = Math.min(1, P.heat + guns * U.heatPerRound);
+        P.heat = Math.min(1, P.heat + guns * U.heatPerRound / cap);
         if (P.heat >= 1 && !P.hot) { P.hot = true; say(W, P, 'Guns overheated'); }
       }
     } else P.owed = 0;
-    P.heat = Math.max(0, P.heat - (U.coolRate + U.chargeCoolRate * P.cordsOut) * dt);   // the cords cool the guns
-    if (P.hot && P.heat <= U.overheatRecoverBelow) { P.hot = false; say(W, P, 'Guns cooled'); }
+    P.heat = Math.max(0, P.heat - (U.coolRate + U.chargeCoolRate * P.cordsOut) * dt / cap);   // the cords cool the guns
+    if (P.hot && P.heat <= 1 - (1 - clamp(U.overheatRecoverBelow, 0, 1)) / cap) { P.hot = false; say(W, P, 'Guns cooled'); }   // HeatState.RecoverMark: the same heat shed at any Space
   }
   function layTrail(W, P, f, M) {
     const q = P.quat;
@@ -955,10 +959,11 @@
         const s = P.m.block, back = P.pos.clone().addScaledVector(f, -U.creationOffset);
         for (let k = 0; k < 5; k++) {
           const phi = POD_ANG[k] + P.ringAngle, pos = back.clone().addScaledVector(rightOf(q), Math.cos(phi) * ringR()).addScaledVector(upOf(q), Math.sin(phi) * ringR());
-          addTrail(W, P, pos, q.clone().multiply(new Q().setFromAxisAngle(AZ, phi + Math.PI / 2)), CREATION_BLOCK.map((x) => x * s));
+          addTrail(W, P, pos, q.clone().multiply(new Q().setFromAxisAngle(AZ, phi + Math.PI / 2)), [CREATION_BLOCK[0] * s, CREATION_BLOCK[1] * s, CREATION_BLOCK[2]]);
         }
       } else {   // BrittleStarPrismController: stretched along the path by the spacing's own factor, so a fast trail joins up
         const stretch = lerp(1, Math.max(1, P.spacing || 1), U.speedModeStretch), sc = SHIP.trailScale.slice(); sc[2] *= stretch;
+        sc[0] *= P.m.block; sc[1] *= P.m.block;   // MASS: the block's x and y (BrittleStarExecutor.ApplyBlockGirth)
         addTrail(W, P, P.pos.clone().addScaledVector(f, -SHIP.trailOffset), q, sc, P.hot && M.destruction);
       }
       return;
@@ -1522,8 +1527,8 @@
     const m = mults(S.lv);
     for (const E of ELEMENTS) {
       const r = elRows[E.key]; r.inp.value = S.lv[E.key]; r.out.textContent = S.lv[E.key];
-      const val = SHIP.unity ? (E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' cords and rounds, \u00d7' + m.blast.toFixed(2) + ' disk thickness' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' corner-trail blocks'
-        : E.key === 'space' ? 'guns reach ' + Math.round(U.projectileSpeed * 2 * U.projectileTime * m.range / Math.PI) + ' u' : Math.round(cruiseOf() * m.speedMode) + ' u/s in Speed mode')
+      const val = SHIP.unity ? (E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' cords and rounds, \u00d7' + m.blast.toFixed(2) + ' disk thickness' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' block width and height'
+        : E.key === 'space' ? 'guns reach ' + Math.round(U.projectileSpeed * 2 * U.projectileTime * m.range / Math.PI) + ' u, \u00d7' + m.heatCap.toFixed(2) + ' heat held' : Math.round(cruiseOf() * m.speedMode) + ' u/s in Speed mode')
         : E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' rounds, \u00d7' + m.blast.toFixed(2) + ' blast' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' Creation blocks' : E.key === 'space' ? Math.round(m.shotSpeed * 2 * SHIP.gunLife / Math.PI) + ' u range' : Math.round(SHIP.minSpeed + SHIP.throttle * (1 + m.speedBonus)) + ' u/s in Speed mode';
       r.wl.textContent = ''; r.wl.append(document.createTextNode(E.persona + ' '), elx('b', null, val));
     }
@@ -1567,23 +1572,25 @@
     ['cords', 'cordLooseWave', 'Whip wave', 10, 1500, 10, 'cordLooseWave, 1/s^2: the whip\'s stiffness. A pulse travels ~sqrt(this) links a second: lower = slower waves.'],
     ['cords', 'cordLooseDamping', 'Whip damping', 0, 5, 0.05, 'cordLooseDamping, 1/s: how fast the whip\'s waves die. Lower = more inertia, it rings on.'],
     ['cords', 'cordRigidWave', 'Saber wave', 100, 8000, 50, 'cordRigidWave, 1/s^2: the saber\'s stiffness (RT pulled).'],
-    ['cords', 'cordPose', 'Saber pose', 0, 5000, 50, 'cordPose, 1/s^2: the pull onto the straight arm line at a full pull (x pull squared).'],
+    ['cords', 'cordPose', 'Saber pose', 0, 5000, 50, 'cordPose, 1/s^2: the pull onto the straight arm line at full rigidity (x rigidity squared).'],
+    ['cords', 'cordMaxRigidity', 'Saber rigidity', 0, 1, 0.05, 'cordMaxRigidity: how rigid a FULL pull makes the cords (0 a whip, 1 the saber dials). 0.7: the saber keeps 30% of the whip\'s give.'],
     ['cords', 'armFocusDistance', 'Arms meet', 30, 400, 10, 'armFocusDistance: stick in, the five guns / cords angle in to meet the nose axis this far ahead (the crosshair).'],
     ['cords', 'armSplayDegrees', 'Arms splay', 0, 60, 1, 'armSplayDegrees: stick out to the rim, each gun / cord splays this far outward.'],
     ['rt', 'fireRate', 'Gun rate', 5, 150, 5, 'fireRate: rounds a second from EACH firing gun at a full RT pull (the pull scales it). Space Mode fires five, every other mode one.'],
     ['rt', 'projectileSpeed', 'Round speed', 20, 1000, 5, 'projectileSpeed, u/s. Range = speed x 2T/pi: change projectileTime the other way to keep it.'],
     ['rt', 'projectileTime', 'Round flight', 0.2, 9, 0.1, 'projectileTime, seconds at Space 0 (x2 at Space 10). 4.5: 150% of the arms\' 3 s.'],
     ['rt', 'roundGrowthFactor', 'Round swell', 1, 6, 0.5, 'roundGrowthFactor: every round swells to this multiple over its flight, hit radius too (the Sparrow\'s look: 3).'],
-    ['heat', 'heatPerRound', 'Heat / round', 0, 0.01, 0.0001, 'heatPerRound: heat per second = rounds/s x guns x this. 0.0012: five guns at a full pull overheat in ~2.4 s.'],
+    ['heat', 'heatPerRound', 'Heat / round', 0, 0.01, 0.0001, 'heatPerRound: heat per second = rounds/s x guns x this. 0.0012: five guns at a full pull overheat in ~2.4 s at Space 0, ~7.1 s at Space 10.'],
     ['heat', 'coolRate', 'Cooling', 0, 1, 0.01, 'coolRate: heat lost per second, always.'],
     ['heat', 'chargeCoolRate', 'Cord cooling', 0, 3, 0.05, 'chargeCoolRate: extra heat lost per second while the Charge cords are out.'],
-    ['heat', 'overheatRecoverBelow', 'Recover at', 0, 0.95, 0.05, 'overheatRecoverBelow: overheated guns fire again once heat falls to this.'],
+    ['heat', 'heatCapacityAt10', 'Heat held at Space 10', 1, 6, 0.5, 'heatCapacity at Space 10: the heat the guns hold over Space 0\'s (x3: the same burst overheats 3x slower).'],
+    ['heat', 'overheatRecoverBelow', 'Recover at', 0, 0.95, 0.05, 'overheatRecoverBelow: overheated guns fire again once heat falls to this (at Space 0; the same heat shed at any Space).'],
     ['ring', 'ringLaunchSpeed', 'Ring launch', 60, 900, 10, 'ringLaunchSpeed: u/s on top of the hull\'s own.'],
     ['ring', 'ringFuseSeconds', 'Ring fuse', 0.3, 3, 0.1, 'ringFuseSeconds.'],
     ['ring', 'ringBlastSeconds', 'Disk sweep', 0.2, 2, 0.05, 'ringBlastSeconds: the disk runs from the ring\'s radius to the nucleus\'s in this long.'],
     ['ring', 'blastScaleAt10', 'Disk at Charge 10', 1, 8, 0.5, 'blastScale at Charge 10: the disk\'s thickness over the ring\'s (x1 at Charge 0).'],
     ['ring', 'nucleusRadius', 'Nucleus', 100, 800, 10, 'The disk\'s radius: the cell\'s nucleus (392 for the standard cell). Lab-only: the game reads the real cell.'],
-    ['ring', 'rebuildSeconds', 'Regrow', 0, 3, 0.1, 'rebuildSeconds: after a throw the mounted ring regrows over this long.'],
+    ['ring', 'rebuildSeconds', 'Regrow', 0, 8, 0.1, 'rebuildSeconds: after a throw the mounted ring regrows over this long.'],
     ['ring', 'maxSpareRings', 'Spare rings', 1, 5, 1, 'maxSpareRings: spares a hull can store, one per crystal; a throw needs one.'],
   ];
   for (const [, k, name, lo, hi, step, tip] of UNITY_ROWS) {

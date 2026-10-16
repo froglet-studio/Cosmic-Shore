@@ -21,16 +21,18 @@ namespace CosmicShore.Gameplay
     /// <item><b>Speed Mode</b> (Time): the hull's cruise × <c>speedModeMultiplier</c> (×6), every thruster lit, the base
     /// trail's spacing stretched so production per second does not rise, and its prisms stretched with it so the trail
     /// joins up.</item>
-    /// <item><b>Creation Mode</b> (Mass): a trail behind EACH of the ring's five corners instead of the cockpit's one, the
+    /// <item><b>Creation Mode</b>: a trail behind EACH of the ring's five corners instead of the cockpit's one, the
     /// base trail's own small block, turning with the ring's firing rotation.</item>
+    /// <item><b>Mass</b>: the x and y of every block the hull lays (<c>prismWidthScale</c>), never its length.</item>
     /// <item><b>Space Mode</b> (<see cref="Mode.Destruction"/>): FIVE GUNS, the RT pull setting their rate (analog); the
     /// right stick moves them in (meeting ahead, a crosshair) and out (splayed).</item>
     /// <item><b>Charge Mode</b>: FIVE CORDS (<see cref="BrittleStarCord"/>) — whips at 150% length with RT released,
-    /// shortening and stiffening into five straight sabers as it is pulled. They slice every prism they touch and cool
-    /// the guns.</item>
+    /// shortening and stiffening as it is pulled into five sabers that keep some give (<c>cordMaxRigidity</c>). They
+    /// slice every prism they touch and cool the guns.</item>
     /// <item><b>Every other mode</b>: RT fires the one turret the ring has turned to the aim — the same gun, no spread.</item>
-    /// <item><b>Heat</b>: every round heats the guns (<see cref="BrittleStarRules.HeatState"/>); overheated they cannot
-    /// fire until they cool, and in Space Mode the trail lays DANGER prisms meanwhile.</item>
+    /// <item><b>Heat</b>: every round heats the guns (<see cref="BrittleStarRules.HeatState"/>), which hold more heat
+    /// with Space (<c>heatCapacity</c>); overheated they cannot fire until they cool, and in Space Mode the trail lays
+    /// DANGER prisms meanwhile.</item>
     /// <item><b>Ring Detonation</b> (LT): throw the ring forward — only with a SPARE ring in stock; the mounted ring then
     /// regrows on its own. It blows on contact or on its fuse in a nucleus-wide disk.</item>
     /// <item><b>Crystals</b> (<see cref="BrittleStarRingChargeByCrystalEffectSO"/>): one spare ring each, up to two.</item>
@@ -79,7 +81,7 @@ namespace CosmicShore.Gameplay
         bool _shotOwedNow;           // the press owes one volley at once
         float _gunsOwed;
         float _cordsOut01;           // eased 0..1: how far the five cords are grown out of their muzzles
-        float _rigidity01;           // eased 0..1: the cords from whip (released) to saber (pulled)
+        float _cordPull01;           // eased 0..1: RT's pull as the cords feel it (length; x cordMaxRigidity = rigidity)
         bool _dangerHeld;            // the base spawner is laying danger prisms (written on EDGES only)
         bool _penHeld;
         float _creationOwed;
@@ -150,8 +152,9 @@ namespace CosmicShore.Gameplay
         public float Heat01 => _heat.Heat01;
         /// <summary>Overheated: the guns cannot fire until they cool (and in Space Mode the trail lays danger prisms).</summary>
         public bool Overheated => _heat.Overheated;
-        /// <summary>Eased 0..1: Charge Mode's cords from whip (0) to saber (1), following the RT pull.</summary>
-        public float CordRigidity01 => _rigidity01;
+        /// <summary>Eased 0..1: Charge Mode's cords from whip (0) toward rigid (1), following the RT pull. A full pull
+        /// reaches <c>cordMaxRigidity</c>, never 1.</summary>
+        public float CordRigidity01 => config ? _cordPull01 * config.CordMaxRigidity : _cordPull01;
         /// <summary>The ring's firing rotation about the nose axis, radians. The animation draws it.</summary>
         public float RingPhase => _ringPhase;
         public bool IsFiring => _firing;
@@ -194,7 +197,7 @@ namespace CosmicShore.Gameplay
             _firing = false;
             _shotOwedNow = false;
             _gunsOwed = 0f;
-            _rigidity01 = 0f;
+            _cordPull01 = 0f;
             _heat.Reset();
             ReleaseDanger();
             ClearCords();
@@ -236,6 +239,11 @@ namespace CosmicShore.Gameplay
             {
                 prisms.SpacingMultiplier = 1f;
                 prisms.LengthMultiplier = 1f;
+            }
+            if (_status?.VesselPrismController is { } spawner)
+            {
+                spawner.WidthMultiplier = 1f;
+                spawner.ThicknessMultiplier = 1f;
             }
         }
 
@@ -320,6 +328,7 @@ namespace CosmicShore.Gameplay
             _ring.Tick(dt);
             EaseModes(dt);
             ApplySpeedMode();
+            ApplyBlockGirth();
             AimRing(dt);
             UpdateCreation();
             float depth = TriggerDepth();
@@ -368,6 +377,23 @@ namespace CosmicShore.Gameplay
                 prisms.LengthMultiplier = Mathf.Lerp(1f, prisms.SpacingMultiplier, config.SpeedModeStretch);
             }
         }
+
+        /// <summary>
+        /// MASS sizes the x and y of every block the hull lays, never its length (Garrett, 2026-10-16: "stretch the prisms
+        /// in z and decrease them in x and y at base. mass can control the x and y"): the base trail through the fleet
+        /// spawner's own width and thickness dials (this executor is their single writer on this hull), Creation Mode's
+        /// corner trails at lay time (<see cref="LayCornerPrism"/>). Read on the replicated level, so every peer lays the
+        /// same block.
+        /// </summary>
+        void ApplyBlockGirth()
+        {
+            if (_status.VesselPrismController is not { } prisms) return;
+            float girth = BlockGirth();
+            prisms.WidthMultiplier = girth;
+            prisms.ThicknessMultiplier = girth;
+        }
+
+        float BlockGirth() => Mathf.Max(0.1f, config.PrismWidthScale.EvaluateReplicated(_status));
 
         // ------------------------------------------------------------------ aim: the ring's firing rotation
 
@@ -456,7 +482,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>One block of corner <paramref name="index"/>'s trail, <paramref name="back"/> behind the corner along
-        /// the course, its length along the path and its broad side tangent to the ring. MASS sizes it, read at lay time.</summary>
+        /// the course, its length along the path and its broad side tangent to the ring. MASS sizes its x and y, read at lay
+        /// time.</summary>
         void LayCornerPrism(PrismEventChannelWithReturnSO channel, PrismType type, int index, Vector3 course, float back)
         {
             Vector3 corner = RingPoint(index, config.CreationRadiusScale);
@@ -466,9 +493,11 @@ namespace CosmicShore.Gameplay
             if (!SafeLookRotation.TryGet(course, radial.normalized, out var rot, this, logError: false)) return;
 
             // The base trail's own small block (Garrett, 2026-10-16: "use the same smaller prisms for all 5 prism
-            // trails"), × MASS.
-            Vector3 scale = _status.VesselPrismController.TrailBaseScale
-                          * Mathf.Max(0.1f, config.CreationBlockScale.EvaluateReplicated(_status));
+            // trails"), its x and y × MASS (ApplyBlockGirth).
+            Vector3 scale = _status.VesselPrismController.TrailBaseScale;
+            float girth = BlockGirth();
+            scale.x *= girth;
+            scale.y *= girth;
             var ret = channel.RaiseEvent(new PrismEventData
             {
                 ownDomain = _status.Domain,
@@ -518,8 +547,8 @@ namespace CosmicShore.Gameplay
             var prisms = _status.VesselPrismController;
             bool want = IsOn(Mode.Charge) && hull && prisms && prisms.SpawnerEnabled;
             _cordsOut01 = Mathf.MoveTowards(_cordsOut01, want ? 1f : 0f, dt / config.ModeBlendSeconds);
-            _rigidity01 += (depth - _rigidity01) * (1f - Mathf.Exp(-config.CordRigidityRate * dt));
-            float length = config.CordLength * Mathf.Lerp(config.CordLooseLengthScale, 1f, _rigidity01)
+            _cordPull01 += (depth - _cordPull01) * (1f - Mathf.Exp(-config.CordRigidityRate * dt));
+            float length = config.CordLength * Mathf.Lerp(config.CordLooseLengthScale, 1f, _cordPull01)
                          * _cordsOut01 * RingPresence01;
             if (length < 0.5f || !hull)
             {
@@ -542,12 +571,15 @@ namespace CosmicShore.Gameplay
                 RigidDamping = config.CordRigidDamping,
                 Pose = config.CordPose,
             };
+            // A full pull shortens the cords all the way but stiffens them only to cordMaxRigidity: the saber keeps 30% of
+            // the whip's give (Garrett, 2026-10-16: "not completely rigid at full press").
+            float rigidity = CordRigidity01;
             float splay01 = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone);
             for (int i = 0; i < _cords.Length; i++)
             {
                 var muzzle = hull.Muzzle(i);
                 if (!muzzle) continue;
-                _cords[i].Step(muzzle.position, ArmLine(muzzle, splay01), length, _rigidity01, settings, dt);
+                _cords[i].Step(muzzle.position, ArmLine(muzzle, splay01), length, rigidity, settings, dt);
             }
 
             float cut = config.CordCutRadius * Mathf.Max(0.1f, config.ProjectileScaleMultiplier.EvaluateReplicated(_status));
@@ -843,7 +875,7 @@ namespace CosmicShore.Gameplay
                     var muzzle = hull.Muzzle(_ring.Mounted ? _aimedPoint : -1);
                     if (muzzle) FireAlong(muzzle, _status.Transform.forward, scale, time, inherit);
                 }
-                if (_heat.AddRounds(guns, config.HeatPerRound)) PlayAt(config.OverheatEvent, HullPosition);
+                if (_heat.AddRounds(guns, config.HeatPerRound, HeatCapacity())) PlayAt(config.OverheatEvent, HullPosition);
             }
             PlayAt(config.FireEvent, HullPosition);
         }
@@ -864,7 +896,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void UpdateHeat(float dt)
         {
-            _heat.Cool(config.CoolRate + config.ChargeCoolRate * _cordsOut01, config.OverheatRecoverBelow, dt);
+            _heat.Cool(config.CoolRate + config.ChargeCoolRate * _cordsOut01, config.OverheatRecoverBelow, dt, HeatCapacity());
             bool danger = _heat.Overheated && IsOn(Mode.Destruction);
             if (danger && !_dangerHeld && _status.VesselPrismController)
             {
@@ -873,6 +905,10 @@ namespace CosmicShore.Gameplay
             }
             else if (!danger) ReleaseDanger();
         }
+
+        /// <summary>SPACE: the heat the guns hold, in Space 0 capacities (×1 → ×3 at Space 10: the same burst overheats
+        /// three times slower). Read on the replicated level, so every peer's copy overheats on the same round.</summary>
+        float HeatCapacity() => Mathf.Max(0.1f, config.HeatCapacity.EvaluateReplicated(_status));
 
         void ReleaseDanger()
         {

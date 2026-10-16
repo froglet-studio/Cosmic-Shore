@@ -251,6 +251,43 @@ namespace CosmicShore.Tests
             Assert.IsFalse(heat.Overheated);
         }
 
+        /// <summary>Seconds of the five guns at a full pull (450 rounds/s, the shipped heat per round and cooling) until
+        /// they overheat, and then seconds until they recover, at <paramref name="capacity"/>.</summary>
+        static void Burst(float capacity, out float toOverheat, out float lockout)
+        {
+            const float dt = 1f / 450f;
+            var heat = new BrittleStarRules.HeatState();
+            toOverheat = 0f;
+            while (!heat.Overheated && toOverheat < 60f)
+            {
+                heat.AddRounds(1, 0.0012f, capacity);
+                heat.Cool(0.12f, 0.35f, dt, capacity);
+                toOverheat += dt;
+            }
+            lockout = 0f;
+            while (heat.Overheated && lockout < 60f)
+            {
+                heat.Cool(0.12f, 0.35f, dt, capacity);
+                lockout += dt;
+            }
+        }
+
+        [Test]
+        public void Heat_SpaceCapacity_OverheatsThreeTimesSlower_SameLockout()
+        {
+            // Garrett, 2026-10-16: "overheat 3x slower at max… have the maximum heat scale with space" (heatCapacity x3).
+            Burst(1f, out float baseRun, out float baseLockout);
+            Burst(3f, out float maxRun, out float maxLockout);
+            Assert.AreEqual(1f / (450f * 0.0012f - 0.12f), baseRun, 0.05f, "Space 0: ~2.4 s");
+            Assert.AreEqual(3f * baseRun, maxRun, 0.05f, "Space 10: three times as long");
+            Assert.AreEqual(baseLockout, maxLockout, 0.05f, "the lockout is the same at any Space");
+            Assert.AreEqual(0.65f / 0.12f, baseLockout, 0.05f);
+
+            var full = new BrittleStarRules.HeatState();
+            full.AddRounds(1000, 0.01f, 3f);
+            Assert.AreEqual(1f, full.Heat01, 1e-5f, "Heat01 is the share of the CURRENT capacity (what the HUD draws)");
+        }
+
         [Test]
         public void Heat_TheCordsCoolTheGunsFaster()
         {
@@ -401,8 +438,11 @@ namespace CosmicShore.Tests
         // The shipped dials (BrittleStarConfigSO's Charge Mode block).
         static readonly BrittleStarCord.Settings Cord = new()
         {
-            LooseWave = 180f, RigidWave = 2500f, LooseDamping = 0.4f, RigidDamping = 14f, Pose = 1600f,
+            LooseWave = 144f, RigidWave = 2500f, LooseDamping = 0.4f, RigidDamping = 14f, Pose = 1600f,
         };
+        /// <summary>cordMaxRigidity: how rigid a FULL pull makes the cords (Garrett, 2026-10-16: "not completely rigid at
+        /// full press… 30% of the current max elasticity").</summary>
+        const float FullPullRigidity = 0.7f;
         const int CordLinks = 16;
         const float SaberLength = 80f, WhipLength = 120f;
 
@@ -487,6 +527,20 @@ namespace CosmicShore.Tests
             Assert.Less(saber, 15f);
             for (int i = 0; i < CordLinks; i++)
                 Assert.Greater(Vector3.Dot(rigid.LinkDirection(i), rigid.LinkDirection(0)), 0.9999f, $"link {i}: a straight saber");
+        }
+
+        [Test]
+        public void Cord_FullPull_KeepsSomeGive_ButHoldsItsLine()
+        {
+            // A full pull stops at cordMaxRigidity: a flick still bends the saber visibly more than the fully rigid dials
+            // would, yet far less than the whip, and the cord settles back onto its line.
+            float whip = Flick(1f / 60f, 0f, out _);
+            float rigid = Flick(1f / 60f, 1f, out _);
+            float pulled = Flick(1f / 60f, FullPullRigidity, out var cord, 6f);
+            Assert.Greater(pulled, rigid * 1.2f, "30% of the give stays: it bends more than a fully rigid cord");
+            Assert.Less(pulled * 2f, whip, "but it is a saber, not a whip");
+            for (int i = 0; i < CordLinks; i++)
+                Assert.Greater(Vector3.Dot(cord.LinkDirection(i), cord.LinkDirection(0)), 0.999f, $"link {i}: settled straight");
         }
 
         [Test]

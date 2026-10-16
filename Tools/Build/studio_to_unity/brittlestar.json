@@ -1,5 +1,5 @@
 {
-  "comment": "The Brittle Star: where each studio parameter lives in the game. key = the studio's own key (the SHIPPED block in Docs/Studios/VesselStudio/brittlestar.html, the Unity build set); asset + field = the Unity field it becomes. BrittleStarConfig.asset rows use BrittleStarConfigSO's own field names; BrittleStar.prefab rows are the one-thumb transformer block and the trail spawner (each a single plain line in the prefab). Not mapped, and listed by --unmapped: the ElementalFloat ranges (speedModeAt0/At10, creationBlockAt10, rangeAt10, projectileScaleAt10, blastScaleAt10: nested in the asset; the trail block BaseScale is a Vector3 on the prefab), ringRadius / ringHalfThickness (BrittleStarHullBuilder C# defaults, not serialized), nucleusRadius (the game reads the cell's own) and skimGraceSeconds (SelfTrailContactConfig.asset, shared by the fleet). Edit this file, never the assets by hand.",
+  "comment": "The Brittle Star: where each studio parameter lives in the game. key = the studio's own key (the SHIPPED block in Docs/Studios/VesselStudio/brittlestar.html, the Unity build set); asset + field = the Unity field it becomes. BrittleStarConfig.asset rows use BrittleStarConfigSO's own field names; BrittleStar.prefab rows are the one-thumb transformer block and the trail spawner (each a single plain line in the prefab). Not mapped, and listed by --unmapped: the ElementalFloat ranges (speedModeAt0/At10, prismWidthAt10, rangeAt10, heatCapacityAt10, projectileScaleAt10, blastScaleAt10: nested in the asset; the trail block BaseScale is a Vector3 on the prefab), ringRadius / ringHalfThickness (BrittleStarHullBuilder C# defaults, not serialized), nucleusRadius (the game reads the cell's own) and skimGraceSeconds (SelfTrailContactConfig.asset, shared by the fleet). Edit this file, never the assets by hand.",
   "vessel": "BrittleStar",
   "page": "Docs/Studios/VesselStudio/brittlestar.html",
   "rows": [
@@ -227,6 +227,11 @@
       "key": "cordPose",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
       "field": "cordPose"
+    },
+    {
+      "key": "cordMaxRigidity",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "cordMaxRigidity"
     },
     {
       "key": "cordRigidityRate",
