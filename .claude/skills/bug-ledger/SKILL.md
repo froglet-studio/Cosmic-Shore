@@ -103,6 +103,11 @@ files — closing is the editor's job, after validation.
 | gone from the branch | closed (it stayed silent), or they discarded it |
 | `open` with `regressions` > 0 | the fix did not hold — say so, and fix it again |
 
+**A fix stuck at 0 of n** although they have played since pulling it: read their trail,
+`git show origin/bugledger/<user>:BugLedger/shared/reports/<user>/ledger/validation.log`. Each play run
+has a line (its length, the fixes it counted, what fired); "waiting for a pull" means the fix commit
+is not in their checkout; no play-run lines at all means the ledger's play-mode handler never ran.
+
 ## 5. Verification
 
 - C# changes: `/verify-unity`; with no editor, a *Verification status* section in the commit saying

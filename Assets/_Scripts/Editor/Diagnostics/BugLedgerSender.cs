@@ -50,10 +50,17 @@ namespace CosmicShore.Editor
             });
         }
 
-        /// <summary>Background: adopt fixes, then push this machine's issues and new report files.</summary>
-        public static void SendInBackground()
+        /// <summary>Background: adopt fixes, then push this machine's issues and new report files.
+        /// <paramref name="withReports"/> false sends only the issues and the validation trail — the
+        /// silent progress update after a play run that counted toward a fix.</summary>
+        public static void SendInBackground(bool withReports = true)
         {
             if (!TryBegin(out var ctx)) return;
+            if (!withReports)
+            {
+                ctx.StatusOnly = true;
+                ctx.ReportCandidates.Clear();
+            }
             Start("BugLedger.Send", () =>
             {
                 for (int attempt = 0; attempt < 2; attempt++)
@@ -79,6 +86,7 @@ namespace CosmicShore.Editor
             public string IndexPath;     // throwaway index under Library/
             public string TempDir;       // blobs are staged from here
             public List<BugHuntReports.Report> ReportCandidates;
+            public bool StatusOnly;      // a silent fix-progress update: issues and trail, no report files
         }
 
         sealed class RemoteBranch
@@ -181,6 +189,11 @@ namespace CosmicShore.Editor
             }
             foreach (var r in reports)
                 if (!Stage(env, r.Source, r.RepoPath, out var why)) return why;
+            // The validation trail is one file, replaced on every send: it says why a fix is (not) closing.
+            var trail = Path.Combine(ctx.TempDir, "validation.log");
+            if (BugLedger.CopyTrail(trail) &&
+                !Stage(env, trail, $"{ctx.ReportsDir}/{BugHuntReports.Slug(ctx.User)}/ledger/validation.log", out var trailWhy))
+                return trailWhy;
 
             var tree = FrogletGit.RunWithEnv(env, "write-tree");
             if (!tree.Ok) return "write-tree: " + tree.Text.Trim();
@@ -207,6 +220,12 @@ namespace CosmicShore.Editor
             if (!push.Ok)
                 return attempt == 0 ? "push rejected, retrying" : "push: " + push.Text.Trim();
 
+            if (ctx.StatusOnly)
+            {
+                Debug.Log($"[BugLedger] Fix progress sent to Claude on branch {ctx.Branch}.");
+                TryDelete(ctx.IndexPath);
+                return null;
+            }
             Debug.Log($"[BugLedger] Sent to Claude: {open} open error(s)" +
                       (reports.Count > 0 ? $" and {reports.Count} report file(s)" : "") +
                       $" on branch {ctx.Branch}. Ask Claude to fix them, or wait for the daily sweep.");
