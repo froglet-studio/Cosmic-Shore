@@ -58,9 +58,33 @@ namespace CosmicShore.Tests
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.SkimRace));
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Slingshot), "the Stoat's circuit race (GateRaceHandicap)");
             Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Warpline), "the Stoat's time race (GateRaceHandicap)");
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Regatta), "Arena gate race (GateRaceHandicap)");
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.AstroLeague), "Arena, platform autopilot (AIPilotBelief)");
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.BroodRush), "Arena, platform autopilot (AIPilotBelief)");
+            Assert.IsTrue(AIDifficultyRules.IsOfferedFor(GameModes.Broadside), "Arena, platform autopilot (AIPilotBelief)");
             Assert.IsFalse(AIDifficultyRules.IsOfferedFor(GameModes.Rampage));
             Assert.IsFalse(AIDifficultyRules.IsOfferedFor(GameModes.Joust));
             Assert.IsFalse(AIDifficultyRules.IsOfferedFor(GameModes.Random));
+        }
+
+        [Test]
+        public void PilotBelief_NeverDoublesAModesOwnHandicap()
+        {
+            // The Skim Race pilot and the gate races carry their own handicap; the platform belief
+            // on top would make every mistake twice.
+            foreach (var mode in new[] { GameModes.SkimRace, GameModes.Slingshot, GameModes.Warpline, GameModes.Regatta })
+                Assert.IsFalse(AIDifficultyRules.UsesPilotBelief(mode), mode.ToString());
+            foreach (var mode in new[] { GameModes.AstroLeague, GameModes.BroodRush, GameModes.Broadside })
+                Assert.IsTrue(AIDifficultyRules.UsesPilotBelief(mode), mode.ToString());
+            Assert.IsFalse(AIDifficultyRules.UsesPilotBelief(GameModes.Joust));
+        }
+
+        [Test]
+        public void EveryArenaCard_OffersTheDifficulty()
+        {
+            // The Arena roster (ArenaGames.asset): Astro League, Brood Rush, Regatta, Broadside.
+            foreach (var mode in new[] { GameModes.AstroLeague, GameModes.BroodRush, GameModes.Regatta, GameModes.Broadside })
+                Assert.IsTrue(AIDifficultyRules.IsOfferedFor(mode), mode.ToString());
         }
 
         [Test]

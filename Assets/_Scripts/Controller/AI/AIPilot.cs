@@ -287,6 +287,18 @@ namespace CosmicShore.Gameplay
 
         Func<Vector3?> _driftLookTargetProvider;
 
+        AIPilotBelief _belief;
+
+        /// <summary>
+        /// The lobby AI difficulty's mistakes on this pilot (<see cref="AIPilotBelief"/>): late notice
+        /// and a misjudged target, applied to whatever point this pilot wants to reach. Null on Hard
+        /// and on every mode that does not offer the difficulty - the pilot then flies exactly as shipped.
+        /// </summary>
+        public void SetTargetBelief(AIPilotBelief belief) => _belief = belief;
+
+        /// <summary>The belief this pilot flies on, or null (diagnostics; the Third Eye reads it).</summary>
+        public AIPilotBelief Belief => _belief;
+
         /// <summary>
         /// Move the MODE's steering hooks (<see cref="SetExternalTargetProvider"/> and
         /// <see cref="SetDriftLookTargetProvider"/>) off <paramref name="source"/> and onto this
@@ -305,8 +317,10 @@ namespace CosmicShore.Gameplay
             if (!source || source == this) return;
             _externalTargetProvider = source._externalTargetProvider;
             _driftLookTargetProvider = source._driftLookTargetProvider;
+            _belief = source._belief;
             source._externalTargetProvider = null;
             source._driftLookTargetProvider = null;
+            source._belief = null;
         }
 
         /// <summary>
@@ -770,6 +784,11 @@ namespace CosmicShore.Gameplay
             // targeting when set - checked last so it always wins.
             if (_externalTargetProvider != null)
                 _targetPosition = _externalTargetProvider();
+
+            // The lobby difficulty edits what the pilot BELIEVES about that target - never how it
+            // flies to it. Null on Hard, so Hard is the shipped pilot.
+            if (_belief != null)
+                _targetPosition = _belief.Believe(_targetPosition, transform.position, HeadingDirection(), Time.time);
 
             // Where the pilot WANTS to be is _targetPosition; where it steers may differ, because a
             // pursuer with a bounded turn radius cannot fly straight at an objective sitting inside

@@ -77,8 +77,11 @@ Copy this list into the AI's doc and tick it.
 
 ### 3.1 Difficulty levels
 
-- **Today only Skim Race offers a difficulty** (`AIDifficultyRules.IsOfferedFor(GameModes.SkimRace)`). In
-  every other mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
+- **Where a difficulty is offered** (`AIDifficultyRules.IsOfferedFor`): Skim Race (its own pilot), the gate
+  races Slingshot / Warpline / Regatta (`GateRaceHandicap`), and the Arena's Astro League / Brood Rush /
+  Broadside (`AIDifficultyRules.UsesPilotBelief` -> `AIPilotBelief` on the platform `AIPilot`: the same two
+  mistakes on whatever point the autopilot wants; never on a mode with its own handicap). In every other
+  mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
   0.7 → 1.0). Say which one your AI uses.
 - **To add a difficulty to a mode**, follow Skim Race's pattern (`SKIM_RACE_AI.md` §10) and do not invent a
   second one:

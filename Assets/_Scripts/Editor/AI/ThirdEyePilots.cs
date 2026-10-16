@@ -187,6 +187,24 @@ namespace CosmicShore.Editor.AI
                 t.State = ai.IsBreakingOrbit ? "Breaking orbit" : "Seeking";
                 t.Color = ai.IsBreakingOrbit ? FrogletEditorPalette.Violet : FrogletEditorPalette.Azure;
                 t.Detail = $"target {Vector3.Distance(pilot.Hull.position, ai.TargetPosition):F0} u away";
+
+                // The lobby difficulty's mistakes (AIPilotBelief), in the studio colours.
+                var belief = ai.Belief;
+                if (belief != null)
+                {
+                    if (belief.Misjudging)
+                    {
+                        t.State = "Misjudged target";
+                        t.Color = FrogletEditorPalette.Ruby;
+                    }
+                    else if (belief.Unnoticed)
+                    {
+                        t.State = "Not noticed yet";
+                        t.Color = FrogletEditorPalette.Gold;
+                    }
+                    t.Detail += $" | reaction {belief.Level.ReactionSeconds:F2} s, mistake chance " +
+                                $"{belief.Level.MistakeChance:P1}, mistakes {belief.Mistakes}";
+                }
             }
             return t;
         }

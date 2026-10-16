@@ -305,10 +305,15 @@ It follows intensity's path exactly, because it is the same kind of fact:
   `SyncAllGameDataForLaunch` beside the AI domains and read on the server where the AI is
   installed. `[NonSerialized]`, survives `ResetRuntimeData` (and so the replay reload), reset by
   `ResetAllData` - the same lifetime as `RequestedAIDomains`.
-- **It is offered only where the AI reads it** - Skim Race today (`Docs/SKIM_RACE_AI.md` §10). A
-  row that changed nothing would be a promise the match breaks, so a mode is added to
-  `AIDifficultyRules.IsOfferedFor` in the same change that teaches its pilot to read the value.
-  Everywhere else the row is hidden, the pad steps over it, and the launch writes Medium.
+- **It is offered only where the AI reads it.** A row that changed nothing would be a promise the
+  match breaks, so a mode is added to `AIDifficultyRules.IsOfferedFor` in the same change that
+  teaches its pilot to read the value. Today: Skim Race (`Docs/SKIM_RACE_AI.md` §10), the gate
+  races Slingshot, Warpline and Regatta (`GateRaceHandicap`), and the Arena's Astro League, Brood
+  Rush and Broadside (`AIDifficultyRules.UsesPilotBelief`: the platform autopilot flies on an
+  `AIPilotBelief` - the Skim Race's late notice and misjudged target, applied to whatever point
+  `AIPilot` wants to reach - installed by `ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode`,
+  none on Hard). So every Arena card offers it. Everywhere else the row is hidden, the pad steps
+  over it, and the launch writes Medium.
 
 **Layout.** The row is authored INACTIVE in the prefab, directly under the intensity row, by
 `Tools/Build/author_ai_difficulty_row.py`: the same 141 x 75 plates and 19.2 px spacing as the
@@ -321,6 +326,12 @@ The controls block already starts under the intensity row, so while the row show
 (measured from the row's own rect, so moving the row needs no second edit) and puts it back on
 the next card; the block is a scroll view and only its viewport shrinks (375 -> 249 px at the
 reference resolution).
+
+**The Arena's window** (`ArenaGameConfigureModal`, a scene object in Menu_Main) gets the same row
+from the same script, but not under its intensity row: its vessel carousel starts there. It sits
+in the free corner instead - right edge on Start's, centred between the domain tiles and the
+carousel, right of the ADD AI toggle (canvas px L=1411 B=242 W=461 H=113). Nothing moves at
+runtime there; `--check` proves it clears every sibling.
 
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 

@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 AI difficulty (Easy / Medium / Hard) on every Arena card (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** the difficulty row only existed on the Arcade window. The headless compile is clean
+(`unity_refcompile`: player and editor configs, 0 errors in project code). `/verify-unity` was not available.
+- **UI:** `Tools/Build/author_ai_difficulty_row.py` now also authors the row into Menu_Main's
+  `ArenaGameConfigureModal` and wires `ArenaLaunchPanel.aiDifficultyPicker`. It sits in the free corner, right of the
+  ADD AI toggle and above Start (the vessel carousel occupies the space under the intensity row). `--check` holds both
+  windows. The Arcade prefab is byte-identical.
+- **AI:** `AIDifficultyRules.IsOfferedFor` now names Regatta (a gate race: `GateRaceHandicap`, already wired) and
+  Astro League / Brood Rush / Broadside (`UsesPilotBelief`). On those three, `ConfigureAIPilotForMode` gives each AI an
+  `AIPilotBelief`: the Skim Race's mistakes (late notice of a new or moving target, a misjudged target 30 u off the line
+  of sight) on whatever point `AIPilot` wants to reach. Hard gets none and flies exactly as before. The belief follows a
+  bot through a pilot swap (`TakeModeHooksFrom`). The Third Eye shows it (amber = not noticed, ruby = misjudged).
+- Not measured: how much slower or weaker Easy and Medium are in these modes. The numbers are the Skim Race's
+  (`SkimRaceDifficultySO`). Regatta's Urchin rail-riding (`TryOverrideAim` while attached) does not carry the handicap.
+
+**Verify:** (1) Menu > Arena: open each of the four cards. The AI DIFFICULTY row shows beside ADD AI. It does not
+overlap the domain tiles, the carousel or Start, and Medium is lit. (2) Press Easy, then Hard. The row lights the
+pick, and the pad's left/right steps it. As a guest the row is greyed and shows the host's pick. (3) Launch Astro
+League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's state flickers amber/ruby and it
+reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
+Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
+still sits under the intensity row on Skim Race and is still hidden on a card without it.
+
 ### 🔴 Merge of bleeding-edge into Ys-bleeding-edge: the Stoat, the black hole lens and the chase camera combined (`Ys-bleeding-edge`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **What landed:** both branches had built on the same Stoat port, so these were merged by hand. The headless
