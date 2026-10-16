@@ -129,15 +129,21 @@ something (target, line-up, obstacles, skims taken and skipped, outcome) is plan
    - Ghosts (a top player's line as a race opponent) come almost free from the recorder.
 
 **Where L3 stands (2026-10-17):**
-- **Built:** the recorder, automatic in every mode and editor-only (step 1). Consent and upload (steps 2-3) wait on the
-  team decisions in §5.
-- **Data:** 46 Squirrel flights from editor play.
+- **Built:** the recorder, automatic in every mode (step 1). It compiles in editor and development builds; only the
+  automatic send to `bugledger/<user>` is editor-only (`BugHuntAutoSend`), so training data comes from the editor.
+  Consent and upload (steps 2-3) wait on the team decisions in §5.
+- **Data:** 46 Squirrel flights from editor play by the evening of 2026-10-16; on 2026-10-17 the bugledger branches hold
+  49 Squirrel and 5 Urchin Regatta flights (plus 2 Serpent and 4 unnamed).
 - **Readers:**
   - `situation_features.py`: situations and choices.
   - `learn_from_flights.py`: the Skim Race numbers, written into the Regatta config on 2026-10-17
     (`LEARNED_FROM_FLIGHTS.md`).
   - `racing_line.py`: the line averaged from clean, fast legs, with each leg's style read from the recording
     (`RACING_LINE.md`). This is a cheaper, explainable stand-in for step A's "recorded lines of the best players".
+  - `learn_drives_from_flights.py`: the other Regatta drives (Rhino, Dolphin, Manta, Stoat; the Urchin report only) as
+    Regatta-only variants (`SITUATION_RECORDING_PLAN.md` §9). No Rhino, Dolphin, Manta or Stoat flight exists yet; the
+    one variant in the repo, `MantaSoarAITuning_Regatta` (bands 0.8 / 0.85, 2026-10-17), was set from a model with
+    the learner's writer, and a person's Manta flights replace it.
 
 ### L4 — Ship: nothing deploys itself
 

@@ -34,19 +34,19 @@ namespace CosmicShore.Gameplay
     /// <c>Tools/Build/learn_from_flights.py</c> and <c>situation_features.py</c> can measure the flight against them.</para>
     ///
     /// <para>One <c>flight_&lt;Mode&gt;_&lt;Vessel&gt;_&lt;time&gt;.json</c> per match (schema <c>cosmic-shore.flight/3</c>,
-    /// with the mode, the vessel and the training type) in <c>&lt;Diagnostics folder&gt;/Flights/</c>. After Play, Unity
-    /// asks "Store AI training record?" naming the vessel, the mode and the training type, and stores it on the
-    /// person's <c>bugledger/&lt;user&gt;</c> branch (<c>BugHuntAutoSend</c>, <c>BugHuntReports</c> kind <c>flights</c>). A
-    /// match that could not be stored says why in one Console warning. Editor and development builds only; nothing
-    /// leaves the machine unless its owner presses Store. Players get their own consent question before any of this
-    /// ships.</para>
+    /// with the mode, the vessel and the training type) in <c>&lt;Diagnostics folder&gt;/Flights/</c>. After Play, the editor
+    /// sends each new record to the person's <c>bugledger/&lt;user&gt;</c> branch without a question (since 2026-10-16;
+    /// <c>BugHuntAutoSend</c>, <c>BugHuntReports</c> kind <c>flights</c>) and logs one Console line naming the vessel and
+    /// the mode. A match that could not be stored says why in one Console warning. The recorder compiles in editor and
+    /// development builds; only the automatic send is editor-only, so a development build's records stay on its machine.
+    /// Players get their own consent question before any of this ships.</para>
     /// </summary>
     public sealed class HumanFlightRecorder : MonoBehaviour
     {
         public const string CommandName = "flightrec";
         public const string Schema = "cosmic-shore.flight/3";   // /3: the situation (SITUATION_RECORDING_PLAN.md §2); columns are read by name, so additions keep /3
 
-        /// <summary>The kind of AI training a record serves, as Unity's "Store AI training record?" names it.</summary>
+        /// <summary>The kind of AI training a record serves, written into the record's <c>training</c> field.</summary>
         public const string TrainingType = "imitation: learning from your flying";
         const float SampleHz = 10f;
         const float LookEvery = 0.5f;

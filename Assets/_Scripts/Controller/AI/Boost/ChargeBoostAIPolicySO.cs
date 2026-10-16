@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
     /// meter. So the fastest a Dolphin can carry is the PEAK of a discharge, and the moment to drift again is the moment
     /// the speed stops climbing (the transformer's own target has fallen to the speed) - not when the meter is empty,
     /// which is where this driver used to wait, re-freezing a speed already sliding back toward cruise. On a straight
-    /// the change is worth about 50%: 303 u/s average against 203 in the offline model
+    /// the change is worth about 50%: 299 u/s average against 202 in the offline model
     /// (<c>Tools/Build/dolphin_drive_sim.py</c>). Every discharge is held to its peak this way, the ones this driver
     /// asks for on a straight and the ones the commit loop starts when the course swings off at a corner.</para>
     ///
