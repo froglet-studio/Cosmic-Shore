@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -60,6 +61,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Latch cluster (u): it then eats that prism's domain within this of the latch.")]
         [SerializeField, Min(0f)] float slingCluster = 24f;
 
+        [Header("The keeper (game only: the lab spawns its first species)")]
+        [Tooltip("The species the Angler's keeper is born as when the cell offers no leashable herbivore of its own. The " +
+                 "Angler always leads at least one creature: with the school empty, one is born behind the hull, already " +
+                 "tamed, and the school's first creature never starves (ANGLER.md §1b).")]
+        [SerializeField] FaunaConfigurationSO companionFauna;
+
         [Header("Presentation (game only: the lab draws its own)")]
         [Tooltip("How often the brush re-reads the prisms under it while a trigger is held (s). The lab paints every frame; 0 does the same here.")]
         [SerializeField, Min(0f)] float brushInterval = 0f;
@@ -72,6 +79,7 @@ namespace CosmicShore.Gameplay
         public float TameDecay => tameDecay;
         public int SquadCap => squadCap;
         public float OmniTameRadius => omniTameRadius;
+        public FaunaConfigurationSO CompanionFauna => companionFauna;
         public float LeashTow => Mathf.Max(1f, leashTow);
         public float FormBack => formBack;
         public float TadTurn => tadTurn;

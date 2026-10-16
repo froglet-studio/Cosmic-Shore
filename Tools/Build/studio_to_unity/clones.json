@@ -8,11 +8,11 @@
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
   },
   "Angler": {
-    "artifactVersion": "v4 (1792043779-2fa3)",
+    "artifactVersion": "v5 (1792126169-6e52)",
     "artifact": "https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6 (the Angler Command Lab, its own decision log)",
-    "pageSha": "64bb47d5",
+    "pageSha": "d38070f4",
     "decisionsThrough": "2026-10-15T00:00:00.000Z",
-    "clonedAt": "2026-10-15",
-    "result": "Second clone (after the first Unity playtest). Added the omni crystal's mass tame (omniTameRadius 300, AnglerCommandMath.OmniTameOrder = the page's CORE.omniTameOrder; AnglerTameByCrystalEffectSO in a forked AnglerImpactorDataContainer) and drew paint the page's way, on the prisms (Prism.SetColorLift: painted 0.75, ordered 0.5 fading 1.2 s). 23 mapped parameters match the artifact; parity 179 cases, 8/8 planted changes caught. First clone: the Sling painter, lure, taming, school and squad pick (22 parameters)."
+    "clonedAt": "2026-10-16",
+    "result": "Third clone (after the second Unity playtest). The keeper (the page's ensureKeeper: an empty school gets one creature, already tamed; in the game it never starves - IFaunaLeash.Sustains, an authorized ecology exception, Docs/ECOSYSTEM.md \u00a70) and lit-until-eaten-or-erased (the page's marked + strikeFromOrders). 23 mapped parameters match the artifact; parity 179 cases, 8/8. Earlier: the omni tame and lit paint (v4), the Sling painter (v3)."
   }
 }

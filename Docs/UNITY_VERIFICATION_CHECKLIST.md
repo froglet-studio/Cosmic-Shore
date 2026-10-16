@@ -65,6 +65,47 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler playtest 2: the keeper (always one creature, it never starves); lit prisms stay lit until eaten or erased (`cece/zealous-feynman-po8k8d`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1a, §1b; the ecology exception is in `Docs/ECOSYSTEM.md` §0 and §61.4. No `unity` CLI was
+available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player + editor: no errors in changed files.
+- Parity: 8/8 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 15/15.
+- `studio_to_unity`: 0 drift.
+- The lab's `verify_lab.cjs`: PASS, scorecard unchanged.
+- Lab headless:
+  - free play starts with the keeper (school 0 → 1 on the first tick, once);
+  - a thrown-at prism stays marked;
+  - erasing it unmarks it and strikes it from all 24 creatures' orders.
+
+**What landed:**
+
+- **The keeper.** `IFaunaLeash.Sustains` + `Fauna.IsStarving`: the school's first creature never starves. `AnglerCommandExecutor.EnsureKeeper`: an empty school has a creature born behind the hull, already tamed.
+- **The keeper's species.** The cell's own first leashable herbivore, else `AnglerConfig.companionFauna` (Clawfish Space).
+- **Lit until eaten or erased.** Thrown-at prisms join `_ordered` and stay lit. LT erases a lit prism from paint AND from every order.
+
+1. **Keeper on spawn.** Pick the Angler in freestyle (Vessel Changer).
+   - Within a second, one creature blooms in behind the hull in the cell's fauna colour and follows. It must grow in, not pop in.
+   - The leash gauge reads 1.
+2. **It never starves.** Fly for well past the species' starvation time without ordering it to eat: it stays.
+   - A second creature tamed alongside it, and never ordered, may starve.
+   - The first one never does.
+3. **It can still die.** Throw it at prisms near a shark, or into a rival's fire. If it is eaten or shot:
+   - it withers and drops its heart as usual;
+   - within a second, a new keeper is born (or the next creature in the school becomes it).
+4. **Lit stays lit.** Paint a field, let go of RT: the painted prisms stay near-white while the squad eats them. Each one goes out only when eaten. Press B (recall): they stay lit.
+5. **Erase an order.** Hold LT over lit prisms after the throw:
+   - they fade back to their own colour;
+   - no creature goes on attacking them; any creature that was flying at one picks another lit prism.
+6. **Two clients (MPPM).**
+   - With a replicated herbivore species, only the host births the keeper, and the client sees it replicated.
+   - With an unreplicated species, every peer seeds its own, as every spawner does.
+   - Only the painting pilot sees the lit prisms.
+
 ### 🔴 Angler playtest fixes: painted prisms light up; an omni crystal tames every herbivore near the hull (`cece/zealous-feynman-po8k8d`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md` §1, §1a. The first playtest found that taming and throwing worked, but painting and
@@ -92,7 +133,7 @@ Headless proof:
 1. **Paint.** Squeeze RT at enemy prisms: every prism under the beam turns near-white within a blink, and stays lit while you keep flying.
    - Your own prisms never light.
    - With LT, the lit ones fade back to their own colour.
-2. **Throw.** Let go of RT: the lit prisms drop to a softer glow and fade back over ~1 s while the squad flies at them.
+2. **Throw.** (Superseded 2026-10-16 by the entry above: the lit prisms now STAY lit until eaten or erased.) Let go of RT: the lit prisms drop to a softer glow and fade back over ~1 s while the squad flies at them.
 3. **Nothing else changed colour.** No prism you did not paint changes colour. A painted prism that a rival's hit turns dangerous or shielded still shows that state.
 4. **Omni crystal.** Fly the Angler through an omni crystal near a school of wild herbivores: every one within ~300 u falls in behind the hull at once (the leash gauge jumps), up to 24.
    - Sharks are not tamed.

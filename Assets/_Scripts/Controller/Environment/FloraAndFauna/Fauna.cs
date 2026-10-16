@@ -163,6 +163,9 @@ namespace CosmicShore.Gameplay
         /// there is nothing to order it to eat.</summary>
         protected virtual bool CanBeLeashed => diet == FaunaDiet.Herbivore;
 
+        /// <summary>Whether a leash can take this creature (or, read on a prefab, this species): <see cref="CanBeLeashed"/>.</summary>
+        public bool Leashable => CanBeLeashed;
+
         /// <summary>Put this creature on <paramref name="holder"/>'s leash. False when it cannot be leashed, is dying,
         /// is a puppet on this peer, or another holder already has it.</summary>
         public bool TryLeash(IFaunaLeash holder)
@@ -292,8 +295,9 @@ namespace CosmicShore.Gameplay
         // What a predator took when it ate this creature (stomach + body), read by the eater right after Predated.
         float _surrenderedMeal;
 
-        /// <summary>True once metabolism has burned this creature's stomach to zero (never with starvationSeconds 0).</summary>
-        protected bool IsStarving => _stomachLive && _stomach.IsEmpty(Time.time);
+        /// <summary>True once metabolism has burned this creature's stomach to zero (never with starvationSeconds 0), unless
+        /// its leash holder SUSTAINS it (<see cref="IFaunaLeash.Sustains"/>: the Angler's keeper, the one fenced exception).</summary>
+        protected bool IsStarving => _stomachLive && _stomach.IsEmpty(Time.time) && !(Leash != null && Leash.Sustains(this));
 
         /// <summary>The stomach's current contents in prism volume (0 before the creature comes alive).</summary>
         public float StomachVolume => _stomachLive ? _stomach.Level(Time.time) : 0f;

@@ -34,4 +34,5 @@ MonoBehaviour:
   slingTime: 3
   slingCatch: 8
   slingCluster: 24
+  companionFauna: {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
   brushInterval: 0

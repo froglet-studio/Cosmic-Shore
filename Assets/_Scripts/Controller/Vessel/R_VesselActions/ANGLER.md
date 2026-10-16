@@ -20,11 +20,11 @@ through `Tools/Build/studio_to_unity/angler.json`. Every formula comes from the 
 | Input | Pad | Keyboard | What it does |
 |---|---|---|---|
 | Right trigger, held | RT (analog) | Right Shift | **Paint.** A beam from the nose marks every enemy prism inside its cone, and the picked squad balls up `slingAhead` ahead of the nose. How far you squeeze sets the brush width: just past halfway paints `brushMin` of the full cone, and a full pull paints all of it. |
-| Left trigger, held | LT (analog) | Left Shift | **Erase.** A narrower beam (`eraseCone`) unmarks paint. RT does not paint while LT is held. |
+| Left trigger, held | LT (analog) | Left Shift | **Erase.** A narrower beam (`eraseCone`) unmarks paint, and unmarks an already-ordered prism too: it leaves every order, and a creature heading for it picks again. RT does not paint while LT is held. |
 | Right trigger, let go | RT | Right Shift | **Throw.** Each creature in the ball is given its own painted prism. The pick is nearest-first, with each existing claim costing 900 u² so the squad spreads out. Each one is then launched at its prism at `slingSpeed`, homing at `homeTurn`. With nothing painted, it is a plain sling: the creature latches onto the first enemy prism it passes within `slingCatch`. |
 | Lure, held | X | Q | The esca lights. Wild herbivores within `lureRadius` turn toward it. A creature held within `tameRadius` tames over `tameTime`, and a tamed one joins the school. While luring, the hull slows to `lureCruise`; boost overrides that. |
 | Pick squad | A | Space | Cycles through the whole school, then each kind of creature in the order it was first tamed, then back to the whole school. |
-| Recall | B | R | The picked squad drops its order and returns to the school (the paint stays until erased). |
+| Recall | B | R | The picked squad drops its order and returns to the school (lit prisms stay lit until eaten or erased). |
 | Boost | RB | E | The vessel's ordinary boost. |
 | Omni crystal (pickup) | — | — | **Mass tame.** Every wild herbivore within `omniTameRadius` (300 u) of the hull joins the school at once, nearest first, up to the leash capacity (`AnglerTameByCrystalEffectSO` → `AnglerCommandExecutor.OmniTame`; the lab's O key). |
 
@@ -33,13 +33,15 @@ input event, so the lure is on X (Button3), in the page's pad map and here alike
 
 ### 1a. What paint looks like: the prism's LIT state
 
-A painted prism is drawn **lit**: its own colour lifted toward white (`Prism.SetColorLift`), with the lab's numbers from
-its `render()`:
+A painted prism is drawn **lit**: its own colour lifted 75% toward white (`paintedLift`, the lab's `render()`), through
+`Prism.SetColorLift`.
 
-- **Painted:** 75% toward white (`paintedLift`). It fades in over 0.12 s (`markFade`), and fades out at the same rate when erased.
-- **At the throw:** each painted prism drops to 50% (`orderedLift`) and fades back to its own colour over 1.2 s (`orderedFade`).
+**It stays lit until it is eaten or erased with LT** (the designer, 2026-10-16):
 
-These are presentation fields on the executor, not tuning.
+- The throw does not dim it. The thrown-at prisms become the executor's `_ordered` set, the lab's `marked`.
+- **Eaten:** the prism is destroyed and its mark goes with it.
+- **Erased:** it fades back over 0.12 s (`markFade`, which is also the fade-in when painted).
+- A recall or a finished order leaves it lit.
 
 How the lit state is built:
 
@@ -48,8 +50,27 @@ How the lit state is built:
 - The next pooled `Initialize` clears it.
 - Only the local pilot's machine draws it (the paint is the pilot's instrument). It is a look, never a gameplay state, so nothing reads it and it is not replicated.
 
-The first cut drew a dot at each painted prism's centre. The dot sat inside the prism and was never seen, which is
-why the first playtest saw no paint at all.
+The first cut drew a dot at each painted prism's centre. The dot sat inside the prism and was never seen. The second cut
+faded the marks out at the throw; the designer asked for them to stay.
+
+### 1b. The keeper: the Angler always leads at least one creature
+
+The designer, 2026-10-16: *"if there are no fauna under the angler's control it should spawn one. there should always be
+at least one fauna that doesn't starve"*.
+
+- **An empty school gets a keeper.** When the school is empty, one creature is born behind the hull, already tamed
+  (`EnsureKeeper`; the lab's `ensureKeeper`). It is the cell's own first leashable herbivore, or the config's
+  `companionFauna` (Clawfish Space) when the cell has none.
+- **It is born the way every creature is born:** through the platform's spawn seam, in the cell's controlling colour, and
+  blooming in. A replicated species is born only where the ecology is simulated. At most once a second, and never after
+  the turn has ended.
+- **The school's first creature never starves** (`IFaunaLeash.Sustains`). When the keeper dies, the next creature
+  inherits the role.
+- **Only starvation is waived.** A keeper that is eaten, shot or jousted dies the ordinary way, and an empty school gets
+  a new one.
+
+This is an **authorized exception** to the locked "populations are bounded by consumption + starvation" rule, fenced and
+recorded in `Docs/ECOSYSTEM.md` §0 and §61.4 and in `Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`.
 
 ## 2. What a leash is (and is not)
 
@@ -97,7 +118,7 @@ The creature-side hooks:
 | `_SO_Assets/Effects/Effect Containers/VesselContainers/AnglerImpactorDataContainer.asset` | The Angler's own vessel container: the Stoat's, forked, with the omni list running the mass tame instead of the Stoat's Overclock. |
 | `Controller/Vessel/AnglerVesselTransformer.cs` | The lure brake: `LureSpeedCap` caps the throttle target unless the hull is boosting. It is not a `ThrottleModifier`, because those raise `IsSlowed`. |
 | `UI/View/AnglerHUDView.cs`, `UI/Controller/AnglerHUDController.cs` | The four gauges: command (paint / ball / hunting), leash (school / cap), lure, and tame (the furthest-along taming). The controller polls the executor and is gated to the pilot. |
-| `Controller/Environment/FloraAndFauna/IFaunaLeash.cs` | The leash contract (§2). |
+| `Controller/Environment/FloraAndFauna/IFaunaLeash.cs` | The leash contract (§2), including `Sustains`, the keeper's one exception (§1b). |
 | `Tests/Editor/AnglerCommandMathTests.cs` | Four named tests, plus `EveryFunction_MatchesTheLabPage` with 179 golden cases generated from the page. |
 | `_Prefabs/Spacevessels/Angler.prefab`, `_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab` | Cloned from the Stoat by `Tools/Build/author_angler_assets.py`. |
 | `_SO_Assets/VesselActions/Angler/` | `AnglerConfig`, plus the `AnglerLure`, `AnglerSquad` and `AnglerRecall` control assets. |
@@ -140,7 +161,7 @@ The creature-side hooks:
 | Latch cluster (u) | `slingCluster` | `slingCluster` | 24 |
 | Cruise (u/s) | `cruise` | `Angler.prefab` `VesselTransformer.DefaultThrottleScaler` | 40 |
 
-**Game only:** `brushInterval` 0 on the config. On the executor, the paint's look is `paintedLift` 0.75, `orderedLift` 0.5, `orderedFade` 1.2 s and `markFade` 0.12 s (§1a). The first three are the lab's `render()` numbers.
+**Game only:** on the config, `brushInterval` 0 and `companionFauna` (the keeper's fallback species, §1b). On the executor, the paint's look is `paintedLift` 0.75 (the lab's `render()` number) and `markFade` 0.12 s (§1a).
 
 **Lab only:**
 
@@ -155,7 +176,7 @@ All of this proof was produced offline. **This session had no Unity CLI, so `/ve
   - The C# core and the page's `CORE` agree on 179 cases.
   - 8 out of 8 planted changes are caught: claim penalty, school ring, cone floor, esca height, the omni reach and the omni room, and others.
 - `node Tools/Build/angler_command_parity/goldens.cjs --check`: the test's goldens are the page's.
-- `python3 Tools/Build/author_angler_assets.py --check`: the prefab, the assets and the registrations are as generated. `--self-test` fires 14 out of 14.
+- `python3 Tools/Build/author_angler_assets.py --check`: the prefab, the assets and the registrations are as generated. `--self-test` fires 15 out of 15.
 - `python3 Tools/Build/author_angler_icons.py --check`.
 - `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/AnglerCommandLab.html`: PASS. A headless pickup in free play tames the 8 wild creatures within 300 u, and a held key counts once.
 - `python3 Tools/Build/studio_to_unity.py --vessel Angler --check`: 23 mapped, 0 drift.
@@ -179,7 +200,7 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
 2. **An Angler AI autopilot.** It must be input-only per `/vessel-ai`. The lab's sim pilot (`aiErase`, its squad heuristics) is the starting point.
 3. **The element map and level-5 upgrades**, once the designer approves them (§7).
 4. **The HUD's squad name.** The HUD shows counts; `SquadName` exists on the executor but has no text slot in the HUD yet.
-5. **A squad that is never ordered starves.** A leashed creature with no order follows the school and does not graze, so the game's starvation clock can kill it. That is consistent with "no imposed death" (it is the creature's own clock), but it is a designer call. The alternative is to let a following creature graze in passing.
+5. **A squad that is never ordered starves, apart from the keeper.** A leashed creature with no order follows the school and does not graze, so its own starvation clock can kill it. The keeper (§1b) is the one exception. Whether the others should graze in passing is still a designer call.
 6. **The Amoebius Port build check** (rule 51; it needs .NET 10, which this session did not have).
 7. **The lure on X** (§1), not the RB the round-2 write-up first proposed: confirm it in play.
 8. **The omni tame respects the leash capacity (24).** "Tame all" is capped there, because the capacity is a decided lab number. Raise `squadCap`, or let the omni overflow it, if the pickup should take everything in reach.

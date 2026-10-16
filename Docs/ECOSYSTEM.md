@@ -126,6 +126,40 @@ granted) are fenced and recorded; neither licenses another.
 > (`VesselPrismController.SetTierHold`) — pausing the spawner, the sanctioned lever named
 > in the rejected-cheat note above. Nothing already laid is removed.
 
+> **AUTHORIZED EXCEPTION (2026-10-16): the Angler's KEEPER — one creature that does not
+> starve.** The designer asked for it in plain words: *"there should always be at least one
+> fauna that doesn't starve etc. so the number of fauna under angler control is always greater
+> than zero."* It resembles the rejected **immortal husk** (a creature that outlives its own
+> death rules, `ECOSYSTEM_DESIGN_PRINCIPLES.md`, "A creature dies when its last body prism is
+> destroyed"), and it is NOT that.
+>
+> What it does:
+>
+> - **No starvation for one creature.** The FIRST creature in an Angler's school (`_tamed[0]`)
+>   does not starve: `Fauna.IsStarving` reads `IFaunaLeash.Sustains`.
+> - **A keeper whenever the school is empty.** One creature is born behind the hull, already
+>   tamed. It is the cell's own first leashable herbivore, else `AnglerConfigSO.companionFauna`.
+>   It is born through `CellLifeSpawnerBase.SpawnFaunaWithDomain`, in the cell's controlling
+>   colour.
+>
+> Its fence — do not widen it:
+>
+> - **One reader, one implementer.** `IFaunaLeash.Sustains` is read only by `Fauna.IsStarving`,
+>   and implemented only by `AnglerCommandExecutor`. No `immortal` / `noStarve` field was added
+>   to `Fauna` or any config; the waiver exists only while a leash says so.
+> - **At most one per Angler.** When the keeper dies the next creature in the school inherits
+>   the role. When the school is empty one is born (at most once a second).
+> - **Only starvation is waived.** A keeper that is eaten, shot to its last body prism or
+>   jousted dies the ordinary way: wither, heart drop, mass conserved. Continuity of existence
+>   holds: the birth blooms through the same seam every spawner uses.
+> - **Production, not decay.** The birth is a spawn (allowed — §0 forbids aging mass out, not
+>   creating it), in the controlling colour (no domain asymmetry), on the sim authority only for
+>   a replicated species. It adds at most one creature per Angler to the cell (a creature's
+>   colliders, against a cell that already ships tens), and only while that Angler leads nobody.
+>
+> **An exception, not a precedent.** The next holder that wants a creature to outlive its
+> clock needs its own sign-off. Detail: §61.4; `R_VesselActions/ANGLER.md` §1b.
+
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
 
@@ -11589,7 +11623,7 @@ purpose: **a leash bends behaviour and nothing else.**
 ### 61.2 What a leash may NOT do (the invariants, each held by the creature's code, not the holder's)
 
 - **The diet decides.** An ordered prism is re-checked against the creature's own edibility rule. It is eaten with the creature's own mouthful (`UpdateFeeding`), so a leash cannot make a herbivore eat what it could not eat wild.
-- **No imposed death, and no reprieve.** The starvation clock keeps running. A tamed creature that is never ordered to eat follows the school without grazing, and may starve on its own clock. That is the ordinary rule; whether a following creature should graze in passing is an open designer call (`ANGLER.md` §8).
+- **No imposed death, and no reprieve — but one keeper.** The starvation clock keeps running. A tamed creature that is never ordered to eat follows the school without grazing, and may starve on its own clock. That is the ordinary rule, with ONE authorized exception: the school's first creature, the Angler's keeper, does not starve (§61.4, §0). Whether a following creature should graze in passing is an open designer call (`ANGLER.md` §8).
 - **One fauna colour per cell.** A tamed creature keeps the cell's colour (LOCKED, `ECOSYSTEM_DESIGN_PRINCIPLES.md`). "My squad" is a leash relationship, not a team.
 - **The heart, body prisms, wither and mass conservation** are untouched. A leashed creature dies exactly as a wild one does.
 - **Who can be leashed:**
@@ -11601,3 +11635,23 @@ purpose: **a leash bends behaviour and nothing else.**
 
 Every hook is gated on `Leash != null`. With no Angler in the cell, `LightFauna` and `Boid` run exactly the code they ran
 before: the same goal, the same feed candidate, the same speed.
+
+### 61.4 The keeper (2026-10-16, an authorized exception)
+
+The designer asked that an Angler always leads at least one creature, and that one never starves.
+
+**The rule:**
+
+- **One creature never starves.** `IFaunaLeash.Sustains(creature)` is true for exactly one creature per holder: the first in the Angler's school. `Fauna.IsStarving` is false while it holds. The stomach still drains and refills as usual; only the death at empty is waived.
+- **An empty school gets a keeper.** When the school is empty, `AnglerCommandExecutor.EnsureKeeper` births one creature:
+  - behind the hull, at the school's first slot;
+  - through `CellLifeSpawnerBase.SpawnFaunaWithDomain` (lineage bind, replication seam, bloom), in the cell's controlling colour;
+  - leashed at once.
+- **Which species:** the cell's own first leashable herbivore (`SpawnProfile.SupportedFaunas`, `Fauna.Leashable`), else `AnglerConfigSO.companionFauna` (Clawfish Space, the lab's first species).
+- **Where it is born:** a replicated species only on the sim authority, at most once a second. Never after the turn has ended.
+
+**What it does not waive:**
+
+- Predation, a jousting vessel, and losing the last body prism still kill a keeper. Its heart still drops and its mass is still conserved. The next creature in the school becomes the keeper, and an empty school gets a new one.
+- §0's "AUTHORIZED EXCEPTION … the Angler's KEEPER" is the record of the sign-off and the fence.
+

@@ -99,7 +99,8 @@ DOC_GUID = guid_for("ANGLER.md")
 OMNI_EFFECT_GUID = guid_for("AnglerTameByCrystalEffect.asset")
 IMPACT_CONTAINER_GUID = guid_for("AnglerImpactorDataContainer.asset")
 STOAT_IMPACT_CONTAINER = "63a1b912028e471b9b7a2df570e90be8"     # StoatImpactorDataContainer.asset
-STOAT_OVERCLOCK = "6b508a166e124e95a6490871697185de"            # StoatOverclockByCrystalEffect.asset (the Stoat's omni effect)
+STOAT_OVERCLOCK = "6b508a166e124e95a6490871697185de"
+KEEPER_SPECIES = "0e87f3117e7141a7b5bce66b0385a2d0"             # Clawfish Fauna Space.asset (the lab's first species)            # StoatOverclockByCrystalEffect.asset (the Stoat's omni effect)
 
 # (control name, AnglerControl value, InputEvents it is bound to). The InputEvents numbers: Button1=6 (A / Space),
 # Button2=7 (B / R), Button3=8 (X / Q). The triggers (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling
@@ -304,6 +305,7 @@ def config_asset() -> str:
             "  slingTime: 3\n"
             "  slingCatch: 8\n"
             "  slingCluster: 24\n"
+            f"  companionFauna: {{fileID: 11400000, guid: {KEEPER_SPECIES}, type: 2}}\n"
             "  brushInterval: 0\n")
 
 
@@ -538,6 +540,8 @@ def check(files: "dict[str, str]") -> "list[str]":
     for path, (_, script, name) in SEEDED.items():
         have = files.get(path) or ""
         need(f"guid: {script}, type: 3}}" in have and f"  m_Name: {name}\n" in have, f"{os.path.relpath(path, ROOT)} missing or not a {name}")
+    need(re.search(r"  companionFauna: \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n", files.get(CONFIG_PATH, "")),
+         "AnglerConfig has no companionFauna - a cell with no leashable herbivore could never give the Angler its keeper")
     need(MAP not in files, "ElementalAbilityMaps/Angler.asset exists - the element mapping is an unapproved PROPOSAL (ANGLER.md §3)")
 
     need(f"  - {{fileID: {ROOT_TRANSFORM_ID}, guid: {PREFAB_GUID}, type: 3}}\n" in files.get(CONTAINER, ""),
@@ -628,6 +632,7 @@ def self_test() -> int:
         "fusion entries missing": (FUSION, lambda t: t.replace(f"  - vessel: {CLASS_ID}\n", "  - vessel: 99\n")),
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Angler", "")),
         "an unapproved map authored": (MAP, lambda t: "authored"),
+        "no keeper species": (CONFIG_PATH, lambda t: re.sub(r"  companionFauna: .*\n", "  companionFauna: {fileID: 0}\n", t)),
         "the Stoat's impactor container back": (PREFAB, lambda t: t.replace(IMPACT_CONTAINER_GUID, STOAT_IMPACT_CONTAINER)),
         "the Stoat's Overclock on the omni list": (IMPACT_CONTAINER, lambda t: t.replace(OMNI_EFFECT_GUID, STOAT_OVERCLOCK)),
     }

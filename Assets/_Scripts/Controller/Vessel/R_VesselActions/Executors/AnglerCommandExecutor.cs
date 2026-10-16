@@ -55,12 +55,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] Color escaColor = new(0.075f, 1f, 0.949f, 1f);
         [Tooltip("A creature being tamed: its taming shows as a dot that fills from this colour to the esca's.")]
         [SerializeField] Color tamingColor = new(0.6f, 0.6f, 0.7f, 1f);
-        [Tooltip("A painted prism is drawn LIT: its own colour lifted this far toward white (Prism.SetColorLift; the lab's render(): col.lerp(WHITE, 0.75)).")]
+        [Tooltip("A painted prism is drawn LIT: its own colour lifted this far toward white (Prism.SetColorLift; the lab's render(): col.lerp(WHITE, 0.75)). It stays lit after the throw until it is eaten or erased.")]
         [SerializeField, Range(0f, 1f)] float paintedLift = 0.75f;
-        [Tooltip("At the throw the painted prisms drop to this lift and fade back to their own colour (the lab's 0.5).")]
-        [SerializeField, Range(0f, 1f)] float orderedLift = 0.5f;
-        [Tooltip("Seconds the thrown-at prisms take to fade back (the lab's 1.2 s).")]
-        [SerializeField, Min(0f)] float orderedFade = 1.2f;
         [Tooltip("Seconds a prism takes to light when painted and to go dark when erased, so a mark never pops.")]
         [SerializeField, Min(0f)] float markFade = 0.12f;
 
@@ -88,6 +84,7 @@ namespace CosmicShore.Gameplay
         readonly List<string> _species = new();             // the squad pick's order: the order kinds were first tamed
         readonly List<Prism> _painted = new();
         readonly HashSet<Prism> _paintedSet = new();
+        readonly HashSet<Prism> _ordered = new();            // thrown at, not yet eaten or erased: the lab's `marked`
         readonly Dictionary<Prism, int> _claims = new();
         readonly List<Prism> _query = new();
         readonly List<Vector3> _candidatePositions = new();
@@ -104,6 +101,7 @@ namespace CosmicShore.Gameplay
         bool _cmdHeld;
         float _cmdDepth, _eraseDepth;
         float _brushOwed;
+        float _keeperRetryAt;      // when the next keeper may be born (Time.time); +inf once the turn has ended
         int _throwSerial;
 
         // ------------------------------------------------------------------ read by the HUD
@@ -143,6 +141,7 @@ namespace CosmicShore.Gameplay
             _cmdHeld = false;
             _cmdDepth = _eraseDepth = 0f;
             _brushOwed = 0f;
+            _keeperRetryAt = 0f;
             _throwSerial = 0;
             _species.Clear();
             if (!config)
@@ -171,6 +170,7 @@ namespace CosmicShore.Gameplay
         void OnTurnEnd()
         {
             ReleaseAll();
+            _keeperRetryAt = float.PositiveInfinity;   // the turn is over: no keeper is born into a finished match
             _luring = false;
             if (_transformer) _transformer.LureSpeedCap = 0f;
         }
@@ -255,6 +255,7 @@ namespace CosmicShore.Gameplay
             if (_status == null || !config || !_status.Transform) return;
             float dt = Time.deltaTime;
             PruneDead();
+            EnsureKeeper();
 
             var input = _status.InputStatus;
             float rt = input != null ? input.RightTriggerAnalog : 0f;
@@ -305,14 +306,20 @@ namespace CosmicShore.Gameplay
                 var p = _query[i];
                 if (!p || p.destroyed) continue;
                 bool painted = _paintedSet.Contains(p);
-                if (paint ? painted : !painted) continue;
+                if (paint ? painted : !(painted || _ordered.Contains(p))) continue;
                 if (paint && config.SpareOwn && p.Domain == own) continue;
                 // Game-side filters the lab's world has no use for: shielded mass is never food, and a creature's body
                 // is never a meal for another (both rejected again by every creature's own diet).
                 if (paint && (Fauna.IsShieldedMass(p) || (p is HealthPrism hp && hp.ResolveOwnerFauna()))) continue;
                 if (!AnglerCommandMath.InCone(o, f, p.transform.position, coneDeg, reach)) continue;
                 if (paint) { _paintedSet.Add(p); _painted.Add(p); if (ShowsMarks) p.SetColorLift(paintedLift, markFade); }
-                else { _paintedSet.Remove(p); removed = true; Unlight(p, markFade); }
+                else
+                {
+                    _paintedSet.Remove(p);
+                    removed = true;
+                    if (_ordered.Remove(p)) StrikeFromOrders(p);
+                    Unlight(p, markFade);
+                }
             }
             if (removed) _painted.RemoveAll(p => !_paintedSet.Contains(p));
         }
@@ -326,9 +333,8 @@ namespace CosmicShore.Gameplay
                 if (_painted[i] && !_painted[i].destroyed) _candidates.Add(_painted[i]);
             _painted.Clear();
             _paintedSet.Clear();
-            // The order is given: the marks drop to the lab's "ordered" glow and fade back to the prisms' own colour.
-            for (int i = 0; i < _candidates.Count; i++)
-                if (_candidates[i].ColorLift > 0f) _candidates[i].SetColorLift(0f, orderedFade, orderedLift);
+            // The order is given, and its prisms stay lit until they are eaten or erased (the lab's `marked`).
+            for (int i = 0; i < _candidates.Count; i++) _ordered.Add(_candidates[i]);
             if (_candidates.Count == 0) { SlingThrow(); return; }
 
             var order = new List<Prism>(_candidates);
@@ -433,6 +439,83 @@ namespace CosmicShore.Gameplay
             PickTarget(m);
             return true;
         }
+
+        /// <summary>An erased prism leaves every order it was in, and a creature heading for it picks again (the lab's
+        /// <c>strikeFromOrders</c>).</summary>
+        void StrikeFromOrders(Prism p)
+        {
+            for (int i = 0; i < _tamed.Count; i++)
+            {
+                var m = _tamed[i];
+                m.Set?.Remove(p);
+                if (m.Target != p) continue;
+                if (m.Order == LeashOrder.Attack) PickTarget(m);
+                else ReleaseClaim(m);
+            }
+        }
+
+        // ---- the keeper: the Angler always leads at least one creature (the designer, 2026-10-16; ANGLER.md §1b) ----
+
+        const float KeeperRetrySeconds = 1f;
+
+        /// <summary>
+        /// With the school empty, one creature is born behind the hull, already tamed (the lab's <c>ensureKeeper</c>). The
+        /// species is the cell's own first leashable herbivore, else <see cref="AnglerConfigSO.CompanionFauna"/>; it is born
+        /// through the platform's one fauna spawn seam (<see cref="CellLifeSpawnerBase.SpawnFaunaWithDomain"/>: the
+        /// lineage bind, the replication seam, the bloom) in the cell's controlling colour, the only colour fauna spawn
+        /// in. A replicated species is born only where the ecology is simulated. The school's first creature is then its
+        /// keeper and does not starve (<see cref="Sustains"/>).
+        /// </summary>
+        void EnsureKeeper()
+        {
+            if (_tamed.Count > 0 || Time.time < _keeperRetryAt) return;
+            _keeperRetryAt = Time.time + KeeperRetrySeconds;
+            var t = _status.Transform;
+            var cell = NearestCell(t.position);
+            if (!cell) return;
+            var cfg = KeeperSpecies(cell);
+            if (!cfg) return;
+            if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return;   // a client never originates a replicated species
+
+            Vector3 at = AnglerCommandMath.FormationSlot(0, t.position, t.forward, t.right, t.up, config.FormBack);
+            if (cell.FaunaExclusionRadius > 0f || cell.FaunaContainmentRadius > 0f) at = cell.ClampToFaunaContainment(at, at);
+            var f = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab, at, cell.ControllingDomain, at, cfg);
+            if (!f || !f.TryLeash(this)) return;   // born wild: an ordinary creature of the cell from here on
+            var m = new Member { Creature = f, Species = SpeciesOf(f), Phase = f.GetInstanceID() * 0.137f };
+            _members[f] = m;
+            JoinSchool(m);
+        }
+
+        FaunaConfigurationSO KeeperSpecies(Cell cell)
+        {
+            var profile = cell.Config ? cell.Config.SpawnProfile : null;
+            if (profile)
+                for (int i = 0; i < profile.SupportedFaunas.Count; i++)
+                {
+                    var c = profile.SupportedFaunas[i];
+                    if (c && c.FaunaPrefab && c.FaunaPrefab.Leashable) return c;
+                }
+            return config.CompanionFauna && config.CompanionFauna.FaunaPrefab && config.CompanionFauna.FaunaPrefab.Leashable
+                ? config.CompanionFauna : null;
+        }
+
+        static Cell NearestCell(Vector3 at)
+        {
+            Cell best = null;
+            float bd = float.PositiveInfinity;
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                var c = cells[i];
+                if (!c) continue;
+                float d = (c.transform.position - at).sqrMagnitude;
+                if (d < bd) { bd = d; best = c; }
+            }
+            return best;
+        }
+
+        /// <summary>The keeper: the school's first creature (the one exception to starvation, <see cref="IFaunaLeash.Sustains"/>).</summary>
+        public bool Sustains(Fauna creature) => _tamed.Count > 0 && _tamed[0].Creature == creature;
 
         // ---- orders: an attacker moves on through its set, and comes home when the set is gone ----
 
@@ -676,6 +759,7 @@ namespace CosmicShore.Gameplay
                 _painted.RemoveAll(p => !p || p.destroyed);
                 _paintedSet.RemoveWhere(p => !p || p.destroyed);
             }
+            if (_ordered.Count > 0) _ordered.RemoveWhere(p => !p || p.destroyed);   // eaten: its lit mark goes with it
             if (_species.Count > 0 && _squad >= _species.Count) _squad = -1;
         }
 
@@ -689,8 +773,10 @@ namespace CosmicShore.Gameplay
             _slipped.Clear();
             _claims.Clear();
             for (int i = 0; i < _painted.Count; i++) Unlight(_painted[i], markFade);
+            foreach (var p in _ordered) Unlight(p, markFade);
             _painted.Clear();
             _paintedSet.Clear();
+            _ordered.Clear();
         }
 
         /// <summary>Only the pilot sees the paint (the marks are the pilot's instrument, and a rival's would be noise).</summary>
