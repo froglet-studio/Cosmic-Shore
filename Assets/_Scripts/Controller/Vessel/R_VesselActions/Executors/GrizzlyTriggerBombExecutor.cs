@@ -28,10 +28,9 @@ namespace CosmicShore.Gameplay
     /// spent, the bomb's visible size and the blast's size together (config
     /// <see cref="GrizzlyTriggerBombConfigSO"/>). Every detonation is spawned with
     /// <c>AffectSelfOverride = false</c> - the blast spares the pilot's own domain, so their own
-    /// trail survives it - and the executor LAUNCHES a Grizzly inside its own blast AWAY FROM THE
-    /// BOMB itself (<see cref="LaunchSelf"/>), strongest at the bomb and easing toward the edge.
-    /// (The charged cannon's self-launch, through <see cref="VesselImpulseByExplosionEffectSO"/>,
-    /// steers by the nose instead; the bombs were asked to push you away from them, 2026-10-08.)
+    /// trail survives it - and the executor LAUNCHES a Grizzly inside its own blast FORWARD, along
+    /// its heading (<see cref="LaunchSelf"/>), strongest at the bomb and easing toward the edge,
+    /// as momentum that lasts long enough to chain the next bomb (design ask, 2026-10-16).
     ///
     /// <para><b>Every peer simulates.</b> Presses and releases reach this executor on every
     /// peer (owner -> server -> all, <c>R_VesselActionHandler</c>), exactly as the cannon's do,
@@ -458,16 +457,23 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Throws the pilot AWAY from their own bomb when the blast catches them: direction is
-        /// bomb -> hull, so a bomb left behind you throws you forward, one beside you throws you
-        /// sideways, and one ahead of you stops you dead. Strength is the blast's own impulse
-        /// (<c>scale / ExplosionDuration</c>, the AOE's <c>Impulse</c>) times
-        /// <c>selfLaunchMultiplier</c>, full at the bomb and eased to <c>selfLaunchEdgeStrength</c>
-        /// at the blast's edge (radius = half its scale - the AOE sphere's collider radius is 0.5),
-        /// and nothing outside it. It rides <c>VesselTransformer.ModifyVelocity</c> with its own
-        /// ceiling, <c>selfLaunchCeiling</c> (300 u/s): the launch was asked to throw three times
-        /// as hard as the shared 100 u/s cap every other shove sits under, and raising the cap
-        /// only for the launch's own lifetime keeps every knock-back the Grizzly takes where it was.
+        /// Throws the pilot FORWARD, along their own heading, when their bomb's blast catches them
+        /// (design ask, 2026-10-16: "push the ship in whatever direction it's heading"). Where the
+        /// bomb sits only decides WHETHER and HOW HARD - inside the blast radius (half its scale -
+        /// the AOE sphere's collider radius is 0.5), full at the bomb and eased to
+        /// <c>selfLaunchEdgeStrength</c> at the edge - never which way. Strength is the blast's own
+        /// impulse (<c>scale / ExplosionDuration</c>, the AOE's <c>Impulse</c>) times
+        /// <c>selfLaunchMultiplier</c>, capped at <c>selfLaunchCeiling</c> u/s over cruise.
+        ///
+        /// <para><b>It is MOMENTUM, not a shove.</b> The launch rides
+        /// <c>VesselTransformer.ModifyThrottle</c>: a throttle multiplier on the hull's own speed,
+        /// so it follows the nose through every turn, and it eases back to cruise over
+        /// <c>selfLaunchSeconds</c> - long enough that the next bomb can be charged, fired and blown
+        /// before the speed is gone. Launches stack, up to the transformer's own speed-modifier cap,
+        /// so chaining blasts is how a Grizzly climbs to top speed (the flow the bombs are for). The
+        /// first version was a 1 s <c>ModifyVelocity</c> along bomb -> hull: it pushed sideways or
+        /// backwards when the bomb was not behind you, and the speed was gone before the next bomb
+        /// was ready, which read as "charging slows me down".</para>
         ///
         /// <para>Applied on the SIMULATING machine only (the owner, or the server for an AI): the
         /// hull's transform is what replicates, and a peer pushing its copy of someone else's
@@ -481,12 +487,9 @@ namespace CosmicShore.Gameplay
             if (!hull || !transformer || blastSeconds <= 0f) return;
 
             float radius = blastScale * 0.5f;
-            Vector3 away = hull.position - blastPos;
-            float distance = away.magnitude;
+            float distance = Vector3.Distance(hull.position, blastPos);
             if (distance > radius) return;
 
-            // Sitting on the bomb has no "away"; the one direction the pilot controls stands in.
-            Vector3 direction = distance > 0.01f ? away / distance : hull.forward;
             float falloff = Mathf.Lerp(1f, config.SelfLaunchEdgeStrength, radius > 0f ? distance / radius : 0f);
             float speed = blastScale / blastSeconds * config.SelfLaunchMultiplier * falloff;
 
@@ -499,7 +502,10 @@ namespace CosmicShore.Gameplay
                     registry.Get<GrizzlyDigInActionExecutor>()?.ReapplyRegen();
             }
 
-            transformer.ModifyVelocity(direction * speed, config.SelfLaunchSeconds, false, config.SelfLaunchCeiling);
+            // Speed over cruise, as a multiplier on the hull's own throttle: the nose steers it.
+            float cruise = Mathf.Max(1f, transformer.CruiseSpeed);
+            float added = Mathf.Min(speed, config.SelfLaunchCeiling);
+            transformer.ModifyThrottle(1f + added / cruise, config.SelfLaunchSeconds);
         }
 
         /// <summary>This trigger's bomb colour: the palette's DANGER signal colour

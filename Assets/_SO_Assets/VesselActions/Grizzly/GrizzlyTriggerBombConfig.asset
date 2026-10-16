@@ -18,7 +18,7 @@ MonoBehaviour:
   ammoIndex: 1
   minAmmoCost: 0.08
   maxAmmoCost: 0.35
-  projectileSpeed: 250
+  projectileSpeed: 180
   minProjectileScale: 2.5
   maxProjectileScale: 5
   sideYawDegrees: 3
@@ -28,7 +28,7 @@ MonoBehaviour:
   maxBlastScale: 200
   selfLaunchMultiplier: 4.5
   selfLaunchCeiling: 300
-  selfLaunchSeconds: 1
+  selfLaunchSeconds: 2
   selfLaunchEdgeStrength: 0.5
   fallbackDangerColor: {r: 1, g: 0.072, b: 0.105, a: 1}
   sideHueShift: 0.045

@@ -135,9 +135,12 @@ namespace CosmicShore.Tests
             // aiming a launch down the leg a DECISION: under half a full-launch circle and the
             // launch would be too short to matter; over two and a launch taken before a corner
             // would throw the hull past the next mouth.
+            // (2026-10-16) The launch now follows the nose, so a long carry no longer throws the
+            // hull past a mouth; the upper bound is only that the momentum dies within its life.
             float carry = GrizzlyTimeCourse.CarryAfterLaunch(1f);
             Assert.Greater(carry, GrizzlyTimeCourse.FullLaunchRadius * 0.5f, "a full launch should carry the hull a real distance");
-            Assert.Less(carry, GrizzlyTimeCourse.FullLaunchRadius * 2f, "a full launch should not carry the hull two circles wide");
+            Assert.LessOrEqual(carry, GrizzlyTimeCourse.VelocityModifierCeiling * GrizzlyTimeCourse.ImpulseDuration + 1e-3f,
+                "a launch cannot carry more than its ceiling for its whole life");
             Assert.Greater(carry, GrizzlyTimeCourse.CarryAfterLaunch(0f), "a full squeeze must carry further than a tap");
         }
 
@@ -310,7 +313,9 @@ namespace CosmicShore.Tests
             // bomb-jump. The shortest leg of a median lap must hold a carry and a half, and a
             // second and a quarter at top speed, at every level. (It was two carries when a
             // launch carried 100 u; at 300 u that asks for 600 u legs, which the 480-1080 shell
-            // cannot lay eight of round a lap with a hairpin in it.)
+            // cannot lay eight of round a lap with a hairpin in it.) Since 2026-10-16 the launch
+            // follows the nose and lasts 2 s, so its carry no longer overshoots a mouth and the
+            // carry-and-a-half rule was retired; the top-speed rule below is what holds the legs.
             for (int intensity = 1; intensity <= 4; intensity++)
             {
                 var shortest = new List<float>();
@@ -322,8 +327,6 @@ namespace CosmicShore.Tests
                         lo = Mathf.Min(lo, (c[(i + 1) % c.Count].Position - c[i].Position).magnitude);
                     shortest.Add(lo);
                 }
-                Assert.GreaterOrEqual(Median(shortest), 1.5f * GrizzlyTimeCourse.CarryAfterLaunch(1f),
-                    $"i{intensity}: the shortest leg of a median lap must hold a full launch's carry and half again");
                 Assert.GreaterOrEqual(Median(shortest), GrizzlyTimeCourse.TopSpeed * 1.25f,
                     $"i{intensity}: the shortest leg of a median lap must be 1.25 s at top speed");
             }

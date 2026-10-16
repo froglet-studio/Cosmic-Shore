@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
         // strategy runs: a button held as the player switched devices, or released while the
         // window was unfocused (InputController skips unfocused frames), never sent its release,
         // so the ability (the Sparrow's boost on B / R, any held face-button ability) stayed on.
-        private bool prevButton1, prevButton2, prevButton3, prevFlip;
+        private bool prevButton1, prevButton2, prevButton3, prevFlip, prevLeftShoulder;
 
         private void EdgeFire(bool isPressed, ref bool prev, InputEvents evt)
         {
@@ -39,6 +39,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(false, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(false, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(false, ref prevFlip, InputEvents.FlipAction);
+            EdgeFire(false, ref prevLeftShoulder, InputEvents.IdleAction);
         }
 
         public override void Initialize(IInputStatus inputStatus)
@@ -133,6 +134,9 @@ namespace CosmicShore.Gameplay
             EdgeFire(Gamepad.current.buttonEast.isPressed, ref prevButton2, InputEvents.Button2Action);
             EdgeFire(Gamepad.current.buttonWest.isPressed, ref prevButton3, InputEvents.Button3Action);
             EdgeFire(Gamepad.current.rightShoulder.isPressed, ref prevFlip, InputEvents.FlipAction);
+            // The left shoulder raises IdleAction, which no shared mapping binds; a hull claims it
+            // through its gamepad override (the Grizzly cycles weapons on it).
+            EdgeFire(Gamepad.current.leftShoulder.isPressed, ref prevLeftShoulder, InputEvents.IdleAction);
 
             // Triggers - read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping

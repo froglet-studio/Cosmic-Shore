@@ -12,28 +12,28 @@ namespace CosmicShore.Gameplay
     /// <para><b>The Grizzly's speed is not its throttle.</b> It cruises at 50 u/s and turns at
     /// <c>50 x 0.1 + 90</c> = 95 deg/s - a 30 u circle, the tightest in the fleet. Everything
     /// past cruise comes from riding its own blasts: LT and RT each fire a bomb, a second pull
-    /// freezes it, the release detonates it, and a Grizzly inside its own blast is LAUNCHED AWAY
-    /// FROM THE BOMB (<c>GrizzlyTriggerBombExecutor.LaunchSelf</c>, GRIZZLY_TRIGGER_BOMBS.md) -
-    /// so the bomb is left BEHIND you and blown. A full squeeze's blast (scale 200) hands over
-    /// <c>200 / 1.2 s x 4.5</c> = 750 u/s at the bomb, eased 1.5 -> 0.5 over a second and clamped
-    /// by the launch's own 300 u/s ceiling (<c>selfLaunchCeiling</c> - three times the 100 u/s
-    /// every other shove shares, design ask 2026-10-08) - so a full launch sits ON that ceiling
-    /// for its whole second: 350 u/s, seven times cruise. That push is a WORLD-SPACE velocity
-    /// (<c>VesselTransformer.velocityShift</c>): it keeps going the way it was thrown, and the
-    /// turn rate does not see it at all.</para>
+    /// freezes it, the release detonates it, and a Grizzly inside its own blast is LAUNCHED FORWARD
+    /// along its heading (<c>GrizzlyTriggerBombExecutor.LaunchSelf</c>, GRIZZLY_TRIGGER_BOMBS.md,
+    /// design ask 2026-10-16). A full squeeze's blast (scale 200) hands over
+    /// <c>200 / 1.2 s x 4.5</c> = 750 u/s at the bomb, capped at 300 u/s over cruise
+    /// (<c>selfLaunchCeiling</c>) - 350 u/s, seven times cruise - and that MOMENTUM eases back to
+    /// cruise over <c>selfLaunchSeconds</c> (2 s, linear) so the next bomb can be charged before
+    /// it is gone. It rides the throttle (<c>VesselTransformer.ModifyThrottle</c>), so it follows
+    /// the nose through a turn, and the turn rate does not see it at all (it reads the smoothed
+    /// <c>speed</c>, not the multiplied output).</para>
     ///
     /// <para><b>So a corner is one question: how much launch is it worth?</b> Launching into a
     /// corner keeps the 350 u/s but the hull swings round at the same 95 deg/s, a 211 u circle;
-    /// coasting it lets the launch bleed off (a full one carries ~300 u the way it was thrown) and
+    /// coasting it lets the launch bleed off (a full one carries ~480 u over cruise before it is gone) and
     /// the hull pivots on its 30 u cruise circle - and then the next bomb has to be
     /// fired, frozen and ridden before the speed is back. <see cref="CornerRadiusAtLaunch"/> is
     /// the curve, the same shape <see cref="RedlineCourse.CornerRadiusAtBoost"/> is for the
     /// Manta's Soar.</para>
     ///
-    /// <para><b>The curve is the STEADY-STATE circle.</b> A launch's push keeps the direction it
-    /// was thrown in when the bomb went off, so a turn taken mid-launch slides a little wide of
-    /// <see cref="FullLaunchRadius"/>. The ladder keeps every demanding corner well inside the
-    /// full-launch circle, so the slide moves no corner across the line.</para>
+    /// <para><b>The curve is the STEADY-STATE circle.</b> Since 2026-10-16 the launch follows the
+    /// nose, so a turn taken mid-launch flies the circle the curve names; before that the push
+    /// kept the direction it was thrown in and slid a turn wide of
+    /// <see cref="FullLaunchRadius"/>.</para>
     ///
     /// <para><b>The cut followed the launch.</b> The course was first cut (2026-10-06) against a
     /// 100 u/s ceiling - 150 u/s top, a 90 u full-launch circle, fourteen gates on a 560 u ring.
@@ -68,17 +68,16 @@ namespace CosmicShore.Gameplay
         /// <summary>`selfLaunchMultiplier` on GrizzlyTriggerBombConfig.asset.</summary>
         public const float SelfLaunchMultiplier = 4.5f;
 
-        /// <summary>`selfLaunchSeconds` on GrizzlyTriggerBombConfig.asset - seconds a launch lives
-        /// (cosine ease-out).</summary>
-        public const float ImpulseDuration = 1f;
+        /// <summary>`selfLaunchSeconds` on GrizzlyTriggerBombConfig.asset - seconds a launch's
+        /// momentum takes to ease back to cruise (linear).</summary>
+        public const float ImpulseDuration = 2f;
 
-        /// <summary>`selfLaunchCeiling` on GrizzlyTriggerBombConfig.asset - the velocity ceiling a
-        /// live bomb launch raises the hull's to (every other shove stays under VesselTransformer's
-        /// shared 100 u/s).</summary>
+        /// <summary>`selfLaunchCeiling` on GrizzlyTriggerBombConfig.asset - the most speed one bomb
+        /// launch adds over cruise, u/s.</summary>
         public const float VelocityModifierCeiling = 300f;
 
-        /// <summary>Cruise turn rate, deg/s. A launch never changes it: `speed` is the throttle
-        /// speed, and the launch rides `velocityShift`, which the turn rate does not read.</summary>
+        /// <summary>Cruise turn rate, deg/s. A launch never changes it: the turn rate reads the
+        /// smoothed `speed`, and the launch is a throttle MULTIPLIER on the output only.</summary>
         public const float TurnRateDegPerSec =
             GrizzlyThrottleScaler * GrizzlyRotationThrottleScaler + GrizzlyTurnScaler;
 
@@ -86,14 +85,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The live weight of a launch <paramref name="age"/> seconds old - the exact factor
-        /// <c>VesselTransformer.ApplyVelocityModifiers</c> applies: <c>cos(pi t / d) / 2 + 1</c>,
-        /// 1.5 at birth easing to 0.5, and gone at <see cref="ImpulseDuration"/>. Its mean over
-        /// the launch's life is 1.
+        /// <c>VesselTransformer.ApplyThrottleModifiers</c> applies to a boost: <c>1 - t / d</c>,
+        /// 1 at birth easing linearly to 0 at <see cref="ImpulseDuration"/>.
         /// </summary>
         public static float ImpulseWeight(float age) =>
             age < 0f || age >= ImpulseDuration
                 ? 0f
-                : Mathf.Cos(age * Mathf.PI / ImpulseDuration) * 0.5f + 1f;
+                : 1f - age / ImpulseDuration;
 
         /// <summary>The impulse a bomb of size <paramref name="size01"/> hands the Grizzly that
         /// rides it, before the ease and the ceiling: <c>blast scale / ExplosionDuration x
@@ -146,11 +144,10 @@ namespace CosmicShore.Gameplay
             SpeedAtLaunch(FastestLaunchForCorner(radius));
 
         /// <summary>
-        /// How far one launch of size <paramref name="size01"/> carries the hull along the heading
-        /// it was aimed down, over its whole life, clamped by the ceiling as the transformer clamps
-        /// it, ridden at the bomb (the launch eases toward the blast's edge). ~300 u for a full
-        /// squeeze - about one and a half full-launch circles, which is why a launch is thrown DOWN
-        /// a leg and a corner is turned before the bomb goes off, not after.
+        /// How far one launch of size <paramref name="size01"/> carries the hull past cruise over
+        /// its whole life, clamped by the ceiling as the executor clamps it, ridden at the bomb
+        /// (the launch eases toward the blast's edge). ~480 u for a full squeeze. It follows the
+        /// nose (2026-10-16), so it is the distance the momentum lasts, not a straight throw.
         /// </summary>
         public static float CarryAfterLaunch(float size01 = 1f)
         {
@@ -216,8 +213,7 @@ namespace CosmicShore.Gameplay
         public const int GatesPerLap = 8;
 
         /// <summary>The circuit's base circle - Headlong's octagon at 800, mid-shell. Eight gates
-        /// leave 475-610 u legs: one full launch's carry (300 u) and a turn-in to spare on every
-        /// one.</summary>
+        /// leave 475-610 u legs, each at least 1.25 s at top speed.</summary>
         public const float BaseRadius = 800f;
     }
 }

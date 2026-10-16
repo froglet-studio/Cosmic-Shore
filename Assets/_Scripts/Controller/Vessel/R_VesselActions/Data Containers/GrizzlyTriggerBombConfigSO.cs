@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Projectile")]
         [SerializeField, Tooltip("Muzzle speed ADDED to the hull's own velocity, u/s. The bomb then CRUISES at that velocity - no drag, no range limit - until the trigger or another vessel freezes it, so it always leaves faster than the Grizzly that fired it.")]
-        float projectileSpeed = 250f;
+        float projectileSpeed = 180f;
         [SerializeField, Tooltip("Visible bomb scale of a minimum bomb. Small on purpose: a bomb is a little hot thing that becomes a huge blast (design ask, 2026-10-08).")]
         float minProjectileScale = 2.5f;
         [SerializeField, Tooltip("Visible bomb scale of a maximum bomb - still small; the glow halo (GrizzlyBombVisual) carries the read.")]
@@ -66,13 +66,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Blast scale of a maximum bomb (the cannon's full charge is 120). Reach is half the scale: 100 u.")]
         float maxBlastScale = 200f;
 
-        [Header("Self launch (away from the bomb)")]
-        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown AWAY FROM THE BOMB at blast scale / ExplosionDuration x this, capped by Self Launch Ceiling. 4.5 = three times the 1.5 it first shipped at (design ask, 2026-10-08).")]
+        [Header("Self launch (forward, along the heading)")]
+        [SerializeField, Tooltip("A Grizzly inside its own blast is thrown FORWARD along its own heading (2026-10-16) - the bomb's position only sets whether and how hard - at blast scale / ExplosionDuration x this over cruise, capped by Self Launch Ceiling. 4.5 = three times the 1.5 it first shipped at (design ask, 2026-10-08).")]
         float selfLaunchMultiplier = 4.5f;
-        [SerializeField, Tooltip("The velocity ceiling a bomb launch may reach, u/s. Every other shove a vessel takes shares VesselTransformer's 100 u/s cap; a live bomb launch raises it to this for its own lifetime only (ShipVelocityModifier.ceiling). 300 = three times the shared cap, which a full squeeze used to sit on.")]
+        [SerializeField, Tooltip("The most speed one bomb launch may ADD over cruise, u/s. The launch is a throttle multiplier (VesselTransformer.ModifyThrottle), so stacked launches are further capped by the transformer's speed-modifier cap (6x cruise).")]
         float selfLaunchCeiling = 300f;
-        [SerializeField, Tooltip("Seconds the launch lasts (cosine ease-out, VesselTransformer.ModifyVelocity).")]
-        float selfLaunchSeconds = 1f;
+        [SerializeField, Tooltip("Seconds the launch's momentum takes to ease back to cruise (linear, VesselTransformer.ModifyThrottle). Long enough to charge, fire and blow the next bomb before the speed is gone, so chained blasts keep the Grizzly at speed (design ask, 2026-10-16).")]
+        float selfLaunchSeconds = 2f;
         [SerializeField, Tooltip("Launch strength at the blast's EDGE as a fraction of the strength at the bomb. 1 = flat; lower rewards blowing it close.")]
         [Range(0f, 1f)] float selfLaunchEdgeStrength = 0.5f;
 

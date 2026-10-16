@@ -373,3 +373,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Jonathan (Grizzly design owner); Yash (offered)
 - **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md
+
+### T-20261016-3ba5 · open · test · Grizzly
+- **Task:** Playtest grizzly-v3 bombs on a pad: 180 u/s bombs, blasts launch along the nose and the speed carries ~2 s (chain LT/RT without slowing), X does nothing in Explosives mode, LB cycles weapons; then run GrizzlyTimeCourseTests + GrizzlyTriggerBombTests in the Test Runner
+- **Done when:** Bomb feel confirmed by the Grizzly driver and both edit-mode suites green in Unity
+- **Who can take it:** Grizzly driver (glory.jones1) or Yash
+- **Added:** 2026-10-16 by a Claude session (`grizzly-v3`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/GRIZZLY_TRIGGER_BOMBS.md

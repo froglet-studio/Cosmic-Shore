@@ -8,7 +8,7 @@ namespace CosmicShore.Data
         RightStickAction = 1,               // Lifting a trigger or lifing a thumb
         LeftStickAction = 2,                // Lifting a trigger or lifing a thumb
         FlipAction = 3,                     // Go to left landscape or right landscape or left bumper
-        IdleAction = 4,                     // Lift both thumbs or the right bumper
+        IdleAction = 4,                     // Lift both thumbs (touch) or the left bumper (gamepad)
         MinimumSpeedStraightAction = 5,     // Fly with minimum speed and straight
         Button1Action = 6,                  // X or Onscreen UI buttons
         Button2Action = 7,                  // A or Onscreen UI buttons
