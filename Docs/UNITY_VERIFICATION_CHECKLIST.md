@@ -10415,3 +10415,20 @@ them.
 3. **Arena:** the four games in one row of tall cards; title, tagline, hull chips, eyebrow and domain count readable and
    not overlapping on each; a press opens the configure window as before.
 4. **Pad:** D-pad moves across the five-wide grid and into the feature row; focus lands on a card when a window opens.
+
+## 🔴 2026-10-16 — Configure rev 3: cinema preview + step cards (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New `ConfigureCinema.cs`; `ModePreviewWindow.RequestFocus()` (additive). Checked offline: refcompile player OK, editor
+(the 3 known errors, 0 in changed files), gates, `author_menu_configure.py --check` / `--self-test`.
+
+1. **Open any Arcade card:** the live game fills the window behind the settings; Briefing top-left, Controls top-right,
+   the game visible between them; three glass cards along the bottom (01 Vessel, 02 Intensity + objective, 03 Pilots);
+   START bottom-right. Nothing overlaps at 1920 x 1080 or at 16:10 / 21:9. **Fail:** the preview blank/black once live,
+   text unreadable over a bright arena (scrims too weak), a card clipped.
+2. **Pad:** the window opens with focus on an intensity node (Arena: a hull), not on FLY or Back; D-pad reaches FLY;
+   A on FLY flies the vessel.
+3. **Flying:** tap the game (or FLY) - the cards, band and header fade away, "START or Esc to stop flying" + STOP appear;
+   START, Esc or STOP hand control back and the settings fade in. While flying, B does not close the window.
+4. **Arena:** the eight hulls in a 4 x 2 grid in card 01; Claim works. **Maelstrom:** the clip fills the window; pool list
+   readable in the right panel (names not overlapping the tier text); Format in card 03.
+5. **Cost:** with the Profiler open, the preview's render texture is at most 720 tall.

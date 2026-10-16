@@ -304,6 +304,13 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Ask for focus exactly as a tap on the surface does. For a separate "fly" control the pad
+        /// can reach: the rev-3 configure window draws this surface full-bleed BEHIND its settings,
+        /// where it cannot also be the first control in focus order.
+        /// </summary>
+        public void RequestFocus() => HandleFocusButton();
+
+        /// <summary>
         /// Grant focus. Called by the session once it has actually handed input to the vessel —
         /// the window never grants its own focus.
         /// </summary>

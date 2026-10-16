@@ -95,7 +95,7 @@ S = dict(
     lbpanel=script("WeeklyChallengeLeaderboardPanel"), lbmodal=script("WeeklyChallengeLeaderboardModal"),
     podium=script("LeaderboardPodiumSlot"), band=script("LeaderboardRewardBand"), node=script("KitIntensityNode"),
     dtile=script("KitDomainTile"), hull=script("KitHullTile"), close=script("ModalWindowCloseButton"),
-    modal=script("ArcadeGameConfigureModal"), audio=script("MenuAudio"),
+    modal=script("ArcadeGameConfigureModal"), audio=script("MenuAudio"), cinema=script("ConfigureCinema"),
     kt=K.kit_script("KitText"), th=K.kit_script("KitThemedGraphic"), button=K.kit_script("KitButton"),
     tile=K.kit_script("KitTile"), cover=K.kit_script("KitCoverImage"), entrance=K.kit_script("KitEntrance"),
     ambient=K.kit_script("KitAmbient"), spark=K.kit_script("KitSpark"), shake=K.kit_script("KitShake"),
@@ -377,9 +377,10 @@ def build_pool_row():
     image_node(root, "Fill", "Fill", STRETCH, "SurfaceDark", K.kit_sprite("kit_sliver10_fill"), sliced=True,
                alpha=0.55, layout=le(ignore=True))
     art_node(root, "Icon", "Icon", R((0, 0.5), None, (30, 0), (26, 26)), SQUIRREL_ICON, preserve=True)
-    label_e(root.child(N("Name", "Name", R((0, 0.5), None, (58, 0), (420, 24), (0, 0.5)))), "Mode", "Body", "TextLight",
-            align="left")
-    label_e(root.child(N("Detail", "Detail", R((1, 0.5), None, (-20, 0), (320, 18), (1, 0.5)))), "TIER 1  -  HULL",
+    # Rev 3: the pool lives in a 560-wide glass panel, so the name stretches and the detail keeps 190.
+    label_e(root.child(N("Name", "Name", R((0, 0.5), (1, 0.5), ((58 - 220) / 2, 0), (-(58 + 220), 24)))), "Mode", "Body",
+            "TextLight", align="left")
+    label_e(root.child(N("Detail", "Detail", R((1, 0.5), None, (-20, 0), (190, 18), (1, 0.5)))), "TIER 1  -  HULL",
             "Label", "NeutralLightest", align="right")
     root.add("entry", 114, lambda ctx, go: mono(go, S["pool_entry"],
              f"  icon: {ref(ctx.c('Icon', 'img'))}\n"
@@ -578,25 +579,47 @@ def build_hull_tile():
 # The views - ConfigureView / ConfigureArenaView / ConfigureMaelstromView
 # --------------------------------------------------------------------------------------------
 
-LEFT_TOP, COL_H = 196, 844           # both columns run from y 196 to y 1040 at 1080
-PREVIEW_H, OBJECTIVE_H = 506, 64
-PANEL_W = 900
-NODE_X = (200, 374, 548, 722)       # intensity node lefts inside the tree panel
-COL_X = (200, 432, 664)             # domain column lefts
-ROW_Y = (30, 228, 426)              # the three step rows
-FOOT_Y = 720
+LEFT_TOP, COL_H = 196, 844           # the leaderboard's columns run from y 196 to y 1040 at 1080
+# Rev 3 (the owner's "interesting option", 2026-10-16): option A's full live preview under option B's
+# three step cards (Docs/MENU_REDESIGN_B.md section 33). At the 1920 x 1080 reference:
+#   y   84 - 1080  the preview, full-bleed under the nav, BEHIND everything
+#   y  200 -  500  the cinema band: Briefing glass on the left, the game showing through the middle
+#                  (status, "+1", Tap to fly / FLY), Controls (Maelstrom: the pool) glass on the right
+#   y  540 -  980  three step cards: 01 Vessel, 02 Intensity (+ objective), 03 Pilots (+ AI)
+#   y  992 - 1052  the launch row: status, summary chips, START
+# While the player flies the preview, ConfigureCinema fades every one of those out (the Chrome node).
+MARGIN = 60
+BAND_TOP, BAND_H = 200, 300
+BRIEF_W, SIDE_W = 620, 560
+CARD_TOP, CARD_H, CARD_GAP, PAD = 540, 440, 20, 22
+FOOT_TOP = 992
+BODY_TOP = 128                       # a card's body starts under its numeral, caption and hint
+CARDS = {"arcade": (400, 680, 680), "arena": (400, 680, 680), "maelstrom": (680, 680, 400)}
+NODE_GAP = (680 - 2 * PAD - 4 * NODE_W) // 3
+COL_GAP = (680 - 2 * PAD - 3 * COL_W) // 2
+BAND_MID = (MARGIN + BRIEF_W + 1920 - MARGIN - SIDE_W) // 2 - 960   # the band's open middle, from centre
 EYEBROW = {"arcade": "Arcade", "arena": "Arena", "maelstrom": "Arcade - Maelstrom"}
 PANEL_CLASS = {"arcade": "minigame", "arena": "arena", "maelstrom": "maelstrom"}
 VIEW_NAME = {"arcade": "ConfigureView", "arena": "ConfigureArenaView", "maelstrom": "ConfigureMaelstromView"}
 HULL_SLOTS = 8
 
 
+
+
 def frame(parent, key, sliver=14, fill="SurfaceVeryDark", border="SurfaceDark", fill_alpha=1.0):
     H.framed(parent, key, sliver, fill, border, fill_alpha=fill_alpha)
 
 
-def header(root, kind):
-    hd = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
+def glass(parent, key, name, r, stagger):
+    """A rev-3 glass panel over the preview: 82 % fill (the game reads through), border, entrance."""
+    n = parent.child(N(key, name, r))
+    n.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=stagger))
+    frame(n, f"{key}/Frame", 14, fill_alpha=0.82)
+    return n
+
+
+def header(parent, kind):
+    hd = parent.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
     hd.add("in", 114, M.entrance("Rise", distance=10)).add("cg", 225, canvas_group(True))
     label(hd.child(N("Header/Eyebrow", "Eyebrow", TL(0, 0, 600, 18))), EYEBROW[kind], "Label", "NeutralLightest")
     row = hd.child(N("Header/TitleRow", "TitleRow", TL(0, 20, 1100, 46)))
@@ -626,56 +649,56 @@ def header(root, kind):
     return back
 
 
-def preview_window(left, kind):
-    """The live arena (ModePreviewWindow) or, for Maelstrom, the clip (ModeVideoView)."""
-    pv = left.child(N("Preview", "Preview", R((0, 1), (1, 1), (0, 0), (0, PREVIEW_H), (0.5, 1))))
+
+def preview_window(root, kind):
+    """The live arena (ModePreviewWindow) or, for Maelstrom, the clip (ModeVideoView), FULL-BLEED under
+    the nav and behind every setting (rev 3). Its tap-to-fly surface is navigation None: drawn first,
+    it would otherwise be the control the pad lands on when the window opens; the pad flies through
+    the FLY button in the band instead (ModePreviewWindow.RequestFocus)."""
+    pv = root.child(N("Preview", "Preview", R((0, 0), (1, 1), (0, -42), (0, -84))))
     # No entrance on the preview: the window opens by a CanvasGroup fade, and a rise that started
-    # under it could leave the preview at alpha 0 - the frame, the live arena and the tap-to-play
-    # target all invisible. The preview is the window's main feature; it is simply always there.
+    # under it could leave the preview at alpha 0. The preview is the window; it is simply there.
     pv.add("cg", 225, canvas_group(True))
-    frame(pv, "Preview/Frame", 14, "SurfaceBlack", "SurfaceDark")
-    surf = pv.child(N("Preview/Surface", "Surface", R((0, 0), (1, 1), (0, 0), (-4, -4))))
+    surf = pv.child(N("Preview/Surface", "Surface", STRETCH))
     surf.add("cr", 222, K.canvas_renderer()).add("raw", 114, raw_image(enabled=False))
-    strip = pv.child(N("Preview/Strip", "Strip", R((0, 0), (1, 0), (0, 2), (-4, 52), (0.5, 0))))
-    strip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.6))) \
-        .add("th", 114, themed("SurfaceBlack", 0.6))
+    # Scrims: the briefing reads on the left, the cards on the bottom; the middle of the band stays clear.
+    image_node(pv, "Preview/ScrimLeft", "ScrimLeft", R((0, 0), (0, 1), (0, 0), (980, 0), (0, 0.5)), "SurfaceBlack",
+               K.kit_sprite("kit_fade_h"), alpha=0.75)
+    image_node(pv, "Preview/ScrimBottom", "ScrimBottom", R((0, 0), (1, 0), (0, 0), (0, 640), (0.5, 0)), "SurfaceBlack",
+               K.kit_sprite("kit_fade_v"), alpha=0.9)
+    mid = R((0.5, 1), None, (BAND_MID, -(BAND_TOP + BAND_H // 2 - 84)), (600, 60))
     if kind == "maelstrom":
-        label(strip.child(N("Preview/Strip/Hint", "Hint", R((0, 0.5), None, (20, 0), (300, 18), (0, 0.5)))), "Clip",
-              "Label", "TextLight")
-        na = pv.child(N("Preview/Unavailable", "Unavailable", R((0.5, 0.5), None, (0, 0), (600, 60))))
+        na = pv.child(N("Preview/Unavailable", "Unavailable", mid))
         label(na, "No clip for this card yet.", "Body", "NeutralLightest", align="center")
         na.active = False
         pv.add("video", 114, lambda ctx, go: mono(go, S["video"],
                f"  surface: {ref(ctx.c('Preview/Surface', 'raw'))}\n"
                f"  unavailableLabel: {ref(ctx.go('Preview/Unavailable'))}\n"
-               "  loop: 1\n  playAudio: 0\n  textureHeight: 360\n"))
+               "  loop: 1\n  playAudio: 0\n  textureHeight: 720\n"))
         pv.add("vp", 328, video_player)
         return pv
-    hint = strip.child(N("Preview/Strip/Hint", "FocusHint", R((0, 0.5), None, (20, 0), (300, 18), (0, 0.5))))
-    hint.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.45))
-    label(hint, "Tap to fly", "Label", "TextLight")
-    vname = strip.child(N("Preview/Strip/Vessel", "Vessel", R((1, 0.5), None, (-20, 0), (300, 18), (1, 0.5))))
-    label(vname, "Squirrel", "Label", "NeutralLightest", align="right")
-    status = pv.child(N("Preview/Status", "Status", R((0.5, 0.5), None, (0, 26), (600, 60))))
+    status = pv.child(N("Preview/Status", "Status", mid))
     status.add("cr", 222, K.canvas_renderer()) \
         .add("tmp", 114, text("LOADING PREVIEW...", "Label", tok("NeutralLightest"), align="center", wrap=True)) \
         .add("kt", 114, K.kit_text("Label", "NeutralLightest"))
-    focus = pv.child(N("Preview/Focus", "Focus", R((0, 0), (1, 1), (0, 0), (-4, -4))))
+    focus = pv.child(N("Preview/Focus", "Focus", STRETCH))
     focus.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-        .add("button", 114, plain_button(c("Preview/Focus", "img")))
-    toast = pv.child(N("Preview/Toast", "Toast", TR(24, 24, 120, 44)))
+        .add("button", 114, plain_button(c("Preview/Focus", "img"), nav=0))
+    toast = pv.child(N("Preview/Toast", "Toast", R((0.5, 1), None, (BAND_MID, -(BAND_TOP - 84 + 40)), (120, 44))))
     toast.active = False
     toast.add("cg", 225, canvas_group(True))
     art_node(toast, "Preview/Toast/Icon", "Icon", R((0, 0.5), None, (18, 0), (28, 28)), None, preserve=True)
     tl = toast.child(N("Preview/Toast/Label", "Label", R((0, 0.5), None, (40, 0), (80, 30), (0, 0.5))))
     tl.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("+1", "Data", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("Data", "TextLight", driven=True))
+    # A full-window surface measured at the display's height would render a full-HD frame with MSAA
+    # under a window that is mostly settings; 720 keeps the cost of the old 625 px frame.
     pv.add("window", 114, lambda ctx, go: mono(go, S["preview"],
            f"  surface: {ref(ctx.c('Preview/Surface', 'raw'))}\n"
            f"  statusLabel: {ref(ctx.c('Preview/Status', 'tmp'))}\n"
            f"  focusButton: {ref(ctx.c('Preview/Focus', 'button'))}\n"
-           f"  focusHint: {ref(ctx.go('Preview/Strip/Hint'))}\n"
-           "  renderHeight: 360\n  maxRenderHeight: 1080\n"))
+           f"  focusHint: {ref(ctx.go('Fly/Hint'))}\n"
+           "  renderHeight: 360\n  maxRenderHeight: 720\n"))
     # The "+1" toast's component lives ON THE TOAST: PreviewMicroToast shows and hides by
     # SetActive on its own GameObject, and on the Preview node every card open (which hides the
     # toast) switched off the whole preview - frame, live arena and tap-to-play target.
@@ -685,6 +708,67 @@ def preview_window(left, kind):
            f"  icon: {ref(ctx.c('Preview/Toast/Icon', 'img'))}\n"
            "  holdSeconds: 0.8\n  fadeSeconds: 0.4\n  popScale: 1.3\n"))
     return pv
+
+
+def text_button(parent, key, name, caption, preview_call, nav=3):
+    """A small style-B KitButton whose click calls ModePreviewWindow.<preview_call> on this view's
+    preview (FLY: RequestFocus, STOP: ReleaseFocus). Laid out by its parent's HLG."""
+    w = 16 + K.label_width(caption, "ButtonSmall") + 16
+    b = parent.child(N(key, name, R((0, 0.5), None, (0, 0), (w, 40), (0, 0.5))))
+    b.add("le", 114, le(pw=w, ph=40))
+    ring_node(b, f"{key}/FocusRing", 10)
+    border, fillc, content = K.button_palette("Default", False)
+    f = b.child(N(f"{key}/Fill", "Fill", STRETCH))
+    f.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+    bd = b.child(N(f"{key}/Border", "Border", STRETCH))
+    bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    lab = b.child(N(f"{key}/Label", "Label", STRETCH))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption, "ButtonSmall", content, align="center")) \
+        .add("kt", 114, K.kit_text("ButtonSmall", driven=True))
+    b.add("audio", 114, A.menu_audio(2))
+    b.add("button", 114, lambda ctx, go: mono(go, S["button"],
+          K.SELECTABLE_FIELDS.replace("    m_Mode: 3\n", f"    m_Mode: {nav}\n")
+          + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n"
+          + A.calls([(ctx.c("Preview", "window"), "CosmicShore.UI.ModePreviewWindow", preview_call),
+                     (ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])
+          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{key}/FocusRing', 'img'))}\n"
+          "  variant: 0\n  fill: 0\n"
+          f"  fillGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n  borderGraphic: {ref(ctx.c(f'{key}/Border', 'img'))}\n"
+          + refs("contentGraphics", [ctx.c(f"{key}/Label", "tmp")]) + "  playGradient: {fileID: 0}\n"))
+    return b
+
+
+def fly_row(chrome):
+    """Tap to fly / FLY / vessel, in the open middle of the band. FLY is the pad's way into the
+    full-bleed preview: a KitButton calling ModePreviewWindow.RequestFocus, the same request a tap
+    on the surface makes."""
+    row = chrome.child(N("Fly", "Fly", R((0.5, 1), None, (BAND_MID, -(BAND_TOP + BAND_H - 56)), (600, 44))))
+    row.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=4))
+    row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0)))
+    hint = row.child(N("Fly/Hint", "FocusHint", R((0, 0.5), None, (0, 0), (180, 18), (0, 0.5))))
+    hint.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.45)) \
+        .add("le", 114, le(pw=180, ph=18))
+    label(hint, "Tap to fly", "Label", "TextLight", align="right")
+    text_button(row, "Fly/Button", "FlyButton", "FLY", "RequestFocus")
+    vname = row.child(N("Fly/Vessel", "Vessel", R((0, 0.5), None, (0, 0), (180, 18), (0, 0.5))))
+    vname.add("le", 114, le(pw=180, ph=18))
+    label(vname, "Squirrel", "Label", "NeutralLightest")
+    return row
+
+
+def flying_hint(root):
+    """Shown only while the player flies the preview (ConfigureCinema): how to hand control back.
+    STOP is for touch, which has neither START nor Esc - and a full-bleed preview leaves almost no
+    "outside" to tap (ModePreviewWindow releases on a press outside its surface). Navigation None:
+    the pad's way back is START."""
+    n = root.child(N("FlyingHint", "FlyingHint", R((0.5, 1), None, (0, -112), (700, 40))))
+    n.add("cg", 225, canvas_group(False))
+    n.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0)))
+    t = n.child(N("FlyingHint/Text", "Text", R((0, 0.5), None, (0, 0), (300, 18), (0, 0.5))))
+    t.add("le", 114, le(pw=300, ph=18))
+    label(t, "START or Esc to stop flying", "Label", "TextLight", align="right")
+    text_button(n, "FlyingHint/Stop", "StopButton", "STOP", "ReleaseFocus", nav=0)
+    return n
 
 
 def video_player(ctx, go):
@@ -701,16 +785,17 @@ def video_player(ctx, go):
             "  m_Looping: 0\n  m_WaitForFirstFrame: 1\n  m_FrameReadyEventEnabled: 0\n  m_VideoShaders: []\n")
 
 
-def objective_bar(left):
-    ob = left.child(N("Objective", "Objective", R((0, 1), (1, 1), (0, -(PREVIEW_H + 20)), (0, OBJECTIVE_H), (0.5, 1))))
+
+def objective_bar(parent, r):
+    ob = parent.child(N("Objective", "Objective", r))
     ob.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
-    frame(ob, "Objective/Frame", 14)
+    frame(ob, "Objective/Frame", 14, "SurfaceBlack", "SurfaceDark", fill_alpha=0.6)
     ic = image_node(ob, "Objective/Icon", "Icon", R((0, 0.5), None, (32, 0), (22, 22)), "TextLight",
                     K.kit_sprite("kit_hex_line2"), preserve=True)
     ic.comps = [x for x in ic.comps if x[0] != "th"]
     label(ob.child(N("Objective/Label", "Label", R((0, 0.5), None, (56, 0), (140, 18), (0, 0.5)))), "Objective", "Label",
           "NeutralLightest")
-    label_e(ob.child(N("Objective/Text", "Text", R((0, 0.5), (1, 0.5), ((196 - 80) / 2, 0), (-(196 + 80), 24)))),
+    label_e(ob.child(N("Objective/Text", "Text", R((0, 0.5), (1, 0.5), ((156 - 80) / 2, 0), (-(156 + 80), 24)))),
             "Fly around. Get a feel for it.", "Body", "TextLight", align="left")
     cnt = ob.child(N("Objective/Count", "Count", R((1, 0.5), None, (-24, 0), (60, 26), (1, 0.5))))
     cnt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("ControlActive"), align="right")) \
@@ -723,20 +808,10 @@ def objective_bar(left):
     return ob
 
 
-def lower_block(left, key, name, title, top, height, half, stagger):
-    """One of the two lower panels: Briefing (left half) / Controls or Format (right half)."""
-    x, w = (-5, -10) if half == 0 else (5, -10)
-    amin, amax = ((0, 1), (0.5, 1)) if half == 0 else ((0.5, 1), (1, 1))
-    n = left.child(N(key, name, R(amin, amax, (x, -top), (w, height), (0.5, 1))))
-    n.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=stagger))
-    frame(n, f"{key}/Frame", 14)
-    section_label(n, f"{key}/Title", "Title", title, TL(22, 22, 200, 18))
-    return n
-
-
-def briefing(left, top, height):
-    b = lower_block(left, "Briefing", "Briefing", "Briefing", top, height, 0, 2)
-    body = b.child(N("Briefing/Body", "Body", R((0, 0), (1, 1), (0, -18), (-44, -80))))
+def briefing(chrome):
+    b = glass(chrome, "Briefing", "Briefing", TL(MARGIN, BAND_TOP, BRIEF_W, BAND_H), 2)
+    section_label(b, "Briefing/Title", "Title", "Briefing", TL(PAD, PAD, 200, 18), token="ControlActive")
+    body = b.child(N("Briefing/Body", "Body", R((0, 0), (1, 1), (0, -18), (-2 * PAD, -80))))
     body.add("cr", 222, K.canvas_renderer()) \
         .add("tmp", 114, text("Find the fastest path to the crystal.", "Body", tok("TextLight"), valign="top", wrap=True)) \
         .add("kt", 114, K.kit_text("Body", "TextLight"))
@@ -746,11 +821,12 @@ def briefing(left, top, height):
     return b
 
 
-def controls(left, top, height):
-    cb = lower_block(left, "Controls", "Controls", "Controls", top, height, 1, 3)
-    label(cb.child(N("Controls/Vessel", "Vessel", TR(22, 22, 200, 18))), "Squirrel", "Label", "NeutralLightest",
+def controls(chrome):
+    cb = glass(chrome, "Controls", "Controls", TR(MARGIN, BAND_TOP, SIDE_W, BAND_H), 3)
+    section_label(cb, "Controls/Title", "Title", "Controls", TL(PAD, PAD, 200, 18))
+    label(cb.child(N("Controls/Vessel", "Vessel", TR(PAD, PAD, 200, 18))), "Squirrel", "Label", "NeutralLightest",
           align="right")
-    sc = cb.child(N("Controls/Scroll", "Scroll", R((0, 0), (1, 1), (0, -14), (-44, -76))))
+    sc = cb.child(N("Controls/Scroll", "Scroll", R((0, 0), (1, 1), (0, -14), (-2 * PAD, -76))))
     sc.add("scroll", 114, A.scroll_rect("Controls/Scroll/Viewport/Content", "Controls/Scroll/Viewport", 20))
     vp = sc.child(N("Controls/Scroll/Viewport", "Viewport", STRETCH))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
@@ -775,31 +851,38 @@ FORMAT_ROWS = (("First to", "WinTarget", "6 points"), ("Games", "GameCap", "up t
                ("Points by place", "Points", "2 / 1 / 0"), ("Seats", "Seats", "4"))
 
 
-def format_block(left, top, height):
-    fb = lower_block(left, "Format", "Format", "Format", top, height, 1, 3)
+def format_card(steps, x, w):
+    fb = steps.child(N("Format", "Format", TL(x, 0, w, CARD_H)))
+    fb.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
+    frame(fb, "Format/Frame", 14, fill_alpha=0.82)
+    M.spark_line(fb, "Format/Edge", "Edge", TL(14, 0, w - 28, 2), grow_delay=0.45)
+    section_label(fb, "Format/Title", "Title", "Format", TL(PAD, 34, 200, 18))
     for i, (cap, key, value) in enumerate(FORMAT_ROWS):
-        y = 52 + i * 41
-        row = fb.child(N(f"Format/{key}", key, R((0, 1), (1, 1), (0, -y), (-44, 40), (0.5, 1))))
+        row = fb.child(N(f"Format/{key}", key, R((0, 1), (1, 1), (0, -(BODY_TOP + i * 52)), (-2 * PAD, 48), (0.5, 1))))
         label(row.child(N(f"Format/{key}/Caption", "Caption", STRETCH)), cap, "Body", "NeutralLightest")
         label(row.child(N(f"Format/{key}/Value", "Value", STRETCH)), value, "Data", "TextLight", align="right")
         image_node(row, f"Format/{key}/Rule", "Rule", R((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)), "SurfaceDark")
     return fb
 
 
-def gutter(panel, i, num, caption, value_key, value, hint):
-    y = ROW_Y[i]
-    g = panel.child(N(f"Step{i + 1}", f"Step{i + 1}", TL(30, y, 150, 190)))
-    g.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=i))
-    label(g.child(N(f"Step{i + 1}/Num", "Num", TL(0, 0, 120, 54))), num, "Display", "SurfaceLight")
-    label(g.child(N(f"Step{i + 1}/Caption", "Caption", TL(0, 56, 150, 18))), caption, "Label", "TextLight")
-    label(g.child(N(f"Step{i + 1}/Value", value_key, TL(0, 78, 150, 24))), value, "Body", "TextLight")
-    label(g.child(N(f"Step{i + 1}/Hint", "Hint", TL(0, 106, 150, 66))), hint, "BodySmall", "NeutralLightest",
+def step_card(steps, i, x, w, num, caption, value, hint):
+    """One rev-3 step card (option B's quest-view rhythm): numeral, caption, the live value on the right,
+    a one-line hint, then the step's own controls from BODY_TOP. A spark runs along its top edge."""
+    key = f"Step{i + 1}"
+    card = steps.child(N(key, key, TL(x, 0, w, CARD_H)))
+    card.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=i))
+    frame(card, f"{key}/Frame", 14, fill_alpha=0.82)
+    M.spark_line(card, f"{key}/Edge", "Edge", TL(14, 0, w - 28, 2), grow_delay=0.15 * (i + 1))
+    label(card.child(N(f"{key}/Num", "Num", TL(PAD, 14, 90, 54))), num, "Display", "SurfaceLight")
+    label(card.child(N(f"{key}/Caption", "Caption", TL(PAD + 92, 34, 240, 18))), caption, "Label", "TextLight")
+    label(card.child(N(f"{key}/Value", "Value", TR(PAD, 30, 220, 24))), value, "Body", "TextLight", align="right")
+    label(card.child(N(f"{key}/Hint", "Hint", TL(PAD, 78, w - 2 * PAD, 40))), hint, "BodySmall", "NeutralLightest",
           valign="top", wrap=True)
-    return g
+    return card
 
 
-def vessel_row(panel):
-    vn = panel.child(N("VesselNode", "VesselNode", TL(NODE_X[0], ROW_Y[0], NODE_W, NODE_H)))
+def vessel_body(card, w):
+    vn = card.child(N("VesselNode", "VesselNode", TL(PAD, BODY_TOP, NODE_W, NODE_H)))
     vn.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Pop", stagger=1))
     frame(vn, "VesselNode/Frame", 14, "SurfaceDark", "TextLight")
     vn.children[-1].comps = [(k, cid, b) if k != "img" else
@@ -814,51 +897,42 @@ def vessel_row(panel):
         .add("amb", 114, M.ambient("Float", period=3.6, amplitude=6))
     label(vn.child(N("VesselNode/Caption", "Caption", R((0, 0), (1, 0), (0, 14), (-16, 18), (0.5, 0)))), "Squirrel",
           "Label", "TextLight", align="center")
-    info = panel.child(N("ClassInfo", "ClassInfo", TL(377, 40, 493, 150)))
+    inner = w - 2 * PAD
+    info = card.child(N("ClassInfo", "ClassInfo", TL(PAD, BODY_TOP, inner, CARD_H - BODY_TOP - PAD)))
     info.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    label(info.child(N("ClassInfo/Eyebrow", "Eyebrow", TL(0, 0, 300, 18))), "Class", "Label", "NeutralLightest")
-    label(info.child(N("ClassInfo/Name", "Name", TL(0, 22, 493, 36))), "Squirrel", "H2", "TextLight")
-    label(info.child(N("ClassInfo/Description", "Description", TL(0, 64, 493, 86))), "", "BodySmall", "NeutralLightest",
-          valign="top", wrap=True)
+    side = inner - NODE_W - 16
+    label(info.child(N("ClassInfo/Eyebrow", "Eyebrow", TL(NODE_W + 16, 8, side, 18))), "Class", "Label", "NeutralLightest")
+    label(info.child(N("ClassInfo/Name", "Name", TL(NODE_W + 16, 30, side, 36))), "Squirrel", "H2", "TextLight")
+    label(info.child(N("ClassInfo/Description", "Description", TL(0, NODE_H + 16, inner, CARD_H - BODY_TOP - PAD - NODE_H - 16))),
+          "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
 
 
-def hull_row(panel):
-    strip = panel.child(N("HullStrip", "HullStrip", TL(NODE_X[0], ROW_Y[0], HULL_SLOTS * (HULL_W + HULL_GAP), HULL_H)))
-    strip.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), HULL_GAP, 0, (0, 0), (0, 0)))
+HULL_COLS = 4
+
+
+def hull_body(card, w):
+    """The Arena's hulls as a 4 x 2 grid (eight slots), then the class line and Claim."""
+    rows = (HULL_SLOTS + HULL_COLS - 1) // HULL_COLS
+    strip = card.child(N("HullStrip", "HullStrip", TL(PAD, BODY_TOP, HULL_COLS * (HULL_W + HULL_GAP) - HULL_GAP,
+                                                        rows * (HULL_H + HULL_GAP) - HULL_GAP)))
     for i in range(HULL_SLOTS):
         strip.children.append(Inst(f"Hull{i + 1}", "ConfigureHullTile", f"Hull{i + 1}",
-                                   TL(i * (HULL_W + HULL_GAP), 0, HULL_W, HULL_H)))
-    info = panel.child(N("ClassInfo", "ClassInfo", TL(NODE_X[0], ROW_Y[0] + HULL_H + 12, 670, 72)))
+                                   TL((i % HULL_COLS) * (HULL_W + HULL_GAP), (i // HULL_COLS) * (HULL_H + HULL_GAP),
+                                      HULL_W, HULL_H)))
+    top = BODY_TOP + rows * (HULL_H + HULL_GAP) + 4
+    info = card.child(N("ClassInfo", "ClassInfo", TL(PAD, top, w - 2 * PAD, 62)))
     info.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    label(info.child(N("ClassInfo/Name", "Name", TL(0, 0, 670, 30))), "Dolphin", "H3", "TextLight")
-    label(info.child(N("ClassInfo/Description", "Description", TL(0, 32, 670, 40))), "", "BodySmall", "NeutralLightest",
-          valign="top", wrap=True)
-    w, h = K.button_size("CLAIM", small=True)
-    claim = panel.child(N("Claim", "Claim", TL(30, 176, w, h)))
+    label(info.child(N("ClassInfo/Name", "Name", TL(0, 0, w - 2 * PAD, 28))), "Dolphin", "H3", "TextLight")
+    label(info.child(N("ClassInfo/Description", "Description", TL(0, 30, w - 2 * PAD, 32))), "", "BodySmall",
+          "NeutralLightest", valign="top", wrap=True)
+    bw, bh = K.button_size("CLAIM", small=True)
+    claim = card.child(N("Claim", "Claim", TL(PAD, CARD_H - PAD - bh, bw, bh)))
     claim.children.append(Inst("ClaimButton", "KitButtonSmall", "ClaimButton", STRETCH,
                                K.button_mods("KitButtonSmall", "Cta", False, "CLAIM", small=True)))
 
 
-def routes(panel, first_row_bottom):
-    """The tree's connectors: vessel -> intensity bus, and the intensity -> pilots bus. Each live
-    route draws in (std) and carries a spark (ambient, Q1)."""
-    cx = NODE_X[0] + NODE_W // 2 - 1
-    M.spark_line(panel, "Route1/Stem", "Route1Stem", TL(cx, first_row_bottom, 2, 200 - first_row_bottom + 2), vertical=True,
-                 grow_delay=0.2)
-    M.spark_line(panel, "Route1/Bus", "Route1Bus", TL(cx, 200, NODE_X[3] + NODE_W // 2 - cx + 1, 2), grow_delay=0.3)
-    for i, x in enumerate(NODE_X):
-        themed_line(panel, f"Route1/Drop{i + 1}", f"Route1Drop{i + 1}", TL(x + NODE_W // 2 - 1, 202, 2, ROW_Y[1] - 202),
-                    "SurfaceLight")
-    bus2_y = ROW_Y[1] + NODE_H + STUB_H - 1
-    M.spark_line(panel, "Route2/Bus", "Route2Bus", TL(cx, bus2_y, NODE_X[3] + NODE_W // 2 - cx + 1, 2), grow_delay=0.5)
-    for i, x in enumerate(COL_X):
-        themed_line(panel, f"Route2/Drop{i + 1}", f"Route2Drop{i + 1}",
-                    TL(x + COL_W // 2 - 1, bus2_y + 2, 2, ROW_Y[2] - bus2_y - 2), "SurfaceLight")
-
-
-def footer(panel, kind):
-    themed_line(panel, "Rule", "Rule", TL(30, FOOT_Y, 840, 1), "SurfaceDark")
-    status = panel.child(N("Status", "Status", TL(30, FOOT_Y + 22, 560, 28)))
+def footer(chrome, kind):
+    status = chrome.child(N("Status", "Status", TL(MARGIN, FOOT_TOP + 16, 560, 28)))
     rdy = status.child(N("Status/Ready", "Ready", STRETCH))
     rdy.add("cg", 225, canvas_group(True))
     label(rdy, "Ready to launch", "Body", "TextLight")
@@ -868,13 +942,14 @@ def footer(panel, kind):
     wait = status.child(N("Status/Waiting", "Waiting", STRETCH))
     wait.add("cg", 225, canvas_group(False)).add("amb", 114, M.ambient("Breathe", period=1.6, amplitude=0.5))
     label(wait, "Waiting for others...", "Body", "ControlActive")
-    chips = panel.child(N("Chips", "Chips", TL(30, FOOT_Y + 60, 560, 26)))
-    chips.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 3, (0, 0), (0, 0)))
+    w, h = K.button_size("START GAME")
+    chips = chrome.child(N("Chips", "Chips", TR(MARGIN + w + 24, FOOT_TOP + 17, 760, 26)))
+    chips.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 5, (0, 0), (0, 0)))
     chip_node(chips, "Chips/Vessel", "Vessel", "Maelstrom" if kind == "maelstrom" else "Squirrel")
     chip_node(chips, "Chips/Intensity", "Intensity", "Intensity 1")
     chip_node(chips, "Chips/Pilots", "Pilots", "1 pilot")
-    w, h = K.button_size("START GAME")
-    start = panel.child(N("Start", "Start", TR(30, FOOT_Y + 26, w, h)))
+    start = chrome.child(N("Start", "Start", TR(MARGIN, FOOT_TOP, w, h)))
+    start.add("in", 114, M.entrance("Rise", stagger=5)).add("cg", 225, canvas_group(True))
     start.children.append(Inst("StartButton", "KitButton", "StartButton", STRETCH,
                                K.button_mods("KitButton", "Play", True, "START GAME"),
                                added=[("mask", 114, A.rect_mask())],
@@ -890,24 +965,25 @@ def sweep_node():
     return n
 
 
-AI_Y, AI_H, AI_BTN_H = 584, 96, 52
 AI_LEVELS = (("Easy", 1), ("Medium", 2), ("Hard", 3))   # AIDifficulty (Assets/_Scripts/Data), easiest first
+AI_BTN_H = 52
 
 
-def ai_row(body):
+def ai_row(card, w, top):
     """The AI DIFFICULTY row (AIDifficultyPicker, bleeding-edge 2026-10-14) drawn in style B: three
     plates under the domain columns, one lit. The panel shows it only on a card whose AI reads it
     (AIDifficultyRules.IsOfferedFor - Skim Race, Slingshot, Warpline), so it ships HIDDEN; the
     picker's CanvasGroup is the one ArcadeLaunchPanel.SetAIDifficultyAvailable drives, which also
     takes the buttons out of pad navigation while it is hidden."""
-    row = body.child(N("AIRow", "AIDifficulty", TL(30, AI_Y, 840, AI_H)))
+    inner = w - 2 * PAD
+    row = card.child(N("AIRow", "AIDifficulty", TL(PAD, top, inner, 30 + AI_BTN_H)))
     row.add("cg", 225, canvas_group(False)).add("in", 114, M.entrance("Rise", stagger=9))
-    label(row.child(N("AIRow/Caption", "Caption", TL(0, 0, 150, 18))), "AI pilots", "Label", "TextLight")
-    label(row.child(N("AIRow/Hint", "Hint", TL(0, 22, 150, 60))), "How hard the AI races. The host picks.",
-          "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    label(row.child(N("AIRow/Caption", "Caption", TL(0, 0, 200, 18))), "AI pilots", "Label", "TextLight")
+    label(row.child(N("AIRow/Hint", "Hint", TR(0, 0, inner - 210, 18))), "How hard the AI races. The host picks.",
+          "BodySmall", "NeutralLightest", align="right")
     for i, (name, _) in enumerate(AI_LEVELS):
         key = f"AIRow/{name}"
-        opt = row.child(N(key, name, TL(COL_X[i] - 30, 4, COL_W, AI_BTN_H)))
+        opt = row.child(N(key, name, TL(i * (COL_W + COL_GAP), 30, COL_W, AI_BTN_H)))
         plate = opt.child(N(f"{key}/Plate", "Plate", STRETCH))
         plate.add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver10_line1"), True, raycast=True))
@@ -932,98 +1008,84 @@ def ai_row(body):
             f"  labelSelected: {color('SurfaceBlack')}\n  labelUnselected: {color('TextLight')}\n"))
 
 
-def tree_panel(root, kind):
-    panel = root.child(N("Tree", "Tree", R((0.5, 1), (1, 1), (0, -LEFT_TOP), (-60, COL_H), (0.5, 1))))
-    panel.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
-    fill = panel.child(N("Tree/Fill", "Fill", STRETCH))
-    fill.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.92), K.kit_sprite("kit_sliver14_fill"), True)) \
-        .add("th", 114, themed("SurfaceVeryDark", 0.92))
-    grid = M.grid_node("Tree/Grid")
-    panel.child(grid)
-    bord = panel.child(N("Tree/Border", "Border", STRETCH))
-    bord.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True)) \
-        .add("th", 114, themed("SurfaceDark"))
-    M.bracket_nodes(panel, "Tree/Bracket")
-    # The canvas is laid out at 900 wide; the tree's nodes sit at fixed offsets from its left edge.
-    body = panel.child(N("Tree/Body", "Body", TL(0, 0, PANEL_W, COL_H)))
+def pool_panel(chrome):
+    pool = glass(chrome, "Pool", "Pool", TR(MARGIN, BAND_TOP, SIDE_W, BAND_H), 3)
+    section_label(pool, "Pool/Title", "Title", "Game pool", TL(PAD, PAD, 300, 18))
+    label(pool.child(N("Pool/Summary", "Summary", TR(PAD, PAD, 300, 18))), "10 of 16 games", "Label", "NeutralLightest",
+          align="right")
+    sc = pool.child(N("Pool/Scroll", "Scroll", R((0, 0), (1, 1), (0, -15), (-2 * PAD, -74))))
+    sc.add("scroll", 114, A.scroll_rect("Pool/Scroll/Viewport/Content", "Pool/Scroll/Viewport", 20))
+    vp = sc.child(N("Pool/Scroll/Viewport", "Viewport", STRETCH))
+    vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("mask", 114, A.rect_mask())
+    content = vp.child(N("Pool/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
+    content.add("vlg", 114, K.hv_layout(True, (0, 4, 0, 0), 6, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    pool.add("list", 114, lambda ctx, go: mono(go, S["pool"],
+             f"  rowContainer: {ref(ctx.rt('Pool/Scroll/Viewport/Content'))}\n"
+             f"  rowPrefab: {K.ref(K.FileIds('ConfigurePoolRow')('root#entry'), asset_guid('ConfigurePoolRow'))}\n"
+             f"  tournamentData: {K.ref(11400000, TOURNAMENT, 2)}\n"
+             f"  summaryText: {ref(ctx.c('Pool/Summary', 'tmp'))}\n"
+             "  summaryFormat: '{0} of {1} games'\n"))
 
+
+def steps_row(chrome, kind):
+    """The three step cards. Sibling order is FOCUS order (ScreenSwitcher.Refocus takes the first
+    live Selectable): the cards come first in the chrome, so the pad lands on a hull, an intensity
+    node or a domain - never on FLY or Back."""
+    widths = CARDS[kind]
+    xs = [sum(widths[:i]) + i * CARD_GAP for i in range(3)]
+    steps = chrome.child(N("Steps", "Steps", TL(MARGIN, CARD_TOP, sum(widths) + 2 * CARD_GAP, CARD_H)))
     if kind == "maelstrom":
-        gutter(body, 0, "01", "Intensity", "Value", "1", "Higher levels unlock as you play.")
-        gutter(body, 1, "02", "Pilots", "Value", "1 of 4", "Pick your domain; fill open seats with AI.")
+        ci, cp = step_card(steps, 0, xs[0], widths[0], "01", "Intensity", "1", "Higher levels unlock as you play."), \
+            step_card(steps, 1, xs[1], widths[1], "02", "Pilots", "1 of 4", "Pick your domain; fill open seats with AI.")
+        format_card(steps, xs[2], widths[2])
     else:
-        gutter(body, 0, "01", "Vessel", "Value", "Squirrel",
-               "Every pilot flies a different hull." if kind == "arena" else "Set by the card.")
-        gutter(body, 1, "02", "Intensity", "Value", "1", "Higher levels unlock as you play.")
-        gutter(body, 2, "03", "Pilots", "Value", "1 of 4", "Pick your domain; fill open seats with AI.")
-        if kind == "arena":
-            hull_row(body)
-            routes(body, ROW_Y[0] + HULL_H + 4)
-        else:
-            vessel_row(body)
-            routes(body, ROW_Y[0] + NODE_H)
-            ai_row(body)
-
-    rows = (0, 1) if kind == "maelstrom" else (1, 2)
-    for i, x in enumerate(NODE_X):
-        body.children.append(Inst(f"Intensity{i + 1}", "ConfigureIntensityNode", f"Intensity{i + 1}",
-                                  TL(x, ROW_Y[rows[0]], NODE_W, NODE_H),
-                                  [("root#in", "staggerIndex", i + 2, None)]))
-    if kind == "maelstrom":
-        bus_y = ROW_Y[0] + NODE_H + STUB_H - 1
-        cx = NODE_X[0] + NODE_W // 2 - 1
-        M.spark_line(body, "Route2/Bus", "Route2Bus", TL(cx, bus_y, NODE_X[3] + NODE_W // 2 - cx + 1, 2), grow_delay=0.4)
-        for i, x in enumerate(COL_X):
-            themed_line(body, f"Route2/Drop{i + 1}", f"Route2Drop{i + 1}",
-                        TL(x + COL_W // 2 - 1, bus_y + 2, 2, ROW_Y[1] - bus_y - 2), "SurfaceLight")
+        cv = step_card(steps, 0, xs[0], widths[0], "01", "Vessel", "Squirrel",
+                       "Every pilot flies a different hull." if kind == "arena" else "Set by the card.")
+        ci = step_card(steps, 1, xs[1], widths[1], "02", "Intensity", "1", "Higher levels unlock as you play.")
+        cp = step_card(steps, 2, xs[2], widths[2], "03", "Pilots", "1 of 4", "Pick your domain; fill open seats with AI.")
+        (hull_body if kind == "arena" else vessel_body)(cv, widths[0])
+    for i in range(4):
+        ci.children.append(Inst(f"Intensity{i + 1}", "ConfigureIntensityNode", f"Intensity{i + 1}",
+                                TL(PAD + i * (NODE_W + NODE_GAP), BODY_TOP, NODE_W, NODE_H),
+                                [("root#in", "staggerIndex", i + 2, None)]))
+    if kind != "maelstrom":
+        objective_bar(ci, TL(PAD, BODY_TOP + NODE_H + STUB_H + 16, 680 - 2 * PAD, 64))
     for i, (dname, dval) in enumerate(DOMAINS):
-        body.children.append(Inst(f"Domain{dname}", "ConfigureDomainColumn", f"{dname}Column",
-                                  TL(COL_X[i], ROW_Y[rows[1]], COL_W, TILE_H + 6 + SEAT_H),
-                                  [("root#dtile", "domain", dval, None), ("root#in", "staggerIndex", i + 6, None)]))
-    if kind == "maelstrom":
-        pool = body.child(N("Pool", "Pool", TL(30, 446, 840, 262)))
-        pool.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=5))
-        section_label(pool, "Pool/Title", "Title", "Game pool", TL(0, 0, 300, 18))
-        label(pool.child(N("Pool/Summary", "Summary", TR(0, 0, 300, 18))), "10 of 16 games", "Label", "NeutralLightest",
-              align="right")
-        sc = pool.child(N("Pool/Scroll", "Scroll", R((0, 0), (1, 1), (0, -14), (0, -28))))
-        sc.add("scroll", 114, A.scroll_rect("Pool/Scroll/Viewport/Content", "Pool/Scroll/Viewport", 20))
-        vp = sc.child(N("Pool/Scroll/Viewport", "Viewport", STRETCH))
-        vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-            .add("mask", 114, A.rect_mask())
-        content = vp.child(N("Pool/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
-        content.add("vlg", 114, K.hv_layout(True, (0, 4, 0, 0), 6, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
-        pool.add("list", 114, lambda ctx, go: mono(go, S["pool"],
-                 f"  rowContainer: {ref(ctx.rt('Pool/Scroll/Viewport/Content'))}\n"
-                 f"  rowPrefab: {K.ref(K.FileIds('ConfigurePoolRow')('root#entry'), asset_guid('ConfigurePoolRow'))}\n"
-                 f"  tournamentData: {K.ref(11400000, TOURNAMENT, 2)}\n"
-                 f"  summaryText: {ref(ctx.c('Pool/Summary', 'tmp'))}\n"
-                 "  summaryFormat: '{0} of {1} games'\n"))
-    footer(body, kind)
-    return panel
+        cp.children.append(Inst(f"Domain{dname}", "ConfigureDomainColumn", f"{dname}Column",
+                                TL(PAD + i * (COL_W + COL_GAP), BODY_TOP, COL_W, TILE_H + 6 + SEAT_H),
+                                [("root#dtile", "domain", dval, None), ("root#in", "staggerIndex", i + 6, None)]))
+    if kind == "arcade":
+        ai_row(cp, widths[2], BODY_TOP + TILE_H + 10 + 2 * (SEAT_H + 6) + 22)
+    return steps
 
 
 def build_view(kind):
     root = N("root", VIEW_NAME[kind], STRETCH)
-    # Near-opaque (the owner, 2026-10-15: "make the bg of these tabs a little less transparent"):
-    # at 72% the Arcade's own title and game grid read through the window.
+    # Near-opaque (the owner, 2026-10-15): under the full-bleed preview it is what shows while the
+    # arena loads, and it keeps the Arcade window behind from reading through.
     image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.94, raycast=True)
+    preview_window(root, kind)
 
-    # Sibling order is FOCUS order (ScreenSwitcher.Refocus takes the first live Selectable): the
-    # tree comes first so the pad lands on an intensity node or a domain, never on Back.
-    tree_panel(root, kind)
-    left = root.child(N("Left", "Left", R((0, 1), (0.5, 1), (10, -LEFT_TOP), (-60, COL_H), (0.5, 1))))
-    preview_window(left, kind)
-    if kind == "maelstrom":
-        briefing(left, PREVIEW_H + 20, COL_H - PREVIEW_H - 20)
-        format_block(left, PREVIEW_H + 20, COL_H - PREVIEW_H - 20)
+    # Everything over the preview. ConfigureCinema fades this one group while the player flies.
+    chrome = root.child(N("Chrome", "Chrome", STRETCH))
+    chrome.add("cg", 225, canvas_group(True))
+    steps_row(chrome, kind)
+    footer(chrome, kind)
+    if kind != "maelstrom":
+        fly_row(chrome)
+        controls(chrome)
     else:
-        objective_bar(left)
-        lower = PREVIEW_H + 20 + OBJECTIVE_H + 20
-        briefing(left, lower, COL_H - lower)
-        controls(left, lower, COL_H - lower)
-    header(root, kind)
+        pool_panel(chrome)
+    briefing(chrome)
+    header(chrome, kind)
+    if kind != "maelstrom":
+        flying_hint(root)
+        root.add("cinema", 114, lambda ctx, go: mono(go, S["cinema"],
+                 f"  preview: {ref(ctx.c('Preview', 'window'))}\n"
+                 f"  chrome: {ref(ctx.c('Chrome', 'cg'))}\n"
+                 f"  flyingHint: {ref(ctx.c('FlyingHint', 'cg'))}\n"
+                 "  fadeSeconds: 0.35\n"))
 
     root.add("panel", 114, lambda ctx, go: panel_body(ctx, go, kind))
     return root
@@ -1033,7 +1095,7 @@ def vessel_names(ctx, kind):
     out = []
     if kind != "maelstrom":
         out += [ctx.c("Step1/Value", "tmp"), ctx.c("ClassInfo/Name", "tmp"), ctx.c("Chips/Vessel/Label", "tmp"),
-                ctx.c("Preview/Strip/Vessel", "tmp"), ctx.c("Controls/Vessel", "tmp")]
+                ctx.c("Fly/Vessel", "tmp"), ctx.c("Controls/Vessel", "tmp")]
         if kind == "arcade":
             out.insert(2, ctx.c("VesselNode/Caption", "tmp"))
     return out
@@ -1757,9 +1819,30 @@ def validate_prefabs(files):
                 wired(text, body, field, want, view)
             _, video = comp_doc(text, V("Preview#video"))
             assert video and A.doc_of(text, V("Preview#vp"))[0] == 328, f"{view}: ModeVideoView needs its VideoPlayer"
-        # Focus order: the tree before the header (Back), so the first A press never closes.
-        order = re.findall(r"^  - \{fileID: (-?\d+)\}", A.doc_of(text, V("root#rt"))[1], re.M)
-        assert order.index(str(V("Tree#rt"))) < order.index(str(V("Header#rt"))), f"{view}: Back must come last in focus order"
+        # Focus order: the step cards before FLY and the header (Back), so the first A press neither
+        # takes off nor closes the window.
+        order = re.findall(r"^  - \{fileID: (-?\d+)\}", A.doc_of(text, V("Chrome#rt"))[1], re.M)
+        assert order[0] == str(V("Steps#rt")), f"{view}: the step cards must come first in focus order"
+        assert order.index(str(V("Steps#rt"))) < order.index(str(V("Header#rt"))), f"{view}: Back must come last in focus order"
+        root_kids = re.findall(r"^  - \{fileID: (-?\d+)\}", A.doc_of(text, V("root#rt"))[1], re.M)
+        assert root_kids.index(str(V("Preview#rt"))) < root_kids.index(str(V("Chrome#rt"))), \
+            f"{view}: the preview must draw BEHIND the settings (rev 3: full-bleed)"
+        if kind != "maelstrom":
+            # Rev 3 cinema: the full-bleed surface is drawn first, so it must not be the control the pad
+            # lands on; FLY is the pad's way in, and ConfigureCinema hides the settings while flying.
+            _, focus = comp_doc(text, V("Preview/Focus#button"))
+            assert re.search(r"m_Navigation:\n    m_Mode: 0\n", focus), \
+                f"{view}: the full-bleed tap-to-fly surface must be navigation None (it would take the window's first focus)"
+            _, fly = comp_doc(text, V("Fly/Button#button"))
+            assert f"m_Target: {{fileID: {V('Preview#window')}}}" in fly and "m_MethodName: RequestFocus" in fly, \
+                f"{view}: FLY must call ModePreviewWindow.RequestFocus (the pad's only way to fly the preview)"
+            _, stop = comp_doc(text, V("FlyingHint/Stop#button"))
+            assert "m_MethodName: ReleaseFocus" in stop, \
+                f"{view}: STOP must call ModePreviewWindow.ReleaseFocus (touch has no START / Esc to stop flying)"
+            _, cin = comp_doc(text, V("root#cinema"))
+            assert cin and S["cinema"] in cin, f"{view}: no ConfigureCinema on the root"
+            for field, want in (("preview", V("Preview#window")), ("chrome", V("Chrome#cg")), ("flyingHint", V("FlyingHint#cg"))):
+                assert f"  {field}: {{fileID: {want}}}" in cin, f"{view}: ConfigureCinema.{field} is not wired"
         _, back = comp_doc(text, V("Back#button"))
         assert back and A.doc_of(text, V("Back#close"))[0] == 114 and "m_Calls: []" in back, \
             f"{view}: Back must close through ModalWindowCloseButton, not a persistent call"
@@ -1867,10 +1950,22 @@ def self_test(files):
          validate_prefabs),
         ("a node that forgot the intensity variable", lambda f: f.__setitem__(node, f[node].replace(INTENSITY_VAR, "0" * 32)),
          validate_prefabs),
-        ("the header ahead of the tree in focus order",
-         lambda f: f.__setitem__(view, f[view].replace(f"  - {{fileID: {V('Tree#rt')}}}\n", "", 1).replace(
-             f"  - {{fileID: {V('Header#rt')}}}\n", f"  - {{fileID: {V('Header#rt')}}}\n  - {{fileID: {V('Tree#rt')}}}\n", 1)),
+        ("the header ahead of the step cards in focus order",
+         lambda f: f.__setitem__(view, f[view].replace(f"  - {{fileID: {V('Steps#rt')}}}\n", "", 1).replace(
+             f"  - {{fileID: {V('Header#rt')}}}\n", f"  - {{fileID: {V('Header#rt')}}}\n  - {{fileID: {V('Steps#rt')}}}\n", 1)),
          validate_prefabs),
+        ("the tap-to-fly surface back in pad navigation", lambda f: f.__setitem__(view, f[view].replace(
+            A.doc_of(f[view], V("Preview/Focus#button"))[1], A.doc_of(f[view], V("Preview/Focus#button"))[1].replace(
+                "m_Navigation:\n    m_Mode: 0\n", "m_Navigation:\n    m_Mode: 3\n"), 1)), validate_prefabs),
+        ("FLY calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: RequestFocus", "m_MethodName: GrantFocus", 1)),
+         validate_prefabs),
+        ("STOP calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: ReleaseFocus", "m_MethodName: Hide", 1)),
+         validate_prefabs),
+        ("the cinema fading nothing", lambda f: f.__setitem__(view, f[view].replace(
+            f"  chrome: {{fileID: {V('Chrome#cg')}}}\n", "  chrome: {fileID: 0}\n", 1)), validate_prefabs),
+        ("the preview drawn over the settings", lambda f: f.__setitem__(view, f[view].replace(
+            f"  - {{fileID: {V('Preview#rt')}}}\n  - {{fileID: {V('Chrome#rt')}}}\n",
+            f"  - {{fileID: {V('Chrome#rt')}}}\n  - {{fileID: {V('Preview#rt')}}}\n", 1)), validate_prefabs),
         ("a persistent call on Back", lambda f: f.__setitem__(view, f[view].replace(
             A.doc_of(f[view], V("Back#button"))[1], A.doc_of(f[view], V("Back#button"))[1].replace(
                 "      m_Calls: []", "      m_Calls:\n      - m_Target: {fileID: 0}"), 1)), validate_prefabs),

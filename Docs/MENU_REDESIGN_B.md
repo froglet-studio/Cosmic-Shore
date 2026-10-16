@@ -1824,3 +1824,29 @@ scroll now fills the body. Generators: `author_menu_arcade.py` (owns the shared 
 **Not done, and why.** The board's filter chips (Racing / Combat / Collect / Favourites) need a category on
 `SO_ArcadeGame`, which does not exist, and the board's "Game of the week" and quest-track column have no data source
 on this branch; none was invented.
+
+## 33. Rev 3: the Configure window - cinema preview + step cards (built 2026-10-16, awaiting in-editor approval)
+
+The owner approved "the interesting option": option A's full live preview under option B's three step cards (canvas Rev 3
+page, R3ConfigureA / R3ConfigureB). One builder, three windows (`author_menu_configure.py`, `build_view`).
+
+- **The preview is the window.** `ModePreviewWindow` (Maelstrom: the clip) fills everything under the nav, BEHIND every
+  setting, with a left and a bottom scrim. Its render height is capped at 720 (`maxRenderHeight`): a full-window surface
+  measured at the display height would render a full-HD frame with MSAA; 720 keeps roughly the old 625 px frame's cost.
+- **The cinema band** (y 200-500): Briefing glass on the left; the game showing through the middle with the loading
+  status, the "+1" toast and the Tap to fly / **FLY** / vessel row; Controls glass on the right (Maelstrom: the game pool).
+- **Three step cards** (y 540-980, glass at 82 %, a spark along each top edge): **01 Vessel** (the vessel node and class
+  line; Arena: the eight hulls as a 4 x 2 grid and Claim), **02 Intensity** (the four nodes, then the objective),
+  **03 Pilots** (Jade / Ruby / Gold, then the AI difficulty row). Maelstrom: 01 Intensity, 02 Pilots, Format.
+- **Launch row** (y 992): status on the left, the summary chips and START on the right.
+- **Flying** (`ConfigureCinema`, new): while the preview has focus, the whole Chrome group (cards, band, header) fades
+  out and stops taking input, and "START or Esc to stop flying" with a **STOP** button fades in. STOP is touch's way back:
+  touch has neither START nor Esc, and a full-bleed surface leaves almost nothing "outside" to tap.
+- **Pad.** The full-bleed tap surface is drawn first, so it is navigation None (it would otherwise take the window's first
+  focus); the pad flies through **FLY**, which calls the new `ModePreviewWindow.RequestFocus` (the same request a tap
+  makes). Focus still lands on the first step card's control when the window opens; Back stays last.
+- Every node the launch panels, the modal and the scene reference kept its key, so no scene reference moved. The pool row's
+  name now stretches (the pool sits in a 560-wide panel).
+
+Validated by `--check` / `--self-test`, with new planted defects: tap surface back in navigation, FLY / STOP calling
+nothing, the cinema fading nothing, the preview drawn over the settings, the header ahead of the cards.

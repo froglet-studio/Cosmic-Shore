@@ -358,3 +358,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith or Yash (decide if wanted)
 - **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §31, Docs/ModePreview/ARCHITECTURE.md
+
+### T-20261016-7044 · open · test · Menu_Main / Configure
+- **Task:** Play-test the rev-3 Configure window (full-window live preview + step cards; FLY / STOP; pad focus; Arena hulls; Maelstrom pool) on PC, pad and a phone
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Configure rev 3' items 1-5 pass or are filed as bugs
+- **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
+- **Added:** 2026-10-16 by claude/new-session-76hnyc (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 33
