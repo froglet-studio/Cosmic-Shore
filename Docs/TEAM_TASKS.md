@@ -337,3 +337,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (Menu_Main owner) or Yash
 - **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §30
+
+### T-20261016-cfc3 · open · decision · Vessel HUD
+- **Task:** Review the rev-3 lava-lamp ability row (element-coloured plates/edges/keycaps; petals untouched) against the HUD's colour vocabulary - Mass blue / Time teal sit near the petal ladder's blue / green; retune AbilityLockupStyle colours or lavaAlpha if they compete
+- **Done when:** Keep / retune / turn off decided on AbilityLockupStyle.asset
+- **Who can take it:** Garrett (vessel HUD owner)
+- **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
+- **See:** Docs/claude/VESSEL_HUD_AND_ELEMENTS.md (Four-Icon row note), canvas Rev 3 R3Hud boards

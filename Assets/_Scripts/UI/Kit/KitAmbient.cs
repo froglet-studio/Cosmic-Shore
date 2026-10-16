@@ -46,6 +46,7 @@ namespace CosmicShore.UI
         private CanvasGroup _group;
         private Vector2 _restPosition;
         private Vector3 _restScale = Vector3.one;
+        private bool _scaleCaptured;   // only Pan writes a scale; it captures lazily (check_rest_scale_capture.py)
         private Quaternion _restRotation = Quaternion.identity;
         private float _clock;
         private KitSightline _sight;
@@ -66,7 +67,6 @@ namespace CosmicShore.UI
         {
             if (!_rect) return;
             _restPosition = _rect.anchoredPosition;
-            _restScale = _rect.localScale;
             _restRotation = _rect.localRotation;
             _clock = phase;
             _lastAlpha = -1f;
@@ -76,7 +76,8 @@ namespace CosmicShore.UI
         {
             if (!_rect) return;
             _rect.anchoredPosition = _restPosition;
-            _rect.localScale = _restScale;
+            if (_scaleCaptured) _rect.localScale = _restScale;
+            _scaleCaptured = false;
             _rect.localRotation = _restRotation;
             // Hand the group back at its owner's alpha - but only if the last write was ours.
             if (_group && mode == KitAmbientMode.Breathe && _lastAlpha >= 0f
@@ -121,6 +122,7 @@ namespace CosmicShore.UI
                     break;
                 case KitAmbientMode.Pan:
                 {
+                    if (!_scaleCaptured) { _restScale = _rect.localScale; _scaleCaptured = true; }
                     float p = Mathf.PingPong(cycle * 2f, 1f);
                     float s = 1f + amplitude * (0.8f + 1.0f * KitMotion.Ease(KitEase.InOutSine, p));
                     _rect.localScale = _restScale * s;

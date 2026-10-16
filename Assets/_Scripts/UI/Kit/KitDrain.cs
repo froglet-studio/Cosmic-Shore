@@ -18,13 +18,13 @@ namespace CosmicShore.UI
 
         private RectTransform _rect;
         private Vector3 _restScale = Vector3.one;
+        private bool _scaleCaptured;   // captured on the first Play, not in Awake (check_rest_scale_capture.py)
         private float _clock = -1f;
         private float _length;
 
         private void Awake()
         {
             _rect = transform as RectTransform;
-            if (_rect) _restScale = _rect.localScale;
         }
 
         private void OnEnable()
@@ -35,13 +35,14 @@ namespace CosmicShore.UI
         private void OnDisable()
         {
             _clock = -1f;
-            if (_rect) _rect.localScale = _restScale;
+            if (_rect && _scaleCaptured) _rect.localScale = _restScale;
         }
 
         /// <summary>Refill and drain over <paramref name="seconds"/>.</summary>
         public void Play(float seconds)
         {
             _length = Mathf.Max(0.1f, seconds);
+            if (_rect && !_scaleCaptured) { _restScale = _rect.localScale; _scaleCaptured = true; }
             _clock = 0f;
             SetFill(1f);
         }

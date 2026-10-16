@@ -157,6 +157,14 @@ geometry re-point. The printed procedure ends by clearing the animation's part f
 
 ### The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
 
+> **Rev 3 element colour (2026-10-16, approved by Shombith; `AbilityLockupStyleSO.elementColour`).** Each card
+> wears its ELEMENT's colour: two soft blobs per plate drift behind the icon like a lava lamp (Charge gold, Mass
+> blue, Space violet, Time teal; the omni card all four; the drift card control blue), the slant edge and the
+> keycap edge take the same colour. Structure, slots, icons, gauges and the petal LADDER are unchanged - the
+> petals are never tinted. A locked card stays dim and still. Tunable on the style asset (`lavaAlpha`,
+> `lavaDrift`, `lavaPeriod`, `lavaMotion` off = still colour, no per-frame work). Mockups: the canvas's Rev 3 page,
+> `R3Hud<Vessel>` boards.
+
 Every vessel HUD shows **exactly four ELEMENTAL ability icons in the lower right — one per element** —
 and the order is not a layout preference, it is the element contract made visible:
 

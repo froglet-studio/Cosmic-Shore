@@ -10362,3 +10362,18 @@ gates, every `author_*.py --check`, and the changed generators' `--self-test` ne
    or the tab still visible while flying.
 7. **Glass window backdrops**: the Arcade / Arena / Toy Box / Mission windows show the menu scene dimly through
    their backdrop (55 %), not a solid black sheet.
+
+## 🔴 2026-10-16 — Lava-lamp HUD (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+AbilityLockupView + AbilityLockupStyleSO (elementColour). Checked offline: refcompile player + editor (no new
+errors), AbilityLockupStyleTests gains `ElementColour_GivesEachElementItsOwnVisibleColour` (not run - no editor).
+
+1. Fly the Sparrow, Squirrel and Dolphin in any arcade mode: each ability card shows slow soft colour blobs behind its
+   icon - Charge gold, Mass blue, Space violet, Time teal - drifting out of step with each other; the card's slanted
+   edges and its keycap edge are the same colour. The Squirrel's drift card is blue; a vessel's omni card, where
+   it is not locked (Squirrel, Dolphin), carries all four colours. Compare with the canvas's Rev 3 `R3Hud<Vessel>` boards.
+2. Locked cards (e.g. Rhino Charge/Space, most omni cards) stay dim with no colour and no motion.
+3. The flower petals keep their level colours exactly as before (white / blue / green ladder) - never tinted.
+4. Gauges, cooldown veils, press flashes and the L5 upgrade (white edge + bloom) still read over the colour.
+5. Perf: Profiler on a phone build - the HUD canvas rebuild cost with `lavaMotion` on vs off. If it shows up, turn
+   `lavaMotion` off on AbilityLockupStyle (colour stays, motion stops).

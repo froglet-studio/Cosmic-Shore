@@ -195,6 +195,42 @@ namespace CosmicShore.ScriptableObjects
                  "Borderless: there is no resting outline, by design.")]
         public Color plateColor = new(0.024f, 0.031f, 0.063f, 0.86f);
 
+        [Header("Element colour - the rev 3 lava lamp (approved 2026-10-16)")]
+        [Tooltip("Each card wears its ELEMENT's colour: soft blobs drifting slowly behind the icon like a " +
+                 "lava lamp, the slant edge in the same colour, and a matching keycap edge. Colour here " +
+                 "is information (which element scales this ability), never a team colour. The flower " +
+                 "petals keep their level ladder - they are the HUD's vocabulary and are never tinted. " +
+                 "Off = the borderless near-black plates as before.")]
+        public bool elementColour = true;
+        public Color chargeColour = new(1f, 0.827f, 0.302f, 1f);
+        public Color massColour = new(0.498f, 0.659f, 1f, 1f);
+        public Color spaceColour = new(0.690f, 0.486f, 1f, 1f);
+        public Color timeColour = new(0.373f, 0.941f, 0.784f, 1f);
+        [Tooltip("The drift card (no element) - the control blue.")]
+        public Color driftColour = new(0f, 0.831f, 1f, 1f);
+        [Tooltip("Blob alpha at its brightest. Low on purpose: the icon is the headline, the colour qualifies it.")]
+        [Range(0f, 1f)] public float lavaAlpha = 0.45f;
+        [Tooltip("Blob diameter as a fraction of the plate width.")]
+        [Range(0.2f, 1.5f)] public float lavaBlobScale = 0.75f;
+        [Tooltip("How far a blob wanders from the plate's centre, in px.")]
+        [Min(0f)] public float lavaDrift = 18f;
+        [Tooltip("Seconds per wander cycle, min to max - each card picks its own so the row never pulses in step.")]
+        public Vector2 lavaPeriod = new(9f, 14f);
+        [Tooltip("Move the blobs. Off keeps the colour but holds it still (no per-frame layout work).")]
+        public bool lavaMotion = true;
+        [Tooltip("Slant-edge alpha in the element colour.")]
+        [Range(0f, 1f)] public float elementEdgeAlpha = 0.9f;
+
+        /// <summary>The colour an element's card wears (rev 3), or the resting edge grey for none.</summary>
+        public Color ColourFor(Element element) => element switch
+        {
+            Element.Charge => chargeColour,
+            Element.Mass => massColour,
+            Element.Space => spaceColour,
+            Element.Time => timeColour,
+            _ => slantEdgeColor,
+        };
+
         [Header("Colours - upgraded")]
         [Tooltip("Upgraded bloom. Alpha carries it - in engine, gameplay bloom clamps at max-channel " +
                  "0.5, so glow is bought with lit AREA, never with intensity. With the rim retired " +
