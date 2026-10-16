@@ -475,3 +475,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Dolphin AI drifts again at the discharge's peak)
+
+### T-20261016-d177 · open · test · Regatta AI
+- **Task:** Watch an AI Manta race Regatta I1-I4 in the Third Eye: it should hold Soar (~700 u/s) through most of each leg, pivot only in hard turns, and thread rings without circling; run RegattaDriveTuningTests
+- **Done when:** tests pass and the four Manta times are written into REGATTA_AI_ROADMAP.md
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Manta AI holds Soar deeper into turns)
