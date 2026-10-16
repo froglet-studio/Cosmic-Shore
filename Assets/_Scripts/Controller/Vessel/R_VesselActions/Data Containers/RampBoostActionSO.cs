@@ -43,8 +43,9 @@ namespace CosmicShore.Gameplay
     {
         [Header("Ramp")]
         [Tooltip("BoostMultiplier applied while the ramp is engaged — sets the top-speed target " +
-                 "the acceleration climbs toward (the TIME elemental multiplier stacks on top in " +
-                 "the transformer as usual).")]
+                 "the acceleration climbs toward: cruise x this (50 x 16.8 = 840 on the Rhino). TIME " +
+                 "does NOT stack on it - Time scales the wind-up rate (timeAccelerationMultiplier) and " +
+                 "BoostSpeedMultiplier is disabled on Rhino.prefab.")]
         [SerializeField] float maxBoostMultiplier = 4f;
 
         [Tooltip("Constant acceleration while engaged, in speed units per second.")]

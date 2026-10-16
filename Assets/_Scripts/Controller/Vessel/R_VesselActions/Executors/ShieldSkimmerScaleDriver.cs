@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
     /// (<see cref="SetInStance"/>, fed by <see cref="ShieldSwipeActionExecutor"/>) for
     /// <c>EnergizeHoldSeconds</c> spends the cost and ignites the blade: while
     /// <see cref="IsEnergized"/> the damage effect POPS super-shielded prisms instead of
-    /// bouncing. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
+    /// binding. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
     /// <c>EnergizeCooldownSeconds</c> locks re-charging. The tail runs out once started - taking
     /// the stance again does not re-light it - UNLESS the CHARGE level-5 upgrade, <b>Live Wire</b>,
     /// is active: then every return to the stance holds the blade lit again (until 2026-10-16 that

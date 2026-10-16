@@ -728,6 +728,27 @@ applies to new abilities, new resources on the meter list, and anything that add
     `remove_gameobject_tree`, `dangling_refs`) is the reference, and it took the Stoat from 4,381 lines to 2,038 with
     zero dangling references. (Stoat own-vessel pass, 2026-10-13.)
 
+47. **Anything a peer DECIDES from input must read input every peer has - and a GESTURE is input no
+    AI has.** Three Rhino defects, one shape (2026-10-16, `R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
+    - **A press/release event is not a pose.** Remote replicas posed the sword from the replayed
+      press events - a full ±1 swing the moment a trigger crossed its deadzone - while the pilot
+      posed it from the analog depth, and every peer cuts prisms against its own blade, so a
+      half-pull that missed for the pilot cut on every other screen. `InputStatus` already
+      replicates the analog trigger MIRRORS (owner-write) and the DEVICE; pose from those on every
+      peer and keep events only for a device that writes no mirrors.
+    - **An owner-only grader with no event to end it latches every replica.** The graded ramp ends
+      only when its own `Tick` sees the pilot leave the grace band (its release event is the top of
+      the slope, not an end), and `Tick` returned early off the owner - so every replica held
+      `IsBoosting` and ×16.8 for the rest of the turn. Grade from the replicated sticks everywhere.
+    - **Owner-authoritative STATE needs a relay, not a hope.** Energy banked from per-peer kills and
+      an energize phase run on per-peer clocks decided what pops; `RhinoSwordNetworkRelay` (energy,
+      phase, surge bit, owner-write) is the shape. Route the mirrored phase through the same setter
+      the owner uses, so the edges (ignition re-dispatch, FX, the afterimage window) fire everywhere.
+    - **No AI raises `FullSpeedStraightAction`** - only a human input strategy does - so an ability
+      bound to the gesture is human-only until an `AIBoostPolicySO` presses it; and an ability posed
+      by TRIGGERS is human-only until something writes the trigger mirrors for the autopilot
+      (`RhinoSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

@@ -1,0 +1,230 @@
+# Rhino kit, 2026-10-16: Afterimage, Live Wire, Momentum and the Surge
+
+Garrett, 2026-10-16, closing the Rhino's open design slots:
+
+- *"after leaving the energized state your sword leaves a trail of prisms that appear like after
+  images of the sword for 5 seconds. after upgrade these become danger prisms."* (Mass)
+- *"time level 5 should be danger prism immunity when traveling over 70% max speed. the icon should
+  indicate this."* and *"[the hull costs nothing on a ram] should be in the time description"* (Time)
+- *"remake the omni crystal ability so it energizes the rhino while also giving it temporary
+  elements and the mass ability that typically waits till after the energize is gone."*
+- Charge as the sword's energy economy with **Live Wire** as its level-5, and Space named for the
+  blade length it already scaled - both approved from the deep-dive recommendations.
+
+This doc is the record for all four rows and the surge. The sword itself is
+`RHINO_ENERGY_SWORD.md`; the pose and the triggers are `RHINO_SHIELD_SWIPE.md`; the ramp is
+`RHINO_RAMP_BOOST.md`; the hull is `RHINO_PLOUGH.md`.
+
+## 1. The map (live, `Assets/Resources/ElementalAbilityMaps/Rhino.asset`)
+
+`python3 Tools/Build/element_ability_table.py Rhino` - **4/4 abilities, 4/4 scaling, 4/4 level-5
+gates, 0 disagreements.** Every entry is `Input: 0` (passive or the ramp gesture).
+
+| Element | Ability | What the element scales | Level 5 |
+|---|---|---|---|
+| Charge | **Sword Energy** | energy banked per cut and per super-shield pop, x1 at rest -> x2 at level 10, floored x0.5 (`RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier`, read live on the owner) | **Live Wire** - a return to the chop stance re-lights the energized tail (`ShieldSkimmerScaleConfigSO.LiveWireActive`) |
+| Mass | **Afterimage** | afterimage VOLUME, x1 -> x2.5, floored x0.25, read at the REPLICATED level (`RhinoSwordAfterimageConfigSO.massVolumeMultiplier`) | **Danger Afterimages** - laid as danger prisms (`RhinoSwordAfterimageConfigSO.DangerActive`) |
+| Space | **Blade Reach** | the blade's resting length, 30 -> 50 (`Skimmer.Scale` on the ForceFieldSkimmer Variant; energy grows it on top toward 120) | **Breaker** (2026-10-13) - a shielded prism is cut in one slice (`RhinoSkimmerDamagePrismEffectSO.breakerElement`) |
+| Time | **Ramp Spool** | the ramp's wind-up, 220 u/s per second x1 -> x2.5, floored x0.5 | **Momentum** - above 70% of top speed (588 of 840 u/s) danger prisms cannot drain the Rhino's elements |
+
+Every gate goes through `IsUpgradeActive` (the replicated unlock bits), never a raw level read.
+
+## 2. Charge - Sword Energy and Live Wire
+
+Energy is the Rhino's Shield resource: it lengthens the blade (30 -> 120 with Space's base under
+it) and pays for the energize (0.1 a time). Each prism the blade destroys banks 0.04, each
+super-shield it pops 0.12, both multiplied by Charge - a charged Rhino refills the meter in half the
+cuts.
+
+**The tail rule changed.** Before, any frame in the chop stance during the energized tail reset the
+tail, so a short chop every few seconds held any blade energized forever - with swipe recovery at
+zero - for one 0.1 payment. Now:
+
+- held in the stance from ignition: stays lit (unchanged);
+- once let go: the 5 s tail runs out whatever the fingers do, then the 5 s cooldown;
+- **Live Wire (Charge 5)**: every return to the stance re-lights it, so a pilot who keeps coming
+  back to the chop keeps the blade lit.
+
+## 3. Mass - Afterimage
+
+`RhinoSwordAfterimage` (on `ScaleSkimmerObject`, beside the sword driver) listens to the driver's
+`EnergizePhaseChanged`. On the way OUT of `Energized` it opens a **5 s window**; while a window is
+open it lays an afterimage whenever the blade tip has moved at least 6 u and 0.3 s has passed, up to
+16 per window. An afterimage is the blade itself, tiled: the hilt-to-tip line, 90% of it, cut into at
+most 6 segments of at most 10 u, each `2 x 0.8 x segment` scaled by the cube root of the Mass
+multiplier (volume - the conserved quantity - scales linearly with the level, the
+`VesselPrismController.trailVolume` rule), oriented along the blade with its thin axis through the
+blade's flat.
+
+Each prism is laid through the vessel's own spawn channel and prism type, owned by the pilot
+(`ownerID`, so the fleet's 1 s self-trail grace keeps the Rhino's hull off its fresh mass), with a
+0.1 s collider delay, then stamped into the window's own **`RhinoAfterimageTrail`** after
+`Prism.Initialize`.
+
+**The blade never cuts its own afterimages.** `RhinoSkimmerDamagePrismEffectSO` asks
+`IRhinoSwordState.IsOwnAfterimage`, which is an identity test (`prism.Trail is RhinoAfterimageTrail
+t && t.Owner == this`). A recycled prism cannot pass it: pool reuse clears membership and its new
+layer stamps its own. Other Rhinos' swords cut them like any prism.
+
+**Danger Afterimages (Mass 5)** sets `prismProperties.IsDangerous` before `Initialize` - the same
+flag `VesselPrismController`'s danger mode uses, so the real danger pipeline makes them.
+
+**Every peer lays its own**, like the trail: the window opens on the replicated energize phase, the
+blade's pose comes from the replicated trigger mirrors, and size and danger read replicated state.
+
+## 4. Time - Momentum, and the bulldozer
+
+`VesselElementalImmunity` gained a window, `WhileAboveTopSpeedFraction`, measured against an
+`ITopSpeedSource` on the vessel. The Rhino's is the ramp: `RampBoostActionExecutor.TopSpeed` =
+authored cruise (`DefaultMinimumSpeed + DefaultThrottleScaler` = 50, not the runtime mirrors, which
+read 0 on a replica) x `maxBoostMultiplier` 16.8 = 840. The component on the Rhino root holds
+`condition 4, upgradeGate Time, wardedSources DangerPrism, topSpeedFraction 0.7`.
+
+Scoped to **DangerPrism alone**, for the Dolphin Drift Ward's reason (vessel skill rule 31): an
+opposing pilot's blast still lands, so Momentum is a ward against the arena, not against being
+scored on.
+
+The Time row's description now says what the hull does on a ram: **nothing to itself.** The Rhino
+carries no prism slow, so ramming mass costs it no speed - the plough shoves what it hits aside and
+the ramp keeps climbing. That was recorded as a gap; it is the design.
+
+## 5. The omni crystal - the Surge
+
+`RhinoVesselSurgeByCrystalEffect` replaces `RhinoVesselChangeResourceByCrystalEffect` in the
+Rhino's vessel container (the explosion beside it is unchanged). On an omni pickup:
+
+1. sword energy is raised to 1 (`energyFill`);
+2. the blade **bursts** in all three dimensions (the crystal-burst look, which no longer spends
+   anything);
+3. the blade is held **energized for 6 s** (`surgeSeconds`) with no stance and no cost, overriding
+   a cooldown;
+4. all four elements are lent **+0.2 normalized (two levels)**, decaying over the surge
+   (`ResourceSystem.ApplyElementalEffect`, temporary - the base level is untouched);
+5. **afterimages lay throughout** - the Mass ability that otherwise waits for the energize to end.
+
+When the surge ends the blade goes out (unless Live Wire and the stance hold it), and the ordinary
+5 s afterimage window follows with a fresh budget.
+
+The **per-petal burst is gone**: `RhinoSwordCrystalBurstEffectSO` ran on every elemental crystal the
+sword touched and drained the whole meter each time, so collecting the levels the Rhino's elements
+are made of emptied the meter its blade is made of. The sword's crystal slot is empty; collection is
+the crystal's side and is unaffected.
+
+**Where it runs.** Omni collection resolves on the server, which runs the effect, and replays it on
+a remote pilot's own machine (`OmniCrystalImpactor.ReplayOnRemoteOwner`). `Surge` is a no-op off
+the owner; the owner's surge replicates through the relay. The elemental half lands on the server
+and the owner, like every crystal's.
+
+## 6. Replication (the sword was per-peer)
+
+- **Pose.** Every peer poses the blade from `InputStatus`'s owner-write trigger mirrors; the local
+  gamepad pilot reads the hardware. Before, a remote peer posed it from replayed press/release
+  EVENTS - a full single-trigger swing at the deadzone - and every peer cuts against its own blade,
+  so a half-pull sweep that missed for the pilot cut on everyone else's screen. Events still drive
+  a device that writes no mirrors (touch).
+- **State.** `RhinoSwordNetworkRelay` (NetworkBehaviour, Rhino root) carries energy (quantized
+  1/1024), the energize phase and the surge bit, owner-write. The driver decides on the owner
+  (`IsAuthority`) and mirrors elsewhere, routing the phase through `SetEnergizePhase` so the
+  ignition re-dispatch, the FX and the afterimage window fire on every peer.
+- Off the network (`!IsSpawned`) the driver is its own authority, exactly as before.
+
+## 7. AI
+
+- **Ramp** - `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` on the Rhino's `AIPilot`. Only a
+  human input strategy raises `FullSpeedStraightAction`, so the AI never ramped. The driver arms the
+  ramp on a straight with runway, re-arms it if the grading let it fall off, and `End()`s it before
+  the turn - a graded ramp's own release is the top of its slope, not an end.
+- **Sword** - `RhinoSwordAutopilot` (Rhino root) writes the trigger MIRRORS on the machine that owns
+  the AI's input, so the shipped sword code poses, energizes and replicates it like a human's. Every
+  0.15 s at rest it picks: hold the energize stance when the meter can pay and hardened mass is near
+  (or the meter is >= 75% and anything is in reach), else one 0.3 s stroke at the nearest hostile
+  prism in reach (side from its lateral offset), then 0.45 s rest. It never steers, and lets go of
+  both triggers the frame autopilot stops. The swipe executor follows its triggers through an
+  autopilot (`IgnoresTriggers` honours `DrivesTriggers`).
+- The AI's ability cycler list is empty: its only entry was GrowTrail at Duration 0 / Cooldown 0.
+
+## 8. HUD
+
+The row binds 4/4 with PLACEHOLDER art (`author_hull_icon_placeholders.py`, `author_hull_ability_rows.py`):
+
+| Card | Lit | Also |
+|---|---|---|
+| Charge | while the blade is energized | the recharge veil sweeps over the energize cooldown; an authored gauge fills with energy |
+| Mass | while afterimages are laying | |
+| Space | (passive) | upgrade badge for Breaker |
+| Time | while **Momentum is holding** - upgraded and above 70% of top speed | "lit" means "warded right now" |
+
+`RhinoVesselHUDController` polls these with change detection, so no subscription can leak across a
+re-initialise. The pre-lockup status cluster that came back when the Rhino bound its first icon is
+deleted (`ABILITY_LOCKUP.md`).
+
+## Files
+
+| File | Role |
+|---|---|
+| `Executors/RhinoSwordAfterimage.cs` (+ `RhinoAfterimageTrail`) | Mass: lays the afterimages |
+| `Executors/RhinoSwordAfterimageConfigSO.cs`, `_SO_Assets/VesselActions/Rhino/RhinoSwordAfterimageConfig.asset` | Mass tuning, Mass scaling, Mass-5 gate |
+| `Executors/ShieldSkimmerScaleDriver.cs` | energy / energize / Live Wire tail / Surge / authority + mirror / `EnergizePhaseChanged` |
+| `Executors/ShieldSkimmerScaleConfigSO.cs`, `ShieldSkimmerScaleConfig.asset` | `liveWireUpgradeElement`, `LiveWireActive` |
+| `Executors/IRhinoSwordState.cs` | `IsSurging`, `Surge`, `IsOwnAfterimage` (TriggerCrystalBurst removed) |
+| `Vessel/RhinoSwordNetworkRelay.cs` | owner-authoritative energy / phase / surge |
+| `Executors/ShieldSwipeActionExecutor.cs` | pose from the replicated mirrors on every peer |
+| `Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs`, `RhinoSkimmerDamagePrismEffect.asset` | Charge energy scaling; never cuts own afterimages |
+| `Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs`, `RhinoVesselSurgeByCrystalEffect.asset` | the Surge |
+| `Vessel/VesselElementalImmunity.cs`, `Vessel/ITopSpeedSource.cs`, `Executors/RampBoostActionExecutor.cs` | Momentum |
+| `Executors/RhinoSwordAutopilot.cs`, `AI/Boost/RampBoostAIPolicySO.cs`, `AI Boost Policies/RhinoAIBoostPolicy.asset` | AI |
+| `UI/Controller/RhinoVesselHUDController.cs` | the three card states |
+| `Tests/Editor/RhinoSwordAfterimageTests.cs` | the segment tiling |
+
+## Tuning knobs (first pass - never played)
+
+| Knob | Where | Value |
+|---|---|---|
+| Afterimage window | `RhinoSwordAfterimageConfig.windowSeconds` | 5 s |
+| Cadence | `layIntervalSeconds` / `minTipTravel` | 0.3 s / 6 u |
+| Budget | `maxAfterimagesPerWindow` | 16 |
+| Shape | `segmentLength` / `maxSegments` / `lengthCoverage` / `width` / `thickness` | 10 / 6 / 0.9 / 2 / 0.8 |
+| Collider delay | `colliderDelaySeconds` | 0.1 s |
+| Mass volume | `massVolumeMultiplier` | x1 -> x2.5, floor x0.25 |
+| Charge energy | `RhinoSkimmerDamagePrismEffect.chargeEnergyGainMultiplier` | x1 -> x2, floor x0.5 |
+| Momentum | `VesselElementalImmunity.topSpeedFraction` (Rhino root) | 0.7 |
+| Surge | `RhinoVesselSurgeByCrystalEffect` `surgeSeconds` / `energyFill` / `elementBoost` | 6 / 1 / 0.2 |
+| AI sword | `RhinoSwordAutopilot` think / stroke / rest / margin / when-full | 0.15 / 0.3 / 0.45 / 0.05 / 0.75 |
+| AI ramp | `RhinoAIBoostPolicy` align / runway / `minRearmSeconds` | fleet defaults / 0.5 s |
+
+Budget: at most 16 x 6 = 96 prisms per window, each <= 2 x 0.8 x 10 = 16 volume at rest (x2.5 at
+Mass 10). Measure it against Cleave's and Astro League's phase thresholds before tuning up.
+
+## In-editor verification
+
+Nothing here has run in the Unity editor (no editor in the authoring session). Compiled with
+`Tools/Build/unity_refcompile` (player + editor, 0 errors); `peer_press_harness` 0 divergences;
+`element_ability_table.py` 0 disagreements. Steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
+(the 2026-10-16 Rhino entry) and `Docs/QA/QA_BACKLOG.md`.
+
+1. **Afterimage** - any Rhino scene: energize (hold both triggers 1 s), swing, release. For 5 s after
+   the blade goes out, blade-shaped prisms appear along its sweep; the Mass card is lit. The blade
+   passes through them without cutting. At Mass 5 they are danger prisms.
+2. **Live Wire** - energize, release, re-enter the stance 2 s later: the blade goes out on time.
+   With Charge 5, the same re-entry re-lights it.
+3. **Momentum** - Time 5, ramp past ~588 u/s, ram a danger prism: no element drain, Time card lit.
+   Below 588 the drain lands and the card is dark.
+4. **Surge** - collect an omni crystal: blade bursts, energized for 6 s with no stance, petals rise
+   two levels and decay, afterimages throughout, then the 5 s window.
+5. **Petals** - collect elemental crystals with the sword: the energy meter no longer empties.
+6. **MPPM two clients** - half-pull a swing past a prism: both clients cut (or both miss) it.
+   Energize: both see the energized blade and the afterimages. Ramp then steer off: the remote
+   copy's `IsBoosting` clears.
+7. **AI** - an AI Rhino ramps on straights, swings at prisms near it, energizes near super-shields.
+
+## Follow-ups
+
+- **Mass budget playtest** - afterimage volume against Cleave / Astro League phase thresholds.
+- **Danger Afterimages x the input mute** - `SparrowDebuffByRhinoDangerPrismEffect` is wired in the
+  Sparrow and Grizzly vessel containers and mutes a victim's Button2 for 5 s on ANY danger prism,
+  which Mass 5 now lays. That is control theft (`Docs/ELEMENTAL_ECONOMY.md` §9); design call.
+- **Combos** - the AI never combos; a staggered energize stance can fire a combo
+  (`RhinoSwordComboDetector` links a rolled press - `RhinoSwordComboTests.ARolledTap_StillLinks`).
+- **Icons** are PLACEHOLDERS (`*-PLACEHOLDER.png`).
+- **Engage SFX** for the surge / afterimages: no new FMOD slots were added; the existing burst FX
+  reads for the surge.

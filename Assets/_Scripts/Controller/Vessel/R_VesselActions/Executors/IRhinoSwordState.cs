@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     /// The energize ritual's phases, driven by <see cref="ShieldSkimmerScaleDriver"/> and
     /// read by <see cref="RhinoSwordFXController"/> for the blade's look:
     /// Idle → (hold the both-triggers chop stance) Charging → (hold met) Energized —
-    /// white-hot, pops super-shielded prisms, stays lit for a tail after leaving the
+    /// danger red, pops super-shielded prisms, stays lit for a tail after leaving the
     /// stance → Cooldown → Idle.
     /// </summary>
     public enum RhinoSwordEnergizePhase
@@ -36,8 +36,8 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public interface IRhinoSwordState
     {
-        /// <summary>True while the blade is energized — white-hot, and the supershield
-        /// key is live (contact pops super-shielded prisms instead of bouncing).</summary>
+        /// <summary>True while the blade is energized — danger red, and the supershield
+        /// key is live (contact pops super-shielded prisms instead of binding in them).</summary>
         bool IsEnergized { get; }
 
         /// <summary>Current stored energy, normalized 0..1 (the Shield resource).</summary>
