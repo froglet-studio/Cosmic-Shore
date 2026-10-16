@@ -247,7 +247,7 @@ for two hulls, in two different ways.
 | Squirrel | Strike (joust overtake) | **steal** |
 | Dolphin / Scarab | Debuff (cone / plate, one shared asset) | eject |
 | Manta | Debuff (bloom, Mass+Space only) | eject |
-| **Rhino** | reported a Strike that **drained nothing** | **steal** — `RhinoSwordStealBySkimmerEffect` |
+| **Rhino** | reported a Strike that **drained nothing** | **steal** — `RhinoSwordStealBySkimmerEffect` (in the sword's container; runs only for a hit `VesselCombatHitBySword` admits, `stealScale` authored disabled = base magnitude — still true 2026-10-16) |
 | **Serpent** | **no anti-vessel verb at all** | **eject** — the sniper cone strips pilots |
 
 The two gaps were not the same kind of gap, and that mattered:
@@ -497,9 +497,13 @@ state rather than a serialized field, which made it *safer* and not *safe*.
 
 **A container can be emptied to nothing, and that is a real gameplay change to state.**
 `SlowExplosionImpactorDataContainer` carried exactly one effect and an empty
-`explosionPrismEffects`, so it is now empty outright — which means the **Rhino's sword crystal
-burst, the Rhino's vessel crystal blast and the Squirrel's vessel crystal blast have no
-vessel-facing effect at all.** That is correct under this law and it is a hole rather than a
+`explosionPrismEffects`, so it is now empty outright — which means the **Rhino's vessel crystal
+blast and the Squirrel's vessel crystal blast have no vessel-facing effect at all** (nor did the
+Rhino's sword crystal burst, which stopped spawning a blast 2026-10-08 and is **deleted** outright
+since 2026-10-16 — `RhinoSwordCrystalBurstEffectSO`, the effect that also drained ALL the sword's
+energy on every elemental petal the blade touched. The sword now collects elemental crystals with
+no sword-side effect; the burst LOOK moved to the Rhino's omni-crystal **Surge**,
+`RhinoVesselSurgeByCrystalEffect`, which fills the energy instead of draining it). That is correct under this law and it is a hole rather than a
 neutral outcome: if those blasts should reach a pilot, the sanctioned shape is a Debuff-class
 combat-hit report plus a drain, exactly as the Dolphin's cone and the Scarab's plate carry
 (`ScarabCavitationDebuffByExplosionEffect`), which is a Broadside **pricing** decision through
@@ -509,15 +513,24 @@ its two prefabs are kept rather than deleted, because a dangling container refer
 
 What is left behind, reported rather than swept: `ScriptableEventSkimmerDebuffApplied` and
 `SkimmerDebuffPayload` now have **no producer** — the channel and `RhinoVesselHUDController`'s
-`ShowDebuffTimer` handler are kept, since a SOAP channel with no producer is a wire rather than a
-feature and this one is the generic *"a skimmer debuffed you"* vehicle. (That HUD readout is
-already dark for a different reason: the ability lockup's retire sweep switched the Rhino's whole
-status cluster off, `Docs/ABILITY_LOCKUP.md`.) `ScriptableEventExplosionDebuffApplied` keeps its
+`ShowDebuffTimer` handler were kept, since a SOAP channel with no producer is a wire rather than a
+feature and this one is the generic *"a skimmer debuffed you"* vehicle. *(2026-10-16: the channel
+ASSET `EventOnSkimmerDebuffApplied` and the HUD handler are now deleted, with the rest of the
+Rhino's pre-lockup status cluster — `Docs/ABILITY_LOCKUP.md`. Only the C# event type and payload
+survive, with no asset, producer or consumer.)* `ScriptableEventExplosionDebuffApplied` keeps its
 producer — the **danger prism**, below.
 
 ### Where the line falls: the ARENA is not a weapon
 
-`SparrowDebuffByRhinoDangerPrismEffectSO` still mutes a pilot's input, and that is deliberate. A
+`SparrowDebuffByRhinoDangerPrismEffectSO` still mutes a pilot's input — the victim's Button2,
+for 5 s, on ANY danger prism — and it is wired into exactly two vessel containers, the **Sparrow's
+and the Grizzly's** (`SparrowImpactorDataContainer`, `GrizzlyImpactorDataContainer`); no other hull
+receives it. *(Recorded 2026-10-16: other docs claimed no container referenced it at all; that was wrong.)* The argument for keeping it is below, and it was written
+when a danger prism was only ever an arena hazard. **It is now an OPEN DESIGN QUESTION** against
+this section's control-theft rule: since the Rhino's Mass L5, **Danger Afterimages**, the sword
+lays danger prisms in its own shape on purpose, so a Rhino can now mute a Sparrow's or Grizzly's
+input with an aimed ability — which is the act this section forbids. Raised to design 2026-10-16,
+not changed (`Docs/ElementalAbilitySystem/BACKLOG.md`, 2026-10-16 section). The original argument: a
 danger prism is a hazard **standing in the world**: it is the risk/reward surface the whole trail
 economy is built on (a danger skim pays 10× energy and slams its own owner on contact), and a
 pilot answers it by not flying into it. The line this law draws is between the **arena** and a

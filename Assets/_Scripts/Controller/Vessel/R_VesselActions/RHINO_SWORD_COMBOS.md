@@ -1,5 +1,9 @@
 # Rhino Sword Combos — trigger strings call flourishes
 
+> **2026-10-16:** the energized variant is now chosen from the REPLICATED energize phase (the
+> owner decides it, `RhinoSwordNetworkRelay`), so every peer picks the same set. The AI still never
+> combos. New OPEN finding: a staggered entry into the energize stance fires a combo (Follow-ups).
+
 > Sits ON TOP of the analog swordsmanship in `RHINO_SHIELD_SWIPE.md` and changes none of it:
 > holding a trigger still places the sword exactly where the finger says and keeps it there.
 > Only a rapid string of **taps** calls a combo. The blade's cutting, energy and energize ritual
@@ -53,6 +57,14 @@ Tip trajectories (top + side view, every path): run
 
 A rolled tap (the second trigger pressed while the first is still coming off, past the chord
 window) still links — that is how fast alternation is actually played.
+**But the same rule links a staggered stance (OPEN, found 2026-10-16):** `Press` links any press
+made while the other trigger has been down for no longer than `tapMaxHoldSeconds`, whether or not
+that trigger is coming off. So a pilot squeezing into the both-triggers energize stance with one
+finger 0.08–0.3 s behind the other — past the chord window, inside the tap hold — fires the
+two-letter combo (RL or LR) on the second press (`RhinoSwordComboDetector.Press`;
+`RhinoSwordComboTests.ARolledTap_StillLinks` asserts the link, with the first trigger still at
+full pull when the second lands). That contradicts verification step 1's "no flourish ever fires
+from holding". See Follow-ups.
 
 ## Pose model — one channel space for fingers and flourishes
 
@@ -83,10 +95,14 @@ flourish IS the swing, and it never owes the rhythm penalty a lone swipe does.
 - **Replication:** detection reads the replicated trigger MIRRORS (`InputStatus.LeftTriggerAnalog`
   / `RightTriggerAnalog`, Owner-write / Everyone-read) — the same values the energize stance reads
   — so the owner and every replica call the same combo to within a network tick of timing, with
-  no new RPC. The energized variant is chosen from the local `IsEnergized`, which is
-  local-authoritative (the known class recorded in `RHINO_ENERGY_SWORD.md`); a peer whose energy
-  tally differs can play the base variant where the owner played the upgraded one. A tap shorter
-  than one network tick can coalesce away on a replica (an edge is not a level across a tick).
+  no new RPC. The energized variant is chosen from `IsEnergized`, which since 2026-10-16 is the
+  owner's energize phase on every peer (`RhinoSwordNetworkRelay`, `RHINO_ENERGY_SWORD.md`), so the
+  choice is no longer purely local. *(Until then each peer ran its own energize machine and a peer
+  whose energy tally differed could play the base variant where the owner played the upgraded
+  one.)* Residual: the phase and the mirrors are separate NetworkVariables, so a combo tapped
+  within a tick of ignition or of the tail running out can still pick different sets on owner and
+  replica. A tap shorter than one network tick can coalesce away on a replica (an edge is not a
+  level across a tick).
 - **Feedback:** `RhinoSwordFXController.NotifyCombo` flashes the blade (hit flash for a
   two-letter combo, pop flash for a finisher or energized combo) and strings a crackle along the
   blade (denser and hotter energized). No camera shake — combos are frequent.
@@ -135,17 +151,23 @@ edit-mode suite's logic runs 29/29 under an NUnit shim (the library-fallback tes
 their rules, and the generator's gates + self-test pass.
 
 1. Freestyle, Rhino, gamepad. Hold RT half-way and sweep it slowly, hold both triggers to
-   energize: the sword behaves exactly as before — no flourish ever fires from holding.
+   energize: the sword behaves exactly as before — no flourish fires from holding. **Known
+   exception (OPEN):** squeeze into the stance with one trigger 0.08–0.3 s behind the other and
+   the Scissor (RL) or Hook and Draw (LR) fires — record how often that happens to a natural
+   two-finger squeeze.
 2. Tap RT twice quickly (< 0.35 s apart, each tap < 0.3 s): **Twin Fang** — two right cuts,
    blade flash, then the sword returns to rest. Repeat for LL, RL, LR — each visibly different.
 3. Tap three: RRR spins the raised blade a full turn overhead; LLL wheels it down the left; RLR
    draws a figure eight. Tap RR then R: the Twin Fang is cut off into the Cyclone.
 4. Energize (hold both), release, then tap combos while the blade is still energized: the
-   upgraded set plays (Tempest = two turns, etc.), with the hotter crackle string.
+   upgraded set plays (Tempest = two turns, etc.), with the hotter crackle string. Note the tail
+   is not re-lit by re-taking the stance (unless Charge L5 Live Wire), so the window is the 5 s
+   tail.
 5. Tap both triggers together repeatedly (feathering the stance): no combo.
 6. Fly through a prism field running combos: prisms are cut along the path and debris flies
    harder off a whipped tip. No console errors.
-7. MPPM two clients: client A runs RL, RLR; client B sees the same flourishes on A's Rhino.
+7. MPPM two clients: client A runs RL, RLR; client B sees the same flourishes on A's Rhino —
+   including the energized set while A's blade is lit.
 8. Keyboard (Left/Right Shift = triggers): taps call combos the same way.
 
 ## Follow-ups
@@ -153,8 +175,17 @@ their rules, and the generator's gates + self-test pass.
 - **Audio**: 24 empty `sound` slots on the library asset for the audio owner.
 - **HUD callout**: `RhinoSwordComboPath.DisplayName` is authored for a combo-name toast; nothing
   draws it yet (`ShieldSwipeActionExecutor.ActiveFlourish` exposes the playing one).
-- **Replicated energized choice**: pick the variant from an owner-written bit rather than the
-  local `IsEnergized` once the energy/energize NetworkVariable follow-up in
-  `RHINO_ENERGY_SWORD.md` lands.
-- **AI**: `AIPilot` never pulls a trigger, so AI Rhinos never combo. A server-side replicated
-  tap pattern (Urchin spike-tap shape) would give them flourishes.
+- ~~**Replicated energized choice**~~ **DONE 2026-10-16** via the owner-authoritative energize
+  phase (`RhinoSwordNetworkRelay`); only the within-a-tick residual above remains.
+- **AI (still OPEN)**: AI Rhinos never combo. Since 2026-10-16 `RhinoSwordAutopilot` does write
+  the trigger mirrors (so the detector runs on them), but its strokes are `strokeSeconds` 0.3 +
+  `restSeconds` 0.45 apart — 0.75 s press to press, past the 0.35 s `comboWindowSeconds` — so they
+  never link, and its stance presses both triggers together (a chord). Giving it flourishes means
+  teaching the autopilot to tap a sequence, not a new replication path.
+- **Staggered stance fires a combo (OPEN, 2026-10-16).** A rolled press links whenever the other
+  trigger has been down ≤ `tapMaxHoldSeconds`, even if it is still fully held — so entering the
+  energize stance with the fingers 0.08–0.3 s apart calls RL/LR (`RhinoSwordComboDetector.Press`;
+  `RhinoSwordComboTests.ARolledTap_StillLinks` locks the current behaviour). Fix shape for design:
+  require the earlier trigger to be COMING OFF (below `pressThreshold`, or past its peak) before a
+  rolled press links, or defer the two-letter fire until the stance has had a chance to form —
+  either way the test must change with it.

@@ -56,7 +56,8 @@ the moment of fixing (all carry citations).
    (`FullAutoAction.asset`: `speedValue {Enabled:1, Min:1500, Max:4000, element:3=Space}`) **and
    does nothing.** Same for `OverheatingAction.heatDecayRate` (Charge — that asset and its SO were
    deleted in 2026-08 with the overheat mechanic), Rhino's
-   `GrowTrailAction.maxSize` (Mass), Serpent's `ConsumeBoostAction.boostMultiplier` (Time,
+   `GrowTrailAction.maxSize` (Mass — the action itself never ran and was deleted 2026-10-16; the
+   Rhino's Mass is now Afterimage, `FLEET_MAPS.md` §2), Serpent's `ConsumeBoostAction.boostMultiplier` (Time,
    also `Enabled:0`).
 2. **The binder is doubly broken even if re-enabled.** `ElementalFloatBinder.cs:33` reflects
    `GetProperty("Ship")` — the property was renamed `Vessel`; the `?.` swallows the null → silent

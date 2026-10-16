@@ -1,5 +1,10 @@
 # Rhino Plough — the hull shoves prisms aside instead of destroying them
 
+> **2026-10-16:** no plough code changed. The throw figures are restated at the live cruise
+> (50 u/s) and top (840 u/s); the peer-agreement claim is corrected (peers agree on the side, not
+> always on the landing point); the hull ignoring mass is now a recorded design statement (the
+> Time row), and the sword's new Mass afterimages are ploughed like any prism.
+
 Garrett, 2026-10-13: *"the rhino should not destroy prisms it collides with. those should be pushed
 to either side like the rhino is a plough."*
 
@@ -39,9 +44,26 @@ On each hull contact `RhinoPloughPrismEffectSO.Execute`:
    clock's flight stamp (`PrismRenderService.StampFlight`, Docs/PRISM_ANIMATION.md §5 C5) with its
    render bounds widened to cover the start. No per-frame CPU work during the slide.
 
-Prism contact is simulated per peer, so the plough runs per peer exactly as the ram did. The side
-is read off each peer's own hull pose and agrees everywhere except for a prism struck within float
-noise of the centreline.
+Prism contact is simulated per peer, so the plough runs per peer exactly as the ram did. The
+**side** is read off each peer's own hull pose and agrees everywhere except for a prism struck
+within float noise of the centreline. The **landing point does not always agree**: it is computed
+from each peer's own hull pose (the clearance) and its own `VesselStatus.Speed` (the throw), and
+a replica's pose and speed lag the owner's. A prism that sits near the clearance edge can be left
+alone on one peer (already clear, so not moved) and shoved on another, and a shoved prism lands
+at a slightly different distance where the peers' speeds differ. *(This paragraph used to claim
+the plough agrees everywhere but the centreline — that is true of the side only.)*
+
+**The hull ignores mass — by design (recorded 2026-10-16).** The Rhino carries no
+`VesselChangeSpeedByPrismEffect`, so ploughing costs no speed; the Time row's description
+("Ramp Spool", `RHINO_RAMP_BOOST.md`) now states this as the bulldozer identity rather than
+leaving it to read as a gap.
+
+**Its own afterimages.** The sword's Mass afterimages (and, at Mass L5, Danger Afterimages) are
+ordinary prisms to the hull: once the fleet-wide ~1 s self-trail grace (`SelfTrailContactConfigSO`)
+has passed, the hull ploughs them aside like any other mass. A Danger Afterimage ploughed that way
+also runs the container's danger entry — own-domain danger, so the temporary debuff, not the
+permanent burn (`VesselElementalDebuffByDangerPrismEffectSO`) — unless Time L5 Momentum is warding
+danger prisms above 588 u/s.
 
 ## Files
 
@@ -57,8 +79,8 @@ noise of the centreline.
 | Field | Shipped | Meaning |
 |---|---|---|
 | `clearanceMargin` | 1 u | Air between the hull's side and the prism's near face, on top of just-touching |
-| `throwSecondsOfSpeed` | 0.04 s | Extra sideways throw per unit of ram speed: 1.4 u at cruise (35), 3.6 u at 90 |
-| `maxThrowDistance` | 30 u | Ceiling on that throw — reached from 750 u/s, so a ramp-boosted Rhino (~1,200 u/s) throws 30, not 48 |
+| `throwSecondsOfSpeed` | 0.04 s | Extra sideways throw per unit of ram speed (`min(maxThrowDistance, speed × 0.04)`): 2.0 u at cruise (50), 3.6 u at 90 |
+| `maxThrowDistance` | 30 u | Ceiling on that throw — reached from 750 u/s, so a ramp-boosted Rhino at top speed (840 u/s) throws 30, not 33.6 |
 | `slideSeconds` | 0.25 s | How long the visual takes to slide out. Animation only |
 | `skipWhileAttached` | on | A riding vessel does not plough the trail it rides |
 
@@ -93,7 +115,12 @@ No `unity` binary was available in the authoring session, so none of this has be
 6. **No snap-back / flicker.** A ploughed prism stays where it landed; the slide is smooth and does
    not frustum-pop at its start.
 7. **MPPM two clients.** One Rhino ploughs a trail; both clients see the prisms land on the same
-   sides.
+   sides. Expect small differences in landing DISTANCE (each peer uses its own hull pose and
+   speed), and a prism grazed at the clearance edge may move on one client and not the other —
+   note how often that reads in play.
+8. **Afterimages.** Energize, let it go out, and fly back through the afterimages the sword
+   laid: after the ~1 s grace the hull ploughs them aside (danger ones sting unless Momentum is
+   up).
 
 ## Follow-ups
 
@@ -104,3 +131,5 @@ No `unity` binary was available in the authoring session, so none of this has be
   pile-ups read badly, probe `PrismSpatialIndex` for a free landing site.
 - Flora and fauna body prisms are ploughed like any other mass; a fauna re-poses its body prisms
   next frame, so they snap back. Decide whether creatures should be immovable to the hull.
+- **Per-peer landing divergence** near the clearance edge (above). If it shows in play, the fix
+  shape is an owner-decided shove (or quantizing the throw), not a change to the side rule.

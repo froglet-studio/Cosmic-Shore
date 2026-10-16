@@ -216,7 +216,9 @@ What the fleet resolves to today, derived from the shipped assets:
 | Dolphin | `R1` / RSHIFT | — | — | `L1` / LSHIFT |
 | Rhino | — | — | — | — |
 
-*(A dash is a passive ability. The face-button entries are blank on keyboard because
+*(A dash is a passive ability. The Rhino's four dashes are all deliberate since 2026-10-16: Sword
+Energy, Afterimage and Blade Reach are passive and the sword is posed by the triggers as a
+gesture; Ramp Spool engages on a full-throttle straight. The face-button entries are blank on keyboard because
 `InputHintBindingMap` authors no keyboard equivalent for `Button1/2/3` — the open item there is the
 keyboard map, not the lockup.)*
 
@@ -376,10 +378,22 @@ asset does not contain at all (`LaserTargeting`, `Crystal`, `ForceField`). Four 
 root branches are therefore genuinely driven (verified: `RhinoVesselHUDView` writes every one of
 those fields), and the sweep spares them exactly as its third guard promises.
 
-So the Rhino keeps a live status cluster beside its four locked cards — and that cluster is anchored
+So the Rhino kept a live status cluster beside its four locked cards — and that cluster is anchored
 at `(0.93..0.98, 0.04..0.13)`, which is the bottom-right corner the lockup row now occupies. It
 reads as "the old UI is back" because it is *in the row's seat*, not because anything failed to
 retire.
+
+**2026-10-16 — the cluster is DELETED.** The clear-slate rule below switched it off while the Rhino
+bound 0/4; binding its first icons in #971 (Mass = Trail Slabs and Time = Ramp Spool, 2/4) flipped the Rhino onto the
+reference guard, exactly as this doc predicts, and the guard spared every branch `RhinoVesselHUDView`
+still referenced — so the skimmer-size ring, slowed counter, slow-line flash, debuff/shock timer and
+the `LaserTargeting` / `Crystal` / `ForceField` indicators came back in the row's corner. The fix
+was not another sweep rule: the readout fields and their routines were deleted from
+`RhinoVesselHUDView`, `RhinoVesselHUDController`'s four SOAP channels went with them (two had no
+producer; two counted every Rhino's blasts, not this one's), and `BoostContainer`,
+`VesselImpactCooldown`, `TrailContainer` and the instance-added objects were removed from
+`RhinoHUDVariant` and `Rhino.prefab`. The Rhino now binds **4/4** (placeholder icons) and has no
+status cluster to spare. *Not yet verified in the editor.*
 
 *A HUD prefab asset does not tell you what a vessel wires.* The vessel's prefab instance can add
 GameObjects the asset has never heard of and populate fields the asset leaves empty — so an
@@ -402,7 +416,8 @@ So the sweep splits on one fact: **does this vessel bind any ability icon at all
   branch a HUD-root component still references comes back: the Serpent's view still pointed
   `shieldIcon` at the retired Seed Wall readout, and that reference had to be nulled or the old
   wall art would have reappeared in the row's corner (`SERPENT_FUEL_PELLETS.md`).
-- **No icon bound** (Rhino, Manta, Serpent — all `0/4` when this was written) — every drawing root-level child is retired.
+- **No icon bound** (Rhino, Manta, Serpent — all `0/4` when this was written; the Rhino is 4/4
+  since 2026-10-16) — every drawing root-level child is retired.
   All four cards render LOCKED, so there is no designed row for anything at root to belong to, and
   whatever is there is the pre-lockup HUD by definition.
 
@@ -411,7 +426,7 @@ Rhino's. Measured per vessel:
 
 | vessel | bound icons | what the clear-slate rule switches off |
 |---|---|---|
-| Rhino | 0/4 | `BoostContainer`, `VesselImpactCooldown`, `TrailContainer`, and the instance-added `LaserTargeting`, `Crystal`, `ForceField` — i.e. the debuff timer, slowed count, skimmer-size ring, laser and crystal indicators |
+| Rhino | 0/4 → **4/4 since 2026-10-16** | was: `BoostContainer`, `VesselImpactCooldown`, `TrailContainer`, and the instance-added `LaserTargeting`, `Crystal`, `ForceField` — i.e. the debuff timer, slowed count, skimmer-size ring, laser and crystal indicators. Binding its first icons (#971, 2/4) brought them back under the reference guard; they are now **deleted** from the HUD variant, the prefab and the view, so there is nothing left for either rule to spare |
 | Manta | 0/4 | inherited from `VesselHUDPrefab`: `Boost Button/display`, `Exhause Barrage`, `ShootBullets`, `ShootMissiles` — **each carrying a live `ResourceDisplay`** — plus both glyph roots |
 | Serpent | 0/4 → **1/4 since 2026-09-25** | was: the same four inherited buttons and their `ResourceDisplay`s. Now the reference guard runs instead, and the old `Boost Button` hosts the Time icon |
 | Squirrel / Sparrow / Dolphin / Scarab | 4/4 | **nothing** — the reference guard still runs on these |
@@ -422,10 +437,13 @@ The four inherited buttons are safe to switch off for a *specific* reason, not b
 through them. They are resource *readouts* wearing button clothing. Were that not true, clearing
 them would delete the on-screen ability control on every touch device — which is exactly the trap
 `RetireLegacyChrome` guards with its touch-target exception, and why this was checked rather than
-assumed. `RhinoVesselHUDView` still writes to all of them — the
-branches are switched *off*, not unwired — so restoring one is re-activating a branch, not
+assumed. `RhinoVesselHUDView` still wrote to all of them — the
+branches were switched *off*, not unwired — so restoring one was re-activating a branch, not
 rebuilding a readout. The rule reverses itself automatically: the day the Rhino binds its first
-ability icon, the reference guard takes over again.
+ability icon, the reference guard takes over again. *(It did, in #971, and the cluster came back —
+which is why the 2026-10-16 fix deleted the readouts rather than relying on either rule. A vessel
+leaving the clear-slate rule must first delete whatever pre-lockup readout its view still
+references.)*
 
 *The lockup never claimed status readouts* — it replaced ability icons, gauges, press glows, upgrade
 badges and device glyphs. Clearing them here is not the lockup extending its remit; it is a vessel
@@ -482,8 +500,8 @@ may add non-elemental cards to their left (see below), but never fewer than four
 icon for renders **locked**: both plates quieter, a hairline mark where the icon would be, no gauge
 track, no chip — but, since 2026-09-16, **the cooldown veil if something is driving one** (see
 "The cooldown" above; it is the only state a locked card draws). Deliberately **not a padlock** —
-the ability is not locked to the *player*, it does not exist yet. This is what puts the Rhino (one named ability, three open design slots) on the fleet's UI
-today instead of leaving it on the old one until design lands, and its element flowers dock into the
+the ability is not locked to the *player*, it does not exist yet. This is what put the Rhino (one named ability, three open design slots, until all four rows
+shipped 2026-10-16) on the fleet's UI instead of leaving it on the old one until design landed, and its element flowers dock into the
 locked cards exactly as they would into live ones.
 
 ## Non-elemental cards — the extension point, to the LEFT of the four
@@ -562,7 +580,7 @@ Measured off the shipped `vesselCrystalEffects`, what each hull actually does:
 | **Squirrel** | lays a ring of **shielded** prisms (`AOEShieldedRingSpawner`) | its own baked icon, tinted |
 | Manta | detonates its planted bombs (Kabloom) | locked |
 | **Dolphin** | fires its blast, and a resource change | **generated** — the blast's prism tally, centred, held until the next blast (`DolphinVesselHUDView.EnsureGeneratedAbilityIcons`, over an invisible anchor icon) |
-| Rhino | a blast, and a resource change | locked |
+| Rhino | a blast, and the **Surge** (2026-10-16, replaced the resource change: fills sword energy, holds the blade energized 6 s, lends two levels to all four elements, lays afterimages) | locked |
 | Serpent | a blast | locked |
 | Sparrow | an 8 s debuff **ward** | locked |
 | Urchin | haptics only — nothing a card can draw | locked, permanently |
@@ -737,8 +755,8 @@ fails on every card EXCEPT one. Gated by `Tools/Build/check_rest_scale_capture.p
 assuming: it is the only HUD that authors a non-1 host scale (0.7 on all four buttons plus its core
 card) and the only one carrying `AbilityButtonPressJuice` at all — Dolphin, Scarab and Sparrow
 author their hosts at 1 and carry only `Image` / `Button` / `ResourceDisplay`, none of which touches
-`localScale`; Manta, Rhino, Serpent and the shared `VesselHUDPrefab` bind no icons, so their hosts
-are generated by the lockup at 1. No vessel prefab overrides a HUD host's `m_LocalScale` either (the
+`localScale`; Manta, Rhino, Serpent and the shared `VesselHUDPrefab` bound no icons when this was
+measured (the Rhino binds 4/4 since 2026-10-16), so their hosts were generated by the lockup at 1. No vessel prefab overrides a HUD host's `m_LocalScale` either (the
 instance-override trap this document records elsewhere). The fix is structural regardless of that
 count — `PlaceHost` corrects any host carrying the juice on whatever vessel it turns up on, and the
 gate fails the build on the next component that caches a scale in `Awake` — so the audit is evidence
@@ -761,7 +779,8 @@ per-vessel art or wiring for a human to supply.
 | Sparrow | 4/4 | ✅ ensured at runtime; `rollChargeIndicator` becomes the Time card's gauge |
 | Squirrel | 4/4 + 2 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge = the joust (skull), Mass = boost ring (+ the standard cooldown veil), **Space = GENERATED** (skimmer-reach ring + steal count, built by the view), Time = skimming (+ `boostFill` as its gauge). Two non-elemental cards sit left of Charge: the **omni crystal** (emblem above, shielded-ring icon below) and the **drift** (no upper cell at all), chip **LT** |
 | Serpent | 1/4 | ✅ Time card bound (Solid Fuel Pellets — its four pips are the fuel tank); Charge/Mass/Space LOCKED. Its Charge card DOES draw the cooldown veil — a locked card has a plate, which is all the veil needs |
-| Manta · Rhino | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
+| Manta | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
+| Rhino | **4/4** (2026-10-16, placeholder icons `Rhino_SwordEnergy` / `Afterimage` / `BladeReach` / `RampSpool`) | ✅ ensured at runtime. Charge card lit while the blade is energized + the energize-cooldown veil (a gauge would fill with sword energy, but none is authored); Mass card lit while afterimages lay; Space passive; Time card lit while Momentum holds. Pre-lockup status cluster deleted. Not yet editor-verified |
 | Urchin | 4/4 | ✅ ensured at runtime (2026-10-06, `author_urchin_hud.py`); ammo fill = the Charge card's gauge, binary riding indicator = the Mass card's, Track recharge = the Space card's veil |
 
 **Row ownership is why `EnsureAbilityLockup` runs BEFORE `view.Initialize`.** Per-vessel views
@@ -901,9 +920,14 @@ notches inside the trapezoid.
    the Time card wipes empty when a strafing roll is spent, refills on re-arm. Scarab: the Space
    card fills with ball energy and goes READY. Confirm each meter is on the card of the ability it
    reports on (boost on Boost Ring, ball energy on Ball Forge), not the one it was authored under.
-10. **Rhino.** Fly a Rhino: four cards, Mass live (Trail Slabs) and the other three drawn locked —
-    quieter plate, a short hairline where the icon would be, no gauge track — with the element
-    flowers docked above all four. No old ability-icon UI left in the corner.
+10. **Rhino.** Fly a Rhino: four LIVE cards (placeholder icons) — Sword Energy, Afterimage, Blade
+    Reach, Ramp Spool — with the element flowers docked above all four. Energize the blade (hold
+    the both-triggers chop stance 1 s): the Charge card lights while energized and carries the
+    energize-cooldown veil afterwards.
+    When the blade goes out the Mass card lights for the afterimage window. Ramp above 588 u/s with
+    Time ≥ 5: the Time card lights (Momentum). No skimmer-size ring, slowed counter, debuff timer or
+    laser/crystal indicator anywhere in the corner. *(Rewritten 2026-10-16; this step used to read
+    "Mass live (Trail Slabs) and the other three drawn locked".)*
 11. **Balance + band.** Both plates the same height AND both marks the same size, mirrored about
     the gap — no coffin, and neither plate looking under-filled. A white band down each sloped side,
     **solid the whole length including the corners**, wrapping a short way onto the top and bottom
@@ -986,8 +1010,9 @@ of rolling this style onto any further vessel.
 - ~~**Urchin.** The only hull the lockup cannot reach~~ — closed 2026-10-06: `UrchinHUDVariant.prefab` exists
   (`Tools/Build/author_urchin_hud.py`). Its icons are placeholders.
 - **Gauges on the remaining hulls.** Dolphin, Manta, Rhino and Serpent bind no `gauge` yet. The
-  Dolphin's four icons are already live gauges in their own right, so it may never want one; the
-  other three are waiting on ability design anyway.
+  Dolphin's four icons are already live gauges in their own right, so it may never want one; Manta
+  and Serpent are waiting on ability design. The Rhino's controller already fills a Charge gauge
+  with sword energy if one is authored (2026-10-16) — authoring it is the open step.
 - ~~`Scarab.prefab` wires `SparrowHUDVariant`~~ — **not true, and now cleaned up.** It references
   `ScarabHUDVariant` (guid `4f3ce7d760a1e0c76f3bc8c6a6842a92`); what it carried was a stale
   prefab-instance **name override** setting `m_Name: SparrowHUDVariant`, a leftover from when the

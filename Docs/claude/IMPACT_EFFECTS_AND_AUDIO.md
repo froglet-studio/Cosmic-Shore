@@ -65,10 +65,16 @@ status is therefore a thing to CHECK, never to assume**: Squirrel / Dolphin / Sp
 it and are pinned to one shared tuning (`speedModifierDuration 1`, `massScaling 0.1`,
 `maxSlowStrength 0.5`, `dangerSlowMultiplier 3`, `dangerSlowDurationMultiplier 3` — a prism should
 read the same whichever hull hits it, so moving one asset off these numbers un-shares the fleet's
-collision read); **Rhino and Serpent still have no speed effect at all** and are the open item.
+collision read); **the Serpent still has no speed effect at all** and is the open item. **The
+Rhino's absence is a DESIGN statement since 2026-10-16, not a gap — "the bulldozer ignores mass"**:
+its hull ploughs prisms aside (`RhinoPloughPrismEffect`) and ramming costs it no speed, recorded in
+the Time row of its elemental map so the next audit reads it as intent.
 Note also that a *name* is not evidence of a slow: `SparrowDebuffByRhinoDangerPrismEffectSO` carries
 a `vesselSlowedByRhinoDangerPrismEvent` field and a "Slow Viewer Integration" header, and only ever
-muted an input.
+muted an input — the victim's Button2 for 5 s, on ANY danger prism, and only on the two hulls whose
+containers carry it (Sparrow, Grizzly). Since the Rhino's Mass L5 lays danger afterimages, that mute
+now has an aimed source; whether it survives the control-theft rule is an open design call
+(`Docs/ElementalAbilitySystem/BACKLOG.md`, 2026-10-16).
 
 **A prism's DEATH VISUAL wears the palette of the TIER it was wearing, never just its domain.** The dying prism's `PrismKind` rides `PrismEventData.Kind` — stamped by `Prism.Explode`/`Implode` from `PrismKinds.Of` *before* the destruction pass — and the batched debris path (Grow still uses `ConfigureForTeam`) tints from `SO_ColorSet.GetPrismKindColors`, the ONE composition `ThemeManager` also paints the live block materials with (`ThemeManager.PaintPrismTier`). Before this, debris was tinted from the domain alone at the PLAIN tier, so a danger prism — a frosty shielded base under the hot domain-independent danger rim — shattered into ordinary domain-coloured debris and read as a plain prism dying; shielded/super-shielded mass had the same defect on a devastating hit. **Never re-inline a tier's colour pair** at either consumer, and never fix a debris colour on the per-domain `SO_MaterialSet.ExplodingBlockMaterial` copies — nothing draws with those (`PrismDebris` reads mesh+material off the pool prefab and overrides colour PER ENTITY, which is also why a mixed-tier burst is still ONE batch and one draw: the tier must never become a reason to split a batch or swap a material). Danger alone also detonates HARDER — `PrismExplosion.DetonationGain`, authored as `dangerDetonationMultiplier` on `PrismExplosion.prefab` (1.6, set 1 for palette-only) — and that gain scales debris speed, shatter rate and the clamp band as ONE quantity, per the AOE-impulse contract above. Detail: `Docs/PALETTE.md §2.1`, `Docs/PRISM_ANIMATION.md §4.6`.
 

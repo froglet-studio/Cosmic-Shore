@@ -346,8 +346,13 @@ oversights:
 Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`
 `URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 
-The **Rhino** is blocked on **design**: its map is still `(open design slot)` with `Input = 0`
-and no `UpgradeLabel`, and its HUD carries 0–2 lower-right icons. (The Manta left this set
+The **Rhino** left this set **2026-10-16**: all four rows are designed and shipped (Sword Energy /
+Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker, Ramp Spool / Momentum — FLEET_MAPS.md
+§2 Rhino, `R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`), every `Input` a deliberate `0` (passive or
+gesture), and its row binds **4/4** with placeholder icons. The pre-lockup status cluster that came
+back when it bound its first icon is deleted (`Docs/ABILITY_LOCKUP.md`). Not yet run in the editor.
+(Until then it was blocked on design: `(open design slot)` entries, no `UpgradeLabel`, 0–2
+lower-right icons.) (The Manta left this set
 2026-08-26 — its spec remake shipped a full map, four bound icons at the wirer bands, and all four
 L5 upgrades; see FLEET_MAPS.md §2 Manta and
 `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`. The **Serpent** left it
@@ -359,8 +364,8 @@ fuel tank, while Charge/Mass/Space still render LOCKED and the Charge card's coo
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The
-remaining flyable HUDs (Rhino, Serpent — 1/4, Time only, since 2026-09-25 — and the Urchin until
-its row is authored) have no or partial `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
+remaining flyable HUDs (Serpent — 1/4, Time only, since 2026-09-25 — and the Urchin until
+its row is authored; the Rhino left this list 2026-10-16 at 4/4) have no or partial `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
 framework above needs no further changes.
 
 ### 7.3 Gotcha: never write a control hint's SIZE

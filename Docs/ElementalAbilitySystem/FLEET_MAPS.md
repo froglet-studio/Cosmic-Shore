@@ -6,9 +6,12 @@ implemented — **Sparrow, Dolphin, Squirrel, Urchin, Manta** (the Manta via the
 remake; its superseded "Reaper Ray" table is kept below as history); their rows below are the
 record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
 them. The **Serpent's Charge and Space rows joined that set on 2026-09-16** (the scope + rifle
-re-cut; its Mass row and its Time L5 are still proposals). The level-5 upgrades for the **Rhino**
-are still **PROPOSALS for Garrett to mark up**, except **Space 5, Breaker**, approved and shipped
-2026-10-13 (one-slice shielded cuts on the sword). Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+re-cut; its Mass row and its Time L5 are still proposals). The **Rhino joined it on 2026-10-16**:
+all four rows — Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker
+(Breaker shipped first, 2026-10-13), Ramp Spool / Momentum — are **APPROVED + SHIPPED** (Garrett's
+design calls in the 2026-10-16 session; nothing on that branch has run in the Unity editor yet). Its
+old forcefield/slab proposals are kept below as superseded history. For any row still a proposal,
+approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
 snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
 fundamentals).
 
@@ -53,7 +56,7 @@ its field and host asset**, and the level-5 upgrade **with the source line that 
 hand-written copy of that drifts — this section carried "map pinned 1" for four vessels for a
 day after the channel it referred to had been deleted.
 
-### Coverage, 2026-09-18 (measured, `element_ability_table.py`)
+### Coverage, 2026-10-16 (measured, `element_ability_table.py`; first taken 2026-09-18)
 
 | Vessel | abilities | scaling wired | L5 gates wired |
 |---|---|---|---|
@@ -62,16 +65,22 @@ day after the channel it referred to had been deleted.
 | Squirrel | 4/4 | 4/4 | 4/4 |  *(Charge scaling filled 2026-09-28 — the joust's STEAL; see the re-cut below)*
 | Urchin | 4/4 | 4/4 | 4/4 |
 | Manta | 4/4 | 4/4 | 3/4 |
-| Serpent | 3/4 | 3/4 | 2/4 |
+| Serpent | 4/4 | 4/4 | 3/4 |  *(Mass filled 2026-10-09 — Seed Wall / Lockdown; Time L5 still open)*
 | Scarab | 4/4 | 4/4 | 2/4 |
-| Rhino | 2/4 | 3/4 | 1/4 | *(Space L5 **Breaker** landed 2026-10-13 on an element whose ABILITY slot is still open — the tool counts the gate and prints no detail for an undesigned row)* |
+| Rhino | 4/4 | 4/4 | 4/4 | *(was 2/4 · 3/4 · 1/4 — Breaker landed 2026-10-13 on a row with no ability; the other three rows and both missing abilities were designed and shipped 2026-10-16, 0 disagreements)* |
+| Grizzly | 4/4 | 3/4 | 3/4 | *(the one vessel `--gaps` still lists — see below)* |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 | **Thresher** | **4/4** | **4/4** | **4/4** | *(added 2026-10-08, measured on the branch — prototype; see `R_VesselActions/THRESHER.md`)* |
 | **Stoat** | **4/4** | **4/4** | **4/4** | *(own vessel 2026-10-13 — Space = Field Dipole (L5 **Accretion**, Theft fused in), Time = Pathfinder / Time Mode (L5 **Foresight**), Charge = **Ripple** (L5 **Siphon**), Mass = **Mass / Time Mode** on B (L5 **Armoured Wake**); `R_VesselActions/STOAT_DIPOLE.md` §1a–§1e, §5)* |
 
-Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
-Charge and Space (Space has its L5, Breaker, but still no ability or scaling), and the Serpent's Mass. The full list, with what each one would cost to fill, is
-**`FLEET_GAPS.md`**.
+Everything the tool still flags (`--gaps`, 2026-10-16) is on **one vessel, the Grizzly** — all four
+of its rows: every one still carries the RETIRED generic map multiplier (`ELEMENT_SCALING_UNIFICATION.md`),
+its Mass (Weapon Systems) changes no number, and its Charge L5 (Battle Sight) is prose with no live
+`IsUpgradeActive` gate. The Rhino's Charge and Space rows and the Serpent's Mass, which this paragraph
+used to list as the open design gaps, are filled (Rhino 2026-10-16, Serpent 2026-10-09). The open
+slots the tool does NOT flag — an `L5 -` on the Serpent's and Manta's Time and the Scarab's Mass and
+Space — are declared-empty upgrades, not disagreements. The full list, with what each one would cost
+to fill, is **`FLEET_GAPS.md`**.
 
 **Re-run the tool rather than reading this table** — it is a transcription and it went stale
 inside one merge. The Serpent was 1/4/1/4/0/4 when the table was first written and the scope +
@@ -303,7 +312,7 @@ exact jaw-angle curve: `DOLPHIN_ENERGY_ECONOMY.md` §1 and §3.
 | Charge | crystal-blast capsule **THICKNESS** — the width across the beam, `0.75×` the authored `_coreExplosionScale` at the resting level rising to `1.5×` at level 10 (`VesselExplosionByCrystalEffectSO._coreMultiplierAtRestCharge/_coreMultiplierAtFullCharge`, floored by `_minCoreMultiplier`). Total extent across the gape is set by ENERGY, so Charge does not enlarge the blast — it redistributes that extent, trading a long thin beam for a fat round one. Carries the **Echo Sight** on the right trigger (`EchoSightActionSO`) | **Pilot Echo** — the sight lights up VESSELS caught in the same volume, each brightened in its own domain's colours (`EchoSightVesselHighlighter` drives `_ColorMultiplier` on `VesselGraph`; `BlastVolume.Contains` is the CPU transcription of the same predicate the sweep job and the prism shader run) |
 | Mass | crystal-seeding recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullMass`, floored by `minCooldown`). The ability is **PASSIVE** — no input; it seeds into the cell's cytoplasm on a loop, so this multiplier sets the seeding tempo and therefore the blast's tempo | **Claimed Seed** — the seed lands TEAM-locked instead of as a free-for-all omni crystal (`upgradedCrystalPrefab` = `TeamCrystal.prefab`, plus the `ownDomain` stamp that IS `Crystal.CanBeCollected`'s gate). Below it your ammunition is anyone's |
 | Space | crystal-impact blast **REACH** ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast self-similarly (reach and base diameter together) because the half-angle IS baseRadius/height; Charge's thickness multiplier composes on top of it and moves only the capsule diameter | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
-| Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Drift Ward** — while DRIFTING the vessel holds the general elemental-debuff immunity state **against DANGER PRISMS ONLY** (`VesselElementalImmunity` on the Dolphin root, `condition: WhileDrifting`, `upgradeGate: Time`, `wardedSources: DangerPrism`), so a danger prism's all-element drain does not land. It denies ONLY the elemental drain, and only from the ARENA: an opposing pilot's crystal blast (`ElementalDebuffSources.Explosion`) debuffs a drifting Dolphin normally, which is what keeps The Bends scoreable — unscoped, this ward cancelled that mode's only scoring event for whichever pilot was losing (`BENDS.md`, `SPARROW_AFTERBURNER.md` §1.1). **Verified against the Dolphin's own containers at ship time** (2026-08-18), what still lands on a danger ram is: the slow (`DolphinVesselChangeSpeedByPrism`, `maxSlowStrength 0.5 × dangerSlowMultiplier 3`, duration `1 × 3`), and the halving of banked blast ENERGY (`DolphinVesselChangeResourceByPrismEffect`, `retainedFraction 0.5`) — the ammunition for the cone, so the ward is not a free pass. Banked BOOST is halved too (`DolphinVesselChangeBoostByPrismEffect`), but that effect deliberately skips its pinned-snapshot correction *while drifting* because the running charge loop refills the meter — so inside the ward's own window a ram costs drift-seconds rather than a bank. Note the platform's "input mute" (`SparrowDebuffByRhinoDangerPrismEffectSO`) does **not** apply here, or anywhere: that asset is referenced by no effect container at all. The vessel-agnostic state is the extension point; nothing here is Dolphin-specific |
+| Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Drift Ward** — while DRIFTING the vessel holds the general elemental-debuff immunity state **against DANGER PRISMS ONLY** (`VesselElementalImmunity` on the Dolphin root, `condition: WhileDrifting`, `upgradeGate: Time`, `wardedSources: DangerPrism`), so a danger prism's all-element drain does not land. It denies ONLY the elemental drain, and only from the ARENA: an opposing pilot's crystal blast (`ElementalDebuffSources.Explosion`) debuffs a drifting Dolphin normally, which is what keeps The Bends scoreable — unscoped, this ward cancelled that mode's only scoring event for whichever pilot was losing (`BENDS.md`, `SPARROW_AFTERBURNER.md` §1.1). **Verified against the Dolphin's own containers at ship time** (2026-08-18), what still lands on a danger ram is: the slow (`DolphinVesselChangeSpeedByPrism`, `maxSlowStrength 0.5 × dangerSlowMultiplier 3`, duration `1 × 3`), and the halving of banked blast ENERGY (`DolphinVesselChangeResourceByPrismEffect`, `retainedFraction 0.5`) — the ammunition for the cone, so the ward is not a free pass. Banked BOOST is halved too (`DolphinVesselChangeBoostByPrismEffect`), but that effect deliberately skips its pinned-snapshot correction *while drifting* because the running charge loop refills the meter — so inside the ward's own window a ram costs drift-seconds rather than a bank. Note the platform's "input mute" (`SparrowDebuffByRhinoDangerPrismEffectSO`, which mutes the victim's Button2 for 5 s on ANY danger prism) does **not** apply here — it is wired only into the **Sparrow's and Grizzly's** vessel containers (`SparrowImpactorDataContainer`, `GrizzlyImpactorDataContainer`), not the Dolphin's. *(Corrected 2026-10-16: this note used to say the asset was referenced by no container at all, which is wrong; since the Rhino's Danger Afterimages, a Sparrow or Grizzly flying into them is muted — an open design question against `ELEMENTAL_ECONOMY.md` §9's control-theft rule, `BACKLOG.md`.)* The vessel-agnostic state is the extension point; nothing here is Dolphin-specific |
 
 All four map `MultiplierAtFullLevel` **no longer exist** (retired 2026-09-18,
 `ELEMENT_SCALING_UNIFICATION.md`) — every scaling above is authored on its
@@ -318,14 +327,43 @@ Superseded proposal (kept for the record): Charge→charge-boost peak / "Shockwa
 Mass→trail scale while discharging / "Solid Wake", Space→skimmer scale / "Slipstream",
 Time→charge fill rate / "Instant Draw".
 
-### Rhino — "Bulldozer" (slabs + forcefield + ram)
+### Rhino — "Bulldozer" (sword + afterimages + plough + ramp) — APPROVED + SHIPPED 2026-10-16
 
-| Element | Quantitative (live) | Proposed L5 upgrade |
+Garrett's design calls, 2026-10-16 (Breaker on Space 5 was approved and shipped first, 2026-10-13).
+All four abilities are passive or gesture-driven, so every `Input` is a deliberate `0`. Nothing
+here has run in the Unity editor yet. Detail: `R_VesselActions/RHINO_ENERGY_SWORD.md`,
+`RHINO_SWORD_AFTERIMAGE.md`, `RHINO_RAMP_BOOST.md`, `RHINO_PLOUGH.md`.
+
+| Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | *(open)* → propose: forcefield shrink rate (the authored-but-dead `GrowSkimmerAction.shrinkRate` Charge mapping, 6→2) | **Unyielding Field** — forcefield no longer shrinks on prism hits, only on crystal timeout |
-| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; on the Sparrow this lives on **MASS** 5 — it spent 2026-08 rounds 4–6 on Space 5 and was returned by sign-off on 2026-08-13) |
-| Space | *(open)* → propose: forcefield max size | **Breaker** — APPROVED + SHIPPED (Garrett, 2026-10-13): the **sword** cuts a SHIELDED prism in one slice instead of two — the shield sheds and the core is cut in the same hit (`RhinoSkimmerDamagePrismEffectSO.breakerElement`, gated on `IsUpgradeActive(Space)`). Super-shielded mass still needs an energized blade. Replaces the old "devastate on ram" proposal: the hull ploughs since 2026-10-13 (`R_VesselActions/RHINO_PLOUGH.md`) |
-| Time | **ramp wind-up rate** (`accelerationPerSecond` ×2.5 at level 10, ×0.5 at −5 — "Ramp Spool", LIVE since Broadside's playtest) | *(open)* — the row is FILLED, the upgrade is not. The old proposal here was "slab growth rate → **Fast Pour**"; it is retired rather than moved, because Time now owns the ramp and one element owns one parameter |
+| Charge | **Sword Energy** — energy banked per cut ×1 at rest → ×2 at level 10, floored ×0.5 (`RhinoSkimmerDamagePrismEffectSO.chargeEnergyGainMultiplier`, new 2026-10-16) on 0.04 per prism kill and 0.12 per super-shield pop. Energy lengthens the blade toward `MaxScale` 120 and pays for the energize (cost 0.1, hold the both-triggers chop stance 1 s, 5 s tail after release, 5 s cooldown) | **Live Wire** — once the stance is let go the energized tail runs out whatever the fingers do; with Live Wire every return to the chop stance re-lights it (`ShieldSkimmerScaleConfigSO.liveWireUpgradeElement`, gated on `IsUpgradeActive(Charge)` in `ShieldSkimmerScaleDriver`). Without the upgrade there is no longer any refresh: the ungated one that kept a blade lit forever was removed the same day |
+| Mass | **Afterimage** — for 5 s after the energized blade goes out the sword lays prisms in its own shape and pose (one per ≥ 0.3 s and ≥ 6 u of tip travel, ≤ 16 per window, the blade cut into ≤ 6 segments of ≤ 10 u covering 90% of it; `RhinoSwordAfterimageConfig.asset`, first pass, never played). Mass scales their VOLUME ×1 → ×2.5, floored ×0.25 (`massVolumeMultiplier`), read at the REPLICATED level so every peer lays the same mass. The blade never cuts its own afterimages | **Danger Afterimages** — the afterimages are laid as DANGER prisms (`RhinoSwordAfterimageConfigSO.dangerUpgradeElement`, gated on `IsUpgradeActive(Mass)`, snapshotted per afterimage). Open interaction: `SparrowDebuffByRhinoDangerPrismEffectSO` in the Sparrow's and Grizzly's containers mutes the victim's Button2 on ANY danger prism, so these now reach it (`BACKLOG.md`) |
+| Space | **Blade Reach** — the blade's resting length 30 at rest → 50 at level 10 (`Skimmer.Scale` ElementalFloat on `ForceFieldSkimmer Variant`, read live by `ShieldSkimmerScaleDriver`); energy grows it on top toward 120 | **Breaker** — APPROVED + SHIPPED 2026-10-13: the sword cuts a SHIELDED prism in one slice instead of two — the shield sheds and the core is cut in the same hit (`RhinoSkimmerDamagePrismEffectSO.breakerElement`, gated on `IsUpgradeActive(Space)`). Super-shielded mass still needs an energized blade. Replaced the old "devastate on ram" proposal: the hull ploughs since 2026-10-13 |
+| Time | **Ramp Spool** — ramp wind-up `accelerationPerSecond` 220 at rest → 550 at level 10, 110 at the −5 floor (`RampBoostActionSO.timeAccelerationMultiplier`, ×1 → ×2.5, floored ×0.5, read live since 2026-10-16 — it was snapshotted at first engage). Time does not raise the ceiling: cruise 50 × `maxBoostMultiplier` 16.8 = 840 u/s | **Momentum** — above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino's elements (`VesselElementalImmunity` on the root, `condition: WhileAboveTopSpeedFraction`, `upgradeGate: Time`, `wardedSources: DangerPrism`), so an opposing pilot's blast still lands. The Time card lights while the ward holds |
+
+**The bulldozer ignores mass — a design statement, not a gap.** The hull carries no
+`VesselChangeSpeedByPrismEffect`: ramming costs the Rhino no speed. The hull destroys nothing either
+— it PLOUGHS prisms aside (`RhinoPloughPrismEffect`, 2026-10-13) and the ramp keeps climbing
+through them. This is recorded in the Time row's description on the map, so it reads as intent.
+
+**Omni crystal — the Surge** (`RhinoVesselSurgeByCrystalEffect`, replaced
+`RhinoVesselChangeResourceByCrystalEffect` 2026-10-16): fills sword energy to 1, bursts the blade,
+holds it ENERGIZED for 6 s with no stance and no cost (overriding a cooldown), lends +0.2 normalized
+(two levels) to all four elements decaying over the 6 s, and lays afterimages throughout. When it
+ends the blade goes out (unless Live Wire and the stance hold it) and the normal 5 s afterimage window
+follows. The Rhino crystal EXPLOSION (`RhinoVesselExplosionByCrystalEffect`) is unchanged.
+
+**Superseded proposals (kept for the record, retired 2026-10-16).** The first-pass table proposed
+Charge → *forcefield shrink rate* (`GrowSkimmerAction.shrinkRate`, 6→2) / **Unyielding Field**,
+Mass → *trail slab max size* / **Armored Slabs**, Space → *forcefield max size*, and Time's
+**Fast Pour** (slab growth rate; retired earlier, when Time took the ramp). They were not rejected on
+taste: every one of them scaled a mechanic that no longer existed. `GrowSkimmerAction` grew the
+retired FORCEFIELD — nothing referenced it once the energy sword replaced the forcefield, and it
+was deleted 2026-10-16 with `GrowTrail` / `ZoomOut`. The Trail Slabs (`GrowTrail`) were dead too:
+the grow loop never ran (`Begin` cancelled itself) and the shrink loop never ran either (every
+scaler already sat at its 1.0 floor), so "slab max size" scaled a number nobody saw — the trail
+prism is laid at `BaseScale` (3, 3, 0.5) with `Gap` 2. An upgrade proposed against an ability must
+first establish that the ability runs.
 
 ### Serpent — scope + rifle (was "Wall-Weaver") — CHARGE + SPACE APPROVED + SHIPPED
 
@@ -595,7 +633,8 @@ its one petal per element, B as the mode button, Siphon and Armoured Wake as the
   the map.
 - The `Input` fields are filled on Sparrow (4/4), Dolphin (3/4), Squirrel (2/4), Urchin (3/4 —
   Trail Rider is deliberately 0 because it is **passive**, not because it is unset) and Manta
-  (2/4 — Sting and Kabloom are deliberately 0: passive). Rhino
-  and Serpent are 0 across the board — fill during HUD icon work. The Rhino's **Time** row is
-  the one deliberate 0: the ramp engages on a full-throttle straight, not on a button. A genuine 0 and a passive
-  ability are indistinguishable in the asset, so say which it is in the row.
+  (2/4 — Sting and Kabloom are deliberately 0: passive). The Rhino is 0 across the board and
+  **every one is deliberate** (2026-10-16): Sword Energy, Afterimage and Blade Reach are passive and
+  the sword is posed by the triggers as a gesture, not a button; Ramp Spool engages on a
+  full-throttle straight. Its four-icon row binds 4/4 (placeholder icons) all the same. A genuine 0
+  and a passive ability are indistinguishable in the asset, so say which it is in the row.
