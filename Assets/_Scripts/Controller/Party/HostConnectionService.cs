@@ -289,11 +289,16 @@ namespace CosmicShore.Gameplay
         /// The one log for a failed accept / direct join / spectate, before the caller rethrows. A full
         /// party is a designed outcome since B25 (the session's MaxPlayers refuses the fifth player) and
         /// PartyInviteController already toasts and warns it, so only a real fault is an error here.
+        /// A party that ended before the join landed (Gone: "SessionNotFound - lobby not found", the
+        /// host left or the invite was stale) is the same kind of outcome and is warned the same way.
         /// </summary>
         static void LogJoinFailure(string what, Exception e)
         {
-            if (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            var failure = UgsRequestPolicy.Classify(e);
+            if (failure == UgsFailureClass.Full)
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] {what}: the party is full ({e.Message}).");
+            else if (failure == UgsFailureClass.Gone)
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[HostConnectionService] {what}: the party has ended ({e.Message}).");
             else
                 CSDebug.LogError(
                     $"[HostConnectionService] {what} error ({e.GetType().Name}): {e}" +
