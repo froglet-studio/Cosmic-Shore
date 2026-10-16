@@ -295,19 +295,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 1.2 and 3.3 (L1); Docs/Reports/PERFORMANCE.md, Waiting on Garrett
 
-### T-20261015-6009 · open · test · Regatta AI
+### T-20261015-6009 · done · test · Regatta AI
 - **Task:** Teach the Regatta Squirrel AI from your flying: Third Eye > Record on, fly Regatta as the Squirrel by hand 5 times to the finish, stop Play and Send to Claude; then ask a session to run learn_from_flights.py --write and test the AI
 - **Done when:** LEARNED_FROM_FLIGHTS.md lists your races and the Squirrel AI flies the learned line without striking its rail
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by Claude for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/SKIM_RACE_AI.md §16
+- **Done:** 2026-10-16
 
-### T-20261015-1188 · open · test · AI / training
+### T-20261015-1188 · done · test · AI / training
 - **Task:** Fly 3-5 Regatta races by hand (Squirrel first) in the Unity EDITOR (training data comes from the editor only, 2026-10-16) and store each record when Unity asks
 - **Done when:** `python3 Tools/Build/situation_features.py --write` reads them (flight/3) and writes learned_situations.json for the hull
 - **Who can take it:** Yash
 - **Added:** 2026-10-15 by Claude (Yash's session) (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md
+- **Done:** 2026-10-16
 
 ### T-20261015-7fc3 · open · dev · AI / Regatta
 - **Task:** Port the two learned knobs to Unity: the commit distance as a curve over the leg (GateRaceController aiCommitDistance -> a + b x leg) and the skim-worth rule (the Squirrel's Skim Race pilot in Regatta), behind inspector switches, off by default
@@ -366,3 +368,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (handicap owner)
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 Status
+
+### T-20261016-6695 · open · test · AI training
+- **Task:** Fly the Regatta capture plan in the Unity editor (Docs/AI_SYSTEM/RACING_LINE.md §4): 20 more normal Squirrel races at I1, then 10 each tagged rail / drift / abilities / hard (HUD console: flightrec tag <word>), then 10 each at I2-I4; store every race, the bad ones too
+- **Done when:** about 100 stored Squirrel flights; racing_line.py reports every leg trusted and stable on each course
+- **Who can take it:** Yash
+- **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/RACING_LINE.md

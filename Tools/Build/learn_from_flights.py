@@ -46,6 +46,7 @@ REPORTS_PREFIX = "BugLedger/shared/reports/"
 SCHEMA = "cosmic-shore.flight/2"
 SCHEMAS = ("cosmic-shore.flight/1", SCHEMA, "cosmic-shore.flight/3")   # /1 carried the rail measures; /2 is measured here; /3 adds the situation columns (SITUATION_RECORDING_PLAN.md)
 SKIM_REACH = 7.5              # the Squirrel's skimmer sphere (SkimRaceAIConfigSO.PlannerSkimReach)
+LAST_RING_REACH = 30.0        # u: a pre-fix flight whose last sample is this close to its last ring finished (finished_of)
 BEGIN = "# learn_from_flights:begin"
 END = "# learn_from_flights:end"
 
@@ -207,6 +208,21 @@ def derive(f, lane):
         f["skimLift"] = max(0.0, hy - f.get("referenceShellHeight", 1.5))
 
 
+
+def finished_of(f):
+    """A finished race. Flights recorded before 2026-10-16's recorder fix stopped one sample before the last ring counted
+    (written 23 / 24): those count as finished when the race ended on its own and the last sample is at the last ring."""
+    if f.get("finished"):
+        return True
+    target, rings, rl = int(f.get("raceTarget") or 0), int(f.get("rings") or 0), f.get("ringList") or []
+    if f.get("ended") != "race over" or target <= 0 or rings != target - 1 or not rl or not f.get("samples"):
+        return False
+    cols = f["columns"]
+    last = f["samples"][-1]
+    ring = rl[(target - 1) % len(rl)]
+    pos = [last[cols.index(k)] for k in ("x", "y", "z")]
+    return math.dist(pos, ring[1:4]) <= LAST_RING_REACH
+
 def measure(f):
     if not f.get("lane"):
         return None
@@ -259,8 +275,8 @@ def measure(f):
     seconds = max(rows[-1]["t"] - rows[0]["t"], 1e-3) if rows else 1e-3
     gaps = [r["gap"] for r in rows if r.get("gap", -1) >= 0]
     return {
-        "name": os.path.basename(f["name"]), "finished": bool(f.get("finished")), "raceSeconds": f.get("raceSeconds"),
-        "rings": f.get("rings"), "target": f.get("raceTarget"), "intensity": f.get("intensity"), "skimLift": f.get("skimLift", 0.0),
+        "name": os.path.basename(f["name"]), "finished": finished_of(f), "raceSeconds": f.get("raceSeconds"),
+        "rings": f.get("rings") + (1 if finished_of(f) and not f.get("finished") else 0), "target": f.get("raceTarget"), "intensity": f.get("intensity"), "skimLift": f.get("skimLift", 0.0),
         "samples": len(rows), "skimShare": len(skim) / max(len(rows), 1),
         "lineHeight": line_h, "gapP10": pct([r["gap"] for r in skim], 0.1), "gapMedian": pct([r["gap"] for r in skim], 0.5),
         "contactShare": sum(1 for g in gaps if g <= 0.05) / max(len(gaps), 1),

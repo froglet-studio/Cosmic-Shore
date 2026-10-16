@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEngine;
@@ -84,6 +85,7 @@ namespace CosmicShore.Gameplay
         static int s_count;
         static float s_countAt = -1f;
         static HumanFlightRecorder s_instance;
+        static string s_tag = "";   // flightrec tag <word>: what the pilot is practising, written into each flight
 
         struct Sample
         {
@@ -122,6 +124,10 @@ namespace CosmicShore.Gameplay
         readonly List<RailCopy> _rails = new(4);
         readonly List<float> _railEvents = new(256);   // t, rail, prism index, 1 destroyed / 0 restored
         readonly List<float> _ringData = new(64 * 8);   // index, x, y, z, ax, ay, az, radius per ring
+        // The pilot's own button presses and releases (InputEvents: abilities, the sticks' actions, flip): t, event, 1 / 0.
+        // Only the local pilot's input strategies raise these events, so an AI's presses never arrive here.
+        readonly List<float> _buttonEvents = new(512);
+        ScriptableEventInputEvents _pressed, _released;
         GameDataSO _gameData;
         Player _player;
         float _nextSample, _nextLook, _raceStart, _frameSum, _prevSampleT;
@@ -129,6 +135,10 @@ namespace CosmicShore.Gameplay
         bool _havePrevRot;
         int _frames, _startRings, _ownRail = -1, _courseSeed, _courseIntensity;
         bool _recording, _turnWasRunning;
+        // Named when recording starts and kept: by the time the turn ends the hull may already be despawned and the game
+        // data reset (leaving to the menu mid-race wrote a flight with hull "Unknown" and raceTarget 0, 2026-10-16).
+        string _hullName = "Unknown", _modeName = "Unknown", _domainName = "";
+        int _target, _intensity;
         string _waiting = "waiting for a match", _railWhy = "";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -145,8 +155,16 @@ namespace CosmicShore.Gameplay
         /// <summary>The console command: what the recorder is doing, how many flights are saved, and where.</summary>
         public static string Handle(string[] args)
         {
+            // flightrec tag <word>: label the next flights with what you are practising (rail, drift, abilities, rivals...),
+            // so the learners can tell a style session from an ordinary race. "flightrec tag" alone clears it.
+            if (args is { Length: > 0 } && args[0].ToLowerInvariant() == "tag")
+            {
+                s_tag = args.Length > 1 ? string.Join("-", args, 1, args.Length - 1).ToLowerInvariant() : "";
+                return string.IsNullOrEmpty(s_tag) ? "flight tag cleared" : $"next flights are tagged \"{s_tag}\"";
+            }
+            string tag = string.IsNullOrEmpty(s_tag) ? "" : $" | tag: {s_tag}";
             string last = string.IsNullOrEmpty(LastFile) ? "" : $" | last: {Path.GetFileName(LastFile)}";
-            return $"AI training recorder (automatic, every mode): {Status} | {SavedCount} stored in {Folder}{last}";
+            return $"AI training recorder (automatic, every mode): {Status} | {SavedCount} stored in {Folder}{tag}{last}";
         }
 
         void Update()
@@ -163,7 +181,13 @@ namespace CosmicShore.Gameplay
             bool running = _gameData.IsTurnRunning;
             if (!running)
             {
-                if (_recording) Finish("race over");
+                if (_recording)
+                {
+                    // The ring that ended the race is threaded on this frame or the last; samples run at 10 Hz, so without
+                    // this last one a finished race was written one ring short (23 / 24, Regatta 2026-10-16).
+                    TakeSample(now);
+                    Finish(_target > 0 && LastRings() >= _target ? "race over" : "race left before the finish");
+                }
                 _turnWasRunning = false;
                 return;
             }
@@ -180,6 +204,8 @@ namespace CosmicShore.Gameplay
                 if (!TryFindLocalHuman()) { _waiting = "waiting for your hull (AI-only races are not recorded)"; return; }
                 _recording = true;
                 _startRings = _player.RoundStats?.SwitchesThreaded ?? 0;
+                NameRace();
+                ListenToButtons();
                 CopyCourse();
             }
 
@@ -215,6 +241,46 @@ namespace CosmicShore.Gameplay
             _nextLook = now;
         }
 
+        void NameRace()
+        {
+            if (_player && _player.Vessel?.VesselStatus != null) _hullName = _player.Vessel.VesselStatus.VesselType.ToString();
+            if (_player) _domainName = _player.Domain.ToString();
+            if (!_gameData) return;
+            _modeName = _gameData.GameMode.ToString();
+            if (_gameData.SwitchTargetCount > 0) _target = _gameData.SwitchTargetCount;
+            if (_gameData.SelectedIntensity != null && _gameData.SelectedIntensity.Value > 0) _intensity = _gameData.SelectedIntensity.Value;
+        }
+
+        void ListenToButtons()
+        {
+            StopListening();
+            var input = _player && _player.Vessel?.VesselStatus != null ? _player.Vessel.VesselStatus.InputStatus : null;
+            if (input == null) return;
+            _pressed = input.OnButtonPressed;
+            _released = input.OnButtonReleased;
+            if (_pressed) _pressed.OnRaised += OnPressed;
+            if (_released) _released.OnRaised += OnReleased;
+        }
+
+        void StopListening()
+        {
+            if (_pressed) _pressed.OnRaised -= OnPressed;
+            if (_released) _released.OnRaised -= OnReleased;
+            _pressed = _released = null;
+        }
+
+        void OnPressed(InputEvents e) => RecordButton(e, 1);
+        void OnReleased(InputEvents e) => RecordButton(e, 0);
+
+        void RecordButton(InputEvents e, int down)
+        {
+            // IdleAction arrives every few frames while both thumbs are lifted; it is the "no input" state, not a press.
+            if (!_recording || e == InputEvents.IdleAction || PilotControl.IsHeldByAI(_player)) return;
+            _buttonEvents.Add(Time.time - _raceStart); _buttonEvents.Add((int)e); _buttonEvents.Add(down);
+        }
+
+        int LastRings() => _samples.Count > 0 ? _samples[_samples.Count - 1].Rings : 0;
+
         bool TryFindLocalHuman()
         {
             if (_gameData.LocalPlayer is Player local && local && !local.IsInitializedAsAI && local.Vessel != null)
@@ -242,6 +308,7 @@ namespace CosmicShore.Gameplay
             var tf = _player.Vessel.Transform;
             if (input == null || !tf) return;
             float t = now - _raceStart;
+            NameRace();
             int rivalStart = _rivals.Count, crystalStart = _crystals.Count;
             RecordRivals();
             RecordCrystals(tf.position);
@@ -453,12 +520,17 @@ namespace CosmicShore.Gameplay
             _crystals.Clear();
             _rails.Clear();
             _railEvents.Clear();
+            _buttonEvents.Clear();
+            StopListening();
             _ringData.Clear();
             _ownRail = -1;
             _courseSeed = _courseIntensity = 0;
             _railWhy = "";
             _havePrevRot = false;
             _prevSampleT = 0f;
+            _hullName = _modeName = "Unknown";
+            _domainName = "";
+            _target = _intensity = 0;
         }
 
         /// <summary>Every other pilot's hull this sample: position, velocity and rings threaded, in the match's player order (the
@@ -507,8 +579,7 @@ namespace CosmicShore.Gameplay
             try
             {
                 Directory.CreateDirectory(Folder);
-                string hull = _player && _player.Vessel?.VesselStatus != null ? _player.Vessel.VesselStatus.VesselType.ToString() : "Unknown";
-                string mode = _gameData ? _gameData.GameMode.ToString() : "Unknown";
+                string hull = _hullName, mode = _modeName;
                 string file = Path.Combine(Folder, $"flight_{mode}_{hull}_{DateTime.Now:yyyyMMdd_HHmmss}.json");
                 File.WriteAllText(file, Serialize(hull, why));
                 LastFile = file;
@@ -527,7 +598,7 @@ namespace CosmicShore.Gameplay
             var c = CultureInfo.InvariantCulture;
             // A rail to measure the flight against exists only where the mode lays one (Regatta, for now). Copied when
             // recording started; if it was not there yet, copied now (no hole events then).
-            bool regatta = _gameData && _gameData.GameMode == GameModes.Regatta;
+            bool regatta = _modeName == nameof(GameModes.Regatta);
             if (regatta && _rails.Count == 0) TryCopyRails();
             bool haveLane = regatta && _rails.Count > 0 && _ownRail >= 0;
             var own = haveLane ? _rails[_ownRail] : null;
@@ -535,16 +606,17 @@ namespace CosmicShore.Gameplay
             int railPrisms = 0;
             for (int r = 0; r < _rails.Count; r++) railPrisms += _rails[r].Points.Count;
             var sb = new StringBuilder(64 * 1024 + railPrisms * 60 + _samples.Count * 400 + _crystals.Count * 6);
-            int target = _gameData ? _gameData.SwitchTargetCount : 0;
+            int target = _target;
             int rings = _samples[_samples.Count - 1].Rings;
             int ringCount = _ringData.Count / 8;
-            int intensity = _gameData && _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
+            int intensity = _intensity;
             sb.Append("{\n");
             sb.Append("\"schema\":\"").Append(Schema).Append("\",\n");
-            sb.Append("\"mode\":\"").Append(_gameData ? _gameData.GameMode.ToString() : "Unknown").Append("\",\"hull\":\"").Append(hull).Append("\",");
+            sb.Append("\"mode\":\"").Append(_modeName).Append("\",\"hull\":\"").Append(hull).Append("\",");
             sb.Append("\"source\":\"unity\",\"hullKey\":\"").Append(hull.ToLowerInvariant()).Append("\",");
             sb.Append("\"training\":\"").Append(TrainingType).Append("\",");
-            sb.Append("\"domain\":\"").Append(_player ? _player.Domain.ToString() : "").Append("\",");
+            sb.Append("\"tag\":\"").Append(Esc(s_tag)).Append("\",");
+            sb.Append("\"domain\":\"").Append(_domainName).Append("\",");
             sb.Append("\"intensity\":").Append(intensity).Append(',');
             sb.Append("\"rivalDifficulty\":\"").Append(_gameData ? _gameData.RequestedAIDifficulty.ToString() : "").Append("\",");
             sb.Append("\"build\":\"").Append(Esc(Application.version)).Append("\",\"unity\":\"").Append(Esc(Application.unityVersion)).Append("\",");
@@ -604,6 +676,16 @@ namespace CosmicShore.Gameplay
                 sb.Append(i > 0 ? ",[" : "[").Append(F(_railEvents[i])).Append(',').Append((int)_railEvents[i + 1]).Append(',')
                   .Append((int)_railEvents[i + 2]).Append(',').Append((int)_railEvents[i + 3]).Append(']');
             }
+            sb.Append("],\n");
+            // The pilot's button presses: [t, InputEvents value, 1 pressed / 0 released].
+            sb.Append("\"buttonNames\":{");
+            var names = (InputEvents[])Enum.GetValues(typeof(InputEvents));
+            for (int i = 0; i < names.Length; i++)
+                sb.Append(i > 0 ? ",\"" : "\"").Append(names[i]).Append("\":").Append((int)names[i]);
+            sb.Append("},\"buttonEvents\":[");
+            for (int i = 0; i + 2 < _buttonEvents.Count; i += 3)
+                sb.Append(i > 0 ? ",[" : "[").Append(F(_buttonEvents[i])).Append(',').Append((int)_buttonEvents[i + 1]).Append(',')
+                  .Append((int)_buttonEvents[i + 2]).Append(']');
             sb.Append("],\n");
 
             sb.Append("\"rivalHulls\":[");
