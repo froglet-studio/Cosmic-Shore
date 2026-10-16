@@ -10352,3 +10352,13 @@ gates, every `author_*.py --check`, and the changed generators' `--self-test` ne
    green. Press "Go offline?" on the pilot chip: its question bar draws OVER the cards.
    **Fail:** the cards overlap the pilot chip or each other, a closed card reappears within a second (HomeUpNext
    re-showing it), or the question bar hides behind them.
+6. **Friends drawer** (FriendsDrawer, `author_menu_friends_drawer.py`): a small "Friends" tab sits on the LEFT edge
+   of Menu_Main on every screen, also while the Arcade / Arena / Toy Box / Mission windows are open (they no longer
+   have a party panel - their games fill the width). Press it: a glass window slides in from the left with the party
+   panel (party seats, invites, online friends) fully working: invite, accept, join, leave. – slides it back to the
+   tab; the screen button grows it to 720 x 900 and the chevron restores it. Go offline: the drawer disappears; back
+   online it returns. Fly in the menu (tap the cell): the drawer fades out with the menu.
+   **Fail:** two party panels anywhere, a panel row overflowing the window, the drawer under a window's backdrop,
+   or the tab still visible while flying.
+7. **Glass window backdrops**: the Arcade / Arena / Toy Box / Mission windows show the menu scene dimly through
+   their backdrop (55 %), not a solid black sheet.

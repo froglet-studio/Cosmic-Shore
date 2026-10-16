@@ -187,7 +187,7 @@ def shuffle_card(parent):
 def build_view():
     root = N("root", "ToyboxView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
-    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack")
+    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA)
     body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
     body.add("hlg", 114, lambda ctx, go: K.hv_layout(False, (0, 0, 0, 0), 24, 0, (1, 1), (0, 1))(ctx, go)
              .replace("  m_ReverseArrangement: 0\n", "  m_ReverseArrangement: 1\n"))
@@ -224,8 +224,7 @@ def build_view():
     empty.add("le", 114, le(ph=60))
     label(empty.child(N("Empty/Text", "Text", STRETCH)), "No toys are standing right now.", "Body", "NeutralLightest",
           align="center")
-    body.children.append(AR.instance("PartyPanel", "PartyPanel", "PartyPanel", R((0, 1), None, (0, 0), (A.PANEL_W, 844), (0, 1)),
-                                     guid=A.asset_guid("PartyPanel")))
+    # Rev 3: the party panel moved to the one friends drawer on Menu_Main.
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
     label(header.child(N("Header/Eyebrow", "Eyebrow", R((0, 1), None, (0, 0), (300, 18), (0, 1)))), "TOY BOX", "Label",
@@ -274,7 +273,6 @@ class Ids:
             "countText": (V("AllToys/Count#tmp"), 114, K.TMP_UGUI),
             "dailyActivityCard": (V("Daily#daily"), 114, S["daily"]),
             "shuffleCard": (V("Shuffle#shuffle"), 114, S["shuffle"]),
-            "partyRoot": (C.derived(K.FileIds("PartyPanel")("root#go"), V("PartyPanel#inst")), 1, None),
         }
         self.stubs = {k: str(C.derived(v[0], self.inst)) for k, v in self.refs.items()}
 
@@ -332,6 +330,10 @@ def transform(text_):
     for fid in list(sc.order):
         if fid in ids.all():
             sc.remove(fid)
+    # Rev 3 stand-down: the party panel's stub (from when ToyboxView nested it) goes with it.
+    legacy_party = str(C.derived(C.derived(K.FileIds("PartyPanel")("root#go"), K.FileIds("ToyboxView")("PartyPanel#inst")), ids.inst))
+    if sc.has(legacy_party):
+        sc.remove(legacy_party)
     out = []
     K.emit_instance(ids.ctx, K.Instance("ToyboxView", "ToyboxView", asset_guid("ToyboxView"), "ToyboxView", STRETCH, ()),
                     EXPLORE["rt"], out)
@@ -348,7 +350,7 @@ def transform(text_):
     sc.replace(PANEL["img"], C.field_set(sc.docs[PANEL["img"]], "m_Enabled", "0"))
     sc.replace(MODAL["gate"], T.set_block(sc.docs[MODAL["gate"]], "onlineOnlyObjects", "  onlineOnlyObjects: []\n"))
     sc.replace(PANEL["gate"], T.set_block(sc.docs[PANEL["gate"]], "onlineOnlyObjects",
-                                          K.refs_list("onlineOnlyObjects", [ids.stubs["partyRoot"]])))
+                                          "  onlineOnlyObjects: []\n"))
     sc.replace(MODAL["toybox"], toybox_doc(sc.docs[MODAL["toybox"]], ids))
     return sc.text(), ids
 
@@ -426,7 +428,7 @@ def validate(files):
     for field in ("titleText", "detailText"):
         C.wired(view, shuf, field, TMP, "ToyboxShuffleCard")
     C.wired(view, shuf, "shuffleButton", S["button"], "ToyboxShuffleCard")
-    assert f"guid: {A.asset_guid('PartyPanel')}" in view, "ToyboxView: the shared PartyPanel is not instanced"
+    assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "ToyboxView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "ToyboxView: Back must close through ModalWindowCloseButton"
 
     sc = T.Scene(files[SCENE])
@@ -444,7 +446,7 @@ def validate(files):
         assert f"  {field}: {{fileID: {ids.stubs[field]}}}" in doc, f"ToyboxModal.{field} does not point into ToyboxView"
     assert f"  cardPrefab: {card_prefab_ref()}" in doc, "ToyboxModal does not spawn ToyCard.prefab"
     assert f"  crystalClickHandler: {{fileID: {CRYSTAL_HANDLER}}}" in doc, "ToyboxModal's freestyle toggle is not wired"
-    assert K.refs_list("onlineOnlyObjects", [ids.stubs["partyRoot"]]) in sc.docs[PANEL["gate"]], "the toy box gate does not gate the party panel"
+    assert "onlineOnlyObjects: []" in sc.docs[PANEL["gate"]], "the toy box gate still names an object (the party panel moved to the drawer)"
 
 
 def drift(files):
@@ -466,6 +468,7 @@ def self_test(files):
     card, view = prefab_path("ToyCard"), prefab_path("ToyboxView")
     ids = Ids()
     cases = [
+        ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ToyboxView"), M.strip_entrances(f[prefab_path("ToyboxView")]))),
         ("a toy card with no portrait", lambda f: f.__setitem__(card, re.sub(r"(  portrait: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the daily card without its countdown", lambda f: f.__setitem__(view, re.sub(r"(  countdownText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),

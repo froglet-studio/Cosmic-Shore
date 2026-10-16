@@ -177,7 +177,7 @@ def card_key(r, col):
 def build_view():
     root = N("root", "ArenaView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
-    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack")
+    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA)
 
     # Sibling order is FOCUS order (ScreenSwitcher.Refocus): the cards first, the party panel (laid
     # out on the left by the reversed row) next, the header's Back last - as the arcade window.
@@ -208,8 +208,7 @@ def build_view():
         for col in range(2):
             row.children.append(instance(card_key(r, col), "ArenaGameCard", "GameCard",
                                          R((0, 1), None, (col * (CARD_W + GAP), 0), (CARD_W, CARD_H), (0, 1))))
-    body.children.append(instance("PartyPanel", "PartyPanel", "PartyPanel", R((0, 1), None, (0, 0), (A.PANEL_W, 844), (0, 1)),
-                                  guid=A.asset_guid("PartyPanel")))
+    # Rev 3: the party panel moved to the one friends drawer on Menu_Main; the explore scroll fills the body.
 
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
@@ -253,7 +252,6 @@ class Ids:
             "GameSelectionView": (V("Explore#go"), 1, None),
             "GameSelectionGrid": (V("Grid#rt"), 224, None),
             "gameCountText": (V("AllGames/Count#kt"), 114, S["kt"]),
-            "partyRoot": (C.derived(K.FileIds("PartyPanel")("root#go"), V("PartyPanel#inst")), 1, None),
         }
         self.stubs = {k: str(C.derived(v[0], self.inst)) for k, v in self.refs.items()}
 
@@ -305,6 +303,10 @@ def transform(text_):
     for fid in list(sc.order):
         if fid in ids.all():
             sc.remove(fid)
+    # Rev 3 stand-down: the party panel's stub (from when ArenaView nested it) goes with it.
+    legacy_party = str(C.derived(C.derived(K.FileIds("PartyPanel")("root#go"), K.FileIds("ArenaView")("PartyPanel#inst")), ids.inst))
+    if sc.has(legacy_party):
+        sc.remove(legacy_party)
     out = []
     K.emit_instance(ids.ctx, K.Instance("ArenaView", "ArenaView", asset_guid("ArenaView"), "ArenaView", STRETCH, ()),
                     EXPLORE["rt"], out)
@@ -320,8 +322,7 @@ def transform(text_):
     sc.replace(MODAL["rt"], C.field_set(mrt, "m_SizeDelta", "{x: 0, y: 0}"))
     sc.replace(PANEL["img"], C.field_set(sc.docs[PANEL["img"]], "m_Enabled", "0"))
     sc.replace(MODAL["gate"], T.set_block(sc.docs[MODAL["gate"]], "onlineOnlyObjects", "  onlineOnlyObjects: []\n"))
-    sc.replace(PANEL["gate"], T.set_block(sc.docs[PANEL["gate"]], "onlineOnlyObjects",
-                                          K.refs_list("onlineOnlyObjects", [ids.stubs["partyRoot"]])))
+    sc.replace(PANEL["gate"], T.set_block(sc.docs[PANEL["gate"]], "onlineOnlyObjects", "  onlineOnlyObjects: []\n"))
     sc.replace(EXPLORE["view"], view_doc(sc.docs[EXPLORE["view"]], ids))
     return sc.text(), ids
 
@@ -400,7 +401,7 @@ def validate(files):
     assert chip_le and "  m_IgnoreLayout: 1\n" in chip_le, "the hull chip template must start out of layout (hidden)"
     view = files[prefab_path("ArenaView")]
     assert view.count(f"guid: {asset_guid('ArenaGameCard')}") >= 2 * ROWS, "ArenaView: the grid does not hold ArenaGameCards"
-    assert f"guid: {A.asset_guid('PartyPanel')}" in view, "ArenaView: the shared PartyPanel is not instanced"
+    assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "ArenaView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "ArenaView: Back must close through ModalWindowCloseButton"
 
     sc = T.Scene(files[SCENE])
@@ -417,7 +418,7 @@ def validate(files):
     for field in ("GameSelectionView", "GameSelectionGrid", "gameCountText"):
         assert f"  {field}: {{fileID: {ids.stubs[field]}}}" in doc, f"the arena ArcadeExploreView.{field} does not point into ArenaView"
     assert f"rosterOverride: {{fileID: 11400000, guid: {ARENA_GAMES}" in doc, "the arena window no longer draws ArenaGames"
-    assert K.refs_list("onlineOnlyObjects", [ids.stubs["partyRoot"]]) in sc.docs[PANEL["gate"]], "the arena gate does not gate the party panel"
+    assert "onlineOnlyObjects: []" in sc.docs[PANEL["gate"]], "the arena gate still names an object (the party panel moved to the drawer)"
     assert "  m_Enabled: 0\n" in sc.docs[PANEL["img"]], "the arena panel's gradient is still on"
 
 
@@ -440,6 +441,7 @@ def self_test(files):
     card = prefab_path("ArenaGameCard")
     ids = Ids()
     cases = [
+        ("the party panel back in the window", lambda f: f.__setitem__(prefab_path("ArenaView"), f[prefab_path("ArenaView")] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ArenaView"), M.strip_entrances(f[prefab_path("ArenaView")]))),
         ("a card with no hull row", lambda f: f.__setitem__(card, re.sub(r"(  hullRow: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the hull template left in layout", lambda f: f.__setitem__(card, f[card].replace("  m_IgnoreLayout: 1\n", "  m_IgnoreLayout: 0\n"))),

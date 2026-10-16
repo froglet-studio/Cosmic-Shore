@@ -647,6 +647,10 @@ def build_online_row():
 # --------------------------------------------------------------------------------------------
 
 PANEL_W = 420
+# The window's backdrop is glass, not a slab: the menu scene reads through it (the user, 2026-10-16:
+# "I liked the transparent backgrounds way more than the solid black backgrounds"). Shared by the
+# Arena, Toy Box and Mission windows.
+WINDOW_BACKDROP_ALPHA = 0.55
 EMPTY_LINE = "No one else is online right now. Pilots who come online show here, ready to invite."
 
 
@@ -900,7 +904,7 @@ def back_button(parent):
 def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     root = N("root", "ArcadeView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
-    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack")
+    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=WINDOW_BACKDROP_ALPHA)
 
     # Sibling order is FOCUS order: ScreenSwitcher.Refocus lands on the first live Selectable in
     # hierarchy order, so the explore scroll comes before the party panel (the Body lays them out
@@ -960,7 +964,8 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
         for col in range(GRID_COLS):
             row.children.append(Inst(card_key(r, col), "ArcadeGameCard", "GameCard",
                                      R((0, 1), None, (col * (CARD_W + 10), 0), (CARD_W, CARD_H), (0, 1))))
-    body.children.append(Inst("PartyPanel", "PartyPanel", "PartyPanel", R((0, 1), None, (0, 0), (PANEL_W, 844), (0, 1))))
+    # Rev 3 (2026-10-16): the party panel left every window for ONE friends drawer on Menu_Main
+    # (author_menu_friends_drawer.py), so the explore scroll takes the whole body.
 
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
@@ -1039,8 +1044,6 @@ class Ids:
             "gameCountText": (V("AllGames/Count#kt"), 114, S["kt"]),
         }
         # Objects of NESTED instances inside ArcadeView: their id in ArcadeView is derived once.
-        party_pid = V("PartyPanel#inst")
-        self.refs["partyRoot"] = (derived(K.FileIds("PartyPanel")("root#go"), party_pid), 1, None)
         self.cards = []
         for r in range(GRID_ROWS):
             for col in range(GRID_COLS):
@@ -1050,7 +1053,9 @@ class Ids:
                 self.cards.append(key)
         self.stubs = {k: str(derived(v[0], self.inst)) for k, v in self.refs.items()}
         # The ScrollRect stub only the retired ArcadeDPadNav named. Removed if present.
-        self.stale = {str(derived(V("Explore#scroll"), self.inst))}
+        self.stale = {str(derived(V("Explore#scroll"), self.inst)),
+                      # rev 3: the party panel left ArcadeView for the friends drawer; its stub goes too
+                      str(derived(derived(K.FileIds("PartyPanel")("root#go"), V("PartyPanel#inst")), self.inst))}
 
     def all(self):
         return {self.inst, self.stub} | set(self.stubs.values())
@@ -1133,8 +1138,7 @@ def transform(text, files=None):
     sc.replace(MODAL["rt"], field_set(mrt, "m_SizeDelta", "{x: 0, y: 0}"))
     sc.replace(PANEL["img"], field_set(sc.docs[PANEL["img"]], "m_Enabled", "0"))
     sc.replace(MODAL["gate"], T.set_block(sc.docs[MODAL["gate"]], "onlineOnlyObjects", "  onlineOnlyObjects: []\n"))
-    sc.replace(PANEL["gate"], T.set_block(sc.docs[PANEL["gate"]], "onlineOnlyObjects",
-                                          K.refs_list("onlineOnlyObjects", [ids.stubs["partyRoot"]])))
+    sc.replace(PANEL["gate"], T.set_block(sc.docs[PANEL["gate"]], "onlineOnlyObjects", "  onlineOnlyObjects: []\n"))
     sc.replace(EXPLORE["view"], view_doc(sc.docs[EXPLORE["view"]], ids))
     sc.replace(RUNNER, T.set_block(sc.docs[RUNNER], "gameCards", K.refs_list("gameCards", [ids.stubs[k] for k in ids.cards])))
     return sc.text()
@@ -1329,7 +1333,9 @@ def validate_scene(before_text, after_text, files):
     for field in VIEW_RETIRED:
         assert field not in vf, f"ArcadeExploreView still serializes the retired {field}"
     gate = sc.docs[PANEL["gate"]]
-    assert f"  - {ref(ids.stubs['partyRoot'])}\n" in gate, "Arcade_Panel's OfflineUIGate does not gate the party panel"
+    assert "onlineOnlyObjects: []" in gate, "Arcade_Panel's OfflineUIGate still names an object (the party panel moved to the drawer)"
+    assert f"guid: {asset_guid('PartyPanel')}" not in files[prefab_path("ArcadeView")], \
+        "ArcadeView still instances the PartyPanel (rev 3 moved it to the friends drawer)"
     assert "onlineOnlyObjects: []" in sc.docs[MODAL["gate"]], "the modal's gate still names a retired object"
     cards = re.findall(r"\{fileID: (-?\d+)\}", block_fields(sc.docs[RUNNER])["gameCards"])
     assert cards == [ids.stubs[k] for k in ids.cards], "QuestGraphRunner.gameCards does not name the 28 cards in order"
@@ -1415,8 +1421,8 @@ def self_test(current, files, guids):
             s, EXPLORE["view"], "  ArcadeGameConfigureModal: {fileID: 391329118}", "  ArcadeGameConfigureModal: {fileID: 0}")),
         "QuestGraphRunner misses a card": scene_plant(lambda s: T.in_doc(
             s, RUNNER, f"  - {{fileID: {ids.stubs[ids.cards[-1]]}}}\n", "")),
-        "party panel left ungated offline": scene_plant(lambda s: T.in_doc(
-            s, PANEL["gate"], f"  - {{fileID: {ids.stubs['partyRoot']}}}\n", "  - {fileID: 0}\n")),
+        "the party panel back in the window": lambda: validate_scene(current, expected, dict(files, **{
+            prefab_path("ArcadeView"): files[prefab_path("ArcadeView")] + f"# guid: {asset_guid('PartyPanel')}\n"})),
         "Back first in focus order": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
             t, K.FileIds("ArcadeView")("root#rt"),
             f"  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n",

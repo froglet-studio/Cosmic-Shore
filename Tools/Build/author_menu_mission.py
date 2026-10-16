@@ -130,7 +130,7 @@ def build_card():
 def build_view():
     root = N("root", "MissionView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
-    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack")
+    image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=A.WINDOW_BACKDROP_ALPHA)
 
     # Sibling order is FOCUS order (ScreenSwitcher.Refocus): the cards first, the party panel next, Back last.
     body = root.child(N("Body", "Body", R((0, 0), (1, 1), (5, -78), (-70, -236))))
@@ -158,8 +158,7 @@ def build_view():
              "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
              f"  m_CellSize: {{x: {CARD_W}, y: {CARD_H}}}\n  m_Spacing: {{x: {GAP}, y: {GAP}}}\n"
              "  m_Constraint: 1\n  m_ConstraintCount: 2\n"))
-    body.children.append(K.Instance("PartyPanel", "PartyPanel", A.asset_guid("PartyPanel"), "PartyPanel",
-                                    R((0, 1), None, (0, 0), (A.PANEL_W, 844), (0, 1)), ()))
+    # Rev 3: the party panel moved to the one friends drawer on Menu_Main.
 
     header = root.child(N("Header", "Header", R((0, 1), (1, 1), (0, -108), (-80, 64), (0.5, 1))))
     header.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Rise", distance=10))
@@ -206,6 +205,7 @@ class Ids:
         self.party = str(C.derived(self.party_src, self.inst))
 
     def all(self):
+        # self.party is the retired party stub's id: listed so a re-run removes it (rev 3 stand-down)
         return {self.inst, self.stub, self.party}
 
     def party_stub(self):
@@ -241,7 +241,6 @@ def transform(text_):
     out = []
     K.emit_instance(ids.ctx, K.Instance("MissionView", "MissionView", asset_guid("MissionView"), "MissionView", STRETCH, ()),
                     EXPLORE["rt"], out)
-    out.append(ids.party_stub())
     anchor = EXPLORE["rt"]
     for d in (K.unity_empty_scalars(d) for d in out):
         sc.insert_after(anchor, T.doc_fid(d), d)
@@ -254,7 +253,7 @@ def transform(text_):
     sc.replace(PANEL["img"], C.field_set(sc.docs[PANEL["img"]], "m_Enabled", "0"))
     sc.replace(MODAL["gate"], T.set_block(sc.docs[MODAL["gate"]], "onlineOnlyObjects", "  onlineOnlyObjects: []\n"))
     sc.replace(PANEL["gate"], T.set_block(sc.docs[PANEL["gate"]], "onlineOnlyObjects",
-                                          K.refs_list("onlineOnlyObjects", [ids.party])))
+                                          "  onlineOnlyObjects: []\n"))
     sc.replace(MODAL["screen"], C.field_set(sc.docs[MODAL["screen"]], "ExploreView", "{fileID: 0}"))
     return sc.text(), ids
 
@@ -304,7 +303,7 @@ def validate(files):
     assert f"guid: {asset_guid('MissionCard')}" in vbody, "MissionView's cardPrefab is not MissionCard"
     C.wired(view, vbody, "grid", 224, "MissionExploreView")
     C.wired(view, vbody, "countText", TMP, "MissionExploreView")
-    assert f"guid: {A.asset_guid('PartyPanel')}" in view, "MissionView: the shared PartyPanel is not instanced"
+    assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "MissionView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "MissionView: Back must close through ModalWindowCloseButton"
 
     sc = T.Scene(files[SCENE])
@@ -318,7 +317,8 @@ def validate(files):
     assert files[SCENE].count(f"m_SourcePrefab: {{fileID: 100100000, guid: {asset_guid('MissionView')}") == 1, \
         "Menu_Main must mount exactly one MissionView"
     ids = Ids()
-    assert K.refs_list("onlineOnlyObjects", [ids.party]) in sc.docs[PANEL["gate"]], "the mission gate does not gate the party panel"
+    assert "onlineOnlyObjects: []" in sc.docs[PANEL["gate"]], "the mission gate still names an object (the party panel moved to the drawer)"
+    assert not sc.has(ids.party), "the retired party stub survives in the mission window"
     assert "  m_Enabled: 0\n" in sc.docs[PANEL["img"]], "the mission panel's gradient is still on"
 
 
@@ -345,8 +345,7 @@ def self_test(files):
         ("a card with no threat count", lambda f: f.__setitem__(card, re.sub(r"(  threatsText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the view drawing no missions", lambda f: f.__setitem__(view, f[view].replace(
             f"  missions: {{fileID: 11400000, guid: {MISSION_GAMES}, type: 2}}\n", "  missions: {fileID: 0}\n"))),
-        ("the party panel ungated", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
-            K.refs_list("onlineOnlyObjects", [Ids().party]), "  onlineOnlyObjects: []\n"))),
+        ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

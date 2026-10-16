@@ -1760,3 +1760,17 @@ From the owner's first play of the redesign.
   arena and tap-to-play target. The component now sits on its own Toast child (ConfigureView and
   ConfigureArenaView), and `author_menu_configure.py` fails, with a negative control, if a toast
   ever shares the preview's GameObject again.
+
+## 30. Rev 3: Home (built 2026-10-16, awaiting in-editor approval)
+
+Mockups: the **Rev 3** page of the canvas (approved 2026-10-16). Built in this order, one commit each:
+
+| Part | What | Generator |
+|---|---|---|
+| A | The old nav icons (cut glyph-only from the pre-redesign sprites) beside each tab word; the gamepad focus ring is white, not the CTA green (`KitSelectableBase.focusRingToken`). | `author_nav_glyphs.py`, `author_menu_topnav.py`, `author_ui_kit_prefabs.py` |
+| B | Every toast on the right: Menu_Main's stack under the Settings hex, the party invite under it; in a match the toast container under the pause hex and the in-match feed under that, sliding in from the right. The fly hint has an × (`DismissibleHint`, remembered per device). | `author_menu_toasts.py`, `author_menu_home.py`, `author_ingame_hud.py` |
+| C | The weekly challenge and current quest cards dock on the left under the pilot chip; – folds a card to a strip (remembered), × closes it for the session (`HomeDockCard`). Card focus is blue. HomeUpNext's words are authored fields. | `author_menu_home.py` |
+| D | ONE friends drawer (`FriendsDrawer`) on the left edge of Menu_Main, over every window: a handle opens it, – slides it back, the screen button maximises / restores. It holds the shared PartyPanel, which the Arcade / Arena / Toy Box / Mission windows no longer nest; it is gated offline as the panel was and fades with the menu in freestyle. The four windows' backdrops are glass (55 %), not solid black. | `author_menu_friends_drawer.py`, `author_menu_arcade.py`, `author_menu_arena.py`, `author_menu_toybox.py`, `author_menu_mission.py` |
+
+Next (rev 3): the Arcade / Arena layouts that use the room the panel gave back, then the Hangar (5 tabs, 3D
+turntable), then the lava-lamp in-game HUD (approved), then Configure.

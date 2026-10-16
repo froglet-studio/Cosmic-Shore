@@ -330,3 +330,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Caleb / Andrew (QA)
 - **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 28
+
+### T-20261016-6465 · open · test · Menu_Main
+- **Task:** Play-test rev-3 Home in the editor: nav glyphs, white focus ring, toasts on the right (menu + match), fly hint x, docked/foldable weekly + quest cards, the friends drawer (open / minimise / maximise, invite + join through it, offline hides it, flying fades it), glass window backdrops
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Menu rev 3, Home' items 1-7 pass or have bugs filed
+- **Who can take it:** Shombith (Menu_Main owner) or Yash
+- **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §30
