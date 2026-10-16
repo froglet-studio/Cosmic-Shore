@@ -103,6 +103,13 @@ namespace CosmicShore.Gameplay
 
         public bool IsBound => _bound;
         public bool RaceActive => _raceActive;
+
+        /// <summary>
+        /// A HUMAN's hull handed to this pilot (the Third Eye's You / AI toggle, <c>PilotControl</c>): fly it
+        /// although its player is not an AI. Without this the pilot stands down on any human-owned hull, so a
+        /// Squirrel handed to the AI fell back to the platform autopilot, which knows nothing of skimming.
+        /// </summary>
+        public bool FlyingForHuman { get; set; }
         public SkimRaceAIConfigSO Config => _config;
         public SkimRaceDriver Driver => _driver;
         public SkimRaceCourse Course => _course;
@@ -141,6 +148,7 @@ namespace CosmicShore.Gameplay
             _objective = objective ?? SkimRaceObjective.For(gameData) ?? new CrystalTrackObjective(gameData);
             _course = null;
             _objective.Pilot = this; // the team plan (CrystalTrackObjective) plans per pilot
+            _driver.AllowDirectFlight = _objective.AllowsDirectFlight;
             _aiPilot = _status?.AIPilot;
             _bound = _vessel != null && _status != null && _gameData != null;
             SuppressOtherPilots();
@@ -190,7 +198,7 @@ namespace CosmicShore.Gameplay
 
             // A human took this hull (arena pilot swap): the sticks are theirs now. Stand down
             // without writing anything; the departed-pilot path re-binds when the AI gets it back.
-            if (_status.Player != null && !_status.Player.IsInitializedAsAI)
+            if (_status.Player != null && !_status.Player.IsInitializedAsAI && !FlyingForHuman)
             {
                 if (_raceActive) { _raceActive = false; ReleaseDrift(); if (_ringPressed) ReleaseRing(); }
                 return;
@@ -276,10 +284,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// What a pilot sees ahead that it must not touch: every live prism near the next
-        /// <see cref="SkimRaceAIConfigSO.MassGuardSeconds"/> of flight that is NOT the track
-        /// (the track's super-shielded prisms are the racing line) and that the game would let the
-        /// hull hit - its own fresh trail is exempt for the same grace the game grants
-        /// (<see cref="SelfTrailContactConfigSO.SuppressesHullContact"/>). Read from
+        /// <see cref="SkimRaceAIConfigSO.MassGuardSeconds"/> of flight that is NOT its own course
+        /// (<see cref="SkimRaceObjective.IsCourseMass"/>: the course's super-shielded prisms are the
+        /// racing line) and that the game would let the hull hit - its own fresh trail is exempt for
+        /// the same grace the game grants (<see cref="SelfTrailContactConfigSO.SuppressesHullContact"/>).
+        /// A super-shielded prism that is not the course (a rival's Regatta rail) is sized to the box
+        /// holding its contact shell, which reaches three times the leaf. Read from
         /// <see cref="PrismSpatialIndex"/>, the canonical index of prism mass.
         /// </summary>
         void FillObstacles(in SkimRaceObservation o)
@@ -303,14 +313,15 @@ namespace CosmicShore.Gameplay
                     var prism = _nearPrisms[i];
                     var props = prism.prismProperties;
                     if (props == null) continue;
-                    if (props.IsSuperShielded) continue;
+                    bool shelled = props.IsSuperShielded;
+                    if (shelled && _objective.IsCourseMass(_status, prism)) continue;
                     if (ownFresh.Suppresses(prism)) continue;
                     var t = prism.transform;
                     _driver.Obstacles.Add(new SkimRaceObstacle
                     {
                         Center = t.position,
                         Rotation = t.rotation,
-                        Half = t.lossyScale * 0.5f,
+                        Half = t.lossyScale * (shelled ? SkimRaceShell.SuperShieldHalfScale : 0.5f),
                     });
                 }
             }

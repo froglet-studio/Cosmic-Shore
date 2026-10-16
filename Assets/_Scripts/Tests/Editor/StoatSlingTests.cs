@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -331,6 +332,58 @@ namespace CosmicShore.Tests
             StringAssert.Contains($"  - {{fileID: {RootTransform}, guid: {PrefabGuid}, type: 3}}\n", Read(Container), "Vessel Prefab Container");
             StringAssert.Contains($"    Prefab: {{fileID: 6417075533431866457, guid: {PrefabGuid}, type: 3}}\n", Read(NetworkPrefabs), "DefaultNetworkPrefabs");
             StringAssert.Contains($"guid: {PrefabGuid}", Read(Prefab + ".meta"));
+        }
+
+        // ------------------------------------------------------------------ the catch's pace (studio dpWarp, 2026-10-14)
+
+        [Test]
+        public void CatchWarp_IsTheFieldsBoostScaledByTheShare()
+        {
+            var config = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
+            try
+            {
+                // the shipped share, 1.15 (the studio's dpWarp): the field's ×3 becomes 1 + 2 × 1.15 = 3.3
+                Assert.AreEqual(3.3f, config.CatchWarpTarget(3f), 1e-4f);
+                Assert.AreEqual(1f, config.CatchWarpTarget(1f), 1e-6f, "no field boost, no catch warp");
+                Assert.AreEqual(1f, config.CatchWarpTarget(0.5f), 1e-6f, "a boost below 1 never slows the clock");
+                Assert.IsTrue(config.CatchWarpFromPress, "the warp starts at the press (studio dpWarpHeld 1)");
+            }
+            finally { Object.DestroyImmediate(config); }
+        }
+
+        [Test]
+        public void CatchWarp_RisesWhileHeldAndFadesAfter_TheFieldsOwnStep()
+        {
+            // StoatDipoleMath.StepBoost is the one rule both modes run: rise toward the target while warped, fade after.
+            float b = 1f;
+            for (int i = 0; i < 120; i++) b = StoatDipoleMath.StepBoost(b, true, 3.3f, 20f, 0.6f, 1f / 60f);
+            Assert.AreEqual(3.3f, b, 0.01f, "two seconds held reaches the catch's target");
+            for (int i = 0; i < 36; i++) b = StoatDipoleMath.StepBoost(b, false, 3.3f, 20f, 0.6f, 1f / 60f);
+            Assert.AreEqual(1f + 2.3f * Mathf.Exp(-1f), b, 0.02f, "one fade time after the release, 1/e of the warp is left");
+        }
+
+        [Test]
+        public void Asset_ShipsTheStudiosPaceAndTiming()
+        {
+            var text = Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
+            StringAssert.Contains("  catchWarpShare: 1.15\n", text, "studio dpWarp");
+            StringAssert.Contains("  catchWarpFromPress: 1\n", text, "studio dpWarpHeld");
+            StringAssert.Contains("  sweetSpotDegrees: 90\n", text, "studio dpSweetDeg");
+            StringAssert.Contains("  missKickShare: 0.2\n", text, "studio dpMissShare");
+        }
+
+        [Test]
+        public void Keyboard_BIsT_TheStudiosKeyToo()
+        {
+            // R is the Vessel Studio's reset; the Stoat's mode switch (Button2Action, pad B) is T in both (2026-10-14).
+            foreach (var path in new[] { "Assets/_Scripts/Controller/IO/KeyboardInputStrategy.cs", "Assets/_Scripts/Controller/IO/SingleStickMouseInputStrategy.cs" })
+            {
+                var src = Read(path);
+                StringAssert.DoesNotContain("rKey", src, $"{path}: Button2 left R");
+                StringAssert.Contains("tKey", src, $"{path}: Button2 is T");
+            }
+            StringAssert.Contains("  - binding: 3\n    padGlyph: {fileID: 21300000, guid: b611b9e51b8b5f14b9d9dc8dd392fc60, type: 3}\n    padGlyphHeld: {fileID: 0}\n    keyboardLabel: T\n",
+                Read("Assets/Resources/ControlGlyphSet.asset"), "the B chip reads T");
         }
     }
 }

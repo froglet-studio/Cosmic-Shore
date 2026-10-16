@@ -35,6 +35,10 @@ namespace CosmicShore.UI
         const float FadeOutSeconds = 0.2f;
         const float GlideSharpness = 10f;
         const float AllowedRefreshSeconds = 1f;
+        // The scene-wide search for always-available controls (every Button, hub button and marker) is
+        // a frame spike in the lava lamp, so it runs on a new target and then this rarely; the cheap
+        // reachability check still runs every AllowedRefreshSeconds on what it found.
+        const float AllowedSearchSeconds = 5f;
 
         static MenuSpotlight _instance;
 
@@ -52,7 +56,16 @@ namespace CosmicShore.UI
         bool _hasHole;
         Rect _hole;
         float _allowedRefreshAt;
+        // The caption's single-line size, measured only when its text, size or font changes (a TMP
+        // layout pass every frame was most of this overlay's cost).
+        string _measuredText;
+        float _measuredSize;
+        TMP_FontAsset _measuredFont;
+        Vector2 _measuredLine;
         readonly List<RectTransform> _allowed = new();
+        readonly List<RectTransform> _allowedCandidates = new();
+        float _allowedSearchAt;
+        RectTransform _searchedFor;
         readonly List<Rect> _holes = new();
 
         /// <summary>The spotlight in the active scene, built on first use.</summary>
@@ -171,10 +184,17 @@ namespace CosmicShore.UI
                 : rect;
             _hasHole = true;
 
-            if (Time.unscaledTime >= _allowedRefreshAt)
+            if (Time.unscaledTime >= _allowedRefreshAt || _searchedFor != _target)
             {
-                MenuGuide.CollectAlwaysAvailable(_allowed);
-                _allowed.RemoveAll(a => !IsReachable(a));
+                if (Time.unscaledTime >= _allowedSearchAt || _searchedFor != _target)
+                {
+                    MenuGuide.CollectAlwaysAvailable(_allowedCandidates);
+                    _allowedSearchAt = Time.unscaledTime + AllowedSearchSeconds;
+                    _searchedFor = _target;
+                }
+                _allowed.Clear();
+                foreach (var candidate in _allowedCandidates)
+                    if (IsReachable(candidate)) _allowed.Add(candidate);
                 _allowedRefreshAt = Time.unscaledTime + AllowedRefreshSeconds;
             }
 
@@ -228,7 +248,15 @@ namespace CosmicShore.UI
             // The pill hugs the text that is actually drawn, not the caption's whole box.
             // Single-line preferred size, folded into the wrap width (the one GetPreferredValues
             // overload every TMP build has).
-            var line = _caption.GetPreferredValues(_captionText);
+            if (_measuredText != _captionText || !Mathf.Approximately(_measuredSize, _caption.fontSize)
+                || _measuredFont != _caption.font)
+            {
+                _measuredLine = _caption.GetPreferredValues(_captionText);
+                _measuredText = _captionText;
+                _measuredSize = _caption.fontSize;
+                _measuredFont = _caption.font;
+            }
+            var line = _measuredLine;
             int lines = Mathf.Max(1, Mathf.CeilToInt(line.x / Mathf.Max(1f, width)));
             float pad = 18f * scale;
             var backing = _captionBacking.rectTransform;

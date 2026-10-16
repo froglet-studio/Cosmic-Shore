@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
     /// course, its laps, its lead-in and its authored length, which the arcade card's preview
     /// reads too (<see cref="RaceCourseSource"/>).</para>
     /// </summary>
-    public abstract class GateRaceController : MultiplayerDomainGamesController
+    public abstract class GateRaceController : MultiplayerDomainGamesController, IAIPilotArming
     {
         [Header("Scoring")]
         [Tooltip("Drag the mode's ScoringRule asset - the per-mode scoring strategy (end condition, scores, results).")]
@@ -125,6 +125,15 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far PAST the gate the fly-through point sits. Same reason: the AI flies at " +
                  "its target and through it, so the target has to be on the other side of the mouth.")]
         [SerializeField, Min(1f)] float aiThroughDistance = 220f;
+
+        [Tooltip("Commit to the fly-through point no earlier than the approach point (commit = the smaller of " +
+                 "aiCommitDistance and the approach lead plus half the hull's turning radius), and after crossing a " +
+                 "ring's plane OUTSIDE the mouth, re-latch the side from where the pilot is and break off at once. " +
+                 "Off: commit at aiCommitDistance whatever the line, and circle the far-side point after a miss " +
+                 "until AIPilot's orbit detector fires. Ported from the Regatta AI studio (17/32 Hard races " +
+                 "finished off, 30/32 on). Regatta turns it on in code; every other gate race keeps its shipped " +
+                 "steering until its owner tests it on.")]
+        [SerializeField] bool aiCommitFromApproachPoint;
 
         [Tooltip("Extra distance an AI will accept flying to take a crystal ON THE WAY to its next " +
                  "gate. The crystal is the Dolphin's only blast trigger, and the external target " +
@@ -291,6 +300,46 @@ namespace CosmicShore.Gameplay
         /// ever true about one frame.</para>
         /// </summary>
         protected string CourseFailureDetail { get; set; }
+
+        /// <summary>The least throttle the mode's AI flies (0 = the AI's own skill throttle). Regatta races at full.</summary>
+        protected virtual float AIThrottleFloor => 0f;
+
+        /// <summary>
+        /// Whether this mode's AIs commit at the approach point and re-attack after a missed mouth
+        /// (<see cref="CommitDistanceFor"/>, <see cref="RaceGateRing.PlaneCrossing"/>). The inspector switch by
+        /// default; a mode that measured the fix overrides it on.
+        /// </summary>
+        protected virtual bool AICommitFromApproachPoint => aiCommitFromApproachPoint;
+
+        /// <summary>
+        /// The approach point never sits further before a ring than this share of the leg into it. Without the cap a
+        /// short leg (Regatta: 461-858 u against a 480 u lead) put the approach point BEHIND the ring just threaded,
+        /// often inside a fast hull's turning circle, so the AI broke orbit and flew away from the course every ring
+        /// (2026-10-14 Regatta audit, the Manta). 1 = no cap.
+        /// </summary>
+        const float ApproachLeadShareOfLeg = 0.4f;
+
+        /// <summary>
+        /// The range inside which an AI stops lining up and aims through the ring. Shipped behaviour is the
+        /// fixed <paramref name="commitDistance"/>; with <paramref name="fromApproachPoint"/> it is never more than
+        /// the approach lead plus half the hull's turning radius, so on a short leg the pilot actually flies to
+        /// its approach point (the 40% lead) before it turns in, instead of committing from wherever it is and
+        /// crossing the plane outside the mouth. Line for line from the Regatta AI studio
+        /// (the deleted Regatta AI page, <c>Docs/Studios/RegattaAI/index.html</c> in git history, <c>aiInput</c>'s <c>commit</c>).
+        /// </summary>
+        public static float CommitDistanceFor(float commitDistance, float approachLead, float minTurnRadius, bool fromApproachPoint)
+        {
+            if (!fromApproachPoint || float.IsNaN(minTurnRadius)) return commitDistance;
+            return Mathf.Min(commitDistance, approachLead + 0.5f * Mathf.Max(0f, minTurnRadius));
+        }
+
+        /// <summary>The lap (1-based) a pilot on <paramref name="threaded"/> threadings is flying, for the AI report.</summary>
+        int DiagnosticLap(int threaded)
+        {
+            int lead = Mathf.Clamp(LeadInGates, 0, _rings.Count);
+            int lapped = _rings.Count - lead;
+            return threaded < lead || lapped <= 0 ? 1 : 1 + (threaded - lead) / lapped;
+        }
 
         /// <summary>
         /// A mode-specific AI aim point, consulted BEFORE the gate logic. Return false (the
@@ -770,6 +819,12 @@ namespace CosmicShore.Gameplay
             if (_finalResultsSent) return;
             if (gameData == null || !gameData.IsTurnRunning) return;
 
+            // Despawned (leaving play mode, a scene teardown): OnNetworkDespawn cleared the course
+            // on purpose while the turn can still read as running for a frame. Without this the
+            // check below reported a "missed SyncCourse" that never happened (Bug Ledger
+            // E-76d7341dae, captured after a Regatta run ended).
+            if (!IsSpawned) return;
+
             if (_rings.Count == 0)
             {
                 // Flying with no course is silent by construction - the pilot simply is never
@@ -942,96 +997,179 @@ namespace CosmicShore.Gameplay
         void ArmRacers()
         {
             Vector3 centre = ResolveCellCentre();
+            var handicapLevel = RaceHandicapLevel();
 
-            // The lobby's AI difficulty, where this card offers the picker (AIDifficultyRules.IsOfferedFor):
-            // Easy and Medium race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
-            // Hard on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
-            var handicapLevel = AIDifficultyRules.IsOfferedFor(gameData.GameMode)
-                ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
-                : default;
-
+            // Every AI seat, plus a human's hull the AI is holding when the race starts (PilotControl, the
+            // Third Eye's "AI flies" toggle): that hull races on the same steering as a seat.
             foreach (var p in gameData.Players)
             {
-                if (p == null || !p.IsInitializedAsAI) continue;
-                var pilot = p.Vessel?.VesselStatus?.AIPilot;
-                if (pilot == null) continue;
-
-                var captured = p;
-                int lockedIndex = -1;
-                float side = 1f;
-                float nextCrystalScan = 0f;
-                Crystal detour = null;
-                // Seeded per seat and per race, so each AI errs differently every race.
-                var handicap = handicapLevel.IsNone ? null
-                    : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
-
-                pilot.SetExternalTargetProvider(() =>
-                {
-                    var selfTf = captured.Vessel?.Transform;
-                    if (selfTf == null) return centre;
-
-                    // A mode whose vessel is ATTACHED to geometry aims at the geometry, not the
-                    // ring. Asked first, every frame, so the answer can change the instant the
-                    // pilot latches on or launches off.
-                    if (TryOverrideAim(captured, out Vector3 overridden)) return overridden;
-
-                    int index = captured.RoundStats?.SwitchesThreaded ?? 0;
-                    if (index < 0 || index >= RaceLength) return centre;   // finished: loiter
-
-                    // RingIndexFor, not the raw index: on a lapped circuit an AI reading
-                    // _course[index] straight would run off the end of the list after one lap
-                    // and loiter for the rest of the race. lockedIndex stays RAW on purpose -
-                    // arriving at the same ring on the next lap IS a new leg.
-                    var gate = _course[RingIndexFor(index)];
-                    Vector3 self = selfTf.position;
-
-                    // What this pilot BELIEVES about its ring (GateRaceHandicap): nothing yet (it flies
-                    // straight on), or the mouth off to one side (it flies there and turns back).
-                    Vector3 ringAt = gate.Position;
-                    if (handicap != null)
-                    {
-                        var belief = handicap.Believe(index, gate.Position, gate.Axis, gate.Radius, self, selfTf.forward, Time.time);
-                        if (belief.Unnoticed) return self + selfTf.forward * 200f;
-                        ringAt = belief.Point;
-                    }
-
-                    if (index != lockedIndex)
-                    {
-                        lockedIndex = index;
-                        side = Vector3.Dot(self - gate.Position, gate.Axis) >= 0f ? 1f : -1f;
-                        detour = null;   // a new leg is a new line; re-decide what is on the way
-                    }
-
-                    // A crystal ON THE WAY, if there is one. Installing an external target
-                    // provider replaces AIPilot's own crystal seeking outright (the trap Bends
-                    // records), so without this an AI would never collect one, never fire the
-                    // blast, and the mode's interference layer would be human-only.
-                    if (aiCrystalDetourSlack > 0f)
-                    {
-                        if (Time.time >= nextCrystalScan)
-                        {
-                            nextCrystalScan = Time.time + aiCrystalScanSeconds;
-                            detour = FindDetourCrystal(self, gate.Position, captured.Domain);
-                        }
-
-                        // Re-tested every frame, not latched: "on the way" is a cheap monotone
-                        // test that stops holding the moment the pilot is past the crystal, so
-                        // the detour cannot become an orbit the way an aim point can.
-                        if (detour)
-                        {
-                            Vector3 c = detour.transform.position;
-                            if (Vector3.Distance(self, c) + Vector3.Distance(c, gate.Position)
-                                <= Vector3.Distance(self, gate.Position) + aiCrystalDetourSlack)
-                                return c;
-                            detour = null;
-                        }
-                    }
-
-                    return (ringAt - self).sqrMagnitude > aiCommitDistance * aiCommitDistance
-                        ? ringAt + gate.Axis * (side * aiApproachLead)
-                        : ringAt - gate.Axis * (side * aiThroughDistance);
-                });
+                if (p == null || (!p.IsInitializedAsAI && !HeldByAutopilot(p))) continue;
+                ArmRacer(p, centre, handicapLevel);
             }
+        }
+
+        /// <summary>
+        /// Arm ONE pilot mid-race: a human's hull handed to the AI after the start (<see cref="PilotControl"/>).
+        /// The same steering <see cref="ArmRacers"/> gives every seat at the start. Server only.
+        /// </summary>
+        public bool ArmAIPilot(IPlayer player)
+        {
+            if (!IsServer || player == null) return false;
+            ArmRacer(player, ResolveCellCentre(), RaceHandicapLevel());
+            return true;
+        }
+
+        // The lobby's AI difficulty, where this card offers the picker (AIDifficultyRules.IsOfferedFor):
+        // Easy and Medium race on GateRaceHandicap's belief (a ring noticed late, a ring misjudged),
+        // Hard on the true course. Same numbers as the Skim Race (SkimRaceDifficultySO).
+        SkimRaceHandicapLevel RaceHandicapLevel() => AIDifficultyRules.IsOfferedFor(gameData.GameMode)
+            ? SkimRaceDifficultySO.Load().For(AIDifficultyRules.Resolve(gameData.RequestedAIDifficulty))
+            : default;
+
+        // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a human's hull.
+        static bool HeldByAutopilot(IPlayer p) =>
+            p.Vessel?.VesselStatus is Component status && status &&
+            status.TryGetComponent(out AIPilot autopilot) && autopilot.AutoPilotEnabled;
+
+        void ArmRacer(IPlayer p, Vector3 centre, SkimRaceHandicapLevel handicapLevel)
+        {
+            var pilot = p.Vessel?.VesselStatus?.AIPilot;
+            if (pilot == null) return;
+
+            var captured = p;
+            int lockedIndex = -1;
+            float side = 1f;
+            float approachLead = aiApproachLead;
+            float nextCrystalScan = 0f;
+            Crystal detour = null;
+            Vector3 lastSelf = default;
+            bool hasLastSelf = false;
+            // Seeded per seat and per race, so each AI errs differently every race.
+            var handicap = handicapLevel.IsNone ? null
+                : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
+
+            pilot.SetExternalTargetProvider(() =>
+            {
+                var selfTf = captured.Vessel?.Transform;
+                if (selfTf == null) return centre;
+
+                // Where the pilot was on the previous call, for the missed-mouth test below.
+                Vector3 previousSelf = lastSelf;
+                bool hadPreviousSelf = hasLastSelf;
+                lastSelf = selfTf.position;
+                hasLastSelf = true;
+
+                // A mode whose vessel is ATTACHED to geometry aims at the geometry, not the
+                // ring. Asked first, every frame, so the answer can change the instant the
+                // pilot latches on or launches off.
+                if (TryOverrideAim(captured, out Vector3 overridden))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Override, overridden);
+                    return overridden;
+                }
+
+                int index = captured.RoundStats?.SwitchesThreaded ?? 0;
+                if (index < 0 || index >= RaceLength)
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Finished, centre);
+                    return centre;   // finished: loiter
+                }
+
+                // RingIndexFor, not the raw index: on a lapped circuit an AI reading
+                // _course[index] straight would run off the end of the list after one lap
+                // and loiter for the rest of the race. lockedIndex stays RAW on purpose -
+                // arriving at the same ring on the next lap IS a new leg.
+                int ringNo = RingIndexFor(index);
+                var gate = _course[ringNo];
+                Vector3 self = selfTf.position;
+                int lap = DiagnosticLap(index);
+
+                // What this pilot BELIEVES about its ring (GateRaceHandicap): nothing yet (it flies
+                // straight on), or the mouth off to one side (it flies there and turns back).
+                Vector3 ringAt = gate.Position;
+                if (handicap != null)
+                {
+                    var belief = handicap.Believe(index, gate.Position, gate.Axis, gate.Radius, self, selfTf.forward, Time.time);
+                    if (belief.Unnoticed)
+                    {
+                        pilot.ReportObjective(AIPilot.ObjectivePhase.NotNoticed, gate.Position, ringNo, lap);
+                        return self + selfTf.forward * 200f;
+                    }
+                    ringAt = belief.Point;
+                }
+                bool misjudged = ringAt != gate.Position;
+
+                // Crossed this ring's plane OUTSIDE the mouth: a miss. The side latched for this ring is now
+                // the wrong one and the far-side point is behind the pilot and close, so it would circle that
+                // point until the orbit detector fired (REGATTA.md section 6.1). Re-latch from where it is (a
+                // ring threads from either side) and extend and re-attack now. A crossing INSIDE the mouth is
+                // the ring's to count; the same formula decides both (RaceGateRing.PlaneCrossing).
+                if (AICommitFromApproachPoint && hadPreviousSelf &&
+                    RaceGateRing.PlaneCrossing(previousSelf, self, gate.Position, gate.Axis, gate.Radius)
+                        == GatePlaneCrossing.OutsideMouth)
+                {
+                    lockedIndex = -1;
+                    pilot.BreakOffNow();
+                }
+
+                if (index != lockedIndex)
+                {
+                    lockedIndex = index;
+                    side = Vector3.Dot(self - gate.Position, gate.Axis) >= 0f ? 1f : -1f;
+                    detour = null;   // a new leg is a new line; re-decide what is on the way
+                    // The leg into this ring: from the ring before it, or from where the pilot is for the first.
+                    Vector3 legFrom = index > 0 ? _course[RingIndexFor(index - 1)].Position : self;
+                    approachLead = Mathf.Min(aiApproachLead,
+                        ApproachLeadShareOfLeg * Vector3.Distance(legFrom, gate.Position));
+                }
+
+                // A crystal ON THE WAY, if there is one. Installing an external target
+                // provider replaces AIPilot's own crystal seeking outright (the trap Bends
+                // records), so without this an AI would never collect one, never fire the
+                // blast, and the mode's interference layer would be human-only.
+                if (aiCrystalDetourSlack > 0f)
+                {
+                    if (Time.time >= nextCrystalScan)
+                    {
+                        nextCrystalScan = Time.time + aiCrystalScanSeconds;
+                        detour = FindDetourCrystal(self, gate.Position, captured.Domain);
+                    }
+
+                    // Re-tested every frame, not latched: "on the way" is a cheap monotone
+                    // test that stops holding the moment the pilot is past the crystal, so
+                    // the detour cannot become an orbit the way an aim point can.
+                    if (detour)
+                    {
+                        Vector3 c = detour.transform.position;
+                        if (Vector3.Distance(self, c) + Vector3.Distance(c, gate.Position)
+                            <= Vector3.Distance(self, gate.Position) + aiCrystalDetourSlack)
+                        {
+                            pilot.ReportObjective(AIPilot.ObjectivePhase.CrystalDetour, c, ringNo, lap);
+                            return c;
+                        }
+                        detour = null;
+                    }
+                }
+
+                var transformer = captured.Vessel?.VesselStatus?.VesselTransformer;
+                float commit = CommitDistanceFor(aiCommitDistance, approachLead,
+                    transformer != null ? transformer.MinTurnRadius : 0f, AICommitFromApproachPoint);
+                bool approaching = (ringAt - self).sqrMagnitude > commit * commit;
+                pilot.ReportObjective(
+                    misjudged ? AIPilot.ObjectivePhase.Misjudged
+                    : approaching ? AIPilot.ObjectivePhase.Approach : AIPilot.ObjectivePhase.Through,
+                    gate.Position, ringNo, lap);
+                return approaching
+                    ? ringAt + gate.Axis * (side * approachLead)
+                    : ringAt - gate.Axis * (side * aiThroughDistance);
+            });
+
+            // A race flies flat out, and a drifting hull (the Dolphin's charge) points its nose where it is
+            // going rather than at the cell centre, so a discharge fires down the line to the ring
+            // (2026-10-14 Regatta audit: it fired wide of the ring).
+            pilot.SetThrottleFloor(AIThrottleFloor);
+            var aiPilot = pilot;
+            pilot.SetDriftLookTargetProvider(() => aiPilot && aiPilot.Objective.Has ? aiPilot.TargetPosition : (Vector3?)null);
         }
 
         /// <summary>

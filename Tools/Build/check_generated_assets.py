@@ -851,6 +851,15 @@ def self_test(schema, base):
     if [f for f in clean_scene if f[0] != "swarm"]:
         ok = False
         print("self-test: the unmodified scene reports findings:", clean_scene[:3])
+    # a package script (UGUI Image, which lives in Library/PackageCache, never under Assets/) named by a
+    # NEW document is not a dangling guid; the "reference to an unknown guid" control above proves a
+    # guid the base tree never saw is still one
+    ugui_image = "fe87c0e1cc204ed48ad3b37840f39efc"
+    pkg = sub(tad, "m_Script: {fileID: 11500000, guid: ", "m_Script: {fileID: 11500000, guid: " + ugui_image + "}  # ", 1)
+    found, _ = run_audit(Tree(ROOT, pkg), schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "guid" and ugui_image in f[2]]
+    print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "package script guid on a new document is NOT a finding", hit[0][2][:110] if hit else ""))
+    ok &= not hit
     # Unity's [SerializeReference] registry is not a field; a `references` key without its shape is
     registry = "  references:\n    version: 2\n    RefIds: []\n"
     found, _ = run_audit(Tree(ROOT, {cfg: tree0.read(cfg).rstrip("\n") + "\n" + registry}),
@@ -863,15 +872,6 @@ def self_test(schema, base):
     hit = [f for f in found if f[0] == "field" and "`references`" in f[2]]
     print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "a plain `references` key is still a dead field", hit[0][2][:110] if hit else ""))
     ok &= bool(hit)
-    # a package script (UGUI Image, which lives in Library/PackageCache, never under Assets/) named by a
-    # NEW document is not a dangling guid; the "reference to an unknown guid" control above proves a
-    # guid the base tree never saw is still one
-    ugui_image = "fe87c0e1cc204ed48ad3b37840f39efc"
-    pkg = sub(tad, "m_Script: {fileID: 11500000, guid: ", "m_Script: {fileID: 11500000, guid: " + ugui_image + "}  # ", 1)
-    found, _ = run_audit(Tree(ROOT, pkg), schema, base, added, [], [], lambda r: None)
-    hit = [f for f in found if f[0] == "guid" and ugui_image in f[2]]
-    print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "package script guid on a new document is NOT a finding", hit[0][2][:110] if hit else ""))
-    ok &= not hit
     # a deleted file still referenced
     found, _ = run_audit(Tree(ROOT, deleted=[cfg + ".meta"]), schema, base, added[2:], [],
                          [(cfg + ".meta", meta_guid(tree0, cfg))], lambda r: None)

@@ -371,6 +371,13 @@ namespace CosmicShore.Editor
         {
             switch (change)
             {
+                case PlayModeStateChange.ExitingEditMode:
+                    // Adopt any fix published since the last sync (a pull with no C# change
+                    // triggers no domain reload, and this project runs play mode without one)
+                    // BEFORE the run starts, so this very run counts toward validating it.
+                    lock (StoreLock) SyncFromSharedLocked();
+                    break;
+
                 case PlayModeStateChange.EnteredPlayMode:
                     _inPlayMode = true;
                     _playStartUtc = DateTime.UtcNow;
@@ -392,11 +399,16 @@ namespace CosmicShore.Editor
                         SeenThisPlay.Clear();
                     }
                     SessionState.SetString(PlayStartKey, "");
+                    LastPlaySeen = seen;
                     CreditCleanSessions("PlayMode", seen, qualifies: seconds >= _minPlaySeconds,
                         why: $"{Math.Max(1, (int)seconds)}s play run");
                     break;
             }
         }
+
+        /// <summary>Error ids that fired during the play run that just ended — what
+        /// <see cref="BugHuntAutoSend"/> asks about. Main thread only.</summary>
+        public static HashSet<string> LastPlaySeen { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>Bounded wait for the worker to finish the already-captured backlog. Only ever
         /// called on the main thread at a session boundary, so 400 ms is the worst-case cost of a
@@ -706,7 +718,9 @@ namespace CosmicShore.Editor
         /// Adopts teammates' PUBLISHED issues into the local live store: every file under
         /// <c>shared/issues/</c> that is neither live locally nor tombstoned (resolved/deleted
         /// here) is imported. Local always wins for an issue that exists on both sides — the
-        /// difference is what the Stage &amp; Push tab shows as a pending MODIFY.
+        /// difference is what the Stage &amp; Push tab shows as a pending MODIFY — with ONE
+        /// exception, <see cref="TryAdoptPublishedFix"/>: a fix published after the local copy's
+        /// last fix moves a local OPEN issue to VALIDATING.
         /// </summary>
         static void SyncFromSharedLocked()
         {
@@ -717,7 +731,11 @@ namespace CosmicShore.Editor
                 {
                     var id = Path.GetFileName(path);
                     id = id[..^".bug.json".Length];
-                    if (Issues.ContainsKey(id)) continue;
+                    if (Issues.TryGetValue(id, out var live))
+                    {
+                        TryAdoptPublishedFix(live, path);
+                        continue;
+                    }
                     if (File.Exists(TombstonePath(id))) continue;
 
                     var issue = BugLedgerIssue.FromJson(File.ReadAllText(path));
@@ -727,6 +745,81 @@ namespace CosmicShore.Editor
                 }
             }
             catch { }
+        }
+
+        /// <summary>
+        /// The return half of the agent loop. Someone else — a teammate, or a Claude session running
+        /// the /bug-ledger skill (<c>Tools/Build/bug_ledger.py mark-fixed</c>) — fixed this bug and
+        /// published it as VALIDATING. "Local wins" would leave it OPEN here forever, and the fix
+        /// would never be validated by the machine that actually reproduces the bug. So a published
+        /// fix whose <c>fixedUtc</c> is NEWER than the local copy's last fix is adopted exactly like
+        /// pressing Mark Fixed: validating, clean count reset, the fixer and their notes carried.
+        /// An OPEN or VALIDATING issue adopts it (an ignored one stays parked), and only a strictly newer fix — after a regression reopens it, the same fix is
+        /// never re-adopted; it takes a NEW fix to put it back on the clock.
+        /// </summary>
+        static void TryAdoptPublishedFix(BugLedgerIssue live, string sharedPath)
+            => TryAdoptFixLocked(live, BugLedgerIssue.FromJson(File.ReadAllText(sharedPath)), fixInHead: null);
+
+        /// <summary>
+        /// The sender's entry point (<see cref="BugLedgerSender"/>, any thread): adopt a fix read
+        /// from this machine's <c>bugledger/&lt;user&gt;</c> branch. <paramref name="fixInHead"/>
+        /// answers "is this commit in my HEAD?" — a fix whose commit this machine has not pulled
+        /// yet is NOT adopted, because play runs on code without the fix would credit it falsely.
+        /// </summary>
+        internal static bool AdoptPublishedFix(BugLedgerIssue published, Func<string, bool> fixInHead)
+        {
+            if (published == null) return false;
+            lock (StoreLock)
+                return Issues.TryGetValue(published.Id, out var live) && TryAdoptFixLocked(live, published, fixInHead);
+        }
+
+        /// <summary>Deep copies of every live issue, for the sender to serialize off the lock.</summary>
+        internal static List<BugLedgerIssue> CopyLive()
+        {
+            lock (StoreLock)
+            {
+                var copies = new List<BugLedgerIssue>(Issues.Count);
+                foreach (var issue in Issues.Values)
+                {
+                    var copy = BugLedgerIssue.FromJson(issue.ToJson());
+                    if (copy != null) copies.Add(copy);
+                }
+                return copies;
+            }
+        }
+
+        /// <summary>True when <paramref name="published"/> carries a fix newer than anything the
+        /// local copy has adopted — i.e. the fix exists but this machine has not taken it yet.</summary>
+        internal static bool IsNewerFix(BugLedgerIssue published, BugLedgerIssue local)
+        {
+            if (published == null || !published.IsValidating) return false;
+            if (!TryParseIso(published.FixedUtc, out var publishedFix)) return false;
+            return local == null || !TryParseIso(local.FixedUtc, out var localFix) || publishedFix > localFix;
+        }
+
+        static bool TryAdoptFixLocked(BugLedgerIssue live, BugLedgerIssue published, Func<string, bool> fixInHead)
+        {
+            // OPEN adopts the fix; VALIDATING adopts a NEWER one too (the clean runs counted so far
+            // were against the old code, so the count restarts). An ignored issue stays parked.
+            if (!live.IsOpen && !live.IsValidating) return false;
+            if (!IsNewerFix(published, live)) return false;
+            if (fixInHead != null && !string.IsNullOrEmpty(published.FixCommit) && !fixInHead(published.FixCommit))
+                return false;
+
+            live.State = BugLedgerIssueState.Validating;
+            live.CleanSessions = 0;
+            live.ValidationPaused = false;
+            live.FixedBy = published.FixedBy;
+            live.FixedUtc = published.FixedUtc;
+            live.FixCommit = published.FixCommit;
+            if (!string.Equals(live.Notes, published.Notes, StringComparison.Ordinal))
+                live.Notes = string.IsNullOrEmpty(live.Notes) || published.Notes.Contains(live.Notes)
+                    ? published.Notes
+                    : live.Notes + "\n\n" + published.Notes;
+            WriteLocked(live);
+            Debug.Log($"[BugLedger] Fix received from {published.FixedBy}: \"{live.Title}\" — it closes itself after " +
+                      $"{live.CleanSessionsRequired} play test(s) without this error, and is sent back if it happens again.");
+            return true;
         }
 
         /// <summary>Pre-split layouts wrote the live store directly under <c>BugLedger/issues|resolved</c>
@@ -770,110 +863,11 @@ namespace CosmicShore.Editor
                 if (File.Exists(path)) return;
                 Directory.CreateDirectory(RootDir);
                 File.WriteAllText(path,
-                    "# Live ledger data is machine-local; only shared/ (published through the\n" +
-                    "# Stage & Push tab of FrogletTools > Diagnostics > Bug Ledger) is tracked.\n" +
+                    "# Live ledger data is machine-local. It reaches the team only through the\n" +
+                    "# after-play \"Send to Claude\" button, which pushes to bugledger/<user>.\n" +
                     "local/\n");
             }
             catch { }
-        }
-
-        // ── Publishing (the Stage & Push tab's data source) ──────────────────────────────────────
-
-        public enum BugLedgerChangeKind { Add = 0, Modify = 1, Remove = 2 }
-
-        /// <summary>One difference between the local live store and the published shared set.</summary>
-        public sealed class BugLedgerPendingChange
-        {
-            public string Id;
-            public string Title;
-            public BugLedgerChangeKind Kind;
-        }
-
-        /// <summary>
-        /// Diffs local against shared: live issues missing from shared are ADDs, differing ones
-        /// are MODIFYs, and shared issues with no live copy (resolved/deleted here) are REMOVEs.
-        /// Pure computation — nothing is written, and git sees nothing until
-        /// <see cref="ApplyStagedChanges"/> runs inside a publish.
-        /// </summary>
-        public static List<BugLedgerPendingChange> ComputePendingChanges()
-        {
-            var pending = new List<BugLedgerPendingChange>();
-            lock (StoreLock)
-            {
-                var shared = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                try
-                {
-                    if (SharedIssuesDir != null && Directory.Exists(SharedIssuesDir))
-                        foreach (var path in Directory.GetFiles(SharedIssuesDir, "*.bug.json"))
-                        {
-                            var name = Path.GetFileName(path);
-                            shared[name[..^".bug.json".Length]] = File.ReadAllText(path);
-                        }
-                }
-                catch { }
-
-                foreach (var issue in Issues.Values)
-                {
-                    if (!shared.TryGetValue(issue.Id, out var publishedJson))
-                        pending.Add(new BugLedgerPendingChange { Id = issue.Id, Title = issue.Title, Kind = BugLedgerChangeKind.Add });
-                    else if (!string.Equals(publishedJson, issue.ToJson(), StringComparison.Ordinal))
-                        pending.Add(new BugLedgerPendingChange { Id = issue.Id, Title = issue.Title, Kind = BugLedgerChangeKind.Modify });
-                }
-
-                foreach (var kv in shared)
-                {
-                    if (Issues.ContainsKey(kv.Key)) continue;
-                    var parsed = BugLedgerIssue.FromJson(kv.Value);
-                    pending.Add(new BugLedgerPendingChange
-                    {
-                        Id = kv.Key,
-                        Title = parsed?.Title ?? kv.Key,
-                        Kind = BugLedgerChangeKind.Remove,
-                    });
-                }
-            }
-
-            pending.Sort((a, b) => a.Kind != b.Kind
-                ? ((int)a.Kind).CompareTo((int)b.Kind)
-                : string.CompareOrdinal(a.Id, b.Id));
-            return pending;
-        }
-
-        /// <summary>
-        /// Materializes the STAGED ids into <c>shared/</c> — copy for Add/Modify, delete for
-        /// Remove — and returns the absolute paths touched (for a scoped <c>git add</c>). Called
-        /// only from inside a publish operation (any thread; takes the store lock), never from a
-        /// [+] click: files must not dirty git while the human is still choosing.
-        /// </summary>
-        public static List<string> ApplyStagedChanges(ICollection<string> stagedIds)
-        {
-            var touched = new List<string>();
-            if (stagedIds == null || stagedIds.Count == 0) return touched;
-
-            lock (StoreLock)
-            {
-                Directory.CreateDirectory(SharedIssuesDir);
-                foreach (var id in stagedIds)
-                {
-                    var sharedPath = Path.Combine(SharedIssuesDir, id + ".bug.json");
-                    try
-                    {
-                        if (Issues.TryGetValue(id, out var issue))
-                        {
-                            File.WriteAllText(sharedPath, issue.ToJson());
-                            touched.Add(sharedPath);
-                        }
-                        else if (File.Exists(sharedPath))
-                        {
-                            File.Delete(sharedPath);
-                            touched.Add(sharedPath);   // git add stages the deletion of a tracked file
-                        }
-                    }
-                    catch { }
-                }
-            }
-            Bump();
-            return touched;
         }
 
         static void WriteLocked(BugLedgerIssue issue)
@@ -958,6 +952,37 @@ namespace CosmicShore.Editor
             return s.Length > max ? s[..max] + "…" : s;
         }
 
+        /// <summary>
+        /// Frames that are the LOGGING itself, not the code that logged. With Unity's native
+        /// ("Full") stack trace, every <c>Debug.LogError</c> starts with ~10 of these — the
+        /// engine's stack walker, <c>DebugLogHandler</c>, <c>Logger</c>, and our own
+        /// <c>BenignLobbyLogFilter</c> — so a 10-line excerpt kept ONLY plumbing and cut off the
+        /// caller (the 2026-10-15 "Rpc methods can only be invoked after starting the
+        /// NetworkManager!" issue arrived with no way to tell who sent the RPC).
+        /// </summary>
+        static readonly string[] PlumbingFrames =
+        {
+            "(Unity) ", "StackWalker", "Stacktrace::", "DebugStringToFile", "DebugLogHandler",
+            "UnityEngine.Logger:", "UnityEngine.Debug:", "(wrapper managed-to-native)",
+            "BenignLobbyLogFilter", "FilteringLogHandler", "CosmicShore.Utility.CSDebug",
+        };
+
+        static bool IsPlumbing(string line)
+        {
+            foreach (var marker in PlumbingFrames)
+                if (line.Contains(marker, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
+        /// <summary>Native frames read <c>0x0000023e8f67b363 (Mono JIT Code) Ns.Type:Method (…)</c>;
+        /// keep only the managed part after the address and the JIT tag.</summary>
+        static string StripNativePrefix(string line)
+        {
+            const string jit = "(Mono JIT Code) ";
+            int idx = line.IndexOf(jit, StringComparison.Ordinal);
+            return idx >= 0 && line.StartsWith("0x", StringComparison.Ordinal) ? line[(idx + jit.Length)..] : line;
+        }
+
         static string StackExcerpt(string stack)
         {
             if (string.IsNullOrEmpty(stack)) return "";
@@ -966,12 +991,14 @@ namespace CosmicShore.Editor
             foreach (var raw in stack.Split('\n'))
             {
                 var line = raw.TrimEnd();
-                if (line.Length == 0) continue;
+                if (line.Length == 0 || IsPlumbing(line)) continue;
+                line = StripNativePrefix(line);
                 if (lines > 0) sb.Append('\n');
                 sb.Append(line);
                 if (++lines >= MaxStackLines || sb.Length >= MaxStackChars) break;
             }
             var result = sb.ToString();
+            if (result.Length == 0) return Truncate(stack, MaxStackChars);   // nothing but plumbing: keep it raw
             return result.Length > MaxStackChars ? result[..MaxStackChars] : result;
         }
 

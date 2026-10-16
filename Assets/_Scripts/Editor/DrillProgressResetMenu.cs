@@ -17,7 +17,7 @@ namespace CosmicShore.Editor
     /// </summary>
     public static class DrillProgressResetMenu
     {
-        [MenuItem("FrogletTools/Quest Graph/Reset Microgame Lessons (testing)")]
+        [MenuItem("FrogletTools/FTUE/Reset Microgame Lessons (testing)")]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 2,
             Description = "Forget the account's microgame Lesson keys and seen tips, so the Lesson is " +
                           "forced again. Run in play mode to clear the cloud copy too.")]

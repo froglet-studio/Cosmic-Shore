@@ -1,6 +1,6 @@
 # Microgame Training — design plan
 
-**Status: PHASE 1 LANDED, NOT YET RUN IN THE EDITOR (2026-10-02)** - data layer, runner, coach view, Play gating (§10.1, §10.2). Revision 3 (2026-09-25) — revision 1's five open questions and
+**Status: PHASES 1-4 AND THE GHOST DEMO LANDED; MERGED INTO `Ys-bleeding-edge` 2026-10-15; NOT YET RUN IN THE EDITOR** - data layer, runner, coach view, Play gating (§10.1, §10.2). Revision 3 (2026-09-25) — revision 1's five open questions and
 revision 2's four are answered and folded in (§1). Nothing here has run in the editor. The Game of the Week rotation is a
 separate thread; this plan only assumes it names one `GameModes` value, whose card locks one hull.
 
@@ -457,7 +457,7 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | 4 **(landed, re-cut)** | Quest Graph P0 first-login guide; the Game of the Week source (§10.5, §10.6) | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
 | 6 | Authoring window, coverage test, analytics (genre already read from `ModeGenre`, §8) | the "every vessel ever" guarantee |
-| later | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
+| later **(landed, §10.7)** | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
 
 ### 10.1 Phase 1a - what landed
 
@@ -589,7 +589,7 @@ two nodes and the rotation type-check against the real `QuestNodeSO` with stubs 
 crosses the arcade screen, the configure modal and the preview, which no harness reaches.
 
 To try it, in play mode: reset quest progress in the Quest Graph Editor, and run **FrogletTools >
-Quest Graph > Reset Microgame Lessons (testing)** (`DrillProgressStore.ResetForTesting`, which
+FTUE > Reset Microgame Lessons (testing)** (`DrillProgressStore.ResetForTesting`, which
 clears the local AND the loaded cloud copy, since a read merges the two). Then leave and re-enter
 Menu_Main. Stated gaps:
 - **`QuestDefaultContentBuilder` still seeds the old Phase 0.** It refuses to run while a
@@ -640,6 +640,31 @@ Stated, and only the editor can settle them:
   now completes, the same as a Lesson whose every step is skipped live (`drill_harness` §3b).
 
 ---
+
+### 10.7 The ghost demo - show, then tell (2026-10-15)
+
+A Lesson step whose `Cue` is `GhostDemo` is flown by the preview's own autopilot first. The coach says
+the step's prompt under the `GhostDemoTitle` header ("WATCH FIRST"), the autopilot flies and presses the
+control the step teaches, and after `ghostDemoSeconds` the stick goes back to the player and the step
+starts counting. The seed puts the cue on the two BUTTON steps of both templates (the Time ability and
+drift): steering is learned by moving the stick, a button is learned by seeing what it does.
+
+| Piece | File | Note |
+|---|---|---|
+| The decision | `Drill/DrillGhostDemo.cs` | Pure. `PlanFor` maps the step's condition to the control: drift HOLDS the hull's drift input, an ability TAPS that element's button from the ability map, a button step TAPS that button, anything else presses nothing (the autopilot's flying is the demo). A control the hull lacks gets no press. `IsPressed` waits a lead-in before pressing and lets a hold go a lead-in before the end, so the hand-over never starts mid-drift |
+| The runner | `Drill/DrillRunner.cs` | `BeginStep` starts a demo instead of the condition; the condition is baselined at the hand-over, so nothing the autopilot pressed counts; the hint clock starts at the hand-over. Presses go through `R_VesselActionHandler.PerformShipControllerActionsReplicated` (input-only, `check_ai_no_state_writes.py` now scans the drill folder). `OnGhostDemoChanged(true/false)` asks for the stick; `Stop` lets go of the control and does NOT announce, because whoever stops a run owns the stick. Skip mid-demo lets go and announces |
+| The hand-over | `ModePreviewSession.HandleGhostDemoChanged` | The same two halves `GrantStick` and `ExitFlightAsync` use - input pause and `ToggleAIPilot` - and only while `State.Live` |
+| Settings | `DrillLibrarySO` | `ghostDemoSeconds` (3; 0 turns demos off), `ghostDemoLeadInSeconds` (0.5), `ghostDemoTapSeconds` (0.4), `Strings.GhostDemoTitle`. Authored by `author_drill_assets.py` (seed) and set on the shipped library and both templates |
+
+Proof: the drill harness drives the shipped runner through a demo - lead-in, tap and release, hold and
+early release, the autopilot's press not completing the step even frames after the hand-over, Stop and
+Skip mid-demo, demos off at 0 s (131 checks; a mutant that baselines the step before the demo fails two).
+`unity_refcompile` player config clean. **Not run in the editor.** What only the editor settles:
+- **The drift demo may be cut short on a hull whose autopilot has `drift` on**: `AIPilot`'s commit logic
+  releases `LeftStickAction` when its course swings off its target. Watch the drift demo actually drift.
+- The autopilot flies at the ARENA's objectives during the demo (the session retargeted it at tap-in), so
+  where it goes is whatever the mode's autopilot chases; watch that it reads as "the ship showing you".
+- Whether 3 s reads as "watch this" or as a delay is a playtest call (`ghostDemoSeconds`).
 
 ## 11. Still open
 

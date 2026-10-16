@@ -77,6 +77,21 @@ namespace CosmicShore.Gameplay
         /// <summary>Whether a race played by hand in the editor records itself
         /// (<see cref="SkimRaceRaceRecorder"/>, which reads Skim Race's crystals).</summary>
         public virtual bool RecordsManualRaces => false;
+
+        /// <summary>
+        /// Whether a SUPER-SHIELDED prism is this pilot's own course - the racing line it skims -
+        /// rather than mass it must keep clear of. Skim Race lays one super-shielded track, so every
+        /// such prism is the course. A race that lays several (Regatta's three braided rails) says
+        /// which one is this pilot's, and the others reach the mass guard as obstacles.
+        /// </summary>
+        public virtual bool IsCourseMass(IVesselStatus status, Prism prism) => true;
+
+        /// <summary>
+        /// Whether the driver may leave the line and fly straight at the target once its boost is
+        /// banked (<see cref="SkimRaceAIConfigSO.DirectBoost"/>). Right on Skim Race, where the
+        /// crystal sits beside the only track; wrong where the straight line crosses other mass.
+        /// </summary>
+        public virtual bool AllowsDirectFlight => true;
     }
 
     /// <summary>Skim Race: the domain's crystal along the waypoint track - the pilot's own Skim Race

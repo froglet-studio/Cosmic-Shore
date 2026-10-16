@@ -34,6 +34,8 @@
   <ItemGroup>
     <!-- Shared screenshot encoder (no engine dependency). -->
     <Compile Include="../CosmicShore.Client/MiniPng.cs" Link="MiniPng.cs" />
+    <!-- The online test log's format, shared with the launcher that sends it to Claude. -->
+    <Compile Include="../Shared/NetTestLogFormat.cs" Link="Shared/NetTestLogFormat.cs" />
   </ItemGroup>
 
   <!-- Same native-copy workaround as CosmicShore.Client (Silk's loader does not probe

@@ -429,6 +429,19 @@ namespace CosmicShore.Engine.Networking.Transports.UTP
     }
 }
 
+namespace CosmicShore.Engine.Networking.Transports.SinglePlayer
+{
+    /// <summary>
+    /// Netcode's in-memory transport (original: Unity.Netcode.Transports.SinglePlayer.SinglePlayerTransport):
+    /// host == server == client in one process with no socket. The port's NetworkManager is already
+    /// single-process offline, so the base class's defaults (every start succeeds, RTT zero) are the
+    /// whole behaviour; the game's OfflineModeService swaps onto it for the browser Toybox boot.
+    /// </summary>
+    public class SinglePlayerTransport : NetworkTransport
+    {
+    }
+}
+
 namespace CosmicShore.Engine.Networking
 {
     /// <summary>Serializable handle to a spawned NetworkObject (original: NetworkObjectReference).</summary>

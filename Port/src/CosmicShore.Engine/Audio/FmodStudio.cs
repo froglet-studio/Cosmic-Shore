@@ -22,6 +22,17 @@ namespace CosmicShore.Engine.Audio.Fmod
 
     public enum STOP_MODE { ALLOWFADEOUT = 0, IMMEDIATE = 1 }
 
+    /// <summary>Original contract: FMOD.Studio.EVENT_CALLBACK_TYPE (the values the game masks with).</summary>
+    [Flags]
+    public enum EVENT_CALLBACK_TYPE : uint
+    {
+        CREATED = 0x00000001, DESTROYED = 0x00000002, STARTING = 0x00000004, STARTED = 0x00000008,
+        RESTARTED = 0x00000010, STOPPED = 0x00000020, START_FAILED = 0x00000040, ALL = 0xFFFFFFFF,
+    }
+
+    /// <summary>Original contract: FMOD.Studio.EVENT_CALLBACK. The engine invokes it on the main thread, from start().</summary>
+    public delegate RESULT EVENT_CALLBACK(EVENT_CALLBACK_TYPE type, IntPtr _event, IntPtr parameters);
+
     public enum PLAYBACK_STATE { PLAYING = 0, SUSTAINING, STOPPED, STARTING, STOPPING }
 
     [Flags]
@@ -81,6 +92,15 @@ namespace CosmicShore.Engine.Audio.Fmod
         public bool isValid() => Path != null;
 
         public RESULT getPath(out string path) { path = Path; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        /// <summary>The GUID the project's GUIDs.txt gives this path (default when it is not listed).</summary>
+        public RESULT getID(out GUID id) { id = FmodGuids.GuidOf(Path); return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        /// <summary>Sets (null clears) the callback every instance of this event invokes; see <see cref="RuntimeManager.InvokeDescriptionCallback"/>.</summary>
+        public RESULT setCallback(EVENT_CALLBACK callback, EVENT_CALLBACK_TYPE callbackmask = EVENT_CALLBACK_TYPE.ALL)
+        {
+            if (Path == null) return RESULT.ERR_INVALID_HANDLE;
+            RuntimeManager.SetDescriptionCallback(Path, callback, callbackmask);
+            return RESULT.OK;
+        }
         // With a runtime installed these come from the banks (a looping event is NOT a one-shot,
         // which FMODOneShotVolumeHelper checks); without one, a one-shot of length 0.
         public RESULT isOneshot(out bool oneshot) { oneshot = FmodBackend.Current?.IsOneshot(Path) ?? true; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
@@ -106,6 +126,28 @@ namespace CosmicShore.Engine.Audio.Fmod
     }
 
     public sealed class VCAState { public string Path; public float Volume = 1f; }
+
+    /// <summary>
+    /// Original contract: FMOD.Studio.Bank. The port has no banks; <see cref="StudioSystem.getBankList"/>
+    /// answers one pseudo bank that lists every event and snapshot path GUIDs.txt names.
+    /// </summary>
+    public struct Bank
+    {
+        internal string Path;
+        public bool isValid() => Path != null;
+        public RESULT getPath(out string path) { path = Path; return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT getID(out GUID id) { id = FmodGuids.GuidOf(Path); return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT getEventList(out EventDescription[] array)
+        {
+            var list = new List<EventDescription>();
+            foreach (var p in FmodGuids.Paths)
+                if (p.StartsWith("event:/", StringComparison.Ordinal) || p.StartsWith("snapshot:/", StringComparison.Ordinal))
+                    list.Add(new EventDescription { Path = p });
+            array = list.ToArray();
+            return Path == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+        public RESULT getEventCount(out int count) { getEventList(out var a); count = a.Length; return RESULT.OK; }
+    }
 
     public struct VCA
     {
@@ -157,6 +199,15 @@ namespace CosmicShore.Engine.Audio.Fmod
             description = new EventDescription { Path = path };
             return RESULT.OK;
         }
+
+        /// <summary>One pseudo bank over GUIDs.txt, or none when no GUIDs file was loaded.</summary>
+        public RESULT getBankList(out Bank[] array)
+        {
+            array = FmodGuids.Count == 0 ? Array.Empty<Bank>() : new[] { new Bank { Path = "bank:/Master" } };
+            return RESULT.OK;
+        }
+
+        public RESULT getBankCount(out int count) { getBankList(out var a); count = a.Length; return RESULT.OK; }
 
         public RESULT update() => RESULT.OK;
         public RESULT flushCommands() => RESULT.OK;

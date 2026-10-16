@@ -130,6 +130,10 @@ namespace CosmicShore.Gameplay
         /// device-tier trail policy (MenuCrystalClickHandler): a preview shows a mode as it plays,
         /// trail included, so the menu's trail hold stands down for it.</summary>
         public static bool AnyActive => s_session && s_session.IsActive;
+
+        /// <summary>The scene's preview session (null before its Start). Lets a per-frame reader - the first-login
+        /// guide's step finder - skip a scene-wide FindObjectsByType.</summary>
+        public static ModePreviewSession Current => s_session;
         static ModePreviewSession s_session;
 
         // Enter Play Mode runs without a domain reload: last session's object must not answer.
@@ -1169,6 +1173,7 @@ namespace CosmicShore.Gameplay
             {
                 _drill = gameObject.AddComponent<DrillRunner>();
                 _drill.OnChanged += HandleDrillChanged;
+                _drill.OnGhostDemoChanged += HandleGhostDemoChanged;
             }
 
             var nm = NetworkManager.Singleton;
@@ -1200,6 +1205,22 @@ namespace CosmicShore.Gameplay
         bool _drillHoldApplied;
 
         void HandleDrillChanged() => ApplyDrillHold(DrillHoldsPlay);
+
+        /// <summary>
+        /// A Ghost Demo step (TRAINING_PLAN §10.7): the autopilot takes the stick to show the step
+        /// (true), then gives it back (false) - the same two halves GrantStick and ExitFlightAsync
+        /// use, input pause and autopilot, and only while the player is IN the window. Every exit
+        /// route takes the stick itself, which is why the runner's Stop never raises this.
+        /// </summary>
+        void HandleGhostDemoChanged(bool demo)
+        {
+            if (_state != State.Live) return;
+            var player = gameData?.LocalPlayer;
+            if (player == null || !Alive(player.Vessel)) return;
+
+            player.InputController?.SetPause(demo);
+            player.Vessel.ToggleAIPilot(demo);
+        }
 
         void ApplyDrillHold(bool hold)
         {

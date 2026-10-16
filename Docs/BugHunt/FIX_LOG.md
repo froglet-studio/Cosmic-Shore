@@ -49,7 +49,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-5.7 — Delete Wildlife Blitz co-op leftovers (scene + controller)
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Purpose / symptom:** co-op Wildlife Blitz scene and controller still on disk after BH-5.5/5.6 retired the shipped surfaces, inviting accidental relaunch or stale GUID refs.
 - **Root cause:** retirement was staged; leftovers were kept on purpose until nothing shipped them.
 - **Decision:** BH-5.5/5.6 had kept `MinigameWildlifeBlitzMultuplayerCoOp.unity` and
@@ -70,7 +70,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-5.6 — Orphan classes after Wildlife Blitz / hangar retirement (salvage-before-delete)
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Purpose / symptom:** after hangar/Build Settings retirement, several Wildlife Blitz / sandbox classes had no scene, prefab, or asset references but still sat in the tree.
 - **Root cause:** mode retirement left code orphans; some types are still required by the Editor `BenchmarkStressTest` path.
 - **Decision (handoff §5):** salvage-before-delete; KEEP anything still needed by the Editor
@@ -91,7 +91,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-5.5 — Wildlife Blitz retired from shipped surfaces
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Root cause:** product decision to RETIRE the mode (handoff §5) after scenes were half-cleaned without clearing Build Settings / previews.
 - **Symptom:** neither Wildlife Blitz mode was in any `SO_GameList`; the co-op scene was still in
   Build Settings and ModePreviewLibrary, so it looked half-alive after the SP scene cleanup.
@@ -108,7 +108,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-5.4 — Hangar Wildlife Blitz training entries + card retired
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Root cause:** training SOs still pointed at a deleted Wildlife Blitz scene; hangar launch path was already dead (`Arcade.Instance` never placed).
 - **Symptom:** Rhino's and Sparrow's hangar training pointed at `SO_TrainingGame_WildLifeBlitz` →
   `ArcadeGameWildlifeBlitz`, whose scene was deleted in the earlier cleanup. `Arcade.Instance` is
@@ -123,7 +123,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-5.3 — Run Benchmark is Editor-only (not in player builds)
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Root cause:** Settings exposed `BenchmarkSceneLauncher` in player builds while `BenchmarkStressTest` is intentionally not in Build Settings.
 - **Symptom (risk):** Settings ▸ Run Benchmark called `BenchmarkSceneLauncher`, which loads
   `BenchmarkStressTest`, but that scene is not in Build Settings — a player build would fail the load.
@@ -137,7 +137,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-5.2 — Strict-YAML failures on cell configs, arcade cards, and captain SOs
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom (risk):** 17 assets failed a strict YAML parse (Unity tolerates mid-line `: ` today, but a
   wrap that ends a line on `:` would make the asset unload as nothing — same class as the Rampage
   Config 1 parse error fixed in PR #905).
@@ -155,7 +155,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-5.1 — Crystal.ActivateCrystal NRE when the cell is already gone
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom:** `NullReferenceException` in `Crystal.ActivateCrystal` at `transform.parent = cellData.Cell.transform`,
   from `Fauna.ReleaseHeart` ← `LightFauna.WitherCoroutine` (3× in the 0447 Editor log, near scene cleanup).
 - **Root cause:** teardown order — the wither coroutine can still release the heart after the cell is
@@ -171,7 +171,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-4.8 — Trail block indices wrapped past 65,535 prisms
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom (risk):** a very long freestyle trail that passes 65,535 prisms silently wraps the stored
   index (`ushort`), so `GetBlockIndex` / ride stepping point at the wrong block.
 - **Root cause:** `Dictionary<Prism, ushort>` and casts to `ushort` on add and reindex.
@@ -184,7 +184,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-4.7 — PrismTimerManager.CancelScheduledActions was O(N²)
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom (risk):** mass pool returns (many prisms cancelled in one frame) hitch while cancel walks the
   whole scheduled list and `RemoveAt`-shifts for each match.
 - **Root cause:** a single flat `List<ScheduledAction>` scanned on every cancel.
@@ -197,7 +197,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-4.6 — ThumbCursor / ThumbPerimeter used legacy Input.touches
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom (risk):** under the new Input System, `Input.touches` is empty, so the thumb cursor and
   perimeter never saw a finger down (both scripts are currently TEMP-disabled, so this was latent).
 - **Root cause:** legacy Input Manager API.
@@ -210,7 +210,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-4.5 — name generator skipped the last word in each list
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom:** the last entry in `FirstWordList` / `SecondWordList` could never appear in a generated name.
 - **Root cause:** `Random.Range(0, list.Length - 1)` — Unity's int overload treats the max as exclusive, so
   the last index was never chosen. Dead for gameplay today if the lists are unused, but wrong when called.
@@ -222,7 +222,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-4.4 — BranchingFlora re-rolled the trunk count every loop iteration
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom (risk):** trunk count drifted as `SeedBranches` ran, and a late roll could keep the loop
   going far past `maxTrunks` (or forever if the rolled value stayed above `i`).
 - **Root cause:** `for (int i = 0; i < Random.Range(minTrunks, maxTrunks + 1); i++)` re-evaluates
@@ -235,7 +235,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-4.1 — Bloomrush restarted a 0-0-0 round when Jade was not fielded
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom:** in a Bloomrush match that fielded only Ruby and Gold (or any set without Jade), a
   round that ended 0-0-0 never showed a winner and started again.
 - **Root cause:** `BloomrushScoringRuleSO.ResolveWinner` walked `ActiveDomains[0..RequestedDomainCount)`,
@@ -252,7 +252,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-4.2 / 4.3 — owner stat-report RPCs accepted NaN volumes and out-of-turn reports
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom (risk):** a client could send a NaN volume that passed the `volume < 0f` check (every
   comparison with NaN is false) and poisoned that player's volume totals. A report that arrived
   after the turn had ended, or before it started, was credited into `RoundStats`, which can
@@ -273,7 +273,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-3.1 — Play Again could leave the screen black when the vessel was ready early
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom (suspected):** after Play Again (scene-reload replay) a host or client stays on a black
   overlay and never fades in.
 - **Root cause:** `MultiplayerMiniGameControllerBase` subscribed `FadeFromBlackOnReplay` to
@@ -291,7 +291,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-2.4 — reconnect from the main menu was refused by the app-state machine
 
-- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge then; reached bleeding-edge 2026-10-13 through `Ys-bleeding-edge`, PR #1078, merge `8bcdde930`). Repro skipped.
 - **Symptom:** after tapping Reconnect in the menu the console shows `[AppState] Invalid
   transition: MainMenu → Authenticating`, and the app-state mirror stays `MainMenu` while the auth
   scene runs. Anything keyed on app state sees the wrong phase during the re-boot.

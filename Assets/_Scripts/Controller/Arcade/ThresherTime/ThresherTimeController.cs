@@ -34,6 +34,8 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Thresher Time";
 
+        /// <summary>The Thresher's circuit (<see cref="ThresherTimeCourseSource"/>): Headlong's solver,
+        /// <see cref="ThresherTimeCourse.ForIntensity"/>'s settings, target/laps rings per lap.</summary>
         protected override RaceCourseSource CreateCourseSource() =>
             new ThresherTimeCourseSource { Laps = laps };
     }

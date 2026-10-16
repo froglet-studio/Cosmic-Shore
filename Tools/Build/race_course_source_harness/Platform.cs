@@ -4,7 +4,17 @@
 using System;
 namespace UnityEngine
 {
-    public class Object { public string name = ""; }
+    public class Object
+    {
+        public string name = "";
+        // Unity's Object converts to bool (alive / destroyed). RegattaCourseSource.TryResolveLiveRails reads it.
+        public static implicit operator bool(Object o) => !ReferenceEquals(o, null);
+        // Scene queries: only RegattaCourseSource.TryResolveLiveRails (a live-rails resolver, not part of the
+        // course build) calls these, and the harness has no scene, so they find nothing.
+        public static T FindAnyObjectByType<T>() where T : Object => null;
+        public static T[] FindObjectsByType<T>(FindObjectsSortMode sort) where T : Object => new T[0];
+    }
+    public enum FindObjectsSortMode { None = 0, InstanceID = 1 }
     public class ScriptableObject : Object { }
     public class Component : Object { }
     public class MonoBehaviour : Component { }
@@ -57,9 +67,19 @@ namespace CosmicShore.Gameplay
         public SkeinCourseSettings CourseSettings => SkeinCourseSettings.ForIntensity(1);
     }
 
+    public class RailTrail { public System.Collections.Generic.List<object> TrailList = new(); }
+
     public class SpawnableRegattaRails : SpawnableBase
     {
+        public System.Collections.Generic.List<RailTrail> GetTrails() => null;
         public System.Collections.Generic.List<RaceGate> BuildGatesNow() =>
             RegattaCourse.BuildGates(RegattaCourse.DefaultSeed, 1);
+    }
+
+    // The scene's Cell, as far as RegattaCourseSource.TryResolveLiveRails touches it (the harness has none).
+    public class Cell : UnityEngine.MonoBehaviour
+    {
+        public CosmicShore.Utility.CellConfigDataSO Config => null;
+        public CosmicShore.Utility.CellConfigDataSO ExpectedConfig => null;
     }
 }

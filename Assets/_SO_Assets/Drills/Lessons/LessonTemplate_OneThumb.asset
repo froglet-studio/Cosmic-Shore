@@ -28,7 +28,7 @@ MonoBehaviour:
     Prompt: 'Press {glyph:Time} to use {ability:Time}.'
     Element: 4
     Anchor: 1
-    Cue: 1
+    Cue: 3
     Applicability: 2
     Condition:
       rid: 1001
@@ -38,7 +38,7 @@ MonoBehaviour:
     Prompt: 'Hold {glyph:Drift} to drift through a turn.'
     Element: 0
     Anchor: 0
-    Cue: 0
+    Cue: 3
     Applicability: 1
     Condition:
       rid: 1002

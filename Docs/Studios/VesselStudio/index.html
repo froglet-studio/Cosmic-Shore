@@ -240,6 +240,7 @@
     g.fillStyle = '#c48bff'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill();
   });
 
+
   preview('pvBrittle', (g, w, h, t) => {   // the pentagon ring spinning round its cockpit, five streams, the Creation frame behind
     g.fillStyle = '#05060c'; g.fillRect(0, 0, w, h);
     const cx = w * 0.4, cy = h * 0.5 + Math.sin(t * 0.9) * h * 0.08, R = 46, spin = t * 0.35;

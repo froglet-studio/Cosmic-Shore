@@ -59,6 +59,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The Lesson finished: true = completed, false = skipped.</summary>
         public event Action<bool> OnLessonEnded;
 
+        /// <summary>
+        /// A Ghost Demo started (true) or ended (false): the session hands the stick to the autopilot
+        /// for it and back after (TRAINING_PLAN §10.7). Not raised by <see cref="Stop"/> - whoever
+        /// stops a run owns the stick from then on.
+        /// </summary>
+        public event Action<bool> OnGhostDemoChanged;
+
         /// <summary>Any runner's Lesson finished (true = completed, false = skipped). For listeners
         /// that cannot reach the runner - the first-login quest, which only knows a Lesson should
         /// happen somewhere.</summary>
@@ -96,6 +103,16 @@ namespace CosmicShore.Gameplay
         /// card's Play button stays disabled (D2). False the moment the Mentor starts.</summary>
         public bool HoldsExit => Phase == DrillPhase.Lesson && !_skippable;
 
+        /// <summary>True while the autopilot shows the current step and the player watches. The step's
+        /// condition only starts counting when the demo hands the stick over.</summary>
+        public bool GhostDemoActive => _demoing;
+
+        /// <summary>Seconds into the running Ghost Demo (0 when none runs). For diagnostics.</summary>
+        public float GhostDemoElapsed => _demoing ? _demoElapsed : 0f;
+
+        /// <summary>The control the running Ghost Demo presses, and how. For diagnostics.</summary>
+        public GhostDemoPlan GhostDemo => _demoPlan;
+
         /// <summary>The library this run reads, for the view's chrome text.</summary>
         public DrillLibrarySO Library => _library;
 
@@ -116,7 +133,13 @@ namespace CosmicShore.Gameplay
         InputDeviceFamily _family;
         bool _keyboard;
         bool _canDrift;
+        InputEvents _driftInput;
         bool _skippable;
+
+        bool _demoing;
+        float _demoElapsed;
+        GhostDemoPlan _demoPlan;
+        bool _demoPressed;
 
         List<ComposedLessonStep> _steps = new();
         DrillConditionState _conditionState;
@@ -212,7 +235,8 @@ namespace CosmicShore.Gameplay
             _map = ElementalAbilityMapSO.LoadFor(status.VesselType);
             _glyphs = Resources.Load<ControlGlyphSetSO>("ControlGlyphSet");
             _handler = status.ActionHandler;
-            _canDrift = _handler && _handler.TryGetInputForAction<DriftActionSO>(out _);
+            _driftInput = default;
+            _canDrift = _handler && _handler.TryGetInputForAction<DriftActionSO>(out _driftInput);
             if (_handler) _handler.OnInputEventStarted += HandleInputStarted;
 
             _family = ResolveFamily();
@@ -248,6 +272,7 @@ namespace CosmicShore.Gameplay
         public void Stop()
         {
             RememberWhereWeAre();
+            EndGhostDemo(announce: false);
             if (_handler) _handler.OnInputEventStarted -= HandleInputStarted;
             _handler = null;
             _liveCondition = null;
@@ -287,6 +312,7 @@ namespace CosmicShore.Gameplay
         public void Skip()
         {
             if (Phase != DrillPhase.Lesson || !SkipAvailable) return;
+            EndGhostDemo(announce: true);
             OnLessonEnded?.Invoke(false);
             AnyLessonEnded?.Invoke(false);
             EnterMentor(null);
@@ -343,14 +369,31 @@ namespace CosmicShore.Gameplay
             }
 
             var step = _steps[StepIndex];
-            _liveCondition = step.Source.Condition;
-            _conditionState = default;
-            _liveCondition?.Begin(this, ref _conditionState);
             _stepElapsed = 0f;
             ShowingHint = false;
             LineElement = step.Source.Element;
             Cue = step.Source.Cue;
+
+            // Show, then tell: the autopilot flies this step once before the player does. The
+            // condition is not live during the demo, so nothing the autopilot does counts.
+            if (Cue == DrillCue.GhostDemo && _library.GhostDemoSeconds > 0f)
+            {
+                StartGhostDemo(step.Source.Condition);
+                RefreshLine();
+                return;
+            }
+
+            StartCondition(step.Source.Condition);
             RefreshLine();
+        }
+
+        /// <summary>Make a condition the live one, baselined NOW - after any demo, so presses the
+        /// autopilot made are not counted toward the player's step.</summary>
+        void StartCondition(DrillCondition condition)
+        {
+            _liveCondition = condition;
+            _conditionState = default;
+            _liveCondition?.Begin(this, ref _conditionState);
         }
 
         /// <summary>A Skims step has no signal to wait on here (see <see cref="SkimCount"/>);
@@ -371,6 +414,13 @@ namespace CosmicShore.Gameplay
             bool changed = skip != SkipAvailable;
             SkipAvailable = skip;
 
+            if (_demoing)
+            {
+                TickGhostDemo(dt);
+                if (changed) OnChanged?.Invoke();
+                return;
+            }
+
             var step = _steps[StepIndex];
             if (!ShowingHint && !string.IsNullOrEmpty(step.Hint) && _stepElapsed >= step.HintAfterSeconds)
             {
@@ -387,6 +437,61 @@ namespace CosmicShore.Gameplay
             }
 
             if (changed) OnChanged?.Invoke();
+        }
+
+        // ── The Ghost Demo ───────────────────────────────────────────────
+
+        void StartGhostDemo(DrillCondition condition)
+        {
+            _liveCondition = null;
+            _demoPlan = DrillGhostDemo.PlanFor(condition, _map, _canDrift, _driftInput);
+            _demoElapsed = 0f;
+            _demoPressed = false;
+            _demoing = true;
+            if (!string.IsNullOrEmpty(_library.Strings.GhostDemoTitle))
+                Title = _library.Strings.GhostDemoTitle;
+            OnGhostDemoChanged?.Invoke(true);
+        }
+
+        void TickGhostDemo(float dt)
+        {
+            _demoElapsed += dt;
+            float duration = _library.GhostDemoSeconds;
+            SetDemoPress(DrillGhostDemo.IsPressed(_demoPlan, _demoElapsed, duration,
+                                                  _library.GhostDemoLeadInSeconds, _library.GhostDemoTapSeconds));
+            if (_demoElapsed < duration) return;
+
+            // The hand-over: the stick goes back, then the step starts counting - and its hint
+            // clock starts now, not when the demo did.
+            EndGhostDemo(announce: true);
+            Title = _library.Strings.LessonTitle ?? string.Empty;
+            _stepElapsed = 0f;
+            StartCondition(_steps[StepIndex].Source.Condition);
+            RefreshLine();
+        }
+
+        /// <summary>Let go of anything the demo holds and end it. Idempotent.</summary>
+        /// <param name="announce">Raise <see cref="OnGhostDemoChanged"/> so the session hands the
+        /// stick back. False from <see cref="Stop"/>, whose caller owns the stick.</param>
+        void EndGhostDemo(bool announce)
+        {
+            if (!_demoing) return;
+            SetDemoPress(false);
+            _demoing = false;
+            _demoElapsed = 0f;
+            if (announce) OnGhostDemoChanged?.Invoke(false);
+        }
+
+        /// <summary>Press or release the demo's control through the vessel's own action handler -
+        /// the path an AI pilot's press takes (input-only).</summary>
+        void SetDemoPress(bool pressed)
+        {
+            if (pressed && !_demoPlan.HasPress) return;
+            if (pressed == _demoPressed) return;
+            _demoPressed = pressed;
+            if (!_handler) return;
+            if (pressed) _handler.PerformShipControllerActionsReplicated(_demoPlan.Input);
+            else _handler.StopShipControllerActionsReplicated(_demoPlan.Input);
         }
 
         void CompleteLesson()

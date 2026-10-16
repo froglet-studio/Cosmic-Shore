@@ -171,7 +171,6 @@ namespace CosmicShore.Core
             readonly QuestRuntimeContext _ctx;
             readonly GameModes _mode;
             float _refindAt;
-            ModePreviewSession[] _sessions;
             ArcadeExploreView _arcade;
             ArcadeExploreView[] _views = System.Array.Empty<ArcadeExploreView>();
             MenuHubButton _hubArcade;
@@ -194,14 +193,13 @@ namespace CosmicShore.Core
 
                 Refind();
 
-                if (_sessions != null)
-                    foreach (var session in _sessions)
-                        if (session && session.IsActive && session.ActiveMode == _mode
-                            && session.Window && session.Window.isActiveAndEnabled)
-                        {
-                            rect = session.Window.SurfaceRect;
-                            return Step.Preview;
-                        }
+                var session = ModePreviewSession.Current;
+                if (session && session.IsActive && session.ActiveMode == _mode
+                    && session.Window && session.Window.isActiveAndEnabled)
+                {
+                    rect = session.Window.SurfaceRect;
+                    return Step.Preview;
+                }
 
                 if (!sw) return Step.None;
 
@@ -232,20 +230,23 @@ namespace CosmicShore.Core
                 return Step.None;
             }
 
+            // Scene-wide searches only while something is still unresolved: this runs while the player
+            // flies the lava lamp, whose prisms make every FindObjectsByType a frame spike (2026-10-15:
+            // the preview session and the Arcade grid were searched for twice a second, forever).
             void Refind()
             {
                 if (Time.unscaledTime < _refindAt) return;
                 _refindAt = Time.unscaledTime + RefindSeconds;
 
-                _sessions = Object.FindObjectsByType<ModePreviewSession>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-
-                _views = Object.FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
                 if (!_arcade)
+                {
+                    _views = Object.FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
                     foreach (var view in _views)
                     {
                         var host = view ? view.GetComponentInParent<ModalWindowManager>(true) : null;
                         if (host && host.ModalType == ScreenSwitcher.ModalWindows.ARCADE) { _arcade = view; break; }
                     }
+                }
 
                 if (!_hubArcade)
                     foreach (var hub in Object.FindObjectsByType<MenuHubButton>(FindObjectsInactive.Include, FindObjectsSortMode.None))

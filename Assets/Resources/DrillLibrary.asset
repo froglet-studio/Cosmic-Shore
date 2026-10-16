@@ -16,6 +16,9 @@ MonoBehaviour:
   oneThumbLesson: {fileID: 11400000, guid: 2f4a9cc8c965873a4e31f8f04b85b520, type: 2}
   lessonSkipDelaySeconds: 3
   defaultHintAfterSeconds: 8
+  ghostDemoSeconds: 3
+  ghostDemoLeadInSeconds: 0.5
+  ghostDemoTapSeconds: 0.4
   metricTips:
   - Metric: 9
     Tips: {fileID: 11400000, guid: 386ccbb36d0d7d16e35e7a29946502d6, type: 2}
@@ -54,6 +57,7 @@ MonoBehaviour:
     NextLabel: 'NEXT'
     MentorClosingLine: 'That is everything. Press Play when you are ready.'
     PlayLockedCaption: 'Finish the lesson to play'
+    GhostDemoTitle: 'WATCH FIRST'
     PadControlLabels:
     - Binding: 7
       Label: 'LT'

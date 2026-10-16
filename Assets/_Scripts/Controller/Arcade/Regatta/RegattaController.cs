@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -121,6 +122,17 @@ namespace CosmicShore.Gameplay
         UrchinAutopilotDriver _urchinAI;
         UrchinAutopilotDriver UrchinAI => _urchinAI ??= new UrchinAutopilotDriver();
 
+        /// <summary>A race flies flat out: every Regatta AI holds full throttle (the hull's own speed verb still decides
+        /// its boost). Before, the AI flew its skill throttle, 0.3-0.9.</summary>
+        protected override float AIThrottleFloor => 1f;
+
+        /// <summary>
+        /// Regatta's short legs (461-858 u) are where committing from 420 u out crosses the plane beside the
+        /// mouth and then circles the far-side point: the Regatta AI studio finished 17/32 Hard hull x intensity
+        /// races with the shipped steering and 30/32 with this on (2026-10-15, the Regatta AI page, since deleted; REGATTA_AI_ROADMAP.md keeps its numbers).
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
+
         /// <summary>
         /// While ATTACHED, ride the rail toward this pilot's next ring; while FREE, fly at the
         /// ring the platform's way (and lay a Track Projector rail when the ring is a long,
@@ -184,6 +196,72 @@ namespace CosmicShore.Gameplay
             }
 
             if (hasGate) UrchinAI.TryProjectTrackToward(pilot, gate.Position, gate.Axis);
+
+            // Free and an Urchin: head for ITS OWN lane, a little ahead of where it is, rather than the ring's spine the
+            // three braided lanes wrap round. Aiming at the spine left the first lane it touched to the spawn slot -
+            // two times in three a rival's, ridden at 20 u/s or slipped and re-latched (2026-10-14 Regatta audit).
+            if (hasGate && status.VesselType == VesselClassType.Urchin && TryOwnLaneAhead(pilot, tf.position, out target))
+                return true;
+            return false;
+        }
+
+        [Tooltip("A free AI Urchin aims this many lane prisms ahead of the nearest point of its own-domain lane, so it " +
+                 "joins the lane going the way the race goes. Lane prisms sit a few units apart.")]
+        [SerializeField, Min(0)] int aiOwnLaneLeadPrisms = 12;
+
+        SpawnableRegattaRails _railsForAI;
+        readonly Dictionary<Domains, List<Prism>> _laneByDomain = new();
+
+        /// <summary>
+        /// A point on <paramref name="pilot"/>'s own-domain lane just ahead of the lane point nearest
+        /// <paramref name="from"/>. The lanes are laid in gate order and close on themselves, so "ahead" is the next
+        /// prisms in the list. False when the rails are not laid yet or the domain has no lane.
+        /// </summary>
+        bool TryOwnLaneAhead(IPlayer pilot, Vector3 from, out Vector3 target)
+        {
+            target = default;
+            if (PrismTrailBuilder.IsLayingInProgress) return false;
+            if (!_railsForAI && !RegattaCourseSource.TryResolveLiveRails(out _railsForAI, out _)) return false;
+
+            if (!_laneByDomain.TryGetValue(pilot.Domain, out var lane) || lane == null || lane.Count == 0)
+            {
+                lane = null;
+                var trails = _railsForAI.GetTrails();
+                if (trails != null)
+                    foreach (var trail in trails)
+                    {
+                        var list = trail?.TrailList;
+                        if (list == null) continue;
+                        foreach (var prism in list)
+                        {
+                            if (!prism) continue;
+                            if (prism.Domain == pilot.Domain) lane = list;
+                            break;   // a lane is one colour: its first live prism says which
+                        }
+                        if (lane != null) break;
+                    }
+                _laneByDomain[pilot.Domain] = lane;
+                if (lane == null) return false;
+            }
+
+            int nearest = -1;
+            float best = float.MaxValue;
+            for (int i = 0; i < lane.Count; i++)
+            {
+                var prism = lane[i];
+                if (!prism) continue;
+                float d = (prism.transform.position - from).sqrMagnitude;
+                if (d < best) { best = d; nearest = i; }
+            }
+            if (nearest < 0) return false;
+
+            for (int step = aiOwnLaneLeadPrisms; step >= 0; step--)
+            {
+                var ahead = lane[(nearest + step) % lane.Count];
+                if (!ahead) continue;
+                target = ahead.transform.position;
+                return true;
+            }
             return false;
         }
 

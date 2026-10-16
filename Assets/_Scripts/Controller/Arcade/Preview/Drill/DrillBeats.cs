@@ -31,7 +31,8 @@ namespace CosmicShore.Gameplay
         None = 0,
         PulseAbilityRow = 1,
         HighlightNextGate = 2,
-        /// <summary>Reserved: the preview's autopilot flies the step once first (TRAINING_PLAN §10, "later").</summary>
+        /// <summary>The preview's autopilot flies the step once first, pressing the control it teaches, then hands
+        /// the stick over (<see cref="DrillGhostDemo"/>, TRAINING_PLAN §10.7). A Lesson-step cue; a tip ignores it.</summary>
         GhostDemo = 3,
     }
 
