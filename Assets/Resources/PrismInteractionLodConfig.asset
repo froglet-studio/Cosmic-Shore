@@ -32,7 +32,9 @@ MonoBehaviour:
   fragmentBurst: 0.5
   fragmentDrift: 0.2
   fragmentLift: 1
-  fragmentAim: 0.35
+  fragmentAim: 0.5
+  fragmentSpeedGain: 0.5
+  fragmentSpeedRef: 10
   fragmentSizeSpeed: 0.8
   fragmentSizeSpin: 0.25
   fragmentSpinCap: 1.6

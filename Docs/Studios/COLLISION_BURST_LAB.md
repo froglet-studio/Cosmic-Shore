@@ -5,7 +5,7 @@ effects they stand in for, running the shipped shader code in WebGL2, with a mea
 a shared decision log: **destruction** (the explosion → the silver gnomon cut, every fragment bursting out on its own)
 and **stealing** (the grade → the roll). Round 1 looked at the four level-1 collision bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 9
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 10
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -35,6 +35,67 @@ many neighbours move in step, when it thins). Rounds 1–8 below measured the sq
 
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
+
+## Round 10 — 2026-10-16 (`cece/dreamy-pascal-7xxx1m`): the velocity, shown and measured
+
+**Your report** (the designer): *"they still don't seem to be accepting the velocity vector. you should give me a 3d
+input vector in the lab that i can use to confirm you are applying the velocity correctly. in game it looked like the
+velocity was not getting accepted at all."*
+
+### What was found
+
+The velocity DOES reach the burst — traced end to end: `PrismFactory.SpawnExplosion` hands `data.Velocity` to
+`PrismInteractionLod.TryDestruction` exactly as it hands it to the explosion; `PrismCollisionBurst.TryRequestDestruction`
+resolves it through the explosion's own `PrismDebris.ResolveExplosionFlight` and stamps it in `_SliceDrift`
+(`SpawnSliceDebrisBatch` writes it per entity); `BurstVert` reads it as the flight (`posWS += v t`), the lean and the
+second spin axis. What the hit barely changed was the fragments' OWN motion: a 0.35 lean, and a burst the same size
+for a 10 u/s hit and a 33 u/s one — where the explosion's spread grows with its speed. And the lab's camera rode with
+the flight, so the flight itself never showed on the page.
+
+### What changed
+
+- **A harder hit bursts wider and leans more along it** (`PrismBurstFragmentBoost`): the fragments' distance and their
+  lean × (1 + `fragmentSpeedGain` 0.5 × (flight speed ÷ `fragmentSpeedRef` 10 u/s − 1)) — 1 at the explosion's slowest
+  debris, 2 at 30 u/s. `fragmentAim` 0.35 → 0.5. The bounds count it (`FragmentReach(…, flightSpeed)`).
+- **The lab's Velocity tab**: the impact velocity X / Y / Z the death is handed (`PrismEventData.Velocity`), resolved
+  exactly as the explosion resolves it; a **yellow arrow** per cloud on the stage is the flight; **Camera rides the
+  flight** 0 holds the camera still so every cloud — the explosion's and the fragments' — visibly flies along the
+  arrow; the HUD prints impact v → flight, the boost and the lean.
+- **The Look scorecard's velocity check**: *Lean along v* (the cloud's mean displacement at 2 s with the flight taken
+  out, along the hit — a flight not applied would read −|v|·t ÷ R) and *Across v* (≈ 0), with two controls that must
+  fail: the velocity reversed (must lean the other way) and the harness's `PRISM_BURST_FRAGMENT_VELOCITY_OFF` compiled
+  into a page probe (must not lean).
+
+### Look scorecard (shipped settings, impact v (20, 0, 0) → flight 20 u/s, boost 1.5)
+
+| | Evenness | Cloud at 2 s (R) | In step | Lean along v (R) | Across v (R) | Half gone |
+|---|---|---|---|---|---|---|
+| *Explosion (the baseline)* | 0.323 | 1.78 | — | 0.00 | 0.00 | — |
+| Level 1 | 0.759 | 4.26 | 0% | 1.09 | 0.03 | 4.60 s |
+| Level 2 | 0.786 | 5.27 | 0.9% | 1.34 | 0.03 | 4.17 s |
+| Level 3 | 0.796 | 6.26 | 0.5% | 1.60 | 0.04 | 3.70 s |
+| Level 4 | 0.800 | 7.21 | 0.3% | **1.87** | 0.04 | 3.30 s |
+| *control: velocity reversed* | 0.793 | 7.21 | 0.3% | **−1.93** — fires | 0.05 | |
+| *control: velocity ignored* | 0.816 | 4.81 | 0.5% | **−0.03** — fires | 0.03 | |
+| *control: noise off* | 0.803 | | **100%** — fires | | | |
+| *control: a face leaves as one* | **0.543** — fires | | | | | |
+
+### Checked
+
+`verify_prism_collision_burst.py` PASS — new **F10**: for random prisms and directions the burst leans at least 2.58 R
+along a 30 u/s hit at 2 s, reversing the hit mirrors it within 4%, and a 3 × harder hit bursts the boost's 2 × wider
+(within 0%); its control (`PRISM_BURST_FRAGMENT_VELOCITY_OFF`, the pose ignores the hit) FIRED — 11 controls, all
+fire; F1–F9 still pass at the new shape (reach use 0.998, spin 0.997 of its cap, evenness 0.794). `parity.py` PASS —
+the page's FRAGMENT pose vs the HLSL executed with random velocities and boosts, 10,008 vertices, worst 3.7e-4.
+`verify_lab.cjs` PASS (screenshots read: a 25 u/s upward hit with the camera held still sends every cloud up along its
+arrow). `build.py --check` OK; `unity_refcompile` player and editor 0 errors; `check_console_logging.py` 0.
+**Not run:** the editor — **NOT editor-verified**. In the game, look first at the burst material's `_FragmentFade.w`
+(0.5) and `_FragmentNoise.w` (10) and the config's `fragmentSpeedGain` / `fragmentSpeedRef` (checklist item 10).
+
+### Decision needed (designer)
+
+How strongly the hit should shape the burst — the Velocity tab to set a hit, the Fragments tab's *Aim* and *Speed gain*
+to set how much it leans and widens.
 
 ## Round 9 — 2026-10-16 (`cece/dreamy-pascal-7xxx1m`): the squint is retired; every fragment bursts out on its own
 

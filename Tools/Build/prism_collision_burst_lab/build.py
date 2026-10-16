@@ -228,7 +228,7 @@ def config():
     for k in ("maxLiveBursts", "maxLiveTriangles", "crowdedFill", "packedFill", "shedMinScreen", "shedFineScreen", "shedFinestScreen", "shedSubdivision", "shedFineSubdivision",
               "shedFinestSubdivision", "bloomWeight", "unravelWeight", "flakeWeight", "bloomRings", "bloomSegments",
               "peelNoise", "rollWeight", "rollRadius", "rollGap", "destructionCut", "fragmentBurst",
-              "fragmentDrift", "fragmentLift", "fragmentAim", "fragmentSizeSpeed", "fragmentSizeSpin", "fragmentSpinCap",
+              "fragmentDrift", "fragmentLift", "fragmentAim", "fragmentSpeedGain", "fragmentSpeedRef", "fragmentSizeSpeed", "fragmentSizeSpin", "fragmentSpinCap",
               "fragmentLevelRef", "fragmentEndSmall", "fragmentEndBig", "fragmentShrink", "fragmentSpinNoise",
               "fragmentNoiseFrequency", "fragmentTravelNoise", "shedInflate", "spread",
               "openSeconds", "spinPerSpeed", "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge",

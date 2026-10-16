@@ -49,10 +49,10 @@ Shader "CosmicShore/PrismCollisionBurst"
         _ExplosionDials ("Explosive rotation, explosive spread (per unit amount)", Vector) = (0.0169, 0.05, 0, 0)
 
         [Header(The destruction fragments (written by PrismCollisionBurst from PrismInteractionLodConfig))]
-        _FragmentMotion ("Burst (prism radii), drift (radii per s), lift, aim", Vector) = (0.5, 0.2, 1, 0.35)
+        _FragmentMotion ("Burst (prism radii), drift (radii per s), lift, aim", Vector) = (0.5, 0.2, 1, 0.5)
         _FragmentSize ("Size speed, size spin, spin cap (per size level), smallest level", Vector) = (0.8, 0.25, 1.6, 4)
-        _FragmentFade ("Smallest gone at, largest gone at (share of life), shrink share", Vector) = (0.45, 0.92, 0.35, 0)
-        _FragmentNoise ("Noise: spin amplitude, frequency (per object unit), travel amplitude", Vector) = (0.15, 3, 0.25, 0)
+        _FragmentFade ("Smallest gone at, largest gone at (share of life), shrink share, speed gain", Vector) = (0.45, 0.92, 0.35, 0.5)
+        _FragmentNoise ("Noise: spin amplitude, frequency (per object unit), travel amplitude; speed reference (u/s)", Vector) = (0.15, 3, 0.25, 10)
 
         [Header(Look)]
         _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 3
@@ -237,6 +237,8 @@ Shader "CosmicShore/PrismCollisionBurst"
                 shape.endBig = _FragmentFade.y;
                 shape.shrink = _FragmentFade.z;
                 shape.tau = _BurstShape.y;
+                shape.speedGain = _FragmentFade.w;
+                shape.speedRef = _FragmentNoise.w;
                 PrismBurstFragmentPose(f.rest, f.normal, TransformObjectToWorld(centroidOS), f.faceCentre, length(f.triUV), centroidOS,
                     input.tri.z, f.radius, age, timing.y, drift.w * age, drift.xyz, _ExplosionDials.x,
                     float4(_FragmentNoise.x, _FragmentNoise.y, timing.z, _FragmentNoise.z), shape, posWS, nrmWS);

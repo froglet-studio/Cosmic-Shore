@@ -37,25 +37,26 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
      tail at least 97% of every camera-facing skin is hidden behind its own prism (a segment test against the
      cube), for random slabs and cameras 4-20 radii out; the roll also runs the first-frame, unit-normal,
      envelope and (while on its face) isometry / normal-derivative tests above.
-  W. THE WEDGE (destruction, Sierpinski depths 0-3 and the silver gnomon cut at 0, 1, 4, 7, the spin noise off
-     and on — the spin noise and the slide noise; W9: the slide is continuous, at most 1 + 2 x its amplitude long,
-     and neighbouring fragments of one wedge do not slide in step): amount 0 is the prism; level 0 IS the explosion —
-     equal to the harness's own Rodrigues statement of RotateFacesAlongAxis' closed form with the graph's
-     constants; every fragment is rigid in the world; normals unit; every pose inside PrismBurstWedgeReach
-     (the CPU's bounds); no fragment turns faster than the explosion's own cap (2 x amount x rotation); and every
-     fragment SPINS as its root wedge does in the explosion (W7: the wedge's tangent and cross(velocity, N), so
-     its normal is the wedge's).
+  F. THE FRAGMENT (destruction since round 9: both cuts at depths 0-10, the shipped shape and every slider at the end
+     of its range, the noise off and on): the first frame is the prism; every fragment rigid up to its shrink; unit
+     normals; every pose inside PrismBurstFragmentReach (the CPU's bounds); no fragment turns faster than
+     2 x the explosion's angle x spinCap x (1 + the noise); every fragment gone by 95% of the life; the smaller gone
+     first; same-size neighbours not travelling in step; the travel directions fill the sphere (entropy floor).
+  F10. THE VELOCITY (round 10): the burst leans along the hit, mirrors when the hit is reversed, and a 3x harder hit
+     bursts wider by the boost (PrismBurstFragmentBoost).
+  X. THE EXPLOSION MAP (the lab draws the explosion with it) equals the harness's own Rodrigues statement of
+     RotateFacesAlongAxis' closed form with the graph's constants.
   NEGATIVE CONTROLS, each must FAIL the test it guards:
   12. -DPRISM_BURST_DISSOLVE_OVERSHOOT=0  — fragments survive to retirement (test 9 fires).
   13. -DPRISM_BURST_UNIFORM_VALUE=0       — the fade sags off the explosion's curve (test 8 fires).
   14. -DPRISM_BURST_ENVELOPE_BASE=1       — a pose escapes the bounds (test 6 fires).
   15. -DPRISM_BURST_BEND_NORMAL=0         — the bend keeps its rest normal (test 4 fires).
   16. -DPRISM_BURST_GRADE_SMOOTH=0        — a shed fades linearly, off the grade (test 9b fires).
-  17. -DPRISM_BURST_PIVOT_BIAS=0          — level 0 leaves the explosion (test W fires).
-  18. -DPRISM_BURST_WEDGE_PIVOT_UNSCALED=1 — the turn in the unscaled frame shears fragments (test W fires).
-  19. -DPRISM_BURST_WEDGE_OWN_TANGENT=1    — each fragment's own radial tangent: off its wedge's spin (W7 fires).
-  20. -DPRISM_BURST_WEDGE_NOISE_OFF=1      — neighbouring fragments back in perfect step (W8 fires).
-  20b. -DPRISM_BURST_WEDGE_SLIDE_NOISE_OFF=1 — every fragment of a wedge sliding as one (W9 fires).
+  17. -DPRISM_BURST_PIVOT_BIAS=0           — the explosion map leaves RotateFacesAlongAxis (X fires).
+  18. -DPRISM_BURST_EXPLOSION_UNSCALED=1   — the turn in the unscaled frame shears a piece (X fires).
+  19. -DPRISM_BURST_FRAGMENT_NOISE_OFF=1   — same-size neighbours back in perfect step (F8 fires).
+  20. -DPRISM_BURST_FRAGMENT_FACE_ONLY=1   — every fragment of a face leaving the same way (F9 fires).
+  20b. -DPRISM_BURST_FRAGMENT_VELOCITY_OFF=1 — the pose ignores the hit (F10 fires).
   21. -DPRISM_BURST_ROLL_TOWARD_CAMERA=1   — the roll rolls toward the camera, onto faces it sees (R fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
@@ -521,9 +522,10 @@ static PrismBurstFragmentShape fragmentShape(bool extreme) {
     PrismBurstFragmentShape s;
     // the shipped shape (PrismInteractionLodConfig.asset), or every slider at the end of its range
     s.burst = extreme ? 4.0f : 0.5f; s.drift = extreme ? 2.0f : 0.2f; s.lift = extreme ? 3.0f : 1.0f;
-    s.aim = extreme ? 2.0f : 0.35f; s.sizeSpeed = extreme ? 1.0f : 0.8f; s.sizeSpin = extreme ? 1.0f : 0.25f;
+    s.aim = extreme ? 2.0f : 0.5f; s.sizeSpeed = extreme ? 1.0f : 0.8f; s.sizeSpin = extreme ? 1.0f : 0.25f;
     s.spinCap = extreme ? 3.0f : 1.6f; s.endSmall = extreme ? 0.1f : 0.45f; s.endBig = extreme ? 0.95f : 0.92f;
     s.shrink = extreme ? 1.0f : 0.35f; s.tau = 0.22f; s.levelRef = extreme ? 1.0f : 4.0f;
+    s.speedGain = extreme ? 2.0f : 0.5f; s.speedRef = 10.0f;
     return s;
 }
 struct FragFrame { float3 rest, n, centroid, faceCentre; };
@@ -577,7 +579,7 @@ static void run_fragment_tests() {
             float speed = rnd(10, 53);
             float4 noise(amp, 3.0f, rnd(0, 1), amp > 0 ? 0.25f : 0.0f);   // the shipped spin and travel amplitudes
             float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
-            float reach = PrismBurstFragmentReach(R, life, s, noise.w);
+            float reach = PrismBurstFragmentReach(R, life, s, noise.w, length(vel));
             std::vector<float> gone(m.size() / 3, life);
             for (float age : {0.0f, 0.1f, 0.4f, 2.0f, 4.0f, 0.95f * life, life}) {
                 std::vector<float3> wp(m.size()), wn(m.size());
@@ -673,6 +675,49 @@ static void run_fragment_tests() {
     CHECK(orderPairs > 0 && ordered >= orderPairs * 97 / 100, "the smaller fragments did not leave first (%d of %d)", ordered, orderPairs);
     CHECK(samePairs > 0 && sameStep <= samePairs / 20, "the noise left %d of %d same-size neighbours in perfect step", sameStep, samePairs);
     CHECK(entropy >= @@ENTROPY_FLOOR@@f, "the cloud's directions cover %.3f of the sphere: grouped, not uniform", entropy);
+}
+
+// F10. the VELOCITY is accepted (round 10, the designer: "in game it looked like the velocity was not getting accepted
+// at all"): the burst leans along the hit and mirrors when the hit is reversed, and a harder hit bursts wider by the
+// boost. The flight itself (BurstVert adds v t after the pose) is held by the lab's parity gate.
+static void run_velocity_tests() {
+    const float ER = 0.0169f, life = 7.5f, age = 2.0f;
+    const PrismBurstFragmentShape s = fragmentShape(false);
+    std::vector<WVert> m = silver(7);
+    float worstLean = 1e9f, worstMirror = 0, worstBoost = 0;
+    for (int trial = 0; trial < 12; trial++) {
+        Pose P = rndPose(); P.t = float3(0,0,0);
+        float3 dirV = rndDir();
+        float4 noise(0.15f, 3.0f, rnd(0, 1), 0.25f);
+        float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
+        // the cloud's mean displacement, and its mean distance, for a flight of the given velocity
+        auto cloud = [&](float3 vel, float& meanDist) {
+            float3 sum(0,0,0); double dsum = 0; int n = 0;
+            for (size_t i = 0; i < m.size(); i += 3) {
+                float3 c(0,0,0);
+                for (int k = 0; k < 3; k++) { float3 q, nn; fragPose(P, m[i+k], age, life, length(vel), vel, ER, noise, s, q, nn); c = c + q / 3.0f; }
+                float3 d = c - world(P, m[i].centroid);
+                sum = sum + d; dsum += length(d); n++;
+            }
+            meanDist = (float)(dsum / n);
+            return sum / (float)n;
+        };
+        float d10, d30, dneg;
+        float3 a = cloud(dirV * 30.0f, d30), b = cloud(dirV * -30.0f, dneg);
+        cloud(dirV * 10.0f, d10);
+        float lean = dot(a, dirV) / R, leanNeg = dot(b, dirV) / R;
+        worstLean = std::min(worstLean, std::min(lean, -leanNeg));
+        worstMirror = std::max(worstMirror, std::fabs(lean + leanNeg) / std::max(lean, 1e-6f));
+        CHECK(lean >= 0.3f && leanNeg <= -0.3f, "the burst does not lean along the hit (%.3f R along v, %.3f along -v)", lean, leanNeg);
+        // a hit three times as fast bursts wider by the boost: 1 + gain x 2 at 30 u/s against 1 at 10 u/s (the lean
+        // grows a little more, so the ratio sits at or just above the boost)
+        float want = PrismBurstFragmentBoost(30.0f, s) / PrismBurstFragmentBoost(10.0f, s), got = d30 / d10;
+        worstBoost = std::max(worstBoost, std::fabs(got / want - 1.0f));
+        CHECK(std::fabs(got / want - 1.0f) <= 0.15f, "a hit 3x as fast bursts %.3fx as wide, not the boost's %.3fx", got, want);
+    }
+    printf("velocity: the burst leans at least %.2f R along the hit at 2 s (reversed: mirrored within %.0f%%); a 3x harder hit "
+           "bursts within %.0f%% of the boost's width\n", worstLean, 100 * worstMirror, 100 * worstBoost);
+    CHECK(worstMirror <= 0.25f, "reversing the hit does not mirror the lean (%.0f%% off)", 100 * worstMirror);
 }
 
 // X. the explosion's own law (the lab draws the explosion with it): PrismBurstExplosionMap about the wedge's own
@@ -785,6 +830,7 @@ int main(int argc, char** argv) {
     bool gradeOnly = argc > 1 && std::strcmp(argv[1], "grade") == 0;
     bool fragmentOnly = argc > 1 && std::strcmp(argv[1], "fragment") == 0;
     bool explosionOnly = argc > 1 && std::strcmp(argv[1], "explosion") == 0;
+    bool velocityOnly = argc > 1 && std::strcmp(argv[1], "velocity") == 0;
     bool rollOnly = argc > 1 && std::strcmp(argv[1], "roll") == 0;
     if (envelopeOnly) run_pose_tests(true);
     else if (fadeOnly) run_fade_tests();
@@ -792,8 +838,9 @@ int main(int argc, char** argv) {
     else if (gradeOnly) run_grade_tests();
     else if (fragmentOnly) run_fragment_tests();
     else if (explosionOnly) run_explosion_tests();
+    else if (velocityOnly) run_velocity_tests();
     else if (rollOnly) run_roll_tests();
-    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_fragment_tests(); run_explosion_tests(); run_roll_tests(); run_misc_tests(); }
+    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_fragment_tests(); run_velocity_tests(); run_explosion_tests(); run_roll_tests(); run_misc_tests(); }
     printf("collision burst: %d failure(s)\n", failures);
     return failures ? 1 : 0;
 }
@@ -855,6 +902,7 @@ def translate(src, required=True):
                  "float PrismBurstEnvelope(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
                  "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstFragmentPose(",
                  "float PrismBurstFragmentReach(", "void PrismBurstExplosionMap(", "float PrismBurstFragmentEnd(",
+                 "float PrismBurstFragmentBoost(",
                  "float3 PrismBurstWedgePivot("):
         assert not required or name in out, f"{name} missing from the shipped HLSL"
     return out
@@ -903,6 +951,7 @@ def main():
                                  ("-DPRISM_BURST_EXPLOSION_UNSCALED=1", "explosion", "unscaled-turn control"),
                                  ("-DPRISM_BURST_FRAGMENT_NOISE_OFF=1", "fragment", "noiseless control"),
                                  ("-DPRISM_BURST_FRAGMENT_FACE_ONLY=1", "fragment", "grouped-burst control"),
+                                 ("-DPRISM_BURST_FRAGMENT_VELOCITY_OFF=1", "velocity", "velocity-ignored control"),
                                  ("-DPRISM_BURST_ROLL_TOWARD_CAMERA=1", "roll", "roll-toward-camera control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0

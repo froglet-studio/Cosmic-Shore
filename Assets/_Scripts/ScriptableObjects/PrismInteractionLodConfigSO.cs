@@ -93,8 +93,16 @@ namespace CosmicShore.ScriptableObjects
                  "x this: 0 skims along the face, higher lifts the burst off it.")]
         [Range(0f, 3f)] [SerializeField] float fragmentLift = 1f;
 
-        [Tooltip("Plus the hit's direction x this: the burst leans the way the prism was struck.")]
-        [Range(0f, 2f)] [SerializeField] float fragmentAim = 0.35f;
+        [Tooltip("Plus the hit's direction x this (x the speed boost): the burst leans the way the prism was struck.")]
+        [Range(0f, 2f)] [SerializeField] float fragmentAim = 0.5f;
+
+        [Tooltip("Round 10: a harder hit bursts WIDER and leans more along it, as the explosion's own spread grows with " +
+                 "its speed. Distance and aim x (1 + this x (flight speed / fragmentSpeedRef - 1)). 0: every hit alike.")]
+        [Range(0f, 2f)] [SerializeField] float fragmentSpeedGain = 0.5f;
+
+        [Tooltip("The flight speed (u/s) of the gentlest hit, where the boost is 1: the explosion's slowest debris " +
+                 "(PrismExplosion.prefab minSpeed).")]
+        [Range(1f, 100f)] [SerializeField] float fragmentSpeedRef = 10f;
 
         [Tooltip("Per size level (each level about 0.71x the size) the smaller fragments fly this much farther: " +
                  "distance x (1 + this x level).")]
@@ -272,6 +280,8 @@ namespace CosmicShore.ScriptableObjects
         public float FragmentDrift => Mathf.Clamp(fragmentDrift, 0f, 2f);
         public float FragmentLift => Mathf.Clamp(fragmentLift, 0f, 3f);
         public float FragmentAim => Mathf.Clamp(fragmentAim, 0f, 2f);
+        public float FragmentSpeedGain => Mathf.Clamp(fragmentSpeedGain, 0f, 2f);
+        public float FragmentSpeedRef => Mathf.Clamp(fragmentSpeedRef, 1f, 100f);
         public float FragmentSizeSpeed => Mathf.Clamp01(fragmentSizeSpeed);
         public float FragmentSizeSpin => Mathf.Clamp01(fragmentSizeSpin);
         public float FragmentSpinCap => Mathf.Clamp(fragmentSpinCap, 1f, 3f);

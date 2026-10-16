@@ -694,6 +694,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `lab.src.html` `lookOf` / `faceOnlyProbe`; harness F9 and `ENTROPY_FLOOR`
 - Promoted: no
 
+### L-STU-78 — A camera that rides the effect hides the input that moves it; give every input the designer doubts its own control and a measured readout
+- Lab: Collision Burst Lab round 10 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: the designer saw in game that the destruction "was not accepting the velocity". The code passed it end to end, but the lab could not show that. Its camera rode the flight, so the flight never showed, and the velocity was a hidden function of one "closing speed" slider. The fragments' own motion also barely depended on the hit. The round added a 3D velocity input, an arrow for the resolved flight, a hold-still camera, and a scorecard lean read along the input's direction. Its first version read the reversed control along the control's OWN direction, and so passed it.
+- Do instead: when a designer doubts an input reaches the effect, give the input its own control in the input's own units, draw what the game resolves it to, and measure the effect's response to it with two controls: the input reversed (read along the ORIGINAL axis) and the input ignored (compiled from the shipped shader).
+- Evidence: `lab.src.html` Velocity tab, `drawArrows`, `lookOf` lean; harness F10; `COLLISION_BURST_LAB.md` round 10
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

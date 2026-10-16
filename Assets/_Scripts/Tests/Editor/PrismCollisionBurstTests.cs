@@ -197,7 +197,9 @@ namespace CosmicShore.Tests
             Assert.AreEqual(-0.5f, PrismCollisionBurst.PivotBias);
             Assert.AreEqual(0.5f, PrismCollisionBurst.SliderGain);
             StringAssert.Contains(
-                "return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise)));", hlsl,
+                "return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise))", hlsl,
+                "FragmentReach is the HLSL's PrismBurstFragmentReach, which the harness proves every pose stays inside");
+            StringAssert.Contains("* PrismBurstFragmentBoost(flightSpeed, s));", hlsl,
                 "FragmentReach is the HLSL's PrismBurstFragmentReach, which the harness proves every pose stays inside");
             StringAssert.Contains("float size = clamp(level, 0.0, 6.0);", hlsl, "the reach's 6 is the size level's cap");
             Assert.AreEqual(5, PrismCollisionBurst.Fragment);
@@ -206,13 +208,19 @@ namespace CosmicShore.Tests
         [Test]
         public void TheFragmentReachIsTheProvedSum()
         {
-            var shape = new PrismCollisionBurst.FragmentShape { Burst = 1.2f, Drift = 0.35f, SizeSpeed = 0.3f };
+            var shape = new PrismCollisionBurst.FragmentShape { Burst = 1.2f, Drift = 0.35f, SizeSpeed = 0.3f, SpeedGain = 0.5f, SpeedRef = 10f };
+            // the gentlest hit: boost 1
             Assert.AreEqual(2f * (3f + (1.2f + 0.35f * 7.5f) * 2.8f * 1.15f),
-                PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, 0.15f), 1e-4f);
-            Assert.AreEqual(2f * 3f, PrismCollisionBurst.FragmentReach(2f, 7.5f, default, 0.15f), 1e-6f,
+                PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, 0.15f, 10f), 1e-4f);
+            // a hit three times as fast: boost 1 + 0.5 x 2 = 2
+            Assert.AreEqual(2f, PrismCollisionBurst.FragmentBoost(30f, shape), 1e-6f);
+            Assert.AreEqual(1f, PrismCollisionBurst.FragmentBoost(4f, shape), 1e-6f, "never below 1");
+            Assert.AreEqual(2f * (3f + (1.2f + 0.35f * 7.5f) * 2.8f * 1.15f * 2f),
+                PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, 0.15f, 30f), 1e-4f);
+            Assert.AreEqual(2f * 3f, PrismCollisionBurst.FragmentReach(2f, 7.5f, default, 0.15f, 30f), 1e-6f,
                 "a fragment that never travels stays within the prism's own 3R");
-            Assert.AreEqual(PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, 0.15f),
-                PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, -0.15f), 1e-6f, "the noise lengthens either way");
+            Assert.AreEqual(PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, 0.15f, 20f),
+                PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, -0.15f, 20f), 1e-6f, "the noise lengthens either way");
         }
 
         [Test]
@@ -229,8 +237,8 @@ namespace CosmicShore.Tests
                     $"{prop} defaults to ({F(x)}, {F(y)}, {F(z)}, {F(w)})");
             Has("_FragmentMotion", cfg.FragmentBurst, cfg.FragmentDrift, cfg.FragmentLift, cfg.FragmentAim);
             Has("_FragmentSize", cfg.FragmentSizeSpeed, cfg.FragmentSizeSpin, cfg.FragmentSpinCap, cfg.FragmentLevelRef);
-            Has("_FragmentFade", cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, 0f);
-            Has("_FragmentNoise", cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, 0f);
+            Has("_FragmentFade", cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, cfg.FragmentSpeedGain);
+            Has("_FragmentNoise", cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, cfg.FragmentSpeedRef);
         }
 
         [Test]
@@ -730,6 +738,10 @@ namespace CosmicShore.Tests
             Assert.LessOrEqual(cfg.FragmentEndBig, 0.95f, "every fragment gone before the entity retires");
             Assert.Greater(cfg.FragmentBurst + cfg.FragmentDrift, 0f, "the fragments leave");
             Assert.GreaterOrEqual(cfg.FragmentSpinCap, 1f);
+            // Round 10 (the designer: "they still don't seem to be accepting the velocity vector"): the hit leans the
+            // burst and a harder hit bursts wider.
+            Assert.Greater(cfg.FragmentAim, 0f, "the burst leans along the hit");
+            Assert.Greater(cfg.FragmentSpeedGain, 0f, "a harder hit bursts wider");
             Assert.GreaterOrEqual(cfg.BloomRings, 2, "more cuts: each piece shorter than the quarter, so it curls tighter");
             Assert.Greater(cfg.PeelNoise, 0f, "every peel different");
             // Bloom pieces (and, if weighted again, ribbons and flake scales) fall on whole triangles at every

@@ -83,22 +83,32 @@ namespace CosmicShore.Utility
         /// <summary>How a <see cref="Fragment"/> flies — <c>PrismBurstFragmentShape</c> in the HLSL, from the config.</summary>
         public struct FragmentShape
         {
-            public float Burst, Drift, SizeSpeed;
+            public float Burst, Drift, SizeSpeed, SpeedGain, SpeedRef;
 
             public static FragmentShape Of(PrismInteractionLodConfigSO cfg) => new()
             {
                 Burst = cfg.FragmentBurst, Drift = cfg.FragmentDrift, SizeSpeed = cfg.FragmentSizeSpeed,
+                SpeedGain = cfg.FragmentSpeedGain, SpeedRef = cfg.FragmentSpeedRef,
             };
         }
+
+        /// <summary>
+        /// How much harder than the gentlest a hit of flight speed <paramref name="flightSpeed"/> is (≥ 1) —
+        /// <c>PrismBurstFragmentBoost</c> in the HLSL: the fragments' distance and lean along the hit × this.
+        /// </summary>
+        public static float FragmentBoost(float flightSpeed, FragmentShape shape) =>
+            1f + shape.SpeedGain * Mathf.Max(flightSpeed / Mathf.Max(shape.SpeedRef, 1e-3f) - 1f, 0f);
 
         /// <summary>
         /// How far, in WORLD units, a <see cref="Fragment"/> can be from the travelling centre over a life of
         /// <paramref name="life"/> seconds — the SAME sum as <c>PrismBurstFragmentReach</c> in the HLSL, whose harness
         /// proves every pose of every depth stays inside it: 3R (a centroid within R of the centre, every vertex within
-        /// 2R of its centroid), plus the travel R × (burst + drift × life) × (1 + 6 sizeSpeed) × (1 + |travel noise|).
+        /// 2R of its centroid), plus the travel R × (burst + drift × life) × (1 + 6 sizeSpeed) × (1 + |travel noise|) ×
+        /// the boost at the flight's speed (<see cref="FragmentBoost"/>).
         /// </summary>
-        public static float FragmentReach(float radius, float life, FragmentShape shape, float travelNoise) =>
-            radius * (3f + (shape.Burst + shape.Drift * life) * (1f + 6f * shape.SizeSpeed) * (1f + Mathf.Abs(travelNoise)));
+        public static float FragmentReach(float radius, float life, FragmentShape shape, float travelNoise, float flightSpeed) =>
+            radius * (3f + (shape.Burst + shape.Drift * life) * (1f + 6f * shape.SizeSpeed) * (1f + Mathf.Abs(travelNoise))
+                         * FragmentBoost(flightSpeed, shape));
 
         /// <summary>
         /// The explosion material's own dials — its <c>_Spread</c>, <c>_ExplosiveRotation</c> and <c>_ExplosiveSpead</c>
@@ -302,7 +312,8 @@ namespace CosmicShore.Utility
             float3 centre, extents;
             if (kind == Fragment)
             {
-                float reach = FragmentReach(0.5f * Abs(scale).magnitude, life, FragmentShape.Of(cfg), cfg.FragmentTravelNoise);
+                float reach = FragmentReach(0.5f * Abs(scale).magnitude, life, FragmentShape.Of(cfg), cfg.FragmentTravelNoise,
+                    flight.magnitude);
                 BuildBoundsOfReach(rotation, scale, flight * life, reach, out centre, out extents);
             }
             else
@@ -475,9 +486,9 @@ namespace CosmicShore.Utility
             s_runtimeMaterial.SetVector(FragmentSizeId,
                 new Vector4(cfg.FragmentSizeSpeed, cfg.FragmentSizeSpin, cfg.FragmentSpinCap, cfg.FragmentLevelRef));
             s_runtimeMaterial.SetVector(FragmentFadeId,
-                new Vector4(cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, 0f));
+                new Vector4(cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, cfg.FragmentSpeedGain));
             s_runtimeMaterial.SetVector(FragmentNoiseId,
-                new Vector4(cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, 0f));
+                new Vector4(cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, cfg.FragmentSpeedRef));
             s_runtimeMaterialTuned = ApplyExplosionTuning(s_runtimeMaterial);
             s_runtimeMaterialFor = cfg;
             return s_runtimeMaterial;

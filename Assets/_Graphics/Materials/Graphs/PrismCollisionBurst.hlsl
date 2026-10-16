@@ -688,7 +688,16 @@ struct PrismBurstFragmentShape
     float shrink;     // the share of its own life over which a fragment shrinks away to its centre
     float tau;        // the burst's time constant, seconds
     float levelRef;   // the size level counted as "the smallest" (the cut's finest, about 4)
+    float speedGain;  // round 10: a harder hit bursts wider and leans more along it — distance and aim ×
+    float speedRef;   // (1 + speedGain × (|velocity| / speedRef − 1)), the explosion's own spread growing with its speed
 };
+
+// How much harder than the gentlest a hit is (≥ 1): 1 at speedRef (the explosion's slowest debris), growing by speedGain
+// per speedRef more. The explosion's own slide grows with its speed the same way (amount × spreadPerAmount).
+float PrismBurstFragmentBoost(float flightSpeed, PrismBurstFragmentShape s)
+{
+    return 1.0 + s.speedGain * max(flightSpeed / max(s.speedRef, 1e-3) - 1.0, 0.0);
+}
 
 // When a fragment of size level is gone: the smallest first, the largest last — from far away the small ones simply
 // go unseen first — a little jittered, never after 95% of the life.
@@ -712,7 +721,8 @@ float PrismBurstFragmentScale(float age, float end, float shrink)
 // little farther; it tumbles about its own centre on two axes, its direction of travel and cross(velocity, N) — the
 // explosion's velocity response — by the explosion's angle (amount × rotation, amount = the explosion's clamped
 // speed × t), the smaller a little faster up to spinCap; and it shrinks away to its centre at its own end, the
-// smallest first. A continuous gradient noise at its centroid (noisePoint, object space × frequency, moved by the
+// smallest first. velocity is the stamped flight (world): its direction leans the burst (aim) and sets the second spin
+// axis, its speed boosts the distance and the lean (PrismBurstFragmentBoost). A continuous gradient noise at its centroid (noisePoint, object space × frequency, moved by the
 // death's seed) varies its two spin angles (amplitude noise.x), its distance and its direction (noise.w), so
 // neighbours move alike and never in step. noise = (spin amplitude, frequency, seed, travel amplitude). The first
 // frame is the prism: at age 0 every term is zero and the scale is 1. middle is the fragment's centroid in world space
@@ -739,12 +749,16 @@ void PrismBurstFragmentPose(float3 rest, float3 N, float3 middle, float3 faceCen
 #else
     float3 radial = PrismBurstAxis(inPlane, float3(0.0, 0.0, 0.0)) * outward;
 #endif
+#ifdef PRISM_BURST_FRAGMENT_VELOCITY_OFF
+    velocity = float3(0.0, 0.0, 0.0);   // negative control only: the pose ignores the hit (the flight is added after)
+#endif
     float3 hit = PrismBurstAxis(velocity, float3(0.0, 0.0, 0.0));
-    float3 dir = PrismBurstAxis(radial + N * s.lift + hit * s.aim + (PrismBurstAxis(inPlane, side) * n4 + side * n5) * noise.w, N);
+    float boost = PrismBurstFragmentBoost(length(velocity), s);
+    float3 dir = PrismBurstAxis(radial + N * s.lift + hit * (s.aim * boost) + (PrismBurstAxis(inPlane, side) * n4 + side * n5) * noise.w, N);
 
     float size = clamp(level, 0.0, 6.0);
     float dist = radius * (s.burst * (1.0 - exp(-max(age, 0.0) / max(s.tau, 1e-3))) + s.drift * max(age, 0.0))
-               * (1.0 + s.sizeSpeed * size) * (1.0 + noise.w * n3);
+               * (1.0 + s.sizeSpeed * size) * (1.0 + noise.w * n3) * boost;
     float spin = min(1.0 + s.sizeSpin * size, s.spinCap);
     float a1 = amount * rotation * spin * (1.0 + noise.x * n1);
     float a2 = amount * rotation * spin * (1.0 + noise.x * n2);
@@ -758,11 +772,12 @@ void PrismBurstFragmentPose(float3 rest, float3 N, float3 middle, float3 faceCen
 // How far, in WORLD units, a fragment can be from the prism's travelling centre (the flight is added after).
 // Proved, not fitted: its centroid lies within R of the centre and every vertex within 2R of its centroid (the
 // tumble keeps it, the shrink only pulls in); the travel is at most R × (burst + drift × life) × (1 + 6 sizeSpeed)
-// × (1 + |travel noise|). The CPU sizes the culling bounds by the same sum (PrismCollisionBurst.FragmentReach); the
-// harness asserts every pose stays inside it.
-float PrismBurstFragmentReach(float radius, float life, PrismBurstFragmentShape s, float travelNoise)
+// × (1 + |travel noise|) × the boost at the flight's speed. The CPU sizes the culling bounds by the same sum
+// (PrismCollisionBurst.FragmentReach); the harness asserts every pose stays inside it.
+float PrismBurstFragmentReach(float radius, float life, PrismBurstFragmentShape s, float travelNoise, float flightSpeed)
 {
-    return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise)));
+    return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise))
+                         * PrismBurstFragmentBoost(flightSpeed, s));
 }
 
 // ─── the fade ─────────────────────────────────────────────────────────────────────────────────

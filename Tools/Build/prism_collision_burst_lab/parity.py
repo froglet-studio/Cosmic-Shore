@@ -150,7 +150,7 @@ FRAGMENT_MAIN = r"""#include "shipped.h"
 @@SILVER_CPP@@
 // Reads cases from stdin: cut (0 Sierpinski, 1 silver gnomon) depth t life speed velocity(3) scale(3) rot(9,
 // column-major) origin(3) rotation tau shape(burst drift lift aim sizeSpeed sizeSpin spinCap levelRef endSmall endBig
-// shrink) noise(spin amplitude, frequency, travel amplitude) seed. Writes the FRAGMENT pose (PrismBurstFragmentPose,
+// shrink speedGain speedRef) noise(spin amplitude, frequency, travel amplitude) seed. Writes the FRAGMENT pose (PrismBurstFragmentPose,
 // the shipped HLSL executed) of every vertex of the cut at the depth, in HighPolyPrismMesh's order, in WORLD with the
 // flight: BurstVert's own frame, as the shader builds it.
 static void split(float2 a, float2 b, float2 c, int level, int depth, std::vector<float>& out) {
@@ -166,14 +166,14 @@ int main() {
     float3 fu[6] = {float3(0,1,0),float3(0,0,1),float3(0,0,1),float3(1,0,0),float3(1,0,0),float3(0,1,0)};
     float3 fv[6] = {float3(0,0,1),float3(0,1,0),float3(1,0,0),float3(0,0,1),float3(0,1,0),float3(1,0,0)};
     for (int c = 0; c < count; c++) {
-        float cut, depth, t, life, speed, v[3], sc[3], r[9], o[3], rotation, tau, sh[11], nz[3], seed;
+        float cut, depth, t, life, speed, v[3], sc[3], r[9], o[3], rotation, tau, sh[13], nz[3], seed;
         scanf("%f %f %f %f %f", &cut, &depth, &t, &life, &speed);
         for (int i = 0; i < 3; i++) scanf("%f", &v[i]);
         for (int i = 0; i < 3; i++) scanf("%f", &sc[i]);
         for (int i = 0; i < 9; i++) scanf("%f", &r[i]);
         for (int i = 0; i < 3; i++) scanf("%f", &o[i]);
         scanf("%f %f", &rotation, &tau);
-        for (int i = 0; i < 11; i++) scanf("%f", &sh[i]);
+        for (int i = 0; i < 13; i++) scanf("%f", &sh[i]);
         scanf("%f %f %f %f", &nz[0], &nz[1], &nz[2], &seed);
         std::vector<float> tri;
         if (cut > 0.5f) {
@@ -199,7 +199,7 @@ int main() {
         PrismBurstFragmentShape shape;
         shape.burst = sh[0]; shape.drift = sh[1]; shape.lift = sh[2]; shape.aim = sh[3]; shape.sizeSpeed = sh[4];
         shape.sizeSpin = sh[5]; shape.spinCap = sh[6]; shape.levelRef = sh[7]; shape.endSmall = sh[8]; shape.endBig = sh[9];
-        shape.shrink = sh[10]; shape.tau = tau;
+        shape.shrink = sh[10]; shape.speedGain = sh[11]; shape.speedRef = sh[12]; shape.tau = tau;
         float radius = length(lin(float3(0.5f, 0.5f, 0.5f)));
         for (int f = 0; f < 6; f++)
         for (size_t i = 0; i < tri.size(); i += 7) {
@@ -284,9 +284,10 @@ def run_cpp(work, cases, kind_shift=0):
     return [vals[i * per:(i + 1) * per] for i in range(len(cases))]
 
 
-SHIPPED_SHAPE = dict(burst=0.5, drift=0.2, lift=1.0, aim=0.35, sizeSpeed=0.8, sizeSpin=0.25, spinCap=1.6, levelRef=4.0,
-                     endSmall=0.45, endBig=0.92, shrink=0.35)
-SHAPE_KEYS = ("burst", "drift", "lift", "aim", "sizeSpeed", "sizeSpin", "spinCap", "levelRef", "endSmall", "endBig", "shrink")
+SHIPPED_SHAPE = dict(burst=0.5, drift=0.2, lift=1.0, aim=0.5, sizeSpeed=0.8, sizeSpin=0.25, spinCap=1.6, levelRef=4.0,
+                     endSmall=0.45, endBig=0.92, shrink=0.35, speedGain=0.5, speedRef=10.0)
+SHAPE_KEYS = ("burst", "drift", "lift", "aim", "sizeSpeed", "sizeSpin", "spinCap", "levelRef", "endSmall", "endBig", "shrink",
+              "speedGain", "speedRef")
 
 
 def fragment_cases(rng):
@@ -297,7 +298,8 @@ def fragment_cases(rng):
         shape = dict(SHIPPED_SHAPE) if not cases else dict(
             burst=rng.uniform(0, 4), drift=rng.uniform(0, 2), lift=rng.uniform(0, 3), aim=rng.uniform(0, 2),
             sizeSpeed=rng.uniform(0, 1), sizeSpin=rng.uniform(0, 1), spinCap=rng.uniform(1, 3), levelRef=rng.uniform(1, 6),
-            endSmall=rng.uniform(0.1, 0.5), endBig=rng.uniform(0.5, 0.95), shrink=rng.uniform(0.05, 1))
+            endSmall=rng.uniform(0.1, 0.5), endBig=rng.uniform(0.5, 0.95), shrink=rng.uniform(0.05, 1),
+            speedGain=rng.uniform(0, 2), speedRef=rng.uniform(5, 20))
         base = rng.uniform(0.5, 4)
         cases.append(dict(cut=cut, depth=depth, noise=[noise, 3.0, noise], seed=rng.random(),
                           t=rng.uniform(0.05, 7.0), life=7.5, speed=rng.uniform(10, 33), tau=0.22,

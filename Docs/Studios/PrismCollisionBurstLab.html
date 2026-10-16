@@ -66,6 +66,7 @@
   #stage { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; transition: filter 0.25s; }
   #hud { position: absolute; left: 12px; right: 12px; top: 10px; color: #cfd6e0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; pointer-events: none; white-space: pre-wrap; }
   #labels { position: absolute; inset: 0; pointer-events: none; }
+  #arrows { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .cell-label { position: absolute; transform: translate(-50%, 0); display: flex; flex-direction: column; align-items: center; gap: 3px; pointer-events: auto; }
   .cell-label button { font: 11px/1.2 system-ui, sans-serif; color: #dfe6f1; background: rgba(12, 16, 24, 0.72); border: 1px solid rgba(160, 180, 210, 0.28); border-radius: 999px; padding: 2px 9px; cursor: pointer; white-space: nowrap; }
   .cell-label button.base { border-color: rgba(255, 220, 160, 0.55); }
@@ -131,6 +132,7 @@
   </header>
   <div id="stageWrap">
     <canvas id="stage" aria-label="The prism's destruction and stealing detail levels beside their ordinary effects"></canvas>
+    <canvas id="arrows" aria-hidden="true"></canvas>
     <div id="labels"></div>
     <div id="hud"></div>
     <div id="transport">
@@ -153,7 +155,7 @@
   const $ = (id) => document.getElementById(id);
 
   // ================= the shipped sources, stamped in by build.py =================
-  const DATA = {"config":{"showcaseMaxMovers":64.0,"boxMaxMovers":256.0,"maxLiveBursts":48.0,"maxLiveTriangles":80000.0,"crowdedFill":0.5,"packedFill":0.8,"shedMinScreen":0.08,"shedFineScreen":0.16,"shedFinestScreen":0.28,"shedSubdivision":12.0,"shedFineSubdivision":18.0,"shedFinestSubdivision":24.0,"bloomWeight":0.0,"unravelWeight":0.0,"flakeWeight":0.0,"bloomRings":3.0,"bloomSegments":3.0,"peelNoise":0.6,"rollWeight":1.0,"rollRadius":0.05,"rollGap":0.01,"destructionCut":1.0,"fragmentBurst":0.5,"fragmentDrift":0.2,"fragmentLift":1.0,"fragmentAim":0.35,"fragmentSizeSpeed":0.8,"fragmentSizeSpin":0.25,"fragmentSpinCap":1.6,"fragmentLevelRef":4.0,"fragmentEndSmall":0.45,"fragmentEndBig":0.92,"fragmentShrink":0.35,"fragmentSpinNoise":0.15,"fragmentNoiseFrequency":3.0,"fragmentTravelNoise":0.25,"shedInflate":0.02,"spread":0.55,"openSeconds":0.22,"spinPerSpeed":0.3,"bloomTurns":0.7,"unravelTurns":0.8,"ribbonsPerFace":6.0,"shardsPerFaceEdge":3.0,"dissolveGrain":0.35,"depthMinScreen":[0.05,0.1,0.16,0.24],"sierpinskiMaxDepth":5,"silverDepths":[4,6,8,10],"silverMaxDepth":12,"gradeSeconds":0.8},"look":{"fresnelPower":3.0,"innerGlow":1.0,"noiseScale":0.55},"explosion":{"rotation":0.0169,"spreadPerAmount":0.05,"spreadValue":[0.18,0.1,0.1],"minSpeed":10.0,"maxSpeed":33.33,"dangerDetonation":1.6,"duration":7.5},"graph":{"pivotBias":-0.5,"slideBias":0.5,"sliderGain":0.5},"motion":{"debrisRestitution":0.3333333333333333,"debrisSpeedLimit":200.0},"overshoot":0.06,"rollTail":0.6,"domains":{"jade":{"bright":[0.0,0.5884546,1.1353014],"dark":[0.0,0.16,0.34]},"ruby":{"bright":[0.5490196,0.0,1.4980392],"dark":[0.11906711,0.006783697,0.30817598]},"gold":{"bright":[0.9964046,0.4048625,0.0185709],"dark":[0.23899364,0.124818474,0.0]},"blue":{"bright":[0.46681717,0.53749484,1.2167859],"dark":[0.023529412,0.023529412,0.34901962]}},"prismMesh":[-0.5,-0.5,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.0,0.0,0.5,-0.5,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.5,0.5,0.5,-0.5,0.5,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.5,0.5,0.5,0.0,0.0,1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,1.0,0.0,0.0,0.5,0.5,0.5,0.5,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.5,0.5,0.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.5,0.5,-0.5,0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,0.0,0.0,-0.5,-0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,0.5,0.5,0.5,-0.5,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.0,-0.5,-0.5,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,0.0,0.0,-0.5,0.5,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,0.5,0.5,-0.5,0.5,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.5,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.5,0.5,0.5,0.5,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,0.0,0.0,0.5,-0.5,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,-1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,-0.5,-0.5,0.5,-1.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,-0.5,-0.5,0.5,-1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.5,0.5,-1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,0.5,0.5,-1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.5,-0.5,-1.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,1.0,0.0,0.5,0.5,-0.5,0.5,-0.5,-1.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,-0.5,-0.5,-0.5,-1.0,0.0,0.0,0.0,0.0,-1.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,-0.5,0.5,1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.5,-0.5,-0.5,1.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.5,-0.5,-0.5,1.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.5,0.5,-0.5,1.0,0.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,0.5,-0.5,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.5,0.5,1.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.5,0.5,0.5,0.5,0.5,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.5,-0.5,0.5,1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,0.5,0.5,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,0.0,1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.5,0.5,0.5,0.5,0.5,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.5,0.5,-0.5,0.0,1.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,0.5,-0.5,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.0,-0.5,0.5,-0.5,0.0,1.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.5,0.5,-0.5,0.5,-0.5,0.0,1.0,0.0,-1.0,0.0,0.0,0.0,0.0,-0.5,0.5,0.5,0.0,1.0,0.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,0.0,-1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.5,-0.5,-0.5,0.0,-1.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,-0.5,-0.5,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.5,-0.5,0.5,0.0,-1.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,-0.5,0.5,0.0,-1.0,0.0,0.0,0.0,1.0,0.0,0.0,-0.5,-0.5,0.5,0.0,-1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,-0.5,0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,0.0,0.0,-0.5,-0.5,-0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.5],"sources":{"burst":"Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl","erosion":"Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl (PrismErosionFade)","grade":"Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl (PrismColorLerp_float)","explosionMap":"RotateFacesAlongAxis.shadersubgraph (closed form, parity-gated)"}};
+  const DATA = {"config":{"showcaseMaxMovers":64.0,"boxMaxMovers":256.0,"maxLiveBursts":48.0,"maxLiveTriangles":80000.0,"crowdedFill":0.5,"packedFill":0.8,"shedMinScreen":0.08,"shedFineScreen":0.16,"shedFinestScreen":0.28,"shedSubdivision":12.0,"shedFineSubdivision":18.0,"shedFinestSubdivision":24.0,"bloomWeight":0.0,"unravelWeight":0.0,"flakeWeight":0.0,"bloomRings":3.0,"bloomSegments":3.0,"peelNoise":0.6,"rollWeight":1.0,"rollRadius":0.05,"rollGap":0.01,"destructionCut":1.0,"fragmentBurst":0.5,"fragmentDrift":0.2,"fragmentLift":1.0,"fragmentAim":0.5,"fragmentSpeedGain":0.5,"fragmentSpeedRef":10.0,"fragmentSizeSpeed":0.8,"fragmentSizeSpin":0.25,"fragmentSpinCap":1.6,"fragmentLevelRef":4.0,"fragmentEndSmall":0.45,"fragmentEndBig":0.92,"fragmentShrink":0.35,"fragmentSpinNoise":0.15,"fragmentNoiseFrequency":3.0,"fragmentTravelNoise":0.25,"shedInflate":0.02,"spread":0.55,"openSeconds":0.22,"spinPerSpeed":0.3,"bloomTurns":0.7,"unravelTurns":0.8,"ribbonsPerFace":6.0,"shardsPerFaceEdge":3.0,"dissolveGrain":0.35,"depthMinScreen":[0.05,0.1,0.16,0.24],"sierpinskiMaxDepth":5,"silverDepths":[4,6,8,10],"silverMaxDepth":12,"gradeSeconds":0.8},"look":{"fresnelPower":3.0,"innerGlow":1.0,"noiseScale":0.55},"explosion":{"rotation":0.0169,"spreadPerAmount":0.05,"spreadValue":[0.18,0.1,0.1],"minSpeed":10.0,"maxSpeed":33.33,"dangerDetonation":1.6,"duration":7.5},"graph":{"pivotBias":-0.5,"slideBias":0.5,"sliderGain":0.5},"motion":{"debrisRestitution":0.3333333333333333,"debrisSpeedLimit":200.0},"overshoot":0.06,"rollTail":0.6,"domains":{"jade":{"bright":[0.0,0.5884546,1.1353014],"dark":[0.0,0.16,0.34]},"ruby":{"bright":[0.5490196,0.0,1.4980392],"dark":[0.11906711,0.006783697,0.30817598]},"gold":{"bright":[0.9964046,0.4048625,0.0185709],"dark":[0.23899364,0.124818474,0.0]},"blue":{"bright":[0.46681717,0.53749484,1.2167859],"dark":[0.023529412,0.023529412,0.34901962]}},"prismMesh":[-0.5,-0.5,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.0,0.0,0.5,-0.5,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.5,0.5,0.5,-0.5,0.5,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.5,0.5,0.5,0.0,0.0,1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,1.0,0.0,0.0,0.5,0.5,0.5,0.5,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.5,0.5,0.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.5,0.5,-0.5,0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,0.0,0.0,-0.5,-0.5,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.0,0.0,1.0,-1.0,0.0,0.0,0.5,0.5,0.5,-0.5,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.0,-0.5,-0.5,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,0.0,0.0,-0.5,0.5,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,-1.0,0.0,0.0,0.5,0.5,-0.5,0.5,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.5,0.5,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.5,0.5,0.5,0.5,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,0.0,0.0,0.5,-0.5,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.0,0.0,-1.0,1.0,0.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,-1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,-0.5,-0.5,0.5,-1.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,-0.5,-0.5,0.5,-1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.5,0.5,-1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,0.5,0.5,-1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,-0.5,0.5,-0.5,-1.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,1.0,0.0,0.5,0.5,-0.5,0.5,-0.5,-1.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,-0.5,-0.5,-0.5,-1.0,0.0,0.0,0.0,0.0,-1.0,1.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,-0.5,0.5,1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.0,0.5,-0.5,-0.5,1.0,0.0,0.0,0.0,-1.0,0.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.5,0.5,0.5,-0.5,-0.5,1.0,0.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.5,0.5,-0.5,1.0,0.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,0.5,-0.5,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.5,0.5,0.5,1.0,0.0,0.0,0.0,1.0,0.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.5,0.5,0.5,0.5,0.5,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.5,-0.5,0.5,1.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,0.5,0.5,0.0,1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,0.0,1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.5,0.5,0.5,0.5,0.5,0.0,1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.5,0.5,-0.5,0.0,1.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,0.5,-0.5,0.0,1.0,0.0,0.0,0.0,-1.0,0.0,0.0,-0.5,0.5,-0.5,0.0,1.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,0.0,0.0,-1.0,0.5,0.5,-0.5,0.5,-0.5,0.0,1.0,0.0,-1.0,0.0,0.0,0.0,0.0,-0.5,0.5,0.5,0.0,1.0,0.0,-1.0,0.0,0.0,1.0,0.0,0.0,0.5,0.0,0.0,1.0,0.0,-1.0,0.0,0.0,0.5,0.5,-0.5,-0.5,-0.5,0.0,-1.0,0.0,0.0,0.0,-1.0,0.0,0.0,0.5,-0.5,-0.5,0.0,-1.0,0.0,0.0,0.0,-1.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,-1.0,0.5,0.5,0.5,-0.5,-0.5,0.0,-1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.5,-0.5,0.5,0.0,-1.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,1.0,0.0,0.0,0.5,0.5,0.5,-0.5,0.5,0.0,-1.0,0.0,0.0,0.0,1.0,0.0,0.0,-0.5,-0.5,0.5,0.0,-1.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,0.0,0.0,1.0,0.5,0.5,-0.5,-0.5,0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,0.0,0.0,-0.5,-0.5,-0.5,0.0,-1.0,0.0,-1.0,0.0,0.0,1.0,0.0,0.0,-0.5,0.0,0.0,-1.0,0.0,-1.0,0.0,0.0,0.5,0.5],"sources":{"burst":"Assets/_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl","erosion":"Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl (PrismErosionFade)","grade":"Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl (PrismColorLerp_float)","explosionMap":"RotateFacesAlongAxis.shadersubgraph (closed form, parity-gated)"}};
   const GLSL_BURST = `#ifndef PRISM_COLLISION_BURST_INCLUDED
 #define PRISM_COLLISION_BURST_INCLUDED
 #define PRISM_BURST_SHATTER 0.0
@@ -626,7 +628,13 @@ struct PrismBurstFragmentShape
     float shrink;
     float tau;
     float levelRef;
+    float speedGain;
+    float speedRef;
 };
+float PrismBurstFragmentBoost(float flightSpeed, PrismBurstFragmentShape s)
+{
+    return 1.0 + s.speedGain * max(flightSpeed / max(s.speedRef, 1e-3) - 1.0, 0.0);
+}
 float PrismBurstFragmentEnd(float level, float life, float jitter, PrismBurstFragmentShape s)
 {
     float share = mix(s.endBig, s.endSmall, saturate(max(level, 0.0) / max(s.levelRef, 1e-3)));
@@ -658,11 +666,15 @@ void PrismBurstFragmentPose(vec3 rest, vec3 N, vec3 middle, vec3 faceCentre, flo
 #else
     vec3 radial = PrismBurstAxis(inPlane, vec3(0.0, 0.0, 0.0)) * outward;
 #endif
+#ifdef PRISM_BURST_FRAGMENT_VELOCITY_OFF
+    velocity = vec3(0.0, 0.0, 0.0);
+#endif
     vec3 hit = PrismBurstAxis(velocity, vec3(0.0, 0.0, 0.0));
-    vec3 dir = PrismBurstAxis(radial + N * s.lift + hit * s.aim + (PrismBurstAxis(inPlane, side) * n4 + side * n5) * noise.w, N);
+    float boost = PrismBurstFragmentBoost(length(velocity), s);
+    vec3 dir = PrismBurstAxis(radial + N * s.lift + hit * (s.aim * boost) + (PrismBurstAxis(inPlane, side) * n4 + side * n5) * noise.w, N);
     float size = clamp(level, 0.0, 6.0);
     float dist = radius * (s.burst * (1.0 - exp(-max(age, 0.0) / max(s.tau, 1e-3))) + s.drift * max(age, 0.0))
-               * (1.0 + s.sizeSpeed * size) * (1.0 + noise.w * n3);
+               * (1.0 + s.sizeSpeed * size) * (1.0 + noise.w * n3) * boost;
     float spin = min(1.0 + s.sizeSpin * size, s.spinCap);
     float a1 = amount * rotation * spin * (1.0 + noise.x * n1);
     float a2 = amount * rotation * spin * (1.0 + noise.x * n2);
@@ -671,9 +683,10 @@ void PrismBurstFragmentPose(vec3 rest, vec3 N, vec3 middle, vec3 faceCentre, flo
     pos = middle + dir * dist + PrismBurstRotate(PrismBurstRotate(rest - middle, dir, a1), axis2, a2) * scale;
     nrm = PrismBurstRotate(PrismBurstRotate(N, dir, a1), axis2, a2);
 }
-float PrismBurstFragmentReach(float radius, float life, PrismBurstFragmentShape s, float travelNoise)
+float PrismBurstFragmentReach(float radius, float life, PrismBurstFragmentShape s, float travelNoise, float flightSpeed)
 {
-    return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise)));
+    return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise))
+                         * PrismBurstFragmentBoost(flightSpeed, s));
 }
 float PrismBurstProgress(float age, float life, float curve)
 {
@@ -784,7 +797,7 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     Spread = mix(StartSpread, TargetSpread, t);
 }`;
 
-  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 9, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
+  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 10, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
   const C = DATA.config, LOOK = DATA.look, X = DATA.explosion;
 
   // ================= SHIPPED: every value names where it came from =================
@@ -808,6 +821,8 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     fragmentDrift: C.fragmentDrift,   // PrismInteractionLodConfig.fragmentDrift     (prism radii per s)
     fragmentLift: C.fragmentLift,     // PrismInteractionLodConfig.fragmentLift      (x the face normal)
     fragmentAim: C.fragmentAim,       // PrismInteractionLodConfig.fragmentAim       (x the hit's direction)
+    fragmentSpeedGain: C.fragmentSpeedGain, // PrismInteractionLodConfig.fragmentSpeedGain (a harder hit bursts wider)
+    fragmentSpeedRef: C.fragmentSpeedRef,   // PrismInteractionLodConfig.fragmentSpeedRef  (u/s: the gentlest hit)
     fragmentSizeSpeed: C.fragmentSizeSpeed, // PrismInteractionLodConfig.fragmentSizeSpeed (per size level)
     fragmentSizeSpin: C.fragmentSizeSpin,   // PrismInteractionLodConfig.fragmentSizeSpin  (per size level)
     fragmentSpinCap: C.fragmentSpinCap,     // PrismInteractionLodConfig.fragmentSpinCap
@@ -831,6 +846,8 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     fresnelPower: LOOK.fresnelPower,  // PrismCollisionBurstMaterial._FresnelPower
     innerGlow: LOOK.innerGlow,        // PrismCollisionBurstMaterial._InnerGlow
     labClosing: 60,                   // lab: closing speed of the collision (u/s)
+    labVelX: 20, labVelY: 0, labVelZ: 0,   // lab: the impact velocity a death is handed (PrismEventData.Velocity, world u/s)
+    labRide: 1,                       // lab: 1 the camera rides with the flight, 0 it holds still so the flight shows
     labScaleX: 4, labScaleY: 0.6, labScaleZ: 2,   // lab: the prism's size (a trail slab)
     labScreenPx: 1080,                // lab: the player's screen height (px), for the size readout
     labFill: 0,                       // lab: how full the detail budget already is (the AMOUNT)
@@ -864,6 +881,8 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     ['Fragments', 'fragmentDrift', 0, 2, 0.01, 'Drift (radii per s)', 'And how fast it drifts on after, so the cloud keeps opening while it thins.'],
     ['Fragments', 'fragmentLift', 0, 3, 0.05, 'Lift (× the face normal)', 'Each fragment leaves along its face\'s own radial (from the face centre out to it) plus the face normal × this. 0 skims along the face; 3 nearly straight off it, six tight jets.'],
     ['Fragments', 'fragmentAim', 0, 2, 0.05, 'Aim (× the hit)', 'Plus the hit\'s direction × this: the burst leans the way the prism was struck.'],
+    ['Fragments', 'fragmentSpeedGain', 0, 2, 0.05, 'Speed gain (harder hit)', 'Round 10: a harder hit bursts WIDER and leans more along it, as the explosion\'s own spread grows with its speed: distance and aim × (1 + this × (flight speed ÷ the reference − 1)). 0: every hit alike.'],
+    ['Fragments', 'fragmentSpeedRef', 1, 100, 1, 'Gentlest hit (u/s)', 'The flight speed where the boost is 1: the explosion\'s slowest debris (PrismExplosion minSpeed).'],
     ['Fragments', 'fragmentSizeSpeed', 0, 1, 0.01, 'Smaller fly farther', 'Per size level (each about 0.71× the size) the distance grows by this: × (1 + this × level).'],
     ['Fragments', 'fragmentSizeSpin', 0, 1, 0.01, 'Smaller spin faster', 'Per size level the spin grows by this, up to the cap: the explosion\'s angle × min(1 + this × level, cap).'],
     ['Fragments', 'fragmentSpinCap', 1, 3, 0.05, 'Spin cap (× the explosion)', 'The most any fragment\'s spin is multiplied over the explosion\'s own speed-capped rate, so nothing flickers.'],
@@ -892,6 +911,10 @@ void PrismErosionFade_float(vec3 UV, vec3 Velocity, float BaseOpacity,
     ['Look', 'fresnelPower', 0.5, 8, 0.1, 'Fresnel power', 'Skin: how tight the bright rim is at grazing angles.'],
     ['Look', 'innerGlow', 0, 3, 0.05, 'Inside colour', 'The brighter inside, on show as the surface opens (× the inside colour; a shed\'s inside is the NEW colour). The only accent: no white.'],
     ['Scene', 'labClosing', 10, 400, 1, 'Closing speed (u/s)', 'Lab only. How fast the two prisms meet. Each leaves at a third of it, clamped like the explosion (10 – 33.3 u/s).'],
+    ['Velocity', 'labVelX', -100, 100, 1, 'Impact velocity X (u/s)', 'Lab only. The world velocity a destruction is handed (what the game passes as PrismEventData.Velocity). It is resolved exactly as the explosion resolves it (PrismDebris.ResolveExplosionFlight: clamped to its min and max speed) into the FLIGHT both the explosion and the fragments ride. The yellow arrow on the stage is that flight.'],
+    ['Velocity', 'labVelY', -100, 100, 1, 'Impact velocity Y (u/s)', 'Lab only. World up.'],
+    ['Velocity', 'labVelZ', -100, 100, 1, 'Impact velocity Z (u/s)', 'Lab only.'],
+    ['Velocity', 'labRide', 0, 1, 1, 'Camera rides the flight', 'Lab only. 1: the camera rides with the clouds (the flight is invisible, the burst\'s own shape shows). 0: the camera holds still and you watch every cloud fly along the arrow.'],
     ['Scene', 'labScaleX', 0.3, 20, 0.1, 'Prism length X', 'Lab only. The prism\'s size along its own x.'],
     ['Scene', 'labScaleY', 0.1, 6, 0.05, 'Prism thickness Y', 'Lab only.'],
     ['Scene', 'labScaleZ', 0.3, 20, 0.1, 'Prism width Z', 'Lab only.'],
@@ -1265,7 +1288,7 @@ void main() {
     shape.burst = uFragmentMotion.x; shape.drift = uFragmentMotion.y; shape.lift = uFragmentMotion.z; shape.aim = uFragmentMotion.w;
     shape.sizeSpeed = uFragmentSize.x; shape.sizeSpin = uFragmentSize.y; shape.spinCap = uFragmentSize.z; shape.levelRef = uFragmentSize.w;
     shape.endSmall = uFragmentFade.x; shape.endBig = uFragmentFade.y; shape.shrink = uFragmentFade.z;
-    shape.tau = uBurstShape.y;
+    shape.tau = uBurstShape.y; shape.speedGain = uFragmentFade.w; shape.speedRef = uFragmentNoise.w;
     PrismBurstFragmentPose(f.rest, f.normal, toWorld(centroidOS), f.faceCentre, length(f.triUV), centroidOS, aTri.z, f.radius, age,
                            uTiming.y, uDrift.w * age, uDrift.xyz, uExplosiveRotation,
                            vec4(uFragmentNoise.x, uFragmentNoise.y, uTiming.z, uFragmentNoise.z), shape, posWS, nrmWS);
@@ -1455,6 +1478,9 @@ void main() {
   const STILL = { v: [0, 0, 0], speed: 0 };
   function scaleVec() { return [P.labScaleX, P.labScaleY, P.labScaleZ]; }
   function prismRadius() { return 0.5 * Math.hypot(P.labScaleX, P.labScaleY, P.labScaleZ); }
+  // A destruction's flight: the lab's impact velocity, resolved as ResolveExplosionFlight resolves it (the explosion's
+  // own clamp, no override — a death the game hands its hit velocity).
+  function destructionFlight() { return resolveFlight([P.labVelX, P.labVelY, P.labVelZ], 0); }
   function impactFlight(sign) {
     const closing = [P.labClosing * sign, 0, 0];
     return resolveFlight(v3.mul(closing, DATA.motion.debrisRestitution), DATA.motion.debrisSpeedLimit);
@@ -1469,7 +1495,10 @@ void main() {
     return { fraction: f, steps, destructionLevel: dl, destruction: DESTRUCTION[dl], stealLevel: st, shed: st > 0 };
   }
   // Destruction cells far enough apart that two clouds never meet at 3 s: twice the fragments' reach then.
-  function destructionSpacing() { const R = prismRadius(); return Math.max(8, R * 2 * (1.5 + (P.fragmentBurst + P.fragmentDrift * 3) * (1 + 1.2 * P.fragmentSizeSpeed))); }
+  function destructionSpacing() {
+    const R = prismRadius(), fv = destructionFlight(), boost = 1 + P.fragmentSpeedGain * Math.max(fv.speed / Math.max(P.fragmentSpeedRef, 1e-3) - 1, 0);
+    return Math.max(8, R * 2 * (1.5 + (P.fragmentBurst + P.fragmentDrift * 3) * (1 + 1.2 * P.fragmentSizeSpeed) * boost));
+  }
   // Every thing on stage this frame:
   //   { type: 'burst'|'explosion'|'prism', kind, origin, flight, start, life, curve, intact, label, steal }
   function sceneItems(clock) {
@@ -1477,7 +1506,7 @@ void main() {
     if (view === 'destruction' || view === 'stealing') {
       const shed = view === 'stealing';
       const spacing = shed ? Math.max(6, R * 2 * 1.9) : destructionSpacing();
-      const fl = shed ? STILL : impactFlight(1);
+      const fl = shed ? STILL : destructionFlight();
       const cells = shed
         ? (() => {
           const res = P.labShedRes > 0 ? Math.round(P.labShedRes) : Math.max(1, liveLevels().stealLevel);
@@ -1519,7 +1548,7 @@ void main() {
   function camTarget(clock) {
     const items = sceneItems(clock), t = Math.max(0, clock);
     if (cam.focus >= 0 && items[cam.focus]) { const it = items[cam.focus]; return v3.add(it.origin, v3.mul(it.flight.v, it.intact ? 0 : t)); }
-    if (view !== 'collision') return v3.add(home(), v3.mul(items[0].flight.v, t));   // ride with the clouds: they share one flight
+    if (view !== 'collision') return P.labRide >= 0.5 ? v3.add(home(), v3.mul(items[0].flight.v, t)) : home();   // ride with the clouds: they share one flight
     return home();
   }
   function camDistance() {
@@ -1555,8 +1584,8 @@ void main() {
     if (!u.uFragmentMotion) return;
     gl.uniform4f(u.uFragmentMotion, q.fragmentBurst, q.fragmentDrift, q.fragmentLift, q.fragmentAim);
     gl.uniform4f(u.uFragmentSize, q.fragmentSizeSpeed, q.fragmentSizeSpin, q.fragmentSpinCap, q.fragmentLevelRef);
-    gl.uniform4f(u.uFragmentFade, q.fragmentEndSmall, q.fragmentEndBig, q.fragmentShrink, 0);
-    gl.uniform4f(u.uFragmentNoise, q.fragmentSpinNoise, q.fragmentNoiseFrequency, q.fragmentTravelNoise, 0);
+    gl.uniform4f(u.uFragmentFade, q.fragmentEndSmall, q.fragmentEndBig, q.fragmentShrink, q.fragmentSpeedGain);
+    gl.uniform4f(u.uFragmentNoise, q.fragmentSpinNoise, q.fragmentNoiseFrequency, q.fragmentTravelNoise, q.fragmentSpeedRef);
   }
   function drawBurst(prog, it, cam, clock, seedOverride) {
     const u = prog.u, rot = PRISM_ROT, shed = it.steal === 'shed';
@@ -1667,6 +1696,7 @@ void main() {
       const b = el.firstChild; b.textContent = (cam.focus === i ? '◉ ' : '') + it.label + (picked ? ' ◆' : ''); b.className = (it.type === 'explosion' || it.type === 'prism') ? 'base' : '';
       b.title = (it.type === 'explosion' ? 'The shipped explosion (the baseline). ' : it.type === 'prism' ? 'The shipped grade (the baseline). ' : '') + (picked ? 'The game draws this at the size shown. ' : '') + (cam.focus === i ? 'Back to the whole stage' : 'Fly the camera to this one');
     });
+    drawArrows(cm, items, R);
     const pct = (lv.fraction * 100).toFixed(1) + '% of the screen height (' + Math.round(lv.fraction * P.labScreenPx) + ' px of ' + P.labScreenPx + ')';
     const head = view === 'destruction' ? (P.labArchive >= 0.5 ? 'Destruction, round 3 (archived): the explosion, the shatter, the quadtree glitter' : 'Destruction, the ' + (P.destructionCut >= 0.5 ? 'silver gnomon' : 'Sierpinski') + ' cut: the explosion is level 0, then levels 1-' + DEPTHS + ' (every fragment bursts out on its own and shrinks away, the smallest first)')
       : view === 'stealing' ? (P.labArchive >= 0.5 ? 'Stealing, round 4 (archived): the grade and the three sheds' : 'Stealing: the grade, the ROLL (away from this camera, round the prism until it hides it) and round 5\'s bloom') + ' (' + domain + ' stolen by ' + thief + ')'
@@ -1676,8 +1706,32 @@ void main() {
     const lod = view === 'stealing'
       ? 'At this size (' + pct + ') a steal ' + (lv.shed ? 'SHEDS at ' + SHED_SUB[lv.stealLevel] + ' subdivisions' : 'GRADES') + crowd + '\n(shed ' + pc(P.shedMinScreen) + ', fine ' + pc(P.shedFineScreen) + ', finest ' + pc(P.shedFinestScreen) + ')'
       : 'At this size (' + pct + ') a death is ' + lv.destruction.toUpperCase() + (lv.destructionLevel > 0 ? ' (' + destructionTris(lv.destructionLevel).toLocaleString() + ' fragments)' : '') + crowd + '\n(' + depthLines().map((l, i) => 'level ' + (i + 1) + ' ' + pc(l)).join(', ') + ')';
-    $('hud').textContent = head + '\n' + lod + '\nt ' + clock.toFixed(2) + ' s   seed ' + labSeed + (clock < 0 ? '   (before the ' + (view === 'stealing' ? 'steal' : 'event') + ')' : '');
+    const fv = destructionFlight(), boost = 1 + P.fragmentSpeedGain * Math.max(fv.speed / Math.max(P.fragmentSpeedRef, 1e-3) - 1, 0);
+    const vel = view === 'destruction' ? '\nimpact v (' + [P.labVelX, P.labVelY, P.labVelZ].join(', ') + ') u/s → flight (' + fv.v.map((c) => c.toFixed(1)).join(', ') + '), ' + fv.speed.toFixed(1) + ' u/s · fragments × ' + boost.toFixed(2) + ' wider, lean × ' + (P.fragmentAim * boost).toFixed(2) + ' · camera ' + (P.labRide >= 0.5 ? 'rides the flight' : 'holds still') : '';
+    $('hud').textContent = head + vel + '\n' + lod + '\nt ' + clock.toFixed(2) + ' s   seed ' + labSeed + (clock < 0 ? '   (before the ' + (view === 'stealing' ? 'steal' : 'event') + ')' : '');
     $('scrub').value = clock; $('clockOut').textContent = clock.toFixed(2) + ' s';
+  }
+
+  // The flight, drawn on the HUD after the 3D pass (a prediction is not light, L-STU-53): one yellow arrow per cloud
+  // from where its centre is now, along the flight both the explosion and the fragments ride.
+  const arrowsEl = $('arrows');
+  function drawArrows(cm, items, R) {
+    const r = arrowsEl.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (arrowsEl.width !== w || arrowsEl.height !== h) { arrowsEl.width = w; arrowsEl.height = h; }
+    const g = arrowsEl.getContext('2d'); g.clearRect(0, 0, w, h);
+    if (view === 'stealing') return;
+    const sx = w / canvas.width, sy = h / canvas.height;
+    g.strokeStyle = g.fillStyle = '#ffd24a'; g.lineWidth = 2 * dpr; g.font = (11 * dpr) + 'px system-ui, sans-serif';
+    for (const it of items) {
+      const v = it.flight.v, m = Math.hypot(v[0], v[1], v[2]); if (!(m > 1e-6)) continue;
+      const at = v3.add(it.origin, v3.mul(v, it.intact ? 0 : Math.max(0, clock)));
+      const a = project(cm.VP, at, canvas.width, canvas.height), b = project(cm.VP, v3.add(at, v3.mul(v, 2.5 * R / m)), canvas.width, canvas.height);
+      if (!a || !b) continue;
+      const ax = a[0] * sx, ay = a[1] * sy, bx = b[0] * sx, by = b[1] * sy, ang = Math.atan2(by - ay, bx - ax), hd = 9 * dpr;
+      g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+      g.beginPath(); g.moveTo(bx, by); g.lineTo(bx - hd * Math.cos(ang - 0.45), by - hd * Math.sin(ang - 0.45)); g.lineTo(bx - hd * Math.cos(ang + 0.45), by - hd * Math.sin(ang + 0.45)); g.closePath(); g.fill();
+    }
   }
 
   // ================= look scorecard (the shipped vertex stage, read back, headless) =================
@@ -1709,6 +1763,10 @@ void main() {
   function faceOnlyProbe() {
     return probeFaceOnly || (probeFaceOnly = program(BURST_VS.replace(PRELUDE, PRELUDE + '#define PRISM_BURST_FRAGMENT_FACE_ONLY 1\n'), PROBE_FS, 'burst probe (grouped control)', ['vPosWS', 'vNrmWS']));
   }
+  let probeVelocityOff = null;
+  function velocityOffProbe() {
+    return probeVelocityOff || (probeVelocityOff = program(BURST_VS.replace(PRELUDE, PRELUDE + '#define PRISM_BURST_FRAGMENT_VELOCITY_OFF 1\n'), PROBE_FS, 'burst probe (velocity-ignored control)', ['vPosWS', 'vNrmWS']));
+  }
   function fragmentRun(mesh, seed, flight, q, prog) {
     const scale = scaleVec(), life = X.duration, frames = [];
     for (let t = 0; t <= life + 1e-6; t += LOOK_STEP) {
@@ -1728,8 +1786,8 @@ void main() {
     }
     return frames;
   }
-  function lookOf(name, meshName, q, control, prog) {
-    const vm = MESHES[meshName], g = vm.mesh, nTri = g.count / 3, R = prismRadius(), scale = scaleVec(), fl = impactFlight(1);
+  function lookOf(name, meshName, q, control, prog, flightOverride) {
+    const vm = MESHES[meshName], g = vm.mesh, nTri = g.count / 3, R = prismRadius(), scale = scaleVec(), fl = flightOverride || destructionFlight();
     const at = (arr, i) => [arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]];
     // rest, in the scorecard's frame (rotation identity, origin 0): the triangle's centroid and its area
     const rest = [], area = [], level = [];
@@ -1741,7 +1799,8 @@ void main() {
       const l = g.tri[9 * t + 2]; level.push(l); minL = Math.min(minL, l); maxL = Math.max(maxL, l);
     }
     const seeds = [0.137, 0.512, 0.871];
-    let entropy = 0, cloud = 0, spinMed = 0, inStep = 0, half = 0, gone = 0;
+    let entropy = 0, cloud = 0, spinMed = 0, inStep = 0, half = 0, gone = 0, lean = 0, across = 0;
+    const vhat = v3.norm(destructionFlight().v);   // the lean is read along the Velocity tab's hit, whatever this run flew
     for (const seed of seeds) {
       const frames = fragmentRun(vm, seed, fl, q, prog);
       const centroid = (f, t) => { const p = f.pos; return v3.mul(v3.add(v3.add(at(p, 3 * t), at(p, 3 * t + 1)), at(p, 3 * t + 2)), 1 / 3); };
@@ -1750,6 +1809,14 @@ void main() {
       const flown = v3.mul(fl.v, f2.t), dirs = [], dist = [];
       for (let t = 0; t < nTri; t++) { const d = v3.sub(v3.sub(centroid(f2, t), flown), rest[t]); const l = Math.hypot(d[0], d[1], d[2]); dist.push(l); if (l > 1e-6) dirs.push(v3.mul(d, 1 / l)); }
       entropy += directionEntropy(dirs);
+      // the velocity check: the cloud's mean displacement at 2 s with the flight taken out (vPosWS carries it), along
+      // the hit and across it, in prism radii — a burst that leans along v reads > 0; a flight not applied would read
+      // −|v| t / R here
+      let mean = [0, 0, 0];
+      for (let t = 0; t < nTri; t++) mean = v3.add(mean, v3.sub(v3.sub(centroid(f2, t), flown), rest[t]));
+      mean = v3.mul(mean, 1 / nTri);
+      const along = v3.dot(mean, vhat), perp = v3.sub(mean, v3.mul(vhat, along));
+      lean += along / R; across += Math.hypot(perp[0], perp[1], perp[2]) / R;
       const sorted = dist.slice().sort((x, y) => x - y); cloud += sorted[Math.floor(0.9 * (sorted.length - 1))] / R;
       // spin: each fragment's normal turned over 0.1 s at t = 1 s (rad/s), the median
       const rates = [];
@@ -1774,11 +1841,11 @@ void main() {
       half += h == null ? X.duration : h; gone += gAll == null ? X.duration : gAll;
     }
     const n = seeds.length;
-    return { name, control: control || '', fragments: nTri, sizes: +Math.pow(2, maxL - minL).toFixed(1), entropy: +(entropy / n).toFixed(3), cloud: +(cloud / n).toFixed(2), spin: +(spinMed / n).toFixed(2), inStep: +(100 * inStep / n).toFixed(1), half: +(half / n).toFixed(2), gone: +(gone / n).toFixed(2) };
+    return { name, control: control || '', fragments: nTri, sizes: +Math.pow(2, maxL - minL).toFixed(1), entropy: +(entropy / n).toFixed(3), cloud: +(cloud / n).toFixed(2), spin: +(spinMed / n).toFixed(2), inStep: +(100 * inStep / n).toFixed(1), half: +(half / n).toFixed(2), gone: +(gone / n).toFixed(2), lean: +(lean / n).toFixed(2), across: +(across / n).toFixed(2), flight: fl.v.map((c) => +c.toFixed(1)) };
   }
   // The explosion (level 0), the baseline: its 24 wedges on the shipped graph's law, read the same way.
   function lookOfExplosion() {
-    const R = prismRadius(), scale = scaleVec(), fl = impactFlight(1), g = meshPrism.mesh, nTri = g.count / 3;
+    const R = prismRadius(), scale = scaleVec(), fl = destructionFlight(), g = meshPrism.mesh, nTri = g.count / 3;
     const run = (t) => feedback(probeExplosion, meshPrism, (prog) => {
       const u = prog.u;
       gl.uniformMatrix3fv(u.uRot, false, [1, 0, 0, 0, 1, 0, 0, 0, 1]); gl.uniform3fv(u.uScale, scale); gl.uniform3fv(u.uOrigin, [0, 0, 0]);
@@ -1790,12 +1857,14 @@ void main() {
     const at = (arr, i) => [arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]];
     const cen = (arr, t) => v3.mul(v3.add(v3.add(at(arr, 3 * t), at(arr, 3 * t + 1)), at(arr, 3 * t + 2)), 1 / 3).map((x, m) => x * scale[m]);
     const [p2] = run(2), [, n1] = run(1), [, n11] = run(1.1), dirs = [], dist = [], rates = [];
+    const vhat = v3.norm(fl.v); let mean = [0, 0, 0];
     for (let t = 0; t < nTri; t++) {
       const d = v3.sub(cen(p2, t), cen(g.pos, t)), l = Math.hypot(d[0], d[1], d[2]); dist.push(l); if (l > 1e-6) dirs.push(v3.mul(d, 1 / l));
+      mean = v3.add(mean, v3.mul(d, 1 / nTri));
       rates.push(Math.acos(Math.max(-1, Math.min(1, v3.dot(at(n1, 3 * t), at(n11, 3 * t))))) / 0.1);
     }
     dist.sort((x, y) => x - y); rates.sort((x, y) => x - y);
-    return { name: 'Explosion (level 0, the baseline)', control: 'baseline', fragments: nTri, sizes: 1, entropy: +directionEntropy(dirs).toFixed(3), cloud: +(dist[Math.floor(0.9 * (dist.length - 1))] / R).toFixed(2), spin: +rates[Math.floor(rates.length / 2)].toFixed(2), inStep: '—', half: '—', gone: 'erodes to ' + (X.duration * 0.85).toFixed(2) };
+    return { name: 'Explosion (level 0, the baseline)', control: 'baseline', fragments: nTri, sizes: 1, entropy: +directionEntropy(dirs).toFixed(3), cloud: +(dist[Math.floor(0.9 * (dist.length - 1))] / R).toFixed(2), spin: +rates[Math.floor(rates.length / 2)].toFixed(2), inStep: '—', half: '—', gone: 'erodes to ' + (X.duration * 0.85).toFixed(2), lean: +(v3.dot(mean, vhat) / R).toFixed(2), across: +(Math.hypot(...v3.sub(mean, v3.mul(vhat, v3.dot(mean, vhat)))) / R).toFixed(2), flight: fl.v.map((c) => +c.toFixed(1)) };
   }
   function runBatch() {
     if (!gl || glError) return [];
@@ -1806,17 +1875,22 @@ void main() {
     const finest = destructionMesh(DEPTHS);
     rows.push(lookOf(DESTRUCTION[DEPTHS] + ' · noise off', finest, Object.assign({}, P, { fragmentSpinNoise: 0, fragmentTravelNoise: 0 }), 'noise off'));
     rows.push(lookOf(DESTRUCTION[DEPTHS] + ' · a face leaves as one', finest, P, 'grouped', faceOnlyProbe()));
+    const fl = destructionFlight();
+    rows.push(lookOf(DESTRUCTION[DEPTHS] + ' · velocity reversed', finest, P, 'reversed', null, { v: v3.mul(fl.v, -1), speed: fl.speed }));
+    rows.push(lookOf(DESTRUCTION[DEPTHS] + ' · velocity ignored', finest, P, 'ignored', velocityOffProbe()));
     for (const r of rows) {
       r.verdict = r.control === 'baseline' ? 'the explosion'
         : r.control === 'noise off' ? (r.inStep >= 50 ? 'in step, as it must be' : 'CONTROL DID NOT FIRE')
         : r.control === 'grouped' ? (r.entropy < 0.7 ? 'grouped, as it must be' : 'CONTROL DID NOT FIRE')
-        : (r.entropy >= 0.7 && r.inStep <= 5 ? 'uniform, out of step' : r.entropy < 0.7 ? 'grouped' : 'in step');
+        : r.control === 'reversed' ? (r.lean <= -0.1 ? 'leans the other way, as it must' : 'CONTROL DID NOT FIRE')
+        : r.control === 'ignored' ? (Math.abs(r.lean) < 0.1 ? 'no lean without v, as it must' : 'CONTROL DID NOT FIRE')
+        : (r.entropy < 0.7 ? 'grouped' : r.inStep > 5 ? 'in step' : r.lean < 0.1 ? 'IGNORES THE HIT' : 'uniform, leans along v');
     }
     clock = savedClock; labSeed = savedSeed; lastScore = rows;
     return rows;
   }
   let lastScore = null;
-  function score() { return lastScore ? lastScore.map((r) => ({ name: r.name, entropy: r.entropy, inStep: r.inStep, half: r.half, verdict: r.verdict })) : { t: +clock.toFixed(2) }; }
+  function score() { return lastScore ? lastScore.map((r) => ({ name: r.name, entropy: r.entropy, inStep: r.inStep, lean: r.lean, across: r.across, half: r.half, verdict: r.verdict })) : { t: +clock.toFixed(2) }; }
 
   // ================= parity probes (read by parity.py through Playwright) =================
   // Transform feedback captures the vertex stage's own outputs: the page's burst and explosion maps,
@@ -1867,8 +1941,8 @@ void main() {
       if (u.uNoiseScale) gl.uniform1f(u.uNoiseScale, 0.55);
       gl.uniform4f(u.uFragmentMotion, c.shape.burst, c.shape.drift, c.shape.lift, c.shape.aim);
       gl.uniform4f(u.uFragmentSize, c.shape.sizeSpeed, c.shape.sizeSpin, c.shape.spinCap, c.shape.levelRef);
-      gl.uniform4f(u.uFragmentFade, c.shape.endSmall, c.shape.endBig, c.shape.shrink, 0);
-      gl.uniform4f(u.uFragmentNoise, c.noise[0], c.noise[1], c.noise[2], 0);
+      gl.uniform4f(u.uFragmentFade, c.shape.endSmall, c.shape.endBig, c.shape.shrink, c.shape.speedGain);
+      gl.uniform4f(u.uFragmentNoise, c.noise[0], c.noise[1], c.noise[2], c.shape.speedRef);
     }, ['pos', 'nrm']);
   }
   function probeExplosionCase(c) {
@@ -1954,14 +2028,14 @@ void main() {
     box.innerHTML = '<p><button class="btn primary" id="runScore">Score the look</button> <span class="hint">Each destruction level run through its whole life on the page\'s own vertex stage (the shipped HLSL, translated), three deaths each, at your settings: the explosion beside it as the baseline, and two controls that must read badly.</span></p><div class="tablewrap"><table id="scoreTable"></table></div><p class="hint" id="scoreNote"></p>';
     const draw = (rows) => {
       const t = box.querySelector('#scoreTable');
-      t.innerHTML = '<tr><th>Candidate</th><th title="Triangles that fly">Fragments</th><th title="Largest ÷ smallest fragment, in length">Size range ×</th><th title="How evenly the travel directions fill the sphere at 2 s: entropy over 256 equal bins (about 7° each) ÷ the most there can be (1 = perfectly even). The explosion\'s six slide directions cap it at 0.32.">Spread evenness</th><th title="90th percentile of how far the fragments have travelled at 2 s, in prism radii">Cloud at 2 s (R)</th><th title="How fast the fragments\' normals turn at 1 s, rad/s, the median (a spin about the travel direction barely turns a normal, so this reads under the full spin)">Tumble (rad/s)</th><th title="Share of same-size neighbours travelling exactly as far: the noise\'s job is 0">In step %</th><th title="When half the area is gone (s)">Half gone (s)</th><th title="When every fragment is gone (s)">All gone (s)</th><th>Verdict</th></tr>';
+      t.innerHTML = '<tr><th>Candidate</th><th title="Triangles that fly">Fragments</th><th title="Largest ÷ smallest fragment, in length">Size range ×</th><th title="How evenly the travel directions fill the sphere at 2 s: entropy over 256 equal bins (about 7° each) ÷ the most there can be (1 = perfectly even). The explosion\'s six slide directions cap it at 0.32.">Spread evenness</th><th title="90th percentile of how far the fragments have travelled at 2 s, in prism radii">Cloud at 2 s (R)</th><th title="How fast the fragments\' normals turn at 1 s, rad/s, the median (a spin about the travel direction barely turns a normal, so this reads under the full spin)">Tumble (rad/s)</th><th title="Share of same-size neighbours travelling exactly as far: the noise\'s job is 0">In step %</th><th title="The velocity check: the cloud\'s mean displacement at 2 s with the flight taken out, along the hit, in prism radii. Leans along v: > 0. A flight not applied would read −|v|·t÷R.">Lean along v (R)</th><th title="The same mean displacement ACROSS the hit (should be about 0: the cloud stays centred on the flight line)">Across v (R)</th><th title="When half the area is gone (s)">Half gone (s)</th><th title="When every fragment is gone (s)">All gone (s)</th><th>Verdict</th></tr>';
       for (const r of rows) {
         const tr = document.createElement('tr');
-        for (const v of [r.name, r.fragments, r.sizes, r.entropy, r.cloud, r.spin, r.inStep, r.half, r.gone]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); }
+        for (const v of [r.name, r.fragments, r.sizes, r.entropy, r.cloud, r.spin, r.inStep, r.lean, r.across, r.half, r.gone]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); }
         const td = document.createElement('td'), pill = document.createElement('span'); pill.className = 'pill ' + (/uniform|explosion|must/.test(r.verdict) ? 'ok' : 'warn'); pill.textContent = r.verdict; td.appendChild(pill); tr.appendChild(td);
         t.appendChild(tr);
       }
-      box.querySelector('#scoreNote').textContent = 'No squint any more (round 9): the silver cut\'s range of sizes lets the small fragments go unseen from far away, so a level no longer has to read as the explosion. "Uniform, out of step" = spread evenness at least 0.70 and at most 5% of same-size neighbours in step. The controls must fail: the noise off puts neighbours back in step; the harness\'s grouped-burst control (every fragment of a face leaving the same way, compiled into the page) reads as six jets.';
+      box.querySelector('#scoreNote').textContent = 'No squint any more (round 9): the silver cut\'s range of sizes lets the small fragments go unseen from far away, so a level no longer has to read as the explosion. "Uniform, leans along v" = spread evenness at least 0.70, at most 5% of same-size neighbours in step, and the cloud leaning at least 0.1 R along the hit. Measured at the impact velocity on the Velocity tab (flight ' + (rows[0] ? JSON.stringify(rows[0].flight) : '') + ' u/s). The controls must fail: the velocity reversed must lean the other way; the harness\'s velocity-ignored control (compiled into the page) must not lean at all; the noise off puts neighbours back in step; the harness\'s grouped-burst control (every fragment of a face leaving the same way, compiled into the page) reads as six jets.';
     };
     box.querySelector('#runScore').onclick = () => draw(runBatch());
     if (lastScore) draw(lastScore);

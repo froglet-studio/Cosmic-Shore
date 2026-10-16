@@ -2625,6 +2625,12 @@ uniform effect instead of keeping things grouped ... now I just want it to look 
   (256 bins; the explosion 0.32, a face leaving as one 0.53); 0–0.9% of same-size neighbours in step (noise off:
   100%); half the area gone at 3.3–4.6 s, all at 5.5–6.6 s of the 7.5 s life.
 - The WEDGE text of rounds 5–8 below is history: the explosion's own law now draws only the explosion.
+- **Round 10 (the designer: "they still don't seem to be accepting the velocity vector")**: the velocity was reaching
+  the burst (flight, lean, spin axis — traced end to end), but the hit barely shaped the fragments' own motion. Now a
+  harder hit bursts wider and leans more along it: distance and lean × (1 + `fragmentSpeedGain` 0.5 × (flight speed ÷
+  `fragmentSpeedRef` 10 u/s − 1)) (`PrismBurstFragmentBoost`), aim 0.5. The lab's Velocity tab sets the hit in 3D and
+  draws the flight; its Look scorecard measures the lean along v (1.1–1.9 R at 2 s for a 20 u/s hit; reversed −1.9;
+  the pose ignoring v −0.03).
 
 **Round 7 (the designer, 2026-10-15) — supersedes the Sierpinski cut as the shipped destruction and the bloom as the
 shipped shed:** *"lets add a small amount of perlin noise ... break up the perfectly synchronized triangle rotations
