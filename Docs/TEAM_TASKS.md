@@ -446,3 +446,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+
+### T-20261016-822d · open · dev · Multiplayer
+- **Task:** Find and fix what the first real multiplayer logs showed: B31 (the party session refresh is rate-limited about every 10 s while a party exists), B32 (after a guest leaves mid-match, the host's party lobby answers NotInLobby and the host sits in Reconnecting) and B33 (in the editor, a second Play starts inside the first Play's dead party session, because the project skips the domain reload).
+- **Done when:** Each of B31-B33 in Docs/PartySystem/BUGS.md is root-caused and fixed, or closed with the reason, and a new two-machine log (net_logs.py show) shows it gone
+- **Who can take it:** Yash (party owner)
+- **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/PartySystem/BUGS.md B31-B33; Caleb's logs on bugledger/belac (python3 Tools/Build/net_logs.py collect)
+
+### T-20261016-c76e · open · test · Multiplayer
+- **Task:** Two-machine repro for B32 with both logs: host and guest party up on two PCs, start a Regatta match, the guest leaves mid-race, then the host waits 2 minutes in the menu and stops Play. Both editors send their logs by themselves.
+- **Done when:** net_logs.py collect shows ONE test with both machines (host/main and guest/main), and the host's timeline says whether it left Reconnecting
+- **Who can take it:** Caleb, Yash (offered)
+- **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/PartySystem/BUGS.md B32; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Multiplayer test logs' steps 7-9

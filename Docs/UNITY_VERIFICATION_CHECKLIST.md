@@ -155,6 +155,13 @@ a virtual player's editor is running. `BugHuntReports` picks the files up as the
 each `Library/VP/*/Logs/NetSessions`). `BugHuntAutoSend` waits 4 s for the virtual players' files, then asks once
 (main editor only): *"This multiplayer test saved logs from main, p2 and p3... Send them to Claude?"*.
 `Tools/Build/net_logs.py` reads them off `bugledger/<user>` into one timeline. Same format from Amoebius (Port commit).
+Since 2026-10-16 the send is automatic, with no dialog (`0a41ef133`).
+**2026-10-16, fixed from the first real logs (Caleb ↔ ys1, two machines).** The project enters Play without a domain
+reload, so a file carried every earlier Play's events and UGS totals, and an earlier test's "client 1 approved" was
+taken as this one's evidence. `NetTestLogs` now resets the recorder and `UgsRequestTelemetry` when Play starts.
+A guest wrote nothing (its record approves nobody), so joining a party now counts, and so does the role
+sampled every 2 s. The "at" location skipped Unity's native stack walker. The party/presence refresh 429s are now
+counted (`HostConnectionService`, B31). `net_logs.py` groups two machines' overlapping logs into one test.
 **Verified without the editor:** `unity_refcompile --config editor`: 0 errors in the three changed files (the 3 errors
 are the known `AuthenticationServiceFacade` MPPM-package ones); the Compose/Quote logic extracted and run standalone,
 its output read by `net_logs.py`; `net_logs.py --self-test` (11 checks, negative control); Amoebius wrote a real file
@@ -167,12 +174,19 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
    editor. Within a few seconds `Logs/NetSessions/` (main project) holds `net_<time>_main.json` and one file per virtual
    player (`_p2`, `_p3`, or `_vp-<id>` if the tag is not read). Each opens as JSON with `"schema": "cosmicshore.nettestlog.v1"`
    and its console lines.
-4. ONE dialog in the main editor names the players ("main, p2 and p3"); the virtual players show none. **Not now**, then a
-   new Play/stop with no new error: it does not ask again about the same files.
-5. Press **Send to Claude** on the next test: `git fetch origin bugledger/<you>` then
-   `python3 Tools/Build/net_logs.py collect` lists the test with every player, and `show 1` prints one timeline. Your working
-   tree and branch unchanged (`git status`).
+4. No dialog: the main editor's Console says `[BugLedger] Sent to Claude automatically: ... the multiplayer test's logs
+   from main, p2 and p3`; the virtual players send nothing. A new Play/stop with nothing new sends nothing again.
+5. `git fetch origin bugledger/<you>` then `python3 Tools/Build/net_logs.py collect` lists the test with every player,
+   and `show 1` prints one timeline. Your working tree and branch unchanged (`git status`).
 6. No frame-time change during Play with the F7 `diag` (the hook is one queue append per log line).
+7. **(2026-10-16) Two machines**: the guest machine also writes a `main` file (its `why` reads "joined another player's
+   party" or "was a client during the session"), and `net_logs.py collect` shows both machines as ONE test,
+   `<host user>/main` and `<guest user>/main`.
+8. **(2026-10-16) Second Play**: Play the multiplayer test again without restarting the editor. The new file's
+   `record.startedUtc` is within seconds of its `playStartedUtc`, and its `lifecycle` holds only that Play's events.
+   `collect` shows no "carried over" mark.
+9. **(2026-10-16)** A warning line's `"at"` names game code (e.g. `CosmicShore....HostConnectionService:...`), never
+   `(Unity) StackWalker`.
 
 ---
 

@@ -1533,6 +1533,9 @@ namespace CosmicShore.Gameplay
                 }
                 else if (failure == UgsFailureClass.RateLimited)
                 {
+                    // The tick is counted as a lobby read but its 429 was not, so a session record said
+                    // "429s 2" over a console of 69 refresh rate limits (Caleb's MPPM log, 2026-10-16).
+                    UgsRequestTelemetry.Count(UgsRequestCounter.RateLimited);
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     CSDebug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
                 }
@@ -1999,6 +2002,7 @@ namespace CosmicShore.Gameplay
                 // [rate-limit] UGS throttled us - back off, keep ActiveSession.
                 if (failure == UgsFailureClass.RateLimited)
                 {
+                    UgsRequestTelemetry.Count(UgsRequestCounter.RateLimited); // see the presence refresh's catch
                     CSDebug.LogWarning($"[HostConnectionService] Party session refresh rate-limited - backing off");
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     return;
