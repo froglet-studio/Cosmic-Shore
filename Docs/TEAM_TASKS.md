@@ -344,3 +344,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (vessel HUD owner)
 - **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
 - **See:** Docs/claude/VESSEL_HUD_AND_ELEMENTS.md (Four-Icon row note), canvas Rev 3 R3Hud boards
+
+### T-20261016-be3d · open · test · Menu_Main / Hangar
+- **Task:** Play-test the rev-3 Hangar: 3D turntable, vibe sliders, five animated tabs (abilities with device labels + perform, upgrade morph preview, games -> configure, pilots, artifacts)
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Hangar rev 3' items 1-8 pass or bugs filed
+- **Who can take it:** Shombith (Menu_Main owner) or Yash
+- **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §31
+
+### T-20261016-1ec1 · open · dev · Menu_Main / Hangar
+- **Task:** Real ability playback in the Hangar (Sparrow actually fires on RT): host a Barren-cell ModePreviewSession behind the Abilities tab instead of the stand-in lunge/roll/light
+- **Done when:** Pressing an ability's control in the Hangar plays the vessel's real ability
+- **Who can take it:** Shombith or Yash (decide if wanted)
+- **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §31, Docs/ModePreview/ARCHITECTURE.md

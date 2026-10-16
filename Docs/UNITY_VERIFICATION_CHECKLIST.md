@@ -10377,3 +10377,27 @@ errors), AbilityLockupStyleTests gains `ElementColour_GivesEachElementItsOwnVisi
 4. Gauges, cooldown veils, press flashes and the L5 upgrade (white edge + bloom) still read over the colour.
 5. Perf: Profiler on a phone build - the HUD canvas rebuild cost with `lavaMotion` on vs off. If it shows up, turn
    `lavaMotion` off on AbilityLockupStyle (colour stays, motion stops).
+
+## 🔴 2026-10-16 — Hangar rev 3 (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Checked offline: refcompile player + editor (no new errors), gates, `author_menu_hangar.py --check` / `--self-test`
+(10 planted defects incl. tab page and stage table). Compare with the canvas's Rev 3 Hangar boards.
+
+1. **3D stage:** open the Hangar - the selected vessel stands as a real 3D model in the centre, turning slowly; drag it
+   or push the right stick to turn it; it resumes turning after ~2.5 s. Select other vessels: the model swaps. Every
+   vessel shows a model (fallback icon only if a prefab has no hull mesh). **Fail:** a black / white box, a tiny model
+   in a corner (render target sized before layout), the model drawn in the menu world, magenta materials.
+2. **Vibe sliders** under the model: Casual-Challenging / Relaxing-Thrilling / Solo-Social with the thumb at the
+   vessel's value (Dolphin far right on the first two, Squirrel far left).
+3. **Tabs:** five tabs; LB / RB or a click swaps them with the slide + skew + scan line; never two pages at once.
+4. **Abilities:** Sparrow shows Pulsefire (RT) / Skyburst (LT) / Turret Stance (A) / Afterburner (B) on a pad,
+   R SHIFT / L SHIFT / SPACE / R on the keyboard (labels flip with the last device used); pressing RT makes the model
+   lunge + roll with a violet burst and lights the Pulsefire row. Touch: no keycaps; tapping a row performs it.
+   Note: RB is also LB/RB tab switching - on a vessel with an RB ability it does both.
+5. **Upgrades:** opens with every element at 0 and the hull in its default form; press Mass: 3 pips, the hull swells
+   (Sparrow / Manta / Dolphin / Squirrel / Serpent have shapes); press again: 5, 10, back to 0. A hull with no shapes
+   says so in the header.
+6. **Games:** the vessel's games as art tiles (its own first); pressing one opens that game's configure window.
+7. **Pilots:** the four captains (Sparrow: Feist, Shrapnel, Longshift, Flux) with portrait, line, quote and wingmate
+   behaviour; the cards switch the hero. **Artifacts:** the "Undiscovered" slot.
+8. **Unlock:** the unlock button / spend-crystals popup still work as before on a locked vessel.

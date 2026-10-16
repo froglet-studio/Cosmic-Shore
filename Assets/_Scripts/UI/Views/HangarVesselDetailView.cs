@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using Reflex.Attributes;
@@ -11,8 +10,10 @@ using CosmicShore.Utility;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The selected vessel in the Hangar (style-B menu redesign, item 2): the centre zone (preview,
-    /// name, description, unlock button), the ability column and the spend-crystals popup.
+    /// The selected vessel in the Hangar (style-B menu redesign, item 2; rev 3 2026-10-16): the centre zone
+    /// (the 3D vessel on its turntable, name, description, the "how it plays" sliders, unlock button), the
+    /// five-tab panel on the right (Abilities, Upgrades, Games, Pilots, Artifacts) and the spend-crystals
+    /// popup. It hands the selected vessel to the stage, the sliders and every tab page.
     ///
     /// Everything is always on screen except the popup and whichever unlock button does not apply;
     /// those are shown and hidden through CanvasGroups, never SetActive. Unlock flow: the unlock
@@ -28,10 +29,13 @@ namespace CosmicShore.UI
         [SerializeField] private TMP_Text vesselNameText;
         [Tooltip("SO_Vessel.Description (Body).")]
         [SerializeField] private TMP_Text vesselDescriptionText;
-        [Tooltip("The hangar preview (SO_Vessel.PreviewImage), cover-fitted inside the hero frame.")]
-        [SerializeField] private KitCoverImage preview;
-        [SerializeField] private CanvasGroup previewGroup;
-        [Tooltip("Shown instead of the preview when a vessel has none: its icon, centred.")]
+        [Tooltip("The 3D vessel on its turntable (rev 3).")]
+        [SerializeField] private HangarVesselStage stage;
+        [Tooltip("The five-tab panel on the right (rev 3).")]
+        [SerializeField] private HangarTabsView tabs;
+        [Tooltip("The old Hangar's three 'how it plays' sliders (rev 3).")]
+        [SerializeField] private HangarVibeView vibe;
+        [Tooltip("Shown instead of the 3D model when a vessel has none to build: its icon, centred.")]
         [SerializeField] private Image fallbackIcon;
         [SerializeField] private CanvasGroup fallbackGroup;
         [Tooltip("The fallback icon's opacity while the vessel is locked.")]
@@ -44,14 +48,6 @@ namespace CosmicShore.UI
         [SerializeField] private KitThemedGraphic chipLock;
         [Tooltip("The chip's padlock leaves the layout while the vessel is owned.")]
         [SerializeField] private LayoutElement chipLockLayout;
-
-        [Header("Abilities")]
-        [SerializeField] private RectTransform abilityList;
-        [Tooltip("One row per ability (HangarAbilityRow.prefab).")]
-        [SerializeField] private HangarAbilityRow abilityRowPrefab;
-        [SerializeField] private KitText abilityCountText;
-        [SerializeField] private TMP_Text noAbilitiesText;
-        [SerializeField] private CanvasGroup noAbilitiesGroup;
 
         [Header("Unlock")]
         [Tooltip("Purchase variant, or CTA when the price is zero.")]
@@ -79,8 +75,20 @@ namespace CosmicShore.UI
         [SerializeField] private KitText confirmLabel;
         [SerializeField] private KitButton cancelButton;
 
+        [Header("Words")]
+        [SerializeField] private string lockedWord = "Locked";
+        [SerializeField] private string ownedWord = "Owned";
+        [Tooltip("The unlock button; {cost} is filled in.")]
+        [SerializeField] private string unlockTemplate = "UNLOCK - {cost}";
+        [SerializeField] private string unlockFreeWord = "UNLOCK - FREE";
+        [Tooltip("The popup's title; {cost} and {vessel} are filled in.")]
+        [SerializeField] private string spendTemplate = "{cost} to unlock {vessel}";
+        [Tooltip("The popup's confirm button; {cost} is filled in.")]
+        [SerializeField] private string confirmTemplate = "CONFIRM - {cost}";
+        [Tooltip("The shortfall line; {amount} is filled in.")]
+        [SerializeField] private string shortfallTemplate = "You need {amount} more crystals.";
+
         SO_Vessel _currentShip;
-        readonly List<HangarAbilityRow> _rows = new();
 
         public SO_Vessel CurrentShip => _currentShip;
 
@@ -139,51 +147,14 @@ namespace CosmicShore.UI
             if (vesselDescriptionText)
                 vesselDescriptionText.text = ship.Description;
 
-            bool hasPreview = ship.PreviewImage;
-            if (preview && hasPreview) preview.SetSprite(ship.PreviewImage);
+            if (stage) stage.SetVessel(ship);
             if (fallbackIcon) fallbackIcon.sprite = ship.IconActive;
-            SetShown(previewGroup, hasPreview);
-            SetShown(fallbackGroup, !hasPreview);
-
-            PopulateAbilities(ship);
+            SetShown(fallbackGroup, !stage || !stage.HasModel);
+            if (vibe) vibe.SetVessel(ship);
+            if (tabs) tabs.SetVessel(ship, stage);
 
             SetShown(unlockPanel, false);
             RefreshLockState();
-        }
-
-        void PopulateAbilities(SO_Vessel ship)
-        {
-            _rows.Clear();
-            if (abilityList)
-            {
-                for (int i = abilityList.childCount - 1; i >= 0; i--)
-                {
-                    // Destroy lands at the end of the frame; deactivate so the old rows leave the
-                    // column's layout now instead of stretching it for a frame.
-                    var old = abilityList.GetChild(i).gameObject;
-                    old.SetActive(false);
-                    Destroy(old);
-                }
-            }
-
-            int count = ship.Abilities?.Count ?? 0;
-            if (abilityList && abilityRowPrefab)
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    var row = Instantiate(abilityRowPrefab, abilityList);
-                    row.name = $"Ability_{i + 1}";
-                    row.Bind(ship.Abilities[i], i == count - 1);
-                    _rows.Add(row);
-                }
-            }
-
-            if (abilityCountText)
-                abilityCountText.SetText(count > 0 ? count.ToString() : string.Empty);
-
-            if (noAbilitiesText)
-                noAbilitiesText.text = $"No abilities are listed for the {ship.Name} yet.";
-            SetShown(noAbilitiesGroup, count == 0);
         }
 
         void RefreshLockState()
@@ -195,7 +166,7 @@ namespace CosmicShore.UI
 
             if (chipLabel)
             {
-                chipLabel.SetText(isLocked ? "Locked" : "Owned");
+                chipLabel.SetText(isLocked ? lockedWord : ownedWord);
                 chipLabel.SetColorToken(isLocked ? UIColorToken.Purchase : UIColorToken.TextLight);
             }
             if (chipBorder) chipBorder.SetToken(isLocked ? UIColorToken.Purchase : UIColorToken.SurfaceLight);
@@ -215,7 +186,7 @@ namespace CosmicShore.UI
             }
 
             if (unlockLabel)
-                unlockLabel.SetText(cost > 0 ? $"UNLOCK - {cost}" : "UNLOCK - FREE");
+                unlockLabel.SetText(cost > 0 ? unlockTemplate.Replace("{cost}", cost.ToString()) : unlockFreeWord);
         }
 
         #region Unlock Confirmation Panel
@@ -239,15 +210,15 @@ namespace CosmicShore.UI
             RefreshCrystalAmount(balance);
 
             if (spendCrystalsDetailText)
-                spendCrystalsDetailText.text = $"{cost} to unlock {_currentShip.Name}";
+                spendCrystalsDetailText.text = spendTemplate.Replace("{cost}", cost.ToString()).Replace("{vessel}", _currentShip.Name);
 
             if (confirmLabel)
-                confirmLabel.SetText($"CONFIRM - {cost}");
+                confirmLabel.SetText(confirmTemplate.Replace("{cost}", cost.ToString()));
             if (confirmButton)
                 confirmButton.interactable = canAfford;
 
             if (shortfallText && !canAfford)
-                shortfallText.SetText($"You need {cost - balance} more crystals.");
+                shortfallText.SetText(shortfallTemplate.Replace("{amount}", (cost - balance).ToString()));
             SetShown(shortfallGroup, !canAfford);
             if (shortfallLayout) shortfallLayout.ignoreLayout = canAfford;
 

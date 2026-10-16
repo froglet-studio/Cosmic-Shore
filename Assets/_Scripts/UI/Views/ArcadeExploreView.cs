@@ -721,6 +721,9 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>True when this window's roster lists <paramref name="game"/> (the Hangar's Games tab asks).</summary>
+        public bool Offers(SO_ArcadeGame game) => game && Roster && Roster.Games != null && Roster.Games.Contains(game);
+
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
             // The press itself, stated. Everything ReportCardPressability can measure is about the

@@ -1774,3 +1774,33 @@ Mockups: the **Rev 3** page of the canvas (approved 2026-10-16). Built in this o
 
 Next (rev 3): the Arcade / Arena layouts that use the room the panel gave back, then the Hangar (5 tabs, 3D
 turntable), then the lava-lamp in-game HUD (approved), then Configure.
+
+## 31. Rev 3: the Hangar (built 2026-10-16, awaiting in-editor approval)
+
+Boards: the canvas's Rev 3 page (`R3HangarAbilities` / `Upgrades` / `UpgradesMass` / `Games` / `Pilots` / `Artifacts` /
+`TabSwap`). Generator: `author_menu_hangar.py` (HangarView.prefab).
+
+- **Centre:** the selected vessel as a live 3D model on a turntable (`HangarVesselStage`): harvested off the prefab
+  asset by `VesselModelBuilder.TryBuildLive` (no gameplay component wakes), its blend-shape meshes re-skinned so the
+  element morphs stay live, rendered on demand into a RawImage by a hand-stepped off-screen camera with the game's
+  post-processing. Drag or the right stick turns it; it idles round on its own. Under it, the old Hangar's three
+  "how it plays" sliders (`HangarVibeView`, `SO_Vessel.gameplayParameter1..3`, the original rail / thumb art).
+- **Right:** five tabs with an animated swap (`HangarTabsView`: underline glide, slide + skew, scan line; LB / RB):
+  - **Abilities** (`HangarAbilitiesPage`): each element's ability (ElementalAbilityMap name / first sentence, the
+    vessel's own HUD icon), the control written for the player's device (ControlGlyphSet via InputHintBindingMap -
+    the HUD's own path), and pressing that control or tapping the row makes the 3D model PERFORM in the element's
+    colour (a lunge, a roll, a coloured burst of light).
+  - **Upgrades** (`HangarUpgradesPage`): opens in the default form; a row press steps that element's preview
+    0 -> 3 -> 5 -> 10 and morphs the hull; shows each element's ability and L5 upgrade.
+  - **Games** (`HangarGamesPage`): the games that list this vessel (Arcade + Arena lists), art tiles, vessel-only
+    first; a press opens that game's configure window (`ScreenSwitcher.OpenGame`).
+  - **Pilots** (`HangarPilotsPage`): the old Captains back as pilots - portrait, name, "The Space Sparrow", quote,
+    best at, how they fly as a wingmate - with four cards to pick. Read-only (levels / purchase died with PlayFab).
+  - **Artifacts**: an authored empty slot - no artifact data exists in the game yet.
+- Retired: the ability column's `HangarAbilityRow` prefab and script; HangarVesselDetailView's words are authored.
+
+**Not done, and why.** "Pressing RT makes the Sparrow FIRE" is a stand-in move (lunge / roll / coloured light), not the
+ability's real effect: the real thing needs the vessel alive in a world, i.e. the mode-preview session
+(`ModePreviewSession` + a Barren-cell definition) - next step. Upgrades are a preview, not a purchase (no saved
+per-vessel element level exists). Pilots cannot be chosen until the Pilots system (PilotSO, branch
+`claude/modest-sagan-0ybcgo`) lands.

@@ -1467,6 +1467,26 @@ namespace CosmicShore.UI
             else CSDebug.LogWarning("[ScreenSwitcher] The Arcade window has no ArcadeExploreView - the weekly challenge cannot open.");
         }
 
+        /// <summary>
+        /// Opens <paramref name="game"/>'s configure window from anywhere in the menu (rev 3: the Hangar's
+        /// Games tab). The window is the one whose roster lists the game - the Arcade's or the Arena's -
+        /// so the configure opens over the same browser it would from that window's own card.
+        /// </summary>
+        public bool OpenGame(SO_ArcadeGame game)
+        {
+            if (!game || WebToybox.IsBuild) return false;
+            foreach (var explore in FindObjectsByType<ArcadeExploreView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (!explore.Offers(game)) continue;
+                var window = explore.GetComponentInParent<ModalWindowManager>(true);
+                if (window) window.ModalWindowIn();
+                explore.SelectGame(game);
+                return true;
+            }
+            CSDebug.LogWarning($"[ScreenSwitcher] No game window lists {game.DisplayName} - its configure cannot open.");
+            return false;
+        }
+
         private void OpenArcadePanel()
         {
             // The gamepad's A on HOME and the arcade nav both land here; the browser Toybox has no
