@@ -269,7 +269,21 @@ def measure(f):
         "meanSpeed": statistics.mean(r["speed"] for r in rows) if rows else 0.0,
         "meanBoost": statistics.mean(r["boost"] for r in rows) if rows else 0.0,
         "lateralMedian": pct([r["lateral"] for r in skim], 0.5),
+        "reactionLag": reaction_lag(f),
     }
+
+
+def reaction_lag(f):
+    """How late the pilot answers the ring (SITUATION_RECORDING_PLAN.md §7 V4), measured by situation_features.py: from
+    the screen when the flight recorded the camera, else from the hull's frame. Reported, never applied to the AI here."""
+    try:
+        import situation_features as sf
+        C = sf.course_from(sf.load_course_js(), int(f.get("intensity") or 1))
+        if not C or not f.get("columns"):
+            return None
+        return sf.analyze(f, C)["lag"]
+    except Exception as e:   # the rail learner must not fail on the situation reader
+        return {"error": f"{type(e).__name__}: {e}"}
 
 
 # ---------------------------------------------------------------- from measurements to the policy
@@ -330,17 +344,23 @@ def learn(ms, base):
 
 
 def report(ms, notes, used, why_used):
-    lines = ["| Race | Finished | Time (s) | Rings | Skimming | Contact | Height above rail | Closest 10% gap | Look-ahead | Turns/s |",
-             "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    lines = ["| Race | Finished | Time (s) | Rings | Skimming | Contact | Height above rail | Closest 10% gap | Look-ahead | Turns/s | Reaction lag |",
+             "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for m in ms:
         lines.append(f"| {m['name']} | {'yes' if m['finished'] else 'no'} | {m['raceSeconds'] or 0:.1f} | {m['rings']}/{m['target']} | "
                      f"{m['skimShare']:.0%} | {m['contactShare']:.1%} | {fmt(m['lineHeight'])} | {fmt(m['gapP10'])} | "
-                     f"{fmt(m['lookSeconds'], 's')} | {m['turnsPerSecond']:.2f} |")
+                     f"{fmt(m['lookSeconds'], 's')} | {m['turnsPerSecond']:.2f} | {fmt_lag(m.get('reactionLag'))} |")
     lines += ["", f"Learned from {why_used}: {', '.join(m['name'] for m in used)}.", "",
               "| Setting | Was | Learned | Why |", "|---|---:|---:|---|"]
     for key, was, new, why in notes:
         lines.append(f"| `{key}` | {fmt(was)} | **{fmt(new)}** | {why} |")
     return "\n".join(lines)
+
+
+def fmt_lag(g):
+    if not g or "lag" not in g:
+        return "-"
+    return f"{g['lag']} s ({g['source']})"
 
 
 def fmt(v, unit=""):

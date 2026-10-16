@@ -352,9 +352,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
 
-### T-20261015-7392 · open · dev · AI training
+### T-20261015-7392 · done · dev · AI training
 - **Task:** Add the pilot's VIEW to the situation recording: record the camera pose/FOV each sample (V1), compute on-screen / occluded / time-to-contact view features and a coarse view grid (V2), gate the target and skipped-skim labels on what was visible (V3), measure the per-pilot reaction lag (V4)
 - **Done when:** flight/3 (or /4) carries the camera; situation_features --self-test passes with the view group; the skim rule is fit only on skims the pilot could see; learn_from_flights reports a measured lag
 - **Who can take it:** Yash (his AI-training session); Garrett for V4's handicap numbers
 - **Added:** 2026-10-15 by Caleb (`claude/friendly-faraday-qropbs`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7
+- **Done:** 2026-10-16, V1-V4 built on Ys-bleeding-edge 2026-10-16 (Yash's session): camera in flight/3, view group + grid, labels gated on what was seen, measured reaction lag reported by both learners; situation_features --self-test covers each with a negative control. Editor check is T-20261015-0576 (checklist step 2b); V5 not started.
+
+### T-20261016-f695 · open · decision · AI training
+- **Task:** Once 3+ hand-flown Regatta editor flights with the camera exist, compare the measured reaction lag (situation_features.py report / learned_situations.json reactionLag) with SkimRaceDifficultySO's Easy/Medium/Hard ReactionSeconds (0.5 / 0.25 / ...) and decide whether any should change
+- **Done when:** A decision is recorded in Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 (keep, or new numbers)
+- **Who can take it:** Garrett (handicap owner)
+- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §7 Status

@@ -96,9 +96,10 @@ namespace CosmicShore.Gameplay
             public int State;                    // State* bits
             public float LvC, LvM, LvS, LvT;     // element levels, 0..1 (charge, mass, space, time)
             public bool Held;                    // the AI held the hull (the You / AI toggle)
-            public Vector3 CamPos, CamFwd;
-            public float Fov;
+            public Vector3 CamPos, CamFwd, CamUp;    // forward + up = the camera's full rotation
+            public float Fov, Aspect;            // vertical field of view (degrees), width / height
             public int CamMode;                  // CameraSettingsSO.mode of the active player camera, -1 if none
+            public bool RearView;                // look-behind (CustomCameraController.RearView)
             public int CrystalStart, CrystalCount;   // into _crystals: x, y, z, element per crystal
         }
 
@@ -264,7 +265,7 @@ namespace CosmicShore.Gameplay
             int state = (status.IsBoosting ? StateBoosting : 0) | (status.IsChargedBoostDischarging ? StateDischarging : 0)
                         | (status.IsDrifting ? StateDrifting : 0) | (status.IsSlowed ? StateSlowed : 0)
                         | (status.IsAttached ? StateAttached : 0) | (status.IsStationary ? StateStationary : 0);
-            ReadCamera(out Vector3 camPos, out Vector3 camFwd, out float fov, out int camMode);
+            ReadCamera(out Vector3 camPos, out Vector3 camFwd, out Vector3 camUp, out float fov, out float aspect, out int camMode, out bool rearView);
 
             _samples.Add(new Sample
             {
@@ -282,7 +283,7 @@ namespace CosmicShore.Gameplay
                 // The AI holding this hull (the Third Eye's You / AI toggle) is not the human's flight: kept, marked,
                 // and skipped by every learner (situation_features.py, situation.js, learn_from_flights.py).
                 Held = PilotControl.IsHeldByAI(_player),
-                CamPos = camPos, CamFwd = camFwd, Fov = fov, CamMode = camMode,
+                CamPos = camPos, CamFwd = camFwd, CamUp = camUp, Fov = fov, Aspect = aspect, CamMode = camMode, RearView = rearView,
                 CrystalStart = crystalStart, CrystalCount = (_crystals.Count - crystalStart) / 4,
             });
         }
@@ -294,21 +295,29 @@ namespace CosmicShore.Gameplay
             catch (Exception) { return 0f; }
         }
 
-        /// <summary>The camera the pilot was looking through (Caleb's V1: learn from the pilot's VIEW).</summary>
-        static void ReadCamera(out Vector3 pos, out Vector3 fwd, out float fov, out int mode)
+        /// <summary>The camera the pilot was looking through (Caleb's V1: learn from the pilot's VIEW): its pose, vertical
+        /// field of view, aspect, mode and look-behind, so <c>situation_features.py</c> can redraw the screen offline.
+        /// <see cref="CameraManager.ViewCamera"/> resolves once a frame; nothing here searches or allocates.</summary>
+        static void ReadCamera(out Vector3 pos, out Vector3 fwd, out Vector3 up, out float fov, out float aspect, out int mode, out bool rearView)
         {
-            pos = fwd = Vector3.zero;
-            fov = 0f;
+            pos = fwd = up = Vector3.zero;
+            fov = aspect = 0f;
             mode = -1;
+            rearView = false;
             var cam = CameraManager.ViewCamera;
             if (!cam) return;
             var tr = cam.transform;
             pos = tr.position;
             fwd = tr.forward;
+            up = tr.up;
             fov = cam.fieldOfView;
+            aspect = cam.aspect;
             var manager = CameraManager.Instance;
-            if (manager && manager.GetActiveController() is CustomCameraController controller && controller && controller.CurrentSettings)
-                mode = (int)controller.CurrentSettings.mode;
+            if (manager && manager.GetActiveController() is CustomCameraController controller && controller)
+            {
+                rearView = controller.RearView;
+                if (controller.CurrentSettings) mode = (int)controller.CurrentSettings.mode;
+            }
         }
 
         /// <summary>The nearest <see cref="MaxCrystals"/> crystals to the pilot: position and element.</summary>
@@ -551,6 +560,7 @@ namespace CosmicShore.Gameplay
             sb.Append("\"referenceShellHeight\":").Append(F(SkimRaceCourse.ReferenceShellHeight, "0.###")).Append(',');
             sb.Append("\"shellHalf\":[").Append(F(shellHalf.x)).Append(',').Append(F(shellHalf.y)).Append(',').Append(F(shellHalf.z)).Append("],");
             sb.Append("\"laneError\":\"").Append(haveLane ? "" : Esc(_railWhy)).Append("\",\n");
+            sb.Append("\"camera\":\"camx..camfz: position and forward, camux..camuz: up, fov: vertical degrees, camAspect: width / height, camRear: look-behind\",\n");
             sb.Append("\"stateBits\":{\"boosting\":").Append(StateBoosting).Append(",\"discharging\":").Append(StateDischarging)
               .Append(",\"drifting\":").Append(StateDrifting).Append(",\"slowed\":").Append(StateSlowed)
               .Append(",\"attached\":").Append(StateAttached).Append(",\"stationary\":").Append(StateStationary).Append("},");
@@ -643,7 +653,7 @@ namespace CosmicShore.Gameplay
 
             sb.Append("\"columns\":[\"t\",\"x\",\"y\",\"z\",\"fx\",\"fy\",\"fz\",\"ux\",\"uy\",\"uz\",\"speed\",\"boost\",\"xSum\",\"ySum\",\"xDiff\",\"yDiff\",\"throttle\",\"rings\",\"lt\",\"rt\",\"cx\",\"cy\",\"cz\","
                     + "\"vx\",\"vy\",\"vz\",\"pitchRate\",\"yawRate\",\"rollRate\",\"charge\",\"state\",\"lvC\",\"lvM\",\"lvS\",\"lvT\",\"held\","
-                    + "\"camx\",\"camy\",\"camz\",\"camfx\",\"camfy\",\"camfz\",\"fov\",\"camMode\"],\n");
+                    + "\"camx\",\"camy\",\"camz\",\"camfx\",\"camfy\",\"camfz\",\"fov\",\"camMode\",\"camux\",\"camuy\",\"camuz\",\"camAspect\",\"camRear\"],\n");
             sb.Append("\"samples\":[\n");
             for (int i = 0; i < _samples.Count; i++)
             {
@@ -666,7 +676,9 @@ namespace CosmicShore.Gameplay
                   .Append(m.Held ? '1' : '0').Append(',')
                   .Append(F(m.CamPos.x)).Append(',').Append(F(m.CamPos.y)).Append(',').Append(F(m.CamPos.z)).Append(',')
                   .Append(F(m.CamFwd.x, "0.###")).Append(',').Append(F(m.CamFwd.y, "0.###")).Append(',').Append(F(m.CamFwd.z, "0.###")).Append(',')
-                  .Append(F(m.Fov, "0.#")).Append(',').Append(m.CamMode).Append(']');
+                  .Append(F(m.Fov, "0.#")).Append(',').Append(m.CamMode).Append(',')
+                  .Append(F(m.CamUp.x, "0.###")).Append(',').Append(F(m.CamUp.y, "0.###")).Append(',').Append(F(m.CamUp.z, "0.###")).Append(',')
+                  .Append(F(m.Aspect, "0.###")).Append(',').Append(m.RearView ? '1' : '0').Append(']');
             }
             sb.Append("\n]\n}\n");
             if (regatta && !haveLane)
