@@ -72,7 +72,7 @@ RANGES = {
     "alignDegrees": (0.0, 90.0), "releaseAlignDegrees": (0.0, 120.0), "stickBand": (0.0, 1.0),
     "releaseStickBand": (0.0, 1.0), "engageRunwaySeconds": (0.0, 6.0), "releaseRunwaySeconds": (0.0, 6.0),
     "steeringShareOfPlateau": (0.1, 1.0), "minHoldSeconds": (0.0, 5.0), "minRestSeconds": (0.0, 5.0),
-    "minRearmSeconds": (0.0, 5.0), "spendAtCharge01": (0.05, 1.0),
+    "minRearmSeconds": (0.0, 5.0), "spendAtCharge01": (0.05, 1.0), "cornerSpeed": (100.0, 1200.0),
     "BoostStickBand": (0.0, 1.0), "YastriStickBand": (0.0, 1.0),
     # the Stoat's autopilot (StoatModeActionSO, StoatDipoleConfigSO, StoatSlingConfigSO)
     "autopilotTimeModeDegrees": (0.0, 180.0), "autopilotModeIntervalSeconds": (0.5, 20.0),
@@ -149,7 +149,7 @@ def samples_of(f):
             "nose": angle(fwd, to), "dist": dist, "fwd": fwd, "trig": max(g("lt"), g("rt")), "tm": int(g("timeMode", -1)),
             "t": g("t"), "angle": angle(course, to), "stick": max(abs(g("xSum")), abs(g("ySum"))),
             "steer": abs(g("xSum")) + abs(g("ySum")) + abs(g("yDiff")), "yaw": g("xSum"),
-            "runway": dist / max(speed, 1.0), "speed": speed, "state": int(g("state")), "held": g("held") > 0.5,
+            "runway": dist / max(speed, 1.0), "speed": speed, "ring": int(g("rings")), "state": int(g("state")), "held": g("held") > 0.5,
             "lt": g("lt"), "rt": g("rt"), "meter": (min(1.0, max(0.0, g(meter, -1.0))) if meter and g(meter, -1.0) >= 0 else None),
         })
     return out
@@ -193,6 +193,11 @@ def measure_policy(S, bit, held=False):
     meters = [s["meter"] for s in eng if s["meter"] is not None]
     m["spendAtCharge01"] = statistics.median(meters) if len(meters) >= MIN_EPISODES // 2 else None
     return m
+
+
+def ring_passage_speeds(S, held=False):
+    """The speed at each ring a pilot threaded (the sample where the ring count goes up) - the Rhino's corner speed."""
+    return [b["speed"] for a, b in zip(S, S[1:]) if b["ring"] > a["ring"] and b["held"] == held]
 
 
 def measure_stoat(S, held=False):
@@ -341,7 +346,14 @@ def learn_hull(hull, flights):
         keys = ["alignDegrees", "stickBand", "engageRunwaySeconds"]
         if hull == "Rhino":
             keys += ["releaseAlignDegrees", "releaseStickBand", "releaseRunwaySeconds", "steeringShareOfPlateau",
-                     "minHoldSeconds", "minRestSeconds", "minRearmSeconds"]
+                     "minHoldSeconds", "minRestSeconds", "minRearmSeconds", "cornerSpeed"]
+            # The speed people thread a ring at: the drive brakes on the ramp to it (RampBoostAIPolicySO).
+            passes = [v for _, S in used for v in ring_passage_speeds(S)]
+            if len(passes) >= MIN_EPISODES:
+                person["cornerSpeed"] = statistics.median(passes)
+            ai_passes = ring_passage_speeds(every, held=True)
+            if len(ai_passes) >= MIN_EPISODES:
+                ai["cornerSpeed"] = statistics.median(ai_passes)
         if hull == "Dolphin":
             keys += ["spendAtCharge01"]   # a discharge ends itself when the bank is spent: its release is not a choice
         for k in keys:
@@ -552,6 +564,7 @@ def self_test():
     rh = learned("Rhino", "policy")["learned"]
     assert rh and rh["alignDegrees"] <= 10.5 and rh["stickBand"] <= 0.31 and rh["engageRunwaySeconds"] >= 1.15, rh
     assert rh["releaseAlignDegrees"] >= rh["alignDegrees"] and rh["releaseRunwaySeconds"] <= rh["engageRunwaySeconds"], rh
+    assert abs(rh["cornerSpeed"] - 200.0) < 1e-6, ("the synthetic pilot threads every ring at 200 u/s", rh)
     ctrl = learned("Rhino", "random")["learned"]
     assert ctrl["alignDegrees"] > rh["alignDegrees"] + 5, ("negative control: a pilot ignoring the rule must not look lined up", ctrl)
     do = learned("Dolphin", "policy")["learned"]

@@ -84,6 +84,12 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
 phase, ring, lap and boost decision to the Third Eye (`AIPilot.Objective`, `AIBoostDriver.Status`), with trails.
 The Rhino now has a drive (`RampBoostAIPolicySO`, step 4's first cut). Nothing has been timed yet.
 
+**2026-10-17: step 4's drive.** The Rhino brakes ON the ramp (its 300 u/s² bleed, not the 120 u/s² coast) to a corner
+speed sized by the corner after the objective (a new `AIPilot.SetNextLegProvider`, filled by `GateRaceController`), and
+presses the ramp only where the leg pays the wind-up back (`AI/AI_BOOST.md`, the Rhino ramp section). In the offline model
+(`Tools/Build/rhino_drive_sim.py`) it finished I1 43.0 s (old 48.2), I2 56.1 s (old 55.4), I3 56.3 s (old: stalled). Not
+editor-verified; `cornerSpeed` is learned from Yash's Rhino flights when they arrive.
+
 **2026-10-17: the Regatta AIs learn from people's editor flights.** The Squirrel's skim line came from 29 flights
 (`SITUATION_RECORDING_PLAN.md` §8); the Rhino, Dolphin and Manta drives learn the same way through Regatta-only variants
 (`learn_drives_from_flights.py`, §9), waiting on flights of those hulls. The Stoat joined the card on 2026-10-17 and learns the same way.

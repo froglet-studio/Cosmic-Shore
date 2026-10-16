@@ -80,16 +80,49 @@ have handed over, so the hull flies exactly as before. Shipped lists:
 - The Dolphin still discharges whatever is banked when the commit loop's own overshoot release
   fires at a turn; the policy only moves the FULL-meter spend onto straights.
 
-## Ramp (the Rhino) — `RampBoostAIPolicySO`, 2026-10-14
+## Ramp (the Rhino) — `RampBoostAIPolicySO`, 2026-10-14, rebuilt 2026-10-17
 
-On a straight at the objective with runway (`IsStraight` + `HasRunway`), the driver presses the ramp
-(`RampBoostActionSO.StartAction` → `RampBoostActionExecutor.Begin`), then holds the throttle full
-(`HoldsFullThrottle`) and keeps the pilot's total steering inside the ramp's full-power plateau
-(`RotationLimit` = 0.9 × `StraightLineGesture.EngageThreshold`, applied by `AIPilot.LimitRotation`, which scales
-the three axes together so it still steers at the ring). Before the turn (`TurnAhead`) or off the line
-(`!StillStraight`) it lets go; the AI steers normally again and the executor ends the ramp itself once the pilot's
-deviation passes the grace band, coasting down at `returnPerSecond`. Asset: `AI Boost Policies/RhinoAIBoostPolicy`,
-wired on `Rhino.prefab`'s `AIPilot`. Not editor-verified.
+Three states, ticked from `AIPilot.TickBoostPolicy`:
+
+- **Ramp.** On a straight at the objective (`IsStraight` + `HasRunway`) whose leg PAYS THE WIND-UP BACK, the driver
+  presses the ramp (`RampBoostActionSO.StartAction` → `RampBoostActionExecutor.Begin`), holds the throttle full
+  (`HoldsFullThrottle`) and keeps the total steering inside the ramp's full-power plateau (`RotationLimit` = 0.9 ×
+  `StraightLineGesture.EngageThreshold`; `AIPilot.LimitRotation` scales the three axes together). "Pays back":
+  `PeakSpeed` (climb at `accelerationPerSecond`, brake back to the corner speed at `bleedPerSecond`, inside the leg)
+  beats the current speed by `minSpeedGain`.
+- **Brake.** From the point where the ramp's bleed only just reaches the corner speed by the objective (`BrakePoint`:
+  `BrakeDistance` + `brakeMarginUnits` + `brakeLeadSeconds` of travel), or off the line (`!StillStraight`), or inside
+  `releaseRunwaySeconds` (`TurnAhead`), the driver stays ON the ramp and lifts the throttle (`AIBoostDriver.Throttle`).
+  The graded ramp then tracks down at `bleedPerSecond` (300 u/s²), 2.5× faster than the coast a released ramp falls back
+  at (`returnPerSecond`, 120 u/s²). The lift is a governor read off `VesselTransformer.CurrentThrottleTarget` (never a
+  copy of the throttle formula): down while the ramp tracks above the corner speed, up while under it. Steering plus
+  lift stays under `graceShare` of the grace band, so braking never lets the ramp fall off, and the lift never takes
+  the last `brakeSteerFloor` of steering.
+- **Off.** At the corner itself (course `cornerReleaseDegrees` off the objective, speed down to the corner speed) it
+  ends the ramp explicitly (`RampBoostActionExecutor.End`: a graded ramp's own release is the top of its slope, not
+  an end) and steers freely; the next straight that pays back presses it again.
+
+**The corner speed** is `cornerSpeed` for a 90° corner, scaled by 1/tan(θ/2) for a turn of θ (a turn at radius R needs
+a lead of R·tan(θ/2)), floored at `minCornerSpeed`. θ is `AIBoostContext.CornerDegrees`: the angle between the leg into
+the objective and the leg after it, from the mode's `AIPilot.SetNextLegProvider` (the gate races give the mouth after the
+approach point, then the next ring after the mouth). A mode that does not say gets a 90° corner. In Regatta,
+`learn_drives_from_flights.py` learns `cornerSpeed` from people's flights (their median speed at each ring they thread).
+
+**The first cut's defect** (2026-10-14 to 10-17): it let go 0.5 s from every objective, after which the released ramp
+coasted down from 840 u/s at 120 u/s² and the Rhino overshot mouths (`REGATTA_AI_ROADMAP.md`: 67.9 s at I1 in the
+deleted page's model). It also never re-armed a ramp the grading let fall off. The re-arm (`minRearmSeconds`) and the
+explicit end are taken from the other cut of this driver on `cece/relaxed-hopper-r62hbd` (Garrett's Rhino branch, not
+merged), which this file will conflict with when that branch lands: keep this one's states and that one's executor
+changes (`TrackedSpeed`, live Time).
+
+**Offline check** (`Tools/Build/rhino_drive_sim.py`, a point-mass model of the ramp executor and the gate steering on
+the Regatta courses; a model, not the game): the old driver finished I1 in 48.2 s and I2 in 55.4 s and stalled on I3;
+the new one finished I1 in 43.0 s, I2 in 56.1 s and I3 in 56.3 s at the sweep's best `cornerSpeed` (600). I4 stalls both
+in the model (it has no break-off), so I4 is the editor's to measure. `--sweep` re-runs the parameter grid.
+
+Asset: `AI Boost Policies/RhinoAIBoostPolicy`, wired on `Rhino.prefab`'s `AIPilot`; a Regatta variant
+(`Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta`) appears once flights are learned. Tests:
+`RhinoRampDriveTests`. Not editor-verified.
 
 The same audit added two hooks every driver can use (`AIBoostDriver.HoldsFullThrottle`, `RotationLimit`), a
 `Status` string for the Third Eye, and to the Dolphin's `ChargeBoost` driver a nose check: it spends only with the

@@ -271,9 +271,22 @@ namespace CosmicShore.Gameplay
         public void ClearExternalTargetProvider()
         {
             _externalTargetProvider = null;
+            _nextLegProvider = null;
             _objective = default;
             _throttleFloor = 0f;
         }
+
+        // Where the mode sends the pilot AFTER its current steering target, or null when it does not know.
+        Func<Vector3?> _nextLegProvider;
+
+        /// <summary>
+        /// Where the pilot flies AFTER the point <see cref="SetExternalTargetProvider"/> gives (the gate races: the
+        /// mouth after the approach point, the next ring after the mouth), or null when the mode does not know. Read only
+        /// by the boost driver, as <see cref="AIBoostContext.CornerDegrees"/>: how sharp the coming corner is, so a ramp
+        /// brakes as much as that corner needs (REGATTA_AI_ROADMAP.md: the one fact a Rhino lacked). Cleared with
+        /// <see cref="ClearExternalTargetProvider"/> and carried by <see cref="TakeModeHooksFrom"/>.
+        /// </summary>
+        public void SetNextLegProvider(Func<Vector3?> provider) => _nextLegProvider = provider;
 
         // The least throttle a mode asks for (a race: full). The skill throttle still applies above it.
         float _throttleFloor;
@@ -393,6 +406,8 @@ namespace CosmicShore.Gameplay
             _driftLookTargetProvider = source._driftLookTargetProvider;
             _belief = source._belief;
             _throttleFloor = source._throttleFloor;
+            _nextLegProvider = source._nextLegProvider;
+            source._nextLegProvider = null;
             source._externalTargetProvider = null;
             source._driftLookTargetProvider = null;
             source._belief = null;
@@ -1011,6 +1026,8 @@ namespace CosmicShore.Gameplay
             if (_boostActive && !VesselStatus.IsSingleStickControls)
             {
                 if (_boostDriver.HoldsFullThrottle) _inputStatus.XDiff = 1f;
+                float driverThrottle = _boostDriver.Throttle;
+                if (driverThrottle >= 0f) _inputStatus.XDiff = Mathf.Clamp01(driverThrottle);
                 float rotationLimit = _boostDriver.RotationLimit;
                 if (rotationLimit >= 0f) LimitRotation(rotationLimit);
             }
@@ -1292,9 +1309,11 @@ namespace CosmicShore.Gameplay
         {
             if (!_boostActive) return;
 
+            // The leg after the objective, from the objective (zero when the mode does not say, or while breaking off).
+            Vector3 nextLeg = !_extending && _nextLegProvider?.Invoke() is Vector3 after ? after - _targetPosition : default;
             _boostDriver.Tick(new AIBoostContext(
                 toObjective, HeadingDirection(), transform.forward, VesselStatus.Speed, LastStickDeflection(),
-                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted));
+                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted, nextLeg));
 
             // The drift-charge driver spends the bank by ending the commit drift on a straight -
             // the same release the off-course branch performs, just earlier.

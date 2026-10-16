@@ -433,12 +433,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
-### T-20261016-92b0 · open · decision · Regatta AI
+### T-20261016-92b0 · done · decision · Regatta AI
 - **Task:** cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than bleeding-edge's - pick one before it merges (learn_drives_from_flights.py writes only fields both share, so either works)
 - **Done when:** The choice is recorded in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md and the other branch is reconciled
 - **Who can take it:** Yash with Garrett (Rhino owner sessions)
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+- **Done:** 2026-10-16, Yash 2026-10-17: no decision step; the Ys-bleeding-edge RampBoostAIPolicySO was rebuilt (brake on the ramp, corner speed, payback) and took the re-arm + explicit end from the cece/relaxed-hopper-r62hbd cut. When that branch merges, keep this file's states and that branch's executor changes (AI_BOOST.md).
 
 ### T-20261016-b525 · open · test · Regatta AI
 - **Task:** Fly Regatta I1 as the Stoat, 5+ finished races, storing every one: Mass mode's dipole on the straights, Time mode (B) slings into the hard corners; in one race flip Third Eye > Pilots > AI on your Stoat for a lap and back. Then ask a session to run learn_drives_from_flights.py --write (writes StoatModeAction / StoatDipoleConfig / StoatSlingConfig _Regatta)
@@ -460,3 +461,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Caleb, Yash (offered)
 - **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/PartySystem/BUGS.md B32; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Multiplayer test logs' steps 7-9
+
+### T-20261016-01ec · open · test · Regatta AI
+- **Task:** Run RhinoRampDriveTests and watch an AI Rhino race Regatta I1-I4 in the Third Eye: it should ramp on straights, brake ON the ramp before each ring, and only let go round sharp corners
+- **Done when:** the tests pass and the four times are written into REGATTA_AI_ROADMAP.md's Rhino row
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Rhino AI brakes on the ramp)

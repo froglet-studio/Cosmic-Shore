@@ -90,6 +90,26 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The Rhino AI brakes on the ramp to a corner speed (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `RampBoostAIPolicySO` has three states (Ramp, Brake, Off; `AI/AI_BOOST.md`, the Rhino ramp section).
+Before a corner it stays ON the ramp and lifts the throttle (new `AIBoostDriver.Throttle`), so the ramp bleeds at its
+300 u/s² instead of coasting at 120 u/s², down to a corner speed sized by the corner after the objective (new
+`AIPilot.SetNextLegProvider` + `AIBoostContext.CornerDegrees`, filled by `GateRaceController.ArmRacer`). It presses the ramp
+only where the leg pays the wind-up back, re-arms a ramp the grading dropped, and ends it explicitly. The asset carries
+the new fields at their defaults; `learn_drives_from_flights.py` learns `cornerSpeed` from Rhino flights.
+**Verified without the editor:** `unity_refcompile` (player-dev clean; editor: 0 errors in changed files),
+`RhinoRampDriveTests` written (not run), `learn_drives_from_flights.py --self-test`, `rhino_drive_sim.py` (a model:
+I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
+**Verify in editor:**
+1. Run `RhinoRampDriveTests` (Test Runner, EditMode): all pass.
+2. Arcade ▸ Regatta, an AI Rhino, Third Eye on it: its boost line reads "ramping on the straight", then "braking on
+   the ramp to N u/s" before each ring, with the speed falling fast and the ramp still on (the Rhino's HUD ramp gauge
+   stays lit), then "cruising" round sharp corners only.
+3. It threads rings at ramp speed without circling them; note its I1-I4 times against the roadmap table.
+4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
+   read as a 90° corner).
+
 ### 🔴 The Stoat races Regatta: on the card, its autopilot tunable per mode (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the Stoat is on `ArcadeGameRegatta` (`author_regatta_assets.py`, `--check` OK) with a Time +10 starting row

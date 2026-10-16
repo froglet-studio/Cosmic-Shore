@@ -1044,6 +1044,8 @@ namespace CosmicShore.Gameplay
             Crystal detour = null;
             Vector3 lastSelf = default;
             bool hasLastSelf = false;
+            // Where the pilot flies after the point the provider below returns (the boost driver's corner), or null.
+            Vector3? after = null;
             // Seeded per seat and per race, so each AI errs differently every race.
             var handicap = handicapLevel.IsNone ? null
                 : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
@@ -1052,6 +1054,8 @@ namespace CosmicShore.Gameplay
             {
                 var selfTf = captured.Vessel?.Transform;
                 if (selfTf == null) return centre;
+
+                after = null;
 
                 // Where the pilot was on the previous call, for the missed-mouth test below.
                 Vector3 previousSelf = lastSelf;
@@ -1159,10 +1163,17 @@ namespace CosmicShore.Gameplay
                     misjudged ? AIPilot.ObjectivePhase.Misjudged
                     : approaching ? AIPilot.ObjectivePhase.Approach : AIPilot.ObjectivePhase.Through,
                     gate.Position, ringNo, lap);
-                return approaching
-                    ? ringAt + gate.Axis * (side * approachLead)
-                    : ringAt - gate.Axis * (side * aiThroughDistance);
+                Vector3 throughPoint = ringAt - gate.Axis * (side * aiThroughDistance);
+                if (approaching)
+                {
+                    after = throughPoint;   // the corner at the approach point is the turn onto the mouth's axis
+                    return ringAt + gate.Axis * (side * approachLead);
+                }
+                // The corner past the mouth is the turn toward the next ring.
+                if (index + 1 < RaceLength) after = _course[RingIndexFor(index + 1)].Position;
+                return throughPoint;
             });
+            pilot.SetNextLegProvider(() => after);
 
             // A race flies flat out, and a drifting hull (the Dolphin's charge) points its nose where it is
             // going rather than at the cell centre, so a discharge fires down the line to the ring

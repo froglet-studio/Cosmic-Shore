@@ -23,3 +23,13 @@ MonoBehaviour:
   steeringShareOfPlateau: 0.9
   minHoldSeconds: 0.5
   minRestSeconds: 0.3
+  minRearmSeconds: 0.5
+  minSpeedGain: 150
+  cornerSpeed: 600
+  minCornerSpeed: 160
+  brakeMarginUnits: 120
+  brakeLeadSeconds: 0.25
+  graceShare: 0.9
+  brakeSteerFloor: 0.3
+  throttleSlewPerSecond: 4
+  cornerReleaseDegrees: 50
