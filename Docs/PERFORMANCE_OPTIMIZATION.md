@@ -251,6 +251,7 @@ per-frame `FindObjects*`, no closure per contact) are the gates in §3.4 plus th
 | 10-15 | **Re-checked on the merged tree** (Yash: "go through bleeding-edge and recheck the performance test"): `bleeding-edge` `a2dbc6787` (#1098 carries the lava-lamp fix) and `Ys-bleeding-edge` both fast-forwarded into the performance branch; `perf_hunt.py sweep --write --tasks`: gates all OK, 78 scan findings (unchanged), 0 capture regressions, still no valid baseline (no Release capture has been sent); `perf_hunt.py amoebius`: Skim Race I2 **REGRESSION** against the 10-09 baseline - `VesselImpactor.AcceptImpactee` 3.83 -> 5.58 KB/frame (+46 %), `PoolRefill.FastGrowPrism` 0.53 -> 0.70, a new `PoolRefill.PrismImplosion` 0.12; watch `SkimRace.Driver.TrackMpc` +31 % ms (.NET time). The tree between the two runs is the Regatta Squirrel AI (it now skims its own rail: more hull contacts, more consumed prisms, more refills), so the pool rows are consumption, lever L2; the impactor row is attributed below. | `sweep`, `amoebius` on `a2dbc6787` |
 | 10-15 | **Prism-on-entities audit** (§1.2): every `Prism` is instanced (config on, no exotic-visual caller, device probe the only gate); the GameObject renderers left in the lava lamp are the spindles (SRP-batchable already) and the snow - L1 and L6, unchanged. | read from the tree |
 | 10-15 | **The impactor allocation attributed.** The 14 `RunEffectIsolated(() => e.Execute(..), e)` lambdas (a closure per effect per contact) were removed first (`ReportEffectThrow`, same once-per-effect report) - measured NEUTRAL: 5.58 -> 5.58 KB/frame, so the closure was never the allocator. Nested markers then split `VesselImpactor.AcceptImpactee`: hull-prism contact, SFX, suppress check and every prism effect sum to < 0.1 KB/frame; **`SquirrelVesselExplosionByCrystalEffect` is 6.0 of the 6.2 KB/frame** - one un-pooled `Instantiate` of the AOE ring prefab plus its ring of prisms per omni collect, at 0.01 collects/frame. Lever **L13**, task T-20261015-fafa. The regression against the 10-09 baseline stands (not adopted: a worse number is never the new normal); it is the Regatta Squirrel collecting more crystals, and the pool is the fix. | Amoebius markers run x3 (`amoebius_markers_run.py --no-build`), per-effect nested markers (temporary, not committed) |
+| 10-15 | **Re-run on `Ys-bleeding-edge` `a4651c844`** (Yash: "benchmarks again on Ys-bleeding-edge"). No new Unity capture on any branch (`bugledger/yskha` still holds only the 10-08 Skim Race diag + prof), so still no valid editor baseline. Sweep: gates OK. Amoebius Skim Race I2: the same three allocation regressions, unchanged to the byte (impactor 5.57 KB/frame = the un-pooled AOE ring, L13 / T-20261015-fafa; the auto-filed duplicate T-20261015-d7f8 closed onto it; the two pool-refill rows stay as tasks T-20261015-c8e2 / -c7db, consumption by the Regatta Squirrel, lever L2). Lava lamp in Amoebius: **1.95 / 1.86 ms per frame** (two runs), `CrystalChargeArcs.LateUpdate` 0.005 ms (asleep, as fixed). Every marker, untouched ones included (`ShellContact.Query` 0.10 -> 0.047 ms), read about half its earlier value, so the drop from 3.45 ms is mostly the machine being less loaded than earlier: timings compare only within one sitting; allocations compare across sittings. | `sweep --write --tasks`, `amoebius`, menu run x2 |
 
 ### 2.1 How the picture changed
 
@@ -502,8 +503,9 @@ scenario, Release, `diag` 15 s, §4.7 protocol:
 | **5** | **Gate.** Nightly `-csmbench` on S1–S6 per tier (§3.4) plus the Amoebius marker run as the no-editor allocation gate (§2, 10-09) | tooling | a regression fails a run |
 
 **How a test is run now (2026-10-14).** One command in the HUD console, `capture <label> 15`, or the
-**Capture** button on the Scene view's Bug Hunt & Performance badge (2026-10-15; it replaced the Capture Performance
-window); after Play, Unity's "Send to Claude?" sends the file, or paste it.
+automatic capture: since 2026-10-15 the editor runs it by itself in Play, once per scene, after the scene's time
+(`PerfAutoCapture`; S2 480 s, Skim Race 90 s, S5 120 s from `perf_hunt.py SCENARIOS`, other scenes 90 s; skipped in
+Debug code optimization). There is no Capture button; after Play, Unity's "Send to Claude?" sends the file, or paste it.
 The agent reads it with `Tools/Build/perf_capture_report.py`, which refuses a Debug-optimization, Deep-Profile
 or managed-job capture before it ranks anything. **First editor test asked for: S2 Lattice** - Menu_Main,
 Cell Selector → Lattice, let it grow 8 minutes, `capture S2 15`. It is the owner's "40k prisms under 60 fps"
@@ -532,7 +534,7 @@ editor window, and screenshots re-typed by hand.
 
 | Question | Tool | Output |
 |---|---|---|
-| **Everything, once, with nothing to transcribe** | `capture <label> 15` (or **Capture** on the Scene view's Bug Hunt & Performance badge), then Send to Claude after Play, or paste the file (§4.6) | One JSON: burst + diag + prof + renderers + cells + console; `perf_capture_report.py` reads it |
+| **Everything, once, with nothing to transcribe** | Just play: the editor captures by itself (`PerfAutoCapture`; or `capture <label> 15` in the console), then Send to Claude after Play, or paste the file (§4.6) | One JSON: burst + diag + prof + renderers + cells + console; `perf_capture_report.py` reads it |
 | **What is costing the frame?** | **Unity Profiler**, Hierarchy + Timeline, Deep Profile **off** | Names the caller. **Always start here.** |
 | **Where does the GC come from?** | Profiler Hierarchy, sort by **GC Alloc** — or `prof <label>` (`topGc` ranks by SELF allocation) | Names the caller |
 | **The Hierarchy as text** | `prof <label> [frames] [root=…] [sort=…]` (§4.5) | `prof_*.json`: averaged tree, top self, top GC, threads, typical + spike frame |
@@ -572,8 +574,8 @@ order (the cost estimates are from this record and `Docs/SKIM_RACE_AI.md` §14.4
 | 4 | **The Third Eye: open only while watching, Resolution 0.5, Trails off unless needed** | A second full render (post, shadows, AA) at window pixels x display scale |
 | 5 | **Game view no larger than 1440p**; Burst on; Game view focused | GPU pixels; managed jobs (10-20x); an unfocused editor throttles |
 
-**To find out which it is, measure, do not guess:** in Play, press **Capture** on the Scene view's Bug Hunt &
-Performance badge, once with the Third Eye closed and once with it open, then **Send to Claude** when Unity asks.
+**To find out which it is, measure, do not guess:** play two sessions past the auto-capture time (90 s for a scene with no
+scenario), once with the Third Eye closed and once with it open, then **Send to Claude** when Unity asks.
 A capture now records the editor's own state (`editor`: Scene views open, Game view size, deep profiling, editor
 profiling) beside the camera list, and `perf_capture_report.py` flags each one.
 

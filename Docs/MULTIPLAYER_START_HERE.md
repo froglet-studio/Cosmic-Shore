@@ -61,6 +61,7 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | Every party bug, with status | `Docs/PartySystem/BUGS.md` |
 | MPPM test procedures (smoke, stress, failure gates) | `Docs/PartySystem/TESTS.md` |
 | What each unverified Unity change needs in the editor | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
+| A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
 | Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
 | The game's edit-mode tests, run in Amoebius | `Tools/Build/prisma_edit_mode_tests/run.sh` |
@@ -120,6 +121,13 @@ Amoebius's lobby and party steps, not in-match ones.
 
 Run these when you sit down with the machines. Each has the result to expect; a different result
 is a bug, and the run's console log is what a session needs to fix it.
+
+**The logs collect themselves (2026-10-15).** Every player of a multiplayer test writes its own log when it
+stops: each MPPM virtual player and the main editor in Unity, each player of START ONLINE / + PLAYER 2 in
+Amoebius. When the test ends, ONE question asks **Send to Claude?** Press it. Do not paste consoles. Then tell
+the session "read my multiplayer logs" and it runs `python3 Tools/Build/net_logs.py show 1`, which lines
+every player up into one timeline (`Docs/DIAGNOSTICS.md` § "Multiplayer test logs"). In Amoebius, close player 2's
+window (or press CLOSE P2) rather than killing it, or its log is lost.
 
 ### 5.1 Amoebius tools (no Unity)
 
@@ -222,4 +230,6 @@ Each step has the check that proves it done. Update the state in §4 when a step
    14/14 expected - it does not run until it moves to the UGS stand-ins, §4). Never point a session's
    tests at the live UGS project: that is the owner's §5.3.
 5. Unity C#: follow §2's `/verify-unity` rule and add the checklist entry.
+5a. A test the owner ran: read its logs first (`python3 Tools/Build/net_logs.py collect`, then `show <n>`).
+    Ask for a pasted console only if no log reached a branch.
 6. Finish by updating §4 and §6 here.

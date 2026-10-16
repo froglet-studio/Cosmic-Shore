@@ -31,10 +31,11 @@ namespace CosmicShore.Launcher
             if (!File.Exists(PlayerExe)) { Log.Add(LogKind.Warn, "Press START ONLINE first: player 2 runs the build it makes."); return; }
             string profile = string.Equals(_s.Profile?.Trim(), "player2", StringComparison.OrdinalIgnoreCase) ? "player3" : "player2";
             var psi = PlayerStart(PlayerExe, new[] { "--size", "1280x720", "--position", "640,80" }, audio: false, network: true, profile: profile);
+            NetLogEnvironment(psi, "p2");
             var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
             p.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, "[P2] " + e.Data); };
             p.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, "[P2] " + e.Data); };
-            p.Exited += (_, _) => Log.Add(LogKind.Info, "Player 2 closed.");
+            p.Exited += (_, _) => { Log.Add(LogKind.Info, "Player 2 closed."); SecondPlayerExited?.Invoke(); };
             p.Start();
             _secondPlayer = p;
             p.BeginOutputReadLine();
@@ -42,9 +43,36 @@ namespace CosmicShore.Launcher
             Log.Add(LogKind.Success, $"Player 2 starting online as the '{profile}' profile (its own UGS player). Its lines start with [P2].");
         }
 
+        /// <summary>Raised when player 2 closes (its multiplayer test log is written by then).</summary>
+        public event Action? SecondPlayerExited;
+
+        /// <summary>Closes player 2's window first, so it writes its multiplayer test log as a close does; stops it if it does not close.</summary>
         public void StopSecondPlayer()
         {
-            try { if (SecondPlayerRunning) _secondPlayer!.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+            var p = _secondPlayer;
+            if (!SecondPlayerRunning) return;
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    if (p!.CloseMainWindow() && p.WaitForExit(5000)) return;
+                    p.Kill(entireProcessTree: true);
+                }
+                catch (InvalidOperationException) { }
+            });
+        }
+
+        /// <summary>Where online games write their multiplayer test logs (<see cref="Amoebius.NetTestLogFormat"/>); SEND TO CLAUDE sends them.</summary>
+        public static string NetLogsDir => Path.Combine(LauncherSettings.DataDir, "netlogs");
+
+        /// <summary>An online game writes its multiplayer test log when it closes, named for <paramref name="peer"/> ("main", "p2").</summary>
+        void NetLogEnvironment(ProcessStartInfo psi, string peer)
+        {
+            psi.Environment["COSMIC_SHORE_NET_LOG_DIR"] = NetLogsDir;
+            psi.Environment["COSMIC_SHORE_NET_PEER"] = peer;
+            if (!psi.Environment.ContainsKey("COSMIC_SHORE_COMMIT") &&
+                ProcessRunner.Capture(_tools.Git ?? "git", "-C", _ws.Dir, "rev-parse", "--short", "HEAD") is { } commit)
+                psi.Environment["COSMIC_SHORE_COMMIT"] = commit;
         }
 
         /// <summary>What every game process gets from SETTINGS: the UGS environment (when one is named) and the diagnostics overlay.</summary>

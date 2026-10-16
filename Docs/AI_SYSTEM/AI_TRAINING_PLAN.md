@@ -13,9 +13,13 @@ This doc is the plan. It builds on what exists (section 2) and does not replace 
 studyholic, Garrett and Shombith (`who_works_where.py query Assets/_Scripts/Utility/AITraining`), and any change to it
 is agreed with them first.
 
+**Decision (Yash, 2026-10-16): training data comes from playing in the Unity editor only, and tests happen in the
+editor too.** The artifact below was the prototype; it was **deleted on 2026-10-16** with `Docs/Studios/RegattaAI/`
+(git history keeps it). Section 1 is kept as a record of what it showed (`SITUATION_RECORDING_PLAN.md`).
+
 ## 1. The prototype: Training AI for Regatta (the artifact)
 
-https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4 (repo `Docs/Studios/RegattaAI/`). It was renamed from "Regatta AI" on
+Deleted 2026-10-16 (it was https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4, repo `Docs/Studios/RegattaAI/`). It was renamed from "Regatta AI" on
 2026-10-15.
 
 - **Every vessel class.** All 16 hulls race. The 8 card hulls fly their modelled speed verbs; the other 8 fly a
@@ -49,7 +53,8 @@ everything (section 3, the noise warning).
 | Offline simulators: the Skim Race sim (cross-entropy tuning that writes the AI config assets), the Regatta course harness, the Regatta balance model | Built | `Tools/Build/skimrace_sim_harness/`, `skimrace_retune.py`, `regatta_course_harness/`, `regatta_balance.py` | No Regatta AI simulator in C# |
 | Amoebius headless trainer (`--train` / `replay` / `eval`) | Built, **under evaluation** (`Docs/TOOLING_DECISIONS.md`) | `Port/docs/AI_TRAINING.md` | Not to be grown here |
 | AI simulation scene, Test Range | **Planned only** | `Docs/Studios/VESSEL_TEST_RANGE_PLAN.md` (R1–R6 unbuilt) | — |
-| Recording a player's flight, ghosts, imitation, behaviour cloning | **Absent** | — | — |
+| Recording a player's flight; learning the Regatta Squirrel's numbers from it | **Built 2026-10-15** (L3 steps 1 and 4A, your own flights, editor and dev builds) | `HumanFlightRecorder.cs`, `Tools/Build/learn_from_flights.py`, `Docs/SKIM_RACE_AI.md` §16 | Ghosts, behaviour cloning, players' flights (consent) |
+| Situations: what the pilot faced, did and meant, per moment; learning the commit distance, the skim choice and the boost angle from them | **Built 2026-10-16** (in `situation_features.py` over editor flights; the recorder in Unity) | `SITUATION_RECORDING_PLAN.md`, `situation_features.json`, `Tools/Build/situation_features.py`, `HumanFlightRecorder` flight/3 | The learned knobs are not in Unity's steering yet |
 | Neural inference | Package only | `com.unity.ai.inference` 2.6.1 (Sentis) is in `Packages/manifest.json`; no code or model uses it | — |
 | Consent, analytics, Cloud Save | Built | `AnalyticsServiceFacade.cs` (opt-in consent, COPPA age gate), `UI/Privacy/PrivacyConsentOverlay.cs` (text from `PrivacyConsentConfigSO`), `UGSDataService.cs` (Cloud Save 3.4.0, key-value only) | No AI-training consent; no store for flight files |
 
@@ -93,6 +98,9 @@ rather than a second one. Its parts:
 
 ### L3 — Learn from players
 
+**Record the situation, not just the sticks:** what to record, compute and learn so the AI knows *why* a player did
+something (target, line-up, obstacles, skims taken and skipped, outcome) is planned in `SITUATION_RECORDING_PLAN.md`.
+
 1. **The flight recorder** (runtime, new). While a human races, it samples about 10 times a second:
    - position, velocity and heading;
    - the sticks and triggers (the same input the AI writes; the input-only contract makes the two comparable);
@@ -134,7 +142,7 @@ Easy and Medium stay the same pilot with belief handicaps (`GateRaceHandicap`), 
 
 | Step | What | Where | Depends on |
 |---|---|---|---|
-| **T0** | Training AI for Regatta: all 16 hulls, AIs racing each other, learn from me, trained vs untrained, JSON hand-off | Artifact | **Done (2026-10-15)** |
+| **T0** | Training AI for Regatta: all 16 hulls, AIs racing each other, learn from me, trained vs untrained, JSON hand-off | Artifact | Done 2026-10-15; **deleted 2026-10-16** (editor only) |
 | **T1** | The AI Lab scene: Test Range R1–R3 (seats, time, runtime Third Eye panels, scorecard file) in `MinigameRegatta` first | Unity, dev-only | — |
 | **T2** | Regatta in the genetic trainer (fitness recipe, steering and drive genes, multi-seed evaluation) and the artifact JSON importer | Unity, `AITraining/` (with its authors) | T1 for watching |
 | **T3** | The flight recorder (local), and *Learn from me* in the Unity trainer's fitness | Unity runtime | T2 |

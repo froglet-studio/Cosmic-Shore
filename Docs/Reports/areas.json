@@ -21,28 +21,22 @@
       ],
       "branch": "Ys-bleeding-edge",
       "branchNote": "for testing; nothing goes to bleeding-edge until Yash has tested it",
-      "summary": "Five hulls racing Regatta with working AIs (Squirrel, Manta, Rhino, Urchin, Dolphin), the host picking every AI seat's hull, the Third Eye showing each AI's path and what it is doing, a steering fix found in the browser lab and ported to Unity, and the Training AI for Regatta artifact where every hull's AI is raced, watched and trained.",
+      "summary": "Five hulls racing Regatta with working AIs (Squirrel, Manta, Rhino, Urchin, Dolphin), the host picking every AI seat's hull, the Third Eye showing each AI's path and what it is doing, and a steering fix found in a browser lab and ported to Unity. Tested in the Unity editor only (the lab artifact was deleted 2026-10-16).",
       "paths": [
         "Assets/_Scripts/Controller/Arcade/Regatta",
         "Assets/_Scripts/Controller/Arcade/Racing",
         "Assets/_Scripts/Controller/Arcade/REGATTA.md",
         "Assets/_Scripts/Controller/AI",
         "Assets/_Scripts/Editor/AI",
-        "Docs/Studios/RegattaAI",
         "Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md",
         "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md"
       ],
       "docs": [
         "Assets/_Scripts/Controller/Arcade/REGATTA.md",
         "Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md",
-        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
-        "Docs/Studios/RegattaAI/README.md"
+        "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md"
       ],
       "artifacts": [
-        {
-          "name": "Training AI for Regatta",
-          "url": "https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4"
-        },
         {
           "name": "Regatta AI Report (the page for Garrett)",
           "url": "https://claude.ai/artifact/RmxWBLGfSsAXsUeubFXkUm"
@@ -80,24 +74,18 @@
         "the core four"
       ],
       "branch": "Ys-bleeding-edge",
-      "summary": "Training every vessel's AI: the genetic trainer in Unity (studyholic, Garrett, Shombith), the Training AI for Regatta prototype, and the plan to an AI Lab scene, Regatta in the trainer, a consented flight recorder and behaviour cloning.",
+      "summary": "Training every vessel's AI: the genetic trainer in Unity (studyholic, Garrett, Shombith), situations learned from Unity editor flights (the browser prototype was deleted 2026-10-16), and the plan to an AI Lab scene, Regatta in the trainer, a consented flight recorder and behaviour cloning.",
       "paths": [
         "Assets/_Scripts/Utility/AITraining",
         "Assets/_SO_Assets/AI Training",
         "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
-        "Docs/Studios/RegattaAI",
         "Tools/Build/skimrace_sim_harness"
       ],
       "docs": [
         "Docs/AI_SYSTEM/AI_TRAINING_PLAN.md",
         "Assets/_Scripts/Utility/AITraining/README.md"
       ],
-      "artifacts": [
-        {
-          "name": "Training AI for Regatta",
-          "url": "https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4"
-        }
-      ],
+      "artifacts": [],
       "report": "Docs/Reports/REGATTA_AI.md",
       "taskAreas": [
         "AI training",
@@ -140,7 +128,8 @@
       "report": "",
       "taskAreas": [
         "Team tools"
-      ]
+      ],
+      "artifacts": []
     },
     "performance": {
       "title": "Performance",
@@ -194,7 +183,7 @@
       "test": [
         "Pull Ys-bleeding-edge, open Unity, Code Optimization = Release, close the Third Eye window.",
         "Play, Cell Selector > Lattice, wait 8 minutes.",
-        "On the Bug Hunt & Performance badge (bottom-left of the Scene view) press Capture S2; wait until it says Saved.",
+        "Keep playing: the editor captures S2 by itself at 8 minutes (the Scene view badge counts down and says Saved).",
         "Stop playing and press Send to Claude when Unity asks.",
         "python3 Tools/Build/perf_hunt.py sweep --write shows the capture judged against its baseline in Docs/Reports/PERFORMANCE.md."
       ]

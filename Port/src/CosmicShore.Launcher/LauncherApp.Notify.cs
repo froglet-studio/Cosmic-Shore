@@ -71,6 +71,47 @@ namespace CosmicShore.Launcher
                 Notify("Clean run", $"{run.Seconds / 60:0.0} min, {run.Exceptions + run.Errors} errors, p95 {run.P95:0.0} ms. Recorded in TRACKS.", NoteKind.Success);
         }
 
+        // ------------------------------------------------------------------ multiplayer test logs
+
+        readonly object _netLogGate = new();
+
+        /// <summary>
+        /// After an online test (START ONLINE, + PLAYER 2) every player has written its multiplayer test log; one
+        /// notification offers to send them to Claude, as the Unity editor's after-play question does. Asked once per
+        /// log: NOT NOW keeps them here and they go with the next send.
+        /// </summary>
+        void OfferNetLogs()
+        {
+            if (_jobs.GameRunning || _jobs.SecondPlayerRunning) return; // the last player to close asks
+            List<FileInfo> fresh;
+            lock (_netLogGate)
+            {
+                var seenFile = Path.Combine(LauncherJobs.NetLogsDir, "offered.txt");
+                var seen = new HashSet<string>(File.Exists(seenFile) ? File.ReadAllLines(seenFile) : Array.Empty<string>(), StringComparer.Ordinal);
+                fresh = NetTestLogFormat.NewFiles(LauncherJobs.NetLogsDir, seen);
+                if (fresh.Count == 0) return;
+                try { File.AppendAllLines(seenFile, fresh.Select(f => f.Name)); } catch { /* asked again next time at worst */ }
+            }
+            var peers = NetTestLogFormat.PeersOf(fresh.Select(f => f.Name));
+            Notify("Send this online test's logs to Claude?",
+                $"Logs from {NetTestLogFormat.Players(peers)}: each player's console and network timeline. Nothing in your project or branch changes.",
+                NoteKind.Info,
+                ("SEND TO CLAUDE", SendNetLogs),
+                ("NOT NOW", () => { }));
+        }
+
+        void SendNetLogs() => Task.Run(async () =>
+        {
+            var files = NetLogSender.Candidates(LauncherJobs.NetLogsDir);
+            if (files.Count == 0) { Notify("No multiplayer test logs to send", "An online test with a second player writes them when its players close.", NoteKind.Info); return; }
+            var r = await NetLogSender.Send(_tools.Git ?? "git", _ws.Dir, files, Environment.UserName, _jobs.Log, System.Threading.CancellationToken.None);
+            if (r.Ok)
+                Notify(r.Sent == 0 ? "Claude already has these logs" : "Sent to Claude",
+                    r.Sent == 0 ? $"They are on {r.Branch}." : $"{r.Sent} multiplayer test log(s) on {r.Branch}. Ask Claude to read them.", NoteKind.Success);
+            else
+                Notify("Could not send the logs", r.Error ?? "", NoteKind.Error, ("RETRY", SendNetLogs), ("NOT NOW", () => { }));
+        });
+
         // ------------------------------------------------------------------ doctor
 
         bool? _lastOkSeen;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEditor;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.Editor
@@ -37,9 +38,29 @@ namespace CosmicShore.Editor
             EditorApplication.playModeStateChanged += change =>
             {
                 if (change == PlayModeStateChange.EnteredEditMode)
-                    EditorApplication.delayCall += AskAfterPlay;
+                    EditorApplication.delayCall += AskWhenPeersLanded;
             };
             EditorApplication.delayCall += BugLedgerSender.SyncFixesInBackground;
+        }
+
+        /// <summary>
+        /// After a multiplayer test the virtual players stop Play a moment after this editor and write their
+        /// logs then (<see cref="NetTestLogs"/>); wait for them so the question and the send see the whole test.
+        /// </summary>
+        static void AskWhenPeersLanded()
+        {
+            if (!NetTestLogs.WroteThisPlay || EditorApplication.timeSinceStartup >= NetTestLogs.AskNotBefore)
+            {
+                AskAfterPlay();
+                return;
+            }
+            void Poll()
+            {
+                if (EditorApplication.timeSinceStartup < NetTestLogs.AskNotBefore && !EditorApplication.isPlayingOrWillChangePlaymode) return;
+                EditorApplication.update -= Poll;
+                AskAfterPlay();
+            }
+            EditorApplication.update += Poll;
         }
 
         static void AskAfterPlay()
@@ -63,12 +84,33 @@ namespace CosmicShore.Editor
                 // only judge captures that reach a branch — so a new one asks too, even on a run
                 // with no new error. Redlog and crash files only ride along: a redlog is written
                 // every session that has reds, and asking for those would ask every run.
-                int newCaptures = 0;
+                // An AI training record (HumanFlightRecorder, automatic in every mode) asks too: the AIs can only learn from
+                // records that reach a branch (learn_from_flights.py). The question names each vessel and mode.
+                // A multiplayer test's logs (NetTestLogs) ask too, from the main editor only: the virtual players'
+                // files land in its folder, and one question per test is the point.
+                int newCaptures = 0, newFlights = 0, newNetLogs = 0;
+                var records = new List<string>();
+                var peers = new List<string>();
+                bool clone = NetTestLogs.IsClone;
                 foreach (var report in BugHuntReports.Candidates("", Environment.UserName))
+                {
                     if (report.Kind == "perf" && asked.Add("perf:" + Path.GetFileName(report.Source)))
                         newCaptures++;
+                    else if (report.Kind == "net" && !clone && asked.Add("net:" + Path.GetFileName(report.Source)))
+                    {
+                        newNetLogs++;
+                        string peer = DescribePeer(Path.GetFileName(report.Source));
+                        if (!peers.Contains(peer)) peers.Add(peer);
+                    }
+                    else if (report.Kind == "flights" && asked.Add("flights:" + Path.GetFileName(report.Source)))
+                    {
+                        newFlights++;
+                        string what = DescribeRecord(Path.GetFileName(report.Source));
+                        if (!records.Contains(what)) records.Add(what);
+                    }
+                }
 
-                if (fresh.Count == 0 && newCaptures == 0) return;
+                if (fresh.Count == 0 && newCaptures == 0 && newFlights == 0 && newNetLogs == 0) return;
 
                 // Remember them whatever the answer: "Not now" must not become "ask every run".
                 settings.SentFingerprints = string.Join("\n", asked);
@@ -84,7 +126,32 @@ namespace CosmicShore.Editor
                         body.Append("• ").Append(Shorten(fresh[i].Title)).Append('\n');
                     if (fresh.Count > MaxTitlesShown) body.Append($"• and {fresh.Count - MaxTitlesShown} more\n");
                     if (newCaptures > 0) body.Append($"\nPlus {newCaptures} new performance capture(s).\n");
+                    if (newNetLogs > 0) body.Append($"\nPlus the multiplayer test's logs from {Players(peers)}.\n");
+                    if (newFlights > 0)
+                        body.Append($"\nPlus {newFlights} new AI training record(s): {string.Join(", ", records)} " +
+                                    $"({HumanFlightRecorder.TrainingType}).\n");
                     body.Append("\nSend them to Claude to fix? Nothing in your project or branch is changed.");
+                }
+                else if (newNetLogs > 0)
+                {
+                    // A multiplayer test with no new error: its logs are still what Claude reads to judge it.
+                    body.Append($"This multiplayer test saved logs from {Players(peers)}");
+                    body.Append(newNetLogs > peers.Count ? $" ({newNetLogs} files).\n" : ".\n");
+                    if (newCaptures > 0) body.Append($"Plus {newCaptures} new performance capture(s).\n");
+                    body.Append("\nSend them to Claude? Nothing in your project or branch is changed.");
+                }
+                else if (newCaptures == 0)
+                {
+                    // Only AI training records: the question is about storing them, not about bugs.
+                    body.Append(newFlights == 1 ? "New AI training record:\n\n" : $"{newFlights} new AI training records:\n\n");
+                    for (int i = 0; i < records.Count && i < MaxTitlesShown; i++)
+                        body.Append("• ").Append(records[i]).Append('\n');
+                    if (records.Count > MaxTitlesShown) body.Append($"• and {records.Count - MaxTitlesShown} more\n");
+                    body.Append($"\nTraining type: {HumanFlightRecorder.TrainingType}.\n");
+                    body.Append("\nStore it so the AI learns from how you fly? Nothing in your project or branch is changed.");
+                    if (EditorUtility.DisplayDialog("Store AI training record?", body.ToString(), "Store AI record", "Not now"))
+                        BugLedgerSender.SendInBackground();
+                    return;
                 }
                 else
                 {
@@ -102,6 +169,28 @@ namespace CosmicShore.Editor
                 // The question must never break the editor (same doctrine as the ledger itself).
                 Debug.LogWarning($"[BugLedger] After-play send prompt failed: {e.GetType().Name}: {e.Message}");
             }
+        }
+
+        /// <summary>"P2" from "net_20261015_101500_p2.json"; "main" for the main editor's.</summary>
+        static string DescribePeer(string file)
+        {
+            var parts = Path.GetFileNameWithoutExtension(file).Split('_');
+            return parts.Length >= 4 ? string.Join("_", parts, 3, parts.Length - 3) : file;
+        }
+
+        /// <summary>"main, p2 and p3".</summary>
+        static string Players(List<string> peers)
+        {
+            if (peers.Count == 0) return "this test";
+            if (peers.Count == 1) return peers[0];
+            return string.Join(", ", peers.GetRange(0, peers.Count - 1)) + " and " + peers[peers.Count - 1];
+        }
+
+        /// <summary>"Squirrel in Regatta" from "flight_Regatta_Squirrel_20261016_023117.json".</summary>
+        static string DescribeRecord(string file)
+        {
+            var parts = Path.GetFileNameWithoutExtension(file).Split('_');
+            return parts.Length >= 3 ? $"{parts[2]} in {parts[1]}" : file;
         }
 
         static string Fingerprint(BugLedgerIssue issue) => issue.Id + ":" + issue.Regressions;

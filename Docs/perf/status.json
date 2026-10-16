@@ -97,31 +97,31 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-15T18:26:47Z",
+  "generatedUtc": "2026-10-15T23:50:18Z",
   "next": [
     "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 5.578 KB/frame (+46%)",
     "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)",
     "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame",
-    "Capture S2 Lattice in Release (no valid baseline yet): Menu_Main, Cell Selector > Lattice, wait 8 minutes, then Capture on the Scene view's Bug Hunt & Performance badge [T-20261015-56dd]",
-    "Capture Skim Race I2 in Release (no valid baseline yet): Arcade > Skim Race, intensity 2, 2 AI, then Capture on the badge - also proves the Burst fix [T-20261015-3e0b]",
-    "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Arcade > Wildlife Liberation, two minutes in, then Capture on the badge - the L8 go/no-go [T-20261015-3972]",
+    "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261015-56dd]",
+    "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix [T-20261015-3e0b]",
+    "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go [T-20261015-3972]",
     "2 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me.)"
   ],
   "openPerformanceTasks": [
     {
       "id": "T-20261015-56dd",
       "kind": "test",
-      "task": "First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, wait 8 minutes, press Capture S2 on the Bug Hunt & Per"
+      "task": "First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itse"
     },
     {
       "id": "T-20261015-3e0b",
       "kind": "test",
-      "task": "Skim Race I2 with 2 AI, Release: press Capture SkimRace on the Scene view badge, stop, then Send to Claude. This is the Burst check the 10-08 fix still owes (bu"
+      "task": "Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), stop, then Send to Claude. This is the Burst check the 10-08 fix still owes"
     },
     {
       "id": "T-20261015-3972",
       "kind": "test",
-      "task": "S5 Wildlife Liberation, Release: two minutes into a match, press Capture S5 on the Scene view badge, stop, then Send to Claude. It is the go/no-go for lever L8 "
+      "task": "S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), stop, then Send to Claude. It is the go/no-go for lever L8 (b"
     },
     {
       "id": "T-20261015-72e1",
@@ -141,7 +141,7 @@
     {
       "id": "T-20261015-7edd",
       "kind": "test",
-      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main, press Capture S2 on the Scene view badge in the first minute, stop, Send to C"
+      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), stop, Send to Claude. Then f"
     },
     {
       "id": "T-20261015-a5a5",
@@ -151,12 +151,27 @@
     {
       "id": "T-20261015-1551",
       "kind": "test",
-      "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), press Capture on the Scene view's Bug Hunt & Pe"
+      "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the"
     },
     {
       "id": "T-20261015-fafa",
       "kind": "dev",
       "task": "Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/"
+    },
+    {
+      "id": "T-20261015-641c",
+      "kind": "decision",
+      "task": "Spindles are the last big GameObject-renderer cost in the lava lamp (lever L1): one Renderer per limb, ~40k enabled in a grown Lattice with ~4.6k visible, +5.3 "
+    },
+    {
+      "id": "T-20261015-c8e2",
+      "kind": "dev",
+      "task": "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)"
+    },
+    {
+      "id": "T-20261015-c7db",
+      "kind": "dev",
+      "task": "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame"
     }
   ],
   "regressions": [
@@ -166,18 +181,21 @@
   ],
   "scenarios": [
     {
+      "afterSeconds": 480,
       "label": "S2",
       "owed": true,
       "scene": "Menu_Main",
       "title": "S2 Lattice"
     },
     {
+      "afterSeconds": 90,
       "label": "SkimRace",
       "owed": true,
       "scene": "MinigameSkimRace",
       "title": "Skim Race I2"
     },
     {
+      "afterSeconds": 120,
       "label": "S5",
       "owed": true,
       "scene": "MinigameWildlifeLiberation",
