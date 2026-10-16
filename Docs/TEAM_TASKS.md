@@ -432,29 +432,29 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 ### T-20261015-de37 · open · test · Replays
-- **Task:** Editor-test match replays on Will's Theater (claude/youthful-hopper-5t3dbr): race Regatta to the end screen and find Regatta_*.cstheater + .replay.json in <repo>/Recordings; press 8 to watch it; leave a race mid-way; retention with a hand-made 9-key recording beside; host + guest online; and AstroLeague's goal replay after its port onto Theater poses. Nine items with pass criteria in Docs/UNITY_VERIFICATION_CHECKLIST.md ('Match replays on Will's Theater').
+- **Task:** Editor-test match replays on Will's Theater (claude/match-replays-5t3dbr): race Regatta to the end screen and find Regatta_*.cstheater + .replay.json in <repo>/Recordings; press 8 to watch it; leave a race mid-way; retention with a hand-made 9-key recording beside; host + guest online; and AstroLeague's goal replay after its port onto Theater poses. Nine items with pass criteria in Docs/UNITY_VERIFICATION_CHECKLIST.md ('Match replays on Will's Theater').
 - **Done when:** All nine checklist items pass in the Unity Editor, or each failure is filed as a dev task.
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
-- **Added:** 2026-10-15 by Claude (replay session) (`claude/youthful-hopper-5t3dbr`)
+- **Added:** 2026-10-15 by Claude (replay session) (`claude/match-replays-5t3dbr`)
 - **See:** Docs/REPLAYS.md
 
 ### T-20261015-4dca · open · decision · Replays
-- **Task:** Will: your Theater (5 commits from claude/fps-cap-pause-menu-vnmn4j, never PR'd) is now the base for player replays on claude/youthful-hopper-5t3dbr, with a landing fix: its log lines ride ArcadeMatch (CSLogChannel is full), its doc row moved to Docs/claude/DOCUMENTATION_INDEX.md, and TheaterDirector gained PlayFile(path). Confirm the landing, and say whether Theater merges through this branch or its own PR.
+- **Task:** Will: your Theater (5 commits from claude/fps-cap-pause-menu-vnmn4j, never PR'd) is now the base for player replays on claude/match-replays-5t3dbr, with a landing fix: its log lines ride ArcadeMatch (CSLogChannel is full), its doc row moved to Docs/claude/DOCUMENTATION_INDEX.md, and TheaterDirector gained PlayFile(path). Confirm the landing, and say whether Theater merges through this branch or its own PR.
 - **Done when:** Will has confirmed the landing or asked for changes, and the merge route is decided.
 - **Who can take it:** Will Bogen (Theater owner)
-- **Added:** 2026-10-15 by Claude (replay session) (`claude/youthful-hopper-5t3dbr`)
+- **Added:** 2026-10-15 by Claude (replay session) (`claude/match-replays-5t3dbr`)
 - **See:** Docs/THEATER.md, Docs/REPLAYS.md section 8
 
 ### T-20261015-5ddc · open · dev · Logging
 - **Task:** CSLogChannel has no free bit: all 32 are taken (ButterflyFold 1<<28 through BlackHole 1<<31), so the next subsystem that needs its own channel cannot get one; Theater and Replay already ride ArcadeMatch for this reason. Widen the enum (EditorPrefs.GetInt storage in LogControlWindow, the int casts in CSDebugTests and TrainingPlayModeHook) or retire a channel.
 - **Done when:** A new CSLogChannel member can be added, and Theater / Replay move to their own channel.
 - **Who can take it:** Garrett (decides), Yash (offered)
-- **Added:** 2026-10-15 by Claude (replay session) (`claude/youthful-hopper-5t3dbr`)
+- **Added:** 2026-10-15 by Claude (replay session) (`claude/match-replays-5t3dbr`)
 - **See:** Assets/_Scripts/Utility/CSDebug.cs
 
 ### T-20261015-784a · open · dev · Replays
 - **Task:** Build the replay browser: ModalWindows.REPLAYS = 19 (check in-flight branches before taking it), listing ReplayService.ListOnDevice and ListFromOtherDevicesAsync, a Replays button in the Arcade modal (gamepad B back to Arcade), transport commands as IReplayCommand, and watching from the menu by loading the match's scene as a stage.
 - **Done when:** A player opens Arcade > Replays, picks a Regatta replay and watches it with play, pause, seek, speed and follow.
-- **Who can take it:** The replay session on claude/youthful-hopper-5t3dbr; Shombith reviews the Menu_Main / Arcade modal change
-- **Added:** 2026-10-15 by Claude (replay session) (`claude/youthful-hopper-5t3dbr`)
+- **Who can take it:** The replay session on claude/match-replays-5t3dbr; Shombith reviews the Menu_Main / Arcade modal change
+- **Added:** 2026-10-15 by Claude (replay session) (`claude/match-replays-5t3dbr`)
 - **See:** Docs/REPLAYS.md section 7

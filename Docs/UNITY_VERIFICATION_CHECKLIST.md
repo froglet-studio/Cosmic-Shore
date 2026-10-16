@@ -9635,7 +9635,7 @@ verification, steps 2-9. The short version:
 4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
-## 🔴 Match replays on Will's Theater + AstroLeague goal replay port (2026-10-15, `claude/youthful-hopper-5t3dbr`) - NOT EDITOR-VERIFIED
+## 🔴 Match replays on Will's Theater + AstroLeague goal replay port (2026-10-15, `claude/match-replays-5t3dbr`) - NOT EDITOR-VERIFIED
 
 No Unity CLI in the session, so `/verify-unity` could not run. Checked offline only: `Tools/Build/unity_refcompile/run.sh`
 player (0 errors in project code, no changed file in any unverified bucket) and editor (0 errors in changed files; the 3
