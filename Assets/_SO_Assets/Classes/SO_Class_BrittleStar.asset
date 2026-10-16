@@ -15,8 +15,8 @@ MonoBehaviour:
   Class: 16
   Name: Brittle Star
   Description: A one-touch flyer built round a cockpit and a five-pointed support ring. Swap between Speed,
-    Creation and Destruction modes, turn the ring to bring a turret to bear, and throw the ring itself as a
-    bomb - a crystal builds the next one.
+    Creation, Space and Charge modes - five guns that overheat, or five cords that whip and stiffen into
+    sabers - turn the ring to bring a turret to bear, and throw spare rings as bombs.
   PrimaryElement: 0
   Element: {fileID: 0}
   InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}
