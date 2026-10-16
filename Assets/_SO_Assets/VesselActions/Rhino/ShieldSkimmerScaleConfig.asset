@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseScale: 30
   maxScale: 120
-  prismMaxScale: 100
   prismGrowSpeed: 30
   shrinkSpeed: 10
   crystalBurstFactorAtFullEnergy: 4

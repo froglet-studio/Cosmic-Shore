@@ -111,6 +111,13 @@ namespace CosmicShore.Gameplay
         /// <summary>Current energize phase (for FX and any future HUD readout).</summary>
         public RhinoSwordEnergizePhase EnergizePhase => _energize;
 
+        /// <summary>How much of the energize COOLDOWN is still to run, 1 the instant it starts and 0
+        /// once the blade can be charged again (0 outside the cooldown). The HUD's recharge veil.</summary>
+        public float EnergizeCooldownRemaining01 =>
+            _energize == RhinoSwordEnergizePhase.Cooldown && config != null && config.EnergizeCooldownSeconds > 0f
+                ? Mathf.Clamp01((_cooldownEnd - Time.time) / config.EnergizeCooldownSeconds)
+                : 0f;
+
         /// <summary>Charge progress 0..1 while Charging (0 otherwise).</summary>
         public float Charge01 => _energize == RhinoSwordEnergizePhase.Charging && config != null
             ? Mathf.Clamp01((Time.time - _chargeStart) / config.EnergizeHoldSeconds)

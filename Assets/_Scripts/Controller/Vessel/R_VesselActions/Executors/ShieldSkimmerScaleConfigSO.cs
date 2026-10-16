@@ -21,8 +21,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float baseScale = 30f;      // energy = 0
         [Tooltip("Blade length at FULL energy.")]
         [SerializeField] private float maxScale  = 120f;     // energy = 1
-        [Tooltip("Legacy prism-growth cap. Nothing reads PrismMaxScale since the max-size debuff was retired; kept as serialized data rather than dropped in a removal commit.")]
-        [SerializeField] private float prismMaxScale = 100f;
 
         [Header("Length Smoothing (world units/sec)")]
         [Tooltip("How fast the resting length grows toward the stored-energy target.")]
@@ -152,8 +150,6 @@ namespace CosmicShore.Gameplay
 
         public float MaxScale => Mathf.Max(baseScale, maxScale);
 
-        public float PrismMaxScale => Mathf.Max(baseScale, prismMaxScale);
-
         public float PrismGrowSpeed => prismGrowSpeed;
         public float ShrinkSpeed    => shrinkSpeed;
 
@@ -208,7 +204,8 @@ namespace CosmicShore.Gameplay
         // the one class of hit they cannot answer with flying. It also mutated THIS asset, and
         // ONE asset drives every Rhino, so shooting one pilot shrank every Rhino's sword in the
         // match. What a weapon may take from another pilot is their elemental PETALS.
-        // The `_maxScaleMultiplier` runtime state went with it, so MaxScale / PrismMaxScale are
-        // now the authored values. Do not reintroduce a debuff here.
+        // The `_maxScaleMultiplier` runtime state went with it, so MaxScale is now the authored
+        // value (the reader-less legacy prismMaxScale cap was deleted 2026-10-16). Do not
+        // reintroduce a debuff here.
     }
 }

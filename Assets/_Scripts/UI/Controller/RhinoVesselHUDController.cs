@@ -1,32 +1,41 @@
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
-using CosmicShore.ScriptableObjects;
-using CosmicShore.UI;
+
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// The Rhino's HUD: pushes the sword's state onto the fleet's four ability cards.
+    ///
+    /// <para><b>CHARGE card</b> - the sword's ENERGY economy (Charge scales what each cut banks; its
+    /// level-5, Live Wire, keeps an energized blade lit). The card is lit while the blade is
+    /// energized, the recharge veil sweeps over it through the energize cooldown, and an authored
+    /// gauge (if the row has one) fills with stored energy.</para>
+    ///
+    /// <para>Polled rather than event-driven, deliberately: every value is a read of state the sword
+    /// driver already owns, so there is no subscription to leak or double across a re-initialise -
+    /// the asymmetric subscribe/unsubscribe pair this replaced did both, depending on whether the
+    /// re-init flipped the pilot between local and AI. Each push is change-detected, so a steady
+    /// card costs a compare per frame.</para>
+    /// </summary>
     public sealed class RhinoVesselHUDController : VesselHUDController
     {
         [Header("View")]
         [SerializeField] private RhinoVesselHUDView view;
 
         [Header("Rhino – Scene Refs")]
-        [SerializeField] private ShieldSkimmerScaleDriver growSkimmerExecutor;
+        [Tooltip("The sword's brain (energy, energize phase). On the Rhino root's ScaleSkimmerObject.")]
+        [FormerlySerializedAs("growSkimmerExecutor")]
+        [SerializeField] private ShieldSkimmerScaleDriver swordDriver;
 
-        [Header("Events (SOAP)")]
-        [SerializeField] private ScriptableEventVesselImpactor rhinoCrystalExplosionEvent;
-        [SerializeField] private ScriptableEventVesselImpactor vesselSlowedByExplosionEvent;
-        [SerializeField] private ScriptableEventVesselImpactor vesselSlowedByRhinoDangerPrismEvent;
-        [SerializeField] private ScriptableEventSkimmerDebuffApplied skimmerDebuffAppliedEvent;
+        IVesselStatus _vesselStatus;
 
-        private int _slowedCount;
-        private IVesselStatus _vesselStatus;
-        private bool _subscribed;
+        bool _chargeLit;
+        float _chargeVeil = -1f;
+        float _chargeGauge = -1f;
 
-        readonly HashSet<IVesselStatus> _uniqueSlowedThisExplosion = new();
-
-        private bool IsHudAllowed =>
-            _vesselStatus is { IsInitializedAsAI: false, IsLocalUser: true };
+        bool IsHudAllowed => _vesselStatus is { IsInitializedAsAI: false, IsLocalUser: true };
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -36,119 +45,38 @@ namespace CosmicShore.UI
             if (!view)
                 view = View as RhinoVesselHUDView;
 
-            view?.Initialize();
-
-            // Re-init (menu vessel swap / ReInitializePair) must not double-subscribe —
-            // that was double-counting the slowed tally on every re-initialize.
-            Unsubscribe();
-            Subscribe();
+            // A re-initialise (menu vessel swap, pilot swap) starts the cards from a known state so
+            // the change detection below pushes everything once.
+            _chargeLit = false;
+            _chargeVeil = -1f;
+            _chargeGauge = -1f;
+            if (view) view.SetAbilityPressed(Element.Charge, false);
         }
 
-        void OnEnable()
+        void Update()
         {
-            // Re-attach after a disable→enable cycle (pooled/toggled HUD). No-op before Initialize.
-            if (_vesselStatus != null) Subscribe();
-        }
+            if (!view || !swordDriver || !IsHudAllowed) return;
 
-        void OnDisable()
-        {
-            Unsubscribe();
-        }
-
-        void Subscribe()
-        {
-            if (_subscribed || _vesselStatus == null) return;
-            _subscribed = true;
-
-            if (vesselSlowedByExplosionEvent != null)
-                vesselSlowedByExplosionEvent.OnRaised += HandleVesselSlowedByExplosion;
-
-            if (vesselSlowedByRhinoDangerPrismEvent != null)
-                vesselSlowedByRhinoDangerPrismEvent.OnRaised += HandleVesselSlowedByExplosion;
-
-            if (rhinoCrystalExplosionEvent != null)
-                rhinoCrystalExplosionEvent.OnRaised += HandleCrystalExplosion;
-
-            if (!IsHudAllowed) return;
-
-            if (growSkimmerExecutor != null)
-                growSkimmerExecutor.OnScaleChanged += HandleSkimmerScaleChanged;
-
-            if (skimmerDebuffAppliedEvent != null)
-                skimmerDebuffAppliedEvent.OnRaised += HandleSkimmerDebuffApplied;
-        }
-
-        void Unsubscribe()
-        {
-            if (!_subscribed) return;
-            _subscribed = false;
-
-            if (vesselSlowedByExplosionEvent != null)
-                vesselSlowedByExplosionEvent.OnRaised -= HandleVesselSlowedByExplosion;
-
-            if (vesselSlowedByRhinoDangerPrismEvent != null)
-                vesselSlowedByRhinoDangerPrismEvent.OnRaised -= HandleVesselSlowedByExplosion;
-
-            if (rhinoCrystalExplosionEvent != null)
-                rhinoCrystalExplosionEvent.OnRaised -= HandleCrystalExplosion;
-
-            if (!IsHudAllowed) return;
-
-            if (growSkimmerExecutor != null)
-                growSkimmerExecutor.OnScaleChanged -= HandleSkimmerScaleChanged;
-
-            if (skimmerDebuffAppliedEvent != null)
-                skimmerDebuffAppliedEvent.OnRaised -= HandleSkimmerDebuffApplied;
-        }
-
-        #region Handlers
-
-        void HandleSkimmerScaleChanged(float current, float min, float max)
-        {
-            if (!IsHudAllowed || !view) return;
-
-            float t = 0f;
-            if (max > min)
-                t = Mathf.Clamp01((current - min) / (max - min));
-
-            view.SetSkimmerIconScale01(t);
-        }
-
-        void HandleCrystalExplosion(VesselImpactor vesselImpactor)
-        {
-            if (!IsHudAllowed || !view) return;
-
-            _slowedCount = 0;
-            _uniqueSlowedThisExplosion.Clear();
-
-            view.SetSlowedCount(_slowedCount);
-            view.FlashCrystalActivated(2f);
-            view.ResetLineIcon();
-        }
-
-        void HandleVesselSlowedByExplosion(VesselImpactor impactor)
-        {
-            if (!IsHudAllowed || !view) return;
-
-            var victimStatus = impactor?.Vessel?.VesselStatus;
-            if (victimStatus != null && _uniqueSlowedThisExplosion.Add(victimStatus))
+            bool lit = swordDriver.IsEnergized;
+            if (lit != _chargeLit)
             {
-                _slowedCount++;
-                view.SetSlowedCount(_slowedCount);
+                _chargeLit = lit;
+                view.SetAbilityPressed(Element.Charge, lit);
             }
 
-            view.FlashLineIconActive(2f);
+            float veil = swordDriver.EnergizeCooldownRemaining01;
+            if (!Mathf.Approximately(veil, _chargeVeil))
+            {
+                _chargeVeil = veil;
+                view.SetAbilityCooldown(Element.Charge, veil);
+            }
+
+            float energy = swordDriver.Energy01;
+            if (!Mathf.Approximately(energy, _chargeGauge) && view.TryGetAbilityGauge(Element.Charge, out var gauge))
+            {
+                _chargeGauge = energy;
+                gauge.fillAmount = energy;
+            }
         }
-
-        void HandleSkimmerDebuffApplied(SkimmerDebuffPayload payload)
-        {
-            if (!IsHudAllowed || !view) return;
-
-            if (payload.Attacker != _vesselStatus) return;
-
-            view.ShowDebuffTimer(payload.Duration);
-        }
-
-        #endregion
     }
 }
