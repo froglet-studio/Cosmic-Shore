@@ -880,6 +880,7 @@ namespace CosmicShore.Utility
             // flippable with the editor stopped, and needing play mode to turn progression
             // back on is exactly the friction it exists to remove.
             DrawMasterUnlockGate();
+            DrawFirstLoginGuideSkip();
 
             bool available = Application.isPlaying && GameModeProgressionService.Instance != null;
 
@@ -1271,6 +1272,51 @@ namespace CosmicShore.Utility
         /// the one switch opens both, and drawn ABOVE each tab's play-mode gate because it is a
         /// PlayerPrefs value that does not need a running game.
         /// </summary>
+        /// <summary>
+        /// Lets a developer out of the first-login guide. That guide is the one quest phase that
+        /// runs even under the master unlock (<c>runsUnderDeveloperUnlock</c>), and it funnels the
+        /// arcade down to the Game of the Week until the first Lesson is finished - so a developer
+        /// who wants any other mode was stuck in it. Skipping marks the main quest complete and
+        /// clears the arcade funnel; Restore puts both back. Both write PlayerPrefs, so they work
+        /// with the editor stopped and take effect on the next Play.
+        /// </summary>
+        void DrawFirstLoginGuideSkip()
+        {
+            const string mainQuestPath = "Assets/FTUE/DataContainer/Quests/MainQuest.asset";
+            var mainQuest = AssetDatabase.LoadAssetAtPath<QuestSO>(mainQuestPath);
+            string questId = mainQuest ? mainQuest.QuestId : "MainQuest";
+            bool done = QuestProgressStore.IsCompleted(questId);
+
+            DrawSubSectionLabel("First-Login Guide");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                done
+                    ? "SKIPPED - the guide will not run, and the arcade is not funnelled."
+                    : "ACTIVE - the guide runs on Play and limits the arcade to the Game of the Week until its first Lesson is done.",
+                _infoStyle);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (!done && GUILayout.Button("Skip first-login guide", GUILayout.Width(260)))
+            {
+                QuestProgressStore.MarkQuestCompleted(questId);
+                QuestArcadeConstraints.Clear();
+                Debug.Log($"[FrogletToolbox] Skipped the first-login guide ('{questId}' marked complete, arcade funnel cleared). " +
+                          (Application.isPlaying ? "Stop and press Play again for it to take effect." : "Takes effect on the next Play."));
+            }
+            if (done && GUILayout.Button("Restore first-login guide", GUILayout.Width(260)))
+            {
+                QuestProgressStore.ResetLocal(questId);
+                Debug.Log($"[FrogletToolbox] Restored the first-login guide ('{questId}' reset). It runs on the next Play.");
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(Pad);
+        }
+
         void DrawMasterUnlockGate()
         {
             GUILayout.Space(Pad);
@@ -1284,7 +1330,7 @@ namespace CosmicShore.Utility
             GUILayout.Space(Pad);
             EditorGUILayout.LabelField(
                 on
-                    ? "OPEN - every vessel, game mode and intensity is playable, and the quest graph does not run at all."
+                    ? "OPEN - every vessel, game mode and intensity is playable. The quest graph only runs phases that opt in (the first-login guide does - skip it below)."
                     : "ENFORCED - real progression is in effect. Locks, the quest graph and the FTUE funnel all apply.",
                 _infoStyle);
             EditorGUILayout.EndHorizontal();
