@@ -128,6 +128,17 @@ something (target, line-up, obstacles, skims taken and skipped, outcome) is plan
      a "learned drive" behind the same input-only contract.
    - Ghosts (a top player's line as a race opponent) come almost free from the recorder.
 
+**Where L3 stands (2026-10-17):**
+- **Built:** the recorder, automatic in every mode and editor-only (step 1). Consent and upload (steps 2-3) wait on the
+  team decisions in §5.
+- **Data:** 46 Squirrel flights from editor play.
+- **Readers:**
+  - `situation_features.py`: situations and choices.
+  - `learn_from_flights.py`: the Skim Race numbers, written into the Regatta config on 2026-10-17
+    (`LEARNED_FROM_FLIGHTS.md`).
+  - `racing_line.py`: the line averaged from clean, fast legs, with each leg's style read from the recording
+    (`RACING_LINE.md`). This is a cheaper, explainable stand-in for step A's "recorded lines of the best players".
+
 ### L4 — Ship: nothing deploys itself
 
 A trained AI reaches players only after a person:

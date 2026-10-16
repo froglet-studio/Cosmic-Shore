@@ -1,10 +1,11 @@
 # Regatta AI — where it stands (report for Garrett)
 
-**The same report as a page to share:** [Regatta AI Report](https://claude.ai/artifact/RmxWBLGfSsAXsUeubFXkUm) (shared from its Share menu).
+**The same report as a page to share:** [Regatta AI Report](https://claude.ai/artifact/RmxWBLGfSsAXsUeubFXkUm). The page
+was last updated 2026-10-15; this file is current.
 
-**From:** Yash's sessions, 2026-10-15. **Branch:** `Ys-bleeding-edge`, for testing. Nothing here is on `bleeding-edge`
-yet, and nothing goes there until Yash has tested it. **Status:** built and checked offline. **Not yet played in the
-Unity editor.** That playtest is the next step (section 5).
+**From:** Yash's sessions, 2026-10-15 to 2026-10-17. **Branch:** everything below is on `bleeding-edge` (PRs #1150,
+#1154, #1165); `Ys-bleeding-edge` carries what comes next. **Status:** built and checked offline: compiles, gates and
+self-tests pass. **Not yet played in the Unity editor.** That playtest is the next step (section 5).
 
 ## 1. In one minute
 
@@ -21,6 +22,17 @@ Unity editor.** That playtest is the next step (section 5).
   Unity editor itself." AIs are tested in the editor (the Third Eye, with a You / AI toggle on every pilot), and
   training data comes only from editor play (`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md`). What the lab measured is
   kept in `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md`.
+
+- **The AIs now learn from people's editor flights.** Every race played by hand in the editor is recorded automatically
+  (`HumanFlightRecorder`) and stored when Unity asks. 46 Squirrel races are stored so far (38 at I1, 8 at I3).
+- **The Squirrel AI's Regatta numbers were learned from those flights** (`learn_from_flights.py --write`, 2026-10-17).
+  The main change: it now skims the side of the rail the rings are on, the side people skim 94% of the time. It used to
+  cross the rail to reach every ring.
+- **A racing line is averaged from the clean, fast legs** (`racing_line.py`, `Docs/AI_SYSTEM/RACING_LINE.md`). Legs with
+  a mistake are left out, and each leg's style (rail riding, drift, abilities, boost) is read from the recording.
+  - Ideal lap: 19.8 s at I1. A person's median lap is 33.0 s.
+  - Rail riding is a little slower but far safer on several legs.
+  - The line itself is not yet flown by the AI.
 
 ## 2. Try it
 
@@ -43,6 +55,10 @@ hand yours to the AI.
 | Five racing AIs fixed from a code audit (table below) | `484582299` | `AIPilot`, `GateRaceController`, `RegattaController`, `RampBoostAIPolicySO` (new), `PilotSwap`, `AIDifficulty` |
 | Third Eye: a trail per pilot (its last seconds of flight) and what each racing AI is doing | `db88a4af4` | `Editor/AI/ThirdEye*` |
 | Steering fix: commit at the approach point, and re-attack after a missed ring (Regatta only) | `bd9fafb90` | `GateRaceController`, `RaceGateRing.PlaneCrossing`, `AIPilot.BreakOffNow`, `GateRaceSteeringTests` |
+| Third Eye: a You / AI toggle on every pilot (hand your hull to the AI, or fly any AI's hull) | `2744411fb` | `PilotControl`, `IAIPilotArming`, `ThirdEyeWindow`, `ThirdEyePilots` |
+| The AI training recorder, automatic in every mode (flight/3: situation, camera, rivals, rails, rings, state bits; the last ring counted, the hull named at the start, button presses) | `b797be06c`, `d72ac8c14`, `6d7241a92` | `HumanFlightRecorder` |
+| The Squirrel's Regatta numbers learned from editor flights (skims the ring face of the rail) | `e9a2a42fe` | `SkimRaceAIConfig_Regatta.asset` via `author_skimrace_ai_config.py` |
+| Offline readers of the flights (no game change): situations and choices, the Skim Race pilot's numbers, the racing line | | `Tools/Build/situation_features.py`, `learn_from_flights.py`, `racing_line.py` |
 
 **The audit fixes, hull by hull** (`REGATTA.md` §6.1):
 
@@ -82,7 +98,18 @@ does apply to every gate race.
 
 **To test (the task board, `Docs/TEAM_TASKS.md`):**
 - The Unity playtest in section 2. Yash has taken it.
-- The checklist entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md` (Regatta, 2026-10-14 and 2026-10-15).
+- The learned Squirrel AI in Regatta: does it hit the rail less? (T-20261016-39e6).
+- The recorder checks: 24/24 on a finish, button presses, the hull named (checklist, 2026-10-16).
+- The You / AI toggle (T-20261015-e266).
+- The checklist entries in `Docs/UNITY_VERIFICATION_CHECKLIST.md` (Regatta, 2026-10-14 to 2026-10-16).
+
+**More flights wanted** (T-20261016-6695, Yash). Just race; nothing to type.
+- About 100 races in all.
+- Mix in rail riding, drifting and abilities, some Hard rivals, and I2-I4.
+- None so far use abilities or Hard rivals, and drift has only 3-4 clean runs per leg.
+
+**Next build step:** port the racing line and the per-leg style choice into the Squirrel's Skim Race pilot
+(T-20261015-7fc3, Garrett with Yash). Before it ships, race it against today's AI in the editor.
 
 **Still open in the AIs** (`REGATTA.md` §6.1):
 - The Manta's Soar has no corner look-ahead.
@@ -106,37 +133,50 @@ This block is refreshed by `python3 Tools/Build/team_report.py area regatta-ai -
 this report runs it first (`Docs/TEAM.md` rule 10).
 
 <!-- team_report:begin (generated by Tools/Build/team_report.py; do not edit) -->
-_Generated 2026-10-15 from git (last 4 days), who_works_where.py and Docs/TEAM_TASKS.md: `python3 Tools/Build/team_report.py area regatta-ai --days 4`._
+_Generated 2026-10-16 from git (last 14 days), who_works_where.py and Docs/TEAM_TASKS.md: `python3 Tools/Build/team_report.py area regatta-ai --days 14`._
 
-### Recent changes (21)
-- 2026-10-15 `c2ef91660` feat(regatta-ai): Training AI for Regatta - every hull, AIs that train each other, learn from a player's line — on Ys-bleeding-edge
-- 2026-10-15 `b702e1692` feat(regatta-ai): easier routes - planned-route line and three steering knobs — on Ys-bleeding-edge
-- 2026-10-15 `71d2d175b` feat(regatta-ai): right-click press and hold pans the camera — on Ys-bleeding-edge
-- 2026-10-15 `bd9fafb90` fix(regatta-ai): commit at the approach point, re-attack after a missed mouth — on Ys-bleeding-edge
-- 2026-10-15 `60db8af10` fix(regatta-ai): settings dock stays right of the stage in any viewer — on Ys-bleeding-edge
-- 2026-10-15 `12bbfbaca` feat(regatta-ai): tabs on the right of the stage, and the studio kit for every AI — on Ys-bleeding-edge
-- 2026-10-15 `2d4a9bf44` fix(regatta-ai): heading buttons sit on the right, beside the fold button — on Ys-bleeding-edge
-- 2026-10-15 `5b7eec061` feat(regatta-ai): the Regatta AI race studio, its own artifact; HyperSea taken out of the Vessel Studio — on Ys-bleeding-edge
-- 2026-10-15 `e51c1ce96` docs(ai): Regatta AIs are tested in their own Regatta artifact, not the Vessel Studio — on Ys-bleeding-edge
-- 2026-10-15 `db88a4af4` feat(third-eye): trajectory trails and what every racing AI is doing — on Ys-bleeding-edge
-- 2026-10-15 `484582299` fix(regatta-ai): five racing AIs fixed from a code audit - Rhino ramps, Urchin finds its lane, Dolphin aims its boost — on Ys-bleeding-edge
-- 2026-10-14 `d52877904` docs(regatta): the host's grid picker and the five-hull test race — on Ys-bleeding-edge
-- 2026-10-14 `a68859e8b` fix(tooling): restore seven characters the menu-reorg script dropped — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-14 `34d902cac` refactor(tooling): reorganise the FrogletTools menu and retire 24 dead tools — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-14 `1f4eede6a` feat(skimrace): ring halves by intensity 4; omni crystal 20% larger — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-14 `5b9e1e057` docs(ai): Regatta AI roadmap - six racing AIs, one drive pattern, Amoebius as the harness — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-14 `53363759f` feat(brittlestar): new one-touch vessel - modes, five turrets, ring detonation — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-13 `3b005f012` fix(ai): AI Serpent cloaks replicate; AIs stop tracking cloaked pilots — on another branch
-- 2026-10-13 `bcba23705` feat(skimrace): omni crystal inside each race ring; ring shrinks with intensity — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-13 `16b41b045` feat(stoat): port the Stoat, Slingshot and Warpline from claude/peaceful-rubin-hhw49n — on Ys-bleeding-edge, bleeding-edge
-- 2026-10-12 `fb2bff7ac` feat(skimrace): replace omni crystals with domain race rings — on Ys-bleeding-edge, bleeding-edge
+### Recent changes (25+)
+- 2026-10-16 `0a41ef133` perf: Send to Claude without a question; generic fixes from the first real Unity capture — on bleeding-edge
+- 2026-10-16 `6d857572d` feat(arena): AI difficulty row (Easy / Medium / Hard) on every Arena card — on bleeding-edge
+- 2026-10-16 `6c03de73c` feat(regatta-ai): the Rhino, Dolphin and Manta AIs learn their drives from editor flights, Regatta only — on bleeding-edge
+- 2026-10-16 `5e6c3b9ef` feat(ai-training): no hand labels - each leg's style is read from the recording — on bleeding-edge
+- 2026-10-16 `14b3ff545` feat(ai-training): racing line from clean flights; recorder counts the last ring, names the hull, records buttons and tags — on bleeding-edge
+- 2026-10-16 `3320c8fa8` docs(rhino): mode, AI-boost, QA and verification docs to current values — on another branch
+- 2026-10-16 `8a3b41616` feat(rhino): design all four rows - Afterimage, Live Wire, Momentum, Surge — on another branch
+- 2026-10-16 `d72ac8c14` feat(ai-training): learn from the pilot's view - camera, view features, seen-gated labels, reaction lag (V1-V4) — on bleeding-edge
+- 2026-10-15 `a4651c844` chore(regatta-ai): delete the Regatta AI artifact and its page; tests happen in the Unity editor — on bleeding-edge
+- 2026-10-15 `b797be06c` feat(ai-training): record the rest of the situation plan (§2.1-2.2) in every flight — on bleeding-edge
+- 2026-10-15 `bfacbb5e4` feat(ai-training): training data from the Unity editor only; the page only views flights — on bleeding-edge
+- 2026-10-15 `6201d906e` feat(ai-training): learn from the situation, not just the sticks (S1-S5) — on bleeding-edge
+- 2026-10-15 `1fbf5e2a6` fix(regatta): the Squirrel AI never had a rail - resolve the laid rails from the cell config — on bleeding-edge
+- 2026-10-15 `eaef8491f` docs(ai): plan for learning from players by situation, not just sticks — on bleeding-edge
+- 2026-10-15 `e3a6598b9` feat(ai): record every hand-flown Regatta race automatically; no Record button — on bleeding-edge
+- 2026-10-15 `395862bf2` fix(ai): the Record button says whether it is on and what it is waiting for — on bleeding-edge
+- 2026-10-15 `fd039c0ea` fix(ai): long flights are sent too; the Record button counts saved flights — on bleeding-edge
+- 2026-10-15 `60e4904cc` fix(ai): a recorded flight survives stopping Play, and Unity asks to send it — on bleeding-edge
+- 2026-10-15 `3ef2bc56f` feat(ai): record your Regatta flights; the Squirrel AI learns its numbers from them — on bleeding-edge
+- 2026-10-15 `7a42dce55` fix(third-eye): the You / AI buttons work again with the Skim Race pilot — on bleeding-edge
+- 2026-10-15 `15ff631e4` fix(ai): Regatta Squirrel - size rails at full growth; the You/AI toggle flies the skim pilot — on bleeding-edge
+- 2026-10-15 `a5f876159` perf(editor): find what a 10 fps editor spends its frame on, and test in slow motion — on bleeding-edge
+- 2026-10-15 `861cca3dd` fix(regatta): no false "turn started with no course" while leaving Play — on bleeding-edge
+- 2026-10-15 `85092c67e` fix(ai): the Squirrel skims its own Regatta rail instead of striking the braid — on bleeding-edge
+- 2026-10-15 `2744411fb` feat(third-eye): a You / AI toggle on every pilot - hand your hull to the AI, take over any AI hull — on bleeding-edge
 
 ### Also in flight on other branches
-- `cece/vibrant-archimedes-n3xn3x` (unattributed, 2026-10-13): merge: bleeding-edge into cece/vibrant-archimedes-n3xn3x; Serpent Charge 66 -> 67
+- `cece/vibrant-archimedes-n3xn3x` (unattributed, 2026-10-16): feat(serpent-charge): a sniper duel - only snipes on rival pilots score
+- `cece/relaxed-hopper-r62hbd` (unattributed, 2026-10-16): docs(rhino): launch-blocker, speed-tunnel, construction and tail/jet docs
+- `claude/admiring-euler-86o7hv` (unattributed, 2026-10-06): fix(ai): resolve AIPilot's commit drift against the active input device
 
 ### Open tasks (Docs/TEAM_TASKS.md)
 - T-20261015-18e7 [taken by Yash] test: Playtest Regatta in Unity on Ys-bleeding-edge: five hulls (Squirrel, Manta, Rhino, Urchin, Dolphin) on AI seats, Hard, I1 then I3, watched in the Third Eye with Trails on. (who: Yash (testing it), anyone with the Unity Editor)
 - T-20261015-0064 [open] decision: Decide the AI-training direction: extend the genetic trainer (Assets/_Scripts/Utility/AITraining) for Regatta rather than build a second one; where consented player flights are stored and the privacy wording; whether a neural-network AI may ever ship. (who: Garrett and the core four; studyholic and Shombith for the trainer)
 - T-20261015-cb8f [open] decision: Decide whether the gate-race steering fix (commit at the approach point, re-attack after a missed ring; on in Regatta only) is turned on for Headlong, Switchback, Breakwater, Skein and Redline (inspector switch aiCommitFromApproachPoint) after a playtest. (who: Garrett (gate races owner))
 - T-20261015-2082 [open] dev: Build T1 of the AI training plan: the AI Lab (Test Range R1-R3) in MinigameRegatta - any hull on any seat (trained or untrained), 0.25x-8x time, the Third Eye's trails and readout in a development build, speed graph and phase timeline, a scorecard JSON per run. (who: Yash (offered), with Garrett for the trainer hand-off)
+- T-20261015-aa0d [open] test: Playtest the Squirrel AI skimming Regatta's rails: Squirrels on AI seats at I1 and I4, the Third Eye's skim readout on one (lift 7.5, direct off, shell gap 1.5-6), and tune Resources/SkimRaceAIConfig_Regatta.asset live if it still strikes or drifts off its rail (who: Yash (found it), Andrew, anyone with the Unity Editor)
+- T-20261015-0576 [open] test: After your next hand-flown Regatta race in the editor, open the stored flight_Regatta_*.json and check the new situation data: 44 columns per sample, rails (one per lane) with ownRail, ringList, railEvents after a rail hit, camMode not -1; toggle You/AI for a few seconds and those rows have held 1 (who: Yash)
+- T-20261016-f695 [open] decision: Once 3+ hand-flown Regatta editor flights with the camera exist, compare the measured reaction lag (situation_features.py report / learned_situations.json reactionLag) with SkimRaceDifficultySO's Easy/Medium/Hard ReactionSeconds (0.5 / 0.25 / ...) and decide whether any should change (who: Garrett (handicap owner))
+- T-20261016-6695 [open] test: Race the Squirrel in Regatta in the Unity editor, about 100 races (Docs/AI_SYSTEM/RACING_LINE.md §4). Nothing to type: each leg's style (rail riding, drift, abilities, boost) and the rival difficulty are read from the recording. Mix it up: ride your rail, drift, press abilities, pick Hard rivals in the lobby for some races, play I2-I4 too. Store every race, the bad ones too (who: Yash)
+- T-20261016-39e6 [open] test: Race the Regatta Squirrel AI after its ring-face change (SkimHeight -6.5, learned from your flights): watch it in the Third Eye skim the side of the rail the rings are on; count its rail hits and its rings when you finish (old median 14/24); revert the one asset to compare with the old AI (who: Yash)
+- T-20261016-89ed [open] test: Fly Regatta I1 as the Rhino, the Dolphin, the Manta and the Urchin, 5+ finished races each, storing every one; in one race per hull flip Third Eye > Pilots > AI on your hull for a lap and back (gives the AI's numbers beside yours). Then ask a session to run learn_drives_from_flights.py --write (who: Yash)
+- T-20261016-0eb3 [open] decision: Two decisions for the Regatta AIs: (1) put the Stoat on the Regatta card (it is one of the roadmap's six but cannot be flown in Regatta, so its AI cannot learn from flights); (2) cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than Ys-bleeding-edge's - pick one before it merges (who: Yash with Garrett (Stoat and Rhino owner sessions))
 <!-- team_report:end -->

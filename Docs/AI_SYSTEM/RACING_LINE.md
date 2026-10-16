@@ -85,7 +85,11 @@ recorded.
 
 **Ability buttons** were never pressed in the five flights that record buttons.
 
-## 3. How the AI is built from this (proposed; nothing ported yet)
+## 3. How the AI is built from this (proposed)
+
+**What has reached the game so far:** only `learn_from_flights.py`'s Skim Race numbers. They were written on 2026-10-17
+into `SkimRaceAIConfig_Regatta.asset` by another session (`LEARNED_FROM_FLIGHTS.md`); the main change is skimming the
+ring face of the rail. The racing line and the per-leg style choice below are not ported yet.
 
 | Layer | Learned from | What it gives the AI |
 |---|---|---|

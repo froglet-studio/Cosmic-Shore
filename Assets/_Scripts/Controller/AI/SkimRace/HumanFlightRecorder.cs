@@ -26,8 +26,10 @@ namespace CosmicShore.Gameplay
     /// toggle - recorded, and every learner skips it); the camera the pilot looked through (position, forward, field of
     /// view, mode); every other pilot's position, velocity and rings; and the nearest crystals. Once per race: every
     /// ring (order, position, axis, mouth radius, laps), every rail (its prisms and up axes, contact shell, owning
-    /// domain), the rival difficulty, the build and the course fingerprint, and each rail prism destroyed or restored
-    /// while the race ran (<c>railEvents</c>). The rails come from the arena
+    /// domain), the rival difficulty, the build and the course fingerprint, each rail prism destroyed or restored
+    /// while the race ran (<c>railEvents</c>), and the pilot's own button presses (<c>buttonEvents</c>). The hull, mode
+    /// and race target are named when recording starts, and one last sample is taken on the frame the race ends, so the
+    /// ring that ended it is counted. The rails come from the arena
     /// (<see cref="RegattaCourseSource.TryResolveLiveRails"/>), copied when recording starts, so
     /// <c>Tools/Build/learn_from_flights.py</c> and <c>situation_features.py</c> can measure the flight against them.</para>
     ///
