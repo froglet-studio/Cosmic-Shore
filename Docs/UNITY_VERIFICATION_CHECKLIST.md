@@ -9329,6 +9329,15 @@ ticked, and with it ticked one-thumb mouse flight is expected to read zero again
 **Editor run (2026-10-15, Caleb): fixed.** Mouse movement steers in the preview without the
 Windows key, WASD steers, LMB fires the guns. Merged into `claude/exciting-bell-69b398`.
 
+**Full FTUE run (2026-10-16, Caleb, on exciting-bell): passes.** The guide spotlights ARCADE, then
+Skein, then the microgame; the Lesson's steer steps pass and the guide releases with a tip.
+One rare fault: LMB twice backed out of the microgame (once on the first shot, once after many
+tries). Likely cause: the cursor lock lapses for a frame whenever another scheme takes the input
+(a connected pad, a pause), and the click that hands flight back to the mouse lands in that frame.
+Fixed (2026-10-16, not Editor-verified): `ModePreviewWindow.GrantFocus(mouseFlies)` - on a one-thumb
+hull a mouse button never releases focus; Escape and pad Start still do. Re-test: with the pad
+connected, nudge its stick, then fire LMB; the window stays focused.
+
 **Originally not settled.** Whether MOUSE MOVEMENT turns the ship in the preview. If it does not, the console
 carries an unconditional `[MouseFlight]` warning naming which link is dead.
 

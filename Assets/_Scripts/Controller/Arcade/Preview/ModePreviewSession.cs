@@ -567,7 +567,8 @@ namespace CosmicShore.Gameplay
                 EventSystem.current.sendNavigationEvents = false;
             }
 
-            _window?.GrantFocus();
+            _window?.GrantFocus(player.Vessel.VesselStatus != null &&
+                                player.Vessel.VesselStatus.IsSingleStickControls);
         }
 
         // The menu behind this window runs PAUSED (ScreenSwitcher pauses on every non-HOME

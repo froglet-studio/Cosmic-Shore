@@ -437,7 +437,7 @@ namespace CosmicShore.Gameplay
                 EventSystem.current.sendNavigationEvents = false;
             }
 
-            window?.GrantFocus();
+            window?.GrantFocus(vessel.VesselStatus.IsSingleStickControls);
         }
 
         void HandleFocusReleased()
