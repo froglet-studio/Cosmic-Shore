@@ -61,10 +61,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Massif silhouette - the four are built by genuinely different rules, not one
         /// cone with different numbers.</summary>
-        enum FlankStyle { Shingled, Terraced, Fluted, Shattered }
+        enum FlankStyle { Shingled = 0, Terraced = 1, Fluted = 2, Shattered = 3 }
 
         /// <summary>How alive the mouth is - sets the danger budget and what the vent does.</summary>
-        enum VentState { Erupting, Degassing, Collapsed, Cooled }
+        enum VentState { Erupting = 0, Degassing = 1, Collapsed = 2, Cooled = 3 }
 
         readonly struct Spec
         {

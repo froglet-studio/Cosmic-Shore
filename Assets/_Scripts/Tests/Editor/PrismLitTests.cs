@@ -169,12 +169,32 @@ namespace CosmicShore.Tests
         {
             string hlsl = ReadHlsl();
 
-            Assert.IsTrue(Regex.IsMatch(hlsl, @"float\s+Domain,\s*//[^\n]*\n\s*out float3 Color\)"),
-                "The sight's entry point no longer takes `float Domain` as its LAST INPUT, immediately " +
-                "before `out float3 Color`. A file-mode Custom Function node builds its call as all " +
-                "inputs then all outputs, so a parameter declared after the `out` makes every prism " +
-                "material render UNMATERIALED with nothing in the console " +
-                "(Tools/Build/check_shadergraph_custom_function_signatures.py is the gate).");
+            // Domain must be an INPUT, i.e. declared before `out float3 Color` with only further
+            // inputs between them. It was the last input when this was written; the super-shield
+            // blocker mark (Docs/PRISM_ANIMATION.md §4.7, "a per-PRISM fact the shader needs is a
+            // STATE bit", 2026-09-28) appended `float SuperShielded` after it, which is legal for
+            // the same inputs-then-outputs reason. What must never happen is an `out` before it.
+            Assert.IsTrue(Regex.IsMatch(hlsl,
+                    @"float\s+Domain,\s*//[^\n]*\n(?:\s*float\d?\s+\w+,\s*//[^\n]*\n)*\s*out float3 Color\)"),
+                "The sight's entry point no longer takes `float Domain` as an INPUT declared before " +
+                "`out float3 Color` (with only further inputs between them). A file-mode Custom " +
+                "Function node builds its call as all inputs then all outputs, so a parameter declared " +
+                "after the `out` makes every prism material render UNMATERIALED with nothing in the " +
+                "console (Tools/Build/check_shadergraph_custom_function_signatures.py is the gate).");
+
+            // ...and nothing before it is an `out` either: the regex above only sees the stretch
+            // from Domain to the final output, so read the whole parameter list (comments stripped,
+            // since they carry parentheses) and require Domain to precede the FIRST `out`.
+            int entry = hlsl.IndexOf("void PrismDestructionSight_float(", System.StringComparison.Ordinal);
+            Assert.GreaterOrEqual(entry, 0, "PrismDestructionSight_float is gone from " + HlslPath + ".");
+            int close = hlsl.IndexOf("out float3 Color)", entry, System.StringComparison.Ordinal);
+            Assert.Greater(close, entry, "PrismDestructionSight_float no longer ends in `out float3 Color)`.");
+            string parameters = Regex.Replace(hlsl.Substring(entry, close - entry), @"//[^\n]*", "");
+            var domainParam = Regex.Match(parameters, @"\bfloat\s+Domain\b");
+            var firstOut = Regex.Match(parameters, @"\bout\b");
+            Assert.IsTrue(domainParam.Success && (!firstOut.Success || firstOut.Index > domainParam.Index),
+                "An `out` parameter of PrismDestructionSight_float is declared before `float Domain`, so " +
+                "the node would call it with its inputs and outputs interleaved.");
 
             var gate = Regex.Match(hlsl, @"if \(tag\.y > 0\.0 && tag\.y != Domain\)\s*\n\s*continue;");
             Assert.IsTrue(gate.Success,

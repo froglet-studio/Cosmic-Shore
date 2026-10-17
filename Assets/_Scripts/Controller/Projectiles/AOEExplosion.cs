@@ -31,6 +31,31 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public virtual bool CreatesMass => false;
 
+        /// <summary>
+        /// May <see cref="AOEExplosionPool"/> reuse instances of this class? Say yes only when every
+        /// field one detonation writes on the instance is rewritten by the next
+        /// <see cref="Initialize"/> (the pool's own doc says which blasts are not there yet). A
+        /// pooled instance ends its life through <see cref="Retire"/>, never <c>Destroy</c>.
+        /// </summary>
+        public virtual bool Poolable => false;
+
+        /// <summary>The prefab this instance belongs to in <see cref="AOEExplosionPool"/>; null when
+        /// it was Instantiated outside the pool.</summary>
+        public AOEExplosion PoolPrefab { get; internal set; }
+
+        /// <summary>
+        /// Ends this blast: parked for reuse when it came from <see cref="AOEExplosionPool"/>,
+        /// destroyed otherwise. Every self-retire site calls this rather than
+        /// <c>Destroy(gameObject)</c>, so a class that turns <see cref="Poolable"/> on needs no
+        /// other change at those sites.
+        /// </summary>
+        protected void Retire()
+        {
+            if (!this) return;
+            if (PoolPrefab) AOEExplosionPool.Release(this);
+            else Destroy(gameObject);
+        }
+
         [Header("Dependencies")]
         [Inject] protected GameDataSO gameData;
 
@@ -143,6 +168,8 @@ namespace CosmicShore.Gameplay
         /// rather than leave the frozen-at-scale husk the mid-animation case wants.
         /// </summary>
         protected bool _visualComplete;
+        float _authoredDuration;
+        bool _authoredDurationCaptured;
         private static int s_trailBlocksMask = -1;
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
         private static readonly ProfilerMarker s_explodeFrame = new("AOE.ExplodeAsync.Frame");
@@ -208,7 +235,7 @@ namespace CosmicShore.Gameplay
         protected virtual void PerformResetCleanup()
         {
             CancelExplosion();
-            Destroy(gameObject);
+            Retire();
         }
 
         public virtual void Initialize(InitializeStruct initStruct)
@@ -223,8 +250,14 @@ namespace CosmicShore.Gameplay
             // that want a fixed physical EXPANSION SPEED rather than a fixed sweep
             // time pass radius/speed here — everything downstream (wavefront ease,
             // batch damage radius, impact speed) already derives from this one field.
-            if (initStruct.DurationOverride > 0f)
-                ExplosionDuration = initStruct.DurationOverride;
+            // Restored to the authored value when there is no override, so a pooled instance does
+            // not keep the previous detonation's duration (AOEExplosionPool).
+            if (!_authoredDurationCaptured)
+            {
+                _authoredDuration = ExplosionDuration;
+                _authoredDurationCaptured = true;
+            }
+            ExplosionDuration = initStruct.DurationOverride > 0f ? initStruct.DurationOverride : _authoredDuration;
 
             ApplyAffectSelfOverride(initStruct);
             ApplyDevastatingOverride(initStruct);
@@ -391,7 +424,7 @@ namespace CosmicShore.Gameplay
                             // ExecuteCommonPrismCommands. Stop explosion immediately.
                             impactor?.EndBatchProcessing();
                             if (colliderDisabledForBatch) RestorePrismExclusion();
-                            if (this) Destroy(gameObject);
+                            Retire();
                             return;
                         }
 
@@ -429,7 +462,7 @@ namespace CosmicShore.Gameplay
 
                 impactor?.EndBatchProcessing();
                 if (colliderDisabledForBatch) RestorePrismExclusion();
-                if (this) Destroy(gameObject);
+                Retire();
             }
             catch (OperationCanceledException)
             {
@@ -445,7 +478,7 @@ namespace CosmicShore.Gameplay
                 // Exception: once the visual is done we are only draining bookkeeping -
                 // the mesh is hidden and the trigger is off, so there is no frozen cone
                 // to preserve and leaving it would strand the GameObject.
-                if (_visualComplete && this) Destroy(gameObject);
+                if (_visualComplete) Retire();
             }
             catch (System.Exception e)
             {
@@ -455,7 +488,7 @@ namespace CosmicShore.Gameplay
                 Debug.LogException(e);
                 impactor?.EndBatchProcessing();
                 if (colliderDisabledForBatch) RestorePrismExclusion();
-                if (this) Destroy(gameObject);
+                Retire();
             }
         }
 

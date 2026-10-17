@@ -707,6 +707,10 @@ def run_audit(tree, schema, base, added, modified, deleted_metas, base_text):
         findings += [f for f in now if f not in old]
     # nothing may still reference a deleted file's guid
     for meta, guid in deleted_metas:
+        # A MOVED file (git mv: same guid, new path) is not deleted: its guid still has an owner, so every reference
+        # to it still resolves. Without this the moved file's own .meta was reported as referencing itself.
+        if guids.get(guid):
+            continue
         hits = subprocess.run(["git", "grep", "-l", guid, "--", "Assets"], cwd=tree.root, stdout=subprocess.PIPE,
                               text=True).stdout.split()
         hits += [k for k, v in tree.overlay.items() if guid in v]

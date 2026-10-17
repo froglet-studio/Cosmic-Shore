@@ -230,8 +230,12 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
   (golf-inverted → showed the loser 1st in SkimRace). It now reads `gameData.Results` too (BUGS.md
   B7); that was the last end-game surface re-deriving rank locally.
 - 🟡 **C** (R1) — partially advanced: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`, no
-  offline single-player branch). Still open: remove the `IsMultiplayerMode` scoring branches
-  (`Scoreboard.cs:147,454`) and retire `DomainStatsList[0]` as a winner source.
+  offline single-player branch). Still open: retire `DomainStatsList[0]` as a winner source (`Scoreboard.cs:482`).
+  *Re-measured 2026-10-17:* the `IsMultiplayerMode` scoring branches this row cited
+  (`Scoreboard.cs:147,454`) are gone — `Scoreboard.cs` has 0 references — but 20 lines in 11
+  other files still read it (`GameDataSO` 4, `Arcade` 4, `MultiplayerMiniGameControllerBase` 3,
+  `MultiplayerSetup` 2, seven files with 1; `git grep -c IsMultiplayerMode -- 'Assets/*.cs'`),
+  which is R1's surface now.
 - 🔴 **D** (next session) — **server-ORDERED results sync**: the rows are still re-SORTED on every
   peer (`SyncFinalScores_ClientRpc` → `rule.BuildResults` over the local `RoundStatsList`), so tied
   rows order differently host vs client. Sort once on the server, ship rows in rank order (+ the
@@ -304,7 +308,8 @@ when the stat-row surface itself changes.
   `BUGS.md` B3; remove or wire correctly.
 - `DuelForCell` in-game HUD wiring is unclear (no dedicated HUD subclass) —
   confirm which HUD the Cellular Duel scene uses during the unified-path work.
-- `GameCanvas-SkimRace.prefab` carries stale Scoreboard-era data: the internal
+- ~~`GameCanvas-SkimRace.prefab`~~ **closed — the prefab was deleted (`5a4a003a0`, 2026-09-08,
+  "delete duplicate prefab"); re-measured 2026-10-17.** It carried stale Scoreboard-era data: the internal
   `Scoreboard`'s serialized fields predate the current class (old
   `multiplayerController` name, `SinglePlayerBannerColor`, rematch panel refs),
   and the retired rematch UI is still in the prefab with persistent calls to

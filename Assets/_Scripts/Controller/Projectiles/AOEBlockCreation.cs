@@ -46,8 +46,8 @@ namespace CosmicShore.Gameplay
             //    every sibling AOE spawner.
             trails.Clear();
 
-            // 3. Destroy this spawner object
-            Destroy(gameObject);
+            // 3. Retire this spawner object (back to AOEExplosionPool when it came from there)
+            Retire();
         }
 
         public virtual void BeginExplosion()
@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
                 // Nothing left to own once the rings are laid: retire the shell instead of leaving
                 // one subscribed AOE object behind per Kabloom (AOEBlockSpawner's lifecycle).
                 if (!ct.IsCancellationRequested && this != null)
-                    Destroy(gameObject);
+                    Retire();
             }
         }
 

@@ -74,6 +74,25 @@ namespace CosmicShore.Tests
             private static void ApplyPatchesToLobby() => throw new ArgumentOutOfRangeException("index");
         }
 
+        /// <summary>A frame named like the SDK method the B34 rule looks for in the stack trace.</summary>
+        private static class LobbyChannel
+        {
+            public static ObjectDisposedException Throw()
+            {
+                try { UnsubscribeAsync(); }
+                catch (ObjectDisposedException e) { return e; }
+                throw new InvalidOperationException("unreachable");
+            }
+
+            private static void UnsubscribeAsync() => throw new ObjectDisposedException("$lobby!!!x");
+        }
+
+        private static ObjectDisposedException DisposedElsewhere()
+        {
+            try { throw new ObjectDisposedException("ours"); }
+            catch (ObjectDisposedException e) { return e; }
+        }
+
         #region Classify - structured
 
         [Test]
@@ -132,6 +151,15 @@ namespace CosmicShore.Tests
         [Test]
         public void Classify_SocketException_IsTransient() =>
             Assert.AreEqual(UgsFailureClass.Transient, UgsRequestPolicy.Classify(new SocketException()));
+
+        [Test]
+        public void LobbyUnsubscribeAfterWireTeardown_MatchesOnlyTheSdkFrame()
+        {
+            Assert.IsTrue(UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown(LobbyChannel.Throw()));
+            Assert.IsTrue(UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown(new AggregateException(LobbyChannel.Throw())));
+            Assert.IsFalse(UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown(DisposedElsewhere()));
+            Assert.IsFalse(UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown(new ObjectDisposedException("never thrown")));
+        }
 
         [Test]
         public void Classify_LobbyPatcherStaleIndex_IsBenign() =>

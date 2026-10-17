@@ -114,7 +114,7 @@ namespace CosmicShore.Gameplay
         /// resolver understands. The authoring tool's validator uses this.</summary>
         public static bool IsKnownToken(string token) => Parse(token, out _, out _, out _) != TokenKind.Unknown;
 
-        enum TokenKind { Unknown, Vessel, Mode, Ability, AbilityDescription, AbilityGlyph, ControlGlyph }
+        enum TokenKind { Unknown = 0, Vessel = 1, Mode = 2, Ability = 3, AbilityDescription = 4, AbilityGlyph = 5, ControlGlyph = 6 }
 
         static DrillTokenOutcome TryFill(string token, IDrillTokenSource source, out string value)
         {
