@@ -336,6 +336,15 @@ namespace CosmicShore.Gameplay
         /// <summary>The mode's last report for this pilot (see <see cref="ObjectiveReport"/>).</summary>
         public ObjectiveReport Objective => _objective;
 
+        /// <summary>
+        /// Where the thing this pilot is AFTER is (a Regatta ring), else the point it steers for. A hull autopilot gauges
+        /// RANGE with this and bearing with <see cref="TargetPosition"/>: when a mode steers along a race line the
+        /// steering point always sits one look-ahead away, so a "how close is my target" question asked of it never comes
+        /// true (the Stoat's field autopilot never laid a pair, 2026-10-17). The one pilot-side read of the mode's
+        /// report: its position, nothing about its phase.
+        /// </summary>
+        public Vector3 ObjectivePosition => _objective.Has ? _objective.Objective : _targetPosition;
+
         /// <summary>A mode's steering hook says what it is doing (presentation only, no allocation).</summary>
         public void ReportObjective(ObjectivePhase phase, Vector3 objective, int ring = -1, int lap = -1) =>
             _objective = new ObjectiveReport
