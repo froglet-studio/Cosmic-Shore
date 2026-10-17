@@ -722,7 +722,8 @@ def preview_window(root, kind):
     return pv
 
 
-def text_button(parent, key, name, caption, preview_call, nav=3):
+def text_button(parent, key, name, caption, preview_call, nav=3, target=("Preview", "window"),
+                type_name="CosmicShore.UI.ModePreviewWindow"):
     """A small style-B KitButton whose click calls ModePreviewWindow.<preview_call> on this view's
     preview (FLY: RequestFocus, STOP: ReleaseFocus). Laid out by its parent's HLG."""
     w = 16 + K.label_width(caption, "ButtonSmall") + 16
@@ -741,7 +742,7 @@ def text_button(parent, key, name, caption, preview_call, nav=3):
     b.add("button", 114, lambda ctx, go: mono(go, S["button"],
           K.SELECTABLE_FIELDS.replace("    m_Mode: 3\n", f"    m_Mode: {nav}\n")
           + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n"
-          + A.calls([(ctx.c("Preview", "window"), "CosmicShore.UI.ModePreviewWindow", preview_call),
+          + A.calls([(ctx.c(*target), type_name, preview_call),
                      (ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])
           + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{key}/FocusRing', 'img'))}\n"
           "  variant: 0\n  fill: 0\n"
@@ -773,13 +774,17 @@ def flying_hint(root):
     STOP is for touch, which has neither START nor Esc - and a full-bleed preview leaves almost no
     "outside" to tap (ModePreviewWindow releases on a press outside its surface). Navigation None:
     the pad's way back is START."""
-    n = root.child(N("FlyingHint", "FlyingHint", R((0.5, 1), None, (0, -112), (700, 40))))
+    n = root.child(N("FlyingHint", "FlyingHint", R((0.5, 1), None, (0, -(BAND_TOP - 48)), (820, 40))))
     n.add("cg", 225, canvas_group(False))
     n.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0)))
     t = n.child(N("FlyingHint/Text", "Text", R((0, 0.5), None, (0, 0), (300, 18), (0, 0.5))))
     t.add("le", 114, le(pw=300, ph=18))
     label(t, "START or Esc to stop flying", "Label", "TextLight", align="right")
     text_button(n, "FlyingHint/Stop", "StopButton", "STOP", "ReleaseFocus", nav=0)
+    # The option (the owner: fly in the little window, "there should be an option"): the frame grows to
+    # the window and the settings fade; again, or handing the stick back, returns the frame.
+    text_button(n, "FlyingHint/Full", "FullScreenButton", "FULL SCREEN", "ToggleFullScreen", nav=0,
+                target=("root", "cinema"), type_name="CosmicShore.UI.ConfigureCinema")
     return n
 
 
@@ -1098,9 +1103,10 @@ def build_view(kind):
         flying_hint(root)
         root.add("cinema", 114, lambda ctx, go: mono(go, S["cinema"],
                  f"  preview: {ref(ctx.c('Preview', 'window'))}\n"
+                 f"  previewRect: {ref(ctx.rt('Preview'))}\n"
                  f"  chrome: {ref(ctx.c('Chrome', 'cg'))}\n"
                  f"  flyingHint: {ref(ctx.c('FlyingHint', 'cg'))}\n"
-                 "  fadeSeconds: 0.35\n"))
+                 "  fadeSeconds: 0.35\n  fullOffsetMin: {x: 0, y: 0}\n  fullOffsetMax: {x: 0, y: -84}\n"))
 
     root.add("panel", 114, lambda ctx, go: panel_body(ctx, go, kind))
     return root
@@ -1860,11 +1866,15 @@ def validate_prefabs(files):
             assert f"  guideTarget: {{fileID: {V('Fly/Button#rt')}}}" in win, \
                 f"{view}: ModePreviewWindow.guideTarget must be FLY (the guide's Preview step would spotlight the whole screen)"
             _, stop = comp_doc(text, V("FlyingHint/Stop#button"))
+            _, full = comp_doc(text, V("FlyingHint/Full#button"))
+            assert f"m_Target: {{fileID: {V('root#cinema')}}}" in full and "m_MethodName: ToggleFullScreen" in full, \
+                f"{view}: FULL SCREEN must call ConfigureCinema.ToggleFullScreen (the option to leave the frame)"
             assert "m_MethodName: ReleaseFocus" in stop, \
                 f"{view}: STOP must call ModePreviewWindow.ReleaseFocus (touch has no START / Esc to stop flying)"
             _, cin = comp_doc(text, V("root#cinema"))
             assert cin and S["cinema"] in cin, f"{view}: no ConfigureCinema on the root"
-            for field, want in (("preview", V("Preview#window")), ("chrome", V("Chrome#cg")), ("flyingHint", V("FlyingHint#cg"))):
+            for field, want in (("preview", V("Preview#window")), ("previewRect", V("Preview#rt")), ("chrome", V("Chrome#cg")),
+                                ("flyingHint", V("FlyingHint#cg"))):
                 assert f"  {field}: {{fileID: {want}}}" in cin, f"{view}: ConfigureCinema.{field} is not wired"
         _, back = comp_doc(text, V("Back#button"))
         assert back and A.doc_of(text, V("Back#close"))[0] == 114 and "m_Calls: []" in back, \
@@ -1993,6 +2003,8 @@ def self_test(files):
         ("the guide pointed at the whole screen", lambda f: f.__setitem__(view, re.sub(
             r"(  guideTarget: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), validate_prefabs),
         ("STOP calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: ReleaseFocus", "m_MethodName: Hide", 1)),
+         validate_prefabs),
+        ("FULL SCREEN calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: ToggleFullScreen", "m_MethodName: Hide", 1)),
          validate_prefabs),
         ("the cinema fading nothing", lambda f: f.__setitem__(view, f[view].replace(
             f"  chrome: {{fileID: {V('Chrome#cg')}}}\n", "  chrome: {fileID: 0}\n", 1)), validate_prefabs),

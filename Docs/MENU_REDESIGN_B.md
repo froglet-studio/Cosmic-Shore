@@ -1929,3 +1929,15 @@ From the owner's play test:
   between them the preview stands in an 840 x 324 frame - black background, glowing ControlActive border, corner
   brackets, a fade under the FLY row. The arena model shows there before the tap; double-tap or FLY flies in it.
   `author_menu_configure.py` fails if the frame loses its background or border.
+
+## 39. Fly in the frame; full screen is the option; the preview keeps one cell (2026-10-17)
+
+- **Flying stays in the little window** (the owner: "you should be just able to fly in the little window, not go full
+  screen - there should be an option"). `ConfigureCinema` no longer fades the settings when the player takes the
+  stick; "START or Esc to stop flying" with **STOP** and **FULL SCREEN** appears above the frame. FULL SCREEN grows the
+  frame to the window and fades the settings; again, or handing the stick back, returns the frame. (Full screen scales
+  the frame's texture, so it reads softer than the frame.)
+- **The preview keeps one cell** ("the cell should not change for the preview"): the configure modal's new
+  `previewFollowsIntensity` (off) holds the preview at the card's lowest intensity, so moving the intensity row never
+  rebuilds the preview world (a multi-second cell build, a hitch per press). The match still launches at the chosen
+  intensity.

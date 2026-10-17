@@ -64,6 +64,12 @@ namespace CosmicShore.UI
         [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
 
+        [SerializeField, Tooltip("Rebuild the preview's arena when the intensity row changes. Off (the owner, 2026-10-17: " +
+                                 "\"the cell should not change for the preview\"): the preview keeps the card's lowest " +
+                                 "intensity cell, so moving the row never stands a new world - a multi-second cell build " +
+                                 "and a hitch on every press. The match itself still launches at the chosen intensity.")]
+        private bool previewFollowsIntensity;
+
         [Header("Maelstrom")]
         [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +
                  "without it the card is looked up in SO_GameList by mode.")]
@@ -1054,6 +1060,9 @@ namespace CosmicShore.UI
         /// it the hull the mode locks to. The window is the affordance - there is no separate
         /// button, because the thing you click to play is the thing the game plays in.
         /// </summary>
+        int PreviewIntensity(SO_ArcadeGame game) =>
+            previewFollowsIntensity && config != null ? config.Intensity : Mathf.Max(1, game ? game.MinIntensity : 1);
+
         void ArmPreviewForGame(SO_ArcadeGame game, ModePreviewDefinitionSO definition)
         {
             var window = ActivePreviewWindow;
@@ -1080,7 +1089,7 @@ namespace CosmicShore.UI
             session.SetDrillNames(game ? game.DisplayName : null, ResolveModeVesselName(game));
             session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
                                   ResolveModeVessel(game),
-                                  config != null ? config.Intensity : 1,
+                                  PreviewIntensity(game),
                                   sparringPartner: game && game.MinPlayersAllowed >= 2);
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
