@@ -30,6 +30,40 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.
 
+## Round 4 (2026-10-17): 2x speed, the lure stops the hull, the camera 4x out, and "they didn't listen"
+
+What the page models changed first; the rest of the designer's round-4 asks are game-only (`R_VesselActions/ANGLER.md`).
+
+| Ask | Page |
+|---|---|
+| Base flight speed **2x** | `cruise` 80 (was 40); `boost` 220, doubled with it so the boost keeps its ratio |
+| The lure **stops** the hull | `lureCruise` 0 (was 12) |
+| Camera **4x** out | New keys `chaseBack` 160 and `chaseUp` 56 (were the hard-coded 40 and 14) |
+| **"The fauna didn't always listen when I painted a new target"** | Fixed (below) |
+
+**The bug.**
+
+- **Cause:** holding RT gathered only idle and attacking creatures, and the throw skipped any creature still in flight.
+- **Why it showed now:** since round 3 a homing throw never gives up, and the brush reaches 3200 u. A creature thrown at a far target could therefore be in flight for many seconds and deaf to every new paint.
+- **The fix:** RT now calls back every creature of the squad, one in flight included, and the throw re-throws one still in flight.
+
+The bug reproduced headless (seed 3, missions): throw at one painted set, paint a second while the first throw is in
+flight, throw again.
+
+| Page | Creatures still on the first set | Creatures on the new paint |
+|---|---|---|
+| Old | 24 of 24 | 0 |
+| New | 0 | 24 of 24 |
+
+**Scorecard** (seeds 1–3, re-run on the round-4 page):
+
+- **Sling painter:** clears in **12.7 s** (was 10.0), orders in **2.35 s**, **72%** on target (was 85%; rookie 81%).
+- **Lure trial:** six tamed in **14.4 s** (was 16.1), quicker because the lure now stops the hull.
+
+The 2x hull outruns its own squad: 32–40 u/s fauna times the 1.6 leash tow is at most 64 u/s, against an 80 u/s cruise.
+So the ball is thinner when RT is released, and the AI commander overshoots. In the game the **Time** element now speeds
+the tamed fauna (`R_VesselActions/ANGLER.md`); the lab has no elements, so this is the number to watch.
+
 ## Round 3 (2026-10-16): 20x reach, newest paint first, the dash, the omni creature, and the element map
 
 The designer's third playtest asked for nine things. What the page models changed first; the rest is game-only.

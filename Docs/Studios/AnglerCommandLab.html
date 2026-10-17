@@ -156,12 +156,14 @@
     nucleusR: 200,        // _Prefabs/Environment/Nucleus.prefab localScale 400 (assumed unit-diameter mesh → radius 200)
     dietAny: 1,           // Cell.IsPreyForHerbivore: nucleus cells → any domain outside the nucleus is edible (1); no nucleus → opposing only (0)
     // --- the Angler (lab: a proposal, the hull does not exist) ---
-    cruise: 40,           // lab. Squirrel ships 60 (prefab); 40 lets L1 Clawfish (32 × 1.25) keep formation
-    boost: 110,           // lab. Squirrel boost ×5 would be 300
+    cruise: 80,           // 2x round 3's 40 (the designer, 2026-10-17). The squad (32-40 u/s, x leashTow) now trails a cruising hull
+    boost: 220,           // 2x with the cruise, so the boost keeps its ratio
     turnRate: 100,        // lab (deg/s)
     // --- lure & tame (lab: no game field, nothing in the codebase lures or tames) ---
     lureAhead: 14,        // lab: the esca hangs this far ahead of the nose (u)
-    lureCruise: 12,       // lab: holding the lure slows the Angler to this (u/s): the anglerfish waits with its light out
+    lureCruise: 0,        // holding the lure STOPS the Angler (the designer, 2026-10-17; was 12): the anglerfish waits with its light out
+    chaseBack: 160,       // the chase camera: this far behind the hull (u; 4x round 3's 40 - the designer, 2026-10-17)
+    chaseUp: 56,          // ...and this far above it (u; 4x 14)
     lureRadius: 70,       // lab: wild fauna inside this reach of the esca turn to it. LightFauna detectionRadius is 60–70
     tameRadius: 22,       // lab: inside this the creature is "held" and taming fills
     tameTime: 2.5,        // lab: seconds held to tame
@@ -241,7 +243,7 @@
     ['Command', 'aiErase', 0, 1, 1, 'AI uses the eraser', 'Scorecard commander: 1 erases painted neighbours before throwing, 0 never erases (the eraser\'s control).', 'slingpaint'],
     ['Command', 'feralSense', 5, 120, 1, 'Feral sense (u)', 'Baseline: tamed creatures attack any enemy prism within this, unbidden.', 'feral'],
     ['Lure', 'lureAhead', 4, 40, 1, 'Esca distance (u)', 'Where the lure light hangs, ahead of the nose.'],
-    ['Lure', 'lureCruise', 0, 60, 1, 'Speed while luring (u/s)', 'Holding the lure slows the Angler to this. Lured fauna swim 16–38 u/s, so a hull at cruise outruns its own catch. Boost still overrides.'],
+    ['Lure', 'lureCruise', 0, 60, 1, 'Speed while luring (u/s)', 'Holding the lure slows the Angler to this; 0 = it stops. Lured fauna swim 16–38 u/s, so a hull at cruise outruns its own catch. Boost still overrides.'],
     ['Lure', 'lureRadius', 10, 200, 1, 'Lure reach (u)', 'Wild fauna within this of the esca turn toward it. LightFauna detect at 60–70.'],
     ['Lure', 'tameRadius', 4, 80, 1, 'Hold radius (u)', 'Inside this the creature is held and taming fills.'],
     ['Lure', 'tameTime', 0.2, 10, 0.1, 'Time to tame (s)', 'Seconds a creature must be held.'],
@@ -263,8 +265,10 @@
     ['Squad', 'tadHunt', 1, 20, 0.5, 'Tadpole dash ×', 'Boid huntSpeedMultiplier: the arrival-capped dash.'],
     ['Squad', 'tadReach', 4, 60, 1, 'Tadpole reach (u)', 'Boid trailBlockInteractionRadius.'],
     ['Squad', 'tadBites', 1, 20, 1, 'Tadpole mouthful size', 'Boid maxClusterBites (C# default 6).'],
-    ['Flight', 'cruise', 10, 120, 1, 'Cruise speed (u/s)', 'The Angler\'s cruise. Squirrel ships 60, Sparrow 35, Manta 180.'],
-    ['Flight', 'boost', 20, 300, 5, 'Boost speed (u/s)', 'Speed with the boost held.'],
+    ['Flight', 'cruise', 10, 240, 1, 'Cruise speed (u/s)', 'The Angler\'s cruise. Squirrel ships 60, Sparrow 35, Manta 180.'],
+    ['Flight', 'chaseBack', 20, 400, 5, 'Chase camera behind (u)', 'How far behind the hull the chase camera sits.'],
+    ['Flight', 'chaseUp', 0, 200, 2, 'Chase camera above (u)', 'How far above the hull the chase camera sits.'],
+    ['Flight', 'boost', 20, 500, 5, 'Boost speed (u/s)', 'Speed with the boost held.'],
     ['Flight', 'turnRate', 30, 240, 5, 'Turn rate (°/s)', 'Full-stick pitch and yaw rate.'],
     ['Cell', 'dietAny', 0, 1, 1, 'Nucleus cell diet', '1: a nucleus cell, where fauna eat ANY domain outside the nucleus (the game\'s rule), so a mouthful near your trail eats your trail. 0: a cell without a nucleus, where fauna eat opposing domains only.'],
     ['Cell', 'taskClear', 0.2, 1, 0.05, 'Order done at', 'An order is complete when this share of its target structure is gone.'],
@@ -635,7 +639,9 @@
       const erasing = (inp.erase || 0) > 0.5;
       if (erasing) brushStroke(w, P.eraseCone * brushScale(inp.erase), false, P.brushNear * brushScale(inp.erase));
       else if (held) brushStroke(w, P.paintCone * brushScale(inp.cmd), true, P.brushNear * brushScale(inp.cmd));
-      if (held) for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.IDLE || f.state === ST.ATTACK)) { releaseClaim(w, f); f.set = null; f.state = ST.GATHER; }
+      // RT calls back EVERY creature of the squad, one still in flight from the last throw included (round 4: a homing
+      // throw never gives up, so a creature left in flight ignored every new paint - the designer's 'didn't listen')
+      if (held) for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.IDLE || f.state === ST.ATTACK || f.state === ST.FLUNG)) { releaseClaim(w, f); f.set = null; f.homing = false; f.state = ST.GATHER; }
       if (edgeUp) throwAtPaint(w);
     } else if (sch === 'sling') {
       if (held) { C.sling += dt; for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.IDLE || f.state === ST.ATTACK)) { releaseClaim(w, f); f.set = null; f.state = ST.GATHER; } }
@@ -676,8 +682,8 @@
     if (!ids.length) { slingThrow(w); return; }
     let n = 0;
     for (const f of w.fauna) {
-      if (!inSquad(w, f) || f.state === ST.FLUNG || f.state === ST.WILD || f.state === ST.LURED) continue;
-      const gathered = f.state === ST.GATHER;
+      if (!inSquad(w, f) || f.state === ST.WILD || f.state === ST.LURED) continue;
+      const gathered = f.state === ST.GATHER || f.state === ST.FLUNG;   // one still in flight is re-thrown at the new paint
       releaseClaim(w, f); f.set = ids; f.recent = true; f.hold = 0; f.focus = null; f.state = ST.ATTACK;
       pickTarget(w, f); if (f.state !== ST.ATTACK) continue;
       if (gathered) {
@@ -1363,7 +1369,7 @@
         const cp = Math.cos(cam.orbitPitch), off = new THREE.Vector3(Math.sin(cam.orbitYaw) * cp, Math.sin(cam.orbitPitch), Math.cos(cam.orbitYaw) * cp).multiplyScalar(cam.orbitDist);
         camera.position.copy(vp).add(off); camera.up.set(0, 1, 0); camera.lookAt(vp); camera.fov = 62;
       } else {
-        const tac = S.cam === 'tactical', back = tac ? 110 : 40, up = tac ? 64 : 14;
+        const tac = S.cam === 'tactical', back = tac ? 110 : P.chaseBack, up = tac ? 64 : P.chaseUp;
         const want = vp.clone().add(new THREE.Vector3(...mul(v.f, -back))).add(new THREE.Vector3(...mul(v.u, up)));
         cam.pos.lerp(want, manualClock ? 1 : 0.18);
         camera.position.copy(cam.pos); camera.up.set(...v.u);
