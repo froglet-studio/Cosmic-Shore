@@ -237,3 +237,18 @@ blocks. The 2026-10-15 control scheme and flora live in Unity only, until the st
   - Charge: dogfight.
 
   See `Docs/Studios/SHRIKE.md` §6.
+- **Leftovers from before the clone, not touched here:** `Assets/_SO_Assets/CrystalHullFusion/Shrike_*_HullFusionBake.asset`
+  (the Shrike is bake-free: its hull morphs itself), and `Assets/_SO_Assets/_TEMP/ShrikeClassSO.asset` with
+  `SO_Captain_Arcade_Shrike_Freestyle.asset`. Retire them once nothing references them.
+
+### 7.1 Refactor rows (seen while shipping, not done here)
+
+- **The eyepiece's layout is a second copy of the Serpent's.** `ShrikeScopeOverlay` and `SniperScopeOverlay` each
+  declare `PipHeightFraction = 0.5f` and the same margins
+  (`grep -rn 'PipHeightFraction\s*=' Assets/_Scripts`: two hits). Move the layout into one shared place, so a change to
+  the Serpent's eyepiece reaches the Shrike. Blocking question: should the Serpent's crosshair move to the Shrike's
+  plain-Image build (SERPENT_SNIPER_SCOPE.md rounds 9-11 explain why generated graphics failed there)?
+- **`ShrikeExecutor` is 1,626 lines** (`wc -l`). It holds the modes, docking, nests, flora, missiles, the lance, the
+  sling, the array, the camera, the zoom and the AI. Split out the missile pool and the flora (they share no state with
+  the lance or the sling), as the Brittle Star split out `BrittleStarCord`. Blocking question: is the design stable
+  enough? Wait until the studio catches up (§6).

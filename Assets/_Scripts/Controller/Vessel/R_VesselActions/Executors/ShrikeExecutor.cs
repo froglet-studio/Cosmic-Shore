@@ -527,6 +527,8 @@ namespace CosmicShore.Gameplay
             if (strength <= 0.001f) { ClearLit(); return; }
             Vector3 o = AimOrigin, f = _status.Transform.forward;
             var domain = _status.Domain;
+            // Two lights: the volume on GetInstanceID() and the target on its complement. A scene component's id is
+            // negative and ~id is not, so the second key cannot be another scene producer's (id + 1 could be).
             int id = GetInstanceID();
             switch (_mode)
             {
@@ -534,7 +536,7 @@ namespace CosmicShore.Gameplay
                 {
                     float r = Mathf.Max(0.1f, config.LanceRadius.EvaluateReplicated(_status));
                     PrismLit.PublishLight(id, LitVolume.Cylinder(o, f, config.LanceRange, r, false), strength, domain);
-                    PrismLit.ClearLight(id + 1);
+                    PrismLit.ClearLight(~id);
                     break;
                 }
                 case Mode.Charge:
@@ -543,9 +545,9 @@ namespace CosmicShore.Gameplay
                     PrismLit.PublishLight(id, LitVolume.Cone(o, f, _status.Transform.right, config.LockRange, Mathf.Tan(cone), 0f),
                         strength * 0.6f, domain);
                     if (Painting && Locked)
-                        PrismLit.PublishLight(id + 1, LitVolume.Sphere(LockPosition,
+                        PrismLit.PublishLight(~id, LitVolume.Sphere(LockPosition,
                             _lock == ShrikeRules.LockClass.Mass ? config.MissileBlast : 10f), strength, domain);
-                    else PrismLit.ClearLight(id + 1);
+                    else PrismLit.ClearLight(~id);
                     break;
                 }
                 default:
@@ -559,13 +561,13 @@ namespace CosmicShore.Gameplay
                     if (!_litAnchorFound)
                     {
                         PrismLit.ClearLight(id);
-                        PrismLit.ClearLight(id + 1);
+                        PrismLit.ClearLight(~id);
                         break;
                     }
                     Vector3 to = _litAnchorPoint - o;
                     PrismLit.PublishLight(id, LitVolume.Cylinder(o, to.normalized, to.magnitude, config.HullRadius, false),
                         strength * 0.6f, domain);
-                    PrismLit.PublishLight(id + 1, LitVolume.Sphere(_litAnchorPoint, _litAnchorSize + 2f), strength, domain);
+                    PrismLit.PublishLight(~id, LitVolume.Sphere(_litAnchorPoint, _litAnchorSize + 2f), strength, domain);
                     break;
                 }
             }
@@ -578,7 +580,7 @@ namespace CosmicShore.Gameplay
             _litPublished = false;
             int id = GetInstanceID();
             PrismLit.ClearLight(id);
-            PrismLit.ClearLight(id + 1);
+            PrismLit.ClearLight(~id);
         }
 
         // ------------------------------------------------------------------ docking
