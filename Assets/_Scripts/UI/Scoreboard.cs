@@ -181,6 +181,7 @@ namespace CosmicShore.UI
         void Awake()
         {
             s_boards.Add(this);
+            EndScreenWitness.Watch(scoreboardPanel, "scoreboard panel");
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");

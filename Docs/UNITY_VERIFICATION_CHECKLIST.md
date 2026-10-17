@@ -11399,3 +11399,12 @@ The Scurry console (ArcadeMatch on) showed the reveal end, the end screen raised
 1. **Finish Scurry, Skim Race and a Maelstrom round:** the board shows.
 2. **If it still does not**, with FrogletTools > Toolbox > Logging > ArcadeMatch on, copy every `[Scoreboard]` and
    `[EndGameSequencer]` line, including `Overlay canvases over the board` and `Reveal toast`.
+
+## 🔴 2026-10-17 — End-screen witness: who destroys the scoreboard panel and the reveal toast (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The Scurry console proved the scoreboard panel and the reveal toast are DESTROYED during play (Scoreboard: "has no
+scoreboard panel"; DOTween: "RectTransform / CanvasGroup has been destroyed") while their owners survive. New
+`EndScreenWitness` (added in code to both at load) warns `[EndScreen] The <piece> '<path>' was destroyed during play`
+(with frame and call stack) or `... was moved to '<path>'`. `/verify-unity` was not run; player reference compile clean.
+
+1. **Finish a Scurry match** and copy every `[EndScreen]` line - its path, frame and stack name the destroyer.

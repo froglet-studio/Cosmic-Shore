@@ -84,6 +84,9 @@ namespace CosmicShore.Utility
         Coroutine _revealRoutine;
         Sequence _toastSeq;
 
+        // Resolved at load, so the toast is watched for the whole match, not only from the reveal on.
+        void Start() => EnsureRevealRefs();
+
         void OnEnable()
         {
             if (gameData != null)
@@ -381,6 +384,7 @@ namespace CosmicShore.Utility
                 if (toast != null && !toast.TryGetComponent(out toastCanvasGroup))
                     toastCanvasGroup = toast.gameObject.AddComponent<CanvasGroup>();
             }
+            EndScreenWitness.Watch(toastCanvasGroup, "reveal toast");
 
             if (gameOverCounterText == null && toastCanvasGroup != null)
             {
