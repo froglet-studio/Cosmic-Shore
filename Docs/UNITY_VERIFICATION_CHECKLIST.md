@@ -9590,3 +9590,29 @@ What ran instead of `/verify-unity`: `unity_refcompile --config editor` (0 error
    player camera (no `PipCamera`); the Grizzly and Dolphin hull parts still lean and bank as before.
 6. Any mode: the turn still ends when its end condition is met (TurnMonitorController loop replaced LINQ Any).
 
+
+## 🔴 2026-10-17 — Garrett's perf items, done by Yash's session: AOE pool + morph build, instanced snow, Charge half-rate (unverified: no Unity CLI in the session)
+
+**Files:** `Projectiles/AOEExplosionPool.cs` (new), `AOEExplosion.cs` (`Poolable`, `Retire`, authored duration restored),
+`AOEBlockCreation.cs`, `AOEBlockSpawner.cs` (pooled), `SpawnableRings.cs` (one reused container),
+`ExplosionHelper.cs`; `Utility/CrystalMorphMeshBuilder.cs` (per-source emit cache); `Cytoplasm/SnowChanger.cs`
+(instanced path); `CrystalChargeArcs.cs`,
+`CrystalChargeArcsProfileSO.cs`, `CrystalChargeArcsProfile.asset` (`halfRateBelowScreenRadiusPixels: 64`). What ran
+instead of `/verify-unity`: `unity_refcompile` player-dev (OK) and editor (0 errors in changed files; 3 in multiplayer
+files whose packages this container could not fetch), the gates, Amoebius Skim Race and lava-lamp runs.
+
+1. **Skim Race (Squirrel), Regatta or any omni-crystal mode:** collect ten omni crystals in a row. Every collect still
+   lays its shielded boost ring, the crystal still morphs onto the ring's octahedra and dissolves, and the ring stays
+   rideable. Hierarchy: one `AOEShieldedRingSpawner(Clone)` is reused (it goes inactive between collects, with one
+   `Rings_...` child), not one per collect. Restart the match (reset for replay): no leftover spawner active.
+2. **Kabloom / Manta, Dolphin cone, Grizzly, Sparrow missiles, Rhino:** explosions look and damage as before (these are
+   NOT pooled; only the ring spawner is).
+3. **Snow:** the cytoplasm snow (shard.prefab) still fills the cell at the same density and turns to face the
+   crystal after a collect. The cytoplasm holds no `shard(Clone)` GameObjects any more. Known difference: the
+   transparent shards are not sorted against each other inside the one instanced draw; look for shards drawing in the
+   wrong order where two overlap. If it reads wrong, say so in the playtest task.
+4. **Crystals:** the Charge arcs still sleep below 24 px radius; between 24 and 64 px they update on alternate frames,
+   so a mid-distance crystal's arcs should still look continuous.
+5. **Capture:** Release, S2 and Skim Race, and let the auto-capture run. The capture's `renderers` line should show the
+   snow family gone and how many `Spindle` renderers a grown Lattice really holds (Amoebius counts ~2.9k at 8 minutes,
+   the 09-25 capture ~40k), and a Skim Race collect should show no `Instantiate`.

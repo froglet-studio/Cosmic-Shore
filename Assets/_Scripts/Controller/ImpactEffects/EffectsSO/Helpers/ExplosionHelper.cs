@@ -179,8 +179,10 @@ namespace CosmicShore.Gameplay
             {
                 if (!prefab) continue;
 
-                var aoe = Object.Instantiate(prefab);
-                if (container != null)
+                // Pooled classes come back from AOEExplosionPool already injected; the rest are
+                // Instantiated as before (AOEExplosion.Poolable).
+                var aoe = AOEExplosionPool.Get(prefab, out bool fresh);
+                if (fresh && container != null)
                     GameObjectInjector.InjectRecursive(aoe.gameObject, container);
                 aoe.Initialize(init);
                 aoe.Detonate();

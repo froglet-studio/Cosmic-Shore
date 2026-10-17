@@ -253,12 +253,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row); Docs/UNITY_VERIFICATION_CHECKLIST.md
 
-### T-20261015-a5a5 · open · decision · Performance
+### T-20261015-a5a5 · done · decision · Performance
 - **Task:** The Charge light now sleeps when a crystal is under 24 px in radius on screen (CrystalChargeArcsProfileSO.sleepBelowScreenRadiusPixels; it rebuilt a mesh per crystal per frame and cost more than every other menu script together in the lava lamp). Check the look at the distance it wakes and pick the number; also worth deciding whether the arcs should rebuild at a lower rate mid-distance.
 - **Done when:** Garrett has looked at it in the lava lamp and the field holds his number (generator and asset).
 - **Who can take it:** Garrett (owns the crystals)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row)
+- **Done:** 2026-10-17, 2026-10-17, Yash took it over: kept 24 px (a bolt core is ~0.3 px there) and added halfRateBelowScreenRadiusPixels = 64 (alternate-frame rebuild between 24 and 64 px), in the profile, the asset and author_omni_crystal_triangles.py. Garrett may still retune both.
 
 ### T-20261015-1551 · open · test · Performance
 - **Task:** Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the Third Eye CLOSED and one with it OPEN (the editor captures each by itself, labelled MinigameRegatta; the capture records the open cameras), stop Play each time (each capture goes to Claude by itself)
@@ -281,19 +282,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
 - **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/MULTIPLAYER_START_HERE.md 5.1; Port/docs/MULTIPLAYER.md
 
-### T-20261015-fafa · open · dev · Performance
+### T-20261015-fafa · done · dev · Performance
 - **Task:** Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/AOEExplosion.cs), so every crystal collect and every explodable projectile mints a GameObject tree. Measured in Amoebius (Skim Race I2, 2026-10-15): VesselImpactor.AcceptImpactee 5.6 KB/frame, all of it SquirrelVesselExplosionByCrystalEffect (the Squirrel's boost ring, ~300 KB per omni collect in .NET; the ring's prisms are the design, the un-pooled explosion object is the practice gap). A GenericPoolManager<AOEExplosion> per prefab (like PrismExplosionPoolManager) with Release instead of Destroy at the end of ExplodeAsync; keep the reset-for-replay cleanup. Go/no-go: a Unity Release capture's Instantiate / GC rows on a crystal collect.
 - **Done when:** AOE explosions come from a pool; perf_hunt.py amoebius shows VesselImpactor.AcceptImpactee under 1 KB/frame on Skim Race I2 and the baseline is adopted; a Release capture of Skim Race shows no Instantiate on a crystal collect.
 - **Who can take it:** Garrett (projectiles / the Squirrel's ring), Yash (offered)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.3 (L13) and 2 (10-15 rows)
+- **Done:** 2026-10-17, 2026-10-17, Yash's session: AOEExplosionPool (opt-in, on for the Squirrel ring spawner: 1 miss / 7 reuses per 8 collects). The real allocator was CrystalMorphMeshBuilder.TryBuild (5.22 of 5.53 KB/frame); its per-source emit cache brought VesselImpactor.AcceptImpactee 5.53 -> 3.41 KB/frame, under the 3.83 baseline (rest is Amoebius's Mesh.Set* copy). Unity check: T-20261017-c82c / Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17.
 
-### T-20261015-641c · open · decision · Performance
+### T-20261015-641c · done · decision · Performance
 - **Task:** Spindles are the last big GameObject-renderer cost in the lava lamp (lever L1): one Renderer per limb, ~40k enabled in a grown Lattice with ~4.6k visible, +5.3 ms CPU measured in S2 (record 3.3). Every Prism is already on entities (record 1.2); spindles are not prisms. Decide the shape: draw spindles through Entities Graphics like prisms, or merge a plant's spindles into one mesh per plant, keeping the per-spindle wither fade (continuity law). Ecology is LOCKED, so this is yours to call before anyone builds it.
 - **Done when:** Garrett has picked an approach (or ruled L1 out) and recorded it in Docs/PERFORMANCE_OPTIMIZATION.md 3.3; a build task follows if he picks one.
 - **Who can take it:** Garrett (ecology / flora owner)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 1.2 and 3.3 (L1); Docs/Reports/PERFORMANCE.md, Waiting on Garrett
+- **Done:** 2026-10-17, 2026-10-17, Yash's call: measured before building. A grown Lattice holds 2,898 spindles at 8 min in Amoebius (not ~40k); a sub-pixel render LOD hid 0 of them (and 0 in Garland), so it was removed. No structural build until a Unity S2 renderer census (T-20261015-56dd) shows the count is still large. Docs/PERFORMANCE_OPTIMIZATION.md 3.3 L1.
 
 ### T-20261015-6009 · done · test · Regatta AI
 - **Task:** Teach the Regatta Squirrel AI from your flying: Third Eye > Record on, fly Regatta as the Squirrel by hand 5 times to the finish, stop Play and Send to Claude; then ask a session to run learn_from_flights.py --write and test the AI
@@ -403,3 +406,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered); Shombith owns Menu_Main
 - **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (AI difficulty on every Arena card)
+
+### T-20261017-c82c · open · test · Performance
+- **Task:** Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at the same density as before and turns towards the crystal after a collect; look for transparent shards drawing in the wrong order where two overlap (they are one instanced draw now, unsorted inside it). (2) Skim Race or Regatta as the Squirrel: ten omni collects in a row, each lays its shielded ring and the crystal still morphs onto it and dissolves.
+- **Done when:** Someone has looked and written here whether the snow reads the same (if not, what is wrong) and the Squirrel collect still morphs; Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17 entry ticked
+- **Who can take it:** Yash (offered), Garrett (crystals, cytoplasm)
+- **Added:** 2026-10-17 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17; Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-17 row)

@@ -28,18 +28,20 @@
 
 ## 1a. Waiting on Garrett (Yash, 2026-10-15: "tell this to Garrett, this has to [reach him] next time he works")
 
-Four performance items need Garrett, because each sits in his code or is his design call. A Claude session shows them to
-him on its first prompt that touches crystals, ecology, flora, spindles, projectiles, explosions, the Squirrel or
+Four performance items were waiting on Garrett. On 2026-10-17 Yash took the first three over ("Garrett is busy, we do
+them ourselves"); what was done is below, so Garrett only needs to look, not build. A Claude session still shows him the
+open ones on its first prompt that touches crystals, ecology, flora, spindles, projectiles, explosions, the Squirrel or
 Regatta (`.claude/hooks/team_tasks_nudge.py`, "tasks waiting on a person").
 
-1. **Pick the Charge light's sleep size** (T-20261015-a5a5). The crystal arcs cost 21 ms of a 36 ms lava-lamp frame in
-   Yash's Profiler; they now sleep when a crystal is under 24 px across on screen. Fly up to a crystal, see where the
-   light wakes, and set `sleepBelowScreenRadiusPixels` in the profile and its generator.
-2. **Pool the AOE explosions** (T-20261015-fafa, lever L13). Every omni collect instantiates the Squirrel's ring
-   explosion and destroys it after; it is the whole of the impactor's 5.6 KB/frame in the Amoebius Skim Race run.
-3. **Decide the spindles** (T-20261015-641c, lever L1). Every prism is already on entities; the spindles are not prisms
-   and are the last big per-object renderer cost (~40k in a grown Lattice, +5.3 ms measured). Entities, or one mesh
-   per plant, keeping the wither fade.
+1. **Charge light sleep size: done** (T-20261015-a5a5 closed). Kept at 24 px radius; between 24 and 64 px the arcs now
+   update every other frame (`halfRateBelowScreenRadiusPixels`). Garrett may still retune either number in the profile.
+2. **AOE explosions: pooled, and the real allocator fixed** (T-20261015-fafa closed). The Squirrel's ring spawner is
+   reused instead of instantiated. Measuring it showed the cost was the crystal-to-ring morph rebuilding the whole
+   crystal mesh each collect; that is cached now. Skim Race impactor allocation 5.53 -> 3.41 KB/frame in Amoebius, back
+   under its baseline. The damage blasts are not pooled (their hit ledgers assume a fresh instance).
+3. **Spindles: nothing to build yet** (T-20261015-641c closed). A grown Lattice holds ~2.9k spindles today, not ~40k,
+   and none are under a pixel, so a size LOD hides nothing. A Unity S2 capture (T-20261015-56dd) shows whether a
+   bigger change is still worth it. Snow (lever L6) is drawn instanced now, ~4.2k renderers fewer, same density.
 4. **Switch on the daily performance check** (T-20261015-f106). GitHub runs the scheduled workflow only from the
    default branch; it is merged into `bleeding-edge` now, so it needs one manual run to confirm its artifacts.
 
