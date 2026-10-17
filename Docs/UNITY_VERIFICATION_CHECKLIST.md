@@ -589,6 +589,27 @@ in `Unity.Multiplayer.PlayMode`. Not compiled: the offline refcompile has no 6.3
    hosts on its own local port (the `[MultiplayerSetup] MPPM clone ...` line on the `NetworkFlow` channel).
 3. If anyone on the team clicked "Yes" before pulling, discard their local rewrite of these two files first.
 
+### 🔴 Store-release URLs: settings links and the consent screen point at www.froglet.games (`claude/store-page-urls-kg5qx7`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+No editor and no `unity` CLI in this session, so `/verify-unity` did NOT run. The change is three serialized
+string values, one consent-config string and the matching three C# field defaults; no structure changed (the edit
+script asserted one owning document, an unchanged document count and exactly three changed lines in the prefab).
+**Merge only once the pages are live** on www.froglet.games (website repo `froglet-studio/cosmic-shore-landing-page`);
+until then the old values point at cosmicshore.com, which currently shows a domain-for-sale page.
+
+**What landed:** `SettingsModal.prefab` `privacyPolicyUrl` / `deleteDataUrl` / `bugReportUrl` →
+`https://www.froglet.games/privacy`, `/delete-my-data`, `/support` (the prefab values override the code defaults; no
+scene overrides them). `GameSettingsPanelController` defaults match. `Resources/PrivacyConsentConfig.asset`
+`privacyPolicyUrl` was EMPTY, so the first-run consent screen showed no policy link; it is now the privacy URL.
+
+1. **Main menu → Settings → General.** Press Privacy Policy: the browser opens `https://www.froglet.games/privacy`.
+   Press Delete my data: `/delete-my-data`. Press the bug-report row: `/support`.
+2. **Pause menu in a match → Settings.** The same three rows open the same three URLs (the prefab is shared).
+3. **First-run consent.** Clear PlayerPrefs (`AnalyticsConsent`, `AnalyticsAgeEligible`), relaunch, enter a birth year
+   13+ years ago: the consent screen now shows a privacy-policy link, and it opens `/privacy`.
+4. **Inspector.** Select the SettingsModal prefab's `GameSettingsPanelController`: the Links header shows the three
+   froglet.games URLs (not cosmicshore.com).
+
 ### 🔴 Stoat play fixes: no flash at the poles' birth, a subtle ripple, the path drawn again, Time mode is the catch-sling (`cece/admiring-cannon-lhmv6t`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/STOAT_DIPOLE.md` §1a, §1b, §1c, §3b. Play feedback on the own-vessel pass below: the annihilation

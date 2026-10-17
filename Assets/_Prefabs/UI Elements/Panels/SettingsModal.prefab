@@ -1419,9 +1419,9 @@ MonoBehaviour:
     offButton: {fileID: 3614563883922198388}
     offUnderline: {fileID: 3273702486144805694}
   hapticsSlider: {fileID: 0}
-  privacyPolicyUrl: https://cosmicshore.com/privacy
-  deleteDataUrl: https://cosmicshore.com/delete-my-data
-  bugReportUrl: https://cosmicshore.com/support
+  privacyPolicyUrl: https://www.froglet.games/privacy
+  deleteDataUrl: https://www.froglet.games/delete-my-data
+  bugReportUrl: https://www.froglet.games/support
 --- !u!114 &572751919054375548
 MonoBehaviour:
   m_ObjectHideFlags: 0
