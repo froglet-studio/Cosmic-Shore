@@ -708,6 +708,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `PrismInteractionLod.TryDestruction` (level 0), `PrismCollisionBurst.CanAcceptExplosion`; `COLLISION_BURST_LAB.md` round 11
 - Promoted: no
 
+### L-STU-81 — "Not copies, not noisy" is a question of WHERE the randomness lives; measure the two separately, and never hash a seed the GPU must reproduce
+- Lab: Collision Burst Lab round 12 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-17
+- What happened: the designer asked that neighbours struck alike not play one animation while each explosion stays one continuous structure. More per-fragment noise would have traded one fault for the other. Drawing the randomness ONCE per death (spread, timing, spin, tumble plane, lean, a smooth ellipsoid) answered both. Two metrics made that visible: a per-region SHAPE difference between two deaths (a per-vertex difference could not tell gestalt from grain; the noise alone already read 0.18 there), and a within-death neighbour roughness. The first rose 3.3x and the second did not move. The first version read the seed through hash13, and the GPU parity gate failed (worst 7e-3, 99% of vertices). hash13 multiplies its input's rounding about a hundredfold, so the page's GPU and the harness drew different characters for the same death. Triangle waves of the seed fixed it (worst 8e-4).
+- Do instead: put "differ between instances" in per-instance constants and "differ within one" in a continuous field, and score each with its own metric plus a negative control. Read an already-hashed seed through gentle functions (triangle waves, low-frequency sines). Never pass it through a second high-gain hash when two GPUs, or a page and a harness, must agree.
+- Evidence: `PrismBurstFragmentVariety`, `PrismBurstSeedWave` (HLSL); harness F11 and `PRISM_BURST_FRAGMENT_VARIETY_OFF`; `COLLISION_BURST_LAB.md` round 12
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

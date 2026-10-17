@@ -230,7 +230,7 @@ def config():
               "peelNoise", "rollWeight", "rollRadius", "rollGap", "destructionCut", "explosionAsFragments", "maxLiveExplosions", "fragmentBurst",
               "fragmentDrift", "fragmentLift", "fragmentAim", "fragmentSpeedGain", "fragmentSpeedRef", "fragmentSizeSpeed", "fragmentSizeSpin", "fragmentSpinCap",
               "fragmentLevelRef", "fragmentEndSmall", "fragmentEndBig", "fragmentShrink", "fragmentSpinNoise",
-              "fragmentNoiseFrequency", "fragmentTravelNoise", "shedInflate", "spread",
+              "fragmentNoiseFrequency", "fragmentTravelNoise", "fragmentVariety", "shedInflate", "spread",
               "openSeconds", "spinPerSpeed", "bloomTurns", "unravelTurns", "ribbonsPerFace", "shardsPerFaceEdge",
               "dissolveGrain"):
         out[k] = yaml_float(lod, k)

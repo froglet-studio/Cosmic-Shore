@@ -690,7 +690,61 @@ struct PrismBurstFragmentShape
     float levelRef;   // the size level counted as "the smallest" (the cut's finest, about 4)
     float speedGain;  // round 10: a harder hit bursts wider and leans more along it — distance and aim ×
     float speedRef;   // (1 + speedGain × (|velocity| / speedRef − 1)), the explosion's own spread growing with its speed
+    float variety;    // round 12: how much one death differs from the next (PrismBurstFragmentVariety) — 0: two prisms struck
+                      // alike play the same animation; the variety is per death, so within one the structure stays whole
 };
+
+// One death's character, hashed from its seed (the designer, 2026-10-17: "adjacent prisms with the nearly identical
+// impact vectors and initial orientations don't look like they are playing the same animation, but spherical explosions
+// should still look beautiful … a balance between not looking noisy and not looking like copies"). Every value is ONE
+// per death, the same for all its fragments, so it adds no roughness between neighbours: it changes the whole explosion's
+// shape, never its grain. At variety v: the spread × (1 ± v/2), the opening's time constant × (1 ± v/2), the spin rate
+// × (1 ± 0.6 v), the tumble's plane turned about each face's normal by up to ± 0.4 π v, the lean tilted off the hit by up
+// to v/2, and the cloud drawn out along a random axis into a smooth ellipsoid, distance × (1 + 0.6 v (1.5 cos² − 0.5))
+// (a second Legendre harmonic: zero on average, so the sphere is reshaped, never thinned or grained).
+struct PrismBurstFragmentCharacter
+{
+    float spread;   // distance multiplier
+    float tau;      // time-constant multiplier
+    float spin;     // spin-rate multiplier
+    float turn;     // the tumble plane's turn about N, radians
+    float3 tilt;    // added to the hit's unit direction, length up to v/2
+    float3 egg;     // the ellipsoid's unit axis
+    float stretch;  // 0.6 v: the most a distance is drawn out along it
+};
+
+// Triangle waves of the seed in [-1, 1], one per frequency: uniform when the seed is (SeedOf hashes the pose, so two
+// neighbours' seeds are already unrelated), and gentle — a hash13 of the seed would multiply its rounding by about a
+// hundred, so the same death would come out a different character on two GPUs (and on the lab's page against this).
+float3 PrismBurstSeedWave(float seed, float3 frequency, float3 phase)
+{
+    return 1.0 - 4.0 * abs(frac(seed * frequency + phase) - 0.5);
+}
+
+PrismBurstFragmentCharacter PrismBurstFragmentVariety(float seed, float variety)
+{
+    float3 a = PrismBurstSeedWave(seed, float3(1.0, 2.0, 3.0), float3(0.13, 0.57, 0.31));
+    float3 b = PrismBurstSeedWave(seed, float3(5.0, 7.0, 11.0), float3(0.71, 0.23, 0.89));
+    float3 c = PrismBurstSeedWave(seed, float3(13.0, 17.0, 19.0), float3(0.47, 0.05, 0.63));
+    float3 d = PrismBurstSeedWave(seed, float3(23.0, 29.0, 31.0), float3(0.37, 0.81, 0.19));
+    float v = saturate(variety);
+    PrismBurstFragmentCharacter ch;
+    ch.spread = 1.0 + 0.5 * v * a.x;
+    ch.tau = 1.0 + 0.5 * v * a.y;
+    ch.spin = 1.0 + 0.6 * v * a.z;
+    ch.turn = 0.4 * 3.14159265 * v * c.x;
+    ch.tilt = b * (0.5 * v / max(length(b), 1.0));                          // inside the ball of radius v/2
+    ch.egg = normalize(d + float3(1e-3, 0.0, 0.0));
+    ch.stretch = 0.6 * v;
+    return ch;
+}
+
+// The most a character stretches a distance: (1 + v/2)(1 + 0.6 v). PrismBurstFragmentReach multiplies by it.
+float PrismBurstFragmentVarietyReach(float variety)
+{
+    float v = saturate(variety);
+    return (1.0 + 0.5 * v) * (1.0 + 0.6 * v);
+}
 
 // How much harder than the gentlest a hit is (≥ 1): 1 at speedRef (the explosion's slowest debris), growing by speedGain
 // per speedRef more. The explosion's own slide grows with its speed the same way (amount × spreadPerAmount).
@@ -724,7 +778,9 @@ float PrismBurstFragmentScale(float age, float end, float shrink)
 // smallest first. velocity is the stamped flight (world): its direction leans the burst (aim) and sets the second spin
 // axis, its speed boosts the distance and the lean (PrismBurstFragmentBoost). A continuous gradient noise at its centroid (noisePoint, object space × frequency, moved by the
 // death's seed) varies its two spin angles (amplitude noise.x), its distance and its direction (noise.w), so
-// neighbours move alike and never in step. noise = (spin amplitude, frequency, seed, travel amplitude). The first
+// neighbours move alike and never in step. The death's character (PrismBurstFragmentVariety, from the same seed) reshapes
+// the whole cloud, its timing and its tumble once per death, so two prisms struck alike never play one animation.
+// noise = (spin amplitude, frequency, seed, travel amplitude). The first
 // frame is the prism: at age 0 every term is zero and the scale is 1. middle is the fragment's centroid in world space
 // (`centroid` is an HLSL interpolation keyword and does not compile as a name).
 void PrismBurstFragmentPose(float3 rest, float3 N, float3 middle, float3 faceCentre, float outward, float3 noisePoint, float level,
@@ -752,17 +808,24 @@ void PrismBurstFragmentPose(float3 rest, float3 N, float3 middle, float3 faceCen
 #ifdef PRISM_BURST_FRAGMENT_VELOCITY_OFF
     velocity = float3(0.0, 0.0, 0.0);   // negative control only: the pose ignores the hit (the flight is added after)
 #endif
+#ifdef PRISM_BURST_FRAGMENT_VARIETY_OFF
+    PrismBurstFragmentCharacter ch = PrismBurstFragmentVariety(noise.z, 0.0);   // negative control only: every death alike
+#else
+    PrismBurstFragmentCharacter ch = PrismBurstFragmentVariety(noise.z, s.variety);
+#endif
     float3 hit = PrismBurstAxis(velocity, float3(0.0, 0.0, 0.0));
+    hit = dot(hit, hit) > 0.0 ? normalize(hit + ch.tilt) : hit;
     float boost = PrismBurstFragmentBoost(length(velocity), s);
     float3 dir = PrismBurstAxis(radial + N * s.lift + hit * (s.aim * boost) + (PrismBurstAxis(inPlane, side) * n4 + side * n5) * noise.w, N);
 
     float size = clamp(level, 0.0, 6.0);
-    float dist = radius * (s.burst * (1.0 - exp(-max(age, 0.0) / max(s.tau, 1e-3))) + s.drift * max(age, 0.0))
-               * (1.0 + s.sizeSpeed * size) * (1.0 + noise.w * n3) * boost;
-    float spin = min(1.0 + s.sizeSpin * size, s.spinCap);
+    float dist = radius * (s.burst * (1.0 - exp(-max(age, 0.0) / max(s.tau * ch.tau, 1e-3))) + s.drift * max(age, 0.0))
+               * (1.0 + s.sizeSpeed * size) * (1.0 + noise.w * n3) * boost * ch.spread
+               * (1.0 + ch.stretch * (1.5 * dot(dir, ch.egg) * dot(dir, ch.egg) - 0.5));
+    float spin = min((1.0 + s.sizeSpin * size) * ch.spin, s.spinCap);
     float a1 = amount * rotation * spin * (1.0 + noise.x * n1);
     float a2 = amount * rotation * spin * (1.0 + noise.x * n2);
-    float3 axis2 = PrismBurstAxis(cross(velocity, N), side);
+    float3 axis2 = PrismBurstRotate(PrismBurstAxis(cross(velocity, N), side), N, ch.turn);
     float scale = PrismBurstFragmentScale(age, PrismBurstFragmentEnd(level, life, n4, s), s.shrink);
 
     pos = middle + dir * dist + PrismBurstRotate(PrismBurstRotate(rest - middle, dir, a1), axis2, a2) * scale;
@@ -772,12 +835,12 @@ void PrismBurstFragmentPose(float3 rest, float3 N, float3 middle, float3 faceCen
 // How far, in WORLD units, a fragment can be from the prism's travelling centre (the flight is added after).
 // Proved, not fitted: its centroid lies within R of the centre and every vertex within 2R of its centroid (the
 // tumble keeps it, the shrink only pulls in); the travel is at most R × (burst + drift × life) × (1 + 6 sizeSpeed)
-// × (1 + |travel noise|) × the boost at the flight's speed. The CPU sizes the culling bounds by the same sum
+// × (1 + |travel noise|) × the boost at the flight's speed × the variety's most stretch. The CPU sizes the culling bounds by the same sum
 // (PrismCollisionBurst.FragmentReach); the harness asserts every pose stays inside it.
 float PrismBurstFragmentReach(float radius, float life, PrismBurstFragmentShape s, float travelNoise, float flightSpeed)
 {
     return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise))
-                         * PrismBurstFragmentBoost(flightSpeed, s));
+                         * PrismBurstFragmentBoost(flightSpeed, s) * PrismBurstFragmentVarietyReach(s.variety));
 }
 
 // ─── the fade ─────────────────────────────────────────────────────────────────────────────────

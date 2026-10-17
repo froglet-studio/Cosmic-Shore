@@ -83,12 +83,12 @@ namespace CosmicShore.Utility
         /// <summary>How a <see cref="Fragment"/> flies — <c>PrismBurstFragmentShape</c> in the HLSL, from the config.</summary>
         public struct FragmentShape
         {
-            public float Burst, Drift, SizeSpeed, SpeedGain, SpeedRef;
+            public float Burst, Drift, SizeSpeed, SpeedGain, SpeedRef, Variety;
 
             public static FragmentShape Of(PrismInteractionLodConfigSO cfg) => new()
             {
                 Burst = cfg.FragmentBurst, Drift = cfg.FragmentDrift, SizeSpeed = cfg.FragmentSizeSpeed,
-                SpeedGain = cfg.FragmentSpeedGain, SpeedRef = cfg.FragmentSpeedRef,
+                SpeedGain = cfg.FragmentSpeedGain, SpeedRef = cfg.FragmentSpeedRef, Variety = cfg.FragmentVariety,
             };
         }
 
@@ -104,11 +104,22 @@ namespace CosmicShore.Utility
         /// <paramref name="life"/> seconds — the SAME sum as <c>PrismBurstFragmentReach</c> in the HLSL, whose harness
         /// proves every pose of every depth stays inside it: 3R (a centroid within R of the centre, every vertex within
         /// 2R of its centroid), plus the travel R × (burst + drift × life) × (1 + 6 sizeSpeed) × (1 + |travel noise|) ×
-        /// the boost at the flight's speed (<see cref="FragmentBoost"/>).
+        /// the boost at the flight's speed (<see cref="FragmentBoost"/>) × the most a death's character stretches a
+        /// distance (<see cref="FragmentVarietyReach"/>).
         /// </summary>
         public static float FragmentReach(float radius, float life, FragmentShape shape, float travelNoise, float flightSpeed) =>
             radius * (3f + (shape.Burst + shape.Drift * life) * (1f + 6f * shape.SizeSpeed) * (1f + Mathf.Abs(travelNoise))
-                         * FragmentBoost(flightSpeed, shape));
+                         * FragmentBoost(flightSpeed, shape) * FragmentVarietyReach(shape.Variety));
+
+        /// <summary>
+        /// <c>PrismBurstFragmentVarietyReach</c> in the HLSL: the most one death's character draws a distance out,
+        /// (1 + v/2) for its spread × (1 + 0.6 v) for its ellipsoid.
+        /// </summary>
+        public static float FragmentVarietyReach(float variety)
+        {
+            float v = Mathf.Clamp01(variety);
+            return (1f + 0.5f * v) * (1f + 0.6f * v);
+        }
 
         /// <summary>
         /// The explosion material's own dials — its <c>_Spread</c>, <c>_ExplosiveRotation</c> and <c>_ExplosiveSpead</c>
@@ -153,6 +164,7 @@ namespace CosmicShore.Utility
         static readonly int FragmentSizeId = Shader.PropertyToID("_FragmentSize");
         static readonly int FragmentFadeId = Shader.PropertyToID("_FragmentFade");
         static readonly int FragmentNoiseId = Shader.PropertyToID("_FragmentNoise");
+        static readonly int FragmentVarietyId = Shader.PropertyToID("_FragmentVariety");
         static readonly int ExplosionDialsId = Shader.PropertyToID("_ExplosionDials");
         static readonly int SourceSpreadId = Shader.PropertyToID("_Spread");
         static readonly int SourceRotationId = Shader.PropertyToID("_ExplosiveRotation");
@@ -546,6 +558,7 @@ namespace CosmicShore.Utility
                     new Vector4(cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, cfg.FragmentSpeedGain));
                 m.SetVector(FragmentNoiseId,
                     new Vector4(cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, cfg.FragmentSpeedRef));
+                m.SetFloat(FragmentVarietyId, cfg.FragmentVariety);
                 tuned &= ApplyExplosionTuning(m);
                 s_runtimeMaterials[v] = m;
             }

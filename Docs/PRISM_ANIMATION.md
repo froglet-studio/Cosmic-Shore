@@ -2614,6 +2614,22 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
 
+**Round 12 (the designer, 2026-10-17) — more separation, and each death its own:** *"lets add 20% more separation and
+speed and some randomization that makes it so adjacent prisms with the nearly identical impacts vectors and initial
+orientations don't look like they are playing the same animation, but spherical explosions should still look beautiful
+… so there is a balance between not looking noisy and not looking like copies."*
+
+- **+20% separation and speed**: fragment burst 0.1 → 0.12, drift 0.06 → 0.072 (distance and speed both scale).
+- **A death's character** (`PrismBurstFragmentVariety`, config `fragmentVariety` 0.5, shader `_FragmentVariety`): drawn
+  ONCE per death from its seed (`SeedOf`, the pose's hash), the same for all its fragments — the spread and the opening
+  time × (1 ± v/2), the spin rate × (1 ± 0.6 v), the tumble's plane turned about each face's normal by up to ± 0.4 π v,
+  the lean tilted off the hit by up to v/2, and the cloud drawn out along a random axis into a smooth ellipsoid
+  (distance × (1 + 0.6 v (1.5 cos² − 0.5))). Being one per death it reshapes the cloud and never adds grain. The seed
+  is read through triangle waves, not a hash13: the hash multiplies its input's rounding about a hundredfold, so one
+  death would differ between two GPUs. Bounds × (1 + v/2)(1 + 0.6 v) (`FragmentVarietyReach`).
+- Measured (harness F11): two deaths struck alike differ in shape by 0.33 of their motion against 0.10 with the noise
+  alone (3.3 ×); one death's neighbour roughness +0%. Lab round 12 (a Neighbours view): `Docs/Studios/COLLISION_BURST_LAB.md`.
+
 **Round 11 (the designer, 2026-10-17) — the explosion IS level 0, and the performance pass:** *"it was reflected in the
 levels not the explosion. lets see what we can do about unifying them and ensure that this is the performance
 optimized version we are pushing for both the explosion and the roll effect for the steal."*

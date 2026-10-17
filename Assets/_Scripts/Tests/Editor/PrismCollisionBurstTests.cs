@@ -199,8 +199,10 @@ namespace CosmicShore.Tests
             StringAssert.Contains(
                 "return radius * (3.0 + (s.burst + s.drift * life) * (1.0 + 6.0 * s.sizeSpeed) * (1.0 + abs(travelNoise))", hlsl,
                 "FragmentReach is the HLSL's PrismBurstFragmentReach, which the harness proves every pose stays inside");
-            StringAssert.Contains("* PrismBurstFragmentBoost(flightSpeed, s));", hlsl,
+            StringAssert.Contains("* PrismBurstFragmentBoost(flightSpeed, s) * PrismBurstFragmentVarietyReach(s.variety));", hlsl,
                 "FragmentReach is the HLSL's PrismBurstFragmentReach, which the harness proves every pose stays inside");
+            StringAssert.Contains("return (1.0 + 0.5 * v) * (1.0 + 0.6 * v);", hlsl,
+                "FragmentVarietyReach is the HLSL's PrismBurstFragmentVarietyReach");
             StringAssert.Contains("float size = clamp(level, 0.0, 6.0);", hlsl, "the reach's 6 is the size level's cap");
             Assert.AreEqual(5, PrismCollisionBurst.Fragment);
         }
@@ -221,6 +223,14 @@ namespace CosmicShore.Tests
                 "a fragment that never travels stays within the prism's own 3R");
             Assert.AreEqual(PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, 0.15f, 20f),
                 PrismCollisionBurst.FragmentReach(2f, 7.5f, shape, -0.15f, 20f), 1e-6f, "the noise lengthens either way");
+            // Round 12: a death's character stretches a distance by at most (1 + v/2)(1 + 0.6 v).
+            Assert.AreEqual(1f, PrismCollisionBurst.FragmentVarietyReach(0f), 1e-6f, "no variety, no stretch");
+            Assert.AreEqual(1.2f * 1.24f, PrismCollisionBurst.FragmentVarietyReach(0.4f), 1e-6f);
+            Assert.AreEqual(1.5f * 1.6f, PrismCollisionBurst.FragmentVarietyReach(3f), 1e-6f, "the variety is capped at 1");
+            var varied = shape;
+            varied.Variety = 0.4f;
+            Assert.AreEqual(2f * (3f + (1.2f + 0.35f * 7.5f) * 2.8f * 1.15f * 2f * 1.2f * 1.24f),
+                PrismCollisionBurst.FragmentReach(2f, 7.5f, varied, 0.15f, 30f), 1e-4f);
         }
 
         [Test]
@@ -293,6 +303,8 @@ namespace CosmicShore.Tests
             Has("_FragmentSize", cfg.FragmentSizeSpeed, cfg.FragmentSizeSpin, cfg.FragmentSpinCap, cfg.FragmentLevelRef);
             Has("_FragmentFade", cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, cfg.FragmentSpeedGain);
             Has("_FragmentNoise", cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, cfg.FragmentSpeedRef);
+            Assert.IsTrue(Regex.IsMatch(shader, $@"_FragmentVariety \(""[^""]*"", Range\(0, 1\)\) = {Regex.Escape(F(cfg.FragmentVariety))}\r?\n"),
+                $"_FragmentVariety defaults to {F(cfg.FragmentVariety)}");
         }
 
         [Test]
@@ -788,6 +800,9 @@ namespace CosmicShore.Tests
             Assert.LessOrEqual(cfg.FragmentSpinNoise, 0.25f, "subtle: the order holds");
             Assert.Greater(cfg.FragmentTravelNoise, 0f, "neighbours travel out of perfect step");
             Assert.LessOrEqual(cfg.FragmentTravelNoise, 0.5f, "within its slider: the order holds");
+            // Round 12: deaths differ from one another, once each, so no explosion turns to grain.
+            Assert.Greater(cfg.FragmentVariety, 0f, "two prisms struck alike never play the same animation");
+            Assert.LessOrEqual(cfg.FragmentVariety, 1f);
             Assert.Less(cfg.FragmentEndSmall, cfg.FragmentEndBig, "the smallest fragments leave first");
             Assert.LessOrEqual(cfg.FragmentEndBig, 0.95f, "every fragment gone before the entity retires");
             Assert.Greater(cfg.FragmentBurst + cfg.FragmentDrift, 0f, "the fragments leave");
@@ -833,6 +848,8 @@ namespace CosmicShore.Tests
             StringAssert.DoesNotContain("PrismErosionFade_float(", shader, "a fragment shrinks instead of eroding");
             foreach (var retired in new[] { "_ExplosionSpread", "_WedgeNoise", "faceUV", "PRISM_BURST_WEDGE" })
                 StringAssert.DoesNotContain(retired, shader, retired);
+            Assert.IsTrue(Regex.IsMatch(shader, @"float _FragmentVariety;"), "_FragmentVariety in the CBUFFER");
+            StringAssert.Contains("shape.variety = _FragmentVariety;", shader, "the variety reaches the pose");
             StringAssert.Contains("#include \"PrismCollisionBurst.hlsl\"", shader);
         }
 

@@ -44,6 +44,8 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
      first; same-size neighbours not travelling in step; the travel directions fill the sphere (entropy floor).
   F10. THE VELOCITY (round 10): the burst leans along the hit, mirrors when the hit is reversed, and a 3x harder hit
      bursts wider by the boost (PrismBurstFragmentBoost).
+  F11. VARIETY (round 12): two deaths with the same pose and hit, only their seeds differ, differ in SHAPE at least twice as much
+     as the noise alone makes them; one death's neighbour roughness grows by at most 15% (the structure stays whole).
   X. THE EXPLOSION MAP (the lab draws the explosion with it) equals the harness's own Rodrigues statement of
      RotateFacesAlongAxis' closed form with the graph's constants.
   NEGATIVE CONTROLS, each must FAIL the test it guards:
@@ -57,6 +59,7 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   19. -DPRISM_BURST_FRAGMENT_NOISE_OFF=1   — same-size neighbours back in perfect step (F8 fires).
   20. -DPRISM_BURST_FRAGMENT_FACE_ONLY=1   — every fragment of a face leaving the same way (F9 fires).
   20b. -DPRISM_BURST_FRAGMENT_VELOCITY_OFF=1 — the pose ignores the hit (F10 fires).
+  20c. -DPRISM_BURST_FRAGMENT_VARIETY_OFF=1  — every death alike: two prisms struck alike play one animation (F11 fires).
   21. -DPRISM_BURST_ROLL_TOWARD_CAMERA=1   — the roll rolls toward the camera, onto faces it sees (R fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
@@ -522,11 +525,11 @@ static void run_noise_tests() {
 static PrismBurstFragmentShape fragmentShape(bool extreme) {
     PrismBurstFragmentShape s;
     // the shipped shape (PrismInteractionLodConfig.asset), or every slider at the end of its range
-    s.burst = extreme ? 4.0f : 0.1f; s.drift = extreme ? 2.0f : 0.06f; s.lift = extreme ? 3.0f : 2.0f;
+    s.burst = extreme ? 4.0f : 0.12f; s.drift = extreme ? 2.0f : 0.072f; s.lift = extreme ? 3.0f : 2.0f;
     s.aim = extreme ? 2.0f : 0.95f; s.sizeSpeed = extreme ? 1.0f : 0.8f; s.sizeSpin = extreme ? 1.0f : 0.25f;
     s.spinCap = extreme ? 3.0f : 1.6f; s.endSmall = extreme ? 0.1f : 0.45f; s.endBig = extreme ? 0.95f : 0.92f;
     s.shrink = extreme ? 1.0f : 0.35f; s.tau = 0.22f; s.levelRef = extreme ? 1.0f : 4.0f;
-    s.speedGain = extreme ? 2.0f : 1.65f; s.speedRef = 10.0f;
+    s.speedGain = extreme ? 2.0f : 1.65f; s.speedRef = 10.0f; s.variety = extreme ? 1.0f : 0.5f;
     return s;
 }
 struct FragFrame { float3 rest, n, centroid, faceCentre; };
@@ -652,13 +655,17 @@ static void run_fragment_tests() {
             }
             // F8. with the noise, same-size neighbours on one face do NOT travel or leave in perfect step
             if (amp > 0 && !extreme && cut.depth >= 4) {
+                // at variety 0: the death's ellipsoid (F11's) also sets neighbours apart, and would hide a noise that
+                // is off
+                PrismBurstFragmentShape s0 = s;
+                s0.variety = 0.0f;
                 for (size_t i = 0; i + 3 < m.size(); i += 3) {
                     const WVert& u = m[i]; const WVert& v = m[i + 3];
                     if (length(u.n - v.n) > 0 || std::fabs(u.level - v.level) > 1e-4f) continue;
                     // how far each has travelled: its centroid's displacement (the tumble and the shrink are about it)
                     auto travel = [&](size_t at) {
                         float3 c(0, 0, 0), n;
-                        for (int k = 0; k < 3; k++) { float3 q; fragPose(P, m[at + k], 2.0f, life, speed, vel, ER, noise, s, q, n); c = c + q / 3.0f; }
+                        for (int k = 0; k < 3; k++) { float3 q; fragPose(P, m[at + k], 2.0f, life, speed, vel, ER, noise, s0, q, n); c = c + q / 3.0f; }
                         return length(c - world(P, m[at].centroid));
                     };
                     float du = travel(i), dv = travel(i + 3);
@@ -719,6 +726,83 @@ static void run_velocity_tests() {
     printf("velocity: the burst leans at least %.2f R along the hit at 2 s (reversed: mirrored within %.0f%%); a 3x harder hit "
            "bursts within %.0f%% of the boost's width\n", worstLean, 100 * worstMirror, 100 * worstBoost);
     CHECK(worstMirror <= 0.25f, "reversing the hit does not mirror the lean (%.0f%% off)", 100 * worstMirror);
+}
+
+// F11. VARIETY (round 12, the designer: "adjacent prisms with the nearly identical impact vectors and initial
+// orientations don't look like they are playing the same animation, but spherical explosions should still look
+// beautiful … a balance between not looking noisy and not looking like copies"). Two deaths with the same pose and the
+// same hit, only their seeds differ (two neighbours on a trail). What the eye reads as "the same animation" is the
+// cloud's SHAPE, not its grain, so the COPY difference is taken region by region (each face's four quarters, 24 in
+// all): the mean distance between the two deaths' mean displacements of a region, over the mean displacement. The
+// gradient noise moves on with the seed but averages away within a region, so it alone leaves the two shapes nearly
+// one; the variety must make them at least twice as different (the shipped 0.5 reads about 3x; the control, 1x). (The vertex-by-vertex difference, spin included,
+// is printed beside it.) And one death must stay one structure: the ROUGHNESS, the mean difference between
+// neighbouring fragments' displacements over the mean displacement, may grow by at most 15% over variety 0.
+static void run_variety_tests() {
+    const float ER = 0.0169f, life = 7.5f;
+    PrismBurstFragmentShape s = fragmentShape(false), flat = s;
+    flat.variety = 0.0f;
+    std::vector<WVert> m = silver(7);
+    double copyVar = 0, copyFlat = 0, roughVar = 0, roughFlat = 0, vertVar = 0, vertFlat = 0; int runs = 0;
+    for (int trial = 0; trial < 48; trial++) {
+        Pose P = rndPose(); P.t = float3(0,0,0);
+        float3 vel = rndDir() * 30.0f;
+        float seedA = rnd(0, 1), seedB = rnd(0, 1);
+        for (float age : {0.4f, 1.5f, 3.0f}) {
+            auto measure = [&](const PrismBurstFragmentShape& sh, double& copy, double& rough, double& vertexCopy) {
+                double diff = 0, moved = 0, nb = 0, nbMoved = 0; int nbN = 0;
+                std::vector<float3> dispA;
+                float3 regA[24], regB[24]; int regN[24];
+                for (int r = 0; r < 24; r++) { regA[r] = regB[r] = float3(0,0,0); regN[r] = 0; }
+                for (size_t i = 0; i < m.size(); i++) {
+                    float3 pa, pb, nn;
+                    fragPose(P, m[i], age, life, length(vel), vel, ER, float4(0.15f, 3.0f, seedA, 0.48f), sh, pa, nn);
+                    fragPose(P, m[i], age, life, length(vel), vel, ER, float4(0.15f, 3.0f, seedB, 0.48f), sh, pb, nn);
+                    float3 rest = world(P, m[i].pos);
+                    diff += length(pa - pb); moved += length(pa - rest) + length(pb - rest);
+                    if (i % 3 == 0) {
+                        float3 ca(0,0,0);
+                        for (int k = 0; k < 3; k++) { float3 q; fragPose(P, m[i+k], age, life, length(vel), vel, ER,
+                            float4(0.15f, 3.0f, seedA, 0.48f), sh, q, nn); ca = ca + q / 3.0f; }
+                        float3 cb(0,0,0);
+                        for (int k = 0; k < 3; k++) { float3 q; fragPose(P, m[i+k], age, life, length(vel), vel, ER,
+                            float4(0.15f, 3.0f, seedB, 0.48f), sh, q, nn); cb = cb + q / 3.0f; }
+                        float3 c0 = world(P, m[i].centroid);
+                        dispA.push_back(ca - c0);
+                        // the region: the face (its normal's axis and sign) and the quarter of it the fragment sits in
+                        float3 n = m[i].n, c = m[i].centroid;
+                        int ax = std::fabs(n.x) > 0.5f ? 0 : std::fabs(n.y) > 0.5f ? 1 : 2;
+                        float sgn = ax == 0 ? n.x : ax == 1 ? n.y : n.z;
+                        float u = ax == 0 ? c.y : c.x, w = ax == 2 ? c.y : c.z;
+                        int r = (ax * 2 + (sgn > 0)) * 4 + (u > 0) * 2 + (w > 0);
+                        regA[r] = regA[r] + (ca - c0); regB[r] = regB[r] + (cb - c0); regN[r]++;
+                    }
+                }
+                // neighbours: consecutive fragments of the recursive cut sit side by side
+                for (size_t j = 1; j < dispA.size(); j++) {
+                    nb += length(dispA[j] - dispA[j-1]); nbMoved += 0.5 * (length(dispA[j]) + length(dispA[j-1])); nbN++;
+                }
+                double gd = 0, gm = 0;
+                for (int r = 0; r < 24; r++) if (regN[r]) {
+                    float3 a = regA[r] / (float)regN[r], b = regB[r] / (float)regN[r];
+                    gd += length(a - b); gm += 0.5 * (length(a) + length(b));
+                }
+                copy = gd / std::max(gm, 1e-9);
+                vertexCopy = diff / std::max(0.5 * moved, 1e-9);
+                rough = nb / std::max(nbMoved, 1e-9);
+            };
+            double cv, rv, cf, rf, vv, vf;
+            measure(s, cv, rv, vv); measure(flat, cf, rf, vf);
+            copyVar += cv; roughVar += rv; copyFlat += cf; roughFlat += rf; vertVar += vv; vertFlat += vf; runs++;
+        }
+    }
+    copyVar /= runs; copyFlat /= runs; roughVar /= runs; roughFlat /= runs; vertVar /= runs; vertFlat /= runs;
+    printf("variety: two deaths struck alike differ in shape by %.3f of their motion (%.3f with the noise alone, %.1fx; "
+           "vertex by vertex %.3f against %.3f); one death's roughness %.3f (%.3f at variety 0, %+.0f%%)\n",
+           copyVar, copyFlat, copyVar / std::max(copyFlat, 1e-9), vertVar, vertFlat, roughVar, roughFlat,
+           100 * (roughVar / std::max(roughFlat, 1e-9) - 1));
+    CHECK(copyVar >= 2.0 * copyFlat, "two deaths struck alike play nearly the same animation (%.3f, the noise alone %.3f)", copyVar, copyFlat);
+    CHECK(roughVar <= 1.15 * roughFlat, "the variety grains one death (roughness %.3f against %.3f)", roughVar, roughFlat);
 }
 
 // X. the explosion's own law (the lab draws the explosion with it): PrismBurstExplosionMap about the wedge's own
@@ -833,6 +917,7 @@ int main(int argc, char** argv) {
     bool explosionOnly = argc > 1 && std::strcmp(argv[1], "explosion") == 0;
     bool velocityOnly = argc > 1 && std::strcmp(argv[1], "velocity") == 0;
     bool rollOnly = argc > 1 && std::strcmp(argv[1], "roll") == 0;
+    bool varietyOnly = argc > 1 && std::strcmp(argv[1], "variety") == 0;
     if (envelopeOnly) run_pose_tests(true);
     else if (fadeOnly) run_fade_tests();
     else if (bendOnly) run_bend_tests();
@@ -841,7 +926,8 @@ int main(int argc, char** argv) {
     else if (explosionOnly) run_explosion_tests();
     else if (velocityOnly) run_velocity_tests();
     else if (rollOnly) run_roll_tests();
-    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_fragment_tests(); run_velocity_tests(); run_explosion_tests(); run_roll_tests(); run_misc_tests(); }
+    else if (varietyOnly) run_variety_tests();
+    else { run_pose_tests(false); run_bend_tests(); run_fade_tests(); run_grade_tests(); run_noise_tests(); run_fragment_tests(); run_velocity_tests(); run_variety_tests(); run_explosion_tests(); run_roll_tests(); run_misc_tests(); }
     printf("collision burst: %d failure(s)\n", failures);
     return failures ? 1 : 0;
 }
@@ -905,7 +991,8 @@ def translate(src, required=True):
                  "float PrismBurstEnvelope(", "float PrismBurstProgress(", "float PrismBurstDissolveValue(",
                  "bool PrismBurstClipped(", "float PrismBurstNoise(", "void PrismBurstFragmentPose(",
                  "float PrismBurstFragmentReach(", "void PrismBurstExplosionMap(", "float PrismBurstFragmentEnd(",
-                 "float PrismBurstFragmentBoost(",
+                 "float PrismBurstFragmentBoost(", "PrismBurstFragmentCharacter PrismBurstFragmentVariety(",
+                 "float PrismBurstFragmentVarietyReach(", "float3 PrismBurstSeedWave(",
                  "float3 PrismBurstWedgePivot("):
         assert not required or name in out, f"{name} missing from the shipped HLSL"
     return out
@@ -955,6 +1042,7 @@ def main():
                                  ("-DPRISM_BURST_FRAGMENT_NOISE_OFF=1", "fragment", "noiseless control"),
                                  ("-DPRISM_BURST_FRAGMENT_FACE_ONLY=1", "fragment", "grouped-burst control"),
                                  ("-DPRISM_BURST_FRAGMENT_VELOCITY_OFF=1", "velocity", "velocity-ignored control"),
+                                 ("-DPRISM_BURST_FRAGMENT_VARIETY_OFF=1", "variety", "every-death-alike control"),
                                  ("-DPRISM_BURST_ROLL_TOWARD_CAMERA=1", "roll", "roll-toward-camera control")):
             rc, out = build_and_run(work, [flag], arg, label)
             fired = rc != 0

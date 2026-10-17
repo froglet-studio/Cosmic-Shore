@@ -31,8 +31,8 @@ MonoBehaviour:
   - 6
   - 8
   - 10
-  fragmentBurst: 0.1
-  fragmentDrift: 0.06
+  fragmentBurst: 0.12
+  fragmentDrift: 0.072
   fragmentLift: 2
   fragmentAim: 0.95
   fragmentSpeedGain: 1.65
@@ -47,6 +47,7 @@ MonoBehaviour:
   fragmentSpinNoise: 0.15
   fragmentNoiseFrequency: 3
   fragmentTravelNoise: 0.48
+  fragmentVariety: 0.5
   shedEnabled: 1
   shedMinScreen: 0.08
   shedFineScreen: 0.24

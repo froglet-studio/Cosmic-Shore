@@ -95,10 +95,10 @@ namespace CosmicShore.ScriptableObjects
         [Header("Destruction — how each fragment flies (round 9: \"now I just want it to look awesome\")")]
         [Tooltip("How far each fragment bursts out, in prism radii, at the full ease (the ease's time constant is " +
                  "openSeconds).")]
-        [Range(0f, 4f)] [SerializeField] float fragmentBurst = 0.1f;
+        [Range(0f, 4f)] [SerializeField] float fragmentBurst = 0.12f;
 
         [Tooltip("And then how far it drifts on, in prism radii per second, so the cloud keeps opening while it fades.")]
-        [Range(0f, 2f)] [SerializeField] float fragmentDrift = 0.06f;
+        [Range(0f, 2f)] [SerializeField] float fragmentDrift = 0.072f;
 
         [Tooltip("Its direction is its face's own radial (from the face centre to the fragment) plus the face normal " +
                  "x this: 0 skims along the face, higher lifts the burst off it.")]
@@ -152,6 +152,13 @@ namespace CosmicShore.ScriptableObjects
                  "by this across and along its face. 0: a face's fragments leave on a perfect fan.")]
         [FormerlySerializedAs("wedgeSlideNoise")]
         [Range(0f, 0.5f)] [SerializeField] float fragmentTravelNoise = 0.48f;
+
+        [Tooltip("Round 12: how much one death differs from the next, so two prisms struck alike never play the same " +
+                 "animation. Hashed once per death (never per fragment), so a single explosion stays one smooth " +
+                 "structure: at 1 its spread and opening time vary by 50%, its spin rate by 60%, its tumble plane " +
+                 "turns up to 72 degrees, its lean tilts off the hit and the cloud is drawn out along a random axis " +
+                 "by up to 60%. 0: every death alike.")]
+        [Range(0f, 1f)] [SerializeField] float fragmentVariety = 0.5f;
 
         [Header("Stealing — the grade, or a shed at one of three resolutions")]
         [Tooltip("Off: every steal is the ordinary grade.")]
@@ -289,6 +296,7 @@ namespace CosmicShore.ScriptableObjects
         public float FragmentSpinNoise => Mathf.Clamp(fragmentSpinNoise, 0f, 0.5f);
         public float FragmentNoiseFrequency => Mathf.Clamp(fragmentNoiseFrequency, 0.5f, 8f);
         public float FragmentTravelNoise => Mathf.Clamp(fragmentTravelNoise, 0f, 0.5f);
+        public float FragmentVariety => Mathf.Clamp01(fragmentVariety);
         public float FragmentBurst => Mathf.Clamp(fragmentBurst, 0f, 4f);
         public float FragmentDrift => Mathf.Clamp(fragmentDrift, 0f, 2f);
         public float FragmentLift => Mathf.Clamp(fragmentLift, 0f, 3f);

@@ -49,10 +49,11 @@ Shader "CosmicShore/PrismCollisionBurst"
         _ExplosionDials ("Explosive rotation, explosive spread (per unit amount)", Vector) = (0.0169, 0.05, 0, 0)
 
         [Header(The destruction fragments (written by PrismCollisionBurst from PrismInteractionLodConfig))]
-        _FragmentMotion ("Burst (prism radii), drift (radii per s), lift, aim", Vector) = (0.1, 0.06, 2, 0.95)
+        _FragmentMotion ("Burst (prism radii), drift (radii per s), lift, aim", Vector) = (0.12, 0.072, 2, 0.95)
         _FragmentSize ("Size speed, size spin, spin cap (per size level), smallest level", Vector) = (0.8, 0.25, 1.6, 4)
         _FragmentFade ("Smallest gone at, largest gone at (share of life), shrink share, speed gain", Vector) = (0.45, 0.92, 0.35, 1.65)
         _FragmentNoise ("Noise: spin amplitude, frequency (per object unit), travel amplitude; speed reference (u/s)", Vector) = (0.15, 3, 0.48, 10)
+        _FragmentVariety ("Per-death variety (0: two prisms struck alike play one animation)", Range(0, 1)) = 0.5
 
         [Header(Look)]
         _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 4
@@ -95,6 +96,7 @@ Shader "CosmicShore/PrismCollisionBurst"
             float4 _FragmentSize;
             float4 _FragmentFade;
             float4 _FragmentNoise;
+            float _FragmentVariety;
             float _FresnelPower;
             float _InnerGlow;
             float _DissolveNoiseScale;
@@ -249,6 +251,7 @@ Shader "CosmicShore/PrismCollisionBurst"
                 shape.tau = _BurstShape.y;
                 shape.speedGain = _FragmentFade.w;
                 shape.speedRef = _FragmentNoise.w;
+                shape.variety = _FragmentVariety;
                 PrismBurstFragmentPose(f.rest, f.normal, TransformObjectToWorld(centroidOS), f.faceCentre, length(f.triUV), centroidOS,
                     input.tri.z, f.radius, age, timing.y, drift.w * age, drift.xyz, _ExplosionDials.x,
                     float4(_FragmentNoise.x, _FragmentNoise.y, timing.z, _FragmentNoise.z), shape, posWS, nrmWS);

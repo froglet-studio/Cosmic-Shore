@@ -5,7 +5,7 @@ effects they stand in for, running the shipped shader code in WebGL2, with a mea
 a shared decision log: **destruction** (the explosion → the silver gnomon cut, every fragment bursting out on its own)
 and **stealing** (the grade → the roll). Round 1 looked at the four level-1 collision bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 11
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 12
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -35,6 +35,72 @@ many neighbours move in step, when it thins). Rounds 1–8 below measured the sq
 
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
+
+## Round 12 — 2026-10-17 (`cece/dreamy-pascal-7xxx1m`): 20% more separation; every death its own
+
+**Asked** (the designer): *"lets add 20% more separation and speed and some randomization that makes it so adjacent
+prisms with the nearly identical impacts vectors and initial orientations don't look like they are playing the same
+animation, but spherical explosions should still look beautiful as the explosion separates and the eye traces that
+continuity of separation in the structure of the explosion. so there is a balance between not looking noisy and not
+looking like copies."*
+
+### What changed
+
+- **+20% separation and speed**: `fragmentBurst` 0.1 → **0.12**, `fragmentDrift` 0.06 → **0.072** (the asset, the SO
+  defaults, the shader defaults, the harness and the parity gate's shipped shape).
+- **Each death draws a CHARACTER from its seed, once** (`PrismBurstFragmentVariety`, `fragmentVariety` **0.5**, shader
+  `_FragmentVariety`, the Fragments tab's *Variety*). The balance the request asks for comes from WHERE the randomness
+  lives: one value per death, the same for every fragment, so it changes the whole cloud's shape and never its grain —
+  the eye still traces one continuous structure inside each explosion, and neighbours stop being copies. At variety v:
+  - the spread and the opening's time constant × (1 ± v/2) — some neighbours crack open fast and small, others bloom;
+  - the spin rate × (1 ± 0.6 v), still under the spin cap, and the tumble's plane turned about each face's normal by up
+    to ± 0.4 π v (± 36° at 0.5) — the clearest "not the same animation" cue;
+  - the lean tilted off the hit by up to v/2;
+  - the cloud drawn out along a random axis into a smooth ellipsoid, distance × (1 + 0.6 v (1.5 cos² − 0.5)) — a second
+    Legendre harmonic, zero on average, so the sphere is reshaped, never thinned.
+- The seed is read through **triangle waves** of distinct frequencies, not a hash: the first version hashed it with
+  hash13 and the parity gate failed (9,936 of 10,008 vertices off, worst 7e-3) — hash13 multiplies its input's rounding
+  about a hundredfold, so the same death came out a different character on the page's GPU than in the harness, and
+  would on two players' GPUs. The waves are uniform when the seed is (`SeedOf` already hashes the pose, so two
+  neighbours' seeds are unrelated) and gentle (parity worst 8.2e-4).
+- The culling bounds grow by the most a character stretches a distance, (1 + v/2)(1 + 0.6 v) = 1.95 at 0.5
+  (`FragmentVarietyReach`, the HLSL's `PrismBurstFragmentVarietyReach`; the harness proves every pose inside).
+- **The lab's Neighbours view**: five prisms on a trail struck alike (same hit, same orientation, every seed the pose's
+  own, as the game hashes it), the upper row at variety 0 (round 11: one animation five times), the lower at yours;
+  the Neighbours tab picks the level (0, the explosion, by default) and the trail spacing. Replay moves the trail.
+
+### Look scorecard (shipped settings, impact v (20, 0, 0))
+
+| | Evenness | Cloud at 2 s (R) | Lean along v (R) | **Copy difference** | **Roughness** |
+|---|---|---|---|---|---|
+| **Level 0 · the explosion** | 0.552 | 0.86 (round 11: 0.66) | 0.52 | **0.416** | 0.415 |
+| Level 1 | 0.653 | 2.24 | 1.20 | 0.362 | 0.290 |
+| Level 4 | 0.670 | 3.95 | 2.11 | 0.352 | 0.109 |
+| *control: variety off (level 0)* | 0.556 | 0.79 | 0.54 | **0.164** — fires (under 0.2) | 0.441 |
+| *controls: grouped / reversed / ignored / noise off* | 0.455 | | −2.07 / −0.01 | | in step 100% |
+
+*Copy difference*: two deaths struck alike (the same pose and hit, their own seeds), each face quarter's mean
+displacement at 2 s, A against B, over how far it moved — under 0.2 they read as one animation twice. *Roughness*: one
+death's grain, how differently neighbouring fragments of a face move, over how far they move. The variety raises the
+first 2.5 × and leaves the second where it was (0.415 against 0.441 without it): more different, not noisier.
+
+### Checked
+
+`verify_prism_collision_burst.py` PASS — new **F11**: two deaths with the same pose and hit differ in shape by 0.331 of
+their motion against 0.100 with the noise alone (3.3 ×; the floor is 2 ×) and one death's neighbour roughness grows
++0%; F1-F10 still pass (reach use 0.821, evenness 0.660, lean ≥ 2.42 R, mirrored within 11%). F8 now measures at
+variety 0, because the death's ellipsoid also sets neighbours apart and would hide a noise that is off. **12 controls
+fire**, the new one `PRISM_BURST_FRAGMENT_VARIETY_OFF` (every death alike: F11 fires); glslang compiles the 42
+programs. `parity.py` PASS (fragment worst 8.2e-4 over 10,008 vertices with random varieties; 7 controls fire).
+`verify_lab.cjs` PASS; the Neighbours screenshots read: the upper row five copies, the lower five different bursts,
+each whole. `unity_refcompile` player 0 errors; editor 0 in this branch's files (3 upstream, T-20261017-1249).
+**Not run:** the editor — **NOT editor-verified** (checklist item 12).
+
+### Decision needed (designer)
+
+- **How much variety** (0.5 shipped; the Neighbours view, the Fragments tab's *Variety*): the tumble plane's turn is
+  the strongest cue — if the deaths read as too unalike, lower the variety before touching anything else.
+- Still open from round 11: the grade length; the level-0 cloud's size at a gentle hit (now 0.86 R).
 
 ## Round 11 — 2026-10-17 (`cece/dreamy-pascal-7xxx1m`): the explosion IS level 0; the performance pass
 
