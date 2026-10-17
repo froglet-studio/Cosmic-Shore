@@ -103,7 +103,7 @@ Finish limit 540 s (DNF beyond it). Measured headless, seed 11, 2026-10-17 (`smo
 
 | Vessel | I1 Hard | I1 Easy | I1 No mech | Mech % | Top u/s | Reading |
 |---|---|---|---|---|---|---|
-| Gibbon | 217 | 232 | 232 | 5% | 170 | Swings for turns only now, and they pay a little (217 against 232 for its own control); straight-line swings were a net loss (266 against 232, the version before). The mechanic is for a human to judge: the AI barely uses it |
+| Gibbon | 159 | 161 | 161 | 2% | 198 | On the Tether's numbers (§8.1) the AI barely swings on the flat octagon (2% of the race) and ties its own control; before the merge, on the recipe's guesses, turn-swings paid a little (217 against 232) and straight-line swings lost (266). The mechanic is for a human to judge |
 | Flea | 294 | 326 | 326 | 56% | 258 | Bounces pay (+10% over the control) once the skim and the hull kept separate cooldowns; the chain is the skill |
 | Albatross | 266 | 266 | DNF | 100% | 144 | Finishes I1 once its physics became a glider's: lift perpendicular to the flight path and following the angle of attack (lift along hull-up put ~90 u/s² against the velocity in a pull-up), a glide ratio of 8 (it was 1.6, a brick), ballast 25 so a dive is a 3 s plunge, an updraft weaker than the ballast at neutral wings. The AI's dive is an ATTITUDE held by the aim controller (a held stick is a pitch rate, and it looped). Its control (no wings, no updraft) cannot fly at all, like the Marlin's. Still DNF on I2-I4: the climbing courses need an energy plan the round-1 pilot does not have. The weakest AI of the ten; fly it yourself |
 | Remora | 80 | 168 | 222 | 92% | 240 | The draft is enormous; **found:** two Remoras leapfrog each other's wakes up to the cap in 40 s (a slipstream chain). A design question |
@@ -131,7 +131,7 @@ Scorecard tab re-runs its own row live.
 
 | Vessel | I1 | I2 | I3 | I4 | Top u/s | Reading |
 |---|---|---|---|---|---|---|
-| Gibbon | 217 / 232 / 232 | 298 / 325 / 316 | DNF / DNF / DNF | 338 / 399 / 307 | 170 | Turn-swings pay on I1 and I2, cost on I4 (the control is faster); the long course beats it. The AI resets 36-127 times a race on the rail |
+| Gibbon | 159 / 161 / 161 | 216 / 212 / 220 | 537 / DNF / DNF | 314 / 233 / 218 | 358 | On the Tether's numbers (§8.1: cruise 80, cap 358, reach 93, half-turn boost). Faster everywhere and the first to finish I3, but swings now COST on I4 (314 vs 218 for the control) and barely fire on I1 (2%): the swing pays where the Tether measured it, on a turn hooked abeam, and the round-2 kind needs its spin limit and auto-anchors before the swing is judged. Before the merge: 217 / 232 / 232, 298 / 325 / 316, DNF, 338 / 399 / 307 |
 | Flea | 294 / 326 / 326 | 388 / 458 / 458 | DNF / DNF / DNF | 496 / 475 / 475 | 258 | The bounce chain pays 10-15% on the flat courses, loses on I4; the AI never hits the rail (0 resets) |
 | Albatross | 266 / 266 / DNF | DNF / DNF / DNF | DNF / DNF / DNF | DNF / DNF / DNF | 144 | Finishes the flat octagon only; the climbing and twisting courses need an energy plan the round-1 pilot lacks. Fly it yourself |
 | Remora | 80 / 168 / 222 | 118 / 256 / 297 | 394 / DNF / DNF | 260 / 264 / 282 | 240 | Two Hard rivals to draft (its scorecard seats them); the draft is worth 2-3x on the flat courses. The slipstream chain finding stands |
@@ -187,3 +187,59 @@ Gates run 2026-10-17: `vessel_pages.py --check`, `check_studio.cjs` on every pag
 (the `__lab` contract: SPEC/SHIPPED, manual clock, deterministic `runBatch`), `parity_gate.py`, `game_catalog.py --check`,
 `domain_colors.py --check`, `bake_previews.cjs`, and the headless race smoke (every vessel, every level, with and without
 its mechanic, four courses).
+
+## 8. Round 2: one vessel per session (the owner, 2026-10-17)
+
+Round 1 made ten vessels in one session so the owner could pick. Round 2 takes **one vessel per session**, in the
+order the owner names, each session on `Ys-bleeding-edge`, each ending with a vessel the owner has flown and recorded a
+decision on. A round-2 session, in order:
+
+1. **Read first**: this file (the vessel's row in §2 and §4.1, §5, §6), its recipe `vessels/<id>.json`, its kind in
+   `studio-kinds.js`, the live decision log (`ArtifactData list decisions`, filtered by `vessel`), and
+   `python3 Tools/Build/who_works_where.py query` on the files it will touch. Say who else works there.
+2. **The studio round(s)**: refine the kind and recipe until the mechanic reads on a phone and a PC: the AI finishes every
+   course it is meant to, Hard is fastest (D24), the mechanic beats its own no-mechanic control (L-GEN-10), and the HUD
+   says what the triggers do. Every round: `vessel_pages.py` → `check_studio.cjs <id>.html --hook __vesselStudio` →
+   the headless smoke on all four courses → `build_artifact.py` → publish into the one artifact → `amoebius_artifacts.py
+   import` → `parity_gate.py --artifact`. Write the measured table into §4.1's row and the round's Found into §5.
+3. **The owner flies it** and records **Keep / Drop** (and what to change) on the page's Decisions tab. The session
+   applies the recorded decisions at the start of its next round and says "your decisions applied".
+4. **Kept → the game**: `/artifact-to-unity` ports the settled numbers and the mechanic, line for line with tests, under
+   `/vessel`'s contract (four abilities over the four elements are proposals until Garrett signs them off, §11 of each
+   design doc). A vessel id is claimed only after checking `bleeding-edge` AND the in-flight branches.
+5. **Ship**: `/ship` (§2.5 and §3.55 never skipped), "Affects: Yash's Vessel Studio" in the commit, the team tasks the
+   session leaves on `Docs/TEAM_TASKS.md`.
+
+What round 1 leaves every vessel's session (from §4-§6): a clean Easy / Medium / Hard ladder, the I3 climbing course
+(five AIs DNF inside 540 s), a human-facing name, and the design decisions in §6 that belong to that vessel.
+
+### 8.1 Gibbon + Tether: one concept, two halves already built
+
+`cece/loving-feynman-hlgf18` (a Claude Code session, 2026-10-08, merged mostly by Garrett) carries the **Tether**
+prototype in Unity: `VesselClassType.Tether`, a Squirrel-hull clone whose long tether is the Gibbon's swing in the
+real flight model, with pure maths (`TetherMath.cs`, 12 edit-mode tests, a headless runner), a config asset
+(`TetherConfig.asset`) and its design doc `Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md`. The two
+concepts are the same vessel seen from two sides, so round 2 **merges them**: the Gibbon is the studio side (where the
+owner flies and decides), the Tether is the Unity side (where the decided numbers land), and from now on they share one
+set of numbers and one design record (this section, and TETHER.md for the engine detail).
+
+| | Gibbon (studio, round 1) | Tether (Unity prototype) | Merged |
+|---|---|---|---|
+| Swing | RT tether to the best prism, reel with LT, release flings; kick ×1.3 past 70° | LT / RT each hook the best target on that side; stick up reels, down pays out; +20% past a half turn | **The Tether's**: two triggers, one per side; reel on the stick; the half-turn boost |
+| Rope | point constraint, no gravity; reel trades rope for speed, cap 170 u/s | rigid rope, angular momentum conserved; the reel stops at the **spin limit** 0.6 rev/s; cap 358 u/s | the Tether's rope and spin limit (the studio kind gains both) |
+| Aiming | 60° cone ahead, target memory 0.5 s | the **search plane** (forward × right; roll tilts it); ghost rings; a held trigger hooks the moment something is in reach | the Tether's plane and ghosts, the Gibbon's 0.5 s memory kept |
+| Straight flight | plain cruise 55 u/s | **auto-anchors**: it plants its own prisms 0.8 s ahead, 20° off the nose, alternating sides every 0.35 s, and yanks itself along them hand over hand at 1.15× cruise | the Tether's auto-anchors (new in the studio; the owner's top tuning question) |
+| The tether itself | inert | a **light sword**: cuts hostile prisms it sweeps, pops shields, binds on super-shields (the Rhino sword's rules) | the Tether's blade |
+| Numbers | the recipe's guesses | `TetherConfig.asset`: cruise 80, range 93, minHook 27, reel 40 + auto-reel 7.4, minLength 19, maxSpin 0.6, maxSpeed 358, releaseBoost 0.2, glide 1.6 s × 0.15 | **the asset's** (D1: the studio reads the shipped numbers); the recipe's `params` now carry them where the round-1 kind has the knob |
+| Elements | Charge Fling · Mass Heft (L5 Harvest) · Space Long Arm · Time Quick Reel | four OPEN slots; proposals Space reach, Time swing rate, Mass anchor size, Charge the blade | the two proposals agree on Space and Time; Charge and Mass stay for Garrett (TETHER.md §11, the design-approval gate) |
+| Measured | I1 Hard 217 s vs 232 control (turn-swings only) | one swing from cruise: 1× → 2.1× (2.4× with the boost) in 1.4 s, hooked at 93 u | both stand; the studio re-measures after the merge |
+
+**The Gibbon session's first steps**, in order: (1) the vessel id: `Tether = 14` on that branch collides with
+`Thresher = 14` on `Ys-bleeding-edge`; the Tether takes the next free value after checking every in-flight branch
+(17 is free in origin today), and TETHER.md §12's id note is rewritten; (2) rebase or merge `cece/loving-feynman-hlgf18`
+onto `Ys-bleeding-edge` (its `VesselTransformer` seams default to the expressions they replaced, so the fleet is
+bit-identical; `check_network_prefab_hashes.py` on the merge); (3) teach the studio's `swing` kind the Tether's three
+additions, auto-anchors, the spin limit, the blade, and the search plane, each as a `TetherConfig` knob by the asset's
+field name; (4) re-run §4.1's row and §2's reading; (5) when the owner records Keep, `/artifact-to-unity` writes the
+decided values into `TetherConfig.asset`, never into the C#. The AI note stands from both sides: nothing drives the
+long tether in Unity yet, and the studio's pilot swings for turns only.

@@ -643,3 +643,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The AI Butterfly's fold lands in the ring)
+
+### T-20261017-3c5d · open · dev · Vessel Studio / concept fleet
+- **Task:** Round 2 of the concept fleet: one vessel per session in the owner's order (CONCEPT_FLEET.md section 8); the Gibbon's session merges the Tether prototype (section 8.1)
+- **Done when:** each picked vessel has a studio round the owner recorded Keep on, and a kept vessel is ported with /artifact-to-unity
+- **Who can take it:** Yash (sessions), Garrett (element sign-off)
+- **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 8
+
+### T-20261017-e64b · open · dev · Vessel / Tether
+- **Task:** Bring cece/loving-feynman-hlgf18 (the Tether prototype) onto Ys-bleeding-edge: Tether = 14 collides with Thresher = 14; take the next free id (17 in origin today), rewrite TETHER.md section 12, run check_network_prefab_hashes.py and the edit-mode suite
+- **Done when:** the Tether flies from Toy Box > Vessel Changer on Ys-bleeding-edge with its own id and the suite green
+- **Who can take it:** Yash or the Gibbon session; Garrett merged the branch's family
+- **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md on that branch; CONCEPT_FLEET.md section 8.1

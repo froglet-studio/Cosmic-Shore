@@ -121,7 +121,7 @@
       "group": "concept",
       "kind": "concept studio - round 1 (recipe-driven, movement kind swing)",
       "chip": "concept · round 1",
-      "summary": "The swinger. Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rope with no gravity to help, reel in with LT to trade rope for speed, and let go to fling out on the tangent. A fling after a full swing pays a kick. Every prism in the HyperSea is an anchor: the course ribbon, the mass beside it, a rival's trail.",
+      "summary": "The swinger, merged with the Tether prototype (cece/loving-feynman-hlgf18). Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rigid rope, reel in with LT to trade rope for speed, and let go to fling out on the tangent; a release past a half turn pays a boost. In Unity the same vessel also plants its own anchor prisms ahead and yanks itself along them hand over hand, and every tether is a light sword that cuts hostile prisms. Those two halves join the studio in its round-2 session; the numbers here are TetherConfig.asset's.",
       "spec": [
         {
           "k": "Mechanic",
@@ -129,15 +129,15 @@
         },
         {
           "k": "Reach",
-          "v": "150 u, 60° cone, target memory 0.5 s"
+          "v": "93 u (TetherConfig range), 60° cone, target memory 0.5 s"
         },
         {
           "k": "Kick",
-          "v": "×1.3 after a 70° swing, cap 170 u/s"
+          "v": "+20% past a half turn (releaseBoost), cap 358 u/s"
         },
         {
           "k": "Why",
-          "v": "grapple / web-swing: Spider-Man 2, Marvel Rivals, Echo Point Nova"
+          "v": "grapple / web-swing: Spider-Man 2, Marvel Rivals, Echo Point Nova; the Tether prototype in Unity"
         }
       ],
       "preview": "previews/gibbon.png",

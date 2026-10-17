@@ -140,7 +140,7 @@
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1 id="h1">Gibbon Studio</h1>
     <span class="round" id="round">concept · round 1</span>
-    <p class="sub" id="sub">The swinger. Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rope with no gravity to help, reel in with LT to trade rope for speed, and let go to fling out on the tangent. A fling after a full swing pays a kick. Every prism in the HyperSea is an anchor: the course ribbon, the mass beside it, a rival&#x27;s trail.</p>
+    <p class="sub" id="sub">The swinger, merged with the Tether prototype (cece/loving-feynman-hlgf18). Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rigid rope, reel in with LT to trade rope for speed, and let go to fling out on the tangent; a release past a half turn pays a boost. In Unity the same vessel also plants its own anchor prisms ahead and yanks itself along them hand over hand, and every tether is a light sword that cuts hostile prisms. Those two halves join the studio in its round-2 session; the numbers here are TetherConfig.asset&#x27;s.</p>
   </header>
 
   <div class="layout">
@@ -300,12 +300,12 @@
   "id": "gibbon",
   "order": 1,
   "name": "Gibbon",
-  "tagline": "the swinger: tether, reel, fling",
+  "tagline": "the swinger: tether, reel, fling (merged with the Tether prototype)",
   "round": "concept \u00b7 round 1",
   "accent": "#7fe08a",
   "kind": "swing",
   "chip": "concept \u00b7 round 1",
-  "summary": "The swinger. Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rope with no gravity to help, reel in with LT to trade rope for speed, and let go to fling out on the tangent. A fling after a full swing pays a kick. Every prism in the HyperSea is an anchor: the course ribbon, the mass beside it, a rival's trail.",
+  "summary": "The swinger, merged with the Tether prototype (cece/loving-feynman-hlgf18). Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rigid rope, reel in with LT to trade rope for speed, and let go to fling out on the tangent; a release past a half turn pays a boost. In Unity the same vessel also plants its own anchor prisms ahead and yanks itself along them hand over hand, and every tether is a light sword that cuts hostile prisms. Those two halves join the studio in its round-2 session; the numbers here are TetherConfig.asset's.",
   "spec": [
     {
       "k": "Mechanic",
@@ -313,28 +313,35 @@
     },
     {
       "k": "Reach",
-      "v": "150 u, 60\u00b0 cone, target memory 0.5 s"
+      "v": "93 u (TetherConfig range), 60\u00b0 cone, target memory 0.5 s"
     },
     {
       "k": "Kick",
-      "v": "\u00d71.3 after a 70\u00b0 swing, cap 170 u/s"
+      "v": "+20% past a half turn (releaseBoost), cap 358 u/s"
     },
     {
       "k": "Why",
-      "v": "grapple / web-swing: Spider-Man 2, Marvel Rivals, Echo Point Nova"
+      "v": "grapple / web-swing: Spider-Man 2, Marvel Rivals, Echo Point Nova; the Tether prototype in Unity"
     }
   ],
   "fantasy": "A brachiator in space. It never flies straight for long: it hooks the world and swings through it, and the mass other pilots lay is its forest canopy.",
   "why": "Grapple and swing is the second hottest movement verb of 2024-26 (Spider-Man 2 at 11M+, Marvel Rivals' most-loved heroes are its swingers, Echo Point Nova 98% positive). The forgiveness rules come from Echo Point Nova: a target is remembered for half a second after you looked past it, and the rope lets go on its own when it stops making sense.",
   "flight": {
-    "cruise": 55,
+    "cruise": 80,
     "pitchYaw": 120,
     "roll": 130,
     "grip": 30,
     "accel": 1.5,
-    "topSpeed": 170
+    "topSpeed": 358
   },
-  "params": {},
+  "params": {
+    "reach": 93,
+    "minRope": 19,
+    "reelRate": 47,
+    "kick": 1.2,
+    "kickAngle": 180,
+    "topSpeed": 358
+  },
   "elements": {
     "charge": {
       "name": "Fling",
@@ -432,11 +439,12 @@
     "rt": "tether (hold) / let go"
   },
   "notModelled": [
-    "The rope is a point constraint with no gravity: the arc comes from the rope alone, speed from reeling. The game would need a tether solver (the Thresher's chain is the nearest).",
-    "What a tether does to a rival's prism on contact (steal, shield, nothing) is a design question: here only Harvest (Mass 5) converts the anchor."
+    "The rope is a point constraint with no gravity, reeled by LT; the Tether's SPIN LIMIT (0.6 rev/s), its AUTO-ANCHORS (own prisms planted 0.8 s ahead, alternating every 0.35 s) and its LIGHT SWORD (cutting hostile prisms) are built in Unity on cece/loving-feynman-hlgf18 and join this kind in the Gibbon's round-2 session (CONCEPT_FLEET.md section 8.1).",
+    "Aiming is a 60-degree cone ahead; the Tether aims with a search plane that roll tilts, and hooks per trigger side.",
+    "What a tether does to a rival's prism on contact: here only Harvest (Mass 5) converts the anchor; in Unity the beam cuts it."
   ],
   "sources": [
-    "Design: Docs/Studios/CONCEPT_FLEET.md (Gibbon). Nearest shipped relative: the Thresher's chain and plant (THRESHER.md); the Shrike design's Void Sling is a zip, not a swing."
+    "Design: Docs/Studios/CONCEPT_FLEET.md (Gibbon, and section 8.1 for the merge). Unity side: Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md and TetherConfig.asset on cece/loving-feynman-hlgf18 (reach 93, minHook 27, reelRate 40 + autoReel 7.4, minLength 19, maxSpin 0.6, maxSpeed 358, releaseBoost 0.2). Nearest shipped relative: the Thresher's chain and plant (THRESHER.md)."
   ],
   "docs": "Docs/Studios/CONCEPT_FLEET.md"
 };
