@@ -104,7 +104,13 @@ OLD_INVITE = dict(pi="1955618632100232137", rt="1078298652", go="195561863210023
                   stray_parent="4432980322083613555", gate="6613135569115853855")
 HOME_RT = "3251318990371052344"
 SWITCHER = "4216411968520269688"
-CARD_W, CARD_H = 600, 132
+# Rev 3.1 (the owner, 2026-10-17: "friends is overlaying vessel hangar, make vessel hangar and weekly
+# challenge smaller tabs"): compact docked cards. Two of them under the pilot chip end at y ~442 at
+# 1080, clear of the friends drawer's handle (centred on the left edge, from y ~484).
+CARD_W, CARD_H = 480, 100
+ART_W = 132                   # the card's art strip
+TEXT_X = ART_W + 16           # where a card's words start
+TEXT_W = CARD_W - TEXT_X - 2 * 26 - 20   # clear of the - and x buttons
 
 
 def ctx_new():
@@ -513,9 +519,9 @@ def patch_header(p):
 # 6b: Up next cards (scene) and the party invite (prefab)
 # --------------------------------------------------------------------------------------------
 
-DOCK_GAP = 12                 # rev 3: the cards stack under the pilot chip
-FOLDED_H = 48                 # a folded card: its art slice and eyebrow
-DOCK_BTN = 26
+DOCK_GAP = 10                 # rev 3: the cards stack under the pilot chip
+FOLDED_H = 40                 # a folded card: its art slice and eyebrow
+DOCK_BTN = 24
 
 
 def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
@@ -526,21 +532,21 @@ def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
     fill = c.child(N(f"{k}/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.9), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
-    clip = c.child(N(f"{k}/Clip", "Clip", R((0, 0), (0, 1), (101, 0), (198, -2), (0.5, 0.5))))
+    clip = c.child(N(f"{k}/Clip", "Clip", R((0, 0), (0, 1), (ART_W / 2 + 2, 0), (ART_W, -2), (0.5, 0.5))))
     clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("mask", 114, A.mask(False)) \
         .add("cover", 114, lambda ctx, go: mono(go, A.S["cover"], f"  image: {ref(ctx.c(f'{k}/Clip/Art', 'img'))}\n"))
-    A.art_node(clip, f"{k}/Clip/Art", "Art", R(size=(198, 132)), None)
+    A.art_node(clip, f"{k}/Clip/Art", "Art", R(size=(ART_W, CARD_H)), None)
     bord = c.child(N(f"{k}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(border_token), K.kit_sprite("kit_sliver14_line1"), True))
-    label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(222, 16, 290, 16))), eyebrow, "Label", eyebrow_token)
+    label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(TEXT_X, 12, TEXT_W, 16))), eyebrow, "Label", eyebrow_token)
     # Everything under the eyebrow folds away with the card (HomeDockCard.detailGroup).
     detail = c.child(N(f"{k}/Detail", "Detail", STRETCH))
     detail.add("cg", 225, H.canvas_group(True))
-    t = detail.child(N(f"{k}/Title", "Title", TL(222, 42, 360, 28)))
+    t = detail.child(N(f"{k}/Title", "Title", TL(TEXT_X, 30, CARD_W - TEXT_X - 18, 26)))
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("Mode", "H3", tok("TextLight")))) \
         .add("kt", 114, K.kit_text("H3", "TextLight"))
-    o = detail.child(N(f"{k}/Line", "Line", TL(222, 72, 360, 20)))
+    o = detail.child(N(f"{k}/Line", "Line", TL(TEXT_X, 56, CARD_W - TEXT_X - 18, 18)))
     o.add("cr", 222, K.canvas_renderer()).add("tmp", 114, A.ellipsis(text("", "BodySmall", tok("NeutralLightest")))) \
         .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest"))
     c.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
@@ -551,8 +557,8 @@ def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
               f"    m_HighlightedColor: {K.col(tok('TextLight'))}\n")
           + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Border', 'img'))}\n" + A.calls([])))
     c.add("audio", 114, A.menu_audio(2))
-    icon_button(c, f"{k}/Minimise", "Minimise", None, TR(14 + DOCK_BTN + 6, 11, DOCK_BTN, DOCK_BTN))
-    icon_button(c, f"{k}/Close", "Close", "chrome_close", TR(14, 11, DOCK_BTN, DOCK_BTN))
+    icon_button(c, f"{k}/Minimise", "Minimise", None, TR(10 + DOCK_BTN + 6, 8, DOCK_BTN, DOCK_BTN))
+    icon_button(c, f"{k}/Close", "Close", "chrome_close", TR(10, 8, DOCK_BTN, DOCK_BTN))
     c.add("dock", 114, lambda ctx, go: mono(go, S["dock"],
           f"  cardGroup: {ref(ctx.c(k, 'cg'))}\n  detailGroup: {ref(ctx.c(f'{k}/Detail', 'cg'))}\n"
           f"  card: {ref(ctx.rt(k))}\n"
@@ -567,20 +573,25 @@ def upnext_node():
     root = N("UpNext", "UpNext", TL(CHIP["x"], CHIP["y"] + CHIP["h"] + 16, CARD_W, 2 * CARD_H + DOCK_GAP))
     root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), DOCK_GAP, 0, (0, 0), (0, 0)))
     w, wd = upnext_card("Weekly", "Weekly challenge", "Purchase", "Purchase", 0)
-    label(wd.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", TL(222, 100, 64, 18))), "Ends in", "Label", "TextLight")
-    cd = wd.child(N("UpNext/Weekly/Countdown", "Countdown", TL(290, 98, 110, 20)))
+    # The stats row sizes each word to itself (an HLG over TMP's preferred widths): "YOUR BEST" ran into
+    # its value when the slots were fixed pixel widths.
+    stats = wd.child(N("UpNext/Weekly/Stats", "Stats", TL(TEXT_X, 76, CARD_W - TEXT_X - 14, 18)))
+    stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (1, 1), (0, 0)))
+    label(stats.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", R(size=(64, 18)))), "Ends in", "Label", "TextLight")
+    cd = stats.child(N("UpNext/Weekly/Countdown", "Countdown", R(size=(110, 18))))
     cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
-    label(wd.child(N("UpNext/Weekly/BestLabel", "BestLabel", TL(404, 100, 76, 18))), "Your best", "Label", "NeutralLightest")
-    b = wd.child(N("UpNext/Weekly/Best", "Best", TL(484, 98, 100, 20)))
+    stats.child(N("UpNext/Weekly/StatsGap", "Gap", R(size=(10, 18)))).add("le", 114, le(pw=10, ph=18))
+    label(stats.child(N("UpNext/Weekly/BestLabel", "BestLabel", R(size=(76, 18)))), "Your best", "Label", "NeutralLightest")
+    b = stats.child(N("UpNext/Weekly/Best", "Best", R(size=(100, 18))))
     b.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("None yet", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     root.children.append(w)
     q, qd = upnext_card("Quest", "Current quest", "NeutralLightest", "TextLight", 0)
-    for i, h in enumerate((13, 16, 19, 22)):
-        seg = qd.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (222 + i * 11, -120), (8, h), (0, 0))))
+    for i, h in enumerate((8, 10, 12, 14)):
+        seg = qd.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (TEXT_X + i * 10, -92), (7, h), (0, 0))))
         seg.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
-    mt = qd.child(N("UpNext/Quest/MeterText", "MeterText", TL(274, 98, 300, 20)))
+    mt = qd.child(N("UpNext/Quest/MeterText", "MeterText", TL(TEXT_X + 46, 76, CARD_W - TEXT_X - 60, 18)))
     mt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     root.children.append(q)
@@ -803,6 +814,11 @@ def validate(files):
     assert f"  - {{fileID: {ctx.go('UpNext')}}}" in sc.docs[SWITCHER], "Up next does not fade with the hub row (hubCompanions)"
     for key in ("Weekly", "Quest"):   # rev 3: each docked card folds and closes
         dk = sc.docs[str(ctx.c(f"UpNext/{key}", "dock"))]
+        # Rev 3.1: both cards expanded must end above the friends drawer's handle (centred on the left
+        # edge, 112 tall: from y 484 at 1080) - the owner's "friends is overlaying vessel hangar".
+        exp = int(re.search(r"expandedHeight: (\d+)", dk).group(1))
+        bottom = CHIP["y"] + CHIP["h"] + 16 + 2 * exp + DOCK_GAP
+        assert bottom <= 540 - 112 // 2 - 16, f"the docked cards reach y {bottom}: under the friends handle"
         for f, want in (("detailGroup", ctx.c(f"UpNext/{key}/Detail", "cg")), ("minimiseButton", ctx.c(f"UpNext/{key}/Minimise", "button")),
                         ("closeButton", ctx.c(f"UpNext/{key}/Close", "button")), ("cardGroup", ctx.c(f"UpNext/{key}", "cg"))):
             assert f"  {f}: {{fileID: {want}}}" in dk, f"{key} card: HomeDockCard.{f} is not wired"
@@ -877,6 +893,8 @@ def self_test(files):
         ("the fly hint's x unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  closeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("Settings left out of the guide's always-available set", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"guid: {S['guide_ok']}", "guid: 00000000000000000000000000000000", 1))),
+        ("the docked cards back under the friends handle", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"expandedHeight: {CARD_H}\n", "expandedHeight: 132\n", 1))),
         ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  - {{fileID: {ctx_new().go('UpNext')}}}\n", "", 1))),
     ]

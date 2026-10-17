@@ -1887,3 +1887,11 @@ flies the selected vessel for real:
   `ModePreviewWindow.AnyHasFocus` (a modal's preview never reached them: `HasActiveModal`).
 - `author_menu_hangar.py` builds it all and validates it (forwarding, the window and hint wiring, TRY / STOP calls, the
   hidden tap surface out of pad navigation, the definition's Barren cell / Mode 0 / no clock), with planted defects.
+
+## 36. Home: compact docked cards, clear of the friends tab (2026-10-17)
+
+The owner: "friends is overlaying vessel hangar, make vessel hangar and weekly challenge smaller tabs". The weekly and
+quest cards go from 600 x 132 to 480 x 100 (art strip 132, folded 40), so both expanded end at y ~442 at 1080, above the
+friends drawer's handle (y 484-596). The weekly stats row ("Ends in ... / Your best ...") now sizes each word to itself
+(an HLG over TMP's preferred widths), so "YOUR BEST" no longer runs into its value. `author_menu_home.py` fails if the
+expanded cards reach the handle (planted defect).
