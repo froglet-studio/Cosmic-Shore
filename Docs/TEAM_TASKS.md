@@ -550,3 +550,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UGS owner), with Yash and Garrett
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/AI_DATA_IN_UGS.md
+
+### T-20261017-5109 · open · test · Refactor
+- **Task:** Open Ys-bleeding-edge in the Unity Editor once after the 2026-10-17 basic refactor pass (enum numbering, TryGetComponent, 3 inspectors moved to Assets/_Scripts/Editor, dead Find branches): let it compile, then open a CameraSettingsSO, a ShapeDefinition and a UniversalStatsProvider and check each custom inspector still draws.
+- **Done when:** Editor compiles with no new console errors and the three custom inspectors draw; note the result in Docs/REFACTOR_BACKLOG.md section 0.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
+- **See:** Docs/REFACTOR_BACKLOG.md section 0
+
+### T-20261017-4c56 · open · dev · Refactor
+- **Task:** Delete the measured-unreferenced vestiges the 2026-10-17 session could not delete (blocked by its permission check): Assets/_Scripts/System/Architectures/ (LoginEventBus.cs, a static event bus nothing calls, plus folder metas) and the stale namespaced copy Assets/_Scripts/Controller/IO/_Input Mapping/InputActionsAsset.cs (+ folder meta; the live generated wrapper is Game/IO/_Input Mapping/InputActionsAsset.cs). Also drop the Controller/IO/_Input Mapping/ entry from Tools/Build/check_console_logging.py TOOL_PATHS.
+- **Done when:** git rm'd on Ys-bleeding-edge, Unity compiles, check_console_logging.py 0 problems.
+- **Who can take it:** Yash (offered)
+- **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
+- **See:** Docs/REFACTOR_BACKLOG.md section 0 row S17

@@ -6,8 +6,9 @@ Measured on `Ys-bleeding-edge` @ `419ceebe` (contains bleeding-edge `a67fee38`, 
 `Docs/{Party,Presence,Scoring}System/REFACTOR.md`, `Docs/ElementalAbilitySystem/BACKLOG.md`,
 `Docs/ToySystem/BACKLOG.md`, `Docs/LAUNCH_BLOCKER_INDEX.md`, `Docs/AI_SYSTEM/`. Method: the
 `/refactor` skill (classify, then measure; counts are `git grep` / comment-stripped scans and
-approximate). **Nothing here was changed in code** — this is the measurement, not the pass.
-Each row is a claim as of today; re-run its evidence before acting on it (`/refactor` §2).
+approximate). The first pass changed no code; **§0 records the basic-refactor pass that
+followed the same day** (on `Ys-bleeding-edge` only). Each row is a claim as of its date; re-run
+its evidence before acting on it (`/refactor` §2).
 
 Size key: **S** ≤1 day, mechanical, few files · **M** bounded multi-file, a few days ·
 **L** architectural / long migration / LOCKED system broadly. `LOCKED` = party, scoring, ecology,
@@ -25,15 +26,42 @@ threading — the system's own rules (per-commit risk gate, MPPM smoke test) app
 Codebase: 2,490 first-party `.cs` under `Assets/_Scripts` (**~551k lines**, 388 editor files),
 one first-party asmdef (`CosmicShore.Data`, 60 files); everything else is Assembly-CSharp.
 
+## 0. Landed 2026-10-17 — the basic pass (`Ys-bleeding-edge` only, not bleeding-edge)
+
+Every C# commit was compiled headless with `Tools/Build/unity_refcompile` (player: 0 errors in
+project code; editor config: 0 errors in changed files — its 3 standing errors are in the untouched
+`AuthenticationServiceFacade.cs`, from the unfetchable `Unity.Multiplayer.Playmode` package) and
+the five standing textual gates. **`/verify-unity` did not run** (no Unity Editor in the cloud
+session); open the project once and let it compile.
+
+| row | what landed | what the measurement corrected |
+|---|---|---|
+| **S1** | `check_enum_member_references.py` scopes every NESTED enum to its own file; gate green, `--self-test` 13/13, negative control still catches a real rename | Two false-positive shapes, not one: excluding the private `Placement` unmasked the public nested `OnlineInfoEntry.Status` vs DrillRunner's `Status` property |
+| **S2** | `ThresherLaunchSight.cs.meta` committed (fresh guid; nothing serialized referenced the type) | It was the ONLY `.cs` under `Assets/_Scripts` without a `.meta` |
+| **S3** | 61 enums / 56 files numbered with their current values; csc-compiled before/after, 0 of 61 differ (negative control: 1 planted → 1 differs) | 65 needed it (runtime, editor and `Assets/FTUE`), not "57 runtime + 6 editor"; **4 left alone because in-flight branches are editing them** (`WeeklyChallengeLeaderboardWirer.Status`, `QuestItemCard.QuestItemState` on `claude/new-session-76hnyc`; `ZoomOutActionSO.ScaleSource`, `ZoomOutActionExecutor.State` on `cece/relaxed-hopper-r62hbd`) — number them after those merge |
+| **S5** | the 4 dead `#else FindObjectOfType` branches removed (AppManager ×3, ShipAudioController) | Amoebius compiles those `#else` branches; its `FindObjectOfType` is an alias of the same method, so no-op there too |
+| **S12** | 3 pure inspectors moved to `Assets/_Scripts/Editor/` (`CameraSettingsSOEditor`, `ShapeDefinitionEditor`, `UniversalStatsProviderEditor`), base named `UnityEditor.Editor` | Only 3 of the "7" can move: `SerializeProperty`/`ResourceDisplay` mix runtime + drawer in one file, runtime code calls `LogControlWindow`, `RewindDrawer` does not exist |
+| **S17** (part) | `SingletonNetwork`, `SingletonNetworkPersistent`, `SingletonScriptableObject` deleted from `Singleton.cs` (generic, unreferenced anywhere) | **Still open:** deleting `LoginEventBus.cs` (+ the empty `System/Architectures/` folder) and the stale `Controller/IO/_Input Mapping/InputActionsAsset.cs` was blocked by the session's permission check — both measured unreferenced; needs a human to run the `git rm` |
+| **S19/S20** | 24 sites / 16 files `GetComponent`+null check → `TryGetComponent` | The audit's ~159 was a loose pattern; the exact mechanical shape is **44** sites. 17 skipped (in-flight files), 3 skipped because the two lines are not sibling statements — folding them would have moved a null-warning inside a braceless `if` (a real behaviour change, caught in review) |
+| **S28** (part) | `TOOLING.md`, `PartySystem/REFACTOR.md`, `ARCHITECTURE_CORE.md`, `AI_SYSTEM/ARCHITECTURE.md`, `ScoringSystem/REFACTOR.md` corrected with dated re-measurements | see below |
+
+**Re-measured and NOT a basic refactor:** **S6** `"Menu_Main"` — of the 16 literals, 7 are the
+deliberate fallback when `SceneNameListSO` is unassigned, and 6 are in the party layer (LOCKED), 3 of
+them presence-protocol payloads rather than scene loads; leave it to the party work. **S27**
+`CoOpScoreBoard` — the class has **no** scene/prefab/asset referrer at all, although
+`ScoringSystem/ARCHITECTURE.md` lists it for Wildlife Blitz co-op; renaming a field on a class
+nothing uses is pointless — it is a vestige proposal (with `UI/Model/MinigameHUDInspector.cs`,
+which is `#if false`).
+
 ## What the docs were wrong about (re-measured)
 
 - `TOOLING.md` "standing debt: 11 RED generators" — **all 101 `author_*.py --check` pass**. Close the row.
 - `Party/REFACTOR` "PartyInviteController ~450 lines" — **731**; `ARCHITECTURE_CORE` "3 Yields in PIC" — **6**.
 - `Scoring/REFACTOR` name-match in final RPCs "~14 files" — **21**; `*SignalColor` gamma rows grew (21/12/5 vs 16/5/4).
-- `Scoring/REFACTOR` still cites `Scoreboard.cs:147,454` (`IsMultiplayerMode`, now 0 hits) and `GameCanvas-SkimRace.prefab` (gone).
+- `Scoring/REFACTOR` still cites `Scoreboard.cs:147,454` (`IsMultiplayerMode`, now 0 hits) and `GameCanvas-SkimRace.prefab` (gone). *(Fixed 2026-10-17.)*
 - `AI_SYSTEM` "three private `IsAutopilotDriven` copies" — **two** (Grizzly, Manta).
 - `FTUE_DIALOGUE_AI.md` documents `DialogueManager` / `DialogueUIController` as live — no asset or C# references them.
-- **The `check_enum_member_references.py` gate is red on bleeding-edge** with 14 false positives
+- *(Fixed 2026-10-17, §0 S1.)* **The `check_enum_member_references.py` gate is red on bleeding-edge** with 14 false positives
   (`'Placement' has no member …`): it resolves `Toy.Placement` (type `ToyPlacement`) against a private
   nested `enum Placement` in the editor-only `CrystalFlipWaveBenchmarkWindow.cs:42` (2026-10-08).
   A permanently red gate stops being read.
@@ -110,7 +138,7 @@ where they already live; they are counted inside the 48 only via M8/S-rows where
 6. **Persistence unification**: PlayerPrefs (230 sites / 20 files) and `DataAccessor` JSON onto the CloudData repositories.
 7. **Pooling unification** (`GenericPoolManager`/`UnityEngine.Pool`; 3 static + ad-hoc pools on hot paths; profile-gated).
 8. **Party PIC extraction + one leave→reset→join operation + session SOAP container** (Party R1, U3, D3).
-9. **Retire `IsMultiplayerMode`** (36 refs / 13 files; after Scoring Q1 sign-off).
+9. **Retire `IsMultiplayerMode`** (20 lines / 11 files re-measured 2026-10-17 — the first audit's "36 / 13, 13 in `MultiplayerHUD.cs`" was wrong; `MultiplayerHUD.cs` has none; after Scoring Q1 sign-off).
 10. **`GrowTrailAction` order / boost multiplier** (Elemental #27, #18/#19): design fork first, then re-derive volumes.
 
 ## 4. Suggested order
