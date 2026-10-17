@@ -58,8 +58,8 @@ MonoBehaviour:
       overheated they cannot fire until they cool; overheated in Space Mode your trail lays DANGER
       prisms. The card shows the heat. Friendly fire is on. A round on a rival hull is a scored bullet
       hit (petals only). Space is reach and endurance: every gun''s range x1 -> x2 at level 10
-      (BrittleStarConfigSO.rangeMultiplier), and the heat the guns hold x1 -> x3, so the same burst
-      overheats three times slower (BrittleStarConfigSO.heatCapacity).'
+      (BrittleStarConfigSO.rangeMultiplier), and the heat the guns hold x1 -> x3.33, so a full
+      five-gun burst runs ~6 s at level 0 and ~20 s at level 10 (BrittleStarConfigSO.heatCapacity).'
     Input: 8
     UnlockLevel: 5
     RelockBelowLevel: 4

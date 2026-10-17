@@ -906,8 +906,8 @@ namespace CosmicShore.Gameplay
             else if (!danger) ReleaseDanger();
         }
 
-        /// <summary>SPACE: the heat the guns hold, in Space 0 capacities (×1 → ×3 at Space 10: the same burst overheats
-        /// three times slower). Read on the replicated level, so every peer's copy overheats on the same round.</summary>
+        /// <summary>SPACE: the heat the guns hold, in Space 0 capacities (×1 → ×3.33 at Space 10: a full five-gun
+        /// burst runs ~20 s instead of ~6 s). Read on the replicated level, so every peer's copy overheats on the same round.</summary>
         float HeatCapacity() => Mathf.Max(0.1f, config.HeatCapacity.EvaluateReplicated(_status));
 
         void ReleaseDanger()

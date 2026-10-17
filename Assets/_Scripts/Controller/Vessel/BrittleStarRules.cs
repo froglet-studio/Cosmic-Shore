@@ -85,8 +85,8 @@ namespace CosmicShore.Gameplay
         /// <c>heatPerRound</c>, so heat rises with rounds per second × guns; it bleeds off at a cooling rate the caller
         /// passes in (faster with Charge Mode's cords out). At full the guns OVERHEAT and cannot fire until they cool.
         ///
-        /// <para><b>Capacity</b> (Garrett, 2026-10-16: "overheat 3x slower at max… have the maximum heat scale with
-        /// space"): how much heat the guns hold, in Space 0 capacities (1 = the base). Heat and cooling are in those same
+        /// <para><b>Capacity</b> (Garrett, 2026-10-16: "have the maximum heat scale with space"; 2026-10-17: a full
+        /// burst "from 6 to 20 seconds"): how much heat the guns hold, in Space 0 capacities (1 = the base). Heat and cooling are in those same
         /// units, so a capacity of 3 takes exactly three times as long to fill at any firing rate, and
         /// <see cref="Heat01"/> stays the share of the CURRENT capacity (what the HUD draws). Recovery comes after shedding
         /// the same heat at every capacity, <c>1 − recoverBelow</c>, so the lockout is as long at Space 10 as at Space 0;

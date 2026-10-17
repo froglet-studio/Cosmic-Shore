@@ -19,8 +19,9 @@ namespace CosmicShore.Gameplay
     /// 2026-10-16: "mass can control the x and y"): <see cref="PrismWidthScale"/> widens and thickens the base trail's
     /// block and Creation Mode's five corner trails alike, never their length.</item>
     /// <item><b>Space — Destruction (Space) Mode</b>, the five guns (Hunter: "increased shot range"):
-    /// <see cref="RangeMultiplier"/>, ×1 → ×2 on every gun's range, and <see cref="HeatCapacity"/>, ×1 → ×3 on the
-    /// heat the guns hold (Garrett, 2026-10-16: "overheat 3x slower at max… the maximum heat scale with space"). The
+    /// <see cref="RangeMultiplier"/>, ×1 → ×2 on every gun's range, and <see cref="HeatCapacity"/>, ×1 → ×3.33 on
+    /// the heat the guns hold (Garrett: "the maximum heat scale with space", 2026-10-16; a full burst "from 6 to 20
+    /// seconds", 2026-10-17). The
     /// document's "nudge intensity" is retired with knockback itself — see below.</item>
     /// <item><b>Time — Speed Mode</b> (Zephyr: "increased movement speed bonus in speed mode"):
     /// <see cref="SpeedModeMultiplier"/>.</item>
@@ -107,13 +108,14 @@ namespace CosmicShore.Gameplay
 
         [Header("Heat (Garrett, 2026-10-16: 'shooting should over heat')")]
         [Tooltip("Heat each round adds (1 = the guns' heat at Space 0), so heat per second = rounds/s x guns x this. " +
-                 "0.0012: the five guns at a full pull overheat in ~2.4 s at Space 0; one turret at a full pull (0.108/s) " +
+                 "0.000637: the five guns at a full pull overheat in ~6 s at Space 0 (Garrett, 2026-10-17: 'from 6 to 20 seconds'); one turret at a full " +
+                 "pull (0.057/s) " +
                  "runs below passive cooling.")]
-        [SerializeField, Min(0f)] float heatPerRound = 0.0012f;
-        [Tooltip("SPACE: the heat the guns hold before they overheat, x the Space 0 capacity (1). x3 at Space 10, so the " +
-                 "same burst overheats 3x slower (~7.1 s for the five guns at a full pull - Garrett, 2026-10-16: 'overheat " +
-                 "3x slower at max… have the maximum heat scale with space'). The Hunter's element.")]
-        [SerializeField] ElementalFloat heatCapacity = ElementalFloat.Multiplier(1f, 3f, Element.Space, 1f);
+        [SerializeField, Min(0f)] float heatPerRound = 0.000637f;
+        [Tooltip("SPACE: the heat the guns hold before they overheat, x the Space 0 capacity (1). x3.33 at Space 10, so " +
+                 "the five guns' full-pull burst runs ~20 s instead of ~6 s (Garrett: 'have the maximum heat scale with " +
+                 "space', 2026-10-16; 'from 6 to 20 seconds', 2026-10-17). The Hunter's element.")]
+        [SerializeField] ElementalFloat heatCapacity = ElementalFloat.Multiplier(1f, 3.3333f, Element.Space, 1f);
         [Tooltip("Heat lost per second, always (in Space 0 capacities: a bigger capacity does not cool faster).")]
         [SerializeField, Min(0f)] float coolRate = 0.12f;
         [Tooltip("Extra heat lost per second while Charge Mode's cords are out ('using charge lasers cools the guns'), " +

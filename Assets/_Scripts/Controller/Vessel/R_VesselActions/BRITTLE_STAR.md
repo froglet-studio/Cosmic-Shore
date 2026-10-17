@@ -130,20 +130,21 @@ struts — the shipped hull still has physical arms (follow-up F8).
   is owed in seconds and paid in whole volleys, at most four a frame (rule 17). The depth is the owner's own analog
   trigger; a device without one (keyboard, mouse), the autopilot and **every remote replica read a press as a full pull**
   — only the press and release replicate (the Thresher's rule, `THRESHER.md` §7).
-- **Heat** (`BrittleStarRules.HeatState`, tested): every round adds `heatPerRound` 0.0012, so heat per second is the pull ×
+- **Heat** (`BrittleStarRules.HeatState`, tested): every round adds `heatPerRound` 0.000637, so heat per second is the pull ×
   the guns firing ("proportional to firing rate (trigger pull) and number of guns firing"). Heat bleeds off at `coolRate`
   0.12/s, plus `chargeCoolRate` 0.6/s × how far Charge Mode's cords are out ("using charge lasers cools the guns"). At 1
   the guns **overheat**: nothing fires until heat falls to `overheatRecoverBelow` 0.35, and while overheated **in Space
   Mode the trail lays danger prisms** (§3.3). Measured on the shipped numbers: the five guns at a full pull overheat in
-  ~2.4 s; one turret at a full pull (0.108/s) runs under passive cooling and never does; recovery takes ~5.4 s passively,
+  ~6 s (Garrett, 2026-10-17: "from 6 to 20 seconds"; ~2.4 s at the first 0.0012); one turret at a full pull (0.057/s)
+  runs under passive cooling and never does; recovery takes ~5.4 s passively,
   ~0.9 s with the cords out.
-- **SPACE holds more heat** (Garrett, 2026-10-16: "overheat 3x slower at max… have the maximum heat scale with space"):
-  `heatCapacity` **×1 → ×3 at Space 10**, the heat the guns hold in Space 0 units. Heat and cooling are in those units, so
-  a full-pull burst of the five guns runs **~7.1 s at Space 10** (three times ~2.4 s) at any rate; `Heat01` stays the
+- **SPACE holds more heat** (Garrett, 2026-10-16: "have the maximum heat scale with space"; 2026-10-17: "from 6 to 20
+  seconds"): `heatCapacity` **×1 → ×3.33 at Space 10**, the heat the guns hold in Space 0 units. Heat and cooling are in
+  those units, so a full-pull burst of the five guns runs **~6 s at Space 0 and ~20 s at Space 10** (tested); `Heat01` stays the
   share of the current capacity (the HUD's card). Recovery comes after shedding the same 0.65 of heat at every Space
   (`HeatState.RecoverMark`), so the lockout stays ~5.4 s — Space lengthens the run, never the wait.
-- **Cost**: Space Mode at a full pull fires 450 rounds/s; overheat ends a burst after ~2.4 s at Space 0 (rounds fly
-  4.5 s: ~1,100 alive per hull per burst) but ~7.1 s at Space 10 (rounds fly 9 s: **~3,200 alive**). The turrets' pool is
+- **Cost**: Space Mode at a full pull fires 450 rounds/s; overheat ends a burst after ~6 s at Space 0 (rounds fly
+  4.5 s: **~2,000 alive** per hull) and ~20 s at Space 10 (rounds fly 9 s: **~4,000 alive**). The turrets' pool is
   1400 / max 2400, sized for Space 0: past it `GenericPoolManager` creates rounds on demand and destroys the extras on
   release. Profile a Space 10 burst before raising the pool (F9).
 
@@ -326,14 +327,14 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | `roundGrowthFactor` (in-flight swell, the Sparrow's look) | `BrittleStarConfig` | ×3 |
 | `armFocusDistance` / `armSplayDegrees` (the guns and cords in / out) | `BrittleStarConfig` | 120 u / 25° |
 | `aimDeadzone` / `ringTurnRate` | `BrittleStarConfig` | 0.25 / 540°/s |
-| `heatPerRound` / `coolRate` / `chargeCoolRate` / `overheatRecoverBelow` | `BrittleStarConfig` | 0.0012 / 0.12 /s / 0.6 /s / 0.35 |
-| `heatCapacity` (Space — the heat the guns hold) | `BrittleStarConfig` | 1 → 3 (~2.4 s → ~7.1 s full-pull burst) |
+| `heatPerRound` / `coolRate` / `chargeCoolRate` / `overheatRecoverBelow` | `BrittleStarConfig` | 0.000637 / 0.12 /s / 0.6 /s / 0.35 |
+| `heatCapacity` (Space — the heat the guns hold) | `BrittleStarConfig` | 1 → 3.33 (~6 s → ~20 s full-pull burst) |
 | `cordLength` (the saber) / `cordLooseLengthScale` (the whip) / `cordLinks` / `cordCutRadius` (× Charge) | `BrittleStarConfig` | 80 u / ×1.5 / 16 / 0.6 u |
 | `cordLooseWave` / `cordRigidWave` / `cordLooseDamping` / `cordRigidDamping` / `cordPose` / `cordRigidityRate` | `BrittleStarConfig` | 144 / 2500 /s² / 0.4 / 14 /s / 1600 /s² / 12 /s |
 | `cordMaxRigidity` (how rigid a full pull makes the cords) | `BrittleStarConfig` | 0.4 (60% of the whip's give kept; 0.7 on 2026-10-16) |
 | `cordDebrisRestitution` / `cordDebrisSpeedLimit` / `cordHitCooldown` | `BrittleStarConfig` | 0.5 / 200 u/s / 0.5 s |
 | `cordRenderSubdivisions` / `cordColor` / `cordRimBrightness` / `cordMaterial` | `BrittleStarConfig`, executor | 4 / iron / 0.75 / `ThresherChainMaterial` |
-| Round pool | `BrittleStar.prefab` turrets | 1400 / max 2400 (~1,100 alive per Space Mode burst at Space 0, ~3,200 at Space 10) |
+| Round pool | `BrittleStar.prefab` turrets | 1400 / max 2400 (~2,000 alive in a Space Mode burst at Space 0, ~4,000 at Space 10) |
 | `ringLaunchSpeed` / `ringFuseSeconds` | `BrittleStarConfig` | 240 u/s / 1.1 s |
 | `blastScale` (Charge — the disk's thickness) | `BrittleStarConfig` | 1 → 4 (× the ring's 0.22 u half-thickness) |
 | `ringBlastSeconds` / `ringBlastFallbackRadius` / `ringBlastBandWidth` | `BrittleStarConfig` | 0.7 s / 200 u / 6 u (radius = the cell's nucleus) |
@@ -369,9 +370,9 @@ None of that is a play test. In order:
    overheats on its own (watch the Space card's heat settle).
 6. **X** (Space): RT fires all five turrets, the pull setting the rate; stick in, the five streams meet ~120 u ahead,
    out, they splay 25°. Rounds reach ~387 u (raise Space: up to ~774 u). Hold a full pull: the Space card fills with heat
-   and turns red after ~2.4 s (raise Space to 10: ~7.1 s); the guns stop; **your trail turns to danger prisms** while overheated in Space Mode. Release
+   and turns red after ~6 s (raise Space to 10: ~20 s); the guns stop; **your trail turns to danger prisms** while overheated in Space Mode. Release
    and wait ~5 s: the card drops below a third and the guns fire again. Profiler with 3–4 AI Brittle Stars bursting:
-   ~1,100 rounds alive per hull.
+   ~2,000 rounds alive per hull (~4,000 at Space 10).
 7. **RB** (Charge): five cords (fresnel tubes in your domain's colour) grow out of the turrets, **120 u long and loose**.
    Flick the right stick round: the ring snaps over and a **wave travels slowly down each cord** (about a second to the
    tip), bounces back and keeps swinging for a few seconds; turn the hull hard and the cords trail and swing. Squeeze RT
@@ -416,7 +417,7 @@ None of that is a play test. In order:
   `Docs/Studios/BRITTLE_STAR.md` §5.2. Not yet published into the one artifact (it goes through `Ys-bleeding-edge`).
 - **F9 — profile the two costs** (measured offline only): each ring explosion runs ten `PrismSpatialIndex.QuerySphere`
   calls of up to the nucleus radius (392 u) (the knob: the sweep count in `BrittleStarExecutor.UpdateWaves`), and a Space
-  Mode burst keeps ~1,100 swept rounds alive per hull at Space 0 and ~3,200 at Space 10, past the turrets' 2,400 pool
+  Mode burst keeps ~2,000 swept rounds alive per hull at Space 0 and ~4,000 at Space 10, past the turrets' 2,400 pool
   (the knobs: `heatPerRound` and `heatCapacity` set the burst's length, `fireRate` thins it).
 - **R1 — naming drift this branch created (inconsistency → a rename, not a redesign).** "Space Mode" is still spelled
   `Mode.Destruction` / `BrittleStarControl.DestructionMode` / `BrittleStarDestructionMode.asset` / `Destruction01`, and the

@@ -9648,9 +9648,9 @@ T-20261016-e2fb. In Play mode:
 1. **LT** with a spare: the new ring blooms back over **3 s** (was 0.5 s); the modes return only when it has.
 2. **RB** Charge Mode: released, the cords whip a little slower and softer (`cordLooseWave` 144, was 180); a FULL RT
    pull shortens them to 80 u but a ring flick still flexes them visibly (`cordMaxRigidity` 0.4: 60% of the give kept; 0.7 on 2026-10-16).
-3. **X** Space Mode, full pull: Space 0 overheats in ~2.4 s as before; raise Space to 10 (the Space test harness on the
-   prefab's resource system): ~7.1 s (`heatCapacity` ×3). The Space card still fills to full; the lockout is still ~5 s.
+3. **X** Space Mode, full pull: Space 0 overheats in ~6 s (was ~2.4 s; `heatPerRound` 0.000637); raise Space to 10 (the
+   Space test harness on the prefab's resource system): ~20 s (`heatCapacity` ×3.33). The Space card still fills to full; the lockout is still ~5 s.
 4. **Trails**: blocks are long and slim — the base trail 0.5 × 1 × 6 (the spawner halves x for a single trail), the
    Creation corners 1 × 1 × 6 — meeting end to end at cruise. Raise Mass: every block widens and thickens up to ×2 at
    Mass 10, never lengthens (`prismWidthScale`). Speed Mode still stretches them along the path.
-5. Profile a Space 10 burst with 3-4 AI Brittle Stars: up to ~3,200 rounds alive against the pool's 2,400 (T-20261016-acc7).
+5. Profile a Space 10 burst with 3-4 AI Brittle Stars: up to ~4,000 rounds alive (~2,000 at Space 0) against the pool's 2,400 (T-20261016-acc7).

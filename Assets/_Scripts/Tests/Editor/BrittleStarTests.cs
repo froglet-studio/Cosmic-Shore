@@ -251,6 +251,9 @@ namespace CosmicShore.Tests
             Assert.IsFalse(heat.Overheated);
         }
 
+        // The shipped heat numbers (BrittleStarConfigSO): heatPerRound, heatCapacity at Space 10, coolRate.
+        const float HeatPerRound = 0.000637f, HeatCapacityAt10 = 3.3333f, CoolRate = 0.12f;
+
         /// <summary>Seconds of the five guns at a full pull (450 rounds/s, the shipped heat per round and cooling) until
         /// they overheat, and then seconds until they recover, at <paramref name="capacity"/>.</summary>
         static void Burst(float capacity, out float toOverheat, out float lockout)
@@ -260,26 +263,26 @@ namespace CosmicShore.Tests
             toOverheat = 0f;
             while (!heat.Overheated && toOverheat < 60f)
             {
-                heat.AddRounds(1, 0.0012f, capacity);
-                heat.Cool(0.12f, 0.35f, dt, capacity);
+                heat.AddRounds(1, HeatPerRound, capacity);
+                heat.Cool(CoolRate, 0.35f, dt, capacity);
                 toOverheat += dt;
             }
             lockout = 0f;
             while (heat.Overheated && lockout < 60f)
             {
-                heat.Cool(0.12f, 0.35f, dt, capacity);
+                heat.Cool(CoolRate, 0.35f, dt, capacity);
                 lockout += dt;
             }
         }
 
         [Test]
-        public void Heat_SpaceCapacity_OverheatsThreeTimesSlower_SameLockout()
+        public void Heat_SpaceCapacity_BurstRunsSixToTwentySeconds_SameLockout()
         {
-            // Garrett, 2026-10-16: "overheat 3x slower at max… have the maximum heat scale with space" (heatCapacity x3).
+            // Garrett: "have the maximum heat scale with space" (2026-10-16); a full burst "from 6 to 20 seconds" (2026-10-17).
             Burst(1f, out float baseRun, out float baseLockout);
-            Burst(3f, out float maxRun, out float maxLockout);
-            Assert.AreEqual(1f / (450f * 0.0012f - 0.12f), baseRun, 0.05f, "Space 0: ~2.4 s");
-            Assert.AreEqual(3f * baseRun, maxRun, 0.05f, "Space 10: three times as long");
+            Burst(HeatCapacityAt10, out float maxRun, out float maxLockout);
+            Assert.AreEqual(6f, baseRun, 0.05f, "Space 0: ~6 s");
+            Assert.AreEqual(20f, maxRun, 0.1f, "Space 10: ~20 s");
             Assert.AreEqual(baseLockout, maxLockout, 0.05f, "the lockout is the same at any Space");
             Assert.AreEqual(0.65f / 0.12f, baseLockout, 0.05f);
 

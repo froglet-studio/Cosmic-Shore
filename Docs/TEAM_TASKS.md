@@ -433,14 +433,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
 ### T-20261016-e2fb · open · test · Brittle Star
-- **Task:** Play the Brittle Star's 2026-10-16 tuning pass in the Editor: the ring regrows over 3 s after LT (modes off meanwhile); RT at a full pull in Charge Mode leaves the sabers flexing on a ring flick (cordMaxRigidity 0.4) and released they whip slower (cordLooseWave 144); Space Mode at Space 10 overheats after ~7 s instead of ~2.4 s, same ~5 s lockout; the trail blocks are long and slim (1 x 1 x 6, base trail 0.5 wide) and widen in x and y with Mass.
+- **Task:** Play the Brittle Star's 2026-10-16 tuning pass in the Editor: the ring regrows over 3 s after LT (modes off meanwhile); RT at a full pull in Charge Mode leaves the sabers flexing on a ring flick (cordMaxRigidity 0.4) and released they whip slower (cordLooseWave 144); Space Mode at a full pull overheats after ~6 s at Space 0 and ~20 s at Space 10, same ~5 s lockout; the trail blocks are long and slim (1 x 1 x 6, base trail 0.5 wide) and widen in x and y with Mass.
 - **Done when:** Each item seen in Play mode and noted in Docs/UNITY_VERIFICATION_CHECKLIST.md's 'Brittle Star tuning pass' section
 - **Who can take it:** Garrett, or Yash (offered)
 - **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
 
 ### T-20261016-acc7 · open · test · Brittle Star
-- **Task:** Profile a Brittle Star Space-10 burst: heatCapacity x3 lets five guns fire ~7.1 s at 450 rounds/s with 9 s flights, so ~3,200 rounds can be alive against the turrets' pool max of 2,400 (GenericPoolManager then instantiates on demand and destroys on release). Capture with 3-4 AI Brittle Stars at Space 10 and decide: raise the pool, shorten the flight, or cap the burst.
+- **Task:** Profile a Brittle Star Space-10 burst: heatCapacity x3.33 lets five guns fire ~20 s at 450 rounds/s with 9 s flights, so ~4,000 rounds can be alive (~2,000 at Space 0, 6 s bursts) against the turrets' pool max of 2,400 (GenericPoolManager then instantiates on demand and destroys on release). Capture with 3-4 AI Brittle Stars at Space 10 and decide: raise the pool, shorten the flight, or cap the burst.
 - **Done when:** A capture (capture console command) attached to the task, and the pool or the numbers changed, or kept with the measurement as the reason
 - **Who can take it:** Yash (offered: diagnostics), Garrett decides
 - **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)

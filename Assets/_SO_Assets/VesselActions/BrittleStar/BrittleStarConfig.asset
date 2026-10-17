@@ -62,12 +62,12 @@ MonoBehaviour:
   armSplayDegrees: 25
   aimDeadzone: 0.25
   ringTurnRate: 540
-  heatPerRound: 0.0012
+  heatPerRound: 0.000637
   heatCapacity:
     Enabled: 1
     Value: 1
     Min: 1
-    Max: 3
+    Max: 3.3333
     element: 3
     UseFloor: 1
     Floor: 1

@@ -366,7 +366,7 @@
     // Speed / Creation the one aimed turret, no spread; base range 150% (4.5 s), x2 through Space; every round heats them
     fireRate: 90, projectileSpeed: 135, projectileTime: 4.5, projectileScale: 1, roundGrowthFactor: 3,
     armFocusDistance: 120, armSplayDegrees: 25, aimDeadzone: 0.25, ringTurnRate: 540,
-    heatPerRound: 0.0012, coolRate: 0.12, chargeCoolRate: 0.6, overheatRecoverBelow: 0.35,
+    heatPerRound: 0.000637, coolRate: 0.12, chargeCoolRate: 0.6, overheatRecoverBelow: 0.35,
     // Charge Mode's five CORDS (BrittleStarCord): whips at 150% with RT released, sabers at 100% pulled, analog between
     cordLength: 80, cordLooseLengthScale: 1.5, cordLinks: 16, cordCutRadius: 0.6, cordLooseWave: 144, cordRigidWave: 2500,
     // (2026-10-16, after round 4: the whip at 80% of round 4's stiffness; a full pull stops at 40% rigid, keeping 60% of the give - 70% on 2026-10-16, 40% on 2026-10-17)
@@ -375,7 +375,7 @@
     ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, ringBlastBandWidth: 6, rebuildSeconds: 3, maxSpareRings: 2, ringBlastHitCooldown: 0.5,
     // its ElementalFloats, level 0 -> 10 (nested in the asset: the map cannot write them, so a change here is made there by hand)
     // prismWidthAt10: MASS on every trail block's x and y, never its length; heatCapacityAt10: SPACE on the heat the guns hold
-    speedModeAt0: 6, speedModeAt10: 8, prismWidthAt10: 2, rangeAt10: 2, heatCapacityAt10: 3, projectileScaleAt10: 1.8, blastScaleAt10: 4,
+    speedModeAt0: 6, speedModeAt10: 8, prismWidthAt10: 2, rangeAt10: 2, heatCapacityAt10: 3.3333, projectileScaleAt10: 1.8, blastScaleAt10: 4,
     // BrittleStar.prefab: the Sparrow's one-thumb transformer block, BrittleStarHullBuilder, the trail spawner
     minimumSpeed: 10, throttleScaler: 35, pitchScaler: 80, yawScaler: 80, rollScaler: 30, rotationThrottleScaler: 0.1,
     ringRadius: 6, ringHalfThickness: 0.22, trailWavelength: 6, trailOffset: 2,
@@ -1171,7 +1171,7 @@
   };
   const shieldMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.55 }), MAXP);
   shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(shieldMesh);
-  const MAXS = 9000;   // slow rounds: Space Mode's five guns keep ~1,100 alive per hull per overheat burst
+  const MAXS = 9000;   // slow rounds: Space Mode's five guns keep ~2,000 alive per hull in a Space 0 burst, ~4,000 at Space 10
   const shotMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAXS);
   shotMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); shotMesh.frustumCulled = false; scene.add(shotMesh);
   const COL = { world: new THREE.Color(0x3a4380), cluster: new THREE.Color(0x6a4f9a) };
@@ -1580,10 +1580,10 @@
     ['rt', 'projectileSpeed', 'Round speed', 20, 1000, 5, 'projectileSpeed, u/s. Range = speed x 2T/pi: change projectileTime the other way to keep it.'],
     ['rt', 'projectileTime', 'Round flight', 0.2, 9, 0.1, 'projectileTime, seconds at Space 0 (x2 at Space 10). 4.5: 150% of the arms\' 3 s.'],
     ['rt', 'roundGrowthFactor', 'Round swell', 1, 6, 0.5, 'roundGrowthFactor: every round swells to this multiple over its flight, hit radius too (the Sparrow\'s look: 3).'],
-    ['heat', 'heatPerRound', 'Heat / round', 0, 0.01, 0.0001, 'heatPerRound: heat per second = rounds/s x guns x this. 0.0012: five guns at a full pull overheat in ~2.4 s at Space 0, ~7.1 s at Space 10.'],
+    ['heat', 'heatPerRound', 'Heat / round', 0, 0.01, 0.0001, 'heatPerRound: heat per second = rounds/s x guns x this. 0.000637: five guns at a full pull overheat in ~6 s at Space 0, ~20 s at Space 10.'],
     ['heat', 'coolRate', 'Cooling', 0, 1, 0.01, 'coolRate: heat lost per second, always.'],
     ['heat', 'chargeCoolRate', 'Cord cooling', 0, 3, 0.05, 'chargeCoolRate: extra heat lost per second while the Charge cords are out.'],
-    ['heat', 'heatCapacityAt10', 'Heat held at Space 10', 1, 6, 0.5, 'heatCapacity at Space 10: the heat the guns hold over Space 0\'s (x3: the same burst overheats 3x slower).'],
+    ['heat', 'heatCapacityAt10', 'Heat held at Space 10', 1, 6, 0.5, 'heatCapacity at Space 10: the heat the guns hold over Space 0\'s (x3.33: a full five-gun burst runs ~20 s instead of ~6 s).'],
     ['heat', 'overheatRecoverBelow', 'Recover at', 0, 0.95, 0.05, 'overheatRecoverBelow: overheated guns fire again once heat falls to this (at Space 0; the same heat shed at any Space).'],
     ['ring', 'ringLaunchSpeed', 'Ring launch', 60, 900, 10, 'ringLaunchSpeed: u/s on top of the hull\'s own.'],
     ['ring', 'ringFuseSeconds', 'Ring fuse', 0.3, 3, 0.1, 'ringFuseSeconds.'],

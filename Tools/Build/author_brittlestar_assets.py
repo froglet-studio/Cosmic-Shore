@@ -260,9 +260,9 @@ def turret_blocks() -> str:
             f"    poolManager: {{fileID: {POOL_ID}}}\n" +
             mb(POOL_ID, TURRETS_GO, POOL_SCRIPT) +
             f"  prefab: {SPARROW_ROUND}\n"
-            # Space Mode's five guns (2026-10-16): up to 450 rounds/s at a full pull, overheating in ~2.4 s at Space 0, each
-            # round flying 4.5 s - ~1,100 alive from one burst, plus the one turret's sustained 90/s. At Space 10 a burst
-            # runs ~7.1 s (heatCapacity x3) and each round flies 9 s, so ~3,200 can be alive: past maxSize the pool
+            # Space Mode's five guns (2026-10-17): up to 450 rounds/s at a full pull, overheating in ~6 s at Space 0, each
+            # round flying 4.5 s - ~2,000 alive in a burst, plus the one turret's sustained 90/s. At Space 10 a burst
+            # runs ~20 s (heatCapacity x3.33) and each round flies 9 s, so ~4,000 can be alive: past maxSize the pool
             # creates on demand (sized here for Space 0; BRITTLE_STAR.md §3.4 Cost).
             "  defaultCapacity: 1400\n"
             "  maxSize: 2400\n"
@@ -500,8 +500,8 @@ CONFIG_BODY = (
     "  armSplayDegrees: 25\n"
     "  aimDeadzone: 0.25\n"
     "  ringTurnRate: 540\n"
-    "  heatPerRound: 0.0012\n"
-    "  heatCapacity:\n" + ef(1, 1, 3, 3, 1) +
+    "  heatPerRound: 0.000637\n"
+    "  heatCapacity:\n" + ef(1, 1, 3.3333, 3, 1) +
     "  coolRate: 0.12\n"
     "  chargeCoolRate: 0.6\n"
     "  overheatRecoverBelow: 0.35\n"
@@ -670,8 +670,8 @@ MAP_ENTRIES = (
      "with no spread. Every round HEATS the guns - heat per second is the pull x the guns firing - and overheated they "
      "cannot fire until they cool; overheated in Space Mode your trail lays DANGER prisms. The card shows the heat. "
      "Friendly fire is on. A round on a rival hull is a scored bullet hit (petals only). Space is reach and endurance: "
-     "every gun's range x1 -> x2 at level 10 (BrittleStarConfigSO.rangeMultiplier), and the heat the guns hold x1 -> x3, "
-     "so the same burst overheats three times slower (BrittleStarConfigSO.heatCapacity)."),
+     "every gun's range x1 -> x2 at level 10 (BrittleStarConfigSO.rangeMultiplier), and the heat the guns hold x1 -> "
+     "x3.33, so a full five-gun burst runs ~6 s at level 0 and ~20 s at level 10 (BrittleStarConfigSO.heatCapacity)."),
     (4, "Speed Mode", 6,
      "A. Ignite every thruster: the hull's cruise speed x6, the base trail's spacing stretched by the same ratio so "
      "production per second does not rise, and every prism stretched with it so the trail still joins up. Time is rate - "
