@@ -150,6 +150,7 @@ namespace CosmicShore.Utility
 
         void HandleWinnerCalculated()
         {
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[EndGameSequencer] Winner calculated - reveal {(_isRunning ? "already running" : "starting")}.");
             if (_isRunning) return;
             _isRunning = true;
             _revealRoutine = StartCoroutine(RunReveal());
@@ -194,6 +195,7 @@ namespace CosmicShore.Utility
             }
 
             int shown = Scoreboard.ShowCount;
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[EndGameSequencer] Reveal over - raising the end screen.");
             gameData.InvokeShowGameEndScreen();
             // A raise no board answered left the player in the arena with no way out: find the board and show it.
             if (Scoreboard.ShowCount == shown) Scoreboard.ShowUnreached();

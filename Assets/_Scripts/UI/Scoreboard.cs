@@ -537,6 +537,15 @@ namespace CosmicShore.UI
             }
             if (scoreboardPanel is RectTransform rect && (rect.rect.width < 1f || rect.rect.height < 1f))
                 CSDebug.LogWarning($"[Scoreboard] The scoreboard is {rect.rect.width:0}x{rect.rect.height:0} - it cannot be seen.");
+            var lossy = scoreboardPanel.lossyScale;
+            if (Mathf.Abs(lossy.x) < 1e-4f || Mathf.Abs(lossy.y) < 1e-4f)
+                CSDebug.LogWarning($"[Scoreboard] The scoreboard's world scale is {lossy} - a parent is scaled to 0, so it cannot be seen.");
+
+            var canvas = scoreboardPanel.GetComponentInParent<Canvas>();
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Scoreboard] Shown: activeInHierarchy={scoreboardPanel.gameObject.activeInHierarchy}, " +
+                $"rect={(scoreboardPanel is RectTransform r ? r.rect.size.ToString() : "?")}, lossyScale={lossy}, " +
+                $"canvas={(canvas ? $"{canvas.rootCanvas.name} mode={canvas.rootCanvas.renderMode} order={canvas.rootCanvas.sortingOrder} enabled={canvas.rootCanvas.enabled}" : "none")}");
         }
 
         #endregion
