@@ -543,3 +543,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (asked for it)
 - **Added:** 2026-10-17 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/DIAGNOSTICS.md (The after-play confirmation and the Project Record)
+
+### T-20261017-e2c3 · open · decision · AI training
+- **Task:** Before storing AI training flights in UGS, read Docs/AI_SYSTEM/AI_DATA_IN_UGS.md and talk to Yash or Garrett: per-race summaries in Cloud Save, full flights unchanged in a file store, lossless compression only
+- **Done when:** the storage choice is recorded in AI_TRAINING_PLAN.md §5.2 (with T-20261015-0064)
+- **Who can take it:** Shombith (UGS owner), with Yash and Garrett
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/AI_DATA_IN_UGS.md
