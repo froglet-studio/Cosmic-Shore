@@ -882,14 +882,14 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   saber straightness, no stretch, a minute bounded, 30 vs 144 fps); the studio's `cordStep` is the line-for-line port.
 - Promoted: no
 
-### L-STU-58 — One cooldown for the skim and the hull hides every hull contact
+### L-STU-80 — One cooldown for the skim and the hull hides every hull contact
 - Lab: Concept fleet (`Docs/Studios/VesselStudio/studio-vessel.js`) · Branch: `Ys-bleeding-edge` · By: the concept-fleet session · Date: 2026-10-17
 - What happened: the platform baseline inherited from the Squirrel studio cooled a prism for 0.6 s per pilot on a SKIM (12 u out) and used the same cooldown for the HULL contact, so a hull flying through a prism it had just skimmed registered nothing. Invisible in every studio whose hull avoids prisms; the Flea, whose mechanic IS the contact, never bounced (uses 2 in 300 s), and every concept's contact count read 0.
 - Do instead: keep two cooldowns (`p.cool` for the skim, `p.hull` for the contact) and test the hull branch with a vessel that wants to hit things. The game's `SkimmerImpactor` / `VesselImpactor` are separate components; worth confirming they never share a cooldown.
 - Evidence: the Flea's smoke rows before and after (uses 2 -> 111 on I1); `studio-vessel.js` stepPilot.
 - Promoted: no
 
-### L-STU-59 — A chain walker needs "ahead" and "not where I came from", or a cluster is a treadmill
+### L-STU-81 — A chain walker needs "ahead" and "not where I came from", or a cluster is a treadmill
 - Lab: Concept fleet (`studio-kinds.js`, the Gecko's `nextOnChain`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-17
 - What happened: the Gecko picked the next prism as "the neighbour most along my course", which inside a 14 u cluster ping-ponged A -> B -> A, and once it had run past a segment's end the clearance lerp pulled it back to the end while the run pushed it forward: a hull at 130 u/s standing still for 60 s, finishing 1 crystal of 24. Only a per-0.5 s trace of pos / stuck / next showed it; the 3 s trace read as "running".
 - Do instead: exclude the previous prism, require forward progress (dot > 0.3), and step to the next prism when the projection passes the segment's end, not only when the hull is near it. Trace position, not state, when a state machine reads healthy and nothing moves.
@@ -901,4 +901,11 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: ten movement mechanics, one AI each. The column that decided most was not Easy / Medium / Hard but the Hard pilot with its mechanic switched off (`W.mech = false`: triggers ignored, passive bonuses off). It said NO to the Gibbon's straight-line swings (Hard 15% behind its own control on I1), YES to the other nine, and separated "the mechanic IS the engine" (Marlin, Octopus: the control cannot move) from "the mechanic is a bonus" (Eel +28%, Gecko +39%, Dragonfly +35%).
 - Do instead: build the no-mechanic control into the engine from the first round (one flag the kinds honour), and read it before any tuning: a mechanic that does not beat its own control is decoration, however good it feels.
 - Evidence: `studio-vessel.js` raceHeadless `{ mech: false }`; `CONCEPT_FLEET.md` section 4.
+- Promoted: no
+
+### L-STU-82 — A dive is an attitude, lift is perpendicular to the path, and a stick held for seconds is a loop
+- Lab: Concept fleet (`studio-kinds.js`, the Albatross's `soar` kind) · Branch: `Ys-bleeding-edge` · Date: 2026-10-17
+- What happened: eight AI attempts (aim heights, airbrakes, lift caps, contact rules) left the Albatross DNF on every course, because the PHYSICS was never audited: (1) lift acted along hull-up, so a pull-up with the nose 50 degrees above the path put ~90 u/s^2 against the velocity and bled 127 u/s to 54 in two seconds; (2) drag 0.0004 at 125 u/s gave a glide ratio of 1.6, so a dive bought nothing; (3) the updraft (22) outpulled the ballast (10) at neutral wings, and the ribbon made the whole line a column, so no dive got down through it; (4) the AI's dive ADDED a pitch push to the base aim (a full stick-up toward a point 120 u above the line), which never nosed down, and once made absolute it was a pitch RATE held for the whole dive, which looped the hull 400 degrees in eight seconds. The scripted probe held its stick the same way and its loop read as "physics".
+- Do instead: audit energy first (E = v^2/2 + g*y, printed per second in free space far from the course) before touching the pilot; make lift perpendicular to the flight path (hull-up minus its along-track part) with the angle of attack as its magnitude, so only gravity and drag change the speed; set the glide ratio and the ballast as design numbers (a racer's dive must be a short plunge); give a scripted or AI dive an ATTITUDE through the aim controller (`ctx.aimAt(P, pos + flat * 120 - up * 100)`), never a held stick.
+- Evidence: `probe_soar2.cjs` energy audit (dE -4.4k/s in a pull-up, half of it drag) and the Hard AI trace (diving=1, Ly=-0.70 for 32 s, speed 90 -> 56); smoke I1 Hard DNF -> 357 -> 266 s across the three fixes (`CONCEPT_FLEET.md` section 4).
 - Promoted: no

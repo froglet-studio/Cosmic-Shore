@@ -99,23 +99,23 @@ The engine's scorecard races the studio's AI alone (the Remora with two Hard riv
 at Easy / Medium / Hard, plus **the Hard pilot forbidden its mechanic** ("No mech"), so the table can say NO: a mechanic
 that does not beat its own control is decoration. "Mech %" is the share of Hard's race spent in the mechanic. Course I1
 is the flat octagon, 3 laps, 24 crystals; the Squirrel's shipped pilot runs it in 64 s, the Squirrel studio's in 69 s.
-Finish limit 400 s (DNF beyond it). Measured headless, seed 11, 2026-10-17:
+Finish limit 540 s (DNF beyond it). Measured headless, seed 11, 2026-10-17 (`smoke.cjs`, the engine's `raceHeadless`):
 
 | Vessel | I1 Hard | I1 Easy | I1 No mech | Mech % | Top u/s | Reading |
 |---|---|---|---|---|---|---|
-| Gibbon | 266 | 225 | 232 | 42% | 170 | The AI's swings are detours on a gentle course: it swings for turns only now and still trails its own control. The mechanic is for a human to judge; the AI cannot make it pay on I1 |
+| Gibbon | 217 | 232 | 232 | 5% | 170 | Swings for turns only now, and they pay a little (217 against 232 for its own control); straight-line swings were a net loss (266 against 232, the version before). The mechanic is for a human to judge: the AI barely uses it |
 | Flea | 294 | 326 | 326 | 56% | 258 | Bounces pay (+10% over the control) once the skim and the hull kept separate cooldowns; the chain is the skill |
-| Albatross | 140 (one run) / DNF | DNF | DNF | 100% | 118-300 | Finishes only when it stays in the ribbon's updraft; a misjudged crystal takes Easy out of the lift and it never climbs back. Unforgiving by design, and the AI is the weakest of the ten |
+| Albatross | 266 | 266 | DNF | 100% | 144 | Finishes I1 once its physics became a glider's: lift perpendicular to the flight path and following the angle of attack (lift along hull-up put ~90 u/s² against the velocity in a pull-up), a glide ratio of 8 (it was 1.6, a brick), ballast 25 so a dive is a 3 s plunge, an updraft weaker than the ballast at neutral wings. The AI's dive is an ATTITUDE held by the aim controller (a held stick is a pitch rate, and it looped). Its control (no wings, no updraft) cannot fly at all, like the Marlin's. Still DNF on I2-I4: the climbing courses need an energy plan the round-1 pilot does not have. The weakest AI of the ten; fly it yourself |
 | Remora | 80 | 168 | 222 | 92% | 240 | The draft is enormous; **found:** two Remoras leapfrog each other's wakes up to the cap in 40 s (a slipstream chain). A design question |
 | Dragonfly | 156 | 150 | 240 | 20% | 190 | Dashes pay; Easy and Hard within noise (Hard dashes more and hits more) |
 | Mole | 63 | 63 | 351 | 87% | 217 | The ribbon is mass, so the Mole is a 150 u/s hull on any Skim Race course; switch the ribbon off (Scene Config) to test a bare course |
 | Marlin | 147 | 149 | DNF | 55% | 121 | The AI thrusts in bursts and drifts the corners; the control cannot move at all (the mechanic IS the engine) |
 | Eel | 201 | 201 | 280 | 21% | 79 | Coil and shed pay; shed segments now fall to the sides, after the AI hit its own wall 120 times a race |
-| Octopus | 88 | DNF | DNF | 100% | 254 | Hard keeps the beat and flies; Easy's late presses break the chain and it crawls. The sharpest difficulty ladder of the ten |
+| Octopus | 94 | DNF | DNF | 100% | 254 | Hard keeps the beat and flies; Easy's late presses break the chain and it crawls. The sharpest difficulty ladder of the ten |
 | Gecko | 160 | 197 | 262 | 28% | 200 | Runs and hops pay; a stationary loop past a segment's end was found and fixed |
 
-The four-course table (I1-I4, all levels) is appended in section 4.1 when the headless run finishes. Read everything as
-relative, between a vessel's own columns: the AI is a line-following pilot plus one rule per mechanic, not a player.
+The four-course table (I1-I4) is section 4.1. Read everything as relative, between a vessel's own columns: the AI is a
+line-following pilot plus one rule per mechanic, not a player.
 
 **The difficulty ladder is not clean yet.** D24 asks for Hard fastest on every course. The shared belief mistakes (late
 notice, misjudged crystal, from `SkimRaceDifficulty.asset`) cost these fast, tight-turning movers little, and the lab-only
@@ -124,7 +124,29 @@ FEEL; the AI ladders get their round once the five are picked.
 
 ### 4.1 Four courses
 
-(appended by the headless run; see the Scorecard tab of each page for the live numbers)
+Finish time in seconds as **Hard / Easy / No mech** per course, finish limit 540 s, seed 11, 2026-10-17 (`smoke.cjs
+--all-courses` on the committed engine; the Albatross row from its final tuning run). I1 is the flat octagon (3 laps, 24
+crystals), I2 the longer flat course (30), I3 the long climbing course (56), I4 the twisting course (54). Each page's
+Scorecard tab re-runs its own row live.
+
+| Vessel | I1 | I2 | I3 | I4 | Top u/s | Reading |
+|---|---|---|---|---|---|---|
+| Gibbon | 217 / 232 / 232 | 298 / 325 / 316 | DNF / DNF / DNF | 338 / 399 / 307 | 170 | Turn-swings pay on I1 and I2, cost on I4 (the control is faster); the long course beats it. The AI resets 36-127 times a race on the rail |
+| Flea | 294 / 326 / 326 | 388 / 458 / 458 | DNF / DNF / DNF | 496 / 475 / 475 | 258 | The bounce chain pays 10-15% on the flat courses, loses on I4; the AI never hits the rail (0 resets) |
+| Albatross | 266 / 266 / DNF | DNF / DNF / DNF | DNF / DNF / DNF | DNF / DNF / DNF | 144 | Finishes the flat octagon only; the climbing and twisting courses need an energy plan the round-1 pilot lacks. Fly it yourself |
+| Remora | 80 / 168 / 222 | 118 / 256 / 297 | 394 / DNF / DNF | 260 / 264 / 282 | 240 | Two Hard rivals to draft (its scorecard seats them); the draft is worth 2-3x on the flat courses. The slipstream chain finding stands |
+| Dragonfly | 156 / 150 / 240 | 200 / 202 / 318 | 513 / 506 / DNF | 218 / 215 / 318 | 190 | Dashes pay about a third everywhere; Easy and Hard within noise (no ladder yet) |
+| Mole | 63 / 63 / 351 | 117 / 118 / 485 | 233 / 261 / DNF | 83 / 130 / 458 | 220 | The ribbon is mass, so it burrows the whole course; a bare course (ribbon off) is the real test |
+| Marlin | 147 / 149 / DNF | 194 / 200 / DNF | 479 / 483 / DNF | 216 / 231 / DNF | 140 | The mechanic is the engine, so the control cannot move; finishes every course |
+| Eel | 201 / 201 / 280 | 272 / 274 / 382 | DNF / DNF / DNF | 266 / 274 / 374 | 81 | Coil and shed pay about 30%; the slowest top speed of the ten by design, and the long course beats it |
+| Octopus | 94 / DNF / DNF | 214 / 145 / DNF | 319 / DNF / DNF | DNF / DNF / DNF | 254 | Hard keeps the beat; Easy's late presses break the chain (I2 is the one course where Easy beat Hard: a seed effect to read with more seeds). The twisting course breaks even Hard's rhythm |
+| Gecko | 160 / 197 / 262 | 226 / 267 / 354 | 475 / DNF / DNF | 313 / 337 / 346 | 207 | Runs and hops pay 10-40%; the cleanest Easy-to-Hard ladder after the Octopus |
+
+**What the table says about round 1 as a whole.** Seven of the ten AIs finish three or four courses; the long climbing
+course I3 beats five of them inside the 540 s limit, which is a pilot limit (a line follower that resets on the rail), not a
+vessel verdict. Every mechanic but the Gibbon's and the Flea's on I4 beats its own control where the control can fly at all.
+The Easy / Hard ladder is clean only for the Gecko, the Gibbon, the Flea and the Octopus; the Remora's is inverted by its
+rivals (Easy drafts less), and the rest sit within noise (section 4's note on the ladder).
 
 ## 5. Found (bugs and design holes the lab exposed)
 

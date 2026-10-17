@@ -162,11 +162,11 @@
 
   // ================= soar: the Albatross =================
   K.soar = {
-    mechanicName: 'soaring', aiRule: 'It dives (folds, RT) when it is above its crystal or slower than 45 u/s, and spreads (LT) when it is below its crystal and either in an updraft or faster than 70 u/s. The line pilot points the nose; gravity does the rest.',
-    defaults: { g: 10, liftK: 0.0028, dragK: 0.0003, spreadLift: 1.8, spreadDrag: 2.2, foldLift: 0.3, foldDrag: 0.45, thermal: 22, thermalR: 70, thermalH: 350, topSpeed: 300, stall: 30, grip: 4, maxLift: 150 },
-    spec: [['g', 0, 25, 0.5, 'Ballast', 'The Albatross\'s own gravity (u/s squared): nothing else in the HyperSea falls'], ['liftK', 0.001, 0.008, 0.0002, 'Wing lift', 'Lift per speed squared at neutral wings'], ['dragK', 0.001, 0.01, 0.0002, 'Drag', 'Drag per speed squared at neutral wings'], ['spreadLift', 1, 3, 0.1, 'Spread lift', 'Lift multiplier with wings spread (LT)'], ['spreadDrag', 1, 4, 0.1, 'Spread drag', 'Drag multiplier with wings spread'],
-      ['foldLift', 0.05, 1, 0.05, 'Fold lift', 'Lift multiplier with wings folded (RT)'], ['foldDrag', 0.1, 1, 0.05, 'Fold drag', 'Drag multiplier folded'], ['maxLift', 15, 120, 5, 'Wing limit', 'The most lift the wings can carry (u/s squared): past it a dive is a dive'], ['thermal', 0, 60, 1, 'Updraft', 'Upward acceleration in the column above mass (u/s squared, at neutral wings)'], ['thermalR', 20, 200, 5, 'Updraft radius', 'How far from a prism its updraft reaches sideways (u)'], ['thermalH', 50, 800, 10, 'Updraft height', 'How high above mass the updraft reaches (u)'], ['topSpeed', 100, 500, 10, 'Top speed', 'Speed cap (u/s)'], ['stall', 10, 60, 1, 'Stall speed', 'Below it the nose barely answers (u/s)']],
-    init(P) { P.K = { spread: 0, fold: 0, up: 0, active: false, thermals: 0, wasUp: false, column: null }; P.vel.set(0, 0, 0).addScaledVector(P.course, 60); P.speed = 60; },
+    mechanicName: 'soaring', aiRule: 'Below 90 u/s it folds (RT) and noses down until it has 150 again; high above the line and slowing it folds to come back down; in an updraft with speed to spare it spreads (LT) and climbs. The line pilot points the nose; gravity does the rest.',
+    defaults: { g: 25, liftK: 0.0065, dragK: 0.00008, spreadLift: 1.8, spreadDrag: 2.2, foldLift: 0.3, foldDrag: 0.45, thermal: 15, thermalR: 70, thermalH: 350, topSpeed: 300, stall: 30, grip: 4, maxLift: 120 },
+    spec: [['g', 0, 40, 0.5, 'Ballast', 'The Albatross\'s own gravity (u/s squared): nothing else in the HyperSea falls. Heavy on purpose: at 10 a dive for 60 u/s took 16 s and 1,100 u of height; at 25 it is a 3 s plunge the pilot can pay back'], ['liftK', 0.0005, 0.03, 0.0005, 'Wing lift', 'Lift per speed squared at neutral wings and a quarter angle of attack (level at about 125 u/s; it was 60, a third of the racers, and the AI could never pay a crystal dive back)'], ['dragK', 0.00002, 0.003, 0.00002, 'Drag', 'Drag per speed squared at neutral wings: a glide ratio of about 8 at 125 u/s (at 0.0004 it was 1.6, a brick, and a dive bought no speed)'], ['spreadLift', 1, 3, 0.1, 'Spread lift', 'Lift multiplier with wings spread (LT)'], ['spreadDrag', 1, 4, 0.1, 'Spread drag', 'Drag multiplier with wings spread'],
+      ['foldLift', 0.05, 1, 0.05, 'Fold lift', 'Lift multiplier with wings folded (RT)'], ['foldDrag', 0.1, 1, 0.05, 'Fold drag', 'Drag multiplier folded'], ['maxLift', 15, 120, 5, 'Wing limit', 'The most lift the wings can carry (u/s squared): past it a dive is a dive'], ['thermal', 0, 60, 1, 'Updraft', 'Upward acceleration in the column above mass (u/s squared, at neutral wings): below the ballast at neutral, above it only with the wings spread, so soaring is a choice (at 22 the whole ribbon was an elevator and no dive could get down through it)'], ['thermalR', 20, 200, 5, 'Updraft radius', 'How far from a prism its updraft reaches sideways (u)'], ['thermalH', 50, 800, 10, 'Updraft height', 'How high above mass the updraft reaches (u)'], ['topSpeed', 100, 500, 10, 'Top speed', 'Speed cap (u/s)'], ['stall', 10, 60, 1, 'Stall speed', 'Below it the nose barely answers (u/s)']],
+    init(P) { P.K = { spread: 0, fold: 0, up: 0, active: false, thermals: 0, wasUp: false, column: null }; P.vel.set(0, 0, 0).addScaledVector(P.course, 130); P.speed = 130; },
     step(W, P, inp, dt, ctx) {
       const m = P.m, Kk = P.K; Kk.spread = W.mech ? inp.lt : 0; Kk.fold = W.mech ? inp.rt : 0;   // the control: neutral wings, no updraft
       const auth = clamp(P.speed / (m.stall * 1.6), 0.25, 1);
@@ -174,7 +174,14 @@
       const { fwd, up } = ctx.axes(P), v = P.vel.length();
       const liftMul = lerp(lerp(1, m.spreadLift, Kk.spread), m.foldLift, Kk.fold), dragMul = lerp(lerp(1, m.spreadDrag, Kk.spread), m.foldDrag, Kk.fold);
       const acc = new ctx.V(0, -m.g, 0);
-      acc.addScaledVector(up, Math.min(m.maxLift, m.liftK * v * v * liftMul));   // the wings carry at most maxLift: a fast dive cannot be pulled out of at 30 g
+      // lift follows the angle of attack, as a wing's does: a nose above the flight path pulls, a nose below it pushes down, so the
+      // pilot's pitch is the lift control (an always-on lift along hull-up looped the hull at any speed). Capped at maxLift.
+      // It acts PERPENDICULAR to the flight path (hull-up with its along-track part removed), as a wing's does, so lift never
+      // does work: only gravity and drag change the speed, and a dive buys exactly the speed a climb spends. Lift along hull-up
+      // itself put ~90 u/s^2 against the velocity in a hard pull-up and bled 127 u/s to 54 in two seconds.
+      const velDir = v > 1e-3 ? P.vel.clone().divideScalar(v) : fwd.clone(), aoaF = clamp(0.25 + 3 * -velDir.dot(up), -0.5, 2.5);
+      const liftDir = up.clone().addScaledVector(velDir, -up.dot(velDir)); if (liftDir.lengthSq() > 1e-6) liftDir.normalize(); else liftDir.copy(up);
+      acc.addScaledVector(liftDir, clamp(m.liftK * v * v * liftMul * aoaF, -m.maxLift, m.maxLift));
       if (v > 1e-3) acc.addScaledVector(P.vel, -m.dragK * v * dragMul);
       // the updraft: a column above every prism within thermalR sideways, up to thermalH above it
       let col = null; for (const p of ctx.near(W, new ctx.V(P.pos.x, P.pos.y - m.thermalH / 2 + 30, P.pos.z), Math.max(m.thermalR, m.thermalH / 2 + 30) + 20)) { if (!isMass(p)) continue; const dy = P.pos.y - p.pos.y; if (dy < -60 || dy > m.thermalH) continue; if (Math.hypot(P.pos.x - p.pos.x, P.pos.z - p.pos.z) > m.thermalR) continue; col = p; break; }
@@ -186,14 +193,27 @@
       ctx.moveVel(P, dt);
       Kk.active = !!col || Kk.fold > 0.5;
     },
-    aiAim(W, P, aim, why, ctx) { return why === 'line' ? { aim: aim.clone().add(new ctx.V(0, 40, 0)), why } : null; },   // ride high in the ribbon's updraft, clear of the mass
-    // a glider brushing mass is cushioned off it, never reset: the component of its velocity into the prism is taken away
-    onContact(W, P, p, ctx) { const n = P.pos.clone().sub(p.pos).normalize(), vn = P.vel.dot(n); if (vn < 0) P.vel.addScaledVector(n, -vn); P.pos.addScaledVector(n, 1.5); return true; },
-    aiSticks(W, P, aim, base, ctx) { if (P.speed >= 45) return null; const L = Object.assign({}, base.L), R = Object.assign({}, base.R); const push = P.pos.y < aim.y - 40 ? -0.65 : -0.45; L.y = clamp(L.y + push, -1, 1); R.y = clamp(R.y + push, -1, 1); return { L, R }; },   // slow: nose down and dive for speed, harder when it has fallen below the line
+    aiAim(W, P, aim, why, ctx) { return why === 'line' ? { aim: aim.clone().add(new ctx.V(0, 120, 0)), why } : null; },   // fly HIGH in the ribbon's updraft (it reaches 350 u up): a dive needs room below it, and the hull stays clear of the mass
+    // a glider brushing mass skips off it, never reset: the velocity into the prism is reflected (taking it away instead left
+    // the hull lying on the ribbon under its own ballast at 20 u/s)
+    onContact(W, P, p, ctx) { const n = P.pos.clone().sub(p.pos).normalize(), vn = P.vel.dot(n); if (vn < 0) P.vel.addScaledVector(n, -2 * vn * 0.9); P.pos.addScaledVector(n, 2); return true; },
+    // slow and OUT of an updraft: nose down and dive for speed (harder when it has fallen below the line). Slow IN an updraft it
+    // spreads and climbs instead (below), so it never dives into the ribbon it is riding.
+    // the energy cycle a soaring pilot flies: below 90 u/s it DIVES (fold, nose down) until it has 150, then it flies the line nose-up,
+    // trading the speed back for height, spreading in a column to take the free lift. Hysteresis, so it never dithers at the edge.
+    // A dive is an ATTITUDE, the nose held about 40 degrees below the horizon by the aim controller, never a held stick: a pitch
+    // push added to the base aim (120 u above the line) never beat a full stick-up, and a held stick is a pitch RATE, which looped
+    // the hull 400 degrees in eight seconds under the line, bleeding 90 u/s to 56 and never reaching the 150 that ends the dive.
+    aiSticks(W, P, aim, base, ctx) {
+      const Kk = P.K; if (P.speed < 90) Kk.diving = true; else if (P.speed > 150 || P.pos.y < aim.y - 200) Kk.diving = false; if (!Kk.diving) return null;   // a dive ends with the speed, or 200 u under the line
+      const { fwd } = ctx.axes(P), flat = new ctx.V(fwd.x, 0, fwd.z); if (flat.lengthSq() < 1e-4) flat.set(P.course.x, 0, P.course.z); flat.normalize();
+      const d = ctx.aimAt(P, P.pos.clone().addScaledVector(flat, 120).add(new ctx.V(0, -100, 0))); return { L: d.L, R: d.R };
+    },
     ai(W, P, aim) {
-      const Kk = P.K, above = P.pos.y - aim.y, dist = aim.distanceTo(P.pos), out = {};
-      // (an airbrake rule, spreading on a fast crystal approach, was tried and looped the hull: spread is lift first, drag second)
-      if (above > 20 || P.speed < 45) out.rt = 1; else if (above < -10 && (Kk.column || P.speed > 70)) out.lt = 1;
+      const Kk = P.K, above = P.pos.y - aim.y, out = {};
+      if (Kk.diving) { out.rt = 1; return out; }
+      if (above > 60 && P.speed < 130) { out.rt = 1; return out; }  // high and slowing: dive back to the line
+      if (Kk.column && P.speed > 110) out.lt = 1;                  // in lift with speed to spare: spread and climb
       return out;
     },
     hud(P) { const m = P.m, Kk = P.K; return [['Updraft', Kk.column ? '+' + Kk.up.toFixed(0) + ' u/s\u00b2' : 'none here', Kk.up / Math.max(1, m.thermal * m.spreadLift), Kk.column ? '#9dff5a' : ''], ['Wings', Kk.fold > 0.5 ? 'folded (dive)' : Kk.spread > 0.5 ? 'spread (lift)' : 'glide', Kk.fold > 0.5 ? Kk.fold : Kk.spread]]; },
