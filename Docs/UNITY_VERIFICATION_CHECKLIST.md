@@ -11437,3 +11437,19 @@ turn start or replay. `/verify-unity` was not run; player reference compile clea
 
 1. **Finish a Skim Race:** the board shows with no feed lines on the right and no ability icons at the bottom right.
 2. **PLAY AGAIN:** in the replay the feed and the ability row are back.
+
+## 🔴 2026-10-17 — Scoreboard Rev 8 option B, the glass ladder (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §49. New: ScoreboardLadder (+ ScoreboardLadderTests), ScoreboardTeamHeader (+ prefab),
+ScoreboardRewardStrip; PlayerScoreCard, Scoreboard and RematchVoteRoster gain optional fields; ScoreboardPanel / Row /
+Stat regenerated. `/verify-unity` was not run; player and editor reference compiles clean (editor: the 3 known errors,
+0 in changed files); generator `--check` / `--self-test` pass.
+
+1. **Skim Race 3 v 1 with AI:** JADE / RUBY headers; "Won - 00:44:93" once on the Jade header, not on the rows; dark
+   glass rows with a thin team stripe; teal share lines (12 / 8 / 0 of 20); your row lit sky blue with a running rim;
+   Jade rows run a teal rim, Ruby a violet one.
+2. **Reward strip** bottom right: "+200" and the balance counting up; absent when you earned nothing.
+3. **Stats** inline under the ladder; **PLAY AGAIN** gold-rimmed, **MAIN MENU** blue-rimmed; A and B still work.
+4. **A client votes rematch:** their face and "1 wants a rematch" under PLAY AGAIN.
+5. **Solo free-for-all mode** (every pilot their own domain): no headers, every row shows its own score.
+6. **Run the edit-mode tests:** ScoreboardLadderTests passes.

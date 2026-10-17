@@ -4224,6 +4224,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &791538742016910032 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 650305313407931897, guid: 13fb065d94c88093a0dbf037d514fb47, type: 3}
+  m_PrefabInstance: {fileID: 286617901393917737}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac967228630d47cfa9f5ce09d1b174d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &4080277108912208582
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4260,6 +4271,8 @@ MonoBehaviour:
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
   modeText: {fileID: 1152919525390980492}
   wireButtonsInCode: 1
+  rewardStrip: {fileID: 791538742016910032}
+  teamHeaderPrefab: {fileID: 720616461796896060, guid: e4f87618a9ea623539403219746b83c8, type: 3}
 --- !u!114 &5361485769591901365
 MonoBehaviour:
   m_ObjectHideFlags: 0

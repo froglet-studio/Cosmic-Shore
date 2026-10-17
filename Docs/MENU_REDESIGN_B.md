@@ -2532,3 +2532,28 @@ is built until the owner picks.
 
 Polish landed meanwhile: the match feed and the vessel ability row no longer draw over the board (the board hides the
 ability row; the feed hides on the end screen and returns next turn).
+
+## 49. The scoreboard is Rev 8 option B, the glass ladder (built 2026-10-17, awaiting in-editor approval)
+
+The owner picked option B ("I like this one"). Built by `author_ingame_hud.py` (ScoreboardPanel / Row / Stat and the
+new ScoreboardTeamHeader prefab) with three new scripts:
+- **`ScoreboardLadder`** (pure, `ScoreboardLadderTests`): the ranked results grouped under team headers when any domain
+  fields two or more pilots (every pilot on their own domain stays a plain ladder). When every member of a team shares
+  one score (a team race time) the header says it once and the rows drop it; a pilot's share of the team's count is
+  read from the leading number of its secondary line ("12 Crystals") and drawn as a Time-teal line along the row's foot
+  (hidden when a line has no number).
+- **`ScoreboardTeamHeader`**: the domain's name and a rule in its colour, then the team's line. The words are
+  Scoreboard fields: `teamWonLine` ("Won - {score}"), `teamWonNoScoreLine` ("Won"), `teamLine` ("{score}").
+- **`ScoreboardRewardStrip`**: "You earned +200" and the balance counting from the old to the new wallet (unscaled
+  0.8 s after 0.4 s), Mass-rimmed, bottom right; hidden when nothing was earned. Fed by
+  `Scoreboard.AwardCrystalsToLocalPlayer`, the one wallet writer.
+
+The row (`PlayerScoreCard`, new optional fields): dark glass (Surface Very Dark 80 %), a 4 px stripe in the domain
+colour, the border running ElementRim_Time for the winning team and ElementRim_Space for the others, and SelectionRim
+plus a glass leaning 35 % to the selection blue for the local pilot. `SetRank` shows the results' rank (grouped rows are
+not in rank order). Stats are a slim inline strip (icon, label, value). PLAY AGAIN / CONTINUE are Charge outline
+buttons with the Charge rim; MAIN MENU / LEAVE LOBBY are Mass. The rematch faces sit under PLAY AGAIN with a count line
+(`RematchVoteRoster.countText`, `oneVoteLine` / `manyVotesLine`). The living window lattice runs behind the scrim.
+
+Gates: `author_ingame_hud.py --check` and `--self-test` (new plants: a row back to a full team fill, the reward strip
+unwired, PLAY AGAIN without its Charge light). `/verify-unity` was not run. Hand test: team task below.

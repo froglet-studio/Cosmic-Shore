@@ -61,6 +61,19 @@ namespace CosmicShore.UI
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
+        [Header("Rev 8 glass ladder (Docs/MENU_REDESIGN_B.md section 49)")]
+        [Tooltip("Spawned into the card container above each team's rows when any domain fields two or more pilots. " +
+                 "Empty: no headers, every row shows its own score.")]
+        [SerializeField] private ScoreboardTeamHeader teamHeaderPrefab;
+        [Tooltip("A winning team's line when every member shares one score (a team race time). {score} is that score.")]
+        [SerializeField] private string teamWonLine = "Won - {score}";
+        [Tooltip("A winning team's line when its members' scores differ (each row shows its own).")]
+        [SerializeField] private string teamWonNoScoreLine = "Won";
+        [Tooltip("Any other team's line when its members share one score. {score} is that score.")]
+        [SerializeField] private string teamLine = "{score}";
+        [Tooltip("What the local pilot earned and the wallet counting up. Empty: no strip.")]
+        [SerializeField] private ScoreboardRewardStrip rewardStrip;
+
         [Header("Crystal Rewards")]
         [Tooltip("Crystals by finishing place, best first: index 0 = 1st, index 1 = 2nd, and so on. " +
                  "Places past the end of the list earn 0, and LAST place always earns 0 regardless " +
@@ -125,6 +138,7 @@ namespace CosmicShore.UI
         private RectTransform _scoreboardRect;
         private Sequence _entranceSeq;
         private readonly List<PlayerScoreCard> _spawnedCards = new();
+        private readonly List<ScoreboardTeamHeader> _spawnedHeaders = new();
 
         // Mode rule's team-total domain placement for the game just shown (index 0 = 1st);
         // null outside tournament mode. Computed once per ShowScoreboard, consumed by the
@@ -461,6 +475,7 @@ namespace CosmicShore.UI
             StopRematchVoteRoster();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
             if (endGameObject) endGameObject.SetActive(false);
+            if (rewardStrip) rewardStrip.Hide();
             ClearPlayerCards();
         }
 
@@ -776,15 +791,31 @@ namespace CosmicShore.UI
             }
 
             string winnerName = results[0].Name;
+            var ladder = ScoreboardLadder.Build(results, gameData.WinnerDomain);
+            int stagger = 0;
 
-            for (int i = 0; i < results.Count; i++)
+            foreach (var entry in ladder)
             {
-                var r = results[i];
+                if (entry.IsHeader)
+                {
+                    if (!teamHeaderPrefab) continue;
+                    var header = Instantiate(teamHeaderPrefab, playerCardContainer);
+                    header.Bind(entry.Domain.ToString(), GetDomainColor(entry.Domain), TeamLine(entry));
+                    _spawnedHeaders.Add(header);
+                    continue;
+                }
+
+                var r = results[entry.ResultIndex];
                 var card = Instantiate(playerCardPrefab, playerCardContainer);
 
-                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), i);
+                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), stagger++);
+                card.SetRank(r.Rank > 0 ? r.Rank : entry.ResultIndex + 1);
                 card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
+                card.SetOutcome(entry.Won);
                 DecorateCard(card, r.Name, r.Domain);
+                // A header carries the team's shared score once; with no header prefab every row keeps its own.
+                card.ShowScore(entry.ShowsScore || !teamHeaderPrefab);
+                card.SetShare(entry.Share);
 
                 if (!string.IsNullOrEmpty(r.Secondary))
                     card.ShowSecondaryStat(r.Secondary);
@@ -799,6 +830,14 @@ namespace CosmicShore.UI
             AwardCrystalsToLocalPlayer(winnerName);
         }
 
+        string TeamLine(ScoreboardLadder.Entry header)
+        {
+            string line = header.SharedScore != null
+                ? (header.Won ? teamWonLine : teamLine)
+                : (header.Won ? teamWonNoScoreLine : string.Empty);
+            return string.IsNullOrEmpty(line) ? string.Empty : line.Replace("{score}", header.SharedScore ?? string.Empty);
+        }
+
         void ClearPlayerCards()
         {
             foreach (var card in _spawnedCards)
@@ -806,6 +845,9 @@ namespace CosmicShore.UI
                 if (card) Destroy(card.gameObject);
             }
             _spawnedCards.Clear();
+            foreach (var header in _spawnedHeaders)
+                if (header) Destroy(header.gameObject);
+            _spawnedHeaders.Clear();
 
             // Safety: also destroy any leftover cards in the container (e.g. editor-placed templates)
             if (playerCardContainer)
@@ -843,6 +885,7 @@ namespace CosmicShore.UI
             string source = gameData.IsMaelstromMode ? "tournament_placement" : "game_placement";
 
             _crystalsAwardedThisGame = true;
+            if (rewardStrip) rewardStrip.Hide();
             if (amount <= 0) return;   // e.g. a last-place domain earns nothing this game
 
             // Wallet write is an external-service boundary: it runs mid-way through building the
@@ -851,6 +894,7 @@ namespace CosmicShore.UI
             try
             {
                 int newBalance = service.AddCrystals(amount, source);
+                if (rewardStrip) rewardStrip.Show(amount, newBalance - amount, newBalance);
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}) - new balance={newBalance}");
             }
             catch (System.Exception e)

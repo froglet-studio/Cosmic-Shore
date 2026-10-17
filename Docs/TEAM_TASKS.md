@@ -725,3 +725,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith or Yash
 - **Added:** 2026-10-17 by Shombith (Claude session) (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 47; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261017-f77b · open · test · In-game HUD
+- **Task:** Playtest the Rev 8 glass-ladder scoreboard on claude/new-session-76hnyc: team headers with the team time once, glass rows with stripe and share line, your row in sky blue, the reward strip counting, rimmed PLAY AGAIN / MAIN MENU, the rematch count line, a free-for-all mode without headers; run ScoreboardLadderTests
+- **Done when:** All six checklist steps pass in the editor, or each failure is reported back
+- **Who can take it:** Shombith or Yash (offered)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-17 Scoreboard Rev 8 option B); Docs/MENU_REDESIGN_B.md section 49
