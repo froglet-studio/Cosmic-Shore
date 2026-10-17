@@ -182,10 +182,10 @@ namespace CosmicShore.Gameplay
 
         enum Corner 
         {
-            TopRight,
-            BottomRight,
-            BottomLeft,
-            TopLeft,
+            TopRight = 0,
+            BottomRight = 1,
+            BottomLeft = 2,
+            TopLeft = 3,
         };
 
         IVessel vessel;

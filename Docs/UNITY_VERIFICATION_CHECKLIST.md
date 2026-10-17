@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 AI seat chips name their hull: hover label, (i) badge, vessel info card (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** the hull icons on the launch panel's AI chips (Regatta and every arena card with the ally hull
+picker) were too small to tell apart. `DomainAvatarChip.SetHullInfo` now names the hull: hovering a chip grows it to
+1.35x and shows the vessel's name in a dark pill under it; an (i) badge in the chip's top-right opens
+`VesselInfoPopup`, a 380 px card over the modal with the hull's icon, name, "<Domain> AI · <Element> vessel"
+(plus "opponent" on the card's pinned opponent seat), the Hangar's description and the ability names. Tap outside
+or ✕ closes it; it also closes with the modal or on a new card. On a chip with both a ✕ (kick) and the (i), the
+generated ✕ moves to the top-left. All of it is generated from primitives (no prefab change); `infoButton`,
+`hoverLabel` on the chip and `vesselInfoPopup` on the modal take authored art when it exists. Headless compile clean
+(`unity_refcompile` player config, 0 errors in project code, negative control fired). `/verify-unity` was not
+available.
+
+**Verify:** (1) Menu > Arena > Regatta. Add AI on two domains, tap their chips to pick two different hulls. (2)
+Hover each chip with the mouse: it grows and the hull's name shows under it, above the neighbouring chips/tiles.
+(3) Click the (i): the card opens centred over the modal with the right hull; tap outside it, then ✕, and both
+close it. Tapping the chip itself (not the (i)) still steps the hull. (4) On a host chip with the ✕, the ✕ is
+top-left and the (i) top-right, neither overlapping. (5) Close the modal with the card open, reopen: no card. (6)
+As a guest: an opponent chip shows the (i) and hover name but is not tappable for a pick.
+
 ### 🔴 AI difficulty (Easy / Medium / Hard) on every Arena card (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** the difficulty row only existed on the Arcade window. The headless compile is clean
@@ -9820,3 +9840,41 @@ verification, steps 2-9. The short version:
 4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
+
+## 🔴 2026-10-17 — Prism effect pools right-sized: implosion buffer 160 -> 24, explosion pool no longer prewarms 1,500 (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Prefabs/Environment/PrismManagers.prefab` (data only: the PrismImplosionPoolManager's
+`bufferSizeTarget`; the PrismExplosionPoolManager's `defaultCapacity`, `maxSize`, `enableBufferMaintenance`,
+`bufferSizeTarget`), `Tools/Build/perf_hunt.py` (capture keys). No C#. Measured in Amoebius (Skim Race I2):
+`PoolRefill.PrismImplosion` 0.157 -> 0.000 KB/frame.
+
+1. Boot to Menu_Main: no error from `[PrismFactory]` ("Batched explosion/implosion debris declined"); prisms that die
+   in the lava lamp still shatter (explosion debris) and creatures still suck prisms in (implosion debris).
+2. Play the **Sparrow** with ReverseSuction (Arcade, any mode): hold full-auto for several seconds. Every shot still
+   streams its prism out of the gun and the prism appears. The first long burst may show one short hitch (`PoolMiss`
+   in a capture) where the old 160-deep buffer had spares; say so in this entry if it is visible.
+3. Hierarchy under the PrismManagers' explosion pool: no inactive `PrismExplosion` children (there were 1,500).
+
+## 🔴 2026-10-17 — The after-play confirmation and the Project Record (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Editor/Diagnostics/BugHuntSendConfirmation.cs` (new window), `ProjectRecord.cs` (new, its
+data), `BugHuntAutoSend.cs` (shows it after the automatic send), `BugLedgerSender.cs` (`LastOutcome` / `LastDetail`),
+`Tools/Build/perf_hunt.py` (`branchFlow` in `status.json`; `status --refresh` keeps capture regressions). What ran
+instead of `/verify-unity`: `unity_refcompile` editor (0 errors in changed files; 3 in multiplayer files whose packages
+this container could not fetch), `perf_hunt.py --self-test` and gates. Docs/DIAGNOSTICS.md § "The after-play
+confirmation and the Project Record".
+
+1. Release, play any arcade mode long enough to leave something new (90 s for a capture, or fly a race for a flight
+   record), stop Play. A small window opens near the top right: a pill that goes SENDING -> SENT (or UP TO DATE / NOT
+   SENT), what went, and where (`bugledger/<you>`). Nothing asks a question; the console still has the one line.
+2. Leave it: it closes by itself about 20 s after SENT. Hover over it: it stays while the pointer is on it.
+3. Press **Project record ▸**: it grows into five tabs. **Overview** shows Ys-bleeding-edge then bleeding-edge
+   (status date, gates, regressions, the Amoebius verdict, captures owed, next steps) and your last sends.
+   **Performance**, **Network**, **AI flights** and **Errors** each start with a line on what that data is for and
+   list your files newest first. Press **Refresh from GitHub**: it reloads without touching your branch
+   (`git status` unchanged).
+4. Stop Play again with nothing new: no window (nothing was sent).
+5. **FrogletTools > Diagnostics > Project Record**: the expanded record opens without a send, and it is on the
+   Froglet Master Tool board under Diagnostics.
+6. Pull the plug (no network) and stop Play with something new: the pill reads NOT SENT with the reason, and the next
+   send carries it.

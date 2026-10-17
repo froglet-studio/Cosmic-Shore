@@ -86,8 +86,7 @@ namespace CosmicShore.Utility
 
         private void CaptureOriginal()
         {
-            var mf = GetComponent<MeshFilter>();
-            if (mf == null) return;
+            if (!TryGetComponent(out MeshFilter mf)) return;
             // Don't recapture if we're already showing our own preview mesh.
             if (_originalMesh == null && mf.sharedMesh != _previewMesh)
                 _originalMesh = mf.sharedMesh;
@@ -95,8 +94,7 @@ namespace CosmicShore.Utility
 
         private void ApplyPreview()
         {
-            var mf = GetComponent<MeshFilter>();
-            if (mf == null) return;
+            if (!TryGetComponent(out MeshFilter mf)) return;
 
             CaptureOriginal();
 
@@ -128,8 +126,7 @@ namespace CosmicShore.Utility
 
         private void RestoreOriginal()
         {
-            var mf = GetComponent<MeshFilter>();
-            if (mf == null) return;
+            if (!TryGetComponent(out MeshFilter mf)) return;
             if (_originalMesh != null && mf.sharedMesh == _previewMesh)
                 mf.sharedMesh = _originalMesh;
         }

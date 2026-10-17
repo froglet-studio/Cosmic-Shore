@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName="ToggleTranslationModeAction", menuName="ScriptableObjects/Vessel Actions/Toggle Translation Mode")]
     public sealed class ToggleTranslationModeActionSO : ShipActionSO
     {
-        public enum Mode { Serpent, Sparrow }
+        public enum Mode { Serpent = 0, Sparrow = 1 }
         [SerializeField] private Mode stationaryMode = Mode.Serpent;
         public Mode StationaryMode => stationaryMode;
 

@@ -343,19 +343,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/Reports/PERFORMANCE.md
 - **Done:** 2026-10-15, Duplicate of T-20261015-fafa: attributed with nested markers to the un-pooled AOE ring explosion on each omni collect (lever L13, Garrett).
 
-### T-20261015-c8e2 · open · dev · Performance
+### T-20261015-c8e2 · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
 - **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
+- **Done:** 2026-10-17, 2026-10-17: not a code regression. The baseline commit (574e0d39a) itself re-measures 0.766 KB/frame today; the refill tracks boost-prism lays 1:1 at ~20 KB each in .NET (net new ring mass), so it moves with how many rings the AIs lay. Current build 0.693 (repeats to 0.3%); the Skim Race Amoebius baseline was re-adopted from that run with this evidence (Docs/PERFORMANCE_OPTIMIZATION.md 2, 10-17 pool row).
 
-### T-20261015-c7db · open · dev · Performance
+### T-20261015-c7db · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
 - **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
+- **Done:** 2026-10-17, 2026-10-17: fixed. The implosion pool topped its buffer up to 160 although death implosions are batched since D4 and only the Sparrow's ReverseSuction Get()s it; PrismManagers.prefab bufferSizeTarget 160 -> 24. PoolRefill.PrismImplosion 0.157 (baseline commit) / 0.122 -> 0.000 KB/frame. Same prefab: the explosion pool (never Get()) no longer prewarms 1,500 objects at boot.
 
 ### T-20261015-7392 · done · dev · AI training
 - **Task:** Add the pilot's VIEW to the situation recording: record the camera pose/FOV each sample (V1), compute on-screen / occluded / time-to-contact view features and a coarse view grid (V2), gate the target and skipped-skim labels on what was visible (V3), measure the per-pilot reaction lag (V4)
@@ -500,6 +502,34 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Manta AI holds Soar deeper into turns)
 
+### T-20261017-1809 · open · dev · Performance
+- **Task:** Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)
+- **Done when:** a new capture of MinigameRegatta|MinigameRegatta compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261017-2129 · open · dev · Performance
+- **Task:** Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)
+- **Done when:** a new capture of MinigameRegatta|MinigameRegatta compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261017-19f0 · open · dev · Performance
+- **Task:** Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)
+- **Done when:** a new capture of MinigameGrizzlyCharge|MinigameGrizzlyCharge compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261017-0026 · open · test · Regatta / launch panel UI
+- **Task:** Hand-test the AI seat chip hull labels on Regatta's launch panel: hover name, (i) badge, vessel info card (Docs/UNITY_VERIFICATION_CHECKLIST.md, 2026-10-17 entry)
+- **Done when:** All six verify steps pass in the editor; the checklist entry is marked green
+- **Who can take it:** Yash (offered); Shombith (UI prefabs, if authored art is wanted)
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/UI/Elements/VesselInfoPopup.cs
+
 ### T-20261017-53f4 · open · decision · Dolphin
 - **Task:** Two Dolphin calls were made for now on 2026-10-17 so the game stays fun while you are away: (1) keep the shipped SCALAR model + holdSpeedWhileDrifting (the docs said vector + Locked; driftThrottlePolicy reset to Live since only the vector model reads it); (2) a drift KEEPS boosted speed (re-drift at a discharge's peak holds ~347 u/s), kept as a skill move the AI also uses. Confirm or change either
 - **Done when:** Garrett confirms both, or the change he wants is made (cap: clamp _heldDriftSpeed to cruise and revert the Dolphin AI peak rule; vector: vectorFlightModel 1 + driftThrottlePolicy 1 + holdSpeedWhileDrifting 0, then play-test)
@@ -513,3 +543,31 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Every Regatta AI hull races its own line)
+
+### T-20261017-2215 · open · test · Performance
+- **Task:** Try the after-play confirmation and the Project Record in Unity (2026-10-17): stop Play after a run that leaves something new; the small window says what went to Claude (SENDING -> SENT) and closes by itself; Project record ▸ expands into Overview / Performance / Network / AI flights / Errors with Ys-bleeding-edge and bleeding-edge's performance status and your sends; also FrogletTools > Diagnostics > Project Record. Say what to change.
+- **Done when:** The six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-17, after-play confirmation) pass, or what to change is written here
+- **Who can take it:** Yash (asked for it)
+- **Added:** 2026-10-17 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/DIAGNOSTICS.md (The after-play confirmation and the Project Record)
+
+### T-20261017-e2c3 · open · decision · AI training
+- **Task:** Before storing AI training flights in UGS, read Docs/AI_SYSTEM/AI_DATA_IN_UGS.md and talk to Yash or Garrett: per-race summaries in Cloud Save, full flights unchanged in a file store, lossless compression only
+- **Done when:** the storage choice is recorded in AI_TRAINING_PLAN.md §5.2 (with T-20261015-0064)
+- **Who can take it:** Shombith (UGS owner), with Yash and Garrett
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/AI_DATA_IN_UGS.md
+
+### T-20261017-5109 · open · test · Refactor
+- **Task:** Open Ys-bleeding-edge in the Unity Editor once after the 2026-10-17 basic refactor pass (enum numbering, TryGetComponent, 3 inspectors moved to Assets/_Scripts/Editor, dead Find branches): let it compile, then open a CameraSettingsSO, a ShapeDefinition and a UniversalStatsProvider and check each custom inspector still draws.
+- **Done when:** Editor compiles with no new console errors and the three custom inspectors draw; note the result in Docs/REFACTOR_BACKLOG.md section 0.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
+- **See:** Docs/REFACTOR_BACKLOG.md section 0
+
+### T-20261017-4c56 · open · dev · Refactor
+- **Task:** Delete the measured-unreferenced vestiges the 2026-10-17 session could not delete (blocked by its permission check): Assets/_Scripts/System/Architectures/ (LoginEventBus.cs, a static event bus nothing calls, plus folder metas) and the stale namespaced copy Assets/_Scripts/Controller/IO/_Input Mapping/InputActionsAsset.cs (+ folder meta; the live generated wrapper is Game/IO/_Input Mapping/InputActionsAsset.cs). Also drop the Controller/IO/_Input Mapping/ entry from Tools/Build/check_console_logging.py TOOL_PATHS.
+- **Done when:** git rm'd on Ys-bleeding-edge, Unity compiles, check_console_logging.py 0 problems.
+- **Who can take it:** Yash (offered)
+- **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
+- **See:** Docs/REFACTOR_BACKLOG.md section 0 row S17

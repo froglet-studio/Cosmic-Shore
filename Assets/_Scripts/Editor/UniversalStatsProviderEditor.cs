@@ -11,7 +11,7 @@ using System.Linq;
 namespace CosmicShore.UI
 {
     [CustomEditor(typeof(UniversalStatsProvider))]
-    public class UniversalStatsProviderEditor : Editor
+    public class UniversalStatsProviderEditor : UnityEditor.Editor
     {
         // Color scheme
         private static readonly Color TrackerColor = new Color(0.4f, 0.6f, 0.9f);

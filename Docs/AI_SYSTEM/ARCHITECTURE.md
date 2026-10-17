@@ -76,8 +76,8 @@ recorder and benchmark runner (editor only).
    hard-coded "Squirrel and `SkimRaceAIDeployment.Claims`" check inside `TrainingDeploymentService`.
 3. **Layer-3 code lives in three different places**: the Urchin driver under `Controller/AI/`, the
    Butterfly driver under `Controller/Arcade/ButterflyGames/`, the Scarab planner inside its controller.
-4. **Layer-4 AI is invisible from the AI folder**: three executors decide for the autopilot, each with its
-   own `IsAutopilotDriven` property, and nothing lists them.
+4. **Layer-4 AI is invisible from the AI folder**: three executors decide for the autopilot, two of them
+   (Grizzly, Manta) through their own private `IsAutopilotDriven` property, and nothing lists them.
 5. **The Skim Race decision core is one 1,612-line class** with 62 state fields (geometry, three planners,
    obstacle grid, recovery), and its track planner is the largest AI cost (`SKIM_RACE_AI.md` §8.0h:
    `TrackMpc` 1.45 ms avg of `Decide`'s 2.35 ms, two seats, editor Release).
@@ -101,7 +101,7 @@ grade every hunk (provably no-op / no-op at the authored numbers / real change),
 | 4.1 | **Markers on every AI**: `AI.Autopilot.*`, `AI.Urchin.*`, `AI.Butterfly.*`, `AI.ScarabJuke.*`, `AI.GrizzlyBombs.*`, `AI.MantaTurnBoost.*` (Skim Race keeps `SkimRace.*`) | Diagnostics | No (provably) | Gates + compile; one `prof` capture per mode in the playbook |
 | 4.2 | **One AI registry** (`AIPilotRegistry`): each replacement pilot declares the mode × hull it claims and how to install; seating asks once; the training installer asks the same registry; the hard-coded Squirrel check goes | Unification | No at today's data | Grep every install site to one; `ServerPlayerVesselInitializerWithAITests` |
 | 4.3 | **One home for hull/mode AI**: `Controller/AI/<Hull>/` holds each pure decision class (Urchin is the model: pure driver + assessment + tests); the mode controller keeps only the adapter. Move `ScarabScrambleJukePlanner` and `ButterflyAutopilotModeDriver` there (same namespace, `.meta` guids kept) | Reorganisation | No | `git mv` keeps guids; refcompile; tests unchanged |
-| 4.4 | **One "is the autopilot driving" question** on the vessel status, replacing the three private `IsAutopilotDriven` copies; the roster lists every layer-4 site | Consistency | No (each copy measured equal first) | Enumerated-consumer grep to zero |
+| 4.4 | **One "is the autopilot driving" question** on the vessel status, replacing the two private `IsAutopilotDriven` copies (Grizzly, Manta; measured 2026-10-17); the roster lists every layer-4 site | Consistency | No (each copy measured equal first) | Enumerated-consumer grep to zero |
 | 4.5 | **Split the Skim Race core** (geometry, obstacle field, one shared rollout, recovery) then **Burst the rollouts** on the main thread | Restructure, then perf | Split: no (simulator byte-identical). Burst: floats only | Simulator identity; then 20-seed benchmark no worse per intensity × frame time; `prof` shows Burst |
 | 4.6 | **Dead code and the dormant training stack**: delete the `AIPilot` unused region; propose `AIGunner` + `Gunner.prefab` and the training stack for the user's verdict (keep / editor-only / retire) | Vestige | No | 0 callers; guid sweep; user decision |
 | 4.7 | **An offline harness per AI that has decision math** (Urchin rail choice, Scarab juke plan, Grizzly bomb timing): pure-C# tests first, a simulator only where a race-level question needs one | Diagnostics | No | Tests run headless (`DIAGNOSIS_PLAYBOOK.md` §2) |
