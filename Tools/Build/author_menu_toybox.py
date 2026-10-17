@@ -77,7 +77,7 @@ def frame(n, key, sliver=14):
         .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite(f"kit_sliver{sliver}_line1"), True))
 
 
-def tile(key, primary, art=(), selected=False, sel_border="ControlActive"):
+def tile(key, primary, art=(), selected=False, sel_border="Selection"):
     body = A.tile_body(c(f"{key}/FocusRing" if key else "FocusRing", "img"),
                        c(f"{key}/Fill" if key else "Fill", "img"), c(f"{key}/Border" if key else "Border", "img"), 14,
                        primary=primary, art=art, sel_border=sel_border,

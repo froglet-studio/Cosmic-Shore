@@ -46,14 +46,16 @@ namespace CosmicShore.UI
         [SerializeField] protected UIThemeSO theme;
         [Tooltip("The focus ring drawn while this control has gamepad / keyboard focus. Optional.")]
         [SerializeField] protected Graphic focusRing;
-        [Tooltip("The ring's colour. White by default: selection is never the CTA green (rev 3, 2026-10-16), " +
-                 "which stays reserved for the one action a screen wants pressed.")]
-        [SerializeField] protected UIColorToken focusRingToken = UIColorToken.TextLight;
+        [Tooltip("The ring's colour. The sky-blue Selection by default (rev 7, 2026-10-17: \"change the selection colour " +
+                 "to glowing blue with animation\"); never the CTA green, which stays reserved for the one action a screen " +
+                 "wants pressed. While the ring shows it also wears the theme's selection light (a sweep and a breath).")]
+        [SerializeField] protected UIColorToken focusRingToken = UIColorToken.Selection;
 
         private VisualState _visual;
         private bool _selected;
         private bool _pointerSelected;
 
+        private Dictionary<Graphic, Material> _restMaterials;
         private readonly List<Graphic> _targets = new();
         private readonly List<Color> _goal = new();
         private readonly List<Color> _start = new();
@@ -69,6 +71,29 @@ namespace CosmicShore.UI
             var c = UITheme.Resolve(theme, token);
             c.a *= alpha;
             return c;
+        }
+
+        /// <summary>
+        /// Light <paramref name="graphic"/> with the theme's selection material while <paramref name="on"/> - a bright
+        /// sweep running round it (along it, for a <paramref name="bar"/>) while it breathes - and give it back its
+        /// own material otherwise (Docs/MENU_REDESIGN_B.md §47.1). The light animates in the shader; the material is
+        /// swapped only on a state change, so nothing re-batches per frame. The shader reads where each vertex sits
+        /// on its rect, so the graphic gets a <see cref="KitRimMesh"/> the first time it is lit.
+        /// </summary>
+        protected void SetSelectionLight(Graphic graphic, bool on, bool bar = false)
+        {
+            if (!graphic || !Application.isPlaying || !theme) return;
+            var light = bar ? theme.selectionBarMaterial : theme.selectionMaterial;
+            if (!light) return;
+            _restMaterials ??= new Dictionary<Graphic, Material>();
+            if (!_restMaterials.TryGetValue(graphic, out var rest))
+            {
+                rest = graphic.material == graphic.defaultMaterial ? null : graphic.material;
+                _restMaterials[graphic] = rest;
+            }
+            var want = on ? light : rest;
+            if (graphic.material != (want ? want : graphic.defaultMaterial)) graphic.material = want;
+            if (on && !graphic.TryGetComponent<KitRimMesh>(out _)) graphic.gameObject.AddComponent<KitRimMesh>();
         }
 
         /// <summary>Fill <paramref name="into"/> with the colour every owned graphic wears in
@@ -137,6 +162,7 @@ namespace CosmicShore.UI
             {
                 bool ring = _selected && !_pointerSelected && _visual != VisualState.Disabled;
                 pairs.Add((focusRing, Token(focusRingToken, ring ? 1f : 0f)));
+                SetSelectionLight(focusRing, ring);
             }
 
             _targets.Clear();

@@ -93,7 +93,7 @@ MonoBehaviour:
   borderImage: {fileID: 999241122732647268}
   borderSelectedSprite: {fileID: 21300000, guid: 17ad9aae4a9b3016d67843d91ccef11e, type: 3}
   borderUnselectedSprite: {fileID: 21300000, guid: 17ad9aae4a9b3016d67843d91ccef11e, type: 3}
-  selectedBorderToken: 0
+  selectedBorderToken: 17
   primaryGraphics: []
   unselectedPrimaryToken: 0
   secondaryGraphics: []

@@ -30,7 +30,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _BaseLevel: 0.7
+    - _Breathe: 0
+    - _BreatheSeconds: 1.8
     - _ColorMask: 15
+    - _Linear: 0
     - _Omni: 1
     - _Speed: 0.08
     - _Stencil: 0

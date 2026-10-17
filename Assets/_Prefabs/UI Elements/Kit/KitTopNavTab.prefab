@@ -548,8 +548,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294956032
-  m_fontColor: {r: 0, g: 0.83137256, b: 1, a: 1}
+    rgba: 4294947389
+  m_fontColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -625,7 +625,7 @@ MonoBehaviour:
   roles: {fileID: 11400000, guid: af2b1c2844e6e0940d27379f27d7a89c, type: 2}
   role: 6
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
-  colorToken: 10
+  colorToken: 17
   colorDrivenExternally: 0
 --- !u!114 &699476184160865436
 MonoBehaviour:
@@ -653,6 +653,7 @@ GameObject:
   - component: {fileID: 209336865252345373}
   - component: {fileID: 812159405126165762}
   - component: {fileID: 951708070662055719}
+  - component: {fileID: 1143738195429237252}
   m_Layer: 5
   m_Name: Underline
   m_TagString: Untagged
@@ -699,8 +700,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0.83137256, b: 1, a: 1}
+  m_Material: {fileID: 2100000, guid: 63699a177466fecef5da1f6829147be5, type: 2}
+  m_Color: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -730,8 +731,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
-  token: 10
+  token: 17
   alpha: 1
+--- !u!114 &1143738195429237252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 73610324245204442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b403ee3874d54f79d0f27e7013879c0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &268072446976896536
 GameObject:
   m_ObjectHideFlags: 0

@@ -325,7 +325,7 @@ def selectable(nav_mode=3):
 
 
 def tile_body(ring, fill, border, sliver, primary=(), unsel_primary="TextLight", secondary=(), art=(),
-              lock=None, lock_label=None, sel_border="TextLight", on_click=()):
+              lock=None, lock_label=None, sel_border="Selection", on_click=()):
     """KitTile, every reference a callable ctx -> fileID."""
     def body(ctx, go):
         f = lambda x: x(ctx)
@@ -866,7 +866,7 @@ def build_card(placeholder_art):
 
     root.add("tile", 114, tile_body(c("FocusRing", "img"), c("Fill", "img"), c("Border", "img"), 14,
                                     primary=[c("Bottom/Title", "tmp")], art=[c("Clip/Art", "img"), c("VesselIcon", "img")],
-                                    lock=c("Lock", "img"), lock_label=c("LockLabel", "tmp"), sel_border="ControlActive",
+                                    lock=c("Lock", "img"), lock_label=c("LockLabel", "tmp"), sel_border="Selection",
                                     on_click=[lambda ctx: (ctx.c("root", "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")]))
     root.add("card", 114, lambda ctx, go: mono(go, S["card"],
              f"  AllGames: {K.ref(11400000, ALL_GAMES, 2)}\n"

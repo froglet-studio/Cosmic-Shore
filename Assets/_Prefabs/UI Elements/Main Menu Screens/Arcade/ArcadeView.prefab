@@ -851,7 +851,7 @@ MonoBehaviour:
   borderImage: {fileID: 273378500942936202}
   borderSelectedSprite: {fileID: 21300000, guid: 6a172fe8ed96165ca76d16f9cefb285c, type: 3}
   borderUnselectedSprite: {fileID: 21300000, guid: e75ec5d5d015d1257b05414fdff6f954, type: 3}
-  selectedBorderToken: 0
+  selectedBorderToken: 17
   primaryGraphics:
   - {fileID: 577731246012314019}
   unselectedPrimaryToken: 0
@@ -2028,7 +2028,7 @@ MonoBehaviour:
   borderImage: {fileID: 36287438311501164}
   borderSelectedSprite: {fileID: 21300000, guid: 6a172fe8ed96165ca76d16f9cefb285c, type: 3}
   borderUnselectedSprite: {fileID: 21300000, guid: e75ec5d5d015d1257b05414fdff6f954, type: 3}
-  selectedBorderToken: 0
+  selectedBorderToken: 17
   primaryGraphics:
   - {fileID: 1062729678969138273}
   unselectedPrimaryToken: 0

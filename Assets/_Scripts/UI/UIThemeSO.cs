@@ -75,6 +75,15 @@ namespace CosmicShore.UI
         [Tooltip("Time - rate: progress. Timers, quests, records, leaderboards.")]
         public Color elementTime = new Color32(0x5F, 0xF0, 0xC8, 0xFF);
 
+        [Header("Selection (rev 7)")]
+        [Tooltip("Whatever is selected or focused - a tile, a card, a tab, the pad's ring - wears this sky blue.")]
+        public Color selection = new Color32(0x3D, 0xB2, 0xFF, 0xFF);
+        [Tooltip("The selection's border light (SelectionRim.mat): a bright sweep running round the border while it " +
+                 "breathes. Optional - without it the selection is the plain colour.")]
+        public Material selectionMaterial;
+        [Tooltip("The same light for a line (SelectionBar.mat): the sweep runs along an underline.")]
+        public Material selectionBarMaterial;
+
         // ── Spacing ───────────────────────────────────────────────────────────────────
 
         [Header("Spacing")]

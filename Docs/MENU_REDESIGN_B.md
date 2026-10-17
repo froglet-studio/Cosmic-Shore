@@ -2315,3 +2315,53 @@ Capture).
 - **Found on the way, filed for Yash.** An AI placed on a domain past `RequestedDomainCount` is spawned there, but
   domain-summing rules never count it. Team task in the Multiplayer area.
 
+
+## 47. Rev 7: the playtest round (approved 2026-10-17)
+
+The owner approved the Rev 7 boards ("Rev 7 - Playtest" on the mockups canvas) and three decisions:
+- the AI difficulty row shows, unlocked, wherever the mode supports it;
+- LT/RT stop at Toy Box and Mission (no wrap);
+- the selection is sky blue.
+
+The four builds: the selection (§47.1), the window slide (§47.2), the friend profile popup (§47.3) and the cell-change
+loading screen (§47.4). The AI row needed no change: `AIDifficultyRules.IsOfferedFor` already offers it, host-only, on
+the seven modes whose AI reads it (Skim Race, Slingshot, Warpline, Regatta, Astro League, Brood Rush, Broadside).
+
+### 47.1 The selection is a glowing sky blue
+
+The owner: "change the selection color to glowing blue with animation", then "sky blue".
+- **One token.** `UIColorToken.Selection = 17`, `#3DB2FF`, appended after the element colours so every serialized
+  token keeps its index. `UIThemeSO` also carries the two selection materials, so a component lights itself from the
+  theme it already has.
+- **The light.** `SelectionRim.mat` and `SelectionBar.mat` (written by `author_ui_lattice.py`) run the elemental rim
+  shader with a white element colour, so the Selection vertex colour tints them:
+
+  | Material | Comet | Notes |
+  |---|---|---|
+  | SelectionRim | round the border, 0.6 turns/s, tail 0.45 | for tile borders, focus rings and plates |
+  | SelectionBar | along the line, 0.35/s, tail 0.35 | `_Linear`: the comet runs along an underline |
+
+  Both rest at 72 % light and breathe ±35 % every 1.8 s. `ElementRim.shader` gained `_Linear`, `_Breathe` and
+  `_BreatheSeconds`. The five element rims set them to 0, so they draw exactly as before.
+- **Where it shows:**
+  - `KitTile`: the selected border, and a fill tinted 22 % toward the blue (`SelectedFillTint`).
+  - `KitSelectableBase`: the focus ring.
+  - `KitTextTab`: the underline.
+  - `KitTopNavTab`: the shown screen's word and underline.
+  - The configure AI seat's lit difficulty plate.
+  - Every hub card: Arcade, Arena, Mission and the Toy Box tiles (they were ControlActive, Cta or TextLight).
+
+  Only the Toy Box daily featured card keeps the green Cta: it is a call to action, not a selection.
+- **No per-frame cost.** `KitSelectableBase.SetSelectionLight` swaps the material only when the state changes,
+  remembers each Graphic's rest material, and adds a `KitRimMesh` the first time a Graphic is lit. The motion is
+  `_Time` in the shader, so a lit tile never dirties its canvas.
+- **Yash's `AIDifficultyPicker`.** It gains optional plate fields: `tintPlates`, the two plate colours and
+  `plateSelectedMaterial`. All are off by default, so the legacy panels draw as before. The style-B configure turns
+  them on.
+- **Verified offline:**
+  - `lattice_preview.py` compiles the shader's real `frag` and asserts the breathing (about 0.79 at rest) and the
+    linear head (+0.30).
+  - `author_ui_kit_prefabs.py` gains `--self-test`. It asserts the token's value, the tile palette, KitTile's
+    border token, and the nav underline's light plus its `KitRimMesh`, with two planted defects.
+  - `author_ui_lattice.py` plants "the selection stops breathing" and "the theme loses the selection's material".
+  - `SelectionStyleTests` checks the index, the fallback, apart from Cta, and the theme override.

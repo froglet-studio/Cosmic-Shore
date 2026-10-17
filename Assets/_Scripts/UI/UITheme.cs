@@ -25,6 +25,8 @@ namespace CosmicShore.UI
         ElementMass = 14,
         ElementSpace = 15,
         ElementTime = 16,
+        // Rev 7: whatever is selected or focused (Docs/MENU_REDESIGN_B.md §47.1).
+        Selection = 17,
     }
 
     /// <summary>Motion durations from <c>Docs/STYLE_FOUNDATION.md</c> §7.</summary>
@@ -66,6 +68,7 @@ namespace CosmicShore.UI
         public static readonly Color ElementMass = new Color32(0x7F, 0xA8, 0xFF, 0xFF);
         public static readonly Color ElementSpace = new Color32(0xB0, 0x7C, 0xFF, 0xFF);
         public static readonly Color ElementTime = new Color32(0x5F, 0xF0, 0xC8, 0xFF);
+        public static readonly Color Selection = new Color32(0x3D, 0xB2, 0xFF, 0xFF);
 
         static readonly float[] DefaultSpacing = { 4f, 8f, 12f, 16f, 24f, 32f, 48f, 64f, 96f };
 
@@ -105,6 +108,7 @@ namespace CosmicShore.UI
                 case UIColorToken.ElementMass: return theme ? theme.elementMass : ElementMass;
                 case UIColorToken.ElementSpace: return theme ? theme.elementSpace : ElementSpace;
                 case UIColorToken.ElementTime: return theme ? theme.elementTime : ElementTime;
+                case UIColorToken.Selection: return theme ? theme.selection : Selection;
                 default: return theme ? theme.textLight : TextLight;
             }
         }

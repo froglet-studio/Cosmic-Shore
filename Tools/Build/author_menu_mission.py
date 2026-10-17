@@ -106,7 +106,7 @@ def build_card():
         .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
 
     root.add("tile", 114, A.tile_body(c("FocusRing", "img"), c("Fill", "img"), c("Border", "img"), 14,
-                                      primary=[c("Title", "tmp")], art=[c("Clip/Art", "img")], sel_border="Cta",
+                                      primary=[c("Title", "tmp")], art=[c("Clip/Art", "img")], sel_border="Selection",
                                       on_click=[lambda ctx: (ctx.c("root", "card"), "CosmicShore.UI.KitMissionCard", "OnPressed")]))
     root.add("card", 114, lambda ctx, go: mono(go, S["card"],
              f"  tile: {ref(ctx.c('root', 'tile'))}\n  art: {ref(ctx.c('Clip/Art', 'img'))}\n"

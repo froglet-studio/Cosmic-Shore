@@ -64,6 +64,7 @@ static inline float length(float2 a) { return std::sqrt(dot(a, a)); }
 static inline float floor_(float x) { return std::floor(x); }
 static inline float sin_(float x) { return std::sin(x); }
 static inline float3 lerp(float3 a, float3 b, float t) { return a + (b - a) * t; }
+static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 static inline float atan2_(float y, float x) { return std::atan2(y, x); }
 static inline float cos_(float x) { return std::cos(x); }
 typedef float4 half4;
@@ -180,7 +181,7 @@ struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition;
 float4 _Time;
 sampler2D _MainTex;
 fixed4 _Color, _TextureSampleAdd, _ElementColor, _ChargeColor, _MassColor, _SpaceColor, _TimeColor;
-float _Omni, _Speed, _Tail, _BaseLevel;
+float _Omni, _Speed, _Tail, _BaseLevel, _Linear, _Breathe, _BreatheSeconds;
 """
 
 RIM_MAIN = r"""
@@ -210,6 +211,7 @@ int main() {
     _ChargeColor = C(1, 0.827f, 0.302f); _MassColor = C(0.498f, 0.659f, 1); _SpaceColor = C(0.690f, 0.486f, 1);
     _TimeColor = C(0.373f, 0.941f, 0.784f); _Color = C(1, 1, 1); _TextureSampleAdd = (float4){0, 0, 0, 0};
     _ElementColor = _SpaceColor; _Omni = 0; _Speed = 0.12f; _Tail = 0.22f; _BaseLevel = 0.45f;
+    _Linear = 0; _Breathe = 0; _BreatheSeconds = 1.8f;
     float l0[360], l2[360]; float4 c0[360], c2[360];
     walk(0.5f, l0, c0); walk(2.5f, l2, c2);
     int h0 = argmax(l0), h2 = argmax(l2);
@@ -236,6 +238,22 @@ int main() {
     need(std::fabs(farLevel - 0.45f) < 0.03f, "away from the comet the rim sits at its base light");
     need(hueOk, "element mode stays in the element's colour");
     need(warm > 20 && cool > 20 && violet > 20 && teal > 20, "omni shows all four elements round the rim");
+    // Rev 7, the selection: it breathes, and on an underline the comet runs along the line.
+    _Omni = 0; _BaseLevel = 0.72f; _Breathe = 0.35f; _BreatheSeconds = 2.0f;
+    float lb[360], lq[360]; float4 cb[360], cq[360];
+    walk(0.5f, lb, cb); walk(1.5f, lq, cq);                         // sin = 1 (dimmest) and sin = -1 (brightest)
+    int quiet = (argmax(lb) + 180) % 360;
+    float ratio = lb[quiet] / std::fmax(lq[quiet], 1e-4f);
+    _Breathe = 0; _Linear = 1; _Speed = 0.25f;
+    auto headX = [&](float t) { _Time = (float4){t / 20, t, t * 2, t * 3}; int k = 0; float best = -1;
+        for (int i = 0; i < 200; i++) { v2f IN; IN.texcoord = (float2){0.5f, 0.5f}; IN.color = (float4){1, 1, 1, 1};
+            IN.rimUV = (float4){(i + 0.5f) / 200, 0.5f, 400, 4}; float l = frag(IN).w; if (l > best) { best = l; k = i; } }
+        return (k + 0.5f) / 200; };
+    float u1 = headX(0.4f), u2 = headX(1.6f);
+    std::printf("selection: breath dims the rim to %.2f of its peak (want ~0.79: alpha follows 60%% of the breath) | underline head %.3f -> %.3f (want +0.300)\n",
+                ratio, u1, u2);
+    need(ratio > 0.72f && ratio < 0.86f, "the selection rim breathes");
+    need(std::fabs((u2 - u1) - 0.30f) < 0.02f, "on an underline the comet runs along the line at its speed");
     return bad ? 1 : 0;
 }
 """

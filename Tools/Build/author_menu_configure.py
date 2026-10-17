@@ -1073,9 +1073,13 @@ def ai_row(card, inner, top):
                 f"  - Difficulty: {val}\n    Button: {ref(ctx.c(f'AIRow/{name}', 'button'))}\n"
                 f"    Plate: {ref(ctx.c(f'AIRow/{name}/Plate', 'img'))}\n"
                 f"    Label: {ref(ctx.c(f'AIRow/{name}/Label', 'tmp'))}\n" for name, val in AI_LEVELS)
-            + f"  plateSelected: {K.sprite_ref(K.kit_sprite('kit_sliver10_fill'))}\n"
+            # Rev 7 (§47.1): the lit plate is the selection - the 2px band in the sky-blue Selection with the selection
+            # light running round it - not a white slab; the others are a quiet outline.
+            + f"  plateSelected: {K.sprite_ref(K.kit_sprite('kit_sliver10_line2'))}\n"
             f"  plateUnselected: {K.sprite_ref(K.kit_sprite('kit_sliver10_line1'))}\n"
-            f"  labelSelected: {color('SurfaceBlack')}\n  labelUnselected: {color('TextLight')}\n"))
+            f"  labelSelected: {color('Selection')}\n  labelUnselected: {color('TextLight')}\n"
+            f"  tintPlates: 1\n  plateSelectedColor: {color('Selection')}\n  plateUnselectedColor: {color('SurfaceLight')}\n"
+            f"  plateSelectedMaterial: {{fileID: 2100000, guid: {M._lattice_guid('selection_rim_mat')}, type: 2}}\n"))
 
 
 def pool_panel(chrome):

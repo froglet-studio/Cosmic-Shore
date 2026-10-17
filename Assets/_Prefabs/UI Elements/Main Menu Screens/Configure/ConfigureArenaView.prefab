@@ -5864,10 +5864,14 @@ MonoBehaviour:
     Button: {fileID: 384956638789384274}
     Plate: {fileID: 495032378814891202}
     Label: {fileID: 1097956089589405168}
-  plateSelected: {fileID: 21300000, guid: 9a86abd8613e387afc691f6e48d9830a, type: 3}
+  plateSelected: {fileID: 21300000, guid: c98bf509f8f1a509923a051d3b07c6c5, type: 3}
   plateUnselected: {fileID: 21300000, guid: 98099cf4a35661dd88b7e9cb399386b7, type: 3}
-  labelSelected: {r: 0, g: 0.003921569, b: 0.039215688, a: 1}
+  labelSelected: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
   labelUnselected: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
+  tintPlates: 1
+  plateSelectedColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
+  plateUnselectedColor: {r: 0.2627451, g: 0.29803923, b: 0.5372549, a: 1}
+  plateSelectedMaterial: {fileID: 2100000, guid: 0defcded7bc8cac24aa943184e47ffed, type: 2}
 --- !u!1 &1069980693522346804
 GameObject:
   m_ObjectHideFlags: 0

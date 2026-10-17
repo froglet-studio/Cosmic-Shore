@@ -15,6 +15,9 @@ Shader "CosmicShore/UI/ElementRim"
         _Speed ("Laps per second", Float) = 0.12
         _Tail ("Comet length (turns)", Range(0.02, 1)) = 0.22
         _BaseLevel ("Rim light away from the comet", Range(0, 1)) = 0.45
+        [Toggle] _Linear ("Run along the rect (an underline), not round it", Float) = 0
+        _Breathe ("Breathing depth (0 steady)", Range(0, 1)) = 0
+        _BreatheSeconds ("Seconds per breath", Float) = 1.8
         _ChargeColor ("Charge", Color) = (1, 0.827, 0.302, 1)
         _MassColor ("Mass", Color) = (0.498, 0.659, 1, 1)
         _SpaceColor ("Space", Color) = (0.690, 0.486, 1, 1)
@@ -95,7 +98,7 @@ Shader "CosmicShore/UI/ElementRim"
             fixed4 _Color;
             fixed4 _TextureSampleAdd;
             float4 _ClipRect;
-            float _Omni, _Speed, _Tail, _BaseLevel;
+            float _Omni, _Speed, _Tail, _BaseLevel, _Linear, _Breathe, _BreatheSeconds;
             fixed4 _ElementColor, _ChargeColor, _MassColor, _SpaceColor, _TimeColor;
 
             v2f vert(appdata_t v)
@@ -117,11 +120,13 @@ Shader "CosmicShore/UI/ElementRim"
                 // there is already transparent; this only stops paying for it (Docs/MENU_REDESIGN_B.md §46.3).
                 if (IN.color.a < 0.004) return float4(0.0, 0.0, 0.0, 0.0);
                 half4 tex = tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd;
-                float4 rim = ElementRim(IN.rimUV.xy, IN.rimUV.zw, _Time.y, _Speed, _Tail, _BaseLevel, _Omni,
+                float4 rim = ElementRim(IN.rimUV.xy, IN.rimUV.zw, _Time.y, _Speed, _Tail, _BaseLevel, _Omni, _Linear,
                                         _ElementColor.rgb, _ChargeColor.rgb, _MassColor.rgb, _SpaceColor.rgb, _TimeColor.rgb);
+                // The selection breathes (rev 7): the whole rim dims and recovers once per breath; 0 is steady.
+                float breathe = 1.0 - _Breathe * (0.5 + 0.5 * sin(_Time.y * 6.2831853 / max(_BreatheSeconds, 0.01)));
                 fixed4 color;
-                color.rgb = rim.rgb * IN.color.rgb;
-                color.a = tex.a * rim.a * IN.color.a;
+                color.rgb = rim.rgb * breathe * IN.color.rgb;
+                color.a = tex.a * saturate(rim.a * lerp(1.0, breathe, 0.6)) * IN.color.a;
 
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);

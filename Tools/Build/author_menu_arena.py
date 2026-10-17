@@ -143,7 +143,7 @@ def build_card():
 
     root.add("tile", 114, A.tile_body(c("FocusRing", "img"), c("Fill", "img"), c("Border", "img"), 14,
                                       primary=[c("Title", "tmp")], art=[c("Clip/Art", "img")],
-                                      lock=c("Lock", "img"), lock_label=c("LockLabel", "tmp"), sel_border="ControlActive",
+                                      lock=c("Lock", "img"), lock_label=c("LockLabel", "tmp"), sel_border="Selection",
                                       on_click=[lambda ctx: (ctx.c("root", "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")]))
     root.add("card", 114, lambda ctx, go: mono(go, S["card"],
              f"  AllGames: {K.ref(11400000, A.ALL_GAMES, 2)}\n"

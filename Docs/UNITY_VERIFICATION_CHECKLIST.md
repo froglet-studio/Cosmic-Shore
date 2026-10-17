@@ -11222,3 +11222,27 @@ collapsed in every mode). `/verify-unity` was not run. Checked offline:
    - Play again / Main menu are on screen and work (mouse and pad).
 3. **Another mode** (a gate race or Skim Race) shows the same full board.
 
+
+## 🔴 2026-10-17 — Rev 7: the sky-blue glowing selection (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`UIColorToken.Selection` (#3DB2FF) with `SelectionRim.mat` / `SelectionBar.mat` (the elemental rim shader with
+`_Linear` and `_Breathe`), lit by `KitSelectableBase.SetSelectionLight` on KitTile, the focus ring, KitTextTab and
+KitTopNavTab, plus the configure AI plates. `/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- every kit and menu generator regenerated and passes `--check` and `--self-test`, with the new planted defects caught;
+- `lattice_preview.py --check` (breathing and linear head);
+- gates.
+
+1. **Compile and tests:** no new console errors; `SelectionStyleTests` passes in the Test Runner.
+2. **Shader:** select `SelectionRim.mat`. It uses `CosmicShore/UI/ElementRim`, `_Breathe` is 0.35, and the element
+   rims (`ElementRim_*.mat`) show `_Breathe` 0 and `_Linear` 0. The Ark, Configure and Hangar rims look as before.
+3. **Menu_Main, mouse and pad:**
+   - the selected Arcade / Arena / Mission / Toy Box card has a sky-blue border with a light running round it, breathing
+     slowly, and a faint blue fill;
+   - the top nav's shown screen has a blue word and a blue underline with a light running along it;
+   - the focus ring on buttons is blue;
+   - the Toy Box daily card is still green.
+4. **Configure, AI seat:** Easy / Medium / Hard; the picked plate is lit blue, the others plain.
+5. **Legacy panels using `AIDifficultyPicker`** (any non-style-B screen): the plates look as before.
+6. **Profiler, Home with the Arcade window open and a card selected:** no `Canvas.BuildBatch` every frame from the
+   lit card.

@@ -52,6 +52,12 @@ BOND_SHADER_GUID = guid("bond_shader")
 PRESENCE_CGINC_GUID = guid("presence_cginc")
 PRESENCE_GUID = guid("presence_mat")
 BOND_GUID = guid("bond_mat")
+# Rev 7 (§47.1): the selection's light - the rim shader in white (the vertex colour, the theme's Selection blue,
+# tints it), sweeping and breathing; the Bar runs along an underline.
+SELECTION_GUID = guid("selection_rim_mat")
+SELECTION_BAR_GUID = guid("selection_bar_mat")
+SELECTION = (0.23921569, 0.69803923, 1)            # #3DB2FF, UITheme.Selection
+THEME = "Assets/_SO_Assets/UI/UITheme.asset"
 # The elemental rims (§45.3): one material per element plus omni. menu_b_motion.rim_border emits these guids.
 RIMS = {"Charge": (1, 0.827451, 0.3019608), "Mass": (0.49803922, 0.65882355, 1), "Space": (0.6901961, 0.4862745, 1),
         "Time": (0.37254903, 0.9411765, 0.78431374), "Omni": None}
@@ -135,10 +141,36 @@ def shader_material(name, shader_guid, floats, colors):
 def rim_material(element):
     omni = RIMS[element] is None
     floats = dict(_Omni=1 if omni else 0, _Speed=0.08 if omni else 0.12, _Tail=0.3 if omni else 0.22,
-                  _BaseLevel=0.7 if omni else 0.45)
+                  _BaseLevel=0.7 if omni else 0.45, _Linear=0, _Breathe=0, _BreatheSeconds=1.8)
     colors = dict(_Color=(1, 1, 1), _ElementColor=RIMS[element] or (1, 1, 1),
                   **{k: v for k, v in ELEMENTS.items()})
     return shader_material(f"ElementRim_{element}", RIM_SHADER_GUID, floats, colors)
+
+
+def selection_material(bar):
+    floats = dict(_Omni=0, _Speed=0.6 if bar else 0.35, _Tail=0.45 if bar else 0.35, _BaseLevel=0.72,
+                  _Linear=1 if bar else 0, _Breathe=0.35, _BreatheSeconds=1.8)
+    colors = dict(_Color=(1, 1, 1), _ElementColor=(1, 1, 1), **ELEMENTS)
+    return shader_material("SelectionBar" if bar else "SelectionRim", RIM_SHADER_GUID, floats, colors)
+
+
+def theme_asset():
+    """UITheme.asset with the selection colour and its two materials (the rest of the asset is untouched)."""
+    text = open(os.path.join(REPO, THEME), encoding="utf-8").read()
+    fields = dict(selection=col(SELECTION), selectionMaterial=f"{{fileID: 2100000, guid: {SELECTION_GUID}, type: 2}}",
+                  selectionBarMaterial=f"{{fileID: 2100000, guid: {SELECTION_BAR_GUID}, type: 2}}")
+    missing = ""
+    for name, value in fields.items():               # field order: selection, selectionMaterial, selectionBarMaterial
+        line = f"  {name}: {value}\n"
+        if re.search(rf"^  {name}: .*$", text, re.M):
+            text = re.sub(rf"^  {name}: .*\n", line, text, count=1, flags=re.M)
+        else:
+            missing += line
+    if missing:
+        anchor = re.search(r"^  elementTime: .*\n", text, re.M)
+        assert anchor, "UITheme.asset has no elementTime to follow"
+        text = text[:anchor.end()] + missing + text[anchor.end():]
+    return text
 
 
 def presence_material():
@@ -175,6 +207,11 @@ def outputs():
     out[f"{DIR}/Presence_Orb.mat.meta"] = mat_meta(PRESENCE_GUID)
     out[f"{DIR}/Bond_Party.mat"] = bond_material()
     out[f"{DIR}/Bond_Party.mat.meta"] = mat_meta(BOND_GUID)
+    out[f"{DIR}/SelectionRim.mat"] = selection_material(False)
+    out[f"{DIR}/SelectionRim.mat.meta"] = mat_meta(SELECTION_GUID)
+    out[f"{DIR}/SelectionBar.mat"] = selection_material(True)
+    out[f"{DIR}/SelectionBar.mat.meta"] = mat_meta(SELECTION_BAR_GUID)
+    out[THEME] = theme_asset()
     return out
 
 
@@ -268,6 +305,21 @@ def validate(files):
     radii = {k: re.search(rf"^    - {k}: (.*)$", orb, re.M).group(1) for k in ("_MemberRadius", "_InnerRadius")}
     assert radii["_MemberRadius"] == radii["_InnerRadius"] == f(ORB_MEMBER_RADIUS), \
         f"the member seats are off the inner ring ({radii}, want {ORB_MEMBER_RADIUS})"
+    # Rev 7: the selection's two materials are rims, white (the theme's blue is the vertex colour), breathing; the
+    # Bar runs along its line; the theme names both and carries the sky blue.
+    for name, bar, g in (("SelectionRim", False, SELECTION_GUID), ("SelectionBar", True, SELECTION_BAR_GUID)):
+        m = files[f"{DIR}/{name}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {RIM_SHADER_GUID}, type: 3}}" in m, f"{name} is not on ElementRim.shader"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == rim_declared, f"{name}: properties drifted (missing {rim_declared - written}, extra {written - rim_declared})"
+        assert f"    - _Linear: {1 if bar else 0}\n" in m, f"{name} runs {'round its rect' if bar else 'along a line'}"
+        assert "    - _Breathe: 0\n" not in m, f"{name} does not breathe"
+        assert f"- _ElementColor: {col((1, 1, 1))}" in m, f"{name} is tinted: the theme's Selection colour must reach it unchanged"
+        assert f"guid: {g}" in files[f"{DIR}/{name}.mat.meta"], f"{name}.mat.meta has the wrong guid"
+    theme = files[THEME]
+    assert f"  selection: {col(SELECTION)}\n" in theme, "UITheme.asset's selection is not the sky blue (#3DB2FF)"
+    for field, g in (("selectionMaterial", SELECTION_GUID), ("selectionBarMaterial", SELECTION_BAR_GUID)):
+        assert f"  {field}: {{fileID: 2100000, guid: {g}, type: 2}}" in theme, f"UITheme.asset does not name its {field}"
     validate_screens(files.get("__screens__") or shipped_prefabs())
 
 
@@ -299,6 +351,9 @@ def self_test(files):
             f"    - _MemberRadius: {f_(ORB_MEMBER_RADIUS)}", "    - _MemberRadius: 0.8", 1))),
         ("the bond material on the rim shader", lambda f: f.__setitem__(f"{DIR}/Bond_Party.mat", f[f"{DIR}/Bond_Party.mat"].replace(
             BOND_SHADER_GUID, RIM_SHADER_GUID))),
+        ("the selection stops breathing", lambda f: f.__setitem__(f"{DIR}/SelectionRim.mat", re.sub(
+            r"    - _Breathe: [\d.]+\n", "    - _Breathe: 0\n", f[f"{DIR}/SelectionRim.mat"], count=1))),
+        ("the theme loses the selection's material", lambda f: f.__setitem__(THEME, f[THEME].replace(SELECTION_GUID, "8" * 32, 1))),
     ]
     screens = shipped_prefabs()
     cases += [

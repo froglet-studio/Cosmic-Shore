@@ -15,12 +15,13 @@ float3 RimOmniColour(float a, float3 charge, float3 mass, float3 space, float3 t
 }
 
 // rect01: the pixel's place over its rect (0..1); size: the rect in canvas units; speed: laps per second;
-// tail: the comet's length in turns; baseLevel: how lit the rim is away from the comet. Returns (rgb, level).
+// tail: the comet's length in turns; baseLevel: how lit the rim is away from the comet. linearMode: the comet runs
+// along the rect left to right (an underline) instead of round it. Returns (rgb, level).
 float4 ElementRim(float2 rect01, float2 size, float t, float speed, float tail, float baseLevel, float omni,
-                  float3 element, float3 charge, float3 mass, float3 space, float3 time)
+                  float linearMode, float3 element, float3 charge, float3 mass, float3 space, float3 time)
 {
     float2 d = (rect01 - 0.5) * size;
-    float angle = atan2(d.y, d.x) * 0.15915494 + 0.5;
+    float angle = linearMode > 0.5 ? rect01.x : atan2(d.y, d.x) * 0.15915494 + 0.5;
     float head = frac(t * speed);
     float behind = frac(head - angle);
     float comet = 1.0 - smoothstep(0.0, tail, behind);

@@ -9,10 +9,11 @@ namespace CosmicShore.UI
     /// §10.13 class card, and - with hexagon sprites - the §10.5 / §10.12 hex nav tile.
     ///
     /// <para><b>Selected</b> is a logical state the owning screen sets (<see cref="IsSelected"/>),
-    /// not the EventSystem selection: a selected tile takes the 2px Light border and the Neutral
-    /// (Dark) fill (approved kit mockup; §10.11 "white border and light fill"). Gamepad focus is
-    /// the separate CTA ring from <see cref="KitSelectableBase"/>, so a pad user can move focus
-    /// across a list without moving the selection.</para>
+    /// not the EventSystem selection: a selected tile takes the 2px sky-blue border, lit by the theme's
+    /// selection light (a sweep round it and a breath), over a fill tinted with the same blue (rev 7,
+    /// Docs/MENU_REDESIGN_B.md §47.1; it was the white border and light fill of §10.11). Gamepad focus is
+    /// the separate ring from <see cref="KitSelectableBase"/>, so a pad user can move focus across a list
+    /// without moving the selection.</para>
     ///
     /// <para><b>Locked</b> dims the art and shows the lock glyph (§10.13); the secondary line takes
     /// <see cref="lockedSecondaryToken"/> (Purchase by default, for a tile unlocked by a spend). A
@@ -40,9 +41,11 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite borderSelectedSprite;
         [Tooltip("Border sprite while not selected (list tiles: the 1px band; hex tiles: the 2px band).")]
         [SerializeField] private Sprite borderUnselectedSprite;
-        [Tooltip("What the border wears while selected. List tiles: TextLight (the §10.11 white border). " +
-                 "Arcade game cards: ControlActive - the card the local player picked.")]
-        [SerializeField] private UIColorToken selectedBorderToken = UIColorToken.TextLight;
+        [Tooltip("What the border wears while selected: the sky-blue Selection (rev 7) everywhere the kit's generators " +
+                 "author a tile.")]
+        [SerializeField] private UIColorToken selectedBorderToken = UIColorToken.Selection;
+
+        private const float SelectedFillTint = 0.22f;
 
         [Header("Content")]
         [Tooltip("The name / icon / label - Light when selected.")]
@@ -89,8 +92,11 @@ namespace CosmicShore.UI
 
             if (fillImage)
             {
-                var fill = isSelected || state == VisualState.Pressed ? UIColorToken.SurfaceDark : UIColorToken.SurfaceVeryDark;
-                into.Add((fillImage, Token(fill)));
+                var fill = isSelected
+                    ? Color.Lerp(Token(UIColorToken.SurfaceVeryDark), Token(UIColorToken.Selection), SelectedFillTint)
+                    : Token(state == VisualState.Pressed ? UIColorToken.SurfaceDark : UIColorToken.SurfaceVeryDark);
+                fill.a = Token(UIColorToken.SurfaceVeryDark).a;
+                into.Add((fillImage, fill));
             }
 
             if (borderImage)
@@ -101,6 +107,7 @@ namespace CosmicShore.UI
                     : hover ? UIColorToken.SurfaceLight
                     : UIColorToken.SurfaceDark;
                 into.Add((borderImage, Token(border)));
+                SetSelectionLight(borderImage, isSelected);
             }
 
             var primary = isLocked ? UIColorToken.NeutralLightest

@@ -35,6 +35,7 @@ referenced guid resolves to a .meta in the repo (or is a known package script).
 
     python3 Tools/Build/author_ui_kit_prefabs.py           # write
     python3 Tools/Build/author_ui_kit_prefabs.py --check   # fail if any output drifted
+    python3 Tools/Build/author_ui_kit_prefabs.py --self-test  # planted defects must all be caught
 """
 
 import argparse
@@ -117,11 +118,13 @@ TOK = {
     "ControlActive": "00D4FF", "Purchase": "FFAE00", "Tooltip": "A600FF",
     # Rev 6: the elements as the colours of meaning (AbilityLockupStyleSO's element colours).
     "ElementCharge": "FFD34D", "ElementMass": "7FA8FF", "ElementSpace": "B07CFF", "ElementTime": "5FF0C8",
+    # Rev 7: whatever is selected or focused (UITheme.Selection).
+    "Selection": "3DB2FF",
 }
 TOKEN_INDEX = {"TextLight": 0, "TextInactive": 1, "InactiveLight": 2, "SurfaceBlack": 3,
                "SurfaceVeryDark": 4, "SurfaceDark": 5, "SurfaceLight": 6, "NeutralLightest": 7,
                "Cta": 8, "Danger": 9, "ControlActive": 10, "Purchase": 11, "Tooltip": 12,
-               "ElementCharge": 13, "ElementMass": 14, "ElementSpace": 15, "ElementTime": 16}
+               "ElementCharge": 13, "ElementMass": 14, "ElementSpace": 15, "ElementTime": 16, "Selection": 17}
 
 
 def tok(name, alpha=1.0):
@@ -165,11 +168,20 @@ def button_palette(variant, opaque, disabled=False):
             (tok("ControlActive"), tok("ControlActive", 0.12), tok("TextLight")))
 
 
+SELECTED_FILL_TINT = 0.22   # KitTile.SelectedFillTint
+
+
+def selected_fill():
+    """KitTile's selected fill: SurfaceVeryDark tinted toward the Selection blue, at SurfaceVeryDark's alpha."""
+    a, b = tok("SurfaceVeryDark"), tok("Selection")
+    return tuple(a[i] + (b[i] - a[i]) * SELECTED_FILL_TINT for i in range(3)) + (a[3],)
+
+
 def tile_palette(selected, locked, unselected_primary="TextLight", locked_secondary="Purchase"):
     """KitTile.CollectColors in the Normal state."""
     return dict(
-        fill=tok("SurfaceDark" if selected else "SurfaceVeryDark"),
-        border=tok("TextLight" if selected else "SurfaceDark"),
+        fill=selected_fill() if selected else tok("SurfaceVeryDark"),
+        border=tok("Selection" if selected else "SurfaceDark"),
         primary=tok("NeutralLightest" if locked else "TextLight" if selected else unselected_primary),
         secondary=tok(locked_secondary if locked else "TextLight" if selected else "NeutralLightest"),
         art=(1.0, 1.0, 1.0, 0.35 if locked else 1.0),
@@ -625,7 +637,7 @@ def build_tile():
 
 
 def tile_body(fill, border, sel_sprite, unsel_sprite, primary, unsel_primary, secondary, art, lock,
-              sel_border="TextLight", lock_label=None):
+              sel_border="Selection", lock_label=None):
     def body(ctx, go):
         return mono(go, kit_script("KitTile"),
                     SELECTABLE_FIELDS
@@ -691,11 +703,16 @@ def build_top_nav_tab():
     # The label sizes itself to its text so the 2px underline beneath it spans the word, not the tab.
     alab = active.child(Node("ActiveImage/Label", "Label",
                              rect(size=(label_width("TAB", "Button"), line_height("Button")))))
-    alab.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("TAB", "Button", tok("ControlActive"))) \
-        .add("kt", 114, kit_text("Button", "ControlActive")).add("csf", 114, fitter(2, 0))
+    # Rev 7: the shown screen's word and underline in the sky-blue Selection; the underline carries the selection
+    # light (SelectionBar.mat: a sweep running along it, breathing), placed by KitRimMesh.
+    alab.add("cr", 222, canvas_renderer()).add("tmp", 114, tmp("TAB", "Button", tok("Selection"))) \
+        .add("kt", 114, kit_text("Button", "Selection")).add("csf", 114, fitter(2, 0))
     under = alab.child(Node("ActiveImage/Underline", "Underline", rect((0, 0), (1, 0), (0, -6), (0, 2), (0.5, 0.5))))
-    under.add("cr", 222, canvas_renderer()).add("img", 114, image(tok("ControlActive"))) \
-        .add("th", 114, themed("ControlActive"))
+    bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
+    under.add("cr", 222, canvas_renderer()).add("img", 114, lambda ctx, go: image(tok("Selection"))(ctx, go).replace(
+        "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n", 1)) \
+        .add("th", 114, themed("Selection")) \
+        .add("rim", 114, lambda ctx, go: mono(go, "b403ee3874d54f79d0f27e7013879c0f", ""))
     # The lit glyph hangs off the word's left edge, so it follows the fitted label without a layout.
     aicon = alab.child(Node("ActiveImage/Icon", "Icon", rect((0, 0.5), None, (-(NAV_ICON_GAP + NAV_ICON / 2), 0),
                                                               (NAV_ICON, NAV_ICON)), active=False))
@@ -1194,6 +1211,16 @@ def validate(out):
                            ("Time", "ElementTime")):
         assert button_palette(variant, True)[1] == tok(token), f"the {variant} button is not drawn in {token}"
     """Every local fileID resolves; anchors are unique; every referenced guid has an owner."""
+    # Rev 7: a selection is the glowing sky blue everywhere (Docs/MENU_REDESIGN_B.md §47.1, the owner 2026-10-17).
+    assert tok("Selection")[:3] == tuple(int("3DB2FF"[i:i + 2], 16) / 255 for i in (0, 2, 4)), "Selection is not sky blue"
+    assert tile_palette(True, False)["border"] == tok("Selection"), "a selected tile's border is not the Selection blue"
+    tile = out[f"{PREFAB_DIR}/KitTile.prefab"]
+    assert f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n" in tile, "KitTile's selected border is not Selection"
+    nav = out[f"{PREFAB_DIR}/KitTopNavTab.prefab"]
+    bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
+    assert f"guid: {bar_mat}, type: 2}}" in nav, "the nav underline lost the selection light (SelectionBar.mat)"
+    assert nav.count("guid: b403ee3874d54f79d0f27e7013879c0f, type: 3}") == 1, \
+        "the nav underline has no KitRimMesh (the selection light would sweep the wrong UVs)"
     known_guids = set(PACKAGE_GUIDS)
     for root, _dirs, names in os.walk(os.path.join(REPO, "Assets")):
         for n in names:
@@ -1242,13 +1269,41 @@ def unity_empty_scalars(text):
     return "\n".join(out)
 
 
+def self_test(out):
+    """Planted defects the validation must catch (the Rev 7 selection look)."""
+    nav, tile = f"{PREFAB_DIR}/KitTopNavTab.prefab", f"{PREFAB_DIR}/KitTile.prefab"
+    bar_mat = hashlib.md5(b"CosmicShore/MenuB/lattice/selection_bar_mat").hexdigest()
+    plants = {
+        "the nav underline loses the selection light": (nav, lambda t: t.replace(
+            f"  m_Material: {{fileID: 2100000, guid: {bar_mat}, type: 2}}\n", "  m_Material: {fileID: 0}\n", 1)),
+        "the selected tile border falls back to the green CTA": (tile, lambda t: t.replace(
+            f"  selectedBorderToken: {TOKEN_INDEX['Selection']}\n", f"  selectedBorderToken: {TOKEN_INDEX['Cta']}\n", 1)),
+    }
+    ok = True
+    for label, (path, plant) in plants.items():
+        bad = dict(out)
+        bad[path] = plant(out[path])
+        assert bad[path] != out[path], f"plant did not apply: {label}"
+        try:
+            validate(bad)
+            print(f"  MISSED: {label}")
+            ok = False
+        except AssertionError as e:
+            print(f"  caught: {label} ({e})")
+    print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
+    return ok
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
 
     out = {p: unity_empty_scalars(t) for p, t in outputs().items()}
     validate(out)
+    if args.self_test:
+        return 0 if self_test(out) else 1
 
     if args.check:
         drift = [p for p, t in out.items()

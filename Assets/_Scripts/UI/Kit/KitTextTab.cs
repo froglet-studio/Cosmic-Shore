@@ -10,8 +10,9 @@ namespace CosmicShore.UI
     ///
     /// <para>Unlike the top-nav tabs (KitTopNavTab.prefab, toggled by the nav itself),
     /// this is a real Selectable: the pad reaches it, the CTA ring draws on focus, and the host
-    /// only sets <see cref="IsSelected"/>. Colours: the shown tab's word is TextLight over a
-    /// ControlActive underline; the others read NeutralLightest and lift to TextLight on hover.</para>
+    /// only sets <see cref="IsSelected"/>. Colours: the shown tab's word is TextLight over a sky-blue
+    /// Selection underline with the selection light running along it (rev 7); the others read
+    /// NeutralLightest and lift to TextLight on hover.</para>
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI Kit/Kit Text Tab")]
     public class KitTextTab : KitSelectableBase
@@ -41,7 +42,10 @@ namespace CosmicShore.UI
             if (label)
                 into.Add((label, Token(isSelected || hover ? UIColorToken.TextLight : UIColorToken.NeutralLightest)));
             if (underline)
-                into.Add((underline, Token(UIColorToken.ControlActive, isSelected ? 1f : 0f)));
+            {
+                into.Add((underline, Token(UIColorToken.Selection, isSelected ? 1f : 0f)));
+                SetSelectionLight(underline, isSelected, bar: true);
+            }
         }
     }
 }
