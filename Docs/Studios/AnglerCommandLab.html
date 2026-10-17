@@ -148,7 +148,7 @@
   // (1) LAB meta + SHIPPED: a READER of the game's numbers. Every constant names the asset / field it was
   //     copied from. "lab" = no game field exists yet (the Angler is a design), shown as a proposal.
   // ===================================================================================================
-  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 2, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design (the Angler does not ship)' };
+  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 5, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design, cloned into the game as the Angler (vessel 17)' };
   const DOMAIN_HEX = { jade: 0x13fff2, ruby: 0xff00f9, gold: 0xffa700 };   // studio-domains.js (OriginalColorSetSO GetDomainSignalColor)
   const SHIPPED = {
     // --- the cell ---
@@ -156,14 +156,16 @@
     nucleusR: 200,        // _Prefabs/Environment/Nucleus.prefab localScale 400 (assumed unit-diameter mesh → radius 200)
     dietAny: 1,           // Cell.IsPreyForHerbivore: nucleus cells → any domain outside the nucleus is edible (1); no nucleus → opposing only (0)
     // --- the Angler (lab: a proposal, the hull does not exist) ---
-    cruise: 80,           // 2x round 3's 40 (the designer, 2026-10-17). The squad (32-40 u/s, x leashTow) now trails a cruising hull
-    boost: 220,           // 2x with the cruise, so the boost keeps its ratio
+    cruise: 40,           // back to round 3's 40 (the designer, 2026-10-17, after flying round 4's 80): L1 Clawfish (32 x 1.25) keep formation
+    boost: 110,           // back with the cruise
     turnRate: 100,        // lab (deg/s)
     // --- lure & tame (lab: no game field, nothing in the codebase lures or tames) ---
     lureAhead: 14,        // lab: the esca hangs this far ahead of the nose (u)
     lureCruise: 0,        // holding the lure STOPS the Angler (the designer, 2026-10-17; was 12): the anglerfish waits with its light out
     chaseBack: 160,       // the chase camera: this far behind the hull (u; 4x round 3's 40 - the designer, 2026-10-17)
-    chaseUp: 56,          // ...and this far above it (u; 4x 14)
+    chaseUp: 0,           // ...and this far above it while FLYING: none, so the nose's line is the screen's centre (the designer, 2026-10-17)
+    chaseLift: 56,        // the camera rises this far while the lure is held or the Time dash is moving (u)
+    chaseLiftTime: 0.4,   // ...easing up and back down over this many seconds
     lureRadius: 70,       // lab: wild fauna inside this reach of the esca turn to it. LightFauna detectionRadius is 60–70
     tameRadius: 22,       // lab: inside this the creature is "held" and taming fills
     tameTime: 2.5,        // lab: seconds held to tame
@@ -187,15 +189,15 @@
     // --- squad sizes (lab; the game's per-cell caps: Clawfish 6, QuadFish 8, Tadpole 6 per pod) ---
     clawN: 6, quadN: 6, tadN: 12,
     // --- the command schemes (all lab) ---
-    paintRange: 3200, paintCone: 8,                 // Spotlight + Sling painter: reach (u, 20x round 2's 160 - the designer, 2026-10-16), half-angle (deg)
+    paintRange: 3200, paintCone: 3,                 // Spotlight + Sling painter: reach (u, 20x round 2's 160 - the designer, 2026-10-16), half-angle (deg; 3, was 8 - smaller and accurate, 2026-10-17)
     flareSpeed: 260, flareRange: 260, flareAssist: 5, flareRadius: 24, flareCd: 0.5,   // Pheromone dart
     gazeRange: 240, gazeCone: 5, gazeDwell: 0.35,   // Gaze lock
     loopStep: 4, loopClose: 18, loopDepth: 40, loopMin: 120,   // Lasso
     slingAhead: 12, slingSpeed: 150, slingCatch: 8, slingCluster: 24, slingTime: 3,   // Pack sling
     // Sling painter (round 2, the designer's pick: the sling + the painter, the other trigger erases). All lab.
     brushMin: 0.35,       // a light squeeze paints with this share of the full brush; a full pull uses all of it
-    eraseCone: 4,         // the eraser's half-angle at a full pull (deg); the paint brush uses paintCone
-    brushNear: 6,         // the brush's radius at the nose (u, at a full pull): close-up prisms paint and erase too (the designer, 2026-10-16)
+    eraseCone: 1.5,       // the eraser's half-angle at a full pull (deg; 1.5, was 4); the paint brush uses paintCone
+    brushNear: 2,         // the brush's radius at the nose (u, at a full pull; 2, was 6): close-up prisms paint and erase too
     dashFrac: 0.75,       // the Time ability: the hull dashes this share of the way to its school's centroid (the designer, 2026-10-16)
     dashTime: 0.35,       // ...over this many seconds (quick, but never a pop)
     homeTurn: 12,         // how sharply a thrown creature homes on its painted prism (/s)
@@ -267,7 +269,9 @@
     ['Squad', 'tadBites', 1, 20, 1, 'Tadpole mouthful size', 'Boid maxClusterBites (C# default 6).'],
     ['Flight', 'cruise', 10, 240, 1, 'Cruise speed (u/s)', 'The Angler\'s cruise. Squirrel ships 60, Sparrow 35, Manta 180.'],
     ['Flight', 'chaseBack', 20, 400, 5, 'Chase camera behind (u)', 'How far behind the hull the chase camera sits.'],
-    ['Flight', 'chaseUp', 0, 200, 2, 'Chase camera above (u)', 'How far above the hull the chase camera sits.'],
+    ['Flight', 'chaseUp', 0, 200, 2, 'Chase camera above (u)', 'How far above the hull the chase camera sits while flying. 0 puts the nose\'s line (the brush\'s axis) at the screen\'s centre.'],
+    ['Flight', 'chaseLift', 0, 200, 2, 'Camera rise when luring or dashing (u)', 'The chase camera rises this far while the lure is held or the Time dash is moving, to show the school and the light from above.'],
+    ['Flight', 'chaseLiftTime', 0.05, 2, 0.05, 'Camera rise time (s)', 'How long the camera takes to rise and to settle back.'],
     ['Flight', 'boost', 20, 500, 5, 'Boost speed (u/s)', 'Speed with the boost held.'],
     ['Flight', 'turnRate', 30, 240, 5, 'Turn rate (°/s)', 'Full-stick pitch and yaw rate.'],
     ['Cell', 'dietAny', 0, 1, 1, 'Nucleus cell diet', '1: a nucleus cell, where fauna eat ANY domain outside the nucleus (the game\'s rule), so a mouthful near your trail eats your trail. 0: a cell without a nucleus, where fauna eat opposing domains only.'],
@@ -1369,7 +1373,12 @@
         const cp = Math.cos(cam.orbitPitch), off = new THREE.Vector3(Math.sin(cam.orbitYaw) * cp, Math.sin(cam.orbitPitch), Math.cos(cam.orbitYaw) * cp).multiplyScalar(cam.orbitDist);
         camera.position.copy(vp).add(off); camera.up.set(0, 1, 0); camera.lookAt(vp); camera.fov = 62;
       } else {
-        const tac = S.cam === 'tactical', back = tac ? 110 : P.chaseBack, up = tac ? 64 : P.chaseUp;
+        // the lift: up while the lure is held or the dash is moving, eased over chaseLiftTime (render-only state)
+        const nowMs = performance.now(), cdt = Math.min(0.1, ((nowMs - (cam.liftMs || nowMs)) / 1000) || 0); cam.liftMs = nowMs;
+        const lifting = world && (world.lureOn || !!world.dash);
+        cam.lift01 = clamp((cam.lift01 || 0) + (lifting ? 1 : -1) * (manualClock ? 1 : cdt / Math.max(0.05, P.chaseLiftTime)), 0, 1);
+        const liftE = cam.lift01 * cam.lift01 * (3 - 2 * cam.lift01);
+        const tac = S.cam === 'tactical', back = tac ? 110 : P.chaseBack, up = tac ? 64 : P.chaseUp + P.chaseLift * liftE;
         const want = vp.clone().add(new THREE.Vector3(...mul(v.f, -back))).add(new THREE.Vector3(...mul(v.u, up)));
         cam.pos.lerp(want, manualClock ? 1 : 0.18);
         camera.position.copy(cam.pos); camera.up.set(...v.u);

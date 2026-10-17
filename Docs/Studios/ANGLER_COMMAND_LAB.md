@@ -30,6 +30,33 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.
 
+## Round 5 (2026-10-17): speed back, a smaller and accurate brush, a level camera
+
+The designer flew round 4 and asked for three things. All three are on the page:
+
+| Ask | Page |
+|---|---|
+| Base flight speed back to what it was | `cruise` 40, `boost` 110 (round 3's) |
+| Painting and erasing cones **accurate and smaller** | `paintCone` 3 (was 8), `eraseCone` 1.5 (was 4), `brushNear` 2 u (was 6) |
+| No camera y offset when flying; it may rise when luring or dashing | `chaseUp` 0 (was 56); new `chaseLift` 56 and `chaseLiftTime` 0.4 s |
+
+**Why the camera makes the brush accurate.** With no y offset, the chase camera sits on the nose's line, 160 u behind
+it, looking ahead along it. The brush's axis is therefore the screen's centre: what is under the middle of the screen
+is what paints. With the camera 56 u up, the axis ran below the screen's centre and the aim read high.
+
+The camera rises `chaseLift` (56 u) while the lure is held or the Time dash is moving, and settles back over
+`chaseLiftTime`, so the light and the school are seen from above when they matter.
+
+Scorecard (seeds 1–3, re-run on the round-5 page):
+
+| Sling painter | Round 4 | Round 5 |
+|---|---|---|
+| Clears in | 12.7 s | **10.9 s** |
+| On target | 72% | **87%**, the best the painter has scored (rookie 79%) |
+
+The narrower brush paints fewer of a target's neighbours. The Spotlight (it shares `paintCone`) is at 82%. The lure trial
+tames six in 16.3 s. The round-4 listen check still holds: 24/24 creatures take the new paint.
+
 ## Round 4 (2026-10-17): 2x speed, the lure stops the hull, the camera 4x out, and "they didn't listen"
 
 What the page models changed first; the rest of the designer's round-4 asks are game-only (`R_VesselActions/ANGLER.md`).
