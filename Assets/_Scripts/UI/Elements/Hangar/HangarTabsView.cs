@@ -118,7 +118,8 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (shoulderInput && isActiveAndEnabled)
+            // While a preview holds the stick (the Abilities tab's TRY), LB / RB belong to the vessel.
+            if (shoulderInput && isActiveAndEnabled && !ModePreviewWindow.AnyHasFocus)
             {
                 var pad = Gamepad.current;
                 if (pad != null && pad.rightShoulder.wasPressedThisFrame) Show(_current + 1);

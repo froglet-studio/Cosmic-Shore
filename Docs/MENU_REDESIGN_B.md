@@ -1867,3 +1867,23 @@ so it was re-done in the new window instead:
   surface, which rev 3 made full-screen (a hole the size of the screen, its caption pushed off the bottom) - it now asks
   `ModePreviewWindow.GuideRect`, the new optional `guideTarget` (FLY here) or the surface elsewhere; and
   `author_menu_home.py` now fails if the SettingsButton loses `MenuGuideAlwaysAvailable`.
+
+## 35. The Hangar's TRY: real ability playback (built 2026-10-17, awaiting in-editor approval; T-20261016-1ec1)
+
+The Abilities tab's rows still make the 3D stage play a stand-in (lunge, roll, element light). **TRY IT FOR REAL** now
+flies the selected vessel for real:
+
+- `HangarAbilityPreview` (new) borrows the menu's one `ModePreviewSession` - the one the configure window flies - with a
+  bare definition, `Assets/_SO_Assets/Hangar/HangarTryPreview.asset` (Barren cell, Mode 0, no objective, no clock; in its
+  own folder because generators and the card-art renderer glob `Mode Previews` for one definition per card). Its window
+  lies over the stage; TRY asks for the stick the moment the scale model is up, so the real cell builds behind the model
+  and the player then flies the selected hull with its real abilities (RT on a Sparrow fires Pulsefire). The session's
+  drill (Lesson + Mentor) coaches that hull's abilities over the picture.
+- Handing it back (START, Esc, STOP, a tap outside), another vessel, another tab or leaving the screen ends the run: the
+  session is struck and detached, and restores the player's hull, pose, AI target and pause itself. STOP is touch's way
+  back and also cancels a slow build. The rows still light while flying (the stand-in move is skipped).
+- **Pad, on a screen.** The Hangar is a screen, not a modal, so two direct pad polls would have fought the flight:
+  ScreenSwitcher paged screens on LT / RT, and the tabs stepped on LB / RB. Both now stand down while
+  `ModePreviewWindow.AnyHasFocus` (a modal's preview never reached them: `HasActiveModal`).
+- `author_menu_hangar.py` builds it all and validates it (forwarding, the window and hint wiring, TRY / STOP calls, the
+  hidden tap surface out of pad navigation, the definition's Barren cell / Mode 0 / no clock), with planted defects.

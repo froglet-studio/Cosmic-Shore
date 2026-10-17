@@ -789,6 +789,10 @@ namespace CosmicShore.UI
 
             if (guided) return;
 
+            // A preview on a SCREEN holds the stick (the Hangar's TRY): the triggers are the vessel's
+            // abilities, not screen paging. A modal's preview never reached here (HasActiveModal).
+            if (ModePreviewWindow.AnyHasFocus) return;
+
             if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 NavigateLeft();
             if (Gamepad.current.rightTrigger.wasPressedThisFrame)

@@ -10687,3 +10687,19 @@ offline: refcompile player OK, editor (the 3 known errors, 0 in changed files), 
    except Settings (press Settings: it opens); ARCADE - the spotlight lands on the target card; the card - the configure
    window opens and the spotlight is on **FLY** with its caption readable; press FLY - the spotlight steps aside while
    flying. Skip ends the tutorial at any step.
+
+## 🔴 2026-10-17 — Hangar TRY: real ability playback (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New `HangarAbilityPreview.cs`, `Assets/_SO_Assets/Hangar/HangarTryPreview.asset`; `ScreenSwitcher` LT / RT paging and
+`HangarTabsView` LB / RB stand down while a preview has focus. Checked offline: refcompile player OK, editor (the 3 known
+errors, 0 in changed files), gates, `author_menu_hangar.py --check` / `--self-test` (12 planted defects).
+
+1. **TRY:** Hangar > Sparrow > Abilities > TRY IT FOR REAL - the stage turns into the live picture (a cell model, then the
+   Sparrow in open water); "START or Esc to stop flying" + STOP above it. RT fires Pulsefire, LT Skyburst, A Turret Stance,
+   B Afterburner - for real; the matching row lights; the drill coach appears over the picture. **Fail:** frozen vessel
+   (pause not lifted), RT pages to another screen, RB switches tab, the wrong hull.
+2. **Back:** START, Esc, STOP (touch) or a tap outside each end it: the turntable returns, the menu vessel is the
+   player's own hull again, Home's lava lamp still flies normally.
+3. **Leave mid-flight / mid-build:** switch tab, pick another vessel, open Games > a card (the configure window must get a
+   working preview of its own), or leave the Hangar - nothing stays standing; no console errors.
+4. Try a locked vessel and the Urchin / Squirrel too (any hull with an ability map).

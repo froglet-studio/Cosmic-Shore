@@ -64,6 +64,10 @@ namespace CosmicShore.UI
         [Header("Motion")]
         [SerializeField, Min(0.05f)] private float glowSeconds = 0.9f;
 
+        [Header("Try it")]
+        [Tooltip("TRY: the selected vessel flown for real in a bare arena (the stage's move is a stand-in).")]
+        [SerializeField] private HangarAbilityPreview tryPreview;
+
         SO_Vessel _vessel;
         HangarVesselStage _stage;
         bool _active;
@@ -85,6 +89,7 @@ namespace CosmicShore.UI
         {
             _vessel = vessel;
             _stage = stage;
+            if (tryPreview) tryPreview.SetVessel(vessel);
             var map = vessel ? ElementalAbilityMapSO.LoadFor(vessel.Class) : null;
             VesselHUDView hud = null;
             if (vessel && prefabs && prefabs.TryGetShipPrefab(vessel.Class, out Transform prefab, reportMissing: false))
@@ -124,7 +129,11 @@ namespace CosmicShore.UI
             RefreshKeycaps();
         }
 
-        public void SetActivePage(bool active) => _active = active;
+        public void SetActivePage(bool active)
+        {
+            _active = active;
+            if (!active && tryPreview) tryPreview.End();    // TRY never outlives its tab
+        }
 
         void Update()
         {
@@ -148,7 +157,8 @@ namespace CosmicShore.UI
         {
             if (row.button && !row.button.interactable) return;
             row.lit = 1f;
-            if (_stage) _stage.Perform(Colour(row.element));
+            // While TRY flies, the real ability is firing in the preview; the row only lights.
+            if (_stage && !(tryPreview && tryPreview.IsRunning)) _stage.Perform(Colour(row.element));
         }
 
         void RefreshKeycaps()
