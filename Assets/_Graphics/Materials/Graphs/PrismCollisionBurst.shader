@@ -49,7 +49,7 @@ Shader "CosmicShore/PrismCollisionBurst"
         _ExplosionDials ("Explosive rotation, explosive spread (per unit amount)", Vector) = (0.0169, 0.05, 0, 0)
 
         [Header(The destruction fragments (written by PrismCollisionBurst from PrismInteractionLodConfig))]
-        _FragmentMotion ("Burst (prism radii), drift (radii per s), lift, aim", Vector) = (0.12, 0.072, 2, 0.95)
+        _FragmentMotion ("Burst (prism radii), drift (radii per s), lift, aim", Vector) = (0.36, 0.216, 2, 0.95)
         _FragmentSize ("Size speed, size spin, spin cap (per size level), smallest level", Vector) = (0.8, 0.25, 1.6, 4)
         _FragmentFade ("Smallest gone at, largest gone at (share of life), shrink share, speed gain", Vector) = (0.45, 0.92, 0.35, 1.65)
         _FragmentNoise ("Noise: spin amplitude, frequency (per object unit), travel amplitude; speed reference (u/s)", Vector) = (0.15, 3, 0.48, 10)

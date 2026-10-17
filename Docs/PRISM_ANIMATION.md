@@ -2614,6 +2614,10 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
 
+**Round 13 (the designer, 2026-10-17): *"triple the amount that they spread"*.** Fragment burst 0.12 → 0.36, drift
+0.072 → 0.216: every fragment travels three times as far; level 0's cloud at 2 s is 2.57 R against the old explosion
+graph's 1.78 R. Lab round 13: `Docs/Studios/COLLISION_BURST_LAB.md`.
+
 **Round 12 (the designer, 2026-10-17) — more separation, and each death its own:** *"lets add 20% more separation and
 speed and some randomization that makes it so adjacent prisms with the nearly identical impacts vectors and initial
 orientations don't look like they are playing the same animation, but spherical explosions should still look beautiful

@@ -525,7 +525,7 @@ static void run_noise_tests() {
 static PrismBurstFragmentShape fragmentShape(bool extreme) {
     PrismBurstFragmentShape s;
     // the shipped shape (PrismInteractionLodConfig.asset), or every slider at the end of its range
-    s.burst = extreme ? 4.0f : 0.12f; s.drift = extreme ? 2.0f : 0.072f; s.lift = extreme ? 3.0f : 2.0f;
+    s.burst = extreme ? 4.0f : 0.36f; s.drift = extreme ? 2.0f : 0.216f; s.lift = extreme ? 3.0f : 2.0f;
     s.aim = extreme ? 2.0f : 0.95f; s.sizeSpeed = extreme ? 1.0f : 0.8f; s.sizeSpin = extreme ? 1.0f : 0.25f;
     s.spinCap = extreme ? 3.0f : 1.6f; s.endSmall = extreme ? 0.1f : 0.45f; s.endBig = extreme ? 0.95f : 0.92f;
     s.shrink = extreme ? 1.0f : 0.35f; s.tau = 0.22f; s.levelRef = extreme ? 1.0f : 4.0f;

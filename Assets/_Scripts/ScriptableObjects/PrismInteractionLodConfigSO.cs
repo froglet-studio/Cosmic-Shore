@@ -95,10 +95,10 @@ namespace CosmicShore.ScriptableObjects
         [Header("Destruction — how each fragment flies (round 9: \"now I just want it to look awesome\")")]
         [Tooltip("How far each fragment bursts out, in prism radii, at the full ease (the ease's time constant is " +
                  "openSeconds).")]
-        [Range(0f, 4f)] [SerializeField] float fragmentBurst = 0.12f;
+        [Range(0f, 4f)] [SerializeField] float fragmentBurst = 0.36f;
 
         [Tooltip("And then how far it drifts on, in prism radii per second, so the cloud keeps opening while it fades.")]
-        [Range(0f, 2f)] [SerializeField] float fragmentDrift = 0.072f;
+        [Range(0f, 2f)] [SerializeField] float fragmentDrift = 0.216f;
 
         [Tooltip("Its direction is its face's own radial (from the face centre to the fragment) plus the face normal " +
                  "x this: 0 skims along the face, higher lifts the burst off it.")]

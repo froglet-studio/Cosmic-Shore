@@ -5,7 +5,7 @@ effects they stand in for, running the shipped shader code in WebGL2, with a mea
 a shared decision log: **destruction** (the explosion → the silver gnomon cut, every fragment bursting out on its own)
 and **stealing** (the grade → the roll). Round 1 looked at the four level-1 collision bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 12
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 13
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -35,6 +35,33 @@ many neighbours move in step, when it thins). Rounds 1–8 below measured the sq
 
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
+
+## Round 13 — 2026-10-17 (`cece/dreamy-pascal-7xxx1m`): the fragments spread three times as far
+
+**Asked** (the designer): *"triple the amount that they spread"*.
+
+- `fragmentBurst` 0.12 → **0.36** and `fragmentDrift` 0.072 → **0.216** (the asset, the SO defaults, the shader
+  defaults, the harness's and the parity gate's shipped shape). Distance is R × (burst × ease + drift × t) × …, so every
+  fragment, at every level and level 0, travels three times as far at every moment; the shape, the lean's direction,
+  the per-death variety and the timing are unchanged.
+- The lab's Destruction line-up fits 3.5 cells of margin instead of 2 (the wider clouds, leaning along the hit, ran off
+  the right edge).
+
+| (impact v (20, 0, 0)) | Cloud at 2 s (R) | Lean along v (R) | Evenness | Copy difference | Roughness |
+|---|---|---|---|---|---|
+| *Explosion graph (before round 11)* | 1.78 | 0.00 | 0.323 | — | — |
+| **Level 0 · the explosion** | **2.57** (round 12: 0.86) | 1.57 | 0.552 | 0.416 | 0.415 |
+| Level 1 | 6.73 | 3.61 | 0.653 | 0.362 | 0.290 |
+| Level 4 | 11.84 | 6.34 | 0.670 | 0.352 | 0.109 |
+
+Level 0's cloud is now wider than the old explosion graph's at 2 s (2.57 R against 1.78 R), which answers round 11's
+open question about a gentle hit's small cloud. Evenness, copy difference and roughness are unchanged: the tripling
+scales the motion, not its shape.
+
+**Checked:** `verify_prism_collision_burst.py` PASS (reach use 0.917 of the proved bound, lean ≥ 7.25 R at 30 u/s, F11
+3.3×, 12 controls fire, 42 glslang programs); `parity.py` PASS (worst 8.2e-4); `verify_lab.cjs` PASS, the line-up and
+Neighbours screenshots read (every cloud on stage); `unity_refcompile` player 0 errors. **NOT editor-verified**
+(checklist item 12 covers it).
 
 ## Round 12 — 2026-10-17 (`cece/dreamy-pascal-7xxx1m`): 20% more separation; every death its own
 

@@ -453,7 +453,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-12); Docs/Studios/COLLISION_BURST_LAB.md rounds 11-12
 
 ### T-20261017-9cab · open · decision · Prisms
-- **Task:** Three calls the round-11/12 burst leaves: (1) at a gentle hit the level-0 explosion cloud is smaller than the old explosion's (0.86 R after round 12's +20% burst 0.12 / drift 0.072, against 1.78 R at 2 s) - keep, or raise them on the lab's Fragments tab (it moves every level at once); (3) round 12's per-death variety (fragmentVariety 0.5): judge it on the lab's Neighbours view - lower it if the deaths read too unalike; (2) your decision set the grade length to 2.2 s, but that is MaterialPropertyAnimator.DefaultTransitionSeconds, every prism colour change in the game - not adopted; adopt or not.
+- **Task:** Three calls the round-11/12 burst leaves: (1) round 13 tripled the spread (burst 0.36 / drift 0.216): the level-0 cloud is now 2.57 R at 2 s against the old explosion's 1.78 R - confirm in game; (3) round 12's per-death variety (fragmentVariety 0.5): judge it on the lab's Neighbours view - lower it if the deaths read too unalike; (2) your decision set the grade length to 2.2 s, but that is MaterialPropertyAnimator.DefaultTransitionSeconds, every prism colour change in the game - not adopted; adopt or not.
 - **Done when:** All three recorded in the Collision Burst Lab decision log and the asset / animator updated to match
 - **Who can take it:** Garrett (prisms / product owner)
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)

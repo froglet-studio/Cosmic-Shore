@@ -161,7 +161,7 @@
   const GLSL_EROSION = `/*@@GLSL_EROSION@@*/`;
   const GLSL_GRADE = `/*@@GLSL_GRADE@@*/`;
 
-  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 12, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
+  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 13, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
   const C = DATA.config, LOOK = DATA.look, X = DATA.explosion;
 
   // ================= SHIPPED: every value names where it came from =================
@@ -956,7 +956,7 @@ void main() {
     const wide = Math.max(1, 1.75 / Math.max(0.3, canvas.width / Math.max(1, canvas.height)));
     if (view === 'destruction' && P.labArchive < 0.5) {
       // fit the whole line-up across the stage's width (the vertical field of view is FOV)
-      const aspect = Math.max(0.3, canvas.width / Math.max(1, canvas.height)), cells = DEPTHS + 2;   // + a cloud's margin each end
+      const aspect = Math.max(0.3, canvas.width / Math.max(1, canvas.height)), cells = DEPTHS + 3.5;   // + a cloud's margin each end, and the lean along the hit (round 13's wider burst)
       return Math.max(R * 22, destructionSpacing() * cells / (2 * Math.tan(FOV / 2) * aspect));
     }
     if (view === 'neighbours') {
