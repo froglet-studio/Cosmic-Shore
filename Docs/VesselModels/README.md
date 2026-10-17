@@ -1,5 +1,11 @@
 # Vessel model dossiers
 
+> These files measure WORK-IN-PROGRESS artist models and prefabs. They record what each prefab binds
+> inside its FBX (the reason an in-place replacement keeps a name or a bone), not what a vessel
+> should be. The intention is `.claude/skills/vessel-model/references/FLEET_CONVENTION.md`; a quirk
+> recorded here is a legacy binding with a migration step there, never a rule to copy (Garrett,
+> 2026-10-17: "building a framework that meets our intentions not mimic halfbaked examples").
+
 One file per vessel, measured from the repo (prefab, FBX, `.meta`, driver code, controller) on
 2026-10-17, before the seven artist files were rebuilt in place by the `/vessel-model` skill
 (`Tools/Build/vessel_model/`). Each dossier is the record of what the ARTIST file contained and

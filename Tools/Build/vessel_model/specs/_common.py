@@ -69,6 +69,7 @@ def box_uv(obj):
     me = obj.data
     bm = bmesh.new()
     bm.from_mesh(me)
+    bm.normal_update()  # face.normal below picks the projection axis; from_mesh leaves it stale
     uv = bm.loops.layers.uv.get("UVMap") or bm.loops.layers.uv.new("UVMap")
     lo = [min(v.co[i] for v in bm.verts) for i in range(3)]
     hi = [max(v.co[i] for v in bm.verts) for i in range(3)]

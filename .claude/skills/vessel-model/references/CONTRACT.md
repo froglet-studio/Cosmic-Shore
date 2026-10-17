@@ -4,6 +4,12 @@ Measured 2026-10-17 on the seven live vessel files (`fbx_probe.py`, `part_map.py
 YAML, the dossiers in `Docs/VesselModels/`). Re-measure before trusting a row: the artist files
 were made by hand and each one is its own convention.
 
+> **Read `FLEET_CONVENTION.md` first.** It is the intention: what every vessel model is meant
+> to be. This file is the measured state of today's prefabs, `.meta` files and drivers, kept so
+> an in-place replacement lands without the editor; where the two differ, the convention wins
+> and the difference is a legacy binding with a migration step (convention section 7). Garrett,
+> 2026-10-17: the shipped vessels are works in progress, not examples to mimic.
+
 ## 1. How a vessel prefab draws its model
 
 `Assets/_Prefabs/Spacevessels/<Vessel>.prefab` nests the FBX as a **PrefabInstance**

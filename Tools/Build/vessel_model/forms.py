@@ -508,31 +508,105 @@ def _stable_faces(faces_iter, predicate, what):
     return sel
 
 
+def _inset_region(bm, faces, thickness, depth=0.0, slot=None):
+    """
+    A DETERMINISTIC region inset. `bmesh.ops.inset_region` walks pointer-keyed hashes, so the
+    ring vertices it creates come out in a different ORDER and at different positions (median
+    6 mm, max 0.5 units on a 0.85-unit hull) from one process to the next; two builds of the
+    same spec then differ, and `build.py --check` cannot tell drift from noise (LESSONS 26).
+    This walks the selected faces in mesh order, offsets every boundary vertex inward along
+    the average in-plane normal of its boundary edges (even offset: divided by the cosine of
+    the half-angle, floored so a sharp corner cannot shoot off), rebuilds the region's faces on
+    the new ring, adds one rim quad per boundary edge, and optionally sinks the region by
+    `depth` along its faces' normals. Returns the list of inner faces.
+    """
+    sel = set(f.index for f in faces)
+    boundary = []  # (edge, loop of the selected face along it), in face/loop order
+    seen = set()
+    for f in faces:
+        for l in f.loops:
+            e = l.edge
+            if e.index in seen:
+                continue
+            if len(e.link_faces) < 2 or any(lf.index not in sel for lf in e.link_faces):
+                seen.add(e.index)
+                boundary.append((e, l))
+    inward, vert_of = {}, {}
+    for e, l in boundary:
+        f = l.face
+        a, b = l.vert, l.link_loop_next.vert
+        edir = (b.co - a.co)
+        if edir.length < 1e-12:
+            continue
+        inw = f.normal.cross(edir.normalized())
+        if inw.length < 1e-12:
+            continue
+        inw.normalize()
+        for v in (a, b):
+            inward.setdefault(v.index, []).append(inw)
+            vert_of[v.index] = v
+    newv = {}
+    for vi, dirs in inward.items():
+        v = vert_of[vi]
+        d = Vector((0, 0, 0))
+        for x in dirs:
+            d += x
+        if d.length < 1e-9:
+            d = dirs[0].copy()
+        d.normalize()
+        cos_half = max(min(d.dot(dirs[0]), 1.0), 0.25)
+        newv[vi] = bm.verts.new(v.co + d * (thickness / cos_half))
+    inner, replaced, push = [], [], {}
+    for f in faces:
+        verts = [newv.get(v.index, v) for v in f.verts]
+        if all(nv is v for nv, v in zip(verts, f.verts)):
+            nf = f  # an interior face: nothing to rebuild
+        else:
+            nf = bm.faces.new(verts)
+            nf.material_index = f.material_index
+            nf.smooth = f.smooth
+            replaced.append(f)
+        if slot is not None:
+            nf.material_index = slot
+        inner.append(nf)
+        if depth:
+            for v in verts:
+                push.setdefault(id(v), [v, []])[1].append(-f.normal * depth)
+    for e, l in boundary:
+        a, b = l.vert, l.link_loop_next.vert
+        if a.index not in newv or b.index not in newv:
+            continue
+        rim = bm.faces.new([a, b, newv[b.index], newv[a.index]])
+        rim.material_index = l.face.material_index
+        rim.smooth = l.face.smooth
+    if replaced:
+        bmesh.ops.delete(bm, geom=replaced, context="FACES")
+    for v, vecs in push.values():
+        acc = Vector((0, 0, 0))
+        for x in vecs:
+            acc += x
+        v.co += acc / len(vecs)
+    return inner
+
+
 def inset_faces(obj, predicate, thickness, depth=0.0, slot=None):
     """
     Inset every face passing `predicate(face_center, face_normal, material_index)` and push
     it in by `depth`; the inner faces take material `slot` if given. Panel lines, vents, the
-    glass of a canopy sunk into its frame - all this.
+    glass of a canopy sunk into its frame - all this. Deterministic (`_inset_region`).
     """
     me = obj.data
     bm = bmesh.new()
     bm.from_mesh(me)
     # bm.from_mesh does not compute face normals: without this, `f.normal` is whatever memory held
-    # and a face near the predicate's threshold flips between runs (the Urchin's canopy inset
-    # produced 1388 or 1390 ball vertices from the same spec - LESSONS 26).
+    # and a face near the predicate's threshold flips between runs (LESSONS 26).
     bm.normal_update()
+    bm.verts.ensure_lookup_table()
+    bm.edges.ensure_lookup_table()
+    bm.faces.ensure_lookup_table()
     faces = _stable_faces(((f, f.calc_center_median(), f.normal, f.material_index) for f in bm.faces), predicate, "inset_faces on %s" % obj.name)
     if faces:
-        res = bmesh.ops.inset_region(bm, faces=faces, thickness=thickness, depth=0.0, use_even_offset=True)
-        if depth:
-            # inset_region rebuilds the region's vertices and leaves the face normals stale, so the
-            # push direction below was read from memory that varied run to run (LESSONS 26).
-            bm.normal_update()
-            for f in faces:
-                bmesh.ops.translate(bm, verts=f.verts, vec=-f.normal * depth)
-        if slot is not None:
-            for f in faces:
-                f.material_index = slot
+        _inset_region(bm, faces, thickness, depth, slot)
     bm.to_mesh(me)
     bm.free()
     me.update()

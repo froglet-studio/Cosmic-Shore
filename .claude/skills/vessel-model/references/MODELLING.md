@@ -5,7 +5,7 @@ vertical FOV: a 5-unit hull at 20 units is ~250 px wide and ~60 px tall on a 108
 From there the pilot sees the STERN three-quarter: engine mouths, wing silhouette, the tail,
 the back of the canopy. Design for that view first; the front is for the codex and the card.
 
-## 1. Read the shipped file before you draw
+## 1. Read the shipped file before you draw (to know what binds, not what to copy)
 
 ```
 python3 Tools/Build/vessel_model/part_map.py "<shipped.fbx>"      # frame, parts, bones, bounds

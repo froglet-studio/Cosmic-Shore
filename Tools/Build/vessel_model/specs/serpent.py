@@ -3,6 +3,12 @@ serpent - the one-thumb sniper: an insect-serpent HEAD that flies face-first wit
 tendrils trailing behind it, a carapace plate over its back and a three-pad engine block at
 the rear. The scope is its eye. Written IN PLACE over the live model:
 
+LEGACY BINDINGS, not design: the file path, node / geometry / armature / bone names, slot order,
+take names and file frame below are what this vessel's prefab, .meta and driver bind TODAY;
+.claude/skills/vessel-model/references/FLEET_CONVENTION.md section 7 names the step that retires
+each one. Everything under 'Design intent' and the morph / pose meanings follow the convention.
+
+
   file      Assets/_Models/Vessel Models/SerpentExport.fbx (same guid; serpent.fbx is a vestige)
   armature  SerpentArmature    mesh node  SerpentMesh    geometry  Cube.190
   bones     the shipped 29 (HeadRootBone root; EngineBone, ChassisBone; HeadTail1-5 + HeadTailSpike

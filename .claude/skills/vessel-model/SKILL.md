@@ -1,6 +1,6 @@
 ---
 name: vessel-model
-description: Build, replace or improve a Cosmic Shore VESSEL MODEL - the FBX hull itself - headlessly with Blender-as-a-Python-module (bpy), to a bar above the shipped artist files. Use for ANY request to make, remake, upgrade, "make a better model for", rig, morph (element shape keys charge/mass/space/time), animate (input-puppetry poses / takes), or re-paint (Domain / Body / Window / Engine slots) a vessel's 3D model - Squirrel, Dolphin, Manta, Serpent, Sparrow, Urchin, Rhino or a new hull - and for "the procedural vessel models look terrible", "placeholder hull", "give the X a real model", "swap the X's rig", or any work on Assets/_Models/Vessel Models/**, Tools/Build/vessel_model/**, or a *HullForm.cs/*HullBuilder.cs procedural hull. Loads the model contract (what Unity, the prefab and the puppetry code bind by NAME), the per-file export frames, the pipeline (spec -> build -> rig -> morphs -> takes -> FBX -> three-reader verify -> contact sheet), the critique loop that raises the bar, and the measured lessons. Pairs with /vessel (the Unity side) and /asset-surgery (binary FBX edits).
+description: Build, replace or improve a Cosmic Shore VESSEL MODEL - the FBX hull itself - headlessly with Blender-as-a-Python-module (bpy), to the fleet convention (the intention), above the work-in-progress artist files. Use for ANY request to make, remake, upgrade, "make a better model for", rig, morph (element shape keys charge/mass/space/time), animate (input-puppetry poses / takes), or re-paint (Domain / Body / Window / Engine slots) a vessel's 3D model - Squirrel, Dolphin, Manta, Serpent, Sparrow, Urchin, Rhino or a new hull - and for "the procedural vessel models look terrible", "placeholder hull", "give the X a real model", "swap the X's rig", or any work on Assets/_Models/Vessel Models/**, Tools/Build/vessel_model/**, or a *HullForm.cs/*HullBuilder.cs procedural hull. Loads the model contract (what Unity, the prefab and the puppetry code bind by NAME), the per-file export frames, the pipeline (spec -> build -> rig -> morphs -> takes -> FBX -> three-reader verify -> contact sheet), the critique loop that raises the bar, and the measured lessons. Pairs with /vessel (the Unity side) and /asset-surgery (binary FBX edits).
 ---
 
 # Vessel Model Protocol
@@ -19,21 +19,33 @@ readers, and LOOKED AT on a contact sheet before anything is written into `Asset
 
 ## 0. The bar, in one paragraph
 
+> Garrett, 2026-10-17: "not overindexing on the flaws in the various vessel implementations.
+> They are all a work in progress, so we should be building a framework that meets our
+> intentions not mimic halfbaked examples."
+
+So the bar is the INTENTION, written down once in `references/FLEET_CONVENTION.md` (one file
+frame, one naming and rig-role scheme, one slot order, four element morphs with one meaning
+each, nine input takes with one sign convention, bone-hosted FX mounts), not the shipped
+artist files. Those files are measured in `Docs/VesselModels/` so a session knows what the
+prefabs still BIND, which is the only reason any of their quirks survive in a spec, and every
+such quirk is a legacy binding with a named migration step, never a rule.
+
 A vessel model is judged from the chase camera (17-250 units behind, 60 degree FOV) at
 250 pixels wide. What reads there is SILHOUETTE, the DOMAIN band, the engine mouths and the
-cockpit glass; what does not read is anything under 2% of the hull's length. The shipped
-artist files (6-13k verts, four slots, four real morphs, 9-13 takes) are the floor. A model
-beats them when it is CONNECTED (no floating parts), has a cleaner silhouette with crisper
-hard-surface detail (bevels, sunken panels, collars), a stronger domain layout, morphs a pilot
+cockpit glass; what does not read is anything under 2% of the hull's length. A model meets
+the bar when it is CONNECTED (no floating parts), has a clean silhouette with crisp
+hard-surface detail (bevels, sunken panels, collars), a strong domain layout, morphs a pilot
 can name (Space = reach, Time = speed, Charge = weapon, Mass = volume), poses that move the
-whole hull, and manifold topology (no n-gon star holes, no loose shells). It must also land in
-the prefab with ZERO edits: same file, same names, same bone rest poses, same frame.
+whole hull, and manifold topology (no n-gon star holes, no loose shells). Until a prefab is
+re-wired to the convention it must also land in that prefab with ZERO edits: same file, same
+names, same bone rest poses, same frame (section 2).
 
 ## 1. Read before you touch
 
 | Topic | Read |
 |---|---|
-| What the prefab, Unity and the puppetry code bind by NAME; per-file export frames; what a replacement must keep | `references/CONTRACT.md` (this directory) |
+| **What a vessel model IS** (the intention: frame, names, rig roles, slots, morphs, takes, mounts) and the legacy table per shipped vessel | `references/FLEET_CONVENTION.md` (this directory) |
+| What the prefab, Unity and the puppetry code bind by NAME today; per-file export frames; what an in-place replacement must keep | `references/CONTRACT.md` (this directory) |
 | The pipeline: modules, commands, the verify gate, the contact sheet | `references/PIPELINE.md` |
 | How to shape a hull that reads; the critique loop; part vocabulary | `references/MODELLING.md` |
 | Every lesson paid for so far (dated, measured) | `references/LESSONS.md` |
@@ -46,9 +58,13 @@ Then run, before any change (Docs/TEAM.md): `git fetch origin` and
 and say who else works there. Thirteen branches touched `Spacevessels` in the week this skill
 was written; a model swap is one file and must not collide with their prefab edits.
 
-## 2. The contract (what a model is)
+## 2. The contract today (legacy bindings an in-place replacement keeps)
 
-One skinned mesh on one armature, exported as binary FBX 7400 IN PLACE over the live file:
+`FLEET_CONVENTION.md` says what a model IS; this section says what today's prefabs, `.meta`
+files and drivers still bind, so a file written over a live one needs no editor. Every item
+below that differs from the convention is a binding to retire (the convention's section 7
+names the step), not a design choice to copy. One skinned mesh on one armature, exported as
+binary FBX 7400 IN PLACE over the live file:
 
 - **Names are identity.** Unity derives sub-asset fileIDs from name + type and they are NOT
   derivable offline (asset-surgery 4.8c). Keep the file path (its guid), the mesh node name,
@@ -107,7 +123,8 @@ every failure and writes nothing you would trust; fix the spec, not the gate.
 
 ## 4. The critique loop (how the bar goes up)
 
-1. Render the shipped file first: `render.contact_sheet(shipped_fbx, ...)` - that is the bar.
+1. Render the shipped file first: `render.contact_sheet(shipped_fbx, ...)` - to know what the
+   player saw and what the prefab binds. It is a reference, not the bar: the bar is section 0.
 2. Build v1, LOOK at the sheet (Read the PNG). Judge, in this order: connectivity (does every
    part grow out of another?), silhouette from the chase tile, the domain band, the engine
    mouths, the glass, then detail. Write the three biggest faults in the spec's docstring.
@@ -153,6 +170,10 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
   with axes - a morph that grabs the whole mesh reads as a scale, not an element.
 - **Clear the pose and unassign the action before export** (`export_fbx` does): a live pose
   leaks into every baked take (the dirty-pose leak, LESSONS 2026-10-17).
+- **Do not bake a driver's bug into the model.** The Squirrel's blend tree halves every pose
+  and the Sparrow artist's PitchUp was inverted as flown: author the pose by its meaning
+  (pitchup = nose up, big enough to read) and file the controller fix as a team task; a
+  model that compensates for a half-baked driver is wrong the day the driver is fixed.
 
 ## 6. Wiring and hand-off
 

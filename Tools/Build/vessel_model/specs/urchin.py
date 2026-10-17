@@ -6,6 +6,12 @@ four element shapes shipped EMPTY. This spec rewrites the rig file with a real h
 morphs so the swap (editor: `FrogletTools > Vessels > Wiring > Swap Vessel Rig`, extended from
 the Dolphin's table) is worth doing:
 
+LEGACY BINDINGS, not design: the file path, node / geometry / armature / bone names, slot order,
+take names and file frame below are what this vessel's prefab, .meta and driver bind TODAY;
+.claude/skills/vessel-model/references/FLEET_CONVENTION.md section 7 names the step that retires
+each one. Everything under 'Design intent' and the morph / pose meanings follow the convention.
+
+
   file      Assets/_Models/Vessel Models/urchan_shapekey_with_animations.fbx (the rig, same guid)
   armature  Armature    mesh node  Body.001    geometry  Sphere.042
   bones     the shipped 38, reused: `fuse` root, and the code's parts `gunM.l/r`, `jetT.l/r`,

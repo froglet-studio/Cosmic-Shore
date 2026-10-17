@@ -148,15 +148,31 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     big faults (floating parts, a wrong spanwise sign, a fishbone tail); the second confirms
     the fix and finds one more; a third is only needed when a morph or a mask was wrong.
 
-26. **A threshold on a face centre is a coin flip.** `build.py urchin --check` reported drift
-    the spec did not contain: 3850 vertices one run, 3852 the next, bounds 0.04 apart. The
-    sphere was identical every run (same coordinate hash), but `bmesh.ops.inset_region`
-    iterates pointer-keyed hashes, so the rim vertices it creates differ by ~1e-7 between
-    processes, and the next inset's band `0.26 < |y| < 0.34` met eight faces whose centres sat
-    at |y| = 0.2600037: in or out depending on the run. Two fixes, both kept: every `paint` /
-    `inset_faces` predicate now goes through `forms._stable_faces`, which nudges each centre
-    and normal by 1e-5 and raises `UnstableSelection` naming the face if the membership flips
-    (so the spec author moves the threshold between face centres, as the Urchin's bands now
-    are at 0.1003 / 0.2585); and `inset_faces` calls `bm.normal_update()` after the inset
-    before pushing along `f.normal` (stale normals after a topology op). Determinism is a
-    gate's precondition: `--check` can only mean "the spec drifted" if the build cannot.
+26. **Blender's own bmesh ops are not deterministic; the gate needs them to be.** `build.py
+    urchin --check` reported drift the spec did not contain: 3850 vertices one run, 3852 the
+    next, one face swapping slots, bounds 3 mm apart. Measured step by step: the sphere is
+    identical every run, but `bmesh.ops.create_uvsphere` emits its FACES in a different order
+    each process, and `bmesh.ops.inset_region` (pointer-keyed hashes inside) then creates its
+    ring vertices in a different order AND at different positions (median 6 mm, max 0.5 units
+    on a 0.85-unit hull); a later predicate at `0.26 < |y|` met faces whose centres sat at
+    0.2600037 and took them or not. Three fixes, all kept: `forms._inset_region` is our own
+    inset (boundary walk in mesh order, even offset from the averaged in-plane normals, rim
+    quads, depth push), so positions no longer depend on traversal order; every `paint` /
+    `inset_faces` predicate goes through `forms._stable_faces`, which nudges each centre and
+    normal by 1e-5 and raises `UnstableSelection` naming the face when the membership flips
+    (the Urchin's bands moved to 0.1003 / 0.2585, the Squirrel's visor and aft frames, the
+    Sparrow's fin paint); and `bm.normal_update()` after every `bm.from_mesh` before a normal
+    is read (`inset_faces`, `box_uv`). Vertex ORDER still varies between runs (harmless to
+    Unity and to the gate, which compares counts, bounds, slots and travel); positions do not.
+    Determinism is a gate's precondition: `--check` can only mean "the spec drifted" if the
+    build cannot.
+
+27. **The shipped files are a work in progress, not the standard** (Garrett, 2026-10-17: "not
+    overindexing on the flaws in the various vessel implementations ... building a framework
+    that meets our intentions not mimic halfbaked examples"). The first draft of this skill
+    had promoted every measured quirk to a rule: four export presets because four artists
+    exported four ways, three slot orders because three files differ, 30-degree poses because
+    one controller halves them. The convention (`FLEET_CONVENTION.md`) now states the ONE
+    intended frame, order, naming and sign convention; the per-file quirks are a legacy table
+    with a migration step each (in-place overwrite today, rig swap / prefab re-fit / driver fix
+    later), and a spec declares them as bindings, not as design.

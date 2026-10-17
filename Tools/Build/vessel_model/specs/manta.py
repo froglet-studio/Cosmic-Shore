@@ -4,6 +4,12 @@ canopy on a (now volumetric) fuselage, an X-tail of four fins and a trident ster
 bomb bay. Drawn four times over (Manta, Falcon, Shrike, Termite). Written IN PLACE over the
 live rig:
 
+LEGACY BINDINGS, not design: the file path, node / geometry / armature / bone names, slot order,
+take names and file frame below are what this vessel's prefab, .meta and driver bind TODAY;
+.claude/skills/vessel-model/references/FLEET_CONVENTION.md section 7 names the step that retires
+each one. Everything under 'Design intent' and the morph / pose meanings follow the convention.
+
+
   file      Assets/_Models/Vessel Models/Manta_shapekey_rigged.fbx (same guid; the mantis file is
             an inactive duplicate and is left alone)
   armature  Armature.002   mesh node  manta   geometry  Sphere.018

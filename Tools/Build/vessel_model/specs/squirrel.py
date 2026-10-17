@@ -4,6 +4,12 @@ of feather-plates for wings, four engine pods (two forward "paws", two aft) and 
 tail that drifts behind it. Written IN PLACE over the artist file so the prefab, the animator
 controller and the .meta's pinned clips keep binding:
 
+LEGACY BINDINGS, not design: the file path, node / geometry / armature / bone names, slot order,
+take names and file frame below are what this vessel's prefab, .meta and driver bind TODAY;
+.claude/skills/vessel-model/references/FLEET_CONVENTION.md section 7 names the step that retires
+each one. Everything under 'Design intent' and the morph / pose meanings follow the convention.
+
+
   file      Assets/_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx (same guid)
   armature  a_Squirrel_Armature            (take names are '<armature>|<action>')
   mesh node a_SquirrelShipMesh_nearfinal   (its SkinnedMeshRenderer is what the prefab strips)

@@ -5,6 +5,12 @@ thin swept wings, and six engine cases fanned round the stern with open exhaust 
 Written IN PLACE over the live rig so the prefab (20 bound sub-objects, jets on the bell
 bones, colliders on the case bones) needs no edit:
 
+LEGACY BINDINGS, not design: the file path, node / geometry / armature / bone names, slot order,
+take names and file frame below are what this vessel's prefab, .meta and driver bind TODAY;
+.claude/skills/vessel-model/references/FLEET_CONVENTION.md section 7 names the step that retires
+each one. Everything under 'Design intent' and the morph / pose meanings follow the convention.
+
+
   file      Assets/_Models/Vessel Models/dolphin_shapekey_with_animations.fbx (same guid)
   armature  dolphin        mesh node  dolohin (sic - the prefab binds this misspelling)
   geometry  Chassis

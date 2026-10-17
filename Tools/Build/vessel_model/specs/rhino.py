@@ -6,6 +6,12 @@ element shapes shipped EMPTY and whose wings sit 1.38x wider than the placeholde
 rewrites the rig file with a real hull and real morphs so the editor swap (VesselRigSwapper,
 Rhino row: fit z -1.5545, re-parent the wing jets to jet.l/.r) has something worth swapping to:
 
+LEGACY BINDINGS, not design: the file path, node / geometry / armature / bone names, slot order,
+take names and file frame below are what this vessel's prefab, .meta and driver bind TODAY;
+.claude/skills/vessel-model/references/FLEET_CONVENTION.md section 7 names the step that retires
+each one. Everything under 'Design intent' and the morph / pose meanings follow the convention.
+
+
   file      Assets/_Models/Vessel Models/rhino_shapekey_with_animations.fbx (the rig, same guid)
   armature  rhino    mesh node  fusalage.002    geometry  Circle.004
   bones     the shipped 12, reused: root, fuse, winghold1/2.l/r, wing1.l/r (front wings, the code's

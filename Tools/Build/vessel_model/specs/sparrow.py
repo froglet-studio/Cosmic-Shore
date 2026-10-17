@@ -3,6 +3,12 @@ sparrow - the shooter: a bird of prey with a beaked nose, a raised canopy, two f
 feather-blades, a gun pod on each wing root, a missile on each flank under a cluster of armour
 shells, and six tail tubes the jets ride. Written IN PLACE over the live model:
 
+LEGACY BINDINGS, not design: the file path, node / geometry / armature / bone names, slot order,
+take names and file frame below are what this vessel's prefab, .meta and driver bind TODAY;
+.claude/skills/vessel-model/references/FLEET_CONVENTION.md section 7 names the step that retires
+each one. Everything under 'Design intent' and the morph / pose meanings follow the convention.
+
+
   file      Assets/_Models/Vessel Models/SparrowModel1.fbx (same guid; SparrowModel4.fbx, which
             only lends the Missile Launch clips, is left alone)
   armature  Sparrow_Armature+Mesh   (the artist's: scaled 0.2034, turned 180 about Z - reused as-is)
