@@ -6134,6 +6134,8 @@ no other vessel carries this asset, and no scene overrides the field.
 4. **Drift at zero throttle.** The Dolphin's `driftThrottlePolicy` is `Locked` and its `Grip` is 0,
    so a drift entered at speed freezes the velocity vector — but a drift entered at *rest* now has
    no floor pushing it along. Confirm that reads as "parked", not as a stuck/unrecoverable state.
+   *(2026-10-17: the shipped Dolphin flies the SCALAR model; the freeze comes from `holdSpeedWhileDrifting`, and
+   `driftThrottlePolicy` is back at `Live` because only the vector model reads it — `DOLPHIN_ENERGY_ECONOMY.md` §2a.)*
 5. **AI Dolphins** (Rampage, The Bends) still fly — the AI has no floor-specific logic, but an AI
    that lets the throttle go now actually stops.
 6. **Speed tunnel.** Cruise crosses the law's floor in the *other* direction: 78 was just above
@@ -7630,6 +7632,8 @@ left outside the hold: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERG
 boost carry recorded in `DOLPHIN_ENERGY_ECONOMY.md` §2: re-drifting at the peak of a discharge
 now pins the vessel near 357 while it banks the next boost. If that ratchets in play, clamp the
 captured value to the unboosted cruise target (78) in `RefreshDriftSpeedHold`.
+*(Decided for now, 2026-10-17: KEEP the carry - a skill move, and the Dolphin AI uses it. The numbers are 347 / 68
+today. `DOLPHIN_ENERGY_ECONOMY.md` §2.)*
 
 ---
 
@@ -7789,6 +7793,8 @@ so it is dragged down with it (357 → 350 on frame 1, ~139 within a second). No
 Under the vector model speed is STATE, so `Locked` freezes it at 357 for the drift's duration. That
 is why the Dolphin is on the vector model rather than reverted — a round-2 revert to scalar
 reinstated exactly this slowdown and was undone.
+*(2026-10-17: every branch's `Dolphin.prefab` is on the SCALAR model with `holdSpeedWhileDrifting: 1`, which pins
+the entry speed too, so the slowdown above does not occur; that setup is kept for now - `DOLPHIN_ENERGY_ECONOMY.md` §2a.)*
 
 **Verify in editor (in order):**
 1. **Squirrel — drift recovery (the point).** SkimRace or freestyle. Get to speed, hold LT into a
