@@ -727,3 +727,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash
 - **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
 - **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-0406 · open · decision · Amoebius
+- **Task:** Decide PR #1045 (Prisma Unity Relay transport, 9 Oct, 1 commit, 817 behind bleeding-edge). bleeding-edge already has its core, built differently: Unity Relay protocol (Wire/Relay), UGS sign-in with per-profile session token (Wire/Ugs), START ONLINE through UGS Lobby + Relay (Shombith, #1089), one NetStack. #1045 is built on the shared-folder sessions and LAN fallback Shombith removed on 14 Oct. Only three things in it are missing on bleeding-edge: automatic region pick by UGS QoS (bleeding-edge only pins COSMIC_SHORE_RELAY_REGION), DTLS 1.2 via BouncyCastle (bleeding-edge uses plain UDP on purpose; a new dependency), and the 9 Oct LIVE run against real UGS Relay (2/2 passed, ~60 ms RTT, spawns/RPCs/NetVars synced; bleeding-edge's docs say nothing has talked to UGS's relay yet). Proposed plan: merge bleeding-edge into prisma-relay-transport taking Shombith's side everywhere, drop CosmicShore.Online / LAN fallback / --relay-* flags / RELAY.md, then port only the QoS region pick into Wire/Relay and record the live results in Port/docs/MULTIPLAYER.md; leave DTLS out. Or close #1045 as superseded.
+- **Done when:** Yash and Shombith choose port-the-gaps or close; #1045 is then either a small PR on Shombith's design (QoS region pick + live evidence, engine tests and unity_isolation_check green) or closed with a comment naming what bleeding-edge replaced it with.
+- **Who can take it:** Yash (author), Shombith (owns Amoebius networking)
+- **Added:** 2026-10-17 by Yash's session (work report) (`Ys-bleeding-edge`)
+- **See:** PR #1045 (prisma-relay-transport); Port/docs/MULTIPLAYER.md 6.7-6.10; Docs/TOOLING_DECISIONS.md 3
+
+### T-20261017-d3b8 · open · decision · Tools
+- **Task:** Decide PR #1030 (branch hygiene, 8 Oct, 9 commits, 1,105 behind bleeding-edge). None of it is on bleeding-edge and nobody else has built it: the Branch cleanup workflow (.github/workflows/branch-cleanup.yml + Tools/BranchJanitor/branch_cleanup.py, report / dry-run / archive / delete, tags archive/<branch> before deleting), policy.json, the browser Branch Janitor page, Docs/BranchArchive/ (one evidence doc per inactive branch) and a new Amoebius launcher BRANCHES page. The archive lists are stale (505 branches then, 545 on 2026-10-17), and a new launcher page is the growth Docs/TOOLING_DECISIONS.md asks to hold until the Amoebius decision. Options: (a) merge bleeding-edge in, keep the workflow, script, policy and docs, drop the BRANCHES page, regenerate the archive for today's branches; (b) keep it as is; (c) close it.
+- **Done when:** Yash picks a, b or c; for (a) the PR is refreshed, the archive regenerated, and the workflow's report mode run once on the real repo.
+- **Who can take it:** Yash (author); the core four for the launcher page
+- **Added:** 2026-10-17 by Yash's session (work report) (`Ys-bleeding-edge`)
+- **See:** PR #1030 (claude/trusting-curie-bn6rrn); Docs/TOOLING_DECISIONS.md 3
