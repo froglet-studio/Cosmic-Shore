@@ -89,6 +89,7 @@ namespace CosmicShore.UI
         float _nextRender;
         float _performT = -1f;
         Color _performColour = Color.white;
+        HangarAbilityKind _performKind = HangarAbilityKind.Shot;
         Vector3 _modelBaseScale = Vector3.one;   // the builder fits the hull to modelRadius through this
         float _pulseT = -1f;
         Color _pulseColour = Color.white;
@@ -172,16 +173,36 @@ namespace CosmicShore.UI
             _nextRender = 0f;
         }
 
-        /// <summary>Plays a short "this is the ability" move in <paramref name="colour"/>.</summary>
-        public void Perform(Color colour)
+        /// <summary>
+        /// Plays a short "this is the ability" move in <paramref name="colour"/>: the hull's motion and the effect
+        /// over the render both follow the ability's <paramref name="kind"/> (section 46) - a shot recoils and fires,
+        /// a boost surges with exhaust, a stance settles under a closing ring, a strike rolls through a slash.
+        /// </summary>
+        public void Perform(Color colour, HangarAbilityKind kind)
         {
             _performColour = colour;
+            _performKind = kind;
             _performT = 0f;
-            // The ability "fires": element-coloured bolts and a muzzle flash leave the nose (UI, over the
-            // render), so a press reads as a shot, not just a lunge.
-            if (fx && TryGetNoseViewport(out var from, out var dir)) fx.Fire(colour, from, dir);
+            if (fx && TryGetNoseViewport(out var from, out var dir)) fx.Play(kind, colour, from, dir);
+            if (kind is HangarAbilityKind.Burst or HangarAbilityKind.Passive) Pulse(colour);
             _lastInput = Time.unscaledTime;
         }
+
+        /// <summary>How each kind moves the hull: forward lunge and roll (as multiples of performLunge /
+        /// performRollDegrees) and how small the hull blinks at the middle (1 = not at all).</summary>
+        static (float lunge, float roll, float blink) MotionOf(HangarAbilityKind kind) => kind switch
+        {
+            HangarAbilityKind.Shot => (-0.25f, 0f, 1f),     // recoil
+            HangarAbilityKind.Boost => (1.8f, 0.35f, 1f),   // surge with a strafing roll
+            HangarAbilityKind.Phase => (2.2f, 0f, 0.35f),   // blink ahead
+            HangarAbilityKind.Build => (0.6f, 0f, 1f),      // glide while laying
+            HangarAbilityKind.Stance => (-0.4f, 0f, 1f),    // settle back
+            HangarAbilityKind.Sense => (0f, 0f, 1f),        // hold still
+            HangarAbilityKind.Pull => (0.25f, 0f, 1f),
+            HangarAbilityKind.Strike => (1.1f, 4f, 1f),     // a full roll through the slash
+            HangarAbilityKind.Burst => (0f, 0f, 1f),
+            _ => (0f, 0f, 1f),
+        };
 
         /// <summary>The hull swells and lights in <paramref name="colour"/> for a beat (an upgrade landing).</summary>
         public void Pulse(Color colour)
@@ -254,13 +275,17 @@ namespace CosmicShore.UI
 
             Vector3 lunge = Vector3.zero;
             float roll = 0f;
+            float blink = 1f;
             if (_performT >= 0f)
             {
                 _performT += dt / performSeconds;
                 float k = Mathf.Clamp01(_performT);
                 float bell = Mathf.Sin(k * Mathf.PI);
-                lunge = Vector3.forward * (performLunge * bell);
-                roll = performRollDegrees * bell;
+                var motion = MotionOf(_performKind);
+                lunge = Vector3.forward * (performLunge * motion.lunge * bell);
+                // A strike's roll turns all the way round; the others rock out and back.
+                roll = _performKind == HangarAbilityKind.Strike ? 360f * k : performRollDegrees * motion.roll * bell;
+                blink = Mathf.Lerp(1f, motion.blink, bell);
                 if (_burst)
                 {
                     _burst.color = _performColour;
@@ -295,7 +320,7 @@ namespace CosmicShore.UI
             _pivot.localRotation = Quaternion.Euler(0f, _yaw, 0f);
             _model.transform.localPosition = lunge;
             _model.transform.localRotation = Quaternion.Euler(0f, 0f, roll);
-            _model.transform.localScale = _modelBaseScale * swell;
+            _model.transform.localScale = _modelBaseScale * (swell * blink);
 
             if (Time.unscaledTime < _nextRender) return;
             // Screens stay ACTIVE beside each other in the strip (only freestyle switches them off), so

@@ -11153,3 +11153,31 @@ run. Checked offline:
 6. **Offline:** the orb disappears with the drawer (OfflineUIGate), as the panel did.
 7. **Freestyle (flying):** the orb fades out with the rest of the menu.
 
+## 🔴 2026-10-17 — Hangar ability kinds + Settings lock (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `HangarAbilityKind.cs` (the kinds and the classifier), `HangarStageFx.Play` (one effect per kind),
+`HangarVesselStage.Perform(colour, kind)`, `HangarAbilitiesPage.kindOverrides`, and
+`GameSettingsPanelController.IsMenuState`. `/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- `check_hangar_ability_kinds.py` and its `--self-test`;
+- the C# classifier compiled with dotnet agrees with the Python check on all 52 abilities.
+
+1. **Hangar, Abilities tab, Sparrow:**
+   - Pulsefire Cannons: the hull recoils and bolts leave the nose.
+   - Afterburner: it surges forward with a roll and exhaust streams from the tail.
+   - Turret Stance: it settles back and a ring closes onto it.
+   - Skyburst Rockets: bolts.
+2. **Other vessels:**
+   - Serpent: Scope pings radar rings; Seed Wall lays blocks behind.
+   - Butterfly: Fold blinks ahead with a ghost.
+   - Thresher: Wrecking Ball rolls through a slash arc; Winch pulls motes in.
+   - Manta: Kabloom bursts a shock ring.
+   - Each move is in the element's colour.
+3. **TRY** still flies the real ability; while it runs, a press only lights the row.
+4. **Settings in the main menu:**
+   - The Performance tab shows no "Change these from the main menu." line.
+   - Every dropdown opens, including after clicking outside the Game view and back.
+5. **Settings during a match** (the pause menu's Settings): Performance stays locked with the line shown; Display
+   and audio stay editable.
+6. **Edit-mode tests:** `HangarAbilityKindsTests` and `GameSettingsContextLockTests` pass.
+

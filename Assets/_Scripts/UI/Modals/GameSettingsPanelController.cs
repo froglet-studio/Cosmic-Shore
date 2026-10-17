@@ -172,8 +172,24 @@ namespace CosmicShore.UI
 
         // ───────────────────────── context lock (menu vs in-game) ─────────────────────────
 
-        /// <summary>True only in the main menu - see <see cref="ApplyContextLock"/> for what is locked elsewhere.</summary>
-        bool InMainMenu => appState == null || appState.Value == null || appState.Value.State == ApplicationState.MainMenu;
+        /// <summary>
+        /// False only while a match is loading, running or ending, or paused / disconnected out of one - the
+        /// only time <see cref="ApplyContextLock"/> locks anything. Every other state is the menu. The app state
+        /// in the menu is not always exactly MainMenu: it is Paused while the app is unfocused, Disconnected
+        /// during a network blip, and None / Authenticating when play starts without the boot chain. The old
+        /// "MainMenu, else locked" test therefore showed the in-match lock in the main menu, with its banner
+        /// and dead Performance dropdowns.
+        /// </summary>
+        bool InMainMenu => appState == null || appState.Value == null
+                           || IsMenuState(appState.Value.State, appState.Value.PreviousState);
+
+        /// <summary>The rule behind <see cref="InMainMenu"/>: everything but a match (GameSettingsContextLockTests).</summary>
+        public static bool IsMenuState(ApplicationState state, ApplicationState previous)
+        {
+            if (state is ApplicationState.Paused or ApplicationState.Disconnected)
+                state = previous;   // the state the interruption is around
+            return state is not (ApplicationState.LoadingGame or ApplicationState.InGame or ApplicationState.GameOver);
+        }
 
         /// <summary>
         /// Locks to the main menu everything that shouldn't be reachable mid-session:

@@ -12,7 +12,8 @@ namespace CosmicShore.UI
     /// element and what it does - with the control that fires it written as the player's own device
     /// names it (LT / RT / A / B on a pad, LSHIFT / SPACE on a keyboard, nothing on touch). Pressing that
     /// control - or tapping the row - makes the 3D vessel on the stage PERFORM it in the element's
-    /// colour, and lights the row.
+    /// colour, and lights the row. The move is the ability's own kind (shot, boost, build, sense...), read
+    /// from its name and description by <see cref="HangarAbilityKinds"/> (Docs/MENU_REDESIGN_B.md section 46).
     ///
     /// <para>The rows read the shipped <see cref="ElementalAbilityMapSO"/> (name, description, input)
     /// and the vessel's own HUD icon art; the control name comes from the fleet's one glyph table
@@ -43,6 +44,16 @@ namespace CosmicShore.UI
             public KitElementHalo halo;
             [HideInInspector] public HintBinding pad, key;
             [HideInInspector] public float lit;
+            [HideInInspector] public HangarAbilityKind kind;
+        }
+
+        /// <summary>One vessel's element shown as another kind than its words read as.</summary>
+        [System.Serializable]
+        public struct KindOverride
+        {
+            public VesselClassType vessel;
+            public Element element;
+            public HangarAbilityKind kind;
         }
 
         [Header("Rows (Charge, Mass, Space, Time)")]
@@ -67,6 +78,11 @@ namespace CosmicShore.UI
 
         [Header("Motion")]
         [SerializeField, Min(0.05f)] private float glowSeconds = 0.9f;
+
+        [Header("Stage moves")]
+        [Tooltip("Each ability's stage move is read from its name and description (HangarAbilityKinds). A row here " +
+                 "overrides that reading for one vessel's element.")]
+        [SerializeField] private KindOverride[] kindOverrides = new KindOverride[0];
 
         [Header("Try it")]
         [Tooltip("TRY: the selected vessel flown for real in a bare arena (the stage's move is a stand-in).")]
@@ -127,6 +143,7 @@ namespace CosmicShore.UI
                 }
                 if (row.button) row.button.interactable = !open;
 
+                row.kind = open ? HangarAbilityKind.Passive : KindOf(vessel.Class, row.element, entry);
                 row.pad = open ? HintBinding.None : InputHintBindingMap.BindingFor(entry.Input, keyboard: false);
                 row.key = open ? HintBinding.None : InputHintBindingMap.BindingFor(entry.Input, keyboard: true);
                 row.lit = 0f;
@@ -165,7 +182,15 @@ namespace CosmicShore.UI
             row.lit = 1f;
             if (row.halo) row.halo.Flash();
             // While TRY flies, the real ability is firing in the preview; the row only lights.
-            if (_stage && !(tryPreview && tryPreview.IsRunning)) _stage.Perform(Colour(row.element));
+            if (_stage && !(tryPreview && tryPreview.IsRunning)) _stage.Perform(Colour(row.element), row.kind);
+        }
+
+        HangarAbilityKind KindOf(VesselClassType vessel, Element element, ElementalAbilityEntry entry)
+        {
+            if (kindOverrides != null)
+                foreach (var o in kindOverrides)
+                    if (o.vessel == vessel && o.element == element) return o.kind;
+            return HangarAbilityKinds.Classify(entry.AbilityLabel, entry.AbilityDescription);
         }
 
         void RefreshKeycaps()

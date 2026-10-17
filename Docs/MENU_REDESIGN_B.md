@@ -2213,3 +2213,57 @@ The owner chose option A, "Orb". The FRIENDS tab on the left edge (rev 3's handl
   - The lattice generator checks the orb and bond materials against their shaders (13 planted defects caught).
 - **Re-emitting the drawer.** The drawer generator now removes the drawer's old documents before re-emitting it, so a
   retired node (rev 3's Handle) cannot linger orphaned in Menu_Main.
+
+## 46. Playtest fixes, 2026-10-17 (after Rev 6)
+
+### 46.1 The Hangar shows each ability's own kind
+
+The owner: "In all vessels in the hangar whatever I press the vessel just shoots for every ability and form. All types
+should be shown". Pressing an ability on the Abilities tab always fired bolts, because `HangarVesselStage.Perform`
+knew one move.
+
+- **The kind is read from the ability's own words.** `HangarAbilityKinds.Classify` reads the authored name, then the
+  opening of the description (the text the row shows). Words match whole, with an optional plural. Nine kinds come
+  out across the fleet's 52 abilities:
+
+  | Kind | The hull | The effect over it | Examples |
+  |---|---|---|---|
+  | Shot | recoils | bolts and a muzzle flash from the nose | Pulsefire Cannons, Sniper Shot, Chain Spikes |
+  | Burst | swells | a shock ring and shards all round | Kabloom, Cavitation Blast, Ripple |
+  | Boost | surges with a strafing roll | exhaust streaming from the tail | Afterburner, Rush, Soar |
+  | Phase | blinks ahead | a dotted path and a ghost | Fold, Slip |
+  | Build | glides | blocks set down behind the tail | Seed Wall, Trail Slabs, Boost Ring |
+  | Stance | settles back | a ring closing onto the hull | Turret Stance, Dig In, Mass / Time Mode |
+  | Sense | holds still | three radar pings | Echo Sight, Scope, Pathfinder |
+  | Pull | eases in | motes spiralling into a point ahead | Field Dipole, Winch, Steal |
+  | Strike | rolls all the way round | a slash arc across the front | Wrecking Ball, Crystal Joust, Charge Mode |
+
+  An ability whose words place it nowhere gets a soft glow (Passive); no shipped ability does.
+- **No asset was edited.** The ability maps and vessel prefabs are untouched. A new vessel's abilities get moves from
+  their words. `HangarAbilitiesPage.kindOverrides` corrects one vessel's element in the inspector if a reading is wrong.
+  The prefabs' input bindings were not used: they disagree with the maps in places (Serpent's Seed Wall).
+- **Gates.** `Tools/Build/check_hangar_ability_kinds.py` reads the two rule tables from `HangarAbilityKind.cs`, runs
+  them over every shipped map, and asserts:
+  - no designed ability falls to Passive;
+  - at least seven kinds appear;
+  - 23 spot checks hold.
+
+  `--self-test` fails it with four planted rule changes. The shipped C# was compiled with dotnet and agrees with the
+  Python reading on all 52 abilities. `HangarAbilityKindsTests` repeats the spot checks and the fleet sweep in the
+  editor.
+
+### 46.2 Settings is locked only during a match
+
+The owner, from the main menu: "Trying to change the settings from main menu not showing anything". The Performance tab
+showed "Change these from the main menu." and its dropdowns did not open.
+
+- `GameSettingsPanelController` locked everything unless the app state was exactly `MainMenu`. In the menu the state
+  is not always that:
+  - `Paused` while the app or editor is unfocused;
+  - `Disconnected` during a network blip;
+  - `None` / `Authenticating` when play starts without the boot chain.
+- Now only a match locks (`LoadingGame`, `InGame`, `GameOver`, or `Paused` / `Disconnected` out of one), through
+  `GameSettingsPanelController.IsMenuState`, pinned by `GameSettingsContextLockTests`.
+- If the banner still shows in the menu after this, the app state is reporting a match there: the console's
+  `[AppState]` lines on the Boot channel (FrogletTools > Toolbox > Logging) say which.
+
