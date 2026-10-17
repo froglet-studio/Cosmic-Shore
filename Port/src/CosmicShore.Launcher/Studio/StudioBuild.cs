@@ -36,10 +36,20 @@ namespace CosmicShore.Launcher
             return i >= 0 ? html[..i] + Tag + html[i..] : html + Tag;
         }
 
-        /// <summary>build_artifact.branch_name: origin/x, refs/remotes/origin/x and refs/heads/x are all branch x.</summary>
+        /// <summary>
+        /// build_artifact.branch_name: origin/x, refs/remotes/origin/x and refs/heads/x are all branch x, and so is
+        /// refs/remotes/&lt;any remote&gt;/x (a Sync job fetches through whichever remote reaches the repo, or its URL into
+        /// refs/remotes/froglet-studio/).
+        /// </summary>
         public static string BranchName(string @ref)
         {
-            foreach (var p in new[] { "refs/remotes/origin/", "origin/", "refs/heads/" })
+            if (@ref.StartsWith("refs/remotes/", StringComparison.Ordinal))
+            {
+                var rest = @ref["refs/remotes/".Length..];
+                int slash = rest.IndexOf('/');
+                return slash > 0 ? rest[(slash + 1)..] : rest;
+            }
+            foreach (var p in new[] { "origin/", "refs/heads/" })
                 if (@ref.StartsWith(p, StringComparison.Ordinal)) return @ref[p.Length..];
             return @ref;
         }

@@ -252,15 +252,12 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        static bool IsAlive(IPlayer p)
-        {
-            if (p == null) return false;
-            if (p is Object po && !po) return false;
-            var v = p.Vessel;
-            if (v == null) return false;
-            if (v is Object vo && !vo) return false;
-            return v.Transform != null;
-        }
+        /// <summary>A spectatable pilot: alive, with a hull that is alive, with a transform.
+        /// The liveness tests are <see cref="VesselLiveness"/>'s rather than a private copy —
+        /// this class grew one because that helper shipped with no <c>IPlayer</c> overload,
+        /// which is exactly the forget-at-the-next-site failure its own doc comment warns
+        /// about.</summary>
+        static bool IsAlive(IPlayer p) => p.IsAlive() && p.Vessel.IsAlive() && p.Vessel.Transform;
 
         void TryBind()
         {

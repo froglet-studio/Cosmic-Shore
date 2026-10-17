@@ -302,6 +302,43 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        /// <summary>
+        /// A ring is threaded on the machine that SIMULATES the pilot (see
+        /// <see cref="CrystalRaceRing"/>), but credited only here on the server - the same split
+        /// the gate races use (owner detects, server records). The host credits its own pilots
+        /// directly; a client sends its vessel's id and the server re-runs the pickup against
+        /// its own copy of the crystal.
+        /// </summary>
+        public override void ReportRingThreaded(int crystalId, Vector3 ringPosition, VesselImpactor collector)
+        {
+            if (!IsSpawned || IsServer)
+            {
+                CreditRingThreaded(crystalId, ringPosition, collector);
+                return;
+            }
+
+            var vesselObject = collector != null ? collector.GetComponentInParent<NetworkObject>() : null;
+            if (vesselObject == null || !vesselObject.IsSpawned) return;
+
+            RingThreaded_ServerRpc(crystalId, ringPosition, vesselObject.NetworkObjectId);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void RingThreaded_ServerRpc(int crystalId, Vector3 ringPosition, ulong vesselNetworkObjectId,
+                                            ServerRpcParams rpcParams = default)
+        {
+            if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects
+                    .TryGetValue(vesselNetworkObjectId, out var vesselObject) || vesselObject == null)
+                return;
+
+            // A client may only report its OWN vessel - otherwise one peer could collect rings
+            // in another pilot's name.
+            if (vesselObject.OwnerClientId != rpcParams.Receive.SenderClientId) return;
+
+            var collector = vesselObject.GetComponentInChildren<VesselImpactor>(true);
+            CreditRingThreaded(crystalId, ringPosition, collector);
+        }
+
         public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams) =>
             ExplodeCrystal_ServerRpc(crystalId, NetworkExplodeParams.FromExplodeParams(explodeParams));
 

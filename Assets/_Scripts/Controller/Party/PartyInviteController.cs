@@ -40,6 +40,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional. Best-effort toast shown when a join fails and the client bounces back to its own menu. May be suppressed during the scene reload.")]
         [SerializeField] private ToastChannel bounceToastChannel;
 
+        [Tooltip("Toast after a join that UGS refused because the party has no free seat. Empty shows no toast.")]
+        [SerializeField, TextArea] private string partyFullToast = "That party is full.";
+
+        [Tooltip("Toast after a join whose party ended before we got in (its lobby is gone: the host left or the invite was stale). Empty shows no toast.")]
+        [SerializeField, TextArea] private string partyEndedToast = "That party has ended.";
+
         [Header("Timing")]
         // The initializers below equal what PartyServices.prefab SERIALIZES (5 / 10 / 30), so a reader
         // of this file is not misled: a serialized field's initializer is not its shipped value.
@@ -257,13 +263,15 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, "[PartyInviteController] Accept flow cancelled.");
             }
-            catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            catch (Exception e) when (UgsRequestPolicy.Classify(e) is UgsFailureClass.Full or UgsFailureClass.Gone)
             {
-                // The party filled between our pre-flight and the join (two players pressing Join
+                // Full: the party filled between our pre-flight and the join (two players pressing Join
                 // on a 3/4 party): the session's seat count IS the party size, so UGS refused us.
-                // An expected refusal, not a fault - back to our own menu with the reason.
+                // Gone: the party ended first - its host left, or the invite / presence entry was stale
+                // ("SessionNotFound: lobby not found"). Both are expected refusals, not faults - back to
+                // our own menu with the reason.
                 await UniTask.Yield(PlayerLoopTiming.Update);
-                await BounceToSoloMenuAsync("That party is full.");
+                await BounceToSoloMenuAsync(UgsRequestPolicy.Classify(e) == UgsFailureClass.Full ? partyFullToast : partyEndedToast);
             }
             catch (Exception e)
             {
@@ -443,13 +451,15 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyInviteController] {label} cancelled.");
             }
-            catch (Exception e) when (UgsRequestPolicy.Classify(e) == UgsFailureClass.Full)
+            catch (Exception e) when (UgsRequestPolicy.Classify(e) is UgsFailureClass.Full or UgsFailureClass.Gone)
             {
-                // The party filled between our pre-flight and the join (two players pressing Join
+                // Full: the party filled between our pre-flight and the join (two players pressing Join
                 // on a 3/4 party): the session's seat count IS the party size, so UGS refused us.
-                // An expected refusal, not a fault - back to our own menu with the reason.
+                // Gone: the party ended first - its host left, or the invite / presence entry was stale
+                // ("SessionNotFound: lobby not found"). Both are expected refusals, not faults - back to
+                // our own menu with the reason.
                 await UniTask.Yield(PlayerLoopTiming.Update);
-                await BounceToSoloMenuAsync("That party is full.");
+                await BounceToSoloMenuAsync(UgsRequestPolicy.Classify(e) == UgsFailureClass.Full ? partyFullToast : partyEndedToast);
             }
             catch (Exception e)
             {
@@ -668,7 +678,7 @@ namespace CosmicShore.Gameplay
             // before recovery is therefore silently dropped (the channel event has no
             // subscriber). Raising it here lands on the fresh menu's live ToastService.
             // See Docs/PartySystem/BUGS.md B10.
-            bounceToastChannel?.ShowPrefix(toastMessage);
+            if (!string.IsNullOrEmpty(toastMessage)) bounceToastChannel?.ShowPrefix(toastMessage);
         }
 
         /// <summary>

@@ -18,6 +18,10 @@ namespace CosmicShore.Gameplay
     /// is an ordinary prism entity (SubstrateFauna.SyncEntities / PoseBodies, the swarm's code over this population's
     /// slice) and this draws the HEARTS only (<see cref="DrawBodies"/> false) - the render service draws no heart
     /// crystal. With the service off (its default) this draws both, as the swarm does.
+    ///
+    /// On a device without vertex-stage structured buffers (WebGL2, GLES 3.0) the same instances are drawn by
+    /// <see cref="SwarmMemberFallbackDraw"/> (SM 3.5, per-instance constants, the same pose and look code;
+    /// Docs/SUBSTRATE_FAUNA.md §5.1) instead of not at all.
     /// </summary>
     public sealed class SubstrateMemberRenderer : System.IDisposable
     {
@@ -51,15 +55,21 @@ namespace CosmicShore.Gameplay
         readonly List<MaterialPropertyBlock> _mpbs = new();
         readonly int _cap, _layer, _element;
         int _heartCount;
+        // non-null on a device without vertex-stage structured buffers: the SM 3.5 instanced draw (§5.1)
+        readonly SwarmMemberFallbackDraw _fallback;
         static bool s_warned;
 
         public bool Valid { get; }
 
+        /// <summary>True when this renderer draws through the SM 3.5 instanced path (no compute on this device).</summary>
+        public bool UsesFallback => _fallback != null;
+
         /// <summary>False while the bodies are PrismRenderService entities (the unified path): this then draws hearts only.</summary>
         public bool DrawBodies { get; set; } = true;
 
-        public static bool Supported =>
-            SystemInfo.supportsComputeShaders && SystemInfo.maxComputeBufferInputsVertex > 0;
+        /// <summary>The GraphicsBuffer path's requirement (<see cref="SwarmMemberRenderer.Supported"/>); without it the
+        /// SM 3.5 path draws the same agents.</summary>
+        public static bool Supported => SwarmMemberRenderer.Supported;
 
         /// <param name="element">Research element index (0 Charge, 1 Mass, 2 Space, 3 Time) every agent's heart is.</param>
         public SubstrateMemberRenderer(Shader shader, SubstrateAgentFauna prefab, int cap, int element, int layer)
@@ -67,12 +77,21 @@ namespace CosmicShore.Gameplay
             _cap = Mathf.Max(1, cap);
             _layer = layer;
             _element = Mathf.Clamp(element, 0, 3);
-            if (!shader || !Supported || !prefab)
+            if (!shader || !prefab)
             {
-                Warn(!shader ? "SubstrateSpeciesSO.MemberShader is not assigned"
-                     : !Supported ? $"this device has no vertex-stage structured buffers ({SystemInfo.graphicsDeviceType})"
-                     : "the agent prefab is missing");
+                Warn(!shader ? "SubstrateSpeciesSO.MemberShader is not assigned" : "the agent prefab is missing");
                 return;
+            }
+            Material fallbackMaterial = null;
+            if (SwarmMemberRenderer.UseFallback)
+            {
+                fallbackMaterial = SwarmMemberFallbackDraw.LoadMaterial(out var whyNot);
+                if (!fallbackMaterial)
+                {
+                    Warn((Supported ? "the SM 3.5 path was forced (memberdraw)" :
+                          $"this device has no vertex-stage structured buffers ({SystemInfo.graphicsDeviceType})") + $" and {whyNot}");
+                    return;
+                }
             }
             var bodyPrism = prefab.GetComponentInChildren<HealthPrism>(true);
             var bodyFilter = bodyPrism ? bodyPrism.GetComponent<MeshFilter>() : null;
@@ -97,6 +116,17 @@ namespace CosmicShore.Gameplay
                 }
             }
             if (_hearts.Count == 0) Warn("no elemental crystal model was found - hearts will not be drawn");
+
+            if (fallbackMaterial)
+            {
+                _fallback = new SwarmMemberFallbackDraw(fallbackMaterial, _cap);
+                _fallback.AddBody(_body.Mesh, _body.Submesh, _body.Local);
+                foreach (var part in _hearts) _fallback.AddHeart(part.Mesh, part.Submesh, part.Local, _element);
+                _mpbs.AddRange(_fallback.Blocks);   // SetPalette writes every block
+                SwarmMemberFallbackDraw.Announce("Substrate", forced: Supported);
+                Valid = true;
+                return;
+            }
 
             _mat = new Material(shader) { name = "SwarmMemberInstanced (substrate, runtime)", hideFlags = HideFlags.DontSave };
             var bodyBlock = new MaterialPropertyBlock();
@@ -174,8 +204,15 @@ namespace CosmicShore.Gameplay
         public void Upload(SubstrateTickJob job, int start, int pop)
         {
             if (!Valid) return;
-            _inst.SetData(job.Instances, start, 0, _cap);
             _heartCount = Mathf.Min(job.HeartCount(pop), _cap);
+            if (_fallback != null)
+            {
+                _fallback.UploadBodies(job.Instances, start);
+                _fallback.BeginHearts();
+                _fallback.UploadHearts(_element, job.Instances, start, job.HeartIdx, start, _heartCount);
+                return;
+            }
+            _inst.SetData(job.Instances, start, 0, _cap);
             if (_heartCount > 0) _heart.SetData(job.HeartIdx, start, 0, _heartCount);
         }
 
@@ -185,13 +222,19 @@ namespace CosmicShore.Gameplay
         {
             if (!Valid || local < 0 || local >= _cap) return;
             job.Instances[start + local].Flags = 0u;
-            _inst.SetData(job.Instances, start + local, local, 1);
+            if (_fallback != null) _fallback.Hide(local);
+            else _inst.SetData(job.Instances, start + local, local, 1);
         }
 
         /// <summary>Once per FRAME. Nothing here scales with the agent count.</summary>
         public void Draw(Bounds bounds, float alpha, float clock, float bloomTicks)
         {
             if (!Valid) return;
+            if (_fallback != null)
+            {
+                _fallback.Draw(bounds, _layer, DrawBodies, _cap, alpha, clock, bloomTicks, Vector3.up, Vector3.forward);
+                return;
+            }
             for (int q = 0; q < _mpbs.Count; q++)
             {
                 var b = _mpbs[q];

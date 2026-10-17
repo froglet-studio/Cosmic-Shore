@@ -66,7 +66,7 @@ namespace CosmicShore.Editor
         Action _deferred;
         Vector2 _listScroll, _detailScroll, _previewScroll, _testingScroll;
 
-        [MenuItem("FrogletTools/Game Modes/Weekly Challenge")]
+        [MenuItem("FrogletTools/Game Modes/Weekly Challenge", false, 164)]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 4,
             Description = "Author the weekly challenge pool, targets, and the test shortcuts.")]
         static void Open()

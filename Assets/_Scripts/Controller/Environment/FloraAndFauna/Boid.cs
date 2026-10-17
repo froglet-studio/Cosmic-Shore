@@ -259,7 +259,7 @@ namespace CosmicShore.Gameplay
                 // out of phase instead of ticking (and paying their consume
                 // cascades) in the same frame forever - a phase-locked swarm lands
                 // several full behavior ticks on one frame at a regular beat.
-                yield return new WaitForSeconds(behaviorUpdateRate * Random.Range(0.9f, 1.1f));
+                yield return CosmicShore.Utility.WaitCache.About(behaviorUpdateRate * Random.Range(0.9f, 1.1f));
             }
         }
 

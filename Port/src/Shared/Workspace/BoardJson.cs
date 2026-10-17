@@ -13,7 +13,7 @@ namespace Amoebius.Workspace
     /// <c>Extra</c> bags, and an unknown kind or state is kept as text. Writing leaves out empty
     /// lists and nulls, so a card that uses no scheduling fields looks as it did before.
     /// </summary>
-    public static class BoardJson
+    internal static class BoardJson
     {
         public static readonly JsonSerializerOptions Options = new()
         {
@@ -61,7 +61,7 @@ namespace Amoebius.Workspace
     }
 
     /// <summary>Reads a string, number or boolean as text, so an enum written any way (or one this build lacks) survives.</summary>
-    public sealed class LenientStringConverter : JsonConverter<string>
+    internal sealed class LenientStringConverter : JsonConverter<string>
     {
         public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.TokenType switch
         {

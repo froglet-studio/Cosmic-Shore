@@ -9,7 +9,7 @@ namespace CosmicShore.Core
     /// Holds an ordered/branching set of <see cref="QuestNodeSO"/> sub-assets and the
     /// entry point the <c>QuestGraphRunner</c> starts from. Phases are sequenced by a
     /// <see cref="QuestSO"/>; a <c>QuestPhaseEndNode</c> inside the graph hands control
-    /// to the next phase. Authored visually in FrogletTools ▸ Quest Graph Editor.
+    /// to the next phase. Authored visually in FrogletTools ▸ FTUE ▸ Quest Graph Editor.
     /// </summary>
     [CreateAssetMenu(fileName = "QuestPhase", menuName = "ScriptableObjects/Quests/Quest Phase Graph")]
     public class QuestPhaseGraphSO : ScriptableObject
@@ -22,6 +22,13 @@ namespace CosmicShore.Core
 
         [Tooltip("When off, the runner skips this phase entirely (test harness).")]
         public bool phaseEnabled = true;
+
+        [Tooltip("Run this PHASE even while the master developer unlock is on. The phase-level twin of " +
+                 "QuestSO.runsUnderDeveloperUnlock: lock-applying nodes still pass straight through, and " +
+                 "when the quest reaches a phase that has not opted in, the runner stands down there " +
+                 "(nothing is marked complete). Lets a routing phase - the first-login guide - run " +
+                 "while the lock-funnel phases after it keep waiting for the gate to be turned off.")]
+        public bool runsUnderDeveloperUnlock;
 
         [Tooltip("Designer notes: what this phase teaches/unlocks, its entry gate, anything a teammate needs to know.")]
         [TextArea(3, 10)] public string designerNotes;

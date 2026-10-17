@@ -8,6 +8,7 @@ using UnityEngine;
 using CosmicShore.Utility;
 using System.Linq;
 using System.IO;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -38,7 +39,9 @@ namespace CosmicShore.Editor
         // Your DialogueSet folder path (update as needed)
         private static readonly string DialogueSetFolder = "Assets/_Scripts/DialogueSystem/SO";
 
-        [MenuItem("FrogletTools/Legacy/Dialogue Editor")]
+        [MenuItem("FrogletTools/FTUE/Dialogue Editor", false, 151)]
+        [FrogletTool(FrogletToolCategory.Ftue, Importance = 3,
+            Description = "Author DialogueSet lines, captains and triggers for the FTUE.")]
         public static void Open()
         {
             GetWindow<DialogueEditorWindow>("Dialogue Editor");

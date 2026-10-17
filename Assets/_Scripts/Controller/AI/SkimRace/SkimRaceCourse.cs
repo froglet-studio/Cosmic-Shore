@@ -36,6 +36,21 @@ namespace CosmicShore.Gameplay
 
         public bool HasShells { get; }
 
+        /// <summary>
+        /// The contact shell's reach along the prism's up axis that <see cref="SkimRaceAIConfigSO.SkimHeight"/>
+        /// was tuned against: Skim Race's 10 x 1 x 3 plates, super-shielded (1 x 1.5).
+        /// </summary>
+        public const float ReferenceShellHeight = 1.5f;
+
+        /// <summary>
+        /// How much taller this course's contact shell stands along its normal than Skim Race's
+        /// plates (median over its prisms, 0 within a quarter unit of the reference). The driver adds
+        /// it to the skim height, so the line keeps its tuned gap ABOVE the shell on any course:
+        /// 0 on Skim Race, 7.5 on Regatta's 6 x 6 x 8 rails, whose shell reaches 9 u along up
+        /// where the plate's reaches 1.5 - a skim line at the plate's height runs inside it.
+        /// </summary>
+        public float SkimLift { get; }
+
         public SkimRaceCourse(IReadOnlyList<Vector3> points, IReadOnlyList<Vector3> normals,
             IReadOnlyList<Quaternion> rotations = null, IReadOnlyList<Vector3> shellHalfExtents = null)
         {
@@ -75,6 +90,18 @@ namespace CosmicShore.Gameplay
                 _segLen2[i] = _segDir[i].sqrMagnitude;
             }
             _length = Mathf.Max(_cumulative[n], 1e-3f);
+            SkimLift = HasShells ? ShellLift(_shellHalf) : 0f;
+        }
+
+        /// <summary><see cref="SkimLift"/> from the shells' up half-extents.</summary>
+        static float ShellLift(Vector3[] shellHalf)
+        {
+            if (shellHalf.Length == 0) return 0f;
+            var heights = new float[shellHalf.Length];
+            for (int i = 0; i < heights.Length; i++) heights[i] = shellHalf[i].y;
+            System.Array.Sort(heights);
+            float lift = heights[heights.Length / 2] - ReferenceShellHeight;
+            return lift < 0.25f ? 0f : lift;
         }
 
         /// <summary>Wraps an arc length into [0, Length).</summary>

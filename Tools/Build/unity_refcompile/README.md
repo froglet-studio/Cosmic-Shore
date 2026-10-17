@@ -4,6 +4,7 @@
 bash Tools/Build/unity_refcompile/run.sh                       # player config (the shipped IL2CPP release)
 bash Tools/Build/unity_refcompile/run.sh --config player-dev   # + DEVELOPMENT_BUILD / ENABLE_PROFILER / DEBUG
 bash Tools/Build/unity_refcompile/run.sh --config editor       # APPROXIMATE: UNITY_EDITOR branches + Assembly-CSharp-Editor
+bash Tools/Build/unity_refcompile/run.sh --config webgl        # browser Toybox: Assets code as the WebGL player + FROGLET_WEB_TOYBOX
 bash Tools/Build/unity_refcompile/run.sh --quiet-buckets       # count, don't list, the unverifiable buckets
 ```
 
@@ -22,6 +23,13 @@ that compiles clean). Recovery: `rm -rf "$CACHE"/packages "$CACHE"/git "$CACHE"/
 alone. Until the lock moves into `run.sh`, start ONE run on a cold cache and fan out after it.
 Needs a .NET SDK, **8.0 or newer** (8.0 and 10.0 both verified), under `DOTNET_ROOT` (`run.sh` falls
 back to `$HOME/.dotnet`); the helper tools are built for the newest runtime + reference pack it holds.
+
+**The `webgl` config** compiles Assets code as the WebGL player of the browser Toybox
+(`Docs/WEBGL_TOYBOX.md`): the standalone platform defines are dropped, `UNITY_WEBGL`, `PLATFORM_WEBGL` and
+`FROGLET_WEB_TOYBOX` are added, and project asmdefs are filtered for the `WebGL` platform. Packages stay
+compiled as the Windows player from the shared cache, so a package's own `UNITY_WEBGL` branches are not
+checked. Negative control (2026-10-14): a call to an undefined method inside `#if FROGLET_WEB_TOYBOX`
+fails this config and passes `player`.
 
 **The `editor` config is approximate.** It compiles the project's runtime code with `UNITY_EDITOR`
 (Mono, collections checks, `UNITY_INCLUDE_TESTS`). It also compiles the loose `Editor/`-folder

@@ -13,6 +13,26 @@ settled, how a new one is built, how the one artifact is published and shared, a
 reaches the real game. `/labmaker` holds the general lab craft (any lab, not only vessels): defer to
 it for the `__lab` contract and `verify_lab.cjs`, never copy it here.
 
+## Status: UNDER EVALUATION (2026-10-15)
+
+The team (Garrett, Caleb, Shombith, Yash) has not decided whether the Vessel Studio stays as it is, shrinks to a
+design lab whose pages read Unity's numbers, folds into `/labmaker`, or goes (`Docs/TOOLING_DECISIONS.md` §4). The
+measured state on 2026-10-15:
+- **The pages are used.** Garrett's sessions added the Goby & Pistol and Brittle Star studios on 2026-10-14.
+- **The shared machinery is not.** The artifact holds 1 decision, 0 requests and 0 Sync jobs.
+
+Until §6 there records a decision, the rules below stand, and:
+- **Tell the person the status** in one line whenever they ask about the studio or which tool to use: under
+  evaluation, Yash drives it, the core four decide (`Docs/TOOLING_DECISIONS.md`), and feedback goes to
+  `Docs/TOOLING_FEEDBACK.md`.
+- **Offer the studio; do not require it.**
+- **Do not grow the Sync / jobs / requests / studio-server machinery unasked.**
+- **Check who else works here first.** Before changing a studio page or its numbers, run
+  `python3 Tools/Build/who_works_where.py query Docs/Studios/VesselStudio <the vessel's Assets paths>`: Unity values
+  someone play-tuned are theirs to change.
+- **Ask for feedback now and then.** At the end of the task, if `Docs/TOOLING_FEEDBACK.md` has no Vessel Studio row
+  from the last three days, ask the person the one feedback question and log the answer.
+
 ## 0. The one artifact (LOCKED, the user's rule 2026-10-09)
 
 **There is exactly one Vessel Studio artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa.**
@@ -31,6 +51,10 @@ goes to THIS artifact:
   `8YakjgME9H7kNuiVyNXGzc` (hub + Sync panel), `Busc3KW6DmVzbsiA2qxoHc` and `HZ6MYm4MNR2iEMnMhCWJxn`
   (Stoat rounds ≤14), `8Wvnsx3gxJXXMNUCoyyuEt` (Stoat round 15, another account). Their stores held
   no decisions or requests when this one replaced them (checked 2026-10-09).
+- **The goal** (D38): `Docs/Studios/VESSEL_STUDIO_VISION.md`, anyone (a non-programmer) makes vessels, trains their
+  AI by playing, makes their games. Read it first; update its status table in every change that moves a step.
+- **One studio, three surfaces** (D37, the user, 2026-10-14): whatever is built in the artifact is built in
+  Amoebius's VESSEL STUDIO page and Unity's studio home in the same change; done means all three show it.
 - **Recommend it for every vessel task** (the user, 2026-10-09). When anyone in the project starts
   vessel work (a hull's feel, its AI, its play styles, cameras, a difficulty, a new vessel), say in one
   line that the team decides vessel and AI questions visually in the Vessel Studio first, and name the
@@ -53,7 +77,7 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 | D5 | **A scorecard of columns, one per question**, beside the game's own numbers; keep a rookie/low-difficulty column; rescore every column after ANY AI change | A scorecard that cannot say NO decides nothing (`L-STU-4`, `L-STU-48`, `L-STU-49`) | Finish times per course × Easy/Medium/Hard beside the game simulator's | Comet avg speed, Flare top speed, Needle ring error, Anchor rookie catches, Maelstrom prisms per sling |
 | D6 | **Play styles are named types over the four element levels**, not raw sliders | A designer picks a feel (`L-STU-11`) | Six types over Charge/Mass/Space/Time | Five styles: Time→Comet, Space→Anchor, Mass→Maelstrom, Charge→Flare, Needle earned |
 | D7 | **Courses come from the game's data**, generated and embedded with the script named; a 4-step intensity ladder | Courses retyped by eye drift; one easy course hides the AI's failures | Skim Race I1–I4 from `skimrace_track_fingerprint.py --emit-track` | Course ladder 1–4 |
-| D8 | **Editor layout, never page scroll — a Vessel Studio design constant** (the user, 2026-10-09): the game view fills the middle; every panel is a tab in a dock around it (right: settings; bottom: records); any tab pops out (⧉) into a floating window you drag, resize and dock back (⇲); splitters resize the docks; all of it is remembered per browser. Below 900 px the docks stack under the stage and the page scrolls. Use the shared `Docs/Studios/VesselStudio/studio-ide.js` (`VesselStudioIDE.build({key, host, stage, right, bottom})`, listed under `shared` in `studios.json`) | A designer tunes while flying; scrolling loses the stage (`L-STU-13`) | Moved onto `studio-ide.js` 2026-10-09 | The original (round 14), still its own copy until its next round |
+| D8 | **Editor layout, never page scroll — a Vessel Studio design constant** (the user, 2026-10-09): the game view fills the middle; every panel is a tab in a dock around it (right: settings; bottom: records); any tab pops out (⧉) into a floating window you drag, resize and dock back (⇲); splitters resize the docks; all of it is remembered per browser. Below 900 px the docks stack under the stage and the page scrolls (a page may lower that with `stackBelow`. The Regatta AI keeps its settings dock on the right on ANY mouse-and-keyboard screen, however narrow the viewer panel, with the rail capped at 46% of the width: a page-local rule injected after the layout, because a browser can hold an older cached `studio-ide.js` that ignores `stackBelow` — the user saw the tabs stacked twice, 2026-10-15). Use the shared `Docs/Studios/VesselStudio/studio-ide.js` (`VesselStudioIDE.build({key, host, stage, right, bottom, stackBelow})`, listed under `shared` in `studios.json`) | A designer tunes while flying; scrolling loses the stage (`L-STU-13`) | Moved onto `studio-ide.js` 2026-10-09 | The original (round 14), still its own copy until its next round |
 | D9 | **Platform answered once at load (D26).** The host by `VesselStudioTheme.host()` only (hash `#amoebius`, old `#prisma`, or `window.__studioHost`; D34: it shapes nothing visible), else phone = mobile UA / iPadOS / touch-only screen; no button asks. Phone = two thumb sticks + LT/RT drag handles into the SAME input object | One page for web, Amoebius and phones | Play on phone | Phone layout opens straight into touch |
 | D10 | **Every setting explains itself**: tooltip with live previews | 79 sliders became legible (`L-STU-10`) | Ability row + live numbers | Every `SPEC` row |
 | D11 | **One hub, one catalog** (`studios.json`), never a copy per surface. `engineMode` gives PLAY IN ENGINE | Web, Amoebius and Unity all read the one list (`L-STU-12`, `L-STU-51`) | Bay + `engineMode: SkimRace` | Bay + `engineMode: Slingshot` |
@@ -81,6 +105,10 @@ Each row was paid for once. Break one only with the designer's say-so, and recor
 | D33 | **The artifact is the ONE source of truth; Unity is its clone** (the user, 2026-10-10: "I don't want the Tune in Unity button ... the parameters must be the artifact's ... one source of truth, which is the artifact; a skill I type and you clone the feature into the Unity project so I can test"). Unity has no tuning tabs of its own for studio parameters (the hand-kept `VesselStudioWindow` tuner, whose rows and names differed from the artifact's, was removed). Work is made and decided in the artifact (Record in a studio's decision log saves `settings.changed` to the shared log), then **`/artifact-to-unity`** clones it: `Tools/Build/studio_to_unity.py` writes the page's `SHIPPED` values and recorded settings into the assets through `Tools/Build/studio_to_unity/<vessel>.json` (`--check` = drift gate), and features are ported line for line into C# with page-golden tests. Any future in-game studio panel is GENERATED from the page's `SPEC` rows, never hand-kept | A second tuning surface drifts from the first and the tester cannot tell which is right | `studio_to_unity.py --self-test` / `--check` | `/artifact-to-unity` |
 | D34 | **One build on every surface, and the artifact's backend in Amoebius** (the user, 2026-10-10: the parity audit approved, plus "make Sync, Ask and Decisions work inside Amoebius"). Every way in opens `build_artifact.py`'s output, never the raw repo pages or `file://`: claude.ai (the artifact), the live mirror (the same build pushed), Amoebius (OPEN IN AMOEBIUS / OPEN IN BROWSER: the checkout's branch built by `StudioBuild`, byte-identical to the Python build, served on `http://127.0.0.1:<port>/<per-launch token>/`), Unity (the studio HOME of D32 stays in Unity; a card's **OPEN STUDIO** opens that studio served by Amoebius: a running Amoebius's server on the same checkout (`<data>/studio/server.json`), else Amoebius started with `--clone <checkout> --page studios:<file>`, so built from Unity's checkout and branch). Amoebius's server gives the pages the same `window.claude.use()` surface as the viewer (`db` = a JSON store under its data dir with the same collections and shapes, `user`, `sample` = Ask through Amoebius's Claude Code CLI, read-only, `mcp` "Claude Code Remote" = Amoebius runs the Sync job itself with `sync_job.py` and §5's limits), so Sync, Ask, Requests and Decisions WORK there, kept on that computer. Pages never know the host beyond what is enabled: the host is read once by `VesselStudioTheme.host()` and nothing visible names it (no "Running on Amoebius"); the 3D stage goes through `VesselStudioTheme.renderer()`, so no WebGL = a message on the stage and every tab still loads. The mirror has no backend: its Sync, Ask and decisions say they work in claude.ai and Amoebius (no cross-origin localhost calls from a public page). `parity_gate.py` fails anything that would open differently (`--self-test` plants each defect); `build_artifact.py --check` runs its page checks. Unity has no tuner of its own (D33) | The audit found five surfaces opening four different things (raw pages over file://, a build, a mirror, an app window) with Sync and Ask dead outside claude.ai and one WebGL failure blanking a whole page | Every page | Every page |
 | D35 | **One studio card, everywhere: the hub's** (the user, 2026-10-10: "change the VESSEL STUDIO home page to look like the cards in the artifact / web hub", both Amoebius's page and Unity's home). The web hub's bay cards are THE card: preview, name, chip, summary, spec rows, "Open studio →". `studios.json` carries the same fields (`chip`, `summary`, `spec`, `preview`; `lede`, `fleet`, `fleetNote`, `cardActions`), and the native homes draw only from it: Amoebius's VESSEL STUDIO page (`LauncherApp.Studios.cs`, a card grid replacing D34's picker) and Unity's home (D32). `cardActions` is the button row in one order on every native card: **Open studio →** · **PLAY IN ENGINE** · **OPEN LIVE IN BROWSER**; a button that does not apply on a host stays in its place, disabled, and says why. The hub's live canvas preview is baked to `previews/<id>.png` by `bake_previews.cjs` (fixed clock, the same bytes every run) for Amoebius; Unity keeps its line-for-line live port where it has one (`StudioPreviews.cs`), else the thumbnail. `studio_cards.py` reads the hub; `parity_gate.py` fails when the catalog and the hub differ, when the thumbnails are older than the preview code, when a native card spells a label itself or skips a field, and when a card still names a tuner (D33). Change a card: edit the hub, copy it to `studios.json` (the gate says what), re-bake | Three copies of the card text (hub, Amoebius, Unity) had already drifted (different summaries, chips and buttons) | Every card | Every card |
+| D36 | **+ New studio: the vessel-creation front door** (the user, 2026-10-14: "a plus button beside the studios: choose a vessel to create or modify, a mini-game to use or create, name the new ones, say it by voice, and it goes straight to Claude Code on a new branch"). The hub's last bay is **+ New studio** (`studio-new.js`): **Vessel** (one of the fleet, or *Create a new vessel* + Name) and **Do** (existing: Create or improve its AI · Change how it flies or its abilities · Change the vessel and its AI · A studio to explore it; new: Create the vessel and its AI · Create the vessel, its AI later); **Mini-game** (one of the game's cards, the hull's own first, or *Create a new mini-game* + Name, or None yet); **What you want** (typed, or **Speak**: the browser's SpeechRecognition, falling back to keyboard dictation where a view blocks the microphone; **Fill the form from this** has Claude, through `sample`, read the words into the choices). **Create with Claude Code** files the request in `requests` (`kind: new studio`, `spec`) and starts a Claude Code session through the viewer's Claude Code Remote connector (as the Sync panel does) on a new branch off Ys-bleeding-edge, with a prompt naming the skills; **Copy prompt** works anywhere. Every list comes from the game (`studio-game.js`, GENERATED by `game_catalog.py`, `--check`), never typed. A "no studio yet" chip opens it on that vessel; `#new-studio` opens it on load. Unity's studio home ends with the same card, which opens the artifact (only claude.ai can send) | A vessel starts as a request with real names in it, and reaches the session that builds it without a copy-paste step | its card in `index.html` | `VesselStudioWindow.Home.cs` `DrawAddCard` |
+| D37 | **Whatever is built in the artifact is built on all three surfaces, in the same change** (the user, 2026-10-14: "whatever we make in the artifact needs to be replicated inside the actual Amoebius game engine and in the Unity counterpart"; the + New studio card first reached only the artifact and Unity). A hub or studio feature is DONE only when it is on: **the artifact** (the pages, published), **Amoebius** (its VESSEL STUDIO page, `LauncherApp.Studios.cs`; and where the feature calls a backend, `StudioServer` answers it for real: a session, a chat, the store; never a silent no-op), and **Unity** (its studio home, `VesselStudioWindow.Home.cs`). The served pages carry themselves to every surface (D34); anything a NATIVE home draws (studio cards, the + New studio card, fleet, lede) comes from `studios.json`'s card model (D35, `newCard`), and `parity_gate.py` fails a home that misses it or spells its text itself. The reply names how it was checked on each surface (the Amoebius page screenshot: `Amoebius --offline --clone <repo> --page studios --screenshot out.png --frames 90` under xvfb) | One studio, three doors: a feature on one door only reads as missing to whoever uses another | `parity_gate.py` (card_checks: the + card on both native homes, its text from `newCard`) | `StudioCatalogTests`, `VesselStudioWindowTests` |
+| D38 | **The goal: anyone can make a vessel** (the owner, 2026-10-14: storytellers, musicians, family; hundreds of vessels from presets, dice and voice; AI trained from their own play; their mini-games; arena assignment; Amoebius a game engine for non-programmers). `Docs/Studios/VESSEL_STUDIO_VISION.md` is the north star: read it first, build the next block in its §4 order (B2 start-from options, B3 the vessel recipe and instant studio, B4 voice tweaks, B5 learn-from-me AI, B6 mini-game studio, B7 arena studio + assignment, B8 Amoebius-only, B9 scale), and update its status and lessons in the same change. Every screen follows its §2: choose never type code, preview everything, plain words, nothing reaches the game undecided | Without one written goal each session optimises its own corner | The vision's §4 table | The vision's §4 table |
+| D39 | **Regatta's AIs are tested in the Unity editor, not in a page** (Yash, 2026-10-16: "delete the artifact, it's not needed; only tests will happen in the Unity editor itself"). The Regatta AI artifact (2026-10-15, later Training AI for Regatta) was deleted with `Docs/Studios/RegattaAI/`; its findings are in `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md`, its course export lives on in `Tools/Build/regatta_course_harness/` (for `situation_features.py`), and AI training data comes only from editor play (`SITUATION_RECORDING_PLAN.md`). Do not rebuild a Regatta page; the race panel's `players.vessels` / `players.anyHuman` options stay in `ai_race_panel.js` for any multi-hull vessel page | A mode's AI is judged on the real vessels in the real scene (Third Eye, the You / AI toggle); a page's simplified flight model gave leads, not results, and its flights are not training data | (none) | (none) |
 
 ## 1.5 The universal studio kit: how every studio's panels are built
 
@@ -185,7 +213,7 @@ Scene Config>` (Camera and Speed); the rest of the panel stays in Game Config or
 
 The Players list (D25), drawn by the panel when you pass `players: { host, max, domains }`:
 
-- **Players N with − / +**, from 1 to `max` (4; the panel allows up to 8). **The race starts with player 1 alone**: the tester adds each player with + (never a fixed four).
+- **Players N with − / +**, from 1 to `max` (4; the panel allows up to 16 for a multi-hull page, D39). **The race starts with player 1 alone**: the tester adds each player with + (never a fixed four).
   - **+** adds an AI player in the first **unused domain**, at **Hard**, with the next play style;
     its card opens.
   - **−** removes the LAST player. Player 1 cannot be removed.
@@ -384,7 +412,9 @@ It fails, by name, on:
   phone. A card lying over the button fails.
 
 `--self-test` plants each defect and must name every one. Then
-`python3 .claude/skills/vessel-studio/domain_colors.py --check` (the domain colours match the game and Amoebius). Then run the studio's own checks:
+`python3 .claude/skills/vessel-studio/domain_colors.py --check` (the domain colours match the game and Amoebius) and
+`python3 .claude/skills/vessel-studio/game_catalog.py --check` (the + panel's vessels and mini-games match the game; run it
+without `--check` after adding a vessel, an arcade card or a studio). Then run the studio's own checks:
 - every course at every difficulty finishes (`raceHeadless`);
 - the scorecard computes;
 - a live 3-AI race at 4× runs;
@@ -548,6 +578,22 @@ computer (`<Amoebius data>/studio/db/`), not the artifact's: carry a decision th
 - **Requests** (`requests`, the hub's studio agent): `vessel`, `kind`, `text`, `status` = open/done,
   `createdAt`, `by`, `reply`. Do the work, then set `status: done` and a `reply`.
 
+### Handling a "+ New studio" request (D36)
+
+A session started by the + panel opens with "Vessel Studio: NEW STUDIO request" and the request's document id in
+`requests`. The prompt is the requester's brief, made from real names (`studio-game.js`); the request document (its
+`spec`) is the record. Then:
+
+1. `ArtifactData get` the request; set `status: "in progress"` and `reply` = your branch (pin `if_version`).
+2. Work on a new branch off Ys-bleeding-edge. Do §2 (intake first: answer every intake line for the vessel and the
+   mini-game before building) with the skills the prompt names (`/vessel` for a new or changed hull, `/vessel-ai`
+   for its AI, `/arcadegame` or `/arenagame` for a new mini-game).
+3. The studio comes first (D33: the artifact is the source of truth). A NEW vessel gets a design studio (D2) before
+   any Unity asset; its numbers are the studio's until the requester decides, then `/artifact-to-unity` clones them.
+4. Publish from your branch (§4) so the requester can fly it, and tell them the Sync panel merges it into
+   Ys-bleeding-edge when they are happy.
+5. Set the request `status: "done"` with a `reply` saying what to test and where.
+
 ### Handling a job ("Vessel Studio Sync job <id> ...")
 
 The message is a pointer, not the request. The request of record is the job document, written from
@@ -606,12 +652,30 @@ the manual replay rig, `MouseOrbitCamera`, `Vessel.ToggleAIPilot`, `DeviceTier` 
   was flown to where it was BELIEVED.
 - **Chase cameras lag at 5× boost** if they lerp the POSITION. Lerp the offset from the hull.
 - **Your own skimmer sphere hides your hull** in chase view: hide the chased pilot's sphere.
+- **A wide trail slab laid just behind the hull fills a chase camera** (the HyperSea page, 2026-10-14: the Squirrel-family `BaseScale` is 20 u wide and lands 6 u back, under the lens). In Chase, skip drawing the viewed hull's prisms from its last ~1.2 s and sit the camera higher (15 u); the sim keeps them.
+- **A ranged AI must stand off, not hunt by ramming** (the HyperSea page): an AI with guns that steers AT its target closes to contact and pays the ram (the Sparrow rammed 16 times and averaged below cruise). Keep its avoidance on while hunting and hunt only beyond ~120 u.
+- **A gate pilot without the game's throttle floor parks on its own far-side point** (Regatta AI, 2026-10-15): the dual-stick mix trades throttle for steering, so a hard-turning AI slows to ~25 u/s and circles the point it is aiming at. Regatta floors every AI's throttle (`AIThrottleFloor`); a race page must too, or its DNFs are its own.
+- **Generate the course from the shipped code, never from a measurement table** (Regatta AI): `regatta_course_measurements.json` holds lengths and radii but not the gates; `export_course.sh` compiles `RegattaCourse` and writes every gate and rail point, with a `--check`.
 - **The latest trigger sample is not the squeeze** (`L-STU-1`), and **gamepad Y is inverted**
   (`L-STU-8`).
+
+- **An open-space minigame lets every pilot fly round the obstacles** (Brittle Star, 2026-10-14). Demolition Derby's walls
+  were flown round at no cost, so every level and every intensity finished within a second of each other and the ladder
+  measured nothing. Bound the course (a corridor with a gentle pull-back, the design's "Ark maximum range") so a barricade
+  has to be dealt with, and plan the AI over a fan of headings scored by what blocks each one.
+- **A studio pilot tuned at one speed orbits at another** (Brittle Star, 2026-10-14). Round 1's pilot rode Speed onto a
+  crystal at x4 (110 u/s); at the Unity build's x6 (297 u/s) the 25 u pickup sat inside its turn radius and every Hard Derby
+  I4 run circled a crystal until the 300 s limit. Whenever a hull's numbers change, re-score every level before reading
+  the result, and give an approach rule hysteresis (a slowed hull must not re-arm its speed mode on the next decision).
+- **A scorecard control that ties is a finding, not a bug.** "Hard, no ring" equalled Hard because overdrive (a crystal
+  while charged) out-paid the ring; the Hard pilot rightly never rang. Report it to the designer rather than forcing the
+  AI to use an ability the numbers do not reward.
 
 **Pages and checks**
 - **The start card covered Play on phone on a sideways phone.** Only a real tap at phone size finds it.
 - **A 400 px check under phone emulation passes everything**: the emulated phone zooms out to fit.
+- **three.js stores `vViewPosition` already negated** (`= -mvPosition.xyz`): its `z` is the distance IN FRONT of the camera.
+  A near-camera dither written as `-vViewPosition.z` discarded every prism and the trail vanished with no error.
 - **WebGL canvases read back blank** without `preserveDrawingBuffer`: judge the stage from a screenshot.
 - **A page that detects a phone may skip the button** (the Stoat goes straight to touch play).
   Accept `body.play`.
@@ -634,6 +698,12 @@ the manual replay rig, `MouseOrbitCamera`, `Vessel.ToggleAIPilot`, `DeviceTier` 
   - A job sent to a session that has ended fails "could not be reached": press Start session.
 - **A files-form publish keeps the publishing view on the OLD files**: reload it. Refresh must
   re-inject the panel.
+- **`origin` is not always the repo** (2026-10-14). Amoebius runs Sync jobs in the user's own Unity checkout,
+  and a checkout cloned from a fork or a local copy has no studio branches on `origin`. Every Refresh failed
+  with "branch Ys-bleeding-edge does not exist on origin" while the branch was on GitHub. `sync_job.py` now
+  picks the remote that points at froglet-studio/Cosmic-Shore, or fetches the repo's URL directly into
+  `refs/remotes/froglet-studio/`. `status` returns that `ref` and Amoebius rebuilds from it
+  (`StudioJobs.FetchedRef`). Never write `origin/<branch>` in a job again: use `ref(b)`.
 - **A new artifact forks the data**: this is why §0 exists. Before anything else, check the artifact
   you are about to publish to is the one.
 - **The Write tool refuses a file it has not read in this session**: read first, and check `git log`.

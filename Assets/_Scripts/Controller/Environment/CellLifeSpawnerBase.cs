@@ -550,7 +550,7 @@ namespace CosmicShore.Gameplay
 
                 var wait = Mathf.Max(0f, getWaitSeconds?.Invoke() ?? 0f);
                 if (wait <= 0f) yield return null;
-                else yield return new WaitForSeconds(wait);
+                else yield return CosmicShore.Utility.WaitCache.About(wait);
             }
         }
 
@@ -563,13 +563,13 @@ namespace CosmicShore.Gameplay
                     spawnOnce?.Invoke();
                     var w = Mathf.Max(0f, trueWait?.Invoke() ?? 0f);
                     if (w <= 0f) yield return null;
-                    else yield return new WaitForSeconds(w);
+                    else yield return CosmicShore.Utility.WaitCache.About(w);
                 }
                 else
                 {
                     var w = Mathf.Max(0f, falseWait?.Invoke() ?? 0f);
                     if (w <= 0f) yield return null;
-                    else yield return new WaitForSeconds(w);
+                    else yield return CosmicShore.Utility.WaitCache.About(w);
                 }
             }
         }

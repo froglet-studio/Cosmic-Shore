@@ -477,10 +477,12 @@ for field, want in SHELL.items():
         errors.append(f"scene shell {field} is not {want} - update SHELL and the two readers below")
     # Two of the three moved to the shared base when Headlong arrived; firstGateDistance is
     # still Switchback's own. Search both rather than guessing which owns which.
-    _srcs = read("Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs") + \
-            read("Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackController.cs")
-    m = re.search(rf"{field}\s*=\s*([0-9.]+)f;", _srcs)
-    if not m or float(m.group(1)) != float(want):
+    # A default may be a literal or a course source's const (aml.cs_field_default follows the hop).
+    _vals = [aml.cs_field_default(read(p), field) for p in (
+        "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
+        "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackController.cs")]
+    _val = next((v for v in _vals if v is not None), None)
+    if _val is None or float(_val) != float(want):
         errors.append(f"gate-race {field} default disagrees with the scene ({want})")
 
 _tests = read("Assets/_Scripts/Tests/Editor/SwitchbackCourseTests.cs")

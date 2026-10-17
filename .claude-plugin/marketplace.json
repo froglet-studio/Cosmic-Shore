@@ -1,0 +1,11 @@
+{
+  "name": "cosmic-shore",
+  "owner": { "name": "Froglet Inc." },
+  "plugins": [
+    {
+      "name": "cosmic-shore-deck",
+      "source": "./.claude/skills/cosmic-shore-deck",
+      "description": "Buttons for team activity, the C# gates, the reference compile, branch sync and ship in every Cosmic Shore session."
+    }
+  ]
+}

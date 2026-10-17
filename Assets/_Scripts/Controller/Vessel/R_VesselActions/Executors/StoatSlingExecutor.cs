@@ -194,6 +194,23 @@ namespace CosmicShore.Gameplay
         /// radial correction fighting it).</summary>
         float OrbitSpeed() => Mathf.Max(_status.Speed, 1f);
 
+        /// <summary>The engine's own speed: the published speed with the flight-clock warp taken out. The kick is a share of
+        /// it, as in the studio (<c>speed + flow</c>), so the warp paces the flight without compounding into the kick.</summary>
+        float EngineSpeed()
+        {
+            var transformer = _status.VesselTransformer;
+            float clock = transformer ? Mathf.Max(1f, transformer.FlightTimeScale) : 1f;
+            return Mathf.Max(_status.Speed / clock, 1f);
+        }
+
+        /// <summary>
+        /// True while the Time-mode pair is held and warps the hull's flight clock (the studio's catch warp, dpWarp): from
+        /// the press (<see cref="StoatSlingConfigSO.CatchWarpFromPress"/>) or once caught. The pathfinder, the one writer of
+        /// the clock, reads it.
+        /// </summary>
+        public bool WarpsFlight => _laid && _pair != null && _pair.IsAlive && _pair.Held && config &&
+                                   config.CatchWarpShare > 0f && (_caught || config.CatchWarpFromPress);
+
         float RadiusFor(float hold01)
         {
             // Space is reach: read live, never cached (vessel contract rule 2).
@@ -321,7 +338,7 @@ namespace CosmicShore.Gameplay
                 ResolveSiblings();
                 float timing = config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
                 float rate = _dipole && _dipole.Config ? _dipole.Config.BoostRatio(_status) : 1f;
-                float squeeze = StoatSlingMath.SlingBoost(OrbitSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
+                float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
                 float kick = StoatSlingMath.TimedKick(squeeze, timing, config.MissKickShare, rate);
                 _lastTiming = timing;
                 // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer). A timed kick can

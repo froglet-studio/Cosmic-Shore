@@ -230,7 +230,8 @@ ARCS_PROFILE_VALUES = [("rate", 1), ("boltIntensity", 1), ("glowIntensity", 1),
                        ("seamStrikeSeconds", 0.07), ("seamDwellMinSeconds", 0.1), ("seamDwellMaxSeconds", 0.28),
                        ("seamFadeSeconds", 0.85), ("seamPetalGlow", 0.35), ("fluxGapSeconds", 0.9), ("fluxChargeSeconds", 0.45),
                        ("fluxStrikeSeconds", 0.06), ("fluxHoldSeconds", 0.45), ("fluxFadeSeconds", 0.45), ("fluxFork", 0.3),
-                       ("fluxMinDegrees", 55), ("fluxMaxDegrees", 125), ("fluxBundle", 0.016), ("fluxTurns", 1), ("strikeProtractionFrom", 0.15), ("strikeProtractionFull", 0.45), ("coreWidth", 0.012), ("writheSpeed", 3), ("flickerSpeed", 4)]
+                       ("fluxMinDegrees", 55), ("fluxMaxDegrees", 125), ("fluxBundle", 0.016), ("fluxTurns", 1), ("strikeProtractionFrom", 0.15), ("strikeProtractionFull", 0.45), ("coreWidth", 0.012), ("writheSpeed", 3), ("flickerSpeed", 4),
+                       ("sleepBelowScreenRadiusPixels", 24)]  # cost: not the lab's pick (the performance session, 2026-10-15)
 # The omni's light: a plain child of Crystal.prefab (GameObject, Transform, MeshFilter, MeshRenderer, CrystalChargeArcs,
 # CrystalAccentTint). The Charge crystal's: a plain child of CrystalCharge.prefab (no tint: its body has no _BrightColor).
 OMNI_ARCS_IDS = (3086241560104200061, 3086241560104200062, 3086241560104200063, 3086241560104200064,

@@ -25,5 +25,6 @@ namespace CosmicShore.Data
         Butterfly = 13,
         Thresher = 14,
         Stoat = 15,
+        BrittleStar = 16,
     }
 }

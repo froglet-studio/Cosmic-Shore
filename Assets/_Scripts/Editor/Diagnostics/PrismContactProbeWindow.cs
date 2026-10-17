@@ -44,7 +44,7 @@ namespace CosmicShore.Editor
         string _report = "";
         Vector2 _scroll;
 
-        [MenuItem("FrogletTools/Diagnostics/Prism Contact Probe", false, 12)]
+        [MenuItem("FrogletTools/Performance/Prism Contact Probe", false, 174)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 4,
             Description = "Measure what it costs to resolve every prism contact through the spatial index instead of PhysX triggers. Play mode; reader only.")]
         public static void Open()

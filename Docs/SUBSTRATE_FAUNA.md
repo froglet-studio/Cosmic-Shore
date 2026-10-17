@@ -233,6 +233,25 @@ vessel leaves. Proxies are client-local, like swarm members; `FaunaNetworkSync.S
 **Extinction.** With no living agent for 8 s, the anchor despawns (heartless, so nothing pops), and the seeder may hatch
 a new population.
 
+### 5.1 Drawing without compute (WebGL2, GLES 3.0)
+
+The member shader reads a `StructuredBuffer` in the vertex stage, so on a device without one (WebGL2, GLES 3.0)
+`SubstrateMemberRenderer` used to refuse with a one-time warning. Every agent was then **invisible** unless it had a
+proxy, which made the bodies-only-near-a-vessel pattern read as "the substrate is empty".
+
+It now draws through the swarm's SM 3.5 instanced path, `SwarmMemberFallbackDraw` (`Docs/SWARM_FAUNA.md` §14.8):
+- **Same picture:** the same 80-byte `SwarmInstance` and the same pose and look code
+  (`SwarmMemberInstancedFallback.shader` includes `SwarmMemberInstanced.hlsl`'s core).
+- **Different carrier:** five `float4` rows per instance in the instancing constant buffer, `RenderMeshInstanced` in
+  batches of 128.
+- **Per tick,** `Upload` packs this population's slice of the cell's frame. The living agents are compacted, and the
+  hearts come from `HeartIdx[start ..]`: one element, local slot indices, exactly the list the GPU path uploads.
+- **Between ticks,** `HideSlot` zeroes the slot's rows at once.
+
+The choice is the renderer's and keys off the GPU (`SwarmMemberRenderer.Supported`), not off the toybox flag.
+`SubstrateFauna` and `SubstrateCellHost` are unchanged: `_gpu = _render.Valid` is simply true on WebGL now, so
+proxies hide their living visuals there as they do on desktop. The tick, the counts and the rules are untouched.
+
 ## 6. Proof
 
 Commands:

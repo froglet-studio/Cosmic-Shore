@@ -8,8 +8,9 @@ namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
     /// Everything that differs between hardware tiers, for ONE <see cref="DeviceTier"/>. The three
-    /// profiles (Desktop, MobileHigh, MobileLow) are held by <see cref="PlatformProfileSetSO"/>, and
-    /// the device's one is <c>PlatformProfile.Current</c>. This replaces the Android strip branch's
+    /// tier profiles (Desktop, MobileHigh, MobileLow), and the Web profile a WebGL player runs in place
+    /// of its tier's, are held by <see cref="PlatformProfileSetSO"/>, and the device's one is
+    /// <c>PlatformProfile.Current</c>. This replaces the Android strip branch's
     /// compile-time <c>PerfStrip</c> flags: a per-platform choice is a field here, read at runtime,
     /// so one build serves every platform (<c>Docs/PLATFORM_UNIFICATION.md</c> §3).
     ///

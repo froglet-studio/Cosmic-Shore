@@ -119,6 +119,9 @@ by itself.
 
 1. **"Block" look in the game**: ecology off (prisms and track only) as proposed, or a flat-shaded prism material as well?
    The second is a shader change and needs `/verify-unity` plus a render check.
-2. **Stoat in the game**: the game ships the round-4 orbit sling. The web studio's dipole sling is not
-   built yet. Should the Test Range test the shipped Stoat now, or wait for the new sling?
+2. ~~**Stoat in the game**: wait for the new sling?~~ **Resolved 2026-10-14:** the game ships the studio's two
+   mechanics, the field trajectory (Mass mode) and the catch sling (Time mode, T / pad B), at one pace
+   (`STOAT_DIPOLE.md` §1b). The Test Range can test the shipped Stoat now. The user asked the same day for the
+   studio's play to use the game's own vessel and prisms ("why are we using low-grade graphics?"); that is
+   tier B, this plan.
 3. **Which branch builds R1–R3**: `Ys-bleeding-edge`, the home of all AI work since 2026-10-09 (`Docs/AI_SYSTEM/BRANCH_WORKFLOW.md`). Decided by the user's move off `ai-system`.

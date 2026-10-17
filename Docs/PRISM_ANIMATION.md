@@ -1361,6 +1361,12 @@ corridor to the skimmer instead of the hull. Because size is now derived, a bad 
 is not cosmetic — too small hides the ship anyway, too large dissolves the world in front of
 it — so measured radii are clamped into a config sanity band and both the clamp and an
 unmeasurable hull scream once, naming the vessel and the number.
+**The band's floor moved 2 → 0.25 (2026-10-15).** The Urchin's hull genuinely measures **0.53 u**
+(`Urchan_Test.fbx`, a ~1 u ship framed by the fleet's closest camera, `|followOffset|` 6.72), so the
+old floor clamped a REAL hull on every spawn: a red `[PrismOcclusion]` error per play and a corridor
+four times the ship. The floor exists to catch a broken measurement, so it has to sit below the
+smallest real hull. (Its ρ is therefore ≈ 12.7, not the ≈ 1.12 quoted in §4.7's base-share
+discussion, which predates the skimmer exclusion and read the skimmer's 7.5 u sphere.)
 
 The band between the two radii is deliberately **short**, and the two things that keep a
 short band from reading as an edge are both continuity choices:

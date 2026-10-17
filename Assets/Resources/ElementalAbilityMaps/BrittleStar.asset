@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: BrittleStar
+  m_EditorClassIdentifier:
+  vesselClass: 16
+  entries:
+  - Element: 1
+    AbilityLabel: Charge Mode
+    AbilityDescription: 'RB. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh
+      trail is spared) and striking rival hulls for petals. Released, RT leaves them WHIPS at 150%
+      length: heavy, inextensible, slow - a turn, a ring flick or a sweep of the right stick sends a
+      wave travelling down them that rings on for seconds. Pulled, RT shortens them to 100% and
+      stiffens them into five straight SABERS (analog: every depth in between). The right stick turns
+      them with the ring and opens them out. Using them cools the guns. LT throws the ring - only with
+      a SPARE ring in stock (one per crystal, two at most); the mounted ring then regrows on its own.
+      It blows on contact or its fuse in a disk as wide as the cell''s nucleus, destroying every prism
+      in its plane and stripping petals from every rival hull it crosses (petals only - nothing is
+      moved). The card shows the spare stock. Charge is threat - one dial: the cords'' cut width and
+      the rounds'' size x1 -> x1.8 at level 10 (projectileScaleMultiplier), the disk''s thickness x1
+      -> x4 (blastScale).'
+    Input: 3
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: Creation Mode
+    AbilityDescription: 'B. A trail behind EACH of the ring''s five corners instead of the single small block from the
+      cockpit - the same small block, five lines that turn with the ring''s firing rotation. The
+      SLOWEST mode: cruise x0.5. Mass is volume - one dial: the corner trails'' blocks x1 -> x1.8 at
+      level 10 (BrittleStarConfigSO.creationBlockScale).'
+    Input: 7
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: Space Mode
+    AbilityDescription: 'X. FIVE GUNS: RT fires every turret, its pull setting the rate (analog, up to 90 rounds/s each;
+      the Sparrow''s round at 135 u/s, swelling as it flies, 387 u reach). The right stick''s
+      direction turns the ring, and the guns with it; its deflection moves them in and out: centred
+      they meet 120 u ahead (the vessel a crosshair), pushed to the rim they splay 25 degrees. In
+      every other mode RT fires the one turret the ring has turned to the aim, the same gun with no
+      spread. Every round HEATS the guns - heat per second is the pull x the guns firing - and
+      overheated they cannot fire until they cool; overheated in Space Mode your trail lays DANGER
+      prisms. The card shows the heat. Friendly fire is on. A round on a rival hull is a scored bullet
+      hit (petals only). Space is reach - one dial: every gun''s range x1 -> x2 at level 10
+      (BrittleStarConfigSO.rangeMultiplier).'
+    Input: 8
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 4
+    AbilityLabel: Speed Mode
+    AbilityDescription: 'A. Ignite every thruster: the hull''s cruise speed x6, the base trail''s spacing stretched by
+      the same ratio so production per second does not rise, and every prism stretched with it so the
+      trail still joins up. Time is rate - one dial: Speed Mode''s multiplier x6 -> x8 at level 10
+      (BrittleStarConfigSO.speedModeMultiplier).'
+    Input: 6
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
