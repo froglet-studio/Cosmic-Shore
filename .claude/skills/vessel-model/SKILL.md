@@ -89,7 +89,7 @@ binary FBX 7400 IN PLACE over the live file:
 - **Four element shape keys** named `charge / mass / space / time` (token rule in
   `VesselElementalMorphConfigSO.TryResolveElement`; the Squirrel ships them capitalised, the
   Dolphin lowercase - keep the file's case), last-frame weight 100, with normals, each moving
-  the hull by 3-15% of its diagonal (the audit calls less than ~2% INERT). And NO blend-shape
+  the hull by 3-15% of its diagonal (the audit calls less than 0.1% INERT, `VesselElementalMorphAuditor.MinShapeTravelFraction`). And NO blend-shape
   animation curves in any take (`export.strip_shape_curves` deletes Blender's residue).
 - **Takes by the shipped NAMES** (`<Armature>|<action>`): the Animator-driven vessels bind
   nine single-frame POSES through 2D blend trees (idle, pitchup/down, yawleft/right,
