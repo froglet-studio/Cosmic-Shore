@@ -191,7 +191,7 @@ its mechanic, four courses).
 ## 8. Round 2: one vessel per session (the owner, 2026-10-17)
 
 Round 1 made ten vessels in one session so the owner could pick. Round 2 takes **one vessel per session**, in the
-order the owner names, each session on `Ys-bleeding-edge`, each ending with a vessel the owner has flown and recorded a
+order Garrett's review set (§9: Given, Flea, Dragonfly, Marlin, Albatross), each session on `Ys-bleeding-edge`, each ending with a vessel the owner has flown and recorded a
 decision on. A round-2 session, in order:
 
 1. **Read first**: this file (the vessel's row in §2 and §4.1, §5, §6), its recipe `vessels/<id>.json`, its kind in
@@ -243,3 +243,31 @@ additions, auto-anchors, the spin limit, the blade, and the search plane, each a
 field name; (4) re-run §4.1's row and §2's reading; (5) when the owner records Keep, `/artifact-to-unity` writes the
 decided values into `TetherConfig.asset`, never into the C#. The AI note stands from both sides: nothing drives the
 long tether in Unity yet, and the studio's pilot swings for turns only.
+
+## 9. Garrett's review (2026-10-17, The Lounge; Garrett, Yash, Joseph Zhou)
+
+Garrett reviewed the ten in the artifact. His verdicts decide §6's first question and set round 2's order. **Qualitative
+first**: "fix the qualitative before you fiddle with the quantitative"; he declined the parameter panels. Recorded in the
+artifact's decision log (`decisions`, `by: Garrett`) so each vessel's session reads them on open.
+
+| Vessel | Verdict | What Garrett asked for |
+|---|---|---|
+| **Gibbon / Tether → "Given"** | **Build next**, from `cece/loving-feynman-hlgf18` | Two modes. **Time mode**: feels like flying, is the branch's auto-tethers (Spider-Man swinging off the blocks its tethers plant). **Space mode**: the slicing mode; two sticks + two triggers, one pair per tether; slicing is what the two tethers cut through; movement differs with 0 / 1 / 2 tethers attached (both held = two, one held = one, none = flinging through space until back in time mode). Charge and mass modes later. The transition time ↔ space must feel natural before anything else is added |
+| **Flea** | **Keep**: "seems really good", no feedback | Give Garrett a branch to fly it. If the artifact version is good, bring it into the game (out of the artifact, playable), make a small racing game for it, push to bleeding-edge as the Unity version |
+| **Albatross** | **Keep, rework the frame** | Up/down from the **nearest point on the nucleus** (not the membrane), in the cytoplasm and in the nucleus: toward the nucleus is diving, away is falling. **Small thermals** with strong lift that shoot it away from the nucleus and make a large explosion. Hitting the membrane has a consequence (maybe mass just inside it; incentive undecided). Crossing the membrane is not free spam: the longer you avoid crossing, the bigger the mass explosion when you do, growing faster than linear ("a very shallow exponential"). Feel before numbers |
+| **Dragonfly** | **Keep**: "I like the name, what it does and how it flies" | Drop the stop function. **Control swap**: holding LT turns the look stick from pitch/yaw to roll/elevation, so A/B go. Solid baseline throttle; boost on a **long cooldown**, fired along the current motion, **stored bursts** like the Serpent's (3 or 5 banked). The precision needs a reason: a **grasping joust** (latch onto a vessel, bite, steal its element: "definitely a jouster") and a **precision mine kit**: mines placed exactly while hovering, hands off the sticks, whose geometry decides the effect (equilateral triangle blows up its inside; square makes mass inside; kite / pentagon / rhombus for mass / charge / space / time). "Should definitely be a miner of some sort" |
+| **Marlin** | **Keep**: "I definitely want this character" | A pure 3D drifter, "all drift all the time". Tune for fun, not real. **Never let him get grip**: for the others drifting is part of the kit, here drifting IS the kit; the rest of the kit must support that identity. Less drift assist is more fun (lean in) |
+| **Octopus (pulse)** | **Not a vessel**: a mode or a piece of a kit | Fun for seconds, repetitive as a whole kit. Use the pulse as a weapon the player steers briefly, a temporary mode on a long cooldown, or one piece of a kit. Watch for mechanics of this scope |
+| **Gecko (trail runner)** | **Keep the mechanic** (read, not flown) | More trail runners besides the Urchin: this becomes a gecko or merges into another trail runner in development, and may update the Urchin so it sucks itself into the trail too |
+| **Remora (draft)** | **Put down** | Not a failure, not a priority, "not that interesting" beside the stronger ideas |
+| **Mole (burrow)** | **Put down**: "not interesting yet" | Could look good (mass parting round the hull and reforming behind), but too close to the Urchin; could be mixed into the Urchin |
+| **Eel (body)** | **Put down** | Overlaps other vessels; coil-and-release is what the Thresher does better |
+
+Other decisions from the meeting: Yash reviews Joseph Zhou's pull request when it lands (approval required before
+merge); Garrett reviews the next R&D round with Yash after the next iteration.
+
+**Round 2's order (§8), as decided:** 1 Given (Gibbon + Tether, from `loving-feynman`), 2 Flea (to the game), 3
+Dragonfly, 4 Marlin, 5 Albatross; Gecko's mechanic folds into a trail-runner session; the Octopus pulse waits for a kit
+that wants a mode; Remora, Mole and Eel are archived (pages stay in the hub, marked archived, for the record). §6's
+questions 1 and 2 are answered above; 3 and 5 fall with their vessels; 4 (the Dragonfly's second input strategy) is
+now the control swap; 6 (names) is open: "Given" is Garrett's for the Gibbon.

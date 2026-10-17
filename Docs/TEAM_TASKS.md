@@ -685,3 +685,45 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash or the Gibbon session; Garrett merged the branch's family
 - **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md on that branch; CONCEPT_FLEET.md section 8.1
+
+### T-20261017-a640 · open · dev · Vessel Studio / Given
+- **Task:** Given (Gibbon + Tether): two modes from cece/loving-feynman-hlgf18: time mode = the branch's auto-tethers, space mode = two sticks + two triggers (one pair per tether), slicing by what the tethers cut, movement by 0 / 1 / 2 tethers attached; the time <-> space transition first
+- **Done when:** Garrett flies the transition and calls it natural
+- **Who can take it:** Yash (session 1 of round 2)
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-929b · open · dev · Vessel Studio / Flea
+- **Task:** Give Garrett a branch with the Flea; if good, bring it into the game as a playable vessel, then a small racing game, then push to bleeding-edge
+- **Done when:** Garrett has flown it from a branch; the Unity Flea flies from the Vessel Changer
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-ba54 · open · dev · Vessel Studio / Albatross
+- **Task:** Up/down from the nearest point on the nucleus (cytoplasm and nucleus), small strong thermals with an explosion, a membrane-crossing consequence that grows faster than linear with time avoided; qualitative before numbers
+- **Done when:** Garrett flies it and the frame reads as diving toward / falling away from the nucleus
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-3cc7 · open · dev · Vessel Studio / Dragonfly
+- **Task:** Control swap (LT held: look stick becomes roll / elevation, no A/B), long-cooldown stored boosts along the current motion, and a precision kit: grasping joust that steals an element, and geometry mines (triangle / square / kite / pentagon / rhombus)
+- **Done when:** Garrett flies the swap and one mine shape
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-1bc9 · open · dev · Vessel Studio / Marlin
+- **Task:** Pure drifter: never gets grip, less drift assist, the kit built around drifting; tune for fun
+- **Done when:** Garrett flies it and still wants the character
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
+
+### T-20261017-b900 · open · dev · Code review
+- **Task:** Review Joseph Zhou's pull request when it lands (Unity crashed while he prepared it); approval is required before merge
+- **Done when:** the PR is approved or sent back with notes
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 9
