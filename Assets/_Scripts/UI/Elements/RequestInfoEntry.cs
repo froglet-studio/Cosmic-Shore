@@ -18,7 +18,7 @@ namespace CosmicShore.UI
     /// </summary>
     public class RequestInfoEntry : MonoBehaviour
     {
-        public enum Kind { FriendRequest, PartyInvite }
+        public enum Kind { FriendRequest = 0, PartyInvite = 1 }
 
         [Header("Display")]
         [SerializeField] private Image avatarIcon;

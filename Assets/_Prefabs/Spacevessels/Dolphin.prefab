@@ -1428,7 +1428,7 @@ MonoBehaviour:
   holdSpeedWhileDrifting: 1
   vectorFlightModel: 0
   driftOvershootCeiling: 1.25
-  driftThrottlePolicy: 1
+  driftThrottlePolicy: 0
   Grip: 0
   boostChanged: {fileID: 0}
   MinimumSpeed: 0

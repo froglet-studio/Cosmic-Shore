@@ -421,7 +421,7 @@ namespace CosmicShore.Gameplay
         /// away from them; there is no third thing, and mixing the two is what produced the
         /// wrestling match this replaces.
         /// </summary>
-        enum DogfightPhase { Pursue, Extend }
+        enum DogfightPhase { Pursue = 0, Extend = 1 }
 
         /// <summary>
         /// Gives every AI a committed PURSUE → EXTEND → PURSUE loop.

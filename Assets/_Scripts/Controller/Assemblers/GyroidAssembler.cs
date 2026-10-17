@@ -557,8 +557,7 @@ namespace CosmicShore.Gameplay
                 if (candidate == null || candidate.destroyed) return;
                 considered++;
 
-                var mateComponent = candidate.GetComponent<GyroidAssembler>();
-                if (mateComponent == null)
+                if (!candidate.TryGetComponent(out GyroidAssembler mateComponent))
                 {
                     mateComponent = ConvertBlock(candidate);
                 }
@@ -608,8 +607,7 @@ namespace CosmicShore.Gameplay
 
         GyroidAssembler ConvertBlock(Prism prism)
         {
-            HealthPrism healthPrism = prism.GetComponent<HealthPrism>();
-            if (healthPrism != null)
+            if (prism.TryGetComponent(out HealthPrism healthPrism))
             {
                 healthPrism.Reparent(Prism.transform.parent);
             }

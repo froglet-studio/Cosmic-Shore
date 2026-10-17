@@ -104,21 +104,21 @@ namespace CosmicShore.UI
                  "can't be spam-clicked. Shared by both buttons.")]
         [SerializeField] private float actionCooldownSeconds = 0.4f;
 
-        public enum Status { Online, InLobby, InMatch, LobbyFull, InYourParty }
+        public enum Status { Online = 0, InLobby = 1, InMatch = 2, LobbyFull = 3, InYourParty = 4 }
 
         /// <summary>What the row's join/spectate button is doing for this player.</summary>
         public enum JoinMode
         {
             /// <summary>No button - already in your party, or nothing to join.</summary>
-            Hidden,
+            Hidden = 0,
             /// <summary>JOIN their party directly.</summary>
-            Join,
+            Join = 1,
             /// <summary>JOIN drawn but inert - their party is full.</summary>
-            JoinDisabled,
+            JoinDisabled = 2,
             /// <summary>SPECTATE their match (the only control on the row).</summary>
-            Spectate,
+            Spectate = 3,
             /// <summary>SPECTATE drawn but inert - in a match that advertises no session.</summary>
-            SpectateDisabled,
+            SpectateDisabled = 4,
         }
 
         string _playerId;

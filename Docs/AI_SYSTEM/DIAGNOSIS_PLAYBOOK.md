@@ -54,7 +54,8 @@ Run after the merge that brought it (`BRANCH_WORKFLOW.md` §4). Intake never cha
 
 - [ ] Roster row added (`ARCHITECTURE.md` §2): layer, code, doc, tests, markers, harness, status "Intake".
 - [ ] `check_ai_no_state_writes.py --check` passes **with the new files in its scope**. Its `SCOPES` list
-      holds only `Controller/AI/SkimRace` and `Utility/AITraining` (2026-10-08), so add the AI's folder or
+      holds four folders (2026-10-17): `Controller/AI/SkimRace`, `Utility/AITraining`, `Editor/AI` and
+      `Controller/Arcade/Preview/Drill`; `AIPilot` and `Controller/AI/Boost` are not in it. Add the AI's folder or
       files, run it, and review every finding (a reviewed exception goes in the gate's exception list with
       its reason, as the five existing ones do).
 - [ ] Per-frame allocation and logging gates pass on its files.
@@ -87,8 +88,10 @@ QA results also flow through `/qa-backlog` (`Docs/QA/QA_BACKLOG.md`), which alre
 ## 5. Status board (update on every diagnosis)
 
 Order chosen by reach × risk: the autopilot first (every AI seat in ~30 modes, unmeasured), then the new
-intakes, then the restructures. **Since 2026-10-14 the Regatta six lead** (`REGATTA_AI_ROADMAP.md` §3): rows 9
-(Stoat) and 10 (gate-race belief) come first, then the Manta, Rhino, Urchin and Dolphin rows in the roadmap's order.
+intakes, then the restructures. **Since 2026-10-14 the Regatta six lead** (`REGATTA_AI_ROADMAP.md` §3). Order on
+2026-10-17: the editor checks of the Rhino and Dolphin drives (rows 12, 13), which also check Regatta's new centre
+steering for every AI; then flights for the learners (row 14); then the Stoat (row 9) and the Manta, Urchin and Squirrel
+rows. Row 10's belief is exposed (2026-10-15).
 
 | # | AI | Tiers done | Next action | Owner of next action |
 |---|---|---|---|---|
@@ -100,6 +103,9 @@ intakes, then the restructures. **Since 2026-10-14 the Regatta six lead** (`REGA
 | 6 | Manta turn boost | 2 (not gated) | Gate scope; markers; review | AI session |
 | 7 | Skim Race pilot | 1–5 (QA PASS) | Split the core, then Burst the rollouts (`ARCHITECTURE.md` §4.5); Hard vs 2 humans decision still open | AI session, then user |
 | 8 | Genetic training stack | 1, 2 | User verdict: keep / editor-only / retire | User |
-| 9 | Stoat autopilot sling / dipole (**new**) | 2, tests exist (not gated) | Gate scope; markers (`AI.StoatSling.*`); user script in Warpline (AI Stoats lay pairs) | AI session, then user |
-| 10 | Gate-race difficulty `GateRaceHandicap` (**new**, Slingshot, Warpline) | 2, tests exist (not gated) | Expose each AI's current belief (noticed / misjudged / true ring) so the Third Eye draws it; then the user script in the checklist (Slingshot Easy vs Hard) | AI session, then user |
+| 9 | Stoat autopilot sling / dipole (Slingshot, Warpline; Regatta since 2026-10-17) | 2, tests exist (not gated) | Gate scope; markers (`AI.StoatSling.*`); user script in Warpline or Regatta (AI Stoats lay pairs) | AI session, then user |
+| 10 | Gate-race difficulty `GateRaceHandicap` (Slingshot, Warpline, Regatta) | 2, tests exist (not gated) | **Belief exposed 2026-10-15** (`AIPilot.ReportObjective`: `NotNoticed` / `Misjudged`, read by the Third Eye). Next: the user script in the checklist (Slingshot or Regatta, Easy vs Hard) | User |
 | 11 | Thresher (**no AI drive**) | — | Autopilot sling in Thresher Time (`THRESHERTIME.md` §4 follow-up; models: Grizzly bomb-jump, Stoat `AutopilotSling`) | AI session |
+| 12 | Rhino drive (`RampBoostAIPolicySO`, Regatta) | 2, tests (`RhinoRampDriveTests`), offline model | Editor: run the tests, watch an AI Rhino race Regatta I1-I4 in the Third Eye (ramp on straights, brake on the ramp, let go round sharp corners) - T-20261016-01ec | User |
+| 13 | Dolphin drive (`ChargeBoostAIPolicySO`, peak re-drift) | 2, tests (`DolphinChargeDriveTests`), offline model | Editor: run the tests, watch an AI Dolphin race Regatta I1-I4 (it drifts again near its top speed; every AI threads rings through the centre) - T-20261016-b719 | User |
+| 14 | Regatta variants (Rhino, Dolphin, Manta, Stoat via `learn_drives_from_flights.py`) | 1 (script self-test) | Flights: 5+ finished Regatta races per hull (T-20261016-89ed, T-20261016-b525), then `learn_drives_from_flights.py --write` writes `Resources/AIBoostPolicies/*_Regatta`. Only the Manta's exists (bands 0.8 / 0.85 from `manta_drive_sim.py`, 2026-10-17; Manta flights replace it) | User, then AI session |

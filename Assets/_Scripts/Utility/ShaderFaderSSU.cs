@@ -153,8 +153,7 @@ namespace CosmicShore.Utility
 
         void GetMaterialFromRenderer(Renderer renderer)
         {
-            InstancerSSU instancer = renderer.GetComponent<InstancerSSU>();
-            if (instancer != null)
+            if (renderer.TryGetComponent(out InstancerSSU instancer))
             {
                 materials.Add(instancer.runtimeMaterial);
             }
@@ -168,8 +167,7 @@ namespace CosmicShore.Utility
 
         void GetMaterialFromGraphic(Graphic graphic)
         {
-            InstancerSSU instancer = graphic.GetComponent<InstancerSSU>();
-            if (instancer != null)
+            if (graphic.TryGetComponent(out InstancerSSU instancer))
             {
                 materials.Add(instancer.runtimeMaterial);
             }

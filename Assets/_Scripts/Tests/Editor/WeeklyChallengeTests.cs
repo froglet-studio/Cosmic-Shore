@@ -164,8 +164,11 @@ namespace CosmicShore.Tests
         [Test]
         public void NextRolloverUtc_IsTheFollowingMonday()
         {
+            // 2026-08-29 is a Saturday, so the rollover is Monday the 31st - NOT the next UTC
+            // midnight (the 30th, a Sunday), which is what this test expected while the cycle was
+            // daily.
             var noon = new DateTime(2026, 8, 29, 12, 0, 0, DateTimeKind.Utc);
-            Assert.AreEqual(new DateTime(2026, 8, 30, 0, 0, 0, DateTimeKind.Utc),
+            Assert.AreEqual(new DateTime(2026, 8, 31, 0, 0, 0, DateTimeKind.Utc),
                             WeeklyChallengeCatalogSO.NextRolloverUtc(noon));
         }
 
@@ -377,11 +380,14 @@ namespace CosmicShore.Tests
             // from one shrunken week can never be mistaken for the same day of the next.
             _catalog.test.enabled = true;
             _catalog.test.periodLengthMinutes = 70f;
-            string a = _catalog.DayKeyFor(utc);
-            string b = _catalog.DayKeyFor(utc.AddMinutes(10));
+            // Test days are counted from the Unix epoch, so UTC midnight starts one; 23:59 is the
+            // LAST minute of its test day, and nine minutes past it is already the next one.
+            var dayStart = utc.AddMinutes(1);
+            string a = _catalog.DayKeyFor(dayStart);
+            string b = _catalog.DayKeyFor(dayStart.AddMinutes(10));
             Assert.AreNotEqual(a, b);
             StringAssert.StartsWith("T", a);
-            Assert.AreEqual(_catalog.DayKeyFor(utc), _catalog.DayKeyFor(utc.AddMinutes(9)));
+            Assert.AreEqual(a, _catalog.DayKeyFor(dayStart.AddMinutes(9)));
         }
 
         [Test]

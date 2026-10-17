@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d8964b654c6452780f4eeb7613d7097, type: 3}
+  m_Name: Manta_Regatta
+  m_EditorClassIdentifier: 
+  LaneShare: 0.7
+  HullClearance: 16
+  Risk: 0.5
+  RiskSpread: 0.15
+  CarefulLookaheadSeconds: 0.35
+  BoldLookaheadSeconds: 0.8
+  MinLookahead: 60
+  MaxLookahead: 520

@@ -44,7 +44,15 @@ namespace CosmicShore.Tests
         const string SkyBurstProjectileContainer =
             "Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/" +
             "SparrowSkyBurstProjectileImpactContainer.asset";
-        const string SkyBurstExplosionContainer =
+        // The 20-point blast tier lives on the DESTRUCTIVE AOEExplosion both rocket variants
+        // spawn, not on the conic cairn: 89c8a53c7 (Garrett, 2026-09-22, "both rockets pay the
+        // blast") moved it there and emptied the cairn's container, so the heavy rocket does not
+        // report its blast twice. SPARROW_SKYBURST_BAY.md § "BOTH rockets pay the 20-point blast";
+        // author_dogfight_assets.py --check enforces both halves.
+        const string SkyBurstBlastContainer =
+            "Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/" +
+            "SkyBurstBlastExplosionImpactorDataContainer.asset";
+        const string SkyBurstConicContainer =
             "Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/" +
             "SkyBurstExplosionImpactorDataContainer.asset";
         const string WarheadExplosionContainer =
@@ -68,7 +76,9 @@ namespace CosmicShore.Tests
         static string Read(string path)
         {
             Assert.IsTrue(File.Exists(path), $"missing asset: {path}");
-            return File.ReadAllText(path);
+            // Normalised: a Windows checkout (.gitattributes `* text=auto`) delivers YAML with
+            // CRLF, and the HUD regex below anchors on "\n" - it could never match there.
+            return File.ReadAllText(path).Replace("\r\n", "\n");
         }
 
         static string Guid(string assetPath)
@@ -121,8 +131,11 @@ namespace CosmicShore.Tests
         {
             StringAssert.Contains(Guid(DirectEffect), Read(SkyBurstProjectileContainer),
                                   "a direct rocket strike would never score");
-            StringAssert.Contains(Guid(BlastEffect), Read(SkyBurstExplosionContainer),
+            StringAssert.Contains(Guid(BlastEffect), Read(SkyBurstBlastContainer),
                                   "a rocket's prism blast would never score");
+            StringAssert.DoesNotContain(Guid(BlastEffect), Read(SkyBurstConicContainer),
+                                        "the heavy rocket's cairn would report the blast tier " +
+                                        "a second time");
             StringAssert.Contains(Guid(ShockwaveEffect), Read(WarheadExplosionContainer),
                                   "the shockwave - the ORDINARY outcome of a proximity kill - " +
                                   "would never score");
@@ -442,15 +455,24 @@ namespace CosmicShore.Tests
 
         #region The missile charge economy and its gauge
 
+        // The "double the prisms per rocket (was 25)" ask was made when the skyburst was ONE
+        // rocket costing 0.5. The weapon has since split in two (SparrowMissileVariantTests):
+        // the heavy, stationary rocket kept the 0.5 and the base rocket costs half of it -
+        // SPARROW_SKYBURST_BAY.md's tuning table: "25 prisms per base rocket, 50 per heavy one,
+        // 100 for a full rack". So the fifty is the HEAVY rocket's price.
         [Test]
         public void FiftyHostilePrismsBuyOneRocket()
         {
+            string weapon = Read(SkyBurstAction);
             float perPrism = Field(Read(SparrowVessel), "ammoPerPrism");
-            float cost = Field(Read(SkyBurstAction), "ammoCost");
+            float heavyCost = Field(weapon, "stationaryAmmoCost");
+            float baseCost = Field(weapon, "ammoCost");
 
             Assert.Greater(perPrism, 0f, "0 disables the rearm entirely");
-            Assert.AreEqual(50f, cost / perPrism, 0.5f,
-                            "the ask was to DOUBLE the prisms per rocket (was 25)");
+            Assert.AreEqual(50f, heavyCost / perPrism, 0.5f,
+                            "the ask was to DOUBLE the prisms per (heavy) rocket (was 25)");
+            Assert.AreEqual(25f, baseCost / perPrism, 0.5f,
+                            "the base rocket costs half the heavy one, so half the prisms");
         }
 
         // The gauge is what the pilot reads that number off. It is bound on the CHARGE card

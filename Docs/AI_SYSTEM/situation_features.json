@@ -25,7 +25,7 @@
       "xSum ySum xDiff yDiff throttle",
       "lt rt",
       "rings threaded",
-      "skims, rams, held (the page; Unity infers skims from a boost rise and rail hits from a speed drop)",
+      "skims, rams, held (the page; Unity infers skims from a boost rise; rail hits from the Slowed state bit on flight/3, else a speed drop)", "buttonEvents: the pilot's own presses [t, InputEvents, 1 / 0] (flight/3, 2026-10-16 on)",
       "rivals: x y z rings per other pilot",
       "camera (HumanFlightRecorder since 2026-10-16): camx camy camz, camfx camfy camfz (forward), camux camuy camuz (up), fov (vertical deg), camAspect, camRear (look-behind), camMode"
     ]
