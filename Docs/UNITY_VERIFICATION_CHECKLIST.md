@@ -11070,3 +11070,22 @@ shows the 3 known errors; every generator `--check` / `--self-test`; gates.
    the cell still flies; a single tap does nothing.
 3. **Docked cards:** - folds and x closes. The glyphs are flat, dim at rest, white on hover and accent-coloured when
    pressed or focused by the pad. The friends drawer's - and maximise look the same.
+
+## 🔴 2026-10-17 — Rev 6 step 1: element colours as meaning (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Changed:
+- `UIColorToken` 13-16, `UIThemeSO` element fields, `UITheme` fallbacks;
+- `KitButton` (Play = Charge, Purchase = Mass, new Mass / Space / Time variants);
+- `KitOnlineRow` (statuses and JOIN / WATCH by element), `HomeUpNext` (quest meter in Time);
+- every style-B prefab re-emitted.
+
+`/verify-unity` was not run. Checked offline: refcompile player OK; editor shows the 3 known errors (0 in changed files);
+gates; every generator `--check` / `--self-test`.
+
+1. **Play buttons in Charge yellow:** Home's ARCADE hub, START GAME, PLAY on the Arcade cards, the Ark's CONVERT and the
+   in-match READY. The opaque START keeps its gradient, now yellow to pale yellow.
+2. **Mass blue:** crystal balances (Home chip, Profile), prices and spends (purchase window, Hangar unlock, UPGRADE).
+3. **Space violet:** in the friends panel, "Online" / "In your party", INVITE, JOIN and ACCEPT. WATCH on a friend in a
+   match is Charge.
+4. **Time teal:** the weekly challenge card (Home and Arcade), its countdown, the current quest card and its lit meter.
+5. **Theme asset:** UITheme.asset in the inspector shows the four element colours under "Elements".

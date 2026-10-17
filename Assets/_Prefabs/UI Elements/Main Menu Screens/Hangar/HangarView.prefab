@@ -10666,15 +10666,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 863164150278670206, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.r
-      value: 1
+      value: 0.49803922
       objectReference: {fileID: 0}
     - target: {fileID: 863164150278670206, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.g
-      value: 0.68235296
+      value: 0.65882355
       objectReference: {fileID: 0}
     - target: {fileID: 863164150278670206, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.b
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 863164150278670206, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.a
@@ -10682,15 +10682,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 203537676558618759, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.r
-      value: 1
+      value: 0.49803922
       objectReference: {fileID: 0}
     - target: {fileID: 203537676558618759, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.g
-      value: 0.68235296
+      value: 0.65882355
       objectReference: {fileID: 0}
     - target: {fileID: 203537676558618759, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.b
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 203537676558618759, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.a
@@ -10698,15 +10698,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 600671503312378593, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_fontColor.r
-      value: 1
+      value: 0.49803922
       objectReference: {fileID: 0}
     - target: {fileID: 600671503312378593, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_fontColor.g
-      value: 0.68235296
+      value: 0.65882355
       objectReference: {fileID: 0}
     - target: {fileID: 600671503312378593, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_fontColor.b
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 600671503312378593, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_fontColor.a
@@ -10714,19 +10714,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 600671503312378593, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_fontColor32.rgba
-      value: 4278234879
+      value: 4294944895
       objectReference: {fileID: 0}
     - target: {fileID: 688059294377391562, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.r
-      value: 1
+      value: 0.49803922
       objectReference: {fileID: 0}
     - target: {fileID: 688059294377391562, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.g
-      value: 0.68235296
+      value: 0.65882355
       objectReference: {fileID: 0}
     - target: {fileID: 688059294377391562, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.b
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 688059294377391562, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.a
@@ -24520,7 +24520,7 @@ MonoBehaviour:
         m_CallState: 2
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   focusRing: {fileID: 320988094215208327}
-  variant: 4
+  variant: 3
   fill: 0
   fillGraphic: {fileID: 849990612100062198}
   borderGraphic: {fileID: 207919037935673568}
@@ -24681,7 +24681,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 0.12}
+  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 0.12}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -24756,7 +24756,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -24848,8 +24848,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4286644121
-  m_fontColor: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+    rgba: 4294944895
+  m_fontColor: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -27038,7 +27038,7 @@ MonoBehaviour:
         m_CallState: 2
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   focusRing: {fileID: 441121278239106994}
-  variant: 4
+  variant: 3
   fill: 0
   fillGraphic: {fileID: 732374976705852998}
   borderGraphic: {fileID: 987105716756798513}
@@ -27199,7 +27199,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 0.12}
+  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 0.12}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -27274,7 +27274,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -27366,8 +27366,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4286644121
-  m_fontColor: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+    rgba: 4294944895
+  m_fontColor: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -29556,7 +29556,7 @@ MonoBehaviour:
         m_CallState: 2
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   focusRing: {fileID: 1064456856771061547}
-  variant: 4
+  variant: 3
   fill: 0
   fillGraphic: {fileID: 256211829701882793}
   borderGraphic: {fileID: 643898489938465013}
@@ -29717,7 +29717,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 0.12}
+  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 0.12}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -29792,7 +29792,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -29884,8 +29884,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4286644121
-  m_fontColor: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+    rgba: 4294944895
+  m_fontColor: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -32074,7 +32074,7 @@ MonoBehaviour:
         m_CallState: 2
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   focusRing: {fileID: 312608709572822016}
-  variant: 4
+  variant: 3
   fill: 0
   fillGraphic: {fileID: 1012622045340647269}
   borderGraphic: {fileID: 373267946713911629}
@@ -32235,7 +32235,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 0.12}
+  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 0.12}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -32310,7 +32310,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+  m_Color: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -32402,8 +32402,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4286644121
-  m_fontColor: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+    rgba: 4294944895
+  m_fontColor: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -47337,15 +47337,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 863164150278670206, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.r
-      value: 1
+      value: 0.49803922
       objectReference: {fileID: 0}
     - target: {fileID: 863164150278670206, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.g
-      value: 0.68235296
+      value: 0.65882355
       objectReference: {fileID: 0}
     - target: {fileID: 863164150278670206, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.b
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 863164150278670206, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.a
@@ -47353,15 +47353,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 203537676558618759, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.r
-      value: 1
+      value: 0.49803922
       objectReference: {fileID: 0}
     - target: {fileID: 203537676558618759, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.g
-      value: 0.68235296
+      value: 0.65882355
       objectReference: {fileID: 0}
     - target: {fileID: 203537676558618759, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.b
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 203537676558618759, guid: c697666178fa5f2c835977d9aeb8d924, type: 3}
       propertyPath: m_Color.a

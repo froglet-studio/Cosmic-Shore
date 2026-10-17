@@ -115,10 +115,13 @@ TOK = {
     "SurfaceBlack": "00010A", "SurfaceVeryDark": "00041F", "SurfaceDark": "222645",
     "SurfaceLight": "434C89", "NeutralLightest": "747BAD", "Cta": "99FF80", "Danger": "FF4B3A",
     "ControlActive": "00D4FF", "Purchase": "FFAE00", "Tooltip": "A600FF",
+    # Rev 6: the elements as the colours of meaning (AbilityLockupStyleSO's element colours).
+    "ElementCharge": "FFD34D", "ElementMass": "7FA8FF", "ElementSpace": "B07CFF", "ElementTime": "5FF0C8",
 }
 TOKEN_INDEX = {"TextLight": 0, "TextInactive": 1, "InactiveLight": 2, "SurfaceBlack": 3,
                "SurfaceVeryDark": 4, "SurfaceDark": 5, "SurfaceLight": 6, "NeutralLightest": 7,
-               "Cta": 8, "Danger": 9, "ControlActive": 10, "Purchase": 11, "Tooltip": 12}
+               "Cta": 8, "Danger": 9, "ControlActive": 10, "Purchase": 11, "Tooltip": 12,
+               "ElementCharge": 13, "ElementMass": 14, "ElementSpace": 15, "ElementTime": 16}
 
 
 def tok(name, alpha=1.0):
@@ -130,7 +133,9 @@ def lerp(a, b, t):
 
 
 WHITE = (1.0, 1.0, 1.0, 1.0)
-VARIANTS = {"Default": 0, "Inactive": 1, "Cancel": 2, "Purchase": 3, "Cta": 4, "Play": 5, "Danger": 6}
+VARIANTS = {"Default": 0, "Inactive": 1, "Cancel": 2, "Purchase": 3, "Cta": 4, "Play": 5, "Danger": 6,
+            "Mass": 7, "Space": 8, "Time": 9}
+ELEMENT_VARIANT = {"Purchase": "ElementMass", "Mass": "ElementMass", "Space": "ElementSpace", "Time": "ElementTime"}
 
 
 def button_palette(variant, opaque, disabled=False):
@@ -144,16 +149,16 @@ def button_palette(variant, opaque, disabled=False):
     if v == "Cancel":
         return ((tok("NeutralLightest"), tok("NeutralLightest"), dark) if opaque else
                 (tok("NeutralLightest"), tok("NeutralLightest", 0.12), tok("TextLight")))
-    if v == "Purchase":
-        return ((tok("Purchase"), tok("Purchase"), dark) if opaque else
-                (tok("Purchase"), tok("Purchase", 0.12), tok("Purchase")))
+    if v in ELEMENT_VARIANT:   # rev 6: a spend is Mass; people Space; progress Time
+        t = ELEMENT_VARIANT[v]
+        return ((tok(t), tok(t), dark) if opaque else (tok(t), tok(t, 0.12), tok(t)))
     if v == "Cta":
         return ((tok("Cta"), tok("Cta"), dark) if opaque else
                 (tok("Cta"), tok("Cta", 0.12), tok("Cta")))
-    if v == "Play":
-        jade = tok("ControlActive")
-        return ((lerp(jade, WHITE, 0.5), jade, dark) if opaque else
-                (jade, tok("ControlActive", 0.24), tok("TextLight")))
+    if v == "Play":            # rev 6: Play is Charge
+        charge = tok("ElementCharge")
+        return ((lerp(charge, WHITE, 0.5), charge, dark) if opaque else
+                (charge, tok("ElementCharge", 0.24), charge))
     if v == "Danger":
         return (tok("Danger"), tok("Danger"), dark)
     return ((tok("TextLight"), tok("TextLight"), dark) if opaque else
@@ -1183,6 +1188,11 @@ def outputs():
 
 
 def validate(out):
+    # Rev 6: the elements are the colours of meaning - Play is Charge, a spend is Mass, people Space,
+    # progress Time (Docs/MENU_REDESIGN_B.md §45). KitButton.PaletteFor mirrors this table.
+    for variant, token in (("Play", "ElementCharge"), ("Purchase", "ElementMass"), ("Space", "ElementSpace"),
+                           ("Time", "ElementTime")):
+        assert button_palette(variant, True)[1] == tok(token), f"the {variant} button is not drawn in {token}"
     """Every local fileID resolves; anchors are unique; every referenced guid has an owner."""
     known_guids = set(PACKAGE_GUIDS)
     for root, _dirs, names in os.walk(os.path.join(REPO, "Assets")):

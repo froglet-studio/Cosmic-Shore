@@ -65,6 +65,16 @@ namespace CosmicShore.UI
         [Tooltip("A600FF — tooltip boxes (§3). Same hex as Ruby; never use it to mean the Ruby team.")]
         public Color tooltip = new Color32(0xA6, 0x00, 0xFF, 0xFF);
 
+        [Header("Elements (rev 6: the colours of meaning)")]
+        [Tooltip("Charge - threat and energy: play. START, PLAY and every Play button.")]
+        public Color elementCharge = new Color32(0xFF, 0xD3, 0x4D, 0xFF);
+        [Tooltip("Mass - substance: what you own. Vessels, upgrades, crystals, prices and every spend.")]
+        public Color elementMass = new Color32(0x7F, 0xA8, 0xFF, 0xFF);
+        [Tooltip("Space - reach and presence: people. Friends, parties, invites, who is online.")]
+        public Color elementSpace = new Color32(0xB0, 0x7C, 0xFF, 0xFF);
+        [Tooltip("Time - rate: progress. Timers, quests, records, leaderboards.")]
+        public Color elementTime = new Color32(0x5F, 0xF0, 0xC8, 0xFF);
+
         // ── Spacing ───────────────────────────────────────────────────────────────────
 
         [Header("Spacing")]

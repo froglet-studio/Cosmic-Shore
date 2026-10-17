@@ -334,10 +334,10 @@ def chip_node():
     image_node(n, "Chip/Divider", "Divider", TL(436, 28, 1, 56), "SurfaceDark")
     cr = n.child(N("Chip/Crystals", "Crystals", TL(456, 26, 130, 60)))
     label(cr.child(N("Chip/Crystals/Label", "Label", TL(0, 0, 130, 16))), "Crystals", "Label", "NeutralLightest")
-    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "Purchase", K.chrome_sprite("chrome_crystal"), preserve=True)
+    image_node(cr, "Chip/Crystals/Glyph", "Glyph", TL(0, 26, 20, 20), "ElementMass", K.chrome_sprite("chrome_crystal"), preserve=True)
     amt = cr.child(N("Chip/Crystals/Amount", "Amount", TL(28, 22, 100, 28)))
-    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("Purchase"))) \
-        .add("kt", 114, K.kit_text("Data", "Purchase"))
+    amt.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0", "Data", tok("ElementMass"))) \
+        .add("kt", 114, K.kit_text("Data", "ElementMass"))
     cr.add("display", 114, lambda ctx, go: mono(go, S["crystals"], f"  balanceText: {ref(ctx.c('Chip/Crystals/Amount', 'tmp'))}\n"))
     return n
 
@@ -583,22 +583,22 @@ def upnext_node():
     # Rev 3: docked on the left under the pilot chip, stacked; a closed card closes its gap.
     root = N("UpNext", "UpNext", TL(CHIP["x"], CHIP["y"] + CHIP["h"] + 16, CARD_W, 2 * CARD_H + DOCK_GAP))
     root.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), DOCK_GAP, 0, (0, 0), (0, 0)))
-    w, wd = upnext_card("Weekly", "Weekly challenge", "Purchase", "Purchase", 0)
+    w, wd = upnext_card("Weekly", "Weekly challenge", "ElementTime", "ElementTime", 0)
     # The stats row sizes each word to itself (an HLG over TMP's preferred widths): "YOUR BEST" ran into
     # its value when the slots were fixed pixel widths.
     stats = wd.child(N("UpNext/Weekly/Stats", "Stats", TL(TEXT_X, 76, CARD_W - TEXT_X - 14, 18)))
     stats.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (1, 1), (0, 0)))
     label(stats.child(N("UpNext/Weekly/EndsLabel", "EndsLabel", R(size=(64, 18)))), "Ends in", "Label", "TextLight")
     cd = stats.child(N("UpNext/Weekly/Countdown", "Countdown", R(size=(110, 18))))
-    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("TextLight"))) \
-        .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
+    cd.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("0d 00:00", "DataSmall", tok("ElementTime"))) \
+        .add("kt", 114, K.kit_text("DataSmall", "ElementTime"))
     stats.child(N("UpNext/Weekly/StatsGap", "Gap", R(size=(10, 18)))).add("le", 114, le(pw=10, ph=18))
     label(stats.child(N("UpNext/Weekly/BestLabel", "BestLabel", R(size=(76, 18)))), "Your best", "Label", "NeutralLightest")
     b = stats.child(N("UpNext/Weekly/Best", "Best", R(size=(100, 18))))
     b.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("None yet", "DataSmall", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("DataSmall", "TextLight"))
     root.children.append(w)
-    q, qd = upnext_card("Quest", "Current quest", "NeutralLightest", "TextLight", 0)
+    q, qd = upnext_card("Quest", "Current quest", "ElementTime", "ElementTime", 0)
     for i, h in enumerate((8, 10, 12, 14)):
         seg = qd.child(N(f"UpNext/Quest/Meter{i + 1}", f"Meter{i + 1}", R((0, 1), None, (TEXT_X + i * 10, -92), (7, h), (0, 0))))
         seg.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))

@@ -581,7 +581,7 @@ def build_request_row():
     text_columns(root, 84, "Pilot", "PARTY INVITE", "ControlActive", line_driven=True)
     btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (72, 32), (1, 0.5))))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (0, 0), (0, 0)))
-    btns.children.append(small_button("Accept", "Accept", "Cta", None, icon="chrome_confirm", added=[row_scroll_into()]))
+    btns.children.append(small_button("Accept", "Accept", "Space", None, icon="chrome_confirm", added=[row_scroll_into()]))
     btns.children.append(small_button("Decline", "Decline", "Cancel", None, icon="chrome_close", added=[row_scroll_into()]))
     root.add("row", 114, lambda ctx, go: mono(go, S["request"],
              f"  avatarIcon: {ref(ctx.c('Avatar/Icon', 'img'))}\n"
@@ -605,10 +605,10 @@ def build_online_row():
     # it are sized for the widest pair. The strip CONTROLS its slots' widths (from their preferred
     # size): reading each slot's own rect instead took its 60-wide placeholder until the slot's
     # fitter caught up, which drew JOIN over INVITE.
-    text_columns(root, 210, "Pilot", "ONLINE", "Cta")
+    text_columns(root, 210, "Pilot", "ONLINE", "ElementSpace")
     btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (202, 36), (1, 0.5))))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (1, 0), (0, 0)))
-    for key, caption, variant, shown in (("Invite", "INVITE", "Default", True), ("Join", "JOIN", "Cta", False)):
+    for key, caption, variant, shown in (("Invite", "INVITE", "Space", True), ("Join", "JOIN", "Space", False)):
         slot = wrap_slot(btns, f"{key}Slot", f"{key}Slot", shown)
         slot.children.append(small_button(f"{key}Button", f"{key}Button", variant, caption, added=[row_scroll_into()]))
     cancel = wrap_slot(btns, "CancelSlot", "CancelSlot", False)
@@ -953,7 +953,7 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
             .add("tmp", 114, text(maelstrom_desc, "BodySmall", tok("TextLight"), valign="top", wrap=True)) \
             .add("kt", 114, K.kit_text("BodySmall", "TextLight"))
 
-    wk = feature_card(feats, "Weekly", "WeeklyChallenge", weekly_art, "WEEKLY CHALLENGE", "Purchase", "Skim Race",
+    wk = feature_card(feats, "Weekly", "WeeklyChallenge", weekly_art, "WEEKLY CHALLENGE", "ElementTime", "Skim Race",
                       weekly_extra)
     wk.add("weekly", 114, lambda ctx, go: mono(go, S["weekly"],
            f"  GameTitle: {ref(ctx.c('Weekly/Title', 'tmp'))}\n"

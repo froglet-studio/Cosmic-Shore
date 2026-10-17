@@ -45,12 +45,12 @@ namespace CosmicShore.UI
         {
             if (!statusText) return;
             statusText.SetText(text);
+            // Rev 6: people are Space; a match in progress is live action, Charge.
             statusText.SetColorToken(pending ? UIColorToken.NeutralLightest : status switch
             {
-                Status.InMatch => UIColorToken.Purchase,
+                Status.InMatch => UIColorToken.ElementCharge,
                 Status.LobbyFull => UIColorToken.NeutralLightest,
-                Status.InYourParty => UIColorToken.ControlActive,
-                _ => UIColorToken.Cta,
+                _ => UIColorToken.ElementSpace,
             });
         }
 
@@ -58,7 +58,7 @@ namespace CosmicShore.UI
         {
             // Not pressable reads as the kit's Inactive look through the button's own interactable flag.
             if (JoinButton is KitButton button)
-                button.Variant = spectate ? KitButtonVariant.Purchase : KitButtonVariant.Cta;
+                button.Variant = spectate ? KitButtonVariant.Play : KitButtonVariant.Space;
             if (joinLabel) joinLabel.SetText(spectate ? spectateWord : joinWord);
         }
 

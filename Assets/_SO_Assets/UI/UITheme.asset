@@ -25,6 +25,10 @@ MonoBehaviour:
   controlActive: {r: 0, g: 0.83137256, b: 1, a: 1}
   purchase: {r: 1, g: 0.68235296, b: 0, a: 1}
   tooltip: {r: 0.6509804, g: 0, b: 1, a: 1}
+  elementCharge: {r: 1, g: 0.827451, b: 0.3019608, a: 1}
+  elementMass: {r: 0.49803922, g: 0.65882355, b: 1, a: 1}
+  elementSpace: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
+  elementTime: {r: 0.37254903, g: 0.9411765, b: 0.78431374, a: 1}
   spacing:
   - 4
   - 8

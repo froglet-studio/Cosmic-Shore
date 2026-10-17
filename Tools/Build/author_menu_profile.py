@@ -319,10 +319,10 @@ def build_view():
         x, y = 650 + col * 262, 40 + rw * 66
         label(card.child(N(f"Pilot/{key}Label", f"{key}Label", TL(x, y, 240, 16))), cap, "Label", "NeutralLightest")
         if key == "Crystals":
-            image_node(card, "Pilot/CrystalIcon", "CrystalIcon", TL(x, y + 26, 18, 18), "Purchase",
+            image_node(card, "Pilot/CrystalIcon", "CrystalIcon", TL(x, y + 26, 18, 18), "ElementMass",
                        K.chrome_sprite("chrome_crystal"), preserve=True)
             v = card.child(N("Pilot/CrystalsValue", "CrystalsValue", TL(x + 26, y + 18, 220, 34)))
-            label(v, val, "H2", "Purchase")
+            label(v, val, "H2", "ElementMass")
             v.add("display", 114, lambda ctx, go: mono(go, S["crystals"], f"  balanceText: {ref(ctx.c('Pilot/CrystalsValue', 'tmp'))}\n"))
         else:
             label(card.child(N(f"Pilot/{key}Value", f"{key}Value", TL(x, y + 18, 240, 34))), val, "H2", "TextLight")

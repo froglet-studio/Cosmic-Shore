@@ -528,7 +528,7 @@ def upgrades_page(panel):
                 .add("img", 114, K.image(tok("SurfaceDark")))
         ellipsize(label(row.child(N(f"{k}/Upgrade", "Upgrade", R((0, 1), (1, 1), (60, -86), (-(60 + 200), 18), (0, 1)))), "", "Label", "NeutralLightest"))
         # Rev 4: UPGRADE - buys the next level (HangarUpgradesPage wires the click; the price is on the label).
-        text_button(row, f"{k}/Buy", "UpgradeButton", "UPGRADE  100", TRr(18, 52, 176, 38), None, None, None, None, "Cta")
+        text_button(row, f"{k}/Buy", "UpgradeButton", "UPGRADE  100", TRr(18, 52, 176, 38), None, None, None, None, "Purchase")
 
     def body(ctx, go):
         rows = ""

@@ -13,14 +13,20 @@ namespace CosmicShore.UI
         Inactive = 1,
         /// <summary>Cancel; "coming soon" in the store.</summary>
         Cancel = 2,
-        /// <summary>Any spend - icon + amount.</summary>
+        /// <summary>Any spend - icon + amount. Drawn in Mass (rev 6: Mass is what you own).</summary>
         Purchase = 3,
         /// <summary>Free / primary action.</summary>
         Cta = 4,
-        /// <summary>Launch a game. The opaque Play button is the one gradient fill in the menu (§1.4).</summary>
+        /// <summary>Launch a game. Drawn in Charge (rev 6). The opaque Play button is the one gradient fill in the menu (§1.4).</summary>
         Play = 5,
         /// <summary>Destructive. Danger is a full-bleed fill only (§2), so it is always drawn opaque.</summary>
         Danger = 6,
+        /// <summary>Rev 6: an action about something you own that is not a spend (equip, upgrade a preview).</summary>
+        Mass = 7,
+        /// <summary>Rev 6: an action about people - invite, join, accept.</summary>
+        Space = 8,
+        /// <summary>Rev 6: an action about progress - claim, watch a record, see the leaderboard.</summary>
+        Time = 9,
     }
 
     /// <summary>§10.1: opaque on popups and wherever a button sits on a line, transparent everywhere else.</summary>
@@ -129,6 +135,11 @@ namespace CosmicShore.UI
             if (playGradient) playGradient.enabled = v == KitButtonVariant.Play && opaque;
         }
 
+        /// <summary>An element-coloured variant: outline + tint + element label, or an element fill with a dark label.</summary>
+        private Palette Element(UIColorToken token, bool opaque, Color dark) => opaque
+            ? new Palette(Token(token), Token(token), dark)
+            : new Palette(Token(token), Token(token, TintAlpha), Token(token));
+
         private Palette PaletteFor(KitButtonVariant v, bool opaque)
         {
             var dark = Token(UIColorToken.SurfaceBlack);
@@ -143,21 +154,24 @@ namespace CosmicShore.UI
                         ? new Palette(Token(UIColorToken.NeutralLightest), Token(UIColorToken.NeutralLightest), dark)
                         : new Palette(Token(UIColorToken.NeutralLightest), Token(UIColorToken.NeutralLightest, TintAlpha), Token(UIColorToken.TextLight));
                 case KitButtonVariant.Purchase:
-                    return opaque
-                        ? new Palette(Token(UIColorToken.Purchase), Token(UIColorToken.Purchase), dark)
-                        : new Palette(Token(UIColorToken.Purchase), Token(UIColorToken.Purchase, TintAlpha), Token(UIColorToken.Purchase));
+                case KitButtonVariant.Mass:
+                    return Element(UIColorToken.ElementMass, opaque, dark);
+                case KitButtonVariant.Space:
+                    return Element(UIColorToken.ElementSpace, opaque, dark);
+                case KitButtonVariant.Time:
+                    return Element(UIColorToken.ElementTime, opaque, dark);
                 case KitButtonVariant.Cta:
                     return opaque
                         ? new Palette(Token(UIColorToken.Cta), Token(UIColorToken.Cta), dark)
                         : new Palette(Token(UIColorToken.Cta), Token(UIColorToken.Cta, TintAlpha), Token(UIColorToken.Cta));
                 case KitButtonVariant.Play:
                 {
-                    var jade = Token(UIColorToken.ControlActive);
-                    // The opaque Play fill runs controlActive -> controlActive halfway to white (the
-                    // KitGradient); its border is that lighter end, as in the approved mockup.
+                    // Rev 6: Play is Charge. The opaque fill runs Charge -> Charge halfway to white (the
+                    // KitGradient); its border is that lighter end. Transparent, the label is Charge too.
+                    var charge = Token(UIColorToken.ElementCharge);
                     return opaque
-                        ? new Palette(Color.Lerp(jade, Color.white, KitGradient.DefaultLighten), jade, dark)
-                        : new Palette(jade, Token(UIColorToken.ControlActive, PlayTintAlpha), Token(UIColorToken.TextLight));
+                        ? new Palette(Color.Lerp(charge, Color.white, KitGradient.DefaultLighten), charge, dark)
+                        : new Palette(charge, Token(UIColorToken.ElementCharge, PlayTintAlpha), charge);
                 }
                 case KitButtonVariant.Danger:
                     return new Palette(Token(UIColorToken.Danger), Token(UIColorToken.Danger), dark);

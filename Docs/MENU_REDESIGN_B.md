@@ -2059,3 +2059,35 @@ now looks like style B:
   - The glyph rests dim (NeutralLightest), turns white under the pointer, and lights in the accent colour when
     pressed or focused by the pad.
   - It is a ColorTint on a plain Button, with a 28 px transparent hit area.
+
+## 45. Rev 6: the elemental UI (approved 2026-10-17)
+
+Boards: the canvas's Rev 6 page (`R6Language`, `R6Arcade`, `R6Ark`, `R6FriendsOrb`, `R6FriendsParty`,
+`R6FriendsRail`, `R6Notes`). The owner: "I want the UI to be inspired by the elements. As the game is one of a kind so
+should be the UI". Decisions:
+- the friends panel becomes the **presence orb** (option A);
+- the elements drive colour **across the whole menu** (PLAY and START turn Charge);
+- **Charge keeps its colour** (`#FFD34D`).
+
+Built in four steps.
+
+### 45.1 Step 1: the elements as the colours of meaning
+
+Each element's game meaning (`Docs/ElementalAbilitySystem/ARCHITECTURE.md`) gives it a job in the menu:
+
+| Element | Game meaning | In the menu | Token |
+|---|---|---|---|
+| Charge `#FFD34D` | threat and energy | play: START, PLAY, every Play button, WATCH (a live match) | `ElementCharge` (13) |
+| Mass `#7FA8FF` | substance and size | what you own: crystals, prices, every spend (Purchase), UPGRADE | `ElementMass` (14) |
+| Space `#B07CFF` | reach and presence | people: online / in-your-party statuses, INVITE, JOIN, ACCEPT | `ElementSpace` (15) |
+| Time `#5FF0C8` | rate and mobility | progress: the weekly challenge, its countdown, the current quest and its meter | `ElementTime` (16) |
+
+- **Colour source:** the values are AbilityLockupStyleSO's element colours, the HUD's and the Hangar's.
+- **Where they live:** `UIThemeSO.elementCharge..elementTime`, `UITheme` fallbacks, and `UIColorToken` 13-16 (checked
+  free on every branch).
+- **Buttons:** `KitButton`'s Play variant draws in Charge, and Purchase in Mass. New variants Mass (7), Space (8) and
+  Time (9) cover actions that are about owning, people or progress.
+- **Unchanged:** warnings (the configure window's reason line) and podium medals keep their colours; they are not
+  about owning or progress.
+- **Gate:** `author_ui_kit_prefabs.py` validation asserts the table (Play is Charge, a spend is Mass, Space, Time),
+  with a planted regression that it catches.
