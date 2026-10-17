@@ -1,203 +1,191 @@
 {
   "SkimRace|I2|3p": {
-    "adoptedUtc": "2026-10-15T15:18:54Z",
-    "frames": 1802,
+    "adoptedUtc": "2026-10-17T08:47:10Z",
+    "frames": 1804,
     "markers": {
+      "AOEPool.Miss": {
+        "avgMsPerFrame": 0.0013,
+        "kbPerFrame": 0.012
+      },
+      "AOEPool.Reuse": {
+        "avgMsPerFrame": 0,
+        "kbPerFrame": 0.001
+      },
       "CSM.Net.Serialize": {
-        "avgMsPerFrame": 0.0026,
+        "avgMsPerFrame": 0.0017,
         "kbPerFrame": 0
       },
       "CapsuleMembrane.RenderMeshInstanced": {
-        "avgMsPerFrame": 0.002,
+        "avgMsPerFrame": 0.0011,
         "kbPerFrame": 0
       },
       "CapsuleMembrane.UpdateMatrices": {
-        "avgMsPerFrame": 0.0577,
+        "avgMsPerFrame": 0.0652,
         "kbPerFrame": 0
       },
       "Cell.VolumeSum": {
-        "avgMsPerFrame": 0.0032,
+        "avgMsPerFrame": 0.0023,
         "kbPerFrame": 0
       },
       "Cell.VolumeSum.Snapshot": {
-        "avgMsPerFrame": 0.0005,
+        "avgMsPerFrame": 0.0003,
         "kbPerFrame": 0
       },
       "CrystalChargeArcs.LateUpdate": {
-        "avgMsPerFrame": 2.6324,
-        "kbPerFrame": 708.097
+        "avgMsPerFrame": 0.004,
+        "kbPerFrame": 0.054
       },
       "CrystalDepthPrisms.LateUpdate": {
-        "avgMsPerFrame": 0.0227,
-        "kbPerFrame": 2.968
+        "avgMsPerFrame": 0.0107,
+        "kbPerFrame": 3.003
       },
       "CrystalFlipWave.LateUpdate": {
-        "avgMsPerFrame": 0.0124,
+        "avgMsPerFrame": 0.0086,
         "kbPerFrame": 0
       },
       "CrystalSpaceSquares.LateUpdate": {
-        "avgMsPerFrame": 0.0027,
-        "kbPerFrame": 0
-      },
-      "DomainVolumeIndicator.Push": {
-        "avgMsPerFrame": 0.0019,
-        "kbPerFrame": 0
-      },
-      "DomainVolumeIndicator.Sample": {
-        "avgMsPerFrame": 0.0034,
-        "kbPerFrame": 0
-      },
-      "Fauna.BodySync": {
-        "avgMsPerFrame": 0.0031,
-        "kbPerFrame": 0.002
-      },
-      "ForcefieldCrackleController.Update": {
-        "avgMsPerFrame": 0.0068,
-        "kbPerFrame": 0.564
-      },
-      "LOD.Drain": {
-        "avgMsPerFrame": 0.0018,
-        "kbPerFrame": 0
-      },
-      "LOD.Sweep": {
-        "avgMsPerFrame": 0.0036,
-        "kbPerFrame": 0.468
-      },
-      "LightFauna.Feed": {
-        "avgMsPerFrame": 0.0007,
-        "kbPerFrame": 0
-      },
-      "ObjectiveIndicator.LateUpdate": {
-        "avgMsPerFrame": 0.0139,
-        "kbPerFrame": 0
-      },
-      "ObjectiveIndicator.PositionAtEdge": {
-        "avgMsPerFrame": 0.0076,
-        "kbPerFrame": 0
-      },
-      "ObjectiveIndicator.ResolveCamera": {
-        "avgMsPerFrame": 0.0002,
-        "kbPerFrame": 0
-      },
-      "ObjectiveIndicator.TryGetObjective": {
-        "avgMsPerFrame": 0.0012,
-        "kbPerFrame": 0
-      },
-      "ObjectiveIndicator.UpdateDistance": {
-        "avgMsPerFrame": 0.0001,
-        "kbPerFrame": 0
-      },
-      "ObjectiveIndicator.WorldToScreen": {
-        "avgMsPerFrame": 0.0031,
-        "kbPerFrame": 0
-      },
-      "PoolActivate.FastGrowPrism": {
-        "avgMsPerFrame": 0.0003,
-        "kbPerFrame": 0.031
-      },
-      "PoolActivate.Squirrel Prism": {
-        "avgMsPerFrame": 0.023,
-        "kbPerFrame": 0.678
-      },
-      "PoolRefill.FastGrowPrism": {
-        "avgMsPerFrame": 0.0122,
-        "kbPerFrame": 0.526
-      },
-      "PoolRefill.Squirrel Prism": {
-        "avgMsPerFrame": 0.1425,
-        "kbPerFrame": 8.29
-      },
-      "Prism.Create.SOAPRaise": {
-        "avgMsPerFrame": 0.0018,
-        "kbPerFrame": 0.26
-      },
-      "Prism.Create.SpatialBind": {
-        "avgMsPerFrame": 0.0052,
-        "kbPerFrame": 0.159
-      },
-      "Prism.Create.Visibility": {
-        "avgMsPerFrame": 0.0037,
-        "kbPerFrame": 0
-      },
-      "Prism.Destroy.EffectRequest": {
-        "avgMsPerFrame": 0.0024,
-        "kbPerFrame": 0.004
-      },
-      "Prism.Destroy.SFX": {
-        "avgMsPerFrame": 0.0002,
-        "kbPerFrame": 0
-      },
-      "Prism.Destroy.Setup": {
-        "avgMsPerFrame": 0.0023,
-        "kbPerFrame": 0
-      },
-      "Prism.Destroy.SpatialIndex": {
         "avgMsPerFrame": 0.0008,
         "kbPerFrame": 0
       },
-      "Prism.Destroy.StatRaise": {
-        "avgMsPerFrame": 0.0015,
+      "DomainVolumeIndicator.Push": {
+        "avgMsPerFrame": 0.0012,
         "kbPerFrame": 0
       },
-      "PrismDebris.Drain": {
-        "avgMsPerFrame": 0.0049,
-        "kbPerFrame": 0.001
+      "DomainVolumeIndicator.Sample": {
+        "avgMsPerFrame": 0.0026,
+        "kbPerFrame": 0
       },
-      "PrismImpactor.AcceptImpactee": {
+      "Fauna.BodySync": {
+        "avgMsPerFrame": 0.0022,
+        "kbPerFrame": 0.002
+      },
+      "ForcefieldCrackleController.Update": {
+        "avgMsPerFrame": 0.0033,
+        "kbPerFrame": 0.497
+      },
+      "LOD.Drain": {
+        "avgMsPerFrame": 0.0014,
+        "kbPerFrame": 0
+      },
+      "LOD.Sweep": {
+        "avgMsPerFrame": 0.0027,
+        "kbPerFrame": 0.493
+      },
+      "LightFauna.Feed": {
+        "avgMsPerFrame": 0.0005,
+        "kbPerFrame": 0
+      },
+      "ObjectiveIndicator.LateUpdate": {
+        "avgMsPerFrame": 0.01,
+        "kbPerFrame": 0
+      },
+      "ObjectiveIndicator.PositionAtEdge": {
+        "avgMsPerFrame": 0.0051,
+        "kbPerFrame": 0
+      },
+      "ObjectiveIndicator.ResolveCamera": {
+        "avgMsPerFrame": 0.0001,
+        "kbPerFrame": 0
+      },
+      "ObjectiveIndicator.TryGetObjective": {
+        "avgMsPerFrame": 0.0007,
+        "kbPerFrame": 0
+      },
+      "ObjectiveIndicator.UpdateDistance": {
         "avgMsPerFrame": 0,
         "kbPerFrame": 0
       },
+      "ObjectiveIndicator.WorldToScreen": {
+        "avgMsPerFrame": 0.0029,
+        "kbPerFrame": 0
+      },
+      "PoolActivate.FastGrowPrism": {
+        "avgMsPerFrame": 0.0005,
+        "kbPerFrame": 0.05
+      },
+      "PoolActivate.Squirrel Prism": {
+        "avgMsPerFrame": 0.0179,
+        "kbPerFrame": 0.726
+      },
+      "PoolRefill.FastGrowPrism": {
+        "avgMsPerFrame": 0.0062,
+        "kbPerFrame": 0.693
+      },
+      "PoolRefill.Squirrel Prism": {
+        "avgMsPerFrame": 0.1283,
+        "kbPerFrame": 8.908
+      },
+      "Prism.Create.SOAPRaise": {
+        "avgMsPerFrame": 0.0018,
+        "kbPerFrame": 0.278
+      },
+      "Prism.Create.SpatialBind": {
+        "avgMsPerFrame": 0.0043,
+        "kbPerFrame": 0.159
+      },
+      "Prism.Create.Visibility": {
+        "avgMsPerFrame": 0.0028,
+        "kbPerFrame": 0
+      },
+      "PrismImpactor.AcceptImpactee": {
+        "avgMsPerFrame": 0.0006,
+        "kbPerFrame": 0
+      },
+      "PrismShieldShatter.Drain": {
+        "avgMsPerFrame": 0.0045,
+        "kbPerFrame": 0.002
+      },
       "ShellContact.Build": {
-        "avgMsPerFrame": 0.0165,
+        "avgMsPerFrame": 0.0097,
         "kbPerFrame": 0
       },
       "ShellContact.Dispatch": {
-        "avgMsPerFrame": 0.0114,
-        "kbPerFrame": 0.135
+        "avgMsPerFrame": 0.0273,
+        "kbPerFrame": 0.137
       },
       "ShellContact.Query": {
-        "avgMsPerFrame": 0.1241,
+        "avgMsPerFrame": 0.0928,
         "kbPerFrame": 0
       },
       "SkimRace.Driver.GuardMass": {
-        "avgMsPerFrame": 0.0548,
-        "kbPerFrame": 0.011
+        "avgMsPerFrame": 0.0083,
+        "kbPerFrame": 0.002
       },
       "SkimRace.Driver.Guards": {
-        "avgMsPerFrame": 0.0165,
+        "avgMsPerFrame": 0.0117,
         "kbPerFrame": 0
       },
       "SkimRace.Driver.PlanPass": {
-        "avgMsPerFrame": 0.0023,
+        "avgMsPerFrame": 0.0011,
         "kbPerFrame": 0
       },
       "SkimRace.Driver.TrackMpc": {
-        "avgMsPerFrame": 0.5364,
+        "avgMsPerFrame": 0.4842,
         "kbPerFrame": 0
       },
       "SkimRace.Pilot.Decide": {
-        "avgMsPerFrame": 0.6524,
-        "kbPerFrame": 0.011
+        "avgMsPerFrame": 0.5374,
+        "kbPerFrame": 0.002
       },
       "SkimRace.Pilot.FillObstacles": {
-        "avgMsPerFrame": 0.0813,
-        "kbPerFrame": 0.007
+        "avgMsPerFrame": 0.0323,
+        "kbPerFrame": 0.002
       },
       "SkimRace.Pilot.FillObstacles.Pack": {
-        "avgMsPerFrame": 0.0169,
-        "kbPerFrame": 0.006
+        "avgMsPerFrame": 0.0027,
+        "kbPerFrame": 0.001
       },
       "SkimRace.Pilot.FillObstacles.Query": {
-        "avgMsPerFrame": 0.0634,
+        "avgMsPerFrame": 0.0289,
         "kbPerFrame": 0.001
       },
       "SkimRace.Pilot.Sense": {
-        "avgMsPerFrame": 0.033,
+        "avgMsPerFrame": 0.0168,
         "kbPerFrame": 0
       },
       "SkimRace.Pilot.Update": {
-        "avgMsPerFrame": 0.7729,
-        "kbPerFrame": 0.017
+        "avgMsPerFrame": 0.5897,
+        "kbPerFrame": 0.004
       },
       "SkimRaceObjectiveProvider.RecomputeTarget": {
         "avgMsPerFrame": 0,
@@ -208,16 +196,20 @@
         "kbPerFrame": 0
       },
       "SkimmerImpactor.AcceptImpactee": {
-        "avgMsPerFrame": 0.0086,
-        "kbPerFrame": 0.13
+        "avgMsPerFrame": 0.0143,
+        "kbPerFrame": 0.069
+      },
+      "SnowChanger.RenderMeshInstanced": {
+        "avgMsPerFrame": 0.0009,
+        "kbPerFrame": 0
       },
       "TeamCrystalImpactor.AcceptImpactee": {
-        "avgMsPerFrame": 0.0018,
-        "kbPerFrame": 0.016
+        "avgMsPerFrame": 0.0106,
+        "kbPerFrame": 0.022
       },
       "VesselImpactor.AcceptImpactee": {
-        "avgMsPerFrame": 0.0208,
-        "kbPerFrame": 3.831
+        "avgMsPerFrame": 0.0752,
+        "kbPerFrame": 3.412
       }
     }
   }

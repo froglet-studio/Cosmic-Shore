@@ -343,19 +343,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/Reports/PERFORMANCE.md
 - **Done:** 2026-10-15, Duplicate of T-20261015-fafa: attributed with nested markers to the un-pooled AOE ring explosion on each omni collect (lever L13, Garrett).
 
-### T-20261015-c8e2 · open · dev · Performance
+### T-20261015-c8e2 · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
 - **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
+- **Done:** 2026-10-17, 2026-10-17: not a code regression. The baseline commit (574e0d39a) itself re-measures 0.766 KB/frame today; the refill tracks boost-prism lays 1:1 at ~20 KB each in .NET (net new ring mass), so it moves with how many rings the AIs lay. Current build 0.693 (repeats to 0.3%); the Skim Race Amoebius baseline was re-adopted from that run with this evidence (Docs/PERFORMANCE_OPTIMIZATION.md 2, 10-17 pool row).
 
-### T-20261015-c7db · open · dev · Performance
+### T-20261015-c7db · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
 - **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
+- **Done:** 2026-10-17, 2026-10-17: fixed. The implosion pool topped its buffer up to 160 although death implosions are batched since D4 and only the Sparrow's ReverseSuction Get()s it; PrismManagers.prefab bufferSizeTarget 160 -> 24. PoolRefill.PrismImplosion 0.157 (baseline commit) / 0.122 -> 0.000 KB/frame. Same prefab: the explosion pool (never Get()) no longer prewarms 1,500 objects at boot.
 
 ### T-20261015-7392 · done · dev · AI training
 - **Task:** Add the pilot's VIEW to the situation recording: record the camera pose/FOV each sample (V1), compute on-screen / occluded / time-to-contact view features and a coarse view grid (V2), gate the target and skipped-skim labels on what was visible (V3), measure the per-pilot reaction lag (V4)
@@ -499,6 +501,27 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Manta AI holds Soar deeper into turns)
+
+### T-20261017-1809 · open · dev · Performance
+- **Task:** Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)
+- **Done when:** a new capture of MinigameRegatta|MinigameRegatta compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261017-2129 · open · dev · Performance
+- **Task:** Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)
+- **Done when:** a new capture of MinigameRegatta|MinigameRegatta compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261017-19f0 · open · dev · Performance
+- **Task:** Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)
+- **Done when:** a new capture of MinigameGrizzlyCharge|MinigameGrizzlyCharge compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
 
 ### T-20261017-0026 · open · test · Regatta / launch panel UI
 - **Task:** Hand-test the AI seat chip hull labels on Regatta's launch panel: hover name, (i) badge, vessel info card (Docs/UNITY_VERIFICATION_CHECKLIST.md, 2026-10-17 entry)
