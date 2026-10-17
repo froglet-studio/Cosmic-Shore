@@ -11380,3 +11380,22 @@ disabled mid-reveal. Now:
 2. **Read the console:** `[EndGameSequencer] ... disabled during the end reveal` or `[Scoreboard] The winner was
    decided ...` names the path. If NEITHER appears and there is still no board, the winner was never decided (no
    reveal either) - say which.
+
+## 🔴 2026-10-17 — The board counts as shown only once its panel is up (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The Scurry console (ArcadeMatch on) showed the reveal end, the end screen raised and the crystals awarded, but no
+`[Scoreboard] Shown:` line and no reveal toast. So a board answered the raise without reaching its panel, and because
+`ShowCount` ticked on entry, every safety net stood down. Now:
+- `ShowCount` ticks only after a panel is switched on, so the sequencer's `ShowUnreached` and the 5 s net still fire;
+- a destroyed board still subscribed to the end screen drops itself with a warning (it no longer pays the wallet or
+  stands in for the real board);
+- a board with no panel warns, naming its object and scene;
+- two frames after showing, the board checks it is still on screen and re-shows it with a warning naming what hid it;
+- the reveal toast warns when it finds no `ScoreRevealToast`, logs its state on ArcadeMatch, and its tweens run on
+  unscaled time;
+- with ArcadeMatch on, the board lists the overlay canvases sorted over it.
+`/verify-unity` was not run; the player reference compile is clean.
+
+1. **Finish Scurry, Skim Race and a Maelstrom round:** the board shows.
+2. **If it still does not**, with FrogletTools > Toolbox > Logging > ArcadeMatch on, copy every `[Scoreboard]` and
+   `[EndGameSequencer]` line, including `Overlay canvases over the board` and `Reveal toast`.

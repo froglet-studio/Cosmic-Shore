@@ -307,7 +307,16 @@ namespace CosmicShore.UI
 
         void ShowScoreboard()
         {
-            ShowCount++;
+            // A destroyed board still subscribed (its OnDisable never ran) is a C# object whose Unity side is gone: it
+            // would pay the wallet, find no panel and count as the board that answered, so the real one's safety nets
+            // stood down. Drop it and say so.
+            if (!this)
+            {
+                if (gameData && gameData.OnShowGameEndScreen != null) gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
+                if (gameData && gameData.OnWinnerCalculated != null) gameData.OnWinnerCalculated.OnRaised -= ArmEndScreenSafetyNet;
+                CSDebug.LogWarning("[Scoreboard] A destroyed scoreboard was still subscribed to the end screen - dropped it.");
+                return;
+            }
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
 // Fail OPEN: the panel (with its Main Menu / Play Again buttons) must appear even
@@ -332,21 +341,29 @@ namespace CosmicShore.UI
                 CSDebug.LogError("[Scoreboard] Population threw — showing the panel anyway so the player can exit.");
             }
 
-            if (scoreboardPanel)
+            if (!scoreboardPanel)
             {
-                scoreboardPanel.gameObject.SetActive(true);
-                EnsureBoardVisible();
-
-                // Entrance animation disabled for now: PlayEntranceAnimation() slid the panel
-                // by mutating its own anchoredPosition (read current pos as the rest target,
-                // shoved it down by `offset`, tweened back via DOAnchorPos) and never restored
-                // it on HideScoreboard(). On a stretch-anchored panel a re-entrant/interrupted
-                // show captured the already-displaced position as the new rest target, so the
-                // panel drifted off-base in modes that re-show the board (Joust / Crystal Capture).
-                // Show at the authored position with no slide. (Re-enable once the rest pos is
-                // captured at Awake and restored on hide.)
-                ShowScoreboardImmediate();
+                CSDebug.LogWarning($"[Scoreboard] '{name}' in scene '{gameObject.scene.name}' has no scoreboard panel - " +
+                                   "it cannot show the end screen. Wire scoreboardPanel on its Scoreboard component.");
+                return;
             }
+
+            scoreboardPanel.gameObject.SetActive(true);
+            EnsureBoardVisible();
+            // Counted only once a panel is really up, so the raisers' safety nets still fire when a raise reached
+            // nothing that could show.
+            ShowCount++;
+            VerifyBoardShownAsync().Forget();
+
+            // Entrance animation disabled for now: PlayEntranceAnimation() slid the panel
+            // by mutating its own anchoredPosition (read current pos as the rest target,
+            // shoved it down by `offset`, tweened back via DOAnchorPos) and never restored
+            // it on HideScoreboard(). On a stretch-anchored panel a re-entrant/interrupted
+            // show captured the already-displaced position as the new rest target, so the
+            // panel drifted off-base in modes that re-show the board (Joust / Crystal Capture).
+            // Show at the authored position with no slide. (Re-enable once the rest pos is
+            // captured at Awake and restored on hide.)
+            ShowScoreboardImmediate();
         }
 
         /// <summary>
@@ -512,6 +529,35 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// A frame after showing, the board must still be on screen: something that switches the end screen (or the
+        /// canvas under it) off in the same frame would otherwise leave the player with nothing, and a quiet console.
+        /// </summary>
+        async UniTaskVoid VerifyBoardShownAsync()
+        {
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+            await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+            if (!this || !scoreboardPanel) return;
+            string hidden = WhatHidesBoard();
+            if (hidden == null) return;
+            CSDebug.LogWarning($"[Scoreboard] The scoreboard was hidden right after it was shown ({hidden}) - showing it again.");
+            scoreboardPanel.gameObject.SetActive(true);
+            EnsureBoardVisible();
+            ShowScoreboardImmediate();
+        }
+
+        /// <summary>What keeps the shown board off screen, or null when nothing does.</summary>
+        string WhatHidesBoard()
+        {
+            for (var t = scoreboardPanel; t; t = t.parent)
+            {
+                if (!t.gameObject.activeSelf) return $"'{t.name}' is inactive";
+                if (t.TryGetComponent<CanvasGroup>(out var group) && group.alpha <= 0.01f) return $"'{t.name}' is at alpha 0";
+                if (t.TryGetComponent<Canvas>(out var canvas) && !canvas.enabled) return $"the canvas '{t.name}' is disabled";
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Anything above the board that would keep it off screen once shown - an inactive parent, a parent CanvasGroup
         /// at alpha 0, a disabled Canvas - is put right and named, so a hidden end screen is a warning, never silence.
         /// </summary>
@@ -541,7 +587,16 @@ namespace CosmicShore.UI
             if (Mathf.Abs(lossy.x) < 1e-4f || Mathf.Abs(lossy.y) < 1e-4f)
                 CSDebug.LogWarning($"[Scoreboard] The scoreboard's world scale is {lossy} - a parent is scaled to 0, so it cannot be seen.");
 
+            if (!CSDebug.IsVerbose(CSLogChannel.ArcadeMatch)) return;
             var host = scoreboardPanel.GetComponentInParent<Canvas>();
+            // Overlay canvases drawn over the board (a higher sort order) - anything opaque among them hides it.
+            var above = new List<string>();
+            if (host)
+                foreach (var other in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                    if (other.isRootCanvas && other != host.rootCanvas && other.isActiveAndEnabled &&
+                        other.renderMode == RenderMode.ScreenSpaceOverlay && other.sortingOrder >= host.rootCanvas.sortingOrder)
+                        above.Add($"{other.name}({other.sortingOrder})");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Scoreboard] Overlay canvases over the board: {(above.Count > 0 ? string.Join(", ", above) : "none")}");
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Scoreboard] Shown: activeInHierarchy={scoreboardPanel.gameObject.activeInHierarchy}, " +
                 $"rect={(scoreboardPanel is RectTransform r ? r.rect.size.ToString() : "?")}, lossyScale={lossy}, " +

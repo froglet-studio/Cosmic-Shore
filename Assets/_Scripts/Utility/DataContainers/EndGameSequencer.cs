@@ -333,7 +333,13 @@ namespace CosmicShore.Utility
             if (gameOverCounterText != null)
                 gameOverCounterText.text = message;
 
-            if (toastCanvasGroup == null) return;
+            if (toastCanvasGroup == null)
+            {
+                CSDebug.LogWarning($"[EndGameSequencer] '{name}' found no ScoreRevealToast under '{transform.root.name}' - the reveal has nothing to show.");
+                return;
+            }
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[EndGameSequencer] Reveal toast '{message}': activeInHierarchy={toastCanvasGroup.gameObject.activeInHierarchy}.");
 
             _toastSeq?.Kill();
             var t = toastCanvasGroup.transform;
@@ -347,7 +353,8 @@ namespace CosmicShore.Utility
             _toastSeq = DOTween.Sequence()
                 .Append(toastCanvasGroup.DOFade(1f, toastInDuration))
                 .Join(t.DOScale(toastPunchScale, toastInDuration).SetEase(Ease.OutBack))
-                .Append(t.DOScale(1f, 0.15f).SetEase(Ease.OutQuad));
+                .Append(t.DOScale(1f, 0.15f).SetEase(Ease.OutQuad))
+                .SetUpdate(true);   // a zero time scale at the end of a match must not hold the toast at alpha 0
         }
 
         void HideToast()
@@ -356,7 +363,8 @@ namespace CosmicShore.Utility
             _toastSeq?.Kill();
             _toastSeq = DOTween.Sequence()
                 .Append(toastCanvasGroup.DOFade(0f, toastOutDuration))
-                .Join(toastCanvasGroup.transform.DOScale(0.85f, toastOutDuration).SetEase(Ease.InQuad));
+                .Join(toastCanvasGroup.transform.DOScale(0.85f, toastOutDuration).SetEase(Ease.InQuad))
+                .SetUpdate(true);
         }
 
         /// <summary>
