@@ -404,6 +404,14 @@ def image(color, sprite=None, sliced=False, raycast=False, preserve=False):
     return body
 
 
+FIT_MIN_SCALE = 0.6   # KitText.MinSizeScale: every kit label shrinks to fit its rect, never below 60 % of its role size
+
+
+def fit_min(size):
+    """The auto-size floor KitText.Apply writes (Mathf.Max(8, Mathf.Round(size * MinSizeScale)))."""
+    return max(8, round(size * FIT_MIN_SCALE))
+
+
 def tmp(text, role, color, align="center", raycast=False):
     _, face, size, spacing, upper, _ = ROLES[role]
     font = SEMIBOLD if face == "Chakra" else ALDRICH
@@ -428,7 +436,7 @@ def tmp(text, role, color, align="center", raycast=False):
                     "  m_TextStyleHashCode: -1183493901\n  m_overrideHtmlColors: 0\n"
                     "  m_faceColor:\n    serializedVersion: 2\n    rgba: 4294967295\n"
                     f"  m_fontSize: {f32(size)}\n  m_fontSizeBase: {f32(size)}\n  m_fontWeight: 400\n"
-                    "  m_enableAutoSizing: 0\n  m_fontSizeMin: 18\n  m_fontSizeMax: 72\n"
+                    f"  m_enableAutoSizing: 1\n  m_fontSizeMin: {f32(fit_min(size))}\n  m_fontSizeMax: {f32(size)}\n"
                     f"  m_fontStyle: {16 if upper else 0}\n  m_HorizontalAlignment: {h}\n"
                     "  m_VerticalAlignment: 512\n  m_textAlignment: 65535\n"
                     f"  m_characterSpacing: {f32(spacing)}\n  m_wordSpacing: 0\n  m_lineSpacing: 0\n"
@@ -1200,6 +1208,11 @@ def validate(out):
         for g in set(re.findall(r"guid: ([0-9a-f]{32})", text)):
             assert g in known_guids or g in minted, f"{path}: guid {g} resolves to no asset"
         assert text.isascii(), f"{path}: non-ASCII text (the UI font has 97 glyphs)"
+        # Every kit label shrinks to fit its rect (KitText.shrinkToFit, 2026-10-17: labels spilled out of their
+        # panels in Menu_Main while auto-size was off).
+        for m in re.finditer(r"  m_enableAutoSizing: (\d)\n  m_fontSizeMin: ([\d.]+)\n  m_fontSizeMax: ([\d.]+)\n", text):
+            assert m.group(1) == "1" and float(m.group(2)) < float(m.group(3)) or float(m.group(3)) <= 8, \
+                f"{path}: a kit label does not auto-size (it would spill out of its rect)"
 
 
 def unity_empty_scalars(text):

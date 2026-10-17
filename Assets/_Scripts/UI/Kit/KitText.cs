@@ -32,6 +32,16 @@ namespace CosmicShore.UI
         [Tooltip("Leave the colour alone - a KitButton / KitTile on a parent owns it.")]
         [SerializeField] private bool colorDrivenExternally;
 
+        [Header("Fit")]
+        [Tooltip("Shrink the text to fit its rect when it would spill out (TMP auto-size, capped at the role's size, so " +
+                 "text that fits is drawn exactly at the role size). Off draws at the role size whatever the rect.")]
+        [SerializeField] private bool shrinkToFit = true;
+        [Tooltip("The smallest the text may shrink to, as a fraction of the role's size.")]
+        [SerializeField, Range(0.3f, 1f)] private float minSizeScale = MinSizeScale;
+
+        /// <summary>The default floor for <see cref="shrinkToFit"/>; the kit generator writes the same number.</summary>
+        public const float MinSizeScale = 0.6f;
+
         private TMP_Text _text;
 
         public UITypeRole Role => role;
@@ -67,7 +77,14 @@ namespace CosmicShore.UI
                 if (font && t.font != font) t.font = font;
             }
             t.fontSize = spec.size;
-            t.enableAutoSizing = false;
+            // Auto-size starts at its maximum and only searches smaller sizes when the text overflows, so a label
+            // that fits costs one layout pass and looks the same as a fixed size.
+            t.enableAutoSizing = shrinkToFit;
+            if (shrinkToFit)
+            {
+                t.fontSizeMax = spec.size;
+                t.fontSizeMin = Mathf.Max(8f, Mathf.Round(spec.size * minSizeScale));
+            }
             t.characterSpacing = spec.characterSpacing;
             // §4: weight comes from the face (no faux bold) and emphasis is colour only (no italic).
             var style = t.fontStyle & ~(FontStyles.UpperCase | FontStyles.LowerCase | FontStyles.SmallCaps |

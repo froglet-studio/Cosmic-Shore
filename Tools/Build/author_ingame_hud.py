@@ -589,7 +589,7 @@ def tmp_restyle(doc, face, size, upper, spacing, align, token):
     doc = C.field_set(doc, "m_sharedMaterial", K.ref(font[1], font[0], 2))
     for f, v in (("m_fontSize", size), ("m_fontSizeBase", size), ("m_fontStyle", 16 if upper else 0),
                  ("m_characterSpacing", spacing), ("m_HorizontalAlignment", {"left": 1, "center": 2, "right": 4}[align]),
-                 ("m_enableAutoSizing", 0)):
+                 ("m_enableAutoSizing", 1), ("m_fontSizeMin", K.fit_min(size)), ("m_fontSizeMax", size)):
         doc = C.field_set(doc, f, str(v))
     c = tok(token)
     doc = C.field_set(doc, "m_Color", K.col(c))

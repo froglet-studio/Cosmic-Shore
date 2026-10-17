@@ -11022,3 +11022,15 @@ confirmation and the Project Record".
    Froglet Master Tool board under Diagnostics.
 6. Pull the plug (no network) and stop Play with something new: the pill reads NOT SENT with the reason, and the next
    send carries it.
+
+## 🔴 2026-10-17 — Kit labels shrink to fit (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`KitText` (shrinkToFit, minSizeScale) plus every style-B prefab re-emitted with auto-size on. `/verify-unity` was not
+run (no editor in a cloud session). Checked offline: refcompile player OK; editor shows the 3 known errors (0 in
+changed files); gates; every generator `--check` / `--self-test`.
+
+1. Menu_Main at 16:9, then at a narrow window (4:3) and on a phone aspect. Look at the Home cards, the Arcade cards,
+   the configure briefing and settings, the Hangar rows and tabs, Profile, Settings and the toasts: no text runs
+   outside its panel; long names shrink.
+2. Short labels (nav tabs, buttons) look the same size as before.
+3. A label edited in the inspector still keeps its role's font and colour.

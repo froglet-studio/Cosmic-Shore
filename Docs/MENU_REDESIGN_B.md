@@ -1987,3 +1987,16 @@ boards were approved with "Approved, price is fine, make it look-only for now". 
   `bannerLineTemplate`.
 - **Gate:** `--self-test` now plants three more defects: the stage losing its FX reference, the bay losing its nested
   Canvas, and an UPGRADE button unwired.
+
+## 42. Every kit label shrinks to fit its panel (2026-10-17)
+
+The owner: "There are texts which are not set to auto size and they come out of their panels in main menu".
+`KitText.Apply()` used to force `enableAutoSizing = false` at runtime, so every style-B label drew at its role size
+whatever its rect held. Now `KitText.shrinkToFit` (default on) turns TMP auto-size on, capped at the role's size and
+never below `minSizeScale` (0.6) of it:
+- Text that fits draws exactly as before. TMP starts at the maximum and only searches smaller sizes on overflow.
+- A label that must never shrink can switch `shrinkToFit` off.
+- The kit emitter (`author_ui_kit_prefabs.py` `tmp`, `fit_min`) and the HUD restyle (`author_ingame_hud.py`
+  `tmp_restyle`) write the same settings, so the prefabs match what runtime does.
+- Every menu, in-game and Maelstrom generator was re-run: 615 of 615 kit labels now auto-size.
+- The kit's validation fails on a kit label that does not auto-size; a planted label with auto-size off is caught.
