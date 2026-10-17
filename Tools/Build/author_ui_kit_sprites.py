@@ -76,6 +76,14 @@ OCT_CUT = 0.29               # corner cut as a fraction of the side - the mockup
 GRID = 24                    # blueprint grid pitch, canvas units (§5 spacing scale)
 BRACKET = 22                 # corner bracket arm, canvas units
 SPARK_W, SPARK_H = 48, 2     # spark streak, canvas units
+# The outline sprites carry a soft INNER glow under the band (the owner, 2026-10-17: "make the
+# borders glow everywhere in the menu"). Baked into the texture, so every kit border glows in its
+# own tint at zero runtime cost. It runs GLOW_U units inward from the band's inner edge, inside the
+# 9-slice corner tile, so a sliced outline still holds its cut at any size; it never reaches the
+# sprite's centre (an outline stays hollow) and never reaches the 0.5 alpha a band texel has.
+GLOW_U = 6.0
+GLOW_PEAK = {"line1": 0.32, "line2": 0.42}
+GLOW_STEP = 0.25
 
 
 def guid_for(name):
@@ -143,6 +151,21 @@ def sliver_border_units(cut):
     return cut + 2
 
 
+def inner_glow(xs, ys, inside_at, width, kind):
+    """The soft glow just inside an outline band: `inside_at(t)` is the shape inset by t units; a
+    point's distance in from the band's inner edge is how many GLOW_STEP insets still hold it.
+    Falls off quadratically to zero at GLOW_U."""
+    depth = np.zeros(np.broadcast(xs, ys).shape)
+    t = GLOW_STEP
+    while t <= GLOW_U:
+        depth += inside_at(width + t)
+        t += GLOW_STEP
+    d = depth * GLOW_STEP                          # units in from the band's inner edge
+    inside = inside_at(width)
+    glow = np.where(inside, (1.0 - np.clip(d / GLOW_U, 0.0, 1.0)) ** 2, 0.0)
+    return glow * GLOW_PEAK[kind]
+
+
 def build_sliver(cut, kind, flip):
     border_u = sliver_border_units(cut)
     border_tex = border_u * TEXELS_PER_UNIT
@@ -155,6 +178,16 @@ def build_sliver(cut, kind, flip):
     else:
         width = LINES[0] if kind == "line1" else LINES[1]
         mask = outer & ~sliver_mask(xs, ys, side_u, side_u, cut, flip, inset=width)
+        # Inside the four 9-slice corner tiles the glow follows the 45 deg cut (inset depth); along the
+        # stretched edges it is measured from the straight edges only, so every stretched row and
+        # column stays identical (the slice-safety assert). At a tile's inner boundary the two agree to
+        # within the glow's faint tail.
+        corner = ((xs < border_u) | (xs > side_u - border_u)) & ((ys < border_u) | (ys > side_u - border_u))
+        follow = inner_glow(xs, ys, lambda t: sliver_mask(xs, ys, side_u, side_u, cut, flip, inset=t), width, kind)
+        box = np.minimum(np.minimum(xs, side_u - xs), np.minimum(ys, side_u - ys)) - width
+        straight = np.where(box >= 0, (1.0 - np.clip(box / GLOW_U, 0.0, 1.0)) ** 2, 0.0) * GLOW_PEAK[kind]
+        glow = np.where(corner, follow, straight) * sliver_mask(xs, ys, side_u, side_u, cut, flip, inset=width)
+        return downsample(np.maximum(mask.astype(float), glow), side_tex, side_tex), border_tex
     alpha = downsample(mask, side_tex, side_tex)
     return alpha, border_tex
 
@@ -169,6 +202,8 @@ def build_hex(w, h, kind):
     else:
         width = LINES[0] if kind == "line1" else LINES[1]
         mask = outer & ~convex_mask(xs, ys, verts, inset=width)
+        glow = inner_glow(xs, ys, lambda t: convex_mask(xs, ys, verts, inset=t), width, kind)
+        return downsample(np.maximum(mask.astype(float), glow), w_tex, h_tex), 0
     return downsample(mask, w_tex, h_tex), 0
 
 
@@ -317,9 +352,14 @@ def check_sprite(name, alpha, border, meta):
         if kind != "fill":
             width = LINES[0] if kind == "line1" else LINES[1]
             row = alpha[h // 2]
-            band = row[: w // 2].sum() / TEXELS_PER_UNIT
+            band = (row[: w // 2] >= 0.5).sum() / TEXELS_PER_UNIT
             assert abs(band - width) <= 0.05, f"{name}: band is {band:.3f} units, expected {width}"
             assert row[w // 2] == 0, f"{name}: an outline must be hollow"
+            # the inner glow: present right inside the band, softer than it, faded out by GLOW_U
+            just_in = row[width * TEXELS_PER_UNIT]
+            assert 0.15 <= just_in < 0.5, f"{name}: no inner glow under the band ({just_in:.2f})"
+            past = int((width + GLOW_U) * TEXELS_PER_UNIT) + 1
+            assert past < w // 2 and np.all(row[past: w // 2] == 0), f"{name}: the glow runs past {GLOW_U} units"
         else:
             assert alpha[h // 2, w // 2] == 1.0, f"{name}: a fill must be solid inside"
     elif "hex" in meta:
@@ -595,6 +635,11 @@ def self_test():
     a, b = build_sliver(14, "fill", False)
     expect_fail("solid fill checked as an outline",
                 lambda: check_sprite("ctl", a, (b,) * 4, dict(cut=14, kind="line1", flip=False)))
+    # 5b. an outline with no inner glow (the band alone)
+    a, b = build_sliver(14, "line1", False)
+    bare = np.where(a >= 0.5, a, 0.0)
+    expect_fail("outline without its inner glow",
+                lambda: check_sprite("ctl", bare, (b,) * 4, dict(cut=14, kind="line1", flip=False)))
     # 6. a fade ramp drawn upside down (solid at the top)
     a, _ = build_fade()
     expect_fail("fade ramp upside down",
