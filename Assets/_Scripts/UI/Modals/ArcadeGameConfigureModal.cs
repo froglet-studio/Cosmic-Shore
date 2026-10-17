@@ -53,6 +53,10 @@ namespace CosmicShore.UI
                  "Reparented to the new tile's strip on each player's NetDomain.OnValueChanged.")]
         [SerializeField] private DomainAvatarChip chipPrefab;
 
+        [Tooltip("Optional authored vessel info card, opened by the (i) on an AI chip that shows a " +
+                 "hull. Leave empty and a generated card is laid out over this modal on first use.")]
+        [SerializeField] private VesselInfoPopup vesselInfoPopup;
+
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
 
@@ -274,6 +278,7 @@ namespace CosmicShore.UI
             OnModalClosed -= HandleSelfClosed;
 
             UnwireActivePanel();
+            if (vesselInfoPopup) vesselInfoPopup.Hide();
 
             if (pcStepper)
                 pcStepper.OnValueChanged -= HandlePlayerCountSelected;
@@ -1200,6 +1205,7 @@ namespace CosmicShore.UI
         {
             ShutDownPreview();
             if (_activePanel) _activePanel.Hide();
+            if (vesselInfoPopup) vesselInfoPopup.Hide();
 
             // ...and the PARTY has to hear about it too, for exactly the reason the comment on
             // OnEnable gives about the content: one subscription on the modal's own close event
@@ -1487,6 +1493,7 @@ namespace CosmicShore.UI
             config.AIDomains.Clear();
             config.AIVessels.Clear();
             _addAiArmed = false;
+            if (vesselInfoPopup) vesselInfoPopup.Hide();   // it described the previous card's seat
             // The weekly challenge seats the card's MINIMUM - it is a personal objective, and every
             // extra seat is one more pilot competing for the same crystals. The party's humans
             // still win the clamp below (a fact on the ground beats a preference).
@@ -2437,6 +2444,22 @@ namespace CosmicShore.UI
             bool mine = domain == localDomain && humanDomains.Contains(domain);
             bool tappable = picker && placed && (!IsClientMode || mine);   // AIHullSeating.MayPick, read from this machine
             seat.SetHull(shown ? shown.IconActive : null, tappable ? () => HandleAllyHullChipClicked(ordinal) : null);
+
+            // The icon alone is small at strip size: name the hull on hover, and offer its card.
+            if (shown)
+            {
+                string seatLabel = opponent ? $"{domain} AI  ·  opponent" : $"{domain} AI";
+                seat.SetHullInfo(VesselInfoPopup.DisplayName(shown), () => ShowVesselInfo(shown, seatLabel));
+            }
+        }
+
+        /// <summary>Open the vessel info card for an AI seat's hull, over this modal.</summary>
+        void ShowVesselInfo(SO_Vessel vessel, string seatLabel)
+        {
+            if (!vesselInfoPopup)
+                vesselInfoPopup = VesselInfoPopup.Build((RectTransform)transform,
+                    selectedGameDescription ? selectedGameDescription.font : null);
+            vesselInfoPopup.Show(vessel, seatLabel);
         }
 
         /// <summary>A tap on one of the local pilot's ally chips: ask the host to step its hull.

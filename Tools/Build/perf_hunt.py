@@ -189,7 +189,24 @@ def cmd_gates(args=None, quiet=False):
 
 def capture_key(b):
     f = pcr.frame(b)
-    return f"{f['scene'] or '?'}|{f['label'] or '?'}"
+    return f"{f['scene'] or '?'}|{scenario_label(b, f['label'])}"
+
+
+# The menu scenarios name a CELL, not a scene: S2 is the Lattice (Cell Selector > Lattice), but the editor's
+# auto-capture labels any long Menu_Main play S2, and the lava lamp boots Garland. A Garland capture keyed S2
+# became the S2 baseline on 2026-10-17 (mrglo's 10-16 capture: 'Garland Cell Config' in its cells line).
+SCENARIO_CELLS = {("Menu_Main", "S2"): "Lattice"}
+
+
+def scenario_label(b, label):
+    """The capture's label, or the cell it really measured when that is not the scenario's cell.
+    A capture with no cells line keeps its label (nothing says otherwise)."""
+    f = pcr.frame(b)
+    want = SCENARIO_CELLS.get((f["scene"], label))
+    m = re.search(r"cell 0 '([^']+)'", str(b.get("cells") or ""))
+    if not want or not m or want.lower() in m.group(1).lower():
+        return label or "?"
+    return m.group(1).replace(" Cell Config", "").strip() or (label or "?")
 
 
 def summarize(b):
@@ -709,6 +726,10 @@ def self_test():
         base = {}
         v = compare_capture(sample, base)
         assert v["action"].startswith("adopted") and "Menu_Main|S2" in base, v
+        garland = json.loads(json.dumps(sample)); garland["cells"] = "cells: 1 | cell 0 'Garland Cell Config' Frenzy"
+        assert capture_key(garland) == "Menu_Main|Garland", capture_key(garland)
+        lattice = json.loads(json.dumps(sample)); lattice["cells"] = "cells: 1 | cell 0 'Lattice Cell Config' Frenzy"
+        assert capture_key(lattice) == "Menu_Main|S2", capture_key(lattice)
         same = json.loads(json.dumps(sample)); same["diag"]["avgCpuBusyMs"] = 20.8   # +4 %: noise
         assert compare_capture(same, base)["action"] == "within baseline"
         worse = json.loads(json.dumps(sample)); worse["diag"]["avgCpuBusyMs"] = 26.0; worse["diag"]["markers"][0]["avgMs"] = 3.0

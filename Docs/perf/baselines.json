@@ -1,4 +1,35 @@
 {
+  "Menu_Main|Garland": {
+    "adoptedUtc": "2026-10-17T08:48:39Z",
+    "codeOpt": "Release",
+    "cpuBusyMs": 3.846808671951294,
+    "fps": 57.958351135253906,
+    "gcKB": 117.82295989990234,
+    "markers": {
+      "Animators.Update": 0.2478,
+      "BehaviourUpdate": 1.0212,
+      "CoroutinesDelayedCalls": 0.1444,
+      "Fauna.BodySync": 0.1313,
+      "Inl_UniversalRenderTotal": 1.4946,
+      "LOD.Drain": 0.0267,
+      "LOD.Sweep": 0.034,
+      "LateBehaviourUpdate": 0.4277,
+      "LightFauna.Feed": 0.0134,
+      "LightFauna.Tick.Goal": 0.0009,
+      "LightFauna.Tick.PrismScan": 0.0912,
+      "LightFauna.Tick.Vessels": 0.0023,
+      "Physics.Simulate": 0.092,
+      "PlayerLoop": 9.2708,
+      "PrismDebris.RefreshConvergence": 0.0103,
+      "ShellContact.Query": 0.0564,
+      "UGUI.Rendering.UpdateBatches": 0.6009,
+      "UniTaskLoopRunnerPreLateUpdate": 0.0009
+    },
+    "p95Ms": 18.76990509033203,
+    "prismEnts": 16882,
+    "prismPath": "ON \u00b7 ents=16882 meshes=4 mats=9",
+    "timestamp": "2026-10-16 16:35:36"
+  },
   "MinigameGrizzlyCharge|MinigameGrizzlyCharge": {
     "adoptedUtc": "2026-10-16T21:50:20Z",
     "codeOpt": "Release",
