@@ -158,6 +158,9 @@ namespace CosmicShore.Editor
             // ref locks, so let it finish first (it takes seconds; give up waiting after a minute).
             for (int waited = 0; BugLedgerSender.IsBusy && waited < 600; waited++) Thread.Sleep(100);
 
+            // The daily check's fallback copy (perf-daily.yml): when a branch refuses the bot's status commit, the
+            // status goes to perf-status as <branch>/status.json. A missing perf-status branch just fails the fetch.
+            FrogletGit.Run("fetch", "-q", "origin", "+refs/heads/perf-status:" + PerfStatusRef);
             foreach (var (branch, role) in plan.Flow)
                 Branches.Add(ReadBranch(branch, role));
 
@@ -199,19 +202,31 @@ namespace CosmicShore.Editor
             }
         }
 
+        const string PerfStatusRef = "refs/remotes/origin/perf-status";
+
         static BranchStatus ReadBranch(string branch, string role)
         {
             var st = new BranchStatus { Branch = branch, Role = role };
             string remoteRef = "refs/remotes/origin/" + branch;
             FrogletGit.Run("fetch", "-q", "origin", "+refs/heads/" + branch + ":" + remoteRef);
             var show = FrogletGit.Run("show", remoteRef + ":Docs/perf/status.json");
+            string statusRef = remoteRef, statusPath = "Docs/perf/status.json";
+
+            // The perf-status copy wins when it is newer (the daily check could not commit to the branch itself).
+            var copy = FrogletGit.Run("show", PerfStatusRef + ":" + branch + "/status.json");
+            if (copy.Ok && (!show.Ok || string.CompareOrdinal(GeneratedOf(copy.StdOut), GeneratedOf(show.StdOut)) > 0))
+            {
+                show = copy;
+                statusRef = PerfStatusRef;
+                statusPath = branch + "/status.json";
+            }
             if (!show.Ok)
             {
                 st.Error = "no Docs/perf/status.json on origin/" + branch + " yet";
                 return st;
             }
 
-            var changed = FrogletGit.Run("log", "-1", "--format=%cI%x09%an", remoteRef, "--", "Docs/perf/status.json");
+            var changed = FrogletGit.Run("log", "-1", "--format=%cI%x09%an", statusRef, "--", statusPath);
             if (changed.Ok)
             {
                 var p = changed.StdOut.Trim().Split('\t');
@@ -272,6 +287,13 @@ namespace CosmicShore.Editor
                 st.Error = "unreadable status.json: " + e.Message;
             }
             return st;
+        }
+
+        /// <summary>The status file's generatedUtc (ISO, so ordinal order is time order), or "".</summary>
+        static string GeneratedOf(string json)
+        {
+            try { return (string)JObject.Parse(json)["generatedUtc"] ?? ""; }
+            catch { return ""; }
         }
 
         static void AddStrings(JToken token, List<string> into)

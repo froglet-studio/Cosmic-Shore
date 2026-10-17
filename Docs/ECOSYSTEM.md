@@ -7219,7 +7219,8 @@ SPECIES reads wrong, fix that species' authored `HeartWorldScale`.** Never the r
 
 **The numbers are owned by a tool, not by hand.**
 `Tools/Build/author_lifeform_heart_sizes.py` (`--check` in CI, `--write` to author) covers the
-**88 canonical** `_SO_Assets/Lifeforms` assets plus the **25 per-cell deployments that author
+**108 canonical** `_SO_Assets/Lifeforms` assets (27 species × 4 elements; the Nested Gyroid's four, the 28th
+species, are pinned by `author_nested_gyroid_flora_assets.py` instead, 112 in the folder) plus the **25 per-cell deployments that author
 their own variant block** — those do NOT inherit a canonical heart, which is why they are
 enumerated rather than assumed. It also flipped the canonical assets' `Variant.Enabled` to 1: a
 heart size stated in a disabled block is a heart size nothing reads

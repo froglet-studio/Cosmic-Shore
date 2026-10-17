@@ -354,6 +354,9 @@ still happens by itself; this only says what happened.
   sweep and status runs, daily and in every performance session), fetched as `origin/<branch>`. The branch list and
   each branch's role are `branchFlow` in that file (`BRANCH_FLOW` in `perf_hunt.py`): **Ys-bleeding-edge first**,
   where the performance work lands (Yash), then **bleeding-edge**. Your sends come from `origin/bugledger/<user>`.
+  bleeding-edge's copy is kept current by the daily check (`.github/workflows/perf-daily.yml`, job `publish`), which
+  commits its status there every day; if branch protection refuses the bot, it publishes to the `perf-status` branch
+  (`<branch>/status.json`) instead and the record reads whichever copy is newer.
   Everything is fetched and read on a background thread; the working tree, index and current branch are never
   touched. **Refresh from GitHub** fetches again.
 - **Any time:** **FrogletTools > Diagnostics > Project Record** opens the expanded record without a send.
