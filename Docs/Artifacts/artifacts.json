@@ -14,8 +14,8 @@
         "build.json"
       ],
       "publishedFrom": {
-        "branch": "Ys-bleeding-edge",
-        "sha": "14382d95519428cacb460e1c7cdb3b0de7ebb432",
+        "branch": "989e690e4",
+        "sha": "989e690e4be745ccd20c2b8c441e159d5922eada",
         "subject": "fix(vessel-studio): the Albatross flies as a glider; the concept fleet's four-course scorecard"
       },
       "files": {
@@ -45,7 +45,7 @@
         "studios.json": "0b840f81695deb48149185cd5500dd5208e424e24c8237dc68deb1a8e38a812e",
         "sync.js": "4e2985383c88b3fe8911f3fa934ce16e2171a4151990039e2e24ecedcf153ff7"
       },
-      "version": "35",
+      "version": "36",
       "importedAt": "2026-10-17"
     }
   ]
