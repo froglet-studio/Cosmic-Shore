@@ -5,13 +5,15 @@ and wire them into Menu_Main.unity (Docs/MENU_REDESIGN_B.md section 12; the appr
 on the "Menu Redesign B" canvas).
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Party/        shared by every mode window (D7)
-        PartySlot.prefab        one seat: KitPartySlot (FriendInfoSlot) - the framed occupied row
-                                (domain ring, avatar, name, role, kick) over the "Open slot" tile
+        PartySlot.prefab        one seat of the party molecule (rev 6, section 45.4): KitPartySlot
+                                (FriendInfoSlot) - the avatar in its domain ring over the name and role,
+                                the kick on its shoulder, over the "Invite a friend" tile
         PartyRequestRow.prefab  one party invite / friend request: KitRequestRow (RequestInfoEntry)
         PartyOnlineRow.prefab   one online pilot: KitOnlineRow (OnlineInfoEntry) - Invite, Join /
                                 Spectate, and the cancel / kick icon button
         PartyPanel.prefab       the unified panel: ArcadeLobbyList + FriendsListPanel on one root,
-                                four seats, Leave, then the INVITES and ONLINE lists in one scroll
+                                the molecule (the leader's seat at the centre, three seats bonded
+                                round it), Leave, then the INVITES and ONLINE lists in one scroll
     Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/
         ArcadeGameCard.prefab   one grid card: KitGameCard (GameCard) on a KitTile
         ArcadeView.prefab       the whole window body: nav dim, backdrop, header with Back (B), the
@@ -494,47 +496,76 @@ def avatar_nodes(parent, key, size, ring=False, x=0):
 # --------------------------------------------------------------------------------------------
 
 ROW_W = 376          # the party panel's inner width at 420 (22 + 22 padding)
-SLOT_H, ROW_H = 58, 46
+ROW_H = 46
+
+
+# Rev 6 (Docs/MENU_REDESIGN_B.md §45.4): the party is a MOLECULE - the leader's seat (slot 1, the host on every
+# device) at the centre and the other three seats bonded round it, each bond lit in its pilot's domain colour.
+SOCK_W, SOCK_H = 112, 112      # one seat: the avatar octagon over the name and the role
+SOCK_AV = 58                   # the avatar; its domain ring is 6 wider
+SOCK_AV_Y = 36                 # the avatar's centre below the seat's top
+MOL_R = 120                    # the centre seat's avatar to a member's, canvas units
+MOL_ANGLES = (155, 25, 270)    # the three member seats, degrees counter-clockwise from the right
+MOL_H = 304
+MOL_CY = MOL_H / 2 - 92        # the centre avatar, above the molecule's middle
+BOND_H = 14                    # a bond's rect: the core plus its glow
+
+
+def socket_pos(i):
+    """Seat i's avatar centre in the molecule (slot 1 is the centre)."""
+    if i == 0:
+        return 0.0, MOL_CY
+    a = math.radians(MOL_ANGLES[i - 1])
+    return round(MOL_R * math.cos(a), 2), round(MOL_CY + MOL_R * math.sin(a), 2)
+
+
+def oct_nodes(parent, key, size, token, sprite_name="kit_oct_fill", y=-SOCK_AV_Y):
+    return image_node(parent, key, key.rsplit("/", 1)[-1], R((0.5, 1), None, (0, y), (size, size)), token,
+                      K.kit_sprite(sprite_name))
 
 
 def build_slot():
-    root = N("root", "PartySlot", R(size=(ROW_W, SLOT_H)))
+    root = N("root", "PartySlot", R(size=(SOCK_W, SOCK_H)))
     # Motion (section 22.8): the seats rise in one after another. The request and online rows are
     # not given one - RequestInfoEntry / OnlineInfoEntry already fade them in (entryFadeInSeconds).
     root.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     occ = root.child(N("Occupied", "Occupied", STRETCH)).add("cg", 225, canvas_group(False))
-    frame_nodes(occ, "Occupied", 10, "SurfaceVeryDark", "SurfaceDark")
-    _, x = avatar_nodes(occ, "Occupied/Avatar", 40, ring=True, x=12)
-    label_e(occ.child(N("Occupied/Name", "Name", R((0, 0.5), (1, 0.5), (x + 12 + (ROW_W - x - 12 - 56) / 2 - ROW_W / 2, 10),
-                                                    (-(x + 12 + 56), 24)))), "Pilot", "Body", "TextLight", align="left")
-    label_e(occ.child(N("Occupied/Role", "Role", R((0, 0.5), (1, 0.5), (x + 12 + (ROW_W - x - 12 - 56) / 2 - ROW_W / 2, -13),
-                                                    (-(x + 12 + 56), 18)))), "Pilot", "Label", "NeutralLightest", align="left")
-    kick = occ.child(N("Occupied/Kick", "Kick", R((1, 0.5), None, (-12, 0), (32, 32), (1, 0.5))))
+    oct_nodes(occ, "Occupied/Avatar/Ring", SOCK_AV + 6, "SurfaceDark")
+    oct_nodes(occ, "Occupied/Avatar/Gap", SOCK_AV + 2, "SurfaceVeryDark")
+    oct_nodes(occ, "Occupied/Avatar/Back", SOCK_AV, "SurfaceDark")
+    art_node(occ, "Occupied/Avatar/Icon", "Avatar", R((0.5, 1), None, (0, -SOCK_AV_Y), (SOCK_AV, SOCK_AV)),
+             AVATAR_PLACEHOLDER, preserve=True)
+    name_top = SOCK_AV_Y + SOCK_AV / 2 + 7
+    label_e(occ.child(N("Occupied/Name", "Name", R((0, 1), (1, 1), (0, -name_top), (0, 20), (0.5, 1)))),
+            "Pilot", "Body", "TextLight", align="center")
+    label_e(occ.child(N("Occupied/Role", "Role", R((0, 1), (1, 1), (0, -name_top - 22), (0, 16), (0.5, 1)))),
+            "Pilot", "Label", "NeutralLightest", align="center")
+    # The host's kick, on the avatar's shoulder.
+    kick = occ.child(N("Occupied/Kick", "Kick", R((0.5, 1), None, (SOCK_AV / 2 + 4, -SOCK_AV_Y + SOCK_AV / 2 + 4), (32, 32))))
     kick.add("cg", 225, canvas_group(False))
     kick.children.append(small_button("KickButton", "KickButton", "Cancel", None, (0.5, 0.5), (0.5, 0.5),
                                       icon="chrome_close"))
 
+    # The open seat: a glass tile, an octagon socket with a + in Space (people), "Invite a friend" under it.
     empty = root.child(N("Empty", "OpenSlot", STRETCH)).add("cg", 225, canvas_group(True))
     ring_node(empty, "Empty/FocusRing", 10)
     fill = empty.child(N("Empty/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.55), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
     bord = empty.child(N("Empty/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
-    image_node(empty, "Empty/PlusRing", "PlusRing", R((0, 0.5), None, (12 + 23, 0), (46, 46)),
-               "SurfaceDark", K.kit_sprite("kit_oct_fill"))
-    image_node(empty, "Empty/PlusBack", "PlusBack", R((0, 0.5), None, (12 + 23, 0), (44, 44)),
-               "SurfaceBlack", K.kit_sprite("kit_oct_fill"))
-    plus = empty.child(N("Empty/Plus", "Plus", R((0, 0.5), None, (12 + 23, 0), (22, 22))))
+    oct_nodes(empty, "Empty/PlusRing", SOCK_AV - 8, "ElementSpace")
+    oct_nodes(empty, "Empty/PlusBack", SOCK_AV - 12, "SurfaceBlack")
+    plus = empty.child(N("Empty/Plus", "Plus", R((0.5, 1), None, (0, -SOCK_AV_Y), (22, 22))))
     plus.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_plus"), preserve=True))
-    lab = empty.child(N("Empty/Label", "Label", R((0, 0.5), (1, 0.5), ((70 - 12) / 2, 0), (-(70 + 12), 22))))
+        .add("img", 114, K.image(tok("ElementSpace"), K.chrome_sprite("chrome_plus"), preserve=True))
+    lab = empty.child(N("Empty/Label", "Label", R((0, 1), (1, 1), (0, -name_top - 4), (-12, 30), (0.5, 1))))
     lab.add("cr", 222, K.canvas_renderer()) \
-        .add("tmp", 114, ellipsis(text("Open slot - invite a friend below", "BodySmall", tok("NeutralLightest")))) \
-        .add("kt", 114, K.kit_text("BodySmall", "NeutralLightest", driven=True))
+        .add("tmp", 114, ellipsis(text("Invite a friend", "Label", tok("ElementSpace"), align="center"))) \
+        .add("kt", 114, K.kit_text("Label", "ElementSpace", driven=True))
     empty.add("tile", 114, tile_body(c("Empty/FocusRing", "img"), c("Empty/Fill", "img"), c("Empty/Border", "img"), 10,
                                      primary=[c("Empty/Plus", "img"), c("Empty/Label", "tmp")],
-                                     unsel_primary="NeutralLightest"))
+                                     unsel_primary="ElementSpace"))
 
     root.add("slot", 114, lambda ctx, go: mono(go, S["slot"],
              f"  avatarIcon: {ref(ctx.c('Occupied/Avatar/Icon', 'img'))}\n"
@@ -548,7 +579,6 @@ def build_slot():
              f"  roleText: {ref(ctx.c('Occupied/Role', 'kt'))}\n"
              f"  domainRing: {ref(ctx.c('Occupied/Avatar/Ring', 'img'))}\n"
              f"  theme: {K.ref(11400000, K.THEME, 2)}\n"))
-    root.add("le", 114, le(ph=SLOT_H, mw=0, fw=1))
     return root
 
 
@@ -649,16 +679,20 @@ def build_online_row():
 # --------------------------------------------------------------------------------------------
 
 PANEL_W = 420
+OPEN_BOND_ALPHA = 0.35     # an open seat's bond (ArcadeLobbyList.openBondAlpha)
 # The window's backdrop is glass, not a slab: the menu scene reads through it (the user, 2026-10-16:
 # "I liked the transparent backgrounds way more than the solid black backgrounds"). Shared by the
 # Arena, Toy Box and Mission windows.
 # 0.55 -> 0.75 on 2026-10-17 (the owner: "make the bg opaque by 20%"): still glass, but Home no longer
 # reads through behind a window's title and Back.
 WINDOW_BACKDROP_ALPHA = 0.75
-# Rev 3: the four windows' body and header, shared. The left inset clears the friends drawer's handle
-# (author_menu_friends_drawer.HANDLE, 76 px on the left edge, drawn over every window) with 24 px of
-# air; the right keeps 60. Vertical: 196 under the top (nav + header), 40 over the bottom.
+# Rev 3: the four windows' body and header, shared. The left inset is a gutter for the friends control
+# drawn over every window (rev 3's 76 px handle on the left edge; since rev 6 the presence orb, ORB_*
+# below); the right keeps 60. Vertical: 196 under the top (nav + header), 40 over the bottom.
 WINDOW_LEFT, WINDOW_RIGHT = 100, 60
+# Rev 6 (§45.4): the friends drawer's presence orb (author_menu_friends_drawer.py) sits in the bottom-left corner over
+# every window, inside the 100 px left gutter above: x 4 .. 96, y 44 .. 136 up from the bottom, its count under it.
+ORB_X, ORB_Y, ORB_SIZE = 4, 44, 92
 WINDOW_BODY = R((0, 0), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -78), (-(WINDOW_LEFT + WINDOW_RIGHT), -236))
 WINDOW_HEADER = R((0, 1), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -108), (-(WINDOW_LEFT + WINDOW_RIGHT), 64), (0.5, 1))
 EXPLORE_W = 1920 - WINDOW_LEFT - WINDOW_RIGHT      # at the 1920 reference width
@@ -685,20 +719,28 @@ def build_panel():
     top = inner.child(N("Top", "Top", R((0, 1), None, (0, 0), (ROW_W, 46), (0, 1))))
     top.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 8, 0, (1, 1), (1, 0))).add("le", 114, le(ph=46))
     head = top.child(N("Top/Header", "Header", R((0, 1), None, (0, 0), (ROW_W, 18), (0, 1)))).add("le", 114, le(ph=18))
-    label(head.child(N("Top/Header/Label", "Label", STRETCH)), "PARTY", "Label", "TextLight")
-    label(head.child(N("Top/Header/Count", "Count", STRETCH)), "1 / 4", "Label", "NeutralLightest", align="right")
+    label(head.child(N("Top/Header/Label", "Label", STRETCH)), "Your party", "Label", "ElementSpace")
+    label(head.child(N("Top/Header/Count", "Count", STRETCH)), "1 / 4", "Label", "ElementSpace", align="right")
     online = top.child(N("Top/Online", "OnlineCount", R((0, 1), None, (0, -26), (ROW_W, 20), (0, 1))))
     online.add("le", 114, le(ph=20)).add("hlg", 114, K.hv_layout(False, (1, 0, 0, 0), 10, 3, (0, 0), (0, 0)))
-    diamond = image_node(online, "Top/Online/Diamond", "Diamond", R((0, 0.5), None, (5, 0), (8, 8)), "Cta")
+    diamond = image_node(online, "Top/Online/Diamond", "Diamond", R((0, 0.5), None, (5, 0), (8, 8)), "ElementSpace")
     diamond.rot = 45
     label(online.child(N("Top/Online/Text", "Text", R((0, 0.5), None, (20, 0), (300, 20), (0, 0.5)))),
           "1 Player Online", "BodySmall", "NeutralLightest")
 
-    slots = inner.child(N("Slots", "Slots", R((0, 1), None, (0, 0), (ROW_W, 4 * SLOT_H + 24), (0, 1))))
-    slots.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 8, 0, (1, 1), (1, 0))).add("le", 114, le(ph=4 * SLOT_H + 24))
+    # The molecule (§45.4): bonds first so the seats draw over their ends, then the four seats.
+    mol = inner.child(N("Molecule", "Molecule", R((0, 1), None, (0, 0), (ROW_W, MOL_H), (0, 1))))
+    mol.add("le", 114, le(ph=MOL_H))
+    for i, angle in enumerate(MOL_ANGLES):
+        bond = mol.child(N(f"Bond{i + 2}", f"Bond{i + 2}", R((0.5, 0.5), None, socket_pos(0), (MOL_R, BOND_H), (0, 0.5))))
+        bond.rot = angle
+        bond.add("cr", 222, K.canvas_renderer()) \
+            .add("img", 114, M.material_image(tok("ElementSpace", OPEN_BOND_ALPHA), M.BOND_MAT)) \
+            .add("rim", 114, lambda ctx, go: mono(go, M.RIM_SCRIPT, ""))
     for i in range(4):
-        slots.children.append(Inst(f"Slot{i + 1}", "PartySlot", f"Slot{i + 1}",
-                                   R((0, 1), None, (0, -i * (SLOT_H + 8)), (ROW_W, SLOT_H), (0, 1))))
+        x, y = socket_pos(i)
+        mol.children.append(Inst(f"Slot{i + 1}", "PartySlot", f"Slot{i + 1}",
+                                 R((0.5, 0.5), None, (x, round(y - (SOCK_H / 2 - SOCK_AV_Y), 2)), (SOCK_W, SOCK_H))))
 
     leave = inner.child(N("Leave", "Leave", R((0, 1), None, (0, 0), (ROW_W, 36), (0, 1))))
     leave.add("cg", 225, canvas_group(False)).add("le", 114, le(ph=36, ignore=True)) \
@@ -734,10 +776,13 @@ def build_panel():
              f"  profileIcons: {K.ref(11400000, PROFILE_ICONS, 2)}\n"
              + refs("slots", [ctx.iref(f"Slot{i + 1}", "root#slot") for i in range(4)])
              + f"  onlineStatusText: {ref(ctx.c('Top/Online/Text', 'tmp'))}\n"
+             "  onlineAloneText: 1 Player Online\n  onlineCountTemplate: '{count} Players Online'\n"
              f"  leaveButton: {ref(ctx.iref('LeaveButton', 'root#button'))}\n"
              f"  friendsListPanel: {ref(ctx.c('root', 'friends'))}\n"
              f"  partyCountText: {ref(ctx.c('Top/Header/Count', 'kt'))}\n"
-             f"  leaveGroup: {ref(ctx.c('Leave', 'cg'))}\n"))
+             f"  leaveGroup: {ref(ctx.c('Leave', 'cg'))}\n"
+             + refs("seatBonds", [0] + [ctx.c(f"Bond{i + 2}", "img") for i in range(3)])
+             + f"  openBondAlpha: {OPEN_BOND_ALPHA}\n  theme: {K.ref(11400000, K.THEME, 2)}\n"))
     root.add("friends", 114, lambda ctx, go: mono(go, S["friends"],
              f"  onlineContent: {ref(ctx.rt('OnlinePlayers'))}\n"
              f"  requestsContent: {ref(ctx.rt('Requests'))}\n"
@@ -1264,6 +1309,46 @@ FIELDS = [
 ]
 
 
+def _num(doc, pattern):
+    m = re.search(pattern, doc)
+    assert m, f"no {pattern} in {doc[:80]!r}"
+    return float(m.group(1))
+
+
+def check_molecule(panel, lobby):
+    """Rev 6 (§45.4), the party molecule as shipped: ArcadeLobbyList.seatBonds holds the centre seat's empty entry then
+    three bonds; each bond is drawn with the bond material and KitRimMesh (the shader reads UV1), starts at the centre
+    seat's avatar and, along its own rotation, ends at its member seat's avatar."""
+    V = K.FileIds("PartyPanel")
+    bonds = re.findall(r"^  - \{fileID: (-?\d+)\}", lobby.split("  seatBonds:\n")[1].split("  openBondAlpha")[0], re.M)
+    assert len(bonds) == 4 and bonds[0] == "0" and len(set(bonds[1:])) == 3, \
+        f"ArcadeLobbyList.seatBonds must be the centre's empty entry then three distinct bonds, not {bonds}"
+
+    def avatar_centre(slot):
+        _, inst = doc_of(panel, V(f"{slot}#inst"))
+        x = _num(inst, r"propertyPath: m_AnchoredPosition\.x\n\s+value: (-?[\d.]+)")
+        y = _num(inst, r"propertyPath: m_AnchoredPosition\.y\n\s+value: (-?[\d.]+)")
+        return x, y + (SOCK_H / 2 - SOCK_AV_Y)
+    centre = avatar_centre("Slot1")
+    for i, fid in enumerate(bonds[1:]):
+        key = f"Bond{i + 2}"
+        assert fid == str(V(f"{key}#img")), f"seatBonds[{i + 1}] is not {key}"
+        _, img = doc_of(panel, fid)
+        assert f"guid: {M.BOND_MAT}" in img, f"{key} is not drawn with the bond material"
+        _, go = doc_of(panel, V(f"{key}#go"))
+        assert any(f"guid: {M.RIM_SCRIPT}" in (doc_of(panel, c)[1] or "")
+                   for c in re.findall(r"component: \{fileID: (-?\d+)\}", go)), f"{key} has no KitRimMesh (the bond shader reads UV1)"
+        _, rt = doc_of(panel, V(f"{key}#rt"))
+        start = (_num(rt, r"m_AnchoredPosition: \{x: (-?[\d.e-]+)"), _num(rt, r"m_AnchoredPosition: \{x: -?[\d.e-]+, y: (-?[\d.e-]+)"))
+        assert abs(start[0] - centre[0]) < 0.5 and abs(start[1] - centre[1]) < 0.5, f"{key} does not start at the centre seat's avatar"
+        a = math.radians(_num(rt, r"m_LocalEulerAnglesHint: \{x: 0, y: 0, z: (-?[\d.e-]+)"))
+        length = _num(rt, r"m_SizeDelta: \{x: (-?[\d.e-]+)")
+        end = (start[0] + length * math.cos(a), start[1] + length * math.sin(a))
+        seat = avatar_centre(f"Slot{i + 2}")
+        assert math.hypot(end[0] - seat[0], end[1] - seat[1]) < 1.0, f"{key} ends at {end}, not at Slot{i + 2}'s avatar {seat}"
+    assert "  onlineCountTemplate: '{count} Players Online'\n" in lobby, "the online line lost its authored template"
+
+
 def validate_prefabs(files, guids):
     M.require_entrances(files, {prefab_path("ArcadeView"): 2, prefab_path("PartySlot"): 1})
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
@@ -1281,6 +1366,7 @@ def validate_prefabs(files, guids):
     assert len(slots) == 4 and len(set(slots)) == 4, "ArcadeLobbyList needs four distinct slots"
     for s in slots:
         assert kind_of(panel, s) == (114, S["slot"]), "an ArcadeLobbyList slot is not a KitPartySlot"
+    check_molecule(panel, lobby)
     _, friends = doc_of(panel, K.FileIds("PartyPanel")("root#friends"))
     for field, name in (("onlineInfoPrefab", "PartyOnlineRow"), ("requestInfoPrefab", "PartyRequestRow")):
         want = f"{field}: {{fileID: {K.FileIds(name)('root#row')}, guid: {asset_guid(name)}"
@@ -1390,12 +1476,12 @@ def block_fields(doc):
     return {k: re.sub(r"\s+", " ", v).strip() for k, v in raw.items()}
 
 
-HANDLE_CLEARANCE = 76 + 16     # the friends drawer's handle (author_menu_friends_drawer.HANDLE) plus air
+ORB_CLEARANCE = ORB_X + ORB_SIZE + 4     # the friends orb (ORB_*) plus air
 
 
 def check_window_inset(view_text, view_name):
-    """Rev 3: a window's Body and Header start right of the friends handle, which draws over every
-    window on the left edge - a card under it can be neither read nor pressed. Shared by the four
+    """Rev 3 / rev 6: a window's Body and Header start right of the friends orb, which draws over every
+    window in the bottom-left corner - a card under it can be neither read nor pressed. Shared by the four
     windows' generators."""
     V = K.FileIds(view_name)
     for key in ("Body#rt", "Header#rt"):
@@ -1403,8 +1489,8 @@ def check_window_inset(view_text, view_name):
         x = float(re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+)", doc).group(1))
         w = float(re.search(r"m_SizeDelta: \{x: (-?[\d.e-]+)", doc).group(1))
         left = x - w / 2          # stretched across the parent with a centre pivot
-        assert left >= HANDLE_CLEARANCE, \
-            f"{view_name} {key.split('#')[0]} starts {left:g} px from the left edge, under the friends handle (needs {HANDLE_CLEARANCE})"
+        assert left >= ORB_CLEARANCE, \
+            f"{view_name} {key.split('#')[0]} starts {left:g} px from the left edge, under the friends orb (needs {ORB_CLEARANCE})"
 
 
 def drift(files):
@@ -1463,7 +1549,14 @@ def self_test(current, files, guids):
             t, K.FileIds("ArcadeView")("root#rt"),
             f"  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n",
             f"  - {{fileID: {K.FileIds('ArcadeView')('Header#rt')}}}\n  - {{fileID: {K.FileIds('ArcadeView')('Body#rt')}}}\n")),
-        "the body back under the friends handle": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
+        "a bond aimed away from its seat": prefab_plant(panel, lambda t: in_one(
+            t, K.FileIds("PartyPanel")("Bond3#rt"), f"m_LocalEulerAnglesHint: {{x: 0, y: 0, z: {K.f32(MOL_ANGLES[1])}}}",
+            "m_LocalEulerAnglesHint: {x: 0, y: 0, z: 40}")),
+        "a bond without KitRimMesh": prefab_plant(panel, lambda t: in_one(
+            t, K.FileIds("PartyPanel")("Bond2#go"), f"  - component: {{fileID: {K.FileIds('PartyPanel')('Bond2#rim')}}}\n", "")),
+        "the centre seat given a bond": prefab_plant(panel, lambda t: t.replace(
+            "  seatBonds:\n  - {fileID: 0}\n", f"  seatBonds:\n  - {{fileID: {K.FileIds('PartyPanel')('Bond2#img')}}}\n", 1)),
+        "the body back under the friends orb": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
             t, K.FileIds("ArcadeView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20")),
         "unrelated document edited": scene_plant(lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1)),
     }

@@ -9,6 +9,10 @@ blueprint grid (kit_grid) behind style-B panels and windows.
     Lattice_Panel.mat     one finer layer for panels (the Ark recipe, leaderboard, Profile card, Toy Box cards...)
     Lattice_Window.mat    two layers for a whole window's backdrop (Arcade, Arena, Mission, Configure, Toy Box)
 
+It also writes the rev 6 rims (ElementRim.shader, §45.3: ElementRim_<element>.mat) and the presence orb and party
+bonds (§45.4): Presence.shader / Bond.shader on UIPresence.cginc, Presence_Orb.mat (the friends orb in Menu_Main)
+and Bond_Party.mat (the party molecule's bonds in PartyPanel.prefab).
+
 This writes the two materials and the shader / include metas (deterministic guids), so every reference the menu
 generators emit (menu_b_motion.grid_node / window_lattice_node) resolves. The element colours are the theme's
 (UIThemeSO element fields, AbilityLockupStyleSO's colours).
@@ -30,6 +34,9 @@ SHADER = f"{DIR}/Lattice.shader"
 CGINC = f"{DIR}/UILattice.cginc"
 RIM_SHADER = f"{DIR}/ElementRim.shader"
 RIM_CGINC = f"{DIR}/UIElementRim.cginc"
+PRESENCE_SHADER = f"{DIR}/Presence.shader"
+BOND_SHADER = f"{DIR}/Bond.shader"
+PRESENCE_CGINC = f"{DIR}/UIPresence.cginc"
 
 
 def guid(key):
@@ -40,6 +47,11 @@ SHADER_GUID = guid("shader")
 CGINC_GUID = guid("cginc")
 RIM_SHADER_GUID = guid("rim_shader")
 RIM_CGINC_GUID = guid("rim_cginc")
+PRESENCE_SHADER_GUID = guid("presence_shader")
+BOND_SHADER_GUID = guid("bond_shader")
+PRESENCE_CGINC_GUID = guid("presence_cginc")
+PRESENCE_GUID = guid("presence_mat")
+BOND_GUID = guid("bond_mat")
 # The elemental rims (§45.3): one material per element plus omni. menu_b_motion.rim_border emits these guids.
 RIMS = {"Charge": (1, 0.827451, 0.3019608), "Mass": (0.49803922, 0.65882355, 1), "Space": (0.6901961, 0.4862745, 1),
         "Time": (0.37254903, 0.9411765, 0.78431374), "Omni": None}
@@ -61,6 +73,15 @@ MATERIALS = {
                            _PulseRepeat=1400, _PulseLength=120, _TwinkleDensity=0.05, _FadeStart=0.55, _Reveal=1),
 }
 MAT_GUID = {"Lattice_Panel": PANEL_GUID, "Lattice_Window": WINDOW_GUID}
+# The presence orb (§45.4). Its member seats sit on the inner ring at these angles (degrees, counter-clockwise from
+# the right): the shader's bonds (_BondAngles, _MemberRadius) and the drawer generator's avatar positions
+# (author_menu_friends_drawer.py) both read them, so a bond always ends under its avatar.
+ORB_MEMBER_ANGLES = (135, 45, 270)
+ORB_MEMBER_RADIUS = 0.66
+PRESENCE = dict(_GlowAlpha=0.32, _InnerRadius=ORB_MEMBER_RADIUS, _InnerAlpha=0.34, _OuterRadius=0.92, _OuterAlpha=0.55,
+                _RingWidth=0.012, _Soft=0.03, _Dashes=28, _SpinSeconds=40, _Online=0, _DotSize=0.055,
+                _MemberRadius=ORB_MEMBER_RADIUS, _BondWidth=0.022, _BondPeriod=0.16, _BondSpeed=0.22)
+BOND = dict(_Width=1.4, _Soft=1, _Period=18, _Speed=26)
 KIT_GRID = "21a4d02295ff993cb1746d4d792daa21"       # the retired blueprint grid sprite (kit_grid.png)
 SCREENS = "Assets/_Prefabs/UI Elements/Main Menu Screens"
 WINDOWS = [f"{SCREENS}/{p}" for p in ("Arcade/ArcadeView.prefab", "Arena/ArenaView.prefab", "Mission/MissionView.prefab",
@@ -100,18 +121,35 @@ def mat_meta(g):
             "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
 
 
+def shader_material(name, shader_guid, floats, colors):
+    """A UI material on another of these shaders: the lattice material's layout, its own name, shader and values.
+    `colors` values are (r, g, b) or (r, g, b, a) - Unity keeps Vector properties among the colours too."""
+    m = material("Lattice_Window").replace("m_Name: Lattice_Window", f"m_Name: {name}")
+    m = m.replace(f"guid: {SHADER_GUID}", f"guid: {shader_guid}")
+    head, _ = m.split("    m_Floats:\n", 1)
+    return (head + "    m_Floats:\n" + "".join(f"    - {k}: {f(v)}\n" for k, v in sorted(dict(floats, **UI_FLOATS).items()))
+            + "    m_Colors:\n" + "".join(f"    - {k}: {col(v[:3], v[3] if len(v) > 3 else 1)}\n" for k, v in sorted(colors.items()))
+            + "  m_BuildTextureStacks: []\n  m_AllowLocking: 1\n")
+
+
 def rim_material(element):
     omni = RIMS[element] is None
     floats = dict(_Omni=1 if omni else 0, _Speed=0.08 if omni else 0.12, _Tail=0.3 if omni else 0.22,
-                  _BaseLevel=0.7 if omni else 0.45, **UI_FLOATS)
+                  _BaseLevel=0.7 if omni else 0.45)
     colors = dict(_Color=(1, 1, 1), _ElementColor=RIMS[element] or (1, 1, 1),
                   **{k: v for k, v in ELEMENTS.items()})
-    m = material("Lattice_Window").replace("m_Name: Lattice_Window", f"m_Name: ElementRim_{element}")
-    m = m.replace(f"guid: {SHADER_GUID}", f"guid: {RIM_SHADER_GUID}")
-    head, _ = m.split("    m_Floats:\n", 1)
-    return (head + "    m_Floats:\n" + "".join(f"    - {k}: {f(v)}\n" for k, v in sorted(floats.items()))
-            + "    m_Colors:\n" + "".join(f"    - {k}: {col(v)}\n" for k, v in sorted(colors.items()))
-            + "  m_BuildTextureStacks: []\n  m_AllowLocking: 1\n")
+    return shader_material(f"ElementRim_{element}", RIM_SHADER_GUID, floats, colors)
+
+
+def presence_material():
+    clear = (0, 0, 0, 0)
+    return shader_material("Presence_Orb", PRESENCE_SHADER_GUID, PRESENCE,
+                           dict(_Color=(1, 1, 1), _SpaceColor=ELEMENTS["_SpaceColor"], _Bond0=clear, _Bond1=clear,
+                                _Bond2=clear, _BondAngles=ORB_MEMBER_ANGLES + (0,)))
+
+
+def bond_material():
+    return shader_material("Bond_Party", BOND_SHADER_GUID, BOND, dict(_Color=(1, 1, 1)))
 
 
 def outputs():
@@ -130,6 +168,13 @@ def outputs():
     for e in RIMS:
         out[f"{DIR}/ElementRim_{e}.mat"] = rim_material(e)
         out[f"{DIR}/ElementRim_{e}.mat.meta"] = mat_meta(RIM_GUID[e])
+    out[f"{PRESENCE_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, PRESENCE_SHADER_GUID)
+    out[f"{BOND_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, BOND_SHADER_GUID)
+    out[f"{PRESENCE_CGINC}.meta"] = out[f"{CGINC}.meta"].replace(CGINC_GUID, PRESENCE_CGINC_GUID)
+    out[f"{DIR}/Presence_Orb.mat"] = presence_material()
+    out[f"{DIR}/Presence_Orb.mat.meta"] = mat_meta(PRESENCE_GUID)
+    out[f"{DIR}/Bond_Party.mat"] = bond_material()
+    out[f"{DIR}/Bond_Party.mat.meta"] = mat_meta(BOND_GUID)
     return out
 
 
@@ -143,14 +188,16 @@ def shipped_prefabs():
 
 
 RIM_SCRIPT = "b403ee3874d54f79d0f27e7013879c0f"      # KitRimMesh.cs
+PARTY_PANEL = f"{SCREENS}/Party/PartyPanel.prefab"
 RIMMED = {f"{SCREENS}/Ark/ArkView.prefab": "Omni", f"{SCREENS}/Configure/ConfigureView.prefab": "Charge",
           f"{SCREENS}/Hangar/HangarView.prefab": "Mass"}
 
 
 def rim_pairs(text):
-    """(gameObject, rim element) for every Image drawn with a rim material, and the GameObjects that carry KitRimMesh."""
+    """(gameObject, rim element) for every Image drawn with a material that reads KitRimMesh's UV1 (a rim, or "Bond" for
+    the party bonds), and the GameObjects that carry KitRimMesh."""
     lit, meshed = [], set()
-    by_guid = {g: e for e, g in RIM_GUID.items()}
+    by_guid = dict({g: e for e, g in RIM_GUID.items()}, **{BOND_GUID: "Bond"})
     for m in re.finditer(r"^--- !u!114 &-?\d+\nMonoBehaviour:\n((?:(?!--- ).*\n)*)", text, re.M):
         body = m.group(1)
         go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", body)
@@ -175,7 +222,7 @@ def validate_screens(prefabs):
     for path, text in prefabs.items():
         lit, meshed = rim_pairs(text)
         bare = [go for go, _ in lit if go not in meshed]
-        assert not bare, f"{path}: a rim-lit Image without KitRimMesh (the comet would not know where it is): {bare[:3]}"
+        assert not bare, f"{path}: a rim-lit or bond Image without KitRimMesh (the shader would not know where it is): {bare[:3]}"
     for path, element in RIMMED.items():
         lit, _ = rim_pairs(prefabs.get(path, ""))
         assert element in {e for _, e in lit}, f"{path} lost its {element} rim"
@@ -204,6 +251,23 @@ def validate(files):
         if RIMS[e]:
             assert f"- _ElementColor: {col(RIMS[e])}" in m, f"ElementRim_{e} is not lit in {e}"
     assert "  - _Omni: 1\n" in files[f"{DIR}/ElementRim_Omni.mat"].replace("    - _Omni: 1", "  - _Omni: 1"), "the omni rim is not omni"
+    # The presence orb and the bonds (§45.4).
+    for shader_path, mat, g in ((PRESENCE_SHADER, "Presence_Orb", PRESENCE_SHADER_GUID), (BOND_SHADER, "Bond_Party", BOND_SHADER_GUID)):
+        src = open(os.path.join(REPO, shader_path), encoding="utf-8").read()
+        assert '#include "UIPresence.cginc"' in src, f"{shader_path} does not include UIPresence.cginc"
+        declared_ = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", src, re.M)) - {"_MainTex"}
+        m = files[f"{DIR}/{mat}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {g}, type: 3}}" in m, f"{mat} is not on {shader_path}"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == declared_, f"{mat}: properties drifted (missing {declared_ - written}, extra {written - declared_})"
+        assert f"guid: {g}" in files[f"{shader_path}.meta"], f"{shader_path}.meta has the wrong guid"
+    orb = files[f"{DIR}/Presence_Orb.mat"]
+    assert f"- _SpaceColor: {col(ELEMENTS['_SpaceColor'])}" in orb, "the orb is not drawn in the theme's Space"
+    assert f"- _BondAngles: {col(ORB_MEMBER_ANGLES, 0)}" in orb, \
+        f"the orb's bonds do not point at the member seats (ORB_MEMBER_ANGLES {ORB_MEMBER_ANGLES})"
+    radii = {k: re.search(rf"^    - {k}: (.*)$", orb, re.M).group(1) for k in ("_MemberRadius", "_InnerRadius")}
+    assert radii["_MemberRadius"] == radii["_InnerRadius"] == f(ORB_MEMBER_RADIUS), \
+        f"the member seats are off the inner ring ({radii}, want {ORB_MEMBER_RADIUS})"
     validate_screens(files.get("__screens__") or shipped_prefabs())
 
 
@@ -219,6 +283,7 @@ def drift(files):
 
 
 def self_test(files):
+    f_ = f
     cases = [
         ("a material on the wrong shader", lambda f: f.__setitem__(f"{DIR}/Lattice_Panel.mat", f[f"{DIR}/Lattice_Panel.mat"].replace(SHADER_GUID, "0" * 32))),
         ("a property the shader no longer declares", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
@@ -228,6 +293,12 @@ def self_test(files):
         ("the Time rim lit in another colour", lambda f: f.__setitem__(f"{DIR}/ElementRim_Time.mat", f[f"{DIR}/ElementRim_Time.mat"].replace(
             f"- _ElementColor: {col(RIMS['Time'])}", f"- _ElementColor: {col(RIMS['Mass'])}", 1))),
         ("the shader meta on another guid", lambda f: f.__setitem__(f"{SHADER}.meta", f[f"{SHADER}.meta"].replace(SHADER_GUID, "1" * 32))),
+        ("the orb's bonds aimed away from the seats", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
+            f"- _BondAngles: {col(ORB_MEMBER_ANGLES, 0)}", f"- _BondAngles: {col((90, 45, 270), 0)}", 1))),
+        ("the orb's seats off the inner ring", lambda f: f.__setitem__(f"{DIR}/Presence_Orb.mat", f[f"{DIR}/Presence_Orb.mat"].replace(
+            f"    - _MemberRadius: {f_(ORB_MEMBER_RADIUS)}", "    - _MemberRadius: 0.8", 1))),
+        ("the bond material on the rim shader", lambda f: f.__setitem__(f"{DIR}/Bond_Party.mat", f[f"{DIR}/Bond_Party.mat"].replace(
+            BOND_SHADER_GUID, RIM_SHADER_GUID))),
     ]
     screens = shipped_prefabs()
     cases += [
@@ -239,6 +310,8 @@ def self_test(files):
             f"{SCREENS}/Hangar/HangarView.prefab": screens[f"{SCREENS}/Hangar/HangarView.prefab"].replace(RIM_GUID["Mass"], "4" * 32)}))),
         ("a window without its lattice", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[2]: screens[WINDOWS[2]].replace(WINDOW_GUID, "2" * 32)}))),
+        ("a party bond without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            PARTY_PANEL: screens[PARTY_PANEL].replace(RIM_SCRIPT, "5" * 32)}))),
     ]
     ok = True
     for label, mutate in cases:

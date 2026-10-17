@@ -2147,3 +2147,69 @@ Each element's game meaning (`Docs/ElementalAbilitySystem/ARCHITECTURE.md`) give
   - omni shows all four elements.
 - **Gates.** `author_ui_lattice.py` checks that every rim-lit Image has KitRimMesh beside it and that the Ark,
   Configure and Hangar keep their rims. Three more planted defects are caught.
+
+### 45.4 Step 4: the presence orb and the party molecule
+
+The owner chose option A, "Orb". The FRIENDS tab on the left edge (rev 3's handle) is gone.
+
+- **The orb.** A 92 x 92 orb sits in the bottom-left corner over every screen (`Drawer/Orb` in Menu_Main). It is the
+  friends drawer's handle: pressing it opens the party panel. What it shows:
+  - you at the centre, your avatar in a ring of your domain colour;
+  - up to three party members on the inner ring (top-left, top-right, bottom), each in their domain colour, with a
+    flowing bond from you to them;
+  - the slowly turning dashed orbit, carrying one dot per player online (up to 8);
+  - "N online" under it, or "Friends" while nobody else is online. Both lines are authored fields on the orb.
+- **Why 92 px and not the board's 150.** The orb draws over the windows too. At 92 it fits the 100 px left gutter the
+  windows keep (`author_menu_arcade.ORB_*`); the board's size would sit over the windows' cards. The windows' gutter
+  gate (`check_window_inset`) and Home's docked-card gate now measure against the orb.
+- **The shader.** `CosmicShore/UI/Presence` (`Presence.shader` + `UIPresence.cginc`) draws the glow, the inner ring,
+  the orbit with its dots and the three bonds on one sprite-less Image. Every radius is a fraction of the half-size.
+  - The member seats' angles and radius are `author_ui_lattice.ORB_MEMBER_ANGLES` / `ORB_MEMBER_RADIUS`. The shader's
+    `_BondAngles` / `_MemberRadius` and the avatars' positions are both written from them, so a bond ends under its
+    avatar.
+  - `KitPresenceOrb` owns one copy of `Presence_Orb.mat` (UI graphics cannot take a property block). It writes
+    `_Online` and the three bond colours only when the party or the online list changes. The motion is `_Time` alone,
+    so the orb never rebuilds a canvas.
+- **Where the orb's facts come from.** It reads, never decides. `ArcadeLobbyList` (the party panel) now publishes:
+  - `PresenceChanged`, raised only when the drawn seating, a seat's live domain colour or the online count changes;
+  - `DrawnSeatCount`, `TryGetSeat` and `RemoteOnlineCount`.
+
+  So the orb shows exactly the synced roster the panel draws. It finds the panel through its FriendsDrawer; an
+  inspector reference wins.
+- **The party molecule.** `PartyPanel.prefab`'s four stacked seats became a molecule:
+  - the leader's seat (slot 1, the host on every device) is at the centre;
+  - the other three seats are bonded round it at 155, 25 and 270 degrees, 120 units out;
+  - each seat (`PartySlot.prefab`) is the avatar in its domain ring over the name and role, with the host's kick on
+    its shoulder;
+  - an open seat is a glass tile with a Space "+" and "Invite a friend".
+- **The molecule's bonds.** `CosmicShore/UI/Bond` (`Bond.shader`, same include) draws dashes flowing outward on a thin
+  rotated Image, with `KitRimMesh` for the place along it.
+  - `ArcadeLobbyList.seatBonds` tints them: the pilot's domain colour, Space while it is unknown, and dim Space
+    (`openBondAlpha` 0.35) for an open seat.
+  - The bond's colour is its vertex colour, set only on change.
+- **The window.** The drawer window carries the panel lattice behind it and a Space rim round it, and its title has the
+  Space glyph. The panel header reads "Your party" with its count in Space; the online diamond is Space.
+- **Authored text.** `ArcadeLobbyList`'s "1 Player Online" / "{count} Players Online" moved from code literals to
+  serialized fields while this method was touched (the player-facing text rule).
+- **Verified offline.**
+  - `lattice_preview.py` compiles `UIPresence.cginc` with both shaders' real `frag` and asserts:
+    - the orbit carries exactly one dot per player online (0, 3, 8);
+    - the dots turn at the set speed;
+    - a seated member's bond lights in their colour, an empty seat's bond draws nothing, and a bond lights only towards
+      its own seat;
+    - the glow stays in the middle;
+    - the dashes flow outward;
+    - the molecule bond keeps its colour and stays on its line.
+
+    Three planted shader defects (a dot too many, an empty seat bonded, dashes flowing inward) each fail it.
+  - The drawer generator checks:
+    - the orb is the handle and sits on `ORB_*`;
+    - the field uses the presence material;
+    - the seats are on the shader's angles;
+    - the window keeps its rim and lattice;
+    - no Handle is left (8 planted defects caught).
+  - The arcade generator checks that each bond starts at the centre avatar and ends at its seat's avatar, carries
+    KitRimMesh, and that the centre seat has no bond (17 planted defects caught).
+  - The lattice generator checks the orb and bond materials against their shaders (13 planted defects caught).
+- **Re-emitting the drawer.** The drawer generator now removes the drawer's old documents before re-emitting it, so a
+  retired node (rev 3's Handle) cannot linger orphaned in Menu_Main.

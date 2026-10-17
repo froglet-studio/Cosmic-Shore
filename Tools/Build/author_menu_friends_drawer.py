@@ -2,18 +2,22 @@
 """
 Author the FRIENDS DRAWER into Menu_Main (rev 3 of the style-B menu, 2026-10-16: "move the friends tab
 out of all the tabs like arcade, arena - make it independent, like a popup from the left side we can
-open, minimise, maximise whenever we want").
+open, minimise, maximise whenever we want"), opened by the PRESENCE ORB (rev 6, Docs/MENU_REDESIGN_B.md
+section 45.4; the owner chose option A, "Orb", over the bond rail).
 
     Safe Area/FriendsDrawerHost     after ModalWindows, so it draws over every window; CanvasGroup (the
     |                               freestyle fade list holds it), OfflineUIGate, FriendsDrawer
     '- Drawer                       the gated object: offline it is deactivated, as the panel was
-       |- Handle                    44 x 220 tab on the left edge: people glyph, FRIENDS written up the
-       |                            tab; pressing it opens the drawer
+       |- Orb                       92 x 92 in the bottom-left corner, inside the windows' 100 px left
+       |                            gutter: the Presence-shader field (glow, the inner ring, the orbit
+       |                            with one dot per player online, the bonds), you at the centre, up to
+       |                            three party members on the inner ring, "N online" under it
+       |                            (KitPresenceOrb); pressing it opens the drawer
        '- Window                    glass panel that slides in from the left (460 x 860, maximised
-          |                         720 x 900): title, a minimise (slide back) and a maximise / restore
+          |                         720 x 900), the panel lattice behind it and a Space rim round it:
+          |                         the Space glyph and title, a minimise (slide back) and a maximise
           '- PartyPanel             THE shared party panel (item 3's prefab, instanced - never copied),
-                                    the same one the Arcade / Arena / Toy Box / Mission windows used to
-                                    nest; those generators no longer instance it.
+                                    drawn as the party molecule since rev 6 (author_menu_arcade.py)
 
 Also: MenuCrystalClickHandler.menuCanvasGroups gains the host's group, so the drawer fades with the
 rest of the menu when the player flies.
@@ -28,6 +32,7 @@ a no-op (--check).
 
 import argparse
 import importlib.util
+import math
 import os
 import re
 import sys
@@ -44,13 +49,15 @@ def _load(name):
 
 HM = _load("author_menu_home")
 AR = _load("author_menu_arcade")
+LAT = _load("author_ui_lattice")
 P, C, A, K, T, H, M = HM.P, HM.C, HM.A, HM.K, HM.T, HM.H, HM.M
 N, STRETCH, R, tok = K.Node, K.STRETCH, K.rect, K.tok
 TL, TR, ref, mono, label = C.TL, C.TR, C.ref, C.mono, H.label
 
 REPO = K.REPO
 SCENE = "Assets/_Scenes/Menu_Main.unity"
-S = dict(drawer=C.script("FriendsDrawer"), gate=C.script("OfflineUIGate"), crystal=C.script("MenuCrystalClickHandler"))
+S = dict(drawer=C.script("FriendsDrawer"), gate=C.script("OfflineUIGate"), crystal=C.script("MenuCrystalClickHandler"),
+         orb=C.script("KitPresenceOrb"))
 PARTY_GUID = AR.asset_guid("PartyPanel")
 
 # Menu_Main, measured 2026-10-16 (names asserted).
@@ -59,9 +66,22 @@ MODAL_WINDOWS_RT = "6818916199485298600"
 
 NORMAL = (460, 860)
 MAXIMISED = (720, 900)
-HANDLE = (76, 112)
 INSET = 16
 BTN = 28
+
+# The presence orb (section 45.4). Its place is author_menu_arcade.ORB_* (the windows' gutter gate reads it too);
+# its member seats sit on the shader's inner ring at author_ui_lattice.ORB_MEMBER_ANGLES.
+ORB = AR.ORB_SIZE
+YOU = 30            # your avatar's ring
+MEMBER = 22         # a member's ring
+COUNT_H = 18
+MAX_DOTS = 8
+
+
+def member_pos(i):
+    a = math.radians(LAT.ORB_MEMBER_ANGLES[i])
+    r = LAT.ORB_MEMBER_RADIUS * ORB / 2
+    return round(r * math.cos(a), 2), round(r * math.sin(a), 2)
 
 
 def ctx_new():
@@ -74,27 +94,57 @@ class Patch(HM.Patch):
         self.ctx = ctx_new()
 
 
-def handle_node(parent):
-    h = parent.child(N("Drawer/Handle", "Handle", R((0, 0.5), None, (0, 0), HANDLE, (0, 0.5))))
-    h.add("cg", 225, H.canvas_group(True))
-    A.ring_node(h, "Drawer/Handle/FocusRing", 10)
-    f = h.child(N("Drawer/Handle/Fill", "Fill", STRETCH))
-    f.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.62), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
-    bd = h.child(N("Drawer/Handle/Border", "Border", STRETCH))
-    bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver10_line1"), True))
-    g = h.child(N("Drawer/Handle/Glyph", "Glyph", R((0.5, 1), None, (0, -18), (30, 30), (0.5, 1))))
-    g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"), K.chrome_sprite("chrome_people"), preserve=True))
-    lab = h.child(N("Drawer/Handle/Label", "Label", R((0, 0), (1, 0), (0, 16), (-8, 20), (0.5, 0))))
-    label(lab, "Friends", "Label", "TextLight", align="center")
-    h.add("button", 114, lambda ctx, go: mono(go, HM.S["kitbutton"],
-          K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {ref(ctx.c('Drawer/Handle/Fill', 'img'))}\n" + A.calls([])
-          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c('Drawer/Handle/FocusRing', 'img'))}\n"
-          "  variant: 0\n  fill: 0\n"
-          f"  fillGraphic: {ref(ctx.c('Drawer/Handle/Fill', 'img'))}\n"
-          f"  borderGraphic: {ref(ctx.c('Drawer/Handle/Border', 'img'))}\n"
-          f"  contentGraphics:\n  - {ref(ctx.c('Drawer/Handle/Glyph', 'img'))}\n  playGradient: {{fileID: 0}}\n"))
-    h.add("audio", 114, A.menu_audio(11))
-    return h
+def seat_nodes(parent, key, size, pos=(0, 0)):
+    """An avatar in an octagon: the ring KitPresenceOrb paints the pilot's domain colour, a dark gap, the icon."""
+    for part, inset, colour in (("Ring", 0, tok("ElementSpace")), ("Gap", 3, tok("SurfaceVeryDark"))):
+        n = parent.child(N(f"{key}/{part}", part, R(pos=pos, size=(size - inset, size - inset))))
+        n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(colour, K.kit_sprite("kit_oct_fill")))
+    icon = parent.child(N(f"{key}/Avatar", "Avatar", R(pos=pos, size=(size - 5, size - 5))))
+    icon.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), AR.AVATAR_PLACEHOLDER, preserve=True))
+
+
+def orb_tint():
+    """A flat ColorTint on the orb's field, the same states as the menu's glyph controls (HM.icon_button)."""
+    return (A.selectable().replace("  m_Transition: 0\n", "  m_Transition: 1\n")
+            .replace("    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}\n", f"    m_NormalColor: {K.col(tok('NeutralLightest'))}\n")
+            .replace("    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
+                     f"    m_HighlightedColor: {K.col(tok('TextLight'))}\n")
+            .replace("    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}\n",
+                     f"    m_PressedColor: {K.col(tok('ControlActive'))}\n")
+            .replace("    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
+                     f"    m_SelectedColor: {K.col(tok('TextLight'))}\n"))
+
+
+def orb_node(parent):
+    o = parent.child(N("Drawer/Orb", "PresenceOrb", R((0, 0), None, (AR.ORB_X, AR.ORB_Y), (ORB, ORB), (0, 0))))
+    o.add("cg", 225, H.canvas_group(True))
+    field = o.child(N("Drawer/Orb/Field", "Field", STRETCH))
+    field.add("cr", 222, K.canvas_renderer()).add("img", 114, M.material_image(K.WHITE, M.PRESENCE_MAT, raycast=True))
+    for i in range(len(LAT.ORB_MEMBER_ANGLES)):
+        m = o.child(N(f"Drawer/Orb/Member{i + 1}", f"Member{i + 1}", R(pos=member_pos(i), size=(MEMBER, MEMBER))))
+        m.add("cg", 225, H.canvas_group(False))
+        seat_nodes(m, f"Drawer/Orb/Member{i + 1}", MEMBER)
+    you = o.child(N("Drawer/Orb/You", "You", R(size=(YOU, YOU))))
+    seat_nodes(you, "Drawer/Orb/You", YOU)
+    count = o.child(N("Drawer/Orb/Count", "Count", R((0, 0), (1, 0), (0, -4), (0, COUNT_H), (0.5, 1))))
+    AR.label_e(count, "Friends", "Label", "ElementSpace", driven=True, align="center")
+    o.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
+          orb_tint() + f"  m_TargetGraphic: {ref(ctx.c('Drawer/Orb/Field', 'img'))}\n" + A.calls([])))
+    o.add("audio", 114, A.menu_audio(11))
+    o.add("orb", 114, lambda ctx, go: mono(go, S["orb"],
+          "  party: {fileID: 0}\n"
+          f"  orb: {ref(ctx.c('Drawer/Orb/Field', 'img'))}\n  maxDots: {MAX_DOTS}\n"
+          f"  centreAvatar: {ref(ctx.c('Drawer/Orb/You/Avatar', 'img'))}\n"
+          f"  centreRing: {ref(ctx.c('Drawer/Orb/You/Ring', 'img'))}\n"
+          "  members:\n" + "".join(
+              f"  - group: {ref(ctx.c(f'Drawer/Orb/Member{i + 1}', 'cg'))}\n"
+              f"    avatar: {ref(ctx.c(f'Drawer/Orb/Member{i + 1}/Avatar', 'img'))}\n"
+              f"    ring: {ref(ctx.c(f'Drawer/Orb/Member{i + 1}/Ring', 'img'))}\n"
+              for i in range(len(LAT.ORB_MEMBER_ANGLES)))
+          + f"  countText: {ref(ctx.c('Drawer/Orb/Count', 'kt'))}\n"
+          "  onlineTemplate: '{count} online'\n  aloneText: Friends\n"
+          f"  theme: {K.ref(11400000, K.THEME, 2)}\n"))
+    return o
 
 
 def window_node(parent):
@@ -103,9 +153,14 @@ def window_node(parent):
     fill = w.child(N("Drawer/Window/Fill", "Fill", STRETCH))
     # Glass, not a slab (the user, 2026-10-16: "I liked the transparent backgrounds way more").
     fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.62), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    # Rev 6: the living lattice behind the panel and a Space (people) rim round it.
+    w.children.append(M.grid_node("Drawer/Window/Lattice"))
     bord = w.child(N("Drawer/Window/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
-    label(w.child(N("Drawer/Window/Title", "Title", TL(22, 18, 200, 22))), "Friends", "Label", "TextLight")
+    M.rim_border(bord, "Space")
+    glyph = w.child(N("Drawer/Window/TitleGlyph", "TitleGlyph", TL(20, 16, 24, 24)))
+    glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), H.element_glyph("Space"), preserve=True))
+    label(w.child(N("Drawer/Window/Title", "Title", TL(52, 18, 200, 22))), "Friends", "Label", "ElementSpace")
     # Minimise (a bar): slides the window back to the handle.
     HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(16 + BTN + 6, 14, BTN, BTN))
     # Maximise / restore: one button, two glyphs the drawer swaps (a screen to grow, a chevron to shrink).
@@ -123,14 +178,14 @@ def host_node():
     host = N("Host", "FriendsDrawerHost", STRETCH)
     host.add("cg", 225, H.canvas_group(True))
     drawer = host.child(N("Drawer", "Drawer", STRETCH))
-    handle_node(drawer)
+    orb_node(drawer)
     window_node(drawer)
     host.add("gate", 114, lambda ctx, go: mono(go, S["gate"],
              "  style: 0\n"
              f"  onlineOnlyObjects:\n  - {ref(ctx.go('Drawer'))}\n  onlineOnlyControls: []\n  offlineOnlyObjects: []\n"
              "  disabledAlpha: 0.4\n"))
     host.add("drawer", 114, lambda ctx, go: mono(go, S["drawer"],
-             f"  handleGroup: {ref(ctx.c('Drawer/Handle', 'cg'))}\n  handleButton: {ref(ctx.c('Drawer/Handle', 'button'))}\n"
+             f"  handleGroup: {ref(ctx.c('Drawer/Orb', 'cg'))}\n  handleButton: {ref(ctx.c('Drawer/Orb', 'button'))}\n"
              f"  windowGroup: {ref(ctx.c('Drawer/Window', 'cg'))}\n  window: {ref(ctx.rt('Drawer/Window'))}\n"
              f"  minimiseButton: {ref(ctx.c('Drawer/Window/Minimise', 'button'))}\n"
              f"  maximiseButton: {ref(ctx.c('Drawer/Window/Maximise', 'button'))}\n"
@@ -147,10 +202,37 @@ def crystal_handler(sc):
     return found[0]
 
 
+def subtree_docs(sc, rt):
+    """Every document under RectTransform `rt`, itself included: each GameObject with its components, and for a
+    prefab instance its PrefabInstance with every stripped stub that belongs to it."""
+    out, todo = set(), [rt]
+    while todo:
+        r = todo.pop()
+        if not sc.has(r):
+            continue
+        doc = sc.docs[r]
+        if " stripped\n" in doc.split("\n", 1)[0] + "\n":
+            pi = re.search(r"m_PrefabInstance: \{fileID: (-?\d+)\}", doc).group(1)
+            out.add(pi)
+            out |= {f for f in sc.order if " stripped" in sc.docs[f].split("\n", 1)[0]
+                    and f"m_PrefabInstance: {{fileID: {pi}}}" in sc.docs[f]}
+            continue
+        go = sc.go_of(r)
+        out |= {r, go} | set(sc.components(go))
+        todo += sc.children(r)
+    return out
+
+
 def transform(text_):
     p = Patch(text_)
     assert p.sc.rect_of(p.sc.go_of(SAFE_AREA_RT)) == SAFE_AREA_RT and p.sc.field(p.sc.go_of(SAFE_AREA_RT), "m_Name") == "Safe Area", "Safe Area moved"
     assert p.sc.field(p.sc.go_of(MODAL_WINDOWS_RT), "m_Name") == "ModalWindows", "ModalWindows moved"
+    # The drawer is re-emitted whole: what an earlier version emitted and this one no longer does (rev 3's Handle,
+    # retired for the orb) is removed rather than left orphaned under the Drawer.
+    host_rt = str(p.ctx.rt("Host"))
+    if p.sc.has(host_rt):
+        for fid in subtree_docs(p.sc, host_rt):
+            p.sc.remove(fid)
     host = host_node()
     rt = p.emit(host, SAFE_AREA_RT, MODAL_WINDOWS_RT)
     kids = [k for k in p.kids(SAFE_AREA_RT) if k != rt]
@@ -180,10 +262,11 @@ def validate(files):
     assert host_rt in kids, "the drawer is not under Safe Area"
     assert kids.index(host_rt) == kids.index(MODAL_WINDOWS_RT) + 1, "the drawer must draw right after ModalWindows (over every window)"
     dr = sc.docs[str(ctx.c("Host", "drawer"))]
-    for f, want in (("handleButton", ctx.c("Drawer/Handle", "button")), ("window", ctx.rt("Drawer/Window")),
+    for f, want in (("handleButton", ctx.c("Drawer/Orb", "button")), ("window", ctx.rt("Drawer/Window")),
                     ("minimiseButton", ctx.c("Drawer/Window/Minimise", "button")), ("maximiseButton", ctx.c("Drawer/Window/Maximise", "button")),
-                    ("windowGroup", ctx.c("Drawer/Window", "cg")), ("handleGroup", ctx.c("Drawer/Handle", "cg"))):
+                    ("windowGroup", ctx.c("Drawer/Window", "cg")), ("handleGroup", ctx.c("Drawer/Orb", "cg"))):
         assert f"  {f}: {{fileID: {want}}}" in dr, f"FriendsDrawer.{f} is not wired"
+    validate_orb(sc, ctx)
     gate = sc.docs[str(ctx.c("Host", "gate"))]
     assert f"  - {{fileID: {ctx.go('Drawer')}}}" in gate, "the drawer is not gated offline (the party panel was)"
     pis = [f for f in sc.order if sc.cls[f] == 1001 and f"guid: {PARTY_GUID}" in sc.docs[f]]
@@ -194,6 +277,55 @@ def validate(files):
     for fid in sc.order:
         for m in re.finditer(r"\{fileID: (-?\d+)\}", sc.docs[fid]):
             assert m.group(1) == "0" or sc.has(m.group(1)), f"dangling local fileID {m.group(1)} in {fid}"
+
+
+def _vec(doc, field):
+    m = re.search(rf"^  {field}: \{{x: (-?[\d.e-]+), y: (-?[\d.e-]+)\}}", doc, re.M)
+    assert m, f"no {field}"
+    return float(m.group(1)), float(m.group(2))
+
+
+def validate_orb(sc, ctx):
+    """Rev 6 (section 45.4): the presence orb is the drawer's handle, sits where the windows' gutter gate expects it,
+    draws its field with the presence material, has its member seats on the shader's inner ring at the shader's
+    angles, and the window wears the Space rim over the lattice. Rev 3's Handle is gone."""
+    names = [sc.field(sc.go_of(r), "m_Name") for r in subtree_rts(sc, str(ctx.rt("Host")))]
+    assert "Handle" not in names, "rev 3's Handle is still under the drawer (the orb replaced it)"
+    orb_rt = sc.docs[str(ctx.rt("Drawer/Orb"))]
+    assert _vec(orb_rt, "m_AnchoredPosition") == (AR.ORB_X, AR.ORB_Y) and _vec(orb_rt, "m_SizeDelta") == (ORB, ORB), \
+        f"the orb moved off author_menu_arcade.ORB_* (the windows' gutter gate measures against those)"
+    assert AR.ORB_X + ORB < AR.WINDOW_LEFT, "the orb no longer fits the windows' left gutter"
+    field = sc.docs[str(ctx.c("Drawer/Orb/Field", "img"))]
+    assert f"m_Material: {{fileID: 2100000, guid: {M.PRESENCE_MAT}, type: 2}}" in field, "the orb's field is not drawn with Presence_Orb.mat"
+    assert "  m_RaycastTarget: 1\n" in field, "the orb's field is not its press area"
+    orb = sc.docs[str(ctx.c("Drawer/Orb", "orb"))]
+    for fld, key in (("orb", ("Drawer/Orb/Field", "img")), ("centreAvatar", ("Drawer/Orb/You/Avatar", "img")),
+                     ("centreRing", ("Drawer/Orb/You/Ring", "img")), ("countText", ("Drawer/Orb/Count", "kt"))):
+        assert f"  {fld}: {{fileID: {ctx.c(*key)}}}" in orb, f"KitPresenceOrb.{fld} is not wired"
+    seats = re.findall(r"^  - group: \{fileID: (-?\d+)\}", orb, re.M)
+    assert len(seats) == len(LAT.ORB_MEMBER_ANGLES), f"KitPresenceOrb needs {len(LAT.ORB_MEMBER_ANGLES)} member seats, has {len(seats)}"
+    r = LAT.ORB_MEMBER_RADIUS * ORB / 2
+    for i, angle in enumerate(LAT.ORB_MEMBER_ANGLES):
+        assert seats[i] == str(ctx.c(f"Drawer/Orb/Member{i + 1}", "cg")), f"KitPresenceOrb.members[{i}] is not Member{i + 1}"
+        x, y = _vec(sc.docs[str(ctx.rt(f"Drawer/Orb/Member{i + 1}"))], "m_AnchoredPosition")
+        want = (r * math.cos(math.radians(angle)), r * math.sin(math.radians(angle)))
+        assert math.hypot(x - want[0], y - want[1]) < 0.5, \
+            f"Member{i + 1} sits at ({x}, {y}); the shader's bond {i + 1} ends at ({want[0]:.1f}, {want[1]:.1f})"
+    assert "  onlineTemplate: '{count} online'\n" in orb, "the orb's count line lost its authored template"
+    border = sc.docs[str(ctx.c("Drawer/Window/Border", "img"))]
+    assert f"guid: {M.rim_material('Space')}" in border, "the drawer window lost its Space rim"
+    assert sc.has(str(ctx.c("Drawer/Window/Border", "rim"))), "the drawer window's rim has no KitRimMesh"
+    assert f"guid: {M.LATTICE_PANEL_MAT}" in sc.docs[str(ctx.c("Drawer/Window/Lattice", "img"))], "the drawer window has no lattice"
+
+
+def subtree_rts(sc, rt):
+    out, todo = [], [rt]
+    while todo:
+        r = todo.pop()
+        if sc.has(r) and " stripped" not in sc.docs[r].split("\n", 1)[0]:
+            out.append(r)
+            todo += sc.children(r)
+    return out
 
 
 def self_test(files):
@@ -209,8 +341,20 @@ def self_test(files):
             return True
         print(f"  MISSED: {label_}")
         return False
+    def in_doc(text_, fid, old, new):
+        return T.in_doc(text_, str(fid), old, new)
+    member = ctx.rt("Drawer/Orb/Member2")
+    x, y = member_pos(1)
     cases = [
-        ("the handle unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  handleButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
+        ("the orb unwired as the handle", lambda f: f.__setitem__(SCENE, re.sub(r"(  handleButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
+        ("a member seat off its bond", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], member, f"m_AnchoredPosition: {K.v2(x, y)}", f"m_AnchoredPosition: {K.v2(x, y + 9)}"))),
+        ("the orb grown into the windows", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.rt("Drawer/Orb"), f"m_SizeDelta: {K.v2(ORB, ORB)}", f"m_SizeDelta: {K.v2(140, 140)}"))),
+        ("the orb's field on another material", lambda f: f.__setitem__(SCENE, f[SCENE].replace(M.PRESENCE_MAT, M.LATTICE_PANEL_MAT, 1))),
+        ("the window's rim gone", lambda f: f.__setitem__(SCENE, f[SCENE].replace(M.rim_material("Space"), "7" * 32, 1))),
+        ("rev 3's handle left behind", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.go("Drawer/Orb"), "  m_Name: PresenceOrb\n", "  m_Name: Handle\n"))),
         ("the drawer ungated offline", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  onlineOnlyObjects:\n  - {{fileID: {ctx.go('Drawer')}}}\n", "  onlineOnlyObjects: []\n", 1))),
         ("the drawer left out of the freestyle fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

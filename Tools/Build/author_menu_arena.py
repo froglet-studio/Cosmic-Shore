@@ -409,7 +409,7 @@ def validate(files):
     chip_le = A.doc_of(card, K.FileIds("ArenaGameCard")("Hulls/Chip#le"))[1]
     assert chip_le and "  m_IgnoreLayout: 1\n" in chip_le, "the hull chip template must start out of layout (hidden)"
     view = files[prefab_path("ArenaView")]
-    A.check_window_inset(view, "ArenaView")      # rev 3: clear of the friends handle
+    A.check_window_inset(view, "ArenaView")      # clear of the friends orb (rev 6)
     assert view.count(f"guid: {asset_guid('ArenaGameCard')}") >= 2 * ROWS, "ArenaView: the grid does not hold ArenaGameCards"
     assert f"guid: {A.asset_guid('PartyPanel')}" not in view, "ArenaView still instances the PartyPanel (rev 3: the friends drawer)"
     assert view.count("guid: " + S["close"]) == 1, "ArenaView: Back must close through ModalWindowCloseButton"
@@ -453,7 +453,7 @@ def self_test(files):
     cases = [
         ("the party panel back in the window", lambda f: f.__setitem__(prefab_path("ArenaView"), f[prefab_path("ArenaView")] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ArenaView"), M.strip_entrances(f[prefab_path("ArenaView")]))),
-        ("the body back under the friends handle", lambda f: f.__setitem__(prefab_path("ArenaView"), A.in_one(
+        ("the body back under the friends orb", lambda f: f.__setitem__(prefab_path("ArenaView"), A.in_one(
             f[prefab_path("ArenaView")], K.FileIds("ArenaView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),
         ("a card with no hull row", lambda f: f.__setitem__(card, re.sub(r"(  hullRow: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the hull template left in layout", lambda f: f.__setitem__(card, f[card].replace("  m_IgnoreLayout: 1\n", "  m_IgnoreLayout: 0\n"))),

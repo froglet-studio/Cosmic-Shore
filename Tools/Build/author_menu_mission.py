@@ -298,7 +298,7 @@ def validate(files):
     assert "SO_ArcadeGame" not in card and A.S["view"] not in card, "a mission card must not ride the arcade data path"
 
     view = files[prefab_path("MissionView")]
-    A.check_window_inset(view, "MissionView")      # rev 3: clear of the friends handle
+    A.check_window_inset(view, "MissionView")      # clear of the friends orb (rev 6)
     V = K.FileIds("MissionView")
     _, vbody = A.doc_of(view, V("root#view"))
     assert vbody and S["view"] in vbody, "MissionView: the root carries no MissionExploreView"
@@ -344,7 +344,7 @@ def self_test(files):
     card, view = prefab_path("MissionCard"), prefab_path("MissionView")
     cases = [
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("MissionView"), M.strip_entrances(f[prefab_path("MissionView")]))),
-        ("the body back under the friends handle", lambda f: f.__setitem__(prefab_path("MissionView"), A.in_one(
+        ("the body back under the friends orb", lambda f: f.__setitem__(prefab_path("MissionView"), A.in_one(
             f[prefab_path("MissionView")], K.FileIds("MissionView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),
         ("mission cards shipped Available", lambda f: f.__setitem__(card, f[card].replace("  availability: 1\n", "  availability: 0\n"))),
         ("a card with no threat count", lambda f: f.__setitem__(card, re.sub(r"(  threatsText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),

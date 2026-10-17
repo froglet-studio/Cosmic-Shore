@@ -10,7 +10,10 @@ short listed set of substitutions, into a C++ harness that renders frames to PNG
 
 What it proves: the include and the fragment compile (-Wall -Werror); pulses appear only when lines carry them;
 reveal 0 shows nothing, reveal 1 equals the plain draw, reveal 0.5 shows a disc; the far layer adds coverage; the
-edge fade empties the corners. What it does not: Unity's own shader compile (no editor here) - the UI plumbing
+edge fade empties the corners. The rim (ElementRim.shader) and the presence orb and party bonds (Presence.shader,
+Bond.shader on UIPresence.cginc, section 45.4) go through the same translation: the orb draws exactly _Online dots
+on its orbit and turns them, a bond lights only in its member's colour and only for a seated member, the bond
+dashes flow outward, and the molecule's bond stays on its line. What it does not: Unity's own shader compile (no editor here) - the UI plumbing
 (stencil, clip rect, UnityCG) is Unity's standard UI/Default block, copied from SilhouetteHolo.shader.
 """
 import argparse
@@ -27,6 +30,9 @@ CGINC = os.path.join(SHADER_DIR, "UILattice.cginc")
 SHADER = os.path.join(SHADER_DIR, "Lattice.shader")
 RIM_CGINC = os.path.join(SHADER_DIR, "UIElementRim.cginc")
 RIM_SHADER = os.path.join(SHADER_DIR, "ElementRim.shader")
+PRESENCE_CGINC = os.path.join(SHADER_DIR, "UIPresence.cginc")
+PRESENCE_SHADER = os.path.join(SHADER_DIR, "Presence.shader")
+BOND_SHADER = os.path.join(SHADER_DIR, "Bond.shader")
 
 # The whole translation: HLSL out-params to C++ references, and the vector constructor spellings.
 SUBS = [(r"\bout float\b", "float&"),
@@ -58,6 +64,7 @@ static inline float floor_(float x) { return std::floor(x); }
 static inline float sin_(float x) { return std::sin(x); }
 static inline float3 lerp(float3 a, float3 b, float t) { return a + (b - a) * t; }
 static inline float atan2_(float y, float x) { return std::atan2(y, x); }
+static inline float cos_(float x) { return std::cos(x); }
 typedef float4 half4;
 typedef int sampler2D;
 static inline float4 tex2D(sampler2D, float2) { return (float4){1, 1, 1, 1}; }
@@ -67,6 +74,7 @@ static inline float4 tex2D(sampler2D, float2) { return (float4){1, 1, 1, 1}; }
 #define floor floor_
 #define sin sin_
 #define atan2 atan2_
+#define cos cos_
 """
 
 UNIFORMS = r"""
@@ -84,6 +92,7 @@ MAIN = r"""
 #undef floor
 #undef sin
 #undef atan2
+#undef cos
 static float4 col(float r, float g, float b) { return (float4){r, g, b, 1}; }
 static void defaults() {
     _Color = col(1, 1, 1); _LineColor = col(0.263f, 0.298f, 0.537f);
@@ -180,6 +189,7 @@ RIM_MAIN = r"""
 #undef floor
 #undef sin
 #undef atan2
+#undef cos
 static float4 C(float r, float g, float b) { return (float4){r, g, b, 1}; }
 // Walk the rim of a 600 x 400 panel: the level and colour at 360 points round it.
 static void walk(float t, float* level, float4* colour) {
@@ -225,6 +235,148 @@ int main() {
     need(std::fabs(farLevel - 0.45f) < 0.03f, "away from the comet the rim sits at its base light");
     need(hueOk, "element mode stays in the element's colour");
     need(warm > 20 && cool > 20 && violet > 20 && teal > 20, "omni shows all four elements round the rim");
+    return bad ? 1 : 0;
+}
+"""
+
+
+PRESENCE_UNIFORMS = r"""
+struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; };
+float4 _Time;
+fixed4 _Color, _SpaceColor, _Bond0, _Bond1, _Bond2;
+float _GlowAlpha, _InnerRadius, _InnerAlpha, _OuterRadius, _OuterAlpha, _RingWidth, _Soft, _Dashes, _SpinSeconds;
+float _Online, _DotSize, _MemberRadius, _BondWidth, _BondPeriod, _BondSpeed;
+float4 _BondAngles;
+"""
+
+PRESENCE_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+#undef cos
+static float4 C(float r, float g, float b, float a) { return (float4){r, g, b, a}; }
+static void defaults() {
+    _Color = C(1, 1, 1, 1); _SpaceColor = C(0.690f, 0.486f, 1, 1);
+    _Bond0 = _Bond1 = _Bond2 = C(0, 0, 0, 0);
+    _GlowAlpha = 0.32f; _InnerRadius = 0.66f; _InnerAlpha = 0.34f; _OuterRadius = 0.92f; _OuterAlpha = 0.55f;
+    _RingWidth = 0.012f; _Soft = 0.03f; _Dashes = 28; _SpinSeconds = 40; _Online = 0; _DotSize = 0.055f;
+    _MemberRadius = 0.66f; _BondAngles = C(135, 45, 270, 0); _BondWidth = 0.022f; _BondPeriod = 0.16f; _BondSpeed = 0.22f;
+}
+static float4 at(float x, float y, float t) {   // x, y in -1..1 over the orb
+    _Time = (float4){t / 20, t, t * 2, t * 3};
+    v2f IN; IN.texcoord = (float2){x * 0.5f + 0.5f, y * 0.5f + 0.5f}; IN.color = (float4){1, 1, 1, 1};
+    return frag(IN);
+}
+// Walk the orbit: how many separate bright dots it carries at time t, and the angle (turns) of the first one.
+static int dots(float t, float* first) {
+    int runs = 0; bool on = false; bool wrapStart = false; *first = -1;
+    for (int i = 0; i < 1440; i++) {
+        float a = i / 1440.0f * 6.2831853f;
+        float4 c = at(_OuterRadius * std::cos(a), _OuterRadius * std::sin(a), t);
+        bool lit = c.w > 0.3f && c.y > 0.7f;
+        if (lit && !on) { runs++; if (*first < 0) *first = i / 1440.0f; if (i == 0) wrapStart = true; }
+        on = lit;
+    }
+    if (on && wrapStart && runs > 1) runs--;   // a dot straddling angle 0 counted twice
+    return runs;
+}
+// The angle (turns) of a single dot on the orbit, as the brightness-weighted circular mean.
+static float dotAngle(float t) {
+    float sx = 0, sy = 0;
+    for (int i = 0; i < 1440; i++) {
+        float a = i / 1440.0f * 6.2831853f;
+        float4 c = at(_OuterRadius * std::cos(a), _OuterRadius * std::sin(a), t);
+        float w = (c.w > 0.3f && c.y > 0.7f) ? c.w : 0;
+        sx += w * std::cos(a); sy += w * std::sin(a);
+    }
+    float turns = std::atan2(sy, sx) / 6.2831853f;
+    return turns < 0 ? turns + 1 : turns;
+}
+// How red the bond along `deg` is at radius 0.45 (between your avatar and the member's), summed over the dash cycle.
+static float redness(float deg) {
+    float a = deg * 0.01745329f, red = 0;
+    for (int k = 0; k < 16; k++) {
+        float4 c = at(0.45f * std::cos(a), 0.45f * std::sin(a), k * 0.04f);
+        red += c.w * (c.x - c.z);
+    }
+    return red;
+}
+// How much the orb covers along `deg` at radius 0.45, summed over the dash cycle (glow alone where there is no bond).
+static float cover(float deg) {
+    float a = deg * 0.01745329f, sum = 0;
+    for (int k = 0; k < 16; k++) sum += at(0.45f * std::cos(a), 0.45f * std::sin(a), k * 0.04f).w;
+    return sum;
+}
+int main() {
+    defaults();
+    float f0, f1, fs;
+    int none = dots(0, &f0);
+    _Online = 3; int three = dots(0, &f0); int threeLater = dots(10, &f1);
+    _Online = 8; int eight = dots(0, &fs);
+    _Online = 1;
+    float moved = dotAngle(10) - dotAngle(0); if (moved < 0) moved += 1;
+    _Online = 0;
+    float bare = redness(135);
+    float emptyCover = cover(45), offBond = cover(0);
+    _Bond0 = C(0.9f, 0.15f, 0.3f, 1);
+    float lit = redness(135), other = redness(45);
+    float4 centre = at(0, 0, 0), corner = at(0.98f, 0.98f, 0);
+    // The bond's dashes flow outward: the brightest place along one dash period moves out with time.
+    auto peak = [](float t) { int k = 0; float best = -1;
+        for (int i = 0; i < 160; i++) { float b = PresenceBond(0, i * 0.001f, t, 0.022f, 0.03f, 0.16f, 0.22f); if (b > best) { best = b; k = i; } }
+        return k * 0.001f; };
+    float shift = peak(0.1f) - peak(0); if (shift < 0) shift += 0.16f;
+    std::printf("orb: dots %d / %d / %d (online 0 / 3 / 8) | turned %.3f turns in 10 s (want %.3f) | bond red %.2f, empty %.2f, "
+                "other seat %.2f | centre a %.2f corner a %.3f | dash moved %.4f (want %.4f)\n",
+                none, three, eight, moved, 10.0f / 40.0f, lit, bare, other, centre.w, corner.w, shift, 0.1f * 0.22f);
+    int bad = 0;
+    auto need = [&](bool ok, const char* what) { if (!ok) { std::printf("FAIL: %s\n", what); bad++; } };
+    need(none == 0 && three == 3 && eight == 8, "the orbit carries exactly one dot per player online");
+    need(threeLater == 3 && std::fabs(moved - 0.25f) < 0.01f, "the dots turn with the orbit at its set speed");
+    need(lit > 2.0f && bare < 0.05f, "a seated member's bond lights in their colour; an empty seat has none");
+    need(other < 0.05f, "a bond lights only towards its own seat");
+    need(std::fabs(emptyCover - offBond) < 0.05f, "an empty seat's bond draws nothing at all");
+    need(centre.w > corner.w * 4 && corner.w < 0.02f, "the glow sits in the middle and the corners stay clear");
+    need(std::fabs(shift - 0.022f) < 0.003f, "the bond's dashes flow outward at their set speed");
+    return bad ? 1 : 0;
+}
+"""
+
+BOND_UNIFORMS = r"""
+struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; float4 rimUV; };
+float4 _Time;
+float4 _MainTex_ST;
+fixed4 _Color;
+float _Width, _Soft, _Period, _Speed;
+"""
+
+BOND_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+#undef cos
+int main() {
+    _Color = (float4){1, 1, 1, 1}; _Width = 1.4f; _Soft = 1; _Period = 18; _Speed = 26; _Time = (float4){0, 0, 0, 0};
+    float core = 0, edge = 0, hueOk = 1;
+    for (int i = 0; i < 120; i++) {   // a 120 x 14 bond, tinted Time teal
+        v2f IN; IN.color = (float4){0.373f, 0.941f, 0.784f, 1}; IN.texcoord = (float2){0, 0};
+        IN.rimUV = (float4){(i + 0.5f) / 120, 0.5f, 120, 14};
+        float4 c = frag(IN); core += c.w;
+        if (c.w > 0.05f && !(c.y > c.x && c.y > c.z)) hueOk = 0;
+        IN.rimUV.y = 0.0f; edge += frag(IN).w;
+    }
+    std::printf("bond: core %.2f edge %.3f hue %s\n", core / 120, edge / 120, hueOk > 0 ? "kept" : "lost");
+    int bad = 0;
+    auto need = [&](bool ok, const char* what) { if (!ok) { std::printf("FAIL: %s\n", what); bad++; } };
+    need(core / 120 > 0.4f, "the bond's line is lit along its length");
+    need(edge / 120 < 0.01f, "the bond stays on its line (its rect's edge is clear)");
+    need(hueOk > 0, "the bond keeps its member's colour");
     return bad ? 1 : 0;
 }
 """
@@ -282,6 +434,25 @@ def build_rim(work):
         raise SystemExit("FAIL: the rim dials do not drive as asserted")
 
 
+def build_presence(work):
+    inc = translate(open(PRESENCE_CGINC, encoding="utf-8").read())
+    for name, shader, uniforms, main_ in (("presence", PRESENCE_SHADER, PRESENCE_UNIFORMS, PRESENCE_MAIN),
+                                          ("bond", BOND_SHADER, BOND_UNIFORMS, BOND_MAIN)):
+        frag = translate(extract_frag(open(shader, encoding="utf-8").read()))
+        src = os.path.join(work, f"{name}.cpp")
+        open(src, "w").write(SHIM + inc + uniforms + frag + main_)
+        exe = os.path.join(work, name)
+        r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
+                           capture_output=True, text=True)
+        if r.returncode:
+            sys.stderr.write(r.stderr)
+            raise SystemExit(f"FAIL: the {name} shader maths does not compile")
+        r = subprocess.run([exe], capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        if r.returncode:
+            raise SystemExit(f"FAIL: the {name} dials do not drive as asserted")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
@@ -304,7 +475,8 @@ def main():
             os.remove(ppm)
         print(f"rendered to {out}")
     build_rim(work)
-    print("OK: the lattice and the rim compile and their dials drive")
+    build_presence(work)
+    print("OK: the lattice, the rim, the presence orb and the bonds compile and their dials drive")
 
 
 if __name__ == "__main__":

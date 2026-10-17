@@ -422,7 +422,7 @@ def validate(files):
     for field, want in CARD_FIELDS.items():
         C.wired(card, body, field, want, "ToyCard")
     view = files[prefab_path("ToyboxView")]
-    A.check_window_inset(view, "ToyboxView")      # rev 3: clear of the friends handle
+    A.check_window_inset(view, "ToyboxView")      # clear of the friends orb (rev 6)
     V = K.FileIds("ToyboxView")
     _, daily = A.doc_of(view, V("Daily#daily"))
     for field, want in DAILY_FIELDS.items():
@@ -473,7 +473,7 @@ def self_test(files):
     cases = [
         ("the party panel back in the window", lambda f: f.__setitem__(view, f[view] + f"# guid: {A.asset_guid('PartyPanel')}\n")),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path("ToyboxView"), M.strip_entrances(f[prefab_path("ToyboxView")]))),
-        ("the body back under the friends handle", lambda f: f.__setitem__(prefab_path("ToyboxView"), A.in_one(
+        ("the body back under the friends orb", lambda f: f.__setitem__(prefab_path("ToyboxView"), A.in_one(
             f[prefab_path("ToyboxView")], K.FileIds("ToyboxView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20"))),
         ("a toy card with no portrait", lambda f: f.__setitem__(card, re.sub(r"(  portrait: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[card]))),
         ("the daily card without its countdown", lambda f: f.__setitem__(view, re.sub(r"(  countdownText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),

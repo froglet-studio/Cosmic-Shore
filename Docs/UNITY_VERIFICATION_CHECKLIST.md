@@ -11125,3 +11125,31 @@ run. Checked offline:
    card's comet is teal and Maelstrom's is all four.
 5. **Comet shape:** it follows the rect (not stretched oddly) on wide and narrow panels. If the comet is missing, check
    Menu_Main's root canvas has TexCoord1 in Additional Shader Channels.
+
+## 🔴 2026-10-17 — Rev 6 step 4: presence orb + party molecule (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `Presence.shader`, `Bond.shader` + `UIPresence.cginc`, `Presence_Orb.mat`, `Bond_Party.mat`, `KitPresenceOrb.cs`;
+`ArcadeLobbyList` gains `PresenceChanged` / `TryGetSeat` / `seatBonds` and authored online lines; `PartySlot` /
+`PartyPanel` re-emitted as the molecule; the drawer's Handle replaced by the orb in Menu_Main. `/verify-unity` was not
+run. Checked offline:
+- clang compile + asserts of the shipped presence and bond maths, with 3 planted shader defects caught;
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- every Menu_Main generator `--check`, the drawer / arcade / lattice / home / window `--self-test`;
+- gates.
+
+1. **The shaders compile:** no pink orb or bonds, and no Console error for `CosmicShore/UI/Presence` or
+   `CosmicShore/UI/Bond`.
+2. **The orb, alone:** bottom-left on Home, a violet glow with your avatar in the middle, a dashed ring slowly turning
+   and "FRIENDS" under it. Hover brightens it; pressing it (or Submit with it focused) opens the party panel. It also
+   shows over the Arcade / Arena / Toy Box / Mission windows without covering their cards.
+3. **With players online:** one dot per other player online rides the turning ring (at most 8) and the line under the
+   orb reads "N online". The dots move smoothly with no canvas rebuild in the Profiler.
+4. **In a party (two devices):** each member's avatar appears on the orb's inner ring in their domain colour, with a
+   short flowing bond from your avatar to theirs. The bond appears when they join and goes when they leave.
+5. **The party panel:** the leader (host) sits in the middle, the other seats round it. Bonds run to each seated pilot
+   in their domain colour; open seats show a violet "+" tile with "Invite a friend", and pressing it moves focus to the
+   online list. The host sees the kick (x) on each member's avatar. The panel's border has a violet comet and a
+   lattice behind it.
+6. **Offline:** the orb disappears with the drawer (OfflineUIGate), as the panel did.
+7. **Freestyle (flying):** the orb fades out with the rest of the menu.
+

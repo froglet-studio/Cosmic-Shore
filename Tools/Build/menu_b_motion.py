@@ -134,6 +134,18 @@ def lattice_image(material_guid):
         "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {material_guid}, type: 2}}\n", 1)
 
 
+# Rev 6 (§45.4): the presence orb's and the party bonds' materials (author_ui_lattice.py).
+PRESENCE_MAT = _lattice_guid("presence_mat")
+BOND_MAT = _lattice_guid("bond_mat")
+
+
+def material_image(color, material_guid, raycast=False):
+    """A sprite-less Image drawn with one of the generated UI materials, tinted `color` (vertex colour)."""
+    base = K.image(color, raycast=raycast)
+    return lambda ctx, go: base(ctx, go).replace(
+        "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {material_guid}, type: 2}}\n", 1)
+
+
 RIM_SCRIPT = "b403ee3874d54f79d0f27e7013879c0f"      # KitRimMesh.cs
 
 

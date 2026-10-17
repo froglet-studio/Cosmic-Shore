@@ -109,7 +109,8 @@ HOME_RT = "3251318990371052344"
 SWITCHER = "4216411968520269688"
 # Rev 3.1 (the owner, 2026-10-17: "friends is overlaying vessel hangar, make vessel hangar and weekly
 # challenge smaller tabs"): compact docked cards. Two of them under the pilot chip end at y ~442 at
-# 1080, clear of the friends drawer's handle (centred on the left edge, from y ~484).
+# 1080, clear of rev 3's friends handle (centred on the left edge, from y ~484) and of rev 6's presence
+# orb that replaced it (bottom-left corner, from y 944).
 CARD_W, CARD_H = 480, 100
 ART_W = 132                   # the card's art strip
 TEXT_X = ART_W + 16           # where a card's words start
@@ -889,11 +890,13 @@ def validate(files):
     assert f"  - {{fileID: {IDS['settings_go']}}}" in sc.docs[SWITCHER], "Settings does not fade with the hub row (hubCompanions)"
     for key in ("Weekly", "Quest"):   # rev 3: each docked card folds and closes
         dk = sc.docs[str(ctx.c(f"UpNext/{key}", "dock"))]
-        # Rev 3.1: both cards expanded must end above the friends drawer's handle (centred on the left
-        # edge, 112 tall: from y 484 at 1080) - the owner's "friends is overlaying vessel hangar".
+        # Rev 3.1: both cards expanded must end clear of the friends control - the owner's "friends is
+        # overlaying vessel hangar". Since rev 6 that is the presence orb in the bottom-left corner
+        # (author_menu_arcade.ORB_*), whose top sits at y 944 at 1080.
         exp = int(re.search(r"expandedHeight: (\d+)", dk).group(1))
         bottom = CHIP["y"] + CHIP["h"] + 16 + 2 * exp + DOCK_GAP
-        assert bottom <= 540 - 112 // 2 - 16, f"the docked cards reach y {bottom}: under the friends handle"
+        orb_top = 1080 - (A.ORB_Y + A.ORB_SIZE)
+        assert bottom <= orb_top - 16, f"the docked cards reach y {bottom}: over the friends orb (top {orb_top})"
         for f, want in (("detailGroup", ctx.c(f"UpNext/{key}/Detail", "cg")), ("minimiseButton", ctx.c(f"UpNext/{key}/Minimise", "button")),
                         ("closeButton", ctx.c(f"UpNext/{key}/Close", "button")), ("cardGroup", ctx.c(f"UpNext/{key}", "cg"))):
             assert f"  {f}: {{fileID: {want}}}" in dk, f"{key} card: HomeDockCard.{f} is not wired"
@@ -976,8 +979,8 @@ def self_test(files):
         ("one click on Home flying again", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             "        m_TargetAssemblyTypeName: CosmicShore.UI.DoubleTapRelay, Assembly-CSharp\n        m_MethodName: Tap\n",
             "        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuCrystalClickHandler, Assembly-CSharp\n        m_MethodName: ToggleTransition\n", 1))),
-        ("the docked cards back under the friends handle", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
-            f"expandedHeight: {CARD_H}\n", "expandedHeight: 132\n", 1))),
+        ("the docked cards grown over the friends orb", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"expandedHeight: {CARD_H}\n", "expandedHeight: 400\n", 1))),
         ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  - {{fileID: {ctx_new().go('UpNext')}}}\n", "", 1))),
     ]

@@ -8,7 +8,8 @@ namespace CosmicShore.UI
     /// (rev 3: "make it independent like a popup from the left side we can open, minimise, maximise
     /// whenever we want"). Three states:
     /// <list type="bullet">
-    /// <item><b>Closed</b> - only the handle on the left edge shows; pressing it opens the drawer.</item>
+    /// <item><b>Closed</b> - only the handle shows; pressing it opens the drawer. Since rev 6 the handle is the
+    /// presence orb in the bottom-left corner (<see cref="KitPresenceOrb"/>, Docs/MENU_REDESIGN_B.md §45.4).</item>
     /// <item><b>Open</b> - the window slides in from the left at its normal size.</item>
     /// <item><b>Maximised</b> - the same window, grown to its large size; the button restores it.</item>
     /// </list>
@@ -21,7 +22,7 @@ namespace CosmicShore.UI
         public enum DrawerState { Closed = 0, Open = 1, Maximised = 2 }
 
         [Header("Wiring")]
-        [Tooltip("The handle on the left edge (shown while closed).")]
+        [Tooltip("The handle (shown while closed): the presence orb in the bottom-left corner.")]
         [SerializeField] private CanvasGroup handleGroup;
         [SerializeField] private Button handleButton;
         [Tooltip("The drawer window (holds the party panel).")]
