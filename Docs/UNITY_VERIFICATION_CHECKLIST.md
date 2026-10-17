@@ -9384,7 +9384,7 @@ in Unity, and nothing has been seen in play.
 
 ### 🔴 The interaction detail levels — destruction and stealing, game-wide (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
 
-`Docs/PRISM_ANIMATION.md` §4.11 (round 2). Supersedes the burst entry below where they differ: no white
+`Docs/PRISM_ANIMATION.md` §4.12 (round 2). Supersedes the burst entry below where they differ: no white
 accents, every explosion death (not only collisions) picks explosion / shatter / glitter by the prism's
 size on screen, every steal picks the grade or a bloom / unravel / flake SHED. New: a Resources config
 (`PrismInteractionLodConfig`, script guid authored out of the editor), `PrismInteractionLod`,
@@ -9459,7 +9459,7 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
 
 ### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
 
-`Docs/PRISM_ANIMATION.md` §4.11, `Docs/PRISM_MOTION.md` §3a. A hand-written shader
+`Docs/PRISM_ANIMATION.md` §4.12, `Docs/PRISM_MOTION.md` §3a. A hand-written shader
 (`PrismCollisionBurst.shader`), a new material, a new Resources config (`PrismMotionConfig`) and an
 unwelded mesh variant were authored out of the editor. Proven offline: `verify_prism_collision_burst.py`
 (executes the shipped HLSL; four negative controls fire; glslang compiles every pass against a URP

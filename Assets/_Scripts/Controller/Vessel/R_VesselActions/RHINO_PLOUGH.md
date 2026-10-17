@@ -46,7 +46,7 @@ On each hull contact `RhinoPloughPrismEffectSO.Execute`:
    Rhino's pilot; a super-shielded target deflects and only the shoved prism goes). Only a clear
    path completes the shove. A plough moves one prism per ram, so it is always LEVEL 1 of prism
    movement's ladder: both prisms come apart as a COLLISION BURST on the ultra-high-res prism
-   (`Docs/PRISM_ANIMATION.md` §4.11) while the burst budget allows, the ordinary explosion otherwise. So the furrow is still a plough in open space, and a weapon against a
+   (`Docs/PRISM_ANIMATION.md` §4.12) while the burst budget allows, the ordinary explosion otherwise. So the furrow is still a plough in open space, and a weapon against a
    wall beside it.
 
 Prism contact is simulated per peer, so the plough runs per peer exactly as the ram did. The side

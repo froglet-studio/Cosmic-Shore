@@ -9,7 +9,7 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The CARRIER of the prism's fine DETAIL LEVELS (Docs/PRISM_ANIMATION.md §4.11): the pure render
+    /// The CARRIER of the prism's fine DETAIL LEVELS (Docs/PRISM_ANIMATION.md §4.12): the pure render
     /// entities that draw a destruction or a steal on a shared high-resolution prism mesh — the unwelded
     /// prism cut union-jack (<see cref="HighPolyPrismMesh.GetShed"/>) at the sheds' resolutions, or the destruction's
     /// cut (<see cref="HighPolyPrismMesh.GetSilverGnomon"/>, <see cref="HighPolyPrismMesh.GetSierpinski"/>) at one

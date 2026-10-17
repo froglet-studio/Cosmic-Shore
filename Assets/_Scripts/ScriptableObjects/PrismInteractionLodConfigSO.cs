@@ -13,7 +13,7 @@ namespace CosmicShore.ScriptableObjects
 
     /// <summary>
     /// The DETAIL LEVELS of the prism's two fundamental interactions, game-wide (Docs/PRISM_ANIMATION.md
-    /// §4.11): how a prism is DESTROYED and how it is STOLEN, drawn on high-resolution meshes
+    /// §4.12): how a prism is DESTROYED and how it is STOLEN, drawn on high-resolution meshes
     /// (<c>PrismCollisionBurst</c>, <c>PrismCollisionBurst.hlsl</c>) when the viewer is close enough to see the
     /// detail and the budget allows, and as the ordinary effect otherwise. <c>PrismInteractionLod</c> decides.
     ///

@@ -517,7 +517,7 @@ where the obvious orthogonal projection overhangs every face slanted to the plan
 (`verify_prism_slice.py`) adds a second proof tier this family lacks: glslang front-end-compiles
 every pass of a hand-written `.shader`, plain and DOTS-instanced, against a URP mock.
 
-**A second neighbour: the COLLISION BURST** (`Docs/PRISM_ANIMATION.md` §4.11) — prism movement's
+**A second neighbour: the COLLISION BURST** (`Docs/PRISM_ANIMATION.md` §4.12) — prism movement's
 level-1 death, also a STAMP on the slice's carrier, drawn on an UNWELDED variant of the mesh
 (`HighPolyPrismMesh.GetUnwelded`) so it can tear along any pattern. Two findings that transfer: **when a
 visual must be indistinguishable from another at a squint, share its ENVELOPE in code, not by tuning**

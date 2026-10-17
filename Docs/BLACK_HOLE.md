@@ -199,7 +199,7 @@ also emits each body's pre-step point). **The body count puts the field on a run
 LADDER** (`PrismMotion.NextLevel`, `Resources/PrismMotionConfig`): at or under 64 bodies (level 1) each
 body's exact oriented box is swept on the main thread (`BoxContacts` → `PrismMotion.TryFirstContact`)
 and each destroyed prism comes apart as a COLLISION BURST on the ultra-high-res prism
-(`Docs/PRISM_ANIMATION.md` §4.11) while its budget allows; up to 256 (level 2), boxes and the ordinary
+(`Docs/PRISM_ANIMATION.md` §4.12) while its budget allows; up to 256 (level 2), boxes and the ordinary
 explosion; above 256 (level 3) a fourth Burst job, `PrismMotion.ContactJob`, tests the spheres of the
 prisms' volumes. Each line is crossed back down at three quarters of it (48, 192). `ApplyContacts` annihilates each pair on the main thread, scored to the
 hole nearest the body (its owner, or the anonymous "Black Hole"), before `ApplyVerdicts`, which drops

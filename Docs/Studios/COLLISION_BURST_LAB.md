@@ -1,6 +1,6 @@
 # Collision Burst Lab
 
-The prism's **interaction detail levels** (`Docs/PRISM_ANIMATION.md` §4.11) side by side with the ordinary
+The prism's **interaction detail levels** (`Docs/PRISM_ANIMATION.md` §4.12) side by side with the ordinary
 effects they stand in for, running the shipped shader code in WebGL2, with a measured look scorecard and
 a shared decision log: **destruction** (the explosion → the silver gnomon cut, every fragment bursting out on its own)
 and **stealing** (the grade → the roll). Round 1 looked at the four level-1 collision bursts alone.

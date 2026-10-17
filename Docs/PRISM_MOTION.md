@@ -109,7 +109,7 @@ capture or a throat transit on the same frame. A pair both bodies reported is an
 
 A prism destroyed by a level-1 collision is drawn at the **destruction detail level** the viewer's
 distance picks, like every other prism death in the game (the detail levels are game-wide since
-2026-10-14 — `Docs/PRISM_ANIMATION.md` §4.11, `PrismInteractionLod`, `Resources/PrismInteractionLodConfig`).
+2026-10-14 — `Docs/PRISM_ANIMATION.md` §4.12, `PrismInteractionLod`, `Resources/PrismInteractionLodConfig`).
 Destruction is one spectrum, coarse to fine, by the prism's projected diameter over the screen height:
 
 | Level | Size on screen | Up close |
@@ -129,7 +129,7 @@ squinted at, each is meant to read as the explosion.
 **Round 9 (the designer, 2026-10-16): the squint is retired.** The silver gnomon cut's range of sizes lets a
 far-away player take the small fragments as unseen, so a level no longer has to read as the explosion squinted at:
 every fragment bursts out on its own direction, filling the sphere, the small ones flung farthest and gone first
-(the FRAGMENT kind, `Docs/PRISM_ANIMATION.md` §4.11; measured in the Collision Burst Lab's Look scorecard). The
+(the FRAGMENT kind, `Docs/PRISM_ANIMATION.md` §4.12; measured in the Collision Burst Lab's Look scorecard). The
 squint measurements below are history.
 
 **Measured, round 5:** with the explosion's law, every depth is the explosion's size (0.99–1.02) and fade
@@ -182,7 +182,7 @@ steps down, and past every level the ordinary effect.
 | `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | `StoredPosition`, `ContactVolume`, `TryGetMotionView` (region "Prism motion") |
 | `_Scripts/Controller/Environment/BlackHole/BlackHoleGravityField.cs` | `PrevPoints` out of the integration, `NextLevel` (the ladder), `BoxContacts`, `ScheduleContacts`, `ApplyContacts`, `CollisionsTotal` |
 | `_Scripts/ScriptableObjects/PrismMotionConfigSO.cs`, `Resources/PrismMotionConfig.asset` | The ladder (`showcaseMaxMovers` 64, `boxMaxMovers` 256) |
-| `_Scripts/ScriptableObjects/PrismInteractionLodConfigSO.cs`, `Resources/PrismInteractionLodConfig.asset` | The game-wide detail levels: the size-on-screen lines, the budget, the shape, the shed weights (`Docs/PRISM_ANIMATION.md` §4.11) |
+| `_Scripts/ScriptableObjects/PrismInteractionLodConfigSO.cs`, `Resources/PrismInteractionLodConfig.asset` | The game-wide detail levels: the size-on-screen lines, the budget, the shape, the shed weights (`Docs/PRISM_ANIMATION.md` §4.12) |
 | `_Scripts/Utility/Effects/PrismInteractionLod.cs` | Picks the level: destruction (explosion / shatter / glitter) and stealing (grade / shed) |
 | `_Scripts/Utility/Effects/PrismCollisionBurst.cs` | The carrier: culling bounds, stamp, drain, retire (destruction and sheds on separate expiry queues) |
 | `_Graphics/Materials/Graphs/PrismCollisionBurst.hlsl` / `.shader`, `_Graphics/Materials/PrismCollisionBurstMaterial.mat` | The five kinds, the two fade curves, the URP passes |

@@ -112,7 +112,7 @@ namespace CosmicShore.Gameplay
                 AttackerName = prism.PlayerName
             };
 
-            // The steal's DETAIL LEVEL (Docs/PRISM_ANIMATION.md §4.11): close to the viewer and within the
+            // The steal's DETAIL LEVEL (Docs/PRISM_ANIMATION.md §4.12): close to the viewer and within the
             // budget, the old colours SHED off the prism as a skin and the prism takes its new colour at
             // once; otherwise the ordinary grade. Squinted at, the two are the same transition.
             if (TryShed(newDomain)) nextGradeSeconds = 0f;

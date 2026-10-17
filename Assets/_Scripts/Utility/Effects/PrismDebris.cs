@@ -287,7 +287,7 @@ namespace CosmicShore.Utility
         /// The explosion's FLIGHT for an impact: the debris velocity after the tier's detonation gain
         /// and the configured (or overridden) speed clamp, and the speed the face spin reads. The one
         /// place it is computed, so anything that must leave like the explosion — a collision burst
-        /// (<c>PrismCollisionBurst</c>, Docs/PRISM_ANIMATION.md §4.11) — leaves EXACTLY like it.
+        /// (<c>PrismCollisionBurst</c>, Docs/PRISM_ANIMATION.md §4.12) — leaves EXACTLY like it.
         /// </summary>
         internal static Vector3 ResolveExplosionFlight(Vector3 velocity, float speedLimitOverride, PrismKind kind,
             out float speed)

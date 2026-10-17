@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The DESTRUCTION's second cut (Docs/PRISM_ANIMATION.md §4.11): the explosion's wedges dissected by the SILVER
+    /// The DESTRUCTION's second cut (Docs/PRISM_ANIMATION.md §4.12): the explosion's wedges dissected by the SILVER
     /// GNOMON, scaled by recursion depth — a range of triangle sizes in the silver ratio, every piece one of two shapes.
     ///
     /// <para><b>The two shapes.</b> The SILVER triangle S (45° apex, 67.5° base angles) and its GNOMON G (45°, 22.5°,

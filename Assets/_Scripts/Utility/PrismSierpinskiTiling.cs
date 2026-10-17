@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The DESTRUCTION's fragments (Docs/PRISM_ANIMATION.md §4.11): a Sierpinski-inspired cut of the prism, scaled by
+    /// The DESTRUCTION's fragments (Docs/PRISM_ANIMATION.md §4.12): a Sierpinski-inspired cut of the prism, scaled by
     /// recursion depth.
     ///
     /// <para><b>Depth 0 is the explosion's own cut</b> — every face fanned from its centre into the four isoceles

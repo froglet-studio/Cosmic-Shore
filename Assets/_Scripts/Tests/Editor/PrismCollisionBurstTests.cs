@@ -15,7 +15,7 @@ namespace CosmicShore.Tests
     /// The CPU half of prism movement's three-level ladder and of the prism's interaction DETAIL LEVELS —
     /// destruction (the explosion, then the Sierpinski cut moved by the explosion's own law) and stealing (the grade,
     /// or a bloom shed)
-    /// (Docs/PRISM_MOTION.md, Docs/PRISM_ANIMATION.md §4.11). The GPU half is proven by
+    /// (Docs/PRISM_MOTION.md, Docs/PRISM_ANIMATION.md §4.12). The GPU half is proven by
     /// Tools/Shaders/verify_prism_collision_burst.py, which executes the shipped HLSL. This file holds
     /// the CPU to the promises that proof assumes — the culling envelope and the dissolve overshoot are the
     /// HLSL's, the unwelded mesh is the same solid with untearable triangles, the ladder has hysteresis, a

@@ -445,3 +445,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (prisms / product owner)
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** Docs/Studios/COLLISION_BURST_LAB.md round 11, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9
+
+### T-20261017-1249 · open · dev · Tooling
+- **Task:** unity_refcompile's editor config reports 3 errors in AuthenticationServiceFacade.cs (Unity.Multiplayer.PlayMode / CurrentPlayer, from 296123a9e) as PROJECT errors on a clean bleeding-edge, so every branch's editor run reads FAILED. Unity.Multiplayer.Playmode is already an unobtainable package: map that namespace to it (note the case difference) in Tools/Build/unity_refcompile so they land in the unobtainable-package bucket. Do not change the game file.
+- **Done when:** A clean bleeding-edge editor run reads RESULT: OK with those 3 in the unobtainable bucket, and a planted typo in a changed Editor file still fails it
+- **Who can take it:** Shombith (CI), Yash (offered)
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Tools/Build/unity_refcompile/README.md
+
+### T-20261017-75d5 · open · docs · Prisms
+- **Task:** Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs has two back-to-back summary blocks (near lines 666 and 2220 on cece/dreamy-pascal-7xxx1m; already on bleeding-edge): a member was inserted between a doc comment and its method, so the doc now sits on the wrong member. Move each onto the method it describes or delete it if superseded. Doc comments only.
+- **Done when:** A scan for '/// </summary>' followed by '/// <summary>' finds nothing in the file
+- **Who can take it:** Yash (offered), anyone
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)

@@ -95,7 +95,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// The same solid at the same density with every triangle owning its own three vertices —
         /// the mesh a COLLISION BURST draws (<c>PrismCollisionBurst.hlsl</c>, Docs/PRISM_ANIMATION.md
-        /// §4.11). Unwelded is what lets the surface tear along any pattern a burst kind chooses
+        /// §4.12). Unwelded is what lets the surface tear along any pattern a burst kind chooses
         /// (shard borders, petal diagonals, ribbon seams) with no triangle stretched across the tear.
         /// At rest it renders exactly as <see cref="Get"/> does: same positions, same hard per-face
         /// normals, same UV0, TEXCOORD1 and tangents. It adds <see cref="TriangleUVChannel"/>, so every
@@ -115,7 +115,7 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The SHED's mesh (Docs/PRISM_ANIMATION.md §4.11): <see cref="GetUnwelded"/> triangulated UNION-JACK —
+        /// The SHED's mesh (Docs/PRISM_ANIMATION.md §4.12): <see cref="GetUnwelded"/> triangulated UNION-JACK —
         /// the cells of the two quadrants the face's anti-diagonal crosses are cut along the other diagonal — so
         /// BOTH face diagonals run along triangle edges and the bloom's petals tear along straight lines at every
         /// resolution, instead of a staircase on one of them. Same solid, same vertex layout, same

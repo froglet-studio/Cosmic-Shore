@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
     /// separating-axis test (<see cref="EntersContact(in Box, float3, in Box, float3, out float)"/>,
     /// <see cref="TryFirstContact"/>), and each destroyed prism comes apart at the destruction DETAIL LEVEL
     /// the viewer's distance and the budget allow — glitter, shatter or the explosion
-    /// (<c>PrismInteractionLod</c>, Docs/PRISM_ANIMATION.md §4.11, game-wide). LEVEL 2, Plain (≤ 256): boxes, the ordinary explosion. LEVEL 3, Bulk (above): the SPHERE of
+    /// (<c>PrismInteractionLod</c>, Docs/PRISM_ANIMATION.md §4.12, game-wide). LEVEL 2, Plain (≤ 256): boxes, the ordinary explosion. LEVEL 3, Bulk (above): the SPHERE of
     /// each prism's volume (<see cref="ContactRadius"/>, capped at <see cref="MaxContactRadius"/>), tested
     /// for thousands of bodies at once in the Burst <see cref="ContactJob"/>, the ordinary explosion. Each
     /// line is crossed back downward at three quarters of it. The Rhino plough moves one prism per ram,

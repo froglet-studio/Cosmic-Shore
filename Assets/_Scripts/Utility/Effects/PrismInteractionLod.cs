@@ -7,7 +7,7 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// The DETAIL LEVEL of the prism's two fundamental interactions, decided once, at the instant of the event,
-    /// for every prism in the game (Docs/PRISM_ANIMATION.md §4.11; config <see cref="PrismInteractionLodConfigSO"/>):
+    /// for every prism in the game (Docs/PRISM_ANIMATION.md §4.12; config <see cref="PrismInteractionLodConfigSO"/>):
     ///
     /// <list type="table">
     /// <item><b>Destruction</b> — a cut of the explosion's wedges scaled by recursion DEPTH: the silver gnomon cut

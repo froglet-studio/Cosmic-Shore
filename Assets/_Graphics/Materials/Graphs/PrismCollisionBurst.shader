@@ -1,5 +1,5 @@
 // PrismCollisionBurst.shader — the prism's detail levels for DESTRUCTION (shatter, glitter) and
-// STEALING (the bloom, unravel and flake sheds), Docs/PRISM_ANIMATION.md §4.11, Docs/PRISM_MOTION.md
+// STEALING (the bloom, unravel and flake sheds), Docs/PRISM_ANIMATION.md §4.12, Docs/PRISM_MOTION.md
 // § "The look". Everything that decides WHERE a vertex goes and WHETHER a fragment survives lives in
 // PrismCollisionBurst.hlsl, which Tools/Shaders/verify_prism_collision_burst.py compiles and EXECUTES;
 // this file is the URP plumbing around it plus the colouring, and the verifier front-end compiles every

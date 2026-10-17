@@ -289,7 +289,7 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
-            // The DETAIL LEVEL of the death (Docs/PRISM_ANIMATION.md §4.11), tried next on the same
+            // The DETAIL LEVEL of the death (Docs/PRISM_ANIMATION.md §4.12), tried next on the same
             // terms: close to the viewer and within the budget, the cut of the explosion's wedges at a depth;
             // everywhere else (and for prism movement's collisions above level 1, which ask for plain)
             // level 0, the same fragment law on the explosion's own 24 wedges — leaving on the explosion's

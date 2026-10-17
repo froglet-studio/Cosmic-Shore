@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Prove the SHIPPED PrismCollisionBurst.hlsl / .shader do what Docs/PRISM_ANIMATION.md §4.11 says a
+Prove the SHIPPED PrismCollisionBurst.hlsl / .shader do what Docs/PRISM_ANIMATION.md §4.12 says a
 collision burst does. Two halves, neither a transcription of the shader:
 
 A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is translated mechanically

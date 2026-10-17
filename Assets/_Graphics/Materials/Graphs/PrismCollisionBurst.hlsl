@@ -1,5 +1,5 @@
 // PrismCollisionBurst.hlsl — the GPU side of the prism's DETAIL LEVELS for its two fundamental
-// interactions (Docs/PRISM_ANIMATION.md §4.11, Docs/PRISM_MOTION.md § "The look"): how a prism is
+// interactions (Docs/PRISM_ANIMATION.md §4.12, Docs/PRISM_MOTION.md § "The look"): how a prism is
 // DESTROYED and how it is STOLEN, drawn on the ultra-high-res prism the Rhino's slice uses whenever the
 // viewer is close enough to see the detail and the budget allows, and as the ordinary effect otherwise.
 // (The file keeps the name of its first use, the prism-movement collision.)
