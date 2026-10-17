@@ -937,6 +937,19 @@ glow intensities start at 1 with no HDR boost — expect to raise them once bloo
 
 ---
 
+### 🔴 DT-003: the remaining 23 EditMode failures fixed offline (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+No Unity editor or `unity` CLI was available, so `/verify-unity` did not run. Each fix was proven in a headless harness against the real test and subject files, and `unity_refcompile` compiled the changed files. The verdict for every test is in `Docs/QA/DEV_TASKS.md` DT-003. Two runtime files changed: `ElementalFloat.EvaluateAtNormalizedLevel` (a disabled float returns its `Value`) and `GameToastAPI` (an internal `Posted` event nothing in the game subscribes to).
+
+1. **Window > General > Test Runner > EditMode > Run All.**
+   - **PASS:** fully green. At most `CrystalHullFusionBakeTests.ShippedBakes_AreCurrent` is red; if so, paste its message into DT-003.
+   - **FAIL:** any other red test. Paste the suite, the test and its first message into DT-003.
+2. **Play any Skim Race match and overtake an AI.**
+   - **PASS:** the overtake and new-leader toasts still appear as before (the toast path gained only the test hook).
+   - **FAIL:** a missing or doubled toast.
+
+---
+
 ### 🔴 From `cece/nice-brahmagupta-ojclij`: CI gates and offline audit tools; Steam dual-app uploader and Playtest runbook; Prisma engine APIs the game's new code compiles against (Port/ only) (`Ys-bleeding-edge`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 Picked by `Tools/Build/pick_branch_parts.py` from `cece/nice-brahmagupta-ojclij`. The steps are that branch's reviewed test plan (`Docs/BRANCH_TEST_PLAN_2026-10-12.md` there), one block per part this branch carries. Each step has a PASS and a FAIL line; record the result in the PR or in Docs/QA/.

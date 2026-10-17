@@ -580,3 +580,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Caleb, Yash (offered), Andrew
 - **Added:** 2026-10-17 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Party: B31-B33 fixed); Docs/PartySystem/BUGS.md B31-B33
+
+### T-20261017-1154 · open · test · QA
+- **Task:** EditMode Run All on Ys-bleeding-edge (or a bleeding-edge that contains it): the 23 remaining DT-003 failures were fixed offline 2026-10-17 without an editor
+- **Done when:** Window > General > Test Runner > EditMode > Run All is fully green (or only CrystalHullFusionBakeTests.ShippedBakes_AreCurrent red, with its message pasted into DT-003)
+- **Who can take it:** Yash (offered), Caleb or Andrew (QA)
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/QA/DEV_TASKS.md DT-003

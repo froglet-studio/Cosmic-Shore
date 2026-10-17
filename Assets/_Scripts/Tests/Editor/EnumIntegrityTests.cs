@@ -223,9 +223,11 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void GameModes_MultiplayerModes_AllContainMultiplayerInName()
+        public void GameModes_MultiplayerModes_AreFlaggedMultiplayerOnTheirCards()
         {
-            // Convention check: multiplayer modes should be identifiable by name.
+            // A multiplayer mode is marked by its card's SO_Game.IsMultiplayer, not by its name:
+            // the domain modes were named Joust and Scurry when they replaced the Multiplayer*
+            // prototypes, so the old "name contains Multiplayer" convention no longer holds.
             var multiplayerModes = new[]
             {
                 GameModes.Multiplayer2v2CoOpVsAI,
@@ -234,10 +236,19 @@ namespace CosmicShore.Tests
                 GameModes.Scurry
             };
 
+            var cards = UnityEditor.AssetDatabase.FindAssets("t:SO_Game")
+                .Select(UnityEditor.AssetDatabase.GUIDToAssetPath)
+                .Select(UnityEditor.AssetDatabase.LoadAssetAtPath<CosmicShore.ScriptableObjects.SO_Game>)
+                .Where(card => card)
+                .ToList();
+
             foreach (var mode in multiplayerModes)
             {
-                Assert.IsTrue(mode.ToString().Contains("Multiplayer"),
-                    $"Multiplayer mode {mode} should contain 'Multiplayer' in its name.");
+                var forMode = cards.Where(card => card.Mode == mode).ToList();
+                Assert.IsNotEmpty(forMode, $"Multiplayer mode {mode} has no SO_Game card.");
+                foreach (var card in forMode)
+                    Assert.IsTrue(card.IsMultiplayer,
+                        $"{UnityEditor.AssetDatabase.GetAssetPath(card)} is the {mode} card and must set IsMultiplayer.");
             }
         }
 

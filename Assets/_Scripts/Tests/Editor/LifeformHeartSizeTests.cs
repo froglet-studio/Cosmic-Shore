@@ -55,9 +55,18 @@ namespace CosmicShore.Tests
         const string RewardEffectPath =
             "Assets/_SO_Assets/Effects/Skimmer Crystal Effects/SkimmerAdjustElementLevelByCrystalEffect.asset";
 
-        /// 22 species × 4 elements. Pinned so a rename, a move, or a parse regression cannot
+        /// 28 species × 4 elements. Pinned so a rename, a move, or a parse regression cannot
         /// turn this whole suite into a green no-op over an empty set.
-        const int CanonicalVariantCount = 88;
+        ///
+        /// <para>27 of the 28 are SIZED by Tools/Build/author_lifeform_heart_sizes.py (its
+        /// canonical count, 108). The 28th, the Nested Gyroid, is deliberately absent from that
+        /// tool's FLORA_PREFABS: its four configs are owned by
+        /// Tools/Build/author_nested_gyroid_flora_assets.py, which PINS the heart at the sizer's
+        /// HEART_MAX instead of letting its ~270 body re-price every heart in the game
+        /// (Docs/ECOSYSTEM.md §58.6). It is still a canonical species × element lifeform, so it
+        /// counts here and every assertion below covers it. The set was 22 species (88) when this
+        /// pin was written; the species since added each landed with their own generator.</para>
+        const int CanonicalVariantCount = 112;
 
         /// The four droppable elements, as serialized (Element.None is 0, Omni 5).
         static readonly int[] DroppableElements = { 1, 2, 3, 4 };

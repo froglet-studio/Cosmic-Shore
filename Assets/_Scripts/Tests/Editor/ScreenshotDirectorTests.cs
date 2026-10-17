@@ -26,6 +26,7 @@ namespace CosmicShore.Tests
             new ScreenshotConcept
             {
                 name = "Test",
+                worldAligned = worldAligned,
                 azimuthDegrees = new Vector2(azimuth, azimuth),
                 elevationDegrees = new Vector2(elevation, elevation),
                 distance = new Vector2(distance, distance),
