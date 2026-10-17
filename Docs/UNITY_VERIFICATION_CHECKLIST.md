@@ -11341,3 +11341,15 @@ at Awake when empty. `/verify-unity` was not run. Checked offline:
 4. **Party (two clients):** the guest flies, then the host opens a game card. The guest leaves freestyle and the card
    opens once the exit blend ends (`RequestExitFreestyle` now runs; it used to return false).
 5. **Double-tap on empty Home** still flies as before.
+
+## 🔴 2026-10-17 — Maelstrom card without description; friends drawer on the lattice (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`MaelstromPreviewHost` sets an empty briefing override on the launch panel, which hides the description and tips. The
+panel-less path clears them. `PartyPanel.prefab`'s frame fill is now transparent, and the drawer window's lattice is
+`Lattice_Window.mat`. `/verify-unity` was not run. Checked offline: refcompile player OK; every menu generator
+`--check`; arcade and friends drawer `--self-test`.
+
+1. **Maelstrom hub, NEXT ROUND card:** the round's name, with no description text over or under it. The main menu's
+   own arcade cards still show their descriptions.
+2. **Friends drawer:** behind the party panel is the living lattice (two layers, element pulses) through glass, not a
+   flat dark-blue slab. The seats, the orb design and the online list read clearly over it.

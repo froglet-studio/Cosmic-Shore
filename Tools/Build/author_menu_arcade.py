@@ -735,7 +735,9 @@ def section_header(parent, key, name, title, shown=True, count="0"):
 
 def build_panel():
     root = N("root", "PartyPanel", R(size=(PANEL_W, 844)))
-    H.framed(root, "Frame", 14, "SurfaceVeryDark", "SurfaceDark")
+    # Rev 7 (the owner, 2026-10-17: "not the blue bg make it more interesting like the lattice bg"): no fill of its
+    # own - the friends drawer's window behind it draws the living lattice through glass.
+    H.framed(root, "Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.0)
     inner = root.child(N("Inner", "Inner", R((0, 0), (1, 1), (0, -2), (-44, -40))))
     inner.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 14, 0, (1, 1), (1, 0)))
 

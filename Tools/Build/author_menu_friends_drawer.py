@@ -153,8 +153,9 @@ def window_node(parent):
     fill = w.child(N("Drawer/Window/Fill", "Fill", STRETCH))
     # Glass, not a slab (the user, 2026-10-16: "I liked the transparent backgrounds way more").
     fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.62), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
-    # Rev 6: the living lattice behind the panel and a Space (people) rim round it.
-    w.children.append(M.grid_node("Drawer/Window/Lattice"))
+    # Rev 6: the living lattice behind the panel and a Space (people) rim round it. Rev 7: the two-layer window lattice
+    # (with its element energy) rather than the faint panel one - the party panel no longer covers it with a slab.
+    w.children.append(M.window_lattice_node("Drawer/Window/Lattice"))
     bord = w.child(N("Drawer/Window/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
     M.rim_border(bord, "Space")
@@ -422,7 +423,7 @@ def validate_orb(sc, ctx):
     border = sc.docs[str(ctx.c("Drawer/Window/Border", "img"))]
     assert f"guid: {M.rim_material('Space')}" in border, "the drawer window lost its Space rim"
     assert sc.has(str(ctx.c("Drawer/Window/Border", "rim"))), "the drawer window's rim has no KitRimMesh"
-    assert f"guid: {M.LATTICE_PANEL_MAT}" in sc.docs[str(ctx.c("Drawer/Window/Lattice", "img"))], "the drawer window has no lattice"
+    assert f"guid: {M.LATTICE_WINDOW_MAT}" in sc.docs[str(ctx.c("Drawer/Window/Lattice", "img"))], "the drawer window has no window lattice"
 
 
 def subtree_rts(sc, rt):
