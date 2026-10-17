@@ -515,16 +515,96 @@ def report(results, wrote):
     return "\n".join(lines)
 
 
+RAIL_OFFSET = 22.0   # RegattaCourse.DefaultRails.LaneOffset
+MIN_CROSSINGS = 12
+
+
+def ring_crossings(f):
+    """(radius from the ring's centre, the ring's mouth) at every ring the PERSON threaded (AI-held samples skipped):
+    where in the mouth this hull is flown. The crossing is interpolated onto the ring's plane."""
+    cols = {c: i for i, c in enumerate(f.get("columns") or [])}
+    if not all(k in cols for k in ("x", "y", "z", "rings")) or not f.get("ringList"):
+        return []
+    rings = {int(r[0]): (r[1:4], r[4:7], r[7]) for r in f["ringList"]}
+    n = len(rings)
+    out, prev = [], None
+    for row in f.get("samples") or []:
+        p = (row[cols["x"]], row[cols["y"]], row[cols["z"]])
+        if "held" in cols and row[cols["held"]] and row[cols["held"]] > 0.5:
+            prev = None
+            continue
+        k = int(row[cols["rings"]])
+        if prev is not None and k > prev[0] and (prev[0] % n) in rings:
+            c, a, R = rings[prev[0] % n]
+            d0 = sum((prev[1][i] - c[i]) * a[i] for i in range(3))
+            d1 = sum((p[i] - c[i]) * a[i] for i in range(3))
+            t = d0 / (d0 - d1) if d0 != d1 else 0.5
+            x = [prev[1][i] + (p[i] - prev[1][i]) * t for i in range(3)]
+            rel = [x[i] - c[i] for i in range(3)]
+            along = sum(rel[i] * a[i] for i in range(3))
+            out.append((math.sqrt(max(0.0, sum((rel[i] - along * a[i]) ** 2 for i in range(3)))), R))
+        prev = (k, p)
+    return out
+
+
+def learn_race_lines(parsed):
+    """{hull: {"LaneShare": x}} from the fastest MIN_FINISHED finished races of each hull that races a line
+    (author_race_lines.HULLS): its median ring-crossing radius, put on the style's own scale (0 = the rails' radius,
+    1 = the tightest mouth less the hull's room at its risk)."""
+    from learn_from_flights import finished_of
+    import author_race_lines as arl
+    learned, report = {}, {}
+    for hull in arl.HULLS:
+        done = sorted([f for f in parsed if f.get("hull") == hull and finished_of(f)],
+                      key=lambda f: f.get("raceSeconds") or 1e9)[:MIN_FINISHED]
+        cross = [c for f in done for c in ring_crossings(f)]
+        report[hull] = {"finished": len(done), "crossings": len(cross)}
+        if len(done) < MIN_FINISHED or len(cross) < MIN_CROSSINGS:
+            continue
+        v = arl.values(hull)
+        clearance = v["HullClearance"] * (1.5 + (0.75 - 1.5) * v["Risk"])
+        tightest = min(R for _, R in cross)
+        room = max(1.0, tightest - clearance - RAIL_OFFSET)
+        median = statistics.median(r for r, _ in cross)
+        share = min(1.0, max(0.0, (median - RAIL_OFFSET) / room))
+        report[hull].update({"medianCrossing": round(median, 1), "tightestMouth": tightest, "LaneShare": round(share, 3)})
+        learned[hull] = {"LaneShare": round(share, 3)}
+    return learned, report
+
+
+def write_race_lines(learned):
+    """Merge the learned shares into race_lines_learned.json and re-run author_race_lines (the one writer)."""
+    import author_race_lines as arl
+    data = json.load(open(arl.LEARNED, encoding="utf-8")) if os.path.exists(arl.LEARNED) else {"hulls": {}}
+    for hull, v in learned.items():
+        data.setdefault("hulls", {}).setdefault(hull, {}).update(v)
+    data["note"] = "Written by learn_drives_from_flights.py --write from people's Regatta flights; read by author_race_lines.py."
+    json.dump(data, open(arl.LEARNED, "w", encoding="utf-8"), indent=2, sort_keys=True)
+    open(arl.LEARNED, "a", encoding="utf-8").write("\n")
+    import subprocess
+    return subprocess.call([sys.executable, os.path.join(HERE, "author_race_lines.py")])
+
+
 def run(sources, write):
     from learn_from_flights import parse
     by_hull = {h: [] for h in HULLS}
+    parsed = []
     for name, text in sources:
         f, err = parse(name, text)
-        if err or f.get("mode") != MODE or f.get("hull") not in HULLS:
+        if err or f.get("mode") != MODE:
+            continue
+        parsed.append(f)
+        if f.get("hull") not in HULLS:
             continue
         S = samples_of(f)
         if S:
             by_hull[f["hull"]].append((f, S))
+    lines, line_report = learn_race_lines(parsed)
+    print("race lines (where each hull crosses the rings; Resources/RaceLines):")
+    for hull, r in line_report.items():
+        print(f"  {hull}: {r}")
+    if write and lines:
+        write_race_lines(lines)
     results = [learn_hull(h, fl) for h, fl in by_hull.items()]
     wrote = [p for R in results if write and R["learned"] for p in write_variant(R["hull"], R["learned"])]
     text = report(results, wrote)
@@ -597,6 +677,17 @@ def self_test():
     S = [{"state": st, "speed": v, "held": False} for st, v in seq]
     shares = redrift_shares(S)
     assert [round(x, 3) for x in shares] == [1.0, 0.625], shares
+    # Race lines: a pilot threading ring 0 (centre (0,0,0), axis +x, mouth 110) 60 u off its centre, every time.
+    def line_flight(radius, seconds):
+        rows = []
+        for k in range(40):
+            x = -50.0 + 5.0 * k
+            rows.append([x, radius, 0.0, 1 if x >= 0 else 0, 0])   # threads ring 0 as it crosses x = 0
+        return {"mode": MODE, "hull": "Rhino", "finished": True, "ended": "race over", "raceSeconds": seconds, "raceTarget": 24,
+                "rings": 24, "ringList": [[0, 0, 0, 0, 1, 0, 0, 110], [1, 5000, 0, 0, 1, 0, 0, 110]],
+                "columns": ["x", "y", "z", "rings", "held"], "samples": rows}
+    cr = ring_crossings(line_flight(60.0, 100))
+    assert cr and abs(cr[0][0] - 60.0) < 1e-6 and cr[0][1] == 110, cr
     ctrl = learned("Rhino", "random")["learned"]
     assert ctrl["alignDegrees"] > rh["alignDegrees"] + 5, ("negative control: a pilot ignoring the rule must not look lined up", ctrl)
     do = learned("Dolphin", "policy")["learned"]

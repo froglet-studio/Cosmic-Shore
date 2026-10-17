@@ -106,6 +106,10 @@ it the Rhino was retuned (`cornerReleaseDegrees` 50 → 30, `minSpeedGain` 150 �
 I2 58.8 / 62.9, I3 53.7 / 50.1, I4 51.8 / 55.4 s, about a tie (208 vs 213 s in all). The brake stays for hairpins;
 `cornerSpeed` is learned from Yash's Rhino flights when they arrive.
 
+**2026-10-17 (later): every hull races its own line along the sides** (`REGATTA.md` §6.2). The centre line above
+is now only the fallback: every styled hull (all but the Squirrel and the Urchin) flies the gap between two rails at its
+own distance from the braid, with its own room and risk, and a person's flights of a hull set its line.
+
 **2026-10-17: step 6, the Dolphin drifts again at the peak** (`ChargeBoostAIPolicySO`, `AI/AI_BOOST.md`). The drift
 freezes speed, so every discharge now holds the next commit drift off only until the speed meets the transformer's
 falling target. Model (`Tools/Build/dolphin_drive_sim.py`, centre steering), 3 laps old vs new: I1 56.9 / 54.0, I2
@@ -162,6 +166,28 @@ these are leads, not results.
   letting go of the ramp 300 u early (instead of 60) raced I1 in 29.0 s instead of 67.9 s.
 - **Levels ordered correctly** for the Serpent and the Manta; the Squirrel's Medium beat its Hard on two courses (rail
   rams reset its boost: noise larger than the belief mistakes).
+
+### 3.0 How the Regatta AIs are trained: one skill at a time, per hull (2026-10-17)
+
+Yash, 2026-10-17: "every vessel moves in different ways ... they should process in their own way. The ultimate goal is
+to win the race fast ... how risky you want to play versus how careful ... more player data can help us gain more
+values on how to set the AIs", like game bots trained to do different tasks and then fight real matches. So each hull's
+racing AI is a set of SKILLS, each trained and measured on its own, then raced together:
+
+| Skill | The question | Per hull, per mode, in | Learned from people by | Tested by |
+|---|---|---|---|---|
+| **Line** | Where on the course to fly | `RaceLineStyleSO` (`Resources/RaceLines`) | ring-crossing radius (`learn_drives_from_flights.py`) | `RegattaRaceLineTests`, the Third Eye |
+| **Speed verb** | When to spend the hull's speed (ramp, Soar, discharge, sling) | `AIBoostPolicySO` variants, `MantaSoarAITuningSO`, the Stoat's configs | engage / release moments | `RhinoRampDriveTests`, `DolphinChargeDriveTests`, the drive sims |
+| **Skim** | When to skim a rail, and when to stop once the speed is there | the Squirrel's `SkimRaceAIConfig_Regatta` (`DirectBoost`: it leaves the rails at boost 3.1) | skim share against boost (to do: needs the skimmer's real reach, not a prism-centre distance) | `SKIM_RACE_AI.md` harness |
+| **Hazards** | Keep off rails and rivals | the line's room (`HullClearance`), the guards | rail distance while flying | the line tests |
+| **Racecraft** | How bold to be, overtaking | the style's `Risk` + per-seat spread | (to do: rival-proximity moments) | (to do) |
+
+Training runs in three stages, the same for every hull:
+1. **Imitation (now):** each skill's numbers come from people's editor flights of that hull, in that mode, from their
+   fastest finished races (`learn_drives_from_flights.py --write`; nothing is written below three finished races).
+2. **Search (next):** each skill's numbers are tuned against race time in the offline drive sims, and later in
+   Amoebius headless races (§4), keeping only changes that win on every intensity.
+3. **Race (always):** the skills fly together in the real game; the Third Eye and the timed races are the judge.
 
 ### 3.1 Stoat, the first one
 
