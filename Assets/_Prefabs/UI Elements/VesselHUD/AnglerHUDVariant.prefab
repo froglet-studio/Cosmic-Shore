@@ -188,6 +188,7 @@ MonoBehaviour:
   leashGauge: {fileID: 7700000000000001223}
   lureGauge: {fileID: 7700000000000001213}
   tameGauge: {fileID: 7700000000000001233}
+  seedSprite: {fileID: 21300000, guid: 72161314f6ad232974be6695531fc9c4, type: 3}
   gaugeColor: {r: 0.59, g: 0.65, b: 0.76, a: 1}
   readyColor: {r: 0.6156863, g: 1, b: 0.1803922, a: 1}
   colorBlendRate: 15

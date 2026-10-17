@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AnglerCameraSettingsSO
   m_EditorClassIdentifier: 
   mode: 0
-  followOffset: {x: 0, y: 14, z: -40}
+  followOffset: {x: 0, y: 56, z: -160}
   lookAheadDistance: 55
   lookAheadLift: 0
   chaseEaseRate: 12

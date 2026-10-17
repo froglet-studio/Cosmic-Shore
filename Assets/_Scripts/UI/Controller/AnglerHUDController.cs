@@ -24,6 +24,7 @@ namespace CosmicShore.UI
 
         bool _isLocalPilotHud;
         float _lure01;
+        int _seeds;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -36,16 +37,21 @@ namespace CosmicShore.UI
                                && !vesselStatus.IsInitializedAsAI
                                && vesselStatus.IsLocalUser;
             _lure01 = 0f;
+            _seeds = 0;
         }
 
         void Update()
         {
             if (!_isLocalPilotHud || !view || !angler) return;
             float school = Mathf.Max(1, angler.TamedCount);
-            view.SetCharge(angler.LockedOn ? angler.Hunting / school : 0f, angler.Erasing);
+            view.SetCharge(Mathf.Clamp01(angler.HunterCount / 3f), angler.Erasing);   // spent hunters out (3+ = full)
             _lure01 = Mathf.MoveTowards(_lure01, angler.Luring ? 1f : 0f, lureEaseRate * Time.unscaledDeltaTime);
             view.SetMass(Mathf.Max(angler.StrongestTame01, _lure01 * 0.15f), angler.Luring);
-            view.SetSpace(angler.LockedOn ? 0f : angler.Hunting / school, angler.Painting && angler.PaintedCount > 0);
+            view.SetFaunaCount(angler.TamedCount);
+            view.SetSpace(angler.Hunting / school, angler.Painting && angler.PaintedCount > 0);
+            view.SetFloraSeeds(angler.FloraSeedCount);
+            if (angler.FloraSeedCount > _seeds) view.PlayOmniCrystalCollected();   // a crystal just left a seed
+            _seeds = angler.FloraSeedCount;
             view.SetTime(angler.DashReady ? 1f : 0f, angler.DashReady);
         }
     }

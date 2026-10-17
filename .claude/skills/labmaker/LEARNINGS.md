@@ -923,3 +923,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `AnglerCommandLab.html` (`P.paintRange` in `brushStroke`, the spotlight's `aimPick`, the commander's reach); the round-3 scorecard.
 - Promoted: no
 
+### L-STU-72 — Removing a timeout can turn a harmless exclusion into a deaf unit; re-test every "skip this state" after it
+- Lab: Angler Command Lab, round 4 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-17
+- What happened: the throw had always skipped creatures still in flight, and holding RT gathered only idle and attacking ones. That was harmless while a homing throw gave up after 6 s. Round 3 removed the give-up (any distance, limited only by speed) and raised the reach to 3200 u. A creature thrown far away was then deaf to every new paint for many seconds, and the designer's next playtest said the fauna "didn't always listen". No scorecard row moved, because the scored commander never repaints mid-flight.
+- Do instead: when a change removes a timeout or a cap, grep every `state === X` skip that the timeout used to bound, and give the page a headless repro of the interaction the skip blocks (here: throw, repaint mid-flight, throw again; count who obeys). Keep that repro as a check: before 24/24 stuck, after 24/24 obey.
+- Evidence: `ANGLER_COMMAND_LAB.md` round 4; `commandStep` slingpaint (the gather now includes `ST.FLUNG`); `throwAtPaint`.
+- Promoted: no
+

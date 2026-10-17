@@ -114,7 +114,17 @@ def dash(d):
     poly(d, [(70, 52), (84, 64), (70, 76)])                         # the arrowhead, at the 75% mark
 
 
+def seed(d):
+    # The omni card: a seed with its first shoot - the plant an omni crystal leaves, planted on the next lure release.
+    pts = [(64 + 22 * math.cos(math.radians(a)), 82 + 30 * math.sin(math.radians(a))) for a in range(0, 360, 10)]
+    poly(d, pts)                                                    # the seed
+    line(d, [(64, 54), (64, 30)], 5.0)                              # the shoot
+    poly(d, [(64, 38), (40, 22), (38, 40)])                         # leaf
+    poly(d, [(64, 32), (88, 16), (90, 34)])                         # leaf
+
+
 ICONS = {
+    "Angler_Seed.png": seed,           # the omni card: a flora seed (round 4)
     "Angler_Command.png": lock_on,     # Charge: Erase / Lock-on
     "Angler_Leash.png": lure_grow,     # Mass: Lure, Tame & Grow
     "Angler_Lure.png": paint,          # Space: Paint

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -17,8 +18,8 @@ namespace CosmicShore.Gameplay
         [Header("Lure (the lab's Lure tab)")]
         [Tooltip("Esca distance (u): where the lure light hangs, ahead of the nose.")]
         [SerializeField, Min(0f)] float lureAhead = 14f;
-        [Tooltip("Speed while luring (u/s): holding the lure slows the Angler to this. Lured fauna swim 16-38 u/s, so a hull at cruise outruns its own catch. Boost still overrides.")]
-        [SerializeField, Min(0f)] float lureCruise = 12f;
+        [Tooltip("Speed while luring (u/s): holding the lure slows the Angler to this; 0 = it stops. Lured fauna swim 16-38 u/s, so a hull at cruise outruns its own catch. Boost still overrides.")]
+        [SerializeField, Min(0f)] float lureCruise = 0f;
         [Tooltip("Lure reach (u): wild fauna within this of the esca turn toward it.")]
         [SerializeField, Min(0f)] float lureRadius = 70f;
         [Tooltip("Hold radius (u): inside this the creature is held and taming fills.")]
@@ -70,9 +71,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Every creature (wild ones too) ranks a painted prism this many times closer than it is when it picks its next " +
                  "meal (PaintedPrey). Preference only: the creature's own diet still decides what is edible. 1 = no preference.")]
         [SerializeField, Min(1f)] float paintedPreference = 4f;
-        [Tooltip("Mass: while the lure is held, one plant of the pilot's domain is planted at a random point within the lure's " +
-                 "reach every this many seconds (a species the cell itself grows). 0 = never.")]
-        [SerializeField, Min(0f)] float plantInterval = 2f;
+        [Tooltip("Mass: while the lure is held, every plant within the lure's reach grows this many times as often (Flora.Hasten). " +
+                 "1 = no effect.")]
+        [SerializeField, Min(1f)] float lureGrowth = 3f;
+        [Tooltip("Time: your tamed fauna swim this many times as fast (following, gathering, thrown, eating an order, hunting), " +
+                 "from x1 at Time 0 to x2 at Time 10. The element's one parameter (vessel contract: Time = rate / mobility).")]
+        [SerializeField] ElementalFloat faunaSpeed = ElementalFloat.Multiplier(1f, 2f, Element.Time, 1f);
         [Tooltip("Charge: a squad locked on to a vessel bites it as a scored Strike (PvP is petals only) at most once per this " +
                  "many seconds, however many creatures are on it (CombatHitDrain's per-pair latch).")]
         [SerializeField, Min(0.1f)] float lockBiteCooldown = 1f;
@@ -117,7 +121,8 @@ namespace CosmicShore.Gameplay
         public float DashFrac => dashFrac;
         public float DashTime => Mathf.Max(0.05f, dashTime);
         public float PaintedPreference => Mathf.Max(1f, paintedPreference);
-        public float PlantInterval => plantInterval;
+        public float LureGrowth => Mathf.Max(1f, lureGrowth);
+        public ElementalFloat FaunaSpeed => faunaSpeed;
         public float LockBiteCooldown => Mathf.Max(0.1f, lockBiteCooldown);
         public float LockBiteReach => lockBiteReach;
         public IReadOnlyList<FaunaConfigurationSO> OmniFauna => omniFauna;

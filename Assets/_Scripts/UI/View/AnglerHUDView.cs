@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -33,6 +34,13 @@ namespace CosmicShore.UI
         [Tooltip("Time card: Dash to the School - full when the dash is ready.")]
         [SerializeField, FormerlySerializedAs("tameGauge")] Image timeGauge;
 
+        [Header("Counts")]
+        [Tooltip("The OMNI card's icon: a seed, the flora an omni crystal left (planted the next time the lure is let go). " +
+                 "Its number is how many seeds are held; it is dim while none is.")]
+        [SerializeField] Sprite seedSprite;
+        [Tooltip("Font size of the numbers on the Mass card (fauna you lead) and the omni card (seeds held).")]
+        [SerializeField, Min(6f)] float countFontSize = 22f;
+
         [Header("Colours")]
         [Tooltip("Every gauge's resting colour.")]
         [SerializeField] Color gaugeColor = new(0.59f, 0.65f, 0.76f, 1f);
@@ -55,6 +63,89 @@ namespace CosmicShore.UI
             if (!gauge) return;
             gauge.fillAmount = 0f;
             gauge.color = gaugeColor;
+        }
+
+        // ---- the numbers: fauna on the Mass card, seeds on the omni card (built at runtime; the lockup re-homes them) ----
+
+        const string SeedHostName = "AnglerSeedButton";
+        const float SeedIconSize = 80f;
+        Image _seedIcon;
+        TextMeshProUGUI _seedCount, _faunaCount;
+        int _seedsShown = -1, _faunaShown = -1;
+
+        /// <summary>
+        /// Builds the omni card's icon (the Dolphin's pattern: a vessel-built icon bound to the core card, because what the
+        /// Angler's crystal leaves is a COUNT of seeds, not a picture) and the Mass card's fauna count. Idempotent by name.
+        /// </summary>
+        public override void EnsureGeneratedAbilityIcons()
+        {
+            base.EnsureGeneratedAbilityIcons();
+            if (!_seedIcon)
+            {
+                var host = transform.Find(SeedHostName) as RectTransform;
+                if (!host)
+                {
+                    host = new GameObject(SeedHostName, typeof(RectTransform)).GetComponent<RectTransform>();
+                    host.SetParent(transform, false);
+                }
+                _seedIcon = ResolveGeneratedChild<Image>(host, "AnglerSeedIcon");
+                var rt = _seedIcon.rectTransform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(SeedIconSize, SeedIconSize);
+                _seedIcon.sprite = seedSprite;
+                _seedIcon.preserveAspect = true;
+                _seedIcon.raycastTarget = false;
+                _seedCount = MakeCount(rt, "SeedCount");
+                BindCoreAbilityIcon(CoreAbility.OmniCrystal, _seedIcon);
+                _seedsShown = -1;
+            }
+            if (!_faunaCount)
+            {
+                Image massIcon = null;
+                for (int i = 0; i < abilityIcons.Count; i++)
+                    if (abilityIcons[i].element == Element.Mass) massIcon = abilityIcons[i].icon;
+                if (massIcon) _faunaCount = MakeCount(massIcon.rectTransform, "FaunaCount");
+                _faunaShown = -1;
+            }
+        }
+
+        TextMeshProUGUI MakeCount(RectTransform parent, string name)
+        {
+            var text = ResolveGeneratedChild<TextMeshProUGUI>(parent, name);
+            var rt = text.rectTransform;
+            rt.anchorMin = new Vector2(1f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(1f, 0f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(48f, 28f);
+            text.alignment = TextAlignmentOptions.BottomRight;
+            text.fontSize = countFontSize;
+            // Never wrap or ellipsise: an overflowing number is a loud, fixable fault, a truncated one a wrong reading.
+            text.enableWordWrapping = false;
+            text.overflowMode = TextOverflowModes.Overflow;
+            text.margin = Vector4.zero;
+            text.raycastTarget = false;
+            text.text = "0";
+            return text;
+        }
+
+        /// <summary>The fauna you lead, on the Mass card (the designer, 2026-10-17).</summary>
+        public void SetFaunaCount(int count)
+        {
+            if (!_faunaCount) EnsureGeneratedAbilityIcons();
+            if (!_faunaCount || count == _faunaShown) return;
+            _faunaShown = count;
+            _faunaCount.text = count.ToString();
+        }
+
+        /// <summary>The seeds the omni crystals left, on the omni card; the icon is dim while none is held.</summary>
+        public void SetFloraSeeds(int count)
+        {
+            if (!_seedIcon) EnsureGeneratedAbilityIcons();
+            if (!_seedIcon || count == _seedsShown) return;
+            _seedsShown = count;
+            if (_seedCount) _seedCount.text = count > 0 ? count.ToString() : "";
+            _seedIcon.color = count > 0 ? Color.white : new Color(1f, 1f, 1f, 0.3f);
         }
 
         public void SetCharge(float hunting01, bool erasing) => Push(chargeGauge, hunting01, erasing);

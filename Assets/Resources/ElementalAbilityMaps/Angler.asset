@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Erase / Lock-on
-    AbilityDescription: 'LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Point it at a rival vessel and the picked squad LOCKS ON: it hunts that hull, and each bite is a scored contact Strike that takes petals, until you throw a new paint, lock another vessel, or the hunters die. R_VesselActions/ANGLER.md.'
+    AbilityDescription: 'LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Each time the beam comes onto a rival vessel - another one, or the same one again - it LOCKS, and the lock SPENDS one creature: it leaves your school (your count drops by one) and chases that vessel until it dies, each bite a scored contact Strike that takes petals. R_VesselActions/ANGLER.md.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -25,7 +25,7 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 2
     AbilityLabel: Lure, Tame & Grow
-    AbilityDescription: 'X, held: the esca lights ahead of the nose and the hull slows. Wild herbivores in its reach turn to it, and one held in the light for the taming time joins your school. While the light is out, plants of your domain grow within the same reach.'
+    AbilityDescription: 'X, held: the esca lights and the hull stops. Wild herbivores in its reach turn to it, and one held in the light for the taming time joins your school (the count on this card). Plants in the light grow three times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain.'
     Input: 8
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 'The lure takes creatures from other holders too: another Angler''s tamed fauna can be lured, tamed and kept. Gated on IsUpgradeActive(Mass).'
   - Element: 3
     AbilityLabel: Paint
-    AbilityDescription: 'RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every creature prefers them; the picked squad balls up ahead. Let go: each creature flies at the most recently painted prisms first, at any distance, and eats them. Lit prisms stay lit until eaten or erased.'
+    AbilityDescription: 'RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every creature prefers them; the whole picked squad balls up ahead, any still in flight included. Let go: each creature flies at the most recently painted prisms first, at any distance, and eats them. Lit prisms stay lit until eaten or erased.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -43,7 +43,7 @@ MonoBehaviour:
     UpgradeDescription: 'The brush paints shielded prisms too, and the squad cracks a painted prism''s shield off when it arrives, so it can be eaten. Gated on IsUpgradeActive(Space).'
   - Element: 4
     AbilityLabel: Dash to the School
-    AbilityDescription: 'Y (F on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured when pressed, in 0.35 s.'
+    AbilityDescription: 'Y (F on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured when pressed, in 0.35 s. Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 (AnglerConfigSO.faunaSpeed).'
     Input: 14
     UnlockLevel: 5
     RelockBelowLevel: 4

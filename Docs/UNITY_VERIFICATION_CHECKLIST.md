@@ -65,6 +65,42 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler round 4: one-thumb, 2x speed, camera 4x, the lure stops, crystal seeds, lure growth, counts, Time speeds fauna, a spent creature per lock, "they didn't listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1d–§1i. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors.
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 19/19.
+- `studio_to_unity`: 25 mapped, 0 drift.
+- `element_ability_table`: Time scales `faunaSpeed` 1 → 2.
+- The lab: `verify_lab` PASS, and the listen bug reproduced and fixed headless.
+
+1. **One thumb.** Fly the Angler on a pad using the LEFT stick only: it pitches, yaws and banks. The right stick does nothing. RT / LT still paint and erase with analog depth. On a keyboard + mouse it flies on the one-thumb mouse scheme.
+2. **Speed and camera.**
+   - It cruises at about twice its old speed (80 u/s) and boosts with RB.
+   - The camera sits about four times further back and higher.
+   - The school is visible round the hull, and trails it at cruise.
+3. **The lure stops it.** Hold X: the hull eases to a stop (boost still moves it). Let go: it eases back up to cruise.
+4. **Lure growth.** Hold X near plants: the plants inside the light grow visibly faster than those outside it. They return to their own pace when you let go.
+5. **The fauna count.** The Mass card shows a number: the creatures you lead. It goes up as you tame, and down when one is spent or dies.
+6. **Omni crystal: a creature and a seed.**
+   - Fly through one: a creature blooms where it was and joins (the count goes up).
+   - The omni card (left of the four) shows a seed icon, bright, with "1", and flashes.
+   - Hold X, then let go: a plant of your domain grows in at the esca, and the seed icon dims.
+   - Two crystals before releasing: "2", and two plants on release.
+7. **"They listen."** Throw the squad at a far painted field. While they are still flying, hold RT on a near field and release: every creature turns to the new paint.
+8. **Charge spends one creature per lock.**
+   - Sweep LT onto a rival vessel: ONE creature (the nearest) leaves the school, the count drops by one, and it chases that vessel. Its bites take petals (at most one per second) and score.
+   - Move the beam off and back on (or release and press LT again on the same vessel): another creature goes, and the count drops again.
+   - Hold the beam steady on the vessel: no further creatures go.
+   - Each hunted hull wears a ring.
+   - The hunters ignore paint and recall. They keep chasing until they die, or go wild if the vessel leaves.
+   - With one creature left, locking spends it, and a keeper is born within a second.
+9. **Time speeds the fauna.** Raise Time (toolbox) to 10: the school keeps up with the cruising hull, and thrown and hunting creatures move about twice as fast.
+
 ### 🔴 Angler round 3: the element map (Charge lock-on, Mass lure & grow, Space paint 3200 u, Time dash on Y), newest paint first, the omni creature, every creature prefers paint (`cece/zealous-feynman-po8k8d`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md` §1, §1c–§1g, §7. No `unity` CLI was available, so `/verify-unity` did NOT run.

@@ -176,9 +176,12 @@ STOAT_SCRIPTS = ("86da9d91d4364f02ad41dd723756e970",   # StoatHUDController
                  "1712753ee2d34c6294526e3c58d4b197",   # StoatRippleExecutor
                  TWO_STICK_SCRIPT)                     # swapped for AnglerVesselTransformer
 
-# The lab's flight (Docs/Studios/AnglerCommandLab.html SHIPPED: cruise 40, boost 110). Cruise = MinimumSpeed +
+# The lab's flight (Docs/Studios/AnglerCommandLab.html SHIPPED: cruise 80, boost 220 - round 4 doubled both). Cruise = MinimumSpeed +
 # ThrottleScaler at full throttle (VesselTransformer), boost = cruise x MaxBoostMultiplier.
-CRUISE, BOOST = 40, 110
+CRUISE, BOOST = 80, 220
+# The lab's chase camera (SHIPPED chaseBack / chaseUp). A Vector3 field, so studio_to_unity cannot map it; this generator
+# seeds it and --check holds the camera asset to it.
+CHASE_BACK, CHASE_UP = 160, 56
 
 
 # ===================================================================================================== the prefab
@@ -286,6 +289,18 @@ GAUGES = (("rippleGauge", "commandGauge", "RippleGauge", "CommandGauge"),     # 
           ("timeGauge", "tameGauge", "TimeGauge", "TameGauge"))               # time
 
 
+SEED_SPRITE = I.guid_for("Angler_Seed.png")
+
+
+def patch_hud_variant(text: str) -> str:
+    """Idempotent edits the committed HUD variant takes too (its clone is a spent one-shot): the omni card's seed sprite
+    (AnglerHUDView.seedSprite, round 4), written right after the Time gauge field (either of its names)."""
+    if "  seedSprite:" in text:
+        return text
+    return re.sub(r"(  (?:tameGauge|timeGauge): \{fileID: \d+\}\n)",
+                  lambda m: m.group(1) + f"  seedSprite: {{fileID: 21300000, guid: {SEED_SPRITE}, type: 3}}\n", text, count=1)
+
+
 def build_hud_variant(donor: str) -> str:
     text = donor.replace("      value: StoatHUDVariant\n", "      value: AnglerHUDVariant\n")
     text = text.replace(f"guid: {S.HUD_VIEW_SCRIPT}, type: 3}}", f"guid: {SCRIPT['AnglerHUDView']}, type: 3}}")
@@ -295,7 +310,7 @@ def build_hud_variant(donor: str) -> str:
         text = S.replace_once(text, f"  m_Name: {old_go}\n", f"  m_Name: {new_go}\n", f"gauge object {old_go}")
     for old, new in ICON_SWAP.items():
         text = S.replace_once(text, f"guid: {old}, type: 3}}", f"guid: {new}, type: 3}}", f"icon sprite {old}")
-    return text
+    return patch_hud_variant(text)
 
 
 # ===================================================================================================== assets
@@ -303,7 +318,7 @@ def config_asset() -> str:
     """SEEDED once. Numbers = AnglerConfigSO's field initializers = the lab's SHIPPED (studio_to_unity owns them after)."""
     return (S.so_header(SCRIPT["AnglerConfigSO"], "AnglerConfig") +
             "  lureAhead: 14\n"
-            "  lureCruise: 12\n"
+            "  lureCruise: 0\n"
             "  lureRadius: 70\n"
             "  tameRadius: 22\n"
             "  tameTime: 2.5\n"
@@ -327,7 +342,8 @@ def config_asset() -> str:
             "  dashFrac: 0.75\n"
             "  dashTime: 0.35\n"
             "  paintedPreference: 4\n"
-            "  plantInterval: 2\n"
+            "  lureGrowth: 3\n"
+            "  faunaSpeed:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2\n    element: 4\n    UseFloor: 1\n    Floor: 1\n"
             "  lockBiteCooldown: 1\n"
             "  lockBiteReach: 6\n"
             "  omniFauna:\n" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in OMNI_FAUNA) +
@@ -358,26 +374,29 @@ def map_asset() -> str:
     return (S.so_header(MAP_SCRIPT, "Angler").replace("  m_EditorClassIdentifier: \n", "  m_EditorClassIdentifier:\n") +
             f"  vesselClass: {CLASS_ID}\n  entries:\n" +
             entry(1, "Erase / Lock-on",
-                  "LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Point it "
-                  "at a rival vessel and the picked squad LOCKS ON: it hunts that hull, and each bite is a scored contact "
-                  "Strike that takes petals, until you throw a new paint, lock another vessel, or the hunters die. "
-                  "R_VesselActions/ANGLER.md.", 2, "", "") +
+                  "LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Each "
+                  "time the beam comes onto a rival vessel - another one, or the same one again - it LOCKS, and the lock "
+                  "SPENDS one creature: it leaves your school (your count drops by one) and chases that vessel until it "
+                  "dies, each bite a scored contact Strike that takes petals. R_VesselActions/ANGLER.md.", 2, "", "") +
             entry(2, "Lure, Tame & Grow",
-                  "X, held: the esca lights ahead of the nose and the hull slows. Wild herbivores in its reach turn to it, and "
-                  "one held in the light for the taming time joins your school. While the light is out, plants of your domain "
-                  "grow within the same reach.", 8, "Steal Fauna",
+                  "X, held: the esca lights and the hull stops. Wild herbivores in its reach turn to it, and one held in the "
+                  "light for the taming time joins your school (the count on this card). Plants in the light grow three "
+                  "times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain.", 8,
+                  "Steal Fauna",
                   "The lure takes creatures from other holders too: another Angler's tamed fauna can be lured, tamed and "
                   "kept. Gated on IsUpgradeActive(Mass).") +
             entry(3, "Paint",
                   "RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every "
-                  "creature prefers them; the picked squad balls up ahead. Let go: each creature flies at the most recently "
-                  "painted prisms first, at any distance, and eats them. Lit prisms stay lit until eaten or erased.", 1,
+                  "creature prefers them; the whole picked squad balls up ahead, any still in flight included. Let go: each "
+                  "creature flies at the most recently painted prisms first, at any distance, and eats them. Lit prisms "
+                  "stay lit until eaten or erased.", 1,
                   "Paint Shields",
                   "The brush paints shielded prisms too, and the squad cracks a painted prism's shield off when it arrives, "
                   "so it can be eaten. Gated on IsUpgradeActive(Space).") +
             entry(4, "Dash to the School",
                   "Y (F on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured "
-                  "when pressed, in 0.35 s.", 14, "", ""))
+                  "when pressed, in 0.35 s. Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 "
+                  "(AnglerConfigSO.faunaSpeed).", 14, "", ""))
 
 
 def control_asset(name: str, value: int) -> str:
@@ -385,12 +404,13 @@ def control_asset(name: str, value: int) -> str:
 
 
 def camera_asset() -> str:
-    """SEEDED once. The lab's chase (AnglerCommandLab.html render(): 40 u behind, 14 up, looking 55 u ahead, closing at
+    """SEEDED once. The lab's chase (AnglerCommandLab.html: chaseBack 160 behind, chaseUp 56 up - 4x round 3's 40 / 14, the
+    designer 2026-10-17 - looking 55 u ahead, closing at
     0.18 a frame = 12/s, a 62-degree frame) - pulled back far enough that the school round the hull reads. The player's
     FOV stays the player's (framingFieldOfView, vessel rule 4.ad)."""
     return (S.so_header(CAMERA_SCRIPT, "AnglerCameraSettingsSO") +
             "  mode: 0\n"
-            "  followOffset: {x: 0, y: 14, z: -40}\n"
+            f"  followOffset: {{x: 0, y: {CHASE_UP}, z: -{CHASE_BACK}}}\n"
             "  lookAheadDistance: 55\n"
             "  lookAheadLift: 0\n"
             "  chaseEaseRate: 12\n"
@@ -595,13 +615,17 @@ def check(files: "dict[str, str]") -> "list[str]":
             need(re.search(r"  (%s|%s): \{fileID: [1-9]\d*\}" % (field, renamed), hud), f"HUD view field {renamed} is not wired")
         for old, new in ICON_SWAP.items():
             need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+        need(f"  seedSprite: {{fileID: 21300000, guid: {SEED_SPRITE}, type: 3}}\n" in hud,
+             "AnglerHUDView.seedSprite is not wired (the omni card's seed, round 4)")
 
     for path, want in owned_files().items():
         have = files.get(path)
         need(have == want, f"{os.path.relpath(path, ROOT)} is {'missing' if have is None else 'drifted'} - run the tool")
+    need(f"  followOffset: {{x: 0, y: {CHASE_UP}, z: -{CHASE_BACK}}}\n" in files.get(CAMERA, ""),
+         f"AnglerCameraSettingsSO.followOffset is not the lab's chase (0, {CHASE_UP}, -{CHASE_BACK})")
     cfg = files.get(CONFIG_PATH, "")
-    for key in ("brushNear", "dashFrac", "dashTime", "paintedPreference", "plantInterval", "lockBiteCooldown", "lockBiteReach"):
-        need(re.search(r"^  %s: " % key, cfg, re.M), f"AnglerConfig has no {key} (round 3; re-seed it or add the line)")
+    for key in ("brushNear", "dashFrac", "dashTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach"):
+        need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4; re-seed it or add the line)")
     need(len(re.findall(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}$", cfg.split("  omniFauna:")[-1].split("  companionFauna:")[0], re.M)) > 0,
          "AnglerConfig's omniFauna is empty - an omni crystal could morph into nothing")
     for path, (_, script, name) in SEEDED.items():
@@ -662,6 +686,11 @@ def author() -> None:
     if HUD_VARIANT_PATH not in files:
         write(HUD_VARIANT_PATH, build_hud_variant(open(HUD_DONOR, encoding="utf-8", newline="").read()))
         print("cloned StoatHUDVariant.prefab -> AnglerHUDVariant.prefab")
+    else:
+        patched = patch_hud_variant(files[HUD_VARIANT_PATH])
+        if patched != files[HUD_VARIANT_PATH]:
+            write(HUD_VARIANT_PATH, patched)
+            print("patched AnglerHUDVariant.prefab (the omni card's seed sprite)")
     for path, text in owned_files().items():
         if files.get(path) != text:
             write(path, text)
@@ -699,6 +728,8 @@ def self_test() -> int:
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Angler", "")),
         "the element map drifted": (MAP, lambda t: t.replace("Input: 14", "Input: 7")),
         "the combat-hit channel unwired": (PREFAB, lambda t: t.replace(f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}", "  onCombatHitLanded: {fileID: 0}")),
+        "the seed sprite unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  seedSprite: .*\n", "", t)),
+        "the camera back in": (CAMERA, lambda t: t.replace(f"z: -{CHASE_BACK}", "z: -40")),
         "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 14\n", "  - InputEvent: 13\n")),
         "no keeper species": (CONFIG_PATH, lambda t: re.sub(r"  companionFauna: .*\n", "  companionFauna: {fileID: 0}\n", t)),
         "the Stoat's impactor container back": (PREFAB, lambda t: t.replace(IMPACT_CONTAINER_GUID, STOAT_IMPACT_CONTAINER)),

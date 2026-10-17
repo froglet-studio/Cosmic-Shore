@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AnglerConfig
   m_EditorClassIdentifier: 
   lureAhead: 14
-  lureCruise: 12
+  lureCruise: 0
   lureRadius: 70
   tameRadius: 22
   tameTime: 2.5
@@ -37,7 +37,15 @@ MonoBehaviour:
   dashFrac: 0.75
   dashTime: 0.35
   paintedPreference: 4
-  plantInterval: 2
+  lureGrowth: 3
+  faunaSpeed:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 4
+    UseFloor: 1
+    Floor: 1
   lockBiteCooldown: 1
   lockBiteReach: 6
   omniFauna:

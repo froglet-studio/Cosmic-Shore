@@ -11677,3 +11677,18 @@ ecosystem:
 
 **The Space level-5 "Paint Shields"** never makes shielded mass food. A squad member that reaches a painted shielded prism
 cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impact makes), and only then can it eat the prism.
+
+### 61.6 Round 4 (2026-10-17): growth haste replaces the garden; seeds; a spent creature
+
+- **The lure's light hastens growth** (`Flora.Hasten`). It replaces §61.5's lure garden, which planted a new plant every 2 s.
+  - While an Angler's lure is out, every plant within its reach waits `growPeriod / 3` between grow ticks instead of `growPeriod`.
+  - Each tick grows exactly what it always did, under the plant's own budgets, so mass is created at the plant's own rate per tick and only the cadence changes.
+  - The haste lapses by itself: a 0.6 s window, refreshed while the light is on the plant. Nothing needs undoing.
+  - Its one caller is `AnglerCommandExecutor`. `Flora` grew no serialized field for it.
+- **An omni crystal's seed.** An Angler that collects an omni crystal holds one flora seed (one of the cell's species) until its lure is next let go. The seed is then planted at the esca, in the pilot's domain, through `CellLifeSpawnerBase.SpawnFlora`.
+  - It grows in; a replicated species is planted only on the sim authority.
+  - It is the same as the garden: a vessel laying its own domain's mass, not the spawner.
+- **A spent creature** (the Charge lock) leaves its holder's school but stays leashed, hunting one vessel until it dies.
+  - It is not the keeper, so it starves normally (§61.4).
+  - Its leash is still behaviour only (§61.2): it swims at the vessel; it does not eat it.
+  - Its bites are the vessel's petals, through the PvP gate, never mass.
