@@ -873,6 +873,8 @@ def feature_card(parent, key, name, art, eyebrow, eyebrow_token, title, extra=No
     image_node(clip, f"{key}/Clip/Scrim", "Scrim", STRETCH, "SurfaceBlack", K.kit_sprite("kit_fade_h"))
     bord = n.child(N(f"{key}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver14_line1"), True))
+    # Rev 6: the card's rim in the element its job comes from; KitTile's state tint keeps it dim until focused.
+    M.rim_border(bord, {"Weekly": "Time", "Maelstrom": "Omni"}.get(key, "Charge"))
     label(n.child(N(f"{key}/Eyebrow", "Eyebrow", R((0, 1), None, (26, -24), (420, 18), (0, 1)))), eyebrow, "Label", eyebrow_token)
     t = n.child(N(f"{key}/Title", "Title", R((0, 1), None, (26, -48), (600, 46), (0, 1))))
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text(title, "H1", tok("TextLight"))) \

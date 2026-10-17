@@ -28,6 +28,8 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 DIR = "Assets/_Graphics/Materials/Shaders/UI"
 SHADER = f"{DIR}/Lattice.shader"
 CGINC = f"{DIR}/UILattice.cginc"
+RIM_SHADER = f"{DIR}/ElementRim.shader"
+RIM_CGINC = f"{DIR}/UIElementRim.cginc"
 
 
 def guid(key):
@@ -36,6 +38,12 @@ def guid(key):
 
 SHADER_GUID = guid("shader")
 CGINC_GUID = guid("cginc")
+RIM_SHADER_GUID = guid("rim_shader")
+RIM_CGINC_GUID = guid("rim_cginc")
+# The elemental rims (§45.3): one material per element plus omni. menu_b_motion.rim_border emits these guids.
+RIMS = {"Charge": (1, 0.827451, 0.3019608), "Mass": (0.49803922, 0.65882355, 1), "Space": (0.6901961, 0.4862745, 1),
+        "Time": (0.37254903, 0.9411765, 0.78431374), "Omni": None}
+RIM_GUID = {e: guid(f"rim_{e.lower()}_mat") for e in RIMS}
 PANEL_GUID = guid("panel_mat")
 WINDOW_GUID = guid("window_mat")
 
@@ -92,6 +100,20 @@ def mat_meta(g):
             "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
 
 
+def rim_material(element):
+    omni = RIMS[element] is None
+    floats = dict(_Omni=1 if omni else 0, _Speed=0.08 if omni else 0.12, _Tail=0.3 if omni else 0.22,
+                  _BaseLevel=0.7 if omni else 0.45, **UI_FLOATS)
+    colors = dict(_Color=(1, 1, 1), _ElementColor=RIMS[element] or (1, 1, 1),
+                  **{k: v for k, v in ELEMENTS.items()})
+    m = material("Lattice_Window").replace("m_Name: Lattice_Window", f"m_Name: ElementRim_{element}")
+    m = m.replace(f"guid: {SHADER_GUID}", f"guid: {RIM_SHADER_GUID}")
+    head, _ = m.split("    m_Floats:\n", 1)
+    return (head + "    m_Floats:\n" + "".join(f"    - {k}: {f(v)}\n" for k, v in sorted(floats.items()))
+            + "    m_Colors:\n" + "".join(f"    - {k}: {col(v)}\n" for k, v in sorted(colors.items()))
+            + "  m_BuildTextureStacks: []\n  m_AllowLocking: 1\n")
+
+
 def outputs():
     out = {
         f"{SHADER}.meta": (f"fileFormatVersion: 2\nguid: {SHADER_GUID}\nShaderImporter:\n  externalObjects: {{}}\n"
@@ -103,14 +125,43 @@ def outputs():
     for name in MATERIALS:
         out[f"{DIR}/{name}.mat"] = material(name)
         out[f"{DIR}/{name}.mat.meta"] = mat_meta(MAT_GUID[name])
+    out[f"{RIM_SHADER}.meta"] = out[f"{SHADER}.meta"].replace(SHADER_GUID, RIM_SHADER_GUID)
+    out[f"{RIM_CGINC}.meta"] = out[f"{CGINC}.meta"].replace(CGINC_GUID, RIM_CGINC_GUID)
+    for e in RIMS:
+        out[f"{DIR}/ElementRim_{e}.mat"] = rim_material(e)
+        out[f"{DIR}/ElementRim_{e}.mat.meta"] = mat_meta(RIM_GUID[e])
     return out
 
 
 def shipped_prefabs():
     """The style-B screen prefabs as committed (the menu generators own them; this reads them)."""
     import glob
-    return {os.path.relpath(p, REPO): open(p, encoding="utf-8").read()
-            for p in glob.glob(os.path.join(REPO, SCREENS, "**", "*.prefab"), recursive=True)}
+    out = {os.path.relpath(p, REPO): open(p, encoding="utf-8").read()
+           for p in glob.glob(os.path.join(REPO, SCREENS, "**", "*.prefab"), recursive=True)}
+    out["Assets/_Scenes/Menu_Main.unity"] = open(os.path.join(REPO, "Assets/_Scenes/Menu_Main.unity"), encoding="utf-8").read()
+    return out
+
+
+RIM_SCRIPT = "b403ee3874d54f79d0f27e7013879c0f"      # KitRimMesh.cs
+RIMMED = {f"{SCREENS}/Ark/ArkView.prefab": "Omni", f"{SCREENS}/Configure/ConfigureView.prefab": "Charge",
+          f"{SCREENS}/Hangar/HangarView.prefab": "Mass"}
+
+
+def rim_pairs(text):
+    """(gameObject, rim element) for every Image drawn with a rim material, and the GameObjects that carry KitRimMesh."""
+    lit, meshed = [], set()
+    by_guid = {g: e for e, g in RIM_GUID.items()}
+    for m in re.finditer(r"^--- !u!114 &-?\d+\nMonoBehaviour:\n((?:(?!--- ).*\n)*)", text, re.M):
+        body = m.group(1)
+        go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", body)
+        if not go:
+            continue
+        mat = re.search(r"m_Material: \{fileID: 2100000, guid: (\w+), type: 2\}", body)
+        if mat and mat.group(1) in by_guid:
+            lit.append((go.group(1), by_guid[mat.group(1)]))
+        if f"guid: {RIM_SCRIPT}" in body:
+            meshed.add(go.group(1))
+    return lit, meshed
 
 
 def validate_screens(prefabs):
@@ -120,6 +171,14 @@ def validate_screens(prefabs):
     for w in WINDOWS:
         assert f"m_Material: {{fileID: 2100000, guid: {WINDOW_GUID}, type: 2}}" in prefabs.get(w, ""), \
             f"{w} has no window lattice behind it"
+    # The rims (§45.3): every rim-lit Image has KitRimMesh beside it, and each rimmed panel carries its element.
+    for path, text in prefabs.items():
+        lit, meshed = rim_pairs(text)
+        bare = [go for go, _ in lit if go not in meshed]
+        assert not bare, f"{path}: a rim-lit Image without KitRimMesh (the comet would not know where it is): {bare[:3]}"
+    for path, element in RIMMED.items():
+        lit, _ = rim_pairs(prefabs.get(path, ""))
+        assert element in {e for _, e in lit}, f"{path} lost its {element} rim"
 
 
 def validate(files):
@@ -135,6 +194,16 @@ def validate(files):
     assert f"guid: {SHADER_GUID}" in files[f"{SHADER}.meta"], "Lattice.shader.meta has the wrong guid"
     for k, rgb in ELEMENTS.items():
         assert col(rgb) in files[f"{DIR}/Lattice_Window.mat"], f"the lattice's {k} is not the theme's element colour"
+    rim = open(os.path.join(REPO, RIM_SHADER), encoding="utf-8").read()
+    rim_declared = set(re.findall(r"^\s+(?:\[[^\]]*\]\s*)*(_\w+) \(", rim, re.M)) - {"_MainTex"}
+    for e in RIMS:
+        m = files[f"{DIR}/ElementRim_{e}.mat"]
+        assert f"m_Shader: {{fileID: 4800000, guid: {RIM_SHADER_GUID}, type: 3}}" in m, f"ElementRim_{e} does not use ElementRim.shader"
+        written = set(re.findall(r"^    - (_\w+):", m, re.M)) - {"_MainTex"}
+        assert written == rim_declared, f"ElementRim_{e}: properties drifted (missing {rim_declared - written}, extra {written - rim_declared})"
+        if RIMS[e]:
+            assert f"- _ElementColor: {col(RIMS[e])}" in m, f"ElementRim_{e} is not lit in {e}"
+    assert "  - _Omni: 1\n" in files[f"{DIR}/ElementRim_Omni.mat"].replace("    - _Omni: 1", "  - _Omni: 1"), "the omni rim is not omni"
     validate_screens(files.get("__screens__") or shipped_prefabs())
 
 
@@ -156,12 +225,18 @@ def self_test(files):
             "    - _FadeStart:", "    - _Retired: 1\n    - _FadeStart:", 1))),
         ("Charge off the theme colour", lambda f: f.__setitem__(f"{DIR}/Lattice_Window.mat", f[f"{DIR}/Lattice_Window.mat"].replace(
             col(ELEMENTS["_ChargeColor"]), col((0, 0.83, 1)), 1))),
+        ("the Time rim lit in another colour", lambda f: f.__setitem__(f"{DIR}/ElementRim_Time.mat", f[f"{DIR}/ElementRim_Time.mat"].replace(
+            f"- _ElementColor: {col(RIMS['Time'])}", f"- _ElementColor: {col(RIMS['Mass'])}", 1))),
         ("the shader meta on another guid", lambda f: f.__setitem__(f"{SHADER}.meta", f[f"{SHADER}.meta"].replace(SHADER_GUID, "1" * 32))),
     ]
     screens = shipped_prefabs()
     cases += [
         ("a screen still drawing the grid", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[0]: screens[WINDOWS[0]] + f"  m_Sprite: {{fileID: 21300000, guid: {KIT_GRID}, type: 3}}\n"}))),
+        ("a rim without KitRimMesh", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            f"{SCREENS}/Ark/ArkView.prefab": screens[f"{SCREENS}/Ark/ArkView.prefab"].replace(RIM_SCRIPT, "3" * 32)}))),
+        ("the Hangar panel back to a plain border", lambda f: f.__setitem__("__screens__", dict(screens, **{
+            f"{SCREENS}/Hangar/HangarView.prefab": screens[f"{SCREENS}/Hangar/HangarView.prefab"].replace(RIM_GUID["Mass"], "4" * 32)}))),
         ("a window without its lattice", lambda f: f.__setitem__("__screens__", dict(screens, **{
             WINDOWS[2]: screens[WINDOWS[2]].replace(WINDOW_GUID, "2" * 32)}))),
     ]

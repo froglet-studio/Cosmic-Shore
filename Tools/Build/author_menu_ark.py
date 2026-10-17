@@ -107,6 +107,7 @@ def recipe_panel(root):
     pn = root.child(N("Recipe", "Recipe", TR(40, 108, 438, 760)))
     pn.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
     C.frame(pn, "Recipe/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
+    M.rim_border(M.find_node(pn, "Recipe/Frame/Border"), "Omni")     # rev 6: the Ark is about every element
     pn.child(M.grid_node("Recipe/Grid"))
     M.bracket_nodes(pn, "Recipe/Bracket")
     C.section_label(pn, "Recipe/Caption", "Caption", "Recipe", TL(26, 26, 200, 18))

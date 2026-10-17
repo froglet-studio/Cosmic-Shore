@@ -134,6 +134,43 @@ def lattice_image(material_guid):
         "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {material_guid}, type: 2}}\n", 1)
 
 
+RIM_SCRIPT = "b403ee3874d54f79d0f27e7013879c0f"      # KitRimMesh.cs
+
+
+def rim_material(element):
+    """author_ui_lattice.py's ElementRim_<element>.mat (Charge / Mass / Space / Time / Omni)."""
+    return _lattice_guid(f"rim_{element.lower()}_mat")
+
+
+def find_node(node, key):
+    if getattr(node, "key", None) == key:
+        return node
+    for c in getattr(node, "children", []):
+        hit = find_node(c, key)
+        if hit:
+            return hit
+    return None
+
+
+def rim_border(node, element):
+    """Rev 6 (Docs/MENU_REDESIGN_B.md §45.3): light a border node (a sliver line Image) with the elemental rim - a comet
+    of the element's light running round it, or all four for Omni. Its theme tint becomes TextLight (the material
+    carries the colour; a dark tint would smother it) and KitRimMesh tells the shader where each vertex sits."""
+    mat = rim_material(element)
+    white = K.tok("TextLight")
+    comps = []
+    for k, cid, body in node.comps:
+        if k == "img":
+            body = (lambda b: lambda ctx, go: re.sub(r"  m_Color: \{[^}]*\}\n", f"  m_Color: {K.col(white)}\n", b(ctx, go), count=1)
+                    .replace("  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {mat}, type: 2}}\n", 1))(body)
+        elif k == "th":
+            body = K.themed("TextLight")
+        comps.append((k, cid, body))
+    node.comps = comps
+    node.add("rim", 114, lambda ctx, go: K.mono(go, RIM_SCRIPT, ""))
+    return node
+
+
 def grid_node(key, name="Lattice"):
     """Rev 6 (Docs/MENU_REDESIGN_B.md §45.2): the living crystal lattice that replaced the blueprint grid
     (kit_grid). Full-stretch; put it first under a panel's fill so content draws over it."""

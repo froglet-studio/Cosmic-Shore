@@ -25,10 +25,13 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 SHADER_DIR = os.path.join(REPO, "Assets/_Graphics/Materials/Shaders/UI")
 CGINC = os.path.join(SHADER_DIR, "UILattice.cginc")
 SHADER = os.path.join(SHADER_DIR, "Lattice.shader")
+RIM_CGINC = os.path.join(SHADER_DIR, "UIElementRim.cginc")
+RIM_SHADER = os.path.join(SHADER_DIR, "ElementRim.shader")
 
 # The whole translation: HLSL out-params to C++ references, and the vector constructor spellings.
 SUBS = [(r"\bout float\b", "float&"),
         (r"\bfloat2\(", "mk2("),
+        (r"\bfloat3\(", "mk3("),
         (r"\bfloat4\(", "mk4(")]
 
 SHIM = r"""
@@ -40,6 +43,7 @@ typedef float float3 __attribute__((ext_vector_type(3)));
 typedef float float4 __attribute__((ext_vector_type(4)));
 typedef float4 fixed4;
 static inline float2 mk2(float a, float b) { return (float2){a, b}; }
+static inline float3 mk3(float a, float b, float c) { return (float3){a, b, c}; }
 static inline float4 mk4(float3 c, float a) { return (float4){c.x, c.y, c.z, a}; }
 static inline float frac(float x) { return x - std::floor(x); }
 static inline float saturate(float x) { return x < 0 ? 0 : (x > 1 ? 1 : x); }
@@ -52,11 +56,17 @@ static inline float dot(float2 a, float2 b) { return a.x * b.x + a.y * b.y; }
 static inline float length(float2 a) { return std::sqrt(dot(a, a)); }
 static inline float floor_(float x) { return std::floor(x); }
 static inline float sin_(float x) { return std::sin(x); }
+static inline float3 lerp(float3 a, float3 b, float t) { return a + (b - a) * t; }
+static inline float atan2_(float y, float x) { return std::atan2(y, x); }
+typedef float4 half4;
+typedef int sampler2D;
+static inline float4 tex2D(sampler2D, float2) { return (float4){1, 1, 1, 1}; }
 #define min hmin
 #define max hmax
 #define abs habs
 #define floor floor_
 #define sin sin_
+#define atan2 atan2_
 """
 
 UNIFORMS = r"""
@@ -73,6 +83,7 @@ MAIN = r"""
 #undef abs
 #undef floor
 #undef sin
+#undef atan2
 static float4 col(float r, float g, float b) { return (float4){r, g, b, 1}; }
 static void defaults() {
     _Color = col(1, 1, 1); _LineColor = col(0.263f, 0.298f, 0.537f);
@@ -154,6 +165,71 @@ int main(int argc, char** argv) {
 """
 
 
+RIM_UNIFORMS = r"""
+struct v2f { float4 vertex; float4 color; float2 texcoord; float4 worldPosition; float4 rimUV; };
+float4 _Time;
+sampler2D _MainTex;
+fixed4 _Color, _TextureSampleAdd, _ElementColor, _ChargeColor, _MassColor, _SpaceColor, _TimeColor;
+float _Omni, _Speed, _Tail, _BaseLevel;
+"""
+
+RIM_MAIN = r"""
+#undef min
+#undef max
+#undef abs
+#undef floor
+#undef sin
+#undef atan2
+static float4 C(float r, float g, float b) { return (float4){r, g, b, 1}; }
+// Walk the rim of a 600 x 400 panel: the level and colour at 360 points round it.
+static void walk(float t, float* level, float4* colour) {
+    _Time = (float4){t / 20, t, t * 2, t * 3};
+    for (int i = 0; i < 360; i++) {
+        float a = (i + 0.5f) / 360.0f * 6.2831853f - 3.14159265f;
+        v2f IN;
+        IN.texcoord = (float2){0.5f, 0.5f};
+        IN.color = (float4){1, 1, 1, 1};
+        IN.rimUV = (float4){0.5f + 0.5f * std::cos(a), 0.5f + 0.5f * std::sin(a), 600, 400};
+        float4 c = frag(IN);
+        level[i] = c.w; colour[i] = c;
+    }
+}
+static int argmax(const float* v) { int k = 0; for (int i = 1; i < 360; i++) if (v[i] > v[k]) k = i; return k; }
+int main() {
+    _ChargeColor = C(1, 0.827f, 0.302f); _MassColor = C(0.498f, 0.659f, 1); _SpaceColor = C(0.690f, 0.486f, 1);
+    _TimeColor = C(0.373f, 0.941f, 0.784f); _Color = C(1, 1, 1); _TextureSampleAdd = (float4){0, 0, 0, 0};
+    _ElementColor = _SpaceColor; _Omni = 0; _Speed = 0.12f; _Tail = 0.22f; _BaseLevel = 0.45f;
+    float l0[360], l2[360]; float4 c0[360], c2[360];
+    walk(0.5f, l0, c0); walk(2.5f, l2, c2);
+    int h0 = argmax(l0), h2 = argmax(l2);
+    float moved = ((h2 - h0 + 360) % 360) / 360.0f;               // turns between t 0.5 and 2.5
+    int far = (h0 + 180) % 360;
+    float farLevel = l0[far];
+    // element mode keeps the element's hue: blue over red, like Space
+    bool hueOk = c0[far].z > c0[far].x * 0.9f && c0[far].z > c0[far].y;
+    _Omni = 1; _BaseLevel = 0.7f;
+    float lo[360]; float4 co[360]; walk(0.5f, lo, co);
+    int warm = 0, cool = 0, teal = 0, violet = 0;
+    for (int i = 0; i < 360; i++) {
+        float4 c = co[i];
+        if (c.x > c.z * 1.4f) warm++;                                 // Charge yellow
+        if (c.y > c.x * 1.5f && c.y > 0.55f * c.w) teal++;            // Time teal
+        if (c.z > c.y * 1.25f && c.x > c.y * 1.1f) violet++;          // Space violet
+        if (c.z > c.x * 1.4f && c.y > c.x * 1.1f) cool++;             // Mass blue
+    }
+    std::printf("rim: head moved %.3f turns (want %.3f) | far level %.3f (base 0.45) | omni warm %d mass %d space %d time %d\n",
+                moved, _Speed * 2.0f, farLevel, warm, cool, violet, teal);
+    int bad = 0;
+    auto need = [&](bool ok, const char* what) { if (!ok) { std::printf("FAIL: %s\n", what); bad++; } };
+    need(std::fabs(moved - 0.24f) < 0.03f, "the comet travels at its set speed");
+    need(std::fabs(farLevel - 0.45f) < 0.03f, "away from the comet the rim sits at its base light");
+    need(hueOk, "element mode stays in the element's colour");
+    need(warm > 20 && cool > 20 && violet > 20 && teal > 20, "omni shows all four elements round the rim");
+    return bad ? 1 : 0;
+}
+"""
+
+
 def extract_frag(shader_text):
     m = re.search(r"fixed4 frag\(v2f IN\) : SV_Target\n(\s*)\{", shader_text)
     assert m, "frag() not found in Lattice.shader"
@@ -189,6 +265,23 @@ def build(work):
     return exe
 
 
+def build_rim(work):
+    inc = translate(open(RIM_CGINC, encoding="utf-8").read())
+    frag = translate(extract_frag(open(RIM_SHADER, encoding="utf-8").read()))
+    src = os.path.join(work, "rim.cpp")
+    open(src, "w").write(SHIM + inc + RIM_UNIFORMS + frag + RIM_MAIN)
+    exe = os.path.join(work, "rim")
+    r = subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Werror", "-Wno-unused-function", src, "-o", exe],
+                       capture_output=True, text=True)
+    if r.returncode:
+        sys.stderr.write(r.stderr)
+        raise SystemExit("FAIL: the rim shader maths does not compile")
+    r = subprocess.run([exe], capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode:
+        raise SystemExit("FAIL: the rim dials do not drive as asserted")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
@@ -210,7 +303,8 @@ def main():
             Image.open(ppm).save(os.path.join(out, name + ".png"))
             os.remove(ppm)
         print(f"rendered to {out}")
-    print("OK: the lattice compiles and its dials drive")
+    build_rim(work)
+    print("OK: the lattice and the rim compile and their dials drive")
 
 
 if __name__ == "__main__":

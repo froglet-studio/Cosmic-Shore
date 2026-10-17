@@ -976,7 +976,7 @@ def build_view(row_guid):
     rz = body.child(N("Abilities", "Tabs", R(size=(548, 844))))
     rz.add("le", 114, le(mw=0, pw=0, fw=38))
     panel = rz.child(N("Abilities/Panel", "Panel", R((0, 0), (1, 1), (2.5, 0), (-5, 0))))
-    framed(panel, "Abilities/Panel", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.8)
+    M.rim_border(framed(panel, "Abilities/Panel", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.8)[1], "Mass")   # rev 6
     build_tabs(panel)
 
     # ---- the spend-crystals popup ----

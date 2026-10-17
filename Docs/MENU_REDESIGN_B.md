@@ -2119,3 +2119,31 @@ Each element's game meaning (`Docs/ElementalAbilitySystem/ARCHITECTURE.md`) give
   Unity's own shader compile still needs the editor.
 - **Gates.** `author_ui_lattice.py` checks the materials match the shader's properties, that no style-B screen draws
   `kit_grid`, and that every window has its lattice. Six planted defects are caught.
+
+### 45.3 Step 3: the elemental rims
+
+- **The shader.** `CosmicShore/UI/ElementRim` (`ElementRim.shader` + `UIElementRim.cginc`) lights a style-B border
+  (the sliver line sprite) with a comet of an element's light running round it: a white-hot head and a tail in the
+  element, over a dim rim of the same colour. Omni blends all four elements round the rim and turns.
+- **Placing the comet.** `KitRimMesh` (a `BaseMeshEffect`) writes each vertex's place on its rect into UV1, because a
+  sliced border's UVs are sprite coordinates. It runs only on mesh rebuilds; the comet animates in the shader.
+- **Materials.** `ElementRim_Charge / _Mass / _Space / _Time / _Omni` are written by `author_ui_lattice.py`.
+  `menu_b_motion.rim_border(node, element)` relights an existing border: rim material, TextLight tint, KitRimMesh.
+- **Where the rims are:**
+
+  | Panel | Rim | Why |
+  |---|---|---|
+  | Ark recipe panel | Omni | about every element |
+  | Configure settings column | Charge | setting up a game |
+  | Home's weekly and quest cards | Time | progress |
+  | Hangar tab panel | Mass | what you own |
+  | Arcade feature cards | Charge; the weekly card Time; Maelstrom Omni | — |
+
+  The feature cards' borders keep KitTile's state tint, so the comet runs bright only on the focused card.
+- **Verified offline.** `lattice_preview.py` also compiles the rim include and the shader's real `frag`, and asserts:
+  - the comet travels at its set speed;
+  - the rim sits at its base light away from the comet;
+  - element mode keeps its colour;
+  - omni shows all four elements.
+- **Gates.** `author_ui_lattice.py` checks that every rim-lit Image has KitRimMesh beside it and that the Ark,
+  Configure and Hangar keep their rims. Three more planted defects are caught.

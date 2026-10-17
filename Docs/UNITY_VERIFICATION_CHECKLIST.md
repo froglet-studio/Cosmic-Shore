@@ -11107,3 +11107,21 @@ five window backdrops re-emitted. `/verify-unity` was not run. Checked offline:
    lattice, clipped to the panel (RectMask2D) with corners fading.
 4. **Speed:** the Profiler shows no Canvas.BuildBatch from the lattice (it animates in the shader only). Check the GPU
    frame time on a phone with the Arcade window open.
+
+## 🔴 2026-10-17 — Rev 6 step 3: elemental rims (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `ElementRim.shader` + `UIElementRim.cginc`, `KitRimMesh.cs`, five `ElementRim_*.mat`. `/verify-unity` was not
+run. Checked offline:
+- clang compile + asserts of the shipped rim maths;
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- every generator `--check` / `--self-test`;
+- gates.
+
+1. **The shader compiles:** no pink borders, and no Console error for `CosmicShore/UI/ElementRim`.
+2. **Ark:** the recipe panel's border carries all four element colours, slowly turning, with a bright sweep.
+3. **Configure:** the settings column's border has a yellow comet running round it. In the Hangar the tab panel's comet
+   is blue; on Home the weekly and quest cards' comets are teal.
+4. **Arcade:** a feature card's rim lights up (comet bright) only when focused; unfocused cards stay dim. The weekly
+   card's comet is teal and Maelstrom's is all four.
+5. **Comet shape:** it follows the rect (not stretched oddly) on wide and narrow panels. If the comet is missing, check
+   Menu_Main's root canvas has TexCoord1 in Additional Shader Channels.

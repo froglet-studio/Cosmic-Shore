@@ -1121,6 +1121,7 @@ def steps_row(chrome, kind):
     node or a domain - never on FLY or Back. Its sections are Step1..3 so the panel's value labels keep
     their keys: Vessel, Intensity, Pilots (Maelstrom: Intensity, Pilots, then Format)."""
     steps = glass(chrome, "Steps", "Steps", TL(SET_X, TOP, SET_W, column_height(kind)), 0)
+    M.rim_border(M.find_node(steps, "Steps/Frame/Border"), "Charge")   # rev 6: setting up a game is play
     y = PAD
     keys = ("Step1", "Step2", "Step3") if kind != "maelstrom" else (None, "Step1", "Step2")
     if kind != "maelstrom":

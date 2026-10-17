@@ -550,6 +550,8 @@ def upnext_card(key, eyebrow, eyebrow_token, border_token, x):
     A.art_node(clip, f"{k}/Clip/Art", "Art", R(size=(ART_W, CARD_H)), None)
     bord = c.child(N(f"{k}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(border_token), K.kit_sprite("kit_sliver14_line1"), True))
+    if border_token == "ElementTime":
+        M.rim_border(bord, "Time")                                      # rev 6: progress is Time
     label(c.child(N(f"{k}/Eyebrow", "Eyebrow", TL(TEXT_X, 12, TEXT_W, 16))), eyebrow, "Label", eyebrow_token)
     # Everything under the eyebrow folds away with the card (HomeDockCard.detailGroup).
     detail = c.child(N(f"{k}/Detail", "Detail", STRETCH))
