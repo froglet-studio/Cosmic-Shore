@@ -1,4 +1,5 @@
 using CosmicShore.Gameplay;
+using FMODUnity;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -35,6 +36,20 @@ namespace CosmicShore.Gameplay
         float igniteTicksPerSecond = 4f;
         [SerializeField, Tooltip("Max prisms ignited per tick, per claw.")]
         int ignitesPerTick = 3;
+
+        [Header("Slice (2026-10-17: the claw slices prisms as well as starting the burn)")]
+        [SerializeField, Tooltip("On: every enemy prism a finger touches is SLICED (the Brittle Star cord's cut) and the prisms around the cut are ignited. Off: the fingers only ignite what they touch.")]
+        bool sliceEnabled = true;
+        [SerializeField, Tooltip("Most prisms one claw may slice in a frame (perf cap).")]
+        int slicesPerFrame = 6;
+        [SerializeField, Tooltip("Prisms within this many world units of a cut are set burning (up to Ignites Per Tick per claw per tick). The sliced prism itself is gone, so its neighbours carry the fire.")]
+        float sliceIgniteRadius = 12f;
+        [SerializeField, Tooltip("Debris speed as a fraction of the finger's own speed where it cut (the Brittle Star's 0.5).")]
+        float sliceDebrisRestitution = 0.5f;
+        [SerializeField, Tooltip("Cap on that debris speed, u/s (0 = none). A sweeping fingertip moves fast.")]
+        float sliceDebrisSpeedLimit = 200f;
+        [SerializeField, Tooltip("FMOD event played at each cut. Leave empty for silence (an unwired slot, never a placeholder).")]
+        EventReference sliceEvent;
 
         [Header("Muzzles (one per trigger)")]
         [SerializeField, Tooltip("How far each claw's root sits to its own side of the hull's centre line, in the hull's local units (LT left, RT right).")]
@@ -92,6 +107,12 @@ namespace CosmicShore.Gameplay
 
         public float Range => range;
         public float ClawBurnRadius => clawBurnRadius;
+        public bool SliceEnabled => sliceEnabled;
+        public int SlicesPerFrame => slicesPerFrame;
+        public float SliceIgniteRadius => sliceIgniteRadius;
+        public float SliceDebrisRestitution => sliceDebrisRestitution;
+        public float SliceDebrisSpeedLimit => sliceDebrisSpeedLimit;
+        public EventReference SliceEvent => sliceEvent;
         public float IgniteTicksPerSecond => igniteTicksPerSecond;
         public int IgnitesPerTick => ignitesPerTick;
         public float SideOffset => sideOffset;

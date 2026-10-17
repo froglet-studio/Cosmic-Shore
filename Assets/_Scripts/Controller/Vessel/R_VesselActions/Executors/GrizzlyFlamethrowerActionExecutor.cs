@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -8,8 +9,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Plasma claw: while a trigger is held, its claw - four stiff red fingers (<see cref="GrizzlyClawWhips"/>) - sets
-    /// fire to every enemy prism a finger touches (<see cref="IgniteAlongClaws"/>, through PrismBurnManager). There is
+    /// Plasma claw: while a trigger is held, its claw - four stiff red fingers (<see cref="GrizzlyClawWhips"/>) -
+    /// SLICES every enemy prism a finger touches and starts the burn around each cut (<see cref="ContactAlongClaws"/>,
+    /// 2026-10-17). There is
     /// NO cone (design ask, 2026-10-17: "get rid of the cone completely, allows the claws to do the work"). Free to
     /// use - no energy cost by design. Mass-5 state is sampled at IGNITE time: burns started while the upgrade is
     /// active convert (steal) on burnout even if the level later drops.
@@ -183,6 +185,7 @@ namespace CosmicShore.Gameplay
                 var burn = PrismBurnManager.EnsureInstance();
                 var spray = _sprays[SlotOf(side)];
                 float sinceIgnite = tickSeconds;   // ignite on the first frame
+                int igniteBudget = 0;
 
                 while (!token.IsCancellationRequested)
                 {
@@ -205,12 +208,14 @@ namespace CosmicShore.Gameplay
                         return;
                     }
 
+                    // Every frame the fingers cut what they touch; the burn's budget refills each tick.
                     sinceIgnite += Time.deltaTime;
                     if (sinceIgnite >= tickSeconds)
                     {
                         sinceIgnite = 0f;
-                        IgniteAlongClaws(so, status, spray.Whips, burn);
+                        igniteBudget = so.IgnitesPerTick;
                     }
+                    ContactAlongClaws(so, status, spray.Whips, burn, ref igniteBudget);
 
                     await UniTask.Yield(PlayerLoopTiming.Update, token);
                 }
@@ -219,13 +224,24 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// THE CLAWS DO THE WORK (design ask, 2026-10-17: "get rid of the cone completely, allows the claws to do the
-        /// work"): every enemy prism a claw finger touches catches fire - each finger's links are swept with
-        /// <see cref="PrismSpatialIndex.QuerySegment"/> at <c>clawBurnRadius</c>, the Brittle Star cords' cut. There is
-        /// no cone: what you see is exactly what burns, and a finger that lags a turn burns where it lags.
+        /// THE CLAWS DO THE WORK (design asks, 2026-10-17: "get rid of the cone completely, allows the claws to do the
+        /// work"; "make the plasma claw slice prisms as well as start the burn"). Every frame each finger's links are
+        /// swept with <see cref="PrismSpatialIndex.QuerySegment"/> at <c>clawBurnRadius</c>, the Brittle Star cords'
+        /// cut, and every enemy prism a finger touches is:
+        /// <list type="bullet">
+        /// <item><b>SLICED</b> (<see cref="Prism.Slice"/> along the plane the finger is sweeping, debris at the
+        /// finger's own velocity) - the Brittle Star's cord cut, enemy mass only, super-shields refuse and a shield
+        /// pops first; and</item>
+        /// <item><b>the burn starts around the cut</b>: the prisms within <c>sliceIgniteRadius</c> of it are
+        /// ignited (PrismBurnManager, so they spread and, with Mass 5, are stolen on burnout). A sliced prism is
+        /// gone, so it cannot burn itself; its neighbours carry the fire.</item>
+        /// </list>
+        /// Ignites are budgeted at <c>ignitesPerTick</c> per claw per burn tick, slices at <c>slicesPerFrame</c>.
+        /// With <c>sliceEnabled</c> off the claw only burns what it touches, as before. Runs on every peer from the
+        /// replicated input, like the Brittle Star's cords.
         /// </summary>
-        void IgniteAlongClaws(GrizzlyFlamethrowerActionSO so, IVesselStatus status, GrizzlyClawWhips whips,
-            PrismBurnManager burn)
+        void ContactAlongClaws(GrizzlyFlamethrowerActionSO so, IVesselStatus status, GrizzlyClawWhips whips,
+            PrismBurnManager burn, ref int igniteBudget)
         {
             var index = PrismSpatialIndex.Instance;
             if (index == null || !index.IsAvailable || burn == null || !whips || status == null) return;
@@ -233,43 +249,89 @@ namespace CosmicShore.Gameplay
             bool convert = status.ElementalAbilityHandler != null &&
                            status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
             float radius = so.ClawBurnRadius;
-            int ignited = 0;
-            _ignitedThisTick.Clear();
+            int sliced = 0;
+            _touchedThisFrame.Clear();
 
-            for (int c = 0; c < whips.CordCount && ignited < so.IgnitesPerTick; c++)
+            for (int c = 0; c < whips.CordCount; c++)
             {
                 var cord = whips.Cord(c);
                 if (cord == null || !cord.Seeded) continue;
                 var pts = cord.Points;
-                for (int k = 0; k < pts.Length - 1 && ignited < so.IgnitesPerTick; k++)
+                for (int k = 0; k < pts.Length - 1; k++)
                 {
                     Vector3 a = pts[k], b = pts[k + 1];
                     _scratch.Clear();
                     index.QuerySegment(a, b, radius + CandidateExtent, _scratch);
+                    if (_scratch.Count == 0) continue;
                     Vector3 ab = b - a;
                     float abLenSq = ab.sqrMagnitude;
-                    foreach (var prism in _scratch)
+                    for (int i = 0; i < _scratch.Count; i++)
                     {
-                        if (ignited >= so.IgnitesPerTick) break;
+                        var prism = _scratch[i];
                         if (prism == null || prism.destroyed || prism.Domain == status.Domain) continue;
-                        if (!_ignitedThisTick.Add(prism)) continue;
+                        if (!_touchedThisFrame.Add(prism)) continue;
 
                         Vector3 centre = prism.transform.position;
                         float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(centre - a, ab) / abLenSq) : 0f;
                         float contact = radius + 0.5f * prism.transform.lossyScale.magnitude;
-                        if ((centre - (a + ab * t)).sqrMagnitude > contact * contact) continue;
+                        Vector3 onFinger = a + ab * t;
+                        if ((centre - onFinger).sqrMagnitude > contact * contact) continue;
 
-                        burn.Ignite(prism, status.PlayerName, status.Domain, convert);
-                        ignited++;
+                        if (!so.SliceEnabled)
+                        {
+                            if (igniteBudget <= 0) continue;
+                            burn.Ignite(prism, status.PlayerName, status.Domain, convert);
+                            igniteBudget--;
+                            continue;
+                        }
+
+                        if (sliced >= so.SlicesPerFrame) continue;
+                        if (prism.prismProperties is { IsSuperShielded: true }) continue;
+
+                        // Light the neighbours first: the cut prism is about to be gone.
+                        IgniteAround(onFinger, so, status, burn, convert, prism, ref igniteBudget);
+
+                        Vector3 v = Vector3.Lerp(cord.NodeVelocity(k), cord.NodeVelocity(k + 1), t);
+                        Vector3 cutNormal = Vector3.Cross(ab, v);
+                        if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, status.Transform.up);
+                        if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
+                        prism.Slice(v * so.SliceDebrisRestitution, status.Domain, status.PlayerName,
+                                    onFinger, cutNormal.normalized, debrisSpeedLimit: so.SliceDebrisSpeedLimit);
+                        PlayAt(so.SliceEvent, onFinger);
+                        sliced++;
                     }
                 }
             }
             _scratch.Clear();
         }
 
+        /// <summary>Ignite the enemy prisms within <c>sliceIgniteRadius</c> of a cut, within the budget.</summary>
+        void IgniteAround(Vector3 point, GrizzlyFlamethrowerActionSO so, IVesselStatus status, PrismBurnManager burn,
+            bool convert, Prism except, ref int igniteBudget)
+        {
+            if (igniteBudget <= 0 || so.SliceIgniteRadius <= 0f) return;
+            _neighbours.Clear();
+            PrismSpatialIndex.Instance.QuerySphere(point, so.SliceIgniteRadius, _neighbours);
+            for (int i = 0; i < _neighbours.Count && igniteBudget > 0; i++)
+            {
+                var n = _neighbours[i];
+                if (n == null || n == except || n.destroyed || n.Domain == status.Domain) continue;
+                burn.Ignite(n, status.PlayerName, status.Domain, convert);
+                igniteBudget--;
+            }
+            _neighbours.Clear();
+        }
+
+        static void PlayAt(FMODUnity.EventReference ev, Vector3 pos)
+        {
+            if (!ev.IsNull && AudioSystem.Instance)
+                AudioSystem.Instance.PlaySFXEvent(ev, pos);
+        }
+
         /// <summary>Padding on the candidate query so a large prism whose centre sits outside the finger's reach
         /// is still tested against its own size.</summary>
         const float CandidateExtent = 8f;
-        readonly HashSet<Prism> _ignitedThisTick = new();
+        readonly HashSet<Prism> _touchedThisFrame = new();
+        readonly List<Prism> _neighbours = new();
     }
 }

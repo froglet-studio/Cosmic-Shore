@@ -123,6 +123,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ClawSlicesAndStartsTheBurnAroundTheCut()
+        {
+            // Design ask 2026-10-17: "make the plasma claw slice prisms as well as start the burn".
+            Assert.IsTrue(_claw.SliceEnabled, "the claw slices by default");
+            Assert.Greater(_claw.SlicesPerFrame, 0);
+            Assert.Greater(_claw.SliceIgniteRadius, _claw.ClawBurnRadius,
+                "a cut prism is gone, so the burn must reach past the finger to its neighbours");
+            Assert.Greater(_claw.IgnitesPerTick, 0, "slicing must still start a burn");
+            Assert.IsTrue(_claw.SliceEvent.IsNull, "the slice sound ships EMPTY until audio authors it (LOCKED FMOD rule)");
+        }
+
+        [Test]
         public void ClawIsAlwaysTheShortestReach()
         {
             float sniperReach = _sniper.ProjectileSpeed * _sniper.ProjectileTime;

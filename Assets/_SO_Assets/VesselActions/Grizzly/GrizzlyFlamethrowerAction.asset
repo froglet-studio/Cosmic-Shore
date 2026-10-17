@@ -18,6 +18,18 @@ MonoBehaviour:
   clawBurnRadius: 2
   igniteTicksPerSecond: 4
   ignitesPerTick: 3
+  sliceEnabled: 1
+  slicesPerFrame: 6
+  sliceIgniteRadius: 12
+  sliceDebrisRestitution: 0.5
+  sliceDebrisSpeedLimit: 200
+  sliceEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   sideOffset: 6
   noseOffset: 4
   splayDegrees: 6

@@ -66,6 +66,13 @@ momentum."*
   no analog = full. Claws root `sideOffset` 6 to each side and `noseOffset` 4 ahead, each turned `splayDegrees` 6°
   outward and `tiltUpDegrees` 5° up (2026-10-17: *"tilt them up just a touch please, the overlap from the chase
   camera makes them look a little awkward"*). 55 u is still the Grizzly's shortest reach on purpose.
+- **The claw slices, then the fire spreads** (2026-10-17: *"make the plasma claw slice prisms as well as start
+  the burn"*): every frame, each enemy prism a finger touches is **sliced** (`Prism.Slice`, the Brittle Star cord's
+  cut: along the plane the finger sweeps, debris at `sliceDebrisRestitution` 0.5 of the finger's speed, capped at
+  `sliceDebrisSpeedLimit` 200; super-shields refuse, a shield pops first; `slicesPerFrame` 6 per claw), and the
+  prisms within `sliceIgniteRadius` 12 of the cut are **set burning** (budget `ignitesPerTick` per claw per tick), so
+  the burn still spreads and, with Mass 5, still steals. A sliced prism is gone, so its neighbours carry the fire.
+  `sliceEnabled` off restores burn-only. `sliceEvent` (FMOD) ships empty.
 - **Claw look: four rigid red whips per side** (2026-10-16: *"the brittlestar has a whip mode that I would
   like to mimic, but have be more rigid and red with four on each side as the plasma claw… we are trying to
   enhance the visuals of it. the cones look a little plain."*). The flat cone is gone
