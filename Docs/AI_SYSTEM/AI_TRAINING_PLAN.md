@@ -174,6 +174,27 @@ Everything lands on `Ys-bleeding-edge` for testing; nothing goes to `bleeding-ed
 1. **Extend the existing genetic trainer** (recommended) or build a second one. This plan assumes extending it, with
    its authors' agreement.
 2. **Where player flights are stored** (T4), and the privacy wording. The core four decide; Shombith owns UGS.
+
+   **Where the team's own editor data lives today, measured 2026-10-17:**
+   - Flights go to each person's `bugledger/<user>` branch, which is never merged into `bleeding-edge`.
+   - 67 flights on 4 branches: about 33 MB of flight JSON, roughly 0.5 MB each. yskha alone has 48 flights (22.5 MB).
+   - The whole repo is 3.8 GB packed.
+
+   **What that is fine for, and what it is not:**
+   - **Fine for the team's own editor play at this scale:** reviewable, versioned, read by every tool
+     (`racing_line.py`, `learn_from_flights.py`, `vessel_mode_chart.py`), and nothing leaves the team.
+   - **It grows forever.** Git keeps every file, and `git fetch origin` pulls every bugledger branch into every clone.
+     The 100-races-per-person capture plan (`RACING_LINE.md` §4) is about 50 MB per person.
+   - **Players' data must never go in git.** That is a privacy matter, not a size one.
+
+   **Recommended, in order:**
+   1. Now: keep the editor flights on bugledger branches, and gzip them. JSON this regular should shrink several
+      times; about a one-line change where `BugHuntReports` stores the file, plus a `.gz` reader in the tools.
+   2. When players record (consent, T4): small per-race summaries in Cloud Save, the way the match-replay work stores
+      its `REPLAY_INDEX` (`claude/match-replays-5t3dbr`). Hull, mode, intensity, time, finished and rings are a few
+      hundred bytes; the chart reads exactly those.
+   3. The full flights (about 0.5 MB, the tracks) go in a file store: Cloud Save files if our version has them, the
+      R2 bucket, or our own endpoint. This is the open decision above (task T-20261015-0064).
 3. **Whether a network-driven AI (T5) may ship**, or whether learning only moves the numbers of hand-written AIs.
 4. **Which hulls get real drives next.** The generic drive is a stand-in, and a hull's own abilities are modelled when
    its AI is built (`REGATTA_AI_ROADMAP.md`).
