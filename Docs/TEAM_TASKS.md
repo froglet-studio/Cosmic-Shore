@@ -499,3 +499,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Manta AI holds Soar deeper into turns)
+
+### T-20261017-0026 · open · test · Regatta / launch panel UI
+- **Task:** Hand-test the AI seat chip hull labels on Regatta's launch panel: hover name, (i) badge, vessel info card (Docs/UNITY_VERIFICATION_CHECKLIST.md, 2026-10-17 entry)
+- **Done when:** All six verify steps pass in the editor; the checklist entry is marked green
+- **Who can take it:** Yash (offered); Shombith (UI prefabs, if authored art is wanted)
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/UI/Elements/VesselInfoPopup.cs
