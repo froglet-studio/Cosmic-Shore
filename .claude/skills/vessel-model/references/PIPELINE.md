@@ -9,7 +9,7 @@ no Blender GUI, no OpenGL. If `import bpy` fails: `pip download bpy` then
 |---|---|---|
 | `fbx_probe.py <fbx> [--takes] [--json]` | reader: GlobalSettings, hierarchy with rest TRS, meshes with slot polygon counts, shapes with travel fraction, takes with which nodes move (pose vs motion), blend-shape curve count | curves hang off curve nodes by OP links; a 1-key take is a POSE and its deflection is `offset` vs rest, not `range` |
 | `part_map.py <fbx>` | reader: every mesh / vertex group / bone in Blender world space after import, whole-model bounds, widest station, which end is the nose | this prints the modelling frame and the targets; copy its numbers into the spec |
-| `rest_compare.py A B` | reader: Blender imports both, compares every node's and bone's world rest pose; exit 1 on a move or a lost bone | run it on every build of a reused rig; trust Blender's reader, not hand-rolled FBX matrix math (it was 10.8 degrees wrong on the Squirrel's armature) |
+| `rest_compare.py A B [--allow-moved a,b]` | reader: Blender imports both and compares every bone AS DRAWN (its posed matrix: the artist files park their node-vs-bind difference as a pose) plus every node's position, rotation and scale; assimp composes both files' node chains the way an engine does and compares again; exit 1 on a move or a lost node from either reader, except names a spec moved on purpose (`rig.move_bones`) | run it against the ARTIST file (`build.artist_path`) on every build of a reused rig; a file whose bones match only in the bind pose fails the assimp reader (LESSONS 8) |
 | `forms.py` | the modelling library: `fuselage`, `loft`, `spine_loft`, `lathe`, `wing`, `plate`, `tube_along`, `cone`, `box`, `sphere`; outlines `superellipse`, `airfoil`, `feather`, `chevron`, `crescent`, `blade`, `rounded_rect`; finishing `bevel`, `subsurf`, `solidify`, `mirror`, `inset_faces`, `sharpen_by_angle`, `apply_modifiers`; painting `paint`, `ensure_slots`; assembly `join`, `mirror_part`, `tag_group`, `bounds`, `tri_count` | every part is an object until `join`; `join` leaves a vertex group per part, which is the skin AND the morph mask; `wing(side=+1)` runs to +X when forward=-Y |
 | `rig.py` | `BoneSpec` + `build_armature` for new rigs; `import_shipped_armature(fbx)` to reuse an artist's; `skin_rigid(mesh, arm, group_to_bone=, default_bone=)`; `blend_root` for organic joints | mesh and armature stay SIBLINGS (`parent_to_armature=False`), like the shipped files; every vertex ends in some bone (orphans -> default_bone) |
 | `morphs.py` | `MaskSet(mesh).mask(*groups)`, deformers `inflate`, `scale_about`, `translate`, `stretch_along(ramp=)`, `sweep`, `taper`; masks `falloff_mask`, `radial_mask`; `add_shape(mesh, name, [deformers])` -> travel | bake AFTER every modifier is applied and the parts are joined; shape key order = call order |
@@ -24,10 +24,22 @@ no Blender GUI, no OpenGL. If `import bpy` fails: `pip download bpy` then
 ## The verify gate (what `export.verify` refuses)
 
 - a bone / armature / mesh node named by the spec that the file lacks
-- more than one mesh, an unskinned mesh, a slot with no polygons, a missing material name
+- more than one mesh, an unskinned mesh, a slot with no polygons or under 0.5% of the SURFACE
+  (area on the re-import; `min_slot_share`, default 0.3%), a missing material name, a slot colour that differs
+  from the artist file's (Unity generates the model's materials from the file), a take or
+  material the `.meta` pins that the file lacks
 - a shape missing or travelling under `min_travel` (default 2%; specs set 2.5-4%)
 - a missing take, a pose take that deflects nothing, ANY blend-shape curve in a take
 - GlobalSettings that do not match the preset (unit, up, front, coord axes and signs)
+- the mesh node's Lcl rotation / scaling (and the cm rigs' armature's) not the preset's: that
+  node frame is where the prefab's colliders were authored, and the round-trip bounds check
+  cannot see it (Blender undoes its own export)
+- extents more than 10% off the file being replaced (`size_ref` from the committed file;
+  `size_tol`, or a spec's own `size_ref`, when the change is meant); a hull not left/right
+  symmetric (`symmetric=False` waives it for a deliberately asymmetric hull)
+- a slot order that differs from the replaced file's without `slot_reorder_from` declaring it
+- a take that does not move every bone its pose named (`takes.AUTHORED`, filled by
+  `pose_take` / `motion_take`), or an idle authored at rest that moves anything
 - no UV layer, no normals layer
 - assimp unable to read it; the Blender re-import missing a bone / shape / action / slot order
 - the re-import's world bounds not matching the built mesh's Blender bounds (5%)
@@ -43,13 +55,18 @@ models under `Tools/Assets/...` and both gates stayed green (LESSONS 24). The dr
 The whole in-place sequence for one vessel, as a session runs it:
 
 ```
-git show "HEAD:<OUTPUT>" > <scratch>/shipped/<vessel>.fbx          # the artist file, for rest_compare
-python3 Tools/Build/vessel_model/build.py <spec> --no-render        # writes OUTPUT in place
-python3 Tools/Build/vessel_model/rest_compare.py <scratch>/shipped/<vessel>.fbx "<OUTPUT>"
+python3 Tools/Build/vessel_model/build.py <spec> --no-render        # writes OUTPUT in place (temp file, verified, then moved over)
+python3 Tools/Build/vessel_model/rest_compare.py "$(python3 -c 'import sys; sys.path.insert(0, "Tools/Build/vessel_model"); import build, <spec>; print(build.artist_path(<spec>.OUTPUT))')" "<OUTPUT>"
 python3 Tools/Build/vessel_model/build.py <spec> --check            # the spec rebuilds to what is on disk
 python3 Tools/Build/measure_vessel_models.py --no-refs --only <file stem>
 git status --short "Assets/_Models/Vessel Models/"                  # the M that proves the write
 ```
+
+The artist file is `build.artist_path(OUTPUT)`: `git show <build.ARTIST_REF>:<OUTPUT>` cached
+under `Tools/Build/vessel_model/.artist_cache/`. NEVER take the reference from HEAD or from
+the working tree: after the first in-place write both hold our own rebuild, and a comparison
+with it compares the pipeline with itself (LESSONS 29). `build.py` itself reads the artist
+file for the size, slot-order and colour references it hands to `verify`.
 
 ## Scratch layout a session should use
 

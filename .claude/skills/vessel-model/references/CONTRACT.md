@@ -58,7 +58,9 @@ SKILL.md, omni crystal, 2026-10). Therefore:
 | Serpent | Body | Engine | Window | Domain | 47 / 3 / 2 / 47 % |
 | Sparrow | Body | Domain | Engine | Window | 86 / 11 / 1.5 / 1.5 % |
 | Dolphin rig | accent.001 (domain) | BASE.001 | windsheild.001 | N.001 (engine) | 20 / 78 / 0.1 / 2 % |
-| Manta rigs | accent | BASE | windsheild | N | - |
+| Manta rig | accent | BASE | windsheild | N | - |
+| Urchin rig | accent (was BASE) | BASE (was accent) | windsheild | N | the artist rig had `BASE` at 0; the rebuilt rig puts the domain band at 0 per the convention (`slot_reorder_from` in the spec; the swap maps materials by meaning) |
+| Rhino rig | accent.005 | BASE.005 | windsheild.005 | N.005 | the live part-per-mesh placeholder paints `BASE` as the domain colour (dossier 8.6); the rig's slot 0 is the band, as the convention says |
 
 `ShipHelper.ApplyShipMaterial` paints the DOMAIN material into **slot 0 of a SkinnedMeshRenderer**
 regardless of names (unless the prefab's `VesselCustomization._domainReplacesMaterials` names
@@ -77,8 +79,9 @@ it and the array shifts.
 | `yup_baked` | Manta rig, Urchin rig | as `yup` | mesh node IDENTITY with the centimetre data baked into the vertices (`bake_space_transform=True`); armature R(-90,0,0) S(100) | nose **-Y**, up +Z, .l bones **+X** |
 
 Read the mesh node's TRS in `fbx_probe` before choosing between `yup` and `yup_baked`: both
-import identically in Blender and Unity, but the prefab's colliders on the mesh node were
-authored in that node's local frame, and the verify bounds check fails the wrong one by 100x.
+import identically in Blender, but the prefab's colliders on the mesh node were authored in
+that node's local frame. `export.verify` asserts the mesh node's Lcl rotation and scaling (and
+the cm rigs' armature's) against the preset; the round-trip bounds check cannot tell them apart.
 
 Unity's result, measured against the prefabs' mounts: Z-up files land as Unity (x, y, z) =
 (file x, file z, file y): nose +Z, the .L bones at -X = the pilot's left (the Squirrel's
@@ -99,7 +102,7 @@ carries R(71.9, -180, 0): artists' scene scars. Reusing the imported armature ob
 | Sparrow | Animator (`SparrowAnimatorController`) + `SparrowAnimationController` (missile bays) | `Sparrow_Armature+Mesh\|{Idle,PitchUp,PitchDown,YawLeft,YawRight,SpeedUp,SpeedDown,Speed+PitchUp,Speed+PitchDown,Speed+TurnLeft,Speed+TurnRight}_SparrowAnim` (+ Missile Launch 1/2 from SparrowModel4, untouched) | 1-2 frame poses |
 | Dolphin | code (`RiptideAnimation`), rest-aware conjugation | none bound; names kept `dolphin\|<pose>_dolphin` | motion, documentary |
 | Manta | code (`MantaAnimation`) + an Animator on the mantis rig's clips | see dossier | - |
-| Rhino / Urchin | code (`RhinoAnimation` / `UrchinAnimation`), parts resolved by bone name | none | the rigs' takes unused |
+| Rhino / Urchin | code (`RhinoAnimation` / `UrchinAnimation`), parts resolved by bone name | none | the artist rigs carried `rhino\|rhino_<pose>` and `Armature\|urchan_<pose>` (+ `urchan_ball/fly/roll`); nothing binds them, so the rebuilt rigs carry the convention's nine standard names (`<Armature>\|<pose>`), a deliberate migration |
 
 Direction convention (Squirrel dossier 3.5, closed): `pitchup` pitches the nose UP in Unity
 (the driver writes `Pitch = -YSum`), `yawright` noses right, `rollleft` dips the `.L` wing.
@@ -125,6 +128,6 @@ size/volume (fatten the body). Map onto the vessel's own ability table
 | Squirrel | +-2.25 | -1.9 .. +4.56 | -0.69 .. +0.77 | -17 | mesh-node BoxCollider (4.12, 3.11, 0.59) in file frame; tails at (+-4, 0, -12) |
 | Dolphin | +-2.64 | -2.83 .. +2.47 | -0.57 .. +0.64 | -20 | 28 bones; 6 bells are jet hosts; fusion bakes go stale on a new mesh |
 | Serpent | +-4.2 | head at +1.5, tendrils to -10.1 | -5.2 .. +6.1 | -250 | nose on +Y |
-| Sparrow | +-? | see dossier | | -50 | armature scale 0.2034; jets on b_Tail1..3 .L/.R |
-| Urchin | rig: ball R 0.425, spines to +-0.9 | | | -6.67 | `Urchan_Test.fbx` (part-per-mesh placeholder) is what the prefab draws; the rebuilt rig `urchan_shapekey_with_animations.fbx` is the swap target (`VesselRigSwapper`), 2.105x the live hull |
+| Sparrow | +-6.24 (symmetric; the artist file's -3.15 .. +6.24 was a mirrored-fan bug in the first spec, not the artist's rest) | nose +Y: -7.6 (engines) .. +4.4 (beak); the artist flew tail-first (dossier 1.4), retired | -0.62 .. +0.70 | -50 | armature scale 0.2034; jets on b_Tail1..3 .L/.R, MOVED to the stern (`rig.move_bones`, `rest_compare --allow-moved`) |
+| Urchin | rig: ball R 0.425, spines to +-0.9 | | | -6.67 | `Urchan_Test.fbx` (part-per-mesh placeholder) is what the prefab draws; the rebuilt rig `urchan_shapekey_with_animations.fbx` is the swap target (`VesselRigSwapper`), 2.105x the live hull; the artist rig's 1.75 node scale on `winggrowrot*` is baked into geometry and bone lengths (nodes at scale 1), so the swap sets the jets' plume scale directly |
 | Rhino | +-8.1 composite (fuselage +-2.8, pods at +-5.4) | fuselage 16.8, composite 20.4 | -8.9 .. +6.5 | -70 (zooms to -200) | `Rhino_Test.fbx` placeholder wired; the rebuilt rig `rhino_shapekey_with_animations.fbx` is the swap target; 10 jets; the live placeholder's DOMAIN slot is `BASE` (dossier 8.6), the Dolphin rig's is `accent`: the artists disagree, the convention (slot 0 = Domain) wins at the swap |

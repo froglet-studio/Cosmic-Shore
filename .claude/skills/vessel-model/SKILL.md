@@ -71,10 +71,15 @@ binary FBX 7400 IN PLACE over the live file:
   the geometry name, the armature name, every bone name and the slot material NAMES. Renaming
   one node silently detaches whatever the prefab hung on it - a jet floats at the origin with
   no error. A new file beside the old one re-hashes every id and needs the editor.
-- **Bones rest where the shipped ones rest.** Jets, colliders and FX are children of bones
-  with offsets in bone space, and the editor rig tools were written against those rest poses.
-  Reuse the shipped armature wholesale (`rig.import_shipped_armature`) and prove it with
-  `rest_compare.py` (exact to 0.000 on every file so far). New bones are allowed; moved ones are not.
+- **Bones rest where the shipped ones rest, in the NODE chain Unity reads.** Jets, colliders
+  and FX are children of bones with offsets in bone space, and the editor rig tools were
+  written against those rest poses. Reuse the artist's armature wholesale
+  (`rig.import_shipped_armature(ctx.artist(OUTPUT))`, from the pinned git ref, never from the
+  file on disk); `skin_rigid` bakes the artist's parked pose into the rest
+  (`rig.bake_parked_pose`: the Squirrel, Urchin and Rhino rigs' node transforms differ from
+  their bind pose, and Unity builds the bone Transforms from the nodes); prove it with
+  `rest_compare.py` against the artist file, whose two readers (Blender's bind-derived rest and
+  assimp's node chain) must both say 0.000. New bones are allowed; moved ones are not.
 - **Four material slots, shipped order and names.** The game writes slot 0 as the domain
   colour on a SkinnedMeshRenderer (`ShipHelper.ApplyShipMaterial`), flashes slot 3 as the
   engine (`FlareEngine`), and the `.meta` remaps slots by NAME (`externalObjects`). Squirrel /

@@ -23,6 +23,7 @@ Workbench need an OpenGL context that a headless container lacks, so they are no
 
 import math
 import os
+import re
 import sys
 
 import bpy
@@ -185,13 +186,27 @@ def contact_sheet(fbx_path, out_dir, tag="sheet", views=("chase", "front34", "si
     if arms:
         arm = arms[0]
         for p in poses:
-            act = None
-            for a in bpy.data.actions:
-                tail = a.name.lower().split("|")[-1]
-                if tail == p or tail.endswith(p) or tail.replace("_", "").endswith(p) or p in tail:
-                    act = a
-            if act is None:
+            # exact take name first, then the normalised pose word ('pitchup' vs 'PitchUp_SparrowAnim' vs
+            # 'squirrelanim_pitchup'), never a mere substring: 'pitchup' must not pick 'Speed+PitchUp'
+            norm = lambda x: re.sub(r"[^a-z0-9]", "", x.lower())
+            want = norm(p)
+            def _rank(a):
+                tail = a.name.split("|")[-1]
+                t = norm(tail)
+                if tail == p or t == want:
+                    return 0
+                # strip a vessel suffix/prefix: 'pitchupsparrowanim' -> drop 'sparrowanim'; 'squirrelanimpitchup' -> drop 'squirrelanim'
+                core = re.sub(r"(sparrowanim|squirrelanim|anim|dolphin|serpent)", "", t)
+                if core == want:
+                    return 1
+                return None
+            ranked = [(r, a) for a in bpy.data.actions for r in [_rank(a)] if r is not None]
+            if not ranked:
+                print("  sheet: no take matches pose %r (have %s)" % (p, [a.name.split("|")[-1] for a in bpy.data.actions]))
                 continue
+            ranked.sort(key=lambda x: x[0])
+            act = ranked[0][1]
+            print("  sheet: pose tile %r renders take %r" % (p, act.name))
             if arm.animation_data is None:
                 arm.animation_data_create()
             arm.animation_data.action = act

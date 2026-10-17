@@ -89,8 +89,9 @@ def build(ctx):
     # three stern nozzles under the trident: the engine glow and the node a jet can mount on
     nozzles = []
     for k, (nx, nz) in enumerate(((0.0, -0.02), (0.19, -0.06), (-0.19, -0.06))):
-        nz_ = f.lathe("nozzle_%d" % k, [(0.0, 0.0), (0.06, 0.0), (0.075, 0.03), (0.075, 0.16), (0.065, 0.19), (0.0, 0.19)],
-                      segments=14, axis=(0, 1, 0), origin=(nx, 1.30, nz))
+        # big enough that the Engine slot covers 0.3% of the hull's surface (verify's floor): the mouths must read
+        nz_ = f.lathe("nozzle_%d" % k, [(0.0, 0.0), (0.085, 0.0), (0.11, 0.04), (0.11, 0.22), (0.095, 0.27), (0.0, 0.27)],
+                      segments=14, axis=(0, 1, 0), origin=(nx, 1.26, nz))
         f.paint(nz_, H)
         f.inset_faces(nz_, lambda c, n, i: n.y > 0.8, 0.012, depth=0.03, slot=J)
         f.sharpen_by_angle(nz_, 35)
@@ -138,7 +139,7 @@ def build(ctx):
     ctx.log("manta joined: %d verts, %d tris" % (len(mesh.data.vertices), f.tri_count(mesh)))
 
     # ------------------------------------------------------------------ RIG: the shipped armature
-    arm = rig.import_shipped_armature(OUTPUT)
+    arm = rig.import_shipped_armature(ctx.artist(OUTPUT))
     assert arm.name == ARMATURE, arm.name
     bone_names = [b.name for b in arm.data.bones]
     rig.skin_rigid(mesh, arm, group_to_bone={"Wing_eye.L": "Wing.L", "Wing_eye.R": "Wing.R"}, default_bone="chassis")

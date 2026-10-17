@@ -45,13 +45,30 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
    turn as a rotation; the mesh node comes out identity with the turn in its vertices, which
    is exactly the shipped layout (mesh identity, armature carrying a rotation).
 
-8. **Reuse the shipped armature; prove it with Blender, not with matrices.** Importing the
-   artist's FBX, dropping its mesh and actions, skinning the new mesh to the imported armature
-   and exporting with the matching preset reproduced every bone's world rest pose to 0.000
-   units / 0.00 degrees on the Squirrel (42 bones) and the Dolphin (28). A hand-rolled
-   `T*R*S` walk of the FBX node transforms disagreed with Blender by a constant 10.8 degrees
-   on every Squirrel bone (the artist's armature carries R(71.9,-180,0)); `rest_compare.py`
-   therefore reads both files with Blender's importer.
+8. **Reuse the shipped armature, bake its parked pose into the rest, and prove the node chain
+   with assimp, never with a hand-rolled walk or with Blender alone.** Importing the artist's
+   FBX, dropping its mesh and actions, skinning the new mesh to the imported armature and
+   exporting with the matching preset reproduced every bone's BIND pose to 0.000 on all seven,
+   and `rest_compare.py` (Blender's reader) said so. It was the wrong question. Blender derives
+   a bone's rest from the skin's bind matrix and parks the difference to the file's node
+   transform as a POSE (`pose_bone.matrix_basis`); the artist Squirrel parks 10.78 degrees on
+   27 of 42 bones (tail bones 0.3-0.5 units, bind-to-posed vertex displacement 0.56), the
+   Urchin rig a 1.75 scale and 20 degrees on 16 of 38, the Rhino rig 70 degrees and 3.3 m on 9
+   of 12; the Dolphin, Sparrow, Serpent and Manta park nothing. Unity builds the bone
+   Transforms from the NODE transforms, so the first written Squirrel moved 42 of 45 nodes in
+   Unity (assimp composes the Lcl chain the way an engine does: `rest_compare.py` now runs it
+   as a second reader, and its Blender reader compares bones AS DRAWN, i.e. posed) while the
+   bind-only reader said 0.000. The fix is `rig.bake_parked_pose` (run by `skin_rigid`): apply
+   the parked pose as the new rest WITHOUT moving the mesh, because a spec is modelled against
+   the hull as drawn (the sheets render the posed file, `part_map` prints posed bounds), so the
+   geometry already sits where the posed bones put it; the first bake also deformed the mesh
+   and raised the Squirrel's fans 45 degrees (the pose applied twice). After the bake the
+   written node chain equals the artist's (assimp 0 of 45) and the bind equals the node chain.
+   The first "refutation" of this finding compared the written
+   file with ITSELF (the scratch "shipped" copies had been re-extracted from a HEAD that already
+   held the rebuild - lesson 29); a hand-rolled `T*R*S` walk had earlier found the same 10.8
+   degrees and been dismissed as wrong. Every gate now reads the ARTIST file from a pinned git
+   ref (`build.ARTIST_REF`, `ctx.artist(OUTPUT)`), never the file on disk.
 
 9. **`ignore_leaf_bones=True` eats real bones.** Blender's importer dropped the Dolphin's six
    exhaust bells (`jetin*`, leaf bones that skin 712 vertices each and host the jets) and the
@@ -119,21 +136,26 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     spines' own geometry (`|co| > R*1.03 and co.y < 0.9R`, which also excludes the exhaust),
     and every morph tile is LOOKED at: "can a pilot name this element from the chase tile?".
 
-21. **Skin to the bone that the part map says carries the vertices.** The Sparrow's fan
-    blades skin to the hinge bones `b_SpinWing.{L,R}.00k`; `b_WingPiece*` are the leaf tip
-    bones and skin nothing. `part_map.py` prints bone -> vertex counts; name parts after the
-    skinning bone, not after the bone whose name sounds like the part.
+21. **Skin to the bone that carries the vertices, and READ the probe, do not remember it.** The
+    artist Sparrow skins each fan blade to the LEAF bone under its spoke (`b_WingPiece8Last.L`
+    under `b_SpinWing.L.001` ... `b_WingPiece1First.L` under `.008`, 100-161 vertices each) and
+    the spokes skin nothing. The first spec had it backwards (blades on the spokes, 0 vertices on
+    all 16 WingPiece bones), and this lesson said the opposite of the data; Unity's
+    `optimizeBones` strips a bone that skins nothing and has no skinning descendant, which would
+    have left 16 dangling clip bindings. `fbx_probe` prints `skins N verts` per bone: the part
+    takes the name of the bone with the vertices.
 
 22. **Every slot must own polygons, and verify says which.** The Manta spec's `N` (engine)
     slot had no faces until three stern nozzles were added and painted; the Serpent's Mass
     morph measured 1.7% until `scale_about` took the carapace and the engine block together.
     Both failed the gate before any render, both were one-line fixes in the spec.
 
-23. **Seven rigs reused, seven exact.** `rest_compare.py` reports 0.000 units / 0.00 degrees
-    on every bone of all seven shipped armatures after the rebuild (Squirrel 42 bones, Dolphin
-    28, Sparrow, Serpent, Manta, Urchin 38, Rhino), including the artists' scars (the
-    Squirrel's R(71.9,-180,0), the Sparrow's 0.2034 scale). Reusing the imported armature
-    object is the whole trick; building a "matching" armature from numbers never was.
+23. **Seven rigs reused; "exact" means both readers against the ARTIST file.** Reusing the
+    imported armature object (with its parked pose baked into the rest, lesson 8) keeps the
+    artists' scars the prefabs depend on (the Squirrel armature's R(71.9,-180,0), the Sparrow
+    armature's 0.2034 scale). The Sparrow's MESH node scale (0.2034, vertices pre-scaled) is
+    deliberately written as 1.0 with the vertices in metres: nothing is authored under that
+    node (dossier 6), and a scaled renderer node is a quirk, not a binding.
 
 24. **Two green gates and nothing written.** The first in-place run resolved the repo root one
     `dirname` short, so `build.py <spec>` wrote seven verified models into
@@ -176,3 +198,61 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     intended frame, order, naming and sign convention; the per-file quirks are a legacy table
     with a migration step each (in-place overwrite today, rig swap / prefab re-fit / driver fix
     later), and a spec declares them as bindings, not as design.
+
+28. **The gates were weaker than their green.** An adversarial review of the first commit
+    found, and three readers confirmed or refuted: (a) `export_and_verify` wrote the live file
+    FIRST and verified second, so a red verify left an unverified model over the asset; it now
+    writes `<file>.verifying.fbx`, verifies, and `os.replace`s only on green. (b) The round-trip
+    bounds check compared the file to the build that produced it (Blender undoing Blender), so
+    any self-consistent hull of any size or mirror passed and `yup` could not be told from
+    `yup_baked`; verify now asserts the mesh node's (and the cm rigs' armature's) Lcl TRS per
+    preset, the extents against the replaced file (10%, `size_ref` / `size_tol` to override),
+    left/right symmetry (`symmetric=False` to waive: the Sparrow's artist rest is asymmetric)
+    and the slot order against the replaced file (`slot_reorder_from` declares a migration: the
+    Urchin rig now has the domain band at slot 0). (c) `build.py --check` compared names only;
+    its summary now carries every node's TRS, the skin counts, each take's deflection per node
+    and the six axis settings. (d) The only take check was "something moves"; every pose and
+    motion take now records the bones it authored (`takes.AUTHORED`) and verify requires the
+    file to move exactly those (an idle authored at rest must move nothing). (e) CONFIRMED, after a
+    wrong refutation: "the written files move every Unity bone by 10.78 degrees" - lesson 8.
+    (f) Every exported material was default grey (0.8, 0.8, 0.8): Unity generates the model's
+    materials from the file and the .meta remaps only Body / Domain / Window, so the Engine
+    slots would have imported grey; `forms.ensure_slots` now writes the artist file's colour
+    per material name (captured by `import_shipped_armature`) and verify compares DiffuseColor
+    per slot against the artist file. (g) The slot gate accepted a 4-polygon Window; it is now
+    0.5% of the faces (`min_slot_share`), and the Sparrow and Dolphin canopies were cut and
+    enlarged to pass it. (h) The Rhino and Urchin rigs' take names were changed to the standard
+    nine (nothing binds the old `rhino_*` / `urchan_*` names; recorded in CONTRACT 5). A finding
+    with a number in it is checked by a reader that did not produce the number - and against
+    the file the number was measured on.
+
+29. **A scratch copy named "shipped" is not the shipped file after the first commit.** The gate
+    scripts extracted `git show HEAD:<file>` into `scratch/shipped/` on every run; once the
+    rebuilt models were committed, HEAD held the rebuild, so `rest_compare` compared the rebuild
+    with itself, the parked-pose probe measured our own file (0 parked bones) and an adversarial
+    finding was "refuted" against the wrong file. The artist files now come from a pinned ref
+    (`build.ARTIST_REF = "b7f0fbbf3"`, cached under `Tools/Build/vessel_model/.artist_cache/`),
+    every spec reuses its armature from there, and every gate compares against it. Name a
+    reference by the commit it comes from, never by the branch it was taken from.
+
+30. **The Sparrow flew backwards, and the first rebuild copied it.** The dossier measured it
+    (section 1.4: Unity z = Blender y for this file; the jet-hosting `b_Tail*` blades land at
+    z +4.6..+7.6, the nose end as flown; the cockpit at z -0.7; the gun muzzles at +1.3 firing
+    forward): the artist built the beak at -Y and the engines at +Y, so the shipped Sparrow
+    leads with its exhaust and the first spec, modelled "where the shipped blades are", did
+    the same - a WIP flaw promoted to a binding. The rebuilt Sparrow is nose-first: beak and
+    canopy at +Y, engines at -Y, and the six `b_Tail` bones moved to the engines with
+    `rig.move_bones` (orientation kept, so the prefab's jets keep their authored rotation);
+    guns, bays, shells and the fan were already placed for a +Y nose. Poses are authored in the
+    fleet's nose -Y vocabulary and mirrored through y = 0 (`mirror_y` in the spec). The editor
+    confirms the sign in flight (checklist); `rest_compare --allow-moved` names the six bones.
+    A slot gate on polygon COUNT then refused a canopy of 18 wide quads: the share is now
+    measured by AREA on the re-import (`material_area_share`), which is what the eye sees.
+
+31. **A connected bone ignores pose location.** The Rhino's `jet.l/.r` are children connected
+    to `wing1` (head pinned to the parent's tail), so a `speedup` pose that slides the pods aft
+    wrote no translation at all and verify's authored-takes check caught it ("the file does not
+    move jet.l"). FBX has no notion of connection and the heads and tails stay put, so
+    `import_shipped_armature` now disconnects every bone. The same check is why the Urchin's
+    scale normalisation and the Sparrow's moved jet bones are DECLARED to the gate
+    (`--allow-scale-only`, `--allow-moved`) instead of silently passing or failing.

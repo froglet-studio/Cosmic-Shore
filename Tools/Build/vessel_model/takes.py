@@ -18,8 +18,10 @@ action named '<ArmatureObject>|<ActionName>', which is the take name Unity shows
 pins to a clip. So the spec's take names are action names, and the armature's object name is
 part of the contract.
 
-Pose deltas are given in DEGREES about the bone's LOCAL axes (Blender pose-bone rotation,
-XYZ euler) and optional local translations; `rest` is implicit, so (0,0,0) is the rest pose.
+Pose deltas are given in DEGREES about the WORLD axes of the Blender modelling frame (X pitch,
+Y roll, Z yaw) plus optional world displacements, conjugated into each bone's rest frame by
+`world_to_bone` (world=True, the default, so the same numbers mean the same thing on any rig);
+world=False takes raw pose-bone values. `rest` is implicit, so (0,0,0) is the rest pose.
 """
 
 import math
@@ -110,6 +112,33 @@ def apply_pose(arm, pose, world=True):
             pb.location = Vector(loc)
 
 
+AUTHORED = {}  # take name -> the bone names the pose/motion deflected; verify checks the file moved them
+
+
+def _deflects(spec, min_deg=2.0, min_loc=0.01):
+    """True when a bone's pose entry asks for a deflection the probe can see (>= 2 degrees or 0.01 units)."""
+    if isinstance(spec, dict):
+        rot, loc = spec.get("rot", (0, 0, 0)), spec.get("loc", (0, 0, 0))
+    else:
+        rot, loc = spec, (0, 0, 0)
+    return max(abs(float(v)) for v in rot) >= min_deg or max(abs(float(v)) for v in loc) >= min_loc
+
+
+def follow(arm, parent_bone, child_bone, rot_deg_world, pivot=None):
+    """
+    The pose entry for `child_bone` so that it rides a WORLD rotation applied to `parent_bone`
+    as if rigidly attached: the same rotation plus the displacement of the child's head around
+    the parent's head (or `pivot`). For pods on a wing, struts on a shoulder, a hub on a boom:
+    bones that are siblings in the artist's rig but one part in the player's eye.
+    """
+    import rig
+    p0 = Vector(pivot) if pivot is not None else rig.bone_world_head(arm, parent_bone)
+    c0 = rig.bone_world_head(arm, child_bone)
+    R = Euler([math.radians(a) for a in rot_deg_world], "XYZ").to_matrix()
+    c1 = p0 + R @ (c0 - p0)
+    return {"rot": tuple(rot_deg_world), "loc": tuple(c1 - c0)}
+
+
 def pose_take(arm, name, pose, frame=1, key_all=True, world=True):
     """
     Bake one pose as an action named `name`. `pose` maps bone name -> (rx, ry, rz) degrees,
@@ -127,6 +156,7 @@ def pose_take(arm, name, pose, frame=1, key_all=True, world=True):
             pb.keyframe_insert("rotation_euler", frame=frame)
             pb.keyframe_insert("location", frame=frame)
     act.use_fake_user = True
+    AUTHORED[name] = [b for b in pose if b in arm.pose.bones and _deflects(pose[b])]
     return act
 
 
@@ -145,6 +175,7 @@ def motion_take(arm, name, keyframes, key_all=True, world=True):
                 pb.keyframe_insert("rotation_euler", frame=frame)
                 pb.keyframe_insert("location", frame=frame)
     act.use_fake_user = True
+    AUTHORED[name] = sorted({b for _, pose in keyframes for b in pose if b in arm.pose.bones and _deflects(pose[b])})
     return act
 
 

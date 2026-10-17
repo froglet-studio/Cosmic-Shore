@@ -231,6 +231,11 @@ for o in bpy.data.objects:
         d["vgroups"] = [g.name for g in o.vertex_groups]
         pts = [o.matrix_world @ v.co for v in o.data.vertices]
         d["bounds"] = [[min(p[i] for p in pts) for i in range(3)], [max(p[i] for p in pts) for i in range(3)]]
+        area = {}
+        for poly in o.data.polygons:
+            area[poly.material_index] = area.get(poly.material_index, 0.0) + poly.area
+        total = sum(area.values()) or 1.0
+        d["material_area_share"] = {str(k): v / total for k, v in area.items()}
     rep["objects"].append(d)
 print("REPORT_JSON " + json.dumps(rep))
 '''
@@ -296,6 +301,14 @@ def verify(path, spec):
     for t in spec.get("takes", []):
         if t not in take_names:
             failures.append("take %r missing (have %s)" % (t, take_names))
+    # what the .meta pins: every takeName the Animator's clips are cut from, every material the prefab
+    # remaps by name, must exist in the file or the clip imports empty / the slot wears the importer's material
+    for t in spec.get("meta_takes", []):
+        if t not in take_names:
+            failures.append("the .meta pins clip takeName %r and the file has no such take (have %s)" % (t, take_names))
+    for nm in spec.get("meta_materials", []):
+        if nm not in mat_names:
+            failures.append("the .meta remaps material %r and the file has no such material (have %s)" % (nm, mat_names))
     for t in r["takes"]:
         if t["blend_shape_curves"]:
             failures.append("take %r carries %d blend-shape curves (strip them)" % (t["name"], t["blend_shape_curves"]))
@@ -303,10 +316,64 @@ def verify(path, spec):
             failures.append("pose take %r deflects nothing" % t["name"])
     # scale / axes
     s = r["settings"]
-    expect = PRESETS[spec.get("preset", "zup")]["expect"]
+    preset = spec.get("preset", "zup")
+    expect = PRESETS[preset]["expect"]
     for k, v in expect.items():
         if s.get(k) != v:
-            failures.append("GlobalSettings %s = %s, preset %s wants %s" % (k, s.get(k), spec.get("preset", "zup"), v))
+            failures.append("GlobalSettings %s = %s, preset %s wants %s" % (k, s.get(k), preset, v))
+    # node TRS per preset: the mesh node's LOCAL frame is where the prefab's colliders are authored,
+    # and the round-trip bounds check below cannot see it (Blender undoes its own export), so the
+    # Lcl rotation / scaling of the mesh node (and, for the cm rigs, the armature) is asserted here.
+    NODE_TRS = {  # preset -> (mesh rot, mesh scale, armature rot, armature scale); None = per-file, not asserted
+        "zup": ((0, 0, 0), 1.0, None, None),
+        "zup_identity": ((0, 0, 0), 1.0, None, None),
+        "yup": ((-90, 0, 0), 100.0, (-90, 0, 0), 100.0),
+        "yup_baked": ((0, 0, 0), 1.0, (-90, 0, 0), 100.0),
+    }
+    def _rot_close(a, b):
+        return all(abs(((x - y) + 180) % 360 - 180) < 0.5 for x, y in zip(a, b))
+    for node_key, want_rot, want_scale in ((spec.get("mesh_node"), NODE_TRS[preset][0], NODE_TRS[preset][1]),
+                                            (spec.get("armature"), NODE_TRS[preset][2], NODE_TRS[preset][3])):
+        if not node_key or node_key not in names or want_rot is None:
+            continue
+        node = names[node_key]
+        rot, sc = node["rotation"], node["scaling"]
+        if node.get("pre_rotation") and any(abs(v) > 1e-3 for v in node["pre_rotation"]):
+            failures.append("node %r carries a PreRotation %s; the pipeline writes none" % (node_key, node["pre_rotation"]))
+        if not _rot_close(rot, want_rot) or any(abs(v - want_scale) > 1e-3 * want_scale for v in sc):
+            failures.append("node %r TRS R=%s S=%s; preset %s wants R=%s S=%s (the frame the prefab's colliders were authored in)" % (
+                node_key, tuple(round(v, 2) for v in rot), tuple(round(v, 3) for v in sc), preset, want_rot, want_scale))
+    # left/right symmetry on the file's own axes (x is lateral in every preset here)
+    if mesh and spec.get("symmetric", True):
+        lo, hi = mesh["bounds"]
+        width = hi[0] - lo[0]
+        if width > 1e-6 and abs(lo[0] + hi[0]) > 0.03 * width:
+            failures.append("hull is not left/right symmetric: x %.3f .. %.3f (set symmetric=False in the spec for a deliberately asymmetric hull)" % (lo[0], hi[0]))
+    # what each authored take must move (bones named in the pose), and that an unnamed take stays at rest
+    for take_name, bones_named in spec.get("expected_moving", {}).items():
+        t = next((t for t in r["takes"] if t["name"] == take_name or t["name"].endswith("|" + take_name)), None)
+        if t is None:
+            continue
+        moving = set(t["moving_detail"].keys())
+        if not bones_named:
+            if t["nodes_that_move"] != 0:
+                failures.append("take %r was authored at rest but moves %d node(s): %s" % (take_name, t["nodes_that_move"], sorted(moving)[:6]))
+        else:
+            missing = [b for b in bones_named if b not in moving]
+            if missing:
+                failures.append("take %r was authored to move %s but the file does not move %s" % (take_name, bones_named, missing))
+    for nm, want in (spec.get("material_colours_ref") or {}).items():
+        got = next((m.get("diffuse") for m in r["materials"] if m["name"] == nm), None)
+        if got is None or want is None:
+            continue
+        if max(abs(a - b) for a, b in zip(got[:3], want[:3])) > 0.05:
+            failures.append("material %r DiffuseColor %s differs from the artist file's %s (Unity generates this material from the file; set material_colours_ref in the spec if the change is meant)" % (
+                nm, tuple(round(v, 3) for v in got[:3]), tuple(round(v, 3) for v in want[:3])))
+    if spec.get("slot_order_ref") is not None and mesh:
+        got_order = [m["name"] for m in r["materials"]]
+        ref = list(spec["slot_order_ref"])
+        if got_order != ref and tuple(spec.get("slot_reorder_from", ())) != tuple(ref):
+            failures.append("material slot order %s differs from the replaced file's %s; declare slot_reorder_from=%s in the spec if the reorder is a deliberate migration" % (got_order, ref, ref))
     # bounds are checked on the Blender RE-IMPORT in world space (below): a file that round-trips
     # to the Blender-frame bounds the spec built is a file whose axis conversion is self-consistent
     # independent readers
@@ -331,6 +398,28 @@ def verify(path, spec):
                 if abs(g - want[side][ax]) > tol * max(1.0, abs(want[side][ax])):
                     failures.append("round-trip bounds mismatch axis %d side %d: re-import %.3f, built %.3f" % (ax, side, g, want[side][ax]))
                     break
+    if meshes and spec.get("slots"):
+        # every slot owns a readable SURFACE: a canopy of one wide quad is glass, forty slivers are not,
+        # so the share is measured by area on the re-import (polygon counts are a poor proxy)
+        min_share = spec.get("min_slot_share", 0.003)
+        shares = meshes[0].get("material_area_share", {})
+        for i, nm in enumerate(spec["slots"]):
+            share = shares.get(str(i), 0.0)
+            if share < min_share:
+                failures.append("material slot %d (%s) covers %.2f%% of the surface (under %.1f%%): the glass / engine / band would not read at the chase camera; enlarge it or set min_slot_share in the spec" % (
+                    i, nm, 100 * share, 100 * min_share))
+    if meshes and spec.get("size_ref_blender"):
+        # size against the ARTIST file as drawn (its bind mesh deformed by its parked pose): the
+        # cameras, colliders and jets were tuned to that hull; the written file has no parked pose,
+        # so its raw bounds are its drawn bounds
+        ref_lo, ref_hi = spec["size_ref_blender"]
+        lo, hi = meshes[0]["bounds"]
+        tol = spec.get("size_tol", 0.10)
+        for ax in range(3):
+            ext_ref, ext = ref_hi[ax] - ref_lo[ax], hi[ax] - lo[ax]
+            if ext_ref > 1e-6 and abs(ext - ext_ref) > tol * ext_ref:
+                failures.append("size axis %d (Blender frame): extent %.3f vs the artist file's drawn %.3f (more than %.0f%% off; set size_ref_blender / size_tol in the spec if the change is meant)" % (
+                    ax, ext, ext_ref, 100 * tol))
     if meshes:
         for s in spec.get("shapes", []):
             if s not in meshes[0]["shapes"]:
@@ -346,9 +435,56 @@ def verify(path, spec):
     return {"probe": r, "assimp": ai, "reimport": rep}
 
 
+_POSED_BOUNDS_READER = r'''
+import bpy, sys, json
+bpy.ops.wm.read_factory_settings(use_empty=True)
+bpy.ops.import_scene.fbx(filepath=sys.argv[-1], ignore_leaf_bones=False, automatic_bone_orientation=False, use_anim=False)
+dg = bpy.context.evaluated_depsgraph_get()
+lo = [1e9] * 3; hi = [-1e9] * 3
+for o in bpy.data.objects:
+    if o.type != "MESH":
+        continue
+    ev = o.evaluated_get(dg)
+    me = ev.to_mesh()
+    for v in me.vertices:
+        p = o.matrix_world @ v.co
+        for i in range(3):
+            lo[i] = min(lo[i], p[i]); hi[i] = max(hi[i], p[i])
+    ev.to_mesh_clear()
+print("POSED_BOUNDS " + json.dumps([lo, hi]))
+'''
+
+
+def blender_posed_bounds(path):
+    """
+    The world-space bounds of a file's mesh AS DRAWN (armature modifier applied, i.e. the bind
+    mesh deformed by the parked pose), in Blender's import frame. For a file with no parked
+    pose this equals the raw bounds; for the artist Squirrel the posed tail sits 0.3 higher.
+    """
+    out = subprocess.run([sys.executable, "-c", _POSED_BOUNDS_READER, path], capture_output=True, text=True, timeout=600)
+    for line in out.stdout.splitlines():
+        if line.startswith("POSED_BOUNDS "):
+            return json.loads(line[len("POSED_BOUNDS "):])
+    raise RuntimeError("blender could not read %s:\n%s" % (path, (out.stdout + out.stderr)[-1200:]))
+
+
 def export_and_verify(path, objects, spec, strip=True):
-    export_fbx(path, objects, preset=spec.get("preset", "zup"))
-    removed = strip_shape_curves(path) if strip else 0
-    rep = verify(path, spec)
+    """
+    Export to a TEMP file beside `path`, strip, verify, and only then move it over `path`.
+    A failed verify deletes the temp file and leaves whatever was at `path` untouched, so an
+    in-place write over a live asset can never leave an unverified file on disk (the first
+    version wrote first and verified second; review finding 2026-10-17).
+    """
+    tmp = path + ".verifying.fbx"
+    try:
+        export_fbx(tmp, objects, preset=spec.get("preset", "zup"))
+        removed = strip_shape_curves(tmp) if strip else 0
+        rep = verify(tmp, spec)
+    except Exception:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
+    os.replace(tmp, path)
     rep["stripped"] = removed
+    rep["probe"] = rep.get("probe") or None
     return rep

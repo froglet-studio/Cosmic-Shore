@@ -79,7 +79,9 @@ def build(ctx):
     ])
     f.paint(hull, H)
     # cockpit: a long sunken glass strip on the spine over the wing root
-    f.inset_faces(hull, lambda c, n, i: n.z > 0.6 and -0.55 < c.y < 0.35 and abs(c.x) < 0.14, 0.02, depth=0.03, slot=W)
+    for (pt, nrm) in (((0, -0.85, 0), (0, 1, 0)), ((0, 0.45, 0), (0, 1, 0)), ((-0.24, 0, 0), (1, 0, 0)), ((0.24, 0, 0), (1, 0, 0))):
+        f.cut_plane(hull, pt, nrm)  # give the glass its own faces (four polygons was all the first version's inset found)
+    f.inset_faces(hull, lambda c, n, i: n.z > 0.5 and -0.85 < c.y < 0.45 and abs(c.x) < 0.24, 0.02, depth=0.03, slot=W)
     # domain flank panels, two a side, sunk in
     for (y0, y1) in ((-0.80, -0.10), (0.45, 1.35)):
         f.inset_faces(hull, lambda c, n, i, y0=y0, y1=y1: i == H and abs(n.x) > 0.6 and y0 < c.y < y1 and -0.25 < c.z < 0.35, 0.02, depth=0.015, slot=D)
@@ -172,7 +174,7 @@ def build(ctx):
     ctx.log("dolphin joined: %d verts, %d tris" % (len(mesh.data.vertices), f.tri_count(mesh)))
 
     # ------------------------------------------------------------------ RIG: the shipped armature
-    arm = rig.import_shipped_armature(OUTPUT)
+    arm = rig.import_shipped_armature(ctx.artist(OUTPUT))
     assert arm.name == ARMATURE, arm.name
     bone_names = [b.name for b in arm.data.bones]
     g2b = {}

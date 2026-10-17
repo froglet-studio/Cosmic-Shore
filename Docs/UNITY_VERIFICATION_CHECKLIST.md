@@ -98,18 +98,24 @@ solve meanwhile). (5) Fly each of the five in freestyle: the hull reads at the c
 throttle move the whole hull (Squirrel, Serpent, Sparrow through their Animator poses, Dolphin and Manta through code
 puppetry); the domain colour lands on the domain slot (slot 0 on the Dolphin / Manta family, `Body` on the Squirrel /
 Serpent / Sparrow as shipped); the glass and the engine mouths read; each element's morph is nameable in the
-elemental lab (Space = reach, Time = speed, Charge = weapon, Mass = volume). Sparrow pitch sign: the artist's
-`PitchUp_SparrowAnim` deflected the OPPOSITE way as flown (`Docs/VesselModels/Sparrow.md` 3.4); the rebuilt takes
-are authored nose-up about world axes like the Squirrel's (whose sign was measured), so pull back and the nose must
-rise. If it drops, flip the sign of the pitch poses in `specs/sparrow.py` and rebuild. (6) The Scarab draws its own
+elemental lab (Space = reach, Time = speed, Charge = weapon, Mass = volume). **Sparrow, read first:** the artist
+file flew BACKWARDS (`Docs/VesselModels/Sparrow.md` 1.4: the jet-hosting `b_Tail*` blades led, the cockpit trailed,
+`PitchUp` was inverted as flown); the rebuilt Sparrow is nose-first (beak and canopy forward, the six engine tubes
+at the stern) and its six `b_Tail1..3.L/.R` bones were MOVED to the stern, orientation kept, so the prefab's six
+`VesselJet` instances now stream from the engines: fly it and confirm the beak leads, the jets trail, pull back
+raises the nose, and the skyburst missiles (b_Missile bones, unchanged) still launch forward. The Squirrel, Urchin
+and Rhino files now carry the artist's parked pose baked into the rest (the node chain Unity builds the bone
+Transforms from equals the artist's, both readers 0.000), so their jets and colliders sit where they did. (6) The Scarab draws its own
 `ScarabHullBuilder` hull over the Sparrow file with renderers off: unchanged, confirm it still does. (7) Urchin and
 Rhino: their prefabs still draw the part-per-mesh placeholders. The rebuilt rigs are the swap targets for
 `FrogletTools > Vessels > Wiring > Swap Vessel Rig` (`Docs/VESSEL_CONSTRUCTION.md`: geometry, materials AND
 animation; the Urchin rig is 2.105x the live hull and the swapper fits the instance transform). At the swap, map the
 materials by MEANING, not by the artist's names: the rebuilt rigs paint the domain band on `accent` (slot 0) and the
 hull on `BASE` (slot 1), while the live Rhino placeholder had it the other way round (`Docs/VesselModels/Rhino.md`
-8.6: `BASE` carried the domain colour); the convention is slot 0 = Domain. After a swap, (3) must report four REAL
-morphs on each.
+8.6: `BASE` carried the domain colour); the convention is slot 0 = Domain. The Urchin artist rig carried a 1.75 scale on its `winggrowrot*` nodes (the
+prefab's jets under them were authored at 1/1.75); the rebuilt rig bakes that scale into the geometry and bone
+lengths and writes the nodes at scale 1, so the swapper (or a hand pass) sets those jets' local scale to the fleet
+plume (0.6, 0.6, 0.13) x |camera| / 20 directly. After a swap, (3) must report four REAL morphs on each.
 
 **First-pass tuning:** morph travel per file (offline, % of diagonal): Squirrel C 6 / M 4 / S 9 / T 7; Dolphin
 C 8 / M 4 / S 10 / T 7; Sparrow S 9 / C 7 / T 6 / M 4; Serpent 5-9; Manta 6-11; Urchin C 18 / M 5 / S 7 / T 9;

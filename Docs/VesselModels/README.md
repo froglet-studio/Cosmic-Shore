@@ -30,6 +30,10 @@ domain band in each vessel's colour). The Urchin and Rhino have a third sheet, `
 part-per-mesh hull their prefabs still draw. The chase tile (top left) is the one that matters: it is the hull at
 the size the game shows it.
 
+Two cross-vessel rule sets, measured the same day: [RULES_unity_import.md](RULES_unity_import.md) (what Unity's importer,
+the metas and the prefab stubs bind, per file) and [RULES_puppetry.md](RULES_puppetry.md) (every driver's parameter signs,
+blend trees and measured take deflections). Both describe today's bindings; the intention is the fleet convention.
+
 Regenerate any number: `python3 Tools/Build/vessel_model/fbx_probe.py "<fbx>" --takes`,
 `python3 Tools/Build/vessel_model/part_map.py "<fbx>"`,
 `python3 Tools/Build/measure_vessel_models.py --no-refs --only <stem>`,

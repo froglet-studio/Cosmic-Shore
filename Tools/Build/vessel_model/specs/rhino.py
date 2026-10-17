@@ -132,7 +132,7 @@ def build(ctx):
     ctx.log("rhino joined: %d verts, %d tris" % (len(mesh.data.vertices), f.tri_count(mesh)))
 
     # ------------------------------------------------------------------ RIG: the shipped armature
-    arm = rig.import_shipped_armature(OUTPUT)
+    arm = rig.import_shipped_armature(ctx.artist(OUTPUT))
     assert arm.name == ARMATURE, arm.name
     bone_names = [b.name for b in arm.data.bones]
     g2b = {}

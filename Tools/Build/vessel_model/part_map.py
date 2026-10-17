@@ -50,7 +50,15 @@ def main(path):
             "(%.1f %.1f %.1f)" % tuple(__import__("math").degrees(a) for a in o.rotation_euler), fmt(o.scale)))
     print("meshes (world space):")
     for o in meshes:
-        pts = [o.matrix_world @ v.co for v in o.data.vertices]
+        # the hull AS DRAWN: the bind mesh deformed by the artist's parked pose (Unity shows this;
+        # specs model against it and rig.bake_parked_pose makes it the rest)
+        try:
+            dg = bpy.context.evaluated_depsgraph_get()
+            ev = o.evaluated_get(dg).to_mesh()
+            src_verts = ev.vertices
+        except Exception:
+            src_verts = o.data.vertices
+        pts = [o.matrix_world @ v.co for v in src_verts]
         allpts += pts
         b = bounds_of(pts)
         if not b:
@@ -58,10 +66,10 @@ def main(path):
         lo, hi = b
         print("  %-30s verts %6d  min %s max %s  size %s" % (o.name, len(pts), fmt(lo), fmt(hi), fmt(hi - lo)))
         groups = {}
-        for v in o.data.vertices:
+        for i, v in enumerate(o.data.vertices):
             for g in v.groups:
-                if g.weight > 0.01:
-                    groups.setdefault(o.vertex_groups[g.group].name, []).append(o.matrix_world @ v.co)
+                if g.weight > 0.01 and i < len(pts):
+                    groups.setdefault(o.vertex_groups[g.group].name, []).append(pts[i])
         for name, gpts in sorted(groups.items()):
             lo, hi = bounds_of(gpts)
             print("      group %-26s verts %5d  min %s max %s  centre %s" % (name, len(gpts), fmt(lo), fmt(hi), fmt((lo + hi) / 2)))

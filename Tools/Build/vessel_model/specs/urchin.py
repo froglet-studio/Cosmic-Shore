@@ -125,7 +125,7 @@ def build(ctx):
     ctx.log("urchin joined: %d verts, %d tris" % (len(mesh.data.vertices), f.tri_count(mesh)))
 
     # ------------------------------------------------------------------ RIG: the shipped armature
-    arm = rig.import_shipped_armature(OUTPUT)
+    arm = rig.import_shipped_armature(ctx.artist(OUTPUT))
     assert arm.name == ARMATURE, arm.name
     bone_names = [b.name for b in arm.data.bones]
     rig.skin_rigid(mesh, arm, default_bone="fuse")
@@ -192,6 +192,7 @@ def build(ctx):
         "armature": arm, "mesh": mesh,
         "spec": {
             "preset": "yup_baked", "armature": ARMATURE, "mesh_node": MESH_NODE,
+            "slot_reorder_from": ("BASE", "accent", "windsheild", "N"),  # deliberate migration: the artist rig had BASE at slot 0; the convention paints slot 0 as the domain band (accent)
             "bones": bone_names,
             "takes": [ARMATURE + "|" + p for p in takes.STANDARD_POSES],
             "pose_takes": [ARMATURE + "|" + p for p in takes.STANDARD_POSES],

@@ -48,6 +48,7 @@ TAKES = ("Idle", "PitchUp", "PitchDown", "YawLeft", "YawRight", "SpeedUp", "Spee
 SIDES = (("L", 1), ("R", -1))
 
 # the eight blades of a fan: (index, angle from +X toward +Y in degrees, length, width)
+WINGPIECE = {1: "8Last", 2: "7", 3: "6", 4: "5", 5: "4", 6: "3", 7: "2", 8: "1First"}  # spoke .00k -> its leaf blade bone
 FAN = [(1, 72, 4.6, 0.52), (2, 58, 4.7, 0.56), (3, 42, 4.8, 0.58), (4, 23, 4.8, 0.58),
        (5, 0, 4.7, 0.56), (6, -28, 4.4, 0.52), (7, -57, 4.0, 0.46), (8, -82, 3.4, 0.40)]
 FAN_PIVOT = (1.50, 0.50, -0.10)
@@ -58,7 +59,12 @@ def build(ctx):
     parts = []
 
     # ------------------------------------------------------------------ BODY (a_Body)
-    body = f.fuselage("body_hull", 5.50, nose=(0, -1.55, 0.05), axis=(0, 1, 0), segments=28, stations=[
+    # NOSE AT +Y. Unity flies +z and this file imports with Unity z = Blender y (dossier 1.4): the artist
+    # built the beak at -Y and the jet-hosting "tails" at +Y, so the shipped Sparrow flies tail-first with
+    # its jets streaming over the hull - a WIP flaw, not a convention (Garrett 2026-10-17). The hull is laid
+    # out nose-first here; the six b_Tail bones are moved to the engines at -Y (the prefab's jets follow
+    # them by name, dossier 8.4 allows it); guns, bays, shells and the fan already sit as a +Y nose wants.
+    body = f.fuselage("body_hull", 7.00, nose=(0, 4.00, 0.05), axis=(0, -1, 0), segments=30, stations=[
         (0.00, 0.06, 0.05, 0.05, 2.2, 2.2, 0.00),
         (0.10, 0.34, 0.20, 0.22, 2.8, 2.6, 0.02),
         (0.25, 0.64, 0.36, 0.34, 3.2, 3.0, 0.06),
@@ -69,15 +75,19 @@ def build(ctx):
     ])
     f.paint(body, H)
     # the canopy: sunk glass behind the beak
-    f.inset_faces(body, lambda c, n, i: n.z > 0.55 and -1.05 < c.y < -0.05 and abs(c.x) < 0.30, 0.03, depth=0.04, slot=W)
-    # a shoulder stripe of domain either side, and a dorsal stripe aft
-    f.paint(body, D, lambda c, n, i: i == H and abs(n.x) > 0.5 and 0.1 < c.y < 2.2 and c.z > 0.05 and abs(c.x) > 0.5)
-    f.paint(body, D, lambda c, n, i: i == H and n.z > 0.85 and 0.4 < c.y < 3.6 and abs(c.x) < 0.12)
-    for (y0, y1) in ((-0.9, -0.3), (0.3, 1.2), (1.4, 2.3), (2.5, 3.6)):
+    # the canopy: cut the hull so the glass has its own faces (the loft's top faces are few and wide;
+    # the first version's inset landed on four polygons, invisible from the chase camera)
+    for (pt, nrm) in (((0, 1.15, 0), (0, 1, 0)), ((0, 3.25, 0), (0, 1, 0)), ((-0.46, 0, 0), (1, 0, 0)), ((0.46, 0, 0), (1, 0, 0)), ((0, 0, 0.12), (0, 0, 1))):
+        f.cut_plane(body, pt, nrm)
+    f.inset_faces(body, lambda c, n, i: n.z > 0.35 and 1.15 < c.y < 3.25 and abs(c.x) < 0.46 and c.z > 0.12, 0.03, depth=0.04, slot=W)
+    # a shoulder stripe of domain either side, and a dorsal stripe aft of the glass
+    f.paint(body, D, lambda c, n, i: i == H and abs(n.x) > 0.5 and -1.2 < c.y < 0.9 and c.z > 0.05 and abs(c.x) > 0.5)
+    f.paint(body, D, lambda c, n, i: i == H and n.z > 0.85 and -2.6 < c.y < 1.2 and abs(c.x) < 0.12)
+    for (y0, y1) in ((-2.7, -1.9), (-1.6, -0.5), (-0.2, 0.7), (3.1, 3.7)):
         f.inset_faces(body, lambda c, n, i, y0=y0, y1=y1: i == H and abs(n.x) > 0.6 and y0 < c.y < y1 and -0.2 < c.z < 0.3, 0.025, depth=0.015)
     finish(f, body, bevel_width=0.015)
-    # the tail boom reaches back under the tubes, and a cross spar ties the six tubes to it
-    boom = f.fuselage("body_boom", 2.30, nose=(0, 3.60, 0.02), axis=(0, 1, 0), segments=14, stations=[
+    # the tail boom reaches aft under the engine tubes, and a cross spar ties the six tubes to it
+    boom = f.fuselage("body_boom", 2.30, nose=(0, -2.60, 0.02), axis=(0, -1, 0), segments=14, stations=[
         (0.00, 0.34, 0.20, 0.18, 2.8, 2.6, 0.00),
         (0.45, 0.30, 0.17, 0.15, 2.8, 2.6, 0.02),
         (1.00, 0.18, 0.10, 0.09, 2.6, 2.4, 0.04),
@@ -85,12 +95,12 @@ def build(ctx):
     f.paint(boom, H)
     f.paint(boom, D, lambda c, n, i: n.z > 0.85 and abs(c.x) < 0.08)
     finish(f, boom, bevel_width=0.01)
-    spar = f.plate("body_spar", f.rounded_rect(4.30, 0.42, r=0.12), thickness=0.22, normal=(0, 1, 0), origin=(0, 5.25, 0.07), right=(1, 0, 0))
+    spar = f.plate("body_spar", f.rounded_rect(4.30, 0.42, r=0.12), thickness=0.22, normal=(0, 1, 0), origin=(0, -4.25, 0.07), right=(1, 0, 0))
     f.paint(spar, H)
     f.paint(spar, D, lambda c, n, i: abs(n.y) > 0.8)
     finish(f, spar, bevel_width=0.012)
-    # beak ridge
-    beak = f.plate("body_beak", f.blade(1.1, 0.26, tip=0.1), thickness=0.08, normal=(1, 0, 0), origin=(0, -0.75, 0.30), right=(0, -1, 0.15))
+    # beak ridge on the nose
+    beak = f.plate("body_beak", f.blade(1.1, 0.26, tip=0.1), thickness=0.08, normal=(1, 0, 0), origin=(0, 3.25, 0.30), right=(0, 1, 0.15))
     f.paint(beak, D)
     finish(f, beak, bevel_width=0.01)
     a_body = f.join([body, boom, spar, beak], "a_Body", SLOTS)
@@ -120,34 +130,42 @@ def build(ctx):
         # eight blades
         for (k, ang, ln, wd) in FAN:
             outline = f.feather(ln, wd, tip_round=0.45, root_width=wd * 0.38, segments=12, curve=0.03)
-            bl = f.plate("b_SpinWing.%s.%03d" % (tag, k), outline, thickness=0.05, normal=(0, 0, 1), origin=(0, 0, 0), right=(1, 0, 0))
+            # the blade skins to the LEAF bone under spoke .00k (b_WingPiece8Last under .001 ... b_WingPiece1First
+            # under .008): that is where the artist's 100-161 vertices per blade are, the clips bind those paths,
+            # and Unity's optimizeBones strips a bone that skins nothing (review finding, 2026-10-17)
+            bl = f.plate("b_WingPiece%s.%s" % (WINGPIECE[k], tag), outline, thickness=0.05, normal=(0, 0, 1), origin=(0, 0, 0), right=(1, 0, 0))
             for cx in (ln * 0.18, ln * 0.26, ln * 0.55, ln * 0.78):
                 f.cut_plane(bl, (cx, 0, 0), (1, 0, 0))
             f.paint(bl, H)
             f.paint(bl, D, lambda c, n, i, ln=ln: n.z > 0.4 and c.x > ln * 0.55)     # domain tips on top
             f.paint(bl, D, lambda c, n, i, ln=ln: n.z > 0.4 and ln * 0.18 < c.x < ln * 0.26)  # a root band
             finish(f, bl, bevel_width=0.008)
-            # a slight droop outward and the fan angle; the blade root starts 0.3 inside the hub
-            m = rot_z(ang * sx) @ rot_y(sx * 3.0) @ translate(0.05, 0, 0)
+            # a slight droop outward and the fan angle, built for the LEFT side; the right side is the
+            # mirror image across the hull's centre plane (x -> -x, winding flipped). The first version
+            # negated the fan ANGLE instead, which reflects across the X axis and grew every right-hand
+            # blade toward +X through the fuselage into the left fan (review finding, 2026-10-17).
+            m = rot_z(ang) @ rot_y(3.0) @ translate(0.05, 0, 0)
             f.transform_mesh(bl, m)
             if sx < 0:
-                f.transform_mesh(bl, scale_axis(-1, (1, 0, 0)) @ scale_axis(-1, (1, 0, 0)))  # no-op; mirrored by the angle sign
+                f.transform_mesh(bl, scale_axis(-1, (1, 0, 0)))
+                flip(bl)
             # stack them slightly so they overlap in z like feathers
             f.transform_mesh(bl, translate(sx * FAN_PIVOT[0], FAN_PIVOT[1], FAN_PIVOT[2] + 0.012 * (k - 4)))
             parts.append(bl)
-        # guns: the long outboard barrel and the short inboard one, muzzles forward (-Y)
+        # guns: the long outboard barrel and the short inboard one; the bone head sits at the muzzle end
+        # (+Y, forward as flown) and the barrel runs aft, exactly as the artist's guns do
         g1 = f.lathe("b_ShipGun1." + tag,
                      [(0.0, 0.0), (0.14, 0.0), (0.17, 0.06), (0.17, 0.40), (0.24, 0.46), (0.26, 0.90), (0.22, 1.10), (0.22, 2.60), (0.30, 2.70), (0.30, 3.30), (0.26, 3.44), (0.0, 3.44)],
                      segments=18, axis=(0, -1, 0), origin=(sx * 2.85, 1.19, 0.40))
         f.paint(g1, H)
         f.paint(g1, D, lambda c, n, i: abs(n.y) < 0.5 and -0.6 < c.y < 0.2)
-        f.inset_faces(g1, lambda c, n, i: n.y < -0.8, 0.03, depth=0.08, slot=J)
+        f.inset_faces(g1, lambda c, n, i: n.y > 0.8, 0.03, depth=0.08, slot=J)
         finish(f, g1, bevel_width=0.008)
         g2 = f.lathe("b_ShipGun2." + tag,
                      [(0.0, 0.0), (0.12, 0.0), (0.15, 0.05), (0.15, 0.9), (0.19, 0.98), (0.19, 2.30), (0.16, 2.40), (0.0, 2.40)],
                      segments=16, axis=(0, -1, 0), origin=(sx * 2.37, 1.95, 0.41))
         f.paint(g2, H)
-        f.inset_faces(g2, lambda c, n, i: n.y < -0.8, 0.025, depth=0.06, slot=J)
+        f.inset_faces(g2, lambda c, n, i: n.y > 0.8, 0.025, depth=0.06, slot=J)
         finish(f, g2, bevel_width=0.008)
         parts += [g1, g2]
         # three slide chips: vertical plates under the shoulder's leading edge
@@ -180,17 +198,18 @@ def build(ctx):
             finish(f, sp, bevel_width=0.01)
             parts.append(sp)
 
-        # ------------------------------------------------------------------ TAIL TUBES (the jet hosts)
-        tails = [("b_Tail1." + tag, sx * 0.61, 4.58, 3.00, 0.36, 0.88), ("b_Tail2." + tag, sx * 1.18, 4.92, 2.32, 0.26, 0.66), ("b_Tail3." + tag, sx * 1.77, 5.30, 1.46, 0.20, 0.46)]
+        # ------------------------------------------------------------------ ENGINE TUBES (the jet hosts, b_Tail*)
+        # at -Y, the stern as flown; the b_Tail bones are moved here after the armature import (below)
+        tails = [("b_Tail1." + tag, sx * 0.61, -4.58, 3.00, 0.36, 0.88), ("b_Tail2." + tag, sx * 1.18, -4.92, 2.32, 0.26, 0.66), ("b_Tail3." + tag, sx * 1.77, -5.30, 1.46, 0.20, 0.46)]
         for name, cx, y0, ln, r, hz in tails:
             tube = f.lathe(name, [(0.0, 0.0), (r * 0.6, 0.0), (r, 0.10), (r, ln * 0.55), (r * 1.15, ln * 0.60), (r * 1.15, ln * 0.70), (r, ln * 0.74), (r, ln - 0.1), (r * 0.9, ln), (0.0, ln)],
-                           segments=16, axis=(0, 1, 0), origin=(cx, y0, 0.07))
+                           segments=16, axis=(0, -1, 0), origin=(cx, y0, 0.07))
             f.paint(tube, H)
-            f.paint(tube, D, lambda c, n, i, y0=y0, ln=ln: abs(n.y) < 0.5 and y0 + ln * 0.60 < c.y < y0 + ln * 0.70)
-            f.inset_faces(tube, lambda c, n, i: n.y > 0.8, 0.03, depth=0.06, slot=J)
-            # a vertical fin on each tube so the tail reads as a tail
+            f.paint(tube, D, lambda c, n, i, y0=y0, ln=ln: abs(n.y) < 0.5 and y0 - ln * 0.70 < c.y < y0 - ln * 0.60)
+            f.inset_faces(tube, lambda c, n, i: n.y < -0.8, 0.03, depth=0.06, slot=J)
+            # a vertical fin on each tube so the stern reads as a tail
             fin = f.plate(name + "_fin", f.blade(ln * 0.7, hz, tip=0.2), thickness=0.04, normal=(1, 0, 0),
-                          origin=(cx, y0 + ln * 0.15, 0.07), right=(0, 1, 0))
+                          origin=(cx, y0 - ln * 0.15, 0.07), right=(0, -1, 0))
             f.paint(fin, H)
             f.paint(fin, D, lambda c, n, i: c.z > 0.072 + hz * 0.3)
             finish(f, tube, bevel_width=0.008)
@@ -206,8 +225,13 @@ def build(ctx):
     ctx.log("sparrow joined: %d verts, %d tris" % (len(mesh.data.vertices), f.tri_count(mesh)))
 
     # ------------------------------------------------------------------ RIG: the shipped armature
-    arm = rig.import_shipped_armature(OUTPUT)
+    arm = rig.import_shipped_armature(ctx.artist(OUTPUT))
     assert arm.name == ARMATURE, arm.name
+    # the six jet-host bones go to the engines at the stern: same orientation (the prefab's jets keep
+    # their authored local rotation), position mirrored through the hull's centre plane y = 0
+    moved = rig.move_bones(arm, {n: (lambda p: (p.x, -p.y, p.z)) for n in
+                                 ["b_Tail%d.%s" % (k, t) for k in (1, 2, 3) for t in ("L", "R")]})
+    ctx.log("moved to the stern: %s" % ", ".join(moved))
     bone_names = [b.name for b in arm.data.bones]
     g2b = {}
     for tag, _sx in SIDES:
@@ -218,7 +242,7 @@ def build(ctx):
 
     # ------------------------------------------------------------------ MORPHS
     msk = morphs.MaskSet(mesh)
-    blades = msk.mask(*[b for b in bone_names if "SpinWing" in b and b[-1].isdigit()])
+    blades = msk.mask(*[b for b in bone_names if "WingPiece" in b])
     guns = msk.mask(*[b for b in bone_names if "ShipGun" in b])
     missiles = msk.mask(*[b for b in bone_names if "Missile" in b])
     shells = msk.mask(*[b for b in bone_names if "Shell" in b])
@@ -228,7 +252,7 @@ def build(ctx):
     lo, hi = f.bounds(mesh)
     shapes = {
         "Charge": [  # the weapon: guns lengthen and thicken, the missiles swell, the shells lift
-            morphs.stretch_along((0, -1, 0), (0, 1.2, 0), 1.30, guns, ramp=(0.0, 0.5)),
+            morphs.stretch_along((0, 1, 0), (0, -2.3, 0), 1.30, guns, ramp=(0.0, 0.5)),
             morphs.scale_about(1.25, (0, 0, 0.4), guns, axes=(1, 0, 1)),
             morphs.inflate(0.07, missiles), morphs.inflate(0.05, shells),
         ],
@@ -239,20 +263,31 @@ def build(ctx):
         "Space": [  # reach: the fans and the tails extend
             morphs.scale_about(1.16, (FAN_PIVOT[0], FAN_PIVOT[1], 0), morphs.falloff_mask(mesh, blades, (0, 0, 0), (1, 0, 0), 0.0, 0.1), axes=(1, 1, 0)),
             morphs.scale_about(1.16, (-FAN_PIVOT[0], FAN_PIVOT[1], 0), morphs.falloff_mask(mesh, blades, (0, 0, 0), (-1, 0, 0), 0.0, 0.1), axes=(1, 1, 0)),
-            morphs.stretch_along((0, 1, 0), (0, 4.6, 0), 1.20, tails, ramp=(0.0, 0.5)),
+            morphs.stretch_along((0, -1, 0), (0, -4.6, 0), 1.20, tails, ramp=(0.0, 0.5)),
         ],
         "Time": [  # speed: the fans sweep back, the beak and the tails stretch
-            morphs.sweep((1, 0, 0), (0, 0, 0), (0, 0.22, 0), morphs.falloff_mask(mesh, blades, (0, 0, 0), (1, 0, 0), 0.0, 0.1)),
-            morphs.sweep((-1, 0, 0), (0, 0, 0), (0, 0.22, 0), morphs.falloff_mask(mesh, blades, (0, 0, 0), (-1, 0, 0), 0.0, 0.1)),
-            morphs.stretch_along((0, -1, 0), (0, -0.4, 0), 1.30, bodym, ramp=(0.0, 0.6)),
-            morphs.stretch_along((0, 1, 0), (0, 4.6, 0), 1.12, tails, ramp=(0.0, 0.5)),
+            morphs.sweep((1, 0, 0), (0, 0, 0), (0, -0.22, 0), morphs.falloff_mask(mesh, blades, (0, 0, 0), (1, 0, 0), 0.0, 0.1)),
+            morphs.sweep((-1, 0, 0), (0, 0, 0), (0, -0.22, 0), morphs.falloff_mask(mesh, blades, (0, 0, 0), (-1, 0, 0), 0.0, 0.1)),
+            morphs.stretch_along((0, 1, 0), (0, 0.4, 0), 1.30, bodym, ramp=(0.0, 0.6)),
+            morphs.stretch_along((0, -1, 0), (0, -4.6, 0), 1.12, tails, ramp=(0.0, 0.5)),
         ],
     }
     for name, defs in shapes.items():
         kb, mx, frac, moved = morphs.add_shape(mesh, name, defs)
         ctx.log("shape %s: travel %.3f (%.1f%% of diag), %d verts" % (name, mx, 100 * frac, moved))
 
-    # ------------------------------------------------------------------ POSES (world axes; nose -Y)
+    # ------------------------------------------------------------------ POSES (world axes; nose +Y)
+    # The builder below is written in the fleet's nose -Y vocabulary (MODELLING.md 6) and mirrored through
+    # y = 0 at the end: X and Z rotations and Y displacements flip sign, Y rotations do not.
+    def mirror_y(d):
+        out = {}
+        for b, v in d.items():
+            if isinstance(v, dict):
+                r, l = v.get("rot", (0, 0, 0)), v.get("loc", (0, 0, 0))
+                out[b] = {"rot": (-r[0], r[1], -r[2]), "loc": (l[0], -l[1], l[2])}
+            else:
+                out[b] = (-v[0], v[1], -v[2])
+        return out
     def fans(l_rot, r_rot, hub=True):
         d = {}
         for tag, rot in (("L", l_rot), ("R", r_rot)):
@@ -269,6 +304,9 @@ def build(ctx):
         return {"b_ShipGun%d.%s" % (k, t): rot for k in (1, 2) for t, _ in SIDES}
 
     def pose(p):
+        return mirror_y(_pose_nose_minus_y(p))
+
+    def _pose_nose_minus_y(p):
         d = {}
         speed = "Speed" in p
         if speed:
@@ -304,6 +342,8 @@ def build(ctx):
         "armature": arm, "mesh": mesh,
         "spec": {
             "preset": "zup", "armature": ARMATURE, "mesh_node": MESH_NODE,
+            "nose": +1,  # the hull flies +Y now (nose-first); the sheet's chase camera sits behind at -Y
+            "sheet_poses": ("PitchUp_SparrowAnim", "YawRight_SparrowAnim", "Speed+TurnRight_SparrowAnim", "SpeedUp_SparrowAnim"),
             "bones": bone_names,
             "takes": [ARMATURE + "|" + p + "_SparrowAnim" for p in TAKES] + [ARMATURE + "|Idle_SparrowAnim.006"],
             "pose_takes": [ARMATURE + "|" + p + "_SparrowAnim" for p in TAKES],

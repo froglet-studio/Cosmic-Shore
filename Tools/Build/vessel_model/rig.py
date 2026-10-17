@@ -109,7 +109,85 @@ def skin_rigid(mesh_obj, armature_obj, group_to_bone=None, default_bone=None, pa
     mod = mesh_obj.modifiers.get("Armature") or mesh_obj.modifiers.new("Armature", "ARMATURE")
     mod.object = armature_obj
     mod.use_vertex_groups = True
+    baked = bake_parked_pose(mesh_obj, armature_obj)
+    if baked:
+        print("  [rig] baked the artist's parked pose into the rest on %d bone(s): %s%s" % (
+            len(baked), ", ".join(baked[:5]), " ..." if len(baked) > 5 else ""))
     return mesh_obj
+
+
+def parked_pose_bones(arm):
+    """Bones whose imported pose (matrix_basis) is not identity: the artist file's node transforms differ from its bind pose there."""
+    out = []
+    for pb in arm.pose.bones:
+        mb = pb.matrix_basis
+        if math.degrees(mb.to_quaternion().angle) > 0.01 or mb.to_translation().length > 1e-5 or any(abs(x - 1.0) > 1e-4 for x in mb.to_scale()):
+            out.append(pb.name)
+    return out
+
+
+def bake_parked_pose(mesh_obj, arm, deform_mesh=False):
+    """
+    Make the armature's REST equal the shipped file's node transforms, and move the mesh with it.
+
+    Blender's importer derives a bone's rest from the skin's bind matrix and parks the difference
+    to the file's Lcl node transform as a POSE (`pose_bone.matrix_basis`). The artist Squirrel
+    parks 10.78 degrees on 27 of 42 bones, the Urchin rig a 1.75 scale and 20 degrees on 16 of
+    38, the Rhino rig 70 degrees and 3.3 m on 9 of 12. Unity builds the bone Transforms (where
+    the prefab's jets, colliders and FX hang with bone-space offsets) from the Lcl transforms,
+    and the game shows the bind mesh DEFORMED by that parked pose. Exporting with the pose
+    cleared (export_fbx must, or it leaks into every take) therefore moved every one of those
+    bones in Unity by the parked amount (assimp node-chain compare, 2026-10-17 review). So:
+    deform the freshly skinned mesh by the parked pose (what the player saw), then apply the
+    pose as the new rest; the written Lcl equals the shipped Lcl, the bind equals the Lcl, and
+    the hull sits where the artist's hull sat in the game. A rest SCALE cannot exist on a
+    Blender bone, so the Urchin rig's 1.75 node scale is baked into its geometry and its bone
+    lengths and written as 1.0 (recorded in the dossier; the rig swap re-fits its jets).
+    `deform_mesh`: also move the mesh by the parked pose. OFF by default, because a spec is
+    modelled against the artist's hull AS DRAWN (the contact sheets render the posed file and
+    `part_map.py` prints posed bounds), so the geometry already sits where the posed bones put
+    it; deforming it again would apply the pose twice (the first baked Squirrel raised its fans
+    45 degrees). Turn it on only for a mesh placed from BIND-pose measurements.
+    Returns the list of bones that were baked (empty = nothing to do).
+    """
+    parked = parked_pose_bones(arm)
+    if not parked:
+        return []
+    me = mesh_obj.data
+    if deform_mesh and me.shape_keys:
+        raise RuntimeError("bake_parked_pose must run before shape keys are added")
+    A = arm.matrix_world
+    A_inv = A.inverted()
+    M = mesh_obj.matrix_world
+    M_inv = M.inverted()
+    group_names = {g.index: g.name for g in mesh_obj.vertex_groups}
+    per_bone = {}
+    for pb in arm.pose.bones:
+        b = arm.data.bones[pb.name]
+        per_bone[pb.name] = A @ pb.matrix @ b.matrix_local.inverted() @ A_inv
+    if deform_mesh:
+        for v in me.vertices:
+            p = M @ v.co
+            acc = Vector((0.0, 0.0, 0.0))
+            total = 0.0
+            for g in v.groups:
+                name = group_names.get(g.group)
+                if name in per_bone and g.weight > 0:
+                    acc += (per_bone[name] @ p) * g.weight
+                    total += g.weight
+            if total > 0:
+                v.co = M_inv @ (acc / total)
+        me.update()
+    # the pose becomes the rest
+    prev_active = bpy.context.view_layer.objects.active
+    bpy.context.view_layer.objects.active = arm
+    arm.select_set(True)
+    bpy.ops.object.mode_set(mode="POSE")
+    bpy.ops.pose.armature_apply(selected=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    arm.select_set(False)
+    bpy.context.view_layer.objects.active = prev_active
+    return parked
 
 
 def _merge_group(obj, src, dst):
@@ -183,6 +261,7 @@ def import_shipped_armature(fbx_path, keep_actions=False):
     Returns the armature object, in the Blender frame the importer put it in (nose -Y), which
     is the frame every spec models in.
     """
+    import forms
     before = set(bpy.data.objects)
     before_actions = set(bpy.data.actions)
     bpy.ops.import_scene.fbx(filepath=fbx_path, ignore_leaf_bones=False, automatic_bone_orientation=False,
@@ -194,6 +273,14 @@ def import_shipped_armature(fbx_path, keep_actions=False):
             arm = o
     if arm is None:
         raise RuntimeError("no armature in %s" % fbx_path)
+    # the shipped materials' colours, by name: Unity generates the file's materials from the FBX
+    # (materialImportMode 2) and remaps only the slots the .meta names, so the un-remapped slots
+    # (the Engine on three vessels) must carry the shipped colour in the FILE, not just on the sheet
+    for o in new_objs:
+        if o.type == "MESH":
+            for m in o.data.materials:
+                if m is not None:
+                    forms.SLOT_COLOURS[m.name] = tuple(m.diffuse_color[:3])
     for o in new_objs:
         if o is not arm:
             bpy.data.objects.remove(o, do_unlink=True)
@@ -211,9 +298,58 @@ def import_shipped_armature(fbx_path, keep_actions=False):
     if arm.animation_data:
         arm.animation_data.action = None
     for pb in arm.pose.bones:
+        # the importer parks the node-vs-bind difference in matrix_basis through rotation_quaternion;
+        # switching the mode alone would read rotation_euler (0,0,0) and silently drop the parked pose
+        mb = pb.matrix_basis.copy()
         pb.rotation_mode = "XYZ"
+        pb.matrix_basis = mb
+    # a CONNECTED bone (head pinned to its parent's tail) ignores pose location, so a pose that
+    # slides a part (the Rhino's pods on speedup) silently writes no translation; FBX has no notion
+    # of connection and the heads/tails stay where they are, so every bone is disconnected
+    prev_active = bpy.context.view_layer.objects.active
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    for eb in arm.data.edit_bones:
+        eb.use_connect = False
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.context.view_layer.objects.active = prev_active
     arm.select_set(False)
     return arm
+
+
+MOVED_BONES = []  # names a spec moved on purpose (rest_compare --allow-moved reads the same list from the spec)
+
+
+def move_bones(arm, mapping):
+    """
+    Move the named bones' rest positions in WORLD space: `mapping` is {bone: fn(world_head) ->
+    new world head}; the tail moves by the same vector, so the bone keeps its orientation and
+    roll (a prefab mount under it keeps its authored local rotation). A deliberate migration
+    step (the Sparrow's jet-host bones to the stern); rest_compare must be told with
+    --allow-moved. Returns the names moved.
+    """
+    from mathutils import Vector as _V
+    prev_active = bpy.context.view_layer.objects.active
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    mw, mw_inv = arm.matrix_world, arm.matrix_world.inverted()
+    moved = []
+    for eb in arm.data.edit_bones:
+        if eb.name not in mapping:
+            continue
+        head_w = mw @ eb.head
+        tail_w = mw @ eb.tail
+        new_head_w = _V(mapping[eb.name](head_w))
+        delta = new_head_w - head_w
+        roll = eb.roll
+        eb.head = mw_inv @ new_head_w
+        eb.tail = mw_inv @ (tail_w + delta)
+        eb.roll = roll
+        moved.append(eb.name)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.context.view_layer.objects.active = prev_active
+    MOVED_BONES.extend(moved)
+    return moved
 
 
 def bone_world_head(arm, name):

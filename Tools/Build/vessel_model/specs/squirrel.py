@@ -304,7 +304,7 @@ def build(ctx):
     # id-mounted jets (bone-space offsets on BackEngineFrame/Inner and FrontEngineTip) keep
     # landing in the pod mouths and the editor tools written against this skeleton still apply.
     # rest_compare.py proves the written file's bones rest where the shipped ones do.
-    arm = rig.import_shipped_armature(OUTPUT)
+    arm = rig.import_shipped_armature(ctx.artist(OUTPUT))
     assert arm.name == ARMATURE, arm.name
     bone_names = [b.name for b in arm.data.bones]
     rig.skin_rigid(mesh, arm, group_to_bone={"arm_L": "bbone_WholeWing.L", "arm_R": "bbone_WholeWing.R",
@@ -350,76 +350,79 @@ def build(ctx):
         kb, mx, frac, moved = morphs.add_shape(mesh, name, defs)
         ctx.log("shape %s: travel %.3f (%.1f%% of diag), %d verts" % (name, mx, 100 * frac, moved))
 
-    # ------------------------------------------------------------------ POSES (deg about bone-local X=pitch, Y=roll, Z=yaw)
-    def tail_curl(sign, amount):
+    # ------------------------------------------------------------------ POSES (deg about WORLD X=pitch, Y=roll, Z=yaw; nose -Y)
+    # The tail bones are SIBLINGS under bbone_WholeTail (not a chain), so the gross swing lives on
+    # WholeTail and the per-chevron curl rides on top. The pods are siblings of the wing: `follow`
+    # makes them ride the wing's bank so the forearm struts stay in their sockets. Magnitudes are
+    # big on purpose: the controller's top blend tree HALVES every pose (dossier 3.2); the artist's
+    # takes drop the tail tip 1.1-1.4 units for pitch and whip it 2.2-2.5 sideways for yaw.
+    PODS = ("bbone_FrontEngineBase", "bbone_FrontEngineTip", "bbone_FrontEngineTrim")
+
+    def tail_curl(sign, amount, axis=0):
         out = {}
         for i, (name, *_r) in enumerate(tail_rows):
-            out[name] = (sign * amount * (0.25 + 0.75 * i / 8.0), 0, 0)
+            v = [0, 0, 0]
+            v[axis] = sign * amount * (0.25 + 0.75 * i / 8.0)
+            out[name] = tuple(v)
         return out
 
-    def fan_set(l_rot, r_rot):
+    def wing_bank(l_rot, r_rot, pods=True):
+        """The whole wing (shoulder, feathers) and, riding it, the front pods."""
         out = {}
         for tag, rot in (("L", l_rot), ("R", r_rot)):
             for k in range(1, 7):
                 out["bbone_WingPiece%d.%s" % (k, tag)] = rot
             out["bbone_WholeWing." + tag] = rot
+            if pods:
+                for pb in PODS:
+                    out["%s.%s" % (pb, tag)] = takes.follow(arm, "bbone_WholeWing." + tag, "%s.%s" % (pb, tag), rot)
         return out
 
     def pose(p):
         if p == "idle":
             return {}
-        # Amplitudes are big on purpose: the controller's top blend tree HALVES every pose
-        # (dossier 3.2), and the shipped takes drop the tail tip 1.1-1.4 units for pitch and
-        # whip it 2.2 units sideways for yaw.
-        if p == "pitchup":    # nose up: the tail curls down and the head lifts, the fan noses up
-            d = tail_curl(-1, 26)
-            d.update(fan_set((-16, 0, 0), (-16, 0, 0)))
-            d.update({"bbone_UpperHelmet": (10, 0, 0), "bbone_LowerHelmet": (10, 0, 0), "bbone_Ears": (14, 0, 0),
-                      "bbone_FrontEngineBase.L": (-14, 0, 0), "bbone_FrontEngineBase.R": (-14, 0, 0),
-                      "bbone_FrontEngineTip.L": (-14, 0, 0), "bbone_FrontEngineTip.R": (-14, 0, 0),
-                      "bbone_FrontEngineTrim.L": (-14, 0, 0), "bbone_FrontEngineTrim.R": (-14, 0, 0)})
+        if p == "pitchup":    # nose up: the whole tail drops (-X about its root), chevrons curl further, head lifts, wing noses up
+            d = {"bbone_WholeTail": (-30, 0, 0)}
+            d.update(tail_curl(-1, 14))
+            d.update(wing_bank((-16, 0, 0), (-16, 0, 0)))
+            d.update({"bbone_UpperHelmet": (10, 0, 0), "bbone_LowerHelmet": (10, 0, 0), "bbone_Ears": (14, 0, 0)})
             return d
         if p == "pitchdown":
-            d = tail_curl(1, 26)
-            d.update(fan_set((16, 0, 0), (16, 0, 0)))
-            d.update({"bbone_UpperHelmet": (-10, 0, 0), "bbone_LowerHelmet": (-10, 0, 0), "bbone_Ears": (-14, 0, 0),
-                      "bbone_FrontEngineBase.L": (14, 0, 0), "bbone_FrontEngineBase.R": (14, 0, 0),
-                      "bbone_FrontEngineTip.L": (14, 0, 0), "bbone_FrontEngineTip.R": (14, 0, 0),
-                      "bbone_FrontEngineTrim.L": (14, 0, 0), "bbone_FrontEngineTrim.R": (14, 0, 0)})
+            d = {"bbone_WholeTail": (30, 0, 0)}
+            d.update(tail_curl(1, 14))
+            d.update(wing_bank((16, 0, 0), (16, 0, 0)))
+            d.update({"bbone_UpperHelmet": (-10, 0, 0), "bbone_LowerHelmet": (-10, 0, 0), "bbone_Ears": (-14, 0, 0)})
             return d
-        if p in ("yawleft", "yawright"):  # the tail swings to the outside of the turn, the fans split
-            s = 1 if p == "yawright" else -1
-            d = {}
-            for i, (name, *_r) in enumerate(tail_rows):
-                d[name] = (0, 0, s * 30 * (0.2 + 0.8 * i / 8.0))
-            d.update(fan_set((0, 0, s * 14), (0, 0, s * 14)))
-            d.update({"bbone_UpperHelmet": (0, 0, -s * 9), "bbone_LowerHelmet": (0, 0, -s * 9), "bbone_Ears": (0, 0, -s * 10),
-                      "bbone_WholeTail": (0, 0, s * 8)})
+        if p in ("yawleft", "yawright"):
+            # nose -Y, pilot's left +X: a right turn noses toward -X, so the tail swings to the OUTSIDE,
+            # +X, which is a NEGATIVE rotation about Z for a tail that points +Y (measured on the artist's
+            # yawright: tail tip dx +2.46)
+            s = -1 if p == "yawright" else 1
+            d = {"bbone_WholeTail": (0, 0, s * 40)}
+            d.update(tail_curl(s, 12, axis=2))
+            d.update(wing_bank((0, 0, s * 12), (0, 0, s * 12), pods=False))
+            d.update({"bbone_UpperHelmet": (0, 0, -s * 9), "bbone_LowerHelmet": (0, 0, -s * 9), "bbone_Ears": (0, 0, -s * 10)})
             return d
-        if p in ("rollleft", "rollright"):  # the fans counter-rotate like ailerons, the tail twists
+        if p in ("rollleft", "rollright"):  # a bank about the hull's long axis: wings and pods go round, the tail twists
             s = 1 if p == "rollright" else -1
-            d = fan_set((s * 30, 0, 0), (-s * 30, 0, 0))
-            for i, (name, *_r) in enumerate(tail_rows):
-                d[name] = (0, s * 28 * (i / 8.0), 0)
+            d = wing_bank((0, s * 32, 0), (0, s * 32, 0))
+            d["bbone_WholeTail"] = (0, s * 18, 0)
+            d.update(tail_curl(s, 12, axis=1))
             d.update({"bbone_cheek.L": (0, 0, s * 10), "bbone_cheek.R": (0, 0, s * 10)})
             return d
         if p == "speedup":   # everything streamlines: the fan folds back, the paws reach, the tail straightens
-            d = fan_set((0, 0, 18), (0, 0, -18))
-            d.update({"bbone_FrontEngineBase.L": {"loc": (0, -0.10, 0)}, "bbone_FrontEngineBase.R": {"loc": (0, -0.10, 0)},
-                      "bbone_FrontEngineTip.L": {"loc": (0, -0.16, 0)}, "bbone_FrontEngineTip.R": {"loc": (0, -0.16, 0)},
-                      "bbone_FrontEngineTrim.L": {"loc": (0, -0.14, 0)}, "bbone_FrontEngineTrim.R": {"loc": (0, -0.14, 0)},
-                      "bbone_Ears": (-10, 0, 0)})
-            for i, (name, *_r) in enumerate(tail_rows):
-                d[name] = (4 * (i / 8.0), 0, 0)
+            d = wing_bank((0, 0, 18), (0, 0, -18), pods=False)
+            d.update({"%s.%s" % (pb, t): {"loc": (0, -dy, 0)} for t in ("L", "R") for pb, dy in zip(PODS, (0.10, 0.16, 0.14))})
+            d["bbone_Ears"] = (-10, 0, 0)
+            d["bbone_WholeTail"] = (6, 0, 0)
+            d.update(tail_curl(1, 4))
             return d
         if p == "speeddown":  # the fan spreads as an airbrake, the paws pull in, the tail flares
-            d = fan_set((-6, 0, -14), (-6, 0, 14))
-            d.update({"bbone_FrontEngineBase.L": {"loc": (0, 0.08, 0)}, "bbone_FrontEngineBase.R": {"loc": (0, 0.08, 0)},
-                      "bbone_FrontEngineTip.L": {"loc": (0, 0.12, 0)}, "bbone_FrontEngineTip.R": {"loc": (0, 0.12, 0)},
-                      "bbone_FrontEngineTrim.L": {"loc": (0, 0.10, 0)}, "bbone_FrontEngineTrim.R": {"loc": (0, 0.10, 0)},
-                      "bbone_Ears": (6, 0, 0)})
-            for i, (name, *_r) in enumerate(tail_rows):
-                d[name] = (-6 * (i / 8.0), 0, 0)
+            d = wing_bank((-6, 0, -14), (-6, 0, 14), pods=False)
+            d.update({"%s.%s" % (pb, t): {"loc": (0, dy, 0)} for t in ("L", "R") for pb, dy in zip(PODS, (0.08, 0.12, 0.10))})
+            d["bbone_Ears"] = (6, 0, 0)
+            d["bbone_WholeTail"] = (-8, 0, 0)
+            d.update(tail_curl(-1, 6))
             return d
         return {}
 

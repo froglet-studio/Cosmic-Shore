@@ -625,12 +625,39 @@ def paint(obj, slot, predicate=None):
     return obj
 
 
+SLOT_COLOURS = {}  # material name -> (r, g, b) read from the shipped file by rig.import_shipped_armature
+
+_DEFAULT_SLOT_COLOURS = {  # by canonical slot, for a new rig with no shipped file to read
+    "Domain": (0.10, 0.60, 0.90), "Body": (0.20, 0.20, 0.22), "Window": (0.30, 0.90, 1.00), "Engine": (0.00, 0.80, 0.00),
+}
+
+
+def slot_colour(name):
+    """The colour a slot material carries IN THE FILE: the shipped file's by name, else the canonical default."""
+    if name in SLOT_COLOURS:
+        return SLOT_COLOURS[name]
+    import re
+    canon = re.sub(r"\.\d+$", "", name)
+    alias = {"accent": "Domain", "BASE": "Body", "windsheild": "Window", "N": "Engine"}
+    return _DEFAULT_SLOT_COLOURS.get(alias.get(canon, canon), (0.8, 0.8, 0.8))
+
+
 def ensure_slots(obj, names):
-    """Give the object exactly these material slots, in order, creating materials by name."""
+    """
+    Give the object exactly these material slots, in order, creating materials by name. Each
+    material carries its colour in `diffuse_color`, which the FBX exporter writes as
+    DiffuseColor: Unity generates the model's materials from it and remaps only the slots the
+    .meta names, so an un-remapped slot (the Engine on the Squirrel / Sparrow / Serpent) wears
+    exactly this colour in the game.
+    """
     while len(obj.data.materials) < len(names):
         obj.data.materials.append(None)
     for i, n in enumerate(names):
-        mat = bpy.data.materials.get(n) or bpy.data.materials.new(n)
+        mat = bpy.data.materials.get(n)
+        if mat is None:
+            mat = bpy.data.materials.new(n)
+            r, g, b = slot_colour(n)
+            mat.diffuse_color = (r, g, b, 1.0)
         obj.data.materials[i] = mat
     return obj
 

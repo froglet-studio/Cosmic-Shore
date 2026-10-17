@@ -50,10 +50,14 @@ SLOT_DOMAIN, SLOT_HULL, SLOT_WINDOW, SLOT_JET = 0, 1, 2, 3
 def slot_names_for(vessel):
     """The FBX material names a vessel's live file uses, in slot order."""
     return {
-        # measured from the shipped files (fbx_probe): Squirrel/Serpent/Sparrow use the generic set
+        # measured from the artist files (fbx_probe); the specs' SLOTS tuples are the record
         "Squirrel": ("Domain", "Body", "Window", "Engine"),
-        "Serpent": ("Domain", "Body", "Window", "Engine"),
-        "Sparrow": ("Domain", "Body", "Window", "Engine"),
+        "Serpent": ("Body", "Engine", "Window", "Domain"),
+        "Sparrow": ("Body", "Domain", "Engine", "Window"),
+        "Dolphin": ("accent.001", "BASE.001", "windsheild.001", "N.001"),
+        "Manta": ("accent", "BASE", "windsheild", "N"),
+        "Urchin": ("accent", "BASE", "windsheild", "N"),   # the rebuilt rig; the artist rig had BASE first
+        "Rhino": ("accent.005", "BASE.005", "windsheild.005", "N.005"),
     }.get(vessel, GENERIC)
 
 
