@@ -26,8 +26,8 @@ Material:
     m_Ints: []
     m_Floats:
     - _DissolveNoiseScale: 0.55
-    - _FresnelPower: 3
-    - _InnerGlow: 1
+    - _FresnelPower: 4
+    - _InnerGlow: 1.2
     m_Colors:
     - _BrightColor: {r: 1, g: 1, b: 1, a: 1}
     - _BurstCurl: {r: 0.7, g: 0.8, b: 5, a: 3}

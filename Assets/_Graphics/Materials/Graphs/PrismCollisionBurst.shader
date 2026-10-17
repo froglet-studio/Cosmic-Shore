@@ -49,14 +49,14 @@ Shader "CosmicShore/PrismCollisionBurst"
         _ExplosionDials ("Explosive rotation, explosive spread (per unit amount)", Vector) = (0.0169, 0.05, 0, 0)
 
         [Header(The destruction fragments (written by PrismCollisionBurst from PrismInteractionLodConfig))]
-        _FragmentMotion ("Burst (prism radii), drift (radii per s), lift, aim", Vector) = (0.5, 0.2, 1, 0.5)
+        _FragmentMotion ("Burst (prism radii), drift (radii per s), lift, aim", Vector) = (0.1, 0.06, 2, 0.95)
         _FragmentSize ("Size speed, size spin, spin cap (per size level), smallest level", Vector) = (0.8, 0.25, 1.6, 4)
-        _FragmentFade ("Smallest gone at, largest gone at (share of life), shrink share, speed gain", Vector) = (0.45, 0.92, 0.35, 0.5)
-        _FragmentNoise ("Noise: spin amplitude, frequency (per object unit), travel amplitude; speed reference (u/s)", Vector) = (0.15, 3, 0.25, 10)
+        _FragmentFade ("Smallest gone at, largest gone at (share of life), shrink share, speed gain", Vector) = (0.45, 0.92, 0.35, 1.65)
+        _FragmentNoise ("Noise: spin amplitude, frequency (per object unit), travel amplitude; speed reference (u/s)", Vector) = (0.15, 3, 0.48, 10)
 
         [Header(Look)]
-        _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 3
-        _InnerGlow ("Inside colour, seen as the surface opens (x the inside colour)", Range(0, 3)) = 1.0
+        _FresnelPower ("Skin Fresnel Power", Range(0.5, 8)) = 4
+        _InnerGlow ("Inside colour, seen as the surface opens (x the inside colour)", Range(0, 3)) = 1.2
         _DissolveNoiseScale ("Dissolve Noise Cell (world units)", Range(0.05, 10)) = 0.55
     }
 
@@ -219,7 +219,17 @@ Shader "CosmicShore/PrismCollisionBurst"
             float3 posWS, nrmWS;
             float piece;
             float kind = floor(timing.w + 0.5);
+            // The game's materials compile ONE kind (round 11, PrismCollisionBurst.ResolveRuntimeMaterial): the
+            // destruction's (_BURST_FRAGMENT) or the steal's (_BURST_ROLL), so neither vertex program carries the
+            // other's code or the five lab-only kinds (and their registers); no keyword is the lab's every-kind
+            // program. The stamped kind still drives the clip and the fade, so a variant is exact for its kind.
+#if defined(_BURST_ROLL)
+            PrismBurstRoll(f, p, posWS, nrmWS);
+            piece = PrismBurstHash(f.faceKey * 7.1 + p.seed * 3.3);
+#else
+#if !defined(_BURST_FRAGMENT)
             if (kind == PRISM_BURST_FRAGMENT)
+#endif
             {
                 // A fragment of the cut, in WORLD space: its own burst, the explosion's spin about cross(velocity, N)
                 // at the explosion's rate (amount = the explosion's speed × t), its own end, the smallest first.
@@ -244,10 +254,13 @@ Shader "CosmicShore/PrismCollisionBurst"
                     float4(_FragmentNoise.x, _FragmentNoise.y, timing.z, _FragmentNoise.z), shape, posWS, nrmWS);
                 piece = 0.0;
             }
+#if !defined(_BURST_FRAGMENT)
             else
             {
                 PrismBurstPose(timing.w, f, p, posWS, nrmWS, piece);
             }
+#endif
+#endif
 
             // The flight: the explosion's own, linear and undamped, so the cloud's centre goes
             // exactly where the ordinary debris would have gone. A shed's is zero: the prism stays.
@@ -271,6 +284,7 @@ Shader "CosmicShore/PrismCollisionBurst"
         {
             float progress = input.phase.x;
             // A fragment leaves by shrinking away to its own centre (PrismBurstFragmentPose): no clip of its own.
+#if !defined(_BURST_FRAGMENT)
             if (input.phase.z != PRISM_BURST_FRAGMENT)
             {
                 // Glitter shards and flake scales go out WHOLE (a scale when the wave reaches it); the
@@ -280,6 +294,7 @@ Shader "CosmicShore/PrismCollisionBurst"
                 float value = PrismBurstDissolveValue(input.phase.w, PrismBurstNoise(input.noisePos), grain);
                 clip(PrismBurstClipped(value, progress) ? -1.0 : 1.0);
             }
+#endif
 
             float corridorAlpha, corridorThreshold;
             PrismOcclusionFadeDebris_float(input.positionWS, _PrismOcclusionTarget.xyz,
@@ -300,6 +315,7 @@ Shader "CosmicShore/PrismCollisionBurst"
             #pragma vertex BurstVert
             #pragma fragment BurstFrag
             #pragma multi_compile_instancing
+            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL
             #pragma instancing_options renderinglayer
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
@@ -340,6 +356,7 @@ Shader "CosmicShore/PrismCollisionBurst"
             #pragma vertex BurstVert
             #pragma fragment BurstDepthFrag
             #pragma multi_compile_instancing
+            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 
             half BurstDepthFrag(Varyings input) : SV_Target
@@ -363,6 +380,7 @@ Shader "CosmicShore/PrismCollisionBurst"
             #pragma vertex BurstVert
             #pragma fragment BurstDepthNormalsFrag
             #pragma multi_compile_instancing
+            #pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL
             #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
             #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DOTS.hlsl"
 

@@ -431,3 +431,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** anyone (icon art); Garrett to approve
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
+
+### T-20261017-60e9 · open · test · Prisms
+- **Task:** Editor-verify the prism destruction and steal detail levels (cece/dreamy-pascal-7xxx1m, lab rounds 9-11): a close death bursts into silver triangles that lean along the hit; a FAR death is 24 wedges on the same law (not the old explosion graph); a big trail wipe draws every death; the steal's roll looks as before. Frame Debugger: destructions draw with keyword _BURST_FRAGMENT, steals with _BURST_ROLL, the roll's mesh is Prism_HighPoly_<n>. Run EditMode PrismCollisionBurstTests.
+- **Done when:** Checklist items 9-11 in Docs/UNITY_VERIFICATION_CHECKLIST.md pass (or each failure is filed as a dev task) and PrismCollisionBurstTests are green
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-11); Docs/Studios/COLLISION_BURST_LAB.md round 11
+
+### T-20261017-9cab · open · decision · Prisms
+- **Task:** Two calls the round-11 burst leaves: (1) at a gentle hit the level-0 explosion cloud is smaller than the old explosion's (0.66 R against 1.78 R at 2 s) because the adopted burst 0.1 / drift 0.06 are small until the speed boost - keep, or raise them on the lab's Fragments tab (it moves every level at once); (2) your decision set the grade length to 2.2 s, but that is MaterialPropertyAnimator.DefaultTransitionSeconds, every prism colour change in the game - not adopted; adopt or not.
+- **Done when:** Both recorded in the Collision Burst Lab decision log and the asset / animator updated to match
+- **Who can take it:** Garrett (prisms / product owner)
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Docs/Studios/COLLISION_BURST_LAB.md round 11, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9

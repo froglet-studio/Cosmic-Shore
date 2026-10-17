@@ -4,6 +4,13 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
+    /// <summary>How the explosion's wedges are cut into a destruction's fragments. Explicit values: serialized.</summary>
+    public enum DestructionCut
+    {
+        Sierpinski = 0,
+        SilverGnomon = 1,
+    }
+
     /// <summary>
     /// The DETAIL LEVELS of the prism's two fundamental interactions, game-wide (Docs/PRISM_ANIMATION.md
     /// §4.11): how a prism is DESTROYED and how it is STOLEN, drawn on high-resolution meshes
@@ -30,13 +37,6 @@ namespace CosmicShore.ScriptableObjects
     /// level coarser; packed, two). A level that does not fit the triangle budget steps down until one does.
     /// Lives at <c>Resources/PrismInteractionLodConfig</c>; absent, every interaction draws its ordinary effect.
     /// </summary>
-    /// <summary>How the explosion's wedges are cut into a destruction's fragments. Explicit values: serialized.</summary>
-    public enum DestructionCut
-    {
-        Sierpinski = 0,
-        SilverGnomon = 1,
-    }
-
     [CreateAssetMenu(fileName = "PrismInteractionLodConfig",
         menuName = "ScriptableObjects/Prisms/Prism Interaction LOD Config")]
     public class PrismInteractionLodConfigSO : ScriptableObject
@@ -67,6 +67,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Off: every destruction is the ordinary explosion.")]
         [SerializeField] bool destructionEnabled = true;
 
+        [Tooltip("Round 11 (the designer: unify the explosion with the levels): level 0 — every death the finer " +
+                 "levels do not take, far away, off screen, plain or over their budget — is the FRAGMENT burst on the " +
+                 "cut's depth 0, the explosion's own 24 wedges, so one law and one set of dials move every destruction. " +
+                 "Off: level 0 is the explosion's own graph (ExplodingBlockMaterial), as before.")]
+        [SerializeField] bool explosionAsFragments = true;
+
+        [Tooltip("Level-0 bursts alive at once (24 triangles each, the explosion's own count; kept OUT of the detail " +
+                 "budget above, so a field-wide wipe never crowds the close-up levels). Past it a death falls back to " +
+                 "the explosion's graph — never nothing.")]
+        [SerializeField] int maxLiveExplosions = 4096;
+
         [Tooltip("How the explosion's wedges are cut. SilverGnomon (the designer, 2026-10-15): silver triangles and " +
                  "their gnomons, a range of sizes in the silver ratio. Sierpinski: corners split at their midpoints, " +
                  "middles kept whole (round 4).")]
@@ -75,7 +86,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("One line per detail level, from level 1: the prism's projected diameter, as a fraction of the " +
                  "screen height, at and above which a death is cut that finely. Below the first line, level 0: the " +
                  "ordinary explosion. Ascending; the array's length is the number of levels (at most 5).")]
-        [SerializeField] float[] depthMinScreen = { 0.05f, 0.10f, 0.16f, 0.24f };
+        [SerializeField] float[] depthMinScreen = { 0.05f, 0.315f, 0.52f, 0.6f };
 
         [Tooltip("The silver gnomon cut's recursion depth at each level, from level 1 (24 x 8, 21, 55, 144 fragments " +
                  "at depths 4, 6, 8, 10). The Sierpinski cut's depth IS the level.")]
@@ -84,21 +95,21 @@ namespace CosmicShore.ScriptableObjects
         [Header("Destruction — how each fragment flies (round 9: \"now I just want it to look awesome\")")]
         [Tooltip("How far each fragment bursts out, in prism radii, at the full ease (the ease's time constant is " +
                  "openSeconds).")]
-        [Range(0f, 4f)] [SerializeField] float fragmentBurst = 0.5f;
+        [Range(0f, 4f)] [SerializeField] float fragmentBurst = 0.1f;
 
         [Tooltip("And then how far it drifts on, in prism radii per second, so the cloud keeps opening while it fades.")]
-        [Range(0f, 2f)] [SerializeField] float fragmentDrift = 0.2f;
+        [Range(0f, 2f)] [SerializeField] float fragmentDrift = 0.06f;
 
         [Tooltip("Its direction is its face's own radial (from the face centre to the fragment) plus the face normal " +
                  "x this: 0 skims along the face, higher lifts the burst off it.")]
-        [Range(0f, 3f)] [SerializeField] float fragmentLift = 1f;
+        [Range(0f, 3f)] [SerializeField] float fragmentLift = 2f;
 
         [Tooltip("Plus the hit's direction x this (x the speed boost): the burst leans the way the prism was struck.")]
-        [Range(0f, 2f)] [SerializeField] float fragmentAim = 0.5f;
+        [Range(0f, 2f)] [SerializeField] float fragmentAim = 0.95f;
 
         [Tooltip("Round 10: a harder hit bursts WIDER and leans more along it, as the explosion's own spread grows with " +
                  "its speed. Distance and aim x (1 + this x (flight speed / fragmentSpeedRef - 1)). 0: every hit alike.")]
-        [Range(0f, 2f)] [SerializeField] float fragmentSpeedGain = 0.5f;
+        [Range(0f, 2f)] [SerializeField] float fragmentSpeedGain = 1.65f;
 
         [Tooltip("The flight speed (u/s) of the gentlest hit, where the boost is 1: the explosion's slowest debris " +
                  "(PrismExplosion.prefab minSpeed).")]
@@ -140,7 +151,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("How much each fragment's TRAVEL wanders: its distance x (1 + this x the noise), and its direction " +
                  "by this across and along its face. 0: a face's fragments leave on a perfect fan.")]
         [FormerlySerializedAs("wedgeSlideNoise")]
-        [Range(0f, 0.5f)] [SerializeField] float fragmentTravelNoise = 0.25f;
+        [Range(0f, 0.5f)] [SerializeField] float fragmentTravelNoise = 0.48f;
 
         [Header("Stealing — the grade, or a shed at one of three resolutions")]
         [Tooltip("Off: every steal is the ordinary grade.")]
@@ -150,7 +161,7 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 1f)] [SerializeField] float shedMinScreen = 0.08f;
 
         [Tooltip("At and above this, the shed is drawn at shedFineSubdivision.")]
-        [Range(0f, 1f)] [SerializeField] float shedFineScreen = 0.16f;
+        [Range(0f, 1f)] [SerializeField] float shedFineScreen = 0.24f;
 
         [Tooltip("At and above this, the shed is drawn at shedFinestSubdivision.")]
         [Range(0f, 1f)] [SerializeField] float shedFinestScreen = 0.28f;
@@ -234,6 +245,8 @@ namespace CosmicShore.ScriptableObjects
         public Material BurstMaterial => burstMaterial;
         public int MaxLiveBursts => Mathf.Max(0, maxLiveBursts);
         public int MaxLiveTriangles => Mathf.Max(0, maxLiveTriangles);
+        public bool ExplosionAsFragments => explosionAsFragments;
+        public int MaxLiveExplosions => Mathf.Max(0, maxLiveExplosions);
         public float CrowdedFill => Mathf.Clamp01(crowdedFill);
         public float PackedFill => Mathf.Clamp01(packedFill);
         public bool DestructionEnabled => destructionEnabled;

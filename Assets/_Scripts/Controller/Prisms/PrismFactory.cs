@@ -290,16 +290,16 @@ namespace CosmicShore.Gameplay
             }
 
             // The DETAIL LEVEL of the death (Docs/PRISM_ANIMATION.md §4.11), tried next on the same
-            // terms: close to the viewer and within the budget, a SHATTER — closer still a GLITTER — on
-            // the ultra-high-res prism, leaving on the explosion's own flight in its palette, so squinted
-            // at it IS the explosion. Prism movement's collisions above level 1 ask for the plain
-            // explosion. Any refusal falls through to the ordinary explosion, so a death never loses
-            // its visual.
-            if (configured && !data.PlainDeath &&
+            // terms: close to the viewer and within the budget, the cut of the explosion's wedges at a depth;
+            // everywhere else (and for prism movement's collisions above level 1, which ask for plain)
+            // level 0, the same fragment law on the explosion's own 24 wedges — leaving on the explosion's
+            // own flight in its palette. Any refusal falls through to the explosion's graph, so a death
+            // never loses its visual.
+            if (configured &&
                 TryGetTeamColors(data.ownDomain, data.Kind, out var detailBright, out var detailDark) &&
                 CosmicShore.Utility.PrismInteractionLod.TryDestruction(
                     data.SpawnPosition, data.Rotation, data.Scale,
-                    detailBright, detailDark, data.Velocity, data.DebrisSpeedLimit, data.Kind))
+                    detailBright, detailDark, data.Velocity, data.DebrisSpeedLimit, data.Kind, data.PlainDeath))
             {
                 return null;
             }

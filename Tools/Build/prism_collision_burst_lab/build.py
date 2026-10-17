@@ -227,7 +227,7 @@ def config():
     out = {k: yaml_float(motion, k) for k in ("showcaseMaxMovers", "boxMaxMovers")}
     for k in ("maxLiveBursts", "maxLiveTriangles", "crowdedFill", "packedFill", "shedMinScreen", "shedFineScreen", "shedFinestScreen", "shedSubdivision", "shedFineSubdivision",
               "shedFinestSubdivision", "bloomWeight", "unravelWeight", "flakeWeight", "bloomRings", "bloomSegments",
-              "peelNoise", "rollWeight", "rollRadius", "rollGap", "destructionCut", "fragmentBurst",
+              "peelNoise", "rollWeight", "rollRadius", "rollGap", "destructionCut", "explosionAsFragments", "maxLiveExplosions", "fragmentBurst",
               "fragmentDrift", "fragmentLift", "fragmentAim", "fragmentSpeedGain", "fragmentSpeedRef", "fragmentSizeSpeed", "fragmentSizeSpin", "fragmentSpinCap",
               "fragmentLevelRef", "fragmentEndSmall", "fragmentEndBig", "fragmentShrink", "fragmentSpinNoise",
               "fragmentNoiseFrequency", "fragmentTravelNoise", "shedInflate", "spread",

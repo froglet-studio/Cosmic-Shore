@@ -316,6 +316,14 @@ Properties the cradle harness proves, and the shape to copy:
 **Always carry a NEGATIVE CONTROL**, driven by a `-D` override of the file's own `#ifndef`
 dial, and assert that it FAILS. A gate nobody has watched fail is a gate nobody should trust.
 
+**Run the harness's glslang front end too, not only the C++ execution.** The C++ translation accepts names
+HLSL reserves: a parameter called `centroid` (an HLSL interpolation modifier) compiled and passed every
+executed test, and only glslang's HLSL parse of the shader passes failed on it (Collision Burst round 9,
+`cece/dreamy-pascal-7xxx1m`). Likewise `v -= N * dot(v, N)` fails the C++ shim's operators while legal HLSL
+and GLSL; spell it `v = v - …`. And **make a parametrised case prove it built the case it names**: assert a
+property only that case has (a vertex count), because a name test like `name[1] == 'i'` matched two cuts
+and ran the wrong mesh for two rounds (`.claude/skills/labmaker/LEARNINGS.md` L-STU-76).
+
 ### 7.1 Prove a derivative by CONVERGENCE RATE, not by a tolerance
 
 This is the single most reusable thing in the family.

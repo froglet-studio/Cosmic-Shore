@@ -224,6 +224,60 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheExplosionIsLevelZeroOfTheCut()
+        {
+            // Round 11: every death the finer levels do not take is the FRAGMENT kind on the cut's depth 0 — the
+            // explosion's own 24 wedges (DepthZeroIsTheExplosionsWedges holds their layout to Prism.asset).
+            var cfg = AssetDatabase.LoadAssetAtPath<PrismInteractionLodConfigSO>(LodConfigPath);
+            Assert.IsNotNull(cfg, LodConfigPath);
+            var mesh = PrismInteractionLod.MeshOfLevel(0, cfg);
+            Assert.IsNotNull(mesh, "level 0 has a mesh: the explosion draws as fragments");
+            Assert.AreEqual(24, PrismCollisionBurst.TrianglesOf(mesh), "the explosion's 24 wedges");
+            Assert.AreEqual(24 * 3, mesh.vertexCount, "every wedge its own fragment");
+            Assert.AreEqual(PrismCollisionBurst.VariantFragment, PrismCollisionBurst.VariantOf(PrismCollisionBurst.Fragment));
+        }
+
+        [Test]
+        public void TheRollDrawsTheWeldedGrid()
+        {
+            // Round 11 (performance): the roll's pose reads only per-vertex data and its piece is per face, so it draws
+            // the welded per-face grid — the same surface as the shed mesh with far fewer vertices to transform.
+            var cfg = AssetDatabase.LoadAssetAtPath<PrismInteractionLodConfigSO>(LodConfigPath);
+            Assert.IsNotNull(cfg, LodConfigPath);
+            foreach (var level in new[] { PrismInteractionLod.StealLevel.Shed, PrismInteractionLod.StealLevel.ShedFine,
+                         PrismInteractionLod.StealLevel.ShedFinest })
+            {
+                int n = cfg.ShedSubdivisionOf((int)level);
+                var roll = PrismInteractionLod.MeshOf(level, cfg, PrismCollisionBurst.Roll);
+                var shed = HighPolyPrismMesh.GetShed(n);
+                Assert.AreSame(HighPolyPrismMesh.Get(n), roll, $"level {level}: the welded grid");
+                Assert.AreSame(shed, PrismInteractionLod.MeshOf(level, cfg, PrismCollisionBurst.Bloom), "a tearing shed keeps the unwelded mesh");
+                Assert.AreEqual(PrismCollisionBurst.TrianglesOf(shed), PrismCollisionBurst.TrianglesOf(roll), "the same triangles");
+                Assert.AreEqual(6 * (n + 1) * (n + 1), roll.vertexCount);
+                Assert.Less(roll.vertexCount * 5, shed.vertexCount, "at least 5x fewer vertices to transform");
+                var at = new System.Collections.Generic.HashSet<Vector3>(roll.vertices);
+                foreach (var v in shed.vertices)
+                    Assert.IsTrue(at.Contains(v), $"level {level}: every shed vertex is a grid vertex (the same surface)");
+            }
+            Assert.AreEqual(PrismCollisionBurst.VariantRoll, PrismCollisionBurst.VariantOf(PrismCollisionBurst.Roll));
+        }
+
+        [Test]
+        public void TheGameCompilesOneKindPerProgram()
+        {
+            // Round 11 (performance): the game's two programs each carry one kind; the lab keeps every kind.
+            string shader = File.ReadAllText(ShaderPath);
+            Assert.AreEqual(3, Regex.Matches(shader, @"#pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL").Count,
+                "every pass compiles the destruction-only and steal-only programs");
+            Assert.IsNull(PrismCollisionBurst.VariantKeywords[PrismCollisionBurst.VariantAll]);
+            Assert.AreEqual("_BURST_FRAGMENT", PrismCollisionBurst.VariantKeywords[PrismCollisionBurst.VariantFragment]);
+            Assert.AreEqual("_BURST_ROLL", PrismCollisionBurst.VariantKeywords[PrismCollisionBurst.VariantRoll]);
+            foreach (int k in new[] { PrismCollisionBurst.Shatter, PrismCollisionBurst.Bloom, PrismCollisionBurst.Unravel,
+                         PrismCollisionBurst.Glitter, PrismCollisionBurst.Flake })
+                Assert.AreEqual(PrismCollisionBurst.VariantAll, PrismCollisionBurst.VariantOf(k), $"kind {k} needs the every-kind program");
+        }
+
+        [Test]
         public void TheShaderDefaultsAreTheShippedFragmentShape()
         {
             // The shader's defaults stand in until the runtime writes the config's values over them: the two agree.
@@ -733,7 +787,7 @@ namespace CosmicShore.Tests
             Assert.Greater(cfg.FragmentSpinNoise, 0f, "neighbours out of perfect step");
             Assert.LessOrEqual(cfg.FragmentSpinNoise, 0.25f, "subtle: the order holds");
             Assert.Greater(cfg.FragmentTravelNoise, 0f, "neighbours travel out of perfect step");
-            Assert.LessOrEqual(cfg.FragmentTravelNoise, 0.25f, "subtle: the order holds");
+            Assert.LessOrEqual(cfg.FragmentTravelNoise, 0.5f, "within its slider: the order holds");
             Assert.Less(cfg.FragmentEndSmall, cfg.FragmentEndBig, "the smallest fragments leave first");
             Assert.LessOrEqual(cfg.FragmentEndBig, 0.95f, "every fragment gone before the entity retires");
             Assert.Greater(cfg.FragmentBurst + cfg.FragmentDrift, 0f, "the fragments leave");
@@ -742,6 +796,9 @@ namespace CosmicShore.Tests
             // burst and a harder hit bursts wider.
             Assert.Greater(cfg.FragmentAim, 0f, "the burst leans along the hit");
             Assert.Greater(cfg.FragmentSpeedGain, 0f, "a harder hit bursts wider");
+            // Round 11 (the designer: unify the explosion with the levels): level 0 is the same fragment law.
+            Assert.IsTrue(cfg.ExplosionAsFragments, "the explosion is level 0 of the cut");
+            Assert.GreaterOrEqual(cfg.MaxLiveExplosions, 1024, "a field-wide wipe stays on the fragment law");
             Assert.GreaterOrEqual(cfg.BloomRings, 2, "more cuts: each piece shorter than the quarter, so it curls tighter");
             Assert.Greater(cfg.PeelNoise, 0f, "every peel different");
             // Bloom pieces (and, if weighted again, ribbons and flake scales) fall on whole triangles at every

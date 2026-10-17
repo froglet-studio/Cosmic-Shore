@@ -2614,6 +2614,21 @@ effect) and by the shared budget (`PrismInteractionLod`, config `Resources/Prism
 | **Destruction** (every explosion death; a collision above motion level 1 asks for plain) | the EXPLOSION — depth 0 of the Sierpinski cut | DEPTH 1 (≥ 5%) → DEPTH 2 (≥ 10%) | DEPTH 3 (≥ 16%) → DEPTH 4 (≥ 24%) |
 | **Stealing** (`PrismTeamManager.Steal`) | the GRADE — the 0.8 s smoothstep colour lerp (`PrismColorLerp`) | a SHED (≥ 8%): the ROLL (round 7; bloom, unravel and flake ship at weight 0), on 12 subdivisions | the same shed on 18 (≥ 16%), then 24 (≥ 28%) subdivisions |
 
+**Round 11 (the designer, 2026-10-17) — the explosion IS level 0, and the performance pass:** *"it was reflected in the
+levels not the explosion. lets see what we can do about unifying them and ensure that this is the performance
+optimized version we are pushing for both the explosion and the roll effect for the steal."*
+
+- **Level 0 is the FRAGMENT kind on the cut's depth 0** (the explosion's own 24 wedges; `explosionAsFragments`, on):
+  every death the finer levels do not take — far, off screen, PLAIN, over budget — runs the same law and dials. Its own
+  live queue (`maxLiveExplosions` 4,096), outside the detail budget; any refusal falls back to the explosion's graph
+  (`PrismDebris.TryRequestExplosion`, which on a device without Entities Graphics is the MeshRenderer path).
+- **One program per kind**: `multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL` — the game draws destructions with a
+  fragment-only vertex program and steals with a roll-only one; the lab keeps the every-kind program.
+- **The roll draws the welded per-face grid** (`HighPolyPrismMesh.Get`): bit-identical vertices, (n + 1)² instead of 6n²
+  a face — 5.5 × fewer vertex-stage runs at 24 subdivisions.
+- The designer's *Fragment look* decision adopted (burst 0.1, drift 0.06, lift 2, aim 0.95, speed gain 1.65, travel
+  noise 0.48; depth lines 0.05 / 0.315 / 0.52 / 0.6). Lab round 11: `Docs/Studios/COLLISION_BURST_LAB.md`.
+
 **Round 9 (the designer, 2026-10-16) — retires the squint and supersedes the WEDGE motion below:** *"by using the silver
 gnomen cut we unsure that there are still a nice size range such that from far away a player could assume that the
 small ones are going unseen. thus we do not need to do the squint test anymore. this will allow you to create a more

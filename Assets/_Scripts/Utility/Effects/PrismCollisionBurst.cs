@@ -158,7 +158,21 @@ namespace CosmicShore.Utility
         static readonly int SourceRotationId = Shader.PropertyToID("_ExplosiveRotation");
         static readonly int SourceSlideId = Shader.PropertyToID("_ExplosiveSpead");
 
-        static Material s_runtimeMaterial;
+        /// <summary>
+        /// The shader programs a burst can draw with (round 11, the performance pass): the game's two KIND-ONLY ones —
+        /// the destruction's (<c>_BURST_FRAGMENT</c>) and the steal's (<c>_BURST_ROLL</c>), each carrying only its own
+        /// kind's code and registers — and the every-kind one the lab-only sheds (bloom, unravel, flake, shatter,
+        /// glitter) still need. <see cref="VariantOf"/> picks one from a stamp's kind.
+        /// </summary>
+        public const int VariantAll = 0, VariantFragment = 1, VariantRoll = 2, VariantCount = 3;
+
+        /// <summary>The <c>multi_compile_local</c> keyword of each variant (none for <see cref="VariantAll"/>).</summary>
+        public static readonly string[] VariantKeywords = { null, "_BURST_FRAGMENT", "_BURST_ROLL" };
+
+        /// <summary>The program a burst of <paramref name="kind"/> draws with.</summary>
+        public static int VariantOf(int kind) => kind == Fragment ? VariantFragment : kind == Roll ? VariantRoll : VariantAll;
+
+        static readonly Material[] s_runtimeMaterials = new Material[VariantCount];
         static PrismInteractionLodConfigSO s_runtimeMaterialFor;
         static bool s_runtimeMaterialTuned;
 
@@ -215,21 +229,28 @@ namespace CosmicShore.Utility
             }
         }
 
-        /// <summary>The requests of one frame that draw one mesh: one spawn batch each.</summary>
+        // Which live queue a request retires from: a close-up destruction, a shed, or a level-0 explosion (round 11,
+        // kept out of the detail budget).
+        const byte QueueDestruction = 0, QueueShed = 1, QueueExplosion = 2;
+
+        /// <summary>The requests of one frame that draw one mesh with one program: one spawn batch each.</summary>
         sealed class Bucket
         {
             public Mesh Mesh;
+            public int Variant;
             public readonly List<PrismRenderService.SliceDebrisSpawn> Spawns = new(32);
-            public readonly List<bool> IsShed = new(32);
+            public readonly List<byte> Queues = new(32);
         }
 
-        // At most one bucket per detail mesh (the shatter's, three glitter, three shed resolutions).
+        // At most one bucket per (detail mesh, program): the explosion's 24 wedges, four cut depths, three roll resolutions.
         static readonly List<Bucket> s_buckets = new(8);
         static int s_pendingCount;
         static int s_pendingTriangles;
+        static int s_pendingExplosions;
         static readonly List<Entity> s_scratch = new(64);
         static readonly LiveQueue s_liveDestruction = new();
         static readonly LiveQueue s_liveShed = new();
+        static readonly LiveQueue s_liveExplosion = new();
         static int s_liveEpoch = -1;
 
         static TickHost s_host;
@@ -242,6 +263,10 @@ namespace CosmicShore.Utility
 
         /// <summary>Detail-level triangles alive now — diagnostics and the budget.</summary>
         public static int LiveTriangles => s_liveDestruction.Triangles + s_liveShed.Triangles;
+
+        /// <summary>Level-0 explosions alive now (outside the detail budget; capped by
+        /// <see cref="PrismInteractionLodConfigSO.MaxLiveExplosions"/>).</summary>
+        public static int LiveExplosions => s_liveExplosion.Count;
 
         /// <summary>
         /// How full the budget is, counting this frame's queued requests: the fuller of entities and triangles, 0–1+.
@@ -261,14 +286,16 @@ namespace CosmicShore.Utility
             s_buckets.Clear();
             s_pendingCount = 0;
             s_pendingTriangles = 0;
+            s_pendingExplosions = 0;
             s_scratch.Clear();
             s_liveDestruction.Clear();
             s_liveShed.Clear();
+            s_liveExplosion.Clear();
             s_liveEpoch = -1;
             s_host = null;
             s_quitting = false;
             s_suspendedUntil = 0f;
-            s_runtimeMaterial = null;
+            System.Array.Clear(s_runtimeMaterials, 0, VariantCount);
             s_runtimeMaterialFor = null;
             s_runtimeMaterialTuned = false;
             Application.quitting -= HandleQuitting;
@@ -286,6 +313,16 @@ namespace CosmicShore.Utility
             cfg != null && cfg.IsSane && cfg.BurstMaterial != null &&
             LiveCount + s_pendingCount < cfg.MaxLiveBursts;
 
+        /// <summary>
+        /// Whether one more LEVEL-0 explosion could be accepted right now: the service up, the config sane, and the
+        /// explosions' own cap (<see cref="PrismInteractionLodConfigSO.MaxLiveExplosions"/>) not reached — the detail
+        /// budget is not consulted, so a field-wide wipe never crowds the close-up levels nor is refused by them.
+        /// </summary>
+        public static bool CanAcceptExplosion(PrismInteractionLodConfigSO cfg) =>
+            !s_quitting && PrismRenderService.Enabled && Time.unscaledTime >= s_suspendedUntil &&
+            cfg != null && cfg.IsSane && cfg.BurstMaterial != null &&
+            s_liveExplosion.Count + s_pendingExplosions < cfg.MaxLiveExplosions;
+
         /// <summary>Whether <paramref name="triangles"/> more fit the triangle budget right now.</summary>
         public static bool FitsTriangles(PrismInteractionLodConfigSO cfg, int triangles) =>
             cfg != null && LiveTriangles + s_pendingTriangles + triangles <= cfg.MaxLiveTriangles;
@@ -298,14 +335,18 @@ namespace CosmicShore.Utility
         /// <see cref="Fragment"/>) for the
         /// prism that was at (<paramref name="position"/>, <paramref name="rotation"/>, <paramref name="scale"/>).
         /// <paramref name="impactVelocity"/>, <paramref name="speedLimitOverride"/> and <paramref name="tier"/>
-        /// are exactly what the explosion would have been handed, so the cloud leaves exactly like it. Returns
-        /// false — the caller explodes the prism instead — on any refusal.
+        /// are exactly what the explosion would have been handed, so the cloud leaves exactly like it.
+        /// <paramref name="level0"/>: this is the EXPLOSION itself (the cut's depth 0, round 11), accepted by
+        /// <see cref="CanAcceptExplosion"/> and retired from its own queue, outside the detail budget. Returns
+        /// false — the caller explodes the prism with the explosion's graph instead — on any refusal.
         /// </summary>
         public static bool TryRequestDestruction(Vector3 position, Quaternion rotation, Vector3 scale,
-            Color bright, Color dark, Vector3 impactVelocity, float speedLimitOverride, PrismKind tier, int kind, Mesh mesh)
+            Color bright, Color dark, Vector3 impactVelocity, float speedLimitOverride, PrismKind tier, int kind, Mesh mesh,
+            bool level0 = false)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
-            if (!CanAccept(cfg) || !FitsTriangles(cfg, TrianglesOf(mesh)) || !PrismDebris.TryGetExplosionLayer(out _)) return false;
+            bool accepted = level0 ? CanAcceptExplosion(cfg) : CanAccept(cfg) && FitsTriangles(cfg, TrianglesOf(mesh));
+            if (!accepted || mesh == null || !PrismDebris.TryGetExplosionLayer(out _)) return false;
 
             Vector3 flight = PrismDebris.ResolveExplosionFlight(impactVelocity, speedLimitOverride, tier, out float speed);
             float life = PrismExplosion.DefaultDuration;
@@ -333,7 +374,7 @@ namespace CosmicShore.Utility
                 Axis = float4.zero,
                 Drift = new float4(flight.x, flight.y, flight.z, speed),
                 Bounds = new AABB { Center = centre, Extents = extents },
-            }, isShed: false, mesh);
+            }, level0 ? QueueExplosion : QueueDestruction, mesh, VariantOf(kind));
             return true;
         }
 
@@ -373,7 +414,7 @@ namespace CosmicShore.Utility
                 Axis = new float4(cameraPosition.x, cameraPosition.y, cameraPosition.z, subdivision),
                 Drift = float4.zero,                    // the prism stays where it is
                 Bounds = new AABB { Center = centre, Extents = extents },
-            }, isShed: true, mesh);
+            }, QueueShed, mesh, VariantOf(kind));
             return true;
         }
 
@@ -393,20 +434,27 @@ namespace CosmicShore.Utility
             math.frac(math.dot(new float3(position.x, position.y, position.z),
                 new float3(0.1031f, 0.11369f, 0.13787f)) * 43.7585f);
 
-        static void Queue(in PrismRenderService.SliceDebrisSpawn spawn, bool isShed, Mesh mesh)
+        static void Queue(in PrismRenderService.SliceDebrisSpawn spawn, byte queue, Mesh mesh, int variant)
         {
             Bucket bucket = null;
             for (int i = 0; i < s_buckets.Count; i++)
-                if (ReferenceEquals(s_buckets[i].Mesh, mesh)) { bucket = s_buckets[i]; break; }
+                if (ReferenceEquals(s_buckets[i].Mesh, mesh) && s_buckets[i].Variant == variant) { bucket = s_buckets[i]; break; }
             if (bucket == null)
             {
-                bucket = new Bucket { Mesh = mesh };
+                bucket = new Bucket { Mesh = mesh, Variant = variant };
                 s_buckets.Add(bucket);
             }
             bucket.Spawns.Add(spawn);
-            bucket.IsShed.Add(isShed);
-            s_pendingCount++;
-            s_pendingTriangles += TrianglesOf(mesh);
+            bucket.Queues.Add(queue);
+            if (queue == QueueExplosion)
+            {
+                s_pendingExplosions++;
+            }
+            else
+            {
+                s_pendingCount++;
+                s_pendingTriangles += TrianglesOf(mesh);
+            }
             EnsureHost();
         }
 
@@ -459,39 +507,51 @@ namespace CosmicShore.Utility
             new(Mathf.Max(1e-4f, Mathf.Abs(scale.x)), Mathf.Max(1e-4f, Mathf.Abs(scale.y)),
                 Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
 
-        static Material ResolveRuntimeMaterial(PrismInteractionLodConfigSO cfg)
+        static Material ResolveRuntimeMaterial(PrismInteractionLodConfigSO cfg, int variant)
         {
-            if (s_runtimeMaterial != null && s_runtimeMaterialFor == cfg)
+            if (s_runtimeMaterials[VariantAll] != null && s_runtimeMaterialFor == cfg)
             {
                 // The explosion pool can configure after the first burst: copy its dials the first drain they exist.
-                if (!s_runtimeMaterialTuned) s_runtimeMaterialTuned = ApplyExplosionTuning(s_runtimeMaterial);
-                return s_runtimeMaterial;
+                if (!s_runtimeMaterialTuned)
+                {
+                    bool real = true;
+                    for (int v = 0; v < VariantCount; v++) real &= ApplyExplosionTuning(s_runtimeMaterials[v]);
+                    s_runtimeMaterialTuned = real;
+                }
+                return s_runtimeMaterials[variant];
             }
             DropRuntimeMaterial();
             if (cfg == null || cfg.BurstMaterial == null) return null;
 
-            s_runtimeMaterial = new Material(cfg.BurstMaterial)
+            bool tuned = true;
+            for (int v = 0; v < VariantCount; v++)
             {
-                name = cfg.BurstMaterial.name + " (runtime)",
-                hideFlags = HideFlags.DontSave,
-            };
-            s_runtimeMaterial.SetVector(ShapeId,
-                new Vector4(cfg.Spread, cfg.OpenSeconds, cfg.SpinPerSpeed, cfg.DissolveGrain));
-            s_runtimeMaterial.SetVector(CurlId,
-                new Vector4(cfg.BloomTurns, cfg.UnravelTurns, cfg.RibbonsPerFace, cfg.ShardsPerFaceEdge));
-            s_runtimeMaterial.SetVector(PeelId, new Vector4(cfg.BloomRings, cfg.BloomSegments, cfg.PeelNoise, 0f));
-            s_runtimeMaterial.SetVector(RollId, new Vector4(cfg.RollRadius, cfg.RollGap, 0f, 0f));
-            s_runtimeMaterial.SetVector(FragmentMotionId,
-                new Vector4(cfg.FragmentBurst, cfg.FragmentDrift, cfg.FragmentLift, cfg.FragmentAim));
-            s_runtimeMaterial.SetVector(FragmentSizeId,
-                new Vector4(cfg.FragmentSizeSpeed, cfg.FragmentSizeSpin, cfg.FragmentSpinCap, cfg.FragmentLevelRef));
-            s_runtimeMaterial.SetVector(FragmentFadeId,
-                new Vector4(cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, cfg.FragmentSpeedGain));
-            s_runtimeMaterial.SetVector(FragmentNoiseId,
-                new Vector4(cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, cfg.FragmentSpeedRef));
-            s_runtimeMaterialTuned = ApplyExplosionTuning(s_runtimeMaterial);
+                var m = new Material(cfg.BurstMaterial)
+                {
+                    name = cfg.BurstMaterial.name + (VariantKeywords[v] != null ? " " + VariantKeywords[v] : "") + " (runtime)",
+                    hideFlags = HideFlags.DontSave,
+                };
+                if (VariantKeywords[v] != null) m.EnableKeyword(VariantKeywords[v]);
+                m.SetVector(ShapeId,
+                    new Vector4(cfg.Spread, cfg.OpenSeconds, cfg.SpinPerSpeed, cfg.DissolveGrain));
+                m.SetVector(CurlId,
+                    new Vector4(cfg.BloomTurns, cfg.UnravelTurns, cfg.RibbonsPerFace, cfg.ShardsPerFaceEdge));
+                m.SetVector(PeelId, new Vector4(cfg.BloomRings, cfg.BloomSegments, cfg.PeelNoise, 0f));
+                m.SetVector(RollId, new Vector4(cfg.RollRadius, cfg.RollGap, 0f, 0f));
+                m.SetVector(FragmentMotionId,
+                    new Vector4(cfg.FragmentBurst, cfg.FragmentDrift, cfg.FragmentLift, cfg.FragmentAim));
+                m.SetVector(FragmentSizeId,
+                    new Vector4(cfg.FragmentSizeSpeed, cfg.FragmentSizeSpin, cfg.FragmentSpinCap, cfg.FragmentLevelRef));
+                m.SetVector(FragmentFadeId,
+                    new Vector4(cfg.FragmentEndSmall, cfg.FragmentEndBig, cfg.FragmentShrink, cfg.FragmentSpeedGain));
+                m.SetVector(FragmentNoiseId,
+                    new Vector4(cfg.FragmentSpinNoise, cfg.FragmentNoiseFrequency, cfg.FragmentTravelNoise, cfg.FragmentSpeedRef));
+                tuned &= ApplyExplosionTuning(m);
+                s_runtimeMaterials[v] = m;
+            }
+            s_runtimeMaterialTuned = tuned;
             s_runtimeMaterialFor = cfg;
-            return s_runtimeMaterial;
+            return s_runtimeMaterials[variant];
         }
 
         /// <summary>Copies the explosion material's dials onto the burst material (<see cref="TryGetExplosionTuning"/>);
@@ -512,12 +572,16 @@ namespace CosmicShore.Utility
 
         static void DropRuntimeMaterial()
         {
-            if (s_runtimeMaterial != null)
+            for (int v = 0; v < VariantCount; v++)
             {
-                if (Application.isPlaying) Object.Destroy(s_runtimeMaterial);
-                else Object.DestroyImmediate(s_runtimeMaterial);
+                var m = s_runtimeMaterials[v];
+                if (m != null)
+                {
+                    if (Application.isPlaying) Object.Destroy(m);
+                    else Object.DestroyImmediate(m);
+                }
+                s_runtimeMaterials[v] = null;
             }
-            s_runtimeMaterial = null;
             s_runtimeMaterialFor = null;
             s_runtimeMaterialTuned = false;
         }
@@ -549,12 +613,11 @@ namespace CosmicShore.Utility
 
         static void Drain()
         {
-            if (s_pendingCount == 0) return;
+            if (s_pendingCount == 0 && s_pendingExplosions == 0) return;
 
             using (s_drainMarker.Auto())
             {
                 var cfg = PrismInteractionLodConfigSO.Instance;
-                var material = ResolveRuntimeMaterial(cfg);
                 bool layerOk = PrismDebris.TryGetExplosionLayer(out int layer);
                 int failed = 0;
 
@@ -564,6 +627,7 @@ namespace CosmicShore.Utility
                     if (bucket.Spawns.Count == 0) continue;
 
                     s_scratch.Clear();
+                    var material = ResolveRuntimeMaterial(cfg, bucket.Variant);
                     bool spawned = material != null && layerOk && bucket.Mesh != null
                         && PrismRenderService.SpawnSliceDebrisBatch(bucket.Mesh, material, layer,
                             bucket.Spawns, PrismClock.Now, s_scratch);
@@ -575,13 +639,18 @@ namespace CosmicShore.Utility
                         {
                             s_liveDestruction.Clear();
                             s_liveShed.Clear();
+                            s_liveExplosion.Clear();
                             s_liveEpoch = epoch;
                         }
 
                         float now = PrismClock.Now;
                         int triangles = TrianglesOf(bucket.Mesh);
                         for (int i = 0; i < s_scratch.Count; i++)
-                            (bucket.IsShed[i] ? s_liveShed : s_liveDestruction).Add(s_scratch[i], now + bucket.Spawns[i].Timing.y, triangles);
+                        {
+                            byte q = bucket.Queues[i];
+                            var live = q == QueueShed ? s_liveShed : q == QueueExplosion ? s_liveExplosion : s_liveDestruction;
+                            live.Add(s_scratch[i], now + bucket.Spawns[i].Timing.y, triangles);
+                        }
                     }
                     else
                     {
@@ -589,7 +658,7 @@ namespace CosmicShore.Utility
                     }
 
                     bucket.Spawns.Clear();
-                    bucket.IsShed.Clear();
+                    bucket.Queues.Clear();
                 }
 
                 if (failed > 0)
@@ -604,13 +673,14 @@ namespace CosmicShore.Utility
 
                 s_pendingCount = 0;
                 s_pendingTriangles = 0;
+                s_pendingExplosions = 0;
                 s_scratch.Clear();
             }
         }
 
         static void Sweep()
         {
-            if (LiveCount == 0) return;
+            if (LiveCount == 0 && s_liveExplosion.Count == 0) return;
 
             using (s_sweepMarker.Auto())
             {
@@ -618,6 +688,7 @@ namespace CosmicShore.Utility
                 {
                     s_liveDestruction.Clear();
                     s_liveShed.Clear();
+                    s_liveExplosion.Clear();
                     return;
                 }
 
@@ -625,6 +696,7 @@ namespace CosmicShore.Utility
                 s_scratch.Clear();
                 s_liveShed.TakeExpired(now, s_scratch);
                 s_liveDestruction.TakeExpired(now, s_scratch);
+                s_liveExplosion.TakeExpired(now, s_scratch);
                 if (s_scratch.Count > 0)
                     PrismRenderService.DestroyDebrisBatch(s_scratch, s_liveEpoch);
                 s_scratch.Clear();

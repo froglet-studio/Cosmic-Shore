@@ -284,8 +284,8 @@ def run_cpp(work, cases, kind_shift=0):
     return [vals[i * per:(i + 1) * per] for i in range(len(cases))]
 
 
-SHIPPED_SHAPE = dict(burst=0.5, drift=0.2, lift=1.0, aim=0.5, sizeSpeed=0.8, sizeSpin=0.25, spinCap=1.6, levelRef=4.0,
-                     endSmall=0.45, endBig=0.92, shrink=0.35, speedGain=0.5, speedRef=10.0)
+SHIPPED_SHAPE = dict(burst=0.1, drift=0.06, lift=2.0, aim=0.95, sizeSpeed=0.8, sizeSpin=0.25, spinCap=1.6, levelRef=4.0,
+                     endSmall=0.45, endBig=0.92, shrink=0.35, speedGain=1.65, speedRef=10.0)
 SHAPE_KEYS = ("burst", "drift", "lift", "aim", "sizeSpeed", "sizeSpin", "spinCap", "levelRef", "endSmall", "endBig", "shrink",
               "speedGain", "speedRef")
 

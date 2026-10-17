@@ -5,7 +5,7 @@ effects they stand in for, running the shipped shader code in WebGL2, with a mea
 a shared decision log: **destruction** (the explosion → the silver gnomon cut, every fragment bursting out on its own)
 and **stealing** (the grade → the roll). Round 1 looked at the four level-1 collision bursts alone.
 
-- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 10
+- **Live page:** https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9 (decision log: `decisions`) — round 11
 - **Page (generated, never edit by hand):** `Docs/Studios/PrismCollisionBurstLab.html`
 - **Source:** `Tools/Build/prism_collision_burst_lab/lab.src.html`; `build.py` stamps the shipped
   numbers and shader code into it (`--check` fails when the page is stale).
@@ -35,6 +35,78 @@ many neighbours move in step, when it thins). Rounds 1–8 below measured the sq
 
 The burst mesh is `HighPolyPrismMesh.GetUnwelded(10)` rebuilt on the page in float32 (`Math.fround`), as
 C# builds it.
+
+## Round 11 — 2026-10-17 (`cece/dreamy-pascal-7xxx1m`): the explosion IS level 0; the performance pass
+
+**Your decision applied** (the designer, logged as *Fragment look*, then: *"I like the new decision i just sent in. it
+communicates the explosion a bit better, but it seems like it was reflected in the levels not the explosion. lets see
+what we can do about unifying them and ensure that this is the performance optimized version we are pushing for both
+the explosion and the roll effect for the steal."*).
+
+### Why the decision missed the explosion
+
+Level 0 was the explosion's own Shader Graph (`ExplodingBlockMaterial`); every Fragments-tab dial drives the burst
+shader, so it could only ever move levels 1-4.
+
+### What changed
+
+- **The explosion is level 0 of the cut** (`explosionAsFragments`, on): every death the finer levels do not take — far
+  away, off screen, PLAIN (prism movement above ladder level 1) or over the close-up budget — is the FRAGMENT kind on
+  the cut's depth 0, the explosion's own 24 wedges (`PrismInteractionLod.MeshOfLevel(0)`), so one law and one set of
+  dials move every destruction. It rides the same carrier (one entity, 24 triangles, as the explosion did) on its OWN
+  live queue, capped by `maxLiveExplosions` (4,096) and kept out of the detail budget, so a field-wide wipe neither
+  crowds the close-up levels nor is refused by them. Any refusal — the cap, the render service down, a device without
+  Entities Graphics (where the in-flight WebGL MeshRenderer path takes over) — falls back to the explosion's graph.
+- **One program per kind** (`#pragma multi_compile_local _ _BURST_FRAGMENT _BURST_ROLL`): the game's destructions draw
+  a vertex program with ONLY the fragment law and the steal's roll one with ONLY the roll — none of the five lab-only
+  kinds' code or registers, no per-vertex kind branch. `PrismCollisionBurst` keeps three runtime materials (every-kind
+  for the lab-only sheds, fragment, roll) and batches by (mesh, program). The lab still runs the every-kind program.
+- **The roll draws the welded grid** (`HighPolyPrismMesh.Get(n)` for kind ROLL, `PrismInteractionLod.MeshOf`): its pose
+  reads only per-vertex data and its piece is per face, so it needs no torn triangles. The welded grid transforms
+  (n + 1)² vertices a face instead of 6n²: 3,750 against 20,736 at 24 subdivisions (5.5 ×), the same triangles, every
+  vertex bit-identical (`TheRollDrawsTheWeldedGrid`).
+- **Adopted from the decision**: fragment burst 0.1, drift 0.06, lift 2, aim 0.95, speed gain 1.65, travel noise 0.48;
+  the roll's fine line 0.24; the burst material's Fresnel 4 and inside glow 1.2; depth lines 0.05 / 0.315 / 0.52 and
+  level 4 at **0.6** (the decision put levels 2 and 3 past level 4's 0.24, which the config's sanity check refuses —
+  level 4 moved to the top of the range, so the 3,456-fragment cut is the rarest). **Not adopted**: the bloom /
+  unravel / flake weights (the steal stays the roll alone, as asked), their shapes (bloom rings, curls, ribbons, shards
+  — dead in the game; 7 ribbons would also break the shed meshes' fit), the grade length 2.2 s
+  (`MaterialPropertyAnimator.DefaultTransitionSeconds` is every prism colour change in the game — a decision of its own),
+  and the archived proposals (overshoot, shed lift).
+
+### Look scorecard (shipped settings, impact v (20, 0, 0))
+
+| | Fragments | Evenness | Cloud at 2 s (R) | In step | Lean along v (R) | Half gone | All gone |
+|---|---|---|---|---|---|---|---|
+| *Explosion graph (level 0 before this round)* | 24 | 0.323 | 1.78 | — | 0.00 | — | erodes to 6.38 s |
+| **Level 0 · the explosion** | 24 | 0.556 | 0.66 | 0% | **0.45** | 5.40 s | 7.10 s |
+| Level 1 | 192 | 0.658 | 1.90 | 0% | 1.04 | 4.60 s | 6.63 s |
+| Level 4 | 3,456 | 0.674 | 3.25 | 0.3% | 1.83 | 3.30 s | 5.53 s |
+| *control: a face leaves as one* | | **0.476** — fires | | | | | |
+| *control: velocity reversed / ignored* | | | | | **−1.82 / −0.01** — fire | | |
+| *control: noise off* | | | | **100%** — fires | | | |
+
+The decision leans the cloud hard along the hit, so evenness is about 0.6-0.67 against round 9's 0.8; the harness's
+floor moved from 0.70 to **0.50**, between the shipped burst and the grouped control (0.42-0.48), which is what the
+floor is for. At a 20 u/s hit the level-0 cloud is SMALLER than the old explosion's (0.66 R against 1.78 R at 2 s:
+burst 0.1 and drift 0.06 are small until the speed boost, 4.85 × at the clamp).
+
+### Checked
+
+`verify_prism_collision_burst.py` PASS — F1-F10 at the adopted shape (reach use 0.998, spin 0.949 of its cap, smaller
+gone first in every pair, evenness 0.659 over the 0.50 floor, lean ≥ 2.78 R at 30 u/s, mirrored within 0%), 11 controls
+fire, and glslang compiles 42 programs (3 passes × the every-kind, fragment-only and roll-only programs, plain and
+DOTS-instanced, × 2 stages). `parity.py` PASS (129,600 burst and 10,008 fragment vertices, 0 outliers; 7 controls
+fire). `verify_lab.cjs` PASS (screenshots read: level 0 fans its 24 wedges up along a (−29, 97, −43) hit as levels 1-4
+do). `unity_refcompile` player 0 errors; editor 0 in this branch's files (3 in `AuthenticationServiceFacade.cs`,
+identical on a clean `bleeding-edge` worktree — upstream). **Not run:** the editor — **NOT editor-verified**
+(checklist item 11).
+
+### Decision needed (designer)
+
+- The level-0 cloud's size at a gentle hit (0.66 R against the old explosion's 1.78 R) — the Fragments tab's burst and
+  drift move it for every level at once.
+- The grade length (2.2 s in your decision): every prism colour change in the game, not only the steal.
 
 ## Round 10 — 2026-10-16 (`cece/dreamy-pascal-7xxx1m`): the velocity, shown and measured
 

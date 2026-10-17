@@ -160,7 +160,7 @@
   const GLSL_EROSION = `/*@@GLSL_EROSION@@*/`;
   const GLSL_GRADE = `/*@@GLSL_GRADE@@*/`;
 
-  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 10, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
+  const LAB = { name: 'Collision Burst Lab', branch: 'cece/dreamy-pascal-7xxx1m', round: 11, doc: 'Docs/Studios/COLLISION_BURST_LAB.md' };
   const C = DATA.config, LOOK = DATA.look, X = DATA.explosion;
 
   // ================= SHIPPED: every value names where it came from =================
@@ -180,6 +180,7 @@
     rollRadius: C.rollRadius,         // PrismInteractionLodConfig.rollRadius    (prism radii)
     rollGap: C.rollGap,               // PrismInteractionLodConfig.rollGap       (prism radii)
     destructionCut: C.destructionCut, // PrismInteractionLodConfig.destructionCut (0 Sierpinski, 1 silver gnomon)
+    explosionAsFragments: C.explosionAsFragments, // PrismInteractionLodConfig.explosionAsFragments (1: level 0 is the cut's depth 0)
     fragmentBurst: C.fragmentBurst,   // PrismInteractionLodConfig.fragmentBurst     (prism radii)
     fragmentDrift: C.fragmentDrift,   // PrismInteractionLodConfig.fragmentDrift     (prism radii per s)
     fragmentLift: C.fragmentLift,     // PrismInteractionLodConfig.fragmentLift      (x the face normal)
@@ -239,6 +240,7 @@
     ['Shape', 'spinPerSpeed', 0, 1.5, 0.01, 'Spin (rad per unit speed per s)', 'Shard tumble (shatter, glitter). The explosion\'s wedges turn with its speed the same way.'],
     ['Shape', 'dissolveGrain', 0, 1, 0.01, 'Fade grain', 'How ragged the fade is inside a piece. Glitter shards and flake scales go whole. Coverage keeps its curve whatever this is.'],
     ['Kinds', 'shardsPerFaceEdge', 1, 6, 1, 'Shards per face edge', 'Shatter: seeds per face edge, so this squared per face. The flake\'s scales are a grid twice as fine.'],
+    ['Fragments', 'explosionAsFragments', 0, 1, 1, 'Explosion as fragments', 'Round 11 (the designer: unify the explosion with the levels): 1, level 0 — every death far away, off screen, plain or over the close-up budget — is the same fragment law on the explosion\'s own 24 wedges, so every dial on this tab moves the explosion too. 0: level 0 is the explosion\'s own graph, as before (the Look scorecard keeps it as the baseline).'],
     ['Fragments', 'destructionCut', 0, 1, 1, 'Destruction cut', 'How the explosion\'s wedges are cut. 1: the SILVER GNOMON — silver triangles (45°, 67.5°, 67.5°) and their gnomons (45°, 22.5°, 112.5°), a range of sizes in the silver ratio (24 × 8 / 21 / 55 / 144 fragments at levels 1-4). 0: the Sierpinski cut (round 4).'],
     ['Fragments', 'fragmentBurst', 0, 4, 0.05, 'Burst (prism radii)', 'How far each fragment bursts out at the full ease (its time constant is the Shape tab\'s opening time).'],
     ['Fragments', 'fragmentDrift', 0, 2, 0.01, 'Drift (radii per s)', 'And how fast it drifts on after, so the cloud keeps opening while it thins.'],
@@ -388,9 +390,11 @@
   // The destruction ladder: depth 0 is the ordinary explosion, level l the configured cut — each triangle a FRAGMENT
   // (round 9): bursting out on its own direction, tumbling at the explosion's capped rate, shrinking away at its own
   // end, the smallest first. Rounds 3 and 4 stay in the Archive tab.
-  const DESTRUCTION = ['Explosion'].concat(Array.from({ length: DEPTHS }, (_, i) => 'Level ' + (i + 1)));
+  const DESTRUCTION = ['Level 0 · the explosion'].concat(Array.from({ length: DEPTHS }, (_, i) => 'Level ' + (i + 1)));
   // The mesh a death at detail level l draws: the configured cut (PrismInteractionLod.MeshOfLevel).
-  function destructionMesh(l) { return l <= 0 ? null : (P.destructionCut >= 0.5 ? 'silver' : 'sier') + l; }
+  // PrismInteractionLod.MeshOfLevel: level 0 is depth 0 of the cut, the explosion's own 24 wedges (round 11).
+  function destructionMesh(l) { return (P.destructionCut >= 0.5 ? 'silver' : 'sier') + Math.max(0, l); }
+  function explosionAsFragments() { return P.explosionAsFragments >= 0.5; }
   function destructionTris(l) { return l <= 0 ? 24 : 24 * (P.destructionCut >= 0.5 ? silverPerWedge(C.silverDepths[l - 1]) : sierpinskiPerWedge(l)); }
   const ARCHIVE_LADDER = ['Explosion', 'Shatter', 'Glitter · large', 'Glitter · medium', 'Glitter · full'];
   const ARCHIVE_MESH = [null, 'shatter', 'glitter4', 'glitter2', 'glitter1'];
@@ -428,13 +432,15 @@
   // PrismCollisionBurst.ShedLife(grade, kind): a roll runs on into its tail; every other shed ends with the grade.
   function shedLife(gradeSeconds, kind) { return Math.max(0.05, gradeSeconds) * (1 + (kind === ROLL ? DATA.rollTail : DATA.overshoot)); }
   function skinScale(s, inflate) { const grow = 2 * Math.max(0, inflate) * 0.5 * Math.hypot(s[0], s[1], s[2]); return s.map((c) => c + Math.sign(c) * grow); }
-  // PrismDebris.ResolveExplosionFlight (Plain tier: gain 1, no speed-limit override clamp beyond the ram's)
+  // PrismDebris.ResolveExplosionFlight (Plain tier: gain 1). The flight is clamped to [minSpeed, ceiling]; the SPEED the
+  // spin reads is the clamped one under an override and the PRE-clamp magnitude without one (GeometryUtils.ClampMagnitude
+  // reports the input's magnitude — "the shatter-rate channel keeps the pre-clamp magnitude"), 0 for a zero velocity.
   function resolveFlight(v, limitOverride) {
     const has = limitOverride > 0, ceiling = has ? limitOverride : X.maxSpeed;
-    let m = Math.hypot(v[0], v[1], v[2]);
-    if (!(m > 1e-6)) { v = [0, X.minSpeed, 0]; m = X.minSpeed; }
-    const speed = Math.min(Math.max(m, X.minSpeed), ceiling);
-    return { v: v.map((c) => c / m * speed), speed: has ? speed : speed };
+    const m = Math.hypot(v[0], v[1], v[2]);
+    if (!(m > 1e-6)) return { v: [0, X.minSpeed, 0], speed: has ? X.minSpeed : 0 };
+    const clamped = Math.min(Math.max(m, X.minSpeed), ceiling);
+    return { v: v.map((c) => c / m * clamped), speed: has ? clamped : m };
   }
   // PrismMotion.NextLevel
   function nextLevel(cur, n, showMax, boxMax) {
@@ -801,10 +807,14 @@ void main() {
       meshBurst = vao(buildUnwelded(10));   // the slice's subdivision: the parity probes' mesh, and round 3's shatter (Archive)
       meshPrism = vao(buildPrism72());
       MESHES.shatter = meshBurst;
-      for (let d = 1; d <= DEPTHS; d++) MESHES['sier' + d] = vao(buildSierpinski(d));
+      for (let d = 0; d <= DEPTHS; d++) MESHES['sier' + d] = vao(buildSierpinski(d));
+      MESHES.silver0 = vao(buildSilver(0));   // level 0: the explosion's own 24 wedges as fragments (round 11)
       for (let d = 1; d <= DEPTHS; d++) MESHES['silver' + d] = vao(buildSilver(C.silverDepths[d - 1]));
       for (const m of [4, 2, 1]) MESHES['glitter' + m] = vao(buildGlitter(m));   // archived (round 3)
       for (const l of [1, 2, 3]) MESHES['shed' + l] = vao(buildUnwelded(SHED_SUB[l], true));
+      // The roll draws the game's WELDED grid (PrismInteractionLod.MeshOf, round 11): the same triangulation as
+      // HighPolyPrismMesh.Get, drawn here unwelded (the page draws arrays, not indices) — the same surface and pose.
+      for (const l of [1, 2, 3]) MESHES['roll' + l] = vao(buildUnwelded(SHED_SUB[l], false));
     } catch (e) { glError = String(e.message || e); console.error(e); }
   }
 
@@ -859,7 +869,7 @@ void main() {
   }
   // Destruction cells far enough apart that two clouds never meet at 3 s: twice the fragments' reach then.
   function destructionSpacing() {
-    const R = prismRadius(), fv = destructionFlight(), boost = 1 + P.fragmentSpeedGain * Math.max(fv.speed / Math.max(P.fragmentSpeedRef, 1e-3) - 1, 0);
+    const R = prismRadius(), fv = destructionFlight(), boost = 1 + P.fragmentSpeedGain * Math.max(Math.hypot(...fv.v) / Math.max(P.fragmentSpeedRef, 1e-3) - 1, 0);   // PrismBurstFragmentBoost reads the flight's length
     return Math.max(8, R * 2 * (1.5 + (P.fragmentBurst + P.fragmentDrift * 3) * (1 + 1.2 * P.fragmentSizeSpeed) * boost));
   }
   // Every thing on stage this frame:
@@ -878,13 +888,13 @@ void main() {
           // The game's shed (the roll) beside round 5's bloom.
           return P.labArchive >= 0.5
             ? grade.concat([BLOOM, UNRAVEL, FLAKE].map((k) => shed(k, KINDS[k] + ' (round 4)', { peel: PEEL_ROUND4, level: -1 })))
-            : grade.concat([shed(ROLL, 'Roll'), shed(BLOOM, 'Bloom (round 5)', { level: -1 })]);
+            : grade.concat([shed(ROLL, 'Roll', { mesh: 'roll' + res }), shed(BLOOM, 'Bloom (round 5)', { level: -1 })]);
         })()
         : P.labArchive >= 0.5
           ? ARCHIVE_LADDER.map((name, l) => l === 0 ? { type: 'explosion', label: name, level: -1 } : { type: 'burst', kind: l === 1 ? SHATTER : GLITTER, carry, mesh: ARCHIVE_MESH[l], level: -1, label: name + ' (round 3)' + (carry ? ' · carried' : '') })
               .concat([{ type: 'burst', kind: GLITTER, mesh: 'sier' + DEPTHS, level: -1, label: 'Sierpinski ' + DEPTHS + ' as glitter (round 4)' },
                        { type: 'burst', kind: FRAGMENT, mesh: 'sier' + DEPTHS, level: -1, label: 'Sierpinski ' + DEPTHS + ' as fragments' }])
-          : DESTRUCTION.map((name, l) => l === 0 ? { type: 'explosion', label: name, level: 0 } : { type: 'burst', kind: FRAGMENT, carry, mesh: destructionMesh(l), level: l, label: name + (carry ? ' · carried' : '') });
+          : DESTRUCTION.map((name, l) => l === 0 && !explosionAsFragments() ? { type: 'explosion', label: 'Level 0 · the explosion graph', level: 0 } : { type: 'burst', kind: FRAGMENT, carry, mesh: destructionMesh(l), level: l, label: name + (carry ? ' · carried' : '') });
       cells.forEach((c, i) => {
         const origin = v3.add(home(), [(i - (cells.length - 1) / 2) * spacing, 0, 0]);
         items.push(Object.assign(c, { origin, flight: fl, start: 0, intact: clock < 0 }));
@@ -897,8 +907,8 @@ void main() {
       const level = liveLevels().destructionLevel;
       const pre = clock < 0;
       const moverPos = pre ? v3.add(moverAtContact, [closing * clock, 0, 0]) : moverAtContact;
-      const one = (origin, flight, who) => level === 0
-        ? { type: 'explosion', origin, flight, start: 0, intact: pre, label: who + ' · Explosion' }
+      const one = (origin, flight, who) => level === 0 && !explosionAsFragments()
+        ? { type: 'explosion', origin, flight, start: 0, intact: pre, label: who + ' · Explosion graph' }
         : { type: 'burst', kind: FRAGMENT, mesh: destructionMesh(level), carry, origin, flight, start: 0, intact: pre, label: who + ' · ' + DESTRUCTION[level] + (carry ? ' · carried' : '') };
       items.push(one(moverPos, fMover, 'Mover'), one(struck, fStruck, 'Struck'));
     }
@@ -1069,8 +1079,8 @@ void main() {
     const lod = view === 'stealing'
       ? 'At this size (' + pct + ') a steal ' + (lv.shed ? 'SHEDS at ' + SHED_SUB[lv.stealLevel] + ' subdivisions' : 'GRADES') + crowd + '\n(shed ' + pc(P.shedMinScreen) + ', fine ' + pc(P.shedFineScreen) + ', finest ' + pc(P.shedFinestScreen) + ')'
       : 'At this size (' + pct + ') a death is ' + lv.destruction.toUpperCase() + (lv.destructionLevel > 0 ? ' (' + destructionTris(lv.destructionLevel).toLocaleString() + ' fragments)' : '') + crowd + '\n(' + depthLines().map((l, i) => 'level ' + (i + 1) + ' ' + pc(l)).join(', ') + ')';
-    const fv = destructionFlight(), boost = 1 + P.fragmentSpeedGain * Math.max(fv.speed / Math.max(P.fragmentSpeedRef, 1e-3) - 1, 0);
-    const vel = view === 'destruction' ? '\nimpact v (' + [P.labVelX, P.labVelY, P.labVelZ].join(', ') + ') u/s → flight (' + fv.v.map((c) => c.toFixed(1)).join(', ') + '), ' + fv.speed.toFixed(1) + ' u/s · fragments × ' + boost.toFixed(2) + ' wider, lean × ' + (P.fragmentAim * boost).toFixed(2) + ' · camera ' + (P.labRide >= 0.5 ? 'rides the flight' : 'holds still') : '';
+    const fv = destructionFlight(), boost = 1 + P.fragmentSpeedGain * Math.max(Math.hypot(...fv.v) / Math.max(P.fragmentSpeedRef, 1e-3) - 1, 0);   // PrismBurstFragmentBoost reads the flight's length
+    const vel = view === 'destruction' ? '\nimpact v (' + [P.labVelX, P.labVelY, P.labVelZ].join(', ') + ') u/s → flight (' + fv.v.map((c) => c.toFixed(1)).join(', ') + '), ' + Math.hypot(...fv.v).toFixed(1) + ' u/s (spin reads ' + fv.speed.toFixed(1) + ') · fragments × ' + boost.toFixed(2) + ' wider, lean × ' + (P.fragmentAim * boost).toFixed(2) + ' · camera ' + (P.labRide >= 0.5 ? 'rides the flight' : 'holds still') : '';
     $('hud').textContent = head + vel + '\n' + lod + '\nt ' + clock.toFixed(2) + ' s   seed ' + labSeed + (clock < 0 ? '   (before the ' + (view === 'stealing' ? 'steal' : 'event') + ')' : '');
     $('scrub').value = clock; $('clockOut').textContent = clock.toFixed(2) + ' s';
   }
@@ -1227,14 +1237,14 @@ void main() {
       rates.push(Math.acos(Math.max(-1, Math.min(1, v3.dot(at(n1, 3 * t), at(n11, 3 * t))))) / 0.1);
     }
     dist.sort((x, y) => x - y); rates.sort((x, y) => x - y);
-    return { name: 'Explosion (level 0, the baseline)', control: 'baseline', fragments: nTri, sizes: 1, entropy: +directionEntropy(dirs).toFixed(3), cloud: +(dist[Math.floor(0.9 * (dist.length - 1))] / R).toFixed(2), spin: +rates[Math.floor(rates.length / 2)].toFixed(2), inStep: '—', half: '—', gone: 'erodes to ' + (X.duration * 0.85).toFixed(2), lean: +(v3.dot(mean, vhat) / R).toFixed(2), across: +(Math.hypot(...v3.sub(mean, v3.mul(vhat, v3.dot(mean, vhat)))) / R).toFixed(2), flight: fl.v.map((c) => +c.toFixed(1)) };
+    return { name: 'Explosion graph (level 0 before round 11)', control: 'baseline', fragments: nTri, sizes: 1, entropy: +directionEntropy(dirs).toFixed(3), cloud: +(dist[Math.floor(0.9 * (dist.length - 1))] / R).toFixed(2), spin: +rates[Math.floor(rates.length / 2)].toFixed(2), inStep: '—', half: '—', gone: 'erodes to ' + (X.duration * 0.85).toFixed(2), lean: +(v3.dot(mean, vhat) / R).toFixed(2), across: +(Math.hypot(...v3.sub(mean, v3.mul(vhat, v3.dot(mean, vhat)))) / R).toFixed(2), flight: fl.v.map((c) => +c.toFixed(1)) };
   }
   function runBatch() {
     if (!gl || glError) return [];
     const savedClock = clock, savedSeed = labSeed;
     labSeed = 0;
     const rows = [lookOfExplosion()];
-    for (let l = 1; l <= DEPTHS; l++) rows.push(lookOf(DESTRUCTION[l], destructionMesh(l), P));
+    for (let l = 0; l <= DEPTHS; l++) rows.push(lookOf(DESTRUCTION[l], destructionMesh(l), P));
     const finest = destructionMesh(DEPTHS);
     rows.push(lookOf(DESTRUCTION[DEPTHS] + ' · noise off', finest, Object.assign({}, P, { fragmentSpinNoise: 0, fragmentTravelNoise: 0 }), 'noise off'));
     rows.push(lookOf(DESTRUCTION[DEPTHS] + ' · a face leaves as one', finest, P, 'grouped', faceOnlyProbe()));
@@ -1244,10 +1254,10 @@ void main() {
     for (const r of rows) {
       r.verdict = r.control === 'baseline' ? 'the explosion'
         : r.control === 'noise off' ? (r.inStep >= 50 ? 'in step, as it must be' : 'CONTROL DID NOT FIRE')
-        : r.control === 'grouped' ? (r.entropy < 0.7 ? 'grouped, as it must be' : 'CONTROL DID NOT FIRE')
+        : r.control === 'grouped' ? (r.entropy < 0.5 ? 'grouped, as it must be' : 'CONTROL DID NOT FIRE')
         : r.control === 'reversed' ? (r.lean <= -0.1 ? 'leans the other way, as it must' : 'CONTROL DID NOT FIRE')
         : r.control === 'ignored' ? (Math.abs(r.lean) < 0.1 ? 'no lean without v, as it must' : 'CONTROL DID NOT FIRE')
-        : (r.entropy < 0.7 ? 'grouped' : r.inStep > 5 ? 'in step' : r.lean < 0.1 ? 'IGNORES THE HIT' : 'uniform, leans along v');
+        : (r.entropy < 0.5 ? 'grouped' : r.inStep > 5 ? 'in step' : r.lean < 0.1 ? 'IGNORES THE HIT' : 'spread, leans along v');
     }
     clock = savedClock; labSeed = savedSeed; lastScore = rows;
     return rows;
@@ -1395,10 +1405,10 @@ void main() {
       for (const r of rows) {
         const tr = document.createElement('tr');
         for (const v of [r.name, r.fragments, r.sizes, r.entropy, r.cloud, r.spin, r.inStep, r.lean, r.across, r.half, r.gone]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); }
-        const td = document.createElement('td'), pill = document.createElement('span'); pill.className = 'pill ' + (/uniform|explosion|must/.test(r.verdict) ? 'ok' : 'warn'); pill.textContent = r.verdict; td.appendChild(pill); tr.appendChild(td);
+        const td = document.createElement('td'), pill = document.createElement('span'); pill.className = 'pill ' + (/spread|explosion|must/.test(r.verdict) ? 'ok' : 'warn'); pill.textContent = r.verdict; td.appendChild(pill); tr.appendChild(td);
         t.appendChild(tr);
       }
-      box.querySelector('#scoreNote').textContent = 'No squint any more (round 9): the silver cut\'s range of sizes lets the small fragments go unseen from far away, so a level no longer has to read as the explosion. "Uniform, leans along v" = spread evenness at least 0.70, at most 5% of same-size neighbours in step, and the cloud leaning at least 0.1 R along the hit. Measured at the impact velocity on the Velocity tab (flight ' + (rows[0] ? JSON.stringify(rows[0].flight) : '') + ' u/s). The controls must fail: the velocity reversed must lean the other way; the harness\'s velocity-ignored control (compiled into the page) must not lean at all; the noise off puts neighbours back in step; the harness\'s grouped-burst control (every fragment of a face leaving the same way, compiled into the page) reads as six jets.';
+      box.querySelector('#scoreNote').textContent = 'No squint any more (round 9): the silver cut\'s range of sizes lets the small fragments go unseen from far away, so a level no longer has to read as the explosion. "Spread, leans along v" = spread evenness at least 0.50 (the harness\'s floor: a face leaving as one reads about 0.42), at most 5% of same-size neighbours in step, and the cloud leaning at least 0.1 R along the hit. Round 11 shipped the designer\'s decision, which leans the cloud hard along the hit (evenness about 0.6, against round 9\'s 0.8). Measured at the impact velocity on the Velocity tab (flight ' + (rows[0] ? JSON.stringify(rows[0].flight) : '') + ' u/s). The controls must fail: the velocity reversed must lean the other way; the harness\'s velocity-ignored control (compiled into the page) must not lean at all; the noise off puts neighbours back in step; the harness\'s grouped-burst control (every fragment of a face leaving the same way, compiled into the page) reads as six jets.';
     };
     box.querySelector('#runScore').onclick = () => draw(runBatch());
     if (lastScore) draw(lastScore);

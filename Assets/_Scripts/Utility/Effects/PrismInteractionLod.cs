@@ -86,16 +86,24 @@ namespace CosmicShore.Utility
         public static StealLevel PickSteal(float fraction, int crowdSteps, float shed, float fine, float finest) =>
             (StealLevel)Mathf.Max(0, LevelForSize(fraction, shed, fine, finest) - crowdSteps);
 
-        /// <summary>The mesh a death at detail <paramref name="level"/> draws (null at 0: the explosion draws itself) —
-        /// the configured cut at that level's recursion depth.</summary>
-        public static Mesh MeshOfLevel(int level, PrismInteractionLodConfigSO cfg) => level <= 0 ? null
-            : cfg.Cut == DestructionCut.SilverGnomon
-                ? HighPolyPrismMesh.GetSilverGnomon(cfg.CutDepthOf(level))
-                : HighPolyPrismMesh.GetSierpinski(cfg.CutDepthOf(level));
+        /// <summary>The mesh a death at detail <paramref name="level"/> draws — the configured cut at that level's
+        /// recursion depth; level 0 is depth 0, the explosion's own 24 wedges (round 11: the explosion as fragments).</summary>
+        public static Mesh MeshOfLevel(int level, PrismInteractionLodConfigSO cfg) =>
+            cfg.Cut == DestructionCut.SilverGnomon
+                ? HighPolyPrismMesh.GetSilverGnomon(cfg.CutDepthOf(Mathf.Max(0, level)))
+                : HighPolyPrismMesh.GetSierpinski(cfg.CutDepthOf(Mathf.Max(0, level)));
 
-        /// <summary>The mesh steal level <paramref name="level"/> draws (null for the grade).</summary>
-        public static Mesh MeshOf(StealLevel level, PrismInteractionLodConfigSO cfg) =>
-            level == StealLevel.Grade ? null : HighPolyPrismMesh.GetShed(cfg.ShedSubdivisionOf((int)level));
+        /// <summary>
+        /// The mesh steal level <paramref name="level"/> draws a shed of <paramref name="kind"/> on (null for the
+        /// grade). The ROLL takes the WELDED per-face grid (<see cref="HighPolyPrismMesh.Get"/>, round 11): its pose
+        /// reads only per-vertex data and its piece is per face, so it needs no torn triangles, and the grid runs the
+        /// vertex stage (n + 1)² times a face instead of 6n² — 5.5 × fewer at 24 subdivisions. The lab-only sheds
+        /// tear along their pieces and keep the unwelded union-jack mesh (<see cref="HighPolyPrismMesh.GetShed"/>).
+        /// </summary>
+        public static Mesh MeshOf(StealLevel level, PrismInteractionLodConfigSO cfg, int kind = PrismCollisionBurst.Roll) =>
+            level == StealLevel.Grade ? null
+            : kind == PrismCollisionBurst.Roll ? HighPolyPrismMesh.Get(cfg.ShedSubdivisionOf((int)level))
+            : HighPolyPrismMesh.GetShed(cfg.ShedSubdivisionOf((int)level));
 
         /// <summary>
         /// How big a prism at <paramref name="position"/> of world <paramref name="scale"/> is on the player's screen
@@ -118,26 +126,36 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// A DESTRUCTION at its depth: the cut as deep as the prism's size on screen and the amount allow, each
-        /// fragment the burst's FRAGMENT kind on the explosion's own flight, spin rate and palette. False means
-        /// depth 0 — the caller (<c>PrismFactory.SpawnExplosion</c>) draws the explosion.
+        /// fragment the burst's FRAGMENT kind on the explosion's own flight, spin rate and palette. Every death the finer
+        /// levels do not take — far away, off screen, <paramref name="plain"/> (prism movement above ladder level 1), or
+        /// over their budget — is LEVEL 0, the same kind on the cut's depth 0 (round 11: one law for every destruction,
+        /// <see cref="PrismInteractionLodConfigSO.ExplosionAsFragments"/>). False means the caller
+        /// (<c>PrismFactory.SpawnExplosion</c>) draws the explosion's own graph.
         /// </summary>
         public static bool TryDestruction(Vector3 position, Quaternion rotation, Vector3 scale, Color bright, Color dark,
-            Vector3 impactVelocity, float speedLimitOverride, PrismKind tier)
+            Vector3 impactVelocity, float speedLimitOverride, PrismKind tier, bool plain = false)
         {
             var cfg = PrismInteractionLodConfigSO.Instance;
-            if (cfg == null || !cfg.DestructionEnabled || !PrismCollisionBurst.CanAccept(cfg)) return false;
-            if (!TryMeasure(position, scale, out float fraction)) return false;
+            if (cfg == null || !cfg.DestructionEnabled) return false;
 
-            int steps = CrowdSteps(PrismCollisionBurst.Fill(cfg), cfg.CrowdedFill, cfg.PackedFill);
-            // A depth whose mesh does not fit the triangle budget steps up until one does; depth 0 is the explosion.
-            for (int depth = PickDepth(fraction, steps, cfg); depth > 0; depth--)
+            if (!plain && PrismCollisionBurst.CanAccept(cfg) && TryMeasure(position, scale, out float fraction))
             {
-                var mesh = MeshOfLevel(depth, cfg);
-                if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
-                return PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
-                    impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Fragment, mesh);
+                int steps = CrowdSteps(PrismCollisionBurst.Fill(cfg), cfg.CrowdedFill, cfg.PackedFill);
+                // A depth whose mesh does not fit the triangle budget steps up until one does.
+                for (int depth = PickDepth(fraction, steps, cfg); depth > 0; depth--)
+                {
+                    var mesh = MeshOfLevel(depth, cfg);
+                    if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
+                    if (PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
+                            impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Fragment, mesh))
+                        return true;
+                    break;
+                }
             }
-            return false;
+
+            return cfg.ExplosionAsFragments &&
+                   PrismCollisionBurst.TryRequestDestruction(position, rotation, scale, bright, dark,
+                       impactVelocity, speedLimitOverride, tier, PrismCollisionBurst.Fragment, MeshOfLevel(0, cfg), level0: true);
         }
 
         /// <summary>
@@ -161,7 +179,7 @@ namespace CosmicShore.Utility
             Vector3 eye = cam ? cam.transform.position : position;
             for (; level > StealLevel.Grade; level--)
             {
-                var mesh = MeshOf(level, cfg);
+                var mesh = MeshOf(level, cfg, kind);
                 if (!PrismCollisionBurst.FitsTriangles(cfg, PrismCollisionBurst.TrianglesOf(mesh))) continue;
                 return PrismCollisionBurst.TryRequestShed(position, rotation, scale, oldBright, oldDark, newBright,
                     gradeSeconds, kind, mesh, eye, cfg.ShedSubdivisionOf((int)level));

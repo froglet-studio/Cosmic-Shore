@@ -75,8 +75,10 @@ displaced, so they do not run the rule. They are valid TARGETS of it.
 6. **The move is final the frame it is made** (the movers contract, `PRISM_ANIMATION.md` §3.6): the
    transform, the collider, the spatial index and the shell agree, so a moving prism is always tested
    where it actually is, and later movers in the same frame see it there.
-7. **The look at level 1 — spectacular up close, the explosion when squinted at** (§3a): the
-   destruction detail level the viewer's distance picks (explosion → shatter → glitter), game-wide.
+7. **The look at level 1 — spectacular up close** (§3a): the destruction detail level the viewer's
+   distance picks (the explosion, then the silver gnomon cut at four depths, every fragment bursting out
+   on its own along the hit), game-wide. (Rounds 1–8 also asked it to read as the explosion when squinted
+   at; the designer retired that on 2026-10-16.)
 
 ## 3. How each path keeps it
 
@@ -196,9 +198,9 @@ steps down, and past every level the ordinary effect.
 ## 6. In-editor verification
 
 No `unity` binary was available in the authoring session. Both configs of the headless reference
-compile (`Tools/Build/unity_refcompile`) are clean, `verify_prism_collision_burst.py` passes with all
-four negative controls firing, and nothing has been seen in play — whether the bursts READ as
-spectacular, and whether squinting really can't tell them from the explosion, is the playtest's answer.
+compile (`Tools/Build/unity_refcompile`) are clean, `verify_prism_collision_burst.py` passes with every
+negative control firing (eleven as of the lab's round 10), and nothing has been seen in play — whether
+the bursts READ as spectacular, and how strongly the hit should shape them, is the playtest's answer.
 
 1. **Plough into a wall.** Freestyle (Menu lava lamp). Lay a trail, then ram a second trail that runs
    parallel to it a few units to its side, so the plough throws prisms toward the first. Each thrown
@@ -217,13 +219,14 @@ spectacular, and whether squinting really can't tell them from the explosion, is
    under a millisecond — if not, lower `boxMaxMovers`) and over a full body budget (~6,000,
    spheres: `ContactJob` must be a small fraction of `IntegrateJob` — if not, lower `MaxContactRadius`).
 6. **The detail levels, up close.** Plough a few prisms into a trail (level 1) with the camera close:
-   each comes apart as a shatter (shards, the brighter inside colour on their backs) or, closer still, a
-   glitter of triangles — no white anywhere. Back the camera off: the same collision explodes plainly.
+   each comes apart into silver triangles and gnomons of many sizes that burst out along the hit, tumble
+   and shrink away, the smallest first — no white anywhere. Back the camera off: the same collision
+   explodes plainly.
    No magenta (a rejected shader), no pop on the first frame, nothing culled while still on screen.
-7. **The squint test.** Side by side — a plough collision and a sword-free hull ram of a stationary
-   prism by another vessel (the ordinary explosion) — at play distance, squinting: the two clouds should
-   travel the same way, be the same size, fade over the same time in the same colours. (The lab measures
-   that they do NOT yet, see §3a — this step confirms or refutes it in the engine.)
+7. **The flight.** Side by side — a plough collision and a sword-free hull ram of a stationary prism by
+   another vessel (the ordinary explosion): both clouds travel the same way, along the hit. (Round 9
+   retired the squint — a detail level no longer has to read as the explosion — so size and fade may
+   differ; round 10's lab measures the lean along the hit, `Docs/Studios/COLLISION_BURST_LAB.md`.)
 8. **The ladder.** Dense Stoat field: past 64 bodies collisions explode plainly (level 2), past 256 the
    contact goes to spheres (level 3); coming back down, level 2 returns at 192 and level 1 at 48. Fill
    the burst budget (48 live) with many level-1 collisions at once: the overflow explodes plainly, never

@@ -60,7 +60,8 @@ A. EXECUTION (clang++, /asset-surgery §4.5c). The file under Assets/ is transla
   21. -DPRISM_BURST_ROLL_TOWARD_CAMERA=1   — the roll rolls toward the camera, onto faces it sees (R fires).
 
 B. FRONT-END COMPILE (glslang, HLSL mode). Every pass of PrismCollisionBurst.shader, vertex and
-   fragment, plain and DOTS-instanced, against a mock of the URP library (the slice verifier's). It
+   fragment, plain and DOTS-instanced, in the lab's every-kind program and the game's two kind-only ones
+   (_BURST_FRAGMENT, _BURST_ROLL), against a mock of the URP library (the slice verifier's). It
    proves the shader's own code is well-formed HLSL; it cannot prove the URP library behaves as the
    mock says. That half is the editor's.
 
@@ -521,11 +522,11 @@ static void run_noise_tests() {
 static PrismBurstFragmentShape fragmentShape(bool extreme) {
     PrismBurstFragmentShape s;
     // the shipped shape (PrismInteractionLodConfig.asset), or every slider at the end of its range
-    s.burst = extreme ? 4.0f : 0.5f; s.drift = extreme ? 2.0f : 0.2f; s.lift = extreme ? 3.0f : 1.0f;
-    s.aim = extreme ? 2.0f : 0.5f; s.sizeSpeed = extreme ? 1.0f : 0.8f; s.sizeSpin = extreme ? 1.0f : 0.25f;
+    s.burst = extreme ? 4.0f : 0.1f; s.drift = extreme ? 2.0f : 0.06f; s.lift = extreme ? 3.0f : 2.0f;
+    s.aim = extreme ? 2.0f : 0.95f; s.sizeSpeed = extreme ? 1.0f : 0.8f; s.sizeSpin = extreme ? 1.0f : 0.25f;
     s.spinCap = extreme ? 3.0f : 1.6f; s.endSmall = extreme ? 0.1f : 0.45f; s.endBig = extreme ? 0.95f : 0.92f;
     s.shrink = extreme ? 1.0f : 0.35f; s.tau = 0.22f; s.levelRef = extreme ? 1.0f : 4.0f;
-    s.speedGain = extreme ? 2.0f : 0.5f; s.speedRef = 10.0f;
+    s.speedGain = extreme ? 2.0f : 1.65f; s.speedRef = 10.0f;
     return s;
 }
 struct FragFrame { float3 rest, n, centroid, faceCentre; };
@@ -577,7 +578,7 @@ static void run_fragment_tests() {
             Pose P = rndPose(); P.t = float3(0,0,0);
             float3 vel = rndDir() * rnd(5, 60);
             float speed = rnd(10, 53);
-            float4 noise(amp, 3.0f, rnd(0, 1), amp > 0 ? 0.25f : 0.0f);   // the shipped spin and travel amplitudes
+            float4 noise(amp, 3.0f, rnd(0, 1), amp > 0 ? 0.48f : 0.0f);   // the shipped spin and travel amplitudes
             float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
             float reach = PrismBurstFragmentReach(R, life, s, noise.w, length(vel));
             std::vector<float> gone(m.size() / 3, life);
@@ -688,7 +689,7 @@ static void run_velocity_tests() {
     for (int trial = 0; trial < 12; trial++) {
         Pose P = rndPose(); P.t = float3(0,0,0);
         float3 dirV = rndDir();
-        float4 noise(0.15f, 3.0f, rnd(0, 1), 0.25f);
+        float4 noise(0.15f, 3.0f, rnd(0, 1), 0.48f);
         float R = length(linear(P, float3(0.5f,0.5f,0.5f)));
         // the cloud's mean displacement, and its mean distance, for a flight of the given velocity
         auto cloud = [&](float3 vel, float& meanDist) {
@@ -850,9 +851,11 @@ int main(int argc, char** argv) {
 # F9's floor: the shipped cloud's travel directions must cover at least this share of the sphere's entropy (256
 # bins, each about 7 degrees across). The explosion's own law, every wedge sliding along one of the 6 face tangents,
 # can reach at most log 6 / log 256 = 0.32; a face's fragments all leaving one way (the grouped-burst control) reads
-# 0.43; the shipped burst, every face filling its own sixth of the sphere, 0.83 (round 9: 0.71 while every fragment
-# of a face left at the same angle off it, six hollow cones).
-ENTROPY_FLOOR = "0.70"
+# 0.42-0.43; the round-9 burst, every face filling its own sixth of the sphere, 0.83 (0.71 while every fragment of a
+# face left at the same angle off it, six hollow cones). Round 11 shipped the designer's decision (lift 2, aim 0.95,
+# speed gain 1.65): the cloud leans hard along the hit, 0.61 — so the floor guards what the gate is FOR, a face
+# leaving as one, between the two.
+ENTROPY_FLOOR = "0.50"
 
 
 # The silver gnomon cut, ported (shared with the lab's parity gate, which builds the same cut in C++).
@@ -966,7 +969,10 @@ def main():
                     os.path.join(work, "PrismOcclusionCorridor.hlsl"))
         include, passes = slice_verifier.extract_passes(shader)
         for vert, frag, prog in passes:
-            for defines in ([], ["DOTS_INSTANCING_ON"], ["_GBUFFER_NORMALS_OCT"]):
+            # round 11: the game's two kind-only programs (destruction, steal), plain and DOTS-instanced, beside the
+            # lab's every-kind one
+            for defines in ([], ["DOTS_INSTANCING_ON"], ["_GBUFFER_NORMALS_OCT"], ["_BURST_FRAGMENT"], ["_BURST_ROLL"],
+                            ["DOTS_INSTANCING_ON", "_BURST_FRAGMENT"], ["DOTS_INSTANCING_ON", "_BURST_ROLL"]):
                 for stage, entry in (("vert", vert), ("frag", frag)):
                     rc, out = slice_verifier.glslang_compile(work, include, prog, stage, entry, defines)
                     label = f"{entry} [{stage}{' ' + ','.join(defines) if defines else ''}]"

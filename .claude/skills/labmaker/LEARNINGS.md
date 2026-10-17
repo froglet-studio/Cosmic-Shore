@@ -701,6 +701,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `lab.src.html` Velocity tab, `drawArrows`, `lookOf` lean; harness F10; `COLLISION_BURST_LAB.md` round 10
 - Promoted: no
 
+### L-STU-80 — A baseline drawn by a different shader cannot answer to the lab's dials: say so on the page, or make it the same law
+- Lab: Collision Burst Lab round 11 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-17
+- What happened: the designer tuned the Fragments tab and recorded the look they liked, then found it "reflected in the levels not the explosion". Level 0 was still the explosion's own Shader Graph, which no burst dial reaches. The lab had labelled it the baseline, but it sat in the same line-up as the levels, and nothing on the page said its look was fixed. The fix made level 0 the same fragment law on the explosion's own 24 wedges, with its own live cap outside the close-up budget, since every far death takes it. The old graph moved to the scorecard as the "before" row.
+- Do instead: when a line-up mixes cells the dials drive with cells they cannot, mark the second kind on the stage, not only in a tooltip. When the designer then wants the dials everywhere, unify the law. Do not hand-tune the other shader to match. Before routing every instance through a path built for a budgeted few, give the bulk its own queue and cap.
+- Evidence: `PrismInteractionLod.TryDestruction` (level 0), `PrismCollisionBurst.CanAcceptExplosion`; `COLLISION_BURST_LAB.md` round 11
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

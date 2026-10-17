@@ -77,7 +77,7 @@ ones.
   answer); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
   their exact oriented BOXES when few prisms move (a plough throw, a sparse field), as the SPHERES of
   their volumes when many do — a three-level LADDER by moving count (`PrismMotionConfig`: level 1 ≤ 64
-  boxes + a high-res COLLISION BURST that squints as the explosion; level 2 ≤ 256 boxes + the explosion;
+  boxes + the high-res destruction detail level (the silver gnomon cut, `PRISM_ANIMATION.md` §4.11); level 2 ≤ 256 boxes + the explosion;
   level 3 spheres + the explosion; down at three quarters of each line). The count changes the
   precision and the look, never the rule. Neighbours already touching when the step begins — a trail falling
   together — are at rest, not a collision; (3) **super-shielded mass is

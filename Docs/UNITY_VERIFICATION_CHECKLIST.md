@@ -9447,6 +9447,15 @@ imports without errors (magenta = rejected), the config asset loads (not a missi
    hold the flight, not zero) before tuning anything. Config: `fragmentAim` 0.5, `fragmentSpeedGain` 0.5,
    `fragmentSpeedRef` 10; material `_FragmentFade.w` 0.5, `_FragmentNoise.w` 10. EditMode:
    `TheFragmentReachIsTheProvedSum` (the boost).
+11. **Round 11 — the explosion is level 0; one program per kind; the welded roll (2026-10-17)**: (a) a FAR death (and a
+   plough collision past 64 movers, which asks for plain) is now 24 wedges flying the fragment law — leaning along the
+   hit like the close levels — not the explosion graph; set `explosionAsFragments` off and it is the graph again.
+   (b) Wipe a big trail at once (hundreds of deaths): every one draws (the level-0 cap is 4,096), the close-up levels
+   still appear on the near ones, and `prof`'s `PrismCollisionBurst.Drain` stays small. (c) Frame Debugger on a
+   destruction and a steal: the burst draws with keyword `_BURST_FRAGMENT` / `_BURST_ROLL` (runtime materials named
+   "… _BURST_FRAGMENT (runtime)" / "… _BURST_ROLL (runtime)"), and a roll's mesh is `Prism_HighPoly_<n>` (welded), not
+   `Prism_HighPoly_Shed_<n>`. (d) The steal's roll looks exactly as before. EditMode: `TheExplosionIsLevelZeroOfTheCut`,
+   `TheRollDrawsTheWeldedGrid`, `TheGameCompilesOneKindPerProgram`.
 
 ### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
 

@@ -69,11 +69,12 @@ namespace CosmicShore.ScriptableObjects
         public Vector3 SliceNormal;
 
         /// <summary>
-        /// PrismType.Explosion only: withhold the finer destruction DETAIL LEVELS (shatter, glitter —
-        /// Docs/PRISM_ANIMATION.md §4.11) and draw the ordinary explosion. Prism movement's collision rule
-        /// sets it above LEVEL 1 of its ladder (Docs/PRISM_MOTION.md), where many prisms move at once.
-        /// False — the default every other producer leaves — lets the factory pick the level by the
-        /// viewer's distance and the budget, falling back to the explosion on any refusal.
+        /// PrismType.Explosion only: withhold the finer destruction DETAIL LEVELS (the cut of the explosion's
+        /// wedges — Docs/PRISM_ANIMATION.md §4.11) and draw LEVEL 0, the explosion (since round 11 the same fragment
+        /// law on its own 24 wedges). Prism movement's collision rule sets it above LEVEL 1 of its ladder
+        /// (Docs/PRISM_MOTION.md), where many prisms move at once. False — the default every other producer leaves —
+        /// lets the factory pick the level by the viewer's distance and the budget, falling back to the explosion on
+        /// any refusal.
         /// </summary>
         public bool PlainDeath;
 
