@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bf12f8c9f443417b8791c1048628978, type: 3}
   m_Name: SkimRaceAIConfig_Regatta
   m_EditorClassIdentifier: 
-  PolicyVersion: regatta-v1-from-general
+  PolicyVersion: regatta-learned-20261016-3flights
   TrackFingerprint: 
   DeployInNormalPlay: 1
   DecisionHz: 0
-  LookaheadSeconds: 1.016
-  LookaheadMin: 26.806
+  LookaheadSeconds: 0.93
+  LookaheadMin: 60
   LookaheadMax: 544.911
-  SkimHeight: 4.346
+  SkimHeight: -6.498
   CrystalBumpHalfWidth: 181.107
   LowBoostApproachScale: 0.797
   LowBoostFull: 2.383
@@ -55,7 +55,7 @@ MonoBehaviour:
   LaneHeightStep: 2.992
   PickupClearDistance: 0
   MassGuardSeconds: 0.705
-  MassGuardMargin: 1.298
+  MassGuardMargin: 1.379
   MassGuardSegment: 0.274
   MassGuardStep: 0.04
   RolloutFollowsLine: 0
@@ -85,7 +85,7 @@ MonoBehaviour:
   MpcNominalBias: 0.05
   LeadGain: 2.832
   MaxLeadDegrees: 19.738
-  StickGainPerDegree: 0.041
+  StickGainPerDegree: 0.032
   LevelingRoll: 0.25
   UseLineTracker: 0
   TrackerConvergeSeconds: 0.6

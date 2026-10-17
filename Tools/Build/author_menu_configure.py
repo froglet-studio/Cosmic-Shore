@@ -698,7 +698,10 @@ def preview_window(root, kind):
            f"  statusLabel: {ref(ctx.c('Preview/Status', 'tmp'))}\n"
            f"  focusButton: {ref(ctx.c('Preview/Focus', 'button'))}\n"
            f"  focusHint: {ref(ctx.go('Fly/Hint'))}\n"
-           "  renderHeight: 360\n  maxRenderHeight: 720\n"))
+           "  renderHeight: 360\n  maxRenderHeight: 720\n"
+           # The first-login guide's Preview step spotlights this: the full-bleed surface would be a
+           # hole the size of the screen with its caption pushed off the bottom.
+           f"  guideTarget: {ref(ctx.rt('Fly/Button'))}\n"))
     # The "+1" toast's component lives ON THE TOAST: PreviewMicroToast shows and hides by
     # SetActive on its own GameObject, and on the Preview node every card open (which hides the
     # toast) switched off the whole preview - frame, live arena and tap-to-play target.
@@ -1055,7 +1058,10 @@ def steps_row(chrome, kind):
         cp.children.append(Inst(f"Domain{dname}", "ConfigureDomainColumn", f"{dname}Column",
                                 TL(PAD + i * (COL_W + COL_GAP), BODY_TOP, COL_W, TILE_H + 6 + SEAT_H),
                                 [("root#dtile", "domain", dval, None), ("root#in", "staggerIndex", i + 6, None)]))
-    if kind == "arcade":
+    # Every Arena card offers the row too since bleeding-edge 2026-10-16 (6d857572d: Regatta's
+    # GateRaceHandicap, AIPilotBelief for Astro League / Brood Rush / Broadside); the panel still shows
+    # it only where AIDifficultyRules.IsOfferedFor says the mode's AI reads it.
+    if kind in ("arcade", "arena"):
         ai_row(cp, widths[2], BODY_TOP + TILE_H + 10 + 2 * (SEAT_H + 6) + 22)
     return steps
 
@@ -1124,7 +1130,7 @@ def panel_body(ctx, go, kind):
               f"  seatValueText: {ref(ctx.c(f'Step{step_pil}/Value', 'tmp'))}\n"
               f"  pilotsChipText: {ref(ctx.c('Chips/Pilots/Label', 'tmp'))}\n"
               f"  readyLabel: {ref(ctx.go('Status/Ready'))}\n")
-    if kind == "arcade":
+    if kind in ("arcade", "arena"):
         fields += f"  aiDifficultyPicker: {ref(ctx.c('AIRow', 'picker'))}\n"
     if kind in ("arcade", "arena"):
         fields += (f"  previewWindow: {ref(ctx.c('Preview', 'window'))}\n"
@@ -1785,8 +1791,9 @@ def validate_prefabs(files):
         assert len(tiles) == 3 and all(A.kind_of(text, t) == (114, S["dtile"]) for t in tiles), \
             f"{view}: needs the three domain tiles"
         assert "  hostModal: {fileID: 0}\n" in body, f"{view}: hostModal must stay empty in the prefab (scene-only)"
-        if kind == "arcade":
-            # Bleeding-edge's Skim Race / Slingshot / Warpline AI difficulty row (merged 2026-10-15).
+        if kind in ("arcade", "arena"):
+            # Bleeding-edge's AI difficulty row: the Arcade's (Skim Race / Slingshot / Warpline, merged
+            # 2026-10-15) and, since 2026-10-16, every Arena card's.
             wired(text, body, "aiDifficultyPicker", S["aipicker"], view)
             _, pick = comp_doc(text, V("AIRow#picker"))
             assert pick.count("  - Difficulty: ") == 3 and "Button: {fileID: 0}" not in pick, \
@@ -1836,6 +1843,9 @@ def validate_prefabs(files):
             _, fly = comp_doc(text, V("Fly/Button#button"))
             assert f"m_Target: {{fileID: {V('Preview#window')}}}" in fly and "m_MethodName: RequestFocus" in fly, \
                 f"{view}: FLY must call ModePreviewWindow.RequestFocus (the pad's only way to fly the preview)"
+            _, win = comp_doc(text, V("Preview#window"))
+            assert f"  guideTarget: {{fileID: {V('Fly/Button#rt')}}}" in win, \
+                f"{view}: ModePreviewWindow.guideTarget must be FLY (the guide's Preview step would spotlight the whole screen)"
             _, stop = comp_doc(text, V("FlyingHint/Stop#button"))
             assert "m_MethodName: ReleaseFocus" in stop, \
                 f"{view}: STOP must call ModePreviewWindow.ReleaseFocus (touch has no START / Esc to stop flying)"
@@ -1942,6 +1952,9 @@ def self_test(files):
          validate_prefabs),
         ("the AI difficulty row unwired", lambda f: f.__setitem__(view, re.sub(
             r"(  aiDifficultyPicker: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view])), validate_prefabs),
+        ("the Arena's AI difficulty row unwired", lambda f: f.__setitem__(prefab_path("ConfigureArenaView"), re.sub(
+            r"(  aiDifficultyPicker: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("ConfigureArenaView")])),
+         validate_prefabs),
         ("the +1 toast back on the preview's GameObject", lambda f: f.__setitem__(view, f[view].replace(
             f"m_GameObject: {{fileID: {V('Preview/Toast#go')}}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {S['toast']}",
             f"m_GameObject: {{fileID: {V('Preview#go')}}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {S['toast']}", 1)),
@@ -1959,6 +1972,8 @@ def self_test(files):
                 "m_Navigation:\n    m_Mode: 0\n", "m_Navigation:\n    m_Mode: 3\n"), 1)), validate_prefabs),
         ("FLY calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: RequestFocus", "m_MethodName: GrantFocus", 1)),
          validate_prefabs),
+        ("the guide pointed at the whole screen", lambda f: f.__setitem__(view, re.sub(
+            r"(  guideTarget: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), validate_prefabs),
         ("STOP calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: ReleaseFocus", "m_MethodName: Hide", 1)),
          validate_prefabs),
         ("the cinema fading nothing", lambda f: f.__setitem__(view, f[view].replace(

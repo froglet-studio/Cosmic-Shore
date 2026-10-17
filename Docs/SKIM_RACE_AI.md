@@ -1779,6 +1779,16 @@ the course. Skim Race never exposed them because it lays one thin track.
 | **The course was sized from the rails' LIVE scale.** A laid prism grows in from zero (the continuity law), so a course built while the rails were still growing recorded them as slivers. The pilot then flew its skim line, and planned its shell clearance, inside their real shells for the whole race. | `RegattaRingObjective` sizes each rail prism from its authored `TargetScale` (through its parent's scale). |
 | **A Squirrel handed to the AI with the Third Eye's You / AI toggle never got the Skim Race pilot.** `PilotControl` armed only the platform autopilot, which flies ring waypoints straight through the braid. The Skim Race pilot also stood down on any human-owned hull. | `PilotControl.TrySetAIFlies` installs the pilot (`SkimRaceAIDeployment.TryInstall`) and sets `SkimRacePilot.FlyingForHuman`, so the pilot flies a human's hull while it is held. `IsHeldByAI` reads that flag. |
 
+**Third round, the root cause (2026-10-16, found from Yash's first recorded flight, which said "no Regatta rails in
+the scene"):** the Cell builds its environment by calling `Spawn()` on the config's `EnvironmentPrefab` ASSET. That lays
+the rail prisms into a plain container and fills the asset's own lane list, but no `SpawnableRegattaRails` ever exists
+in the scene. So `FindAnyObjectByType<SpawnableRegattaRails>()` returned null in all three of its readers:
+`RegattaRingObjective.TryBuildCourse` (the Squirrel pilot's course), `RegattaController.TryOwnLaneAhead` (the riders'
+own-lane aim) and the flight recorder. **The Squirrel AI never had a rail in Regatta**: with no course it flew from ring
+to ring straight through the braid, and none of the skim fixes above could show. `RegattaCourseSource.TryResolveLiveRails`
+asks the cells' configs for the rails asset whose lanes are laid (it still takes an authored scene instance first), and
+all three readers use it.
+
 **Skim Race is unchanged.** Its course has zero lift, every super-shielded prism is still its track, and direct
 flight stays on. The simulator gives bit-identical races before and after (I2, 2 seats, 12 races). Tests:
 `RegattaSkimTests`.
@@ -1813,3 +1823,45 @@ Race was calibrated on.
    recorded there. Never tune `SkimRaceAIConfig.asset` for Regatta: Skim Race I3 flies it.
 
 **Not verified in Unity yet** (no editor in the session that wrote it): `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 16. Learning from human flights (Regatta, 2026-10-15)
+
+Yash asked for this: play Regatta a few times as the Squirrel, then the AI learns from those races. It is built in
+two parts (`Docs/AI_SYSTEM/AI_TRAINING_PLAN.md` L3, steps 1 and 4A):
+
+1. **The recorder** (`HumanFlightRecorder`, editor and development builds only), now the **AI training recorder for every
+   game mode and vessel** (single player; online players later), files `flight_<Mode>_<Vessel>_<time>.json` with a
+   `training` field. After Play the record goes to Claude by itself (no question since 2026-10-16; the console names the vessel and mode). **It is automatic** (Yash,
+   2026-10-15: the Record button kept reading on with nothing saved, so it was removed). It starts when a match's turn
+   starts (Go) and stops when it ends (the Play Again menu) or when Play stops. Only the local player's own hull is
+   recorded; seconds the AI holds it (You / AI) are recorded with `held` = 1 and every learner skips them. Ten times
+   a second it records what `Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §2.2 lists: position, heading and up, speed,
+   boost, the four stick axes, the throttle, both triggers, the course, rings threaded, velocity, turn rates, boost
+   charge and state bits, element levels, the camera, every rival's position, velocity and rings, and the nearest
+   crystals. When recording starts it copies the race's static world (§2.1): every ring and, in Regatta, every rail
+   (prism positions, up axes, contact shell size, owning domain; the pilot's own is `lane` / `ownRail`); rail prisms
+   destroyed or restored during the race are `railEvents`. It writes `flight_<Mode>_<hull>_<time>.json` (schema
+   `cosmic-shore.flight/3`) to `<Documents>/CosmicShore Diagnostics/Flights/`. Unity's after-play **Store AI record**
+   asks about every new flight and carries it to `BugLedger/shared/reports/<user>/flights/`. A race that cannot be saved says why in one Console
+   warning. HUD `flightrec` reports the state and the saved count.
+2. **The learner** (`python3 Tools/Build/learn_from_flights.py`) reads every flight on every origin branch, or
+   `--dir <folder>`, and measures each sample against the rail itself (arc length, height, sideways offset, gap to the
+   shell's box). It learns from the fastest three finished races, or every race when fewer than three finished:
+
+   | Measured from your flying | Sets |
+   |---|---|
+   | median height above your rail while skimming, minus the course's skim lift | `SkimHeight` |
+   | your closest 10% of skimming gaps x 0.6, **never below the current margins** | `TrackGuardMargin`, `MassGuardMargin` |
+   | the look-ahead your heading points at on your skim line (time, and the shortest distances) | `LookaheadSeconds`, `LookaheadMin` |
+   | stick deflection per degree off that aim | `StickGainPerDegree` |
+   | turns per second, mean stick, speed, boost, contact share | the report only |
+
+   Every number is clamped to a band (`BANDS`). `--write` puts the numbers in the `learn_from_flights` block of
+   `author_skimrace_ai_config.py` as overrides on the Regatta policy only, bumps its `PolicyVersion`, regenerates
+   `SkimRaceAIConfig_Regatta.asset`, and writes `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md` (per race: time, rings,
+   skimming share, contact share, height, gap, look-ahead, turns; per setting: was, learned, why). `--self-test`
+   holds the maths on synthetic flights.
+
+**What it is not, yet:** behaviour cloning, meaning a network that copies the sticks (AI_TRAINING_PLAN L3 step B),
+and players' flights (that needs the consent step). It learns the AI's existing, readable numbers from your line, so
+a bad recording is easy to see and to undo (`git revert`, or an empty block).

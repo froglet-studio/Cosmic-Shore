@@ -67,6 +67,7 @@
   .pill.on.speed { background: var(--speed); border-color: var(--speed); }
   .pill.on.creation { background: var(--create); border-color: var(--create); }
   .pill.on.destruction { background: var(--destroy); border-color: var(--destroy); }
+  .pill.on.charge { background: var(--ringc); border-color: var(--ringc); }
   .pill.ring { flex: 1.3; }
   .pill.ring.on { background: var(--ringc); border-color: var(--ringc); }
   .pill.off { opacity: .35; text-decoration: line-through; }
@@ -145,7 +146,7 @@
   .tmodes { position: absolute; right: calc(10px + env(safe-area-inset-right, 0px)); top: calc(54px + env(safe-area-inset-top, 0px)); display: grid; gap: 6px; }
   .tmodes button { width: 64px; padding: 8px 4px; border-radius: 10px; border: 1px solid #ffffff33; background: #121524cc; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
   .tmodes button.on { color: #0b0d16; }
-  .tmodes button.on[data-m="speed"] { background: var(--speed); } .tmodes button.on[data-m="creation"] { background: var(--create); } .tmodes button.on[data-m="destruction"] { background: var(--destroy); }
+  .tmodes button.on[data-m="speed"] { background: var(--speed); } .tmodes button.on[data-m="creation"] { background: var(--create); } .tmodes button.on[data-m="destruction"] { background: var(--destroy); } .tmodes button.on[data-m="charge"] { background: var(--ringc); }
   .tmodes button[data-m="ring"] { border-color: var(--ringc); color: var(--ringc); }
   .tbar { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
   .tbar .btn { padding: 6px 10px; font-size: 13px; background: #121524d9; }
@@ -163,7 +164,7 @@
   <header class="top">
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1>Brittle Star Studio</h1>
-    <span class="round">Round 2 · the Unity build</span>
+    <span class="round">Round 4 · the Unity build</span>
     <p class="sub">The Brittle Star, the Falcon's comeback: a one-touch flyer with a cockpit dart inside a pentagon support ring of five engines and five guns. Swap between Speed, Creation and Destruction modes, fire one stream or all five, and launch the ring itself as a bomb. Fly its two design minigames (Demolition Derby and Fauna Frenzy) at four intensities, against AI Brittle Stars at Easy, Medium or Hard. Flight, gun and trail are the last Brittle Star built (an unmerged branch); the kit is the design document, and every number neither gives is marked lab-only.</p>
   </header>
 
@@ -181,7 +182,7 @@
           <div class="modes">
             <div class="row"><span id="hGoal">Crystal 1/5</span><b id="hMass">0 destroyed</b></div>
             <div class="pills">
-              <span class="pill speed" id="pSpeed">Speed</span><span class="pill creation" id="pCreation">Creation</span><span class="pill destruction" id="pDestruction">Destruct</span><span class="pill ring" id="pRing">Ring</span>
+              <span class="pill speed" id="pSpeed">Speed</span><span class="pill creation" id="pCreation">Creation</span><span class="pill destruction" id="pDestruction">Destruct</span><span class="pill charge" id="pCharge">Charge</span><span class="pill ring" id="pRing">Ring</span>
             </div>
             <div class="row"><span id="hGun">gun: cockpit</span><b id="hCharge">charge 0/1</b></div>
           </div>
@@ -194,8 +195,8 @@
             <h2 id="ovTitle">Demolition Derby, intensity 1</h2>
             <p id="ovText">Reach each of your crystals as fast as you can. Blast a path with your turrets, or fly round the barricades. Every crystal rebuilds or charges your support ring.</p>
             <div class="keys">
-              <span>Gamepad</span><span>left stick steers · right stick turns the ring: the aimed turret, and in Destruction the five arms (pushed further: RT's spread, or the arms opening) · A Speed · B Creation · X Destruction, again for Cruise · RT fires · LT throws the ring</span>
-              <span>Keys</span><span>W S pitch · A D turn · arrows aim and spread · Space fire · 1 2 3 modes · F ring</span>
+              <span>Gamepad</span><span>left stick steers · right stick turns the ring: the aimed turret, and in Destruction the five cords (pushed further: RT's spread, or the cords opening) · A Speed · B Creation · X Destruction (Space) · RB Charge, again for Cruise · RT fires (analog), or stiffens the Charge cords · LT throws a spare ring</span>
+              <span>Keys</span><span>W S pitch · A D turn · arrows aim and spread · Space fire · 1 2 3 (4: Charge, Unity build) modes · F ring</span>
               <span></span><span>Enter play · P pause / resume · R stop · C next camera</span>
             </div>
             <div class="btns"><button class="btn primary" id="startBtn" type="button">Start</button><button class="btn" id="resetBtn" type="button">Reset</button></div>
@@ -204,7 +205,7 @@
         <div class="touch" id="touch">
           <div class="tz L" id="tzL"><div class="ts idle" id="tsL"><i></i></div></div>
           <div class="tz R" id="tzR"><div class="ts idle" id="tsR"><i></i></div></div>
-          <div class="tmodes"><button type="button" data-m="speed">SPEED</button><button type="button" data-m="creation">CREATE</button><button type="button" data-m="destruction">DESTROY</button><button type="button" data-m="ring">RING</button></div>
+          <div class="tmodes"><button type="button" data-m="speed">SPEED</button><button type="button" data-m="creation">CREATE</button><button type="button" data-m="destruction">DESTROY</button><button type="button" data-m="charge">CHARGE</button><button type="button" data-m="ring">RING</button></div>
           <div class="tbar"><button class="btn" id="tStart" type="button">▶ Play</button><button class="btn" id="tCam" type="button">Cam</button><button class="btn" id="tBack" type="button">■ Stop</button><button class="btn" id="tExit" type="button" aria-label="Leave phone play">✕</button></div>
           <div class="portrait">Turn the phone sideways</div>
         </div>
@@ -283,7 +284,7 @@
         <h3>Controls</h3>
         <div class="keys">
           <span>One touch</span><span>the Brittle Star is a one-stick flyer: it always flies at full throttle; the stick only turns it (and banks it into the turn)</span>
-          <span>Gamepad</span><span><b>Unity build</b> (the game's bindings): left stick steer · right stick: direction turns the ring (the aimed turret, and the five arms with it), distance opens RT's spread or moves the arms in and out · A Speed · B Creation · X Destruction (press the lit one again for Cruise) · RT fire · LT Ring Detonation. <b>Design sets</b>: RT or A fire · X Speed · Y Creation · B Destruction</span>
+          <span>Gamepad</span><span><b>Unity build</b> (the game's bindings): left stick steer · right stick: direction turns the ring (the aimed turret, and the five guns or cords with it), distance moves the guns or cords in and out · A Speed · B Creation · X Space (Destruction) · RB Charge (press the lit one again for Cruise) · RT analog: the guns' rate, or in Charge the cords from whip to saber · LT Ring Detonation (needs a spare ring). <b>Design sets</b>: RT or A fire · X Speed · Y Creation · B Destruction</span>
           <span>Keys</span><span>W S pitch · A D turn · arrows aim / spread · Space fire · 1 Speed · 2 Creation · 3 Destruction · F ring (the game's own keys are Space / R / Q for the modes, Right Shift fire, Left Shift ring; R and Space are the studio's Stop and fire here)</span>
           <span>Free cam</span><span>drag to turn · wheel to zoom · J L / I K turn · U O zoom</span>
           <span>Transport</span><span>Enter play · P pause / resume · R stop · C next camera</span>
@@ -306,8 +307,8 @@
 
       <div class="panel" id="grp-hull">
         <h3>Hull</h3>
-        <label class="field"><span>Flight numbers</span><select id="shipSet" class="arp-seg"><option value="unity">Unity build (ships): cruise 45, Speed x6, the five arms, the nucleus-wide disk</option><option value="branch">BrittleStar branch (2026-07): cruise 35, Speed 110, turns 80°/s</option><option value="falcon">Falcon.prefab (bleeding-edge): cruise 60, Speed 210, turns 60 / 40°/s</option></select></label>
-        <p class="note"><b>Unity build</b> is what ships (<code>BrittleStar = 16</code>): its rules (Cruise plus three exclusive modes, the five auto-firing arms, a trail per ring corner, the nucleus-wide ring explosion) and its numbers (the Unity build numbers card, <code>SHIPPED</code> in this page, which <code>studio_to_unity.py</code> clones into <code>BrittleStarConfig.asset</code>). The other two fly round 1's design kit, for comparison: the branch's BrittleStar.prefab (Philip Appoh, May to July 2026, never merged) and the older Falcon.prefab Manta copy.</p>
+        <label class="field"><span>Flight numbers</span><select id="shipSet" class="arp-seg"><option value="unity">Unity build (ships): cruise 45, Speed x6, five guns or five whip cords, spare rings, the nucleus-wide disk</option><option value="branch">BrittleStar branch (2026-07): cruise 35, Speed 110, turns 80°/s</option><option value="falcon">Falcon.prefab (bleeding-edge): cruise 60, Speed 210, turns 60 / 40°/s</option></select></label>
+        <p class="note"><b>Unity build</b> is what ships (<code>BrittleStar = 16</code>): its rules (Cruise plus three exclusive modes, four modes (the five heat-limited guns, the five whip cords), a trail per ring corner, the nucleus-wide ring explosion) and its numbers (the Unity build numbers card, <code>SHIPPED</code> in this page, which <code>studio_to_unity.py</code> clones into <code>BrittleStarConfig.asset</code>). The other two fly round 1's design kit, for comparison: the branch's BrittleStar.prefab (Philip Appoh, May to July 2026, never merged) and the older Falcon.prefab Manta copy.</p>
         <label class="field"><span>Ring</span><select id="hullRing" class="arp-seg"><option value="auto">By Time level (pentagon to circle)</option><option value="penta">Always pentagon</option><option value="circle">Always circle</option></select></label>
         <p class="note">The concept art: "a pentagon instead of a circle; each point of the pentagon is an engine in the back and a gun in the front", the ring held to the cockpit by suspended energy, not struts. Element looks from the design: Mass a larger cockpit, Charge larger thrusters and guns, Space longer barrels, Time a ring that curves into a circle.</p>
       </div>
@@ -326,7 +327,7 @@
         <details open>
           <summary>Where the numbers come from, and what is not modelled</summary>
           <ul>
-            <li><b>The Unity build</b> (the default set, round 2): <code>VesselClassType.BrittleStar = 16</code>'s rules and numbers, ported line for line from <code>BrittleStarExecutor</code> / <code>BrittleStarRules</code> (contract: <code>R_VesselActions/BRITTLE_STAR.md</code>). Cruise 45 u/s; A / B / X select Speed (cruise x6, x8 at Time 10), Creation (x0.5, the slowest; a trail behind each ring corner) or Destruction (the five arms: every turret fires on its own, 90 rounds/s of the Sparrow's round at 135 u/s for 3 s, swelling x3, meeting 120 u ahead with the stick in, splayed 25° with it out), and press again for Cruise; the stick's direction turns the ring in every mode. RT outside Destruction: 12 rounds/s at 70 u/s from the aimed turret or the cockpit. LT throws the ring (+240 u/s, 1.1 s fuse): a flat disk in its plane, as thick as the ring (0.22 u x Charge 1 to 4) and as wide as the nucleus (392 u here), swept out over 0.7 s, breaking every prism it passes and scoring one petal hit per rival hull. A stored charge or a crystal rebuilds the ring over 0.5 s; a crystal while charged is 6 s of Overdrive. Camera straight behind, no height. Every number is in <code>SHIPPED</code> (the Unity build numbers card).</li>
+            <li><b>The Unity build</b> (the default set, round 2): <code>VesselClassType.BrittleStar = 16</code>'s rules and numbers, ported line for line from <code>BrittleStarExecutor</code> / <code>BrittleStarRules</code> (contract: <code>R_VesselActions/BRITTLE_STAR.md</code>). Cruise 45 u/s; A / B / X select Speed (cruise x6, x8 at Time 10), Creation (x0.5, the slowest; a trail behind each ring corner) or Space (X: the five guns, RT's pull setting their rate, heating as they fire; overheated, they stop and the trail lays danger prisms) or Charge (RB: five cords, 2026-10-16 - 120 u whips with RT released that carry slow waves from every turn and ring flick, shortening to 80 u straight sabers as RT is pulled; they slice every prism they touch and cool the guns), and press again for Cruise; in every other mode RT fires the one aimed turret, no spread; LT throws a spare ring (one per crystal, two at most) and the mounted ring regrows; the stick's direction turns the ring in every mode. RT outside Destruction: 12 rounds/s at 70 u/s from the aimed turret or the cockpit. LT throws the ring (+240 u/s, 1.1 s fuse): a flat disk in its plane, as thick as the ring (0.22 u x Charge 1 to 4) and as wide as the nucleus (392 u here), swept out over 0.7 s, breaking every prism it passes and scoring one petal hit per rival hull. A stored charge or a crystal rebuilds the ring over 0.5 s; a crystal while charged is 6 s of Overdrive. Camera straight behind, no height. Every number is in <code>SHIPPED</code> (the Unity build numbers card).</li>
             <li><b>Flight</b> (round 1's design sets; Vessel Config &gt; Flight numbers picks the source). The branch's <code>BrittleStar.prefab</code> (<code>origin/claude/falcon-brittlestar-reintro-oyx1q1</code>): <code>SingleStickVesselTransformer</code>, speed = 10 + 25 × boost, so 35 u/s cruise and 110 u/s in Speed mode (<code>VesselStatus.boostMultiplier</code> 4); there is no throttle axis. Pitch and yaw 80°/s, bank into the turn 30°/s, each plus 0.1 × speed (<code>RotationThrottleScaler</code>). <code>Falcon.prefab</code>: 60 u/s cruise, 210 boosted, pitch 60°/s, yaw 40°/s, bank 15°/s. Both: the nose follows the stick's command at 1.5/s (<code>VesselTransformer.LERP_AMOUNT</code>) and speed eases at the same rate; the stick eases as the game's gamepad strategy does, <code>1 − cos(x·π/2)</code>.</li>
             <li><b>Gun</b> (authored, the branch): <code>FullAutoAction</code> 30 rounds/s per muzzle; round speed 1500 → 4000 u/s with Space (its <code>speedValue</code> ElementalFloat) and a 0.3 s life. The round decelerates as the game's <code>Projectile</code> does (<code>cos(πt/2T)</code>), so its range is <code>v·2T/π</code>: 286 u at Space 0, 764 u at Space 10. Hit radius 0.5 (<code>FalconProjectile.prefab</code>). The five guns ride <code>GunRingTransformer</code>: the ring spins 20°/s and the guns converge 70 + 300 |right stick|² u ahead. Trail: <code>SparrowPrismController</code>, a (2, 2, 5) block every 7 u, 4 u behind; camera <code>SparrowCameraSettingsSO</code>, 50 u behind and 10 up.</li>
             <li><b>Modes, the gun's turrets, Ring Detonation, the crystal charge and overdrive, the element parameters, the personas and both minigames</b>: the design document "Class - Brittle Star" (Notion, Class Design Documents). Its words are quoted in <code>Docs/Studios/BRITTLE_STAR.md</code>; every number it does not give is lab-only and sits in The kit or Barricades and fauna.</li>
@@ -358,16 +359,21 @@
   // names; a key the map lacks has no plain field to write (a prefab number, an ElementalFloat's range): --unmapped lists them.
   const SHIPPED = {
     // BrittleStarConfig.asset (BrittleStarConfigSO)
-    modeBlendSeconds: 0.35, speedModeSpacingFollow: 1, creationSpeedMultiplier: 0.5, creationSpacing: 6, creationOffset: 2,
+    modeBlendSeconds: 0.35, speedModeSpacingFollow: 1, speedModeStretch: 1, creationSpeedMultiplier: 0.5, creationSpacing: 6, creationOffset: 2,
     // slow rounds (Garrett, 2026-10-14): a tenth of the speed, ten times the flight, the same range (speed x 2T/pi);
     // the Sparrow's round at its own size, swelling x3 in flight (FullAutoAction.growthFactorAtRestingMass)
-    fireRate: 12, projectileSpeed: 70, projectileTime: 3, projectileScale: 1, roundGrowthFactor: 3,
-    destructionFireRate: 90, destructionProjectileSpeed: 135, destructionProjectileScale: 1, armFocusDistance: 120, armSplayDegrees: 25,
-    maxSpreadDegrees: 16, aimDeadzone: 0.25, ringTurnRate: 540,
+    // the guns (Garrett, 2026-10-16): RT's pull sets the rate, up to fireRate per gun; Space Mode fires all five, Cruise /
+    // Speed / Creation the one aimed turret, no spread; base range 150% (4.5 s), x2 through Space; every round heats them
+    fireRate: 90, projectileSpeed: 135, projectileTime: 4.5, projectileScale: 1, roundGrowthFactor: 3,
+    armFocusDistance: 120, armSplayDegrees: 25, aimDeadzone: 0.25, ringTurnRate: 540,
+    heatPerRound: 0.0012, coolRate: 0.12, chargeCoolRate: 0.6, overheatRecoverBelow: 0.35,
+    // Charge Mode's five CORDS (BrittleStarCord): whips at 150% with RT released, sabers at 100% pulled, analog between
+    cordLength: 80, cordLooseLengthScale: 1.5, cordLinks: 16, cordCutRadius: 0.6, cordLooseWave: 180, cordRigidWave: 2500,
+    cordLooseDamping: 0.4, cordRigidDamping: 14, cordPose: 1600, cordRigidityRate: 12, cordHitCooldown: 0.5,
     ringLaunchSpeed: 240, ringFuseSeconds: 1.1, ringContactRadiusScale: 1,
-    ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, ringBlastBandWidth: 6, rebuildSeconds: 0.5, overdriveSeconds: 6, ringBlastHitCooldown: 0.5,
+    ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, ringBlastBandWidth: 6, rebuildSeconds: 0.5, maxSpareRings: 2, ringBlastHitCooldown: 0.5,
     // its ElementalFloats, level 0 -> 10 (nested in the asset: the map cannot write them, so a change here is made there by hand)
-    speedModeAt0: 6, speedModeAt10: 8, creationBlockAt10: 1.8, rangeAt10: 1.6, projectileScaleAt10: 1.8, blastScaleAt10: 4,
+    speedModeAt0: 6, speedModeAt10: 8, creationBlockAt10: 1.8, rangeAt10: 2, projectileScaleAt10: 1.8, blastScaleAt10: 4,
     // BrittleStar.prefab: the Sparrow's one-thumb transformer block, BrittleStarHullBuilder, the trail spawner
     minimumSpeed: 10, throttleScaler: 35, pitchScaler: 80, yawScaler: 80, rollScaler: 30, rotationThrottleScaler: 0.1,
     ringRadius: 6, ringHalfThickness: 0.22, trailWavelength: 6, trailOffset: 2,
@@ -379,7 +385,7 @@
   };
   const U = SHIPPED, SHIPPED_AT_LOAD = Object.assign({}, SHIPPED);
   const LAB = { manualClock: false };   // window.__lab (filled at the end of setup)
-  const CREATION_BLOCK = [2.5, 2.5, 4.5];   // BrittleStarConfigSO.creationBlockSize (a Vector3: not a map row)
+  const CREATION_BLOCK = [1.5, 1.5, 3];   // BrittleStar.prefab's spawner BaseScale: the base trail's block, and every corner trail's (2026-10-16; a Vector3: not a map row)
   // ================= the older sources, flown on the design document's kit (round 1) =================
   // Neither ships (the game has no Brittle Star yet). "branch" is the last Brittle Star anyone built:
   // BrittleStar.prefab on origin/claude/falcon-brittlestar-reintro-oyx1q1 (= Bleeding-Edge-Reintroduce-Falcon, Philip
@@ -389,7 +395,7 @@
       label: 'Unity build (BrittleStar = 16)', unity: true,   // the rules switch: every "SHIP.unity" branch below is the C#
       minSpeed: U.minimumSpeed, throttle: U.throttleScaler, pitch: U.pitchScaler, yaw: U.yawScaler, bank: U.rollScaler, rotSpeed: U.rotationThrottleScaler,
       boostMult: U.speedModeAt0, gunRate: U.fireRate, gunSpeed: [U.projectileSpeed, U.projectileSpeed], gunLife: U.projectileTime,
-      shotRadius: 0.5,                     // SparrowProjectile's 0.5 sphere, x projectileScale (RT) or destructionProjectileScale (the arms)
+      shotRadius: 0.5,                     // SparrowProjectile's 0.5 sphere, x projectileScale (RT's rounds)
       ringSpin: 0, focus: [U.armFocusDistance, 0],
       trailWave: U.trailWavelength, trailScale: CREATION_BLOCK.slice(), trailOffset: U.trailOffset,
       chase: [0, 0, -38],                  // BrittleStarCameraSettingsSO.followOffset: no height, the vessel is a crosshair
@@ -497,7 +503,7 @@
       circle: f('time'), cockpit: 1 + 0.5 * f('mass'), pods: 1 + 0.45 * f('charge'), barrels: 1 + 1.1 * f('space'),
     };
   }
-  const rangeOf = (P) => SHIP.unity ? (P.armsOn ? U.destructionProjectileSpeed : U.projectileSpeed) * 2 * U.projectileTime * P.m.range / Math.PI
+  const rangeOf = (P) => SHIP.unity ? (P.cordsOn ? U.cordLength * U.cordLooseLengthScale : U.projectileSpeed * 2 * U.projectileTime * P.m.range / Math.PI)
     : P.m.shotSpeed * 2 * SHIP.gunLife / Math.PI;
   const ringR = () => SHIP.unity ? U.ringRadius : KIT.ringRadius;
   const cruiseOf = () => SHIP.minSpeed + SHIP.throttle;
@@ -586,8 +592,8 @@
       const P = {
         i, spec, domain: domainOf(spec.domain), pos: new V(off, 0, 60), quat: q0.clone(), cmd: q0.clone(), speed: SHIP.minSpeed + SHIP.throttle, push: new V(),
         lv: Object.assign({}, spec.lv), m: mults(spec.lv), style: styleOf(spec.style),
-        mode: SHIP.unity ? null : 'speed', ring: true, charge: 0, overdrive: 0, rebuildAt: 0, armsOwed: 0, armsOn: false, aimedPoint: -1, lastBlastAt: -9, ringAngle: 0, ringTarget: 0, owed: 0, shotN: 0, trailAcc: 0, trailOff: 0, lastHitAt: -1, petalsLost: 0,
-        crystals: 0, crystal: null, finishT: null, destroyed: 0, bonus: 0, rings: 0, hits: 0, mass: 0, kills: 0, modeT: { speed: 0, creation: 0, destruction: 0, overdrive: 0, none: 0 },
+        mode: SHIP.unity ? null : 'speed', ring: true, charge: 0, overdrive: 0, rebuildAt: 0, cords: null, cordsOut: 0, cordsOn: false, cordHitAt: {}, rigid: 0, heat: 0, hot: false, aimedPoint: -1, lastBlastAt: -9, ringAngle: 0, ringTarget: 0, owed: 0, shotN: 0, trailAcc: 0, trailOff: 0, lastHitAt: -1, petalsLost: 0,
+        crystals: 0, crystal: null, finishT: null, destroyed: 0, bonus: 0, rings: 0, hits: 0, mass: 0, kills: 0, modeT: { speed: 0, creation: 0, destruction: 0, charge: 0, overdrive: 0, none: 0 },
         hc: spec.ai ? { level: DIFF[spec.ai], rng: rng(seed * 31 + i * 7 + 1), tracking: -1, noticeAt: 0, misjudged: false, until: 0, off: new V(), unnoticed: false } : null,
         aim: null, aiState: '', lastAiIn: null, firing: false, aimX: 0, aimY: 0, idle: 0, held: false, ringWas: false,
         noRing: !!spec.noRing, noModes: !!spec.noModes, trail: [],
@@ -601,10 +607,10 @@
     if (W.game === 'derby') { P.crystal = P.crystals < W.anchors.length ? { pos: W.anchors[P.crystals].clone(), id: (P.i + 1) * 1000 + P.crystals } : null; return; }
     const k = (P.crystals + P.i) % W.anchors.length; P.crystal = { pos: W.anchors[k].clone(), id: (P.i + 1) * 1000 + P.crystals };
   }
-  function activeModes(P, W) {   // the modes in force: one, all three in overdrive, none without a ring (the design: "loses access to its 3 modes entirely")
-    if (!P.ring || P.noModes) return { speed: false, creation: false, destruction: false };
-    if (P.overdrive > W.t) return { speed: true, creation: true, destruction: true };
-    return { speed: P.mode === 'speed', creation: P.mode === 'creation', destruction: P.mode === 'destruction' };
+  function activeModes(P, W) {   // the modes in force: one, all three in overdrive (design sets), none without a ring
+    if (!P.ring || P.noModes) return { speed: false, creation: false, destruction: false, charge: false };
+    if (!SHIP.unity && P.overdrive > W.t) return { speed: true, creation: true, destruction: true, charge: false };
+    return { speed: P.mode === 'speed', creation: P.mode === 'creation', destruction: P.mode === 'destruction', charge: SHIP.unity && P.mode === 'charge' };
   }
 
   // ---- the handicap: SkimRaceHandicap's two mistakes, applied to what the AI believes (D24) ----
@@ -686,6 +692,8 @@
         else want = br.create > 0.5 ? 'creation' : SHIP.unity && dist < Math.max(250, (P.speed - cruiseOf()) / FOLLOW + 60) ? null : 'speed';
       }
       if (SHIP.unity && threading) want = 'destruction';   // thread at cruise: at x6 the hull overshoots a 36 u hole
+      // Unity build: a wall inside cord reach (or overheated guns, which the cords cool) is cut with Charge Mode's sabers
+      if (SHIP.unity && want === 'destruction' && !threading && (P.hot || ahead.near < U.cordLength * U.cordLooseLengthScale)) want = 'charge';
       mode = wantMode(W, P, want);
       if (P.ring) {
         const wall = soft >= br.ringAt && ahead.near > 80 && ahead.near < 260, sealed = W.I >= 4 && ahead.sup >= 6 && ahead.near > 80 && ahead.near < 240;   // the blast core strips a super shield
@@ -705,7 +713,7 @@
       else if (pack && pack.n >= br.crowd && pack.c.pos.distanceTo(P.pos) < rangeOf(P) * br.guard * 2) {
         const seen = believe(W, P, pack.c.pos, 50000 + pack.c.id), td = pack.c.pos.distanceTo(P.pos); why = 'hunt';
         if (seen) { goal = seen; fire = seen.clone().sub(P.pos).normalize().dot(f) > 0.97 && td < rangeOf(P) && !ownInLine(W, P, f, td); }   // friendly fire is on: never through your own trail
-        mode = wantMode(W, P, 'destruction');
+        mode = wantMode(W, P, SHIP.unity && (P.hot || td < U.cordLength * U.cordLooseLengthScale) ? 'charge' : 'destruction');
         if (P.ring && P.charge > 0 && pack.n >= 3 && td < 240 && td > 60) { ring = true; why = 'ring'; }
       } else if (needCrystal) { goal = believe(W, P, P.crystal.pos, P.crystal.id); why = 'crystal'; mode = wantMode(W, P, 'creation'); }
       else {
@@ -725,7 +733,7 @@
       }
     }
     if (P.noModes) mode = null; if (P.noRing) ring = false;
-    if (SHIP.unity) aim = { x: 0, y: 0 };   // BrittleStarExecutor.AimStick: the AI aims with its nose and the cockpit gun
+    if (SHIP.unity) { aim = { x: 0, y: 0 }; if (P.charge <= 0) ring = false; }   // BrittleStarExecutor: the AI aims with its nose; no spare, no throw
     P.aim = goal; P.aiState = P.hc && P.hc.unnoticed ? 'not noticed' : P.hc && P.hc.misjudged ? 'misjudged' : why;
     let sx = 0, sy = 0;
     if (goal) {
@@ -770,7 +778,7 @@
         for (let k = 0; k < 5; k++) { const d = Math.abs(angDelta(POD_ANG[k] + P.ringAngle, aim)); if (d < bd) { bd = d; best = k; } }
         P.aimedPoint = best; const want = P.ringAngle + angDelta(P.ringAngle, aim - POD_ANG[best]), step = U.ringTurnRate * R * dt;
         P.ringAngle += clamp(want - P.ringAngle, -step, step);
-      } else P.aimedPoint = -1;   // the ring holds its last rotation
+      }   // the ring holds its last rotation, and its aimed turret (RT's one gun outside Space and Charge)
     } else if (SHIP.ringSpin > 0) P.ringAngle += SHIP.ringSpin * R * dt;
     else { if (am > 0.2) P.ringTarget = Math.atan2(inp.ay, inp.ax) - Math.PI / 2; let da = P.ringTarget - P.ringAngle; da = Math.atan2(Math.sin(da), Math.cos(da)); P.ringAngle += da * Math.min(1, 8 * dt); }
     P.focus = lerp(P.focus || SHIP.focus[0], SHIP.focus[0] + SHIP.focus[1] * am * am, Math.min(1, 10 * dt));   // GunFocus eases to 70 + 300 |R|^2
@@ -790,7 +798,8 @@
     if (P.trailOff <= W.t && P.speed > 3) {
       // Speed mode stretches the wavelength so output per second stays put (the design). Unity: by the hull's ACTUAL speed over
       // its plain cruise, never below the authored wavelength (BrittleStarExecutor.ApplySpeedMode: no momentum hole)
-      const wave = SHIP.unity ? (M.creation ? U.creationSpacing : SHIP.trailWave) * lerp(1, Math.max(1, P.speed / cruiseOf()), U.speedModeSpacingFollow)
+      P.spacing = lerp(1, Math.max(1, P.speed / cruiseOf()), U.speedModeSpacingFollow);
+      const wave = SHIP.unity ? (M.creation ? U.creationSpacing : SHIP.trailWave) * P.spacing
         : SHIP.trailWave * (M.speed ? boost : 1);
       P.trailAcc += P.speed * dt;
       while (P.trailAcc >= wave) { P.trailAcc -= wave; layTrail(W, P, f, M); }
@@ -812,10 +821,8 @@
     // the crystal: a charge, or a new ring, or overdrive
     if (P.crystal && P.crystal.pos.distanceTo(P.pos) < 25) {
       P.crystals++;
-      if (SHIP.unity) {   // BrittleStarRules.RingState.CollectCrystal: rebuild a missing ring, else store, else Overdrive
-        if (!P.ring && !(P.rebuildAt > 0)) { P.rebuildAt = W.t + U.rebuildSeconds; say(W, P, 'Support ring rebuilding'); }
-        else if (P.charge < 1) { P.charge = 1; say(W, P, 'Ring charge stored'); }
-        else { P.overdrive = Math.max(P.overdrive, W.t) + U.overdriveSeconds; say(W, P, 'OVERDRIVE: all three modes'); }
+      if (SHIP.unity) {   // BrittleStarRules.RingState.CollectCrystal: one spare ring per crystal, up to maxSpareRings (P.charge = the spares)
+        if (P.charge < U.maxSpareRings) { P.charge++; say(W, P, 'Spare ring ' + P.charge + '/' + U.maxSpareRings); }
       } else if (!P.ring) { P.ring = true; if (P.mode == null && !P.noModes) P.mode = 'speed'; say(W, P, 'Support ring rebuilt'); }
       else if (P.charge < 1) { P.charge = 1; say(W, P, 'Ring charge stored'); }
       else { P.overdrive = W.t + KIT.overdrive; say(W, P, 'OVERDRIVE: all three modes'); }
@@ -825,7 +832,7 @@
     if (W.game === 'frenzy' && P.finishT == null && P.mass >= W.target) { P.finishT = W.t; say(W, P, 'Target mass in ' + W.t.toFixed(1) + ' s'); }
   }
   const say = (W, P, m) => { if (P.i === W.watch) W.events.push(m); };
-  const modeName = (m) => m === 'speed' ? 'Speed' : m === 'creation' ? 'Creation' : 'Destruction';
+  const modeName = (m) => m === 'speed' ? 'Speed' : m === 'creation' ? 'Creation' : m === 'charge' ? 'Charge' : SHIP.unity ? 'Space' : 'Destruction';
   // the turrets: one stream (the cockpit when the aim stick is centred, else the ring point nearest the stick), all five in Destruction
   function podWorld(P, k, q) {
     const a = POD_ANG[k] + P.ringAngle, r = ringR();
@@ -851,34 +858,95 @@
     const a = lerp(-inward, U.armSplayDegrees, clamp(splay01, 0, 1)) * Math.PI / 180;
     return fwd.clone().multiplyScalar(Math.cos(a)).addScaledVector(out, Math.sin(a)).normalize();
   }
-  function fireUnity(W, P, inp, f, M, am, dt) {
-    const T = U.projectileTime * P.m.range, q = P.quat;
-    P.armsOn = M.destruction && P.speed > 3;   // the five ARMS: they fire on their own while the mode is on and the trail runs
-    P.firing = P.armsOn || !!inp.fire;
-    if (P.armsOn) {
-      const iv = 1 / U.destructionFireRate, splay = spread01(am), r = SHIP.shotRadius * U.destructionProjectileScale * P.m.shot;
-      P.armsOwed = Math.min(P.armsOwed + dt, iv * 4);   // a hitch never discharges as a burst (vessel rule 17)
-      while (P.armsOwed >= iv) {
-        P.armsOwed -= iv;
-        for (let k = 0; k < 5; k++) {
-          const m = podWorld(P, k, q), radial = m.clone().sub(P.pos), dist = radial.length();
-          const d = dist > 1e-4 ? armDirection(f, radial.divideScalar(dist), dist, splay) : f.clone();
-          W.shots.push({ p: m, d, v: U.destructionProjectileSpeed + P.speed, t: 0, T, r, r0: r, g: U.roundGrowthFactor, owner: P.i, disable: true, big: true, dead: false });
-        }
+  // ---- Charge Mode's five CORDS (BrittleStarCord + BrittleStarExecutor.UpdateCords, line for line) ----
+  // A discrete wave equation on the link DIRECTIONS: inextensible, the muzzle's arm line the fixed end, the tip free. Released,
+  // a turn or a ring flick sends a slow wave down the whip; pulled, RT shortens it to 100% and stiffens it into a saber.
+  const perpTo = (v, u) => v.clone().addScaledVector(u, -v.dot(u));
+  function Cord(links) { const n = Math.max(2, links); return { n, u: [], w: [], P: [], v: [], seeded: false, ld: null }; }
+  function cordLay(c, anchor, len) { const seg = Math.max(0, len) / c.n; c.P[0] = anchor.clone(); for (let i = 0; i < c.n; i++) c.P[i + 1] = c.P[i].clone().addScaledVector(c.u[i], seg); }
+  function cordReset(c, anchor, dir, len) {
+    for (let i = 0; i < c.n; i++) { c.u[i] = dir.clone(); c.w[i] = new V(); }
+    c.ld = dir.clone(); cordLay(c, anchor, len); for (let i = 0; i <= c.n; i++) c.v[i] = new V(); c.seeded = true;
+  }
+  function cordStep(c, anchor, dir, len, r, dt) {
+    if (!c.seeded) { cordReset(c, anchor, dir, len); return; }
+    if (dt <= 0) return;
+    const K = Math.max(0, lerp(U.cordLooseWave, U.cordRigidWave, r)), D = Math.max(0, lerp(U.cordLooseDamping, U.cordRigidDamping, r)), Po = r * r * U.cordPose;
+    const steps = clamp(Math.ceil(dt * 120 - 1e-4), 1, 8), h = dt / steps, keep = Math.exp(-D * h), from = c.ld, acc = [];   // MaxSubStep 1/120, MaxSubSteps 8
+    for (let k = 1; k <= steps; k++) {
+      let root = from.clone().lerp(dir, k / steps); root = root.lengthSq() > 1e-8 ? root.normalize() : dir.clone();
+      for (let i = 0; i < c.n; i++) {
+        const before = i === 0 ? root : c.u[i - 1], after = i === c.n - 1 ? c.u[i] : c.u[i + 1];
+        const a = before.clone().add(after).addScaledVector(c.u[i], -2).multiplyScalar(K).add(root.clone().sub(c.u[i]).multiplyScalar(Po));
+        acc[i] = perpTo(a, c.u[i]);
       }
-      P.owed = 0; return;   // the arms ARE the guns while they run; RT adds nothing
+      for (let i = 0; i < c.n; i++) {
+        const w = c.w[i].clone().addScaledVector(acc[i], h).multiplyScalar(keep), u = c.u[i].clone().addScaledVector(w, h);
+        if (u.lengthSq() > 1e-8) c.u[i] = u.normalize();
+        c.w[i] = perpTo(w, c.u[i]);
+      }
     }
-    P.armsOwed = 0;
-    if (!inp.fire) { P.owed = 0; return; }
-    const iv = 1 / U.fireRate, r = SHIP.shotRadius * U.projectileScale * P.m.shot, spread = spread01(am) * U.maxSpreadDegrees * Math.PI / 180;
-    P.owed = Math.min(P.owed + dt, iv * 3);
-    while (P.owed >= iv) {   // RT: one stream, from the aimed turret or (stick centred, or ringless) the cockpit gun
-      P.owed -= iv;
-      const m = P.ring && P.aimedPoint >= 0 ? podWorld(P, P.aimedPoint, q) : P.pos.clone().addScaledVector(f, 4);
-      const n = P.shotN++, a = hash(P.i + 1, n) * Math.PI * 2, sp = Math.sqrt(hash(n, P.i + 7)) * spread;
-      const d = f.clone().addScaledVector(rightOf(q), Math.cos(a) * Math.tan(sp)).addScaledVector(upOf(q), Math.sin(a) * Math.tan(sp)).normalize();
-      W.shots.push({ p: m, d, v: U.projectileSpeed + P.speed, t: 0, T, r, r0: r, g: U.roundGrowthFactor, owner: P.i, disable: false, big: false, dead: false });
+    c.ld = dir.clone();
+    const prev = c.P.map((q) => q.clone()); cordLay(c, anchor, len);
+    for (let i = 0; i <= c.n; i++) c.v[i] = c.P[i].clone().sub(prev[i]).divideScalar(dt);
+  }
+  const segDist2 = (x, a, b) => { const ab = b.clone().sub(a), L = ab.lengthSq(), t = L > 1e-8 ? clamp(x.clone().sub(a).dot(ab) / L, 0, 1) : 0; return x.distanceToSquared(a.clone().addScaledVector(ab, t)); };
+  function armLine(P, f, k, splay) { const m = podWorld(P, k, P.quat), radial = m.clone().sub(P.pos), dist = radial.length(); return { m, d: dist > 1e-4 ? armDirection(f, radial.divideScalar(dist), dist, splay) : f.clone() }; }
+  function stepCords(W, P, f, M, am, depth, dt) {
+    P.cordsOut = clamp(P.cordsOut + (M.charge && P.speed > 3 ? 1 : -1) * dt / U.modeBlendSeconds, 0, 1);   // the trail's clock, as the game
+    P.rigid += (depth - P.rigid) * (1 - Math.exp(-U.cordRigidityRate * dt));
+    const len = U.cordLength * lerp(U.cordLooseLengthScale, 1, P.rigid) * P.cordsOut * (P.ring ? 1 : 0);
+    P.cordsOn = len >= 0.5;
+    if (!P.cordsOn) { if (P.cords) for (const c of P.cords) c.seeded = false; return; }
+    const links = Math.max(2, Math.round(U.cordLinks));
+    if (!P.cords || P.cords[0].n !== links) P.cords = [0, 1, 2, 3, 4].map(() => Cord(links));
+    const splay = spread01(am);
+    for (let k = 0; k < 5; k++) { const L = armLine(P, f, k, splay); cordStep(P.cords[k], L.m, L.d, len, P.rigid, dt); }
+    // the cut: every prism a link touches (friendly fire; never your own fresh trail; super-shielded refuses; a shield pops first)
+    const cut = U.cordCutRadius * P.m.shot, seen = new Set();
+    for (const c of P.cords) for (let s = 0; s < c.n; s++) {
+      const a = c.P[s], b = c.P[s + 1], mid = a.clone().add(b).multiplyScalar(0.5), half = a.distanceTo(b) * 0.5;
+      for (const p of W.grid.near(mid, half + cut + 8, tmpArr)) {
+        if (p.dead || seen.has(p) || p.shield === 2) continue;
+        if (p.trailOf === P.i && W.t - p.born < U.skimGraceSeconds) continue;
+        const rr = cut + 0.5 * Math.hypot(p.scale[0], p.scale[1], p.scale[2]);
+        if (segDist2(p.pos, a, b) > rr * rr) continue;
+        seen.add(p);
+        if (p.shield === 1) { p.shield = 0; p.flash = 1; W.dirty = true; } else killPrism(W, p, P);
+      }
+      for (const cr of W.fauna) {   // a creature across a cord: a Destruction hit (2), once per cordHitCooldown (lab-only)
+        if (cr.dead || W.t - (cr.cordAt ?? -9) < U.cordHitCooldown || segDist2(cr.pos, a, b) > (6 + cut) ** 2) continue;
+        cr.cordAt = W.t; cr.hp -= 2; if (cr.hp <= 0) { cr.dead = true; P.kills++; W.killed++; }
+      }
     }
+    for (const O of W.pilots) {   // a hull across a cord: a scored strike (petals only), once per victim per cordHitCooldown
+      if (O.i === P.i || W.t - (O.cordHitAt[P.i] ?? -9) < U.cordHitCooldown) continue;
+      if (P.cords.some((c) => { for (let s = 0; s < c.n; s++) if (segDist2(O.pos, c.P[s], c.P[s + 1]) < (KIT.hullR + cut) ** 2) return true; return false; })) {
+        O.cordHitAt[P.i] = W.t; petalHit(W, P, O);
+      }
+    }
+  }
+  // ---- the guns and their heat (BrittleStarExecutor.UpdateGuns / UpdateHeat, line for line) ----
+  function fireUnity(W, P, inp, f, M, am, dt) {
+    const depth = typeof inp.fire === 'number' ? clamp(inp.fire, 0, 1) : inp.fire ? 1 : 0;   // RT's pull; a key or the AI reads full
+    stepCords(W, P, f, M, am, depth, dt);
+    P.firing = P.cordsOn || depth > 0;
+    const guns = M.destruction ? 5 : M.charge ? 0 : 1;   // BrittleStarRules.GunsFor
+    const shotNow = depth > 0 && !P.trigWas; P.trigWas = depth > 0;
+    if (guns > 0 && depth > 0 && !P.hot) {
+      const iv = 1 / Math.max(0.01, depth * U.fireRate), T = U.projectileTime * P.m.range, r = SHIP.shotRadius * U.projectileScale * P.m.shot, splay = spread01(am);
+      P.owed = Math.min(P.owed + dt, iv * 4);
+      let volleys = Math.floor(P.owed / iv); P.owed -= volleys * iv; if (shotNow && volleys === 0) volleys = 1;
+      for (let v = 0; v < volleys && !P.hot; v++) {
+        const lines = guns > 1 ? [0, 1, 2, 3, 4].map((k) => armLine(P, f, k, splay))
+          : [{ m: P.ring ? podWorld(P, P.aimedPoint < 0 ? 0 : P.aimedPoint, P.quat) : P.pos.clone().addScaledVector(f, 4), d: f.clone() }];   // the aimed turret, no spread
+        for (const L of lines) W.shots.push({ p: L.m, d: L.d, v: U.projectileSpeed + P.speed, t: 0, T, r, r0: r, g: U.roundGrowthFactor, owner: P.i, disable: guns > 1, big: guns > 1, dead: false });
+        P.heat = Math.min(1, P.heat + guns * U.heatPerRound);
+        if (P.heat >= 1 && !P.hot) { P.hot = true; say(W, P, 'Guns overheated'); }
+      }
+    } else P.owed = 0;
+    P.heat = Math.max(0, P.heat - (U.coolRate + U.chargeCoolRate * P.cordsOut) * dt);   // the cords cool the guns
+    if (P.hot && P.heat <= U.overheatRecoverBelow) { P.hot = false; say(W, P, 'Guns cooled'); }
   }
   function layTrail(W, P, f, M) {
     const q = P.quat;
@@ -889,7 +957,10 @@
           const phi = POD_ANG[k] + P.ringAngle, pos = back.clone().addScaledVector(rightOf(q), Math.cos(phi) * ringR()).addScaledVector(upOf(q), Math.sin(phi) * ringR());
           addTrail(W, P, pos, q.clone().multiply(new Q().setFromAxisAngle(AZ, phi + Math.PI / 2)), CREATION_BLOCK.map((x) => x * s));
         }
-      } else addTrail(W, P, P.pos.clone().addScaledVector(f, -SHIP.trailOffset), q, SHIP.trailScale.slice());
+      } else {   // BrittleStarPrismController: stretched along the path by the spacing's own factor, so a fast trail joins up
+        const stretch = lerp(1, Math.max(1, P.spacing || 1), U.speedModeStretch), sc = SHIP.trailScale.slice(); sc[2] *= stretch;
+        addTrail(W, P, P.pos.clone().addScaledVector(f, -SHIP.trailOffset), q, sc, P.hot && M.destruction);
+      }
       return;
     }
     if (M.creation) {   // a pentagon of big blocks from the ring's points, turning with the firing rotation
@@ -902,16 +973,16 @@
       }
     } else addTrail(W, P, P.pos.clone().addScaledVector(f, -SHIP.trailOffset), q, SHIP.trailScale.slice());
   }
-  function addTrail(W, P, pos, q, scale) {
-    P.trail.push(addPrism(W, { pos, quat: q.clone(), scale, owner: P.i, domain: P.domain.key, shield: 0, kind: 'trail', trailOf: P.i, born: W.t }));
+  function addTrail(W, P, pos, q, scale, danger) {   // danger: overheated in Space Mode (VesselPrismController's danger mode)
+    P.trail.push(addPrism(W, { pos, quat: q.clone(), scale, owner: P.i, domain: P.domain.key, shield: 0, kind: 'trail', trailOf: P.i, born: W.t, danger: !!danger }));
     P.mass++; if (P.trail.length > 4000 || (P.trail.length > 600 && P.trail.length % 200 === 0)) P.trail = P.trail.filter((p) => !p.dead);
     if (W.game === 'derby' && P.mass > 500) { for (const p of P.trail) if (!p.dead) { killPrism(W, p); break; } }
   }
   function launchRing(W, P, f) {
-    if (SHIP.unity) {   // RingState.TryLaunch: a stored charge rebuilds the ring over rebuildSeconds (it blooms back)
+    if (SHIP.unity) {   // RingState.TryLaunch: only with a spare; the mounted ring then regrows over rebuildSeconds (it blooms back)
+      if (P.charge <= 0) return;
       W.rings.push({ pos: P.pos.clone(), vel: f.clone().multiplyScalar(P.speed + U.ringLaunchSpeed), quat: P.quat.clone(), angle: P.ringAngle, t: 0, owner: P.i, blast: P.m.blast, dead: false });
-      P.rings++; P.ring = false; say(W, P, 'Ring launched');
-      if (P.charge > 0) { P.charge = 0; P.rebuildAt = W.t + U.rebuildSeconds; say(W, P, 'Rebuilding from the stored charge'); }
+      P.rings++; P.ring = false; P.charge--; P.rebuildAt = W.t + U.rebuildSeconds; say(W, P, 'Ring launched, regrowing');
       return;
     }
     W.rings.push({ pos: P.pos.clone(), vel: f.clone().multiplyScalar(P.speed + KIT.ringLaunch), quat: P.quat.clone(), angle: P.ringAngle, t: 0, owner: P.i, blast: P.m.blast, dead: false });
@@ -1073,7 +1144,7 @@
     const W = makeWorld(game, I, [Object.assign({ ai: level, domain: 'jade', lv: Object.assign({}, styleOf((extra && extra.style) || 'Balanced').lv), style: 'Balanced' }, extra || {})], seed); W.watch = -1;
     const dt = 1 / 30; while (!W.over) stepWorld(W, dt, [aiInput(W, W.pilots[0])]);
     const P = W.pilots[0], tot = W.t || 1;
-    return { finish: P.finishT, destroyed: P.destroyed, rings: P.rings, kills: P.kills, share: { speed: P.modeT.speed / tot, creation: P.modeT.creation / tot, destruction: P.modeT.destruction / tot, overdrive: P.modeT.overdrive / tot, none: P.modeT.none / tot } };
+    return { finish: P.finishT, destroyed: P.destroyed, rings: P.rings, kills: P.kills, share: { speed: P.modeT.speed / tot, creation: P.modeT.creation / tot, destruction: P.modeT.destruction / tot, charge: P.modeT.charge / tot, overdrive: P.modeT.overdrive / tot, none: P.modeT.none / tot } };
   }
 
   // ================= rendering =================
@@ -1095,18 +1166,18 @@
   };
   const shieldMesh = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xbfe6ff, wireframe: true, transparent: true, opacity: 0.55 }), MAXP);
   shieldMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(shieldMesh);
-  const MAXS = 9000;   // slow rounds: 1350-2160 alive per hull in Destruction Mode
+  const MAXS = 9000;   // slow rounds: Space Mode's five guns keep ~1,100 alive per hull per overheat burst
   const shotMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAXS);
   shotMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); shotMesh.frustumCulled = false; scene.add(shotMesh);
   const COL = { world: new THREE.Color(0x3a4380), cluster: new THREE.Color(0x6a4f9a) };
   for (const d of DOMAINS) COL[d.key] = new THREE.Color(d.color);
-  const WHITE = new THREE.Color(0xffffff), m4 = new THREE.Matrix4(), tmpC = new THREE.Color(), sc = new V(), qI = new Q();
+  const DANGER = new THREE.Color(0xff3b30), WHITE = new THREE.Color(0xffffff), m4 = new THREE.Matrix4(), tmpC = new THREE.Color(), sc = new V(), qI = new Q();
   function drawPrisms(W) {
     let n = 0, ns = 0;
     for (const p of W.prisms) {
       if (p.dead || n >= MAXP) continue;
       sc.set(p.scale[0], p.scale[1], p.scale[2]); m4.compose(p.pos, p.quat, sc); prismMesh.setMatrixAt(n, m4);
-      tmpC.copy(p.kind === 'cluster' ? COL.cluster : (COL[p.domain] || COL.world)); if (p.flash > 0) tmpC.lerp(WHITE, p.flash);
+      tmpC.copy(p.kind === 'cluster' ? COL.cluster : (COL[p.domain] || COL.world)); if (p.danger) tmpC.lerp(DANGER, 0.65); if (p.flash > 0) tmpC.lerp(WHITE, p.flash);
       prismMesh.setColorAt(n, tmpC); n++;
       if (p.shield && ns < MAXP) { sc.multiplyScalar(p.shield === 2 ? 1.05 : 0.8); m4.compose(p.pos, p.quat, sc); shieldMesh.setMatrixAt(ns++, m4); }
     }
@@ -1114,6 +1185,23 @@
     prismMesh.instanceMatrix.needsUpdate = true; shieldMesh.instanceMatrix.needsUpdate = true;
     if (prismMesh.instanceColor) prismMesh.instanceColor.needsUpdate = true;
     W.dirty = false;
+  }
+  // the cords: one thin cylinder per gameplay link, in the pilot's domain colour (the game draws a fresnel tube through them)
+  const MAXC = 3200;
+  const cordMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 6, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff }), MAXC);
+  cordMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); cordMesh.frustumCulled = false; scene.add(cordMesh);
+  function drawCords(W) {
+    let n = 0;
+    for (const P of W.pilots) {
+      if (!P.cordsOn || !P.cords) continue;
+      const w = U.cordCutRadius * P.m.shot; tmpC.copy(COL[P.domain.key]).lerp(WHITE, 0.35);
+      for (const c of P.cords) for (let s = 0; s < c.n && n < MAXC; s++) {   // n links, n + 1 joints
+        const a = c.P[s], d = c.P[s + 1].clone().sub(a), L = d.length(); if (L < 1e-4) continue;
+        sc.set(w, L, w); m4.compose(a.clone().addScaledVector(d, 0.5), qI.setFromUnitVectors(AY, d.divideScalar(L)), sc);
+        cordMesh.setMatrixAt(n, m4); cordMesh.setColorAt(n, tmpC); n++;
+      }
+    }
+    cordMesh.count = n; cordMesh.instanceMatrix.needsUpdate = true; if (cordMesh.instanceColor) cordMesh.instanceColor.needsUpdate = true;
   }
   function drawShots(W) {
     let n = 0;
@@ -1209,7 +1297,7 @@
   }
   function drawWorld(W, t) {
     if (W.dirty) drawPrisms(W);
-    drawShots(W);
+    drawShots(W); drawCords(W);
     W.pilots.forEach((P, i) => {
       poseHull(view.hulls[i], P, W, true);
       const c = view.crystals[i]; c.visible = !!P.crystal; if (P.crystal) { c.position.copy(P.crystal.pos); VesselStudioLook.spinCrystal(c, t + i); }
@@ -1271,12 +1359,12 @@
   // ================= input: gamepad, keys, phone =================
   const keys = new Set(); let armed = false, keyMode = null, keyRing = false;
   const isForm = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
-  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyR', 'KeyP', 'KeyC', 'KeyI', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyO', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Digit1', 'Digit2', 'Digit3']);
+  const GAME_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyR', 'KeyP', 'KeyC', 'KeyI', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyO', 'Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Digit1', 'Digit2', 'Digit3', 'Digit4']);
   window.addEventListener('keydown', (e) => {
     if (isForm(e.target) || !armed) return;
     if (GAME_KEYS.has(e.code)) e.preventDefault(); if (e.repeat) return; keys.add(e.code);
     if (e.code === 'Enter') startRace(); if (e.code === 'KeyR') stopRace(); if (e.code === 'KeyP') togglePause(); if (e.code === 'KeyC') cycleCamera();
-    if (e.code === 'Digit1') keyMode = 'speed'; if (e.code === 'Digit2') keyMode = 'creation'; if (e.code === 'Digit3') keyMode = 'destruction';
+    if (e.code === 'Digit1') keyMode = 'speed'; if (e.code === 'Digit2') keyMode = 'creation'; if (e.code === 'Digit3') keyMode = 'destruction'; if (e.code === 'Digit4' && SHIP.unity) keyMode = 'charge';
   });
   window.addEventListener('keyup', (e) => keys.delete(e.code)); window.addEventListener('blur', () => keys.clear());
   document.addEventListener('pointerdown', (e) => { armed = $('viewport').contains(e.target); }); canvas.addEventListener('focus', () => { armed = true; });
@@ -1299,7 +1387,7 @@
     const end = (e) => { if (e.pointerId !== id) return; id = null; home(); }; zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
   }
   bindStick('tzL', 'tsL', 'L'); bindStick('tzR', 'tsR', 'R');   // the right thumb IS the fire button: touching fires, dragging aims and spreads (the design)
-  for (const b of document.querySelectorAll('.tmodes button')) b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touch.used = true; if (b.dataset.m === 'ring') touch.ring = true; else touch.mode = b.dataset.m; });
+  for (const b of document.querySelectorAll('.tmodes button')) b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); touch.used = true; if (b.dataset.m === 'ring') touch.ring = true; else if (b.dataset.m !== 'charge' || SHIP.unity) touch.mode = b.dataset.m; });
   function setPlayMode(on) {
     playMode = !!on; document.body.classList.toggle('play', playMode);
     if (playMode) { const v = $('viewport'), req = v.requestFullscreen || v.webkitRequestFullscreen; if (req) { try { const pr = req.call(v, { navigationUI: 'hide' }); if (pr && pr.catch) pr.catch(() => {}); } catch (e) { /* not allowed */ } } try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ } }
@@ -1325,8 +1413,8 @@
       if (g) {
         const L = dz(g.axes[0], -g.axes[1]), R = dz(g.axes[2], -g.axes[3]), b = (i) => !!(g.buttons[i] && g.buttons[i].pressed), edge = (i) => b(i) && !padWas[i];
         if (edge(9) && race !== 'running') startRace();
-        const rt = !!(g.buttons[7] && g.buttons[7].value > 0.3);
-        inp = SHIP.unity ? { sx: L.x, sy: L.y, ax: R.x, ay: R.y, fire: rt, mode: edge(0) ? 'speed' : edge(1) ? 'creation' : edge(2) ? 'destruction' : null, ring: b(6) }
+        const rtv = g.buttons[7] ? g.buttons[7].value : 0, rt = rtv > 0.3;
+        inp = SHIP.unity ? { sx: L.x, sy: L.y, ax: R.x, ay: R.y, fire: rtv > 0.05 ? rtv : 0, mode: edge(0) ? 'speed' : edge(1) ? 'creation' : edge(2) ? 'destruction' : edge(5) ? 'charge' : null, ring: b(6) }
           : { sx: L.x, sy: L.y, ax: R.x, ay: R.y, fire: b(0) || rt, mode: edge(2) ? 'speed' : edge(3) ? 'creation' : edge(1) ? 'destruction' : null, ring: b(6) || b(5) };
         padWas = g.buttons.map((x) => !!(x && x.pressed));
       } else {
@@ -1434,8 +1522,8 @@
     const m = mults(S.lv);
     for (const E of ELEMENTS) {
       const r = elRows[E.key]; r.inp.value = S.lv[E.key]; r.out.textContent = S.lv[E.key];
-      const val = SHIP.unity ? (E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' rounds, \u00d7' + m.blast.toFixed(2) + ' disk thickness' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' corner-trail blocks'
-        : E.key === 'space' ? 'arms reach ' + Math.round(U.destructionProjectileSpeed * 2 * U.projectileTime * m.range / Math.PI) + ' u' : Math.round(cruiseOf() * m.speedMode) + ' u/s in Speed mode')
+      const val = SHIP.unity ? (E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' cords and rounds, \u00d7' + m.blast.toFixed(2) + ' disk thickness' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' corner-trail blocks'
+        : E.key === 'space' ? 'guns reach ' + Math.round(U.projectileSpeed * 2 * U.projectileTime * m.range / Math.PI) + ' u' : Math.round(cruiseOf() * m.speedMode) + ' u/s in Speed mode')
         : E.key === 'charge' ? '\u00d7' + m.shot.toFixed(2) + ' rounds, \u00d7' + m.blast.toFixed(2) + ' blast' : E.key === 'mass' ? '\u00d7' + m.block.toFixed(2) + ' Creation blocks' : E.key === 'space' ? Math.round(m.shotSpeed * 2 * SHIP.gunLife / Math.PI) + ' u range' : Math.round(SHIP.minSpeed + SHIP.throttle * (1 + m.speedBonus)) + ' u/s in Speed mode';
       r.wl.textContent = ''; r.wl.append(document.createTextNode(E.persona + ' '), elx('b', null, val));
     }
@@ -1473,22 +1561,30 @@
   const UNITY_ROWS = [
     ['speed', 'speedModeAt0', 'Speed mode', 2, 10, 0.5, 'speedModeMultiplier at Time 0: cruise x this in Speed mode (Garrett: x6).'],
     ['speed', 'creationSpeedMultiplier', 'Creation speed', 0.1, 1, 0.05, 'creationSpeedMultiplier: Creation is the slowest mode (Garrett: x0.5).'],
-    ['arms', 'destructionFireRate', 'Arms rate', 20, 120, 5, 'destructionFireRate: rounds a second from EACH of the five arms. Below ~68 the 15 u spacing opens past the tracer and the arms read as dashes.'],
-    ['arms', 'destructionProjectileSpeed', 'Arms speed', 40, 2500, 5, 'destructionProjectileSpeed, u/s (a tenth of the Sparrow\'s 1350).'],
-    ['arms', 'armFocusDistance', 'Arms meet', 30, 400, 10, 'armFocusDistance: stick in, the five arms meet the nose axis this far ahead (the crosshair).'],
-    ['arms', 'armSplayDegrees', 'Arms splay', 0, 60, 1, 'armSplayDegrees: stick out to the rim, each arm splays this far outward.'],
-    ['rt', 'fireRate', 'RT rate', 2, 40, 1, 'fireRate: RT, one stream outside Destruction Mode.'],
-    ['rt', 'projectileSpeed', 'RT speed', 20, 1000, 5, 'projectileSpeed, u/s. Range = speed x 2T/pi: change projectileTime the other way to keep it.'],
-    ['rt', 'projectileTime', 'Round flight', 0.2, 6, 0.1, 'projectileTime, seconds (both streams). Rounds alive = rate x this: the arms keep 5 x 90 x T in the air.'],
+    ['cords', 'cordLength', 'Saber length', 10, 300, 5, 'cordLength, u: each cord at a FULL RT pull (the saber). Released it is cordLooseLengthScale x this (the whip).'],
+    ['cords', 'cordLooseLengthScale', 'Whip length x', 1, 3, 0.05, 'cordLooseLengthScale: the whip\'s length over the saber\'s (Garrett: 150%).'],
+    ['cords', 'cordCutRadius', 'Cord width', 0.1, 4, 0.1, 'cordCutRadius: half the width a cord cuts (x the Charge multiplier). The Thresher\'s chain: 0.6.'],
+    ['cords', 'cordLooseWave', 'Whip wave', 10, 1500, 10, 'cordLooseWave, 1/s^2: the whip\'s stiffness. A pulse travels ~sqrt(this) links a second: lower = slower waves.'],
+    ['cords', 'cordLooseDamping', 'Whip damping', 0, 5, 0.05, 'cordLooseDamping, 1/s: how fast the whip\'s waves die. Lower = more inertia, it rings on.'],
+    ['cords', 'cordRigidWave', 'Saber wave', 100, 8000, 50, 'cordRigidWave, 1/s^2: the saber\'s stiffness (RT pulled).'],
+    ['cords', 'cordPose', 'Saber pose', 0, 5000, 50, 'cordPose, 1/s^2: the pull onto the straight arm line at a full pull (x pull squared).'],
+    ['cords', 'armFocusDistance', 'Arms meet', 30, 400, 10, 'armFocusDistance: stick in, the five guns / cords angle in to meet the nose axis this far ahead (the crosshair).'],
+    ['cords', 'armSplayDegrees', 'Arms splay', 0, 60, 1, 'armSplayDegrees: stick out to the rim, each gun / cord splays this far outward.'],
+    ['rt', 'fireRate', 'Gun rate', 5, 150, 5, 'fireRate: rounds a second from EACH firing gun at a full RT pull (the pull scales it). Space Mode fires five, every other mode one.'],
+    ['rt', 'projectileSpeed', 'Round speed', 20, 1000, 5, 'projectileSpeed, u/s. Range = speed x 2T/pi: change projectileTime the other way to keep it.'],
+    ['rt', 'projectileTime', 'Round flight', 0.2, 9, 0.1, 'projectileTime, seconds at Space 0 (x2 at Space 10). 4.5: 150% of the arms\' 3 s.'],
     ['rt', 'roundGrowthFactor', 'Round swell', 1, 6, 0.5, 'roundGrowthFactor: every round swells to this multiple over its flight, hit radius too (the Sparrow\'s look: 3).'],
-    ['rt', 'maxSpreadDegrees', 'RT spread', 0, 45, 1, 'maxSpreadDegrees: the cone at full stick deflection.'],
+    ['heat', 'heatPerRound', 'Heat / round', 0, 0.01, 0.0001, 'heatPerRound: heat per second = rounds/s x guns x this. 0.0012: five guns at a full pull overheat in ~2.4 s.'],
+    ['heat', 'coolRate', 'Cooling', 0, 1, 0.01, 'coolRate: heat lost per second, always.'],
+    ['heat', 'chargeCoolRate', 'Cord cooling', 0, 3, 0.05, 'chargeCoolRate: extra heat lost per second while the Charge cords are out.'],
+    ['heat', 'overheatRecoverBelow', 'Recover at', 0, 0.95, 0.05, 'overheatRecoverBelow: overheated guns fire again once heat falls to this.'],
     ['ring', 'ringLaunchSpeed', 'Ring launch', 60, 900, 10, 'ringLaunchSpeed: u/s on top of the hull\'s own.'],
     ['ring', 'ringFuseSeconds', 'Ring fuse', 0.3, 3, 0.1, 'ringFuseSeconds.'],
     ['ring', 'ringBlastSeconds', 'Disk sweep', 0.2, 2, 0.05, 'ringBlastSeconds: the disk runs from the ring\'s radius to the nucleus\'s in this long.'],
     ['ring', 'blastScaleAt10', 'Disk at Charge 10', 1, 8, 0.5, 'blastScale at Charge 10: the disk\'s thickness over the ring\'s (x1 at Charge 0).'],
     ['ring', 'nucleusRadius', 'Nucleus', 100, 800, 10, 'The disk\'s radius: the cell\'s nucleus (392 for the standard cell). Lab-only: the game reads the real cell.'],
-    ['ring', 'rebuildSeconds', 'Rebuild', 0, 3, 0.1, 'rebuildSeconds: a stored charge (or a crystal) blooms a new ring over this long.'],
-    ['ring', 'overdriveSeconds', 'Overdrive', 0, 15, 0.5, 'overdriveSeconds: a crystal while charged turns all three modes on this long.'],
+    ['ring', 'rebuildSeconds', 'Regrow', 0, 3, 0.1, 'rebuildSeconds: after a throw the mounted ring regrows over this long.'],
+    ['ring', 'maxSpareRings', 'Spare rings', 1, 5, 1, 'maxSpareRings: spares a hull can store, one per crystal; a throw needs one.'],
   ];
   for (const [, k, name, lo, hi, step, tip] of UNITY_ROWS) {
     const row = elx('label', 'slider'); row.title = tip + ' Shipped: ' + SHIPPED_AT_LOAD[k] + '.';
@@ -1499,7 +1595,7 @@
   }
   $('unityReset').addEventListener('click', () => { Object.assign(U, SHIPPED_AT_LOAD); S.shipped = {}; save(); for (const [i, r] of UNITY_ROWS.entries()) { const el = $('unitySliders').children[i]; el.querySelector('input').value = U[r[1]]; el.querySelector('output').textContent = String(U[r[1]]); } syncRail(); applyLevels(); });
   sliders($('worldSliders'), WORLD_ROWS, S.world, WORLD, () => { if (race !== 'running') newRace(); });
-  const AB = [['speed', 'Speed', 'S', '--speed'], ['creation', 'Creation', 'C', '--create'], ['destruction', 'Destruction', 'D', '--destroy'], ['ring', 'Ring Detonation', 'R', '--ringc']];
+  const AB = [['speed', 'Speed', 'S', '--speed'], ['creation', 'Creation', 'C', '--create'], ['destruction', 'Destruction / Space', 'D', '--destroy'], ['charge', 'Charge (cords)', 'Q', '--ringc'], ['ring', 'Ring Detonation', 'R', '--ringc']];
   const abCards = {};
   for (const [k, nm, ic, col] of AB) { const c = elx('div', 'ab'); c.style.setProperty('--accent', 'var(' + col + ')'); const st = elx('div', 'st'); c.append(elx('div', 'ic', ic), elx('div', 'nm', nm), st); $('abilities').appendChild(c); abCards[k] = { c, st }; }
   let runs = []; try { runs = JSON.parse(localStorage.getItem(LS + '.runs') || '[]') || []; } catch (e) { runs = []; }
@@ -1538,7 +1634,7 @@
       if (j >= STYLES.length) { done(rows); return; }
       const st = STYLES[j++], rs = seeds.map((s) => runHeadless(game, 3, 'Hard', s, { style: st.name, lv: Object.assign({}, st.lv) }));
       const pick = (k) => med(rs.map((r) => r[k]));
-      rows[st.name] = { finish: pick('finish'), destroyed: Math.round(med(rs.map((r) => game === 'derby' ? r.destroyed : r.kills)) || 0), rings: Math.round(med(rs.map((r) => r.rings)) || 0), share: { speed: med(rs.map((r) => r.share.speed)) || 0, creation: med(rs.map((r) => r.share.creation)) || 0, destruction: med(rs.map((r) => r.share.destruction)) || 0, overdrive: med(rs.map((r) => r.share.overdrive)) || 0 } };
+      rows[st.name] = { finish: pick('finish'), destroyed: Math.round(med(rs.map((r) => game === 'derby' ? r.destroyed : r.kills)) || 0), rings: Math.round(med(rs.map((r) => r.rings)) || 0), share: { speed: med(rs.map((r) => r.share.speed)) || 0, creation: med(rs.map((r) => r.share.creation)) || 0, destruction: med(rs.map((r) => r.share.destruction)) || 0, charge: med(rs.map((r) => r.share.charge)) || 0, overdrive: med(rs.map((r) => r.share.overdrive)) || 0 } };
       progress && progress(rows); setTimeout(next, 0);
     };
     setTimeout(next, 20);
@@ -1558,19 +1654,23 @@
     const P = viewed(W); W.watch = P.i; const M = activeModes(P, W);
     $('hWho').textContent = P.domain.name + (P.spec.ai ? ' · AI ' + P.spec.ai : P.held ? ' · AI holding' : '') + ' · speed u/s';
     $('hSpeed').textContent = Math.round(P.speed);
-    $('hSub').textContent = (M.speed && M.creation ? 'Overdrive: Speed x Creation' : M.speed ? 'Speed mode: all five thrusters' : M.creation && SHIP.unity ? 'Creation: half speed, five corner trails' : 'cruise ' + cruiseOf() + ' u/s') + ' · ' + (P.style ? P.style.name : '');
+    $('hSub').textContent = (M.speed && M.creation ? 'Overdrive: Speed x Creation' : M.charge ? 'Charge: five cords, RT stiffens them' : M.destruction && SHIP.unity ? 'Space: five guns, RT sets the rate' : M.speed ? 'Speed mode: all five thrusters' : M.creation && SHIP.unity ? 'Creation: half speed, five corner trails' : 'cruise ' + cruiseOf() + ' u/s') + ' · ' + (P.style ? P.style.name : '');
     $('hGoal').textContent = W.game === 'derby' ? 'Crystal ' + Math.min(P.crystals + 1, W.target) + '/' + W.target : 'Mass ' + Math.max(0, P.mass) + '/' + W.target + ' · ' + P.kills + ' creatures';
     $('hMass').textContent = W.game === 'derby' ? P.destroyed + ' destroyed' : W.fauna.filter((c) => !c.dead).length + ' feeding';
-    for (const [k, id] of [['speed', 'pSpeed'], ['creation', 'pCreation'], ['destruction', 'pDestruction']]) { $(id).classList.toggle('on', M[k]); $(id).classList.toggle('off', !P.ring || P.noModes); }
-    $('pRing').classList.toggle('on', P.ring); $('pRing').classList.toggle('off', !P.ring); $('pRing').textContent = P.ring ? (P.charge ? 'Ring +1' : 'Ring') : P.rebuildAt > 0 ? 'Rebuilding' : 'No ring';
+    for (const [k, id] of [['speed', 'pSpeed'], ['creation', 'pCreation'], ['destruction', 'pDestruction'], ['charge', 'pCharge']]) { $(id).classList.toggle('on', M[k]); $(id).classList.toggle('off', !P.ring || P.noModes); }
+    $('pCharge').hidden = !SHIP.unity; $('pDestruction').textContent = SHIP.unity ? 'Space' : 'Destruct';
+    $('pRing').classList.toggle('on', P.ring); $('pRing').classList.toggle('off', !P.ring);
+    $('pRing').textContent = SHIP.unity ? (P.ring ? 'Rings ' + P.charge + '/' + U.maxSpareRings : 'Regrowing') : P.ring ? (P.charge ? 'Ring +1' : 'Ring') : P.rebuildAt > 0 ? 'Rebuilding' : 'No ring';
     const amH = Math.hypot(P.aimX, P.aimY);
-    if (SHIP.unity) $('hGun').textContent = P.armsOn ? 'the five arms · ' + (spread01(amH) > 0 ? 'splayed ' + Math.round(lerp(0, U.armSplayDegrees, spread01(amH))) + '°' : 'meeting ' + U.armFocusDistance + ' u ahead')
-      : 'RT: ' + (P.ring && P.aimedPoint >= 0 ? 'ring turret ' + (P.aimedPoint + 1) : 'cockpit') + (spread01(amH) > 0 ? ' · spread ' + (spread01(amH) * U.maxSpreadDegrees).toFixed(1) + '°' : '');
+    if (SHIP.unity) $('hGun').textContent = (P.cordsOn ? 'the five cords · ' + (P.rigid > 0.66 ? 'sabers' : P.rigid > 0.2 ? 'stiffening' : 'whips')
+        : M.destruction ? 'the five guns · ' + (spread01(amH) > 0 ? 'splayed ' + Math.round(lerp(0, U.armSplayDegrees, spread01(amH))) + '°' : 'meeting ' + U.armFocusDistance + ' u ahead')
+        : 'RT: ' + (P.ring ? 'ring turret ' + (Math.max(0, P.aimedPoint) + 1) : 'cockpit')) + ' · heat ' + Math.round(P.heat * 100) + '%' + (P.hot ? ' OVERHEATED' : '');
     else $('hGun').textContent = 'gun: ' + (M.destruction ? 'all five turrets' : P.ring && amH > 0.2 ? 'one ring turret' : 'cockpit') + (amH > 0.2 ? ' · spread ' + (amH * KIT.spreadDeg).toFixed(1) + '°' : '');
-    $('hCharge').textContent = 'charge ' + P.charge + '/1';
+    $('hCharge').textContent = SHIP.unity ? 'spare rings ' + P.charge + '/' + U.maxSpareRings : 'charge ' + P.charge + '/1';
     const al = $('hAlert'); let msg = null, od = false;
     if (P.overdrive > W.t) { msg = 'Overdrive ' + (P.overdrive - W.t).toFixed(1) + ' s'; od = true; }
-    else if (!P.ring && !P.noRing) msg = 'No support ring: collect a crystal';
+    else if (SHIP.unity && P.hot) { msg = M.destruction ? 'Overheated: danger trail' : 'Overheated: guns cooling'; od = true; }
+    else if (!P.ring && !P.noRing && !SHIP.unity) msg = 'No support ring: collect a crystal';
     al.hidden = !msg; if (msg) { al.textContent = msg; al.classList.toggle('od', od); }
     const b = $('board'); b.textContent = '';
     const hd = elx('div', 'hd'); hd.append(elx('span', null, GAMES[W.game].name + ' I' + W.I + ' · ' + W.t.toFixed(1) + ' s'), elx('span', null, W.game === 'derby' ? 'crystals / ' + W.target : 'mass / ' + W.target)); b.appendChild(hd);
@@ -1581,10 +1681,12 @@
       row.append(dot, elx('span', null, X.domain.name + (X.spec.ai ? ' · ' + X.spec.ai : '')), st); b.appendChild(row);
     });
     for (const k of ['speed', 'creation', 'destruction']) { abCards[k].c.classList.toggle('on', M[k]); abCards[k].st.textContent = M[k] ? 'on' : P.ring ? (P.mode === k ? 'selected' : 'off') : 'no ring'; }
-    abCards.ring.c.classList.toggle('on', P.ring); abCards.ring.st.textContent = P.ring ? (P.charge ? 'ready +1' : 'ready') : 'need crystal';
+    if (abCards.charge) { abCards.charge.c.classList.toggle('on', M.charge); abCards.charge.st.textContent = M.charge ? (P.rigid > 0.66 ? 'sabers' : 'whips') : P.mode === 'charge' ? 'selected' : 'off'; abCards.charge.c.hidden = !SHIP.unity; }
+    abCards.ring.c.classList.toggle('on', P.ring && (!SHIP.unity || P.charge > 0));
+    abCards.ring.st.textContent = SHIP.unity ? (P.ring ? (P.charge > 0 ? P.charge + ' spare' : 'no spare') : 'regrowing') : P.ring ? (P.charge ? 'ready +1' : 'ready') : 'need crystal';
     $('readWho').textContent = P.domain.name + (P.spec.ai ? ' (AI ' + P.spec.ai + ')' : '');
     const rows = [['speed', P.speed.toFixed(1) + ' u/s'], ['mode', P.ring ? (P.overdrive > W.t ? 'overdrive' : P.mode ? modeName(P.mode) : SHIP.unity ? 'cruise' : 'none') : P.rebuildAt > 0 ? 'rebuilding' : 'no ring'], ['range', Math.round(rangeOf(P)) + ' u'],
-      ['round', (SHIP.unity ? SHIP.shotRadius * P.m.shot * (P.armsOn ? U.destructionProjectileScale : U.projectileScale) : SHIP.shotRadius * P.m.shot * (M.destruction ? KIT.destructionRadius : 1)).toFixed(1) + ' u'],
+      SHIP.unity && P.cordsOn ? ['cord', (2 * U.cordCutRadius * P.m.shot).toFixed(1) + ' u wide · ' + Math.round(U.cordLength * lerp(U.cordLooseLengthScale, 1, P.rigid)) + ' u long'] : ['round', (SHIP.unity ? SHIP.shotRadius * P.m.shot * U.projectileScale : SHIP.shotRadius * P.m.shot * (M.destruction ? KIT.destructionRadius : 1)).toFixed(1) + ' u'],
       ['destroyed', String(P.destroyed)], ['bonus mass', String(P.bonus)], ['rings', String(P.rings)], ['petal hits dealt', String(P.hits)], ['petal hits taken', String(P.petalsLost)], ['trail mass', String(P.mass)], ['creatures', String(P.kills)], ['AI state', P.spec.ai || P.held ? P.aiState : 'player'], ['mistakes', P.spec.ai ? String(P.mistakes || 0) : '—']];
     const box = $('read'); if (box.childElementCount !== rows.length * 2) { box.textContent = ''; for (const [k] of rows) box.append(elx('span', null, k), elx('b')); }
     rows.forEach(([, v], i) => { box.children[i * 2 + 1].textContent = v; });

@@ -998,6 +998,155 @@ two-label toggle and the slider prefab arrive with the items that need them (3 a
 ---
 
 ---
+### 🔴 AI difficulty (Easy / Medium / Hard) on every Arena card (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** the difficulty row only existed on the Arcade window. The headless compile is clean
+(`unity_refcompile`: player and editor configs, 0 errors in project code). `/verify-unity` was not available.
+- **UI:** `Tools/Build/author_ai_difficulty_row.py` now also authors the row into Menu_Main's
+  `ArenaGameConfigureModal` and wires `ArenaLaunchPanel.aiDifficultyPicker`, in the same place as the Arcade's: under
+  the intensity row. The vessel carousel is re-fitted under it (top 8 px under the row, bottom 8 px over ADD AI; hull
+  icon 195 px tall, was 198; arrows level with the icon; SELECT VESSEL under the icon). `--check` holds both
+  windows. The Arcade prefab is byte-identical.
+- **AI:** `AIDifficultyRules.IsOfferedFor` already named Regatta (2026-10-14: Squirrels on `SkimRaceHandicap`, every
+  other hull `GateRaceHandicap`). It now also names Astro League / Brood Rush / Broadside (`UsesPilotBelief`). On those three, `ConfigureAIPilotForMode` gives each AI an
+  `AIPilotBelief`: the Skim Race's mistakes (late notice of a new or moving target, a misjudged target 30 u off the line
+  of sight) on whatever point `AIPilot` wants to reach. Hard gets none and flies exactly as before. The belief follows a
+  bot through a pilot swap (`TakeModeHooksFrom`). The Third Eye shows it (amber = not noticed, ruby = misjudged).
+- Not measured: how much slower or weaker Easy and Medium are in these modes. The numbers are the Skim Race's
+  (`SkimRaceDifficultySO`). Regatta's Urchin rail-riding (`TryOverrideAim` while attached) does not carry the handicap.
+
+**Verify:** (1) Menu > Arena: open each of the four cards. The AI DIFFICULTY row shows under the intensity row, as
+on the Arcade's Skim Race card, and Medium is lit. The vessel carousel sits under it: hull icon, arrows and SELECT
+VESSEL all inside its frame, nothing touching ADD AI. (2) Press Easy, then Hard. The row lights the
+pick, and the pad's left/right steps it. As a guest the row is greyed and shows the host's pick. (3) Launch Astro
+League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's state flickers amber/ruby and it
+reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
+Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
+still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 Regatta drive tuning per mode + resource meters in flights (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `AIBoostPolicySO.ForMode` (a `Resources/AIBoostPolicies/<policy>_<mode>` variant, else the hull's own
+policy) used by `AIPilot` where it builds the drive; `MantaSoarAITuningSO` + `AIPilot.TryGetGameMode`, read once by
+`MantaAnalogTurnBoostExecutor` when its autopilot first drives; `HumanFlightRecorder` adds `m0..m3` (the hull's first four
+resource meters), `meterNames` and `boostMeter`. No variant asset exists yet, so every AI flies exactly as before.
+`Tools/Build/learn_drives_from_flights.py` writes the variants once there are 3 finished flights of a hull
+(`SITUATION_RECORDING_PLAN.md` §9).
+**Verified without the editor:** `unity_refcompile` player-dev 0 project errors, editor only the 3 known ones; gates;
+`learn_drives_from_flights.py --self-test`.
+**Verify in editor:**
+1. Run `RegattaDriveTuningTests` (Test Runner, EditMode): 3 pass.
+2. Race Regatta with AI Rhino, Dolphin and Manta: they race exactly as before (no variant yet), no new Console error.
+3. Fly a Regatta race as the Dolphin and store it: the file has `"meterNames"`, `"boostMeter"` 0 or above, and `m0..m3`
+   columns; the boost meter's column rises while you drift.
+
+### 🔴 Regatta Squirrel AI skims the ring face of the rail (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `SkimRaceAIConfig_Regatta.asset`, written by `learn_from_flights.py --write` from the editor flights
+(policy `regatta-learned-20261016-3flights`, the three fastest won races): `SkimHeight` 4.346 -> **-6.498** (the minus
+puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail; people skim it 94% of the time),
+`LookaheadSeconds` 1.016 -> 0.93, `LookaheadMin` 26.8 -> 60, `MassGuardMargin` 1.298 -> 1.379, `StickGainPerDegree`
+0.041 -> 0.032. No code changed (`SkimRaceDriver` already takes the face from `SkimHeight`'s sign). Why:
+`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §8; numbers: `Docs/AI_SYSTEM/LEARNED_FROM_FLIGHTS.md`.
+**Verified without the editor:** `author_skimrace_ai_config.py --check`, `learn_from_flights.py --self-test`.
+**Verify in editor:**
+1. Regatta I1, solo, Squirrel against AI Squirrels (or let the AI fly your hull: Third Eye ▸ Pilots ▸ AI). Watch an AI
+   Squirrel in the Third Eye's Chase camera: it skims on the side of the rail the rings are on, and threads rings
+   without crossing through the rail.
+2. Count its rail hits over a full race (the Third Eye readout, or its stored flight's Slowed episodes): fewer than
+   before. Its rings when you finish: more than the old median of 14 of 24.
+3. To compare with the old AI: `git revert` this commit's asset change (one file), race again, compare.
+4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
+   `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
+
+### 🔴 Multiplayer test logs collect themselves; one Send to Claude carries every player's (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** `NetTestLogs` (editor, `Assets/_Scripts/Editor/Diagnostics/`) keeps each editor's console from Play
+start and, at Play stop, writes `Logs/NetSessions/net_<utc>_<peer>.json` in the MAIN project when the session was a
+multiplayer test. That means always in an MPPM virtual player; in the main editor when its `NetSessionRecord` shows
+another player (role client/spectator, a client approved other than 0, a client left, leaver to AI, refused, bounce) or
+a virtual player's editor is running. `BugHuntReports` picks the files up as the `net` kind (the main project's folder and
+each `Library/VP/*/Logs/NetSessions`). `BugHuntAutoSend` waits 4 s for the virtual players' files, then asks once
+(main editor only): *"This multiplayer test saved logs from main, p2 and p3... Send them to Claude?"*.
+`Tools/Build/net_logs.py` reads them off `bugledger/<user>` into one timeline. Same format from Amoebius (Port commit).
+**Verified without the editor:** `unity_refcompile --config editor`: 0 errors in the three changed files (the 3 errors
+are the known `AuthenticationServiceFacade` MPPM-package ones); the Compose/Quote logic extracted and run standalone,
+its output read by `net_logs.py`; `net_logs.py --self-test` (11 checks, negative control); Amoebius wrote a real file
+and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
+**Verify in editor:**
+1. Pull and let it compile: no new Console error or warning from `NetTestLogs`, `BugHuntAutoSend` or `BugHuntReports`.
+2. **Solo play** (no virtual players running, online or not): stop Play. Nothing in `Logs/NetSessions/`, and the question
+   does not mention multiplayer logs.
+3. **MPPM, main + P2 + P3** (each with its own tag): party up, start a match, a guest leaves mid-match, stop Play on the main
+   editor. Within a few seconds `Logs/NetSessions/` (main project) holds `net_<time>_main.json` and one file per virtual
+   player (`_p2`, `_p3`, or `_vp-<id>` if the tag is not read). Each opens as JSON with `"schema": "cosmicshore.nettestlog.v1"`
+   and its console lines.
+4. ONE dialog in the main editor names the players ("main, p2 and p3"); the virtual players show none. **Not now**, then a
+   new Play/stop with no new error: it does not ask again about the same files.
+5. Press **Send to Claude** on the next test: `git fetch origin bugledger/<you>` then
+   `python3 Tools/Build/net_logs.py collect` lists the test with every player, and `show 1` prints one timeline. Your working
+   tree and branch unchanged (`git status`).
+6. No frame-time change during Play with the F7 `diag` (the hook is one queue append per log line).
+
+---
+
+### 🔴 AI training recorder: last ring, hull name, button presses, tags (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder`:
+- **The last ring is counted.** It takes one last sample on the frame the race ends, so a finished race is written 24/24.
+  Before, 12 of Yash's 13 finished races read 23/24, their last sample 2–19 u short of ring 24.
+- **The hull, mode, domain, target and intensity are named when recording starts**, so a race left mid-way no longer
+  writes hull "Unknown" with raceTarget 0. A race that ends short of its target is marked `"ended":"race left before the
+  finish"`.
+- **`buttonEvents`** `[t, InputEvents value, 1 pressed / 0 released]`, with a `buttonNames` map. It holds the pilot's
+  own presses (abilities, stick actions, flip), with no IdleAction and nothing while the AI holds the hull.
+- **No labels are typed.** `racing_line.py` reads each leg's style (rail, drift, ability, boost, plain, rival
+  difficulty) from the recording.
+
+`learn_from_flights.py` counts older 23/24 flights as finished when the race ended on its own and the last sample is
+within 30 u of the last ring. `Tools/Build/racing_line.py` is new (`Docs/AI_SYSTEM/RACING_LINE.md`).
+**Verified without the editor:** `unity_refcompile` player, player-dev and editor (only the 3 known
+`AuthenticationServiceFacade` errors, none in changed files); conditional-compilation and console-logging checks;
+`racing_line.py`, `situation_features.py` and `learn_from_flights.py` self-tests.
+**Verify in editor:**
+1. Regatta, Squirrel, fly to the finish and store the record: `"rings":24`, `"finished":true`, `"ended":"race over"`.
+2. Press an ability or two mid-race: `buttonEvents` has rows for them (pressed then released). No new Console warning.
+3. Drift through a few turns and ride your own rail for a stretch: `python3 Tools/Build/racing_line.py --dir <Flights folder>`
+   shows those legs under `drift` and `rail` in its styles table.
+4. Start a race and go back to the menu mid-way: if it is stored, its hull is `Squirrel` (not Unknown), `raceTarget` is
+   24, and `ended` is `race left before the finish`.
+
+### 🔴 AI training recorder: flight/3 records the situation (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** `HumanFlightRecorder` writes `cosmic-shore.flight/3`: the same columns as before plus both triggers and the
+course, and every other pilot's position and rings each sample (`rivalHulls`, `rivals`). **2026-10-16, the rest of
+`SITUATION_RECORDING_PLAN.md` §2.1-2.2** (Yash: "record the rest of the planned data too"): per sample the velocity, pitch /
+yaw / roll rates, boost charge, a `state` bit set (boosting, discharging, drifting, slowed, attached, stationary), the four
+element levels, `held` (1 while the AI holds the hull; those samples are now KEPT and every learner skips them), the camera
+(position, forward, field of view, mode: Caleb's V1), each rival's velocity (`rivalVel`) and the 12 nearest crystals
+(`crystals`); once per race every ring (`ringList`: order, position, axis, mouth radius; `laps`), every rail (`rails`:
+prisms, up axes, shell, owning domain; `ownRail`; `lane` kept), each rail prism destroyed or restored (`railEvents`), the
+rival difficulty, the build and the course seed. The rails and rings are copied when recording starts, not at the end. `Tools/Build/situation_features.py`
+turns a flight into situations (target, line-up, obstacles, skim, manoeuvre, race), labels (what you were going for, the
+phase, skims taken and skipped, mistakes) and what to learn (`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md`).
+**Verified without the editor:** `unity_refcompile` player-dev 0 project errors, editor only the 3 known ones; gates;
+`situation_features.py --self-test` (the fixture flight against its golden output, negative control caught); the
+report read your Unity flight of 2026-10-16 02:31 (flight/2); both learners read that flight re-shaped with the new keys
+and columns; `learn_from_flights.py --self-test` skips `held` rows (negative control: without the column they count).
+**Verify in editor:**
+1. Regatta, solo, Squirrel, with AI rivals. Fly a full race by hand; store the record when Unity asks after Play.
+2. The new `flight_Regatta_Squirrel_*.json` says `"schema":"cosmic-shore.flight/3"`, has `rivalHulls` naming the rivals and
+   `rivals`, `rivalVel` and `crystals` arrays as long as `samples`; each sample row has 49 numbers (`columns`). `rails` has
+   one entry per lane (3 in a three-domain race) and `ownRail` points at yours; `ringList` has the course's rings in order;
+   hitting the rail adds `railEvents` rows. `camMode` is not -1 and `fov` is not 0 while you fly.
+2a. Switch the Third Eye's You / AI to AI for a few seconds mid-race, then back: those rows have `held` 1, and the record
+   is still stored. No new Console warning or error while recording, and no frame-time change (`diag`).
+2b. **The camera (V1, 2026-10-16):** `camux..camuz` is a unit vector square to `camfx..camfz`, `camAspect` is your Game
+   view's width / height, `fov` your field-of-view setting, `camRear` 1 only while you hold look-behind. Then
+   `python3 Tools/Build/situation_features.py --dir <the Flights folder>` prints a `view:` line for the flight (target
+   ring on screen most of the time, skipped skims seen / unseen, misses by cause) and a `reaction lag` read "from the
+   screen".
+3. `python3 Tools/Build/situation_features.py --dir <the Flights folder>` reports it: rings, skims taken / skipped, phases.
+4. After three or more such races: `python3 Tools/Build/situation_features.py --write` learns from them (editor flights only).
 
 ### 🔴 Third Eye: a You / AI toggle on every pilot (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
@@ -1022,7 +1171,7 @@ gates. Nothing has been played.
 
 ### 🔴 Regatta: the AI commits at its approach point and re-attacks after a missed mouth (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
-Ported from the Regatta AI studio (https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4, its *Commit at the approach point,
+Ported from the Regatta AI studio (deleted 2026-10-16; its *Commit at the approach point,
 re-aim after a miss* switch): 17/32 Hard hull x intensity races finished without it, 30/32 with it. No `unity` CLI in
 the session that wrote it. Proved offline: player-dev and editor `unity_refcompile` (no error in the changed files; the
 16 in changed files are the unfetchable Reflex / Unity.Services packages), the 9 `GateRaceSteeringTests` cases run in a
@@ -10432,3 +10581,109 @@ New `ConfigureCinema.cs`; `ModePreviewWindow.RequestFocus()` (additive). Checked
 4. **Arena:** the eight hulls in a 4 x 2 grid in card 01; Claim works. **Maelstrom:** the clip fills the window; pool list
    readable in the right panel (names not overlapping the tier text); Format in card 03.
 5. **Cost:** with the Profiler open, the preview's render texture is at most 720 tall.
+## 🔴 Human flight recorder + learn_from_flights (2026-10-15, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
+
+Checked offline only: unity_refcompile player, player-dev and editor configurations; gates; `learn_from_flights.py --self-test`.
+
+1. (Automatic since 2026-10-15; no Record button.) Fly Regatta as the Squirrel by hand to the finish. While racing,
+   HUD `flightrec` reads "RECORDING". **Pass:** after the race a `flight_Regatta_Squirrel_*.json` is in
+   `Documents/CosmicShore Diagnostics/Flights/`, and HUD console `flightrec` names it.
+2. Hand the hull to the AI for part of a race (You / AI). **Pass:** the file holds fewer samples, with none taken while
+   the AI flew.
+3. Stop Play, then press **Send to Claude**. **Pass:** the flight appears under `BugLedger/shared/reports/<you>/flights/`
+   on your bugledger branch.
+5. Stop Play in the MIDDLE of a recorded race. **Pass:** a flight is still written (`"ended":"play stopped"`, unfinished),
+   and Unity asks "Send to Claude?" with "You recorded a new flight" even when there was no new error.
+4. In a session, run `python3 Tools/Build/learn_from_flights.py`. **Pass:** it lists your races and proposes numbers.
+   With `--write`, `SkimRaceAIConfig_Regatta.asset` changes, and the Squirrel AI flies the learned line.
+
+## 🔴 2026-10-15 — Automatic performance captures; the badge's Capture button removed (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Editor/Diagnostics/PerfAutoCapture.cs` (new), `BugHuntPerfBadge.cs` (button removed, countdown
+shown), `Tools/Build/perf_hunt.py` (scenario times in `status.json`; `status --refresh` keeps the Amoebius verdicts).
+What ran instead of `/verify-unity`: `unity_refcompile --config editor` (0 errors in the changed files),
+`perf_hunt.py --self-test`, the logging and conditional-compilation gates.
+
+1. Code Optimization = Release. Play Menu_Main. Expect the badge to read "Auto-capture: S2 in 7:59" counting down, and
+   NO Capture button anywhere.
+2. Load MinigameSkimRace (or any arcade scene) and play 90 s. Expect "Auto-capture: SkimRace running", a short hitch
+   while the Profiler records 180 frames (the Profiler window does NOT need to be open), then "Auto-capture saved
+   capture_MinigameSkimRace_SkimRace_*.json".
+3. Stop Play. Expect Unity's one "Send to Claude?" question naming the new capture.
+4. Stay in the same scene longer: no second capture in that session. Re-enter Play: it captures again.
+5. Code Optimization = Debug: the badge says auto-capture is off while Debug; nothing is captured.
+6. EditorPrefs `CosmicShore.PerfAutoCapture.Off` = true: no countdown, no capture.
+
+## 🔴 2026-10-16 — Send to Claude with no question; generic per-frame fixes (unverified: no Unity CLI in the session)
+
+**Files:** `BugHuntAutoSend.cs` (no dialog: sends what is new after Play, one console line), `Utility/WaitCache.cs` (new) and
+27 coroutine timer sites, `GunTransformer.cs`, `scan_perframe_allocations.py`. What ran instead of `/verify-unity`:
+`unity_refcompile` player-dev (OK) and editor (0 errors in changed files), an Amoebius lava-lamp A/B, the gates.
+
+1. Play any scene, log a red error (or just play 90 s for an auto-capture), stop Play. Expect NO dialog, and one console
+   line "[BugLedger] Sent to Claude automatically: ...". `origin/bugledger/<you>` gets the error / capture.
+2. Stop Play again with nothing new: nothing is sent, no line.
+3. Fly the Falcon and the Shrike: the guns still fan out and track the right stick as before.
+4. Wildlife Liberation for two minutes: creatures, worms and boids still tick and feed; spawners still fill the cell; the
+   Squirrel's charge boost, a full-auto gun and the drift trail fire at their usual rates.
+5. Grizzly Charge (or any mode with a Grizzly): Scene view off, then check the capture's `cameras` line lists only the
+   player camera (no `PipCamera`); the Grizzly and Dolphin hull parts still lean and bank as before.
+6. Any mode: the turn still ends when its end condition is met (TurnMonitorController loop replaced LINQ Any).
+
+## ⚪ Brittle Star — Destruction Mode is five CORDS (`cece/beautiful-knuth-j3atgk`, 2026-10-15) — SUPERSEDED
+
+> Superseded the next day by the four-mode redesign below: the cords moved to Charge Mode as whips / sabers and
+> Destruction became Space Mode's five guns again. Walk the entry below instead.
+
+No `unity` CLI in the session that wrote it (`/verify-unity` could not run). Proved offline: player and editor
+`unity_refcompile` (0 errors in project code; a planted typo in `BrittleStarExecutor` was caught), the 29
+`BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`: three negative controls, one a
+cord that stretches), `author_brittlestar_assets.py --check` / `--self-test` (11/11), `studio_to_unity.py --vessel
+brittlestar --check` (39 mapped, 0 drift), `check_studio.cjs` on the studio page. Contract: `R_VesselActions/BRITTLE_STAR.md` §3.4.
+1. **X** (Destruction): five cords (fresnel tubes, domain-coloured rim) grow out of the five turrets, ~80 u long, tips
+   nearly meeting ahead. No rounds are fired. Console clean.
+2. **Right stick**: direction turns the ring and the cords with it, the tips whipping round after the roots; deflection
+   splays them to 25° and back. Turn hard: they bow and straighten. Speed Mode (×6) straight: they stay ahead.
+3. **Slicing**: fly them through mass — each prism touched is cut in two along the cord's sweep (the Thresher's slice
+   look), any domain (friendly fire) except trail laid in the last second; a shielded block loses its shield, then dies;
+   super-shielded refuses.
+4. **A rival**: drawn across a cord they lose petals (a Strike, at most every 0.5 s) and are not moved.
+5. **X again / ring thrown / turn end**: the cords draw back in or vanish; no leftover `BrittleStarCords::` objects
+   after the vessel is despawned.
+6. **RT** outside Destruction: unchanged (one stream). RT does nothing while the cords are out.
+7. **Profiler** with 3-4 AI Brittle Stars in Destruction Mode: 60 `QuerySegment`s a frame per hull, no rounds (the
+   turrets' pool is back to 90 / 320).
+
+## 🟡 Brittle Star — four modes, analog guns with heat, whip cords, the ring stock (`cece/beautiful-knuth-j3atgk`, 2026-10-16) — PLAYED, NOT WALKED STEP BY STEP
+
+> **Played by Garrett on 2026-10-16** ("I tested it and it is amazing. one of the most fun things we've ever made").
+> That confirms it loads and flies; the steps below were not reported one by one. Still open: the danger trail, the
+> spare-ring stock, the HUD cards, the AI, multiplayer and the touch caveat.
+
+No `unity` CLI in the session that wrote it (`/verify-unity` could not run). Proved offline: player and editor
+`unity_refcompile` (0 errors in project code; the editor config's 3 are the known `AuthenticationServiceFacade` reds),
+the 31 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`: three negative controls),
+`author_brittlestar_assets.py --check` / `--self-test` (11/11), `element_ability_table.py BrittleStar` (0
+disagreements), `studio_to_unity.py --vessel brittlestar --check` (47 mapped, 0 drift), `check_studio.cjs`, and a
+hook-driven run of every new rule in the studio page. The full walk is `R_VesselActions/BRITTLE_STAR.md` § In-editor
+verification, steps 2-9. The short version:
+1. **RB** toggles Charge Mode (E on keyboard). Five loose 120 u cords; a stick flick sends a slow wave down them; RT
+   squeezed slowly shortens them to 80 u straight sabers (analog). They slice prisms; rivals lose petals only.
+2. **X** Space Mode: RT fires five guns at a rate set by the pull; a full pull overheats in ~2.4 s (Space card red),
+   the guns stop and the trail lays **danger prisms**; Charge Mode drains the heat in ~1 s.
+3. **Cruise / A / B**: RT fires one turret (the one the ring turned to), straight, no spread, never overheating alone.
+4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
+5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
+6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
+
+## 🔴 2026-10-17 — Bleeding-edge merge + first-login guide on the rev-3 menu (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`ModePreviewWindow.guideTarget` / `GuideRect` (new, optional); `QuestGuideToMicrogameNode` asks `GuideRect`. Checked
+offline: refcompile player OK, editor (the 3 known errors, 0 in changed files), every `author_*.py --check`, gates.
+
+1. **Arena AI row:** open an Arena card - EASY / MEDIUM / HARD under the domains in card 03, one lit; picking one sticks
+   and reaches the match (Regatta, Astro League, Brood Rush, Broadside).
+2. **Guide walk** (fresh profile, or reset the quest): Home - the spotlight is on ARCADE, everything else dim and dead
+   except Settings (press Settings: it opens); ARCADE - the spotlight lands on the target card; the card - the configure
+   window opens and the spotlight is on **FLY** with its caption readable; press FLY - the spotlight steps aside while
+   flying. Skip ends the tutorial at any step.

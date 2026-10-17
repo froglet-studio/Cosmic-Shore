@@ -206,7 +206,7 @@ namespace CosmicShore.Core
                 if (session && session.IsActive && session.ActiveMode == _mode
                     && session.Window && session.Window.isActiveAndEnabled)
                 {
-                    rect = session.Window.SurfaceRect;
+                    rect = session.Window.GuideRect;   // the FLY control where the surface is full-screen
                     return Step.Preview;
                 }
 

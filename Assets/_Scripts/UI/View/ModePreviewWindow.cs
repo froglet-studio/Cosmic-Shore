@@ -58,6 +58,12 @@ namespace CosmicShore.UI
                                  "hand a card's small window a needlessly large surface.")]
         [Min(64)] int maxRenderHeight = 1080;
 
+        [Header("Guided path")]
+        [SerializeField, Tooltip("What a guided path spotlights to say 'fly here' (optional; empty = the surface). " +
+                                 "A window whose surface fills the screen points this at its FLY control: a " +
+                                 "full-screen spotlight hole dims nothing and leaves its caption nowhere to sit.")]
+        RectTransform guideTarget;
+
         RenderTexture _renderTexture;
         RectTransform _surfaceRect;
         int _textureHeight;
@@ -143,6 +149,10 @@ namespace CosmicShore.UI
 
         /// <summary>The live picture's rect - what an overlay drawn on the picture parents to.</summary>
         public RectTransform SurfaceRect => _surfaceRect ? _surfaceRect : transform as RectTransform;
+
+        /// <summary>What a guided path spotlights to send the player into this preview: the authored
+        /// <see cref="guideTarget"/> while it is on screen, otherwise the surface.</summary>
+        public RectTransform GuideRect => guideTarget && guideTarget.gameObject.activeInHierarchy ? guideTarget : SurfaceRect;
 
         // ── States (driven by the session) ───────────────────────────────────
 

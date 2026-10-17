@@ -113,6 +113,22 @@ namespace CosmicShore.Gameplay
 
         public bool AllowsMode(GameModes mode) => disabledInModes == null || !disabledInModes.Contains(mode);
 
+        /// <summary>Resources folder of the per-mode variants <see cref="ForMode"/> looks in.</summary>
+        public const string ModeVariantFolder = "AIBoostPolicies";
+
+        /// <summary>
+        /// The variant of <paramref name="policy"/> tuned for one mode - <c>Resources/AIBoostPolicies/&lt;name&gt;_&lt;mode&gt;</c>,
+        /// e.g. <c>RhinoAIBoostPolicy_Regatta</c>, written by <c>Tools/Build/learn_drives_from_flights.py</c> from people's
+        /// editor flights - else <paramref name="policy"/> itself. The SkimRaceAIConfigSO.LoadForRegatta pattern: a mode's
+        /// learned numbers never retune the hull in every other mode. Same class as the base or it is ignored.
+        /// </summary>
+        public static AIBoostPolicySO ForMode(AIBoostPolicySO policy, GameModes mode)
+        {
+            if (!policy) return policy;
+            var variant = Resources.Load<AIBoostPolicySO>($"{ModeVariantFolder}/{policy.name}_{mode}");
+            return variant && variant.GetType() == policy.GetType() ? variant : policy;
+        }
+
         /// <summary>A straight worth starting to spend on (before the runway test).</summary>
         public bool IsStraight(in AIBoostContext c) =>
             !c.Restricted && !c.BreakingOrbit && c.AngleToTarget <= alignDegrees && c.Stick <= stickBand;

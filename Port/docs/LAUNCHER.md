@@ -222,7 +222,18 @@ SETTINGS > ONLINE:
 Each player is their own UGS player. **+ PLAYER 2**, beside a running online game, starts a second
 online game on this PC as the `player2` profile (its own save and UGS sign-in; a smaller window, no
 sound, its console lines prefixed `[P2]`), so one person can party up with themselves through UGS:
-ARCADE, the party panel's **+**, Invite, accept in the other window. **CLOSE P2** closes it.
+ARCADE, the party panel's **+**, Invite, accept in the other window. **CLOSE P2** closes it (its window
+first, so it writes its log; it is stopped only if it does not close within 5 s).
+
+**The test's logs collect themselves.** Every online game writes a multiplayer test log when it
+closes (`<data folder>/netlogs/net_<time>_<peer>.json`, peer `main` or `p2`): its network timeline
+(sign-in, party, clients approved and leaving, refusals) and its console. Player 2 always writes one;
+the main game does when it saw another player. When the last player has closed, a notification asks
+**Send this online test's logs to Claude?** **SEND TO CLAUDE** adds them to your `bugledger/<user>`
+branch, where the Unity editor's Send to Claude puts its logs. It never touches your checkout or
+your branch, and never sends a log twice. **NOT NOW** keeps them; they go with the next send. Claude
+reads them with `python3 Tools/Build/net_logs.py show 1`: every player in one timeline. Format and
+rules: `Docs/DIAGNOSTICS.md` § "Multiplayer test logs".
 
 ## When Amoebius itself closes unexpectedly
 

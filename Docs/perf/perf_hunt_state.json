@@ -1,5 +1,18 @@
 {
-  "filed": {},
+  "filed": {
+    "amoebius:SkimRace|I2|3p:PoolRefill.FastGrowPrism": {
+      "filedUtc": "2026-10-15T23:25:35Z",
+      "task": "T-20261015-c8e2"
+    },
+    "amoebius:SkimRace|I2|3p:VesselImpactor.AcceptImpactee": {
+      "filedUtc": "2026-10-15T23:25:35Z",
+      "task": "T-20261015-d7f8"
+    },
+    "amoebius:SkimRace|I2|3p:new": {
+      "filedUtc": "2026-10-15T23:25:35Z",
+      "task": "T-20261015-c7db"
+    }
+  },
   "scanCounts": {
     "total": 78,
     "updateAllocations": 6,

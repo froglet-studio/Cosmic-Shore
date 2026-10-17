@@ -158,6 +158,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
 
+        /// <summary>The AUTHORED block size (<see cref="BaseScale"/>), for a hull that lays extra trails of the same
+        /// block (the Brittle Star's Creation Mode corners). The same caveat as <see cref="TrailZScale"/>: the real lay
+        /// multiplies it by the scalers, the boost scale and MASS.</summary>
+        public Vector3 TrailBaseScale => BaseScale;
+
         // Guards on the waitTillOutsideSkimmer clearance delay (see CreateBlock). Neither is a
         // tuning dial: the speed floor stops a stationary or near-stationary vessel dividing its
         // way to an infinite delay, and the ceiling stops a slow lay leaving a prism collider-less

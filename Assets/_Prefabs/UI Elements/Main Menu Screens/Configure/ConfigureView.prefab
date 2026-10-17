@@ -275,6 +275,7 @@ MonoBehaviour:
   focusHint: {fileID: 320482774348647695}
   renderHeight: 360
   maxRenderHeight: 720
+  guideTarget: {fileID: 371957229545650684}
 --- !u!1 &63236827959976062
 GameObject:
   m_ObjectHideFlags: 0

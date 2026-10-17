@@ -243,6 +243,7 @@ namespace CosmicShore.Player
             {
                 Console.WriteLine();
                 Console.WriteLine("CRASH — " + e);
+                NetTestLog.Write("crash", e);
                 SessionReport.Write("crash", e);
                 return 2;
             }
@@ -291,6 +292,7 @@ namespace CosmicShore.Player
             SessionReport.Log = boot.Log;
             boot.Log.Quiet = quiet;
             boot.Headless = true;
+            if (train == null) NetTestLog.Begin(boot.Log);
             if (!script.IsEmpty || control != null) script.EnsureDevices();
             bool quit = false;
             if (control != null) control.Quit = () => quit = true;
@@ -328,7 +330,7 @@ namespace CosmicShore.Player
                 }
             }
             Console.WriteLine($"[player] {frames} frames, active scene '{lastScene}', {CosmicShore.Engine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Length} live behaviours");
-            if (train == null) SessionReport.Write(quit ? "quit" : "frames done");
+            if (train == null) { NetTestLog.Write(quit ? "quit" : "frames done"); SessionReport.Write(quit ? "quit" : "frames done"); }
             boot.Log.PrintSummary();
             if (reportRender) { RenderInventory.PrintNetwork(); RenderInventory.Print(); }
             foreach (var d in dumps) { if (d.StartsWith("@")) UiDump.PrintAt(d[1..]); else UiDump.Print(d); }

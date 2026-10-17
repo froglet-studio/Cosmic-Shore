@@ -61,7 +61,8 @@ S = dict(kitbutton=K.kit_script("KitButton"), dismiss=C.script("DismissibleHint"
          lamp=C.script("OnlineStatusIndicator"), bar=C.script("ConfirmQuestionBar"), home=C.script("HomeScreen"),
          crystals=C.script("CrystalCurrencyDisplay"), cbp=C.script("ControllerButtonPress"), button=A.BUTTON,
          upnext=C.script("HomeUpNext"), invite=C.script("PartyInviteNotificationPanel"), drain=K.kit_script("KitDrain"),
-         gate=C.script("OfflineUIGate"), switcher=C.script("ScreenSwitcher"), themed=H.KIT_THEMED)
+         gate=C.script("OfflineUIGate"), switcher=C.script("ScreenSwitcher"), themed=H.KIT_THEMED,
+         guide_ok=C.script("MenuGuideAlwaysAvailable"))
 MASK = A.MASK
 
 # Menu_Main, measured 2026-10-15 (HomeScreen go 319175480197462205).
@@ -785,6 +786,12 @@ def validate(files):
     assert f"  avatarImage: {{fileID: {ctx.c('Avatar/Clip/Avatar', 'img')}}}" in sc.docs[I["home_comp"]], "HomeScreen.avatarImage is not the masked avatar"
     assert f"  noteLabel: {{fileID: {ctx.c('Bar/Note', 'tmp')}}}" in sc.docs[I["bar_comp"]], "the question bar has no note line"
     assert not sc.has(I["settings_cbp"]), "Settings still carries its ControllerButtonPress"
+    # The first-login guide dims and kills everything but its one target - except Settings, which it
+    # finds by this marker (MenuGuide.CollectAlwaysAvailable): lose it and a guided player cannot
+    # reach Settings at all (T-20261015-f4c7, the guide / redesign reconcile).
+    gear = re.search(r"  m_Component:\n((?:  - component: \{fileID: -?\d+\}\n)+)", sc.docs[I["settings_go"]]).group(1)
+    assert any(sc.has(c) and sc.script(c) == S["guide_ok"] for c in re.findall(r"fileID: (-?\d+)", gear)), \
+        "Settings lost MenuGuideAlwaysAvailable: the first-login guide would dim and kill it"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["bar_btn"]]), "the question bar still opens the display-name window"
     # 6b
     up = sc.docs[str(ctx.c("UpNext", "upnext"))]
@@ -868,6 +875,8 @@ def self_test(files):
             r"(  timerBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[invite_path()]))),
         ("a docked card that cannot fold", lambda f: f.__setitem__(SCENE, re.sub(r"(  minimiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("the fly hint's x unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  closeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
+        ("Settings left out of the guide's always-available set", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"guid: {S['guide_ok']}", "guid: 00000000000000000000000000000000", 1))),
         ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  - {{fileID: {ctx_new().go('UpNext')}}}\n", "", 1))),
     ]

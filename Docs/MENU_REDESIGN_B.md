@@ -1850,3 +1850,20 @@ page, R3ConfigureA / R3ConfigureB). One builder, three windows (`author_menu_con
 
 Validated by `--check` / `--self-test`, with new planted defects: tap surface back in navigation, FLY / STOP calling
 nothing, the cinema fading nothing, the preview drawn over the settings, the header ahead of the cards.
+
+## 34. Bleeding-edge merged in; the first-login guide on the rev-3 menu (2026-10-17)
+
+`origin/bleeding-edge` (59 commits) merged into the branch. Menu_Main kept this branch's side: everything bleeding-edge
+changed there (the Arena AI difficulty row, 6d857572d / 3ae867467) hung off the old Arena window that §13 / §33 replaced,
+so it was re-done in the new window instead:
+
+- **Arena AI difficulty row:** `author_menu_configure.py` now authors the row into `ConfigureArenaView` (card 03, under
+  the domains, as on the Arcade) and wires `ArenaLaunchPanel.aiDifficultyPicker` (the base class's field); a planted
+  defect holds it. The panel still shows it only where `AIDifficultyRules.IsOfferedFor` says the mode's AI reads it.
+- **`author_ai_difficulty_row.py` stands down** on both windows once they are style-B configure views (it was aborting
+  on the missing `ConfigurationDetailView` - a spent one-shot must stand down, not abort).
+- **The guide (T-20261015-f4c7):** its targets resolve by type, and all exist on the restyled menu (the ARCADE hub, the
+  Arcade grid and its cards, the Settings marker). Two fixes: the guide's **Preview step** spotlighted the preview
+  surface, which rev 3 made full-screen (a hole the size of the screen, its caption pushed off the bottom) - it now asks
+  `ModePreviewWindow.GuideRect`, the new optional `guideTarget` (FLY here) or the surface elsewhere; and
+  `author_menu_home.py` now fails if the SettingsButton loses `MenuGuideAlwaysAvailable`.

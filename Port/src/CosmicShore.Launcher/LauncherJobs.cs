@@ -365,6 +365,7 @@ namespace CosmicShore.Launcher
             psi.Environment["COSMIC_SHORE_BRANCH"] = _s.Branch;
             var commit = ProcessRunner.Capture(_tools.Git ?? "git", "-C", _ws.Dir, "rev-parse", "--short", "HEAD");
             if (commit != null) psi.Environment["COSMIC_SHORE_COMMIT"] = commit;
+            if (PlayingOnline) NetLogEnvironment(psi, "main");
             PruneSessions();
 
             // Published only once it has started: the UI reads GameRunning every frame, and on Windows

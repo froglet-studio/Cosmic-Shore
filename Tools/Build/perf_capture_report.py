@@ -21,6 +21,25 @@ A bundle pasted from the clipboard can be saved to a file first; this script rea
 import argparse, json, sys
 
 
+
+def gc_owner(row):
+    """A 'GC.Alloc' row names the CALLER: the nearest path element that is not GC.Alloc, the Profiler's own
+    [Invoke] / dll decoration stripped ('VesselAnimation.Update()' from '...Gameplay::VesselAnimation.Update()
+    [Invoke] / GC.Alloc'). The bare name 'GC.Alloc' told the reader nothing (first shared capture, 2026-10-16)."""
+    if row.get("name") != "GC.Alloc":
+        return row.get("name", "?")
+    parts = [x.strip() for x in (row.get("path") or "").split(" / ") if x.strip() and x.strip() != "GC.Alloc"]
+    if not parts:
+        return "GC.Alloc"
+    owner = parts[-1].replace(" [Invoke]", "").replace(" [Coroutine: MoveNext]", " (coroutine)")
+    owner = owner.split("::")[-1] if "::" in owner else owner
+    return owner
+
+
+def _pct(row):
+    pct = row.get("presentPct")
+    return f"in {pct:.0f}% of frames" if isinstance(pct, (int, float)) else ""
+
 def load(path):
     with open(path, encoding="utf-8") as f:
         return json.load(f)
@@ -179,7 +198,7 @@ def print_report(bundles, top):
             print(f"   {r['name'][:60]:<60} {r.get('avgSelfMs',0):7.3f}  x{r.get('avgCalls',0):.0f}")
         print(f"   top SELF allocation (KB/frame):")
         for r in [r for r in (p.get("topGc") or []) if not r.get("editorOnly") and (r.get("avgSelfGcKB") or 0) > 0][:12]:
-            print(f"   {r['name'][:60]:<60} {r.get('avgSelfGcKB',0):7.2f} KB  {r.get('avgSelfMs',0):.3f} ms")
+            print(f"   {gc_owner(r)[:60]:<60} {r.get('avgSelfGcKB',0):7.2f} KB  {_pct(r)}")
         sp = p.get("spikeFrameTree") or []
         if sp:
             print(f"   spike frame ({fmt(p.get('spikeFrameMs'))} ms vs typical {fmt(p.get('typicalFrameMs'))}): top rows")

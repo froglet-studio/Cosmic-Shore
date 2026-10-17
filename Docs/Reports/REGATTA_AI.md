@@ -17,22 +17,16 @@ Unity editor.** That playtest is the next step (section 5).
 - **A browser lab found a steering bug, and the fix is in Unity.** AIs turned in too early on Regatta's short legs,
   missed the ring, then circled it. With the fix, the lab's AIs finish **30 of 32** hard races instead of **17**. In
   Unity it is on for Regatta only.
-- **The lab is now "Training AI for Regatta".** Every vessel races in it. AIs train by racing each other, learn from a
-  player's line, and export what they learn for Unity.
-  - The Rhino went from **62.7 s to 28.5 s** a race in 6 rounds.
-  - In a live race the trained Rhino beat the untrained one, **20.2 s to 41.5 s**.
+- **The browser lab is gone (2026-10-16).** Yash: "delete the artifact, it's not needed; only tests will happen in the
+  Unity editor itself." AIs are tested in the editor (the Third Eye, with a You / AI toggle on every pilot), and
+  training data comes only from editor play (`Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md`). What the lab measured is
+  kept in `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md`.
 
 ## 2. Try it
 
-**The artifact (any browser, phone or PC):** [Training AI for Regatta](https://claude.ai/artifact/FCC7UWbs2wC6LXYMVW4KA4).
-It is private until Yash shares it from its Share menu.
-
-- **Race and watch.** Press *Start* for the five-hull test grid. *C* changes camera, *V* changes pilot, and the trails
-  and dashed planned-route lines show each AI's line.
-- **Train.** Open the *Training* tab at the bottom, pick a hull, press *Train*, then *Race trained vs untrained*.
-- **Teach it your line.** Untick *Is AI* on player 1, fly a hull for a lap, then train with *Learn from me* above 0.
-- **Easier routes.** AI Config ▸ Gate steering has three sliders for AIs that swing wide: *Go straight when lined
-  up*, *Exit toward the next ring* and *Break-off distance*. At their defaults they are the game's steering.
+**The browser lab (Training AI for Regatta) was deleted on 2026-10-16**; everything is tried in the Unity editor:
+Regatta, solo, five hulls seated, FrogletTools ▸ AI ▸ Third Eye with Trails on, and its Pilots panel to fly any hull or
+hand yours to the AI.
 
 **Unity:**
 1. Pull `Ys-bleeding-edge`, open the project and wait for the compile.
@@ -66,7 +60,7 @@ It is private until Yash shares it from its Share menu.
 Breakwater, Skein and Redline: each has an inspector switch, `aiCommitFromApproachPoint`, left off. The 40% lead cap
 does apply to every gate race.
 
-## 4. The browser lab: Training AI for Regatta
+## 4. The browser lab: Training AI for Regatta (deleted 2026-10-16; kept here as a record)
 
 | | |
 |---|---|
