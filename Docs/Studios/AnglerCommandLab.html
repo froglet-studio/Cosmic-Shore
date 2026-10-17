@@ -148,7 +148,7 @@
   // (1) LAB meta + SHIPPED: a READER of the game's numbers. Every constant names the asset / field it was
   //     copied from. "lab" = no game field exists yet (the Angler is a design), shown as a proposal.
   // ===================================================================================================
-  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 5, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design, cloned into the game as the Angler (vessel 17)' };
+  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 6, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design, cloned into the game as the Angler (vessel 17)' };
   const DOMAIN_HEX = { jade: 0x13fff2, ruby: 0xff00f9, gold: 0xffa700 };   // studio-domains.js (OriginalColorSetSO GetDomainSignalColor)
   const SHIPPED = {
     // --- the cell ---
@@ -470,7 +470,7 @@
     const n = SCENE.n;
     world = {
       t: 0, dt: 1 / 60, rnd, mode, scheme,
-      alive: new Uint8Array(n).fill(1), painted: new Uint8Array(n), marked: new Uint8Array(n), paintT: new Float32Array(n), claims: new Uint8Array(n), ordered: new Float32Array(n),
+      alive: new Uint8Array(n).fill(1), painted: new Uint8Array(n), marked: new Uint8Array(n), markQueue: [], paintT: new Float32Array(n), claims: new Uint8Array(n), ordered: new Float32Array(n),
       paintedList: [],
       v: { p: START_P.slice(), f: [0, 0, -1], u: [0, 1, 0], r: [1, 0, 0], speed: P.cruise },
       fauna: [], squadSel: -1, lureOn: false, L: [0, 0, 0],
@@ -542,12 +542,20 @@
     if (w.task && w.task.firstOrder == null && set.some((i) => SCENE.st[i] === w.task.st)) { w.task.firstOrder = w.t; w.m.orderT.push(w.t - w.task.start); }
     return true;
   }
+  // litQueue: the prisms still lit by a throw (marked, alive), in the order they were thrown at; dead and erased entries
+  // are dropped as it is read. Recency comes from paintT, so a prism painted again moves up without a second entry.
+  function litQueue(w) {
+    w.markQueue = w.markQueue.filter((i) => w.alive[i] && w.marked[i]);
+    return w.markQueue;
+  }
   function releaseClaim(w, f) { if (f.target >= 0 && w.claims[f.target] > 0) w.claims[f.target]--; f.target = -1; }
   function pickTarget(w, f) {
     releaseClaim(w, f);
-    const live = f.set.filter((i) => w.alive[i]);
-    // a Sling-painter order picks the newest paint first, regardless of distance (the designer, 2026-10-16); every
-    // other order (the sling's latch cluster, the round-1 schemes) picks the nearest
+    // a Sling-painter order picks from the LIT QUEUE - every prism thrown at and still lit, whichever throw lit it - so
+    // the school keeps eating lit prisms, newest first, until none is left (the designer, 2026-10-17). pickRecent
+    // spreads it: a creature takes the newest prism nobody is heading for, the next one goes down the queue, and so on.
+    // Every other order (the sling's latch cluster, the round-1 schemes) picks the nearest in its own set.
+    const live = f.recent ? litQueue(w) : f.set.filter((i) => w.alive[i]);
     const k = f.recent ? CORE.pickRecent(live.map((i) => w.paintT[i]), live.map((i) => w.claims[i]))
       : CORE.pickTarget([f.x, f.y, f.z], live.map(ppos), live.map((i) => w.claims[i])), best = k < 0 ? -1 : live[k];
     if (best < 0) { f.set = null; f.state = ST.IDLE; return; }
@@ -682,7 +690,7 @@
     const ids = w.paintedList.filter((i) => w.alive[i]);
     for (const i of w.paintedList) w.painted[i] = 0;
     w.paintedList = [];
-    for (const i of ids) w.marked[i] = 1;   // the order stays lit until it is eaten or erased (the designer, 2026-10-16)
+    for (const i of ids) { if (!w.marked[i]) w.markQueue.push(i); w.marked[i] = 1; }   // lit until eaten or erased (2026-10-16)
     if (!ids.length) { slingThrow(w); return; }
     let n = 0;
     for (const f of w.fauna) {

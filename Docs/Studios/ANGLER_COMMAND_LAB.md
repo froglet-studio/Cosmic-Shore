@@ -30,6 +30,41 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.
 
+## Round 6 (2026-10-17): the lit queue
+
+The designer asked: *the fauna should keep eating lit prisms in order of how recently each was lit; if one creature is
+already heading for the newest, the next goes down the queue, and so on.*
+
+**What was wrong.** A throw's creatures picked only from that throw's own paint. Once it was eaten they went back to
+the hull, and a second throw replaced the first. Any prism still lit from an earlier throw stayed lit and was never
+eaten unless a creature happened to bite it.
+
+**The page now.** A Sling-painter creature picks from the **lit queue** (`litQueue`): every prism a throw lit that is
+still alive and still lit, whichever throw lit it. `pickRecent` (unchanged, in CORE) spreads the school over it: the
+fewest claims first, then the newest paint. So the first creature takes the newest prism, the next takes the next
+newest, and so on. A creature that finishes its meal picks again from the queue, and only returns to the hull when
+nothing lit is left. Erasing a prism takes it out of the queue. Painting a lit prism again moves it to the front (its
+stamp is renewed) without a second entry.
+
+Headless check (two throws, 12 prisms then 6 newer ones, 24 creatures):
+
+| | Round 5 | Round 6 |
+|---|---|---|
+| After the second throw | 14 on the new 6, none on the older 12 | 6 on the new 6 (one each), 12 on the older 12 |
+| Older throw's prisms eaten after 40 s | 0 of 12 (still lit) | **12 of 12** |
+| Prisms left lit | 12 | **0** |
+
+Scorecard (seeds 1–3):
+
+| Sling painter | Round 5 | Round 6 |
+|---|---|---|
+| Clears in | 10.9 s | **9.8 s** |
+| On target | 87% | 83% (rookie 73%) |
+
+The clear is faster because nothing lit is abandoned. On-target falls because the sim pilot's stray paint, which round 5
+left lit and uneaten, is now eaten too: the queue does what the paint says. Erase (LT) is how a pilot takes a stray
+mark off the queue.
+
 ## Round 5 (2026-10-17): speed back, a smaller and accurate brush, a level camera
 
 The designer flew round 4 and asked for three things. All three are on the page:
