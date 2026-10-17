@@ -718,3 +718,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash
 - **Added:** 2026-10-17 by Shombith (Claude session) (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 47.3
+
+### T-20261017-84c1 · open · test · Menu_Main / style-B UI
+- **Task:** Hand-test Rev 7 in the editor on claude/new-session-76hnyc: the sky-blue glowing selection, LT/RT + edge arrows between Toy Box / Arcade / Arena / Mission (stops at the ends, skips Unavailable Mission), the friend profile card on avatar hover and pad focus (needs two signed-in clients), and the cell-change loading screen (boot and a cell change). No Unity editor ran in the cloud session.
+- **Done when:** The four 2026-10-17 Rev 7 entries in Docs/UNITY_VERIFICATION_CHECKLIST.md are walked and marked, and anything broken is filed
+- **Who can take it:** Shombith or Yash
+- **Added:** 2026-10-17 by Shombith (Claude session) (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 47; Docs/UNITY_VERIFICATION_CHECKLIST.md
