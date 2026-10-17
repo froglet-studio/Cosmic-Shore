@@ -65,6 +65,11 @@ namespace CosmicShore.Gameplay
 
             public override bool HoldsOffCommit => _holdOff;
 
+            public override string Status =>
+                _holdOff ? "discharging on the straight"
+                : _status.IsDrifting ? $"charging in the drift ({Charge01():P0}, spends at {_policy.spendAtCharge01:P0})"
+                : "waiting for a commit drift to charge";
+
             public override bool TakeCommitReleaseRequest()
             {
                 if (!_releaseRequested) return false;
@@ -93,6 +98,9 @@ namespace CosmicShore.Gameplay
                 if (!c.CommitDriftHeld || !_status.IsDrifting) return;
                 if (c.Restricted || c.BreakingOrbit) return;
                 if (c.AngleToTarget > _policy.AlignDegrees) return;
+                // The discharge fires along the NOSE, and in a drift the nose is free of the course: spend only with the
+                // nose on the objective too, or the boost throws the hull wide of the ring (2026-10-14 Regatta audit).
+                if (Vector3.Angle(c.Forward, c.ToTarget) > _policy.AlignDegrees) return;
                 if (!_policy.HasRunway(c)) return;
                 if (Charge01() < _policy.spendAtCharge01) return;
 

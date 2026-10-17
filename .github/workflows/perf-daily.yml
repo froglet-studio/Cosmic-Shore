@@ -1,0 +1,88 @@
+# The daily performance check (Docs/PERFORMANCE_OPTIMIZATION.md §3.4; the resolve loop is /perf-hunt).
+#
+# Two jobs, both on GitHub-hosted Linux, no Unity:
+#   gates     the static performance gates and every collaborator's shared editor capture judged against its
+#             baseline (Tools/Build/perf_hunt.py sweep). Red when a gate fails or a baseline count rose.
+#   amoebius  the game's own ProfilerMarkers measured in Amoebius (Port/, the engine under evaluation -
+#             Docs/TOOLING_DECISIONS.md) for one Skim Race match: allocations per marker against the committed
+#             baseline. Red when a marker allocates more than it did. Milliseconds there are only reported.
+# Editor captures cannot run here (no Unity runner); they arrive through the Bug Hunt check-in's shared report
+# files, which the sweep reads from every branch.
+name: perf-daily
+
+on:
+  schedule:
+    - cron: '40 5 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'Tools/Build/perf_hunt.py'
+      - 'Tools/Build/perf_capture_report.py'
+      - 'Docs/perf/**'
+      - '.github/workflows/perf-daily.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf-daily-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'bleeding-edge' || github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Self-tests
+        run: |
+          python3 Tools/Build/perf_hunt.py --self-test
+          python3 Tools/Build/perf_capture_report.py --self-test
+      - name: Sweep (gates + every shared capture vs its baseline)
+        id: sweep
+        run: |
+          mkdir -p out
+          python3 Tools/Build/perf_hunt.py sweep --strict --out out/perf_sweep.json | tee out/perf_sweep.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-sweep
+          path: out/
+          retention-days: 30
+
+  amoebius:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'bleeding-edge' || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build the Amoebius player (Release, the game's own source compiled live)
+        run: dotnet build Port/src/CosmicShore.Player -c Release -nologo -v q
+      - name: Skim Race I2, 3 seats - the game's markers, allocations vs the committed baseline
+        env:
+          COSMIC_SHORE_NET: off
+          COSMIC_SHORE_AUDIO: off
+          DOTNET_TieredCompilation: '0'
+        run: |
+          mkdir -p out
+          python3 Tools/Build/perf_hunt.py amoebius --no-build --modes SkimRace:2:3 --frames 1800 | tee out/amoebius.md
+          cp Port/obj/perf_hunt/*.json out/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-amoebius
+          path: out/
+          retention-days: 30

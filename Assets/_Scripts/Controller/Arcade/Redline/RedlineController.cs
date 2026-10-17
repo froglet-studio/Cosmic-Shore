@@ -36,40 +36,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
                  "length, so the circuit is laid with target/laps rings - one number authored " +
                  "once, in the end-condition overrides, and the two can never disagree.")]
-        [SerializeField, Min(1)] int laps = 3;
+        [SerializeField, Min(1)] int laps = RedlineCourseSource.DefaultLaps;
 
         protected override string ModeName => "Redline";
 
-        protected override int LapsPerRace => Mathf.Max(1, laps);
-
-        public override int AuthoredGateTarget()
-        {
-            var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
-                ? overrides.GetRedlineGateTarget()
-                : EndConditionOverridesSO.DefaultRedlineGateTarget;
-        }
-
-        /// <summary>
-        /// A closed circuit, and it CANNOT fail - the shared solver relaxes toward a regular
-        /// octagon rather than walking and backtracking, so there is no back-off ladder here and
-        /// no seed that produces a course nobody can fly. The settings are the Manta's
-        /// (<see cref="RedlineCourse.ForIntensity"/>); the solver is Headlong's.
-        /// </summary>
-        protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
-        {
-            var settings = RedlineCourse.ForIntensity(Intensity);
-            settings.InnerRadius = inner;
-            settings.OuterRadius = outer;
-            settings.FirstGateDirection = Vector3.up;   // the equatorial spawn ring's pole
-
-            // The authored target is the RACE length; the circuit only needs one lap of rings.
-            // Round UP so a target that does not divide by the lap count still yields a whole
-            // circuit, and let RaceLength be the honest authority afterwards.
-            int perLap = Mathf.Max(3, Mathf.CeilToInt(gateCount / (float)LapsPerRace));
-            settings.GateCount = perLap;
-
-            return HeadlongCircuit.Generate(seed, settings);
-        }
+        protected override RaceCourseSource CreateCourseSource() =>
+            new RedlineCourseSource { Laps = laps };
     }
 }

@@ -864,8 +864,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: commit "merge the Brittle Star research and studio" (the `require` lines added).
 - Promoted: no
 
-### L-STU-67 — A control that equals Hard to the decimal is a bug until shown otherwise, even when equality is plausible
-- Lab: Shrike Studio round 1 (`Docs/Studios/VesselStudio/shrike.html`) · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
+### L-STU-79 — A free-ended cord that must whip needs a WAVE EQUATION on its link directions, not pose springs on its points
+- Lab: Brittle Star Studio · Branch: `cece/beautiful-knuth-j3atgk` · Date: 2026-10-16 · (L-STU-67 to 78 are claimed on
+  in-flight branches; this id skips them)
+- What happened: the first model for "cords like the Thresher's chain, without the weight" pulled each point toward its
+  place on a straight pose line, capped lengths with follow-the-leader and re-read velocities from the move (PBD). It
+  passed straight-line and frame-rate tests, but a node prototype showed the two things a whip needs were missing: a
+  root flick moved every link at once (no travelling wave), and 30 s of random flying pumped node speeds to 4,000 u/s
+  (FTL plus the velocity re-read injects energy).
+- Do instead: model the cord as unit link DIRECTIONS laid end to end (inextensible by construction) obeying
+  `u'' = k (u[i-1] - 2u[i] + u[i+1])`, the root direction fixed and the tip free; damping and a pose spring onto the
+  straight line are the analog "stiffen" dials. Waves then emerge and reflect off the tip with no scripting. Prototype it
+  in node first and measure three things before porting: when each link starts to move after a root flick (arrival
+  order and delay), the peak swing over a minute of random flight (bounded), and the same flick at 30 / 60 / 144 fps
+  (sub-step at a fixed h so they agree).
+- Evidence: `Assets/_Scripts/Controller/Vessel/BrittleStarCord.cs` and its tests in `BrittleStarTests` (arrival order,
+  saber straightness, no stretch, a minute bounded, 30 vs 144 fps); the studio's `cordStep` is the line-for-line port.
+- Promoted: no
+
+### L-STU-82 — A control that equals Hard to the decimal is a bug until shown otherwise, even when equality is plausible
+- Lab: Shrike Studio round 1 (`Docs/Studios/VesselStudio/shrike.html`) · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15 · (L-STU-67 to 81 are claimed on
+  other branches; these ids skip them)
 - What happened: Den Defense's "Hard, no array" column matched Hard byte for byte, twice, for two different bugs. First
   the AI let go of the paint the moment it turned to lance: of each burst only the first missile hit, the rest flew out
   their 8 s life, and the run fell at the same 209.3 s as the no-array run. Later, at I4, the boss-wave test `wave % 2 === 2` could never be true, so no creature ever spawned and
@@ -876,7 +895,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Docs/Studios/SHRIKE.md` §5 finding 7; the trace scripts behind `Docs/Studios/Shrike/shrike_score.cjs`.
 - Promoted: no
 
-### L-STU-68 — A survival score decided by one event measures luck; make the loss a sum of many events
+### L-STU-83 — A survival score decided by one event measures luck; make the loss a sum of many events
 - Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
 - What happened: the first Den Defense ended the run when any asteroid reached the den's core. Five seeds of one cell
   spread from 75 s to 296 s, so Easy, Medium and Hard overlapped completely. Wearing the den down instead (a core hit
@@ -887,7 +906,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Docs/Studios/SHRIKE.md` §3 (Den Defense) and §4.
 - Promoted: no
 
-### L-STU-69 — When an easier AI level beats Hard, find what Hard spends its aim on; change one thing per measurement
+### L-STU-84 — When an easier AI level beats Hard, find what Hard spends its aim on; change one thing per measurement
 - Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
 - What happened: in Den Defense, Medium outlived Hard at I1 and I2 (288.9 s against 274.4 s, 242.4 against 228.8). Hard
   painted asteroids for missiles while its hitscan lance (0.48 s cooldown in a nest) could have killed them on the spot,
@@ -901,7 +920,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Docs/Studios/SHRIKE.md` §5 finding 3; `shrike.html` `aiDen` (`worth`).
 - Promoted: no
 
-### L-STU-70 — A lab publishes its own artifact; a hub's "one artifact" rule is the hub's, not every lab's
+### L-STU-85 — A lab publishes its own artifact; a hub's "one artifact" rule is the hub's, not every lab's
 - Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · By: Garrett (owner), 2026-10-15
 - What happened: the Vessel Studio's rule "never publish a second studio artifact" (its skill §0, a `CLAUDE.md` line,
   the vessel-work prompt hook) read as covering any lab about a vessel. So the Shrike lab, built with `/labmaker`, was
@@ -916,7 +935,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   `/vessel-studio` §0; https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy.
 - Promoted: §6
 
-### L-STU-71 — A vessel lab carries four minigames, one per element, and the element decides the kind
+### L-STU-86 — A vessel lab carries four minigames, one per element, and the element decides the kind
 - Lab: all vessel labs (raised on the Shrike Studio) · Branch: `cece/affectionate-clarke-s738vh` · By: Garrett (owner), 2026-10-15
 - What happened: the Shrike lab flew the two minigames its class document named (Thread the Needle, Den Defense). The owner
   set a fleet rule: "time is always a racing game, space a destruction game, mass a creation game, and charge a vessel on

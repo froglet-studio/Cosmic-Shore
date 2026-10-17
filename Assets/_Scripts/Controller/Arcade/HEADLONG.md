@@ -199,7 +199,10 @@ shared base rather than being forked:
 | `Racing/SwitchThreadScoring.cs` | the one place a threaded gate is credited |
 | `Scoring/GateRaceScoringRuleSO.cs` | golf timing + the `BestByDomain` fold |
 
-A subclass supplies **three** things: `ModeName`, `BuildCourse`, and `LapsPerRace`.
+A subclass supplies **two** things: `ModeName` and `CreateCourseSource()`. (It was three -
+`ModeName`, `BuildCourse`, `LapsPerRace` - until 2026-09, when the course, its laps, its lead-in
+and its authored length moved onto a per-mode `RaceCourseSource` so the arcade card's preview
+can lay the same rings without loading the scene; `Docs/ModePreview/TRAINING_PLAN.md` §7.)
 
 **One real bug was found in the extraction**: the AI target provider tested
 `index >= _course.Count` and indexed `_course[index]` directly, so on a lapped circuit every AI

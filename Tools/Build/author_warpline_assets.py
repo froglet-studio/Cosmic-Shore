@@ -278,10 +278,14 @@ for pat, what in ((r"DefaultWarplineGateTarget\s*=\s*(\d+);", "DefaultWarplineGa
         errors.append(f"EndConditionOverridesSO.{what} is not {GATE_TARGET}")
 
 _ctrl = read_or_empty(SCRIPT_PATHS["WarplineController"])
-m = re.search(r"int laps\s*=\s*(\d+);", _ctrl)
-if not m or int(m.group(1)) != LAPS:
+# Literal, or one hop into the course source's const (the RaceCourseSource refactor).
+_laps = lib.cs_field_default(_ctrl, "laps")
+if _laps is None or int(float(_laps)) != LAPS:
     errors.append(f"WarplineController.laps default is not {LAPS}")
-if "SlingshotCourse.ForIntensity" not in _ctrl:
+# The circuit is cut by the controller's course source since the RaceCourseSource refactor.
+_course = read_or_empty("Assets/_Scripts/Controller/Arcade/Warpline/WarplineCourseSource.cs")
+if "SlingshotCourse.ForIntensity" not in _ctrl + _course or \
+        ("WarplineCourseSource" in _ctrl and "SlingshotCourse.ForIntensity" not in _course):
     errors.append("WarplineController no longer cuts Slingshot's circuit (SlingshotCourse.ForIntensity)")
 
 if G_SCRIPT["WarplineController"] not in scene or EXISTING["SlingshotController"] in scene:

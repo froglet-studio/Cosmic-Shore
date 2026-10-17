@@ -776,7 +776,7 @@ MonoBehaviour:
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
   skimmer: {fileID: 708149374973573223}
-  BaseScale: {x: 2.5, y: 2.5, z: 4.5}
+  BaseScale: {x: 1.5, y: 1.5, z: 3}
   prismType: 2
   initialWavelength: 6
   minWavelength: 6
@@ -964,6 +964,9 @@ MonoBehaviour:
   - InputEvent: 2
     ShipActions:
     - {fileID: 11400000, guid: fcbf39a50ea36d566289b4d999a065fb, type: 2}
+  - InputEvent: 3
+    ShipActions:
+    - {fileID: 11400000, guid: 30193df2c492c5ba431b666c13b91521, type: 2}
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 6e440b73dd6896a501eceda2687dde79, type: 2}
@@ -1250,6 +1253,7 @@ MonoBehaviour:
   hull: {fileID: 5137264980012345614}
   gun: {fileID: 4419001122334455012}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+  cordMaterial: {fileID: 2100000, guid: 02033cc2904f4f25bf3b6888ce3c98f9, type: 2}
 --- !u!1001 &5313661885591395716
 PrefabInstance:
   m_ObjectHideFlags: 0

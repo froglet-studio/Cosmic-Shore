@@ -17,7 +17,7 @@ namespace CosmicShore.UI
     {
         [Header("Brittle Star")]
         [SerializeField] BrittleStarHUDView view;
-        [Tooltip("This vessel's executor: the ring, the charge, the modes and Overdrive.")]
+        [Tooltip("This vessel's executor: the spare rings, the guns' heat and the modes.")]
         [SerializeField] BrittleStarExecutor star;
 
         bool _isLocalPilotHud;
@@ -37,11 +37,10 @@ namespace CosmicShore.UI
         void Update()
         {
             if (!_isLocalPilotHud || !view || !star) return;
-            bool overdrive = star.Overdrive;
-            view.SetRing(star.RingPresence01, star.Charges > 0);
-            view.SetCreation(star.Creation01, overdrive);
-            view.SetDestruction(star.Destruction01, overdrive);
-            view.SetSpeed(star.Speed01, overdrive);
+            view.SetCharge(star.SpareRings / (float)Mathf.Max(1, star.MaxSpareRings), star.Charge01 >= 1f);
+            view.SetCreation(star.Creation01);
+            view.SetSpace(star.Heat01, star.Destruction01 >= 1f, star.Overheated);
+            view.SetSpeed(star.Speed01);
         }
     }
 }

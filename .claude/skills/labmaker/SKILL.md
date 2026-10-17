@@ -234,7 +234,7 @@ For a research lab run as parallel autonomous sessions (the NCA and ecology prog
   Vessel Studio's "exactly one artifact" rule (`/vessel-studio` §0, the `CLAUDE.md` line, the vessel-work hook) is
   about that shared hub: it never stops a lab from publishing. A lab whose page lives in `Docs/Studios/VesselStudio/`
   and loads the hub's shared scripts publishes them beside it with `files` and leaves out `sync.js` (the hub's own
-  Sync panel). Joining the hub's catalog is optional and later (§7), and its owner decides. (L-STU-70)
+  Sync panel). Joining the hub's catalog is optional and later (§7), and its owner decides. (L-STU-85)
 - The **repo copy is the source**. The artifact is published FROM it, and the URL goes in the lab's
   README and in `CATALOG.md`. Re-publish to the same URL; a new URL forks the decision log.
 - Declare only the capabilities the page calls (`db` + `user` for the log; `sample` for an Ask

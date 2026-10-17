@@ -85,6 +85,15 @@ def method_bodies(src, entry_regex):
     """Yield (name, body, first_line) for each method the regex opens."""
     for match in entry_regex.finditer(src):
         open_brace = src.find("{", match.end())
+        arrow = src.find("=>", match.end())
+        # Expression-bodied (`void LateUpdate() => Foo();`): the body is that one expression. Brace-matching from
+        # here would read the NEXT method's body as this one's - the scanner reported three hull builders'
+        # one-time HideLegacyModel() as LateUpdate allocations that way (2026-10-16).
+        if arrow >= 0 and (open_brace < 0 or arrow < open_brace) and src.find(";", match.end()) > arrow \
+                and "\n" not in src[match.end():arrow].strip("\n").replace(" ", ""):
+            end = src.find(";", arrow)
+            yield match.group(1), src[arrow:end + 1], src[:arrow].count("\n") + 1
+            continue
         if open_brace < 0:
             continue
         depth, cursor = 0, open_brace
@@ -100,7 +109,8 @@ def method_bodies(src, entry_regex):
 
 
 def strip_comments(body):
-    return "\n".join(l for l in body.split("\n") if not COMMENT.match(l))
+    # A line marked `// perframe-ok: <reason>` is a reviewed exception (a throttled refresh, a one-time branch).
+    return "\n".join(l for l in body.split("\n") if not COMMENT.match(l) and "perframe-ok:" not in l)
 
 
 def scan_big(body):

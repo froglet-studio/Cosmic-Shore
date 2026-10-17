@@ -79,6 +79,50 @@ hull's own bindings, ticked with a read-only context, input-only. Make that the 
 | 6 | **Dolphin**: measure the charge policy in Regatta; tune the discharge runway | Lap times per difficulty |
 | 7 | **Mixed grid**: clear `SO_ArcadeGame.OpponentAIVessel` in `author_regatta_assets.py` (the Squirrel pin is a stopgap, REGATTA.md §6); re-run `regatta_balance.py` against AI times; set `StartingElements` from them | An all-AI domain of each of the six can win; the spread holds |
 
+**2026-10-15 status:** an audit of the five racing hulls (all except the Stoat) found and fixed the race-breakers listed in
+`Arcade/REGATTA.md` §6.1. Step 0 is partly done: Regatta now offers difficulty, and every gate-race AI reports its
+phase, ring, lap and boost decision to the Third Eye (`AIPilot.Objective`, `AIBoostDriver.Status`), with trails.
+The Rhino now has a drive (`RampBoostAIPolicySO`, step 4's first cut). Nothing has been timed yet.
+
+**2026-10-17: the Regatta AIs learn from people's editor flights.** The Squirrel's skim line came from 29 flights
+(`SITUATION_RECORDING_PLAN.md` §8); the Rhino, Dolphin and Manta drives learn the same way through Regatta-only variants
+(`learn_drives_from_flights.py`, §9), waiting on flights of those hulls. The Stoat needs to be on the Regatta card first.
+
+**Decision (Yash, 2026-10-16): the Regatta AIs are tested in the Unity editor only, and the Regatta artifact is
+deleted.** "Delete the artifact, it's not needed; only tests will happen in the Unity editor itself." The loop is: change
+the AI in Unity, watch the real vessels race in the Third Eye (trajectories, behaviour, the You / AI toggle on every
+pilot), measure, repeat. Training data likewise comes only from playing in the editor (`SITUATION_RECORDING_PLAN.md`).
+The page (Regatta AI, then Training AI for Regatta, 2026-10-15/16) and its README are in git history up to the commit
+that deleted `Docs/Studios/RegattaAI/`; its course export moved to `Tools/Build/regatta_course_harness/`.
+
+**What the page measured before it was deleted (2026-10-15; a simplified flight model, Hard, seed 11, the card's
+elements; seconds for three laps, `regatta_balance.py`'s skilled-pilot model in brackets).** Re-measure in the editor;
+these are leads, not results.
+
+| Hull | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| Rhino | 67.9 (17.8) | 57.5 (21.8) | 103.5 (25.6) | 150.5 (25.9) |
+| Manta | 31.4 (23.9) | 53.9 (27.5) | 59.9 (30.4) | 116.3 (30.2) |
+| Dolphin | 86.0 (41.9) | 102.3 (48.0) | 127.2 (53.0) | 132.7 (54.1) |
+| Urchin | 49.8 (48.3) | 57.1 (54.3) | 60.0 (58.9) | 60.9 (58.7) |
+| Squirrel | 66.9 (48.5) | 97.5 (54.6) | 99.1 (59.2) | 83.3 (59.5) |
+| Serpent | 63.8 (58.1) | 87.2 (65.4) | 104.8 (70.9) | 107.8 (70.6) |
+| Sparrow | 89.1 (73.6) | 112.1 (82.7) | 130.3 (89.6) | 143.5 (89.5) |
+| Scarab | 58.7 (44.9) | 73.8 (50.5) | DNF (54.8) | DNF (55.1) |
+
+- **The shipped gate steering finished 17 of these 32 races; with the fix (commit no earlier than the approach point;
+  after a missed mouth re-latch the side and extend at once), 30.** **Ported (2026-10-15, `Ys-bleeding-edge`, for
+  testing):** `GateRaceController` (`CommitDistanceFor`, `RaceGateRing.PlaneCrossing`, `AIPilot.BreakOffNow`), on in
+  Regatta only; the other gate races keep their shipped steering until their owners turn `aiCommitFromApproachPoint` on.
+  Not editor-verified.
+- **The card's Time-10 Scarab (324 u/s, ~140 u turning circle) cannot make I3–I4** under the full-throttle floor (the
+  corner floors were cut for a 216 u/s Scarab).
+- **The Urchin matched the model** (it rides its own lane at 300 u/s); its difficulty does nothing while it rides.
+- **The fast hulls were far off the model** (the Rhino 3-6×): it coasts down from 840 u/s and misses mouths. A lead:
+  letting go of the ramp 300 u early (instead of 60) raced I1 in 29.0 s instead of 67.9 s.
+- **Levels ordered correctly** for the Serpent and the Manta; the Squirrel's Medium beat its Hard on two courses (rail
+  rams reset its boost: noise larger than the belief mistakes).
+
 ### 3.1 Stoat, the first one
 
 The user's brief: **better speed control and manoeuvring with the black-hole / white-hole pair.**

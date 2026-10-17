@@ -94,45 +94,6 @@ on I1–I3 (it is faster on I4, where the game's pilot is conservative). Its dif
 than the game's (game: Medium +14–19%, Easy +23–54%). It plans only ~100 u ahead, so a late notice rarely
 costs it, and it recovers from a missed crystal in ~2 s where the game's pilot loses ~10. The page says so.
 
-### Brittle Star scorecard, measured 2026-10-14 (median of seeds 11/22/33, seconds)
-
-Demolition Derby (5 crystals) and Fauna Frenzy (target mass 500 / 650 / 800 / 950), one AI Brittle Star alone, Balanced:
-
-| Game | Course | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
-|---|---|---|---|---|---|---|
-| Derby | I1 | 29.1 | 27.8 | 28.5 | 28.5 | 94.3 |
-| Derby | I2 | 30.0 | 29.0 | 29.3 | 29.3 | 95.4 |
-| Derby | I3 | 30.9 | 31.4 | 30.7 | 30.7 | 95.9 |
-| Derby | I4 | 55.3 | 59.2 | 54.4 | 54.4 | 107.9 |
-| Frenzy | I1 | 19.1 | 19.0 | 19.9 | 19.9 | 150.8 |
-| Frenzy | I2 | 25.1 | 25.0 | 25.9 | 25.9 | DNF |
-| Frenzy | I3 | 32.1 | 33.4 | 33.5 | 33.5 | DNF |
-| Frenzy | I4 | 85.0 | 66.2 | 63.8 | 63.8 | DNF |
-
-The modes earn their place (no modes is 3× slower); the ring does not yet (overdrive pays more than a detonation, so the
-Hard pilot never rings); the AI levels separate on I4 only, because Destruction clears a Derby wall faster than the hull
-reaches it. The findings and what would change them: `../BRITTLE_STAR.md` §5.1.
-
-### Brittle Star scorecard, round 2: the Unity build (measured 2026-10-14, median of seeds 11/22/33, seconds)
-
-The same races flown on the shipped rules and numbers (Vessel Config > Flight numbers = Unity build, the default),
-re-measured 2026-10-15 with the slow Sparrow rounds (135 / 70 u/s for 3 s):
-
-| Game | Course | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
-|---|---|---|---|---|---|---|
-| Derby | I1 | 20.2 | 20.1 | 21.1 | 21.1 | 73.9 |
-| Derby | I2 | 21.6 | 24.1 | 21.3 | 21.3 | 75.0 |
-| Derby | I3 | 26.4 | 22.5 | 22.0 | 21.6 | 77.8 |
-| Derby | I4 | 64.7 | 59.7 | 69.8 | 69.8 | 84.7 |
-| Frenzy | I1 | 26.4 | 26.4 | 26.0 | 26.0 | 78.1 |
-| Frenzy | I2 | 34.4 | 34.4 | 34.0 | 34.0 | 163.7 |
-| Frenzy | I3 | 81.0 | 68.9 | 60.9 | 60.7 | DNF |
-| Frenzy | I4 | DNF | 135.2 | 153.6 | DNF | DNF |
-
-Derby is faster than round 1 (x6 Speed, the arms clear walls in a blink); Frenzy is much slower (Creation at half speed
-lays a third fewer blocks a second, and the nucleus-wide disk breaks the pilot's own built trail, so the ring never pays
-there: "no ring" ties Hard on I3). Hard is not the fastest level on Derby I1 and I4 or Frenzy I4 (D24 unmet there). Findings: `../BRITTLE_STAR.md` §5.2.
-
 ## In Amoebius
 
 VESSEL STUDIO ▸ **OPEN IN AMOEBIUS** builds the checkout's branch and opens the served page as its own window (Sync,

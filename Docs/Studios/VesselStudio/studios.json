@@ -89,17 +89,17 @@
       "id": "brittlestar",
       "name": "Brittle Star",
       "file": "brittlestar.html",
-      "kind": "the Unity build - round 2",
-      "chip": "the Unity build · round 2",
-      "summary": "The Brittle Star as it ships (BrittleStar = 16): a cockpit inside a pentagon of five engines and five guns. Speed (x6), Creation (the slowest, a trail per ring corner) and Destruction (five auto-firing arms the stick moves in and out), and the support ring thrown as a nucleus-wide disk. Demolition Derby and Fauna Frenzy at four intensities, AI rivals at Easy, Medium or Hard flying four element personas, and a scorecard that races every level and style.",
+      "kind": "the Unity build - round 4",
+      "chip": "the Unity build · round 4",
+      "summary": "The Brittle Star as it ships (BrittleStar = 16): a cockpit inside a pentagon of five engines and five guns. Speed (x6), Creation (the slowest, a trail per ring corner), Space (five guns, RT analog, overheating into a danger trail) and Charge (five whip cords that RT stiffens into sabers), and spare rings thrown as a nucleus-wide disk. Demolition Derby and Fauna Frenzy at four intensities, AI rivals at Easy, Medium or Hard flying four element personas, and a scorecard that races every level and style.",
       "spec": [
         {
           "k": "Modes",
-          "v": "Cruise · Speed · Creation · Destruction"
+          "v": "Cruise · Speed · Creation · Space · Charge"
         },
         {
           "k": "Ring",
-          "v": "a nucleus-wide disk; a crystal rebuilds it"
+          "v": "a nucleus-wide disk; a spare per crystal, two at most"
         },
         {
           "k": "Flight",
