@@ -1,0 +1,14 @@
+2026-10-16T22:38:12.194Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-16T22:38:25.740Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-16T22:38:28.618Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-16T22:38:35.148Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-16T22:51:51.665Z PlayMode session ended (761s play run, exiting play mode): 1 fix(es) waiting; counted: none
+2026-10-17T01:00:11.635Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-17T01:00:24.845Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-17T01:00:27.755Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-17T01:00:33.860Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-17T01:30:19.141Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-17T01:30:32.987Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-17T01:30:33.324Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-17T01:30:41.388Z editor load: play=False capture=True minPlay=15s issues=151
+2026-10-17T01:38:53.952Z PlayMode session ended (476s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-cdf0c783c1 E-7cc3e0223c
