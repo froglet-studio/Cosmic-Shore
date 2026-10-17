@@ -41,8 +41,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static IReadOnlyList<VesselStatus> Live => s_live;
 
+        // Drops only dead entries, never live ones: this project enters Play without a domain or a
+        // scene reload, so a vessel already in the open scene may have registered before this runs,
+        // and clearing would hide it until it is toggled. OnDisable keeps the list clean otherwise.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetLive() => s_live.Clear();
+        static void ResetLive() => s_live.RemoveAll(v => !v);
 
         void OnEnable()
         {
