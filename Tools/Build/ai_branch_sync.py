@@ -35,7 +35,7 @@ ROSTER = "Docs/AI_SYSTEM/ARCHITECTURE.md"
 AI_PATHS = [
     "Assets/_Scripts/Controller/AI/",
     "Assets/_Scripts/Utility/AITraining/",
-    "Assets/_Scripts/Controller/Arcade/ButterflyGames/ButterflyAutopilotModeDriver.cs",
+    "Assets/_Scripts/Controller/AI/Butterfly/ButterflyAutopilotModeDriver.cs",
     "Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs",
     "Assets/_Scripts/Controller/Multiplayer/AIHullSeating.cs",
     "Assets/Resources/SkimRaceAIConfig",

@@ -115,7 +115,7 @@
     {
      "name": "Shrike",
      "value": 10,
-     "hasClass": false,
+     "hasClass": true,
      "studio": "shrike",
      "games": []
     },
@@ -178,6 +178,7 @@
      "hasClass": true,
      "studio": "stoat",
      "games": [
+      "Regatta",
       "Slingshot",
       "Warpline"
      ]
@@ -396,7 +397,8 @@
       "Squirrel",
       "Serpent",
       "Sparrow",
-      "Scarab"
+      "Scarab",
+      "Stoat"
      ],
      "menu": "arena"
     },

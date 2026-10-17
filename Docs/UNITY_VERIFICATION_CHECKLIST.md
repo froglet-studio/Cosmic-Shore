@@ -267,6 +267,25 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The AI Butterfly's fold lands in the ring in Waystation; full throttle; no autopilot on human hulls (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `WaystationController`:
+- The fold's aim is held under asin(0.5 R / d), so it lands within half the mouth; before, a flat 12 degrees landed a
+  420 u fold 87 u off a 40-56 u ring.
+- It lets go 30 u short of the plane, so the hull flies through.
+- The AI races at full throttle (`AIThrottleFloor` 1).
+- The autopilot check uses `TryGetComponent`. It used the `VesselStatus.AIPilot` getter, which ADDS an autopilot to
+  every human's hull, every server tick.
+
+The audit and what stays open: `BUTTERFLY.md` §8a.
+**Verified without the editor:** `unity_refcompile` (player-dev clean, editor 0 errors in changed files), gates.
+`WaystationFoldTests` written, NOT run.
+**Verify in editor:**
+1. Run `WaystationFoldTests`: all pass.
+2. Arcade ▸ Waystation with AI Butterflies, Third Eye on one. It flies at ~67 u/s, and when it folds it lands just short
+   of a ring and threads it (it does not fold past or beside the mouth). Expect fewer folds from far away; each lands.
+3. Your own Butterfly, with the Inspector open on its root: no `AIPilot` component appears that was not there before.
+
 ### 🔴 Every Regatta AI hull races its own line along the sides of the braid (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** every AI hull except the Squirrel and the Urchin flies its own line through Regatta. That line is the
@@ -295,7 +314,12 @@ risk. Before, it aimed at each ring's centre, the middle of the braid and 22 u f
 4. Easy / Medium: the difficulty mistakes still show (amber "not noticed", red "misjudged"); after a missed ring the
    pilot comes back to that ring the gate way, not a whole lap round.
 5. The Squirrel and the Urchin fly as before.
-6. Time I1–I4 per hull against the roadmap table.
+6. **The Stoat** opens its field pair along the line (its path dots bend, it warps above cruise) and still lets go near
+   each ring; run `StoatDipoleTests`. Before the 2026-10-17 range fix it would have raced at cruise on the line.
+7. **The speed drives still fire on the line** (2026-10-17 fix): the Rhino ramps on the straights (Third Eye: "ramping on
+   the straight", ~840 u/s) and the Dolphin releases and re-drifts at the peak ("drifts again at the peak"). Before the
+   fix neither would ever have fired on the line.
+8. Time I1–I4 per hull against the roadmap table.
 
 ### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
@@ -10077,3 +10101,21 @@ confirmation and the Project Record".
    Froglet Master Tool board under Diagnostics.
 6. Pull the plug (no network) and stop Play with something new: the pill reads NOT SENT with the reason, and the next
    send carries it.
+
+## 🔴 2026-10-17 — The Stoat slowdown: a vessel registry instead of scene searches, and named Driver markers (unverified: no Unity CLI in the session)
+
+**Files:** `VesselStatus.cs` (`Live` registry), `BlackHoleVesselPull.cs`, `StoatRippleExecutor.cs`,
+`StoatPathfinderExecutor.cs`, `WarpFieldVesselScaler.cs` (read it instead of `FindObjectsByType<VesselStatus>`),
+the eight nested `Driver` classes (one named marker each), `BlackHoleRegistry.cs` / `BlackHoleGravityField.cs`
+(nested markers), `MarkerBudget.cs`. What ran instead of `/verify-unity`: Amoebius compiled the whole game and ran
+Warpline before and after (Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-17); `unity_refcompile` player-dev has no errors in
+changed files (its errors are all in UGS multiplayer/friends files whose packages this container could not fetch);
+`perf_hunt.py gates` OK.
+
+1. Release, Menu_Main, fly the Stoat for 10 minutes with the **Third Eye closed**. Frames should stay where they were
+   in minute one (no slide to 30-40 fps). Make the poles and let them annihilate: the ripple still knocks a nearby rival.
+2. Fly into a pole's pull: the hull is still pulled (and carried through a pair), as before.
+3. Warp-field mode: vessels still shrink and grow with the field.
+4. Stoat foresight: rivals' predicted paths still draw.
+5. Stop Play: the auto-capture's `diag` lists `BlackHoleRegistry.LateUpdate` and the `BlackHole.*` rows by name
+   (no anonymous `Driver.LateUpdate`).
