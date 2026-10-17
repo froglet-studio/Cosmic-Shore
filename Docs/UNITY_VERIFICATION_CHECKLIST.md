@@ -10717,3 +10717,22 @@ generator `--check` / `--self-test`.
 3. **Hangar:** ability names and lines start right of the glyph, never under the keycap; each row has a coloured hex and a
    breathing glow; pressing a control flashes it. Upgrades rows the same. The 3D vessel still turns and morphs.
 4. **Configure:** a single tap on the game does nothing; a double tap (or FLY) flies.
+
+## 🔴 2026-10-17 — Hangar rev 4: bay stage, firing FX, look-only UPGRADE (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `HangarStageFx.cs`, `HangarUpgradeStore.cs`. Changed: `HangarVesselStage` (post off, fx, pulse, animated morph)
+and `HangarUpgradesPage` (UPGRADE + animation). `/verify-unity` was not run (no editor in a cloud session).
+Checked offline:
+- refcompile player OK; editor shows the 3 known errors, 0 in changed files;
+- the gates;
+- `author_menu_hangar.py --check` / `--self-test` (16 plants).
+
+1. **Stage:** the Hangar shows the lit bay (rings breathing, scan line sweeping), with no black rectangle round the vessel.
+2. **Fire:** Abilities > pick an ability. Bolts and a flash leave the vessel's nose in that ability's colour.
+3. **Upgrade:** on Upgrades, the button reads "UPGRADE 100" at level 0. Press it with enough crystals:
+   - crystals fly to the hull, a pip flashes then fills, the hull morphs and swells, and a ring plus "LEVEL 1" appear;
+   - the wallet drops by 100 and the next price reads 200.
+4. **Can't afford:** the button is greyed out and pressing does nothing.
+5. **Max:** at level 10 the button reads MAX.
+6. **Persists:** leave the Hangar, return and switch vessels. Each vessel shows its own bought levels and hull form. Starting a match does not change how the vessel plays.
+7. **Speed:** Profiler on Home: the bay costs nothing while the Hangar is hidden.

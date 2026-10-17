@@ -293,6 +293,8 @@ UPGRADES_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarUpgrades
 GAMES_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarGamesPage.cs")
 PILOTS_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarPilotsPage.cs")
 HALO_SCRIPT = K.kit_script("KitElementHalo")
+FX_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarStageFx.cs")
+BLOOM = "006e134e05ff461bbd48ab3fd31629b4"            # AbilityLockupStyle.bloomSprite: the soft round glow
 TRY_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarAbilityPreview.cs")
 PREVIEW_WINDOW = K.meta_guid("Assets/_Scripts/UI/View/ModePreviewWindow.cs")
 PREVIEW_DEF_SCRIPT = K.meta_guid("Assets/_Scripts/ScriptableObjects/ModePreviewDefinitionSO.cs")
@@ -495,8 +497,8 @@ def text_button(parent, key, name, caption, r, target_key, target_comp, type_nam
                            "          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine\n"
                            "          m_IntArgument: 0\n          m_FloatArgument: 0\n          m_StringArgument: \n"
                            "          m_BoolArgument: 0\n        m_CallState: 2\n"
-                           for t, tn, m in ((ctx.c(target_key, target_comp), type_name, method),
-                                            (ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio"))))
+                           for t, tn, m in (([(ctx.c(target_key, target_comp), type_name, method)] if method else [])
+                                            + [(ctx.c(key, "audio"), "CosmicShore.UI.MenuAudio", "PlayAudio")])))
         return K.mono(go, KIT_BUTTON,
                       K.SELECTABLE_FIELDS.replace("    m_Mode: 3\n", f"    m_Mode: {nav}\n")
                       + f"  m_TargetGraphic: {ref(ctx.c(f'{key}/Fill', 'img'))}\n" + calls
@@ -510,7 +512,7 @@ def text_button(parent, key, name, caption, r, target_key, target_comp, type_nam
 
 def upgrades_page(panel):
     page = page_node(panel, "Upgrades", False, own_canvas=True)
-    page_header(page, "Tabs/Upgrades", "ELEMENTAL LEVELS", "Default form - press an element to see the hull change.")
+    page_header(page, "Tabs/Upgrades", "ELEMENTAL LEVELS", "Spend crystals to raise an element. The hull changes as it grows.")
     lst = list_node(page, "Tabs/Upgrades/List", 54)
     for name, _ in ELEMENTS:
         k = f"Tabs/Upgrades/{name}"
@@ -522,9 +524,11 @@ def upgrades_page(panel):
         label(row.child(N(f"{k}/LevelLine", "LevelLine", TLr(60, 40, 220, 18))), "Level 0 of 10", "BodySmall", "NeutralLightest")
         label(row.child(N(f"{k}/Level", "Level", TRr(18, 14, 48, 26))), "0", "Data", "TextLight", align="right")
         for p in range(10):
-            row.child(N(f"{k}/Pip{p}", f"Pip{p}", TLr(60 + p * 34, 66, 28, 10))).add("cr", 222, K.canvas_renderer()) \
+            row.child(N(f"{k}/Pip{p}", f"Pip{p}", TLr(60 + p * 26, 66, 20, 10))).add("cr", 222, K.canvas_renderer()) \
                 .add("img", 114, K.image(tok("SurfaceDark")))
-        ellipsize(label(row.child(N(f"{k}/Upgrade", "Upgrade", R((0, 1), (1, 1), (60, -86), (-(60 + 24), 18), (0, 1)))), "", "Label", "NeutralLightest"))
+        ellipsize(label(row.child(N(f"{k}/Upgrade", "Upgrade", R((0, 1), (1, 1), (60, -86), (-(60 + 200), 18), (0, 1)))), "", "Label", "NeutralLightest"))
+        # Rev 4: UPGRADE - buys the next level (HangarUpgradesPage wires the click; the price is on the label).
+        text_button(row, f"{k}/Buy", "UpgradeButton", "UPGRADE  100", TRr(18, 52, 176, 38), None, None, None, None, "Cta")
 
     def body(ctx, go):
         rows = ""
@@ -535,18 +539,21 @@ def upgrades_page(panel):
                      f"    lineText: {ref(ctx.c(f'{k}/LevelLine', 'tmp'))}\n    upgradeText: {ref(ctx.c(f'{k}/Upgrade', 'tmp'))}\n"
                      f"    levelText: {ref(ctx.c(f'{k}/Level', 'tmp'))}\n    pips:\n{pips}"
                      f"    elementGlyph: {ref(ctx.c(f'{k}/Glyph', 'img'))}\n    glow: {ref(ctx.c(f'{k}/Glow', 'img'))}\n"
-                     f"    halo: {ref(ctx.c(f'{k}/Halo', 'halo'))}\n")
+                     f"    halo: {ref(ctx.c(f'{k}/Halo', 'halo'))}\n"
+                     f"    upgradeButton: {ref(ctx.c(f'{k}/Buy', 'button'))}\n"
+                     f"    upgradeButtonText: {ref(ctx.c(f'{k}/Buy/Label', 'tmp'))}\n")
         return K.mono(go, UPGRADES_SCRIPT,
                       "  rows:\n" + rows + f"  headerLineText: {ref(ctx.c('Tabs/Upgrades/Line', 'tmp'))}\n"
                       f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
-                      "  previewSteps: 00000000030000000500000000a00000\n"
-                      "  pipOff: {r: 0.13, g: 0.15, b: 0.27, a: 1}\n"
+                      "  crystalsPerLevel: 100\n"
+                      "  pipOff: {r: 0.13, g: 0.15, b: 0.27, a: 1}\n  pipFlashSeconds: 0.45\n  morphSeconds: 0.5\n"
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
-                      "  defaultLine: Default form - press an element to see the hull change.\n"
-                      "  previewTemplate: '{element} {level} - the hull as it would fly.'\n"
+                      "  defaultLine: Spend crystals to raise an element. The hull changes as it grows.\n"
                       "  noMorphLine: This hull keeps its shape at every level.\n"
                       "  titleTemplate: '{element} - {ability}'\n  levelTemplate: Level {level} of 10\n"
-                      "  upgradeTemplate: L5 {upgrade}\n  openSlotTitle: Open slot\n")
+                      "  upgradeTemplate: L5 {upgrade}\n  openSlotTitle: Open slot\n"
+                      "  buyTemplate: UPGRADE  {cost}\n  maxedWord: MAX\n  bannerTemplate: LEVEL {level}\n"
+                      "  bannerLineTemplate: '{ability} grows'\n")
     page.add("logic", 114, body)
     return page
 
@@ -721,6 +728,86 @@ def build_tabs(panel):
     return pages
 
 
+def nested_canvas():
+    return lambda ctx, go: (
+        "Canvas:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+        f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {go}}}\n"
+        "  m_Enabled: 1\n  serializedVersion: 3\n  m_RenderMode: 0\n  m_Camera: {fileID: 0}\n"
+        "  m_PlaneDistance: 100\n  m_PixelPerfect: 0\n  m_ReceivesEvents: 1\n  m_OverrideSorting: 0\n"
+        "  m_OverridePixelPerfect: 0\n  m_SortingBucketNormalizedSize: 0\n  m_VertexColorAlwaysGammaSpace: 1\n"
+        "  m_AdditionalShaderChannelsFlag: 25\n  m_UpdateRectTransformForStandalone: 0\n"
+        "  m_SortingLayerID: 0\n  m_SortingOrder: 0\n  m_TargetDisplay: 0\n")
+
+
+def glow_img(parent, key, name, r, token, alpha, sprite=None):
+    n = parent.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok(token, alpha), sprite or BLOOM)) \
+        .add("th", 114, themed(token, alpha))
+    return n
+
+
+def hangar_bay(clip):
+    """Rev 4 (the owner, 2026-10-17: "don't like the black screen ... make this part way cooler"): a lit
+    hangar bay behind the vessel instead of a black box - a deep glow, two coloured rim lights, a floor
+    pool, three pulsing hex rings, a scan line sweeping and a few drifting motes. Its own nested Canvas:
+    the ambient loops re-batch only the bay (and sleep while the Hangar is hidden, KitSightline)."""
+    bay = clip.child(N("Hero/Clip/Bay", "Bay", STRETCH))
+    bay.add("canvas", 223, nested_canvas())
+    glow_img(bay, "Hero/Clip/Bay/Deep", "Deep", R(size=(900, 620)), "ControlActive", 0.16)
+    glow_img(bay, "Hero/Clip/Bay/RimL", "RimLeft", R((0, 0.5), None, (60, 40), (620, 640)), "SurfaceLight", 0.55)
+    glow_img(bay, "Hero/Clip/Bay/RimR", "RimRight", R((1, 0.5), None, (-60, 60), (620, 640)), "ControlActive", 0.22)
+    glow_img(bay, "Hero/Clip/Bay/Pool", "FloorPool", R((0.5, 0), None, (0, 96), (700, 130)), "ControlActive", 0.32)
+    for i, (w, h) in enumerate(((640, 120), (480, 90), (330, 62))):
+        ring = glow_img(bay, f"Hero/Clip/Bay/Ring{i}", f"Ring{i}", R((0.5, 0), None, (0, 96), (w, h)), "ControlActive", 0.5,
+                        K.kit_sprite("kit_hex_line2"))
+        ring.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.25, phase=i * 0.33))
+    scan = glow_img(bay, "Hero/Clip/Bay/Scan", "Scan", R((0, 0.5), (1, 0.5), (0, 0), (0, 3)), "ControlActive", 0.45,
+                    K.kit_sprite("kit_spark"))
+    scan.add("amb", 114, M.ambient("Float", period=7.0, amplitude=240))
+    for i in range(8):
+        x, y = (i * 113) % 760 - 380, (i * 71) % 420 - 160
+        mote = glow_img(bay, f"Hero/Clip/Bay/Mote{i}", f"Mote{i}", R(pos=(x, y), size=(5, 5)), "TextLight", 0.8,
+                        K.kit_sprite("kit_hex_fill"))
+        mote.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.0 + (i % 3), amplitude=0.1, phase=i * 0.21))
+
+
+def stage_fx(clip):
+    """Rev 4: the effects over the 3D vessel (HangarStageFx) - ability bolts and a muzzle flash, and the
+    upgrade moment (crystals flying in, a ring, LEVEL N). Its own nested Canvas."""
+    fx = clip.child(N("Hero/Clip/Fx", "Fx", STRETCH))
+    fx.add("canvas", 223, nested_canvas())
+    for i in range(6):
+        b = fx.child(N(f"Hero/Clip/Fx/Bolt{i}", f"Bolt{i}", R(size=(130, 6))))
+        b.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_spark")))
+    fx.child(N("Hero/Clip/Fx/Flash", "Flash", R(size=(120, 120)))).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(K.WHITE, BLOOM))
+    fx.child(N("Hero/Clip/Fx/Ring", "Ring", R(size=(220, 190)))).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_hex_line2")))
+    for i in range(6):
+        c = fx.child(N(f"Hero/Clip/Fx/Crystal{i}", f"Crystal{i}", R(size=(22, 22))))
+        c.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Purchase"), K.chrome_sprite("chrome_crystal"), preserve=True))
+    bn = fx.child(N("Hero/Clip/Fx/Banner", "Banner", R(pos=(0, -170), size=(600, 130))))
+    bn.add("cg", 225, canvas_group(False))
+    label(bn.child(N("Hero/Clip/Fx/Banner/Eyebrow", "Eyebrow", R((0, 1), (1, 1), (0, 0), (0, 18), (0.5, 1)))), "Mass", "Label",
+          "ControlActive", align="center")
+    label(bn.child(N("Hero/Clip/Fx/Banner/Title", "Title", R((0, 1), (1, 1), (0, -22), (0, 62), (0.5, 1)))), "LEVEL 1", "Display",
+          "TextLight", align="center")
+    label(bn.child(N("Hero/Clip/Fx/Banner/Line", "Line", R((0, 0), (1, 0), (0, 0), (0, 22), (0.5, 0)))), "", "Body",
+          "TextLight", align="center")
+    fx.add("fx", 114, lambda ctx, go: K.mono(go, FX_SCRIPT,
+           "  bolts:\n" + "".join(f"  - {ref(ctx.c(f'Hero/Clip/Fx/Bolt{i}', 'img'))}\n" for i in range(6))
+           + f"  flash: {ref(ctx.c('Hero/Clip/Fx/Flash', 'img'))}\n"
+           "  boltSeconds: 0.35\n  boltStagger: 0.11\n  boltTravel: 0.55\n"
+           f"  ring: {ref(ctx.c('Hero/Clip/Fx/Ring', 'img'))}\n"
+           "  crystals:\n" + "".join(f"  - {ref(ctx.c(f'Hero/Clip/Fx/Crystal{i}', 'img'))}\n" for i in range(6))
+           + f"  banner: {ref(ctx.c('Hero/Clip/Fx/Banner', 'cg'))}\n"
+           f"  bannerEyebrow: {ref(ctx.c('Hero/Clip/Fx/Banner/Eyebrow', 'tmp'))}\n"
+           f"  bannerTitle: {ref(ctx.c('Hero/Clip/Fx/Banner/Title', 'tmp'))}\n"
+           f"  bannerLine: {ref(ctx.c('Hero/Clip/Fx/Banner/Line', 'tmp'))}\n"
+           "  flySeconds: 0.55\n  ringSeconds: 0.6\n  bannerSeconds: 1.6\n"))
+    return fx
+
+
 def build_view(row_guid):
     root = N("root", "HangarView", STRETCH)
 
@@ -776,9 +863,7 @@ def build_view(row_guid):
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.55), K.kit_sprite("kit_sliver14_fill"), True)) \
         .add("th", 114, themed("SurfaceVeryDark", 0.55)) \
         .add("mask", 114, lambda ctx, go: K.mono(go, MASK, "  m_ShowMaskGraphic: 1\n"))
-    clip.child(N("Hero/Clip/Floor", "Floor", R((0.5, 0), None, (0, 70), (520, 120)))) \
-        .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive", 0.10), K.kit_sprite("kit_spark"))) \
-        .add("th", 114, themed("ControlActive", 0.10))
+    hangar_bay(clip)
     stage = clip.child(N("Hero/Clip/Stage", "Stage", STRETCH))
     stage.add("cr", 222, K.canvas_renderer()) \
         .add("raw", 114, lambda ctx, go: K.mono(go, RAW_IMAGE,
@@ -790,7 +875,10 @@ def build_view(row_guid):
              f"  prefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n  modelRadius: 4\n  distanceFactor: 2.6\n"
              "  fieldOfView: 34\n  pitchDegrees: 18\n  idleDegreesPerSecond: 14\n  dragDegreesPerPixel: 0.35\n"
              "  stickDegreesPerSecond: 160\n  idleResumeSeconds: 2.5\n  performSeconds: 0.55\n  performLunge: 1.4\n"
-             "  performRollDegrees: 90\n  performLightIntensity: 6\n  renderRate: 30\n  resolution: 768\n"))
+             "  performRollDegrees: 90\n  performLightIntensity: 6\n"
+             f"  fx: {ref(ctx.c('Hero/Clip/Fx', 'fx'))}\n  pulseSeconds: 0.6\n  pulseScale: 0.12\n"
+             "  renderRate: 30\n  resolution: 768\n"))
+    stage_fx(clip)
     # TRY's window over the stage (HangarAbilityPreview): hidden until TRY, then the live picture of the
     # selected vessel flown in open water. The tap surface is navigation None - TRY already asked for
     # the stick, and the pad must not land on an invisible control.
@@ -1193,6 +1281,20 @@ def validate_prefabs(files, guids):
             assert f"pageLogic: {{fileID: {hv(f'Tabs/{name}#logic')}}}" in tabs, f"tab {name}: page logic unwired"
     _, stage = doc_of(view, hv("Hero/Clip/Stage#stage"))
     assert stage and f"prefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}" in stage, "the stage has no vessel prefab table - it would build nothing"
+    # Rev 4: the stage reaches its effects, the bay and the effects each batch on their own canvas, and
+    # every UPGRADE row reaches its button and label (an unwired one would show a dead price).
+    assert f"  fx: {{fileID: {hv('Hero/Clip/Fx#fx')}}}" in stage, "the stage does not reach its effects (HangarStageFx)"
+    _, fxb = doc_of(view, hv("Hero/Clip/Fx#fx"))
+    assert fxb and fxb.count("  - {fileID: ") >= 12 and f"  flash: {{fileID: {hv('Hero/Clip/Fx/Flash#img')}}}" in fxb, \
+        "HangarStageFx needs its six bolts, its flash and its six crystals"
+    for key in ("Hero/Clip/Bay", "Hero/Clip/Fx"):
+        _, cv = doc_of(view, hv(f"{key}#canvas"))
+        assert cv and cv.startswith("Canvas:"), f"{key} must carry its own nested Canvas (its loops re-batch only it)"
+    _, upg = doc_of(view, hv("Tabs/Upgrades#logic"))
+    for name, _ in ELEMENTS:
+        k = f"Tabs/Upgrades/{name}"
+        assert f"    upgradeButton: {{fileID: {hv(f'{k}/Buy#button')}}}" in upg, f"{name}: UPGRADE button unwired"
+        assert f"    upgradeButtonText: {{fileID: {hv(f'{k}/Buy/Label#tmp')}}}" in upg, f"{name}: UPGRADE label unwired"
     _, abil = doc_of(view, hv("Tabs/Abilities#logic"))
     assert abil and [int(x) for x in re.findall(r"  - element: (\d+)", abil)] == [i for _, i in ELEMENTS], \
         "the Abilities rows must be Charge, Mass, Space, Time"
@@ -1338,6 +1440,12 @@ def self_test(current, files, guids):
         "TRY calling nothing": view_plant(lambda t: t.replace("m_MethodName: Try\n", "m_MethodName: Hide\n", 1)),
         "the Abilities page not forwarding to TRY": view_plant(lambda t: re.sub(
             r"(  tryPreview: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
+        "the stage not reaching its effects": view_plant(lambda t: re.sub(
+            r"(\n  fx: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
+        "the bay batching on the screen's canvas": view_plant(lambda t: t.replace(
+            f"&{K.FileIds('HangarView')('Hero/Clip/Bay#canvas')}\nCanvas:", f"&{K.FileIds('HangarView')('Hero/Clip/Bay#canvas')}\nCanvasGroup:", 1)),
+        "an UPGRADE button unwired": view_plant(lambda t: re.sub(
+            r"(    upgradeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "the stage with no vessel table": view_plant(lambda t: t.replace(
             f"prefabs: {{fileID: 11400000, guid: {VESSEL_PREFABS}", "prefabs: {fileID: 0, guid: 0", 1)),
     }

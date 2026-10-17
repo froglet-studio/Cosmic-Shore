@@ -61,6 +61,14 @@ namespace CosmicShore.UI
         [Tooltip("Peak intensity of the coloured light the burst is drawn with.")]
         [SerializeField] private float performLightIntensity = 6f;
 
+        [Header("Effects")]
+        [SerializeField, Tooltip("Bolts, muzzle flash and the upgrade moment, drawn in UI over the stage (optional).")]
+        private HangarStageFx fx;
+        [SerializeField, Min(0.05f), Tooltip("Seconds the upgrade pulse takes.")]
+        private float pulseSeconds = 0.6f;
+        [SerializeField, Tooltip("How much the hull swells at the top of an upgrade pulse.")]
+        private float pulseScale = 0.12f;
+
         [Header("Cost")]
         [SerializeField, Min(1)] private int renderRate = 30;
         [SerializeField, Min(64)] private int resolution = 768;
@@ -81,6 +89,15 @@ namespace CosmicShore.UI
         float _nextRender;
         float _performT = -1f;
         Color _performColour = Color.white;
+        Vector3 _modelBaseScale = Vector3.one;   // the builder fits the hull to modelRadius through this
+        float _pulseT = -1f;
+        Color _pulseColour = Color.white;
+        float _morphT = -1f, _morphSeconds = 0.5f;
+        int _morphFrom, _morphTo;
+        Element _morphElement;
+
+        /// <summary>The stage's UI effects (bolts, upgrade ring, banner), or null.</summary>
+        public HangarStageFx Fx => fx;
         VesselClassType _shown = VesselClassType.Any;
         SO_Vessel _vessel;
 
@@ -122,6 +139,7 @@ namespace CosmicShore.UI
             }
             _model.transform.SetParent(_pivot, false);
             _model.transform.localPosition = Vector3.zero;
+            _modelBaseScale = _model.transform.localScale;
             SetLayerRecursive(_model, _stage.gameObject.layer);
             ReskinMorphMeshes(prefab, _model.transform);
             _shapes.Clear();
@@ -159,7 +177,56 @@ namespace CosmicShore.UI
         {
             _performColour = colour;
             _performT = 0f;
+            // The ability "fires": element-coloured bolts and a muzzle flash leave the nose (UI, over the
+            // render), so a press reads as a shot, not just a lunge.
+            if (fx && TryGetNoseViewport(out var from, out var dir)) fx.Fire(colour, from, dir);
             _lastInput = Time.unscaledTime;
+        }
+
+        /// <summary>The hull swells and lights in <paramref name="colour"/> for a beat (an upgrade landing).</summary>
+        public void Pulse(Color colour)
+        {
+            _pulseColour = colour;
+            _pulseT = 0f;
+            _lastInput = Time.unscaledTime;
+        }
+
+        /// <summary>Morphs <paramref name="element"/> from one level to another over <paramref name="seconds"/>.</summary>
+        public void AnimateElementLevel(Element element, int from, int to, float seconds)
+        {
+            _morphElement = element;
+            _morphFrom = from;
+            _morphTo = to;
+            _morphSeconds = Mathf.Max(0.05f, seconds);
+            _morphT = 0f;
+        }
+
+        void ApplyMorphWeight(Element element, float level)
+        {
+            int lo = Mathf.FloorToInt(level), hi = Mathf.Min(10, lo + 1);
+            float a = VesselElementalMorphConfigSO.NormalizedMorphWeight(Mathf.Clamp(lo, 0, 10));
+            float b = VesselElementalMorphConfigSO.NormalizedMorphWeight(Mathf.Clamp(hi, 0, 10));
+            float k = Mathf.Lerp(a, b, level - lo);
+            foreach (var sh in _shapes)
+                if (sh.Element == element && sh.Renderer)
+                    sh.Renderer.SetBlendShapeWeight(sh.ShapeIndex, k * sh.FullWeight);
+        }
+
+        /// <summary>The vessel's nose and its facing, in 0..1 across the stage, for the bolts.</summary>
+        public bool TryGetNoseViewport(out Vector2 from, out Vector2 dir)
+        {
+            from = new Vector2(0.5f, 0.5f);
+            dir = Vector2.right;
+            if (!_camera || !_model) return false;
+            var fwd = _pivot ? _pivot.forward : Vector3.forward;
+            var nose = _model.transform.position + fwd * modelRadius * 0.8f;
+            var a = _camera.WorldToViewportPoint(nose);
+            var b = _camera.WorldToViewportPoint(nose + fwd * modelRadius);
+            if (a.z <= 0f) return false;
+            from = a;
+            dir = (Vector2)(b - a);
+            if (dir.sqrMagnitude < 1e-6f) dir = Vector2.right;
+            return true;
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -202,9 +269,33 @@ namespace CosmicShore.UI
                 if (_performT >= 1f) _performT = -1f;
             }
 
+            float swell = 1f;
+            if (_pulseT >= 0f)
+            {
+                _pulseT += dt / pulseSeconds;
+                float bell = Mathf.Sin(Mathf.Clamp01(_pulseT) * Mathf.PI);
+                swell = 1f + pulseScale * bell;
+                if (_burst && _performT < 0f)
+                {
+                    _burst.color = _pulseColour;
+                    _burst.intensity = performLightIntensity * 1.4f * bell;
+                }
+                if (_pulseT >= 1f) _pulseT = -1f;
+                _nextRender = 0f;
+            }
+            if (_morphT >= 0f)
+            {
+                _morphT += dt / _morphSeconds;
+                float e = 1f - (1f - Mathf.Clamp01(_morphT)) * (1f - Mathf.Clamp01(_morphT));
+                ApplyMorphWeight(_morphElement, Mathf.Lerp(_morphFrom, _morphTo, e));
+                if (_morphT >= 1f) _morphT = -1f;
+                _nextRender = 0f;
+            }
+
             _pivot.localRotation = Quaternion.Euler(0f, _yaw, 0f);
             _model.transform.localPosition = lunge;
             _model.transform.localRotation = Quaternion.Euler(0f, 0f, roll);
+            _model.transform.localScale = _modelBaseScale * swell;
 
             if (Time.unscaledTime < _nextRender) return;
             // Screens stay ACTIVE beside each other in the strip (only freestyle switches them off), so
@@ -332,7 +423,10 @@ namespace CosmicShore.UI
             _camera.backgroundColor = new Color(0f, 0f, 0f, 0f);   // the hangar backdrop shows through
             _camera.cullingMask = ~LayerMask.GetMask("UI");
             _camera.useOcclusionCulling = false;
-            OffscreenCameraSetup.AdoptGameCameraImage(_camera, postProcessing: true, antiAliasing: false, shadows: false);
+            // No post-processing: URP's post pass writes alpha = 1 over the whole target, which turned the
+            // transparent clear into the black box the owner saw (2026-10-17). Without it the hangar bay
+            // drawn behind the render shows through around the vessel.
+            OffscreenCameraSetup.AdoptGameCameraImage(_camera, postProcessing: false, antiAliasing: false, shadows: false);
             _camera.allowMSAA = false;
             var data = _camera.GetUniversalAdditionalCameraData();
             if (data)

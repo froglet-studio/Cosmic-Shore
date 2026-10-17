@@ -525,3 +525,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
 - **Added:** 2026-10-17 by claude/new-session-76hnyc (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 35
+
+### T-20261017-2c75 · open · test · Menu_Main / Hangar
+- **Task:** Playtest Hangar rev 4: lit bay, vessel fires, UPGRADE with its animation (look-only)
+- **Done when:** Steps 1-7 of the 2026-10-17 'Hangar rev 4' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the editor on claude/new-session-76hnyc
+- **Who can take it:** Shombith or Yash
+- **Added:** 2026-10-17 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §41

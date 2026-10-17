@@ -1958,3 +1958,32 @@ simple one). Built in `author_menu_configure.py`:
   sideways. The Maelstrom clip renders at 360 tall (the banner is 284).
 - Deviation from the board: the three domains stay side by side as columns (the board stacks them); the column prefab's
   seat strip needs its width.
+
+## 41. Hangar rev 4: a lit bay, the vessel fires, a look-only UPGRADE (2026-10-17)
+
+The owner on the rev 3 Hangar: "Dont like the black screen and the sparrow doesnt shoot or anything make this part way
+coooler", and "there should be a button called upgrade and there should be an animation when you upgrade". The Rev 4
+boards were approved with "Approved, price is fine, make it look-only for now". Built in `author_menu_hangar.py`:
+
+- **The black box is gone.** It was URP post-processing writing alpha 1 into the stage's render texture;
+  `HangarVesselStage` now adopts the game camera with `postProcessing: false`. Behind the vessel there is a **hangar bay**
+  (`Hero/Clip/Bay`): a deep glow, two rim lights, a floor pool, three breathing hex rings, a sweeping scan line and
+  eight motes. It has its own nested Canvas, so its loops re-batch only the bay, and they sleep while the Hangar is
+  hidden (KitSightline).
+- **The vessel fires.** `HangarStageFx` (`Hero/Clip/Fx`, also on a nested Canvas) shoots six staggered bolts and a
+  muzzle flash from the hull's nose in the ability's colour whenever the stage performs an ability
+  (`HangarVesselStage.TryGetNoseViewport`).
+- **UPGRADE** on every Upgrades row. The price is `100 x the next level` (`crystalsPerLevel`), paid from the real wallet
+  (`PlayerDataService.TrySpendCrystals`, source `hangar_upgrade`), and the button greys out when the player can't afford
+  it. The row itself now only focuses: a halo flash and a glow.
+- **The upgrade moment.** Six crystals fly from the button to the hull. On landing, the new pip flashes white and settles
+  in the element's colour, the hull morphs from the old level to the new one (`AnimateElementLevel`, 0.5 s) and swells
+  (`Pulse`), a hex ring bursts, and a banner names the element, "LEVEL N" and "{ability} grows".
+- **Look-only.** Levels are saved per vessel per element in PlayerPrefs (`HangarUpgradeStore`,
+  `hangar.upgrade.{vessel}.{element}`, max 10). The hull shows the bought form on every visit, and **nothing in a match
+  reads it**. The crystals spent are real. Making upgrades count in play is a separate decision for the owner (and
+  Garrett, who owns vessel tuning).
+- **The words** are serialized on `HangarUpgradesPage`: `buyTemplate`, `maxedWord`, `bannerTemplate` and
+  `bannerLineTemplate`.
+- **Gate:** `--self-test` now plants three more defects: the stage losing its FX reference, the bay losing its nested
+  Canvas, and an UPGRADE button unwired.
