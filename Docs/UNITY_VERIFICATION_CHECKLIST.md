@@ -65,6 +65,163 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
+
+- LT is the Serpent's eyepiece (`ShrikeScopeOverlay` on `ScopePipView`), not a flight-view zoom.
+- The window is cut to the mode's element petal (`ElementPetalGeometry` / `ElementPetalImage`, new in UI/View).
+- While scoped, `PrismLit` lights the lance cylinder, the lock cone and target, or the sling's path and anchor.
+- A flight reticle sits on the hull axis and the beam is drawn from the muzzle.
+- The camera follow offset is (0, 0, −30), and docked it pulls back 5×.
+- The sling resolves its anchor at the press: no anchor means no sling and no cooldown.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files.
+- `shrike_harness --self-test`: 21/21 pass, including the petal outlines (convex, apex down, centred, aspect kept), and
+  both negative controls fire.
+- `author_shrike_assets --check` passes and `--self-test` fires 11/11.
+- `studio_to_unity --check`: 26/26 match.
+- The gates pass: shared channels, prefab container, far-clip, console logging, conditional compilation, using
+  directives, enum references (no Shrike finding).
+- Not run: Unity, Play mode.
+
+**Verify in editor** (Menu_Main ▸ Toy Box ▸ Vessel Changer ▸ Shrike):
+1. **Alignment:** fly straight. The small posts-and-dot reticle sits at screen centre, just past the nose (the camera is
+   now directly behind, with no lift). Fire the lance (X, then RT): the beam leaves the barrel and runs through the
+   reticle, and what it breaks is under the reticle.
+2. **Zoom (LT / RMB):** the flight view does NOT zoom; an eyepiece window opens top left where the Serpent's does,
+   showing the view down the nose, magnified. On a pad, LT's depth dials the magnification. The reticle in it is at the
+   window's centre, on the same line as the flight reticle.
+3. **Window shape:** X (Space): a kite. RB / E (Charge): the gem, the same as the Serpent's window. B / R (Time): a
+   tall diamond. The shape changes with the mode while scoped.
+4. **Lit:** scoped in Space mode, the mass along the beam's line glows in your colour. In Charge mode the cone ahead
+   glows faintly, and once painted the target glows strongly. In Time mode the path to the block the tether would hit,
+   and that block, glow; aimed at empty space, nothing glows.
+5. **Sling without a target (B, aim at empty space, RT):** nothing happens and the Time card's gauge stays full. Aim at
+   a block: the sling fires, the gauge empties.
+6. **Docked:** touch a block. The camera eases a long way back, about 150 u, and returns when you leave.
+7. **Crosshairs** (added after: "the zoom views needs crosshairs"): scoped in every mode, a full crosshair in your
+   colour, with a dark outline and a centre pip, crosses the eyepiece. Its centre is where the lance hits: fire at a
+   block centred in the eyepiece and that block breaks. The flight view shows a short crosshair at screen centre.
+
+### 🔴 Shrike redesign: mode-driven RT, LT zoom with per-mode scopes, missile-growing flora, non-clipping nests (`cece/affectionate-clarke-s738vh`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett's redesign of the Shrike, following the first port (the entry below). The record is
+`R_VesselActions/SHRIKE.md` §3 and §4. **The previous entry's controls (steps 4-7) are superseded by this one.**
+
+- New code: `ShrikeExecutor` rewritten; `ShrikeActionSO` now has six controls; new `ShrikeNestFlora` / `ShrikeMeshes`
+  and `ShrikeScopeOverlay`; `ShrikeRules` gains `NestRadiusFor`, `GrowTick`, `BetterLock` and `LanceBreaks`.
+- `ShrikeConfig` reseeded; HUD fields renamed by element; the Charge and Space icons swapped; the map's Space upgrade
+  named "Void Pierce".
+- Bindings re-applied to `Shrike.prefab`, and the four first-port control assets retired.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files. The 3 project errors are in the untouched
+    `AuthenticationServiceFacade.cs`.
+- `shrike_harness/run.sh --self-test`: 19/19 pass, and both negative controls fire (inside-out faces; nest blocks that
+  clip).
+- `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
+  is identical to the shipped prefab.
+- `studio_to_unity.py --check`: 26/26 match.
+- These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_console_logging`,
+  `check_conditional_compilation`, `check_using_directives`, `check_enum_member_references` (no Shrike finding) and
+  `check_switch_label_collisions`.
+- The three scope shapes and the marker were rendered and inspected.
+- Not run: Unity, Play mode, networking.
+
+**Verify in editor** (Menu_Main ▸ Toy Box ▸ Vessel Changer ▸ Shrike):
+1. It compiles. `ShrikeTests` (19) and `ShrikeConfigTests` pass. The HUD shows four cards with no "Missing" sprite:
+   Charge (the array icon with a **0** under it), Mass, Space (the lance icon) and Time. The Space card is lit, because
+   Space is the starting mode.
+2. **Zoom (LT / RMB, held):** the view narrows smoothly to about 24° and a green ring-and-crosshair fades in. Release:
+   the FOV returns exactly to what it was. Press **RB / E**, then zoom: lock brackets round a diamond. Press **B / R**,
+   then zoom: a tether line with chevrons. The lit HUD card follows the mode.
+3. **Space mode (X / Q), RT / LMB held:** the beam breaks ordinary blocks but passes through super-shielded ones
+   (shielded blocks in a nest, for example). With the Space upgrade (Space ≥ 5, e.g. from the Element Charger), it
+   breaks them too.
+4. **Docking:** fly into any block. The hull sticks and the camera eases back noticeably. **A / Space:** the hull
+   pushes out forward, and a nest is left behind:
+   - a cup of shielded blocks, **no two touching or overlapping** (look closely, and try it at high Mass);
+   - a flora on top with **one large missile**.
+
+   The Charge card reads **1**. A second A while flying does nothing.
+5. **Crystals:** fly through a crystal. A flora sprouts where it was and visibly grows large missiles, one per 6 s, up
+   to 4, the growing one swelling. The Charge card counts up.
+6. **Charge mode (RB / E), RT held on a target:** a spinning diamond marker sits on the painted target, and each flora
+   launches a missile every 0.8 s. The missiles are large, with bright trails, home in, and blow an 18 u hole. The count
+   drops. Check the lock priority: with a rival vessel and a creature both in the cone, the vessel is painted; with a
+   creature and a plant, the creature; with a plant and mass, the plant.
+7. **Time mode (B / R), RT:** the tether flies; the hull slings to the block, docks, and the camera pulls back.
+8. Swap to another vessel while zoomed and docked: the FOV and camera distance return to normal and the scope
+   disappears.
+9. Spawn Matrix ▸ Shrike AI: it switches modes, lances mass ahead, slings, docks and detaches (leaving nests), and
+   fires missiles at you once it has some.
+
+### 🔴 The Shrike flies in freestyle: the studio's kit ported, the prefab rebuilt (`cece/affectionate-clarke-s738vh`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+**What landed:** everything in `Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md`.
+
+- `Shrike.prefab` was rebuilt from `BrittleStar.prefab` by `Tools/Build/author_shrike_assets.py`. It keeps its guid,
+  so the DefaultNetworkPrefabs entry holds.
+- New code: `ShrikeExecutor`, `ShrikeActionSO` ×4, `ShrikeConfigSO`, `ShrikeRules`, `ShrikeHullForm` /
+  `ShrikeHullBuilder`, `ShrikeAnimation`, `ShrikePrismController`, `ShrikeHUDController` / `ShrikeHUDView` /
+  `ShrikeHUDVariant`, and `ShrikeCrystalEffectSO`.
+- New assets: the containers, the camera, `SO_Class_Shrike` (unlocked), `ElementalAbilityMaps/Shrike`, the four icons
+  and the card.
+- Registered in the Vessel Prefab Container, both class lists and `ToyVesselRoster.Default`.
+- The four vessel-10 fusion entries are bake-free now.
+
+**Verified without the editor:**
+
+- `unity_refcompile`:
+  - `--config player`: 0 project errors.
+  - `--config editor`: 0 errors in changed files. The 3 project errors are in the untouched
+    `AuthenticationServiceFacade.cs`, from the unfetchable Playmode package.
+- `Tools/Build/shrike_harness/run.sh --self-test`: the 16 `ShrikeTests` compile and pass under .NET, against golden
+  numbers from the page's own functions. Both negative controls fire (a frustum wound inside out; a nest firing its
+  last block).
+- `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
+  is byte-identical to the shipped prefab.
+- `studio_to_unity.py --vessel shrike --check`: 29/29 match.
+- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass.
+- These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_vessel_camera_farclip`,
+  `check_vessel_class_icons`, `check_network_prefab_hashes`, `check_console_logging`, `check_conditional_compilation`,
+  `check_using_directives` and `check_elemental_floats`.
+- Not run: Unity itself, Play mode, and any network session.
+
+**Verify in editor:**
+1. Pull and let it compile: no errors. In edit mode, `ShrikeTests` and `ShrikeConfigTests` pass, and so do
+   `ToyVesselRosterCoverageTests`, `OneThumbVesselCoverageTests` and `EnumIntegrityTests`.
+2. Open `Shrike.prefab`. Right-click `ShrikeHull` ▸ Rebuild Hull. You should see a long six-sided dart, the lance's
+   barrel under the nose, forward-swept wings, a tail fin and a flame child. Check that no field is "Missing".
+3. Play `Menu_Main`. Open the Toy Box ▸ Vessel Changer (or fly into the toy) and pick **Shrike**. It spawns and flies
+   slowly (about 18 u/s) on the one-thumb mouse scheme, laying a thin trail.
+4. Docking:
+   - Touch any block: the hull stops and sticks, the flame shrinks to an ember, and the nose still aims (faster).
+   - **Space / A** undocks with a small push.
+   - In flight, **Space / A** builds a nest: a cup of shielded blocks behind and round you, with a bud on top. You
+     dock in it. A fourth nest retires the first.
+5. **LMB / RT (held)**: a domain-coloured beam 2400 u long that breaks every block on its line, shielded ones too, but
+   not your own nest while you sit in it. Cooldown 1.2 s; noticeably faster while docked.
+6. **R / B**: the tether flies ahead. When it meets a block, the hull rushes there in 1 s, laying thick blocks, and
+   docks where it lands. Cooldown 6 s.
+7. With at least one nest: hold **RMB / LT** on a mass. One missile per nest rises from the bud, homes on the mass and
+   blows an 18 u hole (a shield pops first). The Array gauge empties as nests reach 1 health. Release and hold again
+   to fire again.
+8. HUD: four cards (Lance, Nest, Array, Sling) with their gauges and icons, and no "Missing" sprite.
+9. Spawn Matrix: release a Shrike AI. It flies, lances mass ahead, docks and undocks, builds a nest and slings toward
+   far targets.
+
+**First-pass tuning:** every number is the studio's SHIPPED (lab-only proposals, `Docs/Studios/SHRIKE.md` §3). Tune in
+the artifact, Record, then clone. Never tune in the asset.
+
 ### 🔴 AI seat chips name their hull: hover label, (i) badge, vessel info card (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the hull icons on the launch panel's AI chips (Regatta and every arena card with the ally hull

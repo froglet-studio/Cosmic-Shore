@@ -128,7 +128,8 @@ to the person in one line: the ONE claude.ai artifact
 phone or PC before the game changes. **Load `/vessel-studio`** for it: §1.5 is the universal panel kit every studio is
 built from (the six settings tabs Scene / Game / AI / Play Style Config, Input and Vessel Config; dropdown rules; the
 Players list with + / -, domain, difficulty, play style and view; the Easy / Medium / Hard levels; the I1-I4
-intensity ladder; the three cameras). Load `/vessel` for the Unity side. Never publish a second studio artifact.
+intensity ladder; the three cameras). Load `/vessel` for the Unity side. Never publish a second Vessel Studio (hub) artifact; that rule is the shared hub's
+only: a `/labmaker` lab, a vessel's included, publishes its own artifact to explore in and takes its findings to Unity by `/labmaker` §7.
 **The artifact is the ONE source of truth; Unity is its clone** (the user, 2026-10-10): features and numbers are made
 and decided in the artifact first, then **`/artifact-to-unity`** clones them into the game
 (`Tools/Build/studio_to_unity.py` writes the artifact's values into the vessel's assets, `--check` is the drift gate;
