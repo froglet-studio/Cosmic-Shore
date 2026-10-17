@@ -26,6 +26,10 @@ namespace CosmicShore.Launcher.Tests
             Assert.Equal("role client", NetTestLogFormat.MultiplayerEvidence("client", null));
             Assert.Equal("role spectator", NetTestLogFormat.MultiplayerEvidence("spectator", Solo));
             Assert.Equal("client 2 approved", NetTestLogFormat.MultiplayerEvidence("host", Solo.Append(("clientApproved", "2 guest"))));
+            // A guest approves nobody: joining a party is its evidence (ys1's side of Caleb's test wrote nothing).
+            Assert.Equal("joined another player's party",
+                NetTestLogFormat.MultiplayerEvidence("none", Solo.Append(("party", "InPresenceLobby->JoiningParty"))));
+            Assert.Null(NetTestLogFormat.MultiplayerEvidence("host", Solo.Append(("party", "JoiningParty->HostingParty"))));
             foreach (var e in new[] { "clientLeft", "leaverToAI", "refused", "bounce" })
                 Assert.Equal(e, NetTestLogFormat.MultiplayerEvidence("host", Solo.Append((e, "x"))));
         }

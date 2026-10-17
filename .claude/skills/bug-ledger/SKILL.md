@@ -48,7 +48,12 @@ python3 Tools/Build/net_logs.py collect --dir <folder>  # a local Logs/NetSessio
 Each player's line gives its role, CLEAN/DIRTY (the record's verdict), errors, warnings, lobby
 reads, 429s and lifecycle events; the timeline interleaves every player's lifecycle (party,
 clientApproved, clientLeft, leaverToAI, refused, bounce) and warnings/errors in wall-clock order.
-Use it to find which player saw what first. A test missing a player means that player never stopped cleanly
+Use it to find which player saw what first. A test between two machines arrives on two
+`bugledger/*` branches; `net_logs.py` groups the logs whose Plays overlapped into one test
+(`belac/main`, `yskha/main`). Read `429s 2 (console 69)` as 69: the refresh ticks' 429s went uncounted
+until 2026-10-16. A "carried over" mark means a pre-fix Unity file held earlier Plays: trust its
+events, not its counters or its `why`. The party findings so far are B31-B33 in
+`Docs/PartySystem/BUGS.md`. A test missing a player means that player never stopped cleanly
 (a killed process writes nothing). A test with no logs at all means the person did not press
 Send, or the main editor saw no other player (solo online play writes nothing): say so in one
 line. The mechanism is in `Docs/DIAGNOSTICS.md` § "Multiplayer test logs".

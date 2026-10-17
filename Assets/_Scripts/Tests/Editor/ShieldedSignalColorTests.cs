@@ -42,15 +42,17 @@ namespace CosmicShore.Tests
 
         static readonly Domains[] Playable = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
-        static SO_ColorSet Palette()
+        static ThemeManagerDataContainerSO Container()
         {
             var container = Resources.Load<ThemeManagerDataContainerSO>("ThemeManagerDataContainer")
                             ?? UnityEditor.AssetDatabase.LoadAssetAtPath<ThemeManagerDataContainerSO>(
                                 "Assets/_SO_Assets/ThemeManagerDataContainer.asset");
             Assert.IsNotNull(container, "The live ThemeManagerDataContainer is missing.");
             Assert.IsNotNull(container.ColorSet, "The live container names no ColorSet.");
-            return container.ColorSet;
+            return container;
         }
+
+        static SO_ColorSet Palette() => Container().ColorSet;
 
         static ElementalBarsConfigSO Ladder()
         {
@@ -77,8 +79,43 @@ namespace CosmicShore.Tests
             // Domains.Blue has a full row in the palette and TryGetColorSetByDomain returns it, so
             // without this an unresolved domain renders as a plausible TEAM rather than as a
             // failure. Alpha 0 is what makes the caller keep its white.
-            Assert.AreEqual(0f, Palette().GetShieldedSignalColor(Domains.Blue).a, 0.0001f,
-                "Blue is the no-team sentinel; a UI slot must never be able to paint it.");
+            //
+            // The refusal belongs to the CALLER, not to the accessor (Docs/PALETTE.md §2.8): "no
+            // pilot can fly Blue" is a fact about pilots, and a neutral mine or an uncommitted
+            // crystal legitimately asks the palette what colour no-team is. So this drives the
+            // HUD that paints the shielded signal - SquirrelVesselHUDController.ResolveShieldedColor
+            // - over the LIVE palette, with Jade as the positive control proving the read is wired
+            // (an unwired gameData would also return alpha 0 and pass vacuously).
+            const System.Reflection.BindingFlags Private =
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            var hudType = typeof(CosmicShore.UI.SquirrelVesselHUDController);
+            var gameDataField = hudType.GetField("gameData", Private);
+            var resolve = hudType.GetMethod("ResolveShieldedColor", Private);
+            Assert.IsNotNull(gameDataField, "SquirrelVesselHUDController no longer has its injected gameData field.");
+            Assert.IsNotNull(resolve, "SquirrelVesselHUDController no longer has ResolveShieldedColor(Domains).");
+
+            var go = new GameObject("ShieldedSignalColorTests.SquirrelHUD");
+            var gameData = ScriptableObject.CreateInstance<CosmicShore.Utility.GameDataSO>();
+            try
+            {
+                gameData.ThemeManagerData = Container();
+                var hud = go.AddComponent<CosmicShore.UI.SquirrelVesselHUDController>();
+                gameDataField.SetValue(hud, gameData);
+
+                var jade = (Color)resolve.Invoke(hud, new object[] { Domains.Jade });
+                Assert.AreEqual(1f, jade.a, 0.0001f,
+                    "Positive control: the HUD must paint a playable domain's shielded signal, or the " +
+                    "sentinel assertion below proves nothing.");
+
+                var blue = (Color)resolve.Invoke(hud, new object[] { Domains.Blue });
+                Assert.AreEqual(0f, blue.a, 0.0001f,
+                    "Blue is the no-team sentinel; a UI slot must never be able to paint it.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+                UnityEngine.Object.DestroyImmediate(gameData);
+            }
         }
 
         [Test]

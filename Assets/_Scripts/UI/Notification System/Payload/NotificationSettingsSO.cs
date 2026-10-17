@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    public enum SlideDirection { FromRight, FromLeft, FromTop, FromBottom }
+    public enum SlideDirection { FromRight = 0, FromLeft = 1, FromTop = 2, FromBottom = 3 }
 
     [CreateAssetMenu(fileName = "NotificationSettings",
         menuName = "ScriptableObjects/UI/Notification Settings")]

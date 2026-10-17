@@ -11,6 +11,18 @@
     "amoebius:SkimRace|I2|3p:new": {
       "filedUtc": "2026-10-15T23:25:35Z",
       "task": "T-20261015-c7db"
+    },
+    "capture:MinigameGrizzlyCharge|MinigameGrizzlyCharge:marker": {
+      "filedUtc": "2026-10-17T08:48:58Z",
+      "task": "T-20261017-19f0"
+    },
+    "capture:MinigameRegatta|MinigameRegatta:gcKB": {
+      "filedUtc": "2026-10-17T08:48:58Z",
+      "task": "T-20261017-2129"
+    },
+    "capture:MinigameRegatta|MinigameRegatta:marker": {
+      "filedUtc": "2026-10-17T08:48:58Z",
+      "task": "T-20261017-1809"
     }
   },
   "scanCounts": {

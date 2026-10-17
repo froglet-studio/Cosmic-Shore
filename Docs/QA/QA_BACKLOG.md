@@ -1493,7 +1493,8 @@ Dolphin's drift speed matches on both machines.
 **FAIL:** speed changing with throttle during a Dolphin drift · a held speed that is always
 the same number · a danger prism ignored mid-drift · a throttle that stays dead after a swap
 · a drift entry that slams speed down · the Squirrel's drift changed.
-**Report:** whether re-drifting at the peak of a boost lets you ratchet speed upward.
+**Report:** whether re-drifting at the peak of a boost lets you ratchet speed upward. *(Decided for now, 2026-10-17: it does, and that is KEPT as a skill move - the
+Dolphin AI uses it too. Report whether it feels fun or like a cheat; the cap is in `DOLPHIN_ENERGY_ECONOMY.md` §2.)*
 
 ### QA-DOLPHIN-ECHO-SIGHT ⬜ — the re-cut element map, the Echo Sight halo, and the ability cards
 **Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Dolphin elemental map re-cut around one

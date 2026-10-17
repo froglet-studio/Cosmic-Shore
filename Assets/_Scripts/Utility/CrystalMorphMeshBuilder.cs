@@ -378,8 +378,49 @@ namespace CosmicShore.Utility
 
         static readonly Dictionary<int, PanelAnalysis> s_panelAnalysis = new();
 
+        /// <summary>
+        /// What <see cref="Emit"/> writes that depends only on the SOURCE mesh: its corners unshared
+        /// into per-triangle-corner arrays. Cached per source like <see cref="s_panelAnalysis"/>, so a
+        /// collect pays for its two target channels and nothing else. Measured on Amoebius Skim Race
+        /// I2 (2026-10-16): the Squirrel's morph build was 5.2 of the 5.5 KB/frame
+        /// <c>VesselImpactor.AcceptImpactee</c> allocated, about 1.3 MB per omni collect, nearly all
+        /// of it these arrays re-made per build. <see cref="Uv2"/> / <see cref="Uv3"/> are per-build
+        /// scratch: <c>Mesh.SetUVs</c> copies, so reusing them is safe on the main thread.
+        /// </summary>
+        sealed class EmitCache
+        {
+            public Vector3[] Verts;
+            public Vector3[] Normals;
+            public Vector4[] Tangents;
+            public Vector2[] Uv0;
+            public int[] Tris;
+            public Vector4[] Uv2;
+            public Vector4[] Uv3;
+        }
+
+        static readonly Dictionary<int, EmitCache> s_emitCache = new();
+
+        // Per-SOURCE-vertex target scratch for the panel census (TryBuild over octahedra). Emit only
+        // reads them, so one pair serves every build.
+        static Vector4[] s_vertexTarget;
+        static Vector4[] s_vertexTargetNormal;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetPanelCache() => s_panelAnalysis.Clear();
+        static void ResetPanelCache()
+        {
+            s_panelAnalysis.Clear();
+            s_emitCache.Clear();
+            s_vertexTarget = s_vertexTargetNormal = null;
+        }
+
+        /// <summary><paramref name="buffer"/> at exactly <paramref name="length"/>, zeroed, made anew
+        /// only when the length changes.</summary>
+        static Vector4[] Scratch(ref Vector4[] buffer, int length)
+        {
+            if (buffer == null || buffer.Length != length) buffer = new Vector4[length];
+            else System.Array.Clear(buffer, 0, length);
+            return buffer;
+        }
 
         /// <summary>
         /// Emits a morph mesh that starts as <paramref name="source"/> and ends as
@@ -433,8 +474,8 @@ namespace CosmicShore.Utility
                 return null;
             }
 
-            var vertexTarget = new Vector4[a.Vertices.Length];
-            var vertexTargetNormal = new Vector4[a.Vertices.Length];
+            var vertexTarget = Scratch(ref s_vertexTarget, a.Vertices.Length);
+            var vertexTargetNormal = Scratch(ref s_vertexTargetNormal, a.Vertices.Length);
             AssignPanels(a, targets, vertexTarget, vertexTargetNormal,
                          Mathf.Clamp01(fillerPhase), Mathf.Clamp01(panelPhaseStart),
                          Mathf.Clamp01(panelPhaseEnd));
@@ -826,32 +867,21 @@ namespace CosmicShore.Utility
         static Mesh Emit(Mesh source, Vector3[] srcVerts, int[] srcTris,
                          Vector4[] vertexTarget, Vector4[] vertexTargetNormal, Vector3[] extent)
         {
-            var srcNormals = source.normals;
-            var srcTangents = source.tangents;
-            var srcUv0 = source.uv;
-            bool hasNormals = srcNormals != null && srcNormals.Length == srcVerts.Length;
-            bool hasTangents = srcTangents != null && srcTangents.Length == srcVerts.Length;
-            bool hasUv0 = srcUv0 != null && srcUv0.Length == srcVerts.Length;
-
             int n = srcTris.Length;
-            var verts = new Vector3[n];
-            var normals = new Vector3[n];
-            var tangents = new Vector4[n];
-            var uv0 = new Vector2[n];
-            var uv2 = new Vector4[n];
-            var uv3 = new Vector4[n];
-            var tris = new int[n];
+            var cache = EmitCacheFor(source, srcVerts, srcTris);
+            var verts = cache.Verts;
+            var normals = cache.Normals;
+            var tangents = cache.Tangents;
+            var uv0 = cache.Uv0;
+            var uv2 = cache.Uv2;
+            var uv3 = cache.Uv3;
+            var tris = cache.Tris;
 
             for (int k = 0; k < n; k++)
             {
                 int si = srcTris[k];
-                verts[k] = srcVerts[si];
-                normals[k] = hasNormals ? srcNormals[si] : Vector3.up;
-                tangents[k] = hasTangents ? srcTangents[si] : new Vector4(1f, 0f, 0f, 1f);
-                uv0[k] = hasUv0 ? srcUv0[si] : Vector2.zero;
                 uv2[k] = vertexTarget[si];
                 uv3[k] = vertexTargetNormal[si];
-                tris[k] = k;
             }
 
             var mesh = new Mesh
@@ -884,6 +914,45 @@ namespace CosmicShore.Utility
             mesh.bounds = bounds;
 
             return mesh;
+        }
+
+        /// <summary>The source-only half of <see cref="Emit"/>, built once per source mesh (see
+        /// <see cref="EmitCache"/>). Rebuilt if the source's corner count no longer matches, so a
+        /// cache entry can never hand out arrays of the wrong length.</summary>
+        static EmitCache EmitCacheFor(Mesh source, Vector3[] srcVerts, int[] srcTris)
+        {
+            int n = srcTris.Length;
+            int key = source.GetInstanceID();
+            if (s_emitCache.TryGetValue(key, out var cached) && cached.Tris.Length == n) return cached;
+
+            var srcNormals = source.normals;
+            var srcTangents = source.tangents;
+            var srcUv0 = source.uv;
+            bool hasNormals = srcNormals != null && srcNormals.Length == srcVerts.Length;
+            bool hasTangents = srcTangents != null && srcTangents.Length == srcVerts.Length;
+            bool hasUv0 = srcUv0 != null && srcUv0.Length == srcVerts.Length;
+
+            var cache = new EmitCache
+            {
+                Verts = new Vector3[n],
+                Normals = new Vector3[n],
+                Tangents = new Vector4[n],
+                Uv0 = new Vector2[n],
+                Tris = new int[n],
+                Uv2 = new Vector4[n],
+                Uv3 = new Vector4[n],
+            };
+            for (int k = 0; k < n; k++)
+            {
+                int si = srcTris[k];
+                cache.Verts[k] = srcVerts[si];
+                cache.Normals[k] = hasNormals ? srcNormals[si] : Vector3.up;
+                cache.Tangents[k] = hasTangents ? srcTangents[si] : new Vector4(1f, 0f, 0f, 1f);
+                cache.Uv0[k] = hasUv0 ? srcUv0[si] : Vector2.zero;
+                cache.Tris[k] = k;
+            }
+            s_emitCache[key] = cache;
+            return cache;
         }
 
         /// <summary>

@@ -41,6 +41,8 @@ namespace CosmicShore.Utility
             public void LogException(Exception exception, UnityEngine.Object context)
             {
                 if (UgsRequestPolicy.IsLobbyPatcherStaleIndex(exception)) return;
+                // B34: the SDK resetting a lobby whose subscription Wire disposed when Play stopped.
+                if (UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown(exception)) return;
                 _inner.LogException(exception, context);
             }
 
@@ -68,7 +70,8 @@ namespace CosmicShore.Utility
                 if (args != null)
                 {
                     foreach (var a in args)
-                        if (a is Exception ex && UgsRequestPolicy.IsLobbyPatcherStaleIndex(ex))
+                        if (a is Exception ex && (UgsRequestPolicy.IsLobbyPatcherStaleIndex(ex) ||
+                                                  UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown(ex)))
                             return true;
                 }
 

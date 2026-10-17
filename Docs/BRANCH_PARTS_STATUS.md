@@ -69,8 +69,8 @@ No Unity editor or `unity` CLI was available, so only the parts the plan marks "
 - ~~Amoebius test `HandShaderTests.EveryHandTranslation_HasItsAsset_ItsGlsl_AndAUniformPerProperty` failed on
   Ys-bleeding-edge~~ — **fixed** by `9ea2f6aa` (2026-10-14: the OmniChargeEdges hand translation retired with the
   deleted shader). Checked 2026-10-15: Amoebius engine tests 1,979 passed, 0 failed.
-- **`bleeding-edge` fails 35 EditMode tests in 14 suites** (Docs/QA/DEV_TASKS.md DT-003); the plan's step-3
-  list names them.
+- ~~`bleeding-edge` fails 35 EditMode tests in 14 suites~~ — **diagnosed and fixed offline 2026-10-17** (DT-003 in
+  Docs/QA/DEV_TASKS.md has the verdict per test); awaiting QA's next EditMode Run All, which should be fully green.
 - The weekly Sunday AI-training routine still cuts from `cece/nice-brahmagupta-ojclij` until E and I land; the
   Wednesday Skim Race tune reads that branch until F and D land.
 

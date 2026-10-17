@@ -19,8 +19,8 @@ namespace CosmicShore.Utility
 
         public enum Aspect
         {
-            Square,
-            Wide
+            Square = 0,
+            Wide = 1
         }
 
         private void Start()

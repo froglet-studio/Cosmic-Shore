@@ -52,8 +52,8 @@ MEASUREMENTS = os.path.join(ROOT, "Tools", "Build", "regatta_course_measurements
 K = math.pi / 180.0
 LERP_AMOUNT = 1.5            # VesselTransformer.LERP_AMOUNT - the fleet's speed lag
 LAPS = 3
-HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab"]
-TUNABLE = ["Manta", "Dolphin", "Serpent", "Sparrow", "Scarab"]   # Time reaches their speed
+HULLS = ["Manta", "Dolphin", "Rhino", "Urchin", "Squirrel", "Serpent", "Sparrow", "Scarab", "Stoat"]
+TUNABLE = ["Manta", "Dolphin", "Serpent", "Sparrow", "Scarab", "Stoat"]   # Time reaches their speed
 MIN_LEVEL, MAX_LEVEL = -5, 10                                    # the resource system's band
 
 
@@ -165,6 +165,11 @@ def read_constants():
     c["dolphin_boost"] = _key(dolphin, "maxBoostMultiplier", "DolphinChargeBoost")
     c["dolphin_fill"] = _key(dolphin, "chargeTimeToFull", "DolphinChargeBoost")
     c["dolphin_discharge"] = _key(dolphin, "dischargeTimeToEmpty", "DolphinChargeBoost")
+
+    dipole = _read("Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset")
+    c["stoat_boost_min"] = _nested_key(dipole, "boost", "Min", "StoatDipoleConfig")     # the warp at rest (Time 0)
+    c["stoat_boost_max"] = _nested_key(dipole, "boost", "Max", "StoatDipoleConfig")     # ...at Time 10
+    c["stoat_boost_floor"] = _nested_key(dipole, "boost", "Floor", "StoatDipoleConfig")
 
     scarab = _read("Assets/_Scripts/Controller/Vessel/ScarabVesselTransformer.cs")
     c["scarab_top"] = float(re.search(r"baseTopSpeed = ([0-9.]+)f", scarab).group(1))
@@ -311,9 +316,25 @@ def squirrel_model(c, level):
                 accel=("lerp", LERP_AMOUNT))
 
 
+def stoat_model(c, level):
+    """The Stoat (added to the card 2026-10-17, Yash): its speed is the pathfinder's WARP - while its pair bends the
+    path the hull's own flight clock runs at `boost` x (StoatDipoleConfig: x2.5 at rest, Time -> x5, floored at 1).
+    A warp of the CLOCK scales the turn rate with the speed, so the turning circle stays cruise / turn (72 u) at any
+    warp, and every Regatta corner (104 u and up) is taken at the warped speed. A competent pilot on the best line
+    holds a warping pair the whole lap - the same idealisation as every other row (the Squirrel saturated, the Manta
+    in Soar). The residual it hides: the Stoat Flight Studio's AI, on its own circuit, averaged 131 u/s on a x3 field
+    (warped ~60% of the time), STOAT_DIPOLE.md §1b; record it against the editor once Stoat flights exist."""
+    v = c["vessels"]["Stoat"]
+    warp = max(c["stoat_boost_floor"], elemental_float(level, c["stoat_boost_min"], c["stoat_boost_max"]))
+    top = (v["ts"] + v["ms"]) * warp
+    turn = min(v["pitch"], v["yaw"]) * warp
+    return dict(top=top, corner=lambda r: corner_speed_simple(r, v["rts"], turn, top), accel=("lerp", LERP_AMOUNT))
+
+
 MODELS = {
     "Manta": manta_model, "Dolphin": dolphin_model, "Rhino": rhino_model, "Urchin": urchin_model,
     "Squirrel": squirrel_model, "Serpent": serpent_model, "Sparrow": sparrow_model, "Scarab": scarab_model,
+    "Stoat": stoat_model,
 }
 
 

@@ -221,6 +221,37 @@ namespace CosmicShore.Utility
             return false;
         }
 
+        // ── One Play is one session (B33, Docs/PartySystem/BUGS.md) ─────────────────────
+        // Like GameDataSO.ActiveSession, these flags outlived Play in the Editor (no domain reload), so
+        // a new Play began as the last one's party host or spectator. Only the plain flags: the SOAP
+        // lists reset themselves, and clearing them here would raise their events into subscribers of
+        // a Play that has ended.
+        static readonly System.Collections.Generic.List<HostConnectionDataSO> s_loaded = new();
+
+        void OnEnable()
+        {
+            if (!s_loaded.Contains(this)) s_loaded.Add(this);
+        }
+
+        void OnDisable() => s_loaded.Remove(this);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ClearFlagsFromLastPlay()
+        {
+            foreach (var data in s_loaded.ToArray())
+                data.ClearPlaySessionFlags();
+        }
+
+        /// <summary>The party flags a new Play (or a new process) starts from: not connected, hosting nothing, watching nothing.</summary>
+        internal void ClearPlaySessionFlags()
+        {
+            IsConnected = false;
+            IsPresenceLobbyHost = false;
+            IsPartyHost = false;
+            PartyFormedByInvite = false;
+            IsSpectating = false;
+        }
+
         public void ResetRuntimeData()
         {
             LocalPlayerId = string.Empty;
