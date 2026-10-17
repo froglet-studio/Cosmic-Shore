@@ -150,8 +150,7 @@ namespace CosmicShore.Editor.Froglet
             var core = AssetDatabase.LoadAssetAtPath<GameObject>(CorePrefabPath);
             if (core == null) return st;
             st.Loads = true;
-            var scaler = core.GetComponent<CanvasScaler>();
-            if (scaler != null)
+            if (core.TryGetComponent(out CanvasScaler scaler))
             {
                 st.Resolution = scaler.referenceResolution;
                 st.ScaleWithScreenSize = scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -292,8 +291,7 @@ namespace CosmicShore.Editor.Froglet
 
         static void DescribeContract(GameObject root, Log log)
         {
-            var scaler = root.GetComponent<CanvasScaler>();
-            if (scaler == null) { log.Warn("canvas root has no CanvasScaler — the contract cannot be applied"); return; }
+            if (!root.TryGetComponent(out CanvasScaler scaler)) { log.Warn("canvas root has no CanvasScaler — the contract cannot be applied"); return; }
             var res = scaler.referenceResolution;
             log.Info("— contract (1920x1080, Scale-With-Screen-Size, AdaptiveCanvasScaler, smart re-anchor):");
             if (Near(res, CanvasUpgradeProcessor.OldResolution))

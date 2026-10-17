@@ -379,6 +379,12 @@ family: 53 generators — 35 green, 11 RED, 7 un-runnable here** (`ModuleNotFoun
 named 'numpy'`, an environment gap rather than a defect; keep those two classes apart before
 quoting a number).
 
+**Re-measured 2026-10-17 (`Ys-bleeding-edge` after bleeding-edge `a67fee38`): all 101
+`author_*.py --check` pass, and each of the 11 listed as RED below now prints its own OK line**
+(#969/#967 and the follow-ups fixed both classes). The list is kept as the record of what the
+two failure classes looked like; re-run the loop before quoting a number, because the family
+keeps growing.
+
 ```sh
 for f in Tools/Build/author_*.py; do printf '%-46s ' "$(basename $f)";   timeout 180 python3 "$f" --check >/dev/null 2>&1 && echo OK || echo RED; done
 ```

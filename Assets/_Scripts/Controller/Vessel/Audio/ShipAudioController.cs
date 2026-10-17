@@ -837,11 +837,7 @@ namespace CosmicShore.Gameplay.Audio
             // found, _listenerAttachFailed will gate the caller off entirely.
             if (!_listenerSearched)
             {
-#if UNITY_2023_1_OR_NEWER
                 _listener = Object.FindFirstObjectByType<StudioListener>();
-#else
-                _listener = Object.FindObjectOfType<StudioListener>();
-#endif
                 _listenerSearched = true;
             }
             if (_listener != null) return _listener.transform;
