@@ -33,7 +33,7 @@ rule not yet met in the profile window (item 5 - a met rule wears `chrome_confir
 Toy Box's shuffle card (item 8); `chrome_gear`, `chrome_display`, `chrome_gauge` and `chrome_sliders` for
 the settings window's four tabs (item 9); `chrome_cube`, `chrome_pad`, `chrome_blades` and `chrome_target` for
 Home's four hub buttons - Toy Box, Arcade, Arena, Mission (item 6); `chrome_pause` for the centre of the
-in-game pause hex (item 12).
+in-game pause hex (item 12); `chrome_chevron` for the hub windows' edge arrows and strip (Rev 7).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -310,6 +310,13 @@ def chrome_pause():
     return m
 
 
+def chrome_chevron():
+    """Next window (Rev 7, Docs/MENU_REDESIGN_B.md §47.2) - an open chevron pointing right, square-ended; the hub
+    window's edge arrows and its strip wear it, the left one mirrored by its RectTransform."""
+    # A filled band, not a stroked polyline: the stroke squares off its joint into a knuckle at the point.
+    return fill([(-0.40, 0.74), (-0.10, 0.74), (0.52, 0.00), (-0.10, -0.74), (-0.40, -0.74), (0.22, 0.00)])
+
+
 GLYPHS = [
     ("chrome_close",      chrome_close),
     ("chrome_reroll",     chrome_reroll),
@@ -335,6 +342,7 @@ GLYPHS = [
     ("chrome_blades",     chrome_blades),
     ("chrome_target",     chrome_target),
     ("chrome_pause",      chrome_pause),
+    ("chrome_chevron",    chrome_chevron),
 ]
 
 

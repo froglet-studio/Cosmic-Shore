@@ -2365,3 +2365,49 @@ The owner: "change the selection color to glowing blue with animation", then "sk
     border token, and the nav underline's light plus its `KitRimMesh`, with two planted defects.
   - `author_ui_lattice.py` plants "the selection stops breathing" and "the theme loses the selection's material".
   - `SelectionStyleTests` checks the index, the fallback, apart from Cta, and the theme override.
+
+### 47.2 LT / RT and the edge arrows slide between the hub windows
+
+The owner: "When in any of the arcade toybox or etc screen pressing lt rt or pressing a new left right button should
+slide between the menus", then "slide stop".
+- **The row.** Toy Box, Arcade, Arena, Mission (`ScreenSwitcher.hubWindowOrder`, the Home hub's order). Inside one of
+  them, RT swaps it for the next and LT for the previous. The slide stops at the ends: no wrap.
+- **Only while a hub window is the top modal** (`ActiveHubWindow`). Under a configure, Settings or the credits, LT / RT
+  do nothing (inside a configure the triggers belong to the game). A guided path (MenuGuide) and a preview holding the
+  stick also stand them down.
+- **A locked window is skipped.** `CanOpenHubWindow` asks what the window's Home hub entry would:
+  - it is registered;
+  - it is in this build (the browser Toybox);
+  - its `MenuAvailabilityView` is Available.
+
+  Mission is authored Unavailable today, so the row ends at Arena. The rule itself is `ScreenSwitcher.NeighbourInRow`
+  (tested by `HubWindowSlideTests`).
+- **The swap.** The new window opens first, then the old one closes:
+  - the modal stack never empties, so the Home hub row does not flash up between them;
+  - `Refocus` lands once, on the new window's first card (Arcade: the weekly card; Toy Box: today's activity;
+    Arena: the first game).
+
+  The old window slides 160 units out the way the player pressed while "Window Out" fades it. The new one slides in
+  from the other side under "Window In", easing to rest over 0.32 s (unscaled). The tween moves each window root's
+  `anchoredPosition`, which the windows' Animator does not touch (it binds only the root CanvasGroup). The old window
+  holds its offset until it has faded, then both rest positions are restored.
+- **What you see** (`author_menu_hub_nav.py`). One `HubWindowNavHost` in Menu_Main, right after `ModalWindows` (the
+  friends drawer stays above it). It is hidden at rest; `HubWindowNav` shows it while a hub window is the top modal.
+  - **The strip,** under the nav band and centred, reads: LT keycap, chevron, TOY BOX, ARCADE, ARENA, MISSION, chevron,
+    RT keycap.
+    - The words are `KitTextTab`s, so the shown window gets the Selection underline with its light (§47.1).
+    - Clicking a word jumps there. The pad never lands on them (navigation None), so it stays on the cards.
+    - A locked window's word stays, but does not answer.
+  - **The edge arrows** are a glass plate on each screen edge, inside the windows' gutters (52 wide, 4 in). Each has
+    the sky-blue chevron and the neighbour's name running up the plate, copied from the strip's word, so no text is
+    authored twice. An end of the row hides its arrow.
+  - It repaints only on `ScreenSwitcher.ModalStackChanged` and `MenuGuide.Changed`; nothing runs per frame.
+- **New glyph:** `chrome_chevron` (`author_ui_chrome_icons.py`), a filled band. The left arrow wears it turned half
+  round.
+- **Verified offline:**
+  - `author_menu_hub_nav.py --check` / `--self-test` (four planted defects: the Arena dropped from the strip, a word the
+    pad can land on, the nav visible over Home, a wrap in the order);
+  - `author_menu_friends_drawer.py` now follows the hub nav in draw order, and the two generators are stable in either
+    run order;
+  - `HubWindowSlideTests`;
+  - refcompile.

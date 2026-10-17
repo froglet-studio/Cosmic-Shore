@@ -223,6 +223,16 @@ def subtree_docs(sc, rt):
     return out
 
 
+# Rev 7's hub window nav (author_menu_hub_nav.py) sits right after ModalWindows; the drawer draws over it, so an
+# open drawer covers the left edge arrow rather than the arrow cutting through the drawer.
+HUB_NAV_RT = str(P.Ctx("Menu_Main/HubWindowNav").rt("Host"))
+
+
+def drawer_anchor(kids):
+    """The Safe Area child the drawer follows: the hub nav when the scene has it, else ModalWindows."""
+    return HUB_NAV_RT if HUB_NAV_RT in kids else MODAL_WINDOWS_RT
+
+
 def transform(text_):
     p = Patch(text_)
     assert p.sc.rect_of(p.sc.go_of(SAFE_AREA_RT)) == SAFE_AREA_RT and p.sc.field(p.sc.go_of(SAFE_AREA_RT), "m_Name") == "Safe Area", "Safe Area moved"
@@ -236,7 +246,7 @@ def transform(text_):
     host = host_node()
     rt = p.emit(host, SAFE_AREA_RT, MODAL_WINDOWS_RT)
     kids = [k for k in p.kids(SAFE_AREA_RT) if k != rt]
-    at = kids.index(MODAL_WINDOWS_RT) + 1
+    at = kids.index(drawer_anchor(kids)) + 1
     p.children(SAFE_AREA_RT, kids[:at] + [rt] + kids[at:])
     # Flying fades the menu through MenuCrystalClickHandler.menuCanvasGroups: the drawer joins it.
     ch = crystal_handler(p.sc)
@@ -260,7 +270,8 @@ def validate(files):
     host_rt = str(ctx.rt("Host"))
     kids = re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)", sc.docs[SAFE_AREA_RT], re.M).group(1))
     assert host_rt in kids, "the drawer is not under Safe Area"
-    assert kids.index(host_rt) == kids.index(MODAL_WINDOWS_RT) + 1, "the drawer must draw right after ModalWindows (over every window)"
+    assert kids.index(host_rt) == kids.index(drawer_anchor(kids)) + 1, \
+        "the drawer must draw right after ModalWindows and the hub nav (over every window)"
     dr = sc.docs[str(ctx.c("Host", "drawer"))]
     for f, want in (("handleButton", ctx.c("Drawer/Orb", "button")), ("window", ctx.rt("Drawer/Window")),
                     ("minimiseButton", ctx.c("Drawer/Window/Minimise", "button")), ("maximiseButton", ctx.c("Drawer/Window/Maximise", "button")),

@@ -55,7 +55,7 @@ public interface IScreen
 - Manages a modal window stack (`PushModal`/`PopModal`) for overlay modals
 - Persists return-to-screen/modal state via `PlayerPrefs` across scene reloads
 - Notifies `IScreen` implementors on navigation transitions
-- Supports gamepad left/right trigger navigation
+- Supports gamepad left/right trigger navigation: between screens with no modal open, and (rev 7) between the home hub's windows (Toy Box, Arcade, Arena, Mission, `hubWindowOrder`) while one of them is the top modal, stopping at the ends and skipping a window its hub entry refuses (`SlideHubWindow`, `CanOpenHubWindow`). `HubWindowNav` draws the strip and edge arrows (`Docs/MENU_REDESIGN_B.md` §47.2). `ModalStackChanged` fires after every stack change
 - On a device tier that sets `PlatformProfileSO.DeactivateMenuWhileFlying` (MobileLow phones only), DEACTIVATES the active non-HOME screen roots and the nav bar once the enter-freestyle blend settles, and reactivates exactly those at the start of the exit (`HandleFreestyleSettled` / `RestoreMenuAfterFlying`). HOME stays active: the party-invite popup and `HomeScreen`'s profile subscription must keep listening in flight. Anything under a screen root that subscribes in `Start` and unsubscribes in `OnDisable` breaks under this - subscribe in `OnEnable`. Every other tier hides them by CanvasGroup alone, as before. `Docs/PLATFORM_UNIFICATION.md` §3.6
 
 **Adding a new screen**: Create a `MonoBehaviour` implementing `IScreen` if it needs enter/exit lifecycle. Add a `ScreenEntry` in the `ScreenSwitcher` inspector mapping. The switcher will discover and call the `IScreen` automatically.

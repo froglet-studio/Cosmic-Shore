@@ -180,6 +180,17 @@ namespace CosmicShore.UI
                  "window never opens over a live profile chip. Empty entries are ignored.")]
         [SerializeField] private List<GameObject> hubCompanions = new();
 
+        [Header("Hub Window Slide (rev 7)")]
+        [Tooltip("The home hub's windows in slide order. Inside one of them LT / RT (and HubWindowNav's edge arrows) " +
+                 "swap it for its neighbour, stopping at the ends - no wrap (the owner, 2026-10-17: \"slide stop\"). " +
+                 "Docs/MENU_REDESIGN_B.md §47.2.")]
+        [SerializeField] private List<ModalWindows> hubWindowOrder = new()
+            { ModalWindows.TOYBOX, ModalWindows.ARCADE, ModalWindows.ARENA, ModalWindows.MISSION };
+        [Tooltip("How far, in canvas units, the old window slides out and the new one slides in from.")]
+        [SerializeField] private float hubSlideDistance = 160f;
+        [Tooltip("Seconds a window swap takes (unscaled: the menu runs paused).")]
+        [SerializeField] private float hubSlideSeconds = 0.32f;
+
         [Header("Gamepad Freestyle Toggle")]
         [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition.")]
         [SerializeField] private MenuCrystalClickHandler crystalClickHandler;
@@ -208,6 +219,12 @@ namespace CosmicShore.UI
         private readonly List<CanvasGroup> _hubGroups = new();
         private bool _hubGroupsResolved;
         private Coroutine _hubButtonsFade;
+
+        // The running hub-window swap and the rest position of every window it has moved.
+        private Coroutine _hubSlide;
+        private readonly Dictionary<RectTransform, Vector2> _hubSlideRest = new();
+        // Each hub window's Home entry availability, found once (MenuHubButton ensures the view in Awake).
+        private Dictionary<ModalWindows, MenuAvailabilityView> _hubEntries;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
@@ -291,7 +308,12 @@ namespace CosmicShore.UI
             UpdateModalStackInteractable();
             UpdateHubButtonsVisibility();
             Refocus();
+            ModalStackChanged?.Invoke();
         }
+
+        /// <summary>Raised after every change to the modal stack (an open, a close, a prune), once the stack is
+        /// committed. <see cref="HubWindowNav"/> repaints on it.</summary>
+        public event System.Action ModalStackChanged;
 
         #region Home hub buttons
 
@@ -767,7 +789,18 @@ namespace CosmicShore.UI
             }
 
             if (inFreestyle) return;
-            if (HasActiveModal) return;
+            if (HasActiveModal)
+            {
+                // Inside a hub window LT / RT swap it for its neighbour (rev 7). Only while that window is the
+                // top modal: under a configure the triggers belong to the game, and a guided path or a preview
+                // holding the stick leaves the pad one way forward.
+                if (!guided && !ModePreviewWindow.AnyHasFocus && ActiveHubWindow != ModalWindows.NONE)
+                {
+                    if (Gamepad.current.leftTrigger.wasPressedThisFrame) SlideHubWindow(-1);
+                    else if (Gamepad.current.rightTrigger.wasPressedThisFrame) SlideHubWindow(+1);
+                }
+                return;
+            }
 
             if (ScreenIsActive(MenuScreens.HOME))
             {
@@ -1651,6 +1684,164 @@ namespace CosmicShore.UI
 
         /// <summary>The home hub's Mission entry.</summary>
         public void OnClickMissionNav() => OpenModal(ModalWindows.MISSION);
+
+        #region Hub window slide (rev 7)
+
+        /// <summary>
+        /// The hub window on top of the stack - the one LT / RT slide from - or NONE when the top modal is anything
+        /// else (a configure over the window, Settings) or nothing is open.
+        /// </summary>
+        public ModalWindows ActiveHubWindow
+        {
+            get
+            {
+                if (activeModalStack.Count == 0) return ModalWindows.NONE;
+                var top = activeModalStack[activeModalStack.Count - 1];
+                return top.modal && hubWindowOrder.Contains(top.type) ? top.type : ModalWindows.NONE;
+            }
+        }
+
+        /// <summary>
+        /// The next window from <paramref name="from"/> in <paramref name="direction"/> (-1 left, +1 right) that may
+        /// open now, skipping a locked one; NONE at the end of the row (the slide stops, it does not wrap).
+        /// </summary>
+        public ModalWindows HubNeighbour(ModalWindows from, int direction) =>
+            NeighbourInRow(hubWindowOrder, from, direction, CanOpenHubWindow);
+
+        /// <summary>
+        /// The slide rule on its own: the first window past <paramref name="from"/> in <paramref name="row"/>, going
+        /// <paramref name="direction"/>, that <paramref name="canOpen"/> allows; NONE past either end (no wrap) or when
+        /// <paramref name="from"/> is not in the row.
+        /// </summary>
+        public static ModalWindows NeighbourInRow(IReadOnlyList<ModalWindows> row, ModalWindows from, int direction,
+                                                  System.Func<ModalWindows, bool> canOpen)
+        {
+            int step = System.Math.Sign(direction);
+            int i = -1;
+            for (int k = 0; row != null && k < row.Count; k++)
+                if (row[k] == from) { i = k; break; }
+            if (i < 0 || step == 0) return ModalWindows.NONE;
+            for (int j = i + step; j >= 0 && j < row.Count; j += step)
+                if (canOpen == null || canOpen(row[j])) return row[j];
+            return ModalWindows.NONE;
+        }
+
+        /// <summary>LT / RT and the edge arrows: swap the open hub window for its neighbour. False at an end.</summary>
+        public bool SlideHubWindow(int direction)
+        {
+            var from = ActiveHubWindow;
+            return from != ModalWindows.NONE && SwapHubWindow(HubNeighbour(from, direction), direction);
+        }
+
+        /// <summary>A strip entry: swap the open hub window for <paramref name="window"/>, sliding the way it lies.</summary>
+        public bool SlideHubWindowTo(ModalWindows window)
+        {
+            var from = ActiveHubWindow;
+            if (from == ModalWindows.NONE || window == from || !CanOpenHubWindow(window)) return false;
+            return SwapHubWindow(window, hubWindowOrder.IndexOf(window) > hubWindowOrder.IndexOf(from) ? 1 : -1);
+        }
+
+        private bool SwapHubWindow(ModalWindows to, int direction)
+        {
+            if (to == ModalWindows.NONE) return false;
+            var outgoing = activeModalStack[activeModalStack.Count - 1].modal;
+            var incoming = FindModal(to);
+            if (!outgoing || !incoming || incoming == outgoing) return false;
+
+            // The new window opens BEFORE the old one closes, so the stack never empties: the Home hub row does not
+            // fade up between them, ReturnToModal never reads NONE, and Refocus lands once, on the new window's first
+            // card. An open the window refuses (the freestyle gate) leaves the old window where it was.
+            if (to == ModalWindows.ARCADE) OpenArcadePanel();
+            else OpenModal(to);
+            if (!incoming.IsOpen) return false;
+            outgoing.ModalWindowOut();
+
+            if (_hubSlide != null)
+            {
+                StopCoroutine(_hubSlide);
+                _hubSlide = null;
+                RestoreHubSlideRests();
+            }
+            if (hubSlideSeconds > 0f && hubSlideDistance > 0f && isActiveAndEnabled)
+                _hubSlide = StartCoroutine(HubSlide(outgoing, incoming, direction));
+            return true;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="window"/> would open now from its Home hub entry: registered, in this build (the
+        /// browser Toybox), and its <see cref="MenuHubButton"/>'s availability Available. The slide skips a window
+        /// that fails, the same refusal its hub entry gives.
+        /// </summary>
+        public bool CanOpenHubWindow(ModalWindows window)
+        {
+            if (!FindModal(window)) return false;
+            if (WebToybox.IsBuild && !IsModalInWebToybox(window)) return false;
+            if (_hubEntries == null)
+            {
+                _hubEntries = new Dictionary<ModalWindows, MenuAvailabilityView>();
+                foreach (var hub in GetComponentsInChildren<MenuHubButton>(true))
+                    if (hub.TryGetComponent<MenuAvailabilityView>(out var view)) _hubEntries[hub.Target] = view;
+            }
+            return !_hubEntries.TryGetValue(window, out var entry) || !entry || entry.IsAvailable;
+        }
+
+        private ModalWindowManager FindModal(ModalWindows type)
+        {
+            if (type == ModalWindows.ARCADE && ArcadeModal) return ArcadeModal;
+            if (Modals == null) return null;
+            foreach (var modal in Modals)
+                if (modal && modal.ModalType == type) return modal;
+            return null;
+        }
+
+        // The old window slides out the way the player pressed while its "Window Out" fades it; the new one slides
+        // in from the other side under its "Window In". The old one holds its offset until it has faded, so it never
+        // snaps back into view. Unscaled: the menu runs paused.
+        private IEnumerator HubSlide(ModalWindowManager outgoing, ModalWindowManager incoming, int direction)
+        {
+            var outRt = HubSlideTarget(outgoing);
+            var inRt = HubSlideTarget(incoming);
+            Vector2 outRest = HubSlideRest(outRt), inRest = HubSlideRest(inRt);
+            float d = hubSlideDistance * direction;
+            for (float t = 0f; t < hubSlideSeconds; t += Time.unscaledDeltaTime)
+            {
+                float k = t / hubSlideSeconds;
+                float settle = (1f - k) * (1f - k) * (1f - k);
+                if (outRt) outRt.anchoredPosition = outRest + new Vector2(-d * k * k, 0f);
+                if (inRt) inRt.anchoredPosition = inRest + new Vector2(d * settle, 0f);
+                yield return null;
+            }
+            if (inRt) inRt.anchoredPosition = inRest;
+            if (outRt) outRt.anchoredPosition = outRest + new Vector2(-d, 0f);
+
+            var outGroup = outgoing ? outgoing.GetComponent<CanvasGroup>() : null;
+            for (float t = 0f; t < 1f && outgoing && !outgoing.IsOpen && outGroup && outGroup.alpha > 0.01f;
+                 t += Time.unscaledDeltaTime)
+                yield return null;
+
+            RestoreHubSlideRests();
+            _hubSlide = null;
+        }
+
+        private static RectTransform HubSlideTarget(ModalWindowManager modal) =>
+            modal ? modal.transform as RectTransform : null;
+
+        private Vector2 HubSlideRest(RectTransform rt)
+        {
+            if (!rt) return default;
+            if (!_hubSlideRest.TryGetValue(rt, out var rest))
+                _hubSlideRest[rt] = rest = rt.anchoredPosition;
+            return rest;
+        }
+
+        private void RestoreHubSlideRests()
+        {
+            foreach (var pair in _hubSlideRest)
+                if (pair.Key) pair.Key.anchoredPosition = pair.Value;
+            _hubSlideRest.Clear();
+        }
+
+        #endregion
 
         public void OnClickLeftArrow()
         {

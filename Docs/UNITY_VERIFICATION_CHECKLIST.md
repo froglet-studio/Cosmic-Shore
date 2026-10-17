@@ -11246,3 +11246,28 @@ KitTopNavTab, plus the configure AI plates. `/verify-unity` was not run. Checked
 5. **Legacy panels using `AIDifficultyPicker`** (any non-style-B screen): the plates look as before.
 6. **Profiler, Home with the Arcade window open and a card selected:** no `Canvas.BuildBatch` every frame from the
    lit card.
+
+## 🔴 2026-10-17 — Rev 7: LT / RT and edge arrows slide between the hub windows (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`ScreenSwitcher` hub slide (`hubWindowOrder`, `SlideHubWindow`, `CanOpenHubWindow`, `ModalStackChanged`), `HubWindowNav`
+and its `HubWindowNavHost` in Menu_Main (`author_menu_hub_nav.py`), `chrome_chevron`. `/verify-unity` was not run.
+Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- `author_menu_hub_nav.py --check` / `--self-test`, the friends drawer and every other Menu_Main generator `--check`;
+- the layout schematic (strip clear of the window title and BACK; arrows inside the gutters);
+- gates.
+
+1. **Compile and tests:** no new console errors; `HubWindowSlideTests` passes.
+2. **Home:** nothing new shows (the strip and arrows are hidden with no window open).
+3. **Open the Arcade from Home** (pad A or click):
+   - the strip under the nav reads LT, TOY BOX, ARCADE (underlined blue, light running), ARENA, MISSION, RT;
+   - a left arrow names TOY BOX, a right arrow names ARENA.
+4. **RT:** the Arcade slides out left as the Arena slides in from the right; focus is on the Arena's first card.
+   - RT again does nothing: Mission is Unavailable, so the right arrow is hidden.
+   - LT twice: back to Arcade, then Toy Box; on Toy Box the left arrow is hidden.
+5. **Mouse:** the edge arrows and the strip's words do the same; MISSION does not answer.
+6. **Open a game's configure** from the Arcade: the strip and arrows hide, and LT / RT do nothing. B back to the
+   Arcade: they return.
+7. **B on any hub window** closes it as before; the Home hub buttons come back once, with no flash during a slide.
+8. **Friends drawer** opened over a hub window covers the left arrow (the drawer draws above it).
+9. **First-login guide:** while the guide is active, the strip and arrows stay hidden.
