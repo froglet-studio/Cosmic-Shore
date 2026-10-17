@@ -178,6 +178,7 @@
      "hasClass": true,
      "studio": "stoat",
      "games": [
+      "Regatta",
       "Slingshot",
       "Warpline"
      ]
@@ -396,7 +397,8 @@
       "Squirrel",
       "Serpent",
       "Sparrow",
-      "Scarab"
+      "Scarab",
+      "Stoat"
      ],
      "menu": "arena"
     },

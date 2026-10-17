@@ -587,3 +587,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Caleb or Andrew (QA)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
+
+### T-20261017-b227 · open · test · Vessel Studio
+- **Task:** Playtest the ten concept vessels in the Vessel Studio artifact (hub row 'New vessels - the concept fleet'): fly each on phone and PC, watch its AI, and Record Keep / Drop with a line of why on each page's Decisions tab; then pick five, then three (Docs/Studios/CONCEPT_FLEET.md section 1).
+- **Done when:** Every one of the ten pages has a Keep or Drop decision in the shared log and the owner has named the five and the three.
+- **Who can take it:** Yash (asked for them; offered playtests), Garrett (product call on the three)
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md; https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa
+
+### T-20261017-3244 · open · dev · Vessel Studio
+- **Task:** Give the picked concept vessels a clean AI difficulty ladder (Hard fastest on every course, D24): the shared belief mistakes barely cost these fast movers and the lab-only press delay punishes tempo mechanics (the Octopus's Easy DNFs; the Albatross's Easy loses the updraft). One AI round per kept vessel, scorecard before and after.
+- **Done when:** Each kept vessel's Scorecard shows Hard < Medium < Easy on all four courses, recorded in CONCEPT_FLEET.md section 4.
+- **Who can take it:** Yash (offered: follow-up fixes), any Claude session with /vessel-studio
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 4; studio-kinds.js ai() per kind
+
+### T-20261017-b999 · open · decision · Vessel Studio
+- **Task:** Decide the concept fleet's three open design questions before any port: the Albatross's own gravity (a vessel that falls in a HyperSea without gravity), the Remora's compounding slipstream (two drafters ratchet each other to the cap) and whether a tow may take petals, and the Dragonfly / Marlin second input strategy (left stick = translation, RT = throttle).
+- **Done when:** A decision per question recorded in the artifact's decision log and CONCEPT_FLEET.md section 6.
+- **Who can take it:** Garrett (vessels, product); Yash
+- **Added:** 2026-10-17 by Claude (concept fleet session) (`Ys-bleeding-edge`)
+- **See:** Docs/Studios/CONCEPT_FLEET.md section 6
