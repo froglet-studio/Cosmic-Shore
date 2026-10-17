@@ -2564,3 +2564,20 @@ The LOCKED player-text rule applied across the surfaces this branch touched: the
 the quest card, the launch panel's chips, the skip button, credits, settings, the preview window, the party panel's
 toasts and the sign-in name error now read serialized template fields (`TemplateText.Fill` for `{tokens}`), with the
 old wording as each default. One line is handed to Yash (the Cloud Save toast lives in plain C#).
+
+## 51. The Hangar shows each vessel's real abilities (2026-10-18, awaiting in-editor approval)
+
+The owner: "Hangar each vessel should show each powerup animation". The bay's moves were stand-ins - nine generic kinds
+read from each ability's words (§46.1) on a look-only model - because the real effects (guns, trails, fields, prisms)
+need a live world. Now pressing an ability (its row or its control) also starts a **showcase**: the TRY arena
+(`HangarTryPreview`, a Barren cell) stands with the selected vessel, the **autopilot flies it**
+(`ModePreviewSession.DemoPilot`: input paused, AI on, no coaching drill) and `HangarAbilityPreview` presses each of the
+vessel's abilities in turn through `ModePreviewSession.PressAbility` (the vessel's own `R_VesselActionHandler`, the path
+an AI pilot's press and the drill's Ghost Demo take): hold 1.4 s, let the effect play 2.2 s, next, round again,
+starting with the one pressed. Pressing another ability jumps to it; its row lights as it plays. TRY during the
+showcase hands the player the stick; START / Esc / STOP / changing vessel or tab end it, as TRY did. The stand-in move
+still plays at once while the arena builds (a few seconds). Passive abilities light their row without a press.
+
+Known limit: the press uses the ability map's `Input`; where a prefab binds an ability to another control (§46.1's
+Serpent Seed Wall note) the showcase presses what the map says. Affects: Yash's / Garrett's `ModePreviewSession`
+(two additive members; the arcade configure's runs never set `DemoPilot`).

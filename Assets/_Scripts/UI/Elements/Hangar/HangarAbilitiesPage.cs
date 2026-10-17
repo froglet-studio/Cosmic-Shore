@@ -45,6 +45,7 @@ namespace CosmicShore.UI
             [HideInInspector] public HintBinding pad, key;
             [HideInInspector] public float lit;
             [HideInInspector] public HangarAbilityKind kind;
+            [HideInInspector] public bool open;
         }
 
         /// <summary>One vessel's element shown as another kind than its words read as.</summary>
@@ -92,6 +93,11 @@ namespace CosmicShore.UI
         HangarVesselStage _stage;
         bool _active;
         bool _keyboard;
+
+        readonly System.Collections.Generic.List<HangarAbilityPreview.ShowcaseAbility> _showcase = new();
+
+        void OnEnable() { if (tryPreview) tryPreview.ShowcasePlayed += LightRow; }
+        void OnDisable() { if (tryPreview) tryPreview.ShowcasePlayed -= LightRow; }
 
         void Awake()
         {
@@ -147,8 +153,18 @@ namespace CosmicShore.UI
                 row.pad = open ? HintBinding.None : InputHintBindingMap.BindingFor(entry.Input, keyboard: false);
                 row.key = open ? HintBinding.None : InputHintBindingMap.BindingFor(entry.Input, keyboard: true);
                 row.lit = 0f;
+                row.open = open;
                 if (row.glow) row.glow.color = new Color(c.r, c.g, c.b, 0f);
             }
+            _showcase.Clear();
+            foreach (var row in rows)
+            {
+                if (row == null || row.open || map == null) continue;
+                var entry = map.GetEntry(row.element);
+                bool presses = row.pad != HintBinding.None || row.key != HintBinding.None;
+                _showcase.Add(new HangarAbilityPreview.ShowcaseAbility(row.element, entry.Input, presses));
+            }
+            if (tryPreview) tryPreview.SetShowcaseAbilities(_showcase);
             RefreshKeycaps();
         }
 
@@ -183,6 +199,18 @@ namespace CosmicShore.UI
             if (row.halo) row.halo.Flash();
             // While TRY flies, the real ability is firing in the preview; the row only lights.
             if (_stage && !(tryPreview && tryPreview.IsRunning)) _stage.Perform(Colour(row.element), row.kind);
+            // The real thing: the showcase stands the arena (or jumps to this ability) and the vessel performs it.
+            if (tryPreview && (!tryPreview.IsRunning || tryPreview.IsShowcase)) tryPreview.Showcase(row.element);
+        }
+
+        void LightRow(Element element)
+        {
+            foreach (var row in rows)
+            {
+                if (row == null || row.element != element) continue;
+                row.lit = 1f;
+                if (row.halo) row.halo.Flash();
+            }
         }
 
         HangarAbilityKind KindOf(VesselClassType vessel, Element element, ElementalAbilityEntry entry)

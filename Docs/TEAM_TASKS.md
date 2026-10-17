@@ -753,3 +753,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith; Yash (offered)
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** .claude/skills/perf-hunt/SKILL.md section 1; Docs/DIAGNOSTICS.md (Bug Hunt & Performance badge)
+
+### T-20261017-13fb · open · test · Menu_Main / Hangar
+- **Task:** Play-test the Hangar ability showcase: press an ability and watch the vessel fire each of its real abilities in turn (autopilot), jump with another press, TRY to take the stick, START/Esc to end; list any ability that shows nothing
+- **Done when:** All six checklist steps pass, or each failure is reported back with the vessel and ability
+- **Who can take it:** Shombith (Menu_Main); Yash (offered)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-18 Hangar ability showcase); Docs/MENU_REDESIGN_B.md section 51

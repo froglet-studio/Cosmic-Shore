@@ -11471,3 +11471,18 @@ reference compiles clean; every menu generator `--check` passes.
 2. **Blank `bannerWinLine` on GameCanvas > ScoreboardController > Scoreboard** and finish again: the banner is empty
    (then undo).
 3. **Arena window, Profile quest track, configure window:** chips and captions read as before.
+
+## 🔴 2026-10-18 — Hangar ability showcase: each vessel's real abilities (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §51. `/verify-unity` was not run; player and editor reference compiles clean (editor: the 3
+known errors, 0 in changed files).
+
+1. **Hangar > a vessel > Abilities, press one ability:** the stand-in move plays, then within a few seconds the arena
+   shows the vessel flown by the autopilot firing THAT ability for real; then each other ability in turn, its row
+   lighting as it plays. No coaching prompts appear.
+2. **Press another ability** mid-showcase: it plays next.
+3. **TRY** during the showcase: you get the stick (abilities fire on your own presses).
+4. **START / Esc / STOP**, another vessel, or another tab: the showcase ends and the bay returns.
+5. Do this on Sparrow, Squirrel, Manta, Serpent, Grizzly and Stoat; note any ability that shows nothing (its map input
+   and its prefab binding may disagree).
+6. **Arcade configure preview** still coaches and hands you the stick as before (it never sets DemoPilot).
