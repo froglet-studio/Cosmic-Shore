@@ -622,3 +622,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), anyone with the Unity Editor
 - **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
 - **See:** Docs/REFACTOR_BACKLOG.md section 0 batch 2
+
+### T-20261017-7915 · open · dev · Stoat
+- **Task:** The Stoat's AI is paused while you configure the Stoat (Yash, 2026-10-17). When your configuration lands, say so here; the next AI session re-checks the autopilot distances against Regatta's race line, flies it and learns it (REGATTA_AI_ROADMAP.md §3.1 has where the AI stands)
+- **Done when:** Garrett notes his Stoat configuration is done, and the AI follow-up is picked up
+- **Who can take it:** Garrett (Stoat configuration)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md §3.1

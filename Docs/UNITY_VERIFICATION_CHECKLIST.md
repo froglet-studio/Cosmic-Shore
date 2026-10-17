@@ -140,7 +140,10 @@ risk. Before, it aimed at each ring's centre, the middle of the braid and 22 u f
 5. The Squirrel and the Urchin fly as before.
 6. **The Stoat** opens its field pair along the line (its path dots bend, it warps above cruise) and still lets go near
    each ring; run `StoatDipoleTests`. Before the 2026-10-17 range fix it would have raced at cruise on the line.
-7. Time I1–I4 per hull against the roadmap table.
+7. **The speed drives still fire on the line** (2026-10-17 fix): the Rhino ramps on the straights (Third Eye: "ramping on
+   the straight", ~840 u/s) and the Dolphin releases and re-drifts at the peak ("drifts again at the peak"). Before the
+   fix neither would ever have fired on the line.
+8. Time I1–I4 per hull against the roadmap table.
 
 ### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 

@@ -340,10 +340,11 @@ namespace CosmicShore.Gameplay
         /// Where the thing this pilot is AFTER is (a Regatta ring), else the point it steers for. A hull autopilot gauges
         /// RANGE with this and bearing with <see cref="TargetPosition"/>: when a mode steers along a race line the
         /// steering point always sits one look-ahead away, so a "how close is my target" question asked of it never comes
-        /// true (the Stoat's field autopilot never laid a pair, 2026-10-17). The one pilot-side read of the mode's
-        /// report: its position, nothing about its phase.
+        /// true (the Stoat's field autopilot never laid a pair; the Rhino and Dolphin drives never fired, 2026-10-17). A
+        /// difficulty mistake keeps the believed point: a pilot that has not noticed or has misjudged its ring must not
+        /// judge the true one. The one pilot-side read of the mode's report.
         /// </summary>
-        public Vector3 ObjectivePosition => _objective.Has ? _objective.Objective : _targetPosition;
+        public Vector3 ObjectivePosition => _objective.Has && !_objective.Mistake ? _objective.Objective : _targetPosition;
 
         /// <summary>A mode's steering hook says what it is doing (presentation only, no allocation).</summary>
         public void ReportObjective(ObjectivePhase phase, Vector3 objective, int ring = -1, int lap = -1) =>
@@ -1317,10 +1318,17 @@ namespace CosmicShore.Gameplay
         {
             if (!_boostActive) return;
 
+            // The drivers judge the thing the pilot is AFTER (the mode's objective, a ring): its bearing, its range (the
+            // runway) and the turn there. On a race line the steering point sits one look-ahead (0.35-0.8 s) ahead, so
+            // judged by it no straight is ever long enough: the Rhino needs 1.5 s to ramp, the Dolphin 2.5 s to spend, and
+            // neither would ever have fired on the line (2026-10-17). A difficulty mistake keeps the believed point: a
+            // pilot that has not noticed or has misjudged its ring must not spend against the true one.
+            Vector3 judged = ObjectivePosition;
+            Vector3 toJudged = _objective.Has && !_objective.Mistake ? judged - transform.position : toObjective;
             // The leg after the objective, from the objective (zero when the mode does not say, or while breaking off).
-            Vector3 nextLeg = !_extending && _nextLegProvider?.Invoke() is Vector3 after ? after - _targetPosition : default;
+            Vector3 nextLeg = !_extending && _nextLegProvider?.Invoke() is Vector3 after ? after - judged : default;
             _boostDriver.Tick(new AIBoostContext(
-                toObjective, HeadingDirection(), transform.forward, VesselStatus.Speed, LastStickDeflection(),
+                toJudged, HeadingDirection(), transform.forward, VesselStatus.Speed, LastStickDeflection(),
                 _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted, nextLeg));
 
             // The drift-charge driver spends the bank by ending the commit drift on a straight -
