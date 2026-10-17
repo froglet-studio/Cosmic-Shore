@@ -370,6 +370,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §31, Docs/ModePreview/ARCHITECTURE.md
 - **Done:** 2026-10-17, Built on claude/new-session-76hnyc (Docs/MENU_REDESIGN_B.md section 35): TRY IT FOR REAL hosts a Barren-cell ModePreviewSession behind the Abilities tab. The editor test is T-20261016-be3d + the checklist entry 'Hangar TRY'.
+- **Done:** 2026-10-17, Done on claude/new-session-76hnyc: TRY (section 35) flies it, and the showcase (section 51, cc061ef9a) plays each real ability under the autopilot; hand test T-20261017-13fb
 
 ### T-20261016-7044 · done · test · Menu_Main / Configure
 - **Task:** Play-test the rev-3 Configure window (full-window live preview + step cards; FLY / STOP; pad focus; Arena hulls; Maelstrom pool) on PC, pad and a phone
