@@ -43,6 +43,7 @@ namespace CosmicShore.UI
             gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnded;
             gameData.OnResetForReplay.OnRaised += HandleResetForReplay;
+            gameData.OnShowGameEndScreen.OnRaised += HandleEndScreen;
         }
 
         private void OnDestroy()
@@ -54,6 +55,7 @@ namespace CosmicShore.UI
             gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnded;
             gameData.OnResetForReplay.OnRaised -= HandleResetForReplay;
+            gameData.OnShowGameEndScreen.OnRaised -= HandleEndScreen;
         }
 
         //–––––––––––––––––––––––––––––––––––––––––
@@ -77,6 +79,7 @@ namespace CosmicShore.UI
             _hintsFiredOnce.Clear();
             _turnStartTime = Time.time;
             _turnActive = true;
+            view.SetHidden(false);
         }
 
         private void HandleTurnEnded()
@@ -90,7 +93,11 @@ namespace CosmicShore.UI
             _turnActive = false;
             _activeHints.Clear();
             view.Clear();
+            view.SetHidden(false);
         }
+
+        // The scoreboard owns the screen: the feed's lines would otherwise draw over it.
+        private void HandleEndScreen() => view.SetHidden(true);
 
         //–––––––––––––––––––––––––––––––––––––––––
         // IDLE HINTS

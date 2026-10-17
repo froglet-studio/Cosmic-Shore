@@ -11426,3 +11426,14 @@ generator's `--self-test`. A repo-wide scan found one more: Menu_Main's purchase
    Scoreboard Panel field is filled.
 3. **Store > buy something:** the crystal icons fly into the window on confirm.
 4. If the reveal toast still fails to show, copy any `[EndScreen]` line (the witness stays in for that).
+
+## 🔴 2026-10-17 — The end screen owns the screen: no feed or ability row over the board (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The owner's screenshot of the working board showed the match feed ("joined", "Ready", "collected 10 crystals") and the
+vessel ability row drawing over it. `Scoreboard.ShowScoreboard` now hides the local vessel HUD
+(`VesselHUDController.HideHUD`; the next turn or a replay restores it as before), and `GameToastController` hides the
+feed on `OnShowGameEndScreen` (`GameToastView.SetHidden`, CanvasGroup alpha 0, lines kept), showing it again on the next
+turn start or replay. `/verify-unity` was not run; player reference compile clean.
+
+1. **Finish a Skim Race:** the board shows with no feed lines on the right and no ability icons at the bottom right.
+2. **PLAY AGAIN:** in the replay the feed and the ability row are back.

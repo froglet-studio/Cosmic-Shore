@@ -355,6 +355,9 @@ namespace CosmicShore.UI
             // nothing that could show.
             ShowCount++;
             VerifyBoardShownAsync().Forget();
+            // The board owns the screen now: the vessel's ability row would otherwise draw over its bottom edge. The
+            // next turn (or a replay) brings the row back through the HUD's own lifecycle.
+            gameData.LocalPlayer?.Vessel?.VesselStatus?.VesselHUDController?.HideHUD();
 
             // Entrance animation disabled for now: PlayEntranceAnimation() slid the panel
             // by mutating its own anchoredPosition (read current pos as the rest target,

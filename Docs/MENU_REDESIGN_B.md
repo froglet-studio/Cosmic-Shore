@@ -2520,3 +2520,15 @@ Found while writing §47.4's tips; the owner: "fix the Y freestyle toggle first"
   - refcompile.
 
   The loading screen's Y tip (§47.4) is back.
+
+## 48. The scoreboard works; Rev 8 redraws it (2026-10-17)
+
+The missing end screen had one cause: `GameCanvas.prefab` held two stripped stand-ins for the nested ScoreboardPanel
+root, and Unity binds only one, so `Scoreboard.scoreboardPanel` read as destroyed (fixed in `author_ingame_hud.py`;
+`T.duplicate_stubs` now fails any generated file with a twin; the same twin was fixed in Menu_Main's purchase window).
+With the board showing, the owner: "I do not like this UI". Rev 8 on the mockups canvas ("Rev 8 - Scoreboard") draws
+three options in the Rev 6 language - A podium, B glass ladder, C your match first - plus notes and questions. Nothing
+is built until the owner picks.
+
+Polish landed meanwhile: the match feed and the vessel ability row no longer draw over the board (the board hides the
+ability row; the feed hides on the end screen and returns next turn).
