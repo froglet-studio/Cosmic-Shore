@@ -370,6 +370,18 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// The hull's own RACE LINE: where <paramref name="pilot"/> steers instead of the gate's approach / mouth points,
+        /// and the point after it (the boost driver's corner). Asked after the difficulty belief and the missed-mouth test,
+        /// so an Easy pilot's mistakes and a missed ring are still flown the gate way. False (the default) = the gate way.
+        /// Regatta answers it per hull (<see cref="RaceLineStyleSO"/>): Yash, 2026-10-17, every hull races its own line.
+        /// </summary>
+        protected virtual bool TryRaceLine(IPlayer pilot, Vector3 self, out Vector3 aim, out Vector3 after)
+        {
+            aim = after = default;
+            return false;
+        }
+
         /// <summary>The cell shell the course is laid inside, resolved from the live cell.</summary>
         protected void ResolveShell(out float inner, out float outer)
         {
@@ -1053,6 +1065,9 @@ namespace CosmicShore.Gameplay
             bool hasLastSelf = false;
             // Where the pilot flies after the point the provider below returns (the boost driver's corner), or null.
             Vector3? after = null;
+            // The ring this pilot missed while flying its race line: that ring is flown the gate way until threaded, or
+            // the line (a closed loop) would carry the pilot a whole lap round to it.
+            int lineLostIndex = -1;
             // Seeded per seat and per race, so each AI errs differently every race.
             var handicap = handicapLevel.IsNone ? null
                 : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
@@ -1120,7 +1135,17 @@ namespace CosmicShore.Gameplay
                         == GatePlaneCrossing.OutsideMouth)
                 {
                     lockedIndex = -1;
+                    lineLostIndex = index;
                     pilot.BreakOffNow();
+                }
+
+                // The hull's own race line (Regatta: the gap between two rails, RegattaRaceLine), when the mode has one
+                // for this hull and the pilot is not flying a difficulty mistake or recovering from a missed mouth.
+                if (!misjudged && lineLostIndex != index && TryRaceLine(captured, self, out Vector3 lineAim, out Vector3 lineAfter))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Approach, gate.Position, ringNo, lap);
+                    after = lineAfter;
+                    return lineAim;
                 }
 
                 if (index != lockedIndex)

@@ -110,6 +110,36 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 Every Regatta AI hull races its own line along the sides of the braid (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** every AI hull except the Squirrel and the Urchin flies its own line through Regatta. That line is the
+gap between the two rails that are not its domain's, at the hull's own distance from the braid, with its own room and
+risk. Before, it aimed at each ring's centre, the middle of the braid and 22 u from all three rails. The pieces:
+- `RegattaRaceLine`, `RaceLineStyleSO`: `Resources/RaceLines/<Hull>_Regatta`, written by `author_race_lines.py`.
+- `GateRaceController.TryRaceLine`.
+- Each AI seat draws its own risk: careful pilots follow the line tightly; bold ones cut bends and keep less room.
+- `REGATTA.md` §6.2.
+
+**Verified without the editor:**
+- `unity_refcompile`: player-dev clean; editor 0 errors in changed files.
+- Gates, including `check_ai_no_state_writes`.
+- `author_race_lines.py --check` (watched it fail on a tampered asset).
+- `learn_drives_from_flights.py --self-test`.
+- The line, prototyped on the RECORDED rails: at I1, r = 60 is 51 u from every rail (the centre is 22), crosses each
+  ring at 55% of the mouth and is 3% longer.
+- `RegattaRaceLineTests` written, NOT run.
+
+**Verify in editor:**
+1. Run `RegattaRaceLineTests` and `RegattaDriveTuningTests`: all pass.
+2. Arcade ▸ Regatta with AI Rhino, Manta, Dolphin and Stoat, Third Eye on each, trails on. Each flies OUTSIDE the
+   braid's core, between two rails, parallel to them, never crossing a rail. The Rhino flies widest. Every ring is
+   threaded without circling.
+3. Two AIs of the same hull: their lines differ a little (each seat's own risk; bold ones cut bends more).
+4. Easy / Medium: the difficulty mistakes still show (amber "not noticed", red "misjudged"); after a missed ring the
+   pilot comes back to that ring the gate way, not a whole lap round.
+5. The Squirrel and the Urchin fly as before.
+6. Time I1–I4 per hull against the roadmap table.
+
 ### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset` (`BoostStickBand` 0.8, `YastriStickBand`

@@ -273,6 +273,38 @@ the waypoints of the track."*
 - **The Squirrel** already aimed only at rings (`RegattaRingObjective`). The Third Eye's "Crystal on the way" phase
   no longer appears in Regatta.
 
+### 6.2 Every hull races its own line, along the sides (2026-10-17)
+
+Yash, 2026-10-17: "every vessel moves in different ways ... bigger vessels like the Rhino are trying to get to the
+center of the track like the Squirrel does, but that's not how it should fly ... it's always better to play from the
+sides." The centre of the track IS the middle of the braid: the spine runs through every ring's centre and the three
+super-shielded rails are braided 22 u round it, so a hull aiming at ring centres flies 22 u from all three rails at
+once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow and resets the Squirrel's boost, §2).
+
+- **The line** (`RegattaRaceLine`, pure): the bisector of the GAP between the two rails that are not the pilot's
+  domain's, at a radius from the spine. At radius r its nearest rail is sqrt(r² + 22² - 22 r) away, so it never crosses
+  a rail, and it twists with the braid, so it threads every ring inside the mouth. Built once from the live rails.
+  Measured on the recorded rails (2026-10-17): at I1 a line at r = 60 stays **51 u** from every rail (the centre: 22),
+  crosses each ring at 55% of the mouth and is **3%** longer than the spine; at I3, r = 41: 35 u, 57%, the same length.
+- **Each hull's style** (`RaceLineStyleSO`, `Resources/RaceLines/<Hull>_Regatta`, authored by
+  `Tools/Build/author_race_lines.py`): how far out it flies (`LaneShare`), the room its hull keeps from a rail or the
+  rim (`HullClearance`), and its **risk**. Bold cuts more of each bend (a longer look-ahead) and keeps 0.75x the room;
+  careful follows the line tightly with 1.5x. Every AI seat draws its own risk round the hull's (seeded per seat), so a
+  grid has careful and bold pilots of the same hull. Starting values: Rhino 0.80 / 18 u / 0.40 (biggest, fastest:
+  out wide, safer), Manta 0.70 / 16 / 0.50, Dolphin 0.60 / 12 / 0.50, Stoat 0.55 / 10 / 0.60, Serpent 0.60 / 12 /
+  0.50, Sparrow 0.55 / 10 / 0.50, Scarab 0.60 / 12 / 0.45.
+- **Learned from people**: `learn_drives_from_flights.py` measures where a person crosses the rings in their fastest
+  three finished races of a hull and writes that hull's `LaneShare` (`race_lines_learned.json`, read by the
+  generator). No Rhino, Manta, Dolphin, Stoat, Sparrow or Scarab flights yet; the Serpent has one finished race.
+- **Steering** (`GateRaceController.TryRaceLine`, overridden here): asked after the difficulty belief and the
+  missed-mouth test, so an Easy pilot's mistakes and a missed ring are still flown the gate way (a missed ring is flown
+  the gate way until threaded, or the closed line would carry the pilot a whole lap round to it). The point a second
+  look-ahead further on is the boost drivers' corner (`AIBoostContext.CornerDegrees`).
+- **Not on a line:** the Squirrel (its own Skim Race pilot; Yash's own Squirrel crosses rings 11 u from the centre,
+  median of 1,042 crossings: the braid's middle IS the Squirrel's line) and the Urchin (rides its own lane).
+- **Tests:** `RegattaRaceLineTests` (clearance, radius, the centre line as the negative control, the loop, the
+  style's bounds and seeded risk, which hulls have a style). Not editor-verified.
+
 ## 6.5 Scoring — the team sum
 
 `RegattaScoringRuleSO` (a `GateRaceScoringRuleSO` subclass; the asset is points rules,
