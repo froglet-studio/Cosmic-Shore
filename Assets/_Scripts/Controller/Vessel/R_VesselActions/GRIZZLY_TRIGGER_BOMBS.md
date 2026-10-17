@@ -70,12 +70,12 @@ momentum."*
   (`GrizzlyClawConeVisual` deleted); `GrizzlyClawWhips` draws four `BrittleStarCord`s per trigger, the Brittle
   Star's own wave-equation whip (copied verbatim from Garrett's `cece/beautiful-knuth-j3atgk`, same path and
   GUID, so the two branches merge clean), held at `whipRigidity` 0.8 so they lag a turn and shiver but stay
-  nearly straight. **A claw, not a fan** (2026-10-16: *"the whips come out as an X shape. I want them to start at a point and
-  cone outward like a set of claws and they can be a little bigger"*): all four fingers root at the one muzzle
-  point (`whipRootSpacing` 0), open evenly round a ring on the cone's surface (`whipFanFraction` 1,
-  `whipRingPhaseDegrees` 0 = one finger straight up), and curl back toward the axis at the tips (`whipCurl`
-  0.45, drawn only) like talons. The first cut laid them in a row alternating up and down, which read as an X
-  from the chase camera. They taper from `whipWidth` 2 to a point, and use the Thresher chain's fresnel tube material in dark red with a red
+  nearly straight. **A claw** (2026-10-16 / -17: *"the whips come out as an X shape… I want one convergence point and they spread
+  out slightly like claws"*): all four fingers root at the one muzzle point and fan FLAT across the hull's width,
+  the outer ones only `whipSpreadDegrees` 7° to each side, and every tip hooks down (`whipHook` 0.12 of the
+  length, drawn only) like a talon. Two earlier layouts read as an X from the chase camera: roots in a row
+  alternating up and down, then fingers spread evenly round the full cone (four rays round a point always read
+  as an X or a +). The spread is the claw's own and does not change the burn cone. They taper from `whipWidth` 2 to a point, and use the Thresher chain's fresnel tube material in dark red with a red
   rim that dims as the cell empties. **Gameplay is unchanged**: what burns is still the cone the whips fan
   across, with the same pressure, reach, cells and burn.
 - **Claw energy cells** (2026-10-16: *"give each of them a small energy cell that recharges when

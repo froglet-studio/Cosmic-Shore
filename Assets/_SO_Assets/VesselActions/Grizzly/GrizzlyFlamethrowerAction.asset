@@ -26,10 +26,8 @@ MonoBehaviour:
   cellRechargeSeconds: 2
   cellRechargeDelay: 0.25
   whipsPerSide: 4
-  whipFanFraction: 1
-  whipRootSpacing: 0
-  whipRingPhaseDegrees: 0
-  whipCurl: 0.45
+  whipSpreadDegrees: 7
+  whipHook: 0.12
   whipRigidity: 0.8
   whipLinks: 10
   whipLooseWave: 180

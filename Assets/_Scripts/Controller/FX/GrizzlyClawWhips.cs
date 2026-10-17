@@ -10,8 +10,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Cosmetic only, every peer draws its own.</b> What burns is still the claw's cone
     /// (<c>GrizzlyFlamethrowerActionExecutor.IgniteCone</c>): the four cords fan across that cone's half-angle at its
-    /// reach - rooted at one point, opening round a ring and curling in at the tips like a claw - so they are its
-    /// visible envelope and the visual does not lie about what catches fire.</para>
+    /// reach - rooted at one point, fanned slightly across the hull's width and hooked down at the tips like a claw -
+    /// so they sit inside it and the visual does not lie about what catches fire.</para>
     ///
     /// <para>Drawn with the Thresher chain's fresnel tube material (one <see cref="LineRenderer"/> per cord, colours
     /// through a <see cref="MaterialPropertyBlock"/> so the shared material is never instanced). The rim dims as the
@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
         Vector3[] _drawn;
         MaterialPropertyBlock _mpb;
         bool _visible;
-        Vector3 _apex, _axis;
+        Vector3 _apex, _axis, _down;
         float _length;
 
         /// <summary>Gets (or creates) the whip set called <paramref name="setName"/> hanging off this vessel.</summary>
@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Step and draw the cords for one frame: the fingers root at <paramref name="apex"/> and open round a ring. <paramref name="apex"/> is the claw's muzzle in world space,
+        /// Step and draw the cords for one frame: the fingers root at <paramref name="apex"/> and fan out slightly. <paramref name="apex"/> is the claw's muzzle in world space,
         /// <paramref name="aim"/> the cone's axis (forward = +z), <paramref name="length"/> / <paramref name="halfAngle"/>
         /// the cone this pull makes, <paramref name="fill01"/> the cone's energy cell.
         /// </summary>
@@ -67,25 +67,24 @@ namespace CosmicShore.Gameplay
                 Pose = so.WhipPose,
             };
 
-            // A CLAW, not a fan (design ask, 2026-10-16: "the whips come out as an X shape. I want them to start at a
-            // point and cone outward like a set of claws"): every finger roots at the one muzzle point and opens
-            // outward around a ring on the cone's surface, evenly spaced; Draw then curls each tip back toward the
-            // axis, so the set reads as talons closing round what they burn. (The first cut laid the roots in a row
-            // alternating up and down, which from the chase camera read as an X.)
+            // A CLAW (design asks, 2026-10-16 and -17: "the whips come out as an X shape... I want one convergence
+            // point and they spread out slightly like claws"). Every finger roots at the ONE muzzle point and they open
+            // in a single flat fan across the hull's width, only a few degrees apart (whipSpreadDegrees, independent of
+            // the burn cone), so from the chase camera they read as a hand of talons, not a starburst. Draw then hooks
+            // every tip the same way, down, like a claw. Two earlier layouts read as an X: roots in a row alternating
+            // up and down, and fingers spread evenly round the full cone (four rays round a point ARE an X or a +).
             int n = _cords.Length;
-            Vector3 right = aim * Vector3.right;
-            float tilt = halfAngle * so.WhipFanFraction;
             for (int i = 0; i < n; i++)
             {
-                float azimuth = so.WhipRingPhaseDegrees + 360f * i / n;
-                Quaternion local = Quaternion.AngleAxis(azimuth, Vector3.forward) * Quaternion.AngleAxis(-tilt, Vector3.right);
-                Vector3 dir = aim * (local * Vector3.forward);
-                Vector3 anchor = apex + right * ((i - 0.5f * (n - 1)) * so.WhipRootSpacing);   // 0 spacing = one point
-                _cords[i].Step(anchor, dir, length, so.WhipRigidity, settings, dt);
+                float t = n > 1 ? i / (float)(n - 1) : 0.5f;
+                float yaw = Mathf.Lerp(-so.WhipSpreadDegrees, so.WhipSpreadDegrees, t);
+                Vector3 dir = aim * (Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.forward);
+                _cords[i].Step(apex, dir, length, so.WhipRigidity, settings, dt);
             }
 
             _apex = apex;
             _axis = aim * Vector3.forward;
+            _down = aim * Vector3.down;
             _length = length;
             Draw(so, fill01);
         }
@@ -128,24 +127,22 @@ namespace CosmicShore.Gameplay
                 line.SetPropertyBlock(_mpb);
                 line.startColor = line.endColor = rim;   // the vertex-colour fallback material
                 int written = ThresherChainLinks.Smooth(cord.Points, sub, _drawn);
-                Curl(so.WhipCurl, written);
+                Hook(so.WhipHook, written);
                 if (line.positionCount != written) line.positionCount = written;
                 line.SetPositions(_drawn);
             }
         }
 
-        /// <summary>Bend each drawn finger back toward the claw's axis, more toward the tip (s squared), so a straight
-        /// cord reads as a curved talon. Cosmetic: the cord's own physics, and the cone that burns, are untouched.</summary>
-        void Curl(float curl, int count)
+        /// <summary>Hook every drawn finger the same way - down, more toward the tip (s squared) - so a straight cord
+        /// reads as a curved talon and the set as one claw. <paramref name="hook"/> is the tip's drop as a fraction of
+        /// the claw's length. Cosmetic: the cord's own physics, and the cone that burns, are untouched.</summary>
+        void Hook(float hook, int count)
         {
-            if (curl <= 0f || _length <= 1e-4f) return;
+            if (hook <= 0f || _length <= 1e-4f) return;
             for (int p = 0; p < count; p++)
             {
-                Vector3 offset = _drawn[p] - _apex;
-                float along = Vector3.Dot(offset, _axis);
-                float s = Mathf.Clamp01(along / _length);
-                Vector3 radial = offset - _axis * along;
-                _drawn[p] -= radial * (curl * s * s);
+                float s = Mathf.Clamp01(Vector3.Dot(_drawn[p] - _apex, _axis) / _length);
+                _drawn[p] += _down * (hook * _length * s * s);
             }
         }
 

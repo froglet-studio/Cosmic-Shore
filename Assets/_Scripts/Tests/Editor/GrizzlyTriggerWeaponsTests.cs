@@ -77,6 +77,10 @@ namespace CosmicShore.Tests
             Assert.Greater(_claw.WhipRigidity, 0.5f, "the claw's whips are stiffer than the Brittle Star's loose whip");
             var rim = _claw.WhipRimColor;
             Assert.Greater(rim.r, 2f * Mathf.Max(rim.g, rim.b), "the whips glow RED");
+            // 2026-10-17: "one convergence point and they spread out slightly like claws" - a slight fan, never the
+            // wide starburst that read as an X.
+            Assert.Greater(_claw.WhipSpreadDegrees, 0f, "the fingers must open, or the four draw as one");
+            Assert.LessOrEqual(_claw.WhipSpreadDegrees, 15f, "a wide spread reads as an X, not a claw");
 
             // At that rigidity a whip held on a still line stays on it: a claw finger, not a rope.
             var cord = new BrittleStarCord(_claw.WhipLinks);
