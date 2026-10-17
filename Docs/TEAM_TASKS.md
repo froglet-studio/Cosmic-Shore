@@ -81,13 +81,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ModePreview/TRAINING_PLAN.md 11.1
 
-### T-20261015-f4c7 · open · dev · Activation
+### T-20261015-f4c7 · done · dev · Activation
 - **Task:** Reconcile Menu_Main between the first-login guide (merged into Ys-bleeding-edge 2026-10-15) and Menu Redesign B (claude/new-session-76hnyc) before either reaches bleeding-edge: the spotlight must find the restyled ARCADE entry, cards and Settings gear.
 - **Done when:** Both are on one branch, the spotlight walks the restyled menu in the editor, and author_first_login_guide.py --check passes.
 - **Who can take it:** Shombith (Menu_Main owner), Yash (offered)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 4; Docs/MENU_REDESIGN_B.md on claude/new-session-76hnyc
 - **Progress (2026-10-17, claude/new-session-76hnyc):** both are on one branch now (bleeding-edge merged in), author_first_login_guide.py --check passes, and the guide's targets were checked offline: the ARCADE hub (MenuHubButton, target 10), the Arcade grid's ArcadeExploreView / TryRevealCard, Settings (MenuGuideAlwaysAvailable on the restyled SettingsButton, now guarded by author_menu_home.py), and the Preview step (now spotlights FLY via ModePreviewWindow.guideTarget, because the rev-3 preview is full-screen). Left: the in-editor walk (Docs/UNITY_VERIFICATION_CHECKLIST.md 'Bleeding-edge merge 2026-10-17').
+- **Done:** 2026-10-17, Reconciled on claude/new-session-76hnyc after merging bleeding-edge #1189 (Ys-bleeding-edge): each guide step finds its style-B target and each is a generator gate with a planted defect - Home's Arcade hub keeps its MenuHubButton target ARCADE (author_menu_home.py), the Arcade grid (author_menu_arcade.py GameSelectionGrid), the preview's FLY GuideRect (author_menu_configure.py guideTarget), Settings carries MenuGuideAlwaysAvailable (author_menu_home.py); nothing in Menu_Main sorts above the spotlight (32000), so the friends drawer is dimmed too. Editor walk-through still owed: T-20261015-b47d.
 
 ### T-20261015-d364 · open · content · Activation
 - **Task:** Write Mentor tip lists for the non-racing mode families (TRAINING_PLAN phase 5): only the racing family (SwitchesThreaded) and seven racing modes have tips today.

@@ -851,6 +851,13 @@ def validate(files):
     gear = re.search(r"  m_Component:\n((?:  - component: \{fileID: -?\d+\}\n)+)", sc.docs[I["settings_go"]]).group(1)
     assert any(sc.has(c) and sc.script(c) == S["guide_ok"] for c in re.findall(r"fileID: (-?\d+)", gear)), \
         "Settings lost MenuGuideAlwaysAvailable: the first-login guide would dim and kill it"
+    # Its first step is the Arcade hub: QuestGuideToMicrogameNode finds the MenuHubButton whose target is ARCADE
+    # (ScreenSwitcher.ModalWindows.ARCADE = 10). A restyle that drops or re-targets it leaves the guide with nothing
+    # to point at on Home.
+    arcade_hub = next(h for h in HUBS if h[0] == "Arcade")
+    assert sc.script(arcade_hub[5]) == S["hub"] and "  target: 10\n" in sc.docs[arcade_hub[5]] \
+        and "  m_IsActive: 1\n" in sc.docs[arcade_hub[1]], \
+        "the Arcade hub lost its active MenuHubButton targeting ARCADE: the first-login guide would find nothing on Home"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["bar_btn"]]), "the question bar still opens the display-name window"
     # 6b
     up = sc.docs[str(ctx.c("UpNext", "upnext"))]
@@ -947,6 +954,8 @@ def self_test(files):
             r"(  timerBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[invite_path()]))),
         ("a docked card that cannot fold", lambda f: f.__setitem__(SCENE, re.sub(r"(  minimiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("the fly hint's x unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  closeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
+        ("the Arcade hub re-targeted away from ARCADE", lambda f: f.__setitem__(SCENE, re.sub(
+            r"(--- !u!114 &1749518393\n(?:(?!--- ).*\n)*?  target: )10\n", r"\g<1>14\n", f[SCENE], count=1))),
         ("Settings left out of the guide's always-available set", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"guid: {S['guide_ok']}", "guid: 00000000000000000000000000000000", 1))),
         ("one click on Home flying again", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
