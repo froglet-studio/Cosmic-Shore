@@ -51,6 +51,7 @@ typedef float4 fixed4;
 static inline float2 mk2(float a, float b) { return (float2){a, b}; }
 static inline float3 mk3(float a, float b, float c) { return (float3){a, b, c}; }
 static inline float4 mk4(float3 c, float a) { return (float4){c.x, c.y, c.z, a}; }
+static inline float4 mk4(float a, float b, float c, float d) { return (float4){a, b, c, d}; }
 static inline float frac(float x) { return x - std::floor(x); }
 static inline float saturate(float x) { return x < 0 ? 0 : (x > 1 ? 1 : x); }
 static inline float hmin(float a, float b) { return a < b ? a : b; }

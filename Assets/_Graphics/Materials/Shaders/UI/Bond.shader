@@ -106,6 +106,9 @@ Shader "CosmicShore/UI/Bond"
 
             fixed4 frag(v2f IN) : SV_Target
             {
+                // A hidden window (its CanvasGroup at alpha 0) draws nothing: stop before the maths. The output
+                // there is already transparent; this only stops paying for it (Docs/MENU_REDESIGN_B.md §46.3).
+                if (IN.color.a < 0.004) return float4(0.0, 0.0, 0.0, 0.0);
                 // Along the line from the centre end (canvas units), and across it from its centre line.
                 float along = IN.rimUV.x * IN.rimUV.z;
                 float across = abs(IN.rimUV.y - 0.5) * IN.rimUV.w;

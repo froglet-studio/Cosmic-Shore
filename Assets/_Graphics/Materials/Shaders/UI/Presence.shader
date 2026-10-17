@@ -128,6 +128,9 @@ Shader "CosmicShore/UI/Presence"
 
             fixed4 frag(v2f IN) : SV_Target
             {
+                // A hidden window (its CanvasGroup at alpha 0) draws nothing: stop before the maths. The output
+                // there is already transparent; this only stops paying for it (Docs/MENU_REDESIGN_B.md §46.3).
+                if (IN.color.a < 0.004) return float4(0.0, 0.0, 0.0, 0.0);
                 // -1..1 across the rect: every radius is a fraction of the half-size.
                 float2 p = (IN.texcoord - 0.5) * 2.0;
                 float d = length(p);

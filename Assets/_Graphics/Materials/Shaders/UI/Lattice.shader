@@ -134,6 +134,9 @@ Shader "CosmicShore/UI/Lattice"
 
             fixed4 frag(v2f IN) : SV_Target
             {
+                // A hidden window (its CanvasGroup at alpha 0) draws nothing: stop before the maths. The output
+                // there is already transparent; this only stops paying for it (Docs/MENU_REDESIGN_B.md §46.3).
+                if (IN.color.a < 0.004) return float4(0.0, 0.0, 0.0, 0.0);
                 // Canvas-space position: the lattice keeps its size whatever the panel's.
                 float2 p = IN.worldPosition.xy;
                 float t = _Time.y;

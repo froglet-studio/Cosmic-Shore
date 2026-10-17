@@ -2267,3 +2267,30 @@ showed "Change these from the main menu." and its dropdowns did not open.
 - If the banner still shows in the menu after this, the app state is reporting a match there: the console's
   `[AppState]` lines on the Boot channel (FrogletTools > Toolbox > Logging) say which.
 
+### 46.3 Menu performance: what the UI stops paying for
+
+The owner: "performance mate its too laggy" (Home about 34-39 FPS, the cell-change screen 10 FPS, in the editor).
+Nothing has been measured on this branch, so this is a reading of the code and the shared captures:
+- **The 10 FPS screen is the cell build.** `EnvironmentLoadVeil` lays prisms for 80 ms each frame (`VeilLayBudgetMs`,
+  Garrett's environment build). Nothing is drawing there.
+- **The 34-39 FPS is mostly the live cell world plus the editor's own overhead.** The perf record's editor numbers
+  (Menu_Main, Lattice cell: 38.6 FPS, 21.4 ms CPU) match it.
+- **The new shaders are a small share.** A visible window lattice costs about 0.1-0.2 ms on a desktop GPU and 1-2 ms on
+  Iris Xe.
+
+Five changes, none of which changes what is drawn:
+
+| # | Change | Where | Proof |
+|---|---|---|---|
+| 1 | A closed window's Animator is switched off and woken before the open cross-fade. Before, its clips wrote the CanvasGroup every frame ("Window Out" holds its last frame), so 14 closed windows re-batched the whole ~3,400-graphic menu canvas every frame. | `ModalWindowManager.SleepAnimator` | refcompile |
+| 2 | The lattice, rim, orb and bond shaders stop at once on a pixel whose vertex alpha is 0 (a hidden window's CanvasGroup). | the four `frag` functions | harness: reveal 0 draws nothing; the other asserts unchanged |
+| 3 | The lattice pays for its twinkle only within reach of a twinkling node, and for its pulses only within three line widths of a line. Before, the pulse block's 9 of 12 hashes ran on every pixel. | `UILattice.cginc` | old and new renders compared: every channel of three frames identical |
+| 4 | Rim borders no longer fill their centre. The sliver line sprites' centre slices are fully transparent (line1 and line2, both sizes), so the rim shader stops running over every panel's interior. | `menu_b_motion.rim_border` | the 10 regenerated rims differ only in `m_FillCenter` |
+| 5 | The configure briefing stops cycling its text behind a closed window. | `GameBriefingView` (`KitSightline`) | refcompile |
+
+Still open:
+- An open window's "Window Loop" clip still writes every frame while it is open.
+- Hidden graphics are still batched. Giving each window its own Canvas, disabled while hidden, would remove that.
+
+Both wait on a capture: the steps are in team task T-20261015-d4f5's Menu_Main Home capture.
+

@@ -55,18 +55,27 @@ float4 LatticeLayer(float2 p, float t, float spacing, float driftPeriod, float l
     float coverage = lineCore + lineGlow + node * 1.2;
     float3 colour = lineColor * coverage;
 
-    // Twinkling nodes: the nearest node in this row, a few of them glowing in an element colour.
+    // Twinkling nodes: the nearest node in this row, a few of them glowing in an element colour. Paid for only
+    // within reach of a node that twinkles - everywhere else the term is exactly 0.
     float row = floor(q.y / h + 0.5);
     float col = floor((q.x - row * spacing * 0.5) / spacing + 0.5);
     float2 nodePos = float2(col * spacing + row * spacing * 0.5, row * h);
-    float nodeHash = LatticeHash(col, row);
-    float twinkleOn = step(nodeHash, twinkleDensity);
-    float wave = sin(t * (1.1 + nodeHash * 2.3) + nodeHash * 40.0) * 0.5 + 0.5;
-    float twinkle = twinkleOn * wave * wave * wave * (1.0 - smoothstep(0.0, nodeSize * 2.6, length(q - nodePos)));
-    colour += LatticeElement(LatticeHash(row, col), charge, mass, space, time) * twinkle * 1.6;
-    coverage += twinkle;
+    float nodeDistance = length(q - nodePos);
+    if (nodeDistance < nodeSize * 2.6)
+    {
+        float nodeHash = LatticeHash(col, row);
+        if (nodeHash <= twinkleDensity)
+        {
+            float wave = sin(t * (1.1 + nodeHash * 2.3) + nodeHash * 40.0) * 0.5 + 0.5;
+            float twinkle = wave * wave * wave * (1.0 - smoothstep(0.0, nodeSize * 2.6, nodeDistance));
+            colour += LatticeElement(LatticeHash(row, col), charge, mass, space, time) * twinkle * 1.6;
+            coverage += twinkle;
+        }
+    }
 
-    // Pulses: a bright head and a fading tail running along a few lines of each family.
+    // Pulses: a bright head and a fading tail running along a few lines of each family. A pulse lights only within
+    // three line widths of its line, so the rest of the panel (most of it) skips the block.
+    if (dmin >= lineWidth * 3.0) return float4(colour, coverage);
     float2 t0 = float2(1.0, 0.0);
     float2 t1 = float2(0.5, LATTICE_SQ3_2);
     float2 t2 = float2(-0.5, LATTICE_SQ3_2);

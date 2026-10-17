@@ -113,6 +113,9 @@ Shader "CosmicShore/UI/ElementRim"
 
             fixed4 frag(v2f IN) : SV_Target
             {
+                // A hidden window (its CanvasGroup at alpha 0) draws nothing: stop before the maths. The output
+                // there is already transparent; this only stops paying for it (Docs/MENU_REDESIGN_B.md §46.3).
+                if (IN.color.a < 0.004) return float4(0.0, 0.0, 0.0, 0.0);
                 half4 tex = tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd;
                 float4 rim = ElementRim(IN.rimUV.xy, IN.rimUV.zw, _Time.y, _Speed, _Tail, _BaseLevel, _Omni,
                                         _ElementColor.rgb, _ChargeColor.rgb, _MassColor.rgb, _SpaceColor.rgb, _TimeColor.rgb);

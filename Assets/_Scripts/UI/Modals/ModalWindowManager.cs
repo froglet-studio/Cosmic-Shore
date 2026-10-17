@@ -110,7 +110,22 @@ namespace CosmicShore.UI
             // Parent containers stay active so OnEnable/OnDisable lifecycle
             // fires for all children. Hide via CanvasGroup to prevent flash.
             if (!isOn)
+            {
+                SleepAnimator();
                 SetCanvasGroupVisible(false);
+            }
+        }
+
+        /// <summary>
+        /// A closed window's Animator is switched off. Its clips write the CanvasGroup (and the content's
+        /// scale) EVERY frame - "Window Out" holds its last frame - and an Animator dirties what it writes
+        /// even when the value does not change, so every closed window re-batched the whole menu canvas every
+        /// frame (Docs/MENU_REDESIGN_B.md §46.3). <see cref="ModalWindowIn"/> wakes it before the open
+        /// cross-fade; it restarts from its default state, as on a first open.
+        /// </summary>
+        void SleepAnimator()
+        {
+            if (windowAnimator && windowAnimator.enabled) windowAnimator.enabled = false;
         }
 
         /// <summary>
@@ -260,6 +275,7 @@ namespace CosmicShore.UI
 
                 if (windowAnimator)
                 {
+                    if (!windowAnimator.enabled) windowAnimator.enabled = true;
                     if (sharpAnimations == false)
                         windowAnimator.CrossFade("Window In", 0.1f);
                     else
@@ -327,6 +343,7 @@ namespace CosmicShore.UI
         IEnumerator DisableWindow()
         {
             yield return new WaitForSecondsRealtime(0.5f);
+            SleepAnimator();
             SetCanvasGroupVisible(false);
             _disableCoroutine = null;
         }
@@ -370,6 +387,7 @@ namespace CosmicShore.UI
             {
                 windowAnimator.Play("Window Out", 0, 1f);
                 windowAnimator.Update(0f);
+                SleepAnimator();
                 SetCanvasGroupVisible(false);
             }
 

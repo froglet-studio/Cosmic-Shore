@@ -173,8 +173,11 @@ def rim_border(node, element):
     comps = []
     for k, cid, body in node.comps:
         if k == "img":
+            # The sliver line sprite's centre slice is fully transparent, so the rim does not draw it: the rim
+            # shader would otherwise run over the whole panel interior for nothing (§46.3).
             body = (lambda b: lambda ctx, go: re.sub(r"  m_Color: \{[^}]*\}\n", f"  m_Color: {K.col(white)}\n", b(ctx, go), count=1)
-                    .replace("  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {mat}, type: 2}}\n", 1))(body)
+                    .replace("  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {mat}, type: 2}}\n", 1)
+                    .replace("  m_FillCenter: 1\n", "  m_FillCenter: 0\n", 1))(body)
         elif k == "th":
             body = K.themed("TextLight")
         comps.append((k, cid, body))

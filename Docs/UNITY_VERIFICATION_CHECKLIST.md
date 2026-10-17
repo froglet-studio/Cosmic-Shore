@@ -11181,3 +11181,25 @@ New: `HangarAbilityKind.cs` (the kinds and the classifier), `HangarStageFx.Play`
    and audio stay editable.
 6. **Edit-mode tests:** `HangarAbilityKindsTests` and `GameSettingsContextLockTests` pass.
 
+## 🔴 2026-10-17 — Menu performance: closed windows sleep, shaders skip what they cannot show (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`ModalWindowManager.SleepAnimator`; alpha early-outs in `Lattice`, `ElementRim`, `Presence` and `Bond`; branch skips in
+`UILattice.cginc`; rims stop filling their centre; `GameBriefingView` gated on `KitSightline`. `/verify-unity` was not
+run. Checked offline:
+- lattice renders before and after are identical in every channel;
+- the harness asserts pass;
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- every rim generator regenerated and passes `--check`;
+- gates.
+
+1. **Windows still open and close as before:** Arcade, Arena, Toy Box, Mission, Configure, Settings, Profile, the
+   party drawer.
+   - Each fades and scales in, each closes.
+   - Each opens again a second and third time.
+   - A force-close (pressing Fly from a configure) still clears the screen.
+2. **Nothing missing:** the lattice behind open windows, the rims (Ark, Configure, Hangar, Home cards, Arcade
+   feature cards, the party drawer), the orb.
+3. **The capture (team task T-20261015-d4f5):** Release, Scene view hidden, Home idle.
+   - `Canvas.BuildBatch` / `UGUI.Rendering.UpdateBatches` should no longer fire every frame with no window open.
+   - In the Frame Debugger, no `CosmicShore/UI/Lattice` draw on Home with every window closed.
+
