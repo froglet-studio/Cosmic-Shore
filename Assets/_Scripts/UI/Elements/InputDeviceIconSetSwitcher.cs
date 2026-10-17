@@ -47,9 +47,15 @@ namespace CosmicShore.UI
             PadButtonSouth = 1, PadButtonNorth = 2, PadButtonEast = 3, PadButtonWest = 4,
             PadLeftShoulder = 5, PadRightShoulder = 6, PadLeftTrigger = 7, PadRightTrigger = 8,
             PadDpadUp = 9, PadDpadDown = 10, PadDpadLeft = 11, PadDpadRight = 12,
+            // Gamepad CHORDS and GESTURES (2026-10-17): both triggers held (BothSticksAction), and
+            // the dual-stick throttle - both sticks pushed apart, which is full speed. The gesture
+            // has no InputEvents button (FullSpeedStraightAction is the passive sentinel), so it is
+            // reachable only through an explicit chip (VesselHUDView.SetAbilityControlGlyph).
+            PadBothTriggers = 13, PadSticksOutward = 14,
             // Keyboard / mouse (PC text set)
             KeyLeftShift = 20, KeyRightShift = 21, KeySpace = 22, KeyTab = 23,
             KeyQ = 24, KeyE = 25, KeyF = 26, KeyR = 27,
+            KeyBothShifts = 28, KeySticksOutward = 29,
             MouseLeft = 40, MouseRight = 41,
         }
 

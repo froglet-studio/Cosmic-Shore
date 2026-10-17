@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float thickness = 0.8f;
 
         [Tooltip("Seconds a fresh afterimage's collider stays off. Every other pilot meets it after " +
-                 "this; the Rhino itself never cuts its own afterimages, and its hull ignores its own " +
+                 "this; the Rhino's own blade cuts them like any prism after the 1 s self-trail grace, and its hull ignores its own " +
                  "fresh mass for the fleet-wide self-trail grace (SelfTrailContactConfigSO).")]
         [SerializeField, Min(0f)] float colliderDelaySeconds = 0.1f;
 

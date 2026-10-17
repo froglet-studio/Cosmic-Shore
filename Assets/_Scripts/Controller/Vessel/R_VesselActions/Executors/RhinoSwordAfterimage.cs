@@ -18,10 +18,12 @@ namespace CosmicShore.Gameplay
     /// afterimages to within a network tick. The size and the danger flag read REPLICATED state
     /// (the integer element level, the unlock bit) for the same reason.</para>
     ///
-    /// <para><b>The blade never cuts its own afterimages.</b> Each window lays into its own
+    /// <para><b>Its own afterimages are prisms like any other.</b> The blade cuts them and banks their
+    /// energy (Garrett, 2026-10-17: "not immune to our destruction"); only the fleet's 1 s self-trail
+    /// grace keeps the blade and the hull off one just laid. Each window lays into its own
     /// <see cref="RhinoAfterimageTrail"/>, stamped AFTER <c>Prism.Initialize</c> (whose pool reset
     /// clears membership), so <see cref="IsMine"/> is an identity test a recycled prism can never
-    /// pass: once the pool re-issues one, its trail is whatever its new owner stamps.</para>
+    /// pass - the AI's sword hand uses it to aim at something else first.</para>
     ///
     /// <para>Passive: bound to no input, so the config is wired directly here rather than resolved
     /// through the action handler (vessel skill rule 20).</para>

@@ -77,8 +77,8 @@ namespace CosmicShore.Gameplay
 
         [Header("Mass - Afterimage")]
         [Tooltip("The Mass ability on this GameObject: lays the blade's afterimages once the energize " +
-                 "ends (and throughout a surge). The damage effect asks it which prisms are the " +
-                 "sword's own, so the blade never cuts them.")]
+                 "ends (and throughout a surge). It also says which prisms are the sword's own, so the AI " +
+                 "aims elsewhere first; the blade itself cuts them like any prism.")]
         [SerializeField] private RhinoSwordAfterimage afterimage;
 
         /// <summary>Raised on every energize phase change, on every peer (from the replicated phase

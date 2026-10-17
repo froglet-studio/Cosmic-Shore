@@ -25,7 +25,9 @@ namespace CosmicShore.Gameplay
     /// Every prism the sword actually destroys banks energy on the per-vessel
     /// <see cref="IRhinoSwordState"/> (read via <c>impactor.Skimmer.SwordState</c>) - scaled by
     /// CHARGE (<see cref="chargeEnergyGainMultiplier"/>) - and kicks its impact feedback (blade
-    /// flash + contact spark). The sword's own AFTERIMAGES (its Mass ability) are never cut.
+    /// flash + contact spark). The sword's own AFTERIMAGES (its Mass ability) are prisms like any
+    /// other: it cuts them and banks their energy (Garrett, 2026-10-17: "not immune to our
+    /// destruction"). Only the fleet's 1 s self-trail grace keeps it off one it has just laid.
     /// With no sword state present (a non-Rhino skimmer reusing this asset) the blade is never
     /// energized, so super-shielded prisms always bind; the ordinary damage behavior is identical -
     /// only the energy/FX bookkeeping is skipped.
@@ -126,10 +128,6 @@ namespace CosmicShore.Gameplay
             if (prism == null || prism.destroyed) return;
 
             var sword = impactor.Skimmer.SwordState; // null on any non-energy-sword skimmer
-
-            // The blade's own wake. Cutting it would farm energy off the sword's own afterimages and
-            // erase the Mass ability as fast as it lays.
-            if (sword != null && sword.IsOwnAfterimage(prism)) return;
 
             // The velocity of the part of the sword that actually made contact (see
             // SkimmerSwingKinematics) rather than the hull's — a tip strike mid-swipe throws mass

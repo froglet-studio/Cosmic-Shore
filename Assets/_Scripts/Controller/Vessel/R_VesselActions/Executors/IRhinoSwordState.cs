@@ -70,8 +70,9 @@ namespace CosmicShore.Gameplay
         void Surge(float seconds, float energyFill01);
 
         /// <summary>True when <paramref name="prism"/> is one of THIS sword's own afterimages. The
-        /// damage effect never cuts them: they are what the blade leaves behind, and cutting them
-        /// would farm energy off the sword's own wake.</summary>
+        /// blade cuts them like any prism; the AI's sword hand reads this only to aim at something
+        /// else first. (Until 2026-10-17 the damage effect skipped them outright, which made the
+        /// Mass ability's own mass immune to its pilot - reversed by design.)</summary>
         bool IsOwnAfterimage(Prism prism);
 
         /// <summary>Fed each frame by the swipe executor: true while the both-triggers

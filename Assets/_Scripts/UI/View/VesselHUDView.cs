@@ -270,6 +270,18 @@ namespace CosmicShore.UI
             if (lockups) lockups.SetAbilityControl(element, input);
         }
 
+        /// <summary>
+        /// A card's control chip named by the CONTROL itself, for an ability driven by a gesture no
+        /// input event names (see <see cref="AbilityLockupView.SetAbilityControlBinding"/>). Call it
+        /// after the base controller has seeded the chips from the ability map.
+        /// </summary>
+        public void SetAbilityControlGlyph(Element element, InputDeviceIconSetSwitcher.HintBinding pad,
+                                           InputDeviceIconSetSwitcher.HintBinding key)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetAbilityControlBinding(element, pad, key);
+        }
+
         /// <summary>Which device the control chips should speak for.</summary>
         public void SetControlDevice(bool keyboard)
         {
