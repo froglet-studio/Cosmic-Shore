@@ -401,9 +401,12 @@ a volley, and everything about feel.
   faster-than-victim speed the sword now requires) and swings/energizes its blade
   (`RhinoSwordAutopilot`), so the fleet table's "AI can fight? yes — same" is newly true in a way it
   was not measured against. Afterimages (5 s of blade-shaped prisms after an energize; danger at
-  Mass L5) add mass to cut and, at L5, danger traps; and a Danger Afterimage triggers
-  `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow and Grizzly containers — mutes Button2 for 5 s),
-  which sits against the control-theft rule and is raised to design, not changed. The omni crystal
+  Mass L5) add mass to cut and, at L5, danger traps. A Danger Afterimage used to trigger
+  `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow and Grizzly containers — muted Button2 for 5 s);
+  that effect was deleted 2026-10-17 under the control-theft rule, so a danger afterimage now costs
+  what any danger prism does (slow, burn or own-domain debuff, boost reset), and the Grizzly gained
+  the fleet danger burn it never had. Since the same day the Rhino's own blade cuts its own
+  afterimages past the 1 s grace and banks energy for them. The omni crystal
   is now a 6 s **Surge** (+2 levels on every element, blade held energized) rather than a meter fill.
 - **The Debuff anchor moved 4.2× lighter** and The Bends / Undertow are scored entirely on that
   drain. Their scoring is unaffected; the FEEL is not, and it wants a playtest.

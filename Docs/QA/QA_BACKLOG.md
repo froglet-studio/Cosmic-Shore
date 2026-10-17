@@ -1099,7 +1099,7 @@ renamed serialized fields). Reference: `SPARROW_AFTERBURNER.md` § In-editor ver
 danger trail and no self-slam; one press = exactly one roll; the boost ring is full on
 press, wipes empty on the roll, and stays empty until the next press (never a partial
 fill); at Time 5 a danger prism **while boosting** leaves the flowers undipped and
-**not boosting** dips them (the slow and input-mute still land either way, by design);
+**not boosting** dips them (the slow still lands either way, by design — the input mute was deleted 2026-10-17);
 the stopped Serpent never dips at any Time level; both peers agree.
 **FAIL:** a missing script or a Heat resource still present · boost force-releasing or
 laying a danger trail · more than one roll per press · a partially-filled boost ring ·
@@ -1828,19 +1828,24 @@ imported.
 6. Collect **Time** to level 5 (Time crystals, or the Element Charger toy — QA-TOY-ELEMENT-CHARGER),
    then hold full-speed-straight until the speed readout passes ~600. Watch the fourth card; then
    steer off and let the speed fall.
+7. Read the control chip on each card, on a gamepad and then on keyboard.
 
 **PASS:** no import errors; the row auditor reports the Rhino **4/4** with no "open design slot"
 line; the cards read **Sword Energy / Afterimage / Blade Reach / Ramp Spool**, each with its own
 icon; the corner shows the four cards and nothing else — no ring, counter, timer, flash or
 laser/crystal/force-field indicator; card 1 lights while the blade is energized and carries a
-cooldown veil while the energize cools down (5 s); card 2 lights while afterimages are being laid; card 4 lights while
-speed is above ~588 and goes dark below it.
+cooldown veil while the energize cools down (5 s), and its gauge fills with sword energy and stays
+lit through the 5 s tail after the stance is let go; card 2 lights while afterimages are being laid;
+card 4 lights while the ramp is boosting, flashes once when speed passes ~588 (Momentum, Time 5),
+goes dark when the ramp ends, and its gauge fills with speed / top speed *(changed 2026-10-17: it
+used to light only above ~588)*; cards 1-3 carry the L1+R1 two-trigger chip and card 4 the
+sticks-apart chip, reading "L+R SHIFT" and "A + '" on keyboard.
 **FAIL:** a missing-script or broken-reference error · any old status-cluster object on screen ·
 a LOCKED card · a card that never lights, or stays lit after its window ends · two Rhinos'
 energizes lighting each other's cards.
 **Known, do not fail on:** the four icons are PLACEHOLDERS (`Rhino_SwordEnergy` / `Afterimage` /
-`BladeReach` / `RampSpool`); there may be no gauge fill on card 1 (it fills only if one is authored);
-the Rhino's petal bars are built at runtime with a warning (no `ElementalBarsView` authored).
+`BladeReach` / `RampSpool`); the two-trigger chip is a PLACEHOLDER composite
+(`Glyph_BothTriggers-PLACEHOLDER.png`); the Rhino's petal bars are built at runtime with a warning (no `ElementalBarsView` authored).
 
 ### QA-RHINO-AFTERIMAGE ⬜ — Mass: an energized blade leaves 5 s of blade-shaped prisms
 **Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). Mass is now **Afterimage**
@@ -1859,15 +1864,17 @@ prisms. Reference: `ElementalAbilityMaps/Rhino.asset`.
 
 **PASS:** after the blade goes out, prisms appear along the blade's path shaped like the blade at
 that moment (thin, segmented along its length), stop after ~5 s, and number at most about 16 strokes'
-worth; the sword passes through its own afterimages without cutting them; the hull ploughs them
-aside like any prism once the ~1 s self-trail grace is up; at Mass 10 they are visibly fatter; at
+worth; for ~1 s the sword passes through its own fresh afterimages, after that it cuts them like
+any prism and the meter gains energy *(changed 2026-10-17: it used to never cut its own)*; the hull
+ploughs them aside like any prism once the ~1 s self-trail grace is up; at Mass 10 they are visibly fatter; at
 Mass 5+ they wear the **danger** material.
 **FAIL:** no afterimages · afterimages while the blade is lit and before it goes out (outside an
-omni Surge) · afterimages that never stop · the sword destroying its own afterimages · the hull
-crashing into them inside the first second · plain-material prisms at Mass 5+ · a frame-rate drop
+omni Surge) · afterimages that never stop · the sword cutting its own afterimages inside the
+first second · the hull crashing into them inside the first second · plain-material prisms at Mass 5+ · a frame-rate drop
 or errors.
 **Report:** whether 5 s / 16 afterimages feels like too much mass or too little (dials on
-`RhinoSwordAfterimageConfig.asset`).
+`RhinoSwordAfterimageConfig.asset`), and whether one energize plus cutting your own afterimages
+refills the meter too easily (the self-farm watch; the lever is energy per own afterimage).
 
 ### QA-RHINO-LIVE-WIRE ⬜ — Charge L5: without it the energized tail runs out; with it the stance relights
 **Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). Before it, an ungated refresh kept an

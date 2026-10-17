@@ -63,7 +63,9 @@ ordinary prisms to the hull: once the fleet-wide ~1 s self-trail grace (`SelfTra
 has passed, the hull ploughs them aside like any other mass. A Danger Afterimage ploughed that way
 also runs the container's danger entry — own-domain danger, so the temporary debuff, not the
 permanent burn (`VesselElementalDebuffByDangerPrismEffectSO`) — unless Time L5 Momentum is warding
-danger prisms above 588 u/s.
+danger prisms above 588 u/s. The plough is unchanged by the 2026-10-17 call that lets the Rhino's
+own BLADE cut its own afterimages past the same 1 s grace (`RHINO_SWORD_AFTERIMAGE.md`): the blade
+cuts them, the hull ploughs them.
 
 ## Files
 

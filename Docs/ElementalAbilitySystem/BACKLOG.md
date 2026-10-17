@@ -270,7 +270,14 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 
 ## Danger-prism consequence drift (observed while shipping `claude/dolphin-time5-debuff-immunity-kn4vmy`)
 
-25. **[CORRECTED 2026-10-16 — the "referenced by no container" measurement below is WRONG.**
+25. **[RESOLVED 2026-10-17 — the input mute is DELETED.** `SparrowDebuffByRhinoDangerPrismEffectSO`,
+    its asset (guid `5fc2331a92e0b9a4b92f1d03c99669f5`) and `EventOnVesselSlowedByRhinoDangerPrism.asset`
+    are gone (Garrett: control theft is not an economy form — a danger prism burns petals and
+    nothing takes controls). The Sparrow's container lost the entry; the Grizzly's held ONLY the
+    mute and now carries the fleet burn `VesselElementalDebuffByDangerPrismEffect`. A danger
+    prism's costs are now the slow, the elemental hit and the boost reset. The two notes below are
+    history.]**
+    **[CORRECTED 2026-10-16 — the "referenced by no container" measurement below is WRONG.**
     `SparrowDebuffByRhinoDangerPrismEffect.asset` is in the **Sparrow's and Grizzly's** vessel
     containers (`SparrowImpactorDataContainer.asset`, `GrizzlyImpactorDataContainer.asset` — grep
     the asset's guid `5fc2331a92e0b9a4b92f1d03c99669f5`) and mutes the victim's Button2 for 5 s on
@@ -787,11 +794,17 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
   ×1 → ×2.5 volume), collider delay 0.1 s; the Surge lays them for its whole 6 s too. It adds mass
   well beyond the resting sliver (0.75 volume per prism) the Rhino otherwise lays, so Headlong, Cleave
   and Astro League need their volume ladders checked against it. *(balance)*
-- **Danger Afterimages × the Sparrow/Grizzly input mute — design call.**
+- **[RESOLVED 2026-10-17 — mute deleted, Grizzly given the fleet danger burn; see #25.]**
+  **Danger Afterimages × the Sparrow/Grizzly input mute — design call.**
   `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow + Grizzly containers) mutes the victim's Button2
   for 5 s on ANY danger prism; Rhino Mass L5 now lays danger prisms, so it newly reaches those two
   hulls through the Rhino. It sits against `ELEMENTAL_ECONOMY.md` §9's control-theft rule. Raised to
   design, deliberately not changed. *(design)*
+- **Afterimage self-farm — tuning watch (2026-10-17).** The Rhino's own blade now cuts its own
+  afterimages past the 1 s self-trail grace and banks 0.04 × Charge per cut, so one energize (cost
+  0.1) followed by cutting its own wake (up to 16 afterimages × up to 6 segments × 0.04) can refill
+  the meter. Not a bug — playtest whether the loop is too strong; if it is, the lever is
+  energy-per-own-afterimage, not immunity. *(balance)*
 - **[tool false positive] `element_ability_table.py` reports `VesselExplosionByCrystalEffectSO`'s
   Space gate on the Rhino as live** (`VesselExplosionByCrystalEffectSO.cs:208 <-
   RhinoVesselExplosionByCrystalEffect.asset`, listed under Breaker) although

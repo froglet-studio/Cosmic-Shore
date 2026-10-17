@@ -522,16 +522,19 @@ producer — the **danger prism**, below.
 
 ### Where the line falls: the ARENA is not a weapon
 
-`SparrowDebuffByRhinoDangerPrismEffectSO` still mutes a pilot's input — the victim's Button2,
-for 5 s, on ANY danger prism — and it is wired into exactly two vessel containers, the **Sparrow's
-and the Grizzly's** (`SparrowImpactorDataContainer`, `GrizzlyImpactorDataContainer`); no other hull
-receives it. *(Recorded 2026-10-16: other docs claimed no container referenced it at all; that was wrong.)* The argument for keeping it is below, and it was written
-when a danger prism was only ever an arena hazard. **It is now an OPEN DESIGN QUESTION** against
-this section's control-theft rule: since the Rhino's Mass L5, **Danger Afterimages**, the sword
-lays danger prisms in its own shape on purpose, so a Rhino can now mute a Sparrow's or Grizzly's
-input with an aimed ability — which is the act this section forbids. Raised to design 2026-10-16,
-not changed (`Docs/ElementalAbilitySystem/BACKLOG.md`, 2026-10-16 section). The original argument: a
-danger prism is a hazard **standing in the world**: it is the risk/reward surface the whole trail
+`SparrowDebuffByRhinoDangerPrismEffectSO` muted a pilot's input — the victim's Button2, for 5 s,
+on ANY danger prism — on exactly two hulls, the **Sparrow** and the **Grizzly**. It was kept on the
+argument below while a danger prism was only ever an arena hazard; the Rhino's Mass L5, **Danger
+Afterimages**, made it aimable and so an open design question (2026-10-16), and on **2026-10-17
+Garrett deleted it**: *"direct abilities should only steal or strip (for recollection), but if a
+player produces danger prisms that is a way for them to remove crystals from the environment."*
+Control theft is not an economy form, so the danger prism is **no longer an exception to this
+section**: it BURNS petals and nothing takes controls. The effect, its asset and
+`EventOnVesselSlowedByRhinoDangerPrism.asset` are gone; the Sparrow's container lost the entry, and
+the Grizzly's — which held ONLY the mute and had no danger burn at all — now carries the fleet burn
+`VesselElementalDebuffByDangerPrismEffect`. What a danger prism does on contact is now the slow, the
+elemental hit (burn if opposing, 4 s debuff if own) and the boost reset. What survives of the
+argument is the line itself: a danger prism is a hazard **standing in the world**: it is the risk/reward surface the whole trail
 economy is built on (a danger skim pays 10× energy and slams its own owner on contact), and a
 pilot answers it by not flying into it. The line this law draws is between the **arena** and a
 weapon somebody **aimed at you** — the same line `Vessel Prism Effects`' bounce already sits on.
@@ -554,5 +557,6 @@ its own pre-fix tree at **6 findings**, and its self-test carries the prose shap
 fire (a commented call, a doc comment naming the API) beside the calls that must — including the
 control-theft calls, which moved from the must-NOT list to the must list when the tier fell.
 
-The `Vessel Prism Effects/` carve-out covers the danger prism's mute for the reason above, so the
-gate never has to know which hull laid the prism.
+The `Vessel Prism Effects/` family stays outside the gate for the reason above — it is the arena
+(the bounce off mass, the danger prism's slow and burn) — so the gate never has to know which hull
+laid the prism. Since 2026-10-17 that family holds no input mute either.

@@ -28,7 +28,7 @@ only** — the rejection covers NORMAL damage gating, not the hardened-target ri
 | Shielded prism, **Breaker** active (SPACE level 5) | any | **One slice**: the shield sheds AND the core is cut in the same hit (`breakerElement`, gated on `IsUpgradeActive(Space)`; Garrett, 2026-10-13). Restorable like any ordinary sword kill — Breaker sheds the shield first rather than devastating. Super-shielded mass is unaffected |
 | **Super-shielded prism** | **ENERGIZED** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Slice(devastate: true)` (the armour shatters, the core is CUT; unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
 | **Super-shielded prism** | not energized | **BINDS** — no recoil, no spin. The blade sticks in the armour: a dim **denied spark**, the prism **jiggles**, a **punish thud**, and while the blade stays inside the vessel's **rotation rate is dragged down** and the pilot feels a **grind** (§ "Binding"). The prism survives. |
-| One of this sword's own **afterimages** | any | Never cut (`IRhinoSwordState.IsOwnAfterimage`) — cutting the sword's own wake would farm energy off it |
+| One of this sword's own **afterimages** | any | **SLICED like any prism** once the fleet's 1 s self-trail grace is past, banking 0.04 × Charge each (Garrett, 2026-10-17: *"not immune to our destruction"*; it was never cut before). `IRhinoSwordState.IsOwnAfterimage` survives only for the AI's aim. Watch item: one energize plus self-cuts can refill the meter — the lever is energy-per-own-afterimage, not immunity (`RHINO_SWORD_AFTERIMAGE.md` §3) |
 | Another **vessel** | any | The sword also **steals petals**: `RhinoSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`) sits in the sword's container and runs only for a hit `VesselCombatHitBySword` admits (PvP is petals only) — the sword does drain an opponent |
 
 `popRequiresEnergizedBlade` (default **on** — the ritual IS the design) replaces v2's
@@ -292,7 +292,8 @@ not an oscillator (the old driver's tick-decay loop is gone).
   cyan; stale.)* The Rhino HUD keeps reading the same meter through
   `ShieldSkimmerScaleDriver.OnScaleChanged(current, base, max)`, and since 2026-10-16 the
   **Charge card** of the ability row is lit while the blade is energized, with an
-  energize-cooldown veil.
+  energize-cooldown veil; since 2026-10-17 it stays lit through the 5 s tail after the stance is
+  let go and its authored gauge fills with energy 0..1.
 
 ## The omni-crystal Surge (the burst look moved here, 2026-10-16)
 
@@ -621,8 +622,8 @@ which had no knobs, is deleted.)
   paths this branch does not touch. Worth its own pass; not changed here.
 - ~~**HUD:** the energize phase is exposed but not yet drawn.~~ **DONE 2026-10-16:** the Charge
   ("Sword Energy") card of the ability row is lit while energized, with an energize-cooldown
-  veil (and a gauge fill if one is authored). Its icon is still a PLACEHOLDER
-  (`Rhino_SwordEnergy`).
+  veil; the energy gauge was authored 2026-10-17 (`author_hull_ability_rows.py`, `RHINO_GAUGES`)
+  and the card draws the two-trigger chip. Its icon is still a PLACEHOLDER (`Rhino_SwordEnergy`).
 - **Mode lining:** if a mode's super-shielded lining (Skim Race track, Astro League edge) must
   survive an energized Rhino, decide a per-mode carve-out then — do not re-gate ordinary cutting.
 - **Friendly fire + self-farming (design sign-off):** the effect has no domain gate — identical

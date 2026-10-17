@@ -118,7 +118,8 @@ the hull carries no `VesselChangeSpeedByPrismEffect`, the plough shoves prisms a
 L5 is **Momentum**: above 70% of top speed (588 of 840 u/s) danger prisms cannot drain the Rhino
 (`VesselElementalImmunity`'s `WhileAboveTopSpeedFraction` window, DangerPrism-scoped; the
 executor is the hull's `ITopSpeedSource`, `TopSpeed` = (0 + 50) × 16.8). The HUD's Time card is
-lit while Momentum holds. *A capability
+lit while the ramp is boosting, flashes once when Momentum takes hold, and its gauge fills with
+speed / top speed (2026-10-17; it used to light only while Momentum held). *A capability
 live in code and flat in data reads exactly like a capability that does not exist* — three
 separate documents recorded "Time reaches nothing on the Rhino" as a measurement while this line
 sat above the multiply.
@@ -371,7 +372,8 @@ with the rest of the law.
   and the row binds 4/4 with PLACEHOLDER icons — no card is LOCKED. The Time row's own `Input` is
   still deliberately **0**: the ramp engages on a full-throttle straight, not a button.
 - **OPEN: the graded ramp is not reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
-  is published for exactly this and is still read by nothing. The Time card now exists (lit while
-  Momentum holds), so that value is the obvious gauge fill for it — the one number that tells a
+  is published for exactly this and is still read by nothing. The Time card now exists — lit
+  while the ramp boosts, flashing once at Momentum, its gauge filling with speed / top speed
+  (2026-10-17) — and straightness is still the obvious second readout for it: the one number that tells a
   pilot how much of their boost the current line is costing them, which they can otherwise only
   infer from the speed they are not gaining.

@@ -214,11 +214,18 @@ What the fleet resolves to today, derived from the shipped assets:
 | Sparrow | `L1` / LSHIFT | `A` | `R1` / RSHIFT | `B` |
 | Scarab | — | `A` | — | `R1` / RSHIFT |
 | Dolphin | `R1` / RSHIFT | — | — | `L1` / LSHIFT |
-| Rhino | — | — | — | — |
+| Rhino | `L1+R1` / L+R SHIFT | `L1+R1` / L+R SHIFT | `L1+R1` / L+R SHIFT | sticks apart / A + ' |
 
-*(A dash is a passive ability. The Rhino's four dashes are all deliberate since 2026-10-16: Sword
-Energy, Afterimage and Blade Reach are passive and the sword is posed by the triggers as a
-gesture; Ramp Spool engages on a full-throttle straight. The face-button entries are blank on keyboard because
+*(A dash is a passive ability. The Rhino drew four deliberate dashes 2026-10-16; since 2026-10-17
+Charge/Mass/Space are authored `BothSticksAction` (`Input: 13`, the both-triggers energize they all
+follow from), which `InputHintBindingMap` now maps to `HintBinding.PadBothTriggers = 13` /
+`KeyBothShifts = 28` (a PLACEHOLDER L1+R1 composite glyph, `author_two_trigger_glyph.py`), and Time
+stays the passive sentinel with its sticks-apart chip (`PadSticksOutward = 14` /
+`KeySticksOutward = 29`) set explicitly by `RhinoVesselHUDController` through
+`VesselHUDView.SetAbilityControlGlyph` — the one chip not derived from the map. The press path
+lights only the FIRST map entry bound to an input, so the both-triggers press lights Charge. The
+same mapping gave the Manta's Soar (Time, already `Input: 13`) its chip; it drew nothing before
+because no `HintBinding` mapped `BothSticksAction`. The face-button entries are blank on keyboard because
 `InputHintBindingMap` authors no keyboard equivalent for `Button1/2/3` — the open item there is the
 keyboard map, not the lockup.)*
 
@@ -924,8 +931,10 @@ notches inside the trapezoid.
     Reach, Ramp Spool — with the element flowers docked above all four. Energize the blade (hold
     the both-triggers chop stance 1 s): the Charge card lights while energized and carries the
     energize-cooldown veil afterwards.
-    When the blade goes out the Mass card lights for the afterimage window. Ramp above 588 u/s with
-    Time ≥ 5: the Time card lights (Momentum). No skimmer-size ring, slowed counter, debuff timer or
+    When the blade goes out the Mass card lights for the afterimage window. Ramp: the Time card
+    lights while boosting and its gauge fills with speed; above 588 u/s with Time ≥ 5 it flashes
+    once (Momentum). The Charge card's gauge fills with sword energy and the card stays lit through
+    the 5 s tail. Chips: L1+R1 on Charge/Mass/Space, sticks-apart on Time *(2026-10-17)*. No skimmer-size ring, slowed counter, debuff timer or
     laser/crystal indicator anywhere in the corner. *(Rewritten 2026-10-16; this step used to read
     "Mass live (Trail Slabs) and the other three drawn locked".)*
 11. **Balance + band.** Both plates the same height AND both marks the same size, mirrored about

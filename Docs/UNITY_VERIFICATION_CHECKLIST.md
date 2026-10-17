@@ -96,7 +96,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   energy, energize phase and Surge replicate (`RhinoSwordNetworkRelay`, trigger mirrors). AI:
   `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` and `RhinoSwordAutopilot`. HUD: the row binds
   4/4 with placeholder icons; Charge lit while energized + cooldown veil, Mass lit while afterimages
-  lay, Time lit while Momentum holds.
+  lay, Time lit while Momentum holds (superseded 2026-10-17: Time lit while boosting, see item 12).
 
 **Not opened in Unity** (no editor and no `unity` CLI in the session, so `/verify-unity` did not
 run). Offline: `Tools/Build/unity_refcompile` player + editor configs, 0 errors;
@@ -110,8 +110,9 @@ run). Offline: `Tools/Build/unity_refcompile` player + editor configs, 0 errors;
    windows (QA-RHINO-HUD-ROW).
 3. `ResourceSystem` → Charge Test Harness reads 0, and Charge moves with Charge crystals
    (QA-RHINO-CHARGE-HARNESS).
-4. Energize, release: 5 s of blade-shaped prisms; the sword never cuts its own; at Mass 5 they are
-   danger prisms (QA-RHINO-AFTERIMAGE).
+4. Energize, release: 5 s of blade-shaped prisms; for their first 1 s the sword passes through
+   them, after that it cuts them like any prism and banks energy (changed 2026-10-17 — it used to
+   never cut its own); the hull ploughs them; at Mass 5 they are danger prisms (QA-RHINO-AFTERIMAGE).
 5. Below Charge 5 the energized tail runs out ~5 s after the stance is let go; at Charge 5 a return
    to the stance relights it (QA-RHINO-LIVE-WIRE).
 6. Time 5: above ~588 u/s a danger prism does not drain elements; below it does (QA-RHINO-MOMENTUM).
@@ -126,6 +127,20 @@ run). Offline: `Tools/Build/unity_refcompile` player + editor configs, 0 errors;
     shoves it as a solid (QA-RHINO-ASTROLEAGUE-BLADE).
 11. Playtest Headlong, Cleave and Astro League at the new kit — afterimage mass, Momentum and a
     ramping AI all move their numbers, which were not re-derived.
+
+**2026-10-17 follow-up (`e1fc1771`, also not opened in Unity, `/verify-unity` unavailable):**
+
+12. Rhino Time card lights while the ramp is boosting (not only above Momentum) and flashes once
+    when Momentum takes hold (~588 u/s at Time 5); its gauge fills with speed / top speed.
+13. Charge card gauge fills with sword energy 0..1, and the card stays lit through the 5 s tail
+    after the stance is let go.
+14. Chips: L1+R1 two-trigger glyph on Charge, Mass and Space, the sticks-apart glyph on Time; on
+    keyboard they read "L+R SHIFT" and "A + '". Holding both triggers lights Charge only.
+15. Manta Soar card now draws the two-trigger chip (it drew none before).
+16. A Grizzly flying into an opposing domain's danger prism loses petals (the burn); no pilot's
+    Button2 is muted by any danger prism.
+17. Self-farm watch: energize once, then cut only your own afterimages — note whether the meter
+    refills; if it is too strong the lever is energy-per-own-afterimage, not immunity.
 
 **First-pass tuning** (never played — expect a balance pass):
 
@@ -149,9 +164,9 @@ run). Offline: `Tools/Build/unity_refcompile` player + editor configs, 0 errors;
 | AI energize margin | same, `energizeMargin` | 0.05 over the 0.1 cost |
 | AI energize when full | same, `energizeWhenFull` | 0.75 |
 
-**Still open, do not fail on:** `SparrowDebuffByRhinoDangerPrismEffect` (Sparrow and Grizzly
-containers) mutes the victim's Button2 for 5 s on any danger prism, which Danger Afterimages now
-produce — raised to design, not changed. Rig swap not run; jets unsized; no `ElementalBarsView` on
+**Resolved 2026-10-17:** `SparrowDebuffByRhinoDangerPrismEffect` (the Button2 mute on any danger
+prism, Sparrow and Grizzly containers) is deleted; the Grizzly now carries the fleet danger burn.
+**Still open, do not fail on:** rig swap not run; jets unsized; no `ElementalBarsView` on
 the Rhino; combos have 24 empty FMOD slots, no HUD callout, and the AI never combos.
 
 ---

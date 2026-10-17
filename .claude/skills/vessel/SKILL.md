@@ -378,8 +378,9 @@ applies to new abilities, new resources on the meter list, and anything that add
     upgrade description. Per-vessel reality differs: the Dolphin carries the slow and an energy
     halving, its boost effect is a `retainedFraction` halving that deliberately **skips its
     correction while drifting** (i.e. exactly inside a drift-gated ward's window), and the input
-    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) is wired into **no container on any
-    vessel**. Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
+    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) — which this rule once said was wired into
+    no container, when the Sparrow's and Grizzly's both carried it — is **deleted** (2026-10-17;
+    the Grizzly's container held only the mute and had no danger burn at all). Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
     `SkimmerImpactorDataContainerSO` and read the effects you are about to make claims about —
     the ship protocol's "find the PRODUCER" rule, aimed at your own new prose rather than at
     inherited docs. (Dolphin Drift Ward, 2026-08-18.)

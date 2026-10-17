@@ -18,7 +18,9 @@ This doc is the record for all four rows and the surge. The sword itself is
 ## 1. The map (live, `Assets/Resources/ElementalAbilityMaps/Rhino.asset`)
 
 `python3 Tools/Build/element_ability_table.py Rhino` - **4/4 abilities, 4/4 scaling, 4/4 level-5
-gates, 0 disagreements.** Every entry is `Input: 0` (passive or the ramp gesture).
+gates, 0 disagreements.** Charge, Mass and Space are `Input: 13` (`BothSticksAction` - hold both
+triggers to energize; the swing; the afterimages follow the energize; 2026-10-17, so they draw the
+two-trigger chip). Time stays `Input: 0`, the passive sentinel (the ramp gesture).
 
 | Element | Ability | What the element scales | Level 5 |
 |---|---|---|---|
@@ -61,10 +63,19 @@ Each prism is laid through the vessel's own spawn channel and prism type, owned 
 0.1 s collider delay, then stamped into the window's own **`RhinoAfterimageTrail`** after
 `Prism.Initialize`.
 
-**The blade never cuts its own afterimages.** `RhinoSkimmerDamagePrismEffectSO` asks
-`IRhinoSwordState.IsOwnAfterimage`, which is an identity test (`prism.Trail is RhinoAfterimageTrail
-t && t.Owner == this`). A recycled prism cannot pass it: pool reuse clears membership and its new
-layer stamps its own. Other Rhinos' swords cut them like any prism.
+**The blade cuts its own afterimages (changed 2026-10-17).** Garrett: *"the mass after image prisms
+should be danger prisms and not immune to our destruction"* - they stay plain until Mass 5 (that
+split is unchanged), and the Rhino's own blade now cuts them like any prism once the fleet's 1 s
+self-trail grace is past, banking energy for them (0.04 x Charge each). Until 2026-10-17
+`RhinoSkimmerDamagePrismEffectSO` skipped them and the blade never cut its own. The identity test
+survives for the AI: `RhinoSwordAfterimage.IsMine` (`prism.Trail is RhinoAfterimageTrail t &&
+t.Owner == this`, surfaced as `IRhinoSwordState.IsOwnAfterimage`) lets `RhinoSwordAutopilot` aim at
+something else first. A recycled prism cannot pass it: pool reuse clears membership and its new
+layer stamps its own. The hull still ploughs them (`RHINO_PLOUGH.md`, unchanged).
+
+**Watch item, not a bug - the self-farm loop.** One energize (cost 0.1) followed by cutting its own
+afterimages (up to 16 afterimages x up to 6 segments x 0.04) can refill the meter. Playtest whether
+that loop is too strong; if it is, the lever is energy-per-own-afterimage, not immunity.
 
 **Danger Afterimages (Mass 5)** sets `prismProperties.IsDangerous` before `Initialize` - the same
 flag `VesselPrismController`'s danger mode uses, so the real danger pipeline makes them.
@@ -149,10 +160,23 @@ The row binds 4/4 with PLACEHOLDER art (`author_hull_icon_placeholders.py`, `aut
 
 | Card | Lit | Also |
 |---|---|---|
-| Charge | while the blade is energized | the recharge veil sweeps over the energize cooldown; an authored gauge fills with energy |
+| Charge | while the blade is energized - re-asserted every frame, so letting go of the stance no longer darkens it during the 5 s tail | the recharge veil sweeps over the energize cooldown; the authored `ChargeGauge` fills with sword energy 0..1 |
 | Mass | while afterimages are laying | |
 | Space | (passive) | upgrade badge for Breaker |
-| Time | while **Momentum is holding** - upgraded and above 70% of top speed | "lit" means "warded right now" |
+| Time | while the **ramp is boosting** (Garrett: *"the time icon should respond to boosting"*) | flashes ONCE when Momentum takes hold (Time 5, above 70% of top speed = 588 u/s); the authored `TimeGauge` fills with speed / top speed (`ITopSpeedSource`) |
+
+Both gauges are authored into `RhinoHUDVariant.prefab` by `Tools/Build/author_hull_ability_rows.py`
+(`RHINO_GAUGES`, 2026-10-17). Before that day the Time card lit only while Momentum held and no
+gauge was authored.
+
+**Control chips (2026-10-17).** Charge, Mass and Space draw the two-trigger chip from their
+`Input: 13` (`HintBinding.PadBothTriggers = 13` / `KeyBothShifts = 28`; a PLACEHOLDER L1+R1
+composite, `Glyph_BothTriggers-PLACEHOLDER.png`, from `Tools/Build/author_two_trigger_glyph.py`;
+keyboard "L+R SHIFT"). Time is the passive sentinel, so `RhinoVesselHUDController` sets its
+sticks-apart chip explicitly (`VesselHUDView.SetAbilityControlGlyph` ->
+`AbilityLockupView.SetAbilityControlBinding`, `PadSticksOutward = 14` / `KeySticksOutward = 29`,
+`Thumbsticks_Outward.png`, keyboard "A + '"). The press path lights only the FIRST map entry bound
+to an input, so the both-triggers press lights Charge.
 
 `RhinoVesselHUDController` polls these with change detection, so no subscription can leak across a
 re-initialise. The pre-lockup status cluster that came back when the Rhino bound its first icon is
@@ -169,11 +193,11 @@ deleted (`ABILITY_LOCKUP.md`).
 | `Executors/IRhinoSwordState.cs` | `IsSurging`, `Surge`, `IsOwnAfterimage` (TriggerCrystalBurst removed) |
 | `Vessel/RhinoSwordNetworkRelay.cs` | owner-authoritative energy / phase / surge |
 | `Executors/ShieldSwipeActionExecutor.cs` | pose from the replicated mirrors on every peer |
-| `Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs`, `RhinoSkimmerDamagePrismEffect.asset` | Charge energy scaling; never cuts own afterimages |
+| `Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs`, `RhinoSkimmerDamagePrismEffect.asset` | Charge energy scaling; cuts own afterimages past the 1 s grace (since 2026-10-17) |
 | `Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs`, `RhinoVesselSurgeByCrystalEffect.asset` | the Surge |
 | `Vessel/VesselElementalImmunity.cs`, `Vessel/ITopSpeedSource.cs`, `Executors/RampBoostActionExecutor.cs` | Momentum |
 | `Executors/RhinoSwordAutopilot.cs`, `AI/Boost/RampBoostAIPolicySO.cs`, `AI Boost Policies/RhinoAIBoostPolicy.asset` | AI |
-| `UI/Controller/RhinoVesselHUDController.cs` | the three card states |
+| `UI/Controller/RhinoVesselHUDController.cs` | the card states, both gauges, the Time chip |
 | `Tests/Editor/RhinoSwordAfterimageTests.cs` | the segment tiling |
 
 ## Tuning knobs (first pass - never played)
@@ -203,12 +227,13 @@ Nothing here has run in the Unity editor (no editor in the authoring session). C
 (the 2026-10-16 Rhino entry) and `Docs/QA/QA_BACKLOG.md`.
 
 1. **Afterimage** - any Rhino scene: energize (hold both triggers 1 s), swing, release. For 5 s after
-   the blade goes out, blade-shaped prisms appear along its sweep; the Mass card is lit. The blade
-   passes through them without cutting. At Mass 5 they are danger prisms.
+   the blade goes out, blade-shaped prisms appear along its sweep; the Mass card is lit. For the
+   first 1 s the blade passes through them; after that it cuts them and banks energy. At Mass 5
+   they are danger prisms.
 2. **Live Wire** - energize, release, re-enter the stance 2 s later: the blade goes out on time.
    With Charge 5, the same re-entry re-lights it.
-3. **Momentum** - Time 5, ramp past ~588 u/s, ram a danger prism: no element drain, Time card lit.
-   Below 588 the drain lands and the card is dark.
+3. **Momentum** - Time 5, ramp past ~588 u/s, ram a danger prism: no element drain, and the Time
+   card (already lit by the boost) flashes once as Momentum takes hold. Below 588 the drain lands.
 4. **Surge** - collect an omni crystal: blade bursts, energized for 6 s with no stance, petals rise
    two levels and decay, afterimages throughout, then the 5 s window.
 5. **Petals** - collect elemental crystals with the sword: the energy meter no longer empties.
@@ -220,9 +245,12 @@ Nothing here has run in the Unity editor (no editor in the authoring session). C
 ## Follow-ups
 
 - **Mass budget playtest** - afterimage volume against Cleave / Astro League phase thresholds.
-- **Danger Afterimages x the input mute** - `SparrowDebuffByRhinoDangerPrismEffect` is wired in the
-  Sparrow and Grizzly vessel containers and mutes a victim's Button2 for 5 s on ANY danger prism,
-  which Mass 5 now lays. That is control theft (`Docs/ELEMENTAL_ECONOMY.md` §9); design call.
+- ~~**Danger Afterimages x the input mute**~~ - RESOLVED 2026-10-17: `SparrowDebuffByRhinoDangerPrismEffect`
+  (Sparrow and Grizzly containers, Button2 muted 5 s on ANY danger prism) is deleted - control theft
+  is not an economy form (`Docs/ELEMENTAL_ECONOMY.md` §9). The Grizzly, which held only the mute,
+  now carries the fleet burn `VesselElementalDebuffByDangerPrismEffect`.
+- **Self-farm playtest** - one energize then self-cuts can refill the meter (§3); the lever is
+  energy-per-own-afterimage.
 - **Combos** - the AI never combos; a staggered energize stance can fire a combo
   (`RhinoSwordComboDetector` links a rolled press - `RhinoSwordComboTests.ARolledTap_StillLinks`).
 - **Icons** are PLACEHOLDERS (`*-PLACEHOLDER.png`).
