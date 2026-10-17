@@ -2449,3 +2449,49 @@ profile as a popup and basic details".
     list unwired);
   - `FriendProfileSourceTests`;
   - refcompile.
+
+### 47.4 The cell-change loading screen is not black any more
+
+The owner: "Black loading screen when changing cell show something interesting".
+- **What shows** (`EnvironmentLoadVeil`, the same veil, so the boot cover and every cell change get it):
+  - the black, the living lattice over it (`Lattice_Window.mat`; its motion is the shader's);
+  - an omni crystal: a hexagon with its spokes, filling from the bottom in Mass, Time, Charge and Space bands as the
+    cell builds (`LoadCrystalGraphic`, one mesh);
+  - ENTERING and the cell's name (Aldrich, 72), with the cell's line under it;
+  - the four build steps, each with its element glyph and colour;
+  - a tip;
+  - the slim bar and LOADING, as before.
+- **The steps follow the real build** (`EnvironmentLoadVeil.StepFor`):
+
+  | Step | Element | Lit while |
+  |---|---|---|
+  | Laying prisms | Mass | the budgeted lay runs |
+  | Growing prisms | Time | the laid cohort materialises and grows in |
+  | Settling the cell | Charge | the all-clear holds before release |
+  | Opening the cell | Space | the reveal |
+
+  A step never goes back, and nothing lights before the build starts. The board's "Growing flora" and "Waking
+  fauna" named phases the build does not have, so the default words say what is happening; they are authored fields.
+- **The crystal rises with the work** (`CrystalLevel`): the lay fills 70 %, the grow-in the next 25 % (from the
+  largest remaining count seen), the hold 97 %, the reveal 100 %. It never falls.
+- **About 10 frames a second.** The build's 80 ms slices hold the frame rate there by design, so nothing here is fast
+  motion. The crystal's mesh rebuilds only when its level moves, and a step's alpha changes only when the phase does.
+- **Every word is authored** in `Assets/Resources/UI/EnvironmentLoadVeilContent.asset` (`EnvironmentLoadVeilContentSO`,
+  read from Resources because the veil is built in code). It holds:
+  - Entering, Loading and Tip;
+  - the four steps;
+  - a line per freestyle cell;
+  - the tips;
+  - the lattice, the glyphs and the fonts.
+
+  The old hard-coded "LOADING" now comes from it too. The cell lines reuse the cells' own short flavour descriptions;
+  `CellConfigDataSO.Description` itself is not shown, because many are dev notes. The tips state only what the game
+  does today.
+- **Gate untouched.** Cover, Hold, the 80 ms budget, `PollArenaReady` and the release are unchanged. The stage only
+  reads `PrismTrailBuilder.IsLayingInProgress`, `LayProgress` and `GrowRemainingCount`.
+- **Verified offline:**
+  - `author_load_veil_content.py --check` / `--self-test` (five planted defects: a line for a cell that does not
+    exist, a blank step, a tip the font cannot draw, the glyphs out of order, a blank loading word);
+  - `EnvironmentLoadVeilStageTests`;
+  - a layout schematic;
+  - refcompile.

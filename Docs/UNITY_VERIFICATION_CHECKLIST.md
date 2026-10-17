@@ -11296,3 +11296,30 @@ avatar and the three buttons) and `PartySlot.prefab` (the avatar), `IFriendProfi
 6. **Pad:** move down the online list; the card follows the focused row. Moving off the list closes it.
 7. **Party seat:** hover a member's avatar for a card with "In your party" and no buttons. Your own seat shows none.
 8. **Offline (party layer down):** the drawer is gated, and no card can open.
+
+## 🔴 2026-10-17 — Rev 7: the cell-change loading screen (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`EnvironmentLoadVeil` gains its stage: the lattice, `LoadCrystalGraphic`, the cell's name and line, four steps and a
+tip. All words come from `Assets/Resources/UI/EnvironmentLoadVeilContent.asset` (`author_load_veil_content.py`).
+`/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- `author_load_veil_content.py --check` / `--self-test`;
+- `EnvironmentLoadVeilStageTests`;
+- gates.
+
+1. **Compile and tests:** no new console errors, and no "No EnvironmentLoadVeilContentSO" warning;
+   `EnvironmentLoadVeilStageTests` passes.
+2. **Boot into Menu_Main:**
+   - the cover shows the lattice, ENTERING GARLAND and "A flowering bough wound twice around the seed of the world";
+   - the crystal fills Mass then Time;
+   - LAYING PRISMS lights, then GROWING PRISMS, then SETTLING THE CELL;
+   - one tip;
+   - the bar and LOADING at the bottom.
+
+   It fades out onto the finished world as before.
+3. **Change cell** (the cell selector toy, e.g. to Geode or Zephyr): the same screen names the new cell with its line.
+   A cell with no line (e.g. Barren) shows its name alone.
+4. **Steps never go back,** and the crystal never drains during one load.
+5. **Frame rate:** the screen reads well at the build's ~10 FPS (no stutter-prone motion). The build takes as long as
+   before (compare with Load Time Insights if in doubt).
+6. **Edit a word** in the content asset (e.g. a tip). It shows on the next load.

@@ -1,5 +1,6 @@
 using TMPro;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,6 +31,14 @@ namespace CosmicShore.Gameplay
     /// a finished world. The build itself still waits for the scene to settle, and
     /// <see cref="Hold"/> engages the load gate when it starts. The readout is a slim bar and a
     /// "Loading" caption at the bottom of the screen, not a headline.</para>
+    ///
+    /// <para><b>Rev 7: not black any more</b> (the owner, 2026-10-17: "Black loading screen when changing cell show
+    /// something interesting"; Docs/MENU_REDESIGN_B.md §47.4). Over the black: the living lattice, an omni crystal
+    /// filling as the cell builds, "Entering" and the cell's name with its line, the four build steps lighting in
+    /// their elements as the real phases pass (laying, growing, the all-clear hold, the reveal), and a tip. The build
+    /// runs this screen at about 10 frames a second, so nothing here is fast motion: the crystal rises with the work
+    /// done and a step lights when its phase begins. Every word comes from
+    /// <see cref="EnvironmentLoadVeilContentSO"/> (Resources); the gate, its budget and the release are unchanged.</para>
     /// </summary>
     public sealed class EnvironmentLoadVeil : MonoBehaviour
     {
@@ -60,6 +69,21 @@ namespace CosmicShore.Gameplay
         float _fade;
         float _clock;
 
+        // Rev 7's stage.
+        EnvironmentLoadVeilContentSO _words;
+        LoadCrystalGraphic _crystal;
+        TextMeshProUGUI _cellName;
+        TextMeshProUGUI _cellLine;
+        readonly CanvasGroup[] _steps = new CanvasGroup[StepCount];
+        int _phase = -1;
+        bool _sawBuild;
+        int _growPeak;
+        float _progress;
+
+        const int StepCount = 4;
+        const float StepPendingAlpha = 0.22f;
+        const float StepDoneAlpha = 0.7f;
+
         /// <summary>
         /// Cover the screen NOW, without the load gate: the boot world's build is still waiting for
         /// the scene to settle. Opaque from the first frame, so it continues the scene transition's
@@ -73,6 +97,7 @@ namespace CosmicShore.Gameplay
             s_active = go.AddComponent<EnvironmentLoadVeil>();
             s_active._fade = 1f;
             s_active._group.alpha = 1f;
+            s_active.SetCell(environmentName);
         }
 
         /// <summary>
@@ -93,6 +118,7 @@ namespace CosmicShore.Gameplay
             if (s_active != null)
             {
                 s_active.Engage();
+                s_active.SetCell(environmentName);
                 return;
             }
             // A gated scene (connecting screen) already owns the hold - no second veil.
@@ -100,6 +126,7 @@ namespace CosmicShore.Gameplay
             var go = new GameObject("EnvironmentLoadVeil");
             s_active = go.AddComponent<EnvironmentLoadVeil>();
             s_active.Engage();
+            s_active.SetCell(environmentName);
         }
 
         /// <summary>Gate slice while the veil holds: enough for a fast build (~10x the ungated
@@ -143,11 +170,176 @@ namespace CosmicShore.Gameplay
             back.GetComponent<Image>().color = Color.black;
             Stretch(back.GetComponent<RectTransform>());
 
+            _words = Resources.Load<EnvironmentLoadVeilContentSO>(EnvironmentLoadVeilContentSO.ResourcePath);
+            if (!_words)
+                CSDebug.LogWarning($"[EnvironmentLoadVeil] No {nameof(EnvironmentLoadVeilContentSO)} at Resources/" +
+                                 $"{EnvironmentLoadVeilContentSO.ResourcePath} - the loading screen shows its bar alone.");
+            // The living lattice over the black (its motion is the shader's, so it costs no canvas rebuild).
+            if (_words && _words.lattice)
+            {
+                var lattice = new GameObject("Lattice", typeof(Image));
+                lattice.transform.SetParent(transform, false);
+                var image = lattice.GetComponent<Image>();
+                image.material = _words.lattice;
+                image.raycastTarget = false;
+                Stretch(lattice.GetComponent<RectTransform>());
+            }
+
             // The backdrop bleeds and the readout does not - the safe-area split of
             // Docs/UI_ARCHITECTURE_AUDIT.md §1.3. An occluding veil that stopped at the safe area
             // would show strips of the half-built world under the cutout.
             _content = SafeAreaLayer.Create(transform);
+            if (_words) BuildStage();
             BuildReadout();
+        }
+
+        /// <summary>The crystal, the cell's name and line, the four steps and the tip, centred (the Rev 7 board).</summary>
+        void BuildStage()
+        {
+            var crystalGo = new GameObject("Crystal", typeof(RectTransform));
+            crystalGo.transform.SetParent(_content, false);
+            _crystal = crystalGo.AddComponent<LoadCrystalGraphic>();
+            _crystal.raycastTarget = false;
+            _crystal.SetColours(UITheme.Resolve(null, UIColorToken.ElementMass), UITheme.Resolve(null, UIColorToken.ElementTime),
+                                UITheme.Resolve(null, UIColorToken.ElementCharge), UITheme.Resolve(null, UIColorToken.ElementSpace),
+                                UITheme.Resolve(null, UIColorToken.TextLight));
+            Centre(crystalGo.GetComponent<RectTransform>(), new Vector2(0f, 150f), new Vector2(300f, 300f));
+
+            var neutral = UITheme.Resolve(null, UIColorToken.NeutralLightest);
+            var entering = Label(_content, "Entering", _words.captionFont, 14f, 50f, neutral, _words.enteringWord);
+            Centre(entering.rectTransform, new Vector2(0f, -36f), new Vector2(600f, 22f));
+            _cellName = Label(_content, "CellName", _words.displayFont, 72f, 0f, UITheme.Resolve(null, UIColorToken.TextLight), string.Empty);
+            _cellName.fontStyle = FontStyles.UpperCase;
+            _cellName.enableAutoSizing = true;
+            _cellName.fontSizeMin = 36f;
+            _cellName.fontSizeMax = 72f;
+            Centre(_cellName.rectTransform, new Vector2(0f, -90f), new Vector2(1200f, 84f));
+            _cellLine = Label(_content, "CellLine", _words.captionFont, 16f, 0f, neutral, string.Empty);
+            Centre(_cellLine.rectTransform, new Vector2(0f, -146f), new Vector2(1200f, 24f));
+
+            var steps = Row(_content, "Steps", 40f);
+            Centre((RectTransform)steps.transform, new Vector2(0f, -230f), new Vector2(0f, 30f));
+            UIColorToken[] elements = { UIColorToken.ElementMass, UIColorToken.ElementTime, UIColorToken.ElementCharge, UIColorToken.ElementSpace };
+            for (int i = 0; i < StepCount; i++)
+            {
+                var step = Row(steps.transform, $"Step{i + 1}", 12f);
+                _steps[i] = step.AddComponent<CanvasGroup>();
+                _steps[i].alpha = StepPendingAlpha;
+                var colour = UITheme.Resolve(null, elements[i]);
+                var glyph = _words.StepGlyph(i);
+                if (glyph)
+                {
+                    var g = new GameObject("Glyph", typeof(Image), typeof(LayoutElement));
+                    g.transform.SetParent(step.transform, false);
+                    var image = g.GetComponent<Image>();
+                    image.sprite = glyph;
+                    image.preserveAspect = true;
+                    image.raycastTarget = false;
+                    var le = g.GetComponent<LayoutElement>();
+                    le.preferredWidth = le.preferredHeight = 26f;
+                }
+                Label(step.transform, "Label", _words.captionFont, 13f, 12f, colour, _words.StepLabel(i)).fontStyle = FontStyles.UpperCase;
+            }
+
+            string tip = _words.TipAt(Random.value);
+            if (string.IsNullOrEmpty(tip)) return;
+            var tipRow = Row(_content, "Tip", 12f);
+            Centre((RectTransform)tipRow.transform, new Vector2(0f, -310f), new Vector2(0f, 26f));
+            Label(tipRow.transform, "TipLabel", _words.captionFont, 13f, 12f, UITheme.Resolve(null, UIColorToken.ElementTime),
+                  _words.tipLabel).fontStyle = FontStyles.UpperCase;
+            Label(tipRow.transform, "TipText", _words.captionFont, 17f, 0f, UITheme.Resolve(null, UIColorToken.TextLight), tip);
+        }
+
+        /// <summary>Names the cell being entered (and its authored line).</summary>
+        void SetCell(string environmentName)
+        {
+            if (!_cellName || string.IsNullOrEmpty(environmentName)) return;
+            _cellName.text = environmentName;
+            if (_cellLine) _cellLine.text = _words ? _words.LineFor(environmentName) : string.Empty;
+        }
+
+        static TextMeshProUGUI Label(Transform parent, string name, TMP_FontAsset font, float size, float spacing, Color colour, string text)
+        {
+            var go = new GameObject(name, typeof(TextMeshProUGUI));
+            go.transform.SetParent(parent, false);
+            var tmp = go.GetComponent<TextMeshProUGUI>();
+            if (font) tmp.font = font;
+            tmp.text = text ?? string.Empty;
+            tmp.fontSize = size;
+            tmp.characterSpacing = spacing;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
+            tmp.raycastTarget = false;
+            tmp.color = colour;
+            return tmp;
+        }
+
+        /// <summary>A row that sizes itself to its children, centred where it is placed.</summary>
+        static GameObject Row(Transform parent, string name, float spacing)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
+            go.transform.SetParent(parent, false);
+            var row = go.GetComponent<HorizontalLayoutGroup>();
+            row.spacing = spacing;
+            row.childAlignment = TextAnchor.MiddleCenter;
+            row.childControlWidth = row.childControlHeight = true;
+            row.childForceExpandWidth = row.childForceExpandHeight = false;
+            var fit = go.GetComponent<ContentSizeFitter>();
+            fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            return go;
+        }
+
+        static void Centre(RectTransform rt, Vector2 offset, Vector2 size)
+        {
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = offset;
+            rt.sizeDelta = size;
+        }
+
+        /// <summary>
+        /// Which build step is under way: -1 before the build starts (the scene is still settling), 0 laying, 1 growing,
+        /// 2 the all-clear hold, 3 released. It never goes back: a gated frame between two lays is not a regression.
+        /// </summary>
+        public static int StepFor(int previous, bool gated, bool released, bool laying, int growRemaining, bool sawBuild)
+        {
+            int now = released ? 3
+                : !gated ? -1
+                : laying ? 0
+                : growRemaining > 0 ? 1
+                : sawBuild ? 2 : -1;
+            return Mathf.Max(previous, now);
+        }
+
+        /// <summary>How full the crystal is for <paramref name="step"/>: laying fills most of it, growing and the hold
+        /// the rest. Never falls.</summary>
+        public static float CrystalLevel(float previous, int step, float layProgress, int growRemaining, int growPeak)
+        {
+            float now = step switch
+            {
+                0 => 0.7f * Mathf.Clamp01(layProgress),
+                1 => 0.7f + 0.25f * (growPeak > 0 ? 1f - Mathf.Clamp01((float)growRemaining / growPeak) : 0f),
+                2 => 0.97f,
+                3 => 1f,
+                _ => 0f,
+            };
+            return Mathf.Max(previous, now);
+        }
+
+        void UpdateStage()
+        {
+            bool laying = PrismTrailBuilder.IsLayingInProgress;
+            int grow = PrismTrailBuilder.GrowRemainingCount;
+            if (_gated && (laying || grow > 0)) _sawBuild = true;
+            _growPeak = Mathf.Max(_growPeak, grow);
+            int step = StepFor(_phase, _gated, _released, laying, grow, _sawBuild);
+            _progress = CrystalLevel(_progress, step, PrismTrailBuilder.LayProgress, grow, _growPeak);
+            if (_crystal) _crystal.Level = _progress;
+            if (step == _phase) return;
+            _phase = step;
+            for (int i = 0; i < StepCount; i++)
+                if (_steps[i])
+                    _steps[i].alpha = step == 3 || i == step ? 1f : i < step ? StepDoneAlpha : StepPendingAlpha;
         }
 
         /// <summary>The subtle readout: a "Loading" caption over a slim bar, bottom centre.</summary>
@@ -156,9 +348,10 @@ namespace CosmicShore.Gameplay
             var caption = new GameObject("Caption", typeof(TextMeshProUGUI));
             caption.transform.SetParent(_content, false);
             var text = caption.GetComponent<TextMeshProUGUI>();
-            var font = Resources.Load<TMP_FontAsset>(CaptionFontPath);
+            var font = _words && _words.captionFont ? _words.captionFont : Resources.Load<TMP_FontAsset>(CaptionFontPath);
             if (font) text.font = font;
-            text.text = "LOADING";
+            text.text = _words ? _words.loadingWord : string.Empty;
+            text.fontStyle = FontStyles.UpperCase;
             text.fontSize = 14f;
             text.characterSpacing = 12f;
             text.alignment = TextAlignmentOptions.Center;
@@ -233,6 +426,7 @@ namespace CosmicShore.Gameplay
                     _group.alpha = _fade;
                 }
 
+                UpdateStage();
                 var span = BarSpan(PrismTrailBuilder.IsLayingInProgress, PrismTrailBuilder.LayProgress,
                                    PrismTrailBuilder.GrowRemainingCount > 0, _clock);
                 _fill.anchoredPosition = new Vector2(span.x * BarWidth, 0f);
@@ -261,6 +455,7 @@ namespace CosmicShore.Gameplay
         void Release()
         {
             _released = true;
+            UpdateStage();
             if (_gated)
             {
                 PrismTrailBuilder.SetLoadGateHolding(false);
