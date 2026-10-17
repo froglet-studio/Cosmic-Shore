@@ -58,6 +58,7 @@ screen up.
 | `KiteNavigatorAI.cs` | The AI navigator (the lab's `navAI` / `planLoop`). Engine-free. |
 | `KiteNavigatorConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset`. |
 | `KiteNavigator.cs` | The seat on the hull: board frame, motes, prism and rival shadows, thumb, head contacts, effects, swap. |
+| `Assets/_Prefabs/Spacevessels/Kite.prefab`, `Tools/Build/author_kite_assets.py` | The Kite hull (the Sparrow plus this seat) and the tool that authors and registers it. |
 | `KiteBoardGraphic.cs` | The board, drawn as one UI mesh on the navigator's own overlay canvas. No prefab or sprite assets. |
 | `Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs` | **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)** and **Remove**. |
 | `Assets/_Scripts/Tests/Editor/KiteNavigatorCoreTests.cs`, `KiteNavigatorConfigTests.cs` | The core's rules, and the asset's numbers and wiring. |
@@ -65,12 +66,41 @@ screen up.
 
 ## Try it
 
-1. Start any match with a vessel (the lab flew the Sparrow).
-2. Run **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)**. The board appears bottom right,
-   and the AI flies the kite while you fly.
-3. Press **2**, or D-pad right, to move to the kite. The hull's AI takes over. Click or touch the board and draw
-   loops round a single colour of motes.
+**In the Toybox** (how every lab port is tried: Garrett, 2026-10-17):
+
+1. Open the Toybox (menu freestyle) and fly into the **Vessel Changer**. Fly the **Kite** station.
+2. You fly the hull, a Sparrow, and the board appears bottom right with the AI flying the kite.
+3. Press **2**, or D-pad right, to take the kite. The hull's AI takes over. Click or touch the board and draw loops
+   round a single colour of motes.
 4. Press **1**, or D-pad left, to take the hull back.
+
+The same seat can ride any other hull in a match: **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull
+(Play mode)**.
+
+## The Kite hull
+
+The navigator is a seat, not a hull, and the Vessel Changer offers hulls. So the seat ships on its own hull class:
+`VesselClassType.Kite = 19`.
+
+- **The hull:** `Kite.prefab` is a clone of `Sparrow.prefab` with `KiteNavigator` on its root, wired to
+  `KiteNavigatorConfig.asset`. `Tools/Build/author_kite_assets.py` authors and registers it; it is the duo branch's
+  `author_goby_assets.py` cloned for the Sparrow.
+- **Its registrations:**
+  - `SO_Class_Kite`, owned from the start, in both class lists;
+  - the Vessel Prefab Container and `DefaultNetworkPrefabs`;
+  - `ElementalAbilityMaps/Kite`, the Sparrow's map;
+  - four `CrystalHullFusionConfig` entries, the Sparrow's;
+  - `ToyVesselRoster.Default` and `EnumIntegrityTests` in code.
+- **The checks:** `--check` validates the shipped set and `--self-test` proves each check fires.
+- **The id:** 16 is BrittleStar on bleeding-edge (and the Goby on `cece/sharp-tesla-j0kd7z`), and 17 is the Angler
+  (`cece/zealous-feynman-po8k8d`). 18 is left for the Goby, which must move off 16.
+
+**The seat only wakes on the local pilot's own hull while a human flies it**, the same rule `GobyPistolDuo` follows:
+- its transform must be `VesselVisionShading.LocalVessel`;
+- the autopilot must be off, unless this seat started it.
+
+That covers the Vessel Changer's swap-in, where the new hull arrives on autopilot until the changer hands control
+back, as well as any menu that parks the hull on its AI. On an AI hull or a remote copy, the component sits idle.
 
 ## Where the game differs from the lab
 
@@ -98,6 +128,7 @@ bash Tools/Build/unity_refcompile/run.sh              # the player compile
 - **Arena swap.** In an arena match, the swap gesture also asks the arena to swap hulls while the human flies.
   `InputController` polls it, and is paused only while the human navigates. A crew hull in an arena needs one owner
   for the gesture.
-- **Duo vessels.** When the duo-vessel system lands (branch `cece/sharp-tesla-j0kd7z`, skill `/duo-vessel`), register
-  the kite as a duo design, rather than keeping this play-mode menu as its only door.
+- **Duo vessels.** When the duo-vessel system lands (branch `cece/sharp-tesla-j0kd7z`, skill `/duo-vessel`), fold the
+  Kite into it as a duo design. It already follows the same shape: one hull class, the seat on the root, the
+  arena's swap.
 - **Sounds.** All seven `EventReference` slots ship empty: loop closed, fizzle, pop, Mass, Time, Charge, steal.

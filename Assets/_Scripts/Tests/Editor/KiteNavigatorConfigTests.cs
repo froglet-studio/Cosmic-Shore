@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
 using UnityEditor;
@@ -72,6 +73,21 @@ namespace CosmicShore.Tests
             Assert.AreEqual("AOEExplosion", c.SpaceExplosions[0].name);
             Assert.IsTrue(c.OnCombatHitLanded, "a ram is a scored combat hit, raised on the scoreboard's channel");
             Assert.IsTrue(c.GameData, "the board finds rival hulls through the runtime game data");
+        }
+
+        [Test]
+        public void KiteHull_CarriesTheSeat_WiredToThisConfig_SoTheVesselChangerOffersAPlayableKite()
+        {
+            // "Bring it to Unity" = the Toybox's Vessel Changer offers it (Garrett, 2026-10-17); the changer offers hulls,
+            // so the seat ships on its own hull (Tools/Build/author_kite_assets.py)
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Prefabs/Spacevessels/Kite.prefab");
+            Assert.IsNotNull(prefab, "no Kite.prefab: run Tools/Build/author_kite_assets.py");
+            Assert.IsTrue(prefab.TryGetComponent(out KiteNavigator seat), "the Kite's root carries no KiteNavigator");
+            var wired = new SerializedObject(seat).FindProperty("config").objectReferenceValue;
+            Assert.AreEqual(Load(), wired, "the seat is not wired to KiteNavigatorConfig.asset (a null config never seats the navigator)");
+            Assert.IsTrue(prefab.TryGetComponent(out IVesselStatus status));
+            Assert.AreEqual(VesselClassType.Kite, status.VesselType);
+            CollectionAssert.Contains(ToyVesselRoster.Default, VesselClassType.Kite, "the Vessel Changer offers only the roster");
         }
     }
 }

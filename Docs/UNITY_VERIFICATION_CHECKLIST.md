@@ -67,7 +67,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 Kite Navigator: the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
 
-**What landed:** the first multiplayer vessel's second seat, ported from the Crew Vessel Lab's signed-off round 3
+**What landed:** the first multiplayer vessel, `VesselClassType.Kite = 19` (a Sparrow hull, in the Toybox's
+Vessel Changer), and its second seat, ported from the Crew Vessel Lab's signed-off round 3
 (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`).
 - **The board and the kite:** a navigator flies a kite on the hull's x-z plane. The head pops hostile prisms and rams
   rivals. The tail closes loops, and a loop of one navigator-only element fires Space (an AOEExplosion), Mass (a
@@ -87,7 +88,8 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   real match. The lab could not see the real blast hitting rival hulls, or the prism pool's own limits.
 
 **Verify:**
-1. Start any match in the Sparrow. Run **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)**.
+1. Open the Toybox. Fly into the **Vessel Changer**: it offers a **Kite** station, which looks like a Sparrow. Fly it.
+   (In a match, **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)** seats it on any hull.)
    - The board appears bottom right: a dark disc with your hull's triangle below its centre.
    - Prisms show as domain-coloured bars. Navigator motes show as four glyphs: gold diamond, orange square, violet
      triangle, green dot.
@@ -106,6 +108,9 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 6. Press **1**. You fly again, with no stuck input and no stuck boost.
 7. On a phone build, the kite rides about 2 cm above your thumb.
 8. Run **Remove (Play mode)**. The board goes, and you hold the hull.
+9. Fly back to the Vessel Changer and pick another hull. You land in it flying, with no board and no paused input.
+   Pick the Kite again: the board comes back, with the AI on the kite. Then repeat the swap while you are on the kite
+   and the AI flies the hull through the changer. You should land in the new hull flying, with the input live.
 
 ### 🔴 AI difficulty (Easy / Medium / Hard) on every Arena card (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 

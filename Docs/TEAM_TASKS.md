@@ -454,7 +454,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset
 
 ### T-20261017-aca2 · open · test · Crew vessels
-- **Task:** Playtest the Kite Navigator in the Unity Editor: FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode) in any Sparrow match, then the 8 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost). It has only been compiled headlessly.
+- **Task:** Playtest the Kite in the Unity Editor: open the Toybox, fly the Kite station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Kite). It has only been compiled headlessly.
 - **Done when:** The checklist entry is marked verified, or each failing step is a dev task naming what was seen
 - **Who can take it:** Yash (offered), anyone with the Editor
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)

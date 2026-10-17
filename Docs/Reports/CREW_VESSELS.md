@@ -30,8 +30,8 @@ shared from its Share menu. Fly the kite on a phone with one thumb, or fly the h
 
 **Unity:**
 1. Check out `cece/compassionate-babbage-gc13io`, open the project and wait for the compile.
-2. Start any match in the Sparrow. Run **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)**.
-   The board appears bottom right, and the AI flies the kite while you fly.
+2. Open the Toybox, fly into the **Vessel Changer** and fly the **Kite** station (it looks like a Sparrow). The board
+   appears bottom right, and the AI flies the kite while you fly.
 3. Press **2** (or D-pad right) to take the kite. The hull's AI flies the hull. Click or touch the board and circle one
    colour of motes. Press **1** to fly again.
 
@@ -43,7 +43,8 @@ shared from its Share menu. Fly the kite on a phone with one thumb, or fly the h
 | The kite core and its AI, engine-free and ported line for line from the lab | `Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorCore.cs`, `KiteNavigatorAI.cs` |
 | The seat on the hull: board, motes, shadows, thumb, effects, swap | `KiteNavigator.cs`, `KiteBoardGraphic.cs` |
 | Every number, cloned from the lab | `KiteNavigatorConfigSO.cs`, `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset` |
-| The play-mode menu | `Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs` |
+| The Kite hull (`VesselClassType.Kite = 19`): the Sparrow with the seat on its root, in the Toybox Vessel Changer | `Assets/_Prefabs/Spacevessels/Kite.prefab`, authored and registered by `Tools/Build/author_kite_assets.py` |
+| The play-mode menu, which seats the navigator on any hull in a match | `Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs` |
 | The parity gate: C# core against the page, and asset against the page | `Tools/Build/kite_navigator_lab/parity.cjs` |
 | Tests | `Assets/_Scripts/Tests/Editor/KiteNavigatorCoreTests.cs`, `KiteNavigatorConfigTests.cs` |
 
@@ -90,5 +91,5 @@ _Generated 2026-10-17 from git (last 14 days), who_works_where.py and Docs/TEAM_
 - T-20261017-b06e [open] decision: Decide how the Kite Navigator seat goes online: today the board, motes, AI and every effect run on the hull's local human's machine. A second human on another machine needs the seat replicated, and a choice of which machine decides pops, blasts, Mass clusters, boost and steals (vessel rule 48). Also decide the arena case: the seat's swap uses PilotSwapGesture, which in an arena match also asks the arena to swap hulls while the human flies. (who: Garrett with Yash (party / multiplayer))
 - T-20261017-efca [open] dev: When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule. (who: Garrett (duo-vessel owner))
 - T-20261017-3cbe [open] content: Author FMOD events for the Kite Navigator's seven empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal. (who: anyone who does audio)
-- T-20261017-aca2 [open] test: Playtest the Kite Navigator in the Unity Editor: FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode) in any Sparrow match, then the 8 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost). It has only been compiled headlessly. (who: Yash (offered), anyone with the Editor)
+- T-20261017-aca2 [open] test: Playtest the Kite in the Unity Editor: open the Toybox, fly the Kite station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Kite). It has only been compiled headlessly. (who: Yash (offered), anyone with the Editor)
 <!-- team_report:end -->

@@ -70,6 +70,11 @@ namespace CosmicShore.Gameplay
         const float RamReach = 4f;                // a hull's shadow is this much wider than a point
         const int MaxPrismShadows = 900;
 
+        [Header("Config")]
+        [Tooltip("Every number of the kite (KiteNavigatorConfig.asset, the lab's signed-off candidate). The Kite hull's " +
+                 "prefab wires it; the play-mode menu hands it to a hull it attaches to.")]
+        [SerializeField] KiteNavigatorConfigSO config;
+
         static KiteNavigator _active;
 
         /// <summary>The navigator riding the local hull, or null.</summary>
@@ -101,7 +106,7 @@ namespace CosmicShore.Gameplay
 
         float _charge, _boostEnergy;
         bool _boostAsserted;
-        bool _humanNavigates, _grabbed, _down;
+        bool _humanNavigates, _weTookHull, _grabbed, _down;
         float _swapReadyAt;
         KiteVec _aim;
         Vector2 _thumbScreen;
@@ -124,29 +129,21 @@ namespace CosmicShore.Gameplay
         public bool HumanNavigates => _humanNavigates;
 
         /// <summary>
-        /// Seat a navigator on the local player's hull (the FrogletTools play-mode menu calls this). The human keeps the
-        /// hull; the AI takes the kite until the swap gesture moves them. Returns null, with a warning, when there is no
-        /// local hull to ride.
+        /// Seat a navigator on the hull the local player flies (the FrogletTools play-mode menu calls this; the Kite hull
+        /// carries one on its prefab). The human keeps the hull; the AI takes the kite until the swap gesture moves them.
+        /// Returns null, with a warning, when no local hull is flying.
         /// </summary>
-        public static KiteNavigator AttachToLocalVessel(KiteNavigatorConfigSO config)
+        public static KiteNavigator AttachToLocalVessel(KiteNavigatorConfigSO cfg)
         {
-            if (!config || !config.GameData)
+            var vt = VesselVisionShading.LocalVessel;
+            if (!vt || !vt.TryGetComponent(out IVessel _))
             {
-                CSDebug.LogWarning("[KiteNavigator] The config or its GameData is not assigned; nothing to attach.");
+                CSDebug.LogWarning("[KiteNavigator] No local hull is flying yet; start a match or the Toybox first.");
                 return null;
             }
 
-            var player = config.GameData.LocalPlayer;
-            var vessel = player?.Vessel;
-            if (vessel == null || vessel.VesselStatus == null || !vessel.Transform)
-            {
-                CSDebug.LogWarning("[KiteNavigator] No local hull is flying yet; start a match first.");
-                return null;
-            }
-
-            var go = vessel.Transform.gameObject;
-            if (!go.TryGetComponent(out KiteNavigator kite)) kite = go.AddComponent<KiteNavigator>();
-            kite.Bind(config, player);
+            if (!vt.TryGetComponent(out KiteNavigator kite)) kite = vt.gameObject.AddComponent<KiteNavigator>();
+            if (cfg) kite.config = cfg;
             return kite;
         }
 
@@ -156,51 +153,58 @@ namespace CosmicShore.Gameplay
             if (_active) Destroy(_active);
         }
 
-        void Bind(KiteNavigatorConfigSO config, IPlayer player)
+        // The local pilot's own hull, flown by a human - or handed to the AI by this component's own swap. Anything else
+        // (an AI hull, a remote copy, a hull the Vessel Changer has just spawned on autopilot, a menu that parked the
+        // hull on its AI) unbinds, exactly as GobyPistolDuo does on the duo-vessel branch.
+        bool ShouldRun(out IVessel vessel)
+        {
+            vessel = null;
+            if (!config || VesselVisionShading.LocalVessel != transform || !TryGetComponent(out vessel)) return false;
+            return _weTookHull || vessel.VesselStatus == null || !vessel.VesselStatus.AutoPilotEnabled;
+        }
+
+        void Bind(IVessel vessel)
         {
             _cfg = config;
-            _player = player;
-            _vessel = player.Vessel;
-            _status = _vessel.VesselStatus;
-            _s = config.ToSettings();
+            _vessel = vessel;
+            _status = vessel.VesselStatus;
+            _player = _status?.Player;
+            _s = _cfg.ToSettings();
             int seed = System.Environment.TickCount;
-            _ai = new KiteNavigatorAI(seed) { Level = config.AISkill };
+            _ai = new KiteNavigatorAI(seed) { Level = _cfg.AISkill };
             _rng = new System.Random(seed ^ 0x5f3759df);
             _kite.Reset(new KiteVec(0f, _s.Anchor * _s.BoardRadius * 0.5f));
             _ai.Reset(_kite.Position);
             _aim = _kite.Position;
             _snapped = false;
-            Motes.Clear(); Effects.Clear(); _massQueue.Clear(); _lastRam.Clear();
+            _humanNavigates = _weTookHull = _grabbed = _down = false;
+            Motes.Clear(); Effects.Clear(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
             _charge = 0f; _boostEnergy = 0f;
             if (_active && _active != this) Destroy(_active);
             _active = this;
             EnsureCanvas();
         }
 
-        bool ShouldRun =>
-            _cfg && _status != null && _vessel != null && UnityLiveness.Alive(_vessel.Transform) && _status.IsLocalUser;
-
-        void OnDisable()
+        void Unbind()
         {
+            if (_vessel == null) return;
             if (_humanNavigates) SetHumanNavigates(false);
             ReleaseBoost();
-            if (_canvas) _canvas.SetActive(false);
-        }
-
-        void OnEnable()
-        {
-            if (_canvas) _canvas.SetActive(true);
-        }
-
-        void OnDestroy()
-        {
+            _massQueue.Clear();
             if (_canvas) Destroy(_canvas);
+            _canvas = null; _graphic = null;
+            _vessel = null; _status = null; _player = null;
             if (_active == this) _active = null;
         }
 
+        void OnDisable() => Unbind();
+
+        void OnDestroy() => Unbind();
+
         void Update()
         {
-            if (!ShouldRun) return;
+            if (!ShouldRun(out var vessel)) { Unbind(); return; }
+            if (_vessel == null) Bind(vessel);
             float dt = Time.deltaTime;
 
             PollSwap();
@@ -243,24 +247,28 @@ namespace CosmicShore.Gameplay
 
             // The hull's own AI flies while the human navigates; its flight input is paused so the pointer and the
             // sticks belong to the board - the order the lava lamp and the mode preview hand a hull to its AI in
-            // (MenuCrystalClickHandler, ModePreviewSession). Coming back restores both, in the opposite order.
+            // (MenuCrystalClickHandler, ModePreviewSession). Coming back restores both, in the opposite order. Only an
+            // autopilot this component started is stopped again: one something else started is not ours to end.
             if (navigate)
             {
                 SetFlightInputPaused(true);
-                _vessel.ToggleAIPilot(true);
+                _weTookHull = !_status.AutoPilotEnabled;
+                if (_weTookHull) _vessel.ToggleAIPilot(true);
             }
             else
             {
-                _vessel.ToggleAIPilot(false);
+                if (_weTookHull && UnityLiveness.Alive(_vessel.Transform)) _vessel.ToggleAIPilot(false);
+                _weTookHull = false;
                 SetFlightInputPaused(false);
                 _ai.Reset(_kite.Position);
             }
         }
 
+        // the input is the PLAYER's, which outlives this hull (a swap re-homes it), so a destroyed one is skipped
         void SetFlightInputPaused(bool paused)
         {
             if (_player == null) return;
-            if (_player.InputController) _player.InputController.SetPause(paused);
+            if (UnityLiveness.Alive(_player.InputController)) _player.InputController.SetPause(paused);
             else if (_player.InputStatus != null) _player.InputStatus.Paused = paused;
         }
 
@@ -695,7 +703,7 @@ namespace CosmicShore.Gameplay
         {
             if (!_boostAsserted) return;
             _boostAsserted = false;
-            if (_status != null) _status.IsBoosting = false;
+            if (UnityLiveness.Alive(_status)) _status.IsBoosting = false;
         }
 
         // CHARGE: kite power, spent by the next ram on a rival
