@@ -1,0 +1,844 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-17 17:50:19 (next editor launch after the abnormal exit)
+session:        20261017-021043117  (pid 20492, Unity 6000.3.17f1)
+started:        2026-10-17T02:10:43.117Z UTC
+last heartbeat: 2026-10-17T02:34:28.573Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~14s at the last heartbeat — likely a hang / freeze that was then killed
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261017-013833026
+started: 2026-10-17T01:38:33.026Z UTC
+unity:   6000.3.17f1
+pid:     20492
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[07:08:39.725] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 1156.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e53968bf (Unity) GetPrefabDynamicDependencies
+        ...
+[07:08:39.774] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3488.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e53968bf (Unity) GetPrefabDynamicDependencies
+        ...
+[07:08:39.775] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3563.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e53968bf (Unity) GetPrefabDynamicDependencies
+        ...
+[07:08:39.778] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3638.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e53968bf (Unity) GetPrefabDynamicDependencies
+        ...
+[07:08:54.775] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 1156.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e53968bf (Unity) GetPrefabDynamicDependencies
+        ...
+[07:08:54.778] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3488.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e53968bf (Unity) GetPrefabDynamicDependencies
+        ...
+[07:08:54.781] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3563.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e53968bf (Unity) GetPrefabDynamicDependencies
+        ...
+[07:08:54.782] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3638.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e53968bf (Unity) GetPrefabDynamicDependencies
+        ...
+[07:08:54.792] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 1156.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e4ba32ec (Unity) PersistentManager::LoadFileStream
+        ...
+[07:08:54.796] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3488.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e4ba32ec (Unity) PersistentManager::LoadFileStream
+        ...
+[07:08:54.798] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3563.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e4ba32ec (Unity) PersistentManager::LoadFileStream
+        ...
+[07:08:54.799] [EditMode] Error: Could not extract GUID in text file Assets/_Prefabs/UI Elements/Main Menu Screens/Purchase/PurchaseConfirmView.prefab at line 3638.
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e3c0c819 (Unity) DebugStringToFile<core::basic_string<char,core::StringStorageDefault<char> > >
+        0x00007ff9e4b9e81b (Unity) SerializedFile::IndexTextFile
+        0x00007ff9e4b9fdbd (Unity) SerializedFile::InitializeRead
+        0x00007ff9e4ba32ec (Unity) PersistentManager::LoadFileStream
+        ...
+[07:08:54.824] [EditMode] Error: Broken text PPtr. GUID 00000000000000000000000000000000 fileID 21300000 is invalid!
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e59095c0 (Unity) ReadPPtrWithInstanceIDRemappingIfNecessary<PPtr<Object>,YAMLRead>
+        0x00007ff9e4a79548 (Unity) TransferField_NonArray<YAMLRead,Converter_UnityEngineObject>
+        0x00007ff9e4a9b374 (Unity) Transfer_UnityEngineObject<YAMLRead,0>
+        0x00007ff9e4a258fb (Unity) ExecuteSerializationCommands<JSONRead>
+        ...
+[07:08:54.828] [EditMode] Error: Broken text PPtr. GUID 00000000000000000000000000000000 fileID 21300000 is invalid!
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e59095c0 (Unity) ReadPPtrWithInstanceIDRemappingIfNecessary<PPtr<Object>,YAMLRead>
+        0x00007ff9e4a79548 (Unity) TransferField_NonArray<YAMLRead,Converter_UnityEngineObject>
+        0x00007ff9e4a9b374 (Unity) Transfer_UnityEngineObject<YAMLRead,0>
+        0x00007ff9e4a258fb (Unity) ExecuteSerializationCommands<JSONRead>
+        ...
+[07:08:54.831] [EditMode] Error: Broken text PPtr. GUID 00000000000000000000000000000000 fileID 21300000 is invalid!
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e59095c0 (Unity) ReadPPtrWithInstanceIDRemappingIfNecessary<PPtr<Object>,YAMLRead>
+        0x00007ff9e4a79548 (Unity) TransferField_NonArray<YAMLRead,Converter_UnityEngineObject>
+        0x00007ff9e4a9b374 (Unity) Transfer_UnityEngineObject<YAMLRead,0>
+        0x00007ff9e4a258fb (Unity) ExecuteSerializationCommands<JSONRead>
+        ...
+[07:08:54.836] [EditMode] Error: Broken text PPtr. GUID 00000000000000000000000000000000 fileID 21300000 is invalid!
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e59095c0 (Unity) ReadPPtrWithInstanceIDRemappingIfNecessary<PPtr<Object>,YAMLRead>
+        0x00007ff9e4a79548 (Unity) TransferField_NonArray<YAMLRead,Converter_UnityEngineObject>
+        0x00007ff9e4a9b374 (Unity) Transfer_UnityEngineObject<YAMLRead,0>
+        0x00007ff9e4a258fb (Unity) ExecuteSerializationCommands<JSONRead>
+        ...
+[07:10:12.818] ---- entering play mode ----
+[07:10:21.608] ---- play mode running ----
+[07:14:56.269] ---- leaving play mode ----
+[07:15:04.222] ---- edit mode restored ----
+[07:37:25.656] ---- entering play mode ----
+[07:37:30.072] ---- play mode running ----
+[07:38:14.612] ---- leaving play mode ----
+[07:38:20.645] ---- edit mode re[07:40:52.684] ---- domain reload begins (script compilation / play-mode transition) ----
+s\Shombith\Documents\GitHub\Cosmic-Shore\Logs\CrashDetector\HangDump-20261017-013833026.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[07:40:52.662] ---- domain reload begins (script compilation / play-mode transition) ----
+[07:41:45.482] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\Shombith\[07:50:37.428] ---- leaving play mode ----
+[07:50:48.489] [PlayMode] Assert: Assertion failed on expression: 't.GetParent() == nullptr'
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e42a53be (Unity) AssertImplementation
+        0x00007ff9e49b6566 (Unity) DestroyWorldObjects
+        0x00007ff9e5745cfd (Unity) EditorSceneManager::RestoreSceneBackups
+        0x00007ff9e536b7ed (Unity) PlayerLoopController::ExitPlayMode
+        ...
+[07:50:49.173] [PlayMode] Assert: Assertion failed on expression: 't.GetParent() == nullptr'
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e42a53be (Unity) AssertImplementation
+        0x00007ff9e49b6566 (Unity) DestroyWorldObjects
+        0x00007ff9e5745cfd (Unity) EditorSceneManager::RestoreSceneBackups
+        0x00007ff9e536b7ed (Unity) PlayerLoopController::ExitPlayMode
+        ...
+[07:50:49.461] [PlayMode] Error: Some objects were not cleaned up when closing the scene. (Did you spawn new GameObjects from OnDestroy?)
+The following scene GameObjects were found:
+Cell0_RetiringWorld
+
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e49cd039 (Unity) ValidateNoSceneObjectsAreLoaded
+        0x00007ff9e5745d09 (Unity) EditorSceneManager::RestoreSceneBackups
+        0x00007ff9e536b7ed (Unity) PlayerLoopController::ExitPlayMode
+        0x00007ff9e536d4b4 (Unity) PlayerLoopController::SetIsPlaying
+        ...
+[07:50:51.303] ---- edit mode restored ----
+[08:04:12.871] [EditMode] Error: connection.state_change
+oldState=Connecting newState=Failed error=Relay process exited (exit code 1073807364)
+        0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e42a587f (Unity) DebugStringToFile
+        0x00007ff9e4161b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000221378348ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000221378346b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000221318d2e4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000221378337ee (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000002213783354d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000221318d2c9b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/CSDebug.cs:480)
+0x000002219fcb0cdb (Mono JIT Code) CosmicShore.Gameplay.HostConnectionService/<RefreshPartyMembersAsync>d__134:MoveNext () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Party/HostConnectionService.cs:2002)
+0x00000221376bbe37 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<TStateMachine_REF>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:189)
+0x0000022131a95c83 (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x000002219511590c (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<Cysharp.Threading.Tasks.AsyncUnit>:TrySetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:167)
+0x00000221951154db (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<TStateMachine_REF>:SetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:210)
+0x00000221951153b9 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTaskMethodBuilder:SetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/AsyncUniTaskMethodBuilder.cs:59)
+0x00000221a238865b (Mono JIT Code) CosmicShore.Gameplay.PartySessionService/<RefreshAsync>d__30:MoveNext () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Party/Services/PartySessionService.cs:268)
+0x00000221376bbe37 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<TStateMachine_REF>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:189)
+0x0000022131a95c83 (Mono JIT Code) Cysharp.Threading.Tasks.AwaiterActions:Continuation (object) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTask.cs:25)
+0x000002219511590c (Mono JIT Code) Cysharp.Threading.Tasks.UniTaskCompletionSourceCore`1<Cysharp.Threading.Tasks.AsyncUnit>:TrySetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/UniTaskCompletionSource.cs:167)
+0x00000221951154db (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<TStateMachine_REF>:SetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:210)
+0x00000221951153b9 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTaskMethodBuilder:SetException (System.Exception) (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/AsyncUniTaskMethodBuilder.cs:59)
+0x0000022131b0bb5b (Mono JIT Code) CosmicShore.Utility.UniTaskExtensions/<AsMainThread>d__2:MoveNext () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs:61)
+0x00000221376bbe37 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTask`1<TStateMachine_REF>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:189)
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000021ff34b6463 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000021ff34b52bb (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000022093f376a3 (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x00000220951a099b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetException (System.Exception)
+0x0000022093f3fb5b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)
+0x00000221950add53 (Mono JIT Code) Unity.Services.Multiplayer.LobbyHandler/<RefreshLobbyAsync>d__87:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Lobby/LobbyHandler.cs:436)
+0x000002200fd5716a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000021ff3419a0e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000021ff341887b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002200fd56ceb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000021ff34b6463 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000021ff34b52bb (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000022093f376a3 (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000022093f3143b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x00000221950aec43 (Mono JIT Code) Unity.Services.Lobbies.Internal.WrappedLobbyService/<GetLobbyAsync>d__22:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/WrappedLobbyService.cs:178)
+0x000002200fd5716a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000021ff3419a0e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000021ff341887b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002200fd56ceb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000021ff34b6463 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000021ff34b52bb (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000022093f376a3 (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000022093f3143b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x0000022194fad5a3 (Mono JIT Code) Unity.Services.Lobbies.Internal.WrappedLobbyService/<TryCatchRequest>d__42`2<TRequest_REF, TReturn_REF>:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/SDK/WrappedLobbyService.cs:601)
+0x000002200fd5716a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000021ff3419a0e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000021ff341887b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002200fd56ceb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x0000021ff34b6463 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageTwo ()
+0x0000021ff34b52bb (Mono JIT Code) System.Threading.Tasks.Task:Finish (bool)
+0x0000022093f376a3 (Mono JIT Code) System.Threading.Tasks.Task:TrySetException (object)
+0x0000022093f3143b (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetException (System.Exception)
+0x00000221950926a3 (Mono JIT Code) Unity.Services.Lobbies.Apis.Lobby.LobbyApiClient/<GetLobbyAsync>d__13:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Apis/LobbyApi.cs:434)
+0x000002200fd5716a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000021ff3419a0e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000021ff341887b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002200fd56ceb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002200d915f4b (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x00000220142b4fe3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000022194fb6293 (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<MakeRequestAsync>d__1:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:41)
+0x000002200fd5716a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000021ff3419a0e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000021ff341887b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002200fd56ceb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002200d915f4b (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x00000220142b4fe3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000022194fb6d6b (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<CreateWebRequestAsync>d__3:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:56)
+0x000002200fd5716a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000021ff3419a0e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000021ff341887b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002200fd56ceb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002200d915f4b (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x00000220142b4fe3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000022194fb7f43 (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<CreateHttpClientResponse>d__4:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:84)
+0x000002200fd5716a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000021ff3419a0e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000021ff341887b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002200fd56ceb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002200d915f4b (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x00000220142b4fe3 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<TResult_REF>:SetResult (TResult_REF)
+0x0000022195000e9b (Mono JIT Code) Unity.Services.Lobbies.Http.HttpClient/<>c__DisplayClass4_0/<<CreateHttpClientResponse>b__0>d:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/HttpClient.cs:81)
+0x000002200fd5716a (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+0x0000021ff3419a0e (Mono JIT Code) System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x0000021ff341887b (Mono JIT Code) System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+0x000002200fd56ceb (Mono JIT Code) System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+0x000002210cb7ac50 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:InvokeAction (object)
+0x000002200da27ca4 (Mono JIT Code) System.Threading.Tasks.AwaitTaskContinuation:RunCallback (System.Threading.ContextCallback,object,System.Threading.Tasks.Task&)
+0x000002200da2730b (Mono JIT Code) System.Threading.Tasks.SynchronizationContextAwaitTaskContinuation:Run (System.Threading.Tasks.Task,bool)
+0x0000021ff34bb268 (Mono JIT Code) System.Threading.Tasks.Task:FinishContinuations ()
+0x0000021ff34b91e3 (Mono JIT Code) System.Threading.Tasks.Task:FinishStageThree ()
+0x000002200d915f4b (Mono JIT Code) System.Threading.Tasks.Task`1<TResult_REF>:TrySetResult (TResult_REF)
+0x00000220144eb1cb (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:TrySetResult (TResult_REF)
+0x000002212dddbfdb (Mono JIT Code) System.Threading.Tasks.TaskCompletionSource`1<TResult_REF>:SetResult (TResult_REF)
+0x000002219502a8c3 (Mono JIT Code) Unity.Services.Lobbies.Http.UnityWebRequestHelpers/<>c__DisplayClass0_0:<GetAwaiter>b__0 (UnityEngine.AsyncOperation) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Lobbies/Http/UnityWebRequestHelpers.cs:34)
+0x000002212ddd14fc (Mono JIT Code) UnityEngine.AsyncOperation:InvokeCompletionEvent ()
+0x000002219d9ac488 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ff9ec556c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9ec498984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9ec498a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e4b2fdd4 (Unity) scripting_method_invoke
+0x00007ff9e4b36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e4b32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff9e400b129 (Unity) Scripting::UnityEngine::AsyncOperationProxy::InvokeCompletionEvent
+0x00007ff9e49f2657 (Unity) AsyncOperation::InvokeCoroutine
+0x00007ff9e6460bce (Unity) UnityWebRequestAsyncOperation::InvokeCoroutine
+0x00007ff9e6460dc6 (Unity) UnityWebRequestProto<UnityWebRequestTransport,AtomicRefCounter,RedirectHelper,ResponseHelper,DownloadHandler,UploadHandler,CertificateHandler,HeaderHelper,AsyncOperation>::Job_InvokeCoroutine
+0x00007ff9e49728ca (Unity) BackgroundJobQueue::ExecuteMainThreadJobs
+0x00007ff9e49fb65e (Unity) `InitPlayerLoopCallbacks'::`2'::EarlyUpdateExecuteMainThreadJobsRegistrator::Forward
+0x00007ff9e49dabef (Unity) ExecutePlayerLoop
+0x00007ff9e49dad65 (Unity) ExecutePlayerLoop
+0x00007ff9e49dfc0f (Unity) PlayerLoop
+0x00007ff9e53556da (Unity) EditorPlayerLoop::Execute
+0x00007ff9e536c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ff9e536e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ff9e536866d (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+[ProximityBoostAudio] Event '{0a70c49e-da1c-4049-8e10-d6451d61f60b} (event:/SFX/Oneshots/Gameplay sfx/Skim)' has no parameter named 'Boost Amount'. Loop will play but intensity won't drive it.
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e4161b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000221378348ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000221378346b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000221318d2e4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000220147bfcbe (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x00000221a24769de (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x00000221a24768b3 (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object,UnityEngine.Object) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/CSDebug.cs:487)
+0x00000221a24749c3 (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:EnsureLoopStarted () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:421)
+0x00000221a2135e5b (Mono JIT Code) CosmicShore.Gameplay.Audio.ProximityBoostAudioController:HandleBoostChanged (CosmicShore.UI.BoostChangedPayload) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/FX/ProximityBoostAudioController.cs:358)
+0x00000221a213597a (Mono JIT Code) (wrapper delegate-invoke) System.Action`1<CosmicShore.UI.BoostChangedPayload>:invoke_void_T (CosmicShore.UI.BoostChangedPayload)
+0x00000221a21353b8 (Mono JIT Code) Obvious.Soap.ScriptableEvent`1<CosmicShore.UI.BoostChangedPayload>:Raise (CosmicShore.UI.BoostChangedPayload) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEvent.cs:72)
+0x00000221a2473383 (Mono JIT Code) CosmicShore.Gameplay.SkimmerBoostPrismEffectSO:Execute (CosmicShore.Gameplay.SkimmerImpactor,CosmicShore.Gameplay.PrismImpactor) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerBoostPrismEffect.cs:80)
+0x00000221a21dd928 (Mono JIT Code) CosmicShore.Gameplay.SkimmerImpactor:AcceptImpactee (CosmicShore.Gameplay.IImpactor) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs:304)
+0x00000221a21d877a (Mono JIT Code) CosmicShore.Gameplay.ImpactorBase:OnTriggerEnter (UnityEngine.Collider) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/ImpactEffects/Impactors/ImpactorBase.cs:271)
+0x0000021ff33d4894 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void__this___object (object,intptr,intptr,intptr)
+0x00007ff9ec556c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9ec498984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9ec498a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e4b2fdd4 (Unity) scripting_method_invoke
+0x00007ff9e4b36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e4a46f51 (Unity) MonoBehaviour::HandleNotifications
+0x00007ff9e44a5010 (Unity) GameObject::SendMessageAny
+0x00007ff9e5de6e6e (Unity) SendTriggerEvent
+0x00007ff9e5de73ea (Unity) PhysicsScene::SendTriggerEvents
+0x00007ff9e5de670b (Unity) PhysicsScene::DispatchEvents
+0x00007ff9e5d857d4 (Unity) PhysicsManager::Simulate
+0x00007ff9e5d7a01c (Unity) `PhysicsManager::InitializeClass'::`2'::FixedUpdatePhysicsFixedUpdateRegistrator::Forward
+0x00007ff9e49dabef (Unity) ExecutePlayerLoop
+0x00007ff9e49dad65 (Unity) ExecutePlayerLoop
+0x00007ff9e49dfc0f (Unity) PlayerLoop
+0x00007ff9e53556da (Unity) EditorPlayerLoop::Execute
+0x00007ff9e536c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ff9e536e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ff9e536866d (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+[NetworkSceneObjectGuard] Stripped the NetworkObject from 'MassBrittlestarFauna(Clone)' (fauna species is not network-synced). It is a prefab instance that is never network-spawned, and Netcode would have adopted it as an in-scene object at the next host start - a second instance of the same prefab then collides in the scene-object index and breaks synchronization for every joining player. If this object is MEANT to replicate, spawn it (NetworkObject.Spawn); if it is not, remove the NetworkObject from its prefab. See Docs/PartySystem/BUGS.md B16.
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e4161b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000221378348ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000221378346b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000221318d2e4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000221378337ee (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000002213783354d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x00000221318d2c9b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/CSDebug.cs:480)
+0x00000221a35a12eb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (Unity.Netcode.NetworkObject,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:103)
+0x00000221a35a09cb (Mono JIT Code) CosmicShore.Gameplay.NetworkSceneObjectGuard:NeutralizeStray (UnityEngine.GameObject,string) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Multiplayer/NetworkSceneObjectGuard.cs:72)
+0x00000221a35a026b (Mono JIT Code) CosmicShore.Gameplay.FaunaNetworkSync:ServerSpawn (CosmicShore.Gameplay.Fauna) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/FaunaNetworkSync.cs:166)
+0x00000221a35e1f6b (Mono JIT Code) CosmicShore.Gameplay.Fauna:SpawnOffspring (CosmicShore.Gameplay.Cell,CosmicShore.Utility.FaunaConfigurationSO) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:487)
+0x00000221381da20b (Mono JIT Code) CosmicShore.Gameplay.Fauna:TryReproduce () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:465)
+0x00000221381d981b (Mono JIT Code) CosmicShore.Gameplay.Fauna:NotifyFed (single) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs:278)
+0x00000221381d13f3 (Mono JIT Code) CosmicShore.Gameplay.LightFauna:ConsumeMouthful (CosmicShore.Gameplay.Prism) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:888)
+0x00000221a35afecb (Mono JIT Code) CosmicShore.Gameplay.LightFauna:UpdateFeeding () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:846)
+0x00000221a35ae1eb (Mono JIT Code) CosmicShore.Gameplay.LightFauna:Update () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:1058)
+0x000002219da076f8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ff9ec556c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9ec498984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9ec498a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e4b2fdd4 (Unity) scripting_method_invoke
+0x00007ff9e4b36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e4a41aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ff9e4a41bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ff9e45e308b (Unity) BaseBehaviourManager::CommonUpdate<BehaviourManager>
+0x00007ff9e45e9f1a (Unity) BehaviourManager::Update
+0x00007ff9e49fc7ef (Unity) `InitPlayerLoopCallbacks'::`2'::UpdateScriptRunBehaviourUpdateRegistrator::Forward
+0x00007ff9e49dabef (Unity) ExecutePlayerLoop
+0x00007ff9e49dad65 (Unity) ExecutePlayerLoop
+0x00007ff9e49dfc0f (Unity) PlayerLoop
+0x00007ff9e53556da (Unity) EditorPlayerLoop::Execute
+0x00007ff9e536c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ff9e536e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ff9e536866d (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+Asset Pipeline Refresh (id=6dc68e0695ad09440ba01bb5b7462ddf): Total: 0.009 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+[CustomCameraController] The player camera lost its follow target while on screen, so it stopped following the ship. No live player vessel to re-latch onto. The Transform it was following was DESTROYED without the camera being re-pointed.
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e4161b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000221378348ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000221378346b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000221318d2e4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000220147bfcbe (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+0x00000221a24769de (Mono JIT Code) UnityEngine.Debug:LogWarning (object,UnityEngine.Object)
+0x00000221a24768b3 (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object,UnityEngine.Object) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/CSDebug.cs:487)
+0x0000022131d6f833 (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:RecoverLostFollowTarget () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:773)
+0x0000022131d6b7d3 (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:UpdateCamera () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:491)
+0x0000022131d6b42b (Mono JIT Code) CosmicShore.Gameplay.CustomCameraController:LateUpdate () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Controller/Camera/CustomCameraController.cs:484)
+0x000002219da076f8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ff9ec556c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9ec498984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9ec498a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e4b2fdd4 (Unity) scripting_method_invoke
+0x00007ff9e4b36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e4a41aa7 (Unity) MonoBehaviour::CallMethodIfAvailable
+0x00007ff9e4a41bd2 (Unity) MonoBehaviour::CallUpdateMethod
+0x00007ff9e45e34cb (Unity) BaseBehaviourManager::CommonUpdate<LateBehaviourManager>
+0x00007ff9e45ea21a (Unity) LateBehaviourManager::Update
+0x00007ff9e49fc5cf (Unity) `InitPlayerLoopCallbacks'::`2'::PreLateUpdateScriptRunBehaviourLateUpdateRegistrator::Forward
+0x00007ff9e49dabef (Unity) ExecutePlayerLoop
+0x00007ff9e49dad65 (Unity) ExecutePlayerLoop
+0x00007ff9e49dfc0f (Unity) PlayerLoop
+0x00007ff9e53556da (Unity) EditorPlayerLoop::Execute
+0x00007ff9e536c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ff9e536e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ff9e536866d (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+Analytics Dispatcher is already flushing.
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e4161b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000221378348ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000221378346b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000221318d2e4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000221378337ee (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000002213783354d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002213764ea43 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000002213764e7d6 (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x00000221a755b659 (Mono JIT Code) CosmicShore.Core.UgsAnalyticsSink:Flush () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/UgsAnalyticsSink.cs:120)
+0x00000221a755b3ba (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:Flush () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:606)
+0x00000221a755ab0b (Mono JIT Code) CosmicShore.Core.AnalyticsServiceFacade:HandleAppQuitting () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/Instrumentation/AnalyticsServiceFacade.cs:808)
+0x000002202599d427 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x0000022137640272 (Mono JIT Code) Obvious.Soap.ScriptableEventNoParam:Raise () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs:70)
+0x00000221a755a8db (Mono JIT Code) CosmicShore.Core.ApplicationLifecycleManager:OnApplicationQuit () (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/System/Bootstrap/ApplicationLifecycleManager.cs:85)
+0x000002219da076f8 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ff9ec556c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9ec498984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9ec498a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e4b2fdd4 (Unity) scripting_method_invoke
+0x00007ff9e4b36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e4a46f51 (Unity) MonoBehaviour::HandleNotifications
+0x00007ff9e44a5010 (Unity) GameObject::SendMessageAny
+0x00007ff9e49cbc42 (Unity) SendMessageToEveryone
+0x00007ff9e49ff65a (Unity) NotifyPlayerQuit
+0x00007ff9e536b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff9e536d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff9e536896c (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+Container Menu_Main (-260260356) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e4161b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000221378348ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000221378346b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000221318d2e4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000221378337ee (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000002213783354d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000002213764ea43 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000002213764e7d6 (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x00000221a755fa3b (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:321)
+0x00000221a755f7c3 (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:109)
+0x000002202599d427 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x00000221a755c5db (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000002216cec4445 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff9ec556c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9ec498984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9ec498a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e4b2fdd4 (Unity) scripting_method_invoke
+0x00007ff9e4b36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e4b32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff9e400ab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ff9e49ff689 (Unity) NotifyPlayerQuit
+0x00007ff9e536b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff9e536d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff9e536896c (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+[Multiplayer]: NetworkManagerSession.StopAsync: Called after dispose.
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e4161b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000221378348ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000221378346b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000221318d2e4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000221a7567c14 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,string,object,UnityEngine.Object)
+0x00000221a75679a4 (Mono JIT Code) Unity.Services.Multiplayer.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:18)
+0x00000221a7567853 (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogWarning (object,UnityEngine.Object) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:38)
+0x00000221a756772b (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,UnityEngine.Object,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:48)
+0x00000221a75674db (Mono JIT Code) Unity.Services.Multiplayer.Logger:LogCallWarning (string,string,string) (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Utils/Logger.cs:43)
+0x00000221a7565f53 (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession/<StopAsync>d__29:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/NetworkManagerSession.cs:250)
+0x0000021ff345aa12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x00000221a7565b83 (Mono JIT Code) Unity.Services.Multiplayer.NetworkManagerSession:StopAsync (System.Threading.CancellationToken)
+0x00000221a756588b (Mono JIT Code) Unity.Services.Multiplayer.GameObjectsNetcodeNetworkHandler:StopAsync () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/Handlers/NetworkHandler/GameObjectsNetcodeNetworkHandler.cs:121)
+0x00000221a23e74bf (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<ResetAsync>d__83:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:727)
+0x0000021ff345aa12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x00000221a23e70d3 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:ResetAsync ()
+0x00000221a23e6b03 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule/<Unity-Services-Multiplayer-IModule-LeaveAsync>d__59:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Modules/Network/NetworkModule.cs:129)
+0x0000021ff345aa12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x00000221a23e68a3 (Mono JIT Code) Unity.Services.Multiplayer.NetworkModule:Unity.Services.Multiplayer.IModule.LeaveAsync ()
+0x00000221a23e5def (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveModulesAsync>d__132:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:776)
+0x0000021ff345aa12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x00000221a23e5863 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveModulesAsync ()
+0x00000221a7563a6b (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<LeaveAsync>d__133:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:818)
+0x0000021ff345aa12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x00000221a75625f3 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:LeaveAsync ()
+0x00000221a7561ee3 (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler/<OnQuitting>d__166:MoveNext () (at ./Library/PackageCache/com.unity.services.multiplayer@3bd2e24872f4/Runtime/Multiplayer/Session/SessionHandler.cs:1234)
+0x0000021ff3455832 (Mono JIT Code) System.Runtime.CompilerServices.AsyncVoidMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x00000221a7561bcb (Mono JIT Code) Unity.Services.Multiplayer.SessionHandler:OnQuitting ()
+0x000002202599d427 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x00000221a755c5db (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000002216cec4445 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff9ec556c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9ec498984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9ec498a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e4b2fdd4 (Unity) scripting_method_invoke
+0x00007ff9e4b36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e4b32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff9e400ab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ff9e49ff689 (Unity) NotifyPlayerQuit
+0x00007ff9e536b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff9e536d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff9e536896c (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+Assertion failed on expression: 't.GetParent() == nullptr'
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e42a53be (Unity) AssertImplementation
+0x00007ff9e49b6566 (Unity) DestroyWorldObjects
+0x00007ff9e5745cfd (Unity) EditorSceneManager::RestoreSceneBackups
+0x00007ff9e536b7ed (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff9e536d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff9e536896c (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+Assertion failed on expression: 't.GetParent() == nullptr'
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e42a53be (Unity) AssertImplementation
+0x00007ff9e49b6566 (Unity) DestroyWorldObjects
+0x00007ff9e5745cfd (Unity) EditorSceneManager::RestoreSceneBackups
+0x00007ff9e536b7ed (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff9e536d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff9e536896c (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+Some objects were not cleaned up when closing the scene. (Did you spawn new GameObjects from OnDestroy?)
+The following scene GameObjects were found:
+Cell0_RetiringWorld
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e49cd039 (Unity) ValidateNoSceneObjectsAreLoaded
+0x00007ff9e5745d09 (Unity) EditorSceneManager::RestoreSceneBackups
+0x00007ff9e536b7ed (Unity) PlayerLoopController::ExitPlayMode
+0x00007ff9e536d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ff9e536896c (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            11.335 ms
+	Integration:            919.457 ms
+	Integration of assets:  0.026 ms
+	Thread Wait Time:       0.004 ms
+	Total Operation Time:   930.822 ms
+Unloading 21518 unused Assets / (37.0 MB). Loaded Objects now: 31864.
+Memory consumption went from 0.71 GB to 0.68 GB.
+Total: 234.567500 ms (FindLiveObjects: 5.515000 ms CreateObjectMapping: 7.289400 ms MarkObjects: 191.513400 ms  DeleteObjects: 30.247100 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+connection.state_change
+oldState=Connecting newState=Failed error=Relay process exited (exit code 1073807364)
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e4161b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x00000221378348ae (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x00000221378346b3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000002213783436b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x00000221318d2e4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/Shombith/Documents/GitHub/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:55)
+0x00000221378337ee (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x00000221a76671ba (Mono JIT Code) UnityEngine.Debug:LogError (object)
+0x00000221a7666fd3 (Mono JIT Code) Unity.AI.Tracing.ConsoleSink:LogToConsole (string,string,System.Exception) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceSinks.cs:307)
+0x00000221a7665d53 (Mono JIT Code) Unity.AI.Tracing.ConsoleSink:Write (Unity.AI.Tracing.TraceEvent) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceSinks.cs:277)
+0x000002200fcf61ba (Mono JIT Code) Unity.AI.Tracing.TraceWriter:WriteEventInternal (string,string,Unity.AI.Tracing.TraceEventOptions,string,System.Nullable`1<int>) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceWriter.cs:373)
+0x000002200fcf2893 (Mono JIT Code) Unity.AI.Tracing.TraceWriter:Event (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/TraceWriter.cs:297)
+0x000002212dcd639b (Mono JIT Code) Unity.AI.Tracing.Trace:Event (string,Unity.AI.Tracing.TraceEventOptions) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Modules/Unity.AI.Tracing/Trace.cs:79)
+0x000002212dcdceab (Mono JIT Code) Unity.Relay.Editor.RelayService:TransitionTo (Unity.Relay.Editor.RelayStatus,string) (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:1226)
+0x00000221a7663f3b (Mono JIT Code) Unity.Relay.Editor.RelayService/<ConnectWebSocketAsync>d__102:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:675)
+0x0000021ff345aa12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x00000221a76637b3 (Mono JIT Code) Unity.Relay.Editor.RelayService:ConnectWebSocketAsync ()
+0x00000221a7663013 (Mono JIT Code) Unity.Relay.Editor.RelayService/<ReconnectAsync>d__92:MoveNext () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:414)
+0x0000021ff345aa12 (Mono JIT Code) System.Runtime.CompilerServices.AsyncTaskMethodBuilder:Start<TStateMachine_REF> (TStateMachine_REF&)
+0x00000221a7661313 (Mono JIT Code) Unity.Relay.Editor.RelayService:ReconnectAsync ()
+0x0000022132dff59b (Mono JIT Code) Unity.Relay.Editor.RelayService:Update () (at ./Library/PackageCache/com.unity.ai.assistant@d9bb465c57d1/Editor/Assistant/Relay/RelayService.cs:1294)
+0x000002210cba7638 (Mono JIT Code) UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()
+0x000002219d7ecf65 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff9ec556c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9ec498984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9ec498a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e4b2fdd4 (Unity) scripting_method_invoke
+0x00007ff9e4b36c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e4b32235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff9e511bcbb (Unity) Scripting::UnityEditor::EditorApplicationProxy::Internal_CallUpdateFunctions
+0x00007ff9e5799d27 (Unity) SceneTracker::Update
+0x00007ff9e536846d (Unity) Application::TickTimer
+0x00007ff9e5149f7c (Unity) MainMessageLoop
+0x00007ff9e5151a12 (Unity) UnityMain
+0x00007ff7f5e02f2a (Unity) __scrt_common_main_seh
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+Unexpected transport error from import worker 2 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker2.log
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e6b40ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ff9e6b4da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ff9e6b10207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ff9e6b12aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ff9e6b090c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ff9e6b13f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ff9e6b20867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ff9e6b0ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ff9e6b0dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ff9e6b1d809 (Unity) IOService::Run
+0x00007ff9e6b1e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ff9e5b22b80 (Unity) Thread::RunThreadWrapper
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 2: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker2.log
+Unexpected transport error from import worker 3 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker3.log
+0x00007ff9e42f4e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e5b2f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e5b2fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e42a587f (Unity) DebugStringToFile
+0x00007ff9e6b40ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ff9e6b4da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ff9e6b10207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ff9e6b12aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ff9e6b090c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ff9e6b13f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ff9e6b20867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ff9e6b0ca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ff9e6b0dcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ff9e6b1d809 (Unity) IOService::Run
+0x00007ff9e6b1e46b (Unity) IOService::Impl::ThreadFunction
+0x00007ff9e5b22b80 (Unity) Thread::RunThreadWrapper
+0x00007ffae7c9dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffae8b1ee4c (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 3: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker3.log
+IPCStream (hubIPCService): IPC stream failed to read (Not connected)
+IPCStream (Upm-20492): IPC stream failed to read (Not connected)
+
