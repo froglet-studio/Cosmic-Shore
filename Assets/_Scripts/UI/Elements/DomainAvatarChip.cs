@@ -64,6 +64,11 @@ namespace CosmicShore.UI
 
         [SerializeField, Min(0f)] float hoverSeconds = 0.12f;
 
+        [Tooltip("A seat ROW's hover: the authored hover label takes the place of the name and role while it " +
+                 "shows (the configure window's rows are too narrow to show all three). Off keeps them, for a " +
+                 "round chip whose label sits under it.")]
+        [SerializeField] bool hoverReplacesText;
+
         System.Action _onKick;
         Button _generatedKick;
         bool _kickWired;
@@ -237,6 +242,8 @@ namespace CosmicShore.UI
             transform.localScale = Vector3.one;
             if (hoverLabel) hoverLabel.gameObject.SetActive(false);
             if (_generatedLabelRoot) _generatedLabelRoot.SetActive(false);
+            if (nameText) nameText.enabled = true;
+            if (roleText) roleText.enabled = true;
         }
 
         void ShowHover(bool show)
@@ -251,6 +258,11 @@ namespace CosmicShore.UI
             {
                 if (hoverLabel) hoverLabel.gameObject.SetActive(false);
                 if (_generatedLabelRoot) _generatedLabelRoot.SetActive(false);
+            }
+            if (hoverReplacesText && hoverLabel)
+            {
+                if (nameText) nameText.enabled = !show;
+                if (roleText) roleText.enabled = !show;
             }
 
             if (!isActiveAndEnabled) return;

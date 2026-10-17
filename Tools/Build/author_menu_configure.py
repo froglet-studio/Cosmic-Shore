@@ -87,6 +87,7 @@ def script(cls, folder="Assets/_Scripts"):
 
 
 S = dict(
+    popup=script("VesselInfoPopup"),
     minigame=script("MinigameLaunchPanel"), aipicker=script("AIDifficultyPicker"), arena=script("ArenaLaunchPanel"), maelstrom=script("MaelstromLaunchPanel"),
     briefing=script("GameBriefingView"), objective=script("ObjectiveBoxView"), preview=script("ModePreviewWindow"),
     toast=script("PreviewMicroToast"), favorite=script("FavoriteIcon"), controls=script("VesselControlsPanel"),
@@ -101,7 +102,8 @@ S = dict(
     ambient=K.kit_script("KitAmbient"), spark=K.kit_script("KitSpark"), shake=K.kit_script("KitShake"),
 )
 RAW_IMAGE = "1344c3c82d62a2a41a3576d8abb8e3ea"
-PACKAGE = A.PACKAGE | {RAW_IMAGE, M.RECT_MASK_2D}
+GRID_LAYOUT = "8a8695521f0d02e499659fee002a26c2"   # UnityEngine.UI.GridLayoutGroup
+PACKAGE = A.PACKAGE | {RAW_IMAGE, M.RECT_MASK_2D, GRID_LAYOUT}
 
 # --- data assets (read off the shipped wiring the rebuild replaces) ------------------------------
 INTENSITY_VAR = "490485287c38a2f4e9178566394efd69"       # the IntVariable every intensity button writes
@@ -113,7 +115,7 @@ STAR_ON, STAR_OFF = "09f81e9c4fc304748819eca2110c75c0", "2f19932d871d57543a48ef3
 SQUIRREL_ICON = K.VESSEL_ICON["Squirrel"]               # placeholder art until the card binds
 AVATAR_PLACEHOLDER = A.AVATAR_PLACEHOLDER
 
-PART_PREFABS = ("ConfigureSeatChip", "ConfigureAbilityRow", "ConfigurePoolRow", "ConfigureIntensityNode",
+PART_PREFABS = ("ConfigureSeatChip", "VesselInfoCard", "ConfigureAbilityRow", "ConfigurePoolRow", "ConfigureIntensityNode",
                 "ConfigureDomainColumn", "ConfigureHullTile")
 VIEW_PREFABS = ("ConfigureView", "ConfigureArenaView", "ConfigureMaelstromView")
 BOARD_PREFABS = ("LeaderboardRow", "LeaderboardView")
@@ -300,6 +302,11 @@ def section_label(parent, key, name, caption, r, token="TextLight", align="left"
 COL_W, SEAT_H, TILE_H = 206, 40, 62
 
 
+NAME_RIGHT = 108          # the name stops here (from the right): role, (i) and the X live beyond it
+ROLE_RIGHT, ROLE_W = 64, 44
+INFO_RIGHT, INFO_SIZE = 40, 22
+
+
 def build_seat_chip():
     root = N("root", "ConfigureSeatChip", R(size=(COL_W, SEAT_H)))
     frame_nodes(root, "Frame", 10, "SurfaceVeryDark", "SurfaceDark")
@@ -308,10 +315,27 @@ def build_seat_chip():
     outline.active = False
     outline.add("le", 114, le(ignore=True))
     _, x = A.avatar_nodes(root, "Avatar", 28, x=8)
-    label_e(root.child(N("Name", "Name", R((0, 0.5), (1, 0.5), ((x + 8 - 92) / 2, 0), (-(x + 8 + 92), 22)))),
+    left = x + 8
+    label_e(root.child(N("Name", "Name", R((0, 0.5), (1, 0.5), ((left - NAME_RIGHT) / 2, 0), (-(left + NAME_RIGHT), 22)))),
             "Pilot", "Body", "TextLight", align="left", driven=False)
-    label_e(root.child(N("Role", "Role", R((1, 0.5), None, (-40, 0), (72, 18), (1, 0.5)))),
-            "Pilot", "Label", "NeutralLightest", align="right")
+    label(root.child(N("Role", "Role", R((1, 0.5), None, (-ROLE_RIGHT, 0), (ROLE_W, 18), (1, 0.5)))),
+          "Pilot", "Label", "NeutralLightest", align="right")
+    # Rev 5 (Yash's AI seat info in style B): the (i) is a small hex in the row, left of the X.
+    info = root.child(N("Info", "Info", R((1, 0.5), None, (-INFO_RIGHT, 0), (INFO_SIZE, INFO_SIZE), (1, 0.5))))
+    info.active = False
+    info.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_hex_fill"), raycast=True, preserve=True)) \
+        .add("th", 114, themed("SurfaceVeryDark"))
+    image_node(info, "Info/Line", "Line", STRETCH, "ControlActive", K.kit_sprite("kit_hex_line2"), preserve=True)
+    label(info.child(N("Info/Glyph", "Glyph", STRETCH)), "i", "Label", "ControlActive", align="center")
+    info.add("button", 114, plain_button(c("Info", "img"))).add("audio", 114, A.menu_audio(2))
+    # The hover: the row stays its size; the hull's name takes the place of the name and the role
+    # (DomainAvatarChip.hoverReplacesText) and the row's edge lights.
+    hover = root.child(N("HoverName", "HoverName", STRETCH))
+    hover.active = False
+    hover.add("cr", 222, K.canvas_renderer()).add("tmp", 114, hover_text()) \
+        .add("kt", 114, K.kit_text("Label", "ControlActive"))
+    image_node(hover, "HoverName/Edge", "Edge", STRETCH, "ControlActive", K.kit_sprite("kit_sliver10_line2"), sliced=True)
     kick = A.small_button("Kick", "Kick", "Cancel", None, (1, 0.5), (1, 0.5), icon="chrome_close")
     kick.rect = R((1, 0.5), None, (-4, 0), (32, 32), (1, 0.5))
     kick.active = False
@@ -322,11 +346,23 @@ def build_seat_chip():
              f"  nameText: {ref(ctx.c('Name', 'tmp'))}\n"
              f"  roleText: {ref(ctx.c('Role', 'tmp'))}\n"
              f"  kickButton: {ref(ctx.iref('Kick', 'root#button'))}\n"
-             "  hullPickButton: {fileID: 0}\n"))
+             "  hullPickButton: {fileID: 0}\n"
+             f"  infoButton: {ref(ctx.c('Info', 'button'))}\n"
+             f"  hoverLabel: {ref(ctx.c('HoverName', 'tmp'))}\n"
+             "  hoverScale: 1\n  hoverSeconds: 0.12\n  hoverReplacesText: 1\n"))
     root.add("le", 114, le(ph=SEAT_H, pw=COL_W))
     root.add("in", 114, M.entrance("Rise", by_sibling=True, distance=8))
     root.add("cg", 225, canvas_group(True))
     return root
+
+
+def hover_text():
+    """The hull's name over the name + role slot: the TMP spans the row (so its Edge child outlines the whole
+    row) and its margins keep the words between the avatar and the (i)."""
+    base = text("SPARROW", "Label", tok("ControlActive"), align="left")
+    left = 8 + 28 + 8
+    return lambda ctx, go: base(ctx, go).replace("  m_margin: {x: 0, y: 0, z: 0, w: 0}\n",
+                                                f"  m_margin: {{x: {left}, y: 0, z: {ROLE_RIGHT}, w: 0}}\n")
 
 
 # --------------------------------------------------------------------------------------------
@@ -580,32 +616,28 @@ def build_hull_tile():
 # --------------------------------------------------------------------------------------------
 
 LEFT_TOP, COL_H = 196, 844           # the leaderboard's columns run from y 196 to y 1040 at 1080
-# Rev 3 (the owner's "interesting option", 2026-10-16): option A's full live preview under option B's
-# three step cards (Docs/MENU_REDESIGN_B.md section 33). At the 1920 x 1080 reference:
-#   y   84 - 1080  the preview, full-bleed under the nav, BEHIND everything
-#   y  200 -  500  the cinema band: Briefing glass on the left, the game showing through the middle
-#                  (status, "+1", Tap to fly / FLY), Controls (Maelstrom: the pool) glass on the right
-#   y  540 -  980  three step cards: 01 Vessel, 02 Intensity (+ objective), 03 Pilots (+ AI)
-#   y  992 - 1052  the launch row: status, summary chips, START
+# Rev 4 simple (the owner, 2026-10-17: "I like this UI apart from the latest one" - the R4Configure board):
+# ONE framed live preview and ONE settings column. At the 1920 x 1080 reference:
+#   x 60 - 1160, y 196 - 816   the preview: background, glowing border, brackets; FLY bottom-left, the
+#                              objective bottom-right (Maelstrom: the clip)
+#   y 830 - 1048 under it      the briefing (two lines) and the controls as a 3-column grid
+#                              (Maelstrom: the briefing beside the game pool)
+#   x 1180 - 1860, y 196 - 976 the settings column: Vessel, Intensity, Pilots (+ AI)
+#                              (Maelstrom: Intensity, Pilots, Format)
+#   y 990                      the launch row under the column: status, summary chips, START
 # While the player flies the preview, ConfigureCinema fades every one of those out (the Chrome node).
 MARGIN = 60
-# Rev 3 option B (the owner, 2026-10-17: "I like the second version of the UI more"): a wide live-preview
-# BANNER (background, glowing border) with the briefing laid over its left side, then three step cards
-# (01 Vessel with its controls, 02 Intensity with the objective, 03 Pilots) and the launch row.
-BAND_TOP, BAND_H = 196, 284
-BRIEF_W = 640                        # the briefing over the banner's left side
-SIDE_W = 540                         # Arena (controls) / Maelstrom (pool) panel beside a shorter banner
-CARD_TOP, CARD_H, CARD_GAP, PAD = BAND_TOP + BAND_H + 18, 476, 20, 22
-FOOT_TOP = 990
-BODY_TOP = 128                       # a card's body starts under its numeral, caption and hint
-CARDS = {"arcade": (400, 680, 680), "arena": (400, 680, 680), "maelstrom": (680, 680, 400)}
-NODE_GAP = (680 - 2 * PAD - 4 * NODE_W) // 3
-COL_GAP = (680 - 2 * PAD - 3 * COL_W) // 2
-
-
-def banner_w(kind):
-    """The arcade banner spans the window; the Arena's and the Maelstrom's leave room for a side panel."""
-    return 1800 if kind == "arcade" else 1800 - SIDE_W - CARD_GAP
+TOP = 196
+PV_W, PV_H = 1100, 620               # 16:9-ish; ModePreviewWindow renders at the drawn pixel size
+SET_GAP, SET_W = 20, 680
+SET_X = MARGIN + PV_W + SET_GAP
+SET_H = 780
+PAD, SEC_GAP = 18, 10                # the column's inset and the gap between its sections
+SEC_HEAD = 28                        # a section's caption row (caption left, live value right)
+BOTTOM = 1048                        # the lowest edge anything under the preview reaches
+UNDER_TOP = TOP + PV_H + 14          # the briefing / controls (Maelstrom: pool) under the preview
+NODE_GAP = (SET_W - 2 * PAD - 4 * NODE_W) // 3
+COL_GAP = (SET_W - 2 * PAD - 3 * COL_W) // 2
 EYEBROW = {"arcade": "Arcade", "arena": "Arena", "maelstrom": "Arcade - Maelstrom"}
 PANEL_CLASS = {"arcade": "minigame", "arena": "arena", "maelstrom": "maelstrom"}
 VIEW_NAME = {"arcade": "ConfigureView", "arena": "ConfigureArenaView", "maelstrom": "ConfigureMaelstromView"}
@@ -659,11 +691,11 @@ def header(parent, kind):
 
 
 def preview_window(root, kind):
-    """The live arena (ModePreviewWindow) or, for Maelstrom, the clip (ModeVideoView), FULL-BLEED under
-    the nav and behind every setting (rev 3). Its tap-to-fly surface is navigation None: drawn first,
-    it would otherwise be the control the pad lands on when the window opens; the pad flies through
-    the FLY button in the band instead (ModePreviewWindow.RequestFocus)."""
-    pv = root.child(N("Preview", "Preview", TL(MARGIN, BAND_TOP, banner_w(kind), BAND_H)))
+    """The live arena (ModePreviewWindow) or, for Maelstrom, the clip (ModeVideoView): one framed window on
+    the left (rev 4 simple). Its tap-to-fly surface is navigation None: drawn first, it would otherwise be
+    the control the pad lands on when the window opens; the pad flies through FLY instead
+    (ModePreviewWindow.RequestFocus)."""
+    pv = root.child(N("Preview", "Preview", TL(MARGIN, TOP, PV_W, PV_H)))
     # No entrance on the preview: the window opens by a CanvasGroup fade, and a rise that started
     # under it could leave the preview at alpha 0. The preview is the window; it is simply there.
     pv.add("cg", 225, canvas_group(True))
@@ -675,7 +707,7 @@ def preview_window(root, kind):
     image_node(pv, "Preview/Fade", "Fade", R((0, 0), (1, 0), (0, 2), (-4, 90), (0.5, 0)), "SurfaceBlack",
                K.kit_sprite("kit_fade_v"), alpha=0.8)
     M.bracket_nodes(pv, "Preview/Bracket")
-    mid = R((0.5, 0.5), None, (BRIEF_W / 2 - 60, 10), (600, 60))   # right of the briefing over the banner
+    mid = R((0.5, 0.5), None, (0, 10), (600, 60))
     if kind == "maelstrom":
         na = pv.child(N("Preview/Unavailable", "Unavailable", mid))
         label(na, "No clip for this card yet.", "Body", "NeutralLightest", align="center")
@@ -757,7 +789,7 @@ def fly_row(chrome, kind):
     """Tap to fly / FLY / vessel, in the open middle of the band. FLY is the pad's way into the
     full-bleed preview: a KitButton calling ModePreviewWindow.RequestFocus, the same request a tap
     on the surface makes."""
-    row = chrome.child(N("Fly", "Fly", TL(MARGIN + 24, BAND_TOP + BAND_H - 58, 600, 44)))
+    row = chrome.child(N("Fly", "Fly", TL(MARGIN + 24, TOP + PV_H - 58, 460, 44)))
     row.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=4))
     row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (0, 0), (0, 0)))
     hint = row.child(N("Fly/Hint", "FocusHint", R((0, 0.5), None, (0, 0), (180, 18), (0, 0.5))))
@@ -776,7 +808,8 @@ def flying_hint(root):
     STOP is for touch, which has neither START nor Esc - and a full-bleed preview leaves almost no
     "outside" to tap (ModePreviewWindow releases on a press outside its surface). Navigation None:
     the pad's way back is START."""
-    n = root.child(N("FlyingHint", "FlyingHint", R((0.5, 1), None, (0, -(BAND_TOP - 48)), (820, 40))))
+    # Above the picture at the top of the frame (the R4ConfigureFlying board).
+    n = root.child(N("FlyingHint", "FlyingHint", R((0, 1), None, (MARGIN + PV_W / 2, -(TOP + 34)), (820, 40))))
     n.add("cg", 225, canvas_group(False))
     n.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0)))
     t = n.child(N("FlyingHint/Text", "Text", R((0, 0.5), None, (0, 0), (300, 18), (0, 0.5))))
@@ -828,13 +861,13 @@ def objective_bar(parent, r):
 
 
 def briefing(chrome, kind):
-    """The briefing laid over the banner's left side on a fade (option B), clear of the FLY row."""
-    w = min(BRIEF_W, banner_w(kind) - 260)
-    b = chrome.child(N("Briefing", "Briefing", TL(MARGIN + 2, BAND_TOP + 2, w, BAND_H - 4)))
+    """The briefing under the preview: two lines of Body (the R4Configure board). Maelstrom keeps it on the
+    left and gives the right of that strip to the game pool."""
+    w = 520 if kind == "maelstrom" else PV_W
+    h = BOTTOM - UNDER_TOP if kind == "maelstrom" else 64
+    b = chrome.child(N("Briefing", "Briefing", TL(MARGIN, UNDER_TOP, w, h)))
     b.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    image_node(b, "Briefing/Fade", "Fade", STRETCH, "SurfaceBlack", K.kit_sprite("kit_fade_h"), alpha=0.85)
-    section_label(b, "Briefing/Title", "Title", "Briefing", TL(30, 28, 200, 18), token="ControlActive")
-    body = b.child(N("Briefing/Body", "Body", R((0, 0), (1, 1), (-30, -6), (-180, -132))))
+    body = b.child(N("Briefing/Body", "Body", STRETCH))
     body.add("cr", 222, K.canvas_renderer()) \
         .add("tmp", 114, text("Find the fastest path to the crystal.", "Body", tok("TextLight"), valign="top", wrap=True)) \
         .add("kt", 114, K.kit_text("Body", "TextLight"))
@@ -844,26 +877,28 @@ def briefing(chrome, kind):
     return b
 
 
-def controls(parent, r, framed):
-    """The vessel's controls list (VesselControlsPanel): in the Arcade's card 01 under the vessel
-    (option B), or a glass panel beside the Arena's banner."""
-    if framed:
-        cb = glass(parent, "Controls", "Controls", r, 3)
-        ins, top = PAD, PAD
-    else:
-        cb = parent.child(N("Controls", "Controls", r))
-        cb.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=3))
-        ins, top = 0, 0
-    section_label(cb, "Controls/Title", "Title", "Controls", TL(ins, top, 200, 18))
-    label(cb.child(N("Controls/Vessel", "Vessel", TR(ins, top, 200, 18))), "Squirrel", "Label", "NeutralLightest",
-          align="right")
-    sc = cb.child(N("Controls/Scroll", "Scroll", R((0, 0), (1, 1), (0, -(top + 28 - ins) / 2), (-2 * ins, -(top + 28 + ins)))))
+CTRL_COLS, CTRL_CELL_H = 3, 34
+
+
+def controls(parent, r):
+    """The vessel's controls (VesselControlsPanel) under the briefing: a caption, then the rows as a
+    three-column grid (the R4Configure board's one line of controls, with room for a long list)."""
+    cb = parent.child(N("Controls", "Controls", r))
+    cb.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=3))
+    section_label(cb, "Controls/Title", "Title", "Controls", TL(0, 8, 120, 18))
+    label(cb.child(N("Controls/Vessel", "Vessel", TL(0, 30, 120, 18))), "Squirrel", "Label", "NeutralLightest")
+    sc = cb.child(N("Controls/Scroll", "Scroll", R((0, 0), (1, 1), (65, 0), (-130, 0))))
     sc.add("scroll", 114, A.scroll_rect("Controls/Scroll/Viewport/Content", "Controls/Scroll/Viewport", 20))
     vp = sc.child(N("Controls/Scroll/Viewport", "Viewport", STRETCH))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("mask", 114, A.rect_mask())
     content = vp.child(N("Controls/Scroll/Viewport/Content", "Content", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
-    content.add("vlg", 114, K.hv_layout(True, (0, 0, 0, 0), 6, 0, (1, 1), (1, 0))).add("csf", 114, K.fitter(0, 2))
+    cell_w = (PV_W - 130 - (CTRL_COLS - 1) * 14) // CTRL_COLS
+    content.add("grid", 114, lambda ctx, go: mono(go, GRID_LAYOUT,
+                "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+                "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+                f"  m_CellSize: {{x: {cell_w}, y: {CTRL_CELL_H}}}\n  m_Spacing: {{x: 14, y: 4}}\n"
+                f"  m_Constraint: 1\n  m_ConstraintCount: {CTRL_COLS}\n")).add("csf", 114, K.fitter(0, 2))
     cb.add("controls", 114, lambda ctx, go: mono(go, S["controls"],
            f"  rowContainer: {ref(ctx.rt('Controls/Scroll/Viewport/Content'))}\n"
            f"  rowPrefab: {K.ref(K.FileIds('ConfigureAbilityRow')('root#row'), asset_guid('ConfigureAbilityRow'))}\n"
@@ -882,107 +917,109 @@ FORMAT_ROWS = (("First to", "WinTarget", "6 points"), ("Games", "GameCap", "up t
                ("Points by place", "Points", "2 / 1 / 0"), ("Seats", "Seats", "4"))
 
 
-def format_card(steps, x, w):
-    fb = steps.child(N("Format", "Format", TL(x, 0, w, CARD_H)))
-    fb.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    frame(fb, "Format/Frame", 14, fill_alpha=0.82)
-    M.spark_line(fb, "Format/Edge", "Edge", TL(14, 0, w - 28, 2), grow_delay=0.45)
-    section_label(fb, "Format/Title", "Title", "Format", TL(PAD, 34, 200, 18))
+def section(steps, key, top, h, caption, value, stagger):
+    """One setting in the column: its caption on the left, the live value on the right, a rule under the
+    caption row, then the setting's own controls from SEC_HEAD (the R4Configure board's rows)."""
+    sec = steps.child(N(key, key, TL(PAD, top, SET_W - 2 * PAD, h)))
+    sec.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=stagger))
+    label(sec.child(N(f"{key}/Caption", "Caption", TL(0, 0, 200, 20))), caption, "Label", "TextLight")
+    if value is not None:
+        label(sec.child(N(f"{key}/Value", "Value", TR(0, 0, 300, 22))), value, "Body", "TextLight", align="right")
+    image_node(sec, f"{key}/Rule", "Rule", R((0, 1), (1, 1), (0, -(SEC_HEAD - 6)), (0, 1), (0.5, 1)), "SurfaceDark")
+    return sec
+
+
+FORMAT_ROW_H = 44
+
+
+def format_section(steps, top):
+    fb = section(steps, "Format", top, SEC_HEAD + 4 * FORMAT_ROW_H, "Format", None, 2)
     for i, (cap, key, value) in enumerate(FORMAT_ROWS):
-        row = fb.child(N(f"Format/{key}", key, R((0, 1), (1, 1), (0, -(BODY_TOP + i * 52)), (-2 * PAD, 48), (0.5, 1))))
+        row = fb.child(N(f"Format/{key}", key, R((0, 1), (1, 1), (0, -(SEC_HEAD + i * FORMAT_ROW_H)), (0, FORMAT_ROW_H - 4), (0.5, 1))))
         label(row.child(N(f"Format/{key}/Caption", "Caption", STRETCH)), cap, "Body", "NeutralLightest")
         label(row.child(N(f"Format/{key}/Value", "Value", STRETCH)), value, "Data", "TextLight", align="right")
         image_node(row, f"Format/{key}/Rule", "Rule", R((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)), "SurfaceDark")
     return fb
 
 
-def step_card(steps, i, x, w, num, caption, value, hint):
-    """One rev-3 step card (option B's quest-view rhythm): numeral, caption, the live value on the right,
-    a one-line hint, then the step's own controls from BODY_TOP. A spark runs along its top edge."""
-    key = f"Step{i + 1}"
-    card = steps.child(N(key, key, TL(x, 0, w, CARD_H)))
-    card.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=i))
-    frame(card, f"{key}/Frame", 14, fill_alpha=0.82)
-    M.spark_line(card, f"{key}/Edge", "Edge", TL(14, 0, w - 28, 2), grow_delay=0.15 * (i + 1))
-    label(card.child(N(f"{key}/Num", "Num", TL(PAD, 14, 90, 54))), num, "Display", "SurfaceLight")
-    label(card.child(N(f"{key}/Caption", "Caption", TL(PAD + 92, 34, 240, 18))), caption, "Label", "TextLight")
-    label(card.child(N(f"{key}/Value", "Value", TR(PAD, 30, 220, 24))), value, "Body", "TextLight", align="right")
-    label(card.child(N(f"{key}/Hint", "Hint", TL(PAD, 78, w - 2 * PAD, 40))), hint, "BodySmall", "NeutralLightest",
-          valign="top", wrap=True)
-    return card
+VESSEL_ART_W, VESSEL_ART_H = 120, 68
+VESSEL_SEC_H = SEC_HEAD + VESSEL_ART_H
 
 
-def vessel_body(card, w):
-    vn = card.child(N("VesselNode", "VesselNode", TL(PAD, BODY_TOP, NODE_W, NODE_H)))
+def vessel_body(sec):
+    """The Arcade's vessel row: the hull's art, its class name and one line about it (set by the card)."""
+    inner = SET_W - 2 * PAD
+    vn = sec.child(N("VesselNode", "VesselNode", TL(0, SEC_HEAD, VESSEL_ART_W, VESSEL_ART_H)))
     vn.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Pop", stagger=1))
-    frame(vn, "VesselNode/Frame", 14, "SurfaceDark", "TextLight")
-    vn.children[-1].comps = [(k, cid, b) if k != "img" else
-                             ("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line2"), True))
-                             for k, cid, b in vn.children[-1].comps]
-    clip = vn.child(N("VesselNode/Clip", "Clip", TL(8, 8, NODE_W - 16, 96)))
+    frame(vn, "VesselNode/Frame", 10, "SurfaceBlack", "SurfaceDark")
+    clip = vn.child(N("VesselNode/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-6, -6))))
     clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))) \
         .add("th", 114, themed("SurfaceBlack")).add("mask", 114, A.rect_mask())
     art = clip.child(N("VesselNode/Clip/Art", "Art", STRETCH))
     art.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, SQUIRREL_ICON)) \
         .add("cover", 114, lambda ctx, go: mono(go, S["cover"], "")) \
-        .add("amb", 114, M.ambient("Float", period=3.6, amplitude=6))
-    label(vn.child(N("VesselNode/Caption", "Caption", R((0, 0), (1, 0), (0, 14), (-16, 18), (0.5, 0)))), "Squirrel",
-          "Label", "TextLight", align="center")
-    inner = w - 2 * PAD
-    info = card.child(N("ClassInfo", "ClassInfo", TL(PAD, BODY_TOP, inner, NODE_H)))
+        .add("amb", 114, M.ambient("Float", period=3.6, amplitude=4))
+    side = inner - VESSEL_ART_W - 16
+    info = sec.child(N("ClassInfo", "ClassInfo", TL(VESSEL_ART_W + 16, SEC_HEAD, side, VESSEL_ART_H)))
     info.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    side = inner - NODE_W - 16
-    label(info.child(N("ClassInfo/Eyebrow", "Eyebrow", TL(NODE_W + 16, 4, side, 18))), "Class", "Label", "NeutralLightest")
-    label(info.child(N("ClassInfo/Name", "Name", TL(NODE_W + 16, 24, side, 34))), "Squirrel", "H2", "TextLight")
-    label(info.child(N("ClassInfo/Description", "Description", TL(NODE_W + 16, 62, side, NODE_H - 62))),
+    label(info.child(N("ClassInfo/Name", "Name", TL(0, 4, side, 30))), "Squirrel", "H3", "TextLight")
+    label(info.child(N("ClassInfo/Description", "Description", TL(0, 36, side, VESSEL_ART_H - 36))),
           "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
-    # Option B: the controls live with the vessel.
-    top = BODY_TOP + NODE_H + 16
-    controls(card, TL(PAD, top, inner, CARD_H - top - PAD), framed=False)
 
 
-HULL_COLS = 4
+HULL_COLS = 8
+HULL_ROWS = (HULL_SLOTS + HULL_COLS - 1) // HULL_COLS
+HULL_W_SET = (SET_W - 2 * PAD - (HULL_COLS - 1) * 4) // HULL_COLS
+HULL_SEC_H = SEC_HEAD + HULL_ROWS * HULL_H + 8 + 34
 
 
-def hull_body(card, w):
-    """The Arena's hulls as a 4 x 2 grid (eight slots), then the class line and Claim."""
-    rows = (HULL_SLOTS + HULL_COLS - 1) // HULL_COLS
-    strip = card.child(N("HullStrip", "HullStrip", TL(PAD, BODY_TOP, HULL_COLS * (HULL_W + HULL_GAP) - HULL_GAP,
-                                                        rows * (HULL_H + HULL_GAP) - HULL_GAP)))
+def hull_body(sec):
+    """The Arena's hulls as one row of eight tiles, then the class line and Claim."""
+    inner = SET_W - 2 * PAD
+    strip = sec.child(N("HullStrip", "HullStrip", TL(0, SEC_HEAD, inner, HULL_ROWS * HULL_H)))
     for i in range(HULL_SLOTS):
         strip.children.append(Inst(f"Hull{i + 1}", "ConfigureHullTile", f"Hull{i + 1}",
-                                   TL((i % HULL_COLS) * (HULL_W + HULL_GAP), (i // HULL_COLS) * (HULL_H + HULL_GAP),
-                                      HULL_W, HULL_H)))
-    top = BODY_TOP + rows * (HULL_H + HULL_GAP) + 4
-    info = card.child(N("ClassInfo", "ClassInfo", TL(PAD, top, w - 2 * PAD, 62)))
-    info.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    label(info.child(N("ClassInfo/Name", "Name", TL(0, 0, w - 2 * PAD, 28))), "Dolphin", "H3", "TextLight")
-    label(info.child(N("ClassInfo/Description", "Description", TL(0, 30, w - 2 * PAD, 32))), "", "BodySmall",
-          "NeutralLightest", valign="top", wrap=True)
+                                   TL((i % HULL_COLS) * (HULL_W_SET + 4), (i // HULL_COLS) * HULL_H, HULL_W_SET, HULL_H)))
+    top = SEC_HEAD + HULL_ROWS * HULL_H + 8
     bw, bh = K.button_size("CLAIM", small=True)
-    claim = card.child(N("Claim", "Claim", TL(PAD, CARD_H - PAD - bh, bw, bh)))
+    info = sec.child(N("ClassInfo", "ClassInfo", TL(0, top, inner - bw - 12, 34)))
+    info.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
+    label(info.child(N("ClassInfo/Name", "Name", TL(0, 2, 180, 30))), "Dolphin", "H3", "TextLight")
+    label_e(info.child(N("ClassInfo/Description", "Description", R((0, 0.5), (1, 0.5), (95, 0), (-190, 22)))), "",
+            "BodySmall", "NeutralLightest", align="left")
+    claim = sec.child(N("Claim", "Claim", TR(0, top, bw, bh)))
     claim.children.append(Inst("ClaimButton", "KitButtonSmall", "ClaimButton", STRETCH,
                                K.button_mods("KitButtonSmall", "Cta", False, "CLAIM", small=True)))
 
 
+def foot_top(kind):
+    """The launch row sits just under the settings column (the R4Configure board)."""
+    top = TOP + column_height(kind) + 20
+    assert top + K.button_size("START GAME")[1] <= BOTTOM, f"{kind}: the launch row runs off the bottom"
+    return top
+
+
 def footer(chrome, kind):
-    status = chrome.child(N("Status", "Status", TL(MARGIN, FOOT_TOP + 16, 560, 28)))
+    """The launch row under the settings column: status over the summary chips, START on the right."""
+    w, h = K.button_size("START GAME")
+    left = SET_W - w - 20
+    top = foot_top(kind)
+    status = chrome.child(N("Status", "Status", TL(SET_X, top, left, 26)))
     rdy = status.child(N("Status/Ready", "Ready", STRETCH))
     rdy.add("cg", 225, canvas_group(True))
     label(rdy, "Ready to launch", "Body", "TextLight")
     why = status.child(N("Status/Reason", "Reason", STRETCH))
     why.add("cg", 225, canvas_group(False))
-    label(why, "", "Body", "Purchase")
+    label_e(why, "", "Body", "Purchase")
     wait = status.child(N("Status/Waiting", "Waiting", STRETCH))
     wait.add("cg", 225, canvas_group(False)).add("amb", 114, M.ambient("Breathe", period=1.6, amplitude=0.5))
     label(wait, "Waiting for others...", "Body", "ControlActive")
-    w, h = K.button_size("START GAME")
-    chips = chrome.child(N("Chips", "Chips", TR(MARGIN + w + 24, FOOT_TOP + 17, 760, 26)))
-    chips.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 10, 5, (0, 0), (0, 0)))
+    chips = chrome.child(N("Chips", "Chips", TL(SET_X, top + 32, left, 26)))
+    chips.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 3, (0, 0), (0, 0)))
     chip_node(chips, "Chips/Vessel", "Vessel", "Maelstrom" if kind == "maelstrom" else "Squirrel")
     chip_node(chips, "Chips/Intensity", "Intensity", "Intensity 1")
     chip_node(chips, "Chips/Pilots", "Pilots", "1 pilot")
-    start = chrome.child(N("Start", "Start", TR(MARGIN, FOOT_TOP, w, h)))
+    start = chrome.child(N("Start", "Start", TR(MARGIN, top, w, h)))
     start.add("in", 114, M.entrance("Rise", stagger=5)).add("cg", 225, canvas_group(True))
     start.children.append(Inst("StartButton", "KitButton", "StartButton", STRETCH,
                                K.button_mods("KitButton", "Play", True, "START GAME"),
@@ -1003,14 +1040,13 @@ AI_LEVELS = (("Easy", 1), ("Medium", 2), ("Hard", 3))   # AIDifficulty (Assets/_
 AI_BTN_H = 52
 
 
-def ai_row(card, w, top):
+def ai_row(card, inner, top):
     """The AI DIFFICULTY row (AIDifficultyPicker, bleeding-edge 2026-10-14) drawn in style B: three
     plates under the domain columns, one lit. The panel shows it only on a card whose AI reads it
     (AIDifficultyRules.IsOfferedFor - Skim Race, Slingshot, Warpline), so it ships HIDDEN; the
     picker's CanvasGroup is the one ArcadeLaunchPanel.SetAIDifficultyAvailable drives, which also
     takes the buttons out of pad navigation while it is hidden."""
-    inner = w - 2 * PAD
-    row = card.child(N("AIRow", "AIDifficulty", TL(PAD, top, inner, 30 + AI_BTN_H)))
+    row = card.child(N("AIRow", "AIDifficulty", TL(0, top, inner, 30 + AI_BTN_H)))
     row.add("cg", 225, canvas_group(False)).add("in", 114, M.entrance("Rise", stagger=9))
     label(row.child(N("AIRow/Caption", "Caption", TL(0, 0, 200, 18))), "AI pilots", "Label", "TextLight")
     label(row.child(N("AIRow/Hint", "Hint", TR(0, 0, inner - 210, 18))), "How hard the AI races. The host picks.",
@@ -1043,9 +1079,11 @@ def ai_row(card, w, top):
 
 
 def pool_panel(chrome):
-    pool = glass(chrome, "Pool", "Pool", TR(MARGIN, BAND_TOP, SIDE_W, BAND_H), 3)
+    """The Maelstrom's game pool under the clip, beside the briefing."""
+    x = MARGIN + 540
+    pool = glass(chrome, "Pool", "Pool", TL(x, UNDER_TOP, PV_W - 540, BOTTOM - UNDER_TOP), 3)
     section_label(pool, "Pool/Title", "Title", "Game pool", TL(PAD, PAD, 300, 18))
-    label(pool.child(N("Pool/Summary", "Summary", TR(PAD, PAD, 300, 18))), "10 of 16 games", "Label", "NeutralLightest",
+    label(pool.child(N("Pool/Summary", "Summary", TR(PAD, PAD, 260, 18))), "10 of 16 games", "Label", "NeutralLightest",
           align="right")
     sc = pool.child(N("Pool/Scroll", "Scroll", R((0, 0), (1, 1), (0, -15), (-2 * PAD, -74))))
     sc.add("scroll", 114, A.scroll_rect("Pool/Scroll/Viewport/Content", "Pool/Scroll/Viewport", 20))
@@ -1062,57 +1100,73 @@ def pool_panel(chrome):
              "  summaryFormat: '{0} of {1} games'\n"))
 
 
+INTENSITY_SEC_H = SEC_HEAD + NODE_H + STUB_H
+PILOTS_BODY_H = TILE_H + 10 + 2 * (SEAT_H + 6)
+AI_ROW_H = 30 + AI_BTN_H
+
+
+def column_height(kind):
+    """The settings column hugs its sections (never past SET_H, the room above the launch row)."""
+    ai = 8 + AI_ROW_H if kind != "maelstrom" else 0
+    secs = [INTENSITY_SEC_H, SEC_HEAD + PILOTS_BODY_H + ai]
+    secs += [SEC_HEAD + 4 * FORMAT_ROW_H] if kind == "maelstrom" else [HULL_SEC_H if kind == "arena" else VESSEL_SEC_H]
+    h = 2 * PAD + sum(secs) + SEC_GAP * (len(secs) - 1)
+    assert h <= SET_H, f"{kind}: the settings column overflows ({h} > {SET_H})"
+    return h
+
+
 def steps_row(chrome, kind):
-    """The three step cards. Sibling order is FOCUS order (ScreenSwitcher.Refocus takes the first
-    live Selectable): the cards come first in the chrome, so the pad lands on a hull, an intensity
-    node or a domain - never on FLY or Back."""
-    widths = CARDS[kind]
-    xs = [sum(widths[:i]) + i * CARD_GAP for i in range(3)]
-    steps = chrome.child(N("Steps", "Steps", TL(MARGIN, CARD_TOP, sum(widths) + 2 * CARD_GAP, CARD_H)))
-    if kind == "maelstrom":
-        ci, cp = step_card(steps, 0, xs[0], widths[0], "01", "Intensity", "1", "Higher levels unlock as you play."), \
-            step_card(steps, 1, xs[1], widths[1], "02", "Pilots", "1 of 4", "Pick your domain; fill open seats with AI.")
-        format_card(steps, xs[2], widths[2])
-    else:
-        cv = step_card(steps, 0, xs[0], widths[0], "01", "Vessel", "Squirrel",
-                       "Every pilot flies a different hull." if kind == "arena" else "Set by the card.")
-        ci = step_card(steps, 1, xs[1], widths[1], "02", "Intensity", "1", "Higher levels unlock as you play.")
-        cp = step_card(steps, 2, xs[2], widths[2], "03", "Pilots", "1 of 4", "Pick your domain; fill open seats with AI.")
-        (hull_body if kind == "arena" else vessel_body)(cv, widths[0])
+    """The ONE settings column (rev 4 simple). Sibling order is FOCUS order (ScreenSwitcher.Refocus takes the
+    first live Selectable): the column comes first in the chrome, so the pad lands on a hull, an intensity
+    node or a domain - never on FLY or Back. Its sections are Step1..3 so the panel's value labels keep
+    their keys: Vessel, Intensity, Pilots (Maelstrom: Intensity, Pilots, then Format)."""
+    steps = glass(chrome, "Steps", "Steps", TL(SET_X, TOP, SET_W, column_height(kind)), 0)
+    y = PAD
+    keys = ("Step1", "Step2", "Step3") if kind != "maelstrom" else (None, "Step1", "Step2")
+    if kind != "maelstrom":
+        vh = HULL_SEC_H if kind == "arena" else VESSEL_SEC_H
+        cv = section(steps, "Step1", y, vh, "Vessel", "Squirrel", 1)
+        (hull_body if kind == "arena" else vessel_body)(cv)
+        y += vh + SEC_GAP
+    ci = section(steps, keys[1], y, INTENSITY_SEC_H, "Intensity", "1", 2)
     for i in range(4):
         ci.children.append(Inst(f"Intensity{i + 1}", "ConfigureIntensityNode", f"Intensity{i + 1}",
-                                TL(PAD + i * (NODE_W + NODE_GAP), BODY_TOP, NODE_W, NODE_H),
+                                TL(i * (NODE_W + NODE_GAP), SEC_HEAD, NODE_W, NODE_H),
                                 [("root#in", "staggerIndex", i + 2, None)]))
-    if kind != "maelstrom":
-        objective_bar(ci, TL(PAD, BODY_TOP + NODE_H + STUB_H + 16, 680 - 2 * PAD, 64))
+    y += INTENSITY_SEC_H + SEC_GAP
+    ph = SEC_HEAD + PILOTS_BODY_H + (8 + AI_ROW_H if kind != "maelstrom" else 0)
+    cp = section(steps, keys[2], y, ph, "Pilots", "1 of 4", 3)
     for i, (dname, dval) in enumerate(DOMAINS):
         cp.children.append(Inst(f"Domain{dname}", "ConfigureDomainColumn", f"{dname}Column",
-                                TL(PAD + i * (COL_W + COL_GAP), BODY_TOP, COL_W, TILE_H + 6 + SEAT_H),
+                                TL(i * (COL_W + COL_GAP), SEC_HEAD, COL_W, TILE_H + 6 + SEAT_H),
                                 [("root#dtile", "domain", dval, None), ("root#in", "staggerIndex", i + 6, None)]))
-    # Every Arena card offers the row too since bleeding-edge 2026-10-16 (6d857572d: Regatta's
-    # GateRaceHandicap, AIPilotBelief for Astro League / Brood Rush / Broadside); the panel still shows
-    # it only where AIDifficultyRules.IsOfferedFor says the mode's AI reads it.
+    # Every Arena card offers the row too since bleeding-edge 2026-10-16; the panel still shows it only
+    # where AIDifficultyRules.IsOfferedFor says the mode's AI reads it.
     if kind in ("arcade", "arena"):
-        ai_row(cp, widths[2], BODY_TOP + TILE_H + 10 + 2 * (SEAT_H + 6) + 22)
+        ai_row(cp, SET_W - 2 * PAD, SEC_HEAD + PILOTS_BODY_H + 8)
+    y += ph + SEC_GAP
+    if kind == "maelstrom":
+        format_section(steps, y)
+        y += SEC_HEAD + 4 * FORMAT_ROW_H + SEC_GAP
+    assert y - SEC_GAP + PAD == column_height(kind), f"{kind}: the column's sections and its height disagree"
     return steps
 
 
 def build_view(kind):
     root = N("root", VIEW_NAME[kind], STRETCH)
-    # Near-opaque (the owner, 2026-10-15): under the full-bleed preview it is what shows while the
-    # arena loads, and it keeps the Arcade window behind from reading through.
+    # Near-opaque (the owner, 2026-10-15): it keeps the Arcade window behind from reading through.
     image_node(root, "Veil", "Veil", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=0.94, raycast=True)
     preview_window(root, kind)
 
-    # Everything over the preview. ConfigureCinema fades this one group while the player flies.
+    # Everything but the preview. ConfigureCinema fades this one group while the player flies.
     chrome = root.child(N("Chrome", "Chrome", STRETCH))
     chrome.add("cg", 225, canvas_group(True))
     steps_row(chrome, kind)
     footer(chrome, kind)
     if kind != "maelstrom":
         fly_row(chrome, kind)
-        if kind == "arena":
-            controls(chrome, TR(MARGIN, BAND_TOP, SIDE_W, BAND_H), framed=True)
+        objective_bar(chrome, TL(MARGIN + PV_W - 24 - 500, TOP + PV_H - 66, 500, 48))
+        controls(chrome, TL(MARGIN, UNDER_TOP + 74, PV_W, BOTTOM - UNDER_TOP - 74))
     else:
         pool_panel(chrome)
     briefing(chrome, kind)
@@ -1135,8 +1189,6 @@ def vessel_names(ctx, kind):
     if kind != "maelstrom":
         out += [ctx.c("Step1/Value", "tmp"), ctx.c("ClassInfo/Name", "tmp"), ctx.c("Chips/Vessel/Label", "tmp"),
                 ctx.c("Fly/Vessel", "tmp"), ctx.c("Controls/Vessel", "tmp")]
-        if kind == "arcade":
-            out.insert(2, ctx.c("VesselNode/Caption", "tmp"))
     return out
 
 
@@ -1408,12 +1460,78 @@ def build_leaderboard_view():
     return root
 
 
+# --------------------------------------------------------------------------------------------
+# VesselInfoCard.prefab - Yash's AI seat info card, in style B (rev 5)
+# --------------------------------------------------------------------------------------------
+
+LOCKUP_STYLE = K.meta_guid("Assets/Resources/AbilityLockupStyle.asset")
+CARD_ELEMENTS = (("Charge", 1), ("Mass", 2), ("Space", 3), ("Time", 4))
+INFO_W, INFO_H = 420, 480
+
+
+def build_info_card():
+    """Opened by the (i) on an AI seat (ArcadeGameConfigureModal instantiates it over the modal): a glass card
+    with a glowing border beside the settings column - the hull's art, the seat and element line, its name,
+    the Hangar's line about it and its four element abilities. A tap outside or the X closes it."""
+    root = N("root", "VesselInfoCard", STRETCH)
+    root.active = False
+    root.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.35), raycast=True)) \
+        .add("button", 114, plain_button(c("root", "img"), nav=0)).add("cg", 225, canvas_group(True))
+    card = root.child(N("Card", "Card", TL(SET_X - SET_GAP - INFO_W, TOP + 24, INFO_W, INFO_H)))
+    card.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
+    frame(card, "Card/Frame", 14, "SurfaceVeryDark", "ControlActive", fill_alpha=0.92)
+    clip = card.child(N("Card/Art", "Art", TL(2, 2, INFO_W - 4, 150)))
+    clip.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))) \
+        .add("th", 114, themed("SurfaceBlack")).add("mask", 114, A.rect_mask())
+    image_node(clip, "Card/Art/Glow", "Glow", R(size=(360, 200)), "ControlActive", "006e134e05ff461bbd48ab3fd31629b4", alpha=0.35)
+    art_node(clip, "Card/Art/Icon", "Icon", R(size=(260, 130)), SQUIRREL_ICON, preserve=True)
+    image_node(clip, "Card/Art/Edge", "Edge", R((0, 0), (1, 0), (0, 1), (0, 2), (0.5, 0)), "ControlActive")
+    label(card.child(N("Card/Subtitle", "Subtitle", TL(22, 166, INFO_W - 90, 18))), "Ruby AI  -  Space vessel", "Label",
+          "ControlActive")
+    label_e(card.child(N("Card/Name", "Name", TL(22, 186, INFO_W - 90, 40))), "SPARROW", "H2", "TextLight", align="left")
+    close = A.small_button("Close", "Close", "Cancel", None, (1, 1), (1, 1), icon="chrome_close")
+    close.rect = R((1, 1), None, (-14, -164), (32, 32), (1, 1))
+    card.children.append(close)
+    label(card.child(N("Card/Description", "Description", TL(22, 232, INFO_W - 44, 64))), "", "BodySmall",
+          "TextLight", valign="top", wrap=True)
+    grp = card.child(N("Card/Abilities", "Abilities", TL(22, 306, INFO_W - 44, 24 + 4 * 34)))
+    label(grp.child(N("Card/Abilities/Heading", "Heading", TL(0, 0, 200, 18))), "Abilities", "Label", "NeutralLightest")
+    for i, (el, _) in enumerate(CARD_ELEMENTS):
+        k = f"Card/Abilities/{el}"
+        row = grp.child(N(k, el, TL(0, 24 + i * 34, INFO_W - 44, 32)))
+        image_node(row, f"{k}/Hex", "Hex", R((0, 0.5), None, (12, 0), (24, 21)), "TextLight", K.kit_sprite("kit_hex_fill"),
+                   preserve=True)
+        label_e(row.child(N(f"{k}/Name", "Name", R((0, 0.5), (1, 0.5), (19, 0), (-38, 24)))), "Ability", "Body",
+                "TextLight", align="left")
+        if i:
+            image_node(row, f"{k}/Rule", "Rule", R((0, 1), (1, 1), (0, 0), (0, 1), (0.5, 1)), "SurfaceDark")
+    root.add("popup", 114, lambda ctx, go: mono(go, S["popup"],
+             f"  card: {ref(ctx.rt('Card'))}\n  canvasGroup: {ref(ctx.c('root', 'cg'))}\n"
+             f"  vesselIcon: {ref(ctx.c('Card/Art/Icon', 'img'))}\n"
+             f"  vesselNameText: {ref(ctx.c('Card/Name', 'tmp'))}\n"
+             f"  subtitleText: {ref(ctx.c('Card/Subtitle', 'tmp'))}\n"
+             f"  descriptionText: {ref(ctx.c('Card/Description', 'tmp'))}\n"
+             "  abilitiesText: {fileID: 0}\n"
+             "  abilityRows:\n" + "".join(
+                 f"  - element: {v}\n    hex: {ref(ctx.c(f'Card/Abilities/{el}/Hex', 'img'))}\n"
+                 f"    name: {ref(ctx.c(f'Card/Abilities/{el}/Name', 'tmp'))}\n" for el, v in CARD_ELEMENTS)
+             + f"  abilitiesGroup: {ref(ctx.go('Card/Abilities'))}\n"
+             f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
+             "  subtitleTemplate: '{seat}  -  {element} vessel'\n  elementOnlyTemplate: '{element} vessel'\n"
+             "  abilitiesHeading: ABILITIES\n  abilityBullet: '-  '\n"
+             f"  backdropButton: {ref(ctx.c('root', 'button'))}\n"
+             f"  closeButton: {ref(ctx.iref('Close', 'root#button'))}\n"
+             "  openSeconds: 0.15\n"))
+    return root
+
+
 BUILDERS = {"ConfigureSeatChip": build_seat_chip, "ConfigureAbilityRow": build_ability_row,
             "ConfigurePoolRow": build_pool_row, "ConfigureIntensityNode": build_intensity_node,
             "ConfigureDomainColumn": build_domain_column, "ConfigureHullTile": build_hull_tile,
             "ConfigureView": lambda: build_view("arcade"), "ConfigureArenaView": lambda: build_view("arena"),
             "ConfigureMaelstromView": lambda: build_view("maelstrom"),
-            "LeaderboardRow": build_leaderboard_row, "LeaderboardView": build_leaderboard_view}
+            "LeaderboardRow": build_leaderboard_row, "LeaderboardView": build_leaderboard_view,
+            "VesselInfoCard": build_info_card}
 
 
 def prefab_outputs():
@@ -1496,6 +1614,20 @@ def stretch_rt(doc):
     return doc
 
 
+def card_ref():
+    return f"{{fileID: {K.FileIds('VesselInfoCard')('root#popup')}, guid: {asset_guid('VesselInfoCard')}, type: 3}}"
+
+
+def field_put(doc, name, value, after):
+    """field_set, or the line inserted after `after` when the field is not serialized yet (a field added in
+    C# after the asset was last saved)."""
+    if re.search(r"^  " + re.escape(name) + r":", doc, re.M):
+        return field_set(doc, name, value)
+    pat = re.compile(r"^(  " + re.escape(after) + r":.*(?:\n    .*)?)$", re.M)
+    assert len(pat.findall(doc)) == 1, f"field {after} not found exactly once"
+    return pat.sub(lambda m: f"{m.group(1)}\n  {name}: {value}", doc, count=1)
+
+
 def chip_ref():
     return f"{{fileID: {K.FileIds('ConfigureSeatChip')('root#chip')}, guid: {asset_guid('ConfigureSeatChip')}, type: 3}}"
 
@@ -1506,6 +1638,7 @@ def rewrite_modal(doc, mount, modal_type=None, panels=None):
     for field in MODAL_DROPPED:
         doc = field_set(doc, field, "{fileID: 0}")
     doc = field_set(doc, "chipPrefab", chip_ref())
+    doc = field_put(doc, "vesselInfoPopupPrefab", card_ref(), "chipPrefab")
     if modal_type is not None:
         doc = field_set(doc, "ModalType", str(modal_type))
     if panels is not None:
@@ -1744,7 +1877,10 @@ PANEL_FIELDS = dict(gameNameText=TMP, briefing=S["briefing"], favoriteIcon=S["fa
                     pilotsChipText=TMP, readyLabel=1)
 PART_FIELDS = [
     ("ConfigureSeatChip", "root#chip", dict(avatarImage=IMG, localPlayerOutline=1, nameText=TMP, roleText=TMP,
-                                            kickButton=S["button"])),
+                                            kickButton=S["button"], infoButton=A.BUTTON, hoverLabel=TMP)),
+    ("VesselInfoCard", "root#popup", dict(card=224, canvasGroup=225, vesselIcon=IMG, vesselNameText=TMP,
+                                          subtitleText=TMP, descriptionText=TMP, abilitiesGroup=1,
+                                          backdropButton=A.BUTTON, closeButton=S["button"])),
     ("ConfigureAbilityRow", "root#row", dict(icon=IMG, elementPetal=IMG, nameText=TMP, descriptionText=TMP,
                                              chipGlyph=IMG, chipLabel=TMP)),
     ("ConfigurePoolRow", "root#entry", dict(icon=IMG, nameText=TMP, detailText=TMP)),
@@ -1775,6 +1911,19 @@ def validate_prefabs(files):
         assert body, f"{name}: no {comp}"
         for field, want in wanted.items():
             wired(text, body, field, want, name)
+
+    # Rev 5: a seat row's hover never grows the row (its neighbours would be covered); the hull's name takes
+    # the place of the name and role instead. The card names all four elements' abilities.
+    chip = files[prefab_path("ConfigureSeatChip")]
+    _, cbody = comp_doc(chip, K.FileIds("ConfigureSeatChip")("root#chip"))
+    assert "  hoverScale: 1\n" in cbody and "  hoverReplacesText: 1\n" in cbody, \
+        "the seat row's hover must keep its size and replace the name and role (DomainAvatarChip.hoverReplacesText)"
+    card = files[prefab_path("VesselInfoCard")]
+    _, pbody = comp_doc(card, K.FileIds("VesselInfoCard")("root#popup"))
+    rows = re.findall(r"^  - element: (\d+)\n    hex: \{fileID: (-?\d+)\}\n    name: \{fileID: (-?\d+)\}", pbody, re.M)
+    assert [r[0] for r in rows] == ["1", "2", "3", "4"] and all(r[1] != "0" and r[2] != "0" for r in rows), \
+        "the info card needs a wired row for each of Charge, Mass, Space and Time"
+    assert f"lockupStyle: {{fileID: 11400000, guid: {LOCKUP_STYLE}" in pbody, "the info card has no element colours"
 
     # The intensity node writes the shared IntVariable, or the modal's selection never reaches the
     # session (IntensitySelectButton.SetSelected).
@@ -1910,6 +2059,7 @@ def validate_modal(files):
     for f in MODAL_DROPPED:
         assert re.search(r"^  " + f + r": \{fileID: 0\}", body, re.M), f"the modal still names its hidden {f}"
     assert chip_ref().split(", type")[0] in body, "chipPrefab is not ConfigureSeatChip"
+    assert f"  vesselInfoPopupPrefab: {card_ref()}" in body, "the modal does not open the style-B vessel info card"
     panels = re.findall(r"^  - \{fileID: (-?\d+)\}", body.split("  launchPanels:")[1].split("  arcadeConfigSyncManager:")[0], re.M)
     assert len(panels) == 3 and panels[0] == "0" and panels[2] == "0" and panels[1] != "0", \
         "launchPanels must be [scene Arena, ConfigureView, scene Maelstrom] with the scene slots left to the scene"
@@ -2018,6 +2168,14 @@ def self_test(files):
         ("the preview without its background", lambda f: f.__setitem__(view, re.sub(
             r"^--- !u!114 &" + str(V("Preview/Frame/Fill#img")) + r"\n(?:(?!--- ).*\n)*", "", f[view], flags=re.M)),
          validate_prefabs),
+        ("a seat row that grows on hover", lambda f: f.__setitem__(prefab_path("ConfigureSeatChip"), f[prefab_path("ConfigureSeatChip")]
+            .replace("  hoverScale: 1\n", "  hoverScale: 1.35\n", 1)), validate_prefabs),
+        ("the seat row's hover label unwired", lambda f: f.__setitem__(prefab_path("ConfigureSeatChip"), re.sub(
+            r"(  hoverLabel: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("ConfigureSeatChip")], count=1)), validate_prefabs),
+        ("an info card row unwired", lambda f: f.__setitem__(prefab_path("VesselInfoCard"), re.sub(
+            r"(    name: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[prefab_path("VesselInfoCard")], count=1)), validate_prefabs),
+        ("the modal back on the generated card", lambda f: f.__setitem__(modal, f[modal].replace(
+            f"  vesselInfoPopupPrefab: {card_ref()}", "  vesselInfoPopupPrefab: {fileID: 0}", 1)), validate_modal),
         ("the guide pointed at the whole screen", lambda f: f.__setitem__(view, re.sub(
             r"(  guideTarget: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), validate_prefabs),
         ("STOP calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: ReleaseFocus", "m_MethodName: Hide", 1)),

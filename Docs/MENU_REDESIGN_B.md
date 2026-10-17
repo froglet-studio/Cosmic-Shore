@@ -2000,3 +2000,44 @@ never below `minSizeScale` (0.6) of it:
   `tmp_restyle`) write the same settings, so the prefabs match what runtime does.
 - Every menu, in-game and Maelstrom generator was re-run: 615 of 615 kit labels now auto-size.
 - The kit's validation fails on a kit label that does not auto-size; a planted label with auto-size off is caught.
+
+## 43. Configure = Rev 4 simple; Yash's AI seat info in style B (Rev 5) (2026-10-17)
+
+**Configure** (the owner, on the R4Configure board: "I like this UI apart from the latest one"). It replaces option B
+(§40). Built in `author_menu_configure.py`:
+- **The preview:** ONE framed live preview (1100 x 620, background, glowing border, brackets) on the left. FLY is in its
+  bottom-left and the objective in its bottom-right. Flying stays in the frame, with STOP and FULL SCREEN above the
+  picture (§39).
+- **Under the preview:** the briefing in two lines, and the controls as a three-column grid (GridLayoutGroup;
+  `VesselControlsPanel` fills it as before).
+- **The settings column:** ONE glass column (680 wide) on the right, with Vessel, Intensity and Pilots. Pilots holds the
+  three domain columns and the AI difficulty row. The column hugs its sections (`column_height`). The launch row (status,
+  summary chips, START) sits just under it.
+- **Arena:** the eight hulls are one row of tiles, with the class line and CLAIM under them.
+- **Maelstrom:** the column holds Intensity, Pilots and Format; the briefing and the game pool sit under the clip.
+- The sections keep the `Step1..3` keys, so the panel's value labels, focus order (column first, Back last) and the
+  guide's FLY target are unchanged.
+
+**AI seat info** (Yash's feature from bleeding-edge 2026-10-17; the R5 boards, approved). What it does is unchanged; it
+now looks like style B:
+- **Seat rows** (`ConfigureSeatChip`): the (i) is a small hex left of the X. On hover the row keeps its size
+  (`hoverScale: 1`), its edge lights, and the hull's name takes the place of the name and the role. That uses a new
+  `DomainAvatarChip.hoverReplacesText`, off by default so round chips keep Yash's look.
+  Deviation from the board: the board kept the name and swapped only the role. A 206-px row cannot fit name, hull,
+  (i) and X, so the hull name covers both.
+- **The card** (`VesselInfoCard.prefab`): a glass card with a glowing border beside the settings column, holding:
+  - the hull's art;
+  - "Ruby AI - Space vessel";
+  - the name and the Hangar's line about the vessel;
+  - each element's ability as a coloured hex and its name (the hull's `ElementalAbilityMapSO`, new optional
+    `VesselInfoPopup.abilityRows`).
+
+  The modal instantiates it from the new `vesselInfoPopupPrefab` field. With nothing wired, the generated card
+  still stands in.
+
+  Deviations from the board: the card sits in a fixed spot beside the column, with no notch tracking the seat; and it
+  shows no control keycaps (the popup has no input map).
+- **Words:** the card's words are now serialized: `subtitleTemplate`, `elementOnlyTemplate`, `abilitiesHeading` and
+  `abilityBullet`.
+- **Gate:** four new planted defects: a row that grows on hover, the hover label unwired, a card row unwired, and the
+  modal back on the generated card.

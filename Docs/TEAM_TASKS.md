@@ -689,3 +689,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Caleb or Andrew (QA)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
+
+### T-20261017-1ec4 · open · test · Menu_Main / Configure
+- **Task:** Playtest Configure Rev 4 simple and the style-B AI seat info (hover, hex i, vessel card)
+- **Done when:** Steps 1-5 of the 2026-10-17 'Configure Rev 4 simple + AI seat info' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass on claude/new-session-76hnyc
+- **Who can take it:** Shombith (Menu_Main); Yash (AI seat info owner)
+- **Added:** 2026-10-17 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §43

@@ -56,6 +56,10 @@ namespace CosmicShore.UI
                  "hull. Leave empty and a generated card is laid out over this modal on first use.")]
         [SerializeField] private VesselInfoPopup vesselInfoPopup;
 
+        [Tooltip("The authored card to instantiate over this modal when no in-scene card is wired (style B: " +
+                 "VesselInfoCard.prefab). Leave both empty and a generated card stands in.")]
+        [SerializeField] private VesselInfoPopup vesselInfoPopupPrefab;
+
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
 
@@ -2425,8 +2429,10 @@ namespace CosmicShore.UI
         void ShowVesselInfo(SO_Vessel vessel, string seatLabel)
         {
             if (!vesselInfoPopup)
-                vesselInfoPopup = VesselInfoPopup.Build((RectTransform)transform,
-                    selectedGameDescription ? selectedGameDescription.font : null);
+                vesselInfoPopup = vesselInfoPopupPrefab
+                    ? Instantiate(vesselInfoPopupPrefab, transform, false)
+                    : VesselInfoPopup.Build((RectTransform)transform,
+                        selectedGameDescription ? selectedGameDescription.font : null);
             vesselInfoPopup.Show(vessel, seatLabel);
         }
 

@@ -33702,6 +33702,7 @@ MonoBehaviour:
   pcStepper: {fileID: 0}
   dcStepper: {fileID: 0}
   chipPrefab: {fileID: 194668863220513069, guid: 77ead1ac6dbfed567f1f2ccaa25703b5, type: 3}
+  vesselInfoPopupPrefab: {fileID: 227632418688278159, guid: 36daf7e2b45699cc85b1db17bd9abf0f, type: 3}
   previewLibrary: {fileID: 11400000, guid: e3ea5a2685d612c4a10f458e073b5c12, type: 2}
   previewSession: {fileID: 0}
   tournamentData: {fileID: 11400000, guid: f1738a31735a43a196f1b3a711c91947, type: 2}
@@ -38066,6 +38067,7 @@ MonoBehaviour:
   pcStepper: {fileID: 0}
   dcStepper: {fileID: 0}
   chipPrefab: {fileID: 194668863220513069, guid: 77ead1ac6dbfed567f1f2ccaa25703b5, type: 3}
+  vesselInfoPopupPrefab: {fileID: 227632418688278159, guid: 36daf7e2b45699cc85b1db17bd9abf0f, type: 3}
   previewLibrary: {fileID: 0}
   previewSession: {fileID: 0}
   tournamentData: {fileID: 0}

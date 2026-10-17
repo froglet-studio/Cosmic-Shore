@@ -11034,3 +11034,27 @@ changed files); gates; every generator `--check` / `--self-test`.
    outside its panel; long names shrink.
 2. Short labels (nav tabs, buttons) look the same size as before.
 3. A label edited in the inspector still keeps its role's font and colour.
+
+## 🔴 2026-10-17 — Configure Rev 4 simple + AI seat info in style B (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Changed: `DomainAvatarChip` (hoverReplacesText), `VesselInfoPopup` (abilityRows, authored words) and
+`ArcadeGameConfigureModal` (vesselInfoPopupPrefab). Prefabs: the three configure views, `ConfigureSeatChip`, the new
+`VesselInfoCard`, the modal, and Menu_Main's two modal copies. `/verify-unity` was not run. Checked offline:
+refcompile player OK; editor shows the 3 known errors (0 in changed files); gates; every generator `--check` /
+`--self-test`.
+
+1. **Arcade card:**
+   - the preview is framed on the left with FLY bottom-left and the objective bottom-right;
+   - the briefing and the controls grid are under it;
+   - one settings column (Vessel, Intensity, Pilots, AI) is on the right, with START under it;
+   - nothing overlaps at 16:9 or 4:3.
+2. **Fly:** double-tap or FLY flies inside the frame; FULL SCREEN grows it; STOP or START hands control back.
+3. **Arena card:** eight hull tiles in one row, CLAIM under them. Maelstrom: Intensity, Pilots and Format in the column,
+   the pool under the clip.
+4. **AI seats:**
+   - add AI on Ruby; hover its row: the row does not grow, its edge lights, and the hull's name replaces "Ruby AI / AI";
+   - moving off brings them back;
+   - the hex (i) opens the card beside the column, with art, "Ruby AI - Space vessel", the name, the line and four
+     coloured abilities;
+   - X or a tap outside closes it.
+5. **Pad:** the first focus is in the settings column; Back is last.
