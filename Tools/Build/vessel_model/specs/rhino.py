@@ -20,7 +20,8 @@ each one. Everything under 'Design intent' and the morph / pose meanings follow 
   takes     the nine standard poses as rhino|<pose> (RhinoAnimation is code puppetry; unbound)
   slots     0 accent.005 (DOMAIN), 1 BASE.005, 2 windsheild.005, 3 N.005 (ENGINE) - the rig's names
   frame     preset "yup" (roots R(-90) S(100), vertices in metres) as the rig was shipped
-  size      Blender frame (nose -Y): x +-8.0, y -8.0 (bow) .. +12.4 (back-wing tips), z -8.9 .. +6.5;
+  size      Blender frame (nose -Y): x +-8.0, y -8.0 (bow) .. +12.4 (back-wing tips), z -8.9 .. +6.5 (the
+            artist rig at BIND, which is the live silhouette; its node chain parks the wings 70 degrees up);
             camera -120: only the biggest shapes read - the bow blade, the two wing pods, the
             broad armoured back, the ten exhausts
 
@@ -52,18 +53,21 @@ def build(ctx):
     parts = []
 
     # ------------------------------------------------------------------ HULL (fuse)
+    # the plough: a tall narrow blade (the artist's fuselage is 15.3 tall for 5.6 wide - keel bottom z -8.85 at
+    # y -3, crest top +6.45 at y +4, nose tip z -1.36; dossier 1.3). The first spec drew it 8.7 tall.
     hull = f.fuselage("fuse_hull", 16.8, nose=(0, -8.0, -1.0), axis=(0, 1, 0), segments=32, stations=[
         (0.00, 0.80, 1.20, 1.40, 2.6, 2.4, 0.00),
-        (0.08, 2.00, 2.40, 2.80, 3.0, 2.6, 0.30),
-        (0.22, 2.70, 3.20, 3.80, 3.4, 2.8, 0.60),
-        (0.42, 2.85, 3.40, 4.20, 3.6, 2.8, 0.70),
-        (0.65, 2.80, 3.30, 4.00, 3.6, 2.8, 0.60),
-        (0.85, 2.40, 2.70, 3.20, 3.2, 2.6, 0.40),
-        (1.00, 1.60, 1.80, 2.20, 2.8, 2.4, 0.20),
+        (0.08, 2.00, 2.60, 4.00, 3.0, 2.6, 0.30),
+        (0.22, 2.70, 3.60, 7.20, 3.4, 2.8, 0.50),
+        (0.32, 2.85, 4.40, 8.00, 3.6, 2.8, 0.60),
+        (0.50, 2.85, 5.60, 6.40, 3.6, 2.8, 0.80),
+        (0.70, 2.80, 6.60, 4.60, 3.6, 2.8, 0.90),
+        (0.85, 2.40, 5.00, 3.60, 3.2, 2.6, 0.70),
+        (1.00, 1.60, 2.40, 2.60, 2.8, 2.4, 0.40),
     ])
     f.paint(hull, H)
     # canopy slit, sunk, over the forward deck
-    f.inset_faces(hull, lambda c, n, i: n.z > 0.6 and -4.6 < c.y < -2.2 and abs(c.x) < 1.0, 0.12, depth=0.18, slot=W)
+    f.inset_faces(hull, lambda c, n, i: n.z > 0.35 and -5.6 < c.y < -1.4 and abs(c.x) < 2.0, 0.12, depth=0.18, slot=W)  # the taller blade's crest is a narrow ridge: the glass wraps its shoulders to keep a 0.3% share
     # three armour steps down the back, domain-edged
     for (y0, y1) in ((-1.5, 1.0), (1.6, 4.2), (4.8, 7.0)):
         f.inset_faces(hull, lambda c, n, i, y0=y0, y1=y1: i == H and n.z > 0.55 and y0 < c.y < y1 and abs(c.x) < 2.3, 0.14, depth=0.16, slot=D)
@@ -139,7 +143,10 @@ def build(ctx):
     for tag, _sx in SIDES:
         for yy in (6, 32):
             g2b["jetstrut%d.%s" % (yy, tag)] = "wing1." + tag
-    rig.skin_rigid(mesh, arm, group_to_bone=g2b, default_bone="fuse")
+    # the artist rig's node chain parks the wings and jets 70 degrees up from the bind (drawn 25 wide x 20 tall,
+    # a pose the game has never shown: the live placeholder and the rig's bind agree on 16 x 15 x 20), so the
+    # BIND stays the rest and the hull is modelled against it (LESSONS 37); rest_compare is told the 12 moved bones (root and fuse pitch 16.9 degrees, the wing chains fold 36-70)
+    rig.skin_rigid(mesh, arm, group_to_bone=g2b, default_bone="fuse", bake_park=False)
     ctx.log("rig: %d bones reused" % len(bone_names))
 
     # ------------------------------------------------------------------ MORPHS
@@ -183,10 +190,10 @@ def build(ctx):
         if p == "pitchdown":
             return {**{n: (18, 0, 0) for n in ws + js}, "fuse": (6, 0, 0)}
         if p in ("yawleft", "yawright"):
-            s = 1 if p == "yawright" else -1
+            s = -1 if p == "yawright" else 1  # a right turn is clockwise from above: NEGATIVE about Z (the artist's yawright swings the +X wing forward)
             return {**{n: (0, 0, s * 18) for n in ws + js}, "fuse": (0, 0, s * 6)}
         if p in ("rollleft", "rollright"):
-            s = 1 if p == "rollright" else -1
+            s = -1 if p == "rollright" else 1  # +Y rotation drops the +X (.l) wing: rollright is NEGATIVE about Y
             return {**{n: (0, s * 22, 0) for n in ws + js}, "fuse": (0, s * 8, 0)}
         if p == "speedup":
             return {"wing1.l": (0, 0, 20), "wing1.r": (0, 0, -20), **{n: {"loc": (0, 1.0, 0)} for n in js}}
@@ -202,9 +209,23 @@ def build(ctx):
         "armature": arm, "mesh": mesh,
         "spec": {
             "preset": "yup", "armature": ARMATURE, "mesh_node": MESH_NODE,
+            # the artist rig at BIND = the live Rhino's silhouette (dossier 1.3, Blender frame); its node chain draws
+            # the wings folded 70 degrees up, which is not the reference (see skin_rigid above)
+            "size_ref_blender": ((-8.0, -7.99, -8.85), (8.0, 12.42, 6.46)),
             "bones": bone_names,
             "takes": [ARMATURE + "|" + p for p in takes.STANDARD_POSES],
             "pose_takes": [ARMATURE + "|" + p for p in takes.STANDARD_POSES],
+            # each take must move the named part the named way (re-import, centroid deltas; LESSONS 34)
+            "pose_expect": {
+                "pitchup": [("wing2.l", "z", -1, 1.0), ("fuse", "z", -1, 0.2)],      # the back wings drop: nose up
+                "pitchdown": [("wing2.l", "z", +1, 1.0), ("fuse", "z", +1, 0.2)],
+                "yawright": [("wing2.l", "y", -1, 0.4), ("fuse", "x", +1, 0.2)],     # the +X wing swings forward (the artist's yawright does the same)
+                "yawleft": [("wing2.r", "y", -1, 0.4), ("fuse", "x", -1, 0.2)],
+                "rollright": [("wing2.r", "z", -1, 0.4), ("wing2.l", "z", +1, 0.3)],
+                "rollleft": [("wing2.l", "z", -1, 0.4), ("wing2.r", "z", +1, 0.3)],
+                "speedup": [("wing2.l", "x", -1, 1.0), ("jet.l", "y", +1, 0.1)],     # wings sweep in, the pods slide aft
+                "speeddown": [("wing2.l", "x", +1, 0.8), ("jet.l", "y", -1, 0.2)],
+            },
             "shapes": ["charge", "mass", "space", "time"],
             "slots": list(SLOTS),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,

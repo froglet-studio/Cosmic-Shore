@@ -113,9 +113,30 @@ animation; the Urchin rig is 2.105x the live hull and the swapper fits the insta
 materials by MEANING, not by the artist's names: the rebuilt rigs paint the domain band on `accent` (slot 0) and the
 hull on `BASE` (slot 1), while the live Rhino placeholder had it the other way round (`Docs/VesselModels/Rhino.md`
 8.6: `BASE` carried the domain colour); the convention is slot 0 = Domain. The Urchin artist rig carried a 1.75 scale on its `winggrowrot*` nodes (the
-prefab's jets under them were authored at 1/1.75); the rebuilt rig bakes that scale into the geometry and bone
-lengths and writes the nodes at scale 1, so the swapper (or a hand pass) sets those jets' local scale to the fleet
-plume (0.6, 0.6, 0.13) x |camera| / 20 directly. After a swap, (3) must report four REAL morphs on each.
+prefab's jets under them were authored at 1/1.75); the rebuilt rig bakes that scale into the bone lengths, models the
+appendages 1.75x out and 1.75x bigger (what Unity draws for the artist rig) and writes the nodes at scale 1, so
+the swapper (or a hand pass) sets those jets' local scale to the fleet plume (0.6, 0.6, 0.13) x |camera| / 20
+directly. After a swap, (3) must report four REAL morphs on each.
+
+**Round 3 (same day, after a reader review):** three gates had been dead or wrong and are now live, and the files
+were rebuilt under them. (a) The artist-reference block of `build.py` had a swallowed `NameError`, so the size,
+slot-order and colour checks were OFF: every file carried grey `DiffuseColor`; the files now carry the ARTIST
+file's colours by slot name (Unity generates the model's materials from them and remaps only the slots the `.meta`
+names). (b) The "drawn size" reader read each artist file with all four morphs at 100% (the files store
+DeformPercent 100 as the channel's static value), which had sent the Dolphin's wing span to 3.80; the span is back
+to the dossier's +-2.64, the Manta's reference is its real 3.95-wide hull, and the Squirrel now sits at the heights
+the artist's parked pose draws (1.23 tall, not 1.66). (c) A pose-DIRECTION gate (`pose_expect`, re-import centroid
+deltas) found yaw inverted on the Dolphin, Rhino, Urchin and Manta (a right turn is a negative rotation about up),
+roll inverted on five, and the Sparrow's mirrored poses turning the wrong way; all fixed. (d) The Sparrow's tail
+vanes now span the artist's z -0.82..+0.96. (e) The Urchin rig's appendages (guns, pads, jets, shrouds) are modelled
+1.75x out and 1.75x bigger, which is how Unity draws the artist rig (its hold bones carry S 1.75 over a scale-1
+bind) and how the live prefab authors them. One open asymmetry on the Urchin rig: in yaw and roll its `.r` shrouds and top jet deflect about a tenth of what
+the `.l` ones do (the pose gate reads the shields, which are symmetric); the `.r` chains inherit a different bone
+roll from the artist rig - look at it at the rig swap, it is a rig fact, not a model one. **Verify, in flight (every
+vessel):** pull back = nose up, stick right
+= nose right AND the right side drops; the Squirrel's tail swings to the OUTSIDE of a turn and drops on pull-back;
+the Sparrow's tail tubes swing left in a right turn. A wrong sign here is a spec number
+(`Tools/Build/vessel_model/specs/<vessel>.py`, the `pose()` builder), not a prefab or driver change.
 
 **First-pass tuning:** morph travel per file (offline, % of diagonal): Squirrel C 6 / M 4 / S 9 / T 7; Dolphin
 C 8 / M 4 / S 10 / T 7; Sparrow S 9 / C 7 / T 6 / M 4; Serpent 5-9; Manta 6-11; Urchin C 18 / M 5 / S 7 / T 9;

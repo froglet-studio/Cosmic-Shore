@@ -23,6 +23,15 @@ slot order and frame they keep is explained here.
 | Urchin | [Urchin.md](Urchin.md) | `Urchan_Test.fbx` (part-per-mesh placeholder) | `urchan_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs where the artist rig had none | `specs/urchin.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 
+**Round 3, 2026-10-17 (after a review of the gates):** the artist-reference gate had been dead (a swallowed
+`NameError`), the drawn-size reader had read each artist file with all four morphs at 100%, and no check told an
+inverted pose from a correct one. With those fixed (`LESSONS.md` 32-36) the files were rebuilt: the artist's slot
+colours are in every file; the Dolphin's wings are back at the dossier's +-2.64; the Squirrel sits at the heights its
+parked pose draws (1.23 tall); the Sparrow's tail vanes span the artist's -0.82..+0.96 and its poses are written in
+the file's own frame; yaw is a negative rotation about up on every hull (it was inverted on four) and roll drops the
+right side (inverted on five); the Urchin's appendages are modelled 1.75x out, as Unity draws the artist rig. Every
+spec now carries `pose_expect`, so the re-import proves each take's direction.
+
 **Before / after, for anyone judging the look without Unity:** `sheets/<vessel>_before.jpg` is the artist file's
 Cycles contact sheet (four views, the four morph extremes, four poses) and `sheets/<vessel>_after.jpg` the rebuilt
 file's, rendered from the FBX re-imported with studio clay per slot (tan = Body, lime = Engine, cyan = Window, the

@@ -43,6 +43,14 @@ no Blender GUI, no OpenGL. If `import bpy` fails: `pip download bpy` then
 - no UV layer, no normals layer
 - assimp unable to read it; the Blender re-import missing a bone / shape / action / slot order
 - the re-import's world bounds not matching the built mesh's Blender bounds (5%)
+- a take whose named part does not move the named way by the named minimum (`pose_expect`:
+  `{take: [(vertex group, axis, sign, min)]}`, measured on the re-import with the action applied
+  as per-group centroid deltas; the only check that catches an inverted pitch or a mirrored yaw)
+- a bind pose that differs from the node chain (a residual parked pose; `allow_park` declares one)
+
+The artist-reference block of `build.py` reads the ARTIST file (`ARTIST_REF`, pinned) with every
+shape key at 0 and no action (LESSONS 33, 35) for the size, slot-order and colour references;
+only a MISSING artist file is tolerated there, a reader error raises (LESSONS 32).
 
 `rest_compare.py` is deliberately separate (it needs the shipped file): run it by hand on every
 rig-reusing build. `build.py --check` is the drift gate for a committed spec.

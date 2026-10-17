@@ -21,7 +21,8 @@ each one. Everything under 'Design intent' and the morph / pose meanings follow 
             are written as Armature|<pose>
   slots     0 accent (DOMAIN), 1 BASE, 2 windsheild, 3 N (ENGINE) - the fleet order
   frame     preset "yup_baked" (mesh node identity, data in cm, armature R(-90) S(100)) as shipped
-  size      Blender frame (nose -Y): a 0.91-unit ball, x +-0.455, y -0.435 .. +0.438, z +-0.427.
+  size      Blender frame (nose -Y): a 0.85-unit ball whose appendages are drawn 1.75x out (the rig's hold
+            scale): envelope x +-0.80, y -0.44 .. +0.67, z +-0.78 (the artist file as drawn: 1.544 x 1.175 x 1.554).
             The swap tool places this rig at localScale 0.4749 over the 0.43-unit placeholder.
             Camera -6.67: at that range the ball IS the read - a spined sphere with a bubble
             canopy forward, a ringed exhaust aft, two guns, two shields, four jets.
@@ -65,7 +66,7 @@ def build(ctx):
         f.inset_faces(ball, lambda c, n, i, lo_=lo_, hi_=hi_: i == H and lo_ < abs(c.y) < hi_ and abs(c.x) > 0.06, 0.006, depth=0.006)
     finish(f, ball, bevel_width=0.0, sharp_deg=60)
     # exhaust: a ringed cone at the stern (+Y), lime inside
-    exhaust = f.lathe("fuse_exhaust", [(0.0, 0.0), (0.16, 0.0), (0.20, 0.03), (0.20, 0.08), (0.17, 0.10), (0.14, 0.10), (0.12, 0.04), (0.0, 0.04)],
+    exhaust = f.lathe("fuse_exhaust", [(0.0, 0.0), (0.16, 0.0), (0.20, 0.03), (0.20, 0.11), (0.17, 0.14), (0.14, 0.14), (0.12, 0.04), (0.0, 0.04)],  # reaches the artist's drawn stern (y 0.63)
                       segments=24, axis=(0, 1, 0), origin=(0, R - 0.03, 0.0), cap=False)
     f.paint(exhaust, H)
     f.paint(exhaust, J, lambda c, n, i: n.y < -0.3 or (abs(n.y) < 0.6 and ((c.x ** 2 + c.z ** 2) ** 0.5) < 0.15))
@@ -83,38 +84,50 @@ def build(ctx):
     parts.append(fuse)
 
     # ------------------------------------------------------------------ GUNS, SHIELDS, JETS, SHROUDS
+    # The artist rig carries S(1.75) on every hold bone while the mesh was bound at scale 1, so Unity draws
+    # the guns, pads, jets and shrouds 1.75x BIGGER and 1.75x FURTHER OUT than the raw geometry (the live
+    # prefab authors the same 1.75 on its jet and gun nodes): the drawn Urchin is a 0.85 ball inside a 1.54
+    # envelope. The parts below are modelled at the raw layout and then scaled about the origin to match.
+    from mathutils import Matrix as _M
+    DRAWN = 1.75
+    appendages = []
     for tag, sx in SIDES:
         # the side gun: a barrel along -Y on a collar at the ball's equator
-        gun = f.lathe("gunM." + tag, [(0.0, 0.0), (0.045, 0.0), (0.055, 0.02), (0.055, 0.17), (0.07, 0.19), (0.07, 0.24), (0.05, 0.27), (0.0, 0.27)],
-                      segments=14, axis=(0, -1, 0), origin=(sx * 0.35, 0.05, 0.0))
+        gun = f.lathe("gunM." + tag, [(0.0, 0.0), (0.045, 0.0), (0.055, 0.02), (0.055, 0.09), (0.07, 0.11), (0.07, 0.15), (0.05, 0.17), (0.0, 0.17)],
+                      segments=14, axis=(0, -1, 0), origin=(sx * 0.33, -0.065, 0.0))  # drawn: x 0.47..0.68, y -0.40..-0.11
         f.paint(gun, H)
-        f.paint(gun, D, lambda c, n, i: abs(n.y) < 0.5 and -0.16 < c.y < -0.12)
+        f.paint(gun, D, lambda c, n, i: abs(n.y) < 0.5 and -0.19 < c.y < -0.15)
         f.inset_faces(gun, lambda c, n, i: n.y < -0.8, 0.012, depth=0.03, slot=J)
         finish(f, gun, bevel_width=0.004)
-        parts.append(gun)
+        appendages.append(gun)
         # the shield pad: a curved plate standing off the flank
         pad = f.plate("sheildconrot." + tag, f.rounded_rect(0.30, 0.30, r=0.08), thickness=0.035, normal=(sx, 0, 0), origin=(sx * 0.44, 0.0, 0.0), right=(0, 1, 0))
         f.paint(pad, D)
         f.paint(pad, H, lambda c, n, i, sx=sx: n.x * sx < 0.5)
         finish(f, pad, bevel_width=0.006)
-        parts.append(pad)
+        appendages.append(pad)
         # jets: top and bottom pods tilted outward, lime mouths aft
         for name, zc, zs in (("jetT." + tag, 0.275, 1), ("jetB." + tag, -0.273, -1)):
             axis = (sx * 0.25, 1.0, zs * 0.18)
-            pod = f.lathe(name, [(0.0, 0.0), (0.05, 0.0), (0.065, 0.02), (0.065, 0.14), (0.075, 0.16), (0.075, 0.20), (0.06, 0.22), (0.0, 0.22)],
-                          segments=14, axis=axis, origin=(sx * 0.22, -0.16, zc))
+            pod = f.lathe(name, [(0.0, 0.0), (0.05, 0.0), (0.065, 0.02), (0.065, 0.21), (0.075, 0.24), (0.075, 0.30), (0.06, 0.33), (0.0, 0.33)],
+                          segments=14, axis=axis, origin=(sx * 0.22, -0.29, zc))  # drawn: y -0.51..+0.07, z 0.32..0.64
             f.paint(pod, H)
             f.paint(pod, D, lambda c, n, i: abs(n.y) < 0.4 and -0.05 < c.y < 0.0)
             f.inset_faces(pod, lambda c, n, i: n.y > 0.75, 0.01, depth=0.03, slot=J)
             finish(f, pod, bevel_width=0.004)
-            parts.append(pod)
+            appendages.append(pod)
             # the shroud over each jet: a curved fin plate
-            sh = f.plate("wingconrot%s.%s" % ("T" if zs > 0 else "B", tag), f.feather(0.34, 0.22, tip_round=0.6, root_width=0.12), thickness=0.03,
-                         normal=(sx * 0.3, 0, zs * 0.95), origin=(sx * 0.26, 0.03, zc + zs * 0.08), right=(0, 1, 0))
+            # the feather grows from its root along `right` (+Y): rooted forward so it spans the artist's y -0.55..+0.36
+            # once scaled, and tilted so it stands in z (the drawn fin tops out at 0.83)
+            sh = f.plate("wingconrot%s.%s" % ("T" if zs > 0 else "B", tag), f.feather(0.52, 0.22, tip_round=0.6, root_width=0.12), thickness=0.03,
+                         normal=(sx * 0.55, 0, zs * 0.83), origin=(sx * 0.26, -0.31, zc + zs * 0.12), right=(0, 1, 0))
             f.paint(sh, D)
             f.paint(sh, H, lambda c, n, i, zs=zs: n.z * zs < 0.2)
             finish(f, sh, bevel_width=0.005)
-            parts.append(sh)
+            appendages.append(sh)
+    for ap in appendages:
+        f.transform_mesh(ap, _M.Scale(DRAWN, 4))
+        parts.append(ap)
 
     # ------------------------------------------------------------------ JOIN
     mesh = f.join(parts, MESH_NODE, SLOTS)
@@ -147,7 +160,7 @@ def build(ctx):
             morphs.scale_about(1.6, (0, 0, 0), spine_m, axes=(1, 1, 1)),
         ],
         "mass": [  # the ball swells
-            morphs.inflate(0.07, fuse_m), morphs.inflate(0.02, jets),
+            morphs.inflate(0.12, fuse_m), morphs.inflate(0.04, jets),  # the 1.75x appendages lengthen the diagonal the floor is measured against
         ],
         "space": [  # reach: the shield pads and shrouds spread outward, the jets move out
             morphs.translate((0.09, 0, 0), msk.mask("sheildconrot.l", "jetT.l", "jetB.l", "wingconrotT.l", "wingconrotB.l")),
@@ -173,10 +186,10 @@ def build(ctx):
         if p == "pitchdown":
             return {**{n: (25, 0, 0) for n in jt + sh}, "gunM.l": (10, 0, 0), "gunM.r": (10, 0, 0)}
         if p in ("yawleft", "yawright"):
-            s = 1 if p == "yawright" else -1
+            s = -1 if p == "yawright" else 1  # a right turn is clockwise from above: NEGATIVE about Z
             return {**{n: (0, 0, s * 25) for n in jt + sh}, "sheildconrot.l": (0, 0, s * 15), "sheildconrot.r": (0, 0, s * 15)}
         if p in ("rollleft", "rollright"):
-            s = 1 if p == "rollright" else -1
+            s = -1 if p == "rollright" else 1  # +Y rotation drops the +X (.l) side: rollright is NEGATIVE about Y
             return {**{n: (0, s * 25, 0) for n in jt + sh}}
         if p == "speedup":
             return {**{n: {"loc": (0, 0.06, 0)} for n in jt}, "wingconrotT.l": (0, 0, 20), "wingconrotT.r": (0, 0, -20), "wingconrotB.l": (0, 0, 20), "wingconrotB.r": (0, 0, -20)}
@@ -196,6 +209,18 @@ def build(ctx):
             "bones": bone_names,
             "takes": [ARMATURE + "|" + p for p in takes.STANDARD_POSES],
             "pose_takes": [ARMATURE + "|" + p for p in takes.STANDARD_POSES],
+            # each take must move the named part the named way (re-import, centroid deltas; LESSONS 34). The parts
+            # turn about their own heads, so the deltas are small: the shields and shrouds read the turn direction
+            "pose_expect": {
+                "pitchup": [("wingconrotT.l", "z", -1, 0.08), ("gunM.r", "z", +1, 0.05)],    # the top shrouds drop, the gun muzzles rise
+                "pitchdown": [("wingconrotT.l", "z", +1, 0.05), ("gunM.r", "z", -1, 0.05)],
+                "yawright": [("sheildconrot.l", "y", -1, 0.03), ("sheildconrot.r", "y", +1, 0.03)],  # the +X side swings forward (the shrouds' .l/.r bones roll differently: their centroid deltas are not mirror images)
+                "yawleft": [("sheildconrot.r", "y", -1, 0.03), ("sheildconrot.l", "y", +1, 0.03)],
+                "rollright": [("jetT.l", "z", +1, 0.04), ("wingconrotT.l", "z", +1, 0.03)],   # the +X (left) side rises
+                "rollleft": [("jetT.l", "z", -1, 0.04), ("wingconrotT.l", "z", -1, 0.03)],
+                "speedup": [("jetT.l", "y", +1, 0.04)],      # the jets slide aft
+                "speeddown": [("jetT.l", "y", -1, 0.03)],
+            },
             "shapes": ["charge", "mass", "space", "time"],
             "slots": list(SLOTS),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,

@@ -590,7 +590,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 
 ### T-20261017-9025 · open · test · Vessel models
 - **Task:** Open branch ccr-d93a6dfb-ugbxng in the Editor after the seven vessel models were rebuilt in place by /vessel-model (2026-10-17): let the FBX files reimport with no console warning, open the Squirrel / Dolphin / Sparrow / Serpent / Manta (and Falcon, Shrike, Termite) prefabs, run FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs (four REAL shapes on each live file), Audit Vessel Construction and Audit Vessel Tails and Jets, re-bake Crystal Hull Fusions for the Squirrel, Dolphin and Manta, then fly each hull in freestyle: pitch / yaw / roll / throttle move the whole hull, the domain colour lands on the domain slot, glass and engine mouths read, each element morph is nameable
-- **Done when:** Every step in Docs/UNITY_VERIFICATION_CHECKLIST.md's 2026-10-17 vessel-models entry is ticked, or the failing step is written there with the console line
+- **Done when:** Every step in Docs/UNITY_VERIFICATION_CHECKLIST.md's 2026-10-17 vessel-models entry is ticked (including its Round 3 flight checks: pull back = nose up, stick right = nose right and the right side drops, on every vessel), or the failing step is written there with the console line
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor; Garrett judges the look
 - **Added:** 2026-10-17 by Claude session for Garrett, 2026-10-17 (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/README.md; Docs/VesselModels/sheets/ (before/after)

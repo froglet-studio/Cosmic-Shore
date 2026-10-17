@@ -234,6 +234,14 @@ def build(ctx):
             "bones": bone_names,
             "takes": [ARMATURE + "|Serpent%sAnim" % p for p in TAKES],
             "pose_takes": [ARMATURE + "|Serpent%sAnim" % p for p in TAKES],
+            # each take must move the named part the named way (re-import, centroid deltas; LESSONS 34)
+            "pose_expect": {
+                "SerpentUpAnim": [("HeadTail1.R", "z", -1, 1.0)],        # the head tendrils drop: nose up
+                "SerpentDownAnim": [("HeadTail1.R", "z", +1, 0.8)],
+                "SerpentRightAnim": [("BotTail1.R", "x", -1, 1.5), ("BotTail1.R", "z", -1, 0.4), ("BotTail1.L", "z", +1, 0.8)],  # tendrils swing to -X (the pilot's left), right side down
+                "SerpentLeftAnim": [("BotTail1.L", "x", +1, 1.5), ("BotTail1.L", "z", -1, 0.4), ("BotTail1.R", "z", +1, 0.8)],
+                "SerpentSpeedIncreaseAnim": [("ChassisBone", "y", -1, 2.0)],
+            },
             "shapes": ["Space", "Mass", "Time", "Charge"],
             "slots": list(SLOTS),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,

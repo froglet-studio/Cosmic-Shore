@@ -57,7 +57,9 @@ def build(ctx):
 
     # ------------------------------------------------------------------ HEAD
     # helmet: a faceted dome, nose at y=-1.35, back at y=-0.25; the visor is sunk into its front
-    helmet = f.fuselage("bbone_UpperHelmet", 1.20, nose=(0, -1.42, 0.26), axis=(0, 1, 0), segments=28, stations=[
+    # heights follow the bones AS DRAWN (the artist parks 27 bones 10.8 degrees up: the drawn hull is 1.13 tall,
+    # z -0.36 .. +0.77, where the bind mesh is 1.46): helmet crown 0.52, ears 0.77, pods about z 0, tail level
+    helmet = f.fuselage("bbone_UpperHelmet", 1.20, nose=(0, -1.42, 0.06), axis=(0, 1, 0), segments=28, stations=[
         (0.00, 0.10, 0.06, 0.08, 2.2, 2.2, 0.00),
         (0.12, 0.32, 0.22, 0.20, 2.6, 2.4, 0.05),
         (0.35, 0.44, 0.34, 0.24, 3.0, 2.6, 0.10),
@@ -93,7 +95,7 @@ def build(ctx):
     ears = []
     for tag, sx in SIDES:
         ear = f.plate("ear_" + tag, f.blade(0.40, 0.34, tip=0.25, base=1.0), thickness=0.06,
-                      normal=(1, 0, 0), origin=(sx * 0.20, -0.70, 0.56), right=(0, -0.35, 0.94))
+                      normal=(1, 0, 0), origin=(sx * 0.20, -0.70, 0.36), right=(0, -0.35, 0.94))
         f.paint(ear, H)
         f.paint(ear, D, lambda c, n, i, sx=sx: n.x * sx < -0.5)  # inner face wears the domain
         f.bevel(ear, width=0.012, segments=1, angle_deg=30)
@@ -136,7 +138,7 @@ def build(ctx):
     parts.append(body)
 
     # belly keel
-    belly = f.fuselage("bbone_LowerBody", 1.75, nose=(0, -0.58, -0.20), axis=(0, 1, 0), segments=20, stations=[
+    belly = f.fuselage("bbone_LowerBody", 1.75, nose=(0, -0.58, -0.08), axis=(0, 1, 0), segments=20, stations=[
         (0.00, 0.22, 0.14, 0.10, 2.8, 2.2, 0.00),
         (0.30, 0.34, 0.20, 0.26, 3.4, 2.4, 0.00),
         (0.65, 0.34, 0.20, 0.30, 3.4, 2.4, 0.02),
@@ -197,7 +199,7 @@ def build(ctx):
     # ------------------------------------------------------------------ STRUTS (nothing floats)
     # forearms: from the shoulder deck out and forward to each front pod's base
     for tag, sx in SIDES:
-        arm_ = f.tube_along("arm_" + tag, [(sx * 0.40, -0.55, 0.06), (sx * 1.10, -0.85, 0.16), (sx * 1.75, -1.05, 0.22), (sx * 1.92, -1.10, 0.24)],
+        arm_ = f.tube_along("arm_" + tag, [(sx * 0.40, -0.55, 0.04), (sx * 1.10, -0.85, 0.05), (sx * 1.75, -1.05, 0.03), (sx * 1.92, -1.10, 0.02)],
                             [0.13, 0.12, 0.11, 0.09], segments=12)
         f.paint(arm_, H)
         f.paint(arm_, D, lambda c, n, i: n.z > 0.6)
@@ -205,26 +207,19 @@ def build(ctx):
         f.apply_modifiers(arm_)
         parts.append(arm_)
         # hind legs: from the belly back and out to each aft pod
-        leg = f.tube_along("leg_" + tag, [(sx * 0.26, 0.55, -0.18), (sx * 0.70, 0.75, -0.32), (sx * 1.12, 0.95, -0.40)],
+        leg = f.tube_along("leg_" + tag, [(sx * 0.26, 0.55, -0.14), (sx * 0.70, 0.75, -0.13), (sx * 1.12, 0.95, -0.10)],
                            [0.13, 0.12, 0.10], segments=12)
         f.paint(leg, H)
         f.paint(leg, D, lambda c, n, i: n.z > 0.6)
         f.bevel(leg, width=0.01, segments=1, angle_deg=30)
         f.apply_modifiers(leg)
         parts.append(leg)
-    # tail spine: a tapered boom the chevrons ride on, following the droop
-    spine = f.tube_along("bbone_WholeTail", [(0, 1.05, -0.08), (0, 1.60, -0.30), (0, 2.50, -0.46), (0, 3.40, -0.44), (0, 4.40, -0.26)],
-                         [0.17, 0.14, 0.12, 0.09, 0.05], segments=12)
-    f.paint(spine, H)
-    f.paint(spine, D, lambda c, n, i: n.z > 0.7)
-    f.bevel(spine, width=0.008, segments=1, angle_deg=30)
-    f.apply_modifiers(spine)
-    parts.append(spine)
+    # the tail spine is built after the chevrons (below): nine segments, one per chevron, so it bends with them
 
     # ------------------------------------------------------------------ PODS
     # forward pods (the paws): mouth faces FORWARD (-Y). Base + tip + trim ring, three bones.
     for tag, sx in SIDES:
-        cx, cz = sx * 1.92, 0.24
+        cx, cz = sx * 1.92, 0.02
         base = f.lathe("bbone_FrontEngineBase." + tag,
                        [(0.0, 0.0), (0.17, 0.02), (0.25, 0.10), (0.27, 0.30), (0.30, 0.34), (0.30, 0.42), (0.27, 0.46), (0.27, 0.62), (0.22, 0.80), (0.0, 0.82)],
                        segments=22, axis=(0, 1, 0), origin=(cx, -1.52, cz))
@@ -249,7 +244,7 @@ def build(ctx):
 
     # aft pods: mouths face BACK (+Y), slung under the wing root. Frame + inner nozzle.
     for tag, sx in SIDES:
-        cx, cz = sx * 1.12, -0.40
+        cx, cz = sx * 1.12, -0.10
         frame = f.lathe("bbone_BackEngineFrame." + tag,
                         [(0.0, 0.0), (0.18, 0.02), (0.27, 0.14), (0.29, 0.40), (0.32, 0.44), (0.32, 0.52), (0.29, 0.56), (0.29, 0.70), (0.26, 0.90), (0.22, 0.95), (0.0, 0.95)],
                         segments=22, axis=(0, 1, 0), origin=(cx, 0.68, cz))
@@ -268,11 +263,11 @@ def build(ctx):
 
     # ------------------------------------------------------------------ TAIL: nine chevrons
     tail_rows = [  # (name, y centre, width, z centre, depth)
-        ("bbone_Tail1First", 1.43, 0.70, -0.33, 0.30), ("bbone_Tail2", 1.78, 0.87, -0.43, 0.32),
-        ("bbone_Tail3", 2.14, 1.02, -0.51, 0.34), ("bbone_Tail4", 2.50, 1.10, -0.55, 0.36),
-        ("bbone_Tail5", 2.85, 1.12, -0.56, 0.36), ("bbone_Tail6", 3.21, 1.08, -0.53, 0.35),
-        ("bbone_Tail7", 3.56, 0.97, -0.47, 0.33), ("bbone_Tail8", 3.91, 0.80, -0.40, 0.31),
-        ("bbone_Tail9Last", 4.25, 0.54, -0.30, 0.28),
+        ("bbone_Tail1First", 1.43, 0.70, 0.01, 0.30), ("bbone_Tail2", 1.78, 0.87, -0.04, 0.32),
+        ("bbone_Tail3", 2.14, 1.02, -0.05, 0.34), ("bbone_Tail4", 2.50, 1.10, -0.06, 0.36),
+        ("bbone_Tail5", 2.85, 1.12, -0.07, 0.36), ("bbone_Tail6", 3.21, 1.08, -0.09, 0.35),
+        ("bbone_Tail7", 3.56, 0.97, -0.11, 0.33), ("bbone_Tail8", 3.91, 0.80, -0.14, 0.31),
+        ("bbone_Tail9Last", 4.25, 0.54, -0.11, 0.28),
     ]
     for idx, (name, yc, wd, zc, dp) in enumerate(tail_rows):
         # a crescent plate: horns trailing back (+Y), the band's belly forward; closely spaced
@@ -290,6 +285,21 @@ def build(ctx):
         f.bevel(cv, width=0.02, segments=2, angle_deg=30)
         f.apply_modifiers(cv)
         parts.append(cv)
+    # the spine: a tapered boom in TEN segments - root to chevron 1 (skinned to WholeTail), then chevron k to
+    # chevron k+1 (skinned to chevron k's bone), so under a pose it bends WITH the chevron chain instead of
+    # poking out of it as one rigid tube did (sheet, round 3)
+    spine_pts = [(0, 1.05, 0.02)] + [(0, yc, zc) for (_n, yc, _w, zc, _d) in tail_rows] + [(0, 4.42, -0.10)]
+    spine_r = [0.17, 0.155, 0.14, 0.125, 0.11, 0.10, 0.09, 0.08, 0.065, 0.05, 0.035]
+    SPINE_TO_BONE = {"spine_0": "bbone_WholeTail"}
+    for k in range(len(spine_pts) - 1):
+        seg = f.tube_along("spine_%d" % k, [spine_pts[k], spine_pts[k + 1]], [spine_r[k], spine_r[k + 1]], segments=12)
+        f.paint(seg, H)
+        f.paint(seg, D, lambda c, n, i: n.z > 0.7)
+        f.bevel(seg, width=0.008, segments=1, angle_deg=30)
+        f.apply_modifiers(seg)
+        parts.append(seg)
+        if k >= 1:
+            SPINE_TO_BONE["spine_%d" % k] = tail_rows[k - 1][0]
 
     # ------------------------------------------------------------------ JOIN
     mesh = f.join(parts, MESH_NODE, SLOTS)
@@ -308,7 +318,8 @@ def build(ctx):
     assert arm.name == ARMATURE, arm.name
     bone_names = [b.name for b in arm.data.bones]
     rig.skin_rigid(mesh, arm, group_to_bone={"arm_L": "bbone_WholeWing.L", "arm_R": "bbone_WholeWing.R",
-                                             "leg_L": "bbone_BackEngineFrame.L", "leg_R": "bbone_BackEngineFrame.R"},
+                                             "leg_L": "bbone_BackEngineFrame.L", "leg_R": "bbone_BackEngineFrame.R",
+                                             **SPINE_TO_BONE},
                    default_bone="abone_MAIN_Cockpit")
     ctx.log("rig: %d bones reused from the shipped file" % len(bone_names))
     bones = arm.data.bones  # for the mask builders below
@@ -357,6 +368,57 @@ def build(ctx):
     # big on purpose: the controller's top blend tree HALVES every pose (dossier 3.2); the artist's
     # takes drop the tail tip 1.1-1.4 units for pitch and whip it 2.2-2.5 sideways for yaw.
     PODS = ("bbone_FrontEngineBase", "bbone_FrontEngineTip", "bbone_FrontEngineTrim")
+    TAIL_ROOT = (0, 1.05, 0.02)  # where the spine leaves the deck; bbone_WholeTail's own head sits mid-tail
+    TAIL_BONES = ["bbone_WholeTail"] + [name for (name, *_r) in tail_rows]
+
+    def whole_tail(rot):
+        """The whole tail swings rigidly about its root: WholeTail and every sibling chevron bone ride the same rotation."""
+        return {b: takes.follow(arm, "bbone_WholeTail", b, rot, pivot=TAIL_ROOT) for b in TAIL_BONES}
+
+    def tail_chain(root_deg, tip_curl_deg, axis):
+        """
+        The tail as a kinematic CHAIN from TAIL_ROOT about one world axis (0 X pitch, 1 Y twist, 2 Z yaw):
+        the spine root (WholeTail) turns by root_deg; chevron k turns by root_deg plus an accumulated curl
+        that reaches tip_curl_deg at the last chevron, and SITS where the bent chain puts it. The chevrons
+        are siblings in the artist's rig, so a rigid swing plus a curl about each chevron's own head fanned
+        them apart and left the spine poking out (sheet, round 3); a chain keeps spine and chevrons together.
+        """
+        import rig as _rig
+        from mathutils import Vector as _V, Euler as _E
+
+        def R(deg):
+            e = [0.0, 0.0, 0.0]
+            e[axis] = math.radians(deg)
+            return _E(e, "XYZ").to_matrix()
+
+        def euler(deg):
+            v = [0.0, 0.0, 0.0]
+            v[axis] = deg
+            return tuple(v)
+        out = {}
+        root = _V(TAIL_ROOT)
+        wt = _rig.bone_world_head(arm, "bbone_WholeTail")
+        out["bbone_WholeTail"] = {"rot": euler(root_deg), "loc": tuple(root + R(root_deg) @ (wt - root) - wt)}
+        w = [0.25 + 0.75 * i / 8.0 for i in range(len(tail_rows))]
+        inc = [tip_curl_deg * wi / sum(w) for wi in w]
+        prev, prev_new, th = root, root, root_deg
+        for (name, *_r), dk in zip(tail_rows, inc):
+            h = _rig.bone_world_head(arm, name)
+            h_new = prev_new + R(th) @ (h - prev)   # this link carries the orientation of the joint before it
+            th += dk
+            out[name] = {"rot": euler(th), "loc": tuple(h_new - h)}
+            prev, prev_new = h, h_new
+        return out
+
+    def add_curl(d, curl):
+        """Compose a per-chevron curl onto the gross swing (small angles: Euler sum)."""
+        for b, rot in curl.items():
+            if b in d and isinstance(d[b], dict):
+                r0 = d[b]["rot"]
+                d[b] = {"rot": (r0[0] + rot[0], r0[1] + rot[1], r0[2] + rot[2]), "loc": d[b]["loc"]}
+            else:
+                d[b] = rot
+        return d
 
     def tail_curl(sign, amount, axis=0):
         out = {}
@@ -381,15 +443,13 @@ def build(ctx):
     def pose(p):
         if p == "idle":
             return {}
-        if p == "pitchup":    # nose up: the whole tail drops (-X about its root), chevrons curl further, head lifts, wing noses up
-            d = {"bbone_WholeTail": (-30, 0, 0)}
-            d.update(tail_curl(-1, 14))
+        if p == "pitchup":    # nose up: the tail drops as a chain (-X), curling further toward the tip; head lifts, wing noses up
+            d = tail_chain(-12, -24, 0)
             d.update(wing_bank((-16, 0, 0), (-16, 0, 0)))
             d.update({"bbone_UpperHelmet": (10, 0, 0), "bbone_LowerHelmet": (10, 0, 0), "bbone_Ears": (14, 0, 0)})
             return d
         if p == "pitchdown":
-            d = {"bbone_WholeTail": (30, 0, 0)}
-            d.update(tail_curl(1, 14))
+            d = tail_chain(12, 24, 0)
             d.update(wing_bank((16, 0, 0), (16, 0, 0)))
             d.update({"bbone_UpperHelmet": (-10, 0, 0), "bbone_LowerHelmet": (-10, 0, 0), "bbone_Ears": (-14, 0, 0)})
             return d
@@ -398,31 +458,27 @@ def build(ctx):
             # +X, which is a NEGATIVE rotation about Z for a tail that points +Y (measured on the artist's
             # yawright: tail tip dx +2.46)
             s = -1 if p == "yawright" else 1
-            d = {"bbone_WholeTail": (0, 0, s * 40)}
-            d.update(tail_curl(s, 12, axis=2))
+            d = tail_chain(s * 20, s * 30, 2)
             d.update(wing_bank((0, 0, s * 12), (0, 0, s * 12), pods=False))
             d.update({"bbone_UpperHelmet": (0, 0, -s * 9), "bbone_LowerHelmet": (0, 0, -s * 9), "bbone_Ears": (0, 0, -s * 10)})
             return d
         if p in ("rollleft", "rollright"):  # a bank about the hull's long axis: wings and pods go round, the tail twists
-            s = 1 if p == "rollright" else -1
+            s = -1 if p == "rollright" else 1  # +Y rotation drops the +X (.L) wing: rollright is NEGATIVE about Y
             d = wing_bank((0, s * 32, 0), (0, s * 32, 0))
-            d["bbone_WholeTail"] = (0, s * 18, 0)
-            d.update(tail_curl(s, 12, axis=1))
+            d.update(tail_chain(s * 10, s * 16, 1))
             d.update({"bbone_cheek.L": (0, 0, s * 10), "bbone_cheek.R": (0, 0, s * 10)})
             return d
         if p == "speedup":   # everything streamlines: the fan folds back, the paws reach, the tail straightens
             d = wing_bank((0, 0, 18), (0, 0, -18), pods=False)
             d.update({"%s.%s" % (pb, t): {"loc": (0, -dy, 0)} for t in ("L", "R") for pb, dy in zip(PODS, (0.10, 0.16, 0.14))})
             d["bbone_Ears"] = (-10, 0, 0)
-            d["bbone_WholeTail"] = (6, 0, 0)
-            d.update(tail_curl(1, 4))
+            d.update(tail_chain(4, 6, 0))
             return d
         if p == "speeddown":  # the fan spreads as an airbrake, the paws pull in, the tail flares
             d = wing_bank((-6, 0, -14), (-6, 0, 14), pods=False)
             d.update({"%s.%s" % (pb, t): {"loc": (0, dy, 0)} for t in ("L", "R") for pb, dy in zip(PODS, (0.08, 0.12, 0.10))})
             d["bbone_Ears"] = (6, 0, 0)
-            d["bbone_WholeTail"] = (-8, 0, 0)
-            d.update(tail_curl(-1, 6))
+            d.update(tail_chain(-5, -8, 0))
             return d
         return {}
 
@@ -437,6 +493,17 @@ def build(ctx):
             "bones": bone_names,
             "takes": [ARMATURE + "|" + TAKE_PREFIX + p for p in takes.STANDARD_POSES],
             "pose_takes": [ARMATURE + "|" + TAKE_PREFIX + p for p in takes.STANDARD_POSES],
+            # each take must move the named part the named way (re-import, centroid deltas; LESSONS 34)
+            "pose_expect": {
+                TAKE_PREFIX + "pitchup": [("bbone_Tail9Last", "z", -1, 0.8)],
+                TAKE_PREFIX + "pitchdown": [("bbone_Tail9Last", "z", +1, 0.8)],
+                TAKE_PREFIX + "yawright": [("bbone_Tail9Last", "x", +1, 1.0)],   # the tail swings to the OUTSIDE (+X, the pilot's left)
+                TAKE_PREFIX + "yawleft": [("bbone_Tail9Last", "x", -1, 1.0)],
+                TAKE_PREFIX + "rollright": [("bbone_FrontEngineBase.L", "z", +1, 0.2), ("bbone_FrontEngineBase.R", "z", -1, 0.2)],
+                TAKE_PREFIX + "rollleft": [("bbone_FrontEngineBase.R", "z", +1, 0.2), ("bbone_FrontEngineBase.L", "z", -1, 0.2)],
+                TAKE_PREFIX + "speedup": [("bbone_WingPiece6.R", "x", +1, 0.15)],   # the fan folds inward
+                TAKE_PREFIX + "speeddown": [("bbone_WingPiece6.R", "x", -1, 0.15)],  # the fan spreads
+            },
             "shapes": ["Charge", "Mass", "Space", "Time"],
             "slots": list(SLOTS),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,

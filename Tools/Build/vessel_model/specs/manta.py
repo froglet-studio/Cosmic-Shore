@@ -190,10 +190,10 @@ def build(ctx):
         if p == "pitch down":
             return {"Wing.L": (24, 0, 0), "Wing.R": (24, 0, 0), **{n: (24, 0, 0) for n in fin_names}}
         if p in ("yaw left", "yaw right"):
-            s = 1 if p == "yaw right" else -1
+            s = -1 if p == "yaw right" else 1  # a right turn is clockwise from above: NEGATIVE about Z
             return {"Wing.L": (0, 0, s * 21), "Wing.R": (0, 0, s * 21), **{n: (0, 0, -s * 21) for n in fin_names}}
         if p in ("roll left", "roll right"):
-            s = 1 if p == "roll right" else -1
+            s = -1 if p == "roll right" else 1  # +Y rotation drops the +X (.L) wing: roll right is NEGATIVE about Y
             return {"Wing.L": (0, s * 27, 0), "Wing.R": (0, s * 27, 0), **{n: (0, s * 27, 0) for n in fin_names}}
         if p == "speedup":
             return {"Wing.L": (0, 0, 60), "Wing.R": (0, 0, -60), "WingT.L": (0, 27, 0), "WingB.L": (0, -27, 0), "WingT.R": (0, -27, 0), "WingB.R": (0, 27, 0)}
@@ -214,10 +214,23 @@ def build(ctx):
         "armature": arm, "mesh": mesh,
         "spec": {
             "preset": "yup_baked", "armature": ARMATURE, "mesh_node": MESH_NODE,
+            "size_tol": (0.10, 0.10, 0.15),  # z: the fins stand a little taller than the artist's bind fins; the prefab's native pose spreads them to +-0.6 in the game (dossier 1.1)
             "bones": bone_names,
             "takes": [ARMATURE + "|" + p for p in TAKES],
             "pose_takes": [ARMATURE + "|" + p for p in TAKES],
             "sheet_poses": ("pitch up", "yaw right", "roll right", "speedup"),
+            # each take must move the named part the named way (re-import, centroid deltas; LESSONS 34)
+            "pose_expect": {
+                "pitch up": [("Wing.L", "z", -1, 0.08)],      # the wings (aft of their roots) drop: nose up
+                "pitch down": [("Wing.L", "z", +1, 0.08)],
+                "yaw right": [("Wing.L", "y", -1, 0.05), ("Wing.R", "y", +1, 0.02)],   # the left wing swings forward
+                "yaw left": [("Wing.R", "y", -1, 0.05), ("Wing.L", "y", +1, 0.02)],
+                "roll right": [("Wing.R", "z", -1, 0.05), ("Wing.L", "z", +1, 0.05)],
+                "roll left": [("Wing.L", "z", -1, 0.05), ("Wing.R", "z", +1, 0.05)],
+                "speedup": [("Wing.L", "x", -1, 0.25)],       # the wings sweep in and aft
+                "speeddown": [("Wing.L", "x", +1, 0.10)],
+                "cut": [("Wing.L", "x", -1, 0.20)],
+            },
             "shapes": ["charge", "mass", "space", "time"],
             "slots": list(SLOTS),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,

@@ -125,14 +125,16 @@ def build(ctx):
 
     # ------------------------------------------------------------------ WINGS (wing.l / wing.r)
     for tag, sx in SIDES:
+        # span to the artist's wing tip (+-2.64, the dossier's hull bounds). A previous pass stretched it to +-4.1
+        # to meet a "drawn" reference that was the artist file read with all four morphs at 100% (LESSONS 33)
         w = f.wing("wing." + tag, root=(sx * 0.30, -0.22, 0.0), span=2.34, chord_root=0.80, chord_tip=0.30,
                    sweep=0.55, dihedral_deg=0.0, twist_deg=-2.0, thickness=0.16, camber=0.0, sections=8,
                    segments=18, side=sx, taper_power=0.85)
         f.paint(w, H)
         # the leading edge and the tip wear the domain
-        f.paint(w, D, lambda c, n, i, sx=sx: n.y < -0.45 or abs(c.x) > 2.15)
+        f.paint(w, D, lambda c, n, i, sx=sx: n.y < -0.45 or abs(c.x) > 2.15 * 2.64 / 4.1)
         # a sunken top panel
-        f.inset_faces(w, lambda c, n, i, sx=sx: i == H and n.z > 0.7 and 0.95 < abs(c.x) < 1.95, 0.02, depth=0.012, slot=D)
+        f.inset_faces(w, lambda c, n, i, sx=sx: i == H and n.z > 0.7 and 0.70 < abs(c.x) < 1.35, 0.02, depth=0.012, slot=D)
         finish(f, w, bevel_width=0.008, sharp_deg=45)
         parts.append(w)
 
@@ -202,9 +204,10 @@ def build(ctx):
     shapes = {
         "charge": [  # the weapon's girth: each jaw half thickens ABOUT ITS OWN CENTRE (scaling about the hull
             # origin translated the jaws and closed the gape the energy gauge drives, RiptideAnimation 3.3), the throat swells
-            morphs.scale_about(1.9, jaw_u_c, jaw_u, axes=(1, 0, 1)),
-            morphs.scale_about(1.9, jaw_b_c, jaw_b, axes=(1, 0, 1)),
-            morphs.inflate(0.10, jaws),
+            # girth grows OUTWARD only: the pivot sits on each jaw's bite plane (z = +-0.05), so the gape the
+            # energy gauge drives (RiptideAnimation, dossier 3.3) is untouched; x thickens about the centreline
+            morphs.scale_about(1.9, (0.0, jaw_u_c[1], 0.05), jaw_u, axes=(1, 0, 1)),
+            morphs.scale_about(1.9, (0.0, jaw_b_c[1], -0.05), jaw_b, axes=(1, 0, 1)),
             morphs.inflate(0.14, throat),
         ],
         "mass": [  # ammunition carried: the fuselage belly and the case bodies fatten
@@ -249,11 +252,11 @@ def build(ctx):
             d.update(case_fan(1))
             return d
         if p in ("yawleft", "yawright"):
-            s = 1 if p == "yawright" else -1
+            s = -1 if p == "yawright" else 1  # a right turn is clockwise from above: NEGATIVE about Z (the artist's yawright noses the jaws to -X)
             return {"wing.l": (0, 0, s * 26), "wing.r": (0, 0, s * 26), "fuse": (0, 0, s * 12),
                     **{c + "." + t: (0, 0, s * 28) for c in CASES for t, _ in SIDES}}
         if p in ("rollleft", "rollright"):
-            s = 1 if p == "rollright" else -1
+            s = -1 if p == "rollright" else 1  # +Y rotation drops the +X (.l) wing: rollright is NEGATIVE about Y
             return {"wing.l": (0, s * 35, 0), "wing.r": (0, s * 35, 0), "fuse": (0, s * 20, 0),
                     **{c + "." + t: (0, s * 30, 0) for c in CASES for t, _ in SIDES}}
         if p == "speedup":
@@ -280,8 +283,22 @@ def build(ctx):
         "armature": arm, "mesh": mesh,
         "spec": {
             "preset": "yup", "armature": ARMATURE, "mesh_node": MESH_NODE,
+            "size_tol": (0.10, 0.10, 0.40),  # z: the artist's drawn rest gapes the jaws +-1.0 (2.02 tall); ours rest closed, the energy gauge opens them (dossier 3.3)
             "bones": bone_names,
             "takes": [ARMATURE + "|" + p + "_dolphin" for p in TAKES],
+            # each take must move the named part the named way at its last key (re-import, centroid deltas; LESSONS 34)
+            "pose_expect": {
+                "pitchup_dolphin": [("jaw.u", "z", +1, 0.15), ("jetint.l", "z", -1, 0.08)],
+                "pitchdown_dolphin": [("jaw.u", "z", -1, 0.15), ("jetint.l", "z", +1, 0.08)],
+                "yawright_dolphin": [("jaw.u", "x", -1, 0.2), ("wing.l", "y", -1, 0.1)],   # the jaws nose to -X (the pilot's right), the left wing swings forward
+                "yawleft_dolphin": [("jaw.u", "x", +1, 0.2), ("wing.r", "y", -1, 0.1)],
+                "rollright_dolphin": [("wing.r", "z", -1, 0.12), ("wing.l", "z", +1, 0.12)],
+                "rollleft_dolphin": [("wing.l", "z", -1, 0.12), ("wing.r", "z", +1, 0.12)],
+                "speedup_dolphin": [("wing.l", "y", +1, 0.25)],
+                "speeddown_dolphin": [("wing.l", "y", -1, 0.2)],
+                "jawcharge_dolphin": [("jaw.u", "z", +1, 0.2), ("jaw.b", "z", -1, 0.2)],
+                "startcharge_dolphin": [("wing.l", "y", -1, 0.5)],
+            },
             "shapes": ["charge", "mass", "space", "time"],
             "slots": list(SLOTS),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,

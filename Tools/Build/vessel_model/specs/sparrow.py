@@ -20,7 +20,8 @@ each one. Everything under 'Design intent' and the morph / pose meanings follow 
             Speed+PitchUp,Speed+PitchDown,Speed+TurnLeft,Speed+TurnRight}_SparrowAnim (+ the
             Idle_SparrowAnim.006 duplicate the meta lists): 1-frame POSES for the 2D blend trees
   slots     0 Body, 1 Domain, 2 Engine, 3 Window  (the shipped order; slot 0 takes the domain paint)
-  frame     preset "zup" (like the Squirrel): nose -Y, up +Z, .L on +X in the Blender frame
+  frame     preset "zup" (like the Squirrel): nose +Y as flown (beak-first), up +Z, the artist's .L bones
+            on +X = the pilot's RIGHT; poses are written in this frame (a right turn is -Z, nose-up is +X)
   size      x +-6.25, y -4.66 .. +7.57, z -0.82 .. +0.96 ; camera -50
 
 Design: the bird. A beak nose with the canopy sunk behind it; broad shoulders the fans grow
@@ -200,7 +201,8 @@ def build(ctx):
 
         # ------------------------------------------------------------------ ENGINE TUBES (the jet hosts, b_Tail*)
         # at -Y, the stern as flown; the b_Tail bones are moved here after the armature import (below)
-        tails = [("b_Tail1." + tag, sx * 0.61, -4.58, 3.00, 0.36, 0.88), ("b_Tail2." + tag, sx * 1.18, -4.92, 2.32, 0.26, 0.66), ("b_Tail3." + tag, sx * 1.77, -5.30, 1.46, 0.20, 0.46)]
+        # fin heights give the hull the artist's drawn height (1.78; the artist's tail blades spanned z -0.82..+0.96)
+        tails = [("b_Tail1." + tag, sx * 0.61, -4.58, 3.00, 0.36, 1.91), ("b_Tail2." + tag, sx * 1.18, -4.92, 2.32, 0.26, 1.50), ("b_Tail3." + tag, sx * 1.77, -5.30, 1.46, 0.20, 1.10)]
         for name, cx, y0, ln, r, hz in tails:
             tube = f.lathe(name, [(0.0, 0.0), (r * 0.6, 0.0), (r, 0.10), (r, ln * 0.55), (r * 1.15, ln * 0.60), (r * 1.15, ln * 0.70), (r, ln * 0.74), (r, ln - 0.1), (r * 0.9, ln), (0.0, ln)],
                            segments=16, axis=(0, -1, 0), origin=(cx, y0, 0.07))
@@ -276,18 +278,11 @@ def build(ctx):
         kb, mx, frac, moved = morphs.add_shape(mesh, name, defs)
         ctx.log("shape %s: travel %.3f (%.1f%% of diag), %d verts" % (name, mx, 100 * frac, moved))
 
-    # ------------------------------------------------------------------ POSES (world axes; nose +Y)
-    # The builder below is written in the fleet's nose -Y vocabulary (MODELLING.md 6) and mirrored through
-    # y = 0 at the end: X and Z rotations and Y displacements flip sign, Y rotations do not.
-    def mirror_y(d):
-        out = {}
-        for b, v in d.items():
-            if isinstance(v, dict):
-                r, l = v.get("rot", (0, 0, 0)), v.get("loc", (0, 0, 0))
-                out[b] = {"rot": (-r[0], r[1], -r[2]), "loc": (l[0], -l[1], l[2])}
-            else:
-                out[b] = (-v[0], v[1], -v[2])
-        return out
+    # ------------------------------------------------------------------ POSES (world axes; nose +Y, .L on +X)
+    # Written directly in the file's frame. A mirror through y = 0 was tried first: it keeps pitch and the
+    # speed folds but REVERSES yaw and roll (a mirrored right turn is a left turn - chirality), so the
+    # tails swung the wrong way. Whole-body semantics: a right turn is NEGATIVE about Z whatever the
+    # heading; nose-up for a +Y nose is POSITIVE about X; a right bank (+X side down) is POSITIVE about Y.
     def fans(l_rot, r_rot, hub=True):
         d = {}
         for tag, rot in (("L", l_rot), ("R", r_rot)):
@@ -304,30 +299,27 @@ def build(ctx):
         return {"b_ShipGun%d.%s" % (k, t): rot for k in (1, 2) for t, _ in SIDES}
 
     def pose(p):
-        return mirror_y(_pose_nose_minus_y(p))
-
-    def _pose_nose_minus_y(p):
         d = {}
         speed = "Speed" in p
         if speed:
-            d.update(fans((0, 0, 22), (0, 0, -22)))          # fold back
-            d.update(tails_rot((0, 0, 0), (0, 0.35, 0)))      # tails streak aft
-            d.update(guns_rot({"rot": (0, 0, 0), "loc": (0, -0.25, 0)}))
-        if "PitchUp" in p:
-            d.update(fans((-16, 0, 0), (-16, 0, 0)))
-            d.update(tails_rot((-24, 0, 0)))
-        elif "PitchDown" in p:
+            d.update(fans((0, 0, -22), (0, 0, 22)))          # fold aft: the +X fan swings -Z, the -X fan +Z
+            d.update(tails_rot((0, 0, 0), (0, -0.35, 0)))     # tails streak aft (-Y)
+            d.update(guns_rot({"rot": (0, 0, 0), "loc": (0, 0.25, 0)}))  # guns reach forward
+        if "PitchUp" in p:                                    # the fans' leading edges rise, the tails droop
             d.update(fans((16, 0, 0), (16, 0, 0)))
             d.update(tails_rot((24, 0, 0)))
-        if "YawLeft" in p or "TurnLeft" in p:
-            d.update(fans((0, -10, -14), (0, -10, -14)))      # bank left and skid
+        elif "PitchDown" in p:
+            d.update(fans((-16, 0, 0), (-16, 0, 0)))
+            d.update(tails_rot((-24, 0, 0)))
+        if "YawLeft" in p or "TurnLeft" in p:                 # nose to -X: +Z; bank left (-X side down): -Y
+            d.update(fans((0, -10, 14), (0, -10, 14)))
             d.update(tails_rot((0, 0, 22)))
-        elif "YawRight" in p or "TurnRight" in p:
-            d.update(fans((0, 10, 14), (0, 10, 14)))
+        elif "YawRight" in p or "TurnRight" in p:             # nose to +X: -Z; bank right (+X side down): +Y
+            d.update(fans((0, 10, -14), (0, 10, -14)))
             d.update(tails_rot((0, 0, -22)))
         if p == "SpeedDown":
-            d.update(fans((-6, 0, -20), (-6, 0, 20)))         # spread as an airbrake
-            d.update(tails_rot((0, 0, 0), (0, -0.25, 0)))
+            d.update(fans((6, 0, 20), (6, 0, -20)))           # spread forward as an airbrake, leading edges up
+            d.update(tails_rot((0, 0, 0), (0, 0.25, 0)))
         return d
 
     acts = {}
@@ -347,6 +339,20 @@ def build(ctx):
             "bones": bone_names,
             "takes": [ARMATURE + "|" + p + "_SparrowAnim" for p in TAKES] + [ARMATURE + "|Idle_SparrowAnim.006"],
             "pose_takes": [ARMATURE + "|" + p + "_SparrowAnim" for p in TAKES],
+            # each take must move the named part the named way (re-import, centroid deltas; LESSONS 34): nose +Y,
+            # .L on +X = the pilot's right; a right turn swings the tails to -X and the -X fan forward
+            "pose_expect": {
+                "PitchUp_SparrowAnim": [("b_WingPiece8Last.L", "z", +1, 0.6), ("b_Tail1.L", "z", -1, 0.3)],
+                "PitchDown_SparrowAnim": [("b_WingPiece8Last.L", "z", -1, 0.4), ("b_Tail1.L", "z", +1, 0.3)],
+                "Speed+PitchUp_SparrowAnim": [("b_WingPiece8Last.L", "z", +1, 0.6)],
+                "Speed+PitchDown_SparrowAnim": [("b_WingPiece8Last.L", "z", -1, 0.4)],
+                "YawRight_SparrowAnim": [("b_Tail1.L", "x", -1, 0.3), ("b_WingPiece4.R", "y", +1, 0.5)],
+                "YawLeft_SparrowAnim": [("b_Tail1.R", "x", +1, 0.3), ("b_WingPiece4.L", "y", +1, 0.5)],
+                "Speed+TurnRight_SparrowAnim": [("b_Tail1.L", "x", -1, 0.3)],
+                "Speed+TurnLeft_SparrowAnim": [("b_Tail1.R", "x", +1, 0.3)],
+                "SpeedUp_SparrowAnim": [("b_WingPiece5.L", "y", -1, 0.8), ("b_Tail1.L", "y", -1, 0.04)],
+                "SpeedDown_SparrowAnim": [("b_WingPiece3.L", "y", +1, 0.8)],
+            },
             "shapes": ["Space", "Charge", "Time", "Mass"],
             "slots": list(SLOTS),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,

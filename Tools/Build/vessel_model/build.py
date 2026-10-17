@@ -104,25 +104,29 @@ def run(spec_mod, out_path, sheet_dir=None, render=True, samples=20, committed=N
     ctx = BuildContext(os.path.dirname(os.path.abspath(out_path)), artist_ref=getattr(spec_mod, "ARTIST_REF", None))
     result = spec_mod.build(ctx)
     arm, mesh, vspec = result["armature"], result["mesh"], result["spec"]
-    # the slot materials carry the artist file's colours in the FILE (captured when the armature was imported,
-    # which happens after the parts were painted, so apply them now)
-    for mat in mesh.data.materials:
-        if mat is not None:
-            r, g, b = forms.slot_colour(mat.name)
-            mat.diffuse_color = (r, g, b, 1.0)
     # what the takes authored -> verify checks the file moved exactly those bones
     vspec.setdefault("expected_moving", {k: list(v) for k, v in T.AUTHORED.items()})
     # the ARTIST file this one replaces: its size (cameras, colliders and jets were tuned to it), its
     # slot order and its material colours; a spec overrides any of these when the change is meant
     if getattr(spec_mod, "OUTPUT", ""):
+        import subprocess
+        ap = None
         try:
             ap = ctx.artist(spec_mod.OUTPUT)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:  # a NEW vessel has no artist file: say so
+            ctx.log("no artist reference for %s (a new vessel?): %s" % (spec_mod.OUTPUT, str(e)[:120]))
+        if ap:
+            # past this point an error is a reader bug and must raise: a swallowed exception here once switched
+            # off the size, slot-order and colour checks for every spec while every build printed green (review, 2026-10-17)
             cp = P.probe(ap, want_takes=False)
             if cp["meshes"]:
-                vspec.setdefault("size_ref_blender", E.blender_posed_bounds(ap))
                 vspec.setdefault("slot_order_ref", [m["name"] for m in cp["materials"]])
                 vspec.setdefault("material_colours_ref", {m["name"]: m["diffuse"] for m in cp["materials"] if m.get("diffuse")})
+                vspec.setdefault("size_ref_blender", E.blender_posed_bounds(ap))
             vspec.setdefault("artist_path", ap)
+            ctx.log("artist reference %s: drawn size %s, slots %s" % (
+                os.path.basename(ap), [[round(v, 2) for v in b] for b in vspec.get("size_ref_blender", [])], vspec.get("slot_order_ref")))
+        if True:
             meta = os.path.join(REPO, spec_mod.OUTPUT + ".meta")
             if os.path.exists(meta):
                 takes_pinned, mats_remapped = [], []
@@ -133,8 +137,15 @@ def run(spec_mod, out_path, sheet_dir=None, render=True, samples=20, committed=N
                 mats_remapped = _re.findall(r"first:\s*\{[^}]*type:\s*UnityEngine:Material[^}]*name:\s*([^,}\s]+)", txt)
                 vspec.setdefault("meta_takes", takes_pinned)
                 vspec.setdefault("meta_materials", mats_remapped)
-        except Exception as e:  # no artist file (a new vessel) is fine; say so and verify without the references
-            ctx.log("no artist reference for %s: %s" % (spec_mod.OUTPUT, e))
+    # the slot materials carry the ARTIST file's colours in the FILE, by name (Unity generates the model's
+    # materials from DiffuseColor and remaps only the slots the .meta names, so an un-remapped slot wears
+    # this colour in the game); a slot the artist file lacks takes the canonical palette. Read from the FBX
+    # probe, the same reader the colour gate uses: the Blender importer leaves `diffuse_color` at its
+    # default, so capturing it from the imported armature's materials painted every slot the palette
+    for mat in mesh.data.materials:
+        if mat is not None:
+            rgb = (vspec.get("material_colours_ref") or {}).get(mat.name) or forms.slot_colour(mat.name)
+            forms.set_material_colour(mat, tuple(rgb))
     print("  built %s: %d verts, %d tris, slots %s, %.1fs" % (
         spec_mod.NAME, len(mesh.data.vertices), forms.tri_count(mesh), ctx.materials.slot_report(mesh), time.time() - t0))
     rep = E.export_and_verify(out_path, [arm, mesh], vspec)

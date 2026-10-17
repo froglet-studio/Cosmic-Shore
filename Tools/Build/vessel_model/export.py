@@ -42,6 +42,7 @@ THREE READERS, because a writer agrees with itself by construction:
   3. a Blender re-import in a fresh scene            - bones, shape keys, actions, materials
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -209,16 +210,70 @@ def assimp_info(path):
     return out.stdout + out.stderr
 
 
-def blender_reimport_report(path):
+def blender_reimport_report(path, pose_probe=None):
     """
     Re-import the file in a SEPARATE python process (a fresh Blender state, not this scene)
-    and report objects, bones, shape keys, actions and materials.
+    and report objects, bones, shape keys, actions and materials. `pose_probe` = {take suffix:
+    [vertex-group names]}: for each take the reader applies the action, evaluates the skinned
+    mesh and reports each group's centroid displacement from rest, so verify can check that a
+    pose moves the right part the right way (an inverted pitch passes every other check).
     """
     code = r'''
-import bpy, sys, json
+import bpy, sys, json, re
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.fbx(filepath=sys.argv[-1])
-rep = {"objects": [], "actions": [a.name for a in bpy.data.actions]}
+bpy.ops.import_scene.fbx(filepath=sys.argv[-1], ignore_leaf_bones=False, automatic_bone_orientation=False)
+pose_probe = json.loads(sys.argv[-2]) if len(sys.argv) >= 3 and sys.argv[-2].startswith("{") else {}
+rep = {"objects": [], "actions": [a.name for a in bpy.data.actions], "pose_deltas": {}}
+def _norm(x):
+    return re.sub(r"[^a-z0-9]", "", x.lower())
+if pose_probe:
+    arms = [o for o in bpy.data.objects if o.type == "ARMATURE"]
+    meshes_ = [o for o in bpy.data.objects if o.type == "MESH" and o.vertex_groups]
+    if arms and meshes_:
+        arm, mo = arms[0], meshes_[0]
+        if arm.animation_data is None:
+            arm.animation_data_create()
+        def centroids(groups):
+            dg = bpy.context.evaluated_depsgraph_get()
+            ev = mo.evaluated_get(dg).to_mesh()
+            out = {}
+            for g in groups:
+                vg = mo.vertex_groups.get(g)
+                if vg is None:
+                    continue
+                pts = []
+                for v in mo.data.vertices:
+                    for ge in v.groups:
+                        if ge.group == vg.index and ge.weight > 0.5 and v.index < len(ev.vertices):
+                            pts.append(mo.matrix_world @ ev.vertices[v.index].co)
+                            break
+                if pts:
+                    out[g] = [sum(p[i] for p in pts) / len(pts) for i in range(3)]
+            mo.evaluated_get(dg).to_mesh_clear()
+            return out
+        all_groups = sorted({g for gs in pose_probe.values() for g in gs})
+        arm.animation_data.action = None
+        for pb in arm.pose.bones:
+            pb.matrix_basis.identity()
+        rest = centroids(all_groups)
+        for take, groups in pose_probe.items():
+            act = next((a for a in bpy.data.actions if _norm(a.name.split("|")[-1]) == _norm(take) or a.name.split("|")[-1] == take), None)
+            if act is None:
+                continue
+            arm.animation_data.action = act
+            if hasattr(act, "slots") and len(act.slots):
+                try:
+                    arm.animation_data.action_slot = act.slots[0]
+                except Exception:
+                    pass
+            bpy.context.scene.frame_set(int(act.frame_range[1]))  # the LAST key: a motion take (the Dolphin's) reaches its pose at the end, a pose take has one key
+            bpy.context.view_layer.update()
+            posed = centroids(groups)
+            rep["pose_deltas"][take] = {g: [posed[g][i] - rest[g][i] for i in range(3)] for g in groups if g in posed and g in rest}
+            arm.animation_data.action = None
+            for pb in arm.pose.bones:
+                pb.matrix_basis.identity()
+            bpy.context.view_layer.update()
 for o in bpy.data.objects:
     d = {"name": o.name, "type": o.type, "parent": o.parent.name if o.parent else None,
          "loc": list(o.location), "rot_deg": [round(__import__("math").degrees(a), 3) for a in o.rotation_euler], "scale": list(o.scale)}
@@ -239,11 +294,11 @@ for o in bpy.data.objects:
     rep["objects"].append(d)
 print("REPORT_JSON " + json.dumps(rep))
 '''
-    out = subprocess.run([sys.executable, "-c", code, path], capture_output=True, text=True, timeout=600)
+    argv = [sys.executable, "-c", code] + ([json.dumps(pose_probe)] if pose_probe else []) + [path]
+    out = subprocess.run(argv, capture_output=True, text=True, timeout=900)
     for line in out.stdout.splitlines():
         if line.startswith("REPORT_JSON "):
-            import json
-            return json.loads(line[len("REPORT_JSON "):])
+            return json.loads(line[len("REPORT_JSON "):])  # module-level json: a local import here shadowed the dumps() above (UnboundLocalError the first time pose_expect was set)
     raise VerifyError("blender re-import produced no report:\n%s\n%s" % (out.stdout[-2000:], out.stderr[-2000:]))
 
 
@@ -382,7 +437,33 @@ def verify(path, spec):
         failures.append("assimp not available")
     elif "Animations:" not in ai or "Bones:" not in ai:
         failures.append("assimp could not read the file:\n" + ai[-800:])
-    rep = blender_reimport_report(path)
+    # a rebuilt file is modelled against its bones AS DRAWN and bakes the artist's parked pose into the rest
+    # (rig.bake_parked_pose), so its bind pose must EQUAL its node chain: a residual park means the exporter
+    # captured a pose, or the armature was never baked, and Unity would draw the part somewhere else
+    if not spec.get("allow_park"):
+        _b, park = blender_posed_bounds(path, with_park=True)
+        if park:
+            failures.append("the file's bind pose differs from its node chain on %d bone(s) (a parked pose; set allow_park if it is meant): %s" % (
+                len(park), ", ".join("%s loc %.3f rot %.1fdeg scale %.3f" % tuple(p) for p in park[:6])))
+    pose_expect = spec.get("pose_expect") or {}
+    rep = blender_reimport_report(path, pose_probe={t: sorted({e[0] for e in exps}) for t, exps in pose_expect.items()} or None)
+    # each named take must move the named part the named way (direction AND a minimum), measured on the
+    # re-import with the action applied: the only check that tells an inverted pitch from a correct one
+    AXIS = {"x": 0, "y": 1, "z": 2, 0: 0, 1: 1, 2: 2}
+    for take, exps in pose_expect.items():
+        deltas = rep.get("pose_deltas", {}).get(take)
+        if deltas is None:
+            failures.append("pose_expect names take %r but the re-import found no such action" % take)
+            continue
+        for (group, axis, sign, min_abs) in exps:
+            d = deltas.get(group)
+            if d is None:
+                failures.append("pose_expect: take %r names vertex group %r, which the mesh lacks" % (take, group))
+                continue
+            v = d[AXIS[axis]] * (1 if sign > 0 else -1)
+            if v < min_abs:
+                failures.append("pose %r: %s moves %+.3f along %s (sign %+d expected, at least %.2f): the pose is inverted or too small" % (
+                    take, group, d[AXIS[axis]], str(axis), 1 if sign > 0 else -1, min_abs))
     arm = [o for o in rep["objects"] if o["type"] == "ARMATURE"]
     if spec.get("bones") and (not arm or set(spec["bones"]) - set(arm[0]["bones"])):
         failures.append("blender re-import lacks bones %s" % (set(spec.get("bones", [])) - set(arm[0]["bones"] if arm else [])))
@@ -414,12 +495,13 @@ def verify(path, spec):
         # so its raw bounds are its drawn bounds
         ref_lo, ref_hi = spec["size_ref_blender"]
         lo, hi = meshes[0]["bounds"]
-        tol = spec.get("size_tol", 0.10)
+        tol = spec.get("size_tol", 0.10)  # one number, or one per axis (x, y, z) with a reason in the spec
         for ax in range(3):
+            tol_ax = tol[ax] if isinstance(tol, (list, tuple)) else tol
             ext_ref, ext = ref_hi[ax] - ref_lo[ax], hi[ax] - lo[ax]
-            if ext_ref > 1e-6 and abs(ext - ext_ref) > tol * ext_ref:
+            if ext_ref > 1e-6 and abs(ext - ext_ref) > tol_ax * ext_ref:
                 failures.append("size axis %d (Blender frame): extent %.3f vs the artist file's drawn %.3f (more than %.0f%% off; set size_ref_blender / size_tol in the spec if the change is meant)" % (
-                    ax, ext, ext_ref, 100 * tol))
+                    ax, ext, ext_ref, 100 * tol_ax))
     if meshes:
         for s in spec.get("shapes", []):
             if s not in meshes[0]["shapes"]:
@@ -439,6 +521,13 @@ _POSED_BOUNDS_READER = r'''
 import bpy, sys, json
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.fbx(filepath=sys.argv[-1], ignore_leaf_bones=False, automatic_bone_orientation=False, use_anim=False)
+# the artist files store DeformPercent 100 as each blend-shape channel's STATIC value (the Manta and the
+# Dolphin import with all four morphs at 1.0), so the drawn size is the REST mesh under the parked pose only
+for o in bpy.data.objects:
+    if o.type == "MESH" and o.data.shape_keys:
+        for k in o.data.shape_keys.key_blocks:
+            k.value = 0.0
+bpy.context.view_layer.update()
 dg = bpy.context.evaluated_depsgraph_get()
 lo = [1e9] * 3; hi = [-1e9] * 3
 for o in bpy.data.objects:
@@ -451,20 +540,37 @@ for o in bpy.data.objects:
         for i in range(3):
             lo[i] = min(lo[i], p[i]); hi[i] = max(hi[i], p[i])
     ev.to_mesh_clear()
-print("POSED_BOUNDS " + json.dumps([lo, hi]))
+# the parked pose: every bone whose bind differs from its node chain (no action is imported, so the
+# importer's matrix_basis IS that difference)
+import math
+park = []
+for a in bpy.data.objects:
+    if a.type != "ARMATURE":
+        continue
+    for pb in a.pose.bones:
+        loc, rot, sca = pb.matrix_basis.decompose()
+        ang = math.degrees(rot.angle)
+        ang = min(ang, 360.0 - ang)
+        dev = max(abs(loc.x), abs(loc.y), abs(loc.z)), ang, max(abs(sca.x - 1), abs(sca.y - 1), abs(sca.z - 1))
+        if dev[0] > 0.002 or dev[1] > 0.5 or dev[2] > 0.002:
+            park.append([pb.name, round(dev[0], 4), round(dev[1], 2), round(dev[2], 4)])
+print("POSED_BOUNDS " + json.dumps({"bounds": [lo, hi], "park": park}))
 '''
 
 
-def blender_posed_bounds(path):
+def blender_posed_bounds(path, with_park=False):
     """
     The world-space bounds of a file's mesh AS DRAWN (armature modifier applied, i.e. the bind
-    mesh deformed by the parked pose), in Blender's import frame. For a file with no parked
-    pose this equals the raw bounds; for the artist Squirrel the posed tail sits 0.3 higher.
+    mesh deformed by the parked pose, every shape key at 0), in Blender's import frame. For a
+    file with no parked pose this equals the raw bounds; for the artist Squirrel the posed tail
+    sits 0.3 higher. `with_park=True` returns (bounds, park) where park lists every bone whose
+    bind differs from its node chain by more than 0.002 units, 0.5 degrees or 0.2% scale.
     """
     out = subprocess.run([sys.executable, "-c", _POSED_BOUNDS_READER, path], capture_output=True, text=True, timeout=600)
     for line in out.stdout.splitlines():
         if line.startswith("POSED_BOUNDS "):
-            return json.loads(line[len("POSED_BOUNDS "):])
+            rep = json.loads(line[len("POSED_BOUNDS "):])
+            return (rep["bounds"], rep["park"]) if with_park else rep["bounds"]
     raise RuntimeError("blender could not read %s:\n%s" % (path, (out.stdout + out.stderr)[-1200:]))
 
 

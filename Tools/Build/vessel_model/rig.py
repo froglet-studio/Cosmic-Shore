@@ -67,7 +67,7 @@ def build_armature(name, bones, display="OCTAHEDRAL"):
     return obj
 
 
-def skin_rigid(mesh_obj, armature_obj, group_to_bone=None, default_bone=None, parent_to_armature=False):
+def skin_rigid(mesh_obj, armature_obj, group_to_bone=None, default_bone=None, parent_to_armature=False, bake_park=True):
     """
     Bind `mesh_obj` to `armature_obj`: an Armature modifier plus vertex groups renamed to
     their bones. `group_to_bone` maps part vertex-group names to bone names (identity by
@@ -109,7 +109,10 @@ def skin_rigid(mesh_obj, armature_obj, group_to_bone=None, default_bone=None, pa
     mod = mesh_obj.modifiers.get("Armature") or mesh_obj.modifiers.new("Armature", "ARMATURE")
     mod.object = armature_obj
     mod.use_vertex_groups = True
-    baked = bake_parked_pose(mesh_obj, armature_obj)
+    # bake the artist's parked pose into the rest ONLY when that pose is what the game draws (the Squirrel's:
+    # the live prefab plays it; the Urchin's 1.75: the live prefab authors it). A park nobody has seen in the
+    # game (the Rhino rig's 70-degree wing fold) is a WIP pose: bake_park=False keeps the BIND as the rest
+    baked = bake_parked_pose(mesh_obj, armature_obj) if bake_park else []
     if baked:
         print("  [rig] baked the artist's parked pose into the rest on %d bone(s): %s%s" % (
             len(baked), ", ".join(baked[:5]), " ..." if len(baked) > 5 else ""))

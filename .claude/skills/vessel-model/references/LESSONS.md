@@ -256,3 +256,61 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     `import_shipped_armature` now disconnects every bone. The same check is why the Urchin's
     scale normalisation and the Sparrow's moved jet bones are DECLARED to the gate
     (`--allow-scale-only`, `--allow-moved`) instead of silently passing or failing.
+
+32. **A gate that is dead reads exactly like a gate that passes.** `export.py` used `json` in
+    the artist-reference block without importing it; the `NameError` was swallowed by a broad
+    `except Exception` and the size, slot-order and colour checks were OFF for every spec while
+    all seven builds printed green (the review's skeptic found it by asking what failure each
+    gate had ever produced). Two defects shipped under it: every file carried grey
+    `DiffuseColor` (0.8), and the Sparrow and Dolphin were smaller than the artist's envelope.
+    The `except` now tolerates only a MISSING artist file and lets a reader bug raise. Before
+    trusting a green gate, name a failure it produced (CLAUDE.md's rule for `--check`).
+
+33. **The artist files import with every morph at 100%.** The Manta and Dolphin FBX store
+    `DeformPercent 100` as each blend-shape channel's STATIC value, so Blender's importer sets
+    all four shape keys to 1.0 and an "as drawn" bounds reader measured the hull inflated by
+    Mass + Charge + Space + Time at once: the Manta read 5.52 wide (really 3.95) and the Dolphin
+    8.2 (really 5.29), and a pass "corrected" the Dolphin's wing span to 3.80 to meet it. The
+    reader (`_POSED_BOUNDS_READER`) now zeroes every shape key before evaluating; the drawn
+    size is the REST mesh under the parked pose and nothing else. Corollary: when a reference
+    disagrees with the dossier's Unity-measured number by a round factor, suspect the reader.
+
+34. **A right turn is a negative rotation about up, whatever the heading.** Yaw is chiral: the
+    whole-body imitation that every artist take uses (the Squirrel's tail swings to the outside
+    of the turn, the Dolphin's jaws nose to the pilot's right, the Rhino's +X wing swings
+    forward) is `-Z` for yawright on every hull, nose -Y or +Y. Four specs had `+Z` and turned
+    left, and the Sparrow's mirror through `y = 0` (which flips X and Z rotations) turned its
+    correctly-authored tails the wrong way: a mirrored right turn IS a left turn. Pitch and the
+    speed folds survive a mirror; yaw and roll do not. The Sparrow's poses are now written in
+    the file's own frame, and `pose_expect` in every spec makes the re-import prove the
+    direction of each take (a named part must move the named way by at least so much), which
+    is the only check that tells an inverted pose from a correct one.
+
+35. **An imported action poses the armature; a parked pose is only visible with `use_anim=False`.**
+    A reader that imports a file WITH its animations gets the last action's frame as the pose,
+    so the artist Urchin's 1.75 hold scale (the parked pose Unity draws) read as scale 1.0 and
+    our Manta read as if its wing were parked 40 degrees ("cut", the last take). Measure rest and
+    park with `use_anim=False`; measure takes with the action assigned and the park cleared.
+    Verify now also refuses a rebuilt file whose bind differs from its node chain (a residual
+    park; `allow_park` declares one on purpose), since the convention bakes the park into the
+    rest so Unity and Blender draw the same hull.
+
+36. **The Urchin is drawn 1.75x out.** The artist rig scales every hold bone 1.75 while the mesh
+    was bound at scale 1, so Unity draws the guns, pads, jets and shrouds 1.75x bigger and 1.75x
+    further from the ball (the live prefab authors the same 1.75 on its jet and gun nodes - two
+    independent authorings of one number is an intention, not a flaw). The first rebuild modelled
+    the raw layout against baked bones: a 0.91 envelope where 1.54 is drawn, with every jet 0.2
+    from its own bone. The spec now scales the appendages about the origin after modelling them.
+
+37. **Bake a parked pose only when the game draws it.** The Rhino rig's node chain parks its wings
+    and jets 70 degrees up from the bind: drawn by that chain the hull is 25 wide and 20 tall with
+    the wings standing, a pose nobody has seen in the game (the live placeholder prefab and the
+    rig's bind agree on a 16 x 15 x 20 hull). The first rebuild baked it (rest := drawn) and then
+    modelled the wings at the bind layout, so each wing sat metres from its own bone and every
+    pose swung it about a distant pivot; the same shape the Urchin had with its appendages. The
+    Squirrel's park is baked because the live prefab plays it; the Urchin's 1.75 because the live
+    prefab authors it; the Rhino keeps the BIND as its rest (`skin_rigid(..., bake_park=False)`),
+    declares the twelve moved bones (root and fuse included: the drawn chain also pitches the whole rig 16.9 degrees) to `rest_compare --allow-moved` and the bind envelope as
+    `size_ref_blender`. The rule: a mesh part sits ON its bone in whatever rest the file ships;
+    `part_map.py` shows both, and a part centred away from its bone's head-to-tail is the
+    Urchin / Rhino mistake again.

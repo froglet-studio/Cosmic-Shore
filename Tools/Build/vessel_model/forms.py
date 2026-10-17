@@ -642,6 +642,22 @@ def slot_colour(name):
     return _DEFAULT_SLOT_COLOURS.get(alias.get(canon, canon), (0.8, 0.8, 0.8))
 
 
+def set_material_colour(mat, rgb):
+    """
+    Give a material a colour the FBX exporter will WRITE as DiffuseColor. In this Blender a new
+    material has a node tree with a Principled BSDF by default and the exporter reads that node's
+    Base Color (so `diffuse_color` alone exported as 0.8 grey on all seven first files); set both.
+    """
+    r, g, b = rgb
+    mat.diffuse_color = (r, g, b, 1.0)
+    tree = getattr(mat, "node_tree", None)
+    if tree is not None:
+        for n in tree.nodes:
+            if n.type == "BSDF_PRINCIPLED" and "Base Color" in n.inputs:
+                n.inputs["Base Color"].default_value = (r, g, b, 1.0)
+    return mat
+
+
 def ensure_slots(obj, names):
     """
     Give the object exactly these material slots, in order, creating materials by name. Each
@@ -656,8 +672,7 @@ def ensure_slots(obj, names):
         mat = bpy.data.materials.get(n)
         if mat is None:
             mat = bpy.data.materials.new(n)
-            r, g, b = slot_colour(n)
-            mat.diffuse_color = (r, g, b, 1.0)
+            set_material_colour(mat, slot_colour(n))
         obj.data.materials[i] = mat
     return obj
 

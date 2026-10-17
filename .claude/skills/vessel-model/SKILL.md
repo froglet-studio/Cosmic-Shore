@@ -149,13 +149,13 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 
 | vessel | rounds | what the sheet taught |
 |---|---|---|
-| Squirrel | 5 | nothing floats; six overlapping feathers read as one wing; crescent chevrons, not V sticks; 26-30 degree poses |
-| Dolphin | 2 | wing spanwise sign (2.06 -> 2.64 span); lime throats inside the bells paint the engine slot |
-| Sparrow | 2 | `cut_plane` the fan blades before painting their tips; a boom and spar so the tails do not float |
+| Squirrel | 6 | nothing floats; six overlapping feathers read as one wing; crescent chevrons, not V sticks; 22-30 degree poses; every part at the height the parked pose DRAWS (1.2 tall, the tail level with its bones) |
+| Dolphin | 3 | wing spanwise sign (2.06 -> 2.64 span); lime throats inside the bells paint the engine slot; the span stays 2.64 (a "drawn" reference that was the artist file with its morphs at 100% sent it to 3.80 once, LESSONS 33) |
+| Sparrow | 3 | `cut_plane` the fan blades before painting their tips; a boom and spar so the tails do not float; poses in the file's own frame (a mirror reverses yaw and roll); tail vanes to the artist's height |
 | Serpent | 2 | head on +Y (`zup_identity`); Mass takes carapace + engine together or reads inert |
-| Manta | 3 | three stern nozzles so slot N owns faces; fins at 12 degrees dihedral, not 40; big wings with eye spots |
-| Urchin | 3 | the spine mask by radius, not `radial_mask`; the bubble canopy is the Window slot; a ringed exhaust |
-| Rhino | 2 | numeric slot suffixes canonicalised; plough blade + horn as the silhouette; eight stern nozzles |
+| Manta | 4 | three stern nozzles so slot N owns faces; fins at 12 degrees dihedral, not 40; big wings with eye spots; yaw -Z and roll -Y for "right" |
+| Urchin | 4 | the spine mask by radius, not `radial_mask`; the bubble canopy is the Window slot; a ringed exhaust; appendages 1.75x out and bigger, where Unity draws the artist rig's |
+| Rhino | 3 | numeric slot suffixes canonicalised; plough blade + horn as the silhouette; eight stern nozzles; the BIND is the rest (the node chain's 70-degree wing fold is a WIP pose) and the blade is 15 tall |
 
 ## 5. Modelling rules that keep being relearned
 
