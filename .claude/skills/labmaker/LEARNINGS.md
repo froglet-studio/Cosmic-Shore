@@ -617,6 +617,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `CrewVesselLab.html` `onBoard(x, z)` applied to `dashTo` and path points.
 - Promoted: no
 
+### L-STU-68 — When an exponent multiplies a spawned quantity, the spawner is a balance knob as strong as the exponent
+- Lab: Crew Vessel Lab round 3 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-17
+- What happened: a pure loop of n motes fires `base × 2^(n − 1)`. Spreading each mote cluster 4 u wider (gaussian 14 → 18 u, a readability fix) cut the mean loop from 2.8 to 2.25 motes and Space blasts from 327 to 12 hostile prisms a minute. The exponent turned a small change in how motes arrive into a 27× change in what the effect destroyed.
+- Do instead: when a payoff is exponential in a count, put the thing that sets the count (cluster size, spread, spawn rate) beside the exponent in the sign-off questions, and re-run the scorecard after ANY change to the spawner, including a "visual" one. Quote mean and best n with every effect column.
+- Evidence: `CREW_VESSEL_LAB.md` round 3, Found 2 (two `runBatch` runs either side of the spread change).
+- Promoted: no
+
+### L-STU-69 — A pickup fixed in world space is almost never reachable by a player who lives in a tilting plane
+- Lab: Crew Vessel Lab round 3 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-17
+- What happened: the navigator plays on the flying vessel's x-z plane and can touch things within ±40 u of it. Motes placed in world space near the plane were touchable 1–4 times out of 30 within seconds, because every pitch and roll of the pilot swings a 160 u board through 150 × sin(angle) u. The AI planned loops round motes it could not take, and no loop ever fired.
+- Do instead: measure the touchable share of a plane-bound player's targets over time before tuning anything else. When it is low, give the targets an in-plane home (re-project them onto the plane each frame, so they flow with the world but stay touchable) and keep world-fixed as a deliberate option ("the pilot sweeps the slice").
+- Evidence: `CrewVesselLab.html` `stepMotes` (`motes: 'board'`), the Motes in the world preset; round 3 Found 6.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

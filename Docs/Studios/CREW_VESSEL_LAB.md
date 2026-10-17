@@ -8,21 +8,161 @@ puts to the designer, from the brief ("Maverick and Goose"):
 > If there is no other player, an AI flies. The D-pad swaps players between flyer and puzzler, as if
 > they had another squad mate.
 
-The lab does not decide this. **Round 2 (current)** builds the navigator as a 2D character with no vessel of its
-own: it lives in the flying vessel's x-z plane, the 3D map projects onto that plane, one thumb plays it, and twelve
-presets compare controls, jobs, frames and depth rules. Round 1 (four consoles on a flat stand-in) is kept below.
+The lab does not decide this. **Round 3 (current, for sign-off)** is one design: a kite on the flying vessel's x-z
+plane, flown with one thumb (offset above it on a phone). Its head destroys hostile prisms and rams rivals; its tail is
+a lasso; a loop of one navigator-only element fires an exponential effect (Space blast, Mass cluster, Time boost, Charge
+steal). Rounds 2 (twelve one-thumb presets) and 1 (four consoles) are kept below.
 
-How to use round 2: **Navigate** (or just touch the board) to play the 2D seat while an AI flies; **Fly** to fly with
-keys or a pad (A/D yaw, W/S pitch, Q/E roll, Space boost, Shift brake); **Watch**; or **Couch** for two people. Pick a
-preset in the Presets tab. Swap seats with the D-pad left/right, 1 / 2 or the header button.
+How to use round 3: **Navigate** (or touch the board) to fly the kite while an AI flies the vessel; **Fly** to fly the
+vessel (A/D yaw, W/S pitch, Q/E roll, Space boost while you hold boost energy, Shift brake); **Watch**; or **Couch** for
+two people. Pick a variant in the Presets tab. Swap seats with the D-pad left/right, 1 / 2 or the header button.
 
-- **Source (the page is published from it):** `Docs/Studios/CrewVesselLab.html`. Open it in Chrome to use a
+- **Source (the page is published from it):** `Docs/Studios/CrewVesselLab.html` (rounds 1 and 2: `CrewVesselLab.round1.html`, `CrewVesselLab.round2.html`). Open it in Chrome to use a
   gamepad (the claude.ai viewer can block the Gamepad API).
 - **Live page:** https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct (private to the owner until shared from the page's
   Share menu; decisions recorded there land in the shared log Claude reads at the start of each round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html` (PASS, round 2).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html` (PASS, round 3).
 
-## Round 2 (2026-10-16): the 2D navigator on the vessel's plane
+## Round 3 (2026-10-17): the kite and its tail (sign-off candidate)
+
+**Input this round** (the designer, in substance):
+- On mobile, a proper thumb offset, so the thumb never covers the play.
+- Keep the Lasso for collecting, collected with the kite's lasso TAIL. Keep the Guardian's direct prism destruction, done with the kite's head.
+- Loop only one type of element and you get an effect, exponentially bigger for each mote you surround:
+  - Space: a prism-destroying explosion;
+  - Mass: a mass cluster;
+  - Time: boost energy for the pilot;
+  - Charge: powers up the kite, so it steals more crystals for the pilot when it collides with a vessel.
+- The elements are seen only by the navigator and are not the game's crystals.
+- The prisms, the vessel and the effects must match the game.
+- Sign off one more time before trying it in Unity.
+
+The decision log was empty again; this message is the round's input. Round 2's page is kept as
+`CrewVesselLab.round2.html`, and its numbers are in the Archive tab.
+
+### The design under sign-off
+
+- **One thumb flies the kite.** Hold anywhere on the board: the kite flies toward an aim point
+  **`thumbOffset` 80 px above the thumb** on a touch screen (0 on a mouse, with an option to feel the offset on a PC),
+  so the thumb never covers the kite, its tail or what is ahead of it. Lift the thumb and the kite coasts to a stop.
+- **The head destroys.** Hostile prisms (any domain but ours) whose shadow the head touches are destroyed. The head
+  also **rams rival vessels**: with kite power ≥ 1, a ram steals that many whole petals (only what the rival holds).
+- **The tail collects.** The kite drags a tail `tailLen` 1.6 board radii long. Cross it and the loop closes; every
+  touchable mote inside is taken.
+- **One element per loop fires an effect, `base × growth^(n − 1)` for n motes** (`growth` 2, so every extra mote doubles it):
+
+| Mote | Effect | Base (1 mote) | What it is in the game |
+|---|---|---|---|
+| Space | A blast at the loop's centre that destroys hostile prisms, sparing our own | MaxScale 60 (radius 30 u), cap 640 | `AOEExplosion`: radius `0.5 × MaxScale × sin(t·π/2)` over 3 s after 0.2 s (`AOEExplosion.prefab`), own domain spared (`AffectSelfOverride`) |
+| Mass | A cluster of our domain's prisms at the loop's centre | 6 prisms, cap 240 | Sparrow trail prisms (BaseScale 2 × 2 × 5). **New:** the game has no cluster spawner |
+| Time | Boost energy for the pilot | 1.5 s, holds up to 30 s | Sparrow boost (`boostMultiplier` 5 on the throttle term: 35 → 135 u/s). **New:** the Sparrow has no boost meter |
+| Charge | Kite power: the next ram steals that many petals | 1 petal, cap 30 | `ElementalTransfer.Steal` (whole petals, only what is held) |
+
+- **A mixed loop fizzles**: the motes are taken and nothing fires (option: *Majority* fires the biggest element, one
+  mote weaker per stray).
+- **Motes are the navigator's own.** They are orbs with element glyphs, not crystals, and only the board draws them.
+  By default they **live on the board**: they flow past with the world but always stay in the plane, so they are
+  always touchable. Option: *in the world*, fixed in space, so only what the pilot's plane cuts through can be looped.
+- **Matching the game.** Every hull flies the Sparrow's numbers and lays the Sparrow's prisms (one per 7 u). Two AI
+  rivals (Ruby, Gold) fly the same model, lay hostile trails and carry petals. Domain colours are the game's palette.
+  The game's own crystals still exist: the pilots fly for them, and the board does not show them (option: outlines).
+
+Presets are eight variants of this one design: **Kite & Tail** (the candidate), Gentle growth (×1.5), Steep growth (×3),
+Long tail (2.6), Short tail (1.0), Forgiving mixes, Locked board, Motes in the world, and Thin slice (motes in the world, ±18 u).
+
+### Scorecard
+
+`runBatch()` defaults: 3 seeds × 60 s at 30 Hz, AI Hard pilot, 2 AI rivals; each preset with a Hard, an Easy and an
+idle navigator. **Skill** = how much less an Easy navigator produces (hull petals + boost seconds + prisms ÷ 10), as %
+of Hard; **Idle** = what a navigator who never touches produces, as % of Hard. Re-run with **Score every preset** (about 8 s).
+
+| Preset | Hull petals/min | Lift % | Stolen/min | Popped/min | Blasted/min | Mass/min | Boost s/min | Loops/min | Pure % | Mean n | Best n | Skill % | Idle % | Moments/min | Dry spell (s) | Thumb down % | Board turn °/s | ± SE |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Solo pilot | 10.00 | 0 | | | | | | | | | | | | | | | | 1.00 |
+| **Kite & Tail** | 28.67 | +186.7 | 11.33 | 43.7 | 12.0 | 92 | 16.5 | 18.33 | 86 | 2.25 | 4.3 | 66.5 | 19.6 | 24.7 | 8.5 | 93 | 41.5 | 1.45 |
+| Gentle growth (×1.5) | 26.00 | +160.0 | 11.67 | 52.0 | 7.0 | 62.3 | 8.38 | 20.67 | 90 | 2.37 | 4.0 | 48.8 | 25.2 | 30.0 | 6.2 | 93 | 37.2 | 4.58 |
+| Steep growth (×3) | 40.00 | +300.0 | 23.67 | 40.7 | 47.0 | 366 | 27.25 | 18.67 | 83 | 2.25 | 4.7 | 79.8 | 10.4 | 25.3 | 9.2 | 94 | 38.0 | 10.12 |
+| Long tail (2.6) | 29.00 | +190.0 | 12.33 | 43.0 | 32.0 | 74 | 16.0 | 20.00 | 87 | 2.14 | 4.3 | 66.5 | 19.6 | 26.3 | 7.3 | 93 | 41.1 | 1.53 |
+| Short tail (1.0) | 13.33 | +33.3 | 3.33 | 58.3 | 0 | 16 | 5.5 | 4.33 | 80 | 2.19 | 3.3 | 34.8 | 44.7 | 15.0 | 18.5 | 91 | 35.6 | 2.33 |
+| Forgiving mixes | 36.00 | +260.0 | 17.67 | 49.0 | 0 | 102 | 15.0 | 16.67 | 83 | 2.16 | 5.0 | 64.0 | 17.8 | 24.3 | 10.0 | 93 | 41.0 | 8.54 |
+| Locked board | 25.33 | +153.3 | 8.33 | 38.0 | 1.7 | 92 | 15.5 | 16.67 | 87 | 2.12 | 4.3 | 38.5 | 22.0 | 23.7 | 9.6 | 93 | 57.0 | 5.46 |
+| Motes in the world | 21.67 | +116.7 | 7.00 | 95.7 | 0 | 6 | 8.5 | 12.00 | 89 | 1.71 | 3.3 | 68.2 | 29.1 | 23.7 | 8.1 | 86 | 34.8 | 3.67 |
+| Thin slice | 17.00 | +70.0 | 4.33 | 62.3 | 32.7 | 44 | 13.5 | 7.33 | 93 | 2.11 | 3.7 | 71.5 | 26.0 | 16.0 | 11.4 | 78 | 35.4 | 4.51 |
+
+**Noise.** Three seeds of a minute is a small sample: the standard error of hull petals is 1.5–10 per minute, and
+the effect columns swing more than that (see Found 2). Read differences under about 30% as a plateau.
+
+### Found
+
+1. **The kite nearly triples the hull's petals** (10 → 28.7 a minute, +187%). About 11 of those come from rams that
+   steal rival petals. Time loops hand the pilot 16.5 s of boost a minute, which buys faster crystal runs.
+2. **The exponent amplifies cluster size, so the mote spawner is a balance knob as strong as the growth rate.** One
+   mid-round change moved the motes in each cluster 4 u further apart (spread 14 → 18). Space blasts fell from 327 to
+   12 prisms a minute, and the mean loop from 2.8 to 2.25 motes. With ×2 growth a 4-mote Space loop is MaxScale 480
+   (a 240 u blast radius, three-quarters of the cell's 320 u radius); a 2-mote loop is a 60 u radius. What decides which one players see is how the
+   motes arrive. **Decision needed:** how tightly motes cluster, and whether a cap on n is wanted.
+3. **Steep growth (×3) is the most rewarding and the most extreme**: +300% hull petals, 366 Mass prisms a minute, and
+   the highest skill share (80%: an Easy navigator's small mixed loops are worth little). Gentle growth (×1.5) is calmer
+   and makes skill matter least (49%).
+4. **The Hard AI keeps 86% of its loops pure; the Easy AI does not try.** Mixed loops fizzle, which is where the 67%
+   skill gap comes from. Forgiving mixes (+260%) reads above the candidate but inside the noise (SE 8.5).
+5. **Tail length binds only when it is short.** At 1.6 and 2.6 radii the AI's loops are the same size (2.1–2.3 motes);
+   at 1.0 the tail is too short to circle a cluster (4 loops a minute, a dry spell of 18.5 s, and an idle navigator
+   earns 45% of a playing one). A person may draw bigger loops than this AI with a long tail.
+6. **Motes in the world halve the loops** (12 a minute, 1.7 motes each): the pilot's pitch and roll carry most motes
+   out of reach, so the head pops twice as many prisms instead. Fixed in space, only 1–4 of 30 motes were ever
+   touchable before the board option existed (L-STU-69).
+7. **The thumb is on the glass 93% of the time** (the kite follows a held thumb), and a navigator who never touches
+   still produces 20%, mostly from prisms drifting onto a parked head.
+8. **The hull never hits a hostile prism** in these runs (the AI pilot dodges), so the head's pops are not defence.
+   They destroy rival mass, which is cell control.
+
+**Fixed in the lab before any number was taken:**
+- the tail never grew from empty, so no loop could close;
+- world-fixed motes were almost never touchable (Found 6); the board home is now the default.
+
+### Checked
+
+- `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html`: PASS (no console errors, desktop fits,
+  phone does not scroll sideways, `__lab` hooks, `SPEC` ⊂ `SHIPPED` within range, manual clock, `runBatch`
+  deterministic within a page and across loads, stage not blank).
+- Mid-game screenshots (after 21 s and 30 s of manual-clock play, desktop 1600 × 900 and iPhone 13) were read. On a
+  phone the board now sits below the pilot's picture-in-picture so nothing entering at the top is hidden (it was
+  covered in the first shot).
+- Per-seed values for every preset were printed before the table was trusted.
+
+### What round 3 does not model
+
+- Prisms are flat boxes on the board and points in the 3D view, with no shaders, shields or lighting. Trails and Mass
+  clusters recycle their oldest prisms (the game conserves mass).
+- A hostile prism slows a hull for a second (a stand-in for the danger-prism effects). No hull ability fires.
+- A steal is a scored combat hit in the game (`CombatHitDrain.TryAdmit`, ten points per petal); the lab counts petals.
+- Two players in one hull, networking, and which machine runs the board.
+- A real thumb tires and misses; the AI navigator's aim only has a speed, a reaction time and aim noise.
+
+### Decisions needed (designer) for sign-off
+
+1. **Sign off Kite & Tail (or a variant) for Unity.** Record it on the Decisions tab as *Sign-off*.
+2. **Growth rate**: ×2 (the candidate), ×1.5 or ×3, and whether n needs a cap (Found 2, 3).
+3. **How motes arrive**: cluster size and spread (Found 2).
+4. **Mixed loops**: fizzle (the candidate) or majority.
+5. **Where motes live**: on the board (the candidate) or in the world.
+6. **Thumb offset**: 80 px.
+
+### The path to Unity (once signed off; nothing built yet)
+
+- **A pure C# kite core, ported line for line from this page** (aim → kite, head contacts, tail polyline, loop
+  closure, pure/mixed rule, `base × growth^(n − 1)`), held to the page by a parity harness (`/labmaker` §7).
+- **The board is a pure function of the hull's pose**, which already replicates, so it can be drawn on any device. The
+  kite's consequences (a pop, a blast, a cluster, boost, a steal) are sent as inputs and applied where every peer
+  applies them (`/vessel` rule 48).
+- **Effects through the game's own systems:** Space spawns the `AOEExplosion` prefab with `MaxScale` and
+  `AffectSelfOverride = false`; Mass lays prisms through the prism pool in our domain; Charge steals through
+  `ElementalTransfer.Steal` and scores through `CombatHitDrain.TryAdmit`.
+- **New things the game would gain, each its own decision:** navigator motes (seen only on the navigator's screen), a
+  prism-cluster spawner, a boost-energy pool (the Sparrow has none), and the seat layer for a second player on a hull.
+
+## Round 2 (2026-10-16): the 2D navigator on the vessel's plane (superseded by round 3)
 
 **Input this round** (the decision log was empty; the designer's direction, in substance): keep the radar
 character's best traits. It needs no vessel of its own, it suits a phone, and it appeals to people who want
