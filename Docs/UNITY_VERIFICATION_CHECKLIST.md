@@ -11453,3 +11453,21 @@ Stat regenerated. `/verify-unity` was not run; player and editor reference compi
 4. **A client votes rematch:** their face and "1 wants a rematch" under PLAY AGAIN.
 5. **Solo free-for-all mode** (every pilot their own domain): no headers, every row shows its own score.
 6. **Run the edit-mode tests:** ScoreboardLadderTests passes.
+
+## 🔴 2026-10-17 — Player text moved into authored fields (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The LOCKED player-text rule, applied to the code-built lines on surfaces this branch touched. Every line keeps its
+wording as the field's default (Unity fills a new field's initializer on load, so nothing in a scene needed editing);
+an emptied field now shows nothing. New `TemplateText.Fill` fills `{tokens}`.
+- Scoreboard: banner ("{domain} victory" / "Game over"), the mode line, Play again / Rematch? / Rematch sent and both tallies.
+- EndGameSequencer: "{domain} wins", Victory / Defeat, the quest-complete and intensity-unlocked toasts.
+- KitArenaGameCard (eyebrow, domains), KitQuestCard (play, unlocks after, meter, goal rows), ArcadeLaunchPanel
+  (intensity chip, seats, pilots), MiniGameHUD skip, CreditsModal close, Settings version + credits row, ModePreviewWindow
+  unavailable, QuestItemCard + EpisodeScreen "Completed", FriendsListPanel's 13 toasts, the sign-in name error.
+Left for Yash: UGSCloudSaveProvider's save-failed toast (plain C#, team task). `/verify-unity` was not run; both
+reference compiles clean; every menu generator `--check` passes.
+
+1. **Finish a match:** the banner, mode line, Play again and the reveal lines read exactly as before.
+2. **Blank `bannerWinLine` on GameCanvas > ScoreboardController > Scoreboard** and finish again: the banner is empty
+   (then undo).
+3. **Arena window, Profile quest track, configure window:** chips and captions read as before.

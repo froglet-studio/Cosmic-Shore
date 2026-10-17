@@ -34,6 +34,16 @@ namespace CosmicShore.UI
             public KitText description;
         }
 
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The play button. {quest} is the game's name.")]
+        [SerializeField] private string playLine = "Play {quest}";
+        [Tooltip("Under a locked card. {after} names what unlocks it.")]
+        [SerializeField] private string unlocksAfterLine = "Unlocks after {after}";
+        [Tooltip("The meter's caption. {level} is the highest unlocked intensity, {max} the top one.")]
+        [SerializeField] private string meterLine = "Intensity {level} of {max}";
+        [Tooltip("A goal row. {level} is the intensity it unlocks.")]
+        [SerializeField] private string goalLine = "Unlock intensity {level}";
+
         [Header("Style-B Card")]
         [Tooltip("The chrome theme.")]
         [SerializeField] private UIThemeSO theme;
@@ -103,7 +113,7 @@ namespace CosmicShore.UI
 
         protected override void OnConfigured(SO_UnlockData quest)
         {
-            if (playLabel) playLabel.SetText($"Play {quest.DisplayName}");
+            if (playLabel) playLabel.SetText(TemplateText.Fill(playLine, "quest", quest.DisplayName));
         }
 
         public override void SetContext(int index, int maxUnlockedIntensity, string unlocksAfter)
@@ -164,9 +174,9 @@ namespace CosmicShore.UI
             KitVisibility.SetShown(playGroup, progress && hasGoals);
             KitVisibility.SetShown(lockedLineGroup, locked && !string.IsNullOrEmpty(_unlocksAfter));
             if (lockedLineText && !string.IsNullOrEmpty(_unlocksAfter))
-                lockedLineText.SetText($"Unlocks after {_unlocksAfter}");
+                lockedLineText.SetText(TemplateText.Fill(unlocksAfterLine, "after", _unlocksAfter));
 
-            if (meterText) meterText.SetText($"Intensity {Mathf.Max(1, _maxUnlocked)} of {MaxIntensity}");
+            if (meterText) meterText.SetText(TemplateText.Fill(meterLine, "level", Mathf.Max(1, _maxUnlocked).ToString(), "max", MaxIntensity.ToString()));
             for (int i = 0; i < meterBars.Length; i++)
                 if (meterBars[i])
                     meterBars[i].color = Tok(i < _maxUnlocked ? UIColorToken.TextLight : UIColorToken.SurfaceDark);
@@ -204,7 +214,7 @@ namespace CosmicShore.UI
                 }
                 if (row.caption)
                 {
-                    row.caption.SetText($"Unlock intensity {level}");
+                    row.caption.SetText(TemplateText.Fill(goalLine, "level", level.ToString()));
                     row.caption.SetColorToken(next ? UIColorToken.TextLight : UIColorToken.NeutralLightest);
                 }
                 if (row.description)

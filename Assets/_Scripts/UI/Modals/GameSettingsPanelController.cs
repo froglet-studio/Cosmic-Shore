@@ -41,6 +41,12 @@ namespace CosmicShore.UI
         [Inject] AnalyticsServiceFacade analytics;
         [Inject] ApplicationStateDataVariable appState;
 
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The version line. {version} is the build's version.")]
+        [SerializeField] string versionLine = "Version {version}";
+        [Tooltip("The credits row's label when the row is built in code.")]
+        [SerializeField] string creditsLabel = "Credits";
+
         [Header("Panel")]
         [SerializeField, Tooltip("OptionsMenuContent root - enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
         GameObject optionsMenuContent;
@@ -293,7 +299,7 @@ namespace CosmicShore.UI
 
         void BindAll()
         {
-            if (versionText) versionText.text = $"Version {Application.version}";
+            if (versionText) versionText.text = TemplateText.Fill(versionLine, "version", Application.version);
 
             // GENERAL
             BindDropdown(colorblindDropdown, ColorblindOpts, SetColorblindModeIndex);
@@ -732,7 +738,7 @@ namespace CosmicShore.UI
             }
 
             var label = clone.GetComponentInChildren<TMPro.TMP_Text>(true);
-            if (label) label.text = "Credits";
+            if (label) label.text = creditsLabel;
 
             CSDebug.LogVerbose(CSLogChannel.MenuUI,
                 $"{nameof(GameSettingsPanelController)} - no credits row was wired, so one was " +

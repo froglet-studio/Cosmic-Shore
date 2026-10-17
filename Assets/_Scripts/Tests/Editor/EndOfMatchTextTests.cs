@@ -16,12 +16,21 @@ namespace CosmicShore.Tests
         [TestCase(Domains.Ruby, "Ruby victory")]
         [TestCase(Domains.Gold, "Gold victory")]
         public void Banner_NamesTheWinningDomain(Domains domain, string expected)
-            => Assert.AreEqual(expected, Scoreboard.BannerLine(domain));
+            => Assert.AreEqual(expected, Scoreboard.BannerLine(domain, "{domain} victory", "Game over"));
 
         /// <summary>Blue is the "no domain won" sentinel; "BLUE VICTORY" used to be reachable.</summary>
         [Test]
         public void Banner_NeverNamesBlue()
-            => Assert.AreEqual("Game over", Scoreboard.BannerLine(Domains.Blue));
+            => Assert.AreEqual("Game over", Scoreboard.BannerLine(Domains.Blue, "{domain} victory", "Game over"));
+
+        /// <summary>An authored line blanked in the inspector shows nothing - never a hardcoded default.</summary>
+        [Test]
+        public void Banner_BlankLineShowsNothing()
+            => Assert.AreEqual(string.Empty, Scoreboard.BannerLine(Domains.Jade, string.Empty, "Game over"));
+
+        [Test]
+        public void TemplateText_FillsEveryToken()
+            => Assert.AreEqual("Play again (2/3)", TemplateText.Fill("Play again ({votes}/{pilots})", "votes", "2", "pilots", "3"));
 
         [TestCase("RACE TIME", "Race time")]
         [TestCase("CRYSTALS LEFT", "Crystals left")]

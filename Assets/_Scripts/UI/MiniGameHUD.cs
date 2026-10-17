@@ -22,6 +22,10 @@ namespace CosmicShore.UI
     [RequireComponent(typeof(MiniGameHUDView))]
     public class MiniGameHUD : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The skip button's label on the first-login guide.")]
+        [SerializeField] string skipLabel = "SKIP >";
+
         [Header("Data")]
         [Inject] protected GameDataSO gameData;
         [Inject] protected Container _diContainer;
@@ -156,7 +160,7 @@ namespace CosmicShore.UI
             textRect.sizeDelta = Vector2.zero;
 
             var tmpText = textGO.AddComponent<TextMeshProUGUI>();
-            tmpText.text = "SKIP >";
+            tmpText.text = skipLabel;
             tmpText.fontSize = 18;
             tmpText.alignment = TextAlignmentOptions.Center;
             tmpText.color = Color.white;

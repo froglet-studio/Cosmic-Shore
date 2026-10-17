@@ -13,6 +13,10 @@ namespace CosmicShore.UI
     {
         [Inject] UGSDataService _ugsDataService;
 
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("An episode's value once it is completed.")]
+        [SerializeField] string completedLine = "Completed";
+
         [Header("Data")]
         [SerializeField] private SO_EpisodeList episodeList;
 
@@ -173,7 +177,7 @@ namespace CosmicShore.UI
                         if (isPurchasable)
                             valueTMP.text = FormatPrice(episode.priceUsd);
                         else if (cloudProgress != null && cloudProgress.IsCompleted(episode.episodeId))
-                            valueTMP.text = "Completed";
+                            valueTMP.text = completedLine;
                         else
                             valueTMP.text = episode.amount;
                     }

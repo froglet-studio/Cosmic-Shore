@@ -55,6 +55,18 @@ namespace CosmicShore.Utility
                  "here rather than on enable.")]
         [SerializeField] KitEntrance[] revealEntrances = new KitEntrance[0];
 
+        [Header("Words (every line the reveal writes; empty shows nothing)")]
+        [Tooltip("Above the line when a domain won. {domain} is its name.")]
+        [SerializeField] string winnerLine = "{domain} wins";
+        [Tooltip("Above the line when no domain won and you won; also the toast's line with no message set or rule.")]
+        [SerializeField] string victoryLine = "Victory";
+        [Tooltip("Above the line when no domain won and you lost; also the toast's line with no message set or rule.")]
+        [SerializeField] string defeatLine = "Defeat";
+        [Tooltip("The toast when a quest completes. {quest} is its name.")]
+        [SerializeField] string questCompleteLine = "Quest Complete!\n{quest}";
+        [Tooltip("The toast when an intensity unlocks. {mode} is the game, {intensity} the new level.")]
+        [SerializeField] string intensityUnlockedLine = "{mode} Intensity {intensity} Unlocked!";
+
         [Header("Timing")]
         [Tooltip("Seconds the reveal toast holds before the scoreboard appears.")]
         [SerializeField, Min(0f)] float revealDuration = 3f;
@@ -227,7 +239,7 @@ namespace CosmicShore.Utility
             if (rule != null && gameData.LocalRoundStats != null)
                 return rule.BuildReveal(gameData, gameData.LocalRoundStats, didWin).Header;
 
-            return didWin ? "VICTORY" : "DEFEAT";
+            return didWin ? victoryLine : defeatLine;
         }
 
         /// <summary>
@@ -304,7 +316,7 @@ namespace CosmicShore.Utility
 
             if (winnerText)
             {
-                winnerText.text = named ? $"{domain} wins" : didWin ? "Victory" : "Defeat";
+                winnerText.text = named ? TemplateText.Fill(winnerLine, "domain", domain.ToString()) : didWin ? victoryLine : defeatLine;
                 winnerText.color = accent;
             }
             if (winnerRule) winnerRule.color = accent;
@@ -406,7 +418,8 @@ namespace CosmicShore.Utility
         void HandleQuestCompleted(SO_UnlockData quest)
         {
             if (quest == null || quest.IsPlaceholder) return;
-            ToastNotificationAPI.Show($"Quest Complete!\n{quest.DisplayName}", ToastKind.Success);
+            string line = TemplateText.Fill(questCompleteLine, "quest", quest.DisplayName);
+            if (line.Length > 0) ToastNotificationAPI.Show(line, ToastKind.Success);
         }
 
         void HandleIntensityUnlocked(GameModes mode, int intensity)
@@ -414,7 +427,8 @@ namespace CosmicShore.Utility
             var progression = GameModeProgressionService.Instance;
             var quest = progression != null ? progression.GetQuestForMode(mode) : null;
             string label = quest != null ? quest.DisplayName : mode.ToString();
-            ToastNotificationAPI.Show($"{label} Intensity {intensity} Unlocked!", ToastKind.Success);
+            string line = TemplateText.Fill(intensityUnlockedLine, "mode", label, "intensity", intensity.ToString());
+            if (line.Length > 0) ToastNotificationAPI.Show(line, ToastKind.Success);
         }
     }
 }

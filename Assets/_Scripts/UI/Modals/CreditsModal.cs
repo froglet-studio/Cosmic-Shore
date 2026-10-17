@@ -34,6 +34,10 @@ namespace CosmicShore.UI
     /// </summary>
     public class CreditsModal : ModalWindowManager
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The close button's label.")]
+        [SerializeField] string closeLabel = "CLOSE";
+
         [Header("Credits content")]
         [SerializeField, Tooltip("The ScrollRect's Content RectTransform. Rows are generated as " +
                                  "its children; its height is MEASURED after they exist, never authored. " +
@@ -439,7 +443,7 @@ namespace CosmicShore.UI
             var labelRect = NewRect("Label", closeRect);
             Stretch(labelRect);
             var label = labelRect.gameObject.AddComponent<TextMeshProUGUI>();
-            label.text = "CLOSE";
+            label.text = modal.closeLabel;
             label.alignment = TextAlignmentOptions.Center;
             label.fontSize = 24f;
             label.raycastTarget = false;

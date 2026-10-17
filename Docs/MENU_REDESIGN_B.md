@@ -2557,3 +2557,10 @@ buttons with the Charge rim; MAIN MENU / LEAVE LOBBY are Mass. The rematch faces
 
 Gates: `author_ingame_hud.py --check` and `--self-test` (new plants: a row back to a full team fill, the reward strip
 unwired, PLAY AGAIN without its Charge light). `/verify-unity` was not run. Hand test: team task below.
+
+## 50. Polish: every line the style-B surfaces write is an authored field (2026-10-17)
+
+The LOCKED player-text rule applied across the surfaces this branch touched: the scoreboard and reveal, the arena card,
+the quest card, the launch panel's chips, the skip button, credits, settings, the preview window, the party panel's
+toasts and the sign-in name error now read serialized template fields (`TemplateText.Fill` for `{tokens}`), with the
+old wording as each default. One line is handed to Yash (the Cloud Save toast lives in plain C#).

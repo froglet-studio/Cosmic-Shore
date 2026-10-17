@@ -732,3 +732,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith or Yash (offered)
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-17 Scoreboard Rev 8 option B); Docs/MENU_REDESIGN_B.md section 49
+
+### T-20261017-61b1 · open · dev · Cloud Save
+- **Task:** Move UGSCloudSaveProvider's 'Failed to save data: {error}' toast to an authored line: the provider is plain C# (no inspector), so the words need a home such as a small Resources SO or the existing cloud-data config
+- **Done when:** No C# string literal in UGSCloudSaveProvider reaches ToastNotificationAPI.Show
+- **Who can take it:** Yash (Cloud Save owner)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** CLAUDE.md Code Style: player-facing text has a human-facing control

@@ -30,6 +30,10 @@ namespace CosmicShore.Core
     /// </summary>
     public class AuthenticationSceneController : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("Under the pilot-name field when the name could not be set. {error} is the reason.")]
+        [SerializeField] string usernameFailedLine = "Failed to set username: {error}";
+
         [Header("Panels")]
         [SerializeField] private GameObject authPanel;
         [SerializeField] private GameObject usernameSetupPanel;
@@ -546,7 +550,7 @@ namespace CosmicShore.Core
             catch (Exception ex)
             {
                 if (usernameStatusText)
-                    usernameStatusText.text = $"Failed to set username: {ex.Message}";
+                    usernameStatusText.text = TemplateText.Fill(usernameFailedLine, "error", ex.Message);
                 CSDebug.LogWarning($"[AuthScene] Set username failed: {ex}");
             }
             finally

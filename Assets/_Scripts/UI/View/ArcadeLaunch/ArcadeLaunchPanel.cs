@@ -119,11 +119,21 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("The summary chip - \"Intensity 2\".")]
         protected TMPro.TMP_Text intensityChipText;
 
+        [SerializeField, Tooltip("The summary chip's line. {intensity} is the level. Empty: no chip text.")]
+        protected string intensityChipLine = "Intensity {intensity}";
+
         [SerializeField, Tooltip("The pilots step's value - seats filled of the seats the match holds, \"2 of 4\".")]
         protected TMPro.TMP_Text seatValueText;
 
         [SerializeField, Tooltip("The summary chip - \"2 pilots\".")]
         protected TMPro.TMP_Text pilotsChipText;
+
+        [SerializeField, Tooltip("The pilots step's value. {seated} of {seats}. Empty: no value.")]
+        protected string seatLine = "{seated} of {seats}";
+        [SerializeField, Tooltip("The pilots chip with one pilot. {seated} is the count.")]
+        protected string onePilotLine = "{seated} pilot";
+        [SerializeField, Tooltip("The pilots chip with any other count. {seated} is the count.")]
+        protected string manyPilotsLine = "{seated} pilots";
 
         [SerializeField, Tooltip("\"Ready to launch\": shown while Start is live, replaced by the refusal " +
                                  "reason or by the waiting label.")]
@@ -297,7 +307,7 @@ namespace CosmicShore.UI
         void DrawIntensity(int intensity)
         {
             if (intensityValueText) intensityValueText.text = intensity.ToString();
-            if (intensityChipText) intensityChipText.text = $"Intensity {intensity}";
+            if (intensityChipText) intensityChipText.text = TemplateText.Fill(intensityChipLine, "intensity", intensity.ToString());
         }
 
         /// <summary>
@@ -307,8 +317,8 @@ namespace CosmicShore.UI
         /// </summary>
         public virtual void SetSeatSummary(int seated, int seats, int spare, bool canAddAI)
         {
-            if (seatValueText) seatValueText.text = $"{seated} of {seats}";
-            if (pilotsChipText) pilotsChipText.text = seated == 1 ? "1 pilot" : $"{seated} pilots";
+            if (seatValueText) seatValueText.text = TemplateText.Fill(seatLine, "seated", seated.ToString(), "seats", seats.ToString());
+            if (pilotsChipText) pilotsChipText.text = TemplateText.Fill(seated == 1 ? onePilotLine : manyPilotsLine, "seated", seated.ToString());
             foreach (var tile in domainTiles)
                 if (tile && tile.Domain != CosmicShore.Data.Domains.Blue)
                     tile.SetOpenSeat(spare > 0, canAddAI && spare > 0);

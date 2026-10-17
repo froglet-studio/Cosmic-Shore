@@ -129,6 +129,26 @@ namespace CosmicShore.UI
         [Tooltip("'Skim Race - Intensity 3' above the banner.")]
         [SerializeField] private TMP_Text modeText;
 
+        [Header("Words (every line the board writes; empty shows nothing)")]
+        [Tooltip("The banner when a domain won. {domain} is its name.")]
+        [SerializeField] private string bannerWinLine = "{domain} victory";
+        [Tooltip("The banner when no domain won.")]
+        [SerializeField] private string bannerNoWinnerLine = "Game over";
+        [Tooltip("The line above the banner. {mode} is the game, {intensity} its intensity.")]
+        [SerializeField] private string modeLine = "{mode} - Intensity {intensity}";
+        [Tooltip("The line above the banner for a game without an intensity. {mode} is the game.")]
+        [SerializeField] private string modeNoIntensityLine = "{mode}";
+        [Tooltip("Play again, for the host (whose press restarts the match).")]
+        [SerializeField] private string playAgainHostLine = "Play again";
+        [Tooltip("Play again, for a guest (whose press is a rematch vote).")]
+        [SerializeField] private string playAgainGuestLine = "Rematch?";
+        [Tooltip("A guest's button once their vote is in.")]
+        [SerializeField] private string rematchSentLine = "Rematch sent";
+        [Tooltip("The host's button once anyone votes. {votes} voted of {pilots}.")]
+        [SerializeField] private string hostTallyLine = "Play again ({votes}/{pilots})";
+        [Tooltip("A guest's button once anyone votes, before they vote. {votes} voted of {pilots}.")]
+        [SerializeField] private string guestTallyLine = "Rematch? ({votes}/{pilots})";
+
         #endregion
 
         #region Private Fields
@@ -433,7 +453,7 @@ namespace CosmicShore.UI
             // party) and left a client unable to say the most common thing anybody wants to say at
             // a scoreboard, with the host guessing whether anyone wanted another round.
             if (playAgainButton)  playAgainButton.SetActive(true);
-            if (playAgainLabel)   playAgainLabel.text = isClient ? "REMATCH?" : "PLAY AGAIN";
+            if (playAgainLabel)   playAgainLabel.text = isClient ? playAgainGuestLine : playAgainHostLine;
 
             StartRematchVoteRoster();
         }
@@ -699,7 +719,7 @@ namespace CosmicShore.UI
         protected virtual void SetBannerForDomain(Domains domain)
         {
             if (BannerImage) BannerImage.color = GetDomainColor(domain);
-            if (BannerText) BannerText.text = BannerLine(domain);
+            if (BannerText) BannerText.text = BannerLine(domain, bannerWinLine, bannerNoWinnerLine);
             if (BannerText && domain != Domains.Blue && (int)domain != 0) BannerText.color = GetDomainColor(domain);
         }
 
@@ -708,12 +728,10 @@ namespace CosmicShore.UI
         /// (GameDataSO.WinnerDomain's reset value), so it never names a winner: "BLUE VICTORY" used
         /// to be reachable on a board where nobody flies Blue.
         /// </summary>
-        public static string BannerLine(Domains domain) => domain switch
+        public static string BannerLine(Domains domain, string winLine, string noWinnerLine) => domain switch
         {
-            Domains.Jade => "Jade victory",
-            Domains.Ruby => "Ruby victory",
-            Domains.Gold => "Gold victory",
-            _            => "Game over",
+            Domains.Jade or Domains.Ruby or Domains.Gold => TemplateText.Fill(winLine, "domain", domain.ToString()),
+            _ => TemplateText.Fill(noWinnerLine),
         };
 
         void RenderModeLine()
@@ -721,7 +739,9 @@ namespace CosmicShore.UI
             if (!modeText || gameData == null) return;
             string mode = PauseMenu.SpacedName(gameData.GameMode.ToString());
             int intensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 0;
-            modeText.text = intensity > 0 ? $"{mode} - Intensity {intensity}" : mode;
+            modeText.text = intensity > 0
+                ? TemplateText.Fill(modeLine, "mode", mode, "intensity", intensity.ToString())
+                : TemplateText.Fill(modeNoIntensityLine, "mode", mode);
         }
 
         void DecorateCard(PlayerScoreCard card, string pilotName, Domains domain)
@@ -1116,7 +1136,7 @@ namespace CosmicShore.UI
             // none in TMP Settings, and m_missingGlyphCharacter 0. The "REMATCH ✓" this used to say
             // would have drawn a blank where the tick is. It never showed because the label was
             // unwired; wiring it is what would have surfaced it.
-            if (playAgainLabel) playAgainLabel.text = "REMATCH SENT";
+            if (playAgainLabel) playAgainLabel.text = rematchSentLine;
         }
 
         bool _rematchVoteCast;
@@ -1134,9 +1154,10 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             bool isHost = nm == null || nm.IsServer;
 
+            string v = votes.ToString(), n = Mathf.Max(votes, humans).ToString();
             playAgainLabel.text = isHost
-                ? $"PLAY AGAIN ({votes}/{Mathf.Max(votes, humans)})"
-                : (_rematchVoteCast ? "REMATCH SENT" : $"REMATCH? ({votes}/{Mathf.Max(votes, humans)})");
+                ? TemplateText.Fill(hostTallyLine, "votes", v, "pilots", n)
+                : (_rematchVoteCast ? rematchSentLine : TemplateText.Fill(guestTallyLine, "votes", v, "pilots", n));
         }
 
         public void OnLeaveLobbyButtonPressed()

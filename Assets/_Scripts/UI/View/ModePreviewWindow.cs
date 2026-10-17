@@ -31,6 +31,10 @@ namespace CosmicShore.UI
     /// </summary>
     public class ModePreviewWindow : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("Shown when there is no preview, or the build failed.")]
+        [SerializeField] string unavailableLine = "LEVEL PREVIEW\nNOT AVAILABLE";
+
         [Header("Surface")]
         [SerializeField, Tooltip("The RawImage inside the modal's preview frame the live camera " +
                                  "renders into.")]
@@ -268,7 +272,7 @@ namespace CosmicShore.UI
         /// <summary>"LEVEL PREVIEW NOT AVAILABLE" — no definition, or the build failed.</summary>
         public void ShowUnavailable()
         {
-            if (statusLabel) statusLabel.text = "LEVEL PREVIEW\nNOT AVAILABLE";
+            if (statusLabel) statusLabel.text = unavailableLine;
             Apply(State.Unavailable);
         }
 

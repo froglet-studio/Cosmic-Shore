@@ -24,6 +24,28 @@ namespace CosmicShore.UI
     /// </summary>
     public class FriendsListPanel : MonoBehaviour
     {
+        [Header("Words (toasts; empty shows nothing)")]
+        [Tooltip("The connection service is not up yet.")]
+        [SerializeField] string serviceNotReadyLine = "Connection service not ready. Try again shortly.";
+        [Tooltip("A party that refuses a join.")]
+        [SerializeField] string partyNotJoinableLine = "That party can't be joined right now.";
+        [Tooltip("The party controller is missing (join, spectate, accept).")]
+        [SerializeField] string partyControllerMissingLine = "Party controller not available.";
+        [Tooltip("A join that failed.")]
+        [SerializeField] string joinFailedLine = "Failed to join party.";
+        [Tooltip("A match that refuses a spectator.")]
+        [SerializeField] string matchNotSpectatableLine = "That match can't be spectated right now.";
+        [Tooltip("A spectate that failed.")]
+        [SerializeField] string spectateFailedLine = "Failed to spectate.";
+        [Tooltip("The friends service is not up yet.")]
+        [SerializeField] string friendsNotReadyLine = "Friends service not ready.";
+        [Tooltip("A friend request accepted.")]
+        [SerializeField] string requestAcceptedLine = "Friend request accepted!";
+        [Tooltip("A friend request that failed to accept. {error} is the reason.")]
+        [SerializeField] string acceptFailedLine = "Failed to accept: {error}";
+        [Tooltip("A party invite that failed to accept.")]
+        [SerializeField] string inviteAcceptFailedLine = "Failed to accept party invite.";
+
         [Header("Section Content Parents (ScrollRect > Viewport > Content)")]
         [SerializeField] private Transform onlineContent;
         [SerializeField] private Transform requestsContent;
@@ -689,7 +711,7 @@ namespace CosmicShore.UI
         {
             if (HostConnectionService.Instance == null)
             {
-                ToastNotificationAPI.Show("Connection service not ready. Try again shortly.", ToastKind.Error);
+                ShowToast(serviceNotReadyLine, ToastKind.Error);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
                 return;
             }
@@ -758,7 +780,7 @@ namespace CosmicShore.UI
         {
             if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
             {
-                ToastNotificationAPI.Show("That party can't be joined right now.", ToastKind.Refusal);
+                ShowToast(partyNotJoinableLine, ToastKind.Refusal);
                 PopulateOnlineSection();
                 return;
             }
@@ -766,7 +788,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.", ToastKind.Error);
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
                 PopulateOnlineSection();
                 return;
             }
@@ -778,7 +800,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Join party failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to join party.", ToastKind.Error);
+                ShowToast(joinFailedLine, ToastKind.Error);
                 PopulateOnlineSection();
             }
         }
@@ -790,7 +812,7 @@ namespace CosmicShore.UI
         {
             if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
             {
-                ToastNotificationAPI.Show("That match can't be spectated right now.", ToastKind.Refusal);
+                ShowToast(matchNotSpectatableLine, ToastKind.Refusal);
                 PopulateOnlineSection();
                 return;
             }
@@ -798,7 +820,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.", ToastKind.Error);
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
                 PopulateOnlineSection();
                 return;
             }
@@ -810,7 +832,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Spectate failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to spectate.", ToastKind.Error);
+                ShowToast(spectateFailedLine, ToastKind.Error);
                 PopulateOnlineSection();
             }
         }
@@ -819,19 +841,19 @@ namespace CosmicShore.UI
         {
             if (friendsService == null || !friendsService.IsInitialized)
             {
-                ToastNotificationAPI.Show("Friends service not ready.", ToastKind.Error);
+                ShowToast(friendsNotReadyLine, ToastKind.Error);
                 return;
             }
 
             try
             {
                 await friendsService.AcceptFriendRequestAsync(playerId);
-                ToastNotificationAPI.Show("Friend request accepted!", ToastKind.Success);
+                ShowToast(requestAcceptedLine, ToastKind.Success);
             }
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to accept request: {e.Message}");
-                ToastNotificationAPI.Show($"Failed to accept: {e.Message}", ToastKind.Error);
+                ShowToast(TemplateText.Fill(acceptFailedLine, "error", e.Message), ToastKind.Error);
             }
         }
 
@@ -864,7 +886,7 @@ namespace CosmicShore.UI
             var controller = PartyInviteController.Instance;
             if (controller == null)
             {
-                ToastNotificationAPI.Show("Party controller not available.", ToastKind.Error);
+                ShowToast(partyControllerMissingLine, ToastKind.Error);
                 return;
             }
 
@@ -875,7 +897,7 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Accept party invite failed: {e.Message}");
-                ToastNotificationAPI.Show("Failed to accept party invite.", ToastKind.Error);
+                ShowToast(inviteAcceptFailedLine, ToastKind.Error);
             }
         }
 
@@ -1003,5 +1025,10 @@ namespace CosmicShore.UI
         }
 
         #endregion
+
+        static void ShowToast(string line, ToastKind kind)
+        {
+            if (!string.IsNullOrEmpty(line)) ToastNotificationAPI.Show(line, kind);
+        }
     }
 }

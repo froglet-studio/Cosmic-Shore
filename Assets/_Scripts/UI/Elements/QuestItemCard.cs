@@ -11,6 +11,10 @@ namespace CosmicShore.UI
 {
     public class QuestItemCard : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The description once the quest is claimed.")]
+        [SerializeField] string completedLine = "Completed";
+
         [Header("Text")]
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text descriptionText;
@@ -171,7 +175,7 @@ namespace CosmicShore.UI
             if (lockedOverlay != null) lockedOverlay.SetActive(isLocked);
             if (completedOverlay != null) completedOverlay.SetActive(isClaimed);
             if (cardBackground != null) cardBackground.color = isLocked ? lockedTint : _originalBgColor;
-            if (descriptionText != null && isClaimed) descriptionText.text = "Completed";
+            if (descriptionText != null && isClaimed) descriptionText.text = completedLine;
         }
 
         public virtual void SetActiveFrontier(bool isActive, QuestItemState state = QuestItemState.Unlocked)

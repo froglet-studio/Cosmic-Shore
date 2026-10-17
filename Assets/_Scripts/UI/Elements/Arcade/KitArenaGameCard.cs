@@ -28,16 +28,24 @@ namespace CosmicShore.UI
         [Tooltip("The hull chips' parent; its first child is the chip template (an Image with a CanvasGroup and a LayoutElement, the icon a child Image).")]
         [SerializeField] private Transform hullRow;
 
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The eyebrow. {pilots} is the player count or range ('2 - 6').")]
+        [SerializeField] private string eyebrowLine = "Arena - {pilots} pilots";
+        [Tooltip("The domains line for one domain. {domains} is the count.")]
+        [SerializeField] private string oneDomainLine = "{domains} domain";
+        [Tooltip("The domains line for more than one. {domains} is the count or range.")]
+        [SerializeField] private string manyDomainsLine = "{domains} domains";
+
         private readonly List<GameObject> _chips = new();
 
         protected override void DrawDetails(SO_ArcadeGame game)
         {
-            if (eyebrowText) eyebrowText.SetText($"Arena - {Range(game.MinPlayersAllowed, game.MaxPlayersAllowed)} pilots");
+            if (eyebrowText) eyebrowText.SetText(TemplateText.Fill(eyebrowLine, "pilots", Range(game.MinPlayersAllowed, game.MaxPlayersAllowed)));
             if (taglineText) taglineText.text = game.Description;
             if (domainsText)
             {
-                string noun = game.MaxDomainsAllowed == 1 ? "domain" : "domains";
-                domainsText.SetText($"{Range(game.MinDomainsAllowed, game.MaxDomainsAllowed)} {noun}");
+                domainsText.SetText(TemplateText.Fill(game.MaxDomainsAllowed == 1 ? oneDomainLine : manyDomainsLine,
+                    "domains", Range(game.MinDomainsAllowed, game.MaxDomainsAllowed)));
             }
             DrawHulls(game);
         }
