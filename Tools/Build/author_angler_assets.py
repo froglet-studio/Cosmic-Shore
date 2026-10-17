@@ -176,12 +176,12 @@ STOAT_SCRIPTS = ("86da9d91d4364f02ad41dd723756e970",   # StoatHUDController
                  "1712753ee2d34c6294526e3c58d4b197",   # StoatRippleExecutor
                  TWO_STICK_SCRIPT)                     # swapped for AnglerVesselTransformer
 
-# The lab's flight (Docs/Studios/AnglerCommandLab.html SHIPPED: cruise 80, boost 220 - round 4 doubled both). Cruise = MinimumSpeed +
+# The lab's flight (Docs/Studios/AnglerCommandLab.html SHIPPED: cruise 40, boost 110 - round 4 doubled them, round 5 put them back). Cruise = MinimumSpeed +
 # ThrottleScaler at full throttle (VesselTransformer), boost = cruise x MaxBoostMultiplier.
-CRUISE, BOOST = 80, 220
+CRUISE, BOOST = 40, 110
 # The lab's chase camera (SHIPPED chaseBack / chaseUp). A Vector3 field, so studio_to_unity cannot map it; this generator
 # seeds it and --check holds the camera asset to it.
-CHASE_BACK, CHASE_UP = 160, 56
+CHASE_BACK, CHASE_UP = 160, 0   # level when flying (round 5); the executor lifts it while luring or dashing
 
 
 # ===================================================================================================== the prefab
@@ -329,10 +329,10 @@ def config_asset() -> str:
             "  tadTurn: 4\n"
             "  spareOwn: 1\n"
             "  paintRange: 3200\n"
-            "  paintCone: 8\n"
+            "  paintCone: 3\n"
             "  brushMin: 0.35\n"
-            "  eraseCone: 4\n"
-            "  brushNear: 6\n"
+            "  eraseCone: 1.5\n"
+            "  brushNear: 2\n"
             "  slingAhead: 12\n"
             "  slingSpeed: 150\n"
             "  homeTurn: 12\n"
@@ -341,6 +341,8 @@ def config_asset() -> str:
             "  slingCluster: 24\n"
             "  dashFrac: 0.75\n"
             "  dashTime: 0.35\n"
+            "  cameraLift: 56\n"
+            "  cameraLiftTime: 0.4\n"
             "  paintedPreference: 4\n"
             "  lureGrowth: 3\n"
             "  faunaSpeed:\n    Enabled: 1\n    Value: 1\n    Min: 1\n    Max: 2\n    element: 4\n    UseFloor: 1\n    Floor: 1\n"
@@ -404,8 +406,9 @@ def control_asset(name: str, value: int) -> str:
 
 
 def camera_asset() -> str:
-    """SEEDED once. The lab's chase (AnglerCommandLab.html: chaseBack 160 behind, chaseUp 56 up - 4x round 3's 40 / 14, the
-    designer 2026-10-17 - looking 55 u ahead, closing at
+    """SEEDED once. The lab's chase (AnglerCommandLab.html: chaseBack 160 behind - 4x round 3's 40 - and chaseUp 0: level with
+    the hull when flying, so the brush's axis is the screen's centre; AnglerCommandExecutor lifts it by cameraLift while
+    luring or dashing - the designer 2026-10-17 - looking 55 u ahead, closing at
     0.18 a frame = 12/s, a 62-degree frame) - pulled back far enough that the school round the hull reads. The player's
     FOV stays the player's (framingFieldOfView, vessel rule 4.ad)."""
     return (S.so_header(CAMERA_SCRIPT, "AnglerCameraSettingsSO") +
@@ -624,7 +627,7 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(f"  followOffset: {{x: 0, y: {CHASE_UP}, z: -{CHASE_BACK}}}\n" in files.get(CAMERA, ""),
          f"AnglerCameraSettingsSO.followOffset is not the lab's chase (0, {CHASE_UP}, -{CHASE_BACK})")
     cfg = files.get(CONFIG_PATH, "")
-    for key in ("brushNear", "dashFrac", "dashTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach"):
+    for key in ("brushNear", "dashFrac", "dashTime", "cameraLift", "cameraLiftTime", "paintedPreference", "lureGrowth", "faunaSpeed", "lockBiteCooldown", "lockBiteReach"):
         need(re.search(r"^  %s:" % key, cfg, re.M), f"AnglerConfig has no {key} (rounds 3-4; re-seed it or add the line)")
     need(len(re.findall(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}$", cfg.split("  omniFauna:")[-1].split("  companionFauna:")[0], re.M)) > 0,
          "AnglerConfig's omniFauna is empty - an omni crystal could morph into nothing")

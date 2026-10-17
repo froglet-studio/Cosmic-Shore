@@ -117,6 +117,9 @@ namespace CosmicShore.Gameplay
         uint _seedSerial;
         float _vesselScanAt;       // when the eraser last listed the vessels it can lock on to
         float _dashUntil;          // Time: a dash in flight ignores another press until it lands
+        float _camLift01;          // the chase camera's rise while luring or dashing, 0..1 (eased on use)
+        float _camBaseY;           // the follow offset's own height when the rise began (the level camera's 0)
+        CustomCameraController _camera;
         int _throwSerial;
 
         // ------------------------------------------------------------------ read by the HUD
@@ -157,6 +160,7 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus shipStatus)
         {
             ReleaseAll();
+            DropCameraLift();   // before the status moves on, while the rig can still be told it framed the old one
             _status = shipStatus;
             _transformer = _status != null ? _status.VesselTransformer as AnglerVesselTransformer : null;
             _squad = -1;
@@ -187,6 +191,7 @@ namespace CosmicShore.Gameplay
             OnMiniGameTurnEnd.OnRaised -= OnTurnEnd;
             ReleaseAll();
             if (_transformer) _transformer.LureSpeedCap = AnglerVesselTransformer.NoCap;
+            DropCameraLift();
         }
 
         void OnDestroy()
@@ -540,6 +545,7 @@ namespace CosmicShore.Gameplay
             UpdateHunt();
             AssignSlots();
             DrawMarks();
+            UpdateCameraLift(dt);
         }
 
         // ---- the brush ----
@@ -1170,6 +1176,54 @@ namespace CosmicShore.Gameplay
                     _marks.Ring(prey.Transform.position, t.right, t.up, 12f, 24, eraseColor, 1.2f, 3f);
             }
             _marks.End();
+        }
+
+        /// <summary>
+        /// The chase camera flies LEVEL (no height), so the brush's axis sits at the middle of the screen; it rises
+        /// <see cref="AnglerConfigSO.CameraLift"/> over <see cref="AnglerConfigSO.CameraLiftTime"/> while the pilot lures or
+        /// dashes, to see the school and the ground around the lure (the lab's chase camera, round 5:
+        /// <c>cam.lift01</c>, smoothstep). Only the follow offset's HEIGHT is written: its distance belongs to the
+        /// camera's own zoom. Only the local pilot's own framed rig moves, and nothing is written while the camera is level.
+        /// </summary>
+        void UpdateCameraLift(float dt)
+        {
+            bool lifting = ShowsMarks && (_luring || Time.time < _dashUntil);
+            if (!lifting && _camLift01 <= 0f) return;
+            var cam = PlayerCamera();
+            if (!IsFramedBy(cam)) { _camLift01 = 0f; return; }
+            if (_camLift01 <= 0f) _camBaseY = cam.GetFollowOffset().y;
+            _camLift01 = Mathf.Clamp01(_camLift01 + (lifting ? 1f : -1f) * dt / Mathf.Max(0.05f, config.CameraLiftTime));
+            float eased = _camLift01 * _camLift01 * (3f - 2f * _camLift01);
+            var offset = cam.GetFollowOffset();
+            cam.SetFollowOffset(new Vector3(offset.x, _camBaseY + config.CameraLift * eased, offset.z));
+        }
+
+        /// <summary>Puts a raised camera straight back to its own height (a vessel swap, the executor switched off).</summary>
+        void DropCameraLift()
+        {
+            if (_camLift01 > 0f && IsFramedBy(_camera))
+            {
+                var offset = _camera.GetFollowOffset();
+                _camera.SetFollowOffset(new Vector3(offset.x, _camBaseY, offset.z));
+            }
+            _camLift01 = 0f;
+        }
+
+        /// <summary>The player's follow rig (the SpreadWings pattern): the death and replay cameras are never raised.</summary>
+        CustomCameraController PlayerCamera()
+        {
+            if (_camera) return _camera;
+            var rig = CameraManager.Instance ? CameraManager.Instance.GetCloseCamera() : null;
+            if (rig) rig.TryGetComponent(out _camera);
+            return _camera;
+        }
+
+        /// <summary>True while <paramref name="cam"/> follows THIS vessel.</summary>
+        bool IsFramedBy(CustomCameraController cam)
+        {
+            if (!cam || _status == null) return false;
+            var target = _status.CameraFollowTarget;
+            return target && cam.FollowTarget == target;
         }
 
         static Camera ResolveCamera()

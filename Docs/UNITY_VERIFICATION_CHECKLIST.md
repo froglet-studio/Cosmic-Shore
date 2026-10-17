@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler round 5: speed back to 40, a smaller accurate brush, a level camera that rises while luring or dashing (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1h and §5. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors (0 in changed files).
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 19/19.
+- `studio_to_unity`: 27 mapped, 0 drift.
+- The lab: `verify_lab` PASS (87% on target, clear 10.9 s).
+
+In the editor (Menu_Main freestyle, Vessel Changer → Angler):
+
+1. **Speed.** Cruise reads 40 u/s and a full boost about 110 (half of round 4).
+2. **Level camera.** Fly straight: the camera sits directly behind the hull with no height; the hull is at the screen's centre, not below it.
+3. **Accurate brush.** Hold RT on a single far prism at the screen's centre: it, and only its near neighbours, light. The rim ring (60 u out) is small: about 3 u for paint, 1.6 u for erase. LT erases only what is under the centre.
+4. **Close up.** Fly into a cluster with RT held: prisms within 2 u of the nose still light.
+5. **Lure lift.** Hold X: the hull stops and the camera rises about 56 u over 0.4 s. Release: it eases back down to level.
+6. **Dash lift.** Press Y with a school out: the camera rises during the 0.35 s dash and comes back down after.
+7. **Not other cameras.** Die while luring: the death camera is not raised. Swap vessel while luring: the next vessel's camera is level.
+
+---
+
 ### 🔴 Angler round 4: one-thumb, 2x speed, camera 4x, the lure stops, crystal seeds, lure growth, counts, Time speeds fauna, a spent creature per lock, "they didn't listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md` §1, §1d–§1i. No `unity` CLI was available, so `/verify-unity` did NOT run.

@@ -16,6 +16,12 @@ Round 4 (2026-10-17):
 - Charge **spends** a creature per lock (§1e).
 - An omni crystal brings a **seed** as well as a creature (§1g).
 
+Round 5 (2026-10-17):
+
+- The speed is back to **cruise 40, boost 110**.
+- The brush is **smaller**: paint 3°, erase 1.5°, 2 u at the nose.
+- The camera flies **level**, so the brush sits on the screen's centre. It **rises** 56 u while you lure or dash (§1h).
+
 Sources:
 
 - The lab page: `Docs/Studios/AnglerCommandLab.html` (artifact https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6).
@@ -180,9 +186,14 @@ Collecting an omni crystal (`AnglerTameByCrystalEffectSO`) gives the Angler two 
   - The triggers still read their full analog depth on a pad.
   - On desktop the one-thumb mouse scheme flies it: the mouse buttons and shifts are the triggers, binary.
   - `OneThumbVesselCoverageTests` and `IO/ONE_THUMB_MOUSE_CONTROLS.md` list it.
-- **2x speed.** Cruise 80 u/s and boost 220 (the boost multiplier stays 2.75). The squad's followers top out near 64 u/s (40 u/s fauna times the 1.6 tow), so they trail a cruising hull unless Time is raised.
+- **Speed.** Round 4 doubled it (cruise 80, boost 220). Round 5 put it back: cruise 40 u/s, boost 110 (the boost multiplier stays 2.75). The squad's followers top out near 64 u/s (40 u/s fauna times the 1.6 tow), so they keep up with a cruising hull again.
 - **The lure stops the hull.** `lureCruise` 0. The brake's "no cap" is now `AnglerVesselTransformer.NoCap` (-1), since 0 is a real cap.
-- **Camera 4x.** `AnglerCameraSettingsSO.followOffset` is (0, 56, -160): the lab's `chaseBack` and `chaseUp`. It is a Vector3, so the generator owns it, not `studio_to_unity`.
+- **Camera 4x, level (round 5).** `AnglerCameraSettingsSO.followOffset` is (0, 0, -160): the lab's `chaseBack` and `chaseUp`. It is a Vector3, so the generator owns it, not `studio_to_unity`.
+  - **Level while flying.** With no height, the camera sits on the nose's own line, so the brush's axis is the screen's centre. That is what makes the small brush accurate: what is in the middle of the screen is what gets painted.
+  - **Rises while luring or dashing.** `AnglerCommandExecutor.UpdateCameraLift` raises the follow offset's height by `cameraLift` (56 u) over `cameraLiftTime` (0.4 s), smoothstep-eased, while the lure is held or a dash is in flight, and lowers it the same way after. This is the lab's chase camera (`chaseLift`, `chaseLiftTime`).
+  - Only the height is written; the distance stays the camera's own (its zoom).
+  - Only the local pilot's own player rig moves, and only while it follows this vessel (the SpreadWings pattern), so the death and replay cameras are never raised.
+  - Nothing is written while the camera is level. A vessel swap or a disabled executor puts a raised camera straight back.
 
 ### 1i. "The fauna didn't always listen" (fixed)
 
@@ -271,10 +282,10 @@ The creature-side hooks:
 | Tadpole turn (/s) | `tadTurn` | `tadTurn` | 4 |
 | Never target my prisms | `spareOwn` | `spareOwn` | 1 (on) |
 | Brush reach (u) | `paintRange` | `paintRange` | 3200 |
-| Brush half-angle (deg) | `paintCone` | `paintCone` | 8 |
+| Brush half-angle (deg) | `paintCone` | `paintCone` | 3 |
 | Light-squeeze brush | `brushMin` | `brushMin` | 0.35 |
-| Eraser half-angle (deg) | `eraseCone` | `eraseCone` | 4 |
-| Brush radius at the nose (u) | `brushNear` | `brushNear` | 6 |
+| Eraser half-angle (deg) | `eraseCone` | `eraseCone` | 1.5 |
+| Brush radius at the nose (u) | `brushNear` | `brushNear` | 2 |
 | Ball distance (u) | `slingAhead` | `slingAhead` | 12 |
 | Throw speed (u/s) | `slingSpeed` | `slingSpeed` | 150 |
 | Homing (/s) | `homeTurn` | `homeTurn` | 12 |
@@ -283,7 +294,9 @@ The creature-side hooks:
 | Latch cluster (u) | `slingCluster` | `slingCluster` | 24 |
 | Dash to the school (share) | `dashFrac` | `dashFrac` | 0.75 |
 | Dash time (s) | `dashTime` | `dashTime` | 0.35 |
-| Cruise (u/s) | `cruise` | `Angler.prefab` `VesselTransformer.DefaultThrottleScaler` | 80 |
+| Camera rise while luring or dashing (u) | `chaseLift` | `cameraLift` | 56 |
+| Camera rise time (s) | `chaseLiftTime` | `cameraLiftTime` | 0.4 |
+| Cruise (u/s) | `cruise` | `Angler.prefab` `VesselTransformer.DefaultThrottleScaler` | 40 |
 
 **Game only** (the lab models no flora, rival vessels, wild diet, crystals or elements):
 
@@ -299,8 +312,8 @@ The creature-side hooks:
 
 **Lab only:**
 
-- `boost` (220) and `turnRate` (100) belong to the lab's own simple hull. The game's Angler flies on the single-stick transformer, with `MaxBoostMultiplier` 2.75 (220 / 80).
-- `chaseBack` (160) and `chaseUp` (56) are held by the generator in `AnglerCameraSettingsSO.followOffset`, not by `studio_to_unity` (the camera field is a Vector3).
+- `boost` (110) and `turnRate` (100) belong to the lab's own simple hull. The game's Angler flies on the single-stick transformer, with `MaxBoostMultiplier` 2.75 (110 / 40).
+- `chaseBack` (160) and `chaseUp` (0) are held by the generator in `AnglerCameraSettingsSO.followOffset`, not by `studio_to_unity` (the camera field is a Vector3).
 - `aiErase` belongs to the lab's sim pilot. The game has no Angler autopilot yet.
 
 ## 6. Proof
@@ -347,5 +360,5 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
 6. **The Amoebius Port build check** (rule 51; it needs .NET 10, which this session did not have).
 7. **A client pilot's school.** Creatures are leashed on the machine that simulates them (the host), so a client pilot's own executor holds no school. Its dash (which needs the school's centroid) and its HUD counts are empty until the school is replicated to the pilot. Solo play and the host are unaffected.
 8. **"Paint shielded prisms too"** is read here as "paint them, and the squad cracks the shield off so they can be eaten". The locked rule "shielded mass is never food" is left untouched. If the designer meant the squad should eat them through the shield, that needs a sign-off on that rule.
-9. **The squad trails the 2x hull.** Followers top out near 64 u/s against an 80 u/s cruise until Time is raised. The lab's accuracy fell from 85% to 72% on target. A higher `leashTow` is the other lever.
+9. ~~**The squad trails the 2x hull.**~~ Moot since round 5: the cruise is back to 40 u/s, under the followers' 64 u/s.
 10. **The omni pool is herbivores only** (Clawfish, QuadFish, Tadpole), because only a herbivore can be leashed. A random shark would need a predator leash.

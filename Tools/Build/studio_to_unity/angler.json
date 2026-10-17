@@ -124,6 +124,16 @@
       "field": "dashTime"
     },
     {
+      "key": "chaseLift",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "cameraLift"
+    },
+    {
+      "key": "chaseLiftTime",
+      "asset": "Assets/_SO_Assets/VesselActions/Angler/AnglerConfig.asset",
+      "field": "cameraLiftTime"
+    },
+    {
       "key": "cruise",
       "asset": "Assets/_Prefabs/Spacevessels/Angler.prefab",
       "field": "DefaultThrottleScaler"

@@ -43,13 +43,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Brush reach (u): how far the paint brush and the eraser reach.")]
         [SerializeField, Min(1f)] float paintRange = 3200f;
         [Tooltip("Brush half-angle (deg): the paint brush at a full pull of RT. A light squeeze paints a narrower line.")]
-        [SerializeField, Range(0.5f, 45f)] float paintCone = 8f;
+        [SerializeField, Range(0.5f, 45f)] float paintCone = 3f;
         [Tooltip("Light-squeeze brush: share of the full brush a just-past-halfway squeeze paints with (and the same for the eraser). 1 = the trigger depth does not matter.")]
         [SerializeField, Range(0.05f, 1f)] float brushMin = 0.35f;
         [Tooltip("Eraser half-angle (deg): the eraser (LT) at a full pull. Narrower than the brush, so it can pick a neighbour out.")]
-        [SerializeField, Range(0.5f, 45f)] float eraseCone = 4f;
+        [SerializeField, Range(0.5f, 45f)] float eraseCone = 1.5f;
         [Tooltip("Brush radius at the nose (u): the brush never narrows below this near the hull, so close-up prisms paint and erase too (at a full pull; a light squeeze scales it like the cone).")]
-        [SerializeField, Min(0f)] float brushNear = 6f;
+        [SerializeField, Min(0f)] float brushNear = 2f;
         [Tooltip("Ball distance (u): while RT is held the squad balls up this far ahead.")]
         [SerializeField, Min(0f)] float slingAhead = 12f;
         [Tooltip("Throw speed (u/s): how fast the ball flies at the painted prisms.")]
@@ -66,6 +66,10 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float dashFrac = 0.75f;
         [Tooltip("Dash time (s): how long the dash takes.")]
         [SerializeField, Min(0.05f)] float dashTime = 0.35f;
+        [Tooltip("Camera rise when luring or dashing (u): the chase camera rises this far while the lure is held or the Time dash is moving, to show the school and the light from above. Flying, it sits level with the hull (no y offset), so the brush's axis is the screen's centre.")]
+        [SerializeField, Min(0f)] float cameraLift = 56f;
+        [Tooltip("Camera rise time (s): how long the camera takes to rise and to settle back.")]
+        [SerializeField, Min(0.05f)] float cameraLiftTime = 0.4f;
 
         [Header("The abilities in the game (game only: the lab models no flora, rival vessels, wild diet or crystals)")]
         [Tooltip("Every creature (wild ones too) ranks a painted prism this many times closer than it is when it picks its next " +
@@ -120,6 +124,8 @@ namespace CosmicShore.Gameplay
         public float SlingCluster => slingCluster;
         public float DashFrac => dashFrac;
         public float DashTime => Mathf.Max(0.05f, dashTime);
+        public float CameraLift => cameraLift;
+        public float CameraLiftTime => Mathf.Max(0.05f, cameraLiftTime);
         public float PaintedPreference => Mathf.Max(1f, paintedPreference);
         public float LureGrowth => Mathf.Max(1f, lureGrowth);
         public ElementalFloat FaunaSpeed => faunaSpeed;

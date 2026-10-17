@@ -24,10 +24,10 @@ MonoBehaviour:
   tadTurn: 4
   spareOwn: 1
   paintRange: 3200
-  paintCone: 8
+  paintCone: 3
   brushMin: 0.35
-  eraseCone: 4
-  brushNear: 6
+  eraseCone: 1.5
+  brushNear: 2
   slingAhead: 12
   slingSpeed: 150
   homeTurn: 12
@@ -36,6 +36,8 @@ MonoBehaviour:
   slingCluster: 24
   dashFrac: 0.75
   dashTime: 0.35
+  cameraLift: 56
+  cameraLiftTime: 0.4
   paintedPreference: 4
   lureGrowth: 3
   faunaSpeed:

@@ -8,11 +8,11 @@
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
   },
   "Angler": {
-    "artifactVersion": "v7 (1792198877-78fb)",
+    "artifactVersion": "v8 (1792278942-c87a)",
     "artifact": "https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6 (the Angler Command Lab, its own decision log)",
-    "pageSha": "41131b0b",
+    "pageSha": "ec2bebc7",
     "decisionsThrough": "2026-10-15T00:00:00.000Z",
     "clonedAt": "2026-10-17",
-    "result": "Fifth clone (round 4). cruise 80 (2x), lureCruise 0 (the lure stops), the chase camera 4x (generator-held: followOffset is a Vector3), and the page's fix for in-flight creatures ignoring a new paint. 25 mapped parameters match the artifact. Game-only: one-thumb flight, crystal seeds, lure growth haste, the Mass count, Time's faunaSpeed, Charge spends a creature per lock. Earlier: v6 round 3, v5, v4, v3."
+    "result": "Sixth clone (round 5). cruise 40 (back from 80), paintCone 3, eraseCone 1.5, brushNear 2, a level chase camera (chaseUp 0, generator-held) that rises chaseLift 56 over chaseLiftTime 0.4 while luring or dashing (cameraLift / cameraLiftTime, driven by the executor). 27 mapped parameters match the artifact. Earlier: v7 round 4, v6 round 3, v5, v4, v3."
   }
 }
