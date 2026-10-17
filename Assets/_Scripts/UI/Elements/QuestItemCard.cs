@@ -161,10 +161,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Starts or stops the pulsing glow border on the active frontier card.
-        /// Glow color changes based on quest state: blue when in progress, green when ready to claim.
-        /// </summary>
-        /// <summary>
         /// Draw <paramref name="state"/>. The legacy card toggles its overlays and tints its
         /// background; the style-B card (KitQuestCard) overrides this and SetActiveFrontier.
         /// </summary>
@@ -178,6 +174,10 @@ namespace CosmicShore.UI
             if (descriptionText != null && isClaimed) descriptionText.text = completedLine;
         }
 
+        /// <summary>
+        /// Starts or stops the pulsing glow border on the active frontier card.
+        /// Glow color changes based on quest state: blue when in progress, green when ready to claim.
+        /// </summary>
         public virtual void SetActiveFrontier(bool isActive, QuestItemState state = QuestItemState.Unlocked)
         {
             if (glowBorder == null) return;

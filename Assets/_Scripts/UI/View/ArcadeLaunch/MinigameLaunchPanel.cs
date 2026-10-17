@@ -173,6 +173,15 @@ namespace CosmicShore.UI
             base.Hide();
         }
 
+        /// <summary>Redraw the controls block for <paramref name="vessel"/> - the Arena's claimed hull,
+        /// which can differ from the card's first vessel.</summary>
+        protected void ShowControlsFor(SO_Vessel vessel)
+        {
+            if (controlsPanel)
+                controlsPanel.Show(vessel ? vessel.Class : VesselClassType.Any, vessel,
+                                   Game != null ? Game.Mode : GameModes.Random);
+        }
+
         /// <summary>
         /// The hull this mode's controls block describes: the card's vessel when it locks one, and
         /// otherwise the FIRST it lists.
@@ -184,15 +193,6 @@ namespace CosmicShore.UI
         /// named says so in <c>ModeControlsLibrarySO.Vessel</c>, which the panel applies over
         /// this.</para>
         /// </summary>
-        /// <summary>Redraw the controls block for <paramref name="vessel"/> - the Arena's claimed hull,
-        /// which can differ from the card's first vessel.</summary>
-        protected void ShowControlsFor(SO_Vessel vessel)
-        {
-            if (controlsPanel)
-                controlsPanel.Show(vessel ? vessel.Class : VesselClassType.Any, vessel,
-                                   Game != null ? Game.Mode : GameModes.Random);
-        }
-
         static SO_Vessel ResolveModeVessel(SO_ArcadeGame game)
         {
             if (game == null || game.Vessels == null || game.Vessels.Count == 0) return null;

@@ -332,12 +332,6 @@ namespace CosmicShore.UI
 
         // ── Runtime construction ─────────────────────────────────────────
 
-        /// <summary>
-        /// Builds a fully configured indicator at runtime: a full-screen
-        /// container under <paramref name="parent"/> with a procedural arrow
-        /// icon (<see cref="ObjectiveArrowGraphic"/>). Use when no
-        /// editor-wired indicator exists in the scene.
-        /// </summary>
         /// <summary>Tint the arrow (and its distance readout) with a domain colour.</summary>
         public void SetAccent(Color accent)
         {
@@ -345,6 +339,12 @@ namespace CosmicShore.UI
             if (distanceText) distanceText.color = accent;
         }
 
+        /// <summary>
+        /// Builds a fully configured indicator at runtime: a full-screen
+        /// container under <paramref name="parent"/> with a procedural arrow
+        /// icon (<see cref="ObjectiveArrowGraphic"/>). Use when no
+        /// editor-wired indicator exists in the scene.
+        /// </summary>
         public static ObjectiveIndicator CreateRuntime(Transform parent, IObjectiveProvider providerInstance)
         {
             // Sub-canvas isolation: a dedicated Canvas component on the

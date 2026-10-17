@@ -589,6 +589,17 @@ namespace CosmicShore.UI
             return slot;
         }
 
+        /// <summary>The rect + taper of something laid on a plate, already inset inside its band.</summary>
+        readonly struct PlateRect
+        {
+            public readonly float Width, Height, CentreY, TopEdge, BottomEdge;
+            public PlateRect(float width, float height, float centreY, float topEdge, float bottomEdge)
+            {
+                Width = width; Height = height; CentreY = centreY;
+                TopEdge = Mathf.Clamp01(topEdge); BottomEdge = Mathf.Clamp01(bottomEdge);
+            }
+        }
+
         /// <summary>
         /// The stencil the vessel's own meter is drawn through, so a rectangular <c>Filled</c> Image
         /// reads as the trapezoid it sits in.
@@ -602,17 +613,6 @@ namespace CosmicShore.UI
         /// <para>Costs two extra draw calls on a card that HAS a meter (stencil in, stencil out).
         /// Three cards fleet-wide carry one today, so it is six.</para>
         /// </summary>
-        /// <summary>The rect + taper of something laid on a plate, already inset inside its band.</summary>
-        readonly struct PlateRect
-        {
-            public readonly float Width, Height, CentreY, TopEdge, BottomEdge;
-            public PlateRect(float width, float height, float centreY, float topEdge, float bottomEdge)
-            {
-                Width = width; Height = height; CentreY = centreY;
-                TopEdge = Mathf.Clamp01(topEdge); BottomEdge = Mathf.Clamp01(bottomEdge);
-            }
-        }
-
         RectTransform ResolveGaugeClip(RectTransform card, PlateRect rect)
         {
             const string name = "GaugeClip";
@@ -1453,11 +1453,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// One of the card's generated plates. <paramref name="top"/> and <paramref name="bottom"/>
-        /// are edge widths as fractions of the rect - both always derived from the style's single
-        /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
-        /// </summary>
-        /// <summary>
         /// The band on a plate's two SLOPED sides - solid the whole length of each slant, wrapping
         /// around both corners onto the horizontals and grading to nothing there, so it accents the
         /// edges that carry the shape and never closes into the border this style retired. A locked slot wears it at the locked
@@ -1561,6 +1556,11 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// One of the card's generated plates. <paramref name="top"/> and <paramref name="bottom"/>
+        /// are edge widths as fractions of the rect - both always derived from the style's single
+        /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
+        /// </summary>
         TrapezoidGraphic ResolveTrapezoid(RectTransform parent, string childName, float top, float bottom)
         {
             var existing = parent.Find(childName);

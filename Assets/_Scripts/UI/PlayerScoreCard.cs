@@ -195,9 +195,6 @@ namespace CosmicShore.UI
             dataPanelsRoot.SetActive(anyChildShown);
         }
 
-        /// <summary>
-        /// In-game live score update. Animates a counter roll + punch.
-        /// </summary>
         /// <summary>The local pilot's row wears the selection (and "(you)" after the name).</summary>
         public void SetLocal(bool isLocal)
         {
@@ -274,6 +271,9 @@ namespace CosmicShore.UI
             domainText.color = color;
         }
 
+        /// <summary>
+        /// In-game live score update. Animates a counter roll + punch.
+        /// </summary>
         public void UpdateScore(int crystalCount) => ScoreAnimator.AnimateTo(crystalCount);
 
         private void ApplyDomainColor(Color domainColor)
