@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Kite Navigator: the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** the first multiplayer vessel's second seat, ported from the Crew Vessel Lab's signed-off round 3
+(`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`).
+- **The board and the kite:** a navigator flies a kite on the hull's x-z plane. The head pops hostile prisms and rams
+  rivals. The tail closes loops, and a loop of one navigator-only element fires Space (an AOEExplosion), Mass (a
+  cluster of our prisms), Time (boost) or Charge (the next ram steals petals, as a scored Strike).
+- **The seats:** the arena's swap gesture moves the human between the hull and the kite, and an AI flies whichever seat
+  is empty.
+- **What has been checked:**
+  - Compile: `unity_refcompile`, player config clean (0 errors in project code). The editor config has 0 errors in
+    the changed files; its 3 project errors are in `AuthenticationServiceFacade.cs` and `MultiplayerSetup.cs`
+    (`Unity.Multiplayer.PlayMode` is unobtainable to the harness).
+  - Parity: `Tools/Build/kite_navigator_lab/parity.cjs` PASS. The core matches the lab over 3120 frames, the asset
+    matches it on 21 fields, and the planted controls are caught.
+  - Tests: the 12 `KiteNavigatorCoreTests` pass when compiled outside Unity with an NUnit shim.
+  - `/verify-unity` was not available in this session.
+- **First-pass numbers:** all from the lab: board 160 u, kite 320 u/s, tail 1.6 radii, growth ×2, Space 60 → 640
+  MaxScale, Mass 6 → 240 prisms, Time 1.5 → 30 s, Charge 1 → 30 petals. Expect a balancing pass once it is seen in a
+  real match. The lab could not see the real blast hitting rival hulls, or the prism pool's own limits.
+
+**Verify:**
+1. Start any match in the Sparrow. Run **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)**.
+   - The board appears bottom right: a dark disc with your hull's triangle below its centre.
+   - Prisms show as domain-coloured bars. Navigator motes show as four glyphs: gold diamond, orange square, violet
+     triangle, green dot.
+   - The AI's kite loops clusters and pops hostile prisms while you keep flying.
+2. Press **2** (or D-pad right).
+   - The hull keeps flying, on its AI.
+   - Your sticks no longer steer.
+   - Mouse-down on the board drives the kite.
+3. Circle one colour of motes until the tail crosses itself:
+   - **violet**: a blast at the loop's centre takes out hostile prisms;
+   - **orange**: a cluster of your prisms appears;
+   - **green**: the hull boosts for a second or more, and a green arc shows on the board's right;
+   - **gold**: charge pips appear on the board's left.
+4. A mixed loop does nothing (fizzle).
+5. With charge, ram a rival's triangle. Petals move to you, and the scoreboard counts a hit.
+6. Press **1**. You fly again, with no stuck input and no stuck boost.
+7. On a phone build, the kite rides about 2 cm above your thumb.
+8. Run **Remove (Play mode)**. The board goes, and you hold the hull.
+
 ### 🔴 AI difficulty (Easy / Medium / Hard) on every Arena card (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** the difficulty row only existed on the Arcade window. The headless compile is clean
