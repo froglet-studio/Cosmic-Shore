@@ -739,3 +739,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (Cloud Save owner)
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** CLAUDE.md Code Style: player-facing text has a human-facing control
+
+### T-20261017-9990 · open · dev · Performance
+- **Task:** Menu_Main with the Stoat flying: Driver.LateUpdate (BlackHoleRegistry or WormholeView) read 2.7 ms/frame average and 88 ms self in a spike frame (Yash, 2026-10-18; capture tainted by vsync + Third Eye, so rank only). The drivers now carry BlackHole.Tick/Field/Pairs/VesselPull/Waves/Warp/Lens and Wormhole.Tick/SelectAndRender markers, in diag by default: take a clean Release capture with the Stoat dropping a dipole, find the phase that spikes, fix it
+- **Done when:** A clean capture names the phase and a second capture shows the spike gone
+- **Who can take it:** Garrett (black holes, wormholes, Stoat)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** BugLedger capture_Menu_Main_S2_20261018_004107.json on origin/bugledger/yskha; markers BlackHole.* and Wormhole.* (commit on claude/new-session-76hnyc)
+
+### T-20261017-7647 · open · test · Performance
+- **Task:** Share a clean capture of the lag you see: Release code optimization, Third Eye window closed, vsync/frame cap off ('fps uncap'), Auto-publish on in the Bug Hunt & Performance badge; play the laggy scene past the badge's auto-capture countdown and stop Play. It lands on your bugledger branch by itself (Shombith's has no capture yet)
+- **Done when:** A valid capture of the laggy scene is on origin/bugledger/<user>
+- **Who can take it:** Shombith; Yash (offered)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** .claude/skills/perf-hunt/SKILL.md section 1; Docs/DIAGNOSTICS.md (Bug Hunt & Performance badge)
