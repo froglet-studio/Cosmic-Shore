@@ -188,13 +188,19 @@ Everything lands on `Ys-bleeding-edge` for testing; nothing goes to `bleeding-ed
    - **Players' data must never go in git.** That is a privacy matter, not a size one.
 
    **Recommended, in order:**
-   1. Now: keep the editor flights on bugledger branches, and gzip them. JSON this regular should shrink several
-      times; about a one-line change where `BugHuntReports` stores the file, plus a `.gz` reader in the tools.
+   1. Now: keep the editor flights on bugledger branches. Optionally gzip them: lossless, so every byte comes back.
+      JSON this regular should shrink several times; it is a small change where `BugHuntReports` stores the file, plus
+      a `.gz` reader in the tools.
    2. When players record (consent, T4): small per-race summaries in Cloud Save, the way the match-replay work stores
       its `REPLAY_INDEX` (`claude/match-replays-5t3dbr`). Hull, mode, intensity, time, finished and rings are a few
       hundred bytes; the chart reads exactly those.
    3. The full flights (about 0.5 MB, the tracks) go in a file store: Cloud Save files if our version has them, the
       R2 bucket, or our own endpoint. This is the open decision above (task T-20261015-0064).
+
+   **Keep the data whole** (Yash, 2026-10-17): lossless compression only. Nothing lossy: no fewer decimals, samples or
+   columns, no trimmed stretches, never summaries alone. The brief for whoever wires UGS, Shombith first, is
+   `AI_DATA_IN_UGS.md`. A hook (`.claude/hooks/ugs_ai_data_nudge.py`) shows it to any session whose prompt is about
+   UGS.
 3. **Whether a network-driven AI (T5) may ship**, or whether learning only moves the numbers of hand-written AIs.
 4. **Which hulls get real drives next.** The generic drive is a stand-in, and a hull's own abilities are modelled when
    its AI is built (`REGATTA_AI_ROADMAP.md`).
