@@ -188,7 +188,10 @@ namespace CosmicShore.Utility
                 Debug.LogException(e);
             }
 
+            int shown = Scoreboard.ShowCount;
             gameData.InvokeShowGameEndScreen();
+            // A raise no board answered left the player in the arena with no way out: find the board and show it.
+            if (Scoreboard.ShowCount == shown) Scoreboard.ShowUnreached();
             _revealRoutine = null;
         }
 

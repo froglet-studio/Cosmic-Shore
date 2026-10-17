@@ -11353,3 +11353,16 @@ panel-less path clears them. `PartyPanel.prefab`'s frame fill is now transparent
    own arcade cards still show their descriptions.
 2. **Friends drawer:** behind the party panel is the living lattice (two layers, element pulses) through glass, not a
    flat dark-blue slab. The seats, the orb design and the online list read clearly over it.
+
+## 🔴 2026-10-17 — End screen self-heals and names what hid it; friends drawer more opaque (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The owner: "Skim Race solo with AI, reveal shows then nothing - even in Maelstrom end". The scene wiring checks out
+offline (event asset, sequencer, board, rects, overrides), so the fault is a runtime one. `EndGameSequencer` now checks
+whether its end-screen raise reached a board (`Scoreboard.ShowCount`); if not, `Scoreboard.ShowUnreached` turns the
+board and its parents back on and shows it. `Scoreboard.EnsureBoardVisible` fixes any parent that hides the shown
+board (inactive, CanvasGroup alpha 0, disabled Canvas). Each fix logs a warning naming the culprit. The friends drawer
+window's glass is 0.9 (was 0.62). `/verify-unity` was not run.
+
+1. **Skim Race solo with AI, and a Maelstrom round:** after the reveal the scoreboard appears. Copy any `[Scoreboard]`
+   warning from the console: it names what was hiding the board, and that object is the real fix.
+2. **Friends drawer:** Home no longer reads through the party panel; the lattice still shows.

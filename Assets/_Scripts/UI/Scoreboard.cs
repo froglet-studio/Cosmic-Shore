@@ -130,8 +130,35 @@ namespace CosmicShore.UI
 
         #region Unity Lifecycle
 
+        // Every board in the scene, active or not, so an end screen that reached none can still find one.
+        static readonly List<Scoreboard> s_boards = new();
+
+        /// <summary>Counts every <see cref="ShowScoreboard"/>, so the end-game raiser can tell whether its raise
+        /// reached a board at all.</summary>
+        public static int ShowCount { get; private set; }
+
+        /// <summary>
+        /// The end screen was raised and no board answered - its object (or a parent) was switched off after load,
+        /// which also unsubscribed it, and the player was left in the arena with no way out (2026-10-17, the owner:
+        /// "Skim Race solo with AI, reveal shows then nothing"). Turns each board back on, says what was off, and shows it.
+        /// </summary>
+        public static void ShowUnreached()
+        {
+            foreach (var board in s_boards)
+            {
+                if (!board) continue;
+                var off = new List<string>();
+                for (var t = board.transform; t; t = t.parent)
+                    if (!t.gameObject.activeSelf) { off.Add(t.name); t.gameObject.SetActive(true); }
+                if (!board.enabled) { off.Add($"{board.name}'s Scoreboard component"); board.enabled = true; }
+                CSDebug.LogWarning($"[Scoreboard] The end screen reached no scoreboard ({(off.Count > 0 ? string.Join(", ", off) + " was off" : "it was not subscribed")}) - showing it anyway.");
+                board.ShowScoreboard();
+            }
+        }
+
         void Awake()
         {
+            s_boards.Add(this);
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
@@ -254,6 +281,7 @@ namespace CosmicShore.UI
 
         void ShowScoreboard()
         {
+            ShowCount++;
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
 // Fail OPEN: the panel (with its Main Menu / Play Again buttons) must appear even
@@ -281,6 +309,7 @@ namespace CosmicShore.UI
             if (scoreboardPanel)
             {
                 scoreboardPanel.gameObject.SetActive(true);
+                EnsureBoardVisible();
 
                 // Entrance animation disabled for now: PlayEntranceAnimation() slid the panel
                 // by mutating its own anchoredPosition (read current pos as the rest target,
@@ -452,7 +481,36 @@ namespace CosmicShore.UI
 
         void OnDestroy()
         {
+            s_boards.Remove(this);
             _entranceSeq?.Kill();
+        }
+
+        /// <summary>
+        /// Anything above the board that would keep it off screen once shown - an inactive parent, a parent CanvasGroup
+        /// at alpha 0, a disabled Canvas - is put right and named, so a hidden end screen is a warning, never silence.
+        /// </summary>
+        void EnsureBoardVisible()
+        {
+            for (var t = scoreboardPanel; t; t = t.parent)
+            {
+                if (!t.gameObject.activeSelf)
+                {
+                    CSDebug.LogWarning($"[Scoreboard] '{t.name}' above the scoreboard was inactive - turning it on.");
+                    t.gameObject.SetActive(true);
+                }
+                if (t.TryGetComponent<CanvasGroup>(out var group) && group.alpha <= 0.01f)
+                {
+                    CSDebug.LogWarning($"[Scoreboard] '{t.name}' above the scoreboard was at alpha 0 - showing it.");
+                    group.alpha = 1f;
+                }
+                if (t.TryGetComponent<Canvas>(out var canvas) && !canvas.enabled)
+                {
+                    CSDebug.LogWarning($"[Scoreboard] The canvas '{t.name}' holding the scoreboard was disabled - enabling it.");
+                    canvas.enabled = true;
+                }
+            }
+            if (scoreboardPanel is RectTransform rect && (rect.rect.width < 1f || rect.rect.height < 1f))
+                CSDebug.LogWarning($"[Scoreboard] The scoreboard is {rect.rect.width:0}x{rect.rect.height:0} - it cannot be seen.");
         }
 
         #endregion
