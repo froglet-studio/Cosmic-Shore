@@ -536,3 +536,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (Dolphin design owner)
 - **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md §2 and §2a
+
+### T-20261017-2215 · open · test · Performance
+- **Task:** Try the after-play confirmation and the Project Record in Unity (2026-10-17): stop Play after a run that leaves something new; the small window says what went to Claude (SENDING -> SENT) and closes by itself; Project record ▸ expands into Overview / Performance / Network / AI flights / Errors with Ys-bleeding-edge and bleeding-edge's performance status and your sends; also FrogletTools > Diagnostics > Project Record. Say what to change.
+- **Done when:** The six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-17, after-play confirmation) pass, or what to change is written here
+- **Who can take it:** Yash (asked for it)
+- **Added:** 2026-10-17 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/DIAGNOSTICS.md (The after-play confirmation and the Project Record)

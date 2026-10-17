@@ -263,13 +263,14 @@ occurrence.
 - The `Ignore`, `Pause`, `Reopen`, `ResolveNow`, `Delete` and `SetSeverity` calls remain in
   `BugLedger`'s API for tools and Claude; no person is asked to drive them.
 
-### Send to Claude — the only UI
+### Send to Claude — automatic, then a confirmation
 
 `BugHuntAutoSend` (editor, `[InitializeOnLoad]`). When a play test ends and it logged a red error
 Claude does not have yet (an OPEN issue seen this run whose `id:regressions` fingerprint was never
 sent), or made a new performance capture (`PerfAutoCapture`), AI training record or multiplayer
 log, it **sends at once, with no question** (Yash, 2026-10-16: "make send to Claude automatic too, no
-question"; it was a Send / Not now dialog until then) and logs one console line saying what went. The
+question"; it was a Send / Not now dialog until then), logs one console line saying what went, and shows a
+small **confirmation** (no question) that opens into the **Project Record**: see the next section. The
 fingerprints are recorded (`BugLedgerSettings.SentFingerprints`), so the same error is never sent
 twice; only a new error, or one that came BACK after a fix (its regression count moved), sends again.
 
@@ -329,6 +330,33 @@ but plumbing, so its sender could not be found.)
 
 **Older path, still read:** issues published before this into a branch's working-tree
 `BugLedger/shared/issues/` are still imported at load and still read by `collect`.
+
+### The after-play confirmation and the Project Record
+
+`BugHuntSendConfirmation` (editor window) and `ProjectRecord` (its data). Yash, 2026-10-17: "bring the pop-up back as a
+confirmation only, with no question ... minimized ... you can expand it ... performance, network, flights, errors ... a
+project diagnosis history ... Ys-bleeding-edge and bleeding-edge as a performance info". It replaced nothing: the send
+still happens by itself; this only says what happened.
+
+- **Small (after every send).** A small floating window: a pill (SENDING, SENT, UP TO DATE, NOT SENT, from
+  `BugLedgerSender.LastOutcome`), what went (the same summary as the console line), where it went
+  (`bugledger/<user>`), and two buttons, **Project record ▸** and **Close**. It closes by itself 20 s after the send
+  ends unless it is expanded or the pointer is over it. A run with nothing new sends nothing and shows nothing.
+- **Expanded: the Project Record.** Five tabs, each starting with one line on what that data is for:
+  - **Overview**: one block per branch on the performance path (gates, regressions, the Amoebius verdict, captures
+    still owed, the first next steps), then your last five sends and how many files of each kind are on your branch.
+  - **Performance**: per branch, its regressions, Amoebius verdicts, latest captures (who, scene, CPU, GC, verdict),
+    next steps and open performance tasks; then your performance files.
+  - **Network** and **AI flights**: what they are for, and your files on your branch, newest first.
+  - **Errors**: this machine's ledger (open / validating / ignored, the open titles), then the team's console bugs as
+    each branch's status reports them, then your error logs.
+- **Where the numbers come from.** Each branch's own `Docs/perf/status.json` (written by `Tools/Build/perf_hunt.py`'s
+  sweep and status runs, daily and in every performance session), fetched as `origin/<branch>`. The branch list and
+  each branch's role are `branchFlow` in that file (`BRANCH_FLOW` in `perf_hunt.py`): **Ys-bleeding-edge first**,
+  where the performance work lands (Yash), then **bleeding-edge**. Your sends come from `origin/bugledger/<user>`.
+  Everything is fetched and read on a background thread; the working tree, index and current branch are never
+  touched. **Refresh from GitHub** fetches again.
+- **Any time:** **FrogletTools > Diagnostics > Project Record** opens the expanded record without a send.
 
 ### Multiplayer test logs — collected by themselves (Unity and Amoebius)
 
@@ -461,6 +489,7 @@ a clean run. Copy that shape.
 | Ledger settings (`ScriptableSingleton`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
 | Agent side of the ledger (list / show / mark-fixed / collect / file) | `Tools/Build/bug_ledger.py` + `.claude/skills/bug-ledger/SKILL.md` |
 | The automatic after-play send (no question since 2026-10-16) | `Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs` |
+| The after-play confirmation and the Project Record (FrogletTools > Diagnostics > Project Record) | `Assets/_Scripts/Editor/Diagnostics/BugHuntSendConfirmation.cs`, `ProjectRecord.cs` |
 | The one indicator: the Scene view's Bug Hunt & Performance badge (reads `Docs/perf/status.json`) | `Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs` |
 | Sender to `bugledger/<user>` + fix pickup (throwaway index, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs` |
 | Report files that ride along (redlog / crash / perf) | `Assets/_Scripts/Editor/Diagnostics/BugHuntReports.cs` |
