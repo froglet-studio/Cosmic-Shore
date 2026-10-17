@@ -62,7 +62,10 @@ S = dict(kitbutton=K.kit_script("KitButton"), dismiss=C.script("DismissibleHint"
          crystals=C.script("CrystalCurrencyDisplay"), cbp=C.script("ControllerButtonPress"), button=A.BUTTON,
          upnext=C.script("HomeUpNext"), invite=C.script("PartyInviteNotificationPanel"), drain=K.kit_script("KitDrain"),
          gate=C.script("OfflineUIGate"), switcher=C.script("ScreenSwitcher"), themed=H.KIT_THEMED,
-         guide_ok=C.script("MenuGuideAlwaysAvailable"))
+         guide_ok=C.script("MenuGuideAlwaysAvailable"), relay=C.script("DoubleTapRelay"))
+# Home's full-screen invisible tap surface (HomeScreen/Button) and its relay: a double click flies.
+TAP = dict(go="797780467", button="797780469", relay="797780479")
+CRYSTAL_HANDLER = "1486013850"
 MASK = A.MASK
 
 # Menu_Main, measured 2026-10-15 (HomeScreen go 319175480197462205).
@@ -425,7 +428,7 @@ def hint_node():
     n.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.6), K.kit_sprite("kit_sliver10_fill"), True))
     lab = n.child(N("Hint/Label", "Label", R((0, 0), (1, 1), (-(HINT_X + 8) / 2, 0), (-(HINT_X + 8), 0))))
-    label(lab, "Tap the cell to fly", "Label", "TextLight", align="center")
+    label(lab, "Double-tap the cell to fly", "Label", "TextLight", align="center")
     hint_close(n)
     n.add("dismiss", 114, lambda ctx, go: C.mono(go, S["dismiss"],
           f"  group: {C.ref(ctx.c('Hint', 'cg'))}\n  closeButton: {C.ref(ctx.c('Hint/Close', 'button'))}\n"
@@ -712,6 +715,40 @@ def patch_upnext(p):
     p.replace(SWITCHER, T.set_block(sw, "hubCompanions", K.refs_list("hubCompanions", comp)))
 
 
+def _toggle_call(target, type_name, method):
+    return (f"      - m_Target: {{fileID: {target}}}\n"
+            f"        m_TargetAssemblyTypeName: {type_name}, Assembly-CSharp\n"
+            f"        m_MethodName: {method}\n        m_Mode: 1\n        m_Arguments:\n"
+            "          m_ObjectArgument: {fileID: 0}\n"
+            "          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine\n"
+            "          m_IntArgument: 0\n          m_FloatArgument: 0\n          m_StringArgument: \n"
+            "          m_BoolArgument: 0\n        m_CallState: 2\n")
+
+
+def patch_tap_surface(p):
+    """One click on empty Home launched freestyle (the surface's onClick called ToggleTransition). The
+    click now goes to a DoubleTapRelay on the same object, which calls ToggleTransition on the second
+    click within 0.4 s."""
+    go_doc = p.doc(TAP["go"])
+    if f"component: {{fileID: {TAP['relay']}}}" not in go_doc:
+        go_doc = go_doc.replace("  m_Layer:", f"  - component: {{fileID: {TAP['relay']}}}\n  m_Layer:", 1)
+        p.replace(TAP["go"], go_doc)
+    relay = (f"--- !u!114 &{TAP['relay']}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+             "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+             f"  m_GameObject: {{fileID: {TAP['go']}}}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+             f"  m_Script: {{fileID: 11500000, guid: {S['relay']}, type: 3}}\n  m_Name: \n  m_EditorClassIdentifier: \n"
+             "  window: 0.4\n  onDoubleTap:\n    m_PersistentCalls:\n      m_Calls:\n"
+             + _toggle_call(CRYSTAL_HANDLER, "CosmicShore.Gameplay.MenuCrystalClickHandler", "ToggleTransition"))
+    if p.sc.has(TAP["relay"]):
+        p.replace(TAP["relay"], relay)
+    else:
+        p.sc.insert_after(TAP["button"], TAP["relay"], relay)
+    btn = p.doc(TAP["button"])
+    btn = re.sub(r"(  m_OnClick:\n    m_PersistentCalls:\n      m_Calls:\n)(?:      - .*\n(?:        .*\n)*)+",
+                 lambda m: m.group(1) + _toggle_call(TAP["relay"], "CosmicShore.UI.DoubleTapRelay", "Tap"), btn, count=1)
+    p.replace(TAP["button"], btn)
+
+
 def patch_invite(p):
     O = OLD_INVITE
     inst, stub, go_stub = invite_ids()
@@ -766,6 +803,7 @@ def transform(text_):
     patch_header(p)
     patch_upnext(p)
     patch_invite(p)
+    patch_tap_surface(p)
     return p.text()
 
 
@@ -821,6 +859,12 @@ def validate(files):
         assert re.search(r"^  %s: \{fileID: [1-9]" % f, up, re.M), f"HomeUpNext.{f} is not wired"
     assert f"guid: {ARCADE_GAMES}" in up, "HomeUpNext.games is not the arcade card list"
     assert up.count("  - {fileID: ") == 4, "the quest meter needs four segments"
+    # One click on empty Home must not launch freestyle: the tap surface relays to DoubleTapRelay.
+    assert "m_MethodName: ToggleTransition" not in sc.docs[TAP["button"]], "Home's tap surface launches freestyle on ONE click"
+    assert f"m_Target: {{fileID: {TAP['relay']}}}" in sc.docs[TAP["button"]] and "m_MethodName: Tap\n" in sc.docs[TAP["button"]], \
+        "Home's tap surface does not reach its DoubleTapRelay"
+    assert sc.has(TAP["relay"]) and f"m_Target: {{fileID: {CRYSTAL_HANDLER}}}" in sc.docs[TAP["relay"]] \
+        and "m_MethodName: ToggleTransition" in sc.docs[TAP["relay"]], "the DoubleTapRelay does not fly (ToggleTransition)"
     for key in ("UpNext", "Chip", "HintDock"):
         assert f"  - {{fileID: {ctx.go(key)}}}" in sc.docs[SWITCHER], f"{key} does not fade with the hub row (hubCompanions)"
     assert f"  - {{fileID: {IDS['settings_go']}}}" in sc.docs[SWITCHER], "Settings does not fade with the hub row (hubCompanions)"
@@ -905,6 +949,9 @@ def self_test(files):
         ("the fly hint's x unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  closeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("Settings left out of the guide's always-available set", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"guid: {S['guide_ok']}", "guid: 00000000000000000000000000000000", 1))),
+        ("one click on Home flying again", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            "        m_TargetAssemblyTypeName: CosmicShore.UI.DoubleTapRelay, Assembly-CSharp\n        m_MethodName: Tap\n",
+            "        m_TargetAssemblyTypeName: CosmicShore.Gameplay.MenuCrystalClickHandler, Assembly-CSharp\n        m_MethodName: ToggleTransition\n", 1))),
         ("the docked cards back under the friends handle", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"expandedHeight: {CARD_H}\n", "expandedHeight: 132\n", 1))),
         ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

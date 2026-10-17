@@ -584,8 +584,8 @@ def games_page(panel):
             .add("img", 114, K.image(tok("SurfaceBlack", 0.9), K.kit_sprite("kit_fade_h")))
         label(t.child(N(f"{k}/Eyebrow", "Eyebrow", TLr(20, 16, 300, 16))), "ANY VESSEL", "Label", "ControlActive")
         label(t.child(N(f"{k}/Title", "Title", TLr(20, 36, 400, 34))), "Skim Race", "H2", "TextLight")
-        label(t.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (20, -74), (-(20 + 120), 40), (0, 1)))), "", "BodySmall", "NeutralLightest",
-              valign="top", wrap=True)
+        # No description line (the owner, 2026-10-17: "description should not be showing"): the tile is
+        # the art, the eyebrow and the name; the configure window it opens carries the briefing.
     label(page.child(N("Tabs/Games/Empty", "Empty", R((0, 1), (1, 1), (0, -60), (0, 40), (0.5, 1)))),
           "No games list this vessel yet.", "BodySmall", "NeutralLightest").add("cg", 225, canvas_group(False))
 
@@ -595,7 +595,7 @@ def games_page(panel):
             k = f"Tabs/Games/Tile{i}"
             tiles += (f"  - group: {ref(ctx.c(k, 'cg'))}\n    button: {ref(ctx.c(k, 'button'))}\n    art: {ref(ctx.c(f'{k}/Clip/Art', 'img'))}\n"
                       f"    eyebrowText: {ref(ctx.c(f'{k}/Eyebrow', 'tmp'))}\n    titleText: {ref(ctx.c(f'{k}/Title', 'tmp'))}\n"
-                      f"    lineText: {ref(ctx.c(f'{k}/Line', 'tmp'))}\n")
+                      "    lineText: {fileID: 0}\n")
         lists = "".join(f"  - {K.ref(11400000, g, 2)}\n" for g in GAME_LISTS)
         return K.mono(go, GAMES_SCRIPT,
                       "  tiles:\n" + tiles + "  lists:\n" + lists + "  screenSwitcher: {fileID: 0}\n"
