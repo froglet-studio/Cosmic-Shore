@@ -57,8 +57,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private int presenceLobbyMaxPlayers = 100;
 
         [Tooltip("How often (seconds) to refresh the online player list and check for invites. " +
-                 "UGS lobby read rate limit is ~1/s per client, so 1.5s keeps us safely under " +
-                 "while staying responsive enough that invite arrival and member joins feel instant.")]
+                 "UGS Lobby allows 1 GET/s per player across all lobbies: 1.5s is 0.67/s for presence, " +
+                 "and the party session is read at most every 6s (LobbyRefreshScheduler), 0.83/s in all.")]
         [SerializeField] private float refreshIntervalSeconds = 1.5f;
 
         [Inject] private PlayerDataService playerDataService;
@@ -1271,6 +1271,18 @@ namespace CosmicShore.Gameplay
                 // every future guest. Sweep them out while we still can.
                 NetworkSceneObjectGuard.Sweep("before party session create (host start)");
 
+                // A session reference that survives to here is one this machine was NOT serving (the
+                // fast path above would have returned) and cannot serve now that the NetworkManager is
+                // down. CreateAsync no-ops on any non-null reference, so it used to "create" nothing and
+                // the state machine went InParty with no Relay host, while the boot's Relay wait retried
+                // against it for ~30 s (B33: the previous Play's session; a guest's dropped one too).
+                if (_partySessionService.ActiveSession != null)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.Party,
+                        $"[HostConnectionService] Leaving party session {_partySessionService.ActiveSession.Id} before creating our own: nothing here serves it.");
+                    await _partySessionService.LeaveAsync().AsMainThread();
+                }
+
                 await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
 
                 connectionData.IsPartyHost = true;
@@ -1560,9 +1572,11 @@ namespace CosmicShore.Gameplay
                     }
 
                     _consecutiveRefreshErrors++;
-                    if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
+                    if (PresenceErrorForcesRejoin(failure, _consecutiveRefreshErrors))
                     {
-                        CSDebug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors - reconnecting to presence lobby");
+                        CSDebug.LogWarning(failure == UgsFailureClass.Gone
+                            ? "[HostConnectionService] Presence lobby is gone - rejoining at once"
+                            : $"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors - reconnecting to presence lobby");
                         UgsRequestTelemetry.Count(UgsRequestCounter.PresenceForceReset);
                         _consecutiveRefreshErrors = 0;
                         // Clear the internal session reference so JoinOrCreateAsync will proceed.
@@ -1600,7 +1614,51 @@ namespace CosmicShore.Gameplay
                 if (_lobbyService.ActiveLobby == null)
                     SchedulePresenceRejoin();
                 else
+                {
                     ApplyPostLobbyJoinState();
+                    LeaveReconnecting();
+                }
+            }
+        }
+
+        /// <summary>
+        /// After a background presence rejoin (the refresh watchdog's, or the backoff retry's), put the
+        /// state machine back where the party really is (<see cref="StateAfterPresenceRejoin"/>). Not
+        /// part of <see cref="ApplyPostLobbyJoinState"/>: the front-door init takes its own
+        /// Reconnecting -> InPresenceLobby step right after it.
+        /// </summary>
+        private void LeaveReconnecting()
+        {
+            if (_stateMachine.CurrentState == PartyState.Reconnecting)
+                _stateMachine.TryTransition(StateAfterPresenceRejoin(PartySessionLive));
+        }
+
+        /// <summary>
+        /// Whether a presence refresh failure rebuilds the presence layer now. A lobby that is GONE for
+        /// us (deleted, <c>NotInLobby</c>, <c>SessionNotFound</c>) will not come back, so it rejoins at
+        /// once; anything else waits for <see cref="MAX_REFRESH_ERRORS_BEFORE_RECONNECT"/> in a row. In a
+        /// match the refresh runs every 10 s, so the three strikes cost Caleb 30 s of a dead lobby (B32).
+        /// </summary>
+        internal static bool PresenceErrorForcesRejoin(UgsFailureClass failure, int consecutiveErrors) =>
+            failure == UgsFailureClass.Gone || consecutiveErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT;
+
+        /// <summary>
+        /// Where the party state machine goes once the presence lobby is back after a
+        /// <see cref="PartyState.Reconnecting"/>: the party itself never left if its session is still
+        /// served (InParty), otherwise the menu's presence-only state. Nothing used to take it out of
+        /// Reconnecting, so a host whose presence lobby was rebuilt stayed there for the rest of the
+        /// session while its party kept running (B32).
+        /// </summary>
+        internal static PartyState StateAfterPresenceRejoin(bool partySessionLive) =>
+            partySessionLive ? PartyState.InParty : PartyState.InPresenceLobby;
+
+        /// <summary>True while this machine is in a party session it can still serve: hosting it, or connected to its host.</summary>
+        private bool PartySessionLive
+        {
+            get
+            {
+                var nm = NetworkManager.Singleton;
+                return PartySession != null && nm != null && nm.IsListening && (nm.IsServer || nm.IsConnectedClient);
             }
         }
 
@@ -1651,6 +1709,7 @@ namespace CosmicShore.Gameplay
                 _presenceRejoinPending = false;
                 _presenceRejoinAttempts = 0;
                 ApplyPostLobbyJoinState();
+                LeaveReconnecting();
                 CSDebug.LogVerbose(CSLogChannel.Party,
                     $"[HostConnectionService] Presence lobby rejoined - lobby: {_lobbyService.ActiveLobby.Id}");
             }
@@ -1962,7 +2021,12 @@ namespace CosmicShore.Gameplay
                 Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime < SESSION_CREATION_GRACE_PERIOD_SECONDS)
                 return;
 
-            try { await _partySessionService.RefreshAsync(); }
+            // B31: the GET runs at most every PARTY_SESSION_POLL_SECONDS (a reconcile after a leave
+            // always reads). Between GETs the roster below syncs from ISession.Players, which the
+            // SDK keeps current from its lobby events. Two GETs per 1.5 s tick was 1.33/s against
+            // UGS Lobby's 1 GET/s/player: a 429 about every 10 s while a party existed.
+            bool poll = bypassGraceGate || _scheduler.TryTakePartySessionPoll(Time.unscaledTime, _scheduler.IsBoosted);
+            try { if (poll) await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
                 // [stale-tick] The session this tick was polling is no longer the

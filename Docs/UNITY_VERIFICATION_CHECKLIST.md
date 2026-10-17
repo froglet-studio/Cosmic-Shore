@@ -265,6 +265,35 @@ puts the AI on the rail's - face, the side every ring sits on, 22 u off the rail
 4. Fail = it hits the rail more, stalls at a ring, or flips faces every ring. Undo: set `SkimHeight` back to 4.346 in
    `Tools/Build/author_skimrace_ai_config.py` (`REGATTA_LEARNED`) and re-run it.
 
+### 🔴 Party: B31-B33 fixed - refresh under the UGS read limit, the shared presence lobby survives its host, a new Play starts clean (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed** (full cause and fix in `Docs/PartySystem/BUGS.md` B31-B33):
+- **B31:** the refresh tick reads the party session at most every 6 s (15 s while boosted), not every 1.5 s,
+  and syncs the roster from the SDK's own player list every tick. The boosted presence poll is 1.1 s
+  (was 0.75 s). GETs/s: 0.83 at rest, 0.98 boosted (was 1.33 and 2.67). `LobbyRefreshScheduler`,
+  `HostConnectionService.RefreshPartyMembersAsync`.
+- **B32:** `PresenceLobbyService.LeaveAsync` deletes the presence lobby only when its host is alone in it. A
+  presence refresh that answers Gone rejoins at once. After a background rejoin the party state goes back
+  to `InParty` (party still served) or `InPresenceLobby`.
+- **B33:** `GameDataSO` (`ActiveSession`, `IsOfflineSession`) and `HostConnectionDataSO` (party flags) clear
+  at Play start (`SubsystemRegistration`), leaving a carried session in the background.
+  `EnsurePartySessionAsync` leaves a session it is not serving before creating its own.
+**Verified without the editor:** `PartyRefreshRecoveryTests` (10) plus the party suites, run as edit-mode
+tests on Amoebius (`Tools/Build/prisma_edit_mode_tests/run.sh`); `unity_refcompile` player and editor.
+**Verify in editor:**
+1. **B33 (one editor):** Play, wait for the menu, stop, Play again. The console shows no
+   `UpdateLocalPlayerProperties failed ... lobby not found` and no `[AuthScene] Relay session not ready`. The
+   menu arrives as fast as on the first Play. In the second Play's multiplayer log (if any), `HostingParty`
+   and `InParty` are more than a second apart.
+2. **B31 (two machines or MPPM main + P2):** party up and stay 10 minutes in the menu. No
+   `rate-limited - backing off` line on either. `net_logs.py show 1` reads `429s 0`. Invite, accept and a
+   member leaving still show on the other screen within about 2 s.
+3. **B32 (two machines):** the player who went online FIRST (it hosts the presence lobby) and the other
+   party up and start Regatta. The first leaves mid-race and stops Play. The other keeps racing (the leaver
+   flies on as AI) and gets no `Refresh error ... NotInLobby` x3. Its online list recovers. Its log has no
+   `->Reconnecting`, or one followed by `Reconnecting->InParty` within ~10 s.
+4. Back in the menu, invite again: the party re-forms.
+
 ### 🔴 Multiplayer test logs collect themselves; one Send to Claude carries every player's (`Ys-bleeding-edge`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 **What landed:** `NetTestLogs` (editor, `Assets/_Scripts/Editor/Diagnostics/`) keeps each editor's console from Play

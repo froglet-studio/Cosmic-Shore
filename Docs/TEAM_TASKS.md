@@ -460,19 +460,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
 
-### T-20261016-822d · open · dev · Multiplayer
+### T-20261016-822d · done · dev · Multiplayer
 - **Task:** Find and fix what the first real multiplayer logs showed: B31 (the party session refresh is rate-limited about every 10 s while a party exists), B32 (after a guest leaves mid-match, the host's party lobby answers NotInLobby and the host sits in Reconnecting) and B33 (in the editor, a second Play starts inside the first Play's dead party session, because the project skips the domain reload).
 - **Done when:** Each of B31-B33 in Docs/PartySystem/BUGS.md is root-caused and fixed, or closed with the reason, and a new two-machine log (net_logs.py show) shows it gone
 - **Who can take it:** Yash (party owner)
 - **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/PartySystem/BUGS.md B31-B33; Caleb's logs on bugledger/belac (python3 Tools/Build/net_logs.py collect)
+- **Done:** 2026-10-17, Root-caused and fixed 2026-10-17 (B31 GET budget, B32 presence leave deleted the shared lobby + stuck Reconnecting, B33 GameDataSO session carried across Plays); edit-mode tests on Amoebius. The proof by log is the retest task.
 
-### T-20261016-c76e · open · test · Multiplayer
+### T-20261016-c76e · done · test · Multiplayer
 - **Task:** Two-machine repro for B32 with both logs: host and guest party up on two PCs, start a Regatta match, the guest leaves mid-race, then the host waits 2 minutes in the menu and stops Play. Both editors send their logs by themselves.
 - **Done when:** net_logs.py collect shows ONE test with both machines (host/main and guest/main), and the host's timeline says whether it left Reconnecting
 - **Who can take it:** Caleb, Yash (offered)
 - **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/PartySystem/BUGS.md B32; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Multiplayer test logs' steps 7-9
+- **Done:** 2026-10-17, Folded into the B31-B33 retest task, whose step 3 is this repro with the fix in place.
 
 ### T-20261016-01ec · open · test · Regatta AI
 - **Task:** Run RhinoRampDriveTests and watch an AI Rhino race Regatta I1-I4 in the Third Eye: it should ramp on straights, brake ON the ramp before each ring, and only let go round sharp corners
@@ -571,3 +573,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered)
 - **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
 - **See:** Docs/REFACTOR_BACKLOG.md section 0 row S17
+
+### T-20261017-bb32 · open · test · Multiplayer
+- **Task:** Retest the B31-B33 party fixes in the editor: (1) Play, stop, Play again - no 'lobby not found' and no 'Relay session not ready' on the second Play; (2) two machines in a party, 10 minutes in the menu - no 'rate-limited' lines; (3) the player who went online first leaves a Regatta match mid-race and stops Play - the other stays InParty.
+- **Done when:** The four steps of the checklist entry 'Party: B31-B33 fixed' pass with both machines' logs sent (net_logs.py collect shows them), or a failure is noted with its log
+- **Who can take it:** Caleb, Yash (offered), Andrew
+- **Added:** 2026-10-17 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Party: B31-B33 fixed); Docs/PartySystem/BUGS.md B31-B33
