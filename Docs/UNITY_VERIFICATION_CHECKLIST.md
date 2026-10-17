@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 AI seat chips name their hull: hover label, (i) badge, vessel info card (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** the hull icons on the launch panel's AI chips (Regatta and every arena card with the ally hull
+picker) were too small to tell apart. `DomainAvatarChip.SetHullInfo` now names the hull: hovering a chip grows it to
+1.35x and shows the vessel's name in a dark pill under it; an (i) badge in the chip's top-right opens
+`VesselInfoPopup`, a 380 px card over the modal with the hull's icon, name, "<Domain> AI · <Element> vessel"
+(plus "opponent" on the card's pinned opponent seat), the Hangar's description and the ability names. Tap outside
+or ✕ closes it; it also closes with the modal or on a new card. On a chip with both a ✕ (kick) and the (i), the
+generated ✕ moves to the top-left. All of it is generated from primitives (no prefab change); `infoButton`,
+`hoverLabel` on the chip and `vesselInfoPopup` on the modal take authored art when it exists. Headless compile clean
+(`unity_refcompile` player config, 0 errors in project code, negative control fired). `/verify-unity` was not
+available.
+
+**Verify:** (1) Menu > Arena > Regatta. Add AI on two domains, tap their chips to pick two different hulls. (2)
+Hover each chip with the mouse: it grows and the hull's name shows under it, above the neighbouring chips/tiles.
+(3) Click the (i): the card opens centred over the modal with the right hull; tap outside it, then ✕, and both
+close it. Tapping the chip itself (not the (i)) still steps the hull. (4) On a host chip with the ✕, the ✕ is
+top-left and the (i) top-right, neither overlapping. (5) Close the modal with the card open, reopen: no card. (6)
+As a guest: an opponent chip shows the (i) and hover name but is not tappable for a pick.
+
 ### 🔴 AI difficulty (Easy / Medium / Hard) on every Arena card (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** the difficulty row only existed on the Arcade window. The headless compile is clean
@@ -6114,6 +6134,8 @@ no other vessel carries this asset, and no scene overrides the field.
 4. **Drift at zero throttle.** The Dolphin's `driftThrottlePolicy` is `Locked` and its `Grip` is 0,
    so a drift entered at speed freezes the velocity vector — but a drift entered at *rest* now has
    no floor pushing it along. Confirm that reads as "parked", not as a stuck/unrecoverable state.
+   *(2026-10-17: the shipped Dolphin flies the SCALAR model; the freeze comes from `holdSpeedWhileDrifting`, and
+   `driftThrottlePolicy` is back at `Live` because only the vector model reads it — `DOLPHIN_ENERGY_ECONOMY.md` §2a.)*
 5. **AI Dolphins** (Rampage, The Bends) still fly — the AI has no floor-specific logic, but an AI
    that lets the throttle go now actually stops.
 6. **Speed tunnel.** Cruise crosses the law's floor in the *other* direction: 78 was just above
@@ -7610,6 +7632,8 @@ left outside the hold: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERG
 boost carry recorded in `DOLPHIN_ENERGY_ECONOMY.md` §2: re-drifting at the peak of a discharge
 now pins the vessel near 357 while it banks the next boost. If that ratchets in play, clamp the
 captured value to the unboosted cruise target (78) in `RefreshDriftSpeedHold`.
+*(Decided for now, 2026-10-17: KEEP the carry - a skill move, and the Dolphin AI uses it. The numbers are 347 / 68
+today. `DOLPHIN_ENERGY_ECONOMY.md` §2.)*
 
 ---
 
@@ -7769,6 +7793,8 @@ so it is dragged down with it (357 → 350 on frame 1, ~139 within a second). No
 Under the vector model speed is STATE, so `Locked` freezes it at 357 for the drift's duration. That
 is why the Dolphin is on the vector model rather than reverted — a round-2 revert to scalar
 reinstated exactly this slowdown and was undone.
+*(2026-10-17: every branch's `Dolphin.prefab` is on the SCALAR model with `holdSpeedWhileDrifting: 1`, which pins
+the entry speed too, so the slowdown above does not occur; that setup is kept for now - `DOLPHIN_ENERGY_ECONOMY.md` §2a.)*
 
 **Verify in editor (in order):**
 1. **Squirrel — drift recovery (the point).** SkimRace or freestyle. Get to speed, hold LT into a
