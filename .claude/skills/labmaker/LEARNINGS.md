@@ -596,21 +596,21 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: README round 15 "Checked" (through the wormhole) and "Found".
 - Promoted: no
 
-### L-STU-64 — Gate a WebGL port of a shipped shader by transform feedback, with ZERO outliers allowed: it finds the shipped shader's float bugs
+### L-STU-88 — Gate a WebGL port of a shipped shader by transform feedback, with ZERO outliers allowed: it finds the shipped shader's float bugs
 - Lab: Collision Burst Lab · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
 - What happened: `parity.py` reads the page's vertex shader back through WebGL2 transform feedback and compares every vertex with C++ executing the shipped HLSL on the same mesh. An outlier allowance would have hidden three real defects, all now fixed in the shipped HLSL: bloom petals picked by float noise when a centroid sat exactly on a face diagonal (~80 vertices per case, ~1 radius off; fixed with a tie epsilon), `(1 − cos a)/κ` cancelling in float32 at small angles (fixed as `2 sin²(a/2)/κ`), and the lab building mesh centroids in doubles where C# uses float (`Math.fround`). Mechanical trap: transform feedback returned all zeros with `GL_INVALID_OPERATION` because the feedback buffer was still bound to `ARRAY_BUFFER` — unbind it after creating it and check `gl.getError()` after the draw.
 - Do instead: translate the shipped shader mechanically (build step, `--check`), gate it per vertex with no outlier share, and plant controls (the next kind, a doubled dial) that must fire. When parity fails on a few vertices, suspect the shipped code before the port.
 - Evidence: `Tools/Build/prism_collision_burst_lab/parity.py` (`OUTLIER_SHARE = 0.0`); `PrismCollisionBurst.hlsl` `PRISM_BURST_PETAL_TIE`
 - Promoted: no
 
-### L-STU-65 — A camera that frames the scene must move with whatever moves the scene (the seed); read the screenshot at a non-zero seed
+### L-STU-89 — A camera that frames the scene must move with whatever moves the scene (the seed); read the screenshot at a non-zero seed
 - Lab: Collision Burst Lab · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
 - What happened: each seed shifts every pose 7.31 units in z so the per-prism seed hash changes; the line-up camera targeted the origin. Seed 0 looked perfect; any Replay (seed + 1) and `verify_lab.cjs`'s `reset(7)` left an empty stage, and the gate still passed (a WebGL stage skips the blank check). Only reading `desktop.png` showed it.
 - Do instead: derive the camera target from the same "home" the scene items use. Read the screenshot the verifier takes after `reset(seed)`, not only a fresh load.
 - Evidence: `lab.src.html` `camTarget`
 - Promoted: no
 
-### L-STU-66 — "Looks like X from a distance" is a SILHOUETTE claim before it is a colour claim; and a ramp of the right curve can still read as a wipe
+### L-STU-90 — "Looks like X from a distance" is a SILHOUETTE claim before it is a colour claim; and a ramp of the right curve can still read as a wipe
 - Lab: Collision Burst Lab round 2 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
 - What happened: a steal's shed was built so its coverage runs the grade's exact smoothstep (proven equal to the executed `PrismColorLerp`), so its mean colour IS the grade's. Scored on blurred rendered pixels against the grade, the bloom (0.214) and the unravel (0.220) still read further from it than an instant colour snap (0.158), because their petals and ribbons grow the silhouette by a third (size 1.32–1.35). The flake, whose silhouette barely changes (1.10), scored 0.120 but plateaued at ~0.104 under every dial: it reveals the colour as a front along the prism, a wipe, not a uniform change.
 - Do instead: before tuning colour or timing to match an effect "from a distance", score the silhouette (size column) and the spatial order of the change, not only the mean; when the ordinary effect is a colour change, blur all three channels (a hue change at equal brightness hides from a luminance blur). Give the scorecard a band (the ordinary effect, slightly late) and a negative (the change snapped) so "close" has a scale.
@@ -1014,3 +1014,67 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `Assets/_Scripts/Controller/Vessel/BrittleStarCord.cs` and its tests in `BrittleStarTests` (arrival order,
   saber straightness, no stretch, a minute bounded, 30 vs 144 fps); the studio's `cordStep` is the line-for-line port.
 - Promoted: no
+
+### L-STU-82 — A control that equals Hard to the decimal is a bug until shown otherwise, even when equality is plausible
+- Lab: Shrike Studio round 1 (`Docs/Studios/VesselStudio/shrike.html`) · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15 · (L-STU-67 to 81 are claimed on
+  other branches; these ids skip them)
+- What happened: Den Defense's "Hard, no array" column matched Hard byte for byte, twice, for two different bugs. First
+  the AI let go of the paint the moment it turned to lance: of each burst only the first missile hit, the rest flew out
+  their 8 s life, and the run fell at the same 209.3 s as the no-array run. Later, at I4, the boss-wave test `wave % 2 === 2` could never be true, so no creature ever spawned and
+  nothing needed missiles. Both read as a believable finding ("the lance is enough") until the runs were traced.
+- Do instead: when a control ties exactly, count what the ablated piece DID in the full run (missiles fired and what
+  each one hit; creatures spawned). A real "worth nothing" shows the piece working and not mattering; a bug shows it not working.
+  And test every modulo/latch against the values it must fire on (L-ECO-5 is the same family).
+- Evidence: `Docs/Studios/SHRIKE.md` §5 finding 7; the trace scripts behind `Docs/Studios/Shrike/shrike_score.cjs`.
+- Promoted: no
+
+### L-STU-83 — A survival score decided by one event measures luck; make the loss a sum of many events
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
+- What happened: the first Den Defense ended the run when any asteroid reached the den's core. Five seeds of one cell
+  spread from 75 s to 296 s, so Easy, Medium and Hard overlapped completely. Wearing the den down instead (a core hit
+  breaks 3 of its 40 blocks; it falls with a quarter left) cut the band to about +-20 s, and the levels separated.
+- Do instead: before reading a survival or "first failure" column, print one cell over five seeds. If the spread is
+  wider than the gaps you hope to measure, change the loss into an accumulated quantity (labelled lab-only, and put
+  to the designer) rather than adding seeds.
+- Evidence: `Docs/Studios/SHRIKE.md` §3 (Den Defense) and §4.
+- Promoted: no
+
+### L-STU-84 — When an easier AI level beats Hard, find what Hard spends its aim on; change one thing per measurement
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
+- What happened: in Den Defense, Medium outlived Hard at I1 and I2 (288.9 s against 274.4 s, 242.4 against 228.8). Hard
+  painted asteroids for missiles while its hitscan lance (0.48 s cooldown in a nest) could have killed them on the spot,
+  and painting holds the nose on one target until the missiles land. The fix was the paint rule (paint creatures only).
+  It was shipped together with a target-pick hysteresis, and the first learning written here credited the hysteresis.
+  A control copy with the hysteresis removed showed the opposite: Hard still beat Medium and survived longer without it
+  (I1 300 s against 283.4), so the hysteresis was taken out.
+- Do instead: when an easier level wins, trace what the Hard pilot does with its time (here: frames spent painting
+  against lances fired). Change one thing per scorecard run, and before you write down why a fix worked, re-run with
+  each half removed (L-GEN-3 for your own changes).
+- Evidence: `Docs/Studios/SHRIKE.md` §5 finding 3; `shrike.html` `aiDen` (`worth`).
+- Promoted: no
+
+### L-STU-85 — A lab publishes its own artifact; a hub's "one artifact" rule is the hub's, not every lab's
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · By: Garrett (owner), 2026-10-15
+- What happened: the Vessel Studio's rule "never publish a second studio artifact" (its skill §0, a `CLAUDE.md` line,
+  the vessel-work prompt hook) read as covering any lab about a vessel. So the Shrike lab, built with `/labmaker`, was
+  steered into the shared hub: a catalog row, a hub card, and a publish blocked on reading someone else's artifact.
+  The owner's call: "labmaker should be capable of making artifacts just fine ... I just want to explore here and then
+  bring our insights into Unity."
+- Do instead: publish every lab as its own private artifact (§6), with its own decision log. A lab page that loads a
+  hub's shared scripts ships them beside it through `files` and drops the hub-only parts (the Shrike's
+  `build_standalone.py` strips the Sync panel and the hub links, and refuses to build when they move). Joining a hub
+  is optional, later, and its owner's decision. The three places the rule lived now say it is the hub's only.
+- Evidence: `SKILL.md` §6 and §7; `CLAUDE.md` vessel section; `.claude/hooks/vessel_studio_nudge.py`;
+  `/vessel-studio` §0; https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy.
+- Promoted: §6
+
+### L-STU-86 — A vessel lab carries four minigames, one per element, and the element decides the kind
+- Lab: all vessel labs (raised on the Shrike Studio) · Branch: `cece/affectionate-clarke-s738vh` · By: Garrett (owner), 2026-10-15
+- What happened: the Shrike lab flew the two minigames its class document named (Thread the Needle, Den Defense). The owner
+  set a fleet rule: "time is always a racing game, space a destruction game, mass a creation game, and charge a vessel on
+  vessel dogfight", so every vessel's lab tests the kit against the same four kinds of play.
+- Do instead: build the four kinds (`SKILL.md` §1.5). Slot a document's own game by its kind; build the missing kinds as
+  lab proposals. The Shrike lab has the Time race (Thread the Needle); Den Defense is a defense game (not one of the four);
+  Space (Bunker Buster), Mass and Charge are its next round.
+- Evidence: `SKILL.md` §1.5; `Docs/Studios/SHRIKE.md` §6.
+- Promoted: §1.5

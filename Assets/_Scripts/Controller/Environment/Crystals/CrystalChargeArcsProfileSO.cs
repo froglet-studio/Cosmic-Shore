@@ -94,6 +94,14 @@ namespace CosmicShore.Gameplay
                  "them all cost more than every other menu script together (2026-10-15). It wakes at 1.25x this. 0 = never sleep.")]
         [SerializeField, Range(0f, 200f)] float sleepBelowScreenRadiusPixels = 24f;
 
+        [Tooltip("Between the sleep size and this many pixels of radius, a crystal rebuilds its light every OTHER frame " +
+                 "(staggered across crystals), so a mid-distance omni writhes at half the rate it is drawn - at that " +
+                 "size a bolt is a pixel or two wide. Decided 2026-10-16 with the 24 px sleep. 0 = always every frame.")]
+        [SerializeField, Range(0f, 400f)] float halfRateBelowScreenRadiusPixels = 64f;
+
+        /// <summary>Radius on screen, in pixels, under which the light rebuilds every other frame (0 = never).</summary>
+        public float HalfRateBelowScreenRadiusPixels => halfRateBelowScreenRadiusPixels;
+
         /// <summary>Radius on screen, in pixels, under which a crystal's light sleeps (0 = never).</summary>
         public float SleepBelowScreenRadiusPixels => sleepBelowScreenRadiusPixels;
 

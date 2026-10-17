@@ -27,8 +27,16 @@ namespace CosmicShore.Editor
     ///
     /// <para>What counts as a multiplayer test: a virtual player always; the main editor when its record
     /// shows another player (a client approved other than its own, a client left, a leaver handed to the
-    /// AI, a join refused or bounced, the role client or spectator) or when a virtual player's editor is
-    /// running. A solo online session (presence lobby only) writes nothing.</para>
+    /// AI, a join refused or bounced, a party joined, the role client or spectator) or when a virtual
+    /// player's editor is running. A GUEST is caught too: its record never approves anyone, so the role is
+    /// also sampled every few seconds during Play and a client role seen at any point counts. A solo online
+    /// session (presence lobby only) writes nothing.</para>
+    ///
+    /// <para>One Play is one session: the project enters Play without a domain reload
+    /// (<c>EditorSettings</c> Enter Play Mode Options), so the recorder's timeline and the UGS counters are
+    /// reset when Play starts. Without that a file carried every earlier Play's events and totals since the
+    /// editor opened, and an earlier test's "client 1 approved" was taken as this one's evidence (Caleb's
+    /// second log of 2026-10-16).</para>
     /// </summary>
     [InitializeOnLoad]
     public static class NetTestLogs
@@ -58,6 +66,9 @@ namespace CosmicShore.Editor
         static readonly Queue<Line> Lines = new();
         static int _dropped, _errors, _warnings;
         static bool _capturing;
+        static string _sawRole;            // "client" / "spectator" if seen at any point this Play
+        static double _nextRoleSample;
+        const double RoleSampleSeconds = 2.0;
         static DateTime _startedUtc;
         static readonly System.Diagnostics.Stopwatch Clock = new();
 
@@ -66,16 +77,17 @@ namespace CosmicShore.Editor
             if (Application.isBatchMode) return;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             // With domain reload on entering Play, this static constructor runs again inside the play
-            // domain, before the first scene's Awake: start there so nothing early is lost.
-            if (EditorApplication.isPlayingOrWillChangePlaymode && !_capturing) Begin();
+            // domain, before the first scene's Awake: start there so nothing early is lost. The reload
+            // already cleared the recorder, and a reload DURING Play must not wipe the session.
+            if (EditorApplication.isPlayingOrWillChangePlaymode && !_capturing) Begin(resetRecord: false);
         }
 
         static void OnPlayModeChanged(PlayModeStateChange change)
         {
             try
             {
-                if (change == PlayModeStateChange.ExitingEditMode) Begin();
-                else if (change == PlayModeStateChange.EnteredPlayMode && !_capturing) Begin();
+                if (change == PlayModeStateChange.ExitingEditMode) Begin(resetRecord: true);
+                else if (change == PlayModeStateChange.EnteredPlayMode && !_capturing) Begin(resetRecord: false);
                 else if (change == PlayModeStateChange.ExitingPlayMode) Finish();
             }
             catch (Exception e)
@@ -85,8 +97,14 @@ namespace CosmicShore.Editor
             }
         }
 
-        static void Begin()
+        static void Begin(bool resetRecord)
         {
+            if (resetRecord)
+            {
+                // Before the scene loads, so this Play's first mark starts a fresh timeline.
+                NetSessionRecorder.Reset();
+                UgsRequestTelemetry.Reset();
+            }
             lock (Gate)
             {
                 Lines.Clear();
@@ -96,7 +114,29 @@ namespace CosmicShore.Editor
                 if (!_capturing) Application.logMessageReceivedThreaded += OnLog;
                 _capturing = true;
             }
+            _sawRole = null;
+            _nextRoleSample = 0;
+            EditorApplication.update -= SampleRole;
+            EditorApplication.update += SampleRole;
             SessionState.SetBool(WroteKey, false);
+        }
+
+        /// <summary>
+        /// A guest's record approves nobody and sees nobody leave, and by Play stop it may be back in a solo
+        /// party, so its role at the end proves nothing. Sample it while playing; one sighting is enough.
+        /// </summary>
+        static void SampleRole()
+        {
+            if (!EditorApplication.isPlaying || _sawRole != null) return;
+            double now = EditorApplication.timeSinceStartup;
+            if (now < _nextRoleSample) return;
+            _nextRoleSample = now + RoleSampleSeconds;
+            try
+            {
+                var role = NetSessionRecorder.RoleProvider?.Invoke();
+                if (role == "client" || role == "spectator") _sawRole = role;
+            }
+            catch { /* the provider reads live scene objects; a teardown race is not evidence */ }
         }
 
         // Any thread. Allocation-light, never throws.
@@ -136,6 +176,7 @@ namespace CosmicShore.Editor
                 if (!_capturing) return;
                 _capturing = false;
                 Application.logMessageReceivedThreaded -= OnLog;
+                EditorApplication.update -= SampleRole;
                 lines = Lines.ToArray();
                 Lines.Clear();
                 dropped = _dropped; errors = _errors; warnings = _warnings;
@@ -144,6 +185,7 @@ namespace CosmicShore.Editor
             var record = NetSessionRecorder.BuildRecord();
             bool clone = IsVirtualPlayer(Application.dataPath, out var vpId);
             string why = clone ? "MPPM virtual player" : MultiplayerEvidence(record);
+            if (why == null && _sawRole != null) why = "was a " + _sawRole + " during the session";
             if (why == null && AnyVirtualPlayerRunning(MainProjectRoot(Application.dataPath)))
                 why = "MPPM virtual players running";
             if (why == null) return;   // solo play: nothing to collect
@@ -188,6 +230,10 @@ namespace CosmicShore.Editor
             {
                 switch (ev.e)
                 {
+                    case "party":
+                        // Joining a party is joining another player (a solo host only ever hosts).
+                        if ((ev.detail ?? "").EndsWith("->JoiningParty", StringComparison.Ordinal)) return "joined another player's party";
+                        break;
                     case "clientApproved":
                         var id = (ev.detail ?? "").Split(' ')[0];
                         if (id.Length > 0 && id != "0") return "client " + id + " approved";
@@ -264,20 +310,21 @@ namespace CosmicShore.Editor
             return false;
         }
 
-        /// <summary>The first stack frame that is not Unity's logging plumbing.</summary>
-        static string FirstGameFrame(string stack)
+        /// <summary>
+        /// The first stack frame that is not the logging itself. Unity's native ("Full") trace starts with
+        /// its stack walker and DebugLogHandler, so the Bug Ledger's plumbing filter decides (Caleb's first
+        /// logs named <c>0x... (Unity) StackWalker::ShowCallstack</c> for every line).
+        /// </summary>
+        internal static string FirstGameFrame(string stack)
         {
             if (string.IsNullOrEmpty(stack)) return null;
             foreach (var raw in stack.Split('\n'))
             {
                 var f = raw.Trim();
-                if (f.Length == 0) continue;
+                if (f.Length == 0 || f.Contains("StackTraceUtility") || BugLedger.IsPlumbing(f)) continue;
                 if (f.StartsWith("UnityEngine.Debug", StringComparison.Ordinal) ||
-                    f.StartsWith("UnityEngine.Logger", StringComparison.Ordinal) ||
-                    f.StartsWith("UnityEngine.DebugLogHandler", StringComparison.Ordinal) ||
-                    f.StartsWith("CosmicShore.Utility.CSDebug", StringComparison.Ordinal) ||
-                    f.Contains("StackTraceUtility")) continue;
-                return f;
+                    f.StartsWith("UnityEngine.Logger", StringComparison.Ordinal)) continue;
+                return BugLedger.StripNativePrefix(f);
             }
             return null;
         }

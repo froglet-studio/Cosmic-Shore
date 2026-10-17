@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
             public float BeatDepth;
         }
 
-        enum Phase { Forming, Standing, Annihilating, Gone }
+        enum Phase { Forming = 0, Standing = 1, Annihilating = 2, Gone = 3 }
 
         /// <summary>Annihilation when the world it stands in retires — kept inside the cell's suction.</summary>
         const float RetireAnnihilateSeconds = 0.9f;

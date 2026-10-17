@@ -161,8 +161,7 @@ namespace CosmicShore.UI
                 };
                 child.transform.SetParent(root.transform, false);
 
-                var widget = child.GetComponent<MouseFlightWidget>();
-                if (widget == null)
+                if (!child.TryGetComponent(out MouseFlightWidget widget))
                 {
                     s_installFailed = true;
                     Destroy(root);

@@ -450,7 +450,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done when:** Checklist items 9-12 in Docs/UNITY_VERIFICATION_CHECKLIST.md pass (or each failure is filed as a dev task) and PrismCollisionBurstTests are green
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-12); Docs/Studios/COLLISION_BURST_LAB.md rounds 11-12
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-12); Docs/Studios/COLLISION_BURST_LAB.md rounds 11-13
 
 ### T-20261017-9cab · open · decision · Prisms
 - **Task:** Three calls the round-11/12 burst leaves: (1) round 13 tripled the spread (burst 0.36 / drift 0.216): the level-0 cloud is now 2.57 R at 2 s against the old explosion's 1.78 R - confirm in game; (3) round 12's per-death variety (fragmentVariety 0.5): judge it on the lab's Neighbours view - lower it if the deaths read too unalike; (2) your decision set the grade length to 2.2 s, but that is MaterialPropertyAnimator.DefaultTransitionSeconds, every prism colour change in the game - not adopted; adopt or not.
@@ -473,6 +473,34 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
 
+### T-20261017-cb31 · open · test · vessels
+- **Task:** Fly the Shrike in Menu_Main freestyle and run its editor checklist (modes on X/RB/B, LT eyepiece with crosshairs, RT per mode, docking, Mass detach, crystal flora, missile count)
+- **Done when:** Every step of the Shrike entries in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or filed as a bug
+- **Who can take it:** Yash, or Garrett (vessels)
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Shrike entries); Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+
+### T-20261017-868c · open · test · vessels
+- **Task:** Shrike in a 2-player match: docking, nests, flora missiles and the lance agree on both machines
+- **Done when:** Two peers see the same docks, nests and missiles; scored hits land once
+- **Who can take it:** Yash (multiplayer)
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md section 5
+
+### T-20261017-114a · open · decision · vessels
+- **Task:** Shrike level-5 upgrades for Charge, Mass and Time (Space is Void Pierce)
+- **Done when:** Three upgrades named in the Shrike ability map
+- **Who can take it:** Garrett
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md section 7
+
+### T-20261017-d598 · open · dev · vessels
+- **Task:** Bring the Shrike Studio artifact up to the Unity redesign (modes on RT, LT eyepiece, crystal flora, Mass detach) and give it one minigame per element
+- **Done when:** shrike.html plays the shipped controls and has Time race, Space destruction, Mass creation, Charge dogfight
+- **Who can take it:** Garrett (vessels), any session
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Docs/Studios/SHRIKE.md section 0 and 6; .claude/skills/labmaker/SKILL.md section 1.5
+
 ### T-20261016-92b0 · done · decision · Regatta AI
 - **Task:** cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than bleeding-edge's - pick one before it merges (learn_drives_from_flights.py writes only fields both share, so either works)
 - **Done when:** The choice is recorded in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md and the other branch is reconciled
@@ -488,19 +516,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
 
-### T-20261016-822d · open · dev · Multiplayer
+### T-20261016-822d · done · dev · Multiplayer
 - **Task:** Find and fix what the first real multiplayer logs showed: B31 (the party session refresh is rate-limited about every 10 s while a party exists), B32 (after a guest leaves mid-match, the host's party lobby answers NotInLobby and the host sits in Reconnecting) and B33 (in the editor, a second Play starts inside the first Play's dead party session, because the project skips the domain reload).
 - **Done when:** Each of B31-B33 in Docs/PartySystem/BUGS.md is root-caused and fixed, or closed with the reason, and a new two-machine log (net_logs.py show) shows it gone
 - **Who can take it:** Yash (party owner)
 - **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/PartySystem/BUGS.md B31-B33; Caleb's logs on bugledger/belac (python3 Tools/Build/net_logs.py collect)
+- **Done:** 2026-10-17, Root-caused and fixed 2026-10-17 (B31 GET budget, B32 presence leave deleted the shared lobby + stuck Reconnecting, B33 GameDataSO session carried across Plays); edit-mode tests on Amoebius. The proof by log is the retest task.
 
-### T-20261016-c76e · open · test · Multiplayer
+### T-20261016-c76e · done · test · Multiplayer
 - **Task:** Two-machine repro for B32 with both logs: host and guest party up on two PCs, start a Regatta match, the guest leaves mid-race, then the host waits 2 minutes in the menu and stops Play. Both editors send their logs by themselves.
 - **Done when:** net_logs.py collect shows ONE test with both machines (host/main and guest/main), and the host's timeline says whether it left Reconnecting
 - **Who can take it:** Caleb, Yash (offered)
 - **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
 - **See:** Docs/PartySystem/BUGS.md B32; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Multiplayer test logs' steps 7-9
+- **Done:** 2026-10-17, Folded into the B31-B33 retest task, whose step 3 is this repro with the fix in place.
 
 ### T-20261016-01ec · open · test · Regatta AI
 - **Task:** Run RhinoRampDriveTests and watch an AI Rhino race Regatta I1-I4 in the Third Eye: it should ramp on straights, brake ON the ramp before each ring, and only let go round sharp corners
@@ -565,9 +595,51 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md §2 and §2a
 
+### T-20261017-8cc0 · open · test · Regatta AI
+- **Task:** Watch the AI hulls race their own lines in Regatta (Third Eye, trails on): Rhino, Manta, Dolphin, Stoat should fly between two rails outside the braid's core, never crossing a rail, the Rhino widest; run RegattaRaceLineTests; then fly each hull yourself a few races so learn_drives_from_flights.py can set its line from you
+- **Done when:** tests pass, the lines look right on I1-I4, and each hull has 3 finished flights
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Every Regatta AI hull races its own line)
+
+### T-20261017-2215 · open · test · Performance
+- **Task:** Try the after-play confirmation and the Project Record in Unity (2026-10-17): stop Play after a run that leaves something new; the small window says what went to Claude (SENDING -> SENT) and closes by itself; Project record ▸ expands into Overview / Performance / Network / AI flights / Errors with Ys-bleeding-edge and bleeding-edge's performance status and your sends; also FrogletTools > Diagnostics > Project Record. Say what to change.
+- **Done when:** The six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-17, after-play confirmation) pass, or what to change is written here
+- **Who can take it:** Yash (asked for it)
+- **Added:** 2026-10-17 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/DIAGNOSTICS.md (The after-play confirmation and the Project Record)
+
 ### T-20261017-e2c3 · open · decision · AI training
 - **Task:** Before storing AI training flights in UGS, read Docs/AI_SYSTEM/AI_DATA_IN_UGS.md and talk to Yash or Garrett: per-race summaries in Cloud Save, full flights unchanged in a file store, lossless compression only
 - **Done when:** the storage choice is recorded in AI_TRAINING_PLAN.md §5.2 (with T-20261015-0064)
 - **Who can take it:** Shombith (UGS owner), with Yash and Garrett
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/AI_DATA_IN_UGS.md
+
+### T-20261017-5109 · open · test · Refactor
+- **Task:** Open Ys-bleeding-edge in the Unity Editor once after the 2026-10-17 basic refactor pass (enum numbering, TryGetComponent, 3 inspectors moved to Assets/_Scripts/Editor, dead Find branches): let it compile, then open a CameraSettingsSO, a ShapeDefinition and a UniversalStatsProvider and check each custom inspector still draws.
+- **Done when:** Editor compiles with no new console errors and the three custom inspectors draw; note the result in Docs/REFACTOR_BACKLOG.md section 0.
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
+- **See:** Docs/REFACTOR_BACKLOG.md section 0
+
+### T-20261017-4c56 · open · dev · Refactor
+- **Task:** Delete the measured-unreferenced vestiges the 2026-10-17 session could not delete (blocked by its permission check): Assets/_Scripts/System/Architectures/ (LoginEventBus.cs, a static event bus nothing calls, plus folder metas) and the stale namespaced copy Assets/_Scripts/Controller/IO/_Input Mapping/InputActionsAsset.cs (+ folder meta; the live generated wrapper is Game/IO/_Input Mapping/InputActionsAsset.cs). Also drop the Controller/IO/_Input Mapping/ entry from Tools/Build/check_console_logging.py TOOL_PATHS.
+- **Done when:** git rm'd on Ys-bleeding-edge, Unity compiles, check_console_logging.py 0 problems.
+- **Who can take it:** Yash (offered)
+- **Added:** 2026-10-17 by Yash (session) (`Ys-bleeding-edge`)
+- **See:** Docs/REFACTOR_BACKLOG.md section 0 row S17
+
+### T-20261017-bb32 · open · test · Multiplayer
+- **Task:** Retest the B31-B33 party fixes in the editor: (1) Play, stop, Play again - no 'lobby not found' and no 'Relay session not ready' on the second Play; (2) two machines in a party, 10 minutes in the menu - no 'rate-limited' lines; (3) the player who went online first leaves a Regatta match mid-race and stops Play - the other stays InParty.
+- **Done when:** The four steps of the checklist entry 'Party: B31-B33 fixed' pass with both machines' logs sent (net_logs.py collect shows them), or a failure is noted with its log
+- **Who can take it:** Caleb, Yash (offered), Andrew
+- **Added:** 2026-10-17 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Party: B31-B33 fixed); Docs/PartySystem/BUGS.md B31-B33
+
+### T-20261017-1154 · open · test · QA
+- **Task:** EditMode Run All on Ys-bleeding-edge (or a bleeding-edge that contains it): the 23 remaining DT-003 failures were fixed offline 2026-10-17 without an editor
+- **Done when:** Window > General > Test Runner > EditMode > Run All is fully green (or only CrystalHullFusionBakeTests.ShippedBakes_AreCurrent red, with its message pasted into DT-003)
+- **Who can take it:** Yash (offered), Caleb or Andrew (QA)
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/QA/DEV_TASKS.md DT-003

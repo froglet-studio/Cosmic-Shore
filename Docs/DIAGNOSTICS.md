@@ -263,13 +263,14 @@ occurrence.
 - The `Ignore`, `Pause`, `Reopen`, `ResolveNow`, `Delete` and `SetSeverity` calls remain in
   `BugLedger`'s API for tools and Claude; no person is asked to drive them.
 
-### Send to Claude — the only UI
+### Send to Claude — automatic, then a confirmation
 
 `BugHuntAutoSend` (editor, `[InitializeOnLoad]`). When a play test ends and it logged a red error
 Claude does not have yet (an OPEN issue seen this run whose `id:regressions` fingerprint was never
 sent), or made a new performance capture (`PerfAutoCapture`), AI training record or multiplayer
 log, it **sends at once, with no question** (Yash, 2026-10-16: "make send to Claude automatic too, no
-question"; it was a Send / Not now dialog until then) and logs one console line saying what went. The
+question"; it was a Send / Not now dialog until then), logs one console line saying what went, and shows a
+small **confirmation** (no question) that opens into the **Project Record**: see the next section. The
 fingerprints are recorded (`BugLedgerSettings.SentFingerprints`), so the same error is never sent
 twice; only a new error, or one that came BACK after a fix (its regression count moved), sends again.
 
@@ -330,6 +331,36 @@ but plumbing, so its sender could not be found.)
 **Older path, still read:** issues published before this into a branch's working-tree
 `BugLedger/shared/issues/` are still imported at load and still read by `collect`.
 
+### The after-play confirmation and the Project Record
+
+`BugHuntSendConfirmation` (editor window) and `ProjectRecord` (its data). Yash, 2026-10-17: "bring the pop-up back as a
+confirmation only, with no question ... minimized ... you can expand it ... performance, network, flights, errors ... a
+project diagnosis history ... Ys-bleeding-edge and bleeding-edge as a performance info". It replaced nothing: the send
+still happens by itself; this only says what happened.
+
+- **Small (after every send).** A small floating window: a pill (SENDING, SENT, UP TO DATE, NOT SENT, from
+  `BugLedgerSender.LastOutcome`), what went (the same summary as the console line), where it went
+  (`bugledger/<user>`), and two buttons, **Project record ▸** and **Close**. It closes by itself 20 s after the send
+  ends unless it is expanded or the pointer is over it. A run with nothing new sends nothing and shows nothing.
+- **Expanded: the Project Record.** Five tabs, each starting with one line on what that data is for:
+  - **Overview**: one block per branch on the performance path (gates, regressions, the Amoebius verdict, captures
+    still owed, the first next steps), then your last five sends and how many files of each kind are on your branch.
+  - **Performance**: per branch, its regressions, Amoebius verdicts, latest captures (who, scene, CPU, GC, verdict),
+    next steps and open performance tasks; then your performance files.
+  - **Network** and **AI flights**: what they are for, and your files on your branch, newest first.
+  - **Errors**: this machine's ledger (open / validating / ignored, the open titles), then the team's console bugs as
+    each branch's status reports them, then your error logs.
+- **Where the numbers come from.** Each branch's own `Docs/perf/status.json` (written by `Tools/Build/perf_hunt.py`'s
+  sweep and status runs, daily and in every performance session), fetched as `origin/<branch>`. The branch list and
+  each branch's role are `branchFlow` in that file (`BRANCH_FLOW` in `perf_hunt.py`): **Ys-bleeding-edge first**,
+  where the performance work lands (Yash), then **bleeding-edge**. Your sends come from `origin/bugledger/<user>`.
+  bleeding-edge's copy is kept current by the daily check (`.github/workflows/perf-daily.yml`, job `publish`), which
+  commits its status there every day; if branch protection refuses the bot, it publishes to the `perf-status` branch
+  (`<branch>/status.json`) instead and the record reads whichever copy is newer.
+  Everything is fetched and read on a background thread; the working tree, index and current branch are never
+  touched. **Refresh from GitHub** fetches again.
+- **Any time:** **FrogletTools > Diagnostics > Project Record** opens the expanded record without a send.
+
 ### Multiplayer test logs — collected by themselves (Unity and Amoebius)
 
 Yash, 2026-10-15: *"auto collect the logs whenever we test the game, just like bug hunt and
@@ -346,8 +377,12 @@ oldest lines go first if the file would pass 450 KB, and `dropped` counts them).
 **Unity (MPPM).** `NetTestLogs` (editor, `[InitializeOnLoad]`) keeps the console from Play start and,
 at Play stop, writes the file **if this was a multiplayer test**: always in an MPPM virtual player;
 in the main editor when its record shows ANOTHER player (role client/spectator, a client approved
-other than its own client 0, a client left, a leaver handed to the AI, a join refused or bounced) or
-a virtual player's editor is running. Solo online play (the presence lobby only) writes nothing.
+other than its own client 0, a client left, a leaver handed to the AI, a join refused or bounced, a
+party joined) or a virtual player's editor is running. A guest's record approves nobody, so its role
+is also sampled every 2 s during Play: a client role seen at any point counts. Solo online play (the
+presence lobby only) writes nothing. **One Play is one session**: the project enters Play without a
+domain reload, so `NetTestLogs` resets the recorder's timeline and `UgsRequestTelemetry` when Play
+starts. Before 2026-10-16 a file carried every earlier Play's events and totals.
 Virtual players run from `Library/VP/<id>/`, so they write into the MAIN project's
 `Logs/NetSessions/` (peer = the MPPM tag, e.g. `p2`, else `vp-<id>`); the main editor's file is
 `main`. The main editor waits 4 s for the virtual players' files, then sends them with no
@@ -366,8 +401,11 @@ closes player 2's window first so it writes its log (it is only killed if it doe
 5 s). Closing a player some other way also writes its log; a killed process writes nothing.
 
 **Claude's side:** `python3 Tools/Build/net_logs.py collect` lists every test found on every
-`origin/*` branch (`bugledger/*` included), grouping files from the same user and engine within
-2 minutes of each other into one test, `main` first. `show <n|id>` prints each player's summary
+`origin/*` branch (`bugledger/*` included). Files from the same user and engine within 2 minutes of
+each other are one test, and so is another user's file whose Play overlapped them: a test between
+two machines, shown as `<user>/<peer>`. The record's `429s` also shows the console's count of
+rate-limit warnings when the two differ. A pre-fix file holding earlier Plays is marked "carried
+over" and cut to its own Play's events. `show <n|id>` prints each player's summary
 (role, CLEAN/DIRTY, errors, warnings, lobby reads, 429s, events) and ONE merged wall-clock
 timeline: lifecycle events plus warnings and errors (`--lines` adds every log line). `--dir PATH`
 reads a local folder instead (`Logs/NetSessions`, or Amoebius's `netlogs`); `--self-test` holds the
@@ -454,6 +492,7 @@ a clean run. Copy that shape.
 | Ledger settings (`ScriptableSingleton`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
 | Agent side of the ledger (list / show / mark-fixed / collect / file) | `Tools/Build/bug_ledger.py` + `.claude/skills/bug-ledger/SKILL.md` |
 | The automatic after-play send (no question since 2026-10-16) | `Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs` |
+| The after-play confirmation and the Project Record (FrogletTools > Diagnostics > Project Record) | `Assets/_Scripts/Editor/Diagnostics/BugHuntSendConfirmation.cs`, `ProjectRecord.cs` |
 | The one indicator: the Scene view's Bug Hunt & Performance badge (reads `Docs/perf/status.json`) | `Assets/_Scripts/Editor/Diagnostics/BugHuntPerfBadge.cs` |
 | Sender to `bugledger/<user>` + fix pickup (throwaway index, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs` |
 | Report files that ride along (redlog / crash / perf) | `Assets/_Scripts/Editor/Diagnostics/BugHuntReports.cs` |
