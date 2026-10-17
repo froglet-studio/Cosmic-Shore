@@ -11089,3 +11089,21 @@ gates; every generator `--check` / `--self-test`.
    match is Charge.
 4. **Time teal:** the weekly challenge card (Home and Arcade), its countdown, the current quest card and its lit meter.
 5. **Theme asset:** UITheme.asset in the inspector shows the four element colours under "Elements".
+
+## 🔴 2026-10-17 — Rev 6 step 2: the living lattice (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `Lattice.shader` + `UILattice.cginc`, `Lattice_Panel.mat`, `Lattice_Window.mat`; every former `kit_grid` node and
+five window backdrops re-emitted. `/verify-unity` was not run. Checked offline:
+- clang compile + render of the shipped maths (`lattice_preview.py`);
+- refcompile player OK;
+- every generator `--check` / `--self-test`;
+- gates.
+
+1. **The shader compiles in Unity:** no pink. The Console shows no shader error for `CosmicShore/UI/Lattice`
+   (target 3.0, CGPROGRAM like SilhouetteHolo).
+2. **Arcade window:** a faint crystal lattice drifts behind the cards; short comets of yellow / blue / violet / teal run
+   along a few lines; a few nodes twinkle. Opening the window grows the lattice out from the centre.
+3. **The panels that had the grid** (Ark recipe, leaderboard, Profile card, Toy Box cards, Toy configure) show the finer
+   lattice, clipped to the panel (RectMask2D) with corners fading.
+4. **Speed:** the Profiler shows no Canvas.BuildBatch from the lattice (it animates in the shader only). Check the GPU
+   frame time on a phone with the Arcade window open.

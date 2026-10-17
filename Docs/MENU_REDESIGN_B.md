@@ -2091,3 +2091,31 @@ Each element's game meaning (`Docs/ElementalAbilitySystem/ARCHITECTURE.md`) give
   about owning or progress.
 - **Gate:** `author_ui_kit_prefabs.py` validation asserts the table (Play is Charge, a spend is Mass, Space, Time),
   with a planted regression that it catches.
+
+### 45.2 Step 2: the living lattice replaces the blueprint grid
+
+- **The shader.** `CosmicShore/UI/Lattice` (`Assets/_Graphics/Materials/Shaders/UI/Lattice.shader`) uses UI/Default's
+  plumbing (stencil masking, RectMask2D clip, vertex tint). The maths is in `UILattice.cginc`:
+  - a triangular lattice that drifts one lattice vector per period;
+  - element energy pulses (Charge / Mass / Space / Time) running along some of its lines;
+  - a few nodes twinkling.
+  It draws on a sprite-less Image (the UVs span the rect) and runs on `_Time` alone, so it never dirties a canvas or
+  costs CPU.
+- **Crystallise-in.** With `_Reveal` on, the vertex alpha (a CanvasGroup fade) grows the lattice out from the centre
+  with a brighter growth front, instead of fading it. A window's lattice crystallises in as the window opens.
+- **Two materials** (`author_ui_lattice.py`):
+  - `Lattice_Panel` (one 64-unit layer) replaces the grid in every panel that had it: the Ark recipe, the leaderboard
+    list, the Profile card and profile-window preview, the Toy Box cards and Toy configure;
+  - `Lattice_Window` (130- and 72-unit layers) sits behind the Arcade, Arena, Mission and Toy Box windows (over their
+    glass) and over the configure window's veil.
+  The element colours are the theme's.
+- **The emitter.** `menu_b_motion.grid_node` emits the lattice; `window_lattice_node` is the window variant.
+- **Verified offline.** `Tools/Build/lattice_preview.py` compiles the shipped cginc and the shader's real `frag`
+  with clang (`-Wall -Werror`), renders frames, and asserts:
+  - pulses appear only on carrying lines;
+  - reveal 0 / 0.5 / 1 draw nothing / a disc / the plain lattice;
+  - the far layer adds coverage;
+  - the corners fade.
+  Unity's own shader compile still needs the editor.
+- **Gates.** `author_ui_lattice.py` checks the materials match the shader's properties, that no style-B screen draws
+  `kit_grid`, and that every window has its lattice. Six planted defects are caught.

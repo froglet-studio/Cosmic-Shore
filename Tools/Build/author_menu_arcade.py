@@ -919,6 +919,8 @@ def build_view(maelstrom_art, maelstrom_desc, weekly_art):
     root = N("root", "ArcadeView", STRETCH)
     image_node(root, "NavDim", "NavDim", R((0, 1), (1, 1), (0, 0), (0, 84), (0.5, 1)), "SurfaceBlack", alpha=0.75)
     image_node(root, "Backdrop", "Backdrop", R((0, 0), (1, 1), (0, -42), (0, -84)), "SurfaceBlack", alpha=WINDOW_BACKDROP_ALPHA)
+    # Rev 6: the living lattice over the glass (Lattice_Window.mat); it crystallises in as the window fades in.
+    root.child(M.window_lattice_node("BackdropLattice", rect=R((0, 0), (1, 1), (0, -42), (0, -84))))
 
     # Sibling order is FOCUS order: ScreenSwitcher.Refocus lands on the first live Selectable in
     # hierarchy order, so the explore scroll comes before the party panel (the Body lays them out

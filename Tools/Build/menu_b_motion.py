@@ -9,7 +9,7 @@ module, so a screen built in one item moves and reads like a screen built in ano
     ambient(...)       KitAmbient body: float / breathe / spin / sway / pan (the separable ambient layer)
     spark_body(...)    KitSpark body: the travelling highlight, or a button sweep (pause > 0)
     shake() / drain()  KitShake / KitDrain bodies
-    grid_node(...)     the blueprint grid backdrop (kit_grid, Tiled, Neutral Dark)
+    grid_node(...)     the living lattice backdrop (rev 6; Lattice_Panel.mat), window_lattice_node for windows
     bracket_nodes(...) four corner brackets (kit_bracket, turned by z rotation)
     spark_line(...)    a 2 px route line that clips a KitSpark streak (RectMask2D)
 
@@ -116,13 +116,36 @@ def tiled_image(color, sprite):
     return body
 
 
-GRID_COLOR = K.hexc("0A0F33")      # one step above Very Dark - reads as structure, not decoration
+def _lattice_guid(key):
+    """author_ui_lattice.py's deterministic material guids."""
+    import hashlib
+    return hashlib.md5(f"CosmicShore/MenuB/lattice/{key}".encode()).hexdigest()
 
 
-def grid_node(key, name="Grid"):
-    """Full-stretch blueprint grid; put it first under a panel's fill so content draws over it."""
+LATTICE_PANEL_MAT = _lattice_guid("panel_mat")
+LATTICE_WINDOW_MAT = _lattice_guid("window_mat")
+
+
+def lattice_image(material_guid):
+    """A sprite-less Image (its UVs span the rect - the lattice's edge fade and reveal read them) drawn with a
+    lattice material. White tint: the material carries the colours; the vertex alpha grows it in."""
+    base = K.image((1.0, 1.0, 1.0, 1.0))
+    return lambda ctx, go: base(ctx, go).replace(
+        "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {material_guid}, type: 2}}\n", 1)
+
+
+def grid_node(key, name="Lattice"):
+    """Rev 6 (Docs/MENU_REDESIGN_B.md §45.2): the living crystal lattice that replaced the blueprint grid
+    (kit_grid). Full-stretch; put it first under a panel's fill so content draws over it."""
     n = K.Node(key, name, K.STRETCH)
-    n.add("cr", 222, K.canvas_renderer()).add("img", 114, tiled_image(GRID_COLOR, K.kit_sprite("kit_grid")))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_PANEL_MAT))
+    return n
+
+
+def window_lattice_node(key, name="Lattice", rect=None):
+    """The two-layer lattice for a whole window's backdrop (Lattice_Window.mat)."""
+    n = K.Node(key, name, rect or K.STRETCH)
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lattice_image(LATTICE_WINDOW_MAT))
     return n
 
 
