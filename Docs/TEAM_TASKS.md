@@ -704,3 +704,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (Menu_Main owner) or Yash (offered: party / multiplayer); a second device for step 4
 - **Added:** 2026-10-17 by Claude (claude/new-session-76hnyc) (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §45.4
+
+### T-20261017-b7af · open · dev · Multiplayer
+- **Task:** An AI the host places on a domain past RequestedDomainCount (e.g. 1 human, Add AI on Gold in a 2-domain lobby) is spawned there (ServerPlayerVesselInitializerWithAI.cs ~267-279 honours placed domains) but RequestedDomainCount is only widened by human picks (~111), so domain-summing rules like ScurryScoringRuleSO.IsObjectiveReached never count that AI's crystals toward the end or the win. Found by code reading on claude/new-session-76hnyc while tracing a missing scoreboard; not reproduced in the editor.
+- **Done when:** Placing an AI on Gold in a 2-domain lobby either widens the match to 3 domains (its score counts and can win) or the configure stops offering that placement - decided by the owner of AI seating, with a test.
+- **Who can take it:** Yash (AI seating / Arena AI difficulty owner)
+- **Added:** 2026-10-17 by Claude (claude/new-session-76hnyc) (`claude/new-session-76hnyc`)
+- **See:** Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs, Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs ~909 and ~2030

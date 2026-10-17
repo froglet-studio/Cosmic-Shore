@@ -2294,3 +2294,24 @@ Still open:
 
 Both wait on a capture: the steps are in team task T-20261015-d4f5's Menu_Main Home capture.
 
+### 46.4 The end-of-match scoreboard showed at zero size
+
+The owner: "After finishing game no game over came with scorecard". The match in the screenshot was Scurry (Crystal
+Capture).
+- Its "X has collected 10 crystals" lines are milestone toasts (`GameToastConfig_Scurry`, every 10). The turn ends when
+  one domain's summed crystals reach 20 (`EndConditionOverrides.asset`).
+- The end chain itself was unchanged from bleeding-edge: monitor, turn end, final scores, the 3 s reveal,
+  `InvokeShowGameEndScreen`, `Scoreboard.ShowScoreboard`.
+- **The break was the board's size, in every mode.** Item 12d put the style-B `ScoreboardPanel` instance under
+  GameCanvas's `ScoreboardController` as a full stretch. That host was a 0x0 point at the canvas centre: the legacy
+  GameOverPanel had carried its own 832 x 456 at scale 2.4. So the new board was 0x0:
+  - no dim;
+  - the header in the lower middle;
+  - about three rows before the mask clipped them;
+  - the stats and the Play again / Main menu buttons off the bottom.
+- **Fixed in `author_ingame_hud.patch_scoreboard`.** The host now stretches over the canvas: two lines of
+  `GameCanvas.prefab`, and no scene overrides that rect. `validate` asserts it; the planted "host a 0x0 point again"
+  fails it.
+- **Found on the way, filed for Yash.** An AI placed on a domain past `RequestedDomainCount` is spawned there, but
+  domain-summing rules never count it. Team task in the Multiplayer area.
+

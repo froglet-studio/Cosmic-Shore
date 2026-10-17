@@ -11203,3 +11203,22 @@ run. Checked offline:
    - `Canvas.BuildBatch` / `UGUI.Rendering.UpdateBatches` should no longer fire every frame with no window open.
    - In the Frame Debugger, no `CosmicShore/UI/Lattice` draw on Home with every window closed.
 
+## 🔴 2026-10-17 — The end-of-match scoreboard fills the screen (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab`'s `ScoreboardController` now stretches over the canvas (it was a 0x0 point, so the style-B board
+collapsed in every mode). `/verify-unity` was not run. Checked offline:
+- `author_ingame_hud.py --check` and `--self-test`, with the new planted defect caught;
+- `gamecanvas_unification_report.py --check`;
+- every GameCanvas generator passes `--check`.
+
+1. **The prefab:** open `GameCanvas.prefab`, select `ScoreboardController`: anchors stretch-stretch and offsets 0. Its
+   child `ScoreboardPanel` fills it.
+2. **Finish a match** (to get there fast, set Crystal Capture to 3 in FrogletTools > Game Modes > End Game
+   Conditions; the Build value restores itself before a build). After the 3 s reveal:
+   - the screen dims;
+   - the header sits at the top;
+   - every pilot's row shows;
+   - the stats show;
+   - Play again / Main menu are on screen and work (mouse and pad).
+3. **Another mode** (a gate race or Skim Race) shows the same full board.
+

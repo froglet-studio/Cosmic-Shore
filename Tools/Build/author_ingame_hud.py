@@ -884,6 +884,11 @@ def sb_ref(name, key):
     return K.ref(K.FileIds(name)(key), P.asset_guid(name), 3)
 
 
+SCOREBOARD_HOST_RECT = (("m_AnchorMin", "{x: 0, y: 0}"), ("m_AnchorMax", "{x: 1, y: 1}"),
+                        ("m_AnchoredPosition", "{x: 0, y: 0}"), ("m_SizeDelta", "{x: 0, y: 0}"),
+                        ("m_Pivot", "{x: 0.5, y: 0.5}"))
+
+
 def patch_scoreboard(p):
     """Swap the legacy GameOverPanel instance (800x450-era art, ~130 parked overrides and an added
     subtree carrying the real buttons) for one instance of ScoreboardPanel.prefab, and re-point the
@@ -894,6 +899,14 @@ def patch_scoreboard(p):
     sb = sbs[0]
     host_go = p.sc.go_of(sb)
     host_rt = p.sc.rect_of(host_go)
+    # The host must cover the canvas: the style-B board stretches to it. It was a 0x0 point at the centre (the
+    # legacy GameOverPanel carried its own 832 x 456 size at scale 2.4), so the stretched board collapsed to
+    # nothing - no dim, rows clipped, the buttons off screen, in every mode (the owner, 2026-10-17: "after
+    # finishing game no game over came with scorecard").
+    hd = p.doc(host_rt)
+    for key, val in SCOREBOARD_HOST_RECT:
+        hd = re.sub(r"^  %s: \{[^}]*\}$" % key, f"  {key}: {val}", hd, count=1, flags=re.M)
+    p.replace(host_rt, hd)
     olds = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!1001 ") and f"m_SourcePrefab: {{fileID: 100100000, guid: {GAMEOVER_GUID}" in d]
     if olds:
         dead = set(C.instance_docs(p.sc, olds[0]))
@@ -1360,6 +1373,11 @@ def validate(files):
         assert m and m.group(1) in docs, f"Scoreboard.{f} is not wired"
         assert f"guid: {P.asset_guid(SB_PANEL)}" in docs[m.group(1)], f"Scoreboard.{f} does not point into ScoreboardPanel"
     assert f"guid: {P.asset_guid(SB_ROW)}" in sbd and f"guid: {P.asset_guid(SB_STAT)}" in sbd, "the Scoreboard does not clone the style-B row and stat"
+    host_go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", sbd).group(1)
+    host_rt = next(d for d in docs.values() if d.startswith("--- !u!224 ") and f"m_GameObject: {{fileID: {host_go}}}" in d)
+    for key, val in SCOREBOARD_HOST_RECT:
+        assert re.search(r"^  %s: %s$" % (key, re.escape(val)), host_rt, re.M), \
+            f"the Scoreboard's host is not stretched over the canvas ({key} is not {val}): the board would collapse"
     sp = files[sb_path(SB_PANEL)]
     check_local_refs(sb_path(SB_PANEL), sp)
     spd = docs_of(sp)
@@ -1471,7 +1489,15 @@ def self_test(files):
 
     def sub(path, old, new):
         return lambda f: f.__setitem__(path, f[path].replace(old, new, 1))
+    def point_host(f):
+        docs = docs_of(f[CANVAS])
+        sbd = next(d for d in docs.values() if f"guid: {S['scoreboard']}" in d)
+        go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", sbd).group(1)
+        rt = next(d for d in docs.values() if d.startswith("--- !u!224 ") and f"m_GameObject: {{fileID: {go}}}" in d)
+        f[CANVAS] = f[CANVAS].replace(rt, rt.replace("  m_AnchorMin: {x: 0, y: 0}", "  m_AnchorMin: {x: 0.5, y: 0.5}", 1)
+                                          .replace("  m_AnchorMax: {x: 1, y: 1}", "  m_AnchorMax: {x: 0.5, y: 0.5}", 1), 1)
     cases = [
+        ("the scoreboard host a 0x0 point again", point_host),
         ("the connecting backdrop unwired", lambda f: f.__setitem__(CONNECT, re.sub(
             r"(  backdropArt: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),
         ("the lockup plate back to the old near-black", sub(LOCKUP, LOCKUP_FIELDS["plateColor"], "{r: 0.024, g: 0.031, b: 0.063, a: 0.86}")),
