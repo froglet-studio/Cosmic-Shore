@@ -11058,3 +11058,15 @@ refcompile player OK; editor shows the 3 known errors (0 in changed files); gate
      coloured abilities;
    - X or a tap outside closes it.
 5. **Pad:** the first focus is in the settings column; Back is last.
+
+## 🔴 2026-10-17 — Ark layout, fly hint x, flat - / x (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Scene and generator changes only; no C#. `/verify-unity` was not run. Checked offline: refcompile player OK; editor
+shows the 3 known errors; every generator `--check` / `--self-test`; gates.
+
+1. **Ark:** the title band sits under the nav (not behind it), the recipe panel's top row is fully visible, and the
+   converter bar stays at the bottom.
+2. **Home:** the fly hint's x hides the hint, and it stays hidden on the next visit. A double tap on empty space over
+   the cell still flies; a single tap does nothing.
+3. **Docked cards:** - folds and x closes. The glyphs are flat, dim at rest, white on hover and accent-coloured when
+   pressed or focused by the pad. The friends drawer's - and maximise look the same.

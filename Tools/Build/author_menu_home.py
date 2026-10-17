@@ -64,7 +64,7 @@ S = dict(kitbutton=K.kit_script("KitButton"), dismiss=C.script("DismissibleHint"
          gate=C.script("OfflineUIGate"), switcher=C.script("ScreenSwitcher"), themed=H.KIT_THEMED,
          guide_ok=C.script("MenuGuideAlwaysAvailable"), relay=C.script("DoubleTapRelay"))
 # Home's full-screen invisible tap surface (HomeScreen/Button) and its relay: a double click flies.
-TAP = dict(go="797780467", button="797780469", relay="797780479")
+TAP = dict(go="797780467", rt="797780468", button="797780469", relay="797780479")
 CRYSTAL_HANDLER = "1486013850"
 MASK = A.MASK
 
@@ -390,24 +390,25 @@ HINT_W, HINT_H, HINT_X = 300, 36, 28     # the fly hint, and its × (rev 3)
 
 
 def icon_button(parent, k, name, glyph, r, glyph_node=None):
-    """A small KitButton (Default, outline) carrying one chrome glyph: the hint's x, a card's - and x.
-    `glyph_node` draws a glyph no chrome sprite has (the minimise bar)."""
+    """A flat glyph control (the hint's x, a docked card's - and x): no plate and no border (2026-10-17, the
+    owner on the boxed versions: "i dont like the designs"). The glyph rests dim, brightens under the
+    pointer and lights in the accent colour when pressed or focused by the pad (a ColorTint on the glyph);
+    a transparent hit area keeps it easy to press. `glyph` None draws the minimise bar."""
     b = parent.child(N(k, name, r))
-    A.ring_node(b, f"{k}/FocusRing", 10)
-    border, fillc, content = K.button_palette("Default", False)
-    f = b.child(N(f"{k}/Fill", "Fill", STRETCH))
-    f.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
-    bd = b.child(N(f"{k}/Border", "Border", STRETCH))
-    bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True))
+    b.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
     g = b.child(N(f"{k}/Glyph", "Glyph", R(size=(14, 14)) if glyph else R(size=(12, 2))))
-    g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(content, K.chrome_sprite(glyph) if glyph else None, preserve=bool(glyph)))
-    b.add("button", 114, lambda ctx, go: C.mono(go, S["kitbutton"],
-          K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {C.ref(ctx.c(f'{k}/Fill', 'img'))}\n" + A.calls([])
-          + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {C.ref(ctx.c(f'{k}/FocusRing', 'img'))}\n"
-          "  variant: 0\n  fill: 0\n"
-          f"  fillGraphic: {C.ref(ctx.c(f'{k}/Fill', 'img'))}\n"
-          f"  borderGraphic: {C.ref(ctx.c(f'{k}/Border', 'img'))}\n"
-          f"  contentGraphics:\n  - {C.ref(ctx.c(f'{k}/Glyph', 'img'))}\n  playGradient: {{fileID: 0}}\n"))
+    g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.chrome_sprite(glyph) if glyph else None,
+                                                                    preserve=bool(glyph)))
+    tint = (A.selectable().replace("  m_Transition: 0\n", "  m_Transition: 1\n")
+            .replace("    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}\n", f"    m_NormalColor: {K.col(tok('NeutralLightest'))}\n")
+            .replace("    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
+                     f"    m_HighlightedColor: {K.col(tok('TextLight'))}\n")
+            .replace("    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}\n",
+                     f"    m_PressedColor: {K.col(tok('ControlActive'))}\n")
+            .replace("    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
+                     f"    m_SelectedColor: {K.col(tok('ControlActive'))}\n"))
+    b.add("button", 114, lambda ctx, go: C.mono(go, A.BUTTON,
+          tint + f"  m_TargetGraphic: {C.ref(ctx.c(f'{k}/Glyph', 'img'))}\n" + A.calls([])))
     b.add("audio", 114, A.menu_audio(11))
     return b
 
@@ -747,6 +748,11 @@ def patch_tap_surface(p):
     btn = re.sub(r"(  m_OnClick:\n    m_PersistentCalls:\n      m_Calls:\n)(?:      - .*\n(?:        .*\n)*)+",
                  lambda m: m.group(1) + _toggle_call(TAP["relay"], "CosmicShore.UI.DoubleTapRelay", "Tap"), btn, count=1)
     p.replace(TAP["button"], btn)
+    # The surface sits over the cell in the middle of Home - where the fly hint is. Drawn after Main_Menu_Panel it
+    # took every press meant for the hint's x (2026-10-17, the owner: "Cross doesnt close this popup"). Drawn
+    # first it is BEHIND the panel, whose own image is off, so a tap on empty space still reaches it.
+    home = re.search(r"m_Father: \{fileID: (-?\d+)\}", p.doc(TAP["rt"])).group(1)
+    p.children(home, [TAP["rt"]] + [k for k in p.kids(home) if str(k) != TAP["rt"]])
 
 
 def patch_invite(p):
@@ -858,6 +864,10 @@ def validate(files):
     assert sc.script(arcade_hub[5]) == S["hub"] and "  target: 10\n" in sc.docs[arcade_hub[5]] \
         and "  m_IsActive: 1\n" in sc.docs[arcade_hub[1]], \
         "the Arcade hub lost its active MenuHubButton targeting ARCADE: the first-login guide would find nothing on Home"
+    # The double-tap surface draws first, behind Main_Menu_Panel: on top it swallowed the fly hint's x.
+    home = re.search(r"m_Father: \{fileID: (-?\d+)\}", sc.docs[TAP["rt"]]).group(1)
+    first = re.search(r"^  m_Children:\n  - \{fileID: (-?\d+)\}", sc.docs[home], re.M).group(1)
+    assert first == TAP["rt"], "the double-tap surface draws over Home's panel: it would swallow the fly hint's x"
     assert re.search(r"  m_Calls: \[\]\n", sc.docs[I["bar_btn"]]), "the question bar still opens the display-name window"
     # 6b
     up = sc.docs[str(ctx.c("UpNext", "upnext"))]
@@ -954,6 +964,9 @@ def self_test(files):
             r"(  timerBar: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[invite_path()]))),
         ("a docked card that cannot fold", lambda f: f.__setitem__(SCENE, re.sub(r"(  minimiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
         ("the fly hint's x unwired", lambda f: f.__setitem__(SCENE, re.sub(r"(  closeButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[SCENE], count=1))),
+        ("the double-tap surface back over the panel", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  m_Children:\n  - {{fileID: {TAP['rt']}}}\n  - {{fileID: 1769152617528871830}}\n",
+            f"  m_Children:\n  - {{fileID: 1769152617528871830}}\n  - {{fileID: {TAP['rt']}}}\n", 1))),
         ("the Arcade hub re-targeted away from ARCADE", lambda f: f.__setitem__(SCENE, re.sub(
             r"(--- !u!114 &1749518393\n(?:(?!--- ).*\n)*?  target: )10\n", r"\g<1>14\n", f[SCENE], count=1))),
         ("Settings left out of the guide's always-available set", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

@@ -2041,3 +2041,21 @@ now looks like style B:
   `abilityBullet`.
 - **Gate:** four new planted defects: a row that grows on hover, the hover label unwired, a card row unwired, and the
   modal back on the generated card.
+
+## 44. Playtest fixes: the Ark under the nav, the fly hint's x, flat - and x (2026-10-17)
+
+- **The Ark** ("Ark screen is messed up"): the title and the recipe panel sat up under the top nav.
+  `author_menu_ark.py` grew the converter 170.4 upward to cancel ArkScreen's authored top inset. But
+  `ScreenSwitcher.LayoutScreensToViewport` gives every screen the full safe height at runtime, so the grow pushed
+  everything up by 170. The converter now fills its screen exactly (`TOP_GROW = 0`, gated, with a planted 170.4 that
+  the self-test catches).
+- **The fly hint's x** ("Cross doesnt close this popup"): Home's double-tap surface (`HomeScreen/Button`, 840 x 360
+  over the cell) drew after `Main_Menu_Panel`, right over the hint, so it took every press on the x.
+  - It now draws first, behind the panel. The panel's own image is off, so a tap on empty space still reaches it.
+  - The hint's x and the docked cards' - and x work again.
+  - Gated in `author_menu_home.py`, with a planted reorder that the self-test catches.
+- **The - and x controls** ("i dont like the designs"): the docked cards' -, the cards' and the hint's x, and the
+  friends drawer's - and maximise are now flat glyphs, with no plate and no border.
+  - The glyph rests dim (NeutralLightest), turns white under the pointer, and lights in the accent colour when
+    pressed or focused by the pad.
+  - It is a ColorTint on a plain Button, with a 28 px transparent hit area.

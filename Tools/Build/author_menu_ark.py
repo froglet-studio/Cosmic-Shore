@@ -10,8 +10,8 @@ boards, revision 2, on the "Menu Redesign B" canvas).
                          (the run's clock, four segments with their sparks, CONVERT with the sweep)
 
     Menu_Main.unity, `ArkScreen/ElementalConverter` (author_elemental_converter.py made it):
-        One ArkView instance is mounted under the converter; its RectTransform grows 170.4 units upward
-        so the stage runs full-bleed under the translucent nav (ArkScreen itself starts below the nav);
+        One ArkView instance is mounted under the converter, which fills ArkScreen exactly (ScreenSwitcher
+        lays the screen out at the full safe height, under the translucent nav);
         ElementalConverterView's style-B fields are wired into the view, which switches the first cut's
         code-built title and button off. The picture stays built in code, behind the overlay.
 
@@ -51,7 +51,10 @@ C.STUB_KIND.update({"recipe": (114, S["row"]), "entrance": (114, S["entrance"])}
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
 CRYSTAL = {k: K.meta_guid(f"Assets/_Graphics/Codex/ethirion_{k.lower()}.png") for k in ORDER}
 OMNI = K.meta_guid("Assets/_Graphics/Codex/ethirion_omni.png")
-TOP_GROW = 170.4          # ArkScreen's top inset: the converter grows by it to run under the nav
+# The converter fills its screen exactly. It used to grow 170.4 upward to cancel ArkScreen's authored top inset,
+# but ScreenSwitcher.LayoutScreensToViewport lays every screen out at the full safe height at runtime, so the
+# grow pushed the title and the recipe panel up under the nav (2026-10-17, the owner: "Ark screen is messed up").
+TOP_GROW = 0
 
 
 def c(node_key, comp):
@@ -355,7 +358,7 @@ def validate(files):
     assert re.search(r"^  config: \{fileID: 11400000, guid: [0-9a-f]{32}", doc, re.M), "the converter lost its config"
     rt = sc.docs[IDS["rt"]]
     assert K.refs_list("m_Children", [mount.stub]) in rt, "the converter holds more than its overlay"
-    assert f"m_SizeDelta: {{x: 0, y: {K.f32(TOP_GROW)}}}" in rt, "the stage no longer runs under the nav"
+    assert f"m_SizeDelta: {{x: 0, y: {K.f32(TOP_GROW)}}}" in rt, "the converter must fill its screen exactly (ScreenSwitcher already gives the screen the full height)"
 
 
 def drift(files):
@@ -388,8 +391,9 @@ def self_test(files):
         ("a segment that is a plain image", lambda f: f.__setitem__(view, plain_segment(f[view]))),
         ("CONVERT unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  convertButton: {{fileID: {mount.stub_fid('ConvertButton|root#button')}}}", "  convertButton: {fileID: 0}"))),
-        ("the stage back under the nav inset", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
-            f"m_SizeDelta: {{x: 0, y: {K.f32(TOP_GROW)}}}", "m_SizeDelta: {x: 0, y: 0}", 1))),
+        ("the converter grown up under the nav again", lambda f: f.__setitem__(SCENE, re.sub(
+            r"(--- !u!224 &" + IDS["rt"] + r"\n(?:(?!--- ).*\n)*?  m_SizeDelta: )\{x: 0, y: 0\}", r"\1{x: 0, y: 170.4}",
+            f[SCENE], count=1))),
         ("the wrong crystal on a row", lambda f: f.__setitem__(view, f[view].replace(CRYSTAL["Mass"], CRYSTAL["Time"], 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
