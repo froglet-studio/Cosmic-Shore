@@ -780,7 +780,7 @@ per-vessel art or wiring for a human to supply.
 | Squirrel | 4/4 + 2 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge = the joust (skull), Mass = boost ring (+ the standard cooldown veil), **Space = GENERATED** (skimmer-reach ring + steal count, built by the view), Time = skimming (+ `boostFill` as its gauge). Two non-elemental cards sit left of Charge: the **omni crystal** (emblem above, shielded-ring icon below) and the **drift** (no upper cell at all), chip **LT** |
 | Serpent | 1/4 | ✅ Time card bound (Solid Fuel Pellets — its four pips are the fuel tank); Charge/Mass/Space LOCKED. Its Charge card DOES draw the cooldown veil — a locked card has a plate, which is all the veil needs |
 | Manta | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
-| Rhino | **4/4** (2026-10-16, placeholder icons `Rhino_SwordEnergy` / `Afterimage` / `BladeReach` / `RampSpool`) | ✅ ensured at runtime. Charge card lit while the blade is energized + the energize-cooldown veil (a gauge would fill with sword energy, but none is authored); Mass card lit while afterimages lay; Space passive; Time card lit while Momentum holds. Pre-lockup status cluster deleted. Not yet editor-verified |
+| Rhino | **4/4** (2026-10-16, placeholder icons `Rhino_SwordEnergy` / `Afterimage` / `BladeReach` / `RampSpool`) | ✅ ensured at runtime. Charge card lit while the blade is energized (re-asserted every frame, so the 5 s tail after letting go of the stance stays lit) + a gauge filling with sword energy 0..1 + the energize-cooldown veil; Mass card lit while afterimages lay; Space passive; Time card lit while the ramp is BOOSTING, one flash when Momentum takes hold, and a gauge filling with speed / top speed (`ITopSpeedSource`). Both gauges (`ChargeGauge`, `TimeGauge`) authored into `RhinoHUDVariant.prefab` by `author_hull_ability_rows.py` (`RHINO_GAUGES`) 2026-10-17. Chips: the two-trigger L1+R1 glyph on Charge/Mass/Space (`BothSticksAction`), sticks-apart on Time (set by `RhinoVesselHUDController` through `VesselHUDView.SetAbilityControlGlyph`, since Time's map entry is the passive sentinel). Pre-lockup status cluster deleted. Not yet editor-verified |
 | Urchin | 4/4 | ✅ ensured at runtime (2026-10-06, `author_urchin_hud.py`); ammo fill = the Charge card's gauge, binary riding indicator = the Mass card's, Track recharge = the Space card's veil |
 
 **Row ownership is why `EnsureAbilityLockup` runs BEFORE `view.Initialize`.** Per-vessel views
@@ -1009,10 +1009,11 @@ of rolling this style onto any further vessel.
   the authored state is inspectable. Runtime composition is the shipping path today.
 - ~~**Urchin.** The only hull the lockup cannot reach~~ — closed 2026-10-06: `UrchinHUDVariant.prefab` exists
   (`Tools/Build/author_urchin_hud.py`). Its icons are placeholders.
-- **Gauges on the remaining hulls.** Dolphin, Manta, Rhino and Serpent bind no `gauge` yet. The
+- **Gauges on the remaining hulls.** Dolphin, Manta and Serpent bind no `gauge` yet. The
   Dolphin's four icons are already live gauges in their own right, so it may never want one; Manta
-  and Serpent are waiting on ability design. The Rhino's controller already fills a Charge gauge
-  with sword energy if one is authored (2026-10-16) — authoring it is the open step.
+  and Serpent are waiting on ability design. ~~The Rhino~~ — closed 2026-10-17: Charge (sword
+  energy) and Time (speed / top speed) gauges authored by `author_hull_ability_rows.py`
+  (`RHINO_GAUGES`).
 - ~~`Scarab.prefab` wires `SparrowHUDVariant`~~ — **not true, and now cleaned up.** It references
   `ScarabHUDVariant` (guid `4f3ce7d760a1e0c76f3bc8c6a6842a92`); what it carried was a stale
   prefab-instance **name override** setting `m_Name: SparrowHUDVariant`, a leftover from when the
