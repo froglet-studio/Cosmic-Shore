@@ -42,6 +42,7 @@ MonoBehaviour:
   tips:
   - LT and RT slide between the Toy Box, Arcade, Arena and Mission windows.
   - Rest on a pilot's picture in the friends panel to see where they are.
+  - On Home, press Y to fly the cell yourself, and Y again to come back.
   - The Toy Box's shuffle re-rolls the world, your domain and your hull.
   lattice: {fileID: 2100000, guid: 5ec732c8e557e34dafa8c292cb0aa10e, type: 2}
   stepGlyphs:

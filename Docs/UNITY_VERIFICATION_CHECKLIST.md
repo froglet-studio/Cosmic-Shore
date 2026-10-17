@@ -11323,3 +11323,21 @@ tip. All words come from `Assets/Resources/UI/EnvironmentLoadVeilContent.asset` 
 5. **Frame rate:** the screen reads well at the build's ~10 FPS (no stutter-prone motion). The build takes as long as
    before (compare with Load Time Insights if in doubt).
 6. **Edit a word** in the content asset (e.g. a tip). It shows on the next load.
+
+## 🔴 2026-10-17 — Pad Y on Home toggles freestyle again (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`ScreenSwitcher.crystalClickHandler` is wired to the scene's `MenuCrystalClickHandler` (`author_menu_home.py`) and found
+at Awake when empty. `/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- `author_menu_home.py --check` / `--self-test` (new planted defect caught);
+- every Menu_Main generator `--check`;
+- gates.
+
+1. **The scene:** select `Screens` in Menu_Main. ScreenSwitcher > Gamepad Freestyle Toggle > Crystal Click Handler
+   names the MenuCrystalClickHandler object.
+2. **Home with a pad:** Y flies into the cell. After the 3 s cooldown, Y brings you back to Home. Y does nothing
+   while a window is open or on another screen.
+3. **First-login guide:** Y skips the guide (MenuSpotlight) and does not fly.
+4. **Party (two clients):** the guest flies, then the host opens a game card. The guest leaves freestyle and the card
+   opens once the exit blend ends (`RequestExitFreestyle` now runs; it used to return false).
+5. **Double-tap on empty Home** still flies as before.

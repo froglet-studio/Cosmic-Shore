@@ -62,7 +62,8 @@ S = dict(kitbutton=K.kit_script("KitButton"), dismiss=C.script("DismissibleHint"
          crystals=C.script("CrystalCurrencyDisplay"), cbp=C.script("ControllerButtonPress"), button=A.BUTTON,
          upnext=C.script("HomeUpNext"), invite=C.script("PartyInviteNotificationPanel"), drain=K.kit_script("KitDrain"),
          gate=C.script("OfflineUIGate"), switcher=C.script("ScreenSwitcher"), themed=H.KIT_THEMED,
-         guide_ok=C.script("MenuGuideAlwaysAvailable"), relay=C.script("DoubleTapRelay"))
+         guide_ok=C.script("MenuGuideAlwaysAvailable"), relay=C.script("DoubleTapRelay"),
+         crystal=C.script("MenuCrystalClickHandler"))
 # Home's full-screen invisible tap surface (HomeScreen/Button) and its relay: a double click flies.
 TAP = dict(go="797780467", rt="797780468", button="797780469", relay="797780479")
 CRYSTAL_HANDLER = "1486013850"
@@ -791,6 +792,15 @@ def sc_go(p, comp):
     return p.sc.go_of(comp)
 
 
+def patch_freestyle_toggle(p):
+    """Pad Y on Home enters and leaves freestyle through ScreenSwitcher.crystalClickHandler, and the host pulling a
+    flying guest into a game card leaves freestyle through the same reference (RequestExitFreestyle). Menu_Main shipped
+    it empty, so both did nothing (2026-10-17, the owner: "fix the Y freestyle toggle"). It points at the scene's one
+    MenuCrystalClickHandler - the handler the double-tap surface already calls."""
+    assert p.sc.script(CRYSTAL_HANDLER) == S["crystal"], "the MenuCrystalClickHandler moved"
+    p.field(SWITCHER, "crystalClickHandler", ref(CRYSTAL_HANDLER))
+
+
 def transform(text_):
     p = Patch(text_)
     I = IDS
@@ -813,6 +823,7 @@ def transform(text_):
     patch_upnext(p)
     patch_invite(p)
     patch_tap_surface(p)
+    patch_freestyle_toggle(p)
     return p.text()
 
 
@@ -888,6 +899,10 @@ def validate(files):
     for key in ("UpNext", "Chip", "HintDock"):
         assert f"  - {{fileID: {ctx.go(key)}}}" in sc.docs[SWITCHER], f"{key} does not fade with the hub row (hubCompanions)"
     assert f"  - {{fileID: {IDS['settings_go']}}}" in sc.docs[SWITCHER], "Settings does not fade with the hub row (hubCompanions)"
+    handlers = [f for f in sc.order if sc.cls[f] == 114 and sc.script(f) == S["crystal"]]
+    assert handlers == [CRYSTAL_HANDLER], f"Menu_Main must hold exactly one MenuCrystalClickHandler, found {handlers}"
+    assert f"  crystalClickHandler: {{fileID: {CRYSTAL_HANDLER}}}\n" in sc.docs[SWITCHER], \
+        "ScreenSwitcher.crystalClickHandler is not the scene's MenuCrystalClickHandler (pad Y on Home would not fly)"
     for key in ("Weekly", "Quest"):   # rev 3: each docked card folds and closes
         dk = sc.docs[str(ctx.c(f"UpNext/{key}", "dock"))]
         # Rev 3.1: both cards expanded must end clear of the friends control - the owner's "friends is
@@ -983,6 +998,9 @@ def self_test(files):
             f"expandedHeight: {CARD_H}\n", "expandedHeight: 400\n", 1))),
         ("Up next left out of the hub fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  - {{fileID: {ctx_new().go('UpNext')}}}\n", "", 1))),
+        ("pad Y on Home unwired from the freestyle toggle", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  crystalClickHandler: {{fileID: {CRYSTAL_HANDLER}}}\n  freestyleToggleCooldown:",
+            "  crystalClickHandler: {fileID: 0}\n  freestyleToggleCooldown:", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

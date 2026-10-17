@@ -70,6 +70,7 @@ CELL_LINES = (
 TIPS = (
     "LT and RT slide between the Toy Box, Arcade, Arena and Mission windows.",   # ScreenSwitcher.SlideHubWindow
     "Rest on a pilot's picture in the friends panel to see where they are.",      # FriendProfilePopup
+    "On Home, press Y to fly the cell yourself, and Y again to come back.",       # ScreenSwitcher Y (crystalClickHandler)
     "The Toy Box's shuffle re-rolls the world, your domain and your hull.",       # ToyboxShuffleCard
 )
 MAX_LINE = 72   # characters: one line at the screen's 16-17 px sizes inside 1200 units

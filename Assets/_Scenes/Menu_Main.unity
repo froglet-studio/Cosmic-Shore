@@ -46083,7 +46083,7 @@ MonoBehaviour:
   hubWindowOrder: 0d0000000a0000000e0000000f000000
   hubSlideDistance: 160
   hubSlideSeconds: 0.32
-  crystalClickHandler: {fileID: 0}
+  crystalClickHandler: {fileID: 1486013850}
   freestyleToggleCooldown: 3
   NavBarLine: {fileID: 0}
   NavBarLineSprites: []

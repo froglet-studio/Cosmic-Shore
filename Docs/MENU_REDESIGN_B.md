@@ -2495,3 +2495,28 @@ The owner: "Black loading screen when changing cell show something interesting".
   - `EnvironmentLoadVeilStageTests`;
   - a layout schematic;
   - refcompile.
+
+### 47.5 Pad Y on Home flies again
+
+Found while writing §47.4's tips; the owner: "fix the Y freestyle toggle first".
+- **The fault.** `ScreenSwitcher.crystalClickHandler` was empty in Menu_Main (`{fileID: 0}` back to the oldest commit
+  in this clone) and nothing filled it at runtime. So:
+  - Y on Home never entered or left freestyle;
+  - `IsFreestyleSettling` was always false;
+  - `RequestExitFreestyle` (the host pulling a flying guest into a game card, `ArcadeGameConfigureModal`) always
+    returned false, so the guest kept flying.
+
+  The double-tap surface still flew, because it calls the handler directly.
+- **The fix.**
+  - `author_menu_home.py` points the field at the scene's one `MenuCrystalClickHandler`. That is the handler the
+    double-tap surface already calls, and the scene diff is that one line.
+  - `ScreenSwitcher.Awake` finds the handler when the field is empty, so a lost reference cannot silently take Y away
+    again. An authored reference still wins.
+- **Nothing else moves Y.** Flight uses South, East and West, so Y is free in freestyle and toggles both ways. The
+  first-login guide's Y (Skip) runs only while the guide is active, when the switcher's Y stands down.
+- **Verified offline:**
+  - `author_menu_home.py --self-test`, with the new planted defect "pad Y on Home unwired from the freestyle toggle";
+  - every Menu_Main generator `--check`;
+  - refcompile.
+
+  The loading screen's Y tip (§47.4) is back.

@@ -192,7 +192,9 @@ namespace CosmicShore.UI
         [SerializeField] private float hubSlideSeconds = 0.32f;
 
         [Header("Gamepad Freestyle Toggle")]
-        [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition.")]
+        [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition, and " +
+                 "RequestExitFreestyle leaves freestyle through it. Found in the scene at Awake when left empty (there is " +
+                 "one per menu scene): Menu_Main shipped it empty, so Y on Home did nothing.")]
         [SerializeField] private MenuCrystalClickHandler crystalClickHandler;
         [Tooltip("Seconds after a freestyle transition completes before Y can toggle again.")]
         [SerializeField] private float freestyleToggleCooldown = 3f;
@@ -582,6 +584,11 @@ namespace CosmicShore.UI
                     "You can manually assign screens in the inspector for full control."
                 );
             }
+
+            // An authored reference wins; an empty one is found, so a lost wiring cannot silently take Y (and the host
+            // pulling a flying guest into a card) away again. author_menu_home.py authors it in Menu_Main.
+            if (!crystalClickHandler)
+                crystalClickHandler = FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
         }
 
         private void OnEnable()
