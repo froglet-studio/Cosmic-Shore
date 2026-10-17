@@ -127,4 +127,4 @@ size/volume (fatten the body). Map onto the vessel's own ability table
 | Serpent | +-4.2 | head at +1.5, tendrils to -10.1 | -5.2 .. +6.1 | -250 | nose on +Y |
 | Sparrow | +-? | see dossier | | -50 | armature scale 0.2034; jets on b_Tail1..3 .L/.R |
 | Urchin | rig: ball R 0.425, spines to +-0.9 | | | -6.67 | `Urchan_Test.fbx` (part-per-mesh placeholder) is what the prefab draws; the rebuilt rig `urchan_shapekey_with_animations.fbx` is the swap target (`VesselRigSwapper`), 2.105x the live hull |
-| Rhino | +-5.8 | ~16.8 long | | -120 | `Rhino_Test.fbx` placeholder wired; the rebuilt rig `rhino_shapekey_with_animations.fbx` is the swap target; 10 jets |
+| Rhino | +-8.1 composite (fuselage +-2.8, pods at +-5.4) | fuselage 16.8, composite 20.4 | -8.9 .. +6.5 | -70 (zooms to -200) | `Rhino_Test.fbx` placeholder wired; the rebuilt rig `rhino_shapekey_with_animations.fbx` is the swap target; 10 jets; the live placeholder's DOMAIN slot is `BASE` (dossier 8.6), the Dolphin rig's is `accent`: the artists disagree, the convention (slot 0 = Domain) wins at the swap |

@@ -105,8 +105,11 @@ rise. If it drops, flip the sign of the pitch poses in `specs/sparrow.py` and re
 `ScarabHullBuilder` hull over the Sparrow file with renderers off: unchanged, confirm it still does. (7) Urchin and
 Rhino: their prefabs still draw the part-per-mesh placeholders. The rebuilt rigs are the swap targets for
 `FrogletTools > Vessels > Wiring > Swap Vessel Rig` (`Docs/VESSEL_CONSTRUCTION.md`: geometry, materials AND
-animation; the Urchin rig is 2.105x the live hull and the swapper fits the instance transform). After a swap, (3)
-must report four REAL morphs on each.
+animation; the Urchin rig is 2.105x the live hull and the swapper fits the instance transform). At the swap, map the
+materials by MEANING, not by the artist's names: the rebuilt rigs paint the domain band on `accent` (slot 0) and the
+hull on `BASE` (slot 1), while the live Rhino placeholder had it the other way round (`Docs/VesselModels/Rhino.md`
+8.6: `BASE` carried the domain colour); the convention is slot 0 = Domain. After a swap, (3) must report four REAL
+morphs on each.
 
 **First-pass tuning:** morph travel per file (offline, % of diagonal): Squirrel C 6 / M 4 / S 9 / T 7; Dolphin
 C 8 / M 4 / S 10 / T 7; Sparrow S 9 / C 7 / T 6 / M 4; Serpent 5-9; Manta 6-11; Urchin C 18 / M 5 / S 7 / T 9;
