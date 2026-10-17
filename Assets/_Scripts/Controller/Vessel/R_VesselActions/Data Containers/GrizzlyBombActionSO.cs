@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// the RIGHT front, for as long as it is held; live pressure sets the cone's size, always the
     /// Grizzly's shortest-range weapon.</item>
     /// <item><b>Sniper</b> - LT holds the SCOPE (the view rides the round in flight for as long as
-    /// LT is held); RT FIRES, gated by the sniper's cooldown. Pressure is irrelevant.</item>
+    /// LT is held) and LT's pressure is its ZOOM (2026-10-17); RT FIRES, gated by the sniper's cooldown.</item>
     /// </list>
     /// The bombs are OFF while another weapon is active: switching away retires any live bomb
     /// (<see cref="GrizzlyTriggerBombExecutor"/>), so the pilot carries speed on momentum or Rush.
@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
                 case GrizzlyWeaponModeExecutor.WeaponMode.Sniper:
                     var sniperExec = execs.Get<GrizzlySniperShotActionExecutor>();
                     if (!sniper || sniperExec == null) break;
-                    if (side == TriggerSide.Left) sniperExec.BeginScope();
+                    if (side == TriggerSide.Left) sniperExec.BeginScope(sniper);
                     else sniperExec.Fire(sniper, vesselStatus);
                     break;
 

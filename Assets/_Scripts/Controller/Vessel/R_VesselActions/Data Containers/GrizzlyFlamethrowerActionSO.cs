@@ -43,6 +43,8 @@ namespace CosmicShore.Gameplay
         float noseOffset = 4f;
         [SerializeField, Tooltip("Degrees each claw is turned OUTWARD from straight ahead (LT left, RT right), so the two claws spread apart. 0 = both straight forward.")]
         float splayDegrees = 6f;
+        [SerializeField, Tooltip("Degrees each claw is tilted UP from the hull's forward, so the two claws do not sit across each other from the chase camera (design ask, 2026-10-17: 'tilt them up just a touch'). The fingers are what burns, so this tilts the reach too.")]
+        [Range(0f, 30f)] float tiltUpDegrees = 5f;
 
         [Header("Energy cell (one per claw)")]
         [SerializeField, Tooltip("Seconds a FULL cell lasts spraying the SMALLEST claw. Each trigger's claw has its own cell.")]
@@ -95,6 +97,7 @@ namespace CosmicShore.Gameplay
         public float SideOffset => sideOffset;
         public float NoseOffset => noseOffset;
         public float SplayDegrees => splayDegrees;
+        public float TiltUpDegrees => tiltUpDegrees;
         public float CellRechargeDelay => cellRechargeDelay;
         public int WhipsPerSide => whipsPerSide;
         public float WhipSpreadDegrees => whipSpreadDegrees;

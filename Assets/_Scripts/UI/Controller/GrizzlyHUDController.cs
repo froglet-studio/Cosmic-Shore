@@ -64,9 +64,12 @@ namespace CosmicShore.UI
             }
 
             if (sniperExecutor)
+            {
                 sniperExecutor.OnScopeChanged += HandleScope;
                 sniperExecutor.OnRoundInFlight += HandleRoundInFlight;
                 sniperExecutor.OnRoundEnded += HandleRoundEnded;
+                sniperExecutor.OnScopeFovChanged += HandleScopeFov;
+            }
 
             if (_vesselStatus.ResourceSystem != null)
             {
@@ -88,9 +91,12 @@ namespace CosmicShore.UI
             if (weaponModeExecutor)
                 weaponModeExecutor.OnModeChanged -= HandleWeaponMode;
             if (sniperExecutor)
+            {
                 sniperExecutor.OnScopeChanged -= HandleScope;
                 sniperExecutor.OnRoundInFlight -= HandleRoundInFlight;
                 sniperExecutor.OnRoundEnded -= HandleRoundEnded;
+                sniperExecutor.OnScopeFovChanged -= HandleScopeFov;
+            }
             if (_vesselStatus?.ResourceSystem != null)
                 _vesselStatus.ResourceSystem.OnResourceChanged -= HandleResourceChanged;
         }
@@ -140,6 +146,7 @@ namespace CosmicShore.UI
         void HandleScope(bool scoped) { if (view) view.SetScope(scoped); }
         void HandleRoundInFlight(Transform round) { if (view) view.FollowRound(round); }
         void HandleRoundEnded() { if (view) view.ReleaseRound(); }
+        void HandleScopeFov(float fov) { if (view) view.SetScopeFov(fov); }
 
         void HandleWeaponMode(GrizzlyWeaponModeExecutor.WeaponMode mode)
         {

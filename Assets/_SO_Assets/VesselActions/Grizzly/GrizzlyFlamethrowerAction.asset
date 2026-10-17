@@ -21,6 +21,7 @@ MonoBehaviour:
   sideOffset: 6
   noseOffset: 4
   splayDegrees: 6
+  tiltUpDegrees: 5
   cellSeconds: 3
   largeFlameDrainMultiplier: 1.5
   cellRechargeSeconds: 2

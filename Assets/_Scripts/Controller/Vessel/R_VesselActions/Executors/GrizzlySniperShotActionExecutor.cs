@@ -33,11 +33,16 @@ namespace CosmicShore.Gameplay
 
         /// <summary>HUD: the round landed or expired - hand the PiP back to the ship.</summary>
         public event Action OnRoundEnded;
+        /// <summary>HUD: the scope's field of view, degrees - LT's pressure is the zoom (2026-10-17).</summary>
+        public event Action<float> OnScopeFovChanged;
+
         /// <summary>HUD: cooldown started, param = seconds.</summary>
         public event Action<float> OnCooldownStarted;
 
         IVesselStatus _status;
         GrizzlyWeaponModeExecutor _modes;
+        GrizzlySniperShotActionSO _scopeConfig;
+        float _scopeFov = -1f;
         float _lastShotTime = float.NegativeInfinity;
         bool _scoped;
         Projectile _round;
@@ -68,8 +73,39 @@ namespace CosmicShore.Gameplay
             if (mode != GrizzlyWeaponModeExecutor.WeaponMode.Sniper) SetScoped(false);
         }
 
-        /// <summary>LT pressed: open the scope. Aiming is free; only firing is gated.</summary>
-        public void BeginScope() => SetScoped(true);
+        /// <summary>LT pressed: open the scope. Aiming is free; only firing is gated. LT's pressure then sets the
+        /// zoom every frame (<see cref="Update"/>), from <paramref name="so"/>'s wide to narrow field of view.</summary>
+        public void BeginScope(GrizzlySniperShotActionSO so)
+        {
+            _scopeConfig = so;
+            if (so) SetFov(so.ScopeFovForPressure(ScopePressure()), force: true);
+            SetScoped(true);
+        }
+
+        /// <summary>The zoom follows LT while the scope is up.</summary>
+        void Update()
+        {
+            if (!_scoped || !_scopeConfig) return;
+            float target = _scopeConfig.ScopeFovForPressure(ScopePressure());
+            float eased = _scopeFov + (target - _scopeFov) * (1f - Mathf.Exp(-_scopeConfig.ScopeZoomRate * Time.deltaTime));
+            SetFov(eased, force: false);
+        }
+
+        /// <summary>LT's pull, 0..1. A device with no analog trigger (mouse, keyboard, touch, an autopilot) is a
+        /// full squeeze: the deepest zoom.</summary>
+        float ScopePressure()
+        {
+            var input = _status?.InputStatus;
+            if (input == null || input.ActiveInputDevice != InputDeviceType.Gamepad) return 1f;
+            return Mathf.Clamp01(input.LeftTriggerAnalog);
+        }
+
+        void SetFov(float fov, bool force)
+        {
+            if (!force && Mathf.Abs(fov - _scopeFov) < 0.01f) return;
+            _scopeFov = fov;
+            OnScopeFovChanged?.Invoke(fov);
+        }
 
         /// <summary>LT released: close the scope, and with it any ride on a round.</summary>
         public void EndScope() => SetScoped(false);

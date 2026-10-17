@@ -64,7 +64,8 @@ momentum."*
   half the prism's size — the Brittle Star cords' cut, made a burn). Live pressure sets the finger length from
   `minRange` 22 u to `range` 55 u and the spread from `minSpreadFraction` 0.6 of `whipSpreadDegrees` to all of it;
   no analog = full. Claws root `sideOffset` 6 to each side and `noseOffset` 4 ahead, each turned `splayDegrees` 6°
-  outward. 55 u is still the Grizzly's shortest reach on purpose.
+  outward and `tiltUpDegrees` 5° up (2026-10-17: *"tilt them up just a touch please, the overlap from the chase
+  camera makes them look a little awkward"*). 55 u is still the Grizzly's shortest reach on purpose.
 - **Claw look: four rigid red whips per side** (2026-10-16: *"the brittlestar has a whip mode that I would
   like to mimic, but have be more rigid and red with four on each side as the plasma claw… we are trying to
   enhance the visuals of it. the cones look a little plain."*). The flat cone is gone
@@ -85,7 +86,12 @@ momentum."*
   `cellRechargeDelay` 0.25 s after that claw stops. An empty cell cuts its claw out until you
   pull again with charge in it. The claw's glow **dims as its cell empties**, which is the read for now.
   `GrizzlyFlamethrowerActionExecutor.CellFill(side)` is there for a HUD bar.
-- **Sniper:** pressure is ignored. The scope is the HUD's **PiP** (picture-in-picture), not the
+- **Sniper zoom on LT** (2026-10-17: *"make the pressure of LT control the zoom distance of the scope"*): while
+  the scope is up, LT's pull sets its field of view from `scopeWideFov` 30° (a feather) to `scopeNarrowFov` 5°
+  (a full squeeze), eased at `scopeZoomRate` 10/s (`GrizzlySniperShotActionSO`; the executor raises
+  `OnScopeFovChanged`, the HUD view sets the PiP camera). No analog trigger = the deepest zoom. RT's pressure
+  still means nothing.
+- **Sniper:** RT pressure is ignored. The scope is the HUD's **PiP** (picture-in-picture), not the
   main view (design owner, 2026-10-16: "the scope is supposed to be a PiP"). Releasing LT closes
   it, and the round flies on unwatched.
 - **Bombs off elsewhere:** leaving Explosives retires every live bomb silently, and the autopilot

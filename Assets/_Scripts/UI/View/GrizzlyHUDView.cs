@@ -214,6 +214,12 @@ namespace CosmicShore.UI
             return reticleNoTargetColor;
         }
 
+        /// <summary>The scope's zoom: LT's pressure, as a field of view (GrizzlySniperShotActionExecutor).</summary>
+        public void SetScopeFov(float fieldOfView)
+        {
+            if (scopeCamera && fieldOfView > 0f) scopeCamera.fieldOfView = fieldOfView;
+        }
+
         /// <summary>The pilot domain, so the reticle can tell friend from foe.</summary>
         public void SetOwnDomain(Domains domain) => _ownDomain = domain;
 

@@ -98,6 +98,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void LtPressureZoomsTheScope()
+        {
+            // Design ask 2026-10-17: "make the pressure of LT control the zoom distance of the scope".
+            Assert.Greater(_sniper.ScopeFovForPressure(0f), _sniper.ScopeFovForPressure(1f),
+                "a full squeeze must zoom further (a narrower field of view) than a feather");
+            float prev = float.MaxValue;
+            for (float p = 0f; p <= 1.0001f; p += 0.05f)
+            {
+                float fov = _sniper.ScopeFovForPressure(p);
+                Assert.LessOrEqual(fov, prev, "the zoom must deepen steadily with the pull");
+                Assert.Greater(fov, 0f);
+                prev = fov;
+            }
+            Assert.Greater(_sniper.ScopeZoomRate, 0f, "a zoom that never eases never moves");
+        }
+
+        [Test]
+        public void ClawsTiltUpATouch()
+        {
+            // Design ask 2026-10-17: "tilt them up just a touch" so the two claws do not overlap from the chase camera.
+            Assert.Greater(_claw.TiltUpDegrees, 0f);
+            Assert.LessOrEqual(_claw.TiltUpDegrees, 15f, "a touch, not a climb");
+        }
+
+        [Test]
         public void ClawIsAlwaysTheShortestReach()
         {
             float sniperReach = _sniper.ProjectileSpeed * _sniper.ProjectileTime;

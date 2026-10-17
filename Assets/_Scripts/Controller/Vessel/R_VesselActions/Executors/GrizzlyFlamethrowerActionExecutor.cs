@@ -15,7 +15,8 @@ namespace CosmicShore.Gameplay
     /// active convert (steal) on burnout even if the level later drops.
     ///
     /// <para><b>Two claws on the triggers</b> (2026-10-16): LT's claw roots at the LEFT front of the hull and RT's
-    /// at the RIGHT front, both forward and turned <c>splayDegrees</c> outward, each held on its own. The trigger's
+    /// at the RIGHT front, both forward and turned <c>splayDegrees</c> outward, each held on its own. Each
+    /// claw is tilted <c>tiltUpDegrees</c> up, so the two do not overlap from the chase camera. The trigger's
     /// LIVE pressure sets the claw's finger length and spread every frame
     /// (<see cref="GrizzlyFlamethrowerActionSO.RangeForPressure"/>, <c>SpreadForPressure</c>); a device with no
     /// analog trigger gets the full claw. A spray started with no side (the legacy single-button path) roots at the
@@ -196,7 +197,7 @@ namespace CosmicShore.Gameplay
                     var vesselTf = status?.Transform;
                     if (spray.Whips && vesselTf)
                         spray.Whips.Show(so, vesselTf.TransformPoint(LocalApex(so, SlotOf(side))),
-                                         vesselTf.rotation * Quaternion.Euler(0f, Yaw(so, SlotOf(side)), 0f),
+                                         vesselTf.rotation * Quaternion.Euler(-so.TiltUpDegrees, Yaw(so, SlotOf(side)), 0f),
                                          range, spread, spray.Fill, Time.deltaTime);
                     if (spray.Fill <= 0f)
                     {
