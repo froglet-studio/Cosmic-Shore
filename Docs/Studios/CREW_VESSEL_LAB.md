@@ -8,7 +8,8 @@ puts to the designer, from the brief ("Maverick and Goose"):
 > If there is no other player, an AI flies. The D-pad swaps players between flyer and puzzler, as if
 > they had another squad mate.
 
-The lab does not decide this. **Round 3 (current, for sign-off)** is one design: a kite on the flying vessel's x-z
+**Round 3 was signed off on 2026-10-17 ("this is fun, build it in Unity") and has graduated:** the game's port is
+`Assets/_Scripts/Controller/Vessel/Crew/` (start at `KITE_NAVIGATOR.md`). Round 3 is one design: a kite on the flying vessel's x-z
 plane, flown with one thumb (offset above it on a phone). Its head destroys hostile prisms and rams rivals; its tail is
 a lasso; a loop of one navigator-only element fires an exponential effect (Space blast, Mass cluster, Time boost, Charge
 steal). Rounds 2 (twelve one-thumb presets) and 1 (four consoles) are kept below.
@@ -23,7 +24,7 @@ two people. Pick a variant in the Presets tab. Swap seats with the D-pad left/ri
   Share menu; decisions recorded there land in the shared log Claude reads at the start of each round).
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewVesselLab.html` (PASS, round 3).
 
-## Round 3 (2026-10-17): the kite and its tail (sign-off candidate)
+## Round 3 (2026-10-17): the kite and its tail (signed off; graduated to Unity)
 
 **Input this round** (the designer, in substance):
 - On mobile, a proper thumb offset, so the thumb never covers the play.
@@ -149,18 +150,41 @@ the effect columns swing more than that (see Found 2). Read differences under ab
 5. **Where motes live**: on the board (the candidate) or in the world.
 6. **Thumb offset**: 80 px.
 
-### The path to Unity (once signed off; nothing built yet)
+### Signed off, and graduated to Unity (2026-10-17)
 
-- **A pure C# kite core, ported line for line from this page** (aim → kite, head contacts, tail polyline, loop
-  closure, pure/mixed rule, `base × growth^(n − 1)`), held to the page by a parity harness (`/labmaker` §7).
-- **The board is a pure function of the hull's pose**, which already replicates, so it can be drawn on any device. The
-  kite's consequences (a pop, a blast, a cluster, boost, a steal) are sent as inputs and applied where every peer
-  applies them (`/vessel` rule 48).
-- **Effects through the game's own systems:** Space spawns the `AOEExplosion` prefab with `MaxScale` and
-  `AffectSelfOverride = false`; Mass lays prisms through the prism pool in our domain; Charge steals through
-  `ElementalTransfer.Steal` and scores through `CombatHitDrain.TryAdmit`.
-- **New things the game would gain, each its own decision:** navigator motes (seen only on the navigator's screen), a
-  prism-cluster spawner, a boost-energy pool (the Sparrow has none), and the seat layer for a second player on a hull.
+Garrett's sign-off ("this is fun, build it in Unity") took the candidate as it stood. That settles the five open
+decisions above at the candidate's values: growth ×2 with the caps as shipped, clusters of 4 at an 18 u spread,
+mixed loops fizzle, motes live on the board, and an 80 px thumb offset (21 mm of glass in the game).
+
+The port follows `/labmaker` §7:
+
+- **The core was ported line for line.** The page's kite core was first refactored into pure functions (`kiteMove`,
+  `tailAdvance`, `resolveLoop`, `blastRadius`, exposed as `__lab.core`). The refactor is behaviour-neutral: the
+  scorecard is unchanged at 28.67 / 18.33 / 86 / 2.25. The functions were then ported to `KiteNavigatorCore.cs`, and
+  the AI to `KiteNavigatorAI.cs`.
+- **The parity gate:** `node Tools/Build/kite_navigator_lab/parity.cjs`.
+  - It compiles the shipped C# from its real path and diffs it against `__lab.parityTrace` frame by frame.
+  - Result: PASS, 3120 frames over 6 scripted thumbs, 11 loops closed, worst error 0.000× tolerance.
+  - The asset matches the page on 21 fields.
+  - Every planted control was caught: kiteAccel 12→11, tailLen 1.6→1.45, kiteSpeed 320→300, and the asset's growth +0.1.
+- **The effects go through the game's own systems.**
+  - Space: `ExplosionHelper.CreateExplosion` with `AOEExplosion.prefab`.
+  - Mass: the hull's `PrismSpawnChannel`.
+  - Time: `IsBoosting`.
+  - Charge: rams through `CombatHitDrain.TryAdmit`, then `ElementalTransfer.ApplyAuthoritative` (Steal), then
+    `OnCombatHitLanded`.
+- **Seats use the arena's swap gesture**, and the AI squad mate takes whichever seat is empty.
+
+**Where the game differs from the lab:**
+- Time is burned at once, because the Sparrow's boost is unlimited.
+- The real blast can hit rival hulls.
+- Everything runs on the local machine for now.
+
+Each is explained in `KITE_NAVIGATOR.md`, along with the follow-ups: networking, the arena swap, duo-vessel
+registration, and sounds.
+
+**Not yet seen in the Editor.** The play-mode menu, the board's look and the feel on a phone are unverified (entry in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 
 ## Round 2 (2026-10-16): the 2D navigator on the vessel's plane (superseded by round 3)
 

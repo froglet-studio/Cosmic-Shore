@@ -3,7 +3,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <!--
-  CREW VESSEL LAB, round 3: the KITE AND ITS TAIL, the sign-off candidate before Unity.
+  CREW VESSEL LAB, round 3: the KITE AND ITS TAIL, signed off 2026-10-17 and ported to Unity
+  (Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; parity gate Tools/Build/kite_navigator_lab/parity.cjs).
   The navigator is a kite on the flying vessel's own x-z plane; the 3D world projects onto it. One thumb flies the kite
   (it rides above the thumb on a phone). Its HEAD destroys hostile prisms. Its TAIL is a lasso: cross your own tail and
   every navigator mote inside is collected. A loop of ONE element fires that element's effect, exponentially bigger per
@@ -454,15 +455,11 @@
     const counts = [0, 0, 0, 0]; for (const m of inside) { counts[m.e]++; m.dead = true; }
     const kinds = counts.filter((c) => c > 0).length, st = w.stats;
     st.loops++;
-    let e = counts.indexOf(Math.max(...counts)), n = counts[e];
-    if (kinds > 1) {
-      st.mixed++;
-      if (w.opts.mixed !== 'majority') { navEvent(w, cx, cz, 'fizzle', -1, 'mixed loop'); return; }
-      n = counts[e] - (inside.length - counts[e]);
-      if (n < 1) { navEvent(w, cx, cz, 'fizzle', -1, 'mixed loop'); return; }
-    } else st.pure++;
-    st.nSum += n; st.nMax = Math.max(st.nMax, n);
-    fireEffect(w, e, n, cx, cz);
+    if (kinds > 1) st.mixed++; else st.pure++;
+    const r = resolveLoop(counts, w.opts.mixed);
+    if (!r) { navEvent(w, cx, cz, 'fizzle', -1, 'mixed loop'); return; }
+    st.nSum += r.n; st.nMax = Math.max(st.nMax, r.n);
+    fireEffect(w, r.e, r.n, cx, cz);
   }
   const grow = (base, n, cap) => Math.min(cap, base * Math.pow(P.growth, n - 1));
   function fireEffect(w, e, n, x, z) {
@@ -490,7 +487,7 @@
     for (const b of w.blasts) {
       const t = w.t - b.t0 - P.blastDelay;
       if (t < 0) continue;
-      const k = Math.min(1, t / P.blastDuration); b.r = 0.5 * b.maxScale * Math.sin(k * Math.PI / 2);   // AOEExplosion: collider 0.5 × MaxScale × sin ease
+      const k = Math.min(1, t / P.blastDuration); b.r = blastRadius(b.maxScale, w.t - b.t0);   // AOEExplosion: collider 0.5 × MaxScale × sin ease
       const r2 = b.r * b.r;
       for (const pr of w.prisms) if (!pr.dead && pr.dom !== b.dom && d2(pr.p, b.p) < r2) { pr.dead = true; w.stats.blasted++; }
       if (k >= 1) b.done = true;
@@ -507,17 +504,49 @@
     w.stats.stolen += got; w.stats.hullPetals += got; w.stats.rams++;
     navEvent(w, rival.sx, rival.sz, 'steal', CH, got ? 'stole ' + got + ' petals' : 'rival is empty');
   }
+  // ---- THE KITE CORE: pure functions of (kite state, aim, dt, P). Ported line for line to C# as KiteNavigatorCore
+  //      (Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorCore.cs) and held to it by Tools/Build/kite_navigator_lab/parity.cjs.
+  // the kite flies to the aim point while the thumb is down, and coasts to a stop when it lifts; returns where it was
+  function kiteMove(N, ax, az, down, dt) {
+    if (down) { const g = onBoard(ax, az), dx = g[0] - N.c[0], dz = g[1] - N.c[1], d = hypot2(dx, dz), s = Math.min(P.kiteSpeed, d * 7), want = d > 1e-6 ? [dx / d * s, dz / d * s] : [0, 0], a = 1 - Math.exp(-P.kiteAccel * dt); N.vel[0] += (want[0] - N.vel[0]) * a; N.vel[1] += (want[1] - N.vel[1]) * a; }
+    else { const k = Math.exp(-4 * dt); N.vel = [N.vel[0] * k, N.vel[1] * k]; }
+    const prev = N.c.slice();
+    N.c = onBoard(N.c[0] + N.vel[0] * dt, N.c[1] + N.vel[1] * dt);
+    return prev;
+  }
+  // the tail: a polyline of where the kite has been (board-fixed), trimmed to tailLen; crossing it closes a loop (returned)
+  function tailAdvance(N) {
+    const Rr = P.planeRange, T = N.tail, q = N.c.slice();
+    let poly = null;
+    if (!T.length || hypot2(q[0] - T[T.length - 1][0], q[1] - T[T.length - 1][1]) > 2.5) {
+      if (T.length >= 3) {
+        const a = T[T.length - 1];
+        for (let i = 0; i < T.length - 3; i++) {
+          const X = segX(a, q, T[i], T[i + 1]);
+          if (X) { poly = [X].concat(T.slice(i + 1)); poly.push(q); N.tail = [q]; break; }
+        }
+      }
+      if (!N.tail.length || N.tail[N.tail.length - 1] !== q) N.tail.push(q);
+      let total = 0; for (let i = N.tail.length - 1; i > 0; i--) { total += hypot2(N.tail[i][0] - N.tail[i - 1][0], N.tail[i][1] - N.tail[i - 1][1]); if (total > P.tailLen * Rr) { N.tail = N.tail.slice(i); break; } }
+    }
+    return poly;
+  }
+  // a loop's motes by element → which effect fires and how strongly (null: nothing fires)
+  function resolveLoop(counts, mixed) {
+    const total = counts[0] + counts[1] + counts[2] + counts[3]; if (!total) return null;
+    const kinds = counts.filter((c) => c > 0).length;
+    let e = counts.indexOf(Math.max(...counts)), n = counts[e];
+    if (kinds > 1) { if (mixed !== 'majority') return null; n = counts[e] - (total - counts[e]); if (n < 1) return null; }
+    return { e, n };
+  }
+  const blastRadius = (maxScale, since) => { const t = since - P.blastDelay; if (t < 0) return 0; const k = Math.min(1, t / P.blastDuration); return 0.5 * maxScale * Math.sin(k * Math.PI / 2); };
   function stepNav(w, aim, dt) {
     const N = w.nav, Rr = P.planeRange;
     const down = !!aim.down; N.prevDown = down;
     if (down) N.downTime += dt;
     if (N.lastAim) N.travel += hypot2(aim.x - N.lastAim[0], aim.z - N.lastAim[1]) / (2 * Rr);
     N.lastAim = [aim.x, aim.z];
-    // the kite flies to the aim point while the thumb is down, and coasts to a stop when it lifts
-    if (down) { const g = onBoard(aim.x, aim.z), dx = g[0] - N.c[0], dz = g[1] - N.c[1], d = hypot2(dx, dz), s = Math.min(P.kiteSpeed, d * 7), want = d > 1e-6 ? [dx / d * s, dz / d * s] : [0, 0], a = 1 - Math.exp(-P.kiteAccel * dt); N.vel[0] += (want[0] - N.vel[0]) * a; N.vel[1] += (want[1] - N.vel[1]) * a; }
-    else { const k = Math.exp(-4 * dt); N.vel = [N.vel[0] * k, N.vel[1] * k]; }
-    const prev = N.c.slice();
-    N.c = onBoard(N.c[0] + N.vel[0] * dt, N.c[1] + N.vel[1] * dt);
+    const prev = kiteMove(N, aim.x, aim.z, down, dt);
     // head: pop hostile prisms it touches (sweep the move so a fast kite cannot tunnel)
     const hr = P.kiteRadius + P.prismW * 0.5, h2 = hr * hr, mx = (prev[0] + N.c[0]) / 2, mz = (prev[1] + N.c[1]) / 2, step = hypot2(N.c[0] - prev[0], N.c[1] - prev[1]), reach2 = (hr + step) * (hr + step);
     for (const pr of w.prisms) {
@@ -527,19 +556,8 @@
     }
     // head: ram a rival vessel's shadow
     for (let i = 1; i < w.vessels.length; i++) { const v = w.vessels[i]; if (!touchable(v)) continue; if (distSeg2(v.sx, v.sz, prev, N.c) <= (P.kiteRadius + 4) * (P.kiteRadius + 4)) ram(w, v); }
-    // tail: a polyline of where the kite has been (board-fixed), trimmed to tailLen; crossing it closes a loop
-    const T = N.tail, q = N.c.slice();
-    if (!T.length || hypot2(q[0] - T[T.length - 1][0], q[1] - T[T.length - 1][1]) > 2.5) {
-      if (T.length >= 3) {
-        const a = T[T.length - 1];
-        for (let i = 0; i < T.length - 3; i++) {
-          const X = segX(a, q, T[i], T[i + 1]);
-          if (X) { const poly = [X].concat(T.slice(i + 1)); poly.push(q); N.tail = [q]; closeLoop(w, poly); break; }
-        }
-      }
-      if (!N.tail.length || N.tail[N.tail.length - 1] !== q) N.tail.push(q);
-      let total = 0; for (let i = N.tail.length - 1; i > 0; i--) { total += hypot2(N.tail[i][0] - N.tail[i - 1][0], N.tail[i][1] - N.tail[i - 1][1]); if (total > P.tailLen * Rr) { N.tail = N.tail.slice(i); break; } }
-    }
+    const poly = tailAdvance(N);
+    if (poly) closeLoop(w, poly);
     while (N.fx.length && w.t - N.fx[0].t > 1.4) N.fx.shift();
   }
   function distSeg2(x, z, a, b) { const vx = b[0] - a[0], vz = b[1] - a[1], l2 = vx * vx + vz * vz; let t = l2 > 0 ? ((x - a[0]) * vx + (z - a[1]) * vz) / l2 : 0; t = clamp(t, 0, 1); const px = a[0] + vx * t - x, pz = a[1] + vz * t - z; return px * px + pz * pz; }
@@ -1153,6 +1171,19 @@
     tick(dt, n) { dt = dt || DT; n = n || 1; for (let i = 0; i < n; i++) simStepWorld(world, dt, LIVE); resize(); render(); },
     reset, score: () => score(), runBatch, runOne, makeWorld, simStepWorld, presetCfg, presetNumbers, presetOpts, setParam, applyPreset, record, requestSwap, fireEffect, closeLoop,
     get world() { return world; },
+    core: { kiteMove, tailAdvance, resolveLoop, blastRadius, grow, onBoard, segX, pointInPoly },
+    // parity: run a scripted thumb through the page's own kite core; one row per frame
+    parityTrace(scn) {
+      const saved = Object.assign({}, P); Object.assign(P, scn.P || {});
+      const N = { c: [0, P.anchor * P.planeRange * 0.5], vel: [0, 0], tail: [] }, rows = [];
+      for (let f = 0; f < scn.aims.length; f++) {
+        const a = scn.aims[f]; kiteMove(N, a[0], a[1], !!a[2], scn.dt);
+        const poly = tailAdvance(N);
+        rows.push({ x: N.c[0], z: N.c[1], vx: N.vel[0], vz: N.vel[1], tail: N.tail.length, loop: poly ? poly.length : 0 });
+      }
+      Object.assign(P, saved);
+      return rows;
+    },
     state: () => ({ t: world.t, seed, preset: presetKey, pilot: seatName(world.seats.pilot), nav: seatName(world.seats.nav, true), stats: Object.assign({}, world.stats), charge: world.nav.charge, boost: world.vessels[0].boostE, petals: world.vessels[0].petals.slice() }),
   };
 })();
