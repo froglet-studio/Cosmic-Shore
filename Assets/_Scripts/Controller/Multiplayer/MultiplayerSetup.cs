@@ -10,7 +10,7 @@ using CosmicShore.Utility;
 using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
 #if UNITY_EDITOR
-using Unity.Multiplayer.Playmode;
+using Unity.Multiplayer.PlayMode;
 using Unity.Netcode.Transports.UTP;
 #endif
 namespace CosmicShore.Gameplay
@@ -291,8 +291,8 @@ namespace CosmicShore.Gameplay
                     var transport = nm.GetComponent<UnityTransport>();
                     if (transport != null)
                     {
-                        var tags = CurrentPlayer.ReadOnlyTags();
-                        var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
+                        var tags = CurrentPlayer.Tags;
+                        var tagKey = tags != null && tags.Count > 0 ? string.Join("-", tags) : "clone";
                         ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
                         transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
                         CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] MPPM clone '{tagKey}' - local host port {port}.");

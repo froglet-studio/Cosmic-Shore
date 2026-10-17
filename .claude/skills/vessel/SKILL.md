@@ -63,11 +63,11 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
    was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
 3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
-   **FrogletTools > Vessels > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
+   **FrogletTools > Vessels > Wiring > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
    ANY vessel's four-icon row from nothing at the fleet-standard bands; idempotent, never touches
    sprites, adopts authored gauges by name. This is the mechanical half of taking a vessel from 0/4
    to 4/4 once its map is designed),
-   **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
+   **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
    Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
    report and game cannot disagree.
 4. **Per-vessel NUMBERS come from the prefab, never the class default.** Reasoning about a
@@ -761,6 +761,28 @@ applies to new abilities, new resources on the meter list, and anything that add
     computed somewhere that one can. A shared last-writer flag (`SetSpawnerPaused`) is written on EDGES,
     never per frame, or it fights its other writers every frame.
 
+49. **An ability's object the pilot must SEE goes inside the chase camera's frustum — "beside the hull" is off
+    screen.** The Stoat's Time mode laid its attractor square to the side at the orbit radius (150 u) with the
+    chase camera 21 u behind: ~80° off the view axis, outside every FOV the game ships. In play: "I couldn't see
+    the poles at all and was just pulled right or left." Fixed (2026-10-14) by laying it 150 u AHEAD and 45 u to
+    the side, where a catch then takes over (`StoatSlingMath.CatchPair`, a test asserts < 30° off the nose).
+    Before shipping a placement, compute its angle off the camera's forward from the shipped camera settings
+    (`StoatCameraSettingsSO.followOffset`, the FOV) — a cue the pilot cannot see is an unexplained force.
+50. **Never draw instanced `Sprites/Default` (or any sprite shader) with `Graphics.RenderMeshInstanced`.** Its
+    instanced variant reads `unity_SpriteFlipArray` / `unity_SpriteRendererColorArray` per instance; only a
+    `SpriteRenderer` fills them, so both read ZERO and `UnityFlipSprite` collapses every quad to a point. No error,
+    nothing drawn. The Stoat's 3D path dots shipped that way and the path vanished ("I no longer see the
+    foresight"). Draw custom geometry with a shader whose only per-instance datum is the matrix the call fills
+    (`CosmicShore/StoatPathDots`, shipped via a `Resources/` material so builds carry it) — and for many
+    billboards, ONE dynamic mesh with the colour in the vertex colour beats N instances.
+51. **Amoebius compiles `Assets/_Scripts` LIVE: a Unity API its shim lacks breaks the engine's build.** The
+    reference compile (`unity_refcompile`) is against real Unity and stays green; it cannot see this.
+    `Graphics.RenderMesh`, `Mesh.Clear(bool)`, ranged `SetColors` / `SetIndices`, `RenderParams.camera` and
+    `Vector3.RotateTowards` were all missing (2026-10-14). Build it (`dotnet build Port/src/CosmicShore.Live`,
+    .NET 10 SDK) whenever a change calls an engine API the game did not call before, and write to the overloads
+    both have (`RenderMeshInstanced` with one identity instance, list-based mesh setters). A game branch does not
+    edit `Port/` (Port/CLAUDE.md); a missing API worth having is a port-branch row.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
@@ -881,7 +903,7 @@ actually draws — take their size from the **transform chain**, which is precis
 - **Scale the TRANSFORM, not the particle module**, and only because these systems are
   `Hierarchy`-scaled: it moves particle size, emission shape, particle speed AND the nested
   `Trail` child's standoff together. `startSizeMultiplier` would move one of the four.
-- Audit rather than remember: *FrogletTools > Vessels > Audit Vessel Tails and Jets* reports each
+- Audit rather than remember: *FrogletTools > Vessels > Audits > Audit Vessel Tails and Jets* reports each
   hull's effective plume against its camera-derived target and flags `UNSIZED`. Sparrow, Rhino,
   Grizzly and Scarab are still unsized — known, deliberate, recorded in the doc's follow-ups.
 
@@ -1012,6 +1034,31 @@ shipped a change that changed nothing. Two rules:
 
 And then §4.ab applies: a stronger shove is a faster vessel, so any mode cut against that
 vessel's curve has to be re-cut (Grizzly Time went 14 gates on 560 u -> 8 on 800 u).
+
+### 4.ab3 "Slower rounds, the same range" multiplies the rounds in the air — size the pool from rate × flight time
+
+Range is `speed × 2T/π` (rule 34: the WHOLE velocity eases to rest, inherited part included), so a gun slowed to a tenth
+of its speed keeps its range only with ten times the flight time — and every gun's rounds-alive is `rate × T`. The
+Brittle Star's arms (2026-10-15: 1350 → 135 u/s, `projectileTime` 0.3 → 3 s) went from ~135 to **1,350–2,160 rounds alive
+per hull**. Unity's `ObjectPool` does not block when empty: a miss instantiates synchronously and a return beyond
+`maxSize` destroys the round, so an undersized pool turns into hundreds of instantiate/destroy calls a second rather
+than an error. When a speed or flight time moves: recompute `rate × muzzles × T × (the Space range multiplier at 10)`,
+size the turret's pool (`defaultCapacity` / `bufferSizeTarget` / `maxSize`, and its refill rates) from it, say the cost in
+the vessel doc with the cheap knob (the fire rate) beside it, and check two side effects: a hull flying faster than its
+own rounds outruns them within T (own-domain hulls are immune, `Projectile.DisallowImpactOnVessel`), and an in-flight
+growth factor (`Gun.FireGun`'s `flightGrowthFactor`, the Sparrow's look) grows the HIT radius too.
+
+### 4.ab4 Analog-trigger-driven STATE diverges across peers; a heat limit bounds the pool
+
+The fleet's analog triggers (`InputStatus.RightTriggerAnalog`) do not replicate — the Thresher, the Manta's analog turn
+boost and the Brittle Star all read the owner's depth and fall back to "a press is a full pull" on remote copies and the
+autopilot (`ThresherExecutor.PollTriggers`). That is tolerable for something cosmetic or per-peer (a fire RATE, a cord's
+stiffness), but anything the depth ACCUMULATES into is state: the Brittle Star's gun heat runs hotter on a remote copy
+during a partial pull, so its overheat — and the danger trail it switches on — can differ by peer (vessel rule 48).
+Before keying gameplay state off an analog depth, either replicate the depth (two bytes a frame) or write down the gap in
+the vessel doc and its verification list, as `BRITTLE_STAR.md` §3.4 and follow-up F13 do. And when a gun overheats, the
+burst length — not the sustained rate — sizes its pool (4.ab3): rounds alive ≈ rate × guns × seconds-to-overheat for a
+burst that outlives its flight time, not rate × guns × T forever (the Brittle Star's five guns: ~1,100, not 4,050).
 
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 
@@ -1197,7 +1244,7 @@ up the enforcement ladder the shipped systems use:
 5. **Record it**: CLAUDE.md + this skill's CONTRACT.md + the ship checklist.
 
 **Worked example (2026-08):** the skimmer half of that gap is now closed —
-`VesselSkimmerAudit` (`FrogletTools > Vessels > Audit Vessel Skimmers`) walks every vessel
+`VesselSkimmerAudit` (`FrogletTools > Vessels > Audits > Audit Vessel Skimmers`) walks every vessel
 prefab's `NearFieldSkimmer`/`FarFieldSkimmer` to its GameObject and checks active state up the
 whole ancestor chain, the impactor/`ImpactCollider`/trigger-collider/`Rigidbody` the trigger path
 needs, and whether the container holds prism effects; when a container asks for the forcefield

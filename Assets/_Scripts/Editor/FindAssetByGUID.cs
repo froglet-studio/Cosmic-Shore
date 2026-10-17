@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEditor.SceneManagement;
 using CosmicShore.Utility;
+using CosmicShore.Editor.Froglet;
 
 public class FindAssetByGUID : EditorWindow
 {
@@ -11,7 +12,9 @@ public class FindAssetByGUID : EditorWindow
     private string[] searchModes = { "Find Asset by GUID", "Find GameObject by File ID", "Find Sub-Asset (GUID + File ID)" };
     private Vector2 scrollPosition;
 
-    [MenuItem("FrogletTools/Legacy/Find Asset by GUID")]
+    [MenuItem("FrogletTools/Utilities/Find Asset by GUID", false, 220)]
+    [FrogletTool(FrogletToolCategory.Utilities, Importance = 3,
+        Description = "Resolve a guid or fileID to the asset or scene object that owns it.")]
     private static void ShowWindow()
     {
         GetWindow<FindAssetByGUID>("Asset & Object Finder");

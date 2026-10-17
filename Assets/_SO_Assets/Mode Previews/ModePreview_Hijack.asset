@@ -25,6 +25,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e4c4962c3e9491b3ae955f6e19ff471a, type: 2}
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
+  CourseStructurePrefab: {fileID: 0}
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 4

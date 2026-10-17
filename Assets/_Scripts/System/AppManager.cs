@@ -170,14 +170,26 @@ namespace CosmicShore.Core
             applicationStateMachine?.TransitionTo(ApplicationState.Bootstrapping);
 
             ConfigureGameData();
-            StartNetworkMonitor();
-            StartAuthentication();
 
-            // The one connection-loss surface that survives a scene load. Installed here rather
-            // than authored into a scene because a game scene has no toast surface at all - which
-            // is why a mid-match disconnect previously said nothing until after the bounce had
-            // already rebuilt the menu. See Docs/UI_ARCHITECTURE_AUDIT.md section 4.2.1.
-            DisconnectNotice.Install(networkMonitorDataVariable, gameData, reconnectService);
+            // The browser Toybox (WebToybox) talks to no online service: no network monitor, no
+            // UGS sign-in, and so no Cloud Save, presence lobby, Friends or analytics, all of which
+            // start from OnSignedIn. The Authentication scene starts the single-player local host
+            // and loads Menu_Main (AuthenticationSceneController.RunAuthFlowAsync).
+            if (WebToybox.IsBuild)
+            {
+                Log("Browser Toybox build - network monitor, UGS sign-in and the disconnect notice are skipped.");
+            }
+            else
+            {
+                StartNetworkMonitor();
+                StartAuthentication();
+
+                // The one connection-loss surface that survives a scene load. Installed here rather
+                // than authored into a scene because a game scene has no toast surface at all - which
+                // is why a mid-match disconnect previously said nothing until after the bounce had
+                // already rebuilt the menu. See Docs/UI_ARCHITECTURE_AUDIT.md section 4.2.1.
+                DisconnectNotice.Install(networkMonitorDataVariable, gameData, reconnectService);
+            }
 
             _cts = new CancellationTokenSource();
             RunBootstrapAsync(_cts.Token).Forget();
@@ -279,7 +291,10 @@ namespace CosmicShore.Core
                 // silently dropping every analytics event in the game. The overlay is persistent
                 // and non-blocking: bootstrap continues to Authentication underneath it, and
                 // granting consent starts collection whenever the player answers.
-                PrivacyConsentOverlay.CreateIfNeeded(analyticsServiceFacade);
+                // The browser Toybox collects no analytics (UGS never signs in), so there is
+                // nothing to consent to and no age question to ask.
+                if (!WebToybox.IsBuild)
+                    PrivacyConsentOverlay.CreateIfNeeded(analyticsServiceFacade);
 
                 string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");

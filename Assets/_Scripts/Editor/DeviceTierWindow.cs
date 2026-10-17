@@ -17,7 +17,7 @@ namespace CosmicShore.Editor.Froglet
     /// </summary>
     public class DeviceTierWindow : EditorWindow
     {
-        [MenuItem("FrogletTools/Performance/Device Tier")]
+        [MenuItem("FrogletTools/Performance/Device Tier", false, 172)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 4,
             Description = "See which device tier (Desktop / MobileHigh / MobileLow) and platform profile " +
                           "this machine resolves to and why, and simulate another tier in Play mode.")]

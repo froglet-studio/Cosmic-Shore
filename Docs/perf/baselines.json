@@ -1,0 +1,61 @@
+{
+  "MinigameGrizzlyCharge|MinigameGrizzlyCharge": {
+    "adoptedUtc": "2026-10-16T21:50:20Z",
+    "codeOpt": "Release",
+    "cpuBusyMs": 6.47861385345459,
+    "fps": 59.16524887084961,
+    "gcKB": 84.00566864013672,
+    "markers": {
+      "Animators.Update": 0.0285,
+      "BehaviourUpdate": 1.2185,
+      "CoroutinesDelayedCalls": 0.1813,
+      "Fauna.BodySync": 0.2793,
+      "Inl_UniversalRenderTotal": 2.8462,
+      "LOD.Drain": 0.0039,
+      "LOD.Sweep": 0.0076,
+      "LateBehaviourUpdate": 0.3973,
+      "LightFauna.Feed": 0.0633,
+      "LightFauna.Tick.Goal": 0.0009,
+      "LightFauna.Tick.PrismScan": 0.13,
+      "LightFauna.Tick.Vessels": 0.0052,
+      "Physics.Simulate": 0.0775,
+      "PlayerLoop": 10.6872,
+      "PrismDebris.RefreshConvergence": 0.0281,
+      "Projectile.Fuze": 0.0,
+      "Projectile.SweepPrisms": 0.0043,
+      "Projectile.SweepVessels": 0.0006,
+      "ShellContact.Query": 0.0438,
+      "UGUI.Rendering.UpdateBatches": 0.3039,
+      "UniTaskLoopRunnerPreLateUpdate": 0.0062
+    },
+    "p95Ms": 19.186302185058594,
+    "prismEnts": 10830,
+    "prismPath": "ON \u00b7 ents=10830 meshes=5 mats=12",
+    "timestamp": "2026-10-16 14:51:10"
+  },
+  "MinigameRegatta|MinigameRegatta": {
+    "adoptedUtc": "2026-10-16T21:50:20Z",
+    "codeOpt": "Release",
+    "cpuBusyMs": 8.692339897155762,
+    "fps": 87.84300231933594,
+    "gcKB": 47.01902389526367,
+    "markers": {
+      "Animators.Update": 0.1659,
+      "BehaviourUpdate": 1.5866,
+      "CoroutinesDelayedCalls": 0.1719,
+      "Inl_UniversalRenderTotal": 0.9318,
+      "LOD.Drain": 0.0016,
+      "LOD.Sweep": 0.011,
+      "LateBehaviourUpdate": 0.1986,
+      "Physics.Simulate": 0.2102,
+      "PlayerLoop": 9.2972,
+      "ShellContact.Query": 0.0997,
+      "UGUI.Rendering.UpdateBatches": 0.2623,
+      "UniTaskLoopRunnerPreLateUpdate": 0.0007
+    },
+    "p95Ms": 21.256399154663086,
+    "prismEnts": 26945,
+    "prismPath": "ON \u00b7 ents=26945 meshes=9 mats=13",
+    "timestamp": "2026-10-16 11:07:58"
+  }
+}

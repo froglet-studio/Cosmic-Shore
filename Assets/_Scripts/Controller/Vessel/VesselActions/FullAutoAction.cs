@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
                     ResourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
                     OnVolleyFired?.Invoke(VesselStatus.PlayerName);
                 }
-                yield return new WaitForSeconds(1/firingRate);
+                yield return CosmicShore.Utility.WaitCache.Seconds(1/firingRate);
             }
         }
     }

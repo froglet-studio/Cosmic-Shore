@@ -103,6 +103,13 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Size (× the black hole) (whSizeX): the white hole's horizon as a multiple of the black hole's — the lens " +
                  "draws its core this much bigger or smaller.")]
         [SerializeField, Range(0.3f, 3f)] float sourceSizeX = 1f;
+
+        [Tooltip("The studio's birth and death LIGHT: the white hole's light converging on a fresh pair, and the outgoing " +
+                 "light shell + gravitational wave where a released pair meets (BlackHoleWaves). OFF since 2026-10-14 (play: " +
+                 "the flash fired at the pair's CREATION and was far too big and bright) - an annihilation is marked by the " +
+                 "Charge ripple alone (StoatRippleExecutor). On brings the studio's waves back.")]
+        [SerializeField] bool annihilationWaves;
+
         [Header("Fly-through zone (the sink takes a hull that loops it)")]
         [Tooltip("Radius of the fly-through ZONE around the sink, world units at pole size 1 (Space scales it with the poles; 90, " +
                  "then 135 with the 1.5× bigger, softened poles — the smallest that holds a stick-held orbit at 60 u/s). " +
@@ -293,6 +300,7 @@ namespace CosmicShore.ScriptableObjects
         public float SourceGrowSeconds => sourceGrowSeconds;
         public float DieSeconds => dieSeconds;
         public float SourceSizeX => sourceSizeX;
+        public bool AnnihilationWaves => annihilationWaves;
         public float ThroughZoneRadius => throughZoneRadius;
         public float ThroughDegrees => throughDegrees;
         public float TurnCap => turnCap;

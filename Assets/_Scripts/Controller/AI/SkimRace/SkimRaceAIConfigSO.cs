@@ -353,6 +353,18 @@ namespace CosmicShore.Gameplay
             return cfg != null ? cfg : CreateInstance<SkimRaceAIConfigSO>();
         }
 
+        /// <summary>
+        /// Regatta's own copy of the policy (<c>SkimRaceAIConfig_Regatta</c>, first copied from the
+        /// general one), so the Squirrel can be tuned on Regatta's rails - live, in the Inspector,
+        /// while the Third Eye watches - without moving a number Skim Race was calibrated on.
+        /// Falls back to the general policy.
+        /// </summary>
+        public static SkimRaceAIConfigSO LoadForRegatta()
+        {
+            var cfg = Resources.Load<SkimRaceAIConfigSO>($"{ResourcePath}_Regatta");
+            return cfg != null ? cfg : LoadDefault();
+        }
+
         /// <summary>The policy tuned for one intensity's track (<c>SkimRaceAIConfig_I&lt;n&gt;</c>),
         /// falling back to the base policy. Each intensity is a different track, so each may carry
         /// its own tuning; the pilot code is the same. Whether that tuning still fits the live map is

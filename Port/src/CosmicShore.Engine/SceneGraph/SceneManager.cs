@@ -202,5 +202,13 @@ namespace CosmicShore.Engine.SceneManagement
     {
         /// <summary>Instantiates <paramref name="sceneName"/>'s serialized content into <paramref name="scene"/>.</summary>
         void Load(string sceneName, LoadSceneMode mode, Scene scene);
+
+        /// <summary>
+        /// True when <paramref name="nameOrPath"/> (a bare scene name or an asset path) is an
+        /// ENABLED entry of the build list, i.e. a Unity player could load it by name. Backs
+        /// <see cref="Application.CanStreamedLevelBeLoaded(string)"/>. A backend without a build
+        /// list answers false.
+        /// </summary>
+        bool IsInBuildList(string nameOrPath) => false;
     }
 }

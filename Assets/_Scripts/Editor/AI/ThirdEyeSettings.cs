@@ -93,6 +93,13 @@ namespace CosmicShore.Editor.AI
         [SerializeField, Tooltip("Label each pilot (name, hull, speed) and pin off-screen pilots to the edge of the view.")]
         bool showLabels = true;
 
+        [SerializeField, Tooltip("Draw the path every pilot has flown over the last few seconds, in its domain colour, " +
+                                 "fading with age: the AI's real trajectory through the rings.")]
+        bool showTrails = true;
+
+        [SerializeField, Range(1f, 30f), Tooltip("How many seconds of path each trail keeps.")]
+        float trailSeconds = 8f;
+
         public ThirdEyeCameraMode CameraMode { get => cameraMode; set => cameraMode = value; }
         public ThirdEyeFreeMode FreeMode { get => freeMode; set => freeMode = value; }
         public float FieldOfView { get => fieldOfView; set => fieldOfView = Mathf.Clamp(value, 30f, 110f); }
@@ -112,6 +119,8 @@ namespace CosmicShore.Editor.AI
         public float LookSensitivity { get => lookSensitivity; set => lookSensitivity = Mathf.Clamp(value, 0.05f, 1f); }
         public bool ShowThinking { get => showThinking; set => showThinking = value; }
         public bool ShowLabels { get => showLabels; set => showLabels = value; }
+        public bool ShowTrails { get => showTrails; set => showTrails = value; }
+        public float TrailSeconds { get => trailSeconds; set => trailSeconds = Mathf.Clamp(value, 1f, 30f); }
 
         public void SaveNow() => Save(true);
     }

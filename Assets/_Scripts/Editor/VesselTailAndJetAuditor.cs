@@ -8,7 +8,7 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// <b>FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets.</b>
+    /// <b>FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Tails and Jets.</b>
     ///
     /// A tail and a set of jets are STANDARD, EXPECTED parts of a vessel
     /// (<c>Docs/VESSEL_TAIL_AND_JETS.md</c>) — not per-hull decoration. This is the gate that
@@ -63,7 +63,7 @@ namespace CosmicShore.Editor
         // band it was not considered.
         const float PlumeBand = 2f;
 
-        [MenuItem("FrogletTools/Vessels/Audit Vessel Tails and Jets", false, 63)]
+        [MenuItem("FrogletTools/Vessels/Audits/Audit Vessel Tails and Jets", false, 275)]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Which vessels carry a tail, jets, and the domain-tint component — and " +
                           "which would fly one colour and streak another.")]

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -5,78 +6,152 @@ using UnityEngine.Rendering;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Stoat pathfinder's line as round dots placed IN THE SCENE (<c>R_VesselActions/STOAT_DIPOLE.md</c> §3b):
-    /// camera-facing discs every <c>worldDotSpacing</c> world units along the predicted 3D path, each
-    /// <c>worldDotSize</c> across and never smaller on screen than <c>worldDotMinPixels</c>, one GPU-instanced draw.
-    /// They sit in the world, so they recede with depth, pass behind prisms, and are bent by the black hole's lens
-    /// like any light (the lens copies the scene after the transparents). The screen overlay
-    /// (<see cref="StoatPathfinderDots"/>) stays as the fallback when <c>dotsInWorld</c> is off.
+    /// The Stoat pathfinder's line as round dots placed IN THE SCENE (<c>R_VesselActions/STOAT_DIPOLE.md</c> §3b), and Time
+    /// mode's detection / orbit rings (§1b): camera-facing discs every <c>spacing</c> world units along each polyline, each
+    /// <c>size</c> across and never smaller on screen than <c>minPixels</c>. They sit in the world, so they recede with
+    /// depth, pass behind prisms, and are bent by the black hole's lens like any light (the lens copies the scene after the
+    /// transparents). The screen overlay (<see cref="StoatPathfinderDots"/>) stays as the fallback when <c>dotsInWorld</c> is
+    /// off.
     ///
-    /// <para>Shader: <c>Sprites/Default</c>, which the project always includes in builds (GraphicsSettings), so the
-    /// dots cannot vanish from a player build the way a <c>Shader.Find</c> of a stripped shader would.</para>
+    /// <para><b>How it draws.</b> <see cref="Begin"/>, any number of <see cref="Add"/>s, <see cref="End"/>: every dot of the
+    /// frame becomes a quad in ONE dynamic mesh (billboarded here toward the pilot's camera, its colour in the vertex
+    /// colour), drawn as a single identity instance with <c>CosmicShore/StoatPathDots</c> (<c>Resources/StoatPathDots.mat</c>),
+    /// a shader whose only per-instance datum is the matrix the call supplies. Never on a shader that reads a sprite
+    /// renderer's per-draw data: the first cut drew instanced <c>Sprites/Default</c>, whose instanced variant takes its flip
+    /// and colour from per-instance arrays nothing filled — both read zero, every dot collapsed to a point, and the line was
+    /// never seen (2026-10-14).</para>
+    ///
+    /// <para><b>Amoebius.</b> The engine compiles this file live, so it calls only what its UnityEngine shim also has:
+    /// <c>Graphics.RenderMeshInstanced</c> (not <c>RenderMesh</c>), <c>Mesh.Clear()</c>, list-based
+    /// <c>SetColors</c> / <c>SetIndices</c>, and no <c>RenderParams.camera</c>.</para>
     /// </summary>
     public sealed class StoatPathfinderWorldDots
     {
-        const int MaxDots = 1023;   // one instanced batch
+        /// <summary><c>Resources/StoatPathDots.mat</c> (shader <c>CosmicShore/StoatPathDots</c>).</summary>
+        public const string MaterialResourcePath = "StoatPathDots";
+        /// <summary>Dots per frame across every polyline: 4 vertices each, inside a 16-bit index buffer.</summary>
+        public const int MaxDots = 4096;
 
-        static Mesh s_quad;
-        static Texture2D s_disc;
-        static readonly int ColorId = Shader.PropertyToID("_Color");
-        static readonly int MainTexId = Shader.PropertyToID("_MainTex");
+        static Material s_material;
+        static bool s_warned;
+        static readonly Matrix4x4[] s_identity = { Matrix4x4.identity };
 
-        readonly Matrix4x4[] _matrices = new Matrix4x4[MaxDots];
-        readonly MaterialPropertyBlock _block = new();
-        Material _material;
+        readonly Vector3[] _vertices = new Vector3[MaxDots * 4];
+        readonly List<Color32> _colors = new(MaxDots * 4);
+        readonly List<int> _indices = new(MaxDots * 6);
+        readonly Vector2[] _uvs = new Vector2[MaxDots * 4];
+        Mesh _mesh;
+        Camera _cam;
+        Vector3 _camPos, _camRight, _camUp;
+        float _pixelAtUnit;
         int _count;
 
-        /// <summary>
-        /// Lays dots every <paramref name="spacing"/> world units of arc along <paramref name="points"/> (no dot across
-        /// a wormhole jump), and draws them this frame. Returns the number drawn.
-        /// </summary>
-        public int Draw(Camera cam, Vector3[] points, int count, int[] jumps, int jumpCount, Color color,
-            float size, float spacing, float minPixels)
+        /// <summary>Dots laid so far this frame.</summary>
+        public int Count => _count;
+
+        /// <summary>Start a frame's dots for <paramref name="cam"/>. False (nothing will draw) without a camera or material.</summary>
+        public bool Begin(Camera cam)
         {
             _count = 0;
-            if (!cam || points == null || count < 2 || !EnsureMaterial()) return 0;
+            _colors.Clear();
+            _cam = cam;
+            if (!cam || !SharedMaterial()) return false;
+            var t = cam.transform;
+            _camPos = t.position;
+            _camRight = t.right;
+            _camUp = t.up;
+            // world size of one screen pixel at unit distance
+            _pixelAtUnit = cam.orthographic ? 0f
+                : 2f * Mathf.Tan(0.5f * cam.fieldOfView * Mathf.Deg2Rad) / Mathf.Max(1, cam.pixelHeight);
+            return true;
+        }
+
+        /// <summary>
+        /// Lays dots every <paramref name="spacing"/> world units of arc along <paramref name="points"/> (no dot across a
+        /// wormhole jump; <paramref name="closed"/> joins the last point to the first — a ring). Returns the dots added.
+        /// </summary>
+        public int Add(Vector3[] points, int count, int[] jumps, int jumpCount, Color color, float size, float spacing,
+            float minPixels, bool closed = false)
+        {
+            if (!_cam || points == null || count < 2) return 0;
+            int before = _count;
             spacing = Mathf.Max(0.25f, spacing);
             size = Mathf.Max(0.01f, size);
-            var camTf = cam.transform;
-            Quaternion facing = camTf.rotation;
-            Vector3 camPos = camTf.position;
-            // world size of one screen pixel at unit distance
-            float pixelAtUnit = cam.orthographic ? 0f
-                : 2f * Mathf.Tan(0.5f * cam.fieldOfView * Mathf.Deg2Rad) / Mathf.Max(1, cam.pixelHeight);
-
             float carried = 0f;   // arc length since the last dot
-            for (int i = 1; i < count && _count < MaxDots; i++)
+            int segments = closed ? count : count - 1;
+            for (int s = 0; s < segments && _count < MaxDots; s++)
             {
-                if (IsJump(i, jumps, jumpCount)) { carried = 0f; continue; }
-                Vector3 a = points[i - 1], b = points[i];
+                int i = s + 1;
+                if (i < count && IsJump(i, jumps, jumpCount)) { carried = 0f; continue; }
+                Vector3 a = points[s], b = points[i % count];
                 float seg = Vector3.Distance(a, b);
                 if (!(seg > 1e-5f)) continue;
                 float t = spacing - carried;
                 while (t <= seg && _count < MaxDots)
                 {
-                    Vector3 p = Vector3.Lerp(a, b, t / seg);
-                    float s = size;
-                    if (pixelAtUnit > 0f) s = Mathf.Max(s, minPixels * pixelAtUnit * Vector3.Distance(camPos, p));
-                    _matrices[_count++] = Matrix4x4.TRS(p, facing, new Vector3(s, s, s));
+                    var p = Vector3.Lerp(a, b, t / seg);
+                    float dot = size;
+                    if (_pixelAtUnit > 0f) dot = Mathf.Max(dot, minPixels * _pixelAtUnit * Vector3.Distance(_camPos, p));
+                    Quad(p, 0.5f * dot, color);
                     t += spacing;
                 }
                 carried = seg - (t - spacing);
             }
-            if (_count == 0) return 0;
+            return _count - before;
+        }
 
-            _block.SetColor(ColorId, color);
-            _block.SetTexture(MainTexId, Disc());
-            var rp = new RenderParams(_material)
+        /// <summary>Draw this frame's dots (nothing when none were laid).</summary>
+        public void End()
+        {
+            if (!_cam || _count == 0 || !SharedMaterial()) return;
+            EnsureMesh();
+            _mesh.Clear();
+            int verts = _count * 4;
+            _mesh.SetVertices(_vertices, 0, verts);
+            _mesh.SetColors(_colors);
+            _mesh.SetUVs(0, _uvs, 0, verts);
+            SizeIndices(_count);
+            _mesh.SetIndices(_indices, MeshTopology.Triangles, 0, false);
+            var bounds = new Bounds(_camPos, Vector3.one * (2f * Mathf.Max(1f, _cam.farClipPlane)));
+            _mesh.bounds = bounds;
+            var rp = new RenderParams(s_material)
             {
-                matProps = _block,
                 shadowCastingMode = ShadowCastingMode.Off,
                 receiveShadows = false,
+                worldBounds = bounds,
             };
-            Graphics.RenderMeshInstanced(rp, Quad(), 0, _matrices, _count);
-            return _count;
+            Graphics.RenderMeshInstanced(rp, _mesh, 0, s_identity);
+        }
+
+        /// <summary>One polyline, drawn on its own this frame (the path when nothing else is drawn with it).</summary>
+        public int Draw(Camera cam, Vector3[] points, int count, int[] jumps, int jumpCount, Color color,
+            float size, float spacing, float minPixels)
+        {
+            if (!Begin(cam)) return 0;
+            int n = Add(points, count, jumps, jumpCount, color, size, spacing, minPixels);
+            End();
+            return n;
+        }
+
+        void Quad(Vector3 centre, float half, Color color)
+        {
+            int v = _count * 4;
+            var r = _camRight * half;
+            var u = _camUp * half;
+            _vertices[v] = centre - r - u;
+            _vertices[v + 1] = centre - r + u;
+            _vertices[v + 2] = centre + r + u;
+            _vertices[v + 3] = centre + r - u;
+            Color32 c = color;
+            _colors.Add(c);
+            _colors.Add(c);
+            _colors.Add(c);
+            _colors.Add(c);
+            _uvs[v] = new Vector2(0f, 0f);
+            _uvs[v + 1] = new Vector2(0f, 1f);
+            _uvs[v + 2] = new Vector2(1f, 1f);
+            _uvs[v + 3] = new Vector2(1f, 0f);
+            _count++;
         }
 
         static bool IsJump(int index, int[] jumps, int jumpCount)
@@ -86,62 +161,56 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        bool EnsureMaterial()
+        void EnsureMesh()
         {
-            if (_material) return true;
-            var shader = Shader.Find("Sprites/Default");
-            if (!shader)
+            if (_mesh) return;
+            _mesh = new Mesh { name = "StoatPathDots", hideFlags = HideFlags.DontSave };
+            _mesh.MarkDynamic();
+        }
+
+        /// <summary>The quad index list, grown or trimmed to <paramref name="quads"/> (entry i depends only on i).</summary>
+        void SizeIndices(int quads)
+        {
+            int want = quads * 6;
+            if (_indices.Count > want) _indices.RemoveRange(want, _indices.Count - want);
+            for (int q = _indices.Count / 6; q < quads; q++)
             {
-                CSDebug.LogError("[Stoat] Sprites/Default is missing from this build - the pathfinder's 3D dots cannot draw " +
-                                 "(it is in GraphicsSettings' always-included shaders; check that list).");
-                return false;
+                int v = q * 4;
+                _indices.Add(v);
+                _indices.Add(v + 1);
+                _indices.Add(v + 2);
+                _indices.Add(v + 2);
+                _indices.Add(v + 3);
+                _indices.Add(v);
             }
-            _material = new Material(shader) { name = "StoatPathDots", enableInstancing = true, hideFlags = HideFlags.DontSave };
-            return true;
+        }
+
+        static Material SharedMaterial()
+        {
+            if (s_material) return s_material;
+            s_material = Resources.Load<Material>(MaterialResourcePath);
+            if (!s_material && !s_warned)
+            {
+                s_warned = true;
+                CSDebug.LogError($"[Stoat] Resources/{MaterialResourcePath}.mat is missing - the pathfinder's 3D dots and Time " +
+                                 "mode's rings cannot draw.");
+            }
+            return s_material;
         }
 
         public void Dispose()
         {
-            if (_material) Object.Destroy(_material);
-            _material = null;
+            if (_mesh) Object.Destroy(_mesh);
+            _mesh = null;
+            _cam = null;
         }
 
-        /// <summary>A unit quad centred on the origin, facing -Z (the camera's rotation turns it to the viewer).</summary>
-        static Mesh Quad()
+        /// <summary>Play-mode (re)entry: the material cache describes a session that is gone.</summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
         {
-            if (s_quad) return s_quad;
-            s_quad = new Mesh { name = "StoatPathDotQuad", hideFlags = HideFlags.DontSave };
-            s_quad.vertices = new[] { new Vector3(-0.5f, -0.5f, 0f), new Vector3(-0.5f, 0.5f, 0f), new Vector3(0.5f, 0.5f, 0f), new Vector3(0.5f, -0.5f, 0f) };
-            s_quad.uv = new[] { new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(1f, 0f) };
-            s_quad.triangles = new[] { 0, 1, 2, 2, 3, 0 };
-            s_quad.RecalculateBounds();
-            s_quad.bounds = new Bounds(Vector3.zero, Vector3.one * 2f);
-            return s_quad;
-        }
-
-        /// <summary>A white disc with a dark rim, so a dot never reads as a star (made once, no asset).</summary>
-        static Texture2D Disc()
-        {
-            if (s_disc) return s_disc;
-            const int size = 32;
-            s_disc = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                name = "StoatPathDotDisc", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear,
-                hideFlags = HideFlags.DontSave,
-            };
-            var px = new Color32[size * size];
-            float c = 0.5f * (size - 1);
-            for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c)) / (0.5f * size);
-                byte alpha = (byte)(255f * Mathf.Clamp01((1f - d) * 8f));
-                byte lum = (byte)(d < 0.7f ? 255 : 18);   // the dark rim, the outer 30% of the radius
-                px[y * size + x] = new Color32(lum, lum, lum, alpha);
-            }
-            s_disc.SetPixels32(px);
-            s_disc.Apply(false, true);
-            return s_disc;
+            s_material = null;
+            s_warned = false;
         }
     }
 }

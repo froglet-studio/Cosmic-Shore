@@ -11,6 +11,7 @@ instead of copying them:
 
 | Read | For |
 |---|---|
+| `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md` | **The current plan**: the Regatta six, the hull-drive pattern every new racing AI follows (§2), measuring in Amoebius (§4), the order |
 | `Docs/AI_SYSTEM/README.md` | Start here: the branch AI work lives on (`Ys-bleeding-edge`), the first command of every AI session (`python3 Tools/Build/ai_branch_sync.py`) |
 | `Docs/AI_SYSTEM/ARCHITECTURE.md` | The six layers (§1) and **the roster of every AI** (§2, the source of truth). A new AI gets a row there first |
 | `Docs/AI_SYSTEM/DIAGNOSIS_PLAYBOOK.md` | The five tiers of evidence, the intake checklist, the user's test-script template, the status board |
@@ -77,8 +78,12 @@ Copy this list into the AI's doc and tick it.
 
 ### 3.1 Difficulty levels
 
-- **Today only Skim Race offers a difficulty** (`AIDifficultyRules.IsOfferedFor(GameModes.SkimRace)`). In
-  every other mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
+- **Where a difficulty is offered** (`AIDifficultyRules.IsOfferedFor`): Skim Race (its own pilot), the gate
+  races Slingshot / Warpline (`GateRaceHandicap`), Regatta (Squirrels on the Skim Race pilot, every other hull
+  `GateRaceHandicap`), and the Arena's Astro League / Brood Rush /
+  Broadside (`AIDifficultyRules.UsesPilotBelief` -> `AIPilotBelief` on the platform `AIPilot`: the same two
+  mistakes on whatever point the autopilot wants; never on a mode with its own handicap). In every other
+  mode the AI's skill follows the **intensity** (Grizzly Time: skill = intensity × 0.25, throttle
   0.7 → 1.0). Say which one your AI uses.
 - **To add a difficulty to a mode**, follow Skim Race's pattern (`SKIM_RACE_AI.md` §10) and do not invent a
   second one:
@@ -138,9 +143,21 @@ Game view, enter Play mode and play normally: the window shows the same match fr
 - **AI thinking**: a line from each AI hull to the point it is steering for, and a cyan ring on the
   crystal it is really after. The bottom strip reads the watched AI's state, heading error, recoveries
   and its difficulty's mistakes.
+- **Skim readout** (the Skim Race pilot, third line): gap to its own course's contact shell (skims under 7.5, strikes
+  at 0), distance off its skim line, boost, the rival mass the guard is steering round, the course's skim lift and
+  whether direct flight is on. Tune Regatta's Squirrel live in `Resources/SkimRaceAIConfig_Regatta.asset`, then
+  record the numbers in `author_skimrace_ai_config.py` (`SKIM_RACE_AI.md` §15.1).
 - **Labels**: each pilot's name, hull and speed; off-screen pilots pinned to the edge you would turn to.
 - **Paused** (the editor's pause button), it keeps rendering on demand: fly round a frozen frame.
+- **Pilots** (toolbar, on by default): every pilot with a **You / AI** toggle. On your own hull, **AI** hands it to the
+  AI (input paused, the mode's AI steering armed through `IAIPilotArming`) and **You** takes it back; on an AI's hull,
+  **You** takes it over on either team and the AI flies the hull you left (the arena `PilotSwap`, without its
+  same-team rule). Leave your own hull on AI and every hull is AI-flown. Host / solo only (`PilotControl`).
 - Settings (distances, smoothing, FOV, resolution) live in `UserSettings/ThirdEyeSettings.asset`, per machine.
+- **Cost**: it is a second full render (post, shadows, AA) at the window's pixels times the display scale. Its
+  trails are batched and it repaints at most once per game frame. On a slow editor, lower **Resolution**, turn
+  Trails off, close it when not watching, and test in slow motion (HUD console `timescale 0.25`):
+  `Docs/PERFORMANCE_OPTIMIZATION.md` §4.2a.
 - **Known limit**: the occlusion corridor follows the GAMEPLAY camera, so prisms between that camera and your
   hull may look dithered from the Third Eye. Lower Resolution if the second render costs too much.
 

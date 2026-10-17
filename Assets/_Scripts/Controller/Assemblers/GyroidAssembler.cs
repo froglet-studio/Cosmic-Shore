@@ -368,10 +368,10 @@ namespace CosmicShore.Gameplay
             {
                 if (Prism == null)
                 {
-                    yield return new WaitForSeconds(1f);
+                    yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                     continue;
                 }
-                yield return new WaitForSeconds(1f);
+                yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                 // TopLeftMate
                 if (depth == 0)
                 {

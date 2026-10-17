@@ -15,6 +15,12 @@ MonoBehaviour:
   holdExponent: 1.5
   holdRampSeconds: 3
   autopilotHold01: 0.5
+  catchAhead: 150
+  catchSide: 45
+  catchReach: 1.5
+  catchDegrees: 50
+  settleRate: 3
+  maxOrbitDegrees: 360
   orbitRadiusWide: 150
   orbitRadiusTight: 40
   orbitReach:
@@ -25,9 +31,14 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 1
-  orbitHorizons: 6
   radiusFollowRate: 3
   radialCorrectionRate: 5
+  poleHorizon: 1.6
+  poleGM: 20000
+  ringDotSpacing: 5
+  ringDotSize: 0.9
+  detectionRingAlpha: 0.35
+  orbitRingAlpha: 0.6
   slingBoostMin: 0.25
   slingBoostMax: 0.9
   slingBoostSeconds: 1.5
@@ -42,6 +53,8 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  catchWarpShare: 1.15
+  catchWarpFromPress: 1
   driftSpeed: 40
   lifetime: 12
   minStrength: 2
@@ -56,6 +69,8 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 1.5
   aiSlingMinTurnDegrees: 30
+  aiReleaseConeDegrees: 20
+  aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 3
   aiSlingMinDistance: 120
   holdStartEvent:

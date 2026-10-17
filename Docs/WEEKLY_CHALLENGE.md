@@ -760,7 +760,7 @@ board: the player is mid-decision about a card, so the board is a detour, not a 
 
 ### Scene wiring — run the tool
 
-**FrogletTools ▸ Interface ▸ Wire Weekly Challenge Leaderboard** resolves every reference below
+**FrogletTools ▸ UI ▸ Wire Weekly Challenge Leaderboard** resolves every reference below
 from the window's own hierarchy and reports what it could not find. **Report only** shows what it
 would do without writing. It is a repair tool as well as a bring-up tool, because it never
 overwrites a reference set by hand unless you tick the box — so re-running after re-laying the art

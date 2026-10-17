@@ -589,42 +589,42 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: README round 15 "Checked" (through the wormhole) and "Found".
 - Promoted: no
 
-### L-STU-64 — A pursuit AI with no throttle orbits anything inside its turn circle; read the per-seed spread before the mean
+### L-STU-80 — A pursuit AI with no throttle orbits anything inside its turn circle; read the per-seed spread before the mean
 - Lab: Crew Vessel Lab round 1 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
 - What happened: the first scorecard said two of four navigator consoles made a crew WORSE than a solo pilot. The per-seed scores ran from 2 to 20 petals per minute. Two lab bugs: the hull flew at constant speed, so a crystal inside its 25 u turn circle (35 u/s at 80 °/s) was orbited forever; and the "nothing in sight" behaviour turned in place, so a pilot that lost sight of everything never found anything again. With the Sparrow's real throttle (minimum 10 + scaler 25, braking for a target inside 2.2 turn radii) and a roaming search point, skilled runs sat within about ±15% and both "negative" consoles turned positive.
 - Do instead: give the lab hull the game's throttle, not a constant speed, and print per-seed values for every condition before quoting a mean. A spread of 10× between seeds is a stuck agent, not noise.
 - Evidence: `CrewVesselLab.html` `pilotAI` (`turnR`, `seat.roam`); `CREW_VESSEL_LAB.md` round 1, Found 7.
 - Promoted: no
 
-### L-STU-65 — To ask "does this seat's PLAY matter", score skill in the seat separately from the seat existing
+### L-STU-81 — To ask "does this seat's PLAY matter", score skill in the seat separately from the seat existing
 - Lab: Crew Vessel Lab round 1 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
 - What happened: on crew lift alone, Power Split ranked second (+20%). Scoring a Hard against an Easy navigator in the same seat showed 4% (inside the noise): the lift came from the pips being lit at all, not from how they were routed. An actions-per-minute column showed the Hard AI clicking about 200 times a minute for it. Scope Call showed the opposite shape: small lift (+14%) and large skill (31%), so a bad navigator made a good pilot worse than flying alone.
 - Do instead: for any lab about a role or a seat, report three columns side by side: the role's lift over its absence, the skill spread inside the role (expert vs rookie in that seat, everything else fixed), and the role's action rate. Each catches a design the others miss: a chore (high rate, no skill), a crutch (lift, no skill) and a liability (skill bigger than lift).
 - Evidence: `CrewVesselLab.html` `runBatch` (`navMatters`, `navApm`); `CREW_VESSEL_LAB.md` round 1 scorecard.
 - Promoted: no
 
-### L-STU-66 — An AI's "arrived" test must measure against the point it is actually aiming at, noise included
+### L-STU-82 — An AI's "arrived" test must measure against the point it is actually aiming at, noise included
 - Lab: Crew Vessel Lab round 2 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-16
 - What happened: the navigator AI moves a thumb toward `goal + aim noise` but returned its distance to `goal`. Whenever the noise was larger than the arrival tolerance (the sling's was 0.01 board radii, about the Hard AI's noise), the thumb sat on its noisy point forever, one phase short of releasing. Pinball and Pathfinder caught almost nothing on some seeds, which read as "these controls are weak" until a frame trace showed `plan=1/0` unchanged for 10 s.
 - Do instead: an agent that aims with noise judges arrival against its own aim point, and any multi-phase gesture plan gets a trace of its phase over time before its column is quoted. A phase that never changes is a stuck agent.
 - Evidence: `CrewVesselLab.html` `moveThumb` (returns the distance to `tx, tz`); `CREW_VESSEL_LAB.md` round 2, "Fixed in the lab".
 - Promoted: no
 
-### L-STU-67 — A target outside the playfield's clamp freezes the mover forever: clamp the TARGET at input, not only the mover
+### L-STU-83 — A target outside the playfield's clamp freezes the mover forever: clamp the TARGET at input, not only the mover
 - Lab: Crew Vessel Lab round 2 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-16
 - What happened: the kite is kept on its round board every frame. A dash target or a drawn path point just past the rim was never reached (the clamp pulled the kite back each frame), so the dash and path never finished and no new one could start. Hopper seed 2 froze at 33 s and Pathfinder seed 3 at 3 s. A person tapping near the edge would have hit the same freeze; the AI found it first.
 - Do instead: clamp every target a player can set (tap, drag end, drawn point) into the reachable area when it is recorded, inside the mover's own clamp. Look for a mover whose position stops changing while it still has a target.
 - Evidence: `CrewVesselLab.html` `onBoard(x, z)` applied to `dashTo` and path points.
 - Promoted: no
 
-### L-STU-68 — When an exponent multiplies a spawned quantity, the spawner is a balance knob as strong as the exponent
+### L-STU-84 — When an exponent multiplies a spawned quantity, the spawner is a balance knob as strong as the exponent
 - Lab: Crew Vessel Lab round 3 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-17
 - What happened: a pure loop of n motes fires `base × 2^(n − 1)`. Spreading each mote cluster 4 u wider (gaussian 14 → 18 u, a readability fix) cut the mean loop from 2.8 to 2.25 motes and Space blasts from 327 to 12 hostile prisms a minute. The exponent turned a small change in how motes arrive into a 27× change in what the effect destroyed.
 - Do instead: when a payoff is exponential in a count, put the thing that sets the count (cluster size, spread, spawn rate) beside the exponent in the sign-off questions, and re-run the scorecard after ANY change to the spawner, including a "visual" one. Quote mean and best n with every effect column.
 - Evidence: `CREW_VESSEL_LAB.md` round 3, Found 2 (two `runBatch` runs either side of the spread change).
 - Promoted: no
 
-### L-STU-69 — A pickup fixed in world space is almost never reachable by a player who lives in a tilting plane
+### L-STU-85 — A pickup fixed in world space is almost never reachable by a player who lives in a tilting plane
 - Lab: Crew Vessel Lab round 3 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-17
 - What happened: the navigator plays on the flying vessel's x-z plane and can touch things within ±40 u of it. Motes placed in world space near the plane were touchable 1–4 times out of 30 within seconds, because every pitch and roll of the pilot swings a 160 u board through 150 × sin(angle) u. The AI planned loops round motes it could not take, and no loop ever fired.
 - Do instead: measure the touchable share of a plane-bound player's targets over time before tuning anything else. When it is low, give the targets an in-plane home (re-project them onto the plane each frame, so they flow with the world but stay touchable) and keep world-fixed as a deliberate option ("the pilot sweeps the slice").
@@ -869,4 +869,64 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   Keep the literal value as a negative control, and give the designer the table. Split a fault metric by cause
   before gating on it.
 - Evidence: `Tools/Build/converter_round5_harness` section 9; `OMNI_COMBINE_LAB.md` revision 8.
+- Promoted: no
+
+### L-STU-64 — A studio built from a design doc beside a game build from the same doc: add the game as a selectable "ships" set
+- Lab: Brittle Star Studio round 2 · Branch: `cece/gallant-lamport-sc3khe` (studio from `cece/brave-galileo-d95fpj`) · Date: 2026-10-14
+- What happened: two sessions built the Brittle Star on one day from one Notion document without seeing each other, a
+  design studio on one branch and the Unity vessel on another. The designer then made a dozen decisions in the Unity
+  session (x6 Speed, five auto-firing arms, a trail per ring corner, a nucleus-wide ring explosion, Creation the slowest),
+  so the studio modelled a vessel that no longer existed. A rewrite would have thrown away round 1's scorecard and the
+  design-doc comparison the studio had earned.
+- Do instead: port the game's rules line for line behind ONE switch (`SHIP.unity`, a new Flight-numbers set made the
+  default, the saved-settings key bumped so every tester gets it), read every number from a `SHIPPED` block keyed by the
+  config SO's own field names, and keep the old sets selectable. Then a `Tools/Build/studio_to_unity/<vessel>.json` map
+  makes `studio_to_unity.py --check` a drift gate between the page and the asset; negative-control it by changing one
+  number. Check the port against the C# with a hook-driven rules script (speeds, the press-again Cruise, the arms meeting
+  exactly at the focus, the disk sparing a prism 5 u off its plane) before trusting any scorecard it produces.
+- Evidence: `Docs/Studios/BRITTLE_STAR.md` §5.2; `Tools/Build/studio_to_unity/brittlestar.json` (35 mapped, a changed
+  `fireRate` reports DRIFT and exits 1).
+- Promoted: no
+
+### L-STU-65 — A studio pilot tuned at one speed orbits at another; re-score every level whenever the hull's numbers move
+- Lab: Brittle Star Studio round 2 · Branch: `cece/gallant-lamport-sc3khe` · Date: 2026-10-14
+- What happened: round 1's lab-only pilot rode Speed mode onto a crystal at x4 (110 u/s). On the game's x6 (297 u/s at
+  Time 3) the 25 u pickup sat inside its turn radius, so every Hard Derby I4 run circled a crystal for 300 s and the
+  scorecard read DNF. A first fix (drop to Cruise inside the stopping distance) flickered: the slowed hull's stopping
+  distance shrank, the rule asked for Speed again, and it orbited anyway. A second (back off and re-line a sealed wall)
+  made every seed worse.
+- Do instead: trace one failing seed's position, speed, mode and state every couple of seconds before changing the
+  pilot; the samples showed the mode flipping once a second. An approach rule needs hysteresis (here: stay in Cruise
+  within max(250 u, the stopping distance)). Re-score every level and style after ANY change to the hull's numbers, and
+  report where Hard is still not the fastest rather than tuning until it is (D24).
+- Evidence: `Docs/Studios/BRITTLE_STAR.md` §5.2 (finding 6); `/vessel-studio` §7 (the same trap, for studio pilots).
+- Promoted: no
+
+### L-STU-66 — Run the scorecard tool a handoff names before quoting its numbers; this one could not run as committed
+- Lab: Brittle Star Studio · Branch: `cece/gallant-lamport-sc3khe` (tool from `cece/brave-galileo-d95fpj`) · Date: 2026-10-14
+- What happened: the handoff cited `Docs/Studios/BrittleStar/brittlestar_score.cjs` as the source of round 1's scorecard.
+  As committed it used `fs`, `path` and `chromium` without requiring them, so it crashed on its first line: the numbers
+  had come from an inline run, not the file a reader is told to re-run.
+- Do instead: execute every measuring tool a doc or handoff names, from the committed file, before quoting or
+  extending its numbers; fix and say so when it does not run. A committed measurement tool is only evidence once
+  someone other than its author has run it.
+- Evidence: commit "merge the Brittle Star research and studio" (the `require` lines added).
+- Promoted: no
+
+### L-STU-79 — A free-ended cord that must whip needs a WAVE EQUATION on its link directions, not pose springs on its points
+- Lab: Brittle Star Studio · Branch: `cece/beautiful-knuth-j3atgk` · Date: 2026-10-16 · (L-STU-67 to 78 are claimed on
+  in-flight branches; this id skips them)
+- What happened: the first model for "cords like the Thresher's chain, without the weight" pulled each point toward its
+  place on a straight pose line, capped lengths with follow-the-leader and re-read velocities from the move (PBD). It
+  passed straight-line and frame-rate tests, but a node prototype showed the two things a whip needs were missing: a
+  root flick moved every link at once (no travelling wave), and 30 s of random flying pumped node speeds to 4,000 u/s
+  (FTL plus the velocity re-read injects energy).
+- Do instead: model the cord as unit link DIRECTIONS laid end to end (inextensible by construction) obeying
+  `u'' = k (u[i-1] - 2u[i] + u[i+1])`, the root direction fixed and the tip free; damping and a pose spring onto the
+  straight line are the analog "stiffen" dials. Waves then emerge and reflect off the tip with no scripting. Prototype it
+  in node first and measure three things before porting: when each link starts to move after a root flick (arrival
+  order and delay), the peak swing over a minute of random flight (bounded), and the same flick at 30 / 60 / 144 fps
+  (sub-step at a fixed h so they agree).
+- Evidence: `Assets/_Scripts/Controller/Vessel/BrittleStarCord.cs` and its tests in `BrittleStarTests` (arrival order,
+  saber straightness, no stretch, a minute bounded, 30 vs 144 fps); the studio's `cordStep` is the line-for-line port.
 - Promoted: no

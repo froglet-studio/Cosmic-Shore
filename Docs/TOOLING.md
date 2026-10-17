@@ -18,7 +18,7 @@ using UnityEditor;
 
 public static class MyTool
 {
-    [MenuItem("FrogletTools/Validation/Check Widget Integrity")]
+    [MenuItem("FrogletTools/Utilities/Check Widget Integrity")]
     static void Run() { /* ... */ }
 }
 ```
@@ -40,7 +40,7 @@ public static void Open() { ... }
 
 | Field | Meaning |
 |---|---|
-| `Category` | Section + accent colour. Ten sections, see `FrogletToolCategory`. |
+| `Category` | Section + accent colour. Fourteen menu groups, see `FrogletToolCategory` and the section table below. |
 | `Importance` | **1** (niche) … **5** (used every day). Drives sort order within a section and the five-dot rating on the card. Default 3. |
 | `Description` | One line rendered on the card body. |
 | `DisplayName` | Overrides the menu leaf as the card title. |
@@ -74,20 +74,32 @@ Soap, Quick Scene Pro, …) are never picked up — the board shows only tools w
 
 ### Sections
 
-| Category | Section | Colour |
-|---|---|---|
-| `Build` | Build & Release | coral |
-| `SceneSetup` | Scene Setup | azure |
-| `GameModes` | Game Modes | jade |
-| `Vessels` | Vessels & HUD | violet |
-| `Ecology` | Prisms & Ecology | lime |
-| `Performance` | Performance | gold |
-| `Validation` | Validation | ruby |
-| `Interface` | Interface | cyan |
-| `Services` | Services & Data | magenta |
-| `Misc` | Misc | slate |
-| `Diagnostics` | Diagnostics & Health | indigo |
-| `Qa` | QA | cyan |
+The menu and the board use the same sections. The menu root carries only the two hubs
+(**Froglet Master Tool**, **Toolbox**), then one group per section in alphabetical order; a group
+is at most two levels deep (`Vessels/Wiring/…`, `Performance/Benchmarks/…`); the `Legacy` group
+and every loose leaf at the root are gone (reorganised 2026-10-14).
+
+| Category | Menu group | Board section | Colour | Priority band |
+|---|---|---|---|---|
+| `Ai` | `AI/` | AI | ruby | 100 |
+| `Build` | `Amoebius/`, `Build/` | Build & Release | coral | 110, 120 |
+| `Diagnostics` | `Diagnostics/` | Diagnostics & Health | indigo | 130 |
+| `Ecology` | `Ecology/` (+ `Prism Animation/`) | Prisms & Ecology | lime | 140 |
+| `Ftue` | `FTUE/` | FTUE | violet | 150 |
+| `GameModes` | `Game Modes/` | Game Modes | jade | 160 |
+| `Performance` | `Performance/` (+ `Benchmarks/`) | Performance | gold | 170 |
+| `Qa` | `QA/` | QA | cyan | 180 |
+| `SceneSetup` | `Scenes/` | Scenes | azure | 190 |
+| `Services` | `Services/` | Services & Data | magenta | 200 |
+| `Interface` | `UI/` | UI | cyan | 210 |
+| `Utilities` | `Utilities/` | Utilities | slate | 220 |
+| `Vessels` | `Vessels/` (+ `Wiring/`, `Audits/`) | Vessels & HUD | violet | 230 |
+
+**Priorities are the ordering contract.** Each group owns a base (the band above); items within a
+group count up from it, and a jump of 20 (`base + 20`, `base + 40`) draws a separator inside that
+submenu (Unity separates neighbours more than 10 apart). The hubs sit at `-100` / `-99` so the
+root reads hubs, separator, groups. Keep a new tool inside its group's band; never leave the
+priority at the default.
 
 ---
 
@@ -133,7 +145,8 @@ always carries it**, on the same static method as the `[MenuItem]`:
 public static void Open() { ... }
 ```
 
-- The menu path's middle segment should read as the section it is filed under.
+- The menu path's middle segment IS the section: the registry files an un-annotated tool by
+  that segment first (`SegmentCategories`), keywords second.
 - **Importance is calibrated, not aspirational**: 5 = used every day / a ship gate; 4 = reached
   for weekly or the standing auditor for a law; 3 = the neutral default; 2 = occasional; 1 = niche.
 - **Pick from the existing categories.** Extending `FrogletToolCategory` is a curation act —
@@ -314,16 +327,40 @@ Menu items previously lived under three roots. All first-party items were moved 
 | `Tools/Cosmic Shore/End Game Conditions` | `FrogletTools/Game Modes/End Game Conditions` |
 | `Tools/Cosmic Shore/Prism Animation/…` | `FrogletTools/Ecology/Prism Animation/…` |
 | `Tools/Cosmic Shore/Measure Cell Environment Baselines` | `FrogletTools/Ecology/…` |
-| `Tools/Cosmic Shore/Strip Crystal AudioSources` | `FrogletTools/Ecology/…` |
-| `Tools/Cosmic Shore/Validate Lifeform Crystals` | `FrogletTools/Validation/…` |
-| `Tools/Cosmic Shore/Audit Vessel *`, `Wire/Bake Elemental Petal Bars`, `Plan Vessel Rig Swap` | `FrogletTools/Vessels/…` |
-| `Tools/Cosmic Shore/Setup Freestyle Toybox`, `Setup Prism Grid Explosion Scene` | `FrogletTools/Scene Setup/…` |
-| `Tools/Cosmic Shore/Prism Grid Benchmark/…` | `FrogletTools/Performance/Prism Grid Benchmark/…` |
-| `Tools/Cosmic Shore/Canvas Upgrader`, `UI/Raycast Target Audit` | `FrogletTools/Interface/…` |
+| `Tools/Cosmic Shore/Strip Crystal AudioSources` | retired 2026-10-14; its job (never run until then) was done by hand on 2026-10-15: the 9 crystal prefabs' dead `AudioSource`s and `TadPoleFauna`'s override on one were removed |
+| `Tools/Cosmic Shore/Validate Lifeform Crystals` | `FrogletTools/Ecology/…` |
+| `Tools/Cosmic Shore/Audit Vessel *`, `Wire/Bake Elemental Petal Bars`, `Plan Vessel Rig Swap` | `FrogletTools/Vessels/Audits/…`, `FrogletTools/Vessels/Wiring/…` |
+| `Tools/Cosmic Shore/Setup Freestyle Toybox`, `Setup Prism Grid Explosion Scene` | `FrogletTools/Scenes/…` |
+| `Tools/Cosmic Shore/Prism Grid Benchmark/…` | `FrogletTools/Performance/Benchmarks/Prism Grid/…` |
+| `Tools/Cosmic Shore/Canvas Upgrader`, `UI/Raycast Target Audit` | `FrogletTools/UI/…` |
 | `Tools/{Texture Memory Usage, Runtime Texture Memory Usage, Scene Object Counter}` | `FrogletTools/Performance/…` |
-| `Tools/Triangle Window Mesh Generator` | `FrogletTools/Misc/…` |
-| `Cosmic Shore/Toast Notification/…` | `FrogletTools/Interface/Toast Notification/…` |
-| `Window/Animation Recorder` | `FrogletTools/Misc/Animation Recorder` |
+| `Tools/Triangle Window Mesh Generator` | retired 2026-10-14 |
+| `Cosmic Shore/Toast Notification/…` | retired 2026-10-14 (the toast assets shipped) |
+| `Window/Animation Recorder` | retired 2026-10-14 |
+
+### The 2026-10-14 reorganisation
+
+The `Legacy` group and the loose root leaves were removed and every remaining item was filed by
+section (table above). Retired outright, with the owner's sign-off, because their output had
+shipped or nothing had used them since they were written: the six Legacy duplicates of Toolbox
+buttons (Logging ×3, scene shortcuts ×3), `Create/Class`, `Create/MiniGame`, `Component Copier`,
+`ElementalFloat Editor`, `Triangle Window Mesh Generator`, `Animation Recorder`, the AOE benchmark
+pair, the three Quest Graph one-shots (Create Main Quest, Setup Runner, Wire Phase 0 UI), the five
+Toast Notification scaffold items, `Create Butterfly Vessel`, and `Strip Crystal AudioSources`.
+
+| Was | Now |
+|---|---|
+| `FrogletTools/AI Training`, `…/AI Training/Quick Setup` | `FrogletTools/AI/AI Training`, `…/AI/AI Training Quick Setup` |
+| `FrogletTools/Performance Benchmark` | `FrogletTools/Performance/Performance Benchmark` |
+| `FrogletTools/Quest Graph Editor`, `Quest Graph/Layout All Phases (Rows)`, `Legacy/Dialogue Editor` | `FrogletTools/FTUE/…` |
+| `FrogletTools/Legacy/Find Asset by GUID`, `Legacy/Force Re-Serialize All ScriptableObjects`, `Validation/Audit Stray Network Objects` | `FrogletTools/Utilities/…` |
+| `FrogletTools/Validation/Validate Lifeform Crystals` | `FrogletTools/Ecology/…` |
+| `FrogletTools/Interface/…`, `Diagnostics/Report On-Screen UI` | `FrogletTools/UI/…` |
+| `FrogletTools/Diagnostics/Prism Contact Probe` | `FrogletTools/Performance/…` |
+| `FrogletTools/Performance/Crystal Depth Prism Benchmark`, `Crystal Flip Wave Benchmark`, `Prism Grid Benchmark/…` | `FrogletTools/Performance/Benchmarks/…` |
+| `FrogletTools/Scene Setup/…` | `FrogletTools/Scenes/…` |
+| `FrogletTools/Vessels/Wire *`, `Bake *`, `Plan/Swap Vessel Rig` | `FrogletTools/Vessels/Wiring/…` |
+| `FrogletTools/Vessels/Audit *`, `Validate *` | `FrogletTools/Vessels/Audits/…` |
 
 Third-party menus (FMOD, Obvious Soap, Primitive Plus, **Quick Scene Pro**) were left
 exactly where they were — they are not ours to move, and the registry never picks them up because
@@ -376,30 +413,32 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 
 | Lane | Tool | What it is for |
 |---|---|---|
+| FTUE | Quest Graph Editor, Dialogue Editor, Layout All Phases (Rows) | The FTUE quest graph and its dialogue, authored in place. |
+| Utilities | Find Asset by GUID, Force Re-Serialize All ScriptableObjects, Audit Stray Network Objects | Project-wide lookups and integrity checks. |
 | Build | **Pending Tool Changes** | Uncommitted asset output from editor tools. Validate, push, retire. The last gate before a branch ships. |
 | Game Modes | **Game Mode Prefab Kit** | The prefabs a new game-mode scene needs; Add to Scene / Open Prefab / Validate, plus cross-scene drift detection and consolidation. See `Docs/GAMECANVAS.md`. |
-| Game Modes | **AI Training** | Operator surface for overnight genome search: Configure, Learn / Stop, Inspect, Archive, Deploy, and play a normal match against the archive. Keeper. Writes the `Assets/_SO_Assets/AI Training/` set (Quick Setup is idempotent) and records those writes, so it draws the ship panel. See `Assets/_Scripts/Utility/AITraining/README.md` § Operator. |
+| AI | **AI Training** | Operator surface for overnight genome search: Configure, Learn / Stop, Inspect, Archive, Deploy, and play a normal match against the archive. Keeper. Writes the `Assets/_SO_Assets/AI Training/` set (Quick Setup is idempotent) and records those writes, so it draws the ship panel. See `Assets/_Scripts/Utility/AITraining/README.md` § Operator. |
 | Game Modes | **GameCanvas Unifier** | Absorb a forked in-game canvas into `CORE/GameCanvas.prefab`, re-point every scene onto it, and delete the fork. **Keeper, half spent.** The migration half (Absorb / Re-point / Delete fork) has run: the fork is gone and all 15 domain scenes are on CORE, so those buttons are dormant until another canvas forks. What stays live is **Fix prefab** — it enforces the canvas contract (1920x1080, Scale-With-Screen-Size, `AdaptiveCanvasScaler`, smart re-anchor through the Canvas Upgrader's own passes), strips missing scripts before saving, and **reverts any nested-instance override that NULLS a script-declared reference**, which is the class of bug that silently broke the domain picker and, later, every toast in the game — and **Fix scene**, which reverts redundant overrides. Note Unity cannot revert an override whose target no longer exists in the prefab; those have to come out of the scene YAML, which `gamecanvas_unification_report.py` reports. WRITER: records to the ledger, draws the ship panel. See `Docs/GAMECANVAS.md` §9. |
 | Game Modes | End Game Conditions | The one place win conditions are authored for the domain modes. |
-| Build | Windows x64 (Release / Development), Reveal Build Folder | Player builds. |
+| Build | Windows x64 (Release / Development), WebGL Toybox (+ Development), Reveal Build Folder | Player builds. WebGL Toybox (`Editor/Build/WebToyboxBuild.cs`) is the browser Toybox: three scenes and `FROGLET_WEB_TOYBOX` for that build only, output `Builds/WebGLToybox/`; Unity Build Automation calls its `PreExport` instead (`Docs/WEBGL_TOYBOX.md`). Build tools write no assets, so no ship panel. |
 | Build | **Amoebius ▸ Launch Amoebius** (+ *Rebuild Amoebius*, *Show Amoebius Folder*) | Opens Amoebius, Froglet's own engine for Cosmic Shore (`Port/`), built from the checkout the editor has open: `dotnet publish` of `Port/src/CosmicShore.Launcher` into `Library/Amoebius`, redone only when the launcher's source changed, then started. No .NET 10 SDK yet: it opens the copy in `Port/dist/Amoebius-Windows.zip`. Reader only - writes nothing but the gitignored `Library/Amoebius`, so no ship panel. See `Port/docs/LAUNCHER.md`. |
 | Ecology | Prism Animation ▸ Validate Clock Wiring / Auto-Wire Clock Properties | The clock-material law gate. |
 | Ecology | Prism Animation ▸ **Occlusion Dither Lab** | The occlusion corridor's unit shape, live — kernel + scale dials driven as shader globals **while the game runs**, a preview that IS the shipped GPU code, a Measure button that runs the corridor's own |coverage − alpha| admission rule against the shipped baseline, and Bake to write the result back into `PrismOcclusionCorridor.hlsl`. Keeper (re-runnable), but it writes source, so it draws the ship panel. See `Docs/PRISM_ANIMATION.md` §4.7. |
 | Ecology | Measure Cell Environment Baselines | Per-cell prism baselines the phase thresholds ride on. |
-| Validation | Validate Lifeform Crystals | Every lifeform drops exactly one elemental crystal. |
-| Vessels | Audit Vessel Ability Rows / Elemental Morphs, Wire & Bake Petal Bars, Plan Rig Swap | Vessel HUD + model wiring. |
-| Vessels | **Bake Crystal Hull Fusions** | Solves, at edit time, where each elemental crystal's faces land on each vessel hull (`Resources/CrystalHullFusionConfig` entries) and bakes the answer into a `CrystalHullFusionBakeSO` per entry (plus one shared `<Element>_FusionTemplate.asset` mesh per element), so a pickup in game does no geometry. Skinned and static multi-part hulls alike; 12 hulls × 4 elements. Lists every entry CURRENT / MISSING / STALE / UNRESOLVABLE with the reason; Validate fails on anything not current. **Keeper** — re-run whenever a hull or crystal model, an entry's `tileFill`/`surfaceLift` or the solver changes (the game warns once and solves at runtime until it is). Doc: `Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md` §4. |
-| Performance | Performance Benchmark, Prism Grid Benchmark, Texture Memory, Scene Object Counter | Frame cost and memory. |
-| Scene Setup | Setup Freestyle Toybox, Setup Prism Grid Explosion Scene | Scene scaffolding. |
-| Interface | Canvas Upgrader, Raycast Target Audit, Toast Notification setup | UI authoring. |
-| Interface | **Codex** | The in-game encyclopedia, authored in one place across all three kingdoms — **Ethirions** (every crystal), **Ecology** (every lifeform) and **Tools** (every freestyle toy, grouped by the fundamental it changes: Pilot / World / Creation). *Scan & Merge* re-reads the project, *Bake* renders each entry's hero image, and the right-hand panel edits any entry by hand. Keeper (idempotent — the codex needs re-scanning every time a crystal, species or toy is added; **do not retire it**). Its load-bearing property is that **Scan & Merge is always safe to run**: a field-ownership contract makes harvested facts the tool's and all prose the writer's, and an entry whose source asset vanished is reported as an orphan and never auto-deleted. WRITER: records the codex asset and every PNG on the ledger; ships via Pending Tool Changes. See `Docs/CODEX.md`. |
-| Interface | **Wire Offline Menu Surfaces** (+ *Regenerate Icons*) | Wires Menu_Main's offline surfaces: the online/offline lamp, its `ConfirmQuestionBar`, and an `OfflineUIGate` per online-only panel. Keeper (idempotent, re-runnable whenever a panel is added). Works on the OPEN scene, never the YAML, so unsaved authoring is adopted rather than clobbered; finds panels by COMPONENT TYPE (they sit in prefab instances whose object names differ from their script names) and creates only what is missing. Screens dim in place, sub-panels hide — a screen the nav bar can reach must never be hidden. Generates the accept/cancel icons and never overwrites an existing file; the *Regenerate Icons* entry forces a re-render. WRITER: records to the ledger, ships via Pending Tool Changes. See `Docs/OFFLINE_MODE.md` §7–§11. |
-| Vessels | **Vessel Studio** | Opens on the studio HOME: the web hub's heading and one card per `Docs/Studios/VesselStudio/studios.json` studio with the hub's own looping preview (`StudioPreviews.cs`); a card opens that studio built from the checkout and served by Amoebius (the artifact's own build, Sync/Ask/Decisions working; /vessel-studio D34). READER: no tuning UI of its own. The artifact is the one source of truth; its numbers reach the vessel's assets through `/artifact-to-unity` (`Tools/Build/studio_to_unity.py`, `--check` for drift). `author_stoat_assets.py` seeds those assets once and no longer asserts their numbers. See `Docs/Studios/VESSEL_STUDIO_PLAN.md` §2. |
-| Vessels | **AI ▸ Third Eye** | Watch Play mode from a second camera in its own window while you play in the Game view: pick any pilot (you, a rival, an AI), then Chase, Follow or Free (fly or orbit), the Vessel Studio's three cameras. *AI thinking* draws each AI's aim (a line to the point it steers for, coloured by state) and a ring on the crystal it is after; the bottom strip reads the watched AI's state, recoveries and difficulty mistakes. Its own hidden camera (never the gameplay rig), look adopted through `OffscreenCameraSetup`, posed in `beginCameraRendering` so it never lags; keeps rendering while paused. Reader only - writes `UserSettings/ThirdEyeSettings.asset`, never assets, so no ship panel. See `.claude/skills/vessel-ai/SKILL.md` §4. |
-| Misc | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
-| Misc | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
+| Ecology | Validate Lifeform Crystals | Every lifeform drops exactly one elemental crystal. |
+| Vessels | Audits ▸ Audit Vessel Ability Rows / Elemental Morphs / …; Wiring ▸ Wire & Bake Petal Bars, Wire Vessel Ability Row, Plan / Swap Vessel Rig | Vessel HUD + model wiring. |
+| Vessels | Wiring ▸ **Bake Crystal Hull Fusions** | Solves, at edit time, where each elemental crystal's faces land on each vessel hull (`Resources/CrystalHullFusionConfig` entries) and bakes the answer into a `CrystalHullFusionBakeSO` per entry (plus one shared `<Element>_FusionTemplate.asset` mesh per element), so a pickup in game does no geometry. Skinned and static multi-part hulls alike; 12 hulls × 4 elements. Lists every entry CURRENT / MISSING / STALE / UNRESOLVABLE with the reason; Validate fails on anything not current. **Keeper** — re-run whenever a hull or crystal model, an entry's `tileFill`/`surfaceLift` or the solver changes (the game warns once and solves at runtime until it is). Doc: `Assets/_Scripts/Controller/Environment/Crystals/CRYSTAL_HULL_FUSION.md` §4. |
+| Performance | Performance Benchmark, Benchmarks ▸ Prism Grid / Crystal Depth Prism / Crystal Flip Wave, Prism Contact Probe, Texture Memory, Scene Object Counter | Frame cost and memory. |
+| Scenes | Setup Freestyle Toybox, Setup Prism Grid Explosion Scene, Testing Multiplayer toggles | Scene scaffolding. |
+| UI | Canvas Upgrader, Raycast Target Audit, Report On-Screen UI | UI authoring. |
+| UI | **Codex** | The in-game encyclopedia, authored in one place across all three kingdoms — **Ethirions** (every crystal), **Ecology** (every lifeform) and **Tools** (every freestyle toy, grouped by the fundamental it changes: Pilot / World / Creation). *Scan & Merge* re-reads the project, *Bake* renders each entry's hero image, and the right-hand panel edits any entry by hand. Keeper (idempotent — the codex needs re-scanning every time a crystal, species or toy is added; **do not retire it**). Its load-bearing property is that **Scan & Merge is always safe to run**: a field-ownership contract makes harvested facts the tool's and all prose the writer's, and an entry whose source asset vanished is reported as an orphan and never auto-deleted. WRITER: records the codex asset and every PNG on the ledger; ships via Pending Tool Changes. See `Docs/CODEX.md`. |
+| UI | **Wire Offline Menu Surfaces** (+ *Regenerate Icons*) | Wires Menu_Main's offline surfaces: the online/offline lamp, its `ConfirmQuestionBar`, and an `OfflineUIGate` per online-only panel. Keeper (idempotent, re-runnable whenever a panel is added). Works on the OPEN scene, never the YAML, so unsaved authoring is adopted rather than clobbered; finds panels by COMPONENT TYPE (they sit in prefab instances whose object names differ from their script names) and creates only what is missing. Screens dim in place, sub-panels hide — a screen the nav bar can reach must never be hidden. Generates the accept/cancel icons and never overwrites an existing file; the *Regenerate Icons* entry forces a re-render. WRITER: records to the ledger, ships via Pending Tool Changes. See `Docs/OFFLINE_MODE.md` §7–§11. |
+| Vessels | **Vessel Studio** | Opens on the studio HOME: the web hub's heading and one card per `Docs/Studios/VesselStudio/studios.json` studio with the hub's own looping preview (`StudioPreviews.cs`); a card opens that studio built from the checkout and served by Amoebius (the artifact's own build, Sync/Ask/Decisions working; /vessel-studio D34). Its last card is **+ New studio**, which opens the Vessel Studio artifact in claude.ai, where the + panel sends a new-studio request straight to a Claude Code session (D36). READER: no tuning UI of its own. The artifact is the one source of truth; its numbers reach the vessel's assets through `/artifact-to-unity` (`Tools/Build/studio_to_unity.py`, `--check` for drift). `author_stoat_assets.py` seeds those assets once and no longer asserts their numbers. See `Docs/Studios/VESSEL_STUDIO_PLAN.md` §2. |
+| AI | **Third Eye** | Watch Play mode from a second camera in its own window while you play in the Game view: pick any pilot (you, a rival, an AI), then Chase, Follow or Free (fly or orbit), the Vessel Studio's three cameras. *AI thinking* draws each AI's aim (a line to the point it steers for, coloured by state) and a ring on the crystal it is after; the bottom strip reads the watched AI's state, recoveries and difficulty mistakes. Its own hidden camera (never the gameplay rig), look adopted through `OffscreenCameraSetup`, posed in `beginCameraRendering` so it never lags; keeps rendering while paused. Reader only - writes `UserSettings/ThirdEyeSettings.asset`, never assets, so no ship panel. See `.claude/skills/vessel-ai/SKILL.md` §4. |
+| Utilities | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
+| Utilities | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
 | Diagnostics | **Crash Detector** | Always-on editor crash watchdog. A background thread journals every error/exception to `Logs/CrashDetector/` and heartbeats a session sentinel; when the editor dies abnormally (Unity crash, PC fault, force-kill — even with the main thread hung), the next launch writes a `Crash-*.log` report from the stale sentinel + captured errors + the tail of Unity's own `Editor-prev.log`. Reader only — writes machine-local logs and `UserSettings/`, never assets, so no ship panel. Shares the Diagnostics window with the Bug Ledger; a crash report can be filed into the ledger with one button. |
-| Diagnostics | **Bug Ledger** | The team's live bug list, INSIDE the editor. Every distinct error/exception/assert signature auto-files one issue into the GITIGNORED live store (`BugLedger/local/`) — `git status` never sees the ledger working. Publishing is explicit: the **Stage & Push** tab diffs local vs the tracked `BugLedger/shared/`, the human stages changes (+/− per issue), comments, and the tool commits & pushes ONLY ledger paths with a step progress bar (fetch → publish → add → commit → push; `BugLedgerPublisher` over `FrogletGit`). One small JSON file per issue, merge-friendly (same signature = same file on every machine, via the runtime-safe `BugSignature` core). Custom bugs are filed by hand; editor TOOLS file findings through `BugLedger.ReportFromTool`/`ReportToolFindings` (deduped, and auto-resolved by the tool's next full clean run — `VesselSkimmerAudit` is the reference integration). A fix is not believed until the game proves it: *Mark Fixed* → VALIDATING, and only after the issue's clean-session quota (play runs for play-mode bugs, editor sessions for edit-mode ones) does it close — archived to `BugLedger/local/resolved/` (also the tombstone that stops a shared copy from re-importing), removed from the live ledger; a recurrence reopens it as a regression, loudly. Per-issue: severity (blocker/major/minor), pause validation, ignore (parks it and suppresses re-filing), resolve now, delete. Full doc: `Docs/DIAGNOSTICS.md`; store contract: `BugLedger/README.md`. Writes no Assets/ — no ship panel; the store is ordinary committable project data. |
+| Diagnostics | **Bug Ledger** | The team's live bug list. It has NO window (removed 2026-10-15 — "no complex UI toolboxes in Unity"): every distinct error/exception/assert signature auto-files one issue into the GITIGNORED live store (`BugLedger/local/`), and the only UI is ONE question after a play test that logged a new error or made a new perf capture — sent with no question since 2026-10-16 (`BugHuntAutoSend`). It pushes the ledger plus new redlog/crash/perf files to the sender's own `bugledger/<user>` branch, built in a throwaway index so the working tree and branch are never touched (`BugLedgerSender` over `FrogletGit`). Claude fixes from there (`/bug-ledger`, `bug_ledger.py mark-fixed` writes VALIDATING + the fix commit onto that branch); the editor adopts the fix once that commit is in its HEAD, two clean play runs close it, a recurrence reopens it and asks again. Editor TOOLS still file findings through `BugLedger.ReportFromTool`/`ReportToolFindings` (`VesselSkimmerAudit` is the reference integration); they ride along on the next send. Full doc: `Docs/DIAGNOSTICS.md`; store contract: `BugLedger/README.md`. Writes no Assets/ — no ship panel. |
 | QA | **QA Session** | The untested-development backlog, run from inside the editor. Creates the tester's session file, lists the backlog, and for each item renders its numbered steps, its PASS/FAIL definitions and its known do-not-fail-on exceptions verbatim — so a first-time tester never opens `QA_BACKLOG.md`. Reads as five numbered steps (session → right build → set up Unity → run tests → submit); each step's reasoning hides behind a `?`. Evidence attaches per item, including a one-click copy of the Editor log. Every rule lives in `Tools/QA/*.py` (self-tested, 59 checks) and the window only draws — it never parses or writes a results file, so a layout bug can never become a lost verdict. Writes no Assets/ — no ship panel; its output is the tester's own `Docs/QA/RESULTS/` file, ordinary committable project data. Needs python3 on PATH. Full doc: `Docs/QA/README.md`. |
 
 ---
@@ -441,7 +480,8 @@ upstream and the measuring branch touched no `Tools/Build/` file at all.
 | Bug ledger issue model (hand-rolled JSON) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerIssue.cs` |
 | Bug ledger settings (`ScriptableSingleton`, `UserSettings/`) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSettings.cs` |
 | Bug ledger tab view | `Assets/_Scripts/Editor/Diagnostics/BugLedgerView.cs` |
-| Bug ledger Stage & Push tab | `Assets/_Scripts/Editor/Diagnostics/BugLedgerStageView.cs` |
+| Bug ledger: the automatic after-play send | `Assets/_Scripts/Editor/Diagnostics/BugHuntAutoSend.cs` |
+| Bug ledger sender (bugledger/<user> branch, throwaway index) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerSender.cs` |
 | Bug ledger git publisher (scoped, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerPublisher.cs` |
 | Bug ledger store contract (committed data) | `BugLedger/README.md` (project root) |
 | Shared signature core (runtime-safe, for the future in-game reporter) | `Assets/_Scripts/Utility/BugSignature.cs` |

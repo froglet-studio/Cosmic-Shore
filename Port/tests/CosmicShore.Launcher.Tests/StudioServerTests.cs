@@ -225,6 +225,24 @@ namespace CosmicShore.Launcher.Tests
         }
 
         [Fact]
+        public void ARefreshRebuildsFromTheRefTheJobFetched_WhicheverRemoteThatWas()
+        {
+            // A checkout whose origin is a fork or a local copy: sync_job.py fetched through the repo's URL (2026-10-14).
+            var viaUrl = new JsonObject { ["ref"] = "refs/remotes/froglet-studio/Ys-bleeding-edge" };
+            Assert.Equal("refs/remotes/froglet-studio/Ys-bleeding-edge", StudioJobs.FetchedRef(viaUrl, "Ys-bleeding-edge"));
+            Assert.Equal("refs/remotes/upstream/cece/x", StudioJobs.FetchedRef(new JsonObject { ["ref"] = "refs/remotes/upstream/cece/x" }, "cece/x"));
+            // An older sync_job.py (no ref), a ref for another branch, or one that is not a remote-tracking ref: origin/<branch>.
+            Assert.Equal("origin/b", StudioJobs.FetchedRef(new JsonObject(), "b"));
+            Assert.Equal("origin/b", StudioJobs.FetchedRef(new JsonObject { ["ref"] = "refs/remotes/upstream/other" }, "b"));
+            Assert.Equal("origin/b", StudioJobs.FetchedRef(new JsonObject { ["ref"] = "HEAD;rm -rf ~/b" }, "b"));
+            // build.json names the branch, whichever remote it came through.
+            Assert.Equal("Ys-bleeding-edge", StudioBuild.BranchName("refs/remotes/froglet-studio/Ys-bleeding-edge"));
+            Assert.Equal("cece/x", StudioBuild.BranchName("refs/remotes/upstream/cece/x"));
+            Assert.Equal("cece/x", StudioBuild.BranchName("origin/cece/x"));
+            Assert.Equal("my/work", StudioBuild.BranchName("my/work"));
+        }
+
+        [Fact]
         public void TheArgsAreSyncJobPys_WithNoForceAnywhere()
         {
             Assert.True(StudioJobs.IsBranch("cece/magical-carson-9bdq8z"));
@@ -290,12 +308,14 @@ namespace CosmicShore.Launcher.Tests
         readonly StudioServer _srv;
         readonly HttpClient _http = new();
         readonly List<string> _asked = new();
+        readonly List<(string title, string prompt)> _agents = new();
 
         public StudioServerTests()
         {
             _srv = new StudioServer(new StudioServer.Options(_fx.Data, "git", () => _fx.Repo,
                 Ask: async (prompt, onText, ct) => { _asked.Add(prompt); onText("half"); await Task.Yield(); onText("half and whole"); return "half and whole"; },
-                Python: () => null)).Start();
+                Python: () => null,
+                Agent: (title, prompt) => { _agents.Add((title, prompt)); return true; })).Start();
             _srv.EnsureBuilt();
         }
 
@@ -383,6 +403,38 @@ namespace CosmicShore.Launcher.Tests
             Assert.Null(prof["profiles"]!["someone-else"]);
             Assert.Equal("invalid_argument", (await Api("{\"op\":\"db.add\",\"path\":\"../etc\",\"data\":{}}"))["error"]!["code"]!.ToString());
             Assert.Equal("not_found", (await Api("{\"op\":\"db.update\",\"path\":\"jobs\",\"id\":\"nope\",\"data\":{\"a\":1}}"))["error"]!["code"]!.ToString());
+        }
+
+        [Fact]
+        public async Task NewStudio_StartsAnAgentChat_WhileSyncKeepsItsLocalSession()
+        {
+            // the Sync panel's own session prompt: Amoebius is that session, no chat
+            var sync = await Api("{\"op\":\"mcp.call\",\"server\":\"Claude Code Remote\",\"tool\":\"create_session\",\"args\":{\"environment_id\":\"env_amoebius\",\"prompt\":\"" + StudioServer.SyncPromptStart + " for the artifact x.\"}}");
+            Assert.Equal(StudioServer.LocalSession, sync["result"]!["payload"]!["session_id"]!.ToString());
+            Assert.Empty(_agents);
+            // the hub's + New studio: the request becomes an AGENT chat with its title and its prompt, unchanged
+            var req = await Api("{\"op\":\"mcp.call\",\"server\":\"Claude Code Remote\",\"tool\":\"create_session\",\"args\":{\"environment_id\":\"env_amoebius\",\"title\":\"New studio: Heron\",\"prompt\":\"Vessel Studio: NEW STUDIO request\\nVessel: a NEW vessel named Heron.\"}}");
+            Assert.Equal(StudioServer.AgentSession, req["result"]!["payload"]!["session_id"]!.ToString());
+            Assert.Single(_agents);
+            Assert.Equal("New studio: Heron", _agents[0].title);
+            Assert.Equal("Vessel Studio: NEW STUDIO request\nVessel: a NEW vessel named Heron.", _agents[0].prompt);
+            // the page hash a caller may add after #amoebius: one plain word, nothing else
+            Assert.EndsWith("index.html#amoebius&new-studio", _srv.PageUrl("index.html", "new-studio"));
+            Assert.EndsWith("index.html#amoebius", _srv.PageUrl("index.html", "x\"><script>"));
+        }
+
+        [Fact]
+        public async Task NewStudio_WithoutAgentChats_SaysSo()
+        {
+            using var other = new StudioServer(new StudioServer.Options(Path.Combine(_fx.Root, "_d3"), "git", () => _fx.Repo)).Start();
+            using var http = new HttpClient();
+            var m = new HttpRequestMessage(HttpMethod.Post, other.BaseUrl + ".amoebius/api")
+            {
+                Content = new StringContent("{\"op\":\"mcp.call\",\"server\":\"Claude Code Remote\",\"tool\":\"create_session\",\"args\":{\"prompt\":\"build a vessel\"}}", Encoding.UTF8, "application/json"),
+            };
+            m.Headers.TryAddWithoutValidation("Origin", other.Origin);
+            var j = (JsonObject)JsonNode.Parse(await (await http.SendAsync(m)).Content.ReadAsStringAsync())!;
+            Assert.Equal("tool_error", j["error"]!["code"]!.ToString());
         }
 
         [Fact]

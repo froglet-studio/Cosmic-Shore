@@ -117,7 +117,7 @@ namespace CosmicShore.Gameplay
                     ? Mathf.Max(0f, (float)floraCfg.NewPlantPeriod)
                     : floraCfg.FloraPrefab.PlantPeriod;
 
-                if (waitPeriod > 0f) yield return new WaitForSeconds(waitPeriod);
+                if (waitPeriod > 0f) yield return CosmicShore.Utility.WaitCache.About(waitPeriod);
                 else yield return null;
 
                 if (!host) yield break;
