@@ -65,6 +65,55 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The seven vessel models rebuilt in place by `/vessel-model` (Squirrel, Dolphin, Sparrow, Serpent, Manta live files; Urchin and Rhino rigs) (`ccr-d93a6dfb-ugbxng`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett (2026-10-17): "procedural vessel models are terrible even as placeholders". A new skill,
+`/vessel-model` (`.claude/skills/vessel-model/`), and its tools (`Tools/Build/vessel_model/`, Blender 5.2 as a Python
+module, no GUI) rebuilt the seven hulls from Python specs and wrote them **in place over the artist files** (same
+path, same guid, same mesh-node / geometry / armature / bone / material names, every bone's rest pose reproduced to
+0.000 by `rest_compare.py`, the same file frame per file). Each file: one skinned mesh, four REAL element shape
+keys (`charge/mass/space/time`, 4-18% of the diagonal; the Urchin and Rhino artist rigs had four EMPTY ones), the
+takes the Animators / `.meta` bind by name (Squirrel 9, Serpent 6, Sparrow 12, Dolphin 10 motion takes, Manta 9,
+Urchin / Rhino 9 standard poses), four material slots in the shipped order with polygons on every slot. Verified
+offline by three readers (the repo FBX codec + `fbx_probe`, `assimp info`, a Blender re-import), `build.py --check`
+green on all seven, `measure_vessel_models.py` green. **Nothing here ran in the Unity Editor**: `/verify-unity`
+was not available in the session (no editor, no `unity` binary). No C# changed. Live files rewritten:
+`SquirrelVessel_CosmicShoresTest1.fbx`, `dolphin_shapekey_with_animations.fbx`, `SparrowModel1.fbx`,
+`SerpentExport.fbx`, `Manta_shapekey_rigged.fbx`; rig files rewritten (not yet drawn by any prefab):
+`urchan_shapekey_with_animations.fbx`, `rhino_shapekey_with_animations.fbx`. Before/after contact sheets:
+`Docs/VesselModels/sheets/`.
+
+**Verify:** (1) Check out the branch; let Unity reimport the seven FBX files. Console: no "self-intersecting and
+has been discarded", no missing-bone or missing-clip warning; each `.meta` still resolves its clip ids (the take
+names are unchanged) and its `externalObjects` material remaps (names unchanged; the Dolphin's `N.001` never had a
+remap and still wears its Blender material, dossier `Docs/VesselModels/Dolphin.md` §2). (2) Open each prefab
+(`Assets/_Prefabs/Spacevessels/`: Squirrel, Dolphin, Sparrow, Serpent, Manta, plus Falcon / Shrike / Termite, which
+draw the Manta file): the SkinnedMeshRenderer shows the new hull, no bone binding broke, the jets / colliders /
+flares still sit on the hull (they hang off bones whose rest poses are unchanged). (3) `FrogletTools > Vessels >
+Audits > Audit Vessel Elemental Morphs`: all four shapes REAL on the five live files (the editor reads root-bone
+bounds and reports ~1.28x smaller than the offline number). `Audit Vessel Construction` and `Audit Vessel Tails and
+Jets`: no new row. (4) `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` for the Squirrel, Dolphin and
+Manta (the bakes store a vertex count and hash and are stale on any new mesh; the runtime falls back to a worker
+solve meanwhile). (5) Fly each of the five in freestyle: the hull reads at the chase camera; pitch / yaw / roll /
+throttle move the whole hull (Squirrel, Serpent, Sparrow through their Animator poses, Dolphin and Manta through code
+puppetry); the domain colour lands on the domain slot (slot 0 on the Dolphin / Manta family, `Body` on the Squirrel /
+Serpent / Sparrow as shipped); the glass and the engine mouths read; each element's morph is nameable in the
+elemental lab (Space = reach, Time = speed, Charge = weapon, Mass = volume). Sparrow pitch sign: the artist's
+`PitchUp_SparrowAnim` deflected the OPPOSITE way as flown (`Docs/VesselModels/Sparrow.md` 3.4); the rebuilt takes
+are authored nose-up about world axes like the Squirrel's (whose sign was measured), so pull back and the nose must
+rise. If it drops, flip the sign of the pitch poses in `specs/sparrow.py` and rebuild. (6) The Scarab draws its own
+`ScarabHullBuilder` hull over the Sparrow file with renderers off: unchanged, confirm it still does. (7) Urchin and
+Rhino: their prefabs still draw the part-per-mesh placeholders. The rebuilt rigs are the swap targets for
+`FrogletTools > Vessels > Wiring > Swap Vessel Rig` (`Docs/VESSEL_CONSTRUCTION.md`: geometry, materials AND
+animation; the Urchin rig is 2.105x the live hull and the swapper fits the instance transform). After a swap, (3)
+must report four REAL morphs on each.
+
+**First-pass tuning:** morph travel per file (offline, % of diagonal): Squirrel C 6 / M 4 / S 9 / T 7; Dolphin
+C 8 / M 4 / S 10 / T 7; Sparrow S 9 / C 7 / T 6 / M 4; Serpent 5-9; Manta 6-11; Urchin C 18 / M 5 / S 7 / T 9;
+Rhino C 8 / M 4 / S 8 / T 7. Pose amplitudes: 26-30 degrees on the Squirrel (its top blend tree halves them), 20-25
+elsewhere. All of it is a spec number (`Tools/Build/vessel_model/specs/<vessel>.py`); change the number, rebuild,
+`--check`.
+
 ### 🔴 AI seat chips name their hull: hover label, (i) badge, vessel info card (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the hull icons on the launch panel's AI chips (Regatta and every arena card with the ally hull
