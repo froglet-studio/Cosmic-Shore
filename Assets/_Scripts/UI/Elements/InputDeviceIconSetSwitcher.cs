@@ -33,7 +33,7 @@ namespace CosmicShore.UI
     [AddComponentMenu("Cosmic Shore/UI/Input Device Icon Set Switcher")]
     public class InputDeviceIconSetSwitcher : MonoBehaviour
     {
-        public enum IconSet { Xbox, PlayStation, KeyboardText, None }
+        public enum IconSet { Xbox = 0, PlayStation = 1, KeyboardText = 2, None = 3 }
 
         /// <summary>
         /// A physical control. The fleet's vocabulary for "which button is this?", shared by

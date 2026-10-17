@@ -44,16 +44,16 @@ namespace CosmicShore.Gameplay.Audio
     [DisallowMultipleComponent]
     public class DriftAudioController : MonoBehaviour
     {
-        enum AttachMode { None, Ship, Listener }
+        enum AttachMode { None = 0, Ship = 1, Listener = 2 }
 
         enum DriftPhase
         {
             /// <summary>No event playing, waiting for IsDrifting to go true.</summary>
-            Idle,
+            Idle = 0,
             /// <summary>Event playing, drift_amount tracks live trigger state.</summary>
-            Active,
+            Active = 1,
             /// <summary>Drift just ended - ramping drift_amount to 1 ("let go"), event still playing.</summary>
-            Releasing
+            Releasing = 2
         }
 
         [Header("FMOD Event")]

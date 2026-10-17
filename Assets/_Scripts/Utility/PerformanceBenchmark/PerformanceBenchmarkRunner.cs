@@ -63,7 +63,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [Header("Automation")]
         [SerializeField] private bool autoStartOnEnable;
 
-        enum State { Idle, WarmingUp, Sampling, Done }
+        enum State { Idle = 0, WarmingUp = 1, Sampling = 2, Done = 3 }
 
         [SerializeField, HideInInspector] private State state = State.Idle;
 

@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private int uDiv = 8;
         [SerializeField] private int vDiv = 6;
 
-        public enum LatticeType { Tri, Hex }
+        public enum LatticeType { Tri = 0, Hex = 1 }
         [SerializeField] private LatticeType lattice = LatticeType.Tri;
 
         [Header("Organic Variation")]

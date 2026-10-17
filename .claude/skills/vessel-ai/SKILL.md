@@ -15,6 +15,8 @@ instead of copying them:
 | `Docs/AI_SYSTEM/README.md` | Start here: the branch AI work lives on (`Ys-bleeding-edge`), the first command of every AI session (`python3 Tools/Build/ai_branch_sync.py`) |
 | `Docs/AI_SYSTEM/ARCHITECTURE.md` | The six layers (§1) and **the roster of every AI** (§2, the source of truth). A new AI gets a row there first |
 | `Docs/AI_SYSTEM/DIAGNOSIS_PLAYBOOK.md` | The five tiers of evidence, the intake checklist, the user's test-script template, the status board |
+| `Docs/AI_SYSTEM/VESSEL_MODE_CHART.md` | Which hulls have an AI, which modes offer each hull, and what has flown where (`vessel_mode_chart.py --write`; re-run after flights or card changes) |
+| `Docs/AI_SYSTEM/RACING_LINE.md` | Learning from people's editor flights: the racing line averaged from clean legs (`racing_line.py`), each leg's style read from the recording, the capture plan. Readers: `situation_features.py`, `learn_from_flights.py` |
 | `Docs/SKIM_RACE_AI.md` | The most developed AI (the Squirrel's). Its benchmark (§1), difficulty (§10) and simulator are the model for the rest |
 | `Docs/Studios/VESSEL_STUDIO_ROLLOUT.md` | Which vessels have AI, and the order their studios are built in |
 | `/vessel-studio` | The browser studio: AI race panel, levels (§1.5.7), cameras (§1.5.9) |

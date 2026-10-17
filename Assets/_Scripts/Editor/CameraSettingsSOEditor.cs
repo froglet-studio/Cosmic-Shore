@@ -5,7 +5,7 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.Gameplay
 {
     [CustomEditor(typeof(CameraSettingsSO))]
-    public class CameraSettingsSOEditor : Editor
+    public class CameraSettingsSOEditor : UnityEditor.Editor
     {
         SerializedProperty modeProp;
         SerializedProperty followOffsetProp;

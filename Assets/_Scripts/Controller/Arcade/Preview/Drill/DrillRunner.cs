@@ -149,7 +149,7 @@ namespace CosmicShore.Gameplay
 
         List<ComposedTip> _tips = new();
         int _tipIndex;
-        enum TipStage { Waiting, Showing, Gap }
+        enum TipStage { Waiting = 0, Showing = 1, Gap = 2 }
         TipStage _tipStage;
         float _tipElapsed;
 
