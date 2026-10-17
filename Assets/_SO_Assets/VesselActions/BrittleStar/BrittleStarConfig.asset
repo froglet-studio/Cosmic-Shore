@@ -83,7 +83,7 @@ MonoBehaviour:
   cordLooseDamping: 0.4
   cordRigidDamping: 14
   cordPose: 1600
-  cordMaxRigidity: 0.7
+  cordMaxRigidity: 0.4
   cordRigidityRate: 12
   cordDebrisRestitution: 0.5
   cordDebrisSpeedLimit: 200

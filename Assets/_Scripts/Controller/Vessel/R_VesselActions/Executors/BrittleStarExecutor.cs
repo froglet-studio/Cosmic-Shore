@@ -571,8 +571,8 @@ namespace CosmicShore.Gameplay
                 RigidDamping = config.CordRigidDamping,
                 Pose = config.CordPose,
             };
-            // A full pull shortens the cords all the way but stiffens them only to cordMaxRigidity: the saber keeps 30% of
-            // the whip's give (Garrett, 2026-10-16: "not completely rigid at full press").
+            // A full pull shortens the cords all the way but stiffens them only to cordMaxRigidity: the saber keeps 60% of
+            // the whip's give (Garrett: "not completely rigid at full press", 0.4 since 2026-10-17).
             float rigidity = CordRigidity01;
             float splay01 = BrittleStarRules.Spread01(AimStick(), config.AimDeadzone);
             for (int i = 0; i < _cords.Length; i++)

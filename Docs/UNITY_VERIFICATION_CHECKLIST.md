@@ -9636,7 +9636,7 @@ verification, steps 2-9. The short version:
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
 
-## 🔴 Brittle Star tuning pass — 3 s regrow, 70% rigid sabers, softer whip, Space heat capacity, slim long blocks with Mass girth (`cece/gallant-bell-eq7kul`, 2026-10-16) — NOT EDITOR-VERIFIED
+## 🔴 Brittle Star tuning pass — 3 s regrow, 40% rigid sabers (70% first), softer whip, Space heat capacity, slim long blocks with Mass girth (`cece/gallant-bell-eq7kul`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 No `unity` CLI in the session (`/verify-unity` could not run). Proved offline: player `unity_refcompile` (0 errors in
 project code) and editor (3 errors, all the known `AuthenticationServiceFacade` reds, 0 in changed files); the 33
@@ -9647,7 +9647,7 @@ BrittleStar --check` (48 mapped, 0 drift); `check_studio.cjs` and `verify_lab.cj
 T-20261016-e2fb. In Play mode:
 1. **LT** with a spare: the new ring blooms back over **3 s** (was 0.5 s); the modes return only when it has.
 2. **RB** Charge Mode: released, the cords whip a little slower and softer (`cordLooseWave` 144, was 180); a FULL RT
-   pull shortens them to 80 u but a ring flick still flexes them visibly (`cordMaxRigidity` 0.7: 30% of the give kept).
+   pull shortens them to 80 u but a ring flick still flexes them visibly (`cordMaxRigidity` 0.4: 60% of the give kept; 0.7 on 2026-10-16).
 3. **X** Space Mode, full pull: Space 0 overheats in ~2.4 s as before; raise Space to 10 (the Space test harness on the
    prefab's resource system): ~7.1 s (`heatCapacity` ×3). The Space card still fills to full; the lockout is still ~5 s.
 4. **Trails**: blocks are long and slim — the base trail 0.5 × 1 × 6 (the spawner halves x for a single trail), the

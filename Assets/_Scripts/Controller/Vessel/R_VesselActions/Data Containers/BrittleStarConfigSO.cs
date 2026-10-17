@@ -149,10 +149,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float cordRigidDamping = 14f;
         [Tooltip("1/s^2: the pull of every link onto the straight arm's line at FULL rigidity (x rigidity squared).")]
         [SerializeField, Min(0f)] float cordPose = 1600f;
-        [Tooltip("How rigid a FULL pull makes the cords, 0 (still a whip) to 1 (the rigid dials exactly). 0.7: the saber " +
-                 "keeps 30% of the whip's elasticity (Garrett, 2026-10-16: 'not completely rigid at full press'). The pull " +
+        [Tooltip("How rigid a FULL pull makes the cords, 0 (still a whip) to 1 (the rigid dials exactly). 0.4: the saber " +
+                 "keeps 60% of the whip's elasticity (Garrett: 'not completely rigid at full press', 0.7 on 2026-10-16, " +
+                 "then 'further reduce… to 40%' on 2026-10-17). The pull " +
                  "still shortens the cords all the way to cordLength.")]
-        [SerializeField, Range(0f, 1f)] float cordMaxRigidity = 0.7f;
+        [SerializeField, Range(0f, 1f)] float cordMaxRigidity = 0.4f;
         [Tooltip("1/s: how fast the cords follow the trigger between whip and saber (an ease, so a digital press does not " +
                  "snap them).")]
         [SerializeField, Min(0.1f)] float cordRigidityRate = 12f;

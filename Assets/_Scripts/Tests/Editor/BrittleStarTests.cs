@@ -441,8 +441,8 @@ namespace CosmicShore.Tests
             LooseWave = 144f, RigidWave = 2500f, LooseDamping = 0.4f, RigidDamping = 14f, Pose = 1600f,
         };
         /// <summary>cordMaxRigidity: how rigid a FULL pull makes the cords (Garrett, 2026-10-16: "not completely rigid at
-        /// full press… 30% of the current max elasticity").</summary>
-        const float FullPullRigidity = 0.7f;
+        /// full press", 70% on 2026-10-16, then 40%).</summary>
+        const float FullPullRigidity = 0.4f;
         const int CordLinks = 16;
         const float SaberLength = 80f, WhipLength = 120f;
 
@@ -537,7 +537,7 @@ namespace CosmicShore.Tests
             float whip = Flick(1f / 60f, 0f, out _);
             float rigid = Flick(1f / 60f, 1f, out _);
             float pulled = Flick(1f / 60f, FullPullRigidity, out var cord, 6f);
-            Assert.Greater(pulled, rigid * 1.2f, "30% of the give stays: it bends more than a fully rigid cord");
+            Assert.Greater(pulled, rigid * 1.2f, "60% of the give stays: it bends more than a fully rigid cord");
             Assert.Less(pulled * 2f, whip, "but it is a saber, not a whip");
             for (int i = 0; i < CordLinks; i++)
                 Assert.Greater(Vector3.Dot(cord.LinkDirection(i), cord.LinkDirection(0)), 0.999f, $"link {i}: settled straight");

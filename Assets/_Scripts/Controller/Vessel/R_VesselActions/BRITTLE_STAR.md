@@ -166,8 +166,9 @@ struts — the shipped hull still has physical arms (follow-up F8).
   wave stiffness `cordLooseWave` **144** (2026-10-16: 80% of the first 180, "even less stiff") → `cordRigidWave`
   2500 /s², damping `cordLooseDamping` **0.4** → `cordRigidDamping` 14 /s, and a pose spring `rigidity² × cordPose`
   1600 /s² onto the straight arm line. **A full pull is not fully rigid** (Garrett, 2026-10-16: "not completely rigid at
-  full press… 30% of the current max elasticity"): it shortens the cords all the way to 80 u but takes the stiffness
-  dials only `cordMaxRigidity` **0.7** of the way from whip to rigid, so the saber keeps 30% of the whip's give (tested:
+  full press… 30% of the current max elasticity", then 2026-10-17: "further reduce… to 40%"): it shortens the cords all
+  the way to 80 u but takes the stiffness dials only `cordMaxRigidity` **0.4** of the way from whip to rigid, so the saber
+  keeps 60% of the whip's give (tested:
   a flick bends it more than the rigid dials, under half as far as the whip, and it settles straight). Measured on the
   first whip (180, tests, 72° ring flick): the flick reaches link 4 at ~0.5 s, the middle at ~0.8 s and the tip at
   ~1.3 s, and is still swinging 2.5 s later; the 144 whip carries it ~10% slower.
@@ -329,7 +330,7 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | `heatCapacity` (Space — the heat the guns hold) | `BrittleStarConfig` | 1 → 3 (~2.4 s → ~7.1 s full-pull burst) |
 | `cordLength` (the saber) / `cordLooseLengthScale` (the whip) / `cordLinks` / `cordCutRadius` (× Charge) | `BrittleStarConfig` | 80 u / ×1.5 / 16 / 0.6 u |
 | `cordLooseWave` / `cordRigidWave` / `cordLooseDamping` / `cordRigidDamping` / `cordPose` / `cordRigidityRate` | `BrittleStarConfig` | 144 / 2500 /s² / 0.4 / 14 /s / 1600 /s² / 12 /s |
-| `cordMaxRigidity` (how rigid a full pull makes the cords) | `BrittleStarConfig` | 0.7 (30% of the whip's give kept) |
+| `cordMaxRigidity` (how rigid a full pull makes the cords) | `BrittleStarConfig` | 0.4 (60% of the whip's give kept; 0.7 on 2026-10-16) |
 | `cordDebrisRestitution` / `cordDebrisSpeedLimit` / `cordHitCooldown` | `BrittleStarConfig` | 0.5 / 200 u/s / 0.5 s |
 | `cordRenderSubdivisions` / `cordColor` / `cordRimBrightness` / `cordMaterial` | `BrittleStarConfig`, executor | 4 / iron / 0.75 / `ThresherChainMaterial` |
 | Round pool | `BrittleStar.prefab` turrets | 1400 / max 2400 (~1,100 alive per Space Mode burst at Space 0, ~3,200 at Space 10) |
@@ -375,7 +376,7 @@ None of that is a play test. In order:
    Flick the right stick round: the ring snaps over and a **wave travels slowly down each cord** (about a second to the
    tip), bounces back and keeps swinging for a few seconds; turn the hull hard and the cords trail and swing. Squeeze RT
    slowly: the cords **shorten to 80 u and stiffen**, becoming five sabers at a full pull that still flex a little when
-   you flick the ring (30% of the give stays); ease off, they loosen again (analog). Fly them through mass: prisms are sliced in two (friendly fire, except trail laid in the last
+   you flick the ring (60% of the give stays); ease off, they loosen again (analog). Fly them through mass: prisms are sliced in two (friendly fire, except trail laid in the last
    second). Draw one across a rival: petals only. Overheat in Space Mode, then switch to Charge: the heat drains in about
    a second.
 8. **LT** with no spare ring: nothing happens. Collect a **crystal**: the Charge card fills half (one spare); another:
