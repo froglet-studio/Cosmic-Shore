@@ -73,7 +73,7 @@ namespace CosmicShore.Gameplay
         Vector3 _authoredShape; // local X/Y/Z silhouette captured from the Skimmer
 
         // ── crystal burst ──
-        enum BurstPhase { None, Growing, Holding, Returning }
+        enum BurstPhase { None = 0, Growing = 1, Holding = 2, Returning = 3 }
         BurstPhase _burst = BurstPhase.None;
         Vector3 _burstTargetLocal;
         float _burstHoldEnd;

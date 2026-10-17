@@ -52,11 +52,11 @@ namespace CosmicShore.Gameplay.Audio
         enum AttachMode
         {
             /// <summary>No routing decision yet (instance freshly created).</summary>
-            None,
+            None = 0,
             /// <summary>Attached to this ship's transform (3D spatialisation).</summary>
-            Ship,
+            Ship = 1,
             /// <summary>Attached to the listener's transform (effectively 2D / always audible).</summary>
-            Listener
+            Listener = 2
         }
 
         [Header("FMOD Event")]
@@ -264,11 +264,11 @@ namespace CosmicShore.Gameplay.Audio
         enum CreationState
         {
             /// <summary>Player ownership unknown; waiting to decide.</summary>
-            PendingEvaluation,
+            PendingEvaluation = 0,
             /// <summary>Instance was created (local ship, or legacy mode).</summary>
-            Created,
+            Created = 1,
             /// <summary>Ship is remote/AI and onlyAudibleToController is on; no instance will ever be created.</summary>
-            SkippedRemote
+            SkippedRemote = 2
         }
 
         // Runtime state

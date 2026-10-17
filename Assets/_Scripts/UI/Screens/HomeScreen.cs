@@ -22,7 +22,7 @@ namespace CosmicShore.UI
 
         enum PlayerPrefKeys
         {
-            FirstAppLaunch
+            FirstAppLaunch = 0
         }
 
         public void Start()

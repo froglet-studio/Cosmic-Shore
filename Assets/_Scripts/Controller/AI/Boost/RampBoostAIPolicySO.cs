@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
         public static float GovernThrottle(float throttle, float trackedTarget, float wanted, float slew, float dt, float floor) =>
             Mathf.Clamp(throttle + (trackedTarget > wanted ? -1f : 1f) * slew * dt, Mathf.Clamp01(floor), 1f);
 
-        enum Mode { Off, Ramp, Brake }
+        enum Mode { Off = 0, Ramp = 1, Brake = 2 }
 
         sealed class Driver : AIBoostDriver
         {

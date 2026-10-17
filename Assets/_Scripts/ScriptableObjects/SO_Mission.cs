@@ -16,11 +16,11 @@ namespace CosmicShore.ScriptableObjects
     [System.Serializable]
     public enum SpawnMode
     {
-        ConcentratedInvasion,
-        RandomSurfaceScatter,
-        LocalizedAmbush,
-        PathBasedDeployment,
-        SphereInterdiction,
+        ConcentratedInvasion = 0,
+        RandomSurfaceScatter = 1,
+        LocalizedAmbush = 2,
+        PathBasedDeployment = 3,
+        SphereInterdiction = 4,
         //FlashSpawn,
         //PincerSpawn,
         //RandomClusteredSpawn,

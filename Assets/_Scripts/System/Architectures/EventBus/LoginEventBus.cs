@@ -9,7 +9,7 @@ namespace CosmicShore.Core
     [Serializable]
     public enum LoginType
     {
-        Success, Fail, Other
+        Success = 0, Fail = 1, Other = 2
     }
     
     public class LoginEventBus: IDisposable

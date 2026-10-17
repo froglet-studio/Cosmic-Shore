@@ -1134,7 +1134,7 @@ namespace CosmicShore.Editor.Froglet
             return reverted;
         }
 
-        enum AddedFate { Carry, DropSamePath, DropSameName }
+        enum AddedFate { Carry = 0, DropSamePath = 1, DropSameName = 2 }
 
         static AddedFate AddedObjectFate(Dictionary<string, GameObject> idx, string fullPath, string parentPath, string name, RepointOptions opt)
         {

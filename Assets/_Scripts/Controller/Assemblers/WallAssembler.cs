@@ -17,11 +17,11 @@ namespace CosmicShore.Gameplay
 
         public enum SiteType
         {
-            Top,
-            Right,
-            Bottom,
-            Left,
-            None
+            Top = 0,
+            Right = 1,
+            Bottom = 2,
+            Left = 3,
+            None = 4
         }
 
         [SerializeField] private float ownPullSpeed = 4.0f;
