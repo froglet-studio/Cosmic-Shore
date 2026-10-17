@@ -91,6 +91,7 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _painted = new();
         readonly HashSet<Prism> _paintedSet = new();
         readonly HashSet<Prism> _ordered = new();            // thrown at, not yet eaten or erased: the lab's `marked`
+        readonly List<Prism> _litQueue = new();              // _ordered in the order it was thrown at: the lab's `markQueue`
         readonly HashSet<Prism> _lit = new();                // painted or ordered: lit, and preferred by every creature (PaintedPrey)
         readonly Dictionary<Prism, float> _paintStamp = new(); // when each prism was last painted (the recency pick)
         readonly List<float> _candidateStamps = new();
@@ -630,7 +631,8 @@ namespace CosmicShore.Gameplay
             _painted.Clear();
             _paintedSet.Clear();
             // The order is given, and its prisms stay lit until they are eaten or erased (the lab's `marked`).
-            for (int i = 0; i < _candidates.Count; i++) _ordered.Add(_candidates[i]);
+            for (int i = 0; i < _candidates.Count; i++)
+                if (_ordered.Add(_candidates[i])) _litQueue.Add(_candidates[i]);
             if (_candidates.Count == 0) { SlingThrow(); return; }
 
             var order = new List<Prism>(_candidates);
@@ -841,10 +843,15 @@ namespace CosmicShore.Gameplay
             _candidatePositions.Clear();
             _candidateClaims.Clear();
             _candidates.Clear();
-            if (m.Set != null)
-                for (int i = 0; i < m.Set.Count; i++)
+            // A Sling-painter order picks from the LIT QUEUE, every prism thrown at and still lit whichever throw lit it, so
+            // the school keeps eating lit prisms, newest first, until none is left (the designer, 2026-10-17; the lab's
+            // litQueue). PickRecent spreads it: a creature takes the newest prism nobody is heading for, the next goes
+            // down the queue. Every other order (a latch's cluster) picks the nearest in its own set.
+            var source = m.Recent ? LitQueue() : m.Set;
+            if (source != null)
+                for (int i = 0; i < source.Count; i++)
                 {
-                    var p = m.Set[i];
+                    var p = source[i];
                     if (!p || p.destroyed) continue;
                     _candidates.Add(p);
                     _candidatePositions.Add(p.transform.position);
@@ -862,6 +869,20 @@ namespace CosmicShore.Gameplay
             if (k < 0) { ToFollow(m); return; }
             m.Target = _candidates[k];
             _claims[m.Target] = (_claims.TryGetValue(m.Target, out int c) ? c : 0) + 1;
+        }
+
+        /// <summary>The prisms still lit by a throw, in the order they were thrown at; eaten and erased ones are dropped as it is
+        /// read. Recency comes from <c>_paintStamp</c>, so a prism painted again moves up without a second entry.</summary>
+        List<Prism> LitQueue()
+        {
+            int kept = 0;   // compacted in place: this runs on every pick, so no delegate is allocated
+            for (int i = 0; i < _litQueue.Count; i++)
+            {
+                var p = _litQueue[i];
+                if (p && !p.destroyed && _ordered.Contains(p)) _litQueue[kept++] = p;
+            }
+            _litQueue.RemoveRange(kept, _litQueue.Count - kept);
+            return _litQueue;
         }
 
         void ReleaseClaim(Member m)
@@ -1123,6 +1144,7 @@ namespace CosmicShore.Gameplay
             _painted.Clear();
             _paintedSet.Clear();
             _ordered.Clear();
+            _litQueue.Clear();
             _hunters.Clear();
             _beamVessel = null;
         }

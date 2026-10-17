@@ -22,6 +22,8 @@ Round 5 (2026-10-17):
 - The brush is **smaller**: paint 3°, erase 1.5°, 2 u at the nose.
 - The camera flies **level**, so the brush sits on the screen's centre. It **rises** 56 u while you lure or dash (§1h).
 
+Round 6 (2026-10-17): the school keeps eating **every lit prism, newest first**, one creature per prism down the queue (§1j).
+
 Sources:
 
 - The lab page: `Docs/Studios/AnglerCommandLab.html` (artifact https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6).
@@ -201,6 +203,17 @@ Collecting an omni crystal (`AnglerTameByCrystalEffectSO`) gives the Angler two 
 - **Why it showed in round 3:** a homing throw stopped giving up, and the brush reached 3200 u. A creature thrown at a far target could be in flight for many seconds and deaf to every new paint.
 - **Fix:** RT now calls back every creature of the squad, one in flight included, and the throw re-throws it.
 - **Proof:** the lab reproduced it headless (24 of 24 stuck on the old paint before; 24 of 24 on the new paint after). The same fix is ported line for line.
+
+### 1j. The lit queue: eat every lit prism, newest first (round 6)
+
+- **Ask (the designer, 2026-10-17):** the fauna keep eating lit prisms in order of how recently each was lit; if one creature is already heading for the newest, the next goes down the queue, and so on.
+- **Before:** a throw's creatures picked only from that throw's own paint, and a new throw replaced it, so a prism still lit from an earlier throw was never eaten.
+- **Now:** `AnglerCommandExecutor.PickTarget` reads `LitQueue()` for a Sling-painter order: every prism a throw lit that is still lit (`_ordered`), in throw order. `AnglerCommandMath.PickRecent` (fewest claims, then the newest `_paintStamp`) spreads the school over it.
+  - The first creature takes the newest prism, the next the next newest, and so on.
+  - A creature that eats picks again from the queue and only rejoins the hull when nothing lit is left.
+  - Erasing takes a prism out; painting a lit prism again moves it to the front.
+  - A latch's cluster (the throw with nothing painted) still eats nearest first from its own set.
+- **Proof:** the lab's `litQueue`, checked headless (`ANGLER_COMMAND_LAB.md` round 6: 12 of 12 older lit prisms eaten, against 0 of 12 before).
 
 ## 2. What a leash is (and is not)
 

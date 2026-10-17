@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler round 6: the lit queue - the school eats every lit prism, newest first (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1j. No `unity` CLI was available, so `/verify-unity` did NOT run. Headless: `unity_refcompile` player OK; parity 189 cases, 10/10; the lab's queue check (12/12 older lit prisms eaten, 0 before).
+
+In the editor (Menu_Main freestyle, Vessel Changer → Angler, a school of 6+):
+
+1. Paint a row of prisms one at a time (sweep RT slowly) and release. The first creature heads for the LAST prism you painted, the next for the one before it, and so on: one creature per prism.
+2. Before they finish, paint a second, smaller group elsewhere and release. Those prisms get one creature each; the rest of the school goes back to the first group.
+3. Wait: every lit prism from BOTH throws is eaten, and only then does the school return to the hull. No prism is left lit.
+4. Erase (LT) one lit prism that a creature is heading for: it un-lights, and that creature takes the next prism in the queue.
+
+---
+
 ### 🔴 Angler round 5: speed back to 40, a smaller accurate brush, a level camera that rises while luring or dashing (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md` §1h and §5. No `unity` CLI was available, so `/verify-unity` did NOT run.
