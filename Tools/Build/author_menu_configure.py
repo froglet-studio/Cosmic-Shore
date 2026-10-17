@@ -589,21 +589,23 @@ LEFT_TOP, COL_H = 196, 844           # the leaderboard's columns run from y 196 
 #   y  992 - 1052  the launch row: status, summary chips, START
 # While the player flies the preview, ConfigureCinema fades every one of those out (the Chrome node).
 MARGIN = 60
-BAND_TOP, BAND_H = 200, 300
-BRIEF_W, SIDE_W = 460, 460
-# Rev 3.1 (the owner, 2026-10-17: "at least have a background and a border"): the preview is a framed
-# window in the band between Briefing and Controls, not full-bleed - the environment always reads as
-# the game's own picture, vessel or not.
-PV_GAP = 20
-PV_X = MARGIN + BRIEF_W + PV_GAP
-PV_W = 1920 - MARGIN - SIDE_W - PV_GAP - PV_X
-CARD_TOP, CARD_H, CARD_GAP, PAD = 540, 440, 20, 22
-FOOT_TOP = 992
+# Rev 3 option B (the owner, 2026-10-17: "I like the second version of the UI more"): a wide live-preview
+# BANNER (background, glowing border) with the briefing laid over its left side, then three step cards
+# (01 Vessel with its controls, 02 Intensity with the objective, 03 Pilots) and the launch row.
+BAND_TOP, BAND_H = 196, 284
+BRIEF_W = 640                        # the briefing over the banner's left side
+SIDE_W = 540                         # Arena (controls) / Maelstrom (pool) panel beside a shorter banner
+CARD_TOP, CARD_H, CARD_GAP, PAD = BAND_TOP + BAND_H + 18, 476, 20, 22
+FOOT_TOP = 990
 BODY_TOP = 128                       # a card's body starts under its numeral, caption and hint
 CARDS = {"arcade": (400, 680, 680), "arena": (400, 680, 680), "maelstrom": (680, 680, 400)}
 NODE_GAP = (680 - 2 * PAD - 4 * NODE_W) // 3
 COL_GAP = (680 - 2 * PAD - 3 * COL_W) // 2
-BAND_MID = (MARGIN + BRIEF_W + 1920 - MARGIN - SIDE_W) // 2 - 960   # the band's open middle, from centre
+
+
+def banner_w(kind):
+    """The arcade banner spans the window; the Arena's and the Maelstrom's leave room for a side panel."""
+    return 1800 if kind == "arcade" else 1800 - SIDE_W - CARD_GAP
 EYEBROW = {"arcade": "Arcade", "arena": "Arena", "maelstrom": "Arcade - Maelstrom"}
 PANEL_CLASS = {"arcade": "minigame", "arena": "arena", "maelstrom": "maelstrom"}
 VIEW_NAME = {"arcade": "ConfigureView", "arena": "ConfigureArenaView", "maelstrom": "ConfigureMaelstromView"}
@@ -661,7 +663,7 @@ def preview_window(root, kind):
     the nav and behind every setting (rev 3). Its tap-to-fly surface is navigation None: drawn first,
     it would otherwise be the control the pad lands on when the window opens; the pad flies through
     the FLY button in the band instead (ModePreviewWindow.RequestFocus)."""
-    pv = root.child(N("Preview", "Preview", TL(PV_X, BAND_TOP, PV_W, BAND_H)))
+    pv = root.child(N("Preview", "Preview", TL(MARGIN, BAND_TOP, banner_w(kind), BAND_H)))
     # No entrance on the preview: the window opens by a CanvasGroup fade, and a rise that started
     # under it could leave the preview at alpha 0. The preview is the window; it is simply there.
     pv.add("cg", 225, canvas_group(True))
@@ -673,7 +675,7 @@ def preview_window(root, kind):
     image_node(pv, "Preview/Fade", "Fade", R((0, 0), (1, 0), (0, 2), (-4, 90), (0.5, 0)), "SurfaceBlack",
                K.kit_sprite("kit_fade_v"), alpha=0.8)
     M.bracket_nodes(pv, "Preview/Bracket")
-    mid = R((0.5, 0.5), None, (0, 10), (600, 60))
+    mid = R((0.5, 0.5), None, (BRIEF_W / 2 - 60, 10), (600, 60))   # right of the briefing over the banner
     if kind == "maelstrom":
         na = pv.child(N("Preview/Unavailable", "Unavailable", mid))
         label(na, "No clip for this card yet.", "Body", "NeutralLightest", align="center")
@@ -681,7 +683,7 @@ def preview_window(root, kind):
         pv.add("video", 114, lambda ctx, go: mono(go, S["video"],
                f"  surface: {ref(ctx.c('Preview/Surface', 'raw'))}\n"
                f"  unavailableLabel: {ref(ctx.go('Preview/Unavailable'))}\n"
-               "  loop: 1\n  playAudio: 0\n  textureHeight: 720\n"))
+               "  loop: 1\n  playAudio: 0\n  textureHeight: 360\n"))
         pv.add("vp", 328, video_player)
         return pv
     status = pv.child(N("Preview/Status", "Status", mid))
@@ -751,17 +753,17 @@ def text_button(parent, key, name, caption, preview_call, nav=3, target=("Previe
     return b
 
 
-def fly_row(chrome):
+def fly_row(chrome, kind):
     """Tap to fly / FLY / vessel, in the open middle of the band. FLY is the pad's way into the
     full-bleed preview: a KitButton calling ModePreviewWindow.RequestFocus, the same request a tap
     on the surface makes."""
-    row = chrome.child(N("Fly", "Fly", R((0.5, 1), None, (BAND_MID, -(BAND_TOP + BAND_H - 56)), (600, 44))))
+    row = chrome.child(N("Fly", "Fly", TL(MARGIN + 24, BAND_TOP + BAND_H - 58, 600, 44)))
     row.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=4))
-    row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0)))
+    row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 14, 3, (0, 0), (0, 0)))
     hint = row.child(N("Fly/Hint", "FocusHint", R((0, 0.5), None, (0, 0), (180, 18), (0, 0.5))))
     hint.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.45)) \
         .add("le", 114, le(pw=180, ph=18))
-    label(hint, "Double-tap to fly", "Label", "TextLight", align="right")
+    label(hint, "Double-tap to fly", "Label", "TextLight")
     text_button(row, "Fly/Button", "FlyButton", "FLY", "RequestFocus")
     vname = row.child(N("Fly/Vessel", "Vessel", R((0, 0.5), None, (0, 0), (180, 18), (0, 0.5))))
     vname.add("le", 114, le(pw=180, ph=18))
@@ -825,10 +827,14 @@ def objective_bar(parent, r):
     return ob
 
 
-def briefing(chrome):
-    b = glass(chrome, "Briefing", "Briefing", TL(MARGIN, BAND_TOP, BRIEF_W, BAND_H), 2)
-    section_label(b, "Briefing/Title", "Title", "Briefing", TL(PAD, PAD, 200, 18), token="ControlActive")
-    body = b.child(N("Briefing/Body", "Body", R((0, 0), (1, 1), (0, -18), (-2 * PAD, -80))))
+def briefing(chrome, kind):
+    """The briefing laid over the banner's left side on a fade (option B), clear of the FLY row."""
+    w = min(BRIEF_W, banner_w(kind) - 260)
+    b = chrome.child(N("Briefing", "Briefing", TL(MARGIN + 2, BAND_TOP + 2, w, BAND_H - 4)))
+    b.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
+    image_node(b, "Briefing/Fade", "Fade", STRETCH, "SurfaceBlack", K.kit_sprite("kit_fade_h"), alpha=0.85)
+    section_label(b, "Briefing/Title", "Title", "Briefing", TL(30, 28, 200, 18), token="ControlActive")
+    body = b.child(N("Briefing/Body", "Body", R((0, 0), (1, 1), (-30, -6), (-180, -132))))
     body.add("cr", 222, K.canvas_renderer()) \
         .add("tmp", 114, text("Find the fastest path to the crystal.", "Body", tok("TextLight"), valign="top", wrap=True)) \
         .add("kt", 114, K.kit_text("Body", "TextLight"))
@@ -838,12 +844,20 @@ def briefing(chrome):
     return b
 
 
-def controls(chrome):
-    cb = glass(chrome, "Controls", "Controls", TR(MARGIN, BAND_TOP, SIDE_W, BAND_H), 3)
-    section_label(cb, "Controls/Title", "Title", "Controls", TL(PAD, PAD, 200, 18))
-    label(cb.child(N("Controls/Vessel", "Vessel", TR(PAD, PAD, 200, 18))), "Squirrel", "Label", "NeutralLightest",
+def controls(parent, r, framed):
+    """The vessel's controls list (VesselControlsPanel): in the Arcade's card 01 under the vessel
+    (option B), or a glass panel beside the Arena's banner."""
+    if framed:
+        cb = glass(parent, "Controls", "Controls", r, 3)
+        ins, top = PAD, PAD
+    else:
+        cb = parent.child(N("Controls", "Controls", r))
+        cb.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=3))
+        ins, top = 0, 0
+    section_label(cb, "Controls/Title", "Title", "Controls", TL(ins, top, 200, 18))
+    label(cb.child(N("Controls/Vessel", "Vessel", TR(ins, top, 200, 18))), "Squirrel", "Label", "NeutralLightest",
           align="right")
-    sc = cb.child(N("Controls/Scroll", "Scroll", R((0, 0), (1, 1), (0, -14), (-2 * PAD, -76))))
+    sc = cb.child(N("Controls/Scroll", "Scroll", R((0, 0), (1, 1), (0, -(top + 28 - ins) / 2), (-2 * ins, -(top + 28 + ins)))))
     sc.add("scroll", 114, A.scroll_rect("Controls/Scroll/Viewport/Content", "Controls/Scroll/Viewport", 20))
     vp = sc.child(N("Controls/Scroll/Viewport", "Viewport", STRETCH))
     vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
@@ -915,13 +929,16 @@ def vessel_body(card, w):
     label(vn.child(N("VesselNode/Caption", "Caption", R((0, 0), (1, 0), (0, 14), (-16, 18), (0.5, 0)))), "Squirrel",
           "Label", "TextLight", align="center")
     inner = w - 2 * PAD
-    info = card.child(N("ClassInfo", "ClassInfo", TL(PAD, BODY_TOP, inner, CARD_H - BODY_TOP - PAD)))
+    info = card.child(N("ClassInfo", "ClassInfo", TL(PAD, BODY_TOP, inner, NODE_H)))
     info.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
     side = inner - NODE_W - 16
-    label(info.child(N("ClassInfo/Eyebrow", "Eyebrow", TL(NODE_W + 16, 8, side, 18))), "Class", "Label", "NeutralLightest")
-    label(info.child(N("ClassInfo/Name", "Name", TL(NODE_W + 16, 30, side, 36))), "Squirrel", "H2", "TextLight")
-    label(info.child(N("ClassInfo/Description", "Description", TL(0, NODE_H + 16, inner, CARD_H - BODY_TOP - PAD - NODE_H - 16))),
+    label(info.child(N("ClassInfo/Eyebrow", "Eyebrow", TL(NODE_W + 16, 4, side, 18))), "Class", "Label", "NeutralLightest")
+    label(info.child(N("ClassInfo/Name", "Name", TL(NODE_W + 16, 24, side, 34))), "Squirrel", "H2", "TextLight")
+    label(info.child(N("ClassInfo/Description", "Description", TL(NODE_W + 16, 62, side, NODE_H - 62))),
           "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    # Option B: the controls live with the vessel.
+    top = BODY_TOP + NODE_H + 16
+    controls(card, TL(PAD, top, inner, CARD_H - top - PAD), framed=False)
 
 
 HULL_COLS = 4
@@ -1093,11 +1110,12 @@ def build_view(kind):
     steps_row(chrome, kind)
     footer(chrome, kind)
     if kind != "maelstrom":
-        fly_row(chrome)
-        controls(chrome)
+        fly_row(chrome, kind)
+        if kind == "arena":
+            controls(chrome, TR(MARGIN, BAND_TOP, SIDE_W, BAND_H), framed=True)
     else:
         pool_panel(chrome)
-    briefing(chrome)
+    briefing(chrome, kind)
     header(chrome, kind)
     if kind != "maelstrom":
         flying_hint(root)

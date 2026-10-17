@@ -448,7 +448,9 @@ namespace CosmicShore.UI
 
             float aspect = 16f / 9f;
             if (_surfaceRect && _surfaceRect.rect.height > 1f)
-                aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height, 0.25f, 4f);
+                // 8:1, not 4:1: the configure window's preview is a wide banner (~6.3:1); a 4:1 texture
+                // drawn into it stretched the arena sideways by 1.6x.
+                aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height, 0.25f, 8f);
 
             _textureHeight = height;
             _renderTexture = new RenderTexture(Mathf.Max(64, Mathf.RoundToInt(height * aspect)), height, 24)

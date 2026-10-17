@@ -1941,3 +1941,20 @@ From the owner's play test:
   `previewFollowsIntensity` (off) holds the preview at the card's lowest intensity, so moving the intensity row never
   rebuilds the preview world (a multi-second cell build, a hitch per press). The match still launches at the chosen
   intensity.
+
+## 40. Configure = Rev 3 option B (2026-10-17)
+
+The owner picked the second version ("I like the second version of the UI more" - the R3ConfigureB board over the R4
+simple one). Built in `author_menu_configure.py`:
+
+- **A wide live-preview banner** (y 196-480): background, glowing border, brackets; the **briefing laid over its left
+  side** on a fade; "Double-tap to fly" + FLY at its bottom left; loading status right of the briefing.
+- **Three step cards** under it (y 498-974): **01 Vessel** - art, class, a short description beside it, and the
+  **controls list** under it (option B moves Controls into the vessel card); **02 Intensity** - the four nodes and the
+  objective; **03 Pilots** - Jade / Ruby / Gold and the AI row. START and the summary chips below.
+- **Arena**: the banner leaves room for the Controls panel on its right (card 01 is the hull grid). **Maelstrom**: the
+  clip banner leaves room for the pool panel.
+- `ModePreviewWindow` now allows textures up to 8:1 (was 4:1): the banner is ~6.3:1 and a 4:1 texture stretched the arena
+  sideways. The Maelstrom clip renders at 360 tall (the banner is 284).
+- Deviation from the board: the three domains stay side by side as columns (the board stacks them); the column prefab's
+  seat strip needs its width.
