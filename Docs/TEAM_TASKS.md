@@ -445,6 +445,34 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
+### T-20261017-cb31 · open · test · vessels
+- **Task:** Fly the Shrike in Menu_Main freestyle and run its editor checklist (modes on X/RB/B, LT eyepiece with crosshairs, RT per mode, docking, Mass detach, crystal flora, missile count)
+- **Done when:** Every step of the Shrike entries in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or filed as a bug
+- **Who can take it:** Yash, or Garrett (vessels)
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Shrike entries); Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+
+### T-20261017-868c · open · test · vessels
+- **Task:** Shrike in a 2-player match: docking, nests, flora missiles and the lance agree on both machines
+- **Done when:** Two peers see the same docks, nests and missiles; scored hits land once
+- **Who can take it:** Yash (multiplayer)
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md section 5
+
+### T-20261017-114a · open · decision · vessels
+- **Task:** Shrike level-5 upgrades for Charge, Mass and Time (Space is Void Pierce)
+- **Done when:** Three upgrades named in the Shrike ability map
+- **Who can take it:** Garrett
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md section 7
+
+### T-20261017-d598 · open · dev · vessels
+- **Task:** Bring the Shrike Studio artifact up to the Unity redesign (modes on RT, LT eyepiece, crystal flora, Mass detach) and give it one minigame per element
+- **Done when:** shrike.html plays the shipped controls and has Time race, Space destruction, Mass creation, Charge dogfight
+- **Who can take it:** Garrett (vessels), any session
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Docs/Studios/SHRIKE.md section 0 and 6; .claude/skills/labmaker/SKILL.md section 1.5
+
 ### T-20261016-92b0 · done · decision · Regatta AI
 - **Task:** cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than bleeding-edge's - pick one before it merges (learn_drives_from_flights.py writes only fields both share, so either works)
 - **Done when:** The choice is recorded in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md and the other branch is reconciled

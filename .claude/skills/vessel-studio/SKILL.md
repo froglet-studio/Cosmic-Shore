@@ -35,7 +35,9 @@ Until §6 there records a decision, the rules below stand, and:
 
 ## 0. The one artifact (LOCKED, the user's rule 2026-10-09)
 
-**There is exactly one Vessel Studio artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa.**
+**There is exactly one Vessel Studio artifact: https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa.** This rule covers the shared
+hub and its pages only. A `/labmaker` lab, a vessel's included, publishes its own artifact to explore in (`/labmaker` §6);
+joining the hub later is optional.
 Every studio page, the hub, the studio agent (Ask + Development requests), the shared decision log
 and the Sync panel live in it. From any session, anything about vessels, their AI or their studios
 goes to THIS artifact:

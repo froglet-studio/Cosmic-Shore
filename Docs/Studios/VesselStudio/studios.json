@@ -115,6 +115,35 @@
       "docs": "Docs/Studios/BRITTLE_STAR.md"
     },
     {
+      "id": "shrike",
+      "name": "Shrike",
+      "file": "shrike.html",
+      "kind": "design studio - round 1",
+      "chip": "design studio · round 1",
+      "summary": "The sniper, from its design document: a very slow one-touch flyer that docks to any block it touches and builds nests to dock in. The Void Lance pierces everything, the Void Sling hurls it to a block in a second, and the Targeting Array sends every nest's missiles at what it paints. Thread the Needle and Den Defense at four intensities, AI Shrikes at Easy, Medium or Hard, and a scorecard with no-sling and no-array controls.",
+      "spec": [
+        {
+          "k": "Flight",
+          "v": "one stick · 18 u/s (a proposal)"
+        },
+        {
+          "k": "Kit",
+          "v": "Lance · Sling · Array · Nest"
+        },
+        {
+          "k": "Games",
+          "v": "Thread the Needle · Den Defense"
+        },
+        {
+          "k": "Status",
+          "v": "design only: the game's Shrike is a Manta copy"
+        }
+      ],
+      "preview": "previews/shrike.png",
+      "accent": "#ff8a5c",
+      "docs": "Docs/Studios/SHRIKE.md"
+    },
+    {
       "id": "gibbon",
       "name": "Gibbon",
       "file": "gibbon.html",
@@ -431,8 +460,7 @@
     "Grizzly",
     "Scarab",
     "Butterfly",
-    "Termite",
-    "Shrike"
+    "Termite"
   ],
   "fleetNote": "No studio yet. Press a vessel, or + New studio, to start one; each needs the vessel's own numbers read from its assets first.",
   "shared": [

@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Shrike
+  m_EditorClassIdentifier:
+  vesselClass: 10
+  entries:
+  - Element: 1
+    AbilityLabel: Targeting Array
+    AbilityDescription: 'RB: Charge mode. RT (held) paints a target - a rival vessel first, then a creature, then a
+      plant, then the centre of the mass nearest your aim - and every nest flora with a ready missile
+      launches it, one each per 0.8 s, homing while you paint. A missile blows on contact in an 18 u
+      blast (a shield takes the hit first); a rival hull inside it is a petal hit (petals only -
+      nothing is moved). The card counts the missiles left across every flora. A collected crystal
+      becomes a nest flora that grows large missiles (one per 6 s, up to 4). Space widens the lock
+      cone 5 -> 14 degrees at level 10 (ShrikeConfigSO.lockCone).'
+    Input: 3
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: Nest
+    AbilityDescription: 'A. Any block you touch docks you (the camera eases back); docked, every cooldown runs x1.6 (x2.5
+      on super-shielded mass or in a nest). Docked, A detaches you and leaves a nest behind: a cup of
+      super-shielded blocks round where you were, no two touching, the nose''s way out open, crowned
+      with a flora carrying ONE missile (8 s cooldown; at most three nests). Mass is volume - one
+      dial: 12 -> 32 blocks per nest at level 10 (ShrikeConfigSO.nestBlocks), and the cruising
+      trail''s wavelength 8 -> 4 u (trailWavelength).'
+    Input: 6
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: Void Lance
+    AbilityDescription: 'X: Space mode. RT (held) fires a hitscan beam 2400 u long that breaks every block it passes, any
+      domain, except super-shielded mass and the nest you are docked in; a rival hull on the line is a
+      scored petal hit. 1.2 s cooldown, faster docked. Charge widens the beam 1.5 -> 5 u at level 10
+      (ShrikeConfigSO.lanceRadius).'
+    Input: 8
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Void Pierce
+    UpgradeDescription: 'The Void Lance breaks super-shielded mass too.'
+  - Element: 4
+    AbilityLabel: Void Sling
+    AbilityDescription: 'B: Time mode. RT shoots a tether (1600 u); it anchors on the first block it meets and the hull
+      flies straight there in exactly 1 s, laying thick trail, docking on the first block it touches.
+      A crystal resets it. Time is rate - one dial: the cooldown 6 -> 2.5 s at level 10
+      (ShrikeConfigSO.slingCooldown).'
+    Input: 7
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
