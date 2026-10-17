@@ -17,7 +17,8 @@ namespace CosmicShore.Editor
     /// machine's errors plus those files to <c>bugledger/&lt;user&gt;</c> through <see cref="BugLedgerSender"/>,
     /// which never touches your working tree or branch, and logs one console line saying what went. The same
     /// error is not sent again — only a NEW error, or one that came back after a fix (its fingerprint
-    /// <c>id:regressions</c>). Until 2026-10-16 this was a "Send to Claude?" dialog.</para>
+    /// <c>id:regressions</c>). Until 2026-10-16 this was a "Send to Claude?" dialog; since 2026-10-17 a small
+    /// confirmation (<see cref="BugHuntSendConfirmation"/>) says what went and opens into the Project Record.</para>
     ///
     /// <para>Everything after the click is automatic: Claude fixes from that branch and marks the
     /// issue fixed there; once you pull the fix, your next clean play runs close it (the ledger
@@ -134,6 +135,9 @@ namespace CosmicShore.Editor
                 if (newFlights > 0) sent.Add($"{newFlights} AI training record(s): {string.Join(", ", records)}");
                 LastSent = string.Join("; ", sent);
                 BugLedgerSender.SendInBackground();
+                // A confirmation, never a question (Yash, 2026-10-17): it says what went, whether it arrived, and opens
+                // into the Project Record.
+                BugHuntSendConfirmation.ShowAfterSend(LastSent);
                 Debug.Log($"[BugLedger] Sent to Claude automatically: {LastSent}. Nothing in your project or branch changed.");
             }
             catch (Exception e)

@@ -255,6 +255,27 @@ namespace CosmicShore.Utility
             return false;
         }
 
+        /// <summary>
+        /// True when <paramref name="e"/>, or anything it wraps, is the Lobby SDK resetting a lobby
+        /// whose events subscription Wire already disposed (Docs/PartySystem/BUGS.md B34): an
+        /// <see cref="ObjectDisposedException"/> thrown from <c>LobbyChannel.UnsubscribeAsync</c>.
+        /// With no domain reload the previous Play's session outlives Play (B33); Wire disposes every
+        /// subscription at ExitingPlayMode, and the SDK's own <c>async void OnAccessTokenChanged</c>
+        /// later resets that handler when the token clears, in edit mode, where no caller of ours can
+        /// catch it. <c>BenignLobbyLogFilter</c> drops that one shape. Our code never calls
+        /// LobbyChannel, so a match is always the SDK's.
+        /// </summary>
+        public static bool IsLobbyUnsubscribeAfterWireTeardown(Exception e)
+        {
+            for (var current = e; current != null; current = current.InnerException)
+                // Both spellings of the frame: "LobbyChannel.UnsubscribeAsync ()" and the raw async
+                // state machine "LobbyChannel+<UnsubscribeAsync>d__N.MoveNext ()".
+                if (current is ObjectDisposedException && current.StackTrace is { } stack &&
+                    stack.Contains("LobbyChannel") && stack.Contains("UnsubscribeAsync"))
+                    return true;
+            return false;
+        }
+
         private static bool HasLobbyPatcherFrame(Exception e) =>
             e.StackTrace != null && e.StackTrace.Contains("LobbyPatcher");
 

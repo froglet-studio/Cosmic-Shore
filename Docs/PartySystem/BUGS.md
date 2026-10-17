@@ -41,6 +41,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Observed in Caleb's two-machine log 2026-10-16 (69 in 11 min); the count is fixed, the cause is not found | 🔴 |
 | B32 | After a guest leaves mid-match, the host's party lobby answers `NotInLobby` and the host sits in `Reconnecting` for the rest of the session | Observed once (Caleb's log 2026-10-16, 36 min in `Reconnecting`); not root-caused, needs the guest's log | 🔴 |
 | B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Observed in Caleb's second log 2026-10-16; cause likely, not proven | 🔴 |
+| B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -2144,3 +2145,32 @@ not found)` at 33 s in the first log, if ys1 had just restarted Play (B29 family
 second log). If confirmed, reset the party layer's static state and leave the SDK session cleanly when
 Play exits (or re-read it at Play start), and add the reset beside `SpectatorSession`'s
 `SubsystemRegistration` hook.
+
+## B34 — `ObjectDisposedException` on a `$lobby` channel after Play stops 🟡 (root-caused 2026-10-17; the leak itself is B33)
+
+**Seen in.** Bug Ledger `E-c523697cae`, on every tester's branch (`bugledger/yskha`, `gradi`, `mrglo`,
+`belac`; 21 sightings by 2026-10-17), always in EDIT mode, some time after a Play that had a party:
+`ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!<lobby id>!!!…'`, from
+`Subscription.UnsubscribeAsync` ← `LobbyChannel.UnsubscribeAsync` ← `LobbyHandler.LobbyUnsubscribeCallbacksAsync`
+← `LobbyHandler.ResetAsync` ← `LobbyHandler.OnAccessTokenChanged`.
+
+**Cause, read in the package source** (`com.unity.services.wire` 1.5.1, `com.unity.services.multiplayer` 2.3.3):
+
+1. With no domain reload (`m_EnterPlayModeOptions: 3`) the Play's party session outlives Play (B33):
+   its `LobbyHandler` keeps `State != None` and its events subscription.
+2. Wire's `Centrifuge/Client.cs` handles `ExitingPlayMode` by disconnecting and **disposing every
+   subscription**.
+3. Later, in edit mode, the access token clears (it expires, or a sign-out), and the SDK's
+   `private async void OnAccessTokenChanged(null)` calls `ResetAsync`, which unsubscribes the disposed
+   subscription. `Subscription.UnsubscribeAsync` throws `ObjectDisposedException`; being `async void` inside
+   the SDK, nothing of ours can catch it, and Unity logs it.
+
+**What changed.** `UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown` names that one shape (an
+`ObjectDisposedException` whose stack has the SDK's `LobbyChannel` `UnsubscribeAsync` frame; held by
+`UgsRequestPolicyTests`, with negative controls), and `BenignLobbyLogFilter` drops its console copy, as it
+already does for the LobbyPatcher stale index (Presence B1). The error itself was harmless: the handler
+it fails to reset belongs to a session that no longer exists.
+
+**Still open.** The leak behind it is B33. When B33 leaves the SDK session cleanly as Play exits, this
+error has nothing left to fire on, and the filter rule can be deleted.
+
