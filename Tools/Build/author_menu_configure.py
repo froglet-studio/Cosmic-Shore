@@ -590,7 +590,13 @@ LEFT_TOP, COL_H = 196, 844           # the leaderboard's columns run from y 196 
 # While the player flies the preview, ConfigureCinema fades every one of those out (the Chrome node).
 MARGIN = 60
 BAND_TOP, BAND_H = 200, 300
-BRIEF_W, SIDE_W = 620, 560
+BRIEF_W, SIDE_W = 460, 460
+# Rev 3.1 (the owner, 2026-10-17: "at least have a background and a border"): the preview is a framed
+# window in the band between Briefing and Controls, not full-bleed - the environment always reads as
+# the game's own picture, vessel or not.
+PV_GAP = 20
+PV_X = MARGIN + BRIEF_W + PV_GAP
+PV_W = 1920 - MARGIN - SIDE_W - PV_GAP - PV_X
 CARD_TOP, CARD_H, CARD_GAP, PAD = 540, 440, 20, 22
 FOOT_TOP = 992
 BODY_TOP = 128                       # a card's body starts under its numeral, caption and hint
@@ -655,18 +661,19 @@ def preview_window(root, kind):
     the nav and behind every setting (rev 3). Its tap-to-fly surface is navigation None: drawn first,
     it would otherwise be the control the pad lands on when the window opens; the pad flies through
     the FLY button in the band instead (ModePreviewWindow.RequestFocus)."""
-    pv = root.child(N("Preview", "Preview", R((0, 0), (1, 1), (0, -42), (0, -84))))
+    pv = root.child(N("Preview", "Preview", TL(PV_X, BAND_TOP, PV_W, BAND_H)))
     # No entrance on the preview: the window opens by a CanvasGroup fade, and a rise that started
     # under it could leave the preview at alpha 0. The preview is the window; it is simply there.
     pv.add("cg", 225, canvas_group(True))
-    surf = pv.child(N("Preview/Surface", "Surface", STRETCH))
+    # A background (black, so a loading or empty arena never reads as the menu behind) and a glowing
+    # border with corner brackets: a window onto the game.
+    frame(pv, "Preview/Frame", 14, "SurfaceBlack", "ControlActive")
+    surf = pv.child(N("Preview/Surface", "Surface", R((0, 0), (1, 1), (0, 0), (-4, -4))))
     surf.add("cr", 222, K.canvas_renderer()).add("raw", 114, raw_image(enabled=False))
-    # Scrims: the briefing reads on the left, the cards on the bottom; the middle of the band stays clear.
-    image_node(pv, "Preview/ScrimLeft", "ScrimLeft", R((0, 0), (0, 1), (0, 0), (980, 0), (0, 0.5)), "SurfaceBlack",
-               K.kit_sprite("kit_fade_h"), alpha=0.75)
-    image_node(pv, "Preview/ScrimBottom", "ScrimBottom", R((0, 0), (1, 0), (0, 0), (0, 640), (0.5, 0)), "SurfaceBlack",
-               K.kit_sprite("kit_fade_v"), alpha=0.9)
-    mid = R((0.5, 1), None, (BAND_MID, -(BAND_TOP + BAND_H // 2 - 84)), (600, 60))
+    image_node(pv, "Preview/Fade", "Fade", R((0, 0), (1, 0), (0, 2), (-4, 90), (0.5, 0)), "SurfaceBlack",
+               K.kit_sprite("kit_fade_v"), alpha=0.8)
+    M.bracket_nodes(pv, "Preview/Bracket")
+    mid = R((0.5, 0.5), None, (0, 10), (600, 60))
     if kind == "maelstrom":
         na = pv.child(N("Preview/Unavailable", "Unavailable", mid))
         label(na, "No clip for this card yet.", "Body", "NeutralLightest", align="center")
@@ -681,18 +688,17 @@ def preview_window(root, kind):
     status.add("cr", 222, K.canvas_renderer()) \
         .add("tmp", 114, text("LOADING PREVIEW...", "Label", tok("NeutralLightest"), align="center", wrap=True)) \
         .add("kt", 114, K.kit_text("Label", "NeutralLightest"))
-    focus = pv.child(N("Preview/Focus", "Focus", STRETCH))
+    focus = pv.child(N("Preview/Focus", "Focus", R((0, 0), (1, 1), (0, 0), (-4, -4))))
     focus.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
         .add("button", 114, plain_button(c("Preview/Focus", "img"), nav=0))
-    toast = pv.child(N("Preview/Toast", "Toast", R((0.5, 1), None, (BAND_MID, -(BAND_TOP - 84 + 40)), (120, 44))))
+    toast = pv.child(N("Preview/Toast", "Toast", TR(24, 20, 120, 44)))
     toast.active = False
     toast.add("cg", 225, canvas_group(True))
     art_node(toast, "Preview/Toast/Icon", "Icon", R((0, 0.5), None, (18, 0), (28, 28)), None, preserve=True)
     tl = toast.child(N("Preview/Toast/Label", "Label", R((0, 0.5), None, (40, 0), (80, 30), (0, 0.5))))
     tl.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("+1", "Data", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("Data", "TextLight", driven=True))
-    # A full-window surface measured at the display's height would render a full-HD frame with MSAA
-    # under a window that is mostly settings; 720 keeps the cost of the old 625 px frame.
+    # Framed again (rev 3.1): the surface renders at the pixel size it is drawn at, capped at 720.
     pv.add("window", 114, lambda ctx, go: mono(go, S["preview"],
            f"  surface: {ref(ctx.c('Preview/Surface', 'raw'))}\n"
            f"  statusLabel: {ref(ctx.c('Preview/Status', 'tmp'))}\n"
@@ -1834,6 +1840,9 @@ def validate_prefabs(files):
         order = re.findall(r"^  - \{fileID: (-?\d+)\}", A.doc_of(text, V("Chrome#rt"))[1], re.M)
         assert order[0] == str(V("Steps#rt")), f"{view}: the step cards must come first in focus order"
         assert order.index(str(V("Steps#rt"))) < order.index(str(V("Header#rt"))), f"{view}: Back must come last in focus order"
+        # Rev 3.1: the preview is a framed window - a background and a border, never a bare surface.
+        for part in ("Preview/Frame/Fill#img", "Preview/Frame/Border#img"):
+            assert A.doc_of(text, V(part))[0] == 114, f"{view}: the preview lost its {part.split('/')[2].split('#')[0].lower()}"
         root_kids = re.findall(r"^  - \{fileID: (-?\d+)\}", A.doc_of(text, V("root#rt"))[1], re.M)
         assert root_kids.index(str(V("Preview#rt"))) < root_kids.index(str(V("Chrome#rt"))), \
             f"{view}: the preview must draw BEHIND the settings (rev 3: full-bleed)"
@@ -1977,6 +1986,9 @@ def self_test(files):
         ("FLY calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: RequestFocus", "m_MethodName: GrantFocus", 1)),
          validate_prefabs),
         ("a single tap launching the player", lambda f: f.__setitem__(view, f[view].replace("  doubleTapToFocus: 1\n", "  doubleTapToFocus: 0\n", 1)),
+         validate_prefabs),
+        ("the preview without its background", lambda f: f.__setitem__(view, re.sub(
+            r"^--- !u!114 &" + str(V("Preview/Frame/Fill#img")) + r"\n(?:(?!--- ).*\n)*", "", f[view], flags=re.M)),
          validate_prefabs),
         ("the guide pointed at the whole screen", lambda f: f.__setitem__(view, re.sub(
             r"(  guideTarget: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), validate_prefabs),

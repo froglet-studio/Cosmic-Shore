@@ -1917,3 +1917,15 @@ From the owner's play test:
 - **Double tap to fly.** On the configure window's full-bleed preview, one stray tap launched the player; the surface now
   needs a double tap (`ModePreviewWindow.doubleTapToFocus`), the hint reads "Double-tap to fly", and FLY / TRY still go
   in on one press.
+
+## 38. Glowing borders everywhere; the configure preview framed again (2026-10-17)
+
+- **Every kit border glows** (the owner: "make the borders glow everywhere in the menu"). The outline sprites
+  (`kit_sliver14/10_line1/line2`, both flips, `kit_hex_line1/2`) carry a soft inner glow under the band, 6 units deep,
+  in the border's own tint - baked into the texture by `author_ui_kit_sprites.py`, so it costs nothing at runtime. Slice
+  safety holds (the glow follows the cut inside the corner tiles and the straight edges along stretched ones).
+- **The configure preview is a framed window again** (the owner: "at least have a background and a border; it's fine if
+  there is no vessel, the environment should be showing"). Briefing and Controls (Maelstrom: the pool) narrow to 460;
+  between them the preview stands in an 840 x 324 frame - black background, glowing ControlActive border, corner
+  brackets, a fade under the FLY row. The arena model shows there before the tap; double-tap or FLY flies in it.
+  `author_menu_configure.py` fails if the frame loses its background or border.
