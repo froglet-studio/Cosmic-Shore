@@ -541,11 +541,11 @@ namespace CosmicShore.UI
             if (Mathf.Abs(lossy.x) < 1e-4f || Mathf.Abs(lossy.y) < 1e-4f)
                 CSDebug.LogWarning($"[Scoreboard] The scoreboard's world scale is {lossy} - a parent is scaled to 0, so it cannot be seen.");
 
-            var canvas = scoreboardPanel.GetComponentInParent<Canvas>();
+            var host = scoreboardPanel.GetComponentInParent<Canvas>();
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[Scoreboard] Shown: activeInHierarchy={scoreboardPanel.gameObject.activeInHierarchy}, " +
                 $"rect={(scoreboardPanel is RectTransform r ? r.rect.size.ToString() : "?")}, lossyScale={lossy}, " +
-                $"canvas={(canvas ? $"{canvas.rootCanvas.name} mode={canvas.rootCanvas.renderMode} order={canvas.rootCanvas.sortingOrder} enabled={canvas.rootCanvas.enabled}" : "none")}");
+                $"canvas={(host ? $"{host.rootCanvas.name} mode={host.rootCanvas.renderMode} order={host.rootCanvas.sortingOrder} enabled={host.rootCanvas.enabled}" : "none")}");
         }
 
         #endregion
