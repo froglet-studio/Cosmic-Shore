@@ -2581,3 +2581,21 @@ still plays at once while the arena builds (a few seconds). Passive abilities li
 Known limit: the press uses the ability map's `Input`; where a prefab binds an ability to another control (§46.1's
 Serpent Seed Wall note) the showcase presses what the map says. Affects: Yash's / Garrett's `ModePreviewSession`
 (two additive members; the arcade configure's runs never set `DemoPilot`).
+
+## 52. Follow-ups this branch leaves (2026-10-18)
+
+Rows, not fixes - each with what would settle it.
+- **End-screen bring-up guards.** `EndScreenWitness`, `Scoreboard.ShowUnreached` and its 5 s net, and
+  `EndGameSequencer`'s raise check were added while hunting the missing board; the cause was the twin stub (§48). Keep
+  them until a release passes with no `[EndScreen]` / `[Scoreboard] ... reached no scoreboard` warning, then retire the
+  witness (the nets are cheap insurance). Still unexplained: the reveal toast's DOTween "has been destroyed" warnings in
+  the same Scurry run (nothing references the toast twice) - the witness names the destroyer the next time.
+- **`audit_ui_color_literals.py --check` is red on bleeding-edge too** (173 unclassified there, measured by running it
+  on a `git archive` of the merge base). Its verdicts are keyed by `file:line`, so any edit un-classifies them; key them
+  by file + expression instead. Not this branch's.
+- **`CreditsModal` is built in code**, so its new `closeLabel` field has no asset to edit it on (legacy shape); author
+  the modal as a prefab when it is next touched.
+- **The Hangar showcase presses the ability map's `Input`.** Where a prefab binds an ability elsewhere (§46.1's
+  Serpent Seed Wall) the showcase shows nothing for it; the hand test (T-20261017-13fb) lists them.
+- **Perf:** a clean capture of the lag Shombith sees (T-20261017-7647); the black-hole / wormhole phase once the new
+  markers name it (Garrett, T-20261017-9990).
