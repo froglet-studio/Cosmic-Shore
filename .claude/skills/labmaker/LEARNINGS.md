@@ -90,6 +90,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: StoatFlightStudio.html prism-field block ("seeded (round 15)"); `verify_lab.cjs` "a second load".
 - Promoted: §3
 
+### L-GEN-10 — Score the LOOK in rendered pixels against the SHIPPED baseline; a shared-envelope argument is not a shared look
+- Lab: Collision Burst Lab (`Docs/Studios/PrismCollisionBurstLab.html`) · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: the collision bursts were designed to "squint as the explosion" by sharing its flight, life, palette, envelope radius and linear fade, and the docs said so. The lab drew both and scored blurred 120×80 pixels: two explosions differ by 0.082, the bursts by 0.33–0.47 — worse than a prism that never breaks (0.261, the negative control). Thin accents, a smaller cloud and the explosion's lingering last wedges each mattered. The design had also been argued against a REMEMBERED explosion ("the wedges spin in place"); the shipped subgraph, evaluated, slides each wedge outward linearly with age.
+- Do instead: make the baseline the shipped graph, evaluated (and parity-gated), never its description. Measure "looks like" on rendered, blurred pixels, with a band control (the baseline vs itself on another seed) and a negative control that must fail. Hand-waved invariants become columns.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 1 scorecard; `__lab.runBatch()`
+- Promoted: no
+
+### L-GEN-11 — A fixed tolerance in a randomized harness is a latent failure: adding an unrelated case moved the draws onto it
+- Lab: Collision Burst Lab round 2 (`Tools/Shaders/verify_prism_collision_burst.py`) · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: adding a fifth kind (the flake) to the pose loop consumed more of the seeded RNG, so the later bend test drew different prisms, and the unravel's isometry check failed at 2.2e-3 against its fixed 2e-3 — float32 noise of ~40-unit coordinates over a 5e-4 step. The shader was right; the check had passed only because its seed never drew such a prism. Its sibling check (the normal tilt) already scaled by the float noise floor and passed.
+- Do instead: every finite-difference tolerance in a randomized harness gets a noise floor scaled to the coordinates and the step (`8 · 1.2e-7 · (|p| + R) / eps`), never a bare constant; and when a harness goes red after an unrelated addition, suspect the draws moved before the code.
+- Evidence: `verify_prism_collision_burst.py` `stretchFloor`; the failing run printed `the bend stretched a step by 0.997898` four times
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -580,6 +594,125 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the flight followed the drawn line within about 1.5 u all the way into the black hole and came out within 1 u of the drawn exit. It then left the line by up to 76 u over the next 330 u. The wormhole drops you 1.05 horizons from the white hole, inside a push softened over 2 horizons, so a 1 u difference at entry became about 13° of heading on the way out. Running the prediction on the flight's own 4 ms step did not remove it, and the boost did not change it.
 - Do instead: in a parity probe, log the deviation over flown distance, not only its maximum. The trace shows exactly where the flight leaves the line (here, the frame after the jump). A teleport that lands inside a strong force is a sensitivity to report or design out (a wider exit gap), not an integrator to tune.
 - Evidence: README round 15 "Checked" (through the wormhole) and "Found".
+- Promoted: no
+
+### L-STU-88 — Gate a WebGL port of a shipped shader by transform feedback, with ZERO outliers allowed: it finds the shipped shader's float bugs
+- Lab: Collision Burst Lab · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: `parity.py` reads the page's vertex shader back through WebGL2 transform feedback and compares every vertex with C++ executing the shipped HLSL on the same mesh. An outlier allowance would have hidden three real defects, all now fixed in the shipped HLSL: bloom petals picked by float noise when a centroid sat exactly on a face diagonal (~80 vertices per case, ~1 radius off; fixed with a tie epsilon), `(1 − cos a)/κ` cancelling in float32 at small angles (fixed as `2 sin²(a/2)/κ`), and the lab building mesh centroids in doubles where C# uses float (`Math.fround`). Mechanical trap: transform feedback returned all zeros with `GL_INVALID_OPERATION` because the feedback buffer was still bound to `ARRAY_BUFFER` — unbind it after creating it and check `gl.getError()` after the draw.
+- Do instead: translate the shipped shader mechanically (build step, `--check`), gate it per vertex with no outlier share, and plant controls (the next kind, a doubled dial) that must fire. When parity fails on a few vertices, suspect the shipped code before the port.
+- Evidence: `Tools/Build/prism_collision_burst_lab/parity.py` (`OUTLIER_SHARE = 0.0`); `PrismCollisionBurst.hlsl` `PRISM_BURST_PETAL_TIE`
+- Promoted: no
+
+### L-STU-89 — A camera that frames the scene must move with whatever moves the scene (the seed); read the screenshot at a non-zero seed
+- Lab: Collision Burst Lab · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: each seed shifts every pose 7.31 units in z so the per-prism seed hash changes; the line-up camera targeted the origin. Seed 0 looked perfect; any Replay (seed + 1) and `verify_lab.cjs`'s `reset(7)` left an empty stage, and the gate still passed (a WebGL stage skips the blank check). Only reading `desktop.png` showed it.
+- Do instead: derive the camera target from the same "home" the scene items use. Read the screenshot the verifier takes after `reset(seed)`, not only a fresh load.
+- Evidence: `lab.src.html` `camTarget`
+- Promoted: no
+
+### L-STU-90 — "Looks like X from a distance" is a SILHOUETTE claim before it is a colour claim; and a ramp of the right curve can still read as a wipe
+- Lab: Collision Burst Lab round 2 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: a steal's shed was built so its coverage runs the grade's exact smoothstep (proven equal to the executed `PrismColorLerp`), so its mean colour IS the grade's. Scored on blurred rendered pixels against the grade, the bloom (0.214) and the unravel (0.220) still read further from it than an instant colour snap (0.158), because their petals and ribbons grow the silhouette by a third (size 1.32–1.35). The flake, whose silhouette barely changes (1.10), scored 0.120 but plateaued at ~0.104 under every dial: it reveals the colour as a front along the prism, a wipe, not a uniform change.
+- Do instead: before tuning colour or timing to match an effect "from a distance", score the silhouette (size column) and the spatial order of the change, not only the mean; when the ordinary effect is a colour change, blur all three channels (a hue change at equal brightness hides from a luminance blur). Give the scorecard a band (the ordinary effect, slightly late) and a negative (the change snapped) so "close" has a scale.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 2 tables; `__lab.runBatch()` `table: 'sheds'`
+- Promoted: no
+
+### L-STU-67 — A detail level that DROPS geometry pops; one that MERGES it does not — and a uniform triangulation staircases one diagonal
+- Lab: Collision Burst Lab round 3 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: the brief was "from far away it will look like we just aren't seeing the small ones". Removing the small glitter fragments from the far mesh would leave the prism with holes on the first frame of the death, a pop. A nested tiling (a quadtree whose coarser level is the finer with its children merged into their parent) gives the same far picture with nothing missing, and it measured as squint-identical (0.318–0.322 across three levels). Separately, the 24-subdivision shed showed a staircase along one face diagonal: every cell cut the same way puts one diagonal on triangle edges and the other across them. A union-jack cut puts both on edges (0 straddles at every even n, checked).
+- Do instead: build an LOD ladder as a hierarchy of merges (every level a complete cover), not a subset. When a piece pattern follows lines on a mesh (petal diagonals, ribbon seams, scale grids), make the mesh's edges lie on those lines (cut direction, subdivision a multiple of the pattern), and test for straddling triangles.
+- Evidence: `PrismGlitterTiling.cs`, `HighPolyPrismMesh.GetShed`; `parity.py` (tiling vs C# compiled; meshes: area 6, 0 straddles)
+- Promoted: no
+
+### L-STU-68 — A step test's band decides what it can say: "no more different than another death" is weak when two deaths differ completely
+- Lab: Collision Burst Lab round 3 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: each LOD step was scored at the true pixel size of its line against a band of the finer level on another prism. For destruction the band was ~0.97 (two close-up deaths share almost no pixels), so every destruction step passed, the shatter→explosion one at 0.94 of it. The same test was sharp for the sheds (band ~0.46, resolution steps 0.035–0.058).
+- Do instead: report the step and the band side by side, never only the verdict; when the band is near its ceiling, say the test cannot tell and look for a tighter band (the same death at a 10% time offset, a squint) before claiming a step is invisible.
+- Evidence: `__lab.runSteps()`; `Docs/Studios/COLLISION_BURST_LAB.md` round 3 table
+- Promoted: no
+
+### L-STU-69 — When the cheapest level is an existing effect, make it the seed of the recursion and prove the identity
+- Lab: Collision Burst Lab round 4 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the designer proposed a Sierpinski cut "using the base explosion as the first depth". The explosion's mesh is four wedges a face fanned from the centre, which is exactly a Sierpinski seed; each deeper depth splits the corners and keeps the middle. Making depth 0 the explosion's own cut, and checking it (depth 0 on six faces = `Prism.asset`'s 24 triangles, in parity.py), removed an entire rung (the shatter) and a second tiling (the quadtree glitter), and every depth now nests in the explosion's wedges.
+- Do instead: when an LOD ladder ends in an effect the game already ships, derive the finer levels FROM that effect's geometry and gate the identity of level 0 against the shipped asset, so the ladder's coarse end cannot drift from what players already see.
+- Evidence: `PrismSierpinskiTiling.cs`; `parity.py` "depth 0 vs Prism.asset"
+- Promoted: no
+
+### L-STU-70 — A step band drawn from a deterministic law collapses to zero: "another prism" must be another EVENT
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: once every destruction fragment moved by the explosion's law (no per-prism random), the LOD-step band — the finer level on another prism, same flight — drew the identical death: bands 0.001–0.003 and step ratios of 175 to 559,000, every step "visible". With the band on a turned flight (another death, as the scorecard's explosion band already was) the bands were 0.47–0.51 and every step 0.68–1.19 of its band.
+- Do instead: build a band from the variation a player actually sees between two events of the same kind (another flight, another seed, another moment); when the effect stops consuming a random, re-check what the band draws.
+- Evidence: `lab.src.html` `runSteps` (the `other` prism); `Docs/Studios/COLLISION_BURST_LAB.md` round 5, Found 4
+- Promoted: no
+
+### L-STU-71 — Before matching an effect's motion, read its mesh's UV channel: the explosion's fade was laid out per wedge
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the destruction fragments were given the explosion's motion and its erosion fade, reading their face coordinates as UV0. `Prism.asset` turned out to give all 24 wedges the SAME UV triangle ((0,0), (1,0), (0.5,0.5)), so the explosion wipes each wedge on its own; on half the faces the face coordinates would have faded on another pattern (36 of 72 vertices differ — now parity's negative control). Fixed with `PrismSierpinskiTiling.WedgeUV`.
+- Do instead: when a new effect must reproduce a shipped one, dump the shipped mesh's every channel (position, normal, tangent, UV) and gate each one the new mesh feeds into the shared shader code, not only the positions.
+- Evidence: `parity.py` `uv_vs_prism`; `PrismCollisionBurstTests.EveryFragmentWearsItsWedgesExplosionUV`
+- Promoted: no
+
+### L-STU-72 — Prove a remaining squint gap's cause with a scratch copy that removes it, before calling it shape or motion
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: with the explosion's law, destruction's size and fade matched the explosion but the squint stayed 0.21–0.22 against a 0.097 band, and the colour column (0.10–0.11, the explosion's band 0.012) pointed at the brighter inside colour. A scratch copy of the built page without the inside colour on the wedge scored 0.13–0.14, inside 1.5 × the band — so the remaining gap is a deliberate design rule, not a motion bug, and goes to the designer as a decision.
+- Do instead: read the scorecard's columns to name the suspect, then remove exactly that in a scratch copy and re-score; put the measured trade-off in the write-up's decisions instead of "tuning" the shipped rule away.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 5, Scorecards and Found 2
+- Promoted: no
+
+### L-STU-73 — "Same law" is not "same motion" when an input the law takes per PIECE is chosen per fragment
+- Lab: Collision Burst Lab round 6 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: round 5 moved every Sierpinski fragment by the explosion's exact closed form and parity proved depth 0 IS the explosion — yet in the game the designer saw the fragments spin the wrong way. The law's tangent input, which the explosion takes per WEDGE (four a face), had been chosen per FRAGMENT (its centroid direction), so every fragment had its own first axis and slide direction. Giving each fragment its root wedge's tangent dropped the squint from 0.21–0.22 to 0.17–0.18 (0.05–0.06 without the inside colour, inside the two-explosion band).
+- Do instead: when a law is applied to finer pieces of something, list each of its inputs and decide whether the original takes it per piece or per parent; prove the property the player sees (here: every fragment's normal equals its parent wedge's — W7, with the per-fragment choice as a negative control), not only that the coarsest level matches.
+- Evidence: `PrismCollisionBurst.hlsl` `PrismBurstWedgeTangent`; `verify_prism_collision_burst.py` W7 and the radial-tangent control
+- Promoted: no
+
+### L-STU-74 — "Hidden by its own prism" is a measurable claim: test it with a segment, and the failures name the geometry
+- Lab: Collision Burst Lab round 7 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the designer asked for steal rolls that leave by being occluded, not by dissolving. A harness test (segment from each rolled vertex to a random camera against the prism's cube) started at 80.6% hidden; sampling the visible vertices named three causes in turn — a fixed run-out distance too short for steep views (fixed by deriving it from the camera's height and offset), the roll's end caps leaking past the corner for a sideways camera (an inward tuck), and a roll that kept rolling out past the far end of a long slab (stop at the first hiding place) — to 98.5%. An occluder shrunk "a hair inside" also miscounted end caps lying exactly in a face plane.
+- Do instead: turn an occlusion idea into a percentage over random poses and cameras with a negative control (roll TOWARD the camera), print a sample of the failures with object-space coordinates, and fix the geometry the sample names; measure against the occluder's true extent.
+- Evidence: `verify_prism_collision_burst.py` `run_roll_tests`, `hiddenBehindPrism`; `PrismCollisionBurst.hlsl` `PrismBurstRoll`
+- Promoted: no
+
+### L-STU-75 — A test that names things by a hash inherits the hash's precision
+- Lab: Collision Burst Lab round 7 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the harness's shatter-rigidity test paired triangles whose piece hash was equal. The float hash on large inputs quantises to steps of 1/1024, so two different shards could share a "name"; the test passed for rounds only because its random sequence never drew such a pair, then failed when an unrelated test added one random draw.
+- Do instead: identify a piece by the quantity that defines it (here the Voronoi cell), and treat a hash as a name that can collide; when a passing test starts failing after an unrelated change to the RNG stream, suspect the test's identity assumption before the code.
+- Evidence: `verify_prism_collision_burst.py` test 3b
+- Promoted: no
+
+### L-STU-76 — A parametrised test must prove it built the case it names
+- Lab: Collision Burst Lab round 9 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: rounds 7 and 8's harness chose the mesh with `cut.name[1] == 'i'` — true for both "sierpinski" and "silver" — so every "silver" case ran the Sierpinski cut and printed a pass under the silver's name for two rounds. It surfaced only because round 9's silver depth 10 took minutes (Sierpinski depth 10 is ~236k vertices).
+- Do instead: select a case by an exact comparison, and assert a property only the named case has (here the vertex count, 72 × the per-wedge count) before testing it. A runtime far off what the case should cost is a hint the case is not the one named.
+- Evidence: `verify_prism_collision_burst.py` `run_fragment_tests` (the size CHECK); `COLLISION_BURST_LAB.md` round 9 Found
+- Promoted: no
+
+### L-STU-77 — A yardstick that steered the design must go when the designer retires its goal
+- Lab: Collision Burst Lab round 9 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: eight rounds tuned destruction to squint as the explosion, which kept fragments grouped in their wedges' sheets. The designer saw the squint steering the look away from what they wanted and retired it. The replacement Look scorecard needed a measure that could say NO to "grouped": direction entropy at 64 bins could not tell six cones from a sphere (0.787 vs 0.726), while 256 bins could (0.81 vs 0.53). The same measure found a design hole the eye had missed: one angle off every face made six hollow cones (0.71). Weighting the radial by how far out the fragment sat filled the sphere (0.83).
+- Do instead: when a goal is retired, retire its scorecard and its gates too (the squint table, the LOD-step test, the Squint button), and build the new measure with a control compiled from the shipped shader that must fail it, here `PRISM_BURST_FRAGMENT_FACE_ONLY` compiled into a page probe. Size the measure's resolution against that control before trusting it.
+- Evidence: `lab.src.html` `lookOf` / `faceOnlyProbe`; harness F9 and `ENTROPY_FLOOR`
+- Promoted: no
+
+### L-STU-78 — A camera that rides the effect hides the input that moves it; give every input the designer doubts its own control and a measured readout
+- Lab: Collision Burst Lab round 10 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: the designer saw in game that the destruction "was not accepting the velocity". The code passed it end to end, but the lab could not show that. Its camera rode the flight, so the flight never showed, and the velocity was a hidden function of one "closing speed" slider. The fragments' own motion also barely depended on the hit. The round added a 3D velocity input, an arrow for the resolved flight, a hold-still camera, and a scorecard lean read along the input's direction. Its first version read the reversed control along the control's OWN direction, and so passed it.
+- Do instead: when a designer doubts an input reaches the effect, give the input its own control in the input's own units, draw what the game resolves it to, and measure the effect's response to it with two controls: the input reversed (read along the ORIGINAL axis) and the input ignored (compiled from the shipped shader).
+- Evidence: `lab.src.html` Velocity tab, `drawArrows`, `lookOf` lean; harness F10; `COLLISION_BURST_LAB.md` round 10
+- Promoted: no
+
+### L-STU-80 — A baseline drawn by a different shader cannot answer to the lab's dials: say so on the page, or make it the same law
+- Lab: Collision Burst Lab round 11 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-17
+- What happened: the designer tuned the Fragments tab and recorded the look they liked, then found it "reflected in the levels not the explosion". Level 0 was still the explosion's own Shader Graph, which no burst dial reaches. The lab had labelled it the baseline, but it sat in the same line-up as the levels, and nothing on the page said its look was fixed. The fix made level 0 the same fragment law on the explosion's own 24 wedges, with its own live cap outside the close-up budget, since every far death takes it. The old graph moved to the scorecard as the "before" row.
+- Do instead: when a line-up mixes cells the dials drive with cells they cannot, mark the second kind on the stage, not only in a tooltip. When the designer then wants the dials everywhere, unify the law. Do not hand-tune the other shader to match. Before routing every instance through a path built for a budgeted few, give the bulk its own queue and cap.
+- Evidence: `PrismInteractionLod.TryDestruction` (level 0), `PrismCollisionBurst.CanAcceptExplosion`; `COLLISION_BURST_LAB.md` round 11
+- Promoted: no
+
+### L-STU-81 — "Not copies, not noisy" is a question of WHERE the randomness lives; measure the two separately, and never hash a seed the GPU must reproduce
+- Lab: Collision Burst Lab round 12 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-17
+- What happened: the designer asked that neighbours struck alike not play one animation while each explosion stays one continuous structure. More per-fragment noise would have traded one fault for the other. Drawing the randomness ONCE per death (spread, timing, spin, tumble plane, lean, a smooth ellipsoid) answered both. Two metrics made that visible: a per-region SHAPE difference between two deaths (a per-vertex difference could not tell gestalt from grain; the noise alone already read 0.18 there), and a within-death neighbour roughness. The first rose 3.3x and the second did not move. The first version read the seed through hash13, and the GPU parity gate failed (worst 7e-3, 99% of vertices). hash13 multiplies its input's rounding about a hundredfold, so the page's GPU and the harness drew different characters for the same death. Triangle waves of the seed fixed it (worst 8e-4).
+- Do instead: put "differ between instances" in per-instance constants and "differ within one" in a continuous field, and score each with its own metric plus a negative control. Read an already-hashed seed through gentle functions (triangle waves, low-frequency sines). Never pass it through a second high-gain hash when two GPUs, or a page and a harness, must agree.
+- Evidence: `PrismBurstFragmentVariety`, `PrismBurstSeedWave` (HLSL); harness F11 and `PRISM_BURST_FRAGMENT_VARIETY_OFF`; `COLLISION_BURST_LAB.md` round 12
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

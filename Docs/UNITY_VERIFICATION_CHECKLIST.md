@@ -9740,6 +9740,127 @@ executor edit was checked by reading only.
 4. Skein / Regatta: an AI riding a rail must keep its grind speed (the rail lead point must not
    trip the detector).
 
+## 🔴 Prism movement — a moving prism that runs into another destroys BOTH (`cece/dreamy-pascal-7xxx1m`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+Prism movement is now a fundamental (`Docs/claude/DESIGN_PHILOSOPHY_EMERGENCE.md`, design + steps:
+`Docs/PRISM_MOTION.md`). One rule, `PrismMotion`, for both movers: the Rhino's hull plough
+(`TrySweep` before the shove) and every black hole's gravity field (the Burst `ContactJob` after the
+integration). No `unity` binary in the authoring session: both headless reference-compile configs
+(`Tools/Build/unity_refcompile`, player and editor) are clean, `PrismMotionTests` compiled but not run
+in Unity, and nothing has been seen in play.
+1. **Rhino**: ram a trail that lies a few units beside a second trail. Each prism thrown into the second
+   trail stops there and both explode; a prism thrown into open space slides out and survives.
+2. **Rhino into super-shield**: the super-shielded prism jiggles and survives, the thrown one explodes.
+3. **Stoat**, once in a sparse field (≤ 256 bodies: exact boxes) and once in a dense one (spheres):
+   prisms falling in from different sides explode in pairs on the way in; a trail falling in as a ribbon
+   must NOT chain-explode from its own neighbours. A long prism struck end-on must collide at its end in
+   the sparse run.
+4. **Scoring**: both kinds of collision count for the Rhino's / Stoat's pilot.
+5. **Cost**: `prof` with a Stoat pair at ~250 bodies (`BoxContacts` on the main thread, well under 1 ms)
+   and at a full body budget (`ContactJob` a small fraction of `IntegrateJob`).
+
+### 🔴 The interaction detail levels — destruction and stealing, game-wide (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`Docs/PRISM_ANIMATION.md` §4.12 (round 2). Supersedes the burst entry below where they differ: no white
+accents, every explosion death (not only collisions) picks explosion / shatter / glitter by the prism's
+size on screen, every steal picks the grade or a bloom / unravel / flake SHED. New: a Resources config
+(`PrismInteractionLodConfig`, script guid authored out of the editor), `PrismInteractionLod`,
+`MaterialPropertyAnimator.DefaultTransitionSeconds`, `PrismEventData.PlainDeath` (was `CollisionBurst`).
+Proven offline: `verify_prism_collision_burst.py` (5 kinds, 5 negative controls, the shipped grade
+executed), the lab's GPU parity gate, both reference-compile configs. **Import first**: the shader
+imports without errors (magenta = rejected), the config asset loads (not a missing-script), and
+`PrismCollisionBurstTests` passes.
+1. **Destruction up close**: any mode — ram or shoot prisms near the camera: shards (or, very close, a
+   glitter of triangles) with their brighter inside showing, no white anywhere; far ones explode plainly.
+   No pop on the first frame, nothing culled while on screen.
+2. **Stealing up close**: steal a trail close to the camera (Squirrel / Rhino overtake, Urchin): the prism
+   turns the new colour at once while a skin of the old colour peels off it (petals, ribbons or scales,
+   their insides the new colour) over ~0.8 s; no flicker of the two depths fighting. Far away the
+   ordinary 0.8 s colour change.
+3. **Mass events**: a wide AOE destroying or stealing dozens near the camera — the first 48 get detail,
+   the rest the ordinary effect, nothing vanishes, no frame spike in `prof` (`PrismCollisionBurst.Drain`).
+4. **Shielded / dangerous / transparent prisms**: a stolen transparent prism grades (no skin); a shielded
+   one sheds in its shield colours.
+5. **Rounds 3–4 — the Sierpinski cut, shed resolutions, the amount**: close up a death comes apart as the
+   Sierpinski cut of the explosion's wedges (triangles of a range of sizes); walk back and the depth gets
+   shallower until, far away, it is the ordinary explosion (no holes on the first frame at any distance). A steal very close sheds on the 24-subdivision mesh — the bloom's petals tear along straight
+   diagonals, not staircases. A wide AOE near the camera: as the budget fills, later events come out one or
+   two levels coarser, never as nothing; `prof` shows one `SpawnSliceDebrisBatch` per mesh per frame.
+6. **Round 5 — the explosion's law at every depth, the bloom alone**: ram prisms near the camera at different
+   speeds and angles: the fragments fly the way the explosion's wedges fly for the same hit (direction, spin
+   sense — round 6: the pieces of each of a face's four wedges spin in step about that wedge's axes, not each its
+   own way), never spin faster than the explosion's, and erode away on the explosion's wipe; at a distance the
+   ordinary explosion and the cut must be hard to tell apart. Check a fragment's culling: nothing pops out at the
+   screen edge late in its 7.5 s (the `WedgeReach` bounds). The burst material shows the explosion's dials copied
+   onto `_ExplosionSpread` / `_ExplosionDials` (Frame Debugger) once the explosion pool exists. Steal while
+   skimming a trail closely: only blooms, cut in small pieces that curl tight and stay near the surface; steal the
+   same prism twice — it peels differently. `PrismInteractionLodConfig` shows unravel / flake weights 0, rings 3,
+   segments 3, noise 0.6, and `IsSane` holds (a shed happens at all).
+7. **Round 7 — the silver gnomon cut, the spin noise, the ROLL**: a close death comes apart as silver triangles and
+   gnomons of many sizes, the pieces of a wedge turning nearly but not exactly together. Steal a trail close up: each
+   face's old skin rolls up into a tight new-colour roll AWAY from the camera, over the edge, and disappears behind
+   the prism without dissolving; no roll pops into view at a corner, none is seen fading (except on a very thin
+   prism). Steal from different angles — the roll always leaves away from you. Swing the camera hard during a steal:
+   note whether a roll on its way round shows (decision 1 in the lab write-up). `PrismInteractionLodConfig` shows
+   destructionCut SilverGnomon, silverDepths 4/6/8/10, rollWeight 1 and every other shed weight 0.
+8. **Round 8 — the slide noise**: the fragments of one wedge no longer leave as one sheet; each drifts a little off
+   its neighbours while the four wedges a face still read as the explosion's. `wedgeSlideNoise` 0.15 on the config;
+   nothing culled late in the 7.5 s (the widened `WedgeReach`).
+9. **Round 9 — the FRAGMENT kind (2026-10-16; supersedes the wedge motion of items 4–8)**: the shader compiles with the
+   new `_Fragment*` properties (no `_ExplosionSpread`, `_WedgeNoise` or erosion UV left) and the burst material shows
+   their defaults. A close death bursts into a FILLED cloud — big chunks near the core, fine debris flung farthest,
+   every face filling its own part of the sphere, leaning the way it was hit — tumbling at about the explosion's rate
+   with no flicker; the smallest fragments shrink away first, every fragment is gone by ~7 s of the 7.5 s life, and
+   nothing is culled while visible (`FragmentReach` bounds). `PrismInteractionLodConfig` shows the `fragment*` fields
+   (burst 0.5, drift 0.2, lift 1, aim 0.35, size speed 0.8, size spin 0.25, spin cap 1.6, smallest level 4, gone at
+   0.45 / 0.92, shrink 0.35, noise 0.15 / 3 / 0.25) — the old `wedgeSpinNoise` / `wedgeNoiseFrequency` /
+   `wedgeSlideNoise` values migrate through `FormerlySerializedAs` and the asset already carries the new keys.
+   EditMode: `TheFragmentIsTheHlslsKindAndConstants`, `TheFragmentReachIsTheProvedSum`,
+   `TheShaderDefaultsAreTheShippedFragmentShape`, `TheShaderReadsTheStampsTheCarrierWrites`.
+10. **Round 10 — the velocity (2026-10-16)**: ram prisms from several directions at a slow and a fast speed and watch a
+   close death: the whole cloud flies the way the explosion's would (the flight), the fragments lean along the hit, and
+   a fast hit's burst is visibly wider than a slow one's (about 2 × at 30 u/s of flight against 10). If the cloud does
+   NOT fly with the hit, check the burst entity's `_SliceDrift` (Entities Hierarchy: `PrismSliceDriftOverride` should
+   hold the flight, not zero) before tuning anything. Config: `fragmentAim` 0.5, `fragmentSpeedGain` 0.5,
+   `fragmentSpeedRef` 10; material `_FragmentFade.w` 0.5, `_FragmentNoise.w` 10. EditMode:
+   `TheFragmentReachIsTheProvedSum` (the boost).
+11. **Round 11 — the explosion is level 0; one program per kind; the welded roll (2026-10-17)**: (a) a FAR death (and a
+   plough collision past 64 movers, which asks for plain) is now 24 wedges flying the fragment law — leaning along the
+   hit like the close levels — not the explosion graph; set `explosionAsFragments` off and it is the graph again.
+   (b) Wipe a big trail at once (hundreds of deaths): every one draws (the level-0 cap is 4,096), the close-up levels
+   still appear on the near ones, and `prof`'s `PrismCollisionBurst.Drain` stays small. (c) Frame Debugger on a
+   destruction and a steal: the burst draws with keyword `_BURST_FRAGMENT` / `_BURST_ROLL` (runtime materials named
+   "… _BURST_FRAGMENT (runtime)" / "… _BURST_ROLL (runtime)"), and a roll's mesh is `Prism_HighPoly_<n>` (welded), not
+   `Prism_HighPoly_Shed_<n>`. (d) The steal's roll looks exactly as before. EditMode: `TheExplosionIsLevelZeroOfTheCut`,
+   `TheRollDrawsTheWeldedGrid`, `TheGameCompilesOneKindPerProgram`.
+12. **Round 12 — 20% more separation and speed; each death its own (2026-10-17)**: (a) blow up a straight run of a trail
+   with one ram (neighbours, the same hit and orientation): no two clouds play the same animation — sizes, opening
+   time, tumble plane, lean and shape differ — while each cloud stays one smooth, continuous burst (no added grain).
+   Set `fragmentVariety` to 0 on `PrismInteractionLodConfig` and the run reads as one animation repeated; back to 0.5.
+   (b) The fragments spread wide — round 13 tripled round 12's burst and drift (now 0.36 and 0.216): a far death's
+   cloud is visibly larger than the old explosion's — and nothing is culled while on screen at a hard hit (the bounds
+   grow with the burst, the drift and the variety's reach). EditMode:
+   `TheFragmentReachIsTheProvedSum`, `TheShaderDefaultsAreTheShippedFragmentShape`, the config test.
+
+### 🔴 The collision burst — level 1's high-res death (same branch, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`Docs/PRISM_ANIMATION.md` §4.12, `Docs/PRISM_MOTION.md` §3a. A hand-written shader
+(`PrismCollisionBurst.shader`), a new material, a new Resources config (`PrismMotionConfig`) and an
+unwelded mesh variant were authored out of the editor. Proven offline: `verify_prism_collision_burst.py`
+(executes the shipped HLSL; four negative controls fire; glslang compiles every pass against a URP
+mock), both reference-compile configs. **Import first**: the shader must import without errors (a
+rejected shader draws magenta); `PrismCollisionBurstTests` must pass.
+1. **Up close**: plough a few prisms into a trail (level 1). Each pair comes apart as shards with a
+   white-hot crack flash, petals curling open, ribbons peeling, or a glitter of triangles. The first
+   frame must be the prism itself (no pop); nothing culled while still on screen.
+2. **The squint test**: beside an ordinary explosion at play distance, squinting, the burst must travel
+   the same way, be the same size, fade over the same 7.5 s in the same colours. A kind that reads as a
+   different effect at a glance: set its weight to 0 in `PrismMotionConfig` rather than retuning the
+   envelope.
+3. **The ladder**: a dense Stoat field — past 64 bodies collisions explode plainly, past 256 the contact
+   goes to spheres; back down at 192 and 48. Overflow of the 48-burst budget explodes plainly, never
+   vanishes.
+
 ## 🔴 Brittle Star — new vessel, round 4 (`cece/gallant-lamport-sc3khe`, 2026-10-14) — NOT EDITOR-VERIFIED
 
 No `unity` CLI in the session that wrote it. Proved offline: player and editor `unity_refcompile` (0 errors in project
