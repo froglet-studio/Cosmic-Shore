@@ -300,6 +300,11 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   missed-mouth test, so an Easy pilot's mistakes and a missed ring are still flown the gate way (a missed ring is flown
   the gate way until threaded, or the closed line would carry the pilot a whole lap round to it). The point a second
   look-ahead further on is the boost drivers' corner (`AIBoostContext.CornerDegrees`).
+- **The Stoat needed one fix for it** (2026-10-17): its field and sling autopilots judged RANGE by the point they
+  steer for, and the line keeps that point one look-ahead ahead (60 u at cruise), inside their "far enough to lay a
+  pair" tests (90 u, 120 u). It would have laid no pair, warped nowhere and raced at cruise. They now take the bearing
+  from the line and the range from the ring they are after (`AIPilot.ObjectivePosition`,
+  `StoatDipoleMath.AutopilotGauge`; `StoatDipoleTests`). The mode switch reads only the angle and was unaffected.
 - **Not on a line:** the Squirrel (its own Skim Race pilot; Yash's own Squirrel crosses rings 11 u from the centre,
   median of 1,042 crossings: the braid's middle IS the Squirrel's line) and the Urchin (rides its own lane).
 - **Tests:** `RegattaRaceLineTests` (clearance, radius, the centre line as the negative control, the loop, the

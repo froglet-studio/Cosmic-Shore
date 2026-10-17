@@ -138,7 +138,9 @@ risk. Before, it aimed at each ring's centre, the middle of the braid and 22 u f
 4. Easy / Medium: the difficulty mistakes still show (amber "not noticed", red "misjudged"); after a missed ring the
    pilot comes back to that ring the gate way, not a whole lap round.
 5. The Squirrel and the Urchin fly as before.
-6. Time I1–I4 per hull against the roadmap table.
+6. **The Stoat** opens its field pair along the line (its path dots bend, it warps above cruise) and still lets go near
+   each ring; run `StoatDipoleTests`. Before the 2026-10-17 range fix it would have raced at cruise on the line.
+7. Time I1–I4 per hull against the roadmap table.
 
 ### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
