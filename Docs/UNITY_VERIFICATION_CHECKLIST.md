@@ -11366,3 +11366,17 @@ window's glass is 0.9 (was 0.62). `/verify-unity` was not run.
 1. **Skim Race solo with AI, and a Maelstrom round:** after the reveal the scoreboard appears. Copy any `[Scoreboard]`
    warning from the console: it names what was hiding the board, and that object is the real fix.
 2. **Friends drawer:** Home no longer reads through the party panel; the lattice still shows.
+
+## 🔴 2026-10-17 — End-screen safety net independent of the reveal (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+After a Scurry game the board did not show and the console had no `[Scoreboard]` warning. So the end screen was never
+raised, and the most likely silent cause is EndGameSequencer's reveal coroutine being stopped by its object being
+disabled mid-reveal. Now:
+- the sequencer warns when that happens;
+- Scoreboard hears `OnWinnerCalculated` itself and, on an unscaled UniTask timer (`endScreenGraceSeconds` = 5),
+  shows the board with a warning if no end screen came.
+
+1. **Finish Scurry, Skim Race and a Maelstrom round:** the board shows within ~5 s of the reveal.
+2. **Read the console:** `[EndGameSequencer] ... disabled during the end reveal` or `[Scoreboard] The winner was
+   decided ...` names the path. If NEITHER appears and there is still no board, the winner was never decided (no
+   reveal either) - say which.

@@ -99,6 +99,11 @@ namespace CosmicShore.UI
                  "Leave unassigned in non-tournament scenes.")]
         [SerializeField] private GameObject continueButton;
 
+        [Header("End-screen safety net")]
+        [Tooltip("Seconds after the winner is known within which the end screen must have been raised (the reveal holds " +
+                 "3 s). Past it the board shows itself and says the reveal was cut short.")]
+        [SerializeField, Min(1f)] private float endScreenGraceSeconds = 5f;
+
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
@@ -154,6 +159,23 @@ namespace CosmicShore.UI
                 CSDebug.LogWarning($"[Scoreboard] The end screen reached no scoreboard ({(off.Count > 0 ? string.Join(", ", off) + " was off" : "it was not subscribed")}) - showing it anyway.");
                 board.ShowScoreboard();
             }
+        }
+
+        /// <summary>
+        /// The winner is known: the end screen should follow once the reveal ends. EndGameSequencer raises it from a
+        /// coroutine, and a coroutine dies silently if its object is disabled mid-reveal - the player is then left in
+        /// the arena with no board and nothing in the console. This waits on a timer that does not depend on any
+        /// object staying enabled and, if no board has shown by then, shows it and says so.
+        /// </summary>
+        void ArmEndScreenSafetyNet() => EndScreenSafetyNetAsync(ShowCount, endScreenGraceSeconds).Forget();
+
+        static async UniTaskVoid EndScreenSafetyNetAsync(int shownBefore, float seconds)
+        {
+            await UniTask.Delay(System.TimeSpan.FromSeconds(seconds), ignoreTimeScale: true);
+            if (ShowCount != shownBefore || s_boards.Count == 0) return;
+            CSDebug.LogWarning($"[Scoreboard] The winner was decided {seconds:0} s ago and no end screen was raised - the " +
+                               "reveal (EndGameSequencer) was cut short. Showing the scoreboard.");
+            ShowUnreached();
         }
 
         void Awake()
@@ -218,6 +240,8 @@ namespace CosmicShore.UI
 
             if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
+            if (gameData?.OnWinnerCalculated != null)
+                gameData.OnWinnerCalculated.OnRaised += ArmEndScreenSafetyNet;
 
             var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
             if (resetEvent != null) resetEvent.OnRaised += HideScoreboard;
@@ -239,6 +263,8 @@ namespace CosmicShore.UI
 
             if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
+            if (gameData?.OnWinnerCalculated != null)
+                gameData.OnWinnerCalculated.OnRaised -= ArmEndScreenSafetyNet;
 
             var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
             if (resetEvent != null) resetEvent.OnRaised -= HideScoreboard;

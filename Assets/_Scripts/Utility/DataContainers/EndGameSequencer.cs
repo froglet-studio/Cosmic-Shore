@@ -117,6 +117,11 @@ namespace CosmicShore.Utility
 
             if (_revealRoutine != null)
             {
+                // The end screen is raised at the END of this coroutine; stopping it here means no scoreboard. Loud,
+                // so whatever disabled this object mid-reveal shows up in the console (Scoreboard's safety net then
+                // shows the board).
+                CSDebug.LogWarning($"[EndGameSequencer] '{name}' was disabled during the end reveal - the end screen " +
+                                   "would never have been raised. Find what disables it at the end of a match.");
                 StopCoroutine(_revealRoutine);
                 _revealRoutine = null;
             }
