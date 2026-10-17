@@ -9920,3 +9920,21 @@ confirmation and the Project Record".
    Froglet Master Tool board under Diagnostics.
 6. Pull the plug (no network) and stop Play with something new: the pill reads NOT SENT with the reason, and the next
    send carries it.
+
+## 🔴 2026-10-17 — The Stoat slowdown: a vessel registry instead of scene searches, and named Driver markers (unverified: no Unity CLI in the session)
+
+**Files:** `VesselStatus.cs` (`Live` registry), `BlackHoleVesselPull.cs`, `StoatRippleExecutor.cs`,
+`StoatPathfinderExecutor.cs`, `WarpFieldVesselScaler.cs` (read it instead of `FindObjectsByType<VesselStatus>`),
+the eight nested `Driver` classes (one named marker each), `BlackHoleRegistry.cs` / `BlackHoleGravityField.cs`
+(nested markers), `MarkerBudget.cs`. What ran instead of `/verify-unity`: Amoebius compiled the whole game and ran
+Warpline before and after (Docs/PERFORMANCE_OPTIMIZATION.md §2, 10-17); `unity_refcompile` player-dev has no errors in
+changed files (its errors are all in UGS multiplayer/friends files whose packages this container could not fetch);
+`perf_hunt.py gates` OK.
+
+1. Release, Menu_Main, fly the Stoat for 10 minutes with the **Third Eye closed**. Frames should stay where they were
+   in minute one (no slide to 30-40 fps). Make the poles and let them annihilate: the ripple still knocks a nearby rival.
+2. Fly into a pole's pull: the hull is still pulled (and carried through a pair), as before.
+3. Warp-field mode: vessels still shrink and grow with the field.
+4. Stoat foresight: rivals' predicted paths still draw.
+5. Stop Play: the auto-capture's `diag` lists `BlackHoleRegistry.LateUpdate` and the `BlackHole.*` rows by name
+   (no anonymous `Driver.LateUpdate`).

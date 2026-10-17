@@ -587,3 +587,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Caleb or Andrew (QA)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
+
+### T-20261017-3d13 · open · test · performance
+- **Task:** Re-capture Menu_Main with the Stoat for 10 minutes in a Release editor run, with the Third Eye CLOSED (it is a second camera and taints the frame time). The vessel-registry fix should keep frames flat; the diag now names each Driver.LateUpdate and the BlackHole.* rows.
+- **Done when:** A bugledger/yskha capture from after this fix shows no slide from minute 1 to minute 10, and its diag has the BlackHoleRegistry.LateUpdate row
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/PERFORMANCE_OPTIMIZATION.md §2 (10-17 Stoat slowdown); Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17 Stoat entry
