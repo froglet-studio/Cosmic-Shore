@@ -9,7 +9,7 @@
         ],
         [
           "VesselImpactor.AcceptImpactee",
-          6.173
+          3.412
         ],
         [
           "PoolActivate.Squirrel Prism",
@@ -17,13 +17,14 @@
         ],
         [
           "PoolRefill.FastGrowPrism",
-          0.697
+          0.693
         ]
       ],
-      "verdict": "REGRESSION"
+      "verdict": "within baseline"
     }
   ],
   "baselines": [
+    "Menu_Main|Garland",
     "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
     "MinigameRegatta|MinigameRegatta"
   ],
@@ -49,15 +50,6 @@
     "validating": 1
   },
   "captures": [
-    {
-      "cpuBusyMs": 13.124348640441895,
-      "gcKB": 30.218769073486328,
-      "key": "MinigameSkimRace|S_SkimRace_I2",
-      "timestamp": "2026-10-08 06:35:23",
-      "user": "yskha",
-      "valid": false,
-      "verdict": "invalid: not compared"
-    },
     {
       "cpuBusyMs": 16.666672,
       "gcKB": 48.797226,
@@ -86,6 +78,15 @@
       "verdict": "within baseline"
     },
     {
+      "cpuBusyMs": 7.3769307136535645,
+      "gcKB": 32.78360366821289,
+      "key": "MinigameRegatta|MinigameRegatta",
+      "timestamp": "2026-10-16 13:10:56",
+      "user": "belac",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
       "cpuBusyMs": 6.47861385345459,
       "gcKB": 84.00566864013672,
       "key": "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
@@ -95,6 +96,15 @@
       "verdict": "within baseline"
     },
     {
+      "cpuBusyMs": 2.147830009460449,
+      "gcKB": 89.48501586914062,
+      "key": "MinigameRegatta|MinigameRegatta",
+      "timestamp": "2026-10-16 15:13:50",
+      "user": "belac",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
       "cpuBusyMs": 6.011809825897217,
       "gcKB": 96.07453918457031,
       "key": "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
@@ -102,6 +112,15 @@
       "user": "mrglo",
       "valid": true,
       "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 3.846808671951294,
+      "gcKB": 117.82295989990234,
+      "key": "Menu_Main|Garland",
+      "timestamp": "2026-10-16 16:35:36",
+      "user": "mrglo",
+      "valid": true,
+      "verdict": "within baseline"
     }
   ],
   "gates": [
@@ -127,11 +146,12 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-16T21:57:02Z",
+  "generatedUtc": "2026-10-17T08:48:58Z",
   "next": [
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 6.173 KB/frame (+61%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.697 KB/frame (+33%)",
-    "Resolve: Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.127 KB/frame",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",
+    "Resolve: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)",
     "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261015-56dd]",
     "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix [T-20261015-3e0b]",
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go [T-20261015-3972]",
@@ -174,24 +194,9 @@
       "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), then stop: it goes to Claude"
     },
     {
-      "id": "T-20261015-a5a5",
-      "kind": "decision",
-      "task": "The Charge light now sleeps when a crystal is under 24 px in radius on screen (CrystalChargeArcsProfileSO.sleepBelowScreenRadiusPixels; it rebuilt a mesh per cr"
-    },
-    {
       "id": "T-20261015-1551",
       "kind": "test",
       "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the"
-    },
-    {
-      "id": "T-20261015-fafa",
-      "kind": "dev",
-      "task": "Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/"
-    },
-    {
-      "id": "T-20261015-641c",
-      "kind": "decision",
-      "task": "Spindles are the last big GameObject-renderer cost in the lava lamp (lever L1): one Renderer per limb, ~40k enabled in a grown Lattice with ~4.6k visible, +5.3 "
     },
     {
       "id": "T-20261015-c8e2",
@@ -202,12 +207,33 @@
       "id": "T-20261015-c7db",
       "kind": "dev",
       "task": "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame"
+    },
+    {
+      "id": "T-20261017-c82c",
+      "kind": "test",
+      "task": "Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at"
+    },
+    {
+      "id": "T-20261017-1809",
+      "kind": "dev",
+      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)"
+    },
+    {
+      "id": "T-20261017-2129",
+      "kind": "dev",
+      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)"
+    },
+    {
+      "id": "T-20261017-19f0",
+      "kind": "dev",
+      "task": "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)"
     }
   ],
   "regressions": [
-    "Allocation regression in Amoebius SkimRace|I2|3p: VesselImpactor.AcceptImpactee allocates 3.831 -> 6.173 KB/frame (+61%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.697 KB/frame (+33%)",
-    "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.127 KB/frame"
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",
+    "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)"
   ],
   "scenarios": [
     {

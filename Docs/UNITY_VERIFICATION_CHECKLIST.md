@@ -9784,3 +9784,17 @@ verification, steps 2-9. The short version:
 4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
+
+## 🔴 2026-10-17 — Prism effect pools right-sized: implosion buffer 160 -> 24, explosion pool no longer prewarms 1,500 (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Prefabs/Environment/PrismManagers.prefab` (data only: the PrismImplosionPoolManager's
+`bufferSizeTarget`; the PrismExplosionPoolManager's `defaultCapacity`, `maxSize`, `enableBufferMaintenance`,
+`bufferSizeTarget`), `Tools/Build/perf_hunt.py` (capture keys). No C#. Measured in Amoebius (Skim Race I2):
+`PoolRefill.PrismImplosion` 0.157 -> 0.000 KB/frame.
+
+1. Boot to Menu_Main: no error from `[PrismFactory]` ("Batched explosion/implosion debris declined"); prisms that die
+   in the lava lamp still shatter (explosion debris) and creatures still suck prisms in (implosion debris).
+2. Play the **Sparrow** with ReverseSuction (Arcade, any mode): hold full-auto for several seconds. Every shot still
+   streams its prism out of the gun and the prism appears. The first long burst may show one short hitch (`PoolMiss`
+   in a capture) where the old 160-deep buffer had spares; say so in this entry if it is visible.
+3. Hierarchy under the PrismManagers' explosion pool: no inactive `PrismExplosion` children (there were 1,500).
