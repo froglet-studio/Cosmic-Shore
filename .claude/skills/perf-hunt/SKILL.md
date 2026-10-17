@@ -14,7 +14,7 @@ number: the editor shares its captures by itself, the sweep judges them, and the
 
 | Runs | What | Reads |
 |---|---|---|
-| **Every day** (`.github/workflows/perf-daily.yml`, 05:40 UTC, `bleeding-edge`) | `perf_hunt.py sweep` (static gates, every shared capture vs baseline) and `perf_hunt.py amoebius` (the game's own markers in Amoebius, allocations vs baseline) | the workflow run's `perf-sweep` artifact; red = a regression |
+| **Every day** (`.github/workflows/perf-daily.yml`, 05:40 UTC, `bleeding-edge`) | `perf_hunt.py sweep` (static gates, every shared capture vs baseline) and `perf_hunt.py amoebius` (the game's own markers in Amoebius, allocations vs baseline) | the workflow run's `perf-sweep` artifact; red = a regression. Its `publish` job then COMMITS `Docs/perf/status.json` + `Docs/Reports/PERFORMANCE.md` to bleeding-edge (or to `perf-status` if protection refuses), which the editor's Project Record reads |
 | **After every play test** (editor, when the person turned on *Auto-publish* or pressed Share on the Bug Hunt & Performance badge) | `BugHuntReports` copies `capture_*.json` into `BugLedger/shared/reports/<user>/perf/` on their branch | `perf_hunt.py collect` (every origin branch) |
 | **Any session** | `perf_hunt.py sweep --write --tasks` refreshes `Docs/Reports/PERFORMANCE.md` and `Docs/perf/status.json`, and files one team task per NEW regression | `Docs/Reports/PERFORMANCE.md`, `Docs/TEAM_TASKS.md` (area Performance) |
 | **When someone asks** "performance status", "what next", "what to test" | `.claude/hooks/health_status.py` hands the session `Docs/perf/status.json` | `python3 Tools/Build/perf_hunt.py status [--refresh]` |
