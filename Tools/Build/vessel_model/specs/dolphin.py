@@ -187,15 +187,24 @@ def build(ctx):
     # ------------------------------------------------------------------ MORPHS (dossier 4.1)
     ms = morphs.MaskSet(mesh)
     jaws = ms.mask("jaw.u", "jaw.b")
+    jaw_u, jaw_b = ms.mask("jaw.u"), ms.mask("jaw.b")
     fuse_m = ms.mask("fuse")
     wings = ms.mask("wing.l", "wing.r")
+    wing_l, wing_r = ms.mask("wing.l"), ms.mask("wing.r")
+
+    def centre_of(mask):
+        pts = [mesh.data.vertices[i].co for i, w in enumerate(mask) if w > 0.5]
+        return tuple(sum(p[k] for p in pts) / max(1, len(pts)) for k in range(3))
+    jaw_u_c, jaw_b_c = centre_of(jaw_u), centre_of(jaw_b)
     cases = ms.mask(*[c + "." + t for c in CASES for t, _ in SIDES])
     bells = ms.mask(*[BELLS[c] + "." + t for c in CASES for t, _ in SIDES])
     throat = morphs.falloff_mask(mesh, fuse_m, (0, -0.4, 0), (0, -1, 0), 0.0, 0.3)
     shapes = {
-        "charge": [  # the weapon's girth: both jaw halves and the throat thicken
-            morphs.scale_about(1.6, (0, 0, 0), jaws, axes=(1, 0, 1)),
-            morphs.inflate(0.09, jaws),
+        "charge": [  # the weapon's girth: each jaw half thickens ABOUT ITS OWN CENTRE (scaling about the hull
+            # origin translated the jaws and closed the gape the energy gauge drives, RiptideAnimation 3.3), the throat swells
+            morphs.scale_about(1.9, jaw_u_c, jaw_u, axes=(1, 0, 1)),
+            morphs.scale_about(1.9, jaw_b_c, jaw_b, axes=(1, 0, 1)),
+            morphs.inflate(0.10, jaws),
             morphs.inflate(0.14, throat),
         ],
         "mass": [  # ammunition carried: the fuselage belly and the case bodies fatten
@@ -203,9 +212,11 @@ def build(ctx):
             morphs.inflate(0.05, fuse_m),
             morphs.inflate(0.06, cases),
         ],
-        "space": [  # reach: the jaws lengthen forward, the wing tips extend
+        "space": [  # reach: the jaws lengthen forward, the wings extend FROM THEIR ROOTS (a scale about the hull
+            # origin pulled the roots off the fuselage)
             morphs.stretch_along((0, -1, 0), (0, -0.93, 0), 1.35, jaws, ramp=(0.0, 0.4)),
-            morphs.scale_about(1.13, (0, 0, 0), wings, axes=(1, 0, 0)),
+            morphs.stretch_along((1, 0, 0), (0.30, -0.22, 0), 1.16, wing_l, ramp=(0.0, 0.3)),
+            morphs.stretch_along((-1, 0, 0), (-0.30, -0.22, 0), 1.16, wing_r, ramp=(0.0, 0.3)),
         ],
         "time": [  # speed: bells lengthen aft, wings sweep back and thin, the nose sharpens
             morphs.stretch_along((0, 1, 0), (0, 2.10, 0), 1.9, bells, ramp=(0.0, 0.05)),
