@@ -57,7 +57,7 @@ TL, TR, ref, mono, label = C.TL, C.TR, C.ref, C.mono, H.label
 REPO = K.REPO
 SCENE = "Assets/_Scenes/Menu_Main.unity"
 S = dict(drawer=C.script("FriendsDrawer"), gate=C.script("OfflineUIGate"), crystal=C.script("MenuCrystalClickHandler"),
-         orb=C.script("KitPresenceOrb"))
+         orb=C.script("KitPresenceOrb"), popup=C.script("FriendProfilePopup"))
 PARTY_GUID = AR.asset_guid("PartyPanel")
 
 # Menu_Main, measured 2026-10-16 (names asserted).
@@ -174,12 +174,84 @@ def window_node(parent):
     return w
 
 
+# Rev 7 (section 47.3): an online pilot's profile card, popped beside the drawer's window level with the avatar the
+# pointer rests on (the approved "Friend profile" board).
+CARD_W, CARD_H = 400, 292
+CARD_AVATAR = 84
+PK = "Drawer/Profile/Card"
+
+
+def chip(parent, key, name, word, x, filled):
+    """A FRIEND / ONLINE tag: filled Space with dark text, or a Space outline with Space text."""
+    w = K.label_width(word.upper(), "Label") + 20
+    n = parent.child(N(key, name, TL(x, 74, w, 24)))
+    sprite = K.kit_sprite("kit_sliver10_fill" if filled else "kit_sliver10_line1")
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementSpace"), sprite, True))
+    lab = n.child(N(f"{key}/Label", "Label", STRETCH))
+    label(lab, word, "Label", "SurfaceBlack" if filled else "ElementSpace", align="center")
+    return n, x + w + 8
+
+
+def profile_node(parent):
+    pr = parent.child(N("Drawer/Profile", "ProfileCard", STRETCH))
+    pr.add("cg", 225, H.canvas_group(False))
+    card = pr.child(N(PK, "Card", R((0.5, 0.5), None, (0, 0), (CARD_W, CARD_H), (0, 0.5))))
+    fill = card.child(N(f"{PK}/Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.95), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    bord = card.child(N(f"{PK}/Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver14_line1"), True))
+    M.rim_border(bord, "Space")
+    av = card.child(N(f"{PK}/Avatar", "Avatar", TL(20, 20, CARD_AVATAR + 6, CARD_AVATAR + 6)))
+    seat_nodes(av, f"{PK}/Avatar", CARD_AVATAR + 6)
+    label(card.child(N(f"{PK}/Name", "Name", TL(128, 28, 220, 36))), "Pilot", "H2", "TextLight")
+    _, x = chip(card, f"{PK}/FriendTag", "FriendTag", "Friend", 128, True)
+    next(c for c in card.children if c.key == f"{PK}/FriendTag").add("cg", 225, H.canvas_group(False))
+    chip(card, f"{PK}/OnlineTag", "OnlineTag", "Online", x, False)
+    HM.icon_button(card, f"{PK}/Close", "Close", "chrome_close", TR(14, 14, BTN, BTN))
+    for key, y in (("RuleTop", 128), ("RuleMid", 176)):
+        rule = card.child(N(f"{PK}/{key}", key, R((0, 1), (1, 1), (0, -y), (-40, 1), (0.5, 1))))
+        rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark")))
+    AR.label_e(card.child(N(f"{PK}/StateLabel", "StateLabel", TL(20, 138, 200, 30))), "Online", "Label",
+               "NeutralLightest", driven=True)
+    AR.label_e(card.child(N(f"{PK}/StateValue", "StateValue", TR(20, 138, 160, 30))), "", "Body", "ElementTime",
+               driven=True, align="right")
+    game = card.child(N(f"{PK}/Game", "GameRow", R((0, 1), (1, 1), (0, -182), (0, 36), (0.5, 1))))
+    game.add("cg", 225, H.canvas_group(False))
+    label(game.child(N(f"{PK}/Game/Key", "Key", TL(20, 4, 120, 28))), "Game", "Label", "NeutralLightest")
+    AR.label_e(game.child(N(f"{PK}/Game/Value", "Value", TR(20, 4, 240, 28))), "", "Body", "TextLight",
+               driven=True, align="right")
+    # JOIN in Time (where you go next), INVITE in Space (people), as the board; the popup swaps JOIN for SPECTATE.
+    for key, x, variant, caption in (("Join", 20, "Time", "JOIN"), ("Invite", 196, "Space", "INVITE")):
+        slot = card.child(N(f"{PK}/{key}Slot", f"{key}Slot", R((0, 0), None, (x, 20), (164, 36), (0, 0))))
+        slot.add("cg", 225, H.canvas_group(False))
+        slot.children.append(P.kit_button(f"{PK}/{key}", f"{key}Button", variant, caption, STRETCH, opaque=False, small=True))
+    pr.add("popup", 114, lambda ctx, go: mono(go, S["popup"],
+           f"  group: {ref(ctx.c('Drawer/Profile', 'cg'))}\n  card: {ref(ctx.rt(PK))}\n"
+           f"  edge: {ref(ctx.rt('Drawer/Window'))}\n  friendsData: {K.ref(11400000, AR.FRIENDS_DATA, 2)}\n"
+           f"  theme: {K.ref(11400000, K.THEME, 2)}\n"
+           f"  avatar: {ref(ctx.c(f'{PK}/Avatar/Avatar', 'img'))}\n  ring: {ref(ctx.c(f'{PK}/Avatar/Ring', 'img'))}\n"
+           f"  nameText: {ref(ctx.c(f'{PK}/Name', 'tmp'))}\n  friendTag: {ref(ctx.c(f'{PK}/FriendTag', 'cg'))}\n"
+           f"  stateLabel: {ref(ctx.c(f'{PK}/StateLabel', 'kt'))}\n  stateValue: {ref(ctx.c(f'{PK}/StateValue', 'kt'))}\n"
+           f"  gameRow: {ref(ctx.c(f'{PK}/Game', 'cg'))}\n  gameValue: {ref(ctx.c(f'{PK}/Game/Value', 'kt'))}\n"
+           f"  joinButton: {ref(ctx.iref(f'{PK}/Join', 'root#button'))}\n"
+           f"  joinLabel: {ref(ctx.iref(f'{PK}/Join', 'Label#kt'))}\n  joinGroup: {ref(ctx.c(f'{PK}/JoinSlot', 'cg'))}\n"
+           f"  inviteButton: {ref(ctx.iref(f'{PK}/Invite', 'root#button'))}\n"
+           f"  inviteLabel: {ref(ctx.iref(f'{PK}/Invite', 'Label#kt'))}\n  inviteGroup: {ref(ctx.c(f'{PK}/InviteSlot', 'cg'))}\n"
+           f"  closeButton: {ref(ctx.c(f'{PK}/Close', 'button'))}\n"
+           "  onlineWord: Online\n  inLobbyWord: In a lobby\n  inYourPartyWord: In your party\n"
+           "  partyFullWord: Party full\n  inMatchWord: In a match\n  countTemplate: '{count} / {max}'\n"
+           "  joinWord: Join\n  spectateWord: Spectate\n  inviteWord: Invite\n  invitedWord: Invited\n"
+           "  showDelay: 0.3\n  hideDelay: 0.25\n  gap: 16\n"))
+    return pr
+
+
 def host_node():
     host = N("Host", "FriendsDrawerHost", STRETCH)
     host.add("cg", 225, H.canvas_group(True))
     drawer = host.child(N("Drawer", "Drawer", STRETCH))
     orb_node(drawer)
     window_node(drawer)
+    profile_node(drawer)
     host.add("gate", 114, lambda ctx, go: mono(go, S["gate"],
              "  style: 0\n"
              f"  onlineOnlyObjects:\n  - {ref(ctx.go('Drawer'))}\n  onlineOnlyControls: []\n  offlineOnlyObjects: []\n"
@@ -285,9 +357,33 @@ def validate(files):
     assert f"m_TransformParent: {{fileID: {ctx.rt('Drawer/Window')}}}" in sc.docs[pis[0]], "the PartyPanel is not in the drawer window"
     ch = sc.docs[crystal_handler(sc)]
     assert f"  - {{fileID: {ctx.c('Host', 'cg')}}}" in ch, "the drawer does not fade with the menu in freestyle"
+    validate_profile(sc, ctx)
     for fid in sc.order:
         for m in re.finditer(r"\{fileID: (-?\d+)\}", sc.docs[fid]):
             assert m.group(1) == "0" or sc.has(m.group(1)), f"dangling local fileID {m.group(1)} in {fid}"
+
+
+def validate_profile(sc, ctx):
+    """Rev 7 (section 47.3): the profile card is the drawer's last child (it draws over the window), rests hidden, sits
+    beside the window, and every word it shows is an authored field on FriendProfilePopup."""
+    kids = re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)", sc.docs[str(ctx.rt("Drawer"))], re.M).group(1))
+    assert kids[-1] == str(ctx.rt("Drawer/Profile")), "the profile card must be the drawer's last child (over the window)"
+    cg = sc.docs[str(ctx.c("Drawer/Profile", "cg"))]
+    assert "  m_Alpha: 0\n" in cg and "  m_BlocksRaycasts: 0\n" in cg, "the profile card must rest hidden"
+    pop = sc.docs[str(ctx.c("Drawer/Profile", "popup"))]
+    assert S["popup"] in pop, "the profile card carries no FriendProfilePopup"
+    assert f"  edge: {{fileID: {ctx.rt('Drawer/Window')}}}\n" in pop, "the card does not sit beside the drawer's window"
+    assert f"  friendsData: {{fileID: 11400000, guid: {AR.FRIENDS_DATA}, type: 2}}\n" in pop, "the card cannot tell a friend"
+    for f in ("group", "card", "avatar", "ring", "nameText", "friendTag", "stateLabel", "stateValue", "gameRow", "gameValue",
+              "joinButton", "joinLabel", "joinGroup", "inviteButton", "inviteLabel", "inviteGroup", "closeButton"):
+        m = re.search(rf"^  {f}: \{{fileID: (-?\d+)\}}", pop, re.M)
+        assert m and m.group(1) != "0", f"FriendProfilePopup.{f} is not wired"
+    for f in ("onlineWord", "inLobbyWord", "inYourPartyWord", "partyFullWord", "inMatchWord", "joinWord", "spectateWord",
+              "inviteWord", "invitedWord"):
+        assert re.search(rf"^  {f}: \S", pop, re.M), f"FriendProfilePopup.{f} is blank (the card would show nothing there)"
+    assert "  countTemplate: '{count} / {max}'\n" in pop, "the party size template lost a token"
+    card = sc.docs[str(ctx.c(f"{PK}/Fill", "img"))]
+    assert "  m_RaycastTarget: 1\n" in card, "the card does not take the pointer (it would close as you reach for JOIN)"
 
 
 def _vec(doc, field):
@@ -370,6 +466,13 @@ def self_test(files):
             f"  onlineOnlyObjects:\n  - {{fileID: {ctx.go('Drawer')}}}\n", "  onlineOnlyObjects: []\n", 1))),
         ("the drawer left out of the freestyle fade", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  - {{fileID: {ctx.c('Host', 'cg')}}}\n", "", 1))),
+        ("the profile card under the window", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.rt("Drawer"), f"  - {{fileID: {ctx.rt('Drawer/Window')}}}\n  - {{fileID: {ctx.rt('Drawer/Profile')}}}\n",
+            f"  - {{fileID: {ctx.rt('Drawer/Profile')}}}\n  - {{fileID: {ctx.rt('Drawer/Window')}}}\n"))),
+        ("the profile card's JOIN word blanked", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.c("Drawer/Profile", "popup"), "  joinWord: Join\n", "  joinWord: \n"))),
+        ("the profile card's friend list unwired", lambda f: f.__setitem__(SCENE, in_doc(
+            f[SCENE], ctx.c("Drawer/Profile", "popup"), f"guid: {AR.FRIENDS_DATA}", "guid: " + "0" * 32))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

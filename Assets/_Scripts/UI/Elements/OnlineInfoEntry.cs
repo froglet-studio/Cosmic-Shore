@@ -28,7 +28,7 @@ namespace CosmicShore.UI
     /// style-B row (<see cref="KitOnlineRow"/>) draws the same states without a second copy of the
     /// invite, kick and join rules. This class draws the legacy look.</para>
     /// </summary>
-    public class OnlineInfoEntry : MonoBehaviour
+    public class OnlineInfoEntry : MonoBehaviour, IFriendProfileSource
     {
         [Header("Display")]
         [SerializeField] private Image avatarIcon;
@@ -122,6 +122,8 @@ namespace CosmicShore.UI
         }
 
         string _playerId;
+        string _displayName;
+        Sprite _avatar;
         Action<string> _onInvite;
         Action<string> _onCancel;
         Action<string> _onKick;
@@ -140,6 +142,29 @@ namespace CosmicShore.UI
         CanvasGroup _canvasGroup;
 
         public string PlayerId => _playerId;
+
+        /// <summary>Raised after the row's pilot, status or invite state changes (the profile popup follows it).</summary>
+        public event Action ProfileChanged;
+
+        /// <summary>The row as a profile (Rev 7, <see cref="FriendProfilePopup"/>): the same state the row draws.</summary>
+        public bool TryGetProfile(out FriendProfile profile)
+        {
+            profile = new FriendProfile(_playerId, _displayName, _avatar, null, _lastStatus, _lastPartyMemberCount,
+                                        _lastPartyMaxSlots, _lastMatchName, _invitable && !_isPending, _isPending, _joinMode);
+            return !string.IsNullOrEmpty(_playerId);
+        }
+
+        /// <summary>The profile popup's INVITE: exactly this row's Invite press (cooldown, pending look and all).</summary>
+        public void RequestInvite()
+        {
+            if (!_isPending) HandleInviteClicked();
+        }
+
+        /// <summary>The profile popup's JOIN / SPECTATE: exactly this row's join press.</summary>
+        public void RequestJoin()
+        {
+            if (_joinMode == JoinMode.Join || _joinMode == JoinMode.Spectate) HandleJoinClicked();
+        }
 
         protected Button InviteButton => inviteButton;
         protected Button CancelButton => cancelButton;
@@ -205,6 +230,8 @@ namespace CosmicShore.UI
             Action<string> onSpectate = null)
         {
             _playerId = playerId;
+            _displayName = displayName;
+            _avatar = avatar;
             _onInvite = onInvite;
             _onCancel = onCancel;
             _onKick = onKick;
@@ -262,6 +289,7 @@ namespace CosmicShore.UI
             _isPending = false;
             ApplyRowTint(RowIsLive ? defaultTint : disabledTint);
             OnInvitePendingChanged(false);
+            ProfileChanged?.Invoke();
         }
 
         /// <summary>The row reads as live when ANY of its controls can be pressed.</summary>
@@ -292,9 +320,8 @@ namespace CosmicShore.UI
             _lastMatchName = matchName;
 
             // While pending, the label is overridden - don't clobber it.
-            if (_isPending) return;
-
-            ApplyStatusLabel(status, partyMemberCount, partyMaxSlots, matchName);
+            if (!_isPending) ApplyStatusLabel(status, partyMemberCount, partyMaxSlots, matchName);
+            ProfileChanged?.Invoke();
         }
 
         void ApplyStatusLabel(Status status, int partyMemberCount, int partyMaxSlots, string matchName)
@@ -358,6 +385,7 @@ namespace CosmicShore.UI
                 _pulseCoroutine = StartCoroutine(PulsePending());
             else
                 ApplyRowTint(pendingInviteTint);
+            ProfileChanged?.Invoke();
         }
 
         /// <summary>Restores the row to its post-populate state.</summary>
@@ -379,6 +407,7 @@ namespace CosmicShore.UI
             // Restore the proper status label.
             ApplyStatusLabel(_lastStatus, _lastPartyMemberCount, _lastPartyMaxSlots, _lastMatchName);
             OnInvitePendingChanged(false);
+            ProfileChanged?.Invoke();
         }
 
         IEnumerator PulsePending()

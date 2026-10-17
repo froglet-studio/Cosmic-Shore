@@ -711,3 +711,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (AI seating / Arena AI difficulty owner)
 - **Added:** 2026-10-17 by Claude (claude/new-session-76hnyc) (`claude/new-session-76hnyc`)
 - **See:** Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs, Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs ~909 and ~2030
+
+### T-20261017-d0aa · open · dev · Multiplayer / party
+- **Task:** Carry each online pilot's vessel to the menu: FriendPresenceActivity.VesselClass is published but never reaches PartyPlayerData or any UI, so the Rev 7 friend profile card cannot show 'Flying <vessel>'. Publish the selected vessel in the presence lobby and expose it on PartyPlayerData; the card then gains one authored row.
+- **Done when:** PartyPlayerData exposes the remote pilot's vessel class and FriendProfilePopup shows a Flying row for it
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Shombith (Claude session) (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 47.3

@@ -2411,3 +2411,41 @@ slide between the menus", then "slide stop".
     run order;
   - `HubWindowSlideTests`;
   - refcompile.
+
+### 47.3 An online pilot's profile pops beside their avatar
+
+The owner: "Friend profile, when friend is online and once we hover over their picture we should be able to see their
+profile as a popup and basic details".
+- **The card** (`FriendProfilePopup`, in the friends drawer host after the window, `author_menu_friends_drawer.py`).
+  A 400 x 292 glass panel with a Space rim, beside the drawer's window and level with the avatar the pointer rests on.
+  It holds:
+  - the avatar in an octagon ring (the pilot's domain colour on a party seat, Space otherwise);
+  - the name, and the tags FRIEND (only when they are on your friends list, `FriendsDataSO.Friends`) and ONLINE;
+  - where they are: Online, In a lobby, In your party, Party full or In a match, with the party size ("2 / 4") in
+    Time;
+  - a Game row while they are in a match;
+  - JOIN (Time) or SPECTATE (Charge), and INVITE (Space; "Invited" while your invite is out);
+  - a close x.
+
+  Every word is an authored field on the component; `countTemplate` fills `{count}` and `{max}`.
+- **Where it opens.** `FriendProfileHover` relays (`author_menu_arcade.py`):
+  - on an online row's avatar (a transparent hit area, since the icon hides when a pilot has no picture);
+  - on each of the row's Invite / Join / ✕ buttons, so a pad player moving down the list sees the same card;
+  - on a party seat's avatar (a member of your party: no buttons; your own seat has no card).
+
+  A pointer hover opens it after 0.3 s, so crossing the list does not flash cards. Moving to the next avatar swaps
+  the card at once. Leaving closes it after 0.25 s unless the pointer moved onto the card. Pad focus opens it at once
+  and moving off closes it. A click's selection is left to the hover.
+- **One source of truth.** The card reads the row or seat through `IFriendProfileSource` (`OnlineInfoEntry`,
+  `KitPartySlot`). It repaints on their `ProfileChanged`. JOIN / INVITE call the row's own presses (`RequestJoin` /
+  `RequestInvite`), so the cooldown, the pending look and the join rules are the row's, never a copy.
+- **Not shown: what they fly.** The presence payload carries `VesselClass`, but nothing brings it to the menu
+  (`PartyPlayerData` has no vessel), so the board's "Flying" row would always be empty. Team task T-20261017-d0aa
+  (Yash) carries it through; the card then gains one row.
+- **Verified offline:**
+  - `author_menu_arcade.py --self-test` (19 planted defects, two new: a button that loses its relay, a seat relay on
+    the wrong avatar);
+  - `author_menu_friends_drawer.py --self-test` (three new: the card under the window, a blank JOIN word, the friends
+    list unwired);
+  - `FriendProfileSourceTests`;
+  - refcompile.

@@ -11271,3 +11271,28 @@ Checked offline:
 7. **B on any hub window** closes it as before; the Home hub buttons come back once, with no flash during a slide.
 8. **Friends drawer** opened over a hub window covers the left arrow (the drawer draws above it).
 9. **First-login guide:** while the guide is active, the strip and arrows stay hidden.
+
+## 🔴 2026-10-17 — Rev 7: an online pilot's profile card on avatar hover / focus (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`FriendProfilePopup` (Menu_Main, in the friends drawer), `FriendProfileHover` relays on `PartyOnlineRow.prefab` (the
+avatar and the three buttons) and `PartySlot.prefab` (the avatar), `IFriendProfileSource` on `OnlineInfoEntry` and
+`KitPartySlot`. `/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- the arcade and friends drawer generators `--check` / `--self-test` with the new planted defects;
+- every Menu_Main generator `--check`;
+- gates.
+
+1. **Compile and tests:** no new console errors; `FriendProfileSourceTests` passes.
+2. **Two clients signed in** (or a second account online). Open the friends drawer (the orb).
+3. **Rest the pointer on an online pilot's avatar.** After about 0.3 s a card opens to the right of the drawer, level
+   with the avatar:
+   - their picture and name;
+   - FRIEND only if they are on your friends list; ONLINE;
+   - the status (Online / In a lobby 2 / 4 / In a match + Game row);
+   - JOIN or SPECTATE and INVITE as the row offers them.
+4. **Move onto the card and press INVITE:** the row and the card both read "Invited". Pressing JOIN joins as the
+   row's JOIN does, and the card closes.
+5. **Leave the avatar and the card:** it closes. Sweeping the pointer down the list does not flash cards.
+6. **Pad:** move down the online list; the card follows the focused row. Moving off the list closes it.
+7. **Party seat:** hover a member's avatar for a card with "In your party" and no buttons. Your own seat shows none.
+8. **Offline (party layer down):** the drawer is gated, and no card can open.

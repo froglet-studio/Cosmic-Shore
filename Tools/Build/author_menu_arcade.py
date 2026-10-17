@@ -84,6 +84,7 @@ S = dict(
     friends=script("Assets/_Scripts/UI/Elements/FriendsListPanel.cs"),
     slot=script("Assets/_Scripts/UI/Elements/Party/KitPartySlot.cs"),
     online=script("Assets/_Scripts/UI/Elements/Party/KitOnlineRow.cs"),
+    profile=script("Assets/_Scripts/UI/Elements/Party/FriendProfileHover.cs"),
     request=script("Assets/_Scripts/UI/Elements/Party/KitRequestRow.cs"),
     card=script("Assets/_Scripts/UI/Elements/Arcade/KitGameCard.cs"),
     weekly=script("Assets/_Scripts/UI/Elements/WeeklyChallengeCard.cs"),
@@ -368,6 +369,21 @@ def scroll_into(target=None, margin=12):
                                 f"  target: {ref(target(ctx) if target else 0)}\n  margin: {K.f32(margin)}\n")
 
 
+def profile_hover(source, anchor):
+    """FriendProfileHover (rev 7, Docs/MENU_REDESIGN_B.md section 47.3): opens the profile card for `source` (a row or
+    seat component) beside `anchor` (the avatar). Both are callables ctx -> fileID."""
+    return lambda ctx, go: mono(go, S["profile"], f"  source: {ref(source(ctx))}\n  anchor: {ref(anchor(ctx))}\n")
+
+
+def profile_hit(parent, key, r, source, anchor):
+    """A transparent hit area over an avatar carrying FriendProfileHover: the avatar icon hides when a pilot has no
+    picture, so the pointer target is its own graphic."""
+    hit = parent.child(N(key, "ProfileHit", r))
+    hit.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("profile", 114, profile_hover(source, anchor))
+    return hit
+
+
 def mask(show):
     return lambda ctx, go: mono(go, MASK, f"  m_ShowMaskGraphic: {1 if show else 0}\n")
 
@@ -535,6 +551,9 @@ def build_slot():
     oct_nodes(occ, "Occupied/Avatar/Back", SOCK_AV, "SurfaceDark")
     art_node(occ, "Occupied/Avatar/Icon", "Avatar", R((0.5, 1), None, (0, -SOCK_AV_Y), (SOCK_AV, SOCK_AV)),
              AVATAR_PLACEHOLDER, preserve=True)
+    # Rev 7: hovering a member's avatar opens their profile card (FriendProfilePopup); under the kick button.
+    profile_hit(occ, "Occupied/Avatar/Hit", R((0.5, 1), None, (0, -SOCK_AV_Y), (SOCK_AV + 6, SOCK_AV + 6)),
+                lambda ctx: ctx.c("root", "slot"), lambda ctx: ctx.rt("Occupied/Avatar/Icon"))
     name_top = SOCK_AV_Y + SOCK_AV / 2 + 7
     label_e(occ.child(N("Occupied/Name", "Name", R((0, 1), (1, 1), (0, -name_top), (0, 20), (0.5, 1)))),
             "Pilot", "Body", "TextLight", align="center")
@@ -636,14 +655,18 @@ def build_online_row():
     # size): reading each slot's own rect instead took its 60-wide placeholder until the slot's
     # fitter caught up, which drew JOIN over INVITE.
     text_columns(root, 210, "Pilot", "ONLINE", "ElementSpace")
+    # Rev 7: the pilot's profile card opens on their avatar (pointer) and on any of the row's buttons (pad focus).
+    row_comp, row_avatar = (lambda ctx: ctx.c("root", "row")), (lambda ctx: ctx.rt("Avatar/Icon"))
+    profile_hit(root, "Avatar/Hit", R((0, 0.5), None, (20, 0), (40, 40)), row_comp, row_avatar)
+    relay = ("profile", 114, profile_hover(row_comp, row_avatar))
     btns = root.child(N("Buttons", "Buttons", R((1, 0.5), None, (0, 0), (202, 36), (1, 0.5))))
     btns.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 8, 5, (1, 0), (0, 0)))
     for key, caption, variant, shown in (("Invite", "INVITE", "Space", True), ("Join", "JOIN", "Space", False)):
         slot = wrap_slot(btns, f"{key}Slot", f"{key}Slot", shown)
-        slot.children.append(small_button(f"{key}Button", f"{key}Button", variant, caption, added=[row_scroll_into()]))
+        slot.children.append(small_button(f"{key}Button", f"{key}Button", variant, caption, added=[row_scroll_into(), relay]))
     cancel = wrap_slot(btns, "CancelSlot", "CancelSlot", False)
     cancel.children.append(small_button("CancelButton", "CancelButton", "Cancel", None, icon="chrome_close",
-                                        added=[row_scroll_into()]))
+                                        added=[row_scroll_into(), relay]))
     root.add("row", 114, lambda ctx, go: mono(go, S["online"],
              f"  avatarIcon: {ref(ctx.c('Avatar/Icon', 'img'))}\n"
              f"  usernameText: {ref(ctx.c('Name', 'tmp'))}\n"
@@ -1349,6 +1372,22 @@ def check_molecule(panel, lobby):
     assert "  onlineCountTemplate: '{count} Players Online'\n" in lobby, "the online line lost its authored template"
 
 
+def check_profile_hovers(files):
+    """Rev 7 (section 47.3): the profile card opens from the online row's avatar and from each of its three buttons
+    (pad focus), and from a seat's avatar; every relay names its own row or seat and that pilot's avatar."""
+    for name, comp, avatar, wanted in (("PartyOnlineRow", "root#row", "Avatar/Icon#rt", 4),
+                                       ("PartySlot", "root#slot", "Occupied/Avatar/Icon#rt", 1)):
+        text, F = files[prefab_path(name)], K.FileIds(name)
+        want = f"  source: {{fileID: {F(comp)}}}\n  anchor: {{fileID: {F(avatar)}}}\n"
+        relays = [m.group(0) for m in re.finditer(r"^--- !u!114 &-?\d+\n(?:(?!^--- ).*\n)*", text, re.M)
+                  if f"guid: {S['profile']}, type: 3}}" in m.group(0)]
+        assert len(relays) == wanted, f"{name} has {len(relays)} profile relays, not {wanted} (avatar + pad-focus buttons)"
+        for r in relays:
+            assert want in r, f"a {name} profile relay does not name its own {comp.split('#')[1]} and avatar"
+    hit = doc_of(files[prefab_path("PartyOnlineRow")], K.FileIds("PartyOnlineRow")("Avatar/Hit#img"))[1]
+    assert "  m_RaycastTarget: 1\n" in hit, "the online row's avatar hit area does not take the pointer"
+
+
 def validate_prefabs(files, guids):
     M.require_entrances(files, {prefab_path("ArcadeView"): 2, prefab_path("PartySlot"): 1})
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
@@ -1372,6 +1411,7 @@ def validate_prefabs(files, guids):
         want = f"{field}: {{fileID: {K.FileIds(name)('root#row')}, guid: {asset_guid(name)}"
         assert want in friends, f"FriendsListPanel.{field} does not name the {name} row component"
     assert "  embedded: 1\n" in friends and "  listPartyMembers: 0\n" in friends, "the panel's lists must be embedded"
+    check_profile_hovers(files)
 
     view = files[prefab_path("ArcadeView")]
     V = K.FileIds("ArcadeView")
@@ -1559,6 +1599,13 @@ def self_test(current, files, guids):
         "the body back under the friends orb": prefab_plant(prefab_path("ArcadeView"), lambda t: in_one(
             t, K.FileIds("ArcadeView")("Body#rt"), "m_AnchoredPosition: {x: 20", "m_AnchoredPosition: {x: -20")),
         "unrelated document edited": scene_plant(lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1)),
+        "the Join button loses its profile relay (pad focus shows no card)": prefab_plant(
+            prefab_path("PartyOnlineRow"), lambda t: re.sub(
+                r"(?m)^--- !u!114 &-?\d+\n(?:(?!^--- ).*\n)*?.*guid: " + S["profile"] + r", type: 3\}\n(?:(?!^--- ).*\n)*",
+                "", t, count=1)),
+        "a seat's relay opens the card on the wrong avatar": prefab_plant(prefab_path("PartySlot"), lambda t: t.replace(
+            f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Avatar/Icon#rt')}}}\n",
+            f"  anchor: {{fileID: {K.FileIds('PartySlot')('Occupied/Name#rt')}}}\n", 1)),
     }
     failed = []
     for name, fn in plants.items():

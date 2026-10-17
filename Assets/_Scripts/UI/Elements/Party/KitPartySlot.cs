@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,8 +13,11 @@ namespace CosmicShore.UI
     /// Host", "Pilot") and, for the host looking at a remote seat, the kick button. The EMPTY layer is
     /// the slot's add button, "Open slot - invite a friend below". Exactly one shows, through
     /// CanvasGroups; nothing here is SetActive.</para>
+    ///
+    /// <para>A remote member's seat is also a profile source (rev 7): hovering its avatar opens
+    /// <see cref="FriendProfilePopup"/>.</para>
     /// </summary>
-    public class KitPartySlot : FriendInfoSlot
+    public class KitPartySlot : FriendInfoSlot, IFriendProfileSource
     {
         [Header("Style-B Layers")]
         [Tooltip("The filled seat: frame, avatar ring, name, role and kick button.")]
@@ -32,6 +36,28 @@ namespace CosmicShore.UI
         [Tooltip("The chrome theme, for the ring's unknown-domain colour.")]
         [SerializeField] private UIThemeSO theme;
 
+        // The seated pilot's domain colour, for the profile popup's ring.
+        private Color? _domain;
+
+        /// <summary>Raised when the seat's pilot or their domain colour changes (the profile popup follows it).</summary>
+        public event Action ProfileChanged;
+
+        /// <summary>
+        /// A remote member's seat as a profile: already in your party, so the popup offers nothing to press. Your own
+        /// seat and an open seat have none.
+        /// </summary>
+        public bool TryGetProfile(out FriendProfile profile)
+        {
+            profile = new FriendProfile(PlayerId, DisplayNameText ? DisplayNameText.text : string.Empty,
+                                        AvatarIcon ? AvatarIcon.sprite : null, _domain, OnlineInfoEntry.Status.InYourParty,
+                                        0, 0, null, false, false, OnlineInfoEntry.JoinMode.Hidden);
+            return IsOccupied && !IsLocalPlayer;
+        }
+
+        public void RequestInvite() { }
+
+        public void RequestJoin() { }
+
         // The ring replaces the legacy slot's generated halo, so none is built.
         protected override void EnsureDomainGlow() { }
 
@@ -39,10 +65,15 @@ namespace CosmicShore.UI
         {
             if (domainRing)
                 domainRing.color = domainColour ?? UITheme.Resolve(theme, UIColorToken.SurfaceDark);
+            if (_domain == domainColour) return;
+            _domain = domainColour;
+            ProfileChanged?.Invoke();
         }
 
         public override void SetRole(bool isLocal, bool isHost)
         {
+            // Called after every seat assignment: the seat's pilot may have changed.
+            ProfileChanged?.Invoke();
             if (!roleText) return;
             roleText.SetText(isLocal ? (isHost ? "You / Host" : "You") : (isHost ? "Host" : "Pilot"));
             roleText.SetColorToken(isLocal ? UIColorToken.TextLight : UIColorToken.NeutralLightest);
@@ -54,6 +85,7 @@ namespace CosmicShore.UI
             {
                 KitVisibility.SetShown(emptyGroup, shown);
                 KitVisibility.SetShown(occupiedGroup, !shown);
+                ProfileChanged?.Invoke();
             }
             else if (part == KickButton)
             {
