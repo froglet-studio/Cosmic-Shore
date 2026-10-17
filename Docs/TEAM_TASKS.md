@@ -371,12 +371,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/MENU_REDESIGN_B.md §31, Docs/ModePreview/ARCHITECTURE.md
 - **Done:** 2026-10-17, Built on claude/new-session-76hnyc (Docs/MENU_REDESIGN_B.md section 35): TRY IT FOR REAL hosts a Barren-cell ModePreviewSession behind the Abilities tab. The editor test is T-20261016-be3d + the checklist entry 'Hangar TRY'.
 
-### T-20261016-7044 · open · test · Menu_Main / Configure
+### T-20261016-7044 · done · test · Menu_Main / Configure
 - **Task:** Play-test the rev-3 Configure window (full-window live preview + step cards; FLY / STOP; pad focus; Arena hulls; Maelstrom pool) on PC, pad and a phone
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Configure rev 3' items 1-5 pass or are filed as bugs
 - **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
 - **Added:** 2026-10-16 by claude/new-session-76hnyc (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 33
+- **Done:** 2026-10-17, Superseded: the rev-3 Configure (full-window preview + step cards) was replaced by Rev 4 simple on 2026-10-17 (Docs/MENU_REDESIGN_B.md §43); its playtest is T-20261017-1ec4.
 
 ### T-20261015-641c · done · decision · Performance
 - **Task:** Spindles are the last big GameObject-renderer cost in the lava lamp (lever L1): one Renderer per limb, ~40k enabled in a grown Lattice with ~4.6k visible, +5.3 ms CPU measured in S2 (record 3.3). Every Prism is already on entities (record 1.2); spindles are not prisms. Decide the shape: draw spindles through Entities Graphics like prisms, or merge a plant's spindles into one mesh per plant, keeping the per-spindle wither fade (continuity law). Ecology is LOCKED, so this is yours to call before anyone builds it.
