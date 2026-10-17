@@ -4,41 +4,40 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Brittle Star's rules as PURE code (design: <c>R_VesselActions/BRITTLE_STAR.md</c> §3): the support ring's
-    /// life cycle and the aim math, with no scene and no Unity object, so <c>BrittleStarRulesTests</c> run them as-is and
+    /// stock, the guns' heat and the aim math, with no scene and no Unity object, so <c>BrittleStarRulesTests</c> run them as-is and
     /// every peer that feeds them the same replicated events reaches the same state.
     /// </summary>
     public static class BrittleStarRules
     {
-        /// <summary>Which modes are on. Overdrive turns all three on at once.</summary>
-        public enum Mode { Cruise = 0, Speed = 1, Creation = 2, Destruction = 3 }
+        /// <summary>The mode selected: one at a time, or Cruise (none). Values are serialized nowhere but kept static.</summary>
+        public enum Mode { Cruise = 0, Speed = 1, Creation = 2, Destruction = 3, Charge = 4 }
 
         /// <summary>
-        /// The support ring, its one stored charge and Overdrive — the class document's Ring Detonation section,
-        /// clause by clause:
+        /// The support ring and its stock of SPARE rings (Garrett, 2026-10-16: "only let them shoot the ring if they have a
+        /// spare one that automatically regrows. they can store two extra rings, and they get 1 ring per crystal"). It
+        /// replaces the class document's one stored charge, Overdrive and the ringless state:
         /// <list type="bullet">
-        /// <item>"Collecting a crystal adds one charge… Only one charge can be held at a time."</item>
-        /// <item>"Collecting a crystal while you already have a charge will activate all 3 of the Brittle Stars modes
-        /// simultaneously for a short time instead of adding a second charge."</item>
-        /// <item>"After launching the outer ring, if the cockpit has a charge… it will immediately rebuild its support ring.
-        /// If it does not… [it] is unable to rebuild… until a crystal is collected and the vessel loses access to its 3
-        /// modes entirely until a support ring is constructed."</item>
-        /// <item>"The support ring detonation has no cooldown, it only requires the existence of a support ring."</item>
+        /// <item>The hull always carries a ring; throwing it needs a SPARE, and the mounted ring then regrows on its own
+        /// over the rebuild time.</item>
+        /// <item>A crystal adds one spare, up to <c>maxSpares</c>; at a full stock it adds nothing.</item>
+        /// <item>The modes need the mounted ring: none during the brief regrowth.</item>
         /// </list>
         /// Time is passed in, never read, so a test can step it.
         /// </summary>
         public sealed class RingState
         {
             public bool Mounted { get; private set; } = true;
-            /// <summary>Seconds left on a rebuild in progress; 0 when none is.</summary>
+            /// <summary>Seconds left on a regrowth in progress; 0 when none is.</summary>
             public float RebuildRemaining { get; private set; }
-            public int Charges { get; private set; }
-            public float OverdriveRemaining { get; private set; }
+            /// <summary>Spare rings in stock (each one throw).</summary>
+            public int Spares { get; private set; }
 
             public bool Rebuilding => RebuildRemaining > 0f;
-            public bool Overdrive => OverdriveRemaining > 0f;
-            /// <summary>The modes need a ring: none while it is gone or still being built.</summary>
+            /// <summary>The modes need a ring: none while it is regrowing.</summary>
             public bool ModesAvailable => Mounted;
-            /// <summary>0 with no ring, rising to 1 as one is built, 1 while mounted (what the animation draws).</summary>
+            /// <summary>Can the ring be thrown now? A mounted ring and a spare to regrow it from.</summary>
+            public bool CanLaunch => Mounted && Spares > 0;
+            /// <summary>0 just thrown, rising to 1 as the next one grows, 1 while mounted (what the animation draws).</summary>
             public float Presence01(float rebuildSeconds) =>
                 Mounted ? 1f : Rebuilding && rebuildSeconds > 0f ? 1f - RebuildRemaining / rebuildSeconds : 0f;
 
@@ -46,46 +45,31 @@ namespace CosmicShore.Gameplay
             {
                 Mounted = true;
                 RebuildRemaining = 0f;
-                Charges = 0;
-                OverdriveRemaining = 0f;
+                Spares = 0;
             }
 
-            /// <summary>Throw the ring. False (nothing happens) without a mounted ring.</summary>
+            /// <summary>Throw the ring. False (nothing happens) without a mounted ring and a spare; otherwise a spare is
+            /// spent and the next ring regrows over <paramref name="rebuildSeconds"/>.</summary>
             public bool TryLaunch(float rebuildSeconds)
             {
-                if (!Mounted) return false;
+                if (!CanLaunch) return false;
+                Spares--;
                 Mounted = false;
-                if (Charges > 0)
-                {
-                    Charges--;
-                    RebuildRemaining = Mathf.Max(1e-4f, rebuildSeconds);
-                }
+                RebuildRemaining = Mathf.Max(1e-4f, rebuildSeconds);
                 return true;
             }
 
-            public enum CrystalOutcome { Rebuilt = 0, Stored = 1, Overdrive = 2 }
-
-            /// <summary>A crystal: rebuild a missing ring, else store the charge, else Overdrive.</summary>
-            public CrystalOutcome CollectCrystal(float rebuildSeconds, float overdriveSeconds)
+            /// <summary>A crystal: one more spare ring, up to <paramref name="maxSpares"/>. False at a full stock.</summary>
+            public bool CollectCrystal(int maxSpares)
             {
-                if (!Mounted && !Rebuilding)
-                {
-                    RebuildRemaining = Mathf.Max(1e-4f, rebuildSeconds);
-                    return CrystalOutcome.Rebuilt;
-                }
-                if (Charges == 0)
-                {
-                    Charges = 1;
-                    return CrystalOutcome.Stored;
-                }
-                OverdriveRemaining = Mathf.Max(OverdriveRemaining, 0f) + overdriveSeconds;
-                return CrystalOutcome.Overdrive;
+                if (Spares >= maxSpares) return false;
+                Spares++;
+                return true;
             }
 
-            /// <summary>Advance the clocks. Returns true on the frame a rebuild completes.</summary>
+            /// <summary>Advance the clock. Returns true on the frame a regrowth completes.</summary>
             public bool Tick(float dt)
             {
-                if (OverdriveRemaining > 0f) OverdriveRemaining = Mathf.Max(0f, OverdriveRemaining - dt);
                 if (RebuildRemaining <= 0f) return false;
                 RebuildRemaining -= dt;
                 if (RebuildRemaining > 0f) return false;
@@ -95,10 +79,51 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Is <paramref name="mode"/>'s effect on? The selected mode while the ring is mounted, or every mode
-        /// during Overdrive.</summary>
+        /// <summary>
+        /// The guns' HEAT (Garrett, 2026-10-16: "shooting should over heat… the amount of heat produced is proportional to
+        /// firing rate (trigger pull) and number of guns firing… using charge lasers cools the guns"). Every round fired adds
+        /// <c>heatPerRound</c>, so heat rises with rounds per second × guns; it bleeds off at a cooling rate the caller
+        /// passes in (faster with Charge Mode's cords out). At 1 the guns OVERHEAT and cannot fire until heat falls to
+        /// <c>recoverBelow</c>. Pure: no clock, no randomness.
+        /// </summary>
+        public sealed class HeatState
+        {
+            public float Heat01 { get; private set; }
+            public bool Overheated { get; private set; }
+
+            public void Reset()
+            {
+                Heat01 = 0f;
+                Overheated = false;
+            }
+
+            /// <summary>Rounds fired: heat rises. Returns true on the round that overheats the guns.</summary>
+            public bool AddRounds(int rounds, float heatPerRound)
+            {
+                if (rounds <= 0) return false;
+                Heat01 = Mathf.Min(1f, Heat01 + rounds * Mathf.Max(0f, heatPerRound));
+                if (Overheated || Heat01 < 1f) return false;
+                Overheated = true;
+                return true;
+            }
+
+            /// <summary>Cooling over <paramref name="dt"/>. Returns true on the frame the guns recover.</summary>
+            public bool Cool(float coolPerSecond, float recoverBelow, float dt)
+            {
+                Heat01 = Mathf.Max(0f, Heat01 - Mathf.Max(0f, coolPerSecond) * Mathf.Max(0f, dt));
+                if (!Overheated || Heat01 > recoverBelow) return false;
+                Overheated = false;
+                return true;
+            }
+        }
+
+        /// <summary>Is <paramref name="mode"/>'s effect on? The selected mode while the ring is mounted.</summary>
         public static bool IsOn(Mode mode, Mode selected, RingState ring) =>
-            mode != Mode.Cruise && ring != null && ring.ModesAvailable && (ring.Overdrive || selected == mode);
+            mode != Mode.Cruise && ring != null && ring.ModesAvailable && selected == mode;
+
+        /// <summary>How many guns fire in a mode: Space (Destruction) all five, Charge none (the trigger works the
+        /// cords), every other mode the one turret the ring has turned to the aim.</summary>
+        public static int GunsFor(Mode on) => on == Mode.Destruction ? BrittleStarHullForm.Points : on == Mode.Charge ? 0 : 1;
 
         /// <summary>Pressing a mode's control: select it, or return to Cruise if it was already selected.</summary>
         public static Mode Press(Mode selected, Mode pressed) => selected == pressed ? Mode.Cruise : pressed;
@@ -162,29 +187,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// A deterministic deflection inside a cone of <paramref name="halfAngleDegrees"/> about
-        /// <paramref name="forward"/>, from an integer hash of the shot's serial — never <c>UnityEngine.Random</c>
-        /// (vessel rule 18), so peers that agree on the shot count agree on every round.
-        /// </summary>
-        public static Vector3 Deflect(Vector3 forward, Vector3 up, float halfAngleDegrees, uint serial)
-        {
-            if (halfAngleDegrees <= 0f) return forward;
-            float u = Hash01(serial * 2u + 1u);
-            float v = Hash01(serial * 2u + 2u);
-            // Uniform over the cone's disc: sqrt for area, a full turn for the direction.
-            float off = halfAngleDegrees * Mathf.Sqrt(u);
-            float roll = v * 360f;
-            Vector3 side = Vector3.Cross(forward, up);
-            if (side.sqrMagnitude < 1e-8f) side = Vector3.Cross(forward, Vector3.right);
-            if (side.sqrMagnitude < 1e-8f) side = Vector3.Cross(forward, Vector3.up);
-            var tilt = Quaternion.AngleAxis(roll, forward) * Quaternion.AngleAxis(off, side.normalized);
-            return tilt * forward;
-        }
-
-        /// <summary>
         /// The hull's speed multiplier from the modes' eased blends: Speed Mode's ×N and Creation Mode's slow-down
-        /// (the slowest of the modes), multiplied so Overdrive — all modes on at once — gets both. Destruction Mode
-        /// leaves the speed alone.
+        /// (the slowest of the modes), multiplied so a hand-over between the two eases through both. Destruction and
+        /// Charge leave the speed alone.
         /// </summary>
         public static float ModeSpeed(float speed01, float creation01, float speedMultiplier, float creationMultiplier) =>
             Mathf.Lerp(1f, speedMultiplier, speed01) * Mathf.Lerp(1f, creationMultiplier, creation01);
@@ -202,17 +207,6 @@ namespace CosmicShore.Gameplay
             if (Mathf.Abs(along) > halfThickness + extentAlongNormal) return false;
             float reach = radius + extentAcross;
             return (offset - normal * along).sqrMagnitude <= reach * reach;
-        }
-
-        /// <summary>A pure integer hash to [0, 1).</summary>
-        public static float Hash01(uint x)
-        {
-            x ^= x >> 16;
-            x *= 0x7feb352dU;
-            x ^= x >> 15;
-            x *= 0x846ca68bU;
-            x ^= x >> 16;
-            return (x & 0xFFFFFF) / 16777216f;
         }
     }
 }

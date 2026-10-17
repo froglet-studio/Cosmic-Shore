@@ -346,8 +346,12 @@ oldest lines go first if the file would pass 450 KB, and `dropped` counts them).
 **Unity (MPPM).** `NetTestLogs` (editor, `[InitializeOnLoad]`) keeps the console from Play start and,
 at Play stop, writes the file **if this was a multiplayer test**: always in an MPPM virtual player;
 in the main editor when its record shows ANOTHER player (role client/spectator, a client approved
-other than its own client 0, a client left, a leaver handed to the AI, a join refused or bounced) or
-a virtual player's editor is running. Solo online play (the presence lobby only) writes nothing.
+other than its own client 0, a client left, a leaver handed to the AI, a join refused or bounced, a
+party joined) or a virtual player's editor is running. A guest's record approves nobody, so its role
+is also sampled every 2 s during Play: a client role seen at any point counts. Solo online play (the
+presence lobby only) writes nothing. **One Play is one session**: the project enters Play without a
+domain reload, so `NetTestLogs` resets the recorder's timeline and `UgsRequestTelemetry` when Play
+starts. Before 2026-10-16 a file carried every earlier Play's events and totals.
 Virtual players run from `Library/VP/<id>/`, so they write into the MAIN project's
 `Logs/NetSessions/` (peer = the MPPM tag, e.g. `p2`, else `vp-<id>`); the main editor's file is
 `main`. The main editor waits 4 s for the virtual players' files, then sends them with no
@@ -366,8 +370,11 @@ closes player 2's window first so it writes its log (it is only killed if it doe
 5 s). Closing a player some other way also writes its log; a killed process writes nothing.
 
 **Claude's side:** `python3 Tools/Build/net_logs.py collect` lists every test found on every
-`origin/*` branch (`bugledger/*` included), grouping files from the same user and engine within
-2 minutes of each other into one test, `main` first. `show <n|id>` prints each player's summary
+`origin/*` branch (`bugledger/*` included). Files from the same user and engine within 2 minutes of
+each other are one test, and so is another user's file whose Play overlapped them: a test between
+two machines, shown as `<user>/<peer>`. The record's `429s` also shows the console's count of
+rate-limit warnings when the two differ. A pre-fix file holding earlier Plays is marked "carried
+over" and cut to its own Play's events. `show <n|id>` prints each player's summary
 (role, CLEAN/DIRTY, errors, warnings, lobby reads, 429s, events) and ONE merged wall-clock
 timeline: lifecycle events plus warnings and errors (`--lines` adds every log line). `--dir PATH`
 reads a local folder instead (`Logs/NetSessions`, or Amoebius's `netlogs`); `--self-test` holds the

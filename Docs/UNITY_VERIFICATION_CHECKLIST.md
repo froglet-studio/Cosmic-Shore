@@ -90,6 +90,96 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset` (`BoostStickBand` 0.8, `YastriStickBand`
+0.85, written with `learn_drives_from_flights.py`'s own writer). In Regatta only, the AI Manta keeps both triggers flat
+until its stick passes 0.8 (was 0.35) and pivots past 0.85 (was 0.75). Every other mode keeps the executor's bands.
+A person's Manta flights replace these numbers (`learn_drives_from_flights.py --write`).
+**Why:**
+- In the offline model (`manta_drive_sim.py`; seconds for three laps), default → Regatta bands: I1 26.5 → 25.0,
+  I2 32.8 → 31.0, I3 37.5 → 35.6, I4 37.6 → 35.5. Soar raises the Manta's turn rate (0.2 v + 30 deg/s), so it turns
+  better fast.
+- A corner brake (the Rhino's idea) was tested and NOT shipped: slower on every course.
+
+**Verified without the editor:** `learn_drives_from_flights.py --check`, `unity_refcompile` (0 errors in changed files),
+`RegattaDriveTuningTests.MantaRegattaTuning_LoadsWithThePivotBandAboveTheBoostBand` written (not run).
+**Verify in editor:**
+1. Run `RegattaDriveTuningTests`: all pass.
+2. Arcade ▸ Regatta with an AI Manta, Third Eye on it. It soars (~700 u/s) through most of each leg, splits its
+   triggers (Yastri pivot) only in hard turns, and threads rings without circling. Note I1–I4 times.
+3. Any other mode with an AI Manta (Redline): unchanged.
+
+### 🔴 The Dolphin AI drifts again at the discharge's peak; Regatta AIs aim through the ring's centre (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- `ChargeBoostAIPolicySO` holds the next commit drift off until a discharge PEAKS (speed meets the transformer's falling
+  target), so the drift freezes the top speed instead of waiting for the meter to empty. That covers its own releases
+  and the commit loop's corner releases. It spends on a straight only when the discharge can lift the speed by 30 u/s.
+- `GateRaceController` (Regatta only, `AICommitFromApproachPoint`) puts the "through" steering point on the line from
+  the pilot through the ring's CENTRE, not on the ring's axis. A drift locked on an axis point from off-axis flew beside
+  the mouth.
+- The Rhino drive was retuned under that steering (`cornerReleaseDegrees` 30, `minSpeedGain` 50).
+
+**Verified without the editor:**
+- `unity_refcompile`: player-dev clean; editor 0 errors in changed files.
+- `DolphinChargeDriveTests` and `RhinoRampDriveTests` written, NOT run.
+- `learn_drives_from_flights.py --self-test`.
+- Gates.
+- Models (`dolphin_drive_sim.py`, `rhino_drive_sim.py`; seconds for three laps):
+  - Dolphin, old → new: I1 56.9 → 54.0, I2 66.0 → 64.6, I3 80.8 → 73.1, I4 74.0 → 71.9.
+  - Rhino, old / new: I1 43.8 / 44.9, I2 58.8 / 62.9, I3 53.7 / 50.1, I4 51.8 / 55.4.
+  - With the old axis steering the Dolphin stalled on I2–I4.
+
+**Verify in editor:**
+1. Run `DolphinChargeDriveTests` and `RhinoRampDriveTests` (Test Runner, EditMode): all pass.
+2. Arcade ▸ Regatta with an AI Dolphin, Third Eye on it. After each release its line reads "discharging - drifts again
+   at the peak", then "charging in the drift" at a speed near the top (300+ u/s on a long straight), not back near 68–150.
+3. Every Regatta AI (Dolphin, Rhino, Manta, Urchin, Stoat, Squirrel) threads rings without circling them. Watch
+   for any hull that now crosses rings at a steep angle and misses.
+4. Any mode with an AI Dolphin outside Regatta (The Bends, Rampage list it as disabled; others): it still collects
+   crystals; the re-drift waits at most until the discharge peaks (about 1 s).
+
+### 🔴 The Rhino AI brakes on the ramp to a corner speed (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `RampBoostAIPolicySO` has three states (Ramp, Brake, Off; `AI/AI_BOOST.md`, the Rhino ramp section).
+Before a corner it stays ON the ramp and lifts the throttle (new `AIBoostDriver.Throttle`), so the ramp bleeds at its
+300 u/s² instead of coasting at 120 u/s², down to a corner speed sized by the corner after the objective (new
+`AIPilot.SetNextLegProvider` + `AIBoostContext.CornerDegrees`, filled by `GateRaceController.ArmRacer`). It presses the ramp
+only where the leg pays the wind-up back, re-arms a ramp the grading dropped, and ends it explicitly. The asset carries
+the new fields at their defaults; `learn_drives_from_flights.py` learns `cornerSpeed` from Rhino flights.
+**Verified without the editor:** `unity_refcompile` (player-dev clean; editor: 0 errors in changed files),
+`RhinoRampDriveTests` written (not run), `learn_drives_from_flights.py --self-test`, `rhino_drive_sim.py` (a model:
+I1 43.0 s vs 48.2, I2 56.1 vs 55.4, I3 56.3 vs stalled), gates.
+**Verify in editor:**
+1. Run `RhinoRampDriveTests` (Test Runner, EditMode): all pass.
+2. Arcade ▸ Regatta, an AI Rhino, Third Eye on it: its boost line reads "ramping on the straight", then "braking on
+   the ramp to N u/s" before each ring, with the speed falling fast and the ramp still on (the Rhino's HUD ramp gauge
+   stays lit), then "cruising" round sharp corners only.
+3. It threads rings at ramp speed without circling them; note its I1-I4 times against the roadmap table.
+4. Any other mode with an AI Rhino (Broadside): it still ramps on long straights (no next leg there: every objective is
+   read as a 90° corner).
+
+### 🔴 The Stoat races Regatta: on the card, its autopilot tunable per mode (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** the Stoat is on `ArcadeGameRegatta` (`author_regatta_assets.py`, `--check` OK) with a Time +10 starting row
+at every intensity, from `regatta_balance.py`'s new Stoat row (its warp; 48.5 s at I1, fleet spread unchanged at 4.13x).
+`AIModeTuning` lets the three Stoat executors read their AUTOPILOT numbers from a `<config>_Regatta` copy (none exists
+yet, so the AI flies its shipped numbers); a person flying the Stoat reads the hull's own configs. `HumanFlightRecorder`
+adds `timeMode` (1 Time, 0 Mass, -1 another hull). Super-shielded rails are never pulled by the Stoat's holes
+(`BlackHoleGravityField` line 271).
+**Verified without the editor:** `author_regatta_assets.py --check`, `check_vessel_class_icons`, `check_gamelist_scenes`,
+`render_card_backgrounds --check`, `learn_drives_from_flights.py --self-test` (the Stoat's switch / sling rules recovered,
+a random slinger rejected), gates, `unity_refcompile`.
+**Verify in editor:**
+1. Arcade ▸ Regatta: the Stoat is in the vessel carousel with its own icon. Pick it and race I1: it launches, races 3
+   laps, and its HUD's Time flower shows the +10 start.
+2. Your rails stay put while you lay pairs next to them (no rail prism pulled or swallowed).
+3. Set an ally chip to the Stoat (or flip the Third Eye's You / AI to AI on your Stoat): the AI switches to Time mode
+   for the hard corners, slings, and threads rings. Watch for a stall (circling a ring) or a missed mouth at warp speed.
+4. Store the race: the file has a `timeMode` column that flips when you press B.
+5. `RegattaDriveTuningTests` (EditMode): 4 pass.
+
 ### 🔴 Regatta drive tuning per mode + resource meters in flights (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** `AIBoostPolicySO.ForMode` (a `Resources/AIBoostPolicies/<policy>_<mode>` variant, else the hull's own
@@ -135,6 +225,13 @@ a virtual player's editor is running. `BugHuntReports` picks the files up as the
 each `Library/VP/*/Logs/NetSessions`). `BugHuntAutoSend` waits 4 s for the virtual players' files, then asks once
 (main editor only): *"This multiplayer test saved logs from main, p2 and p3... Send them to Claude?"*.
 `Tools/Build/net_logs.py` reads them off `bugledger/<user>` into one timeline. Same format from Amoebius (Port commit).
+Since 2026-10-16 the send is automatic, with no dialog (`0a41ef133`).
+**2026-10-16, fixed from the first real logs (Caleb ↔ ys1, two machines).** The project enters Play without a domain
+reload, so a file carried every earlier Play's events and UGS totals, and an earlier test's "client 1 approved" was
+taken as this one's evidence. `NetTestLogs` now resets the recorder and `UgsRequestTelemetry` when Play starts.
+A guest wrote nothing (its record approves nobody), so joining a party now counts, and so does the role
+sampled every 2 s. The "at" location skipped Unity's native stack walker. The party/presence refresh 429s are now
+counted (`HostConnectionService`, B31). `net_logs.py` groups two machines' overlapping logs into one test.
 **Verified without the editor:** `unity_refcompile --config editor`: 0 errors in the three changed files (the 3 errors
 are the known `AuthenticationServiceFacade` MPPM-package ones); the Compose/Quote logic extracted and run standalone,
 its output read by `net_logs.py`; `net_logs.py --self-test` (11 checks, negative control); Amoebius wrote a real file
@@ -147,14 +244,39 @@ and `net_logs.py show` merged it. **Not run:** the editor, MPPM, a real send.
    editor. Within a few seconds `Logs/NetSessions/` (main project) holds `net_<time>_main.json` and one file per virtual
    player (`_p2`, `_p3`, or `_vp-<id>` if the tag is not read). Each opens as JSON with `"schema": "cosmicshore.nettestlog.v1"`
    and its console lines.
-4. ONE dialog in the main editor names the players ("main, p2 and p3"); the virtual players show none. **Not now**, then a
-   new Play/stop with no new error: it does not ask again about the same files.
-5. Press **Send to Claude** on the next test: `git fetch origin bugledger/<you>` then
-   `python3 Tools/Build/net_logs.py collect` lists the test with every player, and `show 1` prints one timeline. Your working
-   tree and branch unchanged (`git status`).
+4. No dialog: the main editor's Console says `[BugLedger] Sent to Claude automatically: ... the multiplayer test's logs
+   from main, p2 and p3`; the virtual players send nothing. A new Play/stop with nothing new sends nothing again.
+5. `git fetch origin bugledger/<you>` then `python3 Tools/Build/net_logs.py collect` lists the test with every player,
+   and `show 1` prints one timeline. Your working tree and branch unchanged (`git status`).
 6. No frame-time change during Play with the F7 `diag` (the hook is one queue append per log line).
+7. **(2026-10-16) Two machines**: the guest machine also writes a `main` file (its `why` reads "joined another player's
+   party" or "was a client during the session"), and `net_logs.py collect` shows both machines as ONE test,
+   `<host user>/main` and `<guest user>/main`.
+8. **(2026-10-16) Second Play**: Play the multiplayer test again without restarting the editor. The new file's
+   `record.startedUtc` is within seconds of its `playStartedUtc`, and its `lifecycle` holds only that Play's events.
+   `collect` shows no "carried over" mark.
+9. **(2026-10-16)** A warning line's `"at"` names game code (e.g. `CosmicShore....HostConnectionService:...`), never
+   `(Unity) StackWalker`.
 
 ---
+
+### 🔴 Regatta: no AI targets a crystal (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:**
+- `GateRaceController.AICrystalDetourSlack` (virtual; it defaults to the scene's `aiCrystalDetourSlack`).
+- `RegattaController` overrides it to 0. Regatta AIs fly the rings (and their rail) and never swing to a crystal, the
+  omni crystal included.
+- Other gate races are unchanged.
+
+**Verified without the editor:**
+- `unity_refcompile`: player-dev OK; editor shows only the 3 known errors, none in changed files.
+- `RegattaNoCrystalTargetTests` compiles. It has not been run.
+
+**Verify in editor:**
+1. Run `RegattaNoCrystalTargetTests` in the Test Runner (edit mode): both tests pass.
+2. Start Regatta, solo, with a Rhino and other hulls on AI seats. Open FrogletTools ▸ AI ▸ Third Eye. No AI readout
+   ever says "Crystal on the way"; each AI's aim line goes to its ring, or along its rail.
+3. Fly beside an omni crystal near the racing line: no AI bends off its line toward it.
 
 ### 🔴 AI training recorder: last ring, hull name, button presses, tags (`Ys-bleeding-edge`, 2026-10-16) — NOT EDITOR-VERIFIED
 
@@ -9616,3 +9738,49 @@ files whose packages this container could not fetch), the gates, Amoebius Skim R
 5. **Capture:** Release, S2 and Skim Race, and let the auto-capture run. The capture's `renderers` line should show the
    snow family gone and how many `Spindle` renderers a grown Lattice really holds (Amoebius counts ~2.9k at 8 minutes,
    the 09-25 capture ~40k), and a Skim Race collect should show no `Instantiate`.
+
+## ⚪ Brittle Star — Destruction Mode is five CORDS (`cece/beautiful-knuth-j3atgk`, 2026-10-15) — SUPERSEDED
+
+> Superseded the next day by the four-mode redesign below: the cords moved to Charge Mode as whips / sabers and
+> Destruction became Space Mode's five guns again. Walk the entry below instead.
+
+No `unity` CLI in the session that wrote it (`/verify-unity` could not run). Proved offline: player and editor
+`unity_refcompile` (0 errors in project code; a planted typo in `BrittleStarExecutor` was caught), the 29
+`BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`: three negative controls, one a
+cord that stretches), `author_brittlestar_assets.py --check` / `--self-test` (11/11), `studio_to_unity.py --vessel
+brittlestar --check` (39 mapped, 0 drift), `check_studio.cjs` on the studio page. Contract: `R_VesselActions/BRITTLE_STAR.md` §3.4.
+1. **X** (Destruction): five cords (fresnel tubes, domain-coloured rim) grow out of the five turrets, ~80 u long, tips
+   nearly meeting ahead. No rounds are fired. Console clean.
+2. **Right stick**: direction turns the ring and the cords with it, the tips whipping round after the roots; deflection
+   splays them to 25° and back. Turn hard: they bow and straighten. Speed Mode (×6) straight: they stay ahead.
+3. **Slicing**: fly them through mass — each prism touched is cut in two along the cord's sweep (the Thresher's slice
+   look), any domain (friendly fire) except trail laid in the last second; a shielded block loses its shield, then dies;
+   super-shielded refuses.
+4. **A rival**: drawn across a cord they lose petals (a Strike, at most every 0.5 s) and are not moved.
+5. **X again / ring thrown / turn end**: the cords draw back in or vanish; no leftover `BrittleStarCords::` objects
+   after the vessel is despawned.
+6. **RT** outside Destruction: unchanged (one stream). RT does nothing while the cords are out.
+7. **Profiler** with 3-4 AI Brittle Stars in Destruction Mode: 60 `QuerySegment`s a frame per hull, no rounds (the
+   turrets' pool is back to 90 / 320).
+
+## 🟡 Brittle Star — four modes, analog guns with heat, whip cords, the ring stock (`cece/beautiful-knuth-j3atgk`, 2026-10-16) — PLAYED, NOT WALKED STEP BY STEP
+
+> **Played by Garrett on 2026-10-16** ("I tested it and it is amazing. one of the most fun things we've ever made").
+> That confirms it loads and flies; the steps below were not reported one by one. Still open: the danger trail, the
+> spare-ring stock, the HUD cards, the AI, multiplayer and the touch caveat.
+
+No `unity` CLI in the session that wrote it (`/verify-unity` could not run). Proved offline: player and editor
+`unity_refcompile` (0 errors in project code; the editor config's 3 are the known `AuthenticationServiceFacade` reds),
+the 31 `BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`: three negative controls),
+`author_brittlestar_assets.py --check` / `--self-test` (11/11), `element_ability_table.py BrittleStar` (0
+disagreements), `studio_to_unity.py --vessel brittlestar --check` (47 mapped, 0 drift), `check_studio.cjs`, and a
+hook-driven run of every new rule in the studio page. The full walk is `R_VesselActions/BRITTLE_STAR.md` § In-editor
+verification, steps 2-9. The short version:
+1. **RB** toggles Charge Mode (E on keyboard). Five loose 120 u cords; a stick flick sends a slow wave down them; RT
+   squeezed slowly shortens them to 80 u straight sabers (analog). They slice prisms; rivals lose petals only.
+2. **X** Space Mode: RT fires five guns at a rate set by the pull; a full pull overheats in ~2.4 s (Space card red),
+   the guns stop and the trail lays **danger prisms**; Charge Mode drains the heat in ~1 s.
+3. **Cruise / A / B**: RT fires one turret (the one the ring turned to), straight, no spread, never overheating alone.
+4. **Trails**: a smaller block (1.5 × 1.5 × 3) everywhere, the same in Creation's five lines; Speed Mode stretches them.
+5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
+6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.

@@ -134,6 +134,15 @@ namespace CosmicShore.Gameplay
         protected override bool AICommitFromApproachPoint => true;
 
         /// <summary>
+        /// Regatta's AIs fly the course's rings and nothing else: never a crystal, the omni crystal included (Yash,
+        /// 2026-10-17: "in Regatta no AI should target an omni crystal; only the waypoints of the track"). The scene's
+        /// aiCrystalDetourSlack (220) let every gate-race AI swing up to 220 u off its line for a crystal near its route;
+        /// Yash's editor flights showed Manta, Dolphin, Sparrow and Serpent AIs passing within 20 u of omni crystals and the
+        /// Rhino of others. Set in code, like the commit fix above, so no scene value can turn it back on.
+        /// </summary>
+        protected override float AICrystalDetourSlack => 0f;
+
+        /// <summary>
         /// While ATTACHED, ride the rail toward this pilot's next ring; while FREE, fly at the
         /// ring the platform's way (and lay a Track Projector rail when the ring is a long,
         /// straight, lined-up shot). Skein's override, on Regatta's course.

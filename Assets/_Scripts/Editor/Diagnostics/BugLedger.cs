@@ -1013,7 +1013,7 @@ namespace CosmicShore.Editor
             "BenignLobbyLogFilter", "FilteringLogHandler", "CosmicShore.Utility.CSDebug",
         };
 
-        static bool IsPlumbing(string line)
+        internal static bool IsPlumbing(string line)
         {
             foreach (var marker in PlumbingFrames)
                 if (line.Contains(marker, StringComparison.Ordinal)) return true;
@@ -1022,7 +1022,7 @@ namespace CosmicShore.Editor
 
         /// <summary>Native frames read <c>0x0000023e8f67b363 (Mono JIT Code) Ns.Type:Method (…)</c>;
         /// keep only the managed part after the address and the JIT tag.</summary>
-        static string StripNativePrefix(string line)
+        internal static string StripNativePrefix(string line)
         {
             const string jit = "(Mono JIT Code) ";
             int idx = line.IndexOf(jit, StringComparison.Ordinal);

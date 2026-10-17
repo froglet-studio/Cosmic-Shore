@@ -43,6 +43,7 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
 | **Scarab** | flies beside it | 216 u/s ceiling, ×1.5 at Time 10 | none wired |
+| **Stoat** (on the card 2026-10-17) | flies beside it; its pair's gravity **never moves a rail** (super-shielded prisms are never admitted to `BlackHoleGravityField`) | the pathfinder's WARP: the flight clock ×2.5 while its pair bends the path (Time → ×5); turns scale with it, so its 72 u turning circle holds at any warp | none wired; a vessel crossing its attractor's horizon is carried out of the repulsor |
 
 Three rails, one per domain, because `TrailFollower` keys friendly terrain on **domain**: a
 neutral rail would be hostile to every rider. In a two-domain lobby the third rail is hostile to
@@ -62,20 +63,22 @@ home.
 
 The table is authored by `Tools/Build/regatta_balance.py`, an offline lap-time model over the
 **measured** circuits, and the honest result is this (three laps, competent pilot on the best
-line, intensity 1):
+line, intensity 1; re-run 2026-10-17):
 
 | hull | lever | at rest | tuned | with |
 |---|---|---|---|---|
-| Rhino | **none** | 12 s | 12 s | — |
-| Manta | Time → Soar ×0.7..1.3 | 20 s | 24 s | Time −5 |
-| Dolphin | Time → fill rate | 42 s | 42 s | rest (inert: a leg's first cycle dominates) |
-| Scarab | Time → ceiling ×1..1.5 | 67 s | 45 s | Time 10 |
-| Urchin | none (rail) | 48 s | 48 s | — |
-| Squirrel | none (rail) | 49 s | 49 s | — |
-| Serpent | Time → boost ×1.6, duration ×1.6 | 101 s | 58 s | Time 10 |
-| Sparrow | Time → boost ×1.5 | 108 s | 74 s | Time 10 |
+| Rhino | **none** | 17.8 s | 17.8 s | — |
+| Manta | Time → Soar ×0.7..1.3 | 20.3 s | 23.9 s | Time −5 |
+| Dolphin | Time → fill rate | 41.9 s | 41.9 s | rest (inert: a leg's first cycle dominates) |
+| Scarab | Time → ceiling ×1..1.5 | 67.3 s | 44.9 s | Time 10 |
+| Urchin | none (rail) | 48.3 s | 48.3 s | — |
+| Squirrel | none (rail) | 48.5 s | 48.5 s | — |
+| Serpent | Time → boost ×1.6, duration ×1.6 | 100.9 s | 58.1 s | Time 10 |
+| Sparrow | Time → boost ×1.5 | 107.5 s | 73.6 s | Time 10 |
+| Stoat | Time → warp ×2.5..5 | 96.8 s | 48.5 s | Time 10 |
 
-**Spread 8.7× at rest → 6.0× tuned (5.3× at intensity 4).** That residual is the finding, not
+**Spread 6.03× at rest → 4.13× tuned at intensity 1** (I2 3.80×, I3 3.50×, I4 3.46×; `python3
+Tools/Build/regatta_balance.py`). That residual is the finding, not
 a rounding: an element spans ~1.5× on the hulls it reaches and nothing at all on the Rhino, while
 the fleet's straight-line speeds span 34×. Tighter corners compress it a little (the fast hulls
 pay them; a rider pays nothing), which is why the ladder tightens the floors. What would close
@@ -128,6 +131,15 @@ corner it did not ask for.
 
 ## 6. AI
 
+**The Stoat (on the card 2026-10-17, Yash).** It flies the same gate steering; its own autopilot is three executors,
+unchanged: `StoatModeExecutor` switches to Time mode when the ring is ≥ 70° off the nose (back within half of it),
+`StoatDipoleExecutor` flies Mass mode's field dipole (path-watching, one-lap cap), and `StoatSlingExecutor` slings in
+Time mode (ring ≥ 30° off, ≥ 120 u away, every 3 s). In Regatta each reads its AUTOPILOT numbers through
+`AIModeTuning` (`StoatModeAction_Regatta`, `StoatDipoleConfig_Regatta`, `StoatSlingConfig_Regatta`), which
+`Tools/Build/learn_drives_from_flights.py` writes from people's editor flights; none exists yet, so it flies its shipped
+numbers. A person flying the Stoat reads the hull's own configs. Opponent AI stay pinned to the Squirrel
+(`OpponentAIVessel`); a Stoat AI is an ally pick (the launch panel's ally chip) or your own hull on the Third Eye's AI.
+
 The platform's gate-race AI (two-waypoint approach, latched side) plus one override for the one
 hull that ATTACHES: an AI **Urchin** flies its kit through the shared `UrchinAutopilotDriver`
 (#975, the driver Skein and Hijack use), called from `RegattaController.TryOverrideAim` exactly
@@ -152,7 +164,7 @@ the same lap-wrapping `RingIndexFor`) supplies the objective:
   (`UrchinRailAssessment.Scan(..., loop: Trail.IsLoop)`). Skein's and Hijack's rails are open and
   walk exactly as before; without the wrap a pilot just before a Regatta lane's seam would have read
   the ring beyond it as unreachable and slipped off its own lane.
-- **Free:** the platform's gate aiming flies it at the ring (crystal detour included), and on a
+- **Free:** the platform's gate aiming flies it at the ring (no crystal detour in Regatta, below), and on a
   long, straight, lined-up shot it lays a **Track Projector** rail at the ring (`TryProjectTrackToward`).
 
 Before this, an attached AI aimed down whatever rail it had latched — right on its own lane, but a
@@ -216,21 +228,50 @@ EDITOR-VERIFIED; compiled headless only.
 | Manta (fast hulls) | The approach point sat up to 480 u before a ring on 461–858 u legs, i.e. behind the ring just threaded, inside a fast hull's turn: break-offs every ring | The approach lead is capped at 40% of the leg into the ring (`GateRaceController`, every gate race) |
 | Dolphin | In a drift the nose pointed at the cell centre, so the discharge fired wide of the ring; on a gamepad host the AI's drift had depth 0 and never locked the course | Gate races aim the drift nose at the AI's own target (`SetDriftLookTargetProvider`); the charge driver spends only with the nose on the objective; the AI holds the drift trigger while it holds its commit drift |
 | Urchin | Free, it aimed at the ring's spine, so the first lane it touched was its own only one time in three; a rival lane is a 20 u/s crawl or a slip / re-latch loop. Riding, the orbit detector fired and dropped it to 0.6 throttle | A free AI Urchin heads for its own-domain lane just ahead (`RegattaController.TryOwnLaneAhead`); no orbit break while attached |
-| Squirrel | A pilot swap handed the AI a Squirrel on the old ring-blind autopilot; Regatta flew Skim Race's per-intensity tuning files | `PilotSwap` installs the Skim Race pilot; outside Skim Race the general policy |
+| Squirrel | A pilot swap handed the AI a Squirrel on the old ring-blind autopilot; Regatta flew Skim Race's per-intensity tuning files | `PilotSwap` installs the Skim Race pilot; outside Skim Race it loads Regatta's own copy, `SkimRaceAIConfig_Regatta` (`SkimRaceAIDeployment`, `SkimRaceAIConfigSO.LoadForRegatta`; generated by `author_skimrace_ai_config.py`, ring face learned from flights 2026-10-16) |
 | All | Difficulty did nothing in Regatta | Regatta offers Easy / Medium / Hard (`AIDifficultyRules`) |
 | All (2026-10-15, from the Regatta AI studio) | The AI committed to the far-side point 420 u out whether lined up or not, so on a short leg it crossed the plane beside the mouth; the side was latched once per ring, so after a miss it circled the far-side point until a break-off fired. The studio finished 17/32 Hard hull x intensity races this way | It commits no earlier than its approach point (`GateRaceController.CommitDistanceFor`: the smaller of `aiCommitDistance` and the approach lead plus half the turning radius) and, after crossing the plane outside the mouth (`RaceGateRing.PlaneCrossing`), re-latches the side and breaks off at once (`AIPilot.BreakOffNow`). The studio's lab fix, ported line for line: 30/32. On in Regatta only (`AICommitFromApproachPoint`); the other gate races keep their shipped steering until their owners test it |
 
-**Still open (not fixed, by priority):** the Manta's Soar cuts only after a corner has started (needs the roadmap's
-corner look-ahead); an
+**Still open (not fixed, by priority):** the Manta's Soar cuts only after a corner has started (the look-ahead now
+exists, `AIBoostContext.CornerDegrees`; dropping Soar before a corner was modelled 2026-10-17 and was slower on every
+course, so the Manta instead holds Soar deeper into turns in Regatta, below); an
 Urchin riding a tight inside-lane corner at I3–I4 can flip its ride direction; Skim Race lane heights stack across
-every AI seat instead of per domain (Squirrels lift off their rail); the Rhino at full ramp may overshoot I3–I4
-corners (nothing brakes; it coasts down at 120 u/s²). The bleeding-edge commit `fb2bff7ac` (Skim Race ring
+every AI seat instead of per domain (Squirrels lift off their rail); the Rhino's overshoot at full ramp is
+addressed but unmeasured (2026-10-17: it brakes ON the ramp at 300 u/s² to a corner speed, `AI/AI_BOOST.md`). The bleeding-edge commit `fb2bff7ac` (Skim Race ring
 crystals) merges cleanly and does not change Regatta.
+
+**2026-10-17 (Ys-bleeding-edge only, not editor-verified).** Regatta's gate steering now puts the "through" point on
+the line from the pilot through the ring's CENTRE, not on the ring's axis (`GateRaceController.ArmRacer`, gated by
+`AICommitFromApproachPoint`, so Regatta only). A drifting hull locks its course on that point, and an axis point lay off
+that line when the pilot committed off-axis, so the locked line passed beside the mouth. In the offline models the axis
+point stalled the Dolphin at I2-I4 and the old Rhino drive at I3-I4; on the centre line every race finished. It
+affects every Regatta AI. The same day the Dolphin's drive learned to drift again at its discharge's peak (`9b064721b`),
+and the Manta got Regatta Soar bands (`f4e35748c`, below).
+
+**Per-hull Regatta variants.** The Rhino, Dolphin and Manta drives and the Stoat's three configs each read a
+Regatta-only copy when one exists (`Resources/AIBoostPolicies/<asset>_Regatta`, written by
+`learn_drives_from_flights.py` from people's editor flights). Only the Manta's exists: `MantaSoarAITuning_Regatta`,
+Soar bands 0.8 / 0.85 against the executor's 0.35 / 0.75 (2026-10-17, set from `Tools/Build/manta_drive_sim.py`, which
+raced three laps 1.5-2 s faster at every intensity; Manta flights replace it). So the Squirrel
+(`SkimRaceAIConfig_Regatta`) and the Manta fly Regatta numbers; the Rhino, the Dolphin and the Stoat fly their shipped
+numbers.
 
 **Watching them:** FrogletTools ▸ AI ▸ Third Eye. Every pilot now leaves a **trail** of its last seconds of flight
 (toolbar *Trails*, length in Settings), and each AI's readout names its phase (Approach / Through ring N, Crystal on
 the way, Not noticed yet, Misjudged, Riding the rail, Heading for its own rail, Finished), its lap, the ring it is
 after (the cyan ring marker), and its boost decision (the Rhino's ramp, the Dolphin's charge).
+
+**No AI targets a crystal in Regatta (2026-10-17, Yash):** *"in Regatta no AI should target an omni crystal; only
+the waypoints of the track."*
+- **The rule:** every Regatta AI steers for the course's rings, and for its rail while it rides one.
+- **How:** `RegattaController.AICrystalDetourSlack` is 0 in code. Every other gate race still lets an AI swing up to
+  `aiCrystalDetourSlack` (220 u in the scenes) for a crystal on its way, and `MinigameRegatta.unity` serializes 220
+  too. The code value wins, so no scene edit can turn the detour back on.
+- **Why:** in Yash's editor flights, rival AIs came within 20 u of crystals whenever the recording could see one (the
+  Manta, Dolphin, Sparrow and Serpent beside omni crystals; the Rhino beside others).
+- **Test:** `RegattaNoCrystalTargetTests`, with Headlong as the negative control.
+- **The Squirrel** already aimed only at rings (`RegattaRingObjective`). The Third Eye's "Crystal on the way" phase
+  no longer appears in Regatta.
 
 ## 6.5 Scoring — the team sum
 
@@ -292,7 +333,7 @@ assets; the generator reads both.
 
 - **The five-hull test race (2026-10-14) — NOT EDITOR-VERIFIED.** Solo, Arcade ▸ Regatta, 6 seats
   (you + 5 AI) over 3 domains. Tap each AI chip (as host you can tap every team's) to put **Squirrel,
-  Manta, Rhino, Urchin, Dolphin** on the grid, and fly a sixth hull yourself (or one of the five, leaving
+  Manta, Rhino, Urchin, Dolphin** (and since 2026-10-17 the **Stoat**) on the grid, and fly a sixth hull yourself (or one of the five, leaving
   that AI on *auto*). Intensity 1, Hard. Record per hull: finished 3 laps or not, place, rings missed,
   where it got stuck. The model's skilled-pilot I1 times for these five are Rhino 17.8 s, Manta 23.9 s,
   Dolphin 41.9 s, Urchin 48.3 s, Squirrel 48.5 s (`regatta_balance.py`): a 2.7× spread before any AI
