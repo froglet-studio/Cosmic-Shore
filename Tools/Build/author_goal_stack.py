@@ -14,6 +14,12 @@ is touched, so a failed assert costs nothing.
     python3 Tools/Build/author_goal_stack.py [--check]
 
 --check exits 1 if the prefab does not already carry the stack (for CI).
+
+LOOK OWNED ELSEWHERE SINCE ITEM 12: this script authors the stack's STRUCTURE once and then stands
+down. The style-B restyle (Docs/MENU_REDESIGN_B.md section 22) re-scripted each row's trapezoid
+plate as a slivered glass Image under the same fileID and re-set the label face and the row's style
+fields; Tools/Build/author_ingame_hud.py owns those values and its --check holds them. The plate
+constants below describe what this script first wrote, not what ships.
 """
 import hashlib, re, sys, pathlib
 

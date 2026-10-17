@@ -228,7 +228,7 @@ namespace CosmicShore.Core
                 // Toast + analytics touch Unity/SOAP state - marshal to main thread.
                 await MainThreadDispatcher.SwitchToMainThreadAsync();
                 Debug.LogError($"[UGSCloudSaveProvider] Save '{key}' failed after {RetryBackoffMs.Length + 1} attempts: {last?.Message}");
-                ToastNotificationAPI.Show($"Failed to save data: {last?.Message}");
+                ToastNotificationAPI.Show($"Failed to save data: {last?.Message}", ToastKind.Error);
                 OnSaveFailed?.Invoke(key);
             }
 

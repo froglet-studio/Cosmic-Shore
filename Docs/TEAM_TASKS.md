@@ -81,12 +81,14 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ModePreview/TRAINING_PLAN.md 11.1
 
-### T-20261015-f4c7 · open · dev · Activation
+### T-20261015-f4c7 · done · dev · Activation
 - **Task:** Reconcile Menu_Main between the first-login guide (merged into Ys-bleeding-edge 2026-10-15) and Menu Redesign B (claude/new-session-76hnyc) before either reaches bleeding-edge: the spotlight must find the restyled ARCADE entry, cards and Settings gear.
 - **Done when:** Both are on one branch, the spotlight walks the restyled menu in the editor, and author_first_login_guide.py --check passes.
 - **Who can take it:** Shombith (Menu_Main owner), Yash (offered)
 - **Added:** 2026-10-15 by Yash's session (activation) (`Ys-bleeding-edge`)
 - **See:** Docs/ACTIVATION.md 4; Docs/MENU_REDESIGN_B.md on claude/new-session-76hnyc
+- **Progress (2026-10-17, claude/new-session-76hnyc):** both are on one branch now (bleeding-edge merged in), author_first_login_guide.py --check passes, and the guide's targets were checked offline: the ARCADE hub (MenuHubButton, target 10), the Arcade grid's ArcadeExploreView / TryRevealCard, Settings (MenuGuideAlwaysAvailable on the restyled SettingsButton, now guarded by author_menu_home.py), and the Preview step (now spotlights FLY via ModePreviewWindow.guideTarget, because the rev-3 preview is full-screen). Left: the in-editor walk (Docs/UNITY_VERIFICATION_CHECKLIST.md 'Bleeding-edge merge 2026-10-17').
+- **Done:** 2026-10-17, Reconciled on claude/new-session-76hnyc after merging bleeding-edge #1189 (Ys-bleeding-edge): each guide step finds its style-B target and each is a generator gate with a planted defect - Home's Arcade hub keeps its MenuHubButton target ARCADE (author_menu_home.py), the Arcade grid (author_menu_arcade.py GameSelectionGrid), the preview's FLY GuideRect (author_menu_configure.py guideTarget), Settings carries MenuGuideAlwaysAvailable (author_menu_home.py); nothing in Menu_Main sorts above the spotlight (32000), so the friends drawer is dimmed too. Editor walk-through still owed: T-20261015-b47d.
 
 ### T-20261015-d364 · open · content · Activation
 - **Task:** Write Mentor tip lists for the non-racing mode families (TRAINING_PLAN phase 5): only the racing family (SwitchesThreaded) and seven racing modes have tips today.
@@ -290,6 +292,94 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.3 (L13) and 2 (10-15 rows)
 - **Done:** 2026-10-17, 2026-10-17, Yash's session: AOEExplosionPool (opt-in, on for the Squirrel ring spawner: 1 miss / 7 reuses per 8 collects). The real allocator was CrystalMorphMeshBuilder.TryBuild (5.22 of 5.53 KB/frame); its per-source emit cache brought VesselImpactor.AcceptImpactee 5.53 -> 3.41 KB/frame, under the 3.83 baseline (rest is Amoebius's Mesh.Set* copy). Unity check: T-20261017-c82c / Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17.
 
+### T-20261015-d4f5 · open · test · ui
+- **Task:** Profiler capture on claude/new-session-76hnyc: Menu_Main Home (not flying) and the lava lamp. Canvas.BuildBatch / SendWillRenderCanvases should not fire every frame from closed windows (style-B ambient loops now sleep while hidden); compare frame time with bleeding-edge
+- **Done when:** A shared capture shows no per-frame canvas rebuild from hidden menu windows and Home/lava-lamp frame time at or better than bleeding-edge
+- **Who can take it:** Yash or Shombith
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 24
+
+### T-20261015-e890 · open · test · ui
+- **Task:** Boot flow on claude/new-session-76hnyc: from Bootstrap through sign-in, Menu_Main shows only after Garland is built (black + small LOADING bar, then one fade); no GROWING GARLAND headline; game scenes' connecting screen unchanged; Toy Box Arkway/microscene loads use the subtle readout
+- **Done when:** All four checks pass in the editor, and the boot cover time is noted
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 25
+
+### T-20261015-e4dc · open · test · ui
+- **Task:** Style-B start flow on claude/new-session-76hnyc: Bootstrap splash (dim, LOADING bar, no spinner), Connection lost window + RETRY on A, age gate and consent (B/Esc declines), sign-in auth panel and pilot-name panel (rule ticks, count, single press on A), splash holds until Garland is built
+- **Done when:** All nine steps of the checklist entry 'Style-B start flow' pass in the editor, with a pad and with a keyboard
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 26
+
+### T-20261015-ef54 · open · test · ui
+- **Task:** Style-B Maelstrom game UI on claude/new-session-76hnyc: hub (chips, side-by-side round cards with the upcoming card outlined, Race to N bars, Pilots ready faces, READY on A, LB/RB scroll), stats screen (NEXT on A), summary (winner line, domain chips, ranked cards, A/Y/B)
+- **Done when:** All six steps of the checklist entry 'Style-B Maelstrom game UI' pass in the editor, solo with AI and in a two-player party
+- **Who can take it:** Yash
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/MENU_REDESIGN_B.md section 27
+
+### T-20261015-aed4 · done · test · Activation
+- **Task:** First-login guide Skip and every-Lesson Skip on claude/new-session-76hnyc: SKIP (and pad Y) ends the quest for good; Lessons offer Skip on a fresh profile
+- **Done when:** Steps 1-2 of the checklist entry 'Style-B playtest fixes' pass in the editor
+- **Who can take it:** Yash (offered; FTUE owner)
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 28
+- **Done:** 2026-10-15, Superseded: the owner switched the tutorial off (MainQuest questEnabled 0, DrillLibrary tutorialsEnabled 0), MENU_REDESIGN_B section 29
+
+### T-20261015-a46a · open · decision · Activation
+- **Task:** Should a guide Skip be measured? It currently raises nothing (ftue_completed stays 'played through'). If yes, add and declare an ftue_skipped event in UGS and PostHog
+- **Done when:** Decided; if yes the event is declared and fired from QuestGraphRunner.HandleSkipRequested
+- **Who can take it:** Ian (funnel owner), Yash (offered)
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 28
+
+### T-20261015-fd3f · open · test · ui
+- **Task:** Touch and aspect check on claude/new-session-76hnyc: on a phone build with no pad no keycaps or RShift anywhere; tap input stays touch (InputDeviceActuation now reads the touchscreen before the mouse); 4:3 and 21:9 layouts stay on screen
+- **Done when:** Steps 7-8 of the checklist entry pass on a phone and in the Device Simulator
+- **Who can take it:** Yash (offered), Caleb / Andrew (QA)
+- **Added:** 2026-10-15 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 28
+
+### T-20261016-6465 · open · test · Menu_Main
+- **Task:** Play-test rev-3 Home in the editor: nav glyphs, white focus ring, toasts on the right (menu + match), fly hint x, docked/foldable weekly + quest cards, the friends drawer (open / minimise / maximise, invite + join through it, offline hides it, flying fades it), glass window backdrops
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Menu rev 3, Home' items 1-7 pass or have bugs filed
+- **Who can take it:** Shombith (Menu_Main owner) or Yash
+- **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §30
+
+### T-20261016-cfc3 · open · decision · Vessel HUD
+- **Task:** Review the rev-3 lava-lamp ability row (element-coloured plates/edges/keycaps; petals untouched) against the HUD's colour vocabulary - Mass blue / Time teal sit near the petal ladder's blue / green; retune AbilityLockupStyle colours or lavaAlpha if they compete
+- **Done when:** Keep / retune / turn off decided on AbilityLockupStyle.asset
+- **Who can take it:** Garrett (vessel HUD owner)
+- **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
+- **See:** Docs/claude/VESSEL_HUD_AND_ELEMENTS.md (Four-Icon row note), canvas Rev 3 R3Hud boards
+
+### T-20261016-be3d · open · test · Menu_Main / Hangar
+- **Task:** Play-test the rev-3 Hangar: 3D turntable, vibe sliders, five animated tabs (abilities with device labels + perform, upgrade morph preview, games -> configure, pilots, artifacts)
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Hangar rev 3' items 1-8 pass or bugs filed
+- **Who can take it:** Shombith (Menu_Main owner) or Yash
+- **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §31
+
+### T-20261016-1ec1 · done · dev · Menu_Main / Hangar
+- **Task:** Real ability playback in the Hangar (Sparrow actually fires on RT): host a Barren-cell ModePreviewSession behind the Abilities tab instead of the stand-in lunge/roll/light
+- **Done when:** Pressing an ability's control in the Hangar plays the vessel's real ability
+- **Who can take it:** Shombith or Yash (decide if wanted)
+- **Added:** 2026-10-16 by Claude for Shombith (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §31, Docs/ModePreview/ARCHITECTURE.md
+- **Done:** 2026-10-17, Built on claude/new-session-76hnyc (Docs/MENU_REDESIGN_B.md section 35): TRY IT FOR REAL hosts a Barren-cell ModePreviewSession behind the Abilities tab. The editor test is T-20261016-be3d + the checklist entry 'Hangar TRY'.
+- **Done:** 2026-10-17, Done on claude/new-session-76hnyc: TRY (section 35) flies it, and the showcase (section 51, cc061ef9a) plays each real ability under the autopilot; hand test T-20261017-13fb
+
+### T-20261016-7044 · done · test · Menu_Main / Configure
+- **Task:** Play-test the rev-3 Configure window (full-window live preview + step cards; FLY / STOP; pad focus; Arena hulls; Maelstrom pool) on PC, pad and a phone
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Configure rev 3' items 1-5 pass or are filed as bugs
+- **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
+- **Added:** 2026-10-16 by claude/new-session-76hnyc (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 33
+- **Done:** 2026-10-17, Superseded: the rev-3 Configure (full-window preview + step cards) was replaced by Rev 4 simple on 2026-10-17 (Docs/MENU_REDESIGN_B.md §43); its playtest is T-20261017-1ec4.
+
 ### T-20261015-641c · done · decision · Performance
 - **Task:** Spindles are the last big GameObject-renderer cost in the lava lamp (lever L1): one Renderer per limb, ~40k enabled in a grown Lattice with ~4.6k visible, +5.3 ms CPU measured in S2 (record 3.3). Every Prism is already on entities (record 1.2); spindles are not prisms. Decide the shape: draw spindles through Entities Graphics like prisms, or merge a plant's spindles into one mesh per plant, keeping the per-spindle wither fade (continuity law). Ecology is LOCKED, so this is yours to call before anyone builds it.
 - **Done when:** Garrett has picked an approach (or ruled L1 out) and recorded it in Docs/PERFORMANCE_OPTIMIZATION.md 3.3; a build task follows if he picks one.
@@ -445,6 +535,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
+### T-20261017-147f · open · test · Menu_Main / Hangar
+- **Task:** Play-test the Hangar's TRY IT FOR REAL (Abilities tab): the selected vessel flown for real in open water, its abilities firing on the real controls, the drill coach; START / Esc / STOP back; no screen paging or tab switch while flying
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Hangar TRY' items 1-4 pass or are filed as bugs
+- **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
+- **Added:** 2026-10-17 by claude/new-session-76hnyc (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 35
+
+### T-20261017-2c75 · open · test · Menu_Main / Hangar
+- **Task:** Playtest Hangar rev 4: lit bay, vessel fires, UPGRADE with its animation (look-only)
+- **Done when:** Steps 1-7 of the 2026-10-17 'Hangar rev 4' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the editor on claude/new-session-76hnyc
+- **Who can take it:** Shombith or Yash
+- **Added:** 2026-10-17 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §41
+
 ### T-20261016-92b0 · done · decision · Regatta AI
 - **Task:** cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than bleeding-edge's - pick one before it merges (learn_drives_from_flights.py writes only fields both share, so either works)
 - **Done when:** The choice is recorded in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md and the other branch is reconciled
@@ -587,3 +691,73 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Caleb or Andrew (QA)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
+
+### T-20261017-1ec4 · open · test · Menu_Main / Configure
+- **Task:** Playtest Configure Rev 4 simple and the style-B AI seat info (hover, hex i, vessel card)
+- **Done when:** Steps 1-5 of the 2026-10-17 'Configure Rev 4 simple + AI seat info' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass on claude/new-session-76hnyc
+- **Who can take it:** Shombith (Menu_Main); Yash (AI seat info owner)
+- **Added:** 2026-10-17 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §43
+
+### T-20261017-35e3 · open · test · Menu_Main
+- **Task:** Play-test the rev 6 presence orb and party molecule in the editor: the orb bottom-left (glow, turning ring, one dot per player online, 'N online' / 'FRIENDS'), pressing it opens the party panel, it sits over the four windows without covering their cards; in a two-device party each member shows on the orb's inner ring with a bond in their domain colour; the panel draws the party as a molecule (leader in the middle, bonds to seated pilots, violet '+ Invite a friend' tiles).
+- **Done when:** Every step of Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 6 step 4: presence orb + party molecule' passes (no pink shaders, no canvas rebuild from the orb in the Profiler) or the failures are reported in this task.
+- **Who can take it:** Shombith (Menu_Main owner) or Yash (offered: party / multiplayer); a second device for step 4
+- **Added:** 2026-10-17 by Claude (claude/new-session-76hnyc) (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §45.4
+
+### T-20261017-b7af · open · dev · Multiplayer
+- **Task:** An AI the host places on a domain past RequestedDomainCount (e.g. 1 human, Add AI on Gold in a 2-domain lobby) is spawned there (ServerPlayerVesselInitializerWithAI.cs ~267-279 honours placed domains) but RequestedDomainCount is only widened by human picks (~111), so domain-summing rules like ScurryScoringRuleSO.IsObjectiveReached never count that AI's crystals toward the end or the win. Found by code reading on claude/new-session-76hnyc while tracing a missing scoreboard; not reproduced in the editor.
+- **Done when:** Placing an AI on Gold in a 2-domain lobby either widens the match to 3 domains (its score counts and can win) or the configure stops offering that placement - decided by the owner of AI seating, with a test.
+- **Who can take it:** Yash (AI seating / Arena AI difficulty owner)
+- **Added:** 2026-10-17 by Claude (claude/new-session-76hnyc) (`claude/new-session-76hnyc`)
+- **See:** Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs, Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs ~909 and ~2030
+
+### T-20261017-d0aa · open · dev · Multiplayer / party
+- **Task:** Carry each online pilot's vessel to the menu: FriendPresenceActivity.VesselClass is published but never reaches PartyPlayerData or any UI, so the Rev 7 friend profile card cannot show 'Flying <vessel>'. Publish the selected vessel in the presence lobby and expose it on PartyPlayerData; the card then gains one authored row.
+- **Done when:** PartyPlayerData exposes the remote pilot's vessel class and FriendProfilePopup shows a Flying row for it
+- **Who can take it:** Yash
+- **Added:** 2026-10-17 by Shombith (Claude session) (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 47.3
+
+### T-20261017-84c1 · open · test · Menu_Main / style-B UI
+- **Task:** Hand-test Rev 7 in the editor on claude/new-session-76hnyc: the sky-blue glowing selection, LT/RT + edge arrows between Toy Box / Arcade / Arena / Mission (stops at the ends, skips Unavailable Mission), the friend profile card on avatar hover and pad focus (needs two signed-in clients), and the cell-change loading screen (boot and a cell change). No Unity editor ran in the cloud session.
+- **Done when:** The four 2026-10-17 Rev 7 entries in Docs/UNITY_VERIFICATION_CHECKLIST.md are walked and marked, and anything broken is filed
+- **Who can take it:** Shombith or Yash
+- **Added:** 2026-10-17 by Shombith (Claude session) (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md section 47; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261017-f77b · open · test · In-game HUD
+- **Task:** Playtest the Rev 8 glass-ladder scoreboard on claude/new-session-76hnyc: team headers with the team time once, glass rows with stripe and share line, your row in sky blue, the reward strip counting, rimmed PLAY AGAIN / MAIN MENU, the rematch count line, a free-for-all mode without headers; run ScoreboardLadderTests
+- **Done when:** All six checklist steps pass in the editor, or each failure is reported back
+- **Who can take it:** Shombith or Yash (offered)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-17 Scoreboard Rev 8 option B); Docs/MENU_REDESIGN_B.md section 49
+
+### T-20261017-61b1 · open · dev · Cloud Save
+- **Task:** Move UGSCloudSaveProvider's 'Failed to save data: {error}' toast to an authored line: the provider is plain C# (no inspector), so the words need a home such as a small Resources SO or the existing cloud-data config
+- **Done when:** No C# string literal in UGSCloudSaveProvider reaches ToastNotificationAPI.Show
+- **Who can take it:** Yash (Cloud Save owner)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** CLAUDE.md Code Style: player-facing text has a human-facing control
+
+### T-20261017-9990 · open · dev · Performance
+- **Task:** Menu_Main with the Stoat flying: Driver.LateUpdate (BlackHoleRegistry or WormholeView) read 2.7 ms/frame average and 88 ms self in a spike frame (Yash, 2026-10-18; capture tainted by vsync + Third Eye, so rank only). The drivers now carry BlackHole.Tick/Field/Pairs/VesselPull/Waves/Warp/Lens and Wormhole.Tick/SelectAndRender markers, in diag by default: take a clean Release capture with the Stoat dropping a dipole, find the phase that spikes, fix it
+- **Done when:** A clean capture names the phase and a second capture shows the spike gone
+- **Who can take it:** Garrett (black holes, wormholes, Stoat)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** BugLedger capture_Menu_Main_S2_20261018_004107.json on origin/bugledger/yskha; markers BlackHole.* and Wormhole.* (commit on claude/new-session-76hnyc)
+
+### T-20261017-7647 · open · test · Performance
+- **Task:** Share a clean capture of the lag you see: Release code optimization, Third Eye window closed, vsync/frame cap off ('fps uncap'), Auto-publish on in the Bug Hunt & Performance badge; play the laggy scene past the badge's auto-capture countdown and stop Play. It lands on your bugledger branch by itself (Shombith's has no capture yet)
+- **Done when:** A valid capture of the laggy scene is on origin/bugledger/<user>
+- **Who can take it:** Shombith; Yash (offered)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** .claude/skills/perf-hunt/SKILL.md section 1; Docs/DIAGNOSTICS.md (Bug Hunt & Performance badge)
+
+### T-20261017-13fb · open · test · Menu_Main / Hangar
+- **Task:** Play-test the Hangar ability showcase: press an ability and watch the vessel fire each of its real abilities in turn (autopilot), jump with another press, TRY to take the stick, START/Esc to end; list any ability that shows nothing
+- **Done when:** All six checklist steps pass, or each failure is reported back with the vessel and ability
+- **Who can take it:** Shombith (Menu_Main); Yash (offered)
+- **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-18 Hangar ability showcase); Docs/MENU_REDESIGN_B.md section 51

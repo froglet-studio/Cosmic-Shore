@@ -34,6 +34,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The colour the station wears in the world.</summary>
         public Color Accent = Color.white;
 
+        /// <summary>A glyph the configure window draws beside the label - an element's petal, say.
+        /// Optional; the style-B card resolves a hull's own icon from a <c>VesselClassType</c>
+        /// <see cref="Payload"/> when this is empty.</summary>
+        public Sprite Icon;
+
         /// <summary>
         /// True when this option is the state the player is ALREADY in - the cell they are flying
         /// in, the hull they are flying. Never hidden: the diegetic toys show it too (the cell

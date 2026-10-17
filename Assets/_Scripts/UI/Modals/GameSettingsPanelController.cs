@@ -41,6 +41,12 @@ namespace CosmicShore.UI
         [Inject] AnalyticsServiceFacade analytics;
         [Inject] ApplicationStateDataVariable appState;
 
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The version line. {version} is the build's version.")]
+        [SerializeField] string versionLine = "Version {version}";
+        [Tooltip("The credits row's label when the row is built in code.")]
+        [SerializeField] string creditsLabel = "Credits";
+
         [Header("Panel")]
         [SerializeField, Tooltip("OptionsMenuContent root - enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
         GameObject optionsMenuContent;
@@ -106,6 +112,11 @@ namespace CosmicShore.UI
         [SerializeField] OnOffControl haptics;
         [SerializeField] Slider hapticsSlider;
 
+        [Header("Slider readouts (optional)")]
+        [SerializeField, Tooltip("The field of view beside its slider, in degrees.")] TMP_Text fovValueText;
+        [SerializeField, Tooltip("The music level beside its slider, 0 - 100.")] TMP_Text musicValueText;
+        [SerializeField, Tooltip("The effects level beside its slider, 0 - 100.")] TMP_Text sfxValueText;
+
         [Header("Links")]
         [SerializeField] string privacyPolicyUrl = "https://cosmicshore.com/privacy";
         [SerializeField] string deleteDataUrl = "https://cosmicshore.com/delete-my-data";
@@ -116,7 +127,11 @@ namespace CosmicShore.UI
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
         static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "240", "Uncapped" };
-        static readonly string[] QualityOpts = { "Very Low", "Low", "Medium", "High", "Very High", "Ultra" };
+        // "Custom" is the last row and display-only: DisplayGraphicsSettings marks the preset Custom
+        // (-1) when anti-aliasing, texture or upscaling is changed by hand, and the dropdown used to
+        // keep showing the preset that no longer applied.
+        static readonly string[] QualityOpts = { "Very Low", "Low", "Medium", "High", "Very High", "Ultra", "Custom" };
+        const int CustomQualityIndex = 6;
         static readonly string[] AntiAliasingOpts = { "Off", "FXAA", "SMAA", "MSAA 2x", "MSAA 4x", "MSAA 8x", "TAA" };
         static readonly string[] TextureOpts = { "Full", "Half", "Quarter", "Eighth" };
         static readonly string[] UpscalingOpts = { "Auto", "Linear", "FSR", "STP" };
@@ -163,8 +178,24 @@ namespace CosmicShore.UI
 
         // ───────────────────────── context lock (menu vs in-game) ─────────────────────────
 
-        /// <summary>True only in the main menu - see <see cref="ApplyContextLock"/> for what is locked elsewhere.</summary>
-        bool InMainMenu => appState == null || appState.Value == null || appState.Value.State == ApplicationState.MainMenu;
+        /// <summary>
+        /// False only while a match is loading, running or ending, or paused / disconnected out of one - the
+        /// only time <see cref="ApplyContextLock"/> locks anything. Every other state is the menu. The app state
+        /// in the menu is not always exactly MainMenu: it is Paused while the app is unfocused, Disconnected
+        /// during a network blip, and None / Authenticating when play starts without the boot chain. The old
+        /// "MainMenu, else locked" test therefore showed the in-match lock in the main menu, with its banner
+        /// and dead Performance dropdowns.
+        /// </summary>
+        bool InMainMenu => appState == null || appState.Value == null
+                           || IsMenuState(appState.Value.State, appState.Value.PreviousState);
+
+        /// <summary>The rule behind <see cref="InMainMenu"/>: everything but a match (GameSettingsContextLockTests).</summary>
+        public static bool IsMenuState(ApplicationState state, ApplicationState previous)
+        {
+            if (state is ApplicationState.Paused or ApplicationState.Disconnected)
+                state = previous;   // the state the interruption is around
+            return state is not (ApplicationState.LoadingGame or ApplicationState.InGame or ApplicationState.GameOver);
+        }
 
         /// <summary>
         /// Locks to the main menu everything that shouldn't be reachable mid-session:
@@ -268,7 +299,7 @@ namespace CosmicShore.UI
 
         void BindAll()
         {
-            if (versionText) versionText.text = $"Version {Application.version}";
+            if (versionText) versionText.text = TemplateText.Fill(versionLine, "version", Application.version);
 
             // GENERAL
             BindDropdown(colorblindDropdown, ColorblindOpts, SetColorblindModeIndex);
@@ -288,6 +319,7 @@ namespace CosmicShore.UI
             BindDropdown(frameCapDropdown, FrameCapOpts, SetFrameCapIndex);
             BindOnOff(vsync, SetVSync, () => VSyncOn);
             BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView, FieldOfView);
+            BindReadout(fovSlider, fovValueText, DegreesReadout);
 
             // PERFORMANCE
             BindDropdown(qualityDropdown, QualityOpts, SetQualityPresetIndex);
@@ -304,8 +336,10 @@ namespace CosmicShore.UI
             BindOnOff(invertThrottle, SetInvertThrottle, () => InvertThrottleOn);
             BindOnOff(music, SetMusic, () => MusicOn);
             BindSlider(musicSlider, 0f, 1f, false, SetMusicLevel, MusicLevel);
+            BindReadout(musicSlider, musicValueText, PercentReadout);
             BindOnOff(sfx, SetSFX, () => SFXOn);
             BindSlider(sfxSlider, 0f, 1f, false, SetSFXLevel, SFXLevel);
+            BindReadout(sfxSlider, sfxValueText, PercentReadout);
             BindOnOff(haptics, SetHaptics, () => HapticsOn);
             BindSlider(hapticsSlider, 0f, 1f, false, SetHapticsLevel, HapticsLevel);
 
@@ -342,6 +376,10 @@ namespace CosmicShore.UI
             UpdateOnOff(haptics, HapticsOn);
             SetSliderValue(hapticsSlider, HapticsLevel);
 
+            DrawReadout(fovSlider, fovValueText, DegreesReadout);
+            DrawReadout(musicSlider, musicValueText, PercentReadout);
+            DrawReadout(sfxSlider, sfxValueText, PercentReadout);
+
             ApplyContextLock();
         }
 
@@ -365,6 +403,14 @@ namespace CosmicShore.UI
         /// <summary>Tints the label, toggles the underline, and scales the button for the selected/unselected state.</summary>
         void SetButtonVisual(Button b, GameObject underline, bool selected)
         {
+            // The style-B pair is two KitTextTabs: the tab draws its own word and underline from the
+            // theme, so the legacy tint, scale and underline object are left alone.
+            if (b is KitTextTab tab)
+            {
+                tab.IsSelected = selected;
+                return;
+            }
+
             SetLabelColor(b, selected ? selectedColor : unselectedColor);
             if (underline != null) underline.SetActive(selected);
             if (b != null) b.transform.localScale = Vector3.one * (selected ? selectedScale : unselectedScale);
@@ -418,6 +464,21 @@ namespace CosmicShore.UI
         }
 
         static void SetSliderValue(Slider s, float v) { if (s != null) s.SetValueWithoutNotify(v); }
+
+        static string DegreesReadout(float v) => Mathf.RoundToInt(v).ToString();
+        static string PercentReadout(float v) => Mathf.RoundToInt(v * 100f).ToString();
+
+        static void BindReadout(Slider s, TMP_Text text, Func<float, string> format)
+        {
+            if (s == null || text == null) return;
+            s.onValueChanged.AddListener(v => text.text = format(v));
+            text.text = format(s.value);
+        }
+
+        static void DrawReadout(Slider s, TMP_Text text, Func<float, string> format)
+        {
+            if (s != null && text != null) text.text = format(s.value);
+        }
 
         // ───────────────────────── setters (listeners call these) ─────────────────────────
 
@@ -495,10 +556,28 @@ namespace CosmicShore.UI
 #endif
         }
 
-        public void SetQualityPresetIndex(int index) { S?.SetQualityPreset((QualityPresetSetting)index); FlagRestartNeeded(); }
-        public void SetAntiAliasingIndex(int index) { S?.SetAntiAliasing((AntiAliasingSetting)index); FlagRestartNeeded(); }
-        public void SetTextureQualityIndex(int index) { S?.SetTextureQuality(index); FlagRestartNeeded(); }
-        public void SetUpscalingIndex(int index) { S?.SetUpscaling((UpscalingSetting)index); FlagRestartNeeded(); }
+        public void SetQualityPresetIndex(int index)
+        {
+            // Custom is not a preset to apply - it names what hand changes left. Picking it changes
+            // nothing, and the row snaps back to what is really set.
+            if (index >= CustomQualityIndex)
+            {
+                SetDropdown(qualityDropdown, QualityIndex);
+                return;
+            }
+            S?.SetQualityPreset((QualityPresetSetting)index);
+            FlagRestartNeeded();
+        }
+        public void SetAntiAliasingIndex(int index) { S?.SetAntiAliasing((AntiAliasingSetting)index); OnPresetMemberChanged(); }
+        public void SetTextureQualityIndex(int index) { S?.SetTextureQuality(index); OnPresetMemberChanged(); }
+        public void SetUpscalingIndex(int index) { S?.SetUpscaling((UpscalingSetting)index); OnPresetMemberChanged(); }
+
+        // A hand change to a preset member marks the preset Custom; the preset row says so at once.
+        void OnPresetMemberChanged()
+        {
+            FlagRestartNeeded();
+            SetDropdown(qualityDropdown, QualityIndex);
+        }
         public void SetAdaptivePerformanceIndex(int index) => S?.SetAdaptivePerformance((AdaptivePerformanceSetting)index);
         public void SetPhysicsDetailIndex(int index) => S?.SetPhysicsDetail((PhysicsDetailSetting)index);
 
@@ -522,7 +601,9 @@ namespace CosmicShore.UI
         public int FrameCapIndex => FrameCapToIndex(S != null ? S.Current.TargetFrameRate : 60);
         public bool VSyncOn => S != null && S.Current.VSync != VSyncSetting.Off;
         public float FieldOfView => S != null ? S.Current.FieldOfView : GraphicsSettingsData.DefaultFieldOfView;
-        public int QualityIndex => S != null ? (int)S.Current.QualityPreset : 0;
+        public int QualityIndex => S == null ? 0
+            : S.Current.QualityPreset == QualityPresetSetting.Custom ? CustomQualityIndex
+            : (int)S.Current.QualityPreset;
         public int AntiAliasingIndex => S != null ? (int)S.Current.AntiAliasing : 0;
         public int TextureQualityIndex => S != null ? S.Current.TextureQuality : 0;
         public int UpscalingIndex => S != null ? (int)S.Current.Upscaling : 0;
@@ -657,7 +738,7 @@ namespace CosmicShore.UI
             }
 
             var label = clone.GetComponentInChildren<TMPro.TMP_Text>(true);
-            if (label) label.text = "Credits";
+            if (label) label.text = creditsLabel;
 
             CSDebug.LogVerbose(CSLogChannel.MenuUI,
                 $"{nameof(GameSettingsPanelController)} - no credits row was wired, so one was " +

@@ -68,6 +68,10 @@ namespace CosmicShore.UI
             public RectTransform ChipSocket;
             public Image ChipGlyph;
             public TMP_Text ChipLabel;
+            public RectTransform Keycap;
+            public Image KeycapFill;
+            public Image KeycapBorder;
+            public TMP_Text KeycapLabel;
             public InputDeviceIconSetSwitcher.HintBinding PadBinding;
             public InputDeviceIconSetSwitcher.HintBinding KeyBinding;
             public Tween Tween;
@@ -75,7 +79,20 @@ namespace CosmicShore.UI
             public bool Pressed;
             public bool Locked;
             public bool Upgraded;
+            public bool HasTint;        // rev 3: the card wears its element's colour
+            public Color Tint;
         }
+
+        /// <summary>One drifting colour blob of the rev 3 lava lamp, behind a card's icon.</summary>
+        sealed class LavaBlob
+        {
+            public RectTransform Rt;
+            public Vector2 Home;
+            public float Period;
+            public float Phase;
+        }
+
+        readonly List<LavaBlob> _blobs = new();
 
         readonly Dictionary<Element, Slot> _slots = new();
         readonly Dictionary<CoreAbility, Slot> _coreSlots = new();
@@ -90,7 +107,19 @@ namespace CosmicShore.UI
         /// </summary>
         public ElementalBarsView ElementBars => elementBars;
 
-        void Awake() => Build();
+        void Awake()
+        {
+            // The lava blobs move every frame. On GameCanvas (thousands of graphics) each move re-batched
+            // the WHOLE canvas every frame - the in-match slowdown after the lava-lamp row (2026-10-17). A
+            // nested Canvas on the row confines that re-batch to the row; it needs its own raycaster for
+            // the touch ability buttons inside it.
+            if (!TryGetComponent<Canvas>(out _))
+            {
+                gameObject.AddComponent<Canvas>();
+                gameObject.AddComponent<GraphicRaycaster>();
+            }
+            Build();
+        }
 
         /// <summary>
         /// The scale that draws THIS element's icon at the fleet's one drawn size, whatever size the
@@ -239,6 +268,8 @@ namespace CosmicShore.UI
                 }
                 coreHosts[ability] = host;
                 _coreSlots[ability] = slot;
+                ApplyElementColour(slot, ability == CoreAbility.OmniCrystal ? OmniEdge : style.driftColour,
+                                   omni: ability == CoreAbility.OmniCrystal);
                 coreCount++;
             }
 
@@ -263,6 +294,7 @@ namespace CosmicShore.UI
                 hosts[element] = host;
                 if (hasIcon) icons[element] = icon;
                 _slots[element] = slot;
+                ApplyElementColour(slot, style.ColourFor(element), omni: false);
             }
 
             foreach (var pair in _coreSlots)
@@ -557,6 +589,17 @@ namespace CosmicShore.UI
             return slot;
         }
 
+        /// <summary>The rect + taper of something laid on a plate, already inset inside its band.</summary>
+        readonly struct PlateRect
+        {
+            public readonly float Width, Height, CentreY, TopEdge, BottomEdge;
+            public PlateRect(float width, float height, float centreY, float topEdge, float bottomEdge)
+            {
+                Width = width; Height = height; CentreY = centreY;
+                TopEdge = Mathf.Clamp01(topEdge); BottomEdge = Mathf.Clamp01(bottomEdge);
+            }
+        }
+
         /// <summary>
         /// The stencil the vessel's own meter is drawn through, so a rectangular <c>Filled</c> Image
         /// reads as the trapezoid it sits in.
@@ -570,17 +613,6 @@ namespace CosmicShore.UI
         /// <para>Costs two extra draw calls on a card that HAS a meter (stencil in, stencil out).
         /// Three cards fleet-wide carry one today, so it is six.</para>
         /// </summary>
-        /// <summary>The rect + taper of something laid on a plate, already inset inside its band.</summary>
-        readonly struct PlateRect
-        {
-            public readonly float Width, Height, CentreY, TopEdge, BottomEdge;
-            public PlateRect(float width, float height, float centreY, float topEdge, float bottomEdge)
-            {
-                Width = width; Height = height; CentreY = centreY;
-                TopEdge = Mathf.Clamp01(topEdge); BottomEdge = Mathf.Clamp01(bottomEdge);
-            }
-        }
-
         RectTransform ResolveGaugeClip(RectTransform card, PlateRect rect)
         {
             const string name = "GaugeClip";
@@ -995,8 +1027,8 @@ namespace CosmicShore.UI
 
             // The slant edge crosses with them - it is part of the plate, not a separate frame, and
             // it is the one channel with enough contrast left to read at a glance on a dark plate.
-            ApplySlantEdge(slot.ElementPlate, locked: false, upgraded);
-            ApplySlantEdge(slot.AbilityPlate, locked: false, upgraded);
+            ApplySlantEdge(slot.ElementPlate, locked: false, upgraded, slot);
+            ApplySlantEdge(slot.AbilityPlate, locked: false, upgraded, slot);
 
             if (!animate)
             {
@@ -1227,17 +1259,26 @@ namespace CosmicShore.UI
             if (!set || !slot.ChipSocket) return;
 
             var binding = _chipKeyboard ? slot.KeyBinding : slot.PadBinding;
-            var glyph = set.For(binding);
-
-            // A passive ability has no button, and several pad buttons have no keyboard equivalent.
-            // Both draw NOTHING rather than borrowing another device's picture.
-            bool showGlyph = glyph != null && !_chipKeyboard && glyph.padGlyph;
-            bool showLabel = glyph != null && _chipKeyboard && !string.IsNullOrEmpty(glyph.keyboardLabel);
+            // A locked slot has no ability, so it has no control to name (the board's "dim plate,
+            // a dash, no chip").
+            // A phone or tablet with no pad names no controls at all (KitInputDevice).
+            var glyph = slot.Locked || !KitInputDevice.ShowsControlHints ? null : set.For(binding);
 
             // A chip depicts a BUTTON, so it wears the button's own held art while the ability is
             // firing - the one thing the retired hint visuals did that the card cannot say, since
             // the card lights the ability and this lights the control. Both are the same press.
             bool held = slot.Pressed;
+
+            // Style B: the control's NAME on a keycap, on either device. A pad control with no
+            // name authored falls through to its artwork below.
+            string keyName = glyph == null ? null : _chipKeyboard ? glyph.keyboardLabel : glyph.padLabel;
+            bool keycap = style && style.keycapChips && !string.IsNullOrEmpty(keyName);
+            DrawKeycap(slot, keycap ? keyName : null, held, set);
+
+            // A passive ability has no button, and several pad buttons have no keyboard equivalent.
+            // Both draw NOTHING rather than borrowing another device's picture.
+            bool showGlyph = !keycap && glyph != null && !_chipKeyboard && glyph.padGlyph;
+            bool showLabel = !keycap && glyph != null && _chipKeyboard && !string.IsNullOrEmpty(glyph.keyboardLabel);
 
             if (showGlyph || slot.ChipGlyph)
             {
@@ -1258,6 +1299,56 @@ namespace CosmicShore.UI
                 slot.ChipLabel.color = held ? set.heldColor : set.restColor;
                 slot.ChipLabel.enabled = showLabel;
             }
+        }
+
+        /// <summary>
+        /// The style-B keycap: a slivered socket that hugs the control's name, centred in the
+        /// chip socket under its card. <paramref name="keyName"/> null hides it. Held, the key
+        /// reads as pressed in - a lit fill with dark text - which is the same press the card's
+        /// flash shows, said by the control rather than by the ability.
+        /// </summary>
+        void DrawKeycap(Slot slot, string keyName, bool held, ControlGlyphSetSO set)
+        {
+            if (string.IsNullOrEmpty(keyName))
+            {
+                if (slot.Keycap) slot.Keycap.gameObject.SetActive(false);
+                return;
+            }
+
+            if (!slot.Keycap)
+            {
+                var existing = slot.ChipSocket.Find("Keycap") as RectTransform;
+                if (!existing)
+                {
+                    existing = (RectTransform)new GameObject("Keycap", typeof(RectTransform)).transform;
+                    existing.SetParent(slot.ChipSocket, false);
+                }
+                slot.Keycap = existing;
+                slot.KeycapFill = ResolveChildImage(existing, "Fill", style.keycapFillSprite);
+                slot.KeycapBorder = ResolveChildImage(existing, "Border", style.keycapBorderSprite);
+                StretchTo(slot.KeycapFill.rectTransform, 0f);
+                StretchTo(slot.KeycapBorder.rectTransform, 0f);
+                slot.KeycapLabel = ResolveChipLabel(existing, set);
+                slot.KeycapLabel.fontSize = style.keycapTextSize;
+                if (style.keycapFont) slot.KeycapLabel.font = style.keycapFont;
+                slot.KeycapLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            }
+
+            slot.Keycap.gameObject.SetActive(true);
+            slot.KeycapLabel.text = keyName;
+            slot.KeycapLabel.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.keycapHeldTextToken : style.keycapTextToken);
+            slot.KeycapFill.color = CosmicShore.UI.UITheme.Resolve(null, held ? style.keycapHeldFillToken : style.keycapFillToken);
+            // Rev 3: the keycap's edge in the card's element colour, so control and ability read as one.
+            slot.KeycapBorder.color = slot.HasTint ? slot.Tint : CosmicShore.UI.UITheme.Resolve(null, style.keycapBorderToken);
+
+            float width = Mathf.Min(style.plateWidth,
+                                    slot.KeycapLabel.GetPreferredValues(keyName).x + style.keycapPadding * 2f);
+            slot.Keycap.anchorMin = slot.Keycap.anchorMax = slot.Keycap.pivot = new Vector2(0.5f, 0.5f);
+            slot.Keycap.sizeDelta = new Vector2(Mathf.Max(width, style.chipHeight), style.chipHeight);
+            slot.Keycap.anchoredPosition = Vector2.zero;
+            // Held, the key reads as pressed IN: lit and a touch smaller.
+            slot.Keycap.localScale = held ? Vector3.one * 0.92f : Vector3.one;
+            slot.Keycap.localRotation = Quaternion.identity;
         }
 
         TMP_Text ResolveChipLabel(RectTransform socket, ControlGlyphSetSO set)
@@ -1362,26 +1453,114 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// One of the card's generated plates. <paramref name="top"/> and <paramref name="bottom"/>
-        /// are edge widths as fractions of the rect - both always derived from the style's single
-        /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
-        /// </summary>
-        /// <summary>
         /// The band on a plate's two SLOPED sides - solid the whole length of each slant, wrapping
         /// around both corners onto the horizontals and grading to nothing there, so it accents the
         /// edges that carry the shape and never closes into the border this style retired. A locked slot wears it at the locked
         /// mark's colour, so an undesigned slot is quiet in every channel at once.
         /// </summary>
-        void ApplySlantEdge(TrapezoidGraphic plate, bool locked, bool upgraded)
+        void ApplySlantEdge(TrapezoidGraphic plate, bool locked, bool upgraded, Slot tinted = null)
         {
+            if (!plate) return;
             plate.EdgeThickness = style.slantEdgeThickness;
             plate.EdgeWrap = style.slantEdgeWrap;
             plate.EdgeAntialias = style.slantEdgeAntialias;
             plate.EdgeColor = locked ? style.lockedMarkColor
                                      : upgraded ? style.upgradedSlantEdgeColor
-                                                : style.slantEdgeColor;
+                                                : tinted is { HasTint: true } ? WithAlpha(tinted.Tint, style.elementEdgeAlpha)
+                                                                              : style.slantEdgeColor;
         }
 
+        // ---------------------------------------------------------------
+        // Element colour - the rev 3 lava lamp
+        // ---------------------------------------------------------------
+
+        /// <summary>The omni card's edge: near-white, because its blobs carry all four elements.</summary>
+        static readonly Color OmniEdge = new(0.9f, 0.92f, 1f, 1f);
+
+        /// <summary>
+        /// Gives a built card its element's colour (rev 3, approved 2026-10-16): two soft blobs per plate
+        /// drifting behind the icon like a lava lamp, the slant edge and the keycap edge in the same
+        /// colour. The omni card's blobs are the four elements. A LOCKED card stays dim and still - it
+        /// has no ability for the colour to qualify. The flower petals are never touched: their level
+        /// ladder is the HUD's vocabulary.
+        ///
+        /// <para>Each plate's blobs sit in a soft-edged <see cref="RectMask2D"/> the size of the plate,
+        /// drawn right above it and below the gauge, flash and icon. RectMask2D rather than the stencil
+        /// Mask the gauge uses: it costs no extra draw calls, and the soft edge hides the corners where a
+        /// rectangle and a trapezoid disagree.</para>
+        /// </summary>
+        void ApplyElementColour(Slot slot, Color colour, bool omni)
+        {
+            if (slot == null || !style || !style.elementColour || slot.Locked) return;
+            slot.HasTint = true;
+            slot.Tint = colour;
+            if (slot.ElementPlate) BuildLava(slot.Card, slot.ElementPlate, colour, omni, 0);
+            if (slot.AbilityPlate) BuildLava(slot.Card, slot.AbilityPlate, colour, omni, 2);
+            ApplySlantEdge(slot.ElementPlate, false, slot.Upgraded, slot);
+            ApplySlantEdge(slot.AbilityPlate, false, slot.Upgraded, slot);
+        }
+
+        void BuildLava(RectTransform card, TrapezoidGraphic plate, Color colour, bool omni, int omniOffset)
+        {
+            string clipName = plate.name + "Lava";
+            var clip = card.Find(clipName) as RectTransform;
+            if (!clip)
+            {
+                clip = (RectTransform)new GameObject(clipName, typeof(RectTransform), typeof(RectMask2D)).transform;
+                clip.SetParent(card, false);
+            }
+            var prt = plate.rectTransform;
+            SetCellRect(clip, prt.anchoredPosition.y, prt.sizeDelta.x - style.PlateEdgeReach * 2f, prt.sizeDelta.y - style.PlateEdgeReach * 2f);
+            var mask = clip.GetComponent<RectMask2D>();
+            mask.softness = new Vector2Int(10, 10);
+            clip.SetSiblingIndex(plate.transform.GetSiblingIndex() + 1);
+
+            Color.RGBToHSV(colour, out float h, out float sat, out float val);
+            var second = Color.HSVToRGB(Mathf.Repeat(h + 0.06f, 1f), sat, val * 0.95f);
+            Color[] omniColours = { style.chargeColour, style.massColour, style.spaceColour, style.timeColour };
+            for (int i = 0; i < 2; i++)
+            {
+                var blob = ResolveChildImage(clip, $"Blob{i}", style.bloomSprite);
+                var c = omni ? omniColours[(i + omniOffset) % 4] : i == 0 ? colour : second;
+                blob.color = WithAlpha(c, style.lavaAlpha * (i == 0 ? 1f : 0.8f));
+                float d = style.plateWidth * style.lavaBlobScale * (i == 0 ? 1f : 0.8f);
+                var rt = blob.rectTransform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(d, d);
+                var home = i == 0 ? new Vector2(-10f, -6f) : new Vector2(12f, 8f);
+                rt.anchoredPosition = home;
+                // Every blob on its own clock (golden-ratio spread), so the row never pulses in step.
+                float k = Mathf.Repeat((_blobs.Count + 1) * 0.618034f, 1f);
+                _blobs.Add(new LavaBlob
+                {
+                    Rt = rt,
+                    Home = home,
+                    Period = Mathf.Lerp(style.lavaPeriod.x, style.lavaPeriod.y, k),
+                    Phase = k * Mathf.PI * 2f,
+                });
+            }
+        }
+
+        void Update()
+        {
+            if (_blobs.Count == 0 || !style || !style.lavaMotion) return;
+            float t = Time.unscaledTime;
+            for (int i = 0; i < _blobs.Count; i++)
+            {
+                var b = _blobs[i];
+                if (!b.Rt) continue;
+                float a = t * (Mathf.PI * 2f) / Mathf.Max(0.1f, b.Period) + b.Phase;
+                b.Rt.anchoredPosition = b.Home + new Vector2(Mathf.Sin(a), Mathf.Cos(a * 0.77f)) * style.lavaDrift;
+                float sc = 1f + 0.18f * Mathf.Sin(a * 0.6f);
+                b.Rt.localScale = new Vector3(sc, sc, 1f);
+            }
+        }
+
+        /// <summary>
+        /// One of the card's generated plates. <paramref name="top"/> and <paramref name="bottom"/>
+        /// are edge widths as fractions of the rect - both always derived from the style's single
+        /// inset, mirrored, so the two halves of a totem can never disagree about the slant.
+        /// </summary>
         TrapezoidGraphic ResolveTrapezoid(RectTransform parent, string childName, float top, float bottom)
         {
             var existing = parent.Find(childName);
@@ -1459,6 +1638,7 @@ namespace CosmicShore.UI
             }
             _slots.Clear();
             _coreSlots.Clear();
+            _blobs.Clear();
         }
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -433,25 +434,39 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Drives the three systems for this frame. Called once per frame by the driver.</summary>
+        // Named so diag / prof attribute the driver's frame (it read as anonymous Driver.LateUpdate self time,
+        // 2.7 ms average with 88 ms spikes, in a Menu_Main capture with the Stoat flying, 2026-10-18).
+        static readonly ProfilerMarker s_tickMarker = new("BlackHole.Tick");
+        static readonly ProfilerMarker s_pairsMarker = new("BlackHole.Pairs");
+        static readonly ProfilerMarker s_fieldMarker = new("BlackHole.Field");
+        static readonly ProfilerMarker s_pullMarker = new("BlackHole.VesselPull");
+        static readonly ProfilerMarker s_wavesMarker = new("BlackHole.Waves");
+        static readonly ProfilerMarker s_warpMarker = new("BlackHole.Warp");
+        static readonly ProfilerMarker s_lensMarker = new("BlackHole.Lens");
+
         static void Tick()
         {
+            using var tick = s_tickMarker.Auto();
             Prune();
             var config = Config;
             float dt = Time.deltaTime;
 
             // Pairs first: their holes' positions for this frame, and any annihilation, before the
             // field reads the wells.
-            TickPairs(dt);
-            if (_pairs.Count > 0) Prune();
+            using (s_pairsMarker.Auto())
+            {
+                TickPairs(dt);
+                if (_pairs.Count > 0) Prune();
+            }
 
-            BlackHoleGravityField.Tick(_holes, config, dt);
-            BlackHoleVesselPull.Tick(_holes, config, dt);
-            BlackHoleWaves.Tick(config);
-            BlackHoleWarp.Flush(_warpHoles, config);
+            using (s_fieldMarker.Auto()) BlackHoleGravityField.Tick(_holes, config, dt);
+            using (s_pullMarker.Auto()) BlackHoleVesselPull.Tick(_holes, config, dt);
+            using (s_wavesMarker.Auto()) BlackHoleWaves.Tick(config);
+            using (s_warpMarker.Auto()) BlackHoleWarp.Flush(_warpHoles, config);
             // The lens reads the camera's depth texture; keep it on for EVERY enabled game camera while any lens
             // is live (a vessel spawn, the death or end camera switch cameras). Each camera's lens pass reads the
             // holes itself (BlackHoleLens.ScreenWells).
-            BlackHoleLens.CameraSupport.Maintain();
+            using (s_lensMarker.Auto()) BlackHoleLens.CameraSupport.Maintain();
 
             if (CSDebug.IsVerbose(CSLogChannel.BlackHole) && Time.unscaledTime >= _nextReport)
             {

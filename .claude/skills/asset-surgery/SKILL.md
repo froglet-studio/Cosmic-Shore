@@ -503,6 +503,19 @@ a second nested instance in the same file cannot land on the first one's id.
 Prefer this over hand-authoring a copy of the source prefab's contents: a copy severs
 propagation, which is the mistake `Docs/GAMECANVAS.md` exists to record.
 
+**Exactly ONE stub per (class, source object, instance) - a twin binds to NOTHING.** Two
+`stripped` documents with the same `m_CorrespondingSourceObject` and `m_PrefabInstance` are not a
+harmless duplicate: Unity binds one of them to the live object and leaves the other unresolved, so
+every reference through the twin reads as **destroyed** at runtime (`if (field)` is false; DOTween
+reports "has been destroyed"), while the prefab looks perfectly wired in YAML and in any offline
+check that only resolves fileIDs inside the file. It is easy to write: an instance emitter writes the
+root's stub, then a field-wiring step mints its own stub for the same root under a different derived
+id. It cost the style-B end screen in every mode for two days (`GameCanvas.prefab`'s
+`Scoreboard.scoreboardPanel`, 2026-10-17), and the same twin sat in Menu_Main's purchase window.
+Reuse the stub that exists (look it up by its identity, not its id) and gate it:
+`author_menu_topnav.duplicate_stubs(text)` returns every twin; `author_ingame_hud.py` and
+`author_menu_purchase.py` fail on one and plant one in `--self-test`.
+
 ### Technique: deleting objects from a SHARED prefab — prove it project-wide first
 
 Stripping dead objects out of a prefab that a dozen other prefabs instance is safe **iff no

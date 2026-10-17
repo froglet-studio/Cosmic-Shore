@@ -122,6 +122,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ElementColour_GivesEachElementItsOwnVisibleColour()
+        {
+            var s = Load();
+            if (!s.elementColour) return;   // off is a legitimate authored state
+
+            var elements = new[] { Element.Charge, Element.Mass, Element.Space, Element.Time };
+            for (int i = 0; i < elements.Length; i++)
+            {
+                var c = s.ColourFor(elements[i]);
+                Assert.Greater(c.a, 0f, $"{elements[i]}'s card colour is transparent - its lava would draw nothing");
+                for (int j = i + 1; j < elements.Length; j++)
+                {
+                    var o = s.ColourFor(elements[j]);
+                    float d = Mathf.Abs(c.r - o.r) + Mathf.Abs(c.g - o.g) + Mathf.Abs(c.b - o.b);
+                    Assert.Greater(d, 0.2f, $"{elements[i]} and {elements[j]} wear nearly the same colour - the row stops saying which element is which");
+                }
+            }
+            Assert.Greater(s.lavaAlpha, 0f, "the lava blobs are invisible");
+            Assert.Less(s.lavaAlpha, 0.8f, "the lava is louder than the icon it sits behind");
+            Assert.Greater(s.elementEdgeAlpha, 0f, "the element-coloured slant edge is transparent");
+            Assert.LessOrEqual(s.lavaPeriod.x, s.lavaPeriod.y, "lavaPeriod is min..max");
+            Assert.Greater(s.lavaPeriod.x, 1f, "a lava cycle under a second reads as flicker, not a lava lamp");
+        }
+
+        [Test]
         public void Cooldown_ReadsAsRechargingAndIsLoudWhenItReturns()
         {
             var s = Load();

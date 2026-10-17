@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -302,6 +303,17 @@ namespace CosmicShore.Gameplay
             return _candidates[0];
         }
 
+        /// <summary>"Ruby - Sparrow": the spectated pilot's domain and hull, for the overlay.</summary>
+        static string DetailLine(IPlayer player)
+        {
+            if (player == null) return string.Empty;
+            var domain = player.Domain;
+            string d = domain == Domains.Blue || (int)domain == 0 ? null : domain.ToString();
+            var hull = player.Vessel?.VesselStatus != null ? player.Vessel.VesselStatus.VesselType.ToString() : null;
+            if (d != null && hull != null) return $"{d} - {hull}";
+            return d ?? hull ?? string.Empty;
+        }
+
         void SetSpectated(IPlayer player)
         {
             var previous = _spectated;
@@ -316,7 +328,7 @@ namespace CosmicShore.Gameplay
             ApplyCameraMode();
 
             _overlay?.SetSpectated(player.Name, ResolveDomainColor(player.Domain),
-                _candidates.IndexOf(player), _candidates.Count);
+                _candidates.IndexOf(player), _candidates.Count, DetailLine(player));
 
             ReportWatchTarget(player.PlayerNetId);
         }
@@ -349,7 +361,7 @@ namespace CosmicShore.Gameplay
             MuteGameplayHud();
             EnsureOverlay();
             _overlay.SetSpectated(_spectated.Name, ResolveDomainColor(_spectated.Domain),
-                _candidates.IndexOf(_spectated), _candidates.Count);
+                _candidates.IndexOf(_spectated), _candidates.Count, DetailLine(_spectated));
             _overlay.SetCameraMode(_mode);
             _watchingTcs?.TrySetResult(true);
 

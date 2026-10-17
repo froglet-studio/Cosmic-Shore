@@ -491,6 +491,10 @@ namespace CosmicShore.Gameplay
             // on - hiding it would stop the host that is meant to be driving the preview.
             if (launchPanel)
             {
+                // No description on the Maelstrom card (the owner, 2026-10-17: "In maelstrom remove the
+                // description text from the cards" - it ran over the round's name). An empty override
+                // hides the briefing block; Bind keeps honouring it on every redraw.
+                launchPanel.SetBriefingOverride(string.Empty);
                 launchPanel.Bind(game, _intensity);
                 launchPanel.HideObjective();
                 return;
@@ -508,7 +512,7 @@ namespace CosmicShore.Gameplay
                 if (changed && game != null) MaelstromTransitions.Reveal(modeNameText);
             }
 
-            if (briefing) briefing.Show(game);
+            if (briefing) briefing.Clear();
         }
 
         // ── Helper ───────────────────────────────────────────────────────────────

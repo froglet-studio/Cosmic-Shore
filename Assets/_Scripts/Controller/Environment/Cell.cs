@@ -1431,6 +1431,26 @@ namespace CosmicShore.Gameplay
                 gameData.OnInitializeGame.OnRaised -= Initialize;
                 gameData.OnInitializeGame.OnRaised += Initialize;
             }
+
+            CoverBootWorld();
+        }
+
+        /// <summary>
+        /// The world a gate-less scene boots into (<see cref="CellConfigDataSO.BootDefault"/> -
+        /// Garland, in Menu_Main) is built BEFORE the screen is revealed. Its build waits for the
+        /// scene to settle (<see cref="DeferredEnvironmentBuild"/>, a second or more after this
+        /// frame), and the menu shown in the meantime used to be covered by its own loading veil
+        /// mid-look. The cover goes up now and the build claims it. Keyed to the authored boot
+        /// bit, not to the scene: no game scene carries a BootDefault config, so their connecting
+        /// screens are untouched.
+        /// </summary>
+        void CoverBootWorld()
+        {
+            if (!Application.isPlaying || IsSatellite) return;
+            if (cellTypeChoiceOptions != CellTypeChoiceOptions.EnvironmentFree) return;
+            var boot = ExpectedConfig;
+            if (boot && boot.BootDefault && boot.EnvironmentPrefab != null)
+                EnvironmentLoadVeil.Cover(boot.CellName);
         }
 
         void OnDisable()

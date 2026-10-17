@@ -2,7 +2,8 @@ using UnityEngine;
 
 namespace CosmicShore.UI
 {
-    /// <summary>Colour roles carried by <see cref="UIThemeSO"/>. Chrome only — no team colours.</summary>
+    /// <summary>Colour roles carried by <see cref="UIThemeSO"/>. Chrome only — no team colours (the three
+    /// control roles share team hexes but name a UI job; see <see cref="UIThemeSO"/>).</summary>
     public enum UIColorToken
     {
         TextLight = 0,
@@ -15,6 +16,17 @@ namespace CosmicShore.UI
         NeutralLightest = 7,
         Cta = 8,
         Danger = 9,
+        ControlActive = 10,
+        Purchase = 11,
+        Tooltip = 12,
+        // Rev 6 (Docs/MENU_REDESIGN_B.md §45): the four elements as the colours of meaning, the same values as
+        // AbilityLockupStyleSO's element colours. Charge = play, Mass = what you own, Space = people, Time = progress.
+        ElementCharge = 13,
+        ElementMass = 14,
+        ElementSpace = 15,
+        ElementTime = 16,
+        // Rev 7: whatever is selected or focused (Docs/MENU_REDESIGN_B.md §47.1).
+        Selection = 17,
     }
 
     /// <summary>Motion durations from <c>Docs/STYLE_FOUNDATION.md</c> §7.</summary>
@@ -49,6 +61,14 @@ namespace CosmicShore.UI
         public static readonly Color NeutralLightest = new Color32(0x74, 0x7B, 0xAD, 0xFF);
         public static readonly Color Cta = new Color32(0x99, 0xFF, 0x80, 0xFF);
         public static readonly Color Danger = new Color32(0xFF, 0x4B, 0x3A, 0xFF);
+        public static readonly Color ControlActive = new Color32(0x00, 0xD4, 0xFF, 0xFF);
+        public static readonly Color Purchase = new Color32(0xFF, 0xAE, 0x00, 0xFF);
+        public static readonly Color Tooltip = new Color32(0xA6, 0x00, 0xFF, 0xFF);
+        public static readonly Color ElementCharge = new Color32(0xFF, 0xD3, 0x4D, 0xFF);
+        public static readonly Color ElementMass = new Color32(0x7F, 0xA8, 0xFF, 0xFF);
+        public static readonly Color ElementSpace = new Color32(0xB0, 0x7C, 0xFF, 0xFF);
+        public static readonly Color ElementTime = new Color32(0x5F, 0xF0, 0xC8, 0xFF);
+        public static readonly Color Selection = new Color32(0x3D, 0xB2, 0xFF, 0xFF);
 
         static readonly float[] DefaultSpacing = { 4f, 8f, 12f, 16f, 24f, 32f, 48f, 64f, 96f };
 
@@ -81,6 +101,14 @@ namespace CosmicShore.UI
                 case UIColorToken.NeutralLightest: return theme ? theme.neutralLightest : NeutralLightest;
                 case UIColorToken.Cta: return theme ? theme.cta : Cta;
                 case UIColorToken.Danger: return theme ? theme.danger : Danger;
+                case UIColorToken.ControlActive: return theme ? theme.controlActive : ControlActive;
+                case UIColorToken.Purchase: return theme ? theme.purchase : Purchase;
+                case UIColorToken.Tooltip: return theme ? theme.tooltip : Tooltip;
+                case UIColorToken.ElementCharge: return theme ? theme.elementCharge : ElementCharge;
+                case UIColorToken.ElementMass: return theme ? theme.elementMass : ElementMass;
+                case UIColorToken.ElementSpace: return theme ? theme.elementSpace : ElementSpace;
+                case UIColorToken.ElementTime: return theme ? theme.elementTime : ElementTime;
+                case UIColorToken.Selection: return theme ? theme.selection : Selection;
                 default: return theme ? theme.textLight : TextLight;
             }
         }

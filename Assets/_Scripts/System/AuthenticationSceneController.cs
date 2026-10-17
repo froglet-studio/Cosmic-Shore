@@ -30,6 +30,10 @@ namespace CosmicShore.Core
     /// </summary>
     public class AuthenticationSceneController : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("Under the pilot-name field when the name could not be set. {error} is the reason.")]
+        [SerializeField] string usernameFailedLine = "Failed to set username: {error}";
+
         [Header("Panels")]
         [SerializeField] private GameObject authPanel;
         [SerializeField] private GameObject usernameSetupPanel;
@@ -546,7 +550,7 @@ namespace CosmicShore.Core
             catch (Exception ex)
             {
                 if (usernameStatusText)
-                    usernameStatusText.text = $"Failed to set username: {ex.Message}";
+                    usernameStatusText.text = TemplateText.Fill(usernameFailedLine, "error", ex.Message);
                 CSDebug.LogWarning($"[AuthScene] Set username failed: {ex}");
             }
             finally
@@ -577,6 +581,7 @@ namespace CosmicShore.Core
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
             HideLoading();
             EnsureGuestLoginVisible();
+            Focus(guestLoginButton ? guestLoginButton.gameObject : null);
             ParkForPlayerInput("guest sign-in");
         }
 
@@ -585,7 +590,19 @@ namespace CosmicShore.Core
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(true);
             HideLoading();
+            Focus(usernameInputField ? usernameInputField.gameObject : null);
             ParkForPlayerInput("username entry");
+        }
+
+        /// <summary>
+        /// Puts the pad and keyboard on the panel's one action as it appears (Docs/MENU_REDESIGN_B.md
+        /// section 26): A / Enter presses Play as guest, and the name field takes focus so the player
+        /// can type at once. Without a selection the pad moved nothing on either panel.
+        /// </summary>
+        static void Focus(GameObject target)
+        {
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (events && target) events.SetSelectedGameObject(target);
         }
 
         /// <summary>
@@ -883,7 +900,7 @@ namespace CosmicShore.Core
                     // connection can still bring the session up; the wait is unbounded
                     // because there is nothing further to fall back to.
                     bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry,
-                        "Could not connect. Tap retry."));
+                        "We could not start a session. Check your network, then retry."));
 
                     try
                     {
