@@ -28,6 +28,16 @@
     "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
     "MinigameRegatta|MinigameRegatta"
   ],
+  "branchFlow": [
+    {
+      "branch": "Ys-bleeding-edge",
+      "role": "Performance work lands here first (Yash runs the performance work)"
+    },
+    {
+      "branch": "bleeding-edge",
+      "role": "The team's shared branch: performance work arrives here from Ys-bleeding-edge"
+    }
+  ],
   "bugs": {
     "open": 2,
     "top": [
@@ -146,7 +156,7 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-17T08:48:58Z",
+  "generatedUtc": "2026-10-17T09:59:03Z",
   "next": [
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
@@ -197,16 +207,6 @@
       "id": "T-20261015-1551",
       "kind": "test",
       "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the"
-    },
-    {
-      "id": "T-20261015-c8e2",
-      "kind": "dev",
-      "task": "Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)"
-    },
-    {
-      "id": "T-20261015-c7db",
-      "kind": "dev",
-      "task": "Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame"
     },
     {
       "id": "T-20261017-c82c",
