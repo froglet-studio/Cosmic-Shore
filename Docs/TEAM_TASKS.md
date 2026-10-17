@@ -629,3 +629,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (Stoat configuration)
 - **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md §3.1
+
+### T-20261017-0b70 · open · decision · Butterfly
+- **Task:** Butterfly AI audit (BUTTERFLY.md §8a), two calls in your modes: (1) the AI cruises at 0.6 throttle (~45 u/s vs a person's 67) in Dustup, Sirocco and Tapestry - give those modes a full-throttle floor like Regatta and Waystation? (2) in Dustup and Sirocco the AI never fetches crystals, so its Space and Charge stay at level 0 while people level up - add Tapestry's crystal detour?
+- **Done when:** Garrett decides both; the chosen change is made
+- **Who can take it:** Garrett (Butterfly modes owner); Yash can make the change
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md §8a
+
+### T-20261017-5cf2 · open · test · Butterfly
+- **Task:** Play Waystation with AI Butterflies (Third Eye on one): each fold lands just short of a ring and threads it; the AI flies ~67 u/s; your own hull gains no AIPilot component; run WaystationFoldTests
+- **Done when:** tests pass and the folds land in the rings
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The AI Butterfly's fold lands in the ring)

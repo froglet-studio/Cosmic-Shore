@@ -110,6 +110,25 @@ League on Easy with the Third Eye open (FrogletTools > AI > Third Eye). The AI's
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+### 🔴 The AI Butterfly's fold lands in the ring in Waystation; full throttle; no autopilot on human hulls (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** `WaystationController`:
+- The fold's aim is held under asin(0.5 R / d), so it lands within half the mouth; before, a flat 12 degrees landed a
+  420 u fold 87 u off a 40-56 u ring.
+- It lets go 30 u short of the plane, so the hull flies through.
+- The AI races at full throttle (`AIThrottleFloor` 1).
+- The autopilot check uses `TryGetComponent`. It used the `VesselStatus.AIPilot` getter, which ADDS an autopilot to
+  every human's hull, every server tick.
+
+The audit and what stays open: `BUTTERFLY.md` §8a.
+**Verified without the editor:** `unity_refcompile` (player-dev clean, editor 0 errors in changed files), gates.
+`WaystationFoldTests` written, NOT run.
+**Verify in editor:**
+1. Run `WaystationFoldTests`: all pass.
+2. Arcade ▸ Waystation with AI Butterflies, Third Eye on one. It flies at ~67 u/s, and when it folds it lands just short
+   of a ring and threads it (it does not fold past or beside the mouth). Expect fewer folds from far away; each lands.
+3. Your own Butterfly, with the Inspector open on its root: no `AIPilot` component appears that was not there before.
+
 ### 🔴 Every Regatta AI hull races its own line along the sides of the braid (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** every AI hull except the Squirrel and the Urchin flies its own line through Regatta. That line is the
