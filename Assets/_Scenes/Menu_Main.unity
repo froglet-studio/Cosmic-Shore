@@ -54356,11 +54356,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36c1a95b6e2ce113095054da8aaa40ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!224 &886323240020115999 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 1063947158999825856, guid: e9882dfc138de1fe50bf927a240fb983, type: 3}
-  m_PrefabInstance: {fileID: 184432113232838623}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &75247301282177679 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 253442937244998992, guid: e9882dfc138de1fe50bf927a240fb983, type: 3}
@@ -61391,7 +61386,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 77aaf5a4928302040b08895f84152df1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Container: {fileID: 886323240020115999}
+  Container: {fileID: 400961288141571396}
   Source: {fileID: 75247301282177679}
   Target: {fileID: 894741396338179211}
   ImageTemplate: {fileID: 75247301282177679}

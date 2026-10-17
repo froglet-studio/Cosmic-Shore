@@ -918,15 +918,25 @@ def patch_scoreboard(p):
     fk = K.FileIds(SB_PANEL)
     guid = P.asset_guid(SB_PANEL)
 
+    out = []
+    K.emit_instance(p.ctx, K.Instance("Score", SB_PANEL, guid, "ScoreboardPanel", STRETCH, ()), host_rt, out)
+    retired = set()
+
     def stub(key, kind):
         src = fk(key)
         fid = str(C.derived(src, inst))
         doc = C.stub_doc(fid, kind, src, guid, inst)
         if p.sc.has(fid):
             p.sc.remove(fid)
+        # emit_instance already wrote the instance root's stand-in. A second stand-in for the same object binds to
+        # nothing in Unity, so everything pointing at it reads as destroyed: the scoreboard panel did, and no end
+        # screen ever showed (2026-10-17). Reuse the one that exists.
+        same = T.stub_identity(doc)
+        for prior in out:
+            if T.stub_identity(prior) == same:
+                retired.add(fid)
+                return T.doc_fid(prior), prior
         return fid, doc
-    out = []
-    K.emit_instance(p.ctx, K.Instance("Score", SB_PANEL, guid, "ScoreboardPanel", STRETCH, ()), host_rt, out)
     refs = {}
     for field, key, kind in (("endGameObject", "root#go", "go"), ("scoreboardPanel", "root#rt", "rt"),
                              ("statsContainer", "Stats#rt", "rt"), ("BannerImage", "Header/Rule#img", "img"),
@@ -946,7 +956,7 @@ def patch_scoreboard(p):
         p.sc.insert_after(anchor, T.doc_fid(d), d)
         anchor = T.doc_fid(d)
     root_stub = refs["scoreboardPanel"]
-    p.children(host_rt, [k for k in p.kids(host_rt) if k != root_stub] + [root_stub])
+    p.children(host_rt, [k for k in p.kids(host_rt) if k != root_stub and k not in retired] + [root_stub])
     d = p.doc(sb)
     for field, fid in refs.items():
         d = set_field(d, field, f"{{fileID: {fid}}}")
@@ -1259,6 +1269,10 @@ def validate(files):
         if re.search(rf"^  - binding: {b}\n", gl, re.M):
             assert re.search(rf"^  - binding: {b}\n(?:    .*\n)*?    padLabel: {label}\n", gl, re.M), f"ControlGlyphSet: binding {b} is not named {label}"
 
+    for path_, text_ in files.items():
+        if path_.endswith((".prefab", ".unity")):
+            dups = T.duplicate_stubs(text_)
+            assert not dups, f"{os.path.basename(path_)}: two stand-ins for one nested object {dups[:3]} - Unity binds one, every reference to the other reads as destroyed"
     cv = files[CANVAS]
     check_local_refs(CANVAS, cv)
     docs = docs_of(cv)
@@ -1496,7 +1510,15 @@ def self_test(files):
         rt = next(d for d in docs.values() if d.startswith("--- !u!224 ") and f"m_GameObject: {{fileID: {go}}}" in d)
         f[CANVAS] = f[CANVAS].replace(rt, rt.replace("  m_AnchorMin: {x: 0, y: 0}", "  m_AnchorMin: {x: 0.5, y: 0.5}", 1)
                                           .replace("  m_AnchorMax: {x: 1, y: 1}", "  m_AnchorMax: {x: 0.5, y: 0.5}", 1), 1)
+    def second_root_stub(f):
+        cv = f[CANVAS]
+        sbd = next(d for d in docs_of(cv).values() if f"guid: {S['scoreboard']}" in d)
+        fid = re.search(r"  scoreboardPanel: \{fileID: (-?\d+)\}", sbd).group(1)
+        doc = docs_of(cv)[fid]
+        twin = doc.replace(f"&{fid} stripped", "&777000111 stripped", 1)
+        f[CANVAS] = cv.replace(doc, twin + doc, 1)
     cases = [
+        ("two stand-ins for the scoreboard panel again", second_root_stub),
         ("the scoreboard host a 0x0 point again", point_host),
         ("the connecting backdrop unwired", lambda f: f.__setitem__(CONNECT, re.sub(
             r"(  backdropArt: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[CONNECT], count=1))),

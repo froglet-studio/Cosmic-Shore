@@ -214,7 +214,11 @@ def emitter_refs():
 
 
 def stub(src, cls, script):
-    inst, _ = pids()
+    inst, vstub = pids()
+    if cls == 224 and src == F("root#rt"):
+        # The view root already has its stand-in (emit_instance writes it). A second one for the same object binds
+        # to nothing in Unity and every reference to it reads as destroyed (the scoreboard panel did, 2026-10-17).
+        return vstub, None
     fid = str(C.derived(src, inst))
     if cls == 114:
         return fid, T.stub_mono(fid, src, asset_guid(VIEW), inst, script)
@@ -248,8 +252,11 @@ def scene_transform(text_):
     for refs in (modal_refs(), emitter_refs()):
         for field, (src, cls, script) in refs.items():
             fid, doc = stub(src, cls, script)
-            stubs[fid] = doc
-    for fid in [inst, vstub, *stubs]:
+            if doc is not None:
+                stubs[fid] = doc
+    # The retired second stand-in for the view root, from before the fix above.
+    retired = str(C.derived(F("root#rt"), inst))
+    for fid in [inst, vstub, retired, *stubs]:
         if sc.has(fid):
             sc.remove(fid)
     out = []
@@ -291,6 +298,8 @@ def outputs():
 
 def validate(files):
     M.require_entrances(files, {prefab_path(): 2})
+    dups = T.duplicate_stubs(files[SCENE])
+    assert not dups, f"Menu_Main: two stand-ins for one nested object {dups[:3]} - Unity binds one, every reference to the other reads as destroyed"
     guids = T.known_guids() | P.PACKAGE
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     view = files[prefab_path()]
@@ -327,6 +336,10 @@ def drift(files):
             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
 
 
+def docs_of_scene(text_):
+    return {m.group(1): m.group(0) for m in re.finditer(r"^--- !u!\d+ &(-?\d+)(?: stripped)?\n.*?(?=^--- |\Z)", text_, re.S | re.M)}
+
+
 def self_test(files):
     def expect(label_, mutate):
         bad = dict(files)
@@ -339,7 +352,12 @@ def self_test(files):
         print(f"  MISSED: {label_}")
         return False
     price_stub = stub(*modal_refs()["PriceLabel"])[0]
+    def second_root_stub(f):
+        _, vstub = pids()
+        doc = docs_of_scene(f[SCENE])[vstub]
+        f[SCENE] = f[SCENE].replace(doc, doc.replace(f"&{vstub} stripped", "&777000222 stripped", 1) + doc, 1)
     cases = [
+        ("two stand-ins for the view root again", second_root_stub),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path(), M.strip_entrances(f[prefab_path()]))),
         ("buttons left to the inspector", lambda f: f.__setitem__(SCENE, f[SCENE].replace("  wireButtonsInCode: 1\n", "  wireButtonsInCode: 0\n"))),
         ("the price label unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

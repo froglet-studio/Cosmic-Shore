@@ -4031,7 +4031,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1094188840384582599}
+  - {fileID: 648516251028933473}
   m_Father: {fileID: 5497835173863578975}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4150,11 +4150,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 351713562177951649, guid: 13fb065d94c88093a0dbf037d514fb47, type: 3}
   m_PrefabInstance: {fileID: 286617901393917737}
   m_PrefabAsset: {fileID: 0}
---- !u!224 &1094188840384582599 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 924666762770506990, guid: 13fb065d94c88093a0dbf037d514fb47, type: 3}
-  m_PrefabInstance: {fileID: 286617901393917737}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &912118530937803885 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1104010343274996548, guid: 13fb065d94c88093a0dbf037d514fb47, type: 3}
@@ -4246,7 +4241,7 @@ MonoBehaviour:
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   gameController: {fileID: 0}
   endGameObject: {fileID: 512228285457358984}
-  scoreboardPanel: {fileID: 1094188840384582599}
+  scoreboardPanel: {fileID: 648516251028933473}
   statsContainer: {fileID: 912118530937803885}
   statRowPrefab: {fileID: 2866030435025379, guid: 44939a6a57184ca66c865b08149a8351, type: 3}
   BannerImage: {fileID: 292930265384434064}

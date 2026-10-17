@@ -11408,3 +11408,21 @@ scoreboard panel"; DOTween: "RectTransform / CanvasGroup has been destroyed") wh
 (with frame and call stack) or `... was moved to '<path>'`. `/verify-unity` was not run; player reference compile clean.
 
 1. **Finish a Scurry match** and copy every `[EndScreen]` line - its path, frame and stack name the destroyer.
+
+## 🔴 2026-10-17 — ROOT CAUSE: two stand-ins for the scoreboard panel (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab` carried TWO stripped stand-ins for the one nested ScoreboardPanel root (648516251028933473 and
+1094188840384582599, both from `author_ingame_hud.py`: `K.emit_instance` writes one, the field stub writes another).
+Unity binds only one, so `Scoreboard.scoreboardPanel` and the host's child entry (both on the unbound one) read as
+destroyed - "has no scoreboard panel" in every mode since item 12d. The generator now reuses the existing stand-in;
+`T.duplicate_stubs` (author_menu_topnav.py) fails any generated file with a twin, with a planted defect in each
+generator's `--self-test`. A repo-wide scan found one more: Menu_Main's purchase window IconEmitter `Container`
+(`author_menu_purchase.py`, same pattern) - the crystal fly animation had no container. Both fixed; no twins remain.
+`/verify-unity` was not run.
+
+1. **Finish Scurry, Skim Race and a Maelstrom round:** the scoreboard shows after the reveal, with no
+   `[Scoreboard] ... has no scoreboard panel` warning.
+2. **Open GameCanvas.prefab:** ScoreboardController has one ScoreboardPanel child, and its Scoreboard's
+   Scoreboard Panel field is filled.
+3. **Store > buy something:** the crystal icons fly into the window on confirm.
+4. If the reveal toast still fails to show, copy any `[EndScreen]` line (the witness stays in for that).

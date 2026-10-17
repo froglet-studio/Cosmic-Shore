@@ -196,6 +196,30 @@ def go_doc(fid, name, comps, active=True):
             f"  m_IsActive: {1 if active else 0}\n")
 
 
+_STUB_HEAD = re.compile(r"^--- !u!(\d+) &-?\d+ stripped\n\w+:\n  m_CorrespondingSourceObject: \{fileID: (-?\d+), guid: (\w+),\s*type: \d\}\n"
+                        r"  m_PrefabInstance: \{fileID: (-?\d+)\}")
+
+
+def stub_identity(doc):
+    """What a stripped stand-in stands for: (class, source object, source prefab, instance), or None."""
+    m = _STUB_HEAD.match(doc)
+    return m.groups() if m else None
+
+
+def duplicate_stubs(text_):
+    """Stand-ins that share what they stand for with an earlier one - Unity binds only one of them."""
+    seen, dups = {}, []
+    for m in re.finditer(r"^--- !u!\d+ &(-?\d+) stripped\n.*?(?=^--- |\Z)", text_, re.S | re.M):
+        ident = stub_identity(m.group(0))
+        if ident is None:
+            continue
+        if ident in seen:
+            dups.append((seen[ident], m.group(1)))
+        else:
+            seen[ident] = m.group(1)
+    return dups
+
+
 def stub_go(fid, src, guid, pid):
     return (f"--- !u!1 &{fid} stripped\nGameObject:\n  m_CorrespondingSourceObject: {K.ref(src, guid)}\n"
             f"  m_PrefabInstance: {{fileID: {pid}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
