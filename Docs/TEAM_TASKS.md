@@ -499,3 +499,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (has offered to take tasks)
 - **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Manta AI holds Soar deeper into turns)
+
+### T-20261017-53f4 · open · decision · Dolphin
+- **Task:** Two Dolphin calls were made for now on 2026-10-17 so the game stays fun while you are away: (1) keep the shipped SCALAR model + holdSpeedWhileDrifting (the docs said vector + Locked; driftThrottlePolicy reset to Live since only the vector model reads it); (2) a drift KEEPS boosted speed (re-drift at a discharge's peak holds ~347 u/s), kept as a skill move the AI also uses. Confirm or change either
+- **Done when:** Garrett confirms both, or the change he wants is made (cap: clamp _heldDriftSpeed to cruise and revert the Dolphin AI peak rule; vector: vectorFlightModel 1 + driftThrottlePolicy 1 + holdSpeedWhileDrifting 0, then play-test)
+- **Who can take it:** Garrett (Dolphin design owner)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md §2 and §2a
