@@ -10,53 +10,54 @@ namespace CosmicShore.Gameplay
     /// With Mass 5 active the burn STEALS on burnout instead of destroying.
     ///
     /// On the triggers (design ask, 2026-10-16) LT sprays from the LEFT front of the hull and RT
-    /// from the RIGHT front, each forward, and the trigger's live PRESSURE sizes its cone between
+    /// from the RIGHT front, each forward, and the trigger's live PRESSURE sizes its claw between
     /// the Min and Max values below. The Max range must stay the Grizzly's shortest reach - the
     /// claw is always its closest-range weapon.
     ///
     /// <para><b>The look</b> (2026-10-16): four stiff RED whip cords per trigger
     /// (<see cref="GrizzlyClawWhips"/>), the Brittle Star's Charge Mode whips (<see cref="BrittleStarCord"/>) held
-    /// near-rigid, rooted at one point and fanned slightly like a claw. The Whips section below tunes them; nothing in it changes what burns.</para>
+    /// near-rigid, rooted at one point and fanned slightly like a claw. Since 2026-10-17 the fingers ARE the weapon:
+    /// what they touch burns, and there is no cone.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "GrizzlyFlamethrowerAction", menuName = "ScriptableObjects/Vessel Actions/Grizzly Flamethrower")]
     public class GrizzlyFlamethrowerActionSO : ShipActionSO
     {
-        [Header("Cone")]
-        [SerializeField, Tooltip("Reach of the claw's spray at FULL pressure (and on devices with no analog trigger). Keep it the Grizzly's shortest-range weapon.")]
+        [Header("Claw (what burns: the fingers themselves - there is no cone)")]
+        [SerializeField, Tooltip("Length of the claw's fingers at FULL pressure (and on devices with no analog trigger). Keep it the Grizzly's shortest-range weapon.")]
         float range = 55f;
-        [SerializeField, Tooltip("Half-angle of the ignite cone at FULL pressure, degrees.")]
-        float coneHalfAngle = 24f;
-        [SerializeField, Tooltip("Reach of the spray at the LIGHTEST pull.")]
+        [SerializeField, Tooltip("Length of the fingers at the LIGHTEST pull.")]
         float minRange = 22f;
-        [SerializeField, Tooltip("Half-angle of the cone at the LIGHTEST pull, degrees.")]
-        float minConeHalfAngle = 12f;
+        [SerializeField, Tooltip("Outer fingers' spread at the LIGHTEST pull, as a fraction of Whip Spread Degrees (full pressure = the full spread).")]
+        [Range(0f, 1f)] float minSpreadFraction = 0.6f;
+        [SerializeField, Tooltip("How close to a finger a prism must be to catch fire, world units (plus half the prism's own size). The Brittle Star cords' cut, made a burn.")]
+        float clawBurnRadius = 2f;
         [SerializeField, Tooltip("Ignites per second while held.")]
         float igniteTicksPerSecond = 4f;
-        [SerializeField, Tooltip("Max prisms ignited per tick, per cone.")]
+        [SerializeField, Tooltip("Max prisms ignited per tick, per claw.")]
         int ignitesPerTick = 3;
 
         [Header("Muzzles (one per trigger)")]
-        [SerializeField, Tooltip("How far each cone's apex sits to its own side of the hull's centre line, in the hull's local units (LT left, RT right).")]
+        [SerializeField, Tooltip("How far each claw's root sits to its own side of the hull's centre line, in the hull's local units (LT left, RT right).")]
         float sideOffset = 6f;
-        [SerializeField, Tooltip("How far ahead of the hull's pivot each cone's apex sits, in the hull's local units.")]
+        [SerializeField, Tooltip("How far ahead of the hull's pivot each claw's root sits, in the hull's local units.")]
         float noseOffset = 4f;
-        [SerializeField, Tooltip("Degrees each cone is turned OUTWARD from straight ahead (LT left, RT right), so the two claws spread apart. 0 = both straight forward.")]
+        [SerializeField, Tooltip("Degrees each claw is turned OUTWARD from straight ahead (LT left, RT right), so the two claws spread apart. 0 = both straight forward.")]
         float splayDegrees = 6f;
 
-        [Header("Energy cell (one per cone)")]
-        [SerializeField, Tooltip("Seconds a FULL cell lasts spraying the SMALLEST cone. Each trigger's cone has its own cell.")]
+        [Header("Energy cell (one per claw)")]
+        [SerializeField, Tooltip("Seconds a FULL cell lasts spraying the SMALLEST claw. Each trigger's claw has its own cell.")]
         float cellSeconds = 3f;
         [SerializeField, Tooltip("How much faster a cell empties at FULL pressure than at the lightest pull (design ask, 2026-10-16: 1.5x for larger flames). Scales linearly with pressure in between.")]
         float largeFlameDrainMultiplier = 1.5f;
         [SerializeField, Tooltip("Seconds an EMPTY cell takes to refill completely while its trigger is not spraying.")]
         float cellRechargeSeconds = 2f;
-        [SerializeField, Tooltip("Seconds after a cone stops spraying before its cell starts refilling.")]
+        [SerializeField, Tooltip("Seconds after a claw stops spraying before its cell starts refilling.")]
         float cellRechargeDelay = 0.25f;
 
-        [Header("Whips (the look - four per trigger, cosmetic)")]
+        [Header("Whips (the claw's fingers - four per trigger)")]
         [SerializeField, Tooltip("Claw fingers (whip cords) drawn per trigger.")]
         int whipsPerSide = 4;
-        [SerializeField, Tooltip("Degrees the OUTER fingers open to each side of the claw's aim. Every finger starts at one point and they fan flat across the hull's width, so a few degrees reads as a claw (design ask, 2026-10-17: 'one convergence point and they spread out slightly'). Cosmetic: the burn cone is set above.")]
+        [SerializeField, Tooltip("Degrees the OUTER fingers open to each side of the claw's aim. Every finger starts at one point and they fan flat across the hull's width, so a few degrees reads as a claw (design ask, 2026-10-17: 'one convergence point and they spread out slightly'). What the fingers touch burns, so this is also the claw's width.")]
         [Range(0f, 30f)] float whipSpreadDegrees = 7f;
         [SerializeField, Tooltip("How far each finger's tip hooks DOWN, as a fraction of the claw's length (0 = straight spikes). The hook grows toward the tip, so the fingers read as talons. Cosmetic only.")]
         [Range(0f, 0.5f)] float whipHook = 0.12f;
@@ -88,7 +89,7 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] float whipEmptyBrightness = 0.25f;
 
         public float Range => range;
-        public float ConeHalfAngle => coneHalfAngle;
+        public float ClawBurnRadius => clawBurnRadius;
         public float IgniteTicksPerSecond => igniteTicksPerSecond;
         public int IgnitesPerTick => ignitesPerTick;
         public float SideOffset => sideOffset;
@@ -112,23 +113,23 @@ namespace CosmicShore.Gameplay
         public Color WhipRimColor => whipRimColor;
         public float WhipEmptyBrightness => whipEmptyBrightness;
 
-        /// <summary>Cell fraction spent per second spraying at pressure 0..1: the smallest cone
+        /// <summary>Cell fraction spent per second spraying at pressure 0..1: the lightest pull
         /// empties a full cell in <c>cellSeconds</c>, the largest <c>largeFlameDrainMultiplier</c>
         /// times faster.</summary>
         public float CellDrainPerSecond(float pressure01) =>
             Mathf.Lerp(1f, Mathf.Max(1f, largeFlameDrainMultiplier), Mathf.Clamp01(pressure01)) /
             Mathf.Max(0.05f, cellSeconds);
 
-        /// <summary>Cell fraction refilled per second while the cone is idle.</summary>
+        /// <summary>Cell fraction refilled per second while the claw is idle.</summary>
         public float CellRechargePerSecond => 1f / Mathf.Max(0.05f, cellRechargeSeconds);
 
-        /// <summary>Cone reach for a trigger pressure 0..1 (1 = full).</summary>
+        /// <summary>Finger length for a trigger pressure 0..1 (1 = full).</summary>
         public float RangeForPressure(float pressure01) =>
             Mathf.Lerp(Mathf.Min(minRange, range), range, Mathf.Clamp01(pressure01));
 
-        /// <summary>Cone half-angle for a trigger pressure 0..1 (1 = full).</summary>
-        public float HalfAngleForPressure(float pressure01) =>
-            Mathf.Lerp(Mathf.Min(minConeHalfAngle, coneHalfAngle), coneHalfAngle, Mathf.Clamp01(pressure01));
+        /// <summary>Outer fingers' spread, degrees, for a trigger pressure 0..1 (1 = full).</summary>
+        public float SpreadForPressure(float pressure01) =>
+            whipSpreadDegrees * Mathf.Lerp(Mathf.Clamp01(minSpreadFraction), 1f, Mathf.Clamp01(pressure01));
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<GrizzlyFlamethrowerActionExecutor>()?.BeginSpray(this, vesselStatus, null);

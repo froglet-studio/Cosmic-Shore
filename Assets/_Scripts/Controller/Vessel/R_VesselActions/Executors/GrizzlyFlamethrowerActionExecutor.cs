@@ -8,35 +8,30 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Plasma-claw spray: while held, scans a forward cone each tick (via
-    /// PrismSpatialIndex.QuerySphere + angle filter) and ignites enemy prisms
-    /// through PrismBurnManager. Free to use — no energy cost by design.
-    /// Mass-5 state is sampled at IGNITE time: burns started while the upgrade is
+    /// Plasma claw: while a trigger is held, its claw - four stiff red fingers (<see cref="GrizzlyClawWhips"/>) - sets
+    /// fire to every enemy prism a finger touches (<see cref="IgniteAlongClaws"/>, through PrismBurnManager). There is
+    /// NO cone (design ask, 2026-10-17: "get rid of the cone completely, allows the claws to do the work"). Free to
+    /// use - no energy cost by design. Mass-5 state is sampled at IGNITE time: burns started while the upgrade is
     /// active convert (steal) on burnout even if the level later drops.
     ///
-    /// <para><b>Two claws on the triggers</b> (design ask, 2026-10-16): LT's cone opens from the
-    /// LEFT front of the hull and RT's from the RIGHT front, both forward, each held on its own.
-    /// The trigger's LIVE pressure sizes its cone every tick
-    /// (<see cref="GrizzlyFlamethrowerActionSO.RangeForPressure"/>); a device with no analog
-    /// trigger sprays the full cone. A spray started with no side (the legacy single-button
-    /// path) opens from the hull's centre at full size.</para>
+    /// <para><b>Two claws on the triggers</b> (2026-10-16): LT's claw roots at the LEFT front of the hull and RT's
+    /// at the RIGHT front, both forward and turned <c>splayDegrees</c> outward, each held on its own. The trigger's
+    /// LIVE pressure sets the claw's finger length and spread every frame
+    /// (<see cref="GrizzlyFlamethrowerActionSO.RangeForPressure"/>, <c>SpreadForPressure</c>); a device with no
+    /// analog trigger gets the full claw. A spray started with no side (the legacy single-button path) roots at the
+    /// hull's centre at full size.</para>
     ///
-    /// <para><b>Each cone has its own energy cell</b> (design ask, 2026-10-16). Spraying drains it -
-    /// a full cell lasts <c>cellSeconds</c> at the smallest cone and empties
-    /// <c>largeFlameDrainMultiplier</c> (1.5x) faster at full pressure - and it refills while that
-    /// cone is not spraying, after <c>cellRechargeDelay</c>. An empty cell cuts its cone out until
-    /// the trigger is pulled again with charge in it. The whips' glow dims as its cell empties
-    /// (<see cref="GrizzlyClawWhips"/>); <see cref="CellFill"/> is the HUD read.
-    /// Simulated on every peer from the replicated presses and analog, like the spray itself.</para>
-    ///
-    /// <para>The two cones sit <c>sideOffset</c> to each side and are turned <c>splayDegrees</c>
-    /// outward, so they spread apart rather than overlapping ahead of the nose.</para>
+    /// <para><b>Each claw has its own energy cell</b> (2026-10-16). Spraying drains it - a full cell lasts
+    /// <c>cellSeconds</c> at the lightest pull and empties <c>largeFlameDrainMultiplier</c> (1.5x) faster at full
+    /// pressure - and it refills while that claw is idle, after <c>cellRechargeDelay</c>. An empty cell cuts its
+    /// claw out until the trigger is pulled again with charge in it. The fingers' glow dims as the cell empties;
+    /// <see cref="CellFill"/> is the HUD read. Simulated on every peer from the replicated presses and analog.</para>
     ///
     /// <para>Every spray ends when the active weapon changes away from the claw.</para>
     /// </summary>
     public sealed class GrizzlyFlamethrowerActionExecutor : ShipActionExecutorBase
     {
-        /// <summary>HUD: spray active (any cone).</summary>
+        /// <summary>HUD: spray active (any claw).</summary>
         public event Action<bool> OnSprayChanged;
 
         sealed class Spray
@@ -108,8 +103,7 @@ namespace CosmicShore.Gameplay
             if (spray.Fill <= 0f) return;   // empty cell: nothing until it recharges
             spray.Cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
-            // The look: four stiff red whips fanned across the same cone IgniteCone filters on
-            // (GrizzlyClawWhips), so the visual cannot drift from what actually catches fire.
+            // The claws: four stiff red whips (GrizzlyClawWhips) that are both the look AND what burns.
             var vesselTf = status.Transform;
             if (vesselTf != null)
                 spray.Whips = GrizzlyClawWhips.EnsureFor(vesselTf, WhipSetName(slot));
@@ -152,14 +146,14 @@ namespace CosmicShore.Gameplay
             _ => "PlasmaClawWhips",
         };
 
-        /// <summary>The cone's apex in the hull's local space: its own side of the front.</summary>
+        /// <summary>The claw's root in the hull's local space: its own side of the front.</summary>
         static Vector3 LocalApex(GrizzlyFlamethrowerActionSO so, int slot)
         {
             float x = slot switch { 0 => -so.SideOffset, 1 => so.SideOffset, _ => 0f };
             return new Vector3(x, 0f, slot == 2 ? 0f : so.NoseOffset);
         }
 
-        /// <summary>The cone's outward turn about the hull's up, degrees: LT left, RT right.</summary>
+        /// <summary>The claw's outward turn about the hull's up, degrees: LT left, RT right.</summary>
         static float Yaw(GrizzlyFlamethrowerActionSO so, int slot) => slot switch
         {
             0 => -so.SplayDegrees,
@@ -191,19 +185,19 @@ namespace CosmicShore.Gameplay
 
                 while (!token.IsCancellationRequested)
                 {
-                    // The cone follows the pull every frame; the burn ticks at its own rate.
+                    // The claw follows the pull every frame; the burn ticks at its own rate.
                     float pressure = PressureOf(status, side);
                     float range = so.RangeForPressure(pressure);
-                    float halfAngle = so.HalfAngleForPressure(pressure);
+                    float spread = so.SpreadForPressure(pressure);
 
-                    // The cell: bigger flames burn it faster. Empty cuts the cone out.
+                    // The cell: bigger flames burn it faster. Empty cuts the claw out.
                     spray.Fill = Mathf.Max(0f, spray.Fill - so.CellDrainPerSecond(pressure) * Time.deltaTime);
 
                     var vesselTf = status?.Transform;
                     if (spray.Whips && vesselTf)
                         spray.Whips.Show(so, vesselTf.TransformPoint(LocalApex(so, SlotOf(side))),
                                          vesselTf.rotation * Quaternion.Euler(0f, Yaw(so, SlotOf(side)), 0f),
-                                         range, halfAngle, spray.Fill, Time.deltaTime);
+                                         range, spread, spray.Fill, Time.deltaTime);
                     if (spray.Fill <= 0f)
                     {
                         EndSpray(side);
@@ -214,7 +208,7 @@ namespace CosmicShore.Gameplay
                     if (sinceIgnite >= tickSeconds)
                     {
                         sinceIgnite = 0f;
-                        IgniteCone(so, status, SlotOf(side), range, halfAngle, burn);
+                        IgniteAlongClaws(so, status, spray.Whips, burn);
                     }
 
                     await UniTask.Yield(PlayerLoopTiming.Update, token);
@@ -223,40 +217,58 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException) { }
         }
 
-        void IgniteCone(GrizzlyFlamethrowerActionSO so, IVesselStatus status, int slot,
-            float range, float halfAngle, PrismBurnManager burn)
+        /// <summary>
+        /// THE CLAWS DO THE WORK (design ask, 2026-10-17: "get rid of the cone completely, allows the claws to do the
+        /// work"): every enemy prism a claw finger touches catches fire - each finger's links are swept with
+        /// <see cref="PrismSpatialIndex.QuerySegment"/> at <c>clawBurnRadius</c>, the Brittle Star cords' cut. There is
+        /// no cone: what you see is exactly what burns, and a finger that lags a turn burns where it lags.
+        /// </summary>
+        void IgniteAlongClaws(GrizzlyFlamethrowerActionSO so, IVesselStatus status, GrizzlyClawWhips whips,
+            PrismBurnManager burn)
         {
             var index = PrismSpatialIndex.Instance;
-            var vesselTf = status?.Vessel?.Transform;
-            if (index == null || burn == null || vesselTf == null) return;
-
-            var origin = vesselTf.TransformPoint(LocalApex(so, slot));
-            var forward = vesselTf.rotation * (Quaternion.Euler(0f, Yaw(so, slot), 0f) * Vector3.forward);
-
-            // Sphere centered mid-cone, then angle-filter — QuerySphere is the only
-            // spatial primitive and this keeps the scan cheap.
-            _scratch.Clear();
-            index.QuerySphere(origin + forward * (range * 0.5f), range * 0.6f, _scratch);
+            if (index == null || !index.IsAvailable || burn == null || !whips || status == null) return;
 
             bool convert = status.ElementalAbilityHandler != null &&
                            status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
-            float cosLimit = Mathf.Cos(halfAngle * Mathf.Deg2Rad);
+            float radius = so.ClawBurnRadius;
             int ignited = 0;
+            _ignitedThisTick.Clear();
 
-            foreach (var prism in _scratch)
+            for (int c = 0; c < whips.CordCount && ignited < so.IgnitesPerTick; c++)
             {
-                if (ignited >= so.IgnitesPerTick) break;
-                if (prism == null || prism.destroyed) continue;
-                if (prism.Domain == status.Domain) continue;
+                var cord = whips.Cord(c);
+                if (cord == null || !cord.Seeded) continue;
+                var pts = cord.Points;
+                for (int k = 0; k < pts.Length - 1 && ignited < so.IgnitesPerTick; k++)
+                {
+                    Vector3 a = pts[k], b = pts[k + 1];
+                    _scratch.Clear();
+                    index.QuerySegment(a, b, radius + CandidateExtent, _scratch);
+                    Vector3 ab = b - a;
+                    float abLenSq = ab.sqrMagnitude;
+                    foreach (var prism in _scratch)
+                    {
+                        if (ignited >= so.IgnitesPerTick) break;
+                        if (prism == null || prism.destroyed || prism.Domain == status.Domain) continue;
+                        if (!_ignitedThisTick.Add(prism)) continue;
 
-                var to = prism.transform.position - origin;
-                float dist = to.magnitude;
-                if (dist > range || dist < 0.01f) continue;
-                if (Vector3.Dot(to / dist, forward) < cosLimit) continue;
+                        Vector3 centre = prism.transform.position;
+                        float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(centre - a, ab) / abLenSq) : 0f;
+                        float contact = radius + 0.5f * prism.transform.lossyScale.magnitude;
+                        if ((centre - (a + ab * t)).sqrMagnitude > contact * contact) continue;
 
-                burn.Ignite(prism, status.PlayerName, status.Domain, convert);
-                ignited++;
+                        burn.Ignite(prism, status.PlayerName, status.Domain, convert);
+                        ignited++;
+                    }
+                }
             }
+            _scratch.Clear();
         }
+
+        /// <summary>Padding on the candidate query so a large prism whose centre sits outside the finger's reach
+        /// is still tested against its own size.</summary>
+        const float CandidateExtent = 8f;
+        readonly HashSet<Prism> _ignitedThisTick = new();
     }
 }

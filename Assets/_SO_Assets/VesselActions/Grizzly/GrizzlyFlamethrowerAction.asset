@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: GrizzlyFlamethrowerAction
   m_EditorClassIdentifier: 
   range: 55
-  coneHalfAngle: 24
   minRange: 22
-  minConeHalfAngle: 12
+  minSpreadFraction: 0.6
+  clawBurnRadius: 2
   igniteTicksPerSecond: 4
   ignitesPerTick: 3
   sideOffset: 6

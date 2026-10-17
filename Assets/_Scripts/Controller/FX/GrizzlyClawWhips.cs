@@ -8,14 +8,16 @@ namespace CosmicShore.Gameplay
     /// <see cref="BrittleStarCord"/> - the same wave-equation rope the Brittle Star steps - held at a high fixed
     /// rigidity, so it reads as a near-straight claw finger that still lags a turn and shivers when the hull flicks.
     ///
-    /// <para><b>Cosmetic only, every peer draws its own.</b> What burns is still the claw's cone
-    /// (<c>GrizzlyFlamethrowerActionExecutor.IgniteCone</c>): the four cords fan across that cone's half-angle at its
+    /// <para><b>The claws do the work</b> (2026-10-17): there is no cone. What burns is what a finger touches
+    /// (<c>GrizzlyFlamethrowerActionExecutor.IgniteAlongClaws</c> reads <see cref="Cord"/>), so the cords are stepped
+    /// even where nothing can be drawn (a headless server), and every peer steps its own from the replicated input.
+    /// The four cords sit at
     /// reach - rooted at one point, fanned slightly across the hull's width and hooked down at the tips like a claw -
     /// so they sit inside it and the visual does not lie about what catches fire.</para>
     ///
     /// <para>Drawn with the Thresher chain's fresnel tube material (one <see cref="LineRenderer"/> per cord, colours
     /// through a <see cref="MaterialPropertyBlock"/> so the shared material is never instanced). The rim dims as the
-    /// cone's energy cell empties.</para>
+    /// claw's energy cell empties.</para>
     /// </summary>
     public sealed class GrizzlyClawWhips : MonoBehaviour
     {
@@ -45,10 +47,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Step and draw the cords for one frame: the fingers root at <paramref name="apex"/> and fan out slightly. <paramref name="apex"/> is the claw's muzzle in world space,
-        /// <paramref name="aim"/> the cone's axis (forward = +z), <paramref name="length"/> / <paramref name="halfAngle"/>
-        /// the cone this pull makes, <paramref name="fill01"/> the cone's energy cell.
+        /// <paramref name="aim"/> the claw's axis (forward = +z), <paramref name="length"/> / <paramref name="spreadDegrees"/>
+        /// the reach and outer-finger spread this pull makes, <paramref name="fill01"/> the claw's energy cell.
         /// </summary>
-        public void Show(GrizzlyFlamethrowerActionSO so, Vector3 apex, Quaternion aim, float length, float halfAngle,
+        public void Show(GrizzlyFlamethrowerActionSO so, Vector3 apex, Quaternion aim, float length, float spreadDegrees,
                          float fill01, float dt)
         {
             if (!so || !Ensure(so)) return;
@@ -69,15 +71,15 @@ namespace CosmicShore.Gameplay
 
             // A CLAW (design asks, 2026-10-16 and -17: "the whips come out as an X shape... I want one convergence
             // point and they spread out slightly like claws"). Every finger roots at the ONE muzzle point and they open
-            // in a single flat fan across the hull's width, only a few degrees apart (whipSpreadDegrees, independent of
-            // the burn cone), so from the chase camera they read as a hand of talons, not a starburst. Draw then hooks
+            // in a single flat fan across the hull's width, only a few degrees apart (whipSpreadDegrees, scaled by the
+            // pull), so from the chase camera they read as a hand of talons, not a starburst. Draw then hooks
             // every tip the same way, down, like a claw. Two earlier layouts read as an X: roots in a row alternating
             // up and down, and fingers spread evenly round the full cone (four rays round a point ARE an X or a +).
             int n = _cords.Length;
             for (int i = 0; i < n; i++)
             {
                 float t = n > 1 ? i / (float)(n - 1) : 0.5f;
-                float yaw = Mathf.Lerp(-so.WhipSpreadDegrees, so.WhipSpreadDegrees, t);
+                float yaw = Mathf.Lerp(-spreadDegrees, spreadDegrees, t);
                 Vector3 dir = aim * (Quaternion.AngleAxis(yaw, Vector3.up) * Vector3.forward);
                 _cords[i].Step(apex, dir, length, so.WhipRigidity, settings, dt);
             }
@@ -98,6 +100,12 @@ namespace CosmicShore.Gameplay
             SetLinesEnabled(false);
         }
 
+        /// <summary>Claw fingers live this frame (what <c>IgniteAlongClaws</c> sweeps).</summary>
+        public int CordCount => _visible && _cords != null ? _cords.Length : 0;
+
+        /// <summary>Claw finger <paramref name="i"/>: its joints, muzzle first.</summary>
+        public BrittleStarCord Cord(int i) => _cords[i];
+
         void Draw(GrizzlyFlamethrowerActionSO so, float fill01)
         {
             Color body = so.WhipBodyColor;
@@ -116,6 +124,7 @@ namespace CosmicShore.Gameplay
             {
                 var line = _lines[i];
                 var cord = _cords[i];
+                if (!line) continue;
                 if (!cord.Seeded)
                 {
                     line.positionCount = 0;
@@ -135,7 +144,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Hook every drawn finger the same way - down, more toward the tip (s squared) - so a straight cord
         /// reads as a curved talon and the set as one claw. <paramref name="hook"/> is the tip's drop as a fraction of
-        /// the claw's length. Cosmetic: the cord's own physics, and the cone that burns, are untouched.</summary>
+        /// the claw's length. Cosmetic: the cord's own physics, and what it burns, are untouched.</summary>
         void Hook(float hook, int count)
         {
             if (hook <= 0f || _length <= 1e-4f) return;
@@ -150,10 +159,11 @@ namespace CosmicShore.Gameplay
         {
             int count = Mathf.Max(1, so.WhipsPerSide);
             int links = Mathf.Max(2, so.WhipLinks);
-            if (_lines != null && _lines.Length == count && _cords[0].Links == links) return true;
+            if (_cords != null && _cords.Length == count && _cords[0].Links == links) return true;
 
+            // The cords are gameplay (they burn), so they exist with or without graphics; only the lines need a
+            // material, and a headless peer simply draws none.
             var material = so.WhipMaterial ? so.WhipMaterial : FallbackMaterial();
-            if (!material) return false;   // headless: no graphics, no visuals
 
             if (_lines != null)
                 foreach (var old in _lines)
@@ -165,6 +175,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < count; i++)
             {
                 _cords[i] = new BrittleStarCord(links);
+                if (!material) continue;
                 var go = new GameObject($"Whip{i}");
                 go.transform.SetParent(transform, false);
                 var line = go.AddComponent<LineRenderer>();

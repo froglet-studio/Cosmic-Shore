@@ -55,15 +55,16 @@ momentum."*
 | Weapon | LT | RT |
 |---|---|---|
 | **Explosives** | left bomb (below) | right bomb (below) |
-| **Plasma claw** | cone forward from the **left front** while held | cone forward from the **right front** while held |
+| **Plasma claw** | claw forward from the **left front** while held | claw forward from the **right front** while held |
 | **Sniper** | hold = **scope**; a round fired while held takes the view with it until LT is let go | **fire** (sniper cooldown 3 s, energy 0.5) |
 
-- **Claw:** `GrizzlyFlamethrowerActionSO` — live pressure sizes the cone from `minRange` /
-  `minConeHalfAngle` (22 u / 12°) to `range` / `coneHalfAngle` (55 u / 24°); no analog = full.
-  Apexes sit `sideOffset` 6 to each side and `noseOffset` 4 ahead, each turned `splayDegrees` 6°
-  outward so the two spread apart (shrunk and spread, 2026-10-16). Each cone ignites on its own.
-  55 u is still the Grizzly's shortest reach on purpose (raised from 45 with the claw look, 2026-10-16: "they
-  can be a little bigger").
+- **Claw:** `GrizzlyFlamethrowerActionSO` — **the fingers ARE the weapon; there is no cone** (2026-10-17: *"get rid
+  of the cone completely, allows the claws to do the work"*). Every enemy prism a finger touches catches fire
+  (`IgniteAlongClaws`: each finger's links swept with `PrismSpatialIndex.QuerySegment` at `clawBurnRadius` 2, plus
+  half the prism's size — the Brittle Star cords' cut, made a burn). Live pressure sets the finger length from
+  `minRange` 22 u to `range` 55 u and the spread from `minSpreadFraction` 0.6 of `whipSpreadDegrees` to all of it;
+  no analog = full. Claws root `sideOffset` 6 to each side and `noseOffset` 4 ahead, each turned `splayDegrees` 6°
+  outward. 55 u is still the Grizzly's shortest reach on purpose.
 - **Claw look: four rigid red whips per side** (2026-10-16: *"the brittlestar has a whip mode that I would
   like to mimic, but have be more rigid and red with four on each side as the plasma claw… we are trying to
   enhance the visuals of it. the cones look a little plain."*). The flat cone is gone
@@ -75,15 +76,14 @@ momentum."*
   the outer ones only `whipSpreadDegrees` 7° to each side, and every tip hooks down (`whipHook` 0.12 of the
   length, drawn only) like a talon. Two earlier layouts read as an X from the chase camera: roots in a row
   alternating up and down, then fingers spread evenly round the full cone (four rays round a point always read
-  as an X or a +). The spread is the claw's own and does not change the burn cone. They taper from `whipWidth` 2 to a point, and use the Thresher chain's fresnel tube material in dark red with a red
-  rim that dims as the cell empties. **Gameplay is unchanged**: what burns is still the cone the whips fan
-  across, with the same pressure, reach, cells and burn.
+  as an X or a +). They taper from `whipWidth` 2 to a point, and use the Thresher chain's fresnel tube material in dark red with a red
+  rim that dims as the cell empties. Since 2026-10-17 the fingers are also what burns (above); the cone that used to sit under them is gone.
 - **Claw energy cells** (2026-10-16: *"give each of them a small energy cell that recharges when
-  its not being fired and empties 1.5 times faster for larger flames"*): one cell per cone. A full
-  cell lasts `cellSeconds` 3 s at the smallest cone and empties `largeFlameDrainMultiplier` 1.5×
+  its not being fired and empties 1.5 times faster for larger flames"*): one cell per claw. A full
+  cell lasts `cellSeconds` 3 s at the lightest pull and empties `largeFlameDrainMultiplier` 1.5×
   faster at full pressure. It refills in `cellRechargeSeconds` 2 s from empty, starting
-  `cellRechargeDelay` 0.25 s after that cone stops. An empty cell cuts its cone out until you
-  pull again with charge in it. The cone **dims as its cell empties**, which is the read for now.
+  `cellRechargeDelay` 0.25 s after that claw stops. An empty cell cuts its claw out until you
+  pull again with charge in it. The claw's glow **dims as its cell empties**, which is the read for now.
   `GrizzlyFlamethrowerActionExecutor.CellFill(side)` is there for a HUD bar.
 - **Sniper:** pressure is ignored. The scope is the HUD's **PiP** (picture-in-picture), not the
   main view (design owner, 2026-10-16: "the scope is supposed to be a PiP"). Releasing LT closes
@@ -367,8 +367,8 @@ Not run in the editor — no Unity in the authoring sessions. Steps:
 9. **Pressure.** Feather LT: a tiny bomb, small dip, a 25 u blast. Full squeeze: a 100 u blast.
 10. **Turn end** with a bomb cruising or frozen: it disappears with no blast.
 11. **X does nothing** in any mode (2026-10-16).
-11b. **Claw:** LB to PLASMA CLAW. Feather LT: a small cone from the left front; squeeze: the full
-    55 u claw of four red talons. RT the same on the right; the two splay apart. Enemy prisms in them burn. Hold
+11b. **Claw:** LB to PLASMA CLAW. Feather LT: a short, narrow claw from the left front; squeeze: the full
+    55 u claw of four red talons. RT the same on the right; the two splay apart. Enemy prisms the fingers touch burn; nothing between or beyond them does. Hold
     one: its whips dim and it cuts out after ~2-3 s; let go and it refills in ~2 s.
 11c. **Sniper:** LB to SNIPER. Hold LT: the scope PiP opens. RT: a round; the PiP rides it
     while LT is held; let go and the PiP closes. RT again within 3 s does nothing.

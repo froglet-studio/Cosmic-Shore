@@ -37,12 +37,13 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ClawConeGrowsWithPressureAndFullIsTheAuthoredCone()
+        public void ClawGrowsWithPressureAndFullIsTheAuthoredClaw()
         {
             Assert.AreEqual(_claw.Range, _claw.RangeForPressure(1f), 1e-4f);
-            Assert.AreEqual(_claw.ConeHalfAngle, _claw.HalfAngleForPressure(1f), 1e-4f);
-            Assert.Less(_claw.RangeForPressure(0f), _claw.RangeForPressure(1f), "a feathered pull must be a smaller cone");
-            Assert.Less(_claw.HalfAngleForPressure(0f), _claw.HalfAngleForPressure(1f));
+            Assert.AreEqual(_claw.WhipSpreadDegrees, _claw.SpreadForPressure(1f), 1e-4f);
+            Assert.Less(_claw.RangeForPressure(0f), _claw.RangeForPressure(1f), "a feathered pull must be a smaller claw");
+            Assert.Less(_claw.SpreadForPressure(0f), _claw.SpreadForPressure(1f));
+            Assert.Greater(_claw.ClawBurnRadius, 0f, "a finger with no reach burns nothing - the fingers ARE the weapon");
             float prev = -1f;
             for (float p = 0f; p <= 1.0001f; p += 0.05f)
             {
@@ -55,7 +56,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ClawCellEmptiesHalfAgainFasterForTheLargestFlame()
         {
-            // Design ask 2026-10-16: each cone's energy cell empties 1.5x faster for larger flames.
+            // Design ask 2026-10-16: each claw's energy cell empties 1.5x faster for larger flames.
             Assert.AreEqual(1.5f, _claw.CellDrainPerSecond(1f) / _claw.CellDrainPerSecond(0f), 1e-4f);
             Assert.Greater(_claw.CellDrainPerSecond(0.5f), _claw.CellDrainPerSecond(0f));
             Assert.Less(_claw.CellDrainPerSecond(0.5f), _claw.CellDrainPerSecond(1f));
@@ -63,10 +64,10 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ClawConesSpreadApart()
+        public void ClawsSpreadApart()
         {
-            Assert.Greater(_claw.SplayDegrees, 0f, "the two cones turn outward, LT left and RT right");
-            Assert.Less(_claw.SplayDegrees, _claw.ConeHalfAngle, "splayed past its half-angle a cone no longer reads as forward");
+            Assert.Greater(_claw.SplayDegrees, 0f, "the two claws turn outward, LT left and RT right");
+            Assert.Less(_claw.SplayDegrees, 30f, "splayed that far a claw no longer reads as forward");
         }
 
         [Test]
