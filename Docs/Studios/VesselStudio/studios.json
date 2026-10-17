@@ -113,6 +113,306 @@
       "preview": "previews/brittlestar.png",
       "accent": "#7fd7ff",
       "docs": "Docs/Studios/BRITTLE_STAR.md"
+    },
+    {
+      "id": "gibbon",
+      "name": "Gibbon",
+      "file": "gibbon.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind swing)",
+      "chip": "concept · round 1",
+      "summary": "The swinger. Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rope with no gravity to help, reel in with LT to trade rope for speed, and let go to fling out on the tangent. A fling after a full swing pays a kick. Every prism in the HyperSea is an anchor: the course ribbon, the mass beside it, a rival's trail.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "RT tether · LT reel · release to fling"
+        },
+        {
+          "k": "Reach",
+          "v": "150 u, 60° cone, target memory 0.5 s"
+        },
+        {
+          "k": "Kick",
+          "v": "×1.3 after a 70° swing, cap 170 u/s"
+        },
+        {
+          "k": "Why",
+          "v": "grapple / web-swing: Spider-Man 2, Marvel Rivals, Echo Point Nova"
+        }
+      ],
+      "preview": "previews/gibbon.png",
+      "accent": "#7fe08a",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "flea",
+      "name": "Flea",
+      "file": "flea.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind ricochet)",
+      "chip": "concept · round 1",
+      "summary": "The ricochet. It crawls at 40 u/s on its own; speed comes from bouncing off mass. A hull contact reflects it instead of resetting it, and a press of RT inside the window round the contact is a perfect bounce: ×1.35 and a growing chain. Between bounces it coasts almost ballistically, so you aim the next bounce with the nose. Crouch with LT and release to hop when no mass is near.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "RT at contact: perfect bounce · LT crouch, release to hop"
+        },
+        {
+          "k": "Window",
+          "v": "180 ms, ×1.35 perfect / ×0.85 dull"
+        },
+        {
+          "k": "Speed",
+          "v": "crawl 40, cap 260 u/s"
+        },
+        {
+          "k": "Why",
+          "v": "timing windows and earned speed: Haste, ULTRAKILL, Peglin, parry games"
+        }
+      ],
+      "preview": "previews/flea.png",
+      "accent": "#ffd23f",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "albatross",
+      "name": "Albatross",
+      "file": "albatross.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind soar)",
+      "chip": "concept · round 1",
+      "summary": "The soarer. No engine at all: it carries its own ballast, so it falls, and its wings turn speed into lift. Dive to gain speed, pull up to spend it as height, and ride the updraft that rises over every piece of mass (the course ribbon is a thermal corridor). LT spreads the wings for lift and drag, RT folds them for a clean dive. Energy management, not throttle.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "LT spread (lift) · RT fold (dive) · updrafts over mass"
+        },
+        {
+          "k": "Ballast",
+          "v": "g 10 u/s² (its own; nothing else falls)"
+        },
+        {
+          "k": "Speed",
+          "v": "glides level at 60, dives to 300 u/s"
+        },
+        {
+          "k": "Why",
+          "v": "dive-to-glide: Tears of the Kingdom, Exo One, Sky, the web wings"
+        }
+      ],
+      "preview": "previews/albatross.png",
+      "accent": "#dfe7ff",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "remora",
+      "name": "Remora",
+      "file": "remora.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind slipstream)",
+      "chip": "concept · round 1",
+      "summary": "The drafter. Alone it is slow (55 u/s). In a rival's wake its speed cap becomes their speed ×1.3, so it catches anyone it can get behind. Hold LT within reach behind a rival and it latches: towed at their speed, the draft meter filling, taking petals if its Mass is up. Let go, or press RT, and it slings past at ×1.7 their speed plus the draft. Never leads until the last straight.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "wake draft · LT latch (towed) · release to sling"
+        },
+        {
+          "k": "Draft",
+          "v": "cap = rival speed ×1.3 within 14 u of their path"
+        },
+        {
+          "k": "Sling",
+          "v": "×1.7 their speed + draft bonus, 2.5 s"
+        },
+        {
+          "k": "Why",
+          "v": "racing's draft and slipstream: Mario Kart World, F-Zero, Rocket League boost chains"
+        }
+      ],
+      "preview": "previews/remora.png",
+      "accent": "#ff8a3d",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "dragonfly",
+      "name": "Dragonfly",
+      "file": "dragonfly.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind hover)",
+      "chip": "concept · round 1",
+      "summary": "The hoverer. The only hull whose velocity has nothing to do with its nose: the left stick thrusts in any direction (strafe, forward, back), the right stick looks, A and B climb and sink, LT stops it dead. RT is a dash: 190 u/s for a quarter second in the direction you are pushing, three pips that regrow, and nothing can touch you mid-dash. Twin-stick arena movement in 3D.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "left stick thrusts any way · RT dash (3 pips, i-frames) · LT brake"
+        },
+        {
+          "k": "Hover",
+          "v": "75 u/s, stops in a second"
+        },
+        {
+          "k": "Dash",
+          "v": "190 u/s × 0.25 s, a pip every 1.2 s"
+        },
+        {
+          "k": "Why",
+          "v": "stamina dashes and strafes: Hades II, Silksong, ULTRAKILL, twin-stick arenas"
+        }
+      ],
+      "preview": "previews/dragonfly.png",
+      "accent": "#58e6d8",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "mole",
+      "name": "Mole",
+      "file": "mole.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind burrow)",
+      "chip": "concept · round 1",
+      "summary": "The burrower. The whole game turned inside out: in open space it is slow (40 u/s) and turns badly; inside mass (within 16 u of any prism) it is fast (150 u/s), turns on a dime, and passes straight through. The course ribbon, the mass beside it, every rival's trail is a highway, and the more others lay, the faster you are. LT digs a tunnel of your own mass for the next lap; RT as you leave mass is a timed breach for a kick.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "fast inside mass, slow outside · LT dig · RT breach"
+        },
+        {
+          "k": "Speed",
+          "v": "40 open · 150 inside mass"
+        },
+        {
+          "k": "Turn",
+          "v": "90°/s open · 220°/s inside"
+        },
+        {
+          "k": "Why",
+          "v": "momentum from terrain, inverted: wall-runs, grinds, 'the wall is the fast way'"
+        }
+      ],
+      "preview": "previews/mole.png",
+      "accent": "#c9a27a",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "marlin",
+      "name": "Marlin",
+      "file": "marlin.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind momentum)",
+      "chip": "concept · round 1",
+      "summary": "The drifter. Velocity and nose are two different things: the sticks turn the hull freely while it keeps sliding, RT burns along the nose, LT is a retro burn against the velocity, B flips it 180° in a third of a second (flip and burn). A drift assist bends the velocity gently toward the nose so it reads as 3D drifting rather than a physics puzzle; turn it to 0 in Vessel Config for pure Newtonian flight.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "RT thrust · LT retro · B flip · velocity decoupled"
+        },
+        {
+          "k": "Thrust",
+          "v": "70 u/s², retro 45, cap 220 u/s"
+        },
+        {
+          "k": "Assist",
+          "v": "1.2/s lateral damping (0 = pure)"
+        },
+        {
+          "k": "Why",
+          "v": "3D drift: Chorus's Drift Trance; Squadrons; Everspace 2"
+        }
+      ],
+      "preview": "previews/marlin.png",
+      "accent": "#4fa3ff",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "eel",
+      "name": "Eel",
+      "file": "eel.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind body)",
+      "chip": "concept · round 1",
+      "summary": "The body. A head leading a train of segments that follow its exact path: the body IS its trail, shielded mass a rival's hull bounces off. Longer is slower (72 u/s at 8 segments, 45 at 30), and it grows on crystals and skims. LT coils: the turn doubles and the body bunches up behind you; let go and the tail whips straight, cutting any rival or neutral mass it sweeps. RT sheds five segments as standing prisms for a speed burst.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "LT coil, release to whip · RT shed · the body is the trail"
+        },
+        {
+          "k": "Body",
+          "v": "8 → 30 segments, 6 u apart"
+        },
+        {
+          "k": "Speed",
+          "v": "72 u/s short → 45 u/s long"
+        },
+        {
+          "k": "Why",
+          "v": "snake and trail games: Snake.io, Slither, Hole.io (mobile top 10), Tron"
+        }
+      ],
+      "preview": "previews/eel.png",
+      "accent": "#b9ff5a",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "octopus",
+      "name": "Octopus",
+      "file": "octopus.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind pulse)",
+      "chip": "concept · round 1",
+      "summary": "The pulse jet. Hold LT to inhale: it slows, the mantle swells, the charge fills in 0.7 s. Release and it jets, up to 205 u/s, then fades toward a 20 u/s drift. The beat is yours: release at the same interval as your last two pulses and the chain grows, each pulse ×1.1 more, up to ×1.8. RT spends a pulse of charge on an ink cloud of danger prisms behind you. Charge-and-release movement with a rhythm layer you set yourself.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "LT inhale, release to jet · your own tempo multiplies · RT ink"
+        },
+        {
+          "k": "Jet",
+          "v": "55 → 205 u/s by charge, × chain to 1.8"
+        },
+        {
+          "k": "Beat",
+          "v": "±15% of your last interval"
+        },
+        {
+          "k": "Why",
+          "v": "charge-release (Kirby Air Riders, Mario Kart World) + rhythm (Hi-Fi Rush)"
+        }
+      ],
+      "preview": "previews/octopus.png",
+      "accent": "#d98bff",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
+    },
+    {
+      "id": "gecko",
+      "name": "Gecko",
+      "file": "gecko.html",
+      "group": "concept",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind surface)",
+      "chip": "concept · round 1",
+      "summary": "The runner. Hold LT near any mass and it sticks, then runs along the structure: the chain of prisms guides its course, its speed climbs to 130 u/s, the camera rolls onto the surface, and a rival's rail it runs becomes yours. Let go, or press RT, and it hops off with a ×1.4 kick and three seconds of carried momentum to the next surface. Wall-running, where every prismscape is a wall.",
+      "spec": [
+        {
+          "k": "Mechanic",
+          "v": "LT stick and run along mass · release / RT hop"
+        },
+        {
+          "k": "Run",
+          "v": "to 130 u/s on a surface, 50 free"
+        },
+        {
+          "k": "Hop",
+          "v": "×1.4, momentum kept 3 s"
+        },
+        {
+          "k": "Why",
+          "v": "wall-running: Titanfall 2, Ghostrunner, Mario Kart World's wall ride"
+        }
+      ],
+      "preview": "previews/gecko.png",
+      "accent": "#ff9ec6",
+      "docs": "Docs/Studios/CONCEPT_FLEET.md"
     }
   ],
   "newCard": {
@@ -142,6 +442,8 @@
     "studio-domains.js",
     "studio-theme.js",
     "studio-game.js",
-    "studio-new.js"
+    "studio-new.js",
+    "studio-kinds.js",
+    "studio-vessel.js"
   ]
 }

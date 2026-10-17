@@ -196,7 +196,6 @@ namespace CosmicShore.Gameplay
         float _lastYawTarget;
         float _lastRollTarget;
 
-        RaycastHit _hit;
         float _maxDistance = 50f;
         float _maxDistanceSquared;
 
@@ -336,6 +335,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The mode's last report for this pilot (see <see cref="ObjectiveReport"/>).</summary>
         public ObjectiveReport Objective => _objective;
+
+        /// <summary>
+        /// Where the thing this pilot is AFTER is (a Regatta ring), else the point it steers for. A hull autopilot gauges
+        /// RANGE with this and bearing with <see cref="TargetPosition"/>: when a mode steers along a race line the
+        /// steering point always sits one look-ahead away, so a "how close is my target" question asked of it never comes
+        /// true (the Stoat's field autopilot never laid a pair, 2026-10-17). The one pilot-side read of the mode's
+        /// report: its position, nothing about its phase.
+        /// </summary>
+        public Vector3 ObjectivePosition => _objective.Has ? _objective.Objective : _targetPosition;
 
         /// <summary>A mode's steering hook says what it is doing (presentation only, no allocation).</summary>
         public void ReportObjective(ObjectivePhase phase, Vector3 objective, int ring = -1, int lap = -1) =>
@@ -1377,87 +1385,5 @@ namespace CosmicShore.Gameplay
                 yield return CosmicShore.Utility.WaitCache.Seconds(action.Cooldown);
             }
         }
-        
-        #region Unused Methods
-
-        Vector3 ShootLaser(Vector3 position)
-        {
-            if (Physics.Raycast(transform.position + position, transform.forward, out _hit, _maxDistance))
-            {
-                Debug.DrawLine(transform.position + position, _hit.point, Color.red);
-                return _hit.point - (transform.position + position);
-            }
-
-            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * _maxDistance, Color.green);
-            return transform.forward * _maxDistance - (transform.position + position);
-        }
-        
-        float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
-        {
-            float rollAdjustment = 0f;
-
-            // Example logic: If top right and bottom left corners detect obstacles, induce a roll.
-            if (obstacleDirections[Corner.TopRight].magnitude > 0 && obstacleDirections[Corner.BottomLeft].magnitude > 0)
-                rollAdjustment -= 1; // Roll left
-            if (obstacleDirections[Corner.TopLeft].magnitude > 0 && obstacleDirections[Corner.BottomRight].magnitude > 0)
-                rollAdjustment += 1; // Roll right
-
-            return rollAdjustment;
-        }
-
-        float SigmoidResponse(float input)
-        {
-            float output = 2 * (1 / (1 + Mathf.Exp(-0.1f * input)) - 0.5f);
-            return output;
-        }
-        
-        
-        /*
-         
-         // TODO - This method is moved inside AIPilot. Some logics and conditions might have
-         // been temporarily removed, but check this method, for adding those logics inside the
-         // new method of AIPilot
-         IEnumerator SetTargetCoroutine()
-        {
-            // TODO - these lists if needed, should be specified separate.
-            List<ShipClassType> aggressiveShips = new List<ShipClassType>
-            {
-                ShipClassType.Rhino,
-                ShipClassType.Sparrow,
-            };
-
-            var rand = new System.Random();
-
-            // Assume activeNode can't change.
-            var activeCell = CellControlManager.Instance.GetCellByPosition(transform.position);
-            if (activeCell == null)
-                activeCell = CellControlManager.Instance.GetNearestCell(transform.position);
-
-            while (true)
-            {
-                if (activeCell != null &&
-                    // TODO - Commented out as aggressive
-                    // aggressiveShips.Contains(vessel.VesselStatus.ShipType) &&
-                    activeCell.ControllingTeam != Teams.None)
-                {
-                    if ((VesselStatus.Team == activeCell.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
-                    {
-                        _targetPosition = _crystalPosition;
-                    }
-                    else
-                    {
-                        _targetPosition = activeCell.GetExplosionTarget(activeCell.ControllingTeam);  // Block centroid belonging to the winning team
-                    }
-                }
-                else
-                {
-                    _targetPosition = _crystalPosition;
-                }
-                yield return CosmicShore.Utility.WaitCache.Seconds(targetUpdateFrequencySeconds);
-            }
-        }*/
-
-
-        #endregion
     }
 }
