@@ -43,8 +43,7 @@ namespace CosmicShore.ScriptableObjects
         public virtual void Spawn(Vector3 spawnPoint, Domains domain)
         {
             var threat = GameObject.Instantiate(threatPrefab, spawnPoint, Quaternion.identity);
-            ITeamAssignable iTeam = threat.GetComponent<ITeamAssignable>();
-            if (iTeam != null)
+            if (threat.TryGetComponent(out ITeamAssignable iTeam))
                 iTeam.SetTeam(domain);
         }
     }

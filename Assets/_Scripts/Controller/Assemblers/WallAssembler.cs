@@ -417,11 +417,9 @@ namespace CosmicShore.Gameplay
                 var trailBlock = s_mateScratch[i];
                 if (trailBlock == null || trailBlock.destroyed) continue;
 
-                WallAssembler mateComponent = trailBlock.GetComponent<WallAssembler>();
-                if (mateComponent == null)
+                if (!trailBlock.TryGetComponent(out WallAssembler mateComponent))
                 {
-                    HealthPrism healthPrism = trailBlock.GetComponent<HealthPrism>();
-                    if (healthPrism != null)
+                    if (trailBlock.TryGetComponent(out HealthPrism healthPrism))
                     {
                         healthPrism.Reparent(Prism.transform.parent);
                     }

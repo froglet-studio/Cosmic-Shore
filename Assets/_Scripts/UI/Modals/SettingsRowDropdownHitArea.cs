@@ -46,8 +46,7 @@ namespace CosmicShore.UI
             var graphic = row.GetComponent<Graphic>();
             if (graphic == null || !graphic.raycastTarget) return;
 
-            var hitArea = row.GetComponent<SettingsRowDropdownHitArea>();
-            if (hitArea == null) hitArea = row.gameObject.AddComponent<SettingsRowDropdownHitArea>();
+            if (!row.TryGetComponent(out SettingsRowDropdownHitArea hitArea)) hitArea = row.gameObject.AddComponent<SettingsRowDropdownHitArea>();
             hitArea.dropdown = dd;
         }
 
