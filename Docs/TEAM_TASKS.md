@@ -445,6 +445,33 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
+### T-20261017-b06e · open · decision · Crew vessels
+- **Task:** Decide how the Kite Navigator seat goes online: today the board, motes, AI and every effect run on the hull's local human's machine. A second human on another machine needs the seat replicated, and a choice of which machine decides pops, blasts, Mass clusters, boost and steals (vessel rule 48). Also decide the arena case: the seat's swap uses PilotSwapGesture, which in an arena match also asks the arena to swap hulls while the human flies.
+- **Done when:** A written plan in KITE_NAVIGATOR.md that names the deciding machine per effect and the gesture owner in arenas
+- **Who can take it:** Garrett with Yash (party / multiplayer)
+- **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
+
+### T-20261017-efca · open · dev · Crew vessels
+- **Task:** When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule.
+- **Done when:** A duo-vessel entry seats the kite on a hull with no editor menu
+- **Who can take it:** Garrett (duo-vessel owner)
+- **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; .claude/skills/duo-vessel/SKILL.md on cece/sharp-tesla-j0kd7z
+
+### T-20261017-3cbe · open · content · Crew vessels
+- **Task:** Author FMOD events for the Kite Navigator's seven empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal.
+- **Done when:** Every slot holds a real event and plays in a playtest
+- **Who can take it:** anyone who does audio
+- **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset
+
+### T-20261017-aca2 · open · test · Crew vessels
+- **Task:** Playtest the Kite in the Unity Editor: open the Toybox, fly the Kite station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Kite). It has only been compiled headlessly.
+- **Done when:** The checklist entry is marked verified, or each failing step is a dev task naming what was seen
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; Docs/UNITY_VERIFICATION_CHECKLIST.md (Kite Navigator entry)
 ### T-20261017-cb31 · open · test · vessels
 - **Task:** Fly the Shrike in Menu_Main freestyle and run its editor checklist (modes on X/RB/B, LT eyepiece with crosshairs, RT per mode, docking, Mass detach, crystal flora, missile count)
 - **Done when:** Every step of the Shrike entries in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or filed as a bug

@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53a58656e82a4b9fb1f0c5342bf758b7, type: 3}
+  m_Name: KiteNavigatorConfig
+  m_EditorClassIdentifier: 
+  boardRadius: 160
+  anchor: 0.3
+  frame: 0
+  easeRate: 3
+  reachY: 40
+  kiteRadius: 8
+  kiteSpeed: 320
+  kiteAccel: 12
+  tailLength: 1.6
+  thumbOffsetMillimetres: 21
+  offsetMouse: 0
+  moteHome: 0
+  moteCount: 26
+  moteCluster: 4
+  moteSpread: 18
+  mixedLoops: 0
+  growth: 2
+  spaceExplosions:
+  - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
+  spaceMaxScale: 60
+  spaceMaxScaleCap: 640
+  massPrisms: 6
+  massPrismCap: 240
+  massPrismScale: {x: 2, y: 2, z: 5}
+  massPrismsPerFrame: 40
+  timeBoostSeconds: 1.5
+  timeBoostCap: 30
+  chargePetals: 1
+  chargeCap: 30
+  stealCooldown: 1
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  aiSkill: 2
+  boardScreenSize: 0.55
+  boardScreenCentre: {x: 0.76, y: 0.34}
+  boardTouchMargin: 0.25
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  loopClosedSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  loopFizzledSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  prismPoppedSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  massClusterSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  timeBoostSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  chargeSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  stealSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
