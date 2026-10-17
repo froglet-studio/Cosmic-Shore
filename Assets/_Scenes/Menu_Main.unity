@@ -21551,7 +21551,7 @@ RectTransform:
   - {fileID: 8076153094407706410}
   - {fileID: 5738383061455623117}
   - {fileID: 1613024079}
-  - {fileID: 529319828913765578}
+  - {fileID: 228295460563533038}
   m_Father: {fileID: 3251318990371052344}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -22398,6 +22398,55 @@ MonoBehaviour:
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
   colorToken: 11
   colorDrivenExternally: 0
+--- !u!1 &920744703827296296
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 228295460563533038}
+  - component: {fileID: 933938847150904715}
+  m_Layer: 5
+  m_Name: FlyHintDock
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &228295460563533038
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920744703827296296}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 529319828913765578}
+  m_Father: {fileID: 1769152617528871830}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &933938847150904715
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920744703827296296}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &67046692750966094
 GameObject:
   m_ObjectHideFlags: 0
@@ -22433,7 +22482,7 @@ RectTransform:
   m_Children:
   - {fileID: 686832387859091497}
   - {fileID: 991809081977616941}
-  m_Father: {fileID: 1769152617528871830}
+  m_Father: {fileID: 228295460563533038}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
@@ -45830,6 +45879,9 @@ MonoBehaviour:
   - {fileID: 3602970348709213962}
   - {fileID: 7613213338458363602}
   - {fileID: 907027448902480257}
+  - {fileID: 1024912336248131786}
+  - {fileID: 1473612410234841810}
+  - {fileID: 920744703827296296}
   crystalClickHandler: {fileID: 0}
   freestyleToggleCooldown: 3
   NavBarLine: {fileID: 0}

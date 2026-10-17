@@ -68,6 +68,7 @@ namespace CosmicShore.UI
         static readonly Vector3 StageOrigin = new(0f, -110000f, 30000f);
 
         RawImage _surface;
+        KitSightline _sight;
         Camera _camera;
         RenderTexture _target;
         Transform _stage;
@@ -83,7 +84,14 @@ namespace CosmicShore.UI
         VesselClassType _shown = VesselClassType.Any;
         SO_Vessel _vessel;
 
-        void Awake() => _surface = GetComponent<RawImage>();
+        void Awake()
+        {
+            _surface = GetComponent<RawImage>();
+            _sight = new KitSightline(transform, null, _surface ? _surface.canvasRenderer : null);
+        }
+
+        /// <summary>True while something covers the stage (the Abilities tab's TRY): no renders.</summary>
+        public bool Covered { get; set; }
 
         // Released when the screen goes away (nothing holds a surface for a view it is not drawing) and
         // rebuilt for the same vessel when it comes back.
@@ -199,8 +207,27 @@ namespace CosmicShore.UI
             _model.transform.localRotation = Quaternion.Euler(0f, 0f, roll);
 
             if (Time.unscaledTime < _nextRender) return;
+            // Screens stay ACTIVE beside each other in the strip (only freestyle switches them off), so
+            // without this the stage rendered a 768 px vessel 30 times a second behind Home and every
+            // other screen - a full camera render the player never saw (the menu slowdown, 2026-10-17).
+            if (Covered || (_sight != null && !_sight.Visible) || !OnScreen()) return;
             _nextRender = Time.unscaledTime + 1f / Mathf.Max(1, renderRate);
             Step();
+        }
+
+        static readonly Vector3[] s_corners = new Vector3[4];
+
+        /// <summary>True when any part of the stage lies inside the screen (the strip slides other screens
+        /// off it).</summary>
+        bool OnScreen()
+        {
+            if (!(transform is RectTransform rt)) return true;
+            var canvas = rt.GetComponentInParent<Canvas>();
+            var cam = canvas && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            rt.GetWorldCorners(s_corners);
+            var min = RectTransformUtility.WorldToScreenPoint(cam, s_corners[0]);
+            var max = RectTransformUtility.WorldToScreenPoint(cam, s_corners[2]);
+            return max.x > 0f && min.x < Screen.width && max.y > 0f && min.y < Screen.height;
         }
 
         void Step()

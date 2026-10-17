@@ -652,7 +652,9 @@ PANEL_W = 420
 # The window's backdrop is glass, not a slab: the menu scene reads through it (the user, 2026-10-16:
 # "I liked the transparent backgrounds way more than the solid black backgrounds"). Shared by the
 # Arena, Toy Box and Mission windows.
-WINDOW_BACKDROP_ALPHA = 0.55
+# 0.55 -> 0.75 on 2026-10-17 (the owner: "make the bg opaque by 20%"): still glass, but Home no longer
+# reads through behind a window's title and Back.
+WINDOW_BACKDROP_ALPHA = 0.75
 # Rev 3: the four windows' body and header, shared. The left inset clears the friends drawer's handle
 # (author_menu_friends_drawer.HANDLE, 76 px on the left edge, drawn over every window) with 24 px of
 # air; the right keeps 60. Vertical: 196 under the top (nav + header), 40 over the bottom.

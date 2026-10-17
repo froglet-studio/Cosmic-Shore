@@ -32,6 +32,8 @@ namespace CosmicShore.UI
         private ModePreviewDefinitionSO definition;
         [SerializeField, Tooltip("Optional: resolved from the scene when empty (the menu holds one).")]
         private ModePreviewSession session;
+        [SerializeField, Tooltip("The 3D stage under the window: it stops rendering while TRY covers it.")]
+        private HangarVesselStage stage;
 
         [Header("Words")]
         [Tooltip("The name the drill's coach uses for this place (its {mode} token).")]
@@ -101,6 +103,7 @@ namespace CosmicShore.UI
 
         void Show(bool shown)
         {
+            if (stage) stage.Covered = shown;
             KitVisibility.SetShown(windowGroup, shown);
             KitVisibility.SetShown(flyingHint, shown);
         }

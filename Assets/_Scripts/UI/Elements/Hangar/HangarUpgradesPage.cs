@@ -33,6 +33,8 @@ namespace CosmicShore.UI
             public Image[] pips = new Image[10];
             public Image elementGlyph;
             public Image glow;
+            [Tooltip("The breathing element glow behind the glyph.")]
+            public KitElementHalo halo;
             [HideInInspector] public int level;
         }
 
@@ -97,6 +99,7 @@ namespace CosmicShore.UI
                     row.upgradeText.text = open || string.IsNullOrEmpty(entry.UpgradeLabel) ? string.Empty
                         : Fill(upgradeTemplate, ("upgrade", entry.UpgradeLabel));
                 if (row.elementGlyph) row.elementGlyph.color = Colour(row.element);
+                if (row.halo) row.halo.SetColour(Colour(row.element));
             }
             ResetPreview();
         }

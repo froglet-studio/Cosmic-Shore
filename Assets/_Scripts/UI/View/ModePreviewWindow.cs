@@ -58,6 +58,14 @@ namespace CosmicShore.UI
                                  "hand a card's small window a needlessly large surface.")]
         [Min(64)] int maxRenderHeight = 1080;
 
+        [Header("Tap to fly")]
+        [SerializeField, Tooltip("Take focus only on a DOUBLE tap of the surface. For a surface that fills the window " +
+                                 "behind its settings, where a single stray tap would otherwise launch the player " +
+                                 "into the game. A FLY control (RequestFocus) still goes in on one press.")]
+        bool doubleTapToFocus;
+        [SerializeField, Min(0.1f), Tooltip("Seconds between the two taps of a double tap.")]
+        float doubleTapSeconds = 0.4f;
+
         [Header("Guided path")]
         [SerializeField, Tooltip("What a guided path spotlights to say 'fly here' (optional; empty = the surface). " +
                                  "A window whose surface fills the screen points this at its FLY control: a " +
@@ -307,7 +315,21 @@ namespace CosmicShore.UI
 
         // ── Focus ────────────────────────────────────────────────────────────
 
+        float _lastTap = -10f;
+
         void HandleFocusButton()
+        {
+            if (doubleTapToFocus)
+            {
+                float now = Time.unscaledTime;
+                bool second = now - _lastTap <= doubleTapSeconds;
+                _lastTap = second ? -10f : now;
+                if (!second) return;
+            }
+            Request();
+        }
+
+        void Request()
         {
             if (!_focusEnabled || _state != State.Live || HasFocus) return;
             OnFocusRequested?.Invoke();
@@ -318,7 +340,7 @@ namespace CosmicShore.UI
         /// can reach: the rev-3 configure window draws this surface full-bleed BEHIND its settings,
         /// where it cannot also be the first control in focus order.
         /// </summary>
-        public void RequestFocus() => HandleFocusButton();
+        public void RequestFocus() => Request();
 
         /// <summary>
         /// Grant focus. Called by the session once it has actually handed input to the vessel —

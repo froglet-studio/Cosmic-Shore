@@ -107,7 +107,19 @@ namespace CosmicShore.UI
         /// </summary>
         public ElementalBarsView ElementBars => elementBars;
 
-        void Awake() => Build();
+        void Awake()
+        {
+            // The lava blobs move every frame. On GameCanvas (thousands of graphics) each move re-batched
+            // the WHOLE canvas every frame - the in-match slowdown after the lava-lamp row (2026-10-17). A
+            // nested Canvas on the row confines that re-batch to the row; it needs its own raycaster for
+            // the touch ability buttons inside it.
+            if (!TryGetComponent<Canvas>(out _))
+            {
+                gameObject.AddComponent<Canvas>();
+                gameObject.AddComponent<GraphicRaycaster>();
+            }
+            Build();
+        }
 
         /// <summary>
         /// The scale that draws THIS element's icon at the fleet's one drawn size, whatever size the

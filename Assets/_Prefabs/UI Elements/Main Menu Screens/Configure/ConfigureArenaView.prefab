@@ -288,6 +288,8 @@ MonoBehaviour:
   focusHint: {fileID: 819868265453055768}
   renderHeight: 360
   maxRenderHeight: 720
+  doubleTapToFocus: 1
+  doubleTapSeconds: 0.4
   guideTarget: {fileID: 319114659214574448}
 --- !u!1 &58754470269937528
 GameObject:
@@ -11784,7 +11786,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Tap to fly
+  m_text: Double-tap to fly
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
   m_sharedMaterial: {fileID: 4519786210045101501, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}

@@ -292,6 +292,7 @@ ABILITIES_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarAbiliti
 UPGRADES_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarUpgradesPage.cs")
 GAMES_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarGamesPage.cs")
 PILOTS_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarPilotsPage.cs")
+HALO_SCRIPT = K.kit_script("KitElementHalo")
 TRY_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarAbilityPreview.cs")
 PREVIEW_WINDOW = K.meta_guid("Assets/_Scripts/UI/View/ModePreviewWindow.cs")
 PREVIEW_DEF_SCRIPT = K.meta_guid("Assets/_Scripts/ScriptableObjects/ModePreviewDefinitionSO.cs")
@@ -340,7 +341,7 @@ def kit_row(parent, key, name, r, layout_h, content_keys=()):
         .add("img", 114, K.image(tok("TextLight", 0.0), K.kit_sprite("kit_sliver10_line2"), True)).add("le", 114, le(ignore=True))
     fill = b.child(N(f"{key}/Fill", "Fill", STRETCH))
     fill.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.6), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.8), K.kit_sprite("kit_sliver10_fill"), True, raycast=True))
     bord = b.child(N(f"{key}/Border", "Border", STRETCH))
     bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
     glow = b.child(N(f"{key}/Glow", "Glow", R((0, 0), (1, 1), (0, 0), (4, 4))))
@@ -359,10 +360,40 @@ def kit_row(parent, key, name, r, layout_h, content_keys=()):
     return b
 
 
-def page_node(panel, key, shown):
+def page_node(panel, key, shown, own_canvas=False):
     p = panel.child(N(f"Tabs/{key}", key, R((0, 0), (1, 1), (0, -36), (-44, -132))))
     p.add("cg", 225, canvas_group(shown))
+    if own_canvas:
+        # A page that animates every frame (the element halos) gets its own Canvas, so its writes
+        # re-batch the page and never Menu_Main's whole canvas; a nested Canvas needs its own raycaster.
+        p.add("canvas", 223, lambda ctx, go: (
+            "Canvas:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {go}}}\n"
+            "  m_Enabled: 1\n  serializedVersion: 3\n  m_RenderMode: 0\n  m_Camera: {fileID: 0}\n"
+            "  m_PlaneDistance: 100\n  m_PixelPerfect: 0\n  m_ReceivesEvents: 1\n  m_OverrideSorting: 0\n"
+            "  m_OverridePixelPerfect: 0\n  m_SortingBucketNormalizedSize: 0\n  m_VertexColorAlwaysGammaSpace: 1\n"
+            "  m_AdditionalShaderChannelsFlag: 25\n  m_UpdateRectTransformForStandalone: 0\n"
+            "  m_SortingLayerID: 0\n  m_SortingOrder: 0\n  m_TargetDisplay: 0\n"))
+        p.add("raycaster", 114, lambda ctx, go: K.mono(go, K.GRAPHIC_RAYCASTER,
+              "  m_IgnoreReversedGraphics: 1\n  m_BlockingObjects: 0\n  m_BlockingMask:\n"
+              "    serializedVersion: 2\n    m_Bits: 4294967295\n"))
     return p
+
+
+def ellipsize(node):
+    """Clip a label's overflow with an ellipsis (a long ability line ran under the keycap)."""
+    node.comps = [(k, cid, (lambda b: (lambda ctx, go: b(ctx, go).replace("  m_overflowMode: 0\n", "  m_overflowMode: 1\n")))(body))
+                  if k == "tmp" else (k, cid, body) for k, cid, body in node.comps]
+    return node
+
+
+def halo(row, key, r, phase):
+    """The breathing element glow behind a row's glyph (KitElementHalo); the page sets its colour."""
+    h = row.child(N(key, "Halo", r))
+    h.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), K.kit_sprite("kit_spark"))) \
+        .add("halo", 114, lambda ctx, go: K.mono(go, HALO_SCRIPT,
+             f"  period: 2.6\n  phase: {phase}\n  alphaRange: {{x: 0.18, y: 0.6}}\n  whiteDrift: 0.3\n  flashSeconds: 0.6\n"))
+    return h
 
 
 def list_node(page, key, top, spacing=10):
@@ -377,21 +408,22 @@ def page_header(page, key, title, line):
 
 
 def abilities_page(panel):
-    page = page_node(panel, "Abilities", True)
+    page = page_node(panel, "Abilities", True, own_canvas=True)
     page_header(page, "Tabs/Abilities", "PRESS A CONTROL TO TRY IT", "Labels follow your device. The vessel performs each one.")
     lst = list_node(page, "Tabs/Abilities/List", 54)
     for name, _ in ELEMENTS:
         k = f"Tabs/Abilities/{name}"
         row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, 94), (0.5, 1)), 94)
+        halo(row, f"{k}/Halo", TLr(-6, -1, 96, 96), round(0.25 * [n for n, _ in ELEMENTS].index(name), 2))
         row.child(N(f"{k}/Hex", "Hex", TLr(14, 19, 56, 56))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image(tok("SurfaceLight", 0.35), K.kit_sprite("kit_hex_fill"), preserve=True))
         row.child(N(f"{k}/Icon", "Icon", TLr(24, 29, 36, 36))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), preserve=True))
-        label(row.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (-38, -16), (-160, 26), (0, 1)))), name, "H3", "TextLight")
+        ellipsize(label(row.child(N(f"{k}/Name", "Name", R((0, 1), (1, 1), (86, -14), (-(86 + 96), 26), (0, 1)))), name, "H3", "TextLight"))
         row.child(N(f"{k}/Glyph", "Glyph", TLr(86, 46, 16, 16))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), element_glyph(name), preserve=True))
         label(row.child(N(f"{k}/Element", "Element", TLr(108, 45, 160, 18))), name, "Label", "NeutralLightest")
-        label(row.child(N(f"{k}/Desc", "Desc", R((0, 1), (1, 1), (-38, -66), (-160, 20), (0, 1)))), "", "BodySmall", "NeutralLightest")
+        ellipsize(label(row.child(N(f"{k}/Desc", "Desc", R((0, 1), (1, 1), (86, -66), (-(86 + 96), 20), (0, 1)))), "", "BodySmall", "NeutralLightest"))
         cap = row.child(N(f"{k}/Keycap", "Keycap", TRr(18, 27, 64, 40)))
         cap.add("cg", 225, canvas_group(True))
         cap.child(N(f"{k}/Keycap/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()) \
@@ -417,7 +449,8 @@ def abilities_page(panel):
                      f"    nameText: {ref(ctx.c(f'{k}/Name', 'tmp'))}\n    elementText: {ref(ctx.c(f'{k}/Element', 'tmp'))}\n"
                      f"    descriptionText: {ref(ctx.c(f'{k}/Desc', 'tmp'))}\n    elementGlyph: {ref(ctx.c(f'{k}/Glyph', 'img'))}\n"
                      f"    keycapGroup: {ref(ctx.c(f'{k}/Keycap', 'cg'))}\n    keycapText: {ref(ctx.c(f'{k}/Keycap/Label', 'tmp'))}\n"
-                     f"    keycapBorder: {ref(ctx.c(f'{k}/Keycap/Border', 'img'))}\n    glow: {ref(ctx.c(f'{k}/Glow', 'img'))}\n")
+                     f"    keycapBorder: {ref(ctx.c(f'{k}/Keycap/Border', 'img'))}\n    glow: {ref(ctx.c(f'{k}/Glow', 'img'))}\n"
+                     f"    hex: {ref(ctx.c(f'{k}/Hex', 'img'))}\n    halo: {ref(ctx.c(f'{k}/Halo', 'halo'))}\n")
         return K.mono(go, ABILITIES_SCRIPT,
                       "  rows:\n" + rows
                       + f"  prefabs: {K.ref(11400000, VESSEL_PREFABS, 2)}\n  glyphSet: {K.ref(11400000, GLYPH_SET, 2)}\n"
@@ -431,7 +464,8 @@ def abilities_page(panel):
              f"  windowGroup: {ref(ctx.c('Hero/Clip/Try', 'cg'))}\n"
              f"  flyingHint: {ref(ctx.c('Hero/TryHint', 'cg'))}\n"
              f"  definition: {K.ref(11400000, asset_guid('HangarTryPreview'), 2)}\n"
-             "  session: {fileID: 0}\n  placeName: Hangar\n"))
+             "  session: {fileID: 0}\n"
+             f"  stage: {ref(ctx.c('Hero/Clip/Stage', 'stage'))}\n  placeName: Hangar\n"))
     return page
 
 
@@ -475,21 +509,22 @@ def text_button(parent, key, name, caption, r, target_key, target_comp, type_nam
 
 
 def upgrades_page(panel):
-    page = page_node(panel, "Upgrades", False)
+    page = page_node(panel, "Upgrades", False, own_canvas=True)
     page_header(page, "Tabs/Upgrades", "ELEMENTAL LEVELS", "Default form - press an element to see the hull change.")
     lst = list_node(page, "Tabs/Upgrades/List", 54)
     for name, _ in ELEMENTS:
         k = f"Tabs/Upgrades/{name}"
         row = kit_row(lst, k, name, R((0, 1), (1, 1), (0, 0), (0, 112), (0.5, 1)), 112)
+        halo(row, f"{k}/Halo", TLr(-9, -9, 80, 80), round(0.25 * [n for n, _ in ELEMENTS].index(name), 2))
         row.child(N(f"{k}/Glyph", "Glyph", TLr(16, 16, 30, 30))).add("cr", 222, K.canvas_renderer()) \
             .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), element_glyph(name), preserve=True))
-        label(row.child(N(f"{k}/Title", "Title", R((0, 1), (1, 1), (-30, -14), (-120, 24), (0, 1)))), name, "Body", "TextLight")
+        ellipsize(label(row.child(N(f"{k}/Title", "Title", R((0, 1), (1, 1), (60, -14), (-(60 + 80), 24), (0, 1)))), name, "Body", "TextLight"))
         label(row.child(N(f"{k}/LevelLine", "LevelLine", TLr(60, 40, 220, 18))), "Level 0 of 10", "BodySmall", "NeutralLightest")
         label(row.child(N(f"{k}/Level", "Level", TRr(18, 14, 48, 26))), "0", "Data", "TextLight", align="right")
         for p in range(10):
             row.child(N(f"{k}/Pip{p}", f"Pip{p}", TLr(60 + p * 34, 66, 28, 10))).add("cr", 222, K.canvas_renderer()) \
                 .add("img", 114, K.image(tok("SurfaceDark")))
-        label(row.child(N(f"{k}/Upgrade", "Upgrade", R((0, 1), (1, 1), (-30, -84), (-120, 18), (0, 1)))), "", "Label", "NeutralLightest")
+        ellipsize(label(row.child(N(f"{k}/Upgrade", "Upgrade", R((0, 1), (1, 1), (60, -86), (-(60 + 24), 18), (0, 1)))), "", "Label", "NeutralLightest"))
 
     def body(ctx, go):
         rows = ""
@@ -499,7 +534,8 @@ def upgrades_page(panel):
             rows += (f"  - element: {idx}\n    button: {ref(ctx.c(k, 'button'))}\n    titleText: {ref(ctx.c(f'{k}/Title', 'tmp'))}\n"
                      f"    lineText: {ref(ctx.c(f'{k}/LevelLine', 'tmp'))}\n    upgradeText: {ref(ctx.c(f'{k}/Upgrade', 'tmp'))}\n"
                      f"    levelText: {ref(ctx.c(f'{k}/Level', 'tmp'))}\n    pips:\n{pips}"
-                     f"    elementGlyph: {ref(ctx.c(f'{k}/Glyph', 'img'))}\n    glow: {ref(ctx.c(f'{k}/Glow', 'img'))}\n")
+                     f"    elementGlyph: {ref(ctx.c(f'{k}/Glyph', 'img'))}\n    glow: {ref(ctx.c(f'{k}/Glow', 'img'))}\n"
+                     f"    halo: {ref(ctx.c(f'{k}/Halo', 'halo'))}\n")
         return K.mono(go, UPGRADES_SCRIPT,
                       "  rows:\n" + rows + f"  headerLineText: {ref(ctx.c('Tabs/Upgrades/Line', 'tmp'))}\n"
                       f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
@@ -548,7 +584,7 @@ def games_page(panel):
             .add("img", 114, K.image(tok("SurfaceBlack", 0.9), K.kit_sprite("kit_fade_h")))
         label(t.child(N(f"{k}/Eyebrow", "Eyebrow", TLr(20, 16, 300, 16))), "ANY VESSEL", "Label", "ControlActive")
         label(t.child(N(f"{k}/Title", "Title", TLr(20, 36, 400, 34))), "Skim Race", "H2", "TextLight")
-        label(t.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (-50, -74), (-140, 40), (0, 1)))), "", "BodySmall", "NeutralLightest",
+        label(t.child(N(f"{k}/Line", "Line", R((0, 1), (1, 1), (20, -74), (-(20 + 120), 40), (0, 1)))), "", "BodySmall", "NeutralLightest",
               valign="top", wrap=True)
     label(page.child(N("Tabs/Games/Empty", "Empty", R((0, 1), (1, 1), (0, -60), (0, 40), (0.5, 1)))),
           "No games list this vessel yet.", "BodySmall", "NeutralLightest").add("cg", 225, canvas_group(False))
@@ -574,7 +610,7 @@ def pilots_page(panel):
     page_header(page, "Tabs/Pilots", "PILOTS", "Each pilot leans the vessel toward one element.")
     hero = page.child(N("Tabs/Pilots/Hero", "Hero", R((0, 1), (1, 1), (0, -54), (0, 214), (0.5, 1))))
     hero.add("cg", 225, canvas_group(True))
-    framed(hero, "Tabs/Pilots/Hero", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.6)
+    framed(hero, "Tabs/Pilots/Hero", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.8)
     hero.child(N("Tabs/Pilots/Hero/Frame", "Frame", TLr(16, 20, 174, 174))).add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), K.kit_sprite("kit_oct_fill"), preserve=True))
     hero.child(N("Tabs/Pilots/Hero/Portrait", "Portrait", TLr(20, 24, 166, 166))).add("cr", 222, K.canvas_renderer()) \
@@ -629,7 +665,7 @@ def artifacts_page(panel):
     page_header(page, "Tabs/Artifacts", "ARTIFACTS",
                 "A real upgrade to a knob the elements do not reach. Carry one and you can lose it.")
     slot = page.child(N("Tabs/Artifacts/Slot", "Slot", R((0, 1), (1, 1), (0, -60), (0, 110), (0.5, 1))))
-    framed(slot, "Tabs/Artifacts/Slot", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.45)
+    framed(slot, "Tabs/Artifacts/Slot", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.65)
     slot.child(N("Tabs/Artifacts/Slot/Hex", "Hex", TLr(20, 27, 64, 56))).add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceLight", 0.4), K.kit_sprite("kit_hex_line2"), preserve=True))
     label(slot.child(N("Tabs/Artifacts/Slot/Title", "Title", R((0, 1), (1, 1), (52, -28), (-144, 26), (0.5, 1)))), "Undiscovered", "H3", "TextLight")
@@ -734,10 +770,11 @@ def build_view(row_guid):
     cz.add("le", 114, le(mw=0, pw=0, fw=62))
     hero = cz.child(N("Hero", "Hero", R((0, 1), (1, 1), (0, 0), (0, HERO_H), (0.5, 1))))
     clip = hero.child(N("Hero/Clip", "Clip", R((0, 0), (1, 1), (0, 0), (-2, -2))))
-    # Glass, not a slab: the hangar backdrop reads through around the model.
+    # Glass, not a slab: the hangar backdrop reads through around the model (20 % more opaque since
+    # 2026-10-17, the owner: "make the bg opaque by 20%" - the lattice was fighting the text).
     clip.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.35), K.kit_sprite("kit_sliver14_fill"), True)) \
-        .add("th", 114, themed("SurfaceVeryDark", 0.35)) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.55), K.kit_sprite("kit_sliver14_fill"), True)) \
+        .add("th", 114, themed("SurfaceVeryDark", 0.55)) \
         .add("mask", 114, lambda ctx, go: K.mono(go, MASK, "  m_ShowMaskGraphic: 1\n"))
     clip.child(N("Hero/Clip/Floor", "Floor", R((0.5, 0), None, (0, 70), (520, 120)))) \
         .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive", 0.10), K.kit_sprite("kit_spark"))) \
@@ -781,7 +818,8 @@ def build_view(row_guid):
            f"  surface: {ref(ctx.c('Hero/Clip/Try/Surface', 'raw'))}\n"
            f"  statusLabel: {ref(ctx.c('Hero/Clip/Try/Status', 'tmp'))}\n"
            f"  focusButton: {ref(ctx.c('Hero/Clip/Try/Focus', 'button'))}\n"
-           "  focusHint: {fileID: 0}\n  renderHeight: 360\n  maxRenderHeight: 720\n  guideTarget: {fileID: 0}\n"))
+           "  focusHint: {fileID: 0}\n  renderHeight: 360\n  maxRenderHeight: 720\n"
+           "  doubleTapToFocus: 0\n  doubleTapSeconds: 0.4\n  guideTarget: {fileID: 0}\n"))
     clip.child(N("Hero/Clip/Fallback", "FallbackIcon", R(size=(256, 256)))) \
         .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), preserve=True)) \
         .add("cg", 225, canvas_group(False))
@@ -819,7 +857,7 @@ def build_view(row_guid):
 
     # The old Hangar's three sliders, in its own rail and thumb art.
     vz = cz.child(N("Vibe", "Vibe", R((0, 1), (1, 1), (0, -(HERO_H + 16)), (0, VIBE_H), (0.5, 1))))
-    framed(vz, "Vibe", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.45)
+    framed(vz, "Vibe", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.65)
     vz.child(N("Vibe/Icon", "Icon", TLr(24, 16, 24, 24))).add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("ControlActive"), sprite_guid("Assets/_Graphics/Hangar/Hanger_New/Frame 1085.png"), preserve=True))
     label(vz.child(N("Vibe/Title", "Title", TLr(56, 18, 200, 20))), "VIBE", "Label", "TextLight")
@@ -850,7 +888,7 @@ def build_view(row_guid):
     rz = body.child(N("Abilities", "Tabs", R(size=(548, 844))))
     rz.add("le", 114, le(mw=0, pw=0, fw=38))
     panel = rz.child(N("Abilities/Panel", "Panel", R((0, 0), (1, 1), (2.5, 0), (-5, 0))))
-    framed(panel, "Abilities/Panel", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.6)
+    framed(panel, "Abilities/Panel", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.8)
     build_tabs(panel)
 
     # ---- the spend-crystals popup ----
@@ -1176,6 +1214,13 @@ def validate_prefabs(files, guids):
     assert f"PreviewCell: {{fileID: 11400000, guid: {BARREN_CELL}" in tdef and "\n  Mode: 0\n" in tdef \
         and "\n  DurationSeconds: 0\n" in tdef and "\n  ObjectiveTarget: 0\n" in tdef, \
         "TRY's definition must be the Barren cell, Mode 0, no clock and no objective"
+    # A label stretched across its row with a LEFT pivot starts at its anchoredPosition.x: a negative
+    # one starts outside the row (2026-10-17: every ability name and line sat under the icon, x -38).
+    for m in re.finditer(r"^--- !u!224 &(-?\d+)\n((?:(?!--- ).*\n)*)", view, re.M):
+        d = m.group(2)
+        if ("m_AnchorMin: {x: 0," in d and "m_AnchorMax: {x: 1," in d and "m_Pivot: {x: 0," in d):
+            x = float(re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+)", d).group(1))
+            assert x >= 0, f"RectTransform {m.group(1)} is stretched with a left pivot and starts {x:g} px left of its parent"
     _, vibe = doc_of(view, hv("Vibe#vibe"))
     assert vibe and vibe.count("    thumb: {fileID: ") == 3, "the vibe view needs its three sliders"
     for name in RETIRED_PREFABS:
@@ -1288,6 +1333,8 @@ def self_test(current, files, guids):
         "unrelated document edited": scene_plant(lambda s: s.replace("  m_Name: Screens\n", "  m_Name: Screenz\n", 1)),
         "the Games tab's page unwired": view_plant(lambda t: t.replace(
             f"page: {{fileID: {K.FileIds('HangarView')('Tabs/Games#cg')}}}", "page: {fileID: 0}", 1)),
+        "an ability name starting left of its row": view_plant(lambda t: re.sub(
+            r"(m_AnchorMin: \{x: 0, y: 1\}\n  m_AnchorMax: \{x: 1, y: 1\}\n  m_AnchoredPosition: \{x: )86(, y: -14\})", r"\g<1>-38\2", t, count=1)),
         "TRY calling nothing": view_plant(lambda t: t.replace("m_MethodName: Try\n", "m_MethodName: Hide\n", 1)),
         "the Abilities page not forwarding to TRY": view_plant(lambda t: re.sub(
             r"(  tryPreview: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),

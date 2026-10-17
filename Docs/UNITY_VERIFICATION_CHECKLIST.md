@@ -10703,3 +10703,17 @@ errors, 0 in changed files), gates, `author_menu_hangar.py --check` / `--self-te
 3. **Leave mid-flight / mid-build:** switch tab, pick another vessel, open Games > a card (the configure window must get a
    working preview of its own), or leave the Hangar - nothing stays standing; no console errors.
 4. Try a locked vessel and the Urchin / Squirrel too (any hull with an ability map).
+
+## 🔴 2026-10-17 — Playtest round: speed, windows, Hangar text, glyphs, double tap (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New `KitElementHalo.cs`; `HangarVesselStage` (visibility gate), `AbilityLockupView` (nested Canvas), `ModePreviewWindow`
+(double tap). Checked offline: refcompile player OK, editor (the 3 known errors, 0 in changed files), gates, every menu
+generator `--check` / `--self-test`.
+
+1. **Speed:** Home FPS back to what bleeding-edge shows (Profiler: no `Camera.Render` from the Hangar stage while on
+   Home); in a match, `Canvas.BuildBatch` no longer every frame from the ability row.
+2. **Windows:** open Arcade - no pilot chip, crystals, gear or "Tap the cell to fly" behind the title / Back; close it and
+   they fade back (a dismissed fly hint stays gone).
+3. **Hangar:** ability names and lines start right of the glyph, never under the keycap; each row has a coloured hex and a
+   breathing glow; pressing a control flashes it. Upgrades rows the same. The 3D vessel still turns and morphs.
+4. **Configure:** a single tap on the game does nothing; a double tap (or FLY) flies.

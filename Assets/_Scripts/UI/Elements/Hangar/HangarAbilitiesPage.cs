@@ -37,6 +37,10 @@ namespace CosmicShore.UI
             public Image keycapBorder;
             [Tooltip("The row's edge glow while lit.")]
             public Image glow;
+            [Tooltip("The hex behind the ability icon, tinted in the element's colour.")]
+            public Image hex;
+            [Tooltip("The breathing element glow behind the hex.")]
+            public KitElementHalo halo;
             [HideInInspector] public HintBinding pad, key;
             [HideInInspector] public float lit;
         }
@@ -111,6 +115,8 @@ namespace CosmicShore.UI
                     row.elementText.color = c;
                 }
                 if (row.elementGlyph) row.elementGlyph.color = c;
+                if (row.hex) row.hex.color = open ? new Color(1f, 1f, 1f, 0.08f) : new Color(c.r, c.g, c.b, 0.35f);
+                if (row.halo) row.halo.SetColour(open ? Color.clear : c);
 
                 Sprite art = null;
                 if (!open && hud && hud.TryGetAbilityIcon(row.element, out var icon) && icon) art = icon.sprite;
@@ -157,6 +163,7 @@ namespace CosmicShore.UI
         {
             if (row.button && !row.button.interactable) return;
             row.lit = 1f;
+            if (row.halo) row.halo.Flash();
             // While TRY flies, the real ability is firing in the preview; the row only lights.
             if (_stage && !(tryPreview && tryPreview.IsRunning)) _stage.Perform(Colour(row.element));
         }

@@ -1895,3 +1895,25 @@ quest cards go from 600 x 132 to 480 x 100 (art strip 132, folded 40), so both e
 friends drawer's handle (y 484-596). The weekly stats row ("Ends in ... / Your best ...") now sizes each word to itself
 (an HLG over TMP's preferred widths), so "YOUR BEST" no longer runs into its value. `author_menu_home.py` fails if the
 expanded cards reach the handle (planted defect).
+
+## 37. Playtest round (2026-10-17): speed, windows, Hangar text, element glyphs, double tap
+
+From the owner's play test:
+
+- **Speed.** Two per-frame costs from rev 3, fixed: (1) the Hangar's 3D stage rendered its vessel 30 times a second
+  behind EVERY screen - the screens stay active side by side in the strip - and now renders only while it is on screen,
+  visible (`KitSightline`) and not covered by TRY; (2) the in-match lava-lamp row moved 16 blobs a frame on GameCanvas,
+  re-batching the whole canvas each frame, and now sits in its own nested Canvas (added by `AbilityLockupView.Awake`).
+  The Hangar's Abilities and Upgrades pages also get their own Canvas (their halos animate).
+- **Home under the windows.** The pilot chip (with crystals), the Settings gear and the fly hint now fade with the hub
+  row whenever a window opens (`ScreenSwitcher.hubCompanions`; the hint through a wrapper, `HintDock`, so a dismissed
+  hint stays dismissed). The windows' glass backdrop is **20 % more opaque** (0.55 -> 0.75), and so are the Hangar's
+  glass panels.
+- **Hangar text.** The Abilities names / lines and the Upgrades title / upgrade lines were stretched labels positioned
+  at x -38 / -30 (left of their row), so they ran under the icon and the keycap; they start right of the glyph now and
+  end with an ellipsis. `author_menu_hangar.py` fails on any stretched left-pivot label that starts outside its parent.
+- **Animated element glyphs.** Each ability and upgrade row has an element-coloured hex and a halo that breathes in the
+  element's colour (`KitElementHalo`, new; rows offset so they do not pulse together; firing an ability flashes it).
+- **Double tap to fly.** On the configure window's full-bleed preview, one stray tap launched the player; the surface now
+  needs a double tap (`ModePreviewWindow.doubleTapToFocus`), the hint reads "Double-tap to fly", and FLY / TRY still go
+  in on one press.

@@ -699,6 +699,9 @@ def preview_window(root, kind):
            f"  focusButton: {ref(ctx.c('Preview/Focus', 'button'))}\n"
            f"  focusHint: {ref(ctx.go('Fly/Hint'))}\n"
            "  renderHeight: 360\n  maxRenderHeight: 720\n"
+           # Full-bleed behind the settings: one stray tap must not launch the player (the owner,
+           # 2026-10-17: "one tap in the screen is taking me into the game, it should be double tap").
+           "  doubleTapToFocus: 1\n  doubleTapSeconds: 0.4\n"
            # The first-login guide's Preview step spotlights this: the full-bleed surface would be a
            # hole the size of the screen with its caption pushed off the bottom.
            f"  guideTarget: {ref(ctx.rt('Fly/Button'))}\n"))
@@ -751,7 +754,7 @@ def fly_row(chrome):
     hint = row.child(N("Fly/Hint", "FocusHint", R((0, 0.5), None, (0, 0), (180, 18), (0, 0.5))))
     hint.add("cg", 225, canvas_group(True)).add("amb", 114, M.ambient("Breathe", period=2.4, amplitude=0.45)) \
         .add("le", 114, le(pw=180, ph=18))
-    label(hint, "Tap to fly", "Label", "TextLight", align="right")
+    label(hint, "Double-tap to fly", "Label", "TextLight", align="right")
     text_button(row, "Fly/Button", "FlyButton", "FLY", "RequestFocus")
     vname = row.child(N("Fly/Vessel", "Vessel", R((0, 0.5), None, (0, 0), (180, 18), (0, 0.5))))
     vname.add("le", 114, le(pw=180, ph=18))
@@ -1844,6 +1847,7 @@ def validate_prefabs(files):
             assert f"m_Target: {{fileID: {V('Preview#window')}}}" in fly and "m_MethodName: RequestFocus" in fly, \
                 f"{view}: FLY must call ModePreviewWindow.RequestFocus (the pad's only way to fly the preview)"
             _, win = comp_doc(text, V("Preview#window"))
+            assert "  doubleTapToFocus: 1\n" in win, f"{view}: one stray tap on the full-bleed preview would launch the player"
             assert f"  guideTarget: {{fileID: {V('Fly/Button#rt')}}}" in win, \
                 f"{view}: ModePreviewWindow.guideTarget must be FLY (the guide's Preview step would spotlight the whole screen)"
             _, stop = comp_doc(text, V("FlyingHint/Stop#button"))
@@ -1971,6 +1975,8 @@ def self_test(files):
             A.doc_of(f[view], V("Preview/Focus#button"))[1], A.doc_of(f[view], V("Preview/Focus#button"))[1].replace(
                 "m_Navigation:\n    m_Mode: 0\n", "m_Navigation:\n    m_Mode: 3\n"), 1)), validate_prefabs),
         ("FLY calling nothing", lambda f: f.__setitem__(view, f[view].replace("m_MethodName: RequestFocus", "m_MethodName: GrantFocus", 1)),
+         validate_prefabs),
+        ("a single tap launching the player", lambda f: f.__setitem__(view, f[view].replace("  doubleTapToFocus: 1\n", "  doubleTapToFocus: 0\n", 1)),
          validate_prefabs),
         ("the guide pointed at the whole screen", lambda f: f.__setitem__(view, re.sub(
             r"(  guideTarget: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), validate_prefabs),

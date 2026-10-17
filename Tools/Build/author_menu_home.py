@@ -415,7 +415,12 @@ def hint_close(n):
 
 
 def hint_node():
-    n = N("Hint", "FlyHint", R((0.5, 1), None, (0, -500), (HINT_W, HINT_H), (0.5, 1)))
+    # The hint's own CanvasGroup belongs to its Breathe and to DismissibleHint (a closed hint stays at
+    # alpha 0), so the hub fade drives a WRAPPER instead: written by ScreenSwitcher, the hint's group
+    # would bring a closed hint back the moment a window closed.
+    dock = N("HintDock", "FlyHintDock", STRETCH)
+    dock.add("cg", 225, H.canvas_group(True))
+    n = dock.child(N("Hint", "FlyHint", R((0.5, 1), None, (0, -500), (HINT_W, HINT_H), (0.5, 1))))
     n.add("cg", 225, H.canvas_group(True)).add("breathe", 114, M.ambient("Breathe", period=3.2, amplitude=0.45))
     n.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.6), K.kit_sprite("kit_sliver10_fill"), True))
@@ -425,7 +430,7 @@ def hint_node():
     n.add("dismiss", 114, lambda ctx, go: C.mono(go, S["dismiss"],
           f"  group: {C.ref(ctx.c('Hint', 'cg'))}\n  closeButton: {C.ref(ctx.c('Hint/Close', 'button'))}\n"
           "  rememberKey: menu.hint.fly.closed\n"))
-    return n
+    return dock
 
 
 def patch_header(p):
@@ -435,6 +440,8 @@ def patch_header(p):
     # Pilot chip plate + hint: new children of Main_Menu_Panel, the plate drawn under the avatar.
     chip_rt = p.emit(chip_node(), I["panel_rt"], I["panel_rt"])
     hint_rt = p.emit(hint_node(), I["panel_rt"], _last_doc(p, chip_node()))
+    # The hint moved under its fade wrapper (HintDock): a scene written before that still lists it here.
+    p.children(I["panel_rt"], [k for k in p.kids(I["panel_rt"]) if str(k) != str(p.ctx.rt("Hint"))])
 
     # Avatar: octagon ring (its own Image), a masked octagon holding the avatar art, the lamp on top.
     p.rect(I["avatar_rt"], TL(CHIP["x"] + 14, CHIP["y"] + 14, 84, 84))
@@ -693,12 +700,15 @@ def patch_upnext(p):
     kids = [k for k in p.kids(I["panel_rt"]) if k != rt]
     at = kids.index(I["bar_rt"]) if I["bar_rt"] in kids else len(kids)
     p.children(I["panel_rt"], kids[:at] + [rt] + kids[at:])
-    go = str(p.ctx.go("UpNext"))
     sw = p.doc(SWITCHER)
     m = re.search(r"^  hubCompanions:\n((?:  - .*\n)*)", sw, re.M)
     comp = re.findall(r"\{fileID: (-?\d+)\}", m.group(1)) if m else []
-    if go not in comp:
-        comp.append(go)
+    # Everything on Home that is not the hub row fades with it when any window opens (the owner,
+    # 2026-10-17: the pilot chip, crystals, Settings gear and the fly hint read through the windows'
+    # glass backdrop - "You didn't change these").
+    for go in (str(p.ctx.go("UpNext")), str(p.ctx.go("Chip")), IDS["settings_go"], str(p.ctx.go("HintDock"))):
+        if go not in comp:
+            comp.append(go)
     p.replace(SWITCHER, T.set_block(sw, "hubCompanions", K.refs_list("hubCompanions", comp)))
 
 
@@ -811,7 +821,9 @@ def validate(files):
         assert re.search(r"^  %s: \{fileID: [1-9]" % f, up, re.M), f"HomeUpNext.{f} is not wired"
     assert f"guid: {ARCADE_GAMES}" in up, "HomeUpNext.games is not the arcade card list"
     assert up.count("  - {fileID: ") == 4, "the quest meter needs four segments"
-    assert f"  - {{fileID: {ctx.go('UpNext')}}}" in sc.docs[SWITCHER], "Up next does not fade with the hub row (hubCompanions)"
+    for key in ("UpNext", "Chip", "HintDock"):
+        assert f"  - {{fileID: {ctx.go(key)}}}" in sc.docs[SWITCHER], f"{key} does not fade with the hub row (hubCompanions)"
+    assert f"  - {{fileID: {IDS['settings_go']}}}" in sc.docs[SWITCHER], "Settings does not fade with the hub row (hubCompanions)"
     for key in ("Weekly", "Quest"):   # rev 3: each docked card folds and closes
         dk = sc.docs[str(ctx.c(f"UpNext/{key}", "dock"))]
         # Rev 3.1: both cards expanded must end above the friends drawer's handle (centred on the left
