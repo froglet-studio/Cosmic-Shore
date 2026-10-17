@@ -253,12 +253,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row); Docs/UNITY_VERIFICATION_CHECKLIST.md
 
-### T-20261015-a5a5 · open · decision · Performance
+### T-20261015-a5a5 · done · decision · Performance
 - **Task:** The Charge light now sleeps when a crystal is under 24 px in radius on screen (CrystalChargeArcsProfileSO.sleepBelowScreenRadiusPixels; it rebuilt a mesh per crystal per frame and cost more than every other menu script together in the lava lamp). Check the look at the distance it wakes and pick the number; also worth deciding whether the arcs should rebuild at a lower rate mid-distance.
 - **Done when:** Garrett has looked at it in the lava lamp and the field holds his number (generator and asset).
 - **Who can take it:** Garrett (owns the crystals)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-15 lava lamp row)
+- **Done:** 2026-10-17, 2026-10-17, Yash took it over: kept 24 px (a bolt core is ~0.3 px there) and added halfRateBelowScreenRadiusPixels = 64 (alternate-frame rebuild between 24 and 64 px), in the profile, the asset and author_omni_crystal_triangles.py. Garrett may still retune both.
 
 ### T-20261015-1551 · open · test · Performance
 - **Task:** Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the Third Eye CLOSED and one with it OPEN (the editor captures each by itself, labelled MinigameRegatta; the capture records the open cameras), stop Play each time (each capture goes to Claude by itself)
@@ -281,19 +282,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-15 by Yash's session (multiplayer) (`Ys-bleeding-edge`)
 - **See:** Docs/QA/ANDREW_TEST_HANDOFF.md; Docs/MULTIPLAYER_START_HERE.md 5.1; Port/docs/MULTIPLAYER.md
 
-### T-20261015-fafa · open · dev · Performance
+### T-20261015-fafa · done · dev · Performance
 - **Task:** Pool the AOE explosions: ExplosionHelper.SpawnAllAndDetonate does Object.Instantiate(prefab) per detonation and AOEExplosion Destroys itself after (Projectiles/AOEExplosion.cs), so every crystal collect and every explodable projectile mints a GameObject tree. Measured in Amoebius (Skim Race I2, 2026-10-15): VesselImpactor.AcceptImpactee 5.6 KB/frame, all of it SquirrelVesselExplosionByCrystalEffect (the Squirrel's boost ring, ~300 KB per omni collect in .NET; the ring's prisms are the design, the un-pooled explosion object is the practice gap). A GenericPoolManager<AOEExplosion> per prefab (like PrismExplosionPoolManager) with Release instead of Destroy at the end of ExplodeAsync; keep the reset-for-replay cleanup. Go/no-go: a Unity Release capture's Instantiate / GC rows on a crystal collect.
 - **Done when:** AOE explosions come from a pool; perf_hunt.py amoebius shows VesselImpactor.AcceptImpactee under 1 KB/frame on Skim Race I2 and the baseline is adopted; a Release capture of Skim Race shows no Instantiate on a crystal collect.
 - **Who can take it:** Garrett (projectiles / the Squirrel's ring), Yash (offered)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 3.3 (L13) and 2 (10-15 rows)
+- **Done:** 2026-10-17, 2026-10-17, Yash's session: AOEExplosionPool (opt-in, on for the Squirrel ring spawner: 1 miss / 7 reuses per 8 collects). The real allocator was CrystalMorphMeshBuilder.TryBuild (5.22 of 5.53 KB/frame); its per-source emit cache brought VesselImpactor.AcceptImpactee 5.53 -> 3.41 KB/frame, under the 3.83 baseline (rest is Amoebius's Mesh.Set* copy). Unity check: T-20261017-c82c / Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17.
 
-### T-20261015-641c · open · decision · Performance
+### T-20261015-641c · done · decision · Performance
 - **Task:** Spindles are the last big GameObject-renderer cost in the lava lamp (lever L1): one Renderer per limb, ~40k enabled in a grown Lattice with ~4.6k visible, +5.3 ms CPU measured in S2 (record 3.3). Every Prism is already on entities (record 1.2); spindles are not prisms. Decide the shape: draw spindles through Entities Graphics like prisms, or merge a plant's spindles into one mesh per plant, keeping the per-spindle wither fade (continuity law). Ecology is LOCKED, so this is yours to call before anyone builds it.
 - **Done when:** Garrett has picked an approach (or ruled L1 out) and recorded it in Docs/PERFORMANCE_OPTIMIZATION.md 3.3; a build task follows if he picks one.
 - **Who can take it:** Garrett (ecology / flora owner)
 - **Added:** 2026-10-15 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
 - **See:** Docs/PERFORMANCE_OPTIMIZATION.md 1.2 and 3.3 (L1); Docs/Reports/PERFORMANCE.md, Waiting on Garrett
+- **Done:** 2026-10-17, 2026-10-17, Yash's call: measured before building. A grown Lattice holds 2,898 spindles at 8 min in Amoebius (not ~40k); a sub-pixel render LOD hid 0 of them (and 0 in Garland), so it was removed. No structural build until a Unity S2 renderer census (T-20261015-56dd) shows the count is still large. Docs/PERFORMANCE_OPTIMIZATION.md 3.3 L1.
 
 ### T-20261015-6009 · done · test · Regatta AI
 - **Task:** Teach the Regatta Squirrel AI from your flying: Third Eye > Record on, fly Regatta as the Squirrel by hand 5 times to the finish, stop Play and Send to Claude; then ask a session to run learn_from_flights.py --write and test the AI
@@ -340,19 +343,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/Reports/PERFORMANCE.md
 - **Done:** 2026-10-15, Duplicate of T-20261015-fafa: attributed with nested markers to the un-pooled AOE ring explosion on each omni collect (lever L13, Garrett).
 
-### T-20261015-c8e2 · open · dev · Performance
+### T-20261015-c8e2 · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: PoolRefill.FastGrowPrism allocates 0.526 -> 0.7 KB/frame (+33%)
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
 - **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
+- **Done:** 2026-10-17, 2026-10-17: not a code regression. The baseline commit (574e0d39a) itself re-measures 0.766 KB/frame today; the refill tracks boost-prism lays 1:1 at ~20 KB each in .NET (net new ring mass), so it moves with how many rings the AIs lay. Current build 0.693 (repeats to 0.3%); the Skim Race Amoebius baseline was re-adopted from that run with this evidence (Docs/PERFORMANCE_OPTIMIZATION.md 2, 10-17 pool row).
 
-### T-20261015-c7db · open · dev · Performance
+### T-20261015-c7db · done · dev · Performance
 - **Task:** Allocation regression in Amoebius SkimRace|I2|3p: new allocating marker PoolRefill.PrismImplosion: 0.122 KB/frame
 - **Done when:** perf_hunt.py amoebius reads within baseline for that marker
 - **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
 - **Added:** 2026-10-15 by perf_hunt sweep (`perf/performance-optimization`)
 - **See:** Docs/Reports/PERFORMANCE.md
+- **Done:** 2026-10-17, 2026-10-17: fixed. The implosion pool topped its buffer up to 160 although death implosions are batched since D4 and only the Sparrow's ReverseSuction Get()s it; PrismManagers.prefab bufferSizeTarget 160 -> 24. PoolRefill.PrismImplosion 0.157 (baseline commit) / 0.122 -> 0.000 KB/frame. Same prefab: the explosion pool (never Get()) no longer prewarms 1,500 objects at boot.
 
 ### T-20261015-7392 · done · dev · AI training
 - **Task:** Add the pilot's VIEW to the situation recording: record the camera pose/FOV each sample (V1), compute on-screen / occluded / time-to-contact view features and a coarse view grid (V2), gate the target and skipped-skim labels on what was visible (V3), measure the per-pilot reaction lag (V4)
@@ -390,12 +395,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
 
-### T-20261016-0eb3 · open · decision · Regatta AI
+### T-20261016-0eb3 · done · decision · Regatta AI
 - **Task:** Two decisions for the Regatta AIs: (1) put the Stoat on the Regatta card (it is one of the roadmap's six but cannot be flown in Regatta, so its AI cannot learn from flights); (2) cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than Ys-bleeding-edge's - pick one before it merges
 - **Done when:** Both answered in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md
 - **Who can take it:** Yash with Garrett (Stoat and Rhino owner sessions)
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+- **Done:** 2026-10-16, (1) Yash put the Stoat on the Regatta card (2026-10-17, author_regatta_assets.py); (2) the Rhino ramp policy question moved to its own task.
 
 ### T-20261016-2292 · open · test · Arena launch
 - **Task:** Open Menu > Arena in the editor and look at the AI Difficulty row and the re-fitted vessel carousel on all four cards (Astro League, Brood Rush, Regatta, Broadside)
@@ -403,6 +409,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered); Shombith owns Menu_Main
 - **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (AI difficulty on every Arena card)
+
+### T-20261017-c82c · open · test · Performance
+- **Task:** Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at the same density as before and turns towards the crystal after a collect; look for transparent shards drawing in the wrong order where two overlap (they are one instanced draw now, unsorted inside it). (2) Skim Race or Regatta as the Squirrel: ten omni collects in a row, each lays its shielded ring and the crystal still morphs onto it and dissolves.
+- **Done when:** Someone has looked and written here whether the snow reads the same (if not, what is wrong) and the Squirrel collect still morphs; Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17 entry ticked
+- **Who can take it:** Yash (offered), Garrett (crystals, cytoplasm)
+- **Added:** 2026-10-17 by the performance session (perf/performance-optimization) (`perf/performance-optimization`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 2026-10-17; Docs/PERFORMANCE_OPTIMIZATION.md 2 (10-17 row)
 
 ### T-20261016-b12d · open · test · Brittle Star
 - **Task:** Walk the Brittle Star four-mode build step by step in the Editor: the danger trail when overheated in Space Mode, the spare-ring stock (LT refused with none, one per crystal, two at most, the ring regrowing), the HUD cards (Charge = spare rings, Space = heat, red when overheated), an AI seat in an arcade match, and two MPPM clients (petals only; the analog-RT gap). Garrett played it 2026-10-16 and reported it working, not step by step.
@@ -437,7 +450,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done when:** Checklist items 9-12 in Docs/UNITY_VERIFICATION_CHECKLIST.md pass (or each failure is filed as a dev task) and PrismCollisionBurstTests are green
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
-- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-11); Docs/Studios/COLLISION_BURST_LAB.md round 11
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-12); Docs/Studios/COLLISION_BURST_LAB.md rounds 11-12
 
 ### T-20261017-9cab · open · decision · Prisms
 - **Task:** Three calls the round-11/12 burst leaves: (1) at a gentle hit the level-0 explosion cloud is smaller than the old explosion's (0.86 R after round 12's +20% burst 0.12 / drift 0.072, against 1.78 R at 2 s) - keep, or raise them on the lab's Fragments tab (it moves every level at once); (3) round 12's per-death variety (fragmentVariety 0.5): judge it on the lab's Neighbours view - lower it if the deaths read too unalike; (2) your decision set the grade length to 2.2 s, but that is MaterialPropertyAnimator.DefaultTransitionSeconds, every prism colour change in the game - not adopted; adopt or not.
@@ -459,3 +472,102 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), anyone
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
+
+### T-20261016-92b0 · done · decision · Regatta AI
+- **Task:** cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than bleeding-edge's - pick one before it merges (learn_drives_from_flights.py writes only fields both share, so either works)
+- **Done when:** The choice is recorded in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md and the other branch is reconciled
+- **Who can take it:** Yash with Garrett (Rhino owner sessions)
+- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+- **Done:** 2026-10-16, Yash 2026-10-17: no decision step; the Ys-bleeding-edge RampBoostAIPolicySO was rebuilt (brake on the ramp, corner speed, payback) and took the re-arm + explicit end from the cece/relaxed-hopper-r62hbd cut. When that branch merges, keep this file's states and that branch's executor changes (AI_BOOST.md).
+
+### T-20261016-b525 · open · test · Regatta AI
+- **Task:** Fly Regatta I1 as the Stoat, 5+ finished races, storing every one: Mass mode's dipole on the straights, Time mode (B) slings into the hard corners; in one race flip Third Eye > Pilots > AI on your Stoat for a lap and back. Then ask a session to run learn_drives_from_flights.py --write (writes StoatModeAction / StoatDipoleConfig / StoatSlingConfig _Regatta)
+- **Done when:** 3+ finished Stoat Regatta flights on bugledger/<you> and the checklist entry 'The Stoat races Regatta' steps 1-4 pass
+- **Who can take it:** Yash
+- **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
+
+### T-20261016-822d · open · dev · Multiplayer
+- **Task:** Find and fix what the first real multiplayer logs showed: B31 (the party session refresh is rate-limited about every 10 s while a party exists), B32 (after a guest leaves mid-match, the host's party lobby answers NotInLobby and the host sits in Reconnecting) and B33 (in the editor, a second Play starts inside the first Play's dead party session, because the project skips the domain reload).
+- **Done when:** Each of B31-B33 in Docs/PartySystem/BUGS.md is root-caused and fixed, or closed with the reason, and a new two-machine log (net_logs.py show) shows it gone
+- **Who can take it:** Yash (party owner)
+- **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/PartySystem/BUGS.md B31-B33; Caleb's logs on bugledger/belac (python3 Tools/Build/net_logs.py collect)
+
+### T-20261016-c76e · open · test · Multiplayer
+- **Task:** Two-machine repro for B32 with both logs: host and guest party up on two PCs, start a Regatta match, the guest leaves mid-race, then the host waits 2 minutes in the menu and stops Play. Both editors send their logs by themselves.
+- **Done when:** net_logs.py collect shows ONE test with both machines (host/main and guest/main), and the host's timeline says whether it left Reconnecting
+- **Who can take it:** Caleb, Yash (offered)
+- **Added:** 2026-10-16 by Yash (`Ys-bleeding-edge`)
+- **See:** Docs/PartySystem/BUGS.md B32; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Multiplayer test logs' steps 7-9
+
+### T-20261016-01ec · open · test · Regatta AI
+- **Task:** Run RhinoRampDriveTests and watch an AI Rhino race Regatta I1-I4 in the Third Eye: it should ramp on straights, brake ON the ramp before each ring, and only let go round sharp corners
+- **Done when:** the tests pass and the four times are written into REGATTA_AI_ROADMAP.md's Rhino row
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Rhino AI brakes on the ramp)
+
+### T-20261016-b719 · open · test · Regatta AI
+- **Task:** Run DolphinChargeDriveTests and watch an AI Dolphin race Regatta I1-I4 in the Third Eye: after each discharge it should drift again near its top speed (Third Eye: 'drifts again at the peak'), and every Regatta AI should thread rings through their centre without circling
+- **Done when:** the tests pass and the four Dolphin times are written into REGATTA_AI_ROADMAP.md
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Dolphin AI drifts again at the discharge's peak)
+
+### T-20261016-630e · open · test · Regatta AI
+- **Task:** Check that no Regatta AI targets a crystal: run RegattaNoCrystalTargetTests (edit mode), then race Regatta with a Rhino and other AI seats in the Third Eye; no readout says 'Crystal on the way' and no AI bends toward an omni crystal
+- **Done when:** both tests pass and a full Regatta race shows every AI aiming only at rings or its rail
+- **Who can take it:** Yash, anyone with the Unity Editor
+- **Added:** 2026-10-16 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Arcade/REGATTA.md §6
+
+### T-20261016-d177 · open · test · Regatta AI
+- **Task:** Watch an AI Manta race Regatta I1-I4 in the Third Eye: it should hold Soar (~700 u/s) through most of each leg, pivot only in hard turns, and thread rings without circling; run RegattaDriveTuningTests
+- **Done when:** tests pass and the four Manta times are written into REGATTA_AI_ROADMAP.md
+- **Who can take it:** Yash (has offered to take tasks)
+- **Added:** 2026-10-16 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (The Manta AI holds Soar deeper into turns)
+
+### T-20261017-1809 · open · dev · Performance
+- **Task:** Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)
+- **Done when:** a new capture of MinigameRegatta|MinigameRegatta compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261017-2129 · open · dev · Performance
+- **Task:** Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)
+- **Done when:** a new capture of MinigameRegatta|MinigameRegatta compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261017-19f0 · open · dev · Performance
+- **Task:** Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)
+- **Done when:** a new capture of MinigameGrizzlyCharge|MinigameGrizzlyCharge compares within its baseline (perf_hunt.py compare)
+- **Who can take it:** the owner of the files it names (who_works_where.py); Yash (offered)
+- **Added:** 2026-10-17 by perf_hunt sweep (`perf/performance-optimization`)
+- **See:** Docs/Reports/PERFORMANCE.md
+
+### T-20261017-0026 · open · test · Regatta / launch panel UI
+- **Task:** Hand-test the AI seat chip hull labels on Regatta's launch panel: hover name, (i) badge, vessel info card (Docs/UNITY_VERIFICATION_CHECKLIST.md, 2026-10-17 entry)
+- **Done when:** All six verify steps pass in the editor; the checklist entry is marked green
+- **Who can take it:** Yash (offered); Shombith (UI prefabs, if authored art is wanted)
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/UI/Elements/VesselInfoPopup.cs
+
+### T-20261017-53f4 · open · decision · Dolphin
+- **Task:** Two Dolphin calls were made for now on 2026-10-17 so the game stays fun while you are away: (1) keep the shipped SCALAR model + holdSpeedWhileDrifting (the docs said vector + Locked; driftThrottlePolicy reset to Live since only the vector model reads it); (2) a drift KEEPS boosted speed (re-drift at a discharge's peak holds ~347 u/s), kept as a skill move the AI also uses. Confirm or change either
+- **Done when:** Garrett confirms both, or the change he wants is made (cap: clamp _heldDriftSpeed to cruise and revert the Dolphin AI peak rule; vector: vectorFlightModel 1 + driftThrottlePolicy 1 + holdSpeedWhileDrifting 0, then play-test)
+- **Who can take it:** Garrett (Dolphin design owner)
+- **Added:** 2026-10-17 by Claude session for Yash (`Ys-bleeding-edge`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md §2 and §2a
+
+### T-20261017-e2c3 · open · decision · AI training
+- **Task:** Before storing AI training flights in UGS, read Docs/AI_SYSTEM/AI_DATA_IN_UGS.md and talk to Yash or Garrett: per-race summaries in Cloud Save, full flights unchanged in a file store, lossless compression only
+- **Done when:** the storage choice is recorded in AI_TRAINING_PLAN.md §5.2 (with T-20261015-0064)
+- **Who can take it:** Shombith (UGS owner), with Yash and Garrett
+- **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
+- **See:** Docs/AI_SYSTEM/AI_DATA_IN_UGS.md
