@@ -548,6 +548,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith or Yash
 - **Added:** 2026-10-17 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §41
+
 ### T-20261016-e2fb · open · test · Brittle Star
 - **Task:** Play the Brittle Star's 2026-10-16 tuning pass in the Editor: the ring regrows over 3 s after LT (modes off meanwhile); RT at a full pull in Charge Mode leaves the sabers flexing on a ring flick (cordMaxRigidity 0.4) and released they whip slower (cordLooseWave 144); Space Mode at a full pull overheats after ~6 s at Space 0 and ~20 s at Space 10, same ~5 s lockout; the ring explosion is 4x thicker and bursts out five-fold as lit faceted volumes (five coiling arms led by crystals, the ring's pentagon with crystal knots, a faceted torus front with five crests, turning with the ring's spin; nothing flat from any angle); the trail blocks are long and slim (1 x 1 x 6, base trail 0.5 wide) and widen in x and y with Mass.
 - **Done when:** Each item seen in Play mode and noted in Docs/UNITY_VERIFICATION_CHECKLIST.md's 'Brittle Star tuning pass' section
@@ -844,6 +845,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** whoever runs the login-system chat (Shombith to assign)
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §54
+
 ### T-20261018-9fcf · open · test · vessels
 - **Task:** Editor-verify the Angler (vessel 17): run the seven Angler entries in Docs/UNITY_VERIFICATION_CHECKLIST.md (rounds 1-7) in Menu_Main freestyle - lure/tame on A, paint RT, erase/lock LT, dash B, squad X, recall Y, the lit queue, the level camera
 - **Done when:** Every Angler checklist entry passes with a clean console, or each failure is filed as a dev task
@@ -864,3 +866,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-18 by a Claude session (`cece/gallant-bell-eq7kul`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md R3
+
+### T-20261018-a04b · open · test · Profile / Audio
+- **Task:** Hand-test Rev 10 on claude/new-session-76hnyc: EXPAND on the Profile pilot card opens the pilot record (solid + lattice): stats, favourite vessel, favourite pilot picker (LB/RB), fly time by vessel, the Audio Studio (skip / pause / stop / ticks), and the now-playing card on Home
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 10' steps 1-5 pass or their failures are filed
+- **Who can take it:** Shombith (Menu_Main); Yash (offered)
+- **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §56
+
+### T-20261018-fecf · open · dev · Audio (FMOD)
+- **Task:** Give each of the nine soundtrack tracks its own non-looping FMOD event (today event:/Music/Music plays them at random as one multi-sound), build the banks, and wire each event into its row in Assets/_SO_Assets/Audio/Soundtrack.asset. The Audio Studio then plays chosen tracks, names them and shows progress; nothing else changes
+- **Done when:** Soundtrack.asset has an event on every row and the Audio Studio's Play now plays that track
+- **Who can take it:** aradia1 (FMOD project); Shombith to confirm
+- **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §56

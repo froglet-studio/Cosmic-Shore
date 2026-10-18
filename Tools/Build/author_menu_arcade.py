@@ -1280,6 +1280,8 @@ def check_file(path, text, guids, minted):
     for g in set(re.findall(r"guid: ([0-9a-f]{32})", text)):
         assert g in guids or g in minted, f"{path}: guid {g} resolves to no asset"
     assert text.isascii(), f"{path}: non-ASCII text"
+    bad = re.search(r"^ *(?:value|m_text): ([^'\"{\[\n][^\n]*?: [^\n]*)$", text, re.M)
+    assert not bad, f"{path}: an unquoted ': ' in a scalar breaks the YAML ({bad.group(1)[:40]})"
 
 
 def check_sources(path, text, files):

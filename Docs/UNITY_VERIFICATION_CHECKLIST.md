@@ -12075,3 +12075,22 @@ built yet (`NoPlatformSignIn`), so in the editor every provider shows and answer
 7. **AccountSettingsView > Preview: link conflict** (in Play, settings open on Account): the two pilot cards and Fly
    Shomboss / Keep Nova Runner / Cancel; **Preview: delete account** shows the short confirmation.
 8. **Release build:** the sign-in window shows only Play as guest (and is short); the Account tab shows no rows.
+
+## 🔴 2026-10-18 — Rev 10: pilot record, Audio Studio, now-playing card (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §56. `/verify-unity` was not run; player and editor reference compiles clean (editor: the 3
+known errors, 0 in changed files); every menu generator `--check` passes.
+
+1. **Profile:** looks exactly as before, plus EXPAND beside Change avatar / Rename.
+2. **EXPAND:** a solid panel with the lattice drifting over it: your name, fly time / games / sessions, favourite
+   vessel (your most flown, with its icon and time), favourite pilot ("None picked" at first), fly time by vessel
+   (up to five bars), the Audio Studio on the right. CLOSE or B closes it; switching screens closes it too.
+3. **CHANGE (favourite pilot):** four pilots per vessel; LB / RB change vessel; pick one, SET AS FAVOURITE: the record
+   shows it; reopen the game: it is still your favourite.
+4. **Audio Studio (today, one random music event):** the notice says picking arrives with the next update; SKIP and
+   BACK change the music; PAUSE / PLAY and STOP MUSIC / START MUSIC work; ticking / unticking rows saves (reopen the
+   game: the ticks are kept); the last ticked row cannot be unticked.
+5. **Now-playing card:** bottom right on Home; hover shows BACK / PAUSE / SKIP; on another menu screen, SKIP from
+   the studio makes the card slide in and out. Music off in Settings: no card.
+6. **(After aradia1 wires per-track events in Soundtrack.asset)** rows play on press, the title and progress show,
+   and the playlist moves to the next ticked track when one ends.

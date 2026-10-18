@@ -28,6 +28,16 @@ namespace CosmicShore.UI
         [SerializeField] private Button episodesButton;
         [Tooltip("The (inactive) Episodes panel.")]
         [SerializeField] private EpisodeScreen episodes;
+        [Tooltip("The pilot card's expand button: opens the pilot record (favourites, fly time by vessel, Audio Studio).")]
+        [SerializeField] private Button recordButton;
+        [Tooltip("The pilot record window (Rev 10, Docs/MENU_REDESIGN_B.md §56).")]
+        [SerializeField] private ProfileRecordWindow recordWindow;
+
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("Flight time with hours. {h} hours, {m} minutes.")]
+        [SerializeField] private string hoursTemplate = "{h}h {m}m";
+        [Tooltip("Flight time under an hour. {m} minutes.")]
+        [SerializeField] private string minutesTemplate = "{m}m";
 
         // Use the persistent singleton rather than [Inject]: it is reliably available from
         // bootstrap (Awake) and avoids both the DI-injection timing gap (OnEnable fires before
@@ -48,7 +58,10 @@ namespace CosmicShore.UI
                 if (b) b.onClick.AddListener(OpenAvatar);
             if (renameButton) renameButton.onClick.AddListener(OpenName);
             if (episodesButton) episodesButton.onClick.AddListener(OpenEpisodes);
+            if (recordButton) recordButton.onClick.AddListener(OpenRecord);
         }
+
+        void OpenRecord() { if (recordWindow) recordWindow.Open(); }
 
         void OpenAvatar() { if (profileWindow) profileWindow.OpenAvatar(); }
         void OpenName() { if (profileWindow) profileWindow.OpenDisplayName(); }
@@ -81,7 +94,10 @@ namespace CosmicShore.UI
                 Refresh(service.CurrentProfile);
         }
 
-        public void OnScreenExit() { }
+        public void OnScreenExit()
+        {
+            if (recordWindow && recordWindow.IsOpen) recordWindow.Close();
+        }
 
         void Refresh(PlayerProfileData profile)
         {
@@ -99,15 +115,17 @@ namespace CosmicShore.UI
             if (life == null) return;
             if (gamesCompletedText) gamesCompletedText.text = life.GamesCompleted.ToString("N0");
             if (sessionsText) sessionsText.text = life.SessionCount.ToString("N0");
-            if (flightTimeText) flightTimeText.text = FormatFlightTime(life.TotalFlightTimeSeconds);
+            if (flightTimeText) flightTimeText.text = FormatFlightTime(life.TotalFlightTimeSeconds, hoursTemplate, minutesTemplate);
         }
 
-        /// <summary>"6h 12m", "12m", "0m" - whole minutes, hours once there are any.</summary>
-        public static string FormatFlightTime(float seconds)
+        /// <summary>Whole minutes, hours once there are any, through the authored templates ("{h}h {m}m" / "{m}m").</summary>
+        public static string FormatFlightTime(float seconds, string hoursTemplate, string minutesTemplate)
         {
             int minutes = Mathf.Max(0, Mathf.FloorToInt(seconds / 60f));
             int hours = minutes / 60;
-            return hours > 0 ? $"{hours}h {minutes % 60}m" : $"{minutes}m";
+            return hours > 0
+                ? TemplateText.Fill(hoursTemplate, "h", hours.ToString(), "m", (minutes % 60).ToString())
+                : TemplateText.Fill(minutesTemplate, "m", minutes.ToString());
         }
     }
 }

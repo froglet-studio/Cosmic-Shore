@@ -2697,3 +2697,45 @@ bottom right), `R10NowPlaying` (the FC-style card:
 slides in on a new track, resting / focused states, toast-only in a match), `R10FavPilot`, `R10AudioStudio` (Profile > Audio Studio, music only - the owner: "No mixer just the music": now playing with back / pause / skip, shuffle, stop; every track with Play now and a tick for the rotation; it replaced the separate `R10Soundtrack` board), `R10Notes`. Not built.
 What building them needs: per-vessel fly time and a favourite-pilot field in the profile; and the music event made
 track-addressable in the FMOD project (today `event:/Music/Music` plays its nine tracks at random) - aradia1's area.
+
+## 56. Rev 10 built: the pilot record, the Audio Studio, the now-playing card (2026-10-18, awaiting in-editor approval)
+
+The owner approved Rev 10 and then refined it: **the Profile screen stays as it was** (pilot card, quests, Episodes);
+the new content opens from the pilot card ("this profile will open up when we click there expand"), **on a solid
+background with the lattice**. The Audio Studio is **music only** ("No mixer just the music").
+
+**Profile screen:** one addition, an EXPAND button beside Change avatar / Rename (`ProfileScreen.recordButton`). Its
+flight-time format moved to authored templates (`hoursTemplate` / `minutesTemplate`).
+
+**The pilot record** (`ProfileRecordWindow`, inside `ProfileView.prefab`, `author_menu_profile.py`): a solid
+SurfaceBlack panel with the window lattice, below the top nav; CLOSE (B).
+- Fly time, games, sessions (`PlayerProfileData.Lifecycle`).
+- Favourite vessel: the most flown, from `HangarCloudData` (per-vessel `FlightTimeSeconds`, already recorded for games
+  and menu freestyle; Yash's cloud data, read only). Its icon is `SO_Vessel.IconActive` from `SO_Classlist_All`.
+- Favourite pilot: the player's pick, saved as `ProfileIdentity.FavouritePilot` (the SO_Captain asset name; new field,
+  cloud-saved with the profile, `PlayerDataService.SetFavouritePilot`). CHANGE opens `FavouritePilotPicker`: the
+  Hangar's pilots (`ElementalCaptains`), four per vessel, LB / RB through the vessels, SET AS FAVOURITE / BACK.
+- Fly time by vessel: the five most flown (at least a minute), bars in the vessel's element colour.
+- The Audio Studio (`AudioStudioPanel`): now playing (title, artist, progress), BACK / PAUSE / SKIP / SHUFFLE /
+  STOP MUSIC, and nine track rows - press a row to play it now, Y (or the tick box) to put it in or out of the rotation.
+
+**The music** (`SoundtrackPlayer`, owned by `AudioSystem`; `Soundtrack.asset` on `AudioSystem.prefab`):
+- Today the music is ONE FMOD event (`event:/Music/Music`) that plays its nine tracks at random. `Soundtrack.asset`
+  lists the nine with an EMPTY per-track event each (the FMOD rule). While no track has an event the old event keeps
+  playing: back / skip restart it (it picks again), pause and stop work, and the studio says track picking arrives
+  with the next music update.
+- The moment aradia1 gives tracks their own events (non-looping) and wires them in `Soundtrack.asset`, the playlist
+  plays the ticked tracks, names them, shows progress, and Play now works. `author_menu_profile.py` creates the asset
+  once and never overwrites it.
+- Ticks and shuffle are saved on this device (PlayerPrefs); stop lasts for the session. At least one track stays ticked.
+
+**The now-playing card** (`NowPlayingCard.prefab`, last in Menu_Main's safe area): rests on Home; elsewhere in the
+menu it slides in for 4 s when the track changes; hovered, BACK / PAUSE / SKIP. Hidden while music is off or stopped.
+Not built: the in-match toast (the card is in Menu_Main only).
+
+**A YAML trap found on the way.** The caption "SHUFFLE: ON" wrote `value: SHUFFLE: ON`, which does not parse. The kit
+emitter now quotes such values (`yaml_scalar`), and every menu generator's file check fails on an unquoted ": " in a
+`value:` or `m_text:` (planted defect in `author_menu_profile.py --self-test`).
+
+Gates: `author_menu_profile.py --self-test` adds six planted defects (the record shipping shown, an unwired skip, the
+record without its lattice, AudioSystem without the soundtrack, two tracks sharing an id, a YAML-breaking caption).

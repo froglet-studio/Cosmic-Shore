@@ -375,7 +375,7 @@ def emit_instance(ctx, inst, parent_rt, out):
         if isinstance(value, float):
             value = f32(value)
         lines.append(f"    - target: {ref(target, inst.prefab_guid)}\n      propertyPath: {path}\n"
-                     f"      value: {'' if value is None else value}\n"
+                     f"      value: {'' if value is None else yaml_scalar(value)}\n"
                      f"      objectReference: {obj if obj else ref(0)}\n")
     out.append(f"--- !u!1001 &{pid}\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n"
                "  m_Modification:\n    serializedVersion: 3\n"
@@ -391,6 +391,16 @@ def emit_instance(ctx, inst, parent_rt, out):
 # --------------------------------------------------------------------------------------------
 # Component bodies (cloned from Unity's own serialization of each type)
 # --------------------------------------------------------------------------------------------
+
+def yaml_scalar(value):
+    """A modification value as Unity writes it: a string with ": " (or a leading YAML indicator) is single-quoted,
+    else the YAML does not parse ("SHUFFLE: ON" broke a prefab, 2026-10-18)."""
+    v = str(value)
+    if isinstance(value, str) and (": " in v or v.endswith(":") or " #" in v or v.startswith(("- ", "? "))
+                                   or (v and v[0] in "!&*{}[]#|>@`'\"%")):
+        return "'" + v.replace("'", "''") + "'"
+    return v
+
 
 def mono(go, guid, fields, enabled=True):
     return ("MonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
