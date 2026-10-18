@@ -310,17 +310,21 @@ def prefab_meta() -> str:
 
 # ----------------------------------------------------------------------------- the class asset
 # The class card (a cleaner wrasse and its host: Garrett, 2026-10-18, "a good name based on a mutualistic pair").
-DESCRIPTION = ("  Description: Two seats, one hull, like a cleaner wrasse and the fish it keeps clean. One\n"
-               "    player flies the hull; the other flies a kite on the hull's own plane - its head picks\n"
-               "    enemy prisms off, its tail lassos motes into blasts, prism clusters, saved boosts and\n"
-               "    crystal rams. D-pad left or right swaps seats; the AI takes the empty one.\n")
+DESCRIPTION = ("  Description: Two seats, one hull, like a cleaner wrasse and the grouper it keeps clean.\n"
+               "    One player flies the Grouper, the hull; the other flies the Wrasse, a kite on the hull's\n"
+               "    own plane - its head picks enemy prisms off, its tail lassos motes into blasts, prism\n"
+               "    clusters, saved boosts and crystal rams. D-pad left or right swaps seats; the AI takes\n"
+               "    the empty one.\n")
+# The card names both subvessels (Garrett, 2026-10-18: "so its card will read wrasse and ___. pick a fish that the
+# wrasse cleans"): SO_Vessel.CardName joins CrewNames with CrewNameTemplate.
+CREW = "  CrewNames:\n  - Wrasse\n  - Grouper\n  CrewNameTemplate: '{0} and {1}'\n"
 
 
 def class_asset(donor_class: str) -> str:
     text = replace_once(donor_class, "  m_Name: SO_Class_Sparrow\n", "  m_Name: SO_Class_Wrasse\n", "class m_Name")
     text = replace_once(text, f"  Class: {SPARROW_CLASS_ID}\n", f"  Class: {WRASSE_CLASS_ID}\n", "class Class")
     text = replace_once(text, "  Name: Sparrow\n", "  Name: Wrasse\n", "class Name")
-    text, n = re.subn(r"  Description: .*\n(?:    .*\n)*", lambda m: DESCRIPTION, text, count=1)
+    text, n = re.subn(r"  Description: .*\n(?:    .*\n)*", lambda m: DESCRIPTION + CREW, text, count=1)
     if n != 1:
         raise RuntimeError("donor drifted: the class Description was not found")
     text, n = re.subn(r"  isLocked: \d\n", "  isLocked: 0\n  ownedFromStart: 1\n", text, count=1)
@@ -495,6 +499,7 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
         want(text.count(CLASS_GUID) == 1, f"{name}: SO_Class_Wrasse listed {text.count(CLASS_GUID)} times, not once")
     want(f"  Class: {WRASSE_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls and "  isLocked: 0\n" in cls,
          "SO_Class_Wrasse: wrong class, locked, or not owned from the start")
+    want(CREW in cls, "SO_Class_Wrasse: the card does not name both subvessels (CrewNames Wrasse, Grouper)")
     want(f"  vesselClass: {WRASSE_CLASS_ID}\n" in kmap and "  m_Name: Wrasse\n" in kmap, "ElementalAbilityMaps/Wrasse: wrong class or name")
     inputs = re.findall(r"^    Input: (-?\d+)\n", kmap, re.M)
     want(len(inputs) == 4 and set(inputs) == {"0"},
@@ -613,6 +618,7 @@ def self_test():
     expect(check_registrations(container, read(NETWORK_PREFABS).replace(PREFAB_GUID, "x"), lists, cls, kmap, fusion), 1, "no network entry")
     expect(check_registrations(container, network, [(n, t.replace(CLASS_GUID, "x")) for n, t in lists], cls, kmap, fusion), 1, "no class list entry")
     expect(check_registrations(container, network, lists, cls.replace("  isLocked: 0\n", "  isLocked: 1\n"), kmap, fusion), 1, "a locked class")
+    expect(check_registrations(container, network, lists, cls.replace(CREW, ""), kmap, fusion), 1, "a card without its crew names")
     expect(check_registrations(container, network, lists, cls, kmap, fusion.replace(f"  - vessel: {WRASSE_CLASS_ID}\n", "  - vessel: 99\n", 1)), 1, "a missing fusion entry")
     expect(check_registrations(container, network, lists, cls, read(DONOR_MAP), fusion), 1, "the Sparrow's own map")
     expect(check_registrations(container, network, lists, cls, kmap.replace("    Input: 0\n", "    Input: 7\n", 1), fusion), 1, "a card with a button")

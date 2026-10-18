@@ -30,7 +30,7 @@ shared from its Share menu. Fly the kite on a phone with one thumb, or fly the h
 
 **Unity:**
 1. Check out `cece/compassionate-babbage-gc13io`, open the project and wait for the compile.
-2. Open the Toybox, fly into the **Vessel Changer** and fly the **Wrasse** station (it looks like a Sparrow). Fly with two
+2. Open the Toybox, fly into the **Vessel Changer** and fly the **Wrasse and Grouper** station (it looks like a Sparrow). Fly with two
    thumbs. The kite view, the real world seen from above your hull, is a small square in the lower left, and the AI flies
    the kite. The right trigger spends the boosts its Time loops save; the ability cards count them.
 3. Press **2** (or D-pad right) to take the kite: its view fills the screen and the hull's shrinks to the corner. The

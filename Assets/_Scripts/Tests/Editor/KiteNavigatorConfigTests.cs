@@ -111,6 +111,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void WrasseCard_NamesBothSubvessels()
+        {
+            // Garrett, 2026-10-18: "so its card will read wrasse and ___. pick a fish that the wrasse cleans"
+            var cls = AssetDatabase.LoadAssetAtPath<SO_Vessel>("Assets/_SO_Assets/Classes/SO_Class_Wrasse.asset");
+            Assert.IsNotNull(cls);
+            Assert.AreEqual("Wrasse", cls.Name, "Name stays the vessel's key (the hangar's cloud unlocks)");
+            Assert.AreEqual("Wrasse and Grouper", cls.CardName);
+
+            var solo = ScriptableObject.CreateInstance<SO_Vessel>();
+            solo.Name = "Sparrow";
+            Assert.AreEqual("Sparrow", solo.CardName, "a one-seat vessel's card reads its Name");
+            solo.CrewNames = new[] { "A", "B" };
+            solo.CrewNameTemplate = string.Empty;
+            Assert.AreEqual("Sparrow", solo.CardName, "an empty template shows Name alone");
+            Object.DestroyImmediate(solo);
+        }
+
+        [Test]
         public void WrasseHull_FliesOnTwoSticks_AndItsHudReadsTheSeat()
         {
             // round 4d (Garrett, 2026-10-18): "lets go back to two thumb flying for the pilot", and the ability cards show

@@ -187,7 +187,7 @@ always flies the empty seat:
 
 **In the Toybox** (how every lab port is tried: Garrett, 2026-10-17):
 
-1. Open the Toybox (menu freestyle) and fly into the **Vessel Changer**. Fly the **Wrasse** station.
+1. Open the Toybox (menu freestyle) and fly into the **Vessel Changer**. Fly the **Wrasse and Grouper** station.
 2. You fly the hull, a Sparrow body, with two thumbs (both sticks, or the keyboard) and no buttons. The kite view is a
    small square in the lower left, with the AI flying the kite. Pull the right trigger (right Shift; lift both thumbs on a
    phone) to spend a boost a Time loop saved. The Time card counts them, the Charge card counts the kite's rams, the
@@ -210,6 +210,22 @@ then. The hull-level names moved with it: `VesselClassType.Wrasse` (still 19), `
 `Tools/Build/author_wrasse_assets.py`. Every `.meta` guid was kept, so no reference changed. The SEAT keeps its name:
 the navigator still flies a kite, so `KiteNavigator*`, `KiteOmniCrystalEffect`, this doc and the lab's "Kite & Tail"
 are unchanged.
+
+**Each subvessel has its own name** (Garrett, 2026-10-18: "so its card will read wrasse and ___. pick a fish that the
+wrasse cleans"). The navigator's kite is the **Wrasse**; the pilot's hull is the **Grouper**, the reef fish cleaner
+wrasses are best known for cleaning. `SO_Vessel` now has `CrewNames` (Wrasse, Grouper) and `CrewNameTemplate`
+(`{0} and {1}`), and `SO_Vessel.CardName` joins them, so every card reads **Wrasse and Grouper**:
+- the Toybox Vessel Changer's station;
+- the hangar grid card, the detail view and the abilities view;
+- the arcade launch panel, the vessel info popup, the squad card and the Maelstrom pool row.
+
+`Name` stays "Wrasse": it is the vessel's key, and the hangar's cloud unlocks are keyed by it. A one-seat vessel leaves
+`CrewNames` empty and its card reads `Name`. The Goby & Pistol duo (`cece/sharp-tesla-j0kd7z`) can set its own
+`CrewNames` when it lands.
+
+The Vessel Changer reads class assets through its definition's `vesselArt` list. That list comes from the in-flight
+Toybox branch `cece/determined-goodall-o1klfo` (the picture of each vessel); this branch carries the same three hunks,
+byte for byte, so the two merge cleanly.
 
 The navigator is a seat, not a hull, and the Vessel Changer offers hulls. So the seat ships on its own hull class:
 `VesselClassType.Wrasse = 19`.

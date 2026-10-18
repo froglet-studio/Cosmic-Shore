@@ -14,10 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 19
   Name: Wrasse
-  Description: Two seats, one hull, like a cleaner wrasse and the fish it keeps clean. One
-    player flies the hull; the other flies a kite on the hull's own plane - its head picks
-    enemy prisms off, its tail lassos motes into blasts, prism clusters, saved boosts and
-    crystal rams. D-pad left or right swaps seats; the AI takes the empty one.
+  Description: Two seats, one hull, like a cleaner wrasse and the grouper it keeps clean.
+    One player flies the Grouper, the hull; the other flies the Wrasse, a kite on the hull's
+    own plane - its head picks enemy prisms off, its tail lassos motes into blasts, prism
+    clusters, saved boosts and crystal rams. D-pad left or right swaps seats; the AI takes
+    the empty one.
+  CrewNames:
+  - Wrasse
+  - Grouper
+  CrewNameTemplate: '{0} and {1}'
   PrimaryElement: 0
   Element: {fileID: 0}
   InitialResourceLevels:

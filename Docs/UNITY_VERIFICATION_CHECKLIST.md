@@ -115,7 +115,8 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
   - check that the pilot's own view of prisms is unchanged (the include is off by default).
 
 **Verify:**
-1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Wrasse** station (it looks like a Sparrow).
+1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Wrasse and Grouper** station (it looks like a
+   Sparrow). The hangar's card for it reads WRASSE AND GROUPER too.
    - Lower left: a small square kite view, the real world seen from straight above your hull.
    - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
    - In your own view: a faint see-through kite and faint lime dots, not in the way.
