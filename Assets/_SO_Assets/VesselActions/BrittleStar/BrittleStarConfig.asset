@@ -97,6 +97,7 @@ MonoBehaviour:
   ringFlightSpin: 900
   ringBlastSeconds: 0.7
   ringBlastFallbackRadius: 200
+  ringBlastThicknessScale: 4
   blastScale:
     Enabled: 1
     Value: 1
@@ -106,6 +107,12 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 1
   ringBlastBandWidth: 6
+  ringBlastSpinDegrees: 108
+  ringBlastCrestDepth: 2.5
+  ringBlastPentagonLag: 0.8
+  ringBlastArmWidth: 6
+  ringBlastArmWiggle: 0.06
+  ringBlastArmCurlDegrees: 30
   maxSpareRings: 2
   rebuildSeconds: 3
   ringBlastHitClass: 3

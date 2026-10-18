@@ -119,6 +119,41 @@
       "field": "ringBlastBandWidth"
     },
     {
+      "key": "ringBlastThicknessScale",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastThicknessScale"
+    },
+    {
+      "key": "ringBlastSpinDegrees",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastSpinDegrees"
+    },
+    {
+      "key": "ringBlastCrestDepth",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastCrestDepth"
+    },
+    {
+      "key": "ringBlastPentagonLag",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastPentagonLag"
+    },
+    {
+      "key": "ringBlastArmWidth",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastArmWidth"
+    },
+    {
+      "key": "ringBlastArmWiggle",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastArmWiggle"
+    },
+    {
+      "key": "ringBlastArmCurlDegrees",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastArmCurlDegrees"
+    },
+    {
       "key": "rebuildSeconds",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
       "field": "rebuildSeconds"

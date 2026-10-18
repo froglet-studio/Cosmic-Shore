@@ -528,8 +528,15 @@ CONFIG_BODY = (
     "  ringFlightSpin: 900\n"
     "  ringBlastSeconds: 0.7\n"
     "  ringBlastFallbackRadius: 200\n"
+    "  ringBlastThicknessScale: 4\n"
     "  blastScale:\n" + ef(1, 1, 4, 1, 1) +
     "  ringBlastBandWidth: 6\n"
+    "  ringBlastSpinDegrees: 108\n"
+    "  ringBlastCrestDepth: 2.5\n"
+    "  ringBlastPentagonLag: 0.8\n"
+    "  ringBlastArmWidth: 6\n"
+    "  ringBlastArmWiggle: 0.06\n"
+    "  ringBlastArmCurlDegrees: 30\n"
     "  maxSpareRings: 2\n"
     "  rebuildSeconds: 3\n"
     "  ringBlastHitClass: 3\n"
@@ -653,10 +660,11 @@ MAP_ENTRIES = (
      "every depth in between). "
      "The right stick turns them with the ring and opens them out. Using them cools the guns. "
      "LT throws the ring - only with a SPARE ring in stock (one per crystal, two at most); the mounted ring then regrows "
-     "on its own. It blows on contact or its fuse in a disk as wide as the cell's nucleus, destroying every prism in its "
+     "on its own. It blows on contact or its fuse in a disk as wide as the cell's nucleus, bursting out of the ring as "
+     "five wriggling arms, five crests and the ring's own pentagon, still spinning, destroying every prism in its "
      "plane and stripping petals from every rival hull it crosses (petals only - nothing is moved). The card shows the "
      "spare stock. Charge is threat - one dial: the cords' cut width and the rounds' size x1 -> x1.8 at level 10 "
-     "(projectileScaleMultiplier), the disk's thickness x1 -> x4 (blastScale)."),
+     "(projectileScaleMultiplier), the disk's thickness x1 -> x4 on top of its x4 base, 4 to 16 times the ring's (blastScale)."),
     (2, "Creation Mode", 7,
      "B. A trail behind EACH of the ring's five corners instead of the single small block from the cockpit - the same "
      "small block, five lines that turn with the ring's firing rotation. The SLOWEST mode: cruise x0.5. Mass is girth - "

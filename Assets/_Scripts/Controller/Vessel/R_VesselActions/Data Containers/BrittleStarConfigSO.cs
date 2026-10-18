@@ -191,12 +191,32 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.05f)] float ringBlastSeconds = 0.7f;
         [Tooltip("The disk's radius when the ring blows outside any cell with a nucleus, world units.")]
         [SerializeField, Min(1f)] float ringBlastFallbackRadius = 200f;
-        [Tooltip("CHARGE: multiplier on the disk's THICKNESS (x1 = exactly the ring's own). Rolling Thunder's element: " +
-                 "'larger AOE on support ring detonation'.")]
+        [Tooltip("The disk's THICKNESS before Charge, a multiple of the ring's own (Garrett, 2026-10-18: 'quadruple the " +
+                 "ring explosion thickness'): x4, so 4 x the ring's 0.44 u = 1.76 u at Charge 0. What it reaches AND what is drawn.")]
+        [SerializeField, Min(0.1f)] float ringBlastThicknessScale = 4f;
+        [Tooltip("CHARGE: multiplier on the disk's THICKNESS, on top of ringBlastThicknessScale (x4 at Charge 10). Rolling " +
+                 "Thunder's element: 'larger AOE on support ring detonation'.")]
         [SerializeField] ElementalFloat blastScale = ElementalFloat.Multiplier(1f, 4f, Element.Charge, 1f);
         [Tooltip("Width of the expanding band drawn at the disk's edge, world units (the explosion's look; it does not " +
                  "change what the disk reaches).")]
         [SerializeField, Min(0.1f)] float ringBlastBandWidth = 6f;
+
+        [Header("Ring Detonation: the look (BrittleStarBlastForm - five-fold, from the ring that blew; Garrett, 2026-10-18)")]
+        [Tooltip("Degrees the explosion's five-fold pattern turns on after the blast, keeping the thrown ring's spin " +
+                 "(its direction) and braking to a stop over ringBlastSeconds.")]
+        [SerializeField, Range(0f, 720f)] float ringBlastSpinDegrees = 108f;
+        [Tooltip("Each of the front's five crests (behind the ring's five points) is this much wider than the band, " +
+                 "x ringBlastBandWidth. 0 = a plain circle.")]
+        [SerializeField, Range(0f, 10f)] float ringBlastCrestDepth = 2.5f;
+        [Tooltip("The thrown ring's own pentagon grows with the blast, its corners at this share of the front's radius.")]
+        [SerializeField, Range(0f, 1f)] float ringBlastPentagonLag = 0.8f;
+        [Tooltip("Width of each of the five arms at its root (the ring's point), world units; they taper to 30% at the " +
+                 "front and thin as the blast spends itself.")]
+        [SerializeField, Min(0.05f)] float ringBlastArmWidth = 6f;
+        [Tooltip("How far each arm wriggles sideways, x its length (a wave running from root to tip, the animal's).")]
+        [SerializeField, Range(0f, 0.3f)] float ringBlastArmWiggle = 0.06f;
+        [Tooltip("Degrees each arm's tip trails its root, curling back against the spin (a pinwheel).")]
+        [SerializeField, Range(0f, 90f)] float ringBlastArmCurlDegrees = 30f;
 
         // ------------------------------------------------------------------ the ring stock
         [Header("Ring stock (Garrett, 2026-10-16)")]
@@ -303,8 +323,15 @@ namespace CosmicShore.Gameplay
         public float RingFlightSpin => ringFlightSpin;
         public float RingBlastSeconds => ringBlastSeconds;
         public float RingBlastFallbackRadius => ringBlastFallbackRadius;
+        public float RingBlastThicknessScale => ringBlastThicknessScale;
         public ElementalFloat BlastScale => blastScale;
         public float RingBlastBandWidth => ringBlastBandWidth;
+        public float RingBlastSpinDegrees => ringBlastSpinDegrees;
+        public float RingBlastCrestDepth => ringBlastCrestDepth;
+        public float RingBlastPentagonLag => ringBlastPentagonLag;
+        public float RingBlastArmWidth => ringBlastArmWidth;
+        public float RingBlastArmWiggle => ringBlastArmWiggle;
+        public float RingBlastArmCurlDegrees => ringBlastArmCurlDegrees;
         public int MaxSpareRings => maxSpareRings;
         public float RebuildSeconds => rebuildSeconds;
         public CombatHitClass RingBlastHitClass => ringBlastHitClass;

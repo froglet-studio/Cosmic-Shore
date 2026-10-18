@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Compile the SHIPPED pure Brittle Star code (BrittleStarHullForm, BrittleStarRules, BrittleStarCord) and its SHIPPED
+# Compile the SHIPPED pure Brittle Star code (BrittleStarHullForm, BrittleStarRules, BrittleStarCord, BrittleStarBlastForm) and its SHIPPED
 # edit-mode tests (Assets/_Scripts/Tests/Editor/BrittleStarTests.cs) against a UnityEngine math stub and an NUnit shim
 # with Roslyn, and RUN every [Test]. Exit 0 = every test passed. `--self-test` additionally plants an inside-out face, a
-# third spare ring and a cord that stretches past its length, and proves the tests catch each (negative controls).
+# third spare ring, a cord that stretches past its length and a ring explosion drawn past its front, and proves the tests
+# catch each (negative controls).
 # `--obj DIR` writes the shipped hull as OBJ instead (for the card).
 # Needs a .NET SDK (8+), found through DOTNET_ROOT (default ~/.dotnet).
 set -euo pipefail
@@ -18,7 +19,7 @@ mkdir -p "$OUT"
 build_and_run() {   # $1 = hull form source, $2 = rules source, $3 = expected (pass|fail)
   ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
   printf '%s\n' "$HERE/Stubs.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
-    "$ROOT/Assets/_Scripts/Data/Enums/Element.cs" "$1" "$2" "${CORD_SRC:-$CORD}" \
+    "$ROOT/Assets/_Scripts/Data/Enums/Element.cs" "$1" "$2" "${CORD_SRC:-$CORD}" "${BLAST_SRC:-$BLAST}" \
     "$ROOT/Assets/_Scripts/Tests/Editor/BrittleStarTests.cs" | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig "@$OUT/refs.rsp" \
     -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632 \
@@ -36,6 +37,7 @@ build_and_run() {   # $1 = hull form source, $2 = rules source, $3 = expected (p
 FORM="$ROOT/Assets/_Scripts/Controller/Vessel/BrittleStarHullForm.cs"
 RULES="$ROOT/Assets/_Scripts/Controller/Vessel/BrittleStarRules.cs"
 CORD="$ROOT/Assets/_Scripts/Controller/Vessel/BrittleStarCord.cs"
+BLAST="$ROOT/Assets/_Scripts/Controller/Vessel/BrittleStarBlastForm.cs"
 if [ "${1:-}" = "--obj" ]; then OBJ_DIR="$2" build_and_run "$FORM" "$RULES" pass; exit 0; fi
 build_and_run "$FORM" "$RULES" pass
 if [ "${1:-}" = "--self-test" ]; then
@@ -51,4 +53,8 @@ if [ "${1:-}" = "--self-test" ]; then
   sed 's/u = u.sqrMagnitude > 1e-8f ? u.normalized : _direction\[i\];/u = u.sqrMagnitude > 1e-8f ? u : _direction[i];/' "$CORD" > "$OUT/CordStretchy.cs"
   grep -q '? u : _direction' "$OUT/CordStretchy.cs"
   CORD_SRC="$OUT/CordStretchy.cs" build_and_run "$FORM" "$RULES" fail "cord stretches"
+  # 4. The arms' tips are no longer pulled in by their half-width: the look overruns the disk that does the damage.
+  sed 's/ring + (span - half) \* u/ring + (span + half) * u/' "$BLAST" > "$OUT/BlastOverrun.cs"
+  grep -q 'span + half' "$OUT/BlastOverrun.cs"
+  BLAST_SRC="$OUT/BlastOverrun.cs" build_and_run "$FORM" "$RULES" fail "blast drawn past its front"
 fi

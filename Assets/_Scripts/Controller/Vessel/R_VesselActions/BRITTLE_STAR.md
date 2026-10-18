@@ -193,16 +193,30 @@ struts — the shipped hull still has physical arms (follow-up F8).
     not its control radius, which some modes collapse to 0), else that cell's `ExpectedNucleusWorldRadius`, else the
     nearest active cell's, else `ringBlastFallbackRadius` 200 u — the standard cell's nucleus is ~392 u, so the disk is
     ~780 u across;
-  - **as thick as the ring**: ± the ring's strut half-thickness (`BrittleStarHullBuilder.RingHalfThickness`, 0.22 u) ×
-    **`blastScale` ×1 → ×4 at Charge 10**. A prism is caught when its own half-extent along the disk's normal overlaps
+  - **four times as thick as the ring** (Garrett, 2026-10-18: "quadruple the ring explosion thickness"): ± the ring's
+    strut half-thickness (`BrittleStarHullBuilder.RingHalfThickness`, 0.22 u) × **`ringBlastThicknessScale` 4** ×
+    **`blastScale` ×1 → ×4 at Charge 10** — 1.76 u thick at Charge 0, 7 u at Charge 10. A prism is caught when its own half-extent along the disk's normal overlaps
     the disk (`BrittleStarRules.DiskReaches`, tested — a disk, not a sphere: a block a few units off the plane survives);
   - swept out from the ring's own radius to the nucleus's over `ringBlastSeconds` 0.7 s (ease-out, ten queries per
     explosion, not one per frame), **destroying every prism it passes**, any domain — "destroying both enemy and allied
     mass" (shields pop first; super-shielded mass refuses: `Prism.Damage`);
   - **stripping petals** from every rival hull it passes: a scored `MissileBlast` hit through `CombatHitDrain`, once per
     hull per explosion (petals only — nothing is moved);
-  - drawn as an expanding band in the domain's colour (`ringBlastBandWidth` 6 u wide, as thick as the disk), one pooled
-    dynamic mesh per live explosion.
+  - **drawn five-fold, out of the ring that blew** (Garrett, 2026-10-18: "a fun effect with 5 fold symmetry that looks
+    awesome and like it came from the ring that exploded"; `BrittleStarBlastForm`, pure, tested), in the domain's colour,
+    as thick as the disk, in the thrown ring's own frame and turning on with its spin (`ringBlastSpinDegrees` 108°,
+    braking to a stop over the sweep):
+    - **the front** — the annulus at the disk's true edge (`ringBlastBandWidth` 6 u) with **five crests**
+      (`ringBlastCrestDepth` ×2.5 wider) where the arms meet it;
+    - **the ring, grown** — the thrown ring's own pentagon, its corners at `ringBlastPentagonLag` 0.8 of the front;
+    - **five arms**, the animal's — one from each of the ring's points out to its crest, `ringBlastArmWidth` 6 u at the
+      root tapering to 30%, curling back `ringBlastArmCurlDegrees` 30° against the spin and wriggling sideways
+      (`ringBlastArmWiggle` 0.06 of their length) with a wave that runs root to tip, thinning as the blast spends itself.
+    **Honest by construction** (tested, with a negative control): every vertex lies inside the disk that does the damage,
+    so the look never shows the blast reaching where it does not; the shape maps onto itself turned a fifth of a turn.
+    One pooled dynamic mesh per live explosion, ~3,000 vertices rebuilt a frame for 0.7 s (the lists are reused; the
+    mesh upload is the cost). The Vessel Studio page draws the same shape (`blastForm`, its line-for-line twin, matched
+    to the C# within 0.001 u).
   The fleet AOE prefab and the plane wave of the first cut are retired.
 - **The ring stock** (Garrett, 2026-10-16: "only let them shoot the ring if they have a spare one that automatically
   regrows. they can store two extra rings, and they get 1 ring per crystal"; `BrittleStarRules.RingState`, tested):
@@ -336,7 +350,9 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | `cordRenderSubdivisions` / `cordColor` / `cordRimBrightness` / `cordMaterial` | `BrittleStarConfig`, executor | 4 / iron / 0.75 / `ThresherChainMaterial` |
 | Round pool | `BrittleStar.prefab` turrets | 1400 / max 2400 (~2,000 alive in a Space Mode burst at Space 0, ~4,000 at Space 10) |
 | `ringLaunchSpeed` / `ringFuseSeconds` | `BrittleStarConfig` | 240 u/s / 1.1 s |
-| `blastScale` (Charge — the disk's thickness) | `BrittleStarConfig` | 1 → 4 (× the ring's 0.22 u half-thickness) |
+| `ringBlastThicknessScale` (the disk's thickness before Charge) | `BrittleStarConfig` | ×4 the ring's (2026-10-18) |
+| `blastScale` (Charge — the disk's thickness, on top) | `BrittleStarConfig` | 1 → 4 (so 4 → 16 × the ring's 0.22 u half-thickness) |
+| The look: `ringBlastSpinDegrees` / `ringBlastCrestDepth` / `ringBlastPentagonLag` / `ringBlastArmWidth` / `ringBlastArmWiggle` / `ringBlastArmCurlDegrees` | `BrittleStarConfig` | 108° / ×2.5 / 0.8 / 6 u / 0.06 / 30° |
 | `ringBlastSeconds` / `ringBlastFallbackRadius` / `ringBlastBandWidth` | `BrittleStarConfig` | 0.7 s / 200 u / 6 u (radius = the cell's nucleus) |
 | `ringBlastHitClass` / `ringBlastHitCooldown` | `BrittleStarConfig` | MissileBlast / 0.5 s |
 | `maxSpareRings` / `rebuildSeconds` | `BrittleStarConfig` | 2 / 3 s (regrowth) |
@@ -381,8 +397,10 @@ None of that is a play test. In order:
    second). Draw one across a rival: petals only. Overheat in Space Mode, then switch to Charge: the heat drains in about
    a second.
 8. **LT** with no spare ring: nothing happens. Collect a **crystal**: the Charge card fills half (one spare); another:
-   full (two); a third: still two. **LT**: the ring flies off and blows in the nucleus-wide disk (a flat slice through
-   every prism in its plane; a rival it crosses loses petals); a new ring blooms back on the hull over 3 s
+   full (two); a third: still two. **LT**: the ring flies off and blows in the nucleus-wide disk (a flat slice, now four
+   times thicker, through every prism in its plane; a rival it crosses loses petals). Watch it from behind: it bursts out
+   of the ring as five wriggling arms curling back like a pinwheel, the ring's own pentagon growing, and the front with
+   five crests where the arms meet it, all still turning with the ring's spin; a new ring blooms back on the hull over 3 s
    and the card drops a step. The hull is never ringless; the modes drop out only for those three seconds.
 9. **HUD**: four cards, charge → mass → space → time; each turns lime while its mode is on. Run **FrogletTools ▸ Vessels
    ▸ Audit Vessel Ability Rows**, **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (expect: procedural, four

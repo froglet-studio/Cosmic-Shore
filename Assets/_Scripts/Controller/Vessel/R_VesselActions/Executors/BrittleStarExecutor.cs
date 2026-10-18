@@ -976,7 +976,7 @@ namespace CosmicShore.Gameplay
 
                 if (flight.Age >= config.RingFuseSeconds || Touches(flight.Previous, next, flight.Age))
                 {
-                    Detonate(next, t.forward);
+                    Detonate(next, t.rotation);
                     ReturnBody(flight.Body);
                     _flights.RemoveAt(f);
                 }
@@ -1021,15 +1021,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The RING EXPLOSION (Garrett, 2026-10-14): a flat disk lying in the ring's plane, centred where it blew, as thick
-        /// as the ring (× Charge) and as wide as the cell's NUCLEUS. It is swept outward from the ring's own radius to the
-        /// nucleus's over <c>ringBlastSeconds</c>, drawn as an expanding band.
+        /// The RING EXPLOSION (Garrett, 2026-10-14): a flat disk lying in the ring's plane, centred where it blew,
+        /// <c>ringBlastThicknessScale</c> (×4, 2026-10-18) times as thick as the ring (× Charge) and as wide as the cell's
+        /// NUCLEUS. It is swept outward from the ring's own radius to the nucleus's over <c>ringBlastSeconds</c>, drawn in
+        /// the thrown ring's own frame (<paramref name="ringRotation"/>), so its five-fold look starts from the ring's points.
         /// </summary>
-        void Detonate(Vector3 at, Vector3 ringNormal)
+        void Detonate(Vector3 at, Quaternion ringRotation)
         {
             PlayAt(config.RingBlastEvent, at);
-            float half = (hull ? hull.RingHalfThickness : 0.2f) * Mathf.Max(0.1f, config.BlastScale.EvaluateReplicated(_status));
-            Vector3 normal = ringNormal.sqrMagnitude > 1e-6f ? ringNormal.normalized : Vector3.forward;
+            float half = (hull ? hull.RingHalfThickness : 0.2f) * Mathf.Max(0.1f, config.RingBlastThicknessScale)
+                       * Mathf.Max(0.1f, config.BlastScale.EvaluateReplicated(_status));
+            Vector3 normal = ringRotation * Vector3.forward;
             float inner = hull ? hull.RingRadius : 1f;
             var wave = new Wave
             {
@@ -1042,7 +1044,7 @@ namespace CosmicShore.Gameplay
                 HalfThickness = half,
             };
             wave.Band = TakeBand(out wave.BandMesh);
-            if (wave.Band) wave.Band.transform.SetPositionAndRotation(at, Quaternion.LookRotation(normal));
+            if (wave.Band) wave.Band.transform.SetPositionAndRotation(at, ringRotation);
             _waves.Add(wave);
         }
 
@@ -1077,7 +1079,7 @@ namespace CosmicShore.Gameplay
                     wave.LastRadius = radius;
                     _waves[w] = wave;
                 }
-                if (wave.BandMesh) BuildBand(wave.BandMesh, radius, config.RingBlastBandWidth, wave.HalfThickness);
+                if (wave.BandMesh) BuildBand(wave.BandMesh, wave, radius, t);
                 if (t >= 1f)
                 {
                     ReturnBand(wave.Band);
@@ -1171,40 +1173,32 @@ namespace CosmicShore.Gameplay
             _idleBands.Add(band);
         }
 
-        /// <summary>A flat annulus in the band's local XY plane: outer radius <paramref name="radius"/>, <paramref name="width"/>
-        /// wide, ±<paramref name="half"/> thick — top, bottom, outer and inner walls, flat-shaded.</summary>
-        void BuildBand(Mesh mesh, float radius, float width, float half)
+        /// <summary>The explosion's look at this moment (<see cref="BrittleStarBlastForm"/>): the front at the disk's true
+        /// edge with five crests, the thrown ring's pentagon grown, five wriggling arms, all turning on with the ring's spin.
+        /// The lists are reused, so a frame allocates nothing but the mesh upload.</summary>
+        void BuildBand(Mesh mesh, in Wave wave, float radius, float t01)
         {
-            const int Segments = 96;
-            float outer = Mathf.Max(0.01f, radius), inner = Mathf.Max(0f, radius - width);
-            half = Mathf.Max(0.05f, half);
-            _bandVerts.Clear(); _bandNormals.Clear(); _bandTris.Clear();
-            for (int i = 0; i < Segments; i++)
+            float spinSign = config.RingFlightSpin < 0f ? -1f : 1f;
+            var form = new BrittleStarBlastForm.Settings
             {
-                float a0 = i * Mathf.PI * 2f / Segments, a1 = (i + 1) * Mathf.PI * 2f / Segments;
-                Vector3 d0 = new(Mathf.Cos(a0), Mathf.Sin(a0), 0f), d1 = new(Mathf.Cos(a1), Mathf.Sin(a1), 0f);
-                Vector3 f = Vector3.forward * half;
-                BandQuad(d0 * inner + f, d0 * outer + f, d1 * outer + f, d1 * inner + f, Vector3.forward);
-                BandQuad(d1 * inner - f, d1 * outer - f, d0 * outer - f, d0 * inner - f, Vector3.back);
-                BandQuad(d0 * outer + f, d0 * outer - f, d1 * outer - f, d1 * outer + f, (d0 + d1).normalized);
-                BandQuad(d1 * inner + f, d1 * inner - f, d0 * inner - f, d0 * inner + f, -(d0 + d1).normalized);
-            }
+                RingRadius = wave.InnerRadius,
+                Front = radius,
+                HalfThickness = wave.HalfThickness,
+                BandWidth = config.RingBlastBandWidth,
+                Phase = BrittleStarBlastForm.PhaseAt(0f, spinSign * config.RingBlastSpinDegrees * Mathf.Deg2Rad, t01),
+                T01 = t01,
+                CrestDepth = config.RingBlastCrestDepth,
+                PentagonLag = config.RingBlastPentagonLag,
+                ArmWidth = config.RingBlastArmWidth,
+                ArmWiggle = config.RingBlastArmWiggle,
+                ArmCurl = spinSign * config.RingBlastArmCurlDegrees * Mathf.Deg2Rad,
+            };
+            BrittleStarBlastForm.Build(form, _bandVerts, _bandNormals, _bandTris);
             mesh.Clear();
             mesh.SetVertices(_bandVerts);
             mesh.SetNormals(_bandNormals);
             mesh.SetTriangles(_bandTris, 0);
             mesh.RecalculateBounds();
-        }
-
-        void BandQuad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n)
-        {
-            // Wound so Unity's front face (clockwise seen from outside) faces along n.
-            if (Vector3.Dot(Vector3.Cross(b - a, c - a), n) < 0f) { (b, d) = (d, b); }
-            int i0 = _bandVerts.Count;
-            _bandVerts.Add(a); _bandVerts.Add(b); _bandVerts.Add(c); _bandVerts.Add(d);
-            for (int k = 0; k < 4; k++) _bandNormals.Add(n);
-            _bandTris.Add(i0); _bandTris.Add(i0 + 1); _bandTris.Add(i0 + 2);
-            _bandTris.Add(i0); _bandTris.Add(i0 + 2); _bandTris.Add(i0 + 3);
         }
 
         /// <summary>The ring explosion's hit on an enemy hull, under the LOCKED PvP rule: admitted through

@@ -596,5 +596,109 @@ namespace CosmicShore.Tests
             Assert.AreEqual(at144, at30, at144 * 0.3f, "sub-stepped: a 30 fps peer sees the same whip");
             Assert.AreEqual(at144, at60, at144 * 0.3f);
         }
+
+        // ------------------------------------------------------------------ the ring explosion's look (2026-10-18)
+
+        /// <summary>The shipped look (BrittleStarConfigSO's "Ring Detonation: the look" block) on the standard cell: the
+        /// ring's radius 6, the nucleus 392, the disk 4 x the ring's 0.22 half-thickness.</summary>
+        static BrittleStarBlastForm.Settings Blast(float t01, float phase = 0.37f)
+        {
+            const float Ring = 6f, Nucleus = 392f;
+            return new BrittleStarBlastForm.Settings
+            {
+                RingRadius = Ring,
+                Front = Mathf.Lerp(Ring, Nucleus, Mathf.Sin(t01 * Mathf.PI * 0.5f)),
+                HalfThickness = 0.22f * 4f,
+                BandWidth = 6f,
+                Phase = BrittleStarBlastForm.PhaseAt(phase, 108f * Mathf.Deg2Rad, t01),
+                T01 = t01,
+                CrestDepth = 2.5f,
+                PentagonLag = 0.8f,
+                ArmWidth = 6f,
+                ArmWiggle = 0.06f,
+                ArmCurl = 30f * Mathf.Deg2Rad,
+            };
+        }
+
+        static readonly List<Vector3> BlastVerts = new(), BlastNormals = new();
+        static readonly List<int> BlastTris = new();
+
+        [Test]
+        public void Blast_DrawsOnlyInsideTheDiskThatDoesTheDamage_AtEveryMoment()
+        {
+            // Honest: the look never shows the blast reaching where it does not (BrittleStarRules.DiskReaches).
+            for (int step = 0; step <= 20; step++)
+            {
+                var s = Blast(step / 20f);
+                BrittleStarBlastForm.Build(s, BlastVerts, BlastNormals, BlastTris);
+                Assert.Greater(BlastTris.Count, 0, $"t {step / 20f}: something is drawn");
+                foreach (var v in BlastVerts)
+                {
+                    Assert.LessOrEqual(new Vector2(v.x, v.y).magnitude, s.Front + 1e-3f, $"t {step / 20f}: inside the front");
+                    Assert.LessOrEqual(Mathf.Abs(v.z), s.HalfThickness + 1e-4f, $"t {step / 20f}: inside the disk's thickness");
+                }
+            }
+        }
+
+        [Test]
+        public void Blast_HasFiveFoldSymmetry()
+        {
+            BrittleStarBlastForm.Build(Blast(0.4f), BlastVerts, BlastNormals, BlastTris);
+            var turn = Quaternion.AngleAxis(72f, Vector3.forward);
+            for (int i = 0; i < BlastVerts.Count; i += 7)
+            {
+                Vector3 r = turn * BlastVerts[i];
+                float best = float.MaxValue;
+                foreach (var v in BlastVerts) best = Mathf.Min(best, (v - r).sqrMagnitude);
+                Assert.Less(best, 1e-3f, $"vertex {i} turned by a fifth of a turn lands on another");
+            }
+        }
+
+        [Test]
+        public void Blast_CrestsSitBehindTheRingsFivePoints_AndTheArmsStartAtThem()
+        {
+            const float phase = 0.37f;
+            for (int i = 0; i < BrittleStarHullForm.Points; i++)
+            {
+                float point = phase + BrittleStarHullForm.PointAngle(i);
+                Assert.AreEqual(1f, BrittleStarBlastForm.CrestAt(point, phase), 1e-4f, $"point {i}: a full crest");
+                Assert.AreEqual(0f, BrittleStarBlastForm.CrestAt(point + Mathf.PI / 5f, phase), 1e-4f, "none halfway between");
+            }
+
+            // Just after the blast every one of the ring's points has an arm's root on it.
+            var s = Blast(0.02f, phase);
+            BrittleStarBlastForm.Build(s, BlastVerts, BlastNormals, BlastTris);
+            for (int i = 0; i < BrittleStarHullForm.Points; i++)
+            {
+                float a = s.Phase + BrittleStarHullForm.PointAngle(i);
+                var point = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * s.RingRadius;
+                float best = BlastVerts.Min(v => (new Vector3(v.x, v.y, 0f) - point).magnitude);
+                Assert.Less(best, s.ArmWidth, $"point {i}: an arm grows from the ring's point");
+            }
+        }
+
+        [Test]
+        public void Blast_KeepsTheRingsSpin_AndBrakesToAStop()
+        {
+            const float p0 = 0.37f, spin = 108f * Mathf.Deg2Rad;
+            Assert.AreEqual(p0, BrittleStarBlastForm.PhaseAt(p0, spin, 0f), 1e-6f, "starts where the ring was");
+            Assert.AreEqual(p0 + spin, BrittleStarBlastForm.PhaseAt(p0, spin, 1f), 1e-5f, "turns on by the spin in all");
+            float early = BrittleStarBlastForm.PhaseAt(p0, spin, 0.1f) - p0;
+            float late = BrittleStarBlastForm.PhaseAt(p0, spin, 1f) - BrittleStarBlastForm.PhaseAt(p0, spin, 0.9f);
+            Assert.Greater(early, late * 5f, "fast at first, braking to a stop");
+        }
+
+        [Test]
+        public void Blast_EveryTriangleFacesItsNormal()
+        {
+            BrittleStarBlastForm.Build(Blast(0.5f), BlastVerts, BlastNormals, BlastTris);
+            for (int t = 0; t < BlastTris.Count; t += 3)
+            {
+                Vector3 a = BlastVerts[BlastTris[t]], b = BlastVerts[BlastTris[t + 1]], c = BlastVerts[BlastTris[t + 2]];
+                Vector3 cross = Vector3.Cross(b - a, c - a);
+                if (cross.sqrMagnitude < 1e-12f) continue;   // a crest-free inner edge can meet at a point
+                Assert.Greater(Vector3.Dot(cross, BlastNormals[BlastTris[t]]), 0f, $"tri {t / 3}");
+            }
+        }
     }
 }
