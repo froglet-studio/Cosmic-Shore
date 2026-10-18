@@ -1,12 +1,14 @@
 # Handoff prompts — 2026-10-18
 
-Each prompt below is self-contained: paste it as the first message of a new Claude Code session on
+Each prompt below is self-contained and has a task on the team board (Docs/TEAM_TASKS.md): paste it as the first message of a new Claude Code session on
 `froglet-studio/Cosmic-Shore`. Commit hashes were verified against `origin/bleeding-edge` @ `bfd6347973`
 and `origin/Ys-bleeding-edge` @ `b2bd220bb3` on 2026-10-18.
 
 ---
 
 ## 1. Quick fixes (one session, anyone — base `bleeding-edge`)
+
+Board task: **T-20261018-fde3**. Close it with `python3 Tools/Build/team_tasks.py done <id> --note "..."` when the work lands.
 
 ```
 Five small, independent fixes. Each one exists already as a commit on an old branch that can no
@@ -65,6 +67,8 @@ as done or explicitly owed.
 
 ## 2. Yash — the Tether onto Ys-bleeding-edge (team task T-20261017-e64b)
 
+Board task: **T-20261017-e64b (on Ys-bleeding-edge's board)**. Close it with `python3 Tools/Build/team_tasks.py done <id> --note "..."` when the work lands.
+
 ```
 Do team task T-20261017-e64b (Docs/TEAM_TASKS.md on Ys-bleeding-edge) and CONCEPT_FLEET.md §8.1
 step (2): bring the Unity Tether prototype on cece/loving-feynman-hlgf18 onto Ys-bleeding-edge.
@@ -107,6 +111,8 @@ Reference only (do NOT merge; both are superseded by the Tether, read them for i
 
 ## 3. Yash — presence converge releases the lobby it just joined
 
+Board task: **T-20261018-2a60**. Close it with `python3 Tools/Build/team_tasks.py done <id> --note "..."` when the work lands.
+
 ```
 A party/presence race is still live on bleeding-edge. In
 Assets/_Scripts/Controller/Party/Services/PresenceLobbyService.cs, ConvergeToCanonicalAsync
@@ -133,6 +139,8 @@ MPPM (reconnect churn) and /verify-unity. PR into bleeding-edge.
 
 ## 4. Yash — Rhino crystal-absorption hull morph (spike → keep/drop)
 
+Board task: **T-20261018-f1f5**. Close it with `python3 Tools/Build/team_tasks.py done <id> --note "..."` when the work lands.
+
 ```
 cece/trusting-albattani-p1sd96 has one commit, e9002489c5: VesselCrystalAbsorbMorph (+ tests), a
 Rhino.prefab wiring and VESSEL_CRYSTAL_ABSORB.md — a collected elemental crystal morphs onto the
@@ -151,6 +159,8 @@ with the capture and ask Garrett for keep / drop. Don't merge without his keep.
 ---
 
 ## 5. Yash — crystal wormhole rebuild + "under 10 s" retune vs the new lens
+
+Board task: **T-20261018-1a4a**. Close it with `python3 Tools/Build/team_tasks.py done <id> --note "..."` when the work lands.
 
 ```
 cece/charming-cerf-alf1j1 (Black Hole cell selector) has two commits that never landed:
@@ -174,6 +184,8 @@ before/after numbers for every ship.
 
 ## 6. Yash — keep landing the project-sprint parts (optional, larger)
 
+Board task: **T-20261018-a251**. Close it with `python3 Tools/Build/team_tasks.py done <id> --note "..."` when the work lands.
+
 ```
 cece/nice-brahmagupta-ojclij holds ~82 commits not on bleeding-edge, grouped into parts B, D–L
 (Docs/BRANCH_PARTS_STATUS.md; editor test steps in that branch's
@@ -195,6 +207,8 @@ SkimRaceAIConfig_I4.asset (it gained a TrackFingerprint field), not picked.
 ---
 
 ## 7. Garrett (or whoever owns copy) — market analysis docs
+
+Board task: **T-20261018-a464**. Close it with `python3 Tools/Build/team_tasks.py done <id> --note "..."` when the work lands.
 
 ```
 claude/games-market-analysis-uxjcur has three doc commits never landed (~3,950 lines):
