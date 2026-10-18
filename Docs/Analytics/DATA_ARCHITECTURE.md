@@ -146,6 +146,12 @@ Cost: nested `[Serializable]` classes. Newtonsoft (which the UGS SDK uses under 
 used on this path — worth restating, because it silently drops `Dictionary<,>` and has bitten this
 codebase before.
 
+**AI training data.** The AI flight recordings (`HumanFlightRecorder`, about 0.5 MB per race) have their own brief:
+`Docs/AI_SYSTEM/AI_DATA_IN_UGS.md`. In short:
+- small per-race summaries in Cloud Save, the full flight in a file store;
+- lossless compression only, never fewer decimals, samples or columns;
+- check with Yash or Garrett first.
+
 ---
 
 ## 3. Cloud Save schemas — the proposal

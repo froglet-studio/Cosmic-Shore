@@ -1,0 +1,1016 @@
+{
+ "schema": "cosmic-shore.vessel-mode-chart/1",
+ "cards": [
+  {
+   "mode": "AstroLeague",
+   "name": "Astro League",
+   "hulls": [
+    "Rhino",
+    "Scarab",
+    "Squirrel"
+   ],
+   "lists": [
+    "ArenaGames"
+   ]
+  },
+  {
+   "mode": "Bends",
+   "name": "The Bends",
+   "hulls": [
+    "Dolphin"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Bloomrush",
+   "name": "Bloomrush",
+   "hulls": [
+    "Manta"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Breakwater",
+   "name": "Breakwater",
+   "hulls": [
+    "Sparrow"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Broadside",
+   "name": "Broadside",
+   "hulls": [
+    "Manta",
+    "Dolphin",
+    "Rhino",
+    "Urchin",
+    "Squirrel",
+    "Sparrow",
+    "Scarab"
+   ],
+   "lists": [
+    "ArenaGames"
+   ]
+  },
+  {
+   "mode": "BroodRush",
+   "name": "Brood Rush",
+   "hulls": [
+    "Squirrel",
+    "Manta",
+    "Dolphin",
+    "Rhino",
+    "Serpent",
+    "Sparrow"
+   ],
+   "lists": [
+    "ArenaGames"
+   ]
+  },
+  {
+   "mode": "Cleave",
+   "name": "Cleave",
+   "hulls": [
+    "Rhino"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "DogFight",
+   "name": "Dog Fight",
+   "hulls": [
+    "Sparrow"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Dustup",
+   "name": "Dustup",
+   "hulls": [
+    "Butterfly"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "GrizzlyCharge",
+   "name": "Grizzly Charge",
+   "hulls": [
+    "Grizzly"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "GrizzlyTime",
+   "name": "Grizzly Time",
+   "hulls": [
+    "Grizzly"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Headlong",
+   "name": "Headlong",
+   "hulls": [
+    "Rhino"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Hijack",
+   "name": "Hijack",
+   "hulls": [
+    "Urchin"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Joust",
+   "name": "Joust",
+   "hulls": [
+    "Squirrel"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Maelstrom",
+   "name": "Maelstrom",
+   "hulls": [
+    "Sparrow",
+    "Manta",
+    "Squirrel"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Rampage",
+   "name": "Rampage",
+   "hulls": [
+    "Dolphin"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Redline",
+   "name": "Redline",
+   "hulls": [
+    "Manta"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Regatta",
+   "name": "Regatta",
+   "hulls": [
+    "Manta",
+    "Dolphin",
+    "Rhino",
+    "Urchin",
+    "Squirrel",
+    "Serpent",
+    "Sparrow",
+    "Scarab",
+    "Stoat"
+   ],
+   "lists": [
+    "ArenaGames"
+   ]
+  },
+  {
+   "mode": "Salvo",
+   "name": "Salvo",
+   "hulls": [
+    "Sparrow"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "ScarabScramble",
+   "name": "Scarab Scramble",
+   "hulls": [
+    "Scarab"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Scurry",
+   "name": "Scurry",
+   "hulls": [
+    "Sparrow",
+    "Manta",
+    "Squirrel"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Sirocco",
+   "name": "Sirocco",
+   "hulls": [
+    "Butterfly"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Skein",
+   "name": "Skein",
+   "hulls": [
+    "Urchin"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "SkimRace",
+   "name": "Skim Race",
+   "hulls": [
+    "Squirrel"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Slingshot",
+   "name": "Slingshot",
+   "hulls": [
+    "Stoat"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Switchback",
+   "name": "Switchback",
+   "hulls": [
+    "Dolphin"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Tapestry",
+   "name": "Tapestry",
+   "hulls": [
+    "Butterfly"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "ThresherTime",
+   "name": "Thresher Time",
+   "hulls": [
+    "Thresher"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Tollway",
+   "name": "Tollway",
+   "hulls": [
+    "Scarab"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Undertow",
+   "name": "Undertow",
+   "hulls": [
+    "Scarab"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Warpline",
+   "name": "Warpline",
+   "hulls": [
+    "Stoat"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "Waystation",
+   "name": "Waystation",
+   "hulls": [
+    "Butterfly"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "WildlifeLiberation",
+   "name": "Wildlife Liberation",
+   "hulls": [
+    "Sparrow"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  },
+  {
+   "mode": "WreckingBall",
+   "name": "Wrecking Ball",
+   "hulls": [
+    "Scarab"
+   ],
+   "lists": [
+    "ArcadeGames"
+   ]
+  }
+ ],
+ "gateRaceModes": [
+  "Switchback",
+  "Headlong",
+  "Redline",
+  "Breakwater",
+  "Skein",
+  "Regatta",
+  "Waystation"
+ ],
+ "hulls": [
+  {
+   "hull": "BrittleStar",
+   "abilities": {
+    "Charge": "Charge Mode",
+    "Mass": "Creation Mode",
+    "Space": "Space Mode",
+    "Time": "Speed Mode"
+   },
+   "stats": {
+    "ts": 35.0,
+    "ms": 10.0,
+    "pitch": 80.0,
+    "yaw": 80.0,
+    "rts": 0.1,
+    "boost": 1.0
+   },
+   "verb": "speed mode",
+   "aiDrive": "BrittleStarSpeedModeAIPolicySO",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [],
+   "gateRacesOffered": [],
+   "flown": {},
+   "asRival": {}
+  },
+  {
+   "hull": "Butterfly",
+   "abilities": {
+    "Charge": "Scale Dust",
+    "Mass": "Mass / Dust Mode",
+    "Space": "Dust Reach",
+    "Time": "Fold"
+   },
+   "stats": {
+    "ts": 55.0,
+    "ms": 12.0,
+    "pitch": 45.0,
+    "yaw": 45.0,
+    "rts": 0.0,
+    "boost": 4.0
+   },
+   "verb": "",
+   "aiDrive": "",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "Dustup",
+    "Sirocco",
+    "Tapestry",
+    "Waystation"
+   ],
+   "gateRacesOffered": [
+    "Waystation"
+   ],
+   "flown": {},
+   "asRival": {}
+  },
+  {
+   "hull": "Dolphin",
+   "abilities": {
+    "Charge": "Echo Sight",
+    "Mass": "Crystal Seeding",
+    "Space": "Echo Obliteration",
+    "Time": "Charge Fill Rate"
+   },
+   "stats": {
+    "ts": 68.0,
+    "ms": 0.0,
+    "pitch": 110.0,
+    "yaw": 110.0,
+    "rts": 0.0,
+    "boost": 4.0
+   },
+   "verb": "drift charge, then discharge",
+   "aiDrive": "ChargeBoostAIPolicySO",
+   "regattaAI": true,
+   "tunedFor": [
+    "Regatta"
+   ],
+   "offeredIn": [
+    "Bends",
+    "Broadside",
+    "BroodRush",
+    "Rampage",
+    "Regatta",
+    "Switchback"
+   ],
+   "gateRacesOffered": [
+    "Regatta",
+    "Switchback"
+   ],
+   "flown": {},
+   "asRival": {
+    "Regatta": {
+     "races": 47,
+     "medianRings": 13,
+     "target": 24,
+     "difficulty": [
+      "Hard",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      3
+     ]
+    }
+   }
+  },
+  {
+   "hull": "Grizzly",
+   "abilities": {
+    "Charge": "Dig In",
+    "Mass": "Weapon Systems",
+    "Space": "Charged Cannon",
+    "Time": "Rush"
+   },
+   "stats": {
+    "ts": 50.0,
+    "ms": 0.0,
+    "pitch": 90.0,
+    "yaw": 90.0,
+    "rts": 0.1,
+    "boost": 4.0
+   },
+   "verb": "",
+   "aiDrive": "",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "GrizzlyCharge",
+    "GrizzlyTime"
+   ],
+   "gateRacesOffered": [],
+   "flown": {},
+   "asRival": {
+    "Random": {
+     "races": 4,
+     "medianRings": 0,
+     "target": 0,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      1
+     ]
+    }
+   }
+  },
+  {
+   "hull": "Manta",
+   "abilities": {
+    "Charge": "Sting",
+    "Mass": "Yastri",
+    "Space": "Kabloom",
+    "Time": "Soar"
+   },
+   "stats": {
+    "ts": 180.0,
+    "ms": 0.0,
+    "pitch": 50.0,
+    "yaw": 30.0,
+    "rts": 0.2,
+    "boost": 4.0
+   },
+   "verb": "Soar: boost costs yaw",
+   "aiDrive": "Soar drive in MantaAnalogTurnBoostExecutor + MantaSoarAITuningSO",
+   "regattaAI": true,
+   "tunedFor": [
+    "Regatta"
+   ],
+   "offeredIn": [
+    "Bloomrush",
+    "Broadside",
+    "BroodRush",
+    "Maelstrom",
+    "Redline",
+    "Regatta",
+    "Scurry"
+   ],
+   "gateRacesOffered": [
+    "Redline",
+    "Regatta"
+   ],
+   "flown": {},
+   "asRival": {
+    "Regatta": {
+     "races": 53,
+     "medianRings": 14,
+     "target": 24,
+     "difficulty": [
+      "Hard",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      3
+     ]
+    }
+   }
+  },
+  {
+   "hull": "Rhino",
+   "abilities": {
+    "Charge": "(open design slot)",
+    "Mass": "Trail Slabs",
+    "Space": "(open design slot)",
+    "Time": "Ramp Spool"
+   },
+   "stats": {
+    "ts": 50.0,
+    "ms": 0.0,
+    "pitch": 90.0,
+    "yaw": 90.0,
+    "rts": 0.2,
+    "boost": 4.0
+   },
+   "verb": "ramp: hold straight to wind up speed",
+   "aiDrive": "RampBoostAIPolicySO (ramp / brake / off)",
+   "regattaAI": true,
+   "tunedFor": [
+    "Regatta"
+   ],
+   "offeredIn": [
+    "AstroLeague",
+    "Broadside",
+    "BroodRush",
+    "Cleave",
+    "Headlong",
+    "Regatta"
+   ],
+   "gateRacesOffered": [
+    "Headlong",
+    "Regatta"
+   ],
+   "flown": {},
+   "asRival": {
+    "Regatta": {
+     "races": 11,
+     "medianRings": 11,
+     "target": 24,
+     "difficulty": [
+      "Hard",
+      "Medium"
+     ],
+     "intensities": [
+      3
+     ]
+    }
+   }
+  },
+  {
+   "hull": "Scarab",
+   "abilities": {
+    "Charge": "Cavitation Blast",
+    "Mass": "Switch",
+    "Space": "Ball Forge",
+    "Time": "Throttle"
+   },
+   "stats": {
+    "ts": 25.0,
+    "ms": 0.0,
+    "pitch": 100.0,
+    "yaw": 100.0,
+    "rts": 0.1,
+    "boost": 4.0
+   },
+   "verb": "throttle ceiling + Snap Dash",
+   "aiDrive": "SnapDashAIPolicySO",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "AstroLeague",
+    "Broadside",
+    "Regatta",
+    "ScarabScramble",
+    "Tollway",
+    "Undertow",
+    "WreckingBall"
+   ],
+   "gateRacesOffered": [
+    "Regatta"
+   ],
+   "flown": {},
+   "asRival": {}
+  },
+  {
+   "hull": "Serpent",
+   "abilities": {
+    "Charge": "Sniper Shot",
+    "Mass": "Seed Wall",
+    "Space": "Scope",
+    "Time": "Solid Fuel Pellets"
+   },
+   "stats": {
+    "ts": 50.0,
+    "ms": 10.0,
+    "pitch": 80.0,
+    "yaw": 80.0,
+    "rts": 0.4,
+    "boost": 4.0
+   },
+   "verb": "4 boost pellets",
+   "aiDrive": "PelletBoostAIPolicySO",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "BroodRush",
+    "Regatta"
+   ],
+   "gateRacesOffered": [
+    "Regatta"
+   ],
+   "flown": {
+    "Regatta": {
+     "races": 2,
+     "finished": 1,
+     "best": 164.4,
+     "median": 164.4,
+     "intensities": [
+      3
+     ],
+     "pilots": [
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Hard"
+     ],
+     "last": "2026-10-17 04:54:17"
+    }
+   },
+   "asRival": {
+    "Regatta": {
+     "races": 15,
+     "medianRings": 16,
+     "target": 24,
+     "difficulty": [
+      "Hard",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      3
+     ]
+    }
+   }
+  },
+  {
+   "hull": "Sparrow",
+   "abilities": {
+    "Charge": "Skyburst Rockets",
+    "Mass": "Turret Stance",
+    "Space": "Pulsefire Cannons",
+    "Time": "Afterburner"
+   },
+   "stats": {
+    "ts": 25.0,
+    "ms": 10.0,
+    "pitch": 80.0,
+    "yaw": 80.0,
+    "rts": 0.1,
+    "boost": 5.0
+   },
+   "verb": "hold-to-boost",
+   "aiDrive": "HoldBoostAIPolicySO",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "Breakwater",
+    "Broadside",
+    "BroodRush",
+    "DogFight",
+    "Maelstrom",
+    "Regatta",
+    "Salvo",
+    "Scurry",
+    "WildlifeLiberation"
+   ],
+   "gateRacesOffered": [
+    "Breakwater",
+    "Regatta"
+   ],
+   "flown": {},
+   "asRival": {
+    "Regatta": {
+     "races": 11,
+     "medianRings": 12,
+     "target": 24,
+     "difficulty": [
+      "Hard",
+      "Medium"
+     ],
+     "intensities": [
+      3
+     ]
+    }
+   }
+  },
+  {
+   "hull": "Squirrel",
+   "abilities": {
+    "Charge": "Crystal Joust",
+    "Mass": "Boost Ring",
+    "Space": "Steal",
+    "Time": "Skimming"
+   },
+   "stats": {
+    "ts": 60.0,
+    "ms": 0.0,
+    "pitch": 120.0,
+    "yaw": 120.0,
+    "rts": 0.0,
+    "boost": 1.0
+   },
+   "verb": "skims a rail for boost",
+   "aiDrive": "SkimRacePilot (Skim Race crystals; Regatta: RegattaRingObjective)",
+   "regattaAI": true,
+   "tunedFor": [
+    "Regatta",
+    "SkimRace I1",
+    "SkimRace I2",
+    "SkimRace I4"
+   ],
+   "offeredIn": [
+    "AstroLeague",
+    "Broadside",
+    "BroodRush",
+    "Joust",
+    "Maelstrom",
+    "Regatta",
+    "Scurry",
+    "SkimRace"
+   ],
+   "gateRacesOffered": [
+    "Regatta"
+   ],
+   "flown": {
+    "Regatta": {
+     "races": 49,
+     "finished": 33,
+     "best": 91.3,
+     "median": 109.5,
+     "intensities": [
+      1,
+      3
+     ],
+     "pilots": [
+      "belac",
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Hard",
+      "Medium"
+     ],
+     "last": "2026-10-17 01:44:01"
+    }
+   },
+   "asRival": {
+    "Regatta": {
+     "races": 16,
+     "medianRings": 23,
+     "target": 24,
+     "difficulty": [
+      "Hard",
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      3
+     ]
+    }
+   }
+  },
+  {
+   "hull": "Stoat",
+   "abilities": {
+    "Charge": "Ripple",
+    "Mass": "Mass / Time Mode",
+    "Space": "Field Dipole",
+    "Time": "Pathfinder / Time Mode"
+   },
+   "stats": {
+    "ts": 60.0,
+    "ms": 0.0,
+    "pitch": 48.0,
+    "yaw": 48.0,
+    "rts": 0.0,
+    "boost": 1.0
+   },
+   "verb": "black-hole / white-hole pair: warp the path and fly it",
+   "aiDrive": "dipole autopilot in StoatDipole/Sling executors",
+   "regattaAI": true,
+   "tunedFor": [
+    "Regatta"
+   ],
+   "offeredIn": [
+    "Regatta",
+    "Slingshot",
+    "Warpline"
+   ],
+   "gateRacesOffered": [
+    "Regatta"
+   ],
+   "flown": {},
+   "asRival": {}
+  },
+  {
+   "hull": "Thresher",
+   "abilities": {
+    "Charge": "Wrecking Ball",
+    "Mass": "Mass Mode",
+    "Space": "Winch",
+    "Time": "Plant"
+   },
+   "stats": {
+    "ts": 110.0,
+    "ms": 15.0,
+    "pitch": 120.0,
+    "yaw": 120.0,
+    "rts": 0.0,
+    "boost": 1.0
+   },
+   "verb": "",
+   "aiDrive": "",
+   "regattaAI": false,
+   "tunedFor": [],
+   "offeredIn": [
+    "ThresherTime"
+   ],
+   "gateRacesOffered": [],
+   "flown": {},
+   "asRival": {}
+  },
+  {
+   "hull": "Urchin",
+   "abilities": {
+    "Charge": "Chain Spikes",
+    "Mass": "Trail Rider",
+    "Space": "Track Projector",
+    "Time": "Slip"
+   },
+   "stats": {
+    "ts": 65.0,
+    "ms": 0.0,
+    "pitch": 90.0,
+    "yaw": 90.0,
+    "rts": 0.0,
+    "boost": 4.0
+   },
+   "verb": "rides its own rail",
+   "aiDrive": "UrchinAutopilotDriver (rail modes: Regatta, Skein)",
+   "regattaAI": true,
+   "tunedFor": [
+    "Regatta"
+   ],
+   "offeredIn": [
+    "Broadside",
+    "Hijack",
+    "Regatta",
+    "Skein"
+   ],
+   "gateRacesOffered": [
+    "Regatta",
+    "Skein"
+   ],
+   "flown": {
+    "Regatta": {
+     "races": 5,
+     "finished": 2,
+     "best": 54.7,
+     "median": 61.2,
+     "intensities": [
+      1,
+      3
+     ],
+     "pilots": [
+      "belac",
+      "yskha"
+     ],
+     "rivalDifficulty": [
+      "Hard",
+      "Medium"
+     ],
+     "last": "2026-10-17 03:18:01"
+    },
+    "Skein": {
+     "races": 1,
+     "finished": 0,
+     "best": null,
+     "median": null,
+     "intensities": [
+      3
+     ],
+     "pilots": [
+      "gradi"
+     ],
+     "rivalDifficulty": [
+      "Medium"
+     ],
+     "last": "2026-10-16 18:35:15"
+    }
+   },
+   "asRival": {
+    "Regatta": {
+     "races": 6,
+     "medianRings": 23,
+     "target": 24,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      3
+     ]
+    },
+    "Skein": {
+     "races": 3,
+     "medianRings": 4,
+     "target": 0,
+     "difficulty": [
+      "Medium"
+     ],
+     "intensities": [
+      1,
+      3
+     ]
+    }
+   }
+  }
+ ],
+ "flights": 67,
+ "pilots": [
+  "belac",
+  "gradi",
+  "mrglo",
+  "yskha"
+ ]
+}

@@ -97,8 +97,7 @@ namespace CosmicShore.Utility.AITraining
                 aiPilot.enabled = false;
             }
 
-            var pilot = host.GetComponent<TrainingPilot>();
-            if (pilot == null) pilot = host.AddComponent<TrainingPilot>();
+            if (!host.TryGetComponent(out TrainingPilot pilot)) pilot = host.AddComponent<TrainingPilot>();
             pilot.BindVessel(vessel, gameData, cellData);
             pilot.Intensity = Mathf.Clamp(flownIntensity, 1, 4);
             pilot.LoadGenome(genome);

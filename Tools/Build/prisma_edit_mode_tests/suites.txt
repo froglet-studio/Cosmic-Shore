@@ -29,6 +29,7 @@ Assets/_Scripts/Tests/Editor/PartyInviteControllerTests.cs
 Assets/_Scripts/Tests/Editor/PartyInviteDataTests.cs
 Assets/_Scripts/Tests/Editor/PartyInviteSystemTests.cs
 Assets/_Scripts/Tests/Editor/PartyPlayerDataTests.cs
+Assets/_Scripts/Tests/Editor/PartyRefreshRecoveryTests.cs
 Assets/_Scripts/Tests/Editor/PartyRosterTests.cs
 Assets/_Scripts/Tests/Editor/RaceRankToastDriverTests.cs
 Assets/_Scripts/Tests/Editor/RegattaTeamPlayTests.cs
