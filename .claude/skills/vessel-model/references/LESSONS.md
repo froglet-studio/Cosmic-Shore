@@ -490,3 +490,21 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     - **One card camera for the fleet.** Per-vessel views made each card look good alone and the set inconsistent
       (Garrett: "most are flying up and to the right, but some are not"). `CARD_VIEW` / `CARD_NOSE_ANGLE` are
       fleet constants; a hull that faces the wrong way fixes its `nose`/`up` axes, never the camera.
+
+47. **The ship review (2026-10-18, `/ship-deep` after merging bleeding-edge): what three independent re-reads
+    caught that writing the code did not.**
+    - **A Z-up model's MESH NODE is not the hull's frame.** Unity keeps a Z-up FBX's mesh node in the file frame
+      (export.py, THE AXIS STORY): its local Y is the nose and local Z is UP. `BrittleStarHullModel` posed the
+      thrown ring with the skinned renderer's `transform.rotation`, and the executor spins a flight about local
+      Z and faces the blast along it, so the ring tumbled and the blast faced up. Any runtime code that takes a
+      frame from the model must build it from the HULL (`transform`, forward = nose) and re-express the baked
+      vertices and normals in it.
+    - **Wiring a SkinnedMeshRenderer wakes every base-class path gated on it.** On the procedural hulls the
+      field was null, so `VesselAnimation.FlareEngine/FlareBody` (which cloned materials through
+      `renderer.materials`, every frame during a speed burst) never ran. The models made it live on seven hulls.
+      When a model fills a field that was empty, grep the base class for every reader of that field. The fix
+      went into the base (per-slot property blocks), not into seven overrides.
+    - **Look for the tool before writing it.** The Rhino prefab's merge conflict (both sides deleting adjacent
+      YAML documents) needed a per-object merge, and `/asset-surgery` already had one, with its five assertions
+      and `Tools/Build/merge_unity_scene.py`. Rebuilding it skipped two of those assertions (byte-exact
+      round-trip, every addition survives) until the review ran them. They then found one trimmed blank line.
