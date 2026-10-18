@@ -522,6 +522,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
 - **Done:** 2026-10-16, Yash 2026-10-17: no decision step; the Ys-bleeding-edge RampBoostAIPolicySO was rebuilt (brake on the ramp, corner speed, payback) and took the re-arm + explicit end from the cece/relaxed-hopper-r62hbd cut. When that branch merges, keep this file's states and that branch's executor changes (AI_BOOST.md).
+- **Done:** 2026-10-18, merge 5b09c6896 took bleeding-edge's RampBoostAIPolicySO wholesale (a superset of this branch's re-arm + End), Rhino.prefab points at its asset guid ece63fe0fab446188650420e8b018690
 
 ### T-20261016-b525 · open · test · Regatta AI
 - **Task:** Fly Regatta I1 as the Stoat, 5+ finished races, storing every one: Mass mode's dipole on the straights, Time mode (B) slings into the hard corners; in one race flip Third Eye > Pilots > AI on your Stoat for a lap and back. Then ask a session to run learn_drives_from_flights.py --write (writes StoatModeAction / StoatDipoleConfig / StoatSlingConfig _Regatta)
@@ -678,3 +679,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-18 by a Claude session (`cece/gallant-bell-eq7kul`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md R3
+
+### T-20261018-0886 · open · test · Rhino
+- **Task:** Editor-verify the Rhino four-row kit on cece/relaxed-hopper-r62hbd (never opened in Unity): compile, then run the 'Rhino deep dive' section of Docs/UNITY_VERIFICATION_CHECKLIST.md - sword energize/cooldown and Charge gauge, afterimages cut by the Rhino's own blade after 1 s, Time card lit on boost + Momentum flash + speed gauge, the L1+R1 and sticks-apart chips, Manta Soar chip, a Grizzly losing petals to a danger prism, and a 2-player check that a replica's sword/ramp match the owner's
+- **Done when:** Every numbered check in that section passes, or each failure is filed as a dev task
+- **Who can take it:** Yash (offered) or Caleb/Andrew (QA); Garrett for the balance calls
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Rhino deep dive); Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md
+
+### T-20261018-c5a4 · open · decision · Rhino
+- **Task:** Playtest the Rhino afterimage self-farm: one energize (cost 0.1) then cutting its own wake can refill the sword meter now the blade cuts its own afterimages. Keep, or lower energy per own-afterimage cut (not immunity)
+- **Done when:** A call is recorded in Docs/ElementalAbilitySystem/BACKLOG.md (Rhino four-row branch, Open)
+- **Who can take it:** Garrett (vessel owner)
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/ElementalAbilitySystem/BACKLOG.md 'Afterimage self-farm'
+
+### T-20261018-2962 · open · dev · CI gates
+- **Task:** check_vessel_on_vessel_motion.py is red on bleeding-edge: it flags VesselImpulseByExplosionEffectSO (the Grizzly's self-launch, which returns unless SourceVessel is the vessel hit). Teach the gate the self-only guard (or a reasoned allow-list entry) with a negative control; do not change the effect
+- **Done when:** The gate exits 0 on bleeding-edge and still fails when the SourceVessel guard is deleted
+- **Who can take it:** Yash (offered) or whoever owns the CI gates
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/ElementalAbilitySystem/BACKLOG.md '[gate false positive] check_vessel_on_vessel_motion.py'

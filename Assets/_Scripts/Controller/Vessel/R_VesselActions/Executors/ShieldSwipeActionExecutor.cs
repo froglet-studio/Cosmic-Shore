@@ -13,11 +13,19 @@ namespace CosmicShore.Gameplay
     /// (both triggers = centered but fully down; a single full pull chops halfway). The
     /// sword pivots about its parent's origin - rotation and mount position together -
     /// so it carves a real arc through space. The raised rest pose is whatever the
-    /// skimmer transform is authored to in the prefab. For inputs without analog
-    /// triggers (remote peers replaying the owner's events, touch bindings), the
-    /// press/release events drive the same rig at full deflection. Only scale is driven
-    /// on this transform elsewhere (ShieldSkimmerScaleDriver), so rotation/position are
-    /// ours to animate.
+    /// skimmer transform is authored to in the prefab. Only scale is driven on this transform
+    /// elsewhere (ShieldSkimmerScaleDriver), so rotation/position are ours to animate.
+    ///
+    /// EVERY PEER POSES THE BLADE FROM THE SAME TRIGGERS. The owner's analog trigger depth travels
+    /// in InputStatus's owner-write trigger mirrors, and every peer reads them; the local gamepad
+    /// pilot reads the hardware directly (the same value it writes, minus the netvar's latency).
+    /// Until 2026-10-16 a remote peer posed the blade from the replayed press/release EVENTS
+    /// instead - a full ±1 single-trigger swing the moment a trigger crossed its deadzone - and
+    /// each peer cuts prisms against its OWN blade, so a half-pull sweep that missed on the
+    /// pilot's screen cut on everyone else's and the prism fields diverged. The press/release
+    /// path survives only for a device that writes no mirrors (touch). An AI Rhino's
+    /// <see cref="RhinoSwordAutopilot"/> writes the mirrors on its owning machine, so its sword
+    /// replicates the same way.
     ///
     /// COMBOS ride on top: a rapid string of trigger TAPS (RR, RL, RLR, …) calls an authored
     /// flourish from <see cref="RhinoSwordComboLibrarySO"/> — a separate, upgraded set while
@@ -37,6 +45,12 @@ namespace CosmicShore.Gameplay
 
         [Header("Events")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
+
+        [Header("Autopilot")]
+        [Tooltip("The AI's sword hand (RhinoSwordAutopilot on the Rhino root). While it drives the " +
+                 "trigger mirrors, an autopiloted vessel's triggers are followed instead of dropped. " +
+                 "Found on the vessel when empty.")]
+        [SerializeField] RhinoSwordAutopilot autopilot;
 
         [Header("Blade Geometry")]
         [Tooltip("Half the blade mesh's extent along its length axis, in the blade's OWN local units. " +
@@ -107,40 +121,21 @@ namespace CosmicShore.Gameplay
             if (!EnsureShieldRoot()) return;
 
             float diffTarget, sumTarget;
-            bool analog = IsLocalAnalogPilot(out var input);
-            if (analog)
+            bool analog;
+            if (TryReadTriggers(out float lt, out float rt, out analog))
             {
-                // Read the triggers straight off the hardware for the local pose. The
-                // InputStatus trigger properties are NetworkVariable mirrors meant for
-                // replication - going through them puts the whole netvar pipeline
-                // between the finger and the sword. DualMouse has no hardware trigger
-                // axis, so it keeps the mirror (binary 0/1 by design).
-                float lt, rt;
-                var pad = Gamepad.current;
-                if (input.ActiveInputDevice == InputDeviceType.Gamepad && pad != null)
-                {
-                    lt = ApplyDeadzone(pad.leftTrigger.ReadValue());
-                    rt = ApplyDeadzone(pad.rightTrigger.ReadValue());
-                }
-                else
-                {
-                    lt = ApplyDeadzone(input.LeftTriggerAnalog);
-                    rt = ApplyDeadzone(input.RightTriggerAnalog);
-                }
+                // The same reparameterization for every source. A binary device's mirror is 0 or 1,
+                // so a single press is full difference / half chop and both held is the centred chop
+                // (the energize stance) - exactly what the event path below draws, on every peer.
                 diffTarget = rt - lt;
                 sumTarget = rt + lt;
             }
             else
             {
-                // Event-driven stance: remote peers replaying the owner's press/release,
-                // and binary local devices. A press mirrors a full single-trigger pull -
-                // full difference, half chop; BOTH holds down mirror the both-triggers
-                // centered chop (the energize stance), so binary devices can energize and
-                // remote peers replay the owner's stance pose instead of a one-sided swipe.
-                // If autopilot took over mid-hold (menu freestyle exit) the release edge
+                // A device that writes no trigger mirrors (touch): the press/release events drive
+                // the stance at full deflection. If autopilot took over mid-hold the release edge
                 // never arrives, so drop the stance.
-                if (_activeSign != 0f && _status.IsLocalUser && _status.AutoPilotEnabled)
-                    ClearStance();
+                if (_activeSign != 0f && IgnoresTriggers) ClearStance();
                 if (_rightHeld && _leftHeld)
                 {
                     diffTarget = 0f;
@@ -210,7 +205,7 @@ namespace CosmicShore.Gameplay
             }
 
             var input = _status.InputStatus;
-            if (input == null || (_status.IsLocalUser && _status.AutoPilotEnabled))
+            if (input == null || IgnoresTriggers)
             {
                 _comboDetector.Reset();
                 return;
@@ -334,7 +329,7 @@ namespace CosmicShore.Gameplay
             if (sword == null) return;
 
             var input = _status?.InputStatus;
-            if (input == null || (_status.IsLocalUser && _status.AutoPilotEnabled))
+            if (input == null || IgnoresTriggers)
             {
                 sword.SetInStance(false);
                 return;
@@ -392,26 +387,77 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Analog control only exists for the local pilot - triggers don't replicate.
-        /// Remote peers and AI fall through to the event-driven stance.
+        /// True while this machine's own human pilot is under autopilot and nothing is driving the
+        /// triggers for them (the menu's lava-lamp autopilot with no sword hand): a paused input
+        /// controller FREEZES the mirrors rather than zeroing them, so the last pull would hold the
+        /// pose and the stance forever. An autopilot that writes the triggers itself is followed.
         /// </summary>
-        bool IsLocalAnalogPilot(out IInputStatus input)
+        bool IgnoresTriggers =>
+            _status != null && _status.IsLocalUser && _status.AutoPilotEnabled && !AutopilotDrivesTriggers;
+
+        bool AutopilotDrivesTriggers
         {
-            input = null;
-            if (_status == null || !_status.IsLocalUser || _status.AutoPilotEnabled) return false;
-            input = _status.InputStatus;
-            if (input == null) return false;
-            return input.ActiveInputDevice is InputDeviceType.Gamepad or InputDeviceType.DualMouse;
+            get
+            {
+                if (!autopilot && _status?.ShipTransform) autopilot = _status.ShipTransform.GetComponentInChildren<RhinoSwordAutopilot>(true);
+                return autopilot && autopilot.DrivesTriggers;
+            }
         }
+
+        /// <summary>
+        /// This frame's trigger depths (deadzoned), from the source every peer agrees on. False for a
+        /// device that writes no mirrors (touch), whose press/release events drive the stance instead.
+        /// <paramref name="analog"/> says whether the values are continuous (track them) or binary
+        /// (rate-limit them into a swing) - decided from the REPLICATED device, so it is the same
+        /// answer on every peer.
+        /// </summary>
+        bool TryReadTriggers(out float lt, out float rt, out bool analog)
+        {
+            lt = rt = 0f;
+            analog = false;
+            var input = _status?.InputStatus;
+            if (input == null || _status.Player == null) return false;
+
+            if (IgnoresTriggers)
+            {
+                analog = true;   // release smoothly back to rest
+                return true;
+            }
+
+            var device = input.ActiveInputDevice;
+            bool driven = _status.IsInitializedAsAI || _status.AutoPilotEnabled;
+            if (device == InputDeviceType.Touch && !driven) return false;
+
+            // DualMouse's mirror is binary by design but was always TRACKED (not rate-limited), and
+            // that feel is kept; keyboard was always the rate-limited swing.
+            analog = device is InputDeviceType.Gamepad or InputDeviceType.DualMouse || driven;
+
+            // The local gamepad pilot reads the hardware: the mirror carries the same value, but
+            // through the whole netvar pipeline between the finger and the sword.
+            var pad = Gamepad.current;
+            if (_status.IsLocalUser && !_status.AutoPilotEnabled && device == InputDeviceType.Gamepad && pad != null)
+            {
+                lt = ApplyDeadzone(pad.leftTrigger.ReadValue());
+                rt = ApplyDeadzone(pad.rightTrigger.ReadValue());
+                return true;
+            }
+
+            lt = ApplyDeadzone(input.LeftTriggerAnalog);
+            rt = ApplyDeadzone(input.RightTriggerAnalog);
+            return true;
+        }
+
+        /// <summary>True while the events should drive the stance (see <see cref="TryReadTriggers"/>).</summary>
+        bool EventsDriveStance => !TryReadTriggers(out _, out _, out _);
 
         public void BeginSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
             if (!so) return;
 
-            // The analog drive owns the pose on this machine; the event still replicated
-            // to peers before reaching this executor, which is all it needs to do here.
-            if (IsLocalAnalogPilot(out _)) return;
+            // The trigger mirrors own the pose wherever they exist; the event only drives a device
+            // that writes none.
+            if (!EventsDriveStance) return;
 
             if (so.DirectionSign > 0f) _rightHeld = true;
             else _leftHeld = true;
@@ -422,7 +468,7 @@ namespace CosmicShore.Gameplay
         {
             _status ??= status;
             if (!so) return;
-            if (IsLocalAnalogPilot(out _)) return;
+            if (!EventsDriveStance) return;
 
             bool isRight = so.DirectionSign > 0f;
             if (isRight) _rightHeld = false;

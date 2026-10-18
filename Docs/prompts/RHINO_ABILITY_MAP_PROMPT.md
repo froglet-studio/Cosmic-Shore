@@ -1,5 +1,14 @@
 # Prompt — prepare the Rhino's elemental ability map for a design decision
 
+> **SUPERSEDED 2026-10-16 — do not run this prompt.** The Rhino's map was designed directly, by
+> Garrett's design calls in session (`cece/relaxed-hopper-r62hbd`), rather than through the proposal
+> this prompt prepares: Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade Reach /
+> Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge — 4/4 abilities, 4/4 scaling, 4/4 L5.
+> The record is `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 (Rhino) and
+> `Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`. The body below is
+> kept unchanged as history; its counts ("one of four slots designed", "three cards LOCKED") and the
+> forcefield/slab proposals it points at describe the tree before that date.
+
 Paste everything below into a fresh session.
 
 ---

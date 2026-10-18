@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     /// The energize ritual's phases, driven by <see cref="ShieldSkimmerScaleDriver"/> and
     /// read by <see cref="RhinoSwordFXController"/> for the blade's look:
     /// Idle → (hold the both-triggers chop stance) Charging → (hold met) Energized —
-    /// white-hot, pops super-shielded prisms, stays lit for a tail after leaving the
+    /// danger red, pops super-shielded prisms, stays lit for a tail after leaving the
     /// stance → Cooldown → Idle.
     /// </summary>
     public enum RhinoSwordEnergizePhase
@@ -29,14 +29,15 @@ namespace CosmicShore.Gameplay
     /// popping a SUPER-shielded prism, which requires the blade to be ENERGIZED: hold the
     /// both-triggers lower/chop stance (<see cref="SetInStance"/>) to charge; the blade
     /// ignites, stays lit for a tail after leaving the stance, then cools. "Energy" is the
-    /// Rhino's Shield resource (normalized 0..1), banked per prism the sword destroys,
-    /// spent as a fraction on each energize and drained whole by an elemental-crystal
-    /// burst. See <c>RHINO_ENERGY_SWORD.md</c>.
+    /// Rhino's Shield resource (normalized 0..1), banked per prism the sword destroys and
+    /// spent as a fraction on each energize. An OMNI crystal SURGES the blade (energized with
+    /// no stance, temporary elements, afterimages while it lasts - <see cref="Surge"/>). See
+    /// <c>RHINO_ENERGY_SWORD.md</c>.
     /// </summary>
     public interface IRhinoSwordState
     {
-        /// <summary>True while the blade is energized — white-hot, and the supershield
-        /// key is live (contact pops super-shielded prisms instead of bouncing).</summary>
+        /// <summary>True while the blade is energized — danger red, and the supershield
+        /// key is live (contact pops super-shielded prisms instead of binding in them).</summary>
         bool IsEnergized { get; }
 
         /// <summary>Current stored energy, normalized 0..1 (the Shield resource).</summary>
@@ -55,10 +56,24 @@ namespace CosmicShore.Gameplay
         /// the energize stance to pop this.</summary>
         void NotifyPopDenied(Vector3 prismWorldPosition);
 
-        /// <summary>Elemental-crystal hit: burst the blade in all three dimensions scaled by
-        /// the current energy, then consume ALL of it (drain to 0). Full energy reproduces the
-        /// authored max scale; less energy scales the burst down proportionally.</summary>
-        void TriggerCrystalBurst();
+        /// <summary>True while an omni-crystal SURGE holds the blade energized (<see cref="Surge"/>).
+        /// Replicated with the energize phase, so every peer lays the surge's afterimages.</summary>
+        bool IsSurging { get; }
+
+        /// <summary>
+        /// The omni-crystal pickup: fill the energy meter to at least <paramref name="energyFill01"/>,
+        /// burst the blade in all three dimensions, and hold it ENERGIZED for
+        /// <paramref name="seconds"/> with no stance and no cost - overriding a cooldown - while the
+        /// Mass afterimages, which otherwise wait for the energize to END, lay throughout. A no-op on
+        /// a peer that does not own the sword's state (the owner's surge replicates).
+        /// </summary>
+        void Surge(float seconds, float energyFill01);
+
+        /// <summary>True when <paramref name="prism"/> is one of THIS sword's own afterimages. The
+        /// blade cuts them like any prism; the AI's sword hand reads this only to aim at something
+        /// else first. (Until 2026-10-17 the damage effect skipped them outright, which made the
+        /// Mass ability's own mass immune to its pilot - reversed by design.)</summary>
+        bool IsOwnAfterimage(Prism prism);
 
         /// <summary>Fed each frame by the swipe executor: true while the both-triggers
         /// "lower"/chop stance (the energize gesture) is held.</summary>
