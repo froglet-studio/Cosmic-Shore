@@ -23,11 +23,14 @@ MonoBehaviour:
   tailLength: 1.6
   thumbOffsetMillimetres: 21
   offsetMouse: 0
+  stickDeadzone: 0.15
   moteHome: 0
   moteCount: 26
   moteCluster: 4
   moteSpread: 18
   mixedLoops: 0
+  moteBaseWeight: 1
+  moteWeightPerLevel: 1
   growth: 2
   spaceExplosions:
   - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
@@ -39,14 +42,27 @@ MonoBehaviour:
   massPrismsPerFrame: 40
   timeBoostSeconds: 1.5
   timeBoostCap: 30
+  boostCooldownSeconds: 2
   chargePetals: 1
   chargeCap: 30
   stealCooldown: 1
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   aiSkill: 2
-  boardScreenSize: 0.55
-  boardScreenCentre: {x: 0.76, y: 0.34}
-  boardTouchMargin: 0.25
+  omniSeconds: 5
+  omniBoardScale: 2
+  omniZoomRate: 3
+  pipSize: 0.32
+  viewMargin: 0.015
+  petalMeshes:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  moteSize: 3.2
+  tailWidth: 1.4
+  pilotKiteAlpha: 0.22
+  pilotDotAlpha: 0.35
+  pilotDotSize: 0.9
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   loopClosedSfx:
     Guid:

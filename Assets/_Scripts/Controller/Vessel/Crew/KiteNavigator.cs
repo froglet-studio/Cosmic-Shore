@@ -35,6 +35,7 @@ namespace CosmicShore.Gameplay
             public float X, Z, Y, VX, VZ;
             public bool Has;
             public int Element;   // 0 Charge, 1 Mass, 2 Space, 3 Time (Element - 1)
+            public float Spin;    // the petal's turn on the board, degrees
         }
 
         internal struct PrismShadow
@@ -105,13 +106,13 @@ namespace CosmicShore.Gameplay
         readonly Queue<(Vector3 pos, Quaternion rot)> _massQueue = new();
 
         float _charge, _boostEnergy;
-        bool _boostAsserted;
-        bool _humanNavigates, _weTookHull, _grabbed, _down;
-        float _swapReadyAt;
+        bool _humanNavigates, _weTookHull, _down, _boosting;
+        float _swapReadyAt, _boostReadyAt, _omniUntil, _boardScale = 1f;
         KiteVec _aim;
-        Vector2 _thumbScreen;
-        GameObject _canvas;
-        KiteBoardGraphic _graphic;
+        enum Pointer { Mouse = 0, Touch = 1, Stick = 2 }
+        Pointer _pointer;
+        Vector2 _lastMouse;
+        KiteNavigatorView _view;
 
         internal KiteNavigatorConfigSO Config => _cfg;
         internal KiteSettings Settings => _s;
@@ -121,9 +122,9 @@ namespace CosmicShore.Gameplay
         internal float BoostEnergy => _boostEnergy;
         internal bool Down => _down;
         internal KiteVec Aim => _aim;
-        internal Vector2 ThumbScreen => _thumbScreen;
         internal Vector3 BoardRight => _r;
         internal Vector3 BoardForward => _f;
+        internal Vector3 BoardUp => _u;
 
         /// <summary>True while the local human flies the kite and the hull's AI flies the hull.</summary>
         public bool HumanNavigates => _humanNavigates;
@@ -177,22 +178,22 @@ namespace CosmicShore.Gameplay
             _ai.Reset(_kite.Position);
             _aim = _kite.Position;
             _snapped = false;
-            _humanNavigates = _weTookHull = _grabbed = _down = false;
+            _humanNavigates = _weTookHull = _down = _boosting = false;
             Motes.Clear(); Effects.Clear(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
-            _charge = 0f; _boostEnergy = 0f;
+            _charge = 0f; _boostEnergy = 0f; _boostReadyAt = 0f; _omniUntil = 0f; _boardScale = 1f;
             if (_active && _active != this) Destroy(_active);
             _active = this;
-            EnsureCanvas();
+            _view = new KiteNavigatorView(this);
         }
 
         void Unbind()
         {
             if (_vessel == null) return;
             if (_humanNavigates) SetHumanNavigates(false);
-            ReleaseBoost();
+            EndBoost();
             _massQueue.Clear();
-            if (_canvas) Destroy(_canvas);
-            _canvas = null; _graphic = null;
+            _view?.Dispose();
+            _view = null;
             _vessel = null; _status = null; _player = null;
             if (_active == this) _active = null;
         }
@@ -210,22 +211,42 @@ namespace CosmicShore.Gameplay
             PollSwap();
             if (dt <= 0f) return;
 
+            ScaleBoard(dt);
             UpdateBoard(dt);
+            _view.Frame(_humanNavigates);
             StepMotes(dt);
             ShadowPrisms();
             ShadowRivals(dt);
 
-            if (_humanNavigates) ReadThumb();
+            if (_humanNavigates) ReadKiteInput();
             else StepAI(dt);
 
             var prev = _kite.Move(_s, _aim.X, _aim.Z, _down, dt);
             HeadContacts(prev);
             if (_kite.AdvanceTail(_s, _loop)) CloseLoop(_loop);
 
-            BurnBoost(dt);
+            StepBoost(dt);
             LayMassQueue();
             PruneEffects();
-            if (_graphic) _graphic.SetVerticesDirty();
+        }
+
+        // after the hull has moved this frame: the views follow it, then draw
+        void LateUpdate()
+        {
+            if (_view == null || _vessel == null || !UnityLiveness.Alive(_vessel.Transform)) return;
+            UpdateBoard(0f);
+            _view.Frame(_humanNavigates);
+            _view.Draw();
+        }
+
+        // An Omni crystal widens the board for a while: the camera zooms out and the kite may fly that much further, and
+        // since the tail is measured in board radii, the lasso grows with it. Eased, so the kite is drawn in, not snapped.
+        void ScaleBoard(float dt)
+        {
+            float target = Time.time < _omniUntil ? _cfg.OmniBoardScale : 1f;
+            _boardScale += (target - _boardScale) * (1f - Mathf.Exp(-_cfg.OmniZoomRate * dt));
+            _s = _cfg.ToSettings();
+            _s.BoardRadius *= _boardScale;
         }
 
         // ------------------------------------------------------------------ seats
@@ -242,7 +263,6 @@ namespace CosmicShore.Gameplay
         {
             if (_humanNavigates == navigate) return;
             _humanNavigates = navigate;
-            _grabbed = false;
             _down = false;
 
             // The hull's own AI flies while the human navigates; its flight input is paused so the pointer and the
@@ -308,6 +328,13 @@ namespace CosmicShore.Gameplay
         /// <summary>A world point on the board plane.</summary>
         internal Vector3 BoardToWorld(float x, float z) => HullPosition + _r * x + _f * z;
 
+        /// <summary>A world point's shadow on the board (u).</summary>
+        internal KiteVec WorldToBoard(Vector3 world)
+        {
+            var d = world - HullPosition;
+            return new KiteVec(Vector3.Dot(d, _r), Vector3.Dot(d, _f));
+        }
+
         void Shadow(Vector3 world, out float x, out float z, out float y)
         {
             var d = world - HullPosition;
@@ -338,17 +365,38 @@ namespace CosmicShore.Gameplay
             // a same-element cluster ahead of the board, so it flows in from the top
             for (int guard = 0; Motes.Count < _cfg.MoteCount && guard < 6; guard++)
             {
-                int e = _rng.Next(4), n = Mathf.Max(1, Mathf.RoundToInt(_cfg.MoteCluster * (0.5f + (float)_rng.NextDouble())));
+                int e = PickElement(), n = Mathf.Max(1, Mathf.RoundToInt(_cfg.MoteCluster * (0.5f + (float)_rng.NextDouble())));
                 float cx = ((float)_rng.NextDouble() * 2f - 1f) * R * 0.8f, cz = A + R * (0.75f + (float)_rng.NextDouble() * 0.5f);
                 float cy = board ? 0f : Gauss() * _cfg.ReachY * 0.9f;
                 for (int i = 0; i < n && Motes.Count < _cfg.MoteCount + 6; i++)
                 {
                     float x = cx + Gauss() * _cfg.MoteSpread, z = cz + Gauss() * _cfg.MoteSpread, y = board ? 0f : cy + Gauss() * 6f;
                     var world = BoardToWorld(x, z) + _u * y;
-                    Motes.Add(new Mote { World = world, X = x, Z = z, Y = y, Has = true, Element = e });
+                    Motes.Add(new Mote { World = world, X = x, Z = z, Y = y, Has = true, Element = e, Spin = (float)_rng.NextDouble() * 360f });
                 }
             }
         }
+
+        // The hull's own petals set how often each element comes to the kite: weight = base + perLevel x the hull's level
+        // in it, so a pilot who has gathered Space sees more Space to loop.
+        int PickElement()
+        {
+            var rs = _status.ResourceSystem;
+            float total = 0f;
+            for (int e = 0; e < 4; e++) total += _weights[e] = ElementWeight(rs, e);
+            float pick = (float)_rng.NextDouble() * total;
+            for (int e = 0; e < 4; e++)
+            {
+                pick -= _weights[e];
+                if (pick <= 0f) return e;
+            }
+            return 3;
+        }
+
+        readonly float[] _weights = new float[4];
+
+        float ElementWeight(ResourceSystem rs, int e) =>
+            Mathf.Max(0.01f, _cfg.MoteBaseWeight + _cfg.MoteWeightPerLevel * (rs ? rs.GetLevel((Element)(e + 1)) : 0));
 
         float Gauss()
         {
@@ -417,55 +465,63 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ who moves the aim
 
-        void ReadThumb()
+        // The kite follows; nothing is clicked (Garrett, 2026-10-18). The mouse: the kite flies to the cursor. A thumbstick:
+        // the kite flies the way the stick leans, as fast as it leans (circle the stick, the kite circles). A touch: the kite
+        // flies to a point thumbOffset above the thumb, and coasts when the thumb lifts. Whichever was used last leads.
+        void ReadKiteInput()
         {
-            bool pressed = TryReadPointer(out var screen, out bool touch);
-            if (!pressed)
+            var pad = Gamepad.current;
+            var stick = pad != null ? pad.leftStick.ReadValue() : Vector2.zero;
+            var touchscreen = Touchscreen.current;
+            bool touching = touchscreen != null && touchscreen.primaryTouch.press.isPressed;
+            var mouse = Mouse.current;
+
+            if (touching) _pointer = Pointer.Touch;
+            else if (stick.magnitude > _cfg.StickDeadzone) _pointer = Pointer.Stick;
+            else if (mouse != null)
             {
-                _grabbed = false;
-                _down = false;
-                return;
+                var mp = mouse.position.ReadValue();
+                if ((mp - _lastMouse).sqrMagnitude > 4f) _pointer = Pointer.Mouse;
+                _lastMouse = mp;
             }
 
-            if (!_grabbed)
+            switch (_pointer)
             {
-                // a press must START on the board (or just outside its rim) to take the kite
-                KiteBoardGraphic.BoardScreen(_cfg, out var c, out float rpx);
-                if (Vector2.Distance(screen, c) > rpx * (1f + _cfg.BoardTouchMargin)) return;
-                _grabbed = true;
+                case Pointer.Touch:
+                {
+                    if (!touching) { _down = false; return; }
+                    var at = touchscreen.primaryTouch.position.ReadValue();
+                    at.y += ThumbOffsetPixels();
+                    _aim = _view.ScreenToBoard(at);
+                    _down = true;
+                    return;
+                }
+                case Pointer.Stick:
+                {
+                    // the kite's full speed is reached this far from its aim (KiteNavigatorCore.Move), so a full lean is
+                    // full speed and the centre is a hover
+                    float reach = _s.KiteSpeed / KiteNavigatorCore.ApproachGain;
+                    if (stick.magnitude <= _cfg.StickDeadzone) stick = Vector2.zero;
+                    _aim = new KiteVec(_kite.Position.X + stick.x * reach, _kite.Position.Z + stick.y * reach);
+                    _down = true;
+                    return;
+                }
+                default:
+                {
+                    if (mouse == null) { _down = false; return; }
+                    var at = mouse.position.ReadValue();
+                    if (_cfg.OffsetMouse) at.y += ThumbOffsetPixels();
+                    _aim = _view.ScreenToBoard(at);
+                    _down = true;
+                    return;
+                }
             }
-
-            _thumbScreen = screen;
-            if (touch || _cfg.OffsetMouse)
-            {
-                float dpi = Screen.dpi > 0f ? Screen.dpi : 160f;
-                screen.y += _cfg.ThumbOffsetMillimetres / 25.4f * dpi;
-            }
-            _aim = KiteBoardGraphic.ScreenToBoard(_cfg, _s, screen);
-            _down = true;
         }
 
-        static bool TryReadPointer(out Vector2 screen, out bool touch)
+        float ThumbOffsetPixels()
         {
-            var touchscreen = Touchscreen.current;
-            if (touchscreen != null && touchscreen.primaryTouch.press.isPressed)
-            {
-                screen = touchscreen.primaryTouch.position.ReadValue();
-                touch = true;
-                return true;
-            }
-
-            var mouse = Mouse.current;
-            if (mouse != null && mouse.leftButton.isPressed)
-            {
-                screen = mouse.position.ReadValue();
-                touch = false;
-                return true;
-            }
-
-            screen = default;
-            touch = false;
-            return false;
+            float dpi = Screen.dpi > 0f ? Screen.dpi : 160f;
+            return _cfg.ThumbOffsetMillimetres / 25.4f * dpi;
         }
 
         void StepAI(float dt)
@@ -682,7 +738,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // TIME: boost energy for the pilot, burned by the hull at once
+        // TIME: boost for the pilot, spent when the pilot lifts their thumb
         void FireTime(int n, KiteVec c, Vector3 at)
         {
             float s = KiteNavigatorCore.Grow(_cfg.TimeBoostSeconds, n, _cfg.Growth, _cfg.TimeBoostCap);
@@ -691,18 +747,48 @@ namespace CosmicShore.Gameplay
             Play(_cfg.TimeBoostSfx, at);
         }
 
-        void BurnBoost(float dt)
+        // The pilot flies with one thumb and no buttons: LIFTING the thumb is the boost (Garrett, 2026-10-18). A boost runs
+        // while the thumb is up and the navigator's Time gift lasts; the next one waits boostCooldown after it ends, no
+        // wait at all at Time L5. With the AI on the hull (the human navigating), it spends the gift as it comes.
+        void StepBoost(float dt)
         {
-            if (_boostEnergy <= 0f) { ReleaseBoost(); return; }
-            _boostEnergy = Mathf.Max(0f, _boostEnergy - dt);
-            _status.IsBoosting = true;   // what a boost executor writes; the hull's own boostMultiplier applies
-            _boostAsserted = true;
+            bool want = _humanNavigates || PilotThumbLifted();
+            if (_boosting)
+            {
+                if (!want || _boostEnergy <= 0f) { EndBoost(); return; }
+                _boostEnergy = Mathf.Max(0f, _boostEnergy - dt);
+                _status.IsBoosting = true;   // what a boost executor writes; the hull's own boostMultiplier applies
+                return;
+            }
+            if (want && _boostEnergy > 0f && Time.time >= _boostReadyAt)
+            {
+                _boosting = true;
+                _status.IsBoosting = true;
+            }
         }
 
-        void ReleaseBoost()
+        // The pilot's thumb is up: no touch on the glass and the stick centred.
+        bool PilotThumbLifted()
         {
-            if (!_boostAsserted) return;
-            _boostAsserted = false;
+            var touchscreen = Touchscreen.current;
+            if (touchscreen != null && touchscreen.primaryTouch.press.isPressed) return false;
+            var pad = Gamepad.current;
+            if (pad != null && pad.leftStick.ReadValue().magnitude > _cfg.StickDeadzone) return false;
+            return touchscreen != null || pad != null;
+        }
+
+        // The hull's level-5 tier in an element.
+        bool Upgraded(Element element)
+        {
+            var rs = _status?.ResourceSystem;
+            return rs && rs.GetLevel(element) >= 5;
+        }
+
+        void EndBoost()
+        {
+            if (!_boosting) return;
+            _boosting = false;
+            _boostReadyAt = Time.time + (Upgraded(Element.Time) ? 0f : _cfg.BoostCooldownSeconds);
             if (UnityLiveness.Alive(_status)) _status.IsBoosting = false;
         }
 
@@ -738,31 +824,6 @@ namespace CosmicShore.Gameplay
             if (evt.IsNull) return;
             var audio = AudioSystem.Instance;
             if (audio) audio.PlaySFXEvent(evt, at);
-        }
-
-        internal Color DomainColor(Domains domain)
-        {
-            var colorSet = _cfg.GameData.ThemeManagerData ? _cfg.GameData.ThemeManagerData.ColorSet : null;
-            return colorSet ? colorSet.GetDomainSignalColor(domain) : Color.white;
-        }
-
-        void EnsureCanvas()
-        {
-            if (_canvas) return;
-            _canvas = new GameObject("KiteNavigatorBoard", typeof(RectTransform), typeof(Canvas));
-            var canvas = _canvas.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 400;
-
-            var board = new GameObject("Board", typeof(RectTransform), typeof(CanvasRenderer), typeof(KiteBoardGraphic));
-            var rt = (RectTransform)board.transform;
-            rt.SetParent(_canvas.transform, false);
-            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
-            rt.pivot = Vector2.zero;
-            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
-            _graphic = board.GetComponent<KiteBoardGraphic>();
-            _graphic.raycastTarget = false;
-            _graphic.Bind(this);
         }
     }
 }
