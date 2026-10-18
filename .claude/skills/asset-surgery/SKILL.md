@@ -4344,6 +4344,16 @@ Reinstall with `dotnet-install.sh --channel 8.0 --install-dir /root/.dotnet` (re
 the first TLS connect to `builds.dotnet.microsoft.com` can drop), and pass `DOTNET_ROOT=/root/.dotnet`
 to `check_generated_assets.py`, which otherwise looks under `/usr/lib/dotnet` and stops.
 
+### Trap: a planted defect that mutates "the first match" silently retargets when the scene grows
+
+`author_start_flow.py --self-test` planted "the retry panel ships shown" by flipping the FIRST
+`m_Alpha: 0 / m_Interactable: 0 / m_BlocksRaycasts: 0` block in the splash. When the welcome card (another hidden
+group) was emitted before the retry window, the mutation flipped the welcome card instead, a different check caught
+it, and the self-test still printed "caught" for the retry panel - a negative control that no longer tests its
+subject, reported green (2026-10-18). Target a planted defect by the FIELD that names the object
+(`_show_face(text, "retryPanel")`, a fileID read from the component), never by "the first occurrence of a value", and
+read the caught message: it must be the check you meant, not a neighbour's.
+
 ### Bundled tool: `field_parity.py`
 
 Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
