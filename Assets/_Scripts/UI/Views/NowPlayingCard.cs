@@ -9,9 +9,10 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The now-playing card, bottom right of Menu_Main (Docs/MENU_REDESIGN_B.md §56, the R10NowPlaying board, like EA
-    /// SPORTS FC's). It rests on the screens listed in <see cref="restingOn"/> (Home); anywhere else in the menu it slides
-    /// in when a new track starts, stays <see cref="toastSeconds"/>, and slides out. Hovered, it shows Back / Pause /
-    /// Skip. Hidden while the music is turned off in Settings or stopped.
+    /// SPORTS FC's). It shows only on the screens listed in <see cref="restingOn"/> (the owner, 2026-10-18: the Profile
+    /// tab only) and hides while the pilot record is open (its Audio Studio carries the same controls). With
+    /// <see cref="toastOffScreens"/> on, it would also slide in elsewhere for <see cref="toastSeconds"/> when a track
+    /// starts; it ships off. Hovered, it shows Back / Pause / Skip. Hidden while the music is off in Settings or stopped.
     /// </summary>
     public class NowPlayingCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
@@ -29,8 +30,10 @@ namespace CosmicShore.UI
         [SerializeField] Button skipButton;
 
         [Header("Behaviour")]
-        [Tooltip("Menu screens the card rests on. Elsewhere it only slides in when a track changes.")]
-        [SerializeField] ScreenSwitcher.MenuScreens[] restingOn = { ScreenSwitcher.MenuScreens.HOME };
+        [Tooltip("Menu screens the card shows on (the owner: Profile only).")]
+        [SerializeField] ScreenSwitcher.MenuScreens[] restingOn = { ScreenSwitcher.MenuScreens.PROFILE };
+        [Tooltip("Off: the card shows only on the resting screens. On: elsewhere it also slides in for a few seconds when a track starts.")]
+        [SerializeField] bool toastOffScreens;
         [SerializeField, Min(0.5f)] float toastSeconds = 4f;
         [Tooltip("How far right the card slides to hide (canvas units).")]
         [SerializeField] float slideDistance = 520f;
@@ -43,6 +46,8 @@ namespace CosmicShore.UI
         [SerializeField] string unknownTrackTitle = "Cosmic Shore soundtrack";
 
         ScreenSwitcher _switcher;
+        ProfileRecordWindow _record;
+        bool _recordSearched;
         SoundtrackPlayer _player;
         Vector2 _home;
         bool _shown;
@@ -80,9 +85,17 @@ namespace CosmicShore.UI
                 OnChanged();
             }
             if (!_switcher) _switcher = FindAnyObjectByType<ScreenSwitcher>();
+            if (!_recordSearched)
+            {
+                _record = FindAnyObjectByType<ProfileRecordWindow>(FindObjectsInactive.Include);
+                _recordSearched = true;
+            }
 
             bool musicOn = AudioSystem.Instance && AudioSystem.Instance.MusicEnabled && !_player.Stopped;
-            bool want = musicOn && (Resting() || Time.unscaledTime < _toastUntil || _hovered);
+            bool recordOpen = _record && _record.IsOpen;
+            bool resting = Resting();
+            bool toast = toastOffScreens && Time.unscaledTime < _toastUntil;
+            bool want = musicOn && !recordOpen && (resting || toast || (_hovered && _shown));
             if (want != _shown) Place(want, false);
 
             if (_shown)

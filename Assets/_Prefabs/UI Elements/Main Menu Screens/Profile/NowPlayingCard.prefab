@@ -60,6 +60,9 @@ MonoBehaviour:
   pauseButton: {fileID: 881461626919630714}
   pauseLabel: {fileID: 1151365171582497474}
   skipButton: {fileID: 917619768278765491}
+  restingOn:
+  - 5
+  toastOffScreens: 0
 --- !u!1 &659731124801582298
 GameObject:
   m_ObjectHideFlags: 0

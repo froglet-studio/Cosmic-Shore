@@ -2807,3 +2807,19 @@ Measured at ship time on `claude/new-session-76hnyc` after the bleeding-edge mer
 | R3 | `check_generated_assets.py` reports `m_OnClick.m_PersistentCalls` as "not a serialized field of Button.ButtonClickedEvent" | debt walked past (the checker, not this branch) | 134 `[field]` findings on this branch, every one that same field; `m_PersistentCalls` is serialized on `UnityEventBase`, so the reflection probably stops at the derived type | Fix the checker to walk base types of `UnityEvent` subclasses; until then its `[field]` count is noise. |
 | R4 | `check_generated_assets.py` `[guid]` findings outside this branch's work | debt walked past | 2 `GameCanvas.prefab` modifications target fileIDs missing from `EndGameStatsPanel.prefab` / `R_Pause_Menu_Panel.prefab`; 11 `UIKitTestScene.unity` InputSystemUIInputModule actions point at guid `ca9f5fa95ffab41fb9a615ab714db018` (no asset) | GameCanvas: delete the dead modifications (they target removed objects)? UIKitTestScene: re-point to the project's input actions asset. |
 | R5 | Hand-edited YAML is never parse-checked | debt made visible | Garrett's `Rhino.asset` shipped an unescaped apostrophe (fixed `e2802341a`); found only because `check_hangar_ability_kinds.py` uses `yaml.safe_load` | A cheap repo gate: tag-tolerant `yaml.load` of every changed `.asset/.prefab/.unity` (58 files in ~seconds; `/asset-surgery` §5). |
+
+**Play-test round, 2026-10-18 (owner feedback on the built Rev 10):**
+- The now-playing card shows **on the Profile tab only** ("This should only appear in the profile tab not in home or
+  anywhere") and hides while the pilot record is open (its Audio Studio has the same controls). This replaces the
+  "Home only" decision above. `restingOn = { PROFILE }`, `toastOffScreens` off (authored, ships off).
+- The Audio Studio's transport buttons overlapped: each was sized for its first caption, not the words
+  `AudioStudioPanel` writes later ("Shuffle: on / off", "Start music"). Each is now sized for its longest word, and the
+  row controls the widths with a 14 px gap.
+- The record and the pilot picker were "too black": a `SurfaceDark` wash at 0.6 now sits over the solid `SurfaceBlack`,
+  so they read as the menu's navy, still solid, with the lattice on top.
+- "The UI seems too empty": the record now shows what the hangar data already holds:
+  - a fourth stat, Pilot since (`Lifecycle.FirstSeenUtcMs`, authored date format);
+  - the favourite vessel's games, best drift, best boost and prisms broken (`VesselRecord`);
+  - fly time by vessel as eight rows: flown hulls first as bars, then the Hangar's roster (`SO_Classlist_Classes`, the
+    15 playable hulls; the record used `SO_Classlist_All`, which includes Grizzly, Termite and Falcon) dimmed with
+    "Not flown yet".

@@ -12549,3 +12549,15 @@ clean, editor reference compile only the 3 known pre-existing errors (0 in chang
    white square.
 6. **Hangar abilities tab:** the "Core: skim by flying close to a prism..." line still reads in full; the Maelstrom and
    weekly leaderboard placeholders still show "-".
+
+## 🔴 2026-10-18 — Rev 10 play-test fixes (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §56 (play-test round). Reference compiles clean (editor: the 3 known errors, none in changed files).
+1. **Home, Hangar, Arcade:** no now-playing card, even when a track changes. **Profile tab:** the card shows bottom right;
+   open EXPAND and it hides; close the record and it returns.
+2. **Profile > EXPAND > Audio Studio:** BACK, PAUSE, SKIP, SHUFFLE, STOP MUSIC sit in one row with clear gaps; press
+   SHUFFLE and STOP MUSIC so they read "SHUFFLE: OFF" / "START MUSIC": still no overlap.
+3. The record and the CHANGE pilot picker read navy, not black, with the lattice drifting over them.
+4. Stats show Fly time, Games, Sessions and Pilot since (month and year). The favourite vessel card shows Games, Best
+   drift, Best boost, Prisms broken. Fly time by vessel lists your flown hulls first, then playable hulls you have not
+   flown, dimmed, "Not flown yet" (no Grizzly / Termite / Falcon).
