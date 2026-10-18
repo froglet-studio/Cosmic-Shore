@@ -113,6 +113,8 @@ CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
 NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Controller/Vessel/BrittleStarHullForm.cs",
     "Controller/Vessel/BrittleStarHullBuilder.cs",
+    "Controller/Vessel/BrittleStarHullSource.cs",
+    "Controller/Vessel/BrittleStarHullModel.cs",
     "Controller/Vessel/BrittleStarRules.cs",
     "Controller/Vessel/BrittleStarCord.cs",
     "Controller/Vessel/BrittleStarVesselTransformer.cs",
@@ -318,9 +320,13 @@ def hud_controller_block() -> str:
 
 
 def hull_builder_block() -> str:
-    # Proportions are NOT serialized: the builder's field initializers are the shipped values (the Thresher's and the
-    # Stoat's rule), so BrittleStarHullForm.Defaults / the C# is the one source.
-    return mb(HULL_BUILDER_ID, HULL_GO_ID, SCRIPT["BrittleStarHullBuilder"])
+    # The hull component on the BrittleStarHull GameObject. Since 2026-10-18 it is BrittleStarHullModel (it finds its parts
+    # in BrittleStar.fbx, nested under the hull, by name; /vessel-model, specs/brittlestar.py); the procedural
+    # BrittleStarHullBuilder it replaced sat on the same fileID, so the executor's `hull` reference never moved. Nothing
+    # is serialized: the ring's numbers are BrittleStarHullForm.Defaults, the one source. (The clone that calls this is a
+    # spent one-shot: the committed prefab already carries the model, which only the editor-free surgery recorded in
+    # BRITTLE_STAR.md section 2 adds.)
+    return mb(HULL_BUILDER_ID, HULL_GO_ID, SCRIPT["BrittleStarHullModel"])
 
 
 def box(chunk: str, centre, size) -> str:
@@ -858,7 +864,19 @@ def check(files: "dict[str, str]") -> "list[str]":
          "BoostSpeedMultiplier is enabled - a second Time dial on a boost the hull never does")
     need(f"guid: {SCRIPT['BrittleStarPrismController']}" in d.get(PRISM_CONTROLLER_ID, ""), "the spawner is not BrittleStarPrismController")
     need(f"guid: {SCRIPT['BrittleStarAnimation']}" in d.get(ANIMATION_ID, ""), "the animation is not BrittleStarAnimation")
-    need(f"guid: {SCRIPT['BrittleStarHullBuilder']}" in d.get(HULL_BUILDER_ID, ""), "the hull builder is not BrittleStarHullBuilder")
+    need(f"guid: {SCRIPT['BrittleStarHullModel']}" in d.get(HULL_BUILDER_ID, ""), "the hull component is not BrittleStarHullModel")
+    # the model: BrittleStar.fbx nested under the hull (its root's constant fileIDs), and nothing left of the
+    # placeholder's renderer on the hull (a MeshRenderer there would be painted instead of the model)
+    model_meta = os.path.join(A("_Models"), "Vessel Models", "BrittleStar.fbx.meta")
+    mm = re.search(r"^guid: ([0-9a-f]{32})", open(model_meta).read(), flags=re.M) if os.path.exists(model_meta) else None
+    need(mm is not None, "Assets/_Models/Vessel Models/BrittleStar.fbx.meta is missing (build it: vessel_model/build.py brittlestar)")
+    if mm:
+        inst = [k for k, v in docs if f"m_SourcePrefab: {{fileID: 100100000, guid: {mm.group(1)}, type: 3}}" in v]
+        need(len(inst) == 1 and f"m_TransformParent: {{fileID: {HULL_TRANSFORM_ID}}}" in d.get(inst[0], ""),
+             "BrittleStar.fbx is not nested once under the BrittleStarHull transform")
+    hull_go_doc = d.get(HULL_GO_ID, "")
+    need(len(re.findall(r"  - component: ", hull_go_doc)) == 2,
+         "the BrittleStarHull GameObject carries more than its Transform and BrittleStarHullModel (a leftover renderer?)")
     need(f"guid: {SCRIPT['BrittleStarHUDController']}" in d.get(HUD_CONTROLLER_ID, "")
          and f"star: {{fileID: {EXECUTOR_ID}}}" in d.get(HUD_CONTROLLER_ID, ""), "the HUD controller is not BrittleStarHUDController wired to the executor")
     need(f"guid: {HUD_VARIANT}" in d.get(HUD_INSTANCE_ID, ""), "the HUD instance is not BrittleStarHUDVariant")

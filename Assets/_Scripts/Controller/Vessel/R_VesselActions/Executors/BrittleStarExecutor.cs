@@ -55,8 +55,9 @@ namespace CosmicShore.Gameplay
         [Header("Wiring (serialized on the prefab so a missing wire shows in the inspector)")]
         [Tooltip("Every number this executor reads. Wired directly (vessel rule 20).")]
         [SerializeField] BrittleStarConfigSO config;
-        [Tooltip("The procedural hull: the ring, the six muzzles, the ring mesh a detonation throws.")]
-        [SerializeField] BrittleStarHullBuilder hull;
+        [Tooltip("The hull (BrittleStarHullModel, which finds its parts in BrittleStar.fbx by name; or the procedural " +
+                 "BrittleStarHullBuilder it replaced): the ring, the six muzzles, the copy of the ring a detonation throws.")]
+        [SerializeField] BrittleStarHullSource hull;
         [Tooltip("Fires every turret's rounds (its ProjectileFactory pools the round prefab).")]
         [SerializeField] Gun gun;
         [Tooltip("The fleet's shared turn-end channel: the trigger lets go and every thrown ring is cleared.")]
@@ -185,7 +186,7 @@ namespace CosmicShore.Gameplay
             _status = shipStatus;
             _impactor = _status != null && _status.Transform ? _status.Transform.GetComponent<VesselImpactor>() : null;
             if (!hull && _status != null && _status.Transform)
-                hull = _status.Transform.GetComponentInChildren<BrittleStarHullBuilder>(true);
+                hull = _status.Transform.GetComponentInChildren<BrittleStarHullSource>(true);
             if (gun) gun.Initialize(shipStatus);
 
             _ring.Reset();
@@ -213,7 +214,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError($"[BrittleStar] {name}: BrittleStarExecutor has no BrittleStarConfig — the vessel has no " +
                                  "modes, no guns and no ring. Wire Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset.");
             if (!hull)
-                CSDebug.LogError($"[BrittleStar] {name}: no BrittleStarHullBuilder under the vessel — there is no ring to " +
+                CSDebug.LogError($"[BrittleStar] {name}: no BrittleStarHullSource under the vessel — there is no ring to " +
                                  "aim, lay from or throw.");
             if (!gun)
                 CSDebug.LogError($"[BrittleStar] {name}: BrittleStarExecutor has no Gun — the turrets cannot fire.");
@@ -432,7 +433,7 @@ namespace CosmicShore.Gameplay
             var hullT = _status.Transform;
             float a = BrittleStarHullForm.PointAngle(index) + _ringPhase;
             float r = hull.RingRadius * radiusScale;
-            Vector3 local = new(Mathf.Cos(a) * r, Mathf.Sin(a) * r, hull.Ring ? hull.Ring.localPosition.z : 0f);
+            Vector3 local = new(Mathf.Cos(a) * r, Mathf.Sin(a) * r, hull.RingPlaneZ);
             return hullT.TransformPoint(local);
         }
 
@@ -924,13 +925,13 @@ namespace CosmicShore.Gameplay
         {
             var body = TakeBody();
             if (!body) return;
-            var ringT = hull.Ring;
-            body.transform.SetPositionAndRotation(ringT.position, ringT.rotation);
-            body.transform.localScale = ringT.lossyScale;
+            // A still copy of the mounted ring, posed where it is (the hull draws it: a baked copy of the model's ring).
+            hull.DressThrownRing(body);
             body.SetActive(true);
+            Vector3 from = body.transform.position;
             Vector3 velocity = _status.Transform.forward * config.RingLaunchSpeed + _status.Course * _status.Speed;
-            _flights.Add(new Flight { Body = body, Velocity = velocity, Age = 0f, Previous = ringT.position });
-            PlayAt(config.RingLaunchEvent, ringT.position);
+            _flights.Add(new Flight { Body = body, Velocity = velocity, Age = 0f, Previous = from });
+            PlayAt(config.RingLaunchEvent, from);
         }
 
         GameObject TakeBody()
@@ -947,9 +948,6 @@ namespace CosmicShore.Gameplay
                 body.AddComponent<MeshFilter>();
                 body.AddComponent<MeshRenderer>();
             }
-            body.GetComponent<MeshFilter>().sharedMesh = hull.RingMesh;
-            if (hull.TryGetComponent<MeshRenderer>(out var source))
-                body.GetComponent<MeshRenderer>().sharedMaterials = source.sharedMaterials;
             return body;
         }
 
@@ -1156,12 +1154,9 @@ namespace CosmicShore.Gameplay
                 band.AddComponent<MeshRenderer>();
             }
             mesh = band.GetComponent<MeshFilter>().sharedMesh;
-            // The domain colour: slot 1 of the hull's painted renderer (ShipHelper.ApplyShipMaterial).
-            if (hull && hull.TryGetComponent<MeshRenderer>(out var source))
-            {
-                var mats = source.sharedMaterials;
-                if (mats is { Length: > 0 }) band.GetComponent<MeshRenderer>().sharedMaterial = mats[mats.Length > 1 ? 1 : 0];
-            }
+            // The domain colour: the material the hull's domain slot is painted with (ShipHelper.ApplyShipMaterial).
+            var domain = hull ? hull.DomainMaterial : null;
+            if (domain) band.GetComponent<MeshRenderer>().sharedMaterial = domain;
             band.SetActive(true);
             return band;
         }
