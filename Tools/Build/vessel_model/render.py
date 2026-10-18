@@ -115,11 +115,28 @@ def scene_bounds(meshes):
 
 
 def import_for_render(fbx_path):
+    # The rest views must show the hull as Unity draws it with no Animator playing: the NODE CHAIN.
+    # Blender's importer auto-assigns the first take to the armature, so on a file whose first take
+    # is not its rest (the Rhino rig's `rhino` take fans the front plates 28.7 degrees) every rest and
+    # morph tile showed that take instead. Read the node chain from an import without animation, then
+    # import with the takes (the pose row needs them) and put the armature back on that chain.
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.import_scene.fbx(filepath=fbx_path, ignore_leaf_bones=False, automatic_bone_orientation=False, use_anim=False)
+    chain = {(a.name, pb.name): pb.matrix_basis.copy() for a in bpy.data.objects if a.type == "ARMATURE" for pb in a.pose.bones}
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=fbx_path, use_custom_normals=True, ignore_leaf_bones=False,
                              automatic_bone_orientation=False, use_anim=True)
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
     arms = [o for o in bpy.data.objects if o.type == "ARMATURE"]
+    for a in arms:
+        if a.animation_data:
+            a.animation_data.action = None
+        for pb in a.pose.bones:
+            if (a.name, pb.name) in chain:
+                pb.matrix_basis = chain[(a.name, pb.name)]
+    for m in meshes:
+        if m.data.shape_keys and m.data.shape_keys.animation_data:
+            m.data.shape_keys.animation_data.action = None
     for m in meshes:
         names = [mat.name if mat else "Body" for mat in m.data.materials]
         for i, n in enumerate(names):

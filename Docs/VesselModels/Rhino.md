@@ -1,6 +1,42 @@
 # MODEL DOSSIER — Rhino
 
-> **Record of the ARTIST files as shipped before 2026-10-17.** On 2026-10-17 the rig file this dossier measures
+> **RIG SWAP, 2026-10-18 — the game now DRAWS the rig.** `Rhino.prefab` no longer draws the 7-mesh placeholder
+> `Rhino_Test.fbx`: its seven MeshFilter/MeshRenderer pairs are removed and `rhino_shapekey_with_animations.fbx`
+> (guid `350f1f00…`) is nested under `Rhino_Test (1)` as a model instance at local **(0, 0, −1.5545)**, identity
+> rotation, scale 1 (the fitted offset of §1.3 / `VesselRigSwapper`). The file is rebuilt in place by
+> `python3 Tools/Build/vessel_model/build.py rhino` (spec `Tools/Build/vessel_model/specs/rhino.py`, the artist-hull
+> path): the artist's mesh (8,549 verts, 16,798 tris), 12 bones, four slots and nine takes, kept and proven
+> (`take_parity`: 62 moving part-takes at 0.000 units / 0.0 deg; materials 0 differences), plus four REAL element
+> morphs where the artist's were empty: **charge 7.0 %** (the blade: crest +1.25, keel −1.35, beak 2.0 toward the
+> hilt), **mass 4.6 %** (barrel ×1.4 wide, belly −1.4, pods ×1.24 about their own axes, plates ×1.9 thick),
+> **space 8.5 %** (the plates reach: front leading edges forward, back trailing edges aft, both 24 % taller),
+> **time 6.9 %** (crest raked aft and down, beak sharpened, plates swept) of the 30.11 diagonal. Every morph holds
+> the eight body nozzle mouths and the two pod mouths still (the spec asserts it). Sheet: `sheets/rhino_rig_swap.jpg`.
+> - **The BIND is the rest.** The artist's node chain parks the scene at the last frame of `rhino_pitchdown`
+>   (wing chains folded up to 66.5°, 25 wide); the bind is the live silhouette (fuselage, front and back plates
+>   on the placeholder's meshes and colliders exactly; pods 0.34 forward, 0.06 inboard). The file writes the bind
+>   as its node chain; parity and `rest_compare` (0.000) are measured against the artist file with only those nine
+>   parked Lcl Rotations set to the bind (`specs/rhino.py: bindrest_reference`, cached beside the artist file).
+> - **Contract (`RhinoAnimation`)**: the puppetry still turns the prefab's own part transforms (`Rhino_Test (1)`,
+>   `Wing front left/right`, `engine left/right`), which KEEP the five hull BoxColliders (the plough's
+>   `HullColliders`), the pod jets, the sword, tracers and body jets. Each drawn bone FOLLOWS its part rigidly
+>   (`wing1.l/.r` ← the front plates, `jet.l/.r` ← the engines; `wing2.*` ride `wing1.*`, the fuse rides
+>   `Rhino_Test (1)`), so the hull moves exactly as the placeholder did and every collider keeps enclosing its drawn
+>   plate. The renderer is found by `GetComponentInChildren<SkinnedMeshRenderer>(true)`, `updateWhenOffscreen`.
+> - **Kept**: the placeholder's part GameObjects (colliders, jets, FX hosts), `Rhino_Test.fbx` (unreferenced by
+>   the prefab now; still the four hull-fusion bakes' `hullMesh`), `RhinoModel.fbx` (referenced by nothing).
+> - **Paint**: the rig `.meta` remaps `accent.005`→BlueBase, `BASE.005`→GreenAccent (the domain), `windsheild.005`
+>   and `N.005`→Screen, as the placeholder's renderers wore them; `VesselCustomization` paints by identity
+>   (`_domainReplacesMaterials = [GreenAccentVesselMaterial]`, `_shipGeometries = [Rhino_Test (1)]`, resolved to the
+>   skinned mesh). The pods' `BASE` faces now take the domain too (one mesh). `isReadable 1` (the fusion reads it).
+> - **Pod jets** moved from the pod centre to the drawn pods' rear mouths: local (±0.0597, 0.0021, −1.6042) on
+>   `engine left/right`. The eight body jets are unchanged (the fuselage is the placeholder's to the millimetre).
+> - **Editor steps owed**: reimport; Bake Crystal Hull Fusions (the four `Rhino_*_HullFusionBake` still name
+>   `Rhino_Test.fbx`'s `Circle.003`, so they read STALE and solve on a worker until re-baked); the audits
+>   (Elemental Morphs, Construction, Tails and Jets); a flight. §§1-7 below describe the files as measured before.
+>
+> **Record of the ARTIST files as shipped before 2026-10-17.** (The from-scratch rebuild described next was
+> withdrawn on 2026-10-18, `5344a6530`; its spec is `specs/experimental/rhino_scratch.py`.) On 2026-10-17 the rig file this dossier measures
 > (`rhino_shapekey_with_animations.fbx`, the swap target) was rebuilt in place by `python3 Tools/Build/vessel_model/build.py rhino`
 > (spec `Tools/Build/vessel_model/specs/rhino.py`, skill `/vessel-model`): same path and guid, same node, geometry, bone
 > and material names, every bone's rest pose reproduced to 0.000 (`rest_compare.py`), and four REAL element morphs
