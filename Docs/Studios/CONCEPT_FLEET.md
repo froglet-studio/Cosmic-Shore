@@ -236,7 +236,7 @@ set of numbers and one design record (this section, and TETHER.md for the engine
 
 **The Gibbon session's first steps**, in order: (1) the vessel id: `Tether = 14` on that branch collides with
 `Thresher = 14` on `Ys-bleeding-edge`; the Tether takes the next free value after checking every in-flight branch
-(17 is free in origin today), and TETHER.md §12's id note is rewritten; (2) rebase or merge `cece/loving-feynman-hlgf18`
+(17 went to the Angler and the Kite's branch claims 19: 18 as of 2026-10-18, re-check before claiming), and TETHER.md §12's id note is rewritten; (2) rebase or merge `cece/loving-feynman-hlgf18`
 onto `Ys-bleeding-edge` (its `VesselTransformer` seams default to the expressions they replaced, so the fleet is
 bit-identical; `check_network_prefab_hashes.py` on the merge); (3) teach the studio's `swing` kind the Tether's three
 additions, auto-anchors, the spin limit, the blade, and the search plane, each as a `TetherConfig` knob by the asset's
