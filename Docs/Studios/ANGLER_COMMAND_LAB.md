@@ -30,6 +30,19 @@ creatures, the cell and the way they eat are the game's own, read from the asset
 Everything else (the Angler's speeds, the lure, the leash, every command scheme) is lab-only and labelled
 that way in the page.
 
+## Round 7 (2026-10-18): the Sparrow's buttons
+
+The designer asked for the Mass ability on A and the Time ability on B, "just like the Sparrow". The page's pad map is
+now **A lure (Mass), B dash (Time), X squad, Y recall**; RT, LT and RB are unchanged. The squad pick and recall took the
+two freed face buttons. The page's own keyboard keys are unchanged (F lure, T dash, Q squad, X recall); the game's
+keyboard follows its pad (Space lure, R dash, Q squad, F recall).
+
+"The QuadFish don't always listen" was a game-side bug, not a page one: an invisible squad pick (A, the Sparrow's Mass
+button, used to cycle it) and orders the creature's own diet refused. Both are fixed in the game
+(`R_VesselActions/ANGLER.md` §1k). The page already shows the picked squad, and its world is domain-blind.
+
+Scorecard: unchanged (the bots read the input object, not the pad).
+
 ## Round 6 (2026-10-17): the lit queue
 
 The designer asked: *the fauna should keep eating lit prisms in order of how recently each was lit; if one creature is

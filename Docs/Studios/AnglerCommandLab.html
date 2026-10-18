@@ -148,7 +148,7 @@
   // (1) LAB meta + SHIPPED: a READER of the game's numbers. Every constant names the asset / field it was
   //     copied from. "lab" = no game field exists yet (the Angler is a design), shown as a proposal.
   // ===================================================================================================
-  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 6, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design, cloned into the game as the Angler (vessel 17)' };
+  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 7, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design, cloned into the game as the Angler (vessel 17)' };
   const DOMAIN_HEX = { jade: 0x13fff2, ruby: 0xff00f9, gold: 0xffa700 };   // studio-domains.js (OriginalColorSetSO GetDomainSignalColor)
   const SHIPPED = {
     // --- the cell ---
@@ -1221,12 +1221,13 @@
       if (Math.abs(yaw) > 0.02) inp.yaw = clamp(yaw, -1, 1);
       if (Math.abs(pitch) > 0.02) inp.pitch = clamp(pitch, -1, 1);
       const b = (i) => (g.buttons[i] && (g.buttons[i].value || (g.buttons[i].pressed ? 1 : 0))) || 0;
-      // The game's own pad map (GamepadInputStrategy): RT paints / commands, LT erases, X (Button3) lures, A (Button1)
-      // picks the squad, B (Button2) recalls, RB is the throttle/boost. LB raises no event in the game, so nothing uses it.
-      inp.cmd = Math.max(inp.cmd, b(7)); inp.erase = Math.max(inp.erase, b(6)); inp.lure = Math.max(inp.lure, b(2));
-      inp.squad = inp.squad || b(0) > 0.5; inp.boost = Math.max(inp.boost, b(5));
-      inp.recall = inp.recall || b(1) > 0.5;
-      inp.dash = inp.dash || b(3) > 0.5;   // Y: the Time ability (the game's Button4)
+      // The game's own pad map (GamepadInputStrategy), the Sparrow's layout since 2026-10-18: RT paints / commands, LT
+      // erases, A (Button1) lures (Mass), B (Button2) dashes (Time), X (Button3) picks the squad, Y (Button4) recalls, RB
+      // is the throttle/boost. LB raises no event in the game, so nothing uses it.
+      inp.cmd = Math.max(inp.cmd, b(7)); inp.erase = Math.max(inp.erase, b(6)); inp.lure = Math.max(inp.lure, b(0));
+      inp.squad = inp.squad || b(2) > 0.5; inp.boost = Math.max(inp.boost, b(5));
+      inp.recall = inp.recall || b(3) > 0.5;
+      inp.dash = inp.dash || b(1) > 0.5;
     }
     if (touch.stick) { inp.yaw = clamp(touch.sx, -1, 1); inp.pitch = clamp(-touch.sy, -1, 1); }
     if (touch.lure) inp.lure = 1; if (touch.cmd) inp.cmd = 1; if (touch.erase) inp.erase = 1; if (touch.squad) inp.squad = true; if (touch.boost) inp.boost = 1;
@@ -1458,7 +1459,7 @@
       el.textContent = name + ' ' + list.length + (ball ? ' · ' + ball + ' in the ball' : '') + (busy ? ' · ' + busy + ' hunting' : '');
       bar.appendChild(el);
     }
-    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · T dash to the school (Time) · O omni crystal (becomes a creature) · C camera · P pause · R restart. Pad (the game\'s map): two sticks fly, RT paint + command, LT erase, X lure, A squad, B recall, Y dash to the school, RB boost.';
+    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · T dash to the school (Time) · O omni crystal (becomes a creature) · C camera · P pause · R restart. Pad (the game\'s map): the left stick flies, RT paint + command, LT erase, A lure, B dash to the school, X squad, Y recall, RB boost.';
   }
   function box(w, st, color, label) {
     const ids = aliveIds(w, st); if (!ids.length) return;
