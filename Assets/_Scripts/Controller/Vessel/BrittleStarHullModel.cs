@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -17,11 +16,12 @@ namespace CosmicShore.Gameplay
     /// <c>gun.1.mouth</c>..<c>gun.5.mouth</c> (the muzzles), <c>jet.flame</c> / <c>jet.1.flame</c>..<c>jet.5.flame</c>
     /// (the plumes) and the <see cref="SkinnedMeshRenderer"/>. <c>arm.N</c> / <c>.N</c> is the placeholder's point N-1.</para>
     ///
-    /// <para><b>The gameplay numbers stay the form's.</b> The ring's radius, thickness and plane and every muzzle's
-    /// position come from <see cref="BrittleStarHullForm"/> (the same numbers the placeholder emitted), and the muzzles are
-    /// re-seated on the model's mouth bones from those positions, so where a round leaves, where a cord roots and how
-    /// thick the explosion's disk is cannot drift with the drawing. The model's element shapes travel the form's own
-    /// muzzle distances, so the drawn barrels end where the muzzles are at every weight.</para>
+    /// <para><b>The muzzles are the DRAWN barrel mouths.</b> Each muzzle sits on its <c>gun.N.mouth</c> bone (built at
+    /// <see cref="BrittleStarHullForm.MuzzlePosition"/>), so a round leaves and a cord roots exactly where the drawn
+    /// barrel ends, in whatever frame Unity imports the bones (Garrett, 2026-10-18: the guns and cords must be at the
+    /// ring corners). The element shapes grow the barrels while the bones stay put, so each muzzle also follows its
+    /// barrel's own blend-shape travel, read once from the mesh (the mean full-weight delta of the vertices skinned to
+    /// the mouth bone, in the bone's bind frame). The ring's radius, thickness and plane stay the form's numbers.</para>
     ///
     /// <para><b>Rest-relative.</b> The model's bones rest at orientations of the FBX's choosing, so the ring turns about
     /// the vessel's nose axis expressed in its parent's frame and composed onto its captured rest, and each flame
@@ -43,8 +43,11 @@ namespace CosmicShore.Gameplay
         readonly Vector3[] _flameRestScale = new Vector3[Slots];
         readonly int[] _flameAxis = new int[Slots];
         readonly Transform[] _muzzles = new Transform[Slots];
-        readonly Matrix4x4[] _mouthFromHull = new Matrix4x4[Slots];
+        readonly Quaternion[] _muzzleRestRotation = new Quaternion[Slots];
+        // per slot, per element (Charge, Mass, Space, Time): the barrel mouth's full-weight travel in its bone's frame
+        readonly Vector3[,] _mouthTravel = new Vector3[Slots, 4];
         readonly float[] _appliedWeights = { -1f, -1f, -1f, -1f };
+        static readonly string[] ShapeNames = { "Charge", "Mass", "Space", "Time" };
 
         List<int>[] _ringTriangles;
         readonly List<Mesh> _thrownMeshes = new();
@@ -94,7 +97,6 @@ namespace CosmicShore.Gameplay
             }
 
             Vector3 exhaustWorld = transform.TransformDirection(Vector3.back);
-            var settings = BrittleStarHullForm.Defaults;
             int missing = 0;
             for (int i = -1; i < BrittleStarHullForm.Points; i++)
             {
@@ -115,9 +117,8 @@ namespace CosmicShore.Gameplay
                 var mouth = FindPart(transform, "gun" + suffix + ".mouth");
                 if (mouth)
                 {
-                    // hull space -> the mouth bone's local space, at rest: the muzzle rides the bone (and so the ring's
-                    // spin and presence) but is placed by the form's numbers
-                    _mouthFromHull[slot] = mouth.worldToLocalMatrix * transform.localToWorldMatrix;
+                    // the muzzle rides the mouth bone (and so the ring's spin and presence), facing the hull's forward
+                    _muzzleRestRotation[slot] = Quaternion.Inverse(mouth.rotation) * transform.rotation;
                     string name = i < 0 ? "Muzzle_C" : "Muzzle_" + i;
                     var m = mouth.Find(name);
                     if (!m)
@@ -133,8 +134,67 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[BrittleStarHullModel] '{name}': the model under the hull is missing " +
                                    $"{(!_model ? "its SkinnedMeshRenderer, " : "")}{(!_ring ? "the 'ring' bone, " : "")}{missing} " +
                                    "muzzle/flame bone(s). Rebuild it with Tools/Build/vessel_model/build.py brittlestar.");
-            PlaceMuzzles(settings);
+            ReadMouthTravel();
+            PlaceMuzzles(0f, 0f, 0f, 0f);
             CollectRingTriangles();
+        }
+
+        /// <summary>Each barrel mouth's travel under each element shape, in its bone's bind frame: the mean full-weight
+        /// delta of the vertices skinned to the mouth bone (its muzzle brake). Read once; the import keeps the mesh
+        /// readable.</summary>
+        void ReadMouthTravel()
+        {
+            if (!_model) return;
+            var mesh = _model.sharedMesh;
+            if (!mesh || !mesh.isReadable) return;
+            var bones = _model.bones;
+            var bindposes = mesh.bindposes;
+            var weights = mesh.boneWeights;
+            var deltas = new Vector3[mesh.vertexCount];
+            var sums = new Vector3[Slots];
+            var counts = new int[Slots];
+            var slotOfBone = new int[bones.Length];
+            for (int b = 0; b < bones.Length; b++)
+            {
+                slotOfBone[b] = -1;
+                for (int slot = 0; slot < Slots; slot++)
+                    if (_muzzles[slot] && bones[b] == _muzzles[slot].parent) slotOfBone[b] = slot;
+            }
+            for (int e = 0; e < ShapeNames.Length; e++)
+            {
+                int shape = FindShape(mesh, ShapeNames[e]);
+                if (shape < 0) continue;
+                int last = mesh.GetBlendShapeFrameCount(shape) - 1;
+                if (last < 0) continue;
+                mesh.GetBlendShapeFrameVertices(shape, last, deltas, null, null);
+                System.Array.Clear(sums, 0, Slots);
+                System.Array.Clear(counts, 0, Slots);
+                for (int v = 0; v < weights.Length; v++)
+                {
+                    int b = weights[v].boneIndex0;
+                    if (b < 0 || b >= slotOfBone.Length || slotOfBone[b] < 0 || weights[v].weight0 < 0.5f) continue;
+                    sums[slotOfBone[b]] += deltas[v];
+                    counts[slotOfBone[b]]++;
+                }
+                for (int b = 0; b < bones.Length; b++)
+                {
+                    int slot = slotOfBone[b];
+                    if (slot < 0 || counts[slot] == 0 || b >= bindposes.Length) continue;
+                    _mouthTravel[slot, e] = bindposes[b].MultiplyVector(sums[slot] / counts[slot]);
+                }
+            }
+        }
+
+        static int FindShape(Mesh mesh, string element)
+        {
+            for (int i = 0; i < mesh.blendShapeCount; i++)
+            {
+                string n = mesh.GetBlendShapeName(i);
+                if (n.Equals(element, System.StringComparison.OrdinalIgnoreCase)
+                    || n.EndsWith("." + element, System.StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+            return -1;
         }
 
         static Transform FindPart(Transform root, string partName)
@@ -148,15 +208,16 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
-        void PlaceMuzzles(in BrittleStarHullForm.Settings s)
+        /// <summary>Each muzzle on its drawn barrel mouth, carried by the element weights' barrel travel.</summary>
+        void PlaceMuzzles(float charge, float mass, float space, float time)
         {
-            for (int i = -1; i < BrittleStarHullForm.Points; i++)
+            for (int slot = 0; slot < Slots; slot++)
             {
-                var m = _muzzles[i + 1];
+                var m = _muzzles[slot];
                 if (!m) continue;
-                var fromHull = _mouthFromHull[i + 1];
-                m.localPosition = fromHull.MultiplyPoint3x4(BrittleStarHullForm.MuzzlePosition(s, i));
-                m.localRotation = fromHull.rotation;
+                m.localPosition = _mouthTravel[slot, 0] * charge + _mouthTravel[slot, 1] * mass
+                                + _mouthTravel[slot, 2] * space + _mouthTravel[slot, 3] * time;
+                m.localRotation = _muzzleRestRotation[slot];
             }
         }
 
@@ -191,23 +252,16 @@ namespace CosmicShore.Gameplay
         public override void ApplyElementMorphWeights(float charge, float mass, float space, float time)
         {
             // The shapes themselves are VesselAnimation's (blend shapes Charge / Mass / Space / Time); this only keeps
-            // the muzzles on the barrels the shapes grow, at the form's own distances.
+            // the muzzles on the barrel mouths the shapes move.
             if (!_resolved) Resolve();
             if (Mathf.Approximately(charge, _appliedWeights[0]) && Mathf.Approximately(mass, _appliedWeights[1])
-                && Mathf.Approximately(space, _appliedWeights[2]))
+                && Mathf.Approximately(space, _appliedWeights[2]) && Mathf.Approximately(time, _appliedWeights[3]))
                 return;
             _appliedWeights[0] = charge;
             _appliedWeights[1] = mass;
             _appliedWeights[2] = space;
             _appliedWeights[3] = time;
-            var s = BrittleStarHullForm.Defaults;
-            var spaceX = BrittleStarHullForm.Extreme(s, Element.Space);
-            var chargeX = BrittleStarHullForm.Extreme(s, Element.Charge);
-            var massX = BrittleStarHullForm.Extreme(s, Element.Mass);
-            s.BarrelLength += (spaceX.BarrelLength - s.BarrelLength) * Mathf.Clamp01(space);
-            s.PodLength += (chargeX.PodLength - s.PodLength) * Mathf.Clamp01(charge);
-            s.CockpitLength += (massX.CockpitLength - s.CockpitLength) * Mathf.Clamp01(mass);
-            PlaceMuzzles(s);
+            PlaceMuzzles(Mathf.Clamp01(charge), Mathf.Clamp01(mass), Mathf.Clamp01(space), Mathf.Clamp01(time));
         }
 
         /// <summary>Per submesh, the triangles skinned to the ring or a bone under it (the model is skinned rigidly,

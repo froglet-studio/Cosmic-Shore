@@ -57,7 +57,7 @@ fleet convention for a new vessel, and its gameplay numbers are the placeholder'
 | Bones (37) | `ring` at (0, 0, −0.35), the placeholder's Ring pivot: everything under it is what the firing rotation turns and Ring Detonation throws. `arm.1`..`arm.5` (arm.N = the placeholder's point N−1: point 0 straight up, then counter-clockwise seen from behind) from the bearing collar (r 1.86) to the point (r 6). Under each arm, `jet.N` (the nacelle, at the point), `jet.N.mouth` (the nozzle lip, z −0.85, the placeholder's flame root), `jet.N.flame` (the plume) and `gun.N` (barrel, from z 0.05), `gun.N.mouth` (z 0.9 = `BrittleStarHullForm.MuzzlePosition`). The cockpit's own: `jet` / `jet.mouth` / `jet.flame` (nozzle z −0.9) and `gun` / `gun.mouth` (muzzle z 1.65). Every bone skins geometry (the import's `optimizeBones` strips one that skins nothing) |
 | Size | x ±6.07, y −5.21..6.35, z −1.9..1.65 (Unity, flames at rest length 1) against the placeholder's ±5.95, −5.07..6.26, −1.9..1.69: within 2% on every axis. Ring radius 6, its half-thickness 0.22 (the explosion's disk), the six muzzles and nozzles exact |
 | Slots | Domain (radial shields, dorsal arm plates, the halo's rear channel, nacelle bands: 13% of the surface), Body (gunmetal), Window (the canopy and the five aboral lenses), Engine (the six bells and plumes) |
-| Morphs | the placeholder's art direction at the convention's travel: Charge (pods ×1.5 girth ×1.3 length, barrels ×1.6 girth and 0.3 forward, the arm spines bristle ×3.4) 4.2%, Mass (the cockpit ×1.25 long from its tail, its pod ×1.45 girth, the disc ×1.12) 4.9%, Space (the barrels ×2.2) 5.3%, Time (the halo from pentagon to circle) 6.7% of the diagonal. Each moves its barrels by the form's own distances, so the muzzles the code places sit on the drawn muzzles at every weight |
+| Morphs | the placeholder's art direction at the convention's travel: Charge (pods ×1.5 girth ×1.3 length, barrels ×1.6 girth and 0.3 forward, the arm spines bristle ×3.4) 4.2%, Mass (the cockpit ×1.25 long from its tail, its pod ×1.45 girth, the disc ×1.12) 4.9%, Space (the barrels ×2.2) 5.3%, Time (the halo from pentagon to circle) 6.7% of the diagonal. Each moves its barrels by the form's own distances; the muzzles follow the drawn barrel mouths' own travel (`BrittleStarHullModel.ReadMouthTravel`) |
 | Takes | none drive it (`BrittleStarAnimation` writes the bones in code); `bankright` / `bankleft` (the hull's 28° lean) and `ringturn` (the ring turned 36°) are documentation poses with `pose_expect` |
 | Budget | 13,712 triangles, 7,242 vertices |
 
@@ -78,8 +78,12 @@ fileID (so `BrittleStarExecutor.hull` still points at it), is now `BrittleStarHu
 the mouths, the flames and the SkinnedMeshRenderer by name in `Awake`, and implements `BrittleStarHullSource`, the
 surface the executor and the animation now use instead of the builder: the ring's pose (a turn about the nose axis
 composed onto the bone's captured rest, and the bloom scale), the flames (a scale along whichever local axis of the bone
-runs down the exhaust), six muzzle transforms re-seated on the mouth bones from `BrittleStarHullForm.MuzzlePosition`
-(so where a round leaves cannot drift with the drawing), the thrown ring (a `BakeMesh` copy of the ring's triangles,
+runs down the exhaust), six muzzle transforms ON the drawn barrel mouths (the `gun.N.mouth` bones, built at
+`BrittleStarHullForm.MuzzlePosition`), carried by each barrel's own blend-shape travel read once from the mesh, so a
+round leaves and a cord roots exactly where the drawn barrel ends at every element weight and in whatever frame Unity
+imports the bones (2026-10-18: Garrett saw the guns and cords leave away from the ring corners; until then the muzzles
+were placed from the form's hull-space numbers, which only meet the drawing when the bones import in the frame the
+spec assumes), the thrown ring (a `BakeMesh` copy of the ring's triangles,
 recentred on its pivot), and the domain material the explosion wears (slot 0). The element shapes are blend shapes the
 base `VesselAnimation` drives by name, so the builder's `IProceduralElementMorphSource` duty ends; `VesselCustomization`
 paints the model by identity (`_domainReplacesMaterials` = GreenAccentVesselMaterial) after swapping the renderer-less
