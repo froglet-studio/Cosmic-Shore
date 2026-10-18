@@ -123,8 +123,9 @@ When a vessel's DRAWN look changes (a new hull, a rig swap, a slot remap) or the
 images change in the same pass: `python3 Tools/Build/vessel_model/render_cards.py <Vessel> --sheet <scratch>`
 (or `--all`) renders the icon, inactive, silhouette, large and hangar images from the FBX with VesselGraph's own
 look (rim-to-face fresnel, the scheme in `vessel_colors.py`, the domain slot in the neutral CLASS livery, a navy
-outline), overwriting in place so guids survive, and wires the six fields of `SO_Class_<V>`. Register the vessel
-in `VESSELS` (fbx, slot roles, view, nose angle; `files` when its class asset already names other PNGs, as the
+outline), overwriting in place so guids survive, and wires the six fields of `SO_Class_<V>`. Every card shares ONE camera
+(`CARD_VIEW`, `CARD_NOSE_ANGLE`: behind, above and to the right, the nose to the upper right). Register the vessel
+in `VESSELS` (fbx, slot roles, its `nose`/`up` axes if not -Y/+Z; `files` when its class asset already names other PNGs, as the
 artist hulls' do). When a generator writes the class asset (`author_<vessel>_assets.py`), put the new guids in the
 generator instead, so its `--check` stays the owner. `--check` re-renders and compares. Every playable hull is
 registered: the hand-drawn cards (gold plates, lime engines) were replaced on 2026-10-18 because they broke the

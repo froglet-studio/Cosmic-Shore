@@ -21,8 +21,8 @@ draws it - unlit, rim colour at the silhouette blending to face colour where the
 the colours of `vessel_colors.py` (the three shared materials' scheme), so a card is the ship the player flies.
 The domain slot wears the CLASS livery (`vessel_colors.CLASS_LIVERY`: light, low-saturation Blue plates): a card
 is shared by every player, and Ruby, Gold or Jade on it would claim a team (the old hand-drawn cards were gold
-on every hull). A thin navy outline, a transparent background, three-quarters from above with the nose to the
-upper right. The hangar preview sets the model on the hangar's dark hex field with a cool silver glow.
+on every hull). A thin navy outline, a transparent background, and ONE camera for every hull (`CARD_VIEW`,
+`CARD_NOSE_ANGLE`): three-quarters from behind and above, the nose to the upper right. The hangar preview sets the model on the hangar's dark hex field with a cool silver glow.
 
 WHAT IT WRITES (all sprites; each PNG is overwritten IN PLACE when it exists, so its guid and every reference
 survive; a new PNG gets a deterministic guid and a .meta cloned from Squirrel.png's). A vessel whose class asset
@@ -62,11 +62,16 @@ CLASSES = os.path.join(REPO, "Assets", "_SO_Assets", "Classes")
 DONOR_META = os.path.join(CARDS, "Squirrel.png.meta")
 MODELS = "Assets/_Models/Vessel Models/"
 
+# ONE camera for every card (Garrett 2026-10-18: every hull "flying up and to the right", consistently): the
+# camera direction in the model's (right, nose, up) frame - behind, above and to the right - and the nose's
+# direction on the card, degrees from +x. A vessel never overrides it; fix its `nose`/`up` instead if it faces
+# another way.
+CARD_VIEW = (0.85, -0.35, 0.6)
+CARD_NOSE_ANGLE = 30.0
 # vessel -> how to read its model. `roles` maps slot NAME (or its name before the first '.') -> role, as the
-# vessel's .meta remaps it to the shared materials; `view` is the camera direction in the model's (right, nose, up)
-# frame; `nose_angle` is where the nose points on the card, degrees from +x; `nose`/`up` are the model's axes in
-# Blender's frame after import (default nose -Y, up +Z); `files` names the PNGs its class asset already uses
-# (repo-relative under Assets/_Graphics/; a None skips that image) and `hangar_size` the preview's size.
+# vessel's .meta remaps it to the shared materials; `nose`/`up` are the model's axes in Blender's frame after
+# import (default nose -Y, up +Z); `files` names the PNGs its class asset already uses (repo-relative under
+# Assets/_Graphics/; a None skips that image) and `hangar_size` the preview's size.
 FLEET_SLOTS = {"Domain": "domain", "Body": "body", "Window": "window", "Engine": "engine"}
 # the artist files' names, as their .meta remap them (accent = GreenAccent = domain, BASE = BlueBase = body)
 ARTIST_SLOTS = {"accent": "domain", "BASE": "body", "windsheild": "window", "N": "engine"}
@@ -79,41 +84,27 @@ def _files(icon, inactive, silhouette, large, hangar):
 
 
 VESSELS = {
-    "Butterfly": {"fbx": MODELS + "Butterfly.fbx", "roles": FLEET_SLOTS,
-                  "view": (0.55, -0.35, 0.95), "nose_angle": 62.0},
-    "Angler": {"fbx": MODELS + "Angler.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_angler_assets.py",
-               "view": (0.85, -0.3, 0.45), "nose_angle": 22.0},
-    "BrittleStar": {"fbx": MODELS + "BrittleStar.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_brittlestar_assets.py",
-                    "view": (0.45, -0.8, 0.5), "nose_angle": 70.0},
-    "Scarab": {"fbx": MODELS + "Scarab.fbx", "roles": FLEET_SLOTS,
-               "view": (0.8, -0.45, 0.7), "nose_angle": 32.0},
-    "Shrike": {"fbx": MODELS + "Shrike.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_shrike_assets.py",
-               "view": (0.85, -0.3, 0.6), "nose_angle": 30.0},
-    "Stoat": {"fbx": MODELS + "Stoat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_stoat_assets.py",
-              "view": (0.85, -0.3, 0.6), "nose_angle": 26.0},
-    "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS,
-                 "view": (0.85, -0.25, 0.55), "nose_angle": 28.0},
+    "Butterfly": {"fbx": MODELS + "Butterfly.fbx", "roles": FLEET_SLOTS},
+    "Angler": {"fbx": MODELS + "Angler.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_angler_assets.py"},
+    "BrittleStar": {"fbx": MODELS + "BrittleStar.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_brittlestar_assets.py"},
+    "Scarab": {"fbx": MODELS + "Scarab.fbx", "roles": FLEET_SLOTS},
+    "Shrike": {"fbx": MODELS + "Shrike.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_shrike_assets.py"},
+    "Stoat": {"fbx": MODELS + "Stoat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_stoat_assets.py"},
+    "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS},
     # the artist hulls: rendered in place over the files their class assets (and other UI) already reference
-    "Squirrel": {"fbx": MODELS + "SquirrelVessel_CosmicShoresTest1.fbx", "roles": FLEET_SLOTS,
-                 "view": (0.85, -0.35, 0.6), "nose_angle": 30.0},
+    "Squirrel": {"fbx": MODELS + "SquirrelVessel_CosmicShoresTest1.fbx", "roles": FLEET_SLOTS},
     "Dolphin": {"fbx": MODELS + "dolphin_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS,
-                "view": (0.85, -0.35, 0.6), "nose_angle": 30.0,
                 "files": _files("Dolphin_Square.png", "Dolphin_Inactive.png", "Dolphin_Square_silhouette.png",
                                 "Dolphin_large.png", "Dolphin_Hangar_Preview.png")},
-    "Sparrow": {"fbx": MODELS + "SparrowModel1.fbx", "roles": FLEET_SLOTS,
-                "view": (0.5, -0.3, 1.0), "nose_angle": 35.0},
-    "Serpent": {"fbx": MODELS + "SerpentExport.fbx", "roles": FLEET_SLOTS, "nose": (0, 1, 0),
-                "view": (0.6, 0.6, 0.6), "nose_angle": -30.0},
+    "Sparrow": {"fbx": MODELS + "SparrowModel1.fbx", "roles": FLEET_SLOTS},
+    "Serpent": {"fbx": MODELS + "SerpentExport.fbx", "roles": FLEET_SLOTS, "nose": (0, 1, 0)},
     "Manta": {"fbx": MODELS + "Manta_shapekey_rigged.fbx", "roles": ARTIST_SLOTS,
-              "view": (0.4, -0.3, 1.0), "nose_angle": 40.0,
               "files": _files("Manta.png", "Manta_Inactive.png", "Manta_Square_silhouette.png",
                               "Manta_large.png", "Manta_Hangar_Preview.png")},
     "Rhino": {"fbx": MODELS + "rhino_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS,
-              "view": (0.85, -0.35, 0.6), "nose_angle": 30.0,
               "files": _files("Rhino.png", "Rhino_Inactive.png", "Rhino_Square_silhouette.png",
                               "Rhino_large.png", "Rhino_Hangar_Preview.png")},
-    "Urchin": {"fbx": MODELS + "urchan_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS,
-               "view": (0.3, 0.85, 0.4), "nose_angle": -90.0, "hangar_size": (1620, 920),
+    "Urchin": {"fbx": MODELS + "urchan_shapekey_with_animations.fbx", "roles": ARTIST_SLOTS, "hangar_size": (1620, 920),
                "files": _files("Urchin_Square.png", "Urchin_Inactive.png", "Urchin_Square_silhouette.png",
                                None, "Urchin.png")},
 }
@@ -282,7 +273,7 @@ def render_view(cfg, colors, out_dir, shots, background=None, outline=0.006, vie
     args = {
         "fbx": os.path.join(REPO, cfg["fbx"]), "roles": cfg["roles"], "colors": colors,
         "nose": cfg.get("nose", (0, -1, 0)), "up": cfg.get("up", (0, 0, 1)),
-        "view": view or cfg["view"], "nose_angle": cfg.get("nose_angle", 35.0) if nose_angle is None else nose_angle,
+        "view": view or CARD_VIEW, "nose_angle": CARD_NOSE_ANGLE if nose_angle is None else nose_angle,
         "outline": outline, "outline_color": OUTLINE_LINEAR, "background": background,
         "samples": samples, "out": out_dir, "shots": shots,
     }

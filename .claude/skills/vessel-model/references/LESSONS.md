@@ -484,3 +484,9 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       every `.meta` remap for the role each slot plays.
     - **Check a material's surface mode before brightening it.** The body is transparent without depth writes;
       near-black hid any self-overlap, a visible rim may not (an Editor look is owed, COLOR.md section 6).
+    - **Read a palette's pairs against the code that consumes them.** Gold's ShipColor1/ShipColor2 were entered
+      swapped (bright rim, dark face). `DomainScorePanel`'s comment ("ShipColor1 is the muted hull tone") named
+      the intended order, so the fix was a swap, not a re-tune.
+    - **One card camera for the fleet.** Per-vessel views made each card look good alone and the set inconsistent
+      (Garrett: "most are flying up and to the right, but some are not"). `CARD_VIEW` / `CARD_NOSE_ANGLE` are
+      fleet constants; a hull that faces the wrong way fixes its `nose`/`up` axes, never the camera.

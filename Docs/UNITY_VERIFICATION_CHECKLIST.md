@@ -90,6 +90,9 @@ T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime je
 - **Cards**: every class card, inactive card, silhouette, large image and hangar preview of the fourteen hulls is
   rendered from its model with the silver CLASS livery on the domain slot. The artist hulls' files are rewritten
   in place, so `Dolphin_Square.png`'s other users and the Termite's silhouette change too.
+- **Follow-up, same day**: Gold's `ShipColor1`/`ShipColor2` were swapped (they had been entered reversed) in
+  `OriginalColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
+  right.
 
 Verify in the Editor:
 1. Fly Squirrel, Rhino, Manta and Thresher in each domain at the chase camera. The domain is the brightest thing
@@ -103,6 +106,8 @@ Verify in the Editor:
 4. **Rhino**: the neon stripes take the team colour, the hull is gunmetal, and the nozzles and pod rings are ember.
 5. Menu: the vessel carousel, the class cards, the hangar previews and the squad images show the new renders. No
    white squares.
+6. **Gold**: a Gold ship is dark at its silhouette and bright face-on, like Ruby and Jade. In a match, the Gold
+   score chip's backdrop is the muted brown and its accent strip the bright gold.
 
 ### 🔴 The fleet pass: every playable hull is a pipeline-owned model; card images from the models (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
 
