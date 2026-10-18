@@ -866,3 +866,45 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), anyone; Garrett for the sign question and the deletions
 - **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/VesselModels/README.md
+
+### T-20261018-fde3 · open · dev · Quick fixes
+- **Task:** Re-apply five small fixes stranded on old branches, in one PR into bleeding-edge: Time crystal sounds through muted SFX (c30040ec96), recycled shielded prisms play the shield-off effect in Microscene (bbb47c111b, + the Port copy), the /ab-test skill (691cd25d6e), the detect-competing-changes skill (7380381338), the session-branch triage tool (13834d5584); plus two stale doc rows (BRANCH_PARTS_STATUS A/C/M landed, ECOSYSTEM_MASTERPLAN Phase B item 6 done)
+- **Done when:** One PR merged into bleeding-edge with all five fixes and both doc rows; the two in-editor checks (muted Time crystal is silent; Wander toy / HexRace recycle shows no shield-off effect) recorded as done or owed
+- **Who can take it:** Yash (offered), any session
+- **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
+- **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 1
+
+### T-20261018-2a60 · open · dev · Party / presence
+- **Task:** Port the presence converge race fix: PresenceLobbyService.ConvergeToCanonicalAsync can release the lobby it just joined (it re-reads _activeLobby after the join await). Capture the outgoing lobby before joining and release that captured instance; original fix 03f6ad7543 no longer merges
+- **Done when:** Fix merged into bleeding-edge (and the Port copy if it has the same shape) and Docs/PresenceSystem/TESTS.md P8 passes in MPPM
+- **Who can take it:** Yash (party / UGS)
+- **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
+- **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 3
+
+### T-20261018-f1f5 · open · dev · vessels
+- **Task:** Rhino crystal-absorption hull morph spike (e9002489c5 on cece/trusting-albattani-p1sd96): re-apply on bleeding-edge's new CrystalMorphMeshBuilder and impactor path, run it in the Editor and open a DRAFT PR with a capture for keep / drop
+- **Done when:** Draft PR open with a capture of landing radius / whiteout, and Garrett has recorded keep or drop
+- **Who can take it:** Yash (rebase + capture), Garrett (keep / drop)
+- **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
+- **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 4
+
+### T-20261018-1a4a · open · dev · Black Hole cell
+- **Task:** Measure the Sparrow sink-to-source time through the crystal wormhole on today's lens (da2027490f); if the playtest asks (under ~10 s, less warp, smaller poles, stronger suck and spit) are not met, port only the tuning from 86ce29027d (cece/charming-cerf-alf1j1) onto the new lens pass
+- **Done when:** Either a write-up showing the new lens already meets the asks (branch then obsolete) or a PR with before / after times for every ship
+- **Who can take it:** Yash (offered)
+- **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
+- **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 5
+
+### T-20261018-a251 · open · dev · Branch parts (nice-brahmagupta)
+- **Task:** Keep landing the project-sprint parts still only on cece/nice-brahmagupta-ojclij (B, D-L; A, C, M landed in 9d9e713977), cheapest first: H (Unity-side parity harness) and K (leak fixes)
+- **Done when:** H and K each picked onto bleeding-edge with their editor test steps run, and Docs/BRANCH_PARTS_STATUS.md updated; B waits on the sound designer saving Cosmic Shore.fspro, L on Garrett's sign-off
+- **Who can take it:** Yash (offered); Garrett (part L sign-off)
+- **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
+- **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 6; Docs/BRANCH_PARTS_STATUS.md
+
+### T-20261018-a464 · open · content · Market / copy
+- **Task:** Land the market-analysis docs from claude/games-market-analysis-uxjcur (MARKET_GAP_PLAN_2026, evidence digests, WORLD_AND_COPY.md) after a facts refresh (copy says 'thirteen modes / eight ships'), adding the seven pitches from session_01GS2mpWTMXV991uMvShUTjk as a Pitches section
+- **Done when:** Docs-only PR merged into bleeding-edge with refreshed roster facts and the Pitches section, or the branch explicitly dropped
+- **Who can take it:** Garrett (or whoever owns copy)
+- **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
+- **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 7
