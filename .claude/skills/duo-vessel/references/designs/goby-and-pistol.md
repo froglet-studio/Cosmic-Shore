@@ -272,7 +272,7 @@ The lab's arithmetic is in the game, line for line, held to the lab's own number
 | The Pistol AI and its levels, `mulberry32` bit for bit | `PistolAI` | same |
 | 40 numbers | `GobyPistolConfigSO` / `GobyPistolConfig.asset` | `studio_to_unity.py --vessel goby --check` |
 | Playing it: the Pistol rides your hull side on, on real prisms; the Goby's primer and flares; the arena's swap | `GobyPistolDuo` (a runtime component; **FrogletTools ▸ Vessels ▸ Goby and Pistol (Play mode)** adds it to any hull you fly) | Amoebius, 2026-10-15: spawned, bound, swapped both ways, fired a ring (below) |
-| **The vessel: `VesselClassType.Goby` (16)**, flyable from the freestyle Vessel Changer | `Goby.prefab` (a Squirrel clone carrying `GobyPistolDuo`; since 2026-10-18 it draws its own hull, `Goby.fbx`), `SO_Class_Goby`, the container / network / class-list / fusion entries, `ElementalAbilityMaps/Goby` (the Squirrel's map), `ToyVesselRoster.Default` | `Tools/Build/author_goby_assets.py --check` / `--self-test` |
+| **The vessel: `VesselClassType.Goby` (18; 16 until 2026-10-18)**, flyable from the freestyle Vessel Changer | `Goby.prefab` (a Squirrel clone carrying `GobyPistolDuo`; since 2026-10-18 it draws its own hull, `Goby.fbx`), `SO_Class_Goby`, the container / network / class-list / fusion entries, `ElementalAbilityMaps/Goby` (the Squirrel's map), `ToyVesselRoster.Default` | `Tools/Build/author_goby_assets.py --check` / `--self-test` |
 
 **Still lab-only:** the Goby's straight and closeness boosts (they need the duo vessel's own speed executor; the harness
 cannot change a borrowed hull's speed), flora counting as hot, the crystal restock and the free Snap (crystal pickup is

@@ -7,7 +7,7 @@
 
 WHAT IT MAKES (the duo brief: .claude/skills/duo-vessel/references/designs/goby-and-pistol.md)
     Assets/_Prefabs/Spacevessels/Goby.prefab (+ .meta)   a text clone of Squirrel.prefab with:
-        - the root GameObject and VesselStatus renamed, `vesselType: 16` (VesselClassType.Goby)
+        - the root GameObject and VesselStatus renamed, `vesselType: 18` (VesselClassType.Goby; it was 16 until the BrittleStar took 16)
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
           (a disk copy keeps the donor's hash and Netcode then keys two prefabs on one entry)
         - GobyPistolDuo on the root, wired to GobyPistolConfig.asset (the Pistol: the second half of the duo)
