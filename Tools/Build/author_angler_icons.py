@@ -18,7 +18,7 @@ The element order is the PROPOSAL in R_VesselActions/ANGLER.md (no ElementalAbil
 the designer approves a mapping), so an icon names its act, never its element.
 
 The CARD (SO_Class_Angler.IconActive / IconInactive, 256 px) is a flat drawing in the house card look the Thresher's
-renderer set (gold body, a green accent, a navy outline; the inactive fade is render_thresher_card_icon.inactive): an
+renderer set (gold body, a green accent, a navy outline; the inactive fade is R.inactive below): an
 anglerfish in profile with its lit esca. The Angler wears the Stoat's procedural hull for now (ANGLER.md §5), so there
 is no hull of its own to render; when it has one, render the card from it the way render_brittlestar_card_icon.py does.
 
@@ -36,7 +36,30 @@ from PIL import Image, ImageChops, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import author_thresher_icons as T  # noqa: E402  (shared primitives; importing it writes nothing)
-import render_thresher_card_icon as R  # noqa: E402  (the card look's inactive fade and sprite meta; no side effects)
+
+
+class R:
+    """The card look's inactive fade and sprite meta, as render_thresher_card_icon.py defined them (that renderer was
+    retired 2026-10-18 when the Thresher's card moved to its model; these two lines of the house look stay here)."""
+
+    DONOR_META = os.path.join(os.path.dirname(os.path.dirname(HERE)), "Assets", "_Graphics", "CardImages", "Squirrel.png.meta")
+
+    @staticmethod
+    def inactive(img):
+        out = img.copy()
+        grey = out[..., :3] @ np.array([0.299, 0.587, 0.114])
+        out[..., :3] = 0.5 * out[..., :3] + 0.5 * grey[..., None]
+        out[..., :3] = out[..., :3] * 0.7 + 0.3
+        out[..., 3] *= 0.85
+        return out
+
+    @staticmethod
+    def sprite_meta(guid):
+        donor = open(R.DONOR_META, encoding="utf-8").read()
+        out = re.sub(r"^guid: [0-9a-f]{32}$", f"guid: {guid}", donor, count=1, flags=re.M)
+        assert out.count(guid) == 1, "donor meta did not take the guid"
+        return out
+
 
 ROOT = os.path.dirname(os.path.dirname(HERE))
 OUT_DIR = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Angler")
