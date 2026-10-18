@@ -132,8 +132,16 @@ bounds; rest_compare 0.000; `--check` green. **Verify (Squirrel only):** every t
 (rear engines included; roll banks the whole wing with its pods), the spine follows the chevrons with no gap, and Mass
 reads from the chase camera. Then say keep / change / remove before the next vessel is attempted.
 **PASSED in the Editor, 2026-10-18 (Garrett):** "This passes. I upgraded its elements. changed domain. I can't tell
-it isn't the original." The Squirrel (round 8, commit 70824a8fd) is verified; the other six vessels carry the
-artist's files unchanged and need no check.
+it isn't the original." The Squirrel (round 8, commit 70824a8fd) is verified.
+
+**The Dolphin, 2026-10-18 (loop round 4), NOT EDITOR-VERIFIED:** `dolphin_shapekey_with_animations.fbx` is rebuilt
+in place from `specs/dolphin.py` - the artist's hull, 28-bone rig, four morphs, four materials and ten motion takes,
+kept and gated (take parity 0.0000 units / 0.00 degrees over 146 part-takes, moving bones identical take by take,
+morph and material parity, rest_compare 0.000, `--check` green). Nothing visible was added. **Verify:** it looks and
+flies exactly like the original (`RiptideAnimation` puppets it by bone name: jaws, wings, the six engine cases);
+upgrade its elements and change its domain as on the Squirrel; if the hull-fusion bake for its crystals looks off,
+re-run `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` for the Dolphin. The other five vessels carry the
+artist's files unchanged.
 
 **Round 3 (same day, after a reader review):** three gates had been dead or wrong and are now live, and the files
 were rebuilt under them. (a) The artist-reference block of `build.py` had a swallowed `NameError`, so the size,

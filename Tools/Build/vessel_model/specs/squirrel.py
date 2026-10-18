@@ -131,6 +131,7 @@ def build(ctx):
             # every part must move in every take as the artist's part does (take_parity, LESSONS 41); the
             # spine is new (no artist part on its blend), the Mass key is strengthened on purpose
             "take_parity": True,
+            "shape_parity_allow": {"Mass": ["*"]},   # strengthened on purpose (2.5% -> 3.7%); Time / Space / Charge must match the artist's
             "shapes": ["Time", "Mass", "Space", "Charge"],
             "slots": list(SLOTS),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,

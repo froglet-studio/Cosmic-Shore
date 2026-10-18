@@ -53,6 +53,13 @@ no Blender GUI, no OpenGL. If `import bpy` fails: `pip download bpy` then
   rotation - a part frozen where the artist's moves, moving where it holds, or turning about the
   wrong axis. `take_parity_allow` = {take or "*": [parts]} declares a meant change. Standalone:
   `python3 Tools/Build/vessel_model/take_parity.py <artist.fbx> <ours.fbx> [--all]`.
+- **moving-node parity** (same switch): per take, the set of bones whose FBX curves move differs
+  from the artist's - read from the file with no Blender evaluation, so it catches a reader bug
+  the Blender-evaluated gate shares with itself (LESSONS 43).
+- **morph parity** (same switch): any part of any element morph moving differently at full weight
+  (`shape_parity_allow` = {morph: [parts] or ["*"]} declares a strengthened morph).
+- **material parity** (same switch): any material property (diffuse, emissive colour and factor,
+  transparency, specular) differing from the artist's - an un-remapped slot wears these in the game.
 
 The artist-reference block of `build.py` reads the ARTIST file (`ARTIST_REF`, pinned) with every
 shape key at 0 and no action (LESSONS 33, 35) for the size, slot-order and colour references;

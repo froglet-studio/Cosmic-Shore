@@ -383,3 +383,25 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       that looks and moves exactly like the accepted art and carries the improvements. The
       next ambition - a vessel BETTER than its original - starts from that file, one declared
       change at a time, each one judged by the owner.
+
+43. **The Dolphin, the loop's second vessel: one Blender-evaluated reader is not enough.** The
+    Dolphin went through the passing loop unchanged (artist hull, morphs, materials, ten 21-frame
+    motion takes) and its first build passed take parity while every take held ONE constant
+    pose. Three reader blind spots, each now fixed and each found by a second reader:
+    - **Each take imports as two actions**, the armature's and a `Key|...` one for the morph
+      curves; both readers keyed them by take name and the morph action overwrote the armature
+      take, so the dump AND the probe measured the same stale pose and agreed. Readers now use
+      the OBJECT-slot action only (`armature_actions`) and assert take names are unique.
+    - **Blender ignores pose translation on a connected bone; Unity has none.** The artist's
+      `root.002` slides 1.27 in `startcharge` and Blender never showed it. Readers disconnect
+      every bone after import so they play a take the way Unity does.
+    - **An Euler difference is not a rotation difference.** fbx_probe now measures a rotation
+      key's offset from rest as an angle between orientations.
+    The catch came from `compare_moving_nodes`: per take, the set of bones whose FBX curves move
+    must equal the artist's, read straight from the file with no Blender evaluation. Two readers
+    that share no code are the gate; a gate that only ever compares Blender with Blender can
+    agree with itself about a bug. Morph parity (`compare_shapes`, every part of every element
+    morph) and material parity (`compare_materials`, the values an un-remapped slot wears) were
+    added in the same pass, because the loop said "proven kept" for things no gate proved.
+    Result: 146 moving part-takes at 0.0000 units / 0.00 degrees, 42 part-morphs and every
+    material identical, rest_compare 0.000, the take moving-bone counts identical take by take.

@@ -257,13 +257,14 @@ if pose_probe:
             pb.matrix_basis.identity()
         rest = centroids(all_groups)
         for take, groups in pose_probe.items():
-            act = next((a for a in bpy.data.actions if _norm(a.name.split("|")[-1]) == _norm(take) or a.name.split("|")[-1] == take), None)
+            act = next((a for a in bpy.data.actions if (_norm(a.name.split("|")[-1]) == _norm(take) or a.name.split("|")[-1] == take)
+                        and not (hasattr(a, "slots") and len(a.slots) and not any(sl.target_id_type == "OBJECT" for sl in a.slots))), None)
             if act is None:
                 continue
             arm.animation_data.action = act
             if hasattr(act, "slots") and len(act.slots):
                 try:
-                    arm.animation_data.action_slot = act.slots[0]
+                    arm.animation_data.action_slot = next(sl for sl in act.slots if sl.target_id_type == "OBJECT")
                 except Exception:
                     pass
             bpy.context.scene.frame_set(int(act.frame_range[1]))  # the LAST key: a motion take (the Dolphin's) reaches its pose at the end, a pose take has one key
@@ -450,10 +451,25 @@ def verify(path, spec):
     ref_for_parity = spec.get("take_parity_ref") or (spec.get("artist_path") if spec.get("take_parity", True) else None)
     if ref_for_parity:
         import take_parity as TP
-        pfail, _rows = TP.compare(TP.probe(ref_for_parity), TP.probe(path), allow={k: set(v) for k, v in (spec.get("take_parity_allow") or {}).items()})
+        _ref, _cand = TP.probe(ref_for_parity), TP.probe(path)
+        pfail, _rows = TP.compare(_ref, _cand, allow={k: set(v) for k, v in (spec.get("take_parity_allow") or {}).items()})
         if pfail:
             failures.append("take parity with %s: %d difference(s), first %d:\n      %s" % (
                 os.path.basename(ref_for_parity), len(pfail), min(12, len(pfail)), "\n      ".join(pfail[:12])))
+        # the morphs the artist made must still move every part as they did (shape_parity_allow declares a
+        # morph changed on purpose), and every material must carry the artist's values (un-remapped slots
+        # wear them in the game)
+        sfail, _srows = TP.compare_shapes(_ref, _cand, allow={k: set(v) for k, v in (spec.get("shape_parity_allow") or {}).items()})
+        if sfail:
+            failures.append("morph parity with %s: %d difference(s), first %d:\n      %s" % (
+                os.path.basename(ref_for_parity), len(sfail), min(12, len(sfail)), "\n      ".join(sfail[:12])))
+        nfail = TP.compare_moving_nodes(ref_for_parity, path)
+        if nfail:
+            failures.append("moving-node parity with %s (FBX curves, no Blender evaluation):\n      %s" % (
+                os.path.basename(ref_for_parity), "\n      ".join(nfail[:12])))
+        mfail = TP.compare_materials(ref_for_parity, path)
+        if mfail:
+            failures.append("material parity with %s:\n      %s" % (os.path.basename(ref_for_parity), "\n      ".join(mfail)))
     pose_expect = spec.get("pose_expect") or {}
     rep = blender_reimport_report(path, pose_probe={t: sorted({e[0] for e in exps}) for t, exps in pose_expect.items()} or None)
     # each named take must move the named part the named way (direction AND a minimum), measured on the

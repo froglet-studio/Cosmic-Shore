@@ -174,7 +174,7 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 | vessel | rounds | what the sheet taught |
 |---|---|---|
 | Squirrel | 8 | **PASSED the owner's eye (2026-10-18): "I can't tell it isn't the original", elements upgraded and domain changed in play.** Six from-scratch rounds were a cheap remake; round 7 put the ARTIST'S hull back with a spine and Mass 2.5% -> 3.7% ("big improvement") but re-authored takes froze the rear engines; round 8 keeps the artist's takes (take_parity 0.001 / 0.1 deg over 311 part-takes) and weights the spine between chevrons. `specs/squirrel.py` is the template for every next vessel |
-| Dolphin | 3 | from-scratch, withdrawn (artist file restored; `specs/experimental/dolphin_scratch.py`). What held: wing spanwise sign; lime throats paint the engine slot; a size reference read with the morphs at 100% is wrong (LESSONS 33) |
+| Dolphin | 4 | three from-scratch rounds withdrawn; round 4 is the loop's second vessel (2026-10-18): the artist's hull, morphs, materials and ten motion takes, nothing visible added, reproduced to 0.0000 units / 0.00 degrees over 146 part-takes after three reader blind spots were fixed (LESSONS 43). `specs/dolphin.py`; the dossier's weak points are the owner's to pick |
 | Sparrow | 3 | from-scratch, withdrawn and it FLEW BACKWARDS (LESSONS 39: the artist's heading is right by definition). What held: a mirror reverses yaw and roll; tail vanes to the artist's height |
 | Serpent | 2 | from-scratch, withdrawn. What held: head on +Y (`zup_identity`); Mass takes carapace + engine together or reads inert |
 | Manta | 4 | from-scratch, withdrawn. What held: yaw -Z and roll -Y for "right"; three stern nozzles so slot N owns faces |

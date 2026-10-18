@@ -263,6 +263,16 @@ def retarget_from(arm, ref_path, only=None):
                     bpy.context.view_layer.update()
             for pb in arm.pose.bones:
                 loc, q, sc = pb.matrix_basis.decompose()
+                # solver noise on a bone the reference leaves at rest (1e-5 units, 1e-4 degrees) still writes a
+                # curve that MOVES in the file; snap it to the exact rest so the take moves what the artist's moves
+                if loc.length < 1e-4:
+                    loc = Vector((0.0, 0.0, 0.0))
+                if math.degrees(q.angle) < 1e-2:
+                    q = q.__class__((1.0, 0.0, 0.0, 0.0))
+                if max(abs(x - 1.0) for x in sc) < 1e-4:
+                    sc = Vector((1.0, 1.0, 1.0))
+                pb.location = loc
+                pb.scale = sc
                 pb.rotation_mode = "XYZ"
                 pb.rotation_euler = q.to_euler("XYZ", prev[pb.name]) if pb.name in prev else q.to_euler("XYZ")
                 prev[pb.name] = pb.rotation_euler.copy()

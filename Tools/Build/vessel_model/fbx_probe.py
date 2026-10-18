@@ -354,6 +354,25 @@ def probe(path, want_takes=False):
                         for axis_i, vals in keyvals:
                             if rest is not None and isinstance(rest, tuple) and 0 <= axis_i < 3:
                                 offset = max(offset, max(abs(v - rest[axis_i]) for v in vals))
+                        if prop == "Lcl Rotation" and rest is not None and isinstance(rest, tuple):
+                            # a rotation's offset is the ANGLE between orientations, not the largest Euler-number
+                            # difference: (0, 180, 0) and (180, 0, 180) are one orientation, and a retargeted take
+                            # writes whichever triple the solver produced (the Dolphin's 25 "moving" bones that
+                            # were at rest, 2026-10-18)
+                            chans = {ai: vals for ai, vals in keyvals if 0 <= ai < 3}
+                            n = max([len(v) for v in chans.values()] or [0])
+                            if n:
+                                ang = 0.0
+                                for i in range(n):
+                                    trip = []
+                                    for ai, axis in enumerate(("d|X", "d|Y", "d|Z")):
+                                        if ai in chans and chans[ai]:
+                                            trip.append(chans[ai][min(i, len(chans[ai]) - 1)])
+                                        else:
+                                            dv = cnp.get(axis)
+                                            trip.append(dv if isinstance(dv, (int, float)) else rest[ai])
+                                    ang = max(ang, _euler_angle_between(rest, trip))
+                                offset = ang
                         d = moved.setdefault(key, {})
                         d[prop] = {"range": max(d.get(prop, {}).get("range", 0.0), rng),
                                    "offset": max(d.get(prop, {}).get("offset", 0.0), offset),
@@ -445,6 +464,19 @@ def print_report(r, want_takes=False):
                 print("        moves: %s" % ", ".join("%s(%s)" % (k, "/".join(p.replace("Lcl ", "") for p in v)) for k, v in mv[:12]) + (" ..." if len(mv) > 12 else ""))
             kinds = "pose" if all(all(c["keys"] <= 1 or c["range"] < 1e-4 for c in v.values()) for v in t["moving_detail"].values()) and t["moving_detail"] else "motion"
             print("        kind: %s" % (kinds if t["moving_detail"] else "static"))
+
+
+def _euler_angle_between(a, b):
+    """Degrees between two FBX XYZ Euler orientations (R = Rz Ry Rx)."""
+    def mat(e):
+        x, y, z = (math.radians(v) for v in e)
+        cx, sx, cy, sy, cz, sz = math.cos(x), math.sin(x), math.cos(y), math.sin(y), math.cos(z), math.sin(z)
+        return [[cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz],
+                [cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz],
+                [-sy, sx * cy, cx * cy]]
+    A, B = mat(a), mat(b)
+    tr = sum(A[i][k] * B[i][k] for i in range(3) for k in range(3))  # trace(A^T B)
+    return math.degrees(math.acos(max(-1.0, min(1.0, (tr - 1.0) / 2.0))))
 
 
 def main():
