@@ -8,7 +8,7 @@
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
   },
   "Goby & Pistol": {
-    "artifactVersion": "private prototype https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up v9 (the lab is not on the shared Vessel Studio artifact yet)",
+    "artifactVersion": "private prototype https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up v10 (the lab is not on the shared Vessel Studio artifact yet)",
     "pageSha": "6a814aff",
     "decisionsThrough": "none (the prototype's decision log is empty)",
     "clonedAt": "2026-10-18",
