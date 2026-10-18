@@ -36,6 +36,13 @@ The **Dolphin** is the loop's second vessel (`specs/dolphin.py`): reproduced exa
 owner's Editor test. The **Butterfly** is the first hull with no artist file at all (`specs/butterfly.py`,
 `sheets/butterfly_after.jpg`): a new `Butterfly.fbx` that replaces the procedural placeholder, built to the fleet
 convention and the fleet's look, for the owner's Editor test (`LESSONS.md` 44).
+**The fleet pass (2026-10-18, Garrett: "please continue with the rest of the fleet, and get the card images etc.
+updated as well"):** the **Sparrow**, **Serpent** and **Manta** are reproduced exactly through the loop
+(`specs/sparrow.py`, `serpent.py`, `manta.py`; every take, morph, material and node proven against the artist
+file; sheets `sheets/<vessel>_after.jpg`). The Urchin and Rhino get the rig swap (the prefab draws the artist's
+RIG with four real morphs); the procedural hulls (Thresher, Scarab, Stoat, Angler, Brittle Star, Shrike) get new
+models like the Butterfly's. Card images for every hull whose look changed are rendered from its model by
+`Tools/Build/vessel_model/render_cards.py`.
 
 **Round 3, 2026-10-17 (after a review of the gates; files since withdrawn):** the artist-reference gate had been dead (a swallowed
 `NameError`), the drawn-size reader had read each artist file with all four morphs at 100%, and no check told an

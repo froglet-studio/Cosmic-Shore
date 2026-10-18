@@ -366,7 +366,15 @@ def run(name, check=False, sheet=None, samples=16):
         out.alpha_composite(tiles[4].resize((480, 270)), (x, 15))
         out.convert("RGB").save(os.path.join(sheet, "%s_cards.jpg" % name.lower()), quality=90)
     if not check:
-        print("wired %s" % os.path.relpath(wire_class(name), REPO))
+        owner = cfg.get("class_owner")
+        if owner:
+            # a generator writes this class asset: it must carry the guids, or its --check reverts the wiring
+            print("class asset owned by %s; put these in it:" % owner)
+            for field, suffix in FIELDS:
+                png = os.path.join(HANGAR, name + "_Hangar_Preview.png") if suffix == "@hangar" else os.path.join(CARDS, name + suffix + ".png")
+                print("  %-24s %s" % (field, _guid_of(png)))
+        else:
+            print("wired %s" % os.path.relpath(wire_class(name), REPO))
     return fails
 
 

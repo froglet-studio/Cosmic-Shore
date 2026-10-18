@@ -105,6 +105,22 @@ from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.
    the model root (constant fileIDs) and the code resolves bones and the SkinnedMeshRenderer by name
    at runtime; keep the old names resolving too, so the swap is reversible.
 
+## Card images follow the model (`render_cards.py`)
+
+When a vessel's DRAWN look changes (a new hull, a rig swap), its card images change in the same pass:
+`python3 Tools/Build/vessel_model/render_cards.py <Vessel> --sheet <scratch>` renders `<V>.png`,
+`<V>_Inactive.png`, `<V>_silhouette.png`, `<V>_large.png` and `Hangar/<V>_Hangar_Preview.png` from the FBX
+in the house card look (measured from the hand-drawn cards: gold domain, navy body, indigo glass, green
+engines, three cel bands, a navy outline), overwriting in place so guids survive, and wires the six fields
+of `SO_Class_<V>`. Register the vessel in its `VESSELS` table (fbx, slot roles, view, nose angle).
+When a generator writes the class asset (`author_<vessel>_assets.py`), put the new guids in the generator
+instead, so its `--check` stays the owner. `--check` re-renders and compares. A vessel whose look is
+unchanged (an exact reproduction) keeps its hand-drawn card.
+
+An artist mesh node that is not at identity (the Sparrow's carries 0.2034, its vertices 4.9x larger):
+`rig.restore_node_scale(mesh)` after the build and `"mesh_node_scale": s` in the spec keep the node as the
+artist wrote it; `rest_compare.py` compares node transforms and would report it.
+
 Neither gate proves a WRITE. After `build.py <spec>` (no `--out` = in place), prove it with
 `git status --short "Assets/_Models/Vessel Models/"`: the first in-place run wrote seven green
 models under `Tools/Assets/...` and both gates stayed green (LESSONS 24). The driver prints
