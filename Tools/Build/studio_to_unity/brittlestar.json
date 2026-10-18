@@ -114,9 +114,19 @@
       "field": "ringBlastFallbackRadius"
     },
     {
-      "key": "ringBlastBandWidth",
+      "key": "ringBlastFrontWidth",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
-      "field": "ringBlastBandWidth"
+      "field": "ringBlastFrontWidth"
+    },
+    {
+      "key": "ringBlastFrontHeight",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastFrontHeight"
+    },
+    {
+      "key": "ringBlastRelief",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "ringBlastRelief"
     },
     {
       "key": "ringBlastThicknessScale",

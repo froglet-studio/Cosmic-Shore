@@ -2,8 +2,8 @@
 # Compile the SHIPPED pure Brittle Star code (BrittleStarHullForm, BrittleStarRules, BrittleStarCord, BrittleStarBlastForm) and its SHIPPED
 # edit-mode tests (Assets/_Scripts/Tests/Editor/BrittleStarTests.cs) against a UnityEngine math stub and an NUnit shim
 # with Roslyn, and RUN every [Test]. Exit 0 = every test passed. `--self-test` additionally plants an inside-out face, a
-# third spare ring, a cord that stretches past its length and a ring explosion drawn past its front, and proves the tests
-# catch each (negative controls).
+# third spare ring, a cord that stretches past its length, a ring explosion drawn past its front and one drawn flat, and proves
+# the tests catch each (negative controls).
 # `--obj DIR` writes the shipped hull as OBJ instead (for the card).
 # Needs a .NET SDK (8+), found through DOTNET_ROOT (default ~/.dotnet).
 set -euo pipefail
@@ -53,8 +53,12 @@ if [ "${1:-}" = "--self-test" ]; then
   sed 's/u = u.sqrMagnitude > 1e-8f ? u.normalized : _direction\[i\];/u = u.sqrMagnitude > 1e-8f ? u : _direction[i];/' "$CORD" > "$OUT/CordStretchy.cs"
   grep -q '? u : _direction' "$OUT/CordStretchy.cs"
   CORD_SRC="$OUT/CordStretchy.cs" build_and_run "$FORM" "$RULES" fail "cord stretches"
-  # 4. The arms' tips are no longer pulled in by their half-width: the look overruns the disk that does the damage.
-  sed 's/ring + (span - half) \* u/ring + (span + half) * u/' "$BLAST" > "$OUT/BlastOverrun.cs"
-  grep -q 'span + half' "$OUT/BlastOverrun.cs"
+  # 4. The arms no longer stop a crystal short of the front: their heads are drawn past the blast's reach.
+  sed 's/float reach = span - 2f \* head;/float reach = span - 1f * head;/' "$BLAST" > "$OUT/BlastOverrun.cs"
+  grep -q 'span - 1f \* head' "$OUT/BlastOverrun.cs"
   BLAST_SRC="$OUT/BlastOverrun.cs" build_and_run "$FORM" "$RULES" fail "blast drawn past its front"
+  # 5. Every beam squashed into the plane: the explosion reads as a flat sheet (the UI's look, never the world's).
+  sed 's/Vector3.forward \* (z \* Mathf.Sin(psi))/Vector3.forward * (0f * Mathf.Sin(psi))/' "$BLAST" > "$OUT/BlastFlat.cs"
+  grep -q '(0f \* Mathf.Sin(psi))' "$OUT/BlastFlat.cs"
+  BLAST_SRC="$OUT/BlastFlat.cs" build_and_run "$FORM" "$RULES" fail "blast drawn flat"
 fi

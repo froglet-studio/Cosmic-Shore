@@ -372,10 +372,11 @@
     // (2026-10-16, after round 4: the whip at 80% of round 4's stiffness; a full pull stops at 40% rigid, keeping 60% of the give - 70% on 2026-10-16, 40% on 2026-10-17)
     cordLooseDamping: 0.4, cordRigidDamping: 14, cordPose: 1600, cordMaxRigidity: 0.4, cordRigidityRate: 12, cordHitCooldown: 0.5,
     ringLaunchSpeed: 240, ringFuseSeconds: 1.1, ringContactRadiusScale: 1,
-    ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, ringBlastBandWidth: 6, rebuildSeconds: 3,
+    ringBlastSeconds: 0.7, ringBlastFallbackRadius: 200, rebuildSeconds: 3,
     // the ring explosion (2026-10-18): 4x as thick as the ring before Charge; its five-fold look (BrittleStarBlastForm)
-    ringBlastThicknessScale: 4, ringBlastSpinDegrees: 108, ringBlastCrestDepth: 2.5, ringBlastPentagonLag: 0.8,
-    ringBlastArmWidth: 6, ringBlastArmWiggle: 0.06, ringBlastArmCurlDegrees: 30, maxSpareRings: 2, ringBlastHitCooldown: 0.5,
+    // (faceted volumes; every thickness a share of the front's radius: "nothing in the environment should ever look flat")
+    ringBlastThicknessScale: 4, ringBlastFrontWidth: 0.05, ringBlastFrontHeight: 0.04, ringBlastRelief: 0.12, ringBlastSpinDegrees: 108,
+    ringBlastCrestDepth: 2.5, ringBlastPentagonLag: 0.8, ringBlastArmWidth: 0.08, ringBlastArmWiggle: 0.06, ringBlastArmCurlDegrees: 30, maxSpareRings: 2, ringBlastHitCooldown: 0.5,
     // its ElementalFloats, level 0 -> 10 (nested in the asset: the map cannot write them, so a change here is made there by hand)
     // prismWidthAt10: MASS on every trail block's x and y, never its length; heatCapacityAt10: SPACE on the heat the guns hold
     speedModeAt0: 6, speedModeAt10: 8, prismWidthAt10: 2, rangeAt10: 2, heatCapacityAt10: 3.3333, projectileScaleAt10: 1.8, blastScaleAt10: 4,
@@ -1283,44 +1284,72 @@
     }
     drawPrisms(W);
   }
-  // ---- BrittleStarBlastForm (C#), line for line: the ring explosion's look in the thrown ring's own frame - the front
-  // at the disk's true edge with five crests where the arms meet it, the ring's pentagon grown, five wriggling arms, all
-  // turning on with the ring's spin. The game extrudes it +-half thick; the studio draws its plane as one double-sided sheet.
-  const BLAST_FRONT_SEGS = 120, BLAST_ARM_SEGS = 12;
+  // ---- BrittleStarBlastForm (C#), line for line: the ring explosion's look in the thrown ring's own frame, as FACETED
+  // VOLUMES (2026-10-18: "nothing in the environment should ever look flat") - the front at the disk's true edge, a
+  // five-faceted torus with five crests where the arms meet it; the ring's pentagon grown, beams with crystal knots; five
+  // arms coiling in and out of the plane, each led by a crystal head - every thickness a share of the front's radius,
+  // all turning on with the ring's spin. Out: flat-shaded triangles (positions and normals, three floats a corner).
+  const BLAST_FRONT_SEGS = 120, BLAST_ARM_SEGS = 12, BLAST_FACETS = 5;
   const blastPhaseAt = (p0, spin, t01) => { const u = 1 - clamp(t01, 0, 1); return p0 + spin * (1 - u * u); };
   function blastCrestAt(theta, phase) { let c = Math.cos(5 * (theta - phase - POD_ANG[0])); if (c <= 0) return 0; c *= c; return c * c; }
-  function blastForm(s, out) {   // out: a flat array of triangle corners (x, y), the plane of BrittleStarBlastForm.Build
-    out.length = 0;
-    const front = Math.max(0.01, s.front), t = clamp(s.t01, 0, 1), fade = Math.sqrt(1 - t), ring = clamp(s.ringRadius, 0, front);
-    const dir = (a) => [Math.cos(a), Math.sin(a)], quad = (a, b, c, d) => out.push(a[0], a[1], b[0], b[1], c[0], c[1], a[0], a[1], c[0], c[1], d[0], d[1]);
-    const at = (a, r) => { const d = dir(a); return [d[0] * r, d[1] * r]; };
-    const band = Math.min(front, Math.max(0.05, s.bandWidth)), crests = s.phase - s.armCurl;
+  function blastForm(s, pos, nrm) {
+    pos.length = 0; nrm.length = 0;
+    const v3 = (x, y, z) => [x, y, z], add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    const mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    const unit = (a) => { const l = Math.hypot(a[0], a[1], a[2]); return l > 1e-9 ? mul(a, 1 / l) : a; };
+    const dir = (a) => v3(Math.cos(a), Math.sin(a), 0), Z = v3(0, 0, 1);
+    const tri = (a, b, c, n) => { pos.push(...a, ...b, ...c); nrm.push(...n, ...n, ...n); };
+    const quad = (a, b, c, d, n) => { tri(a, b, c, n); tri(a, c, d, n); };   // DoubleSide: the winding does not matter here
+    const corner = (c, side, w, z, j) => { const psi = j * Math.PI * 2 / BLAST_FACETS; return add(add(c, mul(side, w * Math.cos(psi))), mul(Z, z * Math.sin(psi))); };
+    const beam = (c0, s0, w0, z0, c1, s1, w1, z1) => {   // BrittleStarBlastForm.Beam
+      for (let j = 0; j < BLAST_FACETS; j++) {
+        const a = corner(c0, s0, w0, z0, j), b = corner(c0, s0, w0, z0, j + 1), c = corner(c1, s1, w1, z1, j + 1), d = corner(c1, s1, w1, z1, j);
+        const mid = mul(add(add(a, b), add(c, d)), 0.25), axis = mul(add(c0, c1), 0.5);
+        let n = cross(sub(c, a), sub(d, b)); if (dot(n, n) < 1e-12) continue; if (dot(n, sub(mid, axis)) < 0) n = mul(n, -1);
+        quad(a, b, c, d, unit(n));
+      }
+    };
+    const crystal = (centre, along, size, depth) => {   // BrittleStarBlastForm.Crystal: a pentagonal bipyramid
+      const axis = dot(along, along) > 1e-8 ? unit(along) : v3(1, 0, 0);
+      let side = cross(Z, axis); if (dot(side, side) < 1e-8) side = v3(0, 1, 0); side = unit(side);
+      const up = unit(cross(axis, side)), tipA = add(centre, mul(axis, size)), tipB = sub(centre, mul(axis, size));
+      const girdle = 0.6 * size, lift = 0.6 * Math.max(0.01, depth);
+      const face = (a, b, c) => { let n = cross(sub(b, a), sub(c, a)); if (dot(n, n) < 1e-12) return; if (dot(n, sub(mul(add(add(a, b), c), 1 / 3), centre)) < 0) n = mul(n, -1); tri(a, b, c, unit(n)); };
+      for (let j = 0; j < BLAST_FACETS; j++) {
+        const p0 = j * Math.PI * 2 / BLAST_FACETS, p1 = (j + 1) * Math.PI * 2 / BLAST_FACETS;
+        const g0 = add(add(centre, mul(side, girdle * Math.cos(p0))), mul(up, lift * Math.sin(p0))), g1 = add(add(centre, mul(side, girdle * Math.cos(p1))), mul(up, lift * Math.sin(p1)));
+        face(tipA, g0, g1); face(tipB, g1, g0);
+      }
+    };
+    const front = Math.max(0.01, s.front), h = Math.max(0.05, s.halfThickness), t = clamp(s.t01, 0, 1), fade = Math.sqrt(1 - t);
+    const ring = clamp(s.ringRadius, 0, front), frontHalfHeight = Math.max(h, 0.5 * s.frontHeight * front), relief = Math.max(frontHalfHeight, s.relief * front);
+    const band = Math.min(front, Math.max(0.05, s.frontWidth * front)), crests = s.phase - s.armCurl;
+    const ringAt = (a) => { const half = 0.5 * Math.min(front, band * (1 + s.crestDepth * blastCrestAt(a, crests))); return [mul(dir(a), front - half), half]; };
     for (let i = 0; i < BLAST_FRONT_SEGS; i++) {
-      const a0 = crests + i * Math.PI * 2 / BLAST_FRONT_SEGS, a1 = crests + (i + 1) * Math.PI * 2 / BLAST_FRONT_SEGS;
-      const in0 = Math.max(0, front - Math.min(front, band * (1 + s.crestDepth * blastCrestAt(a0, crests))));
-      const in1 = Math.max(0, front - Math.min(front, band * (1 + s.crestDepth * blastCrestAt(a1, crests))));
-      quad(at(a0, in0), at(a0, front), at(a1, front), at(a1, in1));
+      const a0 = crests + i * Math.PI * 2 / BLAST_FRONT_SEGS, a1 = crests + (i + 1) * Math.PI * 2 / BLAST_FRONT_SEGS, [c0, r0] = ringAt(a0), [c1, r1] = ringAt(a1);
+      beam(c0, dir(a0), r0, frontHalfHeight, c1, dir(a1), r1, frontHalfHeight);
     }
-    const corner = Math.max(ring, front * clamp(s.pentagonLag, 0, 1)), width = Math.min(corner, band * 0.6 * fade + 0.05), inset = width / Math.cos(Math.PI / 5);
+    const tube = Math.min(relief, 0.2 * s.armWidth * front) * fade + 0.05, cornerR = Math.max(0, front * clamp(s.pentagonLag, 0, 1) - 3 * tube);
     for (let i = 0; i < 5; i++) {
-      const a0 = s.phase + POD_ANG[i], a1 = s.phase + POD_ANG[(i + 1) % 5], inner = Math.max(0, corner - inset);
-      quad(at(a0, inner), at(a0, corner), at(a1, corner), at(a1, inner));
+      const a0 = s.phase + POD_ANG[i], a1 = s.phase + POD_ANG[(i + 1) % 5], p0 = mul(dir(a0), cornerR), p1 = mul(dir(a1), cornerR), side = cross(Z, unit(sub(p1, p0)));
+      beam(p0, side, tube, tube, p1, side, tube, tube); crystal(p0, dir(a0), 3 * tube, Math.min(relief, 3 * tube));
     }
-    const span = front - ring; if (span <= 0.05) return out;
-    const wiggle = s.armWiggle * span;
-    const edge = (root, u) => {   // BrittleStarBlastForm.ArmEdge: the tip pulled in by its half-width, so it stays inside the front
-      const half = 0.5 * Math.max(0.05, s.armWidth) * (1 - 0.7 * u) * fade + 0.025, rho = Math.max(0.01, ring + (span - half) * u);
-      const lateral = wiggle * u * Math.sin(Math.PI * 2 * (1.5 * u - 2.5 * t)), a = root - s.armCurl * u * u + lateral / rho;
-      const al = dir(a), side = [-al[1], al[0]];
-      return [[al[0] * rho + side[0] * half, al[1] * rho + side[1] * half], [al[0] * rho - side[0] * half, al[1] * rho - side[1] * half]];
+    const span = front - ring; if (span <= 0.05) return;
+    const rootRadius = Math.min(relief, 0.5 * s.armWidth * front) * fade + 0.05, head = Math.min(relief, 2.6 * rootRadius), reach = span - 2 * head;
+    if (reach <= 0.05) return;
+    const armPoint = (root, u) => {   // BrittleStarBlastForm.ArmPoint: swung sideways and, a quarter-wave on, out of the plane
+      const radius = rootRadius * (1 - 0.7 * u), wave = Math.PI * 2 * (1.5 * u - 2.5 * t), amplitude = s.armWiggle * reach * u, rho = Math.max(0.01, ring + reach * u);
+      const angle = root - s.armCurl * u * u + amplitude * Math.sin(wave) / rho, z = Math.max(0, relief - radius) * u * Math.cos(wave), along = dir(angle);
+      return [add(mul(along, rho), mul(Z, z)), v3(-along[1], along[0], 0), radius];
     };
     for (let i = 0; i < 5; i++) {
-      const root = s.phase + POD_ANG[i];
-      for (let k = 0; k < BLAST_ARM_SEGS; k++) { const e0 = edge(root, k / BLAST_ARM_SEGS), e1 = edge(root, (k + 1) / BLAST_ARM_SEGS); quad(e0[0], e0[1], e1[1], e1[0]); }
+      const root = s.phase + POD_ANG[i]; let [c0, d0, w0] = armPoint(root, 0);
+      for (let k = 1; k <= BLAST_ARM_SEGS; k++) { const [c1, d1, w1] = armPoint(root, k / BLAST_ARM_SEGS); beam(c0, d0, w0, w0, c1, d1, w1, w1); c0 = c1; d0 = d1; w0 = w1; }
+      const outward = unit(v3(c0[0], c0[1], 0)); crystal(add(c0, mul(outward, head)), outward, head, Math.min(relief - Math.abs(c0[2]), head));
     }
-    return out;
   }
-  const blastScratch = [];
+  const blastPos = [], blastNrm = [];
   const ringPool = [], blastPool = [], faunaPool = [];
   function ringMesh(i) { if (!ringPool[i]) { const r = makeHull(0xffcf8a); r.userData.cockpit.visible = false; ringPool[i] = r; scene.add(r); } return ringPool[i]; }
   function blastMesh(i) {
@@ -1328,8 +1357,10 @@
       const g = new THREE.Group();
       const ball = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffcf8a, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
       const wave = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 64), new THREE.MeshBasicMaterial({ color: 0xffe3b8, transparent: true, opacity: 0.7, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-      const bandGeo = new THREE.BufferGeometry(); bandGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 6 * (BLAST_FRONT_SEGS + 5 + 5 * BLAST_ARM_SEGS)), 3));
-      const band = new THREE.Mesh(bandGeo, new THREE.MeshBasicMaterial({ color: 0xffe3b8, transparent: true, opacity: 0.85, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      const bandMax = 3 * (6 * BLAST_FACETS * (BLAST_FRONT_SEGS + 5 + 5 * BLAST_ARM_SEGS) + 3 * 2 * BLAST_FACETS * 10), bandGeo = new THREE.BufferGeometry();
+      bandGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(bandMax), 3)); bandGeo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(bandMax), 3));
+      // lit and faceted, as the game's domain material lights it (never an additive flat sheet: that look is the UI's)
+      const band = new THREE.Mesh(bandGeo, new THREE.MeshStandardMaterial({ color: 0xffe3b8, emissive: 0x000000, roughness: 0.35, metalness: 0.1, flatShading: true, side: THREE.DoubleSide, transparent: true }));
       band.frustumCulled = false;
       g.add(ball, wave, band); g.userData = { ball, wave, band }; blastPool[i] = g; scene.add(g);
     }
@@ -1366,13 +1397,14 @@
         const m = blastMesh(k++), u = m.userData; m.visible = true; m.position.copy(b.pos); m.quaternion.copy(b.quat);
         u.ball.visible = false; u.wave.visible = false; u.band.visible = true; u.band.scale.setScalar(1);
         const t01 = Math.min(1, b.t / U.ringBlastSeconds), spin = U.ringBlastSpinDegrees * Math.PI / 180;   // the studio's ring spins + (R.t * 9)
-        blastForm({ ringRadius: b.inner, front: Math.max(0.01, b.r), t01, bandWidth: U.ringBlastBandWidth, phase: blastPhaseAt(b.phase0 || 0, spin, t01),
-          crestDepth: U.ringBlastCrestDepth, pentagonLag: U.ringBlastPentagonLag, armWidth: U.ringBlastArmWidth, armWiggle: U.ringBlastArmWiggle,
-          armCurl: U.ringBlastArmCurlDegrees * Math.PI / 180 }, blastScratch);
-        const pa = u.band.geometry.attributes.position;
-        for (let q = 0, n = blastScratch.length / 2; q < pa.count; q++) { if (q < n) pa.setXYZ(q, blastScratch[2 * q], blastScratch[2 * q + 1], 0); else pa.setXYZ(q, 0, 0, 0); }
-        pa.needsUpdate = true;
-        u.band.material.color.set(W.pilots[b.owner].domain.color); u.band.material.opacity = 0.9 * fade; continue;
+        blastForm({ ringRadius: b.inner, front: Math.max(0.01, b.r), halfThickness: b.half, t01, frontWidth: U.ringBlastFrontWidth, frontHeight: U.ringBlastFrontHeight,
+          relief: U.ringBlastRelief, phase: blastPhaseAt(b.phase0 || 0, spin, t01), crestDepth: U.ringBlastCrestDepth, pentagonLag: U.ringBlastPentagonLag,
+          armWidth: U.ringBlastArmWidth, armWiggle: U.ringBlastArmWiggle, armCurl: U.ringBlastArmCurlDegrees * Math.PI / 180 }, blastPos, blastNrm);
+        const pa = u.band.geometry.attributes.position, na = u.band.geometry.attributes.normal, nv = Math.min(pa.count, blastPos.length / 3);
+        pa.array.set(blastPos.length > pa.array.length ? blastPos.slice(0, pa.array.length) : blastPos); na.array.set(blastNrm.length > na.array.length ? blastNrm.slice(0, na.array.length) : blastNrm);
+        u.band.geometry.setDrawRange(0, nv); pa.needsUpdate = true; na.needsUpdate = true;
+        u.band.material.emissive.set(W.pilots[b.owner].domain.color).multiplyScalar(0.45);
+        u.band.material.color.set(W.pilots[b.owner].domain.color); u.band.material.opacity = fade; continue;
       }
       if (b.t > 1.1) continue; const m = blastMesh(k++), u = m.userData, e = 1 - Math.pow(1 - Math.min(1, b.t / 0.5), 3);
       m.visible = true; m.position.copy(b.pos); m.quaternion.copy(b.quat); u.ball.visible = true; u.wave.visible = true; u.band.visible = false;
@@ -1642,9 +1674,12 @@
     ['ring', 'ringBlastThicknessScale', 'Disk thickness', 1, 10, 0.5, 'ringBlastThicknessScale: the disk\'s thickness before Charge, over the ring\'s own (Garrett, 2026-10-18: x4).'],
     ['ring', 'blastScaleAt10', 'Disk at Charge 10', 1, 8, 0.5, 'blastScale at Charge 10: the disk\'s thickness on top of that (x1 at Charge 0).'],
     ['ring', 'ringBlastSpinDegrees', 'Burst spin', 0, 720, 6, 'ringBlastSpinDegrees: how far the five-fold burst turns on after the blast, keeping the thrown ring\'s spin and braking to a stop.'],
-    ['ring', 'ringBlastCrestDepth', 'Crests', 0, 10, 0.25, 'ringBlastCrestDepth: each of the front\'s five crests (where the arms meet it) is this much wider than the band.'],
+    ['ring', 'ringBlastCrestDepth', 'Crests', 0, 10, 0.25, 'ringBlastCrestDepth: each of the front\'s five crests (where the arms meet it) is this much wider than the front.'],
     ['ring', 'ringBlastPentagonLag', 'Ring echo', 0, 1, 0.05, 'ringBlastPentagonLag: the thrown ring\'s pentagon grows with the blast, its corners at this share of the front.'],
-    ['ring', 'ringBlastArmWidth', 'Arm width', 0.5, 30, 0.5, 'ringBlastArmWidth: each of the five arms at its root, u; it tapers to 30% and thins as the blast spends itself.'],
+    ['ring', 'ringBlastFrontWidth', 'Front width', 0.005, 0.2, 0.005, 'ringBlastFrontWidth: the front\'s radial width, x its radius (the look scales with the blast so it never reads flat).'],
+    ['ring', 'ringBlastFrontHeight', 'Front height', 0.005, 0.2, 0.005, 'ringBlastFrontHeight: the front\'s height, x its radius (never thinner than the disk).'],
+    ['ring', 'ringBlastRelief', 'Relief', 0, 0.3, 0.01, 'ringBlastRelief: how far the arms, the ring and their crystals stand out of the plane, x the front\'s radius.'],
+    ['ring', 'ringBlastArmWidth', 'Arm width', 0.005, 0.3, 0.005, 'ringBlastArmWidth: each of the five arms at its root, x the front\'s radius; it tapers to 30% at its crystal head.'],
     ['ring', 'ringBlastArmWiggle', 'Arm wriggle', 0, 0.3, 0.01, 'ringBlastArmWiggle: how far each arm wriggles sideways, x its length.'],
     ['ring', 'ringBlastArmCurlDegrees', 'Arm curl', 0, 90, 1, 'ringBlastArmCurlDegrees: how far each arm\'s tip trails its root, against the spin (a pinwheel).'],
     ['ring', 'nucleusRadius', 'Nucleus', 100, 800, 10, 'The disk\'s radius: the cell\'s nucleus (392 for the standard cell). Lab-only: the game reads the real cell.'],

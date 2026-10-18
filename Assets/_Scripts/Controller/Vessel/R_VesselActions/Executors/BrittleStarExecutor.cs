@@ -1173,9 +1173,9 @@ namespace CosmicShore.Gameplay
             _idleBands.Add(band);
         }
 
-        /// <summary>The explosion's look at this moment (<see cref="BrittleStarBlastForm"/>): the front at the disk's true
-        /// edge with five crests, the thrown ring's pentagon grown, five wriggling arms, all turning on with the ring's spin.
-        /// The lists are reused, so a frame allocates nothing but the mesh upload.</summary>
+        /// <summary>The explosion's look at this moment (<see cref="BrittleStarBlastForm"/>): faceted volumes - the front at
+        /// the disk's true edge with five crests, the thrown ring's pentagon grown, five coiling arms led by crystals - all
+        /// turning on with the ring's spin. The lists are reused, so a frame allocates nothing but the mesh upload.</summary>
         void BuildBand(Mesh mesh, in Wave wave, float radius, float t01)
         {
             float spinSign = config.RingFlightSpin < 0f ? -1f : 1f;
@@ -1184,7 +1184,8 @@ namespace CosmicShore.Gameplay
                 RingRadius = wave.InnerRadius,
                 Front = radius,
                 HalfThickness = wave.HalfThickness,
-                BandWidth = config.RingBlastBandWidth,
+                FrontWidth = config.RingBlastFrontWidth,
+                FrontHeight = config.RingBlastFrontHeight,
                 Phase = BrittleStarBlastForm.PhaseAt(0f, spinSign * config.RingBlastSpinDegrees * Mathf.Deg2Rad, t01),
                 T01 = t01,
                 CrestDepth = config.RingBlastCrestDepth,
@@ -1192,6 +1193,7 @@ namespace CosmicShore.Gameplay
                 ArmWidth = config.RingBlastArmWidth,
                 ArmWiggle = config.RingBlastArmWiggle,
                 ArmCurl = spinSign * config.RingBlastArmCurlDegrees * Mathf.Deg2Rad,
+                Relief = config.RingBlastRelief,
             };
             BrittleStarBlastForm.Build(form, _bandVerts, _bandNormals, _bandTris);
             mesh.Clear();

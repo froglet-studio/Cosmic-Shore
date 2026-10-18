@@ -202,21 +202,30 @@ struts — the shipped hull still has physical arms (follow-up F8).
     mass" (shields pop first; super-shielded mass refuses: `Prism.Damage`);
   - **stripping petals** from every rival hull it passes: a scored `MissileBlast` hit through `CombatHitDrain`, once per
     hull per explosion (petals only — nothing is moved);
-  - **drawn five-fold, out of the ring that blew** (Garrett, 2026-10-18: "a fun effect with 5 fold symmetry that looks
-    awesome and like it came from the ring that exploded"; `BrittleStarBlastForm`, pure, tested), in the domain's colour,
-    as thick as the disk, in the thrown ring's own frame and turning on with its spin (`ringBlastSpinDegrees` 108°,
-    braking to a stop over the sweep):
-    - **the front** — the annulus at the disk's true edge (`ringBlastBandWidth` 6 u) with **five crests**
-      (`ringBlastCrestDepth` ×2.5 wider) where the arms meet it;
-    - **the ring, grown** — the thrown ring's own pentagon, its corners at `ringBlastPentagonLag` 0.8 of the front;
-    - **five arms**, the animal's — one from each of the ring's points out to its crest, `ringBlastArmWidth` 6 u at the
-      root tapering to 30%, curling back `ringBlastArmCurlDegrees` 30° against the spin and wriggling sideways
-      (`ringBlastArmWiggle` 0.06 of their length) with a wave that runs root to tip, thinning as the blast spends itself.
-    **Honest by construction** (tested, with a negative control): every vertex lies inside the disk that does the damage,
-    so the look never shows the blast reaching where it does not; the shape maps onto itself turned a fifth of a turn.
-    One pooled dynamic mesh per live explosion, ~3,000 vertices rebuilt a frame for 0.7 s (the lists are reused; the
-    mesh upload is the cost). The Vessel Studio page draws the same shape (`blastForm`, its line-for-line twin, matched
-    to the C# within 0.001 u).
+  - **drawn five-fold, out of the ring that blew, as faceted VOLUMES** (Garrett, 2026-10-18: "a fun effect with 5
+    fold symmetry that looks awesome and like it came from the ring that exploded", then "nothing in the environment
+    should ever look flat like this, that is reserved for ui" - `Docs/claude/SHADERS_AND_PERFORMANCE.md`;
+    `BrittleStarBlastForm`, pure, tested), in the domain's lit material, in the thrown ring's own frame and turning on
+    with its spin (`ringBlastSpinDegrees` 108°, braking to a stop over the sweep). Every part is a beam with five flat
+    facets round it (the prism-cut read of the hull and the crystals), and **every thickness is a share of the front's
+    radius**, so it reads as a volume at any size:
+    - **the front** — a faceted torus whose outer ridge is the disk's true edge, `ringBlastFrontWidth` 0.05 × the radius
+      wide and `ringBlastFrontHeight` 0.04 high, swelling into **five crests** (`ringBlastCrestDepth` ×2.5) where the arms
+      meet it;
+    - **the ring, grown** — the thrown ring's own pentagon as faceted beams with a **crystal knot** at each corner, its
+      corners at `ringBlastPentagonLag` 0.8 of the front;
+    - **five arms**, the animal's — tapered faceted beams (`ringBlastArmWidth` 0.08 × the radius at the root, 30% at the
+      tip) from each of the ring's points, curling back `ringBlastArmCurlDegrees` 30° against the spin, swinging sideways
+      (`ringBlastArmWiggle` 0.06 of their length) and, a quarter-wave on, **coiling out of the plane** within
+      `ringBlastRelief` 0.12 × the radius; each is led by a **crystal head** (the ring's pod, flying out) that meets the
+      front at its crest. The arms and the ring thin as the blast spends itself.
+    **Honest where it counts** (tested, with negative controls): nothing is drawn past the front, so the edge shows
+    exactly how far the blast reaches. The disk that does the damage is only 1.76-7 u thick, so the volume necessarily
+    stands above and below it (the front ±2% of the radius, the arms and crystals within ±12%): that overstates the
+    reach out of the plane, never along it. The shape maps onto itself turned a fifth of a turn, and a flat version fails
+    `Blast_IsAVolume_NotAFlatSheet`. One pooled dynamic mesh per live explosion, ~5,900 vertices rebuilt a frame for
+    0.7 s (lists reused; the mesh upload is the cost). The Vessel Studio page draws the same shape lit and flat-shaded
+    (`blastForm`, its line-for-line twin, matched to the C# within 0.001 u).
   The fleet AOE prefab and the plane wave of the first cut are retired.
 - **The ring stock** (Garrett, 2026-10-16: "only let them shoot the ring if they have a spare one that automatically
   regrows. they can store two extra rings, and they get 1 ring per crystal"; `BrittleStarRules.RingState`, tested):
@@ -352,8 +361,9 @@ identical on the Stoat and Sparrow and shared by all 16 vessel prefabs — inher
 | `ringLaunchSpeed` / `ringFuseSeconds` | `BrittleStarConfig` | 240 u/s / 1.1 s |
 | `ringBlastThicknessScale` (the disk's thickness before Charge) | `BrittleStarConfig` | ×4 the ring's (2026-10-18) |
 | `blastScale` (Charge — the disk's thickness, on top) | `BrittleStarConfig` | 1 → 4 (so 4 → 16 × the ring's 0.22 u half-thickness) |
-| The look: `ringBlastSpinDegrees` / `ringBlastCrestDepth` / `ringBlastPentagonLag` / `ringBlastArmWidth` / `ringBlastArmWiggle` / `ringBlastArmCurlDegrees` | `BrittleStarConfig` | 108° / ×2.5 / 0.8 / 6 u / 0.06 / 30° |
-| `ringBlastSeconds` / `ringBlastFallbackRadius` / `ringBlastBandWidth` | `BrittleStarConfig` | 0.7 s / 200 u / 6 u (radius = the cell's nucleus) |
+| The look (shares of the front's radius): `ringBlastFrontWidth` / `ringBlastFrontHeight` / `ringBlastArmWidth` / `ringBlastRelief` | `BrittleStarConfig` | 0.05 / 0.04 / 0.08 / 0.12 |
+| The look: `ringBlastSpinDegrees` / `ringBlastCrestDepth` / `ringBlastPentagonLag` / `ringBlastArmWiggle` / `ringBlastArmCurlDegrees` | `BrittleStarConfig` | 108° / ×2.5 / 0.8 / 0.06 / 30° |
+| `ringBlastSeconds` / `ringBlastFallbackRadius` | `BrittleStarConfig` | 0.7 s / 200 u (radius = the cell's nucleus) |
 | `ringBlastHitClass` / `ringBlastHitCooldown` | `BrittleStarConfig` | MissileBlast / 0.5 s |
 | `maxSpareRings` / `rebuildSeconds` | `BrittleStarConfig` | 2 / 3 s (regrowth) |
 | AI thresholds | `BrittleStarConfig` | fire ≥ 2, Space / Charge ≥ 8, detonate ≥ 18 |
@@ -398,9 +408,10 @@ None of that is a play test. In order:
    a second.
 8. **LT** with no spare ring: nothing happens. Collect a **crystal**: the Charge card fills half (one spare); another:
    full (two); a third: still two. **LT**: the ring flies off and blows in the nucleus-wide disk (a flat slice, now four
-   times thicker, through every prism in its plane; a rival it crosses loses petals). Watch it from behind: it bursts out
-   of the ring as five wriggling arms curling back like a pinwheel, the ring's own pentagon growing, and the front with
-   five crests where the arms meet it, all still turning with the ring's spin; a new ring blooms back on the hull over 3 s
+   times thicker, through every prism in its plane; a rival it crosses loses petals). Watch it from behind and from the side: it bursts
+   out of the ring as faceted, lit volumes - five arms coiling in and out of the plane like a pinwheel, each led by a
+   crystal, the ring's own pentagon growing with crystal knots, and a faceted torus front with five crests where the arms
+   meet it - all still turning with the ring's spin. Nothing in it should read flat from any angle; a new ring blooms back on the hull over 3 s
    and the card drops a step. The hull is never ringless; the modes drop out only for those three seconds.
 9. **HUD**: four cards, charge → mass → space → time; each turns lime while its mode is on. Run **FrogletTools ▸ Vessels
    ▸ Audit Vessel Ability Rows**, **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (expect: procedural, four

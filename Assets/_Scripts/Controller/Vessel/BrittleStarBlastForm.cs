@@ -10,19 +10,29 @@ namespace CosmicShore.Gameplay
     /// Unity object, so <c>BrittleStarTests</c> run it as-is and the studio page draws the same shape (Garrett,
     /// 2026-10-18: "a fun effect with 5 fold symmetry that looks awesome and like it came from the ring that exploded").
     ///
-    /// <para>Three parts, all as thick as the disk, all turning together. The phase starts at the ring's angle when it
-    /// blew and keeps the ring's spin, braking to a stop (<see cref="PhaseAt"/>):
+    /// <para><b>Nothing in it is flat</b> (Garrett, 2026-10-18: "nothing in the environment should ever look flat like
+    /// this, that is reserved for ui"). Every part is a faceted VOLUME with five flat-shaded facets round it - the
+    /// prism-cut read of the hull, the crystals and the prisms - so the domain material lights it like the hull:
     /// <list type="bullet">
-    /// <item><b>The front</b>: the annulus at the disk's true edge (what the blast reaches), with five CRESTS where it
-    /// thickens inward, one where each arm meets it - as if the arms drive the wave out.</item>
-    /// <item><b>The ring, grown</b>: the thrown ring's own pentagon, expanding a little behind the front.</item>
-    /// <item><b>Five arms</b>: the animal's, one from each of the ring's points out to its crest, curling back against the
-    /// spin and wriggling with a wave that runs from root to tip, thinning as the blast spends itself.</item>
-    /// </list></para>
+    /// <item><b>The front</b>: a faceted torus at the disk's true edge, its outer ridge exactly the blast's reach and
+    /// its height exactly the disk's, swelling inward into five CRESTS where the arms meet it.</item>
+    /// <item><b>The ring, grown</b>: the thrown ring's own pentagon, faceted beams with a crystal KNOT at each corner,
+    /// expanding behind the front.</item>
+    /// <item><b>Five arms</b>, the animal's: tapered faceted beams from each of the ring's points out to its crest,
+    /// curling back against the spin and coiling in and out of the plane (a wave running root to tip), each led by a
+    /// crystal HEAD - the ring's pod, flying out.</item>
+    /// </list>
+    /// All of it turns together: the phase starts at the ring's angle when it blew and keeps the ring's spin, braking to
+    /// a stop (<see cref="PhaseAt"/>), and the arms and the ring thin as the blast spends itself.</para>
     ///
-    /// <para><b>Honest by construction</b> (tested): every vertex lies inside the disk that does the damage — within
-    /// <see cref="Settings.Front"/> of the centre and <see cref="Settings.HalfThickness"/> of its plane — so the effect
-    /// never shows the blast reaching where it does not. And the shape maps onto itself turned by a fifth of a turn.</para>
+    /// <para><b>It scales with the blast</b>: every thickness is a share of the front's radius, so a beam reads as a
+    /// volume from the hull whether the disk is 80 u or 780 u across (a few units of beam across a nucleus-wide disk read
+    /// as wire, which is flat again).</para>
+    ///
+    /// <para><b>Honest where it counts</b> (tested): nothing is drawn past the front, so the edge shows exactly how far
+    /// the blast reaches. The disk that does the damage is only a couple of units thick, so the volume necessarily stands
+    /// above and below it: the front by <see cref="Settings.FrontHeight"/>, the arms, the ring and their crystals within
+    /// <see cref="Settings.Relief"/>. The shape maps onto itself turned by a fifth of a turn.</para>
     /// </summary>
     public static class BrittleStarBlastForm
     {
@@ -30,20 +40,24 @@ namespace CosmicShore.Gameplay
         public const int FrontSegments = 120;
         /// <summary>Segments along each arm.</summary>
         public const int ArmSegments = 12;
+        /// <summary>Facets round every beam: five, the class's number.</summary>
+        public const int Facets = 5;
 
         public struct Settings
         {
             public float RingRadius;       // the thrown ring's radius: where the arms start
             public float Front;            // the disk's radius now (its true edge)
-            public float HalfThickness;    // the disk's half-thickness
-            public float BandWidth;        // the front annulus's width between crests
+            public float HalfThickness;    // the disk's half-thickness: the front is never thinner
+            public float FrontWidth;       // the front's radial width between crests, x the front's radius
+            public float FrontHeight;      // the front's height, x the front's radius
             public float Phase;            // radians: the ring's rotation now (PhaseAt)
             public float T01;              // 0 the blast, 1 spent
             public float CrestDepth;       // a crest's extra width, x BandWidth
             public float PentagonLag;      // the grown ring's corners at this share of the front
-            public float ArmWidth;         // an arm's width at its root, world units
-            public float ArmWiggle;        // the arms' sideways wave, x their length
+            public float ArmWidth;         // an arm's diameter at its root, x the front's radius
+            public float ArmWiggle;        // the arms' sideways wave, x their length (the coil out of the plane fills the relief)
             public float ArmCurl;          // radians the arm's tip trails its root, against the spin
+            public float Relief;           // how far the arms, the ring and their crystals may stand out of the plane, x the front's radius
         }
 
         /// <summary>The ring's rotation <paramref name="t01"/> of the way through the blast: its angle when it blew,
@@ -65,9 +79,10 @@ namespace CosmicShore.Gameplay
             return c * c;
         }
 
-        /// <summary>Clear the lists and fill them with the explosion at <paramref name="s"/>. Flat-shaded quads (four
-        /// unshared vertices each), wound so Unity's front face looks along the normal.</summary>
-        public static void Build(in Settings s, List<Vector3> verts, List<Vector3> normals, List<int> tris)
+        /// <summary>Clear the lists and fill them with the explosion at <paramref name="s"/>: flat-shaded facets (every
+        /// face its own vertices), wound so Unity's front face looks along the normal. Returns how many of the vertices
+        /// are the FRONT's (they come first).</summary>
+        public static int Build(in Settings s, List<Vector3> verts, List<Vector3> normals, List<int> tris)
         {
             verts.Clear(); normals.Clear(); tris.Clear();
             float front = Mathf.Max(0.01f, s.Front);
@@ -75,82 +90,144 @@ namespace CosmicShore.Gameplay
             float t = Mathf.Clamp01(s.T01);
             float fade = Mathf.Sqrt(1f - t);
             float ring = Mathf.Clamp(s.RingRadius, 0f, front);
+            float frontHalfHeight = Mathf.Max(h, 0.5f * s.FrontHeight * front);
+            float relief = Mathf.Max(frontHalfHeight, s.Relief * front);
+            int n = BrittleStarHullForm.Points;
 
-            // The front: an annulus at the true edge, its inner edge pushed in at the five crests, where the arms meet it.
-            float band = Mathf.Min(front, Mathf.Max(0.05f, s.BandWidth));
+            // The front: a faceted torus whose outer ridge is the true edge. Its radial half-width swells at the five
+            // crests, where the arms meet it.
+            float band = Mathf.Min(front, Mathf.Max(0.05f, s.FrontWidth * front));
             float crests = s.Phase - s.ArmCurl;
             for (int i = 0; i < FrontSegments; i++)
             {
                 float a0 = crests + i * Mathf.PI * 2f / FrontSegments, a1 = crests + (i + 1) * Mathf.PI * 2f / FrontSegments;
-                float in0 = Mathf.Max(0f, front - Mathf.Min(front, band * (1f + s.CrestDepth * CrestAt(a0, crests))));
-                float in1 = Mathf.Max(0f, front - Mathf.Min(front, band * (1f + s.CrestDepth * CrestAt(a1, crests))));
-                Slab(verts, normals, tris, Dir(a0) * in0, Dir(a0) * front, Dir(a1) * front, Dir(a1) * in1, h, true, true);
+                Ring(front, band, s.CrestDepth, crests, a0, out var c0, out var r0);
+                Ring(front, band, s.CrestDepth, crests, a1, out var c1, out var r1);
+                Beam(verts, normals, tris, c0, Dir(a0), r0, frontHalfHeight, c1, Dir(a1), r1, frontHalfHeight);
             }
+            int frontVertices = verts.Count;
 
-            // The ring, grown: its pentagon, corners at the lag behind the front (never inside the ring's own radius).
-            int n = BrittleStarHullForm.Points;
-            float corner = Mathf.Max(ring, front * Mathf.Clamp01(s.PentagonLag));
-            float width = Mathf.Min(corner, band * 0.6f * fade + 0.05f);
-            float inset = width / Mathf.Cos(Mathf.PI / n);   // along the corner's bisector, so every side is `width` wide
+            // The ring, grown: its pentagon as five faceted beams, a crystal knot at each corner.
+            float tube = Mathf.Min(relief, 0.2f * s.ArmWidth * front) * fade + 0.05f;
+            float corner = Mathf.Max(0f, front * Mathf.Clamp01(s.PentagonLag) - 3f * tube);   // the knot's tip at the lag
             for (int i = 0; i < n; i++)
             {
                 float a0 = s.Phase + BrittleStarHullForm.PointAngle(i), a1 = s.Phase + BrittleStarHullForm.PointAngle((i + 1) % n);
-                float inner = Mathf.Max(0f, corner - inset);
-                Slab(verts, normals, tris, Dir(a0) * inner, Dir(a0) * corner, Dir(a1) * corner, Dir(a1) * inner, h, true, true);
+                Vector3 p0 = Dir(a0) * corner, p1 = Dir(a1) * corner;
+                Vector3 side = Vector3.Cross(Vector3.forward, (p1 - p0).normalized);
+                Beam(verts, normals, tris, p0, side, tube, tube, p1, side, tube, tube);
+                Crystal(verts, normals, tris, p0, Dir(a0), 3f * tube, Mathf.Min(relief, 3f * tube));
             }
 
-            // Five arms: from each of the ring's points to its crest, curling back and wriggling, thinner toward the tip.
+            // Five arms: from each of the ring's points to its crest, curling back and coiling in and out of the plane,
+            // thinner toward the tip, each led by a crystal head. The head's far point stays inside the front.
             float span = front - ring;
-            if (span <= 0.05f) return;
-            float wiggle = s.ArmWiggle * span;
+            if (span <= 0.05f) return frontVertices;
+            float rootRadius = Mathf.Min(relief, 0.5f * s.ArmWidth * front) * fade + 0.05f;
+            float head = Mathf.Min(relief, 2.6f * rootRadius);
+            float reach = span - 2f * head;
+            if (reach <= 0.05f) return frontVertices;
             for (int i = 0; i < n; i++)
             {
                 float root = s.Phase + BrittleStarHullForm.PointAngle(i);
-                for (int k = 0; k < ArmSegments; k++)
+                ArmPoint(s, root, ring, reach, rootRadius, relief, t, 0f, out var c0, out var d0, out var w0);
+                for (int k = 1; k <= ArmSegments; k++)
                 {
-                    ArmEdge(s, root, ring, span, wiggle, fade, t, k / (float)ArmSegments, out var l0, out var r0);
-                    ArmEdge(s, root, ring, span, wiggle, fade, t, (k + 1) / (float)ArmSegments, out var l1, out var r1);
-                    Slab(verts, normals, tris, l0, r0, r1, l1, h, true, true);
+                    ArmPoint(s, root, ring, reach, rootRadius, relief, t, k / (float)ArmSegments, out var c1, out var d1, out var w1);
+                    Beam(verts, normals, tris, c0, d0, w0, w0, c1, d1, w1, w1);
+                    c0 = c1; d0 = d1; w0 = w1;
                 }
+                Vector3 outward = new Vector3(c0.x, c0.y, 0f).normalized;
+                Crystal(verts, normals, tris, c0 + outward * head, outward, head, Mathf.Min(relief - Mathf.Abs(c0.z), head));
             }
+            return frontVertices;
         }
 
-        /// <summary>An arm's left and right edge <paramref name="u"/> of the way from root (the ring) to tip (the front).
-        /// The tip is pulled in by its half-width so even its corners stay inside the front.</summary>
-        static void ArmEdge(in Settings s, float root, float ring, float span, float wiggle, float fade, float t, float u,
-                            out Vector3 left, out Vector3 right)
+        /// <summary>The front's centre line and radial half-width at angle <paramref name="a"/>: its outer ridge at the
+        /// front exactly.</summary>
+        static void Ring(float front, float band, float crestDepth, float crests, float a, out Vector3 centre, out float half)
         {
-            float half = 0.5f * Mathf.Max(0.05f, s.ArmWidth) * (1f - 0.7f * u) * fade + 0.025f;
-            float rho = Mathf.Max(0.01f, ring + (span - half) * u);
-            float lateral = wiggle * u * Mathf.Sin(Mathf.PI * 2f * (1.5f * u - 2.5f * t));
-            float angle = root - s.ArmCurl * u * u + lateral / rho;
-            Vector3 along = Dir(angle), side = new(-along.y, along.x, 0f);
-            Vector3 c = along * rho;
-            left = c + side * half;
-            right = c - side * half;
+            half = 0.5f * Mathf.Min(front, band * (1f + crestDepth * CrestAt(a, crests)));
+            centre = Dir(a) * (front - half);
+        }
+
+        /// <summary>An arm's centre <paramref name="u"/> of the way from root (the ring) to its head, the in-plane
+        /// direction square to it (its beam's width axis), and its radius there. The wave swings it sideways and, a
+        /// quarter-wave on, out of the plane - a coil - within the relief.</summary>
+        static void ArmPoint(in Settings s, float root, float ring, float reach, float rootRadius, float relief, float t,
+                             float u, out Vector3 centre, out Vector3 side, out float radius)
+        {
+            radius = rootRadius * (1f - 0.7f * u);
+            float wave = Mathf.PI * 2f * (1.5f * u - 2.5f * t);
+            float amplitude = s.ArmWiggle * reach * u;
+            float rho = Mathf.Max(0.01f, ring + reach * u);
+            float angle = root - s.ArmCurl * u * u + amplitude * Mathf.Sin(wave) / rho;
+            float z = Mathf.Max(0f, relief - radius) * u * Mathf.Cos(wave);
+            Vector3 along = Dir(angle);
+            centre = along * rho + Vector3.forward * z;
+            side = new Vector3(-along.y, along.x, 0f);
         }
 
         static Vector3 Dir(float a) => new(Mathf.Cos(a), Mathf.Sin(a), 0f);
 
-        /// <summary>A flat quad (a, b, c, d in the plane, a→b the "outward" edge pair) extruded ±<paramref name="h"/>: top,
-        /// bottom and, where asked, its two side walls (b–c the outer, d–a the inner).</summary>
-        static void Slab(List<Vector3> v, List<Vector3> nrm, List<int> tri, Vector3 a, Vector3 b, Vector3 c, Vector3 d,
-                         float h, bool outerWall, bool innerWall)
+        /// <summary>A faceted beam from <paramref name="c0"/> to <paramref name="c1"/>: a pentagon at each end, its
+        /// corners at ±<c>w</c> along the in-plane axis <paramref name="s0"/> / <paramref name="s1"/> (the first corner
+        /// points that way) and ±<c>z</c> out of the plane; five flat facets between them. Consecutive beams share their
+        /// end pentagons, so a chain of them reads as one faceted tube.</summary>
+        static void Beam(List<Vector3> v, List<Vector3> nrm, List<int> tri, Vector3 c0, Vector3 s0, float w0, float z0,
+                         Vector3 c1, Vector3 s1, float w1, float z1)
         {
-            Vector3 f = Vector3.forward * h;
-            Quad(v, nrm, tri, a + f, b + f, c + f, d + f, Vector3.forward);
-            Quad(v, nrm, tri, d - f, c - f, b - f, a - f, Vector3.back);
-            if (outerWall) Quad(v, nrm, tri, b + f, b - f, c - f, c + f, Outward(b, c, a));
-            if (innerWall) Quad(v, nrm, tri, d + f, d - f, a - f, a + f, Outward(d, a, b));
+            for (int j = 0; j < Facets; j++)
+            {
+                Vector3 a = Corner(c0, s0, w0, z0, j), b = Corner(c0, s0, w0, z0, j + 1);
+                Vector3 c = Corner(c1, s1, w1, z1, j + 1), d = Corner(c1, s1, w1, z1, j);
+                Vector3 mid = (a + b + c + d) * 0.25f, axis = (c0 + c1) * 0.5f;
+                Vector3 n = Vector3.Cross(c - a, d - b);
+                if (n.sqrMagnitude < 1e-12f) continue;
+                if (Vector3.Dot(n, mid - axis) < 0f) n = -n;
+                Quad(v, nrm, tri, a, b, c, d, n.normalized);
+            }
         }
 
-        /// <summary>The in-plane normal of edge p→q pointing away from <paramref name="away"/>.</summary>
-        static Vector3 Outward(Vector3 p, Vector3 q, Vector3 away)
+        static Vector3 Corner(Vector3 centre, Vector3 side, float w, float z, int j)
         {
-            Vector3 e = q - p, n = new(e.y, -e.x, 0f);
-            if (n.sqrMagnitude < 1e-12f) n = new Vector3(p.x, p.y, 0f);
-            if (Vector3.Dot(n, (p + q) * 0.5f - away) < 0f) n = -n;
-            return n.sqrMagnitude > 1e-12f ? n.normalized : Vector3.right;
+            float psi = j * Mathf.PI * 2f / Facets;
+            return centre + side * (w * Mathf.Cos(psi)) + Vector3.forward * (z * Mathf.Sin(psi));
+        }
+
+        /// <summary>A pentagonal bipyramid - a crystal - at <paramref name="centre"/>, its two tips ±<paramref name="along"/>
+        /// × <paramref name="size"/>, its girdle <paramref name="size"/> × 0.6 wide and ±<paramref name="depth"/> × 0.6
+        /// out of the plane.</summary>
+        static void Crystal(List<Vector3> v, List<Vector3> nrm, List<int> tri, Vector3 centre, Vector3 along, float size,
+                            float depth)
+        {
+            Vector3 axis = along.sqrMagnitude > 1e-8f ? along.normalized : Vector3.right;
+            Vector3 side = Vector3.Cross(Vector3.forward, axis);
+            if (side.sqrMagnitude < 1e-8f) side = Vector3.up;
+            side = side.normalized;
+            Vector3 up = Vector3.Cross(axis, side).normalized;
+            Vector3 tipA = centre + axis * size, tipB = centre - axis * size;
+            float girdle = 0.6f * size, lift = 0.6f * Mathf.Max(0.01f, depth);
+            for (int j = 0; j < Facets; j++)
+            {
+                float p0 = j * Mathf.PI * 2f / Facets, p1 = (j + 1) * Mathf.PI * 2f / Facets;
+                Vector3 g0 = centre + side * (girdle * Mathf.Cos(p0)) + up * (lift * Mathf.Sin(p0));
+                Vector3 g1 = centre + side * (girdle * Mathf.Cos(p1)) + up * (lift * Mathf.Sin(p1));
+                Tri(v, nrm, tri, tipA, g0, g1, centre);
+                Tri(v, nrm, tri, tipB, g1, g0, centre);
+            }
+        }
+
+        static void Tri(List<Vector3> v, List<Vector3> nrm, List<int> tri, Vector3 a, Vector3 b, Vector3 c, Vector3 inside)
+        {
+            Vector3 n = Vector3.Cross(b - a, c - a);
+            if (n.sqrMagnitude < 1e-12f) return;
+            if (Vector3.Dot(n, (a + b + c) / 3f - inside) < 0f) { (b, c) = (c, b); n = -n; }
+            int i0 = v.Count;
+            v.Add(a); v.Add(b); v.Add(c);
+            n = n.normalized;
+            nrm.Add(n); nrm.Add(n); nrm.Add(n);
+            tri.Add(i0); tri.Add(i0 + 1); tri.Add(i0 + 2);
         }
 
         static void Quad(List<Vector3> v, List<Vector3> nrm, List<int> tri, Vector3 a, Vector3 b, Vector3 c, Vector3 d,

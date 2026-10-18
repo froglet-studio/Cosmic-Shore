@@ -600,7 +600,7 @@ namespace CosmicShore.Tests
         // ------------------------------------------------------------------ the ring explosion's look (2026-10-18)
 
         /// <summary>The shipped look (BrittleStarConfigSO's "Ring Detonation: the look" block) on the standard cell: the
-        /// ring's radius 6, the nucleus 392, the disk 4 x the ring's 0.22 half-thickness.</summary>
+        /// ring's radius 6, the nucleus 392, the disk 4 x the ring's 0.22 half-thickness; sizes are shares of the front.</summary>
         static BrittleStarBlastForm.Settings Blast(float t01, float phase = 0.37f)
         {
             const float Ring = 6f, Nucleus = 392f;
@@ -609,14 +609,16 @@ namespace CosmicShore.Tests
                 RingRadius = Ring,
                 Front = Mathf.Lerp(Ring, Nucleus, Mathf.Sin(t01 * Mathf.PI * 0.5f)),
                 HalfThickness = 0.22f * 4f,
-                BandWidth = 6f,
+                FrontWidth = 0.05f,
+                FrontHeight = 0.04f,
                 Phase = BrittleStarBlastForm.PhaseAt(phase, 108f * Mathf.Deg2Rad, t01),
                 T01 = t01,
                 CrestDepth = 2.5f,
                 PentagonLag = 0.8f,
-                ArmWidth = 6f,
+                ArmWidth = 0.08f,
                 ArmWiggle = 0.06f,
                 ArmCurl = 30f * Mathf.Deg2Rad,
+                Relief = 0.12f,
             };
         }
 
@@ -624,19 +626,42 @@ namespace CosmicShore.Tests
         static readonly List<int> BlastTris = new();
 
         [Test]
-        public void Blast_DrawsOnlyInsideTheDiskThatDoesTheDamage_AtEveryMoment()
+        public void Blast_NeverDrawnPastTheFront_AndStaysWithinItsRelief_AtEveryMoment()
         {
-            // Honest: the look never shows the blast reaching where it does not (BrittleStarRules.DiskReaches).
+            // Honest where it counts: nothing is drawn past the edge where prisms stop breaking; the volume above and below
+            // the thin disk stays within the front's height (the front) and the relief (the arms, the ring, the crystals).
             for (int step = 0; step <= 20; step++)
             {
                 var s = Blast(step / 20f);
-                BrittleStarBlastForm.Build(s, BlastVerts, BlastNormals, BlastTris);
-                Assert.Greater(BlastTris.Count, 0, $"t {step / 20f}: something is drawn");
-                foreach (var v in BlastVerts)
+                int frontVerts = BrittleStarBlastForm.Build(s, BlastVerts, BlastNormals, BlastTris);
+                Assert.Greater(frontVerts, 0, $"t {step / 20f}: the front is drawn");
+                float frontHalf = Mathf.Max(s.HalfThickness, 0.5f * s.FrontHeight * s.Front);
+                float relief = Mathf.Max(frontHalf, s.Relief * s.Front);
+                for (int i = 0; i < BlastVerts.Count; i++)
                 {
+                    var v = BlastVerts[i];
                     Assert.LessOrEqual(new Vector2(v.x, v.y).magnitude, s.Front + 1e-3f, $"t {step / 20f}: inside the front");
-                    Assert.LessOrEqual(Mathf.Abs(v.z), s.HalfThickness + 1e-4f, $"t {step / 20f}: inside the disk's thickness");
+                    Assert.LessOrEqual(Mathf.Abs(v.z), (i < frontVerts ? frontHalf : relief) + 1e-3f, $"t {step / 20f}: within its height");
                 }
+            }
+        }
+
+        [Test]
+        public void Blast_IsAVolume_NotAFlatSheet()
+        {
+            // Garrett, 2026-10-18: "nothing in the environment should ever look flat like this, that is reserved for ui".
+            // A flat sheet's faces all look along the disk's axis; faceted beams and crystals face every way.
+            foreach (float t01 in new[] { 0.1f, 0.5f, 0.9f })
+            {
+                var s = Blast(t01);
+                BrittleStarBlastForm.Build(s, BlastVerts, BlastNormals, BlastTris);
+                int facingAxis = 0, faces = BlastTris.Count / 3;
+                float zMin = float.MaxValue, zMax = float.MinValue;
+                for (int t = 0; t < BlastTris.Count; t += 3)
+                    if (Mathf.Abs(BlastNormals[BlastTris[t]].z) > 0.99f) facingAxis++;
+                foreach (var v in BlastVerts) { zMin = Mathf.Min(zMin, v.z); zMax = Mathf.Max(zMax, v.z); }
+                Assert.Less(facingAxis, faces / 4, $"t {t01}: most facets face sideways, not along the axis");
+                Assert.Greater(zMax - zMin, 0.05f * s.Front, $"t {t01}: it stands well out of the plane");
             }
         }
 
@@ -673,7 +698,7 @@ namespace CosmicShore.Tests
                 float a = s.Phase + BrittleStarHullForm.PointAngle(i);
                 var point = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * s.RingRadius;
                 float best = BlastVerts.Min(v => (new Vector3(v.x, v.y, 0f) - point).magnitude);
-                Assert.Less(best, s.ArmWidth, $"point {i}: an arm grows from the ring's point");
+                Assert.Less(best, s.ArmWidth * s.Front, $"point {i}: an arm grows from the ring's point");
             }
         }
 
@@ -696,7 +721,7 @@ namespace CosmicShore.Tests
             {
                 Vector3 a = BlastVerts[BlastTris[t]], b = BlastVerts[BlastTris[t + 1]], c = BlastVerts[BlastTris[t + 2]];
                 Vector3 cross = Vector3.Cross(b - a, c - a);
-                if (cross.sqrMagnitude < 1e-12f) continue;   // a crest-free inner edge can meet at a point
+                if (cross.sqrMagnitude < 1e-12f) continue;
                 Assert.Greater(Vector3.Dot(cross, BlastNormals[BlastTris[t]]), 0f, $"tri {t / 3}");
             }
         }
