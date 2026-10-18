@@ -20,14 +20,16 @@ MonoBehaviour:
       trail is spared) and striking rival hulls for petals. Released, RT leaves them WHIPS at 150%
       length: heavy, inextensible, slow - a turn, a ring flick or a sweep of the right stick sends a
       wave travelling down them that rings on for seconds. Pulled, RT shortens them to 100% and
-      stiffens them into five straight SABERS (analog: every depth in between). The right stick turns
-      them with the ring and opens them out. Using them cools the guns. LT throws the ring - only with
-      a SPARE ring in stock (one per crystal, two at most); the mounted ring then regrows on its own.
-      It blows on contact or its fuse in a disk as wide as the cell''s nucleus, destroying every prism
-      in its plane and stripping petals from every rival hull it crosses (petals only - nothing is
+      stiffens them into five SABERS that keep 60% of the whip''s give (analog: every depth in
+      between). The right stick turns them with the ring and opens them out. Using them cools the
+      guns. LT throws the ring - only with a SPARE ring in stock (one per crystal, two at most); the
+      mounted ring then regrows on its own. It blows on contact or its fuse in a disk as wide as the
+      cell''s nucleus, bursting out of the ring as faceted volumes - five coiling arms led by
+      crystals, five crests and the ring''s own pentagon - still spinning, destroying every prism in
+      its plane and stripping petals from every rival hull it crosses (petals only - nothing is
       moved). The card shows the spare stock. Charge is threat - one dial: the cords'' cut width and
       the rounds'' size x1 -> x1.8 at level 10 (projectileScaleMultiplier), the disk''s thickness x1
-      -> x4 (blastScale).'
+      -> x4 on top of its x4 base, 4 to 16 times the ring''s (blastScale).'
     Input: 3
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -38,8 +40,9 @@ MonoBehaviour:
     AbilityLabel: Creation Mode
     AbilityDescription: 'B. A trail behind EACH of the ring''s five corners instead of the single small block from the
       cockpit - the same small block, five lines that turn with the ring''s firing rotation. The
-      SLOWEST mode: cruise x0.5. Mass is volume - one dial: the corner trails'' blocks x1 -> x1.8 at
-      level 10 (BrittleStarConfigSO.creationBlockScale).'
+      SLOWEST mode: cruise x0.5. Mass is girth - one dial: the width and height of EVERY block you
+      lay, the base trail''s and the corner trails'', x1 -> x2 at level 10, never their length
+      (BrittleStarConfigSO.prismWidthScale).'
     Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -56,8 +59,9 @@ MonoBehaviour:
       spread. Every round HEATS the guns - heat per second is the pull x the guns firing - and
       overheated they cannot fire until they cool; overheated in Space Mode your trail lays DANGER
       prisms. The card shows the heat. Friendly fire is on. A round on a rival hull is a scored bullet
-      hit (petals only). Space is reach - one dial: every gun''s range x1 -> x2 at level 10
-      (BrittleStarConfigSO.rangeMultiplier).'
+      hit (petals only). Space is reach and endurance: every gun''s range x1 -> x2 at level 10
+      (BrittleStarConfigSO.rangeMultiplier), and the heat the guns hold x1 -> x3.33, so a full
+      five-gun burst runs ~6 s at level 0 and ~20 s at level 10 (BrittleStarConfigSO.heatCapacity).'
     Input: 8
     UnlockLevel: 5
     RelockBelowLevel: 4

@@ -1171,3 +1171,21 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - When the designer remaps buttons, check what the OLD button did. A habit press is how a hidden mode gets entered.
 - Evidence: `R_VesselActions/ANGLER.md` §1k; `ANGLER_COMMAND_LAB.md` round 7.
 - Promoted: no
+
+### L-STU-102 — A studio that draws a world effect as an additive flat sheet is deciding a UI look
+- Lab: Brittle Star Studio, round 5 (the ring explosion) · Branch: `cece/gallant-bell-eq7kul` · Date: 2026-10-18
+- What happened: the five-fold ring explosion was first built as flat ribbons: an annulus, a pentagon, five arms. The
+  preview (a 2D top render) and the studio (a `MeshBasicMaterial`, additive, double-sided sheet) both showed it as flat
+  vector art. Garrett: "good start but nothing in the environment should ever look flat like this, that is reserved for
+  ui". The second cut, with beams a few units thick, still read as wire across a 780 u disk.
+- Do instead:
+  - Draw any world effect in the studio LIT and flat-shaded (`MeshStandardMaterial`, `flatShading`, an emissive tint),
+    never as an additive sheet. The studio is where the look is decided.
+  - Size every thickness as a share of the effect's own size.
+  - Judge the look from a 3D, lit, perspective render at two angles, oblique and low near the plane, not from a top-down
+    outline. A 60-line Python painter's renderer over the C# form's dumped triangles was enough here.
+  - Keep the shape as a pure C# function with a line-for-line JS twin, and check parity by point sets (C# corners vs JS
+    corners, same settings).
+- Evidence: `BrittleStarBlastForm`, `BrittleStarTests.Blast_IsAVolume_NotAFlatSheet` (with its flatten control), the
+  LOCKED rule in `Docs/claude/SHADERS_AND_PERFORMANCE.md`, and `/vessel` §4.ab5.
+

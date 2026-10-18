@@ -10431,6 +10431,30 @@ verification, steps 2-9. The short version:
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
 
+## 🔴 Brittle Star tuning pass — 3 s regrow, 40% rigid sabers (70% first), softer whip, Space heat capacity, slim long blocks with Mass girth, a 4x thick five-fold ring explosion (`cece/gallant-bell-eq7kul`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+No `unity` CLI in the session (`/verify-unity` could not run). Proved offline: player `unity_refcompile` (0 errors in
+project code) and editor (3 errors, all the known `AuthenticationServiceFacade` reds, 0 in changed files); the 39
+`BrittleStarTests` under Roslyn (`Tools/Build/brittlestar_harness/run.sh --self-test`, five negative controls, plus a
+hand control: the new full-pull test fails with `FullPullRigidity` 1); `author_brittlestar_assets.py --check` /
+`--self-test` (11/11); `element_ability_table.py BrittleStar` (0 disagreements); `studio_to_unity.py --vessel
+BrittleStar --check` (57 mapped, 0 drift); `check_studio.cjs` and `verify_lab.cjs` on the studio page. Task
+T-20261016-e2fb. In Play mode:
+1. **LT** with a spare: the new ring blooms back over **3 s** (was 0.5 s); the modes return only when it has.
+2. **RB** Charge Mode: released, the cords whip a little slower and softer (`cordLooseWave` 144, was 180); a FULL RT
+   pull shortens them to 80 u but a ring flick still flexes them visibly (`cordMaxRigidity` 0.4: 60% of the give kept; 0.7 on 2026-10-16).
+3. **X** Space Mode, full pull: Space 0 overheats in ~6 s (was ~2.4 s; `heatPerRound` 0.000637); raise Space to 10 (the
+   Space test harness on the prefab's resource system): ~20 s (`heatCapacity` ×3.33). The Space card still fills to full; the lockout is still ~5 s.
+4. **Trails**: blocks are long and slim — the base trail 0.5 × 1 × 6 (the spawner halves x for a single trail), the
+   Creation corners 1 × 1 × 6 — meeting end to end at cruise. Raise Mass: every block widens and thickens up to ×2 at
+   Mass 10, never lengthens (`prismWidthScale`). Speed Mode still stretches them along the path.
+5. **LT** (2026-10-18): the ring explosion is four times thicker (blocks a few units off its plane now go too) and
+   looks five-fold and VOLUMETRIC (faceted, lit by the domain material: nothing flat from any angle) — five arms coiling
+   out of the ring's points led by crystals, the ring's pentagon growing with crystal knots, a faceted torus front with
+   five crests, all turning with the ring's spin and thinning as it reaches the nucleus. Check it from behind, from the
+   side and edge-on, and that it never shows past the edge where prisms stop breaking (`BrittleStarBlastForm`).
+6. Profile a Space 10 burst with 3-4 AI Brittle Stars: up to ~4,000 rounds alive (~2,000 at Space 0) against the pool's 2,400 (T-20261016-acc7).
+
 ## 🔴 2026-10-17 — Prism effect pools right-sized: implosion buffer 160 -> 24, explosion pool no longer prewarms 1,500 (unverified: no Unity CLI in the session)
 
 **Files:** `Assets/_Prefabs/Environment/PrismManagers.prefab` (data only: the PrismImplosionPoolManager's
