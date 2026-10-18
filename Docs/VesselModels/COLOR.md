@@ -69,7 +69,7 @@ Team first, then cockpit, then the shape, all against a dark ship that sits well
 
 | hull | was | now |
 |---|---|---|
-| Manta (and Termite, Falcon, which reuse its mesh) | the renderer's array `[BlueBase, Screen, GreenAccent, Lime]` was one slot out against the FBX order (`accent, BASE, windsheild, N`). The body drew as glass, the canopy as Jade, the boost stripes as **Lime**, and the domain reached nothing (`_shipGeometries` named only bones) | `[GreenAccent, BlueBase, Screen, Engine]` in FBX order, and the live `manta` renderer added to `_shipGeometries`, so the eye-spots carry the team, the stripes are the ember, and `FlareBody`/`FlareEngine` light the right slots |
+| Manta (and Termite, Falcon, which reuse its mesh) | the renderer's array `[BlueBase, Screen, GreenAccent, Lime]` was one slot out against the FBX order (`accent, BASE, windsheild, N`). The body drew as glass, the canopy as Jade, the boost stripes as **Lime**, and the domain reached nothing (`_shipGeometries` named only bones) | `[GreenAccent, BlueBase, Screen, Engine]` in FBX order, and the live `manta` renderer added to `_shipGeometries` and painted by identity (`_domainReplacesMaterials = [GreenAccent]`), so the eye-spots carry the team, the stripes are the ember, and `FlareBody`/`FlareEngine` light the right slots |
 | `mantis_shapekey_with_animations.fbx.meta` (the inactive copy) | `N` → Lime | `N` → Engine |
 | Rhino (`rhino_shapekey_with_animations.fbx.meta`) | `BASE.005` → domain (80 % of the hull was team colour), `accent.005` → body, `N.005` (the nozzles) → window glass | `BASE.005` → body, `accent.005` → domain (the artist's neon stripes), `N.005` → Engine |
 

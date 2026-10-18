@@ -49,16 +49,6 @@ namespace CosmicShore.Gameplay
         float[] _followPartScale = System.Array.Empty<float>();            // part rest localScale (uniform)
         int _followCount;
 
-        // Engine / body flares through per-material-index property blocks: the base class writes
-        // renderer.materials, which clones every material and allocates an array per call, and
-        // FlareBody is called every frame while a velocity modifier decays. Same numbers as the
-        // base (engine x5, body 1 + amount x4), same slots (3 = the rig's engine 'N', 0 = 'BASE').
-        static readonly int ColorMultiplierId = Shader.PropertyToID("_ColorMultiplier");
-        const int EngineSlot = 3;
-        const int BodySlot = 0;
-        MaterialPropertyBlock _flareBlock;
-        float _engineFlare = 1f, _bodyFlare = 1f;
-
         // Bone names of the rigged urchin model (urchan_shapekey_with_animations.fbx): a 'fuse'
         // body with top/bottom jets and a mid gun pair per side, each behind its own hold/rot
         // bone. Legacy part names from the older part-per-mesh model follow as fallbacks, so
@@ -209,28 +199,6 @@ namespace CosmicShore.Gameplay
             FollowParts();
             base.LateUpdate();
         }
-
-        void ApplyFlare(int slot, float multiplier, ref float applied)
-        {
-            if (!SkinnedMeshRenderer) return;
-            // Quantized, and written only on a change: FlareBody arrives every frame with a
-            // decaying amount, and 1/64 on a 1..5 multiplier is invisible.
-            multiplier = Mathf.Round(multiplier * 64f) / 64f;
-            if (Mathf.Approximately(multiplier, applied)) return;
-            applied = multiplier;
-            _flareBlock ??= new MaterialPropertyBlock();
-            // Per-material-index get-modify-set: composes with the other per-index writers of
-            // this renderer (the vision band, Echo Sight); never SetPropertyBlock(null).
-            SkinnedMeshRenderer.GetPropertyBlock(_flareBlock, slot);
-            _flareBlock.SetFloat(ColorMultiplierId, multiplier);
-            SkinnedMeshRenderer.SetPropertyBlock(_flareBlock, slot);
-        }
-
-        public override void FlareEngine() => ApplyFlare(EngineSlot, 5f, ref _engineFlare);
-        public override void StopFlareEngine() => ApplyFlare(EngineSlot, 1f, ref _engineFlare);
-        public override void FlareBody() => ApplyFlare(BodySlot, 5f, ref _bodyFlare);
-        public override void FlareBody(float amount) => ApplyFlare(BodySlot, 1f + amount * 4f, ref _bodyFlare);
-        public override void StopFlareBody() => ApplyFlare(BodySlot, 1f, ref _bodyFlare);
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {

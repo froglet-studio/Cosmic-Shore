@@ -83,8 +83,12 @@ T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime je
   - `EngineVesselMaterial`: ember, (0.42, 0.11, 0.04) / (0.19, 0.04, 0.02), resting `_ColorMultiplier` 5 → 1
     (FlareEngine still sets 5 on boost).
 - **Slots**:
-  - Manta, Termite and Falcon draw `[GreenAccent, BlueBase, Screen, Engine]`, and their live `manta` renderer is
-    in `_shipGeometries`.
+  - Manta, Termite and Falcon draw `[GreenAccent, BlueBase, Screen, Engine]`. Their live `manta` renderer is in
+    `_shipGeometries`, painted by identity (`_domainReplacesMaterials = [GreenAccent]`, the sharedMaterials
+    path, which clones nothing).
+  - Every skinned hull's engine and body flares now write a per-slot property block, not `renderer.materials`
+    (`VesselAnimation.ApplyFlare`; ship review: the models made the old cloning path live on nine more hulls).
+    Check that the jet exits still brighten on boost and the domain still pulses on a speed burst.
   - The Rhino's meta: `accent.005` is the domain, `BASE.005` the body, `N.005` the Engine.
   - The inactive mantis copy's `N` is Engine.
 - **Cards**: every class card, inactive card, silhouette, large image and hangar preview of the fourteen hulls is

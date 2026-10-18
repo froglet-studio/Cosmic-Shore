@@ -1545,6 +1545,7 @@ namespace CosmicShore.Gameplay
         void ResolveHitchMorphs()
         {
             _hitchShapeCount = 0;
+            _hitchSkin = null;   // a re-init on a live hull resolves the shapes again, not only the bone
             var skins = _status.Transform.GetComponentsInChildren<SkinnedMeshRenderer>(true);
             for (int r = 0; r < skins.Length && !_hitchSkin; r++)
             {

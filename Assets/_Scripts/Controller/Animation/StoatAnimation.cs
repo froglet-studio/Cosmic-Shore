@@ -273,7 +273,8 @@ namespace CosmicShore.Gameplay
             else part.rotation = _hullTransform.rotation * rotation;
         }
 
-        // The parts are the builder's, found through it rather than by name, so nothing to resolve.
+        // The parts come from the builder or, on the model, by bone name (Initialize); the base class's
+        // Transforms list is not used, so nothing to assign.
         protected override void AssignTransforms() { }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle) => Drive(yaw);

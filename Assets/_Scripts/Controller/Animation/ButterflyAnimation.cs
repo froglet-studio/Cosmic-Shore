@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class ButterflyAnimation : VesselAnimation
     {
-        [Header("Wings (resolved from the procedural hull by name if left empty)")]
+        [Header("Wings (resolved by name from the hull model's bones, or the procedural hull's parts, if left empty)")]
         [SerializeField] Transform ForeWingL;
         [SerializeField] Transform ForeWingR;
         [SerializeField] Transform HindWingL;
