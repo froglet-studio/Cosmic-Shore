@@ -2826,3 +2826,19 @@ Measured at ship time on `claude/new-session-76hnyc` after the bleeding-edge mer
 - The friends drawer's window is now fully opaque with the same surface as the pilot record (solid `SurfaceBlack` +
   `SurfaceDark` wash 0.6, lattice over it); it was 0.9 glass (`author_menu_friends_drawer.py`, owner 2026-10-18:
   "Make the friends panel bg the same and full opaque").
+
+## 58. The welcome card on the Bootstrap splash (2026-10-18, awaiting in-editor approval)
+
+The owner: "During loading profile creating session in the bootstrap scene I should see the welcome pilot popup".
+`BootWelcomeCard` (`Assets/_Scripts/UI/Screens/`, authored by `author_start_flow.py` onto the splash's safe area) is the
+sign-in window's signed-in face brought to the splash: eyebrow "Welcome back, pilot" (or "Welcome, pilot" before a
+name exists), the pilot's name (`PlayerDataService` profile, else `AuthenticationData.UserName`), a spinner and the
+current status line. It reads the boot status channel the splash already listens to, so no new event:
+- shows on every `Status` request once `AuthenticationData.IsSignedIn` is true ("Loading profile...", "Joining lobby...",
+  "Creating session...", "Host ready...");
+- stays hidden before sign-in ("Connecting...", "Signing in...");
+- hides on `Hide` (menu reached, game launch) and on `Retry` (the connection-lost window takes over).
+
+Every word is an authored field. The splash now carries two entrances (retry and welcome). Gates: the generator checks
+the card's wiring and that it ships hidden (planted defect: "the welcome card ships shown"); the old "retry panel ships
+shown" defect now targets the retry panel by field (it had started flipping the welcome card instead).

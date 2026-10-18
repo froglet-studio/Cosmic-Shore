@@ -83,7 +83,10 @@ S = dict(
     chooser=HUD.script_guid("Assets/_Scripts/UI/Screens/SignInChooser.cs"),
     providers_so=HUD.script_guid("Assets/_Scripts/UI/SignInProvidersSO.cs"),
     brand=K.kit_script("KitBrandButton"),
+    welcome=HUD.script_guid("Assets/_Scripts/UI/Screens/BootWelcomeCard.cs"),
 )
+AUTH_DATA = "875bcedfcf3335047b416297732cba15"            # the AuthenticationData variable the broadcaster reads
+WELCOME_H = 168
 PROVIDERS_GUID = "5b0c1f7e9a2d4c6e8f1a3b5d7c9e0f21"          # SignInProviders.asset
 PROVIDERS = (("Steam", 2, "chrome_provider_steam"), ("Google", 3, "chrome_provider_google"), ("Apple", 4, "chrome_provider_apple"))
 # R9b (section 57): the chooser carries the providers' own button artwork, untouched; Steam has no button (a Steam build
@@ -269,6 +272,21 @@ def retry_window():
     return w
 
 
+def welcome_window():
+    """Section 58: "Welcome back, pilot" over the splash while a signed-in pilot's profile and session load
+    (BootWelcomeCard reads the boot status channel; hidden until then)."""
+    w = window("Welcome", R((0.5, 0.5), None, (0, 60), (WIN_W, WELCOME_H)), "Welcome back, pilot", "Cta", "", "H2")
+    spinner_line(w, "Welcome", 116)
+    w.add("welcome", 114, lambda ctx, go: K.mono(go, S["welcome"],
+          f"  requestEvent: {K.ref(11400000, BOOT_STATUS_CHANNEL, 2)}\n"
+          f"  authData: {K.ref(11400000, AUTH_DATA, 2)}\n"
+          f"  group: {{fileID: {ctx.c('Welcome', 'cg')}}}\n"
+          f"  eyebrowText: {{fileID: {ctx.c('Welcome/Eyebrow', 'tmp')}}}\n"
+          f"  nameText: {{fileID: {ctx.c('Welcome/Title', 'tmp')}}}\n"
+          f"  lineText: {{fileID: {ctx.c('Welcome/Waiting/Line', 'tmp')}}}\n"))
+    return w
+
+
 def splash_text(text_):
     p = Patch(text_, "Bootstrap/StartFlow")
     assert p.sc.script(SP["panel_comp"]) == S["panel"], "BootStatusPanel moved"
@@ -283,14 +301,15 @@ def splash_text(text_):
 
     p.rect(SP["status_rt"], R((0.5, 0), None, (0, 40), (900, 22)))
     p.replace(SP["status_tmp"], tmp_restyle(p.doc(SP["status_tmp"]), "Chakra", 15, False, 2, "center", "NeutralLightest"))
-    readout, retry = readout_node("Splash", False), retry_window()
-    emit_under(p, SP["safe_rt"], [readout, retry], SP["status_tmp"],
+    readout, retry, welcome = readout_node("Splash", False), retry_window(), welcome_window()
+    emit_under(p, SP["safe_rt"], [readout, welcome, retry], SP["status_tmp"],
                lambda rts: [k for k in p.kids(SP["safe_rt"]) if k not in rts] + rts)
     retry_cg = str(p.ctx.c("Retry", "cg"))
-    cg = p.doc(retry_cg)
-    for f in ("m_Alpha", "m_Interactable", "m_BlocksRaycasts"):
-        cg = C.field_set(cg, f, "0")
-    p.replace(retry_cg, cg)
+    for hidden in (retry_cg, str(p.ctx.c("Welcome", "cg"))):
+        cg = p.doc(hidden)
+        for f in ("m_Alpha", "m_Interactable", "m_BlocksRaycasts"):
+            cg = C.field_set(cg, f, "0")
+        p.replace(hidden, cg)
 
     c = p.ctx.c
     comp = p.doc(SP["panel_comp"])
@@ -705,7 +724,7 @@ def check_scene_links(path, text_):
 
 
 def validate(files):
-    M.require_entrances(files, {SPLASH: 1, AUTH: 2})
+    M.require_entrances(files, {SPLASH: 2, AUTH: 2})
     # Bootstrap splash
     sc = check_scene_links(SPLASH, files[SPLASH])
     assert not loader_instances(sc), "the splash still carries the rotating Loader icon"
@@ -718,6 +737,15 @@ def validate(files):
     cg = sc.docs[field_ref(panel, "retryPanel")]
     assert "  m_Alpha: 0\n" in cg and "  m_BlocksRaycasts: 0\n" in cg, "the retry panel ships shown"
     assert f"  labelConnectionLost: {CONNECTION_LOST}\n" in sc.docs[SP["broadcaster"]], "the connection-lost copy still says Tap retry"
+    # Section 58: the welcome card on the splash, on the boot status channel, hidden until a signed-in status.
+    cards = [(fid, d) for fid, d in sc.docs.items() if f"guid: {S['welcome']}" in d]
+    assert len(cards) == 1, "the splash has no BootWelcomeCard"
+    wd = cards[0][1]
+    assert f"guid: {BOOT_STATUS_CHANNEL}" in wd and f"guid: {AUTH_DATA}" in wd, "BootWelcomeCard reads another channel or auth data"
+    for f in ("group", "eyebrowText", "nameText", "lineText"):
+        assert field_ref(wd, f) != "0" and sc.has(field_ref(wd, f)), f"BootWelcomeCard.{f} is not wired"
+    wg = sc.docs[field_ref(wd, "group")]
+    assert "  m_Alpha: 0\n" in wg and "  m_BlocksRaycasts: 0\n" in wg, "the welcome card ships shown"
     for path, s in ((SPLASH, sc),):
         bars = [d for d in s.docs.values() if f"guid: {S['loadbar']}" in d]
         assert bars and all(field_ref(d, "fill") != "0" for d in bars), f"{path}: a KitLoadBar has no fill"
@@ -868,14 +896,14 @@ def self_test(files):
     cases = [
         ("the sign-in windows' rise stripped", lambda f: f.__setitem__(AUTH, M.strip_entrances(f[AUTH]))),
         ("the retry panel unwired", edit_doc(SPLASH, SP["panel_comp"], lambda d: re.sub(r"(  retryPanel: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d))),
-        ("the retry panel ships shown", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(
-            "  m_Alpha: 0\n  m_Interactable: 0\n  m_BlocksRaycasts: 0\n", "  m_Alpha: 1\n  m_Interactable: 1\n  m_BlocksRaycasts: 1\n", 1))),
+        ("the retry panel ships shown", lambda f: f.__setitem__(SPLASH, _show_face(f[SPLASH], "retryPanel"))),
         ("a load bar with no fill", lambda f: f.__setitem__(AUTH, re.sub(r"(  fill: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[AUTH], count=1))),
         ("the auth panel ships active", edit_doc(AUTH, AU["auth_go"], lambda d: d.replace("  m_IsActive: 0", "  m_IsActive: 1"))),
         ("the guest button also polls the pad", add_cbp),
         ("a privacy sprite missing", lambda f: f.__setitem__(PRIVACY, re.sub(r"(  focusRingSprite: ).*", r"\1{fileID: 0}", f[PRIVACY]))),
         ("the splash lost its lattice", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(M.LATTICE_WINDOW_MAT, "0" * 32))),
         ("the controller lost its chooser", edit_doc(AUTH, AU["ctrl"], lambda d: re.sub(r"(  signInChooser: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d))),
+        ("the welcome card ships shown", lambda f: f.__setitem__(SPLASH, _show_face(f[SPLASH], "group"))),
         ("the PROGRESS face ships shown", lambda f: f.__setitem__(AUTH, _show_face(f[AUTH], "progressGroup"))),
         ("a provider button missing", lambda f: f.__setitem__(AUTH, re.sub(r"  - provider: 4\n    button: \{fileID: -?\d+\}\n    mark: \{fileID: -?\d+\}\n", "", f[AUTH]))),
         ("a retired component left behind", lambda f: f.__setitem__(AUTH, f[AUTH] + (

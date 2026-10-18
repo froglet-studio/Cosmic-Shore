@@ -12561,3 +12561,12 @@ Docs/MENU_REDESIGN_B.md §56 (play-test round). Reference compiles clean (editor
 4. Stats show Fly time, Games, Sessions and Pilot since (month and year). The favourite vessel card shows Games, Best
    drift, Best boost, Prisms broken. Fly time by vessel lists your flown hulls first, then playable hulls you have not
    flown, dimmed, "Not flown yet" (no Grizzly / Termite / Falcon).
+
+## 🔴 2026-10-18 — §58 Bootstrap welcome card (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New `BootWelcomeCard.cs`; regenerated `Bootstrap.unity`. Reference compiles clean (editor: the 3 known errors only).
+1. Play from Bootstrap with a cached sign-in: while "Loading profile..." / "Joining lobby..." / "Creating session..."
+   show, a centred card reads "Welcome back, pilot", your pilot name, a spinner and the same status line.
+2. Before sign-in ("Connecting...", "Signing in...") no card; on a fresh account with no name it reads "Welcome, pilot".
+3. Menu_Main appears: the card is gone. Pull the network mid-boot: the Connection lost window replaces it.
+4. Launch a game from the menu: the loading splash shows no welcome card.
