@@ -37,6 +37,23 @@ The Squirrel is the worked example (`specs/squirrel.py`); the from-scratch specs
 owner fly it, fold what he says into this skill, then the next. Never rewrite several live
 files in one pass again, and never flip a vessel's heading on a measurement (LESSONS 39).
 
+> Garrett, 2026-10-18, after the Butterfly: "excellent. don't forget they are spaceships inspired
+> by earth clades. please continue with the rest of the fleet, and get the card images etc.
+> updated as well".
+
+**Every vessel is a SPACESHIP inspired by an Earth clade, never the animal itself.** The clade
+gives the silhouette, the proportions and the rhythm of the parts (the Squirrel's bushy tail is
+a chain of chevron plates, the Dolphin's flukes are swept wings, the Butterfly's four wings
+beat on hinges); the ship gives everything you build it from: hard-surface hull plates with
+bevels and panel seams, a cockpit or sensor glass where an eye would be, engines and their
+glowing mouths, domain colour as plates, trim lines and running lights, and mechanical joints
+(hinges, collars, pistons) wherever the animal has a joint. Test every part with one question:
+"what is this on the ship?" (an antenna is a sensor mast, an eye a canopy, a vein a structural
+rib, a tail a boom). A part with no ship answer is a costume and goes. A hull with no animal
+read is a generic fighter and fails the other half. When the fleet is redone in one pass, as
+the owner asked on 2026-10-18, each vessel still gets its own spec, gates, sheet, commit and
+flight test; one failing hull never holds the others.
+
 > Garrett, 2026-10-17: "not overindexing on the flaws in the various vessel implementations.
 > They are all a work in progress, so we should be building a framework that meets our
 > intentions not mimic halfbaked examples."
