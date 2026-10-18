@@ -157,7 +157,9 @@ def run(spec_mod, out_path, sheet_dir=None, render=True, samples=20, committed=N
     print("  takes:  " + ", ".join("%s(%d move)" % (t["name"].split("|")[-1], t["nodes_that_move"]) for t in probe["takes"]))
     files = []
     if render:
-        sd = sheet_dir or os.path.join(ctx.out_dir, "sheets")
+        # never beside the FBX: a PNG under Assets/ becomes a Unity asset (LESSONS 45). The default is git-ignored;
+        # a sheet worth keeping is copied as a JPEG to Docs/VesselModels/sheets/<vessel>_after.jpg
+        sd = sheet_dir or os.path.join(HERE, ".sheets", spec_mod.NAME.lower())
         files = R.contact_sheet(out_path, sd, tag=spec_mod.NAME.lower(), samples=samples,
                                 poses=vspec.get("sheet_poses", ("pitchup", "yawright", "rollright", "speedup")),
                                 nose=vspec.get("nose", -1))
