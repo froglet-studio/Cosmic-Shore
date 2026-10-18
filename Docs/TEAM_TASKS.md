@@ -760,8 +760,15 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Kite Navigator
 
 ### T-20261018-8b32 · open · test · Crew vessels
-- **Task:** Fly both crew vessels in the Unity Editor after the crew unification (cece/sharp-tesla-j0kd7z, 2026-10-18): the Goby and Pistol (VesselClassType 18) and the Wrasse and Grouper, from the Toybox Vessel Changer. Check the six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md 'One notion of a crew vessel': both cards name both subvessels, the seat view is a lower-left square while flying the hull and swaps with the pilot view on 2 / 1, the Pistol's foreground dithers instead of vanishing, and the Wrasse behaves exactly as before.
+- **Task:** Fly both crew vessels in the Unity Editor after the crew unification (cece/sharp-tesla-j0kd7z, 2026-10-18): the Goby and Pistol (VesselClassType 18) and the Wrasse and Grouper, from the Toybox Vessel Changer. Check the six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md 'One notion of a crew vessel': both cards name both subvessels, the seat view is a lower-left square while flying the hull and swaps with the pilot view on 2 / 1, the Pistol's foreground dithers instead of vanishing, and the Wrasse behaves exactly as before. Then the three steps of 'The Goby's vortex ring and flares are lit faceted volumes' (the ring shaded and faceted in both views, the flares lit, nothing pink).
 - **Done when:** Both crew vessels flown in the editor, the checklist entry marked green or its failures filed
 - **Who can take it:** Yash (offered), Garrett (sign-off), anyone with the Editor
 - **Added:** 2026-10-18 by a Claude session (`cece/sharp-tesla-j0kd7z`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261018-7c2d · open · decision · Crew vessels
+- **Task:** Decide whether the Pistol's view keeps its flat marks (primed/hot/held rings round prisms, the aim ring and line, the contact dot, the pops) as the view's own markings, or makes them lit volumes like the vortex ring
+- **Done when:** Garrett's call is recorded in .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log) and, if they stay flat, as an owner's-call exception under 'Nothing in the world looks flat' in Docs/claude/SHADERS_AND_PERFORMANCE.md
+- **Who can take it:** Garrett (the rule's and the vessel's owner)
+- **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md; Docs/claude/SHADERS_AND_PERFORMANCE.md

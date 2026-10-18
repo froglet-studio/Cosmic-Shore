@@ -1038,6 +1038,12 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: for any remapped or warped view of a lab's world, reuse the world's meshes and materials and move only transforms. Turn sky, stars and lights by the frame at the viewer. Check the handedness of the frame before placing the camera.
 - Evidence: `goby.html` `renderSide3D`, `flatFrame`, `ribFrame`.
 - Promoted: no
+### L-STU-116 — A blank panel in a headless full-page screenshot of a two-WebGL-canvas lab is the capture, not the page
+- Lab: Goby & Pistol Studio (`Docs/Studios/VesselStudio/goby.html`) · Branch: `cece/sharp-tesla-j0kd7z` · By: session 01KpzppLj3ETY5c6jEP7HuyA · Date: 2026-10-18
+- What happened: `verify_lab.cjs`'s desktop and phone screenshots showed a white-and-black panel, the size of the Pistol's inset, in the lower right of the main view. `elementsFromPoint` found no element there and no code draws there. A CLIPPED capture of the same region (`page.screenshot({ clip })`) was dark and correct, and hiding either inset canvas changed nothing: headless SwiftShader mis-composites the second WebGL canvas's layer in a full-viewport capture.
+- Do instead: before chasing a panel that only a full screenshot shows, capture the region with `clip` and ask `elementsFromPoint` what is there. A defect the clipped capture does not show is the harness's.
+- Evidence: this ship pass's probes (scratchpad `probe3.cjs`, `probe4.cjs`); `verify_lab.cjs` PASS.
+- Promoted: no
 ### L-STU-64 — A studio built from a design doc beside a game build from the same doc: add the game as a selectable "ships" set
 - Lab: Brittle Star Studio round 2 · Branch: `cece/gallant-lamport-sc3khe` (studio from `cece/brave-galileo-d95fpj`) · Date: 2026-10-14
 - What happened: two sessions built the Brittle Star on one day from one Notion document without seeing each other, a

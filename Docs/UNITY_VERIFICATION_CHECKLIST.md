@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Goby's vortex ring and flares are lit faceted volumes (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+**Why:** nothing in the world looks flat (LOCKED 2026-10-18, `Docs/claude/SHADERS_AND_PERFORMANCE.md`). The vortex
+ring was a smooth unlit torus and the flares unlit cubes; the ring in the Pistol's view was an unlit glow.
+**Changed:** `PistolWarp.VortexRingFacets` (a faceted unit torus, tube 0.16 of its radius, 24 x 6 facets, flat normals,
+wound outward), `GobyPistolDuo.Lit` (URP Lit with a faint emission) for the ring and the flares, and the view's ring on
+`PistolWorldMesh`'s SOLID pass with glow 0 (lit facets), thinning as it fades. The lab does the same (v11 of the
+private prototype). **Verified here:** `PistolViewMathTests.VortexRing_IsAFacetedVolume_NotAFlatSheet` in the stand-in
+harness (54/54; a flattened copy and a reversed winding both fail it), `unity_refcompile` player 0 errors and editor 0
+in changed files, Amoebius builds, `verify_lab.cjs` and `check_studio.cjs` PASS. **Not compiled in the editor.**
+
+- [ ] Edit mode: `PistolViewMathTests.VortexRing_IsAFacetedVolume_NotAFlatSheet` passes.
+- [ ] Toybox, freestyle Vessel Changer, pick **Goby and Pistol**. Press 2 (or D-pad right) to take the Pistol, press
+  Q or E (Snap). In the Pistol's view the vortex ring is a shaded ring with visible facets, lit from one side, not a
+  flat glowing band; it thins as it fades.
+- [ ] Press 1 to take the Goby back. In the main view the vortex rings (the AI Pistol's Snaps) and the flares (4 or
+  D-pad down) are lit faceted shapes that take the scene's light, not flat colour; nothing renders pink (a missing URP
+  Lit shader would).
+
 ### 🔴 One notion of a crew vessel: the Goby and Pistol beside the Wrasse and Grouper (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-18: "learn what you can from [the Wrasse and Grouper] ... unify what you can so we have a consistent

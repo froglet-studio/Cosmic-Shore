@@ -31,6 +31,7 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(cls);
             Assert.AreEqual(hull, cls.Name, "Name stays the vessel's key (the hangar's cloud unlocks)");
             Assert.AreEqual(card, cls.CardName, "the card names both subvessels");
+            CollectionAssert.Contains(cls.CrewNames, seats[0].SeatName, "the seat is one of the subvessels its card names");
             CollectionAssert.Contains(ToyVesselRoster.Default, type, "the Vessel Changer offers only the roster");
         }
     }

@@ -176,8 +176,9 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < sides; i++) Tri(solid, c, b + i, b + (i + 1) % sides);
         }
 
-        /// <summary>A torus of radius R (tube radius r) at (x, h, d), its axis <paramref name="axis"/> in the Pistol's world. Glass.</summary>
-        public void AddRing(Vector3 xhd, Vector3 axis, float R, float r, int segs, int sides, Color32 color, float glow)
+        /// <summary>A torus of radius R (tube radius r) at (x, h, d), its axis <paramref name="axis"/> in the Pistol's world. Glass,
+        /// or the solid pass when <paramref name="solid"/> (the vortex ring: a lit faceted volume, never a glow).</summary>
+        public void AddRing(Vector3 xhd, Vector3 axis, float R, float r, int segs, int sides, Color32 color, float glow, bool solid = false)
         {
             if (!HasRoom(segs * sides, segs * sides * 6)) return;
             Vector3 n = axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.forward;
@@ -196,8 +197,8 @@ namespace CosmicShore.Gameplay
                 for (int j = 0; j < sides; j++)
                 {
                     int i1 = (i + 1) % segs, j1 = (j + 1) % sides;
-                    Tri(false, b + i * sides + j, b + i1 * sides + j, b + i1 * sides + j1);
-                    Tri(false, b + i * sides + j, b + i1 * sides + j1, b + i * sides + j1);
+                    Tri(solid, b + i * sides + j, b + i1 * sides + j, b + i1 * sides + j1);
+                    Tri(solid, b + i * sides + j, b + i1 * sides + j1, b + i * sides + j1);
                 }
         }
 

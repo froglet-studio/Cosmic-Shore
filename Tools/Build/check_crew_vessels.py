@@ -11,6 +11,7 @@ crew vessel"; this gate holds the parts of it a file can show:
     card      its class asset (SO_Class_*.asset with the hull's vesselType as Class) names both subvessels:
               CrewNames with two entries and a CrewNameTemplate that uses {0} and {1} (SO_Vessel.CardName), and its
               Name stays the one-word key (the hangar's unlocks are keyed by it)
+    name      the seat's SeatName is one of the subvessels its card names (CrewNames)
     reach     it is in ToyVesselRoster.Default (the Vessel Changer offers it) and the Vessel Prefab Container
     only      a class that names a crew has a hull that carries a seat (no card claims two subvessels it lacks)
 
@@ -43,7 +44,7 @@ def guid_of(path):
 
 
 def seat_scripts():
-    """{guid: class name} of every MonoBehaviour that implements ICrewSeat."""
+    """{guid: (class name, SeatName)} of every MonoBehaviour that implements ICrewSeat."""
     out = {}
     for d, _, files in os.walk(SCRIPTS):
         for f in files:
@@ -53,7 +54,8 @@ def seat_scripts():
             for m in re.finditer(r"class\s+(\w+)\s*:\s*([^{\n]*)", read(p)):
                 bases = [b.strip() for b in m.group(2).split(",")]
                 if "ICrewSeat" in bases and m.group(1) + ".cs" == f and os.path.exists(p + ".meta"):
-                    out[guid_of(p)] = m.group(1)
+                    n = re.search(r'string SeatName\s*=>\s*"([^"]*)"', read(p))
+                    out[guid_of(p)] = (m.group(1), n.group(1) if n else None)
     return out
 
 
@@ -87,12 +89,13 @@ def crew_names(text):
 
 
 def check(prefabs, classes, seats, roster, members, container):
-    """prefabs: {file: text}; classes: {id: (file, text)}; seats: {guid: name}. Returns (errors, crew hulls)."""
+    """prefabs: {file: text}; classes: {id: (file, text)}; seats: {guid: (name, SeatName)}. Returns (errors, crew hulls)."""
     errs, hulls = [], []
     by_value = {v: k for k, v in members.items()}
     crew_ids = set()
     for f, text in sorted(prefabs.items()):
-        found = [seats[g] for g in re.findall(r"m_Script: \{fileID: 11500000, guid: ([0-9a-f]{32})", text) if g in seats]
+        found_seats = [seats[g] for g in re.findall(r"m_Script: \{fileID: 11500000, guid: ([0-9a-f]{32})", text) if g in seats]
+        found = [n for n, _ in found_seats]
         if not found:
             continue
         vt = re.search(r"^  vesselType: (-?\d+)$", text, re.M)
@@ -111,6 +114,9 @@ def check(prefabs, classes, seats, roster, members, container):
             names, template = crew_names(cls[1])
             if len(names) < 2 or not all(n.strip() for n in names[:2]):
                 errs.append(f"{cls[0]}: a crew hull's card names both subvessels (CrewNames, two entries; found {names})")
+            seat_name = found_seats[0][1]
+            if seat_name not in names:
+                errs.append(f"{cls[0]}: {found[0]}.SeatName {seat_name!r} is not one of the card's CrewNames {names}")
             if "{0}" not in template or "{1}" not in template:
                 errs.append(f"{cls[0]}: CrewNameTemplate {template!r} does not join both names ({{0}} and {{1}})")
             key = re.search(r"^  Name: (.*)$", cls[1], re.M)
@@ -159,10 +165,11 @@ def self_test():
     expect("out of the container", container=container.replace(guid_of(os.path.join(VESSELS, hull_file)), "0" * 32))
     seat_guid = next(iter(seats))
     expect("a card with no seat", prefabs={k: v.replace(seat_guid, "f" * 32) for k, v in prefabs.items()})
+    expect("a seat its card does not name", seats={g: (n, "Nobody") for g, (n, _) in seats.items()})
     expect("two seats", prefabs={**prefabs, hull_file: prefabs[hull_file] + f"\n  m_Script: {{fileID: 11500000, guid: {seat_guid}, type: 3}}\n"})
     if fails:
         sys.exit(1)
-    print(f"check_crew_vessels self-test: ok ({len(hulls)} crew hulls; 7 negative controls fire)")
+    print(f"check_crew_vessels self-test: ok ({len(hulls)} crew hulls; 8 negative controls fire)")
 
 
 def main(argv):

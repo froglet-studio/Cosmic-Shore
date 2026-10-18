@@ -1,6 +1,9 @@
 # Goby & Pistol: the first duo vessel
 
-**Status:** design brief, round 2. Nothing is in the game. **The lab is built** (round 1, §9):
+**Status (2026-10-18):** in the game as a prototype, not yet flown in the editor. The Goby is vessel class 18 (card
+"Goby and Pistol"), flyable from the Toybox's Vessel Changer, built from the shared crew pieces (SKILL.md "One notion
+of a crew vessel"); its numbers are cloned from the lab (`studio_to_unity.py --vessel goby`). The editor playtest is
+team task `T-20261018-8b32`. The decisions log below holds every round. **The lab** (§9):
 `Docs/Studios/VesselStudio/goby.html`. Garrett prototypes it first in its own private artifact,
 https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up (his call, 2026-10-14). It joins the one Vessel Studio artifact later,
 by a merge into `Ys-bleeding-edge`. Read that artifact's `decisions` collection at the start of each round.
@@ -403,3 +406,11 @@ the line it settled.
   code now calls the same pieces). **[read] for Garrett:** the Goby still shows the Squirrel's HUD while the Wrasse
   has one that reads its seat; a Goby HUD that reads the Pistol (launch charge, snap, ghost) is the next consistency
   step. The lab's inset is still lower right (the layout was decided in Unity, as the Wrasse's round 4 was).
+- 2026-10-18, ship pass: **the vortex ring and the flares are lit faceted volumes** (nothing in the world looks flat,
+  LOCKED the same day, `Docs/claude/SHADERS_AND_PERFORMANCE.md`). In the lab (v11 of the prototype) and in Unity: the
+  ring is a faceted torus (tube 0.16 of its radius, 24 x 6 facets, `PistolWarp.VortexRingFacets`, held by
+  `PistolViewMathTests.VortexRing_IsAFacetedVolume_NotAFlatSheet` with a flattening negative control), the flares lit
+  1.5 u boxes, and in the Pistol's view the ring is drawn on the lit solid pass, thinning as it fades. **[ask] for
+  Garrett:** the Pistol's view still draws its other marks flat (the primed / hot / held rings round prisms, the aim
+  ring and line, the contact dot, the pops). They read as the view's own markings, like a HUD drawn into the world; say
+  whether they stay flat (the rule's owner's-call exception, recorded here) or become volumes too.

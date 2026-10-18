@@ -48,8 +48,8 @@ defect):
 | **One machine today.** The seat runs on the hull's local human's machine; replicating it is the open networking decision (`T-20261017-b06e`). | `ANCHORS.md` |
 
 **Gates:** `python3 Tools/Build/check_crew_vessels.py` (and `--self-test`; in `/to-bleeding-edge`'s gates) holds every
-hull that carries an `ICrewSeat` to the card, roster and container rules, and every class that names a crew to having
-a seat. `CrewVesselTests` holds the same in the editor. Each hull's generator `--check` holds its own assets.
+hull that carries an `ICrewSeat` to the card, roster and container rules (its `SeatName` is one of the card's
+`CrewNames`), and every class that names a crew to having a seat. `CrewVesselTests` holds the same in the editor. Each hull's generator `--check` holds its own assets.
 
 **Where the two still differ, on purpose or not yet:**
 - The Wrasse has its own HUD controller (`WrasseHUDController`, the cards read the seat); the Goby still shows the

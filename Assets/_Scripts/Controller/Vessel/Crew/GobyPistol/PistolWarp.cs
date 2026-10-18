@@ -277,5 +277,43 @@ namespace CosmicShore.Gameplay
             Vector3 fwd = R.sqrMagnitude > 1e-8f ? R : Vector3.forward, up = U.sqrMagnitude > 1e-8f ? U : Vector3.up;
             return Quaternion.LookRotation(fwd, up);
         }
+
+        /// <summary>The vortex ring's tube radius as a share of its radius (the lab's <c>TorusGeometry(1, 0.16, ...)</c>).</summary>
+        public const float VortexTube = 0.16f;
+
+        /// <summary>Vertices <see cref="VortexRingFacets"/> writes: three per triangle, two triangles per facet.</summary>
+        public static int VortexRingVertexCount(int seg, int side) => seg * side * 6;
+
+        /// <summary>
+        /// The vortex ring as a FACETED volume (nothing in the world looks flat, LOCKED 2026-10-18,
+        /// <c>Docs/claude/SHADERS_AND_PERFORMANCE.md</c>; the lab's <c>TorusGeometry(1, tube, side, seg)</c> drawn
+        /// <c>flatShading</c>): a unit torus in the xy plane, its axis +z, <paramref name="seg"/> facets round the ring and
+        /// <paramref name="side"/> round the tube. Every triangle has its own three vertices and its face normal on each,
+        /// so it shades flat, and the faces look out of the tube. Fills <paramref name="v"/> and <paramref name="n"/>
+        /// (<see cref="VortexRingVertexCount"/> each); triangle k is vertices 3k, 3k + 1, 3k + 2.
+        /// </summary>
+        public static void VortexRingFacets(float tube, int seg, int side, Vector3[] v, Vector3[] n)
+        {
+            int k = 0;
+            for (int i = 0; i < seg; i++)
+                for (int j = 0; j < side; j++)
+                {
+                    Vector3 p00 = RingPoint(tube, seg, side, i, j), p10 = RingPoint(tube, seg, side, i + 1, j);
+                    Vector3 p11 = RingPoint(tube, seg, side, i + 1, j + 1), p01 = RingPoint(tube, seg, side, i, j + 1);
+                    Face(v, n, ref k, p00, p10, p11); Face(v, n, ref k, p00, p11, p01);
+                }
+        }
+
+        static Vector3 RingPoint(float tube, int seg, int side, int i, int j)
+        {
+            float a = i / (float)seg * Mathf.PI * 2f, b = j / (float)side * Mathf.PI * 2f, rr = 1f + tube * Mathf.Cos(b);
+            return new Vector3(rr * Mathf.Cos(a), rr * Mathf.Sin(a), tube * Mathf.Sin(b));
+        }
+
+        static void Face(Vector3[] v, Vector3[] n, ref int k, Vector3 a, Vector3 b, Vector3 c)
+        {
+            var f = Vector3.Cross(b - a, c - a).normalized;
+            v[k] = a; v[k + 1] = b; v[k + 2] = c; n[k] = n[k + 1] = n[k + 2] = f; k += 3;
+        }
     }
 }

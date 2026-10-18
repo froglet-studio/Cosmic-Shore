@@ -215,6 +215,43 @@ namespace CosmicShore.Tests
             }
         }
 
+        [Test]
+        public void VortexRing_IsAFacetedVolume_NotAFlatSheet()
+        {
+            // nothing in the world looks flat (LOCKED 2026-10-18): the ring is a lit volume with flat facets that face out
+            // of its tube, most of them sideways, standing out of its plane; a flattened copy fails the same measure
+            const float tube = PistolWarp.VortexTube; const int seg = 24, side = 6;
+            var v = new Vector3[PistolWarp.VortexRingVertexCount(seg, side)]; var n = new Vector3[v.Length];
+            PistolWarp.VortexRingFacets(tube, seg, side, v, n);
+            float zMin = float.MaxValue, zMax = float.MinValue;
+            for (int k = 0; k < v.Length; k += 3)
+            {
+                Vector3 a = v[k], b = v[k + 1], c = v[k + 2], face = Vector3.Cross(b - a, c - a).normalized;
+                for (int q = 0; q < 3; q++) Near(face, n[k + q], 1e-4f, "flat-shaded: every corner of a facet carries its normal");
+                Vector3 mid = (a + b + c) / 3f, core = new Vector3(mid.x, mid.y, 0f).normalized;   // the tube's centre line
+                Assert.Greater(Vector3.Dot(face, mid - core), 0f, "a facet looks out of the tube");
+                for (int q = 0; q < 3; q++) { zMin = Mathf.Min(zMin, v[k + q].z); zMax = Mathf.Max(zMax, v[k + q].z); }
+            }
+            Assert.Less(AxisFacingShare(v), 0.5f, "most facets face sideways, not along the ring's axis");
+            Assert.Greater(zMax - zMin, 1.5f * tube, "it stands out of its plane");
+
+            var flat = (Vector3[])v.Clone();
+            for (int k = 0; k < flat.Length; k++) flat[k].z = 0f;
+            Assert.Greater(AxisFacingShare(flat), 0.5f, "negative control: a flattened ring is a sheet and fails the measure");
+        }
+
+        static float AxisFacingShare(Vector3[] v)
+        {
+            int facing = 0, faces = 0;
+            for (int k = 0; k < v.Length; k += 3)
+            {
+                var f = Vector3.Cross(v[k + 1] - v[k], v[k + 2] - v[k]);
+                if (f.sqrMagnitude < 1e-12f) { facing++; faces++; continue; }   // a facet with no area is no volume
+                faces++; if (Mathf.Abs(f.normalized.z) > 0.9f) facing++;
+            }
+            return faces > 0 ? facing / (float)faces : 1f;
+        }
+
         static void Near(float want, float got, float tol, string what) => Assert.AreEqual(want, got, tol, what);
         static void Near(Vector3 want, Vector3 got, float tol, string what)
         {

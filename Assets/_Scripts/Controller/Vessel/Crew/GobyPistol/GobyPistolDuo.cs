@@ -580,33 +580,43 @@ namespace CosmicShore.Gameplay
             // a real perspective camera: its off-axis frustum (PistolWarp.Frustum) IS the lab's parallax, so the world is drawn as itself
             _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.cullingMask = 1;
             _cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
-            _torus = BuildTorus(1f, 0.08f, 40, 8);
-            _ringMat = Unlit(new Color(0.62f, 0.91f, 1f)); _flareMat = Unlit(new Color(1f, 0.9f, 0.5f));
+            _torus = BuildVortexRing(PistolWarp.VortexTube, 24, 6);
+            // lit and flat-shaded, as the lab draws them (the vortex ring 0x9fe8ff, a flare 0xffd28a, each with a faint emission)
+            _ringMat = Lit(new Color32(159, 232, 255, 255), new Color32(18, 58, 68, 255), 0.65f);
+            _flareMat = Lit(new Color32(255, 210, 138, 255), new Color32(58, 42, 8, 255), 0.6f);
             _render = new CrewViewRender(_cam, RenderLook);
             _scLive = false; _frameLive = false; _squash = _shake = 0f; _tail.Clear(); _fx.Clear();
         }
 
-        static Material Unlit(Color c)
+        /// <summary>
+        /// A lit material for a world effect (nothing in the world looks flat, LOCKED 2026-10-18,
+        /// <c>Docs/claude/SHADERS_AND_PERFORMANCE.md</c>): URP Lit with the colour, a faint emission and the smoothness given.
+        /// </summary>
+        static Material Lit(Color32 color, Color32 emission, float smoothness)
         {
-            var shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (!shader) shader = Shader.Find("Unlit/Color");
-            if (!shader) shader = Shader.Find("Sprites/Default");
-            return new Material(shader) { color = c, enableInstancing = true };
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (!shader) shader = Shader.Find("Universal Render Pipeline/Simple Lit");
+            if (!shader) shader = Shader.Find("Standard");
+            var m = new Material(shader) { color = color, enableInstancing = true };
+            if (m.HasProperty(s_baseColor)) m.SetColor(s_baseColor, color);
+            if (m.HasProperty(s_smoothness)) m.SetFloat(s_smoothness, smoothness);
+            if (m.HasProperty(s_metallic)) m.SetFloat(s_metallic, 0.1f);
+            if (m.HasProperty(s_emission)) { m.EnableKeyword("_EMISSION"); m.SetColor(s_emission, emission); }
+            return m;
         }
 
-        static Mesh BuildTorus(float R, float r, int seg, int side)
+        static readonly int s_baseColor = Shader.PropertyToID("_BaseColor"), s_smoothness = Shader.PropertyToID("_Smoothness"),
+                            s_metallic = Shader.PropertyToID("_Metallic"), s_emission = Shader.PropertyToID("_EmissionColor");
+
+        /// <summary>The vortex ring as a faceted, flat-shaded mesh (<see cref="PistolWarp.VortexRingFacets"/>).</summary>
+        static Mesh BuildVortexRing(float tube, int seg, int side)
         {
-            var v = new Vector3[seg * side]; var tri = new int[seg * side * 6]; int t = 0;
-            for (int i = 0; i < seg; i++)
-                for (int j = 0; j < side; j++)
-                {
-                    float a = i / (float)seg * Mathf.PI * 2f, b = j / (float)side * Mathf.PI * 2f, rr = R + r * Mathf.Cos(b);
-                    v[i * side + j] = new Vector3(rr * Mathf.Cos(a), rr * Mathf.Sin(a), r * Mathf.Sin(b));
-                    int i1 = (i + 1) % seg, j1 = (j + 1) % side;
-                    tri[t++] = i * side + j; tri[t++] = i1 * side + j; tri[t++] = i1 * side + j1;
-                    tri[t++] = i * side + j; tri[t++] = i1 * side + j1; tri[t++] = i * side + j1;
-                }
-            var m = new Mesh { name = "VortexRing", vertices = v, triangles = tri }; m.RecalculateNormals(); return m;
+            var v = new Vector3[PistolWarp.VortexRingVertexCount(seg, side)]; var n = new Vector3[v.Length]; var tri = new int[v.Length];
+            PistolWarp.VortexRingFacets(tube, seg, side, v, n);
+            for (int k = 0; k < tri.Length; k++) tri[k] = k;
+            var m = new Mesh { name = "VortexRing", vertices = v, normals = n, triangles = tri };
+            m.RecalculateBounds();
+            return m;
         }
 
         Color32 DomainColor(Domains domain)
@@ -928,7 +938,8 @@ namespace CosmicShore.Gameplay
                 _rb.FrameAt(m.X, out var T, out var U, out var R);
                 var axis = new Vector3(Vector3.Dot(ring.N, T), Vector3.Dot(ring.N, U), Vector3.Dot(ring.N, R));
                 float fade = Mathf.Clamp01(ring.Life / 0.35f);
-                _world.AddRing(new Vector3(m.X, m.H, m.D), axis, _vs.pVortexR, 0.16f * _vs.pVortexR, 32, 8, Alpha(C_Held, fade), 1f);
+                // a lit faceted volume on the solid pass (nothing in the world looks flat), thinning as it fades (the lab's)
+                _world.AddRing(new Vector3(m.X, m.H, m.D), axis, _vs.pVortexR, PistolWarp.VortexTube * _vs.pVortexR * (0.35f + 0.65f * fade), 28, 6, C_Held, 0f, true);
             }
             foreach (var F in _flares)
             {
