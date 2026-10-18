@@ -223,3 +223,36 @@ App bundle explorer > the version > Downloads > Native debug symbols.
 | Play warning: "contains native code, and you've not uploaded debug symbols" | Only a recommendation; the release can go out. The bundle was built without the menu (or before 2026-10-14). The check warns about this too. Rebuild with FrogletTools > Build > Android App Bundle (Release) |
 | Gradle fails during the build | Most Android Gradle failures trace to `Assets/Plugins/Android/*.gradle` and the EDM4U block; see `Docs/PLATFORM_UNIFICATION.md` §2.1. Send the Console error to Claude |
 | The check says the base module is over 200 MB | Player Settings > Android > Publishing Settings > **Split Application Binary**, then rebuild |
+
+## 8. A development build that plays like release (Patch And Run)
+
+Android's **Patch** and **Patch And Run** (Build Profiles > Android) only work on a Development
+Build: they push the changed scripts and assets to the installed app instead of a full rebuild and
+reinstall. A development build normally carries the diagnostics HUD, the AI-training flight
+recorder, Unity's red on-screen error console and the info logs. **`DevDiagnostics`**
+(`Assets/_Scripts/Utility/DevDiagnostics.cs`) switches all of them off together, so the patched
+build plays like a release build.
+
+1. Build Profiles > Android: tick **Development Build**. Leave **Autoconnect Profiler**, **Deep
+   Profiling Support** and **Script Debugging** unticked: they slow the build down and are not
+   covered by the switch.
+2. Build And Run once, then **Patch And Run** for every change after that.
+3. On the phone, turn the diagnostics **off**: press **Off** on the diagnostics HUD's command row, or
+   hold **four fingers** on the screen for **two seconds**. The HUD disappears.
+4. The choice is saved on the phone (PlayerPrefs `CosmicShore.DevDiagnostics`). It survives
+   relaunches and every Patch, until the app is uninstalled or its data is cleared.
+5. To get the diagnostics back, hold four fingers for two seconds again (Shift+F7 on a keyboard).
+
+**To start a fresh install with the diagnostics off**, add `CS_DEV_DIAGNOSTICS_OFF` to the Android
+Build Profile's **Scripting Defines**. A choice made on the phone still wins over it.
+
+What the switch does not change:
+
+- Unity's **"Development Build"** watermark in the corner. Unity has no setting for it.
+- Asset-authored test shortcuts: the Episode Token config's unverified grants and the Weekly
+  Challenge catalogue's `test` block. Each is switched on its own asset.
+- Warnings and errors still reach logcat, as they do in a release build.
+- A development build still runs a little slower than release: the profiler hooks and development
+  checks stay compiled in. Take performance numbers from a release build
+  (`Docs/PERFORMANCE_OPTIMIZATION.md`).
+

@@ -757,3 +757,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (sign-off); Yash can run the editor pass
 - **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Kite Navigator
+
+### T-20261018-20ac · open · test · diagnostics
+- **Task:** On an Android development build: press Off on the diagnostics HUD (or hold four fingers 2 s). The HUD and Unity's red error console go away; Patch And Run a change and relaunch - they stay off; hold four fingers 2 s - the HUD returns
+- **Done when:** All three steps behave as described on a phone, and a race played while off writes no flight_*.json under the Diagnostics Flights folder
+- **Who can take it:** Garrett (asked for it); Yash can take it
+- **Added:** 2026-10-18 by a Claude session (`cece/charming-wright-4ayoce`)
+- **See:** Docs/ANDROID_BUILD.md §8, Assets/_Scripts/Utility/DevDiagnostics.cs

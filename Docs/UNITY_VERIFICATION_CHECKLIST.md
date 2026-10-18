@@ -65,6 +65,30 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Development build plays like release: the `DevDiagnostics` switch (`cece/charming-wright-4ayoce`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+**What landed:** `Assets/_Scripts/Utility/DevDiagnostics.cs` + `DevDiagnosticsToggle.cs`. One switch
+turns off the diagnostics HUD, the AI-training flight recorder (new races only), the load-insights
+host (unless `-csmloadinsights` is passed), Unity's on-screen developer console and `CSDebug.Log`
+info logs in a development player. It is flipped by the HUD's new **Off** button, a four-finger hold
+for 2 s, or Shift+F7, and stored in PlayerPrefs (`CosmicShore.DevDiagnostics`). The Editor starts
+every Play session ON and never stores it. Define `CS_DEV_DIAGNOSTICS_OFF` makes a fresh install
+start off. Workflow: `Docs/ANDROID_BUILD.md` §8.
+
+**Proven offline:** `unity_refcompile` player, player-dev and editor configs show no errors in the
+changed files. A negative control (an undefined call beside `Debug.developerConsoleEnabled`) fails
+player-dev. `check_conditional_compilation.py` and `check_console_logging.py` pass. No Unity CLI in
+the authoring session, so `/verify-unity` did not run.
+
+**Verify in editor:**
+1. Play: the HUD appears as before. Press **Off**: the HUD goes away. Shift+F7: it comes back.
+2. Stop and Play again: the HUD is there (the Editor does not store the choice).
+3. Android dev build: **Off**, relaunch, Patch And Run a change. The HUD stays gone and an error
+   does not open Unity's red console. A four-finger hold of 2 s brings the HUD back.
+4. With it off, race to the end: no new `flight_*.json` under the Diagnostics `Flights` folder.
+
+---
+
 ### 🔴 Rhino deep dive: step-1 fixes, HUD vestiges, full four-row kit, replication, AI (`cece/relaxed-hopper-r62hbd`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed** (three code commits; design record `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
