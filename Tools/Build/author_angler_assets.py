@@ -55,7 +55,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import author_stoat_assets as S  # noqa: E402  (document-model helpers + Netcode hash; importing it writes nothing)
-import author_angler_icons as I  # noqa: E402  (the icon and card guids; importing it writes nothing)
+import angler_icon_ids as I  # noqa: E402  (the icon and card guids; no numpy / Pillow, so --check runs in CI's sweep)
 
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 A = lambda *p: os.path.join(ROOT, "Assets", *p)

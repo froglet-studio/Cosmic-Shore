@@ -25,7 +25,6 @@ is no hull of its own to render; when it has one, render the card from it the wa
 Deterministic guids; each .meta is the house sprite meta with the guid swapped. --check decodes and compares pixels
 (tolerance 2/255) rather than bytes, so a different zlib build cannot fail it.
 """
-import hashlib
 import math
 import os
 import re
@@ -45,11 +44,7 @@ CARD_DIR = os.path.join(ROOT, "Assets", "_Graphics", "CardImages")
 DONOR_META = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "Icon_Generate.png.meta")
 SIZE, K = T.SIZE, T.K
 P, circle, line, poly, arc = T.P, T.circle, T.line, T.poly, T.arc
-CARD_ACTIVE, CARD_INACTIVE = "Angler.png", "Angler_Inactive.png"
-
-
-def guid_for(name: str) -> str:
-    return hashlib.md5(f"CosmicShore/AnglerIcons/{name}".encode()).hexdigest()
+from angler_icon_ids import CARD_ACTIVE, CARD_INACTIVE, guid_for  # noqa: E402  (the ids, shared with the asset generator)
 
 
 def fish(d, cx, cy, s, facing=1.0, fill=255):
