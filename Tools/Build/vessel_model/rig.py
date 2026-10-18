@@ -157,8 +157,6 @@ def bake_parked_pose(mesh_obj, arm, deform_mesh=False):
     if not parked:
         return []
     me = mesh_obj.data
-    if deform_mesh and me.shape_keys:
-        raise RuntimeError("bake_parked_pose must run before shape keys are added")
     A = arm.matrix_world
     A_inv = A.inverted()
     M = mesh_obj.matrix_world
@@ -169,8 +167,8 @@ def bake_parked_pose(mesh_obj, arm, deform_mesh=False):
         b = arm.data.bones[pb.name]
         per_bone[pb.name] = A @ pb.matrix @ b.matrix_local.inverted() @ A_inv
     if deform_mesh:
-        for v in me.vertices:
-            p = M @ v.co
+        def posed(v, co):
+            p = M @ co
             acc = Vector((0.0, 0.0, 0.0))
             total = 0.0
             for g in v.groups:
@@ -178,8 +176,15 @@ def bake_parked_pose(mesh_obj, arm, deform_mesh=False):
                 if name in per_bone and g.weight > 0:
                     acc += (per_bone[name] @ p) * g.weight
                     total += g.weight
-            if total > 0:
-                v.co = M_inv @ (acc / total)
+            return M_inv @ (acc / total) if total > 0 else co
+        # every shape key rides along (the artist's morphs are deltas on the bind mesh; the same
+        # per-vertex rigid transform carries them to the drawn pose)
+        if me.shape_keys:
+            for kb in me.shape_keys.key_blocks:
+                for v in me.vertices:
+                    kb.data[v.index].co = posed(v, kb.data[v.index].co)
+        for v in me.vertices:
+            v.co = posed(v, v.co)
         me.update()
     # the pose becomes the rest
     prev_active = bpy.context.view_layer.objects.active
@@ -318,6 +323,69 @@ def import_shipped_armature(fbx_path, keep_actions=False):
     bpy.context.view_layer.objects.active = prev_active
     arm.select_set(False)
     return arm
+
+
+def import_shipped_model(fbx_path):
+    """
+    Bring the SHIPPED model in whole - its armature AND its mesh (vertex groups, shape keys,
+    material slots, the armature modifier) - as the base a spec builds ON. This is the
+    artist-hull path (LESSONS 38): the artist's geometry is the look the owner accepted, so a
+    rebuild keeps it and adds the framework (real morphs, correct-direction takes, connected
+    parts, gates) instead of redrawing the hull from primitives. The parked pose is preserved
+    exactly as import_shipped_armature does; no action is imported (the takes are re-authored
+    against the baked rest). Returns (armature, mesh).
+    """
+    import forms
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=fbx_path, ignore_leaf_bones=False, automatic_bone_orientation=False, use_anim=False)
+    new_objs = [o for o in bpy.data.objects if o not in before]
+    arms = [o for o in new_objs if o.type == "ARMATURE"]
+    meshes = [o for o in new_objs if o.type == "MESH"]
+    if len(arms) != 1 or len(meshes) != 1:
+        raise RuntimeError("%s: expected one armature and one mesh, found %d / %d" % (fbx_path, len(arms), len(meshes)))
+    arm, mesh = arms[0], meshes[0]
+    for m in mesh.data.materials:
+        if m is not None:
+            forms.SLOT_COLOURS[m.name] = tuple(m.diffuse_color[:3])
+    for o in new_objs:
+        if o is not arm and o is not mesh:
+            bpy.data.objects.remove(o, do_unlink=True)
+    if mesh.data.shape_keys:
+        for kb in mesh.data.shape_keys.key_blocks:
+            kb.value = 0.0  # the artist files store DeformPercent 100 as the channel's static value (LESSONS 33)
+    if arm.animation_data:
+        arm.animation_data.action = None
+    for pb in arm.pose.bones:
+        mb = pb.matrix_basis.copy()
+        pb.rotation_mode = "XYZ"
+        pb.matrix_basis = mb
+    prev_active = bpy.context.view_layer.objects.active
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    for eb in arm.data.edit_bones:
+        eb.use_connect = False
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.context.view_layer.objects.active = prev_active
+    arm.select_set(False)
+    mesh.select_set(False)
+    mod = mesh.modifiers.get("Armature")
+    if mod is None:
+        for m_ in mesh.modifiers:
+            if m_.type == "ARMATURE":
+                mod = m_
+    if mod is None:
+        mod = mesh.modifiers.new("Armature", "ARMATURE")
+    mod.object = arm
+    mod.use_vertex_groups = True
+    # the importer parents the mesh under the armature object and splits the file's frame between the two
+    # (armature R(-108.11,0,0), mesh R(71.89,-180,0) on the Squirrel: world = R_z(180)); the shipped file has the
+    # mesh node at IDENTITY as a top-level sibling (what the prefab's stripped references bind), so unparent
+    # it keeping its world placement and bake that into the vertices: the node then exports at identity
+    mw = mesh.matrix_world.copy()
+    mesh.parent = None
+    mesh.matrix_world = mw
+    forms.apply_transform(mesh)
+    return arm, mesh
 
 
 MOVED_BONES = []  # names a spec moved on purpose (rest_compare --allow-moved reads the same list from the spec)

@@ -23,7 +23,14 @@ slot order and frame they keep is explained here.
 | Urchin | [Urchin.md](Urchin.md) | `Urchan_Test.fbx` (part-per-mesh placeholder) | `urchan_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs where the artist rig had none | `specs/urchin.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 
-**Round 3, 2026-10-17 (after a review of the gates):** the artist-reference gate had been dead (a swallowed
+**2026-10-18, withdrawn after the owner's Editor test:** the rebuilt Sparrow flew backwards, the Urchin did not
+change in the game (its prefab draws the placeholder file), and the Squirrel, Dolphin and Sparrow read as cheap
+remakes. The seven artist files are restored. The from-scratch specs moved to `specs/experimental/`; the path now
+is the ARTIST'S hull plus the framework, one vessel per round, proven by the owner flying it (`LESSONS.md` 38-40).
+The first: the **Squirrel** (`specs/squirrel.py`), the artist's mesh with a tail spine, a chain-bending tail,
+proven take directions and a stronger Mass morph; `sheets/squirrel_after.jpg` is that file.
+
+**Round 3, 2026-10-17 (after a review of the gates; files since withdrawn):** the artist-reference gate had been dead (a swallowed
 `NameError`), the drawn-size reader had read each artist file with all four morphs at 100%, and no check told an
 inverted pose from a correct one. With those fixed (`LESSONS.md` 32-36) the files were rebuilt: the artist's slot
 colours are in every file; the Dolphin's wings are back at the dossier's +-2.64; the Squirrel sits at the heights its

@@ -235,7 +235,9 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     every spec reuses its armature from there, and every gate compares against it. Name a
     reference by the commit it comes from, never by the branch it was taken from.
 
-30. **The Sparrow flew backwards, and the first rebuild copied it.** The dossier measured it
+30. **RETRACTED 2026-10-18 (see 39): the dossier's reading was wrong; the nose-first rebuild
+    is what flew backwards in the owner's Editor.** Kept as written for the record:
+    **The Sparrow flew backwards, and the first rebuild copied it.** The dossier measured it
     (section 1.4: Unity z = Blender y for this file; the jet-hosting `b_Tail*` blades land at
     z +4.6..+7.6, the nose end as flown; the cockpit at z -0.7; the gun muzzles at +1.3 firing
     forward): the artist built the beak at -Y and the engines at +Y, so the shipped Sparrow
@@ -314,3 +316,32 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     `size_ref_blender`. The rule: a mesh part sits ON its bone in whatever rest the file ships;
     `part_map.py` shows both, and a part centred away from its bone's head-to-tail is the
     Urchin / Rhino mistake again.
+
+38. **A hull redrawn from primitives is a cheap remake, and no offline render will tell you.**
+    Six rounds of critique on Cycles contact sheets passed the from-scratch Squirrel, Dolphin
+    and Sparrow; the owner flew them once and called them cheap remakes "very far from being
+    ready to replace the original" (2026-10-18). Lathes, plates and lofts with box UVs cannot
+    stand next to a sculpted artist mesh in the game's materials and lighting, and a clay
+    sheet hides exactly that. The path that works: `rig.import_shipped_model` brings the
+    artist's hull in whole (mesh, groups, shape keys, slots, colours), `bake_parked_pose(...,
+    deform_mesh=True)` makes the drawn pose the rest (shape keys ride along), the spec adds
+    what the file LACKED (a spine the floating ribs hang on, a stronger Mass with
+    `morphs.augment_shape`, takes with proven directions) and every gate still runs. The
+    Squirrel's rest bounds then equal the artist's drawn bounds to the millimetre, rest_compare
+    is 0.000, and what the owner sees is his hull plus the improvements. From-scratch modelling
+    stays in `specs/experimental/`, never in place, until a hull passes the owner's eye.
+
+39. **The shipped heading is right by definition.** The Sparrow dossier read the jet-hosting
+    `b_Tail*` blades at the "nose end as flown" and the rebuild turned the hull round; in the
+    owner's Editor it was the rebuild that flew backwards. A forward-axis claim from a file
+    reading (Unity z vs Blender y, a 180-degree node rotation on the armature) is a hypothesis;
+    the owner has flown the shipped file for months, so its heading is the truth unless he
+    says otherwise. Never flip a heading, move the engine bones or mirror a pose set on a
+    measurement alone; ask, and keep the artist's layout.
+
+40. **"Rebuilt" means the game draws it.** The Urchin's rigged file was rebuilt twice and the
+    owner saw no change, because the Urchin prefab draws the part-per-mesh placeholder and the
+    rig swap was left as an editor step in a checklist. A file nobody draws is not a result.
+    For a placeholder-drawn vessel the swap is part of the job (do it, or say in the first
+    line that nothing will change in the game until it runs); for a live file, the proof is the
+    owner flying it, one vessel per round.

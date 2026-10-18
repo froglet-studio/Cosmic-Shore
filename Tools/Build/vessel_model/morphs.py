@@ -216,6 +216,38 @@ def add_shape(obj, name, deformers):
     return kb, max_travel, max_travel / diag, moved
 
 
+def augment_shape(obj, name, deformers):
+    """
+    Add deformer deltas ON TOP of an existing shape key (the artist's morph, kept and
+    strengthened rather than replaced). Deltas are computed from the Basis like add_shape;
+    returns (key_block, max_travel, travel_fraction_of_diagonal, moved_count) measured on the
+    RESULT (the artist's delta plus ours).
+    """
+    ensure_basis(obj)
+    me = obj.data
+    kb = me.shape_keys.key_blocks[name]
+    normals = [Vector(v.normal) for v in me.vertices]
+    basis = me.shape_keys.key_blocks["Basis"]
+    lo = Vector((min(v.co.x for v in me.vertices), min(v.co.y for v in me.vertices), min(v.co.z for v in me.vertices)))
+    hi = Vector((max(v.co.x for v in me.vertices), max(v.co.y for v in me.vertices), max(v.co.z for v in me.vertices)))
+    diag = (hi - lo).length or 1.0
+    max_travel = 0.0
+    moved = 0
+    for v in me.vertices:
+        co = basis.data[v.index].co
+        delta = Vector((0, 0, 0))
+        for d in deformers:
+            delta += d(v.index, co, normals[v.index])
+        kb.data[v.index].co = kb.data[v.index].co + delta
+        total = kb.data[v.index].co - co
+        if total.length > 1e-6:
+            moved += 1
+        if total.length > max_travel:
+            max_travel = total.length
+    kb.value = 0.0
+    return kb, max_travel, max_travel / diag, moved
+
+
 def set_weights(obj, **weights):
     """Set shape key values by name (0..1) - for renders of the extremes."""
     if obj.data.shape_keys is None:

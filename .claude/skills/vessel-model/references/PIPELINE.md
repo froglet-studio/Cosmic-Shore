@@ -55,6 +55,21 @@ only a MISSING artist file is tolerated there, a reader error raises (LESSONS 32
 `rest_compare.py` is deliberately separate (it needs the shipped file): run it by hand on every
 rig-reusing build. `build.py --check` is the drift gate for a committed spec.
 
+## The artist-hull path (the default for any vessel that has an artist file)
+
+1. `arm, mesh = rig.import_shipped_model(ctx.artist(OUTPUT))` - the artist's mesh (groups,
+   shape keys at 0, slots, colours) and armature; the mesh unparented and its transform applied
+   so the node exports at identity like the shipped one; bones disconnected; the park preserved.
+2. `rig.bake_parked_pose(mesh, arm, deform_mesh=True)` - the drawn pose becomes the rest for
+   mesh, shape keys and bones (rest bounds == the artist's drawn bounds; rest_compare 0.000).
+3. Add what the file lacked: parts built against group centroids (`tube_along` segments named
+   for the bone they skin to, joined with `forms.join([mesh] + parts, ...)` - the artist's mesh
+   first so its keys survive), `morphs.augment_shape` on a weak morph, `morphs.add_shape` for a
+   missing one, the takes re-authored (`takes.standard_pose_set`) with `pose_expect`.
+4. The usual gates. The spec's docstring names what was added and what was kept.
+`specs/squirrel.py` is the worked example; `specs/experimental/*_scratch.py` are the withdrawn
+from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.
+
 Neither gate proves a WRITE. After `build.py <spec>` (no `--out` = in place), prove it with
 `git status --short "Assets/_Models/Vessel Models/"`: the first in-place run wrote seven green
 models under `Tools/Assets/...` and both gates stayed green (LESSONS 24). The driver prints

@@ -19,6 +19,23 @@ readers, and LOOKED AT on a contact sheet before anything is written into `Asset
 
 ## 0. The bar, in one paragraph
 
+> Garrett, 2026-10-18, after testing the first rebuilds in the Editor: "the sparrow, dolphin
+> and squirrel all appeared to be cheap remakes that were very far from being ready to replace
+> the original" - "prove that you can fix one of the remakes first. then convert your learnings
+> into the new skills. then we can try to remake another."
+
+**The artist's hull is the base. Build ON it, never from primitives, for any vessel that has
+one.** A hull redrawn from lathes, plates and lofts reads as a toy next to the artist's mesh
+(LESSONS 38), and no offline render told us so; the owner's Editor did. So the path for an
+existing vessel is `rig.import_shipped_model` (the artist's mesh, groups, shape keys, slots
+and colours, exactly as the game draws them) + the framework on top: the parked pose baked
+into the rest, missing or weak morphs authored or strengthened on the artist's topology,
+the takes re-authored with proven directions, parts connected where they float, every gate.
+The Squirrel is the worked example (`specs/squirrel.py`); the from-scratch specs live in
+`specs/experimental/` and never write in place. **One vessel per round**: build it, let the
+owner fly it, fold what he says into this skill, then the next. Never rewrite several live
+files in one pass again, and never flip a vessel's heading on a measurement (LESSONS 39).
+
 > Garrett, 2026-10-17: "not overindexing on the flaws in the various vessel implementations.
 > They are all a work in progress, so we should be building a framework that meets our
 > intentions not mimic halfbaked examples."
@@ -149,13 +166,13 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 
 | vessel | rounds | what the sheet taught |
 |---|---|---|
-| Squirrel | 6 | nothing floats; six overlapping feathers read as one wing; crescent chevrons, not V sticks; 22-30 degree poses; every part at the height the parked pose DRAWS (1.2 tall, the tail level with its bones) |
-| Dolphin | 3 | wing spanwise sign (2.06 -> 2.64 span); lime throats inside the bells paint the engine slot; the span stays 2.64 (a "drawn" reference that was the artist file with its morphs at 100% sent it to 3.80 once, LESSONS 33) |
-| Sparrow | 3 | `cut_plane` the fan blades before painting their tips; a boom and spar so the tails do not float; poses in the file's own frame (a mirror reverses yaw and roll); tail vanes to the artist's height |
-| Serpent | 2 | head on +Y (`zup_identity`); Mass takes carapace + engine together or reads inert |
-| Manta | 4 | three stern nozzles so slot N owns faces; fins at 12 degrees dihedral, not 40; big wings with eye spots; yaw -Z and roll -Y for "right" |
-| Urchin | 4 | the spine mask by radius, not `radial_mask`; the bubble canopy is the Window slot; a ringed exhaust; appendages 1.75x out and bigger, where Unity draws the artist rig's |
-| Rhino | 3 | numeric slot suffixes canonicalised; plough blade + horn as the silhouette; eight stern nozzles; the BIND is the rest (the node chain's 70-degree wing fold is a WIP pose) and the blade is 15 tall |
+| Squirrel | 7 | six from-scratch rounds the owner judged a cheap remake; round 7 is the ARTIST'S hull + a ten-segment spine the nine chevrons hang on, the tail as a bending chain, Mass 2.5% -> 3.7%, takes with proven directions (`specs/squirrel.py`, live) |
+| Dolphin | 3 | from-scratch, withdrawn (artist file restored; `specs/experimental/dolphin_scratch.py`). What held: wing spanwise sign; lime throats paint the engine slot; a size reference read with the morphs at 100% is wrong (LESSONS 33) |
+| Sparrow | 3 | from-scratch, withdrawn and it FLEW BACKWARDS (LESSONS 39: the artist's heading is right by definition). What held: a mirror reverses yaw and roll; tail vanes to the artist's height |
+| Serpent | 2 | from-scratch, withdrawn. What held: head on +Y (`zup_identity`); Mass takes carapace + engine together or reads inert |
+| Manta | 4 | from-scratch, withdrawn. What held: yaw -Z and roll -Y for "right"; three stern nozzles so slot N owns faces |
+| Urchin | 4 | from-scratch, withdrawn, and the game never drew it (its prefab draws the placeholder; LESSONS 40). What held: the artist rig draws its appendages 1.75x out |
+| Rhino | 3 | from-scratch, withdrawn. What held: the BIND is the rest (the node chain's 70-degree wing fold is a WIP pose); the blade is 15 tall |
 
 ## 5. Modelling rules that keep being relearned
 
