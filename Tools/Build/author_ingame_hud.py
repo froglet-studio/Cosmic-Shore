@@ -165,8 +165,12 @@ def lockup_text(text_):
 def glyphs_text(text_):
     def entry(m):
         binding = int(m.group(1))
+        if binding not in PAD_LABELS:
+            # A binding drawn by its sprites alone (Garrett's Rhino 13 two-trigger / 14 sticks-apart, 2026-10-17):
+            # leave the entry exactly as its author wrote it.
+            return m.group(0)
         body = re.sub(r"^    padLabel: .*\n", "", m.group(2), flags=re.M)
-        label = PAD_LABELS.get(binding, "")
+        label = PAD_LABELS[binding]
         body = re.sub(r"(    padGlyphHeld: .*\n)", lambda mm: mm.group(1) + f"    padLabel: {label}\n", body, count=1)
         return f"  - binding: {binding}\n" + body
     return re.sub(r"^  - binding: (\d+)\n((?:    .*\n)*)", entry, text_, flags=re.M)

@@ -141,7 +141,7 @@ namespace CosmicShore.UI
         public void Hide() => gameObject.SetActive(false);
 
         public static string DisplayName(SO_Vessel vessel) =>
-            !string.IsNullOrWhiteSpace(vessel.Name) ? vessel.Name : vessel.Class.ToString();
+            !string.IsNullOrWhiteSpace(vessel.CardName) ? vessel.CardName : vessel.Class.ToString();
 
         string Subtitle(SO_Vessel vessel, string seatLabel)
         {

@@ -591,6 +591,34 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
 
+### T-20261017-b06e · open · decision · Crew vessels
+- **Task:** Decide how the Kite Navigator seat goes online: today the board, motes, AI and every effect run on the hull's local human's machine. A second human on another machine needs the seat replicated, and a choice of which machine decides pops, blasts, Mass clusters, boost and steals (vessel rule 48). Also decide the arena case: the seat's swap uses PilotSwapGesture, which in an arena match also asks the arena to swap hulls while the human flies.
+- **Done when:** A written plan in KITE_NAVIGATOR.md that names the deciding machine per effect and the gesture owner in arenas
+- **Who can take it:** Garrett with Yash (party / multiplayer)
+- **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
+
+### T-20261017-efca · open · dev · Crew vessels
+- **Task:** When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule.
+- **Done when:** A duo-vessel entry seats the kite on a hull with no editor menu
+- **Who can take it:** Garrett (duo-vessel owner)
+- **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; .claude/skills/duo-vessel/SKILL.md on cece/sharp-tesla-j0kd7z
+
+### T-20261017-3cbe · open · content · Crew vessels
+- **Task:** Author FMOD events for the Kite Navigator's eight empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal, fauna struck.
+- **Done when:** Every slot holds a real event and plays in a playtest
+- **Who can take it:** anyone who does audio
+- **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset
+
+### T-20261017-aca2 · open · test · Crew vessels
+- **Task:** Playtest the Wrasse in the Unity Editor: open the Toybox, fly the Wrasse station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Wrasse). It has only been compiled headlessly.
+- **Done when:** The checklist entry is marked verified, or each failing step is a dev task naming what was seen
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; Docs/UNITY_VERIFICATION_CHECKLIST.md (Kite Navigator entry)
+
 ### T-20261017-cb31 · open · test · vessels
 - **Task:** Fly the Shrike in Menu_Main freestyle and run its editor checklist (modes on X/RB/B, LT eyepiece with crosshairs, RT per mode, docking, Mass detach, crystal flora, missile count)
 - **Done when:** Every step of the Shrike entries in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or filed as a bug
@@ -626,6 +654,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
 - **Done:** 2026-10-16, Yash 2026-10-17: no decision step; the Ys-bleeding-edge RampBoostAIPolicySO was rebuilt (brake on the ramp, corner speed, payback) and took the re-arm + explicit end from the cece/relaxed-hopper-r62hbd cut. When that branch merges, keep this file's states and that branch's executor changes (AI_BOOST.md).
+- **Done:** 2026-10-18, merge 5b09c6896 took bleeding-edge's RampBoostAIPolicySO wholesale (a superset of this branch's re-arm + End), Rhino.prefab points at its asset guid ece63fe0fab446188650420e8b018690
 
 ### T-20261016-b525 · open · test · Regatta AI
 - **Task:** Fly Regatta I1 as the Stoat, 5+ finished races, storing every one: Mass mode's dipole on the straights, Time mode (B) slings into the hard corners; in one race flip Third Eye > Pilots > AI on your Stoat for a lap and back. Then ask a session to run learn_drives_from_flights.py --write (writes StoatModeAction / StoatDipoleConfig / StoatSlingConfig _Regatta)
@@ -846,6 +875,51 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §54
 
+### T-20261017-9025 · done · test · Vessel models
+- **Task:** Open branch ccr-d93a6dfb-ugbxng in the Editor after the seven vessel models were rebuilt in place by /vessel-model (2026-10-17): let the FBX files reimport with no console warning, open the Squirrel / Dolphin / Sparrow / Serpent / Manta (and Falcon, Shrike, Termite) prefabs, run FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs (four REAL shapes on each live file), Audit Vessel Construction and Audit Vessel Tails and Jets, re-bake Crystal Hull Fusions for the Squirrel, Dolphin and Manta, then fly each hull in freestyle: pitch / yaw / roll / throttle move the whole hull, the domain colour lands on the domain slot, glass and engine mouths read, each element morph is nameable
+- **Done when:** (2026-10-18: scope is now the SQUIRREL only; the other six files are the artist's again) the Squirrel checks in Docs/UNITY_VERIFICATION_CHECKLIST.md's 2026-10-18 paragraph (round 8) are ticked - every take moves like the artist's Squirrel (rear engines included, roll banks the whole wing), the spine follows the chevrons, Mass shows - or the failing step is written there
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor; Garrett judges the look
+- **Added:** 2026-10-17 by Claude session for Garrett, 2026-10-17 (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/README.md; Docs/VesselModels/sheets/ (before/after)
+- **Done:** 2026-10-18, Garrett, 2026-10-18: the round-8 Squirrel passes in the Editor (elements upgraded, domain changed, indistinguishable from the original); the other six vessels are the artist's files, unchanged
+
+### T-20261017-3b6b · done · dev · Vessel models
+- **Task:** Swap the Urchin and Rhino prefabs from their part-per-mesh placeholders (Urchan_Test.fbx, Rhino_Test.fbx) onto the rebuilt rigs urchan_shapekey_with_animations.fbx and rhino_shapekey_with_animations.fbx with FrogletTools > Vessels > Wiring > Swap Vessel Rig, which moves the geometry, remaps the materials and makes the animation rig-safe (Docs/VESSEL_CONSTRUCTION.md); the rigs now carry four REAL element morphs where the artist rigs had none
+- **Done when:** Both prefabs draw one SkinnedMeshRenderer from the rig file, Audit Vessel Elemental Morphs reports four REAL shapes on each, the jets and colliders sit where they did, and a flight in freestyle shows the puppetry (UrchinAnimation / RhinoAnimation resolve their parts by bone name)
+- **Who can take it:** Garrett (Urchin and Rhino owner), Yash (offered)
+- **Added:** 2026-10-17 by Claude session for Garrett, 2026-10-17 (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/Urchin.md section 8; Docs/VesselModels/Rhino.md section 8; .claude/skills/vessel-model/SKILL.md section 6
+- **Done:** 2026-10-18, 2026-10-18 fleet pass: both prefabs now draw the artist rigs with four real morphs (specs/urchin.py, specs/rhino.py), done offline without the swapper; the bones follow the placeholder parts, which keep the colliders. Editor test is the new Urchin/Rhino task.
+
+### T-20261017-eecd · done · decision · Vessel models
+- **Task:** Judge the seven rebuilt vessel models against the artist files on the before/after contact sheets in Docs/VesselModels/sheets/ (and in the Editor after the reimport task): for each hull say keep, iterate (name the three biggest faults) or revert the file (git checkout the FBX restores the artist file; the .meta is untouched). Also say whether the C# procedural hulls (Scarab, Stoat, Thresher, Butterfly, Brittle Star HullForm/HullBuilder) should be replaced by /vessel-model specs next
+- **Done when:** A line per hull in Docs/VesselModels/README.md or in the session that iterates them
+- **Who can take it:** Garrett
+- **Added:** 2026-10-17 by Claude session for Garrett, 2026-10-17 (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/sheets/; .claude/skills/vessel-model/references/LESSONS.md
+- **Done:** 2026-10-18, Superseded: the 2026-10-17 rebuilds were withdrawn; the fleet pass (2026-10-18) reproduced or replaced every hull; the judging is now the per-vessel flight tasks.
+
+### T-20261018-13dd · open · test · Vessel models
+- **Task:** Fly the rebuilt Dolphin on ccr-d93a6dfb-ugbxng (2026-10-18, /vessel-model loop round 4): it should look and fly exactly like the original; upgrade its elements and change its domain as on the Squirrel; re-run the Dolphin hull-fusion bake if the crystal fusion looks off
+- **Done when:** Garrett says it passes as the Squirrel did, or the difference is written in Docs/UNITY_VERIFICATION_CHECKLIST.md's Dolphin paragraph
+- **Who can take it:** Garrett (judges); Yash (offered) can run the Editor steps
+- **Added:** 2026-10-18 by Claude session for Garrett (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/sheets/dolphin_after.jpg
+
+### T-20261018-f892 · open · test · Butterfly model
+- **Task:** Fly the new Butterfly.fbx in the Editor: four wings beat from their hinges, domain colour on the wings (change domain), Mass mode spreads, the Fold closes the wings OVER THE BACK with a butterfly ghost, each element visibly changes the hull; run Audit Vessel Elemental Morphs + Audit Vessel Construction
+- **Done when:** the owner says it meets the fleet's look and plays like the placeholder did (or names what to change)
+- **Who can take it:** Garrett (owner's eye); Yash can run the audits
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Butterfly entry); Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md section 2
+
+### T-20261018-5511 · open · decision · Butterfly model
+- **Task:** After the Butterfly model is accepted: delete the procedural ButterflyHullBuilder / ButterflyHullForm and Tools/Build/butterfly_hull_harness (keep its Stubs.cs if other harnesses share it), and confirm the ButterflyAnimation wing sign fix (the Fold used to close under the belly) and the model's 41% domain share
+- **Done when:** the placeholder code is gone and the two calls are recorded in BUTTERFLY.md section 2
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (`ccr-d93a6dfb-ugbxng`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md section 2
+
 ### T-20261018-9fcf · open · test · vessels
 - **Task:** Editor-verify the Angler (vessel 17): run the seven Angler entries in Docs/UNITY_VERIFICATION_CHECKLIST.md (rounds 1-7) in Menu_Main freestyle - lure/tame on A, paint RT, erase/lock LT, dash B, squad X, recall Y, the lit queue, the level camera
 - **Done when:** Every Angler checklist entry passes with a clean console, or each failure is filed as a dev task
@@ -887,3 +961,117 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith; Yash (offered)
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §57
+
+### T-20261018-3ec7 · open · test · Vessel models
+- **Task:** Fly the six NEW hulls on ccr-d93a6dfb-ugbxng: Thresher, Scarab, Stoat, Angler, Brittle Star, Shrike (spaceships inspired by their clades, replacing the procedural C# hulls). For each: reimport the FBX, run Audit Vessel Elemental Morphs + Construction + Tails and Jets, fly it, change domain, upgrade each element, and check the puppetry signs listed per vessel in the checklist
+- **Done when:** each hull is accepted or its faults are named (one line per hull in Docs/VesselModels/README.md)
+- **Who can take it:** Garrett (owner's eye); Yash (offered) can run the Editor steps and audits
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
+
+### T-20261018-97b6 · open · test · Vessel models
+- **Task:** Fly the Urchin and Rhino rig swaps: the prefabs now draw the artist's rigs (urchan_/rhino_shapekey_with_animations.fbx) with four real element morphs. Reimport, check the drawn pods/plates stay inside their colliders in every pose, plumes come out of the drawn mouths, the domain lands on the accent slot, each element morphs the hull
+- **Done when:** both pass in the Editor, or the differences are written in the checklist's fleet-pass entry
+- **Who can take it:** Garrett (Urchin and Rhino owner); Yash (offered)
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
+
+### T-20261018-987b · open · test · Vessel models
+- **Task:** Fly the reproduced Sparrow, Serpent and Manta (2026-10-18): the FBXs are rebuilt by the pipeline and proven identical to the artist files (every take, morph, material and node); they should look and fly exactly as before
+- **Done when:** Garrett says they are indistinguishable, as the Squirrel was
+- **Who can take it:** Garrett; Yash (offered)
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
+
+### T-20261018-1432 · open · setup · Vessel models
+- **Task:** Run FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions on ccr-d93a6dfb-ugbxng after the reimport and push the Thresher, Scarab, Brittle Star, Urchin and Rhino bake assets: they are stale (keyed to the old placeholder meshes) and solve at runtime until re-baked
+- **Done when:** CrystalHullFusionBakeTests.ShippedBakes_AreCurrent is green with the new hulls
+- **Who can take it:** Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
+
+### T-20261018-2070 · open · decision · Vessel models
+- **Task:** Fleet-pass calls: (1) Scarab: connected modules vs the 'floating parts' reading of your 2026-09-01 note; its elytra open on the INSIDE of a turn in code, the OUTSIDE in the doc. (2) Stoat: the tail curls with the bend in code, 'swings out' in the doc. (3) Shrike: a new talon grip while docked (keep, change, drop). (4) Angler: first-cut swim/jaw/esca numbers; its hit box is still the Stoat's (narrower than the new bow). (5) Brittle Star: flames wear the Engine slot (the Fire ember since the 2026-10-18 colour pass, Docs/VesselModels/COLOR.md), the arms curl one way (chiral). (6) Butterfly 41% domain share. (7) When each placeholder (HullForm/HullBuilder/harness) is retired
+- **Done when:** each call is answered and recorded in the vessel's doc
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
+
+### T-20261018-d3e5 · open · test · Vessel colour
+- **Task:** Look at the new vessel colour scheme in the Editor: fly each domain (Jade, Ruby, Gold) at the chase camera and in the hangar on a few hulls (Squirrel, Rhino, Manta, Thresher). Check the body for self-overlap ghosting (it is transparent with no depth write and now has a visible steel rim), the Manta/Termite/Falcon/Rhino domain colour on their accents and the ember on their engines (brighter on boost), and that every class card and hangar preview shows the new silver-plate render.
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md's colour-scheme entry is ticked or an issue is filed; if the body ghosts, the hull moves to BlueBaseOpaqueVesselMaterial (Docs/VesselModels/COLOR.md section 6)
+- **Who can take it:** Yash (offered), anyone with the Editor; Garrett for the look
+- **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/COLOR.md
+
+### T-20261018-be55 · done · decision · Vessel colour
+- **Task:** Decide whether Jade's ship colours move from azure (hue 209, next to the neutral Blue windows and body at 220-232) to the teal of the palette's other Jade entries (about 177-182), and whether Gold's inverted rim/face (bright edge, dark face; Ruby and Jade run dark edge to bright face) should match the others. The UI reads the same ShipColor1/2, so it is a palette change, not a vessel one.
+- **Done when:** OriginalColorSetSO JadeColors/GoldColors updated (or kept) and the decision recorded in Docs/VesselModels/COLOR.md section 6
+- **Who can take it:** Garrett (colour language owner)
+- **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/COLOR.md section 6
+- **Done:** 2026-10-18, Gold fixed 2026-10-18 (rim/face swapped in OriginalColorSetSO and the unused Yellow materials, a data-entry mistake: DomainScorePanel reads ShipColor1 as the muted tone). Jade and Ruby hues deferred by Garrett; reopen as a new task when he takes them up.
+
+### T-20261018-a0e2 · open · dev · Vessel colour
+- **Task:** Move the Grizzly's jet renderers (Ship_Wedge_Jet_UL/UR/BL/BR and Ship_Wedge_Body slot 3) off LimeVesselMaterial onto EngineVesselMaterial: Lime is the call-to-action colour only, a jet exit is the Fire ember (Docs/VesselModels/COLOR.md).
+- **Done when:** Grizzly.prefab references no LimeVesselMaterial; the jets flare red on boost
+- **Who can take it:** jtgjones (Grizzly, grizzly-v3 in flight)
+- **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/COLOR.md section 3
+
+### T-20261018-0886 · open · test · Rhino
+- **Task:** Editor-verify the Rhino four-row kit on cece/relaxed-hopper-r62hbd (never opened in Unity): compile, then run the 'Rhino deep dive' section of Docs/UNITY_VERIFICATION_CHECKLIST.md - sword energize/cooldown and Charge gauge, afterimages cut by the Rhino's own blade after 1 s, Time card lit on boost + Momentum flash + speed gauge, the L1+R1 and sticks-apart chips, Manta Soar chip, a Grizzly losing petals to a danger prism, and a 2-player check that a replica's sword/ramp match the owner's
+- **Done when:** Every numbered check in that section passes, or each failure is filed as a dev task
+- **Who can take it:** Yash (offered) or Caleb/Andrew (QA); Garrett for the balance calls
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Rhino deep dive); Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md
+
+### T-20261018-c5a4 · open · decision · Rhino
+- **Task:** Playtest the Rhino afterimage self-farm: one energize (cost 0.1) then cutting its own wake can refill the sword meter now the blade cuts its own afterimages. Keep, or lower energy per own-afterimage cut (not immunity)
+- **Done when:** A call is recorded in Docs/ElementalAbilitySystem/BACKLOG.md (Rhino four-row branch, Open)
+- **Who can take it:** Garrett (vessel owner)
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/ElementalAbilitySystem/BACKLOG.md 'Afterimage self-farm'
+
+### T-20261018-2962 · open · dev · CI gates
+- **Task:** check_vessel_on_vessel_motion.py is red on bleeding-edge: it flags VesselImpulseByExplosionEffectSO (the Grizzly's self-launch, which returns unless SourceVessel is the vessel hit). Teach the gate the self-only guard (or a reasoned allow-list entry) with a negative control; do not change the effect
+- **Done when:** The gate exits 0 on bleeding-edge and still fails when the SourceVessel guard is deleted
+- **Who can take it:** Yash (offered) or whoever owns the CI gates
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/ElementalAbilitySystem/BACKLOG.md '[gate false positive] check_vessel_on_vessel_motion.py'
+
+### T-20261018-3247 · open · dev · Crew vessels
+- **Task:** Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (2 s cooldown, none at Time L5); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish.
+- **Done when:** The lab's SHIPPED block and scorecard carry round 4 and parity.cjs still passes
+- **Who can take it:** any session; Garrett to sign off
+- **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 4); Docs/Studios/CrewVesselLab.html
+
+### T-20261018-49d0 · done · content · Crew vessels
+- **Task:** Give the Wrasse its own HUD. It still wears the Sparrow's (SparrowHUDController + SparrowHUDVariant): the four-icon ability row shows the Sparrow's gun, missile and barrel-roll icons, though the Wrasse has none of those since round 4c. Its four icons should be the kite's four loop effects (Space blast, Mass cluster, Time boost, Charge ram), each with its L5 upgrade (LOCKED four-icon row). Also give it its own ElementalAbilityMap entries (Wrasse.asset is still the Sparrow's map, kept only for the L5 unlock levels).
+- **Done when:** The Wrasse's HUD shows its own four icons and no Sparrow ability
+- **Who can take it:** Garrett (vessels, icons); any session for the wiring
+- **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 4c); Docs/claude/VESSEL_HUD_AND_ELEMENTS.md (four-icon row)
+- **Done:** 2026-10-18, Round 4d: WrasseHUDController drives the four cards (saved boosts, rams, last blast, Mass flash) and Wrasse.asset has the Wrasse's own cards with no button chips. The icon ART is still the Sparrow's: see the follow-up task.
+
+### T-20261018-8ff7 · open · content · Crew vessels
+- **Task:** Draw the Wrasse's four ability-card icons. Since round 4d the cards read the navigator (WrasseHUDController: Time = saved boosts, Charge = kite rams, Space = last blast's kills, Mass = flash on a cluster) and ElementalAbilityMaps/Wrasse.asset names them Space Blast, Saved Boosts, Mass Cluster and Kite Ram, but the sprites on the HUD (SparrowHUDVariant) are still the Sparrow's gun, missile and stance icons.
+- **Done when:** The Wrasse's HUD shows its own four icons (a Wrasse HUD variant of SparrowHUDVariant, made with Create > Prefab Variant), each with its L5 upgrade art, on the LOCKED four-icon row.
+- **Who can take it:** Garrett (vessels, icons); any session for the variant wiring
+- **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 4d
+
+### T-20261018-5c29 · open · test · Crew vessels
+- **Task:** Fly the Wrasse's round 4d in the Unity Editor: let BlockGraph and the swarm member shaders re-import with the new PrismDepthPlane.hlsl include, confirm the pilot's own view of prisms is unchanged, then run Docs/UNITY_VERIFICATION_CHECKLIST.md's Wrasse steps 2-4 (two-thumb flight, the HUD counts, the five-petal motes, out-of-plane prisms opening with distance from the plane and dithering above it).
+- **Done when:** The checklist's Wrasse entry is ticked or its failures are filed, and the two-thumb tuning (the Sparrow's numbers today) is kept or re-tuned.
+- **Who can take it:** Garrett (sign-off); Yash can run the editor pass
+- **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Kite Navigator
+
+### T-20261018-2c7e · open · dev · Vessel models
+- **Task:** Work the nine follow-ups the ship review of the vessel-model branch left (Docs/VesselModels/README.md 'Follow-ups from the ship review'): one Editor check (BakeMesh scale), the Shrike beam origin under the Space morph, a Thresher pectoral sign question, two latent Rhino/VesselCustomization nits, two deletion proposals (GhostAction, the six procedural hull builders: check Amoebius first) and two per-spawn/per-frame perf trims.
+- **Done when:** each row is fixed, filed or answered in the README's table
+- **Who can take it:** Yash (offered), anyone; Garrett for the sign question and the deletions
+- **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/README.md

@@ -193,6 +193,40 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void BothTriggersChordDrawsOneChipOnBothDevices()
+        {
+            // The Rhino's energize stance and the Manta's Soar ride BothSticksAction. Before the
+            // chord had a control the cards bound to it drew nothing at all.
+            var set = LoadSet();
+            Assert.AreEqual(HintBinding.PadBothTriggers,
+                InputHintBindingMap.BindingFor(InputEvents.BothSticksAction, keyboard: false));
+            Assert.AreEqual(HintBinding.KeyBothShifts,
+                InputHintBindingMap.BindingFor(InputEvents.BothSticksAction, keyboard: true));
+
+            var pad = set.For(HintBinding.PadBothTriggers);
+            Assert.IsNotNull(pad, "BothSticksAction has no glyph entry.");
+            Assert.IsNotNull(pad.padGlyph, "BothSticksAction has no pad artwork.");
+            Assert.AreSame(pad, set.For(HintBinding.KeyBothShifts),
+                "BothSticksAction resolves to two different glyph entries.");
+            Assert.IsNotEmpty(pad.keyboardLabel, "BothSticksAction has no keyboard label.");
+        }
+
+        [Test]
+        public void SticksApartGestureHasAGlyphButNoInput()
+        {
+            // Full throttle is a gesture with no InputEvents button, so no map input may resolve to
+            // it (that would draw it on a passive card); the Rhino's HUD names it explicitly.
+            Assert.IsEmpty(InputHintBindingMap.InputEventsFor(HintBinding.PadSticksOutward));
+            Assert.AreEqual(HintBinding.PadSticksOutward,
+                InputHintBindingMap.Canonical(HintBinding.KeySticksOutward));
+
+            var glyph = LoadSet().For(HintBinding.PadSticksOutward);
+            Assert.IsNotNull(glyph, "The sticks-apart gesture has no glyph entry.");
+            Assert.IsNotNull(glyph.padGlyph, "The sticks-apart gesture has no pad artwork.");
+            Assert.IsNotEmpty(glyph.keyboardLabel, "The sticks-apart gesture has no keyboard label.");
+        }
+
+        [Test]
         public void PassiveAbilityDrawsNothing()
         {
             // FullSpeedStraightAction is the "(open design slot)" sentinel AND a real passive

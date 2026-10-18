@@ -23,11 +23,14 @@ namespace CosmicShore.Gameplay
     /// <see cref="popRequiresEnergizedBlade"/> false to pop ungated (the v2 debug behavior).</item>
     /// </list>
     /// Every prism the sword actually destroys banks energy on the per-vessel
-    /// <see cref="IRhinoSwordState"/> (read via <c>impactor.Skimmer.SwordState</c>) and kicks its
-    /// impact feedback (blade flash + contact spark). With no sword state present (a non-Rhino
-    /// skimmer reusing this asset) the blade is never energized, so super-shielded prisms always
-    /// bounce; the ordinary damage behavior is identical — only the energy/FX bookkeeping is
-    /// skipped.
+    /// <see cref="IRhinoSwordState"/> (read via <c>impactor.Skimmer.SwordState</c>) - scaled by
+    /// CHARGE (<see cref="chargeEnergyGainMultiplier"/>) - and kicks its impact feedback (blade
+    /// flash + contact spark). The sword's own AFTERIMAGES (its Mass ability) are prisms like any
+    /// other: it cuts them and banks their energy (Garrett, 2026-10-17: "not immune to our
+    /// destruction"). Only the fleet's 1 s self-trail grace keeps it off one it has just laid.
+    /// With no sword state present (a non-Rhino skimmer reusing this asset) the blade is never
+    /// energized, so super-shielded prisms always bind; the ordinary damage behavior is identical -
+    /// only the energy/FX bookkeeping is skipped.
     /// </summary>
     [CreateAssetMenu(
         fileName = "RhinoSkimmerDamagePrismEffect",
@@ -70,7 +73,7 @@ namespace CosmicShore.Gameplay
         [Header("Super-shielded prisms")]
         [Tooltip("True (v3, the energize ritual): popping a super-shielded prism requires the blade " +
                  "to be ENERGIZED — hold the both-triggers chop stance to charge it. A non-energized " +
-                 "blade bounces off. False: the blade pops super-shields ungated (the v2 behavior, " +
+                 "blade binds in it (see Denied contact). False: the blade pops super-shields ungated (the v2 behavior, " +
                  "kept as a designer A/B switch).")]
         [SerializeField] private bool popRequiresEnergizedBlade = true;
 
@@ -81,6 +84,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Energy banked for popping a super-shielded prism (worth more — they are the " +
                  "hardened targets the sword exists to cut).")]
         [SerializeField] private float energyPerSuperShieldedPrism = 0.12f;
+
+        /// <summary>CHARGE -> energy banked per kill: x1 at rest, x2 at level 10, floored at x0.5. The
+        /// Rhino's Charge row (the sword's energy economy): a charged Rhino refills the meter that
+        /// energizes - and lengthens - the blade in half the cuts. Read live on the owner, whose
+        /// energy is the replicated one (RhinoSwordNetworkRelay).</summary>
+        [SerializeField] private ElementalFloat chargeEnergyGainMultiplier =
+            ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.5f);
 
         [Header("Denied contact (super-shield touched while the blade is NOT energized)")]
         [Tooltip("OFF (shipped): the blade BINDS — no velocity change, no spin; the prism jiggles, the " +
@@ -154,7 +164,7 @@ namespace CosmicShore.Gameplay
                 }
 
                 PopSuperShield(impactor, status, prism, velocity);
-                sword?.AddEnergy(energyPerSuperShieldedPrism);
+                sword?.AddEnergy(energyPerSuperShieldedPrism * chargeEnergyGainMultiplier.EvaluateLive(status));
                 sword?.NotifyPrismDestroyed(superShielded: true, prism.transform.position);
                 return;
             }
@@ -185,7 +195,7 @@ namespace CosmicShore.Gameplay
             // only when this hit actually destroyed the prism.
             if (prism.destroyed && sword != null)
             {
-                sword.AddEnergy(energyPerPrism);
+                sword.AddEnergy(energyPerPrism * chargeEnergyGainMultiplier.EvaluateLive(status));
                 sword.NotifyPrismDestroyed(superShielded: false, prism.transform.position);
             }
         }

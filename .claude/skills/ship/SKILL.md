@@ -124,6 +124,11 @@ run the `/reorient` skill first and act on its verdict before shipping.
   the same branch, `git diff` between the two merge commits' trees was EMPTY, which is better
   evidence the resolution is right than any amount of re-reading it.
 
+- **A `.prefab` / `.unity` conflict is resolved per OBJECT, never per line:** `/asset-surgery` § "resolve a
+  `.unity` / `.prefab` MERGE per OBJECT" and `Tools/Build/merge_unity_scene.py`, with its five assertions. That
+  includes the shape where each side DELETED different adjacent documents. Git then pairs one side's deleted
+  object against the other's surviving neighbour, and every "keep both" builds an object out of two. (2026-10-18:
+  the Rhino rig swap against bleeding-edge's HUD cleanup, 74 deletions and 0 genuine conflicts.)
 - **Merge the base branch in before reviewing**, so you resolve conflicts rather than
   leaving them for a reviewer, and so §2 reviews the tree that will actually land.
   **`git fetch` the base again right before you open the PR, and treat a moved tip as a
@@ -334,6 +339,17 @@ run the `/reorient` skill first and act on its verdict before shipping.
   For each name that still exists (`git ls-remote origin refs/heads/<name>`), run
   `git fetch --depth=50 origin <name>` and then
   `git log --oneline origin/<base>..FETCH_HEAD -- <your changed files>`.
+- **An add/add conflict on a `.meta` is two GUIDs for one asset path, and taking one side wholesale
+  orphans every reference to the other.** Two branches each created `RampBoostAIPolicySO.cs` and
+  `RhinoAIBoostPolicy.asset` (2026-10-17, `cece/relaxed-hopper-r62hbd` against bleeding-edge), so
+  the file names matched and the guids did not. `git checkout --theirs` on the four files is the
+  right resolve, but the branch's own `Rhino.prefab` still pointed `boostPolicy` at the LOSING
+  asset guid. It surfaced here only because both sides had edited that prefab line. Had the other
+  branch not wired the prefab, the line would have auto-merged to a guid no file carries: a null
+  policy, and "the AI quietly never ramps" in play. After taking a side on any `AA` `.meta`,
+  `git grep` the losing guid across `Assets/` and repoint every hit. Two quicker tells that the
+  other copy is the one to keep: its doc comment names your branch as a source, or a
+  `Docs/TEAM_TASKS.md` row already flags the duplicate.
 - **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
   they do not — ask about scope before you discard either.** The collision above assumes two
   implementations of one fix. The other shape is two fixes at different ALTITUDES, and there

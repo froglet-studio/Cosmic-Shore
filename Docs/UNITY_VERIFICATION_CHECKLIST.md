@@ -998,6 +998,320 @@ two-label toggle and the slider prefab arrive with the items that need them (3 a
 ---
 
 ---
+
+### 🔴 The fleet colour scheme: shared vessel materials, slot fixes, every card re-rendered (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable (no Editor, no `unity` binary). No C# changed. What ran:
+- `vessel_colors.py --check` (the four materials carry the scheme);
+- `render_cards.py --all --check` (fourteen hulls' cards match a fresh render);
+- `author_{shrike,brittlestar,stoat,angler,thresher}_assets.py --check`, `author_angler_icons.py --check`,
+  `author_urchin_card_icons.py --check` (now a pointer check, with a negative control that fired) and
+  `check_vessel_class_icons.py`.
+
+Scheme, reasons and sheets: `Docs/VesselModels/COLOR.md`. Team tasks: T-20261018-d3e5 (this look),
+T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime jets).
+
+- **Materials** (sRGB rim / face):
+  - `BlueBaseVesselMaterial` and `BlueBaseOpaqueVesselMaterial`: dark gunmetal, (0.18, 0.21, 0.33) / (0.028, 0.033, 0.065);
+  - `ScreenVesselMaterial`: sapphire, (0.70, 0.80, 1.0) / (0.06, 0.16, 0.62);
+  - `EngineVesselMaterial`: ember, (0.42, 0.11, 0.04) / (0.19, 0.04, 0.02), resting `_ColorMultiplier` 5 → 1
+    (FlareEngine still sets 5 on boost).
+- **Slots**:
+  - Manta, Termite and Falcon draw `[GreenAccent, BlueBase, Screen, Engine]`. Their live `manta` renderer is in
+    `_shipGeometries`, painted by identity (`_domainReplacesMaterials = [GreenAccent]`, the sharedMaterials
+    path, which clones nothing).
+  - Every skinned hull's engine and body flares now write a per-slot property block, not `renderer.materials`
+    (`VesselAnimation.ApplyFlare`; ship review: the models made the old cloning path live on nine more hulls).
+    Check that the jet exits still brighten on boost and the domain still pulses on a speed burst.
+  - The Rhino's meta: `accent.005` is the domain, `BASE.005` the body, `N.005` the Engine.
+  - The inactive mantis copy's `N` is Engine.
+- **Cards**: every class card, inactive card, silhouette, large image and hangar preview of the fourteen hulls is
+  rendered from its model with the silver CLASS livery on the domain slot. The artist hulls' files are rewritten
+  in place, so `Dolphin_Square.png`'s other users and the Termite's silhouette change too.
+- **Follow-up, same day**: Gold's `ShipColor1`/`ShipColor2` were swapped (they had been entered reversed) in
+  `OriginalColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
+  right.
+
+Verify in the Editor:
+1. Fly Squirrel, Rhino, Manta and Thresher in each domain at the chase camera. The domain is the brightest thing
+   on the hull, the glass reads as glass, and the body's steel rim draws the silhouette against the sky. The jet
+   exits are a dull ember at rest and hot red on boost.
+2. **Body ghosting**: the body is transparent with no depth write. Look for far parts of a hull showing through
+   near parts (rim lines where none should be). If they do, move the hull to `BlueBaseOpaqueVesselMaterial`.
+3. **Manta / Termite / Falcon**: the eye-spots take the team colour, the canopy is glass, the trailing-edge
+   stripes are ember (not lime), and `FlareEngine` lights the stripes. On the Falcon, check that
+   `VesselCustomization` no longer logs the empty-geometry error.
+4. **Rhino**: the neon stripes take the team colour, the hull is gunmetal, and the nozzles and pod rings are ember.
+5. Menu: the vessel carousel, the class cards, the hangar previews and the squad images show the new renders. No
+   white squares.
+6. **Gold**: a Gold ship is dark at its silhouette and bright face-on, like Ruby and Jade. In a match, the Gold
+   score chip's backdrop is the muted brown and its accent strip the bright gold.
+
+### 🔴 The fleet pass: every playable hull is a pipeline-owned model; card images from the models (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable (no Editor, no `unity` binary). What ran on the merged tree: the headless reference
+compile (80 assemblies, no errors in project code); `build.py <vessel> --check` for all fourteen specs; every touched
+generator's `--check` (thresher, shrike, brittlestar, stoat, angler, urchin, rhino sword combos, butterfly dust,
+preview spawns, the icon tools); `render_cards.py <V> --check` for the seven re-carded hulls; the fleet gates
+(console logging, class icons, network prefab hashes, prefab container, shared channels, camera far clip,
+conditional compilation). Contact sheets: `Docs/VesselModels/sheets/`. Team tasks T-20261018-3ec7 / 97b6 / 987b /
+1432 / 2070.
+
+For every hull below: reimport its FBX; run **FrogletTools ▸ Vessels ▸ Audits ▸** Vessel Elemental Morphs (four real
+shapes), Vessel Construction, Vessel Tails and Jets; fly it in Menu_Main freestyle; change domain (the domain colour
+lands on the Domain plates); upgrade each element (each visibly morphs the hull); check the class card, the
+inactive card and the hangar preview are the new hull. Then run **Wiring ▸ Bake Crystal Hull Fusions** once and
+push the bakes (Thresher, Scarab, Brittle Star, Urchin and Rhino are stale until then; they solve at runtime).
+
+1. **Sparrow, Serpent, Manta** (reproduced exactly): indistinguishable from before.
+2. **Thresher** (`Thresher.fbx`): a right turn swings the whip LEFT (out of the turn; the swim's yaw sign was
+   fixed), a planted whip curls toward the ball, a crack flicks toward it; the chain hangs from the shackle.
+3. **Scarab** (`Scarab.fbx`; the hidden Sparrow is gone from the prefab): the elytra open in a turn and on
+   throttle, the legs hang and tuck, the juke roll carries every part; the hull collider still triggers.
+4. **Stoat** (`Stoat.fbx`): the lope, the turn bend and the tail swing; spaghettification near a horizon still
+   stretches the drawn hull.
+5. **Angler** (`Angler.fbx`, its own `AnglerAnimation`): the swim beat, the jaw opens and the esca bulb swells
+   while luring (A held); the world-mark lure dot is unchanged.
+6. **Brittle Star** (`BrittleStar.fbx`): the ring turns with the firing rotation, is gone while thrown and blooms
+   back; muzzles fire from the barrel mouths; thruster flames lengthen; the 28 degree bank.
+   **Ring Detonation** (fixed at ship review): the thrown ring spins in its OWN plane, around the nose axis (it
+   used to take the mesh node's frame, whose Z is the hull's UP, so it tumbled), it leaves without frozen
+   plumes, and the blast disk faces along the nose.
+7. **Shrike** (`Shrike.fbx`): the beam leaves `gun.mouth`; the flame scales aft; docking swings the talon clamps.
+8. **Urchin** (rig swap): pods extend in flight and tuck flush when riding, the colliders stay on the drawn pods
+   (gizmos) through pitch/yaw/roll, plumes leave the four jet mouths, Slip/GhostAction still phase the colliders.
+9. **Rhino** (rig swap): wings fold at low throttle with the drawn plates inside their colliders (the plough's
+   reach), pod plumes leave the drawn rings, the pods now also wear the domain colour.
+
+### 🔴 The Butterfly's new model replaces its procedural hull (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable in this session (no Editor, no `unity` binary). What did run: the headless
+reference compile (`Tools/Build/unity_refcompile/run.sh`, 80 assemblies, no errors in project code),
+`build.py butterfly --check` (OK), `author_butterfly_dust.py --check` (OK) and a prefab self-check (every local
+reference resolves). Changed: `Assets/_Models/Vessel Models/Butterfly.fbx` (+ `.meta`, new guid, four slots
+remapped), `Butterfly.prefab` (the model under `Hull` in place of the MeshFilter / MeshRenderer /
+`ButterflyHullBuilder`), `ButterflyAnimation.cs` (bones by name, finds the SkinnedMeshRenderer, wing side signs
+fixed), `FoldActionExecutor.cs` (the ghost bakes the skinned mesh), `VesselCustomization.cs` (a model geometry
+with no Renderer resolves to its child SkinnedMeshRenderer). Verify in the Editor:
+1. The project compiles; the model imports with its four slots remapped (Domain / Body / Window / Engine).
+2. Fly it in Menu_Main freestyle: four wings beat from the hinges, the fore and hind a little apart; the
+   domain colour is on the wings; change domain and the wings change.
+3. Mass mode spreads the wings; the Fold (hold LT) closes them OVER THE BACK and the ghost is a butterfly.
+4. Upgrade each element: Charge, Mass, Space, Time each visibly change the hull.
+5. `FrogletTools ▸ Vessels ▸` Audit Vessel Elemental Morphs (four, none INERT), Audit Vessel Construction.
+
+### 🔴 The seven vessel models rebuilt in place by `/vessel-model` (Squirrel, Dolphin, Sparrow, Serpent, Manta live files; Urchin and Rhino rigs) (`ccr-d93a6dfb-ugbxng`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett (2026-10-17): "procedural vessel models are terrible even as placeholders". A new skill,
+`/vessel-model` (`.claude/skills/vessel-model/`), and its tools (`Tools/Build/vessel_model/`, Blender 5.2 as a Python
+module, no GUI) rebuilt the seven hulls from Python specs and wrote them **in place over the artist files** (same
+path, same guid, same mesh-node / geometry / armature / bone / material names, every bone's rest pose reproduced to
+0.000 by `rest_compare.py`, the same file frame per file). Each file: one skinned mesh, four REAL element shape
+keys (`charge/mass/space/time`, 4-18% of the diagonal; the Urchin and Rhino artist rigs had four EMPTY ones), the
+takes the Animators / `.meta` bind by name (Squirrel 9, Serpent 6, Sparrow 12, Dolphin 10 motion takes, Manta 9,
+Urchin / Rhino 9 standard poses), four material slots in the shipped order with polygons on every slot. Verified
+offline by three readers (the repo FBX codec + `fbx_probe`, `assimp info`, a Blender re-import), `build.py --check`
+green on all seven, `measure_vessel_models.py` green. **Nothing here ran in the Unity Editor**: `/verify-unity`
+was not available in the session (no editor, no `unity` binary). No C# changed. Live files rewritten:
+`SquirrelVessel_CosmicShoresTest1.fbx`, `dolphin_shapekey_with_animations.fbx`, `SparrowModel1.fbx`,
+`SerpentExport.fbx`, `Manta_shapekey_rigged.fbx`; rig files rewritten (not yet drawn by any prefab):
+`urchan_shapekey_with_animations.fbx`, `rhino_shapekey_with_animations.fbx`. Before/after contact sheets:
+`Docs/VesselModels/sheets/`.
+
+**Verify:** (1) Check out the branch; let Unity reimport the seven FBX files. Console: no "self-intersecting and
+has been discarded", no missing-bone or missing-clip warning; each `.meta` still resolves its clip ids (the take
+names are unchanged) and its `externalObjects` material remaps (names unchanged; the Dolphin's `N.001` never had a
+remap and still wears its Blender material, dossier `Docs/VesselModels/Dolphin.md` §2). (2) Open each prefab
+(`Assets/_Prefabs/Spacevessels/`: Squirrel, Dolphin, Sparrow, Serpent, Manta, plus Falcon / Shrike / Termite, which
+draw the Manta file): the SkinnedMeshRenderer shows the new hull, no bone binding broke, the jets / colliders /
+flares still sit on the hull (they hang off bones whose rest poses are unchanged). (3) `FrogletTools > Vessels >
+Audits > Audit Vessel Elemental Morphs`: all four shapes REAL on the five live files (the editor reads root-bone
+bounds and reports ~1.28x smaller than the offline number). `Audit Vessel Construction` and `Audit Vessel Tails and
+Jets`: no new row. (4) `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` for the Squirrel, Dolphin and
+Manta (the bakes store a vertex count and hash and are stale on any new mesh; the runtime falls back to a worker
+solve meanwhile). (5) Fly each of the five in freestyle: the hull reads at the chase camera; pitch / yaw / roll /
+throttle move the whole hull (Squirrel, Serpent, Sparrow through their Animator poses, Dolphin and Manta through code
+puppetry); the domain colour lands on the domain slot (slot 0 on the Dolphin / Manta family, `Body` on the Squirrel /
+Serpent / Sparrow as shipped); the glass and the engine mouths read; each element's morph is nameable in the
+elemental lab (Space = reach, Time = speed, Charge = weapon, Mass = volume). **Sparrow, read first:** the artist
+file flew BACKWARDS (`Docs/VesselModels/Sparrow.md` 1.4: the jet-hosting `b_Tail*` blades led, the cockpit trailed,
+`PitchUp` was inverted as flown); the rebuilt Sparrow is nose-first (beak and canopy forward, the six engine tubes
+at the stern) and its six `b_Tail1..3.L/.R` bones were MOVED to the stern, orientation kept, so the prefab's six
+`VesselJet` instances now stream from the engines: fly it and confirm the beak leads, the jets trail, pull back
+raises the nose, and the skyburst missiles (b_Missile bones, unchanged) still launch forward. The Squirrel, Urchin
+and Rhino files now carry the artist's parked pose baked into the rest (the node chain Unity builds the bone
+Transforms from equals the artist's, both readers 0.000), so their jets and colliders sit where they did. (6) The Scarab draws its own
+`ScarabHullBuilder` hull over the Sparrow file with renderers off: unchanged, confirm it still does. (7) Urchin and
+Rhino: their prefabs still draw the part-per-mesh placeholders. The rebuilt rigs are the swap targets for
+`FrogletTools > Vessels > Wiring > Swap Vessel Rig` (`Docs/VESSEL_CONSTRUCTION.md`: geometry, materials AND
+animation; the Urchin rig is 2.105x the live hull and the swapper fits the instance transform). At the swap, map the
+materials by MEANING, not by the artist's names: the rebuilt rigs paint the domain band on `accent` (slot 0) and the
+hull on `BASE` (slot 1), while the live Rhino placeholder had it the other way round (`Docs/VesselModels/Rhino.md`
+8.6: `BASE` carried the domain colour); the convention is slot 0 = Domain. The Urchin artist rig carried a 1.75 scale on its `winggrowrot*` nodes (the
+prefab's jets under them were authored at 1/1.75); the rebuilt rig bakes that scale into the bone lengths, models the
+appendages 1.75x out and 1.75x bigger (what Unity draws for the artist rig) and writes the nodes at scale 1, so
+the swapper (or a hand pass) sets those jets' local scale to the fleet plume (0.6, 0.6, 0.13) x |camera| / 20
+directly. After a swap, (3) must report four REAL morphs on each.
+
+**2026-10-18, after Garrett's Editor test: WITHDRAWN.** The rebuilt Sparrow flew backwards, the Urchin did not
+change (its prefab draws the placeholder), and the Squirrel, Dolphin and Sparrow read as cheap remakes. All seven
+FBX files were restored from the artist commit (5344a6530). The paragraphs above and the Round 3 paragraph below
+describe the withdrawn files; the only rebuilt file now live is the **Squirrel, round 7, on the artist's hull**:
+`specs/squirrel.py` keeps the artist's mesh, slots and colours exactly, bakes the parked pose into the rest, adds a
+ten-segment tail spine the nine chevrons hang on, and strengthens Mass 2.5% -> 3.7%. Garrett flew round 7 (2026-10-18):
+"big improvement", but the rear jet ports stayed still and roll twisted the wing panels, not the wing - its takes had
+been re-authored. **Round 8** carries the ARTIST'S nine takes (retargeted bone by bone; the new `take_parity.py` gate
+matches every part of every take to the artist's within 0.001 units / 0.1 degrees, and reports 310 differences on the
+round-7 file) and weights the spine between chevrons so it bends with them. Rest bounds equal the artist's drawn
+bounds; rest_compare 0.000; `--check` green. **Verify (Squirrel only):** every take moves like the artist's Squirrel
+(rear engines included; roll banks the whole wing with its pods), the spine follows the chevrons with no gap, and Mass
+reads from the chase camera. Then say keep / change / remove before the next vessel is attempted.
+**PASSED in the Editor, 2026-10-18 (Garrett):** "This passes. I upgraded its elements. changed domain. I can't tell
+it isn't the original." The Squirrel (round 8, commit 70824a8fd) is verified.
+
+**The Dolphin, 2026-10-18 (loop round 4), NOT EDITOR-VERIFIED:** `dolphin_shapekey_with_animations.fbx` is rebuilt
+in place from `specs/dolphin.py` - the artist's hull, 28-bone rig, four morphs, four materials and ten motion takes,
+kept and gated (take parity 0.0000 units / 0.00 degrees over 146 part-takes, moving bones identical take by take,
+morph and material parity, rest_compare 0.000, `--check` green). Nothing visible was added. **Verify:** it looks and
+flies exactly like the original (`RiptideAnimation` puppets it by bone name: jaws, wings, the six engine cases);
+upgrade its elements and change its domain as on the Squirrel; if the hull-fusion bake for its crystals looks off,
+re-run `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` for the Dolphin. The other five vessels carry the
+artist's files unchanged.
+
+**Round 3 (same day, after a reader review):** three gates had been dead or wrong and are now live, and the files
+were rebuilt under them. (a) The artist-reference block of `build.py` had a swallowed `NameError`, so the size,
+slot-order and colour checks were OFF: every file carried grey `DiffuseColor`; the files now carry the ARTIST
+file's colours by slot name (Unity generates the model's materials from them and remaps only the slots the `.meta`
+names). (b) The "drawn size" reader read each artist file with all four morphs at 100% (the files store
+DeformPercent 100 as the channel's static value), which had sent the Dolphin's wing span to 3.80; the span is back
+to the dossier's +-2.64, the Manta's reference is its real 3.95-wide hull, and the Squirrel now sits at the heights
+the artist's parked pose draws (1.23 tall, not 1.66). (c) A pose-DIRECTION gate (`pose_expect`, re-import centroid
+deltas) found yaw inverted on the Dolphin, Rhino, Urchin and Manta (a right turn is a negative rotation about up),
+roll inverted on five, and the Sparrow's mirrored poses turning the wrong way; all fixed. (d) The Sparrow's tail
+vanes now span the artist's z -0.82..+0.96. (e) The Urchin rig's appendages (guns, pads, jets, shrouds) are modelled
+1.75x out and 1.75x bigger, which is how Unity draws the artist rig (its hold bones carry S 1.75 over a scale-1
+bind) and how the live prefab authors them. One open asymmetry on the Urchin rig: in yaw and roll its `.r` shrouds and top jet deflect about a tenth of what
+the `.l` ones do (the pose gate reads the shields, which are symmetric); the `.r` chains inherit a different bone
+roll from the artist rig - look at it at the rig swap, it is a rig fact, not a model one. **Verify, in flight (every
+vessel):** pull back = nose up, stick right
+= nose right AND the right side drops; the Squirrel's tail swings to the OUTSIDE of a turn and drops on pull-back;
+the Sparrow's tail tubes swing left in a right turn. A wrong sign here is a spec number
+(`Tools/Build/vessel_model/specs/<vessel>.py`, the `pose()` builder), not a prefab or driver change.
+
+**First-pass tuning:** morph travel per file (offline, % of diagonal): Squirrel C 6 / M 4 / S 9 / T 7; Dolphin
+C 8 / M 4 / S 10 / T 7; Sparrow S 9 / C 7 / T 6 / M 4; Serpent 5-9; Manta 6-11; Urchin C 18 / M 5 / S 7 / T 9;
+Rhino C 8 / M 4 / S 8 / T 7. Pose amplitudes: 26-30 degrees on the Squirrel (its top blend tree halves them), 20-25
+elsewhere. All of it is a spec number (`Tools/Build/vessel_model/specs/<vessel>.py`); change the number, rebuild,
+`--check`.
+
+### 🔴 Rhino deep dive: step-1 fixes, HUD vestiges, full four-row kit, replication, AI (`cece/relaxed-hopper-r62hbd`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed** (three code commits; design record `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
+
+- **`805eef12` step-1 audit fixes.** `Rhino.prefab`'s `ResourceSystem.ChargeTestHarness` 0.5 → **0**
+  (it pinned Charge at level 5 every frame on every Rhino). The ramp now grades on **every peer**
+  from `InputStatus`' replicated sticks (only the owner did, so a replica held `IsBoosting` and ×16.8
+  for the rest of the turn), reads Time live, and compares climb/bleed against the new
+  `VesselTransformer.TrackedSpeed`. Sword ignition re-dispatch replays super-shielded contacts only,
+  and the box-overlap set is keyed on `prismProperties.TimeCreated` (a recycled prism is never
+  re-cut). The overtake/steal haptic plays only where a local human is one of the two pilots. The
+  sword capsule is a **trigger** again (the #928 merge had made it a solid kinematic capsule that
+  shoved the Astro League ball). `RhinoAnimation` idles the engines.
+- **`3fa268cd` HUD vestiges.** The pre-lockup status cluster that came back when the Rhino bound its
+  first icon (#971) — skimmer-size ring, slowed counter, slow-line flash, debuff/shock timer,
+  LaserTargeting / Crystal / ForceField, `BoostContainer` / `VesselImpactCooldown` /
+  `TrailContainer` — is deleted from `RhinoHUDVariant`, `Rhino.prefab` and `RhinoVesselHUDView`;
+  `RhinoVesselHUDController`'s four SOAP channels are gone. Dead weight removed: GrowTrail /
+  GrowSkimmer / ZoomOut classes, assets and executors (GrowTrail's grow loop never ran), the orphaned
+  arch-burst asset, `EventOnSkimmerDebuffApplied` / `EventOnVesselSlowedByExplosion`, 14 inert
+  SkimmerImpactor/Skimmer overrides, `ShieldSkimmerScaleConfigSO.prismMaxScale`.
+- **`8a3b4161` the four rows.** Charge **Sword Energy** (energy per cut ×1 → ×2) + L5 **Live Wire**
+  (a return to the stance re-lights the tail; without it the tail now runs out once let go). Mass
+  **Afterimage** (for 5 s after the energized blade goes out the sword lays prisms in its own shape;
+  volume ×1 → ×2.5) + L5 **Danger Afterimages**. Space **Blade Reach** (30 → 50) + **Breaker**
+  (unchanged). Time **Ramp Spool** + L5 **Momentum** (above 70% of top speed, 588 of 840 u/s, danger
+  prisms cannot drain the Rhino). The omni crystal is now a **Surge**
+  (`RhinoVesselSurgeByCrystalEffect`); the per-petal sword crystal burst is deleted. Blade pose,
+  energy, energize phase and Surge replicate (`RhinoSwordNetworkRelay`, trigger mirrors). AI:
+  `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` (this branch's cut was replaced by bleeding-edge's
+  ramp / brake / off driver in merge `5b09c6896`; "The Rhino AI brakes on the ramp" below,
+  `AI/AI_BOOST.md`) and `RhinoSwordAutopilot`. HUD: the row binds
+  4/4 with placeholder icons; Charge lit while energized + cooldown veil, Mass lit while afterimages
+  lay, Time lit while Momentum holds (superseded 2026-10-17: Time lit while boosting, see item 12).
+
+**Not opened in Unity** (no editor and no `unity` CLI in the session, so `/verify-unity` did not
+run). Offline: `Tools/Build/unity_refcompile` player + editor configs, 0 errors;
+`element_ability_table.py` Rhino 4/4 abilities, 4/4 scaling, 4/4 L5, 0 disagreements.
+
+**Verify in editor** (the QA items carry the full pass/fail wording, Block G of `Docs/QA/QA_BACKLOG.md`):
+1. `Rhino.prefab` and `RhinoHUDVariant.prefab` import with no missing-script or broken-reference
+   errors; **Audit Vessel Ability Rows** reports the Rhino 4/4 (QA-RHINO-HUD-ROW).
+2. Freestyle Rhino: the four cards read Sword Energy / Afterimage / Blade Reach / Ramp Spool and
+   nothing of the old status cluster is on screen; Charge, Mass and Time cards light in their
+   windows (QA-RHINO-HUD-ROW).
+3. `ResourceSystem` → Charge Test Harness reads 0, and Charge moves with Charge crystals
+   (QA-RHINO-CHARGE-HARNESS).
+4. Energize, release: 5 s of blade-shaped prisms; for their first 1 s the sword passes through
+   them, after that it cuts them like any prism and banks energy (changed 2026-10-17 — it used to
+   never cut its own); the hull ploughs them; at Mass 5 they are danger prisms (QA-RHINO-AFTERIMAGE).
+5. Below Charge 5 the energized tail runs out ~5 s after the stance is let go; at Charge 5 a return
+   to the stance relights it (QA-RHINO-LIVE-WIRE).
+6. Time 5: above ~588 u/s a danger prism does not drain elements; below it does (QA-RHINO-MOMENTUM).
+7. Omni crystal: 6 s energized with no stance, +2 levels on all four decaying, afterimages
+   throughout, blade burst, explosion unchanged; elemental petals no longer empty the meter
+   (QA-RHINO-OMNI-SURGE).
+8. MPPM two clients: a half-pull swing cuts the same prisms on both; energize and afterimages show on
+   both; a remote ramp ends (`IsBoosting` false) once its pilot steers off (QA-RHINO-TWO-PEER).
+9. AI Rhino ramps on straights, swings at prisms, energizes near super-shields; `AIPilot`'s ability
+   list is empty (QA-RHINO-AI).
+10. Astro League as the Rhino: a swung sword tip still launches the ball; a parked blade no longer
+    shoves it as a solid (QA-RHINO-ASTROLEAGUE-BLADE).
+11. Playtest Headlong, Cleave and Astro League at the new kit — afterimage mass, Momentum and a
+    ramping AI all move their numbers, which were not re-derived.
+
+**2026-10-17 follow-up (`e1fc1771`, also not opened in Unity, `/verify-unity` unavailable):**
+
+12. Rhino Time card lights while the ramp is boosting (not only above Momentum) and flashes once
+    when Momentum takes hold (~588 u/s at Time 5); its gauge fills with speed / top speed.
+13. Charge card gauge fills with sword energy 0..1, and the card stays lit through the 5 s tail
+    after the stance is let go.
+14. Chips: L1+R1 two-trigger glyph on Charge, Mass and Space, the sticks-apart glyph on Time; on
+    keyboard they read "L+R SHIFT" and "A + '". Holding both triggers lights Charge only.
+15. Manta Soar card now draws the two-trigger chip (it drew none before).
+16. A Grizzly flying into an opposing domain's danger prism loses petals (the burn); no pilot's
+    Button2 is muted by any danger prism.
+17. Self-farm watch: energize once, then cut only your own afterimages — note whether the meter
+    refills; if it is too strong the lever is energy-per-own-afterimage, not immunity.
+
+**First-pass tuning** (never played — expect a balance pass):
+
+| knob | where | value |
+|---|---|---|
+| afterimage window | `RhinoSwordAfterimageConfig.asset` `windowSeconds` | 5 s |
+| lay cadence | same, `layIntervalSeconds` / `minTipTravel` | ≥ 0.3 s and ≥ 6 u of tip travel |
+| afterimages per window | same, `maxAfterimagesPerWindow` | 16 |
+| blade segments | same, `maxSegments` / `segmentLength` / `lengthCoverage` | ≤ 6 of ≤ 10 u, covering 90% |
+| segment cross-section | same, `width` × `thickness` | 2 × 0.8 (× cbrt of the Mass multiplier) |
+| collider delay | same, `colliderDelaySeconds` | 0.1 s |
+| Mass → afterimage volume | same, `massVolumeMultiplier` | ×1 → ×2.5, floor ×0.25 |
+| Surge length | `RhinoVesselSurgeByCrystalEffect.asset` `surgeSeconds` | 6 s |
+| Surge element lend | same, `elementBoost` | +0.2 (2 levels), decaying over the Surge |
+| Surge energy fill | same, `energyFill` | 1 |
+| Charge → energy per cut | `RhinoSkimmerDamagePrismEffect.asset` `chargeEnergyGainMultiplier` | ×1 → ×2, floor ×0.5 (on 0.04 / kill, 0.12 / super-shield pop) |
+| Momentum threshold | `Rhino.prefab` `VesselElementalImmunity` `topSpeedFraction` | 0.7 (588 of 840 u/s) |
+| AI ramp re-arm | `RhinoAIBoostPolicy.asset` `minRearmSeconds` | 0.5 s (corner speed / brake knobs: `AI/AI_BOOST.md`, Ramp) |
+| AI sword think | `Rhino.prefab` `RhinoSwordAutopilot` `thinkSeconds` | 0.15 s |
+| AI stroke / rest | same, `strokeSeconds` / `restSeconds` | 0.3 s / 0.45 s |
+| AI energize margin | same, `energizeMargin` | 0.05 over the 0.1 cost |
+| AI energize when full | same, `energizeWhenFull` | 0.75 |
+
+**Resolved 2026-10-17:** `SparrowDebuffByRhinoDangerPrismEffect` (the Button2 mute on any danger
+prism, Sparrow and Grizzly containers) is deleted; the Grizzly now carries the fleet danger burn.
+**Still open, do not fail on:** rig swap not run; jets unsized; no `ElementalBarsView` on
+the Rhino; combos have 24 empty FMOD slots, no HUD callout, and the AI never combos.
+
+---
+
 ### 🔴 Angler round 7: A lures and B dashes (the Sparrow's buttons); "the QuadFish don't always listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md` §1, §1k. No `unity` CLI was available, so `/verify-unity` did NOT run. Headless: `unity_refcompile` player OK (editor: only the 3 pre-existing `UgsRequestPolicyTests` errors); `author_angler_assets --check` and `--self-test` 19/19; `element_ability_table Angler` reads Mass A / Space and Time B / T.
@@ -1268,6 +1582,100 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 **First-pass tuning** comes from the lab's `SHIPPED` block, and the lab is where it changes (`ANGLER.md` §5).
 
 ---
+
+### 🔴 Kite Navigator on the Wrasse ("Wrasse and Grouper"): the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** the first multiplayer vessel, `VesselClassType.Wrasse = 19` (a Sparrow hull, in the Toybox's
+Vessel Changer), and its second seat, ported from the Crew Vessel Lab's signed-off round 3
+(`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`).
+- **The board and the kite:** a navigator flies a kite on the hull's x-z plane. The head pops hostile prisms and rams
+  rivals. The tail closes loops, and a loop of one navigator-only element fires Space (an AOEExplosion), Mass (a
+  cluster of our prisms), Time (boost) or Charge (the next ram steals petals, as a scored Strike).
+- **The seats:** the arena's swap gesture moves the human between the hull and the kite, and an AI flies whichever seat
+  is empty.
+- **What has been checked:**
+  - Compile: `unity_refcompile`, player config clean (0 errors in project code). The editor config has 0 errors in
+    the changed files; its 3 project errors are in `AuthenticationServiceFacade.cs` and `MultiplayerSetup.cs`
+    (`Unity.Multiplayer.PlayMode` is unobtainable to the harness).
+  - Parity: `Tools/Build/kite_navigator_lab/parity.cjs` PASS. The core matches the lab over 3120 frames, the asset
+    matches it on 21 fields, and the planted controls are caught.
+  - Tests: the 12 `KiteNavigatorCoreTests` pass when compiled outside Unity with an NUnit shim.
+  - `/verify-unity` was not available in this session.
+- **First-pass numbers:** all from the lab: board 160 u, kite 320 u/s, tail 1.6 radii, growth ×2, Space 60 → 640
+  MaxScale, Mass 6 → 240 prisms, Time 1.5 → 30 s, Charge 1 → 30 petals. Expect a balancing pass once it is seen in a
+  real match. The lab could not see the real blast hitting rival hulls, or the prism pool's own limits.
+
+**Round 4 (2026-10-18, Garrett's direction in Unity; `KITE_NAVIGATOR.md` "Round 4"):** the kite view is a second
+camera drawn by the game; the views swap; motes are lime petal shapes; the kite follows with no click; the pilot is
+one-thumb with no buttons, and the lifted thumb boosts; the hull's petals weight the motes; Charge rams creatures; the
+L5 upgrades (Mass shields clusters, Charge steals, Space breaks super shields, Time removes the boost cooldown); an
+Omni crystal doubles the board for 5 s. Round 4b: boost on the pilot's trigger, visible petals, unlit out-of-plane
+prisms, a 50% longer lasso, a small pilot view. Player and editor reference compiles: 0 errors in changed files.
+`author_wrasse_assets.py --check` and `--self-test` OK.
+
+**Round 4d (2026-10-18):**
+- The pilot flies on two sticks again.
+- The ability cards count the saved boosts (Time), the kite's rams (Charge) and the last blast's kills (Space); the
+  Mass card flashes when a cluster lands. This is `WrasseHUDController`, and the map has the Wrasse's own cards with no
+  button chips.
+- Each mote is a five-petal flower that moves like its element.
+- The kite view sees 400 u above and below the plane:
+  - prism depth is measured from the plane (`PrismDepthPlane`, a new HLSL include in `PrismClockAnimation.hlsl` and the
+    swarm member shaders);
+  - the mass above the board dithers in a cone (`PrismOcclusionCorridor.BeginViewOverride`).
+- Checks run:
+  - player reference compile: 0 errors;
+  - editor reference compile: the same 3 errors as before, none in the changed files;
+  - `author_wrasse_assets.py --check` and `--self-test`: OK;
+  - `verify_swarm_member_pose.py`: OK.
+- **The shader change needs a Unity import**:
+  - BlockGraph and the swarm shaders recompile with the new include;
+  - check that the pilot's own view of prisms is unchanged (the include is off by default).
+
+**Verify:**
+1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Wrasse and Grouper** station (it looks like a
+   Sparrow). The hangar's card for it reads WRASSE AND GROUPER too.
+   - Lower left: a small square kite view, the real world seen from straight above your hull.
+   - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
+   - In your own view: a faint see-through kite and faint lime dots, not in the way.
+2. Fly with two thumbs (both sticks, or the keyboard): the spread of the sticks is the throttle. Round 4e: it turns
+   faster and rolls much faster than in 4d (pitch and yaw 100, roll 120). No ability button does
+   anything, and no card shows a button chip. The hull keeps the Sparrow's tuning (top speed 60); say if it wants the
+   two-stick hulls' sharper turns.
+3. After a Time loop, the Time card shows the saved boosts (a number) and the kite view shows a lime dot each round the
+   hull. Pull the right trigger (right Shift; on a phone, lift both thumbs): one boost runs 1.5 s, the count drops by
+   one, and the Time card's veil sweeps until the next can fire (2 s after; none at Time level 5). Flying with nothing
+   held does NOT boost.
+   - The Charge card shows the kite's rams (a number), the Space card how many prisms the last Space blast destroyed,
+     and the Mass card flashes when a Mass cluster lands.
+4. Press **2** (or D-pad right).
+   - The kite view fills the screen.
+   - Your hull's view shrinks to the same small square in the lower left, flown by its AI.
+   - Each mote is a lime five-petal flower that looks like the element flower on top of the ability totem: the same
+     petal shapes, sizes and spacing (round 4f). Space spins all the time; Time flips its petals one after another; Mass
+     holds three petals in while two push out, a new pair each half second; Charge has one blue plasma bolt with a short
+     tail running round all five petals.
+   - The hull, flown by its AI, never shoots (round 4c removed the Sparrow's guns and missiles).
+   - Prisms far above or below the plane are the real prisms, never gone (round 4d). Prisms on the plane look crisp;
+     the farther out of the plane, the more their faces part, as distant mass does in the pilot view. Prisms above
+     the board dither (a shattered see-through look) so the board under them stays visible. In your small pilot view,
+     prisms look exactly as they always did.
+   - The tail is half as long again as before (2.4 board radii).
+   - Move the mouse without clicking, or lean the stick: the kite follows.
+5. Loop motes of one petal shape:
+   - **Space**: a blast takes out hostile prisms. At Space level 5 it also breaks shielded and super-shielded prisms.
+   - **Mass**: a cluster of your prisms. At Mass level 5 they are shielded.
+   - **Time**: boost for the pilot.
+   - **Charge**: gold pips round the kite.
+6. A loop with two petal shapes in it fizzles.
+7. With charge, ram a rival: crystals burst out of them (at Charge level 5, the petals come to you instead) and the
+   scoreboard counts a hit. Ram a creature: it dies, and one pip goes.
+8. Collect an Omni crystal (round 4e): four clusters of motes, one of each element, pop onto the kite's board around its
+   centre. The view does NOT zoom.
+9. Press **1**: your view is full screen again, at its old size, with no stuck input and no stuck boost.
+10. Gather petals of one element on the hull: the motes of that shape come more often.
+11. In the Vessel Changer, swap away from the Wrasse and back, once flying and once while on the kite. Every view comes
+    back to normal and the input is live.
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
@@ -1393,7 +1801,7 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 - `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
   is byte-identical to the shipped prefab.
 - `studio_to_unity.py --vessel shrike --check`: 29/29 match.
-- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass.
+- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass (the latter retired 2026-10-18: the card is rendered from the model by `vessel_model/render_cards.py Shrike --check`).
 - These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_vessel_camera_farclip`,
   `check_vessel_class_icons`, `check_network_prefab_hashes`, `check_console_logging`, `check_conditional_compilation`,
   `check_using_directives` and `check_elemental_floats`.
@@ -2585,7 +2993,7 @@ icons rendered from the hull (`render_thresher_card_icon.py`). All authored by `
 
 **Proved offline**: `thresher_hull_harness` (shipped forms RUN: winding by parity ray, morph bounds, tail chain
 never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--self-test` (6 negative controls);
-`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check`; `check_vessel_class_icons.py`;
+`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check` (retired 2026-10-18: `vessel_model/render_cards.py Thresher --check`); `check_vessel_class_icons.py`;
 `unity_refcompile` (see the branch's commit message for the run). Nothing here has been seen in the editor.
 
 **Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /
@@ -4042,6 +4450,12 @@ config reports 0 errors in project code.
 2. Fly through an omni crystal: the Rhino's vessel crystal blast still fires (unchanged).
 3. The inspector on `RhinoSwordCrystalBurstEffect.asset` shows no fields, and the console is clean.
 
+> **Superseded 2026-10-16 (`cece/relaxed-hopper-r62hbd`):** `RhinoSwordCrystalBurstEffectSO` and its
+> asset are DELETED — the burst drained the whole sword meter on every elemental petal the blade
+> touched. On a build carrying that branch, step 1 reads "collected, petal gained, **no** blade burst
+> and **no** meter drain", and step 3 has no asset to open. The blade-burst look moved to the omni
+> crystal's Surge (`RhinoVesselSurgeByCrystalEffect`); the vessel blast in step 2 is unchanged.
+
 ---
 
 ### 🔴 Offline mode: the seven cases tested, B26–B28 fixed (Block 4) (`Ys-bleeding-edge`, 2026-10-08)
@@ -5180,6 +5594,11 @@ QA item: `QA-HULL-ABILITY-ROWS`.
 3. **FrogletTools > Vessels > Audits > Audit Ability Lockups**: no icon reported as not fitting its card.
 4. Rhino match: row reads LOCKED / Trail Slabs / LOCKED / Ramp Spool; the old bottom-right Rhino
    chrome stays retired; no `[VesselHUDView]` row warnings.
+   *(Superseded 2026-10-16, `cece/relaxed-hopper-r62hbd`: the Rhino binds **4/4** — Sword Energy /
+   Afterimage / Blade Reach / Ramp Spool, placeholder icons — so step 2 has no Rhino open-slot lines
+   and this step reads four live cards. The "old chrome stays retired" half did NOT hold: binding
+   this entry's first icon let the lockup spare the status cluster and it came back; that branch
+   deleted it outright.)*
 5. Serpent: Sniper Shot (RT chip) / LOCKED / Scope (LT chip) / Pellets (A chip); fire the rifle and
    the Charge card's cooldown veil sweeps over the bullet icon.
 6. Scarab: blast / ring / ball / dial icons, not Sparrow art; gauge tints still apply (blast
@@ -5893,6 +6312,13 @@ The **Rhino's energised sword** lands a Strike and drains nothing — it is now 
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
 
+> **Wrong as of 2026-10-16 (re-measured on `cece/relaxed-hopper-r62hbd`):** the sword's container
+> carries `RhinoSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`, landed with #928):
+> −0.08 / +0.08 per element for 3 s, cooldown 1 s, `stealScale` authored disabled (base magnitude),
+> run only for a hit `VesselCombatHitBySword` admits — i.e. the Strike price, PvP-petals-only. The
+> gap this section describes is closed; verify it as "a +8 sword hit dips the victim's four petal
+> bars".
+
 ---
 
 ### 🔴 Scarab analog juke + mirrored cavitation plate (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
@@ -6330,6 +6756,14 @@ skimmer-size ring, laser and crystal indicators. The view still writes to them �
 switched off, not unwired — so restoring one is re-activating a branch. The rule reverses itself
 the day that vessel binds its first ability icon.
 
+> **2026-10-16 — the reversal happened, and the Rhino half of this entry is now history.** #971 bound
+> the Rhino's first icons, the reference guard came back on, and the driven cluster reappeared in the
+> row's corner. `cece/relaxed-hopper-r62hbd` deleted the cluster (readouts, view fields, the SOAP
+> channels, `BoostContainer` / `VesselImpactCooldown` / `TrailContainer`, and Rhino.prefab's added
+> LaserTargeting / Crystal / ForceField / ShockIcon objects), and the Rhino now binds **4/4**. The
+> Rhino checkbox below reads, on such a build, "four LIVE cards bottom-right and nothing else" — the
+> listed objects are not inactive, they do not exist. Manta and Serpent are unchanged by it.
+
 **Verify in editor**
 
 - [ ] **Rhino**: four LOCKED cards bottom-right and nothing else on the HUD. `BoostContainer`,
@@ -6476,7 +6910,9 @@ Four defects reported from play, four fixes, all still unverified in the Editor:
    gone entirely.
 4. **Locked slots / the Rhino.** The row is always four cards; an unbound slot draws locked.
    **Verify:** fly a **Rhino** — four cards, Mass live (Trail Slabs), three drawn locked, element
-   flowers docked above all four, and no old ability-icon UI left in the corner. Same for **Manta**
+   flowers docked above all four, and no old ability-icon UI left in the corner. *(2026-10-16: on a
+   build carrying `cece/relaxed-hopper-r62hbd` the Rhino has no locked card — all four are live —
+   so use Manta / Serpent for the locked-slot half.)* Same for **Manta**
    and **Serpent**. Confirm the locked cards are clearly quieter than a live one and are not
    clickable.
 
@@ -6518,7 +6954,7 @@ retired from the style. **Verify, per vessel:**
    on-screen ability button must still respond on a device or the simulator; raycasting uses the
    RECT, not the drawn trapezoid, so the corners are live by design.
 7. **Locked slots.** On Rhino / Manta / Serpent both plates read quieter, with the placeholder bar
-   centred in the lower one.
+   centred in the lower one. *(Rhino: no locked slot since 2026-10-16, `cece/relaxed-hopper-r62hbd`.)*
 
 Then re-run **Audit Ability Lockups** (it now reports the slant and checks the icon against the
 ability plate's NARROW edge) and `AbilityLockupStyleTests` (three new/reworked tests: the gap and
@@ -6598,7 +7034,7 @@ from the assets, per vessel:
 |---|---|---|
 | Sparrow · Scarab | `Boost Button/display`, `Ammo Count`, `ActionIconHolder`, `XBOX_Icon_Root`, `PS_Icon_Root` | the four cards |
 | Dolphin | a stray root `Image`, `XBOX_Icon_Root`, `PS_Icon_Root` | its four ability buttons (already moved into the row) |
-| Rhino | `BoostContainer` | — |
+| Rhino | `BoostContainer` *(deleted from `RhinoHUDVariant` outright on 2026-10-16, `cece/relaxed-hopper-r62hbd` — nothing left to retire)* | — |
 | Serpent · Squirrel | — | their glyph roots, because their switcher references them |
 
 **Verify:** only the four-card row remains on each vessel; the Squirrel and Serpent still show

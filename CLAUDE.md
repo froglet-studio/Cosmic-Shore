@@ -50,6 +50,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Menu Screen Navigation (Menu_Main Scene); Lava-Lamp Mode (Menu Freestyle Merge)
 - [`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`](Docs/claude/VESSEL_HUD_AND_ELEMENTS.md): Elemental bars, hull morphs, rigged-model swap, the LOCKED four-icon ability row.
   Sections: Elemental Bars (per-vessel buff/debuff display); Elemental Hull Morphs (the vessel model is an element display); The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
+- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
+  Sections: the table of dossiers; how to regenerate a number
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.
@@ -121,6 +123,11 @@ Until then:
   someone play-tuned in Unity, ask: `who_works_where.py` shows who tuned them.
 
 ### Working with the Vessel Studio (while it is kept)
+
+**"Bring it to Unity" means "put it in the Toybox's Vessel Changer"** (Garrett, 2026-10-17: "my workflow is artifact
+to vessel selector in toybox"). A port is done when the person can fly it from the freestyle Vessel Changer, not when
+a play-mode menu or a scene reaches it. Anything that is not a hull of its own (a seat, a crew role) ships on a hull
+class (`Tools/Build/author_wrasse_assets.py` is the pattern). Details: `/labmaker` §7, `/artifact-to-unity` §2.
 
 For vessel work (how a vessel flies, its AI, difficulty levels, play styles or cameras), **offer the Vessel Studio**
 to the person in one line: the ONE claude.ai artifact

@@ -1112,6 +1112,28 @@ cuts a hole through unrelated mass:
 A third caller needs to make the same argument. What is NOT sanctioned is a hold taken to make
 some content look better, or one taken for longer than the vantage it exists for.
 
+**The one re-shaping view, `PrismOcclusionCorridor.BeginViewOverride` / `EndViewOverride`
+(2026-10-18).** Not a hold and not a re-point to somewhere else: a SECOND VIEW of the bound
+vessel's own play that looks down a different line needs the same protection the law gives the
+pilot's eye. The one caller is the Wrasse's navigator board (`Controller/Vessel/Crew/KiteNavigatorView.cs`).
+That is a top-down orthographic camera over the hull's plane, where the mass between the lens and the
+plane hides the board the navigator flies on (Garrett: "for the prisms above the plane just use
+the dither effect in a cone to preserve the viewing area visibility").
+- **For that camera's render only** (`beginCameraRendering` / `endCameraRendering`), the three
+  corridor globals become a cone from the kite lens down to the plane, sized so its core covers the
+  view at the plane, with a core alpha above 0 so the mass dithers rather than vanishing.
+- **Its guards:**
+  - it is **identity-guarded** like `SetViewShift` (only the bound vessel or a child may call it);
+  - it honours `SetSuppressed`;
+  - it saves what was published and restores it at the end callback, so the pilot camera that renders
+    after it, and the Scene view, draw their own corridor unchanged.
+- **Its sibling for the same render** is `PrismDepthPlane` (`PrismDepthPlane.hlsl`, included by
+  `PrismClockAnimation.hlsl` and the swarm member shaders). The face spread's distance becomes the
+  scaled distance OUT OF THE PLANE, so the board reads crisp and the mass far above or below it opens.
+  The all-zero default is off, bit for bit.
+
+A further view override needs the same argument: a second view of the bound vessel's own play.
+
 In both cases it is symmetric and it is a HOLD, not an opt-out: the vessel
 binding survives it, so nothing has to remember to re-point the corridor afterwards. That lift
 is **unconditional and first**, above `RestoreGameplayCamera`'s own follow-target early return

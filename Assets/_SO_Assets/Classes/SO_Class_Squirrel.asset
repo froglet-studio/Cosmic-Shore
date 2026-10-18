@@ -29,10 +29,8 @@ MonoBehaviour:
   PreviewImage: {fileID: 21300000, guid: 99bcc774a1bc5ad42bff1539ddc45a7f, type: 3}
   SquadImage: {fileID: 21300000, guid: 468b9bae5faa0d94d82ead6a137b1d6a, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
-  CardSilohoutteActive: {fileID: 21300000, guid: 5d8f022f56d65ef4fae2cea4428a990f,
-    type: 3}
-  CardSilohoutteInactive: {fileID: 21300000, guid: cc08a778da01fa24ab5748ca8efe5178,
-    type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: 5d8f022f56d65ef4fae2cea4428a990f, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: cc08a778da01fa24ab5748ca8efe5178, type: 3}
   Abilities:
   - {fileID: 11400000, guid: 200e28ab23d1c5d49ae077a93c79c387, type: 2}
   - {fileID: 11400000, guid: b576710e788f4dd4883e6be348736384, type: 2}

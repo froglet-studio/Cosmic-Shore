@@ -142,7 +142,7 @@ namespace CosmicShore.UI
             _currentShip = ship;
 
             if (vesselNameText)
-                vesselNameText.text = ship.Name.ToUpperInvariant();
+                vesselNameText.text = ship.CardName.ToUpperInvariant();
 
             if (vesselDescriptionText)
                 vesselDescriptionText.text = ship.Description;

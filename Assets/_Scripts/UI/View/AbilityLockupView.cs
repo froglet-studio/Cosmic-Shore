@@ -1227,6 +1227,22 @@ namespace CosmicShore.UI
             if (_slots.TryGetValue(element, out var slot)) SetSlotControl(slot, input);
         }
 
+        /// <summary>
+        /// A card's chip named by its CONTROL rather than by an input event - for an ability driven by
+        /// a gesture no <see cref="InputEvents"/> button names (the Rhino's ramp is the dual-stick
+        /// throttle pushed apart; <c>FullSpeedStraightAction</c> is also the passive sentinel and draws
+        /// nothing, deliberately, for every passive card in the fleet). Overrides whatever the map's
+        /// input seeded on this card.
+        /// </summary>
+        public void SetAbilityControlBinding(Element element, InputDeviceIconSetSwitcher.HintBinding pad,
+                                             InputDeviceIconSetSwitcher.HintBinding key)
+        {
+            if (!_slots.TryGetValue(element, out var slot)) return;
+            slot.PadBinding = pad;
+            slot.KeyBinding = key;
+            RefreshChip(slot);
+        }
+
         /// <summary>The same chip on a NON-elemental card.</summary>
         public void SetCoreAbilityControl(CoreAbility ability, InputEvents input)
         {
