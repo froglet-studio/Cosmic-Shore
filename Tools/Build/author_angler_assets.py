@@ -182,6 +182,13 @@ ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": I.guid_for("Angler_Command.png"
              "586d56db81bb568c940094830cd59abb": I.guid_for("Angler_Lure.png"),
              "669089ec7ad29ed295eccc53d8615225": I.guid_for("Angler_Tame.png")}
 CARD_ACTIVE, CARD_INACTIVE = I.guid_for(I.CARD_ACTIVE), I.guid_for(I.CARD_INACTIVE)
+# the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
+# names a new PNG md5("cosmic-shore-card:" + its repo path); Angler.png / Angler_Inactive.png keep the guids above
+def _model_card(rel):
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+CARD_SILHOUETTE = _model_card("Assets/_Graphics/CardImages/Angler_silhouette.png")
+CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Angler_large.png")
+CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Angler_Hangar_Preview.png")
 # Stoat-only BEHAVIOUR that must not survive the clone (the hull and the lope are kept: see the module doc).
 STOAT_SCRIPTS = ("86da9d91d4364f02ad41dd723756e970",   # StoatHUDController
                  "c120940f60a14c2aa390446ea0791b5a",   # StoatHUDView
@@ -516,11 +523,11 @@ def class_asset() -> str:
             "  InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}\n"
             f"  IconActive: {{fileID: 21300000, guid: {CARD_ACTIVE}, type: 3}}\n"
             f"  IconInactive: {{fileID: 21300000, guid: {CARD_INACTIVE}, type: 3}}\n"
-            "  PreviewImage: {fileID: 0}\n"
-            "  SquadImage: {fileID: 0}\n"
+            f"  PreviewImage: {{fileID: 21300000, guid: {CARD_PREVIEW}, type: 3}}\n"
+            f"  SquadImage: {{fileID: 21300000, guid: {CARD_LARGE}, type: 3}}\n"
             "  TrailPreviewImage: {fileID: 0}\n"
-            "  CardSilohoutteActive: {fileID: 0}\n"
-            "  CardSilohoutteInactive: {fileID: 0}\n"
+            f"  CardSilohoutteActive: {{fileID: 21300000, guid: {CARD_ACTIVE}, type: 3}}\n"
+            f"  CardSilohoutteInactive: {{fileID: 21300000, guid: {CARD_SILHOUETTE}, type: 3}}\n"
             "  Abilities: []\n"
             "  Games: []\n"
             "  TrainingGames: []\n"

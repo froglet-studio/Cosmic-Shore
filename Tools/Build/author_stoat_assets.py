@@ -481,7 +481,7 @@ def apply_hull(text: str) -> str:
 def class_asset() -> str:
     """SO_Class_Stoat - the SO_Vessel a card's Vessels list, the hangar and the class lists name a
     hull by (CONTRACT.md 1.9). Butterfly-shaped; owned from the start so the prototype can be
-    picked; its card icons are renders of its own hull (render_stoat_card_icon.py)."""
+    picked; its card images are renders of its own model (vessel_model/render_cards.py)."""
     return (
         "%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
         "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
@@ -497,8 +497,10 @@ def class_asset() -> str:
         "  InitialResourceLevels:\n    Mass: 0\n    Charge: 0\n    Space: 0\n    Time: 0\n"
         f"  IconActive: {{fileID: 21300000, guid: {CARD_ICON_ACTIVE}, type: 3}}\n"
         f"  IconInactive: {{fileID: 21300000, guid: {CARD_ICON_INACTIVE}, type: 3}}\n"
-        "  PreviewImage: {fileID: 0}\n  SquadImage: {fileID: 0}\n  TrailPreviewImage: {fileID: 0}\n"
-        "  CardSilohoutteActive: {fileID: 0}\n  CardSilohoutteInactive: {fileID: 0}\n"
+        f"  PreviewImage: {{fileID: 21300000, guid: {CARD_PREVIEW}, type: 3}}\n"
+        f"  SquadImage: {{fileID: 21300000, guid: {CARD_LARGE}, type: 3}}\n  TrailPreviewImage: {{fileID: 0}}\n"
+        f"  CardSilohoutteActive: {{fileID: 21300000, guid: {CARD_ICON_ACTIVE}, type: 3}}\n"
+        f"  CardSilohoutteInactive: {{fileID: 21300000, guid: {CARD_SILHOUETTE}, type: 3}}\n"
         "  Abilities: []\n  Games: []\n  TrainingGames: []\n"
         "  gameplayParameter1:\n    LeftHandLabel: Casual\n    RightHandLabel: Challenging\n    Value: 0.6\n"
         "  gameplayParameter2:\n    LeftHandLabel: Relaxing\n    RightHandLabel: Thrilling\n    Value: 0.7\n"
@@ -908,8 +910,16 @@ VESSEL_CONTAINER = "63a1b912028e471b9b7a2df570e90be8"
 SKIMMER_CONTAINER = "ffdd072d412946c6ad6adf899a6ef7a6"
 AI_BOOST_POLICY = "c691910cb0114ea7aeb572bc51b71a6a"
 HUD_VARIANT = "1f9b41e6fa58494599674753191b495b"
-CARD_ICON_ACTIVE = "627c06caaa88435fa2c44e98ad1fb611"      # render_stoat_card_icon.py
+CARD_ICON_ACTIVE = "627c06caaa88435fa2c44e98ad1fb611"      # rendered from the model by vessel_model/render_cards.py
 CARD_ICON_INACTIVE = "d845d4e49ee148f9b787599a3755eaa9"
+# the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
+# names a new PNG md5("cosmic-shore-card:" + its repo path); Stoat.png / Stoat_Inactive.png keep the guids above
+def _model_card(rel):
+    import hashlib
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+CARD_SILHOUETTE = _model_card("Assets/_Graphics/CardImages/Stoat_silhouette.png")
+CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Stoat_large.png")
+CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Stoat_Hangar_Preview.png")
 SQUIRREL_CAMERA = "3c3fc507fffc4f5e86ab043ee7543cd2"
 SQUIRREL_VESSEL_CONTAINER = "769c65db9958c064485be49a2183f263"
 SQUIRREL_SKIMMER_CONTAINER = "643af834f1bcd9946903ac2c71d6d8ff"
@@ -1618,7 +1628,7 @@ def check_stage6(files, prefab, errors):
     if not files.get(os.path.relpath(AI_POLICY_PATH, ROOT), "").count("  m_Name: StoatAIBoostPolicy\n"):
         errors.append(f"{os.path.relpath(AI_POLICY_PATH, ROOT)} is missing or misnamed")
     if not class_icons_ok(files):
-        errors.append("the Stoat's card icons (CardImages/Stoat.png, Stoat_Inactive.png) are missing - run render_stoat_card_icon.py")
+        errors.append("the Stoat's card icons (CardImages/Stoat.png, Stoat_Inactive.png) are missing - run vessel_model/render_cards.py Stoat")
 
 
 def check(files: "dict[str, str]") -> "list[str]":

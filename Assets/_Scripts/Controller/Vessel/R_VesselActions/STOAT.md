@@ -166,8 +166,9 @@ present. The spaghettification (`BlackHoleWarp.VesselLogStretch`) and the lope s
 `GreenAccentVesselMaterial` (the Domain slot) by identity.
 
 **Kept until the owner accepts the model:** `StoatHullForm.cs`, `StoatHullBuilder.cs`, `StoatHullTests`,
-`Tools/Build/stoat_hull_harness/` and `render_stoat_card_icon.py` (the card icons are still renders of the
-placeholder). To go back, restore the stage-2 hull block of `author_stoat_assets.py` from git and rerun it.
+`Tools/Build/stoat_hull_harness/`. The card images are rendered from the MODEL by
+`Tools/Build/vessel_model/render_cards.py Stoat` (`render_stoat_card_icon.py`, which drew the placeholder, was retired
+2026-10-18). To go back, restore the stage-2 hull block of `author_stoat_assets.py` from git and rerun it.
 
 ## 2.2 The bounding lope — body-only (`StoatLopeMath` + `StoatAnimation`)
 

@@ -17,7 +17,8 @@ Angler Command Lab's words (Docs/Studios/ANGLER_COMMAND_LAB.md, round 2 - the Sl
 The element order is the PROPOSAL in R_VesselActions/ANGLER.md (no ElementalAbilityMaps/Angler.asset is authored until
 the designer approves a mapping), so an icon names its act, never its element.
 
-The CARD (SO_Class_Angler.IconActive / IconInactive, 256 px) is a flat drawing in the house card look the Thresher's
+The CARD (SO_Class_Angler.IconActive / IconInactive, 256 px) WAS a flat drawing (until 2026-10-18; the card is now rendered
+from the Angler's model by Tools/Build/vessel_model/render_cards.py and this tool keeps only its .metas) in the house card look the Thresher's
 renderer set (gold body, a green accent, a navy outline; the inactive fade is R.inactive below): an
 anglerfish in profile with its lit esca. The Angler wears the Stoat's procedural hull for now (ANGLER.md §5), so there
 is no hull of its own to render; when it has one, render the card from it the way render_brittlestar_card_icon.py does.
@@ -229,12 +230,16 @@ def folder_meta() -> str:
 
 
 def outputs():
-    """Every file this tool owns: path -> (image, meta text)."""
-    out = {os.path.join(OUT_DIR, name): (render(fn), sprite_meta(guid_for(name))) for name, fn in ICONS.items()}
-    active = card_active()
-    out[os.path.join(CARD_DIR, CARD_ACTIVE)] = (to_image(active), R.sprite_meta(guid_for(CARD_ACTIVE)))
-    out[os.path.join(CARD_DIR, CARD_INACTIVE)] = (to_image(R.inactive(active)), R.sprite_meta(guid_for(CARD_INACTIVE)))
-    return out
+    """Every file this tool owns: path -> (image, meta text). Since 2026-10-18 the Angler has its own model and its
+    CARD images (Angler.png / Angler_Inactive.png) are rendered from it by Tools/Build/vessel_model/render_cards.py,
+    so this tool owns only the card .metas (their guids, which SO_Class_Angler names); card_active() below is the
+    flat drawing it used to write, kept for the record and no longer written."""
+    return {os.path.join(OUT_DIR, name): (render(fn), sprite_meta(guid_for(name))) for name, fn in ICONS.items()}
+
+
+def card_metas():
+    """The two card .metas this tool still owns: path -> meta text."""
+    return {os.path.join(CARD_DIR, name) + ".meta": R.sprite_meta(guid_for(name)) for name in (CARD_ACTIVE, CARD_INACTIVE)}
 
 
 def main(argv):
@@ -251,6 +256,9 @@ def main(argv):
                 bad.append(f"{name} differs from its render - re-run without --check")
             if not os.path.exists(path + ".meta") or open(path + ".meta", encoding="utf-8").read() != meta:
                 bad.append(f"{name}.meta missing or drifted")
+        for meta_path, meta in card_metas().items():
+            if not os.path.exists(meta_path) or open(meta_path, encoding="utf-8").read() != meta:
+                bad.append(f"{os.path.relpath(meta_path, ROOT)} missing or drifted")
         if not os.path.exists(OUT_DIR + ".meta") or open(OUT_DIR + ".meta", encoding="utf-8").read() != folder_meta():
             bad.append("icon folder .meta missing or drifted")
         for b in bad:
@@ -260,6 +268,9 @@ def main(argv):
     os.makedirs(OUT_DIR, exist_ok=True)
     with open(OUT_DIR + ".meta", "w", encoding="utf-8", newline="\n") as f:
         f.write(folder_meta())
+    for meta_path, meta in card_metas().items():
+        with open(meta_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(meta)
     for path, (img, meta) in files.items():
         img.save(path, optimize=False, compress_level=9)
         with open(path + ".meta", "w", encoding="utf-8", newline="\n") as f:

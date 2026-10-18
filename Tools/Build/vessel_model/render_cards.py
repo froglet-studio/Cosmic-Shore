@@ -71,12 +71,16 @@ FLEET_SLOTS = {"Domain": "domain", "Body": "body", "Window": "window", "Engine":
 VESSELS = {
     "Butterfly": {"fbx": MODELS + "Butterfly.fbx", "roles": FLEET_SLOTS,
                   "view": (0.55, -0.35, 0.95), "nose_angle": 62.0},
+    "Angler": {"fbx": MODELS + "Angler.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_angler_assets.py",
+               "view": (0.85, -0.3, 0.45), "nose_angle": 22.0},
     "BrittleStar": {"fbx": MODELS + "BrittleStar.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_brittlestar_assets.py",
                     "view": (0.45, -0.8, 0.5), "nose_angle": 70.0},
     "Scarab": {"fbx": MODELS + "Scarab.fbx", "roles": FLEET_SLOTS,
                "view": (0.8, -0.45, 0.7), "nose_angle": 32.0},
     "Shrike": {"fbx": MODELS + "Shrike.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_shrike_assets.py",
                "view": (0.85, -0.3, 0.6), "nose_angle": 30.0},
+    "Stoat": {"fbx": MODELS + "Stoat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_stoat_assets.py",
+              "view": (0.85, -0.3, 0.6), "nose_angle": 26.0},
     "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS,
                  "view": (0.85, -0.25, 0.55), "nose_angle": 28.0},
 }
