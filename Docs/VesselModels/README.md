@@ -29,6 +29,8 @@ remakes. The seven artist files are restored. The from-scratch specs moved to `s
 is the ARTIST'S hull plus the framework, one vessel per round, proven by the owner flying it (`LESSONS.md` 38-40).
 The first: the **Squirrel** (`specs/squirrel.py`), the artist's mesh and the artist's own takes (retargeted, proven
 part by part by `take_parity.py`) with a tail spine and a stronger Mass morph; `sheets/squirrel_after.jpg` is that file.
+**It passed the owner's Editor test on 2026-10-18** ("I can't tell it isn't the original", with its elements
+upgraded and its domain changed); `.claude/skills/vessel-model/SKILL.md` section 4 is the loop to repeat.
 
 **Round 3, 2026-10-17 (after a review of the gates; files since withdrawn):** the artist-reference gate had been dead (a swallowed
 `NameError`), the drawn-size reader had read each artist file with all four morphs at 100%, and no check told an

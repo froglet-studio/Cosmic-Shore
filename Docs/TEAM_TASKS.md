@@ -588,12 +588,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
 
-### T-20261017-9025 · open · test · Vessel models
+### T-20261017-9025 · done · test · Vessel models
 - **Task:** Open branch ccr-d93a6dfb-ugbxng in the Editor after the seven vessel models were rebuilt in place by /vessel-model (2026-10-17): let the FBX files reimport with no console warning, open the Squirrel / Dolphin / Sparrow / Serpent / Manta (and Falcon, Shrike, Termite) prefabs, run FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs (four REAL shapes on each live file), Audit Vessel Construction and Audit Vessel Tails and Jets, re-bake Crystal Hull Fusions for the Squirrel, Dolphin and Manta, then fly each hull in freestyle: pitch / yaw / roll / throttle move the whole hull, the domain colour lands on the domain slot, glass and engine mouths read, each element morph is nameable
 - **Done when:** (2026-10-18: scope is now the SQUIRREL only; the other six files are the artist's again) the Squirrel checks in Docs/UNITY_VERIFICATION_CHECKLIST.md's 2026-10-18 paragraph (round 8) are ticked - every take moves like the artist's Squirrel (rear engines included, roll banks the whole wing), the spine follows the chevrons, Mass shows - or the failing step is written there
 - **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor; Garrett judges the look
 - **Added:** 2026-10-17 by Claude session for Garrett, 2026-10-17 (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/README.md; Docs/VesselModels/sheets/ (before/after)
+- **Done:** 2026-10-18, Garrett, 2026-10-18: the round-8 Squirrel passes in the Editor (elements upgraded, domain changed, indistinguishable from the original); the other six vessels are the artist's files, unchanged
 
 ### T-20261017-3b6b · open · dev · Vessel models
 - **Task:** Swap the Urchin and Rhino prefabs from their part-per-mesh placeholders (Urchan_Test.fbx, Rhino_Test.fbx) onto the rebuilt rigs urchan_shapekey_with_animations.fbx and rhino_shapekey_with_animations.fbx with FrogletTools > Vessels > Wiring > Swap Vessel Rig, which moves the geometry, remaps the materials and makes the animation rig-safe (Docs/VESSEL_CONSTRUCTION.md); the rigs now carry four REAL element morphs where the artist rigs had none

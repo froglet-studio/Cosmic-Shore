@@ -144,30 +144,36 @@ reused) or `specs/dolphin.py` (code puppetry, rig reused) or `specs/_wedge.py` (
 re-import in a fresh process) -> `render` (Cycles CPU contact sheet). A failed verify prints
 every failure and writes nothing you would trust; fix the spec, not the gate.
 
-## 4. The critique loop (how the bar goes up)
+## 4. The loop that passed (how the bar goes up)
 
-1. Render the shipped file first: `render.contact_sheet(shipped_fbx, ...)` - to know what the
-   player saw and what the prefab binds. It is a reference, not the bar: the bar is section 0.
-2. Build v1, LOOK at the sheet (Read the PNG). Judge, in this order: connectivity (does every
-   part grow out of another?), silhouette from the chase tile, the domain band, the engine
-   mouths, the glass, then detail. Write the three biggest faults in the spec's docstring.
-3. Fix those three, rebuild as v2. Never tune more than three things between looks - you
-   cannot tell which one helped.
-4. Check the morph row: each extreme must be nameable from the chase tile ("that's Space:
-   the wings reached"). Check the pose row: each pose must move the whole hull, not a flap.
-5. Stop when the sheet beats the shipped sheet on the five things in step 2 AND every gate is
-   green, then run `rest_compare.py` and `--check`, and write the file in place.
-6. Append what you learned to `references/LESSONS.md` with the date and the measurement.
+> Garrett, 2026-10-18, on the round-8 Squirrel: "This passes. I upgraded its elements. changed
+> domain. I can't tell it isn't the original."
 
-Five rounds took the Squirrel from "floating pills" to a feathered hull that beats the shipped
-one; three the Manta and the Urchin; two each the Dolphin, Sparrow, Serpent and Rhino. Budget
-that, and never more than three changes between looks.
+That is the bar for a remake of an existing vessel: **the owner cannot tell it from the
+original in play, AND it carries the framework the original lacked.** Eight rounds got there;
+the last two are the loop to repeat on every vessel (LESSONS 42 has why each step exists):
+
+1. **Start from the artist's file, not a blank scene.** `rig.import_shipped_model` + `bake_parked_pose(deform_mesh=True)`.
+   Gate: rest bounds == the artist's drawn bounds; `rest_compare.py` 0.000.
+2. **Keep everything the owner already accepted**: mesh, slots, colours, morphs, takes
+   (`takes.retarget_from`). Gate: `take_parity.py` passes with NO allowances.
+3. **Add only what the original lacks**, one kind of change at a time, each weighted so it
+   follows the existing rig (the Squirrel: a tail spine; a stronger Mass key). Gate: the
+   parity gate still passes - an addition must not change how an existing part moves.
+4. **Look at the sheet**, then hand ONE vessel to the owner to fly. His words are the result;
+   offline renders and gates only say what he will not have to point out.
+5. **Fold what he said into this skill before the next vessel** - a new gate if a check could
+   have caught it (the parity gate came from "the rear jet ports are staying stationary").
+
+A change the owner asked for (a new motion, a new silhouette) is the only reason to depart from
+the artist's file, and it is declared (`take_parity_allow`, a spec docstring line) so the
+gates keep proving everything else is untouched.
 
 What "beats the shipped model" has meant on each hull, so the next one knows the bar:
 
 | vessel | rounds | what the sheet taught |
 |---|---|---|
-| Squirrel | 8 | six from-scratch rounds the owner judged a cheap remake; round 7 put the ARTIST'S hull back with a spine and Mass 2.5% -> 3.7% ("big improvement"), but re-authored takes froze the rear engines and twisted the wing panels on roll; round 8 keeps the artist's takes (retargeted, take_parity 0.001 / 0.1 deg over 311 part-takes) and weights the spine between chevrons (`specs/squirrel.py`, live) |
+| Squirrel | 8 | **PASSED the owner's eye (2026-10-18): "I can't tell it isn't the original", elements upgraded and domain changed in play.** Six from-scratch rounds were a cheap remake; round 7 put the ARTIST'S hull back with a spine and Mass 2.5% -> 3.7% ("big improvement") but re-authored takes froze the rear engines; round 8 keeps the artist's takes (take_parity 0.001 / 0.1 deg over 311 part-takes) and weights the spine between chevrons. `specs/squirrel.py` is the template for every next vessel |
 | Dolphin | 3 | from-scratch, withdrawn (artist file restored; `specs/experimental/dolphin_scratch.py`). What held: wing spanwise sign; lime throats paint the engine slot; a size reference read with the morphs at 100% is wrong (LESSONS 33) |
 | Sparrow | 3 | from-scratch, withdrawn and it FLEW BACKWARDS (LESSONS 39: the artist's heading is right by definition). What held: a mirror reverses yaw and roll; tail vanes to the artist's height |
 | Serpent | 2 | from-scratch, withdrawn. What held: head on +Y (`zup_identity`); Mass takes carapace + engine together or reads inert |

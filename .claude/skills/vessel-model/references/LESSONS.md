@@ -362,3 +362,24 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     parity gate by default whenever the artist file is known; a meant change to a take goes in
     `take_parity_allow` (take -> parts), never through a silenced gate. Added parts (the spine)
     are weighted between the bones at their ends so they follow whatever the takes do.
+
+42. **What made the Squirrel pass (2026-10-18), stated so the next vessel starts there.**
+    Garrett flew round 8, upgraded its elements and changed its domain: "This passes ... I can't
+    tell it isn't the original." Eight rounds; what the passing one had that the others lacked:
+    - **It started from what the owner already accepted.** Every from-scratch round failed
+      however good its sheet looked (38). The pass kept the artist's mesh, slots, colours,
+      morphs AND takes; the remake's value is the framework added on top, not a new drawing.
+    - **Every kept thing was PROVEN kept, part by part.** Rest bounds to the millimetre,
+      every bone rest (`rest_compare`), every part of every take (`take_parity`), the slot
+      colours, the .meta's take names. Round 7 kept the mesh but not the takes and the owner
+      saw it in one flight; a check exists now for each thing he could have noticed.
+    - **Additions follow the existing rig instead of fighting it.** The spine is weighted
+      between the bones at its ends, so the artist's takes drive it with no new animation; the
+      Mass key adds to the artist's delta (`augment_shape`), it does not replace it.
+    - **One vessel, one flight, one fold-back.** Each owner verdict became a rule or a gate
+      before the next attempt (38-41), and the rounds converged once that loop was kept.
+    - **"Cannot tell it from the original" is a success, not a shortfall**, for a remake: the
+      game now has a file the pipeline owns (rebuildable, gated, drift-checked by `--check`)
+      that looks and moves exactly like the accepted art and carries the improvements. The
+      next ambition - a vessel BETTER than its original - starts from that file, one declared
+      change at a time, each one judged by the owner.
