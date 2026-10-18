@@ -136,6 +136,9 @@ push the bakes (Thresher, Scarab, Brittle Star, Urchin and Rhino are stale until
    while luring (A held); the world-mark lure dot is unchanged.
 6. **Brittle Star** (`BrittleStar.fbx`): the ring turns with the firing rotation, is gone while thrown and blooms
    back; muzzles fire from the barrel mouths; thruster flames lengthen; the 28 degree bank.
+   **Ring Detonation** (fixed at ship review): the thrown ring spins in its OWN plane, around the nose axis (it
+   used to take the mesh node's frame, whose Z is the hull's UP, so it tumbled), it leaves without frozen
+   plumes, and the blast disk faces along the nose.
 7. **Shrike** (`Shrike.fbx`): the beam leaves `gun.mouth`; the flame scales aft; docking swings the talon clamps.
 8. **Urchin** (rig swap): pods extend in flight and tuck flush when riding, the colliders stay on the drawn pods
    (gizmos) through pitch/yaw/roll, plumes leave the four jet mouths, Slip/GhostAction still phase the colliders.

@@ -242,12 +242,15 @@ poses. After writing: re-run `fbx_probe`, `rest_compare`, `measure_vessel_models
 Construction`, `Audit Vessel Tails and Jets`, re-bake `Bake Crystal Hull Fusions` where a
 vessel has fusion bakes, a flight) in `Docs/UNITY_VERIFICATION_CHECKLIST.md` and as a team task
 (`python3 Tools/Build/team_tasks.py add --area <Vessel> --kind test ...`, Yash has offered).
-Urchin and Rhino still wire part-per-mesh placeholders (`Urchan_Test.fbx`, `Rhino_Test.fbx`):
-their rebuilt rigs (`urchan_shapekey_with_animations.fbx`, `rhino_shapekey_with_animations.fbx`,
-written 2026-10-17 with four REAL morphs where the artist rigs had none) are the swap targets
-for `FrogletTools > Vessels > Wiring > Swap Vessel Rig` in the editor - write the rig, write the
-plan, hand it off; do not fake the swap in YAML (Docs/VESSEL_CONSTRUCTION.md: a rig swap is
-three jobs, geometry, materials, animation, and only the editor tool does all three).
+The Urchin and Rhino prefabs draw their rebuilt rigs since 2026-10-18 (`urchan_shapekey_with_animations.fbx`,
+`rhino_shapekey_with_animations.fbx`, four REAL morphs where the artist rigs had none). The swap was done by
+prefab surgery that does all three of a rig swap's jobs (Docs/VESSEL_CONSTRUCTION.md: geometry, materials,
+animation): the placeholder's part transforms STAY, with their colliders, jets and gameplay hooks; the rig is
+nested under the hull at the fitted offset with its `.meta` remapping the four slots; and the animation keeps
+driving the parts while each drawn bone FOLLOWS its part every frame (`RhinoAnimation` / `UrchinAnimation`,
+LESSONS 45). It is not editor-verified: the checklist entry and the team tasks hold the steps. For a hull whose
+parts can be retired outright, `FrogletTools > Vessels > Wiring > Swap Vessel Rig` in the editor is still the
+tool.
 
 Prove the write before you claim it: `git status --short "Assets/_Models/Vessel Models/"` must
 show an `M` on the file (LESSONS 24: the first in-place run wrote under `Tools/Assets/` with

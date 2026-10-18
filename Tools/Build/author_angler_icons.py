@@ -20,8 +20,8 @@ the designer approves a mapping), so an icon names its act, never its element.
 The CARD (SO_Class_Angler.IconActive / IconInactive, 256 px) WAS a flat drawing (until 2026-10-18; the card is now rendered
 from the Angler's model by Tools/Build/vessel_model/render_cards.py and this tool keeps only its .metas) in the house card look the Thresher's
 renderer set (gold body, a green accent, a navy outline; the inactive fade is R.inactive below): an
-anglerfish in profile with its lit esca. The Angler wears the Stoat's procedural hull for now (ANGLER.md §5), so there
-is no hull of its own to render; when it has one, render the card from it the way render_brittlestar_card_icon.py does.
+anglerfish in profile with its lit esca. The Angler has its own model since 2026-10-18 (Angler.fbx), and its card is
+rendered from it by render_cards.py; this tool's card drawing stands retired.
 
 Deterministic guids; each .meta is the house sprite meta with the guid swapped. --check decodes and compares pixels
 (tolerance 2/255) rather than bytes, so a different zlib build cannot fail it.

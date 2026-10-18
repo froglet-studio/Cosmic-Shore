@@ -38,6 +38,7 @@ namespace CosmicShore.Gameplay
         Quaternion _ringRestLocal = Quaternion.identity;
         Vector3 _ringRestScale = Vector3.one;
         Vector3 _ringAxisInParent = Vector3.forward;
+        float _ringPhaseDegrees;   // the firing rotation SetRingPose last applied: a thrown ring carries it in its pose
 
         readonly Transform[] _flames = new Transform[Slots];
         readonly Vector3[] _flameRestScale = new Vector3[Slots];
@@ -52,6 +53,7 @@ namespace CosmicShore.Gameplay
         List<int>[] _ringTriangles;
         readonly List<Mesh> _thrownMeshes = new();
         readonly List<Vector3> _vertexScratch = new();
+        readonly List<Vector3> _normalScratch = new();
         bool _resolved;
 
         // Every entry point resolves first: a hull that starts inactive has not run Awake when the executor asks.
@@ -119,11 +121,11 @@ namespace CosmicShore.Gameplay
                 {
                     // the muzzle rides the mouth bone (and so the ring's spin and presence), facing the hull's forward
                     _muzzleRestRotation[slot] = Quaternion.Inverse(mouth.rotation) * transform.rotation;
-                    string name = i < 0 ? "Muzzle_C" : "Muzzle_" + i;
-                    var m = mouth.Find(name);
+                    string muzzleName = i < 0 ? "Muzzle_C" : "Muzzle_" + i;
+                    var m = mouth.Find(muzzleName);
                     if (!m)
                     {
-                        m = new GameObject(name) { layer = gameObject.layer }.transform;
+                        m = new GameObject(muzzleName) { layer = gameObject.layer }.transform;
                         m.SetParent(mouth, false);
                     }
                     _muzzles[slot] = m;
@@ -225,12 +227,14 @@ namespace CosmicShore.Gameplay
         {
             if (!_resolved) Resolve();
             if (!_ring) return;
-            _ring.localRotation = Quaternion.AngleAxis(phaseRadians * Mathf.Rad2Deg, _ringAxisInParent) * _ringRestLocal;
+            _ringPhaseDegrees = phaseRadians * Mathf.Rad2Deg;
+            _ring.localRotation = Quaternion.AngleAxis(_ringPhaseDegrees, _ringAxisInParent) * _ringRestLocal;
             _ring.localScale = _ringRestScale * presenceScale;
         }
 
         public override void ResetRingPose()
         {
+            _ringPhaseDegrees = 0f;
             if (!_ring) return;
             _ring.localRotation = _ringRestLocal;
             _ring.localScale = _ringRestScale;
@@ -265,7 +269,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Per submesh, the triangles skinned to the ring or a bone under it (the model is skinned rigidly,
-        /// one bone per part): what a thrown ring draws. Read once; the import keeps the mesh readable.</summary>
+        /// one bone per part): what a thrown ring draws - less the thruster plumes (<c>*.flame</c>), which belong to
+        /// the mounted ring's engines, not to a still copy in flight. Read once; the import keeps the mesh readable.</summary>
         void CollectRingTriangles()
         {
             _ringTriangles = null;
@@ -279,7 +284,8 @@ namespace CosmicShore.Gameplay
             }
             var bones = _model.bones;
             var inRing = new bool[bones.Length];
-            for (int b = 0; b < bones.Length; b++) inRing[b] = bones[b] && bones[b].IsChildOf(_ring);
+            for (int b = 0; b < bones.Length; b++)
+                inRing[b] = bones[b] && bones[b].IsChildOf(_ring) && !bones[b].name.EndsWith(".flame");
             var weights = mesh.boneWeights;
             var tris = new List<int>();
             _ringTriangles = new List<int>[mesh.subMeshCount];
@@ -303,7 +309,19 @@ namespace CosmicShore.Gameplay
         public override void DressThrownRing(GameObject body)
         {
             if (!_resolved) Resolve();
-            if (!body || !_model || !_ring || _ringTriangles == null) return;
+            if (!body) return;
+
+            // The thrown ring's frame is the mounted ring's, as the procedural builder hands over `_ring.rotation`:
+            // local Z along the NOSE, turned by the firing rotation. The executor spins the flight about that local Z
+            // and faces the detonation disk along it. It is built from the hull (`transform`, whose forward is the
+            // nose), NOT taken from the skinned mesh's transform: a Z-up FBX keeps its mesh node in the file frame
+            // (export.py, THE AXIS STORY), so that node's local Z is the hull's UP.
+            Quaternion bodyRotation = transform.rotation * Quaternion.AngleAxis(_ringPhaseDegrees, Vector3.forward);
+            Vector3 pivot = _ring ? _ring.position : transform.position;
+            // Posed before any guard below, so a body that cannot be dressed still launches from the ring.
+            body.transform.SetPositionAndRotation(pivot, bodyRotation);
+            body.transform.localScale = Vector3.one;
+            if (!_model || !_ring || _ringTriangles == null) return;
             var filter = body.GetComponent<MeshFilter>();
             var renderer = body.GetComponent<MeshRenderer>();
             if (!filter || !renderer) return;
@@ -318,21 +336,26 @@ namespace CosmicShore.Gameplay
                 filter.sharedMesh = mesh;
             }
 
-            // The ring as it stands - its firing rotation and the element morphs - then only the ring's triangles,
-            // recentred on its pivot (on the nose axis) so the thrown copy spins about its own centre.
+            // The ring as it stands - its firing rotation and the element morphs - re-expressed in the body's frame
+            // (world, then into bodyRotation about the pivot), so its vertices hold the UNTURNED ring and the pose
+            // carries the turn; the normals turn with them (VesselGraph's rim reads them). Then only the ring's
+            // triangles.
             var source = _model.transform;
             _model.BakeMesh(mesh, false);
-            Vector3 pivot = source.InverseTransformPoint(_ring.position);
+            Quaternion toBody = Quaternion.Inverse(bodyRotation);
+            Quaternion normalToBody = toBody * source.rotation;
             mesh.GetVertices(_vertexScratch);
-            for (int v = 0; v < _vertexScratch.Count; v++) _vertexScratch[v] -= pivot;
+            for (int v = 0; v < _vertexScratch.Count; v++)
+                _vertexScratch[v] = toBody * (source.TransformPoint(_vertexScratch[v]) - pivot);
             mesh.SetVertices(_vertexScratch);
+            mesh.GetNormals(_normalScratch);
+            for (int n = 0; n < _normalScratch.Count; n++) _normalScratch[n] = normalToBody * _normalScratch[n];
+            mesh.SetNormals(_normalScratch);
             int subMeshes = Mathf.Min(mesh.subMeshCount, _ringTriangles.Length);
             for (int s = 0; s < subMeshes; s++) mesh.SetTriangles(_ringTriangles[s], s, false);
             mesh.RecalculateBounds();
 
             renderer.sharedMaterials = _model.sharedMaterials;
-            body.transform.SetPositionAndRotation(_ring.position, source.rotation);
-            body.transform.localScale = source.lossyScale;
         }
 
         void OnDestroy()

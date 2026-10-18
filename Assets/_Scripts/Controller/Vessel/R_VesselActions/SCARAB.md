@@ -166,7 +166,8 @@ below, which the owner had accepted only as a placeholder ("more like a low poly
 ship", 2026-09-01) and then judged, with every C# runtime hull, "terrible even as placeholders"
 (2026-10-17). Like the Butterfly it has no artist file behind it; it is built to the fleet
 convention for a new vessel and to the fleet's look (dark gunmetal armour, domain plates and trim
-lines, cyan glass, lime engine glows):
+lines, cyan glass, lime engine glows; since 2026-10-18 the engine slot is the Fire ember of
+`Docs/VesselModels/COLOR.md`, never Lime, which is the call-to-action colour):
 
 | | |
 |---|---|

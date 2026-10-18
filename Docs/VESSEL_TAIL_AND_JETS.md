@@ -321,7 +321,8 @@ is what prompted this pass.
   retired in 2026-08 — `Docs/VESSEL_CONSTRUCTION.md` §7 — so the file this names is gone; the trap
   it demonstrates is not, which is why the account is kept verbatim.) That file is a REFERENCE —
   the placeholder points its own filters at the Rhino's meshes. `Rhino_Test.fbx.meta` is the one
-  whose top-level `guid:` line carries it, so the Rhino renders `Rhino_Test.fbx`'s `fusalage`.
+  whose top-level `guid:` line carries it, so the Rhino rendered `Rhino_Test.fbx`'s `fusalage` (until 2026-10-18,
+  when the prefab moved to the skinned rig `rhino_shapekey_with_animations.fbx`).
 
   **Exactly one `.meta` OWNS a guid; every other hit is something referencing it.** `head -1`
   picks by filename order, which has nothing to do with ownership — the check is

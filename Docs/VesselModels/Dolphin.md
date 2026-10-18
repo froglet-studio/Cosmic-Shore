@@ -78,7 +78,7 @@ dolohin [Mesh]  R(−90,0,0) S(100)  geometry "Chassis"  SkinnedMeshRenderer, 28
 | 2 | `windsheild.001` | diffuse (0.056, 0.058, 0.8) | `ScreenVesselMaterial.mat` (923d3665…) | **10** | 0.068 | **WINDOW** (practically no cockpit read: 10 polys) |
 | 3 | `N.001` | black, emissive (0, 0.211, 1) | **NOT remapped** — importer-embedded material from the FBX description | 533 | 0.177 | **ENGINE** glow on the bells; `FlareEngine()` = `materials[3].SetFloat("_ColorMultiplier", 5)` |
 
-All three remapped materials use `VesselGraph.shadergraph` (guid 0236447d…) with `_ColorMultiplier 1`. Slot 3's embedded material is not a VesselGraph material, so `_ColorMultiplier` has no property to land on and the boost engine flare (`VesselTransformer.cs:1469`) is, as far as the assets show, a silent no-op on this hull — unverified in-editor, listed as a risk in §8. `_domainMaterialSlot = 1` on the prefab is IGNORED because the identity list is set (VesselCustomization.cs tooltip; `VESSEL_CONSTRUCTION.md` §4.6: slot 1 here is the BODY, so the index path would paint the whole hull).
+All three remapped materials use `VesselGraph.shadergraph` (guid 0236447d…) with `_ColorMultiplier 1`. Slot 3's embedded material is not a VesselGraph material, so `_ColorMultiplier` has no property to land on and the boost engine flare (`VesselTransformer.cs:1477`) is, as far as the assets show, a silent no-op on this hull — unverified in-editor, listed as a risk in §8. `_domainMaterialSlot = 1` on the prefab is IGNORED because the identity list is set (VesselCustomization.cs tooltip; `VESSEL_CONSTRUCTION.md` §4.6: slot 1 here is the BODY, so the index path would paint the whole hull).
 
 ---
 
