@@ -29,7 +29,46 @@ import sys
 import zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from render_scarab_card_icons import greyed, encode_png, meta_for  # noqa: E402
+# The card family's greyed look, PNG encoder and sprite meta, as render_scarab_card_icons.py defined them (that
+# renderer was retired 2026-10-18 when the Scarab's card moved to its model; the Urchin's inactive card keeps them).
+ROOT_ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+META_TEMPLATE = os.path.join(ROOT_, "Assets", "_Graphics", "CardImages", "Sparrow.png.meta")
+
+
+def greyed(pixels):
+    """The family's inactive look (Sparrow_Inactive.png): grey with a trace of the accent."""
+    out = []
+    for row in pixels:
+        r2 = []
+        for r, g, b, a in row:
+            lum = 0.299 * r + 0.587 * g + 0.114 * b
+            grey = 0.28 + 0.36 * lum
+            r2.append((grey + (r - lum) * 0.22, grey + (g - lum) * 0.22, grey + (b - lum) * 0.22, a))
+        out.append(r2)
+    return out
+
+
+def encode_png(pixels):
+    size = len(pixels)
+    raw = bytearray()
+    for row in pixels:
+        raw.append(0)
+        for r, g, b, a in row:
+            raw += bytes((int(round(min(1.0, max(0.0, r)) * 255)), int(round(min(1.0, max(0.0, g)) * 255)),
+                          int(round(min(1.0, max(0.0, b)) * 255)), int(round(min(1.0, max(0.0, a)) * 255))))
+    def chunk(kind, data):
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xffffffff)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
+
+
+def meta_for(guid):
+    with open(META_TEMPLATE, encoding="utf-8") as fh:
+        text = fh.read()
+    return re.sub(r"^guid: [0-9a-f]{32}$", f"guid: {guid}", text, count=1, flags=re.M)
+
+
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CARD_DIR = os.path.join(ROOT, "Assets", "_Graphics", "CardImages")

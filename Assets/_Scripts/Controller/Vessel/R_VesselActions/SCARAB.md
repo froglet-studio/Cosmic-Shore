@@ -223,9 +223,8 @@ layer, and the colliders stayed on Ships).
 
 **The procedural placeholder** is kept in the tree until the owner accepts the model, then retired
 (`ScarabHullForm.cs`, `ScarabHullBuilder.cs` (no longer on the prefab), `ScarabHullFormTests`,
-`ScarabHullMorphTests`, `Tools/Build/scarab_icon_harness/`, `Tools/Build/render_scarab_card_icons.py`,
-whose `--check` reads the builder's settings off the prefab and so now fails until the card art is
-re-rendered from the model). Its record follows, kept because its reasoning (spring puppetry, the
+`ScarabHullMorphTests`, `Tools/Build/scarab_icon_harness/`). `render_scarab_card_icons.py` was retired
+2026-10-18: the card images are rendered from the model by `Tools/Build/vessel_model/render_cards.py Scarab`. Its record follows, kept because its reasoning (spring puppetry, the
 morph meanings, the NaN and Core-offset lessons) still holds.
 
 #### The procedural placeholder (2026-08-15 to 2026-10-18)

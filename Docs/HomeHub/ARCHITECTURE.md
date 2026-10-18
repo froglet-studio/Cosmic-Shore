@@ -272,10 +272,10 @@ Sparrow. Both harvesters now skip `IProceduralElementMorphSource.HiddenLegacyMod
 harvest `IProceduralHullSource` pieces (the Scarab answers off the asset with the same parts its
 runtime `EmitParts` lays), so a codex re-bake and the toybox's mini Scarab are the Scarab. The
 card icons themselves (`Assets/_Graphics/CardImages/Scarab.png` / `Scarab_Inactive.png`) are
-rendered from the SHIPPED hull by `Tools/Build/render_scarab_card_icons.py` (Roslyn compiles and
-runs `ScarabHullForm` at the prefab's authored proportions; `--check` fails on a hull retune
-until the script is re-run) in the card family's palette — a stand-in until an artist draws
-one, but a stand-in that is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
+rendered from the SHIPPED hull: since 2026-10-18 from the Scarab's MODEL (`Scarab.fbx`) by
+`Tools/Build/vessel_model/render_cards.py Scarab` (`--check` fails when the model changes until it
+is re-run; it replaced `render_scarab_card_icons.py`, which compiled and ran the procedural
+`ScarabHullForm`) in the card family's palette — the card is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
 hulls, because the two sprites were different assets with the same pixels, which a reference
 check cannot see.
 

@@ -639,7 +639,7 @@ the prefab with the fleet audits under **FrogletTools ▸ Vessels ▸ Audits**.
   `4470d95b…`), wired in the registration-drift pass (#965, 2026-10) so
   `check_vessel_class_icons.py` passes (11/11 resolve, re-run 2026-10-06). The guids resolve, but
   the art is not the hull's own render and active/inactive are the same sprite. A real pair is
-  still owed; the Scarab's renderer (`Tools/Build/render_scarab_card_icons.py`) or the Urchin's
-  (`author_urchin_card_icons.py`) is the pattern.
+  still owed. **Done 2026-10-18:** the cards are rendered from `Butterfly.fbx` by
+  `Tools/Build/vessel_model/render_cards.py Butterfly`.
 - **A standing fold wormhole has no HUD marker** (its open/thread sounds now have slots, above), and an AI never threads one
   (`BUTTERFLY_FOLD.md` § Follow-ups).
