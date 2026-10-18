@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Butterfly's new model replaces its procedural hull (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable in this session (no Editor, no `unity` binary). What did run: the headless
+reference compile (`Tools/Build/unity_refcompile/run.sh`, 80 assemblies, no errors in project code),
+`build.py butterfly --check` (OK), `author_butterfly_dust.py --check` (OK) and a prefab self-check (every local
+reference resolves). Changed: `Assets/_Models/Vessel Models/Butterfly.fbx` (+ `.meta`, new guid, four slots
+remapped), `Butterfly.prefab` (the model under `Hull` in place of the MeshFilter / MeshRenderer /
+`ButterflyHullBuilder`), `ButterflyAnimation.cs` (bones by name, finds the SkinnedMeshRenderer, wing side signs
+fixed), `FoldActionExecutor.cs` (the ghost bakes the skinned mesh), `VesselCustomization.cs` (a model geometry
+with no Renderer resolves to its child SkinnedMeshRenderer). Verify in the Editor:
+1. The project compiles; the model imports with its four slots remapped (Domain / Body / Window / Engine).
+2. Fly it in Menu_Main freestyle: four wings beat from the hinges, the fore and hind a little apart; the
+   domain colour is on the wings; change domain and the wings change.
+3. Mass mode spreads the wings; the Fold (hold LT) closes them OVER THE BACK and the ghost is a butterfly.
+4. Upgrade each element: Charge, Mass, Space, Time each visibly change the hull.
+5. `FrogletTools ▸ Vessels ▸` Audit Vessel Elemental Morphs (four, none INERT), Audit Vessel Construction.
+
 ### 🔴 The seven vessel models rebuilt in place by `/vessel-model` (Squirrel, Dolphin, Sparrow, Serpent, Manta live files; Urchin and Rhino rigs) (`ccr-d93a6dfb-ugbxng`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** Garrett (2026-10-17): "procedural vessel models are terrible even as placeholders". A new skill,

@@ -405,3 +405,30 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     added in the same pass, because the loop said "proven kept" for things no gate proved.
     Result: 146 moving part-takes at 0.0000 units / 0.00 degrees, 42 part-morphs and every
     material identical, rest_compare 0.000, the take moving-bone counts identical take by take.
+
+44. **The Butterfly, the first hull with no artist file: what a placeholder replacement needs.**
+    There was nothing accepted to keep, so the brief came from the vessel itself (`BUTTERFLY.md`,
+    the prefab, the puppetry code) and the look from the fleet's artist hulls. What it took:
+    - **The hinges, the size and the names are the contract, not the drawing.** The colliders,
+      the dust capsule, the wake width and the camera were tuned to the placeholder; the model
+      keeps its four hinge points, its dihedrals and its span / length within 6%, and binds
+      `wing.L` ... `wing.2.R` by name while the placeholder's `WingForeL` ... still resolve.
+    - **Read the camera before choosing detail.** At 207 units the hull is ~56 px wide: only the
+      silhouette and the colour FIELDS read. Budget the triangles on the wing outline and the
+      pattern edges; detail under ~2 units is for the menus.
+    - **Build the surface so the pattern follows the anatomy.** A radial grid from each wing root
+      (rings out, columns round) makes the domain field, the dark frame, the cells and the
+      eyespots sit where a real wing has them; flat painted plates read as clip-art. When the
+      ring count drops for the budget, key each band to RING CENTRES or the cells vanish.
+    - **Relief in the surface, never floating on it.** Vein tubes laid over the membrane read as
+      needles from the camera; raising the vein columns of the membrane itself reads as veins.
+    - **A style metric cannot pass a hull.** `style_metrics.py` measures the fleet's band (edges,
+      slot shares, domain regions), but the withdrawn from-scratch hulls sat inside it too. It
+      points at what to look at on the sheet; the owner's flight is still the gate.
+    - **Integration is by name because fileIDs are not computable offline.** The prefab holds the
+      model root by its constant fileIDs; bones and the SkinnedMeshRenderer resolve at runtime.
+      Every consumer of the old hull had to be found (the animation, customization's domain
+      swap, the Fold's ghost) - grep for the old component's type, not just its prefab.
+    - **A model with a top and a bottom exposes the code's sign bugs.** `ButterflyAnimation` had
+      the side signs reversed; on the flat placeholder no one could see that the Fold closed
+      under the belly. Check every puppetry direction on the sheet against the vessel's doc.

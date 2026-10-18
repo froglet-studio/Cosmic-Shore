@@ -7,8 +7,8 @@ description: Build, replace or improve a Cosmic Shore VESSEL MODEL - the FBX hul
 
 You are about to make a vessel MODEL: the skinned mesh, armature, element shape keys, takes
 and material slots that a Cosmic Shore vessel prefab draws. The repo's earlier attempts at
-"procedural" hulls (`ScarabHullForm`, `StoatHullForm`, `ThresherHullForm`, `ButterflyHullForm`,
-`BrittleStarHullForm`: C# surfaces of revolution and flat wing sheets built at runtime) were
+"procedural" hulls (`ScarabHullForm`, `StoatHullForm`, `ThresherHullForm`, `ButterflyHullForm` (replaced
+2026-10-18 by `Butterfly.fbx`, `specs/butterfly.py`), `BrittleStarHullForm`: C# surfaces of revolution and flat wing sheets built at runtime) were
 judged "terrible even as placeholders" by the owner (2026-10-17). This skill replaces that
 approach with real modelling in Blender, driven from Python, verified by three independent
 readers, and LOOKED AT on a contact sheet before anything is written into `Assets/`.
@@ -165,6 +165,10 @@ the last two are the loop to repeat on every vessel (LESSONS 42 has why each ste
 5. **Fold what he said into this skill before the next vessel** - a new gate if a check could
    have caught it (the parity gate came from "the rear jet ports are staying stationary").
 
+A vessel with NO artist file (the Butterfly) follows PIPELINE "The new-hull path" instead: the
+vessel's doc and prefab are the brief, the fleet's artist hulls are the look, and the owner's
+flight is still the result.
+
 A change the owner asked for (a new motion, a new silhouette) is the only reason to depart from
 the artist's file, and it is declared (`take_parity_allow`, a spec docstring line) so the
 gates keep proving everything else is untouched.
@@ -175,6 +179,7 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 |---|---|---|
 | Squirrel | 8 | **PASSED the owner's eye (2026-10-18): "I can't tell it isn't the original", elements upgraded and domain changed in play.** Six from-scratch rounds were a cheap remake; round 7 put the ARTIST'S hull back with a spine and Mass 2.5% -> 3.7% ("big improvement") but re-authored takes froze the rear engines; round 8 keeps the artist's takes (take_parity 0.001 / 0.1 deg over 311 part-takes) and weights the spine between chevrons. `specs/squirrel.py` is the template for every next vessel |
 | Dolphin | 4 | three from-scratch rounds withdrawn; round 4 is the loop's second vessel (2026-10-18): the artist's hull, morphs, materials and ten motion takes, nothing visible added, reproduced to 0.0000 units / 0.00 degrees over 146 part-takes after three reader blind spots were fixed (LESSONS 43). `specs/dolphin.py`; the dossier's weak points are the owner's to pick |
+| Butterfly | 1 | **the first NEW hull** (2026-10-18): no artist file, so it replaces the procedural placeholder with a model to the fleet convention and look (`specs/butterfly.py`, PIPELINE "The new-hull path", LESSONS 44). Four hinged wings built as radial grids so the domain field, dark frame, cells and eyespots follow wing anatomy; veins raised in the membrane (floating tubes read as needles); 13,948 tris; integrated by name; a wing sign bug in `ButterflyAnimation` (the Fold closed under the belly) found and fixed. Awaiting the owner's flight |
 | Sparrow | 3 | from-scratch, withdrawn and it FLEW BACKWARDS (LESSONS 39: the artist's heading is right by definition). What held: a mirror reverses yaw and roll; tail vanes to the artist's height |
 | Serpent | 2 | from-scratch, withdrawn. What held: head on +Y (`zup_identity`); Mass takes carapace + engine together or reads inert |
 | Manta | 4 | from-scratch, withdrawn. What held: yaw -Z and roll -Y for "right"; three stern nozzles so slot N owns faces |

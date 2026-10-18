@@ -616,3 +616,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (judges); Yash (offered) can run the Editor steps
 - **Added:** 2026-10-18 by Claude session for Garrett (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/sheets/dolphin_after.jpg
+
+### T-20261018-f892 · open · test · Butterfly model
+- **Task:** Fly the new Butterfly.fbx in the Editor: four wings beat from their hinges, domain colour on the wings (change domain), Mass mode spreads, the Fold closes the wings OVER THE BACK with a butterfly ghost, each element visibly changes the hull; run Audit Vessel Elemental Morphs + Audit Vessel Construction
+- **Done when:** the owner says it meets the fleet's look and plays like the placeholder did (or names what to change)
+- **Who can take it:** Garrett (owner's eye); Yash can run the audits
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Butterfly entry); Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md section 2
+
+### T-20261018-5511 · open · decision · Butterfly model
+- **Task:** After the Butterfly model is accepted: delete the procedural ButterflyHullBuilder / ButterflyHullForm and Tools/Build/butterfly_hull_harness (keep its Stubs.cs if other harnesses share it), and confirm the ButterflyAnimation wing sign fix (the Fold used to close under the belly) and the model's 41% domain share
+- **Done when:** the placeholder code is gone and the two calls are recorded in BUTTERFLY.md section 2
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (`ccr-d93a6dfb-ugbxng`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md section 2

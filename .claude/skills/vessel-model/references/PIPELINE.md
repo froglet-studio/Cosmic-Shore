@@ -86,6 +86,25 @@ rig-reusing build. `build.py --check` is the drift gate for a committed spec.
 `specs/squirrel.py` is the worked example; `specs/experimental/*_scratch.py` are the withdrawn
 from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.
 
+## The new-hull path (a vessel with NO artist file: the Butterfly, `specs/butterfly.py`)
+
+1. **The brief is the vessel's doc and its prefab, not a picture.** Read what the code binds (bone
+   names, hinge positions, which part the puppetry turns), what the camera sees (distance, px per
+   unit) and what the tuning was sized to (colliders, skimmers, wake width); put every number in
+   the spec's docstring. Keep the replaced hull's hinges and size within a few percent.
+2. **Fleet convention for a new vessel** (`FLEET_CONVENTION.md` 1-4): preset `zup`, nodes `mesh` /
+   `rig`, root bone `hull`, slots Domain / Body / Window / Engine, shapes Charge / Mass / Space /
+   Time at 4-12% travel, a new guid, a `.meta` that remaps all four slots.
+3. **Build the parts so the colour follows the anatomy** (radial grids from a wing root, rings
+   keyed to where a pattern band sits), with relief IN the surface rather than floating on it.
+4. **Measure the look against the fleet**: `style_metrics.py --fleet <ours.fbx>` prints the artist
+   hulls' band (smooth / hard edges, slot shares, domain regions and width, density). It is
+   INFORMATIVE: the withdrawn from-scratch hulls sat inside the band too, so it cannot pass a hull;
+   it only tells you which number to look at on the sheet.
+5. **Integrate by NAME** (an FBX's sub-object fileIDs cannot be computed offline): the prefab holds
+   the model root (constant fileIDs) and the code resolves bones and the SkinnedMeshRenderer by name
+   at runtime; keep the old names resolving too, so the swap is reversible.
+
 Neither gate proves a WRITE. After `build.py <spec>` (no `--out` = in place), prove it with
 `git status --short "Assets/_Models/Vessel Models/"`: the first in-place run wrote seven green
 models under `Tools/Assets/...` and both gates stayed green (LESSONS 24). The driver prints

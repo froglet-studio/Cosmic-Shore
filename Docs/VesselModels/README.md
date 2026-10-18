@@ -21,6 +21,7 @@ slot order and frame they keep is explained here.
 | Serpent | [Serpent.md](Serpent.md) | `SerpentExport.fbx` | the same, in place | `specs/serpent.py` |
 | Manta | [Manta.md](Manta.md) | `mantis_shapekey_with_animations.fbx` + `Manta_shapekey_rigged.fbx` (two coincident hulls, VESSEL_CONSTRUCTION.md 3.4) | `Manta_shapekey_rigged.fbx`, in place | `specs/manta.py` |
 | Urchin | [Urchin.md](Urchin.md) | `Urchan_Test.fbx` (part-per-mesh placeholder) | `urchan_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs where the artist rig had none | `specs/urchin.py` |
+| Butterfly | (none: the vessel had no model; `BUTTERFLY.md` section 2 is its brief) | `Butterfly.fbx` (new, 2026-10-18), replacing the procedural `ButterflyHullBuilder` | the same | `specs/butterfly.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 
 **2026-10-18, withdrawn after the owner's Editor test:** the rebuilt Sparrow flew backwards, the Urchin did not
@@ -32,7 +33,9 @@ part by part by `take_parity.py`) with a tail spine and a stronger Mass morph; `
 **It passed the owner's Editor test on 2026-10-18** ("I can't tell it isn't the original", with its elements
 upgraded and its domain changed); `.claude/skills/vessel-model/SKILL.md` section 4 is the loop to repeat.
 The **Dolphin** is the loop's second vessel (`specs/dolphin.py`): reproduced exactly, nothing visible added, for the
-owner's Editor test.
+owner's Editor test. The **Butterfly** is the first hull with no artist file at all (`specs/butterfly.py`,
+`sheets/butterfly_after.jpg`): a new `Butterfly.fbx` that replaces the procedural placeholder, built to the fleet
+convention and the fleet's look, for the owner's Editor test (`LESSONS.md` 44).
 
 **Round 3, 2026-10-17 (after a review of the gates; files since withdrawn):** the artist-reference gate had been dead (a swallowed
 `NameError`), the drawn-size reader had read each artist file with all four morphs at 100%, and no check told an
