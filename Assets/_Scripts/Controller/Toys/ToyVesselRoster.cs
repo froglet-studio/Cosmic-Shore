@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
             VesselClassType.Squirrel, VesselClassType.Serpent, VesselClassType.Sparrow,
             VesselClassType.Urchin, VesselClassType.Scarab, VesselClassType.Butterfly,
             VesselClassType.Grizzly, VesselClassType.Thresher, VesselClassType.Stoat,
-            VesselClassType.BrittleStar,
+            VesselClassType.BrittleStar, VesselClassType.Shrike, VesselClassType.Angler,
         };
 
         /// <summary>

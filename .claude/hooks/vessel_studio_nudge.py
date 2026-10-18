@@ -42,8 +42,9 @@ CONTEXT = (
     'AI race panel, cameras, difficulties, intensity ladders, domains or publishing; load /vessel for the Unity '
     'side. While the studio is kept, its rules stand: the artifact is the source of truth for studio numbers '
     '(/artifact-to-unity clones them into the game). But ask before writing them over Unity values someone '
-    'play-tuned in Unity (Tools/Build/who_works_where.py shows who). Never publish a second studio artifact. If the '
-    'work has nothing to do with vessels, ignore this note.')
+    'play-tuned in Unity (Tools/Build/who_works_where.py shows who). Never publish a second studio (hub) '
+    'artifact; that rule is the shared hub\'s only: a /labmaker lab, a vessel\'s included, publishes its own '
+    'artifact to explore in (/labmaker section 6). If the work has nothing to do with vessels, ignore this note.')
 
 
 def wants_nudge(prompt):

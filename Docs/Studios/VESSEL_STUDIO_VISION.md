@@ -89,3 +89,9 @@ status) in every change that moves a step**, and add what a step taught to §6.
   first version of Amoebius's stand-in for Claude Code ignored the request's prompt and still answered "sent", so a
   backend stand-in must do the real thing or say it cannot.
 - **2026-10-14/15, the HyperSea, then the Regatta AI.** A fleet-in-one-cell page (every prefab as one data row: flight, trail, a boost kind, a move kind) read fifteen hulls apart in 1.3 s headless, but its signature moves were guesses that decided the result, so it was taken back out the next day for a race studio on a REAL mode: the Regatta AI artifact, where the course is the game's own output and only speed moves matter. Lesson: a data row per hull works for flight; a ranking is only worth trusting where the mode and every number in it are the game's.
+- 2026-10-15, toward B2 (start from a document): the Shrike studio was built from its Notion class document in one
+  session. What a document gives is WORDS ("flies incredibly slowly", "a moderate cooldown"), so every number is a
+  proposal the page must label, and two kinds of rule sit above any document: the LOCKED project rules (PvP is petals
+  only retired half of the Shrike's on-hit effects) and readings the document leaves open (one salvo per paint, a cup
+  nest), each listed for the designer. A document start needs those three lists on screen: quoted words, proposals,
+  overridden or open readings (`Docs/Studios/SHRIKE.md` §2, §3, §6).

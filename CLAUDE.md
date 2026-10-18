@@ -56,7 +56,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.
   Sections: Anti-Patterns to Avoid
-- [`Docs/claude/SHADERS_AND_PERFORMANCE.md`](Docs/claude/SHADERS_AND_PERFORMANCE.md): HLSL / Shader Graph, performance standards, prism performance — Performance Standards now routes to the perf record (`Docs/PERFORMANCE_OPTIMIZATION.md` first, `MEMORY_AUDIT.md`, `PLATFORM_UNIFICATION.md`), the in-game instruments (`diag`, `prof`, `freeze`/`ab`, `renderers`), the allocation gates and the editor-vs-build measurement rules. Read before any perf work.
+- [`Docs/claude/SHADERS_AND_PERFORMANCE.md`](Docs/claude/SHADERS_AND_PERFORMANCE.md): the LOCKED rule that nothing in the world looks flat (flat is the UI's look: world effects are lit, faceted volumes scaled with their size); HLSL / Shader Graph, performance standards, prism performance — Performance Standards now routes to the perf record (`Docs/PERFORMANCE_OPTIMIZATION.md` first, `MEMORY_AUDIT.md`, `PLATFORM_UNIFICATION.md`), the in-game instruments (`diag`, `prof`, `freeze`/`ab`, `renderers`), the allocation gates and the editor-vs-build measurement rules. Read before any perf work.
   Sections: Shader & Visual Development; HLSL / Shader Graph; Performance Standards; Prism System Performance
 - [`Docs/claude/SESSION_DECK.md`](Docs/claude/SESSION_DECK.md): The session deck plugin: `/deck` pane of buttons (team activity, gates, reference compile, sync, ship), band, status line.
   Sections: What it adds; What each button runs; How it loads; Changing it
@@ -130,7 +130,8 @@ to the person in one line: the ONE claude.ai artifact
 phone or PC before the game changes. **Load `/vessel-studio`** for it: §1.5 is the universal panel kit every studio is
 built from (the six settings tabs Scene / Game / AI / Play Style Config, Input and Vessel Config; dropdown rules; the
 Players list with + / -, domain, difficulty, play style and view; the Easy / Medium / Hard levels; the I1-I4
-intensity ladder; the three cameras). Load `/vessel` for the Unity side. Never publish a second studio artifact.
+intensity ladder; the three cameras). Load `/vessel` for the Unity side. Never publish a second Vessel Studio (hub) artifact; that rule is the shared hub's
+only: a `/labmaker` lab, a vessel's included, publishes its own artifact to explore in and takes its findings to Unity by `/labmaker` §7.
 **The artifact is the ONE source of truth; Unity is its clone** (the user, 2026-10-10): features and numbers are made
 and decided in the artifact first, then **`/artifact-to-unity`** clones them into the game
 (`Tools/Build/studio_to_unity.py` writes the artifact's values into the vessel's assets, `--check` is the drift gate;

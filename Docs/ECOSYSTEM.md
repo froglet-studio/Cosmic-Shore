@@ -126,6 +126,40 @@ granted) are fenced and recorded; neither licenses another.
 > (`VesselPrismController.SetTierHold`) — pausing the spawner, the sanctioned lever named
 > in the rejected-cheat note above. Nothing already laid is removed.
 
+> **AUTHORIZED EXCEPTION (2026-10-16): the Angler's KEEPER — one creature that does not
+> starve.** The designer asked for it in plain words: *"there should always be at least one
+> fauna that doesn't starve etc. so the number of fauna under angler control is always greater
+> than zero."* It resembles the rejected **immortal husk** (a creature that outlives its own
+> death rules, `ECOSYSTEM_DESIGN_PRINCIPLES.md`, "A creature dies when its last body prism is
+> destroyed"), and it is NOT that.
+>
+> What it does:
+>
+> - **No starvation for one creature.** The FIRST creature in an Angler's school (`_tamed[0]`)
+>   does not starve: `Fauna.IsStarving` reads `IFaunaLeash.Sustains`.
+> - **A keeper whenever the school is empty.** One creature is born behind the hull, already
+>   tamed. It is the cell's own first leashable herbivore, else `AnglerConfigSO.companionFauna`.
+>   It is born through `CellLifeSpawnerBase.SpawnFaunaWithDomain`, in the cell's controlling
+>   colour.
+>
+> Its fence — do not widen it:
+>
+> - **One reader, one implementer.** `IFaunaLeash.Sustains` is read only by `Fauna.IsStarving`,
+>   and implemented only by `AnglerCommandExecutor`. No `immortal` / `noStarve` field was added
+>   to `Fauna` or any config; the waiver exists only while a leash says so.
+> - **At most one per Angler.** When the keeper dies the next creature in the school inherits
+>   the role. When the school is empty one is born (at most once a second).
+> - **Only starvation is waived.** A keeper that is eaten, shot to its last body prism or
+>   jousted dies the ordinary way: wither, heart drop, mass conserved. Continuity of existence
+>   holds: the birth blooms through the same seam every spawner uses.
+> - **Production, not decay.** The birth is a spawn (allowed — §0 forbids aging mass out, not
+>   creating it), in the controlling colour (no domain asymmetry), on the sim authority only for
+>   a replicated species. It adds at most one creature per Angler to the cell (a creature's
+>   colliders, against a cell that already ships tens), and only while that Angler leads nobody.
+>
+> **An exception, not a precedent.** The next holder that wants a creature to outlive its
+> clock needs its own sign-off. Detail: §61.4; `R_VesselActions/ANGLER.md` §1b.
+
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
 
@@ -11572,3 +11606,97 @@ each heart must show `ElementalCrystalImpactor` (`Crystal` set, one collection e
 `ImpactCollider` (pointing at it), its `Crystal` component unchecked, and no Missing (Mono Script)
 rows. A living QuadFish's heart must still be joustable: `SetEmbeddedIn` enables the collider, and
 that doesn't depend on the `Crystal` component being enabled.
+
+## 61. The fauna leash — a vessel can steer a creature, never rewrite it (Oct 2026)
+
+The Angler (vessel 17, `R_VesselActions/ANGLER.md`) lures, tames and commands fauna. It does that through one narrow
+contract, `IFaunaLeash` (`Controller/Environment/FloraAndFauna/IFaunaLeash.cs`), and the contract is narrow on
+purpose: **a leash bends behaviour and nothing else.**
+
+### 61.1 What a leash may do
+
+- **`TrySteer(creature, out goal, out speed, out turnRate)`.** It replaces the creature's own goal for this tick:
+  - `LightFauna` slerps its body to that goal (`SteerOnLeash`) and eases its speed at 2.5/s.
+  - A `Boid` uses the goal as its steering target, at the leash's turn rate.
+- **`OrderedMeal(creature)`.** Picks which edible prism the creature's next mouthful faces. The creature re-reads it every frame.
+- **`Released(creature)`.** The creature tells its holder it has left the leash.
+
+### 61.2 What a leash may NOT do (the invariants, each held by the creature's code, not the holder's)
+
+- **The diet decides.** An ordered prism is re-checked against the creature's own edibility rule. It is eaten with the creature's own mouthful (`UpdateFeeding`), so a leash cannot make a herbivore eat what it could not eat wild.
+- **No imposed death, and no reprieve — but one keeper.** The starvation clock keeps running. A tamed creature that is never ordered to eat follows the school without grazing, and may starve on its own clock. That is the ordinary rule, with ONE authorized exception: the school's first creature, the Angler's keeper, does not starve (§61.4, §0). Whether a following creature should graze in passing is an open designer call (`ANGLER.md` §8).
+- **One fauna colour per cell.** A tamed creature keeps the cell's colour (LOCKED, `ECOSYSTEM_DESIGN_PRINCIPLES.md`). "My squad" is a leash relationship, not a team.
+- **The heart, body prisms, wither and mass conservation** are untouched. A leashed creature dies exactly as a wild one does.
+- **Who can be leashed:**
+  - Herbivores only (`Fauna.CanBeLeashed`). A `Boid` must also be a forager.
+  - Only on the peer that simulates the creature (`IsSimAuthority`), so consequences never fork across peers.
+  - Never while dying. `Die()` and `OnDestroy()` call `DropLeash()` before anything else, so a holder never steers a corpse.
+
+### 61.3 What is inert without a holder
+
+Every hook is gated on `Leash != null`. With no Angler in the cell, `LightFauna` and `Boid` run exactly the code they ran
+before: the same goal, the same feed candidate, the same speed.
+
+### 61.4 The keeper (2026-10-16, an authorized exception)
+
+The designer asked that an Angler always leads at least one creature, and that one never starves.
+
+**The rule:**
+
+- **One creature never starves.** `IFaunaLeash.Sustains(creature)` is true for exactly one creature per holder: the first in the Angler's school. `Fauna.IsStarving` is false while it holds. The stomach still drains and refills as usual; only the death at empty is waived.
+- **An empty school gets a keeper.** When the school is empty, `AnglerCommandExecutor.EnsureKeeper` births one creature:
+  - behind the hull, at the school's first slot;
+  - through `CellLifeSpawnerBase.SpawnFaunaWithDomain` (lineage bind, replication seam, bloom), in the cell's controlling colour;
+  - leashed at once.
+- **Which species:** the cell's own first leashable herbivore (`SpawnProfile.SupportedFaunas`, `Fauna.Leashable`), else `AnglerConfigSO.companionFauna` (Clawfish Space, the lab's first species).
+- **Where it is born:** a replicated species only on the sim authority, at most once a second. Never after the turn has ended.
+
+**What it does not waive:**
+
+- Predation, a jousting vessel, and losing the last body prism still kill a keeper. Its heart still drops and its mass is still conserved. The next creature in the school becomes the keeper, and an empty school gets a new one.
+- §0's "AUTHORIZED EXCEPTION … the Angler's KEEPER" is the record of the sign-off and the fence.
+
+
+### 61.5 Round 3 (2026-10-16): painted prey, theft, and the lure's garden
+
+The designer gave the Angler's elements their abilities (`R_VesselActions/ANGLER.md` §1c–§1g). Three of them touch the
+ecosystem:
+
+- **Every creature prefers painted prisms** (`PaintedPrey`).
+  - `LightFauna` and `Boid` rank a painted prism `paintedPreference` (4) times closer in their own nearest-edible search. That is the only reader.
+  - It is a preference inside the creature's own sensing radius, never a goal and never food. The diet still decides edibility, and shielded mass is still never food.
+  - It is a vessel's active act on the world (an ability), not an imposed rule of the food web. With nothing painted, every forager ranks exactly as before.
+  - Its static registry is fenced against the static-registry trap. Each holder unmarks what it marked (eaten, erased, turn end, disable), and `Prism.Initialize` forgets a pooled prism's marks.
+- **Theft** (Mass level 5). `Fauna.TryLeash(holder, steal: true)` moves a creature from one holder's leash to another's. The old holder is told (`Released`).
+  - A leash is still behaviour only (§61.1–61.2), so stealing changes who steers the creature and nothing else.
+- **The lure's garden** (Mass). While an Angler's lure is out, one plant of the PILOT'S domain is planted in the lure's reach every 2 s:
+  - one of the cell's own species;
+  - through `CellLifeSpawnerBase.SpawnFlora`, so it grows in;
+  - a replicated species only on the sim authority.
+
+  This is a vessel laying its own domain's mass, the same as a trail. It is not the spawner, so the "fauna spawn in the controlling colour" rule (a spawner rule) is not touched.
+
+**The Space level-5 "Paint Shields"** never makes shielded mass food. A squad member that reaches a painted shielded prism
+cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impact makes), and only then can it eat the prism.
+
+### 61.6 Round 4 (2026-10-17): growth haste replaces the garden; seeds; a spent creature
+
+- **The lure's light hastens growth** (`Flora.Hasten`). It replaces §61.5's lure garden, which planted a new plant every 2 s.
+  - While an Angler's lure is out, every plant within its reach waits `growPeriod / 3` between grow ticks instead of `growPeriod`.
+  - Each tick grows exactly what it always did, under the plant's own budgets, so mass is created at the plant's own rate per tick and only the cadence changes.
+  - The haste lapses by itself: a 0.6 s window, refreshed while the light is on the plant. Nothing needs undoing.
+  - Its one caller is `AnglerCommandExecutor`. `Flora` grew no serialized field for it.
+- **An omni crystal's seed.** An Angler that collects an omni crystal holds one flora seed (one of the cell's species) until its lure is next let go. The seed is then planted at the esca, in the pilot's domain, through `CellLifeSpawnerBase.SpawnFlora`.
+  - It grows in; a replicated species is planted only on the sim authority.
+  - It is the same as the garden: a vessel laying its own domain's mass, not the spawner.
+- **A spent creature** (the Charge lock) leaves its holder's school but stays leashed, hunting one vessel until it dies.
+  - It is not the keeper, so it starves normally (§61.4).
+  - Its leash is still behaviour only (§61.2): it swims at the vessel; it does not eat it.
+  - Its bites are the vessel's petals, through the PvP gate, never mass.
+
+### 61.7 Round 7 (2026-10-18): a holder asks the creature's diet before it orders
+
+- **`Fauna.LeashCanEat(Prism)`** is the creature's own edibility rule, asked by a holder before it gives an order (`LightFauna` → `IsEdibleForHerbivore`, `Boid` → `IsEdibleForForager`; the base answers true).
+  - It reads; it changes nothing. The diet is still the creature's (§61.2): a holder can only skip a prism the creature would refuse, never make one edible.
+  - Without it a leashed creature was ordered to a prism its diet refused (its own domain in a cell with no nucleus, the nucleus claim, outside its pen) and hovered there for good. That is the "the fauna don't always listen" the designer saw.
+  - The Angler's `PickTarget` is its one caller. A shielded prism stays a candidate: only Space 5 paints one, and the squad cracks the shield (§61.5).

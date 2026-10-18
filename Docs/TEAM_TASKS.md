@@ -445,6 +445,76 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
+### T-20261016-e2fb · open · test · Brittle Star
+- **Task:** Play the Brittle Star's 2026-10-16 tuning pass in the Editor: the ring regrows over 3 s after LT (modes off meanwhile); RT at a full pull in Charge Mode leaves the sabers flexing on a ring flick (cordMaxRigidity 0.4) and released they whip slower (cordLooseWave 144); Space Mode at a full pull overheats after ~6 s at Space 0 and ~20 s at Space 10, same ~5 s lockout; the ring explosion is 4x thicker and bursts out five-fold as lit faceted volumes (five coiling arms led by crystals, the ring's pentagon with crystal knots, a faceted torus front with five crests, turning with the ring's spin; nothing flat from any angle); the trail blocks are long and slim (1 x 1 x 6, base trail 0.5 wide) and widen in x and y with Mass.
+- **Done when:** Each item seen in Play mode and noted in Docs/UNITY_VERIFICATION_CHECKLIST.md's 'Brittle Star tuning pass' section
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+
+### T-20261016-acc7 · open · test · Brittle Star
+- **Task:** Profile a Brittle Star Space-10 burst: heatCapacity x3.33 lets five guns fire ~20 s at 450 rounds/s with 9 s flights, so ~4,000 rounds can be alive (~2,000 at Space 0, 6 s bursts) against the turrets' pool max of 2,400 (GenericPoolManager then instantiates on demand and destroys on release). Capture with 3-4 AI Brittle Stars at Space 10 and decide: raise the pool, shorten the flight, or cap the burst.
+- **Done when:** A capture (capture console command) attached to the task, and the pool or the numbers changed, or kept with the measurement as the reason
+- **Who can take it:** Yash (offered: diagnostics), Garrett decides
+- **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** BRITTLE_STAR.md section 3.4 Cost and F9
+
+### T-20261017-60e9 · open · test · Prisms
+- **Task:** Editor-verify the prism destruction and steal detail levels (cece/dreamy-pascal-7xxx1m, lab rounds 9-12): a close death bursts into silver triangles that lean along the hit; neighbours on a trail rammed at once do not play the same animation, yet each cloud stays one smooth burst (round 12; fragmentVariety 0 makes them copies); a FAR death is 24 wedges on the same law (not the old explosion graph); a big trail wipe draws every death; the steal's roll looks as before. Frame Debugger: destructions draw with keyword _BURST_FRAGMENT, steals with _BURST_ROLL, the roll's mesh is Prism_HighPoly_<n>. Run EditMode PrismCollisionBurstTests.
+- **Done when:** Checklist items 9-12 in Docs/UNITY_VERIFICATION_CHECKLIST.md pass (or each failure is filed as a dev task) and PrismCollisionBurstTests are green
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-12); Docs/Studios/COLLISION_BURST_LAB.md rounds 11-13
+
+### T-20261017-9cab · open · decision · Prisms
+- **Task:** Three calls the round-11/12 burst leaves: (1) round 13 tripled the spread (burst 0.36 / drift 0.216): the level-0 cloud is now 2.57 R at 2 s against the old explosion's 1.78 R - confirm in game; (3) round 12's per-death variety (fragmentVariety 0.5): judge it on the lab's Neighbours view - lower it if the deaths read too unalike; (2) your decision set the grade length to 2.2 s, but that is MaterialPropertyAnimator.DefaultTransitionSeconds, every prism colour change in the game - not adopted; adopt or not.
+- **Done when:** All three recorded in the Collision Burst Lab decision log and the asset / animator updated to match
+- **Who can take it:** Garrett (prisms / product owner)
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Docs/Studios/COLLISION_BURST_LAB.md round 11, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9
+
+### T-20261017-1249 · open · dev · Tooling
+- **Task:** unity_refcompile's editor config reports 3 errors in AuthenticationServiceFacade.cs (Unity.Multiplayer.PlayMode / CurrentPlayer, from 296123a9e) as PROJECT errors on a clean bleeding-edge, so every branch's editor run reads FAILED. Unity.Multiplayer.Playmode is already an unobtainable package: map that namespace to it (note the case difference) in Tools/Build/unity_refcompile so they land in the unobtainable-package bucket. Do not change the game file.
+- **Done when:** A clean bleeding-edge editor run reads RESULT: OK with those 3 in the unobtainable bucket, and a planted typo in a changed Editor file still fails it
+- **Who can take it:** Shombith (CI), Yash (offered)
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Tools/Build/unity_refcompile/README.md
+
+### T-20261017-75d5 · open · docs · Prisms
+- **Task:** Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs has two back-to-back summary blocks (near lines 666 and 2220 on cece/dreamy-pascal-7xxx1m; already on bleeding-edge): a member was inserted between a doc comment and its method, so the doc now sits on the wrong member. Move each onto the method it describes or delete it if superseded. Doc comments only.
+- **Done when:** A scan for '/// </summary>' followed by '/// <summary>' finds nothing in the file
+- **Who can take it:** Yash (offered), anyone
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
+
+### T-20261017-cb31 · open · test · vessels
+- **Task:** Fly the Shrike in Menu_Main freestyle and run its editor checklist (modes on X/RB/B, LT eyepiece with crosshairs, RT per mode, docking, Mass detach, crystal flora, missile count)
+- **Done when:** Every step of the Shrike entries in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or filed as a bug
+- **Who can take it:** Yash, or Garrett (vessels)
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Shrike entries); Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md
+
+### T-20261017-868c · open · test · vessels
+- **Task:** Shrike in a 2-player match: docking, nests, flora missiles and the lance agree on both machines
+- **Done when:** Two peers see the same docks, nests and missiles; scored hits land once
+- **Who can take it:** Yash (multiplayer)
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md section 5
+
+### T-20261017-114a · open · decision · vessels
+- **Task:** Shrike level-5 upgrades for Charge, Mass and Time (Space is Void Pierce)
+- **Done when:** Three upgrades named in the Shrike ability map
+- **Who can take it:** Garrett
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md section 7
+
+### T-20261017-d598 · open · dev · vessels
+- **Task:** Bring the Shrike Studio artifact up to the Unity redesign (modes on RT, LT eyepiece, crystal flora, Mass detach) and give it one minigame per element
+- **Done when:** shrike.html plays the shipped controls and has Time race, Space destruction, Mass creation, Charge dogfight
+- **Who can take it:** Garrett (vessels), any session
+- **Added:** 2026-10-17 by a Claude session (`cece/affectionate-clarke-s738vh`)
+- **See:** Docs/Studios/SHRIKE.md section 0 and 6; .claude/skills/labmaker/SKILL.md section 1.5
+
 ### T-20261016-92b0 · done · decision · Regatta AI
 - **Task:** cece/relaxed-hopper-r62hbd carries a second, older RampBoostAIPolicySO for the Rhino than bleeding-edge's - pick one before it merges (learn_drives_from_flights.py writes only fields both share, so either works)
 - **Done when:** The choice is recorded in Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md and the other branch is reconciled
@@ -630,3 +700,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (`ccr-d93a6dfb-ugbxng`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BUTTERFLY.md section 2
+
+### T-20261018-9fcf · open · test · vessels
+- **Task:** Editor-verify the Angler (vessel 17): run the seven Angler entries in Docs/UNITY_VERIFICATION_CHECKLIST.md (rounds 1-7) in Menu_Main freestyle - lure/tame on A, paint RT, erase/lock LT, dash B, squad X, recall Y, the lit queue, the level camera
+- **Done when:** Every Angler checklist entry passes with a clean console, or each failure is filed as a dev task
+- **Who can take it:** Yash (editor tests), Garrett (vessel owner)
+- **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+
+### T-20261018-bf51 · open · decision · vessels
+- **Task:** Angler design slots still open: Charge and Time level-5 upgrades, and element scaling for Charge, Mass and Space (only Time scales today)
+- **Done when:** Garrett names the four, or says they stay open
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md section 7
+
+### T-20261018-5d70 · open · decision · Brittle Star
+- **Task:** The Brittle Star's base trail lays blocks HALF as wide as its Creation corner trails (0.5 x 1 x 6 against 1 x 1 x 6): the fleet spawner halves BaseScale.x for a single trail, the corners do not. Pick: halve the corners' x, or author the base block as (2, 1, 6).
+- **Done when:** Garrett picks one and the corners and base trail lay the same block (BRITTLE_STAR.md R3)
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md R3
