@@ -55,8 +55,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(KiteNavigatorAI.Skill.Hard, c.AISkill);
             // Garrett's 2026-10-18 direction, built in Unity first (KITE_NAVIGATOR.md "Round 4")
             Assert.AreEqual(2f, c.BoostCooldownSeconds, "a boost waits 2 s after the last, none at Time L5");
-            Assert.AreEqual(5f, c.OmniSeconds);
-            Assert.AreEqual(2f, c.OmniBoardScale, "an Omni crystal zooms the kite view out twice as far");
+            Assert.AreEqual(6, c.OmniMotesPerElement, "round 4e: an Omni crystal drops a cluster of each element, not a zoom");
+            Assert.AreEqual(0.5f, c.OmniClusterRadius, 1e-6f);
             Assert.AreEqual(1f, c.MoteBaseWeight);
             Assert.AreEqual(1f, c.MoteWeightPerLevel);
             Assert.AreEqual(1f, c.FaunaChargeCost);
@@ -65,6 +65,13 @@ namespace CosmicShore.Tests
             Assert.AreEqual(60f, c.DepthFullSpreadAt);
             Assert.AreEqual(0.35f, c.DitherCoreAlpha, 1e-6f);
             Assert.AreEqual(0.5f, c.DitherNearScale, 1e-6f);
+            // round 4e: the petals set apart, Space spinning without pausing, Mass +20%, Charge's plasma visible
+            Assert.AreEqual(0.5f, c.PetalGap, 1e-6f);
+            Assert.AreEqual(0.65f, c.PetalWidth, 1e-6f);
+            Assert.AreEqual(150f, c.SpaceSpinDegreesPerSecond);
+            Assert.AreEqual(0.72f, c.MassPulse, 1e-6f, "round 4d's 0.6, +20%");
+            Assert.AreEqual(1.35f, c.ChargeHaloScale, 1e-6f);
+            Assert.AreEqual(0.32f, c.ChargeSparkSize, 1e-6f);
         }
 
         [Test]

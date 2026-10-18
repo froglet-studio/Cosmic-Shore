@@ -119,7 +119,8 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
    - Lower left: a small square kite view, the real world seen from straight above your hull.
    - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
    - In your own view: a faint see-through kite and faint lime dots, not in the way.
-2. Fly with two thumbs (both sticks, or the keyboard): the spread of the sticks is the throttle. No ability button does
+2. Fly with two thumbs (both sticks, or the keyboard): the spread of the sticks is the throttle. Round 4e: it turns
+   faster and rolls much faster than in 4d (pitch and yaw 100, roll 120). No ability button does
    anything, and no card shows a button chip. The hull keeps the Sparrow's tuning (top speed 60); say if it wants the
    two-stick hulls' sharper turns.
 3. After a Time loop, the Time card shows the saved boosts (a number) and the kite view shows a lime dot each round the
@@ -131,8 +132,9 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 4. Press **2** (or D-pad right).
    - The kite view fills the screen.
    - Your hull's view shrinks to the same small square in the lower left, flown by its AI.
-   - Each mote is a lime five-petal flower of its element's petal (round 4d). Space spins; Time flips its petals one
-     after another; Mass moves each petal in and out; Charge has a blue plasma spark running round its petals.
+   - Each mote is a lime five-petal flower of its element's petal, the five petals clearly apart (round 4e). Space spins
+     all the time; Time flips its petals one after another; Mass moves each petal well in and out; Charge has a
+     flickering blue plasma rim round each petal and a bright blue spark running round it.
    - The hull, flown by its AI, never shoots (round 4c removed the Sparrow's guns and missiles).
    - Prisms far above or below the plane are the real prisms, never gone (round 4d). Prisms on the plane look crisp;
      the farther out of the plane, the more their faces part, as distant mass does in the pilot view. Prisms above
@@ -148,7 +150,8 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 6. A loop with two petal shapes in it fizzles.
 7. With charge, ram a rival: crystals burst out of them (at Charge level 5, the petals come to you instead) and the
    scoreboard counts a hit. Ram a creature: it dies, and one pip goes.
-8. Collect an Omni crystal: for 5 s the kite view zooms out twice as far and the kite reaches twice as far.
+8. Collect an Omni crystal (round 4e): four clusters of motes, one of each element, pop onto the kite's board around its
+   centre. The view does NOT zoom.
 9. Press **1**: your view is full screen again, at its old size, with no stuck input and no stuck boost.
 10. Gather petals of one element on the hull: the motes of that shape come more often.
 11. In the Vessel Changer, swap away from the Kite and back, once flying and once while on the kite. Every view comes

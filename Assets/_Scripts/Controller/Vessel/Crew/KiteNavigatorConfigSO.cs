@@ -122,14 +122,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("The navigator AI's skill: thumb speed, reaction, aim noise and judgement (never the kite itself).")]
         [SerializeField] KiteNavigatorAI.Skill aiSkill = KiteNavigatorAI.Skill.Hard;
 
-        [Header("Omni crystal: the wide board")]
-        [Tooltip("Seconds an Omni crystal the hull collects widens the kite's board.")]
-        [SerializeField, Min(0f)] float omniSeconds = 5f;
-        [Tooltip("How much wider: the kite view zooms out this many times, the kite may fly that much further, and the " +
-                 "lasso (measured in board radii) grows with it.")]
-        [SerializeField, Range(1f, 4f)] float omniBoardScale = 2f;
-        [Tooltip("How fast the board widens and narrows again (1/s).")]
-        [SerializeField, Min(0.1f)] float omniZoomRate = 3f;
+        [Header("Omni crystal: a burst of motes (Garrett, round 4e)")]
+        [Tooltip("An Omni crystal the hull collects drops one cluster of each element on the kite's board, this many motes " +
+                 "each, so a crew short of crystals can make it up (round 4e: \"if they are low on elemental crystals the " +
+                 "omnicrystal can inject a bunch to make up for low production\").")]
+        [SerializeField, Range(0, 24)] int omniMotesPerElement = 6;
+        [Tooltip("Where the four clusters land: this far from the board's centre, as a fraction of its radius, evenly round it.")]
+        [SerializeField, Range(0f, 0.9f)] float omniClusterRadius = 0.5f;
 
         [Header("Views (the game's renderer)")]
         [Tooltip("The small view's height, as a fraction of the screen: a square in the lower left, the kite view while " +
@@ -139,6 +138,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
         [Tooltip("A mote's size in the kite view (u).")]
         [SerializeField, Min(0.5f)] float moteSize = 3.2f;
+
+        [Header("Mote flowers (five petals, each moving like its element; round 4e)")]
+        [Tooltip("How far each petal sits off the flower's centre, as a fraction of a petal's length: the gap that keeps " +
+                 "the five petals distinct (round 4e: \"the petals need more separation to look distinct\").")]
+        [SerializeField, Range(0f, 1.5f)] float petalGap = 0.5f;
+        [Tooltip("A petal's width, as a fraction of its own shape's width (narrower = more space between petals).")]
+        [SerializeField, Range(0.2f, 1f)] float petalWidth = 0.65f;
+        [Tooltip("Space: the flower spins this many degrees a second, without pausing.")]
+        [SerializeField, Min(0f)] float spaceSpinDegreesPerSecond = 150f;
+        [Tooltip("Mass: how far each petal moves out and back, as a fraction of a petal's length (0.6 in round 4d, +20% " +
+                 "in round 4e).")]
+        [SerializeField, Range(0f, 2f)] float massPulse = 0.72f;
+        [Tooltip("Charge: the blue plasma round each petal, as a fraction of the petal's size (1 = the petal itself).")]
+        [SerializeField, Range(1f, 2f)] float chargeHaloScale = 1.35f;
+        [Tooltip("Charge: the spark that runs each petal's perimeter, as a fraction of the mote's size.")]
+        [SerializeField, Range(0.05f, 1f)] float chargeSparkSize = 0.32f;
         [Tooltip("The tail's width in the kite view (u).")]
         [SerializeField, Min(0.2f)] float tailWidth = 1.4f;
         [Tooltip("How visible the kite is to the pilot: a faint, see-through kite (0 = hidden).")]
@@ -194,12 +209,17 @@ namespace CosmicShore.Gameplay
         public float MoteBaseWeight => moteBaseWeight;
         public float MoteWeightPerLevel => moteWeightPerLevel;
         public float BoostCooldownSeconds => boostCooldownSeconds;
-        public float OmniSeconds => omniSeconds;
-        public float OmniBoardScale => omniBoardScale;
-        public float OmniZoomRate => omniZoomRate;
+        public int OmniMotesPerElement => omniMotesPerElement;
+        public float OmniClusterRadius => omniClusterRadius;
         public float PipSize => pipSize;
         public float ViewMargin => viewMargin;
         public float MoteSize => moteSize;
+        public float PetalGap => petalGap;
+        public float PetalWidth => petalWidth;
+        public float SpaceSpinDegreesPerSecond => spaceSpinDegreesPerSecond;
+        public float MassPulse => massPulse;
+        public float ChargeHaloScale => chargeHaloScale;
+        public float ChargeSparkSize => chargeSparkSize;
         public float TailWidth => tailWidth;
         public float PilotKiteAlpha => pilotKiteAlpha;
         public float PilotDotAlpha => pilotDotAlpha;

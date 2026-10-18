@@ -572,9 +572,9 @@ MonoBehaviour:
     element: 4
     UseFloor: 1
     Floor: 0.5
-  PitchScaler: 80
-  YawScaler: 80
-  RollScaler: 30
+  PitchScaler: 100
+  YawScaler: 100
+  RollScaler: 120
   RotationThrottleScaler: 0.1
   restrictedTurnMultiplier: 3
 --- !u!114 &5613657713013293844

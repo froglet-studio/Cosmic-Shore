@@ -22,7 +22,7 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR
           "lets go back to two thumb flying for the pilot so it can choose the fly in a way that brings more mass into
           plane for the kite"); the subclass adds no serialized field, so the swap is the script guid alone
         - its VesselImpactor on KiteImpactorDataContainer: the Sparrow's container plus KiteOmniCrystalEffect in the omni
-          list (an Omni crystal widens the navigator's board) and without the Sparrow's Omni ward, so the Sparrow's own
+          list (an Omni crystal drops motes on the navigator's board) and without the Sparrow's Omni ward, so the Sparrow's own
           container is untouched
         - NO SPARROW KIT (Garrett, 2026-10-18: "clean up the vestiges from using the sparrow. the pilot is shooting when i am
           controlling the kite"): the guns, the bullet and Skyburst missile factories and their four action executors
@@ -250,12 +250,33 @@ def hud_retrofit(text: str) -> str:
     return head + "".join(out)
 
 
+# The pilot a bit more maneuverable, the roll especially (Garrett, round 4e: "the roll speed was especially slow"). On two
+# sticks RollScaler is a real roll axis, where the Sparrow's single stick used it only to bank into turns (30). Written
+# ONCE, while the transformer still carries the Sparrow's numbers, so a value play-tuned in Unity is never overwritten.
+SPARROW_TURN = {"PitchScaler": "80", "YawScaler": "80", "RollScaler": "30"}
+KITE_TURN = {"PitchScaler": "100", "YawScaler": "100", "RollScaler": "120"}
+
+
+def tuning_retrofit(text: str) -> str:
+    """The Kite's own turn rates, over the Sparrow's untouched ones only. Idempotent."""
+    head, docs = split_docs(text)
+    out = []
+    for _, _, d in docs:
+        if f"guid: {TWO_STICK_TRANSFORMER_GUID}, type: 3" in d and \
+                all(f"\n  {k}: {v}\n" in d for k, v in SPARROW_TURN.items()):
+            for k, v in KITE_TURN.items():
+                d = d.replace(f"\n  {k}: {SPARROW_TURN[k]}\n", f"\n  {k}: {v}\n")
+        out.append(d)
+    return head + "".join(out)
+
+
 def retrofit(text: str) -> str:
     """No buttons, and the Kite's own impactor container. Idempotent: run on the clone and on the committed prefab."""
     text = BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
     text = strip_sparrow_kit(text)
     text = hud_retrofit(text)
     text = text.replace(f"guid: {SINGLE_STICK_TRANSFORMER_GUID},", f"guid: {TWO_STICK_TRANSFORMER_GUID},")
+    text = tuning_retrofit(text)
     return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {KITE_CONTAINER_GUID},")
 
 
@@ -571,6 +592,11 @@ def self_test():
     if strip_sparrow_kit(good) != good:
         fails.append("the Sparrow-kit strip is not idempotent")
     assert anchor
+    if "\n  RollScaler: 120\n" not in good:
+        fails.append("a fresh clone does not get the Kite's turn rates")
+    tuned = good.replace("\n  RollScaler: 120\n", "\n  RollScaler: 95\n")
+    if tuning_retrofit(tuned) != tuned:
+        fails.append("the turn-rate retrofit overwrote a value tuned after it")
     if retrofit(good) != good:
         fails.append("the retrofit is not idempotent")
     omni_script = guid_of(OMNI_SCRIPT_META)

@@ -49,7 +49,7 @@ they are not game crystals.
 | Charge: knock crystals out, steal them at Charge L5 | The ram's form: Eject, then Steal at L5. |
 | Space blasts destroy shielded and super-shielded prisms at Space L5 | Super shields inside the blast's reach are dropped first (`Prism.DeactivateShields`, the Rhino sword's sequence), and the blast goes out with `DevastatingOverride = true`. |
 | The lasso 50% longer (round 4b) | `tailLength` 1.6 → 2.4 board radii (384 u); the lab's default moved with it (parity's asset check holds them equal). |
-| An Omni crystal: 5 s of a longer lasso and a kite view zoomed out twice as far | `KiteOmniCrystalEffectSO` in the Kite's own `KiteImpactorDataContainer` (omni list) calls `KiteNavigator.OnOmniCrystal`: the board radius eases to ×2 (`omniBoardScale`) for `omniSeconds` (5). The camera zooms with it, the kite may fly twice as far, and the lasso, measured in board radii, doubles. |
+| An Omni crystal: 5 s of a longer lasso and a kite view zoomed out twice as far | Replaced in round 4e by a burst of motes (below). |
 | Boosts: 2 s cooldown, none at Time L5 | `boostCooldownSeconds` (2) after a boost ends; 0 at Time L5. |
 
 **Round 4b (the same day, after flying round 4):** the petals could not be seen. Every instanced draw used
@@ -131,6 +131,25 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
     - `ditherNearScale` (0.5) is the cone's radius at the lens, as a share of its radius at the plane.
   - The kite, its tail, the motes and the rings are drawn just under the lens, so no prism covers them.
 
+**Round 4e (2026-10-18, after flying 4d):**
+- **The Omni crystal drops motes; no zoom** ("I don't like when it zooms out from the omni crystal ... if they are low on
+  elemental crystals the omnicrystal can inject a bunch to make up for low production"). `KiteNavigator.OnOmniCrystal`
+  lays one cluster of each element (`omniMotesPerElement`, 6) evenly round the board at `omniClusterRadius` (0.5 R),
+  each with a pop ring, over the usual mote count. The zoom fields (`omniSeconds`, `omniBoardScale`, `omniZoomRate`)
+  are gone.
+- **The flowers, set apart.** Each petal's inner tip sits `petalGap` (0.5) petal-lengths off the centre, and is
+  `petalWidth` (0.65) of its shape's width. A flower is now 1.5× as wide.
+  - **Space** spins without pausing (`spaceSpinDegreesPerSecond`, 150). Round 4d stepped 72° at a time, and a
+    five-petal flower turned 72° looks exactly the same, so the spin could not be seen.
+  - **Mass** moves out and back 20% further (`massPulse` 0.6 → 0.72).
+  - **Time** flips as before, with the separation.
+  - **Charge**: a flickering blue halo under each petal shows as a plasma rim (`chargeHaloScale` 1.35), with a bright
+    spark lapping each petal's outline (`chargeSparkSize` 0.32 of the mote). Round 4d's plasma bars were about a pixel
+    wide in the full-screen view, which is why nobody saw them.
+- **A more agile pilot, the roll especially.** Pitch and yaw 80 → 100, roll 30 → 120. On two sticks, `RollScaler` is a
+  real roll axis; the Sparrow's 30 only banked its single stick into turns. `author_kite_assets.py` writes these once,
+  while the hull still carries the Sparrow's numbers, so a value tuned in Unity afterwards is never overwritten.
+
 Every "L5" is the fleet's gate, `ElementalAbilityHandler.IsUpgradeActive(element)`. The Kite's map lists all four
 elements: each unlocks at level 5 and relocks below 4.
 
@@ -159,7 +178,7 @@ always flies the empty seat:
 | `KiteNavigatorView.cs` | The two views: the kite camera, the picture-in-picture swap, every kite, tail, mote and ring draw (the game's renderer, `Graphics.RenderMeshInstanced`). |
 | `UI/Controller/KiteHUDController.cs` | The four ability cards read the seat: saved boosts, charges, the last blast, the Mass flash. |
 | `Utility/PrismDepthPlane.cs`, `_Graphics/Materials/Graphs/PrismDepthPlane.hlsl` | Prism depth from a plane, for one camera's render (the kite view). |
-| `ImpactEffects/EffectsSO/Vessel Crystal Effects/KiteOmniCrystalEffectSO.cs` | An Omni crystal widens the board (asset `KiteOmniCrystalEffect`, in `KiteImpactorDataContainer`). |
+| `ImpactEffects/EffectsSO/Vessel Crystal Effects/KiteOmniCrystalEffectSO.cs` | An Omni crystal drops a burst of motes on the board (asset `KiteOmniCrystalEffect`, in `KiteImpactorDataContainer`). |
 | `Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs` | **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)** and **Remove**. |
 | `Assets/_Scripts/Tests/Editor/KiteNavigatorCoreTests.cs`, `KiteNavigatorConfigTests.cs` | The core's rules, and the asset's numbers and wiring. |
 | `Tools/Build/kite_navigator_lab/parity.cjs` | Compiles the shipped C# core and diffs it against the lab page frame by frame, over 6 scripted thumbs. Also diffs the asset against the page key by key. Planted controls must be caught. |
@@ -208,7 +227,7 @@ back, as well as any menu that parks the hull on its AI. On an AI hull or a remo
 ## Where the game differs from the lab
 
 - **Round 4 is not in the lab yet**: the views, the two-thumb pilot, the saved boosts, the HUD counts, the five-petal
-  motes, the element weights, the L5 upgrades, the Omni zoom and the fauna rams were directed in Unity (above; task
+  motes, the element weights, the L5 upgrades, the Omni burst and the fauna rams were directed in Unity (above; task
   `T-20261018-3247`).
 - **While the AI flies the hull, it spends the Time gift as it comes** (it has no trigger).
 - **The Space blast is the real `AOEExplosion`.** Through its `ExplosionImpactor` it can also hit rival hulls, which
@@ -219,7 +238,7 @@ back, as well as any menu that parks the hull on its AI. On an AI hull or a remo
   while the human navigates.
 - **The kite view sees 400 u either side of the plane**, depth measured from the plane and the mass above it dithered; the
   lab drew prisms beyond the slice as faint ghosts.
-- **The Omni zoom comes only on the Kite hull**: the play-mode menu's seat on another hull has no Omni effect in its
+- **The Omni burst comes only on the Kite hull**: the play-mode menu's seat on another hull has no Omni effect in its
   container.
 
 ## Gates

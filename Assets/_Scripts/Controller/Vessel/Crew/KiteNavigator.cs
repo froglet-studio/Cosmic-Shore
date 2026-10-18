@@ -119,7 +119,8 @@ namespace CosmicShore.Gameplay
         readonly HashSet<Prism> _blastCounted = new();
         float _blastWatchUntil;
         bool _humanNavigates, _weTookHull, _down, _boosting;
-        float _swapReadyAt, _boostReadyAt, _omniUntil, _boardScale = 1f;
+        float _swapReadyAt, _boostReadyAt;
+        int _omniPending;
         KiteVec _aim;
         enum Pointer { Mouse = 0, Touch = 1, Stick = 2 }
         Pointer _pointer;
@@ -153,11 +154,9 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the local human flies the kite and the hull's AI flies the hull.</summary>
         public bool HumanNavigates => _humanNavigates;
 
-        /// <summary>The hull collected an Omni crystal: the board widens for <c>omniSeconds</c> (KiteOmniCrystalEffectSO).</summary>
-        public void OnOmniCrystal()
-        {
-            if (config) _omniUntil = Time.time + config.OmniSeconds;
-        }
+        /// <summary>The hull collected an Omni crystal: a cluster of each element drops on the board for the kite to loop
+        /// (KiteOmniCrystalEffectSO). Laid on the next step, where the board is current.</summary>
+        public void OnOmniCrystal() => _omniPending++;
 
         /// <summary>
         /// Seat a navigator on the hull the local player flies (the FrogletTools play-mode menu calls this; the Kite hull
@@ -210,7 +209,7 @@ namespace CosmicShore.Gameplay
             _snapped = false;
             _humanNavigates = _weTookHull = _down = _boosting = false;
             Motes.Clear(); Effects.Clear(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
-            _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _boostReadyAt = 0f; _omniUntil = 0f; _boardScale = 1f;
+            _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _boostReadyAt = 0f; _omniPending = 0;
             if (_active && _active != this) Destroy(_active);
             _active = this;
             _view = new KiteNavigatorView(this);
@@ -241,7 +240,7 @@ namespace CosmicShore.Gameplay
             PollSwap();
             if (dt <= 0f) return;
 
-            ScaleBoard(dt);
+            _s = _cfg.ToSettings();
             UpdateBoard(dt);
             _view.Frame(_humanNavigates);
             StepMotes(dt);
@@ -269,16 +268,6 @@ namespace CosmicShore.Gameplay
             UpdateBoard(0f);
             _view.Frame(_humanNavigates);
             _view.Draw();
-        }
-
-        // An Omni crystal widens the board for a while: the camera zooms out and the kite may fly that much further, and
-        // since the tail is measured in board radii, the lasso grows with it. Eased, so the kite is drawn in, not snapped.
-        void ScaleBoard(float dt)
-        {
-            float target = Time.time < _omniUntil ? _cfg.OmniBoardScale : 1f;
-            _boardScale += (target - _boardScale) * (1f - Mathf.Exp(-_cfg.OmniZoomRate * dt));
-            _s = _cfg.ToSettings();
-            _s.BoardRadius *= _boardScale;
         }
 
         // ------------------------------------------------------------------ seats
@@ -392,6 +381,22 @@ namespace CosmicShore.Gameplay
                 if (Mathf.Sqrt(m.X * m.X + dz * dz) >= R * 1.9f || Mathf.Abs(m.Y) >= Mathf.Max(_cfg.ReachY * 5f, 160f))
                     Motes.RemoveAt(i);
                 else Motes[i] = m;
+            }
+
+            // an Omni crystal: one cluster of each element, evenly round the board's centre, over the usual mote count
+            for (; _omniPending > 0; _omniPending--)
+            {
+                float turn = (float)_rng.NextDouble() * Mathf.PI * 2f, rr = R * _cfg.OmniClusterRadius;
+                for (int e = 0; e < 4; e++)
+                {
+                    float a = turn + e * Mathf.PI * 0.5f, cx = Mathf.Cos(a) * rr, cz = A + Mathf.Sin(a) * rr;
+                    for (int i = 0; i < _cfg.OmniMotesPerElement; i++)
+                    {
+                        float x = cx + Gauss() * _cfg.MoteSpread * 0.6f, z = cz + Gauss() * _cfg.MoteSpread * 0.6f;
+                        Motes.Add(new Mote { World = BoardToWorld(x, z), X = x, Z = z, Y = 0f, Has = true, Element = e, Spin = (float)_rng.NextDouble() * 360f });
+                    }
+                    AddFx(FxKind.Pop, cx, cz);
+                }
             }
 
             // a same-element cluster ahead of the board, so it flows in from the top

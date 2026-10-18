@@ -49,12 +49,17 @@ MonoBehaviour:
   faunaChargeCost: 1
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   aiSkill: 2
-  omniSeconds: 5
-  omniBoardScale: 2
-  omniZoomRate: 3
+  omniMotesPerElement: 6
+  omniClusterRadius: 0.5
   pipSize: 0.32
   viewMargin: 0.015
   moteSize: 3.2
+  petalGap: 0.5
+  petalWidth: 0.65
+  spaceSpinDegreesPerSecond: 150
+  massPulse: 0.72
+  chargeHaloScale: 1.35
+  chargeSparkSize: 0.32
   tailWidth: 1.4
   pilotKiteAlpha: 0.22
   pilotDotAlpha: 0.35
