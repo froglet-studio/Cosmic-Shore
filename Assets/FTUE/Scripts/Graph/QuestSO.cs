@@ -21,6 +21,12 @@ namespace CosmicShore.Core
         [Tooltip("Master switch (test harness). When off, the runner never starts this quest.")]
         public bool questEnabled = true;
 
+        [Tooltip("Run this quest even while the master developer unlock (DeveloperUnlockGate) is on. " +
+                 "Its lock-APPLYING nodes still pass straight through under the gate (nothing gets locked); " +
+                 "everything else - navigation, dialogue, gates - runs. Off by default, so a quest that was " +
+                 "authored as a lock funnel keeps standing down exactly as before.")]
+        public bool runsUnderDeveloperUnlock;
+
         [Tooltip("Designer notes for the whole quest — the progression plan, assumptions, links.")]
         [TextArea(3, 12)] public string designerNotes;
 

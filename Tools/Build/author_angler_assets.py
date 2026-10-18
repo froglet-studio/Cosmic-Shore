@@ -113,7 +113,7 @@ OMNI_FAUNA = ("9a71c56e49ff4ee493c70be766f1b335", "d6d14731fd184959b837ab47e378f
               "28c9a96388684fa0b3b10b9dbea56c70", "72fa98519b534214b89e9c29c44b89da", "62a30981533145a5b66304c04e7c50e0")            # StoatOverclockByCrystalEffect.asset (the Stoat's omni effect)
 
 # (control name, AnglerControl value, InputEvents it is bound to). The InputEvents numbers: Button1=6 (A / Space),
-# Button2=7 (B / R), Button3=8 (X / Q), Button4Action=14 (Y / F). Mass (Lure) is on A and Time (Dash) on B, the Sparrow's
+# Button2=7 (B / T; R until 2026-10-14), Button3=8 (X / Q), Button4Action=14 (Y / F). Mass (Lure) is on A and Time (Dash) on B, the Sparrow's
 # layout (the designer, 2026-10-18); the squad pick and recall took the freed X and Y. The triggers (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling
 # painter reads their analog depth from the replicated InputStatus. LB raises no event in the game, so it is unused.
 CONTROLS = (("AnglerLure", 0, 6), ("AnglerSquad", 1, 8), ("AnglerRecall", 2, 14), ("AnglerDash", 3, 7))
@@ -397,7 +397,7 @@ def map_asset() -> str:
                   "The brush paints shielded prisms too, and the squad cracks a painted prism's shield off when it arrives, "
                   "so it can be eaten. Gated on IsUpgradeActive(Space).") +
             entry(4, "Dash to the School",
-                  "B (R on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured "
+                  "B (T on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured "
                   "when pressed, in 0.35 s. Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 "
                   "(AnglerConfigSO.faunaSpeed).", 7, "", ""))
 

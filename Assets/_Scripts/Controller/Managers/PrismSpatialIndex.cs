@@ -915,6 +915,35 @@ namespace CosmicShore.Gameplay
             _lodBecameFar = new NativeList<int>(512, Allocator.Persistent);
         }
 
+        #region Prism motion (PrismMotion's contact rule)
+
+        /// <summary>The position this slot is filed under — last frame's for anything a mover has
+        /// not written back yet. Out of range reads as the origin.</summary>
+        internal float3 StoredPosition(int index) =>
+            index >= 0 && index < _highWaterMark ? _spatial[index].Position : float3.zero;
+
+        /// <summary>The slot's LIVE volume (the cell-summation view's, refreshed on growth), the input
+        /// to <see cref="PrismMotion.ContactRadius"/>. Out of range reads as 0.</summary>
+        internal float ContactVolume(int index) =>
+            index >= 0 && index < _highWaterMark && _cellData.IsCreated ? _cellData[index].Volume : 0f;
+
+        /// <summary>
+        /// The hot arrays and the bucket grid, read-only, for <see cref="PrismMotion.ContactJob"/>.
+        /// Same-frame only: a job holding these must be completed before ANY index write (a move, a
+        /// register, a destroy), since every write may move or reallocate them.
+        /// </summary>
+        internal bool TryGetMotionView(out NativeArray<PrismSpatialData> spatial, out NativeArray<PrismCellData> cellData,
+            out NativeParallelMultiHashMap<int3, int> buckets, out int highWaterMark)
+        {
+            spatial = _spatial;
+            cellData = _cellData;
+            buckets = _buckets;
+            highWaterMark = _highWaterMark;
+            return _spatial.IsCreated && _cellData.IsCreated && _buckets.IsCreated;
+        }
+
+        #endregion
+
         #region Bucket grid
 
         private static int3 BucketKey(float3 position) =>

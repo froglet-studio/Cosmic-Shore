@@ -38,7 +38,7 @@ whole roster renders in ~35 s.
 | tier | source | a new mode gets it when |
 |---|---|---|
 | **RUN** | the shipped generator compiled + run in `Tools/Build/card_art_harness/` with every field read off the prefab the intensity-2 cell config's `EnvironmentPrefab` (or the preview's `TrackSpawnablesByIntensity[1]`) names | automatically, if its generator is in `SOURCES` |
-| **COURSE** | a shipped pure course generator (`SwitchbackCourse`, `HeadlongCircuit`, `RedlineCourse`, `RegattaCourse`, `BreakwaterCourse` + `BreakwaterStationBuilder`) at intensity 2, on the card's fixed seed, with the shell/gate count mirrored from `GateRaceController.BuildCourse` | a branch in `recipe()` |
+| **COURSE** | a shipped pure course generator (`SwitchbackCourse`, `HeadlongCircuit`, `RedlineCourse`, `RegattaCourse`, `BreakwaterCourse` + `BreakwaterStationBuilder`) at intensity 2, on the card's fixed seed, with the shell/gate count mirrored from the mode's `RaceCourseSource` (`SwitchbackCourseSource` etc.) | a branch in `recipe()` |
 | **MODEL** | what only exists at runtime (a grown forest, a controller-built court): the planting measured as `ModePreviewPlantingModel` measures it, each plant a species GLYPH; a court read off the controller's own settings asset | a branch in `recipe()` |
 | **MONTAGE** | a meta-mode with no arena (Maelstrom): slanted strips of the cards it can draw | — |
 

@@ -386,7 +386,9 @@ below ~2700.
 cheap, asset-only check that encodes a contract; several have never been run.
 
 Run each and paste its report into your results file:
-1. **Vessels ▸ Audit Vessel Skimmers**
+1. **Vessels ▸ Audit Vessel Skimmers** — compare with `python3 Tools/Build/audit_vessel_skimmers.py`,
+   its offline twin (DT-002 carries the per-hull classification of the current six); a hull the
+   editor names that the offline run does not is the finding to paste
 2. **Vessels ▸ Audit Vessel Ability Rows**
 3. **Vessels ▸ Audit Vessel Elemental Morphs**
 4. **Vessels ▸ Validate Speed Tunnel Law**
@@ -1491,7 +1493,8 @@ Dolphin's drift speed matches on both machines.
 **FAIL:** speed changing with throttle during a Dolphin drift · a held speed that is always
 the same number · a danger prism ignored mid-drift · a throttle that stays dead after a swap
 · a drift entry that slams speed down · the Squirrel's drift changed.
-**Report:** whether re-drifting at the peak of a boost lets you ratchet speed upward.
+**Report:** whether re-drifting at the peak of a boost lets you ratchet speed upward. *(Decided for now, 2026-10-17: it does, and that is KEPT as a skill move - the
+Dolphin AI uses it too. Report whether it feels fun or like a cheat; the cap is in `DOLPHIN_ENERGY_ECONOMY.md` §2.)*
 
 ### QA-DOLPHIN-ECHO-SIGHT ⬜ — the re-cut element map, the Echo Sight halo, and the ability cards
 **Source:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` 🔴 "Dolphin elemental map re-cut around one

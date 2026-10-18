@@ -11,12 +11,12 @@ namespace CosmicShore.Core
     /// </summary>
     public enum QuestNavTarget
     {
-        Home,
-        Store,
-        Port,
-        Hangar,
-        Profile,
-        ArcadeModal,
+        Home = 0,
+        Store = 1,
+        Port = 2,
+        Hangar = 3,
+        Profile = 4,
+        ArcadeModal = 5,
     }
 
     /// <summary>

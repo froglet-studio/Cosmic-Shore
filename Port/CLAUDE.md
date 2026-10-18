@@ -14,6 +14,17 @@ still carry the old one (the `#prisma` page hash the studio pages read, `Tools/B
 `docs/PRISMA_BOARD_SCHEDULER.md`); renaming those is its own change. The game's `Prism*` names are not
 the engine's and were never renamed.
 
+**Status: UNDER EVALUATION** (2026-10-15, [`Docs/TOOLING_DECISIONS.md`](../Docs/TOOLING_DECISIONS.md) §3). The team
+(Garrett, Caleb, Shombith, Yash) has not decided what Amoebius is for. The options are: keep all of it; keep the
+engine as a headless compile / test / multiplayer harness and freeze the launcher; stop; or commit to it as Froglet's
+own engine. Until §6 there records a decision: build what the person asks for; do not grow the launcher's scope on
+your own initiative; and at the end of a task, if `Docs/TOOLING_FEEDBACK.md` has no Amoebius row from the last three
+days, ask the person whether it helped and log the answer. Who drives which part: Shombith the engine, Yash the
+launcher (`Docs/TEAM.md`). **Tell the person this status** in the first line of any answer about the engine, the
+launcher or which tool to use, even when they only asked a question: under evaluation, who drives the part they
+asked about, the core four decide, `Docs/TOOLING_DECISIONS.md`. The `team_context.py` hook shows them the same line
+once per session.
+
 ## The one rule
 
 **The port never changes the Unity project.** Nothing under `Port/` is read by Unity, and the
@@ -189,7 +200,8 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
 - `--verbose` opens every `CSDebug` log channel; `game_logs grep` filters them.
 - **Session reports**: `--session-report PATH` (the launcher always passes one) writes JSON at
   exit - scenes, frame-time percentiles, CPU per loop phase (`cpu.phaseAvgMs`), allocations per
-  phase and steady-state GC (`memory`), audio, distinct errors/warnings/exceptions with counts,
+  phase and steady-state GC (`memory`), the game's own ProfilerMarkers with time, calls and KB per
+  frame (`markers`; `docs/ARCHITECTURE.md` §11.3b, `tools/amoebius_markers_run.py`), audio, distinct errors/warnings/exceptions with counts,
   crash. A user's "LAST SESSION" message points at one; read it before guessing. A `--headless`
   run has no GPU: its render figures are zero and the prism render service is off, so
   `[PrismClock]`/`[PrismFactory]` errors in a headless report are expected (xvfb renders in

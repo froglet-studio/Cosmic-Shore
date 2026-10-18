@@ -4,6 +4,10 @@
 
 ### FTUE (First-Time User Experience) — the QUEST GRAPH
 
+> **Activation work starts at `Docs/ACTIVATION.md`**: every onboarding plan and its status, who is on
+> what, the `ftue_*` analytics events, and the redesign (first-login spotlight guide, Lesson, Mentor,
+> ghost demo) - `Docs/ModePreview/TRAINING_PLAN.md`, merged into `Ys-bleeding-edge` 2026-10-15.
+
 **The adapter/step-handler tutorial system this section used to describe is DELETED** (25 files:
 `IFlowController`, `ITutorialExecutor`, `TutorialFlowController`, `TutorialStep`,
 `TutorialSequenceSet`, `FTUEIntroAnimator`, the four step handlers, `TutorialUIView`,
@@ -37,6 +41,22 @@ adding a handler class:
   start trigger) plus `OnQuestPhaseCompleted` / `OnQuestCompleted`, consumed only by
   `QuestToastNotifier`. Nothing blocks on them.
 
+**GUIDE A PLAYER BY SHOWING THE PATH, NEVER BY WALKING IT (LOCKED rule — every quest, tutorial
+and onboarding beat).** When the app wants a player to go to one place (the microgame on first
+login, the Hangar or Profile early on), it **signals that one place** — a call to action on it, a
+semi-transparent dim over everything else — and **turns every other function off except Settings**
+(the "Overlay"), which is always available on every step. The player then **presses each step
+themselves**. Nothing may open a screen, select a card, press a button or fly the vessel in on the
+player's behalf: a player carried somewhere cannot find the way back, and one who walked a locked
+path by hand remembers it. Built as `MenuGuide` + `MenuSpotlight` (`_Scripts/UI/Guide/`) — the dim
+refuses every press outside its cut-outs, the cut-out passes the press to the REAL control, Settings
+is cut out of the dim and found from its own onClick, the step is re-derived from where the player
+is every frame, and it fails open rather than dimming a screen with no way forward. The first driver
+is `QuestGuideToMicrogameNode`; the first-login "railroad" that carried the player instead
+(`TrySelectMode`, `ArmForcedEntry`) was deleted for breaking this. The Quest Graph's older
+`Navigate`/`EnterFreestyle` nodes break it too and must not be used in a new graph.
+`Docs/HomeHub/ARCHITECTURE.md` §8.
+
 **Progression is a separate system from the graph** and is the thing the graph unlocks:
 `SO_UnlockList` + `SO_UnlockData` (formerly `SO_GameModeQuestList` / `SO_GameModeQuestData`) drive
 `GameModeProgressionService`, tuned by `SO_ProgressionConfig`. There is no XP — quest completion
@@ -44,9 +64,15 @@ is the only currency.
 
 **THE MASTER DEVELOPER UNLOCK IS ON BY DEFAULT — read this before debugging any lock.**
 `DeveloperUnlockGate.AllUnlocked` (`_Scripts/System/Progression/`) opens every entitlement at
-once — all vessels, all game modes, every intensity tier, the Vessel Hangar — **and stands the
-quest graph down entirely**, because everything the graph applies is a lock that gate exists to
-open. It defaults ON until the FTUE is designed, so *the onboarding does not run in a default
+once — all vessels, all game modes, every intensity tier, the Vessel Hangar — **and stands down
+every quest that has not opted in** (`QuestSO.runsUnderDeveloperUnlock`, or per PHASE
+`QuestPhaseGraphSO.runsUnderDeveloperUnlock`; both default off), because a
+lock-funnel quest applies exactly the locks that gate exists to open. A quest that ROUTES rather
+than locks (the first-login guide into the Game of the Week microgame,
+`Docs/ModePreview/TRAINING_PLAN.md`) opts in and runs, with every lock-APPLYING node
+(`QuestNodeSO.AppliesLock` — LockModes, the locking direction of LockNavigation /
+SetButtonInteractable / SetArcadeConstraints) passing straight through while the gate is on. It
+defaults ON until the FTUE is designed, so *the onboarding does not run in a default
 checkout*, and a lock that appears not to work is this switch before it is a bug. Flip it in the
 Froglet Toolbox (Quest Debug or Vessel Unlock tab); it announces itself once per session as a
 warning for exactly that reason. It gates six choke points rather than teaching ~20 call sites
@@ -71,7 +97,7 @@ Custom dialogue system spanning two locations:
 
 Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - `AIPilot` controls AI vessel behavior
-- `AIGunner` controls AI targeting/shooting
+- `AIGunner` has no behaviour today (its only method is commented out; it sits on `Gunner.prefab`; `Docs/AI_SYSTEM/ARCHITECTURE.md` §3 item 7)
 - AI profiles configured via `SO_AIProfileList` (`MainAIProfileList.asset`)
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
@@ -82,9 +108,14 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 
 | AI | Code | Read first |
 |---|---|---|
-| The platform autopilot every hull flies by default | `AIPilot`, `AIGunner`, `PursuitReachability`, `AIObjectiveScoring` | `AI_ORBIT_BREAK.md` (below), `AI_BOOST.md` (per-hull boost policies: `AIPilot.boostPolicy`, one `AIBoostPolicySO` per boost mechanic, each listing the modes where it stands down) |
+| The platform autopilot every hull flies by default | `AIPilot`, `AIPilotBelief` (lobby difficulty on the Arena cards), `PursuitReachability`, `AIObjectiveScoring` | `AI_ORBIT_BREAK.md` (below), `AI_BOOST.md` (per-hull boost policies: `AIPilot.boostPolicy`, one `AIBoostPolicySO` per boost mechanic, each listing the modes where it stands down) |
 | **The Skim Race pilot** (the Squirrel in Skim Race, and Regatta's rings) | `Controller/AI/SkimRace/`: `SkimRacePilot` (lifecycle, sensing, actuation), `SkimRaceDriver` (the decision core, pure C#), `SkimRaceObjective` (`CrystalTrackObjective` / `RegattaRingObjective` - the only mode-aware part), `SkimRaceTeamPlan` (AI teammates split the crystals), `SkimRaceHandicap` (Easy / Medium mistakes), `SkimRaceReplanGate` (one planner re-plan per frame) | `Docs/SKIM_RACE_AI.md` - §3 architecture, §10 the host's difficulty row, §11 map fingerprints and `skimrace_retune.py`, §12 per-frame cost and Profiler markers, §13 team play, §14 frame rate (policies are tuned across 62/36/20 fps with the game's 0.04 s contact step) and the editor-mode cost; §8.0f-i the editor measurements |
-| The Urchin autopilot (Hijack) | `Controller/AI/Urchin/`: `UrchinAutopilotDriver`, `UrchinRailAssessment`, `UrchinAutopilotConfigSO` | the class headers (no separate doc yet) |
+| The Urchin autopilot (Hijack, Skein, Regatta) | `Controller/AI/Urchin/`: `UrchinAutopilotDriver`, `UrchinRailAssessment`, `UrchinAutopilotConfigSO` | `Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md`, `Arcade/REGATTA.md` §6 |
+| The Rhino drive (Regatta and every mode the Rhino races) | `Controller/AI/Boost/RampBoostAIPolicySO`: ramp on a straight that pays back, brake ON the ramp to a corner speed (`AIBoostContext.CornerDegrees`, `AIBoostDriver.Throttle`), let go at the corner | `AI_BOOST.md` (Ramp); offline model `Tools/Build/rhino_drive_sim.py` |
+| The Dolphin drive | `Controller/AI/Boost/ChargeBoostAIPolicySO`: discharge the commit drift's charge on a straight, drift again at the discharge's peak (2026-10-17) | `AI_BOOST.md` (Charge); `R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`; model `Tools/Build/dolphin_drive_sim.py` |
+| The Stoat autopilot (Slingshot, Warpline, Regatta) | `StoatModeExecutor`, `StoatDipoleExecutor`, `StoatSlingExecutor` (autopilot numbers on their config SOs, per mode through `AIModeTuning`) | `R_VesselActions/STOAT.md`, `STOAT_DIPOLE.md`, `Arcade/REGATTA.md` §6 |
+| Gate-race difficulty (Slingshot, Warpline, Regatta) | `Controller/AI/GateRaceHandicap`, applied in `GateRaceController`, which also reports each AI's phase / ring / lap to the Third Eye (`AIPilot.ReportObjective`) | `Docs/AI_SYSTEM/ARCHITECTURE.md` §2 |
+| Learning from editor flights | `HumanFlightRecorder` (records), `Tools/Build/learn_from_flights.py` (the Squirrel), `learn_drives_from_flights.py` (Rhino, Dolphin, Manta, Stoat; per-mode variants `Resources/AIBoostPolicies/<asset>_<mode>`) | `Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md` §8-9, `RACING_LINE.md` |
 
 Rules every AI shares: **input-only** - an AI reads what a pilot can see and writes only the vessel's
 input channels (`Tools/Build/check_ai_no_state_writes.py` gates it); no 3-argument `Mathf.Min/Max` in
@@ -93,8 +124,9 @@ per-frame code (`MathfNoAlloc`; `check_mathf_params_alloc.py`); a per-frame cost
 (`Tools/Build/skimrace_sim_harness/run.sh`: it compiles the shipped driver; `SKIMRACE_RUNTIME=mono` predicts
 the editor's cost), an in-editor benchmark (`FrogletTools > AI > Skim Race AI Benchmark`), and a recorder
 that saves every hand-played editor race with its frame time (`BenchmarkResults/SkimRaceAI/manual_*.jsonl`).
-The host picks the AI difficulty on the Skim Race card (`AIDifficulty`, `AIDifficultyRules`, replicated in
-`LobbySnapshot.AIDifficulty`); AI seats are placed per `ServerPlayerVesselInitializerWithAI.GetBalancedDomain`
+The host picks the AI difficulty on every card `AIDifficultyRules.IsOfferedFor` names: Skim Race, the gate races
+(Slingshot, Warpline, Regatta) and the Arena cards (Astro League, Brood Rush, Broadside) (`AIDifficulty`,
+replicated in `LobbySnapshot.AIDifficulty`); AI seats are placed per `ServerPlayerVesselInitializerWithAI.GetBalancedDomain`
 (fewest pilots first) and the host moves them with **Add AI** (`Docs/SKIM_RACE_AI.md` §13 lists every 4-seat shape).
 
 **A pursuing AI ORBITS anything inside its own minimum turn radius, and that is geometry rather

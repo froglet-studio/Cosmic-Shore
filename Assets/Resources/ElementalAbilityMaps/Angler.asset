@@ -43,7 +43,7 @@ MonoBehaviour:
     UpgradeDescription: 'The brush paints shielded prisms too, and the squad cracks a painted prism''s shield off when it arrives, so it can be eaten. Gated on IsUpgradeActive(Space).'
   - Element: 4
     AbilityLabel: Dash to the School
-    AbilityDescription: 'B (R on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured when pressed, in 0.35 s. Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 (AnglerConfigSO.faunaSpeed).'
+    AbilityDescription: 'B (T on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured when pressed, in 0.35 s. Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 (AnglerConfigSO.faunaSpeed).'
     Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4

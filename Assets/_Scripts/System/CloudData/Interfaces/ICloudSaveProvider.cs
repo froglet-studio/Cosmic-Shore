@@ -7,15 +7,15 @@ namespace CosmicShore.Core
     public enum CloudLoadStatus
     {
         /// <summary>The cloud answered and the key was there.</summary>
-        Loaded,
+        Loaded = 0,
         /// <summary>The cloud answered and the key does not exist: a genuinely new player.</summary>
-        Missing,
+        Missing = 1,
         /// <summary>
         /// The cloud did NOT give a usable answer (offline, not signed in, network or auth error,
         /// or a stored value that could not be read). The player's record may well exist, so the
         /// caller must not treat this as "new player" or write defaults over it.
         /// </summary>
-        Failed
+        Failed = 2
     }
 
     /// <summary>Result of <see cref="ICloudSaveProvider.TryLoadAsync{T}"/>.</summary>

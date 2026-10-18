@@ -1383,7 +1383,7 @@ namespace CosmicShore.Gameplay
         {
             while (true)
             {
-                yield return new WaitForSeconds(GetAggressionScaledGoalInterval());
+                yield return CosmicShore.Utility.WaitCache.Seconds(GetAggressionScaledGoalInterval());
                 if (cell == null) continue;
                 Goal = ResolveGoal();
             }

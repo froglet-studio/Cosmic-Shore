@@ -103,8 +103,7 @@ namespace CosmicShore.Utility
             DestroyPreviewHierarchy();
             if (preview == PreviewShape.None) return;
 
-            var spawner = GetComponent<SegmentSpawner>();
-            if (spawner == null) return;
+            if (!TryGetComponent(out SegmentSpawner spawner)) return;
 
             EnsureAssets();
 

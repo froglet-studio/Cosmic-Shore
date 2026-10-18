@@ -4,14 +4,14 @@ namespace CosmicShore.Gameplay
     public enum ScarabJukeGestureAction
     {
         /// <summary>Nothing to do this frame.</summary>
-        None,
+        None = 0,
         /// <summary>A new push crossed the engage threshold — fire the dash at this strength.</summary>
-        Begin,
+        Begin = 1,
         /// <summary>The push in flight reached the stick's limit — upgrade it to a committed dash:
         /// the steal window, the full displacement and the cavitation plate.</summary>
-        Commit,
+        Commit = 2,
         /// <summary>The stick came back inside the release band — the push is over.</summary>
-        End,
+        End = 3,
     }
 
     /// <summary>

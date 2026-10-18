@@ -289,6 +289,21 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
+            // The DETAIL LEVEL of the death (Docs/PRISM_ANIMATION.md §4.12), tried next on the same
+            // terms: close to the viewer and within the budget, the cut of the explosion's wedges at a depth;
+            // everywhere else (and for prism movement's collisions above level 1, which ask for plain)
+            // level 0, the same fragment law on the explosion's own 24 wedges — leaving on the explosion's
+            // own flight in its palette. Any refusal falls through to the explosion's graph, so a death
+            // never loses its visual.
+            if (configured &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var detailBright, out var detailDark) &&
+                CosmicShore.Utility.PrismInteractionLod.TryDestruction(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    detailBright, detailDark, data.Velocity, data.DebrisSpeedLimit, data.Kind, data.PlainDeath))
+            {
+                return null;
+            }
+
             // Batched pure-entity debris is the ONLY death-explosion carrier (D4).
             // The pool prefab stays the authored CONFIG source (mesh / material /
             // layer / clamp / duration). The factory never Get()s explosionPool

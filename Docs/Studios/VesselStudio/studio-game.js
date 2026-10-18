@@ -116,7 +116,7 @@
      "name": "Shrike",
      "value": 10,
      "hasClass": false,
-     "studio": null,
+     "studio": "shrike",
      "games": []
     },
     {

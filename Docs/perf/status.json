@@ -1,0 +1,261 @@
+{
+  "amoebius": [
+    {
+      "key": "SkimRace|I2|3p",
+      "topGameAllocators": [
+        [
+          "PoolRefill.Squirrel Prism",
+          8.908
+        ],
+        [
+          "VesselImpactor.AcceptImpactee",
+          3.412
+        ],
+        [
+          "PoolActivate.Squirrel Prism",
+          0.726
+        ],
+        [
+          "PoolRefill.FastGrowPrism",
+          0.693
+        ]
+      ],
+      "verdict": "within baseline"
+    }
+  ],
+  "baselines": [
+    "Menu_Main|Garland",
+    "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
+    "MinigameRegatta|MinigameRegatta"
+  ],
+  "branchFlow": [
+    {
+      "branch": "Ys-bleeding-edge",
+      "role": "Performance work lands here first (Yash runs the performance work)"
+    },
+    {
+      "branch": "bleeding-edge",
+      "role": "The team's shared branch: performance work arrives here from Ys-bleeding-edge"
+    }
+  ],
+  "bugs": {
+    "open": 2,
+    "top": [
+      {
+        "id": "E-8cd155dc89",
+        "state": "open",
+        "title": "[BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me."
+      },
+      {
+        "id": "E-cdf0c783c1",
+        "state": "open",
+        "title": "[FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti"
+      },
+      {
+        "id": "E-76d7341dae",
+        "state": "validating",
+        "title": "[Regatta] Turn started with no course on this peer - gates flown now cannot be credited. The SyncCourse broadc"
+      }
+    ],
+    "validating": 1
+  },
+  "captures": [
+    {
+      "cpuBusyMs": 16.666672,
+      "gcKB": 48.797226,
+      "key": "MinigameSkimRace|prisma",
+      "timestamp": "2026-10-09 13:02:22",
+      "user": "local",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    },
+    {
+      "cpuBusyMs": 16.666664,
+      "gcKB": 73.90112,
+      "key": "Menu_Main|S1test",
+      "timestamp": "2026-10-14 17:11:54",
+      "user": "local",
+      "valid": false,
+      "verdict": "invalid: not compared"
+    },
+    {
+      "cpuBusyMs": 8.692339897155762,
+      "gcKB": 47.01902389526367,
+      "key": "MinigameRegatta|MinigameRegatta",
+      "timestamp": "2026-10-16 11:07:58",
+      "user": "belac",
+      "valid": true,
+      "verdict": "within baseline"
+    },
+    {
+      "cpuBusyMs": 7.3769307136535645,
+      "gcKB": 32.78360366821289,
+      "key": "MinigameRegatta|MinigameRegatta",
+      "timestamp": "2026-10-16 13:10:56",
+      "user": "belac",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 6.47861385345459,
+      "gcKB": 84.00566864013672,
+      "key": "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
+      "timestamp": "2026-10-16 14:51:10",
+      "user": "mrglo",
+      "valid": true,
+      "verdict": "within baseline"
+    },
+    {
+      "cpuBusyMs": 2.147830009460449,
+      "gcKB": 89.48501586914062,
+      "key": "MinigameRegatta|MinigameRegatta",
+      "timestamp": "2026-10-16 15:13:50",
+      "user": "belac",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 6.011809825897217,
+      "gcKB": 96.07453918457031,
+      "key": "MinigameGrizzlyCharge|MinigameGrizzlyCharge",
+      "timestamp": "2026-10-16 15:42:28",
+      "user": "mrglo",
+      "valid": true,
+      "verdict": "REGRESSION"
+    },
+    {
+      "cpuBusyMs": 3.846808671951294,
+      "gcKB": 117.82295989990234,
+      "key": "Menu_Main|Garland",
+      "timestamp": "2026-10-16 16:35:36",
+      "user": "mrglo",
+      "valid": true,
+      "verdict": "within baseline"
+    }
+  ],
+  "gates": [
+    {
+      "gate": "mathf params alloc",
+      "ok": true
+    },
+    {
+      "gate": "burst MathF (swarm pose)",
+      "ok": true
+    },
+    {
+      "gate": "burst MathF (substrate)",
+      "ok": true
+    },
+    {
+      "gate": "console logging",
+      "ok": true
+    },
+    {
+      "gate": "per-frame allocation scan",
+      "ok": true
+    }
+  ],
+  "gatesOk": true,
+  "generatedUtc": "2026-10-17T09:59:03Z",
+  "next": [
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
+    "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",
+    "Resolve: Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)",
+    "Capture S2 Lattice in Release (no valid baseline yet): Play Menu_Main in Release, Cell Selector > Lattice, and keep playing 8 minutes: the editor captures S2 by itself [T-20261015-56dd]",
+    "Capture Skim Race I2 in Release (no valid baseline yet): Play Arcade > Skim Race, intensity 2, 2 AI, in Release for 90 s: the editor captures it by itself - also proves the Burst fix [T-20261015-3e0b]",
+    "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go [T-20261015-3972]",
+    "2 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [BugLedgerTest] Synthetic error \u2014 file me, mark me fixed, then watch validation close me.)"
+  ],
+  "openPerformanceTasks": [
+    {
+      "id": "T-20261015-56dd",
+      "kind": "test",
+      "task": "First editor performance capture, S2 Lattice: Code Optimization = Release, Play, Cell Selector > Lattice, keep playing 8 minutes (the editor captures S2 by itse"
+    },
+    {
+      "id": "T-20261015-3e0b",
+      "kind": "test",
+      "task": "Skim Race I2 with 2 AI, Release: play 90 s (the editor captures SkimRace by itself), then stop: it goes to Claude by itself. This is the Burst check the 10-08 f"
+    },
+    {
+      "id": "T-20261015-3972",
+      "kind": "test",
+      "task": "S5 Wildlife Liberation, Release: play two minutes into a match (the editor captures S5 by itself), then stop: it goes to Claude by itself. It is the go/no-go fo"
+    },
+    {
+      "id": "T-20261015-72e1",
+      "kind": "dev",
+      "task": "Amoebius: Mesh.SetVertices(List)/SetUVs(List<Vector4>)/SetTriangles(List) copy their lists into fresh arrays on every call (ToArray), and the renderer detects a"
+    },
+    {
+      "id": "T-20261015-f106",
+      "kind": "setup",
+      "task": "Switch on the daily performance check: GitHub runs a scheduled workflow only from the repository's DEFAULT branch, so .github/workflows/perf-daily.yml (merged i"
+    },
+    {
+      "id": "T-20261015-7d29",
+      "kind": "test",
+      "task": "Test the Bug Hunt & Performance badge in the Scene view: open Unity, check the card shows bugs and perf with no dialog on load, fold/unfold/hide it, press Relea"
+    },
+    {
+      "id": "T-20261015-7edd",
+      "kind": "test",
+      "task": "Confirm the lava lamp fps fix in Unity: Release, Third Eye closed, Play Menu_Main for 8 minutes (the editor captures S2 by itself), then stop: it goes to Claude"
+    },
+    {
+      "id": "T-20261015-1551",
+      "kind": "test",
+      "task": "Find why Regatta runs at 10 fps in the editor: in MinigameRegatta (Release code optimization, Deep Profile off), play two sessions of 90 s or more, one with the"
+    },
+    {
+      "id": "T-20261017-c82c",
+      "kind": "test",
+      "task": "Look at the instanced snow and the Squirrel's collect in Unity (2026-10-17 perf change): (1) Menu_Main and any arcade cell: the cytoplasm snow fills the cell at"
+    },
+    {
+      "id": "T-20261017-1809",
+      "kind": "dev",
+      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)"
+    },
+    {
+      "id": "T-20261017-2129",
+      "kind": "dev",
+      "task": "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)"
+    },
+    {
+      "id": "T-20261017-19f0",
+      "kind": "dev",
+      "task": "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)"
+    }
+  ],
+  "regressions": [
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
+    "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 15:13:50): gcKB 47.01902389526367 -> 89.48501586914062 (+90%)",
+    "Performance regression in MinigameGrizzlyCharge|MinigameGrizzlyCharge (mrglo, 2026-10-16 15:42:28): marker LateBehaviourUpdate 0.3973 -> 0.6018 ms/frame (+51%)"
+  ],
+  "scenarios": [
+    {
+      "afterSeconds": 480,
+      "label": "S2",
+      "owed": true,
+      "scene": "Menu_Main",
+      "title": "S2 Lattice"
+    },
+    {
+      "afterSeconds": 90,
+      "label": "SkimRace",
+      "owed": true,
+      "scene": "MinigameSkimRace",
+      "title": "Skim Race I2"
+    },
+    {
+      "afterSeconds": 120,
+      "label": "S5",
+      "owed": true,
+      "scene": "MinigameWildlifeLiberation",
+      "title": "S5 Wildlife Liberation"
+    }
+  ]
+}

@@ -41,7 +41,8 @@ unchanged (measured 1.4997 over 200k rolls), so only the phase between clients i
 
 Two restrictions are part of the fix rather than omissions:
 
-- **Boosted mode is left unjittered.** It is already 0.75 s against a ~1/s UGS read cap, so
+- **Boosted mode is left unjittered.** It is 1.1 s against UGS's 1 GET/s/player cap (0.75 s
+  until 2026-10-17: over the cap on its own, Docs/PartySystem/BUGS.md B31), so
   it has no room to be jittered DOWN, and the boost window is the one phase where
   responsiveness is the point. Leaving the window re-rolls, so the next base cycle is
   freshly phased.

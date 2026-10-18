@@ -129,7 +129,7 @@ orbit near 90 degree orbit rotation."*
 | **The trail** | THICK: the prism's height × `massModeThickness` (Mass ×3 → ×6, read at the REPLICATED level) | as authored |
 | **Mass 5** | every prism arrives SHIELDED (Armoured Wake) | — |
 
-**B** (`InputEvents.Button2Action`; R on a keyboard) flips the mode (`StoatModeActionSO` → `StoatModeExecutor.Toggle`).
+**B** (`InputEvents.Button2Action`; T on a keyboard, the Vessel Studio's key too — R until 2026-10-14) flips the mode (`StoatModeActionSO` → `StoatModeExecutor.Toggle`).
 It is a press with no release semantics (vessel rule 37). Both trigger assets ride each trigger (`StoatDipoleLeft/
 RightAction` AND `StoatSlingLeft/RightAction`); each executor stands aside outside its own mode, so the binding never
 changes and the peer-press harness sees one ordinary binding. **A switch lets go of whatever the triggers held** — the
@@ -181,8 +181,25 @@ So a release a quarter-turn round (out on a tangent square to the heading you ca
 release or a half orbit (180°) pays a fifth (`missKickShare` 0.2). **Time is the boost**: the kick scales by
 `StoatDipoleConfigSO.BoostRatio` (×1 → ×2). A kick past the shared 100 u/s displacement ceiling raises the cap for its
 own life (`ModifyVelocity(…, ceiling)`, vessel §4.ab2). The HUD's Time card fills toward the sweet spot and turns lime in
-the window. `sweetSpotEvent` (empty) plays on a timed release. No path is predicted in Time mode, so the warp boost
-does not run there (the omni Overclock still does).
+the window. `sweetSpotEvent` (empty) plays on a timed release. The kick is a share of the ENGINE's speed (the published
+speed with the warp taken out, as the studio's `speed + flow`), so the warp below paces the flight without compounding
+into the kick.
+
+**The pace (2026-10-14, the studio's `dpWarp` / `dpWarpHeld`).** Play feedback: "the slingshot orbit is pretty slow
+compared to the field trajectory … the vessel feels better when it's moving fast." Time mode now runs the field's own warp
+rule with "the pair is held" in place of "the path is lime": from the press (`catchWarpFromPress`, or only once caught)
+the hull's flight clock (`VesselTransformer.FlightTimeScale`, still written only by the pathfinder) rises to
+`1 + (Boost − 1) × catchWarpShare` at `boostRise` and fades over `boostFadeSeconds` after the release. Decided in the
+artifact's batch race (the AI at Hard, best of three squeezes; the field ×3 boost):
+
+| | Circuit best / median | Hairpins best / median | Avg speed (circuit) |
+|---|---|---|---|
+| Field trajectory (Mass) | 59.6 / 59.6 s | 33.2 / 33.2 s | 131 u/s |
+| Catch, round 6 (no timing, no warp) | 107.2 / 111.8 s | 110.1 / 116.0 s | 75 u/s |
+| Catch, 90° timing, no warp (what shipped 2026-10-14) | 115.8 / 122.6 s | 138.0 / 149.5 s | 66 u/s |
+| **Catch, timing + warp from the press, share 1.15** | **56.1 / 61.2 s** | 71.4 / 79.5 s | **122 u/s** |
+
+The circuit is now level; the hairpins are still the field's (the catch's circles cost time there — tuning, not pace).
 
 **The autopilot** presses the trigger on its target's side (target ≥ 30° off the nose, ≥ 120 u away, every 3 s), flies
 toward its target past the pole and is caught; once caught it lets go when the target is within `aiReleaseConeDegrees`
@@ -246,7 +263,7 @@ executors, serialized on the prefab — rule 14):
 | Charge | Ripple | the ripple a let-go would throw NOW, as a share of the largest |
 | Mass | Mass / Time Mode | the switch: full in Mass mode, empty in Time mode, eased between |
 | Space | Field Dipole | Space-5 Accretion: how far the open pair has grown |
-| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window |
+| Time | Pathfinder | Mass mode: the warp boost on; Time mode: progress to the 90° sweet spot, lime in the window (the warp runs in both) |
 
 The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--check`); the card icons on
 `SO_Class_Stoat` are renders of the Stoat's own hull (`Tools/Build/render_stoat_card_icon.py`, `--check`).
@@ -272,6 +289,7 @@ The icons are placeholders (`Tools/Build/author_stoat_icon_placeholders.py`, `--
 | **a rival vessel** | carried out of the source, **stripped of its crystals** — every element's takeable level (`crystalStripShare` 1), left as crystals on the sink's side | `BlackHoleCrystalStrip.Levy` from `TeleportContinuity` |
 | **a teammate** | carried through, not stripped | — |
 | **a prism** | **vanishes** (destroyed at the horizon, scored to the owner, no debris — it fell behind the shadow); with **Space 5 (Theft)** it is **stolen**: carried out of the source in the owner's domain | `BlackHoleGravityField.ApplyVerdicts`, `Prism.Vanish` / `Prism.Steal` |
+| **a falling prism meets another on the way in** | **both are destroyed**, scored to the owner — prism movement's collision rule (`Docs/PRISM_MOTION.md`); prisms that fall in already touching (a trail's neighbours) are at rest and do not. While the field holds ≤ 64 bodies they come apart as a high-res collision burst (`PRISM_ANIMATION.md` §4.12), otherwise the ordinary explosion | `BlackHoleGravityField.ApplyContacts`, `PrismMotion` |
 | **a creature** | **swallowed**: killed within 1.5 sink horizons, its body suctioned into the sink (`Fauna.Predated(name, sink)`), on the fauna's simulating machine | `StoatDipoleExecutor.SwallowFauna` |
 
 Nothing outside the pair is MOVED by it except by its own flying: an owned horizon pair pulls no

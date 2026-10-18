@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Editor.Froglet;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEditor;
 using UnityEngine;
@@ -27,13 +28,18 @@ namespace CosmicShore.Editor.AI
     /// <para><b>Known limit.</b> The prism occlusion corridor and vision shading are bound to the
     /// gameplay camera, so prisms between THAT camera and your hull may look dithered from here.</para>
     ///
-    /// <para>A READER: it writes no asset and changes no game state. Its settings live in
+    /// <para><b>Who flies which hull.</b> The <i>Pilots</i> panel lists every pilot with a <b>You / AI</b> toggle
+    /// (Yash, 2026-10-15): hand your own hull to the AI and watch from here, take over any AI-flown hull on either
+    /// team, or leave every hull to the AI. The window changes nothing else; the toggle goes through
+    /// <see cref="PilotControl"/> (the game's own AI hand-back and arena pilot swap), host only.</para>
+    ///
+    /// <para>It writes no asset. Its settings live in
     /// <c>UserSettings/ThirdEyeSettings.asset</c> (gitignored). See <c>.claude/skills/vessel-ai/SKILL.md</c>.</para>
     /// </summary>
     public sealed class ThirdEyeWindow : EditorWindow
     {
         const string Title = "Third Eye";
-        const float InfoHeight = 44f;
+        const float InfoHeight = 64f;
         const double ScanInterval = 0.5;
         const double RepaintInterval = 1.0 / 60.0;
         const double PausedRenderInterval = 1.0 / 30.0;
@@ -48,6 +54,11 @@ namespace CosmicShore.Editor.AI
         int _adoptedFrom;
 
         readonly List<ThirdEyePilot> _pilots = new();
+        // Each pilot's recent path (its trajectory), sampled at TrailHz in game time, keyed by ThirdEyePilot.Id.
+        readonly Dictionary<int, ThirdEyeTrail> _trails = new();
+        readonly HashSet<int> _livePilots = new();
+        const float TrailHz = 15f;
+        float _nextTrailSample;
         string[] _pilotLabels = System.Array.Empty<string>();
         int _watchedId;
 
@@ -61,8 +72,16 @@ namespace CosmicShore.Editor.AI
         bool _shift;
         bool _visible = true;
         bool _showSettings;
+        bool _showPilots = true;
+        string _pilotRefusal;
         bool _settingsDirty;
         double _nextScan, _nextRepaint, _nextPausedRender, _saveAt, _lastStep;
+        int _repaintedFrame = -1;
+
+        // Trail polyline runs, reused: one DrawAAPolyLine per run of segments in the same fade band
+        // instead of one per segment (8 s x 15 Hz = 120 draws per pilot per repaint before).
+        const int TrailFadeBands = 4;
+        Vector3[] _trailRun = new Vector3[64];
         Rect _viewRect;
 
         [MenuItem("FrogletTools/AI/Third Eye", false, 100)]
@@ -130,7 +149,10 @@ namespace CosmicShore.Editor.AI
                 ThirdEyePilots.Scan(_pilots);
                 RebuildPilotLabels();
                 EnsureRig();
+                PruneTrails();
             }
+
+            SampleTrails();
 
             if (_cam) _cam.enabled = _visible && _rt;
 
@@ -140,9 +162,13 @@ namespace CosmicShore.Editor.AI
                 RenderNow();
             }
 
-            if (now >= _nextRepaint)
+            // At most once per GAME frame: the window's repaint runs on the main thread between the game's
+            // frames, so repainting at 60 Hz while the game manages 10 only takes time from the game.
+            // Paused, the Free camera still moves, so it repaints on the clock.
+            if (now >= _nextRepaint && (EditorApplication.isPaused || Time.frameCount != _repaintedFrame))
             {
                 _nextRepaint = now + RepaintInterval;
+                _repaintedFrame = Time.frameCount;
                 Repaint();
             }
         }
@@ -205,7 +231,92 @@ namespace CosmicShore.Editor.AI
             _pilots.Clear();
             _pilotLabels = System.Array.Empty<string>();
             _held.Clear();
+            _trails.Clear();
+            _nextTrailSample = 0f;
             _snap = true;
+        }
+
+        // ── Trails (each pilot's trajectory) ─────────────────────────────────────
+
+        /// <summary>One point per pilot every 1/TrailHz s of GAME time, so a paused game freezes the trails.</summary>
+        void SampleTrails()
+        {
+            if (!Settings.ShowTrails || EditorApplication.isPaused) return;
+            float t = Time.time;
+            if (t < _nextTrailSample && t >= _nextTrailSample - 1f) return;
+            _nextTrailSample = t + 1f / TrailHz;
+            int capacity = Mathf.CeilToInt(30f * TrailHz) + 2;
+            foreach (var pilot in _pilots)
+            {
+                if (!pilot.Alive) continue;
+                if (!_trails.TryGetValue(pilot.Id, out var trail)) _trails[pilot.Id] = trail = new ThirdEyeTrail(capacity);
+                trail.Add(pilot.Hull.position, t);
+            }
+        }
+
+        /// <summary>Forget the trails of pilots that are gone (despawned, swapped out).</summary>
+        void PruneTrails()
+        {
+            if (_trails.Count == 0) return;
+            _livePilots.Clear();
+            foreach (var p in _pilots) _livePilots.Add(p.Id);
+            List<int> gone = null;
+            foreach (var id in _trails.Keys)
+                if (!_livePilots.Contains(id)) (gone ??= new List<int>()).Add(id);
+            if (gone != null) foreach (var id in gone) _trails.Remove(id);
+        }
+
+        void DrawTrail(Rect local, ThirdEyePilot pilot)
+        {
+            if (!_trails.TryGetValue(pilot.Id, out var trail) || trail.Count < 2) return;
+            float now = Time.time, keep = Settings.TrailSeconds, near = _cam.nearClipPlane + 0.01f;
+            Color domain = ThirdEyePilots.DomainColor(pilot);
+            // Segments are joined into runs and each run is one polyline: a run breaks where a segment is
+            // clipped by the near plane or skipped, and where the fade steps to the next band (the fade is
+            // drawn in TrailFadeBands steps, oldest faintest, rather than per segment).
+            int count = 0, band = -1;
+            for (int i = 1; i < trail.Count; i++)
+            {
+                trail.Get(i - 1, out Vector3 pa, out _);
+                trail.Get(i, out Vector3 pb, out float tb);
+                float age = now - tb;
+                if (age > keep) { FlushTrailRun(ref count, band, keep, domain); continue; }
+                Vector3 va = _cam.WorldToViewportPoint(pa), vb = _cam.WorldToViewportPoint(pb);
+                if (!ThirdEyeRig.ClipToFront(pa, va.z, pb, vb.z, near, out Vector3 wa, out Vector3 wb))
+                {
+                    FlushTrailRun(ref count, band, keep, domain);
+                    continue;
+                }
+                Vector2 ga = ToGui(local, _cam.WorldToViewportPoint(wa));
+                Vector2 gb = ToGui(local, _cam.WorldToViewportPoint(wb));
+                int b = Mathf.Min(TrailFadeBands - 1, (int)(age / keep * TrailFadeBands));
+                bool joins = count > 0 && b == band && wa == pa
+                             && (_trailRun[count - 1] - new Vector3(ga.x, ga.y, 0f)).sqrMagnitude < 0.01f;
+                if (!joins)
+                {
+                    // A new run starts at the end of the old one when only the band changed, so the line stays whole.
+                    bool continues = count > 0 && wa == pa;
+                    Vector3 last = count > 0 ? _trailRun[count - 1] : default;
+                    FlushTrailRun(ref count, band, keep, domain);
+                    _trailRun[count++] = continues ? last : new Vector3(ga.x, ga.y, 0f);
+                    band = b;
+                }
+                if (count == _trailRun.Length) System.Array.Resize(ref _trailRun, count * 2);
+                _trailRun[count++] = new Vector3(gb.x, gb.y, 0f);
+            }
+            FlushTrailRun(ref count, band, keep, domain);
+        }
+
+        void FlushTrailRun(ref int count, int band, float keep, Color domain)
+        {
+            if (count >= 2)
+            {
+                // The band's middle age sets its fade, as each segment's own age did before.
+                float age = (band + 0.5f) / TrailFadeBands * keep;
+                Handles.color = domain.WithAlpha(0.85f * (1f - age / keep));
+                Handles.DrawAAPolyLine(2.5f, count, _trailRun);
+            }
+            count = 0;
         }
 
         // Paused, the player loop renders nothing; draw this one camera on request so the Free camera
@@ -384,6 +495,7 @@ namespace CosmicShore.Editor.AI
                 "Watch Play mode from any pilot while you play: Chase, Follow or Free, with each AI's aim drawn over the view.",
                 FrogletEditorPalette.ColorFor(FrogletToolCategory.Vessels));
             DrawToolbar();
+            if (_showPilots && EditorApplication.isPlaying) DrawPilotsPanel();
             if (_showSettings) DrawSettings();
 
             Rect view = GUILayoutUtility.GetRect(10f, 10f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
@@ -426,15 +538,111 @@ namespace CosmicShore.Editor.AI
                 GUILayout.FlexibleSpace();
 
                 bool thinking = GUILayout.Toggle(s.ShowThinking, new GUIContent("AI thinking",
-                    "Draw each AI's aim and the crystal it is after."), EditorStyles.toolbarButton);
+                    "Draw each AI's aim, the ring or crystal it is after, and what it is doing."), EditorStyles.toolbarButton);
                 if (thinking != s.ShowThinking) { s.ShowThinking = thinking; MarkSettingsDirty(); }
+
+                bool trails = GUILayout.Toggle(s.ShowTrails, new GUIContent("Trails",
+                    "Draw the path every pilot has flown over the last few seconds (Settings: how long)."), EditorStyles.toolbarButton);
+                if (trails != s.ShowTrails) { s.ShowTrails = trails; MarkSettingsDirty(); }
 
                 bool labels = GUILayout.Toggle(s.ShowLabels, new GUIContent("Labels",
                     "Name every pilot and pin off-screen pilots to the edge."), EditorStyles.toolbarButton);
                 if (labels != s.ShowLabels) { s.ShowLabels = labels; MarkSettingsDirty(); }
 
+                _showPilots = GUILayout.Toggle(_showPilots, new GUIContent("Pilots",
+                    "Who flies each hull: You or the AI. Hand your hull to the AI, or take over any AI's hull."), EditorStyles.toolbarButton);
                 _showSettings = GUILayout.Toggle(_showSettings, "Settings", EditorStyles.toolbarButton);
             }
+        }
+
+        // ── Who flies which hull ─────────────────────────────────────────────────
+
+        static readonly GUIContent s_you = new("You", "You fly this hull. On an AI's hull: take it over (the AI flies the one you leave).");
+        static readonly GUIContent s_ai = new("AI", "The AI flies this hull. On your own hull: hand it to the AI and watch.");
+
+        void DrawPilotsPanel()
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Pilots: who flies each hull", FrogletEditorPalette.SectionLabel);
+                if (_pilots.Count == 0)
+                {
+                    EditorGUILayout.LabelField("No pilots yet.", FrogletEditorPalette.CardBody);
+                    return;
+                }
+
+                bool host = PilotControl.CanControl;
+                Player you = LocalHuman();
+                foreach (var pilot in _pilots)
+                {
+                    if (!pilot.Alive) continue;
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        Rect stripe = GUILayoutUtility.GetRect(4f, 18f, GUILayout.Width(4f));
+                        if (Event.current.type == EventType.Repaint)
+                            FrogletEditorPalette.DrawRect(stripe, ThirdEyePilots.DomainColor(pilot));
+
+                        if (GUILayout.Button(new GUIContent(pilot.Label, "Watch this pilot."), FrogletEditorPalette.CardBody, GUILayout.MinWidth(120f)))
+                            WatchPilot(pilot);
+
+                        bool otherHuman = !pilot.IsLocalHuman && !pilot.IsAI;
+                        bool aiFlies = pilot.AIFlying;
+                        using (new EditorGUI.DisabledScope(!host || otherHuman || pilot.Player == null || you == null))
+                        {
+                            bool pickYou = GUILayout.Toggle(!aiFlies && !otherHuman, s_you, EditorStyles.miniButtonLeft, GUILayout.Width(44f));
+                            bool pickAI = GUILayout.Toggle(aiFlies, s_ai, EditorStyles.miniButtonRight, GUILayout.Width(44f));
+                            if (pickYou && aiFlies) SetFlier(pilot, you, youFly: true);
+                            else if (pickAI && !aiFlies) SetFlier(pilot, you, youFly: false);
+                        }
+                    }
+                }
+
+                string note = !host ? "Only the host (or a solo game) can change who flies a hull."
+                    : you == null ? "No local pilot in this match."
+                    : _pilotRefusal;
+                if (!string.IsNullOrEmpty(note))
+                    EditorGUILayout.LabelField(note, FrogletEditorPalette.CardBody);
+            }
+        }
+
+        void SetFlier(ThirdEyePilot pilot, Player you, bool youFly)
+        {
+            _pilotRefusal = null;
+            string refusal;
+            bool ok = pilot.IsLocalHuman
+                ? PilotControl.TrySetAIFlies(you, aiFlies: !youFly, LoadGameData(), out refusal)
+                : youFly ? PilotControl.TryTakeOver(you, pilot.Player, out refusal)
+                : Refuse("that hull is already flown by the AI", out refusal);
+            if (!ok) _pilotRefusal = $"Not changed: {refusal}.";
+            _nextScan = 0;   // re-read who flies what on the next update
+        }
+
+        static bool Refuse(string why, out string refusal)
+        {
+            refusal = why;
+            return false;
+        }
+
+        // The local human's Player, wherever they sit now (their own hull, or one they took over).
+        Player LocalHuman()
+        {
+            foreach (var pilot in _pilots)
+                if (pilot.IsLocalHuman && pilot.Player) return pilot.Player;
+            return null;
+        }
+
+        static GameDataSO s_gameData;
+        static GameDataSO LoadGameData()
+        {
+            if (s_gameData) return s_gameData;
+            var found = Resources.FindObjectsOfTypeAll<GameDataSO>();
+            return s_gameData = found.Length > 0 ? found[0] : null;
+        }
+
+        void WatchPilot(ThirdEyePilot pilot)
+        {
+            int i = _pilots.IndexOf(pilot);
+            if (i >= 0) Watch(i);
         }
 
         void DrawSettings()
@@ -466,6 +674,10 @@ namespace CosmicShore.Editor.AI
                 s.FreeFastMultiplier = EditorGUILayout.Slider("Shift multiplier", s.FreeFastMultiplier, 1f, 10f);
                 s.OrbitDistance = EditorGUILayout.Slider("Orbit distance", s.OrbitDistance, 5f, 1000f);
                 s.LookSensitivity = EditorGUILayout.Slider("Look sensitivity", s.LookSensitivity, 0.05f, 1f);
+
+                EditorGUILayout.LabelField("Trails", FrogletEditorPalette.SectionLabel);
+                s.TrailSeconds = EditorGUILayout.Slider(new GUIContent("Length (s)",
+                    "Seconds of flown path each pilot's trail keeps."), s.TrailSeconds, 1f, 30f);
             }
             if (EditorGUI.EndChangeCheck()) MarkSettingsDirty();
         }
@@ -500,11 +712,14 @@ namespace CosmicShore.Editor.AI
         void DrawOverlay(Rect rect)
         {
             var s = Settings;
-            if (!_cam || (!s.ShowLabels && !s.ShowThinking)) return;
+            if (!_cam || (!s.ShowLabels && !s.ShowThinking && !s.ShowTrails)) return;
 
             GUI.BeginClip(rect);
             var local = new Rect(0f, 0f, rect.width, rect.height);
             var watched = Watched();
+            if (s.ShowTrails)
+                foreach (var pilot in _pilots)
+                    if (pilot.Alive) DrawTrail(local, pilot);
             foreach (var pilot in _pilots)
             {
                 if (!pilot.Alive) continue;
@@ -612,6 +827,8 @@ namespace CosmicShore.Editor.AI
             string speed = watched.Status ? $"{watched.Status.Speed:F0} u/s" : "";
             GUI.Label(text, $"{watched.Label}   {speed}   {(t.Has ? t.Pilot : "")}", FrogletEditorPalette.CardTitle);
             GUI.Label(line2, t.Has ? t.Detail : "Pick an AI pilot to see what it is aiming for.", FrogletEditorPalette.CardBody);
+            if (t.Has && !string.IsNullOrEmpty(t.Skim))
+                GUI.Label(new Rect(line2.x, line2.yMax + 2f, line2.width, 18f), t.Skim, FrogletEditorPalette.CardBody);
         }
 
         static GUIStyle s_centered;

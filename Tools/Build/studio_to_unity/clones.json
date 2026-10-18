@@ -7,12 +7,19 @@
     "clonedAt": "2026-10-12",
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
   },
+  "Shrike": {
+    "artifactVersion": "standalone Shrike Studio, https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy",
+    "pageSha": "28804dbd",
+    "decisionsThrough": null,
+    "clonedAt": "2026-10-15",
+    "result": "First clone: the whole kit (docking, Nest, Void Lance, Void Sling, Targeting Array + missiles, the thin / thick trail) ported from the page's stepPilot into ShrikeExecutor / ShrikeRules, the prefab rebuilt from BrittleStar.prefab (author_shrike_assets.py). 29 mapped parameters match (studio_to_unity.py --check); the five elemental ranges ported by hand into ShrikeConfig.asset and held by ShrikeConfigTests. The decision log was empty. 2026-10-15 later: Garrett's control/flora redesign was built in Unity directly (LT zoom, RT by mode, Mass detach-and-nest, missile-growing flora, priority lock, Void Pierce); the studio page is now BEHIND the game - see R_VesselActions/SHRIKE.md section 6. nestHealth / nestHealthMax / crystalHealth unmapped (retired in the game)."
+  },
   "Angler": {
     "artifactVersion": "v10 (1792282801-1706)",
     "artifact": "https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6 (the Angler Command Lab, its own decision log)",
     "pageSha": "63c426ea",
     "decisionsThrough": "2026-10-15T00:00:00.000Z",
     "clonedAt": "2026-10-17",
-    "result": "Eighth clone (round 7). The Sparrow's buttons: Lure (Mass) on A / Space, Dash (Time) on B / R, squad pick on X / Q, recall on Y / F (author_angler_assets.py CONTROLS + the element map). Game-only listen fix: the picked squad shows over the Mass card, PickTarget skips prisms the creature's own diet refuses (Fauna.LeashCanEat), the latch cluster skips body prisms. 27 mapped, 0 drift. Earlier: v9 round 6, v8 round 5, v7 round 4, v6 round 3, v5, v4, v3."
+    "result": "Eighth clone (round 7). The Sparrow's buttons: Lure (Mass) on A / Space, Dash (Time) on B / T (the keyboard's Button2 moved from R to T on bleeding-edge), squad pick on X / Q, recall on Y / F (author_angler_assets.py CONTROLS + the element map). Game-only listen fix: the picked squad shows over the Mass card, PickTarget skips prisms the creature's own diet refuses (Fauna.LeashCanEat), the latch cluster skips body prisms. 27 mapped, 0 drift. Earlier: v9 round 6, v8 round 5, v7 round 4, v6 round 3, v5, v4, v3."
   }
 }

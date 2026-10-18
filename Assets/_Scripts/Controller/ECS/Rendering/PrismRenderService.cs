@@ -33,10 +33,10 @@ namespace CosmicShore.ECS
     /// </summary>
     public enum PrismRenderOverrideSet
     {
-        Prism,
-        Explosion,
-        Implosion,
-        Slice,
+        Prism = 0,
+        Explosion = 1,
+        Implosion = 2,
+        Slice = 3,
     }
 
     /// <summary>

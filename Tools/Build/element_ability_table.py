@@ -81,7 +81,7 @@ INPUT_EVENTS = {
     4: ("IdleAction", "", ""),
     5: ("MinimumSpeedStraightAction", "", ""),
     6: ("Button1Action", "A", "Space"),
-    7: ("Button2Action", "B", "R"),
+    7: ("Button2Action", "B", "T"),   # T since 2026-10-14 (R is the Vessel Studio reset)
     8: ("Button3Action", "X", "Q"),
     9: ("NodeTapAction", "", ""),
     10: ("SelfTapAction", "", ""),

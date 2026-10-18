@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
                 {
                     _nextRefresh = Time.unscaledTime + RefreshSeconds;
                     _vessels.Clear();
-                    _vessels.AddRange(FindObjectsByType<VesselStatus>(FindObjectsSortMode.None));
+                    _vessels.AddRange(FindObjectsByType<VesselStatus>(FindObjectsSortMode.None)); // perframe-ok: throttled to RefreshSeconds
                     Prune();
                 }
 
