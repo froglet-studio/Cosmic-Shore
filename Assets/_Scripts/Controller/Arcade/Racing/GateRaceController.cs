@@ -312,6 +312,13 @@ namespace CosmicShore.Gameplay
         protected virtual bool AICommitFromApproachPoint => aiCommitFromApproachPoint;
 
         /// <summary>
+        /// The extra distance an AI flies for a crystal on the way to its next ring (<see cref="aiCrystalDetourSlack"/>).
+        /// 0 means an AI never steers at a crystal in this mode: it flies the course's rings and nothing else. A mode
+        /// whose crystals are not part of the race overrides it to 0 (Regatta).
+        /// </summary>
+        protected virtual float AICrystalDetourSlack => aiCrystalDetourSlack;
+
+        /// <summary>
         /// The approach point never sits further before a ring than this share of the leg into it. Without the cap a
         /// short leg (Regatta: 461-858 u against a 480 u lead) put the approach point BEHIND the ring just threaded,
         /// often inside a fast hull's turning circle, so the AI broke orbit and flew away from the course every ring
@@ -360,6 +367,18 @@ namespace CosmicShore.Gameplay
         protected virtual bool TryOverrideAim(IPlayer pilot, out Vector3 target)
         {
             target = default;
+            return false;
+        }
+
+        /// <summary>
+        /// The hull's own RACE LINE: where <paramref name="pilot"/> steers instead of the gate's approach / mouth points,
+        /// and the point after it (the boost driver's corner). Asked after the difficulty belief and the missed-mouth test,
+        /// so an Easy pilot's mistakes and a missed ring are still flown the gate way. False (the default) = the gate way.
+        /// Regatta answers it per hull (<see cref="RaceLineStyleSO"/>): Yash, 2026-10-17, every hull races its own line.
+        /// </summary>
+        protected virtual bool TryRaceLine(IPlayer pilot, Vector3 self, out Vector3 aim, out Vector3 after)
+        {
+            aim = after = default;
             return false;
         }
 
@@ -1044,6 +1063,11 @@ namespace CosmicShore.Gameplay
             Crystal detour = null;
             Vector3 lastSelf = default;
             bool hasLastSelf = false;
+            // Where the pilot flies after the point the provider below returns (the boost driver's corner), or null.
+            Vector3? after = null;
+            // The ring this pilot missed while flying its race line: that ring is flown the gate way until threaded, or
+            // the line (a closed loop) would carry the pilot a whole lap round to it.
+            int lineLostIndex = -1;
             // Seeded per seat and per race, so each AI errs differently every race.
             var handicap = handicapLevel.IsNone ? null
                 : new GateRaceHandicap(handicapLevel, unchecked(System.Environment.TickCount * 31 + (int)p.PlayerNetId));
@@ -1052,6 +1076,8 @@ namespace CosmicShore.Gameplay
             {
                 var selfTf = captured.Vessel?.Transform;
                 if (selfTf == null) return centre;
+
+                after = null;
 
                 // Where the pilot was on the previous call, for the missed-mouth test below.
                 Vector3 previousSelf = lastSelf;
@@ -1109,7 +1135,17 @@ namespace CosmicShore.Gameplay
                         == GatePlaneCrossing.OutsideMouth)
                 {
                     lockedIndex = -1;
+                    lineLostIndex = index;
                     pilot.BreakOffNow();
+                }
+
+                // The hull's own race line (Regatta: the gap between two rails, RegattaRaceLine), when the mode has one
+                // for this hull and the pilot is not flying a difficulty mistake or recovering from a missed mouth.
+                if (!misjudged && lineLostIndex != index && TryRaceLine(captured, self, out Vector3 lineAim, out Vector3 lineAfter))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Approach, gate.Position, ringNo, lap);
+                    after = lineAfter;
+                    return lineAim;
                 }
 
                 if (index != lockedIndex)
@@ -1127,7 +1163,7 @@ namespace CosmicShore.Gameplay
                 // provider replaces AIPilot's own crystal seeking outright (the trap Bends
                 // records), so without this an AI would never collect one, never fire the
                 // blast, and the mode's interference layer would be human-only.
-                if (aiCrystalDetourSlack > 0f)
+                if (AICrystalDetourSlack > 0f)
                 {
                     if (Time.time >= nextCrystalScan)
                     {
@@ -1142,7 +1178,7 @@ namespace CosmicShore.Gameplay
                     {
                         Vector3 c = detour.transform.position;
                         if (Vector3.Distance(self, c) + Vector3.Distance(c, gate.Position)
-                            <= Vector3.Distance(self, gate.Position) + aiCrystalDetourSlack)
+                            <= Vector3.Distance(self, gate.Position) + AICrystalDetourSlack)
                         {
                             pilot.ReportObjective(AIPilot.ObjectivePhase.CrystalDetour, c, ringNo, lap);
                             return c;
@@ -1159,10 +1195,25 @@ namespace CosmicShore.Gameplay
                     misjudged ? AIPilot.ObjectivePhase.Misjudged
                     : approaching ? AIPilot.ObjectivePhase.Approach : AIPilot.ObjectivePhase.Through,
                     gate.Position, ringNo, lap);
-                return approaching
-                    ? ringAt + gate.Axis * (side * approachLead)
+                // Regatta (AICommitFromApproachPoint): through the CENTRE from where the pilot is. A drifting hull locks
+                // its course on this point, and a point on the ring's axis lies off that line whenever the pilot commits
+                // off-axis - the locked line then passes beside the mouth and the drift cannot correct it (the offline
+                // models stalled every Dolphin race at I2-I4, and the Rhino's at I3-I4; on this line all of them finish:
+                // AI/AI_BOOST.md). Any crossing inside the mouth threads it, from either side.
+                Vector3 throughCentre = ringAt - self;
+                Vector3 throughPoint = AICommitFromApproachPoint && throughCentre.sqrMagnitude > 1f
+                    ? ringAt + throughCentre.normalized * aiThroughDistance
                     : ringAt - gate.Axis * (side * aiThroughDistance);
+                if (approaching)
+                {
+                    after = throughPoint;   // the corner at the approach point is the turn onto the mouth's axis
+                    return ringAt + gate.Axis * (side * approachLead);
+                }
+                // The corner past the mouth is the turn toward the next ring.
+                if (index + 1 < RaceLength) after = _course[RingIndexFor(index + 1)].Position;
+                return throughPoint;
             });
+            pilot.SetNextLegProvider(() => after);
 
             // A race flies flat out, and a drifting hull (the Dolphin's charge) points its nose where it is
             // going rather than at the cell centre, so a discharge fires down the line to the ring
@@ -1185,7 +1236,7 @@ namespace CosmicShore.Gameplay
         Crystal FindDetourCrystal(Vector3 self, Vector3 gate, Domains domain)
         {
             var crystals = Crystal.Active;
-            float budget = Vector3.Distance(self, gate) + aiCrystalDetourSlack;
+            float budget = Vector3.Distance(self, gate) + AICrystalDetourSlack;
 
             Crystal best = null;
             float bestCost = float.MaxValue;

@@ -15,18 +15,22 @@ MonoBehaviour:
   vesselClass: 16
   entries:
   - Element: 1
-    AbilityLabel: Ring Detonation
-    AbilityDescription: 'LT. Eject the support ring and throw it forward (240 u/s on top of your own speed); it blows on
-      touching any mass or a rival hull, or on its 1.1 s fuse, in a RING EXPLOSION: a flat disk in the
-      ring''s plane, as thick as the ring and as wide as the cell''s nucleus, sweeping out from the
-      ring over 0.7 s. It destroys every prism it passes, any domain (your own and your allies'' too),
-      and strips petals from every rival hull it passes (petals only - nothing is moved). No cooldown,
-      only a ring: with a stored crystal charge a new ring is built at once (two in rapid succession);
-      without one you fly ringless and modeless until a crystal builds the next. Charge is threat -
-      one dial: the disk''s thickness x1 -> x4 at level 10 (BrittleStarConfigSO.blastScale), and the
-      rounds'' size x1 -> x1.8 with it (projectileScaleMultiplier), the Rolling Thunder persona''s two
-      halves of one idea.'
-    Input: 2
+    AbilityLabel: Charge Mode
+    AbilityDescription: 'RB. FIVE CORDS, one from each turret, slicing every prism they touch (any domain; your own fresh
+      trail is spared) and striking rival hulls for petals. Released, RT leaves them WHIPS at 150%
+      length: heavy, inextensible, slow - a turn, a ring flick or a sweep of the right stick sends a
+      wave travelling down them that rings on for seconds. Pulled, RT shortens them to 100% and
+      stiffens them into five SABERS that keep 60% of the whip''s give (analog: every depth in
+      between). The right stick turns them with the ring and opens them out. Using them cools the
+      guns. LT throws the ring - only with a SPARE ring in stock (one per crystal, two at most); the
+      mounted ring then regrows on its own. It blows on contact or its fuse in a disk as wide as the
+      cell''s nucleus, bursting out of the ring as faceted volumes - five coiling arms led by
+      crystals, five crests and the ring''s own pentagon - still spinning, destroying every prism in
+      its plane and stripping petals from every rival hull it crosses (petals only - nothing is
+      moved). The card shows the spare stock. Charge is threat - one dial: the cords'' cut width and
+      the rounds'' size x1 -> x1.8 at level 10 (projectileScaleMultiplier), the disk''s thickness x1
+      -> x4 on top of its x4 base, 4 to 16 times the ring''s (blastScale).'
+    Input: 3
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -35,9 +39,10 @@ MonoBehaviour:
   - Element: 2
     AbilityLabel: Creation Mode
     AbilityDescription: 'B. A trail behind EACH of the ring''s five corners instead of the single small block from the
-      cockpit - five lines that turn with the ring''s firing rotation. The SLOWEST mode: cruise x0.5.
-      Needs the ring. Mass is volume - one dial: the corner trails'' blocks x1 -> x1.8 at level 10
-      (BrittleStarConfigSO.creationBlockScale).'
+      cockpit - the same small block, five lines that turn with the ring''s firing rotation. The
+      SLOWEST mode: cruise x0.5. Mass is girth - one dial: the width and height of EVERY block you
+      lay, the base trail''s and the corner trails'', x1 -> x2 at level 10, never their length
+      (BrittleStarConfigSO.prismWidthScale).'
     Input: 7
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -45,17 +50,18 @@ MonoBehaviour:
     UpgradeLabel: 
     UpgradeDescription: 
   - Element: 3
-    AbilityLabel: Destruction Mode
-    AbilityDescription: 'X. The FIVE ARMS: while the mode is on, every turret fires on its own - unspread, at the
-      Sparrow''s full-auto cadence (90 rounds/s each; slow rounds, 135 u/s, swelling as they fly) - a
-      stream steady enough to read as five arms reaching ahead of the ring. The right stick''s
-      direction turns the ring, and the arms with it; its deflection moves them in and out: centred
-      they meet 120 u ahead (the vessel a crosshair), pushed to the rim they splay 25 degrees. Outside
-      it, Fire on RT (held) is one stream from the turret the right stick points at (the ring turns to
-      bring it round) or the cockpit gun with the stick centred, the stick''s deflection opening the
-      spread. Friendly fire is on. A round on a rival hull is a scored bullet hit (petals only). Space
-      is reach - one dial: the rounds'' flight time, and so their range, x1 -> x1.6 at level 10
-      (BrittleStarConfigSO.rangeMultiplier).'
+    AbilityLabel: Space Mode
+    AbilityDescription: 'X. FIVE GUNS: RT fires every turret, its pull setting the rate (analog, up to 90 rounds/s each;
+      the Sparrow''s round at 135 u/s, swelling as it flies, 387 u reach). The right stick''s
+      direction turns the ring, and the guns with it; its deflection moves them in and out: centred
+      they meet 120 u ahead (the vessel a crosshair), pushed to the rim they splay 25 degrees. In
+      every other mode RT fires the one turret the ring has turned to the aim, the same gun with no
+      spread. Every round HEATS the guns - heat per second is the pull x the guns firing - and
+      overheated they cannot fire until they cool; overheated in Space Mode your trail lays DANGER
+      prisms. The card shows the heat. Friendly fire is on. A round on a rival hull is a scored bullet
+      hit (petals only). Space is reach and endurance: every gun''s range x1 -> x2 at level 10
+      (BrittleStarConfigSO.rangeMultiplier), and the heat the guns hold x1 -> x3.33, so a full
+      five-gun burst runs ~6 s at level 0 and ~20 s at level 10 (BrittleStarConfigSO.heatCapacity).'
     Input: 8
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -64,10 +70,10 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 4
     AbilityLabel: Speed Mode
-    AbilityDescription: 'A. Ignite every thruster: the hull''s cruise speed x6, and the base trail''s spacing stretched
-      by the same ratio so production per second does not rise. Needs the ring. A crystal collected
-      with a charge already stored is OVERDRIVE - all three modes at once for 6 s. Time is rate - one
-      dial: Speed Mode''s multiplier x6 -> x8 at level 10 (BrittleStarConfigSO.speedModeMultiplier).'
+    AbilityDescription: 'A. Ignite every thruster: the hull''s cruise speed x6, the base trail''s spacing stretched by
+      the same ratio so production per second does not rise, and every prism stretched with it so the
+      trail still joins up. Time is rate - one dial: Speed Mode''s multiplier x6 -> x8 at level 10
+      (BrittleStarConfigSO.speedModeMultiplier).'
     Input: 6
     UnlockLevel: 5
     RelockBelowLevel: 4

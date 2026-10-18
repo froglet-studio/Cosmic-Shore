@@ -25,3 +25,6 @@ MonoBehaviour:
   requireAIPlayer: 0
   spendAtCharge01: 0.95
   maxHoldOffSeconds: 4
+  peakMarginUnits: 3
+  minDischargeSeconds: 0.2
+  minPulseGainUnits: 30

@@ -30,8 +30,8 @@ const [page_, three] = process.argv.slice(2);
   for (const g of ['derby', 'frenzy']) {
     console.log('== ' + g + ': I | Easy Medium Hard NoRing NoModes');
     for (const I of [1, 2, 3, 4]) { const row = r[g][I]; console.log('I' + I, ['Easy', 'Medium', 'Hard', 'NoRing', 'NoModes'].map(k => f(row[k])).join(' | ')); }
-    console.log('-- styles (Hard, I3): time destroyed rings speed creation destruction overdrive');
-    for (const [k, v] of Object.entries(r[g + 'Styles'])) console.log(k, f(v.finish), v.destroyed, v.rings, ...['speed', 'creation', 'destruction', 'overdrive'].map(m => Math.round(v.share[m] * 100) + '%'));
+    console.log('-- styles (Hard, I3): time destroyed rings speed creation space charge overdrive');
+    for (const [k, v] of Object.entries(r[g + 'Styles'])) console.log(k, f(v.finish), v.destroyed, v.rings, ...['speed', 'creation', 'destruction', 'charge', 'overdrive'].map(m => Math.round((v.share[m] || 0) * 100) + '%'));
   }
   await b.close();
 })();

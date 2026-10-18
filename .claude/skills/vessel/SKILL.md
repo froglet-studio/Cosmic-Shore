@@ -1048,6 +1048,43 @@ the vessel doc with the cheap knob (the fire rate) beside it, and check two side
 own rounds outruns them within T (own-domain hulls are immune, `Projectile.DisallowImpactOnVessel`), and an in-flight
 growth factor (`Gun.FireGun`'s `flightGrowthFactor`, the Sparrow's look) grows the HIT radius too.
 
+### 4.ab4 Analog-trigger-driven STATE diverges across peers; a heat limit bounds the pool
+
+The fleet's analog triggers (`InputStatus.RightTriggerAnalog`) do not replicate — the Thresher, the Manta's analog turn
+boost and the Brittle Star all read the owner's depth and fall back to "a press is a full pull" on remote copies and the
+autopilot (`ThresherExecutor.PollTriggers`). That is tolerable for something cosmetic or per-peer (a fire RATE, a cord's
+stiffness), but anything the depth ACCUMULATES into is state: the Brittle Star's gun heat runs hotter on a remote copy
+during a partial pull, so its overheat — and the danger trail it switches on — can differ by peer (vessel rule 48).
+Before keying gameplay state off an analog depth, either replicate the depth (two bytes a frame) or write down the gap in
+the vessel doc and its verification list, as `BRITTLE_STAR.md` §3.4 and follow-up F13 do. And when a gun overheats, the
+burst length — not the sustained rate — sizes its pool (4.ab3): rounds alive ≈ rate × guns × seconds-to-overheat for a
+burst that outlives its flight time, not rate × guns × T forever (the Brittle Star's five guns, measured at the first
+heat numbers: ~1,100, not 4,050). The cap only holds while the burst is SHORTER than the flight: once a later round
+lengthened the bursts (6 s at Space 0, 20 s at Space 10, `cece/gallant-bell-eq7kul`) the 20 s burst outlives the 9 s
+flight and the count is back to rate × guns × T, ~4,000 — so re-derive the pool whenever heat or range is retuned.
+
+### 4.ab5 A hull's effect mesh is a pure FORM: tested, twinned in its studio, and never flat
+
+The Brittle Star's ring explosion (`BrittleStarBlastForm`, `cece/gallant-bell-eq7kul`, 2026-10-18) set the pattern for
+a vessel effect drawn as one dynamic mesh:
+- **The shape is a pure static function** (settings in, flat-shaded triangle lists out, no Unity object), so
+  `BrittleStarTests` run it under the Roslyn harness and the executor only uploads it (lists reused: no allocation but the
+  mesh upload). The studio page carries a line-for-line JS twin, and parity is checked by dumping the C# corners and the
+  JS corners for the same settings and comparing point sets (farthest point 0.001 u).
+- **Nothing in the world looks flat** (LOCKED, `Docs/claude/SHADERS_AND_PERFORMANCE.md`): every part is a faceted beam
+  or crystal the domain material lights, and **every thickness scales with the effect's own size** — a 6 u beam across a
+  780 u blast read as wire. Pin it with a test a flat sheet fails (most facets face sideways; it stands out of the plane)
+  and a negative control that flattens it.
+- **Honest in the direction that decides play**: never drawn past the edge where prisms stop breaking (tested, with a
+  negative control). Where the gameplay volume is thinner than any readable look (a 1.76 u disk), let the look stand out
+  of the plane and say so in the vessel doc.
+- **Draw it in the thrown object's own frame** (`Detonate(at, ring.rotation)`), so its symmetry starts from the object's
+  points and keeps its spin.
+- **Two traps.** The fleet spawner lays a SINGLE (gapless) trail at `BaseScale.x / 2` (`VesselPrismController.CreateBlock`:
+  `BaseScale.x * XScaler / 2f - |halfGap|`), so a hull that lays extra trails from `TrailBaseScale` lays them twice as
+  wide as its base trail unless it halves x too. And the harness's `UnityEngine` stub has `.normalized` but no
+  `Normalize()`: write `v = v.normalized` in pure code the harness compiles.
+
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 
 Some placed objects look different to different pilots: the Butterfly's fold wormhole first

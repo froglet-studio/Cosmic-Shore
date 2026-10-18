@@ -161,7 +161,7 @@ namespace CosmicShore.Core
             return c.a > 0f ? c : new Color(0.55f, 1f, 0.2f, 1f);
         }
 
-        enum Step { None, StandAside, Arcade, Card, Preview }
+        enum Step { None = 0, StandAside = 1, Arcade = 2, Card = 3, Preview = 4 }
 
         /// <summary>Works out, from the live menu, which control is the next step.</summary>
         sealed class StepFinder

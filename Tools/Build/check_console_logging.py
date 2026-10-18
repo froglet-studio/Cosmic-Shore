@@ -45,8 +45,6 @@ TOOL_PATHS = (
     "Assets/_Scripts/ScriptableObjects/SnowStressTestSpawner.cs",
     "Assets/_Scripts/Controller/Vessel/PrismOctahedronShieldTester.cs",
     "Assets/_Scripts/Controller/Vessel/PrismStellatedOctahedronShieldTester.cs",
-    "Assets/_Scripts/UI/UniversalStatsProviderEditor.cs",
-    "Assets/_Scripts/Controller/Environment/MiniGameObjects/ShapeDefinitionEditor.cs",  # #if UNITY_EDITOR inspector button
     "Assets/_Scripts/Game/IO/",            # generated input-actions doc comments
     "Assets/_Scripts/Controller/IO/_Input Mapping/",
 )

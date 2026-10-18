@@ -1,0 +1,1721 @@
+<!doctype html>
+<!--
+  ANGLER COMMAND LAB (round 1) — a /labmaker browser lab.
+  Question: what is the most satisfying way for a strategist vessel (the Angler, proposed VesselClassType 17)
+  to send PARTICULAR tamed fauna at PARTICULAR prisms in a 3D cell, and what does each way cost?
+  Fly it (keys / gamepad / touch), or press "Score the schemes" for the headless scorecard, where an
+  input-only commander AI flies every scheme through the same four orders.
+  Write-up: Docs/Studios/ANGLER_COMMAND_LAB.md. Verify: node .claude/skills/labmaker/verify_lab.cjs <this file>
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Angler Command Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  /* Editor layout (labmaker §2.7): header / stage + right dock / bottom dock; nothing scrolls the page.
+     Tokens and faces are the Vessel Studio's (Docs/Studios/VesselStudio/studio-theme.js), so the lab reads as one product with it. */
+  :root {
+    --bg: #eef1fb; --panel: #ffffff; --panel-2: #f5f7ff; --line: #c9d0ee; --fg: #141a3a; --dim: #4b567f;
+    --accent: #a65f00; --accent-2: #0a6fa8; --good: #1f8a4c; --warn: #8a6100; --bad: #b3243a; --stage: #03050d;
+    --jade: #13fff2; --ruby: #ff00f9; --gold: #ffa700;
+    --font-display: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+    --font-body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1026; --panel: #121a3a; --panel-2: #0e1531; --line: #27336a; --fg: #e8ecff; --dim: #9aa6d6;
+      --accent: #ffb347; --accent-2: #7fd7ff; --good: #6fe39a; --warn: #ffcf5c; --bad: #ff7a8a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1026; --panel: #121a3a; --panel-2: #0e1531; --line: #27336a; --fg: #e8ecff; --dim: #9aa6d6;
+    --accent: #ffb347; --accent-2: #7fd7ff; --good: #6fe39a; --warn: #ffcf5c; --bad: #ff7a8a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }   /* outside the claude.ai viewer a component rule can beat [hidden] (L-STU-6) */
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--font-body); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr) 232px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 10px 14px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font: 700 1.05rem/1.2 var(--font-display); margin: 0; letter-spacing: 0.02em; }
+  .meta { color: var(--dim); font-size: 0.85rem; }
+  .round { font: 500 0.75rem/1.2 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--accent-2); font-size: 0.85rem; }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; }
+  #stage, #hud2d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #hud2d { pointer-events: none; }
+  #noGL { position: absolute; inset: 0; display: grid; place-items: center; color: #9aa6d6; font: 600 14px var(--font-body); text-align: center; padding: 24px; }
+  .hudtxt { position: absolute; color: #e8ecff; font: 500 12px/1.45 var(--font-display); letter-spacing: 0.04em; pointer-events: none; text-shadow: 0 1px 2px #000; }
+  #order { left: 50%; top: 10px; transform: translateX(-50%); text-align: center; font-size: 14px; max-width: 92%; }
+  #order .big { font-size: 17px; font-weight: 700; letter-spacing: 0.06em; }
+  #status { left: 12px; top: 10px; }
+  #squadBar { position: absolute; right: 12px; top: 10px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; pointer-events: none; }
+  .sq { font: 600 12px/1 var(--font-display); letter-spacing: 0.05em; padding: 5px 8px; border-radius: 5px; color: #e8ecff; background: rgba(14, 21, 49, 0.72); border: 1px solid #27336a; }
+  .sq.on { border-color: #ffb347; color: #ffb347; }
+  #hint { left: 12px; bottom: 54px; color: #9aa6d6; font-size: 11px; }
+  #transport { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 6px; }
+  #transport button { font: 700 0.8rem var(--font-display); letter-spacing: 0.05em; background: rgba(14, 21, 49, 0.8); color: #e8ecff; border: 1px solid #27336a; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  #transport button[aria-pressed="true"] { background: #ffb347; color: #1a1200; border-color: #ffb347; }
+  #camTag { position: absolute; right: 12px; bottom: 12px; pointer-events: auto; }
+  #camTag select { font: 600 12px var(--font-display); background: rgba(14, 21, 49, 0.8); color: #e8ecff; border: 1px solid #27336a; border-radius: 6px; padding: 5px 6px; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; min-width: 0; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; min-width: 0; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: 700 0.8rem var(--font-display); letter-spacing: 0.03em; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+  .btn:focus-visible, .tabs button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h3 { font: 700 0.8rem/1.2 var(--font-display); text-transform: uppercase; letter-spacing: 0.06em; margin: 14px 0 6px; color: var(--dim); }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+  .row label .key { color: var(--dim); font: 11px ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font: 600 0.85rem var(--font-display); font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--accent-2); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--dim); font-size: 12px; }
+  .field { display: grid; gap: 4px; margin: 8px 0; }
+  .field label { font: 600 0.8rem var(--font-display); letter-spacing: 0.03em; }
+  .desc { color: var(--dim); font-size: 12.5px; margin: 4px 0 8px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font: 700 0.72rem var(--font-display); text-transform: uppercase; letter-spacing: 0.05em; color: var(--dim); }
+  .tablewrap { overflow-x: auto; }
+  .best { font-weight: 700; color: var(--good); }
+  .worst { color: var(--bad); }
+  .status-ok { color: var(--good); } .status-warn { color: var(--warn); }
+  textarea, select, input[type=text] { width: 100%; font: 0.9rem var(--font-body); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+  ul.plain { margin: 4px 0; padding-left: 18px; } ul.plain li { margin: 2px 0; }
+  #touch { position: absolute; inset: 0; pointer-events: none; }
+  #touch .tb { position: absolute; pointer-events: auto; width: 68px; height: 68px; border-radius: 50%; border: 2px solid rgba(255, 179, 71, 0.7); background: rgba(14, 21, 49, 0.55); color: #ffb347; font: 700 11px var(--font-display); letter-spacing: 0.04em; display: grid; place-items: center; user-select: none; -webkit-user-select: none; touch-action: none; }
+  #touch .tb.on { background: rgba(255, 179, 71, 0.85); color: #1a1200; }
+  #stickZone { position: absolute; left: 0; bottom: 0; width: 50%; height: 70%; pointer-events: auto; touch-action: none; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 4 / 5; max-width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); }
+    header, #dock, #bottom { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #order { font-size: 12px; } #order .big { font-size: 14px; }
+    #hint { display: none; }
+    #status { top: auto; bottom: 58px; font-size: 11px; }
+    #order { top: 8px; max-width: 62%; left: 8px; transform: none; text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title">Angler Command Lab</h1>
+    <span class="round" id="roundTag"></span>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="resetAll" title="Every setting back to the shipped / lab default numbers">Defaults</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage"></canvas><canvas id="hud2d"></canvas>
+    <div id="noGL" hidden>WebGL is not available here, so the 3D view is off. Every tab and the scorecard still work.</div>
+    <div class="hudtxt" id="order"></div>
+    <div class="hudtxt" id="status"></div>
+    <div id="squadBar"></div>
+    <div class="hudtxt" id="hint"></div>
+    <div id="transport"><button id="tpPlay" aria-pressed="false" title="Play / pause (P)">❚❚ Pause</button><button id="tpStop" title="Stop and restart the run (R)">■ Restart</button></div>
+    <div id="camTag"><select id="camSel" aria-label="Camera"><option value="chase">Chase</option><option value="tactical">Tactical</option><option value="orbit">Free orbit</option></select></div>
+    <div id="touch" hidden>
+      <div id="stickZone"></div>
+      <div class="tb" id="tLure" style="right: 92px; bottom: 150px">LURE</div>
+      <div class="tb" id="tErase" style="right: 172px; bottom: 120px">ERASE</div>
+      <div class="tb" id="tCmd" style="right: 12px; bottom: 182px">CMD</div>
+      <div class="tb" id="tSquad" style="right: 12px; bottom: 100px">SQUAD</div>
+      <div class="tb" id="tBoost" style="right: 92px; bottom: 68px">BOOST</div>
+    </div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ===================================================================================================
+  // (1) LAB meta + SHIPPED: a READER of the game's numbers. Every constant names the asset / field it was
+  //     copied from. "lab" = no game field exists yet (the Angler is a design), shown as a proposal.
+  // ===================================================================================================
+  const LAB = { name: 'Angler Command Lab', branch: 'cece/zealous-feynman-po8k8d', round: 7, doc: 'Docs/Studios/ANGLER_COMMAND_LAB.md', models: 'design, cloned into the game as the Angler (vessel 17)' };
+  const DOMAIN_HEX = { jade: 0x13fff2, ruby: 0xff00f9, gold: 0xffa700 };   // studio-domains.js (OriginalColorSetSO GetDomainSignalColor)
+  const SHIPPED = {
+    // --- the cell ---
+    cellR: 1200,          // _Prefabs/Environment/CapsuleMembrane.prefab radius (57 of 63 cell configs)
+    nucleusR: 200,        // _Prefabs/Environment/Nucleus.prefab localScale 400 (assumed unit-diameter mesh → radius 200)
+    dietAny: 1,           // Cell.IsPreyForHerbivore: nucleus cells → any domain outside the nucleus is edible (1); no nucleus → opposing only (0)
+    // --- the Angler (lab: a proposal, the hull does not exist) ---
+    cruise: 40,           // back to round 3's 40 (the designer, 2026-10-17, after flying round 4's 80): L1 Clawfish (32 x 1.25) keep formation
+    boost: 110,           // back with the cruise
+    turnRate: 100,        // lab (deg/s)
+    // --- lure & tame (lab: no game field, nothing in the codebase lures or tames) ---
+    lureAhead: 14,        // lab: the esca hangs this far ahead of the nose (u)
+    lureCruise: 0,        // holding the lure STOPS the Angler (the designer, 2026-10-17; was 12): the anglerfish waits with its light out
+    chaseBack: 160,       // the chase camera: this far behind the hull (u; 4x round 3's 40 - the designer, 2026-10-17)
+    chaseUp: 0,           // ...and this far above it while FLYING: none, so the nose's line is the screen's centre (the designer, 2026-10-17)
+    chaseLift: 56,        // the camera rises this far while the lure is held or the Time dash is moving (u)
+    chaseLiftTime: 0.4,   // ...easing up and back down over this many seconds
+    lureRadius: 70,       // lab: wild fauna inside this reach of the esca turn to it. LightFauna detectionRadius is 60–70
+    tameRadius: 22,       // lab: inside this the creature is "held" and taming fills
+    tameTime: 2.5,        // lab: seconds held to tame
+    tameDecay: 0.6,       // lab: taming lost per second outside the hold
+    squadCap: 24,         // lab: most creatures on the leash at once
+    leashTow: 1.6,        // lab: a FOLLOWING creature may swim this × its own max to hold formation (attacks stay at game speed)
+    formBack: 6,          // lab: how far behind the hull the school's ring sits (u)
+    // --- commanded behaviour ---
+    urgency: 1,           // lab: the aggression level a commanded creature runs at (LightFauna SpeedByAggression / consume-radius rows L0/L1/L2)
+    spareOwn: 1,          // lab: orders never TARGET your own prisms (a mouthful can still eat them; see dietAny)
+    // --- Clawfish (Assets/_SO_Assets/Light Fauna Data/ClawfishFaunaDataSO.asset) ---
+    clawMin: 18, clawMax: 32, clawReach: 36, clawTurn: 7,      // minSpeed / maxSpeed / consumeRadius / rotationLerpSpeed
+    // --- QuadFish (QuadFishFaunaDataSO.asset) ---
+    quadMin: 16, quadMax: 28, quadReach: 40, quadTurn: 6,
+    // --- the LightFauna mouthful (LightFaunaDataSO C# defaults: no asset stores them) ---
+    lfHold: 2, lfCluster: 12, lfBites: 8, lfFacing: 25,      // consumeHoldSeconds / feedingClusterRadius / maxClusterBites / feedingFacingAngle
+    // --- Tadpole (Assets/_Prefabs/FloraAndFauna/TadPoleFauna.prefab, Boid forager) ---
+    tadMin: 10, tadMax: 15, tadHunt: 10, tadReach: 20, tadTick: 1.5,   // minSpeed / maxSpeed / huntSpeedMultiplier / trailBlockInteractionRadius / behaviorUpdateRate
+    tadHold: 2, tadCluster: 10, tadBites: 6, tadFacing: 30,           // Boid C# defaults (not in the prefab)
+    tadTurn: 4,           // lab: Boid steering is a velocity lerp; this is the lab's turn rate for it
+    // --- squad sizes (lab; the game's per-cell caps: Clawfish 6, QuadFish 8, Tadpole 6 per pod) ---
+    clawN: 6, quadN: 6, tadN: 12,
+    // --- the command schemes (all lab) ---
+    paintRange: 3200, paintCone: 3,                 // Spotlight + Sling painter: reach (u, 20x round 2's 160 - the designer, 2026-10-16), half-angle (deg; 3, was 8 - smaller and accurate, 2026-10-17)
+    flareSpeed: 260, flareRange: 260, flareAssist: 5, flareRadius: 24, flareCd: 0.5,   // Pheromone dart
+    gazeRange: 240, gazeCone: 5, gazeDwell: 0.35,   // Gaze lock
+    loopStep: 4, loopClose: 18, loopDepth: 40, loopMin: 120,   // Lasso
+    slingAhead: 12, slingSpeed: 150, slingCatch: 8, slingCluster: 24, slingTime: 3,   // Pack sling
+    // Sling painter (round 2, the designer's pick: the sling + the painter, the other trigger erases). All lab.
+    brushMin: 0.35,       // a light squeeze paints with this share of the full brush; a full pull uses all of it
+    eraseCone: 1.5,       // the eraser's half-angle at a full pull (deg; 1.5, was 4); the paint brush uses paintCone
+    brushNear: 2,         // the brush's radius at the nose (u, at a full pull; 2, was 6): close-up prisms paint and erase too
+    dashFrac: 0.75,       // the Time ability: the hull dashes this share of the way to its school's centroid (the designer, 2026-10-16)
+    dashTime: 0.35,       // ...over this many seconds (quick, but never a pop)
+    homeTurn: 12,         // how sharply a thrown creature homes on its painted prism (/s)
+    aiErase: 1,           // the commander AI uses the eraser (0 = never; the eraser's own control)
+    feralSense: 40,       // Feral baseline: a tamed creature attacks enemy prisms within this of itself
+    // --- missions (lab) ---
+    taskClear: 0.6, taskTimeout: 50,
+    // --- the commander AI's rookie (lab; the Skim Race levels' shape: late notice + believed aim error) ---
+    rookieNotice: 0.6, rookieAim: 3,
+  };
+
+  // [group, key, lo, hi, step, label, tooltip, scheme?]. A row with a scheme tag shows only while that scheme is picked.
+  const SPEC = [
+    ['Command', 'spareOwn', 0, 1, 1, 'Never target my prisms', 'On: an order\'s target list skips your own prisms. A mouthful can still eat them when the cell\'s diet allows it (Cell tab).'],
+    ['Command', 'urgency', 0, 2, 1, 'Commanded aggression (L0–L2)', 'The LightFauna aggression row a commanded creature runs at: speed ×1 / 1.25 / 1.6 and mouth reach ×1 / 1.4 / 1.8 (LightFauna.cs).'],
+    ['Command', 'paintRange', 40, 4000, 20, 'Spotlight reach (u)', 'How far the beam paints prisms.', 'paint'],
+    ['Command', 'paintCone', 2, 25, 0.5, 'Spotlight half-angle (°)', 'Wider paints more per sweep but also catches neighbours.', 'paint'],
+    ['Command', 'flareSpeed', 60, 600, 10, 'Dart speed (u/s)', 'How fast the pheromone dart flies.', 'flare'],
+    ['Command', 'flareRange', 60, 600, 10, 'Dart range (u)', 'How far it flies before it fizzles.', 'flare'],
+    ['Command', 'flareAssist', 0, 20, 0.5, 'Dart aim assist (u)', 'A prism within this of the dart\'s line counts as hit.', 'flare'],
+    ['Command', 'flareRadius', 4, 80, 1, 'Scent radius (u)', 'Prisms of the struck prism\'s domain within this of the hit become the order.', 'flare'],
+    ['Command', 'flareCd', 0, 3, 0.05, 'Dart cooldown (s)', 'Time between darts.', 'flare'],
+    ['Command', 'gazeRange', 40, 500, 10, 'Gaze reach (u)', 'How far the reticle can lock.', 'gaze'],
+    ['Command', 'gazeCone', 1, 15, 0.5, 'Gaze cone (°)', 'How close to the reticle a prism must be.', 'gaze'],
+    ['Command', 'gazeDwell', 0, 2, 0.05, 'Dwell to lock (s)', 'Hold the reticle on one structure this long to lock the whole structure.', 'gaze'],
+    ['Command', 'loopStep', 1, 12, 0.5, 'Leash sample (u)', 'The leash trail drops a point every this many units.', 'lasso'],
+    ['Command', 'loopClose', 4, 60, 1, 'Close distance (u)', 'Return within this of the leash\'s start and the loop closes itself.', 'lasso'],
+    ['Command', 'loopDepth', 5, 150, 1, 'Loop depth (u)', 'Prisms within this of the loop\'s plane and inside it are taken.', 'lasso'],
+    ['Command', 'loopMin', 20, 600, 10, 'Shortest loop (u)', 'A loop must be at least this long to close itself.', 'lasso'],
+    ['Command', 'slingAhead', 4, 40, 1, 'Ball distance (u)', 'Hold the trigger and the squad gathers in a ball this far ahead.', 'sling'],
+    ['Command', 'slingSpeed', 40, 400, 5, 'Throw speed (u/s)', 'How fast the ball is thrown.', 'sling'],
+    ['Command', 'slingCatch', 2, 30, 1, 'Catch radius (u)', 'A thrown creature that passes within this of an enemy prism latches on.', 'sling'],
+    ['Command', 'slingCluster', 4, 80, 1, 'Latch cluster (u)', 'It then eats that prism\'s domain within this of the latch.', 'sling'],
+    ['Command', 'slingTime', 0.5, 8, 0.1, 'Throw lasts (s)', 'A creature that latches onto nothing returns after this.', 'sling'],
+    ['Command', 'paintRange', 40, 4000, 20, 'Brush reach (u)', 'How far the paint brush and the eraser reach.', 'slingpaint'],
+    ['Command', 'brushNear', 0, 30, 0.5, 'Brush radius at the nose (u)', 'The brush never narrows below this near the hull, so close-up prisms paint and erase too (at a full pull; a light squeeze scales it like the cone).', 'slingpaint'],
+    ['Command', 'dashFrac', 0, 1, 0.05, 'Dash to the school (share)', 'The Time ability: press it and the hull dashes this share of the way to the centroid of every creature it leads, measured when pressed.', 'slingpaint'],
+    ['Command', 'dashTime', 0.05, 2, 0.05, 'Dash time (s)', 'How long the dash takes.', 'slingpaint'],
+    ['Command', 'paintCone', 2, 25, 0.5, 'Brush half-angle (°)', 'The paint brush at a full pull of RT. A light squeeze paints a narrower line.', 'slingpaint'],
+    ['Command', 'brushMin', 0.1, 1, 0.05, 'Light-squeeze brush', 'Share of the full brush a just-past-halfway squeeze paints with (and the same for the eraser). 1 = the trigger depth does not matter.', 'slingpaint'],
+    ['Command', 'eraseCone', 1, 25, 0.5, 'Eraser half-angle (°)', 'The eraser (LT) at a full pull. Narrower than the brush, so it can pick a neighbour out.', 'slingpaint'],
+    ['Command', 'slingAhead', 4, 40, 1, 'Ball distance (u)', 'While RT is held the squad balls up this far ahead.', 'slingpaint'],
+    ['Command', 'slingSpeed', 40, 400, 5, 'Throw speed (u/s)', 'How fast the ball flies at the painted prisms.', 'slingpaint'],
+    ['Command', 'homeTurn', 1, 40, 0.5, 'Homing (/s)', 'How sharply each thrown creature turns toward its own painted prism.', 'slingpaint'],
+    ['Command', 'aiErase', 0, 1, 1, 'AI uses the eraser', 'Scorecard commander: 1 erases painted neighbours before throwing, 0 never erases (the eraser\'s control).', 'slingpaint'],
+    ['Command', 'feralSense', 5, 120, 1, 'Feral sense (u)', 'Baseline: tamed creatures attack any enemy prism within this, unbidden.', 'feral'],
+    ['Lure', 'lureAhead', 4, 40, 1, 'Esca distance (u)', 'Where the lure light hangs, ahead of the nose.'],
+    ['Lure', 'lureCruise', 0, 60, 1, 'Speed while luring (u/s)', 'Holding the lure slows the Angler to this; 0 = it stops. Lured fauna swim 16–38 u/s, so a hull at cruise outruns its own catch. Boost still overrides.'],
+    ['Lure', 'lureRadius', 10, 200, 1, 'Lure reach (u)', 'Wild fauna within this of the esca turn toward it. LightFauna detect at 60–70.'],
+    ['Lure', 'tameRadius', 4, 80, 1, 'Hold radius (u)', 'Inside this the creature is held and taming fills.'],
+    ['Lure', 'tameTime', 0.2, 10, 0.1, 'Time to tame (s)', 'Seconds a creature must be held.'],
+    ['Lure', 'tameDecay', 0, 3, 0.05, 'Taming lost (/s)', 'How fast a half-tamed creature forgets you outside the hold.'],
+    ['Lure', 'leashTow', 1, 4, 0.05, 'Leash tow ×', 'A following creature may swim this many times its own max speed to keep formation. 1 = no tow: at 1 the squad (32–40 u/s) cannot catch a 40 u/s hull and falls out of sight behind the chase camera. Attacks always run at the game\'s own speeds.'],
+    ['Lure', 'formBack', -20, 60, 1, 'School ring behind (u)', 'Where the squad\'s ring sits behind the hull. Small values keep the school in the chase camera\'s view.'],
+    ['Lure', 'squadCap', 3, 60, 1, 'Leash capacity', 'Most creatures you can lead at once.'],
+    ['Squad', 'clawN', 0, 12, 1, 'Clawfish', 'Squad size in missions.'],
+    ['Squad', 'quadN', 0, 12, 1, 'QuadFish', 'Squad size in missions.'],
+    ['Squad', 'tadN', 0, 30, 1, 'Tadpoles', 'Squad size in missions.'],
+    ['Squad', 'clawMax', 5, 80, 1, 'Clawfish max speed', 'ClawfishFaunaDataSO.maxSpeed.'],
+    ['Squad', 'clawReach', 5, 80, 1, 'Clawfish mouth reach', 'ClawfishFaunaDataSO.consumeRadius: it eats from this far away (suction).'],
+    ['Squad', 'quadMax', 5, 80, 1, 'QuadFish max speed', 'QuadFishFaunaDataSO.maxSpeed.'],
+    ['Squad', 'quadReach', 5, 80, 1, 'QuadFish mouth reach', 'QuadFishFaunaDataSO.consumeRadius.'],
+    ['Squad', 'lfHold', 0.2, 5, 0.1, 'Mouthful hold (s)', 'LightFaunaDataSO.consumeHoldSeconds: the bite\'s facing hold.'],
+    ['Squad', 'lfCluster', 0, 40, 1, 'Mouthful radius (u)', 'LightFaunaDataSO.feedingClusterRadius: a bite takes edible prisms within this of the target.'],
+    ['Squad', 'lfBites', 1, 20, 1, 'Mouthful size', 'LightFaunaDataSO.maxClusterBites.'],
+    ['Squad', 'tadMax', 5, 60, 1, 'Tadpole max speed', 'TadPoleFauna.prefab maxSpeed.'],
+    ['Squad', 'tadHunt', 1, 20, 0.5, 'Tadpole dash ×', 'Boid huntSpeedMultiplier: the arrival-capped dash.'],
+    ['Squad', 'tadReach', 4, 60, 1, 'Tadpole reach (u)', 'Boid trailBlockInteractionRadius.'],
+    ['Squad', 'tadBites', 1, 20, 1, 'Tadpole mouthful size', 'Boid maxClusterBites (C# default 6).'],
+    ['Flight', 'cruise', 10, 240, 1, 'Cruise speed (u/s)', 'The Angler\'s cruise. Squirrel ships 60, Sparrow 35, Manta 180.'],
+    ['Flight', 'chaseBack', 20, 400, 5, 'Chase camera behind (u)', 'How far behind the hull the chase camera sits.'],
+    ['Flight', 'chaseUp', 0, 200, 2, 'Chase camera above (u)', 'How far above the hull the chase camera sits while flying. 0 puts the nose\'s line (the brush\'s axis) at the screen\'s centre.'],
+    ['Flight', 'chaseLift', 0, 200, 2, 'Camera rise when luring or dashing (u)', 'The chase camera rises this far while the lure is held or the Time dash is moving, to show the school and the light from above.'],
+    ['Flight', 'chaseLiftTime', 0.05, 2, 0.05, 'Camera rise time (s)', 'How long the camera takes to rise and to settle back.'],
+    ['Flight', 'boost', 20, 500, 5, 'Boost speed (u/s)', 'Speed with the boost held.'],
+    ['Flight', 'turnRate', 30, 240, 5, 'Turn rate (°/s)', 'Full-stick pitch and yaw rate.'],
+    ['Cell', 'dietAny', 0, 1, 1, 'Nucleus cell diet', '1: a nucleus cell, where fauna eat ANY domain outside the nucleus (the game\'s rule), so a mouthful near your trail eats your trail. 0: a cell without a nucleus, where fauna eat opposing domains only.'],
+    ['Cell', 'taskClear', 0.2, 1, 0.05, 'Order done at', 'An order is complete when this share of its target structure is gone.'],
+    ['Cell', 'taskTimeout', 10, 120, 1, 'Order time limit (s)', 'An order that runs this long counts as failed.'],
+    ['Cell', 'rookieNotice', 0, 2, 0.05, 'Rookie notice (s)', 'Scorecard rookie: seconds before they react to a new order.'],
+    ['Cell', 'rookieAim', 0, 10, 0.25, 'Rookie aim error (°)', 'Scorecard rookie: the drift in where they believe the target is.'],
+  ];
+
+  // The command schemes the lab exists to compare. One trigger (RT / Space) drives every one, so both thumbs keep
+  // flying: the game flies on two sticks (InputController's dual-stick mix), leaving triggers and bumpers free.
+  const SCHEMES = [
+    { key: 'slingpaint', name: 'Sling painter', how: 'Hold RT: paint prisms with the beam (squeeze harder for a wider brush) while the squad balls up ahead. Hold LT: erase paint with a narrower beam. Let go of RT: the ball is thrown and each creature homes on its own painted prism, then eats only painted prisms. Nothing painted: it throws like the Pack sling.' },
+    { key: 'paint', name: 'Spotlight paint', how: 'Hold the command trigger: a beam from the nose paints every prism it sweeps. Let go: the squad eats what you painted.' },
+    { key: 'flare', name: 'Pheromone dart', how: 'Tap the command trigger: a dart flies along your aim and sticks in the first prism. The squad eats that prism\'s domain around the dart.' },
+    { key: 'gaze', name: 'Gaze lock', how: 'Keep the reticle on a structure until its brackets lock, then tap the command trigger: the squad takes the whole structure.' },
+    { key: 'lasso', name: 'Lasso loop', how: 'Hold the command trigger and fly a loop around the target. Close the loop (or let go): everything inside is the order.' },
+    { key: 'sling', name: 'Pack sling', how: 'Hold the command trigger: the squad balls up ahead of your nose. Aim and let go: the ball is thrown, and each creature latches onto the first enemy prism it passes.' },
+    { key: 'feral', name: 'Feral (baseline)', how: 'No command. Tamed creatures follow you and eat any enemy prism that comes within their sense. Fly them past the target.' },
+    { key: 'none', name: 'No squad (control)', how: 'Control: the squad never attacks. Every kill column must read zero.' },
+  ];
+  const SPECIES = [
+    { key: 'claw', name: 'Clawfish', kind: 'lf', min: 'clawMin', max: 'clawMax', reach: 'clawReach', turn: 'clawTurn', n: 'clawN', color: 0xff7a5c, src: 'ClawfishFaunaDataSO' },
+    { key: 'quad', name: 'QuadFish', kind: 'lf', min: 'quadMin', max: 'quadMax', reach: 'quadReach', turn: 'quadTurn', n: 'quadN', color: 0x9b8cff, src: 'QuadFishFaunaDataSO' },
+    { key: 'tad', name: 'Tadpoles', kind: 'tad', min: 'tadMin', max: 'tadMax', reach: 'tadReach', turn: 'tadTurn', n: 'tadN', color: 0x7dffa0, src: 'TadPoleFauna.prefab' },
+  ];
+  const AGGR_SPEED = [1, 1.25, 1.6], AGGR_REACH = [1, 1.4, 1.8];   // LightFauna.cs SpeedByAggression / ConsumeRadiusByAggression
+
+  // Saved tuning: a per-viewer convenience, stored as the DIFF from SHIPPED so a retune reaches every saved browser.
+  const LS = 'anglerlab:';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet('P', {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+  const S = Object.assign({ scheme: 'slingpaint', mode: 'missions', cam: 'chase' }, lsGet('S', {}));
+  if (!SCHEMES.some((s) => s.key === S.scheme)) S.scheme = 'slingpaint';
+
+  // ===================================================================================================
+  // seeded RNG + small vector helpers
+  // ===================================================================================================
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const gauss = (rnd) => { const u = Math.max(1e-9, rnd()), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283185307 * v); };
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const len = (a) => Math.hypot(a[0], a[1], a[2]);
+  const norm = (a) => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+  const D2R = Math.PI / 180;
+
+  // ===================================================================================================
+  // CORE: the pure arithmetic the Unity port copies LINE FOR LINE (Assets/_Scripts/Controller/Vessel/AnglerCommandMath.cs).
+  // The model below calls these and nothing else for these decisions, so the parity gate
+  // (Tools/Build/angler_command_parity) measures what the page flies (labmaker §2.8, L-GEN-8). Vectors are [x, y, z].
+  // ===================================================================================================
+  const CORE = {
+    // trigger depth (0.5 = the press threshold, 1 = a full pull) -> share of the full brush
+    brushScale(depth, brushMin) { return brushMin + (1 - brushMin) * clamp(((depth || 0) - 0.5) / 0.5, 0, 1); },
+    // is point p inside the brush from o along unit f: ahead of the nose, within reach along the axis, and no further from
+    // the axis than the cone's radius there (half-angle coneDeg) or nearR, whichever is wider - so close-up prisms count
+    inBrush(o, f, p, coneDeg, reach, nearR) {
+      const dx = p[0] - o[0], dy = p[1] - o[1], dz = p[2] - o[2], along = dx * f[0] + dy * f[1] + dz * f[2];
+      if (along < 0 || along > reach) return false;
+      const perp2 = Math.max(0, dx * dx + dy * dy + dz * dz - along * along), r = Math.max(nearR, along * Math.tan(coneDeg * D2R));
+      return perp2 <= r * r;
+    },
+    // the candidate nearest `from`, each claim on it costing 900 (30 u squared) so a squad spreads over a set
+    pickTarget(from, cands, claims) {
+      let best = -1, bd = Infinity;
+      for (let i = 0; i < cands.length; i++) {
+        const c = cands[i], dx = c[0] - from[0], dy = c[1] - from[1], dz = c[2] - from[2], d = dx * dx + dy * dy + dz * dz + claims[i] * 900;
+        if (d < bd) { bd = d; best = i; }
+      }
+      return best;
+    },
+    // creature i's place in the school: a golden-angle spiral round the hull, formBack behind it
+    formationSlot(i, p, f, r, u, formBack) {
+      const ring = 6 + Math.sqrt(i) * 3.2, th = i * 2.399963, bk = formBack + i * 0.6, c = Math.cos(th) * ring, sn = Math.sin(th) * ring;
+      return [p[0] - f[0] * bk + r[0] * c + u[0] * sn, p[1] - f[1] * bk + r[1] * c + u[1] * sn, p[2] - f[2] * bk + r[2] * c + u[2] * sn];
+    },
+    // a follower's speed: the hull's, fed forward, plus 1.5/s of its gap beyond 4 u, between half its minimum and its cap
+    followSpeed(hullSpeed, gap, minSpeed, cap) { return clamp(hullSpeed + (gap - 4) * 1.5, minSpeed * 0.5, cap); },
+    // a LightFauna follower's cap: its top speed at the commanded aggression, towed by the leash
+    lightFollowCap(maxSpeed, aggrSpeed, tow) { return maxSpeed * aggrSpeed * tow; },
+    // a Tadpole follower's cap: its arrival-capped dash (Boid huntSpeedMultiplier), towed by the leash
+    tadFollowCap(maxSpeed, hunt, tick, gap, tow) { return Math.min(maxSpeed * hunt, Math.max(maxSpeed, gap / Math.max(0.05, tick))) * tow; },
+    // the ball's pull on a gathering creature
+    gatherSpeed(d, minSpeed, top, hullSpeed) { return clamp(d * 2, minSpeed, Math.max(top, hullSpeed * 1.2)); },
+    // taming: fills while held in the light, fades outside it
+    tameStep(tame, inHold, dt, tameTime, decay) { return inHold ? tame + dt / tameTime : Math.max(0, tame - decay * dt); },
+    // where the esca hangs
+    lurePoint(p, f, u, ahead) { return [p[0] + f[0] * ahead + u[0] * 2.5, p[1] + f[1] * ahead + u[1] * 2.5, p[2] + f[2] * ahead + u[2] * 2.5]; },
+    // a painted order's pick, regardless of distance: the candidate with the fewest claims, then the most recently
+    // painted (largest stamp), then the lowest index - so a squad fans out over the newest paint first
+    pickRecent(stamps, claims) {
+      let best = -1;
+      for (let i = 0; i < stamps.length; i++)
+        if (best < 0 || claims[i] < claims[best] || (claims[i] === claims[best] && stamps[i] > stamps[best])) best = i;
+      return best;
+    },
+    // the Time ability's landing point: frac of the way from p to the school's centroid c
+    dashPoint(p, c, frac) { return [p[0] + (c[0] - p[0]) * frac, p[1] + (c[1] - p[1]) * frac, p[2] + (c[2] - p[2]) * frac]; },
+  };
+
+  // ===================================================================================================
+  // THE SCENE: one fixed battlefield (seeded by a constant, so every run and every scheme meets the same prisms).
+  // Domains: 0 = Jade (yours), 1 = Ruby, 2 = Gold. Structures are what an order names.
+  // ===================================================================================================
+  const SCENE_SEED = 20261015;
+  const B = [0, 0, 440];   // the battlefield sits outside the nucleus (radius 200), inside the 1200 membrane
+  function catmull(pts, spacing, jit, rnd) {
+    // Catmull-Rom through the control points, resampled every `spacing` units by arc length.
+    const dense = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      for (let s = 0; s < 40; s++) {
+        const t = s / 40, t2 = t * t, t3 = t2 * t;
+        dense.push([0, 1, 2].map((k) => 0.5 * ((2 * p1[k]) + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3)));
+      }
+    }
+    dense.push(pts[pts.length - 1].slice());
+    const out = []; let acc = 0;
+    out.push({ p: dense[0], t: norm(sub(dense[1], dense[0])) });
+    for (let i = 1; i < dense.length; i++) {
+      const seg = len(sub(dense[i], dense[i - 1])); acc += seg;
+      if (acc >= spacing) { acc = 0; const j = [gauss(rnd) * jit, gauss(rnd) * jit, gauss(rnd) * jit]; out.push({ p: add(dense[i], j), t: norm(sub(dense[i], dense[i - 1])) }); }
+    }
+    return out;
+  }
+  function buildScene() {
+    const rnd = mulberry32(SCENE_SEED), P0 = [], structs = [];
+    const at = (x, y, z) => [B[0] + x, B[1] + y, B[2] + z];
+    function addStruct(name, short, dom, kind, items) {
+      const id = structs.length, ids = [];
+      for (const it of items) { ids.push(P0.length); P0.push({ p: it.p, t: it.t, dom, st: id, leaf: kind !== 'trail' }); }
+      let c = [0, 0, 0]; for (const it of items) c = add(c, it.p); c = mul(c, 1 / items.length);
+      let r = 0; for (const it of items) r = Math.max(r, len(sub(it.p, c)));
+      structs.push({ id, name, short, dom, kind, ids, c, r });
+    }
+    // Ruby trail: a long rival wake, sweeping across the field.
+    addStruct('Ruby trail', 'RUBY TRAIL', 1, 'trail', catmull([at(-210, 60, -150), at(-120, 80, -40), at(-20, 50, -110), at(90, 70, -20), at(200, 40, -90)], 4, 0.25, rnd));
+    // Ruby knot: a flora-like ball of leaves (phyllotactic shells).
+    const knot = [], KC = at(60, -10, -10);
+    for (const [r, n] of [[5, 14], [10, 34], [15, 62]]) for (let i = 0; i < n; i++) {
+      const y = 1 - 2 * (i + 0.5) / n, rr = Math.sqrt(1 - y * y), th = i * 2.399963;
+      const d = [Math.cos(th) * rr, y, Math.sin(th) * rr]; knot.push({ p: add(KC, mul(d, r)), t: d });
+    }
+    addStruct('Ruby knot', 'RUBY KNOT', 1, 'knot', knot);
+    // Gold trail: passes just behind the Ruby knot, so a careless order bleeds into it.
+    addStruct('Gold trail', 'GOLD TRAIL', 2, 'trail', catmull([at(160, -90, 60), at(95, -30, 10), at(55, -12, -38), at(-40, -40, -60), at(-170, -10, -10)], 4, 0.25, rnd));
+    // Gold lattice: a rippled sheet (a builder's wall).
+    const lat = [], LC = at(-90, -30, 60), la = norm([1, 0, 0.3]), lb = norm([0, 1, 0.2]), ln = norm(cross(la, lb));
+    for (let i = -5; i <= 5; i++) for (let j = -5; j <= 5; j++) {
+      const h = 5 * Math.sin(i * 0.6) * Math.cos(j * 0.5);
+      lat.push({ p: add(add(add(LC, mul(la, i * 5.5)), mul(lb, j * 5.5)), mul(ln, h)), t: la });
+    }
+    addStruct('Gold lattice', 'GOLD LATTICE', 2, 'lattice', lat);
+    // Your trail (Jade): threads between the lattice and the knot: the friendly-fire hazard.
+    addStruct('Your trail', 'YOUR TRAIL', 0, 'trail', catmull([at(-220, -60, 120), at(-120, -20, 82), at(-30, -5, 30), at(40, 10, 8), at(120, 30, 60), at(220, 0, 120)], 4, 0.25, rnd));
+    const n = P0.length, px = new Float32Array(n), py = new Float32Array(n), pz = new Float32Array(n), tx = new Float32Array(n), ty = new Float32Array(n), tz = new Float32Array(n);
+    const dom = new Uint8Array(n), st = new Int16Array(n), leaf = new Uint8Array(n);
+    P0.forEach((q, i) => { px[i] = q.p[0]; py[i] = q.p[1]; pz[i] = q.p[2]; tx[i] = q.t[0]; ty[i] = q.t[1]; tz[i] = q.t[2]; dom[i] = q.dom; st[i] = q.st; leaf[i] = q.leaf ? 1 : 0; });
+    return { n, px, py, pz, tx, ty, tz, dom, st, leaf, structs };
+  }
+  const SCENE = buildScene();
+  const STRUCT = { rubyTrail: 0, rubyKnot: 1, goldTrail: 2, goldLattice: 3, yours: 4 };
+  // The four orders every mission gives, the same for every scheme. sq: species index, -1 = all.
+  const TASKS = [
+    { sq: 0, st: STRUCT.rubyTrail },
+    { sq: 1, st: STRUCT.goldLattice },
+    { sq: 2, st: STRUCT.rubyKnot },
+    { sq: -1, st: STRUCT.goldTrail },
+  ];
+  const START_P = [B[0], B[1] + 40, B[2] + 300];
+
+  // ===================================================================================================
+  // (3) THE MODEL. simStep(dt, input) never draws and never reads a device.
+  // input = { pitch, yaw (-1..1), boost, lure, cmd (0..1), squad, recall (held booleans) }: the same object a pad,
+  // the keyboard, touch and the commander AI write.
+  // ===================================================================================================
+  const ST = { WILD: 0, LURED: 1, IDLE: 2, ATTACK: 3, GATHER: 4, FLUNG: 5 };
+  let world = null, seed = 7;
+
+  function makeFauna(w, sp, p, state) {
+    const s = SPECIES[sp];
+    w.fauna.push({ sp, x: p[0], y: p[1], z: p[2], hx: 0, hy: 0, hz: -1, spd: P[s.min], state, tame: state === ST.IDLE ? 1 : 0,
+      set: null, target: -1, hold: 0, focus: null, flungT: 0, home: p.slice(), wander: [0, 0, 0], feralT: w.rnd() * 0.25, homing: false, slot: 0, nextTick: w.rnd() * P.tadTick, dash: 1 });
+  }
+  function reset(s, opts) {
+    if (s != null) seed = s >>> 0;
+    opts = opts || {};
+    const mode = opts.mode || S.mode, scheme = opts.scheme || S.scheme;
+    const rnd = mulberry32(seed * 2654435761 >>> 0 || 1);
+    const n = SCENE.n;
+    world = {
+      t: 0, dt: 1 / 60, rnd, mode, scheme,
+      alive: new Uint8Array(n).fill(1), painted: new Uint8Array(n), marked: new Uint8Array(n), markQueue: [], paintT: new Float32Array(n), claims: new Uint8Array(n), ordered: new Float32Array(n),
+      paintedList: [],
+      v: { p: START_P.slice(), f: [0, 0, -1], u: [0, 1, 0], r: [1, 0, 0], speed: P.cruise },
+      fauna: [], squadSel: -1, lureOn: false, L: [0, 0, 0],
+      prev: { cmd: false, squad: false, recall: false, omni: false, dash: false }, lastInput: {}, dash: null,
+      cmd: { holding: false, holdT: 0, loop: [], loopLen: 0, loopShow: null, flares: [], flareCd: 0, gazeSt: -1, gazeDwell: 0, gazeLock: -1, sling: 0 },
+      fx: { blooms: [] },
+      task: null, taskIdx: -1, structAlive0: SCENE.structs.map((s) => s.ids.length),
+      m: { on: 0, off: 0, own: 0, orders: 0, inputs: 0, presses: 0, orderT: [], clearT: [], timeouts: 0, tamed: 0, keepers: 0, firstTameT: null, tame6T: null },
+      ai: { phase: 'approach', runT: 0, pressT: 0, swept: 0, lastAng: null, noise: [0, 0, 0], plan: null, released: false, sqT: 0 },
+      done: false,
+    };
+    updateBasis(world.v);
+    if (mode === 'missions') {
+      // a pre-tamed squad around the hull, then the first order
+      for (let sp = 0; sp < SPECIES.length; sp++) for (let i = 0; i < Math.round(P[SPECIES[sp].n]); i++) {
+        makeFauna(world, sp, add(START_P, [gauss(rnd) * 8, gauss(rnd) * 8, 20 + rnd() * 20]), ST.IDLE);
+      }
+      world.m.tamed = world.fauna.length;
+      nextTask(world);
+    } else {
+      // free play / lure trial: wild pods of each species roam the field, in the cell controller's colour
+      const pods = [[at3(-60, 90, 180), 0], [at3(120, 60, 150), 1], [at3(-150, 20, 40), 2], [at3(150, -70, -120), 0], [at3(-40, -90, -160), 1], [at3(20, 120, -60), 2]];
+      for (const [c, sp] of pods) { const k = sp === 2 ? 6 : 3; for (let i = 0; i < k; i++) makeFauna(world, sp, add(c, [gauss(rnd) * 10, gauss(rnd) * 10, gauss(rnd) * 10]), ST.WILD); }
+    }
+  }
+  function at3(x, y, z) { return [B[0] + x, B[1] + y, B[2] + z]; }
+  function updateBasis(v) {
+    v.f = norm(v.f); v.r = norm(cross(v.f, v.u)); v.u = norm(cross(v.r, v.f));
+  }
+  function nextTask(w) {
+    w.taskIdx++;
+    if (w.taskIdx >= TASKS.length) { w.task = null; w.done = true; return; }
+    const T = TASKS[w.taskIdx];
+    w.task = { sq: T.sq, st: T.st, start: w.t, firstOrder: null, alive0: countAlive(w, T.st) };
+    w.ai.phase = 'approach'; w.ai.plan = null; w.ai.runT = 0; w.ai.recalled = false; w.ai.sqT = 0; w.ai.spT = 0; w.ai.erT = 0;
+  }
+  function countAlive(w, st) { let c = 0; for (const i of SCENE.structs[st].ids) c += w.alive[i]; return c; }
+  function edible(w, i, eaterSet) {
+    // Cell.IsPreyForHerbivore: nucleus interior is never food; a nucleus cell eats any domain, else opposing only.
+    if (!w.alive[i]) return false;
+    const x = SCENE.px[i], y = SCENE.py[i], z = SCENE.pz[i];
+    if (x * x + y * y + z * z < P.nucleusR * P.nucleusR) return false;
+    if (!P.dietAny && SCENE.dom[i] === 0) return false;   // tamed creatures keep the cell's colour; "opposing" = not the leash holder's (lab reading)
+    return true;
+  }
+  function kill(w, i) {
+    if (!w.alive[i]) return;
+    w.alive[i] = 0;
+    const st = SCENE.st[i], d = SCENE.dom[i];
+    if (d === 0) w.m.own++;
+    else if (w.task && st === w.task.st) w.m.on++;
+    else w.m.off++;
+    w.fx.blooms.push({ i, t: w.t });
+  }
+
+  // ---------- orders ----------
+  function inSquad(w, f) { return f.state >= ST.IDLE && (w.squadSel < 0 || f.sp === w.squadSel); }
+  function issueOrder(w, ids) {
+    const set = ids.filter((i) => w.alive[i] && !(P.spareOwn && SCENE.dom[i] === 0));
+    if (!set.length) return false;
+    let n = 0;
+    for (const f of w.fauna) {
+      if (!inSquad(w, f) || f.state === ST.FLUNG) continue;
+      releaseClaim(w, f); f.set = set; f.state = ST.ATTACK; f.hold = 0; f.focus = null; n++;
+    }
+    if (!n) return false;
+    w.m.orders++;
+    for (const i of set) w.ordered[i] = w.t;
+    if (w.task && w.task.firstOrder == null && set.some((i) => SCENE.st[i] === w.task.st)) { w.task.firstOrder = w.t; w.m.orderT.push(w.t - w.task.start); }
+    return true;
+  }
+  // litQueue: the prisms still lit by a throw (marked, alive), in the order they were thrown at; dead and erased entries
+  // are dropped as it is read. Recency comes from paintT, so a prism painted again moves up without a second entry.
+  function litQueue(w) {
+    w.markQueue = w.markQueue.filter((i) => w.alive[i] && w.marked[i]);
+    return w.markQueue;
+  }
+  function releaseClaim(w, f) { if (f.target >= 0 && w.claims[f.target] > 0) w.claims[f.target]--; f.target = -1; }
+  function pickTarget(w, f) {
+    releaseClaim(w, f);
+    // a Sling-painter order picks from the LIT QUEUE - every prism thrown at and still lit, whichever throw lit it - so
+    // the school keeps eating lit prisms, newest first, until none is left (the designer, 2026-10-17). pickRecent
+    // spreads it: a creature takes the newest prism nobody is heading for, the next one goes down the queue, and so on.
+    // Every other order (the sling's latch cluster, the round-1 schemes) picks the nearest in its own set.
+    const live = f.recent ? litQueue(w) : f.set.filter((i) => w.alive[i]);
+    const k = f.recent ? CORE.pickRecent(live.map((i) => w.paintT[i]), live.map((i) => w.claims[i]))
+      : CORE.pickTarget([f.x, f.y, f.z], live.map(ppos), live.map((i) => w.claims[i])), best = k < 0 ? -1 : live[k];
+    if (best < 0) { f.set = null; f.state = ST.IDLE; return; }
+    f.target = best; w.claims[best]++;
+  }
+
+  // ---------- the vessel ----------
+  function flyVessel(w, inp, dt) {
+    const v = w.v, yaw = clamp(inp.yaw || 0, -1, 1) * P.turnRate * D2R * dt, pitch = clamp(inp.pitch || 0, -1, 1) * P.turnRate * D2R * dt;
+    if (yaw) { const f = add(mul(v.f, Math.cos(yaw)), mul(v.r, Math.sin(yaw))); v.f = f; }
+    if (pitch) { const f = add(mul(v.f, Math.cos(pitch)), mul(v.u, Math.sin(pitch))), u = sub(mul(v.u, Math.cos(pitch)), mul(v.f, Math.sin(pitch))); v.f = f; v.u = u; }
+    // lab-only membrane turn-back: past 92% of the cell radius the nose is eased home (the game has no such assist)
+    const rp = len(v.p);
+    if (rp > P.cellR * 0.92) { const home = mul(v.p, -1 / rp), k = clamp((rp / P.cellR - 0.92) * 20, 0, 1) * 1.5 * dt; v.f = norm(add(v.f, mul(home, k))); }
+    updateBasis(v);
+    const base = (inp.lure || 0) > 0.5 ? Math.min(P.cruise, P.lureCruise) : P.cruise, want = base + (P.boost - base) * clamp(inp.boost || 0, 0, 1);
+    v.speed += (want - v.speed) * (1 - Math.exp(-3 * dt));
+    v.p = add(v.p, mul(v.f, v.speed * dt));
+  }
+
+  // ---------- the command schemes ----------
+  function aimPick(w, coneDeg, range, filter) {
+    // the alive prism closest to the nose direction within the cone and range
+    const v = w.v, cosC = Math.cos(coneDeg * D2R);
+    let best = -1, bc = cosC;
+    for (let i = 0; i < SCENE.n; i++) {
+      if (!w.alive[i] || (filter && !filter(i))) continue;
+      const dx = SCENE.px[i] - v.p[0], dy = SCENE.py[i] - v.p[1], dz = SCENE.pz[i] - v.p[2], d = Math.hypot(dx, dy, dz);
+      if (d > range || d < 1) continue;
+      const c = (dx * v.f[0] + dy * v.f[1] + dz * v.f[2]) / d;
+      if (c > bc) { bc = c; best = i; }
+    }
+    return best;
+  }
+  function commandStep(w, inp, edgeDown, edgeUp, dt) {
+    const C = w.cmd, v = w.v, held = (inp.cmd || 0) > 0.5, sch = w.scheme;
+    C.flareCd = Math.max(0, C.flareCd - dt);
+    if (sch === 'paint') {
+      if (held) {
+        const cosC = Math.cos(P.paintCone * D2R);
+        for (let i = 0; i < SCENE.n; i++) {
+          if (!w.alive[i] || w.painted[i] || (P.spareOwn && SCENE.dom[i] === 0)) continue;
+          const dx = SCENE.px[i] - v.p[0], dy = SCENE.py[i] - v.p[1], dz = SCENE.pz[i] - v.p[2], d = Math.hypot(dx, dy, dz);
+          if (d > P.paintRange || d < 1) continue;
+          if ((dx * v.f[0] + dy * v.f[1] + dz * v.f[2]) / d > cosC) { w.painted[i] = 1; w.paintedList.push(i); }
+        }
+      }
+      if (edgeUp) { if (w.paintedList.length) issueOrder(w, w.paintedList); for (const i of w.paintedList) w.painted[i] = 0; w.paintedList = []; }
+    } else if (sch === 'flare') {
+      if (edgeDown && C.flareCd <= 0) {
+        C.flareCd = P.flareCd;
+        let best = -1, bt = Infinity;
+        for (let i = 0; i < SCENE.n; i++) {
+          if (!w.alive[i]) continue;
+          const dx = SCENE.px[i] - v.p[0], dy = SCENE.py[i] - v.p[1], dz = SCENE.pz[i] - v.p[2], t = dx * v.f[0] + dy * v.f[1] + dz * v.f[2];
+          if (t <= 0 || t > P.flareRange || t >= bt) continue;
+          const perp2 = dx * dx + dy * dy + dz * dz - t * t;
+          if (perp2 < P.flareAssist * P.flareAssist + 1.5) { bt = t; best = i; }
+        }
+        const to = best >= 0 ? [SCENE.px[best], SCENE.py[best], SCENE.pz[best]] : add(v.p, mul(v.f, P.flareRange));
+        C.flares.push({ from: v.p.slice(), to, hit: best, t0: w.t, t1: w.t + (best >= 0 ? bt : P.flareRange) / P.flareSpeed, stuck: false });
+      }
+      for (const fl of C.flares) {
+        if (fl.stuck || w.t < fl.t1) continue;
+        fl.stuck = true; fl.stuckT = w.t;
+        if (fl.hit >= 0) {
+          const d0 = SCENE.dom[fl.hit], ids = [], r2 = P.flareRadius * P.flareRadius;
+          for (let i = 0; i < SCENE.n; i++) {
+            if (!w.alive[i] || SCENE.dom[i] !== d0) continue;
+            const dx = SCENE.px[i] - fl.to[0], dy = SCENE.py[i] - fl.to[1], dz = SCENE.pz[i] - fl.to[2];
+            if (dx * dx + dy * dy + dz * dz < r2) ids.push(i);
+          }
+          fl.ok = issueOrder(w, ids);
+        }
+      }
+      C.flares = C.flares.filter((fl) => !fl.stuck || w.t - fl.stuckT < 1.2);
+    } else if (sch === 'gaze') {
+      const i = aimPick(w, P.gazeCone, P.gazeRange, P.spareOwn ? (k) => SCENE.dom[k] !== 0 : null), s = i >= 0 ? SCENE.st[i] : -1;
+      if (s >= 0 && s === C.gazeSt) C.gazeDwell += dt; else { C.gazeSt = s; C.gazeDwell = 0; }
+      if (s >= 0 && C.gazeDwell >= P.gazeDwell) C.gazeLock = s;
+      if (C.gazeLock >= 0 && countAlive(w, C.gazeLock) === 0) C.gazeLock = -1;
+      if (edgeDown && C.gazeLock >= 0) issueOrder(w, SCENE.structs[C.gazeLock].ids);
+    } else if (sch === 'lasso') {
+      if (edgeDown) { C.loop = [v.p.slice()]; C.loopLen = 0; C.holding = true; }
+      if (held && C.holding) {
+        const last = C.loop[C.loop.length - 1], d = len(sub(v.p, last));
+        if (d >= P.loopStep) { C.loop.push(v.p.slice()); C.loopLen += d; }
+        if (C.loopLen > P.loopMin && len(sub(v.p, C.loop[0])) < P.loopClose) { closeLoop(w); C.holding = false; }
+      }
+      if (edgeUp && C.holding) { closeLoop(w); C.holding = false; }
+    } else if (sch === 'slingpaint') {
+      // ===== SLING PAINTER (round 2): the block the Unity port copies line for line (AnglerSlingPainter.cs) =====
+      const erasing = (inp.erase || 0) > 0.5;
+      if (erasing) brushStroke(w, P.eraseCone * brushScale(inp.erase), false, P.brushNear * brushScale(inp.erase));
+      else if (held) brushStroke(w, P.paintCone * brushScale(inp.cmd), true, P.brushNear * brushScale(inp.cmd));
+      // RT calls back EVERY creature of the squad, one still in flight from the last throw included (round 4: a homing
+      // throw never gives up, so a creature left in flight ignored every new paint - the designer's 'didn't listen')
+      if (held) for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.IDLE || f.state === ST.ATTACK || f.state === ST.FLUNG)) { releaseClaim(w, f); f.set = null; f.homing = false; f.state = ST.GATHER; }
+      if (edgeUp) throwAtPaint(w);
+    } else if (sch === 'sling') {
+      if (held) { C.sling += dt; for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.IDLE || f.state === ST.ATTACK)) { releaseClaim(w, f); f.set = null; f.state = ST.GATHER; } }
+      if (edgeUp) { slingThrow(w); C.sling = 0; }
+    }
+  }
+  // ---- Sling painter helpers ----
+  // brushScale: trigger depth (0.5 = the press threshold, 1 = a full pull) -> share of the full brush.
+  function brushScale(depth) { return CORE.brushScale(depth, P.brushMin); }
+  // brushStroke: every alive prism inside the cone (half-angle coneDeg, reach paintRange) is painted (paint) or cleaned.
+  function brushStroke(w, coneDeg, paint, nearR) {
+    const v = w.v;
+    let removed = false;
+    for (let i = 0; i < SCENE.n; i++) {
+      if (!w.alive[i] || (paint ? w.painted[i] : !(w.painted[i] || w.marked[i]))) continue;
+      if (paint && P.spareOwn && SCENE.dom[i] === 0) continue;
+      if (!CORE.inBrush(v.p, v.f, [SCENE.px[i], SCENE.py[i], SCENE.pz[i]], coneDeg, P.paintRange, nearR)) continue;
+      if (paint) { w.painted[i] = 1; w.paintT[i] = w.t; w.paintedList.push(i); }
+      else { w.painted[i] = 0; removed = true; if (w.marked[i]) { w.marked[i] = 0; strikeFromOrders(w, i); } }
+    }
+    if (removed) w.paintedList = w.paintedList.filter((i) => w.painted[i]);
+  }
+  // strikeFromOrders: an erased prism leaves every order it was in, and a creature heading for it picks again.
+  function strikeFromOrders(w, i) {
+    for (const f of w.fauna) {
+      if (f.set && f.set.includes(i)) f.set = f.set.filter((k) => k !== i);
+      if (f.target === i && f.state === ST.ATTACK) { f.hold = 0; f.focus = null; pickTarget(w, f); }
+      else if (f.target === i) releaseClaim(w, f);
+    }
+  }
+  // throwAtPaint: the release. Every gathered creature of the picked squad is thrown and homes on the painted prism
+  // pickTarget gives it (nearest, spread by claims); a creature still swimming to the ball joins the order on foot.
+  function throwAtPaint(w) {
+    const ids = w.paintedList.filter((i) => w.alive[i]);
+    for (const i of w.paintedList) w.painted[i] = 0;
+    w.paintedList = [];
+    for (const i of ids) { if (!w.marked[i]) w.markQueue.push(i); w.marked[i] = 1; }   // lit until eaten or erased (2026-10-16)
+    if (!ids.length) { slingThrow(w); return; }
+    let n = 0;
+    for (const f of w.fauna) {
+      if (!inSquad(w, f) || f.state === ST.WILD || f.state === ST.LURED) continue;
+      const gathered = f.state === ST.GATHER || f.state === ST.FLUNG;   // one still in flight is re-thrown at the new paint
+      releaseClaim(w, f); f.set = ids; f.recent = true; f.hold = 0; f.focus = null; f.state = ST.ATTACK;
+      pickTarget(w, f); if (f.state !== ST.ATTACK) continue;
+      if (gathered) {
+        f.state = ST.FLUNG; f.homing = true; f.flungT = 0; f.spd = P.slingSpeed;
+        const d = norm([SCENE.px[f.target] - f.x, SCENE.py[f.target] - f.y, SCENE.pz[f.target] - f.z]); f.hx = d[0]; f.hy = d[1]; f.hz = d[2];
+      }
+      n++;
+    }
+    if (!n) return;
+    w.m.orders++;
+    for (const i of ids) w.ordered[i] = w.t;
+    if (w.task && w.task.firstOrder == null && ids.some((i) => SCENE.st[i] === w.task.st)) { w.task.firstOrder = w.t; w.m.orderT.push(w.t - w.task.start); }
+  }
+  // the Pack sling's own throw (used by the Sling painter when nothing is painted)
+  function slingThrow(w) {
+    const v = w.v; let n = 0;
+    for (const f of w.fauna) if (f.state === ST.GATHER) {
+      const j = [gauss(w.rnd) * 0.05, gauss(w.rnd) * 0.05, gauss(w.rnd) * 0.05], d = norm(add(v.f, j));
+      f.state = ST.FLUNG; f.homing = false; f.flungT = 0; f.hx = d[0]; f.hy = d[1]; f.hz = d[2]; f.spd = P.slingSpeed; n++;
+    }
+    if (n) w.m.orders++;
+  }
+  function closeLoop(w) {
+    const C = w.cmd, L = C.loop;
+    C.loopShow = { pts: L.slice(), t: w.t };
+    if (L.length < 4) { C.loop = []; return; }
+    let c = [0, 0, 0]; for (const p of L) c = add(c, p); c = mul(c, 1 / L.length);
+    let nrm = [0, 0, 0];   // Newell's normal of the closed polygon
+    for (let i = 0; i < L.length; i++) { const a = L[i], b = L[(i + 1) % L.length]; nrm = add(nrm, [(a[1] - b[1]) * (a[2] + b[2]), (a[2] - b[2]) * (a[0] + b[0]), (a[0] - b[0]) * (a[1] + b[1])]); }
+    if (len(nrm) < 1e-6) { C.loop = []; return; }
+    nrm = norm(nrm);
+    const ax = norm(Math.abs(nrm[0]) < 0.9 ? cross(nrm, [1, 0, 0]) : cross(nrm, [0, 1, 0])), bx = cross(nrm, ax);
+    const poly = L.map((p) => { const d = sub(p, c); return [dot(d, ax), dot(d, bx)]; });
+    const ids = [];
+    for (let i = 0; i < SCENE.n; i++) {
+      if (!w.alive[i]) continue;
+      const d = [SCENE.px[i] - c[0], SCENE.py[i] - c[1], SCENE.pz[i] - c[2]];
+      if (Math.abs(dot(d, nrm)) > P.loopDepth) continue;
+      const x = dot(d, ax), y = dot(d, bx);
+      let inside = false;
+      for (let a = 0, b = poly.length - 1; a < poly.length; b = a++) {
+        const pa = poly[a], pb = poly[b];
+        if ((pa[1] > y) !== (pb[1] > y) && x < (pb[0] - pa[0]) * (y - pa[1]) / (pb[1] - pa[1]) + pa[0]) inside = !inside;
+      }
+      if (inside) ids.push(i);
+    }
+    issueOrder(w, ids);
+    C.loop = [];
+  }
+
+  // ---------- fauna ----------
+  function steer(f, tx, ty, tz, spd, turn, dt) {
+    let dx = tx - f.x, dy = ty - f.y, dz = tz - f.z; const d = Math.hypot(dx, dy, dz);
+    if (d > 1e-4) {
+      dx /= d; dy /= d; dz /= d;
+      const k = 1 - Math.exp(-turn * dt);   // LightFauna: Slerp toward the desired rotation at rotationLerpSpeed
+      f.hx += (dx - f.hx) * k; f.hy += (dy - f.hy) * k; f.hz += (dz - f.hz) * k;
+      const l = Math.hypot(f.hx, f.hy, f.hz) || 1; f.hx /= l; f.hy /= l; f.hz /= l;
+    }
+    f.spd += (spd - f.spd) * (1 - Math.exp(-2.5 * dt));
+    f.x += f.hx * f.spd * dt; f.y += f.hy * f.spd * dt; f.z += f.hz * f.spd * dt;
+    return d;
+  }
+  function eatMouthful(w, f, target) {
+    // LightFauna.ConsumeMouthful / Boid's mouthful: the faced prism plus edible prisms around it, domain-blind in a nucleus cell.
+    const s = SPECIES[f.sp], lf = s.kind === 'lf', R = lf ? P.lfCluster : P.tadCluster, cap = Math.round(lf ? P.lfBites : P.tadBites);
+    const cx = SCENE.px[target], cy = SCENE.py[target], cz = SCENE.pz[target];
+    let bites = 0;
+    if (edible(w, target)) { kill(w, target); bites++; }
+    const R2 = R * R, near = [];
+    for (let i = 0; i < SCENE.n; i++) {
+      if (i === target || !edible(w, i)) continue;
+      const dx = SCENE.px[i] - cx, dy = SCENE.py[i] - cy, dz = SCENE.pz[i] - cz, d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 < R2) near.push([d2, i]);
+    }
+    near.sort((a, b) => a[0] - b[0] || a[1] - b[1]);   // the spatial index returns them in its own order; nearest-first is the lab's reading
+    for (const [, i] of near) { if (bites >= cap) break; kill(w, i); bites++; }
+    f.hold = lf ? P.lfHold : P.tadHold; f.focus = [cx, cy, cz];
+  }
+  function faunaStep(w, dt) {
+    const v = w.v, aSpd = AGGR_SPEED[Math.round(P.urgency)], aReach = AGGR_REACH[Math.round(P.urgency)];
+    let slot = 0, lured = 0;
+    for (const f of w.fauna) {
+      const s = SPECIES[f.sp], maxS = P[s.max], minS = P[s.min], turn = P[s.turn], lf = s.kind === 'lf';
+      const reach = lf ? P[s.reach] * aReach : P[s.reach];
+      if (f.state === ST.WILD || f.state === ST.LURED) {
+        const dL = Math.hypot(w.L[0] - f.x, w.L[1] - f.y, w.L[2] - f.z);
+        if (w.lureOn && dL < P.lureRadius) f.state = ST.LURED; else if (f.state === ST.LURED && (!w.lureOn || dL > P.lureRadius * 1.3)) f.state = ST.WILD;
+        if (f.state === ST.LURED) {
+          lured++;
+          const a = w.t * 1.3 + f.home[0];
+          steer(f, w.L[0] + Math.cos(a) * 6, w.L[1] + Math.sin(a * 0.7) * 6, w.L[2] + Math.sin(a) * 6, Math.min(maxS * 1.2, Math.max(minS, dL)), turn, dt);
+          f.tame = CORE.tameStep(f.tame, dL < P.tameRadius, dt, P.tameTime, P.tameDecay);
+          if (f.tame >= 1 && schoolSize(w) < P.squadCap) {
+            f.state = ST.IDLE; f.tame = 1; w.m.tamed++;
+            if (w.m.firstTameT == null) w.m.firstTameT = w.t;
+            if (w.m.tamed >= 6 && w.m.tame6T == null) w.m.tame6T = w.t;
+          }
+        } else {
+          f.tame = Math.max(0, f.tame - P.tameDecay * dt);
+          f.wander = f.wander.map((x) => x * Math.exp(-0.4 * dt) + gauss(w.rnd) * 9 * Math.sqrt(dt));
+          steer(f, f.home[0] + f.wander[0] * 4, f.home[1] + f.wander[1] * 4, f.home[2] + f.wander[2] * 4, minS, turn * 0.5, dt);
+        }
+        continue;
+      }
+      if (f.state === ST.IDLE) {
+        // the leash formation: a golden-angle spiral behind the hull
+        const [tx, ty, tz] = CORE.formationSlot(slot++, v.p, v.f, v.r, v.u, P.formBack);
+        const d = Math.hypot(tx - f.x, ty - f.y, tz - f.z);
+        const cap = lf ? CORE.lightFollowCap(maxS, aSpd, P.leashTow) : CORE.tadFollowCap(maxS, P.tadHunt, P.tadTick, d, P.leashTow);
+        steer(f, tx, ty, tz, CORE.followSpeed(v.speed, d, minS, cap), turn, dt);   // the hull's speed fed forward, so the ring holds instead of trailing
+        if (w.scheme === 'feral') {
+          f.feralT -= dt;
+          if (f.feralT <= 0) {
+            f.feralT = 0.25;
+            let best = -1, bd = P.feralSense * P.feralSense;
+            for (let k = 0; k < SCENE.n; k++) {
+              if (!w.alive[k] || SCENE.dom[k] === 0) continue;
+              const dx = SCENE.px[k] - f.x, dy = SCENE.py[k] - f.y, dz = SCENE.pz[k] - f.z, d2 = dx * dx + dy * dy + dz * dz;
+              if (d2 < bd) { bd = d2; best = k; }
+            }
+            if (best >= 0) { f.set = [best]; f.state = ST.ATTACK; }
+          }
+        }
+        continue;
+      }
+      if (f.state === ST.GATHER) {
+        const bx = v.p[0] + v.f[0] * P.slingAhead, by = v.p[1] + v.f[1] * P.slingAhead, bz = v.p[2] + v.f[2] * P.slingAhead;
+        const d = Math.hypot(bx - f.x, by - f.y, bz - f.z);
+        steer(f, bx, by, bz, CORE.gatherSpeed(d, minS, maxS * aSpd, v.speed), turn * 2, dt);
+        continue;
+      }
+      if (f.state === ST.FLUNG && f.homing) {
+        // Sling painter: home on the painted prism at throw speed; inside the mouth's reach the throw ends and the
+        // creature lands at its own swim speed and eats by its own mouthful rule (painted prisms only, as its order)
+        f.flungT += dt;
+        if (f.target < 0 || !w.alive[f.target]) { pickTarget(w, f); if (f.state === ST.IDLE) { f.homing = false; continue; } }
+        const t = f.target, d = steer(f, SCENE.px[t], SCENE.py[t], SCENE.pz[t], P.slingSpeed, P.homeTurn, dt);
+        if (d < reach) { f.state = ST.ATTACK; f.homing = false; f.spd = Math.min(f.spd, maxS * aSpd); }   // no give-up: any distance, limited only by speed
+        continue;
+      }
+      if (f.state === ST.FLUNG) {
+        f.flungT += dt; f.spd = P.slingSpeed * Math.exp(-0.25 * f.flungT);
+        const x0 = f.x, y0 = f.y, z0 = f.z;
+        f.x += f.hx * f.spd * dt; f.y += f.hy * f.spd * dt; f.z += f.hz * f.spd * dt;
+        // swept catch: the closest enemy prism to this frame's segment
+        let hit = -1, hd = P.slingCatch * P.slingCatch;
+        const sx = f.x - x0, sy = f.y - y0, sz = f.z - z0, sl2 = sx * sx + sy * sy + sz * sz || 1;
+        for (let i = 0; i < SCENE.n; i++) {
+          if (!w.alive[i] || (P.spareOwn && SCENE.dom[i] === 0)) continue;
+          const dx = SCENE.px[i] - x0, dy = SCENE.py[i] - y0, dz = SCENE.pz[i] - z0;
+          if (Math.abs(dx) > 60 || Math.abs(dy) > 60 || Math.abs(dz) > 60) continue;
+          const t = clamp((dx * sx + dy * sy + dz * sz) / sl2, 0, 1), ex = dx - sx * t, ey = dy - sy * t, ez = dz - sz * t, d2 = ex * ex + ey * ey + ez * ez;
+          if (d2 < hd) { hd = d2; hit = i; }
+        }
+        if (hit >= 0) {
+          const d0 = SCENE.dom[hit], ids = [], r2 = P.slingCluster * P.slingCluster;
+          for (let i = 0; i < SCENE.n; i++) {
+            if (!w.alive[i] || SCENE.dom[i] !== d0) continue;
+            const dx = SCENE.px[i] - SCENE.px[hit], dy = SCENE.py[i] - SCENE.py[hit], dz = SCENE.pz[i] - SCENE.pz[hit];
+            if (dx * dx + dy * dy + dz * dz < r2) ids.push(i);
+          }
+          f.set = ids; f.state = ST.ATTACK; f.hold = 0; f.target = -1;
+          for (const i of ids) w.ordered[i] = w.t;
+          if (w.task && w.task.firstOrder == null && SCENE.st[hit] === w.task.st) { w.task.firstOrder = w.t; w.m.orderT.push(w.t - w.task.start); }
+        } else if (f.flungT > P.slingTime) f.state = ST.IDLE;
+        continue;
+      }
+      if (f.state === ST.ATTACK) {
+        if (w.scheme === 'none') { f.state = ST.IDLE; f.set = null; continue; }
+        if (f.hold > 0) {
+          f.hold -= dt;
+          // hold facing the meal, braking to a hover (LightFauna watches its mouthful all the way in)
+          steer(f, f.focus[0], f.focus[1], f.focus[2], 0, turn * 2, dt);
+          if (f.hold <= 0) f.target = -1;
+          continue;
+        }
+        if (!f.set) { f.state = ST.IDLE; continue; }
+        if (f.target < 0 || !w.alive[f.target]) pickTarget(w, f);
+        if (f.state !== ST.ATTACK) continue;
+        const t = f.target, tx = SCENE.px[t], ty = SCENE.py[t], tz = SCENE.pz[t];
+        const d = Math.hypot(tx - f.x, ty - f.y, tz - f.z);
+        let spd;
+        if (lf) spd = clamp(d * 0.8, minS, maxS * aSpd);
+        else { f.dash = clamp(d / Math.max(0.05, maxS * P.tadTick), 1, P.tadHunt); spd = Math.min(maxS * f.dash, Math.max(minS, d * 1.2)); }
+        // inside the mouth's reach, brake and turn to face the meal (Boid feedingTurnBoost 4 + feedingBrakeSharpness);
+        // without it a creature that arrives sideways circles its prism forever at minimum speed (found in round 1)
+        if (d < reach) spd = 0;   // hover: a near-zero speed lets the heading swing round to the meal
+        steer(f, tx, ty, tz, spd, d < reach ? turn * 4 : turn, dt);
+        if (d < reach) {
+          const cosF = (f.hx * (tx - f.x) + f.hy * (ty - f.y) + f.hz * (tz - f.z)) / Math.max(1e-6, d);
+          // a meal already in the mouth (under 3 u) counts as faced: the facing test is undefined at the prism itself
+          if (d < 3 || cosF > Math.cos((lf ? P.lfFacing : P.tadFacing) * D2R)) { releaseClaim(w, f); eatMouthful(w, f, t); }
+        }
+      }
+    }
+    return lured;
+  }
+
+  // An OMNI crystal (the game's omni pickup; the lab has no crystals, so O stands in for it, at the hull): the crystal
+  // MORPHS into a random creature that joins the school (the designer, 2026-10-16). Up to the leash capacity.
+  function omniMorph(w) {
+    if (schoolSize(w) >= P.squadCap) return false;
+    makeFauna(w, Math.floor(w.rnd() * SPECIES.length), w.v.p.slice(), ST.IDLE);
+    w.m.morphs = (w.m.morphs || 0) + 1;
+    return true;
+  }
+
+  // The TIME ability: the hull dashes dashFrac of the way to the centroid of every creature it leads, measured at the
+  // press (the designer, 2026-10-16). No school, no dash.
+  function startDash(w) {
+    const school = w.fauna.filter((f) => f.state >= ST.IDLE);
+    if (!school.length) return false;
+    const c = [0, 0, 0];
+    for (const f of school) { c[0] += f.x / school.length; c[1] += f.y / school.length; c[2] += f.z / school.length; }
+    w.dash = { from: w.v.p.slice(), to: CORE.dashPoint(w.v.p, c, P.dashFrac), t0: w.t };
+    return true;
+  }
+  function dashStep(w) {
+    const D = w.dash; if (!D) return;
+    const k = clamp((w.t - D.t0) / Math.max(1e-3, P.dashTime), 0, 1), e = k * k * (3 - 2 * k);
+    w.v.p = [D.from[0] + (D.to[0] - D.from[0]) * e, D.from[1] + (D.to[1] - D.from[1]) * e, D.from[2] + (D.to[2] - D.from[2]) * e];
+    if (k >= 1) w.dash = null;
+  }
+
+  // The KEEPER (the designer, 2026-10-16): the Angler always leads at least one creature. With the school empty, one of
+  // the first species is born at the school's first slot, already tamed. In the game that keeper never starves (the lab
+  // models no starvation, so here it is only the always-one rule). Not counted in m.tamed, which scores the lure.
+  function schoolSize(w) { let n = 0; for (const f of w.fauna) if (f.state >= ST.IDLE) n++; return n; }
+  function ensureKeeper(w) {
+    if (schoolSize(w) > 0) return false;
+    makeFauna(w, 0, CORE.formationSlot(0, w.v.p, w.v.f, w.v.r, w.v.u, P.formBack), ST.IDLE);
+    w.m.keepers++;
+    return true;
+  }
+
+  // ---------- the step ----------
+  function simStep(dt, inp) {
+    const w = world; if (!w) return;
+    inp = inp || {};
+    const cmdHeld = (inp.cmd || 0) > 0.5, edgeDown = cmdHeld && !w.prev.cmd, edgeUp = !cmdHeld && w.prev.cmd;
+    const sqEdge = !!inp.squad && !w.prev.squad, rcEdge = !!inp.recall && !w.prev.recall, omEdge = !!inp.omni && !w.prev.omni, dsEdge = !!inp.dash && !w.prev.dash;
+    if (edgeDown) { w.m.inputs++; w.m.presses++; } if (sqEdge) w.m.inputs++; if (rcEdge) w.m.inputs++;
+    w.prev.cmd = cmdHeld; w.prev.squad = !!inp.squad; w.prev.recall = !!inp.recall; w.prev.omni = !!inp.omni; w.prev.dash = !!inp.dash; w.lastInput = inp;
+    flyVessel(w, inp, dt);
+    if (dsEdge) startDash(w);
+    dashStep(w);
+    if (sqEdge) w.squadSel = w.squadSel >= SPECIES.length - 1 ? -1 : w.squadSel + 1;
+    if (rcEdge) for (const f of w.fauna) if (inSquad(w, f)) { releaseClaim(w, f); f.set = null; f.state = ST.IDLE; f.hold = 0; }
+    if (omEdge) omniMorph(w);
+    ensureKeeper(w);
+    w.lureOn = (inp.lure || 0) > 0.5;
+    w.L = CORE.lurePoint(w.v.p, w.v.f, w.v.u, P.lureAhead);
+    commandStep(w, inp, edgeDown, edgeUp, dt);
+    faunaStep(w, dt);
+    if (w.task) {
+      const T = w.task, alive = countAlive(w, T.st), cleared = 1 - alive / Math.max(1, T.alive0);
+      T.cleared = cleared;
+      if (cleared >= P.taskClear) { w.m.clearT.push(w.t - T.start); nextTask(w); }
+      else if (w.t - T.start > P.taskTimeout) { w.m.clearT.push(P.taskTimeout); w.m.timeouts++; if (T.firstOrder == null) w.m.orderT.push(P.taskTimeout); nextTask(w); }
+    }
+    if (w.fx.blooms.length > 400) w.fx.blooms.splice(0, w.fx.blooms.length - 400);
+    w.t += dt;
+  }
+
+  function score(w) {
+    w = w || world;
+    const m = w.m, mean = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null, kills = m.on + m.off + m.own;
+    return {
+      t: +w.t.toFixed(2), orderIdx: w.taskIdx, done: w.done,
+      clearS: mean(m.clearT) == null ? null : +mean(m.clearT).toFixed(1),
+      orderS: mean(m.orderT) == null ? null : +mean(m.orderT).toFixed(2),
+      onTargetPct: kills ? +(100 * m.on / kills).toFixed(1) : null,
+      offTarget: m.off, ownLost: m.own, timeouts: m.timeouts,
+      inputsPerOrder: m.orders ? +(m.inputs / m.orders).toFixed(2) : null, pressesPerOrder: m.orders ? +(m.presses / m.orders).toFixed(2) : null, orders: m.orders, inputs: m.inputs,
+      tamed: m.tamed, tame6S: m.tame6T == null ? null : +m.tame6T.toFixed(1),
+      perOrderS: m.clearT.map((x) => +x.toFixed(1)),
+    };
+  }
+
+  // ===================================================================================================
+  // THE COMMANDER AI: input-only (labmaker §2.4). It writes the same input object a pad does. A rookie differs only
+  // in what it BELIEVES (late notice of each order, a drifting error in where it thinks the target is), never its stick.
+  // ===================================================================================================
+  const BRAINS = { skilled: { notice: 0.15, aim: 0.4 }, rookie: () => ({ notice: P.rookieNotice, aim: P.rookieAim }) };
+  function brainOf(kind) { return kind === 'rookie' ? BRAINS.rookie() : BRAINS.skilled; }
+  function steerInput(w, inp, target, gain) {
+    const v = w.v, d = sub(target, v.p), lf = dot(d, v.f), lr = dot(d, v.r), lu = dot(d, v.u);
+    inp.yaw = clamp(Math.atan2(lr, Math.max(lf, 1e-3) + Math.abs(lu) * 0) * (gain || 3), -1, 1);
+    inp.pitch = clamp(Math.atan2(lu, Math.hypot(lf, lr)) * (gain || 3), -1, 1);
+    if (lf < 0) { inp.yaw = lr >= 0 ? 1 : -1; }
+    return Math.acos(clamp(lf / Math.max(1e-6, len(d)), -1, 1));   // aim error (rad)
+  }
+  function believe(w, p, brain) {
+    // the believed position: the true one plus a slowly drifting angular error, scaled by distance
+    const a = w.ai.noise, d = len(sub(p, w.v.p)), k = Math.tan(brain.aim * D2R) * d;
+    return [p[0] + a[0] * k, p[1] + a[1] * k, p[2] + a[2] * k];
+  }
+  function aliveIds(w, st) { return SCENE.structs[st].ids.filter((i) => w.alive[i]); }
+  function centroid(ids) { let c = [0, 0, 0]; for (const i of ids) c = add(c, [SCENE.px[i], SCENE.py[i], SCENE.pz[i]]); return mul(c, 1 / Math.max(1, ids.length)); }
+  const ppos = (i) => [SCENE.px[i], SCENE.py[i], SCENE.pz[i]];
+  function squadBusy(w) { for (const f of w.fauna) if (inSquad(w, f) && (f.state === ST.ATTACK || f.state === ST.FLUNG)) return true; return false; }
+  function commander(w, brain) {
+    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, erase: 0, squad: false, recall: false }, ai = w.ai, v = w.v;
+    // the belief's drift: an Ornstein-Uhlenbeck error, per axis, from the run's seeded stream
+    ai.noise = ai.noise.map((x) => x * Math.exp(-0.8 * w.dt) + gauss(w.rnd) * Math.sqrt(1.6 * w.dt));
+    if (w.mode === 'lure') return lurePilot(w, inp, brain);
+    const T0 = w.task; if (!T0) { steerInput(w, inp, B); return inp; }
+    const T = w.decoy ? Object.assign({}, T0, { st: (T0.st + 1) % 4 }) : T0;   // decoy: a planted wrong target (yardstick check)
+    if (w.t - T.start < brain.notice) return inp;   // has not noticed the new order yet
+    // pick the squad (LB), released every other frame so each press is an edge; recall the last order first
+    if (!ai.recalled) { ai.recalled = true; inp.recall = true; return inp; }
+    if (w.squadSel !== T.sq) { ai.sqT = (ai.sqT || 0) + 1; inp.squad = ai.sqT % 2 === 1; }
+    const ids = aliveIds(w, T.st); if (!ids.length) return inp;
+    const c = centroid(ids), cB = believe(w, c, brain), dist = len(sub(c, v.p)), S0 = SCENE.structs[T.st];
+    const busy = squadBusy(w), sch = w.scheme;
+    const breakAway = (minD) => {
+      // fly out past minD, then turn back for the next run
+      const out = norm(sub(v.p, c)); steerInput(w, inp, add(c, mul(norm(add(out, mul(v.f, 0.3))), minD * 1.6)));
+      if (dist > minD) ai.phase = 'approach';
+    };
+    if (sch === 'none') { steerInput(w, inp, cB); return inp; }
+    if (sch === 'feral') {
+      // skim the structure: chase the alive prism nearest a point ahead of the nose
+      const ahead = add(v.p, mul(v.f, 30)); let best = ids[0], bd = Infinity;
+      for (const i of ids) { const d = len(sub(ppos(i), ahead)); if (d < bd) { bd = d; best = i; } }
+      steerInput(w, inp, add(believe(w, ppos(best), brain), mul(v.u, 8)));
+      if (dist > 120) inp.boost = 1;
+      return inp;
+    }
+    if (sch === 'lasso') return lassoPilot(w, inp, brain, ids, c, S0, T);
+    const reach = sch === 'paint' || sch === 'slingpaint' ? P.paintRange : sch === 'flare' ? P.flareRange * 0.6 : sch === 'gaze' ? P.gazeRange * 0.7 : Math.min(P.slingSpeed * 1.2, 180);
+    const tooClose = Math.max(25, S0.kind === 'trail' ? 25 : S0.r + 15);
+    if (ai.phase === 'away') { breakAway(Math.min(reach * 0.8, 160)); return inp; }
+    if (w.squadSel !== T.sq) { steerInput(w, inp, cB); return inp; }
+    if (sch !== 'flare' && busy) { breakAway(Math.min(reach * 0.8, 160)); if (dist > reach * 0.9) steerInput(w, inp, cB); return inp; }
+    if (dist > reach * 1.05) { steerInput(w, inp, cB); inp.boost = dist > reach * 2 ? 1 : 0; return inp; }
+    if (dist < tooClose) { ai.phase = 'away'; return inp; }
+    if (sch === 'paint') {
+      // sweep: aim at the unpainted target prism nearest the nose direction; hold the beam until the structure is lit
+      let best = -1, bc = -2, lit = 0;
+      for (const i of ids) { if (w.painted[i]) { lit++; continue; } const d = norm(sub(ppos(i), v.p)), cc = dot(d, v.f); if (cc > bc) { bc = cc; best = i; } }
+      if (best >= 0) steerInput(w, inp, believe(w, ppos(best), brain), 4);
+      inp.cmd = 1;
+      if (lit >= ids.length * 0.9 || dist < tooClose * 1.3) { inp.cmd = 0; ai.phase = 'away'; }
+      return inp;
+    }
+    if (sch === 'flare') {
+      // dart the unordered target prism nearest the structure's centre; a dart covers flareRadius around its hit
+      let best = -1, bd = Infinity;
+      for (const i of ids) { if (w.ordered[i] > 0 && w.t - w.ordered[i] < 6) continue; const d = len(sub(ppos(i), c)); if (d < bd) { bd = d; best = i; } }
+      if (best < 0) { breakAway(Math.min(reach, 160)); return inp; }
+      const err = steerInput(w, inp, believe(w, ppos(best), brain), 4), tol = Math.atan2(P.flareAssist + 1, len(sub(ppos(best), v.p)));
+      if (err < tol && w.cmd.flareCd <= 0 && !w.prev.cmd) inp.cmd = 1;
+      return inp;
+    }
+    if (sch === 'gaze') {
+      let best = ids[0], bd = Infinity;
+      for (const i of ids) { const d = len(sub(ppos(i), c)); if (d < bd) { bd = d; best = i; } }
+      steerInput(w, inp, believe(w, ppos(best), brain), 4);
+      if (w.cmd.gazeLock === T.st && !w.prev.cmd) { inp.cmd = 1; ai.phase = 'away'; }
+      return inp;
+    }
+    if (sch === 'slingpaint') {
+      // 1. sweep the brush over the ordered structure with RT held (the ball gathers meanwhile);
+      // 2. with aiErase, hold LT on painted neighbours that are NOT the ordered structure (RT still held, no throw);
+      // 3. let go of RT: the throw
+      ai.spT = (ai.spT || 0) + w.dt;
+      inp.cmd = 1;
+      let lit = 0, best = -1, bc = -2;
+      for (const i of ids) { if (w.painted[i]) { lit++; continue; } const d = norm(sub(ppos(i), v.p)), cc = dot(d, v.f); if (cc > bc) { bc = cc; best = i; } }
+      if (best >= 0 && lit < ids.length * 0.9 && ai.spT < 3 && dist > tooClose * 1.3) { steerInput(w, inp, believe(w, ppos(best), brain), 4); return inp; }
+      if (P.aiErase) {
+        let stray = -1, sc = -2;
+        for (const i of w.paintedList) { if (!w.alive[i] || SCENE.st[i] === T.st) continue; const d = norm(sub(ppos(i), v.p)), cc = dot(d, v.f); if (cc > sc) { sc = cc; stray = i; } }
+        ai.erT = ai.erT || 0;
+        if (stray >= 0 && ai.erT < 1.5 && dist > tooClose * 1.1) { ai.erT += w.dt; steerInput(w, inp, believe(w, ppos(stray), brain), 5); inp.erase = 1; return inp; }
+      }
+      inp.cmd = 0; ai.phase = 'away'; ai.spT = 0; ai.erT = 0;
+      return inp;
+    }
+    if (sch === 'sling') {
+      let mid = ids[0], md = Infinity;
+      for (const i of ids) { const d = len(sub(ppos(i), c)); if (d < md) { md = d; mid = i; } }
+      const err = steerInput(w, inp, believe(w, ppos(mid), brain), 4);
+      inp.cmd = 1;
+      let gathered = 0, n = 0;
+      for (const f of w.fauna) if (inSquad(w, f) && f.state !== ST.FLUNG) { n++; const d = Math.hypot(f.x - v.p[0] - v.f[0] * P.slingAhead, f.y - v.p[1] - v.f[1] * P.slingAhead, f.z - v.p[2] - v.f[2] * P.slingAhead); if (f.state === ST.GATHER && d < 10) gathered++; }
+      const tol = Math.atan2(Math.max(3, P.slingCatch * 0.6), len(sub(ppos(mid), v.p)));
+      if ((n && gathered >= n * 0.8 && err < tol) || dist < tooClose * 1.4) { inp.cmd = 0; ai.phase = 'away'; }
+      return inp;
+    }
+    return inp;
+  }
+  function lassoPilot(w, inp, brain, ids, c, S0, T) {
+    const ai = w.ai, v = w.v;
+    if (w.squadSel !== T.sq) { steerInput(w, inp, believe(w, c, brain)); return inp; }
+    if (!ai.plan || ai.plan.st !== T.st) {
+      // the loop plane: the structure's flattest axis (power iteration on the covariance, smallest via the two largest)
+      const P3 = ids.map(ppos); let cov = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+      for (const p of P3) { const d = sub(p, c); for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) cov[a][b] += d[a] * d[b]; }
+      const mv = (m, x) => [dot(m[0], x), dot(m[1], x), dot(m[2], x)];
+      let e1 = norm([1, 0.3, 0.2]); for (let k = 0; k < 30; k++) e1 = norm(mv(cov, e1));
+      const l1 = dot(e1, mv(cov, e1)); const cov2 = cov.map((row, a) => row.map((x, b) => x - l1 * e1[a] * e1[b]));
+      let e2 = norm(cross(e1, [0.2, 1, 0.1])); for (let k = 0; k < 30; k++) { e2 = mv(cov2, e2); e2 = norm(sub(e2, mul(e1, dot(e2, e1)))); }
+      const nrm = norm(cross(e1, e2));
+      let r = 0; for (const p of P3) { const d = sub(p, c), q = sub(d, mul(nrm, dot(d, nrm))); r = Math.max(r, len(q)); }
+      // a big loop is flown on boost when the boosted turn circle still fits inside it
+      const rBoost = P.boost / (P.turnRate * D2R) * 1.6, rMin = P.cruise / (P.turnRate * D2R) * 1.6;
+      ai.plan = { boost: r + 14 > rBoost, st: T.st, c, nrm, ax: e1, bx: cross(nrm, e1), R: Math.max(r + 14, rMin) };
+      ai.swept = 0; ai.lastAng = null; ai.phase = 'approach';
+    }
+    const pl = ai.plan, d = sub(v.p, pl.c), x = dot(d, pl.ax), y = dot(d, pl.bx), h = dot(d, pl.nrm), ang = Math.atan2(y, x);
+    const radial = Math.hypot(x, y), onCircle = Math.abs(radial - pl.R) < pl.R * 0.25 && Math.abs(h) < 20;
+    const lead = 0.35, tgt = add(add(pl.c, mul(pl.ax, Math.cos(ang + lead) * pl.R)), mul(pl.bx, Math.sin(ang + lead) * pl.R));
+    if (ai.phase === 'away') { steerInput(w, inp, believe(w, tgt, brain)); if (!squadBusy(w)) { ai.phase = 'approach'; ai.swept = 0; ai.lastAng = null; } return inp; }
+    steerInput(w, inp, believe(w, tgt, brain), 3);
+    if (pl.boost) inp.boost = 1;
+    if (ai.phase === 'approach' && onCircle) { ai.phase = 'loop'; ai.swept = 0; ai.lastAng = ang; }
+    if (ai.phase === 'loop') {
+      let da = ang - ai.lastAng; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI;
+      ai.swept += Math.abs(da); ai.lastAng = ang;
+      inp.cmd = 1;
+      if (ai.swept > 2 * Math.PI * 1.03 || (ai.swept > Math.PI && !w.cmd.holding && w.prev.cmd)) { inp.cmd = 0; ai.phase = 'away'; }
+    }
+    return inp;
+  }
+  function lurePilot(w, inp, brain) {
+    // lure trial: fly at the nearest wild pod and hold the esca on it until six are tamed
+    let best = null, bd = Infinity;
+    for (const f of w.fauna) if (f.state <= ST.LURED) { const d = Math.hypot(f.x - w.v.p[0], f.y - w.v.p[1], f.z - w.v.p[2]); if (d < bd) { bd = d; best = f; } }
+    if (!best) return inp;
+    steerInput(w, inp, believe(w, [best.x, best.y, best.z], brain), 3);
+    if (bd < P.lureRadius * 0.9) { inp.lure = 1; inp.boost = 0; } else inp.boost = bd > 200 ? 1 : 0;
+    return inp;
+  }
+
+  // ===================================================================================================
+  // headless batch: the scorecard. Every scheme × seeds × {skilled, rookie} flies the same four orders.
+  // ===================================================================================================
+  function runMission(scheme, s, brainKind, mode, decoy) {
+    const savedW = world, savedSeed = seed;
+    reset(s, { scheme, mode: mode || 'missions' });
+    world.decoy = !!decoy;
+    const brain = brainOf(brainKind), dt = world.dt, limit = mode === 'lure' ? 90 : TASKS.length * P.taskTimeout + 5;
+    while (!world.done && world.t < limit) {
+      simStep(dt, commander(world, brain));
+      if (mode === 'lure' && world.m.tame6T != null) break;
+    }
+    const sc = score(world);
+    world = savedW; seed = savedSeed;
+    return sc;
+  }
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2], schemes = opts.schemes || SCHEMES.map((x) => x.key), rows = [];
+    const mean = (a) => { const b = a.filter((x) => x != null); return b.length ? b.reduce((x, y) => x + y, 0) / b.length : null; };
+    const r1 = (x, k) => x == null ? null : +x.toFixed(k == null ? 1 : k);
+    for (const sch of schemes) {
+      const sk = seeds.map((s) => runMission(sch, s, 'skilled')), rk = seeds.map((s) => runMission(sch, s, 'rookie'));
+      rows.push({
+        scheme: sch,
+        clearS: r1(mean(sk.map((x) => x.clearS))), orderS: r1(mean(sk.map((x) => x.orderS)), 2),
+        onTargetPct: r1(mean(sk.map((x) => x.onTargetPct))), offTarget: r1(mean(sk.map((x) => x.offTarget))), ownLost: r1(mean(sk.map((x) => x.ownLost))),
+        timeouts: r1(mean(sk.map((x) => x.timeouts)), 2), pressesPerOrder: r1(mean(sk.map((x) => x.pressesPerOrder)), 2), seconds: r1(mean(sk.map((x) => x.t))),
+        rookieClearS: r1(mean(rk.map((x) => x.clearS))), rookieOnTargetPct: r1(mean(rk.map((x) => x.onTargetPct))), rookieTimeouts: r1(mean(rk.map((x) => x.timeouts)), 2),
+      });
+    }
+    if (opts.lure !== false) {
+      const sk = seeds.map((s) => runMission('none', s, 'skilled', 'lure')), rk = seeds.map((s) => runMission('none', s, 'rookie', 'lure'));
+      rows.push({ scheme: 'lure-trial', tame6S: r1(mean(sk.map((x) => x.tame6S))), rookieTame6S: r1(mean(rk.map((x) => x.tame6S))) });
+    }
+    return rows;
+  }
+
+  // ===================================================================================================
+  // platform + input
+  // ===================================================================================================
+  function detectPlatform() {
+    const host = window.__labHost || {}, ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+  const keys = new Set();
+  const typing = (e) => /INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '');
+  addEventListener('keydown', (e) => {
+    if (typing(e)) return;
+    keys.add(e.code);
+    if (e.code === 'KeyP') togglePause();
+    if (e.code === 'KeyR' && !e.repeat) restart();
+    if (e.code === 'KeyC' && !e.repeat) { const o = ['chase', 'tactical', 'orbit']; setCam(o[(o.indexOf(S.cam) + 1) % 3]); }
+    if (['Space', 'Tab', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
+  });
+  addEventListener('keyup', (e) => keys.delete(e.code));
+  addEventListener('blur', () => keys.clear());
+  const touch = { stick: null, sx: 0, sy: 0, lure: false, cmd: false, erase: false, squad: false, boost: false };
+  let lastHumanT = -1e9;
+  function easeIn(x) { return x < 0 ? Math.cos(x * Math.PI / 4) - 1 : -(Math.cos(x * Math.PI / 4) - 1); }   // InputController ease
+  function humanInput() {
+    const inp = { pitch: 0, yaw: 0, boost: 0, lure: 0, cmd: 0, erase: 0, squad: false, recall: false, omni: false, dash: false };
+    const k = (c) => keys.has(c);
+    inp.yaw = (k('KeyD') || k('ArrowRight') ? 1 : 0) - (k('KeyA') || k('ArrowLeft') ? 1 : 0);
+    inp.pitch = (k('KeyW') || k('ArrowUp') ? 1 : 0) - (k('KeyS') || k('ArrowDown') ? 1 : 0);
+    inp.boost = k('ShiftLeft') || k('ShiftRight') ? 1 : 0;
+    inp.cmd = k('Space') || mouse.left ? 1 : 0;
+    inp.lure = k('KeyF') || k('KeyE') ? 1 : 0;
+    inp.erase = k('KeyV') || k('ControlLeft') || mouse.right ? 1 : 0;
+    inp.squad = k('KeyQ') || k('Tab');
+    inp.recall = k('KeyX');
+    inp.omni = k('KeyO');
+    inp.dash = k('KeyT');
+    let pads = [];
+    try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; } catch (e) { pads = []; }
+    const g = pads[0];
+    if (g) {
+      const dz = (x) => Math.abs(x) < 0.12 ? 0 : x;
+      // The game's dual-stick mix (InputController): yaw = ease(R.x+L.x), pitch = -ease(R.y+L.y). Gamepad Y is down-positive (L-STU-8).
+      const lx = dz(g.axes[0] || 0), ly = dz(g.axes[1] || 0), rx = dz(g.axes[2] || 0), ry = dz(g.axes[3] || 0);
+      const yaw = easeIn(clamp(rx + lx, -2, 2)), pitch = -easeIn(clamp(ry + ly, -2, 2));
+      if (Math.abs(yaw) > 0.02) inp.yaw = clamp(yaw, -1, 1);
+      if (Math.abs(pitch) > 0.02) inp.pitch = clamp(pitch, -1, 1);
+      const b = (i) => (g.buttons[i] && (g.buttons[i].value || (g.buttons[i].pressed ? 1 : 0))) || 0;
+      // The game's own pad map (GamepadInputStrategy), the Sparrow's layout since 2026-10-18: RT paints / commands, LT
+      // erases, A (Button1) lures (Mass), B (Button2) dashes (Time), X (Button3) picks the squad, Y (Button4) recalls, RB
+      // is the throttle/boost. LB raises no event in the game, so nothing uses it.
+      inp.cmd = Math.max(inp.cmd, b(7)); inp.erase = Math.max(inp.erase, b(6)); inp.lure = Math.max(inp.lure, b(0));
+      inp.squad = inp.squad || b(2) > 0.5; inp.boost = Math.max(inp.boost, b(5));
+      inp.recall = inp.recall || b(3) > 0.5;
+      inp.dash = inp.dash || b(1) > 0.5;
+    }
+    if (touch.stick) { inp.yaw = clamp(touch.sx, -1, 1); inp.pitch = clamp(-touch.sy, -1, 1); }
+    if (touch.lure) inp.lure = 1; if (touch.cmd) inp.cmd = 1; if (touch.erase) inp.erase = 1; if (touch.squad) inp.squad = true; if (touch.boost) inp.boost = 1;
+    if (inp.yaw || inp.pitch || inp.cmd || inp.erase || inp.lure || inp.squad || inp.boost || inp.recall) lastHumanT = performance.now();
+    return inp;
+  }
+  const mouse = { left: false, right: false };
+  // ===================================================================================================
+  // rendering (three.js r128). The sim never touches any of this.
+  // ===================================================================================================
+  const canvas = $('stage'), hud = $('hud2d'), hctx = hud.getContext('2d');
+  let R3 = null;
+  function initGL() {
+    if (typeof THREE === 'undefined') return null;
+    let renderer;
+    try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); } catch (e) { return null; }
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x03050d);
+    scene.fog = new THREE.FogExp2(0x03050d, 0.0012);
+    const camera = new THREE.PerspectiveCamera(62, 1, 0.5, 5000);
+    scene.add(new THREE.AmbientLight(0x8090c0, 0.75));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(0.4, 1, 0.3); scene.add(sun);
+    // stars (render-only randomness, its own seed)
+    const srnd = mulberry32(99), sg = new THREE.BufferGeometry(), sp = new Float32Array(1800 * 3);
+    for (let i = 0; i < 1800; i++) { const d = norm([gauss(srnd), gauss(srnd), gauss(srnd)]), r = 1800 + srnd() * 1200; sp[i * 3] = d[0] * r; sp[i * 3 + 1] = d[1] * r; sp[i * 3 + 2] = d[2] * r; }
+    sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+    scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0x9fb0ff, size: 2, sizeAttenuation: false, fog: false })));
+    // the membrane (1200) and the nucleus sanctuary (200)
+    const mem = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(P.cellR, 3)), new THREE.LineBasicMaterial({ color: 0x3b4f9a, transparent: true, opacity: 0.22, fog: false }));
+    scene.add(mem);
+    const nuc = new THREE.Mesh(new THREE.SphereGeometry(P.nucleusR, 40, 24), new THREE.MeshBasicMaterial({ color: 0x2a3a7a, transparent: true, opacity: 0.16, depthWrite: false }));
+    scene.add(nuc);
+    // prisms: trail prisms are slim bars along the trail; leaves are flat plates (NominalPrismVolume 16 = 4×4×1)
+    const trailGeo = new THREE.BoxGeometry(1.1, 0.7, 3.2), leafGeo = new THREE.BoxGeometry(3.4, 0.6, 3.4);
+    const pmat = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x111111 });
+    const nT = SCENE.leaf.reduce((a, x) => a + (x ? 0 : 1), 0), nL = SCENE.n - nT;
+    const trails = new THREE.InstancedMesh(trailGeo, pmat, nT), leaves = new THREE.InstancedMesh(leafGeo, pmat.clone(), nL);
+    const slotOf = new Int32Array(SCENE.n), meshOf = new Uint8Array(SCENE.n), mats = [];
+    let a = 0, b = 0;
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), pos = new THREE.Vector3(), scl = new THREE.Vector3(1, 1, 1), zf = new THREE.Vector3(0, 0, 1), yf = new THREE.Vector3(0, 1, 0);
+    for (let i = 0; i < SCENE.n; i++) {
+      pos.set(SCENE.px[i], SCENE.py[i], SCENE.pz[i]);
+      const t = new THREE.Vector3(SCENE.tx[i], SCENE.ty[i], SCENE.tz[i]).normalize();
+      q.setFromUnitVectors(SCENE.leaf[i] ? yf : zf, t);
+      m4.compose(pos, q, scl); mats.push(m4.clone());
+      if (SCENE.leaf[i]) { slotOf[i] = b; meshOf[i] = 1; leaves.setMatrixAt(b++, m4); } else { slotOf[i] = a; meshOf[i] = 0; trails.setMatrixAt(a++, m4); }
+    }
+    const col = new THREE.Color();
+    for (let i = 0; i < SCENE.n; i++) { col.setHex([DOMAIN_HEX.jade, DOMAIN_HEX.ruby, DOMAIN_HEX.gold][SCENE.dom[i]]); (meshOf[i] ? leaves : trails).setColorAt(slotOf[i], col); }
+    // r128 culls an InstancedMesh by its GEOMETRY's bounds at the mesh origin, not the instances': off for every instanced mesh
+    trails.frustumCulled = false; leaves.frustumCulled = false;
+    scene.add(trails); scene.add(leaves);
+    // fauna: one instanced mesh per species
+    const fgeo = [new THREE.ConeGeometry(1.2, 4, 5), new THREE.OctahedronGeometry(1.6), new THREE.TetrahedronGeometry(1.0)];
+    fgeo[0].rotateX(Math.PI / 2);
+    const fmesh = SPECIES.map((s, k) => { const m = new THREE.InstancedMesh(fgeo[k], new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x222222 }), 64); m.frustumCulled = false; for (let i = 0; i < 64; i++) m.setColorAt(i, new THREE.Color(s.color)); m.count = 0; scene.add(m); return m; });   // r128 sizes instanceColor from the CURRENT count: colour first, then count 0
+    // the Angler: a squat hull with a glowing esca on a stalk (the anglerfish's lure)
+    const ship = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.ConeGeometry(2.2, 7, 7), new THREE.MeshLambertMaterial({ color: 0x0e6b67, emissive: 0x06302e }));
+    hull.rotation.x = -Math.PI / 2; ship.add(hull);
+    const jaw = new THREE.Mesh(new THREE.SphereGeometry(2.6, 12, 8), new THREE.MeshLambertMaterial({ color: 0x0a4f4c })); jaw.scale.set(1, 0.7, 1.1); jaw.position.z = 1.6; ship.add(jaw);
+    const stalkPts = []; for (let i = 0; i <= 12; i++) { const t = i / 12; stalkPts.push(new THREE.Vector3(0, 1.6 + Math.sin(t * Math.PI) * 3.5 + t * 0.9, -t * SHIPPED.lureAhead)); }
+    const stalk = new THREE.Line(new THREE.BufferGeometry().setFromPoints(stalkPts), new THREE.LineBasicMaterial({ color: 0x5fe8dc }));
+    ship.add(stalk);
+    const esca = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 8), new THREE.MeshBasicMaterial({ color: 0x13fff2 })); ship.add(esca);
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), new THREE.MeshBasicMaterial({ color: 0x13fff2, transparent: true, opacity: 0.12, depthWrite: false })); scene.add(glow);
+    scene.add(ship);
+    // command visuals
+    const beam = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+    beam.geometry.translate(0, -0.5, 0); beam.geometry.rotateX(Math.PI / 2); scene.add(beam);   // apex at the nose, base out along local -Z (forward)
+    const mkLines = (n) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); return g; };
+    const atkG = mkLines(256), atk = new THREE.LineSegments(atkG, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })); scene.add(atk);
+    const loopG = mkLines(2048), loop = new THREE.Line(loopG, new THREE.LineBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.9 })); scene.add(loop);
+    const flareG = mkLines(64), flares = new THREE.LineSegments(flareG, new THREE.LineBasicMaterial({ color: 0xff8bf0, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending })); scene.add(flares);
+    return { renderer, scene, camera, trails, leaves, slotOf, meshOf, mats, fmesh, ship, esca, glow, beam, atk, atkG, loop, loopG, flares, flareG, zero: new THREE.Matrix4().makeScale(0, 0, 0), white: new THREE.Color(0xffffff), cam: { pos: new THREE.Vector3(START_P[0], START_P[1] + 5, START_P[2] + 16), orbitYaw: 0.6, orbitPitch: 0.35, orbitDist: 140 }, tmp: { m4, q, pos, scl, col } };
+  }
+  R3 = initGL();
+  if (!R3) $('noGL').hidden = false;
+
+  function render() {
+    resize();
+    const w = world, v = w.v;
+    if (R3) {
+      const { renderer, scene, camera, trails, leaves, slotOf, meshOf, mats, fmesh, tmp } = R3;
+      // prisms: hide the eaten, brighten the painted / ordered / locked
+      const zero = R3.zero, col = tmp.col, now = w.t, WHITE = R3.white;
+      const lockSt = w.scheme === 'gaze' ? w.cmd.gazeLock : -1;
+      for (let i = 0; i < SCENE.n; i++) {
+        const mesh = meshOf[i] ? leaves : trails, s = slotOf[i];
+        if (!w.alive[i]) { mesh.setMatrixAt(s, zero); continue; }
+        mesh.setMatrixAt(s, mats[i]);
+        col.setHex([DOMAIN_HEX.jade, DOMAIN_HEX.ruby, DOMAIN_HEX.gold][SCENE.dom[i]]);
+        const ordered = w.ordered[i] > 0 && now - w.ordered[i] < 1.2;
+        if (w.painted[i] || w.marked[i]) col.lerp(WHITE, 0.75);
+        else if (ordered) col.lerp(WHITE, 0.5 * (1 - (now - w.ordered[i]) / 1.2));
+        else if (lockSt >= 0 && SCENE.st[i] === lockSt) col.lerp(WHITE, 0.35 + 0.15 * Math.sin(now * 10));
+        else col.multiplyScalar(0.7);
+        mesh.setColorAt(s, col);
+      }
+      trails.instanceMatrix.needsUpdate = true; leaves.instanceMatrix.needsUpdate = true;
+      if (trails.instanceColor) trails.instanceColor.needsUpdate = true; if (leaves.instanceColor) leaves.instanceColor.needsUpdate = true;
+      // fauna
+      const counts = [0, 0, 0], q = tmp.q, pos = tmp.pos, scl = tmp.scl, m4 = tmp.m4, fwd = new THREE.Vector3(0, 0, 1);
+      for (const f of w.fauna) {
+        const k = f.sp, mesh = fmesh[k], idx = counts[k]++; if (idx >= 64) continue;
+        pos.set(f.x, f.y, f.z); q.setFromUnitVectors(fwd, new THREE.Vector3(f.hx, f.hy, f.hz)); const sc = f.state === ST.LURED ? 1.1 + 0.15 * Math.sin(now * 12) : 1; scl.set(sc, sc, sc);
+        m4.compose(pos, q, scl); mesh.setMatrixAt(idx, m4);
+        col.setHex(SPECIES[k].color);
+        if (f.state === ST.WILD) col.multiplyScalar(0.45).lerp(new THREE.Color(DOMAIN_HEX.ruby), 0.35);
+        else if (f.state === ST.LURED) col.lerp(new THREE.Color(0xffffff), Math.min(0.8, f.tame * 0.8));
+        else if (f.state >= ST.ATTACK) col.lerp(new THREE.Color(0xffffff), 0.25);
+        mesh.setColorAt(idx, col);
+      }
+      fmesh.forEach((m, k) => { m.count = Math.min(64, counts[k]); m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+      // the hull
+      const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(...v.r), new THREE.Vector3(...v.u), new THREE.Vector3(...mul(v.f, -1)));
+      R3.ship.position.set(...v.p); R3.ship.quaternion.setFromRotationMatrix(basis);
+      R3.esca.position.set(0, 1.6 + 0.9, -P.lureAhead);
+      R3.glow.position.set(...w.L); const gs = w.lureOn ? P.lureRadius : 3; R3.glow.scale.set(gs, gs, gs); R3.glow.material.opacity = w.lureOn ? 0.07 + 0.03 * Math.sin(now * 6) : 0.35;
+      // the spotlight beam
+      const sp = w.scheme === 'slingpaint', erasing = sp && (w.lastInput.erase || 0) > 0.5, painting = (w.scheme === 'paint' || sp) && (w.prev.cmd || erasing);
+      R3.beam.visible = painting;
+      R3.beam.material.color.setHex(erasing ? 0x7fd7ff : 0xffd27a);
+      const cone = !sp ? P.paintCone : erasing ? P.eraseCone * brushScale(w.lastInput.erase) : P.paintCone * brushScale(w.lastInput.cmd);
+      if (painting) { const rr = Math.tan(cone * D2R) * P.paintRange; R3.beam.position.set(...v.p); R3.beam.quaternion.setFromRotationMatrix(basis); R3.beam.scale.set(rr, rr, P.paintRange); }
+      // attack lines from each attacking creature to its meal
+      const ap = R3.atkG.attributes.position.array, ac = R3.atkG.attributes.color.array; let na = 0;
+      for (const f of w.fauna) {
+        if (na >= 127 || f.state !== ST.ATTACK) continue;
+        const t = f.hold > 0 && f.focus ? f.focus : f.target >= 0 ? ppos(f.target) : null; if (!t) continue;
+        col.setHex(SPECIES[f.sp].color);
+        ap.set([f.x, f.y, f.z, t[0], t[1], t[2]], na * 6); ac.set([col.r, col.g, col.b, col.r * 0.3, col.g * 0.3, col.b * 0.3], na * 6); na++;
+      }
+      R3.atkG.setDrawRange(0, na * 2); R3.atkG.attributes.position.needsUpdate = true; R3.atkG.attributes.color.needsUpdate = true;
+      // the lasso leash (live, then the closed loop fading)
+      const lp = R3.loopG.attributes.position.array; let nl = 0;
+      const pts = w.cmd.loop.length ? w.cmd.loop.concat([v.p]) : (w.cmd.loopShow && now - w.cmd.loopShow.t < 1.5 ? w.cmd.loopShow.pts.concat([w.cmd.loopShow.pts[0]]) : []);
+      for (const p of pts) { if (nl >= 2047) break; lp.set(p, nl * 3); nl++; }
+      R3.loopG.setDrawRange(0, nl); R3.loopG.attributes.position.needsUpdate = true;
+      // darts
+      const fp = R3.flareG.attributes.position.array; let nf = 0;
+      for (const fl of w.cmd.flares) {
+        if (nf >= 31) break;
+        const k = clamp((now - fl.t0) / Math.max(1e-3, fl.t1 - fl.t0), 0, 1), head = add(fl.from, mul(sub(fl.to, fl.from), k)), tail = add(fl.from, mul(sub(fl.to, fl.from), Math.max(0, k - 0.15)));
+        fp.set(tail.concat(head), nf * 6); nf++;
+      }
+      R3.flareG.setDrawRange(0, nf * 2); R3.flareG.attributes.position.needsUpdate = true;
+      // cameras: Chase (behind, rolls with the hull), Tactical (high and wide, for reading the field), Free orbit
+      const cam = R3.cam, vp = new THREE.Vector3(...v.p);
+      if (S.cam === 'orbit') {
+        const cp = Math.cos(cam.orbitPitch), off = new THREE.Vector3(Math.sin(cam.orbitYaw) * cp, Math.sin(cam.orbitPitch), Math.cos(cam.orbitYaw) * cp).multiplyScalar(cam.orbitDist);
+        camera.position.copy(vp).add(off); camera.up.set(0, 1, 0); camera.lookAt(vp); camera.fov = 62;
+      } else {
+        // the lift: up while the lure is held or the dash is moving, eased over chaseLiftTime (render-only state)
+        const nowMs = performance.now(), cdt = Math.min(0.1, ((nowMs - (cam.liftMs || nowMs)) / 1000) || 0); cam.liftMs = nowMs;
+        const lifting = world && (world.lureOn || !!world.dash);
+        cam.lift01 = clamp((cam.lift01 || 0) + (lifting ? 1 : -1) * (manualClock ? 1 : cdt / Math.max(0.05, P.chaseLiftTime)), 0, 1);
+        const liftE = cam.lift01 * cam.lift01 * (3 - 2 * cam.lift01);
+        const tac = S.cam === 'tactical', back = tac ? 110 : P.chaseBack, up = tac ? 64 : P.chaseUp + P.chaseLift * liftE;
+        const want = vp.clone().add(new THREE.Vector3(...mul(v.f, -back))).add(new THREE.Vector3(...mul(v.u, up)));
+        cam.pos.lerp(want, manualClock ? 1 : 0.18);
+        camera.position.copy(cam.pos); camera.up.set(...v.u);
+        camera.lookAt(vp.clone().add(new THREE.Vector3(...mul(v.f, tac ? 80 : 55)))); camera.fov = tac ? 72 : 62;
+      }
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+    }
+    drawHUD();
+  }
+  function project(p) {
+    if (!R3) return null;
+    const v3 = new THREE.Vector3(p[0], p[1], p[2]).project(R3.camera), behind = v3.z > 1;
+    return { x: (v3.x * 0.5 + 0.5) * hud.width, y: (-v3.y * 0.5 + 0.5) * hud.height, behind };
+  }
+  function drawHUD() {
+    const w = world, W = hud.width, H = hud.height, dpr = W / Math.max(1, hud.clientWidth);
+    hctx.clearRect(0, 0, W, H);
+    hctx.font = (11 * dpr) + 'px "Chakra Petch", system-ui, sans-serif';
+    // reticle: where the nose points, 80 u out
+    const aim = project(add(w.v.p, mul(w.v.f, 80)));
+    if (aim && !aim.behind) {
+      hctx.strokeStyle = 'rgba(255,179,71,0.9)'; hctx.lineWidth = 1.5 * dpr; hctx.beginPath(); hctx.arc(aim.x, aim.y, 9 * dpr, 0, 7); hctx.stroke();
+      hctx.beginPath(); hctx.moveTo(aim.x - 15 * dpr, aim.y); hctx.lineTo(aim.x - 5 * dpr, aim.y); hctx.moveTo(aim.x + 5 * dpr, aim.y); hctx.lineTo(aim.x + 15 * dpr, aim.y); hctx.stroke();
+      if (w.scheme === 'gaze' && w.cmd.gazeSt >= 0 && w.cmd.gazeLock !== w.cmd.gazeSt) {
+        hctx.beginPath(); hctx.arc(aim.x, aim.y, 13 * dpr, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * clamp(w.cmd.gazeDwell / Math.max(0.01, P.gazeDwell), 0, 1)); hctx.stroke();
+      }
+    }
+    // gaze lock brackets around the locked structure's screen box
+    if (w.scheme === 'gaze' && w.cmd.gazeLock >= 0) box(w, w.cmd.gazeLock, '#ffffff', 'LOCKED · ' + SCENE.structs[w.cmd.gazeLock].short);
+    // the current order's marker, pinned to the edge when off screen
+    if (w.task) {
+      const st = SCENE.structs[w.task.st], ids = aliveIds(w, w.task.st);
+      if (ids.length) {
+        const c = centroid(ids), p = project(c), d = len(sub(c, w.v.p));
+        if (p) {
+          let x = p.x, y = p.y; const m = 28 * dpr, off = p.behind || x < m || x > W - m || y < m || y > H - m;
+          if (p.behind) { x = W - x; y = H - y; }
+          if (off) { const cx = W / 2, cy = H / 2, dx = x - cx, dy = y - cy, k = Math.min((W / 2 - m) / Math.max(1e-3, Math.abs(dx)), (H / 2 - m) / Math.max(1e-3, Math.abs(dy))); x = cx + dx * k; y = cy + dy * k; }
+          hctx.strokeStyle = '#ffb347'; hctx.fillStyle = '#ffb347'; hctx.lineWidth = 2 * dpr;
+          hctx.beginPath(); hctx.moveTo(x, y - 9 * dpr); hctx.lineTo(x + 9 * dpr, y); hctx.lineTo(x, y + 9 * dpr); hctx.lineTo(x - 9 * dpr, y); hctx.closePath(); hctx.stroke();
+          hctx.textAlign = x > W - 160 * dpr ? 'right' : 'left';
+          hctx.fillText(st.short + ' · ' + Math.round(d) + ' u', x + (hctx.textAlign === 'right' ? -14 : 14) * dpr, y + 4 * dpr);
+        }
+      }
+    }
+    // painted count
+    if ((w.scheme === 'paint' || w.scheme === 'slingpaint') && w.paintedList.length) { hctx.fillStyle = '#ffd27a'; hctx.textAlign = 'center'; hctx.fillText(w.paintedList.length + ' painted', W / 2, H - 60 * dpr); }
+    // text overlays
+    const T = w.task, s = score();
+    if (w.mode === 'missions') {
+      if (T) {
+        const sq = T.sq < 0 ? 'Whole squad' : SPECIES[T.sq].name, st = SCENE.structs[T.st];
+        $('order').innerHTML = '';
+        const big = document.createElement('div'); big.className = 'big'; big.textContent = 'ORDER ' + (w.taskIdx + 1) + '/' + TASKS.length + ' · ' + sq.toUpperCase() + ' → ' + st.short;
+        const sm = document.createElement('div'); sm.textContent = Math.round(100 * (T.cleared || 0)) + '% of ' + Math.round(100 * P.taskClear) + '% · ' + (w.t - T.start).toFixed(1) + ' s of ' + P.taskTimeout + ' · ' + SCHEMES.find((x) => x.key === w.scheme).name;
+        $('order').append(big, sm);
+      } else $('order').textContent = 'MISSION DONE · avg ' + s.clearS + ' s per order · ' + (s.onTargetPct == null ? '–' : s.onTargetPct + '%') + ' on target · ' + s.ownLost + ' of yours lost · R to fly it again';
+    } else $('order').textContent = 'FREE PLAY · hold LURE on wild fauna until they turn your colour · ' + w.m.tamed + ' tamed';
+    $('status').textContent = 't ' + w.t.toFixed(1) + ' s · seed ' + seed + (paused ? ' · PAUSED' : '') + (aiDriving ? ' · AI COMMANDER' : '') + '\nkills: ' + w.m.on + ' on target · ' + w.m.off + ' off · ' + w.m.own + ' yours';
+    $('status').style.whiteSpace = 'pre';
+    // squad roster
+    const bar = $('squadBar'), rows = [['All', -1]].concat(SPECIES.map((x, k) => [x.name, k]));
+    const tamed = SPECIES.map((_, k) => w.fauna.filter((f) => f.sp === k && f.state >= ST.IDLE));
+    bar.innerHTML = '';
+    for (const [name, k] of rows) {
+      const el = document.createElement('div'); el.className = 'sq' + (w.squadSel === k ? ' on' : '');
+      const list = k < 0 ? tamed.flat() : tamed[k], busy = list.filter((f) => f.state === ST.ATTACK || f.state === ST.FLUNG).length, ball = list.filter((f) => f.state === ST.GATHER).length;
+      el.textContent = name + ' ' + list.length + (ball ? ' · ' + ball + ' in the ball' : '') + (busy ? ' · ' + busy + ' hunting' : '');
+      bar.appendChild(el);
+    }
+    $('hint').textContent = PLATFORM.device === 'phone' ? '' : 'W A S D steer · Shift boost · F LURE · Space / left mouse PAINT + COMMAND · V / right mouse ERASE · Q / Tab SQUAD · X recall · T dash to the school (Time) · O omni crystal (becomes a creature) · C camera · P pause · R restart. Pad (the game\'s map): the left stick flies, RT paint + command, LT erase, A lure, B dash to the school, X squad, Y recall, RB boost.';
+  }
+  function box(w, st, color, label) {
+    const ids = aliveIds(w, st); if (!ids.length) return;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, any = false;
+    for (let k = 0; k < ids.length; k += Math.max(1, ids.length >> 6)) { const p = project(ppos(ids[k])); if (!p || p.behind) continue; any = true; x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+    if (!any) return;
+    const dpr = hud.width / Math.max(1, hud.clientWidth), L = 12 * dpr, pad = 8 * dpr; x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+    hctx.strokeStyle = color; hctx.lineWidth = 2 * dpr; hctx.beginPath();
+    for (const [x, y, sx, sy] of [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]]) { hctx.moveTo(x + sx * L, y); hctx.lineTo(x, y); hctx.lineTo(x, y + sy * L); }
+    hctx.stroke(); hctx.fillStyle = color; hctx.textAlign = 'left'; hctx.fillText(label, x0, y0 - 6 * dpr);
+  }
+  function resize() {
+    const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (hud.width !== w || hud.height !== h) { hud.width = w; hud.height = h; }
+    if (R3) { const sz = R3.renderer.getSize(new THREE.Vector2()); if (sz.x !== Math.round(r.width) || sz.y !== Math.round(r.height)) { R3.renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false); R3.camera.aspect = r.width / Math.max(1, r.height); R3.camera.updateProjectionMatrix(); } }
+  }
+
+  // ===================================================================================================
+  // UI: tabs, sliders, shipped-vs-yours, scheme picker
+  // ===================================================================================================
+  const outputs = {};
+  const fmt = (v, step) => { const dec = step < 1 ? Math.min(3, (String(step).split('.')[1] || '').length) : 0; return Number(v).toFixed(dec); };
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const n = Object.keys(diffOnly()).length;
+    $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from the defaults' : 'default numbers';
+    for (const k in outputs) { const o = outputs[k], row = SPEC.find((r) => r[1] === k); o.out.textContent = fmt(P[k], row[4]); o.out.classList.toggle('changed', Math.abs(P[k] - SHIPPED[k]) > 1e-9); o.out.title = 'default ' + SHIPPED[k] + ' · yours ' + P[k]; }
+  }
+  const RESEED_KEYS = new Set(['clawN', 'quadN', 'tadN']);
+  function setParam(key, v) { P[key] = v; lsSet('P', diffOnly()); if (RESEED_KEYS.has(key)) restart(); refreshDiff(); }
+  function slider(row) {
+    const [, key, lo, hi, step, label, tip] = row, el = document.createElement('div'); el.className = 'row';
+    el.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+    el.querySelector('label span').textContent = label; el.querySelector('.key').textContent = key; el.querySelector('.tip').textContent = tip;
+    const inp = el.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key], id: 'sl-' + key }); inp.setAttribute('aria-label', label);
+    inp.oninput = () => setParam(key, parseFloat(inp.value));
+    outputs[key] = { out: el.querySelector('output'), inp };
+    return el;
+  }
+  function selectField(id, label, options, value, onchange, note) {
+    const box = document.createElement('div'); box.className = 'field';
+    const lab = document.createElement('label'); lab.textContent = label; lab.htmlFor = id;
+    const sel = document.createElement('select'); sel.id = id;
+    for (const [v, t] of options) { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); }
+    sel.value = value; sel.onchange = () => onchange(sel.value);
+    box.append(lab, sel);
+    if (note) { const d = document.createElement('div'); d.className = 'desc'; d.textContent = note; box.appendChild(d); }
+    return box;
+  }
+  function group(name, extra) {
+    const box = document.createElement('div');
+    for (const k in outputs) delete outputs[k];
+    if (extra) box.appendChild(extra());
+    for (const row of SPEC) { if (row[0] !== name) continue; if (row[7] && row[7] !== S.scheme) continue; box.appendChild(slider(row)); }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  function commandHeader() {
+    const box = document.createElement('div');
+    box.appendChild(selectField('schemeSel', 'Command scheme', SCHEMES.map((s) => [s.key, s.name]), S.scheme, (v) => { S.scheme = v; lsSet('S', S); world.scheme = v; dock.refresh(); }));
+    const d = document.createElement('p'); d.className = 'desc'; d.textContent = SCHEMES.find((s) => s.key === S.scheme).how; box.appendChild(d);
+    return box;
+  }
+  function cellHeader() {
+    const box = document.createElement('div');
+    box.appendChild(selectField('modeSel', 'Run', [['missions', 'Missions: four orders, a tamed squad'], ['free', 'Free play: tame your own']], S.mode, (v) => { S.mode = v; lsSet('S', S); restart(); }));
+    const ai = document.createElement('div'); ai.className = 'field';
+    ai.innerHTML = '<label for="aiSel">Who flies</label>';
+    const sel = document.createElement('select'); sel.id = 'aiSel';
+    for (const [v, t] of [['you', 'You (the AI takes over after 4 s idle)'], ['skilled', 'AI commander: skilled'], ['rookie', 'AI commander: rookie']]) { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); }
+    sel.value = S.pilot || 'you'; sel.onchange = () => { S.pilot = sel.value; lsSet('S', S); };
+    ai.appendChild(sel); box.appendChild(ai);
+    const sd = document.createElement('div'); sd.className = 'field'; sd.innerHTML = '<label for="seedIn">Seed</label>';
+    const si = document.createElement('input'); si.type = 'text'; si.id = 'seedIn'; si.value = String(seed); si.onchange = () => { const n = parseInt(si.value, 10); if (n >= 0) { seed = n; restart(); } };
+    sd.appendChild(si); box.appendChild(sd);
+    const h = document.createElement('h3'); h.textContent = 'The cell'; box.appendChild(h);
+    return box;
+  }
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId); let cur = lsGet(storeKey, tabs[0].name);
+    function show(name) { cur = name; for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name); }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === cur) ? cur : tabs[0].name);
+    return { refresh: () => show(cur), show };
+  }
+  const dock = makeTabs('dockTabs', 'dockBody', [
+    { name: 'Command', build: () => group('Command', commandHeader) },
+    { name: 'Lure', build: () => group('Lure') },
+    { name: 'Squad', build: () => group('Squad') },
+    { name: 'Flight', build: () => group('Flight') },
+    { name: 'Cell', build: () => group('Cell', cellHeader) },
+  ], 'dock');
+
+  // ---------- the decision log (shared db "decisions", with a browser fallback) ----------
+  let db = null, me = '', remote = [], localLog = lsGet('log', []);
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: { round: LAB.round, scheme: S.scheme, changed: diffOnly() } };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="desc" id="logStatus"></p><div class="field"><label for="logTopic">Topic</label><select id="logTopic"><option>Command scheme</option><option>Lure and tame</option><option>Squads</option><option>Taming vs one fauna colour per cell</option><option>Angler flight</option><option>Other</option></select></div><div class="field"><label for="logChoice">Your decision</label><textarea id="logChoice" rows="2"></textarea></div><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tablewrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab, and Claude reads it at the start of the next round.' : 'Kept in this browser. Use Copy log to send it.';
+    status.className = 'desc ' + (db ? 'status-ok' : 'status-warn');
+    box.querySelector('#logChoice').value = 'Scheme: ' + SCHEMES.find((s) => s.key === S.scheme).name + '. Settings: ' + (Object.keys(diffOnly()).length ? JSON.stringify(diffOnly()) : 'defaults');
+    box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value, box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* no clipboard */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    if (!rows.length) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 3; td.textContent = 'No decisions yet. Fly a scheme, then record which one felt right and why.'; tr.appendChild(td); t.appendChild(tr); }
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; td.style.whiteSpace = 'normal'; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+  })();
+
+  // ---------- scorecard ----------
+  const COLS = [
+    ['clearS', 'Clear s', 'min', 'Mean seconds per order to clear its share of the target (a timeout counts at the limit).'],
+    ['orderS', 'Order s', 'min', 'Seconds from an order appearing to the first command that names its target.'],
+    ['onTargetPct', 'On target %', 'max', 'Of every prism the squad ate, the share that belonged to the ordered structure.'],
+    ['offTarget', 'Off target', 'min', 'Enemy prisms eaten that the order did not name.'],
+    ['ownLost', 'Yours lost', 'min', 'Your own prisms eaten (mouthfuls are domain-blind in a nucleus cell).'],
+    ['timeouts', 'Fails', 'min', 'Orders not cleared in time (of 4).'],
+    ['pressesPerOrder', 'Presses/order', 'min', 'Command-trigger presses per order that reached the squad (a dart that misses, or a loop that takes nothing, is a press with no order).'],
+    ['rookieClearS', 'Rookie clear s', 'min', 'The same, flown by the rookie commander.'],
+    ['rookieOnTargetPct', 'Rookie on %', 'max', 'Rookie on-target share.'],
+    ['rookieTimeouts', 'Rookie fails', 'min', 'Rookie orders not cleared in time.'],
+  ];
+  let lastRows = lsGet('rows', null);
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score the schemes</button> <span class="desc" id="batchNote">Headless: every scheme flies the same four orders, seeds 1–3, skilled and rookie commander. Takes a few seconds.</span></p><div class="tablewrap"><table id="scoreTable"></table></div><p class="desc" id="lureNote"></p>';
+    const draw = () => {
+      const t = box.querySelector('#scoreTable'); if (!lastRows) { t.innerHTML = '<tr><td>No scorecard yet. Press Score the schemes.</td></tr>'; return; }
+      const rows = lastRows.filter((r) => r.scheme !== 'lure-trial' && r.scheme !== 'none'), ctrl = lastRows.find((r) => r.scheme === 'none');
+      t.innerHTML = '';
+      const hr = document.createElement('tr'); hr.innerHTML = '<th>Scheme</th>'; for (const [, h, , tip] of COLS) { const th = document.createElement('th'); th.textContent = h; th.title = tip; hr.appendChild(th); } t.appendChild(hr);
+      for (const r of rows.concat(ctrl ? [ctrl] : [])) {
+        const tr = document.createElement('tr'), name = document.createElement('td'); name.textContent = SCHEMES.find((s) => s.key === r.scheme).name; tr.appendChild(name);
+        for (const [k, , dir] of COLS) {
+          const td = document.createElement('td'), vals = rows.map((x) => x[k]).filter((x) => x != null);
+          td.textContent = r[k] == null ? '–' : r[k];
+          if (r.scheme !== 'none' && r[k] != null && vals.length > 1) { const best = dir === 'min' ? Math.min(...vals) : Math.max(...vals), worst = dir === 'min' ? Math.max(...vals) : Math.min(...vals); if (r[k] === best) td.className = 'best'; else if (r[k] === worst) td.className = 'worst'; }
+          tr.appendChild(td);
+        }
+        t.appendChild(tr);
+      }
+      const lt = lastRows.find((r) => r.scheme === 'lure-trial');
+      box.querySelector('#lureNote').textContent = (lt ? 'Lure trial: six fauna tamed in ' + (lt.tame6S == null ? 'never (90 s)' : lt.tame6S + ' s') + ' (skilled), ' + (lt.rookieTame6S == null ? 'never (90 s)' : lt.rookieTame6S + ' s') + ' (rookie). ' : '') + 'Green = best in the column, red = worst. The control row must show zero kills, or the yardstick is counting something other than the squad.';
+    };
+    box.querySelector('#runBatch').onclick = () => {
+      const note = box.querySelector('#batchNote'); note.textContent = 'Scoring…';
+      setTimeout(() => { const t0 = performance.now(); lastRows = runBatch({ seeds: [1, 2, 3] }); lsSet('rows', lastRows); note.textContent = 'Scored in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s (seeds 1–3, skilled and rookie).'; draw(); }, 30);
+    };
+    draw();
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><span id="aboutLine"></span></p>' +
+      '<p class="desc">The Angler is a proposed strategist hull (VesselClassType 17 is free). It lures wild fauna with the light on its stalk, tames the ones it holds there, and sends particular squads at particular prisms. This lab compares five ways to give that order, against a feral baseline and a no-squad control. The creatures are the game\'s own (Clawfish, QuadFish and Tadpoles at their shipped speeds), and they eat the way the game eats: a 2 s mouthful that takes the target and the prisms around it, any domain, outside the nucleus.</p>' +
+      '<h3>What this lab does not model</h3><ul class="plain">' +
+      '<li>The Angler\'s flight is a plain pitch/yaw model with the game\'s dual-stick mix on a pad, not the game\'s VesselTransformer. Its speeds are proposals.</li>' +
+      '<li>No game code lets anything command a creature. Fauna.Goal is overwritten on every behaviour tick, so a port needs a persistent goal provider. Commanding here bends what a creature steers to; it still eats by its own mouthful rule.</li>' +
+      '<li>Taming keeps a creature in the cell controller\'s colour with a leash, because the locked ecology rule says a cell never holds two fauna colours. Whether tamed fauna change colour is a design decision.</li>' +
+      '<li>No separation between creatures, no starvation (the keeper never starving is a game-only rule), no breeding, no flora (the Mass ability grows plants only in the game), no elements or level-5 upgrades (shielded paint, fauna theft), no wild fauna diet (in the game every creature prefers painted prisms), no predators (sharks eat creatures, never prisms), no shields, no danger prisms, no rival vessels (so no Charge lock-on), no network.</li>' +
+      '<li>The battlefield is one fixed stand-in (two Ruby, two Gold and one Jade structure), not a cell from a real mode. Prism spacing is 4 u on trails.</li>' +
+      '<li>The mouthful takes its neighbours nearest-first. The game takes them in its spatial index\'s order.</li>' +
+      '<li>The commander AI is the lab\'s own. Its runs (approach, act, break away) are one competent style, and a better pilot could change a scheme\'s numbers.</li></ul>';
+    box.querySelector('#aboutLine').textContent = LAB.name + ' · round ' + LAB.round + ' · models a ' + LAB.models + ' · branch ' + LAB.branch + ' · write-up ' + LAB.doc;
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'bottom');
+
+  // ---------- transport, camera, touch, mouse ----------
+  let paused = false, manualClock = false, aiDriving = false;
+  function togglePause() { paused = !paused; $('tpPlay').textContent = paused ? '▶ Play' : '❚❚ Pause'; $('tpPlay').setAttribute('aria-pressed', String(paused)); }
+  function restart() { reset(seed, { mode: S.mode, scheme: S.scheme }); if (R3) R3.cam.pos.set(START_P[0], START_P[1] + 5, START_P[2] + 16); lastHumanT = performance.now(); }
+  function setCam(c) { S.cam = c; lsSet('S', S); $('camSel').value = c; }
+  $('tpPlay').onclick = togglePause; $('tpStop').onclick = restart;
+  $('camSel').value = S.cam; $('camSel').onchange = () => setCam($('camSel').value);
+  $('roundTag').textContent = 'Round ' + LAB.round; $('meta').textContent = 'Strategist vessel · command fauna at prisms · a design, not the shipped game';
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet('P', {}); dock.refresh(); restart(); refreshDiff(); };
+  const stageWrap = $('stageWrap');
+  stageWrap.addEventListener('contextmenu', (e) => e.preventDefault());
+  let drag = null;
+  stageWrap.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch' || e.target.closest('#transport,#camTag,#touch')) return;
+    if (S.cam === 'orbit' && e.shiftKey) { drag = { x: e.clientX, y: e.clientY }; return; }
+    if (e.button === 0) mouse.left = true; if (e.button === 2) mouse.right = true;
+    if (S.cam === 'orbit' && e.button === 1) drag = { x: e.clientX, y: e.clientY };
+  });
+  addEventListener('pointerup', (e) => { if (e.button === 0) mouse.left = false; if (e.button === 2) mouse.right = false; drag = null; });
+  addEventListener('pointermove', (e) => { if (!drag || !R3) return; R3.cam.orbitYaw -= (e.clientX - drag.x) * 0.006; R3.cam.orbitPitch = clamp(R3.cam.orbitPitch + (e.clientY - drag.y) * 0.006, -1.4, 1.4); drag = { x: e.clientX, y: e.clientY }; });
+  stageWrap.addEventListener('wheel', (e) => { if (S.cam !== 'orbit' || !R3) return; e.preventDefault(); R3.cam.orbitDist = clamp(R3.cam.orbitDist * Math.exp(e.deltaY * 0.001), 30, 900); }, { passive: false });
+  if (PLATFORM.device === 'phone') {
+    $('touch').hidden = false;
+    let first = true;
+    stageWrap.addEventListener('touchstart', () => { if (first) { first = false; try { const r = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* the viewer may refuse */ } } }, { passive: true });
+    const zone = $('stickZone');
+    zone.addEventListener('pointerdown', (e) => { touch.stick = { id: e.pointerId, x: e.clientX, y: e.clientY }; touch.sx = 0; touch.sy = 0; try { zone.setPointerCapture(e.pointerId); } catch (er) { /* ok */ } });
+    zone.addEventListener('pointermove', (e) => { if (!touch.stick || e.pointerId !== touch.stick.id) return; touch.sx = (e.clientX - touch.stick.x) / 50; touch.sy = (e.clientY - touch.stick.y) / 50; });
+    const endStick = (e) => { if (touch.stick && e.pointerId === touch.stick.id) { touch.stick = null; touch.sx = touch.sy = 0; } };
+    zone.addEventListener('pointerup', endStick); zone.addEventListener('pointercancel', endStick);
+    for (const [id, key] of [['tLure', 'lure'], ['tCmd', 'cmd'], ['tErase', 'erase'], ['tSquad', 'squad'], ['tBoost', 'boost']]) {
+      const el = $(id);
+      el.addEventListener('pointerdown', (e) => { e.preventDefault(); touch[key] = true; el.classList.add('on'); });
+      const up = () => { touch[key] = false; el.classList.remove('on'); };
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
+    }
+  }
+
+  // ---------- the loop ----------
+  let last = performance.now(), acc = 0;
+  function frame(now) {
+    const real = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      if (!paused) {
+        acc += real;
+        const human = humanInput(), pilot = S.pilot || 'you';
+        while (acc >= world.dt) {
+          acc -= world.dt;
+          aiDriving = pilot !== 'you' || performance.now() - lastHumanT > 4000;
+          simStep(world.dt, aiDriving ? commander(world, brainOf(pilot === 'rookie' ? 'rookie' : 'skilled')) : human);
+        }
+      }
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  reset(seed, { mode: S.mode, scheme: S.scheme }); lastHumanT = performance.now(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  // ---------- the test surface (labmaker §2.2) ----------
+  window.__lab = window.__anglerLab = {
+    LAB, SHIPPED, SPEC, P, S, PLATFORM, SCHEMES, SPECIES, TASKS, SCENE, CORE,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n, input) { dt = dt || world.dt; n = n || 1; for (let i = 0; i < n; i++) simStep(dt, typeof input === 'function' ? input(world) : (input || commander(world, brainOf('skilled')))); render(); },
+    reset: (s, opts) => reset(s, opts), score: () => score(), runBatch, runMission, setParam, record, commander: (kind) => commander(world, brainOf(kind || 'skilled')),
+    state: () => ({ t: world.t, seed, scheme: world.scheme, mode: world.mode, taskIdx: world.taskIdx, squadSel: world.squadSel, tamed: world.m.tamed, alive: world.alive.reduce((a, x) => a + x, 0), fauna: world.fauna.map((f) => ({ sp: f.sp, state: f.state, p: [f.x, f.y, f.z] })) }),
+    world: () => world,
+    gl: () => R3 && { calls: R3.renderer.info.render.calls, triangles: R3.renderer.info.render.triangles, fauna: R3.fmesh.map((m) => m.count), faunaColor0: R3.fmesh.map((m) => m.instanceColor && Array.from(m.instanceColor.array.slice(0, 3)).map((x) => +x.toFixed(2))), faunaMat: R3.fmesh.map((m) => m.material.type) },
+  };
+})();
+</script>
+</body>
+</html>

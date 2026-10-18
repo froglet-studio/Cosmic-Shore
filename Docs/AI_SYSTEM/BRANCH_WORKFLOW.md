@@ -80,7 +80,7 @@ Scramble and the Grizzly AI bombs.
 | `Docs/claude/*.md` rule lists | Union: both sides' rules. |
 | Blank-line / comment-only hunks | Either side; prefer the one with the explanatory comment. |
 | A file one side deleted and the other edited | Read why it was deleted (`git log --diff-filter=D -1 -- <path>`); a retirement wins unless the edit is a live fix. |
-| Generated assets (`Assets/Resources/SkimRaceAIConfig*.asset`, cell configs) | Never hand-merge: regenerate with the generator (`author_skimrace_ai_config.py`, `author_<mode>_assets.py`) and run its `--check`. |
+| Generated assets (`Assets/Resources/SkimRaceAIConfig*.asset`, `Assets/Resources/AIBoostPolicies/*_Regatta.asset`, cell configs) | Never hand-merge: regenerate with the generator (`author_skimrace_ai_config.py`, `learn_drives_from_flights.py --write`, `author_<mode>_assets.py`) and run its `--check`. |
 
 ## 6. Verification after every merge
 
@@ -90,6 +90,8 @@ bash Tools/Build/unity_refcompile/run.sh --config editor --quiet-buckets
 python3 Tools/Build/check_ai_no_state_writes.py --check
 python3 Tools/Build/check_mathf_params_alloc.py
 python3 Tools/Build/author_skimrace_ai_config.py --check
+python3 Tools/Build/learn_drives_from_flights.py --check
+python3 Tools/Build/author_regatta_assets.py --check
 python3 Tools/Build/skimrace_track_fingerprint.py --check
 python3 Tools/Build/check_using_directives.py --check
 python3 Tools/Build/check_enum_member_references.py --check
@@ -98,8 +100,9 @@ python3 Tools/Build/check_console_logging.py
 python3 Tools/Build/check_conditional_compilation.py
 ```
 
-The editor config has carried 4 known errors in untouched files since 2026-10 (`CameraSettingsSOEditor.cs`,
-`ResourceDisplay.cs`, `UniversalStatsProviderEditor.cs` ×2); anything else is new. If the merge touched
+The editor config carries 3 known errors (since 2026-10-15), all in `AuthenticationServiceFacade` on
+`com.unity.multiplayer.playmode`, a package the container cannot fetch; anything else is new. (Before that it was 4, in
+`CameraSettingsSOEditor.cs`, `ResourceDisplay.cs` and `UniversalStatsProviderEditor.cs` ×2.) If the merge touched
 a file the Skim Race simulator compiles (`Tools/Build/skimrace_sim_harness/run.sh` lists them), re-run a
 benchmark and compare with the previous one on the same seeds. `/verify-unity` is the rule for C#
 commits when the Unity CLI is available; when it is not, say so in the commit and file the editor steps

@@ -134,6 +134,15 @@ namespace CosmicShore.Gameplay
         protected override bool AICommitFromApproachPoint => true;
 
         /// <summary>
+        /// Regatta's AIs fly the course's rings and nothing else: never a crystal, the omni crystal included (Yash,
+        /// 2026-10-17: "in Regatta no AI should target an omni crystal; only the waypoints of the track"). The scene's
+        /// aiCrystalDetourSlack (220) let every gate-race AI swing up to 220 u off its line for a crystal near its route;
+        /// Yash's editor flights showed Manta, Dolphin, Sparrow and Serpent AIs passing within 20 u of omni crystals and the
+        /// Rhino of others. Set in code, like the commit fix above, so no scene value can turn it back on.
+        /// </summary>
+        protected override float AICrystalDetourSlack => 0f;
+
+        /// <summary>
         /// While ATTACHED, ride the rail toward this pilot's next ring; while FREE, fly at the
         /// ring the platform's way (and lay a Track Projector rail when the ring is a long,
         /// straight, lined-up shot). Skein's override, on Regatta's course.
@@ -265,6 +274,113 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// Every hull but the Urchin (which rides its own lane) and the Squirrel (its own pilot) races its OWN line: the
+        /// gap between the two rails that are not its domain's, at the hull's distance from the braid
+        /// (<see cref="RaceLineStyleSO"/>, <c>Resources/RaceLines/&lt;Hull&gt;_Regatta</c>), aiming the hull's look-ahead
+        /// along it. Yash, 2026-10-17: bigger hulls flew to the centre like the Squirrel - the middle of the braid, 22 u
+        /// from all three rails - "it's always better to play from the sides". The line is <see cref="RegattaRaceLine"/>.
+        /// A hull with no style asset, or before the rails are laid, flies the gate way. Every seat draws its own risk
+        /// round the hull's, so a grid of one hull has careful and bold pilots.
+        /// </summary>
+        protected override bool TryRaceLine(IPlayer pilot, Vector3 self, out Vector3 aim, out Vector3 after)
+        {
+            aim = after = default;
+            var status = pilot?.Vessel?.VesselStatus;
+            if (status == null || status.VesselType == VesselClassType.Urchin || status.IsAttached) return false;
+
+            if (!_lineStyles.TryGetValue(status.VesselType, out var style))
+            {
+                style = RaceLineStyleSO.Load(status.VesselType, GameModes.Regatta);
+                _lineStyles[status.VesselType] = style;
+            }
+            if (!style) return false;
+
+            ulong seat = pilot.PlayerNetId;
+            if (!_pilotLines.TryGetValue(seat, out var state) || state.Line == null || state.Style != style)
+            {
+                if (!TryBuildLine(pilot.Domain, style, unchecked((int)seat * 7919 + 17), out state)) return false;
+                _pilotLines[seat] = state;
+            }
+
+            int nearest = state.Line.Nearest(self, state.Hint);
+            // Strayed (a break-off, a knock): find the line again from scratch.
+            if ((state.Line[nearest] - self).sqrMagnitude > LineRefindDistance * LineRefindDistance)
+                nearest = state.Line.Nearest(self, -1);
+            state.Hint = nearest;
+            _pilotLines[seat] = state;
+
+            float look = style.Lookahead(status.Speed, state.Risk);
+            aim = state.Line.PointAhead(nearest, look);
+            after = state.Line.PointAhead(nearest, 2f * look);
+            return true;
+        }
+
+        const float LineRefindDistance = 250f;
+
+        struct PilotLine
+        {
+            public RegattaRaceLine Line;
+            public RaceLineStyleSO Style;
+            public float Risk;
+            public int Hint;
+        }
+
+        readonly Dictionary<VesselClassType, RaceLineStyleSO> _lineStyles = new();
+        readonly Dictionary<ulong, PilotLine> _pilotLines = new();
+        readonly Dictionary<(int gap, int radius), RegattaRaceLine> _gapLines = new();
+
+        /// <summary>
+        /// The line for a pilot of <paramref name="domain"/>: the gap between the two lanes that are not its colour (so
+        /// each domain races its own side of the braid), at the radius the hull's style and this seat's risk give.
+        /// Lines are shared by every pilot with the same gap and radius. False until the rails are laid.
+        /// </summary>
+        bool TryBuildLine(Domains domain, RaceLineStyleSO style, int seatSeed, out PilotLine state)
+        {
+            state = default;
+            if (_course.Count == 0 || PrismTrailBuilder.IsLayingInProgress) return false;
+            if (!_railsForAI && !RegattaCourseSource.TryResolveLiveRails(out _railsForAI, out _)) return false;
+            var trails = _railsForAI.GetTrails();
+            if (trails == null) return false;
+
+            var lanes = new List<List<Vector3>>(3);
+            int own = -1;
+            foreach (var trail in trails)
+            {
+                var list = trail?.TrailList;
+                if (list == null) continue;
+                var points = new List<Vector3>(list.Count);
+                Domains laneDomain = default;
+                bool known = false;
+                foreach (var prism in list)
+                {
+                    if (!prism) continue;
+                    if (!known) { laneDomain = prism.Domain; known = true; }
+                    points.Add(prism.transform.position);
+                }
+                if (points.Count < 3) continue;
+                if (known && laneDomain == domain) own = lanes.Count;
+                lanes.Add(points);
+            }
+            if (lanes.Count != 3) return false;
+            if (own < 0) own = 0;   // a lobby without this domain's lane: any one gap is as fair as another
+
+            float tightest = float.MaxValue;
+            for (int i = 0; i < _course.Count; i++) tightest = Mathf.Min(tightest, _course[i].Radius);
+            float risk = style.RiskFor(seatSeed);
+            float radius = style.LaneRadius(tightest, RegattaCourse.DefaultRails.LaneOffset, risk);
+
+            var key = (own, Mathf.RoundToInt(radius));
+            if (!_gapLines.TryGetValue(key, out var line))
+            {
+                line = RegattaRaceLine.BuildGapLine(lanes[(own + 1) % 3], lanes[(own + 2) % 3], lanes[own], radius);
+                if (line == null) return false;
+                _gapLines[key] = line;
+            }
+            state = new PilotLine { Line = line, Style = style, Risk = risk, Hint = -1 };
+            return true;
+        }
+
         /// <summary>The ring <paramref name="pilot"/> must thread next, from the same course and
         /// the same progress counter the platform's own gate aiming reads.</summary>
         bool TryGetAIGate(IPlayer pilot, out RaceGate gate)
@@ -280,6 +396,8 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             _urchinAI?.Clear();
+            _pilotLines.Clear();
+            _gapLines.Clear();
             base.OnNetworkDespawn();
         }
     }

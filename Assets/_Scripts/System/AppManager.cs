@@ -382,11 +382,7 @@ namespace CosmicShore.Core
         {
             if (field == null)
             {
-#if UNITY_2023_1_OR_NEWER
                 field = FindAnyObjectByType<T>();
-#else
-                field = FindObjectOfType<T>();
-#endif
             }
 
             if (field != null)
@@ -619,11 +615,7 @@ namespace CosmicShore.Core
                     }
 
                     // Deferred scene search at first injection time.
-#if UNITY_2023_1_OR_NEWER
                     var found = FindAnyObjectByType<T>();
-#else
-                    var found = FindObjectOfType<T>();
-#endif
                     if (found != null)
                     {
                         EnsurePersistent(found);
@@ -737,11 +729,7 @@ namespace CosmicShore.Core
             var activeScene = SceneManager.GetActiveScene();
             if (activeScene.buildIndex != 0) return;
 
-#if UNITY_2023_1_OR_NEWER
             if (FindAnyObjectByType<AppManager>() != null) return;
-#else
-            if (FindObjectOfType<AppManager>() != null) return;
-#endif
 
             CSDebug.LogVerbose(CSLogChannel.Boot, "[AppManager] No AppManager found in Bootstrap scene. Auto-creating flow objects.");
 

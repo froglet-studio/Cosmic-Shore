@@ -16,13 +16,23 @@ origin branch (git, no checkout), groups the players of one test, and lines them
     python3 Tools/Build/net_logs.py --self-test
 
 A test is the files of ONE sender whose play started within GROUP_SECONDS of the first one (MPPM players
-start together; a separate test minutes later is a separate group).
+start together; a separate test minutes later is a separate group), plus any other sender's file whose play
+overlapped it in time (a test between two machines: each sends from its own bugledger branch). With more than
+one sender, a player is named `<user>/<peer>`.
+
+Read with care (both measured on Caleb's logs of 2026-10-16, both fixed in the writer since):
+- A Unity file written before the writer reset the recorder at Play start can carry EARLIER Play sessions
+  (the project enters Play without a domain reload). Such a file is marked "carried over": its events are cut
+  to this Play's, but its counters and its `why` may belong to an earlier one.
+- The refresh ticks' 429s were not counted in the record, so `429s` also shows the console's count of
+  rate-limit warnings when they differ.
 """
 import argparse
 import datetime as dt
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -30,7 +40,9 @@ import tempfile
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 REPORTS_PREFIX = "BugLedger/shared/reports/"
 GROUP_SECONDS = 120
+CARRIED_SECONDS = 30        # a record that started this long before its Play did belongs to an earlier Play
 SCHEMA = "cosmicshore.nettestlog.v1"
+RATE_LIMIT = re.compile(r"rate[- ]limited", re.IGNORECASE)
 
 
 # ── sources ──────────────────────────────────────────────────────────────────
@@ -99,7 +111,34 @@ def parse(text, source, user):
     doc["source"] = source
     doc["user"] = user or doc.get("user") or "unknown"
     doc["_start"] = _time(doc.get("playStartedUtc"))
-    return doc if doc["_start"] is not None else None
+    if doc["_start"] is None:
+        return None
+    doc["_end"] = _time(doc.get("playEndedUtc")) or doc["_start"]
+    _own_events(doc)
+    return doc
+
+
+def _own_events(log):
+    """This Play's lifecycle events, each with its wall-clock time, in log["_events"]; log["_carried"] says
+    whether the record also held earlier Plays'. The recorder's clock restarts with each Play while its
+    first-mark time does not, so an earlier Play's events end where the times drop back."""
+    rec = log.get("record") or {}
+    events = rec.get("lifecycle") or []
+    rec_start = _time(rec.get("startedUtc")) or log["_start"]
+    carried = (log["_start"] - rec_start).total_seconds() > CARRIED_SECONDS
+    log["_carried"] = carried
+    if not carried:
+        log["_events"] = [(rec_start + dt.timedelta(seconds=float(ev.get("t", 0))), ev) for ev in events]
+        return
+    cut = 0
+    for i in range(1, len(events)):
+        if float(events[i].get("t", 0)) < float(events[i - 1].get("t", 0)):
+            cut = i
+    if cut:
+        log["_events"] = [(log["_start"] + dt.timedelta(seconds=float(ev.get("t", 0))), ev) for ev in events[cut:]]
+    else:   # no clock restart seen: keep what falls inside this Play
+        timed = [(rec_start + dt.timedelta(seconds=float(ev.get("t", 0))), ev) for ev in events]
+        log["_events"] = [(at, ev) for at, ev in timed if at >= log["_start"]]
 
 
 def _time(iso):
@@ -120,38 +159,74 @@ def _time(iso):
 
 # ── grouping ─────────────────────────────────────────────────────────────────
 
+def _belongs(test, log):
+    """Same sender: started within GROUP_SECONDS of the test (MPPM). Another sender: its Play overlapped one
+    of the test's (two machines playing together)."""
+    if test["engine"] != log.get("engine", "unity"):
+        return False
+    for p in test["peers"]:
+        if p["user"] == log["user"]:
+            if abs((log["_start"] - test["start"]).total_seconds()) <= GROUP_SECONDS:
+                return True
+        elif log["_start"] <= p["_end"] and p["_start"] <= log["_end"]:
+            return True
+    return False
+
+
 def group(logs):
-    """Tests, newest first: per sender, files whose play started within GROUP_SECONDS of the test's first."""
-    by_user = {}
-    for log in logs:
-        by_user.setdefault((log["user"], log.get("engine", "unity")), []).append(log)
+    """Tests, newest first (see the module doc for what makes one test)."""
     tests = []
-    for (user, engine), items in by_user.items():
-        items.sort(key=lambda l: l["_start"])
-        current = None
-        for log in items:
-            if current is None or (log["_start"] - current["start"]).total_seconds() > GROUP_SECONDS:
-                current = {"user": user, "engine": engine, "start": log["_start"], "peers": []}
-                tests.append(current)
-            current["peers"].append(log)
+    for log in sorted(logs, key=lambda l: l["_start"]):
+        home = next((t for t in reversed(tests) if _belongs(t, log)), None)
+        if home is None:
+            home = {"engine": log.get("engine", "unity"), "start": log["_start"], "peers": []}
+            tests.append(home)
+        home["peers"].append(log)
     for t in tests:
-        t["id"] = f"{t['user']}-{t['start']:%Y%m%d_%H%M%S}"
-        t["peers"].sort(key=lambda l: (l.get("peer") != "main", l.get("peer") or ""))
+        users = []
+        for p in sorted(t["peers"], key=lambda l: l["_start"]):
+            if p["user"] not in users:
+                users.append(p["user"])
+        t["user"] = users[0]
+        t["users"] = users
+        t["id"] = f"{'+'.join(users)}-{t['start']:%Y%m%d_%H%M%S}"
+        t["peers"].sort(key=lambda l: (users.index(l["user"]), l.get("peer") != "main", l.get("peer") or ""))
     tests.sort(key=lambda t: t["start"], reverse=True)
     return tests
 
 
-def peer_summary(log):
+def peer_name(test, log):
+    peer = log.get("peer", "?")
+    return f"{log['user']}/{peer}" if len(test.get("users") or []) > 1 else peer
+
+
+def _clean_at(at):
+    """Unity's native trace once put its own stack walker here; that names no code, so it is left out."""
+    if not at or "(Unity) " in at or "StackWalker" in at:
+        return None
+    return at
+
+
+def console_rate_limits(log):
+    return sum(1 for l in (log.get("console") or {}).get("lines") or []
+               if l.get("type") == "warning" and RATE_LIMIT.search(l.get("msg", "")))
+
+
+def peer_summary(log, name=None):
     rec = log.get("record") or {}
     con = log.get("console") or {}
     verdict = rec.get("verdict") or {}
     counters = rec.get("counters") or {}
     clean = not (verdict.get("offlineFallbacksWhileOnline") or verdict.get("forceResets")
                  or verdict.get("budgetExhaustions") or verdict.get("rateLimited"))
-    return (f"{log.get('peer', '?'):<10} {rec.get('role', '?'):<10} "
+    counted, seen = counters.get("rateLimited", 0), console_rate_limits(log)
+    limits = f"{counted}" + (f" (console {seen})" if seen != counted else "")
+    events = log["_events"] if "_events" in log else rec.get("lifecycle") or []
+    carried = "  [record carried over from an earlier Play: counters and why may be that one's]" if log.get("_carried") else ""
+    return (f"{name or log.get('peer', '?'):<10} {rec.get('role', '?'):<10} "
             f"{'CLEAN' if clean else 'DIRTY':<6} errors {con.get('errors', 0):<4} warnings {con.get('warnings', 0):<4} "
-            f"reads {counters.get('lobbyReads', 0)} 429s {counters.get('rateLimited', 0)} "
-            f"events {len(rec.get('lifecycle') or [])}  ({log.get('why', '')})")
+            f"reads {counters.get('lobbyReads', 0)} 429s {limits} "
+            f"events {len(events)}  ({log.get('why', '')}){carried}")
 
 
 def timeline(test, all_lines=False):
@@ -159,11 +234,10 @@ def timeline(test, all_lines=False):
     rows = []
     origin = test["start"]
     for log in test["peers"]:
-        peer = log.get("peer", "?")
-        rec = log.get("record") or {}
-        rec_start = _time(rec.get("startedUtc")) or log["_start"]
-        for ev in rec.get("lifecycle") or []:
-            at = rec_start + dt.timedelta(seconds=float(ev.get("t", 0)))
+        peer = peer_name(test, log)
+        if "_events" not in log:
+            _own_events(log)
+        for at, ev in log["_events"]:
             rows.append((at, peer, "event", f"{ev.get('e', '')} {ev.get('detail', '')}".strip()))
         for line in (log.get("console") or {}).get("lines") or []:
             kind = line.get("type", "log")
@@ -171,7 +245,7 @@ def timeline(test, all_lines=False):
                 continue
             at = log["_start"] + dt.timedelta(seconds=float(line.get("t", 0)))
             text = line.get("msg", "")
-            if line.get("at"):
+            if _clean_at(line.get("at")):
                 text += f"   @ {line['at']}"
             rows.append((at, peer, kind, text))
     rows.sort(key=lambda r: r[0])
@@ -190,8 +264,8 @@ def cmd_collect(args):
     tests = load(args)
     if not tests:
         print("no multiplayer test logs yet (BugLedger/shared/reports/*/net/ on any origin branch"
-              + (", or the given folders" if args.dir else "") + "). After a multiplayer play test, press "
-              "Send to Claude when Unity asks; run `git fetch origin` first.")
+              + (", or the given folders" if args.dir else "") + "). A multiplayer play test sends its logs by itself "
+              "when it stops; run `git fetch origin` first.")
         return 0
     for i, t in enumerate(tests, 1):
         branches = sorted({b for p in t["peers"] for b in p.get("branches", [])})
@@ -199,7 +273,7 @@ def cmd_collect(args):
         print(f"[{i}] {t['id']}  {t['engine']}  {len(t['peers'])} player(s)"
               + (f"  on {commit}" if commit else "") + (f"  from {', '.join(branches)}" if branches else ""))
         for p in t["peers"]:
-            print("    " + peer_summary(p))
+            print("    " + peer_summary(p, peer_name(t, p)))
     if args.json:
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump([{"id": t["id"], "engine": t["engine"], "start": t["start"].isoformat(),
@@ -220,11 +294,12 @@ def cmd_show(args):
         return 1
     print(f"{pick['id']}  {pick['engine']}  started {pick['start']:%Y-%m-%d %H:%M:%S} UTC")
     for p in pick["peers"]:
-        print("  " + peer_summary(p))
+        print("  " + peer_summary(p, peer_name(pick, p)))
         print(f"    branch {p.get('branch')} @ {p.get('commit')}   source {p.get('source')}")
     print()
+    width = max([10] + [len(peer_name(pick, p)) for p in pick["peers"]])
     for when, peer, kind, text in timeline(pick, all_lines=args.lines):
-        print(f"{when}  {peer:<10} {kind:<9} {' / '.join(text.splitlines())}")
+        print(f"{when}  {peer:<{width}} {kind:<9} {' / '.join(text.splitlines())}")
     return 0
 
 
@@ -279,10 +354,42 @@ def self_test():
         check(not any(r[2] == "log" for r in rows), "plain log lines left out unless --lines")
         check(any(r[2] == "log" for r in timeline(tests[1], all_lines=True)), "--lines keeps them")
         check("CLEAN" in peer_summary(tests[1]["peers"][0]), "a record with no verdict findings reads CLEAN")
-        dirty = _fixture("main", "2026-10-15T10:00:00Z", "host", [], [])
+        dirty = _fixture("main", "2026-10-15T10:00:00Z", "host", [], [(3.0, "warning", "Party session refresh rate-limited - backing off")])
         dirty["record"]["verdict"] = {"rateLimited": 2}
+        dirty["record"]["counters"]["rateLimited"] = 2
         dirty["_start"] = _time(dirty["playStartedUtc"])
         check("DIRTY" in peer_summary(dirty), "a 429 in the verdict reads DIRTY (negative control)")
+        check("429s 2 (console 1)" in peer_summary(dirty), "the console's rate-limit warnings show beside the record's count")
+        check("console" not in peer_summary(tests[1]["peers"][0]), "...and not when they agree")
+
+    # Two machines: another sender whose Play overlapped is the same test; one that did not is not.
+    def at(doc, end, user):
+        doc["playEndedUtc"] = end
+        doc["user"] = user
+        return parse(json.dumps(doc), source="x", user=user)
+    a = at(_fixture("main", "2026-10-16T20:05:24Z", "host", [(71.8, "clientApproved", "1")], []), "2026-10-16T20:52:01Z", "belac")
+    b = at(_fixture("main", "2026-10-16T20:06:10Z", "client", [(0.5, "party", "InPresenceLobby->JoiningParty")], []), "2026-10-16T20:15:19Z", "yskha")
+    c = at(_fixture("main", "2026-10-16T21:00:00Z", "host", [], []), "2026-10-16T21:05:00Z", "yskha")
+    two = group([a, b, c])
+    check(len(two) == 2 and two[1]["id"] == "belac+yskha-20261016_200524", "overlapping Plays on two machines are one test")
+    check([peer_name(two[1], p) for p in two[1]["peers"]] == ["belac/main", "yskha/main"], "...whose players carry their sender")
+    check(len(two[0]["peers"]) == 1 and peer_name(two[0], two[0]["peers"][0]) == "main",
+          "a later Play that overlapped nothing stays its own test (negative control)")
+
+    # A record carried over from an earlier Play (no domain reload): cut to this Play's events.
+    old = _fixture("main", "2026-10-16T21:56:40Z", "host",
+                   [(0.0, "party", "x->y"), (71.8, "clientApproved", "1"), (2640.4, "readyGate", "old"),
+                    (1.9, "party", "Disconnected->InPresenceLobby"), (29.3, "clientApproved", "0")], [])
+    old["record"]["startedUtc"] = "2026-10-16T20:05:30Z"
+    log = parse(json.dumps(old), source="x", user="belac")
+    check(log["_carried"] and [ev["e"] for _, ev in log["_events"]] == ["party", "clientApproved"]
+          and log["_events"][1][1]["detail"] == "0", "a carried-over record keeps only this Play's events")
+    check(log["_events"][0][0] == _time("2026-10-16T21:56:41.9Z"), "...placed from this Play's start")
+    check("carried over" in peer_summary(log), "...and its summary says so")
+    fresh = parse(json.dumps(_fixture("main", "2026-10-16T20:05:24Z", "host", [(5.0, "party", "a->b")], [])), "x", "t")
+    check(not fresh["_carried"] and len(fresh["_events"]) == 1, "a record from its own Play is kept whole (negative control)")
+    check(_clean_at("0x00007ffe48c74e2e (Unity) StackWalker::ShowCallstack") is None
+          and _clean_at("CosmicShore.Party.Foo:Bar ()") == "CosmicShore.Party.Foo:Bar ()", "the native stack walker is not a location")
 
     # Branch reading, against a throwaway repository with an origin/bugledger branch.
     with tempfile.TemporaryDirectory() as repo:
@@ -335,4 +442,8 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except BrokenPipeError:   # `show 1 | head`: the reader stopped, which is not an error
+        sys.stderr.close()
+        sys.exit(0)

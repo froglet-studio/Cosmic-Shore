@@ -42,6 +42,10 @@ namespace Amoebius
             foreach (var (e, detail) in lifecycle)
                 switch (e)
                 {
+                    case "party":
+                        // Joining a party is joining another player; a guest's record has no other sign of one.
+                        if ((detail ?? "").EndsWith("->JoiningParty", StringComparison.Ordinal)) return "joined another player's party";
+                        break;
                     case "clientApproved":
                         var id = (detail ?? "").Split(' ')[0];
                         if (id.Length > 0 && id != "0") return "client " + id + " approved";

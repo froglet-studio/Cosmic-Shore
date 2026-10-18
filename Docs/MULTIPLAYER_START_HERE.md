@@ -124,7 +124,7 @@ is a bug, and the run's console log is what a session needs to fix it.
 
 **The logs collect themselves (2026-10-15).** Every player of a multiplayer test writes its own log when it
 stops: each MPPM virtual player and the main editor in Unity, each player of START ONLINE / + PLAYER 2 in
-Amoebius. When the test ends, ONE question asks **Send to Claude?** Press it. Do not paste consoles. Then tell
+Amoebius. When the test ends, the main editor sends every player's logs to Claude by itself (no question since 2026-10-16). Do not paste consoles. Then tell
 the session "read my multiplayer logs" and it runs `python3 Tools/Build/net_logs.py show 1`, which lines
 every player up into one timeline (`Docs/DIAGNOSTICS.md` § "Multiplayer test logs"). In Amoebius, close player 2's
 window (or press CLOSE P2) rather than killing it, or its log is lost.
@@ -218,6 +218,7 @@ Each step has the check that proves it done. Update the state in §4 when a step
 | U1 | The owner's MPPM runs in §5.2 | Each 🔴 checklist entry becomes 🟢 with a date |
 | U2 | **Block 5: push instead of poll** (hardening prompt) | GETs ≤ 4/min/client at rest; invite visible < 1 s p95; no stale-index lines in a 30-minute 4-client run |
 | U3 | Block 6: reconnection grace | A 15 s network pull mid-match hands the vessel back with no menu |
+| U4 | **What the first real logs showed** (Caleb ↔ ys1, two machines, 2026-10-16; `Docs/PartySystem/BUGS.md` B31-B33). **Fixed 2026-10-17, awaiting the hand retest:** the party session is read at most every 6 s (B31); leaving the shared presence lobby no longer deletes it under everyone, and a rejoin leaves `Reconnecting` (B32); a new editor Play no longer inherits the last Play's session (B33) | B31: no `rate-limited` lines in a 10-minute party (`net_logs.py` shows `429s 0`); B32: a guest's mid-match leave keeps the host `InParty`; B33: a second Play's log starts clean |
 
 ## 7. How a session starts here
 

@@ -88,6 +88,7 @@ namespace UnityEngine
         public const float Rad2Deg = 180f / PI;
         public static float Sin(float v) => (float)Math.Sin(v);
         public static float Cos(float v) => (float)Math.Cos(v);
+        public static float Tan(float v) => (float)Math.Tan(v);
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Sqrt(float v) => (float)Math.Sqrt(v);
         public static float Abs(float v) => Math.Abs(v);
@@ -100,6 +101,9 @@ namespace UnityEngine
         public static float Clamp01(float v) => Clamp(v, 0f, 1f);
         public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
         public static int FloorToInt(float v) => (int)Math.Floor(v);
+        public static int CeilToInt(float v) => (int)Math.Ceiling(v);
+        public static int Clamp(int v, int a, int b) => v < a ? a : (v > b ? b : v);
+        public static float Exp(float v) => (float)Math.Exp(v);
         public static float Repeat(float t, float length) => Clamp(t - (float)Math.Floor(t / length) * length, 0f, length);
         public static float DeltaAngle(float current, float target) { float d = Repeat(target - current, 360f); if (d > 180f) d -= 360f; return d; }
         public static float MoveTowards(float c, float t, float d) => Math.Abs(t - c) <= d ? t : c + Math.Sign(t - c) * d;

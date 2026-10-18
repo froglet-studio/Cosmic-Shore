@@ -119,8 +119,7 @@ namespace CosmicShore.Gameplay
             Transform t = transform.Find(name);
             if (t)
             {
-                var ctrl = t.GetComponent<ICameraController>();
-                if (ctrl == null)
+                if (!t.TryGetComponent(out ICameraController ctrl))
                 {
                     ctrl = t.gameObject.AddComponent<CustomCameraController>();
                 }
@@ -163,8 +162,7 @@ namespace CosmicShore.Gameplay
             _themeManagerData.SetBackgroundColor(activeCam != null ? activeCam : Camera.main);
 
             var shipGO = _playerFollowTarget.gameObject;
-            var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
-            if (shipCustomizer != null)
+            if (shipGO.TryGetComponent(out VesselCameraCustomizer shipCustomizer))
                 shipCustomizer.Configure(_playerCamera);
 
             // Snap camera to correct initial position to prevent retaining

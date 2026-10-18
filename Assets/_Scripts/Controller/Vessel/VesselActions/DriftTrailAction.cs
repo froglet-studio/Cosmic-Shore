@@ -39,7 +39,7 @@ public class DriftTrailAction : ShipAction
                 var driftAltitude = Vector3.Dot(Vessel.VesselStatus.Course, Vessel.Transform.forward);
                 if (!Vessel.VesselStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
                 VesselPrismController.SetDotProduct(driftAltitude);
-                yield return new WaitForSeconds(.05f);
+                yield return CosmicShore.Utility.WaitCache.Seconds(.05f);
             }
         }
     }

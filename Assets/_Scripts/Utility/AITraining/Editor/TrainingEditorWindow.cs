@@ -21,7 +21,7 @@ namespace CosmicShore.Utility.AITraining.Editor
     /// </summary>
     public class TrainingEditorWindow : EditorWindow
     {
-        enum Tab { Configure, Schedule, Inspect, Archive, Deploy }
+        enum Tab { Configure = 0, Schedule = 1, Inspect = 2, Archive = 3, Deploy = 4 }
         Tab _tab = Tab.Configure;
 
         TrainingScenarioSO _scenario;
