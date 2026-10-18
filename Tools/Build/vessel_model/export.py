@@ -388,7 +388,9 @@ def verify(path, spec):
     }
     def _rot_close(a, b):
         return all(abs(((x - y) + 180) % 360 - 180) < 0.5 for x, y in zip(a, b))
-    for node_key, want_rot, want_scale in ((spec.get("mesh_node"), NODE_TRS[preset][0], NODE_TRS[preset][1]),
+    # `mesh_node_scale`: an artist file whose mesh node carries its own uniform scale (the Sparrow's 0.2034),
+    # kept by rig.restore_node_scale; the node must then carry exactly that scale
+    for node_key, want_rot, want_scale in ((spec.get("mesh_node"), NODE_TRS[preset][0], spec.get("mesh_node_scale", NODE_TRS[preset][1])),
                                             (spec.get("armature"), NODE_TRS[preset][2], NODE_TRS[preset][3])):
         if not node_key or node_key not in names or want_rot is None:
             continue

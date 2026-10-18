@@ -382,10 +382,29 @@ def import_shipped_model(fbx_path):
     # mesh node at IDENTITY as a top-level sibling (what the prefab's stripped references bind), so unparent
     # it keeping its world placement and bake that into the vertices: the node then exports at identity
     mw = mesh.matrix_world.copy()
+    # the node's own uniform scale, for a file whose mesh node is NOT at identity (the Sparrow's is 0.2034,
+    # its vertices 4.9x larger): `restore_node_scale` puts it back on the node before export
+    mesh["artist_node_scale"] = float(sum(mw.to_scale()) / 3.0)
     mesh.parent = None
     mesh.matrix_world = mw
     forms.apply_transform(mesh)
     return arm, mesh
+
+
+def restore_node_scale(mesh):
+    """
+    Give the mesh node back the artist file's uniform scale, keeping every vertex where it is drawn:
+    the vertices AND every shape key are divided by it and the node carries it (Mesh.transform with
+    shape_keys). Skinning is unchanged (Unity skins from bones and bind poses), but a node the prefab
+    or rest_compare reads keeps its authored transform. A no-op when the artist's node was at scale 1.
+    """
+    from mathutils import Matrix
+    s = float(mesh.get("artist_node_scale", 1.0))
+    if abs(s - 1.0) < 1e-4:
+        return 1.0
+    mesh.data.transform(Matrix.Diagonal((1.0 / s, 1.0 / s, 1.0 / s, 1.0)), shape_keys=True)
+    mesh.scale = (s, s, s)
+    return s
 
 
 MOVED_BONES = []  # names a spec moved on purpose (rest_compare --allow-moved reads the same list from the spec)

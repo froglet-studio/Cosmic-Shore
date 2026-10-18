@@ -47,6 +47,14 @@ VIEWS = {
 }
 
 
+# pose word -> the shipped files' other names for it (normalised: lowercase, no separators, vessel word dropped)
+SYNONYMS = {
+    "pitchup": ("up",), "pitchdown": ("down",),
+    "yawright": ("right", "turnright"), "yawleft": ("left", "turnleft"),
+    "speedup": ("speedincrease",),
+}
+
+
 def _setup_scene(res=(900, 700), samples=24):
     sc = bpy.context.scene
     sc.render.engine = "CYCLES"
@@ -199,6 +207,10 @@ def contact_sheet(fbx_path, out_dir, tag="sheet", views=("chase", "front34", "si
                 core = re.sub(r"(sparrowanim|squirrelanim|anim|dolphin|serpent)", "", t)
                 if core == want:
                     return 1
+                # the artists' other words for the same pose (the Serpent's 'Up' / 'Right' / 'SpeedIncrease',
+                # the Sparrow's 'TurnRight'); a lower rank than an exact word, never a substring
+                if core in SYNONYMS.get(want, ()):
+                    return 2
                 return None
             ranked = [(r, a) for a in bpy.data.actions for r in [_rank(a)] if r is not None]
             if not ranked:
@@ -220,7 +232,8 @@ def contact_sheet(fbx_path, out_dir, tag="sheet", views=("chase", "front34", "si
             f = os.path.join(out_dir, "%s_pose_%s.png" % (tag, p))
             render_frame(f, "chase", meshes, res=res, samples=samples)
             files.append(f)
-        arm.animation_data.action = None
+        if arm.animation_data is not None:   # a file with no takes (the Manta) never got animation data
+            arm.animation_data.action = None
         bpy.context.scene.frame_set(1)
     sheet = compose(files, os.path.join(out_dir, "%s.png" % tag), cols=len(views))
     VIEWS = base_views
