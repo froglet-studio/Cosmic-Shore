@@ -1773,7 +1773,7 @@ icons rendered from the hull (`render_thresher_card_icon.py`). All authored by `
 
 **Proved offline**: `thresher_hull_harness` (shipped forms RUN: winding by parity ray, morph bounds, tail chain
 never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--self-test` (6 negative controls);
-`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check`; `check_vessel_class_icons.py`;
+`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check` (retired 2026-10-18: `vessel_model/render_cards.py Thresher --check`); `check_vessel_class_icons.py`;
 `unity_refcompile` (see the branch's commit message for the run). Nothing here has been seen in the editor.
 
 **Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /

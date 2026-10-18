@@ -71,6 +71,8 @@ FLEET_SLOTS = {"Domain": "domain", "Body": "body", "Window": "window", "Engine":
 VESSELS = {
     "Butterfly": {"fbx": MODELS + "Butterfly.fbx", "roles": FLEET_SLOTS,
                   "view": (0.55, -0.35, 0.95), "nose_angle": 62.0},
+    "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS,
+                 "view": (0.85, -0.25, 0.55), "nose_angle": 28.0},
 }
 # placeholders' renderers that wrote the same PNGs before the models existed (their card now follows the model)
 SUPERSEDES = {}

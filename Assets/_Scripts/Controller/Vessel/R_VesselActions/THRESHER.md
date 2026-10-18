@@ -488,7 +488,7 @@ nobody saw it. `ThresherAnimation` now turns the chain by `-yaw`; the math, its 
 unchanged.
 
 **The procedural placeholder** (`ThresherHullForm`, `ThresherHullBuilder`, `thresher_hull_harness`,
-`ThresherHullFormTests`, `render_thresher_card_icon.py`) stays in the tree until the owner accepts the
+`ThresherHullFormTests`) stays in the tree until the owner accepts the
 model, then it is retired. Its description follows, kept because its numbers are the model's contract.
 
 The Thresher was a text clone of the Squirrel and flew its model, its animation controller, its jets
@@ -536,8 +536,10 @@ whip's arcs behind it), **Mass Mode** (the ball laying a growing row of prisms �
 wore was never what the ability does; the file was renamed `Thresher_MassMode.png` with its guid kept),
 Winch (a chain hauled round a drum), Plant (the ball as the pivot, the hull swinging on its orbit). The
 **card icons** (`SO_Class_Thresher.IconActive/IconInactive`, which reused the Wrecking Ball glyph) are now
-renders of the shark hull in the house card look (`Tools/Build/render_thresher_card_icon.py`, the
-Stoat's renderer).
+renders of the shark hull in the house card look. Since 2026-10-18 they are rendered from the MODEL by
+`Tools/Build/vessel_model/render_cards.py Thresher` (`--check`), which also writes the large, silhouette and
+hangar-preview images and wires them into the class asset; the placeholder-era `render_thresher_card_icon.py`
+was retired with it, because it drew the procedural hull over them.
 
 **Authored by** `Tools/Build/author_thresher_assets.py` (idempotent; `--check` validates the shipped
 prefab — no Squirrel FBX / DriftJet / Manta animation left, the hull, colliders, paint, animation and two
@@ -589,7 +591,7 @@ is the fix.
 | `Controller/Animation/ThresherAnimation.cs`, `ThresherSwimMath.cs` | The swim: tail wave, bank, pectorals, ball-driven curl / flare / crack (§5b) |
 | `Controller/Vessel/ThresherBallForm.cs` | The morning-star ball mesh (§5) |
 | `Tools/Build/author_thresher_assets.py`, `Tools/Build/thresher_hull_harness/` | The prefab pass (`--check`, `--self-test`); the offline geometry/swim/ball harness |
-| `Tools/Build/author_thresher_icons.py`, `Tools/Build/render_thresher_card_icon.py` | Ability icons; class card icons rendered from the hull |
+| `Tools/Build/author_thresher_icons.py`, `Tools/Build/vessel_model/render_cards.py` | Ability icons; class card images rendered from the model |
 | `Tests/Editor/ThresherHullFormTests.cs` | Hull parts, accents, morphs, bounds, the tail chain, the ball |
 | `Controller/Vessel/ThresherVesselTransformer.cs` | Seam overrides |
 | `Controller/Vessel/VesselTransformer.cs` | + `ComputeExternalAcceleration`, `NoseConvergence` (default-off) |
