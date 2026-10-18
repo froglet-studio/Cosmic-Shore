@@ -92,6 +92,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Parallax depth. Layers this deep draw at half size.")]
         [SerializeField] float pParallax = 160f;
 
+        [Header("Pistol: the views (the crew vessels' one layout and look: the Wrasse's KiteNavigatorConfig names and defaults)")]
+        [Tooltip("The small view's side, as a fraction of the screen height: the Pistol's view while you fly the Goby, the Goby's while you fly the Pistol.")]
+        [SerializeField, Range(0.15f, 0.6f)] float pipSize = 0.32f;
+
+        [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
+        [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
+
+        [Tooltip("For the Pistol's view only, the prisms' depth look measures distance from the Pistol's plane: a prism this far (u) " +
+                 "out of it reads as far as the Goby's view's most distant mass; one on the plane reads near.")]
+        [SerializeField, Min(1f)] float depthFullSpreadAt = 60f;
+
         [Header("Pistol: launch and ghost (the artifact's Pistol section)")]
         [Tooltip("Launch range")]
         [SerializeField] float pLaunchRange = 240f;
@@ -184,6 +195,9 @@ namespace CosmicShore.ScriptableObjects
         public float BodyR => pBodyR;
         public float ViewWidth => pViewWidth;
         public float Parallax => pParallax;
+        public float PipSize => pipSize;
+        public float ViewMargin => viewMargin;
+        public float DepthFullSpreadAt => depthFullSpreadAt;
         public float Chain => pChain;
         public float HotRing => pHotRing;
         public float HotLife => pHotLife;

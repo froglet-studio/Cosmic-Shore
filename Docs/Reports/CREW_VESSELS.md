@@ -80,8 +80,9 @@ runs on one machine. Each is explained in `Assets/_Scripts/Controller/Vessel/Cre
 - **Decide how the seat goes online** (`T-20261017-b06e`, Garrett with Yash):
   - which machine decides each effect;
   - who owns the swap gesture in an arena match.
-- **Register the seat as a duo design** when your duo-vessel branch (`cece/sharp-tesla-j0kd7z`) lands
-  (`T-20261017-efca`, Garrett). The Goby there still uses enum value 16 and has to move; 18 is left for it.
+- **Register the seat as a duo design**: done on `cece/sharp-tesla-j0kd7z` (2026-10-18, `T-20261017-efca` closed). The
+  Goby moved to 18, its card reads "Goby and Pistol", and both seats share one notion of a crew vessel
+  (`.claude/skills/duo-vessel/SKILL.md`; `CrewSeat`, `CrewPictureInPicture`, `CrewViewRender`, `check_crew_vessels.py`).
 - **Card icons:** the Wrasse still shows the Sparrow's four ability icons (`T-20261018-8ff7`).
 - **Sounds:** eight empty FMOD slots (`T-20261017-3cbe`).
 - **Catch the lab up** to rounds 4-4f (`T-20261018-3247`).

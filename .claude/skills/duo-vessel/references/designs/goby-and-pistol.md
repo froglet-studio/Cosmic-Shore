@@ -263,7 +263,7 @@ The lab's arithmetic is in the game, line for line, held to the lab's own number
 
 | Piece | Unity | Proof |
 |---|---|---|
-| The unrolled world: map / unmap, frames, the hinge ground (all three unrolls) | `PistolRibbon` (`Assets/_Scripts/Controller/Vessel/Duo/GobyPistol/`) | `GobyPistolMathTests` (goldens from `Tools/Build/goby_pistol_goldens.cjs`, tests written by `goby_pistol_goldens_to_tests.py`) |
+| The unrolled world: map / unmap, frames, the hinge ground (all three unrolls) | `PistolRibbon` (`Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/`) | `GobyPistolMathTests` (goldens from `Tools/Build/goby_pistol_goldens.cjs`, tests written by `goby_pistol_goldens_to_tests.py`) |
 | The ride, launch, ghost, Snap trigger, the body test | `PistolBodyMath` | same |
 | The vortex ring (capture, toroidal flow, collapse) | `VortexRing` | same |
 | The Pistol AI and its levels, `mulberry32` bit for bit | `PistolAI` | same |
@@ -388,3 +388,18 @@ the line it settled.
   camera; `frustumOf` held by a golden). **[read] for Garrett:** the brief's §4.3 "may distort" and the review's fog /
   glass awareness-of-depth are superseded by "true": depth is perspective alone now; if the near field needs a hint of
   distance back, a depth-of-field or the game's own fog is the true way, not a tint.
+- 2026-10-18, Garrett: **"notice there is a new wrasse and grouper multiplayer vessel. learn what you can from how it
+  renders the environment with the dither effect, uses both names in its card, etc. unify what you can so we have a
+  consistent notion of multiplayer vessels. and apply it here."** Merged bleeding-edge, where the Wrasse and Grouper
+  (`cece/compassionate-babbage-gc13io`) had landed: the Goby moved to `VesselClassType` 18 (16 is the Brittle Star), its
+  card reads **Goby and Pistol** (`SO_Vessel.CrewNames`), and the code moved to `Controller/Vessel/Crew/GobyPistol/`
+  beside the Wrasse's seat. The two seats now share one notion (SKILL.md "One notion of a crew vessel"): `ICrewSeat`;
+  `CrewSeat` (wake, swap, hand-over - the Goby now pauses the player's `InputController`, as the Kite did);
+  `CrewPictureInPicture` (the Pistol's view moved from a lower-RIGHT inset to the Wrasse's lower-left square, and
+  taking the Pistol now lifts the Goby's view into that square); `CrewViewRender` (the side camera's render measures
+  prism depth from the Pistol's plane and re-aims the game's occlusion corridor at the Pistol, so a foreground prism
+  in front of it DITHERS - the round-before's "skip it" concession is gone); draws for the side camera only
+  (`RenderParams.camera`); `check_crew_vessels.py` and `CrewVesselTests`. The Wrasse's behaviour is unchanged (its
+  code now calls the same pieces). **[read] for Garrett:** the Goby still shows the Squirrel's HUD while the Wrasse
+  has one that reads its seat; a Goby HUD that reads the Pistol (launch charge, snap, ghost) is the next consistency
+  step. The lab's inset is still lower right (the layout was decided in Unity, as the Wrasse's round 4 was).

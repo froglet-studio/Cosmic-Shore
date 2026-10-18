@@ -229,6 +229,10 @@ namespace CosmicShore.Engine.Collections
         public NativeParallelHashMap(int capacity, Allocator allocator) { _m = new NativeHashMap<TKey, TValue>(capacity, allocator); }
         public bool IsCreated => _m.IsCreated;
         public int Count() => _m.Count;
+        /// <summary>Original contract: the map's slot count. A managed dictionary grows on demand, so the shim keeps the
+        /// largest capacity asked for and reports it (BlackHoleGravityField grows its maps to the body count).</summary>
+        public int Capacity { get => System.Math.Max(_capacity, _m.Count); set => _capacity = System.Math.Max(value, _m.Count); }
+        int _capacity;
         public TValue this[TKey key] { get => _m[key]; set => _m[key] = value; }
         public bool TryAdd(TKey key, TValue value) => _m.TryAdd(key, value);
         public bool Remove(TKey key) => _m.Remove(key);

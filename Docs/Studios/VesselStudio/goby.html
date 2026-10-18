@@ -558,7 +558,7 @@
     out.ok = true; return out;
   }
   // ---- DRAWING-ONLY maps, beside ribMap and mirroring the Unity clone exactly (PistolRibbon.MapFast / MapNear /
-  //      Curvature / BeyondEnd, Assets/_Scripts/Controller/Vessel/Duo/GobyPistol/PistolRibbon.cs). The SIM asks only
+  //      Curvature / BeyondEnd, Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/PistolRibbon.cs). The SIM asks only
   //      ribMap; these are what the side view asks, hundreds of times a frame. ----
   function ribResolve(rb, q, bk, bt, goby, out) {   // (x, h, d) of q against segment bk at fraction bt: the tail of ribMap
     const k = bk, t = bt, X0 = RX(rb, k), X1 = RX(rb, k + 1);

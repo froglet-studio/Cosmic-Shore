@@ -494,12 +494,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
 
-### T-20261017-efca · open · dev · Crew vessels
+### T-20261017-efca · done · dev · Crew vessels
 - **Task:** When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule.
 - **Done when:** A duo-vessel entry seats the kite on a hull with no editor menu
 - **Who can take it:** Garrett (duo-vessel owner)
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; .claude/skills/duo-vessel/SKILL.md on cece/sharp-tesla-j0kd7z
+- **Done:** 2026-10-18, Done on cece/sharp-tesla-j0kd7z (2026-10-18): the Wrasse is the duo-vessel skill's second design, and both crew seats (KiteNavigator, GobyPistolDuo) implement ICrewSeat and share CrewSeat (wake, PilotSwapGesture swap, AI hand-over), CrewPictureInPicture and CrewViewRender; check_crew_vessels.py holds every crew hull to the card / roster / container rules. The Wrasse already reaches the game from the Toybox Vessel Changer; a mode carrying a crew hull is the networking decision (T-20261017-b06e).
 
 ### T-20261017-3cbe · open · content · Crew vessels
 - **Task:** Author FMOD events for the Kite Navigator's eight empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal, fauna struck.
@@ -757,3 +758,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (sign-off); Yash can run the editor pass
 - **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Kite Navigator
+
+### T-20261018-8b32 · open · test · Crew vessels
+- **Task:** Fly both crew vessels in the Unity Editor after the crew unification (cece/sharp-tesla-j0kd7z, 2026-10-18): the Goby and Pistol (VesselClassType 18) and the Wrasse and Grouper, from the Toybox Vessel Changer. Check the six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md 'One notion of a crew vessel': both cards name both subvessels, the seat view is a lower-left square while flying the hull and swaps with the pilot view on 2 / 1, the Pistol's foreground dithers instead of vanishing, and the Wrasse behaves exactly as before.
+- **Done when:** Both crew vessels flown in the editor, the checklist entry marked green or its failures filed
+- **Who can take it:** Yash (offered), Garrett (sign-off), anyone with the Editor
+- **Added:** 2026-10-18 by a Claude session (`cece/sharp-tesla-j0kd7z`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md

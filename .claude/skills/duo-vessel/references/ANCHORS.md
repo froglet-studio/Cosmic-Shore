@@ -51,6 +51,18 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 - **Party size:** `HostConnectionDataSO.MaxPartySlots` = 4 (asserted in
   `HostConnectionDataSOTests`).
 
+### The crew pieces (built 2026-10-18; use them, never re-roll them)
+
+| Piece | File | What it owns |
+|---|---|---|
+| `ICrewSeat` | `Controller/Vessel/Crew/CrewSeat.cs` | What makes a hull a crew hull: a component on its root with `SeatName` and `HumanInSeat`. `KiteNavigator` (Wrasse) and `GobyPistolDuo` (Goby) implement it |
+| `CrewSeat` | same | The wake rule (`ShouldWake`), the swap (`PollSwap`: `PilotSwapGesture`, `PilotSwap.CooldownSeconds`), the hand-over (`HandHullToAI` / `GiveHullBack`, `SetFlightInputPaused` through the player's `InputController`) |
+| `CrewPictureInPicture` | `Controller/Vessel/Crew/CrewViews.cs` | The two views' layout: the seat's view a lower-left square while the human flies the hull; full screen, with the pilot camera (`CameraManager.ViewCamera`) in the square, while the human is in the seat; the pilot camera's rect and depth restored |
+| `CrewViewRender` | same | A seat camera's look, for its render only: `PrismDepthPlane` (depth from the seat's plane) and `PrismOcclusionCorridor.BeginViewOverride` (the dither corridor re-aimed), restored in `endCameraRendering` |
+| `SO_Vessel.CrewNames` / `CrewNameTemplate` / `CardName` | `ScriptableObjects/SO_Vessel.cs` | The card that names both subvessels; `Name` stays the key |
+| `check_crew_vessels.py`, `CrewVesselTests` | `Tools/Build/`, `Tests/Editor/` | Every hull with an `ICrewSeat` has the crew card, is on the roster and in the container; every crew card has a seat |
+| `author_<hull>_assets.py` | `Tools/Build/` | Clones a donor hull, puts the seat on its root, registers it everywhere (`author_wrasse_assets.py` also strips the donor's kit and swaps the HUD controller) |
+
 ### Player ↔ vessel, input, AI
 - **`IPlayer` / `Player`:** `C/Player/IPlayer.cs`, `C/Player/Player.cs`.
   - A Player has one `Vessel`, `InputController`, `InputStatus`, `IsLocalPilot` and
@@ -175,7 +187,7 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 | Per-viewer rendering of prisms or a curve | **generic** | the Serpent cloak's `IsLocalUser` alpha |
 | Speed gauge on the HUD | generic | `ThresherHUDView` fill |
 | Speed from distance to another object | per duo (Goby) | `StoatPathfinderExecutor` `FlightTimeScale`, `SkimmerModifyThrotleByPrismEffectSO` |
-| The unrolled-ribbon world: map world points to (s, h, d) and back, constrain the Pistol to the plane, draw parallax depth layers and distorted prisms, on the Pistol's client only | per duo (Pistol) | **The maths exists** (2026-10-15): `PistolRibbon`, `PistolBodyMath`, `VortexRing`, `PistolAI` in `Controller/Vessel/Duo/GobyPistol/`; `GobyPistolDuo` (on `Goby.prefab`, `VesselClassType.Goby`) draws the warped world through a second camera on the local pilot's machine. Still no seat, no networking |
+| The unrolled-ribbon world: map world points to (s, h, d) and back, constrain the Pistol to the plane, draw parallax depth layers and distorted prisms, on the Pistol's client only | per duo (Pistol) | **The maths exists** (2026-10-15): `PistolRibbon`, `PistolBodyMath`, `VortexRing`, `PistolAI` in `Controller/Vessel/Crew/GobyPistol/`; `GobyPistolDuo` (on `Goby.prefab`, `VesselClassType.Goby`) draws the warped world through a second camera on the local pilot's machine. Still no seat, no networking |
 | A side-on sidescroller camera mode | generic | `CameraSettingsSO.CameraMode` |
 | Alternating-angle trail blocks | per duo (Goby) | `VesselPrismController.CreateBlock` |
 | Drag-to-aim launch on mobile | generic | `ThresherLaunchSight` (stick aim only) |

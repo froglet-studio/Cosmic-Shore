@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     /// explosion), so mass is conserved and nothing pops. The side view draws each prism's own mesh and material at its
     /// unrolled place, turned by the ribbon there: the Pistol's world, not a copy of it.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat
     {
         enum Half { Goby = 0, Pistol = 1 }
         enum By { Body = 0, Vortex = 1, Chain = 2, Flare = 3 }
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
         IVessel _goby; Transform _gt;   // bound while this is the local pilot's hull, flown by a human
         PistolRibbon _rb; PistolBodyMath.State _p; PistolAI _ai;
         PistolBodyMath.Settings _body; VortexRing.Settings _vs; PistolAI.Settings _ais; PistolRibbon.LaySettings _lay;
-        float _t, _lastSwapAt = -9f; Vector3 _lastPos; Half _human = Half.Goby; bool _weTookGoby; IInputStatus _pausedInput;
+        float _t, _swapReadyAt; Vector3 _lastPos; Half _human = Half.Goby; bool _weTookGoby; IPlayer _seatPlayer;
         readonly List<RingRun> _rings = new();
         readonly HashSet<Prism> _held = new();
         readonly Dictionary<Prism, float> _primed = new(), _hot = new();
@@ -95,6 +95,8 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Prism, float> _barSince = new();         // when a prism became a bar (hysteresis, grow-in)
         readonly List<Prism> _expiredK = new();
         readonly PistolWorldMesh _world = new();
+        readonly CrewPictureInPicture _pip = new();                 // the crew vessels' one layout of the two views
+        CrewViewRender _render;                                      // and their one look for a seat camera's render
         readonly PistolTrueDraw _true = new();                      // the world drawn as itself: real meshes, real materials, lit, under the sky
         readonly Dictionary<Prism, Renderer> _renderers = new(2048); // each prism's renderer (its live sharedMaterials)
         readonly List<Renderer> _gobyRenderers = new();              // the hull's own renderers, drawn at the end of the ground
@@ -121,13 +123,14 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        // the local pilot's own hull, flown by a human (or handed to the AI by this component's own swap)
-        bool ShouldRun(out IVessel vessel)
-        {
-            vessel = null;
-            if (VesselVisionShading.LocalVessel != transform || !TryGetComponent(out vessel)) return false;
-            return _weTookGoby || vessel.VesselStatus == null || !vessel.VesselStatus.AutoPilotEnabled;
-        }
+        /// <summary>The seat's subvessel on the card ("Goby and Pistol").</summary>
+        public string SeatName => "Pistol";
+        /// <summary>True while the local human flies the Pistol and the Goby's own AI flies the hull.</summary>
+        public bool HumanInSeat => _human == Half.Pistol;
+
+        // the local pilot's own hull, flown by a human (or handed to the AI by this component's own swap): the crew seat
+        // rule every crew vessel shares (CrewSeat.ShouldWake; the Wrasse's KiteNavigator follows the same one)
+        bool ShouldRun(out IVessel vessel) => CrewSeat.ShouldWake(this, _weTookGoby, out vessel);
 
         void Bind(IVessel vessel)
         {
@@ -136,7 +139,7 @@ namespace CosmicShore.Gameplay
             if (!config) config = ScriptableObject.CreateInstance<GobyPistolConfigSO>();
             _body = Config.Body; _vs = Config.Vortex; _ais = Config.AI; _lay = Config.Lay;
             _primer = Mathf.RoundToInt(Config.PrimerCharges); _flare = Mathf.RoundToInt(Config.FlareCharges);
-            _t = 0f; _lastSwapAt = -9f; _human = Half.Goby;
+            _t = 0f; _swapReadyAt = 0f; _human = Half.Goby;
             // every clock the step reads against _t restarts with it: a re-bind (the menu round trip hands the hull to the
             // autopilot and back) otherwise held the AI Goby's primer and flares until the OLD clock's last fire had passed
             _nextSweep = 0f; _lastPrimerAt = _lastFlareAt = -9f; _primerT = _flareT = 0f; _prevPrimer = _prevFlare = false;
@@ -149,6 +152,7 @@ namespace CosmicShore.Gameplay
             if (_goby == null) return;
             if (_human == Half.Pistol) SetHuman(Half.Goby);
             ReleaseAllRings(); _flares.Clear(); _primed.Clear(); _hot.Clear();
+            _render?.Dispose(); _render = null; _pip.Restore();
             if (_view) Destroy(_view);
             _world.Dispose(); _fx.Clear(); _tail.Clear(); _seen.Clear(); _foreground.Clear(); _lastK.Clear(); _barSince.Clear();
             _true.Dispose(); _renderers.Clear(); _gobyRenderers.Clear();
@@ -472,35 +476,29 @@ namespace CosmicShore.Gameplay
 
         void PollSwap()
         {
-            // the arena's gesture, read here because the Goby's InputController is paused while the human is on the
-            // Pistol (and RequestPilotSwap is a no-op outside an arena match, so the two never both act)
-            if (PilotSwapGesture.DirectionThisFrame() == 0 || _t - _lastSwapAt < PilotSwap.CooldownSeconds) return;
-            _lastSwapAt = _t;
-            SetHuman(_human == Half.Goby ? Half.Pistol : Half.Goby);
+            // the arena's gesture on the arena's cooldown (CrewSeat.PollSwap), read here because the Goby's input is paused
+            // while the human is on the Pistol (and RequestPilotSwap is a no-op outside an arena match, so the two never
+            // both act)
+            if (CrewSeat.PollSwap(ref _swapReadyAt)) SetHuman(_human == Half.Goby ? Half.Pistol : Half.Goby);
         }
 
         void SetHuman(Half half)
         {
-            if (half == Half.Goby && _pausedInput != null)
-            {
-                // the input paused is the PLAYER's, which outlives this hull (a swap re-homes it): restore that one
-                if (_pausedInput is not UnityEngine.Object o || o) _pausedInput.Paused = false;   // skip a destroyed component
-                _pausedInput = null;
-            }
-            if (_goby == null || !_gt) { _human = half; _weTookGoby = false; return; }   // the hull is gone: nothing to hand back
+            // the hand-over every crew seat shares (CrewSeat): to the Pistol, the player's flight input paused and the
+            // Goby's own AI flying it; back, the opposite order, and only an autopilot this seat started is stopped again.
+            // The player is captured on the way out: it outlives the hull (a swap re-homes it), so it is the one restored.
             if (half == Half.Pistol)
             {
-                // the AI takes the Goby; the human's sticks stop reaching it (they fly the Pistol now)
-                _weTookGoby = !_goby.VesselStatus.AutoPilotEnabled;
-                if (_weTookGoby) _goby.ToggleAIPilot(true);
-                var player = _goby.VesselStatus.Player;
-                _pausedInput = player != null ? player.InputStatus : null;
-                if (_pausedInput != null) _pausedInput.Paused = true;
+                if (_human != Half.Pistol)
+                {
+                    _seatPlayer = _goby != null && _gt ? _goby.VesselStatus?.Player : null;
+                    _weTookGoby = _goby != null && _gt && CrewSeat.HandHullToAI(_goby, _seatPlayer);
+                }
             }
-            else
+            else if (_human == Half.Pistol)
             {
-                if (_weTookGoby) _goby.ToggleAIPilot(false);
-                _weTookGoby = false;
+                CrewSeat.GiveHullBack(_goby != null && _gt ? _goby : null, _seatPlayer, _weTookGoby);
+                _weTookGoby = false; _seatPlayer = null;
             }
             _human = half;
             // a press carried across the swap is not a press (the lab's swap)
@@ -584,6 +582,7 @@ namespace CosmicShore.Gameplay
             _cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
             _torus = BuildTorus(1f, 0.08f, 40, 8);
             _ringMat = Unlit(new Color(0.62f, 0.91f, 1f)); _flareMat = Unlit(new Color(1f, 0.9f, 0.5f));
+            _render = new CrewViewRender(_cam, RenderLook);
             _scLive = false; _frameLive = false; _squash = _shake = 0f; _tail.Clear(); _fx.Clear();
         }
 
@@ -665,13 +664,17 @@ namespace CosmicShore.Gameplay
         void LateUpdate()
         {
             if (!_cam || _rb == null) return;
-            _cam.enabled = showSideView;
-            if (!showSideView) { Draw3D(); return; }   // the rings and flares live in the 3D world: drawn with or without the side view
+            if (!showSideView)
+            {
+                _cam.enabled = false; _pip.Restore();
+                Draw3D();   // the rings and flares live in the 3D world: drawn with or without the side view
+                return;
+            }
             using (s_viewMarker.Auto())
             {
-                var main = Camera.main;
-                _cam.depth = (main ? main.depth : 0f) + 5f;
-                _cam.rect = _human == Half.Pistol ? new Rect(0f, 0f, 1f, 1f) : new Rect(0.62f, 0.03f, 0.35f, 0.35f);
+                // the Pistol's view a square in the lower left while the human flies the Goby; full screen, with the Goby's
+                // view in the square, while the human flies the Pistol (CrewPictureInPicture: the crew vessels' one layout)
+                _pip.Layout(_cam, HumanInSeat, Config.PipSize, Config.ViewMargin);
                 float W = Config.ViewWidth, aspect = Mathf.Max(0.2f, _cam.aspect), D = Mathf.Max(20f, Config.Parallax), lift = 0.08f * (W / aspect);
                 // the lab's sideCam: a fifth of a screen ahead of the Pistol, easing in height
                 PistolWarp.SideCamTarget(_p.x, _p.y, _rb.Ground(_p.x), W, aspect, out float tx, out float ty);
@@ -691,7 +694,7 @@ namespace CosmicShore.Gameplay
                 _cam.transform.SetPositionAndRotation(Stage + _frame * (new Vector3(cx, cy, -D) + shake), _frame);
 
                 var stage = Matrix4x4.TRS(Stage, _frame, Vector3.one);
-                _true.Begin(stage, new Bounds(_cam.transform.position, Vector3.one * (2f * far)));
+                _true.Begin(stage, new Bounds(_cam.transform.position, Vector3.one * (2f * far)), _cam);
                 _world.Begin(_scX, _scY, cx, cy, D);
                 _rb.SegTests = 0; _cntMapped = _cntWarped = _cntBars = _cntBoxes = _cntTiles = 0;
                 float xLo = _scX - 2f * W, xHi = _scX + 2f * W;   // the ribbon the far background can still show
@@ -805,8 +808,6 @@ namespace CosmicShore.Gameplay
                 _cntTiles++;
                 return;
             }
-            // the foreground (between the eye and the plane) is real and opaque, so the one thing it may not do is cover the Pistol
-            if (m.D < -(Config.Vision + 4f) && Mathf.Abs(m.X - _p.x) < hd + 8f && Mathf.Abs(m.H - _p.y) < hd + 8f) return;
 
             // the marks (the lab's own): rings about the prism, unlit, pulsing - the prism itself keeps its own look
             Vector3 at = new(m.X, m.H, z.D);
@@ -850,6 +851,30 @@ namespace CosmicShore.Gameplay
             if (!warped) { _true.Rigid(mesh, mats, PistolWarp.FlatTransform(tr.localToWorldMatrix, T, U, R, new Vector3(m.X, m.H, m.D))); _cntBoxes++; return; }   // a fold: a corner landed on another pass
             _true.Warped(data, _xhd, mats);
             _cntWarped++;
+        }
+
+        // ---- how the side camera sees the game's prisms, for its render only (CrewViewRender, the crew vessels' one look):
+        // their depth look measured from the Pistol's plane (d = 0 at the stage), and the game's own occlusion corridor
+        // aimed from this lens at the Pistol, the vessel this camera is for - so the foreground in front of it dithers, as
+        // the mass in front of any vessel does for the game's own camera, instead of hiding it
+        CrewViewRender.Look RenderLook()
+        {
+            var look = new CrewViewRender.Look
+            {
+                PlanePoint = Stage, PlaneNormal = _frame * Vector3.forward, FullSpreadAt = Config.DepthFullSpreadAt,
+            };
+            var corridor = PrismOcclusionCorridor.Config;
+            if (_gt && corridor && corridor.Enabled)
+            {
+                float r = Mathf.Clamp(Config.BodyR, corridor.MinVesselRadius, corridor.MaxVesselRadius);
+                look.Hull = _gt;
+                look.CorridorTarget = Stage + _frame * new Vector3(_p.x, _p.y, -(Config.Vision + 4f));   // the tube's near cap
+                look.OuterRadius = r * corridor.OuterRadiusScale;
+                look.InnerRadius = r * corridor.InnerRadiusScale;
+                look.CoreAlpha = corridor.CoreAlpha;
+                look.NearRadius = corridor.NearRadius(r);
+            }
+            return look;
         }
 
         // ---- the Pistol, its trail, the Goby, the rings, the flares, the aim

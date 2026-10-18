@@ -18,11 +18,15 @@ namespace CosmicShore.Engine
         public int layer;
         /// <summary>Per-draw property overrides (UnityEngine.RenderParams.matProps).</summary>
         public MaterialPropertyBlock matProps;
+        /// <summary>The one camera that draws this submission (UnityEngine.RenderParams.camera); null = every camera.
+        /// The crew seats' second views draw their marks for their own camera only.</summary>
+        public Camera camera;
 
         public RenderParams(Material material)
         {
             this.material = material;
             matProps = null;
+            camera = null;
             worldBounds = new Bounds(Vector3.zero, Vector3.zero);
             shadowCastingMode = Rendering.ShadowCastingMode.On;
             receiveShadows = true;

@@ -25,6 +25,8 @@ run retire_call_to_action       python3 Tools/Build/retire_call_to_action.py --c
 run graphic_canvas_renderer     python3 Tools/Build/check_graphic_canvas_renderer.py
 run ai_no_state_writes          python3 Tools/Build/check_ai_no_state_writes.py --check
 run arcade_mode_lib             python3 Tools/Build/arcade_mode_lib.py --self-test
+run crew_vessels                python3 Tools/Build/check_crew_vessels.py
+run crew_vessels_self_test      python3 Tools/Build/check_crew_vessels.py --self-test
 for f in Tools/Build/author_*_assets.py Tools/Build/author_skimrace_ai_config.py Tools/Build/author_lifeform_heart_sizes.py; do
   [ -f "$f" ] && run "$(basename "$f") --check" python3 "$f" --check
 done

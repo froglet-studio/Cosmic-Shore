@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class KiteNavigator : MonoBehaviour
+    public sealed class KiteNavigator : MonoBehaviour, ICrewSeat
     {
         internal struct Mote
         {
@@ -154,6 +154,10 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the local human flies the kite and the hull's AI flies the hull.</summary>
         public bool HumanNavigates => _humanNavigates;
 
+        /// <summary>The seat's subvessel on the card ("Wrasse and Grouper": the kite is the Wrasse).</summary>
+        public string SeatName => "Wrasse";
+        bool ICrewSeat.HumanInSeat => _humanNavigates;
+
         /// <summary>The hull collected an Omni crystal: a cluster of each element drops on the board for the kite to loop
         /// (KiteOmniCrystalEffectSO). Laid on the next step, where the board is current.</summary>
         public void OnOmniCrystal() => _omniPending++;
@@ -183,14 +187,12 @@ namespace CosmicShore.Gameplay
             if (_active) Destroy(_active);
         }
 
-        // The local pilot's own hull, flown by a human - or handed to the AI by this component's own swap. Anything else
-        // (an AI hull, a remote copy, a hull the Vessel Changer has just spawned on autopilot, a menu that parked the
-        // hull on its AI) unbinds, exactly as GobyPistolDuo does on the duo-vessel branch.
+        // The local pilot's own hull, flown by a human - or handed to the AI by this component's own swap: the crew seat
+        // rule every crew vessel shares (CrewSeat.ShouldWake; GobyPistolDuo follows the same one).
         bool ShouldRun(out IVessel vessel)
         {
             vessel = null;
-            if (!config || VesselVisionShading.LocalVessel != transform || !TryGetComponent(out vessel)) return false;
-            return _weTookHull || vessel.VesselStatus == null || !vessel.VesselStatus.AutoPilotEnabled;
+            return config && CrewSeat.ShouldWake(this, _weTookHull, out vessel);
         }
 
         void Bind(IVessel vessel)
@@ -274,10 +276,7 @@ namespace CosmicShore.Gameplay
 
         void PollSwap()
         {
-            int dir = PilotSwapGesture.DirectionThisFrame();
-            if (dir == 0 || Time.unscaledTime < _swapReadyAt) return;
-            _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
-            SetHumanNavigates(!_humanNavigates);
+            if (CrewSeat.PollSwap(ref _swapReadyAt)) SetHumanNavigates(!_humanNavigates);
         }
 
         void SetHumanNavigates(bool navigate)
@@ -286,31 +285,16 @@ namespace CosmicShore.Gameplay
             _humanNavigates = navigate;
             _down = false;
 
-            // The hull's own AI flies while the human navigates; its flight input is paused so the pointer and the
-            // sticks belong to the board - the order the lava lamp and the mode preview hand a hull to its AI in
-            // (MenuCrystalClickHandler, ModePreviewSession). Coming back restores both, in the opposite order. Only an
-            // autopilot this component started is stopped again: one something else started is not ours to end.
-            if (navigate)
-            {
-                SetFlightInputPaused(true);
-                _weTookHull = !_status.AutoPilotEnabled;
-                if (_weTookHull) _vessel.ToggleAIPilot(true);
-            }
+            // The hull's own AI flies while the human navigates, its flight input paused so the pointer and the sticks
+            // belong to the board; coming back restores both in the opposite order, and only an autopilot this seat
+            // started is stopped again (CrewSeat, the hand-over every crew seat shares).
+            if (navigate) _weTookHull = CrewSeat.HandHullToAI(_vessel, _player);
             else
             {
-                if (_weTookHull && UnityLiveness.Alive(_vessel.Transform)) _vessel.ToggleAIPilot(false);
+                CrewSeat.GiveHullBack(_vessel, _player, _weTookHull);
                 _weTookHull = false;
-                SetFlightInputPaused(false);
                 _ai.Reset(_kite.Position);
             }
-        }
-
-        // the input is the PLAYER's, which outlives this hull (a swap re-homes it), so a destroyed one is skipped
-        void SetFlightInputPaused(bool paused)
-        {
-            if (_player == null) return;
-            if (UnityLiveness.Alive(_player.InputController)) _player.InputController.SetPause(paused);
-            else if (_player.InputStatus != null) _player.InputStatus.Paused = paused;
         }
 
         // ------------------------------------------------------------------ the board

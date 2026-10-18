@@ -1,6 +1,6 @@
 ---
 name: duo-vessel
-description: Use for ANY "two vessels in one" class in Cosmic Shore - a DUO vessel that takes ONE squad slot and is balanced as ONE vessel, but is really two craft that two humans, or a human and an AI, fly separately, swapped with the SAME D-pad left/right gesture as the arena pilot swap (a phone flip on mobile). Holds the duo contract (one slot, two hulls, one shared element meter, the pilot matrix, the unified swap, per-half cameras, HUDs and AIs, crystals that restock both halves, balance as one), the lab-first build order, the code anchors a duo hooks into and the pieces that do not exist yet, and one design brief per duo under references/designs/ (the first is the Goby & Pistol - a two-thumb goby (flies like the Squirrel) that lays the path and a pistol shrimp that plays a warped 2D sidescroller unrolled from the goby's ribbon, with primer, heat and flares). Trigger on "duo vessel", "two vessels in one", "two-in-one", "tandem vessel", "co-op vessel", "two pilots one vessel", "switch characters", "phone flip swap", Goby, Pistol, the Flier, the Bird, the sidescroller vessel, or any references/designs/*.md here. Load /vessel alongside it for the single-hull contract every half still owes.
+description: Use for ANY multiplayer vessel in Cosmic Shore - a CREW vessel (this skill's older word: a DUO vessel), one hull class that takes ONE squad slot and is balanced as ONE vessel but carries two subvessels that two humans, or a human and an AI, fly separately, swapped with the SAME D-pad left/right gesture as the arena pilot swap (a phone flip on mobile). Holds the ONE notion of a crew vessel both shipped ones keep (the seat on the hull's root, ICrewSeat; the card that names both, SO_Vessel.CrewNames - "Wrasse and Grouper", "Goby and Pistol"; the shared seat rules CrewSeat, the shared view layout CrewPictureInPicture and the seat camera that renders the real game with depth from its plane and the dither corridor, CrewViewRender; the Vessel Changer as the way in; check_crew_vessels.py), the duo contract (one slot, one shared element meter, the pilot matrix, the unified swap, per-seat cameras, HUDs and AIs, crystals that restock both, balance as one), the lab-first build order, the code anchors, and one design brief per crew vessel under references/designs/ (the Goby & Pistol - a two-thumb goby that lays the path and a pistol shrimp that plays a 2D side view unrolled from it; the Wrasse and Grouper - a two-thumb hull and a one-thumb kite on its plane). Trigger on "crew vessel", "multiplayer vessel", "duo vessel", "two vessels in one", "two-in-one", "tandem vessel", "co-op vessel", "two pilots one vessel", "two seats one hull", "switch characters", "phone flip swap", Goby, Pistol, Wrasse, Grouper, Kite Navigator, ICrewSeat, CrewSeat, CrewNames, the sidescroller vessel, or any references/designs/*.md here. Load /vessel alongside it for the single-hull contract the hull still owes.
 ---
 
 # Duo Vessel Protocol
@@ -15,6 +15,49 @@ duo teaches something new, it is added here (§8), so the skill grows with each 
 > before any Unity work. Recommend it to the person in one line. Then `/artifact-to-unity` clones
 > the decided page into the game. Never publish a second artifact.
 
+## One notion of a crew vessel (both shipped ones keep it; read before touching either)
+
+**Words.** The code says **crew vessel** (`Controller/Vessel/Crew/`, `SO_Vessel.CrewNames`, `ICrewSeat`); this skill
+was written first and says **duo vessel**. They are the same thing. "Multiplayer vessel" in a request means this too.
+Say *crew vessel* in new code and docs; each half is a **subvessel**, the extra one a **seat**.
+
+| Crew vessel | Card | Hull (`VesselClassType`) | Seat on its root | The seat's view | Brief |
+|---|---|---|---|---|---|
+| **Wrasse** | Wrasse and Grouper | Wrasse = 19 (the Sparrow without its kit, two thumbs) | `KiteNavigator`: a one-thumb kite on the hull's x-z plane | top-down orthographic, the real world projected onto the plane | `references/designs/wrasse-and-grouper.md` → `Controller/Vessel/Crew/KITE_NAVIGATOR.md` |
+| **Goby** | Goby and Pistol | Goby = 18 (the Squirrel, its own cruise) | `GobyPistolDuo`: the Pistol, a 2D side view unrolled from the Goby's path | side-on perspective whose frustum is the parallax, the real prisms laid out along the unroll | `references/designs/goby-and-pistol.md` |
+
+**The shape both chose** (call it **C** beside §3.1's A and B): **one hull class and one prefab** - a clone of a donor
+hull, authored and registered by `Tools/Build/author_<hull>_assets.py` (`author_wrasse_assets.py` is the fuller
+pattern, `author_goby_assets.py` the first) - with **the seat as one component on the hull's root** that implements
+`ICrewSeat` and is wired to its own config SO. The seat's subvessel is simulated and drawn by the seat; it is not an
+`IVessel` of its own. A and B stay the options for a seat that needs a real second hull.
+
+**What every crew vessel keeps** (one piece of shared code or data each; a seat that hand-rolls one of these is a
+defect):
+
+| Rule | Where it lives |
+|---|---|
+| **The card names both subvessels**: `CrewNames` (two entries) joined by `CrewNameTemplate` (`{0} and {1}`) is `SO_Vessel.CardName`, which every card, station and panel shows. `Name` stays the one-word key (the hangar's unlocks are keyed by it). | `SO_Class_<Hull>.asset`, written and checked by the generator |
+| **The way in is the Toybox's Vessel Changer** ("bring it to Unity" = fly it from there, CLAUDE.md). The hull is on `ToyVesselRoster.Default`, the Vessel Prefab Container, `DefaultNetworkPrefabs`, both class lists, and has its four `CrystalHullFusionConfig` entries. Claim the enum value after checking bleeding-edge AND the in-flight branches. | the generator `--check`; `EnumIntegrityTests` |
+| **The seat wakes** only on the local pilot's own hull while a human flies it, or while the seat itself handed the hull to its AI. | `CrewSeat.ShouldWake` |
+| **ONE swap, the arena's**: `PilotSwapGesture` (D-pad left / right, keys 1 / 2) on `PilotSwap.CooldownSeconds`. | `CrewSeat.PollSwap` |
+| **The empty seat is never pilotless.** Into the seat: the player's flight input paused, then the hull's `AIPilot` flies it; back: the opposite order, and only an autopilot the seat started is stopped. The seat has its own input-only AI for when the human flies the hull (`/vessel-ai`). | `CrewSeat.HandHullToAI` / `GiveHullBack`; `KiteNavigatorAI`, `PistolAI` |
+| **Two views, one layout**: flying the hull, the seat's view is a square in the lower left (`pipSize` 0.32 of the screen height, `viewMargin` 0.015); flying the seat, it fills the screen and the pilot's camera (`CameraManager.ViewCamera`) is lifted into the same square. The pilot camera's rect and depth are always restored. | `CrewPictureInPicture` |
+| **The seat camera renders the game** (Garrett, 2026-10-18, for both: "use the game's rendering", "as true to the game as possible"): the real prisms, hulls and materials under the game's lights and sky, never a re-styled copy, fog or tint. For its render only, the prisms' depth look measures distance **from the seat's plane** (`PrismDepthPlane`, `depthFullSpreadAt` 60), and the game's occlusion corridor (the screen-door dither) is **re-aimed for the seat's view** so mass in front of what the seat must see dithers instead of hiding it: the Kite's is a cone from its lens down to the board; the Pistol's is the game's own vessel corridor aimed from its lens at the Pistol. | `CrewViewRender` |
+| **The seat's own marks** (the kite, motes, rings; the Pistol's tube, aim, primed / hot / held rings) are drawn for the seat's camera only (`RenderParams.camera`), instanced with URP/Unlit set transparent - never `Sprites/Default`, whose instanced path draws at zero alpha. | each seat's view code |
+| **One machine today.** The seat runs on the hull's local human's machine; replicating it is the open networking decision (`T-20261017-b06e`). | `ANCHORS.md` |
+
+**Gates:** `python3 Tools/Build/check_crew_vessels.py` (and `--self-test`; in `/to-bleeding-edge`'s gates) holds every
+hull that carries an `ICrewSeat` to the card, roster and container rules, and every class that names a crew to having
+a seat. `CrewVesselTests` holds the same in the editor. Each hull's generator `--check` holds its own assets.
+
+**Where the two still differ, on purpose or not yet:**
+- The Wrasse has its own HUD controller (`WrasseHUDController`, the cards read the seat); the Goby still shows the
+  Squirrel's HUD. A Goby HUD that reads the Pistol is the next consistency step (no task yet).
+- The Wrasse's hull is stripped of its donor's kit (`author_wrasse_assets.py` round 4c); the Goby keeps the Squirrel's
+  abilities, by design ([stated], the brief).
+- The Kite's lab is behind the game (`T-20261018-3247`); the Goby's lab IS the source (`/artifact-to-unity`).
+
 ## 0. Read first
 
 - **`references/designs/<duo>.md`**: the brief for the duo you are working on. Read every
@@ -25,6 +68,10 @@ duo teaches something new, it is added here (§8), so the skill grows with each 
     (Garrett first called them the Flier and the Bird.)
     Its lab is `Docs/Studios/VesselStudio/goby.html` (round 1, 2026-10-14). It is the template for
     the next duo's lab.
+  - `wrasse-and-grouper.md`: the **Grouper**, the Sparrow's hull flown on two thumbs, and the **Wrasse**, a one-thumb
+    kite on the hull's own plane whose head pops prisms and whose tail lassos motes into effects. Built in its own
+    lab (`Docs/Studios/CrewVesselLab.html`) on `cece/compassionate-babbage-gc13io`; the full record is
+    `Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`.
 - **`references/ANCHORS.md`**: the code a duo plugs into (seats, the arena pilot swap, input,
   phone flip, cameras, trails and the spline, crystals), and the list of pieces that **do not
   exist yet**. Re-verify an anchor before relying on it. Anchors drift.
@@ -142,7 +189,8 @@ two options (ANCHORS.md has the code each one touches):
   - Pros: each half reuses the single-hull pipeline, and the swap is literally `PilotSwap`.
   - Cons: slot counting, selection and backfill must learn to treat a pair as one seat.
 
-**The code leans hard toward B.** Flight, abilities and the AI's stick all go through
+**Both shipped crew vessels chose C** (above: one hull, the seat a component on its root), which needs neither A's
+composite nor B's paired seat. For a seat that needs a real second hull, **the code leans hard toward B.** Flight, abilities and the AI's stick all go through
 `Player.InputStatus`. `PilotSwap.ApplyLocal` already trades hulls between a human Player and an
 AI Player, with ownership, camera, HUD, local-pilot systems, motion and AI restart all handled.
 Recommend B unless a design needs something only A gives.

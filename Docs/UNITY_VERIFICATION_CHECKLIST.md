@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 One notion of a crew vessel: the Goby and Pistol beside the Wrasse and Grouper (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-18: "learn what you can from [the Wrasse and Grouper] ... unify what you can so we have a consistent
+notion of multiplayer vessels. and apply it here." After merging bleeding-edge: the Goby is `VesselClassType` **18**
+(16 is the Brittle Star) and its card reads **Goby and Pistol**; both seats implement `ICrewSeat` and run on the shared
+`CrewSeat` (wake, swap, hand-over), `CrewPictureInPicture` (the two views' layout) and `CrewViewRender` (a seat camera's
+look: prism depth from its plane, the occlusion corridor re-aimed). The Goby's code moved to
+`Controller/Vessel/Crew/GobyPistol/`. No editor and no `unity` CLI, so `/verify-unity` did NOT run. Headless: refcompile
+player 0 errors, editor 3 (`AuthenticationServiceFacade`, identical to bleeding-edge); Amoebius builds;
+`check_crew_vessels.py` ok with 7 negative controls; both generators' `--check`; the Kite's `parity.cjs` (core and asset
+unchanged); 53/53 stand-in tests.
+
+1. **Toybox ▸ Vessel Changer:** the stations read **Goby and Pistol** and **Wrasse and Grouper**; so do the hangar card,
+   its detail and abilities views and the arcade launch panel for either.
+2. **Fly the Goby:** the Pistol's view is now a **square in the lower left** (it was a lower-right inset), the same
+   size and place as the Wrasse's kite view.
+3. **Press 2:** the Pistol's view fills the screen and **the Goby's chase view drops into the lower-left square**; press
+   1: both return, and the main camera's rect is whole again (no stuck square after leaving the Goby either).
+4. **The foreground:** a prism between the side camera and the Pistol now **dithers** (the game's screen-door, as
+   prisms between your own camera and your hull do), instead of vanishing. Prisms on the Pistol's plane read crisp;
+   their faces part with distance from the plane, not from the camera.
+5. **The Wrasse, unchanged:** fly it, press 2 / 1, watch the kite view's square, the pilot view swapped into it, the
+   dither cone above the board - all as before this change (its code now calls the shared pieces).
+6. **Never:** a crew seat waking on an AI hull or a hull the changer just spawned on autopilot; the player's sticks
+   still flying the hull while they are in a seat; the pilot camera left in the small square after a swap back, a
+   hull change or leaving freestyle.
+
 ### 🔴 The Pistol's view drawn as the game draws it (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-18: "render the shrimp view as true to the game as possible; err on the side of being too true to the game."
@@ -201,7 +228,7 @@ prefab-container, class-icon, shared-channel and far-clip gates OK.
 `.claude/skills/duo-vessel/references/designs/goby-and-pistol.md` §9-§10. The Goby & Pistol lab
 (`Docs/Studios/VesselStudio/goby.html`) ported line for line: `PistolRibbon` (the unrolled path and the Pistol's ground),
 `PistolBodyMath` + `VortexRing` (the ride, launch, ghost, the vortex-ring Snap), `PistolAI` (Easy / Medium / Hard), all in
-`Assets/_Scripts/Controller/Vessel/Duo/GobyPistol/`; `GobyPistolConfigSO` + `Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset`
+`Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/`; `GobyPistolConfigSO` + `Assets/_SO_Assets/VesselActions/GobyPistol/GobyPistolConfig.asset`
 (40 numbers written by `studio_to_unity.py --vessel goby`); the Play-mode harness (since 2026-10-15 the runtime `GobyPistolDuo`, see the Goby vessel entry above).
 No editor and no `unity` CLI in this session, so `/verify-unity` did NOT run. Headless proof: `unity_refcompile` player,
 player-dev and editor configs (0 project errors); `GobyPistolMathTests` (10 tests) run OUTSIDE Unity against a float

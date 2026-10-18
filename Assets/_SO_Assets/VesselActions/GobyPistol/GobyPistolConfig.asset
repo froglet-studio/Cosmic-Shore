@@ -34,6 +34,9 @@ MonoBehaviour:
   pBodyR: 5
   pViewWidth: 460
   pParallax: 160
+  pipSize: 0.32
+  viewMargin: 0.015
+  depthFullSpreadAt: 60
   pLaunchRange: 240
   pLaunchSpeed: 280
   pLaunchCharges: 1

@@ -46,7 +46,7 @@ MAPS = os.path.join(ROOT, "Assets", "Resources", "ElementalAbilityMaps")
 DONOR_MAP = os.path.join(MAPS, "Squirrel.asset")
 MAP = os.path.join(MAPS, "Goby.asset")
 FUSION = os.path.join(ROOT, "Assets", "Resources", "CrystalHullFusionConfig.asset")
-DUO_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Duo", "GobyPistol", "GobyPistolDuo.cs.meta")
+DUO_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Crew", "GobyPistol", "GobyPistolDuo.cs.meta")
 CONFIG_META = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "GobyPistol", "GobyPistolConfig.asset.meta")
 
 GOBY_CLASS_ID = 18   # 16 is the BrittleStar on bleeding-edge; 18 was left for the Goby (VesselClassType.cs)

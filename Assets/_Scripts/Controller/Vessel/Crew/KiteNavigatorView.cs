@@ -56,10 +56,8 @@ namespace CosmicShore.Gameplay
         readonly List<int> _tris = new();
         readonly Dictionary<(Material, Mesh, Camera), Batch> _batches = new();
 
-        Camera _pilot;
-        Rect _pilotRect;
-        float _pilotDepth;
-        bool _pilotLifted;
+        readonly CrewPictureInPicture _pip = new();   // the crew vessels' one layout of the two views
+        readonly CrewViewRender _render;               // and their one look for a seat camera's render
 
         sealed class Batch
         {
@@ -77,8 +75,7 @@ namespace CosmicShore.Gameplay
             _cam.orthographic = true;
             _cam.nearClipPlane = 0.1f;
             _cam.enabled = false;
-            RenderPipelineManager.beginCameraRendering += BeginRender;
-            RenderPipelineManager.endCameraRendering += EndRender;
+            _render = new CrewViewRender(_cam, RenderLook);
 
             _kiteMesh = BuildKite();
             _dotMesh = BuildDisc(1f, 12);
@@ -144,10 +141,8 @@ namespace CosmicShore.Gameplay
 
         internal void Dispose()
         {
-            RenderPipelineManager.beginCameraRendering -= BeginRender;
-            RenderPipelineManager.endCameraRendering -= EndRender;
-            EndRender(default, _cam);
-            RestorePilot();
+            _render.Dispose();
+            _pip.Restore();
             if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
             foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh, _tailMat, _loopMat,
@@ -162,16 +157,6 @@ namespace CosmicShore.Gameplay
         {
             var cfg = _nav.Config;
             var s = _nav.Settings;
-            var pilot = CameraManager.ViewCamera;
-            if (pilot != _pilot) { RestorePilot(); _pilot = pilot; if (_pilot) { _pilotRect = _pilot.rect; _pilotDepth = _pilot.depth; } }
-
-            _cam.enabled = true;
-            if (_pilot)
-            {
-                _cam.cullingMask = _pilot.cullingMask;
-                _cam.clearFlags = _pilot.clearFlags;
-                _cam.backgroundColor = _pilot.backgroundColor;
-            }
 
             // straight down the board's up axis, centred on the disc, seeing viewDepth either side of the plane
             Vector3 up = _nav.BoardUp, fwd = _nav.BoardForward;
@@ -180,41 +165,19 @@ namespace CosmicShore.Gameplay
             _cam.orthographicSize = s.BoardRadius * 1.04f;
             _cam.farClipPlane = 2f * cfg.ViewDepth + 1f;
 
-            float baseDepth = _pilot ? _pilotDepth : 0f;
-            float m = cfg.ViewMargin, h = cfg.PipSize, aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
-            if (humanNavigates)
-            {
-                _cam.rect = new Rect(0f, 0f, 1f, 1f);
-                _cam.depth = baseDepth + 1f;
-                if (_pilot)
-                {
-                    _pilot.rect = new Rect(m / aspect, m, h / aspect, h);  // the kite view's own small square
-                    _pilot.depth = baseDepth + 2f;
-                    _pilotLifted = true;
-                }
-            }
-            else
-            {
-                RestorePilot();
-                _cam.rect = new Rect(m / aspect, m, h / aspect, h);       // a square in the lower left
-                _cam.depth = baseDepth + 1f;
-            }
+            // the kite view a square in the lower left while piloting; full screen, with the pilot's view in the square,
+            // while navigating (CrewPictureInPicture: the crew vessels' one layout)
+            _pip.Layout(_cam, humanNavigates, cfg.PipSize, cfg.ViewMargin);
         }
 
-        bool _corridorOverridden, _planePublished;
-
-        // This camera's render only: prism depth measured from the plane, and the corridor as a cone from this lens down
-        // to the plane, sized to the view. Restored in EndRender, before the pilot camera (which renders after this one
+        // This camera's render only (CrewViewRender): prism depth measured from the plane, and the corridor as a cone from
+        // this lens down to the plane, sized to the view. Restored before the pilot camera (which renders after this one
         // while the human navigates) or the Scene view draws.
-        void BeginRender(ScriptableRenderContext _, Camera cam)
+        CrewViewRender.Look RenderLook()
         {
-            if (cam != _cam || !_cam.enabled) return;
             var cfg = _nav.Config;
             var s = _nav.Settings;
             Vector3 up = _nav.BoardUp;
-            var plane = _nav.BoardToWorld(0f, s.Anchor * s.BoardRadius);
-            PrismDepthPlane.Begin(plane, up, cfg.DepthFullSpreadAt);
-            _planePublished = true;
 
             // The corridor's base is graded over its last share and solid at tSolid = 2/3 of its length whenever it is
             // much wider than it is long (PRISM_OCCLUSION_MAX_BASE_SHARE with inner = outer / 2), so a corridor 1.5x the
@@ -223,26 +186,12 @@ namespace CosmicShore.Gameplay
             float halfDiagonal = _cam.orthographicSize * Mathf.Sqrt(1f + _cam.aspect * _cam.aspect);
             float near = cfg.DitherNearScale;
             float outer = 2f * halfDiagonal / Mathf.Lerp(near, 1f, 2f / 3f);   // inner (outer / 2) covers the view at the plane
-            _corridorOverridden = PrismOcclusionCorridor.BeginViewOverride(
-                _nav.transform, _cam.transform.position - up * (1.5f * h), outer, 0.5f * outer, cfg.DitherCoreAlpha, near * outer);
-        }
-
-        void EndRender(ScriptableRenderContext _, Camera cam)
-        {
-            if (cam != _cam) return;
-            if (_planePublished) PrismDepthPlane.End();
-            if (_corridorOverridden) PrismOcclusionCorridor.EndViewOverride();
-            _planePublished = _corridorOverridden = false;
-        }
-
-        void RestorePilot()
-        {
-            if (_pilotLifted && _pilot)
+            return new CrewViewRender.Look
             {
-                _pilot.rect = _pilotRect;
-                _pilot.depth = _pilotDepth;
-            }
-            _pilotLifted = false;
+                PlanePoint = _nav.BoardToWorld(0f, s.Anchor * s.BoardRadius), PlaneNormal = up, FullSpreadAt = cfg.DepthFullSpreadAt,
+                Hull = _nav.transform, CorridorTarget = _cam.transform.position - up * (1.5f * h),
+                OuterRadius = outer, InnerRadius = 0.5f * outer, CoreAlpha = cfg.DitherCoreAlpha, NearRadius = near * outer,
+            };
         }
 
         /// <summary>A screen pixel as a point on the board (u), through the kite camera.</summary>
@@ -262,7 +211,7 @@ namespace CosmicShore.Gameplay
             var cfg = _nav.Config;
             var s = _nav.Settings;
             var basis = Quaternion.LookRotation(_nav.BoardForward, _nav.BoardUp);
-            Camera kite = _cam, pilot = _pilot;
+            Camera kite = _cam, pilot = _pip.Pilot;
             float lift = cfg.ViewDepth - 2f;   // just under the lens: in front of every prism the view sees
             float now = Time.time;
 

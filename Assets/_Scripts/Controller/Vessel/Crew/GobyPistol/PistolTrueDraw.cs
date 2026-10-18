@@ -22,13 +22,15 @@ namespace CosmicShore.Gameplay
         readonly List<Vector3> _verts = new(512);
         Matrix4x4 _stage = Matrix4x4.identity;
         Bounds _bounds;
+        Camera _cam;
         public int Draws { get; private set; }
         public int Instances { get; private set; }
 
-        /// <summary>Start a frame: the flat frame's place in the world, and the bounds every draw is given (the camera's reach).</summary>
-        public void Begin(in Matrix4x4 stage, in Bounds worldBounds)
+        /// <summary>Start a frame: the flat frame's place in the world, the bounds every draw is given (the camera's reach),
+        /// and the one camera that draws it (RenderParams.camera: the seat's view only, as the Wrasse's kite view draws).</summary>
+        public void Begin(in Matrix4x4 stage, in Bounds worldBounds, Camera cam)
         {
-            _stage = stage; _bounds = worldBounds; _pooled = 0; Draws = 0; Instances = 0;
+            _stage = stage; _bounds = worldBounds; _cam = cam; _pooled = 0; Draws = 0; Instances = 0;
             for (int i = 0; i < _used; i++) _batches[i].N = 0;
             _used = 0;
         }
@@ -78,7 +80,7 @@ namespace CosmicShore.Gameplay
             {
                 var mat = materials[Mathf.Min(s, materials.Length - 1)];
                 if (!mat) continue;
-                var rp = new RenderParams(mat) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false, worldBounds = _bounds };
+                var rp = new RenderParams(mat) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false, worldBounds = _bounds, camera = _cam };
                 Graphics.RenderMesh(rp, mesh, s, _stage);
                 Draws++;
             }
@@ -91,7 +93,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _used; i++)
             {
                 var b = _batches[i]; if (b.N == 0) continue;
-                var rp = new RenderParams(b.Material) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false, worldBounds = _bounds };
+                var rp = new RenderParams(b.Material) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false, worldBounds = _bounds, camera = _cam };
                 if (b.Material.enableInstancing) { Graphics.RenderMeshInstanced(rp, b.Mesh, b.Sub, b.M, b.N); Draws++; }
                 else for (int k = 0; k < b.N; k++) { Graphics.RenderMesh(rp, b.Mesh, b.Sub, b.M[k]); Draws++; }
                 b.N = 0;

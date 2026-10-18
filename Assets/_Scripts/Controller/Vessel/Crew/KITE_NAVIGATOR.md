@@ -195,6 +195,12 @@ elements: each unlocks at level 5 and relocks below 4.
 
 ## Seats: the swap is the arena's
 
+The seat rules below are `CrewSeat`'s (`Controller/Vessel/Crew/CrewSeat.cs`), shared with the Goby's Pistol seat
+(`GobyPistolDuo`) so the two crew vessels cannot drift apart: the wake rule, the swap poll and the hand-over. The two
+views' layout is `CrewPictureInPicture` and the kite camera's look `CrewViewRender` (`CrewViews.cs`), the same pieces
+the Pistol's view uses. The contract they implement is `.claude/skills/duo-vessel/SKILL.md`, "One notion of a crew
+vessel".
+
 The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
 `PilotSwap.CooldownSeconds` as its cooldown. It moves the local human between the hull and the kite. An AI squad mate
 always flies the empty seat:
@@ -215,7 +221,8 @@ always flies the empty seat:
 | `KiteNavigatorConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset`. |
 | `KiteNavigator.cs` | The seat on the hull: board frame, motes, prism and rival shadows, thumb, head contacts, effects, swap. |
 | `Assets/_Prefabs/Spacevessels/Wrasse.prefab`, `Tools/Build/author_wrasse_assets.py` | The Wrasse hull (the Sparrow plus this seat) and the tool that authors and registers it. |
-| `KiteNavigatorView.cs` | The two views: the kite camera, the picture-in-picture swap, every kite, tail, mote and ring draw (the game's renderer, `Graphics.RenderMeshInstanced`). |
+| `KiteNavigatorView.cs` | The two views: the kite camera, every kite, tail, mote and ring draw (the game's renderer, `Graphics.RenderMeshInstanced`). The picture-in-picture layout and the per-render look are the shared `CrewPictureInPicture` / `CrewViewRender`. |
+| `CrewSeat.cs`, `CrewViews.cs` | What every crew vessel shares (2026-10-18, with the Goby): `ICrewSeat`, the wake rule, the swap, the hand-over (`CrewSeat`); the two views' layout (`CrewPictureInPicture`) and a seat camera's look (`CrewViewRender`). `Tools/Build/check_crew_vessels.py` and `CrewVesselTests` hold every crew hull to the contract. |
 | `UI/Controller/WrasseHUDController.cs` | The four ability cards read the seat: saved boosts, charges, the last blast, the Mass flash. |
 | `Utility/PrismDepthPlane.cs`, `_Graphics/Materials/Graphs/PrismDepthPlane.hlsl` | Prism depth from a plane, for one camera's render (the kite view). |
 | `ImpactEffects/EffectsSO/Vessel Crystal Effects/KiteOmniCrystalEffectSO.cs` | An Omni crystal drops a burst of motes on the board (asset `KiteOmniCrystalEffect`, in `WrasseImpactorDataContainer`). |
@@ -260,8 +267,8 @@ wrasses are best known for cleaning. `SO_Vessel` now has `CrewNames` (Wrasse, Gr
 - the arcade launch panel, the vessel info popup, the squad card and the Maelstrom pool row.
 
 `Name` stays "Wrasse": it is the vessel's key, and the hangar's cloud unlocks are keyed by it. A one-seat vessel leaves
-`CrewNames` empty and its card reads `Name`. The Goby & Pistol duo (`cece/sharp-tesla-j0kd7z`) can set its own
-`CrewNames` when it lands.
+`CrewNames` empty and its card reads `Name`. The Goby took the same rule when it landed: its card reads **Goby and
+Pistol** (`SO_Class_Goby`).
 
 The Vessel Changer reads class assets through its definition's `vesselArt` list. That list comes from the in-flight
 Toybox branch `cece/determined-goodall-o1klfo` (the picture of each vessel); this branch carries the same three hunks,
@@ -280,8 +287,8 @@ The navigator is a seat, not a hull, and the Vessel Changer offers hulls. So the
   - four `CrystalHullFusionConfig` entries, the Sparrow's;
   - `ToyVesselRoster.Default` and `EnumIntegrityTests` in code.
 - **The checks:** `--check` validates the shipped set and `--self-test` proves each check fires.
-- **The id:** 16 is BrittleStar on bleeding-edge (and the Goby on `cece/sharp-tesla-j0kd7z`), and 17 is the Angler
-  (`cece/zealous-feynman-po8k8d`). 18 is left for the Goby, which must move off 16.
+- **The id:** 16 is BrittleStar and 17 the Angler; the Goby moved off 16 to 18 when `cece/sharp-tesla-j0kd7z`
+  merged bleeding-edge (2026-10-18).
 
 **The seat only wakes on the local pilot's own hull while a human flies it**, the same rule `GobyPistolDuo` follows:
 - its transform must be `VesselVisionShading.LocalVessel`;
@@ -323,9 +330,9 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
 - **Arena swap.** In an arena match, the swap gesture also asks the arena to swap hulls while the human flies.
   `InputController` polls it, and is paused only while the human navigates. A crew hull in an arena needs one owner
   for the gesture.
-- **Duo vessels.** When the duo-vessel system lands (branch `cece/sharp-tesla-j0kd7z`, skill `/duo-vessel`), fold the
-  Wrasse into it as a duo design. It already follows the same shape: one hull class, the seat on the root, the
-  arena's swap.
+- **Duo vessels: done (2026-10-18).** The Wrasse is the duo-vessel skill's second design
+  (`.claude/skills/duo-vessel/references/designs/wrasse-and-grouper.md`), and its seat, swap and views run on the
+  shared crew pieces above (behaviour unchanged).
 - **Sounds.** All eight `EventReference` slots ship empty: loop closed, fizzle, pop, Mass, Time, Charge, steal, creature.
 - **The HUD is the Sparrow's view under a Wrasse controller** (inconsistency, a fix). `WrasseHUDController` drives
   `SparrowHUDVariant` and re-enables the Charge and Space icons that `SparrowHUDView.Initialize` hides. The icons are

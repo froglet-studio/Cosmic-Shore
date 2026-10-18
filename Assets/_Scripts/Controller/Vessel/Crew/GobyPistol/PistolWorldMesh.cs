@@ -257,12 +257,12 @@ namespace CosmicShore.Gameplay
             s_instance[0] = frame;
             if (_solid.Count > 0)
             {
-                var rp = new RenderParams(s_solid) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false, worldBounds = world };
+                var rp = new RenderParams(s_solid) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false, worldBounds = world, camera = cam };
                 Graphics.RenderMeshInstanced(rp, _mesh, 0, s_instance);
             }
             if (_glass.Count > 0)
             {
-                var rp = new RenderParams(s_glass) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false, worldBounds = world };
+                var rp = new RenderParams(s_glass) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false, worldBounds = world, camera = cam };
                 Graphics.RenderMeshInstanced(rp, _mesh, 1, s_instance);
             }
         }
