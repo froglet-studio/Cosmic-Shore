@@ -218,6 +218,9 @@ namespace CosmicShore.Gameplay
         {
             ClearLaunchView();   // a re-init on a live hull (a vessel swap) hands back the old hull's pen first
             _status = shipStatus;
+            _hitchSearched = false;   // the hitch is this vessel's, found again by name
+            _hitch = null;
+            _hitchBuilder = null;
             _registry = GetComponentInParent<ActionExecutorRegistry>(true);
             _impactor = _status != null && _status.Transform ? _status.Transform.GetComponent<VesselImpactor>() : null;
             RebuildSolver();
@@ -1447,7 +1450,8 @@ namespace CosmicShore.Gameplay
 
         static Material s_lineMaterial, s_ballMaterial;
         static Mesh s_ballMesh;
-        ThresherHullBuilder _hullBuilder;
+        Transform _hitch;           // where the chain is drawn from: the model's `hitch` bone (or the procedural hull's ring)
+        bool _hitchSearched;
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         static readonly int ColorId = Shader.PropertyToID("_Color");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -1497,15 +1501,36 @@ namespace CosmicShore.Gameplay
             if (TMP_Settings.defaultFontAsset) _comboLabel.font = TMP_Settings.defaultFontAsset;
         }
 
-        /// <summary>This vessel's own shark hull, for the hitch the chain is drawn from. Resolved lazily and
-        /// retried until found (the hull is built in its own Awake); null on a hull without one, which then
-        /// draws the chain from the ship's centre as before.</summary>
-        bool TryHull(out ThresherHullBuilder hull)
+        /// <summary>This vessel's own tow point, the hitch the chain is drawn from: the hull model's <c>hitch</c>
+        /// bone (Thresher.fbx, /vessel-model 2026-10-18; it rides the tail's sway), else the procedural
+        /// <see cref="ThresherHullBuilder"/>'s ring. Resolved once, by name, when the vessel is known; a hull with
+        /// neither draws the chain from the ship's centre as before.</summary>
+        bool TryHitch(out Vector3 hitchWorld)
         {
-            if (!_hullBuilder && _status != null && _status.Transform)
-                _hullBuilder = _status.Transform.GetComponentInChildren<ThresherHullBuilder>(true);
-            hull = _hullBuilder;
-            return hull;
+            if (!_hitchSearched && _status != null && _status.Transform)
+            {
+                _hitchSearched = true;
+                var builder = _status.Transform.GetComponentInChildren<ThresherHullBuilder>(true);
+                if (builder) _hitchBuilder = builder;
+                else _hitch = FindDeep(_status.Transform, "hitch");
+            }
+            if (_hitchBuilder) { hitchWorld = _hitchBuilder.HitchWorldPosition; return true; }
+            hitchWorld = _hitch ? _hitch.position : default;
+            return _hitch;
+        }
+
+        ThresherHullBuilder _hitchBuilder;
+
+        static Transform FindDeep(Transform root, string childName)
+        {
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var child = root.GetChild(i);
+                if (child.name == childName) return child;
+                var found = FindDeep(child, childName);
+                if (found) return found;
+            }
+            return null;
         }
 
         /// <summary>The morning star, built once and shared by every Thresher (the geometry is identical; size
@@ -1651,9 +1676,9 @@ namespace CosmicShore.Gameplay
             // DRAWN from the hull's hitch ring at the tail fork (THRESHER.md §5b), the offset eased out over
             // the first link so the curve leaves the ring without a kink. Drawing only: the gameplay chain,
             // its sweep and its physics still hang from the ship's centre.
-            if (written > 1 && TryHull(out var hull))
+            if (written > 1 && TryHitch(out var hitchWorld))
             {
-                Vector3 offset = hull.HitchWorldPosition - ship;
+                Vector3 offset = hitchWorld - ship;
                 int span = Mathf.Min(written - 1, Mathf.Max(1, config.ChainRenderSubdivisions));
                 for (int i = 0; i <= span; i++)
                 {
