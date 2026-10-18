@@ -50,6 +50,9 @@ namespace CosmicShore.UI
         [Header("Panel")]
         [SerializeField, Tooltip("OptionsMenuContent root - enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
         GameObject optionsMenuContent;
+        [SerializeField, Tooltip("The ACCOUNT tab (Docs/MENU_REDESIGN_B.md §54). Its link / sign-out / delete actions follow the same main-menu-only lock as the GENERAL tab's exit actions.")]
+        AccountSettingsView accountView;
+
         [SerializeField, Tooltip("Shown while the panel is open IN-GAME: Performance settings + Auto-Detect + Benchmark, plus the GENERAL tab's Bug Report / Privacy Policy / Delete Data / Quit Game buttons, are locked outside the main menu (big graphics changes and anything that leaves the game happen in the menu only).")]
         GameObject menuOnlyHint;
         [SerializeField, Tooltip("Shown when a renderer-level change (Quality / AA / Texture / Upscaling) is made - 'some changes apply after a restart'. Hidden on open.")]
@@ -231,6 +234,7 @@ namespace CosmicShore.UI
             SetInteractable(privacyPolicyButton, menu);
             SetInteractable(deleteDataButton, menu);
             SetInteractable(quitGameButton, menu);
+            if (accountView) accountView.SetMenuContext(menu);
 
             // Credits is NOT an exit action - it neither leaves the game nor touches the account -
             // but it opens a ScreenSwitcher modal, and the switcher only exists in Menu_Main. So it

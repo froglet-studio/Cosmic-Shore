@@ -761,3 +761,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (Menu_Main); Yash (offered)
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-18 Hangar ability showcase); Docs/MENU_REDESIGN_B.md section 51
+
+### T-20261018-5b28 · open · test · Sign-in / Settings
+- **Task:** Hand-test the Rev 9 sign-in UI on claude/new-session-76hnyc: the lattice drifting over the splash and sign-in art; Sign in to fly with Steam / Google / Apple / Play as guest (providers answer 'not ready in this build' until the login branch); the SignInChooser and AccountSettingsView context-menu previews; Settings > Account (fifth tab), locked in a match
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 9 sign-in UI' steps 1-8 pass or their failures are filed
+- **Who can take it:** Shombith (Menu_Main, sign-in); Yash (offered)
+- **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §54
+
+### T-20261018-6b30 · open · dev · Sign-in
+- **Task:** Implement IPlatformSignIn (Assets/_Scripts/System/Systems/Authentication/IPlatformSignIn.cs) for Steam, Google and Apple over AuthenticationServiceFacade, replace NoPlatformSignIn's registration in AppManager, and drop the providers' official marks into Assets/_SO_Assets/UI/SignInProviders.asset (the shipped marks are stand-ins). The UI is built (Docs/MENU_REDESIGN_B.md §54); no new SDK without asking Shombith
+- **Done when:** a Windows build signs in with Steam silently, the chooser signs in with Google and Apple, linking keeps a guest's progress and the conflict window appears for an already-owned account
+- **Who can take it:** whoever runs the login-system chat (Shombith to assign)
+- **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §54

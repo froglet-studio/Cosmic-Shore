@@ -78,10 +78,6 @@ def F(key):
 # The view
 # --------------------------------------------------------------------------------------------
 
-def sprite(guid):
-    return f"{{fileID: 21300000, guid: {guid}, type: 3}}"
-
-
 def glyph(parent, key, name, size, token, spr, active=True):
     n = parent.child(N(key, name, R(size=(size, size)), active=active))
     n.add("cr", 222, K.canvas_renderer()) \
@@ -109,7 +105,7 @@ def build_view():
     bal = root.child(N("Balances", "Balances", R((1, 1), None, (-40, -108), (420, 48), (1, 1))))
     bal.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 12, 5, (1, 1), (0, 0)))
     pill(bal, "Balances/Crystals", "Crystals", K.chrome_sprite("chrome_crystal"), "Purchase", "CrystalBalanceText")
-    pill(bal, "Balances/Tickets", "Tickets", sprite(TICKET_SPRITE), "TextLight", "TicketBalanceText")
+    pill(bal, "Balances/Tickets", "Tickets", TICKET_SPRITE, "TextLight", "TicketBalanceText")
 
     win = root.child(N("Window", "Window", R((0.5, 0.5), None, (0, 30), (WIN_W, WIN_H))))
     win.add("cg", 225, M.canvas_group()).add("in", 114, M.entrance("Pop", delay=0.04))
@@ -143,8 +139,10 @@ def build_view():
     tile = win.child(N("Window/Tile", "ItemTile", TR(PAD, 80, 200, 200)))
     tile.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_fill"), True)).add("th", 114, H.themed("SurfaceDark"))
-    for key, spr, active in (("CaptainImage", "{fileID: 0}", True), ("GameImage", "{fileID: 0}", False),
-                             ("TicketImage", sprite(TICKET_SPRITE), False)):
+    # Sprites are guids: K.image writes the reference (a pre-built reference here nested one reference inside
+    # another, which Unity loads as Missing - check_generated_assets.py caught it on 2026-10-18).
+    for key, spr, active in (("CaptainImage", None, True), ("GameImage", None, False),
+                             ("TicketImage", TICKET_SPRITE, False)):
         n = tile.child(N(f"Window/Tile/{key}", key, R(size=(150, 150)), active=active))
         n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, spr, preserve=True))
 
@@ -303,6 +301,8 @@ def validate(files):
     guids = T.known_guids() | P.PACKAGE
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
     view = files[prefab_path()]
+    nested = re.search(r"^  (\w+): \{fileID: \d+, guid: \{", view, re.M)
+    assert not nested, f"PurchaseConfirmView: {nested.group(1) if nested else ''} is a reference nested inside a reference (Unity loads it as Missing)"
     A.check_file(prefab_path(), view, guids, minted)
     for key in ("Window/Line/Price#tmp", "Window/Keep#tmp", "Window/SpendOf#tmp", "Window/Tile/TicketImage#img",
                 "Balances/Crystals/Glyph#img", "Window/Bar/Keep#rt", "Window/Bar/Spend#rt"):
@@ -358,6 +358,9 @@ def self_test(files):
         f[SCENE] = f[SCENE].replace(doc, doc.replace(f"&{vstub} stripped", "&777000222 stripped", 1) + doc, 1)
     cases = [
         ("two stand-ins for the view root again", second_root_stub),
+        ("a sprite reference nested in another", lambda f: f.__setitem__(prefab_path(), f[prefab_path()].replace(
+            "  m_Sprite: {fileID: 21300000, guid: 7834bfe433c51904599575f6ec1786a3, type: 3}",
+            "  m_Sprite: {fileID: 21300000, guid: {fileID: 21300000, guid: 7834bfe433c51904599575f6ec1786a3, type: 3}, type: 3}", 1))),
         ("the window's entrances stripped", lambda f: f.__setitem__(prefab_path(), M.strip_entrances(f[prefab_path()]))),
         ("buttons left to the inspector", lambda f: f.__setitem__(SCENE, f[SCENE].replace("  wireButtonsInCode: 1\n", "  wireButtonsInCode: 0\n"))),
         ("the price label unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(

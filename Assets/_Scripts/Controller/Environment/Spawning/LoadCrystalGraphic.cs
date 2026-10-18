@@ -10,6 +10,7 @@ namespace CosmicShore.Gameplay
     /// bottom up. One mesh, rebuilt only when <see cref="Level"/> moves - the build runs the veil at about 10 frames a
     /// second, so the fill is a steady rise rather than an animation that would stutter.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public sealed class LoadCrystalGraphic : MaskableGraphic
     {
         /// <summary>The fill's colours, bottom to top, and where each sits (0-1 of the crystal's height).</summary>

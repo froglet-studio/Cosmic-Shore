@@ -46,6 +46,11 @@ namespace CosmicShore.Core
         [SerializeField] private Button guestLoginButton;
         [SerializeField] private TMP_Text statusText;
 
+        [Header("Platform sign-in (Rev 9, Docs/MENU_REDESIGN_B.md §54)")]
+        [Tooltip("The auth window's chooser: the platform's provider buttons, the waiting / failed face and the " +
+                 "signed-in-for-you card. Empty: the panel offers Play as guest only, as before.")]
+        [SerializeField] private SignInChooser signInChooser;
+
         [Header("Username Setup")]
         [SerializeField] private TMP_InputField usernameInputField;
         [SerializeField] private Button confirmUsernameButton;
@@ -75,8 +80,10 @@ namespace CosmicShore.Core
         [Inject] private ApplicationStateMachine _appStateMachine;
         [Inject] private HostConnectionDataSO _connectionData;
         [Inject] private OfflineModeService _offlineMode;
+        [Inject] private IPlatformSignIn _platformSignIn;
 
         CancellationTokenSource _cts;
+        CancellationTokenSource _providerCts;
         bool _navigated;
 
         /// <summary>
@@ -104,6 +111,13 @@ namespace CosmicShore.Core
 
             if (confirmUsernameButton)
                 confirmUsernameButton.onClick.AddListener(OnConfirmUsernameClicked);
+
+            if (signInChooser)
+            {
+                signInChooser.ProviderChosen += OnProviderChosen;
+                signInChooser.CancelRequested += CancelProviderSignIn;
+                signInChooser.GuestRequested += OnGuestLoginClicked;
+            }
         }
 
         void OnDisable()
@@ -119,6 +133,14 @@ namespace CosmicShore.Core
 
             if (confirmUsernameButton)
                 confirmUsernameButton.onClick.RemoveListener(OnConfirmUsernameClicked);
+
+            if (signInChooser)
+            {
+                signInChooser.ProviderChosen -= OnProviderChosen;
+                signInChooser.CancelRequested -= CancelProviderSignIn;
+                signInChooser.GuestRequested -= OnGuestLoginClicked;
+            }
+            CancelProviderSignIn();
         }
 
         void Start()
@@ -128,6 +150,8 @@ namespace CosmicShore.Core
             // Subscribed here rather than in OnEnable: [Inject] fields are populated after
             // Awake and before Start, so _authDataVariable is still null in OnEnable.
             SubscribeSignedIn();
+
+            if (signInChooser) signInChooser.Bind(_platformSignIn);
 
             RunAuthFlowAsync(_cts.Token).Forget();
         }
@@ -289,7 +313,13 @@ namespace CosmicShore.Core
             HideLoading();
             if (authPanel != null)
             {
-                ShowAuthPanel();
+                // The platform's silent provider first (Steam on PC signs the player in on its own); the
+                // chooser appears only if it is not usable or does not produce a session.
+                var silent = signInChooser ? signInChooser.SilentProvider : SignInProvider.None;
+                if (silent != SignInProvider.None)
+                    await RunPlatformSignInAsync(silent, true, ct);
+                else
+                    ShowAuthPanel();
             }
             else
             {
@@ -423,6 +453,86 @@ namespace CosmicShore.Core
             {
                 if (guestLoginButton) guestLoginButton.interactable = true;
             }
+        }
+
+        // ──────────────────────────────────────────────
+        //  Platform sign-in (Steam / Google / Apple, through IPlatformSignIn)
+        // ──────────────────────────────────────────────
+
+        void OnProviderChosen(SignInProvider provider)
+        {
+            RunPlatformSignInAsync(provider, false, _cts?.Token ?? CancellationToken.None).Forget();
+        }
+
+        void CancelProviderSignIn()
+        {
+            _providerCts?.Cancel();
+            _providerCts?.Dispose();
+            _providerCts = null;
+        }
+
+        /// <summary>
+        /// Signs in with a provider and continues to the post-auth flow on a session. <paramref name="silent"/> is the
+        /// platform's own provider tried before the chooser shows: its card is drawn while it runs, and any failure
+        /// falls back to the chooser without a failure window (the player never asked for it).
+        /// </summary>
+        async UniTask RunPlatformSignInAsync(SignInProvider provider, bool silent, CancellationToken ct)
+        {
+            _awaitingPlayerInput = false;   // a sign-in of our own is under way; the late-sign-in net must not race it
+            CancelProviderSignIn();
+            if (authPanel) authPanel.SetActive(true);
+            if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
+            HideLoading();
+            ClearStatusMessages();
+
+            if (_platformSignIn == null || !_platformSignIn.IsAvailable(provider))
+            {
+                if (silent) ShowAuthPanel();
+                else
+                {
+                    signInChooser.ShowFailed(provider, SignInStatus.Unavailable);
+                    ParkForPlayerInput($"{provider} is not in this build");
+                }
+                return;
+            }
+
+            _providerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var token = _providerCts.Token;
+            if (silent) signInChooser.ShowAuto(provider, _platformSignIn.LinkedName(provider));
+            else signInChooser.ShowWaiting(provider, _platformSignIn.UsesBrowser(provider));
+
+            SignInOutcome outcome;
+            try
+            {
+                outcome = await _platformSignIn.SignInAsync(provider, token);
+            }
+            catch (OperationCanceledException)
+            {
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
+                if (ct.IsCancellationRequested) return;      // scene leaving
+                if (silent) ShowAuthPanel();                 // Other ways: the chooser
+                return;                                      // Cancel: the chooser already came back
+            }
+            catch (Exception ex)
+            {
+                outcome = new SignInOutcome(SignInStatus.Failed, ex.Message);
+            }
+            await MainThreadDispatcher.SwitchToMainThreadAsync();
+
+            if (outcome.Succeeded && (_facade == null || _facade.IsSignedIn))
+            {
+                await HandlePostAuthFlowAsync(ct);
+                return;
+            }
+
+            CSDebug.LogWarning($"[AuthScene] {provider} sign-in ended {outcome.Status}: {outcome.Reason}");
+            if (silent)
+            {
+                ShowAuthPanel();
+                return;
+            }
+            signInChooser.ShowFailed(provider, outcome.Status);
+            ParkForPlayerInput($"{provider} sign-in did not finish");
         }
 
         void ShowGuestSignInFailed()
@@ -581,8 +691,10 @@ namespace CosmicShore.Core
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
             HideLoading();
             EnsureGuestLoginVisible();
-            Focus(guestLoginButton ? guestLoginButton.gameObject : null);
-            ParkForPlayerInput("guest sign-in");
+            var guest = guestLoginButton ? guestLoginButton.gameObject : null;
+            if (signInChooser) signInChooser.ShowChoose(guest);
+            else Focus(guest);
+            ParkForPlayerInput("sign-in");
         }
 
         void ShowUsernameSetup()

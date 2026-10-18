@@ -27,6 +27,14 @@ StartAgeGate / StartConsent boards).
         a panel that started active flashed at full size for a frame before the controller hid it.
         The kit buttons carry NO ControllerButtonPress: the controller selects each panel's control as
         the panel appears, so A arrives as an EventSystem submit; a pad poll on top fired it twice.
+    Rev 9 (Docs/MENU_REDESIGN_B.md §54, the approved R9 boards): the living lattice (Lattice_Window) drifts
+        over the feature art on both the splash and the sign-in scene, between the dim and the bottom fade.
+        The auth panel's window becomes the sign-in window - SignInChooser's three faces: CHOOSE ("Sign in to
+        fly", Continue with Steam / Google / Apple, the "or" rule, Play as guest - the controller's
+        guestLoginButton - a hint and the controller's status line), PROGRESS (waiting / did not finish / not
+        ready in this build) and AUTO (signed in for you with Steam). The window is top-pivoted: the chooser
+        collapses rows the platform does not offer and sets its height. SignInProviders.asset (the per-platform
+        order, the silent provider, the stand-in marks) is written here too.
     PrivacyConsentConfig.asset: the overlay's five optional sliver sprites (the overlay builds its
         own UI in code - PrivacyConsentOverlay - so this is the only authored part of it).
 
@@ -56,6 +64,7 @@ TL = HM.TL
 Patch, set_field, tmp_restyle = HUD.Patch, HUD.set_field, HUD.tmp_restyle
 
 SPLASH = "Assets/_Scenes/Bootstrap.unity"
+PROVIDERS_ASSET = "Assets/_SO_Assets/UI/SignInProviders.asset"
 AUTH = "Assets/_Scenes/Authentication.unity"
 PRIVACY = "Assets/Resources/PrivacyConsentConfig.asset"
 
@@ -70,7 +79,11 @@ S = dict(
     kitbutton=HUD.S["kitbutton"],
     cbp=HUD.S["cbp"],
     loader="96d427922847afd4ca2fcdffed2c2b3b",        # Loader.prefab (the rotating icon)
+    chooser=HUD.script_guid("Assets/_Scripts/UI/Screens/SignInChooser.cs"),
+    providers_so=HUD.script_guid("Assets/_Scripts/UI/SignInProvidersSO.cs"),
 )
+PROVIDERS_GUID = "5b0c1f7e9a2d4c6e8f1a3b5d7c9e0f21"          # SignInProviders.asset
+PROVIDERS = (("Steam", 2, "chrome_provider_steam"), ("Google", 3, "chrome_provider_google"), ("Apple", 4, "chrome_provider_apple"))
 BOOT_STATUS_CHANNEL = "8a2f3b41c9e7456db1d8f9c0a1b2e84b"   # ScriptableEventBootStatusRequest asset
 
 # Bootstrap.unity, measured 2026-10-15.
@@ -90,6 +103,10 @@ AU = dict(canvas_rt="394550809", bg_rt="1700000002", safe_rt="612275706100289267
           old_status_go="1617331190")
 
 WIN_W, PAD = 600, 34
+INNER = WIN_W - 2 * PAD
+# The sign-in window (R9Chooser): rows from STACK_TOP, ROW_GAP apart; SignInChooser re-lays them at runtime.
+STACK_TOP, ROW_GAP, BTN_H, OR_H, HINT_H, STATUS_H = 166, 14, 60, 20, 22, 44
+PROGRESS_H, AUTO_H = 360, 250
 AUTH_H, NAME_H, RETRY_H = 330, 440, 250
 RULES = 4                      # DisplayNameRuleState.Count
 
@@ -162,7 +179,8 @@ def vignette_nodes(prefix):
     fade = N(f"{prefix}/BottomFade", "BottomFade", R((0, 0), (1, 0), (0, 210), (0, 420)))
     fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.9), K.kit_sprite("kit_fade_v"))) \
         .add("th", 114, H.themed("SurfaceBlack", 0.9))
-    return [dim, fade]
+    # Rev 9: the living lattice drifts over the dimmed art (shader-only: no CPU, never dirties the canvas).
+    return [dim, M.window_lattice_node(f"{prefix}/Lattice"), fade]
 
 
 def readout_node(prefix, with_line):
@@ -267,13 +285,196 @@ def auth_ctx():
     return P.Ctx("Authentication/StartFlow")
 
 
-def auth_window():
-    w = window("Auth", R((0.5, 0.5), None, (0, -185), (WIN_W, AUTH_H)), "Welcome, pilot", "Cta", "Ready to launch", "H1")
-    H.label(w.child(N("Auth/Body", "Body", TL(PAD, 108, WIN_W - 2 * PAD, 46))),
-            "Play as a guest now. Your progress is saved to this device and syncs when you are online.",
-            "BodySmall", "NeutralLightest", valign="top", wrap=True)
-    w.child(plain_kit_button("Auth/Guest", "GuestLoginButton", PAD, 172, "Play", True, "Play as guest", "A"))
+def icon_button(k, name, r, variant, caption, icon=None, cap=None, align=3, sub=None):
+    """A KitButton like author_ingame_hud.kit_button, without the pad poll (it is SELECTED, so A arrives as a
+    submit) and with an optional provider mark before its label, an optional keycap and an optional small line
+    at its right end (Play as guest's "Saved on this device only")."""
+    border, fillc, content = K.button_palette(variant, False)
+    n = N(k, name, r)
+    ring = n.child(N(f"{k}/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (10, 10))))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Cta", 0.0), K.kit_sprite("kit_sliver10_line2"), True)) \
+        .add("le", 114, H.le(ignore=True))
+    fill = n.child(N(f"{k}/Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(fillc, K.kit_sprite("kit_sliver10_fill"), True, raycast=True)) \
+        .add("le", 114, H.le(ignore=True))
+    bord = n.child(N(f"{k}/Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(border, K.kit_sprite("kit_sliver10_line1"), True)) \
+        .add("le", 114, H.le(ignore=True))
+    content_keys = []
+    if icon:
+        mark = n.child(N(f"{k}/Mark", "Mark", R(size=(26, 26))))
+        mark.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(content, K.chrome_sprite(icon), preserve=True)) \
+            .add("le", 114, H.le(pw=26, ph=26))
+        content_keys.append((f"{k}/Mark", "img"))
+    if cap:
+        kw, kh = K.label_width(cap.upper(), "Label") + 24, K.line_height("Label") + 8
+        slot = n.child(N(f"{k}/KeycapSlot", "KeycapSlot", R(size=(kw, kh))))
+        slot.add("le", 114, H.le(pw=kw, ph=kh))
+        slot.children.append(P.Inst(k.replace("/", "") + "Keycap", "KitKeycap", "Keycap", STRETCH, [("Label#tmp", "m_text", cap, None)]))
+    lab = n.child(N(f"{k}/Label", "Label", R(size=(K.label_width(caption.upper(), "Button"), K.line_height("Button")))))
+    lab.add("cr", 222, K.canvas_renderer()).add("tmp", 114, K.tmp(caption, "Button", content)) \
+        .add("kt", 114, K.kit_text("Button", driven=True))
+    content_keys.insert(0, (f"{k}/Label", "tmp"))
+    if sub:
+        sl = n.child(N(f"{k}/Sub", "Sub", R((1, 0.5), None, (-24, 0), (220, 20), (1, 0.5))))
+        H.label(sl, sub, "BodySmall", "NeutralLightest", align="right")
+        sl.add("le", 114, H.le(ignore=True))
+    n.add("button", 114, lambda ctx, go: K.mono(go, S["kitbutton"],
+        K.SELECTABLE_FIELDS
+        + f"  m_TargetGraphic: {{fileID: {ctx.c(f'{k}/Fill', 'img')}}}\n"
+        "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"
+        f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: {ctx.c(f'{k}/FocusRing', 'img')}}}\n"
+        f"  variant: {K.VARIANTS[variant]}\n  fill: 0\n"
+        f"  fillGraphic: {{fileID: {ctx.c(f'{k}/Fill', 'img')}}}\n"
+        f"  borderGraphic: {{fileID: {ctx.c(f'{k}/Border', 'img')}}}\n"
+        + K.refs_list("contentGraphics", [ctx.c(a, b) for a, b in content_keys])
+        + "  playGradient: {fileID: 0}\n"))
+    n.add("hlg", 114, K.hv_layout(False, (24, 24, 0, 0), 16, align, (1, 1), (0, 0)))
+    return n
+
+
+def bare_window(key, r):
+    """A slivered style-B window: fill, border and corner brackets (author_start_flow.window without its
+    eyebrow and title - each of the sign-in window's faces carries its own)."""
+    w = N(key, "Window", r)
+    w.add("cg", 225, H.canvas_group(True))
+    w.add("in", 114, M.entrance("Rise", distance=14))
+    H.framed(w, key, 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
+    M.bracket_nodes(w, f"{key}/Bracket", inset=-6)
     return w
+
+
+def face(w, key, shown):
+    f = w.child(N(key, key.split("/")[-1], STRETCH))
+    cg = H.canvas_group(True)
+    f.add("cg", 225, cg)
+    return f
+
+
+def heading(f, key, eyebrow, eyebrow_token, title, title_role, body=None, body_h=46):
+    H.label(f.child(N(f"{key}/Eyebrow", "Eyebrow", TL(PAD, 30, INNER, 20))), eyebrow, "Label", eyebrow_token)
+    H.label(f.child(N(f"{key}/Title", "Title", TL(PAD, 56, INNER, 44))), title, title_role, "TextLight")
+    if body is not None:
+        H.label(f.child(N(f"{key}/Body", "Body", TL(PAD, 108, INNER, body_h))), body, "BodySmall", "NeutralLightest", valign="top", wrap=True)
+
+
+def spinner_line(f, key, top):
+    row = f.child(N(f"{key}/Waiting", "Waiting", TL(PAD, top, INNER, 22)))
+    sp = row.child(N(f"{key}/Waiting/Spinner", "Spinner", R((0, 0.5), None, (9, 0), (18, 16))))
+    sp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Selection"), K.kit_sprite("kit_hex_line1"), preserve=True)) \
+        .add("spin", 114, M.ambient("Spin", period=1.1, amplitude=0))
+    H.label(row.child(N(f"{key}/Waiting/Line", "Line", R((0, 0.5), (1, 0.5), (14, 0), (-28, 22)))), "", "BodySmall", "NeutralLightest")
+    return row
+
+
+def chooser_rows():
+    """The CHOOSE face's rows below the body, top-down, as the board lays them out with every provider shown."""
+    y, rows = STACK_TOP, []
+    for name, _, _ in PROVIDERS:
+        rows.append((f"SignIn/Choose/{name}", y, BTN_H))
+        y += BTN_H + ROW_GAP
+    for key, h in (("SignIn/Choose/Or", OR_H), ("SignIn/Choose/Guest", BTN_H), ("SignIn/Choose/Hint", HINT_H), ("status", STATUS_H)):
+        rows.append((key, y, h))
+        y += h + ROW_GAP
+    return rows, y - ROW_GAP + PAD
+
+
+def auth_window():
+    rows, height = chooser_rows()
+    at = {k: y for k, y, _ in rows}
+    w = bare_window("SignIn", R((0.5, 0.5), None, (0, height / 2 - 80), (WIN_W, height), (0.5, 1)))
+
+    ch = face(w, "SignIn/Choose", True)
+    heading(ch, "SignIn/Choose", "Welcome, pilot", "Cta", "Sign in to fly", "H1",
+            "Your pilot, crystals and vessels follow you to every device you sign in on.")
+    for name, _, icon in PROVIDERS:
+        ch.child(icon_button(f"SignIn/Choose/{name}", f"{name}Button", TL(PAD, at[f"SignIn/Choose/{name}"], INNER, BTN_H),
+                             "Default", f"Continue with {name}", icon=icon))
+    orr = ch.child(N("SignIn/Choose/Or", "Or", TL(PAD, at["SignIn/Choose/Or"], INNER, OR_H)))
+    for side, amin, amax, pos in (("L", (0, 0.5), (0.5, 0.5), (-14, 0)), ("R", (0.5, 0.5), (1, 0.5), (14, 0))):   # 24 px clear round "or"
+        rule = orr.child(N(f"SignIn/Choose/Or/{side}", f"Rule{side}", R(amin, amax, (pos[0] * 6 / 7, 0), (-24, 1))))
+        rule.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
+    H.label(orr.child(N("SignIn/Choose/Or/Word", "Word", R((0.5, 0.5), None, (0, 0), (40, 20)))), "or", "Label", "NeutralLightest", align="center")
+    ch.child(icon_button("SignIn/Choose/Guest", "GuestLoginButton", TL(PAD, at["SignIn/Choose/Guest"], INNER, BTN_H),
+                         "Default", "Play as guest", icon="chrome_person", sub="Saved on this device only"))
+    H.label(ch.child(N("SignIn/Choose/Hint", "Hint", TL(PAD, at["SignIn/Choose/Hint"], INNER, HINT_H))),
+            "You can link an account later in Settings > Account.", "BodySmall", "NeutralLightest")
+
+    pr = face(w, "SignIn/Progress", False)
+    heading(pr, "SignIn/Progress", "Google", "Cta", "Finish in your browser", "H2",
+            "A Google sign-in page opened in your browser. Choose your account there, then come back here.", body_h=70)
+    spinner_line(pr, "SignIn/Progress", 196)
+    pr.child(icon_button("SignIn/Progress/Primary", "PrimaryButton", TL(PAD, 236, 240, 52), "Play", "Try again", cap="A", align=4))
+    pr.child(icon_button("SignIn/Progress/Secondary", "SecondaryButton", TL(PAD + 256, 236, 240, 52), "Space", "Other ways", align=4))
+    pr.child(icon_button("SignIn/Progress/Guest", "GuestLink", TL(PAD, 300, 260, 36), "Cancel", "Play as guest", icon="chrome_person"))
+
+    au = face(w, "SignIn/Auto", False)
+    H.label(au.child(N("SignIn/Auto/Eyebrow", "Eyebrow", TL(PAD, 30, INNER, 20))), "Welcome back, pilot", "Label", "Cta")
+    mk = au.child(N("SignIn/Auto/Mark", "Mark", TL(PAD, 66, 64, 64)))
+    mk.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_provider_steam"), preserve=True))
+    H.label(au.child(N("SignIn/Auto/Name", "Name", TL(PAD + 84, 70, INNER - 84, 34))), "", "H2", "TextLight")
+    H.label(au.child(N("SignIn/Auto/Caption", "Caption", TL(PAD + 84, 108, INNER - 84, 20))), "Steam account", "Label", "Cta")
+    spinner_line(au, "SignIn/Auto", 152)
+    au.child(icon_button("SignIn/Auto/OtherWays", "OtherWaysButton", TL(PAD, 190, 300, 36), "Cancel", "Other ways to sign in"))
+
+    w.add("chooser", 114, lambda ctx, go: K.mono(go, S["chooser"], chooser_body(ctx)))
+    return w
+
+
+def chooser_body(ctx):
+    c = ctx.c
+    rows, _ = chooser_rows()
+    trailing = [k for k, _, _ in rows if k in ("SignIn/Choose/Hint", "status")]
+    return (f"  providers: {K.ref(11400000, PROVIDERS_GUID, 2)}\n"
+            f"  window: {{fileID: {ctx.rt('SignIn')}}}\n"
+            f"  stackTop: {STACK_TOP}\n  rowGap: {ROW_GAP}\n  bottomPadding: {PAD}\n"
+            f"  progressHeight: {PROGRESS_H}\n  autoHeight: {AUTO_H}\n"
+            f"  chooseGroup: {{fileID: {c('SignIn/Choose', 'cg')}}}\n"
+            "  providerButtons:\n" + "".join(
+                f"  - provider: {v}\n    button: {{fileID: {c(f'SignIn/Choose/{n}', 'button')}}}\n"
+                f"    mark: {{fileID: {c(f'SignIn/Choose/{n}/Mark', 'img')}}}\n" for n, v, _ in PROVIDERS)
+            + f"  orRule: {{fileID: {ctx.rt('SignIn/Choose/Or')}}}\n"
+            f"  guestRow: {{fileID: {ctx.rt('SignIn/Choose/Guest')}}}\n"
+            "  trailingRows:\n" + "".join(
+                f"  - {{fileID: {AU['login_status_rt'] if k == 'status' else ctx.rt(k)}}}\n" for k in trailing)
+            + f"  progressGroup: {{fileID: {c('SignIn/Progress', 'cg')}}}\n"
+            f"  progressEyebrow: {{fileID: {c('SignIn/Progress/Eyebrow', 'tmp')}}}\n"
+            f"  progressTitle: {{fileID: {c('SignIn/Progress/Title', 'tmp')}}}\n"
+            f"  progressBody: {{fileID: {c('SignIn/Progress/Body', 'tmp')}}}\n"
+            f"  progressLine: {{fileID: {c('SignIn/Progress/Waiting/Line', 'tmp')}}}\n"
+            f"  spinner: {{fileID: {ctx.go('SignIn/Progress/Waiting/Spinner')}}}\n"
+            f"  primaryButton: {{fileID: {c('SignIn/Progress/Primary', 'button')}}}\n"
+            f"  primaryLabel: {{fileID: {c('SignIn/Progress/Primary/Label', 'tmp')}}}\n"
+            f"  secondaryButton: {{fileID: {c('SignIn/Progress/Secondary', 'button')}}}\n"
+            f"  secondaryLabel: {{fileID: {c('SignIn/Progress/Secondary/Label', 'tmp')}}}\n"
+            f"  guestLinkButton: {{fileID: {c('SignIn/Progress/Guest', 'button')}}}\n"
+            f"  autoGroup: {{fileID: {c('SignIn/Auto', 'cg')}}}\n"
+            f"  autoMark: {{fileID: {c('SignIn/Auto/Mark', 'img')}}}\n"
+            f"  autoName: {{fileID: {c('SignIn/Auto/Name', 'tmp')}}}\n"
+            f"  autoCaption: {{fileID: {c('SignIn/Auto/Caption', 'tmp')}}}\n"
+            f"  autoLine: {{fileID: {c('SignIn/Auto/Waiting/Line', 'tmp')}}}\n"
+            f"  otherWaysButton: {{fileID: {c('SignIn/Auto/OtherWays', 'button')}}}\n")
+
+
+def providers_asset():
+    """SignInProviders.asset: the platforms' orders (Steam / Google / Apple on desktop; Apple first on iPhone,
+    Google first on Android), Steam as the desktop's silent provider, the stand-in marks."""
+    def order(name, vals):
+        return f"  {name}:\n" + "".join(f"  - {v}\n" for v in vals)
+    marks = {n: K.sprite_ref(K.chrome_sprite(icon)) for n, _, icon in PROVIDERS}
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {S['providers_so']}, type: 3}}\n"
+            "  m_Name: SignInProviders\n  m_EditorClassIdentifier: \n"
+            + order("desktopOrder", (2, 3, 4)) + order("iPhoneOrder", (4, 3)) + order("androidOrder", (3, 4)) + order("webOrder", (3, 4))
+            + "  desktopSilentProvider: 2\n"
+            f"  steamMark: {marks['Steam']}\n  googleMark: {marks['Google']}\n  appleMark: {marks['Apple']}\n"
+            "  showUnavailableInDevBuilds: 1\n  editorPreview: 0\n")
+
+
+PROVIDERS_META = ("fileFormatVersion: 2\nguid: %s\nNativeFormatImporter:\n  externalObjects: {}\n  mainObjectFileID: 11400000\n"
+                  "  userData: \n  assetBundleName: \n  assetBundleVariant: \n" % PROVIDERS_GUID)
 
 
 def name_window():
@@ -321,14 +522,27 @@ def auth_text(text_):
     emit_under(p, I["safe_rt"], [readout], "979943021161530881",
                lambda rts: rts + [k for k in p.kids(I["safe_rt"]) if k not in rts])
 
-    # Auth panel: the window, then the controller's status line moved into it.
+    # Auth panel: the sign-in window (Rev 9), then the controller's status line moved into its CHOOSE face.
+    # The section-26 window ("Auth") is retired first, its status line lifted out so it survives.
+    legacy = str(p.ctx.go("Auth"))
+    if p.sc.has(legacy):
+        reparent(p, I["login_status_rt"], I["auth_rt"])
+        remove_go(p, legacy)
     aw = auth_window()
     (win_rt,) = emit_under(p, I["auth_rt"], [aw], I["auth_rt"], lambda rts: rts)
-    reparent(p, I["login_status_rt"], win_rt)
-    p.rect(I["login_status_rt"], TL(PAD, 250, WIN_W - 2 * PAD, 48))
+    for f in ("SignIn/Progress", "SignIn/Auto"):
+        cg_ = str(p.ctx.c(f, "cg"))
+        d = p.doc(cg_)
+        for fld in ("m_Alpha", "m_Interactable", "m_BlocksRaycasts"):
+            d = C.field_set(d, fld, "0")
+        p.replace(cg_, d)
+    choose_rt = str(p.ctx.rt("SignIn/Choose"))
+    reparent(p, I["login_status_rt"], choose_rt)
+    status_y = dict((k, y) for k, y, _ in chooser_rows()[0])["status"]
+    p.rect(I["login_status_rt"], TL(PAD, status_y, INNER, STATUS_H))
     st = tmp_restyle(p.doc(I["login_status_tmp"]), "Chakra", 15, False, 2, "left", "NeutralLightest")
     p.replace(I["login_status_tmp"], C.field_set(st, "m_TextWrappingMode", "1"))
-    p.children(win_rt, p.kids(win_rt) + [I["login_status_rt"]])
+    p.children(choose_rt, p.kids(choose_rt) + [I["login_status_rt"]])
 
     # Pilot-name panel: the window; the field and the error line move into it.
     nw = name_window()
@@ -355,7 +569,10 @@ def auth_text(text_):
     set_active(p, I["name_go"], False)
     c = p.ctx.c
     comp = p.doc(I["ctrl"])
-    comp = set_field(comp, "guestLoginButton", ref(c("Auth/Guest", "button")))
+    comp = set_field(comp, "guestLoginButton", ref(c("SignIn/Choose/Guest", "button")))
+    if not re.search(r"^  signInChooser: ", comp, re.M):
+        comp = HUD.insert_after_field(comp, "statusText", "signInChooser", ref(c("SignIn", "chooser")))
+    comp = set_field(comp, "signInChooser", ref(c("SignIn", "chooser")))
     comp = set_field(comp, "confirmUsernameButton", ref(c("Name/Confirm", "button")))
     p.replace(I["ctrl"], comp)
     return p.text()
@@ -384,7 +601,10 @@ TRANSFORMS = {SPLASH: splash_text, AUTH: auth_text, PRIVACY: privacy_text}
 
 
 def outputs():
-    return {path: fn(open(os.path.join(REPO, path), encoding="utf-8").read()) for path, fn in TRANSFORMS.items()}
+    files = {path: fn(open(os.path.join(REPO, path), encoding="utf-8").read()) for path, fn in TRANSFORMS.items()}
+    files[PROVIDERS_ASSET] = providers_asset()
+    files[PROVIDERS_ASSET + ".meta"] = PROVIDERS_META
+    return files
 
 
 def field_ref(doc, name):
@@ -459,6 +679,39 @@ def validate(files):
                 go = s.go_of(fid)
                 assert not any(f"guid: {S['cbp']}" in s.docs.get(c, "") for c in s.components(go)), \
                     f"{path}: a start-flow button also polls the pad (it would press twice)"
+    # Rev 9: the lattice over the art, in both scenes, between the dim and the bottom fade.
+    for path, s_ in ((SPLASH, sc), (AUTH, au)):
+        lat = [d for d in s_.docs.values() if f"guid: {M.LATTICE_WINDOW_MAT}, type: 2" in d]
+        assert lat, f"{path}: no living lattice over the feature art"
+    # Rev 9: the sign-in window.
+    choosers = [(fid, d) for fid, d in au.docs.items() if f"guid: {S['chooser']}" in d]
+    assert len(choosers) == 1, "the sign-in window has no SignInChooser"
+    cfid, cd = choosers[0]
+    assert field_ref(ctrl, "signInChooser") == cfid, "AuthenticationSceneController.signInChooser is not the window's chooser"
+    assert f"  providers: {K.ref(11400000, PROVIDERS_GUID, 2)}" in cd, "SignInChooser reads another providers asset"
+    for f in ("window", "chooseGroup", "progressGroup", "autoGroup", "orRule", "guestRow", "primaryButton", "secondaryButton",
+              "guestLinkButton", "progressLine", "spinner", "autoName", "otherWaysButton"):
+        assert field_ref(cd, f) != "0" and au.has(field_ref(cd, f)), f"SignInChooser.{f} is not wired"
+    buttons = re.findall(r"  - provider: (\d+)\n    button: \{fileID: (-?\d+)\}", cd)
+    assert sorted(int(v) for v, _ in buttons) == [2, 3, 4], "SignInChooser needs one button each for Steam, Google and Apple"
+    for _, b in buttons:
+        assert f"guid: {S['kitbutton']}" in au.docs.get(b, ""), "a provider button is not a KitButton"
+    trailing = re.search(r"^  trailingRows:\n((?:  - .*\n)*)", cd, re.M)
+    assert trailing and f"{{fileID: {AU['login_status_rt']}}}" in trailing.group(1), "the controller's status line is not a chooser row"
+    for f in ("progressGroup", "autoGroup"):
+        g = au.docs[field_ref(cd, f)]
+        assert "  m_Alpha: 0\n" in g and "  m_BlocksRaycasts: 0\n" in g, f"SignInChooser.{f} ships shown"
+    guest_go = au.go_of(field_ref(ctrl, "guestLoginButton"))
+    choose_rt = au.rect_of(au.go_of(field_ref(cd, "chooseGroup")))
+    assert f"  m_Father: {{fileID: {choose_rt}}}" in au.docs[au.rect_of(guest_go)], "Play as guest is not on the CHOOSE face"
+    # SignInProviders.asset
+    a = files[PROVIDERS_ASSET]
+    assert f"guid: {S['providers_so']}" in a and f"guid: {PROVIDERS_GUID}" in files[PROVIDERS_ASSET + ".meta"], "SignInProviders.asset is not a SignInProvidersSO"
+    assert "  desktopOrder:\n  - 2\n  - 3\n  - 4\n" in a and "  iPhoneOrder:\n  - 4\n" in a and "  androidOrder:\n  - 3\n" in a, \
+        "the platform orders differ from the approved boards (Steam, Google, Apple; Apple first on iPhone; Google first on Android)"
+    assert "  desktopSilentProvider: 2\n" in a, "Steam no longer signs the player in on its own on desktop"
+    for n in ("steamMark", "googleMark", "appleMark"):
+        assert re.search(r"^  %s: \{fileID: 21300000, guid: \w{32}, type: 3\}" % n, a, re.M), f"SignInProviders.{n} has no sprite"
     # Privacy
     for f, sprite in PRIVACY_SPRITES:
         assert f"  {f}: {K.sprite_ref(K.kit_sprite(sprite))}" in files[PRIVACY], f"PrivacyConsentConfig.{f} is not set"
@@ -467,6 +720,13 @@ def validate(files):
 def drift(files):
     return [p for p, t in files.items()
             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
+
+
+def _show_face(text_, field):
+    cg = re.search(r"^  %s: \{fileID: (-?\d+)\}" % field, text_, re.M).group(1)
+    i = text_.index(f" &{cg}\n")
+    j = text_.find("\n--- ", i)
+    return text_[:i] + text_[i:j].replace("  m_Alpha: 0\n", "  m_Alpha: 1\n").replace("  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n") + text_[j:]
 
 
 def self_test(files):
@@ -507,6 +767,11 @@ def self_test(files):
         ("the auth panel ships active", edit_doc(AUTH, AU["auth_go"], lambda d: d.replace("  m_IsActive: 0", "  m_IsActive: 1"))),
         ("the guest button also polls the pad", add_cbp),
         ("a privacy sprite missing", lambda f: f.__setitem__(PRIVACY, re.sub(r"(  focusRingSprite: ).*", r"\1{fileID: 0}", f[PRIVACY]))),
+        ("the splash lost its lattice", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(M.LATTICE_WINDOW_MAT, "0" * 32))),
+        ("the controller lost its chooser", edit_doc(AUTH, AU["ctrl"], lambda d: re.sub(r"(  signInChooser: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d))),
+        ("the PROGRESS face ships shown", lambda f: f.__setitem__(AUTH, _show_face(f[AUTH], "progressGroup"))),
+        ("a provider button missing", lambda f: f.__setitem__(AUTH, re.sub(r"  - provider: 4\n    button: \{fileID: -?\d+\}\n    mark: \{fileID: -?\d+\}\n", "", f[AUTH]))),
+        ("Steam no longer silent", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace("desktopSilentProvider: 2", "desktopSilentProvider: 0"))),
         ("the rule ticks judge another field", lambda f: f.__setitem__(AUTH, re.sub(r"(  input: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[AUTH], count=1))),
     ]
     ok = all(expect(l, m) for l, m in cases)

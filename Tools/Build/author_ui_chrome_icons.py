@@ -21,7 +21,7 @@ supersampling, margin or PNG encoding. Docs/STYLE_FOUNDATION.md sections 1.2, 5 
   * 256x256 with a 24px margin, matching the vendor sub-sprites they replace so no
     RectTransform moves.
 
-NINETEEN glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
+TWENTY-NINE glyphs. Five arrived with the vendor swap - FOUR of them for six replaced references, and one consolidation is deliberate. `CancelButton`
 (Menu_Main) and `Close Button` (Arcade Screen) wore two DIFFERENT vendor glyphs while
 meaning the same thing; the style guide's icon list names one "X Button", so they share
 `chrome_close` here. That is the one intentional look change in the swap. `chrome_lock` and
@@ -33,7 +33,8 @@ rule not yet met in the profile window (item 5 - a met rule wears `chrome_confir
 Toy Box's shuffle card (item 8); `chrome_gear`, `chrome_display`, `chrome_gauge` and `chrome_sliders` for
 the settings window's four tabs (item 9); `chrome_cube`, `chrome_pad`, `chrome_blades` and `chrome_target` for
 Home's four hub buttons - Toy Box, Arcade, Arena, Mission (item 6); `chrome_pause` for the centre of the
-in-game pause hex (item 12); `chrome_chevron` for the hub windows' edge arrows and strip (Rev 7).
+in-game pause hex (item 12); `chrome_chevron` for the hub windows' edge arrows and strip (Rev 7); `chrome_person` and
+the three `chrome_provider_*` STAND-IN marks for sign-in (Rev 9).
 
 Usage:
     python3 Tools/Build/author_ui_chrome_icons.py            # write the PNGs + .meta files
@@ -317,6 +318,41 @@ def chrome_chevron():
     return fill([(-0.40, 0.74), (-0.10, 0.74), (0.52, 0.00), (-0.10, -0.74), (-0.40, -0.74), (0.22, 0.00)])
 
 
+def chrome_person():
+    """One pilot, head and shoulders - Play as guest and the settings window's Account tab (Rev 9,
+    Docs/MENU_REDESIGN_B.md §54)."""
+    m = ring(_octagon(0.30, 0.0, 0.36), w=W * 1.0)
+    m |= stroke([(-0.66, -0.80), (-0.66, -0.30), (-0.36, -0.06), (0.36, -0.06), (0.66, -0.30), (0.66, -0.80)], w=W * 1.0)
+    return m
+
+
+def chrome_provider_steam():
+    """STAND-IN for the Steam mark on the sign-in buttons (Rev 9): an octagon, a hollow piston head and a
+    small weight on a rod. The built buttons take each provider's official mark from SignInProviders.asset
+    when the login branch adds it - the providers' brand rules require their own marks."""
+    m = ring(_octagon(0.84), w=W * 0.95)
+    m |= ring(_octagon(0.24, 0.26, 0.20), w=W * 0.95)
+    m |= fill(_octagon(0.15, -0.34, -0.30))
+    m |= stroke([(-0.82, -0.08), (-0.34, -0.30), (0.08, 0.04)], w=W * 0.95)
+    return m
+
+
+def chrome_provider_google():
+    """STAND-IN for the Google mark (Rev 9): an angular G - an octagon open on its upper right, with its bar."""
+    oct_ = _octagon(0.74)
+    m = stroke([oct_[1], oct_[2], oct_[3], oct_[4], oct_[5], oct_[6], oct_[7], (oct_[7][0], 0.0)], w=W * 1.25)
+    m |= stroke([(0.06, 0.0), (oct_[7][0] + W * 0.6, 0.0)], w=W * 1.25)
+    return m
+
+
+def chrome_provider_apple():
+    """STAND-IN for the Apple mark (Rev 9): a faceted apple with its leaf."""
+    m = fill([(0.0, 0.40), (0.36, 0.52), (0.66, 0.30), (0.70, -0.16), (0.44, -0.68), (0.18, -0.70), (0.0, -0.60),
+              (-0.18, -0.70), (-0.44, -0.68), (-0.70, -0.16), (-0.66, 0.30), (-0.36, 0.52)])
+    m |= fill([(0.02, 0.50), (0.12, 0.80), (0.36, 0.86), (0.26, 0.58)])
+    return m
+
+
 GLYPHS = [
     ("chrome_close",      chrome_close),
     ("chrome_reroll",     chrome_reroll),
@@ -343,6 +379,10 @@ GLYPHS = [
     ("chrome_target",     chrome_target),
     ("chrome_pause",      chrome_pause),
     ("chrome_chevron",    chrome_chevron),
+    ("chrome_person",     chrome_person),
+    ("chrome_provider_steam", chrome_provider_steam),
+    ("chrome_provider_google", chrome_provider_google),
+    ("chrome_provider_apple", chrome_provider_apple),
 ]
 
 

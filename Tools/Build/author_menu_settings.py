@@ -6,9 +6,12 @@ section 18; the approved Settings / SettingsOther boards, revision 2, on the "Me
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/
         SettingsView.prefab     the whole window: the dim, the frame and brackets, "Settings" + the active
-                                tab's name, the four hex tabs, Close (B), four pages of rows (label, one-
+                                tab's name, the five hex tabs, Close (B), four pages of rows (label, one-
                                 line description, and a dropdown, an ON / OFF pair or a slider with its
-                                value), the General links, the Performance notices and buttons, the version.
+                                value), the General links, the Performance notices and buttons, the version,
+                                and (Rev 9, section 54) the ACCOUNT page - the pilot, the guest notice, a row
+                                per sign-in provider with LINK, Sign out and Delete account - with its window
+                                (the link conflict and the confirmations) over the settings.
                                 GameSettingsPanelController, SettingsTabBar and BenchmarkSceneLauncher ride
                                 on its root.
 
@@ -66,7 +69,13 @@ SCROLL = "1aa08ab6e0800fa44ae55d278d1423e3"            # UnityEngine.UI.ScrollRe
 SLIDER = P.SLIDER
 S = dict(controller=C.script("GameSettingsPanelController"), tabbar=C.script("SettingsTabBar"),
          bench=C.script("BenchmarkSceneLauncher"), tab=K.kit_script("KitTextTab"), tile=K.kit_script("KitTile"),
-         button=K.kit_script("KitButton"), close=C.script("ModalWindowCloseButton"), modal=C.script("SettingsModal"))
+         button=K.kit_script("KitButton"), close=C.script("ModalWindowCloseButton"), modal=C.script("SettingsModal"),
+         account=C.script("AccountSettingsView"), prompt=C.script("AccountPromptWindow"))
+# Rev 9 (section 54): the Account tab. SignInProviders.asset is written by author_start_flow.py (PROVIDERS_GUID there).
+PROVIDERS_GUID = "5b0c1f7e9a2d4c6e8f1a3b5d7c9e0f21"
+ACCOUNT_ROWS = (("Steam", 2, "chrome_provider_steam"), ("Google", 3, "chrome_provider_google"), ("Apple", 4, "chrome_provider_apple"))
+ACCOUNT_ROWS_TOP, ACCOUNT_PITCH, ACCOUNT_ACTIONS_GAP = 34, 84, 26
+PROMPT_W, PROMPT_H, PROMPT_CONFIRM_H = 1180, 680, 330
 PACKAGE = P.PACKAGE | {DROPDOWN, TOGGLE, SCROLL}
 
 # The rows, as the approved board draws them (revision 2: a one-line description under every label).
@@ -102,6 +111,7 @@ PAGES = [
         ("sl", "SFX volume", "How loud the effects are.", "sfxSlider"),
         ("tg", "Haptics", "Controller rumble.", "haptics"),
     ]),
+    ("Account", "chrome_person", []),
 ]
 READOUTS = {"fovSlider": "fovValueText", "musicSlider": "musicValueText", "sfxSlider": "sfxValueText"}
 LINKS = (("BugReport", "BUG REPORT", "Default", "bugReportButton"), ("Privacy", "PRIVACY POLICY", "Default", "privacyPolicyButton"),
@@ -282,6 +292,126 @@ def small_buttons(page, key, top, items):
                                       K.button_mods("KitButtonSmall", variant, False, cap, small=True)))
 
 
+def account_page(page, pk):
+    """Rev 9 (section 54, the approved R9Account board): who you are, the guest notice, the linked accounts and the
+    account actions. AccountSettingsView lays the rows out (rows the platform does not offer collapse)."""
+    label(page.child(N(f"{pk}/Name", "PilotName", TL(0, 0, 900, 40))), "", "H2", "TextLight")
+    label(page.child(N(f"{pk}/Id", "PlayerId", TL(0, 46, 900, 20))), "", "Label", "NeutralLightest")
+    g = page.child(N(f"{pk}/Guest", "GuestNotice", TL(0, 84, PAGE_W, 56)))
+    H.framed(g, f"{pk}/Guest", 10, "SurfaceVeryDark", "ElementCharge")
+    ic = g.child(N(f"{pk}/Guest/Icon", "Icon", R((0, 0.5), None, (32, 0), (24, 24))))
+    ic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ElementCharge"), K.chrome_sprite("chrome_person"), preserve=True))
+    label(g.child(N(f"{pk}/Guest/Text", "Text", TL(60, 0, PAGE_W - 80, 56))),
+          "Guest pilot. Your progress lives on this device. Link an account to keep it if you reinstall or change devices.",
+          "Body", "TextLight")
+    label(page.child(N(f"{pk}/Caption", "LinkedCaption", TL(0, 164, 600, 18))), "Linked accounts", "Label", "NeutralLightest")
+    rows = page.child(N(f"{pk}/Rows", "Rows", TL(0, 170, PAGE_W, 480)))
+    for i, (name, _, icon) in enumerate(ACCOUNT_ROWS):
+        rk = f"{pk}/Rows/{name}"
+        r = rows.child(N(rk, name, TL(0, ACCOUNT_ROWS_TOP + i * ACCOUNT_PITCH, PAGE_W, ACCOUNT_PITCH)))
+        mk = r.child(N(f"{rk}/Mark", "Mark", TL(0, 28, 28, 28)))
+        mk.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite(icon), preserve=True))
+        label(r.child(N(f"{rk}/Name", "Name", TL(48, 14, 600, 26))), name, "Body", "TextLight")
+        label(r.child(N(f"{rk}/Line", "Line", TL(48, 44, 600, 20))), "Not linked", "BodySmall", "NeutralLightest")
+        image_node(r, f"{rk}/Rule", "Rule", R((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)), "SurfaceDark")
+        w, h = K.button_size("LINK", small=True)
+        holder = r.child(N(f"{rk}/Link", "Link", R((1, 0.5), None, (0, 0), (w, h), (1, 0.5))))
+        holder.children.append(P.Inst(f"Account{name}LinkButton", "KitButtonSmall", "LinkButton", STRETCH,
+                                      K.button_mods("KitButtonSmall", "Space", False, "LINK", small=True)))
+        label(r.child(N(f"{rk}/Linked", "Linked", R((1, 0.5), None, (0, 0), (200, 24), (1, 0.5)), active=False)),
+              "Linked", "Label", "ElementTime", align="right")
+    act = rows.child(N(f"{pk}/Rows/Actions", "Actions",
+                       TL(0, ACCOUNT_ROWS_TOP + len(ACCOUNT_ROWS) * ACCOUNT_PITCH + ACCOUNT_ACTIONS_GAP, PAGE_W, 40)))
+    for k, cap, variant, anchor in (("SignOut", "SIGN OUT", "Mass", 0), ("Delete", "DELETE ACCOUNT", "Danger", 1)):
+        w, h = K.button_size(cap, small=True)
+        holder = act.child(N(f"{pk}/Rows/Actions/{k}", k, R((anchor, 0.5), None, (0, 0), (w, h), (anchor, 0.5))))
+        holder.children.append(P.Inst(f"Account{k}Button", "KitButtonSmall", f"{k}Button", STRETCH,
+                                      K.button_mods("KitButtonSmall", variant, False, cap, small=True)))
+    page.add("account", 114, lambda ctx, go: mono(go, S["account"], account_body(ctx, pk)))
+
+
+def account_body(ctx, pk):
+    return (f"  providers: {K.ref(11400000, PROVIDERS_GUID, 2)}\n"
+            f"  pilotName: {ref(ctx.c(f'{pk}/Name', 'tmp'))}\n"
+            f"  playerIdText: {ref(ctx.c(f'{pk}/Id', 'tmp'))}\n"
+            f"  guestNotice: {ref(ctx.go(f'{pk}/Guest'))}\n"
+            "  rows:\n" + "".join(
+                f"  - provider: {v}\n    root: {ref(ctx.rt(f'{pk}/Rows/{n}'))}\n"
+                f"    mark: {ref(ctx.c(f'{pk}/Rows/{n}/Mark', 'img'))}\n"
+                f"    line: {ref(ctx.c(f'{pk}/Rows/{n}/Line', 'tmp'))}\n"
+                f"    linkButton: {ref(ctx.iref(f'Account{n}LinkButton', 'root#button'))}\n"
+                f"    linkedMark: {ref(ctx.go(f'{pk}/Rows/{n}/Linked'))}\n" for n, v, _ in ACCOUNT_ROWS)
+            + f"  rowsTop: {ACCOUNT_ROWS_TOP}\n  rowPitch: {ACCOUNT_PITCH}\n"
+            f"  actionsRow: {ref(ctx.rt(f'{pk}/Rows/Actions'))}\n  actionsGap: {ACCOUNT_ACTIONS_GAP}\n"
+            f"  signOutButton: {ref(ctx.iref('AccountSignOutButton', 'root#button'))}\n"
+            f"  deleteButton: {ref(ctx.iref('AccountDeleteButton', 'root#button'))}\n"
+            f"  prompt: {ref(ctx.c('Prompt', 'prompt'))}\n")
+
+
+def prompt_node(root):
+    """The Account tab's window over the settings (R9Conflict): the link conflict, and - shorter, without the pilot
+    cards - the sign-out and delete confirmations. Its foot and buttons hang from its bottom edge."""
+    pr = root.child(N("Prompt", "AccountPrompt", STRETCH))
+    pr.add("cg", 225, canvas_group(False))
+    image_node(pr, "Prompt/Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.7, raycast=True)
+    win = pr.child(N("Prompt/Window", "Window", R((0.5, 0.5), None, (0, 0), (PROMPT_W, PROMPT_H))))
+    fill = win.child(N("Prompt/Window/Fill", "Fill", STRETCH))
+    fill.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceBlack"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True)) \
+        .add("th", 114, H.themed("SurfaceBlack"))
+    bord = win.child(N("Prompt/Window/Border", "Border", STRETCH))
+    bord.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("TextLight"), K.kit_sprite("kit_sliver14_line1"), True)).add("th", 114, H.themed("TextLight"))
+    M.bracket_nodes(win, "Prompt/Window/Bracket", inset=14)
+    inner = PROMPT_W - 2 * PAD
+    label(win.child(N("Prompt/Window/Eyebrow", "Eyebrow", TL(PAD, 40, inner, 18))), "Link Google", "Label", "Cta")
+    label(win.child(N("Prompt/Window/Title", "Title", TL(PAD, 64, inner, 46))), "This Google account already has a pilot", "H2", "TextLight")
+    label(win.child(N("Prompt/Window/Body", "Body", TL(PAD, 118, inner, 48))),
+          "Pilots cannot be merged. Choose which one to fly; the other stays where it is.", "Body", "NeutralLightest",
+          valign="top", wrap=True)
+    cards = win.child(N("Prompt/Window/Cards", "Cards", TL(PAD, 180, inner, 280)))
+    card_w = (inner - 60) // 2
+    for i, side in enumerate(("This", "Other")):
+        ck = f"Prompt/Window/Cards/{side}"
+        card = cards.child(N(ck, side, TL(i * (card_w + 60), 0, card_w, 280)))
+        H.framed(card, ck, 10, "SurfaceVeryDark", "Selection" if side == "Other" else "SurfaceLight")
+        label(card.child(N(f"{ck}/Caption", "Caption", TL(28, 24, card_w - 56, 18))), "", "Label", "Cta" if side == "Other" else "NeutralLightest")
+        label(card.child(N(f"{ck}/Name", "Name", TL(28, 52, card_w - 56, 36))), "", "H2", "TextLight")
+        for j, (stat, cap) in enumerate((("Crystals", "Crystals"), ("Vessels", "Vessels"), ("Quests", "Quests done"))):
+            y = 110 + j * 52
+            label(card.child(N(f"{ck}/{stat}Caption", f"{stat}Caption", TL(28, y, 260, 26))), cap, "Body", "NeutralLightest")
+            label(card.child(N(f"{ck}/{stat}", stat, TL(28, y, card_w - 56, 26))), "0", "Body", "TextLight", align="right")
+            image_node(card, f"{ck}/{stat}Rule", f"{stat}Rule", TL(28, y + 38, card_w - 56, 1), "SurfaceDark")
+    label(win.child(N("Prompt/Window/Foot", "Foot", R((0, 0), (1, 0), (0, 118), (-2 * PAD, 40), (0.5, 0)))),
+          "", "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    row = win.child(N("Prompt/Window/Buttons", "Buttons", R((0, 0), (1, 0), (0, 44), (-2 * PAD, 52), (0.5, 0))))
+    row.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 18, 4, (0, 0), (0, 0)))
+    for k, cap, variant in (("Primary", "FLY SHOMBOSS", "Play"), ("Secondary", "KEEP NOVA RUNNER", "Mass"), ("Cancel", "CANCEL", "Space")):
+        w, h = K.button_size(cap, small=True)
+        holder = row.child(N(f"Prompt/Window/Buttons/{k}", k, R(size=(w + 80, h))))
+        holder.add("le", 114, le(pw=w + 80, ph=h))
+        holder.children.append(P.Inst(f"Prompt{k}Button", "KitButtonSmall", f"{k}Button", STRETCH,
+                                      K.button_mods("KitButtonSmall", variant, False, cap, small=True)))
+    pr.add("prompt", 114, lambda ctx, go: mono(go, S["prompt"], prompt_body(ctx)))
+
+
+def prompt_body(ctx):
+    def card(side):
+        ck = f"Prompt/Window/Cards/{side}"
+        return (f"    caption: {ref(ctx.c(f'{ck}/Caption', 'tmp'))}\n    name: {ref(ctx.c(f'{ck}/Name', 'tmp'))}\n"
+                f"    crystals: {ref(ctx.c(f'{ck}/Crystals', 'tmp'))}\n    vessels: {ref(ctx.c(f'{ck}/Vessels', 'tmp'))}\n"
+                f"    questsDone: {ref(ctx.c(f'{ck}/Quests', 'tmp'))}\n")
+    return (f"  group: {ref(ctx.c('Prompt', 'cg'))}\n  window: {ref(ctx.rt('Prompt/Window'))}\n"
+            f"  conflictHeight: {PROMPT_H}\n  confirmHeight: {PROMPT_CONFIRM_H}\n"
+            + "".join(f"  {f}: {ref(ctx.c(f'Prompt/Window/{k}', 'tmp'))}\n"
+                      for f, k in (("eyebrow", "Eyebrow"), ("title", "Title"), ("body", "Body"), ("foot", "Foot")))
+            + f"  cards: {ref(ctx.go('Prompt/Window/Cards'))}\n"
+            f"  thisPilot:\n{card('This')}  otherPilot:\n{card('Other')}"
+            + "".join(f"  {f}Button: {ref(ctx.iref(f'Prompt{k}Button', 'root#button'))}\n"
+                      f"  {f}Label: {ref(ctx.iref(f'Prompt{k}Button', 'Label#tmp'))}\n"
+                      for f, k in (("primary", "Primary"), ("secondary", "Secondary"), ("cancel", "Cancel"))))
+
+
 def build_view():
     root = N("root", VIEW, STRETCH)
     image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.82, raycast=True)
@@ -312,17 +442,21 @@ def build_view():
             small_buttons(page, f"{pk}/Links", len(rows) * ROW_H + 26, [(k, cap, v) for k, cap, v, _ in LINKS])
         if name == "Performance":
             small_buttons(page, f"{pk}/Tools", top + len(rows) * ROW_H + 22, [(k, cap, "Default") for k, cap, _ in PERF_BUTTONS])
+        if name == "Account":
+            account_page(page, pk)
 
     label(win.child(N("Window/Eyebrow", "Eyebrow", TL(PAD, 38, 300, 18))), "Settings", "Label", "NeutralLightest")
     t = win.child(N("Window/Title", "Title", TL(PAD, 58, 520, 46)))
     t.add("cr", 222, K.canvas_renderer()).add("tmp", 114, text("General", "H1", tok("TextLight"))) \
         .add("kt", 114, K.kit_text("H1", "TextLight", driven=True))
-    tabs = win.child(N("Window/Tabs", "Tabs", TL((WIN_W - 4 * 120) // 2, 26, 4 * 120, 108)))
+    tabs = win.child(N("Window/Tabs", "Tabs", TL((WIN_W - len(PAGES) * 120) // 2, 26, len(PAGES) * 120, 108)))
     for i, (name, icon, _) in enumerate(PAGES):
         C.tab_node(tabs, i, name, icon, name)
     W.close_button(win)
     v = win.child(N("Window/Version", "Version", R((1, 0), None, (-PAD, 30), (400, 18), (1, 0))))
     label(v, "Version", "Label", "NeutralLightest", align="right")
+
+    prompt_node(root)
 
     root.add("controller", 114, lambda ctx, go: mono(go, S["controller"], controller_body(ctx, wiring)))
     root.add("tabbar", 114, lambda ctx, go: mono(go, S["tabbar"],
@@ -374,7 +508,8 @@ def controller_body(ctx, wiring):
             + "".join(f"  {f}: {ref(ctx.c(wiring[f][1], 'tmp'))}\n" for f in ("fovValueText", "musicValueText", "sfxValueText"))
             + "  privacyPolicyUrl: https://cosmicshore.com/privacy\n"
             "  deleteDataUrl: https://cosmicshore.com/delete-my-data\n"
-            "  bugReportUrl: https://cosmicshore.com/support\n")
+            "  bugReportUrl: https://cosmicshore.com/support\n"
+            f"  accountView: {ref(ctx.c('Window/Account', 'account'))}\n")
 
 
 def prefab_outputs():
@@ -650,7 +785,27 @@ def validate(files):
             tmpl = A.doc_of(view, V(f"Window/{name}/Row{i + 1}/Dropdown/Template#go"))[1]
             assert "  m_IsActive: 0\n" in tmpl, f"{name} row {i + 1}: the dropdown template must start inactive"
     _, tb = A.doc_of(view, V("root#tabbar"))
-    assert tb.count("  - button: {fileID: ") == 4 and "  scaleLabels: 0\n" in tb, "SettingsTabBar: four kit tabs, unscaled"
+    assert tb.count("  - button: {fileID: ") == len(PAGES) == 5 and "  scaleLabels: 0\n" in tb, "SettingsTabBar: five kit tabs, unscaled"
+    # Rev 9: the Account tab and its window.
+    _, acc = A.doc_of(view, V("Window/Account#account"))
+    assert acc and S["account"] in acc, "SettingsView: the Account page carries no AccountSettingsView"
+    assert re.search(r"^  accountView: \{fileID: %s\}" % V("Window/Account#account"), ctl, re.M), \
+        "GameSettingsPanelController.accountView is not the Account page (its actions would escape the in-game lock)"
+    assert f"  providers: {K.ref(11400000, PROVIDERS_GUID, 2)}" in acc, "AccountSettingsView reads another providers asset"
+    assert os.path.exists(os.path.join(REPO, "Assets/_SO_Assets/UI/SignInProviders.asset.meta")) and \
+        f"guid: {PROVIDERS_GUID}" in open(os.path.join(REPO, "Assets/_SO_Assets/UI/SignInProviders.asset.meta")).read(), \
+        "SignInProviders.asset is missing (run author_start_flow.py)"
+    rows_ = re.findall(r"  - provider: (\d+)\n    root: \{fileID: (-?\d+)\}\n    mark: .*\n    line: .*\n    linkButton: \{fileID: (-?\d+)\}", acc)
+    assert sorted(int(v) for v, _, _ in rows_) == [2, 3, 4], "the Account tab needs a row each for Steam, Google and Apple"
+    assert all(b != "0" for _, _, b in rows_), "an Account row has no LINK button"
+    for f in ("pilotName", "playerIdText", "guestNotice", "actionsRow", "signOutButton", "deleteButton", "prompt"):
+        assert not re.search(r"^  %s: \{fileID: 0\}" % f, acc, re.M), f"AccountSettingsView.{f} is not wired"
+    _, pw = A.doc_of(view, V("Prompt#prompt"))
+    assert pw and S["prompt"] in pw, "SettingsView: no AccountPromptWindow"
+    for f in ("group", "window", "cards", "primaryButton", "secondaryButton", "cancelButton", "primaryLabel"):
+        assert not re.search(r"^  %s: \{fileID: 0\}" % f, pw, re.M), f"AccountPromptWindow.{f} is not wired"
+    _, pcg = A.doc_of(view, V("Prompt#cg"))
+    assert "  m_Alpha: 0\n" in pcg and "  m_BlocksRaycasts: 0\n" in pcg, "the Account window ships shown (it would cover the settings)"
     assert view.count("guid: " + S["close"]) == 1, "SettingsView: Close must close through ModalWindowCloseButton"
 
     modal = files[MODAL_PREFAB]
@@ -674,6 +829,13 @@ def drift(files):
             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
 
 
+def _show_prompt(text_):
+    fid = K.FileIds(VIEW)("Prompt#cg")
+    i = text_.index(f" &{fid}\n")
+    j = text_.find("\n--- ", i)
+    return text_[:i] + text_[i:j].replace("  m_Alpha: 0\n", "  m_Alpha: 1\n").replace("  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n") + text_[j:]
+
+
 def self_test(files):
     def expect(label_, mutate):
         bad = dict(files)
@@ -695,6 +857,9 @@ def self_test(files):
             f"    - target: {{fileID: {MODAL['modal']}, guid: {MODAL_GUID}", orphan + f"    - target: {{fileID: {MODAL['modal']}, guid: {MODAL_GUID}", 1))),
         ("a dropdown with no template", lambda f: f.__setitem__(view, re.sub(r"(  m_Template: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
         ("an ON / OFF pair on plain buttons", lambda f: f.__setitem__(view, f[view].replace("    onButton: {fileID: ", "    onButton: {fileID: 1", 1))),
+        ("the Account page unhooked from the in-game lock", lambda f: f.__setitem__(view, re.sub(r"(  accountView: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
+        ("an Account row missing", lambda f: f.__setitem__(view, re.sub(r"  - provider: 4\n    root: .*\n    mark: .*\n    line: .*\n    linkButton: .*\n    linkedMark: .*\n", "", f[view]))),
+        ("the Account window ships shown", lambda f: f.__setitem__(view, _show_prompt(f[view]))),
         ("OptionsMenuContent left nested", lambda f: f.__setitem__(MODAL_PREFAB, f[MODAL_PREFAB] + f"# guid: {OPTIONS_GUID}\n")),
     ]
     ok = all(expect(l, m) for l, m in cases)

@@ -11486,3 +11486,22 @@ known errors, 0 in changed files).
 5. Do this on Sparrow, Squirrel, Manta, Serpent, Grizzly and Stoat; note any ability that shows nothing (its map input
    and its prefab binding may disagree).
 6. **Arcade configure preview** still coaches and hands you the stick as before (it never sets DemoPilot).
+
+## 🔴 2026-10-18 — Rev 9 sign-in UI and the Account tab (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §54. `/verify-unity` was not run; the player reference compile is clean. The providers are not
+built yet (`NoPlatformSignIn`), so in the editor every provider shows and answers "not ready in this build".
+
+1. **Boot with no cached session** (sign out or clear the UGS session): the splash and the sign-in screen show the
+   lattice drifting over the art. The sign-in window reads "Sign in to fly" with Steam, Google and Apple, "or", Play as
+   guest and the hint; the pad lands on Steam.
+2. **Press Google:** "Google is not ready yet" with Other ways and Play as guest. **Other ways** returns to the chooser.
+3. **Play as guest** (from either face) signs in as before: pilot name if needed, then the menu.
+4. **SignInChooser context menus** (select the sign-in window in Play): Google in the browser, did not finish, Steam
+   signs you in - each face lays out cleanly; Other ways returns to the chooser.
+5. **SignInProviders.asset > Editor Preview = IPhone:** Apple then Google; = Android: Google then Apple.
+6. **Settings > Account** (fifth tab): your pilot name and player ID, the guest notice, Steam / Google / Apple rows
+   reading "Not ready in this build"; no Sign out or Delete. **In a match** the LINK buttons are locked.
+7. **AccountSettingsView > Preview: link conflict** (in Play, settings open on Account): the two pilot cards and Fly
+   Shomboss / Keep Nova Runner / Cancel; **Preview: delete account** shows the short confirmation.
+8. **Release build:** the sign-in window shows only Play as guest (and is short); the Account tab shows no rows.
