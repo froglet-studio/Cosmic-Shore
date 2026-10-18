@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fde7d8c2dacf45f99e46799ffeea15e6, type: 3}
+  m_Name: KiteImpactorDataContainer
+  m_EditorClassIdentifier: 
+  vesselPrismEffects:
+  - {fileID: 11400000, guid: 66cae311ef174118a0fcefec37c858c7, type: 2}
+  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
+  - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}
+  - {fileID: 11400000, guid: d47be97bcb5f4728b66a427ce0b4179c, type: 2}
+  - {fileID: 11400000, guid: 5fc2331a92e0b9a4b92f1d03c99669f5, type: 2}
+  - {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
+  vesselCrystalEffects:
+  - {fileID: 11400000, guid: d926fa11a6134e259eef87c71cfe1573, type: 2}
+  - {fileID: 11400000, guid: a5c175fbce18440abb3570fbb8672a2a, type: 2}
+  vesselElementalCrystalEffects:
+  - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
+  vesselSkimmerEffects: []

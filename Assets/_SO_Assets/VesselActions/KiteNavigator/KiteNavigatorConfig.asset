@@ -46,6 +46,7 @@ MonoBehaviour:
   chargePetals: 1
   chargeCap: 30
   stealCooldown: 1
+  faunaChargeCost: 1
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   aiSkill: 2
   omniSeconds: 5
@@ -53,11 +54,6 @@ MonoBehaviour:
   omniZoomRate: 3
   pipSize: 0.32
   viewMargin: 0.015
-  petalMeshes:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
   moteSize: 3.2
   tailWidth: 1.4
   pilotKiteAlpha: 0.22
@@ -107,6 +103,13 @@ MonoBehaviour:
       Data4: 0
     Path: 
   stealSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  faunaStruckSfx:
     Guid:
       Data1: 0
       Data2: 0

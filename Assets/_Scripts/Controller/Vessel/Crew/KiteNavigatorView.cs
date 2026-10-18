@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.UI;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -31,13 +33,14 @@ namespace CosmicShore.Gameplay
         readonly KiteNavigator _nav;
         readonly GameObject _root;
         readonly Camera _cam;
-        readonly Mesh _kiteMesh, _dotMesh, _ringMesh, _petalFallback;
+        readonly Mesh _kiteMesh, _dotMesh, _ringMesh;
+        readonly Mesh[] _petals = new Mesh[4];
         readonly Mesh _tailMesh, _loopMesh;
         readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat;
         readonly List<Vector3> _verts = new();
         readonly List<Color> _colors = new();
         readonly List<int> _tris = new();
-        readonly Dictionary<Material, Batch> _batches = new();
+        readonly Dictionary<(Material, Mesh, Camera), Batch> _batches = new();
 
         Camera _pilot;
         Rect _pilotRect;
@@ -64,7 +67,7 @@ namespace CosmicShore.Gameplay
             _kiteMesh = BuildKite();
             _dotMesh = BuildDisc(1f, 12);
             _ringMesh = BuildRing(1f, 0.08f, 48);
-            _petalFallback = BuildPetal();
+            for (int e = 0; e < 4; e++) _petals[e] = BuildPetal((Element)(e + 1));
             _tailMesh = new Mesh { name = "KiteTail" };
             _tailMesh.MarkDynamic();
             _loopMesh = new Mesh { name = "KiteLoops" };
@@ -96,7 +99,8 @@ namespace CosmicShore.Gameplay
         {
             RestorePilot();
             if (_root) Object.Destroy(_root);
-            foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _petalFallback, _tailMesh, _loopMesh,
+            foreach (var o in _petals) if (o) Object.Destroy(o);
+            foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh,
                                              _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat })
                 if (o) Object.Destroy(o);
         }
@@ -203,9 +207,8 @@ namespace CosmicShore.Gameplay
             foreach (var mote in _nav.Motes)
             {
                 if (!KiteNavigatorCore.InDisc(s, mote.X, mote.Z)) continue;
-                var mesh = cfg.PetalMesh(mote.Element);
                 var pos = _nav.BoardToWorld(mote.X, mote.Z);
-                Add(_limeMat, mesh ? mesh : _petalFallback, kite,
+                Add(_limeMat, _petals[mote.Element], kite,
                     Matrix4x4.TRS(pos + _nav.BoardUp * (lift - 0.2f), basis * Quaternion.Euler(0f, mote.Spin, 0f), Vector3.one * ms));
                 if (pilot) Add(_limeFaintMat, _dotMesh, pilot, Matrix4x4.TRS(pos, PilotFacing(pilot, pos), Vector3.one * cfg.PilotDotSize));
             }
@@ -250,11 +253,9 @@ namespace CosmicShore.Gameplay
         void Add(Material mat, Mesh mesh, Camera cam, Matrix4x4 m)
         {
             if (!cam || !mesh) return;
-            // one batch per material: the kite view and the pilot view never share a material, so a batch has one camera
-            if (!_batches.TryGetValue(mat, out var b)) _batches[mat] = b = new Batch();
-            if (b.N > 0 && (b.Mesh != mesh || b.Camera != cam)) DrawBatch(mat, b);
-            b.Mesh = mesh;
-            b.Camera = cam;
+            // one batch per material, mesh and camera: a frame's motes cost one draw per petal shape, not one per mote
+            var key = (mat, mesh, cam);
+            if (!_batches.TryGetValue(key, out var b)) _batches[key] = b = new Batch { Mesh = mesh, Camera = cam };
             if (b.N == b.M.Length)
             {
                 if (b.N >= 1023) DrawBatch(mat, b);
@@ -265,7 +266,7 @@ namespace CosmicShore.Gameplay
 
         void Flush()
         {
-            foreach (var kv in _batches) if (kv.Value.N > 0) DrawBatch(kv.Key, kv.Value);
+            foreach (var kv in _batches) if (kv.Value.N > 0) DrawBatch(kv.Key.Item1, kv.Value);
         }
 
         static void DrawBatch(Material mat, Batch b)
@@ -385,24 +386,16 @@ namespace CosmicShore.Gameplay
             return m;
         }
 
-        // a pointed petal (a lens), used for an element whose petal shape is not wired in the config
-        static Mesh BuildPetal()
+        // The element's own petal, the outline the HUD's elemental bars draw (ElementPetalGeometry: Mass a triangle, Space a
+        // kite, Time a diamond, Charge a five-sided gem), fanned from its centre into a flat mesh on the board, a unit wide.
+        static Mesh BuildPetal(Element element)
         {
+            var outline = ElementPetalGeometry.Outline(element);
             var v = new List<Vector3> { Vector3.zero };
             var t = new List<int>();
-            const int seg = 16;
-            for (int i = 0; i <= seg; i++)
-            {
-                float k = i / (float)seg, z = Mathf.Lerp(-1f, 1f, k), x = 0.55f * Mathf.Sin(k * Mathf.PI);
-                v.Add(new Vector3(x, 0f, z));
-            }
-            for (int i = 0; i <= seg; i++)
-            {
-                float k = i / (float)seg, z = Mathf.Lerp(1f, -1f, k), x = -0.55f * Mathf.Sin(k * Mathf.PI);
-                v.Add(new Vector3(x, 0f, z));
-            }
-            for (int i = 1; i < v.Count - 1; i++) { t.Add(0); t.Add(i); t.Add(i + 1); }
-            var m = new Mesh { name = "KitePetal" };
+            foreach (var p in outline) v.Add(new Vector3((p.x - 0.5f) * 2f, 0f, (p.y - 0.5f) * 2f));
+            for (int i = 1; i <= outline.Length; i++) { t.Add(0); t.Add(i); t.Add(i % outline.Length + 1); }
+            var m = new Mesh { name = $"KitePetal_{element}" };
             m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateBounds();
             return m;
         }

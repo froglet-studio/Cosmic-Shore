@@ -16,7 +16,13 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
           (a disk copy keeps the donor's hash and Netcode then keys two prefabs on one entry)
         - KiteNavigator on the root, wired to KiteNavigatorConfig.asset
+        - NO BUTTONS: the Sparrow's ability bindings are emptied (Garrett, 2026-10-18: "the pilot should be a one thumb flyer
+          that has no buttons"); the Sparrow's SingleStickVesselTransformer already makes it a one-thumb hull, and lifting
+          the thumb is the navigator's Time boost (KiteNavigator)
+        - its VesselImpactor on KiteImpactorDataContainer: the Sparrow's container plus KiteOmniCrystalEffect in the omni
+          list (an Omni crystal widens the navigator's board), so the Sparrow's own container is untouched
       Everything else is the Sparrow's: the lab flew the Sparrow's numbers, and the hull is the pilot's half.
+      Unlike the clone, the no-buttons and container edits are RETROFITS: applied to the committed prefab too, idempotently.
     SO_Class_Kite (the Sparrow's icons and abilities, owned from the start) + its entry in SO_Classlist_All / _Classes;
     one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and `DefaultNetworkPrefabs.asset` (the root
     GAMEOBJECT); Resources/ElementalAbilityMaps/Kite.asset (the Sparrow's map, unchanged but for its name and class);
@@ -50,6 +56,12 @@ MAP = os.path.join(MAPS, "Kite.asset")
 FUSION = os.path.join(ROOT, "Assets", "Resources", "CrystalHullFusionConfig.asset")
 SEAT_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Crew", "KiteNavigator.cs.meta")
 CONFIG_META = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "KiteNavigator", "KiteNavigatorConfig.asset.meta")
+CONTAINERS = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Effect Containers", "VesselContainers")
+DONOR_CONTAINER = os.path.join(CONTAINERS, "SparrowImpactorDataContainer.asset")
+KITE_CONTAINER = os.path.join(CONTAINERS, "KiteImpactorDataContainer.asset")
+OMNI_EFFECT = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Vessel Crystal Effects", "KiteOmniCrystalEffect.asset")
+OMNI_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "ImpactEffects", "EffectsSO", "Vessel Crystal Effects",
+                                "KiteOmniCrystalEffectSO.cs.meta")
 
 # 16 is BrittleStar (bleeding-edge) and the Goby (cece/sharp-tesla-j0kd7z), 17 the Angler (cece/zealous-feynman-po8k8d);
 # 18 is left for the Goby, which has to move off 16 when it merges. Checked across every origin branch 2026-10-17.
@@ -58,6 +70,9 @@ SPARROW_CLASS_ID = 11
 PREFAB_GUID = "c81d6c43058343b796fee1128ce6ccda"
 CLASS_GUID = "db96e34a6c3b4cb1b498f0529f765db1"
 MAP_GUID = "007a16964bc0490a937e8384d4e27eec"
+DONOR_CONTAINER_GUID = "bd2b4a654fb302e47a23cf303280df2d"
+KITE_CONTAINER_GUID = "dac5775f7c7b4048bab9186e40e50977"
+OMNI_EFFECT_GUID = "a5c175fbce18440abb3570fbb8672a2a"
 ROOT_GO = "8279817603024118164"              # the Sparrow's root GameObject
 ROOT_TRANSFORM_ID = "4853044355858455827"
 NETWORK_OBJECT_ID = "2386735669300085014"    # the NetworkObject component on it
@@ -105,7 +120,32 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
     text = text[:root.end(1)] + f"  - component: {{fileID: {SEAT_ID}}}\n" + text[root.end(1):]
     if not text.endswith("\n"):
         text += "\n"
-    return text + seat_block(script_guid, config_guid)
+    return retrofit(text + seat_block(script_guid, config_guid))
+
+
+BINDINGS = re.compile(r"(  _inputEventShipActions:)\n(?:  [- ] .*\n)+")
+
+
+def retrofit(text: str) -> str:
+    """No buttons, and the Kite's own impactor container. Idempotent: run on the clone and on the committed prefab."""
+    text = BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
+    return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {KITE_CONTAINER_GUID},")
+
+
+def container_asset(donor: str) -> str:
+    text = replace_once(donor, "  m_Name: SparrowImpactorDataContainer\n", "  m_Name: KiteImpactorDataContainer\n", "container name")
+    m = re.search(r"  vesselCrystalEffects:\n((?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)*)", text)
+    if not m:
+        raise RuntimeError("donor drifted: the Sparrow container's vesselCrystalEffects list was not found")
+    return text[:m.end(1)] + f"  - {{fileID: 11400000, guid: {OMNI_EFFECT_GUID}, type: 2}}\n" + text[m.end(1):]
+
+
+def omni_effect_asset(script_guid: str) -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            "  m_Name: KiteOmniCrystalEffect\n  m_EditorClassIdentifier: \n")
 
 
 def prefab_meta() -> str:
@@ -215,6 +255,18 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     want(seat and f"guid: {script_guid}" in seat.group(1), "Kite.prefab: the KiteNavigator document is missing or names another script")
     want(seat and f"  config: {{fileID: 11400000, guid: {config_guid}, type: 2}}" in seat.group(1),
          "Kite.prefab: KiteNavigator.config is not KiteNavigatorConfig.asset (a null config never seats the navigator)")
+    want("  _inputEventShipActions: []\n" in text, "Kite.prefab: the hull still binds buttons (the pilot is a one-thumb flyer with none)")
+    want(f"guid: {KITE_CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
+         "Kite.prefab: the VesselImpactor is not on KiteImpactorDataContainer (an Omni crystal would not widen the board)")
+    return errs
+
+
+def check_container(container: str, effect: str, omni_script_guid: str):
+    errs = []
+    if f"  - {{fileID: 11400000, guid: {OMNI_EFFECT_GUID}, type: 2}}\n" not in container.split("  vesselElementalCrystalEffects:")[0]:
+        errs.append("KiteImpactorDataContainer: KiteOmniCrystalEffect is not in its omni (vesselCrystalEffects) list")
+    if f"guid: {omni_script_guid}, type: 3" not in effect:
+        errs.append("KiteOmniCrystalEffect.asset: does not name KiteOmniCrystalEffectSO")
     return errs
 
 
@@ -260,6 +312,10 @@ def check_all():
     for path in (CLASS_ASSET, MAP):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
+    for path in (KITE_CONTAINER, OMNI_EFFECT):
+        if not os.path.exists(path) or not os.path.exists(path + ".meta"):
+            return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
+    errs += check_container(read(KITE_CONTAINER), read(OMNI_EFFECT), guid_of(OMNI_SCRIPT_META))
     errs += check_registrations(read(CONTAINER), read(NETWORK_PREFABS),
                                 [(os.path.basename(p), read(p)) for p in CLASS_LISTS],
                                 read(CLASS_ASSET), read(MAP), read(FUSION))
@@ -271,6 +327,14 @@ def author():
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR), script_guid, config_guid))
         write(PREFAB + ".meta", prefab_meta())
+    else:                            # the retrofits are not one-shots: they apply to the committed prefab
+        old = read(PREFAB); new = retrofit(old)
+        if new != old:
+            write(PREFAB, new)
+    if not os.path.exists(OMNI_EFFECT):
+        write(OMNI_EFFECT, omni_effect_asset(guid_of(OMNI_SCRIPT_META))); write(OMNI_EFFECT + ".meta", native_meta(OMNI_EFFECT_GUID))
+    if not os.path.exists(KITE_CONTAINER):
+        write(KITE_CONTAINER, container_asset(read(DONOR_CONTAINER))); write(KITE_CONTAINER + ".meta", native_meta(KITE_CONTAINER_GUID))
     if not os.path.exists(CLASS_ASSET):
         write(CLASS_ASSET, class_asset(read(DONOR_CLASS))); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
     if not os.path.exists(MAP):
@@ -295,6 +359,15 @@ def self_test():
     expect(check_prefab(re.sub(r"(  GlobalObjectIdHash: )\d+", r"\g<1>1124080984", good, count=1), script_guid, config_guid), 1, "the donor's hash")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {SEAT_ID}}}\n", ""), script_guid, config_guid), 1, "the seat off the root")
     expect(check_prefab(good.replace(f"guid: {config_guid}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid, config_guid), 1, "the seat's config unwired")
+    expect(check_prefab(good.replace("  _inputEventShipActions: []\n", "  _inputEventShipActions:\n  - InputEvent: 1\n    ShipActions: []\n"), script_guid, config_guid), 1, "a button bound")
+    expect(check_prefab(good.replace(KITE_CONTAINER_GUID, DONOR_CONTAINER_GUID), script_guid, config_guid), 1, "the Sparrow's container")
+    if retrofit(good) != good:
+        fails.append("the retrofit is not idempotent")
+    omni_script = guid_of(OMNI_SCRIPT_META)
+    kc, oe = container_asset(read(DONOR_CONTAINER)), omni_effect_asset(omni_script)
+    expect(check_container(kc, oe, omni_script), 0, "a Kite container passes")
+    expect(check_container(read(DONOR_CONTAINER), oe, omni_script), 1, "the Sparrow's container")
+    expect(check_container(kc, oe.replace(omni_script, "0" * 32), omni_script), 1, "the effect names another script")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]
     cls, kmap = class_asset(read(DONOR_CLASS)), build_map(read(DONOR_MAP))

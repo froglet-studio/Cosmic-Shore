@@ -87,30 +87,38 @@ Vessel Changer), and its second seat, ported from the Crew Vessel Lab's signed-o
   MaxScale, Mass 6 → 240 prisms, Time 1.5 → 30 s, Charge 1 → 30 petals. Expect a balancing pass once it is seen in a
   real match. The lab could not see the real blast hitting rival hulls, or the prism pool's own limits.
 
+**Round 4 (2026-10-18, Garrett's direction in Unity; `KITE_NAVIGATOR.md` "Round 4"):** the kite view is a second
+camera drawn by the game; the views swap; motes are lime petal shapes; the kite follows with no click; the pilot is
+one-thumb with no buttons, and the lifted thumb boosts; the hull's petals weight the motes; Charge rams creatures; the
+L5 upgrades (Mass shields clusters, Charge steals, Space breaks super shields, Time removes the boost cooldown); an
+Omni crystal doubles the board for 5 s. Player and editor reference compiles: 0 errors in changed files.
+`author_kite_assets.py --check` and `--self-test` OK.
+
 **Verify:**
-1. Open the Toybox. Fly into the **Vessel Changer**: it offers a **Kite** station, which looks like a Sparrow. Fly it.
-   (In a match, **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)** seats it on any hull.)
-   - The board appears bottom right: a dark disc with your hull's triangle below its centre.
-   - Prisms show as domain-coloured bars. Navigator motes show as four glyphs: gold diamond, orange square, violet
-     triangle, green dot.
-   - The AI's kite loops clusters and pops hostile prisms while you keep flying.
-2. Press **2** (or D-pad right).
-   - The hull keeps flying, on its AI.
-   - Your sticks no longer steer.
-   - Mouse-down on the board drives the kite.
-3. Circle one colour of motes until the tail crosses itself:
-   - **violet**: a blast at the loop's centre takes out hostile prisms;
-   - **orange**: a cluster of your prisms appears;
-   - **green**: the hull boosts for a second or more, and a green arc shows on the board's right;
-   - **gold**: charge pips appear on the board's left.
-4. A mixed loop does nothing (fizzle).
-5. With charge, ram a rival's triangle. Petals move to you, and the scoreboard counts a hit.
-6. Press **1**. You fly again, with no stuck input and no stuck boost.
-7. On a phone build, the kite rides about 2 cm above your thumb.
-8. Run **Remove (Play mode)**. The board goes, and you hold the hull.
-9. Fly back to the Vessel Changer and pick another hull. You land in it flying, with no board and no paused input.
-   Pick the Kite again: the board comes back, with the AI on the kite. Then repeat the swap while you are on the kite
-   and the AI flies the hull through the changer. You should land in the new hull flying, with the input live.
+1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Kite** station (it looks like a Sparrow).
+   - Lower left: a small square kite view, the real world seen from straight above your hull.
+   - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
+   - In your own view: a faint see-through kite and faint lime dots, not in the way.
+2. Fly with one thumb: the stick, the mouse, or one touch. No button does anything.
+3. After a green (Time, diamond) loop, lift your thumb (or centre the stick). The hull boosts while it is up. Boost
+   again at once: refused for 2 s (and not refused at Time level 5).
+4. Press **2** (or D-pad right).
+   - The kite view fills the screen.
+   - Your hull's view shrinks to the lower left, flown by its AI.
+   - Move the mouse without clicking, or lean the stick: the kite follows.
+5. Loop motes of one petal shape:
+   - **Space**: a blast takes out hostile prisms. At Space level 5 it also breaks shielded and super-shielded prisms.
+   - **Mass**: a cluster of your prisms. At Mass level 5 they are shielded.
+   - **Time**: boost for the pilot.
+   - **Charge**: gold pips round the kite.
+6. A loop with two petal shapes in it fizzles.
+7. With charge, ram a rival: crystals burst out of them (at Charge level 5, the petals come to you instead) and the
+   scoreboard counts a hit. Ram a creature: it dies, and one pip goes.
+8. Collect an Omni crystal: for 5 s the kite view zooms out twice as far and the kite reaches twice as far.
+9. Press **1**: your view is full screen again, at its old size, with no stuck input and no stuck boost.
+10. Gather petals of one element on the hull: the motes of that shape come more often.
+11. In the Vessel Changer, swap away from the Kite and back, once flying and once while on the kite. Every view comes
+    back to normal and the input is live.
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**

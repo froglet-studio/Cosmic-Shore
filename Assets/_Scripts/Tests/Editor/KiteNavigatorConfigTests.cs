@@ -52,6 +52,13 @@ namespace CosmicShore.Tests
             Assert.AreEqual(30f, c.ChargeCap);
             Assert.AreEqual(1f, c.StealCooldown);
             Assert.AreEqual(KiteNavigatorAI.Skill.Hard, c.AISkill);
+            // Garrett's 2026-10-18 direction, built in Unity first (KITE_NAVIGATOR.md "Round 4")
+            Assert.AreEqual(2f, c.BoostCooldownSeconds, "a boost waits 2 s after the last, none at Time L5");
+            Assert.AreEqual(5f, c.OmniSeconds);
+            Assert.AreEqual(2f, c.OmniBoardScale, "an Omni crystal zooms the kite view out twice as far");
+            Assert.AreEqual(1f, c.MoteBaseWeight);
+            Assert.AreEqual(1f, c.MoteWeightPerLevel);
+            Assert.AreEqual(1f, c.FaunaChargeCost);
         }
 
         [Test]

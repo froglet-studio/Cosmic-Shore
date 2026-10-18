@@ -55,6 +55,12 @@ namespace CosmicShore.Gameplay
             public Domains Domain;
         }
 
+        internal struct FaunaShadow
+        {
+            public Fauna Fauna;
+            public float X, Z, Y;
+        }
+
         internal enum FxKind { Loop = 0, Fizzle = 1, Pop = 2, Space = 3, Mass = 4, Time = 5, Charge = 6, Steal = 7 }
 
         internal struct Fx
@@ -96,6 +102,7 @@ namespace CosmicShore.Gameplay
         internal readonly List<Mote> Motes = new();
         internal readonly List<PrismShadow> Prisms = new();
         internal readonly List<RivalShadow> Rivals = new();
+        internal readonly List<FaunaShadow> Creatures = new();
         internal readonly List<Fx> Effects = new();
         readonly List<Prism> _query = new();
         readonly List<KiteMote> _aiMotes = new();
@@ -128,6 +135,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True while the local human flies the kite and the hull's AI flies the hull.</summary>
         public bool HumanNavigates => _humanNavigates;
+
+        /// <summary>The hull collected an Omni crystal: the board widens for <c>omniSeconds</c> (KiteOmniCrystalEffectSO).</summary>
+        public void OnOmniCrystal()
+        {
+            if (config) _omniUntil = Time.time + config.OmniSeconds;
+        }
 
         /// <summary>
         /// Seat a navigator on the hull the local player flies (the FrogletTools play-mode menu calls this; the Kite hull
@@ -217,6 +230,7 @@ namespace CosmicShore.Gameplay
             StepMotes(dt);
             ShadowPrisms();
             ShadowRivals(dt);
+            ShadowCreatures();
 
             if (_humanNavigates) ReadKiteInput();
             else StepAI(dt);
@@ -460,6 +474,29 @@ namespace CosmicShore.Gameplay
             return -1;
         }
 
+        // The charged kite rams creatures too (Garrett, 2026-10-18). There is no fauna spatial index: the live fauna of the
+        // active cells are walked, as the Stoat's ripple does, and only while the kite holds a charge to spend.
+        void ShadowCreatures()
+        {
+            Creatures.Clear();
+            if (_charge < 1f || !FaunaNetworkSync.IsSimAuthority) return;
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int c = 0; c < cells.Count; c++)
+            {
+                var cell = cells[c];
+                if (!cell) continue;
+                var fauna = cell.LiveFauna;
+                for (int i = 0; i < fauna.Count; i++)
+                {
+                    var f = fauna[i];
+                    if (!f || f.IsDying || !f.isActiveAndEnabled) continue;
+                    Shadow(f.transform.position, out float x, out float z, out float y);
+                    if (!KiteNavigatorCore.InDisc(_s, x, z) || !Touchable(y)) continue;
+                    Creatures.Add(new FaunaShadow { Fauna = f, X = x, Z = z, Y = y });
+                }
+            }
+        }
+
         bool OffRamCooldown(IVesselStatus victim) =>
             !_lastRam.TryGetValue(victim, out float t) || Time.time - t >= _cfg.StealCooldown;
 
@@ -550,6 +587,12 @@ namespace CosmicShore.Gameplay
                 _aiRivals.Add(new KiteTarget { Id = r.Id, X = r.X, Z = r.Z, VX = r.VX, VZ = r.VZ });
             }
 
+            foreach (var c in Creatures)
+            {
+                anyRival = true;
+                _aiRivals.Add(new KiteTarget { Id = c.Fauna.GetInstanceID(), X = c.X, Z = c.Z });
+            }
+
             _ai.Step(_s, _cfg.Growth, _kite, _charge, _aiMotes, _aiPrisms, _aiRivals, anyRival, dt);
             _aim = _ai.Aim;
             _down = _ai.Down;
@@ -581,11 +624,23 @@ namespace CosmicShore.Gameplay
                 if (!Touchable(r.Y)) continue;
                 if (KiteNavigatorCore.DistanceToSegmentSq(r.X, r.Z, prev, at) <= rr) Ram(r, impact);
             }
+
+            // a charged head kills a creature it passes through: the joust's death (heart freed at the strike), a charge each
+            foreach (var c in Creatures)
+            {
+                if (_charge < _cfg.FaunaChargeCost || !c.Fauna || c.Fauna.IsDying) continue;
+                if (KiteNavigatorCore.DistanceToSegmentSq(c.X, c.Z, prev, at) > rr) continue;
+                if (!c.Fauna.Jousted(name)) continue;
+                _charge = Mathf.Max(0f, _charge - _cfg.FaunaChargeCost);
+                AddFx(FxKind.Steal, c.X, c.Z);
+                Play(_cfg.FaunaStruckSfx, c.Fauna.transform.position);
+            }
         }
 
         /// <summary>
         /// A charged ram is a scored Strike on the rival (PvP is petals only): one gate for the score and the petals, then
-        /// whole petals moved one at a time from the rival's fullest element, as many as the kite holds power for.
+        /// whole petals moved one at a time from the rival's fullest element, as many as the kite holds power for. They are
+        /// KNOCKED OUT as crystals anyone can take (Eject); at Charge L5 they are STOLEN for the pilot (Garrett, 2026-10-18).
         /// </summary>
         void Ram(RivalShadow rival, Vector3 impact)
         {
@@ -599,6 +654,7 @@ namespace CosmicShore.Gameplay
 
             int want = Mathf.FloorToInt(_charge), got = 0;
             var rs = victim.ResourceSystem;
+            var form = Upgraded(Element.Charge) ? ElementalTransferForm.Steal : ElementalTransferForm.Eject;
             while (want > 0 && rs != null)
             {
                 var element = Element.None; int most = 0;
@@ -608,7 +664,7 @@ namespace CosmicShore.Gameplay
                     if (level >= 1 && level > most) { most = level; element = e; }
                 }
                 if (element == Element.None) break;
-                int moved = ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Steal, victim, _status,
+                int moved = ElementalTransfer.ApplyAuthoritative(form, victim, _status,
                                                                  ElementalTransfer.MaskOf(element), CombatHitDrain.NormalizedPerLevel,
                                                                  impact, ElementalDebuffSources.VesselContact);
                 if (moved <= 0) break;
@@ -671,6 +727,13 @@ namespace CosmicShore.Gameplay
 
             var prefabs = _cfg.SpaceExplosions;
             if (prefabs is not { Length: > 0 }) return;
+
+            // Space L5: the blast destroys shielded and super-shielded prisms (Garrett, 2026-10-18). No blast breaks a super
+            // shield on its own (ExplosionImpactor and the Burst path both absorb the hit), so the super shields inside the
+            // blast's reach are dropped here first, by the sanctioned sequence (DeactivateShields; the Rhino sword, the
+            // Thresher, the Shrike), and the blast itself goes out devastating, which takes plain shields outright.
+            bool breaker = Upgraded(Element.Space);
+            if (breaker) DropSuperShields(at, 0.5f * maxScale);
             var impactor = _vessel.Transform.GetComponentInChildren<VesselImpactor>();
             var init = new AOEExplosion.InitializeStruct
             {
@@ -682,8 +745,23 @@ namespace CosmicShore.Gameplay
                 SpawnPosition = at,
                 SpawnRotation = Quaternion.LookRotation(_f, _u),
                 AffectSelfOverride = false,
+                DevastatingOverride = breaker ? true : null,
             };
             ExplosionHelper.CreateExplosion(prefabs, init, impactor ? impactor.DIContainer : null);
+        }
+
+        void DropSuperShields(Vector3 centre, float radius)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            _query.Clear();
+            index.QuerySphere(centre, radius, _query);
+            var own = OwnDomain;
+            foreach (var p in _query)
+            {
+                if (!p || p.destroyed || p.Domain == own || p.prismProperties is not { IsSuperShielded: true }) continue;
+                p.DeactivateShields((p.transform.position - centre).normalized * 20f);
+            }
         }
 
         // MASS: a cluster of our domain's prisms at the loop's centre, laid over a few frames
@@ -731,6 +809,7 @@ namespace CosmicShore.Gameplay
                 prism.TargetScale = scale;
                 prism.ownerID = _status.PlayerName;
                 prism.ChangeTeam(_status.Domain);
+                if (Upgraded(Element.Mass)) prism.prismProperties.IsShielded = true;   // Mass L5: Initialize applies it
                 prism.Initialize(_status.PlayerName);
                 // a stated size: admit it past the pool's scale window AFTER Initialize (whose reset re-clamps it)
                 prism.AdmitTargetScale(scale);
@@ -767,21 +846,24 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // The pilot's thumb is up: no touch on the glass and the stick centred.
+        // The pilot's thumb is up. The Kite is a one-thumb hull (the Sparrow's SingleStickVesselTransformer), so its one
+        // stick is the whole of its input: on a touch screen the strategy raises Idle when every thumb lifts, and on a
+        // pad or the single-stick mouse a centred stick is the lifted thumb.
         bool PilotThumbLifted()
         {
-            var touchscreen = Touchscreen.current;
-            if (touchscreen != null && touchscreen.primaryTouch.press.isPressed) return false;
-            var pad = Gamepad.current;
-            if (pad != null && pad.leftStick.ReadValue().magnitude > _cfg.StickDeadzone) return false;
-            return touchscreen != null || pad != null;
+            var input = _player?.InputStatus;
+            if (input == null) return false;
+            if (input.Idle) return true;
+            float dz = _cfg.StickDeadzone;
+            return input.EasedLeftJoystickPosition.sqrMagnitude < dz * dz;
         }
 
-        // The hull's level-5 tier in an element.
+        // The hull's level-5 upgrade in an element: the fleet's replicated gate (the Kite's ElementalAbilityMap lists all four
+        // elements, unlocking at 5 and relocking below 4).
         bool Upgraded(Element element)
         {
-            var rs = _status?.ResourceSystem;
-            return rs && rs.GetLevel(element) >= 5;
+            var abilities = _status?.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(element);
         }
 
         void EndBoost()

@@ -472,6 +472,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), anyone with the Editor
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; Docs/UNITY_VERIFICATION_CHECKLIST.md (Kite Navigator entry)
+
 ### T-20261017-cb31 · open · test · vessels
 - **Task:** Fly the Shrike in Menu_Main freestyle and run its editor checklist (modes on X/RB/B, LT eyepiece with crosshairs, RT per mode, docking, Mass detach, crystal flora, missile count)
 - **Done when:** Every step of the Shrike entries in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or filed as a bug
@@ -642,3 +643,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Caleb or Andrew (QA)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
+
+### T-20261018-3247 · open · dev · Crew vessels
+- **Task:** Bring the Crew Vessel Lab up to the Kite's round 4, which was directed in Unity on 2026-10-18: the kite view and pilot view swap (small view lower left), lime motes in their element's petal shape, the kite following the mouse or stick with no click, a one-thumb pilot whose lifted thumb spends the Time boost (2 s cooldown, none at Time L5), mote frequency weighted by the hull's petals, Charge rams on fauna, Eject below Charge L5 and Steal at it, shielded Mass clusters at Mass L5, Space L5 blasts through shields and super shields, and the Omni crystal's 5 s double-size board. Then re-run parity.cjs and verify_lab.cjs and republish.
+- **Done when:** The lab's SHIPPED block and scorecard carry round 4 and parity.cjs still passes
+- **Who can take it:** any session; Garrett to sign off
+- **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 4); Docs/Studios/CrewVesselLab.html

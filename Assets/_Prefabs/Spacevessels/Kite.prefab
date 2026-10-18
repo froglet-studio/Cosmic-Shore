@@ -1429,19 +1429,7 @@ MonoBehaviour:
   NetEchoSightShape:
     m_InternalValue: {x: 0, y: 0, z: 0}
   _executors: {fileID: 5466809915974853214}
-  _inputEventShipActions:
-  - InputEvent: 1
-    ShipActions:
-    - {fileID: 11400000, guid: c23cd2f2729292e468689b36e50be258, type: 2}
-  - InputEvent: 7
-    ShipActions:
-    - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
-  - InputEvent: 2
-    ShipActions:
-    - {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
-  - InputEvent: 6
-    ShipActions:
-    - {fileID: 11400000, guid: af52deeb6df808440a057ec5db100610, type: 2}
+  _inputEventShipActions: []
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []
@@ -1491,7 +1479,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselImpactorDataContainerSO: {fileID: 11400000, guid: bd2b4a654fb302e47a23cf303280df2d,
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: dac5775f7c7b4048bab9186e40e50977,
     type: 2}
   networkVesselImpactor: {fileID: 2035987173373189047}
 --- !u!114 &223934081028988333

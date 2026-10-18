@@ -110,6 +110,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float chargeCap = 30f;
         [Tooltip("lab stealCooldown: seconds between two rams on the same rival.")]
         [SerializeField, Min(0f)] float stealCooldown = 1f;
+        [Tooltip("Kite power a charged ram spends on each creature it kills.")]
+        [SerializeField, Min(0f)] float faunaChargeCost = 1f;
         [Tooltip("Raised for every ram that steals, as every combat hit is (the scoreboard's channel; the Thresher raises the same one).")]
         [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
 
@@ -132,9 +134,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.15f, 0.6f)] float pipSize = 0.32f;
         [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
-        [Tooltip("The petal shape each element's motes are drawn in, lime, in the kite view: Charge, Mass, Space, Time. An " +
-                 "empty slot draws a plain petal.")]
-        [SerializeField] Mesh[] petalMeshes = new Mesh[4];
         [Tooltip("A mote's size in the kite view (u).")]
         [SerializeField, Min(0.5f)] float moteSize = 3.2f;
         [Tooltip("The tail's width in the kite view (u).")]
@@ -163,8 +162,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference timeBoostSfx;
         [Tooltip("A Charge loop powers the kite.")]
         [SerializeField] EventReference chargeSfx;
-        [Tooltip("A charged ram steals petals.")]
+        [Tooltip("A charged ram knocks out (or, at Charge L5, steals) petals.")]
         [SerializeField] EventReference stealSfx;
+        [Tooltip("A charged ram kills a creature.")]
+        [SerializeField] EventReference faunaStruckSfx;
 
         public float BoardRadius => boardRadius;
         public float Anchor => anchor;
@@ -188,10 +189,6 @@ namespace CosmicShore.Gameplay
         public float PilotKiteAlpha => pilotKiteAlpha;
         public float PilotDotAlpha => pilotDotAlpha;
         public float PilotDotSize => pilotDotSize;
-
-        /// <summary>The petal mesh for a mote of element index <paramref name="element"/> (0 Charge .. 3 Time), or null.</summary>
-        public Mesh PetalMesh(int element) =>
-            petalMeshes != null && element >= 0 && element < petalMeshes.Length ? petalMeshes[element] : null;
         public KiteMoteHome MoteHome => moteHome;
         public int MoteCount => moteCount;
         public int MoteCluster => moteCluster;
@@ -210,6 +207,7 @@ namespace CosmicShore.Gameplay
         public float ChargePetals => chargePetals;
         public float ChargeCap => chargeCap;
         public float StealCooldown => stealCooldown;
+        public float FaunaChargeCost => faunaChargeCost;
         public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
         public KiteNavigatorAI.Skill AISkill => aiSkill;
         public GameDataSO GameData => gameData;
@@ -220,6 +218,7 @@ namespace CosmicShore.Gameplay
         public EventReference TimeBoostSfx => timeBoostSfx;
         public EventReference ChargeSfx => chargeSfx;
         public EventReference StealSfx => stealSfx;
+        public EventReference FaunaStruckSfx => faunaStruckSfx;
 
         /// <summary>The kite core's numbers.</summary>
         public KiteSettings ToSettings() => new()

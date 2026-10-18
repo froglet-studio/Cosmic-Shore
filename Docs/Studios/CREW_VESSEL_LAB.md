@@ -183,6 +183,19 @@ The port follows `/labmaker` §7:
 Each is explained in `KITE_NAVIGATOR.md`, along with the follow-ups: networking, the arena swap, duo-vessel
 registration, and sounds.
 
+**Round 4 went to Unity first (2026-10-18).** After flying the port, Garrett directed round 4 straight into the game:
+- the views drawn by the game's renderer, which swap when you change seats;
+- lime motes in each element's petal shape;
+- a kite that follows the mouse or stick with no click;
+- a one-thumb pilot with no buttons, who boosts by lifting the thumb;
+- mote frequency weighted by the hull's petals;
+- Charge rams on fauna;
+- the L5 upgrades;
+- the Omni crystal's wide board.
+
+The game's `Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` ("Round 4") is the record until this lab catches
+up (task `T-20261018-3247`). The parity gate still holds the kite core, which round 4 did not change.
+
 **Not yet seen in the Editor.** The play-mode menu, the board's look and the feel on a phone are unverified (entry in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 
