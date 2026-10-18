@@ -105,8 +105,15 @@ SKIMMER_CONTAINER_GUID = guid_for("ShrikeSkimmerImpactorDataContainer.asset")
 CRYSTAL_EFFECT_GUID = guid_for("ShrikeCrystalEffect.asset")
 ACTIONS_FOLDER_GUID = guid_for("VesselActions/Shrike")
 DOC_GUID = guid_for("SHRIKE.md")
-CARD_ACTIVE = hashlib.md5(b"CosmicShore/Shrike/CardImages/Shrike.png").hexdigest()            # render_shrike_card_icon.py
+CARD_ACTIVE = hashlib.md5(b"CosmicShore/Shrike/CardImages/Shrike.png").hexdigest()            # the card PNGs; rendered from the model by vessel_model/render_cards.py
 CARD_INACTIVE = hashlib.md5(b"CosmicShore/Shrike/CardImages/Shrike_Inactive.png").hexdigest()
+# the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
+# names a new PNG md5("cosmic-shore-card:" + its repo path); Shrike.png / Shrike_Inactive.png keep the guids above
+def _model_card(rel):
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+CARD_SILHOUETTE = _model_card("Assets/_Graphics/CardImages/Shrike_silhouette.png")
+CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Shrike_large.png")
+CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Shrike_Hangar_Preview.png")
 
 # (control name, enum value, InputEvents it is bound to). The InputEvents numbers: RightStickAction=1 (RT / LMB /
 # Right Shift), LeftStickAction=2 (LT / RMB / Left Shift), FlipAction=3 (RB / E), Button1=6 (A / Space),
@@ -598,11 +605,11 @@ def class_asset() -> str:
             "  InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}\n"
             f"  IconActive: {{fileID: 21300000, guid: {CARD_ACTIVE}, type: 3}}\n"
             f"  IconInactive: {{fileID: 21300000, guid: {CARD_INACTIVE}, type: 3}}\n"
-            "  PreviewImage: {fileID: 0}\n"
-            "  SquadImage: {fileID: 0}\n"
+            f"  PreviewImage: {{fileID: 21300000, guid: {CARD_PREVIEW}, type: 3}}\n"
+            f"  SquadImage: {{fileID: 21300000, guid: {CARD_LARGE}, type: 3}}\n"
             "  TrailPreviewImage: {fileID: 0}\n"
-            "  CardSilohoutteActive: {fileID: 0}\n"
-            "  CardSilohoutteInactive: {fileID: 0}\n"
+            f"  CardSilohoutteActive: {{fileID: 21300000, guid: {CARD_ACTIVE}, type: 3}}\n"
+            f"  CardSilohoutteInactive: {{fileID: 21300000, guid: {CARD_SILHOUETTE}, type: 3}}\n"
             "  Abilities: []\n"
             "  Games: []\n"
             "  TrainingGames: []\n"
@@ -856,7 +863,7 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(not re.search(r"  - vessel: %d\n    element: \d+\n    bake: \{fileID: [1-9]" % CLASS_ID, fusion),
          "a Shrike fusion entry still names a bake of the Manta-copy mesh")
     for meta, guid in ((CARD_ACTIVE_META, CARD_ACTIVE), (CARD_INACTIVE_META, CARD_INACTIVE)):
-        need(f"guid: {guid}" in files.get(meta, ""), f"{os.path.basename(meta)} missing (render_shrike_card_icon.py)")
+        need(f"guid: {guid}" in files.get(meta, ""), f"{os.path.basename(meta)} missing (vessel_model/render_cards.py Shrike)")
     enum = files.get(os.path.join(SCRIPTS, "Data/Enums/VesselClassType.cs"), "")
     need(re.search(r"\bShrike = %d," % CLASS_ID, enum), "VesselClassType has no Shrike = 10")
     roster = files.get(os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), "")

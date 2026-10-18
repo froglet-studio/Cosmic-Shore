@@ -30,7 +30,7 @@ and calls missiles down from its nests' turrets.
 | `ShrikeConfigTests` | The elemental ranges against SHIPPED. |
 | `Tools/Build/author_shrike_assets.py` | Builds the prefab, the assets and the registrations (`--check`, `--self-test`). |
 | `Tools/Build/studio_to_unity/shrike.json` | The number map. |
-| `author_shrike_icons.py` / `render_shrike_card_icon.py` | The four HUD icons and the card. |
+| `author_shrike_icons.py` / `vessel_model/render_cards.py Shrike` | The four HUD icons; the card images (icon, inactive, silhouette, large, hangar preview) rendered from the model. |
 
 ## 2. Hull
 
@@ -79,7 +79,7 @@ test reads. Docking is still the 3-unit `hullRadius` against the block's box; th
 
 **The procedural placeholder** (kept in the tree until the owner accepts the model, then retired):
 `ShrikeHullForm.cs` (pure geometry, the page's `makeHull`), `ShrikeHullBuilder.cs` (no longer on the prefab),
-`Tools/Build/shrike_harness/` and `render_shrike_card_icon.py` (which read the form). It was a hexagonal fuselage, a
+`Tools/Build/shrike_harness/` (which reads the form; `render_shrike_card_icon.py` was retired 2026-10-18, because it drew this form over the model's card). It was a hexagonal fuselage, a
 head pyramid, a box barrel, two forward-swept box wings with stripes, a box fin and a cone flame, on two materials.
 
 ### 2.2 Animation

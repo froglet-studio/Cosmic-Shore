@@ -581,7 +581,7 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 - `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
   is byte-identical to the shipped prefab.
 - `studio_to_unity.py --vessel shrike --check`: 29/29 match.
-- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass.
+- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass (the latter retired 2026-10-18: the card is rendered from the model by `vessel_model/render_cards.py Shrike --check`).
 - These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_vessel_camera_farclip`,
   `check_vessel_class_icons`, `check_network_prefab_hashes`, `check_console_logging`, `check_conditional_compilation`,
   `check_using_directives` and `check_elemental_floats`.
