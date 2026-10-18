@@ -4293,6 +4293,57 @@ never fold it into a fix for something else.
   control that leaves the parameter in (238 units). Grep for every renderer that borrows a
   material's `sharedMaterials` before giving a shader per-vertex semantics.
 
+### Trap: a generator that EMITS OVER the committed scene keeps every node it no longer writes
+
+A `Patch`-style generator (`author_start_flow.py`, the `HM.Patch` family) reads the committed scene,
+re-emits its nodes by deterministic key and writes the result. Removing a node from the recipe does
+NOT remove it from the scene: the old GameObject, its children, and any component whose key the
+recipe dropped (a `HorizontalLayoutGroup`, a `LayoutElement`) stay in the file - orphaned from their
+GameObject's `m_Component` list or still listed under the parent - and `--check` passes, because the
+recipe re-derives the same file it read. R9b (2026-10-18) removed the sign-in chooser's Steam button
+and three kit-button parts per row; all of them survived the first regeneration. Fix in two halves:
+an explicit retirement list the generator deletes BEFORE emitting (`remove_go` per retired key,
+`sc.remove` per retired component key), and an integrity check in the validator that fails on a
+transform its father does not list or a component its GameObject does not list (exempt stripped
+prefab-instance owners - components added to an instance are legitimately unlisted). Negative-control
+it by appending an orphan component doc. A prefab generator that writes the whole file from scratch
+does not have this problem; a scene patcher always does.
+
+### Trap: hand-edited single-quoted YAML with an apostrophe, and unquoted text with ": "
+
+Two shapes of the same defect, both invisible to Unity's lenient loader in review and both fatal to a
+strict YAML read (and to any audit that uses one). A single-quoted scalar must double its apostrophes
+(`'the Rhino''s own blade'`); one `Rhino's` ends the string early and the rest of the line is garbage
+(Garrett's hand-edited `Rhino.asset`, 2026-10-17, found by `check_hangar_ability_kinds.py`'s
+`yaml.safe_load`). And a plain scalar cannot contain `": "` or be a lone `-`: `m_text: Core: skim...`
+and `m_text: -` shipped from the kit's text writer until `author_ui_kit_prefabs.tmp` routed `m_text`
+through `yaml_scalar`. When a generator writes text, quote it through one helper; when an asset was
+hand-edited, `yaml.load` it with a tag-tolerant loader
+(`L.add_multi_constructor('tag:unity3d.com', lambda l, s, n: None)`, documents split on `^--- `)
+before trusting it - 58 assets parse in a few seconds.
+
+### Technique: extracting a macOS `.dmg` on Linux with nothing installed
+
+No `7z`, `hfsplus` or `dmg2img` in the container. A UDIF `.dmg` ends in a 512-byte `koly` trailer
+whose offset 0xD8 gives the XML plist; its `resource-fork/blkx` entries are `mish` block tables
+(40-byte runs: type, sector, count, compressed offset/length; `0x80000005` = zlib, `0x80000006` =
+bz2, `1` = raw, `0`/`2` = zeros). Decompressing every run rebuilds the raw disk; the HFS+ volume
+header sits 1024 bytes into the Apple_HFS partition (`H+`), and walking the catalog B-tree's leaf
+nodes (folder records type 1, file records type 2, data fork extents at record offset 88) recovers
+every file - about 90 lines of Python, used for Apple's Sign in with Apple download (2026-10-18).
+**Read the licence that comes out of it before using anything else:** Apple Design Resources allow
+mock-ups for Apple-only software and forbid embedding, so those logo files cannot ship in a
+cross-platform build; Apple's button image service (`appleid.cdn-apple.com/appleid/button`) is the
+route for embedded button art.
+
+### Trap: the refcompile's .NET SDK can vanish from a long-lived container
+
+`unity_refcompile/run.sh` answered `no .NET runtime under /root/.dotnet/shared/Microsoft.NETCore.App`
+mid-session, though it had run hours earlier (the sentinels were still there; the runtime was not).
+Reinstall with `dotnet-install.sh --channel 8.0 --install-dir /root/.dotnet` (retry with backoff:
+the first TLS connect to `builds.dotnet.microsoft.com` can drop), and pass `DOTNET_ROOT=/root/.dotnet`
+to `check_generated_assets.py`, which otherwise looks under `/usr/lib/dotnet` and stops.
+
 ### Bundled tool: `field_parity.py`
 
 Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize

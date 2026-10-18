@@ -2795,3 +2795,15 @@ Apple JS / REST) there, not the native iOS API.
 
 **Owner decision (2026-10-18):** the now-playing card rests on Home only (`NowPlayingCard.restingOn = { HOME }`, as
 built in §56); elsewhere in the menu it only appears briefly when the track changes.
+
+### 57.1 Refactor rows from the ship pass (2026-10-18; rows, not edits)
+
+Measured at ship time on `claude/new-session-76hnyc` after the bleeding-edge merge (`9601b40fb`).
+
+| # | Row | Kind | Evidence | Blocking question |
+|---|---|---|---|---|
+| R1 | `chrome_provider_steam / google / apple` stand-in glyphs are unreferenced by any shipped asset | debt this branch created | `grep -rl <guid> Assets --include=*.unity --include=*.prefab --include=*.asset` = 0 for all three; only `author_start_flow.py` / `author_menu_settings.py` self-tests use them as planted stand-ins | Retire them from `author_ui_chrome_icons.py` (and point the self-tests at any other chrome sprite)? A first-party redrawn Google G is a brand risk if someone wires it again. |
+| R2 | `ControlGlyphSet.asset` has two writers | debt made visible | `author_ingame_hud.py` owns the pad labels; Garrett's `e1fc17719` hand-added bindings 13 / 14; the generator now leaves unnamed bindings untouched (merge `9601b40fb`) | One owner: should the HUD generator author 13 / 14 too, or hand pad labels back to the asset? Ask Garrett. |
+| R3 | `check_generated_assets.py` reports `m_OnClick.m_PersistentCalls` as "not a serialized field of Button.ButtonClickedEvent" | debt walked past (the checker, not this branch) | 134 `[field]` findings on this branch, every one that same field; `m_PersistentCalls` is serialized on `UnityEventBase`, so the reflection probably stops at the derived type | Fix the checker to walk base types of `UnityEvent` subclasses; until then its `[field]` count is noise. |
+| R4 | `check_generated_assets.py` `[guid]` findings outside this branch's work | debt walked past | 2 `GameCanvas.prefab` modifications target fileIDs missing from `EndGameStatsPanel.prefab` / `R_Pause_Menu_Panel.prefab`; 11 `UIKitTestScene.unity` InputSystemUIInputModule actions point at guid `ca9f5fa95ffab41fb9a615ab714db018` (no asset) | GameCanvas: delete the dead modifications (they target removed objects)? UIKitTestScene: re-point to the project's input actions asset. |
+| R5 | Hand-edited YAML is never parse-checked | debt made visible | Garrett's `Rhino.asset` shipped an unescaped apostrophe (fixed `e2802341a`); found only because `check_hangar_ability_kinds.py` uses `yaml.safe_load` | A cheap repo gate: tag-tolerant `yaml.load` of every changed `.asset/.prefab/.unity` (58 files in ~seconds; `/asset-surgery` §5). |
