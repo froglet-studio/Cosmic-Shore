@@ -385,7 +385,8 @@ None of that is a play test. In order:
 1. **Freestyle**: Menu → freestyle → Vessel Changer → Brittle Star. Expect: a gold pentagon ring round a hub, domain-
    coloured nozzles and canopy, a cockpit flame; the hull leans into turns and the **outside** pods light as it banks.
    Console clean (no `[BrittleStar]` errors).
-2. **Trail**: fly straight; a single SMALL block (1.5 × 1.5 × 3) every ~6 u behind the cockpit.
+2. **Trail**: fly straight; a single long, slim block (0.5 × 1 × 6 as laid: `BaseScale` 1 × 1 × 6, the spawner halving
+   x for a single trail) every ~6 u behind the cockpit, end to end. Raise Mass: the blocks widen and thicken, never lengthen.
 3. **A** (Speed): every thruster lights and the hull runs at **6×** (45 → 270 u/s); the trail's blocks spread out
    (~36 u apart, same blocks per second) and **stretch** with it (~18 u long), so the line still reads joined. **A** again:
    back to Cruise; no burst of short blocks while the hull coasts down.
@@ -461,6 +462,22 @@ None of that is a play test. In order:
   phone is turned. Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
   and whether a `Button4Action` (Y / a key / an on-screen button) is wanted fleet-wide (measured 2026-10-16: the
   Brittle Star and the Grizzly bind it). Owner: the input layer.
+- **R3 — an inconsistency this branch walked past (the trails' width).** The fleet spawner lays a single, gapless
+  trail at `BaseScale.x / 2` (`VesselPrismController.CreateBlock`: `BaseScale.x * XScaler / 2f - Mathf.Abs(halfGap)`),
+  but Creation Mode's corners read `TrailBaseScale` whole (`BrittleStarExecutor.LayCornerPrism`). So the corner blocks
+  are twice as wide as the base trail's: 1 × 1 × 6 against 0.5 × 1 × 6, although Garrett asked for "the same smaller
+  prisms for all 5 prism trails". The studio models both at 1 × 1 × 6. Measure first: in Play mode, read the `scale`
+  of a base-trail prism and a corner prism. Then pick one fix: halve the corner's x, or author the base block as
+  (2, 1, 6). The second changes what `TrailBaseScale` means to every other reader. Owner: Garrett (the look).
+- **R4 — debt this branch walked past (the studio page's About text).** The "Unity build" paragraph in
+  `brittlestar.html`'s About tab still describes round 2: 12 rounds/s at 70 u/s, a stored charge, Overdrive, a disk
+  "0.22 u x Charge 1 to 4" thick. The SHIPPED block and the rules are current (`studio_to_unity --check` 0 drift);
+  only that prose is stale. This branch patched two sentences in it. A rewrite from the SHIPPED block would end the
+  drift, ideally generated so it cannot recur. Count first: `grep -c "70 u/s\|Overdrive" brittlestar.html`.
+- **F14 — profile the ring explosion's mesh** (2026-10-18): each live explosion rebuilds about 5,900 flat-shaded
+  vertices a frame for 0.7 s (`BrittleStarBlastForm` through `BrittleStarExecutor.BuildBand`; lists are reused, so the
+  cost is the mesh upload). Capture several AI Brittle Stars throwing rings together. If it shows, the levers are
+  `FrontSegments` (120), `ArmSegments` (12), or rebuilding every other frame.
 - **F12 — the Charge card's icon** still shows Ring Detonation (`author_brittlestar_icons.py`): Charge Mode's cords need
   their own icon; the card's gauge (the spare-ring stock) already fits the ring.
 - **F13 — replicate RT's depth** (two bytes a frame) so remote copies fire, heat and stiffen at the owner's real pull;

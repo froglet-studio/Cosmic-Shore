@@ -671,3 +671,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md section 7
+
+### T-20261018-5d70 · open · decision · Brittle Star
+- **Task:** The Brittle Star's base trail lays blocks HALF as wide as its Creation corner trails (0.5 x 1 x 6 against 1 x 1 x 6): the fleet spawner halves BaseScale.x for a single trail, the corners do not. Pick: halve the corners' x, or author the base block as (2, 1, 6).
+- **Done when:** Garrett picks one and the corners and base trail lay the same block (BRITTLE_STAR.md R3)
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md R3
