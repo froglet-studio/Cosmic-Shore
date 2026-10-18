@@ -2785,3 +2785,10 @@ the hangar, configure and Maelstrom generators were re-run (`check_generated_ass
 
 The old `chrome_provider_*` stand-in glyphs are no longer referenced by any shipped asset (the self-tests still use
 them as planted stand-ins).
+
+**Owner decisions (2026-10-18, after R9b):** Steam signs in silently on PC - yes. Apple is offered on every platform
+(PC, iPhone, Android, web). Play as guest stays on Steam builds. The shipped `SignInProviders.asset` already matched
+all three; `author_start_flow.py` now fails if any platform's order drops Apple (planted defect: Apple dropped from
+Android), alongside its existing checks that Steam is the desktop's silent provider and that Play as guest is on the
+CHOOSE face. Apple on Windows / Android / web means the login branch signs in through Apple's web flow (Sign in with
+Apple JS / REST) there, not the native iOS API.

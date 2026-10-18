@@ -841,7 +841,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 
 ### T-20261018-6b30 · open · dev · Sign-in
 - **Task:** Implement IPlatformSignIn (Assets/_Scripts/System/Systems/Authentication/IPlatformSignIn.cs) for Steam, Google and Apple over AuthenticationServiceFacade, replace NoPlatformSignIn's registration in AppManager, (the providers' own button art is already in Assets/_SO_Assets/UI/SignInProviders.asset, R9b §57; Steam's Account mark stays empty until Valve-approved artwork is added). The UI is built (Docs/MENU_REDESIGN_B.md §54, §57); no new SDK without asking Shombith
-- **Done when:** a Windows build signs in with Steam silently, the chooser signs in with Google and Apple, linking keeps a guest's progress and the conflict window appears for an already-owned account
+- **Done when:** a Windows build signs in with Steam silently, the chooser signs in with Google and Apple on every platform (owner, 2026-10-18: Apple everywhere - Apple's web flow on Windows / Android / web), Play as guest still works on Steam builds, linking keeps a guest's progress and the conflict window appears for an already-owned account
 - **Who can take it:** whoever runs the login-system chat (Shombith to assign)
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §54

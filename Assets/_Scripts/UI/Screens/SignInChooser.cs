@@ -197,6 +197,7 @@ namespace CosmicShore.UI
                 orRule.gameObject.SetActive(first);
                 if (first) y = Place(orRule, y);
             }
+            // Play as guest shows on every platform, Steam builds included (the owner, 2026-10-18).
             if (guestRow) y = Place(guestRow, y);
             if (trailingRows != null)
                 foreach (var row in trailingRows)

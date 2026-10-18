@@ -799,6 +799,11 @@ def validate(files):
     assert "  desktopOrder:\n  - 2\n  - 3\n  - 4\n" in a and "  iPhoneOrder:\n  - 4\n" in a and "  androidOrder:\n  - 3\n" in a, \
         "the platform orders differ from the approved boards (Steam, Google, Apple; Apple first on iPhone; Google first on Android)"
     assert "  desktopSilentProvider: 2\n" in a, "Steam no longer signs the player in on its own on desktop"
+    # Owner decisions, 2026-10-18 (section 57): Steam signs in silently (above), Apple on every platform, and Play as
+    # guest stays on Steam builds too (it is the controller's own button on the CHOOSE face, checked above).
+    for order in ("desktopOrder", "iPhoneOrder", "androidOrder", "webOrder"):
+        block = re.search(r"^  %s:\n((?:  - \d+\n)*)" % order, a, re.M)
+        assert block and "  - 4\n" in block.group(1), f"SignInProviders.{order} drops Apple (the owner: Apple on every platform)"
     for f in BRANDS:
         assert f"  {f}: {K.sprite_ref(brand_sprite(f))}\n" in a, f"SignInProviders.{f} is not the provider's own artwork"
     assert "  steamMark: {fileID: 0}\n" in a, "SignInProviders.steamMark is set: only Valve-approved Steam artwork may go there"
@@ -882,6 +887,8 @@ def self_test(files):
         ("Apple's artwork altered", lambda f: f.__setitem__(f"{BRAND_DIR}/{BRANDS['appleButton'][0]}", b"\x89PNG recoloured")),
         ("a stand-in Steam mark", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace(
             "  steamMark: {fileID: 0}", "  steamMark: " + K.sprite_ref(K.chrome_sprite("chrome_provider_steam"))))),
+        ("Apple dropped from Android", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace(
+            "  androidOrder:\n  - 3\n  - 4\n", "  androidOrder:\n  - 3\n"))),
         ("Steam no longer silent", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace("desktopSilentProvider: 2", "desktopSilentProvider: 0"))),
         ("the rule ticks judge another field", lambda f: f.__setitem__(AUTH, re.sub(r"(  input: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[AUTH], count=1))),
     ]
