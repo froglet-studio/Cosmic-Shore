@@ -1,0 +1,535 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-18 07:47:58 (next editor launch after the abnormal exit)
+session:          (pid -1, Unity )
+started:         UTC
+last heartbeat:  UTC
+last state:     unknown
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261017-201838708
+started: 2026-10-17T20:18:38.708Z UTC
+unity:   6000.3.17f1
+pid:     21352
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[02:02:14.729] ---- entering play mode ----
+[02:02:17.715] ---- play mode running ----
+[02:16:21.148] ---- leaving play mode ----
+[02:16:28.819] ---- edit mode restored ----
+[02:16:40.561] ---- entering play mode ----
+[02:16:42.41[02:35:53.068] ---- domain reload begins (script compilation / play-mode transition) ----
+---- edit mode restored ----
+[02:25:45.820] ---- entering play mode ----
+[02:25:47.048] ---- play mode running ----
+[02:33:57.458] ---- leaving play mode ----
+[02:34:03.470] ---- edit mode restored ----
+[02:34:39.507] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:35:38.506] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261017-210452526.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:35:53.313] ---- main thread stalled ~60s and RECOVERED — slow, not hung ----
+[03:06:08.825] ---- domain reload begins (script compilation / play-mode transition) ----
+es\Cosmic-Shore\Logs\CrashDetector\HangDump-20261017-210558065.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[03:07:18.177] ---- domain reload begins (script compilation / play-mode transition) ----
+ic-Shore\Logs\CrashDetector\HangDump-20261017-213615164.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[03:07:18.745] ---- main thread stalled ~64s and RECOVERED — slow, not hung ----
+[03:10:15.382] ---- entering play mode ----
+[03:10:17.461] ---- play mode running ----
+[03:11:01.896] [PlayMode] Error: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Activat[05:02:06.125] ---- domain reload begins (script compilation / play-mode transition) ----
+ot. A looping instance never stops, so release() never frees it and one immortal voice leaks PER CALL - which shows up as RuntimeManager.Update() eating the frame. NOT PLAYED. Fix by removing the loop region in FMOD Studio, or give the ability its own EventReference and own the instance (start on begin, stop on end).
+        0x00007ff9e2944e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff9e417f369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff9e417fbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff9e28f587f (Unity) DebugStringToFile
+        0x00007ff9e27b1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001e7b067cbdd (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001e7b067caa3 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001e7b067c6db (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:23:24.026] ---- leaving play mode ----
+[03:23:28.935] ---- edit mode restored ----
+[05:01:54.108] ---- domain reload begins (script compilation / play-mode transition) ----
+[05:02:57.444] ---- main thread unresponsive ~45s — wrote hang dump: B:\FrogletGames\Cosmic-Shore\Logs\CrashDetector\HangDump-20261017-233211676.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(142,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(220,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(414,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(786,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(815,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(214,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(235,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(270,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(285,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Vessel\VesselController.cs(479,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\Controller\Vessel\VesselController.cs(489,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+
+Assets\_Scripts\UI\View\SquirrelVesselHUDView.cs(251,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\ShrikeHUDView.cs(80,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\UI\View\DolphinVesselHUDView.cs(245,17): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+
+Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueBall.cs(1498,56): warning CS0618: 'NetworkObject.IsSceneObject' is obsolete: 'Use InScenePlaced instead'
+
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Explosion Effects\VesselElementalDebuffByExplosionEffectSO.cs(63,40): warning CS0414: The field 'VesselElementalDebuffByExplosionEffectSO.debuffDuration' is assigned but its value is never used
+
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Skimmer Effects\VesselElementalDebuffBySkimmerEffectSO.cs(55,32): warning CS0414: The field 'VesselElementalDebuffBySkimmerEffectSO.debuffDuration' is assigned but its value is never used
+[3039/3046  2s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+[3040/3046  6s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp-Editor.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll, with 139 defines and 483 references
+
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[3041/3046  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[3042/3046  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+[3043/3046 14s] ILPostProcess Library/Bee/artifacts/1900b0aE.dag/post-processed/Assembly-CSharp.dll (+pdb)
+Processing assembly Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp.dll, with 141 defines and 457 references
+
+processors: Unity.Entities.CodeGen.EntitiesILPostProcessors, Unity.Jobs.CodeGen.JobsILPostProcessor, Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain, Unity.Netcode.Editor.CodeGen.INetworkMessageILPP, Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP, Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP, Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP, Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor, zzzUnity.Burst.CodeGen.BurstILPostProcessor
+
+running Unity.Entities.CodeGen.EntitiesILPostProcessors
+
+running Unity.Jobs.CodeGen.JobsILPostProcessor
+
+running Unity.Multiplayer.Tools.NetStats.CodeGen.AssemblyProcessorMain
+
+running Unity.Netcode.Editor.CodeGen.INetworkMessageILPP
+
+running Unity.Netcode.Editor.CodeGen.INetworkSerializableILPP
+
+running Unity.Netcode.Editor.CodeGen.NetworkBehaviourILPP
+
+running Unity.Netcode.Editor.CodeGen.RuntimeAccessModifiersILPP
+
+running Unity.Pipeline.CodeGen.HotReloadInPlaceILPostProcessor
+
+running zzzUnity.Burst.CodeGen.BurstILPostProcessor
+[3044/3046  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.pdb
+[3045/3046  0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp.dll
+*** Tundra build success (30.63 seconds), 23 items updated, 3046 evaluated
+Total cache size 268364056
+Total cache size after purge 268364056, took 00:00:00.5617847
+Assets\_Scripts\UI\NetworkVolumeUIController.cs(67,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(305,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\HijackController.cs(317,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerDomainGamesController.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(472,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\MultiplayerMiniGameControllerBase.cs(890,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\Racing\GateRaceController.cs(606,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Arcade\TurnMonitors\NetworkJoustCollisionTurnMonitor.cs(98,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FloraAndFauna\FaunaNetworkSync.cs(333,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(290,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(326,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Environment\FlowField\NetworkCrystalManager.cs(345,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(118,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(142,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\ImpactEffects\Impactors\NetworkVesselImpactor.cs(220,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(414,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(786,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ArcadeConfigSyncManager.cs(815,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(214,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(235,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(270,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(285,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(479,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\Controller\Vessel\VesselController.cs(489,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
+Assets\_Scripts\UI\View\SquirrelVesselHUDView.cs(251,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\ShrikeHUDView.cs(80,13): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\UI\View\DolphinVesselHUDView.cs(245,17): warning CS0618: 'TMP_Text.enableWordWrapping' is obsolete: 'The enabledWordWrapping property is now obsolete. Please use the textWrappingMode property instead.'
+Assets\_Scripts\Controller\Arcade\AstroLeague\AstroLeagueBall.cs(1498,56): warning CS0618: 'NetworkObject.IsSceneObject' is obsolete: 'Use InScenePlaced instead'
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Explosion Effects\VesselElementalDebuffByExplosionEffectSO.cs(63,40): warning CS0414: The field 'VesselElementalDebuffByExplosionEffectSO.debuffDuration' is assigned but its value is never used
+Assets\_Scripts\Controller\ImpactEffects\EffectsSO\Vessel Skimmer Effects\VesselElementalDebuffBySkimmerEffectSO.cs(55,32): warning CS0414: The field 'VesselElementalDebuffBySkimmerEffectSO.debuffDuration' is assigned but its value is never used
+Reloading assemblies after forced synchronous recompile.
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Begin MonoManager ReloadAssembly
+[INFO ] [relay] log Domain reload signal received from client editor-21352-31zbwd
+[INFO ] [relay] log Client disconnected - blocking and caching for recovery
+[WARN ] [relay] connection.lost clientId=null
+[WARN ] [relay] log Client disconnected - sessions will persist until auto-shutdown, reason: Client disconnected
+[INFO ] [relay] log Auto-shutdown timer started due to client disconnection
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Symbol file LoadedFromMemory is not a mono symbol file
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  4.184 seconds
+Start importing ProjectSettings/EditorBuildSettings.asset using Guid(0000000000000000b000000000000000) (LibraryAssetImporter) -> (artifact id: '5637b398ef9f0eea7fc339aebbd473ba') in 0.0209105 seconds
+Start importing Assets/_SO_Assets/VesselActions/Shrike using Guid(d152d589f20642c491da468daee90013) (DefaultImporter) -> (artifact id: '69b00ba557b66e97988cf426859a7c19') in 0.0009666 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Shrike using Guid(afd91c60d97c36da917da683627309ba) (DefaultImporter) -> (artifact id: 'ce891614c37c4c0ce647e8d0e927f7e4') in 0.0007301 seconds
+Refreshing native plugins compatible for Editor in 17.67 ms, found 12 plugins.
+Native extension for iOS target not found
+Native extension for Android target not found
+Native extension for WindowsStandalone target not found
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+Assembly reference Packages/com.unity.entities/Unity.Scenes.Editor/Internals/Properties/Unity.Properties.Internals.asmref has no target assembly definition
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+Timings:
+ - All                                      :      25ms
+   - Discover Methods to Compile            :    2771ms
+     - Find Entrypoints                     :   28085ms
+     - Group Entrypoints                    :      10ms
+     - Calculate Hash of C# IL              :      19ms
+   - C# IL -> LLVM IR module                :       0ms
+     - Parse C# IL from assemblies          :       0ms
+     - Transform C# IL                      :       0ms
+     - Produce LLVM IR module               :       0ms
+   - LLVM IR module transformations         :       0ms
+     - Add target CPU info to module        :       0ms
+     - Optimizations on module              :       0ms
+     - Cleanup module                       :       0ms
+     - Verify module is valid               :       0ms
+   - Extract used static readonly variables :       0ms
+   - LLVM IR module -> DLL                  :       0ms
+     - Splice into per-entry-point modules  :       0ms
+     - LLVM IR modules -> object files      :       0ms
+     - Get objects from object cache        :       0ms
+     - Link object files -> DLL             :       0ms
+     - Add objects to object cache          :       0ms
+   - Dump                                   :       0ms
+
+Counters:
+- Number of Functions                      :         0
+  - Entry Points (job or function pointer) :         0
+  - Declaring Type or Function is Generic  :         0
+- Number of Instructions                   :         0
+
+
+While compiling job:
+TransformBakingSystem, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::__codegen__OnCreate(System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Entities.CompanionGameObjectUpdateTransformSystem, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::__codegen__OnCreate(System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Entities.CompanionGameObjectUpdateTransformSystem, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::RemoveDestroyedEntities(Unity.Entities.CompanionGameObjectUpdateTransformSystem+RemoveDestroyedEntitiesArgs&, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null)
+Unity.Entities.CompanionGameObjectUpdateTransformSystem, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::__codegen__OnDestroy(System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+UnityEngine.Jobs.IJobParallelForTransformExtensions+TransformParallelForLoopStruct`1[[Unity.Entities.CompanionGameObjectUpdateTransformSystem+CopyTransformJob, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.Entities.CompanionGameObjectUpdateTransformSystem+CopyTransformJob&, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+TransformBakingSystem+BakedRuntimeTransformsJob, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::IsUniformScale(Unity.Mathematics.float3&, Unity.Mathematics, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null)
+Unity.Entities.JobChunkExtensions+JobChunkProducer`1[[TransformBakingSystem+BakedRuntimeTransformsJob, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], Unity.Entities, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(Unity.Entities.JobChunkExtensions+JobChunkWrapper`1[[TransformBakingSystem+BakedRuntimeTransformsJob, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]&, Unity.Entities, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Entities.CompanionGameObjectUpdateTransformSystem, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::__codegen__OnUpdate(System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+TransformBakingSystem, Unity.Transforms.Hybrid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::__codegen__OnUpdate(System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Timings:
+ - All                                      :    3975ms
+   - Discover Methods to Compile            :    2784ms
+     - Find Entrypoints                     :   28085ms
+     - Group Entrypoints                    :      10ms
+     - Calculate Hash of C# IL              :      32ms
+   - C# IL -> LLVM IR module                :     519ms
+     - Parse C# IL from assemblies          :     142ms
+     - Transform C# IL                      :      82ms
+     - Produce LLVM IR module               :     295ms
+   - LLVM IR module transformations         :    1416ms
+     - Add target CPU info to module        :       0ms
+     - Optimizations on module              :    1375ms
+     - Cleanup module                       :       0ms
+     - Verify module is valid               :      41ms
+   - Extract used static readonly variables :       0ms
+   - LLVM IR module -> DLL                  :     243ms
+     - Splice into per-entry-point modules  :      83ms
+     - LLVM IR modules -> object files      :    1732ms
+     - Get objects from object cache        :       0ms
+     - Link object files -> DLL             :     138ms
+     - Add objects to object cache          :      21ms
+   - Dump                                   :       0ms
+
+Counters:
+- Number of Functions                      :       637
+  - Entry Points (job or function pointer) :        18
+  - Declaring Type or Function is Generic  :       320
+- Number of Instructions                   :     26615
+
+
+While compiling job:
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.ShellContactQueryJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.ShellContactQueryJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.ECS.PrismRenderService+ResolveHandlesJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.ECS.PrismRenderService+ResolveHandlesJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Utility.PerformanceBenchmark.BurstProbe+ProbeJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Utility.PerformanceBenchmark.BurstProbe+ProbeJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.SwarmPoseJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SwarmPoseJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.PrismSpatialIndex+UpdatePositionsJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.PrismSpatialIndex+UpdatePositionsJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+UnityEngine.Jobs.IJobParallelForTransformExtensions+TransformParallelForLoopStruct`1[[CosmicShore.Gameplay.BlackHoleGravityField+WritePoseJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.BlackHoleGravityField+WritePoseJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.SubstrateAgentJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.SubstrateAgentJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.LodClassifyJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.LodClassifyJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.AOESpatialQueryJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.AOESpatialQueryJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.CellVolumeSumJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.CellVolumeSumJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.ECS.PrismRenderService+WriteLocalToWorldJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.ECS.PrismRenderService+WriteLocalToWorldJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.ECS.PrismRenderService+SetLookJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.ECS.PrismRenderService+SetLookJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.ECS.PrismRenderService+InitCreatedJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.ECS.PrismRenderService+InitCreatedJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.BlackHoleGravityField+IntegrateJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.BlackHoleGravityField+IntegrateJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.AOECylinderSweepQueryJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.AOECylinderSweepQueryJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+UnityEngine.Jobs.IJobParallelForTransformExtensions+TransformParallelForLoopStruct`1[[CosmicShore.Gameplay.BlackHoleGravityField+ReadPoseJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.BlackHoleGravityField+ReadPoseJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobParallelForExtensions+ParallelForJobStruct`1[[CosmicShore.Gameplay.AOEConicSweepQueryJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.AOEConicSweepQueryJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+Unity.Jobs.IJobExtensions+JobStruct`1[[CosmicShore.Gameplay.FindDensestRegionJob, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]], UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null::Execute(CosmicShore.Gameplay.FindDensestRegionJob&, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|System.IntPtr, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089|Unity.Jobs.LowLevel.Unsafe.JobRanges&, UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null|System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)
+TypeManager.Initialize took: 381ms
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 17.00 ms, found 12 plugins.
+Start HTTP server: port:7801
+Editor is not in automated mode. Modal Pop up might break continuous command workflow. Start the editor with -automated
+0x00007ff9e2944e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e417f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e417fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e28f587f (Unity) DebugStringToFile
+0x00007ff9e27b1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001e7a5e5883d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001e7a5e58703 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001e7a5e5833b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001e7a5e580c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001e7a5e57f88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001e7a5e57edb (Mono JIT Code) Unity.Pipeline.Editor.EditorPipelineServer:ServerStarted () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineServer.cs:91)
+0x000001e7a139dcf3 (Mono JIT Code) Unity.Pipeline.BasePipelineServer:Start (int) (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Runtime/Common/BasePipelineServer.cs:238)
+0x000001e7a5e2f323 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:StartServer () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:174)
+0x000001e7a5e2e6a3 (Mono JIT Code) Unity.Pipeline.Editor.PipelineServerStartup:.cctor () (at ./Library/PackageCache/com.unity.pipeline@24975d51528a/Editor/EditorPipelineStartup.cs:47)
+0x000001e7a5e27425 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff9d8736c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9d8678984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9d8673965 (mono-2.0-bdwgc) mono_runtime_class_init_full (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:563)
+0x00007ff9d85a9fb7 (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall.c:1292)
+0x00007ff9d85dcbdc (mono-2.0-bdwgc) ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor_raw (at C:/build/output/Unity-Technologies/mono/mono/metadata/icall-def.h:756)
+0x000001e792a14fda (Mono JIT Code) (wrapper managed-to-native) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (intptr)
+0x000001e792a14eeb (Mono JIT Code) System.Runtime.CompilerServices.RuntimeHelpers:RunClassConstructor (System.RuntimeTypeHandle)
+0x000001e792a12653 (Mono JIT Code) UnityEditor.EditorAssemblies:ProcessInitializeOnLoadAttributes (System.Type[])
+0x000001e95d346658 (Mono JIT Code) (wrapper runtime-invoke) <Module>:runtime_invoke_void_object (object,intptr,intptr,intptr)
+0x00007ff9d8736c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9d8678984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9d8678a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e317fdd4 (Unity) scripting_method_invoke
+0x00007ff9e3186c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e3182235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff9e3772433 (Unity) Scripting::UnityEditor::EditorAssembliesProxy::ProcessInitializeOnLoadAttributes
+0x00007ff9e309d9bf (Unity) MonoManager::SetupLoadedEditorAssemblies
+0x00007ff9e3094cf3 (Unity) MonoManager::FinalizeReload
+0x00007ff9e5065cd4 (Unity) ScriptingInitializer::FinalizeReload
+0x00007ff9e50f52d6 (Unity) ImportOutOfDateAssets
+0x00007ff9e50fe3fa (Unity) RefreshInternalV2
+0x00007ff9e5106f17 (Unity) StopAssetImportingV2Internal
+0x00007ff9e50ff51c (Unity) RefreshV2
+0x00007ff9e5071073 (Unity) AssetDatabase::Refresh
+0x00007ff9e39a2951 (Unity) Application::AutoRefresh
+0x00007ff9e37d4674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffabeec52e6 (USER32) CallWindowProcW
+0x00007ffabeec4dac (USER32) CallWindowProcW
+0x00007ffaa060ced8 (COMCTL32) DefSubclassProc
+0x00007ffaa060ce08 (COMCTL32) DefSubclassProc
+0x00007ffab8b433f3 (AppUINativePlugin) 
+0x00007ffaa060ced8 (COMCTL32) DefSubclassProc
+0x00007ffaa060ccaf (COMCTL32) GetWindowSubclass
+0x00007ffabeec52e6 (USER32) CallWindowProcW
+0x00007ffabeec4b6c (USER32) GetFocus
+0x00007ffabeeef593 (USER32) GetWindowDpiAwarenessContext
+0x00007ffac1165d94 (ntdll) KiUserCallbackDispatcher
+0x00007ffabe281304 (win32u) NtUserPeekMessage
+0x00007ffabeec19df (USER32) PeekMessageW
+0x00007ffabeec1968 (USER32) PeekMessageW
+0x00007ff9e3799b24 (Unity) MainMessageLoop
+0x00007ff9e37a1a12 (Unity) UnityMain
+0x00007ff6db9c2f2a (Unity) __scrt_common_main_seh
+0x00007ffabee0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffac107ee4c (ntdll) RtlUserThreadStart
+
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+[Licensing::Client] Successfully resolved entitlement details
+Reflex LogLevel set to Info
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Logging.ReflexLogger:.cctor () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:15)
+Reflex.Configuration.ReflexSettings:OnValidate () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Configuration/ReflexSettings.cs:39)
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs Line: 15)
+
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  5.855 seconds
+Domain Reload Profiling: 10050ms
+	BeginReloadAssembly (3066ms)
+		ExecutionOrderSort (4ms)
+		DisableScriptedObjects (145ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (4ms)
+		CreateAndSetChildDomain (1971ms)
+	RebuildCommonClasses (46ms)
+	RebuildNativeTypeToScriptingClass (19ms)
+	initialDomainReloadingComplete (75ms)
+	LoadAllAssembliesAndSetupDomain (988ms)
+		LoadAssemblies (335ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (779ms)
+			TypeCache.Refresh (87ms)
+				TypeCache.ScanAssembly (56ms)
+			BuildScriptInfoCaches (641ms)
+			ResolveRequiredComponents (36ms)
+	FinalizeReload (5856ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (4172ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (51ms)
+			SetLoadedEditorAssemblies (7ms)
+			BeforeProcessingInitializeOnLoad (656ms)
+			ProcessInitializeOnLoadAttributes (2850ms)
+			ProcessInitializeOnLoadMethodAttributes (596ms)
+			AfterProcessingInitializeOnLoad (9ms)
+			EditorAssembliesLoaded (2ms)
+		ExecutionOrderSort2 (2ms)
+		AwakeInstancesAfterBackupRestoration (491ms)
+Start importing Assets/_Graphics/Icons/AbilityIcons/Shrike/Shrike_Nest.png using Guid(21aa8a980a4d7df0e8692a6492e79922) [Licensing::Client] Successfully resolved entitlement details
+(TextureImporter) -> (artifact id: 'f584e794836c47b4670ac9ecd7302f9d') in 0.0333972 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Shrike/Shrike_VoidSling.png using Guid(52c0b1239725a7d66048a26758e4ec4e) (TextureImporter) -> (artifact id: 'fe8ec20d6552705c41798d89de22d1fe') in 0.0059237 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Shrike/Shrike_TargetingArray.png using Guid(d26bf70eaf8378fc0bc63fd06f406669) (TextureImporter) -> (artifact id: 'ca6a3970ea8b81ca75ac5af41257b911') in 0.0055403 seconds
+Start importing Assets/_Graphics/CardImages/Shrike_Inactive.png using Guid(7a5436b5a0a88f927c9575627e6b4e6d) (TextureImporter) -> (artifact id: '2a04495a2c2a4b7e07ebc4fe023e07ba') in 0.0082664 seconds
+Start importing Assets/_Graphics/CardImages/Shrike.png using Guid(7d20cbed8a942a203b8e336cb411fd84) (TextureImporter) -> (artifact id: '8e6be539259a708e5fe2179e32003c5c') in 0.0080425 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Shrike/Shrike_VoidLance.png using Guid(adb67c096f7d1b58ca3efe7a986dafeb) (TextureImporter) -> (artifact id: '29ecf9666ba8827e49dc86cd2cc6c377') in 0.0050951 seconds
+Start importing Assets/_SO_Assets/Effects/Effect Containers/VesselContainers/ShrikeImpactorDataContainer.asset using Guid(a0888043fb2809a2e3b157adb03954ac) (NativeFormatImporter) -> (artifact id: 'cdb0e6b8ae5764d101f1010a9ed1180e') in 0.0023671 seconds
+Start importing Assets/_SO_Assets/VesselActions/Shrike/ShrikeSpaceMode.asset using Guid(b193b34cecdde527eef26aeed5162ea2) (NativeFormatImporter) -> (artifact id: '51b69216c1d412f074fd2bbf2714de01') in 0.0015492 seconds
+Start importing Assets/_SO_Assets/VesselActions/Shrike/ShrikeZoom.asset using Guid(93d8c998e7596ddc7afeb72a0fa4bc0e) (NativeFormatImporter) -> (artifact id: '1606f89f1d318a11a943c859073c57c7') in 0.001978 seconds
+Start importing Assets/_SO_Assets/Effects/Vessel Crystal Effects/ShrikeCrystalEffect.asset using Guid(247d947b964ecd87dde3088ac86a7d92) (NativeFormatImporter) -> (artifact id: 'a7a0f349026cd7af0363e5795a3ffaac') in 0.0014166 seconds
+Start importing Assets/_SO_Assets/VesselActions/Shrike/ShrikeConfig.asset using Guid(a45d89ef20aa47a295b3a82a8db7ffbe) (NativeFormatImporter) -> (artifact id: '4ace87ca5df24f1d3a5b32e6db8da694') in 0.0030032 seconds
+Start importing Assets/_SO_Assets/Vessel Prefab Container.asset using Guid(05f8f1205bd90e14b8e59cf78da1a6f2) (NativeFormatImporter) -> (artifact id: '5ac25f39e4bc4d0a33d5045de399ae9e') in 0.0072023 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset using Guid(17dcd58a38dad2a498afe518e6a0bb58) (NativeFormatImporter) -> (artifact id: '088dd12cd4ca2ee75daffd7eae102d3a') in 0.0078991 seconds
+Start importing Assets/_SO_Assets/VesselActions/Shrike/ShrikeTimeMode.asset using Guid(c7f7a2401f6b87262d9803e8aabcb540) (NativeFormatImporter) -> (artifact id: '7c90df6d16871b670387850882eab916') in 0.0013192 seconds
+Start importing Assets/_SO_Assets/VesselActions/Shrike/ShrikeTrigger.asset using Guid(08e586ef8a8b02a7de75f7057025de61) (NativeFormatImporter) -> (artifact id: '76c18c1284fb744837036b2a94d455f7') in 0.0012754 seconds
+Start importing Assets/Resources/CrystalHullFusionConfig.asset using Guid(28667c3a393a462985c7e8b246ec05cc) (NativeFormatImporter) -> (artifact id: 'aadf245d1fee6bcde86aaf452bc1aa3a') in 0.0065182 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Classlist_All.asset using Guid(49c7c10ad2901c74589c28317a4eb17b) (NativeFormatImporter) -> (artifact id: '269eb6f265789075125e7a6804e15b5f') in 0.0083871 seconds
+Start importing Assets/_SO_Assets/Classes/SO_Class_Shrike.asset using Guid(bbb0b0e8c8f85ba69d31e63fe9e05d77) (NativeFormatImporter) -> (artifact id: 'cd1535e60d598fe940fa405056c36f2a') in 0.0015293 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Shrike.asset using Guid(2c86b143c531f7718d7a481b8fba8600) (NativeFormatImporter) -> (artifact id: '5cda1d008bfbc6487e79300dc9b87135') in 0.001659 seconds
+Start importing Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/ShrikeSkimmerImpactorDataContainer.asset using Guid(2ddc24508273fddee184362ca4a211a0) (NativeFormatImporter) -> (artifact id: '90af044eaf55a0b42672e4a6e31faf1a') in 0.0015501 seconds
+Start importing Assets/_SO_Assets/Camera/ShrikeCameraSettingsSO.asset using Guid(3d46182ed78ce53031be5af4e87f423d) (NativeFormatImporter) -> (artifact id: '29a3f3f4671790f1a295a3f221eb8d37') in 0.0013183 seconds
+Start importing Assets/_SO_Assets/VesselActions/Shrike/ShrikeMass.asset using Guid(dd6c70c64010dfc7ffffe5e0ff83631b) (NativeFormatImporter) -> (artifact id: '50facf77019efc2a8e7c2ccf6aa5638b') in 0.0014605 seconds
+Start importing Assets/_SO_Assets/VesselActions/Shrike/ShrikeChargeMode.asset using Guid(dfa0585d0972719a2ba8990536835324) (NativeFormatImporter) -> (artifact id: '40b9029575458f5b98c4dda61405b4c9') in 0.0014755 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/SHRIKE.md using Guid(cb06e715275553f4957296b255aaa1ba) (TextScriptImporter) -> (artifact id: 'a0d221948a9e35d671cc088257170568') in 0.001719 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/ShrikeHUDVariant.prefab using Guid(e91e5d18d7e161878c9ebf5f98e422d5) (PrefabImporter) -> (artifact id: 'dc03456e27b1b05fdcfc4bb3c1364018') in 0.0699755 seconds
+Start importing Assets/_Prefabs/Spacevessels/Shrike.prefab using Guid(ae83e6dd3b718654db0175585a46edb2) (PrefabImporter) -> (artifact id: '3d8542b3c750524dccd6277a5f6c39b6') in 0.05183 seconds
+Refreshing native plugins compatible for Editor in 17.33 ms, found 12 plugins.
+Preloading 1 native plugins for Editor in 0.11 ms.
+Asset Pipeline Refresh (id=1752dd3ed9a860c4883c1e4b036ec5aa): Total: 48.815 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+	Summary:
+		Imports: total=50 (actual=28, local cache=22, cache server=0)
+		Asset DB Process Time: managed=29 ms, native=7049 ms
+		Asset DB Callback time: managed=1271 ms, native=39 ms
+		Scripting: domain reloads=1, domain reload time=4234 ms, compile time=36191 ms, other=0 ms
+		Project Asset Count: scripts=4418, non-scripts=11540
+		Asset File Changes: new=41, changed=85, moved=2, deleted=9
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.003ms
+	InvokePackagesCallback: 3.286ms
+	ApplyChangesToAssetFolders: 1.361ms
+	Scan: 88.677ms
+	OnSourceAssetsModified: 0.640ms
+	CategorizeAssetsWithTransientArtifact: 2.166ms
+	ProcessAssetsWithTransientArtifactChanges: 29.290ms
+	UnregisterDeletedAssets: 0.166ms
+	CategorizeAssets: 215.862ms
+	ImportOutOfDateAssets: 6231.015ms (-30298.307ms without children)
+		ImportManagerImport: 296.500ms (21.897ms without children)
+			ImportInProcess: 274.370ms
+			UpdateCategorizedAssets: 0.233ms
+		CompileScripts: 36190.956ms
+		CollectScriptTypesHashes: 9.837ms
+		ReloadNativeAssets: 10.833ms
+		UnloadImportedAssets: 1.896ms
+		ReloadImportedAssets: 11.488ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 4.468ms
+		InitializingProgressBar: 0.001ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.004ms
+		OnDemandSchedulerStart: 3.339ms
+	PostProcessAllAssets: 1284.316ms
+	Hotreload: 25.612ms
+	GatherAllCurrentPrimaryArtifactRevisions: 5.146ms
+	UnloadStreamsBegin: 4.989ms
+	PersistCurrentRevisions: 1.591ms
+	UnloadStreamsEnd: 0.001ms
+	GenerateScriptTypeHashes: 23.050ms
+	Untracked: 40920.864ms
+
+Unloading 55 Unused Serialized files (Serialized files now loaded: 0)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Successfully resolved entitlement details
+[BuildSceneListReconciler] the build-scene list this Editor session is holding was missing 1 scene(s) an arcade card names, so those cards could not be launched. Added:
+  Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
+
+This happens because ProjectSettings/EditorBuildSettings.asset is not in the AssetDatabase: a headless generator's write to it is invisible to an Editor that is already open. Commit the change (FrogletTools > Build > Pending Tool Changes).
+0x00007ff9e2944e2e (Unity) StackWalker::ShowCallstack
+0x00007ff9e417f369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ff9e417fbee (Unity) Stacktrace::GetStacktrace
+0x00007ff9e28f587f (Unity) DebugStringToFile
+0x00007ff9e27b1b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001e7a5e5883d (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001e7a5e58703 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001e7a5e5833b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001e7a5e580c0 (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001e7a5e57f88 (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001e7dea91b23 (Mono JIT Code) CosmicShore.Editor.BuildSceneListReconciler:AutoRepair () (at B:/FrogletGames/Cosmic-Shore/Assets/_Scripts/Editor/Build/BuildSceneListReconciler.cs:85)
+0x000001e7dea8aa58 (Mono JIT Code) UnityEditor.EditorApplication:Internal_CallDelayFunctions ()
+0x000001e95d346f95 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ff9d8736c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ff9d8678984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ff9d8678a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ff9e317fdd4 (Unity) scripting_method_invoke
+0x00007ff9e3186c93 (Unity) ScriptingInvocation::Invoke
+0x00007ff9e3182235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ff9e376b10b (Unity) Scripting::UnityEditor::EditorApplicationProxy::Internal_CallDelayFunctions
+0x00007ff9e39b859a (Unity) Application::TickTimer
+0x00007ff9e3799f7c (Unity) MainMessageLoop
+0x00007ff9e37a1a12 (Unity) UnityMain
+0x00007ff6db9c2f2a (Unity) __scrt_common_main_seh
+0x00007ffabee0dda7 (KERNEL32) BaseThreadInitThunk
+0x00007ffac107ee4c (ntdll) RtlUserThreadStart
+
+[INFO ] [relay] log Unity client connected with ID: editor-21352-bh9ndc (relay 1.0.12-build.96)
+[INFO ] [relay] connection.established clientId=editor-21352-bh9ndc port=9001
+Unloading 2384 unused Assets / (6.0 MB). Loaded Objects now: 29103.
+Memory consumption went from 1.27 GB to 1.26 GB.
+Total: 62.701200 ms (FindLiveObjects: 3.268800 ms CreateObjectMapping: 5.443600 ms MarkObjects: 41.178200 ms  DeleteObjects: 12.809500 ms)
+
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+UPID Received '3030fd69-28ab-433f-b4bd-22b9b93c5118'.
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Asset Pipeline Refresh (id=c68b37d5ca06b8c4f90926f0663e6c22): Total: 0.015 seconds - Initiated by RefreshV2(AllowForceSynchronousImport)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+[Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+Scanning for USB devices : 10.372ms
+Scanning for USB devices : 9.420ms
+Android Extension - Scanning For ADB Devices 1599 ms
+Android Extension - Scanning For ADB Devices 207 ms
+Attempted to call .Dispose on an already disposed CancellationTokenSource
+Android Extension - Scanning For ADB Devices 208 ms
+Android Extension - Scanning For ADB Devices 208 ms
+Scanning for USB devices : 9.377ms
+Scanning for USB devices : 9.013ms
+

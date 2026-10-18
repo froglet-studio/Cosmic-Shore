@@ -54,3 +54,24 @@
 2026-10-17T21:37:22.227Z editor load: play=False capture=True minPlay=15s issues=9
 2026-10-17T21:37:23.370Z editor load: play=False capture=True minPlay=15s issues=9
 2026-10-17T21:53:24.023Z PlayMode session ended (786s play run, exiting play mode): 3 fix(es) waiting; counted: none; fired: E-cdf0c783c1
+2026-10-17T23:32:01.670Z editor load: play=False capture=True minPlay=15s issues=9
+2026-10-17T23:32:10.482Z editor load: play=False capture=True minPlay=15s issues=9
+2026-10-17T23:32:11.710Z editor load: play=False capture=True minPlay=15s issues=9
+2026-10-18T02:17:59.596Z editor load: play=False capture=True minPlay=15s issues=9
+2026-10-18T02:18:51.212Z editor load: play=False capture=True minPlay=15s issues=9
+2026-10-18T02:18:51.294Z editor load: play=False capture=True minPlay=15s issues=9
+2026-10-18T02:18:51.314Z editor load: play=False capture=True minPlay=15s issues=9
+2026-10-18T02:29:28.098Z PlayMode session ended (1s play run, exiting play mode): not counted (capture=True, long enough=False)
+2026-10-18T02:44:32.145Z PlayMode session ended (846s play run, exiting play mode): 3 fix(es) waiting; counted: none; fired: E-cdf0c783c1
+2026-10-18T02:45:43.084Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T02:45:59.588Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T02:45:59.700Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T03:07:35.660Z PlayMode session ended (1171s play run, exiting play mode): 3 fix(es) waiting; counted: none
+2026-10-18T03:10:55.721Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T03:12:06.869Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T03:12:06.895Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T03:21:27.061Z PlayMode session ended (485s play run, exiting play mode): 3 fix(es) waiting; counted: none
+2026-10-18T03:23:19.909Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T03:23:33.076Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T03:23:33.111Z editor load: play=False capture=True minPlay=15s issues=11
+2026-10-18T03:40:20.093Z PlayMode session ended (926s play run, exiting play mode): 3 fix(es) waiting; counted: none; fired: E-cdf0c783c1
