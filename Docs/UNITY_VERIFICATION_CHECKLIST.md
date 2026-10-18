@@ -95,23 +95,49 @@ Omni crystal doubles the board for 5 s. Round 4b: boost on the pilot's trigger, 
 prisms, a 50% longer lasso, a small pilot view. Player and editor reference compiles: 0 errors in changed files.
 `author_kite_assets.py --check` and `--self-test` OK.
 
+**Round 4d (2026-10-18):**
+- The pilot flies on two sticks again.
+- The ability cards count the saved boosts (Time), the kite's rams (Charge) and the last blast's kills (Space); the
+  Mass card flashes when a cluster lands. This is `KiteHUDController`, and the map has the Kite's own cards with no
+  button chips.
+- Each mote is a five-petal flower that moves like its element.
+- The kite view sees 400 u above and below the plane:
+  - prism depth is measured from the plane (`PrismDepthPlane`, a new HLSL include in `PrismClockAnimation.hlsl` and the
+    swarm member shaders);
+  - the mass above the board dithers in a cone (`PrismOcclusionCorridor.BeginViewOverride`).
+- Checks run:
+  - player reference compile: 0 errors;
+  - editor reference compile: the same 3 errors as before, none in the changed files;
+  - `author_kite_assets.py --check` and `--self-test`: OK;
+  - `verify_swarm_member_pose.py`: OK.
+- **The shader change needs a Unity import**:
+  - BlockGraph and the swarm shaders recompile with the new include;
+  - check that the pilot's own view of prisms is unchanged (the include is off by default).
+
 **Verify:**
 1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Kite** station (it looks like a Sparrow).
    - Lower left: a small square kite view, the real world seen from straight above your hull.
    - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
    - In your own view: a faint see-through kite and faint lime dots, not in the way.
-2. Fly with one thumb: the stick, the mouse, or one touch. No ability button does anything.
-3. After a Time (diamond) loop, hold the right trigger (left mouse button; on a phone, lift your thumb). The hull boosts
-   while it is held. Flying straight with nothing held does NOT boost. Boost again at once: refused for 2 s (and not
-   refused at Time level 5).
+2. Fly with two thumbs (both sticks, or the keyboard): the spread of the sticks is the throttle. No ability button does
+   anything, and no card shows a button chip. The hull keeps the Sparrow's tuning (top speed 60); say if it wants the
+   two-stick hulls' sharper turns.
+3. After a Time loop, the Time card shows the saved boosts (a number) and the kite view shows a lime dot each round the
+   hull. Pull the right trigger (right Shift; on a phone, lift both thumbs): one boost runs 1.5 s, the count drops by
+   one, and the Time card's veil sweeps until the next can fire (2 s after; none at Time level 5). Flying with nothing
+   held does NOT boost.
+   - The Charge card shows the kite's rams (a number), the Space card how many prisms the last Space blast destroyed,
+     and the Mass card flashes when a Mass cluster lands.
 4. Press **2** (or D-pad right).
    - The kite view fills the screen.
    - Your hull's view shrinks to the same small square in the lower left, flown by its AI.
-   - The motes show as lime petal shapes (Round 4b fixed them drawing invisible), each with its crystal's effect
-     round it (round 4c): Charge, a flickering bolt hopping round it; Mass, little triangles climbing out and dropping
-     back; Space, rings of little kites turning in steps; Time, a ring of diamonds flipping in a wave.
+   - Each mote is a lime five-petal flower of its element's petal (round 4d). Space spins; Time flips its petals one
+     after another; Mass moves each petal in and out; Charge has a blue plasma spark running round its petals.
    - The hull, flown by its AI, never shoots (round 4c removed the Sparrow's guns and missiles).
-   - Prisms far above or below the plane show as dim, flat, unlit boxes in their domain's tint, not gone.
+   - Prisms far above or below the plane are the real prisms, never gone (round 4d). Prisms on the plane look crisp;
+     the farther out of the plane, the more their faces part, as distant mass does in the pilot view. Prisms above
+     the board dither (a shattered see-through look) so the board under them stays visible. In your small pilot view,
+     prisms look exactly as they always did.
    - The tail is half as long again as before (2.4 board radii).
    - Move the mouse without clicking, or lean the stick: the kite follows.
 5. Loop motes of one petal shape:

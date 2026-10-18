@@ -13,8 +13,8 @@ namespace CosmicShore.Gameplay
     /// rendering for the kite").
     ///
     /// <para><b>The kite view</b> is a second camera looking straight down the hull's up axis onto its x-z plane,
-    /// orthographic, clipped to the slice the kite can touch (reachY either side of the plane), so it renders the real
-    /// world - prisms, hulls, crystals - as a map of the board. The kite, its tail, the motes (lime, each element in its
+    /// orthographic, seeing viewDepth above and below the plane, so it renders the real world - prisms, hulls, crystals -
+    /// as a map of the board. The kite, its tail, the motes (lime, each element in its
     /// own petal shape), the loop and effect rings are world-space meshes drawn ONLY for that camera.</para>
     ///
     /// <para><b>The pilot view</b> is the game's own camera (<see cref="CameraManager.ViewCamera"/>). It sees the kite
@@ -26,9 +26,13 @@ namespace CosmicShore.Gameplay
     /// square (Garrett, 2026-10-18: "the kite view when flying the pilot was good; use that"). The pilot camera's rect and
     /// depth are restored the moment the human flies again, the camera changes, or the seat is unbound.</para>
     ///
-    /// <para><b>Out of the slice.</b> A prism further than reachY from the plane cannot be touched, so the camera clips it
-    /// away, and it is drawn back in UNLIT: a flat box in its domain's tint, dimmed, under everything in the slice
-    /// (Garrett, 2026-10-18: "the prisms that go out of plane for the kite should be unlit but not disappear").</para>
+    /// <para><b>Out of the plane</b> (Garrett, round 4d: "they should just use the normal prism depth shader instead but use
+    /// distance from the plane for depth. for the prisms above the plane just use the dither effect in a cone to preserve
+    /// the viewing area visibility"). For this camera's render only: the prisms' own depth look (their faces part with
+    /// distance) measures distance OUT OF THE PLANE (<see cref="PrismDepthPlane"/>), so the touchable slice reads crisp
+    /// and far mass opens up as it does in the pilot's view; and the occlusion corridor is re-shaped into a cone from this
+    /// lens down to the plane, sized to the view (<see cref="PrismOcclusionCorridor.BeginViewOverride"/>), so the mass
+    /// above the board dithers instead of hiding it. Both are restored before any other camera draws.</para>
     /// </summary>
     sealed class KiteNavigatorView
     {
@@ -47,8 +51,6 @@ namespace CosmicShore.Gameplay
         readonly Mesh _tailMesh, _loopMesh;
         readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat;
         readonly Material _tailMat, _loopMat;
-        readonly Mesh _boxMesh;
-        readonly Dictionary<CosmicShore.Data.Domains, Material> _ghostMats = new();
         readonly List<Vector3> _verts = new();
         readonly List<Color> _colors = new();
         readonly List<int> _tris = new();
@@ -75,6 +77,8 @@ namespace CosmicShore.Gameplay
             _cam.orthographic = true;
             _cam.nearClipPlane = 0.1f;
             _cam.enabled = false;
+            RenderPipelineManager.beginCameraRendering += BeginRender;
+            RenderPipelineManager.endCameraRendering += EndRender;
 
             _kiteMesh = BuildKite();
             _dotMesh = BuildDisc(1f, 12);
@@ -93,7 +97,6 @@ namespace CosmicShore.Gameplay
             _loopMesh.MarkDynamic();
 
             var cfg = nav.Config;
-            _boxMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
             _tailMat = VertexColoured(Lime);
             _loopMat = VertexColoured(new Color(1f, 1f, 1f, 0.85f));
             _kiteMat = Unlit(KiteWhite);
@@ -139,26 +142,17 @@ namespace CosmicShore.Gameplay
             return new Material(shader) { color = c, renderQueue = (int)RenderQueue.Transparent + 100 };
         }
 
-        Material GhostMaterial(CosmicShore.Data.Domains domain)
-        {
-            if (_ghostMats.TryGetValue(domain, out var m)) return m;
-            var c = PrismLit.DomainTint(domain) * _nav.Config.GhostBrightness;
-            c.a = _nav.Config.GhostAlpha;
-            var ghost = Unlit(c);
-            ghost.renderQueue = (int)RenderQueue.Transparent - 50;   // under the kite, its tail and the motes
-            _ghostMats[domain] = ghost;
-            return ghost;
-        }
-
         internal void Dispose()
         {
+            RenderPipelineManager.beginCameraRendering -= BeginRender;
+            RenderPipelineManager.endCameraRendering -= EndRender;
+            EndRender(default, _cam);
             RestorePilot();
             if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
             foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _quadMesh, _tailMesh, _loopMesh, _tailMat, _loopMat,
                                              _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat, _plasmaMat })
                 if (o) Object.Destroy(o);
-            foreach (var g in _ghostMats.Values) if (g) Object.Destroy(g);
         }
 
         // ------------------------------------------------------------------ cameras
@@ -179,12 +173,12 @@ namespace CosmicShore.Gameplay
                 _cam.backgroundColor = _pilot.backgroundColor;
             }
 
-            // straight down the board's up axis, centred on the disc, seeing only the slice the kite can touch
+            // straight down the board's up axis, centred on the disc, seeing viewDepth either side of the plane
             Vector3 up = _nav.BoardUp, fwd = _nav.BoardForward;
-            _cam.transform.SetPositionAndRotation(_nav.BoardToWorld(0f, s.Anchor * s.BoardRadius) + up * cfg.ReachY,
+            _cam.transform.SetPositionAndRotation(_nav.BoardToWorld(0f, s.Anchor * s.BoardRadius) + up * cfg.ViewDepth,
                                                   Quaternion.LookRotation(-up, fwd));
             _cam.orthographicSize = s.BoardRadius * 1.04f;
-            _cam.farClipPlane = 2f * cfg.ReachY + 1f;
+            _cam.farClipPlane = 2f * cfg.ViewDepth + 1f;
 
             float baseDepth = _pilot ? _pilotDepth : 0f;
             float m = cfg.ViewMargin, h = cfg.PipSize, aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
@@ -205,6 +199,40 @@ namespace CosmicShore.Gameplay
                 _cam.rect = new Rect(m / aspect, m, h / aspect, h);       // a square in the lower left
                 _cam.depth = baseDepth + 1f;
             }
+        }
+
+        bool _corridorOverridden, _planePublished;
+
+        // This camera's render only: prism depth measured from the plane, and the corridor as a cone from this lens down
+        // to the plane, sized to the view. Restored in EndRender, before the pilot camera (which renders after this one
+        // while the human navigates) or the Scene view draws.
+        void BeginRender(ScriptableRenderContext _, Camera cam)
+        {
+            if (cam != _cam || !_cam.enabled) return;
+            var cfg = _nav.Config;
+            var s = _nav.Settings;
+            Vector3 up = _nav.BoardUp;
+            var plane = _nav.BoardToWorld(0f, s.Anchor * s.BoardRadius);
+            PrismDepthPlane.Begin(plane, up, cfg.DepthFullSpreadAt);
+            _planePublished = true;
+
+            // The corridor's base is graded over its last share and solid at tSolid = 2/3 of its length whenever it is
+            // much wider than it is long (PRISM_OCCLUSION_MAX_BASE_SHARE with inner = outer / 2), so a corridor 1.5x the
+            // lens height ends solid exactly at the plane: the touchable slice stays solid, the mass above dithers.
+            float h = cfg.ViewDepth;
+            float halfDiagonal = _cam.orthographicSize * Mathf.Sqrt(1f + _cam.aspect * _cam.aspect);
+            float near = cfg.DitherNearScale;
+            float outer = 2f * halfDiagonal / Mathf.Lerp(near, 1f, 2f / 3f);   // inner (outer / 2) covers the view at the plane
+            _corridorOverridden = PrismOcclusionCorridor.BeginViewOverride(
+                _nav.transform, _cam.transform.position - up * (1.5f * h), outer, 0.5f * outer, cfg.DitherCoreAlpha, near * outer);
+        }
+
+        void EndRender(ScriptableRenderContext _, Camera cam)
+        {
+            if (cam != _cam) return;
+            if (_planePublished) PrismDepthPlane.End();
+            if (_corridorOverridden) PrismOcclusionCorridor.EndViewOverride();
+            _planePublished = _corridorOverridden = false;
         }
 
         void RestorePilot()
@@ -235,7 +263,7 @@ namespace CosmicShore.Gameplay
             var s = _nav.Settings;
             var basis = Quaternion.LookRotation(_nav.BoardForward, _nav.BoardUp);
             Camera kite = _cam, pilot = _pilot;
-            float lift = cfg.ReachY * 0.9f;   // the kite view's top: in front of everything in the slice
+            float lift = cfg.ViewDepth - 2f;   // just under the lens: in front of every prism the view sees
             float now = Time.time;
 
             // the kite: pointed along its flight, gold while charged; faint for the pilot
@@ -292,14 +320,6 @@ namespace CosmicShore.Gameplay
                 if (r < 0.5f) continue;
                 Add(fx.Kind is KiteNavigator.FxKind.Charge or KiteNavigator.FxKind.Steal ? _goldMat : _ringMat, _ringMesh, kite,
                     Matrix4x4.TRS(c, basis, Vector3.one * r));
-            }
-
-            // the prisms out of the slice: unlit, dimmed, flat on the floor of the view
-            var floor = -_nav.BoardUp * (cfg.ReachY * 0.95f);
-            foreach (var g in _nav.Ghosts)
-            {
-                var pos = _nav.BoardToWorld(g.X, g.Z) + floor;
-                Add(GhostMaterial(g.Domain), _boxMesh, kite, Matrix4x4.TRS(pos, g.Rotation, g.Scale));
             }
 
             BuildTail(lift);

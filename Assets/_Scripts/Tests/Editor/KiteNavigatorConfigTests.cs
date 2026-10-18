@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -59,6 +60,11 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, c.MoteBaseWeight);
             Assert.AreEqual(1f, c.MoteWeightPerLevel);
             Assert.AreEqual(1f, c.FaunaChargeCost);
+            // round 4d: out-of-plane prisms are seen, with depth from the plane and a dither cone above it
+            Assert.AreEqual(400f, c.ViewDepth);
+            Assert.AreEqual(60f, c.DepthFullSpreadAt);
+            Assert.AreEqual(0.35f, c.DitherCoreAlpha, 1e-6f);
+            Assert.AreEqual(0.5f, c.DitherNearScale, 1e-6f);
         }
 
         [Test]
@@ -95,6 +101,20 @@ namespace CosmicShore.Tests
             Assert.IsTrue(prefab.TryGetComponent(out IVesselStatus status));
             Assert.AreEqual(VesselClassType.Kite, status.VesselType);
             CollectionAssert.Contains(ToyVesselRoster.Default, VesselClassType.Kite, "the Vessel Changer offers only the roster");
+        }
+
+        [Test]
+        public void KiteHull_FliesOnTwoSticks_AndItsHudReadsTheSeat()
+        {
+            // round 4d (Garrett, 2026-10-18): "lets go back to two thumb flying for the pilot", and the ability cards show
+            // the saved boosts, the charges, the last blast and the Mass flash
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Prefabs/Spacevessels/Kite.prefab");
+            Assert.IsNotNull(prefab);
+            Assert.IsTrue(prefab.TryGetComponent(out VesselTransformer transformer));
+            Assert.AreEqual(typeof(VesselTransformer), transformer.GetType(), "the Kite's hull is not the two-stick VesselTransformer");
+            Assert.IsTrue(prefab.TryGetComponent(out KiteHUDController hud), "the Kite's HUD controller is not KiteHUDController");
+            Assert.AreEqual(prefab.GetComponent<KiteNavigator>(), new SerializedObject(hud).FindProperty("navigator").objectReferenceValue,
+                "the HUD does not read this hull's seat");
         }
     }
 }

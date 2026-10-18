@@ -651,9 +651,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 4); Docs/Studios/CrewVesselLab.html
 
-### T-20261018-49d0 · open · content · Crew vessels
+### T-20261018-49d0 · done · content · Crew vessels
 - **Task:** Give the Kite its own HUD. It still wears the Sparrow's (SparrowHUDController + SparrowHUDVariant): the four-icon ability row shows the Sparrow's gun, missile and barrel-roll icons, though the Kite has none of those since round 4c. Its four icons should be the kite's four loop effects (Space blast, Mass cluster, Time boost, Charge ram), each with its L5 upgrade (LOCKED four-icon row). Also give it its own ElementalAbilityMap entries (Kite.asset is still the Sparrow's map, kept only for the L5 unlock levels).
 - **Done when:** The Kite's HUD shows its own four icons and no Sparrow ability
 - **Who can take it:** Garrett (vessels, icons); any session for the wiring
 - **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 4c); Docs/claude/VESSEL_HUD_AND_ELEMENTS.md (four-icon row)
+- **Done:** 2026-10-18, Round 4d: KiteHUDController drives the four cards (saved boosts, rams, last blast, Mass flash) and Kite.asset has the Kite's own cards with no button chips. The icon ART is still the Sparrow's: see the follow-up task.
+
+### T-20261018-8ff7 · open · content · Crew vessels
+- **Task:** Draw the Kite's four ability-card icons. Since round 4d the cards read the navigator (KiteHUDController: Time = saved boosts, Charge = kite rams, Space = last blast's kills, Mass = flash on a cluster) and ElementalAbilityMaps/Kite.asset names them Space Blast, Saved Boosts, Mass Cluster and Kite Ram, but the sprites on the HUD (SparrowHUDVariant) are still the Sparrow's gun, missile and stance icons.
+- **Done when:** The Kite's HUD shows its own four icons (a Kite HUD variant of SparrowHUDVariant, made with Create > Prefab Variant), each with its L5 upgrade art, on the LOCKED four-icon row.
+- **Who can take it:** Garrett (vessels, icons); any session for the variant wiring
+- **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 4d
+
+### T-20261018-5c29 · open · test · Crew vessels
+- **Task:** Fly the Kite's round 4d in the Unity Editor: let BlockGraph and the swarm member shaders re-import with the new PrismDepthPlane.hlsl include, confirm the pilot's own view of prisms is unchanged, then run Docs/UNITY_VERIFICATION_CHECKLIST.md's Kite steps 2-4 (two-thumb flight, the HUD counts, the five-petal motes, out-of-plane prisms opening with distance from the plane and dithering above it).
+- **Done when:** The checklist's Kite entry is ticked or its failures are filed, and the two-thumb tuning (the Sparrow's numbers today) is kept or re-tuned.
+- **Who can take it:** Garrett (sign-off); Yash can run the editor pass
+- **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Kite Navigator

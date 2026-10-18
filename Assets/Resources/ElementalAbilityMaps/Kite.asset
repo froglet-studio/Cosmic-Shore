@@ -15,63 +15,38 @@ MonoBehaviour:
   vesselClass: 19
   entries:
   - Element: 3
-    AbilityLabel: Pulsefire Cannons
-    AbilityDescription: Full-auto cannons. Space extends their range dramatically
-      - short at rest, unchanged at full overcharge. At level 5 shots pierce through
-      prisms - both bullets and turret-stance prism rounds.
-    Input: 1
+    AbilityLabel: 'Space Blast'
+    AbilityDescription: 'The kite closes a loop of Space motes and a blast goes off where it closed; a bigger loop, a bigger blast. The card counts what the last blast destroyed.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Piercing Bullets
-    UpgradeDescription: Shots pierce through prisms instead of being destroyed on
-      first impact - bullets and turret-stance prism rounds alike. SPACE owns REACH;
-      the armour on fired prisms is MASS 5.
+    UpgradeLabel: 'Shield Breaker'
+    UpgradeDescription: 'Space blasts destroy shielded and super-shielded prisms.'
   - Element: 4
-    AbilityLabel: Afterburner
-    AbilityDescription: Hold to boost indefinitely - there is no heat and no meter.
-      Boosting at full stick deflection performs one strafing roll per press (base,
-      no unlock). Time raises the boost speed; at level 5 boosting also makes you
-      immune to elemental debuffs.
-    Input: 7
+    AbilityLabel: 'Saved Boosts'
+    AbilityDescription: 'Every loop of Time motes the kite closes saves boosts for the pilot. The pilot spends them on the trigger; the card counts how many are saved.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Elemental Ward
-    UpgradeDescription: While boosting, elemental debuffs cannot land - danger prisms
-      and skimmer overtakes leave your levels untouched. Buffs still apply.
+    UpgradeLabel: 'No Cooldown'
+    UpgradeDescription: 'Saved boosts chain back to back with no cooldown.'
   - Element: 2
-    AbilityLabel: Turret Stance
-    AbilityDescription: 'Stop and fire prisms instead of bullets - the same shot in
-      every way, except you watch a prism fly and it stays wherever the bullet would
-      have died. Mass is the SUBSTANCE of what you fire: it stretches the fired prisms
-      AND swells every round as it travels (3x over its flight at rest, 6x at level
-      10), so the hit volume grows with the visual. At level 5 fired prisms arrive
-      shielded.'
-    Input: 6
+    AbilityLabel: 'Mass Cluster'
+    AbilityDescription: 'A loop of Mass motes lays a cluster of prisms on the kite''s plane. The card flashes when one is laid.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Shielded Prisms
-    UpgradeDescription: 'Prisms fired in the turret stance arrive shielded - one-hit
-      ablative octahedron armor, with a wider hit sphere to match. Briefly lived at
-      Space 5 (2026-08 round 4) and was returned here by design sign-off: MASS owns
-      the substance of what you fire, SPACE owns its reach.'
+    UpgradeLabel: 'Shielded Clusters'
+    UpgradeDescription: 'Mass clusters are laid shielded.'
   - Element: 1
-    AbilityLabel: Skyburst Rockets
-    AbilityDescription: Rockets stocked by DESTROYING MASS - every hostile prism
-      you break puts a little back in the rack, so the arena is the ammunition.
-      They carry a proximity fuze and go off near an enemy or a creature rather
-      than only on contact, throwing two blasts - the old one that tears prisms
-      apart and lays new ones, and a wider warhead that debuffs pilots and kills
-      wildlife. Charge widens the prism blast (authored on the skyburst effect
-      assets); at level 5 both explosions spare your own domain.
-    Input: 2
+    AbilityLabel: 'Kite Ram'
+    AbilityDescription: 'Loops of Charge motes power the kite''s ram: strike a rival hull to knock its crystals loose, or strike wildlife. The card counts the rams held.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Domain-Safe Skybursts
-    UpgradeDescription: Skyburst explosions no longer destroy your own domain's
-      prisms - and the warhead no longer kills your own domain's wildlife or
-      debuffs your own pilots, since both halves of the detonation read one
-      friendly-fire decision.
+    UpgradeLabel: 'Crystal Steal'
+    UpgradeDescription: 'A ram steals the rival''s crystals instead of knocking them loose.'

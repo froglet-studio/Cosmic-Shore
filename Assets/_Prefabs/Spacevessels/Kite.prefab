@@ -540,7 +540,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 8279817603024118164}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   toggleManualThrottle: 0
@@ -835,19 +835,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 8279817603024118164}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1938f2b097540e7abd1e4210d446545, type: 3}
+  m_Script: {fileID: 11500000, guid: 6aefd1658b714dd48fc28803d84d76b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   baseView: {fileID: 4159619328234506921}
   _iconSetSwitcher: {fileID: 0}
-  view: {fileID: 4159619328234506921}
-  fireGunExecutor: {fileID: 0}
-  barrelRollController: {fileID: 0}
-  gunSprayAccuracy: {fileID: 0}
-  stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
-    type: 2}
-  onInputEventBlocked: {fileID: 11400000, guid: 11683e8c1b111854d94fa6bcf821abfe,
-    type: 2}
+  navigator: {fileID: 5137264980016000019}
 --- !u!114 &2035987173373189047
 MonoBehaviour:
   m_ObjectHideFlags: 0

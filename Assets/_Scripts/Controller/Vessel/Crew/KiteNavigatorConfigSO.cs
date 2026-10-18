@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] KiteBoardFrame frame = KiteBoardFrame.Eased;
         [Tooltip("lab easeRate: Eased frame, how fast the board follows a bank or pitch (1/s).")]
         [SerializeField, Min(0.1f)] float easeRate = 3f;
-        [Tooltip("lab reachY: anything within this of the plane (u) can be touched; further away it is drawn as a hollow ghost.")]
+        [Tooltip("lab reachY: anything within this of the plane (u) can be touched; further away it is out of reach (still seen).")]
         [SerializeField, Min(1f)] float reachY = 40f;
 
         [Header("Kite")]
@@ -147,15 +147,18 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float pilotDotAlpha = 0.35f;
         [Tooltip("The size of a mote's dot in the pilot's view (u).")]
         [SerializeField, Min(0.1f)] float pilotDotSize = 0.9f;
-        [Tooltip("The kite view draws prisms out of the touchable slice UNLIT, down to this far from the plane (u); further " +
-                 "ones are not drawn. At or under reachY, none are.")]
-        [SerializeField, Min(0f)] float ghostDepth = 240f;
-        [Tooltip("Most out-of-slice prisms drawn in a frame.")]
-        [SerializeField, Range(0, 3000)] int ghostCap = 1500;
-        [Tooltip("An out-of-slice prism's brightness: its domain's tint times this.")]
-        [SerializeField, Range(0f, 1f)] float ghostBrightness = 0.45f;
-        [Tooltip("An out-of-slice prism's opacity.")]
-        [SerializeField, Range(0f, 1f)] float ghostAlpha = 0.55f;
+        [Header("Kite view depth (Garrett, round 4d: out-of-plane prisms never disappear)")]
+        [Tooltip("How far above AND below the plane the kite view sees (u). Its camera sits this high over the plane.")]
+        [SerializeField, Min(1f)] float viewDepth = 400f;
+        [Tooltip("The kite view reads prism depth as distance OUT OF THE PLANE, through the prisms' own depth look (their " +
+                 "faces part with distance). A prism this far from the plane (u) reads as far as the pilot view's most " +
+                 "distant mass; one on the plane reads near.")]
+        [SerializeField, Min(1f)] float depthFullSpreadAt = 60f;
+        [Tooltip("The prisms ABOVE the plane, between the kite view's lens and the board, dither in the occlusion " +
+                 "corridor's cone so the board stays visible: their opacity in the cone's core (0 = cleared).")]
+        [SerializeField, Range(0f, 1f)] float ditherCoreAlpha = 0.35f;
+        [Tooltip("The cone's radius at the lens, as a fraction of its radius at the plane (1 = a cylinder).")]
+        [SerializeField, Range(0f, 1f)] float ditherNearScale = 0.5f;
 
         [Header("Game")]
         [Tooltip("The runtime game data: its player list is how the board finds the rival hulls.")]
@@ -201,10 +204,10 @@ namespace CosmicShore.Gameplay
         public float PilotKiteAlpha => pilotKiteAlpha;
         public float PilotDotAlpha => pilotDotAlpha;
         public float PilotDotSize => pilotDotSize;
-        public float GhostDepth => ghostDepth;
-        public int GhostCap => ghostCap;
-        public float GhostBrightness => ghostBrightness;
-        public float GhostAlpha => ghostAlpha;
+        public float ViewDepth => viewDepth;
+        public float DepthFullSpreadAt => depthFullSpreadAt;
+        public float DitherCoreAlpha => ditherCoreAlpha;
+        public float DitherNearScale => ditherNearScale;
         public KiteMoteHome MoteHome => moteHome;
         public int MoteCount => moteCount;
         public int MoteCluster => moteCluster;

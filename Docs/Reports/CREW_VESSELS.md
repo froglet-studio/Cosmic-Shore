@@ -30,10 +30,16 @@ shared from its Share menu. Fly the kite on a phone with one thumb, or fly the h
 
 **Unity:**
 1. Check out `cece/compassionate-babbage-gc13io`, open the project and wait for the compile.
-2. Open the Toybox, fly into the **Vessel Changer** and fly the **Kite** station (it looks like a Sparrow). The board
-   appears bottom right, and the AI flies the kite while you fly.
-3. Press **2** (or D-pad right) to take the kite. The hull's AI flies the hull. Click or touch the board and circle one
-   colour of motes. Press **1** to fly again.
+2. Open the Toybox, fly into the **Vessel Changer** and fly the **Kite** station (it looks like a Sparrow). Fly with two
+   thumbs. The kite view, the real world seen from above your hull, is a small square in the lower left, and the AI flies
+   the kite. The right trigger spends the boosts its Time loops save; the ability cards count them.
+3. Press **2** (or D-pad right) to take the kite: its view fills the screen and the hull's shrinks to the corner. The
+   kite follows the mouse or stick with no click; loop one petal shape of motes. Press **1** to fly again.
+
+Since the 2026-10-17 port, Garrett directed rounds 4 to 4d in Unity on 2026-10-18 (the views, two thumbs, the HUD
+counts, five-petal motes, depth measured from the plane and a dither cone in the kite view). The detail is in
+`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` "Round 4". The lab has not caught up yet
+(`T-20261018-3247`).
 
 ## 3. What was built
 

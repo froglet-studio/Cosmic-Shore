@@ -37,12 +37,12 @@ they are not game crystals.
 |---|---|
 | The kite and its petals visible to the pilot but not in the way | The pilot's camera sees a faint see-through kite (`pilotKiteAlpha` 0.22) and faint lime dots (`pilotDotAlpha` 0.35), drawn only for that camera (`RenderParams.camera`). |
 | The kite's screen small in the lower left while piloting; swapped when playing the kite | `KiteNavigatorView`: piloting, the kite view is a square `pipSize` (0.32 of the screen height) in the lower left. Navigating, the kite view is full screen and the pilot camera (`CameraManager.ViewCamera`) is lifted over it in the SAME small square (round 4b: "the kite view when flying the pilot was good; use that"); its rect and depth are restored on the way back. |
-| Use the game's rendering for the kite | The kite view is a second camera looking straight down the hull's up axis onto its x-z plane, orthographic, clipped to the touchable slice (±reachY), so it draws the real world. The kite, tail, motes and rings are world meshes drawn only for it. The 2D UI board (`KiteBoardGraphic`) is gone. |
-| Prisms out of the plane: unlit, not gone (round 4b) | The camera's clip still removes them from the lit render; a second, deeper prism query (`ghostDepth` 240 u, at most `ghostCap` 1500) draws each one back as an unlit box in its domain's tint × `ghostBrightness` (0.45), `ghostAlpha` (0.55), on the floor of the view under everything in the slice. |
+| Use the game's rendering for the kite | The kite view is a second camera looking straight down the hull's up axis onto its x-z plane, orthographic, so it draws the real world (round 4d: `viewDepth` 400 u above and below the plane, below). The kite, tail, motes and rings are world meshes drawn only for it. The 2D UI board (`KiteBoardGraphic`) is gone. |
+| Prisms out of the plane: unlit, not gone (round 4b) | Superseded in round 4d: the prisms themselves are drawn, with depth measured from the plane (below). |
 | Every element lime, told apart by its petal shape | Motes are lime, each drawn in its element's petal outline from the HUD (`ElementPetalGeometry.Outline`: Mass a triangle, Space a kite, Time a diamond, Charge a five-sided gem). |
 | The kite follows the mouse or thumbstick; no click | Mouse: the kite flies to the cursor. Stick: it flies the way the stick leans, as fast as it leans (circle the stick, the kite circles). Touch: to a point 21 mm above the thumb. The last-used device leads. |
-| The pilot is a one-thumb flyer with no buttons | The Kite is the Sparrow's one-thumb hull (`SingleStickVesselTransformer`; listed in `OneThumbVesselCoverageTests`) with every ability binding removed. |
-| The pilot controls the boost: the trigger on a gamepad (round 4b) | `InputStatus.RightTriggerAnalog` > 0.5: the pad's right trigger, or the left mouse button with the single-stick mouse. On a touch screen, with no trigger, lifting the thumb (the touch strategy's `Idle`). A boost runs while held and the Time gift lasts. (Round 4 boosted on a centred stick, which fired by itself whenever the pilot flew straight.) |
+| The pilot is a one-thumb flyer with no buttons | No buttons: every ability binding is removed. Round 4d moved the hull back to two thumbs (below). |
+| The pilot controls the boost: the trigger on a gamepad (round 4b) | `InputStatus.RightTriggerAnalog` > 0.5: the pad's right trigger, or right Shift on the keyboard. On a touch screen, with no trigger, lifting both thumbs (the touch strategy's `Idle`). Round 4d made the Time gift discrete saved boosts (below). (Round 4 boosted on a centred stick, which fired by itself whenever the pilot flew straight.) |
 | The ship's petals set how often each element comes | weight = `moteBaseWeight` (1) + `moteWeightPerLevel` (1) × the hull's level in it. |
 | Charge works on fauna | A charged head kills a creature it passes through (`Fauna.Jousted`, sim authority only), for `faunaChargeCost` (1). The AI rams creatures too. |
 | Mass clusters shielded at Mass L5 | `prismProperties.IsShielded` before `Initialize`, as the Thresher's armoured trail. |
@@ -73,13 +73,63 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
     policy (`check_vessel_shared_channels` requires it; it is inert with no boost binding), and the `ResourceSystem`'s
     three Sparrow meters (shared world effects index a hull's meters by number, so emptying the list risks
     out-of-range; nothing fills them now).
-  - **Still the Sparrow's:** the HUD and the ability map (task `T-20261018-49d0`).
+  - **Still the Sparrow's** (in 4c): the HUD and the ability map. Round 4d gave the Kite its own (below).
 - **Each mote wears its crystal's effect, in lime**, round its petal (`KiteNavigatorView.CrystalEffect`, from the shipped
   crystals' numbers):
   - Charge: the seam walk, a bolt hopping round a pentagon every ~0.2 s with the last two seams thinning behind it.
   - Mass: the columns, six small triangles climbing out to 1.5× and down to 0.6 scale, then dropping back.
   - Space: the group spins, five kites turning 72° in 1.0 s alternating with an inner three turning 120°.
   - Time: the flip wave, eight diamonds flipping ring by ring on a 2 s loop.
+
+**Round 4d (2026-10-18):**
+- **Two thumbs.** "Lets go back to two thumb flying for the pilot so it can choose the fly in a way that brings more mass
+  into plane for the kite." `author_kite_assets.py` swaps the Sparrow's `SingleStickVesselTransformer` for its base,
+  `VesselTransformer` (no field of its own, so the swap is the script guid); `--check` holds it. The Kite left
+  `OneThumbVesselCoverageTests.OneThumbVessels` and joined the two-stick row of `ONE_THUMB_MOUSE_CONTROLS.md`.
+  - **The hull still has the Sparrow's tuning**: `ThrottleScaler` 50, `MinimumSpeed` 10, pitch/yaw 80, roll 30. On two
+    sticks the throttle is the sticks' spread (`XDiff`), so top speed is the Sparrow's 60, reached by spreading the
+    thumbs; the two-stick hulls (the Squirrel: 0 / 60 / 120 / 120 / 130) turn harder. Re-tune on the Kite in Unity.
+- **The HUD reads the navigator.** `KiteHUDController` replaces `SparrowHUDController` on the hull (the generator
+  retrofits it, wired to the seat). On the Sparrow's HUD view:
+  - **Time:** the saved boosts as a number, and the boost's recharge on the card's veil.
+  - **Charge:** the rams the kite holds, as a number. The icon is shown again: the Sparrow's view hides it until its guns
+    report.
+  - **Space:** how many prisms the last Space blast destroyed, counting up while it runs.
+  - **Mass:** the card flashes each time a Mass cluster is laid (`PlayAbilityFlash`).
+
+  The counts are generated into the cards at runtime (the Shrike's missile count is the pattern). Their text is the
+  `countTemplate` field (`{count}`), so the words are the team's. The Kite's ability map has its own cards now ("Space
+  Blast", "Saved Boosts", "Mass Cluster", "Kite Ram", each with its L5), every input 0, so no Sparrow button chip is
+  drawn.
+- **Five petals per mote, moving like its element.** Each mote is a five-petal flower, as the element amount indicator
+  draws (`ElementalBarsConfigSO` petal count and spacing). This replaces round 4c's crystal effects.
+  - Space spins, 72° every 1.1 s.
+  - Time flips all its petals, one after another on a 2 s loop.
+  - Mass moves each petal in and out.
+  - Charge runs a blue plasma spark round each petal's outline.
+- **Saved boosts.** A Time loop of n motes saves `round(Grow(1, n, growth, max))` boosts, up to
+  `timeBoostCap / timeBoostSeconds` (20). Each trigger pull spends one, for `timeBoostSeconds` (1.5 s). The kite view
+  shows one lime dot per saved boost round the hull.
+- **Out-of-plane prisms never disappear.** "They should just use the normal prism depth shader instead but use distance
+  from the plane for depth. For the prisms above the plane just use the dither effect in a cone to preserve the viewing
+  area visibility."
+  - The kite camera sits `viewDepth` (400 u) over the plane and sees as far below it. The ghost boxes and the ±reachY
+    clip are gone.
+  - **Depth from the plane:** the prisms' own depth look is the face spread (faces part with distance). For this
+    camera's render only, it measures distance OUT OF THE PLANE: `PrismDepthPlane.cs` publishes `_PrismDepthPlane` in
+    `beginCameraRendering` and zeroes it in `endCameraRendering`. It is read by `PrismDepthPlane.hlsl`, through
+    `PrismFlightSqrDistance` (every BlockGraph prism) and the swarm members' spread.
+    - A prism `depthFullSpreadAt` (60 u) from the plane reads as far as the pilot view's farthest mass.
+    - The touchable slice stays crisp.
+    - Every other camera reads the all-zero default and is unchanged.
+  - **The dither cone above the plane:** for the same render, the occlusion corridor is re-shaped into a cone from the
+    kite lens down to the plane, sized so its core covers the view at the plane
+    (`PrismOcclusionCorridor.BeginViewOverride`, identity-guarded to the bound hull, saved and restored).
+    - The corridor's length is 1.5× the lens height, so its base is solid exactly at the plane.
+    - Prisms above the board dither (the shipped SHATTER kernel) to `ditherCoreAlpha` (0.35) in the core.
+    - The touchable slice reads nearly solid; prisms on and below the plane are solid.
+    - `ditherNearScale` (0.5) is the cone's radius at the lens, as a share of its radius at the plane.
+  - The kite, its tail, the motes and the rings are drawn just under the lens, so no prism covers them.
 
 Every "L5" is the fleet's gate, `ElementalAbilityHandler.IsUpgradeActive(element)`. The Kite's map lists all four
 elements: each unlocks at level 5 and relocks below 4.
@@ -107,6 +157,8 @@ always flies the empty seat:
 | `KiteNavigator.cs` | The seat on the hull: board frame, motes, prism and rival shadows, thumb, head contacts, effects, swap. |
 | `Assets/_Prefabs/Spacevessels/Kite.prefab`, `Tools/Build/author_kite_assets.py` | The Kite hull (the Sparrow plus this seat) and the tool that authors and registers it. |
 | `KiteNavigatorView.cs` | The two views: the kite camera, the picture-in-picture swap, every kite, tail, mote and ring draw (the game's renderer, `Graphics.RenderMeshInstanced`). |
+| `UI/Controller/KiteHUDController.cs` | The four ability cards read the seat: saved boosts, charges, the last blast, the Mass flash. |
+| `Utility/PrismDepthPlane.cs`, `_Graphics/Materials/Graphs/PrismDepthPlane.hlsl` | Prism depth from a plane, for one camera's render (the kite view). |
 | `ImpactEffects/EffectsSO/Vessel Crystal Effects/KiteOmniCrystalEffectSO.cs` | An Omni crystal widens the board (asset `KiteOmniCrystalEffect`, in `KiteImpactorDataContainer`). |
 | `Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs` | **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)** and **Remove**. |
 | `Assets/_Scripts/Tests/Editor/KiteNavigatorCoreTests.cs`, `KiteNavigatorConfigTests.cs` | The core's rules, and the asset's numbers and wiring. |
@@ -117,9 +169,10 @@ always flies the empty seat:
 **In the Toybox** (how every lab port is tried: Garrett, 2026-10-17):
 
 1. Open the Toybox (menu freestyle) and fly into the **Vessel Changer**. Fly the **Kite** station.
-2. You fly the hull, a Sparrow, with one thumb (the stick, the mouse or a touch) and no buttons. The kite view is a small
-   square in the lower left, with the AI flying the kite. Hold the right trigger (left mouse button; lift your thumb on
-   a phone) to spend the boost a Time loop gave you.
+2. You fly the hull, a Sparrow body, with two thumbs (both sticks, or the keyboard) and no buttons. The kite view is a
+   small square in the lower left, with the AI flying the kite. Pull the right trigger (right Shift; lift both thumbs on a
+   phone) to spend a boost a Time loop saved. The Time card counts them, the Charge card counts the kite's rams, the
+   Space card counts what the last blast destroyed, and the Mass card flashes when a cluster lands.
 3. Press **2**, or D-pad right, to take the kite. The kite view fills the screen and your hull's view shrinks to the
    same small square in the lower left. Move the mouse or lean the stick; the kite follows. Loop motes of one petal shape.
 4. Press **1**, or D-pad left, to take the hull back.
@@ -138,7 +191,7 @@ The navigator is a seat, not a hull, and the Vessel Changer offers hulls. So the
 - **Its registrations:**
   - `SO_Class_Kite`, owned from the start, in both class lists;
   - the Vessel Prefab Container and `DefaultNetworkPrefabs`;
-  - `ElementalAbilityMaps/Kite`, the Sparrow's map;
+  - `ElementalAbilityMaps/Kite`, the Sparrow's map with the Kite's own cards, every input 0 (round 4d);
   - four `CrystalHullFusionConfig` entries, the Sparrow's;
   - `ToyVesselRoster.Default` and `EnumIntegrityTests` in code.
 - **The checks:** `--check` validates the shipped set and `--self-test` proves each check fires.
@@ -154,8 +207,9 @@ back, as well as any menu that parks the hull on its AI. On an AI hull or a remo
 
 ## Where the game differs from the lab
 
-- **Round 4 is not in the lab yet**: the views, the one-thumb pilot, the thumb-lift boost, the element weights, the L5
-  upgrades, the Omni zoom and the fauna rams were directed in Unity (above).
+- **Round 4 is not in the lab yet**: the views, the two-thumb pilot, the saved boosts, the HUD counts, the five-petal
+  motes, the element weights, the L5 upgrades, the Omni zoom and the fauna rams were directed in Unity (above; task
+  `T-20261018-3247`).
 - **While the AI flies the hull, it spends the Time gift as it comes** (it has no trigger).
 - **The Space blast is the real `AOEExplosion`.** Through its `ExplosionImpactor` it can also hit rival hulls, which
   the lab's blast never did.
@@ -163,8 +217,8 @@ back, as well as any menu that parks the hull on its AI. On an AI hull or a remo
   ignores the board's own turn. The lab differenced each prism's shadow.
 - **The kite view always shows**, even while the human flies, so the pilot can watch the AI work. It takes the pointer only
   while the human navigates.
-- **The kite view lights only the slice the kite can touch** (±reachY); farther prisms are unlit boxes (the lab drew them
-  as faint ghosts).
+- **The kite view sees 400 u either side of the plane**, depth measured from the plane and the mass above it dithered; the
+  lab drew prisms beyond the slice as faint ghosts.
 - **The Omni zoom comes only on the Kite hull**: the play-mode menu's seat on another hull has no Omni effect in its
   container.
 
@@ -173,6 +227,8 @@ back, as well as any menu that parks the hull on its AI. On an AI hull or a remo
 ```
 node Tools/Build/kite_navigator_lab/parity.cjs        # core vs page, asset vs page, planted controls
 bash Tools/Build/unity_refcompile/run.sh              # the player compile
+python3 Tools/Build/author_kite_assets.py --check     # the hull: no Sparrow kit, two sticks, the Kite HUD, the map
+python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' spread with the depth-plane include
 ```
 
 ## Follow-ups

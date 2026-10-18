@@ -36,6 +36,7 @@ Shader "CosmicShore/SwarmMemberInstancedFallback"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "PrismOcclusionCorridor.hlsl"
+            #include "PrismDepthPlane.hlsl"
             // the CORE of the member HLSL only: this define skips its StructuredBuffer half (SM 4.5)
             #define SWARM_MEMBER_INSTANCED_INCLUDED
             #include "SwarmMemberInstanced.hlsl"

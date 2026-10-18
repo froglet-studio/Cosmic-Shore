@@ -38,7 +38,7 @@ namespace CosmicShore.Tests
         /// transformer sets <c>IsSingleStickControls</c>; this list is the roster that must
         /// stay true, so adding a hull here without giving it such a transformer fails.</summary>
         static readonly string[] OneThumbVessels =
-            { "Sparrow", "Serpent", "Grizzly", "Termite", "Falcon", "Shrike", "Scarab", "BrittleStar", "Kite" };
+            { "Sparrow", "Serpent", "Grizzly", "Termite", "Falcon", "Shrike", "Scarab", "BrittleStar" };
 
         // Unity fileIDs are SIGNED - a negative anchor is ordinary, and a `&(\d+)` regex
         // silently skips those documents (which is how a first pass of this census lost the

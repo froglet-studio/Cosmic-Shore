@@ -17,8 +17,10 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR
           (a disk copy keeps the donor's hash and Netcode then keys two prefabs on one entry)
         - KiteNavigator on the root, wired to KiteNavigatorConfig.asset
         - NO BUTTONS: the Sparrow's ability bindings are emptied (Garrett, 2026-10-18: "the pilot should be a one thumb flyer
-          that has no buttons"); the Sparrow's SingleStickVesselTransformer already makes it a one-thumb hull, and lifting
-          the thumb is the navigator's Time boost (KiteNavigator)
+          that has no buttons"); the navigator's saved Time boosts are spent on the pilot's trigger (KiteNavigator)
+        - TWO THUMBS: the Sparrow's SingleStickVesselTransformer becomes its base, VesselTransformer (Garrett, round 4d:
+          "lets go back to two thumb flying for the pilot so it can choose the fly in a way that brings more mass into
+          plane for the kite"); the subclass adds no serialized field, so the swap is the script guid alone
         - its VesselImpactor on KiteImpactorDataContainer: the Sparrow's container plus KiteOmniCrystalEffect in the omni
           list (an Omni crystal widens the navigator's board) and without the Sparrow's Omni ward, so the Sparrow's own
           container is untouched
@@ -81,6 +83,8 @@ CLASS_GUID = "db96e34a6c3b4cb1b498f0529f765db1"
 MAP_GUID = "007a16964bc0490a937e8384d4e27eec"
 DONOR_CONTAINER_GUID = "bd2b4a654fb302e47a23cf303280df2d"
 KITE_CONTAINER_GUID = "dac5775f7c7b4048bab9186e40e50977"
+SINGLE_STICK_TRANSFORMER_GUID = "b6b54993a316e0041b4bf5981190ac67"   # the Sparrow's SingleStickVesselTransformer
+TWO_STICK_TRANSFORMER_GUID = "95baa921cf22958449a3143749d5e0e3"      # VesselTransformer (same fields, its base class)
 OMNI_EFFECT_GUID = "a5c175fbce18440abb3570fbb8672a2a"
 ROOT_GO = "8279817603024118164"              # the Sparrow's root GameObject
 ROOT_TRANSFORM_ID = "4853044355858455827"
@@ -227,10 +231,31 @@ def dangling_local_refs(text: str):
     return sorted({r for r in re.findall(r"\{fileID: (-?\d+)\}", text) if r != "0" and r not in anchors})
 
 
+SPARROW_HUD_KEYS = ["view", "fireGunExecutor", "barrelRollController", "gunSprayAccuracy", "stationaryModeChanged",
+                    "onInputEventBlocked"]
+
+
+def hud_retrofit(text: str) -> str:
+    """SparrowHUDController (guns, missiles, roll) becomes KiteHUDController, wired to the seat. Idempotent."""
+    sparrow_hud, kite_hud = guid_of_script("SparrowHUDController"), guid_of_script("KiteHUDController")
+    head, docs = split_docs(text)
+    out = []
+    for _, _, d in docs:
+        if f"guid: {sparrow_hud}, type: 3" in d:
+            d = d.replace(f"guid: {sparrow_hud}, type: 3", f"guid: {kite_hud}, type: 3")
+            for key in SPARROW_HUD_KEYS:
+                d = re.sub(r"^  %s: \{[^}]*\}\n" % key, "", d, flags=re.M)
+            d = d.rstrip("\n") + f"\n  navigator: {{fileID: {SEAT_ID}}}\n"
+        out.append(d)
+    return head + "".join(out)
+
+
 def retrofit(text: str) -> str:
     """No buttons, and the Kite's own impactor container. Idempotent: run on the clone and on the committed prefab."""
     text = BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
     text = strip_sparrow_kit(text)
+    text = hud_retrofit(text)
+    text = text.replace(f"guid: {SINGLE_STICK_TRANSFORMER_GUID},", f"guid: {TWO_STICK_TRANSFORMER_GUID},")
     return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {KITE_CONTAINER_GUID},")
 
 
@@ -319,9 +344,49 @@ def register_network(text: str) -> str:
                    "    OverridingTargetPrefab: {fileID: 0}\n")
 
 
+# The Kite's own cards (Garrett, 2026-10-18 round 4d: the icons show the navigator's loops). Input 0 is
+# FullSpeedStraightAction, the fleet's "passive, no button" value, so no Sparrow button chip is drawn. The words are
+# authored data the team edits in the inspector; this tool writes them once and then only holds the inputs at 0.
+KITE_MAP_ENTRIES = [
+    (3, "Space Blast", "The kite closes a loop of Space motes and a blast goes off where it closed; a bigger loop, a "
+        "bigger blast. The card counts what the last blast destroyed.",
+     "Shield Breaker", "Space blasts destroy shielded and super-shielded prisms."),
+    (4, "Saved Boosts", "Every loop of Time motes the kite closes saves boosts for the pilot. The pilot spends them on "
+        "the trigger; the card counts how many are saved.",
+     "No Cooldown", "Saved boosts chain back to back with no cooldown."),
+    (2, "Mass Cluster", "A loop of Mass motes lays a cluster of prisms on the kite's plane. The card flashes when one "
+        "is laid.",
+     "Shielded Clusters", "Mass clusters are laid shielded."),
+    (1, "Kite Ram", "Loops of Charge motes power the kite's ram: strike a rival hull to knock its crystals loose, or "
+        "strike wildlife. The card counts the rams held.",
+     "Crystal Steal", "A ram steals the rival's crystals instead of knocking them loose."),
+]
+
+
+def yaml_str(text: str) -> str:
+    return "'" + text.replace("'", "''") + "'"
+
+
+def map_entries() -> str:
+    out = "  entries:\n"
+    for element, label, desc, up_label, up_desc in KITE_MAP_ENTRIES:
+        out += (f"  - Element: {element}\n    AbilityLabel: {yaml_str(label)}\n    AbilityDescription: {yaml_str(desc)}\n"
+                f"    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
+                f"    UpgradeLabel: {yaml_str(up_label)}\n    UpgradeDescription: {yaml_str(up_desc)}\n")
+    return out
+
+
 def build_map(donor_map: str) -> str:
     text = replace_once(donor_map, "  m_Name: Sparrow\n", "  m_Name: Kite\n", "map name")
-    return replace_once(text, f"  vesselClass: {SPARROW_CLASS_ID}\n", f"  vesselClass: {KITE_CLASS_ID}\n", "map vesselClass")
+    text = replace_once(text, f"  vesselClass: {SPARROW_CLASS_ID}\n", f"  vesselClass: {KITE_CLASS_ID}\n", "map vesselClass")
+    return text[:text.index("  entries:\n")] + map_entries()
+
+
+def map_retrofit(text: str) -> str:
+    """The Sparrow's cards become the Kite's once (the words are then the team's); every input is held at 0. Idempotent."""
+    if "AbilityLabel: Pulsefire Cannons" in text:
+        text = text[:text.index("  entries:\n")] + map_entries()
+    return re.sub(r"^    Input: -?\d+\n", "    Input: 0\n", text, flags=re.M)
 
 
 def fusion_entries(text: str, vessel: int):
@@ -364,6 +429,8 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     want(seat and f"  config: {{fileID: 11400000, guid: {config_guid}, type: 2}}" in seat.group(1),
          "Kite.prefab: KiteNavigator.config is not KiteNavigatorConfig.asset (a null config never seats the navigator)")
     want("  _inputEventShipActions: []\n" in text, "Kite.prefab: the hull still binds buttons (the pilot is a one-thumb flyer with none)")
+    want(f"guid: {TWO_STICK_TRANSFORMER_GUID}, type: 3" in text and SINGLE_STICK_TRANSFORMER_GUID not in text,
+         "Kite.prefab: the hull is not on the two-stick VesselTransformer (the pilot flies with two thumbs)")
     want(f"guid: {KITE_CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
          "Kite.prefab: the VesselImpactor is not on KiteImpactorDataContainer (an Omni crystal would not widen the board)")
     names = set(re.findall(r"^  m_Name: (.*)$", text, re.M))
@@ -374,6 +441,9 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     ai = re.search(r"guid: %s, type: 3\}\n((?:.*\n)*?)(?=--- !u!|\Z)" % guid_of_script("AIPilot"), text)
     want(ai and "  abilities: []\n" in ai.group(1),
          "Kite.prefab: the AIPilot still cycles abilities (the Sparrow's guns fire whenever the AI flies the hull)")
+    hud = re.search(r"guid: %s, type: 3\}\n((?:.*\n)*?)(?=--- !u!|\Z)" % guid_of_script("KiteHUDController"), text)
+    want(hud and f"  navigator: {{fileID: {SEAT_ID}}}\n" in hud.group(1) and guid_of_script("SparrowHUDController") not in text,
+         "Kite.prefab: the HUD is not KiteHUDController wired to the seat (the ability cards would not show the counts)")
     dangling = dangling_local_refs(text)
     want(not dangling, f"Kite.prefab: dangling local fileID reference(s) {dangling[:5]}")
     return errs
@@ -404,6 +474,10 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
     want(f"  Class: {KITE_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls and "  isLocked: 0\n" in cls,
          "SO_Class_Kite: wrong class, locked, or not owned from the start")
     want(f"  vesselClass: {KITE_CLASS_ID}\n" in kmap and "  m_Name: Kite\n" in kmap, "ElementalAbilityMaps/Kite: wrong class or name")
+    inputs = re.findall(r"^    Input: (-?\d+)\n", kmap, re.M)
+    want(len(inputs) == 4 and set(inputs) == {"0"},
+         f"ElementalAbilityMaps/Kite: inputs {inputs} (the Kite has no buttons: every card is passive, Input 0)")
+    want("Pulsefire" not in kmap and "Skyburst" not in kmap, "ElementalAbilityMaps/Kite: still the Sparrow's cards")
     kite, sparrow = fusion_entries(fusion, KITE_CLASS_ID), fusion_entries(fusion, SPARROW_CLASS_ID)
     want(len(kite) == 4, f"CrystalHullFusionConfig: {len(kite)} Kite entries, not 4 (CrystalHullFusionConfigTests needs one per element)")
     want([e.split("\n", 1)[1] for e in kite] == [e.split("\n", 1)[1] for e in sparrow],
@@ -463,6 +537,10 @@ def author():
         write(CLASS_ASSET, class_asset(read(DONOR_CLASS))); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
     if not os.path.exists(MAP):
         write(MAP, build_map(read(DONOR_MAP))); write(MAP + ".meta", native_meta(MAP_GUID))
+    else:
+        old = read(MAP); new = map_retrofit(old)
+        if new != old:
+            write(MAP, new)
     for path, fn in [(CONTAINER, register_container), (NETWORK_PREFABS, register_network), (FUSION, register_fusion)] + \
                     [(p, register_class_list) for p in CLASS_LISTS]:
         old = read(path); new = fn(old)
@@ -485,6 +563,8 @@ def self_test():
     expect(check_prefab(good.replace(f"guid: {config_guid}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid, config_guid), 1, "the seat's config unwired")
     expect(check_prefab(good.replace("  _inputEventShipActions: []\n", "  _inputEventShipActions:\n  - InputEvent: 1\n    ShipActions: []\n"), script_guid, config_guid), 1, "a button bound")
     expect(check_prefab(good.replace(KITE_CONTAINER_GUID, DONOR_CONTAINER_GUID), script_guid, config_guid), 1, "the Sparrow's container")
+    expect(check_prefab(good.replace(guid_of_script("KiteHUDController"), guid_of_script("SparrowHUDController")), script_guid, config_guid), 1, "the Sparrow's HUD controller")
+    expect(check_prefab(good.replace(TWO_STICK_TRANSFORMER_GUID, SINGLE_STICK_TRANSFORMER_GUID), script_guid, config_guid), 1, "the one-thumb transformer")
     expect(check_prefab(read(DONOR).replace("  m_Name: Sparrow\n", "  m_Name: Kite\n"), script_guid, config_guid), 3, "the Sparrow's kit, untouched")
     anchor = DOC.search(good).group(2)
     expect(check_prefab(good + f"  stray: {{fileID: 987654321}}\n", script_guid, config_guid), 1, "a dangling local reference")
@@ -508,6 +588,9 @@ def self_test():
     expect(check_registrations(container, network, lists, cls.replace("  isLocked: 0\n", "  isLocked: 1\n"), kmap, fusion), 1, "a locked class")
     expect(check_registrations(container, network, lists, cls, kmap, fusion.replace(f"  - vessel: {KITE_CLASS_ID}\n", "  - vessel: 99\n", 1)), 1, "a missing fusion entry")
     expect(check_registrations(container, network, lists, cls, read(DONOR_MAP), fusion), 1, "the Sparrow's own map")
+    expect(check_registrations(container, network, lists, cls, kmap.replace("    Input: 0\n", "    Input: 7\n", 1), fusion), 1, "a card with a button")
+    if map_retrofit(kmap) != kmap:
+        fails.append("the map retrofit is not idempotent")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:
         fails.append("registration is not idempotent")
     for f in fails:

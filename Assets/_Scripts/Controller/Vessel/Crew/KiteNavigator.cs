@@ -55,14 +55,6 @@ namespace CosmicShore.Gameplay
             public Domains Domain;
         }
 
-        internal struct Ghost
-        {
-            public float X, Z;
-            public Quaternion Rotation;
-            public Vector3 Scale;
-            public Domains Domain;
-        }
-
         internal struct FaunaShadow
         {
             public Fauna Fauna;
@@ -111,7 +103,6 @@ namespace CosmicShore.Gameplay
         internal readonly List<PrismShadow> Prisms = new();
         internal readonly List<RivalShadow> Rivals = new();
         internal readonly List<FaunaShadow> Creatures = new();
-        internal readonly List<Ghost> Ghosts = new();
         internal readonly List<Fx> Effects = new();
         readonly List<Prism> _query = new();
         readonly List<KiteMote> _aiMotes = new();
@@ -148,6 +139,9 @@ namespace CosmicShore.Gameplay
         public int LastBlastDestroyed => _lastBlastDestroyed;
         /// <summary>Time.time of the last Mass cluster laid (the HUD flashes the Mass icon).</summary>
         public float MassFlashAt => _massFlashAt;
+        /// <summary>The boost's recharge veil, 1 while a boost runs and falling to 0 when the next can fire.</summary>
+        public float BoostCooldown01 => _boosting ? 1f
+            : config && config.BoostCooldownSeconds > 0f ? Mathf.Clamp01((_boostReadyAt - Time.time) / config.BoostCooldownSeconds) : 0f;
         /// <summary>The most boosts the pilot can hold: timeBoostCap seconds of 1.5 s boosts.</summary>
         int MaxSavedBoosts => Mathf.Max(1, Mathf.FloorToInt(_cfg.TimeBoostCap / Mathf.Max(0.05f, _cfg.TimeBoostSeconds)));
         internal bool Down => _down;
@@ -447,7 +441,6 @@ namespace CosmicShore.Gameplay
         void ShadowPrisms()
         {
             Prisms.Clear();
-            Ghosts.Clear();
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
 
@@ -465,24 +458,6 @@ namespace CosmicShore.Gameplay
                 var domain = p.Domain;
                 Prisms.Add(new PrismShadow { Prism = p, X = x, Z = z, Y = y, Domain = domain, Hostile = domain != own });
                 if (Prisms.Count >= MaxPrismShadows) break;
-            }
-
-            // The prisms beyond the slice, for the kite view to draw unlit (its camera clips them): a second, deeper
-            // query, so the slice's own prisms - the ones the kite can pop - are never crowded out of the first.
-            Ghosts.Clear();
-            float depth = _cfg.GhostDepth;
-            if (depth <= _cfg.ReachY || _cfg.GhostCap <= 0) return;
-            _query.Clear();
-            index.QuerySphere(centre, Mathf.Sqrt(R * R + depth * depth), _query);
-            foreach (var p in _query)
-            {
-                if (!p || p.destroyed) continue;
-                var t = p.transform;
-                Shadow(t.position, out float x, out float z, out float y);
-                float ay = Mathf.Abs(y);
-                if (ay <= _cfg.ReachY || ay > depth || !KiteNavigatorCore.InDisc(_s, x, z)) continue;
-                Ghosts.Add(new Ghost { X = x, Z = z, Rotation = t.rotation, Scale = t.lossyScale, Domain = p.Domain });
-                if (Ghosts.Count >= _cfg.GhostCap) break;
             }
         }
 
@@ -924,8 +899,9 @@ namespace CosmicShore.Gameplay
         }
 
         // The pilot boosts (Garrett, 2026-10-18: "the pilot should be in control of the boost, use the trigger on gamepad"):
-        // the right trigger on a pad, the left mouse button with the single-stick mouse (both are RightTriggerAnalog), and
-        // on a touch screen, where there is no trigger, lifting the thumb (the touch strategy's Idle).
+        // the right trigger on a pad, right Shift on the keyboard (both are RightTriggerAnalog), and on a touch screen,
+        // where there is no trigger, lifting both thumbs (the touch strategy's Idle). The hull flies on two sticks since
+        // round 4d, so the pilot can steer the hull's plane through the mass the kite wants.
         bool PilotWantsBoost()
         {
             var input = _player?.InputStatus;

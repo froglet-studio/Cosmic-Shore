@@ -59,10 +59,10 @@ MonoBehaviour:
   pilotKiteAlpha: 0.22
   pilotDotAlpha: 0.35
   pilotDotSize: 0.9
-  ghostDepth: 240
-  ghostCap: 1500
-  ghostBrightness: 0.45
-  ghostAlpha: 0.55
+  viewDepth: 400
+  depthFullSpreadAt: 60
+  ditherCoreAlpha: 0.35
+  ditherNearScale: 0.5
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   loopClosedSfx:
     Guid:
