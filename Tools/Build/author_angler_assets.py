@@ -27,9 +27,13 @@ WHAT IT MAKES
         - the vessel impactor: AnglerImpactorDataContainer, a fork of the Stoat's with the omni crystal's effect swapped
           from the Stoat's Overclock to the Angler's mass tame (AnglerTameByCrystalEffect). Applied to the committed
           prefab too, as an idempotent patch (patch_prefab).
-    KEPT FROM THE DONOR ON PURPOSE (a stand-in body until the Angler has its own, ANGLER.md §5): the Stoat's procedural
-    hull (StoatHullBuilder) and its lope (StoatAnimation), the two jets, the tails, the hit box, the skimmer container
-    and the shared prism / haptics effects the vessel container keeps.
+    THE ANGLER'S OWN HULL (2026-10-18, ANGLER.md §9; patch_prefab, so the committed prefab takes it too): AnglerHull holds
+    the model Angler.fbx (Tools/Build/vessel_model/specs/angler.py) as a nested PrefabInstance in place of the Stoat's
+    procedural StoatHullBuilder + MeshFilter / MeshRenderer, the root's VesselAnimation is AnglerAnimation (same fileID)
+    in place of the Stoat's lope, and VesselCustomization repaints the model's Domain slot by material identity.
+    KEPT FROM THE DONOR ON PURPOSE: the two jets (now at the model's nacelle mouths), the tails, the hit box (StoatBody,
+    1.2 x 1.4 x 7 - narrower than the model's bow, an open decision), the skimmer container and the shared prism /
+    haptics effects the vessel container keeps.
     Assets: AnglerConfig + the four control assets (VesselActions/Angler/), the camera, SO_Class_Angler, every new
     script's .meta, the doc's .meta. Registrations: Vessel Prefab Container (root TRANSFORM), DefaultNetworkPrefabs (root
     GAMEOBJECT), SO_Classlist_All / _Classes, four CrystalHullFusionConfig entries (copied from the Stoat's: same hull).
@@ -133,6 +137,7 @@ NEW_SCRIPTS = tuple((rel, guid_for(os.path.basename(rel))) for rel in (
     "Tests/Editor/AnglerCommandMathTests.cs",
     "Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/AnglerTameByCrystalEffectSO.cs",
     "Controller/Environment/FloraAndFauna/PaintedPrey.cs",
+    "Controller/Animation/AnglerAnimation.cs",
 ))
 SCRIPT = {os.path.basename(rel)[:-3]: guid for rel, guid in NEW_SCRIPTS}
 
@@ -149,6 +154,16 @@ SHIP_ACTIONS_GO = "7850473780452578400"
 REGISTRY_ID = "9105512684531825410"
 STOAT_EXECUTORS = tuple(f"513726498001234560{i}" for i in range(1, 7))
 HULL_GO_ID = "5137264980012345610"
+HULL_TRANSFORM_ID = "5137264980012345611"
+HULL_BUILDER_ID = "5137264980012345614"       # the Stoat's procedural hull, last of the stand-in's hull documents
+ANIMATION_ID = "5500781737155866732"          # the root's VesselAnimation
+STOAT_HULL_SCRIPTS = ("1c6aec6ea8ef44f1bef4884679d33d0a",   # StoatHullBuilder (the stand-in body)
+                      "f8734be12714484eb93134990801178a")   # StoatAnimation (the stand-in's lope)
+# The Angler's own hull model (2026-10-18): Angler.fbx nested under AnglerHull (the importer's constant root fileIDs are
+# S.MODEL_ROOT_GO / S.MODEL_ROOT_TRANSFORM; the instance and its stripped Transform are this prefab's own).
+MODEL_GUID = "ae96d7fa1c094f7eb5a9c0c92d679b5e"           # Assets/_Models/Vessel Models/Angler.fbx
+MODEL_INSTANCE_ID = "420031417031765437"
+MODEL_TRANSFORM_ID = "147994826206272918"
 HUD_INSTANCE_ID, HUD_VIEW_ID = "5137264980012345620", "5137264980012345622"
 STOAT_HUD_VARIANT = "1f9b41e6fa58494599674753191b495b"
 TWO_STICK_SCRIPT = "95baa921cf22958449a3143749d5e0e3"          # VesselTransformer (the Stoat's)
@@ -208,6 +223,61 @@ def hud_controller_block() -> str:
             f"  view: {{fileID: {HUD_VIEW_ID}}}\n"
             f"  angler: {{fileID: {EXECUTOR_ID}}}\n"
             "  lureEaseRate: 6\n")
+
+
+def hull_blocks() -> str:
+    """AnglerHull: the Stoat generator's hull block (a Transform holding the two jets and the model), naming the Angler's
+    own model and instance. Derived from author_stoat_assets.hull_blocks so the two cannot drift apart in shape."""
+    text = S.hull_blocks()
+    for old, new in (("  m_Name: StoatHull\n", "  m_Name: AnglerHull\n"), ("      value: Stoat\n", "      value: Angler\n"),
+                     (S.MODEL_GUID, MODEL_GUID), (S.MODEL_INSTANCE_ID, MODEL_INSTANCE_ID), (S.MODEL_TRANSFORM_ID, MODEL_TRANSFORM_ID)):
+        assert old in text, old
+        text = text.replace(old, new)
+    return text
+
+
+def animation_block() -> str:
+    """The root's VesselAnimation as AnglerAnimation (the SAME fileID, so VesselStatus's reference holds), its fields the
+    C# initializers, its hullVisual the AnglerHull."""
+    return (S.mb_header(ANIMATION_ID, ROOT_GO, SCRIPT["AnglerAnimation"]) +
+            "  SkinnedMeshRenderer: {fileID: 0}\n"
+            "  SaveNewPositions: 1\n"
+            "  brakeThreshold: 0.65\n"
+            "  lerpAmount: 2\n"
+            "  smallLerpAmount: 0.7\n"
+            f"  hullVisual: {{fileID: {HULL_TRANSFORM_ID}}}\n"
+            "  swimRate: 0.5\n"
+            "  swimDegrees: 6\n"
+            "  turnTailDegrees: 18\n"
+            "  caudalFollow: 1.6\n"
+            "  finPitchDegrees: 14\n"
+            "  finIdleDegrees: 4\n"
+            "  mastBobDegrees: 3\n"
+            "  jawOpenDegrees: 22\n"
+            "  escaLitScale: 1.6\n"
+            "  lureEaseRate: 4\n")
+
+
+def apply_own_hull(text: str) -> str:
+    """Idempotent: the Angler's own hull model in place of the Stoat's stand-in body, AnglerAnimation in place of the
+    lope, and the domain repainted by material identity."""
+    head, docs = S.split_docs(text)
+    start = S.doc_index(docs, HULL_GO_ID)
+    end = -1
+    for last in (MODEL_TRANSFORM_ID, S.MODEL_TRANSFORM_ID, HULL_BUILDER_ID):   # its own model, the donor's, the stand-in's builder
+        end = S.doc_index(docs, last)
+        if end >= 0:
+            break
+    if start < 0 or end < start:
+        raise RuntimeError("Angler.prefab drifted: the AnglerHull documents not found")
+    _, hull = S.split_docs(hull_blocks())
+    docs[start:end + 1] = hull
+    if S.get_doc(docs, ANIMATION_ID) is None:
+        raise RuntimeError("Angler.prefab drifted: the root's VesselAnimation component not found")
+    S.set_doc(docs, ANIMATION_ID, animation_block())
+    text = S.join_docs(head, docs)
+    return text.replace(f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}\n  _domainMaterialSlot: 1\n  _domainReplacesMaterials: []\n",
+                        S.paint_block())
 
 
 def build_prefab(donor: str) -> str:
@@ -272,7 +342,9 @@ def build_prefab(donor: str) -> str:
 def patch_prefab(text: str) -> str:
     """Idempotent edits the committed prefab takes too (the clone itself is a spent one-shot):
     - the vessel impactor reads the Angler's own container (an omni crystal runs the Angler's effect, not the Stoat's);
-    - the executor block (its wiring, the combat-hit channel included) and the four button bindings are the generator's."""
+    - the executor block (its wiring, the combat-hit channel included) and the four button bindings are the generator's;
+    - the Angler's own hull model and AnglerAnimation (apply_own_hull)."""
+    text = apply_own_hull(text)
     text = text.replace(f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {STOAT_IMPACT_CONTAINER}, type: 2}}",
                         f"vesselImpactorDataContainerSO: {{fileID: 11400000, guid: {IMPACT_CONTAINER_GUID}, type: 2}}")
     text = re.sub(r"  _inputEventShipActions:(?:.*\n)*?(?=  _onButtonPressed:)", lambda _: bindings(), text, count=1)
@@ -544,7 +616,7 @@ def register_class_list(text: str) -> str:
 
 
 def register_fusion(text: str) -> str:
-    """Four entries copied from the Stoat's: the Angler wears the Stoat's procedural hull, so the fusion is the same."""
+    """Four entries copied from the Stoat's (the Angler wore the Stoat's hull when they were made; neither has a bake)."""
     if re.search(r"^  - vessel: %d\n" % CLASS_ID, text, re.M):
         return text
     blocks = re.findall(r"(  - vessel: %d\n(?:    .*\n)+)" % STOAT_CLASS_ID, text)
@@ -578,6 +650,11 @@ def check(files: "dict[str, str]") -> "list[str]":
         need(guid not in prefab, f"a Stoat-only reference survived the clone: {guid}")
     for fid in STOAT_EXECUTORS:
         need(fid not in ids, f"Stoat executor {fid} still present")
+    for guid in STOAT_HULL_SCRIPTS:
+        need(guid not in prefab, f"the Stoat's stand-in hull or lope ({guid}) is still on the prefab (the Angler has its own)")
+    need(hull_blocks() in prefab, "AnglerHull is not authored as expected (holding the Angler.fbx model)")
+    need(animation_block() in prefab, "the root's VesselAnimation is not AnglerAnimation driving the AnglerHull")
+    need(S.paint_block() in prefab, "VesselCustomization does not repaint the model's Domain slot (GreenAccentVesselMaterial)")
     ex = d.get(EXECUTOR_ID, "")
     need(f"guid: {SCRIPT['AnglerCommandExecutor']}" in ex, "AnglerCommandExecutor missing")
     need(f"  - {{fileID: {EXECUTOR_ID}}}\n" in d.get(REGISTRY_ID, ""), "AnglerCommandExecutor is not in the ActionExecutorRegistry")
@@ -686,7 +763,7 @@ def author() -> None:
         patched = patch_prefab(files[PREFAB])
         if patched != files[PREFAB]:
             write(PREFAB, patched)
-            print("patched Angler.prefab (impactor container, executor wiring, bindings)")
+            print("patched Angler.prefab (impactor container, executor wiring, bindings, its own hull)")
     if HUD_VARIANT_PATH not in files:
         write(HUD_VARIANT_PATH, build_hud_variant(open(HUD_DONOR, encoding="utf-8", newline="").read()))
         print("cloned StoatHUDVariant.prefab -> AnglerHUDVariant.prefab")
@@ -738,6 +815,8 @@ def self_test() -> int:
         "no keeper species": (CONFIG_PATH, lambda t: re.sub(r"  companionFauna: .*\n", "  companionFauna: {fileID: 0}\n", t)),
         "the Stoat's impactor container back": (PREFAB, lambda t: t.replace(IMPACT_CONTAINER_GUID, STOAT_IMPACT_CONTAINER)),
         "the Stoat's Overclock on the omni list": (IMPACT_CONTAINER, lambda t: t.replace(OMNI_EFFECT_GUID, STOAT_OVERCLOCK)),
+        "the Stoat's model in the hull": (PREFAB, lambda t: t.replace(MODEL_GUID, S.MODEL_GUID)),
+        "the Stoat's lope back": (PREFAB, lambda t: t.replace(SCRIPT["AnglerAnimation"], STOAT_HULL_SCRIPTS[1])),
     }
     failed = 0
     for name, (path, mutate) in mutations.items():

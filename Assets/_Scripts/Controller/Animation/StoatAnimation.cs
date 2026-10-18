@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -7,8 +8,18 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Puppeteers the Stoat's plated hull (built by <see cref="StoatHullBuilder"/> /
-    /// <see cref="StoatHullForm"/>). Design record: <c>R_VesselActions/STOAT.md</c> §2.2.
+    /// Puppeteers the Stoat's plated hull. Design record: <c>R_VesselActions/STOAT.md</c> §2.1-§2.2.
+    ///
+    /// <para><b>Two hulls, one lope.</b> Since 2026-10-18 the hull is a MODEL
+    /// (<c>Stoat.fbx</c>, built by <c>Tools/Build/vessel_model/specs/stoat.py</c>) nested under the
+    /// prefab's hull transform: its BONES are the parts (<c>plate.0</c> .. <c>plate.4</c> with
+    /// <c>hull</c> as the core plate, <c>nose</c>, <c>tail</c> .. <c>tail.5</c>, <c>leg.1.L</c> ..
+    /// <c>leg.2.R</c>), each resting where the procedural part pivoted, and its element morphs are
+    /// blend shapes the base class drives by name. The procedural placeholder
+    /// (<see cref="StoatHullBuilder"/> / <see cref="StoatHullForm"/>) still works when a prefab carries
+    /// it, until the model is accepted. Either way the parts are posed from their REST in the hull's
+    /// frame, so a bone that rests at an imported orientation under a parent that is not hull-aligned
+    /// moves exactly as an identity-rest procedural part did.</para>
     ///
     /// <para><b>The bounding lope is the vessel's read</b> — the user's pick from the Stoat
     /// viewer (round 2, Option 2): a BODY-ONLY bound. The drawn hull rises nose-up, arches long at
@@ -58,12 +69,47 @@ namespace CosmicShore.Gameplay
         [Tooltip("Degrees the legs reach fore and aft at the landing.")]
         [SerializeField] float legReachDegrees = 52f;
 
-        StoatHullBuilder _hull;
+        [Header("Hull")]
+        [Tooltip("The transform the lope lifts, pitches and stretches (and the tide spaghettifies): the GameObject " +
+                 "that holds the hull model. Leave empty and it is the procedural builder's own transform, or else " +
+                 "the parent of the model the vessel's SkinnedMeshRenderer belongs to.")]
+        [SerializeField] Transform hullVisual;
+
+        // Bone names first (the model, Stoat.fbx), the procedural builder's part names after.
+        static readonly string[][] PlateNames =
+        {
+            new[] { "plate.0", "StoatPlate0" }, new[] { "plate.1", "StoatPlate1" }, new[] { "hull", "StoatCore" },
+            new[] { "plate.3", "StoatPlate3" }, new[] { "plate.4", "StoatPlate4" },
+        };
+        static readonly string[][] TailNames =
+        {
+            new[] { "tail", "StoatTail0" }, new[] { "tail.2", "StoatTail1" }, new[] { "tail.3", "StoatTail2" },
+            new[] { "tail.4", "StoatTail3" }, new[] { "tail.5", "StoatTailTip" },
+        };
+        static readonly string[][] LegNames =
+        {
+            new[] { "leg.1.L", "StoatLegFL" }, new[] { "leg.1.R", "StoatLegFR" },
+            new[] { "leg.2.L", "StoatLegBL" }, new[] { "leg.2.R", "StoatLegBR" },
+        };
+        static readonly string[] HeadNames = { "nose", "StoatHead" };
+        const int ModelCoreIndex = 2;   // `hull`, the middle plate
+
+        StoatHullBuilder _hull;          // the procedural placeholder, when the prefab still carries it
         Transform _hullTransform;
         Vector3 _hullRestPos, _hullRestScale;
         Quaternion _hullRestRot;
+        Transform[] _plates, _tail, _legs;
+        Transform _head;
+        int _coreIndex;
+        float _bodyLength;
+        // Each part's rest in the HULL TRANSFORM's frame (what the pose is composed onto) and its local rest
+        // (what a pooled vessel is reset to). On the procedural hull the two coincide and the rotation is identity.
         Vector3[] _plateRest, _tailRest, _legRest;
-        Vector3 _headRest;
+        Quaternion[] _plateRestRot, _tailRestRot, _legRestRot;
+        Vector3[] _plateLocal, _tailLocal, _legLocal;
+        Quaternion[] _plateLocalRot, _tailLocalRot, _legLocalRot;
+        Vector3 _headRest, _headLocal;
+        Quaternion _headRestRot, _headLocalRot;
         float _phase;
 
         // ---- procedural element morphs (the ButterflyAnimation plumbing, verbatim in shape) ----
@@ -80,27 +126,151 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus vesselStatus)
         {
             _hull = GetComponentInChildren<StoatHullBuilder>(true);
-            if (!_hull)
-                CSDebug.LogWarning($"[StoatAnimation] '{name}' has no StoatHullBuilder in its children; the lope has nothing to move.");
+            _hullTransform = hullVisual ? hullVisual : (_hull ? _hull.transform : null);
+            // The model (Stoat.fbx, nested under the hull transform) is found, not wired: its sub-objects'
+            // fileIDs exist only after Unity imports it. Its element shapes are driven by the base class by
+            // name; the flares need the renderer; the lope lifts the hull 1.6 u and the Space morph reaches
+            // past the bind-pose bounds, so it must not be culled on them.
+            if (!SkinnedMeshRenderer)
+                SkinnedMeshRenderer = _hullTransform
+                    ? _hullTransform.GetComponentInChildren<SkinnedMeshRenderer>(true)
+                    : GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.updateWhenOffscreen = true;
+            if (!_hullTransform && SkinnedMeshRenderer)
+            {
+                var modelRoot = SkinnedMeshRenderer.transform.parent;
+                _hullTransform = modelRoot && modelRoot.parent ? modelRoot.parent : modelRoot;
+            }
             base.Initialize(vesselStatus);
+            ResolveHullParts();
             CaptureRest();
             InitializeProceduralMorphs(vesselStatus);
         }
 
+        /// <summary>The parts, from the procedural builder when the prefab carries one, else the model's bones
+        /// (looked up under the hull transform only, so a same-named object elsewhere on the vessel - the
+        /// VesselTail, the HUD - can never be taken for a bone).</summary>
+        void ResolveHullParts()
+        {
+            if (_hull)
+            {
+                _plates = Copy(_hull.Plates);
+                _tail = Copy(_hull.Tail);
+                _legs = Copy(_hull.Legs);
+                _head = _hull.Head;
+                _coreIndex = _hull.CoreIndex;
+                _bodyLength = _hull.BodyLength;
+                return;
+            }
+            if (!_hullTransform)
+            {
+                CSDebug.LogWarning($"[StoatAnimation] '{name}' has neither a StoatHullBuilder nor a hull model; the lope has nothing to move.");
+                return;
+            }
+
+            var byName = new Dictionary<string, Transform>(System.StringComparer.OrdinalIgnoreCase);
+            foreach (var t in _hullTransform.GetComponentsInChildren<Transform>(true))
+                if (t != _hullTransform && !byName.ContainsKey(t.name)) byName[t.name] = t;
+            var missing = new List<string>();
+            _plates = Lookup(byName, PlateNames, missing);
+            _tail = Lookup(byName, TailNames, missing);
+            _legs = Lookup(byName, LegNames, missing);
+            _head = Lookup(byName, HeadNames, missing);
+            _coreIndex = ModelCoreIndex;
+            if (missing.Count > 0)
+                CSDebug.LogWarning($"[StoatAnimation] '{name}' could not resolve hull bone(s): {string.Join(", ", missing)}. " +
+                                   "They will not lope - check that the model under the hull is Stoat.fbx (specs/stoat.py).");
+
+            // The body length the arch's slope is measured over: the nose plate to the hip plate, one plate
+            // length past each centre (4 u on the shipped hull, the placeholder's BodyLength).
+            var first = _plates[0];
+            var last = _plates[_plates.Length - 1];
+            _bodyLength = first && last
+                ? Mathf.Abs(_hullTransform.InverseTransformPoint(first.position).z - _hullTransform.InverseTransformPoint(last.position).z)
+                  * _plates.Length / Mathf.Max(1, _plates.Length - 1)
+                : 4f;
+        }
+
+        static Transform[] Copy(IReadOnlyList<Transform> list)
+        {
+            var array = new Transform[list.Count];
+            for (int i = 0; i < array.Length; i++) array[i] = list[i];
+            return array;
+        }
+
+        static Transform[] Lookup(Dictionary<string, Transform> byName, string[][] names, List<string> missing)
+        {
+            var array = new Transform[names.Length];
+            for (int i = 0; i < names.Length; i++) array[i] = Lookup(byName, names[i], missing);
+            return array;
+        }
+
+        static Transform Lookup(Dictionary<string, Transform> byName, string[] candidates, List<string> missing)
+        {
+            for (int i = 0; i < candidates.Length; i++)
+                if (byName.TryGetValue(candidates[i], out var found)) return found;
+            missing.Add(candidates[0]);
+            return null;
+        }
+
         void CaptureRest()
         {
-            if (!_hull) return;
-            _hullTransform = _hull.transform;
+            if (!_hullTransform || _plates == null) return;
             _hullRestPos = _hullTransform.localPosition;
             _hullRestRot = _hullTransform.localRotation;
             _hullRestScale = _hullTransform.localScale;
-            _plateRest = new Vector3[_hull.Plates.Count];
-            for (int i = 0; i < _plateRest.Length; i++) if (_hull.Plates[i]) _plateRest[i] = _hull.Plates[i].localPosition;
-            _tailRest = new Vector3[_hull.Tail.Count];
-            for (int i = 0; i < _tailRest.Length; i++) if (_hull.Tail[i]) _tailRest[i] = _hull.Tail[i].localPosition;
-            _legRest = new Vector3[_hull.Legs.Count];
-            for (int i = 0; i < _legRest.Length; i++) if (_hull.Legs[i]) _legRest[i] = _hull.Legs[i].localPosition;
-            if (_hull.Head) _headRest = _hull.Head.localPosition;
+            Capture(_plates, out _plateRest, out _plateRestRot, out _plateLocal, out _plateLocalRot);
+            Capture(_tail, out _tailRest, out _tailRestRot, out _tailLocal, out _tailLocalRot);
+            Capture(_legs, out _legRest, out _legRestRot, out _legLocal, out _legLocalRot);
+            if (_head) CaptureOne(_head, out _headRest, out _headRestRot, out _headLocal, out _headLocalRot);
+        }
+
+        void Capture(Transform[] parts, out Vector3[] rest, out Quaternion[] restRot, out Vector3[] local, out Quaternion[] localRot)
+        {
+            rest = new Vector3[parts.Length];
+            restRot = new Quaternion[parts.Length];
+            local = new Vector3[parts.Length];
+            localRot = new Quaternion[parts.Length];
+            for (int i = 0; i < parts.Length; i++)
+            {
+                restRot[i] = localRot[i] = Quaternion.identity;
+                if (parts[i]) CaptureOne(parts[i], out rest[i], out restRot[i], out local[i], out localRot[i]);
+            }
+        }
+
+        void CaptureOne(Transform part, out Vector3 rest, out Quaternion restRot, out Vector3 local, out Quaternion localRot)
+        {
+            local = part.localPosition;
+            localRot = part.localRotation;
+            if (part.parent == _hullTransform)
+            {
+                rest = local;
+                restRot = localRot;
+                return;
+            }
+            rest = _hullTransform.InverseTransformPoint(part.position);
+            restRot = Quaternion.Inverse(_hullTransform.rotation) * part.rotation;
+        }
+
+        /// <summary>Pose a part in the HULL TRANSFORM's frame: <paramref name="position"/> and
+        /// <paramref name="rotation"/> are where it sits and how it is turned relative to the hull. A direct child
+        /// (the procedural parts) is written locally, exactly as before; a bone deeper in the model is carried
+        /// there through the hull's live transform, so its parent chain's own rest orientation never enters.</summary>
+        void SetPose(Transform part, Vector3 position, Quaternion rotation)
+        {
+            if (part.parent == _hullTransform)
+            {
+                part.localPosition = position;
+                part.localRotation = rotation;
+                return;
+            }
+            part.SetPositionAndRotation(_hullTransform.TransformPoint(position), _hullTransform.rotation * rotation);
+        }
+
+        void SetRotation(Transform part, Quaternion rotation)
+        {
+            if (part.parent == _hullTransform) part.localRotation = rotation;
+            else part.rotation = _hullTransform.rotation * rotation;
         }
 
         // The parts are the builder's, found through it rather than by name, so nothing to resolve.
@@ -137,47 +307,44 @@ namespace CosmicShore.Gameplay
 
             // The spine: plates rise toward the middle when arched (∩) and sink when bunched (∪),
             // each tilted along the curve's slope; the stick bends the front into a turn and the back out.
-            int n = _hull.Plates.Count, core = _hull.CoreIndex;
-            float bodyLength = Mathf.Max(0.01f, _hull.BodyLength);
+            int n = _plates.Length, core = _coreIndex;
+            float bodyLength = Mathf.Max(0.01f, _bodyLength);
             for (int i = 0; i < n; i++)
             {
-                var plate = _hull.Plates[i];
-                if (!plate || i == core) continue;   // the core is the hull transform itself
+                var plate = _plates[i];
+                if (!plate || i == core) continue;   // the core rides the hull transform itself
                 float t = StoatHullForm.SegmentT(i, n);
                 float lift = spineArchLift * pose.Spine * (Mathf.Sin(Mathf.PI * t) - 1f);
                 // Slope of y = A·sin(πt) along +Z (t runs nose → hip, so z falls as t rises): a ∩
                 // arch tilts the front plates nose-DOWN, which is a positive X rotation.
                 float tilt = Mathf.Atan(spineArchLift * pose.Spine * Mathf.PI / bodyLength * Mathf.Cos(Mathf.PI * t)) * Mathf.Rad2Deg;
                 float bend = yaw * turnBendDegrees * (1f - 2f * t);
-                plate.localPosition = _plateRest[i] + Vector3.up * lift;
-                plate.localRotation = Quaternion.Euler(tilt, bend, 0f);
+                SetPose(plate, _plateRest[i] + Vector3.up * lift, Quaternion.Euler(tilt, bend, 0f) * _plateRestRot[i]);
             }
 
-            if (_hull.Head)
-            {
-                _hull.Head.localPosition = _headRest + Vector3.up * spineArchLift * pose.Spine * -1f;
-                _hull.Head.localRotation = Quaternion.Euler(headNodDegrees * pose.Spine, yaw * headTurnDegrees, 0f);
-            }
+            if (_head)
+                SetPose(_head, _headRest + Vector3.up * spineArchLift * pose.Spine * -1f,
+                    Quaternion.Euler(headNodDegrees * pose.Spine, yaw * headTurnDegrees, 0f) * _headRestRot);
 
             // The tail rides up at the landing and swings OUT of a turn, more toward the tip.
-            int tn = _hull.Tail.Count;
+            int tn = _tail.Length;
             for (int j = 0; j < tn; j++)
             {
-                var seg = _hull.Tail[j];
+                var seg = _tail[j];
                 if (!seg) continue;
                 float f = (j + 1f) / tn;
-                seg.localPosition = _tailRest[j] + Vector3.up * (tailLift * f * pose.Legs);
-                seg.localRotation = Quaternion.Euler(0f, -yaw * tailSwingDegrees * f, 0f);
+                SetPose(seg, _tailRest[j] + Vector3.up * (tailLift * f * pose.Legs),
+                    Quaternion.Euler(0f, -yaw * tailSwingDegrees * f, 0f) * _tailRestRot[j]);
             }
 
             // Legs reach at the landing: the front pair forward (a negative X rotation swings a
             // downward leg toward +Z), the back pair back.
-            for (int k = 0; k < _hull.Legs.Count; k++)
+            for (int k = 0; k < _legs.Length; k++)
             {
-                var leg = _hull.Legs[k];
+                var leg = _legs[k];
                 if (!leg) continue;
                 float sign = k < 2 ? -1f : 1f;
-                leg.localRotation = Quaternion.Euler(sign * legReachDegrees * pose.Legs, 0f, 0f);
+                SetRotation(leg, Quaternion.Euler(sign * legReachDegrees * pose.Legs, 0f, 0f) * _legRestRot[k]);
             }
         }
 
@@ -187,20 +354,24 @@ namespace CosmicShore.Gameplay
             _hullTransform.localPosition = _hullRestPos;
             _hullTransform.localRotation = _hullRestRot;
             _hullTransform.localScale = _hullRestScale;
-            for (int i = 0; i < _hull.Plates.Count && i < _plateRest.Length; i++)
-                if (_hull.Plates[i] && _hull.Plates[i] != _hullTransform)
-                {
-                    _hull.Plates[i].localPosition = _plateRest[i];
-                    _hull.Plates[i].localRotation = Quaternion.identity;
-                }
-            for (int j = 0; j < _hull.Tail.Count && j < _tailRest.Length; j++)
-                if (_hull.Tail[j]) { _hull.Tail[j].localPosition = _tailRest[j]; _hull.Tail[j].localRotation = Quaternion.identity; }
-            for (int k = 0; k < _hull.Legs.Count; k++)
-                if (_hull.Legs[k]) _hull.Legs[k].localRotation = Quaternion.identity;
-            if (_hull.Head) { _hull.Head.localPosition = _headRest; _hull.Head.localRotation = Quaternion.identity; }
+            ResetParts(_plates, _plateLocal, _plateLocalRot);
+            ResetParts(_tail, _tailLocal, _tailLocalRot);
+            ResetParts(_legs, _legLocal, _legLocalRot);
+            if (_head) { _head.localPosition = _headLocal; _head.localRotation = _headLocalRot; }
         }
 
-        // ---- element morph plumbing --------------------------------------------------------
+        void ResetParts(Transform[] parts, Vector3[] local, Quaternion[] localRot)
+        {
+            for (int i = 0; i < parts.Length; i++)
+                if (parts[i] && parts[i] != _hullTransform)
+                {
+                    parts[i].localPosition = local[i];
+                    parts[i].localRotation = localRot[i];
+                }
+        }
+
+        // ---- element morph plumbing (the procedural placeholder only: the model's morphs are blend
+        // shapes named Charge / Mass / Space / Time, which the base class drives) ---------------
 
         void InitializeProceduralMorphs(IVesselStatus vesselStatus)
         {

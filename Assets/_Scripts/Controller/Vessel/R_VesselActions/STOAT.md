@@ -28,8 +28,8 @@ the drawn hull, its colliders and skimmers shrink together; `WarpFieldVesselScal
 
 Status: **PROTOTYPE.** The prefab is a text clone of the Squirrel's (same flight model, colliders,
 HUD and camera) with the Squirrel's bindings replaced and its model HIDDEN: the drawn hull is the
-Stoat's own **procedural plated body** with the user's **bounding lope** (§2.1, §2.2), both picked in
-the Stoat Flight Studio viewer (round 2, Option 2). Its game is **Slingshot** (`GameModes.Slingshot = 64`, `Arcade/SLINGSHOT.md`): a two-lap circuit
+Stoat's own **plated body** with the user's **bounding lope** (§2.1, §2.2), both picked in
+the Stoat Flight Studio viewer (round 2, Option 2); since 2026-10-18 the body is the model `Stoat.fbx` (§2.1). Its game is **Slingshot** (`GameModes.Slingshot = 64`, `Arcade/SLINGSHOT.md`): a two-lap circuit
 race where the sling is the only speed past cruise. **Nothing here has been
 run in the editor** — every proof below is offline (§5), the same standing as `Docs/BLACK_HOLE.md`
 §0.1. The black hole itself — the pull, the lens, the tides, the pair, the pass-through — is
@@ -117,21 +117,57 @@ Pure arithmetic in `StoatSlingMath` (`Hold01`, `Peak`, `OrbitRadius`, `OrbitHori
 so the LEFT trigger's axis is the hull's **+right** (`BlackHolePairMath.Positions` puts the attractor
 at −axis).
 
-## 2.1 The hull — plated, procedural (`StoatHullForm` + `StoatHullBuilder`)
+## 2.1 The hull — `Stoat.fbx`, a model (2026-10-18; the procedural placeholder is kept until it is accepted)
 
-Round 2, Option 2 at fleet scale (the viewer's numbers ×1.6): five **diamond plates** (a four-sided
-cross-section, point up, so the spine reads as a ridge) tapering chest 0.45 → hip 0.26, a **wedge
-head**, tetrahedral ears, a **dorsal ridge** of fins on every other plate, a four-plate tail ending in
-a **crystal**, four strut legs — 8.0 u nose to crystal, 0.9 u wide. Flat-shaded throughout. **Slot 1
-(the domain colour) is the fins, the eyes and the tail crystal**; slot 0 is the plates.
-`StoatHullForm` is pure (the Butterfly/Scarab split): `Tools/Build/stoat_hull_harness/run.sh`
-compiles and runs the shipped file (topology across the four extremes, every element moves it,
-blend@1 == extreme, bounds hold all 16 corners, every face wound outward, size) and `--obj <dir>`
-exports the meshes. `StoatHullBuilder` sits on a `StoatHull` GameObject under the root (layer
-Ships), is what `VesselCustomization` paints, and switches off the Squirrel model's RENDERERS (its
-colliders stay). **Element morphs** (real geometry, `IProceduralElementMorphSource`): Charge —
-fins ×2.2, crystal ×1.8, eyes ×1.5; Mass — plates and head thicken ×1.35/×1.2; Space — body ×1.3,
-tail ×1.4; Time — legs ×1.8, ears ×1.6.
+The hull is **`Assets/_Models/Vessel Models/Stoat.fbx`**, built headlessly with Blender-as-a-module from
+**`Tools/Build/vessel_model/specs/stoat.py`** (`/vessel-model`, the new-hull path the Butterfly opened). It replaced the
+procedural placeholder (`StoatHullForm` + `StoatHullBuilder`: five diamond plates, a wedge head, a four-plate tail with a
+crystal, four strut legs, two slots, flat-shaded), which the owner judged "terrible even as placeholders" (2026-10-17).
+It is a **spaceship inspired by a stoat**, not the animal: read from the chase camera (`StoatCameraSettingsSO`
+followOffset (0, 6.5, -21), 68 degrees; the root's 0.8 scale makes the 8-unit hull 6.4 world units, ~45 px wide at
+1080p, its back toward the pilot) as a long, low, sinuous interceptor.
+
+| Clade | On the ship | Bone |
+|---|---|---|
+| body | five overlapping armour segments (a chine at the waterline, a raised collar at each back edge) over a dark spine core that shows between them when the lope arches the spine; a sunken domain panel either side of the dark ridge, a domain trim line on each flank and across each collar | `plate.0`, `plate.1`, `hull` (the core plate), `plate.3`, `plate.4` |
+| dorsal ridge | three swept emitter fins on plates 0 / 2 / 4, domain-coloured | their plates |
+| head and eyes | a pointed prow; the eyes are a split sensor visor (Window glass) sunk either side of the ridge | `nose` |
+| ears | two small swept sensor fins, domain-tipped | `nose` |
+| haunches | twin engine nacelles, lime mouths and side vents, a domain band; the mouths sit where the prefab's two `VesselJet`s are (Unity (+-0.3, -0.05, -2.15) under `StoatHull`) | `plate.4` |
+| legs | four landing struts ending in manoeuvring-thruster pods (Engine nozzles) | `leg.1.L/R` (under plate 1), `leg.2.L/R` (under plate 3) |
+| tail | a four-segment dark boom of shingled collars | `tail`, `tail.2`, `tail.3`, `tail.4` |
+| black tail tip | a faceted DOMAIN-coloured beacon spike behind a dark collar: the stoat's dark tip, in the domain colour so the domain reads from behind | `tail.5` |
+
+**Contract** (the fleet convention for a new vessel, `FLEET_CONVENTION.md` sections 1-4):
+
+| | |
+|---|---|
+| file / preset | `Stoat.fbx` (guid `0ef0b84d93774ac39ddc699c59d0821a`), `zup`: nose -Y, up +Z, the pilot's left +X in Blender; in Unity nose +Z |
+| nodes | mesh `mesh`, armature `rig`, root bone `hull` |
+| bones | 15, every one a child of `hull`, each head at the placeholder's part pivot: plates at Unity z 1.6 / 0.8 / 0 / -0.8 / -1.6, `nose` at the neck (0, 0, 2.0), `tail` .. `tail.4` at (0, 0.065, -2.0 - 0.525 j), `tail.5` at (0, 0.065, -4.1), the legs at the hips (+-0.55 r, -0.55 r) under plates 1 and 3 |
+| size | Blender frame x +-0.447, y -3.168 .. 4.82 (nose to beacon tip), z -0.665 .. 0.769: 7.99 long, 0.89 wide, 1.43 tall - the placeholder's 7.96 / 0.90 / 1.48 within 4% (the 1.2 x 1.4 x 7 hit box, the jets and the camera were tuned to it) |
+| slots | 0 `Domain`, 1 `Body`, 2 `Window`, 3 `Engine`; the `.meta` remaps all four by name to the fleet's four materials |
+| morphs | `Charge` 7.5% of the 8.16 diagonal (the emitter fins grow into tall swept blades, the beacon swells, the visor bulges), `Mass` 4.5% (plates, prow, nacelles and core fatten about the spine, the boom less), `Space` 10.5% (the body draws out x1.12, the boom x1.22, the prow reaches), `Time` 5.3% (the struts lengthen and rake back, the sensor fins prick up and sweep, the prow sharpens) - the placeholder's meanings |
+| takes | none drive it; four documentation poses for the sheet and the studio, each with `pose_expect`: `arch`, `land`, `turnright`, `turnleft` (StoatAnimation's lope and turn at their extremes) |
+| budget | 10,324 tris, 5,218 verts, UVs, no n-gons, nothing floating (every part overlaps the part it hangs from) |
+| sheet | `Docs/VesselModels/sheets/stoat_after.jpg` |
+
+**Integration is by NAME** (an FBX's sub-object fileIDs cannot be computed offline). `author_stoat_assets.py` stage 2
+now authors `StoatHull` as a bare Transform holding the two jets and the model (a nested PrefabInstance at identity);
+the MeshFilter / MeshRenderer / `StoatHullBuilder` are gone from the prefab. `StoatAnimation` resolves the bones under
+its `hullVisual` (the `StoatHull` transform; the placeholder's part names still resolve, and a prefab that still
+carries `StoatHullBuilder` is driven exactly as before), finds the `SkinnedMeshRenderer` (`updateWhenOffscreen`, since
+the lope lifts the hull 1.6 u), and poses every bone from its REST in the hull transform's frame, so the lope, the
+turn bend and the tail swing are the placeholder's, unchanged. The element morphs are now blend shapes the base
+`VesselAnimation` drives by name; the builder's `IProceduralElementMorphSource` path runs only while a builder is
+present. The spaghettification (`BlackHoleWarp.VesselLogStretch`) and the lope still scale / lift / pitch the
+`StoatHull` transform, which now carries the model; `WarpFieldVesselScaler` still scales the root.
+`VesselCustomization` paints `StoatHull`, which it resolves to the model's skinned renderer, and replaces
+`GreenAccentVesselMaterial` (the Domain slot) by identity.
+
+**Kept until the owner accepts the model:** `StoatHullForm.cs`, `StoatHullBuilder.cs`, `StoatHullTests`,
+`Tools/Build/stoat_hull_harness/` and `render_stoat_card_icon.py` (the card icons are still renders of the
+placeholder). To go back, restore the stage-2 hull block of `author_stoat_assets.py` from git and rerun it.
 
 ## 2.2 The bounding lope — body-only (`StoatLopeMath` + `StoatAnimation`)
 
@@ -141,7 +177,8 @@ the top, lands nose-down, bunched, legs reaching — while the vessel's transfor
 prism trail stay straight, so aim and the wake are steady. `StoatAnimation` replaced the Squirrel
 clone's `MantaAnimationContoller` on the same component (so `VesselStatus`'s reference holds); it
 writes transforms only (hull lift/pitch/stretch, plate arch and tilt, head nod/turn, tail lift and
-swing out of a turn, leg reach), the builder writes vertices only. The stick bends the spine into a
+swing out of a turn, leg reach) - on the model, the bones of §2.1, posed from their rest in the hull's frame -
+and the element morphs write vertices only (the model's blend shapes; the builder's on the placeholder). The stick bends the spine into a
 turn (12°), turns the head (18°) and swings the tail out (28°). Poses are written directly, not
 through the base class's lerp (the Butterfly lesson: it eats a slow periodic motion).
 
@@ -156,9 +193,10 @@ through the base class's lerp (the Butterfly lesson: it eats a slow periodic mot
 | `_SO_Assets/VesselActions/Stoat/` | `StoatSlingConfig`, `StoatSlingLeftAction` (side 0), `StoatSlingRightAction` (side 1), `StoatHoldAction` (stationaryMode 1 = Sparrow) |
 | `Resources/ElementalAbilityMaps/Stoat.asset` | all four authored since 2026-10-13 — Space = Field Dipole, Time = Pathfinder / Time Mode, Charge = Ripple, Mass = Mass / Time Mode (`STOAT_DIPOLE.md` §5) |
 | `_Prefabs/Spacevessels/Stoat.prefab` | authored by `Tools/Build/author_stoat_assets.py`: cloned once from `Squirrel.prefab` (§4), its own vessel since stage 6 |
-| `StoatHullForm.cs`, `StoatHullBuilder.cs` (Vessel/) | the plated hull: pure geometry + morphs, and the emitter (§2.1) |
+| `Assets/_Models/Vessel Models/Stoat.fbx`, `Tools/Build/vessel_model/specs/stoat.py` | the hull model and the spec that builds it (§2.1); `build.py stoat --check` is its drift gate |
+| `StoatHullForm.cs`, `StoatHullBuilder.cs` (Vessel/) | the procedural placeholder (pure geometry + morphs, and the emitter), off the prefab since 2026-10-18 and kept until the model is accepted |
 | `StoatLopeMath.cs`, `StoatAnimation.cs` (Animation/) | the lope (pure) and the puppetry + morph plumbing (§2.2) |
-| `Tools/Build/stoat_hull_harness/` | compiles and RUNS the shipped hull form offline; `--obj` exports it |
+| `Tools/Build/stoat_hull_harness/` | compiles and RUNS the placeholder hull form offline; `--obj` exports it |
 | `Tools/Build/author_stoat_assets.py` | the generator + `--check` + `--self-test` (22 negative controls); stage 2 authors the hull and the animation swap, stage 6 the own-vessel pass |
 | `Docs/Studios/StoatFlightStudio.html` | the web studio: fly the Stoat on a gamepad, sling either wormhole style, compare them, log decisions (`Docs/Studios/README.md`; live copy with the shared log: https://claude.ai/artifact/Busc3KW6DmVzbsiA2qxoHc) |
 
