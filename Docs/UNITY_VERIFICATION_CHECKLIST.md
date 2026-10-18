@@ -107,7 +107,10 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 4. Press **2** (or D-pad right).
    - The kite view fills the screen.
    - Your hull's view shrinks to the same small square in the lower left, flown by its AI.
-   - The motes show as lime petal shapes (Round 4b fixed them drawing invisible).
+   - The motes show as lime petal shapes (Round 4b fixed them drawing invisible), each with its crystal's effect
+     round it (round 4c): Charge, a flickering bolt hopping round it; Mass, little triangles climbing out and dropping
+     back; Space, rings of little kites turning in steps; Time, a ring of diamonds flipping in a wave.
+   - The hull, flown by its AI, never shoots (round 4c removed the Sparrow's guns and missiles).
    - Prisms far above or below the plane show as dim, flat, unlit boxes in their domain's tint, not gone.
    - The tail is half as long again as before (2.4 board radii).
    - Move the mouse without clicking, or lean the stick: the kite follows.

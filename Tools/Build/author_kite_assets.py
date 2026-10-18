@@ -20,7 +20,16 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR
           that has no buttons"); the Sparrow's SingleStickVesselTransformer already makes it a one-thumb hull, and lifting
           the thumb is the navigator's Time boost (KiteNavigator)
         - its VesselImpactor on KiteImpactorDataContainer: the Sparrow's container plus KiteOmniCrystalEffect in the omni
-          list (an Omni crystal widens the navigator's board), so the Sparrow's own container is untouched
+          list (an Omni crystal widens the navigator's board) and without the Sparrow's Omni ward, so the Sparrow's own
+          container is untouched
+        - NO SPARROW KIT (Garrett, 2026-10-18: "clean up the vestiges from using the sparrow. the pilot is shooting when i am
+          controlling the kite"): the guns, the bullet and Skyburst missile factories and their four action executors
+          (SPARROW_SUBTREES), the missile rearm, the barrel roll, the Omni ward and the Time-L5 immunity
+          (SPARROW_COMPONENTS), the AI's ability cycle (AIPilot.abilities: the gun and missile actions it fired whenever the
+          autopilot flew - i.e. whenever the human was on the kite; its boost policy stays wired, as check_vessel_shared_channels
+          requires, and is inert with no boost binding); the Sparrow's gun telemetry
+          becomes DefaultVesselTelemetry. Every local reference into a removed part is dropped, and --check holds the prefab
+          to having no dangling local fileID
       Everything else is the Sparrow's: the lab flew the Sparrow's numbers, and the hull is the pilot's half.
       Unlike the clone, the no-buttons and container edits are RETROFITS: applied to the committed prefab too, idempotently.
     SO_Class_Kite (the Sparrow's icons and abilities, owned from the start) + its entry in SO_Classlist_All / _Classes;
@@ -125,15 +134,114 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
 
 BINDINGS = re.compile(r"(  _inputEventShipActions:)\n(?:  [- ] .*\n)+")
 
+SPARROW_SUBTREES = ["FullAutoBlockActionExecutor", "FullAutoActionExecutor", "SkyBurstMissileActionExecutor", "ExhaustBarrage",
+                    "GunSprayAccuracy"]
+SPARROW_COMPONENTS = ["VesselRearmOnPrismDestruction", "BarrelRollController", "VesselTimedElementalWard", "VesselElementalImmunity"]
+SPARROW_WARD_EFFECT_GUID = "d926fa11a6134e259eef87c71cfe1573"   # SparrowVesselWardByCrystalEffect
+SPARROW_TELEMETRY_KEYS = ["prismBlocksShotStat", "skyburstMissilesShotStat", "dangerBlocksSpawnedStat"]
+DOC = re.compile(r"^--- !u!(\d+) &(-?\d+)( stripped)?\n", re.M)
+
+
+def guid_of_script(name: str) -> str:
+    for dirpath, _, files in os.walk(os.path.join(ROOT, "Assets", "_Scripts")):
+        if f"{name}.cs.meta" in files:
+            return guid_of(os.path.join(dirpath, f"{name}.cs.meta"))
+    raise RuntimeError(f"no script {name}.cs")
+
+
+def split_docs(text: str):
+    """(header, [(kind, anchor, doc text incl. its header line)]) in file order."""
+    starts = [m.start() for m in DOC.finditer(text)]
+    head = text[:starts[0]] if starts else text
+    docs = []
+    for i, a in enumerate(starts):
+        b = starts[i + 1] if i + 1 < len(starts) else len(text)
+        m = DOC.match(text, a)
+        docs.append((m.group(1), m.group(2), text[a:b]))
+    return head, docs
+
+
+def strip_sparrow_kit(text: str) -> str:
+    """The Sparrow's weapons and Sparrow-only parts off the Kite (see the module doc). Idempotent."""
+    head, docs = split_docs(text)
+    by_anchor = {a: d for _, a, d in docs}
+    go_name = {a: (re.search(r"^  m_Name: (.*)$", d, re.M) or [None, None])[1] for k, a, d in docs if k == "1"}
+    transform_of, children = {}, {}
+    for k, a, d in docs:
+        if k in ("4", "224") and " stripped" not in d.split("\n", 1)[0]:
+            go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", d)
+            if go:
+                transform_of[go.group(1)] = a
+            ch = re.search(r"  m_Children:\n((?:  - \{fileID: -?\d+\}\n)*)", d)
+            children[a] = re.findall(r"fileID: (-?\d+)", ch.group(1)) if ch else []
+    go_of_transform = {t: g for g, t in transform_of.items()}
+
+    gos = set()
+    def take(go):
+        if go in gos:
+            return
+        gos.add(go)
+        for child in children.get(transform_of.get(go), []):
+            if child in go_of_transform:
+                take(go_of_transform[child])
+    for go, name in go_name.items():
+        if name in SPARROW_SUBTREES:
+            take(go)
+
+    kill_scripts = {guid_of_script(n) for n in SPARROW_COMPONENTS}
+    removed = set(gos) | {transform_of[g] for g in gos if g in transform_of}
+    for k, a, d in docs:
+        go = re.search(r"^  m_GameObject: \{fileID: (-?\d+)\}", d, re.M)
+        if go and go.group(1) in gos:
+            removed.add(a)
+        sc = re.search(r"^  m_Script: \{fileID: 11500000, guid: (\w+)", d, re.M)
+        if k == "114" and sc and sc.group(1) in kill_scripts:
+            removed.add(a)
+    if not removed and "  abilities: []\n" in text:
+        pass
+
+    ai_guid, sparrow_tel, default_tel = guid_of_script("AIPilot"), guid_of_script("SparrowVesselTelemetry"), guid_of_script("DefaultVesselTelemetry")
+    out = []
+    for k, a, d in docs:
+        if a in removed:
+            continue
+        for r in removed:
+            d = re.sub(r"^  - component: \{fileID: %s\}\n" % r, "", d, flags=re.M)
+            d = re.sub(r"^  - \{fileID: %s\}\n" % r, "", d, flags=re.M)
+            d = re.sub(r"\{fileID: %s\}" % r, "{fileID: 0}", d)
+        if f"guid: {ai_guid}, type: 3" in d:
+            d = re.sub(r"(  abilities:)\n(?:  [- ] .*\n)+", r"\1 []\n", d)
+        if f"guid: {sparrow_tel}, type: 3" in d:
+            d = d.replace(f"guid: {sparrow_tel}, type: 3", f"guid: {default_tel}, type: 3")
+            for key in SPARROW_TELEMETRY_KEYS:
+                d = re.sub(r"^  %s: \{[^}]*\}\n" % key, "", d, flags=re.M | re.S)
+        out.append(d)
+    # an emptied list prints as []
+    text = head + "".join(out)
+    return re.sub(r"^(  (?:m_Children|_executors|m_Component)):\n(?=  [a-zA-Z_<]|--- |\Z)", r"\1: []\n", text, flags=re.M)
+
+
+def dangling_local_refs(text: str):
+    """Local {fileID: N} references (no guid) that name no document in the file."""
+    anchors = {m.group(2) for m in DOC.finditer(text)}
+    return sorted({r for r in re.findall(r"\{fileID: (-?\d+)\}", text) if r != "0" and r not in anchors})
+
 
 def retrofit(text: str) -> str:
     """No buttons, and the Kite's own impactor container. Idempotent: run on the clone and on the committed prefab."""
     text = BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
+    text = strip_sparrow_kit(text)
     return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {KITE_CONTAINER_GUID},")
 
 
+def container_retrofit(text: str) -> str:
+    """The Sparrow's Omni ward is not the Kite's (its Omni crystal widens the board). Idempotent."""
+    return text.replace(f"  - {{fileID: 11400000, guid: {SPARROW_WARD_EFFECT_GUID}, type: 2}}\n", "")
+
+
 def container_asset(donor: str) -> str:
-    text = replace_once(donor, "  m_Name: SparrowImpactorDataContainer\n", "  m_Name: KiteImpactorDataContainer\n", "container name")
+    text = container_retrofit(donor)
+    text = replace_once(text, "  m_Name: SparrowImpactorDataContainer\n", "  m_Name: KiteImpactorDataContainer\n", "container name")
     m = re.search(r"  vesselCrystalEffects:\n((?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)*)", text)
     if not m:
         raise RuntimeError("donor drifted: the Sparrow container's vesselCrystalEffects list was not found")
@@ -258,6 +366,16 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     want("  _inputEventShipActions: []\n" in text, "Kite.prefab: the hull still binds buttons (the pilot is a one-thumb flyer with none)")
     want(f"guid: {KITE_CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
          "Kite.prefab: the VesselImpactor is not on KiteImpactorDataContainer (an Omni crystal would not widen the board)")
+    names = set(re.findall(r"^  m_Name: (.*)$", text, re.M))
+    for n in SPARROW_SUBTREES:
+        want(n not in names, f"Kite.prefab: the Sparrow's {n} is still on the hull")
+    for n in SPARROW_COMPONENTS + ["SparrowVesselTelemetry"]:
+        want(f"guid: {guid_of_script(n)}, type: 3" not in text, f"Kite.prefab: the Sparrow's {n} is still on the hull")
+    ai = re.search(r"guid: %s, type: 3\}\n((?:.*\n)*?)(?=--- !u!|\Z)" % guid_of_script("AIPilot"), text)
+    want(ai and "  abilities: []\n" in ai.group(1),
+         "Kite.prefab: the AIPilot still cycles abilities (the Sparrow's guns fire whenever the AI flies the hull)")
+    dangling = dangling_local_refs(text)
+    want(not dangling, f"Kite.prefab: dangling local fileID reference(s) {dangling[:5]}")
     return errs
 
 
@@ -267,6 +385,8 @@ def check_container(container: str, effect: str, omni_script_guid: str):
         errs.append("KiteImpactorDataContainer: KiteOmniCrystalEffect is not in its omni (vesselCrystalEffects) list")
     if f"guid: {omni_script_guid}, type: 3" not in effect:
         errs.append("KiteOmniCrystalEffect.asset: does not name KiteOmniCrystalEffectSO")
+    if SPARROW_WARD_EFFECT_GUID in container:
+        errs.append("KiteImpactorDataContainer: still carries the Sparrow's Omni ward (SparrowVesselWardByCrystalEffect)")
     return errs
 
 
@@ -331,6 +451,10 @@ def author():
         old = read(PREFAB); new = retrofit(old)
         if new != old:
             write(PREFAB, new)
+    if os.path.exists(KITE_CONTAINER):
+        old = read(KITE_CONTAINER); new = container_retrofit(old)
+        if new != old:
+            write(KITE_CONTAINER, new)
     if not os.path.exists(OMNI_EFFECT):
         write(OMNI_EFFECT, omni_effect_asset(guid_of(OMNI_SCRIPT_META))); write(OMNI_EFFECT + ".meta", native_meta(OMNI_EFFECT_GUID))
     if not os.path.exists(KITE_CONTAINER):
@@ -361,6 +485,12 @@ def self_test():
     expect(check_prefab(good.replace(f"guid: {config_guid}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid, config_guid), 1, "the seat's config unwired")
     expect(check_prefab(good.replace("  _inputEventShipActions: []\n", "  _inputEventShipActions:\n  - InputEvent: 1\n    ShipActions: []\n"), script_guid, config_guid), 1, "a button bound")
     expect(check_prefab(good.replace(KITE_CONTAINER_GUID, DONOR_CONTAINER_GUID), script_guid, config_guid), 1, "the Sparrow's container")
+    expect(check_prefab(read(DONOR).replace("  m_Name: Sparrow\n", "  m_Name: Kite\n"), script_guid, config_guid), 3, "the Sparrow's kit, untouched")
+    anchor = DOC.search(good).group(2)
+    expect(check_prefab(good + f"  stray: {{fileID: 987654321}}\n", script_guid, config_guid), 1, "a dangling local reference")
+    if strip_sparrow_kit(good) != good:
+        fails.append("the Sparrow-kit strip is not idempotent")
+    assert anchor
     if retrofit(good) != good:
         fails.append("the retrofit is not idempotent")
     omni_script = guid_of(OMNI_SCRIPT_META)

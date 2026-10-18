@@ -58,6 +58,29 @@ SpriteRenderer fills, so it drew at zero alpha. Instanced draws now use URP/Unli
 surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose vertices carry their fade, keep
 `Sprites/Default` drawn without instancing.
 
+**Round 4c (2026-10-18):**
+- **No Sparrow kit.** "The pilot is shooting when I am controlling the kite": the Sparrow's `AIPilot.abilities` cycled
+  its guns and missiles whenever the autopilot flew, which is whenever the human is on the kite. `author_kite_assets.py`
+  now strips the Sparrow's kit from the Kite:
+  - the AI's ability cycle;
+  - the guns, the bullet and Skyburst missile factories and their four action executors;
+  - the missile rearm, the barrel roll, the Omni ward and the Time-L5 immunity;
+  - the Omni ward effect from `KiteImpactorDataContainer`;
+  - the gun telemetry, which becomes `DefaultVesselTelemetry`.
+
+  `--check` holds the prefab to having none of them and no dangling local reference.
+  - **Kept:** the hull's flight, trail, model, animation, camera, jets, the hull-versus-prism effects, the AI's boost
+    policy (`check_vessel_shared_channels` requires it; it is inert with no boost binding), and the `ResourceSystem`'s
+    three Sparrow meters (shared world effects index a hull's meters by number, so emptying the list risks
+    out-of-range; nothing fills them now).
+  - **Still the Sparrow's:** the HUD and the ability map (task `T-20261018-49d0`).
+- **Each mote wears its crystal's effect, in lime**, round its petal (`KiteNavigatorView.CrystalEffect`, from the shipped
+  crystals' numbers):
+  - Charge: the seam walk, a bolt hopping round a pentagon every ~0.2 s with the last two seams thinning behind it.
+  - Mass: the columns, six small triangles climbing out to 1.5× and down to 0.6 scale, then dropping back.
+  - Space: the group spins, five kites turning 72° in 1.0 s alternating with an inner three turning 120°.
+  - Time: the flip wave, eight diamonds flipping ring by ring on a 2 s loop.
+
 Every "L5" is the fleet's gate, `ElementalAbilityHandler.IsUpgradeActive(element)`. The Kite's map lists all four
 elements: each unlocks at level 5 and relocks below 4.
 
