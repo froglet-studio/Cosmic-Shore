@@ -1502,9 +1502,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>This vessel's own tow point, the hitch the chain is drawn from: the hull model's <c>hitch</c>
-        /// bone (Thresher.fbx, /vessel-model 2026-10-18; it rides the tail's sway), else the procedural
-        /// <see cref="ThresherHullBuilder"/>'s ring. Resolved once, by name, when the vessel is known; a hull with
-        /// neither draws the chain from the ship's centre as before.</summary>
+        /// bone, the tow shackle at the TIP of the whip (Thresher.fbx, /vessel-model; Garrett 2026-10-18: "the
+        /// thresher cord should begin at the tip of the tail"), else the procedural <see cref="ThresherHullBuilder"/>'s
+        /// ring. Resolved once, by name, when the vessel is known; a hull with neither draws the chain from the ship's
+        /// centre as before. The element morphs carry the drawn shackle with the tip (Space telescopes the whip, Time
+        /// rakes it) while the bone stays put, so the point follows the shackle's own blend-shape travel
+        /// (<see cref="ResolveHitchMorphs"/>).</summary>
         bool TryHitch(out Vector3 hitchWorld)
         {
             if (!_hitchSearched && _status != null && _status.Transform)
@@ -1512,11 +1515,67 @@ namespace CosmicShore.Gameplay
                 _hitchSearched = true;
                 var builder = _status.Transform.GetComponentInChildren<ThresherHullBuilder>(true);
                 if (builder) _hitchBuilder = builder;
-                else _hitch = FindDeep(_status.Transform, "hitch");
+                else
+                {
+                    _hitch = FindDeep(_status.Transform, "hitch");
+                    if (_hitch) ResolveHitchMorphs();
+                }
             }
             if (_hitchBuilder) { hitchWorld = _hitchBuilder.HitchWorldPosition; return true; }
-            hitchWorld = _hitch ? _hitch.position : default;
-            return _hitch;
+            if (!_hitch) { hitchWorld = default; return false; }
+
+            Vector3 local = Vector3.zero;
+            for (int s = 0; s < _hitchShapeCount; s++)
+            {
+                float w = _hitchSkin.GetBlendShapeWeight(_hitchShapeIndex[s]) / _hitchShapeFullWeight[s];
+                local += _hitchShapeOffset[s] * w;
+            }
+            hitchWorld = _hitch.TransformPoint(local);
+            return true;
+        }
+
+        // The shackle's travel under each element shape, in the hitch bone's own frame at the bind pose (read once
+        // from the model's mesh: the mean full-weight delta of the vertices skinned to the bone).
+        SkinnedMeshRenderer _hitchSkin;
+        readonly int[] _hitchShapeIndex = new int[4];
+        readonly float[] _hitchShapeFullWeight = new float[4];
+        readonly Vector3[] _hitchShapeOffset = new Vector3[4];
+        int _hitchShapeCount;
+
+        void ResolveHitchMorphs()
+        {
+            _hitchShapeCount = 0;
+            var skins = _status.Transform.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            for (int r = 0; r < skins.Length && !_hitchSkin; r++)
+            {
+                int bone = Array.IndexOf(skins[r].bones, _hitch);
+                var mesh = skins[r].sharedMesh;
+                if (bone < 0 || !mesh || !mesh.isReadable || bone >= mesh.bindposeCount) continue;
+                _hitchSkin = skins[r];
+
+                var weights = mesh.boneWeights;
+                var deltas = new Vector3[mesh.vertexCount];
+                Matrix4x4 toBone = mesh.bindposes[bone];
+                for (int shape = 0; shape < mesh.blendShapeCount && _hitchShapeCount < _hitchShapeIndex.Length; shape++)
+                {
+                    int last = mesh.GetBlendShapeFrameCount(shape) - 1;
+                    if (last < 0) continue;
+                    mesh.GetBlendShapeFrameVertices(shape, last, deltas, null, null);
+                    Vector3 sum = Vector3.zero;
+                    int count = 0;
+                    for (int v = 0; v < weights.Length; v++)
+                    {
+                        if (weights[v].boneIndex0 != bone || weights[v].weight0 < 0.5f) continue;
+                        sum += deltas[v];
+                        count++;
+                    }
+                    if (count == 0 || sum.sqrMagnitude < 1e-8f) continue;
+                    _hitchShapeIndex[_hitchShapeCount] = shape;
+                    _hitchShapeFullWeight[_hitchShapeCount] = Mathf.Max(1e-3f, mesh.GetBlendShapeFrameWeight(shape, last));
+                    _hitchShapeOffset[_hitchShapeCount] = toBone.MultiplyVector(sum / count);
+                    _hitchShapeCount++;
+                }
+            }
         }
 
         ThresherHullBuilder _hitchBuilder;
@@ -1673,13 +1732,22 @@ namespace CosmicShore.Gameplay
             int drawn = ThresherChainLinks.SmoothedCount(_links.Count, config.ChainRenderSubdivisions);
             if (_chainDrawn == null || _chainDrawn.Length != drawn) _chainDrawn = new Vector3[drawn];
             int written = ThresherChainLinks.Smooth(_links.Points, config.ChainRenderSubdivisions, _chainDrawn);
-            // DRAWN from the hull's hitch ring at the tail fork (THRESHER.md §5b), the offset eased out over
-            // the first link so the curve leaves the ring without a kink. Drawing only: the gameplay chain,
-            // its sweep and its physics still hang from the ship's centre.
+            // DRAWN from the hull's tow shackle at the tip of the whip (THRESHER.md §5b), the offset eased out
+            // so the curve leaves the shackle without a kink. Drawing only: the gameplay chain, its sweep and its
+            // physics still hang from the ship's centre.
             if (written > 1 && TryHitch(out var hitchWorld))
             {
                 Vector3 offset = hitchWorld - ship;
+                // Eased over at least the first link, and over as many drawn points as it takes to cover twice the
+                // offset: the tip of the whip sits several units behind the centre the gameplay chain hangs from,
+                // and easing that over one link would kink the curve at the shackle.
                 int span = Mathf.Min(written - 1, Mathf.Max(1, config.ChainRenderSubdivisions));
+                float reach = 2f * offset.magnitude, run = 0f;
+                for (int i = 1; i < written - 1 && run < reach; i++)
+                {
+                    run += Vector3.Distance(_chainDrawn[i], _chainDrawn[i - 1]);
+                    if (i > span) span = i;
+                }
                 for (int i = 0; i <= span; i++)
                 {
                     float f = 1f - i / (float)span;

@@ -25,19 +25,21 @@ Clade -> ship (every part answers "what is this on the ship?"):
   lower caudal lobe   -> a short ventral skeg
   upper caudal lobe   -> the WHIP: three hinged boom segments (tail.2-4), a dark spar along the leading edge,
                          a domain blade trailing it, a knuckle at every joint, a lime light at the tip
-  (the chain)         -> a tow shackle (bone `hitch`): a domain ring held by a clevis under the tail fork,
-                         exactly where the placeholder hitched the chain (the executor draws from it)
+  (the chain)         -> a tow shackle (bone `hitch`): a domain ring held by a clevis just past the WHIP'S TIP,
+                         so the chain begins at the tip of the tail (Garrett, 2026-10-18: "the thresher cord should
+                         begin at the tip of the tail"); it rides the whip's swing and every morph's tip
 
 Contract (FLEET_CONVENTION sections 1-4 for a NEW vessel):
   file      Assets/_Models/Vessel Models/Thresher.fbx (new guid), preset "zup"
   nodes     mesh `mesh`, armature `rig`; root bone `hull`
   bones     hull; wing.L / wing.R (the placeholder's pectoral hinges, PectoralRoot at t=0.33);
             tail (peduncle hinge, PeduncleZ) -> tail.2 -> tail.3 -> tail.4 (the scythe's three segment hinges,
-            LobePoint(k/3)); hitch (child of tail, HitchCenter). Placeholder (Unity) -> Blender (-x, -z, y):
+            LobePoint(k/3)); hitch (child of tail.4, just past LobePoint(1), the whip tip). Placeholder (Unity) ->
+            Blender (-x, -z, y):
               wing.L   Unity (-0.4746, -0.2198, 0.748)   = Blender (+0.4746, -0.748, -0.2198)
               tail     Unity (0, 0, -2.2)                = Blender (0, 2.2, 0)
               tail.2   Unity (0, 0.02, -2.7) (the fork)  = Blender (0, 2.7, 0.02)
-              hitch    Unity (0, -0.2516, -2.425)        = Blender (0, 2.425, -0.2516)
+              (the placeholder's HitchCenter, Unity (0, -0.2516, -2.425), is no longer the tow point)
   size      the placeholder's within ~6%: 8.1 snout to whip tip, 3.5 across the wings (the 1.6 x 1.4 x 5.2
             body box, the 2.2 x 1.9 x 5.8 hitbox, the jets and the 55-unit camera were tuned to it)
   slots     0 Domain, 1 Body, 2 Window, 3 Engine
@@ -66,7 +68,6 @@ D, H, W, J = 0, 1, 2, 3
 BODY_NOSE_Y = -2.288          # NoseZ + 2% of the body length, the snout apex
 PEDUNCLE_Y = 2.2              # PeduncleZ: the tail hinge
 FORK = (0.0, 2.7, 0.02)       # ForkPoint: the scythe's root hinge
-HITCH = (0.0, 2.425, -0.2516)  # HitchCenter: where the chain is drawn from
 PECTORAL_ROOT = (0.4746, -0.748, -0.2198)
 PECTORAL_SPAN, PECTORAL_DROOP, PECTORAL_SWEEP = 1.35, 18.0, 0.75
 LOBE_LENGTH, LOBE_RISE, LOBE_CURL, LOBE_CHORD, LOBE_BLADE, LOBE_SEGMENTS = 3.6, 24.0, 22.0, 0.62, 0.4, 3
@@ -344,8 +345,14 @@ def build(ctx):
     parts.append(bone_part(tb, "tail"))
 
     # ------------------------------------------------------------------ THE SHACKLE (where the chain leaves)
+    # just past the whip's tip, in the whip's own plane: the chain begins at the tip of the tail
     hp = []
     ring_r, tube = 0.20, 0.055
+    tip_p = Vector(lobe_point(1.0))
+    # it hangs back and a little down off the tip like a towing eye, so it trails the whip without standing above it
+    tip_d = Vector((0.0, math.cos(math.radians(30)), -math.sin(math.radians(30))))
+    HITCH = tuple(tip_p + tip_d * (ring_r + 0.03))
+    near = Vector(HITCH) - tip_d * ring_r            # the ring's side the clevis grips
     bm = bmesh.new()
     segs, sides = 16, 8
     grid = []
@@ -365,10 +372,11 @@ def build(ctx):
     ring = f.new_mesh_object("ring", bm, smooth=True)
     hp.append(piece(ring, D, 11))
     for sx in (1, -1):   # the clevis cheeks: from the peduncle's belly down past the ring's pin
-        ch = f.box("clevis", (0.035, 0.20, 0.30), center=(sx * 0.085, HITCH[1], HITCH[2] + 0.13))
+        mid = (tip_p + near) * 0.5
+        ch = f.box("clevis", (0.035, 0.20, 0.20), center=(sx * 0.085, mid.y, mid.z))
         hp.append(piece(ch, H, 11, bevel=0.008))
     pin = f.lathe("pin", [(0.0, -0.13), (0.05, -0.13), (0.05, 0.13), (0.0, 0.13)], segments=10, axis=(1, 0, 0),
-                  origin=(0, HITCH[1], HITCH[2] + ring_r))
+                  origin=(0, near.y, near.z))
     hp.append(piece(pin, H, 11))
     parts.append(bone_part(hp, "hitch"))
 
@@ -470,7 +478,7 @@ def build(ctx):
         nm = "tail.%d" % (k + 2)
         bones.append(B(nm, lobe_point(u0), lobe_point(u1), parent=prev))
         prev = nm
-    bones.append(B("hitch", HITCH, (HITCH[0], HITCH[1], HITCH[2] - 0.3), parent="tail"))
+    bones.append(B("hitch", HITCH, tuple(Vector(HITCH) + tip_d * 0.3), parent="tail.%d" % (LOBE_SEGMENTS + 1)))
     arm = rig.build_armature(ARMATURE, bones)
     rig.skin_rigid(mesh, arm, default_bone="hull")
     bone_names = [b.name for b in arm.data.bones]
@@ -537,16 +545,16 @@ def build(ctx):
             widen_blade(0.55),
         ],
         "Mass": [  # volume: the hull, nacelles and peduncle fatten, the tow shackle swells (Mass Mode), the wings ride out
-            about_axis_x_z(1.52, body_like),
+            about_axis_x_z(1.60, body_like),
             about_axis_x_z(1.52, nacelle, z0=0.0),
             morphs.translate((0, 0, 0.23), dorsal),
             morphs.scale_about(1.35, (0, PEDUNCLE_Y, 0), peduncle, axes=(1, 0, 1)),
             morphs.scale_about(1.9, HITCH, shackle),
-            morphs.translate((0, 0, -0.12), shackle),
             ride_out(wing[1], 1, 0.25), ride_out(wing[-1], -1, 0.25),
         ],
         "Space": [  # reach: the whip's last segment telescopes out, the wings reach along their span
             morphs.stretch_along(tuple(tip_axis.normalized()), tip_root, 1.0 + 0.70, whip[-1], ramp=(0.08, 0.3)),
+            morphs.translate(tuple(tip_axis.normalized() * (0.70 * tip_len)), shackle),   # the shackle stays on the tip
             *[morphs.stretch_along(tuple(span_dir[sx]), (sx * PECTORAL_ROOT[0], PECTORAL_ROOT[1], PECTORAL_ROOT[2]), 1.18, wing[sx],
                                    ramp=(0.2, 0.5)) for sx in (1, -1)],
         ],
@@ -555,6 +563,7 @@ def build(ctx):
             *[morphs.stretch_along((sx, 0, 0), (sx * PECTORAL_ROOT[0], 0, 0), 1.12, wing[sx]) for sx in (1, -1)],
             morphs.sweep((0, 0, 1), (0, 0, top0), (0, 0.42, 0), dorsal),
             morphs.sweep((0, 0, 1), FORK, (0, 0.30, -0.0), whip_all),
+            morphs.sweep((0, 0, 1), FORK, (0, 0.30, -0.0), shackle),
         ],
     }
     for name in ("Charge", "Mass", "Space", "Time"):
@@ -599,7 +608,9 @@ def build(ctx):
             "shapes": ["Charge", "Mass", "Space", "Time"],
             "slots": list(SLOTS),
             # the placeholder's envelope (Blender frame), which the gameplay and camera were tuned to
-            "size_ref_blender": ((-1.76, -2.29, -0.64), (1.76, 5.77, 1.90)), "size_tol": (0.08, 0.06, 0.12),
+            "size_ref_blender": ((-1.76, -2.29, -0.64), (1.76, 5.77, 1.90)),
+            # y and z carry the tow shackle hung off the whip tip (the chain begins at the tip of the tail, 2026-10-18)
+            "size_tol": (0.08, 0.09, 0.14),
             "bounds_blender": (tuple(lo), tuple(hi)), "bounds_tol": 0.05,
             "min_travel": 0.04,
         },

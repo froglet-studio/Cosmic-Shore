@@ -443,7 +443,7 @@ look: a SPACESHIP inspired by the thresher shark, not a shark costume.
 | | |
 |---|---|
 | Nodes | mesh `mesh`, armature `rig` (preset `zup`: Blender nose -Y, up +Z, pilot's left +X) |
-| Bones (heads at the placeholder's hinges) | `hull` (root); `wing.L` / `wing.R` at the pectoral roots, Unity (∓0.475, -0.220, 0.748); `tail` at the peduncle hinge (0, 0, -2.2); `tail.2` → `tail.3` → `tail.4`, the whip's three segment hinges on the placeholder's lobe curve (`LobePoint(k/3)`: the fork (0, 0.02, -2.7), then (0, 0.524, -3.789), (0, 1.118, -4.831)); `hitch` (child of `tail`) at the placeholder's `HitchCenter`, Unity (0, -0.252, -2.425) |
+| Bones (heads at the placeholder's hinges) | `hull` (root); `wing.L` / `wing.R` at the pectoral roots, Unity (∓0.475, -0.220, 0.748); `tail` at the peduncle hinge (0, 0, -2.2); `tail.2` → `tail.3` → `tail.4`, the whip's three segment hinges on the placeholder's lobe curve (`LobePoint(k/3)`: the fork (0, 0.02, -2.7), then (0, 0.524, -3.789), (0, 1.118, -4.831)); `hitch` (child of `tail.4`): the tow shackle just past the whip's tip, hung back and 30° down like a towing eye (moved from the placeholder's `HitchCenter` under the fork on 2026-10-18, Garrett: "the thresher cord should begin at the tip of the tail") |
 | Size | snout to whip tip 8.14 (placeholder 8.06), 3.62 across the wing tips (3.52), 2.63 tall (2.54): within 4%, so the 1.6 × 1.4 × 5.2 body box, the 2.2 × 1.9 × 5.8 hitbox, the jets and the 55-unit camera keep what they were tuned to |
 | Slots | Domain (the dorsal blade, the whip's trailing blade, two sunk saddle plates each side of the spine, the flank trim lines, the wing panels, the tow ring, the nacelle and tail-collar trims: 18% of the surface), Body (gunmetal), Window (the sensor eyes, the canopy, the snout sensor), Engine (the gill louvres, the nacelle mouths, the chin intake's throat, the wing and whip-tip lights) |
 | Morphs | Charge (the dorsal blade stands 1.55× and the whip's blade widens) 6.1%, Mass (hull, nacelles and peduncle fatten, the tow shackle swells 1.9×, the wings ride out — Mass Mode) 4.1%, Space (the whip's last segment telescopes 1.7×, the wings reach 1.18× along their span) 9.5%, Time (wings sweep back and spread, dorsal and whip rake back) 6.3% of the diagonal |
@@ -460,8 +460,9 @@ two engine nacelles on the rear flanks whose glowing mouths sit where the prefab
 are; the second dorsal and anal fins are small stabilisers; the caudal peduncle is the tail-boom root
 behind a mechanical joint collar; the lower caudal lobe is a ventral skeg; the upper caudal lobe — the
 read — is the whip, a three-jointed boom with a dark spar, a domain blade, a knuckle at every joint and a
-lime light at the tip; and the chain leaves through a tow shackle (a domain ring on a clevis and pin) at
-exactly the placeholder's hitch.
+lime light at the tip; and the chain leaves through a tow shackle (a domain ring on a clevis and pin) at the
+TIP of the whip (2026-10-18, Garrett: "the thresher cord should begin at the tip of the tail"), so it rides
+every swing of the whip and the element morphs carry it with the tip.
 
 **Integration is by NAME, not by fileID** (an FBX's sub-object fileIDs cannot be derived offline), all
 written by `author_thresher_assets.py` (`--check` validates it): `ThresherHull` keeps its Transform and the
@@ -472,7 +473,10 @@ still resolve, so either hull swims), banks and sways `ThresherHull` (its new `h
 every part in the hull's frame onto the rest captured there, and finds the SkinnedMeshRenderer
 (`updateWhenOffscreen`); the element morphs are the model's blend shapes, driven by `VesselAnimation` by
 name, and the builder's morph push runs only while a prefab still carries the builder. `ThresherExecutor`
-draws the chain from the model's `hitch` bone (or the builder's ring). `VesselCustomization` paints the hull,
+draws the chain from the model's `hitch` bone (or the builder's ring), plus the shackle's own blend-shape
+travel (read once from the mesh: Space telescopes the whip, Time rakes it, and the bone does not move with
+either), eased out over the drawn points that cover twice the offset so the curve leaves the tip cleanly.
+Drawing only: the gameplay chain, its sweep and its physics still hang from the ship's centre. `VesselCustomization` paints the hull,
 which resolves to the model's SkinnedMeshRenderer, and names `GreenAccentVesselMaterial` (the model's
 `Domain` slot, remapped by the `.meta`) as the material the domain colour replaces. **Hull fusion**: the
 asset now HAS a hull mesh (readable), so the four `CrystalHullFusionConfig` entries are no longer
