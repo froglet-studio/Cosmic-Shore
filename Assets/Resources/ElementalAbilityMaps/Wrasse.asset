@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Wrasse
+  m_EditorClassIdentifier:
+  vesselClass: 19
+  entries:
+  - Element: 3
+    AbilityLabel: 'Space Blast'
+    AbilityDescription: 'The kite closes a loop of Space motes and a blast goes off where it closed; a bigger loop, a bigger blast. The card counts what the last blast destroyed.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Shield Breaker'
+    UpgradeDescription: 'Space blasts destroy shielded and super-shielded prisms.'
+  - Element: 4
+    AbilityLabel: 'Saved Boosts'
+    AbilityDescription: 'Every loop of Time motes the kite closes saves boosts for the pilot. The pilot spends them on the trigger; the card counts how many are saved.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'No Cooldown'
+    UpgradeDescription: 'Saved boosts chain back to back with no cooldown.'
+  - Element: 2
+    AbilityLabel: 'Mass Cluster'
+    AbilityDescription: 'A loop of Mass motes lays a cluster of prisms on the kite''s plane. The card flashes when one is laid.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Shielded Clusters'
+    UpgradeDescription: 'Mass clusters are laid shielded.'
+  - Element: 1
+    AbilityLabel: 'Kite Ram'
+    AbilityDescription: 'Loops of Charge motes power the kite''s ram: strike a rival hull to knock its crystals loose, or strike wildlife. The card counts the rams held.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Crystal Steal'
+    UpgradeDescription: 'A ram steals the rival''s crystals instead of knocking them loose.'

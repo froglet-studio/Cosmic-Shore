@@ -144,7 +144,7 @@ namespace CosmicShore.Gameplay
 
                 into.Add(new ToyShellOption
                 {
-                    Label = vessel.ToString(),
+                    Label = LabelOf(captured),
                     Detail = isCurrent ? "flying" : "",
                     Accent = accent,
                     IsCurrent = isCurrent,
@@ -157,6 +157,16 @@ namespace CosmicShore.Gameplay
         }
 
         readonly List<VesselClassType> _shellScratch = new();
+
+        /// <summary>
+        /// A station's name: its class asset's card name (a crew vessel reads "Wrasse and Grouper"), else the class
+        /// name. A probe on the definition's class list, quiet on a miss.
+        /// </summary>
+        string LabelOf(VesselClassType vessel) =>
+            _def && _def.VesselArt && _def.VesselArt.TryGetVesselByClass(vessel, out var so, reportMissing: false)
+            && !string.IsNullOrWhiteSpace(so.CardName)
+                ? so.CardName
+                : vessel.ToString();
 
         /// <summary>Your own hull has no station - flying it would swap it for itself.</summary>
         protected override bool WorldOmitsCurrentOption => true;

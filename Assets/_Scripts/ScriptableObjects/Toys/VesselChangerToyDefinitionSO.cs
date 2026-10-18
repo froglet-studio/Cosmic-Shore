@@ -21,6 +21,10 @@ namespace CosmicShore.ScriptableObjects
                                  "curated default set. The vessel you're currently flying is always excluded.")]
         VesselClassType[] vesselCollection;
 
+        [SerializeField, Tooltip("Where each hull's picture comes from on the Toy Box's vessel list - " +
+                                 "the class assets' card art. Leave empty and the rows are names only.")]
+        SO_VesselList vesselArt;
+
         [Header("Layout")]
         [SerializeField, Min(10f), Tooltip("Spacing between ships in the matrix.")]
         float stationSpacing = 60f;
@@ -34,6 +38,7 @@ namespace CosmicShore.ScriptableObjects
         float matrixDistanceFactor = 6f;
 
         public VesselClassType[] VesselCollection => vesselCollection;
+        public SO_VesselList VesselArt => vesselArt;
         public float StationSpacing => stationSpacing;
         public float MatrixDistanceFactor => matrixDistanceFactor;
 

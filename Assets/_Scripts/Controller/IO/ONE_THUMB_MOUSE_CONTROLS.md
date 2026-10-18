@@ -433,7 +433,7 @@ Both duplicates are excised. The roster now reads:
 | Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` | ✅ |
 | Scarab | `ScarabVesselTransformer` | ✅ |
 | Brittle Star | `BrittleStarVesselTransformer` (single-stick subclass) | ✅ |
-| Dolphin, Manta, Rhino, Squirrel | `VesselTransformer` | — |
+| Dolphin, Manta, Rhino, Squirrel, Wrasse | `VesselTransformer` | — |
 | Urchin | `GunVesselTransformer` | — |
 
 `OneThumbVesselCoverageTests` holds all three halves of that as source laws — exactly one

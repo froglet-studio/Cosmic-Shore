@@ -443,6 +443,100 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 **First-pass tuning** comes from the lab's `SHIPPED` block, and the lab is where it changes (`ANGLER.md` §5).
 
 ---
+
+### 🔴 Kite Navigator on the Wrasse ("Wrasse and Grouper"): the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** the first multiplayer vessel, `VesselClassType.Wrasse = 19` (a Sparrow hull, in the Toybox's
+Vessel Changer), and its second seat, ported from the Crew Vessel Lab's signed-off round 3
+(`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`).
+- **The board and the kite:** a navigator flies a kite on the hull's x-z plane. The head pops hostile prisms and rams
+  rivals. The tail closes loops, and a loop of one navigator-only element fires Space (an AOEExplosion), Mass (a
+  cluster of our prisms), Time (boost) or Charge (the next ram steals petals, as a scored Strike).
+- **The seats:** the arena's swap gesture moves the human between the hull and the kite, and an AI flies whichever seat
+  is empty.
+- **What has been checked:**
+  - Compile: `unity_refcompile`, player config clean (0 errors in project code). The editor config has 0 errors in
+    the changed files; its 3 project errors are in `AuthenticationServiceFacade.cs` and `MultiplayerSetup.cs`
+    (`Unity.Multiplayer.PlayMode` is unobtainable to the harness).
+  - Parity: `Tools/Build/kite_navigator_lab/parity.cjs` PASS. The core matches the lab over 3120 frames, the asset
+    matches it on 21 fields, and the planted controls are caught.
+  - Tests: the 12 `KiteNavigatorCoreTests` pass when compiled outside Unity with an NUnit shim.
+  - `/verify-unity` was not available in this session.
+- **First-pass numbers:** all from the lab: board 160 u, kite 320 u/s, tail 1.6 radii, growth ×2, Space 60 → 640
+  MaxScale, Mass 6 → 240 prisms, Time 1.5 → 30 s, Charge 1 → 30 petals. Expect a balancing pass once it is seen in a
+  real match. The lab could not see the real blast hitting rival hulls, or the prism pool's own limits.
+
+**Round 4 (2026-10-18, Garrett's direction in Unity; `KITE_NAVIGATOR.md` "Round 4"):** the kite view is a second
+camera drawn by the game; the views swap; motes are lime petal shapes; the kite follows with no click; the pilot is
+one-thumb with no buttons, and the lifted thumb boosts; the hull's petals weight the motes; Charge rams creatures; the
+L5 upgrades (Mass shields clusters, Charge steals, Space breaks super shields, Time removes the boost cooldown); an
+Omni crystal doubles the board for 5 s. Round 4b: boost on the pilot's trigger, visible petals, unlit out-of-plane
+prisms, a 50% longer lasso, a small pilot view. Player and editor reference compiles: 0 errors in changed files.
+`author_wrasse_assets.py --check` and `--self-test` OK.
+
+**Round 4d (2026-10-18):**
+- The pilot flies on two sticks again.
+- The ability cards count the saved boosts (Time), the kite's rams (Charge) and the last blast's kills (Space); the
+  Mass card flashes when a cluster lands. This is `WrasseHUDController`, and the map has the Wrasse's own cards with no
+  button chips.
+- Each mote is a five-petal flower that moves like its element.
+- The kite view sees 400 u above and below the plane:
+  - prism depth is measured from the plane (`PrismDepthPlane`, a new HLSL include in `PrismClockAnimation.hlsl` and the
+    swarm member shaders);
+  - the mass above the board dithers in a cone (`PrismOcclusionCorridor.BeginViewOverride`).
+- Checks run:
+  - player reference compile: 0 errors;
+  - editor reference compile: the same 3 errors as before, none in the changed files;
+  - `author_wrasse_assets.py --check` and `--self-test`: OK;
+  - `verify_swarm_member_pose.py`: OK.
+- **The shader change needs a Unity import**:
+  - BlockGraph and the swarm shaders recompile with the new include;
+  - check that the pilot's own view of prisms is unchanged (the include is off by default).
+
+**Verify:**
+1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Wrasse and Grouper** station (it looks like a
+   Sparrow). The hangar's card for it reads WRASSE AND GROUPER too.
+   - Lower left: a small square kite view, the real world seen from straight above your hull.
+   - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
+   - In your own view: a faint see-through kite and faint lime dots, not in the way.
+2. Fly with two thumbs (both sticks, or the keyboard): the spread of the sticks is the throttle. Round 4e: it turns
+   faster and rolls much faster than in 4d (pitch and yaw 100, roll 120). No ability button does
+   anything, and no card shows a button chip. The hull keeps the Sparrow's tuning (top speed 60); say if it wants the
+   two-stick hulls' sharper turns.
+3. After a Time loop, the Time card shows the saved boosts (a number) and the kite view shows a lime dot each round the
+   hull. Pull the right trigger (right Shift; on a phone, lift both thumbs): one boost runs 1.5 s, the count drops by
+   one, and the Time card's veil sweeps until the next can fire (2 s after; none at Time level 5). Flying with nothing
+   held does NOT boost.
+   - The Charge card shows the kite's rams (a number), the Space card how many prisms the last Space blast destroyed,
+     and the Mass card flashes when a Mass cluster lands.
+4. Press **2** (or D-pad right).
+   - The kite view fills the screen.
+   - Your hull's view shrinks to the same small square in the lower left, flown by its AI.
+   - Each mote is a lime five-petal flower that looks like the element flower on top of the ability totem: the same
+     petal shapes, sizes and spacing (round 4f). Space spins all the time; Time flips its petals one after another; Mass
+     holds three petals in while two push out, a new pair each half second; Charge has one blue plasma bolt with a short
+     tail running round all five petals.
+   - The hull, flown by its AI, never shoots (round 4c removed the Sparrow's guns and missiles).
+   - Prisms far above or below the plane are the real prisms, never gone (round 4d). Prisms on the plane look crisp;
+     the farther out of the plane, the more their faces part, as distant mass does in the pilot view. Prisms above
+     the board dither (a shattered see-through look) so the board under them stays visible. In your small pilot view,
+     prisms look exactly as they always did.
+   - The tail is half as long again as before (2.4 board radii).
+   - Move the mouse without clicking, or lean the stick: the kite follows.
+5. Loop motes of one petal shape:
+   - **Space**: a blast takes out hostile prisms. At Space level 5 it also breaks shielded and super-shielded prisms.
+   - **Mass**: a cluster of your prisms. At Mass level 5 they are shielded.
+   - **Time**: boost for the pilot.
+   - **Charge**: gold pips round the kite.
+6. A loop with two petal shapes in it fizzles.
+7. With charge, ram a rival: crystals burst out of them (at Charge level 5, the petals come to you instead) and the
+   scoreboard counts a hit. Ram a creature: it dies, and one pip goes.
+8. Collect an Omni crystal (round 4e): four clusters of motes, one of each element, pop onto the kite's board around its
+   centre. The view does NOT zoom.
+9. Press **1**: your view is full screen again, at its old size, with no stuck input and no stuck boost.
+10. Gather petals of one element on the hull: the motes of that shape come more often.
+11. In the Vessel Changer, swap away from the Wrasse and back, once flying and once while on the kite. Every view comes
+    back to normal and the input is live.
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**

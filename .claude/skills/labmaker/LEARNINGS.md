@@ -104,6 +104,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `verify_prism_collision_burst.py` `stretchFloor`; the failing run printed `the bend stretched a step by 0.997898` four times
 - Promoted: no
 
+### L-GEN-16 — A mechanism written into a write-up is a hypothesis until a trace shows it
+- Lab: Crew Vessel Lab round 1 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: the first draft explained the weak element-buff consoles as "the pilot's crystals fill the [0,10] band within about two minutes, so buffs only reach the draining overcharge". The arithmetic looked right (4 elements × 8 petals at ~15 catches/min). A trace of the levels at 30 / 60 / 90 / 120 s showed 6–10 at the END of the 120 s scoring window, so the band was not full for most of it. The real cause, also traced, was the payout: a match board averages about 1 level of buff spread over four elements.
+- Do instead: before a "because" goes into a finding, log the quantity it names over the run (here the base levels and the summed live buff) and confirm it says what the sentence claims. An arithmetic estimate is where to look, not the evidence.
+- Evidence: `CREW_VESSEL_LAB.md` round 1, Found 2 (mean live buff 1.06 levels; base levels 7.0/10.4/10.8/7.0 at 120 s).
+- Promoted: no
+
+### L-GEN-17 — A lab's canvas draws ported to Unity's instanced meshes: never `Sprites/Default`
+- Lab: Crew Vessel Lab → the Wrasse in Unity (`Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorView.cs`) · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: the lab's 2D overlay (kite, motes, rings) became world meshes drawn with `Graphics.RenderMeshInstanced` and a `Sprites/Default` material. It compiled, and the batching looked right. Garrett flew it and "couldn't see any petals": on the instanced path, `Sprites/Default` takes its colour from `unity_SpriteRendererColorArray`, which only a SpriteRenderer fills, so every instance drew at zero alpha.
+- Do instead: for instanced overlay draws, use `Universal Render Pipeline/Unlit` set up as a transparent, double-sided surface (`_Surface` 1, SrcAlpha/OneMinusSrcAlpha, `_ZWrite` 0, `_Cull` Off, `_SURFACE_TYPE_TRANSPARENT`). Keep `Sprites/Default` only for single non-instanced meshes whose vertices carry their own colour. When graduating a lab's look, hand the person the one thing to check first: "can you see it at all".
+- Evidence: `KiteNavigatorView.Unlit` and its comment; `KITE_NAVIGATOR.md` "Round 4b".
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -713,6 +727,62 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the designer asked that neighbours struck alike not play one animation while each explosion stays one continuous structure. More per-fragment noise would have traded one fault for the other. Drawing the randomness ONCE per death (spread, timing, spin, tumble plane, lean, a smooth ellipsoid) answered both. Two metrics made that visible: a per-region SHAPE difference between two deaths (a per-vertex difference could not tell gestalt from grain; the noise alone already read 0.18 there), and a within-death neighbour roughness. The first rose 3.3x and the second did not move. The first version read the seed through hash13, and the GPU parity gate failed (worst 7e-3, 99% of vertices). hash13 multiplies its input's rounding about a hundredfold, so the page's GPU and the harness drew different characters for the same death. Triangle waves of the seed fixed it (worst 8e-4).
 - Do instead: put "differ between instances" in per-instance constants and "differ within one" in a continuous field, and score each with its own metric plus a negative control. Read an already-hashed seed through gentle functions (triangle waves, low-frequency sines). Never pass it through a second high-gain hash when two GPUs, or a page and a harness, must agree.
 - Evidence: `PrismBurstFragmentVariety`, `PrismBurstSeedWave` (HLSL); harness F11 and `PRISM_BURST_FRAGMENT_VARIETY_OFF`; `COLLISION_BURST_LAB.md` round 12
+- Promoted: no
+
+### L-STU-106 — A pursuit AI with no throttle orbits anything inside its turn circle; read the per-seed spread before the mean
+- Lab: Crew Vessel Lab round 1 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: the first scorecard said two of four navigator consoles made a crew WORSE than a solo pilot. The per-seed scores ran from 2 to 20 petals per minute. Two lab bugs: the hull flew at constant speed, so a crystal inside its 25 u turn circle (35 u/s at 80 °/s) was orbited forever; and the "nothing in sight" behaviour turned in place, so a pilot that lost sight of everything never found anything again. With the Sparrow's real throttle (minimum 10 + scaler 25, braking for a target inside 2.2 turn radii) and a roaming search point, skilled runs sat within about ±15% and both "negative" consoles turned positive.
+- Do instead: give the lab hull the game's throttle, not a constant speed, and print per-seed values for every condition before quoting a mean. A spread of 10× between seeds is a stuck agent, not noise.
+- Evidence: `CrewVesselLab.html` `pilotAI` (`turnR`, `seat.roam`); `CREW_VESSEL_LAB.md` round 1, Found 7.
+- Promoted: no
+
+### L-STU-107 — To ask "does this seat's PLAY matter", score skill in the seat separately from the seat existing
+- Lab: Crew Vessel Lab round 1 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-14
+- What happened: on crew lift alone, Power Split ranked second (+20%). Scoring a Hard against an Easy navigator in the same seat showed 4% (inside the noise): the lift came from the pips being lit at all, not from how they were routed. An actions-per-minute column showed the Hard AI clicking about 200 times a minute for it. Scope Call showed the opposite shape: small lift (+14%) and large skill (31%), so a bad navigator made a good pilot worse than flying alone.
+- Do instead: for any lab about a role or a seat, report three columns side by side: the role's lift over its absence, the skill spread inside the role (expert vs rookie in that seat, everything else fixed), and the role's action rate. Each catches a design the others miss: a chore (high rate, no skill), a crutch (lift, no skill) and a liability (skill bigger than lift).
+- Evidence: `CrewVesselLab.html` `runBatch` (`navMatters`, `navApm`); `CREW_VESSEL_LAB.md` round 1 scorecard.
+- Promoted: no
+
+### L-STU-108 — An AI's "arrived" test must measure against the point it is actually aiming at, noise included
+- Lab: Crew Vessel Lab round 2 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-16
+- What happened: the navigator AI moves a thumb toward `goal + aim noise` but returned its distance to `goal`. Whenever the noise was larger than the arrival tolerance (the sling's was 0.01 board radii, about the Hard AI's noise), the thumb sat on its noisy point forever, one phase short of releasing. Pinball and Pathfinder caught almost nothing on some seeds, which read as "these controls are weak" until a frame trace showed `plan=1/0` unchanged for 10 s.
+- Do instead: an agent that aims with noise judges arrival against its own aim point, and any multi-phase gesture plan gets a trace of its phase over time before its column is quoted. A phase that never changes is a stuck agent.
+- Evidence: `CrewVesselLab.html` `moveThumb` (returns the distance to `tx, tz`); `CREW_VESSEL_LAB.md` round 2, "Fixed in the lab".
+- Promoted: no
+
+### L-STU-109 — A target outside the playfield's clamp freezes the mover forever: clamp the TARGET at input, not only the mover
+- Lab: Crew Vessel Lab round 2 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-16
+- What happened: the kite is kept on its round board every frame. A dash target or a drawn path point just past the rim was never reached (the clamp pulled the kite back each frame), so the dash and path never finished and no new one could start. Hopper seed 2 froze at 33 s and Pathfinder seed 3 at 3 s. A person tapping near the edge would have hit the same freeze; the AI found it first.
+- Do instead: clamp every target a player can set (tap, drag end, drawn point) into the reachable area when it is recorded, inside the mover's own clamp. Look for a mover whose position stops changing while it still has a target.
+- Evidence: `CrewVesselLab.html` `onBoard(x, z)` applied to `dashTo` and path points.
+- Promoted: no
+
+### L-STU-110 — When an exponent multiplies a spawned quantity, the spawner is a balance knob as strong as the exponent
+- Lab: Crew Vessel Lab round 3 (`Docs/Studios/CrewVesselLab.html`) · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-17
+- What happened: a pure loop of n motes fires `base × 2^(n − 1)`. Spreading each mote cluster 4 u wider (gaussian 14 → 18 u, a readability fix) cut the mean loop from 2.8 to 2.25 motes and Space blasts from 327 to 12 hostile prisms a minute. The exponent turned a small change in how motes arrive into a 27× change in what the effect destroyed.
+- Do instead: when a payoff is exponential in a count, put the thing that sets the count (cluster size, spread, spawn rate) beside the exponent in the sign-off questions, and re-run the scorecard after ANY change to the spawner, including a "visual" one. Quote mean and best n with every effect column.
+- Evidence: `CREW_VESSEL_LAB.md` round 3, Found 2 (two `runBatch` runs either side of the spread change).
+- Promoted: no
+
+### L-STU-111 — A pickup fixed in world space is almost never reachable by a player who lives in a tilting plane
+- Lab: Crew Vessel Lab round 3 · Branch: `cece/compassionate-babbage-gc13io` · Date: 2026-10-17
+- What happened: the navigator plays on the flying vessel's x-z plane and can touch things within ±40 u of it. Motes placed in world space near the plane were touchable 1–4 times out of 30 within seconds, because every pitch and roll of the pilot swings a 160 u board through 150 × sin(angle) u. The AI planned loops round motes it could not take, and no loop ever fired.
+- Do instead: measure the touchable share of a plane-bound player's targets over time before tuning anything else. When it is low, give the targets an in-plane home (re-project them onto the plane each frame, so they flow with the world but stay touchable) and keep world-fixed as a deliberate option ("the pilot sweeps the slice").
+- Evidence: `CrewVesselLab.html` `stepMotes` (`motes: 'board'`), the Motes in the world preset; round 3 Found 6.
+- Promoted: no
+
+### L-STU-112 — A five-fold flower turned 72° looks unmoved: keep motion continuous, or break the symmetry
+- Lab: Crew Vessel Lab → the Wrasse's motes (`KiteNavigatorView.Flower`) · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: the Space motes copied the Space crystal's stepped group spin (72° in 1.1 s, then a hold). On a flower of five identical petals every rest pose is the start pose, so the spin read as a twitch. Garrett: "I didn't notice the space rotating".
+- Do instead: before porting a motion onto a symmetric shape, ask whether its rest poses are distinguishable. A step of 360°/n on an n-fold shape is invisible. Spin continuously, or mark one petal.
+- Evidence: `KITE_NAVIGATOR.md` "Round 4e" (`spaceSpinDegreesPerSecond` 150, continuous).
+- Promoted: no
+
+### L-STU-113 — To match a shipped icon's proportions, measure the shipped sprite; never shape it with free knobs
+- Lab: Crew Vessel Lab → the Wrasse's motes · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: to separate the petals, round 4e added `petalGap` and a non-uniform `petalWidth`. The width squashed every traced outline, so the Space dart "doesn't look the same in its proportions". The totem's flower already had the answer: each `Resources/ElementPetals/<element>_petal.png` is the whole flower, one petal at its true offset and size.
+- Do instead: trace the shipped asset (alpha bounds at 0.5 give each petal's centre offset and scale, in flower radii), scale uniformly, and delete the knobs that were standing in for that measurement.
+- Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
