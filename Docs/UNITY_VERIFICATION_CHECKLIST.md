@@ -76,6 +76,10 @@ look: prism depth from its plane, the occlusion corridor re-aimed). The Goby's c
 player 0 errors, editor 3 (`AuthenticationServiceFacade`, identical to bleeding-edge); Amoebius builds;
 `check_crew_vessels.py` ok with 7 negative controls; both generators' `--check`; the Kite's `parity.cjs` (core and asset
 unchanged); 53/53 stand-in tests.
+**Not flown, even in Amoebius:** the scripted flight that proved every earlier round could not reach freestyle this
+time - bleeding-edge's new first-time guided path ("Your first race is waiting. Open the Arcade.", `MenuSpotlight`)
+dims and blocks the Toybox and the menu crystal on the test profile. The run itself logged zero crew exceptions with
+the seat idle, so the shared seat, layout and render code is compile-verified only (both seats).
 
 1. **Toybox ▸ Vessel Changer:** the stations read **Goby and Pistol** and **Wrasse and Grouper**; so do the hangar card,
    its detail and abilities views and the arcade launch panel for either.
