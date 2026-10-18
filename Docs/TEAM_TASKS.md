@@ -859,3 +859,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (sign-off); Yash can run the editor pass
 - **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Kite Navigator
+
+### T-20261018-2c7e · open · dev · Vessel models
+- **Task:** Work the nine follow-ups the ship review of the vessel-model branch left (Docs/VesselModels/README.md 'Follow-ups from the ship review'): one Editor check (BakeMesh scale), the Shrike beam origin under the Space morph, a Thresher pectoral sign question, two latent Rhino/VesselCustomization nits, two deletion proposals (GhostAction, the six procedural hull builders: check Amoebius first) and two per-spawn/per-frame perf trims.
+- **Done when:** each row is fixed, filed or answered in the README's table
+- **Who can take it:** Yash (offered), anyone; Garrett for the sign question and the deletions
+- **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/README.md

@@ -83,3 +83,23 @@ Where a dossier and `Docs/VESSEL_CONSTRUCTION.md` or a vessel's `R_*.md` disagre
 names the asset it read and the asset is the record (each dossier's header says so). The dossiers
 were written by independent readers in one session; the skill's `references/CONTRACT.md` is the
 cross-vessel digest and is what a modelling session reads first.
+
+## Follow-ups from the ship review (2026-10-18, `/ship-deep` of `ccr-d93a6dfb-ugbxng`)
+
+Three independent re-reads of the branch's C#. The blocker (the Brittle Star's thrown ring tumbled about the hull's
+UP, because a Z-up FBX's mesh node keeps the file frame) and the should-fixes (the flares cloned materials on
+every skinned hull; the Manta family painted the domain through the cloning path; the Thresher hitch lost its
+morph tracking on a re-init) were fixed on the branch. These were left, each with the evidence that names it.
+None blocks building on the branch. Team task T-20261018-2c7e.
+
+| # | what | evidence | kind |
+|---|---|---|---|
+| 1 | Confirm `SkinnedMeshRenderer.BakeMesh(mesh, false)` bakes WITHOUT the transform's scale. `FoldActionExecutor` (the Fold ghost) then sets `localScale = source.lossyScale`, and `BrittleStarHullModel.DressThrownRing` re-applies the scale through `TransformPoint`. If `false` keeps the scale, both come out at s^2. | Latent: every hull's `lossyScale` is 1 today, except during the Butterfly's arrival bloom (`ApplyVisualScale` < 1 while a Fold starts). One Editor look at a Fold started mid-bloom settles it. | check |
+| 2 | The Shrike's lance leaves `gun.mouth`, a bone the Space morph does not move. At high Space the beam starts inside the lengthened barrel. | `ShrikeExecutor.cs` beam origin; `specs/shrike.py` (Space lengthens the barrel). The Brittle Star solved the same thing with mouth travel read from the blend-shape deltas (`BrittleStarHullModel.ReadMouthTravel`). | visual |
+| 3 | The Thresher's pectoral comment says the inside fin's leading edge goes UP. The code puts it DOWN on a right turn (`attack = side*yaw*twist`, then `Euler(+X)`). | The `ThresherAnimation.cs` pectoral loop; the attack line predates this branch. The owner decides which is meant. | sign |
+| 4 | `RhinoAnimation` makes its bones follow the parts in `Update`, while the Urchin's do it in `LateUpdate`. A part moved later in the frame draws one frame behind its collider. On a prefab without the rig, the follow lookups also report `wing1.l` etc. as unresolved, though the parts animate. | `RhinoAnimation.cs` FollowParts / ResolveParts; `UrchinAnimation.cs` LateUpdate. Latent: only `Rhino.prefab` uses it, and it has the rig. | nit |
+| 5 | `VesselCustomization.ResolveModelGeometries` REPLACES a renderer-less geometry with its child SkinnedMeshRenderer, so a collider-bearing parent (the Rhino's `Rhino_Test (1)`) leaves `ShipGeometries`. | Only `GhostAction` and `UrchinSlipActionExecutor` read colliders from `ShipGeometries`, both Urchin-only, so nothing breaks today. Appending the renderer, or replacing only collider-less geometry, is safer. | latent |
+| 6 | `GhostAction` has no caller. Its `Initialize` skips `base.Initialize`, so `Vessel` would be null. | `grep -rn GhostAction Assets --include=*.cs` shows only its own file; the Urchin prefab holds only the component. Deletion PROPOSAL: a guid sweep does not see a `Resources.Load` or a type reference from Amoebius (`Port/` compiles `Assets/_Scripts`). | dead? |
+| 7 | The six procedural hull builders (`Scarab/Shrike/Stoat/Thresher/Butterfly/BrittleStarHullBuilder`) are referenced by NO prefab, scene or asset. Only the fallback branches of their animation and executor scripts name them. | Script-guid sweep over `Assets/**/*.{prefab,unity,asset}`: 0 each. Deletion PROPOSAL, with their fallback branches. The `*HullForm` classes stay (the harnesses, tests and `BrittleStarHullModel` read `Defaults`). Check Amoebius first. | dead? |
+| 8 | `BrittleStarHullModel` reads the whole mesh (bone weights twice, bindposes, four blend-shape frames, every submesh's triangles) on each spawn. | Once per spawn, not per frame, but an AI backfill spawns several. Cache statically per `sharedMesh`. | perf |
+| 9 | `updateWhenOffscreen = true` on the seven skinned hulls recomputes their bounds every frame, off screen too, AI included. | Deliberate (the morphs and the Rhino's fold reach past the bind bounds). Padding `localBounds` once would cost nothing per frame. | perf |
