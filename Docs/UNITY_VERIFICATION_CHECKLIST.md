@@ -133,9 +133,10 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 4. Press **2** (or D-pad right).
    - The kite view fills the screen.
    - Your hull's view shrinks to the same small square in the lower left, flown by its AI.
-   - Each mote is a lime five-petal flower of its element's petal, the five petals clearly apart (round 4e). Space spins
-     all the time; Time flips its petals one after another; Mass moves each petal well in and out; Charge has a
-     flickering blue plasma rim round each petal and a bright blue spark running round it.
+   - Each mote is a lime five-petal flower that looks like the element flower on top of the ability totem: the same
+     petal shapes, sizes and spacing (round 4f). Space spins all the time; Time flips its petals one after another; Mass
+     holds three petals in while two push out, a new pair each half second; Charge has one blue plasma bolt with a short
+     tail running round all five petals.
    - The hull, flown by its AI, never shoots (round 4c removed the Sparrow's guns and missiles).
    - Prisms far above or below the plane are the real prisms, never gone (round 4d). Prisms on the plane look crisp;
      the farther out of the plane, the more their faces part, as distant mass does in the pilot view. Prisms above

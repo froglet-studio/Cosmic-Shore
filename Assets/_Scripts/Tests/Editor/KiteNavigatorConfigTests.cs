@@ -65,13 +65,16 @@ namespace CosmicShore.Tests
             Assert.AreEqual(60f, c.DepthFullSpreadAt);
             Assert.AreEqual(0.35f, c.DitherCoreAlpha, 1e-6f);
             Assert.AreEqual(0.5f, c.DitherNearScale, 1e-6f);
-            // round 4e: the petals set apart, Space spinning without pausing, Mass +20%, Charge's plasma visible
-            Assert.AreEqual(0.5f, c.PetalGap, 1e-6f);
-            Assert.AreEqual(0.65f, c.PetalWidth, 1e-6f);
+            // rounds 4e-4f: the totem's proportions, Space spinning without pausing, Mass +20% with three petals held in,
+            // Charge's one bolt round the whole flower
+            Assert.AreEqual(4.5f, c.MoteSize);
             Assert.AreEqual(150f, c.SpaceSpinDegreesPerSecond);
             Assert.AreEqual(0.72f, c.MassPulse, 1e-6f, "round 4d's 0.6, +20%");
-            Assert.AreEqual(1.35f, c.ChargeHaloScale, 1e-6f);
-            Assert.AreEqual(0.32f, c.ChargeSparkSize, 1e-6f);
+            Assert.AreEqual(2, c.MassPetalsOut, "three of the five held in");
+            Assert.AreEqual(0.5f, c.MassStepSeconds, 1e-6f);
+            Assert.AreEqual(1.6f, c.ChargeBoltLapSeconds, 1e-6f);
+            Assert.AreEqual(0.22f, c.ChargeSparkSize, 1e-6f);
+            Assert.AreEqual(7, c.ChargeBoltTrail);
         }
 
         [Test]

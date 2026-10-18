@@ -150,6 +150,27 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
   real roll axis; the Sparrow's 30 only banked its single stick into turns. `author_wrasse_assets.py` writes these once,
   while the hull still carries the Sparrow's numbers, so a value tuned in Unity afterwards is never overwritten.
 
+**Round 4f (2026-10-18):**
+- **The totem's proportions** ("lets have all of the blooms get closer to matching the sizes shapes and spacing of the
+  ones used to display elements above the ability icons"). Each petal now sits where the totem's element flower puts
+  it, measured from `Resources/ElementPetals/<element>_petal.png` (each sprite is the whole flower, turned 72° per
+  petal; traced from its alpha). In flower radii:
+
+  | Petal | Centre out | Outline scale |
+  |---|---|---|
+  | Charge | 0.445 | 0.367 |
+  | Mass | 0.395 | 0.453 |
+  | Space | 0.461 | 0.383 |
+  | Time | 0.461 | 0.383 |
+
+  Every petal is scaled uniformly. Round 4e's `petalWidth` squashed every shape, which is why the Space dart looked
+  wrong, so it is gone, and so is `petalGap`. `moteSize` is now the flower's radius (4.5 u).
+- **Mass:** three petals held in, two pushed out by `massPulse` (0.72 of the radius) on a bump. A new pair, never
+  neighbours, takes over every `massStepSeconds` (0.5 s). `massPetalsOut` is 2.
+- **Charge:** ONE blue bolt laps all five petals. It runs each petal's outline from the apex, then hops to the next,
+  every `chargeBoltLapSeconds` (1.6 s), with `chargeBoltTrail` (7) fading sparks behind a head of `chargeSparkSize`
+  (0.22 of the radius). The per-petal halos and sparks are gone.
+
 Every "L5" is the fleet's gate, `ElementalAbilityHandler.IsUpgradeActive(element)`. The Wrasse's map lists all four
 elements: each unlocks at level 5 and relocks below 4.
 

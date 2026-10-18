@@ -53,13 +53,14 @@ MonoBehaviour:
   omniClusterRadius: 0.5
   pipSize: 0.32
   viewMargin: 0.015
-  moteSize: 3.2
-  petalGap: 0.5
-  petalWidth: 0.65
+  moteSize: 4.5
   spaceSpinDegreesPerSecond: 150
   massPulse: 0.72
-  chargeHaloScale: 1.35
-  chargeSparkSize: 0.32
+  massPetalsOut: 2
+  massStepSeconds: 0.5
+  chargeBoltLapSeconds: 1.6
+  chargeSparkSize: 0.22
+  chargeBoltTrail: 7
   tailWidth: 1.4
   pilotKiteAlpha: 0.22
   pilotDotAlpha: 0.35

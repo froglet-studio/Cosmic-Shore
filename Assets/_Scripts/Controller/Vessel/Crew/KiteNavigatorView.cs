@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
         readonly Mesh[] _petals = new Mesh[4];
         readonly Vector3[][] _outlines = new Vector3[4][];   // each petal's outline in its mesh's own space
         static readonly Color Plasma = new(0.42f, 0.72f, 1f, 1f);   // the Charge crystal's blue plasma
-        readonly Material _plasmaMat, _plasmaHaloMat;
+        readonly Material _plasmaMat;
         readonly Mesh _tailMesh, _loopMesh;
         readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat;
         readonly Material _tailMat, _loopMat;
@@ -106,9 +106,7 @@ namespace CosmicShore.Gameplay
             _ringMat = Unlit(new Color(1f, 1f, 1f, 0.85f));
             _goldMat = Unlit(Gold);
             _plasmaMat = Unlit(Plasma);
-            _plasmaMat.renderQueue += 1;                     // the spark over the lime petal
-            _plasmaHaloMat = Unlit(new Color(Plasma.r, Plasma.g, Plasma.b, 0.85f));
-            _plasmaHaloMat.renderQueue -= 1;                 // the halo under it, so only its rim shows
+            _plasmaMat.renderQueue += 1;                     // the bolt over the lime petals
         }
 
         internal Camera Camera => _cam;
@@ -153,7 +151,7 @@ namespace CosmicShore.Gameplay
             if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
             foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh, _tailMat, _loopMat,
-                                             _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat, _plasmaMat, _plasmaHaloMat })
+                                             _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat, _plasmaMat })
                 if (o) Object.Destroy(o);
         }
 
@@ -337,69 +335,83 @@ namespace CosmicShore.Gameplay
         // elemental bars draw an element (ElementalBarsConfigSO.PetalCount / PetalSpacing), so the element's motion reads
         // (Garrett, 2026-10-18: "use all 5 petals for each of the kite elements like we do in the element amount indicator.
         // then you can sell their effect better"):
-        //   Space  - the flower SPINS, the Space crystal's group spin: 72 deg in 1.0 s, then a 0.1 s hold
-        //   Time   - every petal FLIPS 180 deg about its own axis, petal by petal round the flower, on the Time crystal's 2 s
-        //            loop (each flip 1.0 s, eased)
-        //   Mass   - each petal moves IN and OUT along its spoke, the Mass crystal's columns: a slow climb, a quick drop
-        //   Charge - a BLUE plasma bolt runs the perimeter of each petal, the Charge crystal's seam walk along its edges
+        //   Space  - the flower SPINS without pausing (round 4e: a 72 deg step left a five-petal flower looking unchanged)
+        //   Time   - every petal FLIPS 180 deg about its own axis, petal by petal round the flower, on a 2 s loop
+        //   Mass   - three petals held in while the other two push out along their spokes, a new pair each step (round 4f)
+        //   Charge - ONE blue plasma bolt laps all five petals' outlines (round 4f)
         // Each mote's Spin seeds its phase, so a cluster does not move in lockstep.
-        // A mote: five petals of its element's shape, as the element amount indicator draws them, set apart by petalGap so
-        // each petal reads on its own (round 4e), each moving like its element. Space spins without pausing; Mass moves
-        // each petal in and out; Time flips every petal, one after another; Charge wears a flickering blue plasma halo
-        // round each petal with a spark running its perimeter.
-        void Flower(int element, float x, float z, float seed, float height, float size, Quaternion basis, float now, Camera cam)
+        //
+        // Each element's petal as the totem's element flower draws it (Resources/ElementPetals/<element>_petal.png, one
+        // sprite the size of the whole flower, turned 72 degrees per petal): where the petal's centre sits out from the
+        // flower's centre, and the scale of its outline mesh (whose longer side spans 2), both in flower radii. Traced from
+        // each sprite's alpha bounds (>= 0.5), so the kite's motes keep the totem's sizes, shapes and spacing (round 4f).
+        static readonly float[] PetalCentreOut = { 0.445f, 0.395f, 0.461f, 0.461f };   // Charge, Mass, Space, Time
+        static readonly float[] PetalScale = { 0.367f, 0.453f, 0.383f, 0.383f };
+        readonly Matrix4x4[] _flowerPetals = new Matrix4x4[ElementalBarsConfigSO.PetalCount];
+
+        // A mote: five petals of its element's shape, laid out as the totem lays them, each moving like its element.
+        // Space spins without pausing; Mass holds three petals in and pushes the other two out, a different pair each step;
+        // Time flips every petal, one after another; Charge has one blue plasma bolt lapping all five petals.
+        void Flower(int element, float x, float z, float seed, float height, float radius, Quaternion basis, float now, Camera cam)
         {
             const int petals = ElementalBarsConfigSO.PetalCount;
             const float spacing = ElementalBarsConfigSO.PetalSpacing;
             var cfg = _nav.Config;
-            float phase = seed / 360f, p = size * 0.5f;       // a petal is 2p long
-            float rest = p * (1f + 2f * cfg.PetalGap);        // its centre: its inner tip sits petalGap petal-lengths out
+            float phase = seed / 360f;
+            float rest = PetalCentreOut[element] * radius, scale = PetalScale[element] * radius;
             var centre = _nav.BoardToWorld(x, z) + _nav.BoardUp * height;
 
             float spin = seed;
             if (element == 2) spin += now * cfg.SpaceSpinDegreesPerSecond;
 
+            float massCycle = now / cfg.MassStepSeconds + phase * petals;
+            int massStep = Mathf.FloorToInt(massCycle);
+            float massBump = Mathf.Sin(Mathf.PI * (massCycle - massStep));
+
             for (int i = 0; i < petals; i++)
             {
-                float deg = spin + i * spacing, out1 = rest;
-                float width = cfg.PetalWidth;
-                if (element == 1)                               // Mass: in and out
+                float deg = spin + i * spacing, out1 = rest, width = 1f;
+                if (element == 1)                               // Mass: the step's petals out, the rest held in
                 {
-                    float u = Mathf.Repeat(now * 0.6f + phase + i * 0.37f, 1f);
-                    float climb = u < 0.85f ? u / 0.85f : 1f - (u - 0.85f) / 0.15f;
-                    out1 = rest + 2f * p * cfg.MassPulse * climb;
+                    // star order (2i), so the petals out together are never neighbours
+                    int order = ((2 * i - massStep) % petals + petals) % petals;
+                    if (order < cfg.MassPetalsOut) out1 = rest + radius * cfg.MassPulse * massBump;
                 }
                 else if (element == 3)                          // Time: every petal flips, one after another
                 {
                     float tl = Mathf.Repeat(now / 2f + phase, 1f) * 2f;
                     float u = Mathf.Clamp01((tl - (0.2f + 0.2f * i)) / 1.0f);
-                    width *= Mathf.Max(0.05f, Mathf.Abs(Mathf.Cos(Mathf.PI * Mathf.SmoothStep(0f, 1f, u))));
+                    width = Mathf.Max(0.05f, Mathf.Abs(Mathf.Cos(Mathf.PI * Mathf.SmoothStep(0f, 1f, u))));
                 }
                 float a = deg * Mathf.Deg2Rad;
                 var dir = _nav.BoardRight * Mathf.Sin(a) + _nav.BoardForward * Mathf.Cos(a);
                 var rot = basis * Quaternion.Euler(0f, deg, 0f);   // the petal's local +Z (tip) points along dir
-                var at = centre + dir * out1;
-                var m = Matrix4x4.TRS(at, rot, new Vector3(p * width, 1f, p));
+                var m = Matrix4x4.TRS(centre + dir * out1, rot, new Vector3(scale * width, 1f, scale));
+                _flowerPetals[i] = m;
                 Add(_limeMat, _petals[element], cam, m);
-                if (element != 0) continue;
-
-                // Charge: the halo flickers per petal, under the lime (its own queue), so only its rim shows
-                float flicker = 0.85f + 0.3f * Mathf.PerlinNoise(now * 9f + i * 3.1f, phase * 17f);
-                float halo = cfg.ChargeHaloScale * flicker;
-                Add(_plasmaHaloMat, _petals[0], cam, Matrix4x4.TRS(at - _nav.BoardUp * 0.05f, rot, new Vector3(p * width * halo, 1f, p * halo)));
-                PlasmaSpark(m, now * 1.6f + phase + i * 0.2f, size * cfg.ChargeSparkSize, basis, cam);
             }
+
+            if (element == 0) PlasmaBolt(now / cfg.ChargeBoltLapSeconds + phase, radius, basis, cam);
         }
 
-        // Charge: a bright spark lapping one petal's outline every 1/1.6 s, drawn over the petal
-        void PlasmaSpark(Matrix4x4 petal, float t, float spark, Quaternion basis, Camera cam)
+        // Charge: ONE bolt laps the whole flower, running each petal's outline from its apex in turn (the apexes all sit by
+        // the centre, so the hop to the next petal is short), a few fading sparks behind its head.
+        void PlasmaBolt(float laps, float radius, Quaternion basis, Camera cam)
         {
+            var cfg = _nav.Config;
             var outline = _outlines[0];
-            int n = outline.Length;
-            float u = Mathf.Repeat(t, 1f) * n;
-            int e = Mathf.FloorToInt(u);
-            var at = petal.MultiplyPoint3x4(Vector3.Lerp(outline[e], outline[(e + 1) % n], u - e)) + _nav.BoardUp * 0.05f;
-            Add(_plasmaMat, _dotMesh, cam, Matrix4x4.TRS(at, basis, Vector3.one * spark));
+            int n = outline.Length, total = n * _flowerPetals.Length;
+            float head = Mathf.Repeat(laps, 1f) * total;
+            var lift = _nav.BoardUp * 0.05f;
+            for (int k = 0; k <= cfg.ChargeBoltTrail; k++)
+            {
+                float u = Mathf.Repeat(head - k * 0.3f, total);
+                int seg = Mathf.FloorToInt(u), petal = seg / n, e = seg % n;
+                var local = Vector3.Lerp(outline[e], outline[(e + 1) % n], u - seg);
+                var at = _flowerPetals[petal].MultiplyPoint3x4(local) + lift;
+                float fade = 1f - k / (cfg.ChargeBoltTrail + 1f);
+                Add(_plasmaMat, _dotMesh, cam, Matrix4x4.TRS(at, basis, Vector3.one * (radius * cfg.ChargeSparkSize * fade)));
+            }
         }
 
         // a dot faces the pilot camera, so it reads as a dot from any angle

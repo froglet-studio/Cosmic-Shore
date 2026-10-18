@@ -136,24 +136,26 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.15f, 0.6f)] float pipSize = 0.32f;
         [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
-        [Tooltip("A mote's size in the kite view (u).")]
-        [SerializeField, Min(0.5f)] float moteSize = 3.2f;
+        [Tooltip("A mote's flower radius in the kite view (u). The petals sit in it in the totem's own proportions (the " +
+                 "element flower above each ability card).")]
+        [SerializeField, Min(0.5f)] float moteSize = 4.5f;
 
-        [Header("Mote flowers (five petals, each moving like its element; round 4e)")]
-        [Tooltip("How far each petal sits off the flower's centre, as a fraction of a petal's length: the gap that keeps " +
-                 "the five petals distinct (round 4e: \"the petals need more separation to look distinct\").")]
-        [SerializeField, Range(0f, 1.5f)] float petalGap = 0.5f;
-        [Tooltip("A petal's width, as a fraction of its own shape's width (narrower = more space between petals).")]
-        [SerializeField, Range(0.2f, 1f)] float petalWidth = 0.65f;
+        [Header("Mote flowers (five petals, each moving like its element; rounds 4e-4f)")]
         [Tooltip("Space: the flower spins this many degrees a second, without pausing.")]
         [SerializeField, Min(0f)] float spaceSpinDegreesPerSecond = 150f;
-        [Tooltip("Mass: how far each petal moves out and back, as a fraction of a petal's length (0.6 in round 4d, +20% " +
-                 "in round 4e).")]
+        [Tooltip("Mass: how far a petal moves out, as a fraction of the flower's radius.")]
         [SerializeField, Range(0f, 2f)] float massPulse = 0.72f;
-        [Tooltip("Charge: the blue plasma round each petal, as a fraction of the petal's size (1 = the petal itself).")]
-        [SerializeField, Range(1f, 2f)] float chargeHaloScale = 1.35f;
-        [Tooltip("Charge: the spark that runs each petal's perimeter, as a fraction of the mote's size.")]
-        [SerializeField, Range(0.05f, 1f)] float chargeSparkSize = 0.32f;
+        [Tooltip("Mass: how many of the five petals are out at once; the rest are held in (round 4f: three held in).")]
+        [SerializeField, Range(1, 4)] int massPetalsOut = 2;
+        [Tooltip("Mass: seconds each set of petals is out before the next set takes over.")]
+        [SerializeField, Min(0.05f)] float massStepSeconds = 0.5f;
+        [Tooltip("Charge: seconds the one plasma bolt takes to lap all five petals.")]
+        [SerializeField, Min(0.1f)] float chargeBoltLapSeconds = 1.6f;
+        [Tooltip("Charge: the bolt's head, as a fraction of the flower's radius.")]
+        [SerializeField, Range(0.05f, 1f)] float chargeSparkSize = 0.22f;
+        [Tooltip("Charge: how many fading sparks trail the bolt's head.")]
+        [SerializeField, Range(0, 16)] int chargeBoltTrail = 7;
+
         [Tooltip("The tail's width in the kite view (u).")]
         [SerializeField, Min(0.2f)] float tailWidth = 1.4f;
         [Tooltip("How visible the kite is to the pilot: a faint, see-through kite (0 = hidden).")]
@@ -214,12 +216,13 @@ namespace CosmicShore.Gameplay
         public float PipSize => pipSize;
         public float ViewMargin => viewMargin;
         public float MoteSize => moteSize;
-        public float PetalGap => petalGap;
-        public float PetalWidth => petalWidth;
         public float SpaceSpinDegreesPerSecond => spaceSpinDegreesPerSecond;
         public float MassPulse => massPulse;
-        public float ChargeHaloScale => chargeHaloScale;
+        public int MassPetalsOut => massPetalsOut;
+        public float MassStepSeconds => massStepSeconds;
+        public float ChargeBoltLapSeconds => chargeBoltLapSeconds;
         public float ChargeSparkSize => chargeSparkSize;
+        public int ChargeBoltTrail => chargeBoltTrail;
         public float TailWidth => tailWidth;
         public float PilotKiteAlpha => pilotKiteAlpha;
         public float PilotDotAlpha => pilotDotAlpha;
