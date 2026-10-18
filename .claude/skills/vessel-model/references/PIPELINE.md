@@ -47,6 +47,12 @@ no Blender GUI, no OpenGL. If `import bpy` fails: `pip download bpy` then
   `{take: [(vertex group, axis, sign, min)]}`, measured on the re-import with the action applied
   as per-group centroid deltas; the only check that catches an inverted pitch or a mirrored yaw)
 - a bind pose that differs from the node chain (a residual parked pose; `allow_park` declares one)
+- **take parity** (`take_parity.py`, on by default when the artist file is known): any bone-skinned
+  part, in any take, whose rigid motion from the drawn rest differs from the artist's part by more
+  than max(1.5% of the diagonal, 25% of the artist's travel) in position or max(5 deg, 25%) in
+  rotation - a part frozen where the artist's moves, moving where it holds, or turning about the
+  wrong axis. `take_parity_allow` = {take or "*": [parts]} declares a meant change. Standalone:
+  `python3 Tools/Build/vessel_model/take_parity.py <artist.fbx> <ours.fbx> [--all]`.
 
 The artist-reference block of `build.py` reads the ARTIST file (`ARTIST_REF`, pinned) with every
 shape key at 0 and no action (LESSONS 33, 35) for the size, slot-order and colour references;
@@ -64,8 +70,11 @@ rig-reusing build. `build.py --check` is the drift gate for a committed spec.
    mesh, shape keys and bones (rest bounds == the artist's drawn bounds; rest_compare 0.000).
 3. Add what the file lacked: parts built against group centroids (`tube_along` segments named
    for the bone they skin to, joined with `forms.join([mesh] + parts, ...)` - the artist's mesh
-   first so its keys survive), `morphs.augment_shape` on a weak morph, `morphs.add_shape` for a
-   missing one, the takes re-authored (`takes.standard_pose_set`) with `pose_expect`.
+   first so its keys survive; weight each added part between the bones at its ends so it follows
+   any take), `morphs.augment_shape` on a weak morph, `morphs.add_shape` for a missing one.
+   **The takes are the artist's**: `takes.retarget_from(arm, ctx.artist(OUTPUT))` keys them bone
+   by bone onto the baked rest (names, frames and fps kept). Re-author a take only when the owner
+   asks for a different motion, and then list the changed parts in `take_parity_allow`.
 4. The usual gates. The spec's docstring names what was added and what was kept.
 `specs/squirrel.py` is the worked example; `specs/experimental/*_scratch.py` are the withdrawn
 from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.

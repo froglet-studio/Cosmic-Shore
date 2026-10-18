@@ -445,6 +445,15 @@ def verify(path, spec):
         if park:
             failures.append("the file's bind pose differs from its node chain on %d bone(s) (a parked pose; set allow_park if it is meant): %s" % (
                 len(park), ", ".join("%s loc %.3f rot %.1fdeg scale %.3f" % tuple(p) for p in park[:6])))
+    # every part must move in every take the way the REFERENCE file's part does (take_parity.py). On by
+    # default whenever the artist file is known: a rebuild that changes a take must say so in take_parity_allow
+    ref_for_parity = spec.get("take_parity_ref") or (spec.get("artist_path") if spec.get("take_parity", True) else None)
+    if ref_for_parity:
+        import take_parity as TP
+        pfail, _rows = TP.compare(TP.probe(ref_for_parity), TP.probe(path), allow={k: set(v) for k, v in (spec.get("take_parity_allow") or {}).items()})
+        if pfail:
+            failures.append("take parity with %s: %d difference(s), first %d:\n      %s" % (
+                os.path.basename(ref_for_parity), len(pfail), min(12, len(pfail)), "\n      ".join(pfail[:12])))
     pose_expect = spec.get("pose_expect") or {}
     rep = blender_reimport_report(path, pose_probe={t: sorted({e[0] for e in exps}) for t, exps in pose_expect.items()} or None)
     # each named take must move the named part the named way (direction AND a minimum), measured on the

@@ -30,7 +30,8 @@ one.** A hull redrawn from lathes, plates and lofts reads as a toy next to the a
 existing vessel is `rig.import_shipped_model` (the artist's mesh, groups, shape keys, slots
 and colours, exactly as the game draws them) + the framework on top: the parked pose baked
 into the rest, missing or weak morphs authored or strengthened on the artist's topology,
-the takes re-authored with proven directions, parts connected where they float, every gate.
+the artist's takes kept (`takes.retarget_from`) and proven part by part against the artist file
+(`take_parity.py`, on by default in verify), parts connected where they float, every gate.
 The Squirrel is the worked example (`specs/squirrel.py`); the from-scratch specs live in
 `specs/experimental/` and never write in place. **One vessel per round**: build it, let the
 owner fly it, fold what he says into this skill, then the next. Never rewrite several live
@@ -166,7 +167,7 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 
 | vessel | rounds | what the sheet taught |
 |---|---|---|
-| Squirrel | 7 | six from-scratch rounds the owner judged a cheap remake; round 7 is the ARTIST'S hull + a ten-segment spine the nine chevrons hang on, the tail as a bending chain, Mass 2.5% -> 3.7%, takes with proven directions (`specs/squirrel.py`, live) |
+| Squirrel | 8 | six from-scratch rounds the owner judged a cheap remake; round 7 put the ARTIST'S hull back with a spine and Mass 2.5% -> 3.7% ("big improvement"), but re-authored takes froze the rear engines and twisted the wing panels on roll; round 8 keeps the artist's takes (retargeted, take_parity 0.001 / 0.1 deg over 311 part-takes) and weights the spine between chevrons (`specs/squirrel.py`, live) |
 | Dolphin | 3 | from-scratch, withdrawn (artist file restored; `specs/experimental/dolphin_scratch.py`). What held: wing spanwise sign; lime throats paint the engine slot; a size reference read with the morphs at 100% is wrong (LESSONS 33) |
 | Sparrow | 3 | from-scratch, withdrawn and it FLEW BACKWARDS (LESSONS 39: the artist's heading is right by definition). What held: a mirror reverses yaw and roll; tail vanes to the artist's height |
 | Serpent | 2 | from-scratch, withdrawn. What held: head on +Y (`zup_identity`); Mass takes carapace + engine together or reads inert |

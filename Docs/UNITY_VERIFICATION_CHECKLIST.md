@@ -123,12 +123,14 @@ change (its prefab draws the placeholder), and the Squirrel, Dolphin and Sparrow
 FBX files were restored from the artist commit (5344a6530). The paragraphs above and the Round 3 paragraph below
 describe the withdrawn files; the only rebuilt file now live is the **Squirrel, round 7, on the artist's hull**:
 `specs/squirrel.py` keeps the artist's mesh, slots and colours exactly, bakes the parked pose into the rest, adds a
-ten-segment tail spine the nine chevrons hang on (one segment per chevron bone, so it bends with them), re-authors
-the nine takes as a bending chain with proven directions, and strengthens Mass 2.5% -> 3.7%. Rest bounds equal the
-artist's drawn bounds; rest_compare 0.000; `--check` green. **Verify (Squirrel only):** it looks like the artist's
-Squirrel with a spine under the tail; pull back drops the tail as one bending chain (tip ~1.9 units), stick right
-swings it to the outside of the turn (~2.7), roll drops the right pods; Mass is visible from the chase camera. Then
-say keep / change / remove before the next vessel is attempted.
+ten-segment tail spine the nine chevrons hang on, and strengthens Mass 2.5% -> 3.7%. Garrett flew round 7 (2026-10-18):
+"big improvement", but the rear jet ports stayed still and roll twisted the wing panels, not the wing - its takes had
+been re-authored. **Round 8** carries the ARTIST'S nine takes (retargeted bone by bone; the new `take_parity.py` gate
+matches every part of every take to the artist's within 0.001 units / 0.1 degrees, and reports 310 differences on the
+round-7 file) and weights the spine between chevrons so it bends with them. Rest bounds equal the artist's drawn
+bounds; rest_compare 0.000; `--check` green. **Verify (Squirrel only):** every take moves like the artist's Squirrel
+(rear engines included; roll banks the whole wing with its pods), the spine follows the chevrons with no gap, and Mass
+reads from the chase camera. Then say keep / change / remove before the next vessel is attempted.
 
 **Round 3 (same day, after a reader review):** three gates had been dead or wrong and are now live, and the files
 were rebuilt under them. (a) The artist-reference block of `build.py` had a swallowed `NameError`, so the size,

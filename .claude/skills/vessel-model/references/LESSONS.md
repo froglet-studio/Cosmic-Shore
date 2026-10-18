@@ -345,3 +345,20 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     For a placeholder-drawn vessel the swap is part of the job (do it, or say in the first
     line that nothing will change in the game until it runs); for a live file, the proof is the
     owner flying it, one vessel per round.
+
+41. **Keep the artist's takes; prove every part of every take against them.** The first
+    artist-hull Squirrel kept the artist's mesh but RE-AUTHORED the nine takes, and Garrett
+    saw it at once (2026-10-18): "the rear jet ports are staying stationary, among other little
+    differences like the roll twisting the wing panels but not the wing". The pose gate passed,
+    because it checked one named part per take. `take_parity.py` now compares EVERY bone-skinned
+    part in EVERY take with the reference file: it fits each part's rigid motion from the drawn
+    rest to the pose (Kabsch on the vertices bound to one bone) and compares position and
+    rotation at the reference part's centre. Run on the flown file it reported 310 differences
+    across 8 takes, the rear engines frozen in all of them (a 1.2-2.3 unit, 27-70 degree miss);
+    run on the artist file against itself it passes, so it is a real gate with a named failure.
+    `takes.retarget_from(arm, artist)` keys the artist's takes onto the rebuilt armature bone by
+    bone from the artist's posed matrices, whatever rest the rebuild baked; the Squirrel now
+    matches the artist in 311 moving part-takes to 0.001 units and 0.1 degrees. verify runs the
+    parity gate by default whenever the artist file is known; a meant change to a take goes in
+    `take_parity_allow` (take -> parts), never through a silenced gate. Added parts (the spine)
+    are weighted between the bones at their ends so they follow whatever the takes do.

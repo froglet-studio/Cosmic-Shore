@@ -27,7 +27,7 @@ world=False takes raw pose-bone values. `rest` is implicit, so (0,0,0) is the re
 import math
 
 import bpy
-from mathutils import Euler, Vector
+from mathutils import Euler, Matrix, Vector
 
 STANDARD_POSES = ("idle", "pitchup", "pitchdown", "yawleft", "yawright",
                   "rollleft", "rollright", "speedup", "speeddown")
@@ -218,3 +218,62 @@ def set_take(arm, action, frame=1):
     """Pose the armature by an action at a frame (for renders)."""
     _assign_action(arm, action)
     bpy.context.scene.frame_set(frame)
+
+
+def retarget_from(arm, ref_path, only=None):
+    """
+    Key the REFERENCE file's takes onto `arm` so every bone lands, in armature space, exactly
+    where the reference's lands in every frame of every take. `arm` must be the reference's own
+    armature (same bone names and armature object), its rest free to differ - a rest that bakes
+    the parked pose, say: the keys are solved per bone from the reference's posed matrices, so
+    the take is the artist's take whatever rest the rebuild chose (LESSONS 41). Actions keep the
+    reference's names (the .meta pins them) and frame numbers; the scene takes its fps.
+    Returns {take: action}.
+    """
+    import take_parity
+    dump = take_parity.retarget_dump(ref_path)
+    bpy.context.scene.render.fps = dump["fps"]
+    aw = Matrix(dump["arm_world"])
+    if max(abs(a - b) for ra, rb in zip(aw, arm.matrix_world) for a, b in zip(ra, rb)) > 1e-4:
+        raise RuntimeError("retarget_from: the armature object's transform differs from the reference's")
+
+    def depth(b):
+        d = 0
+        while b.parent:
+            b, d = b.parent, d + 1
+        return d
+    order = sorted(arm.pose.bones, key=lambda pb: depth(pb.bone))
+    acts = {}
+    for take, rec in dump["takes"].items():
+        if only and take not in only:
+            continue
+        # the importer names an action "<object>|<stack>", and the stack itself is "<armature>|<take>"; the
+        # exporter writes "<armature>|<action>", so the action is the LAST segment (the .meta's takeName round-trips)
+        act = bpy.data.actions.new(rec["name"].split("|")[-1])
+        _assign_action(arm, act)
+        prev = {}
+        moved = set()
+        for f in sorted(rec["frames"], key=int):
+            mats = rec["frames"][f]
+            clear_pose(arm)
+            bpy.context.view_layer.update()
+            for pb in order:
+                if pb.name in mats:
+                    pb.matrix = Matrix(mats[pb.name])
+                    bpy.context.view_layer.update()
+            for pb in arm.pose.bones:
+                loc, q, sc = pb.matrix_basis.decompose()
+                pb.rotation_mode = "XYZ"
+                pb.rotation_euler = q.to_euler("XYZ", prev[pb.name]) if pb.name in prev else q.to_euler("XYZ")
+                prev[pb.name] = pb.rotation_euler.copy()
+                if loc.length > 0.01 or math.degrees(q.angle) > 2.0 or max(abs(s - 1) for s in sc) > 0.01:
+                    moved.add(pb.name)
+                pb.keyframe_insert("location", frame=int(f))
+                pb.keyframe_insert("rotation_euler", frame=int(f))
+                pb.keyframe_insert("scale", frame=int(f))
+        AUTHORED[act.name] = sorted(moved)
+        acts[take] = act
+    clear_pose(arm)
+    if arm.animation_data:
+        arm.animation_data.action = None
+    return acts
