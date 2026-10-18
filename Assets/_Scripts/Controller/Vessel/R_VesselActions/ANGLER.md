@@ -281,7 +281,9 @@ The creature-side hooks:
 | `Assets/Resources/ElementalAbilityMaps/Angler.asset` | The approved element map (§7), owned by the generator. |
 | `Data/Enums/InputEvents.cs` (`Button4Action`), the gamepad / keyboard / single-stick-mouse strategies, `UI/Elements/InputHintBindingMap.cs`, `Resources/ControlGlyphSet.asset` | The Y / F button (§1f). |
 | `Tests/Editor/AnglerCommandMathTests.cs` | Five named tests, plus `EveryFunction_MatchesTheLabPage` with 189 golden cases generated from the page. |
-| `_Prefabs/Spacevessels/Angler.prefab`, `_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab` | Cloned from the Stoat by `Tools/Build/author_angler_assets.py`. |
+| `_Prefabs/Spacevessels/Angler.prefab`, `_Prefabs/UI Elements/VesselHUD/AnglerHUDVariant.prefab` | Cloned from the Stoat by `Tools/Build/author_angler_assets.py`; its `patch_prefab` gives the committed prefab its own hull (§9). |
+| `_Models/Vessel Models/Angler.fbx`, `Tools/Build/vessel_model/specs/angler.py` | The hull model and the spec that builds it (§9); `build.py angler --check` is its drift gate. |
+| `Controller/Animation/AnglerAnimation.cs` | The hull's motion: the swim, the stabilisers, the mast's bob, and the jaw and the lure bulb while the lure is held (§9). |
 | `_SO_Assets/VesselActions/Angler/` | `AnglerConfig`, plus the `AnglerLure`, `AnglerSquad`, `AnglerRecall` and `AnglerDash` control assets. |
 | `_SO_Assets/Classes/SO_Class_Angler.asset`, `_SO_Assets/Camera/AnglerCameraSettingsSO.asset` | The class entry and the camera. |
 | `_Graphics/Icons/AbilityIcons/Angler/`, `_Graphics/CardImages/Angler*.png` | Drawn by `Tools/Build/author_angler_icons.py`. The icon FILES keep round 1's names (their guids are wired); each draws its slot's approved ability: `Angler_Command` = Charge (lock-on), `Angler_Leash` = Mass (lure and grow), `Angler_Lure` = Space (paint), `Angler_Tame` = Time (dash). |
@@ -380,7 +382,9 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
 
 ## 8. Follow-ups
 
-1. **The Angler's own hull.** It wears the Stoat's procedural hull and lope as a stand-in body.
+1. ~~**The Angler's own hull.**~~ Done 2026-10-18: `Angler.fbx` and `AnglerAnimation` (§9). Open: its hit box is still
+   the Stoat's (`StoatBody` 1.2 x 1.4 x 7), narrower than the bow and the stabilisers; the AI and the card art were made
+   against the stand-in.
 2. **An Angler AI autopilot.** It must be input-only per `/vessel-ai`. The lab's sim pilot (`aiErase`, its squad heuristics) is the starting point.
 3. **Element scaling for Charge, Mass and Space, and the Charge and Time level-5 upgrades** (§7). Time scales the tamed fauna's speed. The fleet's convention would make Space the paint's reach, Mass the lure's reach or growth, and Charge the bite, but none is approved.
 4. ~~**The HUD's squad name.**~~ Done in round 7: the picked kind shows over the Mass card (§1k).
@@ -392,3 +396,58 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
 10. **The omni pool is herbivores only** (Clawfish, QuadFish, Tadpole), because only a herbivore can be leashed. A random shark would need a predator leash.
 11. **A thrown creature is slowed by its own behaviour tick.** `LightFauna.UpdateBehavior` rewrites `currentVelocity` to `desiredDirection * Clamp(averageSpeed, minSpeed, maxSpeed)` on every tick, and a leashed creature goes through it too. A homing throw at `slingSpeed` (150 u/s) is cut to the creature's `maxSpeed` (28-32 u/s) each tick, and `SteerOnLeash` eases it back up at 2.5/s. The lab flies a throw at a constant 150. To measure: log a thrown creature's speed per frame in the editor. The fix would be for the tick to leave a leashed creature's speed to the leash. It was found while reading for the QuadFish bug (2026-10-18) and is not fixed here.
 12. **A penned species cannot follow a leash out of its pen.** Every leash goal goes through `Fauna.Goal`'s setter, which clamps to the species' band (`BandOuterRadius`, 1180 u on Wildlife Liberation's Clawfish and QuadFish) and to the cell's containment. The brush reaches 3200 u, so in that mode a creature is ordered past a wall it is steered back from. `LeashCanEat` already keeps creatures from being ORDERED to prisms outside their pen (`IsInsideBand`), so only the follow and gather goals are affected. Whether a tamed creature should leave its pen is a design call (`Docs/ECOSYSTEM.md` §22 calls the pens a diet and steering rule, never a wall).
+
+## 9. The hull — `Angler.fbx` (2026-10-18)
+
+Until 2026-10-18 the Angler wore the Stoat's procedural hull and lope as a stand-in body (§8.1). Its own hull is
+**`Assets/_Models/Vessel Models/Angler.fbx`**, built headlessly with Blender-as-a-module from
+**`Tools/Build/vessel_model/specs/angler.py`** (`/vessel-model`, the new-hull path the Butterfly opened). It is a
+**spaceship inspired by an anglerfish**, not the fish: read from the chase camera (`AnglerCameraSettingsSO` followOffset
+(0, 0, -160), 62 degrees: ~10 px per world unit at 1080p, the root scaled 0.8) by its silhouette - the broad bow, the open
+jaw, the mast arching forward with its glowing bulb, the stabilisers and the twin engines.
+
+| Clade | On the ship | Bone |
+|---|---|---|
+| big head and jaw | a heavy armoured bow over a hinged lower jaw: a ram-scoop intake, dark inside and glowing lime (Engine) at the throat, its rim lined with domain-coloured intake vanes (the teeth) | `hull` (bow), `jaw.B` (jaw) |
+| illicium and esca | a dorsal sensor mast on a domain-collared hinge, arching forward and ending in the **lure bulb** (Engine slot, so it glows; it flares with the engines) | `lure` (the mast), `esca` (the bulb, its child) |
+| small eyes | sensor-glass slits (Window) on the bow's shoulders | `hull` |
+| pectoral fins | swept stabilisers with domain tips | `fin.L`, `fin.R` |
+| dorsal fin | a low comb of three domain blades behind the mast | `hull` |
+| tail and caudal fin | a short tail boom with a domain band, ending in a twin-lobed domain caudal stabiliser | `tail`, `tail.2` (its child) |
+| (the ship's own) | twin engine nacelles on the tail root; their mouths sit where the prefab's two `VesselJet`s are (Unity (+-0.3, -0.05, -2.15) under `AnglerHull`) | `hull` |
+| skin | a dark armoured hull with sunken domain panel lines along the flanks and a domain trim line across the bow | `hull` |
+
+**Contract** (the fleet convention for a new vessel, `FLEET_CONVENTION.md` sections 1-4):
+
+| | |
+|---|---|
+| file / preset | `Angler.fbx` (guid `ae96d7fa1c094f7eb5a9c0c92d679b5e`), `zup`: nose -Y, up +Z, the pilot's left +X in Blender; in Unity nose +Z |
+| nodes | mesh `mesh`, armature `rig`, root bone `hull` |
+| bones | 8: `hull`; `jaw.B` at the jaw hinge (Unity (0, -0.2, 1.95)); `lure` at the mast's hinge on the head (0, 0.7, 1.7) > `esca` at the bulb's centre (0, 0.92, 4.12); `fin.L` / `fin.R` at the stabilisers' roots (-+0.7, -0.12, 0.75); `tail` at the boom's root (0, 0.02, -2.25) > `tail.2` at the caudal's root (0, 0.02, -2.95) |
+| size | Blender frame x +-1.22, y -4.33 .. 3.82, z -0.74 .. 1.68: 8.15 long (the stand-in's 7.96, so the camera and the jets keep their places), 1.9 wide over the bow and 2.44 across the stabilisers, 2.4 tall with the mast. **Wider and taller than the stand-in on purpose** (an anglerfish's bow); the hit box was left as the Stoat's |
+| slots | 0 `Domain`, 1 `Body`, 2 `Window`, 3 `Engine`; the `.meta` remaps all four by name to the fleet's four materials |
+| morphs | of the 8.84 diagonal, each the part its ability lives on: `Charge` 4.4% (the bite: the intake vanes grow into fangs, the jaw juts; Erase / Lock-on), `Mass` 4.3% (the lure and the volume: the bulb doubles, the hull fattens; Lure, Tame & Grow), `Space` 8.3% (reach: the mast reaches further forward, the stabilisers span out; Paint), `Time` 6.6% (rate: the stabilisers and the caudal sweep back, the tail lengthens; Dash) |
+| takes | none drive it; four documentation poses with `pose_expect`: `lure`, `turnright`, `turnleft`, `dive` |
+| budget | 7,784 tris, 3,958 verts, UVs, no n-gons, nothing floating |
+| sheet | `Docs/VesselModels/sheets/angler_after.jpg` |
+
+**The esca.** What lit the esca before the model, and still does, is `AnglerCommandExecutor.DrawMarks`: the world mark at
+`AnglerCommandMath.LurePoint` (`lureAhead` 14 u ahead, 2.5 u up), drawn at 1.2 and at 2.4 while the lure is held, with the
+tame ring round it. It is untouched. The model adds the ship's own esca: the `esca` bulb at the mast's tip, in the Engine
+slot (so it glows lime and flares with the engines), and `AnglerAnimation` swells it to `escaLitScale` (1.6) and opens the
+jaw by `jawOpenDegrees` (22) while `AnglerCommandExecutor.Luring` is true, eased at `lureEaseRate`.
+
+**The motion** (`AnglerAnimation`, replacing the Stoat's lope on the same component, so `VesselStatus`'s reference
+holds): the tail boom swims a slow beat (`swimRate` 0.5 /s, `swimDegrees` 6) and swings OUT of a turn (`turnTailDegrees`
+18; the caudal follows x1.6 and lags), the stabilisers flap gently and lift with the pitch stick (`finPitchDegrees` 14),
+the mast bobs (3 degrees), and near a horizon the hull transform is stretched by the tide as the stand-in's was
+(`BlackHoleWarp.VesselLogStretch`). Every bone is posed from its rest in the hull transform's frame, written directly
+(no lerp), allocation-free. These numbers are the model's first cut, not a tuning anyone has played.
+
+**Integration is by NAME** (an FBX's sub-object fileIDs cannot be computed offline). `author_angler_assets.py`
+`apply_own_hull` (inside `patch_prefab`, so the committed prefab takes it) authors `AnglerHull` as a bare Transform
+holding the two jets and the model (a nested PrefabInstance at identity; the shape of `author_stoat_assets.hull_blocks`),
+swaps the root's animation to `AnglerAnimation` with its `hullVisual` wired, and has `VesselCustomization` replace
+`GreenAccentVesselMaterial` (the model's Domain slot) by identity; `--check` holds all of it and that neither
+`StoatHullBuilder` nor `StoatAnimation` is left on the prefab. The element morphs are the model's blend shapes, driven
+by the base `VesselAnimation` by name. The Stoat's `StoatAnimation` / `StoatHullBuilder` are the Stoat's again.
