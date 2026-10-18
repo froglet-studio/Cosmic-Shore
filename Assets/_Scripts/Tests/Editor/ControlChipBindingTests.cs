@@ -122,7 +122,7 @@ namespace CosmicShore.Tests
             HintBinding[] keyboardControls =
             {
                 HintBinding.KeyLeftShift, HintBinding.KeyRightShift,
-                HintBinding.KeySpace, HintBinding.KeyR, HintBinding.KeyQ, HintBinding.KeyE,
+                HintBinding.KeySpace, HintBinding.KeyR, HintBinding.KeyQ, HintBinding.KeyE, HintBinding.KeyF,
             };
 
             foreach (var control in keyboardControls)
@@ -143,7 +143,7 @@ namespace CosmicShore.Tests
             // not bounce to some other control's artwork.
             foreach (var pad in new[] { HintBinding.PadLeftTrigger, HintBinding.PadRightTrigger,
                                         HintBinding.PadButtonSouth, HintBinding.PadButtonEast,
-                                        HintBinding.PadButtonWest, HintBinding.None })
+                                        HintBinding.PadButtonWest, HintBinding.PadButtonNorth, HintBinding.None })
                 Assert.AreEqual(pad, InputHintBindingMap.Canonical(pad));
         }
 
@@ -155,14 +155,17 @@ namespace CosmicShore.Tests
             // (B and N were the historical bindings) is unreachable from that hand position, and
             // because there is ONE keyboardLabel per control it would also drag the dual-WASD
             // scheme with it or make the chip wrong for one of the two.
+            // F carries the fourth face button (Button4Action, pad Y; first bound by the Angler (its dash 2026-10-16, its recall since 2026-10-18)). No
+            // QWER key is free in BOTH desktop schemes (W is the dual-WASD scheme's stick), and F is the home-row key
+            // directly under R, so the resting left hand still reaches it.
             var cluster = new[]
             {
-                HintBinding.KeyQ, HintBinding.KeyE, HintBinding.KeyR, HintBinding.KeySpace,
+                HintBinding.KeyQ, HintBinding.KeyE, HintBinding.KeyR, HintBinding.KeySpace, HintBinding.KeyF,
                 HintBinding.KeyLeftShift, HintBinding.KeyRightShift,
             };
 
             foreach (var input in new[] { InputEvents.Button1Action, InputEvents.Button2Action,
-                                          InputEvents.Button3Action, InputEvents.LeftStickAction,
+                                          InputEvents.Button3Action, InputEvents.Button4Action, InputEvents.LeftStickAction,
                                           InputEvents.RightStickAction, InputEvents.FlipAction })
             {
                 var binding = InputHintBindingMap.BindingFor(input, keyboard: true);

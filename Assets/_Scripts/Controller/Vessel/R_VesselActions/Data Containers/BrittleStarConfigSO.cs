@@ -15,11 +15,14 @@ namespace CosmicShore.Gameplay
     /// <item><b>Charge — Charge Mode</b>, the five whip cords (Rolling Thunder: "larger projectile size and larger AOE on
     /// support ring detonation"): the cords' cut width, the rounds' size (<see cref="ProjectileScaleMultiplier"/>) and the
     /// ring explosion's thickness (<see cref="BlastScale"/>).</item>
-    /// <item><b>Mass — Creation Mode</b> (Fabricator: "increased block size in creation mode"): a trail behind each of
-    /// the ring's five corners, <see cref="CreationBlockScale"/>.</item>
+    /// <item><b>Mass — every trail block's girth</b> (Fabricator: "increased block size in creation mode"; Garrett,
+    /// 2026-10-16: "mass can control the x and y"): <see cref="PrismWidthScale"/> widens and thickens the base trail's
+    /// block and Creation Mode's five corner trails alike, never their length.</item>
     /// <item><b>Space — Destruction (Space) Mode</b>, the five guns (Hunter: "increased shot range"):
-    /// <see cref="RangeMultiplier"/>, ×1 → ×2 on every gun's range. The document's "nudge intensity" is retired with
-    /// knockback itself — see below.</item>
+    /// <see cref="RangeMultiplier"/>, ×1 → ×2 on every gun's range, and <see cref="HeatCapacity"/>, ×1 → ×3.33 on
+    /// the heat the guns hold (Garrett: "the maximum heat scale with space", 2026-10-16; a full burst "from 6 to 20
+    /// seconds", 2026-10-17). The
+    /// document's "nudge intensity" is retired with knockback itself — see below.</item>
     /// <item><b>Time — Speed Mode</b> (Zephyr: "increased movement speed bonus in speed mode"):
     /// <see cref="SpeedModeMultiplier"/>.</item>
     /// </list></para>
@@ -47,10 +50,14 @@ namespace CosmicShore.Gameplay
                  "connects better'). 0 = blocks keep their length and the gaps grow with the speed.")]
         [SerializeField, Range(0f, 1f)] float speedModeStretch = 1f;
 
+        [Header("Trail blocks")]
+        [Tooltip("MASS: multiplier on the x and y of EVERY block the hull lays - the base trail's and Creation Mode's " +
+                 "corner trails' - never its length (Garrett, 2026-10-16: 'stretch the prisms in z and decrease them in x " +
+                 "and y at base. mass can control the x and y'). The block itself is BrittleStar.prefab's spawner BaseScale " +
+                 "(1, 1, 6). The Fabricator's element.")]
+        [SerializeField] ElementalFloat prismWidthScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+
         [Header("Creation Mode (a trail behind each ring corner)")]
-        [Tooltip("MASS: the corner trails' block size, a multiple of the base trail's own block (BrittleStar.prefab's " +
-                 "spawner BaseScale - the same small prism every trail lays, Garrett 2026-10-16). The Fabricator's element.")]
-        [SerializeField] ElementalFloat creationBlockScale = ElementalFloat.Multiplier(1f, 1.8f, Element.Mass, 0.6f);
         [Tooltip("World units between blocks along each corner's trail (the base trail's wavelength).")]
         [SerializeField, Min(0.5f)] float creationSpacing = 6f;
         [Tooltip("How far out from the hull's axis the corner trails are laid, as a multiple of the ring's radius (1 = on the corners).")]
@@ -100,16 +107,23 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float ringTurnRate = 540f;
 
         [Header("Heat (Garrett, 2026-10-16: 'shooting should over heat')")]
-        [Tooltip("Heat each round adds (1 = overheated), so heat per second = rounds/s x guns x this. 0.0012: the five " +
-                 "guns at a full pull overheat in ~2.4 s; one turret at a full pull (0.108/s) runs below passive cooling.")]
-        [SerializeField, Min(0f)] float heatPerRound = 0.0012f;
-        [Tooltip("Heat lost per second, always.")]
+        [Tooltip("Heat each round adds (1 = the guns' heat at Space 0), so heat per second = rounds/s x guns x this. " +
+                 "0.000637: the five guns at a full pull overheat in ~6 s at Space 0 (Garrett, 2026-10-17: 'from 6 to 20 seconds'); one turret at a full " +
+                 "pull (0.057/s) " +
+                 "runs below passive cooling.")]
+        [SerializeField, Min(0f)] float heatPerRound = 0.000637f;
+        [Tooltip("SPACE: the heat the guns hold before they overheat, x the Space 0 capacity (1). x3.33 at Space 10, so " +
+                 "the five guns' full-pull burst runs ~20 s instead of ~6 s (Garrett: 'have the maximum heat scale with " +
+                 "space', 2026-10-16; 'from 6 to 20 seconds', 2026-10-17). The Hunter's element.")]
+        [SerializeField] ElementalFloat heatCapacity = ElementalFloat.Multiplier(1f, 3.3333f, Element.Space, 1f);
+        [Tooltip("Heat lost per second, always (in Space 0 capacities: a bigger capacity does not cool faster).")]
         [SerializeField, Min(0f)] float coolRate = 0.12f;
         [Tooltip("Extra heat lost per second while Charge Mode's cords are out ('using charge lasers cools the guns'), " +
                  "x how far they are grown out.")]
         [SerializeField, Min(0f)] float chargeCoolRate = 0.6f;
-        [Tooltip("Overheated guns fire again once heat has fallen to this. Meanwhile, in Space Mode, the trail lays " +
-                 "DANGER prisms.")]
+        [Tooltip("Overheated guns fire again once they have shed (1 - this) of the Space 0 capacity: heat 0.35 at Space 0, " +
+                 "the same 0.65 of heat (and so the same wait) at any Space. Meanwhile, in Space Mode, the trail lays DANGER " +
+                 "prisms.")]
         [SerializeField, Range(0f, 0.95f)] float overheatRecoverBelow = 0.35f;
 
         // ------------------------------------------------------------------ Charge Mode: the five whip cords
@@ -126,16 +140,22 @@ namespace CosmicShore.Gameplay
                  "x projectileScaleMultiplier (CHARGE). Drawn at exactly this width.")]
         [SerializeField, Min(0.05f)] float cordCutRadius = 0.6f;
         [Tooltip("1/s^2: the WHIP's wave stiffness (trigger released). A pulse at the root travels about sqrt(this) links " +
-                 "a second - 180: ~13/s, so a flick takes about a second to reach the tip of a 16-link cord.")]
-        [SerializeField, Min(0f)] float cordLooseWave = 180f;
-        [Tooltip("1/s^2: the SABER's wave stiffness (trigger pulled).")]
+                 "a second - 144: ~12/s, so a flick takes over a second to reach the tip of a 16-link cord. (80% of the " +
+                 "first whip's 180 - Garrett, 2026-10-16: 'even less stiff'.)")]
+        [SerializeField, Min(0f)] float cordLooseWave = 144f;
+        [Tooltip("1/s^2: the fully rigid cord's wave stiffness. A full pull reaches only cordMaxRigidity of the way here.")]
         [SerializeField, Min(0f)] float cordRigidWave = 2500f;
         [Tooltip("1/s: how fast the whip's waves die. Low = high inertia: a flick rings on for seconds.")]
         [SerializeField, Min(0f)] float cordLooseDamping = 0.4f;
-        [Tooltip("1/s: the saber's damping.")]
+        [Tooltip("1/s: the fully rigid cord's damping (a full pull reaches cordMaxRigidity of the way here).")]
         [SerializeField, Min(0f)] float cordRigidDamping = 14f;
-        [Tooltip("1/s^2: the pull of every link onto the straight arm's line at a full trigger pull (x pull squared).")]
+        [Tooltip("1/s^2: the pull of every link onto the straight arm's line at FULL rigidity (x rigidity squared).")]
         [SerializeField, Min(0f)] float cordPose = 1600f;
+        [Tooltip("How rigid a FULL pull makes the cords, 0 (still a whip) to 1 (the rigid dials exactly). 0.4: the saber " +
+                 "keeps 60% of the whip's elasticity (Garrett: 'not completely rigid at full press', 0.7 on 2026-10-16, " +
+                 "then 'further reduce… to 40%' on 2026-10-17). The pull " +
+                 "still shortens the cords all the way to cordLength.")]
+        [SerializeField, Range(0f, 1f)] float cordMaxRigidity = 0.4f;
         [Tooltip("1/s: how fast the cords follow the trigger between whip and saber (an ease, so a digital press does not " +
                  "snap them).")]
         [SerializeField, Min(0.1f)] float cordRigidityRate = 12f;
@@ -171,20 +191,49 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.05f)] float ringBlastSeconds = 0.7f;
         [Tooltip("The disk's radius when the ring blows outside any cell with a nucleus, world units.")]
         [SerializeField, Min(1f)] float ringBlastFallbackRadius = 200f;
-        [Tooltip("CHARGE: multiplier on the disk's THICKNESS (x1 = exactly the ring's own). Rolling Thunder's element: " +
-                 "'larger AOE on support ring detonation'.")]
+        [Tooltip("The disk's THICKNESS before Charge, a multiple of the ring's own (Garrett, 2026-10-18: 'quadruple the " +
+                 "ring explosion thickness'): x4, so 4 x the ring's 0.44 u = 1.76 u at Charge 0. What it reaches AND what is drawn.")]
+        [SerializeField, Min(0.1f)] float ringBlastThicknessScale = 4f;
+        [Tooltip("CHARGE: multiplier on the disk's THICKNESS, on top of ringBlastThicknessScale (x4 at Charge 10). Rolling " +
+                 "Thunder's element: 'larger AOE on support ring detonation'.")]
         [SerializeField] ElementalFloat blastScale = ElementalFloat.Multiplier(1f, 4f, Element.Charge, 1f);
-        [Tooltip("Width of the expanding band drawn at the disk's edge, world units (the explosion's look; it does not " +
-                 "change what the disk reaches).")]
-        [SerializeField, Min(0.1f)] float ringBlastBandWidth = 6f;
+
+        [Header("Ring Detonation: the look (BrittleStarBlastForm - five-fold faceted volumes, from the ring that blew)")]
+        [Tooltip("The front's radial width between crests, x its radius (Garrett, 2026-10-18: 'nothing in the environment " +
+                 "should ever look flat' - every thickness of the look scales with the blast, so it reads as a volume at " +
+                 "any size). Its outer ridge is always the blast's true edge.")]
+        [SerializeField, Range(0.005f, 0.2f)] float ringBlastFrontWidth = 0.05f;
+        [Tooltip("The front's height, x its radius (never thinner than the disk itself). The disk that does the damage " +
+                 "is only a couple of units thick; this is the look's volume, standing above and below it.")]
+        [SerializeField, Range(0.005f, 0.2f)] float ringBlastFrontHeight = 0.04f;
+        [Tooltip("How far the arms, the ring's pentagon and their crystals may stand out of the plane, x the front's " +
+                 "radius: the arms coil within it.")]
+        [SerializeField, Range(0f, 0.3f)] float ringBlastRelief = 0.12f;
+        [Tooltip("Degrees the explosion's five-fold pattern turns on after the blast, keeping the thrown ring's spin " +
+                 "(its direction) and braking to a stop over ringBlastSeconds.")]
+        [SerializeField, Range(0f, 720f)] float ringBlastSpinDegrees = 108f;
+        [Tooltip("Each of the front's five crests (where the arms meet it) is this much wider than the front, " +
+                 "x ringBlastFrontWidth. 0 = a plain torus.")]
+        [SerializeField, Range(0f, 10f)] float ringBlastCrestDepth = 2.5f;
+        [Tooltip("The thrown ring's own pentagon grows with the blast, its corners at this share of the front's radius.")]
+        [SerializeField, Range(0f, 1f)] float ringBlastPentagonLag = 0.8f;
+        [Tooltip("Each of the five arms' thickness at its root (the ring's point), x the front's radius; they taper to " +
+                 "30% at their crystal head and thin as the blast spends itself. The ring's pentagon is a quarter of it.")]
+        [SerializeField, Range(0.005f, 0.3f)] float ringBlastArmWidth = 0.08f;
+        [Tooltip("How far each arm wriggles sideways, x its length (a wave running from root to tip, the animal's); a " +
+                 "quarter-wave on, it coils out of the plane within ringBlastRelief.")]
+        [SerializeField, Range(0f, 0.3f)] float ringBlastArmWiggle = 0.06f;
+        [Tooltip("Degrees each arm's tip trails its root, curling back against the spin (a pinwheel).")]
+        [SerializeField, Range(0f, 90f)] float ringBlastArmCurlDegrees = 30f;
 
         // ------------------------------------------------------------------ the ring stock
         [Header("Ring stock (Garrett, 2026-10-16)")]
         [Tooltip("Spare rings the hull can store. A crystal adds one; the ring can be thrown only with a spare, and the " +
                  "mounted ring then regrows on its own.")]
         [SerializeField, Range(1, 5)] int maxSpareRings = 2;
-        [Tooltip("Seconds the mounted ring takes to regrow after a throw.")]
-        [SerializeField, Min(0.05f)] float rebuildSeconds = 0.5f;
+        [Tooltip("Seconds the mounted ring takes to regrow after a throw (Garrett, 2026-10-16: 3 s). The modes are off " +
+                 "until it has.")]
+        [SerializeField, Min(0.05f)] float rebuildSeconds = 3f;
 
         [Header("Scored hits (PvP is petals only)")]
         [Tooltip("The ring explosion's hit on an enemy hull: its class (and so its price in petals).")]
@@ -236,7 +285,7 @@ namespace CosmicShore.Gameplay
         public ElementalFloat SpeedModeMultiplier => speedModeMultiplier;
         public float SpeedModeSpacingFollow => speedModeSpacingFollow;
         public float SpeedModeStretch => speedModeStretch;
-        public ElementalFloat CreationBlockScale => creationBlockScale;
+        public ElementalFloat PrismWidthScale => prismWidthScale;
         public float CreationSpacing => creationSpacing;
         public float CreationRadiusScale => creationRadiusScale;
         public float CreationOffset => creationOffset;
@@ -255,6 +304,7 @@ namespace CosmicShore.Gameplay
         public float AimDeadzone => aimDeadzone;
         public float RingTurnRate => ringTurnRate;
         public float HeatPerRound => heatPerRound;
+        public ElementalFloat HeatCapacity => heatCapacity;
         public float CoolRate => coolRate;
         public float ChargeCoolRate => chargeCoolRate;
         public float OverheatRecoverBelow => overheatRecoverBelow;
@@ -267,6 +317,7 @@ namespace CosmicShore.Gameplay
         public float CordLooseDamping => cordLooseDamping;
         public float CordRigidDamping => cordRigidDamping;
         public float CordPose => cordPose;
+        public float CordMaxRigidity => cordMaxRigidity;
         public float CordRigidityRate => cordRigidityRate;
         public float CordDebrisRestitution => cordDebrisRestitution;
         public float CordDebrisSpeedLimit => cordDebrisSpeedLimit;
@@ -280,8 +331,17 @@ namespace CosmicShore.Gameplay
         public float RingFlightSpin => ringFlightSpin;
         public float RingBlastSeconds => ringBlastSeconds;
         public float RingBlastFallbackRadius => ringBlastFallbackRadius;
+        public float RingBlastThicknessScale => ringBlastThicknessScale;
         public ElementalFloat BlastScale => blastScale;
-        public float RingBlastBandWidth => ringBlastBandWidth;
+        public float RingBlastFrontWidth => ringBlastFrontWidth;
+        public float RingBlastFrontHeight => ringBlastFrontHeight;
+        public float RingBlastRelief => ringBlastRelief;
+        public float RingBlastSpinDegrees => ringBlastSpinDegrees;
+        public float RingBlastCrestDepth => ringBlastCrestDepth;
+        public float RingBlastPentagonLag => ringBlastPentagonLag;
+        public float RingBlastArmWidth => ringBlastArmWidth;
+        public float RingBlastArmWiggle => ringBlastArmWiggle;
+        public float RingBlastArmCurlDegrees => ringBlastArmCurlDegrees;
         public int MaxSpareRings => maxSpareRings;
         public float RebuildSeconds => rebuildSeconds;
         public CombatHitClass RingBlastHitClass => ringBlastHitClass;

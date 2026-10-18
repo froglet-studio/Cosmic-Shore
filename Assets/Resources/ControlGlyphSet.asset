@@ -38,6 +38,11 @@ MonoBehaviour:
     padGlyphHeld: {fileID: 0}
     padLabel: X
     keyboardLabel: Q
+  - binding: 2
+    padGlyph: {fileID: 21300000, guid: fcefb9acdf631b349b1d6af33878b73b, type: 3}
+    padGlyphHeld: {fileID: 0}
+    padLabel: Y
+    keyboardLabel: F
   - binding: 6
     padGlyph: {fileID: 21300000, guid: f8a4939355545f7409216ea81225cbfb, type: 3}
     padGlyphHeld: {fileID: 21300000, guid: 6ce06e2ec681ac742956d0e46079a199, type: 3}
