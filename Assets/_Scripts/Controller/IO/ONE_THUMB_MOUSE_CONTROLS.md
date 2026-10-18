@@ -13,6 +13,7 @@ else:
 | Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` |
 | Scarab | `ScarabVesselTransformer` (single-stick steering, its own throttle integrator) |
 | Brittle Star | `BrittleStarVesselTransformer` (a `SingleStickVesselTransformer` subclass: Speed Mode's multiplier on the throttle target) |
+| Angler | `AnglerVesselTransformer` (a `SingleStickVesselTransformer` subclass since 2026-10-17: the lure brake caps the throttle target, to a stop) |
 
 ## 1. Why these vessels needed their own scheme
 

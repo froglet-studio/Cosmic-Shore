@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
 
         void Jitter() { _jx = Gauss() * P.Noise; _jz = Gauss() * P.Noise; }
 
-        // the thumb travels toward its (noisy) goal; the distance returned is to where it is AIMING (L-STU-82)
+        // the thumb travels toward its (noisy) goal; the distance returned is to where it is AIMING (L-STU-108)
         float MoveAim(in KiteSettings s, float gx, float gz, float dt)
         {
             float tx = gx + _jx * s.BoardRadius, tz = gz + _jz * s.BoardRadius;

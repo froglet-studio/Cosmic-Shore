@@ -1,8 +1,15 @@
 # Rhino Ramp Boost + Speed-Tunnel Quasi Dolly Zoom
 
+> **2026-10-16:** every peer now grades the ramp from `InputStatus`' replicated sticks (replicas
+> used to hold `IsBoosting` + ×16.8 forever after the first ramp); Time is read live; climb/bleed
+> compares against `VesselTransformer.TrackedSpeed`. The AI now ramps (`RampBoostAIPolicySO`).
+> The Time row's L5 is **Momentum**, and its description states the bulldozer-ignores-mass
+> identity. `GrowTrailAction` is deleted.
+
 The Rhino's full-speed-straight reward. Holding full throttle with no rotation input
 raises `InputEvents.FullSpeedStraightAction` (from the input strategies' deviation
-threshold), which the Rhino maps to `RhinoRampBoostAction` + `GrowTrailAction`. The boost
+threshold), which the Rhino maps to `RhinoRampBoostAction` (it also fired `GrowTrailAction`
+until 2026-10-16, when Trail Slabs / GrowTrail was deleted — its grow loop never ran). The boost
 is a **constant-acceleration ramp**, and it is sold optically by an **inverse quasi dolly
 zoom** — field of view and Panini projection start at the same home values every vessel
 runs with and drop below them proportionally to live speed.
@@ -13,14 +20,21 @@ runs with and drop below them proportionally to live speed.
   `BoostMultiplier` = `maxBoostMultiplier` (top-speed target), and the transformer enters
   **constant-rate speed tracking** — `VesselTransformer.SetSpeedTrackingRate(accelerationPerSecond)`
   makes `AdvanceSpeed` use `MoveTowards` (linear, steady slope) instead of the default
-  exponential lerp. The TIME elemental multiplies the acceleration (Element → parameter),
-  and separately multiplies the top speed inside the transformer as for any boost.
+  exponential lerp. The TIME elemental multiplies the acceleration (Element → parameter,
+  read LIVE every climb frame since 2026-10-16 — it used to be snapshotted at first engage, so a
+  Time level earned mid-ramp changed nothing until the ramp fell off). **Time does NOT raise the
+  top speed**: the transformer's per-hull `BoostSpeedMultiplier` is not authored on the Rhino
+  (see "The effective numbers"). *(This line used to say Time "separately multiplies the top
+  speed inside the transformer as for any boost" — stale.)*
 - **Graded hold** (`RampBoostActionExecutor.Update`, every frame while armed): the executor
   re-reads `StraightLineGesture.DeviationFromFullSpeedStraight` and scales itself by it —
   `BoostMultiplier = lerp(1, maxBoostMultiplier, straightness)`, full across the gesture's own
   0.30 plateau and falling linearly to plain cruise at `straightnessGraceBand`. Tracking is set
   to `accelerationPerSecond` while the target is above the current speed and `bleedPerSecond`
-  while it is below (asked of `VesselTransformer.CurrentThrottleTarget`, never re-derived).
+  while it is below (asked of `VesselTransformer.CurrentThrottleTarget`, never re-derived, and
+  compared against `VesselTransformer.TrackedSpeed` — the transformer's own tracked speed, not
+  the published `VesselStatus.Speed`, which is after the impact slow, warp field and flight time
+  scale and so could pick the climb rate for a bleed).
   **This is what makes the ability worth practising** — see "The ramp is a slope" below.
 - **Release** (grace band exceeded, turn end, or component disable): boost state restores and
   tracking switches to `returnPerSecond` — a constant-rate coast to the input-driven throttle
@@ -85,14 +99,27 @@ CurrentBoostAmount() + MinimumSpeed`, and the Rhino authors `DefaultThrottleScal
 > feeds (`CornerRadiusFactor × FlatOutRadius`, 356.3 → 355.9) never binds. What moved is 10 u/s
 > off every speed in the tables below.
 
-`ThrottleScalerMultiplier` is disabled on the Rhino, so `CurrentBoostAmount()` is exactly
-`maxBoostMultiplier` — no elemental factor and no squaring (the Dolphin's
+`CurrentBoostAmount()` is `BoostMultiplier × BoostSpeedMultiplier` (`VesselTransformer.cs`), and
+the Rhino does not author `BoostSpeedMultiplier` (the class default is a constant 1); the separate
+`ThrottleScalerMultiplier`, which multiplies the throttle term outside the boost, is authored
+**disabled** on `Rhino.prefab`. So the boost factor is exactly `maxBoostMultiplier` — no
+elemental factor and no squaring. *(This paragraph used to name `ThrottleScalerMultiplier` as the
+factor inside `CurrentBoostAmount()`; the in-boost factor is `BoostSpeedMultiplier`.)* (the Dolphin's
 `IsChargedBoostDischarging` path does not apply here). **TIME does not touch that ceiling; it
 scales `accelerationPerSecond`**, so the build times above are the resting ones — at Time 10 the
-ramp climbs at 550/s and reaches top in **2.1 s**, at Time −5 it climbs at 110/s and takes
-**10.5 s**. The executor has always read `Multiplier(Element.Time)` here; the map entry behind it
+ramp climbs at 550/s and reaches top in **~1.4 s** (`790 / 550`), at the deficit floor (×0.5) it
+climbs at 110/s and takes **~7.2 s** (`790 / 110`). *(These were 2.1 s / 10.5 s against the
+pre-2026-09-25 top of 1200.)* The executor has always scaled by Time here (today through `RampBoostActionSO.timeAccelerationMultiplier`, an `ElementalFloat` on the asset); the map entry behind it
 was an `(open design slot)` authored 1.0/1.0 until Broadside's first playtest filled it
-(**Ramp Spool**, 2.5 / 0.5 — `Assets/_Scripts/Controller/Arcade/BROADSIDE.md`). *A capability
+(**Ramp Spool**, 2.5 / 0.5 — `Assets/_Scripts/Controller/Arcade/BROADSIDE.md`). Since 2026-10-16
+the row's description also states the hull's identity outright — **the bulldozer ignores mass**:
+the hull carries no `VesselChangeSpeedByPrismEffect`, the plough shoves prisms aside
+(`RHINO_PLOUGH.md`) and the ramp keeps climbing. That is a design statement now, not a gap. Its
+L5 is **Momentum**: above 70% of top speed (588 of 840 u/s) danger prisms cannot drain the Rhino
+(`VesselElementalImmunity`'s `WhileAboveTopSpeedFraction` window, DangerPrism-scoped; the
+executor is the hull's `ITopSpeedSource`, `TopSpeed` = (0 + 50) × 16.8). The HUD's Time card is
+lit while the ramp is boosting, flashes once when Momentum takes hold, and its gauge fills with
+speed / top speed (2026-10-17; it used to light only while Momentum held). *A capability
 live in code and flat in data reads exactly like a capability that does not exist* — three
 separate documents recorded "Time reaches nothing on the Rhino" as a measurement while this line
 sat above the multiply.
@@ -108,7 +135,8 @@ at cruise, 197 u at the old ×6 top, and it would have been 579 u at ×18. Raisi
 alone would have made the vessel *less* fun, not more, which is the trap: the ramp boost was
 already the least usable ability in the fleet because using it cost you the ability to steer.
 
-The Rhino now authors `RotationThrottleScaler: 0.5` (against the Manta's 0.2 and the Serpent's
+The Rhino authored `RotationThrottleScaler: 0.5` at this pass (**0.2 since 2026-09-25** — see the
+retune box above; the numbers in this section are the 0.5 record) (against the Manta's 0.2 and the Serpent's
 0.4), which makes the radius **converge** instead of diverge:
 
     R(v) = 180·v / (π·(v·r + 90))     →     R(∞) = 180/(π·r) = 114.6 u at r = 0.5
@@ -182,11 +210,15 @@ Three details that look arbitrary and are not:
   steering pilot just chose — brisk, because a corner lasts a fraction of a second and at the
   coast rate steering would cost nothing inside one. `returnPerSecond` (120) is the long coast
   after the ramp disengages entirely: speed as a resource you spent winding up.
-- **Only the machine that drives the input grades.** Press/release round-trip through
-  `R_VesselActionHandler`, so the executor is live on every peer, but a remote replica's
-  `InputStatus` is never written and would read as hard-over forever. The gate is
-  `IPlayer.IsNetworkOwner`, not `IsLocalUser`, because an AI Rhino's input IS driven — on the
-  server.
+- **Every peer grades, from the same sticks (2026-10-16).** Press/release round-trip through
+  `R_VesselActionHandler`, so the executor is live on every peer, and the sticks it grades by are
+  `InputStatus`' owner-write NetworkVariables — the owner's fingers, or an AI's writes on the
+  server, read identically everywhere. *Until 2026-10-16 only the owner graded
+  (`IPlayer.IsNetworkOwner`) and a replica kept the full multiplier "while armed" — but a graded
+  ramp is never disarmed by an input event (the release at the engage threshold is the top of
+  the slope), only by leaving the grace band in `Tick`, so every replica held `IsBoosting` and
+  ×16.8 for the rest of the turn after the first ramp, and every per-peer reader of either
+  (immunity windows, telemetry, the roll controller) read a boost that had ended.*
 
 Authoring `straightnessGraceBand` at `0.30` restores the old binary latch exactly, which is the
 safety valve if this ever needs to be walked back (`RhinoRampGradingTests` asserts it).
@@ -216,13 +248,14 @@ fleet, which is the point of it being a law.
 
 | Knob | Where | Shipped value |
 |---|---|---|
-| `maxBoostMultiplier` | `_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset` | **24** (1200 top speed) |
-| `accelerationPerSecond` | same asset | **220** at Time rest (cruise → top in 5.2 s); ×`Multiplier(Element.Time)`, **2.5 at Time 10 / 0.5 at Time −5** |
+| `maxBoostMultiplier` | `_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset` | **16.8** (840 top speed; 24 / 1200 until 2026-09-25) |
+| `accelerationPerSecond` | same asset | **220** at Time rest (cruise → top in 3.6 s); × `timeAccelerationMultiplier` (Time, ×1 at rest → **×2.5 at level 10**, floored **×0.5**) → 110 .. 220 .. 550 /s, read live |
 | `straightnessGraceBand` | same asset | **1.0** — hard-over stick = plain cruise; `0.3` restores the binary latch |
 | `bleedPerSecond` | same asset | **300** — tracking down to the target a steering pilot chose |
-| `returnPerSecond` | same asset | **120** (9.6 s coast back to cruise once disengaged) |
+| `returnPerSecond` | same asset | **120** (6.6 s coast back to cruise once disengaged) |
 | `engageSFX` | same asset | BoostActivate (13) |
-| `RotationThrottleScaler` | `_Prefabs/Spacevessels/Rhino.prefab` | **0.5** — the turn-radius asymptote, `180/(pi*r)` = 115 u |
+| `RotationThrottleScaler` | `_Prefabs/Spacevessels/Rhino.prefab` | **0.2** (0.5 until 2026-09-25) — the turn-radius asymptote, `180/(pi*r)` = 286 u |
+| AI arming | `RampBoostAIPolicySO` → `RhinoAIBoostPolicy.asset` on the Rhino's AIPilot | ramp on a straight that pays back, brake ON the ramp to a corner speed, let go at a sharp corner (`Controller/AI/AI_BOOST.md`, Ramp) — first AI ramp 2026-10-14/16, rebuilt 2026-10-17 |
 | `followOffset.z` | `_SO_Assets/Camera/RhinoCameraSettingsSO.asset` | **-70** (was -120) |
 
 `returnPerSecond` is the **feel** dial, not a safety one: at 120 the speed bleeds over seconds
@@ -254,31 +287,37 @@ how a platform law starts reading like a vessel feature again.
 
 1. Launch any game mode as the Rhino (or menu freestyle) with a gamepad, touch, or
    keyboard+mouse. Fly full throttle and straight.
-2. Speed should climb **linearly** (no ease-in curve) toward **1200** over **~5.2s**; one
+2. Speed should climb **linearly** (no ease-in curve) toward **840** over **~3.6s**; one
    BoostActivate SFX on engage; the view should progressively narrow (zoom-in) while the
    fisheye-ish Panini compression relaxes — tunnel vision proportional to speed. **The tunnel
    saturates at 280 u/s** (`Resources/SpeedTunnelConfig`, `maxEffectSpeed`), so everything above
-   that looks optically identical — 1200 does not read as four times 310 through the lens, only
+   that looks optically identical — 840 does not read as three times 280 through the lens, only
    through the world going past. That is a fleet-wide absolute law and is deliberately NOT
    retuned for this vessel; four other hulls already exceed the ceiling.
 3. Break the line HARD (stick to the stop): the ramp disengages and speed **coasts** back to
-   input speed over ~9.6s, the view relaxing with it.
+   input speed over ~6.6s, the view relaxing with it.
    **Confirm FOV and Panini land exactly on pre-boost values.** (Note: every
    vessel tunnels now, so there is no longer a tunnel-free vessel to compare against —
    judge the return against the Rhino's own resting view.)
 3a. **The graded ramp is the thing to judge, and it is the whole point of this pass.** Hold the
    ramp, then feed in a LITTLE stick and hold it. Speed should settle at a lower cruise rather
-   than collapsing — roughly 1046 u/s at a quarter stick, 881 at a half, 553 at 0.7 — and the
+   than collapsing — roughly 727 u/s at 0.4 stick, 614 at a half, 389 at 0.7 (the live table in
+   the retune box above) — and the
    vessel should carve a correspondingly tighter arc. Sweeping the stick slowly from centre to
    the stop should read as one continuous trade, with no step anywhere, and hard-over should
    land on plain cruise (50 u/s) exactly as disengaging does.
-3b. **Steer at top speed.** At 1200 u/s full stick should sweep the nose at ~690 °/s and put the
-   vessel through a ~100-unit circle. Compare against the same manoeuvre at cruise: the CIRCLE
-   should be bigger, but only ~3.5x for a 20x speed increase. If it feels twitchy rather than
+3b. **Steer at top speed.** At 840 u/s full stick should sweep the nose at ~258 °/s and put the
+   vessel through a ~186-unit circle. Compare against the same manoeuvre at cruise (~29 u): the
+   CIRCLE should be bigger, ~6.5x for a 16.8x speed increase (it was ~3.5x for 20x at the old
+   0.5 scaler). If it feels twitchy rather than
    authoritative, `RotationThrottleScaler` is the dial (and it moves the asymptote with it).
-3c. **AI Rhino.** Add one and watch it fly — its input IS graded (the gate is `IsNetworkOwner`,
-   not `IsLocalUser`), so an AI should now also bleed speed into its turns rather than holding
-   full ramp through them.
+3c. **AI Rhino.** Add one and watch it fly — it should now RAMP on straights that pay the
+   wind-up back, brake on the ramp into each ring and let go at sharp corners (`RampBoostAIPolicySO`;
+   `Controller/AI/AI_BOOST.md`, Ramp). *Until then the AI never ramped at all:
+   the full-speed-straight gesture is raised only by a human input strategy, so this step's old
+   wording ("an AI should also bleed speed into its turns") described a ramp the AI never had.*
+3d. **Peers (MPPM two clients).** Ramp on A, then steer hard: B's copy of A must bleed too and
+   drop `IsBoosting` when A leaves the grace band (replicas used to hold ×16.8 for the turn).
 4. Wobble in and out of the straight line rapidly — no snapping to foreign FOV/Panini
    values at any point (the home-values rule).
 5. Multiplayer sanity: a second client's Rhino boosting must not change YOUR camera or
@@ -292,25 +331,30 @@ Rhino is the required hull in **Astro League (37)**, **Cleave (39)** and now
 **Headlong (49)**. Both existing modes want a playtest against this pass, and neither was
 retuned here:
 
-- **Astro League** — the court IS the cell's nucleus, and a pilot who can cross it at 1200 u/s
-  arrives at the ball far faster than the mode was tuned for. `SkimmerSwingKinematics` composes
-  the vessel's velocity AND its angular rate into the blade's strike speed, and this pass raised
-  BOTH (`RotationThrottleScaler` 0.4 → 0.5 is +25% on the tip's swing rate at a given speed), so
-  a boosted swing hits very much harder than before. Watch for the ball leaving the court in one
+- **Astro League** — the court IS the cell's nucleus, and a pilot who can cross it at 840 u/s
+  (1200 when this was written) arrives at the ball far faster than the mode was tuned for.
+  `SkimmerSwingKinematics` composes the vessel's velocity AND its angular rate into the blade's
+  strike speed; this pass raised BOTH (`RotationThrottleScaler` 0.4 → 0.5), and the 2026-09-25
+  retune pulled both back (0.2, 840), so a boosted swing hits harder than at the original ×6 but
+  less than this pass first shipped. Watch for the ball leaving the court in one
   touch. The graded ramp cuts the other way — a pilot turning toward the ball no longer carries
   full ramp into the strike — so this needs a play test rather than a prediction.
 - **Cleave** — the cage's outer radius is 360 u and its innermost shell is 100 u. The
-  Rhino's boosted turn radius (100 u) now matches the core, but the ramp needs ~5,200 u of
-  straight line to reach top speed and the arena is 720 u across, so in practice the boost cannot
-  wind past roughly ×5 in there. That is a self-limiting arena rather than a fix.
+  Rhino's boosted minimum turn radius is now ~186 u (100 u when this was written), and the ramp
+  needs ~1,600 u of straight line to reach top speed at rest (`(840² − 50²) / (2 × 220)`) while
+  the arena is 720 u across, so a full-diameter straight winds it to only ~565 u/s (≈×11). That
+  is a self-limiting arena rather than a fix.
+- **All three** want a playtest at the 2026-10-16 kit too: the AI now ramps (it raced every
+  Rhino-only mode at cruise before), and Momentum + the Mass afterimages change what a fast
+  Rhino leaves behind and what stops it.
 
 ## Follow-ups
 
 Tunnel-side follow-ups (menu Cinemachine, window tuning) moved to `Docs/SPEED_TUNNEL.md` §6
 with the rest of the law.
 
-- Engage SFX plays on every peer for remote Rhinos (pre-existing `BoostActivate`
-  semantics, unchanged).
+- **OPEN:** engage SFX plays on every peer for remote Rhinos (pre-existing `BoostActivate`
+  semantics, unchanged). An AI re-arm also replays it (`minRearmSeconds` 0.5 spaces them).
 - **The gesture threshold (0.3) is shared code** and now has ONE home,
   `StraightLineGesture.EngageThreshold`. The Rhino is the only vessel that binds
   `FullSpeedStraightAction` (verified across all 11 prefabs) and nothing binds
@@ -318,19 +362,19 @@ with the rest of the law.
   practice — but it is not one in principle. Since the ramp became graded it is also no longer
   the fussy edge it was: it is the top of a slope rather than a cliff, so a pilot who drifts past
   it loses a little speed instead of all of it. Prefer `straightnessGraceBand` as the feel dial.
-- **`MinimumSpeedStraightAction` is raised by all six strategies and bound by nothing.** It is
+- **OPEN: `MinimumSpeedStraightAction` is raised by the input strategies and bound by nothing**
+  (re-checked 2026-10-16). It is
   the mirror of the gesture this ability rides and would be the natural home for a Rhino
   brake/anchor if one is ever wanted.
-- **Two of the four element slots are still open design** (`Resources/ElementalAbilityMaps/Rhino.asset`
-  authors Mass → trail slab size and, since Broadside's playtest, **Time → this ability's
-  wind-up rate**), so two of the Rhino's four HUD cards render LOCKED and no L5 upgrade is
-  authored on any row. Proposals for Charge and Space are in
-  `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 "Rhino — Bulldozer"; neither touches speed or
-  handling, so a Space → turn-authority re-cut is still the obvious shape. The Time row's own
-  `Input` is deliberately **0**: the ramp engages on a full-throttle straight, not a button.
-- **The graded ramp is not yet reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
-  is published for exactly this and is read by nothing: the Rhino renders four LOCKED ability
-  cards, so there is no gauge to bind it to. When the Rhino's map is authored, that value is the
-  obvious fill for whichever card owns the ramp — it is the one number that tells a pilot how
-  much of their boost the current line is costing them, which they can otherwise only infer from
-  the speed they are not gaining.
+- ~~**Two of the four element slots are still open design** … two HUD cards render LOCKED and no
+  L5 upgrade is authored on any row.~~ **Stale since 2026-10-16:** `Resources/ElementalAbilityMaps/Rhino.asset`
+  now authors all four rows with scaling and an L5 each (Charge — Sword Energy / Live Wire; Mass —
+  Afterimage / Danger Afterimages; Space — Blade Reach / Breaker; Time — Ramp Spool / Momentum),
+  and the row binds 4/4 with PLACEHOLDER icons — no card is LOCKED. The Time row's own `Input` is
+  still deliberately **0**: the ramp engages on a full-throttle straight, not a button.
+- **OPEN: the graded ramp is not reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
+  is published for exactly this and is still read by nothing. The Time card now exists — lit
+  while the ramp boosts, flashing once at Momentum, its gauge filling with speed / top speed
+  (2026-10-17) — and straightness is still the obvious second readout for it: the one number that tells a
+  pilot how much of their boost the current line is costing them, which they can otherwise only
+  infer from the speed they are not gaining.

@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The kite slows into its aim point: its wanted speed is min(top speed, distance × this).</summary>
         public const float ApproachGain = 7f;
         /// <summary>The kite and every target the thumb sets are kept inside this fraction of the board radius
-        /// (a target past the rim could never be reached: L-STU-83).</summary>
+        /// (a target past the rim could never be reached: L-STU-109).</summary>
         public const float RimFraction = 0.96f;
         /// <summary>A loop's crossing ignores the newest few tail segments, which always touch the head.</summary>
         const int SkipNewest = 3;

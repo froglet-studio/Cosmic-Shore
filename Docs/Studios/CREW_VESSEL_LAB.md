@@ -112,7 +112,7 @@ the effect columns swing more than that (see Found 2). Read differences under ab
    earns 45% of a playing one). A person may draw bigger loops than this AI with a long tail.
 6. **Motes in the world halve the loops** (12 a minute, 1.7 motes each): the pilot's pitch and roll carry most motes
    out of reach, so the head pops twice as many prisms instead. Fixed in space, only 1–4 of 30 motes were ever
-   touchable before the board option existed (L-STU-85).
+   touchable before the board option existed (L-STU-111).
 7. **The thumb is on the glass 93% of the time** (the kite follows a held thumb), and a navigator who never touches
    still produces 20%, mostly from prisms drifting onto a parked head.
 8. **The hull never hits a hostile prism** in these runs (the AI pilot dodges), so the head's pops are not defence.
@@ -307,9 +307,9 @@ navigator-AI's play, not a person's: fun is the designer's call on a phone.
 
 **Fixed in the lab before any number above was taken** (each would have frozen a human's kite too):
 - the AI thumb measured "arrived" against its goal without its own aim noise, so a noisy aim never arrived and the
-  Pinball and Pathfinder AIs froze (L-STU-82);
+  Pinball and Pathfinder AIs froze (L-STU-108);
 - a dash target or path point past the board's rim could never be reached, so the kite froze at the rim for the rest
-  of the run (Hopper seed 2 caught one crystal in the 57 s after it froze at 33 s; Pathfinder seed 3 one in 45 s after 3 s) (L-STU-83);
+  of the run (Hopper seed 2 caught one crystal in the 57 s after it froze at 33 s; Pathfinder seed 3 one in 45 s after 3 s) (L-STU-109);
 - a sweep through a trail counted every prism as a separate moment (Glide read 160–230 moments a minute), so events
   under 0.4 s apart are now one moment;
 - the Lasso AI looped clusters of prisms rather than crystals; it now anchors its loop on crystals.
@@ -466,7 +466,7 @@ Sweeps (same scorecard, one knob moved; full tables reproduced with `runBatch` a
 7. **Two lab bugs were found and fixed before any number above was taken.** The lab hull had no throttle, so the
    AI orbited any crystal inside its 25 u turn circle forever; and its "nothing in sight" search turned in place.
    Per-seed scores ran from 2 to 20 per minute. With the Sparrow's throttle and a roaming search point, a skilled
-   pilot's runs sit within about ±15% of each other (L-STU-80).
+   pilot's runs sit within about ±15% of each other (L-STU-106).
 
 **Open thread (not a result):** Gem Feed reads −14% in the sparse cell with a small standard error. The control
 is 0, so the console causes it, but the mechanism is not shown. One candidate: Time buffs raise speed and with it

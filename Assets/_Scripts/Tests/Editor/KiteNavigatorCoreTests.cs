@@ -49,7 +49,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Move_AimPastTheRim_IsClampedOntoTheBoard_SoTheKiteNeverFreezes()
         {
-            // L-STU-83: a target past the rim could never be reached and the kite froze there for the rest of the run
+            // L-STU-109: a target past the rim could never be reached and the kite froze there for the rest of the run
             var s = Candidate(); var k = Kite(s);
             for (int i = 0; i < 300; i++) k.Move(s, 1000f, 48f, true, Dt);
             var c = KiteNavigatorCore.Centre(s);

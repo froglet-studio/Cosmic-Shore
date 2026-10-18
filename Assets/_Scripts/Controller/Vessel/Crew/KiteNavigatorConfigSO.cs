@@ -72,7 +72,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(4, 80)] int moteCount = 26;
         [Tooltip("lab moteCluster: average motes per same-element cluster. With growth 2, this and the spread set how big loops get.")]
         [SerializeField, Range(1, 10)] int moteCluster = 4;
-        [Tooltip("lab cluster spread (u, gaussian). A balance knob as strong as the growth rate: 14 -> 18 cut the lab's Space blasts 27x (L-STU-84).")]
+        [Tooltip("lab cluster spread (u, gaussian). A balance knob as strong as the growth rate: 14 -> 18 cut the lab's Space blasts 27x (L-STU-110).")]
         [SerializeField, Range(4f, 40f)] float moteSpread = 18f;
         [Tooltip("What a loop of more than one element does. Fizzle is the signed-off rule.")]
         [SerializeField] KiteMixedLoopRule mixedLoops = KiteMixedLoopRule.Fizzle;

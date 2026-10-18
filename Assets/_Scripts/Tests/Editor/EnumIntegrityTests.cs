@@ -55,6 +55,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Thresher, 14)]
         [TestCase(VesselClassType.Stoat, 15)]
         [TestCase(VesselClassType.BrittleStar, 16)]
+        [TestCase(VesselClassType.Angler, 17)]
         [TestCase(VesselClassType.Wrasse, 19)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {

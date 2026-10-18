@@ -100,7 +100,7 @@ namespace CosmicShore.Tests
             HintBinding[] keyboardControls =
             {
                 HintBinding.KeyLeftShift, HintBinding.KeyRightShift,
-                HintBinding.KeySpace, HintBinding.KeyR, HintBinding.KeyQ, HintBinding.KeyE,
+                HintBinding.KeySpace, HintBinding.KeyR, HintBinding.KeyQ, HintBinding.KeyE, HintBinding.KeyF,
             };
 
             foreach (var control in keyboardControls)
@@ -121,7 +121,7 @@ namespace CosmicShore.Tests
             // not bounce to some other control's artwork.
             foreach (var pad in new[] { HintBinding.PadLeftTrigger, HintBinding.PadRightTrigger,
                                         HintBinding.PadButtonSouth, HintBinding.PadButtonEast,
-                                        HintBinding.PadButtonWest, HintBinding.None })
+                                        HintBinding.PadButtonWest, HintBinding.PadButtonNorth, HintBinding.None })
                 Assert.AreEqual(pad, InputHintBindingMap.Canonical(pad));
         }
 
@@ -133,14 +133,17 @@ namespace CosmicShore.Tests
             // (B and N were the historical bindings) is unreachable from that hand position, and
             // because there is ONE keyboardLabel per control it would also drag the dual-WASD
             // scheme with it or make the chip wrong for one of the two.
+            // F carries the fourth face button (Button4Action, pad Y; first bound by the Angler (its dash 2026-10-16, its recall since 2026-10-18)). No
+            // QWER key is free in BOTH desktop schemes (W is the dual-WASD scheme's stick), and F is the home-row key
+            // directly under R, so the resting left hand still reaches it.
             var cluster = new[]
             {
-                HintBinding.KeyQ, HintBinding.KeyE, HintBinding.KeyR, HintBinding.KeySpace,
+                HintBinding.KeyQ, HintBinding.KeyE, HintBinding.KeyR, HintBinding.KeySpace, HintBinding.KeyF,
                 HintBinding.KeyLeftShift, HintBinding.KeyRightShift,
             };
 
             foreach (var input in new[] { InputEvents.Button1Action, InputEvents.Button2Action,
-                                          InputEvents.Button3Action, InputEvents.LeftStickAction,
+                                          InputEvents.Button3Action, InputEvents.Button4Action, InputEvents.LeftStickAction,
                                           InputEvents.RightStickAction, InputEvents.FlipAction })
             {
                 var binding = InputHintBindingMap.BindingFor(input, keyboard: true);
@@ -165,6 +168,40 @@ namespace CosmicShore.Tests
                 Assert.AreSame(pad, key, $"{input} resolves to two different glyph entries.");
                 Assert.IsFalse(string.IsNullOrEmpty(key.keyboardLabel), $"{input} has no keyboard label.");
             }
+        }
+
+        [Test]
+        public void BothTriggersChordDrawsOneChipOnBothDevices()
+        {
+            // The Rhino's energize stance and the Manta's Soar ride BothSticksAction. Before the
+            // chord had a control the cards bound to it drew nothing at all.
+            var set = LoadSet();
+            Assert.AreEqual(HintBinding.PadBothTriggers,
+                InputHintBindingMap.BindingFor(InputEvents.BothSticksAction, keyboard: false));
+            Assert.AreEqual(HintBinding.KeyBothShifts,
+                InputHintBindingMap.BindingFor(InputEvents.BothSticksAction, keyboard: true));
+
+            var pad = set.For(HintBinding.PadBothTriggers);
+            Assert.IsNotNull(pad, "BothSticksAction has no glyph entry.");
+            Assert.IsNotNull(pad.padGlyph, "BothSticksAction has no pad artwork.");
+            Assert.AreSame(pad, set.For(HintBinding.KeyBothShifts),
+                "BothSticksAction resolves to two different glyph entries.");
+            Assert.IsNotEmpty(pad.keyboardLabel, "BothSticksAction has no keyboard label.");
+        }
+
+        [Test]
+        public void SticksApartGestureHasAGlyphButNoInput()
+        {
+            // Full throttle is a gesture with no InputEvents button, so no map input may resolve to
+            // it (that would draw it on a passive card); the Rhino's HUD names it explicitly.
+            Assert.IsEmpty(InputHintBindingMap.InputEventsFor(HintBinding.PadSticksOutward));
+            Assert.AreEqual(HintBinding.PadSticksOutward,
+                InputHintBindingMap.Canonical(HintBinding.KeySticksOutward));
+
+            var glyph = LoadSet().For(HintBinding.PadSticksOutward);
+            Assert.IsNotNull(glyph, "The sticks-apart gesture has no glyph entry.");
+            Assert.IsNotNull(glyph.padGlyph, "The sticks-apart gesture has no pad artwork.");
+            Assert.IsNotEmpty(glyph.keyboardLabel, "The sticks-apart gesture has no keyboard label.");
         }
 
         [Test]

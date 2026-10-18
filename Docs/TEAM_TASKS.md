@@ -445,6 +445,48 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
+### T-20261016-e2fb · open · test · Brittle Star
+- **Task:** Play the Brittle Star's 2026-10-16 tuning pass in the Editor: the ring regrows over 3 s after LT (modes off meanwhile); RT at a full pull in Charge Mode leaves the sabers flexing on a ring flick (cordMaxRigidity 0.4) and released they whip slower (cordLooseWave 144); Space Mode at a full pull overheats after ~6 s at Space 0 and ~20 s at Space 10, same ~5 s lockout; the ring explosion is 4x thicker and bursts out five-fold as lit faceted volumes (five coiling arms led by crystals, the ring's pentagon with crystal knots, a faceted torus front with five crests, turning with the ring's spin; nothing flat from any angle); the trail blocks are long and slim (1 x 1 x 6, base trail 0.5 wide) and widen in x and y with Mass.
+- **Done when:** Each item seen in Play mode and noted in Docs/UNITY_VERIFICATION_CHECKLIST.md's 'Brittle Star tuning pass' section
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md
+
+### T-20261016-acc7 · open · test · Brittle Star
+- **Task:** Profile a Brittle Star Space-10 burst: heatCapacity x3.33 lets five guns fire ~20 s at 450 rounds/s with 9 s flights, so ~4,000 rounds can be alive (~2,000 at Space 0, 6 s bursts) against the turrets' pool max of 2,400 (GenericPoolManager then instantiates on demand and destroys on release). Capture with 3-4 AI Brittle Stars at Space 10 and decide: raise the pool, shorten the flight, or cap the burst.
+- **Done when:** A capture (capture console command) attached to the task, and the pool or the numbers changed, or kept with the measurement as the reason
+- **Who can take it:** Yash (offered: diagnostics), Garrett decides
+- **Added:** 2026-10-16 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** BRITTLE_STAR.md section 3.4 Cost and F9
+
+### T-20261017-60e9 · open · test · Prisms
+- **Task:** Editor-verify the prism destruction and steal detail levels (cece/dreamy-pascal-7xxx1m, lab rounds 9-12): a close death bursts into silver triangles that lean along the hit; neighbours on a trail rammed at once do not play the same animation, yet each cloud stays one smooth burst (round 12; fragmentVariety 0 makes them copies); a FAR death is 24 wedges on the same law (not the old explosion graph); a big trail wipe draws every death; the steal's roll looks as before. Frame Debugger: destructions draw with keyword _BURST_FRAGMENT, steals with _BURST_ROLL, the roll's mesh is Prism_HighPoly_<n>. Run EditMode PrismCollisionBurstTests.
+- **Done when:** Checklist items 9-12 in Docs/UNITY_VERIFICATION_CHECKLIST.md pass (or each failure is filed as a dev task) and PrismCollisionBurstTests are green
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Prism movement section, items 9-12); Docs/Studios/COLLISION_BURST_LAB.md rounds 11-13
+
+### T-20261017-9cab · open · decision · Prisms
+- **Task:** Three calls the round-11/12 burst leaves: (1) round 13 tripled the spread (burst 0.36 / drift 0.216): the level-0 cloud is now 2.57 R at 2 s against the old explosion's 1.78 R - confirm in game; (3) round 12's per-death variety (fragmentVariety 0.5): judge it on the lab's Neighbours view - lower it if the deaths read too unalike; (2) your decision set the grade length to 2.2 s, but that is MaterialPropertyAnimator.DefaultTransitionSeconds, every prism colour change in the game - not adopted; adopt or not.
+- **Done when:** All three recorded in the Collision Burst Lab decision log and the asset / animator updated to match
+- **Who can take it:** Garrett (prisms / product owner)
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Docs/Studios/COLLISION_BURST_LAB.md round 11, https://claude.ai/artifact/F47yG1UjBkK662rEnhk7m9
+
+### T-20261017-1249 · open · dev · Tooling
+- **Task:** unity_refcompile's editor config reports 3 errors in AuthenticationServiceFacade.cs (Unity.Multiplayer.PlayMode / CurrentPlayer, from 296123a9e) as PROJECT errors on a clean bleeding-edge, so every branch's editor run reads FAILED. Unity.Multiplayer.Playmode is already an unobtainable package: map that namespace to it (note the case difference) in Tools/Build/unity_refcompile so they land in the unobtainable-package bucket. Do not change the game file.
+- **Done when:** A clean bleeding-edge editor run reads RESULT: OK with those 3 in the unobtainable bucket, and a planted typo in a changed Editor file still fails it
+- **Who can take it:** Shombith (CI), Yash (offered)
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** Tools/Build/unity_refcompile/README.md
+
+### T-20261017-75d5 · open · docs · Prisms
+- **Task:** Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs has two back-to-back summary blocks (near lines 666 and 2220 on cece/dreamy-pascal-7xxx1m; already on bleeding-edge): a member was inserted between a doc comment and its method, so the doc now sits on the wrong member. Move each onto the method it describes or delete it if superseded. Doc comments only.
+- **Done when:** A scan for '/// </summary>' followed by '/// <summary>' finds nothing in the file
+- **Who can take it:** Yash (offered), anyone
+- **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
+- **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
+
 ### T-20261017-b06e · open · decision · Crew vessels
 - **Task:** Decide how the Kite Navigator seat goes online: today the board, motes, AI and every effect run on the hull's local human's machine. A second human on another machine needs the seat replicated, and a choice of which machine decides pops, blasts, Mass clusters, boost and steals (vessel rule 48). Also decide the arena case: the seat's swap uses PilotSwapGesture, which in an arena match also asks the arena to swap hulls while the human flies.
 - **Done when:** A written plan in KITE_NAVIGATOR.md that names the deciding machine per effect and the gesture owner in arenas
@@ -508,6 +550,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Yash's session (`Ys-bleeding-edge`)
 - **See:** Docs/AI_SYSTEM/SITUATION_RECORDING_PLAN.md §9
 - **Done:** 2026-10-16, Yash 2026-10-17: no decision step; the Ys-bleeding-edge RampBoostAIPolicySO was rebuilt (brake on the ramp, corner speed, payback) and took the re-arm + explicit end from the cece/relaxed-hopper-r62hbd cut. When that branch merges, keep this file's states and that branch's executor changes (AI_BOOST.md).
+- **Done:** 2026-10-18, merge 5b09c6896 took bleeding-edge's RampBoostAIPolicySO wholesale (a superset of this branch's re-arm + End), Rhino.prefab points at its asset guid ece63fe0fab446188650420e8b018690
 
 ### T-20261016-b525 · open · test · Regatta AI
 - **Task:** Fly Regatta I1 as the Stoat, 5+ finished races, storing every one: Mass mode's dipole on the straights, Time mode (B) slings into the hard corners; in one race flip Third Eye > Pilots > AI on your Stoat for a lap and back. Then ask a session to run learn_drives_from_flights.py --write (writes StoatModeAction / StoatDipoleConfig / StoatSlingConfig _Regatta)
@@ -643,6 +686,48 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Caleb or Andrew (QA)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
+
+### T-20261018-9fcf · open · test · vessels
+- **Task:** Editor-verify the Angler (vessel 17): run the seven Angler entries in Docs/UNITY_VERIFICATION_CHECKLIST.md (rounds 1-7) in Menu_Main freestyle - lure/tame on A, paint RT, erase/lock LT, dash B, squad X, recall Y, the lit queue, the level camera
+- **Done when:** Every Angler checklist entry passes with a clean console, or each failure is filed as a dev task
+- **Who can take it:** Yash (editor tests), Garrett (vessel owner)
+- **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+
+### T-20261018-bf51 · open · decision · vessels
+- **Task:** Angler design slots still open: Charge and Time level-5 upgrades, and element scaling for Charge, Mass and Space (only Time scales today)
+- **Done when:** Garrett names the four, or says they stay open
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md section 7
+
+### T-20261018-5d70 · open · decision · Brittle Star
+- **Task:** The Brittle Star's base trail lays blocks HALF as wide as its Creation corner trails (0.5 x 1 x 6 against 1 x 1 x 6): the fleet spawner halves BaseScale.x for a single trail, the corners do not. Pick: halve the corners' x, or author the base block as (2, 1, 6).
+- **Done when:** Garrett picks one and the corners and base trail lay the same block (BRITTLE_STAR.md R3)
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by a Claude session (`cece/gallant-bell-eq7kul`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md R3
+
+### T-20261018-0886 · open · test · Rhino
+- **Task:** Editor-verify the Rhino four-row kit on cece/relaxed-hopper-r62hbd (never opened in Unity): compile, then run the 'Rhino deep dive' section of Docs/UNITY_VERIFICATION_CHECKLIST.md - sword energize/cooldown and Charge gauge, afterimages cut by the Rhino's own blade after 1 s, Time card lit on boost + Momentum flash + speed gauge, the L1+R1 and sticks-apart chips, Manta Soar chip, a Grizzly losing petals to a danger prism, and a 2-player check that a replica's sword/ramp match the owner's
+- **Done when:** Every numbered check in that section passes, or each failure is filed as a dev task
+- **Who can take it:** Yash (offered) or Caleb/Andrew (QA); Garrett for the balance calls
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Rhino deep dive); Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md
+
+### T-20261018-c5a4 · open · decision · Rhino
+- **Task:** Playtest the Rhino afterimage self-farm: one energize (cost 0.1) then cutting its own wake can refill the sword meter now the blade cuts its own afterimages. Keep, or lower energy per own-afterimage cut (not immunity)
+- **Done when:** A call is recorded in Docs/ElementalAbilitySystem/BACKLOG.md (Rhino four-row branch, Open)
+- **Who can take it:** Garrett (vessel owner)
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/ElementalAbilitySystem/BACKLOG.md 'Afterimage self-farm'
+
+### T-20261018-2962 · open · dev · CI gates
+- **Task:** check_vessel_on_vessel_motion.py is red on bleeding-edge: it flags VesselImpulseByExplosionEffectSO (the Grizzly's self-launch, which returns unless SourceVessel is the vessel hit). Teach the gate the self-only guard (or a reasoned allow-list entry) with a negative control; do not change the effect
+- **Done when:** The gate exits 0 on bleeding-edge and still fails when the SourceVessel guard is deleted
+- **Who can take it:** Yash (offered) or whoever owns the CI gates
+- **Added:** 2026-10-18 by a Claude session (`cece/relaxed-hopper-r62hbd`)
+- **See:** Docs/ElementalAbilitySystem/BACKLOG.md '[gate false positive] check_vessel_on_vessel_motion.py'
 
 ### T-20261018-3247 · open · dev · Crew vessels
 - **Task:** Bring the Crew Vessel Lab up to the Wrasse's round 4, which was directed in Unity on 2026-10-18: the kite view and pilot view swap (small view lower left), lime motes in their element's petal shape, the kite following the mouse or stick with no click, a one-thumb pilot whose lifted thumb spends the Time boost (2 s cooldown, none at Time L5), mote frequency weighted by the hull's petals, Charge rams on fauna, Eject below Charge L5 and Steal at it, shielded Mass clusters at Mass L5, Space L5 blasts through shields and super shields, and the Omni crystal's burst of motes (round 4e; it no longer zooms). Rounds 4d-4e also changed the pilot to two thumbs, the motes to five-petal flowers and the out-of-plane prisms: KITE_NAVIGATOR.md. Then re-run parity.cjs and verify_lab.cjs and republish.

@@ -118,7 +118,11 @@ Inbound references were measured with a single pass that indexes every guid in e
 That method reproduced the documented hazard live: **`RhinoModel.fbx` has 0 asset references but
 2 `.meta` `externalObjects` remaps pointing into it** (from both `Vessel_Placeholder_*.fbx.meta`).
 A `head -1` check would have mis-attributed it; a naive "0 references → delete" would have broken
-two `.meta` files.
+two `.meta` files. *(Re-measured 2026-10-16: both placeholders have since been retired —
+`VESSEL_CONSTRUCTION_FOLLOWUP.md` Phase 5 — and `RhinoModel.fbx` (guid `d342a388…`, one owner) now
+has **0** asset references AND **0** `.meta` remaps. It is HELD deliberately as the only copy of the
+pre-subdivision front wings, not because anything points at it. The lesson above stands; the
+example no longer reproduces.)*
 
 **Blind spot 1 — `Resources.Load` by name.** A guid check cannot see a runtime load by string.
 `Unity Assests/TextMesh Pro/Resources/TMP Settings.asset` measures **zero inbound guid references**
@@ -562,15 +566,18 @@ doc's Phase 0 asks for re-verification before acting, so this pass re-ran the re
 | `dolphin_shapekey_with_animations.fbx` | 1 | 0 | 0 |
 | `rhino_shapekey_with_animations.fbx` | 1 | 0 | 0 |
 | `urchan_shapekey_with_animations.fbx` | 1 | **5** | 0 |
-| `Vessel_Placeholder_1.fbx` | 1 | 0 | 0 |
-| `Vessel_Placeholder_2.fbx` | 1 | 0 | 0 |
-| `RhinoModel.fbx` | 1 | 0 | **2** |
+| `Vessel_Placeholder_1.fbx` *(retired since — FOLLOWUP Phase 5)* | 1 | 0 | 0 |
+| `Vessel_Placeholder_2.fbx` *(retired since — FOLLOWUP Phase 5)* | 1 | 0 | 0 |
+| `RhinoModel.fbx` *(2026-10-16: 0 remaps — they lived in the placeholders' `.meta`s and went with them; held as the only pre-subdivision wing copy)* | 1 | 0 | **2** → **0** |
 | `Riptide.fbx` / `Dolphin_split.fbx` / `Hammerhead_split.fbx` | 1 | 0 | 0 |
 
 Counts agree with `VESSEL_CONSTRUCTION.md`, so the tree has not moved. Two of the eight are **not**
 "referenced by nothing", which the summary phrasing elides: `urchan_shapekey` is referenced by four
-animator controllers plus one more (its takes are used by other vessels), and `RhinoModel` is
-reached through `externalObjects` remaps in both placeholder `.meta` files.
+animator controllers plus one more (its takes are used by other vessels), and `RhinoModel` was
+reached through `externalObjects` remaps in both placeholder `.meta` files *(true on 12 Sep; on
+2026-10-16 a grep of its guid across every `.meta` and asset finds nothing — the placeholders are
+gone, so `RhinoModel` is now referenced by nothing and kept by decision,
+`VESSEL_CONSTRUCTION_FOLLOWUP.md` "HELD deliberately")*.
 
 **Verdict `salvage-first`**, unchanged — `dolphin_shapekey_with_animations` carries the Dolphin's
 only real hull morph (10,909 verts) and is a salvage candidate, not a deletion candidate.

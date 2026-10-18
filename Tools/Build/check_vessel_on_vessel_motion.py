@@ -39,10 +39,10 @@ DELIBERATELY NOT CHECKED
   * `Vessel Prism Effects/` - a vessel deflecting off MASS it flew into is the FLIGHT MODEL, not
     a weapon, and `GentleSpinShip`/`ModifyVelocity` are how a bounce reads. A rival's trail
     deflecting you is you hitting their wall, which a pilot answers by flying around it. The
-    same carve-out covers the DANGER prism's input mute (`SparrowDebuffByRhinoDangerPrismEffectSO`
-    calls `MuteInput`): a danger prism is a hazard standing in the world, which is exactly the
-    risk/reward surface the trail economy is built on, and a pilot answers it by not flying into
-    it. The line the law draws is between the ARENA and a weapon somebody AIMED at you.
+    line the law draws is between the ARENA and a weapon somebody AIMED at you. (This carve-out
+    used to cover a danger prism's input MUTE too - `SparrowDebuffByRhinoDangerPrismEffectSO`,
+    on the Sparrow and Grizzly. It was deleted 2026-10-17: a danger prism BURNS petals, the
+    economy's one sink, and takes nothing else - Docs/ELEMENTAL_ECONOMY.md.)
   * `Skimmer Prism Effects/` - same argument, one impactor over (the Rhino's blade bouncing off
     a prism it cut).
   * A vessel moving ITSELF (dashes, barrel rolls, boosts, `SpinAroundAction`) - that is the
