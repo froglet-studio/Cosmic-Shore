@@ -973,3 +973,17 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: audit energy first (E = v^2/2 + g*y, printed per second in free space far from the course) before touching the pilot; make lift perpendicular to the flight path (hull-up minus its along-track part) with the angle of attack as its magnitude, so only gravity and drag change the speed; set the glide ratio and the ballast as design numbers (a racer's dive must be a short plunge); give a scripted or AI dive an ATTITUDE through the aim controller (`ctx.aimAt(P, pos + flat * 120 - up * 100)`), never a held stick.
 - Evidence: `probe_soar2.cjs` energy audit (dE -4.4k/s in a pull-up, half of it drag) and the Hard AI trace (diving=1, Ly=-0.70 for 32 s, speed 90 -> 56); smoke I1 Hard DNF -> 357 -> 266 s across the three fixes (`CONCEPT_FLEET.md` section 4).
 - Promoted: no
+
+### L-STU-100 — A mode switch must not read the input of the mode it is leaving: the press acts on what the screen showed
+- Lab: Concept fleet, the Gibbon's two modes (`studio-kinds.js`, kind `tether`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: Garrett's space mode gives each stick to a tether (it aims it, then reels it), and a trigger press is the door into that mode. The first version aimed the hook with the stick in the frame of the press, but in that frame the thumbs were still STEERING (time mode), so a held pitch-up aimed the tether 45 degrees up and hooked nothing; the ghost ring had shown a different prism.
+- Do instead: when an input changes meaning across a mode switch, resolve the switch frame with the OLD mode's reading (here: hook the prism the ring showed, from the time-mode neutral aim) and let the new meaning start on the next frame. Test it with a scripted pad that is already deflected at the press, not a neutral one.
+- Evidence: `probe_given.cjs` "space, one tether": hooked never -> hooked at 0.02 s; `CONCEPT_FLEET.md` section 8.2.
+- Promoted: no
+
+### L-STU-101 — Two rigid ropes are one constraint (a circle about the anchors' line), not two constraints solved in turn
+- Lab: Concept fleet, the Gibbon's bolas · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: projecting the velocity onto each rope's sphere in turn (Gauss-Seidel, 4 passes) kept both ropes exact (error 0.000 u) and still STALLED the hull: 1 degree swept in 3 s. A hull flying between two anchors planted ahead has almost no velocity along the only circle the two ropes allow, so the projections ate it; "rope error 0" read as success while nothing moved.
+- Do instead: solve the pair as what it is, a rotation about the line A-B on the circle the two lengths define (x = (la^2 - lb^2 + d^2) / 2d along the axis, radius sqrt(la^2 - x^2)), with the speed redirected onto that circle at the hook. Measure motion (swept angle, distance travelled) beside any constraint error: a solver that freezes the body satisfies every constraint.
+- Evidence: `probe_given.cjs` "space, two tethers": swept 1 -> 722 degrees in 3 s, rope error 0.000 u both times.
+- Promoted: no

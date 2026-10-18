@@ -148,25 +148,25 @@
       "name": "Gibbon",
       "file": "gibbon.html",
       "group": "concept",
-      "kind": "concept studio - round 1 (recipe-driven, movement kind swing)",
-      "chip": "concept · round 1",
-      "summary": "The swinger, merged with the Tether prototype (cece/loving-feynman-hlgf18). Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rigid rope, reel in with LT to trade rope for speed, and let go to fling out on the tangent; a release past a half turn pays a boost. In Unity the same vessel also plants its own anchor prisms ahead and yanks itself along them hand over hand, and every tether is a light sword that cuts hostile prisms. Those two halves join the studio in its round-2 session; the numbers here are TetherConfig.asset's.",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind tether)",
+      "chip": "round 2 · two modes",
+      "summary": "Round 2, after Garrett's review: two modes. TIME mode feels like flying: the Gibbon plants its own anchor prisms ahead, alternating sides, and yanks itself along them on short elastic tethers (the Tether prototype's auto-tethers). Squeeze a trigger and you are in SPACE mode: each trigger fires its own tether and its stick aims it, then reels it. One tether is a swing round its anchor, two is a bolas round the line between them, none is a fling through space until time mode takes the sticks back. Every tether is a light sword: what it sweeps through, it cuts.",
       "spec": [
         {
-          "k": "Mechanic",
-          "v": "RT tether · LT reel · release to fling"
+          "k": "Time mode",
+          "v": "auto-tethers every 0.35 s, 0.8 s ahead, 20° off the nose"
         },
         {
-          "k": "Reach",
-          "v": "93 u (TetherConfig range), 60° cone, target memory 0.5 s"
+          "k": "Space mode",
+          "v": "LT + left stick = left tether · RT + right stick = right tether"
         },
         {
-          "k": "Kick",
-          "v": "+20% past a half turn (releaseBoost), cap 358 u/s"
+          "k": "Swing",
+          "v": "reel 40 u/s, spin limit 0.6 rev/s, +20% past a half turn, cap 358"
         },
         {
-          "k": "Why",
-          "v": "grapple / web-swing: Spider-Man 2, Marvel Rivals, Echo Point Nova; the Tether prototype in Unity"
+          "k": "From",
+          "v": "the Tether prototype (cece/loving-feynman-hlgf18) + Garrett's review"
         }
       ],
       "preview": "previews/gibbon.png",

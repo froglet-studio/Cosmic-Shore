@@ -139,8 +139,8 @@
   <header class="top">
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1 id="h1">Gibbon Studio</h1>
-    <span class="round" id="round">concept · round 1</span>
-    <p class="sub" id="sub">The swinger, merged with the Tether prototype (cece/loving-feynman-hlgf18). Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rigid rope, reel in with LT to trade rope for speed, and let go to fling out on the tangent; a release past a half turn pays a boost. In Unity the same vessel also plants its own anchor prisms ahead and yanks itself along them hand over hand, and every tether is a light sword that cuts hostile prisms. Those two halves join the studio in its round-2 session; the numbers here are TetherConfig.asset&#x27;s.</p>
+    <span class="round" id="round">round 2 · two modes</span>
+    <p class="sub" id="sub">Round 2, after Garrett&#x27;s review: two modes. TIME mode feels like flying: the Gibbon plants its own anchor prisms ahead, alternating sides, and yanks itself along them on short elastic tethers (the Tether prototype&#x27;s auto-tethers). Squeeze a trigger and you are in SPACE mode: each trigger fires its own tether and its stick aims it, then reels it. One tether is a swing round its anchor, two is a bolas round the line between them, none is a fling through space until time mode takes the sticks back. Every tether is a light sword: what it sweeps through, it cuts.</p>
   </header>
 
   <div class="layout">
@@ -300,28 +300,28 @@
   "id": "gibbon",
   "order": 1,
   "name": "Gibbon",
-  "tagline": "the swinger: tether, reel, fling (merged with the Tether prototype)",
-  "round": "concept \u00b7 round 1",
+  "tagline": "time mode flies on its own tethers; space mode swings and slices on two",
+  "round": "round 2 \u00b7 two modes",
   "accent": "#7fe08a",
-  "kind": "swing",
-  "chip": "concept \u00b7 round 1",
-  "summary": "The swinger, merged with the Tether prototype (cece/loving-feynman-hlgf18). Hold RT and a tether shoots to the best prism in reach: you pendulum round it on a rigid rope, reel in with LT to trade rope for speed, and let go to fling out on the tangent; a release past a half turn pays a boost. In Unity the same vessel also plants its own anchor prisms ahead and yanks itself along them hand over hand, and every tether is a light sword that cuts hostile prisms. Those two halves join the studio in its round-2 session; the numbers here are TetherConfig.asset's.",
+  "kind": "tether",
+  "chip": "round 2 \u00b7 two modes",
+  "summary": "Round 2, after Garrett's review: two modes. TIME mode feels like flying: the Gibbon plants its own anchor prisms ahead, alternating sides, and yanks itself along them on short elastic tethers (the Tether prototype's auto-tethers). Squeeze a trigger and you are in SPACE mode: each trigger fires its own tether and its stick aims it, then reels it. One tether is a swing round its anchor, two is a bolas round the line between them, none is a fling through space until time mode takes the sticks back. Every tether is a light sword: what it sweeps through, it cuts.",
   "spec": [
     {
-      "k": "Mechanic",
-      "v": "RT tether \u00b7 LT reel \u00b7 release to fling"
+      "k": "Time mode",
+      "v": "auto-tethers every 0.35 s, 0.8 s ahead, 20\u00b0 off the nose"
     },
     {
-      "k": "Reach",
-      "v": "93 u (TetherConfig range), 60\u00b0 cone, target memory 0.5 s"
+      "k": "Space mode",
+      "v": "LT + left stick = left tether \u00b7 RT + right stick = right tether"
     },
     {
-      "k": "Kick",
-      "v": "+20% past a half turn (releaseBoost), cap 358 u/s"
+      "k": "Swing",
+      "v": "reel 40 u/s, spin limit 0.6 rev/s, +20% past a half turn, cap 358"
     },
     {
-      "k": "Why",
-      "v": "grapple / web-swing: Spider-Man 2, Marvel Rivals, Echo Point Nova; the Tether prototype in Unity"
+      "k": "From",
+      "v": "the Tether prototype (cece/loving-feynman-hlgf18) + Garrett's review"
     }
   ],
   "fantasy": "A brachiator in space. It never flies straight for long: it hooks the world and swings through it, and the mass other pilots lay is its forest canopy.",
@@ -330,58 +330,51 @@
     "cruise": 80,
     "pitchYaw": 120,
     "roll": 130,
-    "grip": 30,
+    "grip": 8,
     "accel": 1.5,
     "topSpeed": 358
   },
-  "params": {
-    "reach": 93,
-    "minRope": 19,
-    "reelRate": 47,
-    "kick": 1.2,
-    "kickAngle": 180,
-    "topSpeed": 358
-  },
+  "params": {},
   "elements": {
     "charge": {
-      "name": "Fling",
-      "param": "kick",
+      "name": "Blade",
+      "param": "cutRadius",
       "range": [
         1,
-        1.25
+        1.8
       ],
-      "l5": "Catapult",
-      "tip": "Charge is the energy of the fling: the release kick grows with it."
+      "l5": "Shield Breaker",
+      "tip": "A proposal (the Tether's): Charge is the blade. Its cutting width grows; at level 5 a beam cuts shielded prisms outright instead of popping the shield."
     },
     "mass": {
-      "name": "Heft",
-      "param": "minRope",
+      "name": "Anchor",
+      "param": "anchorScale",
       "range": [
         1,
-        0.6
+        1.6
       ],
       "l5": "Harvest",
-      "tip": "Mass lets the rope reel shorter, so a heavy Gibbon whips round tighter. At level 5 the anchor prism becomes yours when you let go."
+      "tip": "A proposal: Mass is the anchors' size. At level 5 a rival's prism you swung off becomes yours when you let go."
     },
     "space": {
-      "name": "Long Arm",
-      "param": "reach",
+      "name": "Reach",
+      "param": "range",
       "range": [
         1,
         1.6
       ],
       "l5": "Far Reach",
-      "tip": "Space is how far the tether reaches."
+      "tip": "The Tether's proposal: Space is how far a tether reaches."
     },
     "time": {
-      "name": "Quick Reel",
+      "name": "Reel",
       "param": "reelRate",
       "range": [
         1,
         1.8
       ],
       "l5": "Winch",
-      "tip": "Time is how fast LT reels the rope in."
+      "tip": "The Tether's proposal: Time is how fast a stick reels its tether in."
     }
   },
   "styles": [
@@ -393,7 +386,7 @@
         "space": 0,
         "time": 0
       },
-      "info": "Every element at 0: the recipe's numbers."
+      "info": "Every element at 0: TetherConfig's numbers."
     },
     {
       "name": "Acrobat",
@@ -406,14 +399,14 @@
       "info": "Long reach and a fast reel: chains swings far apart."
     },
     {
-      "name": "Slinger",
+      "name": "Slicer",
       "lv": {
         "charge": 10,
         "mass": 10,
         "space": 0,
         "time": 0
       },
-      "info": "Tight ropes and a big kick: fewer swings, each one a cannon shot."
+      "info": "A wide blade and big anchors: flies through mass cutting it."
     },
     {
       "name": "Maxed",
@@ -435,16 +428,32 @@
     }
   ],
   "controls": {
-    "lt": "reel in (analog)",
-    "rt": "tether (hold) / let go"
+    "lt": "left tether (hold = SPACE mode)",
+    "rt": "right tether (hold = SPACE mode)",
+    "rows": [
+      [
+        "Time mode",
+        "no trigger: the sticks fly, the auto-tethers pull you along on the beat; ghost rings mark what each trigger would hook"
+      ],
+      [
+        "Space mode",
+        "a trigger held: its stick aims that tether (W A S D left, arrows right), then stick up reels in, down lets out \u00b7 one tether swings, two make a bolas \u00b7 the hull follows the rope"
+      ],
+      [
+        "Fling",
+        "let go of every trigger: you fly on, the sticks still aim; time mode takes the sticks back after the fling (1.6 s) \u00b7 squeeze again to chain"
+      ]
+    ]
   },
   "notModelled": [
-    "The rope is a point constraint with no gravity, reeled by LT; the Tether's SPIN LIMIT (0.6 rev/s), its AUTO-ANCHORS (own prisms planted 0.8 s ahead, alternating every 0.35 s) and its LIGHT SWORD (cutting hostile prisms) are built in Unity on cece/loving-feynman-hlgf18 and join this kind in the Gibbon's round-2 session (CONCEPT_FLEET.md section 8.1).",
-    "Aiming is a 60-degree cone ahead; the Tether aims with a search plane that roll tilts, and hooks per trigger side.",
-    "What a tether does to a rival's prism on contact: here only Harvest (Mass 5) converts the anchor; in Unity the beam cuts it."
+    "The Tether prototype's long tether aims with a SEARCH PLANE that roll tilts; here each tether aims with its own stick (Garrett's space mode). The stick aim is the studio's proposal: neutral points ahead and out on its own side.",
+    "Two tethers (the bolas) are new here: the hull keeps both ropes rigid and orbits the line between the anchors. The Tether in Unity holds one long tether at a time.",
+    "The blade never cuts the course ribbon (it is the course) or this hull's own prisms; shields pop and survive that contact, as the Rhino sword's rule. Super-shields, crystals as hook targets and the hook RPC are not modelled.",
+    "Auto-anchors stay in the world as in the game, but the studio keeps only each hull's last 150.",
+    "Charge and mass MODES (Garrett: later) are not here; the element rows are proposals until Garrett signs them off."
   ],
   "sources": [
-    "Design: Docs/Studios/CONCEPT_FLEET.md (Gibbon, and section 8.1 for the merge). Unity side: Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md and TetherConfig.asset on cece/loving-feynman-hlgf18 (reach 93, minHook 27, reelRate 40 + autoReel 7.4, minLength 19, maxSpin 0.6, maxSpeed 358, releaseBoost 0.2). Nearest shipped relative: the Thresher's chain and plant (THRESHER.md)."
+    "Design: Docs/Studios/CONCEPT_FLEET.md sections 8.1 (the merge) and 9 (Garrett's review, 2026-10-17). Unity side: Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md, AutoTetherRig.cs and TetherMath.cs on cece/loving-feynman-hlgf18; the numbers are TetherConfig.asset's."
   ],
   "docs": "Docs/Studios/CONCEPT_FLEET.md"
 };

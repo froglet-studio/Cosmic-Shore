@@ -469,7 +469,9 @@
       const k = (c) => keys.has(c) ? 1 : 0;
       if (keyLayout === 'omni') return { pad: true, L: { x: k('KeyD') - k('KeyA'), y: k('KeyW') - k('KeyS') }, R: { x: k('ArrowRight') - k('ArrowLeft'), y: k('ArrowUp') - k('ArrowDown') }, lt: k('Space') * S.trigDepth, rt: k('KeyF'), a: keys.has('KeyG'), b: keys.has('KeyH'), kb: true };
       if (keys.has('ArrowUp')) kbThrottle = Math.min(1, kbThrottle + dt * 0.6); if (keys.has('ArrowDown')) kbThrottle = Math.max(0, kbThrottle - dt * 0.6);
-      return { pad: false, k: { yaw: k('KeyD') - k('KeyA'), pitch: k('KeyS') - k('KeyW'), roll: k('KeyE') - k('KeyQ'), throttle: kbThrottle }, lt: k('Space') * S.trigDepth, rt: k('KeyF'), a: keys.has('KeyG'), b: keys.has('KeyH'), kb: true };
+      // L / R carry the same keys as two sticks (left W A S D, right the arrows) for a kind whose sticks stop steering in a
+      // mode (the Gibbon's space mode aims a tether with each); a kind that steers reads `k` through ctx.sticks and never sees them
+      return { pad: false, k: { yaw: k('KeyD') - k('KeyA'), pitch: k('KeyS') - k('KeyW'), roll: k('KeyE') - k('KeyQ'), throttle: kbThrottle }, L: { x: k('KeyD') - k('KeyA'), y: k('KeyW') - k('KeyS') }, R: { x: k('ArrowRight') - k('ArrowLeft'), y: k('ArrowUp') - k('ArrowDown') }, lt: k('Space') * S.trigDepth, rt: k('KeyF'), a: keys.has('KeyG'), b: keys.has('KeyH'), kb: true };
     }
     function humanInput(dt) {
       camTouch = S.cam === 'Free' && S.players[0].ai;   // with an AI on your hull, the phone's sticks fly the free camera
@@ -591,9 +593,10 @@
         ['Keys', (keyLayout === 'omni' ? 'W A S D move \u00b7 arrows turn' : 'W S pitch \u00b7 A D yaw \u00b7 Q E roll \u00b7 \u2191 \u2193 throttle') + (c.lt ? ' \u00b7 Space ' + c.lt : '') + (c.rt ? ' \u00b7 F ' + c.rt : '') + (c.a ? ' \u00b7 G ' + c.a : '') + (c.b ? ' \u00b7 H ' + c.b : '')],
         ['Free cam', 'orbits the viewed hull: drag to turn \u00b7 wheel to zoom \u00b7 J L / I K turn \u00b7 U O zoom'],
         ['Transport', 'Enter play \u00b7 P pause / resume \u00b7 R stop \u00b7 C next camera'],
-        ['Phone', 'opens by itself on a phone: two thumb sticks, LT / RT handles, A / B buttons']];
+        ['Phone', 'opens by itself on a phone: two thumb sticks, LT / RT handles, A / B buttons']].concat(c.rows || []);   // a recipe's own rows (a mode that remaps the sticks)
       for (const [k, v] of rows) box.append(elx('span', null, k), elx('span', null, v));
       $('keysGamepad').textContent = rows[0][1]; $('keysKeys').textContent = rows[1][1];
+      let at = $('keysKeys'); for (const [k, v] of (c.rows || [])) { const ks = elx('span', null, k), vs = elx('span', null, v); at.after(ks, vs); at = vs; }   // the start card gets a recipe's own rows too
     })();
     $('trigDepth').value = String(S.trigDepth); $('trigDepth').addEventListener('change', (e) => { S.trigDepth = +e.target.value; save(); });
     function syncRail() {

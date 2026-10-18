@@ -686,8 +686,8 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by the concept-fleet session (`Ys-bleeding-edge`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md on that branch; CONCEPT_FLEET.md section 8.1
 
-### T-20261017-a640 · open · dev · Vessel Studio / Given
-- **Task:** Given (Gibbon + Tether): two modes from cece/loving-feynman-hlgf18: time mode = the branch's auto-tethers, space mode = two sticks + two triggers (one pair per tether), slicing by what the tethers cut, movement by 0 / 1 / 2 tethers attached; the time <-> space transition first
+### T-20261017-a640 · open · dev · Vessel Studio / Gibbon
+- **Task:** Gibbon (+ the Tether; the notes' "Given" is the Gibbon): two modes from cece/loving-feynman-hlgf18: time mode = the branch's auto-tethers, space mode = two sticks + two triggers (one pair per tether), slicing by what the tethers cut, movement by 0 / 1 / 2 tethers attached; the time <-> space transition first
 - **Done when:** Garrett flies the transition and calls it natural
 - **Who can take it:** Yash (session 1 of round 2)
 - **Added:** 2026-10-17 by Garrett's review 2026-10-17, recorded by the concept-fleet session (`Ys-bleeding-edge`)

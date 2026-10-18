@@ -5,7 +5,8 @@
  * a proposal) and its `elements` say which parameter each of the four elements scales.
  *
  * The ten kinds of the concept fleet (Docs/Studios/CONCEPT_FLEET.md), each a movement players are loving right now:
- *   swing      Gibbon     tether to any prism, pendulum round it, reel in, fling (grapple / web-swing)
+ *   swing      (round 1)  tether to any prism, pendulum round it, reel in, fling; the Gibbon's round-1 kind, kept for the record
+ *   tether     Gibbon     round 2: TIME mode auto-tethers (the Tether prototype) / SPACE mode two tethers, one per stick + trigger
  *   ricochet   Flea       bounce off mass; a press inside the window banks momentum (pinball + perfect-landing timing)
  *   soar       Albatross  no engine: dive for speed, spread for lift, ride the updraft over mass (glider / dynamic soaring)
  *   slipstream Remora     fast only in a rival's wake; latch on, get towed, sling past (racing draft)
@@ -107,6 +108,262 @@
     mount(ctx, scene, P) { const l = line(ctx, P.domain.color, 2); scene.add(l); const ring = new ctx.THREE.Mesh(new ctx.THREE.TorusGeometry(5, 0.4, 6, 24), new ctx.THREE.MeshBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.7 })); scene.add(ring); return { l, ring, dispose() { scene.remove(l); scene.remove(ring); } }; },
     draw(W, P, o, t, ctx) { const Kk = P.K; const a = Kk.active ? Kk.anchor : ((!P.spec.ai || P.i === W.watch) && W.t - Kk.memT < 0.2 ? Kk.mem : null); o.l.visible = Kk.active; o.ring.visible = !!a && !a.dead; if (Kk.active) setLine(o.l, [P.pos, Kk.anchor.pos]); if (a && !a.dead) { o.ring.position.copy(a.pos); o.ring.lookAt(P.pos); o.ring.material.opacity = Kk.active ? 0.9 : 0.35 + 0.25 * Math.sin(t * 6); } },
     preview(g, w, h, t, accent) { bg(g, w, h); const ax = w * 0.55, ay = h * 0.28; blocks(g, '#3a4380', [[ax, ay], [ax + 9, ay + 4], [ax - 8, ay + 6], [w * 0.2, h * 0.3], [w * 0.88, h * 0.25]], 8); const ph = (t * 1.1) % 3; let x, y, a; if (ph < 2) { const th = -2.2 + ph * 1.1 * 1.6, r = 70 - ph * 12; x = ax + Math.sin(th) * r; y = ay + Math.cos(th) * r; a = th + Math.PI; g.strokeStyle = accent + 'aa'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(ax, ay); g.lineTo(x, y); g.stroke(); } else { const u = ph - 2; x = ax + Math.sin(1.32) * 46 + u * 140; y = ay + Math.cos(1.32) * 46 - u * 30; a = -0.2; for (let i = 1; i < 6; i++) { g.globalAlpha = 0.4 - i * 0.06; dart(g, accent, x - i * 10, y + i * 2, a, 0.8); } g.globalAlpha = 1; } dart(g, accent, x, y, a); },
+  };
+
+  // ================= tether: the Gibbon, round 2 (Garrett's review 2026-10-17, CONCEPT_FLEET.md sections 8.1 and 9) =================
+  // TWO MODES. TIME mode feels like flying and is the Tether prototype's auto-tethers (cece/loving-feynman-hlgf18,
+  // AutoTetherRig + TetherMath, ported function for function below): it plants its own anchor prisms ahead, alternating
+  // sides, and yanks itself along them on short elastic lines. SPACE mode is the slicing mode: each trigger owns one tether
+  // and its stick owns that tether's aim (unhooked) or its reel (hooked). The movement follows how many are attached:
+  // one = a rigid swing round its anchor, two = a bolas round the line between the anchors, none = the fling, ballistic,
+  // until time mode takes back the sticks. Every live tether, short or long, is a light sword that cuts hostile prisms.
+  // Numbers: TetherConfig.asset's where it has the knob (D1), the rest lab-only.
+  const TT = {
+    // TetherMath.AnchorPoint: lead x speed ahead, angle off the nose WITHIN the search plane (forward x right)
+    anchorPoint(ctx, P, fwd, right, m, side) { const a = m.anchorAngle * ctx.DEG; return P.pos.clone().addScaledVector(fwd.clone().multiplyScalar(Math.cos(a)).addScaledVector(right, side * Math.sin(a)), Math.max(0, P.speed) * m.anchorLead); },
+    // TetherMath.ElasticPull: spring past rest only; damping resists STRETCHING only (the hull's closing speed is its own flight)
+    pull(ctx, P, line, m, dt) {
+      const d = line.anchor.pos.clone().sub(P.pos), len = d.length(); line.tension = 0; if (len < 1e-3) return new ctx.V();
+      const stretch = len - line.rest; if (stretch <= 0) return new ctx.V();
+      const dir = d.divideScalar(len); line.tension = clamp(stretch / line.span, 0, 1);
+      const dv = dir.clone().multiplyScalar(m.autoStiffness * stretch * dt), closing = P.vel.dot(dir);
+      if (closing < 0) dv.addScaledVector(dir, -closing * (1 - Math.exp(-m.autoDamping * dt)));
+      return dv;
+    },
+    // TetherMath.LimitSpeedGain: the pulls may not lift the speed past the cap, and never brake a hull already faster
+    limitGain(vel, dv, cap) { const next = vel.clone().add(dv), before = vel.length(), after = next.length(); if (after <= cap || after <= before || after < 1e-3) return dv; return next.multiplyScalar(Math.max(before, cap) / after).sub(vel); },
+    // TetherMath.ReelLength: stick up reels (plus the auto-reel), down pays out; a floor stops a reel, never pays the line out
+    reel(L, speed, input, m, maxLen, dt) {
+      const i = clamp(input, -1, 1), rate = i >= 0 ? -(m.autoReel + i * m.reelRate) : -i * m.reelRate - m.autoReel; let next = L + rate * dt;
+      if (next < L) { const w = m.maxSpin * Math.PI * 2; let floor = Math.max(m.minLength, w > 0 ? Math.sqrt(Math.max(0, speed * L) / w) : 0); if (m.maxSpeed > 0) floor = Math.max(floor, speed * L / m.maxSpeed); next = Math.max(next, Math.min(L, floor)); }
+      else if (next > L) next = Math.min(next, Math.max(L, maxLen));
+      return next;
+    },
+    // TetherMath.ReleaseSpeed: past a half turn, +releaseBoost, shrinking as 1 - (v/cap)^2
+    release(speed, swept, m) { const capped = Math.min(speed, m.maxSpeed); if (swept < 180 || m.releaseBoost <= 0) return capped; const head = 1 - (speed / m.maxSpeed) * (speed / m.maxSpeed); return Math.min(m.maxSpeed, speed * (1 + m.releaseBoost * clamp(head, 0, 1))); },
+    // the Tether's throttle (Tether.prefab): DefaultMinimumSpeed 20 + throttle x DefaultThrottleScaler 120, so 80 at neutral sticks
+    cruise(P) { return P.F.cruise * (0.25 + 1.5 * P.throttle) * P.boost; },
+    window(P, m) { return 1 + m.windowGrowth * (P.speed / Math.max(1, m.cruiseSpeed) - 1); },
+    // the stick's aim: neutral points ahead-and-out on its own side; the stick tilts it across, up and down (lab-only, the studio's proposal)
+    aimDir(ctx, fwd, right, up, side, s) { return fwd.clone().addScaledVector(right, side * 0.75 + (s ? s.x : 0) * 0.9).addScaledVector(up, (s ? s.y : 0) * 0.9).normalize(); },
+    stick(inp, side) { const s = side < 0 ? inp.L : inp.R; return s || { x: 0, y: 0 }; },
+    // TetherMath.TryScoreHook, the studio's form: inside the window, inside the aim cone, near the window's middle; any mass but
+    // this hull's own LIVE anchors (they are its propulsion) and an anchor the other tether holds
+    target(W, P, ctx, dir, m, other) {
+      const ws = Math.max(0.5, TT.window(P, m)), hi = m.range * ws, lo = m.minHook * ws, cone = Math.cos(m.aimCone * ctx.DEG); let best = null, bs = -1e9;
+      for (const p of ctx.near(W, P.pos, hi)) {
+        if (!isMass(p) || (p.liveAnchor && p.owner === P.i) || p === other) continue;
+        const d = p.pos.clone().sub(P.pos), dist = d.length(); if (dist < lo || dist > hi) continue; const c = d.divideScalar(dist).dot(dir); if (c < cone) continue;
+        const s = c * 1.0 - Math.abs((dist - lo) / (hi - lo) - 0.5) * 0.5; if (s > bs) { bs = s; best = p; }
+      }
+      return best;
+    },
+    hostile(P, p) { return isMass(p) && p.kind !== 'track' && p.owner !== P.i && p.domain !== P.domain.key && !p.hookedBy; },
+    // TetherExecutor.CutAlong, the studio's form: the quad a beam swept this frame (anchor fixed, hull end from last frame's
+    // position to this frame's), sampled; a shield pops and the prism survives that contact, anything else is cut
+    cut(W, P, ctx, a, h0, h1, m) {
+      const mid = a.clone().add(h1).multiplyScalar(0.5), r = a.distanceTo(h1) / 2 + m.cutRadius + 6, seg = [h0, h0.clone().lerp(h1, 0.5), h1];
+      for (const p of ctx.near(W, mid, r)) {
+        if (p.dead || !TT.hostile(P, p) || (p.cutCool && p.cutCool > W.t)) continue;
+        const reach = m.cutRadius + (p.scale ? p.scale[0] * 0.5 : 1.5); let hit = false;
+        for (const h of seg) { const ab = h.clone().sub(a), t = clamp(p.pos.clone().sub(a).dot(ab) / Math.max(1e-6, ab.lengthSq()), 0, 1); if (a.clone().addScaledVector(ab, t).distanceTo(p.pos) < reach) { hit = true; break; } }
+        if (!hit) continue;
+        if (p.shield && !ctx.l5(P, 'charge')) { p.shield = false; p.cutCool = W.t + 0.4; p.flash = 1; W.dirty = true; ctx.event(W, P, 'Shield popped'); continue; }
+        ctx.removePrism(W, p); P.K.cuts++; P.K.sparkT = W.t;
+      }
+    },
+    hookedCount(Kk) { return (Kk.rope[-1] ? 1 : 0) + (Kk.rope[1] ? 1 : 0); },
+    toSpace(W, P, ctx) { const Kk = P.K; if (Kk.mode === 'space') return; for (const l of Kk.lines) if (l.anchor) l.anchor.liveAnchor = false; Kk.lines.length = 0; Kk.mode = 'space'; ctx.event(W, P, 'SPACE mode'); },
+    hook(W, P, ctx, side, p) {
+      const Kk = P.K, r = P.pos.clone().sub(p.pos), len = r.length(), rh = r.clone().divideScalar(Math.max(1e-3, len));
+      // TetherMath.HookVelocity: the same speed, redirected onto the tangent: hooking never costs speed
+      const sp = P.vel.length(), t = P.vel.clone().addScaledVector(rh, -P.vel.dot(rh)); if (t.lengthSq() > 1e-4) P.vel.copy(t.normalize().multiplyScalar(sp));
+      Kk.rope[side] = { anchor: p, len, swept: 0, last: rh }; p.hookedBy = (p.hookedBy || 0) + 1; p.flash = 1; W.dirty = true; Kk.swings++; Kk.hookT = W.t; P.stats.uses++;
+      ctx.event(W, P, (side < 0 ? 'Left' : 'Right') + ' tether');
+    },
+    unhook(W, P, ctx, side, fling) {
+      const Kk = P.K, R = Kk.rope[side]; if (!R) return; R.anchor.hookedBy = Math.max(0, (R.anchor.hookedBy || 1) - 1); Kk.rope[side] = null;
+      if (ctx.l5(P, 'mass') && R.anchor.owner !== P.i && R.anchor.kind !== 'track') { R.anchor.owner = P.i; R.anchor.domain = P.domain.key; Kk.taken++; P.stolen++; W.dirty = true; }
+      if (!fling) return;
+      const sp = TT.release(P.vel.length(), R.swept, P.m); P.vel.setLength(sp); P.speed = sp; Kk.lastSwept = R.swept; Kk.flingT = 0;
+      if (R.swept >= 180) Kk.halfTurns++;
+      ctx.event(W, P, R.swept >= 180 ? 'Fling! ' + Math.round(R.swept) + '\u00b0 +' + Math.round(P.m.releaseBoost * 100) + '%' : 'Let go at ' + Math.round(R.swept) + '\u00b0');
+    },
+  };
+  K.tether = {
+    mechanicName: 'space mode', keyLayout: 'fly',
+    aiRule: 'Time mode is automatic (the auto-tethers fly it). On a turn sharper than 35 deg with a target on the inside of it, from time mode with the sticks back and under 1.8x cruise, the AI presses that side\'s trigger, reels at half stick, and lets go when its velocity points within 12 deg (plus 0.08 s of the swing\'s turn rate) of its aim, or after 170 deg. It never holds two tethers yet: the bolas is for a human to judge first.',
+    defaults: {
+      cruiseSpeed: 80, anchorLead: 0.8, anchorAngle: 20, anchorPeriod: 0.35, anchorScale: 3, autoSpeedTarget: 1.15, autoStiffness: 0.8, autoDamping: 4, autoRestFraction: 0.5, autoNoseGrip: 6,
+      range: 93, minHook: 27, windowGrowth: 0.5, aimCone: 35, reelRate: 40, autoReel: 7.4, minLength: 19, maxSpin: 0.6, maxSpeed: 358, releaseBoost: 0.2, glide: 1.6, glideDecayFactor: 0.15,
+      cutRadius: 2.5, overspeedDecay: 0.6, handBack: 0.5, anchorCap: 150,
+    },
+    spec: [
+      ['anchorPeriod', 0.15, 1, 0.01, 'The beat', 'TetherConfig.anchorPeriod: seconds between auto-anchors in time mode (the top playtest question)'],
+      ['anchorLead', 0.3, 1.6, 0.05, 'Anchor lead', 'TetherConfig.anchorLead: how far ahead an anchor is planted, as seconds of flight'],
+      ['anchorAngle', 5, 45, 1, 'Anchor angle', 'TetherConfig.anchorAngle: degrees off the nose, alternating sides, in the search plane (roll tilts it)'],
+      ['autoStiffness', 0.1, 3, 0.05, 'Surge strength', 'TetherConfig.autoStiffness: the auto-tether spring (per s squared)'],
+      ['autoSpeedTarget', 1, 1.6, 0.01, 'Auto speed cap', 'TetherConfig.autoSpeedTarget: the auto-tethers never pull past this x cruise'],
+      ['autoNoseGrip', 0, 20, 0.5, 'Sway', 'TetherConfig.autoNoseGrip: how fast momentum re-aligns with the nose while a line is taut (low = more sway)'],
+      ['range', 40, 250, 1, 'Tether reach', 'TetherConfig.range: the hook window\'s far edge at cruise (u); it moves out with speed'],
+      ['minHook', 5, 80, 1, 'Closest hook', 'TetherConfig.minHook: the window\'s near edge at cruise (u)'],
+      ['aimCone', 10, 70, 1, 'Aim cone', 'Lab-only: how far off a stick\'s aim a target may sit (deg)'],
+      ['reelRate', 10, 120, 1, 'Reel rate', 'TetherConfig.reelRate: stick up reels this fast (u/s); a shorter rope spins you faster (v x L is kept)'],
+      ['autoReel', 0, 30, 0.1, 'Auto reel', 'TetherConfig.autoReel: a hooked line always reels this much (u/s)'],
+      ['minLength', 5, 60, 1, 'Shortest rope', 'TetherConfig.minLength (u)'],
+      ['maxSpin', 0.2, 1.5, 0.05, 'Spin limit', 'TetherConfig.maxSpin: the reel stops at this many turns per second'],
+      ['maxSpeed', 150, 600, 5, 'Top speed', 'TetherConfig.maxSpeed (u/s)'],
+      ['releaseBoost', 0, 0.6, 0.01, 'Half-turn boost', 'TetherConfig.releaseBoost: the kick for letting go past a half turn'],
+      ['glide', 0.3, 4, 0.1, 'Fling time', 'TetherConfig.glide: seconds of fling after the last tether lets go, before time mode takes back the sticks'],
+      ['glideDecayFactor', 0, 1, 0.05, 'Fling carry', 'TetherConfig.glideDecayFactor: overspeed fades this much slower while flinging'],
+      ['cutRadius', 0.5, 8, 0.1, 'Blade', 'TetherConfig.cutRadius: the beam\'s cutting capsule (u)'],
+      ['handBack', 0, 2, 0.05, 'Hand-back', 'Lab-only: seconds over which time mode eases the sticks back to steering after a fling (0 = a snap)'],
+      ['overspeedDecay', 0.1, 3, 0.05, 'Overspeed fade', 'Lab-only: how fast speed above cruise fades in time mode (the flight model\'s decay)'],
+    ],
+    init(P) { P.K = { mode: 'time', lines: [], cadence: Infinity, nextSide: 1, planted: [], rope: { '-1': null, '1': null }, ghost: { '-1': null, '1': null }, flingT: 9, hand: 1, cuts: 0, swings: 0, halfTurns: 0, taken: 0, lastSwept: 0, active: false, prevPos: null }; P.vel.copy(P.course).multiplyScalar(P.F.cruise); P.speed = P.F.cruise; },
+    step(W, P, inp, dt, ctx) {
+      const m = P.m, Kk = P.K, prev = P.pos.clone();
+      const trig = { '-1': W.mech && inp.lt > 0.5, '1': W.mech && inp.rt > 0.5 };
+      const { fwd, right, up } = ctx.axes(P);
+      // ---- the aims (both sides, every frame): the ghost rings show what a press would hook. In time mode a tether aims
+      // ahead-and-out on its own side whatever the sticks do (they are steering); in space mode and the fling its stick aims it ----
+      const ghosts = () => { for (const side of [-1, 1]) Kk.ghost[side] = W.mech && !Kk.rope[side] ? TT.target(W, P, ctx, TT.aimDir(ctx, fwd, right, up, side, Kk.mode === 'time' ? null : TT.stick(inp, side)), m, Kk.rope[-side] && Kk.rope[-side].anchor) : null; };
+      ghosts();
+      // ---- the mode switch: a trigger is the door into space mode, and the press hooks what its ring showed; releasing the
+      // last tether flings ----
+      for (const side of [-1, 1]) {
+        const held = trig[side], was = !!Kk['held' + side]; Kk['held' + side] = held;
+        if (held && !was) { const g = Kk.ghost[side]; TT.toSpace(W, P, ctx); if (g && !g.dead) TT.hook(W, P, ctx, side, g); }
+        if (!held && was && Kk.rope[side]) TT.unhook(W, P, ctx, side, !trig[-side] || !Kk.rope[-side]);
+      }
+      if (Kk.mode === 'space' && !trig[-1] && !trig[1]) { Kk.mode = 'fling'; if (Kk.flingT > 0.05) Kk.flingT = 0; }
+      // a held trigger with nothing hooked aims with its stick, and hooks the moment something is in reach (the Tether's rule)
+      if (Kk.mode === 'space') { ghosts(); for (const side of [-1, 1]) if (trig[side] && !Kk.rope[side] && Kk.ghost[side]) TT.hook(W, P, ctx, side, Kk.ghost[side]); }
+      const n = TT.hookedCount(Kk);
+      if (n > 0) {
+        // ---- SPACE: the ropes fly the hull; the sticks reel. One rope = a swing round it, two = a bolas round the line between them ----
+        const ropes = [-1, 1].filter((s) => Kk.rope[s]).map((s) => Kk.rope[s]);
+        for (const R of ropes) if (R.anchor.dead) { const s = Kk.rope[-1] === R ? -1 : 1; TT.unhook(W, P, ctx, s, false); }
+        const live = [-1, 1].filter((s) => Kk.rope[s]);
+        if (live.length) {
+          let sp = P.vel.length();
+          if (live.length === 1) {
+            // one rope: TetherMath's swing. Reel (v x L kept, the spin limit stops a reel's gain), fly the chord of the arc
+            // (ArcVelocity), put the hull back on the rigid rope (ConstrainToRope)
+            const R = Kk.rope[live[0]], L0 = R.len; R.len = TT.reel(R.len, sp, TT.stick(inp, live[0]).y, m, m.range * 2, dt); if (R.len < L0) sp = Math.min(m.maxSpeed, sp * L0 / R.len);
+            const rv = P.pos.clone().sub(R.anchor.pos), rl = rv.length();
+            if (rl > 1e-3 && sp > 1e-3) { const rad = rv.divideScalar(rl), tan = P.vel.clone().addScaledVector(rad, -P.vel.dot(rad)); if (tan.lengthSq() > 1e-6) { tan.normalize(); const half = 0.5 * sp * dt / Math.max(R.len, 1e-3); P.vel.copy(tan.multiplyScalar(Math.cos(half)).addScaledVector(rad, -Math.sin(half)).multiplyScalar(sp)); } }
+            P.pos.addScaledVector(P.vel, P.slow * dt);
+            const rv2 = P.pos.clone().sub(R.anchor.pos), rl2 = rv2.length(); if (rl2 > 1e-3) { const rad = rv2.divideScalar(rl2); P.pos.copy(R.anchor.pos).addScaledVector(rad, R.len); P.vel.addScaledVector(rad, -P.vel.dot(rad)); if (P.vel.lengthSq() > 1e-6) P.vel.setLength(sp); }
+            const nr = P.pos.clone().sub(R.anchor.pos).normalize(); R.swept += Math.acos(clamp(nr.dot(R.last), -1, 1)) / ctx.DEG; R.last = nr;
+          } else {
+            // two ropes, both rigid: the hull can only turn about the line A-B. Its circle: x along the axis from A, radius r.
+            // Reeling moves the circle (angular momentum about the axis is kept); the motion is an exact rotation about the axis.
+            const A = Kk.rope[-1].anchor.pos, B = Kk.rope[1].anchor.pos, u = B.clone().sub(A), d = Math.max(1e-3, u.length()); u.divideScalar(d);
+            const circle = () => { const la = Kk.rope[-1].len, lb = Kk.rope[1].len, x = (la * la - lb * lb + d * d) / (2 * d); return { x, r: Math.sqrt(Math.max(1, la * la - x * x)) }; };
+            if (Kk.rope[-1].len + Kk.rope[1].len < d + 2) { const k = (d + 2) / (Kk.rope[-1].len + Kk.rope[1].len); Kk.rope[-1].len *= k; Kk.rope[1].len *= k; }
+            const r0 = circle().r; for (const sd of [-1, 1]) { const R = Kk.rope[sd]; R.len = TT.reel(R.len, sp, TT.stick(inp, sd).y, m, m.range * 2, dt); }
+            const c1 = circle(), r1 = c1.r; let sp2 = sp * r0 / r1; if (sp2 > sp) sp2 = Math.min(sp2, Math.max(sp, m.maxSpin * Math.PI * 2 * r1)); sp = Math.min(m.maxSpeed, sp2);
+            const centre = A.clone().addScaledVector(u, c1.x); let q = P.pos.clone().sub(A); q.addScaledVector(u, -q.dot(u)); if (q.lengthSq() < 1e-6) q = up.clone().addScaledVector(u, -up.dot(u)); q.normalize();
+            // the sense of turning: the one the velocity already has (hooking never costs speed); a hull flying straight at the axis turns over its own top
+            const t0 = new ctx.V().crossVectors(u, q); let sense = Math.sign(P.vel.dot(t0)); if (Math.abs(P.vel.dot(t0)) < 0.05 * sp) sense = Math.sign(up.dot(t0)) || 1; Kk.bolasSense = sense;
+            const ang = sense * sp * dt * P.slow / Math.max(1, r1); q.applyAxisAngle(u, ang);
+            P.pos.copy(centre).addScaledVector(q, r1); P.vel.copy(new ctx.V().crossVectors(u, q).multiplyScalar(sense * sp));
+            for (const sd of [-1, 1]) { const R = Kk.rope[sd]; R.swept += Math.abs(ang) / ctx.DEG; R.last = P.pos.clone().sub(R.anchor.pos).normalize(); }
+          }
+          P.speed = sp; if (sp > 1e-3) P.course.copy(P.vel).divideScalar(sp);
+          // the nose follows the swing's tangent with its head toward the pivot (a swinger looks at where it is going)
+          const pivot = live.length === 1 ? Kk.rope[live[0]].anchor.pos : Kk.rope[-1].anchor.pos.clone().add(Kk.rope[1].anchor.pos).multiplyScalar(0.5), upv = pivot.clone().sub(P.pos).normalize();
+          P.quat.slerp(new ctx.Q().setFromRotationMatrix(new ctx.THREE.Matrix4().lookAt(new ctx.V(), P.course.clone().negate(), upv)), 1 - Math.exp(-10 * dt));
+          Kk.hand = 0;
+        }
+      }
+      if (TT.hookedCount(Kk) === 0 && Kk.mode !== 'time') {
+        // ---- the FLING (and space mode with a trigger held but nothing hooked yet): ballistic; the sticks only aim ----
+        Kk.flingT += dt; const target = P.F.cruise * P.boost, sp = P.vel.length();   // the fling fades toward neutral cruise
+        if (sp > target) P.vel.setLength(target + (sp - target) * Math.exp(-m.overspeedDecay * m.glideDecayFactor * dt));
+        P.quat.slerp(new ctx.Q().setFromRotationMatrix(new ctx.THREE.Matrix4().lookAt(new ctx.V(), P.vel.clone().normalize().negate(), up)), 1 - Math.exp(-8 * dt));
+        ctx.moveVel(P, dt); Kk.hand = 0;
+        if (Kk.mode === 'fling' && Kk.flingT >= m.glide) { Kk.mode = 'time'; Kk.cadence = Infinity; ctx.event(W, P, 'TIME mode'); }
+      } else if (Kk.mode === 'time') {
+        // ---- TIME: flight, with the sticks handed back over `handBack` s after a fling, and the auto-tethers pulling ----
+        Kk.hand = m.handBack > 0 ? Math.min(1, Kk.hand + dt / m.handBack) : 1;
+        ctx.steer(P, inp, dt, Kk.hand);
+        const a = ctx.axes(P), target = TT.cruise(P), taut = Kk.lines.some((l) => l.tension > 0);
+        P.vel.lerp(a.fwd.clone().multiplyScalar(P.vel.length()), 1 - Math.exp(-(taut ? m.autoNoseGrip : P.F.grip) * Kk.hand * dt));
+        let sp = P.vel.length(); sp = sp < target ? sp + (target - sp) * (1 - Math.exp(-P.F.accel * dt)) : target + (sp - target) * Math.exp(-m.overspeedDecay * dt);
+        P.vel.copy(sp > 1e-3 && P.vel.lengthSq() > 1e-6 ? P.vel.setLength(sp) : a.fwd.clone().multiplyScalar(sp));
+        if (W.mech) {
+          // AutoTetherRig: the plant cadence (owed time beyond one period is dropped, never paid as a burst), attach, abeam release, force
+          let due = false; if (Kk.cadence === Infinity) { Kk.cadence = 0; due = true; } else { Kk.cadence += dt; if (Kk.cadence >= m.anchorPeriod) { Kk.cadence = Math.min(Kk.cadence - m.anchorPeriod, m.anchorPeriod); due = true; } }
+          if (due && P.speed > 3) {
+            const at = TT.anchorPoint(ctx, P, a.fwd, a.right, m, Kk.nextSide), s = m.anchorScale, p = ctx.layPrism(W, P, at, P.quat, [s, s, s], { anchor: true });
+            p.liveAnchor = true; Kk.planted.push(p); if (Kk.planted.length > m.anchorCap) { const old = Kk.planted.shift(); if (!old.liveAnchor && !old.hookedBy) ctx.removePrism(W, old); }
+            const len = at.distanceTo(P.pos), rest = len * clamp(m.autoRestFraction, 0, 1); Kk.lines.push({ anchor: p, rest, span: Math.max(1e-3, len - rest), side: Kk.nextSide, tension: 1, born: W.t });
+            if (Kk.lines.length > 8) { const o = Kk.lines.shift(); o.anchor.liveAnchor = false; }
+            Kk.nextSide = -Kk.nextSide; P.K.plants = (P.K.plants || 0) + 1;
+          }
+          for (let i = Kk.lines.length - 1; i >= 0; i--) { const l = Kk.lines[i]; if (l.anchor.dead || l.anchor.pos.clone().sub(P.pos).dot(a.fwd) <= 0) { l.anchor.liveAnchor = false; Kk.lines.splice(i, 1); } }
+          let dv = new ctx.V(); for (const l of Kk.lines) dv.add(TT.pull(ctx, P, l, m, dt));
+          P.vel.add(TT.limitGain(P.vel, dv, m.autoSpeedTarget * target));
+        }
+        ctx.moveVel(P, dt);
+      }
+      // ---- the light swords: every live beam cuts what it swept this frame ----
+      if (W.mech) { for (const l of Kk.lines) TT.cut(W, P, ctx, l.anchor.pos, prev, P.pos, m); for (const s of [-1, 1]) if (Kk.rope[s]) TT.cut(W, P, ctx, Kk.rope[s].anchor.pos, prev, P.pos, m); }
+      Kk.active = Kk.mode !== 'time'; Kk.sparkOn = Kk.sparkT != null && W.t - Kk.sparkT < 0.3;
+    },
+    onContact(W, P, p) { const Kk = P.K; return (Kk.rope[-1] && Kk.rope[-1].anchor === p) || (Kk.rope[1] && Kk.rope[1].anchor === p) || (p.liveAnchor && p.owner === P.i); },
+    // the AI's sticks in space mode: the hooked side reels at half stick, the other stays neutral (input-only, D4)
+    aiSticks(W, P, aim, base) { const Kk = P.K; if (Kk.mode === 'time') return null; return { L: { x: 0, y: Kk.rope[-1] ? 0.5 : 0 }, R: { x: 0, y: Kk.rope[1] ? 0.5 : 0 } }; },
+    ai(W, P, aim, base, ctx) {
+      const Kk = P.K;
+      for (const side of [-1, 1]) {
+        const R = Kk.rope[side]; if (!R) continue;
+        // let go a little early: the velocity turns at the swing's rate, so lead the release by ~0.08 s of it
+        const toAim = aim.clone().sub(P.pos).normalize(), vErr = Math.acos(clamp(P.course.dot(toAim), -1, 1)) / ctx.DEG, rate = P.speed / Math.max(1, P.pos.distanceTo(R.anchor.pos)) / ctx.DEG, done = (vErr < 12 + rate * 0.08 && R.swept >= 20) || R.swept > 170;
+        if (done) { Kk.aiReleaseT = W.t; return {}; }
+        return side < 0 ? { lt: 1 } : { rt: 1 };
+      }
+      // a swing only from time mode with the sticks fully handed back, only on a sharp turn, and not at fling speed: a fling cannot
+      // steer, and at the cap it carries the hull 500 u past the turn it was meant to take (the first rule hooked on every 25 deg
+      // turn and spent 96% of I1 in space mode, DNF)
+      if (Kk.mode !== 'time' || Kk.hand < 1 || W.t - (Kk.aiReleaseT || -9) < 1 || P.aimWhy === 'turn back' || base.err <= 35 || P.speed > 1.8 * P.m.cruiseSpeed) return {};
+      const side = Math.sign(base.yawErr) || 1, g = Kk.ghost[side]; if (!g) return {};
+      return side < 0 ? { lt: 1 } : { rt: 1 };
+    },
+    hud(P) {
+      const m = P.m, Kk = P.K, n = TT.hookedCount(Kk), sw = Math.max(Kk.rope[-1] ? Kk.rope[-1].swept : 0, Kk.rope[1] ? Kk.rope[1].swept : 0);
+      const mode = Kk.mode === 'time' ? ['Mode', 'TIME \u00b7 auto-tethers', Kk.lines.reduce((a, l) => Math.max(a, l.tension), 0), '']
+        : n ? ['Mode', 'SPACE \u00b7 ' + (n === 2 ? 'two tethers (bolas)' : 'one tether (swing)'), clamp(P.speed / m.maxSpeed, 0, 1), '#7fd7ff']
+        : Kk.mode === 'space' ? ['Mode', 'SPACE \u00b7 armed, nothing in reach', 0, '#7fd7ff'] : ['Mode', 'FLING \u00b7 ' + Math.max(0, m.glide - Kk.flingT).toFixed(1) + ' s', clamp(1 - Kk.flingT / m.glide, 0, 1), '#ffc640'];
+      const second = n ? ['Swing', Math.round(sw) + '\u00b0' + (sw >= 180 ? ' \u00b7 boost ready' : ''), clamp(sw / 180, 0, 1), sw >= 180 ? '#ffc640' : ''] : ['Sliced', Kk.cuts + ' prisms', clamp(Kk.cuts / 40, 0, 1), Kk.sparkOn ? '#ff6a6a' : ''];
+      return [mode, second];
+    },
+    abilityStates(P) { const m = P.m; return { charge: 'blade ' + m.cutRadius.toFixed(1) + ' u', mass: 'anchor ' + m.anchorScale.toFixed(1) + ' u', space: Math.round(m.range) + ' u reach', time: Math.round(m.reelRate) + ' u/s reel' }; },
+    hull(ctx, color) { return K.swing.hull(ctx, color); },
+    mount(ctx, scene, P) {
+      const autos = [0, 1, 2, 3].map(() => { const l = line(ctx, P.domain.color, 2); l.material.opacity = 0.5; scene.add(l); return l; });
+      const beam = () => { const mm = new ctx.THREE.Mesh(new ctx.THREE.CylinderGeometry(1, 1, 1, 6, 1, true), new ctx.THREE.MeshBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.85 })); scene.add(mm); return mm; };
+      const ring = () => { const r = new ctx.THREE.Mesh(new ctx.THREE.TorusGeometry(4, 0.35, 6, 24), new ctx.THREE.MeshBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.5 })); scene.add(r); return r; };
+      const o = { autos, ropes: { '-1': beam(), '1': beam() }, rings: { '-1': ring(), '1': ring() } };
+      o.dispose = () => { for (const x of autos.concat([o.ropes[-1], o.ropes[1], o.rings[-1], o.rings[1]])) scene.remove(x); };
+      return o;
+    },
+    draw(W, P, o, t, ctx) {
+      const Kk = P.K, mine = !P.spec.ai || P.i === W.watch;
+      o.autos.forEach((l, i) => { const L = Kk.lines[Kk.lines.length - 1 - i]; l.visible = !!L; if (L) { setLine(l, [P.pos, L.anchor.pos]); l.material.opacity = 0.25 + 0.6 * L.tension; } });
+      for (const s of [-1, 1]) {
+        const R = Kk.rope[s], b = o.ropes[s]; b.visible = !!R;
+        if (R) { const a = R.anchor.pos, d = P.pos.clone().sub(a), L = d.length(); b.position.copy(a).addScaledVector(d, 0.5); b.quaternion.setFromUnitVectors(new ctx.V(0, 1, 0), d.normalize()); const w = 0.25 + 0.5 * clamp(P.speed / P.m.maxSpeed, 0, 1); b.scale.set(w, L, w); b.material.color.set(R.swept >= 180 ? 0xffc640 : P.domain.color); }
+        const g = Kk.ghost[s], r = o.rings[s]; r.visible = mine && !!g && !R; if (r.visible) { r.position.copy(g.pos); r.lookAt(P.pos); r.material.opacity = (Kk.mode === 'time' ? 0.25 : 0.55) + 0.2 * Math.sin(t * 6 + s); }
+      }
+    },
+    preview(g, w, h, t, accent) {
+      bg(g, w, h); const u = (t * 0.5) % 2;
+      if (u < 1) { const x = w * (0.1 + u * 0.6), y = h * 0.55 + Math.sin(u * 18) * 4; const k = Math.floor(u * 6); blocks(g, '#3a4380', [0, 1, 2, 3, 4, 5, 6].map((i) => [w * (0.18 + i * 0.1), h * (i % 2 ? 0.38 : 0.72)]), 6); g.strokeStyle = accent + 'aa'; g.lineWidth = 1; const ax = w * (0.18 + (k + 1) * 0.1), ay = h * (k % 2 ? 0.72 : 0.38); g.beginPath(); g.moveTo(x, y); g.lineTo(ax, ay); g.stroke(); dart(g, accent, x, y, 0); g.fillStyle = '#9fb0d0'; g.font = '10px sans-serif'; g.fillText('TIME', 8, 14); }
+      else { const v = u - 1, ax = w * 0.5, ay = h * 0.2, th = -1.9 + v * 3.6, x = ax + Math.sin(th) * 62, y = ay + Math.cos(th) * 62; blocks(g, '#3a4380', [[ax, ay], [w * 0.15, h * 0.2]], 8); g.strokeStyle = accent; g.lineWidth = 2.5; g.beginPath(); g.moveTo(ax, ay); g.lineTo(x, y); g.stroke(); dart(g, accent, x, y, th + Math.PI); g.fillStyle = '#7fd7ff'; g.font = '10px sans-serif'; g.fillText('SPACE', 8, 14); }
+    },
   };
 
   // ================= ricochet: the Flea =================

@@ -131,7 +131,7 @@ Scorecard tab re-runs its own row live.
 
 | Vessel | I1 | I2 | I3 | I4 | Top u/s | Reading |
 |---|---|---|---|---|---|---|
-| Gibbon | 159 / 161 / 161 | 216 / 212 / 220 | 537 / DNF / DNF | 314 / 233 / 218 | 358 | On the Tether's numbers (§8.1: cruise 80, cap 358, reach 93, half-turn boost). Faster everywhere and the first to finish I3, but swings now COST on I4 (314 vs 218 for the control) and barely fire on I1 (2%): the swing pays where the Tether measured it, on a turn hooked abeam, and the round-2 kind needs its spin limit and auto-anchors before the swing is judged. Before the merge: 217 / 232 / 232, 298 / 325 / 316, DNF, 338 / 399 / 307 |
+| Gibbon | 73 / 85 / 79 | 136 / 127 / 111 | 235 / 293 / 254 | 182 / 177 / 123 | 253 | Round 2 (§8.2): two modes. The auto-tethers alone beat the control on I1 and I3 (I3 with zero swings); the AI's swings cost on the twisting courses, where a 1.6 s fling cannot steer. Round 1's swing kind: 159 / 161 / 161, 216 / 212 / 220, 537 / DNF / DNF, 314 / 233 / 218 |
 | Flea | 294 / 326 / 326 | 388 / 458 / 458 | DNF / DNF / DNF | 496 / 475 / 475 | 258 | The bounce chain pays 10-15% on the flat courses, loses on I4; the AI never hits the rail (0 resets) |
 | Albatross | 266 / 266 / DNF | DNF / DNF / DNF | DNF / DNF / DNF | DNF / DNF / DNF | 144 | Finishes the flat octagon only; the climbing and twisting courses need an energy plan the round-1 pilot lacks. Fly it yourself |
 | Remora | 80 / 168 / 222 | 118 / 256 / 297 | 394 / DNF / DNF | 260 / 264 / 282 | 240 | Two Hard rivals to draft (its scorecard seats them); the draft is worth 2-3x on the flat courses. The slipstream chain finding stands |
@@ -191,7 +191,7 @@ its mechanic, four courses).
 ## 8. Round 2: one vessel per session (the owner, 2026-10-17)
 
 Round 1 made ten vessels in one session so the owner could pick. Round 2 takes **one vessel per session**, in the
-order Garrett's review set (§9: Given, Flea, Dragonfly, Marlin, Albatross), each session on `Ys-bleeding-edge`, each ending with a vessel the owner has flown and recorded a
+order Garrett's review set (§9: Gibbon, Flea, Dragonfly, Marlin, Albatross), each session on `Ys-bleeding-edge`, each ending with a vessel the owner has flown and recorded a
 decision on. A round-2 session, in order:
 
 1. **Read first**: this file (the vessel's row in §2 and §4.1, §5, §6), its recipe `vessels/<id>.json`, its kind in
@@ -252,7 +252,7 @@ artifact's decision log (`decisions`, `by: Garrett`) so each vessel's session re
 
 | Vessel | Verdict | What Garrett asked for |
 |---|---|---|
-| **Gibbon / Tether → "Given"** | **Build next**, from `cece/loving-feynman-hlgf18` | Two modes. **Time mode**: feels like flying, is the branch's auto-tethers (Spider-Man swinging off the blocks its tethers plant). **Space mode**: the slicing mode; two sticks + two triggers, one pair per tether; slicing is what the two tethers cut through; movement differs with 0 / 1 / 2 tethers attached (both held = two, one held = one, none = flinging through space until back in time mode). Charge and mass modes later. The transition time ↔ space must feel natural before anything else is added |
+| **Gibbon / Tether** (the notes spell it "Given": the transcriber's spelling of "Gibbon", the page Garrett was reviewing) | **Build next**, from `cece/loving-feynman-hlgf18` | Two modes. **Time mode**: feels like flying, is the branch's auto-tethers (Spider-Man swinging off the blocks its tethers plant). **Space mode**: the slicing mode; two sticks + two triggers, one pair per tether; slicing is what the two tethers cut through; movement differs with 0 / 1 / 2 tethers attached (both held = two, one held = one, none = flinging through space until back in time mode). Charge and mass modes later. The transition time ↔ space must feel natural before anything else is added |
 | **Flea** | **Keep**: "seems really good", no feedback | Give Garrett a branch to fly it. If the artifact version is good, bring it into the game (out of the artifact, playable), make a small racing game for it, push to bleeding-edge as the Unity version |
 | **Albatross** | **Keep, rework the frame** | Up/down from the **nearest point on the nucleus** (not the membrane), in the cytoplasm and in the nucleus: toward the nucleus is diving, away is falling. **Small thermals** with strong lift that shoot it away from the nucleus and make a large explosion. Hitting the membrane has a consequence (maybe mass just inside it; incentive undecided). Crossing the membrane is not free spam: the longer you avoid crossing, the bigger the mass explosion when you do, growing faster than linear ("a very shallow exponential"). Feel before numbers |
 | **Dragonfly** | **Keep**: "I like the name, what it does and how it flies" | Drop the stop function. **Control swap**: holding LT turns the look stick from pitch/yaw to roll/elevation, so A/B go. Solid baseline throttle; boost on a **long cooldown**, fired along the current motion, **stored bursts** like the Serpent's (3 or 5 banked). The precision needs a reason: a **grasping joust** (latch onto a vessel, bite, steal its element: "definitely a jouster") and a **precision mine kit**: mines placed exactly while hovering, hands off the sticks, whose geometry decides the effect (equilateral triangle blows up its inside; square makes mass inside; kite / pentagon / rhombus for mass / charge / space / time). "Should definitely be a miner of some sort" |
@@ -266,8 +266,66 @@ artifact's decision log (`decisions`, `by: Garrett`) so each vessel's session re
 Other decisions from the meeting: Yash reviews Joseph Zhou's pull request when it lands (approval required before
 merge); Garrett reviews the next R&D round with Yash after the next iteration.
 
-**Round 2's order (§8), as decided:** 1 Given (Gibbon + Tether, from `loving-feynman`), 2 Flea (to the game), 3
+**Round 2's order (§8), as decided:** 1 Gibbon (+ the Tether, from `loving-feynman`), 2 Flea (to the game), 3
 Dragonfly, 4 Marlin, 5 Albatross; Gecko's mechanic folds into a trail-runner session; the Octopus pulse waits for a kit
 that wants a mode; Remora, Mole and Eel are archived (pages stay in the hub, marked archived, for the record). §6's
 questions 1 and 2 are answered above; 3 and 5 fall with their vessels; 4 (the Dragonfly's second input strategy) is
-now the control swap; 6 (names) is open: "Given" is Garrett's for the Gibbon.
+now the control swap; 6 (names) is open (the notes' "Given" is the Gibbon, misheard).
+
+### 8.2 Session 1: the Gibbon, two modes (2026-10-18)
+
+Built from Garrett's review (§9) on the Tether prototype (§8.1). The Gibbon's kind is now `tether` in `studio-kinds.js`
+(round 1's `swing` stays in the file for the record); the recipe reads `TetherConfig.asset`'s numbers.
+
+**What it is.** **Time mode** (no trigger): the sticks fly; every 0.35 s an anchor prism is planted 0.8 s ahead, 20°
+off the nose, alternating sides, and a short elastic tether yanks the hull along it (AutoTetherRig and TetherMath ported
+function for function: the plant cadence that drops owed time, the spring that pulls only past rest and damps only
+stretching, the abeam release, the 1.15× cruise cap). **Space mode** (a trigger held): each trigger owns one tether and
+its stick owns that tether. The press hooks what the trigger's ghost ring showed; after that the stick aims an unhooked
+tether and reels a hooked one (up in, down out). **One tether** is the Tether's swing (rigid rope, v·L kept, the spin
+limit stops a reel's gain, +20% past a half turn). **Two tethers** are a bolas: the hull turns about the line between
+the anchors, exactly (a rotation, so both ropes stay rigid). **No trigger after a swing** is the fling: ballistic, the
+sticks only aim, and after 1.6 s (TetherConfig.glide) time mode eases the sticks back to steering over 0.5 s (`handBack`,
+lab-only; 0 = a snap). Squeezing during the fling chains. **Every live tether cuts**: hostile prisms it sweeps are cut,
+a shield pops and survives that contact, own and own-domain prisms, the hooked anchor and the course ribbon never.
+
+**Measured** (`probe_given.cjs`, free space far from the course, and `smoke.cjs --all-courses`):
+
+| | Studio | TETHER.md |
+|---|---|---|
+| Time mode, hands off 6 s | 92 u/s = 1.150× cruise, heading ≤ 0.54°, 18 anchors | 1.10-1.15×, ≤ 0.63° |
+| Its control (no auto-tethers) | 80 u/s flat | |
+| One tether, hooked ~40-60 u, full reel | 87 → 140 u/s in 0.5 s, held there by the spin limit (0.6 rev/s at 37 u) | 60 u: 1.68× at 0.5 s |
+| Release past a half turn | 140 → 164 (+17%: the boost shrinks toward the 358 cap) | +20% × (1 − (v/cap)²) |
+| Fling → time mode | 1.60 s, then the anchors resume | |
+| Bolas | rope error 0.000 u, two turns in 3 s with the auto-reel only | (new) |
+| Blade | hostile cut; shielded: shield popped, survived; own-domain and the anchor intact | the Rhino sword's rules |
+| Race, Hard / Easy / No mech | I1 73 / 85 / 79 · I2 136 / 127 / 111 · I3 235 / 293 / 254 · I4 182 / 177 / 123 | |
+
+**Found.**
+- **A mode switch must not read the input of the mode it is leaving.** In space mode a stick aims its tether, but at the
+  press the thumbs are still steering, so the first version hooked wherever the steering had pushed the aim (a held
+  pitch-up aimed 45° up and hooked nothing). The press now hooks what the ring showed, and the stick aims only from the
+  next frame.
+- **Two rigid ropes cannot be solved one rope at a time.** Projecting the velocity onto each rope's sphere in turn stalled
+  the bolas (1° swept in 3 s): a hull flying between two anchors ahead has almost no velocity along the circle the two
+  ropes allow. Solved as a rotation about the anchors' line, with the speed redirected onto the circle (hooking never
+  costs speed; a hull flying straight at the axis turns over its own top).
+- **The studio's neutral throttle was half the Tether's cruise** (the engine's convention puts neutral at half
+  `cruise`): the Gibbon now maps throttle as Tether.prefab does (20 pinched, 80 neutral, 140 flat out).
+- **An AI that hooks on every turn lives in space mode.** The first rule (any turn over 25°) spent 96% of I1 swinging
+  and DNF'd: a fling at the cap cannot steer and carries the hull 500 u past its turn. The AI now swings only from time
+  mode with the sticks back, on turns over 35°, under 1.8× cruise, and lets go leading by the swing's turn rate.
+
+**Decisions needed (Garrett, by flying it).**
+1. Does time → space → fling → time feel natural? The knobs that decide it: `glide` (fling time), `handBack` (how the
+   sticks come back), the ring opacity in time mode (what a press will hook).
+2. Should the fling steer? The race says an unsteerable 1.6 s fling is expensive on twisting courses (I2, I4).
+3. The stick aim in space mode is the studio's proposal (neutral = ahead and out on its own side); the Tether aims with a
+   search plane that roll tilts. Which one?
+4. What should the bolas do? It is here because Garrett said movement differs with two tethers attached; its
+   behaviour (an orbit about the anchors' line) is the studio's guess.
+5. Charge and mass modes: later (Garrett). The element rows are proposals.
+
+**Not done this session:** the Tether branch is not merged into `Ys-bleeding-edge` (its id 14 collides with the
+Thresher; T-20261017-e64b), so nothing reached Unity; the AI never holds two tethers.
