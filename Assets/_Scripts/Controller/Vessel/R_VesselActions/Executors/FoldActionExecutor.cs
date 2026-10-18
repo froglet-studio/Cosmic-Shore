@@ -81,6 +81,12 @@ namespace CosmicShore.Gameplay
                  "to field initializers.")]
         [SerializeField] FoldActionSO config;
 
+        [Header("Hull")]
+        [Tooltip("The transform the departure WITHERS and the arrival BLOOMS (scaled 1 -> 0 -> 1): " +
+                 "the vessel's Hull, which holds the model. Leave empty and the child named 'Hull' " +
+                 "is used.")]
+        [SerializeField] Transform hullVisual;
+
         [Header("Ghost")]
         [Tooltip("Material the destination ghost is drawn with. Leave empty and the ghost borrows " +
                  "the hull's own material — it still reads as a second copy of the ship, just an " +
@@ -123,9 +129,10 @@ namespace CosmicShore.Gameplay
 
         IVesselStatus _status;
         FoldActionSO _activeSo;
-        ButterflyHullBuilder _hull;
         ButterflyAnimation _animation;
         Transform _hullVisual;
+        SkinnedMeshRenderer _hullRenderer;   // the model the ghost is baked from
+        Mesh _ghostMesh;                      // owned: destroyed with the ghost (a Mesh outlives its GameObject)
 
         bool _held;
         float _heldSeconds;
@@ -181,10 +188,15 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
-            _hull = GetComponentInParent<ButterflyHullBuilder>(true);
-            if (!_hull && shipStatus?.Vessel != null)
-                _hull = shipStatus.Vessel.Transform.GetComponentInChildren<ButterflyHullBuilder>(true);
-            _hullVisual = _hull ? _hull.transform : null;
+            // The hull is a MODEL now (Butterfly.fbx under the prefab's Hull, /vessel-model 2026-10-18),
+            // not the procedural ButterflyHullBuilder: the wither scales the authored Hull transform and
+            // the ghost is baked from the model's skinned mesh, so neither depends on how the hull is made.
+            var vesselRoot = shipStatus?.Vessel != null ? shipStatus.Vessel.Transform : null;
+            _hullVisual = hullVisual;
+            if (!_hullVisual && vesselRoot) _hullVisual = vesselRoot.Find("Hull");
+            _hullRenderer = _hullVisual
+                ? _hullVisual.GetComponentInChildren<SkinnedMeshRenderer>(true)
+                : (vesselRoot ? vesselRoot.GetComponentInChildren<SkinnedMeshRenderer>(true) : null);
             _animation = shipStatus?.Vessel != null
                 ? shipStatus.Vessel.Transform.GetComponentInChildren<ButterflyAnimation>(true)
                 : null;
@@ -598,50 +610,36 @@ namespace CosmicShore.Gameplay
 
         void EnsureGhost()
         {
-            if (_ghost || _hull == null) return;
+            if (_ghost || !_hullRenderer || _status == null) return;
 
-            var pieces = new List<ProceduralHullPiece>();
-            _hull.BuildPreviewPieces(pieces);
-            if (pieces.Count == 0) return;
+            // A STILL copy of the model as it stands at the press - the pose and the element morphs
+            // the pilot is flying - baked once, so the ghost brings no rig, no animator and no second
+            // element-morph target along with it (what cloning the live hull would).
+            var mesh = new Mesh { name = "FoldGhost" };
+            _hullRenderer.BakeMesh(mesh, false);
+            mesh.RecalculateBounds();
+            _ghostMesh = mesh;
 
-            // Built through IProceduralHullSource rather than by cloning the live hull: that seam
-            // exists precisely so a second copy of a generated ship can be made without waking the
-            // builder, and a clone would bring its LateUpdate, its material watch and a second
-            // element-morph target along with it.
             var root = new GameObject("ButterflyFoldGhost");
             _ghost = root.transform;
+            var go = new GameObject("Hull");
+            go.transform.SetParent(_ghost, false);
+            // seat the baked mesh where the renderer sits in the VESSEL's frame
+            var vessel = _status.Transform;
+            var source = _hullRenderer.transform;
+            go.transform.localPosition = Quaternion.Inverse(vessel.rotation) * (source.position - vessel.position);
+            go.transform.localRotation = Quaternion.Inverse(vessel.rotation) * source.rotation;
+            go.transform.localScale = source.lossyScale;
 
-            Material material = ghostMaterial;
-            if (!material)
-            {
-                var source = _hull.GetComponent<MeshRenderer>();
-                if (source) material = source.sharedMaterial;
-            }
-
-            foreach (var piece in pieces)
-            {
-                var go = new GameObject(piece.Name);
-                go.transform.SetParent(_ghost, false);
-                go.transform.localPosition = piece.LocalPosition;
-
-                var mesh = new Mesh { name = "FoldGhost_" + piece.Name };
-                mesh.SetVertices(piece.Vertices);
-                mesh.SetNormals(piece.Normals);
-                mesh.SetUVs(0, piece.Uvs);
-                mesh.subMeshCount = piece.Submeshes.Length;
-                for (int i = 0; i < piece.Submeshes.Length; i++)
-                    mesh.SetTriangles(piece.Submeshes[i], i);
-                mesh.RecalculateBounds();
-
-                go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                var renderer = go.AddComponent<MeshRenderer>();
-                var mats = new Material[piece.Submeshes.Length];
-                for (int i = 0; i < mats.Length; i++) mats[i] = material;
-                renderer.sharedMaterials = mats;
-                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
-                _ghostRenderers.Add(renderer);
-            }
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var renderer = go.AddComponent<MeshRenderer>();
+            var mats = (Material[])_hullRenderer.sharedMaterials.Clone();
+            if (ghostMaterial)
+                for (int i = 0; i < mats.Length; i++) mats[i] = ghostMaterial;
+            renderer.sharedMaterials = mats;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            _ghostRenderers.Add(renderer);
         }
 
         void PoseGhost()
@@ -654,6 +652,11 @@ namespace CosmicShore.Gameplay
         void DestroyGhost()
         {
             _ghostRenderers.Clear();
+            if (_ghostMesh)
+            {
+                if (Application.isPlaying) Destroy(_ghostMesh); else DestroyImmediate(_ghostMesh);
+                _ghostMesh = null;
+            }
             if (!_ghost) return;
             var go = _ghost.gameObject;
             _ghost = null;

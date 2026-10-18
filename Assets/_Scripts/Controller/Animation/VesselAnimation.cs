@@ -524,28 +524,39 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public virtual void FlareEngine()
-        {
-            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[3].SetFloat("_ColorMultiplier",5f);
-        }
+        // Engine / body flares go through per-material-index property blocks, never renderer.materials: that
+        // getter clones every material and allocates an array per call, the clones are never destroyed, and
+        // VesselTransformer calls FlareBody every frame while a velocity modifier decays. Get-modify-set on the
+        // slot composes with the renderer's other per-index writers (VesselVisionShading's band, Echo Sight);
+        // never SetPropertyBlock(null), which erases them. Slots: 3 the engine, 0 the domain (the Squirrel's
+        // order); a renderer with fewer slots is left alone. A hull with its own flare (Scarab) overrides these.
+        static readonly int ColorMultiplierId = Shader.PropertyToID("_ColorMultiplier");
+        const int EngineFlareSlot = 3;
+        const int BodyFlareSlot = 0;
+        MaterialPropertyBlock _flareBlock;
+        readonly List<Material> _flareSlots = new();
+        float _engineFlare = 1f, _bodyFlare = 1f;
 
-        public virtual void StopFlareEngine()
-        {
-            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[3].SetFloat("_ColorMultiplier", 1f);
-        }
-        
-        public virtual void FlareBody()
-        {
-            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[0].SetFloat("_ColorMultiplier",5f);
-        }
-        public virtual void FlareBody(float amount)
-        {
-            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[0].SetFloat("_ColorMultiplier",1 + amount*4f);
-        }
+        public virtual void FlareEngine() => ApplyFlare(EngineFlareSlot, 5f, ref _engineFlare);
+        public virtual void StopFlareEngine() => ApplyFlare(EngineFlareSlot, 1f, ref _engineFlare);
+        public virtual void FlareBody() => ApplyFlare(BodyFlareSlot, 5f, ref _bodyFlare);
+        public virtual void FlareBody(float amount) => ApplyFlare(BodyFlareSlot, 1f + amount * 4f, ref _bodyFlare);
+        public virtual void StopFlareBody() => ApplyFlare(BodyFlareSlot, 1f, ref _bodyFlare);
 
-        public virtual void StopFlareBody()
+        void ApplyFlare(int slot, float multiplier, ref float applied)
         {
-            if (SkinnedMeshRenderer) SkinnedMeshRenderer.materials[0].SetFloat("_ColorMultiplier", 1f);
+            if (!SkinnedMeshRenderer) return;
+            // Quantized, and written only on a change: FlareBody arrives every frame with a decaying amount,
+            // and 1/64 on a 1..5 multiplier is invisible.
+            multiplier = Mathf.Round(multiplier * 64f) / 64f;
+            if (Mathf.Approximately(multiplier, applied)) return;
+            SkinnedMeshRenderer.GetSharedMaterials(_flareSlots);
+            if (slot >= _flareSlots.Count) return;
+            applied = multiplier;
+            _flareBlock ??= new MaterialPropertyBlock();
+            SkinnedMeshRenderer.GetPropertyBlock(_flareBlock, slot);
+            _flareBlock.SetFloat(ColorMultiplierId, multiplier);
+            SkinnedMeshRenderer.SetPropertyBlock(_flareBlock, slot);
         }
 
 

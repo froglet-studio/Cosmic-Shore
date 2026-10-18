@@ -7,8 +7,12 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Puppeteers the Thresher's shark hull (built by <see cref="ThresherHullBuilder"/> /
-    /// <see cref="ThresherHullForm"/>). Design record: <c>R_VesselActions/THRESHER.md</c> §5b.
+    /// Puppeteers the Thresher's hull. Design record: <c>R_VesselActions/THRESHER.md</c> §5b. Since 2026-10-18
+    /// the hull is a MODEL (<c>Thresher.fbx</c>, built by /vessel-model from
+    /// <c>Tools/Build/vessel_model/specs/thresher.py</c>) nested under the prefab's <c>ThresherHull</c>; its parts
+    /// are BONES found by name (<c>tail</c>, <c>tail.2</c>-<c>tail.4</c>, <c>wing.L</c> / <c>wing.R</c>), and the
+    /// procedural <see cref="ThresherHullBuilder"/>'s part names (<c>ThresherTailBase</c>, <c>ThresherLobe0</c>...,
+    /// <c>ThresherPectoralL</c>...) still resolve, so either hull swims.
     ///
     /// <para><b>The read is a SHARK SWIMMING, and its tail is the weapon.</b> The scythe beats side to side
     /// as a travelling wave (<see cref="ThresherSwimMath"/>), quicker and fuller with speed; the stick banks
@@ -19,8 +23,13 @@ namespace CosmicShore.Gameplay
     /// move with any of it.</para>
     ///
     /// <para><b>Channel discipline.</b> This component writes TRANSFORMS only: the hull's localRotation (bank,
-    /// sway) and each part's local pose. The builder writes VERTICES only (the element morph). No channel has
-    /// two writers.</para>
+    /// sway) and each part's pose. The element morph is the model's blend shapes (Charge / Mass / Space / Time,
+    /// driven by the base class), or, on the procedural hull, the builder's vertices. No channel has two
+    /// writers.</para>
+    ///
+    /// <para><b>Every part is posed in the HULL's frame onto the rest captured there</b>, so a bone that rests at
+    /// an angle under a parent that is not hull-aligned turns about the hull's axes (the Butterfly lesson), and a
+    /// procedural part resting at identity behaves exactly as before.</para>
     ///
     /// <para><b>Writes poses directly, not through the base's lerp helpers</b> — the
     /// <see cref="ButterflyAnimation"/> / <see cref="StoatAnimation"/> lesson: those lag a beat into a fraction
@@ -72,15 +81,32 @@ namespace CosmicShore.Gameplay
         [Tooltip("How fast the ball terms (curl, bank, flare) ease to their target, per second.")]
         [SerializeField, Min(0.1f)] float ballEaseRate = 6f;
 
-        ThresherHullBuilder _hull;
+        [Header("Hull")]
+        [Tooltip("The transform the swim banks and sways: ThresherHull, which holds the hull model and the jets. " +
+                 "Leave empty and the child named 'ThresherHull' is used.")]
+        [SerializeField] Transform hullRoot;
+
+        /// <summary>The tail chain's joints by name, root first: the model's bone, then the procedural part.</summary>
+        static readonly string[][] ChainNames =
+        {
+            new[] { "tail", "ThresherTailBase" },
+            new[] { "tail.2", "ThresherLobe0" },
+            new[] { "tail.3", "ThresherLobe1" },
+            new[] { "tail.4", "ThresherLobe2" },
+        };
+
+        ThresherHullBuilder _hull;          // the procedural hull, when the prefab still carries it (element morphs only)
         ThresherExecutor _executor;
         Transform _hullTransform;
         Quaternion _hullRestRot;
-        Vector3[] _chainRest;              // tail base pivot, then every scythe segment's
+        Transform[] _chain;                 // tail base, then every scythe segment
+        Vector3[] _chainRest;               // each joint's pivot at rest, in the hull's space
+        Quaternion[] _chainRestRot;         // each joint's orientation at rest, in the hull's frame
         Quaternion[] _chainLocal, _chainRot;
         Vector3[] _chainPos;
         float[] _jointYaws;
-        Vector3[] _pectoralRest;
+        readonly Transform[] _pectorals = new Transform[2];        // left, right
+        readonly Quaternion[] _pectoralRestRot = new Quaternion[2];
         float _phase, _whip, _orbitBank, _flare, _crack, _crackSide = 1f;
         int _lastCombo;
         bool _wasHot;
@@ -106,8 +132,12 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus vesselStatus)
         {
             _hull = GetComponentInChildren<ThresherHullBuilder>(true);
-            if (!_hull)
-                CSDebug.LogWarning($"[ThresherAnimation] '{name}' has no ThresherHullBuilder in its children; the swim has nothing to move.");
+            // The model (Thresher.fbx, nested under ThresherHull) is found, not wired: its sub-objects' fileIDs
+            // exist only after Unity imports it. The base drives its element shapes by name; the flares need the
+            // renderer; and the beating whip and the Space morph reach past the bind-pose bounds, so it must not
+            // be culled on them.
+            if (!SkinnedMeshRenderer) SkinnedMeshRenderer = GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.updateWhenOffscreen = true;
             // The vessel's OWN executor (it rides this prefab's ShipActions) — never another hull's.
             _executor = GetComponentInChildren<ThresherExecutor>(true);
             base.Initialize(vesselStatus);
@@ -115,28 +145,45 @@ namespace CosmicShore.Gameplay
             InitializeProceduralMorphs(vesselStatus);
         }
 
+        protected override void ResolveParts()
+        {
+            _hullTransform = hullRoot ? hullRoot : (_hull ? _hull.transform : transform.Find("ThresherHull"));
+            if (!_hullTransform)
+                CSDebug.LogWarning($"[ThresherAnimation] '{name}' has no ThresherHull; the swim has nothing to move.");
+
+            int n = ChainNames.Length;
+            _chain = new Transform[n];
+            for (int j = 0; j < n; j++) _chain[j] = ResolvePart(null, ChainNames[j]);
+            _pectorals[0] = ResolvePart(null, "wing.L", "ThresherPectoralL");
+            _pectorals[1] = ResolvePart(null, "wing.R", "ThresherPectoralR");
+            ReportUnresolvedParts();
+        }
+
+        /// <summary>Every part's rest pivot and orientation in the HULL's frame, captured once at the authored pose.</summary>
         void CaptureRest()
         {
-            if (!_hull || !_hull.TailBase) return;
-            _hullTransform = _hull.transform;
+            if (!_hullTransform || _chain == null || !_chain[0]) return;
             _hullRestRot = _hullTransform.localRotation;
+            var toHull = Quaternion.Inverse(_hullTransform.rotation);
 
-            int n = 1 + _hull.Lobes.Count;
+            int n = _chain.Length;
             _chainRest = new Vector3[n];
+            _chainRestRot = new Quaternion[n];
             _chainLocal = new Quaternion[n];
             _chainRot = new Quaternion[n];
             _chainPos = new Vector3[n];
             _jointYaws = new float[n];
-            _chainRest[0] = _hull.TailBase.localPosition;
-            for (int k = 0; k < _hull.Lobes.Count; k++)
-                _chainRest[k + 1] = _hull.Lobes[k] ? _hull.Lobes[k].localPosition : _chainRest[k];
-
-            _pectoralRest = new Vector3[_hull.Pectorals.Count];
-            for (int i = 0; i < _pectoralRest.Length; i++)
-                if (_hull.Pectorals[i]) _pectoralRest[i] = _hull.Pectorals[i].localPosition;
+            for (int j = 0; j < n; j++)
+            {
+                var t = _chain[j];
+                _chainRest[j] = t ? _hullTransform.InverseTransformPoint(t.position) : (j > 0 ? _chainRest[j - 1] : Vector3.zero);
+                _chainRestRot[j] = t ? toHull * t.rotation : Quaternion.identity;
+            }
+            for (int i = 0; i < _pectorals.Length; i++)
+                _pectoralRestRot[i] = _pectorals[i] ? toHull * _pectorals[i].rotation : Quaternion.identity;
         }
 
-        // The parts are the builder's, found through it rather than by name, so nothing to resolve.
+        // The parts are resolved by name in ResolveParts.
         protected override void AssignTransforms() { }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle) => Drive(pitch, yaw);
@@ -164,36 +211,41 @@ namespace CosmicShore.Gameplay
             _flare = Mathf.Lerp(_flare, flareTarget, k);
             _crack = Mathf.MoveTowards(_crack, 0f, crackDecay * dt);
 
-            // The tail: one chain, beat + steer + curl + crack, posed so no joint ever opens.
-            ThresherSwimMath.JointYaws(swim, _phase, Mathf.Max(speed01, Mathf.Abs(yaw)), yaw, _whip, _crack, _crackSide, _jointYaws);
-            for (int j = 0; j < _jointYaws.Length; j++) _chainLocal[j] = Quaternion.Euler(0f, _jointYaws[j], 0f);
-            ThresherSwimMath.PoseChain(_chainRest, _chainLocal, _chainPos, _chainRot);
-            _hull.TailBase.localPosition = _chainPos[0];
-            _hull.TailBase.localRotation = _chainRot[0];
-            for (int i = 0; i < _hull.Lobes.Count; i++)
-            {
-                var lobe = _hull.Lobes[i];
-                if (!lobe) continue;
-                lobe.localPosition = _chainPos[i + 1];
-                lobe.localRotation = _chainRot[i + 1];
-            }
-
-            // The body: banks into the turn and into an orbit, and counter-sways against the beat.
+            // The body first (every part below is posed in its frame): banks into the turn and into an orbit,
+            // and counter-sways against the beat.
             float sway = -bodySwayDegrees * Mathf.Sin(_phase) * Mathf.Lerp(0.45f, 1f, speed01);
             _hullTransform.localRotation = _hullRestRot * Quaternion.Euler(0f, sway, -yaw * bankDegrees - _orbitBank);
+            Quaternion hullRot = _hullTransform.rotation;
+
+            // The tail: one chain, beat + steer + curl + crack, posed so no joint ever opens.
+            // SIGN: ThresherSwimMath's yaw is positive toward the pilot's RIGHT (+X) - its steer term is negative
+            // so a right turn swings the tail LEFT, "out of the turn", and its curl and crack are positive toward
+            // a ball on the right. Unity's Euler(0, +a, 0) carries a part that trails the pivot (on -Z) to -X, the
+            // LEFT, so the pose turns by -yaw. Until 2026-10-18 it turned by +yaw: the tail swung INTO a turn and
+            // curled and cracked AWAY from the ball, and the body's counter-sway moved with the tail instead of
+            // against it - never seen, because nobody had opened the procedural hull in Unity (THRESHER.md §5b).
+            ThresherSwimMath.JointYaws(swim, _phase, Mathf.Max(speed01, Mathf.Abs(yaw)), yaw, _whip, _crack, _crackSide, _jointYaws);
+            for (int j = 0; j < _jointYaws.Length; j++) _chainLocal[j] = Quaternion.Euler(0f, -_jointYaws[j], 0f);
+            ThresherSwimMath.PoseChain(_chainRest, _chainLocal, _chainPos, _chainRot);
+            for (int j = 0; j < _chain.Length; j++)
+            {
+                var part = _chain[j];
+                if (!part) continue;
+                part.SetPositionAndRotation(_hullTransform.TransformPoint(_chainPos[j]), hullRot * _chainRot[j] * _chainRestRot[j]);
+            }
 
             // Pectorals: angle of attack with the stick, twisted against each other in a turn (ailerons:
             // the inside fin's leading edge up), and both tips flared DOWN while the ball stops.
-            for (int i = 0; i < _hull.Pectorals.Count; i++)
+            for (int i = 0; i < _pectorals.Length; i++)
             {
-                var fin = _hull.Pectorals[i];
+                var fin = _pectorals[i];
                 if (!fin) continue;
                 float side = i == 0 ? -1f : 1f;
                 float attack = -pitch * pectoralPitchDegrees + side * yaw * pectoralTwistDegrees;
                 // A positive Z roll swings +X up toward +Y: it DROPS the left fin's tip (it hangs toward -X)
                 // and lifts the right's, so a flare is the opposite sign on each side.
                 float flare = -side * _flare * brakeFlareDegrees;
-                fin.localRotation = Quaternion.Euler(attack, 0f, flare);
+                fin.rotation = hullRot * Quaternion.Euler(attack, 0f, flare) * _pectoralRestRot[i];
             }
         }
 
@@ -243,16 +295,18 @@ namespace CosmicShore.Gameplay
         {
             if (!_hullTransform || _chainRest == null) return;
             _hullTransform.localRotation = _hullRestRot;
-            if (_hull.TailBase) { _hull.TailBase.localPosition = _chainRest[0]; _hull.TailBase.localRotation = Quaternion.identity; }
-            for (int i = 0; i < _hull.Lobes.Count && i + 1 < _chainRest.Length; i++)
-                if (_hull.Lobes[i]) { _hull.Lobes[i].localPosition = _chainRest[i + 1]; _hull.Lobes[i].localRotation = Quaternion.identity; }
-            for (int i = 0; i < _hull.Pectorals.Count; i++)
-                if (_hull.Pectorals[i]) _hull.Pectorals[i].localRotation = Quaternion.identity;
+            Quaternion hullRot = _hullTransform.rotation;
+            for (int j = 0; j < _chain.Length; j++)
+                if (_chain[j]) _chain[j].SetPositionAndRotation(_hullTransform.TransformPoint(_chainRest[j]), hullRot * _chainRestRot[j]);
+            for (int i = 0; i < _pectorals.Length; i++)
+                if (_pectorals[i]) _pectorals[i].rotation = hullRot * _pectoralRestRot[i];
             _whip = _orbitBank = _flare = _crack = 0f;
         }
 
         // ---- element morph plumbing --------------------------------------------------------
 
+        // Only while the prefab still carries the procedural hull: the model's element morphs are its blend shapes,
+        // which the base class drives by name.
         void InitializeProceduralMorphs(IVesselStatus vesselStatus)
         {
             if (!_hull) return;
