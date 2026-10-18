@@ -1,5 +1,47 @@
 # MODEL DOSSIER — Urchin
 
+> **RIG SWAP, 2026-10-18 — the prefab now DRAWS the rig.** `Urchin.prefab` nests
+> `urchan_shapekey_with_animations.fbx` (guid `7f9bbc7b…`) under `OrientationHandle` at localScale **0.474905**
+> (`VesselRigSwapper`'s measured fit; the instance is named `urchan_shapekey_with_animations`, so that tool reports
+> "already swapped"). The 13 MeshFilter + MeshRenderer pairs that drew `Urchan_Test.fbx` are removed; the placeholder
+> FBX stays in the repo, drawn by nothing. Rebuilt by `python3 Tools/Build/vessel_model/build.py urchin`
+> (`Tools/Build/vessel_model/specs/urchin.py`, the artist-hull path), in place, same guid. Sheet:
+> `sheets/urchin_rig_swap.jpg` (row 1 the free-flight rest; row 2 the four morphs at 100% from the chase view; row 3
+> the artist's pitchup / yawright / rollright / ball takes).
+>
+> **What the file is now.** The artist's 6,080-vert / 12,090-tri mesh, 38 bones, four slots (`BASE, accent,
+> windsheild, N`) and eleven takes, kept. Its REST is the artist's free-flight pose: the first key of `urchan_fly`
+> (bind + the six `winggrowrot*` pod holds at 1.75), which nine of the eleven takes start from and which equals the
+> placeholder prefab's free-flight layout part by part to < 0.5 mm (×0.474905). The rig's node chain had parked the
+> last frame of `urchan_yawright` (root −9.9°, fuse −14.1°, holds 10.5°, shrouds 19–41°, one-sided), a twisted pose
+> the game never drew, so it is NOT the rest (LESSONS 37). The spec gates against `rested_reference()`: the artist
+> file with only its animated nodes' Lcl transforms set to that key (codec surgery; mesh, skin, bind, takes and
+> materials are the artist's bytes). Four REAL morphs, lowercase as the file had them: **mass** 4.4% of the
+> diagonal (the ball ×1.23 about its centre, shells +0.025), **charge** 9.3% (barrels ×1.8 forward and ×1.3 thick,
+> the gear rings ×1.3 with their teeth thrown out), **space** 6.0% (all six pods 0.14 out along their radials),
+> **time** 10.9% (the four engine pods swept 12° back about the ball, the jet domes ×1.2 aft). Gates: take parity
+> 127 moving part-takes at 0.000 / 0.0°, moving-node and material parity clean, `rest_compare` vs the rested
+> reference 0.000 / 0.00° on the Blender reader (the assimp reader shows the 1.75 node scale written as 1.0 under
+> the six holds, positions equal to 0.0012 cm: Blender cannot hold a rest scale, so it is baked into the geometry).
+>
+> **The contract in the prefab.** `UrchinAnimation` still drives the placeholder's part transforms exactly as before
+> (the 12 box colliders, the four `VesselJet`s and `MuzzleL/R` live on them); in `LateUpdate` the rig's `fuse` and
+> six `winggrowrot*` holds FOLLOW `Body`, `LeftGun/RightGun`, `JetTop*/JetBottom*` (rest-relative rotation, position
+> and the 1.75 ↔ 1.0 tuck scale), so every collider keeps enclosing its drawn pod. `.l` = the pilot's left = Unity −X
+> = the `Left` parts. The SkinnedMeshRenderer is found by `GetComponentInChildren` (`updateWhenOffscreen`), its four
+> element shapes reach the screen through `VesselAnimation` by name, and its engine/body flares go through
+> per-material-index property blocks (slot 3 `N`, slot 0 `BASE`). The `.meta` remaps `BASE / accent / windsheild / N`
+> to `BlueBase / GreenAccent / Screen / EngineVesselMaterial` and sets `isReadable 1` (the hull fusion reads it);
+> `_shipGeometries` gains the instance root, which `VesselCustomization.ResolveModelGeometries` turns into the
+> skinned renderer, so the domain paints the `accent` slot. The drawn jet mouths sit within 2 mm of the authored
+> `VesselJet` points (no jet moved). **Still stale:** the four `Urchin_*_HullFusionBake` assets key the placeholder's
+> Body mesh; the runtime warns once and solves on a worker until **FrogletTools > Vessels > Wiring > Bake Crystal
+> Hull Fusions** is re-run in the editor. Morphs are not re-fitted to the colliders: at 100% the ball outgrows its
+> sphere collider by ~0.049 u, Space carries pods ~0.066 u out of their boxes, Charge's barrel tip ~0.103 u forward,
+> Time's pods ~0.12 u aft.
+>
+> Sections 1-8 below are the pre-swap record and stay the explanation of why each number is what it is.
+
 > **Record of the ARTIST file as shipped before 2026-10-17.** On 2026-10-17 the file this dossier measures was
 > rebuilt in place by `python3 Tools/Build/vessel_model/build.py urchin` (spec `Tools/Build/vessel_model/specs/urchin.py`,
 > skill `/vessel-model`): same path and guid, same node, geometry, bone and material names, every bone's rest pose
