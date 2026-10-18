@@ -24,6 +24,8 @@ Round 5 (2026-10-17):
 
 Round 6 (2026-10-17): the school keeps eating **every lit prism, newest first**, one creature per prism down the queue (§1j).
 
+Round 7 (2026-10-18): the Sparrow's buttons. **A lures** (Mass) and **B dashes** (Time); X picks the squad and Y recalls. The fix for "the QuadFish don't always listen" (§1k).
+
 Sources:
 
 - The lab page: `Docs/Studios/AnglerCommandLab.html` (artifact https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6).
@@ -42,15 +44,16 @@ through `Tools/Build/studio_to_unity/angler.json`. Every formula comes from the 
 | Right trigger, held | RT (analog) | Right Shift | **Paint** (Space). A beam from the nose, reaching `paintRange` (3200 u) and never narrower than `brushNear` (6 u) at the nose, so close-up prisms paint too. Every enemy prism inside it lights up, and every creature prefers it (§1c). The **whole** picked squad balls up `slingAhead` ahead of the nose, any creature still in flight from the last throw included. How far you squeeze sets the brush width: just past halfway paints `brushMin` of the full brush, and a full pull paints all of it. **Level 5 (Paint Shields):** shielded prisms paint too, and the squad cracks the shield off when it arrives. |
 | Left trigger, held | LT (analog) | Left Shift | **Erase / Lock-on** (Charge). A narrower beam (`eraseCone`, same reach and close-up rule) unmarks paint, and unmarks an already-ordered prism too: it leaves every order, and a creature heading for it picks again. Each time the beam comes onto a rival vessel (another one, or the same one again) it **locks, and spends one creature** on it (§1e). RT does not paint while LT is held. |
 | Right trigger, let go | RT | Right Shift | **Throw.** Each creature in the ball (one still in flight is re-thrown) goes for the **most recently painted** prisms first, regardless of distance (`PickRecent`: the fewest claims, then the newest paint). It is launched at its prism at `slingSpeed`, homing at `homeTurn`, and a homing throw never gives up: it reaches its prism at any distance, limited only by speed. With nothing painted, it is a plain sling: the creature latches onto the first enemy prism it passes within `slingCatch`. |
-| Lure, held | X | Q | **Lure, Tame & Grow** (Mass). The esca lights and the hull **stops** (`lureCruise` 0; boost overrides it). Wild herbivores within `lureRadius` turn toward it; a creature held within `tameRadius` tames over `tameTime` and joins the school, whose size is the **number on the Mass card**. Plants in the light grow `lureGrowth` (3x) as often. **Letting go plants every seed** an omni crystal left (§1g). **Level 5 (Steal Fauna):** the lure takes other Anglers' creatures too. |
-| Pick squad | A | Space | Cycles through the whole school, then each kind of creature in the order it was first tamed, then back to the whole school. |
-| Recall | B | R | The picked squad drops its order and returns to the school (lit prisms stay lit until eaten or erased). |
-| Dash to the School | Y | F | **Time.** The hull dashes `dashFrac` (75%) of the way to the centroid of every creature it leads, measured when pressed, in `dashTime` (0.35 s) (§1f). Time also **speeds your tamed fauna**: `faunaSpeed` x1 at Time 0 to x2 at Time 10. |
+| Lure, held | A | Space | **Lure, Tame & Grow** (Mass). The esca lights and the hull **stops** (`lureCruise` 0; boost overrides it). Wild herbivores within `lureRadius` turn toward it; a creature held within `tameRadius` tames over `tameTime` and joins the school, whose size is the **number on the Mass card**. Plants in the light grow `lureGrowth` (3x) as often. **Letting go plants every seed** an omni crystal left (§1g). **Level 5 (Steal Fauna):** the lure takes other Anglers' creatures too. |
+| Pick squad | X | Q | Cycles through the whole school, then each kind of creature in the order it was first tamed, then back to the whole school. A picked kind is shown over the Mass card ("QuadFish x3"); while it shows, only that kind gathers and is thrown (§1k). |
+| Recall | Y | F | The picked squad drops its order and returns to the school (lit prisms stay lit until eaten or erased). |
+| Dash to the School | B | R | **Time.** The hull dashes `dashFrac` (75%) of the way to the centroid of every creature it leads, measured when pressed, in `dashTime` (0.35 s) (§1f). Time also **speeds your tamed fauna**: `faunaSpeed` x1 at Time 0 to x2 at Time 10. |
 | Boost | RB | E | The vessel's ordinary boost. |
 | Omni crystal (pickup) | — | — | **One creature and one plant.** The crystal morphs into a random creature that joins the school, and leaves a **flora seed**, shown on the HUD's omni card and planted the next time the lure is let go (§1g). |
 
 The round-2 write-up first proposed the lure on RB. The game's RB is already throttle and boost, and LB raises no
-input event, so the lure is on X (Button3), in the page's pad map and here alike.
+input event, so the lure went on X (Button3). Since 2026-10-18 the Angler uses the Sparrow's layout: Mass (Lure) on A
+(Button1) and Time (Dash) on B (Button2); the squad pick and recall took the freed X (Button3) and Y (Button4Action).
 
 ### 1a. What paint looks like: the prism's LIT state
 
@@ -159,7 +162,7 @@ machine that owns the hull, whose transform replicates.
 - **Time's scaling** (round 4): `faunaSpeed`, an `ElementalFloat` on `AnglerConfigSO` (x1 at Time 0 to x2 at Time 10), multiplies every speed the leash gives a tamed creature: following, gathering, thrown, eating an order, hunting. A creature still being lured is not affected.
 - The lab moves its hull on a smoothstep; the endpoint is the same.
 
-**The Y button is new to the game.** `InputEvents.Button4Action` (14):
+**The Y button is new to the game** (first bound to the dash; since 2026-10-18 it is the recall). `InputEvents.Button4Action` (14):
 
 - the pad's Y (`buttonNorth`) and F on both desktop schemes;
 - a chip row in `Resources/ControlGlyphSet` (Y artwork, label F);
@@ -214,6 +217,18 @@ Collecting an omni crystal (`AnglerTameByCrystalEffectSO`) gives the Angler two 
   - Erasing takes a prism out; painting a lit prism again moves it to the front.
   - A latch's cluster (the throw with nothing painted) still eats nearest first from its own set.
 - **Proof:** the lab's `litQueue`, checked headless (`ANGLER_COMMAND_LAB.md` round 6: 12 of 12 older lit prisms eaten, against 0 of 12 before).
+
+### 1k. "The QuadFish don't always listen" (round 7)
+
+Three causes, each fixed:
+
+- **An invisible squad pick.** A used to cycle the squad, and nothing on the HUD showed it. A pilot pressing A for the lure (the Sparrow's Mass button) picked the first kind tamed, usually the keeper's Clawfish. From then on only Clawfish gathered and were thrown, and the QuadFish kept their old orders. Now:
+  - the pick is on X, not A;
+  - a picked kind shows over the Mass card (`AnglerHUDView.SetSquad`, "QuadFish x3"), blank while the whole school answers.
+- **An order the creature's own diet refused.** The executor gave orders without asking the creature. A creature sent to a prism it may not eat (its own domain in a cell with no nucleus, the nucleus claim, outside its pen) hovered there for good, holding its claim and skipping the queue. Now `PickTarget` asks `Fauna.LeashCanEat` (the same predicate the creature applies to its meal: `LightFauna.IsEdibleForHerbivore`, `Boid.IsEdibleForForager`) and skips a refused prism. A shielded prism stays a candidate, because Space 5 painted it and the squad cracks the shield on arrival.
+- **A latch onto a creature's body.** The plain sling's latch cluster could include another creature's body prism, which no herbivore eats. That cluster now skips body prisms, as the latch itself already did.
+
+The lab's world is domain-blind, so the diet filter is game-only, like the shield and body filters on the brush.
 
 ## 2. What a leash is (and is not)
 
@@ -368,7 +383,7 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
 1. **The Angler's own hull.** It wears the Stoat's procedural hull and lope as a stand-in body.
 2. **An Angler AI autopilot.** It must be input-only per `/vessel-ai`. The lab's sim pilot (`aiErase`, its squad heuristics) is the starting point.
 3. **Element scaling for Charge, Mass and Space, and the Charge and Time level-5 upgrades** (§7). Time scales the tamed fauna's speed. The fleet's convention would make Space the paint's reach, Mass the lure's reach or growth, and Charge the bite, but none is approved.
-4. **The HUD's squad name.** The HUD shows counts; `SquadName` exists on the executor but has no text slot in the HUD yet.
+4. ~~**The HUD's squad name.**~~ Done in round 7: the picked kind shows over the Mass card (§1k).
 5. **A squad that is never ordered starves, apart from the keeper.** Whether a following creature should graze in passing is still a designer call.
 6. **The Amoebius Port build check** (rule 51; it needs .NET 10, which this session did not have).
 7. **A client pilot's school.** Creatures are leashed on the machine that simulates them (the host), so a client pilot's own executor holds no school. Its dash (which needs the school's centroid) and its HUD counts are empty until the school is replicated to the pilot. Solo play and the host are unaffected.

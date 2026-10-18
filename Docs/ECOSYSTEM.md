@@ -11692,3 +11692,10 @@ cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impac
   - It is not the keeper, so it starves normally (§61.4).
   - Its leash is still behaviour only (§61.2): it swims at the vessel; it does not eat it.
   - Its bites are the vessel's petals, through the PvP gate, never mass.
+
+### 61.7 Round 7 (2026-10-18): a holder asks the creature's diet before it orders
+
+- **`Fauna.LeashCanEat(Prism)`** is the creature's own edibility rule, asked by a holder before it gives an order (`LightFauna` → `IsEdibleForHerbivore`, `Boid` → `IsEdibleForForager`; the base answers true).
+  - It reads; it changes nothing. The diet is still the creature's (§61.2): a holder can only skip a prism the creature would refuse, never make one edible.
+  - Without it a leashed creature was ordered to a prism its diet refused (its own domain in a cell with no nucleus, the nucleus claim, outside its pen) and hovered there for good. That is the "the fauna don't always listen" the designer saw.
+  - The Angler's `PickTarget` is its one caller. A shielded prism stays a candidate: only Space 5 paints one, and the squad cracks the shield (§61.5).

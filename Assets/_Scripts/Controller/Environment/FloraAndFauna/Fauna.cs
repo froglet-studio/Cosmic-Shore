@@ -208,6 +208,12 @@ namespace CosmicShore.Gameplay
         /// <summary>How far this creature's mouth reaches (it eats from this far; u).</summary>
         public virtual float LeashMouthReach => 0f;
 
+        /// <summary>Whether this creature's own diet would eat <paramref name="prism"/> now (domain, nucleus claim, pens,
+        /// shields), asked by a holder BEFORE it gives the order, so it never sends a creature to a meal it will refuse
+        /// on arrival. The same predicate the creature applies to an ordered meal; true for a species with no rule of its
+        /// own.</summary>
+        public virtual bool LeashCanEat(Prism prism) => prism && !prism.destroyed;
+
         /// <summary>Set the creature's velocity outright (a holder's throw: the creature leaves the ball at throw speed
         /// instead of easing up to it, and lands at its own swim speed). A no-op on a creature that does not integrate
         /// its own velocity, and on a puppet.</summary>

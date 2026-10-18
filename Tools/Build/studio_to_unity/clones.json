@@ -8,11 +8,11 @@
     "result": "50 mapped parameters match the artifact (studio_to_unity.py --check). Cloned the waves: the light shells in and out, the gravitational wave (lens + prisms), dieS, whSizeX. The shared log held no newer decision (only d16-d17, no settings snapshot)."
   },
   "Angler": {
-    "artifactVersion": "v9 (1792280676-7b6d)",
+    "artifactVersion": "v10 (1792282801-1706)",
     "artifact": "https://claude.ai/artifact/CwuwJcgaGkJqBYC5UHfdE6 (the Angler Command Lab, its own decision log)",
-    "pageSha": "efc7121a",
+    "pageSha": "63c426ea",
     "decisionsThrough": "2026-10-15T00:00:00.000Z",
     "clonedAt": "2026-10-17",
-    "result": "Seventh clone (round 6). The lit queue: a Sling-painter creature picks from every prism still lit by any throw (litQueue -> AnglerCommandExecutor.LitQueue), spread by PickRecent, so the school eats every lit prism newest first, one creature per prism down the queue. No parameter changed: 27 mapped, 0 drift. Earlier: v8 round 5, v7 round 4, v6 round 3, v5, v4, v3."
+    "result": "Eighth clone (round 7). The Sparrow's buttons: Lure (Mass) on A / Space, Dash (Time) on B / R, squad pick on X / Q, recall on Y / F (author_angler_assets.py CONTROLS + the element map). Game-only listen fix: the picked squad shows over the Mass card, PickTarget skips prisms the creature's own diet refuses (Fauna.LeashCanEat), the latch cluster skips body prisms. 27 mapped, 0 drift. Earlier: v9 round 6, v8 round 5, v7 round 4, v6 round 3, v5, v4, v3."
   }
 }

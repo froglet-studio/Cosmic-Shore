@@ -70,8 +70,9 @@ namespace CosmicShore.UI
         const string SeedHostName = "AnglerSeedButton";
         const float SeedIconSize = 80f;
         Image _seedIcon;
-        TextMeshProUGUI _seedCount, _faunaCount;
+        TextMeshProUGUI _seedCount, _faunaCount, _squadLabel;
         int _seedsShown = -1, _faunaShown = -1;
+        string _squadShown;
 
         /// <summary>
         /// Builds the omni card's icon (the Dolphin's pattern: a vessel-built icon bound to the core card, because what the
@@ -104,8 +105,20 @@ namespace CosmicShore.UI
                 Image massIcon = null;
                 for (int i = 0; i < abilityIcons.Count; i++)
                     if (abilityIcons[i].element == Element.Mass) massIcon = abilityIcons[i].icon;
-                if (massIcon) _faunaCount = MakeCount(massIcon.rectTransform, "FaunaCount");
+                if (massIcon)
+                {
+                    _faunaCount = MakeCount(massIcon.rectTransform, "FaunaCount");
+                    // The picked squad, over the Mass card. Blank while the whole school answers, so a pick (X) can never
+                    // silently leave a kind out of every order (the playtest's "the QuadFish don't always listen").
+                    _squadLabel = MakeCount(massIcon.rectTransform, "SquadLabel");
+                    var rt = _squadLabel.rectTransform;
+                    rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 1f);
+                    rt.sizeDelta = new Vector2(160f, 28f);
+                    _squadLabel.alignment = TextAlignmentOptions.Top;
+                    _squadLabel.text = "";
+                }
                 _faunaShown = -1;
+                _squadShown = null;
             }
         }
 
@@ -136,6 +149,16 @@ namespace CosmicShore.UI
             if (!_faunaCount || count == _faunaShown) return;
             _faunaShown = count;
             _faunaCount.text = count.ToString();
+        }
+
+        /// <summary>The picked squad over the Mass card ("QuadFish x3"); blank while the whole school answers.</summary>
+        public void SetSquad(string label)
+        {
+            if (!_squadLabel) EnsureGeneratedAbilityIcons();
+            label ??= "";
+            if (!_squadLabel || label == _squadShown) return;
+            _squadShown = label;
+            _squadLabel.text = label;
         }
 
         /// <summary>The seeds the omni crystals left, on the omni card; the icon is dim while none is held.</summary>

@@ -25,6 +25,8 @@ namespace CosmicShore.UI
         bool _isLocalPilotHud;
         float _lure01;
         int _seeds;
+        int _squadCount = -2;   // the squad label last written (-1 = the whole school)
+        string _squadName;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -38,6 +40,8 @@ namespace CosmicShore.UI
                                && vesselStatus.IsLocalUser;
             _lure01 = 0f;
             _seeds = 0;
+            _squadCount = -2;   // forces the first write
+            _squadName = null;
         }
 
         void Update()
@@ -48,6 +52,13 @@ namespace CosmicShore.UI
             _lure01 = Mathf.MoveTowards(_lure01, angler.Luring ? 1f : 0f, lureEaseRate * Time.unscaledDeltaTime);
             view.SetMass(Mathf.Max(angler.StrongestTame01, _lure01 * 0.15f), angler.Luring);
             view.SetFaunaCount(angler.TamedCount);
+            int squad = angler.SquadPicked ? angler.SquadCount : -1;
+            if (squad != _squadCount || (squad >= 0 && angler.SquadName != _squadName))   // the label is rebuilt only on a change
+            {
+                _squadCount = squad;
+                _squadName = squad >= 0 ? angler.SquadName : null;
+                view.SetSquad(squad >= 0 ? $"{_squadName} x{squad}" : "");
+            }
             view.SetSpace(angler.Hunting / school, angler.Painting && angler.PaintedCount > 0);
             view.SetFloraSeeds(angler.FloraSeedCount);
             if (angler.FloraSeedCount > _seeds) view.PlayOmniCrystalCollected();   // a crystal just left a seed

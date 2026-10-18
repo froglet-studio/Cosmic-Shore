@@ -133,7 +133,7 @@ namespace CosmicShore.Tests
             // (B and N were the historical bindings) is unreachable from that hand position, and
             // because there is ONE keyboardLabel per control it would also drag the dual-WASD
             // scheme with it or make the chip wrong for one of the two.
-            // F carries the fourth face button (Button4Action, pad Y; first bound by the Angler's dash, 2026-10-16). No
+            // F carries the fourth face button (Button4Action, pad Y; first bound by the Angler (its dash 2026-10-16, its recall since 2026-10-18)). No
             // QWER key is free in BOTH desktop schemes (W is the dual-WASD scheme's stick), and F is the home-row key
             // directly under R, so the resting left hand still reaches it.
             var cluster = new[]

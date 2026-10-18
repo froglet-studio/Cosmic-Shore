@@ -824,6 +824,8 @@ namespace CosmicShore.Gameplay
 
         protected override bool CanBeLeashed => forager && base.CanBeLeashed;
 
+        public override bool LeashCanEat(Prism prism) => IsEdibleForForager(prism);
+
         /// <summary>The holder's ordered meal if this forager may eat it (its own diet decides), else null.</summary>
         Prism LeashedMeal()
         {

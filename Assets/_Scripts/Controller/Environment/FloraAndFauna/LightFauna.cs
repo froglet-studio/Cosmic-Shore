@@ -1001,6 +1001,7 @@ namespace CosmicShore.Gameplay
         public override float LeashTopSpeed => data ? Mathf.Max(0f, data.maxSpeed) * GetAggressionSpeedMultiplier() : 0f;
         public override float LeashMinSpeed => data ? Mathf.Max(0f, data.minSpeed) : 0f;
         public override float LeashMouthReach => data ? Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier() : 0f;
+        public override bool LeashCanEat(Prism prism) => IsEdibleForHerbivore(prism);
 
         // --- Hunting (predator, per-frame) -----------------------------------
 

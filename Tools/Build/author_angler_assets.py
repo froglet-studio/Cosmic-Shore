@@ -17,7 +17,7 @@ WHAT IT MAKES
         - the flight model: the Stoat's two-stick transformer block on the SAME fileID, its script swapped to
           AnglerVesselTransformer (the lure brake), cruise 40 u/s and boost x2.75 (110 u/s) - the lab's flight numbers;
         - the executors: every Stoat executor removed; AnglerCommandExecutor added (config, turn-end channel);
-        - the bindings: X (Button3) Lure, A (Button1) Squad, B (Button2) Recall. The Sling painter reads the two
+        - the bindings: A (Button1) Lure, B (Button2) Dash, X (Button3) Squad, Y (Button4Action) Recall. The Sling painter reads the two
           TRIGGERS as analog depth, so neither trigger is bound to an action;
         - the AI: no blind ability cycle; the donor's boost policy kept (SkimRingAIPolicy, inert on a hull with no
           Squirrel tube bound - exactly as on the Stoat); no Angler autopilot yet (ANGLER.md follow-ups);
@@ -113,9 +113,10 @@ OMNI_FAUNA = ("9a71c56e49ff4ee493c70be766f1b335", "d6d14731fd184959b837ab47e378f
               "28c9a96388684fa0b3b10b9dbea56c70", "72fa98519b534214b89e9c29c44b89da", "62a30981533145a5b66304c04e7c50e0")            # StoatOverclockByCrystalEffect.asset (the Stoat's omni effect)
 
 # (control name, AnglerControl value, InputEvents it is bound to). The InputEvents numbers: Button1=6 (A / Space),
-# Button2=7 (B / R), Button3=8 (X / Q). The triggers (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling
+# Button2=7 (B / R), Button3=8 (X / Q), Button4Action=14 (Y / F). Mass (Lure) is on A and Time (Dash) on B, the Sparrow's
+# layout (the designer, 2026-10-18); the squad pick and recall took the freed X and Y. The triggers (RightStickAction=1, LeftStickAction=2) stay unbound: the Sling
 # painter reads their analog depth from the replicated InputStatus. LB raises no event in the game, so it is unused.
-CONTROLS = (("AnglerLure", 0, 8), ("AnglerSquad", 1, 6), ("AnglerRecall", 2, 7), ("AnglerDash", 3, 14))   # 14 = Button4Action (Y / F)
+CONTROLS = (("AnglerLure", 0, 6), ("AnglerSquad", 1, 8), ("AnglerRecall", 2, 14), ("AnglerDash", 3, 7))
 CONTROL_GUID = {name: guid_for(name + ".asset") for name, _, _ in CONTROLS}
 
 # Every script this vessel added: (path under Assets/_Scripts, guid).
@@ -381,9 +382,9 @@ def map_asset() -> str:
                   "SPENDS one creature: it leaves your school (your count drops by one) and chases that vessel until it "
                   "dies, each bite a scored contact Strike that takes petals. R_VesselActions/ANGLER.md.", 2, "", "") +
             entry(2, "Lure, Tame & Grow",
-                  "X, held: the esca lights and the hull stops. Wild herbivores in its reach turn to it, and one held in the "
+                  "A (Space on a keyboard), held: the esca lights and the hull stops. Wild herbivores in its reach turn to it, and one held in the "
                   "light for the taming time joins your school (the count on this card). Plants in the light grow three "
-                  "times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain.", 8,
+                  "times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain.", 6,
                   "Steal Fauna",
                   "The lure takes creatures from other holders too: another Angler's tamed fauna can be lured, tamed and "
                   "kept. Gated on IsUpgradeActive(Mass).") +
@@ -396,9 +397,9 @@ def map_asset() -> str:
                   "The brush paints shielded prisms too, and the squad cracks a painted prism's shield off when it arrives, "
                   "so it can be eaten. Gated on IsUpgradeActive(Space).") +
             entry(4, "Dash to the School",
-                  "Y (F on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured "
+                  "B (R on a keyboard): the hull dashes 75% of the way to the centre of every creature it leads, measured "
                   "when pressed, in 0.35 s. Time also speeds your tamed fauna: x1 at Time 0 to x2 at Time 10 "
-                  "(AnglerConfigSO.faunaSpeed).", 14, "", ""))
+                  "(AnglerConfigSO.faunaSpeed).", 7, "", ""))
 
 
 def control_asset(name: str, value: int) -> str:
@@ -729,11 +730,11 @@ def self_test() -> int:
         "Lure unbound": (PREFAB, lambda t: t.replace(CONTROL_GUID["AnglerLure"], "f" * 32)),
         "fusion entries missing": (FUSION, lambda t: t.replace(f"  - vessel: {CLASS_ID}\n", "  - vessel: 99\n")),
         "roster entry missing": (os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), lambda t: t.replace("VesselClassType.Angler", "")),
-        "the element map drifted": (MAP, lambda t: t.replace("Input: 14", "Input: 7")),
+        "the element map drifted": (MAP, lambda t: t.replace("Input: 7", "Input: 14")),
         "the combat-hit channel unwired": (PREFAB, lambda t: t.replace(f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_CHANNEL}, type: 2}}", "  onCombatHitLanded: {fileID: 0}")),
         "the seed sprite unwired": (HUD_VARIANT_PATH, lambda t: re.sub(r"  seedSprite: .*\n", "", t)),
         "the camera back in": (CAMERA, lambda t: t.replace(f"z: -{CHASE_BACK}", "z: -40")),
-        "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 14\n", "  - InputEvent: 13\n")),
+        "the dash unbound": (PREFAB, lambda t: t.replace("  - InputEvent: 7\n", "  - InputEvent: 13\n")),
         "no keeper species": (CONFIG_PATH, lambda t: re.sub(r"  companionFauna: .*\n", "  companionFauna: {fileID: 0}\n", t)),
         "the Stoat's impactor container back": (PREFAB, lambda t: t.replace(IMPACT_CONTAINER_GUID, STOAT_IMPACT_CONTAINER)),
         "the Stoat's Overclock on the omni list": (IMPACT_CONTAINER, lambda t: t.replace(OMNI_EFFECT_GUID, STOAT_OVERCLOCK)),

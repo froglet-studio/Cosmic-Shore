@@ -135,6 +135,21 @@ namespace CosmicShore.Gameplay
         public int SpeciesCount => _species.Count;
         /// <summary>The picked squad's name ("School" for all of them).</summary>
         public string SquadName => _squad < 0 || _squad >= _species.Count ? "School" : _species[_squad];
+
+        /// <summary>True while X has picked one kind: only that kind gathers and is thrown, the rest keep their orders.</summary>
+        public bool SquadPicked => _squad >= 0 && _squad < _species.Count;
+
+        /// <summary>How many creatures the picked squad holds (the whole school while none is picked).</summary>
+        public int SquadCount
+        {
+            get
+            {
+                if (!SquadPicked) return _tamed.Count;
+                int n = 0;
+                for (int i = 0; i < _tamed.Count; i++) if (_tamed[i].Species == _species[_squad]) n++;
+                return n;
+            }
+        }
         public int InBall => Count(LeashOrder.Gather);
         public int Hunting => Count(LeashOrder.Attack) + Count(LeashOrder.Thrown);
         /// <summary>Creatures spent by the Charge lock, out of the school, chasing their vessels.</summary>
@@ -730,7 +745,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < found; i++)
             {
                 var p = _query[i];
-                if (p && !p.destroyed && p.Domain == hit.Domain && !Fauna.IsShieldedMass(p)) cluster.Add(p);
+                if (p && !p.destroyed && p.Domain == hit.Domain && !Fauna.IsShieldedMass(p)
+                    && !(p is HealthPrism hp && hp.ResolveOwnerFauna())) cluster.Add(p);   // a creature's body is no meal
             }
             ReleaseClaim(m);
             m.Set = cluster;
@@ -853,6 +869,11 @@ namespace CosmicShore.Gameplay
                 {
                     var p = source[i];
                     if (!p || p.destroyed) continue;
+                    // Game-only (the lab's world is domain-blind): skip a prism this creature's own diet refuses - its
+                    // domain, the nucleus claim, its pen - or it hovers at a meal it will never take, holding its claim
+                    // and ignoring the queue. A shielded prism stays a candidate: only Space 5 paints one, and the squad
+                    // cracks the shield off when it arrives (UpdateOrders).
+                    if (!Fauna.IsShieldedMass(p) && !m.Creature.LeashCanEat(p)) continue;
                     _candidates.Add(p);
                     _candidatePositions.Add(p.transform.position);
                     _candidateClaims.Add(_claims.TryGetValue(p, out int n) ? n : 0);

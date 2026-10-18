@@ -18,6 +18,6 @@ namespace CosmicShore.Data
         OnlyRightStickAction = 11,
         OnlyLeftStickAction = 12,
         BothSticksAction = 13,//
-        Button4Action = 14,                 // Y (pad north) / F; first bound by the Angler's dash (2026-10-16)
+        Button4Action = 14,                 // Y (pad north) / F; first bound by the Angler (dash 2026-10-16, recall since 2026-10-18)
     }
 }
