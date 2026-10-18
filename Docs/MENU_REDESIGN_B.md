@@ -2823,3 +2823,6 @@ Measured at ship time on `claude/new-session-76hnyc` after the bleeding-edge mer
   - fly time by vessel as eight rows: flown hulls first as bars, then the Hangar's roster (`SO_Classlist_Classes`, the
     15 playable hulls; the record used `SO_Classlist_All`, which includes Grizzly, Termite and Falcon) dimmed with
     "Not flown yet".
+- The friends drawer's window is now fully opaque with the same surface as the pilot record (solid `SurfaceBlack` +
+  `SurfaceDark` wash 0.6, lattice over it); it was 0.9 glass (`author_menu_friends_drawer.py`, owner 2026-10-18:
+  "Make the friends panel bg the same and full opaque").

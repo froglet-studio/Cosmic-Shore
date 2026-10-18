@@ -147,13 +147,19 @@ def orb_node(parent):
     return o
 
 
+WINDOW_TINT = 0.6   # the same wash as author_menu_profile.RECORD_TINT
+
+
 def window_node(parent):
     w = parent.child(N("Drawer/Window", "Window", R((0, 0.5), None, (-NORMAL[0] - 8, 0), NORMAL, (0, 0.5))))
     w.add("cg", 225, H.canvas_group(False))
     fill = w.child(N("Drawer/Window/Fill", "Fill", STRETCH))
-    # Glass, not a slab (the user, 2026-10-16: "I liked the transparent backgrounds way more"); 0.9 since the party
-    # panel stopped drawing its own slab (2026-10-17, "Make it more opaque": Home read through it). The lattice draws over it.
-    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceVeryDark", 0.9), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    # Fully opaque, the pilot record's surface (the owner, 2026-10-18: "Make the friends panel bg the same and full
+    # opaque"): solid SurfaceBlack with a SurfaceDark wash, so it reads navy, not black. It was glass at 0.9 (2026-10-16 /
+    # 10-17). The lattice draws over both.
+    fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"), K.kit_sprite("kit_sliver14_fill"), True, raycast=True))
+    tint = w.child(N("Drawer/Window/Tint", "Tint", STRETCH))
+    tint.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark", WINDOW_TINT), K.kit_sprite("kit_sliver14_fill"), True))
     # Rev 6: the living lattice behind the panel and a Space (people) rim round it. Rev 7: the two-layer window lattice
     # (with its element energy) rather than the faint panel one - the party panel no longer covers it with a slab.
     w.children.append(M.window_lattice_node("Drawer/Window/Lattice"))
