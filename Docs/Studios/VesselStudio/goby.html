@@ -1131,15 +1131,16 @@
   const pistolMesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 14, 1, true), pistolMat); scene.add(pistolMesh);
   const ribbonGeo = new THREE.BufferGeometry(), RIBN = 180; ribbonGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RIBN * 3 * 3), 3));
   const ribbonLine = new THREE.LineSegments(ribbonGeo, new THREE.LineBasicMaterial({ color: 0xff8a3d, transparent: true, opacity: 0.7 })); ribbonLine.frustumCulled = false; scene.add(ribbonLine);
-  const flareGeo = new THREE.BufferGeometry(); flareGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(64 * 3), 3));
-  const flarePts = new THREE.Points(flareGeo, new THREE.PointsMaterial({ color: 0xffd28a, size: 5, sizeAttenuation: true })); flarePts.frustumCulled = false; scene.add(flarePts);
+  // the flares and the vortex rings are VOLUMES lit by the scene, flat-shaded (nothing in the world looks flat, LOCKED
+  // 2026-10-18, Docs/claude/SHADERS_AND_PERFORMANCE.md): a flare is a 1.5 u lit box, as Unity draws it
+  const flareMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), new THREE.MeshStandardMaterial({ color: 0xffd28a, emissive: 0x3a2a08, roughness: 0.4, metalness: 0.1, flatShading: true }), 64); flareMesh.count = 0; flareMesh.frustumCulled = false; scene.add(flareMesh);
   const fxGeo = new THREE.BufferGeometry(); fxGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(16 * 2 * 3), 3));
   const fxLines = new THREE.LineSegments(fxGeo, new THREE.LineBasicMaterial({ color: 0xb98bff })); fxLines.frustumCulled = false; scene.add(fxLines);
   const thinkGeo = new THREE.BufferGeometry(); thinkGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
   const thinkMat = new THREE.LineBasicMaterial({ color: 0x4be38f }); const thinkLine = new THREE.Line(thinkGeo, thinkMat); thinkLine.frustumCulled = false; scene.add(thinkLine);
   const booms = []; for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), new THREE.MeshBasicMaterial({ color: 0xffb070, transparent: true, opacity: 0.5, depthWrite: false })); m.visible = false; scene.add(m); booms.push(m); }
   let crystalMeshes = [];
-  const VORT_N = 6, torusGeo = new THREE.TorusGeometry(1, 0.16, 10, 48), torusMat = new THREE.MeshBasicMaterial({ color: 0x9fe8ff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending });
+  const VORT_N = 6, torusGeo = new THREE.TorusGeometry(1, 0.16, 6, 24), torusMat = new THREE.MeshStandardMaterial({ color: 0x9fe8ff, emissive: 0x123a44, roughness: 0.35, metalness: 0.1, flatShading: true });   // a faceted torus, its tube a share of its radius
   const tori = []; for (let i = 0; i < VORT_N; i++) { const m = new THREE.Mesh(torusGeo, torusMat); m.visible = false; scene.add(m); tori.push(m); }
   const ZAX = new THREE.Vector3(0, 0, 1);
   const dum = new THREE.Object3D(), col = new THREE.Color(), tq = new THREE.Quaternion(), tm = new THREE.Matrix4(), tv = new THREE.Vector3(), tv2 = new THREE.Vector3(), tv3 = new THREE.Vector3();
@@ -1194,9 +1195,9 @@
       }
       ribbonGeo.setDrawRange(0, o / 3); ribbonGeo.attributes.position.needsUpdate = true;
     }
-    const fa = flareGeo.attributes.position.array; let fn = 0;
-    for (const F of W.flares) { if (fn >= 64) break; fa[fn * 3] = F.p.x; fa[fn * 3 + 1] = F.p.y; fa[fn * 3 + 2] = F.p.z; fn++; }
-    flareGeo.setDrawRange(0, fn); flareGeo.attributes.position.needsUpdate = true;
+    let fn = 0;
+    for (const F of W.flares) { if (fn >= 64) break; dum.position.set(F.p.x, F.p.y, F.p.z); dum.quaternion.identity(); dum.scale.setScalar(1); dum.updateMatrix(); flareMesh.setMatrixAt(fn++, dum.matrix); }
+    flareMesh.count = fn; flareMesh.instanceMatrix.needsUpdate = true;
     const la = fxGeo.attributes.position.array; let ln = 0, bi = 0;
     for (const f of W.fx) {
       const age = W.t - f.t;
@@ -1679,7 +1680,7 @@
     for (const v of W.vortices) {
       const m = ribMapFast(W.rb, v.c, xLo, xHi, true, MPR); if (!m.ok) continue;
       const F = ribFrameAt(W.rb, m.x, FR), fade = clamp(v.life / 0.35, 0, 1);
-      PW.addRing(m.x, m.h, -m.d, vdot(v.n, F.T), vdot(v.n, F.U), -vdot(v.n, F.R), P.pVortexR, 0.16 * P.pVortexR, 28, 6, alphaC(cA, C_RING, fade), 1, false);
+      PW.addRing(m.x, m.h, -m.d, vdot(v.n, F.T), vdot(v.n, F.U), -vdot(v.n, F.R), P.pVortexR, 0.16 * P.pVortexR * (0.35 + 0.65 * fade), 28, 6, alphaC(cA, C_RING, 1), 0, true);   // a lit faceted volume on the solid pass (nothing in the world looks flat); it thins as it fades
     }
     for (const F of W.flares) {
       const m = ribMapFast(W.rb, F.p, xLo, xHi, true, MPR); if (!m.ok) continue;
