@@ -342,8 +342,9 @@ leaving them as an absence.
   reaches this ability where it previously reached nothing. Worth a play-test before anyone
   authors a Time row here.
 - **2026-10-16 Rhino kit — needs a playtest.** Three changes reach this mode. (1) **The AI now
-  ramps**: `RampBoostAIPolicySO` (`RhinoAIBoostPolicy.asset`) arms the ramp on straights and ends
-  it before turns, so AI lap times change completely and the approach/commit distances above are
+  ramps**: `RampBoostAIPolicySO` (`RhinoAIBoostPolicy.asset`) ramps on a straight that pays the
+  wind-up back, brakes on the ramp to a corner speed and lets go at sharp corners
+  (`AI/AI_BOOST.md`, Ramp), so AI lap times change completely and the approach/commit distances above are
   now load-bearing rather than theoretical. The AI also swings the sword (`RhinoSwordAutopilot`),
   so it now interferes with a rival's line. (2) **Momentum** (Time L5) — above 588 u/s (70% of
   840) danger prisms cannot drain the Rhino. The card authors no Time row, so only the comeback

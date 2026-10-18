@@ -334,6 +334,17 @@ run the `/reorient` skill first and act on its verdict before shipping.
   For each name that still exists (`git ls-remote origin refs/heads/<name>`), run
   `git fetch --depth=50 origin <name>` and then
   `git log --oneline origin/<base>..FETCH_HEAD -- <your changed files>`.
+- **An add/add conflict on a `.meta` is two GUIDs for one asset path, and taking one side wholesale
+  orphans every reference to the other.** Two branches each created `RampBoostAIPolicySO.cs` and
+  `RhinoAIBoostPolicy.asset` (2026-10-17, `cece/relaxed-hopper-r62hbd` against bleeding-edge), so
+  the file names matched and the guids did not. `git checkout --theirs` on the four files is the
+  right resolve, but the branch's own `Rhino.prefab` still pointed `boostPolicy` at the LOSING
+  asset guid. It surfaced here only because both sides had edited that prefab line. Had the other
+  branch not wired the prefab, the line would have auto-merged to a guid no file carries: a null
+  policy, and "the AI quietly never ramps" in play. After taking a side on any `AA` `.meta`,
+  `git grep` the losing guid across `Assets/` and repoint every hit. Two quicker tells that the
+  other copy is the one to keep: its doc comment names your branch as a source, or a
+  `Docs/TEAM_TASKS.md` row already flags the duplicate.
 - **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
   they do not — ask about scope before you discard either.** The collision above assumes two
   implementations of one fix. The other shape is two fixes at different ALTITUDES, and there

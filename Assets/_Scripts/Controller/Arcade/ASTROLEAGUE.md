@@ -151,8 +151,9 @@ on the server with billiard thinking:
 
 **2026-10-16 — the AI Rhino now has two levers this section says the AI lacks** (both vessel-side,
 not mode-side, so the "only lever" claim above still holds for the *mode*): `RampBoostAIPolicySO`
-(`RhinoAIBoostPolicy.asset`) arms the ramp on straights (the AI never ramped before — only a human
-input strategy raised the gesture), and `RhinoSwordAutopilot` swings the blade at the nearest
+(`RhinoAIBoostPolicy.asset`) ramps on a straight that pays the wind-up back, brakes on the ramp to
+a corner speed and lets go at sharp corners (`AI/AI_BOOST.md`, Ramp; the AI never ramped before —
+only a human input strategy raised the gesture), and `RhinoSwordAutopilot` swings the blade at the nearest
 hostile prism in reach and holds the energize stance near super-shielded mass — which this court's
 edge lining is. Whether the autopilot's strokes help or hurt a striker's ball contact, and whether
 it burns energize on the lining, is unplayed. Needs a playtest.

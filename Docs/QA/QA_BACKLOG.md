@@ -1822,7 +1822,8 @@ arena and moves at most every 1.5 s.)
 **Source:** PR #852. `GameModes.Headlong = 49`, Rhino-only closed circuit (8 rings a lap, **24**
 to win) built around the graded ramp boost. "Not editor-verified … nobody has flown it." The AI
 was never tuned for Rhino speed — and until 2026-10-16 it never ramped at all (only a human input
-strategy raised the ramp gesture); `RampBoostAIPolicySO` now arms it on straights. Its doc points to
+strategy raised the ramp gesture); `RampBoostAIPolicySO` now ramps on straights that pay back and
+brakes on the ramp into each ring (`_Scripts/Controller/AI/AI_BOOST.md`, Ramp). Its doc points to
 a checklist entry that does not exist.
 Reference: `_Scripts/Controller/Arcade/HEADLONG.md` § 8.
 
@@ -2009,9 +2010,11 @@ speed (or `IsBoosting` true) after its pilot has turned off.
 writes no analog mirrors), so a half-pull is not testable on touch.
 
 ### QA-RHINO-AI ⬜ — AI Rhinos ramp on straights, swing at prisms and energize near super-shields
-**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`). The AI Rhino never ramped (only a human input
-strategy raises the ramp gesture) and never swung. `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset`
-arms the ramp on straights and ends it before turns; `RhinoSwordAutopilot` (Rhino root) writes the
+**Source:** `cece/relaxed-hopper-r62hbd` (`8a3b4161`; its ramp driver was replaced by bleeding-edge's in
+merge `5b09c6896`). The AI Rhino never ramped (only a human input strategy raises the ramp gesture) and
+never swung. `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` ramps on a straight that pays the wind-up
+back, brakes ON the ramp to a corner speed and lets go at a sharp corner (`AI_BOOST.md`, Ramp);
+`RhinoSwordAutopilot` (Rhino root) writes the
 trigger mirrors — a stroke at the nearest hostile prism in reach (0.15 s think, 0.3 s stroke, 0.45 s
 rest), the energize stance near super-shielded mass or on a ≥ 75% meter. The AIPilot's old ability
 list (GrowTrail, flickering every frame) is empty. Reference: `_Scripts/Controller/AI/AI_BOOST.md`.
@@ -2024,8 +2027,8 @@ list (GrowTrail, flickering every frame) is empty. Reference: `_Scripts/Controll
 5. In freestyle, take control of the Rhino, then hand it back to the autopilot (centre click / Y)
    mid-swing.
 
-**PASS:** the AI Rhino speeds up on straights and slows before corners (it no longer cruises at
-~50 u/s); its sword swings at nearby prisms in short strokes and breaks some; near super-shielded
+**PASS:** the AI Rhino speeds up on straights and slows into each ring without overshooting the mouth
+(it no longer cruises at ~50 u/s); its sword swings at nearby prisms in short strokes and breaks some; near super-shielded
 mass (or with a nearly full meter) it holds the stance, the blade turns danger-red and super-shields
 pop; on hand-over the triggers let go cleanly and the human's control is unaffected.
 **FAIL:** an AI Rhino that never ramps or never swings · a blade stuck in one pose · an AI that

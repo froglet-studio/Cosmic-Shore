@@ -142,9 +142,10 @@ and the owner, like every crystal's.
 ## 7. AI
 
 - **Ramp** - `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` on the Rhino's `AIPilot`. Only a
-  human input strategy raises `FullSpeedStraightAction`, so the AI never ramped. The driver arms the
-  ramp on a straight with runway, re-arms it if the grading let it fall off, and `End()`s it before
-  the turn - a graded ramp's own release is the top of its slope, not an end.
+  human input strategy raises `FullSpeedStraightAction`, so the AI never ramped. The driver ramps on a
+  straight whose leg pays the wind-up back, brakes ON the ramp to a corner speed, and `End()`s it at
+  a sharp corner (a graded ramp's own release is the top of its slope, not an end); it re-arms a ramp
+  the grading let fall off. `Controller/AI/AI_BOOST.md`, Ramp.
 - **Sword** - `RhinoSwordAutopilot` (Rhino root) writes the trigger MIRRORS on the machine that owns
   the AI's input, so the shipped sword code poses, energizes and replicates it like a human's. Every
   0.15 s at rest it picks: hold the energize stance when the meter can pay and hardened mass is near
@@ -214,7 +215,7 @@ deleted (`ABILITY_LOCKUP.md`).
 | Momentum | `VesselElementalImmunity.topSpeedFraction` (Rhino root) | 0.7 |
 | Surge | `RhinoVesselSurgeByCrystalEffect` `surgeSeconds` / `energyFill` / `elementBoost` | 6 / 1 / 0.2 |
 | AI sword | `RhinoSwordAutopilot` think / stroke / rest / margin / when-full | 0.15 / 0.3 / 0.45 / 0.05 / 0.75 |
-| AI ramp | `RhinoAIBoostPolicy` align / runway / `minRearmSeconds` | fleet defaults / 0.5 s |
+| AI ramp | `RhinoAIBoostPolicy` `cornerSpeed` / `minCornerSpeed` / `minSpeedGain` / `cornerReleaseDegrees` / `minRearmSeconds` | 600 / 160 / 50 / 30° / 0.5 s (align / runway: fleet defaults) |
 
 Budget: at most 16 x 6 = 96 prisms per window, each <= 2 x 0.8 x 10 = 16 volume at rest (x2.5 at
 Mass 10). Measure it against Cleave's and Astro League's phase thresholds before tuning up.

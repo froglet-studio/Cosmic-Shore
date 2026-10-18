@@ -255,7 +255,7 @@ fleet, which is the point of it being a law.
 | `returnPerSecond` | same asset | **120** (6.6 s coast back to cruise once disengaged) |
 | `engageSFX` | same asset | BoostActivate (13) |
 | `RotationThrottleScaler` | `_Prefabs/Spacevessels/Rhino.prefab` | **0.2** (0.5 until 2026-09-25) — the turn-radius asymptote, `180/(pi*r)` = 286 u |
-| AI arming | `RampBoostAIPolicySO` → `RhinoAIBoostPolicy.asset` on the Rhino's AIPilot | arms on straights, ends before turns (`minRearmSeconds` 0.5) — new 2026-10-16 |
+| AI arming | `RampBoostAIPolicySO` → `RhinoAIBoostPolicy.asset` on the Rhino's AIPilot | ramp on a straight that pays back, brake ON the ramp to a corner speed, let go at a sharp corner (`Controller/AI/AI_BOOST.md`, Ramp) — first AI ramp 2026-10-14/16, rebuilt 2026-10-17 |
 | `followOffset.z` | `_SO_Assets/Camera/RhinoCameraSettingsSO.asset` | **-70** (was -120) |
 
 `returnPerSecond` is the **feel** dial, not a safety one: at 120 the speed bleeds over seconds
@@ -311,8 +311,9 @@ how a platform law starts reading like a vessel feature again.
    CIRCLE should be bigger, ~6.5x for a 16.8x speed increase (it was ~3.5x for 20x at the old
    0.5 scaler). If it feels twitchy rather than
    authoritative, `RotationThrottleScaler` is the dial (and it moves the asymptote with it).
-3c. **AI Rhino.** Add one and watch it fly — it should now RAMP on straights and end the ramp
-   before turns (`RampBoostAIPolicySO`, new 2026-10-16). *Until then the AI never ramped at all:
+3c. **AI Rhino.** Add one and watch it fly — it should now RAMP on straights that pay the
+   wind-up back, brake on the ramp into each ring and let go at sharp corners (`RampBoostAIPolicySO`;
+   `Controller/AI/AI_BOOST.md`, Ramp). *Until then the AI never ramped at all:
    the full-speed-straight gesture is raised only by a human input strategy, so this step's old
    wording ("an AI should also bleed speed into its turns") described a ramp the AI never had.*
 3d. **Peers (MPPM two clients).** Ramp on A, then steer hard: B's copy of A must bleed too and

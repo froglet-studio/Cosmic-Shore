@@ -692,7 +692,8 @@ by seat so they never all raid at once.
 arena is super-shielded — but it is the constraint that makes "no shielded mass" a rule rather than
 a preference. See above. *(Stale as of 2026-10-16: `RhinoSwordAutopilot` now swings the AI's blade
 and energizes near super-shielded mass or on a ≥ 75% meter, and `RampBoostAIPolicySO` now ramps it
-on straights — before this the AI never ramped, so every transit speed this section was watched at
+on straights that pay the wind-up back and brakes on the ramp into corners (`AI/AI_BOOST.md`, Ramp)
+— before this the AI never ramped, so every transit speed this section was watched at
 was cruise. Both change AI pace; see the follow-up.)*
 
 ## End condition
@@ -978,8 +979,8 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   Mass-scaled volume (×1 → ×2.5). That is new player-laid mass in a mode whose collider ladder has
   23% headroom and whose score is destroying mass; `cleave_budget` models none of it. At Mass L5
   they are laid as **danger** prisms, which adds to the arenas' danger traps. (2) **The AI now
-  ramps and swings**: `RampBoostAIPolicySO` arms the ramp on straights (the AI never ramped
-  before), and `RhinoSwordAutopilot` strokes at the nearest hostile prism and energizes near
+  ramps and swings**: `RampBoostAIPolicySO` ramps on straights that pay the wind-up back and
+  brakes on the ramp into corners (`AI/AI_BOOST.md`, Ramp; the AI never ramped before), and `RhinoSwordAutopilot` strokes at the nearest hostile prism and energizes near
   super-shields or on a ≥ 75% meter — so AI transit speed and cut rate both change, and the
   1,200 / 1,500 pacing flag above now has a moved baseline. (3) **"AI cannot energize, so the mode
   has no shielded mass"** (§ "Nothing is shielded", `cleave_budget` check 3) no longer holds as a

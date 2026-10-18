@@ -94,7 +94,9 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
   prisms cannot drain the Rhino). The omni crystal is now a **Surge**
   (`RhinoVesselSurgeByCrystalEffect`); the per-petal sword crystal burst is deleted. Blade pose,
   energy, energize phase and Surge replicate (`RhinoSwordNetworkRelay`, trigger mirrors). AI:
-  `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` and `RhinoSwordAutopilot`. HUD: the row binds
+  `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` (this branch's cut was replaced by bleeding-edge's
+  ramp / brake / off driver in merge `5b09c6896`; "The Rhino AI brakes on the ramp" below,
+  `AI/AI_BOOST.md`) and `RhinoSwordAutopilot`. HUD: the row binds
   4/4 with placeholder icons; Charge lit while energized + cooldown veil, Mass lit while afterimages
   lay, Time lit while Momentum holds (superseded 2026-10-17: Time lit while boosting, see item 12).
 
@@ -158,7 +160,7 @@ run). Offline: `Tools/Build/unity_refcompile` player + editor configs, 0 errors;
 | Surge energy fill | same, `energyFill` | 1 |
 | Charge → energy per cut | `RhinoSkimmerDamagePrismEffect.asset` `chargeEnergyGainMultiplier` | ×1 → ×2, floor ×0.5 (on 0.04 / kill, 0.12 / super-shield pop) |
 | Momentum threshold | `Rhino.prefab` `VesselElementalImmunity` `topSpeedFraction` | 0.7 (588 of 840 u/s) |
-| AI ramp re-arm | `RhinoAIBoostPolicy.asset` `minRearmSeconds` | 0.5 s (base-class 12° / 0.35 / 1.5 s / 0.5 s) |
+| AI ramp re-arm | `RhinoAIBoostPolicy.asset` `minRearmSeconds` | 0.5 s (corner speed / brake knobs: `AI/AI_BOOST.md`, Ramp) |
 | AI sword think | `Rhino.prefab` `RhinoSwordAutopilot` `thinkSeconds` | 0.15 s |
 | AI stroke / rest | same, `strokeSeconds` / `restSeconds` | 0.3 s / 0.45 s |
 | AI energize margin | same, `energizeMargin` | 0.05 over the 0.1 cost |

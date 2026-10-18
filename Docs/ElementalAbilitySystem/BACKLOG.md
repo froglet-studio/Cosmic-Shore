@@ -766,9 +766,10 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
   trigger mirrors (press/release events drive the pose only for touch, which writes no mirrors).
   Energy, energize phase and surge are owner-authoritative through `RhinoSwordNetworkRelay` on the
   Rhino root; non-owners mirror them.
-- **AI never ramped or energized.** `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` arms the ramp
-  on straights and ends it before turns (only a human input strategy raised
-  `FullSpeedStraightAction`, so `AI_BOOST.md`'s "the Rhino AI could already boost" was wrong).
+- **AI never ramped or energized.** `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` ramps on a
+  straight that pays the wind-up back, brakes ON the ramp to a corner speed and lets go at a sharp
+  corner (`AI_BOOST.md`, Ramp; only a human input strategy raised `FullSpeedStraightAction`, so
+  `AI_BOOST.md`'s old "the Rhino AI could already boost" was wrong).
   `RhinoSwordAutopilot` writes the trigger mirrors on the owning machine: strokes at the nearest
   hostile prism in reach, holds the energize stance near super-shielded mass or on a ≥ 75% meter.
   The AIPilot abilities list is empty (its one entry was the dead `GrowTrail`).
@@ -815,4 +816,12 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
   finding #5 of `FLEET_GAPS.md` §3 again — `guard_state` reading a serialized bool's C# default —
   on a guard that sits ABOVE the gate rather than on it. Breaker is really gated only at
   `RhinoSkimmerDamagePrismEffectSO`. *(tool)*
+- **[gate false positive] `check_vessel_on_vessel_motion.py` is red on bleeding-edge as well as here
+  (measured 2026-10-18, exit 1 on both trees: "1 PROBLEM(S) (13 victim-facing effect(s) over 3
+  families)").** It flags `VesselImpulseByExplosionEffectSO.cs:75` (`ModifyVelocity`), but the
+  effect returns unless `impactee.SourceVessel` IS the vessel it hit (`:47`). It is the Grizzly's
+  self-launch, wired only into `GrizzlyExplosionImpactorDataContainer.asset`, and moves no
+  opponent. The gate reads the call and not the self-only guard. Fix the GATE (recognise the
+  `SourceVessel == victim` early return, or a reasoned allow-list entry with a negative control),
+  never the effect. Until then the gate shows red on every branch. *(tool)*
 - 5.2 (Rhino Time playtest) stays open, above.

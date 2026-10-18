@@ -143,9 +143,9 @@ approach point, then the next ring after the mouth). A mode that does not say ge
 **The first cut's defect** (2026-10-14 to 10-17): it let go 0.5 s from every objective, after which the released ramp
 coasted down from 840 u/s at 120 u/s² and the Rhino overshot mouths (`REGATTA_AI_ROADMAP.md`: 67.9 s at I1 in the
 deleted page's model). It also never re-armed a ramp the grading let fall off. The re-arm (`minRearmSeconds`) and the
-explicit end are taken from the other cut of this driver on `cece/relaxed-hopper-r62hbd` (Garrett's Rhino branch, not
-merged), which this file will conflict with when that branch lands: keep this one's states and that one's executor
-changes (`TrackedSpeed`, live Time).
+explicit end are taken from the other cut of this driver on `cece/relaxed-hopper-r62hbd` (Garrett's Rhino branch). That
+branch's merge of bleeding-edge (`5b09c6896`, 2026-10-18) kept this file's driver whole, repointed `Rhino.prefab` at this
+asset's guid, and kept that branch's executor changes (`VesselTransformer.TrackedSpeed`, live Time).
 
 **Offline check** (`Tools/Build/rhino_drive_sim.py`, a point-mass model of the ramp executor and the gate steering on
 the Regatta courses; a model without break-off or rotation-follow lag, not the game). It defaults to Regatta's
