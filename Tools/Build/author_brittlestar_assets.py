@@ -181,6 +181,13 @@ CAMERA_SCRIPT = "fd4e6f3597f7439ba7333b35a3a9e164"
 VESSEL_CONTAINER_SCRIPT = "fde7d8c2dacf45f99e46799ffeea15e6"
 SKIMMER_CONTAINER_SCRIPT = "68b3e74284f14e32a6e21b5fb8c3e8ad"
 CARD_ACTIVE, CARD_INACTIVE = "b5a17e5c3d0f4a7e9c1b2d4f6a8c0e21", "b5a17e5c3d0f4a7e9c1b2d4f6a8c0e22"
+# the rest of the card set, rendered from the MODEL by Tools/Build/vessel_model/render_cards.py (2026-10-18), which
+# names a new PNG md5("cosmic-shore-card:" + its repo path); BrittleStar.png / BrittleStar_Inactive.png keep the guids above
+def _model_card(rel):
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+CARD_SILHOUETTE = _model_card("Assets/_Graphics/CardImages/BrittleStar_silhouette.png")
+CARD_LARGE = _model_card("Assets/_Graphics/CardImages/BrittleStar_large.png")
+CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/BrittleStar_Hangar_Preview.png")
 # The Stoat's four icon sprites (by element) and the Brittle Star's that replace them in the HUD variant.
 ICON_SWAP = {"ebdd346798d474b5a5ab2364683a8725": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_RingDetonation.png").hexdigest(),
              "783faf75777a15c5b2241cfc3e2691d3": hashlib.md5(b"CosmicShore/BrittleStarIcons/BrittleStar_CreationMode.png").hexdigest(),
@@ -630,11 +637,11 @@ def class_asset() -> str:
             "  InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}\n"
             f"  IconActive: {{fileID: 21300000, guid: {CARD_ACTIVE}, type: 3}}\n"
             f"  IconInactive: {{fileID: 21300000, guid: {CARD_INACTIVE}, type: 3}}\n"
-            "  PreviewImage: {fileID: 0}\n"
-            "  SquadImage: {fileID: 0}\n"
+            f"  PreviewImage: {{fileID: 21300000, guid: {CARD_PREVIEW}, type: 3}}\n"
+            f"  SquadImage: {{fileID: 21300000, guid: {CARD_LARGE}, type: 3}}\n"
             "  TrailPreviewImage: {fileID: 0}\n"
-            "  CardSilohoutteActive: {fileID: 0}\n"
-            "  CardSilohoutteInactive: {fileID: 0}\n"
+            f"  CardSilohoutteActive: {{fileID: 21300000, guid: {CARD_ACTIVE}, type: 3}}\n"
+            f"  CardSilohoutteInactive: {{fileID: 21300000, guid: {CARD_SILHOUETTE}, type: 3}}\n"
             "  Abilities: []\n"
             "  Games: []\n"
             "  TrainingGames: []\n"
@@ -921,7 +928,7 @@ def check(files: "dict[str, str]") -> "list[str]":
          "CrystalHullFusionConfig does not carry exactly four Brittle Star entries")
     for asset, guid in ((os.path.join(ROOT, "Assets/_Graphics/CardImages/BrittleStar.png.meta"), CARD_ACTIVE),
                         (os.path.join(ROOT, "Assets/_Graphics/CardImages/BrittleStar_Inactive.png.meta"), CARD_INACTIVE)):
-        need(f"guid: {guid}" in files.get(asset, ""), f"{os.path.basename(asset)} missing (render_brittlestar_card_icon.py)")
+        need(f"guid: {guid}" in files.get(asset, ""), f"{os.path.basename(asset)} missing (vessel_model/render_cards.py BrittleStar)")
     enum = files.get(os.path.join(SCRIPTS, "Data/Enums/VesselClassType.cs"), "")
     need(re.search(r"\bBrittleStar = %d," % CLASS_ID, enum), "VesselClassType has no BrittleStar = 16")
     roster = files.get(os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs"), "")

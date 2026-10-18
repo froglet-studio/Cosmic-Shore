@@ -90,7 +90,7 @@ runs **Bake Crystal Hull Fusions** for it.
 **The procedural placeholder** is kept in the tree until the owner accepts the model, then retired:
 `BrittleStarHullForm.cs` (still the source of the ring's numbers and the muzzle positions), `BrittleStarHullBuilder.cs`
 (no longer on the prefab; it now implements `BrittleStarHullSource` too, so putting it back on the hull's fileID restores
-it), `Tools/Build/brittlestar_harness/` and `render_brittlestar_card_icon.py`. The bullets below describe the shared
+it), `Tools/Build/brittlestar_harness/` (`render_brittlestar_card_icon.py` was retired 2026-10-18: it drew this form over the model's card). The bullets below describe the shared
 design and, where they name parts, the placeholder's:
 
 - **Ring size** (Garrett, 2026-10-14): radius **6** — 2.5× the first cut — so Creation Mode's five corner trails lie
@@ -111,7 +111,7 @@ design and, where they name parts, the placeholder's:
   gone while thrown and **blooms back** (ease-out-back) while rebuilt. The drawn hull leans 28° into a full-stick turn
   (fleet-scale puppetry, vessel rule 24). Channel discipline: the animation writes transforms only; the builder writes
   vertices and the muzzles' positions.
-- **Card icons** are renders of this hull (`Tools/Build/render_brittlestar_card_icon.py`), the four ability icons are
+- **Card images** (icon, inactive, silhouette, large, hangar preview) are renders of the MODEL (`Tools/Build/vessel_model/render_cards.py BrittleStar`, `--check`), the four ability icons are
   `Tools/Build/author_brittlestar_icons.py` (the Thresher's icon language).
 
 ## 3. The abilities (`BrittleStarExecutor`, tuning `BrittleStarConfigSO`)
@@ -369,7 +369,7 @@ cluster (≥ 18), or into any cluster when its stock is full (a crystal would be
 | Tests | `_Scripts/Tests/Editor/BrittleStarTests.cs` (29: five on the cords) |
 | Creation tool | `Tools/Build/author_brittlestar_assets.py` (`--check`, `--self-test`) |
 | Offline test runner | `Tools/Build/brittlestar_harness/run.sh` (`--self-test`, `--obj DIR`) |
-| Art | `Tools/Build/author_brittlestar_icons.py`, `Tools/Build/render_brittlestar_card_icon.py`; concept art `Docs/Studios/BrittleStar/` |
+| Art | `Tools/Build/author_brittlestar_icons.py`, `Tools/Build/vessel_model/render_cards.py`; concept art `Docs/Studios/BrittleStar/` |
 
 ### How the prefab was made
 
