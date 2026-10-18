@@ -67,6 +67,34 @@ ones.
   conserved mass (see **Mass**): only active forces — vessel abilities and
   fauna consumption — remove a prism. Whether a prism is a lifeform's health-
   prism or vessel-spawned makes no difference to this rule.
+- **Prism movement** — *a prism a force displaces is a MOVING prism, and every moving prism meets
+  the world by one rule.* Added at the prompter's request (2026-10-14) once two vessels had
+  introduced it: the Rhino's hull ploughs prisms aside (`RHINO_PLOUGH.md`) and the Stoat's dipole —
+  every black hole — pulls them (`BLACK_HOLE.md`, `STOAT_DIPOLE.md`). It extends **Prisms** rather
+  than sitting beside them: mass that was static is now mass with a path. **The expectations**
+  (`PrismMotion`, `Docs/PRISM_MOTION.md`): (1) **a moving prism that runs into another prism
+  destroys BOTH** — scored to the force behind the motion, devastating (an ordinary shield is no
+  answer); (2) **"runs into" means the two prisms go from apart to touching over the step** — as
+  their exact oriented BOXES when few prisms move (a plough throw, a sparse field), as the SPHERES of
+  their volumes when many do — a three-level LADDER by moving count (`PrismMotionConfig`: level 1 ≤ 64
+  boxes + the high-res destruction detail level (the silver gnomon cut, `PRISM_ANIMATION.md` §4.12); level 2 ≤ 256 boxes + the explosion;
+  level 3 spheres + the explosion; down at three quarters of each line). The count changes the
+  precision and the look, never the rule. Neighbours already touching when the step begins — a trail falling
+  together — are at rest, not a collision; (3) **super-shielded mass is
+  the one survivor**: it is indestructible, so it deflects and only the mover goes, and no force
+  moves it in the first place; (4) **the move is final the frame it is made** — collider, spatial
+  index and shell agree with the transform (the movers contract, `PRISM_ANIMATION.md` §3.6) — so a
+  moving prism is always tested where it actually is. **What is NOT a moving prism**: one POSED by
+  its owner every frame — a creature's body, a builder setting a stone, a growing plant, a
+  projectile carrying its payload. That prism is the shape of its owner, not displaced mass; it is a
+  valid target, never a mover. Composes with **Mass** (the collision is the act of a vessel or a
+  field, never a decay, so conservation holds — and it turns any force that moves mass into a way
+  to spend it), **Domain** (no friendly exception: a prism thrown into your own wall takes the wall
+  piece with it), **Vessels** (any ability that moves mass inherits the rule by calling
+  `PrismMotion`, not by re-deriving it), **Flora & Fauna** (a body prism struck by a moving prism is
+  destroyed like any other), **Cells** (annihilated mass leaves the cell's sums through the ordinary
+  destruction path). **A new mover calls `PrismMotion.TrySweep` / `TryFirstContact` (boxes) or, past a
+  box budget, schedules `PrismMotion.ContactJob` (spheres)** — never its own overlap test.
 - **Flora & Fauna** — populations that live on and respond to the
   fundamentals above (e.g. fauna attraction to prisms, flora growth on
   cells).

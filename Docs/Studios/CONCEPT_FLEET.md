@@ -198,7 +198,7 @@ decision on. A round-2 session, in order:
    `studio-kinds.js`, the live decision log (`ArtifactData list decisions`, filtered by `vessel`), and
    `python3 Tools/Build/who_works_where.py query` on the files it will touch. Say who else works there.
 2. **The studio round(s)**: refine the kind and recipe until the mechanic reads on a phone and a PC: the AI finishes every
-   course it is meant to, Hard is fastest (D24), the mechanic beats its own no-mechanic control (L-GEN-10), and the HUD
+   course it is meant to, Hard is fastest (D24), the mechanic beats its own no-mechanic control (L-GEN-15), and the HUD
    says what the triggers do. Every round: `vessel_pages.py` → `check_studio.cjs <id>.html --hook __vesselStudio` →
    the headless smoke on all four courses → `build_artifact.py` → publish into the one artifact → `amoebius_artifacts.py
    import` → `parity_gate.py --artifact`. Write the measured table into §4.1's row and the round's Found into §5.

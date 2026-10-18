@@ -483,7 +483,8 @@ namespace CosmicShore.Gameplay
                         sb.Append($"{(h.IsSource ? "R" : "A")}#{h.Id} S{h.Strength:F1} rs {h.HorizonRadius:F1} inf {h.InfluenceRadius:F0} w {h.WarpWeight:F2} at {h.transform.position}; ");
                     }
                     sb.Append($"pairs {_pairs.Count}; bodies {BlackHoleGravityField.BodyCount} (captured {BlackHoleGravityField.CapturedThisSecond}/s, " +
-                              $"total {BlackHoleGravityField.CapturedTotal}, through the throat {BlackHoleGravityField.ThroatTransitsTotal}), " +
+                              $"total {BlackHoleGravityField.CapturedTotal}, through the throat {BlackHoleGravityField.ThroatTransitsTotal}, " +
+                              $"collided {BlackHoleGravityField.CollisionsTotal}), " +
                               $"stretching holes {BlackHoleWarp.LiveSlotCount}, vessels pulled {BlackHoleVesselPull.PulledVesselCount}");
                     CSDebug.LogVerbose(CSLogChannel.BlackHole, sb.ToString());
                 }

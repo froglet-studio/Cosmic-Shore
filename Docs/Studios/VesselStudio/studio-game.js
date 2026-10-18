@@ -189,6 +189,13 @@
      "hasClass": true,
      "studio": "brittlestar",
      "games": []
+    },
+    {
+     "name": "Angler",
+     "value": 17,
+     "hasClass": true,
+     "studio": null,
+     "games": []
     }
    ],
    "games": [
