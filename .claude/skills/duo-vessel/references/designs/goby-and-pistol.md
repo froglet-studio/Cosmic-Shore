@@ -272,7 +272,7 @@ The lab's arithmetic is in the game, line for line, held to the lab's own number
 | The Pistol AI and its levels, `mulberry32` bit for bit | `PistolAI` | same |
 | 40 numbers | `GobyPistolConfigSO` / `GobyPistolConfig.asset` | `studio_to_unity.py --vessel goby --check` |
 | Playing it: the Pistol rides your hull side on, on real prisms; the Goby's primer and flares; the arena's swap | `GobyPistolDuo` (a runtime component; **FrogletTools ▸ Vessels ▸ Goby and Pistol (Play mode)** adds it to any hull you fly) | Amoebius, 2026-10-15: spawned, bound, swapped both ways, fired a ring (below) |
-| **The vessel: `VesselClassType.Goby` (16)**, flyable from the freestyle Vessel Changer | `Goby.prefab` (a Squirrel clone carrying `GobyPistolDuo`), `SO_Class_Goby`, the container / network / class-list / fusion entries, `ElementalAbilityMaps/Goby` (the Squirrel's map), `ToyVesselRoster.Default` | `Tools/Build/author_goby_assets.py --check` / `--self-test` |
+| **The vessel: `VesselClassType.Goby` (16)**, flyable from the freestyle Vessel Changer | `Goby.prefab` (a Squirrel clone carrying `GobyPistolDuo`; since 2026-10-18 it draws its own hull, `Goby.fbx`), `SO_Class_Goby`, the container / network / class-list / fusion entries, `ElementalAbilityMaps/Goby` (the Squirrel's map), `ToyVesselRoster.Default` | `Tools/Build/author_goby_assets.py --check` / `--self-test` |
 
 **Still lab-only:** the Goby's straight and closeness boosts (they need the duo vessel's own speed executor; the harness
 cannot change a borrowed hull's speed), flora counting as hot, the crystal restock and the free Snap (crystal pickup is
@@ -293,7 +293,7 @@ inside a lap of radius R draws R/r times as long and one holding the centre span
 squash and puff on landing, a shake on a hard one, pops on hits, a flash on launch, the collapse ring, primed/hot/carried prisms
 pulsing in their own colour, the tiny trail, the Pistol leaning along its velocity with a lit cap and a glowing eye.
 
-**What the Goby is today (2026-10-15).** One hull, one Player: the Goby is a Squirrel clone (model, flight, its four
+**What the Goby is today (2026-10-15; its own model since 2026-10-18).** One hull, one Player: the Goby is a Squirrel clone (flight, its four
 abilities and HUD, camera, containers), so architecture A/B (§8) is still open and the Pistol is not a second
 networked object: `GobyPistolDuo` simulates it on the LOCAL pilot's machine only, wakes only while a human flies the
 hull (not on an AI or remote copy, not under the menu's autopilot), and its prism breaks are local. Fine for freestyle;
@@ -414,3 +414,12 @@ the line it settled.
   Garrett:** the Pistol's view still draws its other marks flat (the primed / hot / held rings round prisms, the aim
   ring and line, the contact dot, the pops). They read as the view's own markings, like a HUD drawn into the world; say
   whether they stay flat (the rule's owner's-call exception, recorded here) or become volumes too.
+- 2026-10-18, **the Goby's own hull** (`/vessel-model`, `specs/goby.py`, `Assets/_Models/Vessel Models/Goby.fbx`): a
+  spaceship inspired by a goby, never the fish. The lookout eyes are twin sensor turrets on the head; the gill covers
+  are louvred cheek scoops; the pectoral fins are fans of three framed domain plates with a thruster pod at each tip; a
+  swept sensor sail; a pelvic stub wing carrying the rear nacelles; a docking clamp under the chest where the Pistol
+  rides; a long banded body ending in a rounded caudal fan. It is built on the Squirrel's rig and names, so the
+  Squirrel's takes still drive it (the tail chain swims the body) and `Goby.prefab` binds it by a guid swap alone; the
+  cards are rendered from it (`render_cards.py Goby`). Sheets: `Docs/VesselModels/sheets/goby_after.jpg`,
+  `goby_cards.jpg`. **[read] for Garrett:** fly it; the bar is that it reads as the Goby from the chase camera and
+  nothing floats or tears in a turn. The crystal-hull-fusion bakes read stale until re-baked in the editor.

@@ -11,6 +11,9 @@ WHAT IT MAKES (the duo brief: .claude/skills/duo-vessel/references/designs/goby-
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
           (a disk copy keeps the donor's hash and Netcode then keys two prefabs on one entry)
         - GobyPistolDuo on the root, wired to GobyPistolConfig.asset (the Pistol: the second half of the duo)
+        - the model: the Goby's own hull, Assets/_Models/Vessel Models/Goby.fbx (specs/goby.py, /vessel-model), built on
+          the Squirrel's rig and names, so every reference the clone makes into the Squirrel's model binds it by a guid
+          swap (Unity derives a model's sub-object ids from type + name); the Squirrel's Animator controller drives it
       DefaultThrottleScaler = the lab's gCruise (the Goby zips, Garrett 2026-10-16; studio_to_unity maps the same line);
       everything else is the Squirrel's: the Goby turns on its numbers and has its abilities [stated, 2026-10-14];
       the duo's own element row (primer, flares) is an open design question, not filled here.
@@ -18,13 +21,15 @@ WHAT IT MAKES (the duo brief: .claude/skills/duo-vessel/references/designs/goby-
     SO_Classlist_All / _Classes; one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and
     `DefaultNetworkPrefabs.asset` (the root GAMEOBJECT); Resources/ElementalAbilityMaps/Goby.asset (the
     Squirrel's map, unchanged but for its name and class); and four CrystalHullFusionConfig entries
-    (the Squirrel's, the Goby draws the Squirrel's mesh so its bakes apply).
+    (copied from the Squirrel's: their bakes read STALE against the Goby's own hull, so the game solves them on a worker
+    thread until FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions writes the Goby's own; one per element).
     The toybox roster (ToyVesselRoster.Default) is CODE and is not written here (vessel skill rule 40).
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md): it runs only while Goby.prefab is
-absent, and `--check` validates the SHIPPED prefab's invariants rather than diffing it against a fresh clone
+absent (the model swap alone also applies to a committed prefab that still draws the Squirrel, idempotently), and `--check` validates the SHIPPED prefab's invariants rather than diffing it against a fresh clone
 of a donor that will move on. To re-author from scratch, delete Goby.prefab and its .meta and run again.
 """
+import hashlib
 import os
 import re
 import sys
@@ -48,6 +53,9 @@ MAP = os.path.join(MAPS, "Goby.asset")
 FUSION = os.path.join(ROOT, "Assets", "Resources", "CrystalHullFusionConfig.asset")
 DUO_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Crew", "GobyPistol", "GobyPistolDuo.cs.meta")
 CONFIG_META = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "GobyPistol", "GobyPistolConfig.asset.meta")
+MODELS = os.path.join(ROOT, "Assets", "_Models", "Vessel Models")
+SQUIRREL_MODEL_META = os.path.join(MODELS, "SquirrelVessel_CosmicShoresTest1.fbx.meta")
+GOBY_MODEL_META = os.path.join(MODELS, "Goby.fbx.meta")
 
 GOBY_CLASS_ID = 18   # 16 is the BrittleStar on bleeding-edge; 18 was left for the Goby (VesselClassType.cs)
 SQUIRREL_CLASS_ID = 6
@@ -59,8 +67,19 @@ ROOT_TRANSFORM_ID = "5928382658856804067"
 NETWORK_OBJECT_ID = "1733035045152327888"    # the NetworkObject component on it
 DUO_ID = "5137264980016000001"               # GobyPistolDuo on the root
 SO_VESSEL_SCRIPT = "0309a5343d820c14abd73b35f6fa50f1"
-SQUIRREL_ICON_ACTIVE = "5d8f022f56d65ef4fae2cea4428a990f"
-SQUIRREL_ICON_INACTIVE = "c7a15d77edb2723429254cf708d9d20c"
+
+
+def _model_card(rel):
+    """The guid vessel_model/render_cards.py gives a NEW card PNG: md5("cosmic-shore-card:" + its repo path)."""
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+
+
+# the card images, rendered from the Goby's own model by Tools/Build/vessel_model/render_cards.py Goby (2026-10-18)
+CARD_ICON = _model_card("Assets/_Graphics/CardImages/Goby.png")
+CARD_INACTIVE = _model_card("Assets/_Graphics/CardImages/Goby_Inactive.png")
+CARD_SILHOUETTE = _model_card("Assets/_Graphics/CardImages/Goby_silhouette.png")
+CARD_LARGE = _model_card("Assets/_Graphics/CardImages/Goby_large.png")
+CARD_PREVIEW = _model_card("Assets/_Graphics/Design Assests/Hangar/Goby_Hangar_Preview.png")
 AI_LEVEL_HARD = 3                            # AIDifficulty.Hard
 
 
@@ -110,7 +129,12 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
     text = text[:root.end(1)] + f"  - component: {{fileID: {DUO_ID}}}\n" + text[root.end(1):]
     if not text.endswith("\n"):
         text += "\n"
-    return text + duo_block(script_guid, config_guid)
+    return swap_model(text) + duo_block(script_guid, config_guid)
+
+
+def swap_model(text: str) -> str:
+    """Every reference into the Squirrel's model becomes the same reference into the Goby's (same names, so same ids)."""
+    return text.replace(f"guid: {guid_of(SQUIRREL_MODEL_META)},", f"guid: {guid_of(GOBY_MODEL_META)},")
 
 
 def prefab_meta() -> str:
@@ -141,10 +165,12 @@ def class_asset() -> str:
         + CREW +
         "  PrimaryElement: 3\n  Element: {fileID: 0}\n"
         "  InitialResourceLevels:\n    Mass: 0\n    Charge: 0\n    Space: 0\n    Time: 0\n"
-        f"  IconActive: {{fileID: 21300000, guid: {SQUIRREL_ICON_ACTIVE}, type: 3}}\n"
-        f"  IconInactive: {{fileID: 21300000, guid: {SQUIRREL_ICON_INACTIVE}, type: 3}}\n"
-        "  PreviewImage: {fileID: 0}\n  SquadImage: {fileID: 0}\n  TrailPreviewImage: {fileID: 0}\n"
-        "  CardSilohoutteActive: {fileID: 0}\n  CardSilohoutteInactive: {fileID: 0}\n"
+        f"  IconActive: {{fileID: 21300000, guid: {CARD_ICON}, type: 3}}\n"
+        f"  IconInactive: {{fileID: 21300000, guid: {CARD_INACTIVE}, type: 3}}\n"
+        f"  PreviewImage: {{fileID: 21300000, guid: {CARD_PREVIEW}, type: 3}}\n"
+        f"  SquadImage: {{fileID: 21300000, guid: {CARD_LARGE}, type: 3}}\n  TrailPreviewImage: {{fileID: 0}}\n"
+        f"  CardSilohoutteActive: {{fileID: 21300000, guid: {CARD_ICON}, type: 3}}\n"
+        f"  CardSilohoutteInactive: {{fileID: 21300000, guid: {CARD_SILHOUETTE}, type: 3}}\n"
         "  Abilities: []\n  Games: []\n  TrainingGames: []\n"
         "  gameplayParameter1:\n    LeftHandLabel: Casual\n    RightHandLabel: Challenging\n    Value: 0.5\n"
         "  gameplayParameter2:\n    LeftHandLabel: Relaxing\n    RightHandLabel: Thrilling\n    Value: 0.6\n"
@@ -242,6 +268,9 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     want(root and f"{{fileID: {DUO_ID}}}" in root.group(1), "Goby.prefab: GobyPistolDuo is not on the root's component list")
     duo = re.search(r"--- !u!114 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % DUO_ID, text)
     want(duo and f"guid: {script_guid}" in duo.group(1), "Goby.prefab: the GobyPistolDuo document is missing or names another script")
+    sq, gb = guid_of(SQUIRREL_MODEL_META), guid_of(GOBY_MODEL_META)
+    want(f"guid: {sq}," not in text, "Goby.prefab: still draws the Squirrel's model (run the tool: the Goby has its own hull, Goby.fbx)")
+    want(f"m_SourcePrefab: {{fileID: 100100000, guid: {gb}, type: 3}}" in text, "Goby.prefab: the nested model is not Goby.fbx")
     want(duo and f"  config: {{fileID: 11400000, guid: {config_guid}, type: 2}}" in duo.group(1),
          "Goby.prefab: GobyPistolDuo.config is not GobyPistolConfig.asset (a null config runs the SHIPPED defaults, not the clone)")
     return errs
@@ -260,11 +289,13 @@ def check_registrations(container: str, network: str, lists, cls: str, gmap: str
         want(text.count(CLASS_GUID) == 1, f"{name}: SO_Class_Goby listed {text.count(CLASS_GUID)} times, not once")
     want(f"  Class: {GOBY_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls, "SO_Class_Goby: wrong class or not owned from the start")
     want(CREW in cls, "SO_Class_Goby: the card does not name both subvessels (CrewNames Goby, Pistol: SO_Vessel.CardName)")
+    want(all(f"guid: {g}, type: 3" in cls for g in (CARD_ICON, CARD_INACTIVE, CARD_SILHOUETTE, CARD_LARGE, CARD_PREVIEW)),
+         "SO_Class_Goby: the card images are not the renders of the Goby's own model (vessel_model/render_cards.py Goby)")
     want(f"  vesselClass: {GOBY_CLASS_ID}\n" in gmap and "  m_Name: Goby\n" in gmap, "ElementalAbilityMaps/Goby: wrong class or name")
     goby, squirrel = fusion_entries(fusion, GOBY_CLASS_ID), fusion_entries(fusion, SQUIRREL_CLASS_ID)
     want(len(goby) == 4, f"CrystalHullFusionConfig: {len(goby)} Goby entries, not 4 (CrystalHullFusionConfigTests needs one per element)")
-    want([e.split("\n", 1)[1] for e in goby] == [e.split("\n", 1)[1] for e in squirrel],
-         "CrystalHullFusionConfig: the Goby's entries are not the Squirrel's (it draws the Squirrel's mesh)")
+    want(sorted(re.search(r"    element: (\d+)", e).group(1) for e in goby) == sorted(re.search(r"    element: (\d+)", e).group(1) for e in squirrel),
+         "CrystalHullFusionConfig: the Goby's entries do not cover the elements the Squirrel's do (one per element)")
     return errs
 
 
@@ -300,6 +331,10 @@ def author():
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR), script_guid, config_guid))
         write(PREFAB + ".meta", prefab_meta())
+    else:                            # but the model swap applies to the committed prefab, once
+        old = read(PREFAB); new = swap_model(old)
+        if new != old:
+            write(PREFAB, new)
     if not os.path.exists(CLASS_ASSET):
         write(CLASS_ASSET, class_asset()); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
     if not os.path.exists(MAP):
@@ -325,6 +360,7 @@ def self_test():
     expect(check_prefab(re.sub(r"(  GlobalObjectIdHash: )\d+", r"\g<1>2256742461", good, count=1), script_guid, config_guid), 1, "the donor's hash")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {DUO_ID}}}\n", ""), script_guid, config_guid), 1, "the duo off the root")
     expect(check_prefab(good.replace(f"guid: {config_guid}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid, config_guid), 1, "the duo's config unwired")
+    expect(check_prefab(good.replace(f"guid: {guid_of(GOBY_MODEL_META)},", f"guid: {guid_of(SQUIRREL_MODEL_META)},"), script_guid, config_guid), 1, "the Squirrel's model")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))
     lists = [(os.path.basename(p), register_class_list(read(p))) for p in CLASS_LISTS]
     cls, gmap = class_asset(), build_map(read(DONOR_MAP))
@@ -335,6 +371,7 @@ def self_test():
     expect(check_registrations(container, network, lists, cls, gmap, fusion.replace(f"  - vessel: {GOBY_CLASS_ID}\n", "  - vessel: 99\n", 1)), 1, "a missing fusion entry")
     expect(check_registrations(container, network, lists, cls, read(DONOR_MAP), fusion), 1, "the Squirrel's own map")
     expect(check_registrations(container, network, lists, cls.replace(CREW, ""), gmap, fusion), 1, "no crew names on the card")
+    expect(check_registrations(container, network, lists, cls.replace(CARD_ICON, "5d8f022f56d65ef4fae2cea4428a990f"), gmap, fusion), 1, "the Squirrel's card icon")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:
         fails.append("registration is not idempotent")
     for f in fails:

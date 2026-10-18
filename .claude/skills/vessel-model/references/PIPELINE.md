@@ -105,6 +105,18 @@ from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.
    the model root (constant fileIDs) and the code resolves bones and the SkinnedMeshRenderer by name
    at runtime; keep the old names resolving too, so the swap is reversible.
 
+## The borrowed-rig path (a vessel whose prefab is a CLONE of another vessel's: the Goby, `specs/goby.py`)
+
+1. Import the donor's CURRENT model whole (`rig.import_shipped_model`), keep its armature, free its mesh (object AND
+   datablock, or the new geometry loses the donor's geometry name), and retarget the donor's takes
+   (`takes.retarget_from`): the clone's Animator controller is the donor's and plays exactly those.
+2. Build new geometry in the donor's frame and skin each part to the donor bone whose part sat there, so every take
+   moves the new hull the way it moved the donor; weight a long body between consecutive chain bones.
+3. Keep every name the clone's prefab hashes (mesh node, geometry, armature, bones, slots, shapes, takes) and write a
+   NEW file whose `.meta` is the donor's with a fresh guid; then swap the donor model's guid for the new one in the
+   prefab (and in the generator that owns it). Prove: `rest_compare.py <donor> <new>` 0.0000, every prefab reference
+   now names the new guid, `build.py --check`.
+
 ## The rig-swap path (the prefab draws a placeholder; the artist made a rig of the same art: Urchin, Rhino)
 
 1. The spec builds from the artist's RIG with the artist-hull path, but first finds the true rest (LESSONS 45):

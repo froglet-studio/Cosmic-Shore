@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Goby flies its own hull, `Goby.fbx` (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/vessel-model` new hull on the Squirrel's rig (`Tools/Build/vessel_model/specs/goby.py`; LESSONS 48). `Goby.prefab`'s 46
+references into the Squirrel's model now name `Goby.fbx` (same node / bone / slot / shape / take names, so the same ids);
+the Squirrel's Animator controller still drives it. No C# changed. **Verified here:** three FBX readers (codec, assimp,
+Blender re-import), `rest_compare.py` Squirrel vs Goby 0.0000 on every bone (both readers), `build.py goby --check`
+(and it fails on a changed spec), `render_cards.py Goby --check`, `author_goby_assets.py --check` / `--self-test` (a new
+control fails a prefab that still draws the Squirrel), `check_crew_vessels.py`, `vessel_colors.py --check`. Sheets:
+`Docs/VesselModels/sheets/goby_after.jpg`, `goby_cards.jpg`. **Not imported or flown in the editor.**
+
+- [ ] Let Unity import `Assets/_Models/Vessel Models/Goby.fbx`; open `Goby.prefab`: the hull is the goby (two cyan
+  sensor turrets on the head, fans with pods, a banded body and a rounded tail fan), no missing-reference warnings.
+- [ ] **FrogletTools > Vessels > Audits**: Audit Vessel Elemental Morphs (Goby: four REAL shapes), Audit Vessel
+  Construction, Audit Vessel Tails and Jets (the four jets resolve, at the rear nacelle mouths and the pod tips).
+- [ ] **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** (the Goby's four entries read stale until then;
+  the game solves them on a worker thread meanwhile).
+- [ ] Toybox, freestyle Vessel Changer, **Goby and Pistol**: pitch, yaw and roll - the body swims (the tail chain
+  bends), the fans bank, nothing floats or tears; boost - the nacelle and pod mouths and the intake glow.
+- [ ] Raise each element: Time sweeps the fans back, Mass swells the head and body, Space spreads the fans, sail and tail
+  fan, Charge raises the turrets and flares the gill scoops.
+- [ ] Hangar and arcade: the Goby's card, inactive icon, silhouette, squad image and hangar preview show the goby.
+
 ### 🔴 The Goby's vortex ring and flares are lit faceted volumes (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 **Why:** nothing in the world looks flat (LOCKED 2026-10-18, `Docs/claude/SHADERS_AND_PERFORMANCE.md`). The vortex

@@ -208,6 +208,7 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 | Stoat | 1 | new hull (`specs/stoat.py`): five overlapping armour segments, sensor-fin ears, nacelles, a domain-tipped tail beacon |
 | Angler | 1 | new hull (`specs/angler.py`): its own model and `AnglerAnimation` (it wore the Stoat's); ram-scoop jaw, a lure mast with an Engine-slot esca bulb that swells while luring |
 | Brittle Star | 1 | new hull (`specs/brittlestar.py`): a five-lobed core, five segmented gun/thruster booms, the halo as a structural beam (Time turns it from a pentagon to a circle); muzzles, nozzles and ring numbers exact |
+| Goby | 1 | new hull on a BORROWED rig (2026-10-18, `specs/goby.py`, LESSONS 48): the Goby wore the Squirrel's model, so the new hull keeps the Squirrel's armature, bones (rest 0.0000), node, geometry, slot, shape and take names, and `Goby.prefab` binds it by a guid swap alone; the Squirrel's controller and takes still drive it (the tail chain swims the goby's banded body). Lookout sensor turrets, framed pectoral fans with tip pods, a gill-louvred head, a sail, a swept stub wing carrying the rear nacelles, a rounded caudal fan. Awaiting the owner's flight |
 | Shrike | 1 | new hull (`specs/shrike.py`): hooked ram prow over the lance barrel, the eye-mask as a visor band, talon docking clamps (a new grip while docked). The likeliest of the fleet to read as a generic jet: the owner's eye decides |
 
 ## 5. Modelling rules that keep being relearned

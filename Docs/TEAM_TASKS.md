@@ -881,3 +881,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), anyone; Garrett for the sign question and the deletions
 - **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/VesselModels/README.md
+
+### T-20261018-0201 · open · test · Crew vessels
+- **Task:** Import and fly the Goby's own hull (Goby.fbx, built by /vessel-model on the Squirrel's rig) in the Unity Editor: the audits, the crystal-hull-fusion bake, a Toybox flight and the cards, per Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Goby flies its own hull'
+- **Done when:** the checklist entry's six steps are green, or each failure is filed; Garrett has said whether it reads as the Goby
+- **Who can take it:** Yash (offered), Garrett (sign-off: the owner's flight is the bar), anyone with the Editor
+- **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/sheets/goby_after.jpg

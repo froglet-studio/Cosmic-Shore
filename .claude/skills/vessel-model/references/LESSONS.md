@@ -508,3 +508,19 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       YAML documents) needed a per-object merge, and `/asset-surgery` already had one, with its five assertions
       and `Tools/Build/merge_unity_scene.py`. Rebuilding it skipped two of those assertions (byte-exact
       round-trip, every addition survives) until the review ran them. They then found one trimmed blank line.
+
+48. **The Goby (2026-10-18): a NEW hull on a BORROWED rig binds a cloned prefab by a guid swap alone.** The Goby's
+    prefab is a Squirrel clone: 46 references into the Squirrel's model (the skinned renderer, the Animator, the root
+    bone, six bones holding the four jets) and the Squirrel's Animator controller. A new hull built from the fleet
+    convention (nodes `mesh` / `rig`) would have needed the editor to re-point all of them. Instead `specs/goby.py`
+    imports the Squirrel's armature and takes, builds new geometry skinned to its bones, and keeps EVERY name the
+    prefab hashes (mesh node, geometry `Plane.011`, armature, all 42 bones at rest 0.0000, slot names and order, shape
+    names, take names), under its own guid with a `.meta` copied from the Squirrel's. Evidence that type + name is the
+    whole id: one mesh id is shared by thirteen TriBlock FBX files and a node id by the two Manta files (measured over
+    every model reference in `Assets/`); the root Animator id is the same in the Serpent, Sparrow and Squirrel models.
+    Traps paid for: the donor's mesh DATABLOCK keeps its name after its object is removed, so the new geometry came
+    out `Plane.001` until the datablock was freed too (`assert mesh.data.name == GEOMETRY` now); and a generator that
+    owns the cloned prefab (`author_goby_assets.py`) must make the same swap, or its `--check` would call the new
+    model drift. Use it for any vessel that is a clone of another: the clone gets its own look with no editor step.
+    What it cannot do: change a bone's rest (jets hang in bone space) or add a take the donor's controller does not
+    play.
