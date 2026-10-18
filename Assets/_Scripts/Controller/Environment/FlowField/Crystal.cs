@@ -59,6 +59,15 @@ namespace CosmicShore.Gameplay
         public List<CrystalModelData> CrystalModels => crystalModels;
 
         /// <summary>
+        /// False for a crystal authored with no crystal model at all (its pickup drawn by something
+        /// else entirely). A retirement that animates the crystal's own body (the Squirrel's morph)
+        /// has nothing to carry for one and stands down quietly, rather than warning on every
+        /// pickup about a body that was never meant to exist. (Skim Race's race-ring crystals DO
+        /// have one: the small omni crystal in the middle of the ring.)
+        /// </summary>
+        public bool HasBody => crystalModels is { Count: > 0 };
+
+        /// <summary>
         /// Raised when a model's renderer settles onto a new material — a domain change or an
         /// activation reaching the end of its lerp. For an overlay that wears the crystal's colour
         /// without being one of its models: the omni crystal's charge edges
@@ -721,14 +730,35 @@ namespace CosmicShore.Gameplay
         /// every-lifeform-drops-a-crystal invariant. Reparenting preserves world pose, and a
         /// withering creature holds still, so the heart does not appear to move.
         /// </summary>
-        public void DetachHeartToCell()
+        public void DetachHeartToCell() => ReparentToCell();
+
+        /// <summary>
+        /// Moves this crystal onto the cell, keeping its world pose and its world SIZE - and
+        /// making that size uniform again. A heart is sized along x (<see cref="LifeFormCrystal.SetWorldScale"/>
+        /// divides out the parent's x), so under an owner whose chain is NON-uniformly scaled the
+        /// heart is stretched along the other axes, and its spinning model children shear as they
+        /// turn. A plain reparent bakes that stretch into the crystal's own localScale, so the
+        /// dropped pickup kept warping long after the creature was gone (the QuadFish root was
+        /// authored at z 1.31). Re-stating the x size on the uniform cell is what un-warps it, and
+        /// x is also the axis the collect reward reads, so the payoff does not move.
+        /// </summary>
+        void ReparentToCell()
         {
-            if (cellData && cellData.Cell)
-                transform.parent = cellData.Cell.transform;
+            if (!cellData || !cellData.Cell) return;
+            float worldScale = Mathf.Abs(transform.lossyScale.x);
+            transform.SetParent(cellData.Cell.transform, true);
+            LifeFormCrystal.SetWorldScale(this, worldScale);
         }
 
         public void ActivateCrystal()
         {
+            // Teardown-order guard (PLAYBOOK §4): LightFauna.WitherCoroutine can still reach
+            // ReleaseHeart → here after the cell is already destroyed (or the scene is
+            // unloading). Unity-null checks, not ?. — DetachHeartToCell already does this for
+            // the early re-home; ActivateCrystal must match or it NREs on .transform.
+            // Skip the whole activation when the scene is gone (crystal goes with it).
+            if (!gameObject.scene.isLoaded) return;
+
             // The pair on screen RIGHT NOW is where the heart → pickup cross-fade departs from,
             // and it has to be read before anything below disturbs it: clearing EmbeddedIn
             // changes what the state resolves to, and each material lerp drops the block on its
@@ -736,7 +766,7 @@ namespace CosmicShore.Gameplay
             bool hadTint = TryGetDisplayedTint(out var fromBright, out var fromDull);
 
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now
-            transform.parent = cellData.Cell.transform;
+            ReparentToCell();
             var dropCol = gameObject.GetComponent<SphereCollider>();
             if (_authoredColliderRadius > 0f) dropCol.radius = _authoredColliderRadius;
             dropCol.enabled = true;

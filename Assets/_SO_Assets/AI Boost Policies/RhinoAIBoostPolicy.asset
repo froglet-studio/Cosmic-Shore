@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95825cec5a01765d82ec0b8213ff75b8, type: 3}
+  m_Script: {fileID: 11500000, guid: f0d84783a08d4582a1882cc260dce84e, type: 3}
   m_Name: RhinoAIBoostPolicy
   m_EditorClassIdentifier: 
   alignDegrees: 12
@@ -20,4 +20,16 @@ MonoBehaviour:
   releaseRunwaySeconds: 0.5
   disabledInModes: []
   requireAIPlayer: 0
+  steeringShareOfPlateau: 0.9
+  minHoldSeconds: 0.5
+  minRestSeconds: 0.3
   minRearmSeconds: 0.5
+  minSpeedGain: 50
+  cornerSpeed: 600
+  minCornerSpeed: 160
+  brakeMarginUnits: 120
+  brakeLeadSeconds: 0.25
+  graceShare: 0.9
+  brakeSteerFloor: 0.3
+  throttleSlewPerSecond: 4
+  cornerReleaseDegrees: 30

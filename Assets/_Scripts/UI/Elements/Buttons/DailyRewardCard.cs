@@ -14,8 +14,8 @@ namespace CosmicShore.UI
 {
     enum ButtonMode
     {
-        Free,
-        Clock
+        Free = 0,
+        Clock = 1
     }
 
     public class DailyRewardCard : PurchaseCard

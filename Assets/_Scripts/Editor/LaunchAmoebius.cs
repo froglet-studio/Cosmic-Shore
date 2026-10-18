@@ -20,7 +20,10 @@ namespace CosmicShore.Editor
     /// once and rebuild only when the launcher's source changed (after a pull, say). Without a
     /// .NET 10 SDK on the machine it falls back to <c>Port/dist/Amoebius-Windows.zip</c>, and Amoebius
     /// installs its own SDK the first time START is pressed, after which builds work. Amoebius is told
-    /// which clone opened it, so its PLAY page follows the branch Unity has checked out.
+    /// which clone opened it, so its PLAY page follows the branch Unity has checked out. FrogletTools > Amoebius > Vessel
+    /// Studio Page opens it on its VESSEL STUDIO page (<c>--page studios</c>); FrogletTools > Vessels > Vessel Studio
+    /// (<c>Studios/VesselStudioWindow</c>, the studio home) opens the studio pages themselves through <see cref="OpenStudio"/>:
+    /// built from this checkout and served by Amoebius (/vessel-studio D34), never the raw files.
     /// READER: writes only under the gitignored <c>Library/</c>, never assets - no ship panel.
     /// </summary>
     public static class LaunchAmoebius
@@ -37,7 +40,7 @@ namespace CosmicShore.Editor
         static string _buildStamp;
         static double _buildStarted;
 
-        [MenuItem("FrogletTools/Amoebius/Launch Amoebius", false, 0)]
+        [MenuItem("FrogletTools/Amoebius/Launch Amoebius", false, 110)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 5,
             Description = "Opens Amoebius, our own engine, built from this checkout (rebuilt only when its source changed).",
             DocPath = "Port/docs/LAUNCHER.md")]
@@ -67,7 +70,114 @@ namespace CosmicShore.Editor
             Build(dotnet, stamp);
         }
 
-        [MenuItem("FrogletTools/Amoebius/Rebuild Amoebius", false, 1)]
+        /// <summary>The Amoebius page the next start opens (<c>--page</c>), then cleared. Null = Amoebius's own default.</summary>
+        static string _openPage;
+
+        [MenuItem("FrogletTools/Amoebius/Vessel Studio Page", false, 130)]
+        [FrogletTool(FrogletToolCategory.Build, Importance = 2,
+            Description = "Opens Amoebius on its VESSEL STUDIO page (pick a vessel; PLAY IN ENGINE runs the game's own vessel in Amoebius).",
+            DocPath = "Port/docs/LAUNCHER.md")]
+        public static void OpenAmoebiusStudiosPage()
+        {
+            _openPage = "studios";
+            Launch();
+        }
+
+        /// <summary>
+        /// A Vessel Studio page (<paramref name="file"/>: <c>index.html</c>, <c>stoat.html</c>, ...) the way every surface opens
+        /// it (/vessel-studio D34): the build of THIS checkout's branch, served by Amoebius on 127.0.0.1, with Sync, Ask,
+        /// Requests and Decisions working. An Amoebius already serving this checkout (its <c>&lt;data&gt;/studio/server.json</c>,
+        /// process alive) opens it at once in an app window; otherwise Amoebius starts with <c>--page studios:&lt;file&gt;</c>
+        /// and opens it itself. The home's cards and OPEN THE HUB use it.
+        /// </summary>
+        /// <param name="fragment">A page-hash word after <c>#amoebius</c> (letters, digits, dashes): <c>new-studio</c>
+        /// opens the hub's "+ New studio" panel on load (/vessel-studio D36).</param>
+        internal static void OpenStudio(string file, string fragment = null)
+        {
+            if (fragment != null && !System.Text.RegularExpressions.Regex.IsMatch(fragment, "^[A-Za-z0-9-]{1,40}$")) fragment = null;
+            string served = RunningStudioServer();
+            if (served != null)
+            {
+                OpenStudioWindow(served + Uri.EscapeDataString(file) + "#amoebius" + (fragment != null ? "&" + fragment : ""));
+                return;
+            }
+            _openPage = "studios:" + file + (fragment != null ? "#" + fragment : "");
+            Launch();
+        }
+
+        [Serializable]
+        class StudioServerFile { public int pid; public int port; public string @base; public string root; }
+
+        /// <summary>The base URL of an Amoebius studio server already serving this checkout, else null.</summary>
+        static string RunningStudioServer()
+        {
+            try
+            {
+                // Amoebius's data folder (LauncherSettings): AMOEBIUS_DATA_DIR, the older PRISMA_DATA_DIR, else %LOCALAPPDATA%\Amoebius
+                string data = Environment.GetEnvironmentVariable("AMOEBIUS_DATA_DIR");
+                if (string.IsNullOrEmpty(data)) data = Environment.GetEnvironmentVariable("PRISMA_DATA_DIR");
+                if (string.IsNullOrEmpty(data))
+                    data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Amoebius");
+                string path = Path.Combine(data, "studio", "server.json");
+                if (!File.Exists(path)) return null;
+                var s = JsonUtility.FromJson<StudioServerFile>(File.ReadAllText(path));
+                if (s == null || s.port <= 0 || string.IsNullOrEmpty(s.@base) || !s.@base.StartsWith("http://127.0.0.1:", StringComparison.Ordinal)) return null;
+                if (!SamePath(s.root, Root)) return null;   // serving another checkout: start one for this branch
+                using (var p = Process.GetProcessById(s.pid)) if (p.HasExited) return null;
+                return s.@base;
+            }
+            catch (Exception) { return null; }   // no process with that id, unreadable file: start Amoebius
+        }
+
+        static bool SamePath(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b)) return false;
+            string Norm(string p) => Path.GetFullPath(p).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var cmp = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            return string.Equals(Norm(a), Norm(b), cmp);
+        }
+
+        /// <summary>
+        /// A served studio URL as its own app window (Edge, always on Windows 10/11, or Chrome: <c>--app</c>, no tabs or
+        /// address bar), with a window profile under <c>Library/</c> so the studio's layout is remembered; the default
+        /// browser when neither is installed. Amoebius's OPEN IN AMOEBIUS does the same (StudioCatalog.AppWindowArgs).
+        /// </summary>
+        static void OpenStudioWindow(string url)
+        {
+            string profile = Path.Combine(Root, "Library", "VesselStudioWindow");
+            foreach (var exe in AppBrowserCandidates())
+            {
+                if (!File.Exists(exe)) continue;
+                try
+                {
+                    Process.Start(new ProcessStartInfo(exe,
+                        $"--app=\"{url}\" --user-data-dir=\"{profile}\" --window-size=1600,960 --no-first-run --no-default-browser-check")
+                        { UseShellExecute = false });
+                    return;
+                }
+                catch (Exception) { /* try the next browser */ }
+            }
+            Application.OpenURL(url);
+        }
+
+        static string[] AppBrowserCandidates()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var roots = new[] { Environment.GetEnvironmentVariable("ProgramFiles(x86)"), Environment.GetEnvironmentVariable("ProgramFiles"), Environment.GetEnvironmentVariable("LOCALAPPDATA") }
+                    .Where(r => !string.IsNullOrEmpty(r));
+                return roots.SelectMany(r => new[]
+                {
+                    Path.Combine(r, "Microsoft", "Edge", "Application", "msedge.exe"),
+                    Path.Combine(r, "Google", "Chrome", "Application", "chrome.exe"),
+                }).ToArray();
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return new[] { "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" };
+            return new[] { "/usr/bin/microsoft-edge", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser" };
+        }
+
+        [MenuItem("FrogletTools/Amoebius/Rebuild Amoebius", false, 111)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 2,
             Description = "Builds Amoebius from this checkout again even if its source looks unchanged, then opens it.",
             DocPath = "Port/docs/LAUNCHER.md")]
@@ -77,7 +187,7 @@ namespace CosmicShore.Editor
             Launch();
         }
 
-        [MenuItem("FrogletTools/Amoebius/Show Amoebius Folder", false, 2)]
+        [MenuItem("FrogletTools/Amoebius/Show Amoebius Folder", false, 112)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 1,
             Description = "Reveals Library/Amoebius, where the built Amoebius.exe lives.")]
         public static void Reveal()
@@ -288,7 +398,10 @@ namespace CosmicShore.Editor
             try
             {
                 // --clone: Amoebius's PLAY follows the branch this checkout is on (and says when it plays another).
-                Process.Start(new ProcessStartInfo(exe, $"--clone \"{Root}\"") { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! });
+                // --page: a menu item that opens a particular page (Vessel Studio Page -> VESSEL STUDIO) asks for it once.
+                string args = $"--clone \"{Root}\"" + (_openPage != null ? $" --page {_openPage}" : "");
+                _openPage = null;
+                Process.Start(new ProcessStartInfo(exe, args) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe)! });
             }
             catch (Exception e) { Debug.LogError($"[Amoebius] Could not start {exe}: {e.Message}"); }
         }

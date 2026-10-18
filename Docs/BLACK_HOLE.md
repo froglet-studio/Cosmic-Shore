@@ -1,11 +1,12 @@
 # BLACK HOLES — gravity wells in the HyperSea
 
-> A black hole is spawned with ONE number — its strength — anywhere in any scene, from the
-> DiagnosticsHUD console (`blackhole spawn 10`). It pulls every prism in reach into orbit or into
+> A black hole is spawned with ONE number — its strength — by `BlackHoleRegistry.Spawn`; in the game
+> today only the Stoat's field dipole lays them (`StoatDipoleExecutor`, two at a time). It pulls every prism in reach into orbit or into
 > the singularity, pulls vessels (which can out-run it), drags space around with its spin, and
 > spaghettifies what comes near its horizon. **Everything it does is physics, approximated — no
 > painted glow, no disc, no invented swirl**: a Paczyński–Wiita pull, Lense–Thirring frame
-> dragging, the general-relativistic tidal tensor, and a Schwarzschild ray trace for the lens. The
+> dragging, the general-relativistic tidal tensor, and the Vessel Studio's lens (a shadow at the photon-capture
+> radius, Einstein bending, a thin photon ring), every hole in one screen pass. The
 > motion is a simulation (live gameplay data under the movers contract); the stretch is a §4.7
 > global-uniform vertex map (photons only). Status: **built 2026-10-07, made physical 2026-10-08 —
 > nothing here has been run in the editor**; the gates it passed and the playtest it still needs
@@ -33,17 +34,15 @@
 | The vessel pull | `BlackHoleVesselPull.cs` |
 | Spaghettification's CPU half — the global bank | `BlackHoleWarp.cs` |
 | Spaghettification's GPU half — the tidal tensor, one affine map per prism | `_Graphics/Materials/Graphs/PrismGravityWarp.hlsl` |
-| The lens — what the hole LOOKS like (ray-traced background and shadow; no painted disc) | `BlackHoleLens.cs`, `BlackHoleSky.cs` (the scene's own skybox in six faces, for rays bent off-screen), `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
+| The lens — what the holes LOOK like (the Vessel Studio's lens, every hole in one screen pass; no painted disc) | `BlackHoleLens.cs` (the per-hole marker + `ScreenWells`, the studio's `setLensUniforms`), `_Graphics/Materials/Graphs/BlackHoleLens.shader` + `BlackHoleLens.hlsl`, `Resources/BlackHoleLens.mat`, `Tools/Shaders/verify_black_hole_lens.py` (§5.1) |
 | The ECS component every prism's companion entity carries | `_Scripts/Controller/ECS/Components/GravityBodyComponents.cs` (+ the prototype addition and the `SetGravityBody` / `ClearGravityBody` / `TryGetGravityBodyLookup` API in `PrismRenderService`) |
-| The lens's own render pass — copies the camera colour AFTER the transparents and draws every lens from it (Render Graph, injected from script; §5.1) | `BlackHoleLensPass.cs` |
-| Keys: **B** opens/closes the tool, **Shift+B** spawns ahead of the camera on screen (§6.2) | `BlackHoleHotkeys.cs` |
-| Console commands | `BlackHoleConsole.cs` (`blackhole`, alias `bh`) |
-| The Black Hole tool — one Spawn button at the configured position, live holes, every config field (§6.1) | `BlackHoleTool.cs` (uGUI) + `BlackHoleToolModel.cs` (pure: fields, bounds, switch); `blackhole tool on`; proof `Tools/Build/black_hole_tool_harness/run.sh`, `BlackHoleToolTests` |
+| The lens's own render pass — copies the camera colour AFTER the transparents and draws every hole in one full-screen triangle from it (Render Graph, injected from script; §5.1) | `BlackHoleLensPass.cs` |
+| Who lays holes | The Stoat's field dipole only (`StoatDipoleExecutor`; `R_VesselActions/STOAT_DIPOLE.md`). Its settings are the studio's, ported (`StoatDipoleConfig.asset`) |
+| Keys, console, the Black Hole tool, the test scene | **Retired 2026-10-10** (§6). The Vessel Studio's Stoat page is where a pair is tried now |
 | Tuning (the only tuning surface) | `BlackHoleConfigSO` → `Assets/Resources/BlackHoleConfig.asset` |
-| The test scene | **Not on bleeding-edge.** `BlackHoleTest.unity`, `BlackHoleTestHarness`, `BlackHoleTestConfigSO`, the scene setup tool and the mouse camera `MouseOrbitCamera` stayed on `claude/peaceful-rubin-hhw49n` when the black hole alone was brought over (§7) |
 | The crystal wormhole that grew out of the Black Hole cell (attractor + repulsor, smooth wells) | `Docs/CRYSTAL_WORMHOLE.md` |
 | Wirer / proof / gates | `Tools/Shaders/wire_prism_gravity_warp.py`, `Tools/Shaders/verify_prism_gravity_warp.py`, `PrismClockWiringValidator` (Specs + edges), `BlackHoleTests`, `BlackHolePhysicsTests` |
-| See the lens offline (renders the SHIPPED HLSL to a PNG from any viewpoint) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
+| See the lens offline (the studio's GLSL and the SHIPPED lens side by side, to a PNG) | `Tools/Shaders/render_black_hole_lens.py` (§5.1); proof: `Tools/Shaders/verify_black_hole_lens.py` |
 | Log channel | `CSLogChannel.BlackHole` (FrogletTools ▸ Toolbox ▸ Logging), one line per second while a hole is live, including the idle case |
 
 ## 0.1 Where it stands (2026-10-08) — read this first
@@ -65,12 +64,12 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 |---|---|---|
 | 1 | Gravity: Paczyński–Wiita pull, ECS/Burst prism mover (three chained jobs), vessel pull, captures through `Prism.Consume` | §2, §3, §4 |
 | 2 | Burst `MathF` errors in the substrate/swarm kernels fixed with `KernelMath` | §9.1 |
-| 3 | The lens: a per-pixel Schwarzschild ray trace on a lens-sized sphere (right from every viewpoint, inside it too) | §5.1 |
+| 3 | The lens: a per-pixel Schwarzschild ray trace on a lens-sized sphere (replaced by the studio's one-pass lens, row 17) | §5.1 |
 | 4 | Painted accretion disc built, then REMOVED at the user's request — the hole is its shadow and the bent scene | §5.1, §10 |
 | 5 | Made physical: Lense–Thirring frame dragging (`spin`), GR tidal spaghettification (`tidalResponseSeconds`, `maxTidalStretch`) | §2, §5, §9.2 |
-| 6 | The Black Hole tool (`B` / `blackhole tool on`): spawn rows, live holes, every config field | §6.1 |
-| 7 | Spawn placement: ahead of the camera ON SCREEN (in horizon radii) or a world position; Shift+B | §6.1, §6.2 |
-| 8 | The lens sky is the scene's OWN skybox (`BlackHoleSky`), never URP's baked default | §5.1 |
+| 6 | The Black Hole tool (`B` / `blackhole tool on`): spawn rows, live holes, every config field (retired 2026-10-10) | §6 |
+| 7 | Spawn placement: ahead of the camera ON SCREEN (in horizon radii) or a world position; Shift+B (retired 2026-10-10) | §6 |
+| 8 | The lens sky is the scene's OWN skybox (`BlackHoleSky`), never URP's baked default (retired with the sphere, row 17) | §5.1 |
 | 9 | Every camera gets the lens's depth texture; the on-screen camera, not `Camera.main`, places spawns | §5.1 |
 | 10 | The lens bends TRANSPARENTS too (shards, particles): its own after-transparents pass | §5.1 |
 | 11 | Merged with bleeding-edge (9,708 commits); `CSLogChannel.BlackHole` moved to bit 31 — the enum is now FULL | the merge commit |
@@ -79,13 +78,14 @@ spawning between steps, and every fault they reported is fixed and recorded in t
 | 14 | (charming-cerf) The Black Hole cell, then the dipole — now the Crystal Wormhole: smooth wells, the graded lens, the felt pull, the seamless mouths, formation and annihilation | §12, `Docs/CRYSTAL_WORMHOLE.md` |
 | 15 | (charming-cerf) The warp field | `Docs/WARP_FIELD.md` |
 | 16 | The merge: both pair styles on one engine, a pair-style switch on the Stoat's sling and in the Black Hole tool | §13 |
+| 17 | (2026-10-10) The lens IS the Vessel Studio's: every hole in one full-screen pass, ported line for line and proven against the page's own GLSL and JavaScript. The per-hole sphere, its sky (`BlackHoleSky`) and the ray trace are gone | §5.1 |
 
 **Untested in the editor, in priority order:** the pair-style switch and a crystal-style sling (§13);
 white holes and pairs (§11 — the repulsion on a vessel, the pass-through of captured prisms, the core
 drawn over the now-diverging source lens, the drift and annihilation); the Crystal Wormhole cell end to
-end (§12); the after-transparents lens pass (`BlackHoleLensPass`, Render Graph) on every camera and the
-Scene view; the lens sky (`BlackHoleSky`) on a low quality level; Shift+B in lava-lamp freestyle with a
-vessel flying; the edit-mode suites `BlackHoleTests`, `BlackHolePhysicsTests`, `BlackHoleToolTests`,
+end (§12); the one-pass lens (`BlackHoleLensPass` + `BlackHoleLens.shader`, Render Graph) on every camera and the
+Scene view, in lava lamp with a Stoat pair; Shift+B in lava-lamp freestyle with a
+vessel flying (retired, §6); the edit-mode suites `BlackHoleTests`, `BlackHolePhysicsTests`,
 `CrystalWormholeTests`, `WarpFieldTests` (written, never run).
 
 **What builds on it next:** the Stoat vessel, whose ability spawns these holes (row 13; prototype on
@@ -190,6 +190,22 @@ prism outside a hole's reach is byte-for-byte what it was before the component e
 The render and index writes are the two halves of `Prism.NotifyPositionChanged` done for N prisms at
 once, exactly as the swarm and the builders do. Nothing per prism is managed except admission and
 the verdicts.
+
+**A body is a MOVING prism (2026-10-14, `Docs/PRISM_MOTION.md`).** Prism movement is a fundamental,
+and its rule holds here: a body that runs into another prism destroys both. Every body's step is
+swept for its earliest contact BEFORE the bulk index write (the index's stored positions are the
+pre-step ones) — static prisms where they stand, other bodies along their own step (`IntegrateJob` now
+also emits each body's pre-step point). **The body count puts the field on a rung of prism movement's
+LADDER** (`PrismMotion.NextLevel`, `Resources/PrismMotionConfig`): at or under 64 bodies (level 1) each
+body's exact oriented box is swept on the main thread (`BoxContacts` → `PrismMotion.TryFirstContact`)
+and each destroyed prism comes apart as a COLLISION BURST on the ultra-high-res prism
+(`Docs/PRISM_ANIMATION.md` §4.12) while its budget allows; up to 256 (level 2), boxes and the ordinary
+explosion; above 256 (level 3) a fourth Burst job, `PrismMotion.ContactJob`, tests the spheres of the
+prisms' volumes. Each line is crossed back down at three quarters of it (48, 192). `ApplyContacts` annihilates each pair on the main thread, scored to the
+hole nearest the body (its owner, or the anonymous "Black Hole"), before `ApplyVerdicts`, which drops
+the destroyed bodies — a collision outranks a capture or a throat transit on the same frame. Bodies
+already touching when the step began (a ribbon of trail falling in together) are at rest, not a
+collision. Session counter: `BlackHoleGravityField.CollisionsTotal`.
 
 **Admission** runs every `admissionInterval` (0.1 s): each hole asks `PrismSpatialIndex.QuerySphere`
 for the prisms inside its influence sphere, new ones are ranked nearest-first and admitted up to
@@ -321,246 +337,153 @@ cannot grow, so a prism stretched ×N whose bounds are just off-screen can lose 
 should show. The tensor is the radial-free-fall frame's; an orbiting prism feels the same tensor to
 the accuracy that matters on screen.
 
-## 5.1 The lens — what the player SEES (`BlackHoleLens` + `BlackHoleLens.shader` / `.hlsl`)
+## 5.1 The lens — what the player SEES (`BlackHoleLens` + `BlackHoleLensPass` + `BlackHoleLens.shader` / `.hlsl`)
 
-A black hole is invisible; what is visible is everything behind it bent around it. The hole is drawn
-by a per-pixel **Schwarzschild ray trace** of the scene behind it, not by a sphere and a disc mesh
-(that was the first cut, and it read as a black ball with a yellow ring). It is two things and
-nothing else — the shadow and the bent background:
+**The lens IS the Vessel Studio's (2026-10-10).** `Docs/Studios/StoatFlightStudio.html` draws every hole in ONE
+screen-space pass (`lensMat`, its uniforms from `setLensUniforms`), and Unity now draws it the same way, ported line
+for line. A black hole is invisible; what is visible is everything behind it bent toward it, and its shadow:
 
-- **The background distorts.** Each pixel near the hole follows its light ray backwards from the
-  eye through the hole's spacetime. A ray that escapes left along a BENT direction, and the pixel
-  shows what the scene has in THAT direction — prisms and the skybox smear into arcs, and a point
-  straight behind the hole becomes an Einstein ring.
-- **The shadow is ~2.6× the horizon.** Rays closer than the critical impact parameter
-  `b_c = (3√3/2) r_s ≈ 2.598 r_s` fall in, so the black disc on screen is the photon-capture
-  cross-section, not the horizon.
+- **The shadow** is pure black at `shadowSize` × the horizon's angular radius (2.6: the photon-capture radius
+  `b_c = (3√3/2) r_s ≈ 2.598 r_s`, so the black disc is the capture cross-section, not the horizon).
+- **The bend.** Each pixel samples the scene displaced toward the hole by `θ_E² / max(θ, shadow)` — `θ` its angle from
+  the hole on screen, `θ_E = f·tan √(2 r_s / D)` the Einstein angle (× `lensStrength`) — so something straight behind the
+  hole becomes an Einstein ring. The bend fades out from `lensFadeStart` × the reach to the reach (`lensRadiusMultiplier`
+  horizons), so it never ends at an edge.
+- **The photon ring**: a thin warm glow `(1, 0.8, 0.55) · photonRingGlow · exp(−((θ − 1.03·shadow) / (photonRingWidth ·
+  shadow))²)` hugging the shadow. It is not an accretion disc (§10): nothing orbits in it.
+- **A white hole** bends the same way (`whiteLensStrength`), and inside its core (`whiteCoreSize` horizons) the light
+  coming out of it: the bent scene × `whiteCoreSkyMix` plus a white-hot glow `whiteCoreBrightness · (1 − t)²`.
+- **A smooth well** (the crystal pair, §12) is the graded lens `A · r_c · u · e^(−u²/2)`, `u = θ / r_c`, toward its centre
+  for an attractor and away for a repulsor; no horizon, shadow or ring.
+- An owned hole's domain tint (§14, `DomainTintAmount`) still colours its shadow and core; the Stoat ships it at 0.
 
-**There is no accretion disc, by decision (2026-10-07).** What orbits and spirals into the hole is the
-REAL mass — the prisms the gravity field moves (§3) and the tides spaghettify (§5) — so the "disc"
-a player sees is the hole's own swirl of matter, not a painting. A synthetic disc was built into the
-lens (a thin Shakura–Sunyaev disc in the spin plane, relativistic Doppler beaming and redshift,
-Keplerian spiral streaks, its density fed by every capture) and went through two rounds in the
-editor: first as a flat peach-to-tan plate (its opacity was a clamp, so a fed disc sat at α = 1, and
-with no tonemapper its HDR glow was clipped per channel — fixed with Beer–Lambert opacity and a
-hue-preserving roll-off), then, correctly rendered, seen edge-on as a bright line slicing through
-the shadow. That second look is what a real disc does, and it is not what this hole should be: it
-was removed — shader, feed (`BlackHole.DiskFeed` / `NotifyCapture`), the eleven `disk*` config
-fields, its verifier properties and its renderer flags. `BlackHoleTests.Lens_HasNoPaintedAccretionDisc`
-keeps it from creeping back; if a disc is ever wanted again, the commit history has it whole.
+**How it draws.** `BlackHoleLensPass` is injected from script into every base game camera and the Scene view while a
+lens is live (no renderer feature, no asset edit). After the TRANSPARENTS it copies the camera colour
+(`_BlackHoleSceneColor`: opaques, skybox and transparents — the snow shards are bent too) and draws ONE full-screen
+triangle with `BlackHoleLens.shader`. The holes' screen numbers are worked out for that camera
+(`BlackHoleLens.ScreenWells`, the nearest 8 in front of it: centre, depth, angular horizon, Einstein term, reach, margin)
+and go with the draw in a `MaterialPropertyBlock`, so two cameras in one frame never read each other's. Each pixel sums
+every hole's displacement, samples the copy ONCE, then lays the white core, the ring and the shadow over it; a pixel no
+hole changes is discarded and keeps exactly what the camera drew. A camera that sees no hole skips the copy too.
+**What is not bent:** for each hole, a pixel whose opaque depth is in front of the hole by more than 2.6 r_s (the
+studio's `sceneZ < wC.z − wM.w`), so a vessel between you and the hole is drawn unbent over it. The depth texture is OFF
+in `URP_Asset`; `BlackHoleLens.CameraSupport` turns it on for every enabled game camera while a hole is live and
+restores each camera's own setting after. A ray bent off the screen shows the screen MIRRORED at its edge, as in the
+studio.
 
-**The equation** is the null-geodesic Binet equation `u'' + u = (3/2) r_s u²`, integrated in 3D as a
-particle under the fictitious central force `x'' = −(3/2) h² x / |x|⁵` (units of r_s; it conserves `h`
-and traces exactly the photon's orbit) with **velocity Verlet** — first-order Euler at the same step
-put the shadow's edge 2% inside `b_c`, which the harness caught. Step = 8% of the current radius, so
-rays are fine near the photon sphere and coarse far out; 128 steps per pixel by default.
+**Why it changed (2026-10-10, the user's playtest of a Stoat pair in lava lamp).** Unity drew one lens SPHERE per hole,
+30 horizons wide, each ray-tracing Schwarzschild spacetime from a copy of the scene taken before any lens. Two faults
+came from that design, not from a tuning:
+1. **Black occluding white.** A pair's spheres overlap (poles 60–200 u apart inside ~105 u lenses), and the sphere drawn
+   last painted over its partner. The `_BHHoleBank` patch (each sphere drawing the OTHER holes' shadow and core) hid it
+   only partly: the partner's own bending was still erased wherever the spheres overlapped.
+2. **A large disc round the hole.** Every bent ray that landed on something in front of the hole was swapped for the
+   skybox (`BlackHoleSky`, rendered in six faces), and a ray bent off the screen took the sky too. In lava lamp —
+   prisms and the vessel in front, a cell membrane instead of an open sky — the swapped pixels drew the sphere's
+   outline as a disc.
+A sum has no order, and nothing is swapped in, so neither can happen. Retired with it: the lens sphere mesh,
+`BlackHoleSky.cs`, the ray trace (`BlackHoleLensTrace`, `lensSteps`), `lensSkyResolution`, `lensSkyFacesPerFrame`,
+`PublishHorizonHoles` / `PublishSmoothWells` and their global banks. Added to `BlackHoleConfig` (the studio's rows):
+`shadowSize` (bhShadow 2.6), `lensStrength` (bhLensStrength 1), `whiteLensStrength` (whLensStrength 1), `whiteCoreSize`
+(whCoreSize 2.6); `lensRadiusMultiplier` is the studio's bhLensReach (30) and `lensFadeStart` its bhLensFade (0.55). All
+of them are rows in the artifact-to-game map (`Tools/Build/studio_to_unity/stoat.json`): the artifact owns their numbers and
+`/artifact-to-unity` writes them (`studio_to_unity.py --check` reports drift).
 
-**How it draws.** One SPHERE per hole — the lens volume itself, an icosphere (320 triangles) that
-circumscribes the lens radius, scaled to the lens diameter (30 r_s by default) — in the transparent
-queue, after URP copies the opaque scene. The shader draws its BACK faces (`Cull Front`): a convex
-mesh shows exactly one back-face layer over every pixel whose ray passes through it, so the lens
-covers its true screen footprint from any viewpoint — far away, close up, off to one side, or with
-the camera INSIDE the lens (a strong hole's lens is hundreds of units wide, so flying into it is
-ordinary). Its depth is pinned just inside the far plane, so a lens wider than the camera's far
-distance is never clipped. **Only what is behind the hole is lensed**: the fragment reads the depth
-texture first and discards wherever the opaque scene is in front of the hole's centre (`ZTest
-Always`, the test made in the shader), so an occluded pixel costs one depth read and never runs the
-trace. The hole grows in on spawn and shrinks out on despawn (its effective horizon rides the same
-eased weight as the warp), so the shadow never pops. Per-hole numbers go through a
-`MaterialPropertyBlock` each frame — one renderer per hole, at most four; the clock-material law
-governs prisms, not this.
+**There is no accretion disc, by decision (2026-10-07).** What orbits and spirals into the hole is the REAL mass — the
+prisms the gravity field moves (§3) and the tides spaghettify (§5). A synthetic disc was built, read in the editor as a
+disc slicing through the hole, and was removed; `BlackHoleTests.Lens_HasNoPaintedAccretionDisc` keeps it out.
 
-*Why not the first version's billboard:* a camera-facing quad at the hole's centre depth, as wide as
-the lens, covers the lens's screen footprint only from far away. Measured on axis, it missed 0.6%
-of the rays that should bend with the camera at 5 lens radii, 9.8% at 2, **22% at 1.5** (about the
-test scene's framing), 40% at 1.2, and from inside the lens it could not cover the view — the lens
-was cut off at a hard edge close up and lost entirely from inside. *Why not a full-screen camera
-effect:* it would shade every pixel of every camera for every hole; the sphere shades only the
-lens's own footprint, with the same per-pixel trace, and needs no renderer feature.
+**Stated limits** (the studio's own): a bend that lands on a foreground object shows that object (the copy cannot see
+behind it); a TRANSPARENT in front of the hole has no depth, so it is bent with the background; the gravitational-wave
+and light-shell effects of the studio's pass are not in the game (the game has no waves yet), nor its crystal mouths
+(the crystal pair carries its own mouth meshes, `Docs/CRYSTAL_WORMHOLE.md`). At most 8 holes per camera, the nearest.
 
-**What it bends: everything drawn before it — opaques, skybox AND transparents.** `BlackHoleLensPass`
-(injected from script into every base game camera and the Scene view while a lens is live — no
-renderer feature, no asset edit) copies the camera colour AFTER the transparents into
-`_BlackHoleSceneColor` (full resolution, MSAA resolved) and draws the lens from it; the lens shader's
-pass is `LightMode = BlackHoleLens`, which URP's own passes never draw. **Incident (2026-10-08): the
-snow shards were not bent.** The lens used to draw at Transparent+50 from URP's `_CameraOpaqueTexture`,
-which is copied BEFORE any transparent — the cytoplasm's snow shards (`SnowMaterial`: alpha-blended,
-queue 3000, no depth write) were never in it, and the lens, which paints every pixel of its sphere,
-covered the ones already drawn behind it: a ball 30 r_s across with no shards in it.
-`BlackHoleTests.Lens_MaterialShaderAndHlslShipTogether` now fails if the lens reads the opaque copy
-again. The lens still reads the DEPTH texture (to leave opaque mass in front of the hole unbent),
-which is OFF in `URP_Asset`: `BlackHoleLens.CameraSupport` turns it on for EVERY enabled game camera
-while a hole is live and restores each camera's own setting when the last hole goes. **Every camera,
-not `Camera.main` (incident, 2026-10-08):** in the real game the vessel's camera (CameraManager's `CM
-PlayerCam`, its own Unity Camera) is Untagged in Bootstrap, so while flying in lava-lamp freestyle
-`Camera.main` was the menu's camera; only it was patched, and the vessel camera's lens drew BLACK. The
-same mistake put "ahead of the camera" ahead of the wrong camera, so spawning measures from
-`BlackHoleLens.ViewCamera()`: the last base game camera URP finished rendering to the screen.
+**Proof** (`python3 Tools/Shaders/verify_black_hole_lens.py`, `--require-real` to make B2 and C mandatory). It reads the
+studio's OWN code out of the page and runs it beside the shipped code:
+- **A.** The studio's fragment shader (GLSL) and the shipped `BlackHoleLens.hlsl` + the shader's fragment function, both
+  translated to C++ mechanically: 108,000 pixels over 400 random sets of 1–4 black holes, white holes and smooth wells
+  agree to 1.2e-7; reversing the holes changes no pixel; past its reach the lens leaves the scene untouched and the
+  largest step across the reach is 0.0002 (no edge); a pixel in front of a hole is left alone. Negative control: the
+  photon ring moved 1.03 → 1.10 fails parity.
+- **B.** The shader compiles: glslang against a per-file URP mock (negative control: without `DeclareDepthTexture.hlsl`
+  it fails), and DXC against the REAL URP + core ShaderLibrary for D3D11, Vulkan and Metal.
+- **C.** `BlackHoleLens.ScreenWell`, cut out of the C# and compiled with dotnet, against the page's `setLensUniforms`
+  JavaScript run in node: 600 holes, worst relative error 6.5e-7. Negative control: the Einstein cap moved 1.2 → 1.3 fails.
 
-**The sky a bent ray sees off-screen is the scene's own skybox** (`BlackHoleSky.cs`). Whatever
-Lighting ▸ Environment ▸ Skybox Material names (`RenderSettings.skybox`) is drawn into six 90° faces
-of a texture array (`lensSkyResolution`, 1024 by default) — all six when a lens first appears and
-whenever the skybox or the resolution changes, then `lensSkyFacesPerFrame` (1) per frame, round-robin,
-so an animated sky like the HyperSea's stays in step — and the shader samples it by direction
-(`BlackHoleSkyFaceUV`). Nothing is rendered while no hole is live; a scene with no skybox is black
-space. The face table is a contract between the C# and the HLSL, and the verifier reads it out of
-`BlackHoleSky.cs` and checks the shader against it (property 8, with a negative control).
+`python3 Tools/Shaders/render_black_hole_lens.py --out pair.png` renders the studio's lens and the shipped one side by
+side (`--gap 3` overlaps the pair; `--only black|white`). `BlackHoleTests` holds the rest in the Editor: the shader
+compiles (`ShaderUtil.ShaderHasError`), `MaxWells` matches the shader's bank, `ScreenWell` is the studio's numbers, no sky
+is ever sampled.
 
-**Incident (2026-10-08): Unity's default sky warped around a HyperSea hole.** The lens used to sample
-URP's `_GlossyEnvironmentCubeMap`. That is the BAKED environment reflection: Generate Lighting
-rebuilds it, changing the Skybox Material does not, and a scene that was never baked carries Unity's
-DEFAULT sky in it at 128 px. So in `BlackHoleTest` — skybox switched to the HyperSea, lighting never
-generated — the lens drew the default sky's pale horizon bent around the hole, and the edge of the
-lens sphere showed as a curved seam wherever that sky met the real one. Realtime reflection probes
-were not the fix: they are off at the Very Low, Low and Medium quality levels. The scene and its
-setup tool now also carry the HyperSea sky (the tool replaces only a missing or built-in default
-skybox). Prisms' ambient light and reflections still come from the baked environment — Lighting ▸
-**Generate Lighting** brings those to the HyperSea too; the lens no longer depends on it.
+**Incident (2026-10-07): the first lens drew a MAGENTA quad.** The fragment stage called `DecodeHDREnvironment` without
+the include that declares it; a one-blob mock passed and Unity substituted its error shader. The verifier's mock is per
+file since, and because a shader that fails to compile still reports `Shader.isSupported`, `BlackHoleLens.IsDrawable`
+also asks `ShaderUtil.ShaderHasError` in the Editor: a broken lens falls back to a plain black sphere with the compiler's
+first error in a warning, never magenta. **Incident (2026-10-08): the snow shards were not bent** — the lens read URP's
+opaque copy, taken before the transparents; `BlackHoleLensPass` copies after them. **Incident (2026-10-08): the vessel
+camera's lens drew black** — only `Camera.main` (the menu's) had its depth texture on; `CameraSupport` patches every
+game camera, and spawning measures from `BlackHoleLens.ViewCamera()`, the camera on screen.
 
-**Stated screen-space limits.** A bent ray that leaves the screen samples the sky above instead of
-the scene, so off-screen prisms and shards are not lensed in; a bent ray that lands on OPAQUE mass in
-front of the hole is rejected the same way (the copy cannot see past it). A TRANSPARENT in front of
-the hole (a shard between you and it) has no depth, so it is in the copy and bent with the
-background rather than drawn over the lens. The bend is
-faded to the straight ray over the outer 45% of the lens radius — light at impact parameter `b` is
-really deflected by ~`2/b` at any distance, so a finite lens would otherwise draw a seam at its edge.
+Dials (`BlackHoleConfig`, Lens header): `lensEnabled`, `shadowSize`, `lensStrength`, `lensRadiusMultiplier`,
+`lensFadeStart`, `whiteLensStrength`, `whiteCoreSize`, `whiteCoreBrightness`, `whiteCoreSkyMix`, `photonRingGlow`,
+`photonRingWidth`. `lensEnabled` off falls back to the plain black sphere.
 
-**Seeing it without the editor.** `python3 Tools/Shaders/render_black_hole_lens.py --out lens.png`
-renders the SHIPPED HLSL (translated by the verifier's mechanical HLSL→C++ step, compiled with
-clang++) through the shader's own composite and the project's display transform, against a
-stand-in background (procedural sky, a dark-blue prism field), from any viewpoint (`--dist`,
-`--yaw`, `--pitch`, `--fov`; `--dist` below the lens radius renders from inside it), and `--hlsl`
-renders another version of the file — the way to compare a change before and after.
+## 5.2 Waves in space-time — the annihilation's wobble (`BlackHoleWaves`, 2026-10-12)
 
-**Proof.** `Tools/Shaders/verify_black_hole_lens.py` compiles the SHIPPED HLSL with clang++ and runs
-it: the shadow edge at 2.594 r_s (exact 2.598), Einstein deflection at b = 20/40/80 r_s within 0.8%
-of Schwarzschild's second-order value, no light from inside the horizon, 4,000 random rays (eyes
-inside and outside the lens) finite with unit escape directions, a seamless fade, 20,000 directions
-landing on the sky face and texel `BlackHoleSky.cs` renders — and two negative controls: a coarse step
-fails five of them, and a sky table with one face's up vector flipped fails the sky property. Both
-shader stages are then compiled twice:
-glslang against a URP mock laid out FILE BY FILE at the shader's own include paths, and DXC against
-the REAL URP + core ShaderLibrary (the graphics checkout `Tools/Build/unity_refcompile` fetches) for
-D3D11, Vulkan and Metal — each with a negative control that removes one include and must fail.
+The Vessel Studio's pairs are born and die with waves, and Unity now draws them, ported line for line
+(`StoatFlightStudio.html`: `spawnWave`, `waveAlive`, `gwStrainAt`, `setWaveUniforms`, the wave loop of `lensMat`,
+`writeBodies`). Three kinds, all photons (nothing here moves mass), local per peer like every hole visual:
 
-**Incident (2026-10-07): the first lens drew a MAGENTA quad.** The fragment stage called
-`DecodeHDREnvironment`, which lives in core's `EntityLighting.hlsl`, while the shader included only
-URP's `Core.hlsl` + the two Declare* files — none of which reach it. Unity failed the compile and
-substituted its error shader. The offline check had passed because its mock was ONE blob that
-declared every symbol the shader used, so a missing include could not fail it. Fixed by the include;
-the verifier's mock is now per-file and the real-library DXC compile is the check that would have
-caught it (`--require-real` makes its absence a failure). And because a shader that fails to compile
-still reports `Shader.isSupported`, `BlackHoleLens.IsDrawable` also asks
-`ShaderUtil.ShaderHasError` in the Editor: a broken lens now falls back to the black sphere with the
-compiler's first error in a warning, never magenta, and `BlackHoleTests.Lens_ShaderCompilesAndTheLensIsDrawable`
-fails the edit-mode suite on it. **Nothing here has been seen on screen**; the look is a playtest away.
-Dials (`BlackHoleConfig`, Lens header): `lensRadiusMultiplier`, `lensFadeStart`, `lensSteps`;
-`lensEnabled` off falls back to the plain black sphere.
+| Wave | When | What you see | Parameters (the studio's 'life' rows, `BlackHoleConfig` unless noted) |
+|---|---|---|---|
+| **In** — the white hole's light converging onto its spot | a pair is laid (`StoatDipoleExecutor.Spawn`) | a thin bright shell shrinking from far away onto the pair, bending the view across its front | `whInFrom` 700 u; its duration is the white hole's birth, `whInS` (= `StoatDipoleConfig.sourceGrowSeconds` 1.1 s); `shellBend` 6 |
+| **Gravitational** — the burst the pair's mass leaves as | the pair annihilates (`Close(annihilate: true)`) | a ripple moving out at `gwSpeed`, ringing (`gwPeriod`) and dying away (`gwRingdown`), weaker as 1/r (flat inside 60 u), loudest sideways to the line the holes met on and silent along it; crests a little brighter, troughs a little darker (`gwGlow`); the whole view stretches one way and squeezes the other as it passes YOU (`gwShake`); every prism it crosses stretches along its own x and squeezes along its own y (`gwPrism`, `PrismGravityWarp.hlsl`) | `gwAmp` 12, `gwSpeed` 120, `gwPeriod` 0.35, `gwRingdown` 1.0, `gwPrism` 0.6, `gwShake` 1, `gwGlow` 1; its mass is the pair's strength / 6 in 0.3–2 |
+| **Out** — the white hole's light leaving | the pair annihilates | a bright shell growing from the white hole, and a soft wash of light as it passes you | `whOutSpeed` 450, `whOutFade` 1.6, `shellBend` 6 |
 
-## 6. Console
+Both poles also **sink to a point over `dieS`** (`StoatDipoleConfig.dieSeconds` 0.7 s) along the studio's curve,
+1 − smoothstep(t / dieS) (`BlackHole.BeginDespawn(seconds)`), instead of the generic linear ease. And the white hole is
+`whSizeX` × the black hole (`StoatDipoleConfig.sourceSizeX` 1). Every one of these is a row in
+`Tools/Build/studio_to_unity/stoat.json`, so the artifact's values reach the game through `/artifact-to-unity` and
+`studio_to_unity.py --check` reports drift.
 
-From any scene (the HUD and the console auto-spawn; editor and development builds only):
+**How it draws.** `BlackHoleWaves` keeps the live waves (dropped when the studio's `waveAlive` says they are over: an In
+shell after `whInS`, an Out shell after 6 × `whOutFade`, the gravitational wave after 4000 u / `gwSpeed` + 8 ringdowns)
+and lays the newest four on screen per camera (`ScreenWaves`). The lens pass (`BlackHoleLensPass`) keeps running while
+any wave is alive, even after every hole is gone. `BlackHoleWarp.Flush` publishes the newest four gravitational waves to
+the prism shader. Proof: `verify_black_hole_lens.py` 1b (45,000 pixels of random waves with holes, the view stretched and
+a shell's wash, against the studio's GLSL: 1.2e-7) and 5b (a negative control), C2 (`BlackHoleWaves.cs` compiled against
+stubs vs the page's `setWaveUniforms` run in node, with its own negative control); `verify_prism_gravity_warp.py` 16 (the
+strain is the page's `gwStrainAt`, the prism stretch is 1 ± gh along its own axes; a flipped-axis control fails it).
 
-```
-blackhole tool [on|off]                          open / close the Black Hole tool (§6.1); no word = toggle
-blackhole config                                 open the tool on its config view
-blackhole spawn                                  spawn from the config's Spawn section (ahead of the camera, or at its position)
-blackhole spawn <strength> [x y z] [vx vy vz]   spawn at (x,y,z) — default 300 u ahead of the camera
-blackhole here <strength>                        spawn at the camera
-blackhole size <id> <r_s>                        resize a live hole (event-horizon radius; 0 = from strength)
-blackhole move <id> <vx> <vy> <vz>               set a hole's velocity (drive it through mass)
-blackhole strength <id> <value>                  retune a live hole's pull
-blackhole spin <id> <ax> <ay> <az>               set its spin axis (Lense–Thirring frame dragging)
-blackhole list                                   every live hole and its numbers
-blackhole white [<strength> [x y z]]            spawn a WHITE hole (§11) the same way as spawn
-blackhole pair [left|right]                      spawn a black–white pair across the camera, black on that side (default left)
-blackhole despawn <id> | all                     eased release, then destroy
-bh ...  /  black hole ...                        aliases ("black hole tool on" works as typed)
-```
+**The hole budget (fixed 2026-10-12).** The registry allowed four live holes in all, sized to the prism warp bank. With
+two AIs holding pairs, the player's squeeze was refused — "sometimes my pair spawns, sometimes it doesn't". The budget
+is now 16 (`maxBlackHoles`; the field's well list `BlackHolePhysics.NativeWells` holds 16); the prism warp bank stays at
+4 and takes the holes nearest the camera; the lens draws the nearest 8. A squeeze refused for room keeps asking while the
+trigger is held (`StoatDipoleExecutor.StepAuthority`), so it opens the moment there is room.
 
-The HUD's `BlackHole` section shows live holes, bodies, captures, how many holes are stretching
-prisms, and pulled vessels.
+## 6. Tools, keys, console and the test scene — retired (2026-10-10)
 
-### 6.1 The Black Hole tool (`BlackHoleTool`, `BlackHoleToolModel`)
+The DiagnosticsHUD console verbs (`blackhole …`, `bh`, `wormhole …`), the **Black Hole tool** panel
+(`BlackHoleTool` + `BlackHoleToolModel`, its offline proof `Tools/Build/black_hole_tool_harness` and
+`BlackHoleToolTests`), the keys (**B**, **Shift+B**, **N**, **M** — `BlackHoleHotkeys`), the
+`BlackHoleTest` scene with `BlackHoleTestHarness`, `BlackHoleTestConfigSO` / `BlackHoleTestConfig.asset`
+and **Setup Black Hole Test Scene**, and the config's Spawn section (`spawnStrength`,
+`spawnHorizonRadius`, `spawnAheadOfCamera`, `spawnDistanceHorizons`, `spawnPosition`, `spawnVelocity`,
+`spawnSpinAxis`, `pairAheadHorizons`) were deleted at the owner's request, with the registry helpers
+only they called (`SpawnFromConfig`, `SpawnPairFromConfig`, `SpawnStyledPairFromConfig`, `SpawnPoint`).
 
-`blackhole tool on` opens a panel (top-right, drag it by its title bar; `blackhole tool off` or ×
-closes it). **Its values live in the config ASSET, `Resources/BlackHoleConfig`, not in the tool**, so
-what is on the asset is what spawns — from the tool, or from `blackhole spawn` with no strength.
+**Why.** They were bring-up instruments for a hole nobody flew. Two of them auto-spawned into EVERY
+scene (`[RuntimeInitializeOnLoadMethod]`), so a stray N or M in the lava lamp laid a pair at the
+camera, and the hotkeys and the debug HUD's "cmd: blackhole tool on" made a lava-lamp hole look like
+something the menu did. The settings they edited are now the Stoat's, decided in the Vessel Studio
+(`Docs/Studios/StoatFlightStudio.html`, the field-dipole rows) and ported to
+`StoatDipoleConfig.asset`; that studio page is where a pair is tried, watched and tuned.
 
-- **SPAWN** rows edit the asset's Spawn section: **Spawn Strength** (the pull: `GM = strength ×
-  gmPerStrength`), **Spawn Horizon Radius** (the SIZE — the event-horizon radius in world units;
-  0 derives it from the strength), **Spawn Ahead Of Camera** (on by default: the hole lands straight
-  ahead of the camera you are looking through — your vessel's while flying) with **Spawn Distance
-  Horizons** (how far, in horizon radii: 6 = 120 u at strength 10; nearer than ~3 the camera is inside
-  the ~2.6 r_s shadow), **Spawn Position** (where it goes instead, world space, when that is off),
-  **Spawn Velocity** (u/s, world space; zero parks it) and **Spawn Spin Axis** (world). A caption
-  shows what those make: r_s, the shadow (~2.6 r_s), the lens radius, the position and how far it is
-  from the camera, GM and the influence radius.
-- **Spawn black** / **Spawn white** spawn from exactly those values (`BlackHoleRegistry.SpawnFromConfig`,
-  placement in `SpawnPoint`); the two **Pair** buttons lay a black–white pair across the camera, black
-  on the left or the right (§11), from the **Pair** rows (ahead, half-gap, drift, lifetime).
-  **Despawn all**; **Save asset** (Editor) writes the asset to disk.
-- **LIVE HOLES** lists each hole with **Retune** (apply the current spawn strength and size to it)
-  and **Despawn**.
-- **Config ▾** opens a second panel, docked to the left, with EVERY other field of the asset —
-  physics, budgets, vessels, spaghettification, lens — grouped by its `[Header]`, a slider wherever the field has a
-  `[Range]`, an input otherwise, clamped to its own `[Range]` / `[Min]`; hovering a label shows the
-  field's `[Tooltip]`. It is generated from the SO by reflection (`BlackHoleToolModel.EditableFields`),
-  so a field added to the config appears here with no change to the tool. **Select asset** (Editor)
-  selects it in the Inspector.
-
-Edits apply live. In the Editor they edit the asset itself and mark it dirty (the config is outside
-`_SO_Assets/`, so `PlayModeSOProtector` does not revert it) — **Save asset** persists them now, the
-project's next save otherwise.
-
-**Size and strength are separate.** A hole's horizon radius is its own `Size` when set (> 0), else
-`max(minHorizonRadius, horizonPerStrength × strength)`. So to change how big holes are: set **Spawn
-Horizon Radius** in the tool (or `blackhole size <id> <r_s>` on a live one) for one hole, or
-**horizonPerStrength** / **minHorizonRadius** for every hole that derives its size from strength.
-What the player sees scales from r_s: the shadow is ~2.6 r_s, the lens bends out to
-**lensRadiusMultiplier** r_s, and spaghettification is evaluated out to **warpReachMultiplier** r_s.
-How hard a hole of a given size shreds is `GM·τ²/r_s³` — a bigger hole at the same strength stretches
-LESS at its horizon (§5).
-
-**Proof.** `Tools/Build/black_hole_tool_harness/run.sh` compiles the SHIPPED `BlackHoleConfigSO.cs`
-and `BlackHoleToolModel.cs` (with a handful of `UnityEngine` stubs — the engine's reference DLLs have
-no method bodies) and runs them: the tool reaches all 29 config fields, every number is bounded, the
-asset, the SO and the tool agree key for key and the asset loads through the model sane, the size
-helpers, the clamping, the labels and the switch — and two negative controls (a config with an
-unsupported field, an asset with a renamed key) fire. `BlackHoleToolTests` (edit mode) checks the
-model against Unity's own `SerializedObject` view of the asset, the spawn pose, the size helpers, the
-clamping, and builds the real panel and closes it.
-
-### 6.2 Keys, and how to test it (`BlackHoleHotkeys`)
-
-Editor and development builds, any scene, ignored while a text field has focus:
-
-| Key | Does |
-|---|---|
-| **B** | Open / close the Black Hole tool (in the Editor it also selects `Resources/BlackHoleConfig` in the Inspector) |
-| **Shift+B** | Spawn a hole from the config right now — ahead of the camera — without opening anything (Shift also boosts while flying) |
-| **N** / **M** | Spawn a black–white PAIR across the camera — black on the LEFT (N) or the RIGHT (M); N sits left of M on the keyboard. The Stoat's sling, from any vessel (§11) |
-| `blackhole tool on` / `off` | The same as B, from the DiagnosticsHUD console (`blackhole config` opens the config view) |
-
-**In freestyle** (Menu_Main): **B** opens the tool, Shift+B spawns ahead of the camera. (The Cell Selector's
-*Crystal Wormhole* runs smooth wells, not black holes — `Docs/CRYSTAL_WORMHOLE.md`.)
-
-**In lava-lamp freestyle** (Menu_Main, flying a vessel): **B** → set strength/size/distance → close
-it with B → **Shift+B** while flying: the hole appears straight ahead of your vessel's camera
-(the view you fly — `BlackHoleLens.ViewCamera()`, the camera actually on screen, which is not `Camera.main` there).
-It pulls the cell's prisms and your vessel — faster than the local escape speed gets away,
-slower is drawn in and held at the horizon (§4) — so boost out, or **Despawn all** / `blackhole
-despawn all`. Lava lamp's lifeforms are not pulled (§8), and the scene's lighting bake does not
-matter: the lens bends whatever skybox the scene renders (§5.1).
-
-## 7. The test scene
-
-**Not on bleeding-edge.** `BlackHoleTest.unity` (a prism-lattice field, a centre hole and a
-fly-through, driven by `BlackHoleTestHarness` / `bhtest`), its config `BlackHoleTestConfigSO`, the
-**Setup Black Hole Test Scene** tool and the Transport-Fever-style `MouseOrbitCamera` (§7.1 on that
-branch) live on `claude/peaceful-rubin-hhw49n` and were deliberately left there when the black hole
-alone was brought over. The in-game place to see a hole is the Black Hole cell (§11), or Shift+B
-anywhere (§6.2). Bring the scene over as its own change if it is wanted; nothing here depends on it.
+**What stays.** Everything a laid hole needs: `BlackHole`, `BlackHoleRegistry` (`Spawn`, `SpawnPair`,
+`SpawnCrystalPair`, `LetGo`, `Annihilate`, the driver), the gravity field, the vessel pull, the warp,
+the lens and its pass, the sky, `BlackHoleConfigSO` and its asset, and `BlackHoleTests` /
+`BlackHolePhysicsTests`. Sections below that name the tool, its buttons or `blackhole …` verbs are the
+record of how a behaviour was first tried, not a way to reach it today.
 
 ## 8. Stated limits of the simple version
 
@@ -610,7 +533,7 @@ Offline, in this order; nothing was run in the editor:
   namespace` false positives in untouched files. `check_generated_assets.py`: 4 added + 2 modified
   assets OK against the compiled schema.
 - Edit-mode: `BlackHoleTests` (HLSL/bank/slot agreement, splice order on both graphs, validator
-  specs, config sanity, residency budget; the test-scene wiring test stayed with the scene, §7) and `BlackHolePhysicsTests` (eleven
+  specs, config sanity, residency budget; the test-scene wiring test was deleted with the scene, §6) and `BlackHolePhysicsTests` (eleven
   claims about what a hole does, run through the shipped integrator) — written, to be run in the
   editor with the rest of the suite.
 
@@ -686,6 +609,11 @@ Evidence, on the final tree:
 - **A viscous swirl as "frame dragging"** (every body coupled to a frame turning at a fraction of the
   circular speed). It swept mass at rest into orbit from far out — a whirlpool, not a spinning hole.
   Lense–Thirring falls as `1/r³` and advects position; orbits come from angular momentum (§2).
+- **One lens sphere per hole, ray-tracing Schwarzschild spacetime** (2026-10-07 to 2026-10-10). Exact bending, but each
+  sphere drew from a copy of the scene taken before any lens, so overlapping holes erased each other, and its sky swap
+  drew a disc round the hole in lava lamp (§5.1). The studio's one-pass sum replaced it. Do not go back to per-hole
+  geometry for the lens: any per-hole draw has an order, and the pair overlaps by design.
+
 - **Summing the tides of two holes in the shader.** The tensors do add, but two stretch axes do not make
   one stretch about a single axis, and the per-prism map would stop being a pure stretch. The larger
   tide wins, as the larger pull wins in the integrator.
@@ -707,18 +635,14 @@ smooth well (§12) keeps charming-cerf's signed lens and tides.)
 | Frame dragging (§2) | ω about the spin axis | −ω (angular momentum flips under time reversal) |
 | Capture | a body at r ≤ r_s is captured | never — a body inside the horizon is one it is emitting, and the pole guard's floor gives it the kick out |
 | Tides (§5) | `GM·τ²/r³` stretch along the radial | the same (tides are even under time reversal; the bank publishes \|GM\|) — an emitted body starts a needle and relaxes as it leaves: the capture movie backwards |
-| Lens (§5.1) | the same bending; rays through the horizon draw the SHADOW | the same bending (traced +1); rays through the horizon draw the CORE |
+| Lens (§5.1) | the same bending; inside the shadow radius, black | the same bending; inside the core radius, the white-hot core |
 | Vessels (§4) | pulled; a vessel crossing a PAIRED horizon is carried to the white hole | pushed, through the same channel |
 
-**The core.** What comes out of a white hole is what fell into its paired black hole from the far
-side — the sky continues through the tunnel — so the core samples the scene's own skybox
-(`BlackHoleSky`) in the direction the backward trace crossed the horizon, under a glow that is
-white-hot at the core's centre and gone at its rim (the photon-capture radius, 2.6 r_s):
-`core = sky(crossing) × whiteCoreSkyMix + whiteCoreBrightness × (1 − b/b_c)²`. A smooth well (§12) has
-no horizon and so no core. With
-HDR on and no tonemapper, a brightness above 1 clips to pure white at the centre. Stated
-approximation: the emitted light is the SKY behind the black hole, not the prisms around it (that would
-need a camera render per hole); the lensed background outside the core is the real scene.
+**The core** (the studio's, since 2026-10-10 — §5.1): inside `whiteCoreSize` horizons the bent scene × `whiteCoreSkyMix`
+plus a glow white-hot at the centre and gone at the rim, `whiteCoreBrightness × (1 − θ/core)²`. (It used to sample the
+skybox along the direction a backward ray trace crossed the horizon; that trace and its sky are retired.) A smooth well
+(§12) has no horizon and so no core. With HDR on and no tonemapper, a brightness above 1 clips to pure white at the
+centre.
 
 **A pair** (`BlackHoleRegistry.SpawnPair`, `BlackHolePairMath`): a black hole and a white hole born
 together, either side of a midpoint along one axis, the same size. A HELD pair (the Stoat's, while its
@@ -755,8 +679,7 @@ out (`BlackHoleWarp.VesselLogStretch`, the prisms' tide × `vesselTideScale`; dr
 **Proof.** `BlackHolePhysicsTests`: a white hole repels with the black hole's magnitude and turns its
 frame the other way (the source's sign in GM and frame drag), a white hole never captures and pushes a body at its horizon past its influence sphere, a let-go
 pair only closes and meets where its horizons touch (`SecondsToMeet`, and `SecondsLeft` after it), the exit is the point reflection with the entry
-velocity outward. `verify_black_hole_lens.py` property 9: 2,000 captured rays report a unit, finite,
-inward crossing direction. `render_black_hole_lens.py --white` renders the core offline.
+velocity outward. `render_black_hole_lens.py --only white` renders the core offline, the studio's beside the shipped one.
 
 **The Stoat** (`R_VesselActions/STOAT.md` §1) is the vessel built on this. PRESS lays a HELD pair
 beside the hull — the attractor perpendicular to the nose on the trigger's side at the orbit radius the
@@ -822,6 +745,20 @@ config can hold the mouth material (shown by name, edited on the asset). Tests: 
 **Fly both before choosing:** the web studio (`Docs/Studios/StoatFlightStudio.html`, live in the one Vessel Studio with
 the shared decision log, https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) flies the Stoat on a
 gamepad through the game's own stick mix with either style, and compares them split-screen.
+
+## 13a. The studio's look (2026-10-10)
+
+The Vessel Studio's lens pass (`Docs/Studios/StoatFlightStudio.html`, `lensMat`) is the reference for how a
+pair looks: a pure black shadow at 2.6 r_s, the Einstein bending, a thin warm **photon ring** at the shadow's
+edge (`(1, 0.8, 0.55) · 0.55 · exp(−((b − 1.03 b_c) / (0.06 b_c))²)`), and on a white hole the same bending with
+the white-hot core (×4, sky mix 0.8). The Unity lens matched all of it but the ring, which it now draws
+(`BlackHolePhotonRing` in `BlackHoleLens.hlsl`, `_BHCore.zw` = `photonRingGlow`, `photonRingWidth`; black holes
+only), and an owned hole's domain tint (§14), which tinted the shadow jade; the Stoat ships it at 0. The ring is
+not an accretion disc (§10): it is a fixed thin glow at the photon sphere, nothing orbiting.
+
+**Overlapping lenses (2026-10-10).** A pair's two lens spheres overlapped and the sphere drawn last erased its partner;
+a first patch had each sphere draw the others' shadow and core (`_BHHoleBank`). Superseded the same day by the studio's
+own one-pass lens (§5.1), which sums every hole and has no order at all.
 
 ## 14. Owner rules on a hole (2026-10-09, the Stoat's field dipole)
 

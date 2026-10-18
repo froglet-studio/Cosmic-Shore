@@ -48,6 +48,9 @@ import arcade_mode_lib as aml  # noqa: E402  - committed_scene (the clone's stan
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from arcade_mode_lib import wrap_yaml_scalar  # noqa: E402
+
 
 def guid(name: str) -> str:
     """Deterministic GUID for a stable asset name (asset-surgery: generator-authored family)."""
@@ -332,9 +335,10 @@ for _dirpath, _dirnames, _filenames in os.walk(os.path.join(ROOT, SCRIPTS_DIR)):
             _script_names[_m.group(1)] = _fn[:-len(".cs.meta")]
 
 # Which of those classes are actually flora GROWTH RULES. Read from the declaration rather than
-# assumed from the file name, because two prefabs in the flora folder carry components that are
-# not Flora at all (SeaweedFlora's SegmentSpawner, oldWallFlora's GyroidAssembler) and counting
-# them would inflate "how many families does the project ship" by two.
+# assumed from the file name, because a prefab in the flora folder can carry a component that is
+# not a Flora at all (SeaweedFlora's SegmentSpawner; oldWallFlora's GyroidAssembler was the second
+# until that prefab was deleted, 2026-10-14) and counting it would inflate "how many families does
+# the project ship".
 _flora_subclasses = set()
 for _dirpath, _dirnames, _filenames in os.walk(os.path.join(ROOT, SCRIPTS_DIR)):
     for _fn in _filenames:
@@ -671,13 +675,15 @@ CELL_DESC_TMPL = (
     "TOLLWAY.md."
 )
 for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
+    _cell_desc = wrap_yaml_scalar(CELL_DESC_TMPL.format(
+        i=_i, plants=ANCHOR_PLANTS, species=_sp,
+        family=ANCHOR_FAMILY[_sp],
+        volume=ANCHOR_VOLUME[_sp], prisms=ANCHOR_PRISMS[_sp],
+        restless=RESTLESS_DAISES, frenzy=FRENZY_DAISES,
+        maxdaises=MAX_MATCH_DAISES, target=TOLL_TARGET))
     emit(f"{ANCHOR_FLORA_DIR}/Tollway Cell Config {_i}.asset",
          HEADER_FOR(EXISTING["CellConfigDataSO"], f"Tollway Cell Config {_i}") + f"""  CellName: Tollway
-  Description: {CELL_DESC_TMPL.format(i=_i, plants=ANCHOR_PLANTS, species=_sp,
-                                      family=ANCHOR_FAMILY[_sp],
-                                      volume=ANCHOR_VOLUME[_sp], prisms=ANCHOR_PRISMS[_sp],
-                                      restless=RESTLESS_DAISES, frenzy=FRENZY_DAISES,
-                                      maxdaises=MAX_MATCH_DAISES, target=TOLL_TARGET)}
+  Description: {_cell_desc}
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: 2
   CellEndGameScore: 0
@@ -1110,7 +1116,7 @@ if _anchor_outer_world - _anchor_inner_world < 100.0:
 # is that each setting is visibly a different place. The bar is DERIVED from what the project
 # actually ships rather than written as a literal - count the distinct growth components across
 # the flora prefabs (a component that derives from Flora, which is what excludes SeaweedFlora's
-# SegmentSpawner and oldWallFlora's GyroidAssembler), and require the roster to span as many of
+# SegmentSpawner), and require the roster to span as many of
 # them as four intensities can.
 _families_available = set()
 for _fn in sorted(os.listdir(os.path.join(ROOT, FLORA_PREFAB_DIR))):

@@ -62,7 +62,7 @@ namespace CosmicShore.Editor
 
         const int ReportDisplayCap = 40000;   // TextArea slows down beyond this; full text always goes to the Console/Editor.log
 
-        [MenuItem("FrogletTools/Interface/Canvas Upgrader")]
+        [MenuItem("FrogletTools/UI/Canvas Upgrader", false, 211)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 3,
             Description = "Bring a legacy canvas up to the current UI conventions.")]
         static void Open()
@@ -201,7 +201,7 @@ namespace CosmicShore.Editor
 
             EditorGUILayout.HelpBox(
                 "Perf, while you're in here: the 'raycast targets on' counts above drive EventSystem cost and are " +
-                "worth auditing per upgraded scene with FrogletTools > Interface > Raycast Target Audit " +
+                "worth auditing per upgraded scene with FrogletTools > UI > Raycast Target Audit " +
                 "(scan, review candidates, disable, click through the UI once).",
                 MessageType.None);
 

@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class StraightLineGenerator : SpawnableBase
     {
-        public enum RotationMode { Random, Constant }
+        public enum RotationMode { Random = 0, Constant = 1 }
 
         [Header("Straight Line")]
         [SerializeField] int count = 10;

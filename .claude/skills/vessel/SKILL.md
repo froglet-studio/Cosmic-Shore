@@ -14,6 +14,12 @@ permanently-latched init race, a gauge bound to a meter that never raises events
 drift within the branch itself. This skill exists so that never happens again. Follow it
 exactly.
 
+> **See it before you change it: the Vessel Studio.** If the task changes how a vessel FLIES or FEELS, its AI, its
+> difficulty, its play styles or its cameras, recommend the Vessel Studio first
+> (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) and load **`/vessel-studio`**. The team decides those questions
+> by playing and watching there, then ports the settled numbers here once (its D13). A vessel with no studio yet
+> gets one by `/vessel-studio` §2. This skill stays the contract for the Unity side.
+
 ## 1. The contract (what every vessel is)
 
 > **Four abilities, each mapped to one of the four elements, each with a level-5 upgrade, each
@@ -57,11 +63,11 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
    was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
 3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
-   **FrogletTools > Vessels > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
+   **FrogletTools > Vessels > Wiring > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
    ANY vessel's four-icon row from nothing at the fleet-standard bands; idempotent, never touches
    sprites, adopts authored gauges by name. This is the mechanical half of taking a vessel from 0/4
    to 4/4 once its map is designed),
-   **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
+   **FrogletTools > Vessels > Audits > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
    Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
    report and game cannot disagree.
 4. **Per-vessel NUMBERS come from the prefab, never the class default.** Reasoning about a
@@ -729,7 +735,55 @@ applies to new abilities, new resources on the meter list, and anything that add
     `remove_gameobject_tree`, `dangling_refs`) is the reference, and it took the Stoat from 4,381 lines to 2,038 with
     zero dangling references. (Stoat own-vessel pass, 2026-10-13.)
 
-47. **Anything a peer DECIDES from input must read input every peer has - and a GESTURE is input no
+47. **A procedural hull with NON-CONVEX pieces needs a parity-ray winding test, and hinged SIBLINGS must be posed
+    as a chain.** The Stoat harness checks winding as "every face points away from its piece's centroid" — exact for
+    convex pieces and wrong for a torus (a hitch ring's inner faces point AT the centroid) or a curved blade. The
+    Thresher's harness (`Tools/Build/thresher_hull_harness`) instead offsets a point a hair along each face's front
+    and counts ray crossings with the rest of its closed piece (odd = the face points inward), negative-controlled
+    with a flipped face. Second: parts the builder emits as SIBLINGS (so each carries its own mesh) but that read as
+    one limb — a tail in segments — open a gap at every joint the moment each rotates about its own pivot. Pose them
+    with one composition (`ThresherSwimMath.PoseChain`: joint k sits at joint k−1's ACCUMULATED rotation applied to
+    the rest offset) and assert in the harness that each segment's end, carried by its own pose, lands on the next
+    pivot over a full beat. Third: the second clone to drop its donor model reuses the first one's machinery —
+    `author_thresher_assets.py` IMPORTS `author_stoat_assets`'s document-model helpers (split_docs, remove_instance,
+    dangling_refs) rather than copying them; their error text still says "Stoat.prefab" (a refactor row in
+    THRESHER.md). (Thresher own-vessel pass, 2026-10-13.)
+
+48. **A LOCAL-only presentation state must never gate a SIMULATED consequence — move the predicate into
+    the per-peer step and make the presentation follow its edges.** The Thresher's launch view was decided
+    inside the camera code (`_spectating`, the local pilot only), and "turn the trail off while the
+    crosshair is up" read as one line against it. On the owner, yes; but trail prisms are laid on EVERY
+    peer, and a guest's copy of the hull has no camera state, so it would lay a ring of prisms the owner
+    never laid. That is a permanent prismscape desync, not a visual glitch. The fix (2026-10-14) moved the
+    engage/release rule into `StepChain` as `LaunchViewUp`, built only from state every peer simulates
+    (the chain's spin, the triggers as replicated edges), and the camera switches on ITS edges, so
+    crosshair-on == trail-off holds by construction. Before keying a consequence to a camera, HUD or
+    input-depth state, ask whether a remote copy of this hull can see that state; if not, it has to be
+    computed somewhere that one can. A shared last-writer flag (`SetSpawnerPaused`) is written on EDGES,
+    never per frame, or it fights its other writers every frame.
+
+49. **An ability's object the pilot must SEE goes inside the chase camera's frustum — "beside the hull" is off
+    screen.** The Stoat's Time mode laid its attractor square to the side at the orbit radius (150 u) with the
+    chase camera 21 u behind: ~80° off the view axis, outside every FOV the game ships. In play: "I couldn't see
+    the poles at all and was just pulled right or left." Fixed (2026-10-14) by laying it 150 u AHEAD and 45 u to
+    the side, where a catch then takes over (`StoatSlingMath.CatchPair`, a test asserts < 30° off the nose).
+    Before shipping a placement, compute its angle off the camera's forward from the shipped camera settings
+    (`StoatCameraSettingsSO.followOffset`, the FOV) — a cue the pilot cannot see is an unexplained force.
+50. **Never draw instanced `Sprites/Default` (or any sprite shader) with `Graphics.RenderMeshInstanced`.** Its
+    instanced variant reads `unity_SpriteFlipArray` / `unity_SpriteRendererColorArray` per instance; only a
+    `SpriteRenderer` fills them, so both read ZERO and `UnityFlipSprite` collapses every quad to a point. No error,
+    nothing drawn. The Stoat's 3D path dots shipped that way and the path vanished ("I no longer see the
+    foresight"). Draw custom geometry with a shader whose only per-instance datum is the matrix the call fills
+    (`CosmicShore/StoatPathDots`, shipped via a `Resources/` material so builds carry it) — and for many
+    billboards, ONE dynamic mesh with the colour in the vertex colour beats N instances.
+51. **Amoebius compiles `Assets/_Scripts` LIVE: a Unity API its shim lacks breaks the engine's build.** The
+    reference compile (`unity_refcompile`) is against real Unity and stays green; it cannot see this.
+    `Graphics.RenderMesh`, `Mesh.Clear(bool)`, ranged `SetColors` / `SetIndices`, `RenderParams.camera` and
+    `Vector3.RotateTowards` were all missing (2026-10-14). Build it (`dotnet build Port/src/CosmicShore.Live`,
+    .NET 10 SDK) whenever a change calls an engine API the game did not call before, and write to the overloads
+    both have (`RenderMeshInstanced` with one identity instance, list-based mesh setters). A game branch does not
+    edit `Port/` (Port/CLAUDE.md); a missing API worth having is a port-branch row.
+52. **Anything a peer DECIDES from input must read input every peer has - and a GESTURE is input no
     AI has.** Three Rhino defects, one shape (2026-10-16, `R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
     - **A press/release event is not a pose.** Remote replicas posed the sword from the replayed
       press events - a full ±1 swing the moment a trigger crossed its deadzone - while the pilot
@@ -870,7 +924,7 @@ actually draws — take their size from the **transform chain**, which is precis
 - **Scale the TRANSFORM, not the particle module**, and only because these systems are
   `Hierarchy`-scaled: it moves particle size, emission shape, particle speed AND the nested
   `Trail` child's standoff together. `startSizeMultiplier` would move one of the four.
-- Audit rather than remember: *FrogletTools > Vessels > Audit Vessel Tails and Jets* reports each
+- Audit rather than remember: *FrogletTools > Vessels > Audits > Audit Vessel Tails and Jets* reports each
   hull's effective plume against its camera-derived target and flags `UNSIZED`. Sparrow, Rhino,
   Grizzly and Scarab are still unsized — known, deliberate, recorded in the doc's follow-ups.
 
@@ -1002,6 +1056,56 @@ shipped a change that changed nothing. Two rules:
 And then §4.ab applies: a stronger shove is a faster vessel, so any mode cut against that
 vessel's curve has to be re-cut (Grizzly Time went 14 gates on 560 u -> 8 on 800 u).
 
+### 4.ab3 "Slower rounds, the same range" multiplies the rounds in the air — size the pool from rate × flight time
+
+Range is `speed × 2T/π` (rule 34: the WHOLE velocity eases to rest, inherited part included), so a gun slowed to a tenth
+of its speed keeps its range only with ten times the flight time — and every gun's rounds-alive is `rate × T`. The
+Brittle Star's arms (2026-10-15: 1350 → 135 u/s, `projectileTime` 0.3 → 3 s) went from ~135 to **1,350–2,160 rounds alive
+per hull**. Unity's `ObjectPool` does not block when empty: a miss instantiates synchronously and a return beyond
+`maxSize` destroys the round, so an undersized pool turns into hundreds of instantiate/destroy calls a second rather
+than an error. When a speed or flight time moves: recompute `rate × muzzles × T × (the Space range multiplier at 10)`,
+size the turret's pool (`defaultCapacity` / `bufferSizeTarget` / `maxSize`, and its refill rates) from it, say the cost in
+the vessel doc with the cheap knob (the fire rate) beside it, and check two side effects: a hull flying faster than its
+own rounds outruns them within T (own-domain hulls are immune, `Projectile.DisallowImpactOnVessel`), and an in-flight
+growth factor (`Gun.FireGun`'s `flightGrowthFactor`, the Sparrow's look) grows the HIT radius too.
+
+### 4.ab4 Analog-trigger-driven STATE diverges across peers; a heat limit bounds the pool
+
+The fleet's analog triggers (`InputStatus.RightTriggerAnalog`) do not replicate — the Thresher, the Manta's analog turn
+boost and the Brittle Star all read the owner's depth and fall back to "a press is a full pull" on remote copies and the
+autopilot (`ThresherExecutor.PollTriggers`). That is tolerable for something cosmetic or per-peer (a fire RATE, a cord's
+stiffness), but anything the depth ACCUMULATES into is state: the Brittle Star's gun heat runs hotter on a remote copy
+during a partial pull, so its overheat — and the danger trail it switches on — can differ by peer (vessel rule 48).
+Before keying gameplay state off an analog depth, either replicate the depth (two bytes a frame) or write down the gap in
+the vessel doc and its verification list, as `BRITTLE_STAR.md` §3.4 and follow-up F13 do. And when a gun overheats, the
+burst length — not the sustained rate — sizes its pool (4.ab3): rounds alive ≈ rate × guns × seconds-to-overheat for a
+burst that outlives its flight time, not rate × guns × T forever (the Brittle Star's five guns, measured at the first
+heat numbers: ~1,100, not 4,050). The cap only holds while the burst is SHORTER than the flight: once a later round
+lengthened the bursts (6 s at Space 0, 20 s at Space 10, `cece/gallant-bell-eq7kul`) the 20 s burst outlives the 9 s
+flight and the count is back to rate × guns × T, ~4,000 — so re-derive the pool whenever heat or range is retuned.
+
+### 4.ab5 A hull's effect mesh is a pure FORM: tested, twinned in its studio, and never flat
+
+The Brittle Star's ring explosion (`BrittleStarBlastForm`, `cece/gallant-bell-eq7kul`, 2026-10-18) set the pattern for
+a vessel effect drawn as one dynamic mesh:
+- **The shape is a pure static function** (settings in, flat-shaded triangle lists out, no Unity object), so
+  `BrittleStarTests` run it under the Roslyn harness and the executor only uploads it (lists reused: no allocation but the
+  mesh upload). The studio page carries a line-for-line JS twin, and parity is checked by dumping the C# corners and the
+  JS corners for the same settings and comparing point sets (farthest point 0.001 u).
+- **Nothing in the world looks flat** (LOCKED, `Docs/claude/SHADERS_AND_PERFORMANCE.md`): every part is a faceted beam
+  or crystal the domain material lights, and **every thickness scales with the effect's own size** — a 6 u beam across a
+  780 u blast read as wire. Pin it with a test a flat sheet fails (most facets face sideways; it stands out of the plane)
+  and a negative control that flattens it.
+- **Honest in the direction that decides play**: never drawn past the edge where prisms stop breaking (tested, with a
+  negative control). Where the gameplay volume is thinner than any readable look (a 1.76 u disk), let the look stand out
+  of the plane and say so in the vessel doc.
+- **Draw it in the thrown object's own frame** (`Detonate(at, ring.rotation)`), so its symmetry starts from the object's
+  points and keeps its spin.
+- **Two traps.** The fleet spawner lays a SINGLE (gapless) trail at `BaseScale.x / 2` (`VesselPrismController.CreateBlock`:
+  `BaseScale.x * XScaler / 2f - |halfGap|`), so a hull that lays extra trails from `TrailBaseScale` lays them twice as
+  wide as its base trail unless it halves x too. And the harness's `UnityEngine` stub has `.normalized` but no
+  `Normalize()`: write `v = v.normalized` in pure code the harness compiles.
+
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 
 Some placed objects look different to different pilots: the Butterfly's fold wormhole first
@@ -1053,6 +1157,64 @@ objects no-ops off the server (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
   real path within 3 s of starting a held turn (measured 2026-10-13, `StoatDipoleMath.HullResponse` fixed it
   to within 2 u). Seed the predictor from `CommandedRotation`, the follow rate and the throttle target, and
   pin it with a test against a frame-stepped model of the transformer (`StoatDipoleTests` has one).
+
+### 4.ad Porting a vessel from its studio — the settings, the CAMERA, and the AI's hand-over
+
+The studio (`/vessel-studio`) is where a vessel's numbers are decided; the Unity port is a COPY of them, and
+the Stoat's first port (2026-10-10) showed the three places a copy goes wrong. Do all three, every port:
+
+1. **Every studio number lands in the vessel's config SO, and the ARTIFACT owns it.** The generator SEEDS the
+   tuning assets once (and checks they exist with the right script); from then on their numbers come from the Vessel
+   Studio artifact, written by **`/artifact-to-unity`** (`Tools/Build/studio_to_unity.py`, `--check` for drift). Tune
+   in the artifact, press Record, clone; never tune those fields in Unity. (Asserting the numbers in the generator made every live tweak fail
+   its gate.) Before that seeding existed the rule read:
+   The Stoat's is `Tools/Build/author_stoat_assets.py` (its "vessel creation tool": the prefab, the class
+   asset, the registrations, the dipole config and the camera asset, each `--check`ed). An asset edited
+   by hand drifts from the generator, and the next re-run silently puts the old numbers back. Map each studio
+   row to its field and record the map in the vessel's doc (`STOAT_DIPOLE.md` §1: `ftAhead` → `aheadDistance`,
+   `ftStrength × 20,000` → `poleGM`, `ftTurnScale` → the prefab's turn rates ×0.4, `aiWarpQ` →
+   `autopilotHold01`, …). A studio number that the Unity side deliberately maps to an ELEMENT LEVEL (the
+   Stoat's boost: the studio's 3× is Time level 5, 2× at rest, 4× at 10) is a design decision, not a
+   drift; say so in the tooltip, and do not "fix" it to the studio's flat value.
+2. **The camera is part of the vessel.** A cloned prefab keeps its donor's `VesselCameraCustomizer.settings`,
+   so the Stoat flew on the Squirrel's camera (flat, 17 u straight behind, looking at the hull) and read as
+   "the camera is off". Give the vessel its OWN `CameraSettingsSO` at the studio's chase framing:
+   `followOffset` = the studio's chase offset with z negated (three.js forward is −z), and
+   `lookAheadDistance` / `lookAheadLift` = the studio's look point (`hull + fwd·N + up·M`). Both are 0 on
+   every other vessel, which keeps the camera aimed at the hull exactly as before. Port the studio's
+   **easing** too (`chaseEaseRate`: the studio's chase closes on its target at 7/s, so the hull swings in the
+   frame through a turn; a hard-attached camera reads as "off" beside it). **Never override the player's FOV**
+   (a graphics setting, `DisplayGraphicsSettings`, default 90, re-applied on every change). Instead set
+   `framingFieldOfView` to the studio's FOV (68): the camera moves nearer by tan(68°/2)/tan(fov/2) and turns
+   its look so the hull reads the same size AND sits at the same height on screen at whatever FOV the player
+   chose (`CustomCameraController.FramedLook`, `CameraLookAheadTests`). A per-vessel FOV was tried first and
+   reverted: `CameraSettingsApplier` re-applies the player's value on every settings change.
+4. **The studio's look has no owner tint.** A slung hole's `DomainTintAmount` filled the black hole's shadow
+   with the owner's dark domain colour (it read as JADE, not black). The studio draws a pure black shadow, a
+   warm photon ring and a white-hot core; the Stoat's config ships the tint at 0, and the lens draws the ring
+   (`BlackHoleConfig.photonRingGlow` / `photonRingWidth`, the studio's `bhRingGlow` / `bhRingWidth`).
+3. **An autopilot that PRESSES an input must RELEASE it when it hands the hull back.** The lava lamp flies
+   the menu vessel on AI and hands it to you when you click. The Stoat's autopilot ran only while the AI
+   flew, so a pair it was holding stayed pressed forever: the menu's pair stayed open and its field flung
+   the hull from the first frame of freestyle (what looked like "a black hole spawned at the centre, the
+   camera off the vessel"). Any executor whose autopilot holds a replicated press needs a hand-back path
+   (`StoatDipoleExecutor.HandBackAiHold`): on the frame `AutoPilotEnabled` goes false with the AI's press
+   still held, stop it through the same replicated path it was pressed with.
+5. **Port a studio's LOOK the way the studio draws it, and prove it against the page's own code.** The black and
+   white hole lens was first rebuilt in Unity a different way (one ray-traced lens sphere per hole); two faults
+   came from that design and no tuning could reach them: the pair's overlapping spheres painted over each other,
+   and the sphere's skybox swap drew a disc round every hole in lava lamp. The fix was the studio's own structure
+   (`lensMat`: ONE screen pass summing every hole), ported line for line (`BlackHoleLens.shader`,
+   `BlackHoleLens.ScreenWells`). `Tools/Shaders/verify_black_hole_lens.py` extracts the page's GLSL and
+   `setLensUniforms` JavaScript and runs them beside the shipped HLSL and C# — copy that shape (extract, translate
+   mechanically, compare, plus a negative control) for any studio visual you port.
+
+Prove the port in Amoebius before handing it over (the `/amoebius` loop; `Port/CLAUDE.md`): set the menu hull
+to the vessel (`Menu_Main.unity` `menuVesselClass`, reverted after), wait for the AI to use its ability,
+click into freestyle, then read the camera (`get "CM PlayerCam" CustomCameraController _followOffset`), the
+live holes or placed objects (`do eval …Registry.Count`) and a screenshot. Amoebius compiles the game
+live, so a missing engine API (the boot fix's `MissingReferenceException`) shows up there first; that gap
+belongs in `Port/src/CosmicShore.Engine`, its own commit.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
@@ -1128,7 +1290,7 @@ up the enforcement ladder the shipped systems use:
 5. **Record it**: CLAUDE.md + this skill's CONTRACT.md + the ship checklist.
 
 **Worked example (2026-08):** the skimmer half of that gap is now closed —
-`VesselSkimmerAudit` (`FrogletTools > Vessels > Audit Vessel Skimmers`) walks every vessel
+`VesselSkimmerAudit` (`FrogletTools > Vessels > Audits > Audit Vessel Skimmers`) walks every vessel
 prefab's `NearFieldSkimmer`/`FarFieldSkimmer` to its GameObject and checks active state up the
 whole ancestor chain, the impactor/`ImpactCollider`/trigger-collider/`Rigidbody` the trigger path
 needs, and whether the container holds prism effects; when a container asks for the forcefield

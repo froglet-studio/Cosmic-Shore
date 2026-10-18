@@ -10,6 +10,7 @@ namespace CosmicShore.Engine
     {
         static float _frameDeltaTime;
         static bool _inFixedPhase;
+        static float _levelLoadTime;
 
         /// <summary>Scaled frame delta; reports <see cref="fixedDeltaTime"/> during FixedUpdate (original contract).</summary>
         public static float deltaTime => _inFixedPhase ? fixedDeltaTime : _frameDeltaTime;
@@ -23,6 +24,14 @@ namespace CosmicShore.Engine
         /// </summary>
         public static double timeAsDouble => time;
         public static float unscaledTime { get; private set; }
+
+        /// <summary>
+        /// Scaled seconds since the last Single scene load finished (original contract), marked by
+        /// <see cref="SceneManagement.SceneManager.NotifySceneLoaded(SceneManagement.Scene, SceneManagement.LoadSceneMode)"/>.
+        /// </summary>
+        public static float timeSinceLevelLoad => time - _levelLoadTime;
+
+        internal static void MarkLevelLoaded() => _levelLoadTime = time;
 
         /// <summary>
         /// Wall-clock seconds since startup in the original engine. Backed by the
@@ -42,6 +51,12 @@ namespace CosmicShore.Engine
         /// </summary>
         public static float maximumDeltaTime { get; set; } = float.PositiveInfinity;
         public static float timeScale { get; set; } = 1f;
+        /// <summary>
+        /// Original contract: a non-zero value makes every frame advance 1/value s regardless of
+        /// wall time. The engine's fixed-step loops already tick at 1/60; the value is kept so the
+        /// game's DeterministicSession compiles and reads back what it set.
+        /// </summary>
+        public static int captureFramerate { get; set; }
         public static int frameCount { get; private set; }
         public static bool inFixedTimeStep => _inFixedPhase;
 
@@ -67,6 +82,7 @@ namespace CosmicShore.Engine
             _inFixedPhase = false;
             unscaledDeltaTime = 0f;
             time = 0f;
+            _levelLoadTime = 0f;
             unscaledTime = 0f;
             timeScale = 1f;
             frameCount = 0;
@@ -74,6 +90,7 @@ namespace CosmicShore.Engine
             // after the loop exists (ContentRuntime), so its step never leaks into the next world.
             fixedDeltaTime = 0.02f;
             maximumDeltaTime = float.PositiveInfinity;
+            FrameTimingManager.Reset();   // the measured frames belong to the old world too
         }
     }
 }

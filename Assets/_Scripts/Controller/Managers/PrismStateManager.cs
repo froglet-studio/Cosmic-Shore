@@ -9,10 +9,10 @@ namespace CosmicShore.Gameplay
 {
     public enum BlockState
     {
-        Normal,
-        Shielded,
-        SuperShielded,
-        Dangerous
+        Normal = 0,
+        Shielded = 1,
+        SuperShielded = 2,
+        Dangerous = 3
     }
 
     public class PrismStateManager : MonoBehaviour
@@ -87,8 +87,9 @@ namespace CosmicShore.Gameplay
             // it; otherwise we add one at runtime so existing prefabs don't
             // need to be touched individually. The component's Awake resolves
             // BoxCollider / MeshFilter / Rigidbody from the same GameObject.
-            octahedronShield = GetComponent<PrismOctahedronShield>();
-            if (octahedronShield == null)
+            // TryGetComponent, not GetComponent: this lookup misses on most prefabs by design, and a
+            // missed GetComponent allocates its error message in the editor - on every prism laid.
+            if (!TryGetComponent(out octahedronShield))
                 octahedronShield = gameObject.AddComponent<PrismOctahedronShield>();
         }
 

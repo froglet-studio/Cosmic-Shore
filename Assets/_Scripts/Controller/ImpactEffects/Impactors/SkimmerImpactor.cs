@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
                             nameof(SkimmerImpactorDataContainerSO.SkimmerPrismEffects), e))
                         continue;
                     var ep = esp[e];
-                    RunEffectIsolated(() => ep.Execute(this, prismImpactor), ep);
+                    try { ep.Execute(this, prismImpactor); } catch (System.Exception ex) { ReportEffectThrow(ex, ep); }
                 }
             }
         }
@@ -252,12 +252,13 @@ namespace CosmicShore.Gameplay
             if (!isInitialized)
                 return;
 
-            // The legacy Components/Skimmer.prefab predates the container refactor (it still
-            // serializes the retired per-list fields), so vessels that nest it without a
-            // per-instance override run this impactor with a null container. Every branch
+            // The legacy Components/Skimmer.prefab predated the container refactor, so the six
+            // vessels that nest it without a per-instance override (Urchin, Manta, Grizzly,
+            // Shrike, Termite, Falcon) ran this impactor with a null container. Every branch
             // below derefs it before its secondary calls, so a bare deref threw per contact —
-            // an exception storm inside PhysX callbacks that froze the editor. Report once,
-            // skip the contact.
+            // an exception storm inside PhysX callbacks that froze the editor. The prefab now
+            // defaults to NoEffectsSkimmerImpactorDataContainer (exactly the legacy, empty
+            // lists); this guard stays for any impactor wired by hand: report once, skip.
             if (IsEffectContainerMissing(skimmerImpactorDataContainer, nameof(skimmerImpactorDataContainer)))
                 return;
 
@@ -277,7 +278,7 @@ namespace CosmicShore.Gameplay
                                 nameof(SkimmerImpactorDataContainerSO.VesselSkimmerEffects), i))
                             continue;
                         var ev = evs[i];
-                        RunEffectIsolated(() => ev.Execute(shipImpactor, this), ev);
+                        try { ev.Execute(shipImpactor, this); } catch (System.Exception ex) { ReportEffectThrow(ex, ev); }
                     }
 
                     skimmer.ExecuteImpactOnShip(shipImpactor.Vessel); // secondary call
@@ -313,7 +314,7 @@ namespace CosmicShore.Gameplay
                                 nameof(SkimmerImpactorDataContainerSO.SkimmerPrismEffects), i))
                             continue;
                         var ep = esp[i];
-                        RunEffectIsolated(() => ep.Execute(this, prismImpactor), ep);
+                        try { ep.Execute(this, prismImpactor); } catch (System.Exception ex) { ReportEffectThrow(ex, ep); }
                     }
 
 
@@ -359,7 +360,7 @@ namespace CosmicShore.Gameplay
                                     nameof(SkimmerImpactorDataContainerSO.SkimmerLifeformCrystalEffects), i))
                                 continue;
                             var le = lifeformEffects[i];
-                            RunEffectIsolated(() => le.Execute(this, crystal), le);
+                            try { le.Execute(this, crystal); } catch (System.Exception ex) { ReportEffectThrow(ex, le); }
                         }
                         return;
                     }
@@ -375,7 +376,7 @@ namespace CosmicShore.Gameplay
                             continue;
                         if (!elemental && !esc[i].AlsoAppliesToOmniCrystals) continue;
                         var ec = esc[i];
-                        RunEffectIsolated(() => ec.Execute(this, crystalImpactor), ec);
+                        try { ec.Execute(this, crystalImpactor); } catch (System.Exception ex) { ReportEffectThrow(ex, ec); }
                     }
 
                     break;

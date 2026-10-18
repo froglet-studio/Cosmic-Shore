@@ -284,7 +284,7 @@ by how hard they are to see.
 **And when a report is about a COLOUR, sample the frame before re-reading the code that sets it.**
 Two colours 0.3° apart are identical in a diff and different on a screen; three consecutive passes
 of correct reasoning about the asset found three real defects and changed nothing the player saw,
-where one screenshot measured the answer. (`FrogletTools > Diagnostics > Report On-Screen UI` for
+where one screenshot measured the answer. (`FrogletTools > UI > Report On-Screen UI` for
 the layout equivalent.)
 
 
@@ -321,7 +321,7 @@ Canon: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1–7.4. The distilled 
   write a hint's size** (zero-sizeDelta stretch rects — collapsing the anchor span destroys
   their size); use `InverseLerpUnclamped` (anchor fractions far outside 0..1 are correct);
   `WarnIfPlacedOffScreen` closes the loop.
-- **Auditor**: `FrogletTools > Vessels > Audit Vessel Ability Rows` — asset-only; checks map
+- **Auditor**: `FrogletTools > Vessels > Audits > Audit Vessel Ability Rows` — asset-only; checks map
   completeness, 4 icons one-per-element, order, uniform size/pitch (1.5 px on a deterministic
   1920×1080 canvas), switcher + hint coverage. Blind spots: <2 resolved icons skips geometry;
   slot geometry reads the icon's PARENT rect.
@@ -332,7 +332,7 @@ The flower display is **fleet-required** (CLAUDE.md's "opt-in rollout" phrasing 
 `[RequireComponent(typeof(ElementalBarsController))]` on VesselStatus,
 `VesselController.Initialize` drives it, and every missing piece is runtime-created **with a
 loud warning naming the authoring tool** — warnings mean the prefab authoring was skipped, they
-are not the contract. Author via `FrogletTools > Vessels > Wire Elemental Petal Bars` (selected
+are not the contract. Author via `FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars` (selected
 HUD prefab in Prefab Mode) or `Bake Elemental Petal Bars Into All Vessel HUDs` (fleet pass),
 then assign the view to `ElementalBarsController.elementBars`. All look/feel lives in
 `Assets/Resources/ElementalBarsConfig.asset` (`ElementalBarsConfigSO`) — never per-prefab
@@ -386,7 +386,7 @@ juice through `ElementBars` when a vessel wants it.
   Read the FBX `Geometry` sub-records of subtype `Shape` and sum the deltas. Evidence + the
   per-file table: `Docs/VESSEL_CONSTRUCTION.md` §4.
 - **Rig swaps** (Dolphin/Urchin/Rhino placeholders → their `*_shapekey_with_animations` rigs)
-  are a hands-on editor pass: run `FrogletTools > Vessels > Plan Vessel Rig Swap`
+  are a hands-on editor pass: run `FrogletTools > Vessels > Wiring > Plan Vessel Rig Swap`
   (report-only) and follow its printed procedure — migrate gameplay objects to mapped bones,
   retire legacy MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the
   animation's part fields** so they re-resolve to bones, re-run the morph audit. Order of work
@@ -400,7 +400,7 @@ juice through `ElementBars` when a vessel wants it.
   most of the cost of a swap. Re-measure only what the rig genuinely re-poses (the Rhino's
   wings sit 1.38× wider in its bind pose, and its wings stop being separate GameObjects, so
   anything parented to them re-parents to bones).
-- Audit: `FrogletTools > Vessels > Audit Vessel Elemental Morphs` (asset-only, exact runtime
+- Audit: `FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs` (asset-only, exact runtime
   discovery). Mislabeled shapes fail **silently** in game — the audit is the only detector.
   **Since 2026-08-26 it measures MAGNITUDE**, so an empty labelled shape no longer passes:
   `Travel()` reports each shape's farthest vertex travel as a fraction of its mesh's own
@@ -616,4 +616,4 @@ already lists all 11 prefabs).
 stack (`EnergySkimmer`) was the live one doing the physics, and the stack the vessel actually
 REFERENCED was a disabled leftover. Reading a prefab and concluding "looks wired" is not
 evidence; resolve the reference to its GameObject and check `m_IsActive` up the ancestor chain,
-or just run **FrogletTools > Vessels > Audit Vessel Skimmers**, which does exactly that.
+or just run **FrogletTools > Vessels > Audits > Audit Vessel Skimmers**, which does exactly that.

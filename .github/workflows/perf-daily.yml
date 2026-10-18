@@ -1,0 +1,143 @@
+# The daily performance check (Docs/PERFORMANCE_OPTIMIZATION.md §3.4; the resolve loop is /perf-hunt).
+#
+# Two jobs, both on GitHub-hosted Linux, no Unity:
+#   gates     the static performance gates and every collaborator's shared editor capture judged against its
+#             baseline (Tools/Build/perf_hunt.py sweep). Red when a gate fails or a baseline count rose.
+#   amoebius  the game's own ProfilerMarkers measured in Amoebius (Port/, the engine under evaluation -
+#             Docs/TOOLING_DECISIONS.md) for one Skim Race match: allocations per marker against the committed
+#             baseline. Red when a marker allocates more than it did. Milliseconds there are only reported.
+#   publish   (scheduled and manual runs only) re-runs the sweep with the amoebius job's result and COMMITS
+#             Docs/perf/status.json and Docs/Reports/PERFORMANCE.md to bleeding-edge (Yash, 2026-10-17), so the
+#             editor's Project Record (BugHuntSendConfirmation) and every session read today's status from the
+#             branch itself. If branch protection refuses the bot's push, the same files go to the `perf-status`
+#             branch (bleeding-edge/status.json, bleeding-edge/PERFORMANCE.md) and the run warns; the Project Record
+#             reads whichever copy is newer.
+# Editor captures cannot run here (no Unity runner); they arrive through the Bug Hunt check-in's shared report
+# files, which the sweep reads from every branch.
+name: perf-daily
+
+on:
+  schedule:
+    - cron: '40 5 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'Tools/Build/perf_hunt.py'
+      - 'Tools/Build/perf_capture_report.py'
+      - 'Docs/perf/**'
+      - '.github/workflows/perf-daily.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf-daily-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'bleeding-edge' || github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Self-tests
+        run: |
+          python3 Tools/Build/perf_hunt.py --self-test
+          python3 Tools/Build/perf_capture_report.py --self-test
+      - name: Sweep (gates + every shared capture vs its baseline)
+        id: sweep
+        run: |
+          mkdir -p out
+          python3 Tools/Build/perf_hunt.py sweep --strict --out out/perf_sweep.json | tee out/perf_sweep.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-sweep
+          path: out/
+          retention-days: 30
+
+  amoebius:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'bleeding-edge' || github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build the Amoebius player (Release, the game's own source compiled live)
+        run: dotnet build Port/src/CosmicShore.Player -c Release -nologo -v q
+      - name: Skim Race I2, 3 seats - the game's markers, allocations vs the committed baseline
+        env:
+          COSMIC_SHORE_NET: off
+          COSMIC_SHORE_AUDIO: off
+          DOTNET_TieredCompilation: '0'
+        run: |
+          mkdir -p out
+          python3 Tools/Build/perf_hunt.py amoebius --no-build --modes SkimRace:2:3 --frames 1800 | tee out/amoebius.md
+          cp Port/obj/perf_hunt/*.json out/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-amoebius
+          path: out/
+          retention-days: 30
+
+  publish:
+    needs: [gates, amoebius]
+    if: ${{ always() && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bleeding-edge
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: perf-amoebius
+          path: amoebius-out
+      - name: Sweep again with the Amoebius run, writing the status and the report
+        run: |
+          mkdir -p Port/obj/perf_hunt
+          for f in amoebius-out/*.json; do [ -f "$f" ] && cp "$f" Port/obj/perf_hunt/; done
+          python3 Tools/Build/perf_hunt.py sweep --write | tail -5
+      - name: Commit the status to bleeding-edge (or to perf-status when the branch refuses)
+        run: |
+          git config user.name "perf-daily"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- Docs/perf/status.json Docs/Reports/PERFORMANCE.md; then
+            echo "Status unchanged; nothing to commit."; exit 0
+          fi
+          cp Docs/perf/status.json "$RUNNER_TEMP/status.json"; cp Docs/Reports/PERFORMANCE.md "$RUNNER_TEMP/PERFORMANCE.md"
+          git add Docs/perf/status.json Docs/Reports/PERFORMANCE.md
+          git commit -q -m "perf: daily status $(date -u +%Y-%m-%d) [skip ci]"
+          for i in 1 2 3; do
+            if git push origin HEAD:bleeding-edge; then echo "Committed to bleeding-edge."; exit 0; fi
+            # bleeding-edge moved: put this one status commit on top of it and try again.
+            git fetch -q origin bleeding-edge && git rebase -q origin/bleeding-edge || { git rebase --abort; break; }
+          done
+          echo "::warning::bleeding-edge refused the daily status commit (branch protection?). Published to the perf-status branch instead; allow github-actions to push Docs/perf/status.json to bleeding-edge to stop this."
+          git fetch -q origin perf-status || true
+          if git rev-parse -q --verify origin/perf-status >/dev/null; then git checkout -q -B perf-status origin/perf-status; else git checkout -q --orphan perf-status && git rm -rq --cached . ; fi
+          mkdir -p bleeding-edge
+          cp "$RUNNER_TEMP/status.json" bleeding-edge/status.json; cp "$RUNNER_TEMP/PERFORMANCE.md" bleeding-edge/PERFORMANCE.md
+          git add bleeding-edge/status.json bleeding-edge/PERFORMANCE.md
+          git commit -q -m "perf: daily status for bleeding-edge $(date -u +%Y-%m-%d) [skip ci]"
+          git push origin HEAD:perf-status

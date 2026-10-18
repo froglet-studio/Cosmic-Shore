@@ -16,11 +16,12 @@
 //   3. window.__lab exposes the test surface: SHIPPED, SPEC, P, tick, reset, score, runBatch, state
 //   4. every SPEC key exists in SHIPPED and every shipped value lies inside its slider range
 //   5. the manual clock advances the model (state().t moves under tick, not under wall time)
-//   6. runBatch is deterministic: two calls give byte-identical rows
+//   6. runBatch is deterministic: two calls give byte-identical rows, and a fresh page load gives the same rows again
 //   7. the stage is not blank after ticking (the canvas has more than one colour)
 //
-// --self-test plants five defects into a copy of the template (a console error, a SHIPPED
-// value outside its range, a hook that throws, a WebGL fault, a non-deterministic batch) and requires the gate
+// --self-test plants six defects into a copy of the template (a console error, a SHIPPED
+// value outside its range, a hook that throws, an unseeded load-time Math.random, a WebGL fault,
+// a non-deterministic batch) and requires the gate
 // to name each one —
 // a gate that has only ever passed is not a gate.
 'use strict';
@@ -45,7 +46,7 @@ function parseArgs(argv) {
 
 async function verify(file, outDir, browser) {
   const failures = [], notes = [];
-  const url = 'file://' + path.resolve(file);
+  const url = /^https?:\/\//.test(file) ? file : 'file://' + path.resolve(file);   // a lab file, or the same page served
   fs.mkdirSync(outDir, { recursive: true });
 
   async function open(ctxOpts, label) {
@@ -76,7 +77,9 @@ async function verify(file, outDir, browser) {
       const call = (name, fn) => { try { return fn(); } catch (e) { out.threw.push(name + ' threw: ' + (e && e.message || e)); return undefined; } };
       for (const k of ['SHIPPED', 'SPEC', 'P', 'tick', 'reset', 'score', 'runBatch', 'state']) if (L[k] == null) out.missing.push(k);
       if (L.SPEC && L.SHIPPED) for (const row of L.SPEC) {
-        const [, key, lo, hi] = row;
+        // the range is the first two numbers after the key: the template writes [group, key, lo, hi, …], the Stoat
+        // studio (and labs before the template) [group, key, label, lo, hi, …]
+        const key = row[1], [lo, hi] = row.slice(2).filter((x) => typeof x === 'number');
         if (!(key in L.SHIPPED)) out.spec.push(key + ' is a slider but not in SHIPPED');
         else if (L.SHIPPED[key] < lo || L.SHIPPED[key] > hi) out.spec.push(key + ' shipped ' + L.SHIPPED[key] + ' outside its range ' + lo + '…' + hi);
       }
@@ -119,6 +122,16 @@ async function verify(file, outDir, browser) {
   await d.page.screenshot({ path: path.join(outDir, 'desktop.png') });
   await d.ctx.close();
 
+  // ---- a second load: the same batch must come out of a FRESH page. Two calls in one page share whatever the page drew
+  // from Math.random while it loaded (the Stoat's prism field did, for 14 rounds), so only a reload can see it.
+  if (hasLab && !failures.some((f) => /not deterministic|runBatch\(\) threw/.test(f))) {
+    const d2 = await open({ viewport: { width: 1600, height: 900 } }, 'reload');
+    const again = await d2.page.evaluate(() => { try { return JSON.stringify(window.__lab.runBatch()); } catch (e) { return undefined; } });
+    const first = notes.find((n) => n.startsWith('batch: '));
+    if (first && again !== undefined && first.slice(7) !== again) failures.push('runBatch differs between two page loads (a load-time Math.random reaches the batch — seed it):\n    ' + first.slice(7, 400) + '\n    ' + again.slice(0, 400));
+    await d2.ctx.close();
+  }
+
   // ---- phone ----
   const p = await open(Object.assign({}, devices['iPhone 13']), 'phone');
   const ps = await p.page.evaluate(() => { const se = document.scrollingElement || document.documentElement; return { w: se.scrollWidth - se.clientWidth, device: window.__lab && window.__lab.PLATFORM && window.__lab.PLATFORM.device }; });
@@ -127,7 +140,7 @@ async function verify(file, outDir, browser) {
   await p.page.screenshot({ path: path.join(outDir, 'phone.png'), fullPage: true });
   await p.ctx.close();
 
-  const report = { file: path.resolve(file), ok: failures.length === 0, failures, notes, screenshots: ['desktop.png', 'phone.png'] };
+  const report = { file: /^https?:\/\//.test(file) ? file : path.resolve(file), ok: failures.length === 0, failures, notes, screenshots: ['desktop.png', 'phone.png'] };
   fs.writeFileSync(path.join(outDir, 'report.json'), JSON.stringify(report, null, 2));
   return report;
 }
@@ -139,6 +152,7 @@ async function selfTest(browser, outRoot) {
     { name: 'console error', expect: /console\/page error/, edit: (s) => s.replace("'use strict';", "'use strict'; console.error('planted');") },
     { name: 'shipped out of range', expect: /outside its range/, edit: (s) => s.replace('damping: 0.4,', 'damping: 9,') },
     { name: 'hook throws', expect: /hook: runBatch\(\) threw/, edit: (s) => s.replace("opts = opts || {};", "opts = opts || {}; if (!opts.qs) throw new TypeError('planted: runBatch needs qs');") },
+    { name: 'unseeded load', expect: /differs between two page loads/, edit: (s) => s.replace("'use strict';", "'use strict'; const LOAD_SALT = Math.random();").replace("rows.push({ variant: va.name, caughtPct:", "rows.push({ salt: LOAD_SALT, variant: va.name, caughtPct:") },
     { name: 'webgl fault', expect: /console\/page error: .*WebGL/, edit: (s) => s.replace("'use strict';", "'use strict'; (function () { const g = document.createElement('canvas').getContext('webgl'); if (g) g.useProgram(g.createProgram()); })();") },
     { name: 'nondeterministic batch', expect: /not deterministic/, edit: (s) => s.replace("rows.push({ variant: va.name, caughtPct:", "rows.push({ jitter: Math.random(), variant: va.name, caughtPct:") },
   ];
@@ -162,7 +176,7 @@ async function selfTest(browser, outRoot) {
 (async () => {
   const a = parseArgs(process.argv.slice(2));
   if (!a.selfTest && !a.file) { console.error('usage: verify_lab.cjs <lab.html> [--out dir] | --self-test'); process.exit(2); }
-  if (a.file && !fs.existsSync(a.file)) { console.error('verify_lab: no such file ' + a.file); process.exit(2); }
+  if (a.file && !/^https?:\/\//.test(a.file) && !fs.existsSync(a.file)) { console.error('verify_lab: no such file ' + a.file); process.exit(2); }
   const out = a.out || fs.mkdtempSync(path.join(os.tmpdir(), 'verify_lab-'));
   let browser;
   try { browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] }); }

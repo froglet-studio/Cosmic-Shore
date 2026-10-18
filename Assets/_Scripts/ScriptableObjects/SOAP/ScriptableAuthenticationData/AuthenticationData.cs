@@ -7,7 +7,7 @@ namespace CosmicShore.ScriptableObjects
     {
         public enum AuthState
         {
-            NotInitialized, Initializing, Ready, SigningIn, SignedIn, Failed
+            NotInitialized = 0, Initializing = 1, Ready = 2, SigningIn = 3, SignedIn = 4, Failed = 5
         }
         
         public string PlayerId { get; set; } = string.Empty;

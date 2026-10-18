@@ -18,10 +18,14 @@ namespace CosmicShore.Gameplay
     /// (<see cref="VesselTransformer.FlightTimeScale"/>), so the path stays the path and only arrives
     /// sooner. Time is rate: the boost is <see cref="StoatDipoleConfigSO.Boost"/>, read live.
     ///
-    /// <para><b>In Time mode, while the hull ORBITS</b> (<see cref="StoatSlingExecutor"/>), the line is the rest of
-    /// the orbit instead — round the attractor to the far edge of the slingshot's timing window — and it turns lime
-    /// while a release would pay the whole kick (<see cref="StoatSlingExecutor.Timing01"/>). That is the cue the
-    /// 90° slingshot is timed by.</para>
+    /// <para><b>In Time mode there is no path</b> (2026-10-14: "instead of showing your path it shows a detection radius
+    /// and an orbital radius"). While a Time-mode pair is laid (<see cref="StoatSlingExecutor"/>) two rings are drawn round
+    /// its attractor, in the plane of the hull's pass: the DETECTION radius (faint — where it can catch you) and the ORBIT
+    /// radius (where it holds you; brighter once it has caught you, easing toward lime as the quarter-turn nears and LIME
+    /// while a release would pay the whole kick, <see cref="StoatSlingExecutor.Timing01"/>). That is the cue the 90°
+    /// slingshot is timed by. No path is predicted in Time mode; the warp boost runs while the pair is held
+    /// (<see cref="StoatSlingExecutor.WarpsFlight"/>, the studio's catch warp, 2026-10-14), to
+    /// <see cref="StoatSlingConfigSO.CatchWarpShare"/> of the field's boost, so the two modes fly at one pace.</para>
     ///
     /// <para><b>Time 5 — Foresight</b> (the replicated unlock bit): the nearest rivals' paths are drawn too, in their
     /// domain colours, each flown forward on the turn and speed it is holding right now (measured from its pose, no
@@ -53,9 +57,12 @@ namespace CosmicShore.Gameplay
         StoatDipoleMath.PathResult _path;
         float _boost = 1f;
         bool _wasWarped;
-        bool _orbitLine;
-        float _orbitTiming;
+        bool _timeMode;
+        StoatModeExecutor _mode;
+        readonly Vector3[] _ring = new Vector3[RingSegments];
+        const int RingSegments = 96;
         StoatPathfinderDots _dots;
+        StoatPathfinderWorldDots _worldDots;
 
         /// <summary>One rival the Time-5 Foresight is drawing.</summary>
         sealed class Rival
@@ -103,6 +110,8 @@ namespace CosmicShore.Gameplay
             if (!_dipole) TryGetComponent(out _dipole);
             _sling = hasRegistry ? registry.Get<StoatSlingExecutor>() : null;
             if (!_sling) TryGetComponent(out _sling);
+            _mode = hasRegistry ? registry.Get<StoatModeExecutor>() : null;
+            if (!_mode) TryGetComponent(out _mode);
             _boost = 1f;
             _path = default;
             _wasWarped = false;
@@ -127,19 +136,26 @@ namespace CosmicShore.Gameplay
             }
 
             bool flying = transformer.IsActive && !_status.IsStationary && !_status.IsTranslationRestricted;
-            _orbitLine = flying && OrbitArc(hull);
-            if (_orbitLine) _path = new StoatDipoleMath.PathResult { Count = _path.Count, LoopIndex = -1 };
-            else if (flying) Predict(transformer, hull);
+            // Time mode draws the catch's rings, never a path (and so never warps one).
+            _timeMode = _mode && _mode.IsTimeMode;
+            if (flying && !_timeMode) Predict(transformer, hull);
             else _path = default;
 
             float dt = Time.deltaTime;
             float target = Mathf.Max(1f, config.Boost.EvaluateLive(_status));
             if (flying && IsOverclocked) _path.Warped = true;   // the omni crystal: the line is lime and the boost on
-            _boost = flying ? StoatDipoleMath.StepBoost(_boost, _path.Warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
+            // Time mode: the catch warps the clock while its pair is held (the field's rule, "held" in place of "lime").
+            bool warped = _path.Warped;
+            if (_timeMode && _sling && _sling.Config && !IsOverclocked)
+            {
+                warped = _sling.WarpsFlight;
+                target = _sling.Config.CatchWarpTarget(target);
+            }
+            _boost = flying ? StoatDipoleMath.StepBoost(_boost, warped, target, config.BoostRise, config.BoostFadeSeconds, dt) : 1f;
             transformer.FlightTimeScale = _boost;
 
-            if (_path.Warped && !_wasWarped) PlayOneShot(config.WarpEvent);
-            _wasWarped = _path.Warped;
+            if (warped && !_wasWarped) PlayOneShot(config.WarpEvent);
+            _wasWarped = warped;
 
             bool pilot = _status.IsLocalUser && !_status.AutoPilotEnabled;
             if (pilot && flying) DrawDots();
@@ -147,23 +163,6 @@ namespace CosmicShore.Gameplay
 
             if (pilot && ForesightActive()) Foresight(dt);
             else ClearForesight();
-        }
-
-        /// <summary>
-        /// Time mode, orbiting: the line is the rest of the orbit, to the far edge of the slingshot's timing window.
-        /// False when the hull is not orbiting (the ordinary prediction runs).
-        /// </summary>
-        bool OrbitArc(Transform hull)
-        {
-            if (!_sling || !_sling.IsOrbiting || !_sling.Config) return false;
-            var attractor = _sling.Attractor;
-            if (!attractor) return false;
-            int n = StoatSlingMath.OrbitArc(hull.position + hull.forward * config.PathNoseOffset, hull.forward,
-                attractor.transform.position, _sling.OrbitAngle * Mathf.Rad2Deg, _sling.Config.SweetSpotEndDegrees,
-                config.PathStep, _points);
-            _path.Count = n;
-            _orbitTiming = _sling.Timing01;
-            return n > 1;
         }
 
         void Predict(VesselTransformer transformer, Transform hull)
@@ -211,20 +210,53 @@ namespace CosmicShore.Gameplay
         {
             var cam = ResolveCamera();
             if (!cam) { HideDots(); return; }
-            if (!_dots) _dots = StoatPathfinderDots.Create(name);
-            if (!_dots) return;
-            if (_orbitLine)
+            if (config.DotsInWorld)
             {
-                // Lime while a release would pay the whole kick; easing toward it as the window nears.
-                bool inWindow = _orbitTiming >= 0.999f;
-                var color = Color.Lerp(config.OpenColor, config.WarpedColor, inWindow ? 1f : 0.35f * _orbitTiming);
-                _dots.Show(cam, _points, _path.Count, _jumps, 0, -1, color, config.DotPixels, config.DotGap, inWindow,
-                    config.DotDepthMinScale, config.DotDepthFade);
+                if (_dots) _dots.Hide();
+                _worldDots ??= new StoatPathfinderWorldDots();
+                if (!_worldDots.Begin(cam)) return;
+                if (_timeMode) AddRings(hull: _status.Transform);
+                else
+                    _worldDots.Add(_points, _path.Count, _jumps, _path.JumpCount,
+                        _path.Warped ? config.WarpedColor : config.OpenColor,
+                        config.WorldDotSize, config.WorldDotSpacing, config.WorldDotMinPixels);
+                _worldDots.End();
                 return;
             }
+            if (!_dots) _dots = StoatPathfinderDots.Create(name);
+            if (!_dots) return;
+            // The flat overlay (dotsInWorld off) draws the path only; Time mode's rings are world dots.
+            if (_timeMode) { _dots.Hide(); return; }
             var pathColor = _path.Warped ? config.WarpedColor : config.OpenColor;
             _dots.Show(cam, _points, _path.Count, _jumps, _path.JumpCount, _path.Warped ? _path.LoopIndex : -1, pathColor,
                 config.DotPixels, config.DotGap, _path.Warped, config.DotDepthMinScale, config.DotDepthFade);
+        }
+
+        /// <summary>
+        /// Time mode: the laid pair's DETECTION ring (faint) and ORBIT ring round its attractor, in the plane of the hull's
+        /// pass. The orbit ring brightens once it has caught the hull, eases toward lime as the quarter-turn nears, and is
+        /// lime while a release would pay the whole kick.
+        /// </summary>
+        void AddRings(Transform hull)
+        {
+            var sc = _sling ? _sling.Config : null;
+            var attractor = _sling ? _sling.Attractor : null;
+            if (!sc || !attractor || !hull) return;
+            var centre = attractor.transform.position;
+            var normal = StoatSlingMath.RingNormal(hull.position, hull.forward, centre, hull.up);
+            float timing = _sling.Timing01;
+            bool caught = _sling.IsOrbiting;
+
+            var detection = config.OpenColor;
+            detection.a *= sc.DetectionRingAlpha;
+            int n = StoatSlingMath.Ring(centre, normal, _sling.DetectionRadius, RingSegments, _ring);
+            _worldDots.Add(_ring, n, null, 0, detection, sc.RingDotSize, sc.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+
+            bool inWindow = timing >= 0.999f;
+            var orbit = Color.Lerp(config.OpenColor, config.WarpedColor, inWindow ? 1f : 0.35f * timing);
+            orbit.a *= caught ? 1f : sc.OrbitRingAlpha;
+            n = StoatSlingMath.Ring(centre, normal, _sling.OrbitRadius, RingSegments, _ring);
+            _worldDots.Add(_ring, n, null, 0, orbit, sc.RingDotSize, sc.RingDotSpacing, config.WorldDotMinPixels, closed: true);
         }
 
         void HideDots()
@@ -372,6 +404,8 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (_dots) Destroy(_dots.transform.root.gameObject);
+            _worldDots?.Dispose();
+            _worldDots = null;
             ClearForesight();
         }
     }

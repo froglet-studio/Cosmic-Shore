@@ -33,7 +33,11 @@ namespace CosmicShore.Launcher
         public float Progress { get; private set; } = -1;
         public bool? LastOk { get; private set; }
         public string? LastArtifact { get; private set; }
-        public bool GameRunning => _game is { HasExited: false };
+        /// <summary>
+        /// The game started from PLAY is still open. Read every frame by the UI thread, so it must never
+        /// throw: <see cref="Process.HasExited"/> does on a process that is not (or not yet) started.
+        /// </summary>
+        public bool GameRunning => ProcessRunner.IsRunning(_game);
         public CommitInfo? Commit { get; private set; }
         public List<string> Branches { get; private set; } = new();
         public bool BranchesLoading { get; private set; }
@@ -138,8 +142,19 @@ namespace CosmicShore.Launcher
 
         public void Update() => Start("Update workspace", async ct => await SyncStep(ct));
 
-        public void Play() => Start("Start game", async ct =>
+        /// <summary>Extra player arguments for the next PLAY only (STUDIOS' PLAY IN ENGINE: <c>--arcade MODE</c>); cleared when it launches.</summary>
+        IReadOnlyList<string>? _oneShotArgs;
+
+        /// <summary>PLAY, with <paramref name="extraArgs"/> added to this one launch.</summary>
+        public void Play(IReadOnlyList<string> extraArgs) { _oneShotArgs = extraArgs; Play(); }
+
+        /// <summary>
+        /// START (offline, the default) or START ONLINE (<paramref name="online"/>: signed in to UGS, parties and
+        /// matches through UGS Lobby and Relay).
+        /// </summary>
+        public void Play(bool online = false) => Start("Start game", async ct =>
         {
+            PlayingOnline = online;
             if (!await EnsureTools(ct)) return false;
             // Unsaved edits in the workspace are what the user wants to try: build them as they are.
             int pending = _ws.HasEngine ? _ws.PendingChanges() : 0;
@@ -336,10 +351,12 @@ namespace CosmicShore.Launcher
                 CreateNoWindow = true,
             };
             foreach (var a in PlayerArgs()) psi.ArgumentList.Add(a);
+            _oneShotArgs = null;
             foreach (var kv in _tools.DotnetEnv()) psi.Environment[kv.Key] = kv.Value;
             psi.Environment["COSMIC_SHORE_PROJECT"] = _ws.Dir;
             if (!audio) psi.Environment["COSMIC_SHORE_AUDIO"] = "off";
-            if (!_s.Network) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            if (!PlayingOnline) psi.Environment["COSMIC_SHORE_NET"] = "off";
+            OnlineEnvironment(psi);
             if (_s.MobileRenderPath) psi.Environment["COSMIC_SHORE_GLES"] = "1";
             if (!string.IsNullOrWhiteSpace(_s.Profile)) psi.Environment["COSMIC_SHORE_PROFILE"] = _s.Profile.Trim();
             // Every play session leaves a report (scenes, frame times, errors) the CLAUDE page can hand to Claude.
@@ -348,15 +365,20 @@ namespace CosmicShore.Launcher
             psi.Environment["COSMIC_SHORE_BRANCH"] = _s.Branch;
             var commit = ProcessRunner.Capture(_tools.Git ?? "git", "-C", _ws.Dir, "rev-parse", "--short", "HEAD");
             if (commit != null) psi.Environment["COSMIC_SHORE_COMMIT"] = commit;
+            if (PlayingOnline) NetLogEnvironment(psi, "main");
             PruneSessions();
 
-            _game = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            _game.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
-            _game.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
-            _game.Exited += (_, _) => { Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(_game)})."); GameExited?.Invoke(); };
-            _game.Start();
-            _game.BeginOutputReadLine();
-            _game.BeginErrorReadLine();
+            // Published only once it has started: the UI reads GameRunning every frame, and on Windows
+            // Start can take seconds (the virus scanner checks a freshly built exe). A field holding
+            // an unstarted Process made HasExited throw on the UI thread, which closed Amoebius.
+            var game = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            game.OutputDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            game.ErrorDataReceived += (_, e) => { if (e.Data != null) Log.Add(LogKind.Output, e.Data); };
+            game.Exited += (_, _) => { Log.Add(LogKind.Info, $"Game closed (exit code {SafeExit(game)})."); GameExited?.Invoke(); };
+            game.Start();
+            _game = game;
+            game.BeginOutputReadLine();
+            game.BeginErrorReadLine();
             Log.Add(LogKind.Success, "Game running. Have fun.");
             return true;
         }
@@ -387,6 +409,7 @@ namespace CosmicShore.Launcher
 
             if (_s.VerboseLogs) a.Add("--verbose");
             foreach (var x in SplitArgs(_s.ExtraArgs)) a.Add(x);
+            if (_oneShotArgs != null) a.AddRange(_oneShotArgs);
             return a;
         }
 

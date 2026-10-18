@@ -162,7 +162,7 @@ frequencies. A simple script that scans recent log files and tallies
 `NetDiag: class=*` occurrences would directly inform refactor
 priority (see `../PartySystem/REFACTOR.md` § "Sequencing").
 
-**Outline.** Editor menu item `FrogletTools > Validation > NetDiag Report`
+**Outline.** Editor menu item `FrogletTools > Utilities > NetDiag Report`
 that:
 1. Reads the last N hours of Editor / Player logs.
 2. Counts `NetDiag: class=*` per class, per source file.

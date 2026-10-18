@@ -74,6 +74,9 @@ namespace CosmicShore.Player
         /// </summary>
         public static bool StartHidden;
 
+        /// <summary>--position X,Y: the window's top-left on the desktop (null = the platform's choice).</summary>
+        public static (int x, int y)? StartPosition;
+
         public void Run()
         {
             var options = WindowOptions.Default with
@@ -87,6 +90,7 @@ namespace CosmicShore.Player
             };
             if (StartFullscreen) options = options with { WindowState = WindowState.Fullscreen };
             if (StartHidden) options = options with { IsVisible = false };
+            if (StartPosition is { } pos) options = options with { Position = new Vector2D<int>(pos.x, pos.y) };
             // COSMIC_SHORE_GLES=1 runs the desktop player on an OpenGL ES 3.0 context — the exact
             // render path a phone takes, so the mobile build can be checked without one.
             if (Environment.GetEnvironmentVariable("COSMIC_SHORE_GLES") == "1")
@@ -106,6 +110,11 @@ namespace CosmicShore.Player
             _window.Update += OnUpdate;
             _window.Render += OnRender;
             _window.Run();
+            // An online test's log first, while the network still answers who this player was.
+            NetTestLog.Write("window closed");
+            // The window was closed (its close button, Alt+F4, or the game's own quit): the game hears
+            // OnApplicationQuit and Application.quitting once either way, as in a Unity player.
+            if (_boot?.Loop != null) Application.RunQuitSequence(cancellable: false);
             SessionReport.Write("window closed");
             _boot?.Dispose();
             _inputBridge?.Dispose();
@@ -151,32 +160,56 @@ namespace CosmicShore.Player
             _environment = new EnvironmentLighting(_gl);
             _sceneRenderer.EnvironmentLight = _environment;
             _post = new PostPass(_gl);
-            if (SessionReport.Enabled && GpuTimer.Supported) _gpu = new GpuTimer(_gl, "textures", "clear", "sky", "collect", "post", "ui", "present", "opaque", "transparent");
+            if (GpuTimer.Supported) _gpu = new GpuTimer(_gl, "textures", "clear", "sky", "collect", "post", "ui", "present", "opaque", "transparent");
             _textures.External = t => t is RenderTexture rt && _rt.TryGetValue(rt, out var target) ? target.Out.Color : 0u;
             Camera.RenderRequested = cam => { if (cam != null && cam.targetTexture != null) RenderToTexture(cam, force: true); };
 
             _inputBridge = new SilkInputBridge(_window);
+            // Alt+Tab and clicks elsewhere reach the game as OnApplicationFocus (the rumble stops, as in Unity).
+            if (_window is IWindow focusable) focusable.FocusChanged += Application.SetFocus;
             OnInput?.Invoke(_window);
             _script.EnsureDevices();
             // This device draws Entities Graphics entities (SceneRenderer's entity pass), so the
             // game's Entities Graphics support probe passes as it does on a desktop GPU. A
             // headless run never gets here and stays on the MeshRenderer path, like -nographics.
             SystemInfo.supportsComputeShaders = true;
-            if (Control != null) { Control.Quit = () => _window.Close(); Control.FrameMs = () => _lastFrameMs; }
+            if (Control != null) { Control.Quit = () => _window.Close(); Control.FrameMs = LastFrameMs; }
             if (StartHidden && Control != null) Control.VirtualSize = (_width, _height);
             _boot = new PlayerBoot { NoScene = ModelViewer.Path != null };
             SessionReport.Log = _boot.Log;
             SessionReport.Frame = () => _frameIndex;
+            NetTestLog.Begin(_boot.Log);
             _boot.Start(_scene);
             _tmp.Fonts = _boot.Runtime.Fonts;
         }
 
+        double _titleAt;
+
+        /// <summary>
+        /// The window title doubles as a network stats monitor: with several players tiled on one
+        /// desktop it says which one is which and how its link is doing (docs/MULTIPLAYER.md §6.4).
+        /// </summary>
+        void UpdateNetTitle()
+        {
+            if (_window is not IWindow w || ModelViewer.Path != null) return;
+            double now = Environment.TickCount64 / 1000.0;
+            if (now - _titleAt < 1.0) return;
+            _titleAt = now;
+            var title = CosmicShore.Engine.Networking.NetStats.Title(Environment.GetEnvironmentVariable("COSMIC_SHORE_PROFILE"));
+            if (w.Title != title) w.Title = title;
+        }
+
         void OnUpdate(double dt)
         {
-            float step = Scripted ? 1f / 60f : (float)Math.Min(dt, 0.1);
+            // A scripted run steps every game clock by 1/60 s so its pictures repeat run to run. A normal
+            // run passes the real frame time unclamped, because Time.unscaledDeltaTime is the wall clock in
+            // Unity. Time.Advance caps deltaTime at the project's Maximum Allowed Timestep, so a slow frame
+            // cannot run away the simulation. FrameTimingManager measures the real frame in both kinds of run.
+            float step = Scripted ? 1f / 60f : (float)dt;
             _inputBridge.BeforeTick();
             BeforeTick?.Invoke(step);
             _script.BeforeTick(_frameIndex);
+            ArcadeAutoStart.Tick(_frameIndex);
             if (GalleryFrame > 0 && _frameIndex == GalleryFrame) ShaderGallery.Build(GalleryLegend);
             if (ModelViewer.Path != null)
             {
@@ -184,11 +217,21 @@ namespace CosmicShore.Player
                 ModelViewer.Tick(step);
             }
             Control?.BeforeTick(_frameIndex);
+            UpdateNetTitle();
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled;
+            CosmicShore.Engine.GameLoop.PhaseTiming = s_timing || SessionReport.Enabled || PlayerDiagnostics.Visible;
             _boot.Tick(step);
+            if (_boot.QuitNow) _window.Close();
             ParityRun.AfterTick(_frameIndex);
-            SessionReport.SimTime(System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+            // One clock for every frame figure (session report, F3, the control port, the game's DiagnosticsHUD):
+            // the frame the loop just completed, as FrameTimingManager measured it.
+            if (FrameTimingManager.CompletedFrames != _reportedFrames && FrameTimingManager.TryGetLastFrame(out var frame, out double simMs))
+            {
+                _reportedFrames = FrameTimingManager.CompletedFrames;
+                SessionReport.FrameTime(frame.cpuFrameTime);
+                SessionReport.SimTime(simMs);
+            }
+            if (ModelViewer.Path == null) PlayerDiagnostics.Tick(_sceneRenderer.DrawCalls, _sceneRenderer.Instances);
             if (s_timing && _frameIndex % 30 == 0)
                 Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})"
                     + $" | avg/30: {CosmicShore.Engine.GameLoop.Current?.TakePhaseReport(30)} | {GcReport()}");
@@ -207,20 +250,20 @@ namespace CosmicShore.Player
             return r;
         }
 
-        double _lastFrameMs;
-        // GPU time per render pass for the session report (desktop GL, --session-report only). A pass's
+        int _reportedFrames;
+
+        /// <summary>The last completed frame's wall time (FrameTimingManager), for the control port and the screenshot line.</summary>
+        static double LastFrameMs() => FrameTimingManager.TryGetLastFrame(out var frame) ? frame.cpuFrameTime : 0;
+
+        // GPU time per render pass (desktop GL), for the session report and FrameTimingManager. A pass's
         // time is GPU wall time, so while the frame is CPU-bound it includes the GPU waiting for
         // the pass's commands: read it next to cpu.renderP50Ms.
         GpuTimer _gpu;
         Action<int> _gpuSceneSplit;
         static readonly bool s_timing = Environment.GetEnvironmentVariable("COSMIC_SHORE_RENDER_TIMING") == "1";
-        readonly System.Diagnostics.Stopwatch _frameClock = System.Diagnostics.Stopwatch.StartNew();
 
         void OnRender(double dt)
         {
-            _lastFrameMs = _frameClock.Elapsed.TotalMilliseconds;
-            SessionReport.FrameTime(_lastFrameMs);
-            _frameClock.Restart();
             int winW = _window.FramebufferSize.X, winH = _window.FramebufferSize.Y;
             if (winW <= 0 || winH <= 0) return;
             // The control port's `resize WxH`: the game sees (and captures) that resolution
@@ -266,14 +309,17 @@ namespace CosmicShore.Player
             }
             else _present.Draw(_frame.Color, w, h);
             _gpu?.EndFrame();
-            // CPU time spent issuing the frame's GL work (the GPU's own time needs timer queries).
-            SessionReport.RenderTime(System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds);
+            // CPU time spent issuing the frame's GL work (the GPU's own time needs timer queries). FrameTimingManager
+            // takes it with the GPU's last answer: the frame timing F3 and the game's DiagnosticsHUD read.
+            double renderMs = System.Diagnostics.Stopwatch.GetElapsedTime(r0).TotalMilliseconds;
+            FrameTimingManager.ReportRender(renderMs, _gpu?.LastFrameMs);
+            SessionReport.RenderTime(renderMs);
 
             _frameIndex++;
             if (_shots.TryGetValue(_frameIndex, out var path))
             {
                 Capture(path, w, h);
-                Console.WriteLine($"screenshot → {path} ({w}x{h}) frame {_frameIndex} — scene {_sceneRenderer.DrawCalls} draws / {_sceneRenderer.Instances} instances, {_lastFrameMs:F0} ms/frame");
+                Console.WriteLine($"screenshot → {path} ({w}x{h}) frame {_frameIndex} — scene {_sceneRenderer.DrawCalls} draws / {_sceneRenderer.Instances} instances, {LastFrameMs():F0} ms/frame");
             }
             if (FrameRecorder.TryPath(_frameIndex, out var recPath))
                 Capture(recPath, w, h);

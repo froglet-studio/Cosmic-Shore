@@ -83,6 +83,27 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `parity.cjs` step 5; `analogTriggers` in the page.
 - Promoted: §7 (with L-STU-35)
 
+### L-GEN-9 — Two batch calls in one page cannot see a load-time `Math.random`; reload and compare
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the Stoat's prism field (2,400 homes) was placed with `Math.random` at load. Every scorecard column was reproducible except "prisms pulled per sling", which differed per page load (Balanced 984.1 against 986.3). `verify_lab`'s determinism check called `runBatch()` twice in one page, so both calls saw the same random field and it passed for 14 rounds. It was found by comparing the round-14 file's batch with round 15's across two loads.
+- Do instead: seed everything a batch can read, scene setup included (`mulberry32(20261009)` for the field). `verify_lab` now opens a second, fresh page and requires the same `runBatch()` rows. Its `--self-test` plants a load-time salt that must be named, and a copy of the Stoat with the old `Math.random` fails the check.
+- Evidence: StoatFlightStudio.html prism-field block ("seeded (round 15)"); `verify_lab.cjs` "a second load".
+- Promoted: §3
+
+### L-GEN-10 — Score the LOOK in rendered pixels against the SHIPPED baseline; a shared-envelope argument is not a shared look
+- Lab: Collision Burst Lab (`Docs/Studios/PrismCollisionBurstLab.html`) · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: the collision bursts were designed to "squint as the explosion" by sharing its flight, life, palette, envelope radius and linear fade, and the docs said so. The lab drew both and scored blurred 120×80 pixels: two explosions differ by 0.082, the bursts by 0.33–0.47 — worse than a prism that never breaks (0.261, the negative control). Thin accents, a smaller cloud and the explosion's lingering last wedges each mattered. The design had also been argued against a REMEMBERED explosion ("the wedges spin in place"); the shipped subgraph, evaluated, slides each wedge outward linearly with age.
+- Do instead: make the baseline the shipped graph, evaluated (and parity-gated), never its description. Measure "looks like" on rendered, blurred pixels, with a band control (the baseline vs itself on another seed) and a negative control that must fail. Hand-waved invariants become columns.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 1 scorecard; `__lab.runBatch()`
+- Promoted: no
+
+### L-GEN-11 — A fixed tolerance in a randomized harness is a latent failure: adding an unrelated case moved the draws onto it
+- Lab: Collision Burst Lab round 2 (`Tools/Shaders/verify_prism_collision_burst.py`) · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: adding a fifth kind (the flake) to the pose loop consumed more of the seeded RNG, so the later bend test drew different prisms, and the unravel's isometry check failed at 2.2e-3 against its fixed 2e-3 — float32 noise of ~40-unit coordinates over a 5e-4 step. The shader was right; the check had passed only because its seed never drew such a prism. Its sibling check (the normal tilt) already scaled by the float noise floor and passed.
+- Do instead: every finite-difference tolerance in a randomized harness gets a noise floor scaled to the coordinates and the step (`8 · 1.2e-7 · (|p| + R) / eps`), never a bare constant; and when a harness goes red after an unrelated addition, suspect the draws moved before the code.
+- Evidence: `verify_prism_collision_burst.py` `stretchFloor`; the failing run printed `the bend stretched a step by 0.997898` four times
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -362,7 +383,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - **The discharge:** `ScreenSwitcher` runs every menu screen but HOME at `Time.timeScale = 0`. The lab's CPU effects had been ported onto unscaled time, but the game's discharge SHADERS read `_Time.y`, so every bolt stood still.
   - **The shimmer:** the off-screen stage sat at y −150000, where a float resolves 1/64 of a unit, on a crystal 4 units across. Every vertex snapped as the camera circled.
 - Do instead: before shipping a lab's motion into a menu, list every clock the drawn result reads (CPU and SHADER: `_Time`, `Time.time`, animators, particles) and give each one the display's own unscaled time. A default-off property such as `_ArcClock` leaves the game untouched. Put an off-screen stage only as far out as the far clip needs, and make it large. Its jitter is |position| × 2^-23 against the subject's size.
-- Evidence: `_ArcClock` in `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader`; `ElementalConverterView.StageOrigin`; `OmniCombineConfigSO.omniWorldRadius`.
+- Evidence: `_ArcClock` in `ChargeCrystal.shader` / `OmniChargeEdgesShader.shader` (the latter retired 2026-10-13; its successor `CrystalChargeArcsShader` draws CPU geometry on the player's clock, so it needs none); `ElementalConverterView.StageOrigin`; `OmniCombineConfigSO.omniWorldRadius`.
 - Promoted: no
 
 ### L-STU-40 — A graduated lab that reads ANOTHER generator's mesh breaks when that generator bakes something new into it
@@ -370,6 +391,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the converter's generator fits the game's `MassCrystalPrisms` / `OmniCrystalTriangles` onto the art file's plates. A parallel branch (Omni Shepard round 10) baked the prisms' thickness into those meshes and set the materials to `_Thickness 1`. The merge was clean; the generator's `--check` failed with "misses the omni's triangles by 5.33e-01". Had it not been gated, the converter would have drawn the Mass prisms thin, then double-thick at hand-off.
 - Do instead: when a lab's generator reads a mesh another generator owns, IMPORT that owner's constants (`author_omni_crystal_triangles.DEPTH_THICKNESS`, `author_mass_crystal_look.MASS_DEPTH_THICKNESS`); never copy the numbers. Undo the owner's transform exactly, and gate the inverse against something it cannot fake. Here the top face is fixed, so the mesh's highest corner must sit at the material's `_TopHeight`, and the thin triangles must land on the art omni within 1e-4. Add a negative control for a wrong constant. Re-run every such generator's `--check` after each merge of the base: the break shows there, not as a conflict.
 - Evidence: `read_prisms()` in `Tools/Build/author_omni_combine_asset.py` and its "wrong baked thickness is refused" self-test; `depth.massThickness` / `depth.omniThickness`; `OmniCombinePlayer.DepthShape.Of(..., baked)`. The recovered thin Mass matched the pre-bake data to 1e-5.
+- Promoted: no
+
+### L-STU-41 — A brief names a cause; measure the mechanism before building the cure
+- Lab: Omni Motion Lab (`Docs/Studios/OmniMotionLab.html`) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the brief was to time the squares' moves and the rhombi's flips so they never move at once, "so their movements never clip". The lab built that scheduler. It also added a convex-plate interpenetration test that records what was moving on each clipping frame (`clipTimeline`). The overlap fell from 87% to 0, but visible clips only fell from 66.7% to 28.6% of frames, and every remaining clip happened with the rhombi STILL. A square turning round its pentagon cuts through the still rhombus beside it, on the art's own keys and on a rigid turn alike. What reached 0 was a rigid turn that hops off the shell. A lift sweep found the edge: 0.14 R on the pentagon turn, 2.2× the art's lift on the triangle turn.
+- Do instead: when a brief says "do X so that Y", build Y's METRIC as well as X. Have it record the state that was active when Y fails, so the lab can say whether X is the cause. Ship the requested change AND the measured fix as separate styles, so the designer sees both.
+- Evidence: `runFullBatch()` rows "Proposal: the brief, as keys" (overlap 0, clips 28.6) vs "Proposal: rigid arcs that hop clear" (0, 0); `clipTimeline`; `OMNI_MOTION_LAB.md` Found 1.
+- Promoted: no
+
+### L-STU-42 — "Make it more" can be capped by a rule, not by the knob the designer named; measure what caps it
+- Lab: Omni Motion Lab round 3 (`Docs/Studios/OmniMotionLab.html`) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: "more Mass prisms out, and further out". The obvious knob, column height, moved the visible count from 2.2 to at most about 2.4. The ratchet was the cap: it holds a prism moving away sealed until the deep reseat. Taller columns made it worse, because they need a deeper reseat to stay hidden. Changing the RULE fixed it: a prism may rise whenever its column top is hidden. Visible height went 1.5 → 7.4 plate radii, with zero rises seen, and a planted "rise anywhere" control reads 100% so the check is live.
+- Do instead: before sweeping the named knob, add the metric for what the designer wants to SEE (here, height seen = how far × how many). Sweep the knob, and if it plateaus, find the invariant that caps it. A new rule needs its own never-seen check and a planted control that breaks it.
+- Evidence: `OMNI_MOTION_LAB.md` round 3 sweep; `depthRise` in `depthStep`; styles "Round 3" and "Control: rise anywhere".
 - Promoted: no
 
 ---
@@ -409,6 +444,7 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `stepAnalog` and the analog `stepPivot` branch (`nSub`); round 2 "Found" 8.
 - Promoted: no (§8's fixed-timestep trap covers it)
 
+
 ### L-STU-46 — A float32 game clock ends a curve a frame before (or after) a float64 lab; end curves at 1 − ε, and expect a peak column to move
 - Lab: Thresher Plant Lab graduation (`ThresherChainSolver`, `parity.cjs`) · Branch: `cece/zealous-johnson-gopp6t` · Date: 2026-10-13
 - What happened: the analog hook ends at `u = hookT / hookSeconds >= 1`. Adding 1/60 thirty times is 0.49999997 in C# float32 and 0.5000000000000001 in JS float64, so the game's hook ran one frame longer than the lab's, and parity diverged from 1e-3 u to a mode mismatch within 50 frames. Ending every curve at `u >= 1 − 1e-4` on both sides fixed parity, and it moved the lab's analog catch column ~20% (2 620 → 3 183 °/s²), because a peak column reads the one frame where two models hand over.
@@ -421,6 +457,262 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: all ten analog tests passed on their first run. Planting two mutations showed that the full-pull test caught a near-instant stop, but the ambiguous-plant test still passed with the turn-direction rule removed: its one scripted flight never produced the case the rule exists for (a sideways velocity that disagrees with the turn). A sweep over 80 turn patterns produced it (`(-90,-60,20)`), and with the sweep the rule's deletion fails.
 - Do instead: for every test written for a lab finding, delete or break the line it guards and run it once. If it still passes, the scenario does not reach the case; sweep the scenario until it does, and assert that the sweep produced enough qualifying cases.
 - Evidence: `AmbiguousPlant_OrbitsInTheFlightPlane_TheWayTheShipIsTurning` (the sweep and its `ambiguous > 10` guard).
+- Promoted: no
+
+### L-STU-58 — A "worst error" over zero matched samples is 0: gate every max-error check on its sample count
+- Lab: Omni Motion Lab round 5 graduation · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the graduation harness checked that the triangle turn with the art file's own lift and side step passes through the art's Step1 key, as the worst distance over matched vertices. The first run printed PASS with worst 0. No vertex had matched: the anchor set is mirror-symmetric, so the matcher tried both x signs and the hit count never reached a full match, leaving the max at its initial 0. Breaking on the first FULL match (x as written, the same as the baker) gave the real result, 1.97e-6 R.
+- Do instead: report the sample count beside every max/mean error, and fail the check when it is zero or short of the expected count. A tolerance check that can pass on an empty set is not a check.
+- Evidence: `Tools/Build/omni_turns_harness/Program.cs` ("anchors with x 1: 1440 body vertices matched"); the round-5 graduation section of `Docs/Studios/OMNI_MOTION_LAB.md`.
+- Promoted: no
+
+### L-STU-59 — A trail that fades per point from its STRIKE steps at every hold; fade from when the bolt LEFT the point
+- Lab: Omni Motion Lab round 5, after graduation · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the seam walk struck each seam in 0.07 s and then HELD 0.1–0.28 s before the next. Each point faded
+  from when it was struck, so at every junction the brightness stepped by the hold's worth of fade (about 0 → 0.3).
+  When the old seam died, the trail's tail began at a third of its brightness: a hard, popping end. The designer saw it
+  as "discrete units separating". The harness's frame-to-frame check found it only once it measured what is visible.
+  The first measurements blamed resampling and pinning.
+- Do instead: fade each point from when the bolt LEFT it (`min(now, start + (leaves - start) * place)`), so consecutive
+  points across a hold are the same moment. Check the trail's tail brightness and frame-to-frame motion over visible
+  points, and keep the old rule as the negative control.
+- Evidence: `ChargeArcs.SeamWalk` (`leftAt`); `Tools/Build/charge_arcs_harness` ("the seam trail's tail always fades
+  to nothing", 0.014 vs 0.327 with the old rule).
+
+### L-STU-48 — A harder course measures the AI's failures unless the AI learns the harder skill
+- Lab: Stoat Flight Studio sim lab, round 14 · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the new intensity ladder grades turning (1 plain circle → 4 side-on and dive rings). The
+  round-12 AI was caught on only 3 of 15 slings at intensity 4, for two reasons: it steered for the ring
+  before the hole held it, and the pair is always laid along the wings, so a climb could not use it. The
+  ladder then measured an AI that couldn't fly it, not the course. Three changes fixed it:
+  - **bank to sling:** roll until the turn lies off one wing;
+  - **pass on the circle:** aim at the hold radius until caught;
+  - **release at the best heading:** let go when the nose stops closing on the ring.
+
+  Catches went to 19 of 19, and grip turn per race rose 766° → 1,382° → 2,420° → 2,209° across the levels.
+- Do instead: when a lab adds difficulty, check the AI's own success rate (here, catches per sling) per
+  level before reading any other column. Then teach the AI the skill the level demands.
+- Evidence: `aiInput` in `StoatFlightStudio.html` (the `bank` / `lay` phases, `aiAim`, `ai.prevOff`);
+  `STOAT_SIM_LAB_PLAN.md` §2 "The intensity ladder and the round-14 AI".
+- Promoted: no
+
+### L-STU-49 — Improving the AI moves every scorecard column; the rookie must keep the rookie's mistakes
+- Lab: Stoat Flight Studio sim lab, round 14 · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the smarter catch logic also reached the rookie (`aiNoise`), so every style's rookie catch
+  rate became 100% and Anchor lost its column. Comet, now catching reliably, also overtook Flare on top
+  speed. The fix:
+  - the rookie keeps steering for the ring before the catch (its classic miss);
+  - Flare's buried boost rose from +2.1 to +3.1 (slider ceiling 3 → 5).
+- Do instead: re-run the whole scorecard after ANY change to the AI, not only the column it was meant for.
+  Model skill differences as specific mistakes the skilled pilot does not make.
+- Evidence: round-14 scorecard in `STOAT_SIM_LAB_PLAN.md`; `aiInput` `P.aiNoise < 0.5` gate.
+- Promoted: no
+
+### L-STU-50 — A lab's vessel can be in the game and still not run in Amoebius: compile the engine before you call it portable
+- Lab: Stoat (game side) and Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: the game on this branch did not compile in Amoebius at all. Its black-hole code used:
+  - `UnityEngine.Jobs` transform jobs;
+  - URP's script-injected render-graph pass and `CommandBuffer`;
+  - `typeof(SerializeField)` (the engine called it `SerializeFieldAttribute`);
+  - a fully qualified `InputSystem.Controls.ButtonControl` (the engine had it one namespace up);
+  - and the engine had no GLSL port of a new shader-graph custom function.
+
+  All of it was filled as engine API. Engine 1,691/1,691, ported game tests 352/352.
+- Do instead: before saying "test it in Amoebius", run `dotnet build Port/src/CosmicShore.Player` on the
+  branch. A Unity-only API in new game code fails there first. Fill gaps in the engine (`Port/src`),
+  never in `Assets/`.
+- Evidence: commit `84898d17a`; `Port/src/CosmicShore.Engine/Jobs/TransformAccess.cs`, `Rendering/RenderGraph.cs`.
+- Promoted: no
+
+### L-STU-51 — One-click "play the real thing" from a studio: a catalog field plus a player flag
+- Lab: Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: Amoebius's STUDIOS page gained two buttons:
+  - **OPEN IN AMOEBIUS**: Edge or Chrome app mode, opening the page as `#prisma` with its own window profile.
+  - **PLAY IN ENGINE**: `studios.json` `engineMode`. The player's `--arcade MODE` waits for `Menu_Main`,
+    opens that card and presses Start (`ArcadeAutoStart`, through the existing `arcade` input verb).
+
+  Headless, `--arcade Slingshot` reached the race at frame 258. Entering the race scene directly (`--scene`)
+  does NOT work: there is no Bootstrap camera rig or app services.
+- Do instead: reach a game mode through the menu path players use, driven by the same verbs the control
+  port uses. Never boot a gameplay scene directly to "save time". Put the per-studio fact (which mode) in
+  the catalog, not in launcher code.
+- Evidence: commit `30a890606`; `StudioCatalogTests.TheShippedCatalogsEngineModesAreGameModes`.
+- Promoted: no
+
+### L-STU-52 — Two people on one studio: the artifact refreshes itself from GitHub
+- Lab: Vessel Studio · Branch: `claude/peaceful-rubin-hhw49n` · Date: 2026-10-09
+- What happened: two designers pushed studio rounds from two sessions, and the published artifact fell
+  behind within the hour. A Sync panel now does the loop inside the artifact:
+  - it reads GitHub through the viewer's own connector (`mcp`);
+  - it republishes the hub with the files form of `artifact.publish`;
+  - it merges branches through a PR, then asks whether to delete the merged branch;
+  - it keeps a shared `decisions` collection (`db`).
+- Do instead: give every shared studio artifact the panel (`build_artifact.py`), share it with edit access,
+  and record decisions in it, not in chat. Remember the connector cannot delete branches,
+  `get_file_contents` returns the file in a `resource` block, and a files publish leaves the publishing
+  view on the old files until it reloads.
+- Evidence: `.claude/skills/vessel-studio/` (SKILL.md §4-§6, `build_artifact.py --self-test`);
+  `Docs/Studios/VesselStudio/SYNC_PANEL.md`.
+- Promoted: yes, into the `/vessel-studio` skill
+
+### L-STU-53 — Draw a predicted path on the HUD, after the lens, or the black hole bends and doubles it
+- Lab: Stoat Flight Studio, round 15 (field trajectory) · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the first trajectory line was a `THREE.Line` in the scene. The lens post-pass bent it like any light, so near the pair it showed up twice, once on each side of the hole (the same thin-lens map that doubles the stars). That reads as two trajectories. A prediction is information, not light.
+- Do instead: project the points with the camera and stroke them on the 2D HUD canvas after the post-pass. That is also thicker than WebGL's 1 px lines.
+- Evidence: `drawFieldPath` (HUD); screenshots before and after in the round-15 session.
+- Promoted: §8
+
+### L-STU-54 — Check a predicted path against the flight it predicts; three bugs hid in "the line looks right"
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: a parity probe laid a pair, set the hull on a looping heading, flew it with no input and measured each flown point's distance to the drawn path. It found three bugs:
+  - the prediction held the engine at its current speed while the engine was still spooling up;
+  - it STARTED the path 8 u ahead of the nose instead of flying from the hull and DRAWING from 8 u ahead (near a hole, a path 8 u further on is a different path);
+  - it tested the horizon every 3 u, so a 3 u horizon slipped between two points while the flight's 4 ms step fell in.
+
+  After the fixes, paths clear of the horizon agree to 1.7–3.1 u. Whirls that graze the horizon still diverge by 11–78 u, and the shipped 4 ms integrator diverges as much, so that part is the chaotic orbit, not a bug.
+- Do instead: share one step function between the flight and the prediction, and run the parity probe before trusting the colours. Also run it with the prediction forced onto the flight's own step: when that diverges just as much, the divergence is the system, not the integrator.
+- Evidence: `fieldSubstep` / `fieldPath` (`stepBy` checks the horizon every substep; the pre-roll to `ftNose`); `Pv.ftExact`; README round 15 "Checked".
+- Promoted: no
+
+### L-STU-55 — A reward computed from a prediction that includes the reward can cancel itself
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the field trajectory boosts you 3× while the predicted path loops. Flown at the boosted speed (the literal request), the boost straightens the loop that earned it within about 2 frames. The lime flickered: lime 3.8% of the race against 14% with the path at engine speed, with the most loop onsets per minute (37.8). The same literal rule also made a held turn alone a permanent 3×, because a full-stick circle (about 180 u) is shorter than the 600 u path.
+- Do instead: when a mechanic's trigger reads state the mechanic changes, measure it both ways (here `ftBoostInPath` 0/1) and put a pure-input control row in the scorecard ("steering only, not in path" must equal No sling). Leave the reading to the designer as **Decision needed**.
+- Evidence: README round 15 field scorecard and "Decision needed".
+- Promoted: no
+- Superseded (same day): the designer chose a boost that cannot touch the path (L-STU-56), so the 0/1 row is gone.
+
+### L-STU-56 — To make a boost that never changes the predicted path, warp the vessel's own clock
+- Lab: Stoat Flight Studio, round 15 · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the designer wanted the field trajectory's 3× to move the Stoat along the drawn path sooner without bending it, so the line "always shows where you go if you hold your inputs". Adding speed changes a field path, because the bend per unit length is acceleration over speed squared. Running the hull's whole flight (steering, engine spool, momentum fade, field substeps) at `ftMul` × the clock (`kdt` in `stepFly`) keeps the curve and only reparametrises time. The race clock, the pair's life and the squeeze stay on real time. Measured: a looping heading flown with no input at boost 1 and boost 3 stays 4.5 u and 3.6 u from the drawn loop, and the boosted run is 2.9× quicker. Outside the mode the warp is 1, and the dipole scorecard stays byte-identical.
+- Do instead: when a reward must not change what a prediction shows, scale the time the prediction is parametrised by, not a state the prediction reads. Then prove it with the same heading flown at both settings against the drawn path.
+- Evidence: `stepFly` (`inField`, `warp`, `kdt`); `stepFieldFlight(kdt, dt)`; README round 15 "Checked".
+- Promoted: no
+
+### L-STU-57 — A prediction past a teleport is only as good as the exit's sensitivity; measure where the flight leaves the line
+- Lab: Stoat Flight Studio, round 15 (dipole field) · Branch: `cece/magical-carson-9bdq8z` · Date: 2026-10-09
+- What happened: the flight followed the drawn line within about 1.5 u all the way into the black hole and came out within 1 u of the drawn exit. It then left the line by up to 76 u over the next 330 u. The wormhole drops you 1.05 horizons from the white hole, inside a push softened over 2 horizons, so a 1 u difference at entry became about 13° of heading on the way out. Running the prediction on the flight's own 4 ms step did not remove it, and the boost did not change it.
+- Do instead: in a parity probe, log the deviation over flown distance, not only its maximum. The trace shows exactly where the flight leaves the line (here, the frame after the jump). A teleport that lands inside a strong force is a sensitivity to report or design out (a wider exit gap), not an integrator to tune.
+- Evidence: README round 15 "Checked" (through the wormhole) and "Found".
+- Promoted: no
+
+### L-STU-88 — Gate a WebGL port of a shipped shader by transform feedback, with ZERO outliers allowed: it finds the shipped shader's float bugs
+- Lab: Collision Burst Lab · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: `parity.py` reads the page's vertex shader back through WebGL2 transform feedback and compares every vertex with C++ executing the shipped HLSL on the same mesh. An outlier allowance would have hidden three real defects, all now fixed in the shipped HLSL: bloom petals picked by float noise when a centroid sat exactly on a face diagonal (~80 vertices per case, ~1 radius off; fixed with a tie epsilon), `(1 − cos a)/κ` cancelling in float32 at small angles (fixed as `2 sin²(a/2)/κ`), and the lab building mesh centroids in doubles where C# uses float (`Math.fround`). Mechanical trap: transform feedback returned all zeros with `GL_INVALID_OPERATION` because the feedback buffer was still bound to `ARRAY_BUFFER` — unbind it after creating it and check `gl.getError()` after the draw.
+- Do instead: translate the shipped shader mechanically (build step, `--check`), gate it per vertex with no outlier share, and plant controls (the next kind, a doubled dial) that must fire. When parity fails on a few vertices, suspect the shipped code before the port.
+- Evidence: `Tools/Build/prism_collision_burst_lab/parity.py` (`OUTLIER_SHARE = 0.0`); `PrismCollisionBurst.hlsl` `PRISM_BURST_PETAL_TIE`
+- Promoted: no
+
+### L-STU-89 — A camera that frames the scene must move with whatever moves the scene (the seed); read the screenshot at a non-zero seed
+- Lab: Collision Burst Lab · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: each seed shifts every pose 7.31 units in z so the per-prism seed hash changes; the line-up camera targeted the origin. Seed 0 looked perfect; any Replay (seed + 1) and `verify_lab.cjs`'s `reset(7)` left an empty stage, and the gate still passed (a WebGL stage skips the blank check). Only reading `desktop.png` showed it.
+- Do instead: derive the camera target from the same "home" the scene items use. Read the screenshot the verifier takes after `reset(seed)`, not only a fresh load.
+- Evidence: `lab.src.html` `camTarget`
+- Promoted: no
+
+### L-STU-90 — "Looks like X from a distance" is a SILHOUETTE claim before it is a colour claim; and a ramp of the right curve can still read as a wipe
+- Lab: Collision Burst Lab round 2 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: a steal's shed was built so its coverage runs the grade's exact smoothstep (proven equal to the executed `PrismColorLerp`), so its mean colour IS the grade's. Scored on blurred rendered pixels against the grade, the bloom (0.214) and the unravel (0.220) still read further from it than an instant colour snap (0.158), because their petals and ribbons grow the silhouette by a third (size 1.32–1.35). The flake, whose silhouette barely changes (1.10), scored 0.120 but plateaued at ~0.104 under every dial: it reveals the colour as a front along the prism, a wipe, not a uniform change.
+- Do instead: before tuning colour or timing to match an effect "from a distance", score the silhouette (size column) and the spatial order of the change, not only the mean; when the ordinary effect is a colour change, blur all three channels (a hue change at equal brightness hides from a luminance blur). Give the scorecard a band (the ordinary effect, slightly late) and a negative (the change snapped) so "close" has a scale.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 2 tables; `__lab.runBatch()` `table: 'sheds'`
+- Promoted: no
+
+### L-STU-67 — A detail level that DROPS geometry pops; one that MERGES it does not — and a uniform triangulation staircases one diagonal
+- Lab: Collision Burst Lab round 3 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: the brief was "from far away it will look like we just aren't seeing the small ones". Removing the small glitter fragments from the far mesh would leave the prism with holes on the first frame of the death, a pop. A nested tiling (a quadtree whose coarser level is the finer with its children merged into their parent) gives the same far picture with nothing missing, and it measured as squint-identical (0.318–0.322 across three levels). Separately, the 24-subdivision shed showed a staircase along one face diagonal: every cell cut the same way puts one diagonal on triangle edges and the other across them. A union-jack cut puts both on edges (0 straddles at every even n, checked).
+- Do instead: build an LOD ladder as a hierarchy of merges (every level a complete cover), not a subset. When a piece pattern follows lines on a mesh (petal diagonals, ribbon seams, scale grids), make the mesh's edges lie on those lines (cut direction, subdivision a multiple of the pattern), and test for straddling triangles.
+- Evidence: `PrismGlitterTiling.cs`, `HighPolyPrismMesh.GetShed`; `parity.py` (tiling vs C# compiled; meshes: area 6, 0 straddles)
+- Promoted: no
+
+### L-STU-68 — A step test's band decides what it can say: "no more different than another death" is weak when two deaths differ completely
+- Lab: Collision Burst Lab round 3 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-14
+- What happened: each LOD step was scored at the true pixel size of its line against a band of the finer level on another prism. For destruction the band was ~0.97 (two close-up deaths share almost no pixels), so every destruction step passed, the shatter→explosion one at 0.94 of it. The same test was sharp for the sheds (band ~0.46, resolution steps 0.035–0.058).
+- Do instead: report the step and the band side by side, never only the verdict; when the band is near its ceiling, say the test cannot tell and look for a tighter band (the same death at a 10% time offset, a squint) before claiming a step is invisible.
+- Evidence: `__lab.runSteps()`; `Docs/Studios/COLLISION_BURST_LAB.md` round 3 table
+- Promoted: no
+
+### L-STU-69 — When the cheapest level is an existing effect, make it the seed of the recursion and prove the identity
+- Lab: Collision Burst Lab round 4 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the designer proposed a Sierpinski cut "using the base explosion as the first depth". The explosion's mesh is four wedges a face fanned from the centre, which is exactly a Sierpinski seed; each deeper depth splits the corners and keeps the middle. Making depth 0 the explosion's own cut, and checking it (depth 0 on six faces = `Prism.asset`'s 24 triangles, in parity.py), removed an entire rung (the shatter) and a second tiling (the quadtree glitter), and every depth now nests in the explosion's wedges.
+- Do instead: when an LOD ladder ends in an effect the game already ships, derive the finer levels FROM that effect's geometry and gate the identity of level 0 against the shipped asset, so the ladder's coarse end cannot drift from what players already see.
+- Evidence: `PrismSierpinskiTiling.cs`; `parity.py` "depth 0 vs Prism.asset"
+- Promoted: no
+
+### L-STU-70 — A step band drawn from a deterministic law collapses to zero: "another prism" must be another EVENT
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: once every destruction fragment moved by the explosion's law (no per-prism random), the LOD-step band — the finer level on another prism, same flight — drew the identical death: bands 0.001–0.003 and step ratios of 175 to 559,000, every step "visible". With the band on a turned flight (another death, as the scorecard's explosion band already was) the bands were 0.47–0.51 and every step 0.68–1.19 of its band.
+- Do instead: build a band from the variation a player actually sees between two events of the same kind (another flight, another seed, another moment); when the effect stops consuming a random, re-check what the band draws.
+- Evidence: `lab.src.html` `runSteps` (the `other` prism); `Docs/Studios/COLLISION_BURST_LAB.md` round 5, Found 4
+- Promoted: no
+
+### L-STU-71 — Before matching an effect's motion, read its mesh's UV channel: the explosion's fade was laid out per wedge
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the destruction fragments were given the explosion's motion and its erosion fade, reading their face coordinates as UV0. `Prism.asset` turned out to give all 24 wedges the SAME UV triangle ((0,0), (1,0), (0.5,0.5)), so the explosion wipes each wedge on its own; on half the faces the face coordinates would have faded on another pattern (36 of 72 vertices differ — now parity's negative control). Fixed with `PrismSierpinskiTiling.WedgeUV`.
+- Do instead: when a new effect must reproduce a shipped one, dump the shipped mesh's every channel (position, normal, tangent, UV) and gate each one the new mesh feeds into the shared shader code, not only the positions.
+- Evidence: `parity.py` `uv_vs_prism`; `PrismCollisionBurstTests.EveryFragmentWearsItsWedgesExplosionUV`
+- Promoted: no
+
+### L-STU-72 — Prove a remaining squint gap's cause with a scratch copy that removes it, before calling it shape or motion
+- Lab: Collision Burst Lab round 5 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: with the explosion's law, destruction's size and fade matched the explosion but the squint stayed 0.21–0.22 against a 0.097 band, and the colour column (0.10–0.11, the explosion's band 0.012) pointed at the brighter inside colour. A scratch copy of the built page without the inside colour on the wedge scored 0.13–0.14, inside 1.5 × the band — so the remaining gap is a deliberate design rule, not a motion bug, and goes to the designer as a decision.
+- Do instead: read the scorecard's columns to name the suspect, then remove exactly that in a scratch copy and re-score; put the measured trade-off in the write-up's decisions instead of "tuning" the shipped rule away.
+- Evidence: `Docs/Studios/COLLISION_BURST_LAB.md` round 5, Scorecards and Found 2
+- Promoted: no
+
+### L-STU-73 — "Same law" is not "same motion" when an input the law takes per PIECE is chosen per fragment
+- Lab: Collision Burst Lab round 6 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: round 5 moved every Sierpinski fragment by the explosion's exact closed form and parity proved depth 0 IS the explosion — yet in the game the designer saw the fragments spin the wrong way. The law's tangent input, which the explosion takes per WEDGE (four a face), had been chosen per FRAGMENT (its centroid direction), so every fragment had its own first axis and slide direction. Giving each fragment its root wedge's tangent dropped the squint from 0.21–0.22 to 0.17–0.18 (0.05–0.06 without the inside colour, inside the two-explosion band).
+- Do instead: when a law is applied to finer pieces of something, list each of its inputs and decide whether the original takes it per piece or per parent; prove the property the player sees (here: every fragment's normal equals its parent wedge's — W7, with the per-fragment choice as a negative control), not only that the coarsest level matches.
+- Evidence: `PrismCollisionBurst.hlsl` `PrismBurstWedgeTangent`; `verify_prism_collision_burst.py` W7 and the radial-tangent control
+- Promoted: no
+
+### L-STU-74 — "Hidden by its own prism" is a measurable claim: test it with a segment, and the failures name the geometry
+- Lab: Collision Burst Lab round 7 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the designer asked for steal rolls that leave by being occluded, not by dissolving. A harness test (segment from each rolled vertex to a random camera against the prism's cube) started at 80.6% hidden; sampling the visible vertices named three causes in turn — a fixed run-out distance too short for steep views (fixed by deriving it from the camera's height and offset), the roll's end caps leaking past the corner for a sideways camera (an inward tuck), and a roll that kept rolling out past the far end of a long slab (stop at the first hiding place) — to 98.5%. An occluder shrunk "a hair inside" also miscounted end caps lying exactly in a face plane.
+- Do instead: turn an occlusion idea into a percentage over random poses and cameras with a negative control (roll TOWARD the camera), print a sample of the failures with object-space coordinates, and fix the geometry the sample names; measure against the occluder's true extent.
+- Evidence: `verify_prism_collision_burst.py` `run_roll_tests`, `hiddenBehindPrism`; `PrismCollisionBurst.hlsl` `PrismBurstRoll`
+- Promoted: no
+
+### L-STU-75 — A test that names things by a hash inherits the hash's precision
+- Lab: Collision Burst Lab round 7 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-15
+- What happened: the harness's shatter-rigidity test paired triangles whose piece hash was equal. The float hash on large inputs quantises to steps of 1/1024, so two different shards could share a "name"; the test passed for rounds only because its random sequence never drew such a pair, then failed when an unrelated test added one random draw.
+- Do instead: identify a piece by the quantity that defines it (here the Voronoi cell), and treat a hash as a name that can collide; when a passing test starts failing after an unrelated change to the RNG stream, suspect the test's identity assumption before the code.
+- Evidence: `verify_prism_collision_burst.py` test 3b
+- Promoted: no
+
+### L-STU-76 — A parametrised test must prove it built the case it names
+- Lab: Collision Burst Lab round 9 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: rounds 7 and 8's harness chose the mesh with `cut.name[1] == 'i'` — true for both "sierpinski" and "silver" — so every "silver" case ran the Sierpinski cut and printed a pass under the silver's name for two rounds. It surfaced only because round 9's silver depth 10 took minutes (Sierpinski depth 10 is ~236k vertices).
+- Do instead: select a case by an exact comparison, and assert a property only the named case has (here the vertex count, 72 × the per-wedge count) before testing it. A runtime far off what the case should cost is a hint the case is not the one named.
+- Evidence: `verify_prism_collision_burst.py` `run_fragment_tests` (the size CHECK); `COLLISION_BURST_LAB.md` round 9 Found
+- Promoted: no
+
+### L-STU-77 — A yardstick that steered the design must go when the designer retires its goal
+- Lab: Collision Burst Lab round 9 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: eight rounds tuned destruction to squint as the explosion, which kept fragments grouped in their wedges' sheets. The designer saw the squint steering the look away from what they wanted and retired it. The replacement Look scorecard needed a measure that could say NO to "grouped": direction entropy at 64 bins could not tell six cones from a sphere (0.787 vs 0.726), while 256 bins could (0.81 vs 0.53). The same measure found a design hole the eye had missed: one angle off every face made six hollow cones (0.71). Weighting the radial by how far out the fragment sat filled the sphere (0.83).
+- Do instead: when a goal is retired, retire its scorecard and its gates too (the squint table, the LOD-step test, the Squint button), and build the new measure with a control compiled from the shipped shader that must fail it, here `PRISM_BURST_FRAGMENT_FACE_ONLY` compiled into a page probe. Size the measure's resolution against that control before trusting it.
+- Evidence: `lab.src.html` `lookOf` / `faceOnlyProbe`; harness F9 and `ENTROPY_FLOOR`
+- Promoted: no
+
+### L-STU-78 — A camera that rides the effect hides the input that moves it; give every input the designer doubts its own control and a measured readout
+- Lab: Collision Burst Lab round 10 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-16
+- What happened: the designer saw in game that the destruction "was not accepting the velocity". The code passed it end to end, but the lab could not show that. Its camera rode the flight, so the flight never showed, and the velocity was a hidden function of one "closing speed" slider. The fragments' own motion also barely depended on the hit. The round added a 3D velocity input, an arrow for the resolved flight, a hold-still camera, and a scorecard lean read along the input's direction. Its first version read the reversed control along the control's OWN direction, and so passed it.
+- Do instead: when a designer doubts an input reaches the effect, give the input its own control in the input's own units, draw what the game resolves it to, and measure the effect's response to it with two controls: the input reversed (read along the ORIGINAL axis) and the input ignored (compiled from the shipped shader).
+- Evidence: `lab.src.html` Velocity tab, `drawArrows`, `lookOf` lean; harness F10; `COLLISION_BURST_LAB.md` round 10
+- Promoted: no
+
+### L-STU-80 — A baseline drawn by a different shader cannot answer to the lab's dials: say so on the page, or make it the same law
+- Lab: Collision Burst Lab round 11 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-17
+- What happened: the designer tuned the Fragments tab and recorded the look they liked, then found it "reflected in the levels not the explosion". Level 0 was still the explosion's own Shader Graph, which no burst dial reaches. The lab had labelled it the baseline, but it sat in the same line-up as the levels, and nothing on the page said its look was fixed. The fix made level 0 the same fragment law on the explosion's own 24 wedges, with its own live cap outside the close-up budget, since every far death takes it. The old graph moved to the scorecard as the "before" row.
+- Do instead: when a line-up mixes cells the dials drive with cells they cannot, mark the second kind on the stage, not only in a tooltip. When the designer then wants the dials everywhere, unify the law. Do not hand-tune the other shader to match. Before routing every instance through a path built for a budgeted few, give the bulk its own queue and cap.
+- Evidence: `PrismInteractionLod.TryDestruction` (level 0), `PrismCollisionBurst.CanAcceptExplosion`; `COLLISION_BURST_LAB.md` round 11
+- Promoted: no
+
+### L-STU-81 — "Not copies, not noisy" is a question of WHERE the randomness lives; measure the two separately, and never hash a seed the GPU must reproduce
+- Lab: Collision Burst Lab round 12 · Branch: `cece/dreamy-pascal-7xxx1m` · Date: 2026-10-17
+- What happened: the designer asked that neighbours struck alike not play one animation while each explosion stays one continuous structure. More per-fragment noise would have traded one fault for the other. Drawing the randomness ONCE per death (spread, timing, spin, tumble plane, lean, a smooth ellipsoid) answered both. Two metrics made that visible: a per-region SHAPE difference between two deaths (a per-vertex difference could not tell gestalt from grain; the noise alone already read 0.18 there), and a within-death neighbour roughness. The first rose 3.3x and the second did not move. The first version read the seed through hash13, and the GPU parity gate failed (worst 7e-3, 99% of vertices). hash13 multiplies its input's rounding about a hundredfold, so the page's GPU and the harness drew different characters for the same death. Triangle waves of the seed fixed it (worst 8e-4).
+- Do instead: put "differ between instances" in per-instance constants and "differ within one" in a continuous field, and score each with its own metric plus a negative control. Read an already-hashed seed through gentle functions (triangle waves, low-frequency sines). Never pass it through a second high-gain hash when two GPUs, or a page and a harness, must agree.
+- Evidence: `PrismBurstFragmentVariety`, `PrismBurstSeedWave` (HLSL); harness F11 and `PRISM_BURST_FRAGMENT_VARIETY_OFF`; `COLLISION_BURST_LAB.md` round 12
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
@@ -588,3 +880,312 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: a lab that re-implements the kernel can drift from the game, and one that calls the shipped kernel cannot. Report verdicts as ratios against the shipped baseline.
 - Evidence: PrismOcclusionDitherLab.cs class doc.
 - Promoted: §0
+
+### L-STU-60 — Before inventing a path, measure where the existing one goes wrong, and ask whether topology allows "a bit"
+- Lab: Omni Combine Lab revisions 6–7 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: "Time came in from inside" got answered with a new per-plate path that rose to a shell, went round
+  and dropped in. The designer called it heavily embellished and asked for the lab's morphs plus "a bit of extra
+  spacing". Measuring the lab's morph first showed the real fault: its shell is 90% formed while the crystal is still
+  0.3–0.5 R out, so the finish is a finished shell SLIDING home. Its leading rhombi rise out of their holes, its sides
+  slide along at slot radius, and only its trailing side comes in from outside. A body arriving from one side must
+  bring its leading side through or round the other body. No small spacing can avoid that, and five cheaper variants
+  were measured and failed:
+  - spacing alone;
+  - retiming the ease;
+  - a radial floor, which whips plates at 36 R/s;
+  - re-anchoring plates to their slots, which moves them 1.5–3 R;
+  - containment, which swells the shell to 2–3x.
+  The conflict was put to the designer with numbers. The answer was to keep the morphs and choose WHERE the crossing
+  happens: the flight turns so each crystal arrives from the camera's side, and the crossing goes behind the omni.
+- Do instead:
+  - Measure the existing motion against the complaint in the viewer's terms first. Here that is "a rhombus under a
+    camera-facing hole is inside the omni, late in its morph".
+  - Before building a new path, check whether "a bit" can satisfy the ask at all. If the geometry forbids it, put the
+    conflict to the designer with measured options, rather than shipping an embellishment that looks like an answer.
+  - When something unavoidable can't be made smaller, the viewer's camera is a design input. Put the crossing where
+    the body itself hides it. This is the same move as the Mass "rise while hidden".
+- Evidence: `OmniCombineCore.FaceCamera`, `SocketSpacing`; `Tools/Build/converter_round5_harness` (camera-facing
+  rhombi inside 0.5 / 6.5 / 0.6% of late frames, against 24.6 / 19.0 / 33.0% arriving straight in). See L-STU-61: that
+  measure was a proxy, and the true one does not back the occlusion claim.
+- Promoted: no
+
+### L-STU-61 — "Occluded" means a ray from the camera hits something drawn first; a facing test is not that
+- Lab: Omni Combine Lab revision 7 → round 8 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: revision 7 shipped "arrive from the camera's side, so the clipping happens behind the omni". Its
+  evidence was a proxy, "a rhombus whose hole faces the camera is inside the omni", which fell from 33% to 0.6%. The
+  designer then asked for "the same treatment" on Charge and Mass, which already had it. Ray-casting from the
+  converter's camera against every triangle drawn showed visible plate-through-plate intersections at about 15% on
+  every approach: straight in, from the camera's side, along the line of sight, from above. From behind was best.
+  The clipping is the crystal entering the omni and growing inside it. The approach direction only trades which half
+  you see. A sparse structure (Charge lands on Space alone) has nothing to hide it behind.
+- Do instead: when the claim is "occluded" or "hidden", measure it with occlusion. Cast rays from the real camera
+  against the geometry actually drawn, at the moment it is drawn, and count the events the viewer would call the
+  fault: here, triangle-triangle intersections. Keep any facing or hemisphere test only as a fast pre-filter, and say
+  in the doc which one produced the number.
+- Evidence: the round-8 scratch ray-cast rig (`OMNI_COMBINE_LAB.md` revision 7, "Correction, round 8").
+- Promoted: no
+
+### L-STU-62 — When the designer's eye and your measure disagree, ship their ask with the dial, and publish the disagreement
+- Lab: Omni Combine Lab revision 7, round 9 (the converter) · Branch: `cece/sharp-fermi-yw38ky` · Date: 2026-10-13
+- What happened: the designer saw Mass "come in from the top", with visible clipping from the side, and asked
+  whether there was a 90° error. There was no error in azimuth: the approach matched only the camera's compass
+  direction, not its height. Matching the height too fixed what they named, with arrival 0.2° off the camera's.
+  But the triangle ray-cast scored a line-of-sight approach WORSE on the silhouette (Mass 98 against 31 rim
+  intersections a second from overhead). The measure counts intersection points; it cannot see a body sinking
+  through another body's outline, which is what they were describing.
+- Do instead: build what the designer asked, and expose the contested quantity as one authored dial
+  (`approachAboveCameraDegrees`, default the ask). Put the measure's opposing numbers in the doc and the
+  verification checklist, so the next look in the editor settles it. Don't override the eye with a metric
+  that was never validated against it, and don't hide a metric that disagrees.
+- Evidence: `OmniCombineParams.ApproachAboveCamera`; `OMNI_COMBINE_LAB.md` revision 7, round 9.
+- Promoted: no
+
+### L-STU-63 — Run the designer's literal value as a control: it can trade the fault they named for a new one
+- Lab: Omni Combine Lab revision 8 (the converter) · Branch: `cece/beautiful-goodall-8cenn3` · Date: 2026-10-14
+- What happened: the designer asked for the Mass prisms to fly in "at maximum column height" so they socket instead of
+  clipping. Taken literally, the raised prisms stand 2.5 R out in every direction as the crystal nears the centre, and
+  the Time crystal waits 2.7–3.3 R out. Measured on the real prism bodies, the top of the column reaches into the Time
+  crystal (0.00 R). The first version of the check also flagged prisms passing through the omni mid-flight. That was a
+  proxy problem: it lumped "landing beside my hole" together with "bound for the far side, passing through".
+- Do instead: build the ask as a dial, and run the literal value through the same harness. Here that is `massRaise`,
+  with 1 meaning "maximum". If the literal value only trades the fault the designer named for a new one (a
+  body-on-body contact, not a contested metric as in L-STU-62), ship the highest value that keeps the ask's purpose.
+  Keep the literal value as a negative control, and give the designer the table. Split a fault metric by cause
+  before gating on it.
+- Evidence: `Tools/Build/converter_round5_harness` section 9; `OMNI_COMBINE_LAB.md` revision 8.
+- Promoted: no
+
+### L-STU-64 — A studio built from a design doc beside a game build from the same doc: add the game as a selectable "ships" set
+- Lab: Brittle Star Studio round 2 · Branch: `cece/gallant-lamport-sc3khe` (studio from `cece/brave-galileo-d95fpj`) · Date: 2026-10-14
+- What happened: two sessions built the Brittle Star on one day from one Notion document without seeing each other, a
+  design studio on one branch and the Unity vessel on another. The designer then made a dozen decisions in the Unity
+  session (x6 Speed, five auto-firing arms, a trail per ring corner, a nucleus-wide ring explosion, Creation the slowest),
+  so the studio modelled a vessel that no longer existed. A rewrite would have thrown away round 1's scorecard and the
+  design-doc comparison the studio had earned.
+- Do instead: port the game's rules line for line behind ONE switch (`SHIP.unity`, a new Flight-numbers set made the
+  default, the saved-settings key bumped so every tester gets it), read every number from a `SHIPPED` block keyed by the
+  config SO's own field names, and keep the old sets selectable. Then a `Tools/Build/studio_to_unity/<vessel>.json` map
+  makes `studio_to_unity.py --check` a drift gate between the page and the asset; negative-control it by changing one
+  number. Check the port against the C# with a hook-driven rules script (speeds, the press-again Cruise, the arms meeting
+  exactly at the focus, the disk sparing a prism 5 u off its plane) before trusting any scorecard it produces.
+- Evidence: `Docs/Studios/BRITTLE_STAR.md` §5.2; `Tools/Build/studio_to_unity/brittlestar.json` (35 mapped, a changed
+  `fireRate` reports DRIFT and exits 1).
+- Promoted: no
+
+### L-STU-65 — A studio pilot tuned at one speed orbits at another; re-score every level whenever the hull's numbers move
+- Lab: Brittle Star Studio round 2 · Branch: `cece/gallant-lamport-sc3khe` · Date: 2026-10-14
+- What happened: round 1's lab-only pilot rode Speed mode onto a crystal at x4 (110 u/s). On the game's x6 (297 u/s at
+  Time 3) the 25 u pickup sat inside its turn radius, so every Hard Derby I4 run circled a crystal for 300 s and the
+  scorecard read DNF. A first fix (drop to Cruise inside the stopping distance) flickered: the slowed hull's stopping
+  distance shrank, the rule asked for Speed again, and it orbited anyway. A second (back off and re-line a sealed wall)
+  made every seed worse.
+- Do instead: trace one failing seed's position, speed, mode and state every couple of seconds before changing the
+  pilot; the samples showed the mode flipping once a second. An approach rule needs hysteresis (here: stay in Cruise
+  within max(250 u, the stopping distance)). Re-score every level and style after ANY change to the hull's numbers, and
+  report where Hard is still not the fastest rather than tuning until it is (D24).
+- Evidence: `Docs/Studios/BRITTLE_STAR.md` §5.2 (finding 6); `/vessel-studio` §7 (the same trap, for studio pilots).
+- Promoted: no
+
+### L-STU-66 — Run the scorecard tool a handoff names before quoting its numbers; this one could not run as committed
+- Lab: Brittle Star Studio · Branch: `cece/gallant-lamport-sc3khe` (tool from `cece/brave-galileo-d95fpj`) · Date: 2026-10-14
+- What happened: the handoff cited `Docs/Studios/BrittleStar/brittlestar_score.cjs` as the source of round 1's scorecard.
+  As committed it used `fs`, `path` and `chromium` without requiring them, so it crashed on its first line: the numbers
+  had come from an inline run, not the file a reader is told to re-run.
+- Do instead: execute every measuring tool a doc or handoff names, from the committed file, before quoting or
+  extending its numbers; fix and say so when it does not run. A committed measurement tool is only evidence once
+  someone other than its author has run it.
+- Evidence: commit "merge the Brittle Star research and studio" (the `require` lines added).
+- Promoted: no
+
+### L-STU-79 — A free-ended cord that must whip needs a WAVE EQUATION on its link directions, not pose springs on its points
+- Lab: Brittle Star Studio · Branch: `cece/beautiful-knuth-j3atgk` · Date: 2026-10-16 · (L-STU-67 to 78 are claimed on
+  in-flight branches; this id skips them)
+- What happened: the first model for "cords like the Thresher's chain, without the weight" pulled each point toward its
+  place on a straight pose line, capped lengths with follow-the-leader and re-read velocities from the move (PBD). It
+  passed straight-line and frame-rate tests, but a node prototype showed the two things a whip needs were missing: a
+  root flick moved every link at once (no travelling wave), and 30 s of random flying pumped node speeds to 4,000 u/s
+  (FTL plus the velocity re-read injects energy).
+- Do instead: model the cord as unit link DIRECTIONS laid end to end (inextensible by construction) obeying
+  `u'' = k (u[i-1] - 2u[i] + u[i+1])`, the root direction fixed and the tip free; damping and a pose spring onto the
+  straight line are the analog "stiffen" dials. Waves then emerge and reflect off the tip with no scripting. Prototype it
+  in node first and measure three things before porting: when each link starts to move after a root flick (arrival
+  order and delay), the peak swing over a minute of random flight (bounded), and the same flick at 30 / 60 / 144 fps
+  (sub-step at a fixed h so they agree).
+- Evidence: `Assets/_Scripts/Controller/Vessel/BrittleStarCord.cs` and its tests in `BrittleStarTests` (arrival order,
+  saber straightness, no stretch, a minute bounded, 30 vs 144 fps); the studio's `cordStep` is the line-for-line port.
+- Promoted: no
+
+### L-STU-82 — A control that equals Hard to the decimal is a bug until shown otherwise, even when equality is plausible
+- Lab: Shrike Studio round 1 (`Docs/Studios/VesselStudio/shrike.html`) · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15 · (L-STU-67 to 81 are claimed on
+  other branches; these ids skip them)
+- What happened: Den Defense's "Hard, no array" column matched Hard byte for byte, twice, for two different bugs. First
+  the AI let go of the paint the moment it turned to lance: of each burst only the first missile hit, the rest flew out
+  their 8 s life, and the run fell at the same 209.3 s as the no-array run. Later, at I4, the boss-wave test `wave % 2 === 2` could never be true, so no creature ever spawned and
+  nothing needed missiles. Both read as a believable finding ("the lance is enough") until the runs were traced.
+- Do instead: when a control ties exactly, count what the ablated piece DID in the full run (missiles fired and what
+  each one hit; creatures spawned). A real "worth nothing" shows the piece working and not mattering; a bug shows it not working.
+  And test every modulo/latch against the values it must fire on (L-ECO-5 is the same family).
+- Evidence: `Docs/Studios/SHRIKE.md` §5 finding 7; the trace scripts behind `Docs/Studios/Shrike/shrike_score.cjs`.
+- Promoted: no
+
+### L-STU-83 — A survival score decided by one event measures luck; make the loss a sum of many events
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
+- What happened: the first Den Defense ended the run when any asteroid reached the den's core. Five seeds of one cell
+  spread from 75 s to 296 s, so Easy, Medium and Hard overlapped completely. Wearing the den down instead (a core hit
+  breaks 3 of its 40 blocks; it falls with a quarter left) cut the band to about +-20 s, and the levels separated.
+- Do instead: before reading a survival or "first failure" column, print one cell over five seeds. If the spread is
+  wider than the gaps you hope to measure, change the loss into an accumulated quantity (labelled lab-only, and put
+  to the designer) rather than adding seeds.
+- Evidence: `Docs/Studios/SHRIKE.md` §3 (Den Defense) and §4.
+- Promoted: no
+
+### L-STU-84 — When an easier AI level beats Hard, find what Hard spends its aim on; change one thing per measurement
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · Date: 2026-10-15
+- What happened: in Den Defense, Medium outlived Hard at I1 and I2 (288.9 s against 274.4 s, 242.4 against 228.8). Hard
+  painted asteroids for missiles while its hitscan lance (0.48 s cooldown in a nest) could have killed them on the spot,
+  and painting holds the nose on one target until the missiles land. The fix was the paint rule (paint creatures only).
+  It was shipped together with a target-pick hysteresis, and the first learning written here credited the hysteresis.
+  A control copy with the hysteresis removed showed the opposite: Hard still beat Medium and survived longer without it
+  (I1 300 s against 283.4), so the hysteresis was taken out.
+- Do instead: when an easier level wins, trace what the Hard pilot does with its time (here: frames spent painting
+  against lances fired). Change one thing per scorecard run, and before you write down why a fix worked, re-run with
+  each half removed (L-GEN-3 for your own changes).
+- Evidence: `Docs/Studios/SHRIKE.md` §5 finding 3; `shrike.html` `aiDen` (`worth`).
+- Promoted: no
+
+### L-STU-85 — A lab publishes its own artifact; a hub's "one artifact" rule is the hub's, not every lab's
+- Lab: Shrike Studio round 1 · Branch: `cece/affectionate-clarke-s738vh` · By: Garrett (owner), 2026-10-15
+- What happened: the Vessel Studio's rule "never publish a second studio artifact" (its skill §0, a `CLAUDE.md` line,
+  the vessel-work prompt hook) read as covering any lab about a vessel. So the Shrike lab, built with `/labmaker`, was
+  steered into the shared hub: a catalog row, a hub card, and a publish blocked on reading someone else's artifact.
+  The owner's call: "labmaker should be capable of making artifacts just fine ... I just want to explore here and then
+  bring our insights into Unity."
+- Do instead: publish every lab as its own private artifact (§6), with its own decision log. A lab page that loads a
+  hub's shared scripts ships them beside it through `files` and drops the hub-only parts (the Shrike's
+  `build_standalone.py` strips the Sync panel and the hub links, and refuses to build when they move). Joining a hub
+  is optional, later, and its owner's decision. The three places the rule lived now say it is the hub's only.
+- Evidence: `SKILL.md` §6 and §7; `CLAUDE.md` vessel section; `.claude/hooks/vessel_studio_nudge.py`;
+  `/vessel-studio` §0; https://claude.ai/artifact/JD17sQMeuEUETp6AUPqMmy.
+- Promoted: §6
+
+### L-STU-86 — A vessel lab carries four minigames, one per element, and the element decides the kind
+- Lab: all vessel labs (raised on the Shrike Studio) · Branch: `cece/affectionate-clarke-s738vh` · By: Garrett (owner), 2026-10-15
+- What happened: the Shrike lab flew the two minigames its class document named (Thread the Needle, Den Defense). The owner
+  set a fleet rule: "time is always a racing game, space a destruction game, mass a creation game, and charge a vessel on
+  vessel dogfight", so every vessel's lab tests the kit against the same four kinds of play.
+- Do instead: build the four kinds (`SKILL.md` §1.5). Slot a document's own game by its kind; build the missing kinds as
+  lab proposals. The Shrike lab has the Time race (Thread the Needle); Den Defense is a defense game (not one of the four);
+  Space (Bunker Buster), Mass and Charge are its next round.
+- Evidence: `SKILL.md` §1.5; `Docs/Studios/SHRIKE.md` §6.
+- Promoted: §1.5
+
+### L-STU-91 — three.js r128 instanced meshes: colour before count, and turn culling off
+- Lab: Angler Command Lab (`Docs/Studios/AnglerCommandLab.html`) · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: every creature drew grey, then not at all. `InstancedMesh.setColorAt` creates `instanceColor` sized from the mesh's CURRENT `count`, and the page had set `count = 0` first, so the buffer was empty (`instanceColor.array.length` 0) and nothing errored. Separately, r128 frustum-culls an InstancedMesh by its geometry's bounding sphere at the mesh origin, so creatures 450 u from the origin vanished whenever the origin left the view. The verifier passed both: a WebGL stage skips the blank check.
+- Do instead: call `setColorAt` for every slot before lowering `count`, and set `frustumCulled = false` on any instanced mesh whose instances spread out. Expose a `gl()` hook (draw calls, instance counts, the first colour) so a probe can tell "not drawn" from "drawn black" without a screenshot.
+- Evidence: `initGL` (`fmesh`, `trails.frustumCulled`); `window.__lab.gl()`.
+- Promoted: no
+
+### L-GEN-12 — Before calling a failing column a design finding, trace one failing run frame by frame
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the Pack sling failed 3–4 of 4 orders, which read as "the sling is a bad gesture". A per-second trace of one run showed two bugs first. The commander let go after one frame because it counted the gathering ball as "busy". Creatures that latched beside a prism circled it forever: at minimum speed their turn could not catch the bearing, and at d ≈ 0 "facing it" is undefined. With both fixed, the sling turned out to be the fastest scheme on blobs, and its remaining failure (every trail, one 24 u cluster per throw) is the real design finding. A per-order breakdown (`perOrderS`) is what separated the two.
+- Do instead: when a variant fails, print its state machine every 0.5 s for one seed before writing it up. Report per-order times, not only a mean, so "fails on lines, wins on blobs" cannot hide inside "slow". For any seek-and-face creature, brake to a hover inside reach and count a meal in the mouth as faced.
+- Evidence: `ANGLER_COMMAND_LAB.md` round 1 "Found"; `faunaStep` (the hover and `d < 3`); `squadBusy`.
+- Promoted: no
+
+### L-GEN-13 — An attribution column needs a decoy control and per-order state resets
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: "on target %" charges each kill to the CURRENT order. The commander recalled its squad only before the first order (a flag never reset per order), so creatures kept eating the last order's structure and every later kill read as off-target. That made precision look about 20 points worse than it was. A planted decoy (`runMission(…, decoy = true)`: the commander aims every order at the wrong structure) must read 0% on target, and it does on all five schemes. A diet control (`dietAny` 0: "yours lost" must go to 0) proved the friendly losses come from the mouthful, not the targeting.
+- Do instead: reset every per-order flag in the function that starts an order. Plant a decoy that must drive the attribution column to zero, and a control that must zero each loss column you explain by one cause.
+- Evidence: `nextTask` (`w.ai.recalled = false`); `runMission`'s `decoy`; `ANGLER_COMMAND_LAB.md` "Checked".
+- Promoted: no
+
+### L-STU-92 — A companion slower than the hull is invisible from the chase camera; measure follower lag
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the tamed squad runs at the game's fauna speeds (at most 40 u/s at L1), the same as the Angler's cruise, so it sat on average 79 u from the hull (max 102), behind a 40 u chase camera. Every screenshot showed no squad. A speed proportional to the gap added a steady ~27 u lag on top. The same speed gap broke taming: with the lure held at cruise, six creatures were never tamed in 90 s, against 14–19 s with the lure slowing the hull to 20 u/s or less.
+- Do instead: in any lab where companions follow a vessel, measure their mean and max distance from it, feed the leader's speed forward in the follow law, and put the speed gap on the page as a design question (here a lure brake and a follower-only leash tow), never as a quiet speed-up of the creature.
+- Evidence: `ANGLER_COMMAND_LAB.md` "What it says" (the last two bullets); `leashTow`, `formBack`, `lureCruise`.
+- Promoted: no
+
+
+### L-GEN-14 — A golden table from random inputs can miss a planted change; plant the change before trusting it
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the parity gate runs the page's `CORE` functions in headless Chromium on a seeded table of inputs and writes the results into the NUnit test as goldens. Its first `--self-test` planted six one-number changes in the C# port, and two of them passed every golden:
+  - The claim penalty, changed from 900 to 800: no random pick case sat near enough to the boundary for the penalty to change the winner.
+  - The esca's 2.5 u lift: every lure case used the world up vector, and the plant changed only the x component, which is always zero there.
+- Do instead: plant every constant before believing a golden table. When a plant survives, add the cases that reach it, here pick cases with two candidates either side of one claim's cost, and a lure case with a general (non-axis) up vector. Make each plant change every component it can. The gate is only evidence once every plant fails it.
+- Evidence: `Tools/Build/angler_command_parity/run.sh --self-test` (6/6), `goldens.cjs` (the boundary pick and tilted-lure cases).
+- Promoted: no
+
+### L-STU-93 — A nested enum named like a common word trips the repo's enum-member gate; name it for its owner
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the executor's per-creature state enum was first called `Order`, matching the lab's word. `check_enum_member_references.py` resolves `X.Member` by enum NAME across the repo, so every `Order.Add(...)` elsewhere (a list called `Order` in `ProfilerCapture.cs`) read as a reference to a missing member of the new enum. The gate went red on code the change never touched.
+- Do instead: give a nested enum a name only its owner would use (`LeashOrder`), even when the lab calls it something shorter. Keep the lab's word in the doc comment.
+- Evidence: `AnglerCommandExecutor.LeashOrder`; the gate's output before and after the rename.
+- Promoted: no
+
+### L-STU-94 — Port the lab's LOOK of a state with its rules; a marker at an object's centre is inside the object
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the lab draws a painted prism by recolouring the prism itself (75% toward white in `render()`). The Unity port kept the paint arithmetic line for line, but drew the state as camera-facing dots at each prism's centre. Every dot sat inside an opaque prism, so the first playtest reported that painting did nothing. Every gate was green, because no gate looks at pixels.
+- Do instead: when a lab state is shown by changing an object's own look, port that look onto the object with the lab's numbers (here a per-prism lift toward white, one fading stamp per change). Then list in the verification entry what the player must SEE, not only what the code does. A world-space marker for a solid object goes on its surface or above it, never at its pivot.
+- Evidence: `AnglerCommandLab.html` `render()` (the `col.lerp(WHITE, 0.75)` line); `Prism.SetColorLift`; `ANGLER.md` §1a.
+- Promoted: no
+
+### L-STU-95 — A SHIPPED key two schemes share moves both; name the key per scheme or report both rows
+- Lab: Angler Command Lab, round 3 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-16
+- What happened: the designer asked for the Sling painter's reach x20. `paintRange` is also the round-1 Spotlight's reach, and the AI commander's approach distance. Raising it moved three things: the Sling painter (85% on target, from 90%), the Spotlight (70%, from 80%), and how the scorecard's AI flies. A comparison scheme that was meant to stay put shifted with it.
+- Do instead: before changing a SHIPPED value, grep every reader (`P.<key>`): schemes, the AI commander, the renderer. Either split the key per scheme, or re-run the whole batch and report every row that moved. Here the change was meant for both painters, so both rows are reported in `ANGLER_COMMAND_LAB.md` round 3.
+- Evidence: `AnglerCommandLab.html` (`P.paintRange` in `brushStroke`, the spotlight's `aimPick`, the commander's reach); the round-3 scorecard.
+- Promoted: no
+
+### L-STU-96 — Removing a timeout can turn a harmless exclusion into a deaf unit; re-test every "skip this state" after it
+- Lab: Angler Command Lab, round 4 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-17
+- What happened: the throw had always skipped creatures still in flight, and holding RT gathered only idle and attacking ones. That was harmless while a homing throw gave up after 6 s. Round 3 removed the give-up (any distance, limited only by speed) and raised the reach to 3200 u. A creature thrown far away was then deaf to every new paint for many seconds, and the designer's next playtest said the fauna "didn't always listen". No scorecard row moved, because the scored commander never repaints mid-flight.
+- Do instead: when a change removes a timeout or a cap, grep every `state === X` skip that the timeout used to bound, and give the page a headless repro of the interaction the skip blocks (here: throw, repaint mid-flight, throw again; count who obeys). Keep that repro as a check: before 24/24 stuck, after 24/24 obey.
+- Evidence: `ANGLER_COMMAND_LAB.md` round 4; `commandStep` slingpaint (the gather now includes `ST.FLUNG`); `throwAtPaint`.
+- Promoted: no
+
+### L-STU-97 — The camera's height IS the aim's error; level the chase camera before you shrink a brush
+- Lab: Angler Command Lab, round 5 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-17
+- What happened: the designer asked for "accurate and smaller" paint cones. A beam from the nose, seen from a chase camera 56 u above the nose line, runs below the screen's centre, so whatever the pilot centred was not what got painted. Shrinking the cone alone would have made that miss worse. Putting the camera on the nose line (`chaseUp` 0) made the screen's centre the beam's axis, and then the small cone (3°) scored the painter's best on-target rate (87%).
+- Do instead: before tuning the size of any aimed volume, check where its axis lands on screen from the shipped camera. Level the camera (or aim from the camera) first. If height is wanted for overview, raise it only in the states that do not aim (here: luring and dashing, eased in and out).
+- Evidence: `ANGLER_COMMAND_LAB.md` round 5; `AnglerCommandExecutor.UpdateCameraLift`.
+- Promoted: no
+
+### L-STU-98 — An order scoped to ONE gesture's targets abandons the last gesture's; queue every live mark
+- Lab: Angler Command Lab, round 6 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-17
+- What happened: each throw gave its creatures a set holding only that stroke's paint, and a new throw replaced it. Prisms still lit from an earlier throw were never eaten. The scorecard did not show it: its commander paints one target at a time. A headless repro did (two throws: 0 of 12 older lit prisms eaten before, 12 of 12 after).
+- Do instead: when marks persist ("lit until eaten or erased"), the units should pick from ONE queue of every live mark, not from the gesture that issued them. Spread them with a claim count, then recency. Keep a two-gesture repro as a page check.
+- Evidence: `AnglerCommandLab.html` `litQueue` / `pickTarget`; `ANGLER_COMMAND_LAB.md` round 6.
+- Promoted: no
+
+### L-STU-99 — Two kinds of bug the lab cannot catch: a world rule it waives, and a readout it shows but the clone does not
+- Lab: Angler Command Lab, round 7 (a Unity playtest) · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-18
+- What happened: "the QuadFish don't always listen" had two game-side causes.
+  - The lab's world is domain-blind, so every creature eats every prism. The game's creatures refuse their own domain, the nucleus claim and their pen, and an order to such a prism left a creature hovering at it for good.
+  - The lab shows the picked squad; the Unity HUD did not. One stray press of the squad button (on A, the Sparrow's Mass button) silently left every other kind out of each order.
+  No lab check could fail for either.
+- Do instead:
+  - For each rule on the lab's not-modelled list, ask what a clone must do when the game enforces it. Here the holder asks the creature's own diet before ordering (`Fauna.LeashCanEat`).
+  - Port every mode readout the lab draws (squad, selection, lock) together with the mode itself.
+  - When the designer remaps buttons, check what the OLD button did. A habit press is how a hidden mode gets entered.
+- Evidence: `R_VesselActions/ANGLER.md` §1k; `ANGLER_COMMAND_LAB.md` round 7.
+- Promoted: no
+
+### L-STU-102 — A studio that draws a world effect as an additive flat sheet is deciding a UI look
+- Lab: Brittle Star Studio, round 5 (the ring explosion) · Branch: `cece/gallant-bell-eq7kul` · Date: 2026-10-18
+- What happened: the five-fold ring explosion was first built as flat ribbons: an annulus, a pentagon, five arms. The
+  preview (a 2D top render) and the studio (a `MeshBasicMaterial`, additive, double-sided sheet) both showed it as flat
+  vector art. Garrett: "good start but nothing in the environment should ever look flat like this, that is reserved for
+  ui". The second cut, with beams a few units thick, still read as wire across a 780 u disk.
+- Do instead:
+  - Draw any world effect in the studio LIT and flat-shaded (`MeshStandardMaterial`, `flatShading`, an emissive tint),
+    never as an additive sheet. The studio is where the look is decided.
+  - Size every thickness as a share of the effect's own size.
+  - Judge the look from a 3D, lit, perspective render at two angles, oblique and low near the plane, not from a top-down
+    outline. A 60-line Python painter's renderer over the C# form's dumped triangles was enough here.
+  - Keep the shape as a pure C# function with a line-for-line JS twin, and check parity by point sets (C# corners vs JS
+    corners, same settings).
+- Evidence: `BrittleStarBlastForm`, `BrittleStarTests.Blast_IsAVolume_NotAFlatSheet` (with its flatten control), the
+  LOCKED rule in `Docs/claude/SHADERS_AND_PERFORMANCE.md`, and `/vessel` §4.ab5.
+

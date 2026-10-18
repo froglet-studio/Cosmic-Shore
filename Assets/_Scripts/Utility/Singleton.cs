@@ -1,13 +1,11 @@
 using CosmicShore.Core;
-using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
 
 /*
         Generic classes for the use of singleton
-        there are 3 types:
+        there are 2 types:
         - MonoBehaviour -> for the use of singleton to normal MonoBehaviours
-        - NetworkBehaviour -> for the use of singleton that uses NetworkBehaviours
         - Persistent -> when we need to make sure that the object is not destroyed during the session.
 */
 
@@ -44,71 +42,6 @@ namespace CosmicShore.Utility
             else if (!ApplicationLifecycleManager.IsQuitting)
             {
                 Destroy(gameObject);
-            }
-        }
-    }
-
-    public class SingletonNetwork<T> : NetworkBehaviour where T : Component
-    {
-        public static T Instance { get; private set; }
-
-        public virtual void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this as T;
-            }
-            else if (!ApplicationLifecycleManager.IsQuitting)
-            {
-                Destroy(gameObject);
-            }
-        }
-    }
-
-    public class SingletonNetworkPersistent<T> : NetworkBehaviour where T : Component
-    {
-        public static T Instance { get; private set; }
-
-        public virtual void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this as T;
-                DontDestroyOnLoad(this);
-            }
-            else if (!ApplicationLifecycleManager.IsQuitting)
-            {
-                Destroy(gameObject);
-            }
-        }
-    }
-
-    public abstract class SingletonScriptableObject<T> : ScriptableObject where T : ScriptableObject
-    {
-        private static T _instance = null;
-
-        public static T Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    T[] results = Resources.FindObjectsOfTypeAll<T>();
-                    if (results.Length == 0)
-                    {
-                        CSDebug.LogError("SingletonScriptableObject -> Instance -> results length is 0 for type" + typeof(T).ToString() + ".");
-                        return null;
-
-                    }
-                    if (results.Length > 1)
-                    {
-                        CSDebug.LogError("SingletonScriptableObject -> Instance -> results length is greater than for type" + typeof(T).ToString() + ".");
-                        return null;
-
-                    }
-                    _instance = results[0];
-                }
-                return _instance;
             }
         }
     }

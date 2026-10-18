@@ -44,6 +44,27 @@ races headless in a few seconds.
    writing any `window.claude` code: its `use()` contract is versioned and is the authority over
    any copy in this repo.
 
+## 1.5 A vessel lab plays one minigame per element (the owner's rule, 2026-10-15)
+
+Every lab about a VESSEL ships four minigames, one per element, each with its own four-step intensity
+ladder (I1-I4) and its own scorecard column set. The element decides the KIND of game, whatever the
+vessel's design document calls its games:
+
+| Element | Minigame kind | What it scores | Example shape |
+|---|---|---|---|
+| **Time** | a **race** | time to finish a course (gates, rings, windows, crystals in order) | Thread the Needle (Shrike), Skim Race |
+| **Space** | a **destruction** game | mass destroyed in a time limit, or time to clear a structure | Bunker Buster (Shrike concept), Demolition Derby |
+| **Mass** | a **creation** game | mass built and kept (laid, standing at the end, defended) | Fauna Frenzy (lay trail mass creatures eat) |
+| **Charge** | a **vessel-on-vessel dogfight** | petal hits dealt against taken, eliminations (PvP is petals only, LOCKED) | rivals at Easy / Medium / Hard in one arena |
+
+- A game the design document already has goes in the slot of its KIND, not of the element its document
+  rewards. Where the document has no game for an element, the lab builds the kind above and says it is the
+  lab's (a proposal).
+- The game picker lists them in that order (Time, Space, Mass, Charge) with the element named, and the
+  scorecard runs each one: the levels (Easy / Medium / Hard), the controls (each ability off), and the
+  element-led play style should win its own element's game (the Stoat's "each style wins its column", §2.3).
+- A lab built before this rule records which of the four it still lacks, in its record and in `CATALOG.md`.
+
 ## 2. The lab contract — every lab meets all of it
 
 ### 2.1 A READER of the shipped numbers, never their authority
@@ -122,7 +143,7 @@ reads as a promise about the game.
 - **Editor layout, no page scroll**: stage in the middle, a right dock with a tab per settings
   group, a bottom dock for Runs / Scorecard / Decisions / About. Below 900 px the docks stack.
 - **Platform detection is answered once at load**: a native host sets `window.__labHost = {shell, device}`
-  (Amoebius uses `#amoebius` because a file page cannot be handed a variable); otherwise phone =
+  (Amoebius opens the page with a host hash, still the pre-rename `#prisma`; `studio-ide.js` also accepts `#amoebius`; a hash because a file page cannot be handed a variable); otherwise phone =
   mobile UA / iPadOS-as-Mac / coarse-pointer-only. A touchscreen laptop is a PC. Give a manual
   Layout override.
 - **Phones**: real fullscreen needs a gesture (request it on the first touch); portrait gets a way
@@ -153,7 +174,8 @@ as an iPhone 13, and fails on:
 - a missing `__lab` hook, or a hook that throws when called with no arguments;
 - a `SPEC` key absent from `SHIPPED`, or a shipped value outside its slider range;
 - a manual clock that does not advance;
-- a non-deterministic `runBatch`;
+- a non-deterministic `runBatch`, within one page or across two page loads (a load-time `Math.random` that reaches the
+  batch is invisible to two calls in one page; L-GEN-9);
 - a blank 2D stage.
 
 It writes `desktop.png` and `phone.png`. **Read the screenshots**: the gate cannot see an overlap.
@@ -208,6 +230,11 @@ For a research lab run as parallel autonomous sessions (the NCA and ecology prog
 
 ## 6. Publishing
 
+- **Every lab publishes its own artifact**, private to whoever made it, even when its subject is a vessel. The
+  Vessel Studio's "exactly one artifact" rule (`/vessel-studio` §0, the `CLAUDE.md` line, the vessel-work hook) is
+  about that shared hub: it never stops a lab from publishing. A lab whose page lives in `Docs/Studios/VesselStudio/`
+  and loads the hub's shared scripts publishes them beside it with `files` and leaves out `sync.js` (the hub's own
+  Sync panel). Joining the hub's catalog is optional and later (§7), and its owner decides. (L-STU-85)
 - The **repo copy is the source**. The artifact is published FROM it, and the URL goes in the lab's
   README and in `CATALOG.md`. Re-publish to the same URL; a new URL forks the decision log.
 - Declare only the capabilities the page calls (`db` + `user` for the log; `sample` for an Ask
@@ -227,7 +254,7 @@ For a research lab run as parallel autonomous sessions (the NCA and ecology prog
 | A scorecard claim ("each style wins its column") | An edit-mode test that asserts it on the C# model |
 | A model the game should run | A pure-C# core plus a parity harness that scores it with the lab's UNCHANGED yardstick (`Tools/Build/swarm_core_harness/`, `nca_creature_harness/`) |
 | A design question | **Decision needed** in the write-up and the owning `Docs/` file. Never decided by the porter |
-| The lab itself, for designers | A hub entry (`Docs/Studios/VesselStudio/studios.json`), Amoebius's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
+| The lab itself, for designers | Its own artifact first (§6). Optionally, later: a hub entry (`Docs/Studios/VesselStudio/studios.json`), Amoebius's STUDIOS page, `FrogletTools ▸ Vessels ▸ Vessel Studio` |
 
 - **Port the pick's per-frame ENTRY POINT, not just its physics, and call it from both sides.** Thresholds,
   slews and "when to switch" decisions that live in the lab's harness class escape a parity gate that only
@@ -269,6 +296,8 @@ Each has an entry in `LEARNINGS.md` with the evidence.
 - **A threat the pilots never meet scores 0.** Give it a local reason to be where pilots go (L-ECO-7).
 - **Hot-path sorting in a grid query** (`Array.from().sort()`) cost 13 of 18 ms. Use
   generation-stamped marks (L-ECO-8).
+- **A prediction is not light.** A path, an aim line or a ghost drawn in the 3D scene goes through the lens pass and
+  gets bent and doubled round a black hole. Draw it on the HUD after the lens (L-STU-53).
 - **A design hole looks like a skilled AI.** The best play was a 0° "tap sling" because the kick
   ignored how far round the hull went. When the AI's best play looks like a cheat, it is a design
   question for the human, not an AI bug (L-STU-3).

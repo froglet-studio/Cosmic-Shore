@@ -245,7 +245,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 |---|---|---|---|
 | **Squirrel** | vector | Live | This document. Throttle semantics unchanged — only the direction of thrust |
 | **Scarab** | vector | Live (own policy) | Integrator throttle; overrides `ComputeNoseAcceleration` + `ShapeSpeed` |
-| **Dolphin** | **scalar** | (`Locked`, not consulted) | `Dolphin.prefab` authors `vectorFlightModel: 0`, so its drift freeze is the SCALAR path's `holdSpeedWhileDrifting: 1` — the only vessel in the fleet that sets it — and its `driftThrottlePolicy: Locked` is inert (the policy is vector-only). Same outcome (speed pinned for the drift's duration, entering at speed costs nothing), different mechanism. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
+| **Dolphin** | **scalar** | Live (not consulted) | `Dolphin.prefab` authors `vectorFlightModel: 0`, so its drift freeze is the SCALAR path's `holdSpeedWhileDrifting: 1` — the only vessel in the fleet that sets it. Its `driftThrottlePolicy` was `Locked` (inert: the policy is vector-only) until 2026-10-17, when it went back to the default; keeping the scalar hold is decided for now (`DOLPHIN_ENERGY_ECONOMY.md` §2a). Same outcome (speed pinned for the drift's duration, entering at speed costs nothing), different mechanism. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
 | Everyone else | scalar | — | Bit-identical to before the flag existed |
 
 ---
@@ -255,7 +255,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 | Knob | Where | Value | Effect |
 |---|---|---|---|
 | `driftOvershootCeiling` | Squirrel.prefab | 1.25 | Max \|v\| during a drift, × the throttle target. 1 = no overshoot |
-| `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` (the Dolphin) = no acceleration for the drift's duration |
+| `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` = no acceleration for the drift's duration (no shipped vessel; the Dolphin's documented alternative) |
 | `Mult` / `driftDamping` | `SquirrelDriftAction` | 1.8/0.25 | Rotation multiplier and grip at full trigger pull |
 | `DefaultThrottleScaler` | Squirrel.prefab | 60 | Scissor throttle's speed scale |
 | `RotationThrottleScaler` | Squirrel.prefab | 0 | Turn rate vs speed — **deliberately 0** |

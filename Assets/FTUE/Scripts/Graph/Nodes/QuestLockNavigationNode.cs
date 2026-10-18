@@ -15,6 +15,7 @@ namespace CosmicShore.Core
     public class QuestLockNavigationNode : QuestNodeSO
     {
         public override QuestNodeCategory Category => QuestNodeCategory.Gameplay;
+        public override bool AppliesLock => !unlock;
         public override string TypeTooltip =>
             "Locks the FTUE-funnel nav buttons (Hangar + Profile links; Ark/Port are permanently scene-locked, Home stays available) or unlocks them. Buttons are wired on the runner; the quest teardown always restores them.";
         public override string EditorSummary => unlock ? "Unlock nav (Hangar/Profile)" : "Lock nav (Hangar/Profile)";

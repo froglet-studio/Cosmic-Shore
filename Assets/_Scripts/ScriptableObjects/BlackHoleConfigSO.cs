@@ -9,9 +9,9 @@ namespace CosmicShore.ScriptableObjects
     /// A black hole has two numbers: its STRENGTH, which sets the gravitational parameter
     /// (<c>GM</c>, what pulls), and its SIZE, the event-horizon radius (<c>r_s</c>, what swallows
     /// and what the lens draws). A hole spawned with size 0 derives its size from its strength
-    /// (<see cref="HorizonRadius(float)"/>), so the console's <c>blackhole spawn 10</c> and a
-    /// designer's asset edit reach the same physics; the Black Hole tool (<c>blackhole tool on</c>)
-    /// sets size explicitly from the Spawn section below. The influence radius (how far out mass is
+    /// (<see cref="HorizonRadius(float)"/>), so a strength alone reaches the same physics
+    /// as a designer's asset edit; the Stoat's dipole sets size explicitly
+    /// (StoatDipoleConfig). The influence radius (how far out mass is
     /// simulated at all) follows from GM and r_s plus the acceleration floor below which a pull is
     /// not worth a body.
     ///
@@ -89,10 +89,13 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)]
         [SerializeField] int maxBodies = 6000;
 
-        [Tooltip("How many black holes may be live at once (console spawns past this are refused). " +
-                 "Mirrors PRISM_GRAVITY_WARP_SLOTS in PrismGravityWarp.hlsl — change both together.")]
-        [Range(1, 4)]
-        [SerializeField] int maxBlackHoles = 4;
+        [Tooltip("How many holes may be live at once, every pilot's together (a spawn past this is refused; a hole that is " +
+                 "annihilating has already left the count). A Stoat's pair is two, so a 4-pilot race needs 8; 16 leaves " +
+                 "room for the cell's own. At a budget of 4, two AIs holding pairs refused the player's squeeze (2026-10-12). " +
+                 "At most BlackHolePhysics.NativeWells.Capacity (16). The prism tide shader draws the 4 holes nearest the " +
+                 "camera; the lens the nearest 8.")]
+        [Range(2, 16)]
+        [SerializeField] int maxBlackHoles = 16;
 
         [Tooltip("Seconds between admission sweeps (the spatial query that finds new prisms inside " +
                  "an influence sphere). Bodies already admitted integrate every frame regardless.")]
@@ -158,40 +161,41 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float warpEaseSeconds = 0.5f;
 
         [Header("Lens (photons only — what the player sees of the hole, Docs/BLACK_HOLE.md §5.1)")]
-        [Tooltip("Master switch for the gravitational-lens visual. Off draws the plain black sphere " +
-                 "instead. The lens bends the opaque scene behind the hole, so while it is on the " +
-                 "main camera's opaque and depth textures are switched on (only while a hole is live).")]
+        [Tooltip("Master switch for the lens (the Vessel Studio's: shadow, Einstein bending, photon ring, white core). " +
+                 "Off draws a plain black sphere instead. While a hole is live every game camera's depth texture is " +
+                 "switched on, so a vessel in front of the hole is not bent.")]
         [SerializeField] bool lensEnabled = true;
 
-        [Tooltip("How far around the hole the bending is drawn, in horizon radii. Light passing at b " +
-                 "is really deflected by ~2/b — it never reaches zero — so the bend is faded out over " +
-                 "the outer part of this radius (Lens Fade Start). Larger reaches farther, costs more " +
-                 "screen pixels.")]
-        [Range(6f, 120f)]
+        [Tooltip("The black hole's shadow radius, in horizons (the studio's bhShadow). 2.6 is the physical value: light " +
+                 "passing closer than b_c = 2.598 r_s falls in.")]
+        [Range(1f, 4f)]
+        [SerializeField] float shadowSize = 2.6f;
+
+        [Tooltip("How strongly a black hole bends what is behind it, × the physical Einstein bending (the studio's " +
+                 "bhLensStrength). A point straight behind the hole becomes a ring of radius θ_E = √(2 r_s / D).")]
+        [Range(0f, 4f)]
+        [SerializeField] float lensStrength = 1f;
+
+        [Tooltip("How far around the hole the bending is drawn, in horizon radii (the studio's bhLensReach). Light " +
+                 "passing at b is really bent by ~2/b at any distance, so the bend is faded out over the outer part " +
+                 "of this reach (Lens Fade Start) and never ends at an edge.")]
+        [Range(5f, 120f)]
         [SerializeField] float lensRadiusMultiplier = 30f;
 
-        [Tooltip("Where the bend starts fading back to the straight ray, as a fraction of the lens " +
-                 "radius. Inside it the ray trace is exact.")]
+        [Tooltip("Where the bend starts fading out, as a fraction of the reach (the studio's bhLensFade).")]
         [Range(0.1f, 0.95f)]
         [SerializeField] float lensFadeStart = 0.55f;
 
-        [Tooltip("Ray-march step budget per pixel. Rays near the photon sphere (1.5 horizon radii) " +
-                 "need the most; 128 traces one full loop around it.")]
-        [Range(16, 192)]
-        [SerializeField] int lensSteps = 128;
+        [Tooltip("A WHITE hole's lens: how strongly it bends what is behind it, × the physical Einstein bending (the " +
+                 "studio's whLensStrength). It bends the same way a black hole does — outside its horizon its " +
+                 "spacetime is a black hole's.")]
+        [Range(0f, 4f)]
+        [SerializeField] float whiteLensStrength = 1f;
 
-        [Tooltip("Resolution of each of the six faces of the SKY the lens bends — the scene's own skybox " +
-                 "(Lighting > Environment > Skybox Material), rendered for rays bent off the screen. " +
-                 "Higher is sharper stars at the lens's outer edge; each face costs one skybox draw of " +
-                 "this size.")]
-        [Range(128, 2048)]
-        [SerializeField] int lensSkyResolution = 1024;
-
-        [Tooltip("How many of the sky's six faces are re-rendered each frame, round-robin, so an animated " +
-                 "skybox stays in step with the real one. 0 = render once (and again whenever the skybox " +
-                 "material or the resolution changes).")]
-        [Range(0, 6)]
-        [SerializeField] int lensSkyFacesPerFrame = 1;
+        [Tooltip("A WHITE hole's glowing core radius, in horizons (the studio's whCoreSize; 2.6 matches the black " +
+                 "hole's shadow).")]
+        [Range(1f, 4f)]
+        [SerializeField] float whiteCoreSize = 2.6f;
 
         [Tooltip("A WHITE hole's core (Docs/BLACK_HOLE.md §11): how bright the white at its centre is, in HDR " +
                  "units (the project has no tonemapper, so anything above 1 clips to pure white). The glow " +
@@ -200,64 +204,75 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 16f)]
         [SerializeField] float whiteCoreBrightness = 4f;
 
-        [Tooltip("How much of the EMITTED light shows in a white hole's core: the sky that fell into its " +
-                 "paired black hole, coming out the far side (the backward-traced ray continues through the " +
-                 "tunnel into the sky). 0 = a pure white core, 1 = the sky at full strength under the glow.")]
+        [Tooltip("How much of the scene shows through a white hole's core under its glow (the studio's whCoreSkyMix): " +
+                 "the bent scene × this, plus the white-hot glow. 0 = a pure white core, 1 = the scene at full " +
+                 "strength under the glow.")]
         [Range(0f, 2f)]
         [SerializeField] float whiteCoreSkyMix = 0.8f;
 
-        [Header("Spawn (the Black Hole tool — B, or blackhole tool on; Shift+B spawns)")]
-        [Tooltip("Strength of a hole the tool spawns: its PULL. GM = strength x Gm Per Strength. With " +
-                 "Spawn Horizon Radius at 0 the strength also sets the size.")]
-        [Range(0f, 100f)]
-        [SerializeField] float spawnStrength = 10f;
+        [Tooltip("A BLACK hole's photon ring: a thin warm glow (1, 0.8, 0.55) hugging the shadow's edge, where light " +
+                 "skims the photon sphere. The Vessel Studio's look (bhRingGlow 0.55); 0 = no ring.")]
+        [Range(0f, 2f)]
+        [SerializeField] float photonRingGlow = 0.55f;
 
-        [Tooltip("SIZE of a hole the tool spawns: its event-horizon radius r_s, world units. On screen " +
-                 "the black shadow is ~2.6 r_s in radius and the lens bends the scene out to Lens Radius " +
-                 "Multiplier r_s. 0 = derived from strength (Horizon Per Strength x strength, at least " +
-                 "Min Horizon Radius).")]
-        [Range(0f, 200f)]
-        [SerializeField] float spawnHorizonRadius = 0f;
+        [Tooltip("The photon ring's width as a share of the shadow's radius (the studio's bhRingWidth 0.06).")]
+        [Range(0.005f, 0.5f)]
+        [SerializeField] float photonRingWidth = 0.06f;
 
-        [Tooltip("ON: a spawn (the tool's Spawn button, Shift+B, `blackhole spawn` with no strength) goes " +
-                 "straight AHEAD of the camera you are looking through — while flying, your vessel's " +
-                 "camera — Spawn Distance Horizons away. OFF: it goes to Spawn Position.")]
-        [SerializeField] bool spawnAheadOfCamera = true;
+        [Header("Waves in space-time — the Vessel Studio's 'life' rows (Docs/BLACK_HOLE.md §5.2)")]
+        [Tooltip("Its light shell starts this far out (u)")]
+        [Range(100f, 3000f)]
+        [SerializeField] float whInFrom = 700f;
 
-        [Tooltip("How far ahead of the camera a spawn lands, in HORIZON RADII (with Spawn Ahead Of Camera " +
-                 "on). In horizon radii because a hole is big for its strength: its shadow is ~2.6 r_s in " +
-                 "radius, so much nearer than 3 r_s the camera starts inside the shadow and the vessel " +
-                 "inside the strong pull. 6 is 120 u for a strength-10 hole (r_s 20).")]
-        [Range(3f, 100f)]
-        [SerializeField] float spawnDistanceHorizons = 6f;
+        [Tooltip("White hole's light leaves at (u/s)")]
+        [Range(50f, 2000f)]
+        [SerializeField] float whOutSpeed = 450f;
 
-        [Tooltip("WHERE a spawn goes when Spawn Ahead Of Camera is off: the hole's centre, world space.")]
-        [SerializeField] Vector3 spawnPosition = Vector3.zero;
+        [Tooltip("That light fades over (s)")]
+        [Range(0.1f, 6f)]
+        [SerializeField] float whOutFade = 1.6f;
 
-        [Tooltip("Velocity a spawned hole travels at, u/s, world space. Zero parks it at the spawn " +
-                 "position; a moving hole is what sets the mass it passes ORBITING (it pulls, it does " +
-                 "not tow).")]
-        [SerializeField] Vector3 spawnVelocity = Vector3.zero;
+        [Tooltip("Light shells bend the sky by (u)")]
+        [Range(0f, 30f)]
+        [SerializeField] float shellBend = 6f;
 
-        [Tooltip("Spin axis of a spawned hole, world space: the frame dragging winds infalling mass " +
-                 "around it, in the plane perpendicular to it.")]
-        [SerializeField] Vector3 spawnSpinAxis = Vector3.forward;
+        [Tooltip("Gravity wave strength (u)")]
+        [Range(0f, 40f)]
+        [SerializeField] float gwAmp = 12f;
+
+        [Tooltip("Gravity wave speed (u/s)")]
+        [Range(50f, 2000f)]
+        [SerializeField] float gwSpeed = 120f;
+
+        [Tooltip("Ripple period (s)")]
+        [Range(0.05f, 1.5f)]
+        [SerializeField] float gwPeriod = 0.35f;
+
+        [Tooltip("Ringdown fades over (s)")]
+        [Range(0.05f, 3f)]
+        [SerializeField] float gwRingdown = 1f;
+
+        [Tooltip("Prisms stretch & squeeze in it")]
+        [Range(0f, 2f)]
+        [SerializeField] float gwPrism = 0.6f;
+
+        [Tooltip("Space stretches as it passes you")]
+        [Range(0f, 4f)]
+        [SerializeField] float gwShake = 1f;
+
+        [Tooltip("Show the wave's crests (visual aid)")]
+        [Range(0f, 3f)]
+        [SerializeField] float gwGlow = 1f;
 
         [Header("Pair (a black hole and a white hole born together — Docs/BLACK_HOLE.md §11)")]
-        [Tooltip("How far AHEAD of the camera (or the vessel) the pair's midpoint is placed, in horizon radii " +
-                 "of the spawned holes. 0 puts the midpoint level with the camera, the holes straight out to " +
-                 "its left and right.")]
-        [Range(0f, 50f)]
-        [SerializeField] float pairAheadHorizons = 3f;
-
         [Tooltip("Each hole's distance from the pair's midpoint at birth, in horizon radii — the black hole " +
                  "to one side, the white hole to the other, on the camera's (the vessel's) own horizontal. " +
                  "Nearer than ~3 the vessel between them sits inside both shadows.")]
         [Range(1.5f, 30f)]
         [SerializeField] float pairHalfGapHorizons = 4f;
 
-        [Tooltip("How fast the two holes CLOSE on each other once let go, u/s (a tool pair is let go at birth; " +
-                 "the Stoat's when its trigger is released). They fall together, accelerating to this over " +
+        [Tooltip("How fast the two holes CLOSE on each other once let go, u/s (the Stoat's " +
+                 "when its trigger is released). They fall together, accelerating to this over " +
                  "pairCloseRampSeconds, and annihilate where their horizons touch.")]
         [Range(0f, 200f)]
         [SerializeField] float pairDriftSpeed = 20f;
@@ -272,8 +287,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float pairCloseRampSeconds = 0.6f;
 
         [Header("Pair style (Docs/BLACK_HOLE.md §13)")]
-        [Tooltip("Which wormhole pair every pair spawn lays — the Stoat's sling, the tool's Pair buttons, N/M and " +
-                 "`blackhole pair`. OFF: the DRIFT pair (this branch, §11): a black attractor with a shadow and a " +
+        [Tooltip("Which wormhole pair every pair spawn lays — the Stoat's sling. " +
+                 "OFF: the DRIFT pair (this branch, §11): a black attractor with a shadow and a " +
                  "white-hot repulsor, the physical pull, drifting apart and annihilating over pairLifetime (the " +
                  "Stoat's own sling life on StoatSlingConfig). ON: the CRYSTAL wormhole (charming-cerf, §12): two " +
                  "smooth wells with the graded lens and the felt pull, seamless mouths that carry the pilot through, " +
@@ -351,30 +366,36 @@ namespace CosmicShore.ScriptableObjects
         [Range(32, 1024)]
         [SerializeField] int crystalMouthPanoramaFaceSize = 256;
 
-        public float SpawnStrength => Mathf.Max(0f, spawnStrength);
-        public float SpawnHorizonRadius => Mathf.Max(0f, spawnHorizonRadius);
-        public bool SpawnAheadOfCamera => spawnAheadOfCamera;
-        public float SpawnDistanceHorizons => Mathf.Clamp(spawnDistanceHorizons, 3f, 100f);
-        public Vector3 SpawnPosition => spawnPosition;
-        public Vector3 SpawnVelocity => spawnVelocity;
-        public Vector3 SpawnSpinAxis => spawnSpinAxis.sqrMagnitude > 1e-6f ? spawnSpinAxis.normalized : Vector3.forward;
 
         public bool LensEnabled => lensEnabled;
-        public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 6f, 120f);
+        public float ShadowSize => Mathf.Clamp(shadowSize, 1f, 4f);
+        public float LensStrength => Mathf.Clamp(lensStrength, 0f, 4f);
+        public float LensRadiusMultiplier => Mathf.Clamp(lensRadiusMultiplier, 5f, 120f);
         public float LensFadeStart => Mathf.Clamp(lensFadeStart, 0.1f, 0.95f);
-        public int LensSteps => Mathf.Clamp(lensSteps, 16, 192);
-        public int LensSkyResolution => Mathf.Clamp(lensSkyResolution, 128, 2048);
-        public int LensSkyFacesPerFrame => Mathf.Clamp(lensSkyFacesPerFrame, 0, 6);
+        public float WhiteLensStrength => Mathf.Clamp(whiteLensStrength, 0f, 4f);
+        public float WhiteCoreSize => Mathf.Clamp(whiteCoreSize, 1f, 4f);
         public float WhiteCoreBrightness => Mathf.Clamp(whiteCoreBrightness, 0f, 16f);
         public float WhiteCoreSkyMix => Mathf.Clamp(whiteCoreSkyMix, 0f, 2f);
-        public float PairAheadHorizons => Mathf.Clamp(pairAheadHorizons, 0f, 50f);
+        public float PhotonRingGlow => Mathf.Clamp(photonRingGlow, 0f, 2f);
+        public float PhotonRingWidth => Mathf.Clamp(photonRingWidth, 0.005f, 0.5f);
+        public float WhInFrom => Mathf.Max(0f, whInFrom);
+        public float WhOutSpeed => Mathf.Max(0f, whOutSpeed);
+        public float WhOutFade => Mathf.Max(0.05f, whOutFade);
+        public float ShellBend => Mathf.Max(0f, shellBend);
+        public float GwAmp => Mathf.Max(0f, gwAmp);
+        public float GwSpeed => Mathf.Max(1f, gwSpeed);
+        public float GwPeriod => Mathf.Max(0.02f, gwPeriod);
+        public float GwRingdown => Mathf.Max(0.01f, gwRingdown);
+        public float GwPrism => Mathf.Max(0f, gwPrism);
+        public float GwShake => Mathf.Max(0f, gwShake);
+        public float GwGlow => Mathf.Max(0f, gwGlow);
         public float PairHalfGapHorizons => Mathf.Clamp(pairHalfGapHorizons, 1.5f, 30f);
         public float PairDriftSpeed => Mathf.Clamp(pairDriftSpeed, 0f, 200f);
         public float PairLifetime => Mathf.Clamp(pairLifetime, 0.5f, 30f);
         public float PairCloseRampSeconds => Mathf.Clamp(pairCloseRampSeconds, 0f, 5f);
 
-        /// <summary>The pair style (§13): false = the drift pair, true = the crystal wormhole. Settable: the
-        /// tool's style switch and <c>blackhole style</c> flip it live, like every other field the tool edits.</summary>
+        /// <summary>The pair style (§13): false = the drift pair, true = the crystal wormhole. Settable, so a
+        /// test can flip it.</summary>
         public bool CrystalPairs { get => crystalPairs; set => crystalPairs = value; }
         public float CrystalFormSeconds => Mathf.Clamp(crystalFormSeconds, 0.05f, 10f);
         public float CrystalStandSeconds => Mathf.Clamp(crystalStandSeconds, 0.01f, 30f);
@@ -403,7 +424,9 @@ namespace CosmicShore.ScriptableObjects
         public float ReleaseSpeed => Mathf.Max(0.01f, releaseSpeed);
         public int MaxSubsteps => Mathf.Clamp(maxSubsteps, 1, 16);
         public int MaxBodies => Mathf.Max(0, maxBodies);
-        public int MaxBlackHoles => Mathf.Clamp(maxBlackHoles, 1, 4);
+        /// <summary>The budget's ceiling: <c>BlackHolePhysics.NativeWells.Capacity</c> (BlackHoleTests holds them equal).</summary>
+        public const int HoleBudgetCeiling = 16;
+        public int MaxBlackHoles => Mathf.Clamp(maxBlackHoles, 2, HoleBudgetCeiling);
         public float AdmissionInterval => Mathf.Max(0.02f, admissionInterval);
         public bool PullVessels => pullVessels;
         public float VesselPullScale => Mathf.Max(0f, vesselPullScale);

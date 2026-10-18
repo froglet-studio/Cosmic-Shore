@@ -114,7 +114,7 @@ namespace CosmicShore.Core
             return await _provider.SaveAsync(CloudKey, _data, ct);
         }
 
-        enum FailedLoadOutcome { StillBlocked, SafeToWrite, AdoptedCloud }
+        enum FailedLoadOutcome { StillBlocked = 0, SafeToWrite = 1, AdoptedCloud = 2 }
 
         /// <summary>
         /// Retries a load that failed earlier: <see cref="FailedLoadOutcome.SafeToWrite"/> when the

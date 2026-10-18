@@ -43,8 +43,11 @@ DATA_META = os.path.join(FOLDER, "OmniCombineData.json.meta")
 MATS = os.path.join(ROOT, "Assets", "_Graphics", "Materials", "CrystalMaterials")
 TRI_MESH = os.path.join(ROOT, "Assets", "_Models", "OmniCrystalTriangles.asset")
 DEPTH_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalDepthPrismProfile.asset")
+CADENCE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "OmniCrystalCadence.asset")
+CHARGE_ARCS_PROFILE = os.path.join(ROOT, "Assets", "_SO_Assets", "Environment", "CrystalChargeArcsProfile.asset")
 SCRIPTS = {
     "OmniCombineCore": "Assets/_Scripts/Utility/OmniCombineCore.cs",
+    "OmniCombineMotion": "Assets/_Scripts/Utility/OmniCombineMotion.cs",
     "OmniCombineConfigSO": "Assets/_Scripts/Controller/Environment/Crystals/OmniCombineConfigSO.cs",
     "OmniCombinePlayer": "Assets/_Scripts/Controller/Environment/Crystals/OmniCombinePlayer.cs",
     "ElementalConverterView": "Assets/_Scripts/UI/Elements/ElementalConverterView.cs",
@@ -75,6 +78,10 @@ CONFIG_VALUES = [
     ("tumble", "{x: 0.15, y: 0.35}"),
     ("siteSpread", "{x: 0.35, y: 0.65}"),
     ("suck", "{x: 0.3, y: 0.4}"),
+    ("socketSpacing", "{x: 0.14, y: 0.18}"),
+    ("socketSeconds", "{x: 0.8, y: 1}"),
+    ("massRaise", "0.6"),
+    ("approachAboveCameraDegrees", "0"),
     ("layout", "2"),
     ("ease", "2"),
     ("morphStart", "0.1"),
@@ -135,14 +142,16 @@ def config_asset(guids):
              f"  m_Script: {{fileID: 11500000, guid: {guids['OmniCombineConfigSO']}, type: 3}}",
              "  m_Name: OmniCombineConfig", "  m_EditorClassIdentifier: ",
              f"  combineData: {{fileID: 4900000, guid: {meta_guid(DATA_META[:-5])}, type: 3}}",
-             f"  chargeMaterial: {mat('ChargeCrystalMaterial')}",
              f"  shellMaterial: {mat('OmniCrystalBody')}",
              f"  omniMaterial: {mat('OmniCrystalBody')}",
-             f"  omniChargeEdgesMaterial: {mat('OmniChargeEdges')}",
              f"  massMaterial: {mat('MassDepthPrisms')}",
              f"  omniTrianglesMaterial: {mat('OmniDepthPrisms')}",
              f"  omniTrianglesMesh: {{fileID: 4300000, guid: {meta_guid(TRI_MESH)}, type: 2}}",
-             f"  depthProfile: {{fileID: 11400000, guid: {meta_guid(DEPTH_PROFILE)}, type: 2}}"]
+             f"  depthProfile: {{fileID: 11400000, guid: {meta_guid(DEPTH_PROFILE)}, type: 2}}",
+             # Omni Motion Lab round 5 (2026-10-13): the woken omni and the Charge light are the game's.
+             f"  cadence: {{fileID: 11400000, guid: {meta_guid(CADENCE)}, type: 2}}",
+             f"  chargeArcs: {{fileID: 11400000, guid: {meta_guid(CHARGE_ARCS_PROFILE)}, type: 2}}",
+             f"  omniArcsMaterial: {mat('OmniChargeArcs')}"]
     lines += [f"  {k}: {v}" for k, v in CONFIG_VALUES]
     return "\n".join(lines) + "\n"
 
@@ -235,7 +244,12 @@ def edit_scene(text, view_guid):
     return text
 
 
-def validate_scene(before, after, view_guid):
+def validate_scene(before, after, view_guid, current=None):
+    """`before` is the merge base's scene (for NEW dangling references); `current` is the file as it is on
+    disk before this run's edit, which the document count is measured against. Measuring the count against
+    the merge base made every other branch's Menu_Main addition read as this tool's (found 2026-10-15: the
+    first-login guide's spotlight components)."""
+    current = before if current is None else current
     d = docs(after)
     for fid in (NEW_GO, NEW_RT, NEW_VIEW):
         if int(fid) > INT64_MAX:
@@ -255,7 +269,7 @@ def validate_scene(before, after, view_guid):
     new = dangling(after) - dangling(before)
     if new:
         raise SystemExit(f"the edit leaves {len(new)} new dangling reference(s): {sorted(new)[:5]}")
-    if after.count("\n--- !u!") != before.count("\n--- !u!") + (3 if f"&{NEW_GO}\n" not in before else 0) - (1 if f"&{ARK_GATE}\n" in before else 0):
+    if after.count("\n--- !u!") != current.count("\n--- !u!") + (3 if f"&{NEW_GO}\n" not in current else 0) - (1 if f"&{ARK_GATE}\n" in current else 0):
         raise SystemExit("the document count moved by something other than +3 converter / -1 gate")
 
 
@@ -271,8 +285,9 @@ def planned():
     if not os.path.exists(DATA_META):
         raise SystemExit("OmniCombineData.json is not authored: run Tools/Build/author_omni_combine_asset.py first")
     fields = set(serialized_fields(os.path.join(ROOT, SCRIPTS["OmniCombineConfigSO"])))
-    keys = {"combineData", "chargeMaterial", "shellMaterial", "omniMaterial", "omniChargeEdgesMaterial", "massMaterial",
-            "omniTrianglesMaterial", "omniTrianglesMesh", "depthProfile"} | {k for k, _ in CONFIG_VALUES}
+    keys = {"combineData", "shellMaterial", "omniMaterial", "massMaterial",
+            "omniTrianglesMaterial", "omniTrianglesMesh", "depthProfile", "cadence", "chargeArcs",
+            "omniArcsMaterial"} | {k for k, _ in CONFIG_VALUES}
     if fields != keys:
         raise SystemExit(f"OmniCombineConfig keys and OmniCombineConfigSO's fields disagree: "
                          f"asset-only {sorted(keys - fields)}, script-only {sorted(fields - keys)}")
@@ -283,7 +298,7 @@ def planned():
     out[CONFIG + ".meta"] = asset_meta(guid("OmniCombineConfig.asset"))
     before = read(SCENE)
     after = edit_scene(before, guids["ElementalConverterView"])
-    validate_scene(base_scene(before), after, guids["ElementalConverterView"])
+    validate_scene(base_scene(before), after, guids["ElementalConverterView"], current=before)
     out[SCENE] = after
     return out, guids
 
@@ -296,6 +311,21 @@ def base_scene(current):
         return subprocess.run(["git", "show", f"{base}:Assets/_Scenes/Menu_Main.unity"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
     except (subprocess.CalledProcessError, FileNotFoundError):
         return current
+
+
+def unedited_scene():
+    """Menu_Main as it was before this tool first edited it: the parent of the oldest commit that added the converter.
+    Once the converter is on the merge base, base_scene() is ALREADY edited, every edit is a no-op, and the refusals
+    below would pass without ever reaching the code they guard (found 2026-10-13: two of them had gone red)."""
+    try:
+        log = subprocess.run(["git", "log", "--format=%H", "-S", f"--- !u!1 &{NEW_GO}", "--", "Assets/_Scenes/Menu_Main.unity"],
+                             cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+        if not log:
+            return base_scene(read(SCENE))
+        return subprocess.run(["git", "show", f"{log[-1]}^:Assets/_Scenes/Menu_Main.unity"], cwd=ROOT, capture_output=True,
+                              text=True, check=True).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return base_scene(read(SCENE))
 
 
 def self_test():
@@ -312,14 +342,20 @@ def self_test():
             return False
         except SystemExit:
             return True
-    base = base_scene(read(SCENE))
+    base = unedited_scene()
     g = script_guids()["ElementalConverterView"]
+    check("the self-test edits a scene the converter is not in yet", f"--- !u!1 &{NEW_GO}\n" not in base)
     after = edit_scene(base, g)
     validate_scene(base, after, g)
     check("the base scene edits and validates", True)
     check("editing an edited scene changes nothing", edit_scene(after, g) == after)
     check("ARK is open and PORT still closed", f"disabledScreens: {DISABLED_AFTER}\n" in after and DISABLED_AFTER == "03000000")
     check("the new fileIDs fit a signed int64", all(int(f) <= INT64_MAX for f in (NEW_GO, NEW_RT, NEW_VIEW)))
+    extra = after + "--- !u!1 &424243\nGameObject:\n  m_Name: Stray\n"
+    check("a document added beside the converter's three is refused", refused(lambda: validate_scene(base, extra, g)))
+    other_branch = base + "--- !u!1 &424244\nGameObject:\n  m_Name: OtherBranch\n"
+    check("another branch's Menu_Main addition is not counted as this tool's",
+          not refused(lambda: validate_scene(base, edit_scene(other_branch, g), g, current=other_branch)))
     broken = after.replace(f"  - {{fileID: {NEW_RT}}}\n", "", 1)
     check("a converter missing from ArkScreen's children is refused", refused(lambda: validate_scene(base, broken, g)))
     broken = after.replace(f"config: {{fileID: 11400000", "config: {fileID: 11400001", 1) + f"  stray: {{fileID: 424242}}\n"
@@ -329,7 +365,10 @@ def self_test():
     gated = base.replace(f"  disabledScreens: {DISABLED_BEFORE}\n", f"  disabledScreens: {DISABLED_BEFORE}\n  m_Extra: {{fileID: {ARK_GATE}}}\n", 1)
     check("an OfflineUIGate referenced from elsewhere is not removed", refused(lambda: edit_scene(gated, g)))
     out, _ = planned()
-    check("the config asset carries every OmniCombineConfigSO field", "omniChargeEdgesMaterial: {fileID: 2100000" in out[CONFIG])
+    check("the config asset carries every OmniCombineConfigSO field",
+          all(f"  {k}: {{fileID: " in out[CONFIG] for k in ("cadence", "chargeArcs", "omniArcsMaterial")))
+    check("the Charge crystal wears the omni's body (one hue at the hand-off)", "chargeMaterial" not in out[CONFIG])
+    check("the retired edge-crawl material is not wired", "omniChargeEdgesMaterial" not in out[CONFIG])
     sys.exit(0 if ok else 1)
 
 

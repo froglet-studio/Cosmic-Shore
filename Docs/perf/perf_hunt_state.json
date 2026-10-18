@@ -1,0 +1,34 @@
+{
+  "filed": {
+    "amoebius:SkimRace|I2|3p:PoolRefill.FastGrowPrism": {
+      "filedUtc": "2026-10-15T23:25:35Z",
+      "task": "T-20261015-c8e2"
+    },
+    "amoebius:SkimRace|I2|3p:VesselImpactor.AcceptImpactee": {
+      "filedUtc": "2026-10-15T23:25:35Z",
+      "task": "T-20261015-d7f8"
+    },
+    "amoebius:SkimRace|I2|3p:new": {
+      "filedUtc": "2026-10-15T23:25:35Z",
+      "task": "T-20261015-c7db"
+    },
+    "capture:MinigameGrizzlyCharge|MinigameGrizzlyCharge:marker": {
+      "filedUtc": "2026-10-17T08:48:58Z",
+      "task": "T-20261017-19f0"
+    },
+    "capture:MinigameRegatta|MinigameRegatta:gcKB": {
+      "filedUtc": "2026-10-17T08:48:58Z",
+      "task": "T-20261017-2129"
+    },
+    "capture:MinigameRegatta|MinigameRegatta:marker": {
+      "filedUtc": "2026-10-17T08:48:58Z",
+      "task": "T-20261017-1809"
+    }
+  },
+  "scanCounts": {
+    "total": 78,
+    "updateAllocations": 6,
+    "yieldNewInLoop": 63,
+    "yieldNullLoops": 9
+  }
+}

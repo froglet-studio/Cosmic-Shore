@@ -7,7 +7,11 @@ ball on a chain. Turn hard and the ball whips round; wind the chain out and let 
 ball cracks red-hot through everything. The **chain slices**, the **ball is always destructive**,
 and prisms are **binary** — there is no partial damage anywhere. The chain's kills **charge** the
 ball's next explosion; **A** switches to **Mass Mode**, where the ball builds instead of breaking;
-an **omni crystal** windmills the ball round the ship (§2a–2c, added 2026-10-13).
+an **omni crystal** windmills the ball round the ship (§2a–2c, added 2026-10-13). Since the
+own-vessel pass (2026-10-13, `cece/dazzling-hypatia-nmdhle`) it flies its **own hull** — a faceted
+thresher shark whose long scythe of a tail beats as it swims and cracks like a whip — tows a faceted
+**morning-star** ball, and wears finished icons (§5b). Its race is **Thresher Time**
+(`Controller/Arcade/THRESHERTIME.md`).
 
 The mechanic was prototyped in a 2D browser sandbox (cruise 380 u/s). Every chain dial is authored
 in the sandbox's units and scaled to this game by one factor (§4), so the two read side by side.
@@ -36,7 +40,7 @@ The digital controls (until 2026-10-13; `analogTriggers` off):
 | **RT hold** (Winch) | `RightStickAction` (1) | `OnlyRightStickAction` (11) | Let chain out (`payOut`) up to `maxLen` × the Space scaling: longer reach, slower whip. |
 | **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. The chain turns **lime** (the palette's CTA colour, a quick ease, never a flicker) while releasing now would reach smash speed (READY). |
 | **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. The sticks keep a **low-sensitivity** say: they steer your path round the ball at `pivotSteer` 45 °/s (under half of free flight's 120), never the spin. |
-| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, along the **aim** the sticks have set (§5a): the ship keeps circling and leaves from the launch point whose tangent is the aim (at most a lap later; no wait inside the lime window); the ball is yanked after you (`yank`). |
+| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, along the **aim** the sticks have set (§5a): the ship keeps circling and leaves from the launch point whose tangent is the aim (at most a lap later; no wait inside the lime window), always at the **launch boost** (`launchBoost` ×4.8 the orbit's speed, whatever the timing); the ball is yanked after you (`yank`). |
 | **A press** (Mass Mode) | `Button1Action` (6), shared map | `Button1Action` (on-screen button) | **Toggle** Mass Mode (§2b). The release is ignored (rule 37). |
 
 The trigger bindings use the Squirrel's InputEvents slots, so no input plumbing changed. Keyboard:
@@ -147,13 +151,13 @@ routed to all of them.
 | Charge | **Wrecking Ball** (passive) | `vesselHitPetals` 1 → 3 petals per element the ball or chain steals per enemy-vessel hit (floor 0.5) | **Magnet** — the free ball is drawn to enemy vessels |
 | Mass | **Mass Mode** (A, toggle) | `massTrailScale` ×1 → ×2 on the size of the ball's Mass Mode trail prisms (floor ×0.5) | **Armoured Trail** — those prisms are laid shielded |
 | Space | **Winch** (RT) | `energyMaxDiameterScale` ×4 → ×8, the largest blast the chain's bank can buy (floor ×2) | **Breaker** — a red ball's direct hit destroys super-shielded prisms |
-| Time | **Plant** (LT) | `spinMultiplier` ×1 → ×1.75 on spin-up rate and cap — how fast the spin winds up to launch speed | **Perfect Release** — a launch timed inside the window leaves ×1.6 faster |
+| Time | **Plant** (LT) | `spinMultiplier` ×1 → ×1.75 on spin-up rate and cap — how fast the spin winds up to launch speed | **open (design needed)** — "Perfect Release" (a timed launch ×1.6) retired 2026-10-13 when every aimed launch took the boost |
 
 Retired by this re-cut (rule 26 — each old gate is deleted, not left beside the new one): Charge
 "Lit", Mass "Wrecker" (and the ball's Mass-scaled weight/radius: the ball is now a fixed size),
 Space "Reaper Chain" (and the Space-scaled chain reach: `maxLen` is fixed), Time "Slingshot", and
 the Charge-scaled explosion size. Upgrades are read through the replicated unlock bits at the
-moment of use (`MagnetActive`, `ArmouredTrailActive`, `BreakerActive`, `PerfectReleaseActive`). The scalings use `EvaluateReplicated`, not
+moment of use (`MagnetActive`, `ArmouredTrailActive`, `BreakerActive`; Time's slot is open, its gate deleted). The scalings use `EvaluateReplicated`, not
 `EvaluateLive`: every peer simulates the ball and element levels do not replicate.
 
 **One L5 per element (rule 26).** The hull is a Squirrel clone, and the Squirrel's containers gate
@@ -253,7 +257,9 @@ holds the lab page's solver to this C# frame by frame on 4 digital and 5 analog 
   `HapticController.PlaySkim(lerp(0.45, 1, heat))`. **Combo**: one world counter `x2, x3…` per whip.
 - **Audio** (all **shipped EMPTY**, LOCKED FMOD convention): `smashEvent`, `crushEvent`,
   `bounceEvent`, `sliceEvent`, `plantEvent`, `yankEvent` on `ThresherExecutor`.
-- **Look**: a studded ball that rolls (runtime-built: a sphere and six cube studs) on
+- **Look**: a studded ball that rolls — since 2026-10-13 a faceted **morning star**
+  (`ThresherBallForm`: an 80-facet core at the gameplay radius and twelve five-sided spikes on the
+  icosahedron's axes, one shared mesh, one renderer; it replaced a runtime sphere and six cube studs) on
   **`ThresherBallMaterial` / `ThresherBallFresnelShader`** — the game's own fresnel convention, a
   dull body under a bright rim, `lerp(_DarkColor, _BrightColor, (1 − N·V)^1.5)`. Power 1.5, not the
   crystals' 4, because the ball is a few units across and often 100+ u away: area-weighted the rim
@@ -286,7 +292,7 @@ holds the lab page's solver to this C# frame by frame on 4 digital and 5 analog 
   as noise; the change itself is the signal. The skid trail keeps `lineMaterial` (vertex colour).
 - **HUD** (`ThresherHUDController` / `ThresherHUDView`, `ThresherHUDVariant.prefab`, a variant of
   `VesselHUDPrefab`): the four-icon row Wrecking Ball · Mass Mode · Winch · Plant
-  (`Tools/Build/author_thresher_icon_placeholders.py`, `--check`), a **ball-heat gauge** on the
+  (`Tools/Build/author_thresher_icons.py`, `--check`; the art pass, §5b), a **ball-heat gauge** on the
   Charge card in the ball's colour and an **energy gauge** on the Space card (2026-10-13; it was the
   chain-out gauge): how much explosion RADIUS the chain's kills have banked
   (`ThresherExecutor.EnergyRadius01` = (energy scale − 1) / (`energyMaxDiameterScale` − 1)), iron
@@ -359,8 +365,9 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   - **The launch sight** (`ThresherLaunchSight`, round 4 — it replaced the dotted line, which
     degenerates to a point once the camera is ON the trajectory). A **crosshair** at screen centre:
     every point of the trajectory projects there. White while a release would wait; the palette's
-    **CTA lime while the timing is right** — the ship will reach the launch point within
-    `perfectWindowSeconds` 0.25 s (`IsTimingPerfect`, `ThresherChainSolver.SecondsToLaunchPoint`).
+    **CTA lime while a release would barely wait** — the ship will reach the launch point within
+    `launchCueSeconds` 0.25 s (`IsLaunchImminent`, `ThresherChainSolver.SecondsToLaunchPoint`). A cue
+    only: it pays nothing (below).
     Beside it, a **zoom window shaped like the TIME petal** (the Plant is the Time ability), in the
     Serpent eyepiece's slot (top-left, 45% of screen height): a second camera looking down the same
     trajectory from the launch point, with its own crosshair, **zoomed by LT's depth** like the
@@ -377,8 +384,15 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     ship keeps circling and leaves from the chosen point, along the aim, on the frame it would
     otherwise carry past it (the angle still to go is within that frame's angular step) — at most one
     lap later (≈ 2 s at 3 rad/s, ≈ 7 s at the 0.9 threshold). Released inside the lime window the wait
-    is little to none, and with **Time L5 "Perfect Release"** that launch leaves `perfectBoost` ×1.6
-    faster than the orbit (`ThresherStepResult.Perfect`). The aim is held once armed. The ball is
+    is little to none. **Every aimed launch is boosted** (2026-10-13, Garrett: "boost it out of a cross
+    hair move every time instead of rewarding timing … triple the boost"): it leaves `launchBoost` **×4.8**
+    the orbit's speed however long it waited for its point (`ThresherChainSolver.ArmLaunch(aim, boost)`;
+    739 u/s off the 154 u/s spin cap, 2 299 u/s off the 479 u/s sling ceiling). Before, only a launch
+    timed inside the 0.25 s window with **Time L5 "Perfect Release"** got ×1.6; that upgrade and its
+    `ThresherStepResult.Perfect` flag are retired. A plain release (no crosshair: a slow orbit, the
+    autopilot, a remote replica's LT edge) still leaves at the orbit's speed. The ship carries the speed
+    as momentum and bleeds it back to cruise at the throttle step (`LERP_AMOUNT` 1.5/s); nothing clamps
+    it (no `ModifyVelocity`, so §4.ab2's ceiling does not apply). The aim is held once armed. The ball is
     yanked along the aim; the transformer faces the hull along it (`TryConsumeReleaseDirection`) and
     grip puts the momentum on the nose. Re-pressing LT while armed does not cancel it (re-releasing
     re-arms with the same aim).
@@ -387,6 +401,15 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     at its cap spectates (reeled in at cruise 3.2 rad/s, let out at its cap 1.1); only a let-out orbit
     hooked on at the crawl floor (0.3 rad/s) is ridden until it spins up. Below the threshold the old
     behaviour stands: the sticks lean the orbit at `pivotSteer` and LT releases on the tangent at once.
+- **No trail while the crosshair is up** (2026-10-13). A spin circling in front of the lens walled its
+  own launch path in prisms, so the hull's trail pen is held UP for exactly as long as the launch view
+  is (`ThresherExecutor.LaunchViewUp` → `VesselPrismController.SetSpawnerPaused`, the Fold's lever: it
+  gates prism creation only, never the spawn loop, written on edges because the pen is one last-writer
+  flag shared with the cell's spawner pause and the painting toys). `LaunchViewUp` is the camera's old
+  engage/release rule moved into `StepChain`, so it is simulated on EVERY peer from the chain's own state
+  and every machine pauses the same trail; the owner's camera now switches on its edges, so crosshair
+  on == trail off by construction. The trail comes back on the launch frame (the plant ends). Mass
+  Mode's ball trail is untouched (it lays only off the plant anyway).
 - **Analog triggers** (shipped 2026-10-13): the camera switches only with the ball STOPPED and LT and the
   chain's rigidity both at `fullPull`; RT eased below `letGoBelow` hands it back unless a launch is armed.
   The entry keeps the camera's own turn and glides it to a stop over `spectateCarrySeconds` 0.35 (the old
@@ -404,6 +427,66 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   follow-target change, reset on a teleport and by `SnapToTarget`.
 - **Hand-back**: `OnDisable` / `OnDestroy` / losing local pilot / disabling `cameraFraming` clear
   the vantage and the follow-turn cap and restore the prefab's distance.
+
+## 5b. Its own vessel — the shark hull, the swim, the ball, the icons (2026-10-13)
+
+The Thresher was a text clone of the Squirrel and flew its model, its animation controller, its jets
+and a placeholder icon row. The own-vessel pass replaced every one of them. All of it is authored by
+script and proved offline; nothing is hand-edited YAML.
+
+**The hull** (`ThresherHullForm` — pure — emitted by `ThresherHullBuilder` on a `ThresherHull` child of
+the root, the `StoatHullForm`/`StoatHullBuilder` shape): a thresher shark cut from flat facets like the
+HyperSea's prisms. A six-sided fuselage lofted from a pointed snout through a girth station a third of
+the way back to a slim peduncle (4.4 u), a swept **dorsal** fin, two drooping **pectorals**, a small
+lower caudal lobe and — the animal's signature — an **upper caudal lobe as long as the body** (3.6 u),
+curving up and back like a scythe, in three hinged segments. The chain leaves through a **hitch** ring
+under the tail fork, so the ball reads as the end of the shark's whip (the executor DRAWS the chain from
+`ThresherHullBuilder.HitchWorldPosition`, eased over the first link; the gameplay chain still hangs from
+the ship's centre). Snout to scythe tip 8.1 u, 3.5 u across the pectorals — the Squirrel's size.
+**Domain colour** (material slot 1, painted by `VesselCustomization`): the dorsal, the eyes, the
+scythe's trailing **blade** (40% of its chord) and the hitch. **Element morphs** (one set of floats per
+element, baked base + four extremes like the Stoat's): Charge — the dorsal stands 1.8× and the blade
+widens; Mass — the body thickens 1.42× and the hitch swells; Space — the scythe draws out 1.45× (reach);
+Time — the pectorals spread 1.5× and sweep back.
+
+**The swim** (`ThresherAnimation`, on the root's VesselAnimation fileID; the beat is `ThresherSwimMath`,
+pure): the scythe beats side to side as a **travelling wave** (each segment 0.7 rad behind the last, the
+tip landing last), 0.55 → 1.1 beats/s from a standstill to cruise (110 u/s), the tip sweeping **±39°** —
+fleet-scale (vessel rule 24). The segments are siblings posed as ONE chain (`PoseChain`), so a curl never
+opens a joint. The stick banks the hull 22° into a turn, swings the tail 34° out of it and twists the
+pectorals like ailerons. The ball drives the rest, read off the vessel's own `ThresherExecutor`: planted
+(Pivot), the tail **curls toward the ball** (48° at the tip) and the hull **banks into the orbit** (34°),
+both growing with the spin; while the ball **stops** (Skidding) the pectorals **flare** down 40° like
+brakes; a new smash in the combo, the ball turning red-hot, or a launch **cracks** the tip 55° toward the
+ball and decays. Transforms only — the builder owns the vertices.
+
+**Colliders and jets**: the Squirrel FBX's two box colliders and `ImpactCollider` went with it;
+`ThresherBody` (box 1.6 × 1.4 × 5.2 + `ImpactCollider`, layer Default) and `ThresherHitbox` (trigger
+2.2 × 1.9 × 5.8, layer Ships) are the shark's. Two of the four jets ride the hull flanking the peduncle,
+pointing back, plume `(1.65, 1.65, 0.3575)` (the fleet formula `(0.6, 0.6, 0.13) × |followOffset.z| / 20`
+at the camera's 55); the Squirrel's sideways-steering `DriftJet` is gone from them; the other two are
+removed. **Hull fusion**: the hull is generated at runtime, so the four `CrystalHullFusionConfig`
+entries carry no bake and solve on a worker (`CrystalHullFusion.Prewarm`, the Stoat's path); the four
+Squirrel-keyed bakes were deleted.
+
+**Icons** (`Tools/Build/author_thresher_icons.py`, `--check`): bold white glyphs drawn at 8× and
+downsampled, the house language — Wrecking Ball (the morning star on its chain, cracking a prism, the
+whip's arcs behind it), **Mass Mode** (the ball laying a growing row of prisms — the Heavy Iron weight it
+wore was never what the ability does; the file was renamed `Thresher_MassMode.png` with its guid kept),
+Winch (a chain hauled round a drum), Plant (the ball as the pivot, the hull swinging on its orbit). The
+**card icons** (`SO_Class_Thresher.IconActive/IconInactive`, which reused the Wrecking Ball glyph) are now
+renders of the shark hull in the house card look (`Tools/Build/render_thresher_card_icon.py`, the
+Stoat's renderer).
+
+**Authored by** `Tools/Build/author_thresher_assets.py` (idempotent; `--check` validates the shipped
+prefab — no Squirrel FBX / DriftJet / Manta animation left, the hull, colliders, paint, animation and two
+jets wired, zero dangling local references, the fusion entries bake-free — and `--self-test` proves six
+negative controls fire). **Proved offline** by `Tools/Build/thresher_hull_harness` (Roslyn, the shipped
+`ThresherHullForm` / `ThresherSwimMath` / `ThresherBallForm` RUN against a math stub): every face of the
+hull and the ball wound outward (a parity-ray test inside each closed piece), the scythe continuous and
+3.6 u along its curve, every element moving the hull, blend at one weight = that extreme, baked bounds
+holding all 16 weight corners, the beating tail never opening a joint, the ball a core plus twelve evenly
+spread spikes. `ThresherHullFormTests` (edit mode) asserts the same.
 
 ## 6. Flight model hooks
 
@@ -440,16 +523,22 @@ is the fix.
 | File | What |
 |---|---|
 | `Controller/Vessel/ThresherChainSolver.cs` | Pure physics, `ThresherDials` (the defaults), `ThresherChainLinks` |
+| `Controller/Vessel/ThresherHullForm.cs`, `ThresherHullBuilder.cs` | The shark hull: pure geometry + element morph set; the emitter (§5b) |
+| `Controller/Animation/ThresherAnimation.cs`, `ThresherSwimMath.cs` | The swim: tail wave, bank, pectorals, ball-driven curl / flare / crack (§5b) |
+| `Controller/Vessel/ThresherBallForm.cs` | The morning-star ball mesh (§5) |
+| `Tools/Build/author_thresher_assets.py`, `Tools/Build/thresher_hull_harness/` | The prefab pass (`--check`, `--self-test`); the offline geometry/swim/ball harness |
+| `Tools/Build/author_thresher_icons.py`, `Tools/Build/render_thresher_card_icon.py` | Ability icons; class card icons rendered from the hull |
+| `Tests/Editor/ThresherHullFormTests.cs` | Hull parts, accents, morphs, bounds, the tail chain, the ball |
 | `Controller/Vessel/ThresherVesselTransformer.cs` | Seam overrides |
 | `Controller/Vessel/VesselTransformer.cs` | + `ComputeExternalAcceleration`, `NoseConvergence` (default-off) |
 | `R_VesselActions/Executors/ThresherExecutor.cs` | Ball sweep, chain cut, explosions, upgrades, feedback, visuals |
 | `R_VesselActions/Data Containers/ThresherActionSO.cs` / `ThresherConfigSO.cs` | Trigger routing; every dial |
 | `UI/Controller/ThresherHUDController.cs`, `UI/View/ThresherHUDView.cs` | HUD pair |
-| `_Prefabs/Spacevessels/Thresher.prefab`, `_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab` | Hull (Squirrel clone), HUD |
+| `_Prefabs/Spacevessels/Thresher.prefab`, `_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab` | Hull (born a Squirrel clone; its own shark hull since 2026-10-13), HUD |
 | `_SO_Assets/VesselActions/Thresher/*.asset` | Config, Winch, Plant and Mass Mode actions |
 | `_SO_Assets/Effects/Effect Containers/{Vessel,Skimmer}Containers/Thresher*.asset`, `Skimmer Prism Effects/ThresherSkimmerBoostPrismEffect.asset` | Forked containers (§3) |
 | `Resources/ElementalAbilityMaps/Thresher.asset`, `_SO_Assets/Classes/SO_Class_Thresher.asset`, `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Map, class, camera |
-| `_Graphics/Icons/AbilityIcons/Thresher/` | Placeholder icons |
+| `_Graphics/Icons/AbilityIcons/Thresher/`, `_Graphics/CardImages/Thresher*.png` | Ability icons (art pass); class card icons |
 | `R_VesselActions/Executors/ThresherLaunchSight.cs`, `UI/View/TimePetalGeometry.cs`, `UI/View/TimePetalImage.cs` | The launch sight: crosshair + Time-petal zoom window (§5a); reuses `Utility/ScopePipView.cs` and `UI/View/ScopePetalImage.cs` from the Serpent |
 | `Controller/Camera/CustomCameraController.cs` | + `Spectate` vantage seam (default null) and `MaxFollowTurnRate` follow-frame cap (default 0), §5a |
 | `ImpactEffects/EffectsSO/Vessel Crystal Effects/ThresherWindmillByCrystalEffectSO.cs`, `_SO_Assets/Effects/Vessel Crystal Effects/ThresherWindmillByCrystalEffect.asset` | The omni-crystal windmill (§2c), wired into `ThresherImpactorDataContainer.vesselCrystalEffects` |
@@ -458,12 +547,12 @@ is the fix.
 | `_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader`, `_Graphics/Materials/ThresherChainMaterial.mat` | The chain's fresnel tube (§5) |
 | `Tests/Editor/ThresherAnalogTriggerTests.cs` | 10 tests on the analog path (partial pull never plants, full-pull stop with no single-frame stop, let-go mid-stop keeps the ball's speed, slack vs rigid reach, reel-in spins up, slew, ambiguous plant swept over 80 turn patterns, 30 fps stability, armed launch with/without a lead, analog off is inert); run offline by the chain harness too |
 | `Docs/Studios/ThresherPlantLab.html`, `Docs/Studios/THRESHER_PLANT_LAB.md`, `Tools/Build/thresher_plant_lab/` | The lab the analog triggers graduated from, and `parity.cjs` (lab ↔ C# frame parity on both paths, asset ↔ lab preset) |
-| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, hook-on, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + perfect launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
+| `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, hook-on, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + boosted launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
 
 Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObjectIdHash`
-1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (reuses the Squirrel's bakes —
-same hull mesh) and `SO_Classlist_All` / `_Classes`. Still the Squirrel's: the model, the skimmer
-prefab, `DriftAudioController`, jets and tails.
+1887398589), `ToyVesselRoster.Default`, `CrystalHullFusionConfig` (no bakes: a runtime hull, §5b) and
+`SO_Classlist_All` / `_Classes`. Still the Squirrel's: the skimmer prefab's tuning, `DriftAudioController`
+(class-gated to the Squirrel, so inert here) and the two `VesselTail` instances.
 
 ## 9. Known weaknesses
 
@@ -503,16 +592,52 @@ prefab, `DriftAudioController`, jets and tails.
   the local pilot's camera state and do not replicate. The hull's pose does, but a remote peer runs
   the plain release the moment LT comes up, so its copy of the ball is let go while the replicated
   hull keeps circling to the launch point — the remote ball and chain can look wrong for up to a lap.
-  Replicating the armed aim (one Vector3 with the release) is the fix. Untested in MPPM.
+  Replicating the armed aim (one Vector3 with the release) is the fix. Untested in MPPM. Since every
+  aimed launch is boosted ×4.8 (2026-10-13) the gap is wider: the remote copy's ball is yanked at the
+  orbit's speed while the owner's leaves at ×4.8 — the hull's replicated pose is right, the remote
+  ball's yank is not.
+- **Time L5 is an open slot (design needed, 2026-10-13).** "Perfect Release" was the timing reward, and
+  the timing reward is gone: every aimed launch takes the boost. Its gate is deleted (rule 26), the map's
+  `UpgradeLabel` is empty, so a Time-5 Thresher gains nothing — but `IsUpgradeActive(Time)` still flips
+  and the HUD's Time card still shows the upgrade. Not invented here (the vessel skill's design gate).
+- **Thresher Time is not cut for the boosted launch.** Its ladder is cut against the UNBOOSTED 479 u/s
+  sling ceiling (THRESHERTIME.md §3); a boosted ceiling launch leaves at 2 299 u/s, whose 120 °/s circle
+  (~1 100 u) is wider than the course shell. Only the detection clamp moved (1600 → 4600 u/s). Whether
+  the mode wants the boost, a lower cap, or a re-cut is a design call.
+- **The launch view (and so the trail pause) is simulated per peer from replicated edges.** A remote copy
+  reads each trigger press as a full pull (§7), so during a partial pull the owner and a guest can
+  disagree on the moment the view (and the trail) goes up by a few frames — a prism or two at the edges.
 - Mass Mode is a toggle replicated by re-running the press on every peer; a press lost to a peer
   would invert that peer's Mass Mode until the next press (the same exposure every edge has).
 - The windmill and Mass Mode have **no FMOD events of their own** yet: the trail and shield reuse
   nothing, a steal plays `crushEvent`, an energy blast `smashEvent`.
-- Mass Mode's icon is still the Heavy Iron placeholder (a weight).
 - READY underestimates during fast snaps (it projects the current spin through a full reel and
   ignores the snap crack).
 
 ## In-editor verification
+
+**Own-vessel pass (2026-10-13, §5b; never opened in the editor):**
+
+H1. **Toy Box > Vessel Changer → Thresher**: a faceted shark, not the Squirrel — scythe tail curving up and
+    back, dorsal fin, the dorsal / eyes / scythe blade / hitch ring in your domain colour. No Squirrel mesh
+    anywhere (Hierarchy: `ThresherHull` with `ThresherPectoralL/R`, `ThresherTailBase`, `ThresherLobe0..2`).
+    Console clean (no "has no ThresherHullBuilder" warning).
+H2. **Swim**: hands off, the scythe beats slowly side to side, the tip landing last; at cruise it beats
+    faster and wider. No gap opens between the scythe's segments at any point of a beat.
+H3. **Stick**: a hard turn banks the hull into it, swings the tail out of it, twists the pectorals.
+H4. **Ball**: full LT — while the ball stops the pectorals flare down; planted, the tail curls toward the
+    ball and the hull banks into the orbit, harder as the spin builds. A smash (or a launch) flicks the
+    scythe's tip toward the ball. The chain is drawn from the ring under the tail fork, without a kink.
+H5. **The ball** is a spiked morning star, the spikes legible as it rolls; colours unchanged (§5).
+H6. **Elements** (FrogletTools element tools or crystals): Charge raises the dorsal and widens the blade,
+    Mass fattens the body, Space lengthens the scythe, Time spreads the pectorals — each eased in.
+H7. **Hit box**: ram a rival prism and another vessel head-on and from the side — contacts register as
+    before (the hit box is the shark's body, 1.6 × 1.4 × 5.2).
+H8. **Crystal hull fusion**: collect each element's crystal — its faces fly onto the SHARK hull (solved on a
+    worker at spawn), never onto an invisible Squirrel.
+H9. **HUD and Arcade**: the four row icons are the new glyphs (Mass Mode is the ball laying prisms, not a
+    weight); the vessel's card in the carousel / Toy Box is the gold shark render.
+H10. **Jets**: two plumes stream back from beside the tail base; none points sideways.
 
 Current as of round 5 (2026-10-13). `Docs/UNITY_VERIFICATION_CHECKLIST.md` keeps one entry per round.
 
@@ -555,20 +680,25 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
 8. **Launch view**: once it spins, the camera glides (~0.9 s, no wobble) to sit level behind a point
    on the circle, looking along the launch path; a crosshair at screen centre flashes lime as the ship
    is about to pass the point. Stick X slides the point round the circle; stick Y tilts the whole
-   orbit with the camera. Hold RT: the point stays on the ship's own circle.
+   orbit with the camera. Hold RT: the point stays on the ship's own circle. **The hull lays no trail
+   while the crosshair is up** — no ring of your prisms round the orbit — and laying resumes the
+   moment you launch (or the view drops).
 9. **Sight**: a Time-petal (diamond) window top-left shows the path magnified with its own crosshair;
    squeeze LT deeper to zoom (to 6°), ease to a light hold to widen; the main view never zooms.
 10. **Launch**: release LT anywhere in the lap — the ship leaves exactly from the point along the
-    crosshair; released while lime, almost no wait. The camera glides back behind the ship (~0.8 s, no
-    swing, no pop). Let a spin decay instead (pay out RT): the same glide.
+    crosshair; released while lime, almost no wait. **Every** such launch leaves boosted (×4.8 the
+    orbit — far faster than any plain release), whether released while lime or a lap early; compare
+    with a plain release from a slow orbit (no crosshair), which leaves at orbit speed. The camera
+    glides back behind the ship (~0.8 s, no swing, no pop). Let a spin decay instead (pay out RT): the
+    same glide.
 11. **Windmill**: fly through an OMNI crystal — the ball whips red-hot round the ship across your flight
     path for ~12 s; RT changes its radius. An elemental crystal does not.
 12. **Enemy vessels**: hit an AI/rival hull with the ball or the chain — they lose petals and you score
     a Strike (once a second per victim); nothing else happens to them.
 13. **Upgrades** (FrogletTools element tools or crystals to L5): Charge (Magnet) — the free ball curves
     toward a nearby enemy; Mass (Armoured Trail) — Mass Mode's trail prisms arrive shielded; Space
-    (Breaker) — a red ball smashes a super-shielded prism; Time (Perfect Release) — a release while lime
-    launches visibly faster. Below 5: more petals per hit, bigger trail prisms, bigger max blast, faster
+    (Breaker) — a red ball smashes a super-shielded prism; Time — no upgrade (open slot; the HUD's
+    Time card still marks L5). Below 5: more petals per hit, bigger trail prisms, bigger max blast, faster
     spin-up.
 14. **Other vessels**: Squirrel, Dolphin, Scarab fly unchanged; the **Serpent's** scope eyepiece looks
     exactly as before (it shares `ScopePipView` / `ScopePetalImage` with the Thresher's sight).
@@ -582,11 +712,46 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
 (when it detaches), `aimYawRate` / `aimElevationDegrees` (how the aim feels), then `cameraZoomInRate`
-(how lazily it comes home), `perfectWindowSeconds` / `perfectBoost` (the timing reward). Energy:
+(how lazily it comes home), `launchBoost` (the aimed launch's speed) / `launchCueSeconds` (the lime cue). Energy:
 `energyDiameterPerUnit` / `energyMaxDiameterScale`. Vessel hits: `vesselHitPetals`, `magnetRange`. Mass Mode:
 `massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 
 ## Follow-ups
+
+### Refactor rows (2026-10-14 crosshair-trail + launch-boost ship pass, `cece/relaxed-dijkstra-g6ix3x` — rows only)
+
+- **The trail pen is a fifth last-writer of one flag (debt CREATED).** `HoldTrailPen` writes
+  `VesselPrismController.SetSpawnerPaused`, a single bool also written by the Cell's spawner pause, the
+  painting runner, Arkway, the mode preview and the Fold. Written on edges only, so it never fights per
+  frame, but a launch view that ENDS while the cell holds the pen up releases the cell's hold (the Fold has
+  the same exposure, and `Cell.cs`'s own note says so). The fix is the `SetTierHold` shape: a per-owner
+  hold set (or a counted pen), so no holder can release another's. Measure:
+  `grep -rn "SetSpawnerPaused(" Assets/_Scripts --include=*.cs | grep -v "public void" | wc -l` → 11 call
+  sites in 6 files.
+- **The Plant Lab's `armLaunch` still has the retired timing window (debt CREATED).** The shipped solver is
+  `ArmLaunch(aim, boost)`; `Docs/Studios/ThresherPlantLab.html` still carries
+  `armLaunch(aim, perfectWindowSeconds, perfectBoost)` and a `res.Perfect`. Parity cannot see it: every
+  scenario arms with the default boost 1 (`TraceDriver.cs` calls `ArmLaunch(aim)`), so the gate passes
+  whatever the boost does. Port the lab's signature and add an armed-with-boost scenario to
+  `scenarios.json`. Measure: `grep -n "armLaunch(aim, perfectWindowSeconds" Docs/Studios/ThresherPlantLab.html`
+  → line 374.
+- **`UpdateCamera`'s docstring describes the round-1 camera (prose describing a deleted system, walked
+  past).** `ThresherExecutor.cs` ~1050: "looks DOWN on the orbit … a line shows the path, and releasing LT
+  flies the ship off along it at once". Since round 4 the camera sits ON the trajectory, the line is a
+  crosshair, and a release ARMS a launch that waits for its point. Rewrite it against §5a. Measure:
+  `grep -n "a line shows the path" ThresherExecutor.cs` → 1 hit.
+- **Time L5 is open (INCOMPLETENESS, a report, not debt).** Recorded in §9; a design question, not a
+  cleanup — do not fill it from this row.
+
+### Refactor rows (2026-10-13 own-vessel ship pass, `cece/dazzling-hypatia-nmdhle` — rows only)
+
+| # | Kind | Row | Measured |
+|---|---|---|---|
+| T1 | debt created | `author_thresher_assets.py` imports `author_stoat_assets`'s document-model helpers, whose 11 error strings say "Stoat.prefab drifted" — a Thresher failure names the wrong file. Extract the helpers (split_docs, remove_instance, remove_gameobject_tree, dangling_refs, mb_header) into a shared `prefab_doc_lib.py` with a file-name parameter. | `grep -c "Stoat.prefab drifted" Tools/Build/author_stoat_assets.py` → 11 |
+| T2 | debt created | `ThresherHullForm` repeats `StoatHullForm`'s morph-set machinery (`MorphSet`, `BakeMorphSet`, `BlendPart`, `AssertSameTopology`) and flat-shaded primitives (`AddTri`, `AddQuad`, `AddOctahedron`) — the Scarab and Butterfly forms carry a third and fourth copy. One shared `ProceduralHullMorph` would hold them; the per-hull form keeps only its geometry and `ApplyElementExtreme`. | 152 of 587 non-blank lines of `ThresherHullForm.cs` are identical to `StoatHullForm.cs` modulo the class name (line-set comparison, 2026-10-13) |
+| T3 | debt walked past | Two Squirrel leftovers remain on `Thresher.prefab`: `DriftAudioController` and `ProximityBoostAudioController`, both `restrictToVesselClass: 1` / `targetVesselClass: 6` (Squirrel), so they disable themselves here; and the two `VesselTail` instances at (±4, 0, −12) authored for the Squirrel. The Stoat's stage 6 removed its pair of audio components; the Thresher's could go the same way, and its tails want sizing against the 55 u camera (`VESSEL_TAIL_AND_JETS.md` §3). | `grep -n "targetVesselClass" Thresher.prefab` → lines 1100, 1192, both 6 |
+| T4 | debt walked past | `MiniGameHUD.cs` ~984-993: a `<summary>` block for the goal-stack method sits directly above `EnsureSpectatorBadge`'s own `<summary>`, so the badge method carries two and the goal-stack method none (pre-existing; not in this branch's diff). | `/// </summary>` followed by `/// <summary>` at line 993 |
+| T5 | tool | `check_generated_assets.py` reports a guid-keeping rename (`Thresher_HeavyIron.png` → `Thresher_MassMode.png`) as a `[deleted]` reference. Resolve the referenced guid to its CURRENT owner before calling it deleted. | the audit's one finding on this branch (asset-surgery trap, 2026-10-13) |
 
 ### Refactor rows (2026-10-13 analog-trigger ship pass, `cece/zealous-johnson-gopp6t` — rows only)
 

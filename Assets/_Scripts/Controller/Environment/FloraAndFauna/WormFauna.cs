@@ -604,7 +604,7 @@ namespace CosmicShore.Gameplay
         {
             while (true)
             {
-                yield return new WaitForSeconds(
+                yield return CosmicShore.Utility.WaitCache.Seconds(
                     Mathf.Max(0.1f, config ? config.BehaviorTickSeconds : 1.5f)
                     * AggressionMultiplier(config ? config.CadenceByAggression : null));
 
@@ -859,6 +859,10 @@ namespace CosmicShore.Gameplay
             // colony sitting at the segment cap banks unbounded elapsed time and regrows a
             // shot-off head on the next behavior tick (~1.5 s) instead of the next wave.
             _lastProductionTime = Time.time;
+
+            // A diagnostic production hold skips the cycle it lands on - AFTER the stamp above,
+            // so a held colony banks nothing and grows at its ordinary rate once released.
+            if (Cell.DiagnosticProductionHold) return;
 
             if (segments.Count >= config.MaxSegmentsPerWorm)
             {

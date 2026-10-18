@@ -23,6 +23,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual bool IsDomainMatching(Domains domain) => true;
 
+        /// <summary>
+        /// May a vessel of <paramref name="domain"/> collect this crystal? The same predicate the
+        /// impact path enforces, exposed so a collector that is NOT a physics contact (a
+        /// <see cref="CrystalRaceRing"/> threaded by its mouth) can skip a pilot the crystal would
+        /// refuse anyway - rather than running the vessel's half of a pickup that never happens.
+        /// </summary>
+        public bool AcceptsDomain(Domains domain) => IsDomainMatching(domain);
+
         // Null manager = a manager-less local mint (e.g. the freestyle conveyor toy's omni pickups):
         // treat it as a local single-machine collect, never a network client.
         bool IsNetworkClient() => Crystal.CrystalManager != null && Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
@@ -98,15 +106,6 @@ namespace CosmicShore.Gameplay
         }
         
         /// <summary>
-        /// Spend this crystal because a BLAST engulfed it (the Scarab's cavitation punch forging
-        /// a ball). Same retirement as a vessel collect — the crystal blooms out through its own
-        /// explode path and respawns, rather than popping out of existence — and the same
-        /// half-second impact latch, so a growing blast cannot collect it twice.
-        ///
-        /// It takes the blast's domain and position instead of a vessel's, because there is no
-        /// collector here: the thing that consumed the crystal is a wavefront.
-        /// </summary>
-        /// <summary>
         /// True when a blast of this domain may spend this crystal. Routes through the same
         /// <see cref="IsDomainMatching"/> predicate a vessel collect uses, so
         /// <see cref="TeamCrystalImpactor"/>'s strict domain rule holds for blasts too — a blast
@@ -117,6 +116,15 @@ namespace CosmicShore.Gameplay
             && Crystal != null && !Crystal.IsExploding
             && IsDomainMatching(blastDomain);
 
+        /// <summary>
+        /// Spend this crystal because a BLAST engulfed it (the Scarab's cavitation punch forging
+        /// a ball). Same retirement as a vessel collect — the crystal blooms out through its own
+        /// explode path and respawns, rather than popping out of existence — and the same
+        /// half-second impact latch, so a growing blast cannot collect it twice.
+        ///
+        /// It takes the blast's domain and position instead of a vessel's, because there is no
+        /// collector here: the thing that consumed the crystal is a wavefront.
+        /// </summary>
         public void ConsumeByBlast(Domains blastDomain, Vector3 blastOrigin)
         {
             if (!CanBlastConsume(blastDomain)) return;

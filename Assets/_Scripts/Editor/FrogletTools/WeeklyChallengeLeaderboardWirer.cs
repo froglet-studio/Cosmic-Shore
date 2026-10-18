@@ -36,7 +36,7 @@ namespace CosmicShore.Editor.Froglet
             CommitScope = "ui",
         };
 
-        [MenuItem("FrogletTools/Interface/Wire Weekly Challenge Leaderboard", false, 30)]
+        [MenuItem("FrogletTools/UI/Wire Weekly Challenge Leaderboard", false, 233)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 3,
             Description = "Resolve every reference on the weekly leaderboard modal and its row " +
                           "panel from the hierarchy, and report what is missing.")]

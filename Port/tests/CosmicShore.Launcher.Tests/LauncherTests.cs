@@ -41,8 +41,13 @@ namespace CosmicShore.Launcher.Tests
 
     public class UsageTests
     {
-        // A real rate_limit_event from `claude -p --output-format stream-json --verbose` (Claude Code 2.1).
-        const string Event = """{"status":"allowed","resetsAt":1791424200,"rateLimitType":"five_hour","overageStatus":"rejected","isUsingOverage":false,"unifiedWindows":{"five_hour":{"utilization":0.07,"resetsAt":1791424200},"seven_day":{"utilization":0.31,"resetsAt":1792011600}}}""";
+        // A real rate_limit_event from `claude -p --output-format stream-json --verbose` (Claude Code 2.1),
+        // with its reset times moved to just ahead of now: a fixed date passes, and from then on the
+        // restart below correctly reads the window as reset (0) and the test fails on the calendar.
+        static readonly long FiveHourReset = DateTimeOffset.UtcNow.AddHours(5).ToUnixTimeSeconds();
+        static readonly long SevenDayReset = DateTimeOffset.UtcNow.AddDays(7).ToUnixTimeSeconds();
+        static readonly string Event = """{"status":"allowed","resetsAt":FIVE,"rateLimitType":"five_hour","overageStatus":"rejected","isUsingOverage":false,"unifiedWindows":{"five_hour":{"utilization":0.07,"resetsAt":FIVE},"seven_day":{"utilization":0.31,"resetsAt":SEVEN}}}"""
+            .Replace("FIVE", FiveHourReset.ToString()).Replace("SEVEN", SevenDayReset.ToString());
 
         [Fact]
         public void Plan_windows_read_from_rate_limit_event_and_survive_a_restart()
@@ -55,7 +60,7 @@ namespace CosmicShore.Launcher.Tests
             Assert.Equal("Current session", w[0].Label);
             Assert.Equal("Current week (all models)", w[1].Label);
             Assert.Equal(0.07, w[0].Utilization, 3);
-            Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1791424200), w[0].ResetsAt);
+            Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(FiveHourReset), w[0].ResetsAt);
             Assert.Equal("allowed", cli.UsageStatus);
 
             var again = new ClaudeCli(new LauncherSettings());
@@ -70,6 +75,32 @@ namespace CosmicShore.Launcher.Tests
             cli.OnRateLimit(d.RootElement);
             var again = new ClaudeCli(new LauncherSettings());
             Assert.Equal(0, again.Windows.Single(x => x.Key == "five_hour").Utilization);
+        }
+    }
+
+    public class PushRefusalTests
+    {
+        static ProcessRunner.Result Err(string stderr) => new(128, "", stderr);
+
+        [Theory]
+        [InlineData("fatal: could not read Username for 'https://github.com': terminal prompts disabled")]
+        [InlineData("remote: Permission to froglet-studio/Cosmic-Shore.git denied to someone.\nfatal: unable to access 'https://github.com/froglet-studio/Cosmic-Shore.git/': The requested URL returned error: 403")]
+        [InlineData("remote: Invalid username or password.\nfatal: Authentication failed for 'https://github.com/froglet-studio/Cosmic-Shore.git/'")]
+        public void Sign_in_failures_count_as_refused(string stderr) => Assert.True(SourceControl.AuthRefused(Err(stderr)));
+
+        [Theory]
+        [InlineData(" ! [rejected]        x -> x (fetch first)\nerror: failed to push some refs to 'https://github.com/froglet-studio/Cosmic-Shore'")]
+        [InlineData(" ! [remote rejected] x -> x (protected branch hook declined)")]
+        public void A_rejected_ref_is_not_a_sign_in_problem(string stderr) => Assert.False(SourceControl.AuthRefused(Err(stderr)));
+
+        [Fact]
+        public void The_message_names_what_was_tried()
+        {
+            const string Url = "https://github.com/froglet-studio/Cosmic-Shore";
+            Assert.Contains("refused the token", SourceControl.PushRefused(true, false, "403", Url));
+            Assert.Contains("froglet-studio/Cosmic-Shore", SourceControl.PushRefused(true, false, "403", Url));
+            Assert.Contains("Git Credential Manager sign-in", SourceControl.PushRefused(false, true, "403", Url));
+            Assert.Contains("Install Git for Windows", SourceControl.PushRefused(false, false, "terminal prompts disabled", Url));
         }
     }
 
@@ -261,6 +292,44 @@ namespace CosmicShore.Launcher.Tests
             var lines = new System.Collections.Generic.List<LogLine>();
             log.CopyTo(lines);
             Assert.Contains(lines, l => l.Text.Contains("unsaved change"));
+        }
+
+        /// <summary>
+        /// "Beside my clone" when the clone's origin is a fork (or an old URL) without the branch PLAY offers: the branch
+        /// list reads the configured repository, so the fetch must too. Before the fix this failed with
+        /// "fatal: couldn't find remote ref Ys-bleeding-edge" (2026-10-10).
+        /// </summary>
+        [Fact]
+        public void Worktree_fetches_from_the_configured_repository_when_the_clones_origin_lacks_the_branch()
+        {
+            string root = Path.Combine(Path.GetTempPath(), "amoebius-wt-" + Guid.NewGuid().ToString("N")[..8]);
+            string canon = Path.Combine(root, "canon.git"), fork = Path.Combine(root, "fork.git"), src = Path.Combine(root, "src"), clone = Path.Combine(root, "Cosmic-Shore");
+            Directory.CreateDirectory(src);
+            Setup.Git(root, "init", "-q", "--bare", canon);
+            Setup.Git(root, "init", "-q", "--bare", fork);
+            Setup.Git(src, "init", "-q");
+            Setup.Git(src, "config", "user.email", "t@example.com");
+            Setup.Git(src, "config", "user.name", "T");
+            Directory.CreateDirectory(Path.Combine(src, "Port", "src", "CosmicShore.Player"));
+            File.WriteAllText(Path.Combine(src, "Port", "src", "CosmicShore.Player", "CosmicShore.Player.csproj"), "<Project />\n");
+            Setup.Git(src, "add", "-A");
+            Setup.Git(src, "commit", "-q", "-m", "engine");
+            Setup.Git(src, "push", "-q", canon, "HEAD:refs/heads/bleeding-edge");
+            Setup.Git(src, "push", "-q", canon, "HEAD:refs/heads/Ys-bleeding-edge");   // only the real repository has it
+            Setup.Git(src, "push", "-q", fork, "HEAD:refs/heads/bleeding-edge");
+            Setup.Git(root, "clone", "-q", fork, clone);                                  // the user's clone: origin = the fork
+
+            var s = new LauncherSettings { Workspace = WorkspaceMode.WorktreeOfMyClone, MyClonePath = clone, RemoteUrl = canon };
+            var tools = new Toolchain();
+            tools.Detect(s);
+            var ws = new Workspace(s, tools);
+            var log = new LogBuffer();
+            bool ok = ws.Sync("Ys-bleeding-edge", log, (_, _) => { }, default).Result;
+            var lines = new System.Collections.Generic.List<LogLine>();
+            log.CopyTo(lines);
+            Assert.True(ok, string.Join("\n", lines.Select(l => l.Text)));
+            Assert.True(ws.HasEngine);
+            Assert.Equal(Setup.Git(src, "rev-parse", "HEAD"), ws.HeadSha());
         }
 
         [Theory]

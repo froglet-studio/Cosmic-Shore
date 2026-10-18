@@ -156,7 +156,7 @@ MonoBehaviour:
   defaultCapacity: 10
   maxSize: 200
   enableBufferMaintenance: 1
-  bufferSizeTarget: 160
+  bufferSizeTarget: 24
   maxInstantiateRate: 20
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
@@ -574,10 +574,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 8796858733488306809, guid: 1263d2306dde455092dc34161380df92, type: 3}
-  defaultCapacity: 1500
-  maxSize: 1500
-  enableBufferMaintenance: 1
-  bufferSizeTarget: 1500
+  defaultCapacity: 0
+  maxSize: 16
+  enableBufferMaintenance: 0
+  bufferSizeTarget: 0
   maxInstantiateRate: 20
   baseInstantiateRate: 5
   maxAddsPerFrame: 4

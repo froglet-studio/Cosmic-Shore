@@ -126,6 +126,40 @@ granted) are fenced and recorded; neither licenses another.
 > (`VesselPrismController.SetTierHold`) — pausing the spawner, the sanctioned lever named
 > in the rejected-cheat note above. Nothing already laid is removed.
 
+> **AUTHORIZED EXCEPTION (2026-10-16): the Angler's KEEPER — one creature that does not
+> starve.** The designer asked for it in plain words: *"there should always be at least one
+> fauna that doesn't starve etc. so the number of fauna under angler control is always greater
+> than zero."* It resembles the rejected **immortal husk** (a creature that outlives its own
+> death rules, `ECOSYSTEM_DESIGN_PRINCIPLES.md`, "A creature dies when its last body prism is
+> destroyed"), and it is NOT that.
+>
+> What it does:
+>
+> - **No starvation for one creature.** The FIRST creature in an Angler's school (`_tamed[0]`)
+>   does not starve: `Fauna.IsStarving` reads `IFaunaLeash.Sustains`.
+> - **A keeper whenever the school is empty.** One creature is born behind the hull, already
+>   tamed. It is the cell's own first leashable herbivore, else `AnglerConfigSO.companionFauna`.
+>   It is born through `CellLifeSpawnerBase.SpawnFaunaWithDomain`, in the cell's controlling
+>   colour.
+>
+> Its fence — do not widen it:
+>
+> - **One reader, one implementer.** `IFaunaLeash.Sustains` is read only by `Fauna.IsStarving`,
+>   and implemented only by `AnglerCommandExecutor`. No `immortal` / `noStarve` field was added
+>   to `Fauna` or any config; the waiver exists only while a leash says so.
+> - **At most one per Angler.** When the keeper dies the next creature in the school inherits
+>   the role. When the school is empty one is born (at most once a second).
+> - **Only starvation is waived.** A keeper that is eaten, shot to its last body prism or
+>   jousted dies the ordinary way: wither, heart drop, mass conserved. Continuity of existence
+>   holds: the birth blooms through the same seam every spawner uses.
+> - **Production, not decay.** The birth is a spawn (allowed — §0 forbids aging mass out, not
+>   creating it), in the controlling colour (no domain asymmetry), on the sim authority only for
+>   a replicated species. It adds at most one creature per Angler to the cell (a creature's
+>   colliders, against a cell that already ships tens), and only while that Angler leads nobody.
+>
+> **An exception, not a precedent.** The next holder that wants a creature to outlive its
+> clock needs its own sign-off. Detail: §61.4; `R_VesselActions/ANGLER.md` §1b.
+
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
 
@@ -930,7 +964,7 @@ work is saved and Phase 2 can be picked up.
    - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
      in the controlling color (Jade appears when Jade leads), hunt, and thin out as
      prey runs low; spawn ring sweeps; **no numeric readout**.
-   - *One gameplay scene* (e.g. `MinigameWildlifeBlitzMultuplayerCoOp` / `MinigameSkimRace`): confirm
+   - *One gameplay scene* (e.g. `MinigameWildlifeLiberation` / `MinigameSkimRace`): confirm
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
@@ -1436,7 +1470,7 @@ decision, made per profile.
 (still clamped by each species' `MaxLivePopulation` — a tick with the species at cap
 hatches nothing). The profile is shared by `Menu_Main` **and** `BenchmarkStressTest`, so
 the benchmark now runs a fuller average fauna population; re-baseline before reading it
-against older numbers (`Docs/PERFORMANCE_OPTIMIZATION.md`).
+against older numbers (`Docs/archive/PERFORMANCE_LOG_2026.md`).
 
 ### 16.2 Shielded mass is not food for any herbivore
 
@@ -2753,7 +2787,7 @@ First pass, in Menu_Main freestyle:
 
 1. **Import clean.** Pull, let Unity reimport, confirm zero compile errors and that the
    four new prefabs open without "Missing (Mono Script)" rows. Run
-   **FrogletTools > Validation > Validate Lifeform Crystals** — every segment's heart is
+   **FrogletTools > Ecology > Validate Lifeform Crystals** — every segment's heart is
    runtime-provisioned by design (and the validator only inspects `LifeForm`/`LightFauna`
    prefabs anyway), so it should stay quiet about the worm.
 2. **Spawn**: freestyle → Spawn Matrix toy → "Worm Colony" → any element station.
@@ -3713,7 +3747,7 @@ Two things to watch in a playtest, in this order:
 ### 26.8 In-editor verification (the human is the gate)
 
 Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
-**MinigameWildlifeBlitzMultuplayerCoOp** for a populated cell (the single-player scene was retired 2026-09).
+**MinigameWildlifeLiberation** for a populated cell (both Wildlife Blitz scenes were deleted, 2026-09 and 2026-10).
 
 1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
    no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate
@@ -4725,7 +4759,7 @@ NOT re-run after the octagon conversion and remain open:
    Confirm it still reads as topiary in the garden.
 7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning,
    `python3 Tools/Build/verify_gyroid_octagon_tables.py` after any bond-table or octagon-table
-   edit, and `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every octagon is a lifeform
+   edit, and `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` (every octagon is a lifeform
    now, so the one-crystal rule is being asserted far more often than before).
 
 ### 32.7 The octagon colony — a crystal in every window (Aug 2026, second pass)
@@ -5227,7 +5261,7 @@ Menu_Main freestyle (Blob cell) is the fastest read:
    SHOULD show a size gradient with the founders largest.
 5. **The reward tracks** — collect a level-1 heart and a levelled one and confirm the element
    flowers move further on the second.
-6. Re-run `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (no prefab changed, but the
+6. Re-run `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` (no prefab changed, but the
    sizing path did) and `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for
    Rampage per consequence 1 above.
 ## 34. Schwarz P grows on its own TILE — the hyperbolic {6,4}, which is one half-period cube (Aug 2026)
@@ -6227,7 +6261,7 @@ fit against and no equivalent measurement; nobody has looked at them.
    construction (nothing in `Spindle` reads `leafSize`) and they compose, but the *look* of a
    Charge gyroid's join is the one thing this branch cannot predict. Check it on the same plant as
    step 5.
-8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+8. After the flora config edits: `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ---
 
@@ -6704,7 +6738,7 @@ five-playtest failure class).
 7. **The food web:** graze a strut (any vessel ability) — the edge frees and the plant regrows
    it; strip a whole plant — it withers to its crystal on the standard path, and the freed
    heart is re-plantable by the colony.
-8. After the flora config edits: `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.
+8. After the flora config edits: `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals`.
 
 ### 37.9 A prism is a LEAF of the hierarchy — and the lattice doubles (Aug 2026, second pass)
 
@@ -7219,7 +7253,8 @@ SPECIES reads wrong, fix that species' authored `HeartWorldScale`.** Never the r
 
 **The numbers are owned by a tool, not by hand.**
 `Tools/Build/author_lifeform_heart_sizes.py` (`--check` in CI, `--write` to author) covers the
-**88 canonical** `_SO_Assets/Lifeforms` assets plus the **25 per-cell deployments that author
+**108 canonical** `_SO_Assets/Lifeforms` assets (27 species × 4 elements; the Nested Gyroid's four, the 28th
+species, are pinned by `author_nested_gyroid_flora_assets.py` instead, 112 in the folder) plus the **25 per-cell deployments that author
 their own variant block** — those do NOT inherit a canonical heart, which is why they are
 enumerated rather than assumed. It also flipped the canonical assets' `Variant.Enabled` to 1: a
 heart size stated in a disabled block is a heart size nothing reads
@@ -7397,7 +7432,7 @@ twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna
    not the feel).
 7. Re-run `python3 Tools/Build/author_lifeform_heart_sizes.py --check` (must print
    *"every lifeform heart matches the authored band"*), then
-   `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` and
+   `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` and
    `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for Rampage per consequence 1.
 
 ## 41. The Arkway and the Ark — a voyage whose fights are the shipped ecology (Sep 2026)
@@ -9099,7 +9134,7 @@ Everything above is offline. Specifically:
    of bluntness, are the prefab's `density` (0.5–1.3), then `Blossoms`/`Crowns`/`Falls`.
 4. **Confirm the garden grows and stops.** Plant count should settle at 21 and stay there; the
    cell should reach Restless within the first minutes and never reach Frenzy.
-5. **FrogletTools > Validation > Validate Lifeform Crystals** after any lifeform-prefab change.
+5. **FrogletTools > Ecology > Validate Lifeform Crystals** after any lifeform-prefab change.
 
 **Known gaps, stated rather than hidden:** the cell wears the project-wide placeholder card icon
 (as 15 of the 16 shipped cell configs do — a Garland-specific one is an art task); the flora
@@ -11459,4 +11494,209 @@ outer-sheet fragments the rider cannot bridge (largest component 83–99%).
 * **Unrelated, pre-existing:** `Tools/Build/author_flora_populations.py --check` exits 1 on `Tollway Anchor Flora
   Gyroid` (no recorded pre-conversion budget in `LATTICE_SOURCE_BUDGET`), identically on a clean `bleeding-edge`
   worktree (A/B'd at ship). Needs the number only that conversion's author has.
+---
 
+## 59. The diagnostic production hold — `freeze`, for a same-state A/B (Sep 2026)
+
+**What it is.** `Cell.DiagnosticProductionHold` — one static flag, raised and released only by the
+DiagnosticsHUD `freeze on | off` console command (`EcologyFreezeSwitch`), settable only in the Editor
+and Development builds. While it is up, no cell produces: `FloraGrowingEnabled` is false (so growth,
+planting, plant reproduction and the lattice colonies' population births stop, exactly as they do at
+Frenzy), `FaunaSpawningEnabled` is false, `IsFaunaAtCap` / `IsFloraAtCap` read full (the Microscene
+conveyor, `Fauna.TryReproduce`, the IntensityWise seeder), and the two producers that ask none of
+those — `RandomLifeSpawner`'s fauna seeder and `WormFauna.TickProduction` — check the flag directly.
+
+**Why it exists.** A performance A/B is only valid when the only difference between its two arms is
+the thing under test (`Docs/PERFORMANCE_OPTIMIZATION.md` §4.3). A growing world breaks that: the first
+spindle A/B compared 24,243 prisms against 49,116 because the Lattice cell had kept growing between
+the arms, and the result could not be separated from the growth.
+
+**Invariants (restated per the protocol).** It is **production gating**, which §0 already permits
+("not creating mass is allowed"), and the same class of gate as Frenzy — so it is not a carve-out.
+Nothing is removed, aged or culled; no timer runs; grazing, predation, starvation and vessel abilities
+keep working, so a held world can only LOSE mass. Continuity of existence is untouched (nothing
+appears or disappears because of it). Domain symmetry is untouched (it gates every domain alike and
+changes no spawn colour). The phase is not touched, so fauna aggression does not change. **Nothing
+catches up on release**: every producer already turns its cycle whether or not it produced (the
+lattice colony books, the worm colony's production stamp, the seeders), so `freeze off` resumes at the
+ordinary rate. Collider impact: none.
+
+**Its two fences.** It is released on any active-scene change, with a warning, so a hold set for one
+scenario can never freeze the next one. And it is not a lever: nothing in gameplay may raise it — a
+mode that wants less production tunes its spawn profile or its volume ladder, the way every shipped
+mode does. Explicit player acts are deliberately not gated (the Lifeform Matrix toy's releases).
+
+
+## 60. A dead QuadFish's heart followed the vessel and could not be taken (Oct 2026)
+
+**Reported (2026-10-14):** the crystals left behind by dead QuadFish "look like they are part of a
+different transform — they get warped and don't like to be collected, but they follow the player
+around; they interact with the vessel skimmer but not the hull". Two independent defects, both in
+how the heart is authored rather than in the death path.
+
+**Landed in two PRs:** #1091 (the runtime wiring in `LifeFormCrystal`, the QuadFish scale move and
+`Crystal.ReparentToCell`) and #1094 (the authoring half below: the collection pair on five prefabs,
+and `Tools/Build/author_lifeform_heart_collection.py`).
+
+### 60.1 Vacuumable, never collectable — the collection pair was missing
+
+A heart is collected through `ElementalCrystalImpactor` + `ImpactCollider` on the crystal. The
+standalone elemental prefabs in `Resources/ElementalCrystalSet` carry **neither** (`CrystalSpace`
+is `Crystal` + a trigger `SphereCollider` + audio), and lifeform prefabs add the pair as inspector
+overrides. Swept 2026-10-14: **six** lifeform prefabs never did — QuadFish, Clawfish, Nerve, Pine,
+Wall and oldWall flora (the other 25 lifeform hearts do).
+
+The skimmer's VACUUM (`SkimmerImpactor.OnTriggerStay`) only needs the `Crystal` on the trigger, so
+once death cleared `IsEmbedded` the heart was dragged after the vessel for as long as it stayed in
+range, while no contact could ever reach `ElementalCrystalImpactor.AcceptImpactee`. Only the
+**Space** QuadFish showed it: `LifeFormCrystal.EnsureElementalCrystal(owner, element)` REPLACES an
+authored crystal of the wrong element with a set prefab and wires the pair onto the replacement
+(`WireCollection`), but returned an authored crystal of the right element untouched — and the
+QuadFish authors a Space crystal. Charge, Mass and Time QuadFish were always collectable.
+
+**Fix:** both `EnsureElementalCrystal` overloads now run `WireCollection` on a crystal they KEEP.
+It is a no-op when an impactor is already present, so the 25 prefabs that author it are unchanged. The
+same call makes the Space QuadFish's heart reachable by the crystal-joust chain, which also goes
+through the impactor. The runtime wiring is the backstop that makes "every lifeform drops a
+collectable crystal" hold regardless of authoring.
+
+**The authoring half (same day):** `Tools/Build/author_lifeform_heart_collection.py` adds the pair to
+any lifeform heart that lacks it, in the exact shape the 25 already carry — an
+`ElementalCrystalImpactor` (`Crystal` -> the instance's Crystal, the one collection effect
+`0ac04a74…` every authored heart uses) and an `ImpactCollider` pointing at it, both as added
+components on the nested crystal instance, plus the `Crystal` component overridden to DISABLED. That
+last part was a second inconsistency the sweep found: all 25 working hearts author `m_Enabled: 0` on
+their Crystal, so a living heart stays out of `Crystal.Active` and its `Start` (the `crystalValue`
+stamp) waits for `ActivateCrystal`; QuadFish and Clawfish did not (the four flora already did). The
+script authored QuadFish, Clawfish, Nerve, Pine and Wall flora. oldWallFlora, the sixth bare heart,
+was skipped because no config, scene or prefab referenced its guid, and was then deleted (#1097). `--check` is the gate: it fails naming any lifeform
+prefab whose heart lacks the pair (negative-controlled — it named exactly these five before the
+write), and a second write is byte-identical. Nested ids follow Unity's rule
+(`instanceFileID XOR sourceFileID`, 63-bit), which reproduces all 25 existing hearts' stubs.
+
+### 60.2 Warped — a non-uniform creature root
+
+The QuadFish ROOT was authored at `(1, 1, 1.31)`. The heart hangs off the root, so it was stretched
+31% along the fish, and its spinning model children sheared as they turned (a rotating child of a
+non-uniformly scaled parent cannot stay rigid). `transform.parent = cell` on release preserved that
+lossy scale by baking a non-uniform `localScale` into the crystal itself, so the dropped pickup kept
+warping long after the fish was gone.
+
+**Fix, two layers:**
+- **Prefab:** the elongation moved from the root onto the body child, `BezierCurve` `5,5,5 → 5,5,6.55`,
+  root now `1,1,1`. The root has exactly two children (the body and the heart at the origin), and
+  `QuadFishSwimDriver` banks the body only about **z** — a rotation about z commutes with a z-only
+  scale — so every body and fin world pose is identical at every bank angle.
+  `author_lifeform_heart_sizes.py --check` still measures the body at **22.9** and the band at 1.75.
+- **Code backstop:** `Crystal.ReparentToCell` (behind `DetachHeartToCell` and `ActivateCrystal`)
+  reparents with world pose kept and then restates the crystal's **x** world size uniformly on the
+  cell. x is the axis `LifeFormCrystal.SetWorldScale` sizes a heart along and the axis the collect
+  reward reads (`lossyScale.x`), so no payout moves. Every crystal prefab root is authored uniform
+  (swept 2026-10-14), so a crystal that was already uniform is unaffected.
+
+### 60.3 Invariants
+
+Touches the locked "every lifeform drops exactly one elemental crystal" invariant only to make it
+hold more often (a dropped heart is now always collectable). No collider is added — the
+`ImpactCollider` is a component on the heart's existing `SphereCollider`, not a new collider — so the
+collider budget is unchanged. Not editor-verified: kill a Space QuadFish in Garland or Wildlife
+Liberation, fly the HULL through its dropped heart (it must collect), and confirm the heart and a
+living fish both look undistorted. Then open QuadFish, Clawfish, NerveFlora, PineFlora and WallFlora:
+each heart must show `ElementalCrystalImpactor` (`Crystal` set, one collection effect) and
+`ImpactCollider` (pointing at it), its `Crystal` component unchecked, and no Missing (Mono Script)
+rows. A living QuadFish's heart must still be joustable: `SetEmbeddedIn` enables the collider, and
+that doesn't depend on the `Crystal` component being enabled.
+
+## 61. The fauna leash — a vessel can steer a creature, never rewrite it (Oct 2026)
+
+The Angler (vessel 17, `R_VesselActions/ANGLER.md`) lures, tames and commands fauna. It does that through one narrow
+contract, `IFaunaLeash` (`Controller/Environment/FloraAndFauna/IFaunaLeash.cs`), and the contract is narrow on
+purpose: **a leash bends behaviour and nothing else.**
+
+### 61.1 What a leash may do
+
+- **`TrySteer(creature, out goal, out speed, out turnRate)`.** It replaces the creature's own goal for this tick:
+  - `LightFauna` slerps its body to that goal (`SteerOnLeash`) and eases its speed at 2.5/s.
+  - A `Boid` uses the goal as its steering target, at the leash's turn rate.
+- **`OrderedMeal(creature)`.** Picks which edible prism the creature's next mouthful faces. The creature re-reads it every frame.
+- **`Released(creature)`.** The creature tells its holder it has left the leash.
+
+### 61.2 What a leash may NOT do (the invariants, each held by the creature's code, not the holder's)
+
+- **The diet decides.** An ordered prism is re-checked against the creature's own edibility rule. It is eaten with the creature's own mouthful (`UpdateFeeding`), so a leash cannot make a herbivore eat what it could not eat wild.
+- **No imposed death, and no reprieve — but one keeper.** The starvation clock keeps running. A tamed creature that is never ordered to eat follows the school without grazing, and may starve on its own clock. That is the ordinary rule, with ONE authorized exception: the school's first creature, the Angler's keeper, does not starve (§61.4, §0). Whether a following creature should graze in passing is an open designer call (`ANGLER.md` §8).
+- **One fauna colour per cell.** A tamed creature keeps the cell's colour (LOCKED, `ECOSYSTEM_DESIGN_PRINCIPLES.md`). "My squad" is a leash relationship, not a team.
+- **The heart, body prisms, wither and mass conservation** are untouched. A leashed creature dies exactly as a wild one does.
+- **Who can be leashed:**
+  - Herbivores only (`Fauna.CanBeLeashed`). A `Boid` must also be a forager.
+  - Only on the peer that simulates the creature (`IsSimAuthority`), so consequences never fork across peers.
+  - Never while dying. `Die()` and `OnDestroy()` call `DropLeash()` before anything else, so a holder never steers a corpse.
+
+### 61.3 What is inert without a holder
+
+Every hook is gated on `Leash != null`. With no Angler in the cell, `LightFauna` and `Boid` run exactly the code they ran
+before: the same goal, the same feed candidate, the same speed.
+
+### 61.4 The keeper (2026-10-16, an authorized exception)
+
+The designer asked that an Angler always leads at least one creature, and that one never starves.
+
+**The rule:**
+
+- **One creature never starves.** `IFaunaLeash.Sustains(creature)` is true for exactly one creature per holder: the first in the Angler's school. `Fauna.IsStarving` is false while it holds. The stomach still drains and refills as usual; only the death at empty is waived.
+- **An empty school gets a keeper.** When the school is empty, `AnglerCommandExecutor.EnsureKeeper` births one creature:
+  - behind the hull, at the school's first slot;
+  - through `CellLifeSpawnerBase.SpawnFaunaWithDomain` (lineage bind, replication seam, bloom), in the cell's controlling colour;
+  - leashed at once.
+- **Which species:** the cell's own first leashable herbivore (`SpawnProfile.SupportedFaunas`, `Fauna.Leashable`), else `AnglerConfigSO.companionFauna` (Clawfish Space, the lab's first species).
+- **Where it is born:** a replicated species only on the sim authority, at most once a second. Never after the turn has ended.
+
+**What it does not waive:**
+
+- Predation, a jousting vessel, and losing the last body prism still kill a keeper. Its heart still drops and its mass is still conserved. The next creature in the school becomes the keeper, and an empty school gets a new one.
+- §0's "AUTHORIZED EXCEPTION … the Angler's KEEPER" is the record of the sign-off and the fence.
+
+
+### 61.5 Round 3 (2026-10-16): painted prey, theft, and the lure's garden
+
+The designer gave the Angler's elements their abilities (`R_VesselActions/ANGLER.md` §1c–§1g). Three of them touch the
+ecosystem:
+
+- **Every creature prefers painted prisms** (`PaintedPrey`).
+  - `LightFauna` and `Boid` rank a painted prism `paintedPreference` (4) times closer in their own nearest-edible search. That is the only reader.
+  - It is a preference inside the creature's own sensing radius, never a goal and never food. The diet still decides edibility, and shielded mass is still never food.
+  - It is a vessel's active act on the world (an ability), not an imposed rule of the food web. With nothing painted, every forager ranks exactly as before.
+  - Its static registry is fenced against the static-registry trap. Each holder unmarks what it marked (eaten, erased, turn end, disable), and `Prism.Initialize` forgets a pooled prism's marks.
+- **Theft** (Mass level 5). `Fauna.TryLeash(holder, steal: true)` moves a creature from one holder's leash to another's. The old holder is told (`Released`).
+  - A leash is still behaviour only (§61.1–61.2), so stealing changes who steers the creature and nothing else.
+- **The lure's garden** (Mass). While an Angler's lure is out, one plant of the PILOT'S domain is planted in the lure's reach every 2 s:
+  - one of the cell's own species;
+  - through `CellLifeSpawnerBase.SpawnFlora`, so it grows in;
+  - a replicated species only on the sim authority.
+
+  This is a vessel laying its own domain's mass, the same as a trail. It is not the spawner, so the "fauna spawn in the controlling colour" rule (a spawner rule) is not touched.
+
+**The Space level-5 "Paint Shields"** never makes shielded mass food. A squad member that reaches a painted shielded prism
+cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impact makes), and only then can it eat the prism.
+
+### 61.6 Round 4 (2026-10-17): growth haste replaces the garden; seeds; a spent creature
+
+- **The lure's light hastens growth** (`Flora.Hasten`). It replaces §61.5's lure garden, which planted a new plant every 2 s.
+  - While an Angler's lure is out, every plant within its reach waits `growPeriod / 3` between grow ticks instead of `growPeriod`.
+  - Each tick grows exactly what it always did, under the plant's own budgets, so mass is created at the plant's own rate per tick and only the cadence changes.
+  - The haste lapses by itself: a 0.6 s window, refreshed while the light is on the plant. Nothing needs undoing.
+  - Its one caller is `AnglerCommandExecutor`. `Flora` grew no serialized field for it.
+- **An omni crystal's seed.** An Angler that collects an omni crystal holds one flora seed (one of the cell's species) until its lure is next let go. The seed is then planted at the esca, in the pilot's domain, through `CellLifeSpawnerBase.SpawnFlora`.
+  - It grows in; a replicated species is planted only on the sim authority.
+  - It is the same as the garden: a vessel laying its own domain's mass, not the spawner.
+- **A spent creature** (the Charge lock) leaves its holder's school but stays leashed, hunting one vessel until it dies.
+  - It is not the keeper, so it starves normally (§61.4).
+  - Its leash is still behaviour only (§61.2): it swims at the vessel; it does not eat it.
+  - Its bites are the vessel's petals, through the PvP gate, never mass.
+
+### 61.7 Round 7 (2026-10-18): a holder asks the creature's diet before it orders
+
+- **`Fauna.LeashCanEat(Prism)`** is the creature's own edibility rule, asked by a holder before it gives an order (`LightFauna` → `IsEdibleForHerbivore`, `Boid` → `IsEdibleForForager`; the base answers true).
+  - It reads; it changes nothing. The diet is still the creature's (§61.2): a holder can only skip a prism the creature would refuse, never make one edible.
+  - Without it a leashed creature was ordered to a prism its diet refused (its own domain in a cell with no nucleus, the nucleus claim, outside its pen) and hovered there for good. That is the "the fauna don't always listen" the designer saw.
+  - The Angler's `PickTarget` is its one caller. A shielded prism stays a candidate: only Space 5 paints one, and the squad cracks the shield (§61.5).

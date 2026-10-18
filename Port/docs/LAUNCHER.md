@@ -28,16 +28,17 @@ Source: `Port/src/CosmicShore.Launcher` (C#, Dear ImGui on our own Silk.NET wind
 
 | Page | What it is for |
 |---|---|
-| **PLAY** | Branch, **START**, and four quick toggles (fullscreen, audio, online, pull first). The small buttons beside them update without playing and open the workspace folder. |
+| **PLAY** | Branch, **START** (offline) and **START ONLINE** (UGS, below), and three quick toggles (fullscreen, audio, pull first). The small buttons beside them update without playing and open the workspace folder. |
 | **BUILD** | One card per phone platform. Each card has one choice and one button; everything else is under *Options*. |
 | **PROJECT** | The engine's own Project Settings (below). |
 | **AGENT** | The Amoebius Agent, powered by Claude: as many chats as you like, side by side (below). |
 | **GIT** | What the agent (or you) changed in the workspace, and getting it to GitHub (below). |
 | **EDITOR** | TOOLS (every FrogletTools tool, run by the agent), DATA (the data sets, editable) and MODELS (every model in the game's colours; VIEW IN ENGINE) (below). |
-| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) and local multiplayer (2-4 game windows that join each other) (below). |
+| **VESSEL STUDIO** | The Vessel Studio inside Amoebius: pick a vessel (Squirrel, Stoat, or ALL STUDIOS for the hub), then one row of actions for it: **OPEN IN AMOEBIUS · OPEN IN BROWSER · PLAY IN ENGINE · AGENT · DOCS**. Quiet links below: the claude.ai artifact, the folder, update from the artifact. Below it, **ARTIFACTS**: every claude.ai artifact brought into the repo, and the way to add one. Catalogs: `Docs/Studios/VesselStudio/studios.json` and `Docs/Artifacts/artifacts.json` (below). |
+| **TIME** | Benchmarks (timed runs of scenes and replays that close themselves, with a results table against the last run) (below). |
 | **TRACKS** | Every play run: performance per scene, features used, audio, every problem over time (below). |
 | **BOARD** | Bugs and tasks, with Amoebius's suggestions (below). |
-| **SETTINGS** | Folded sections: Game, Source, Look, Claude, Advanced, Toolchain, About (versions). |
+| **SETTINGS** | Folded sections: Game, Online (below), Source, Look, Claude, Advanced, Toolchain, About (versions). |
 | **CONSOLE** | Every command the launcher ran and its output. COPY for a bug report. |
 
 ![PLAY](architecture/launcher_play.png)
@@ -55,7 +56,127 @@ bottom shows what is happening, a progress bar and CANCEL. The title bar shows t
 agent's state (green: ready on your Claude plan), the notification bell and **?** (the tour).
 The first start shows a one-minute tour of every page; **?** replays it.
 
-## TIME - benchmarks and local multiplayer
+## VESSEL STUDIO - the Vessel Studio and every artifact
+
+The rail item was called STUDIOS until 2026-10-09; the page id is still `studios` (`--page studios`, which
+Unity's **FrogletTools ▸ Amoebius ▸ Vessel Studio Page** passes). `--page studios:artifacts` opens it scrolled to the
+artifact library (docs screenshots). `--page studios:hub` (or `studios:stoat`, any catalog id) also opens that studio
+in its window as soon as the page is up: Unity's **FrogletTools ▸ Vessels ▸ Vessel Studio** passes `studios:hub`.
+
+![VESSEL STUDIO](architecture/launcher_vessel_studio.png)
+
+Pick a vessel and its studio opens: fly it on gamepad, keys or a phone's thumbs, switch its play-style types
+and element levels, and read what each number does. The pages live in `Docs/Studios/VesselStudio/`; what every
+surface opens is their **build** (`build_artifact.py`'s output), so the studio here is byte for byte the one on
+claude.ai and the live mirror (/vessel-studio D34, below). Test steps: `Docs/Studios/PRISMA_TEST_STEPS.md`.
+
+**The hub's cards** (/vessel-studio D35, 2026-10-10, the user: "look like the cards in the artifact / web hub"; it replaces
+the picker). The page is the web hub's front page natively: the hub's lede, the hub's own row (OPEN THE HUB, OPEN IN
+BROWSER, AGENT, DOCS), then one card per studio in a grid, exactly as `index.html` draws its bays: the preview (the
+hub's live canvas, baked to `previews/<id>.png` by `bake_previews.cjs`), the name in the card's accent, the chip, the
+summary, the spec rows. Each card's buttons come from `studios.json` `cardActions`, in the same order on every card
+and in Unity's home: **Open studio →** (served, its own window) · **PLAY IN ENGINE** · **OPEN LIVE IN BROWSER** (no
+TUNE IN UNITY: the artifact is the one source of truth, /vessel-studio D33); a button that does not apply stays in its place, disabled, and its
+tooltip says why (`StudioCatalog.Applies`). Under them, the quiet per-studio links: in browser · agent · docs. Then
+the fleet without a studio. Nothing on the page spells a studio's text or a card label (`DrawStudioCard`), so a studio
+added to `studios.json` and the hub shows up with no launcher change; `StudioCatalogTests.TheShippedCatalogsCards_AreTheHubs`
+and `parity_gate.py` hold the catalog to the hub. The artifact library below keeps the picker, card (`PickedCard`) and
+action row (`ActionRow`). The studio is built from **the checkout Unity opened Amoebius from**
+when Unity started it (`--clone`: Unity's branch), else from Amoebius's workspace when it has the studio, else from
+that checkout (`StudioCatalog.PickRoot`), so nothing waits for the first START.
+
+The actions:
+
+- **OPEN IN AMOEBIUS**: the studio, built from the checkout and served by Amoebius (below), as its own window in the
+  app mode of Edge (always on Windows 10/11) or Chrome.
+  - It has no tabs or address bar.
+  - It uses a window profile under Amoebius's data folder (`studio-window`), so the studio's layout and pop-out
+    windows are remembered.
+  - The URL ends in `#amoebius`: the pages' one host helper (`VesselStudioTheme.host()`) reads it; nothing visible changes.
+  - With neither browser installed it falls back to the default browser.
+  - `PRISMA_STUDIO_BROWSER_ARGS` adds browser flags (a GPU-less test box: `--use-gl=swiftshader --enable-unsafe-swiftshader`).
+  - Code: `StudioCatalog.AppBrowserCandidates` / `AppWindowArgs`; `LauncherApp.OpenServedStudio` / `OpenStudioWindow`.
+- **OPEN IN BROWSER**: the same served studio in the default browser. With no checkout yet it opens the live mirror
+  (`mirror` in the catalog, else `StudioCatalog.DefaultMirror`), which is also a quiet link under the card.
+- **PLAY IN ENGINE** (a studio with `engineMode` in the catalog): the game's own vessel.
+  - Amoebius builds and starts the game as PLAY does.
+  - It adds `--arcade MODE` for that one launch (`LauncherJobs.Play(extraArgs)`).
+  - The player waits for the main menu, opens that arcade card and presses its Start
+    (`Port/src/CosmicShore.Player/ArcadeAutoStart.cs`, through the same path as the `arcade` input verb).
+  - The pilot presses Ready. First-run prompts on a new profile still come first.
+  - `engineNote` says what the engine run is when it differs from the studio's design (the Stoat's game sling
+    is still round 4's).
+
+- **The list comes from data:** `Docs/Studios/VesselStudio/studios.json` (`id`, `name`, `file`, `kind`,
+  `summary`, `docs`, optional `engineMode` and `engineNote`, plus `web` and `hub`). A test checks every
+  `engineMode` is a `GameModes` member. A branch without it shows why, and how to switch. Adding a studio
+  is a page plus a catalog entry; no launcher change. Read by `StudioCatalog` (tested in
+  `tests/CosmicShore.Launcher.Tests/StudioCatalogTests.cs`, including "every listed page exists").
+- **AGENT** starts an Amoebius Agent chat on that studio (or on the Vessel Studio as a whole, for ALL STUDIOS), in plan mode.
+- **DOCS**: the vessel's doc (`docs` in the catalog); for ALL STUDIOS, the plan.
+- **Links under the card**: the claude.ai artifact (`web`, else `StudioCatalog.DefaultWeb`; its decisions and requests are shared with everyone), the live mirror, the folder, and update from the artifact (an agent chat; needs the workspace). The line above them says what is being served (branch @ commit, port).
+- **From Unity:** **FrogletTools > Vessels > Vessel Studio** opens the studio home in Unity (/vessel-studio D32); a card's
+  **OPEN STUDIO** opens that studio SERVED by Amoebius (D34): the server of an Amoebius already running on Unity's checkout
+  (`<data>/studio/server.json`), else Amoebius started with `--clone <checkout> --page studios:<file>`. Built from Unity's
+  checkout and branch. **FrogletTools > Amoebius > Vessel Studio Page** opens this page (`--page studios`).
+
+### The studio server: one build, and the artifact's backend (/vessel-studio D34)
+
+`Port/src/CosmicShore.Launcher/Studio/`. Started the first time a studio opens; lives as long as Amoebius.
+
+- **Build** (`StudioBuild`): the C# twin of `.claude/skills/vessel-studio/build_artifact.py`: the pages, studios.json,
+  sync.js, the shared files and build.json from the checkout's branch (`git show`, so committed work: commit to see a
+  change), into `<data>/studio/build/<time>-<sha>/`. Rebuilt only when the branch's commit changed. A test builds this
+  repo both ways and compares every byte (`StudioBuildTests`).
+- **Serve** (`StudioServer`): `http://127.0.0.1:<random port>/<random per-launch token>/<page>#amoebius`. Only
+  127.0.0.1, only that Host header (no DNS rebinding), any other Origin or a cross-site fetch refused (403), the API
+  only with our Origin, no CORS headers, `Referrer-Policy: no-referrer` (the token never reaches the font or three.js
+  CDNs), `Cache-Control: no-store`. The one byte difference from the published build: a `<script src=".amoebius/bridge.js">`
+  first in `<head>` (`StudioServer.WithBridge`), which `parity_gate.py` allows and nothing else.
+- **Backend** (`Assets/studio-bridge.js` + `StudioServer.Api`): the same `window.claude.use()` the claude.ai viewer gives,
+  so the pages do not know which host they are on beyond what is enabled:
+  - `db`: `StudioStore`, one JSON file per collection under `<data>/studio/db/` (`decisions`, `jobs`, `requests`,
+    `data/users/<id>`), add / doc get-set-update-delete / orderBy-limit, live queries polled. Firestore's rule that
+    orderBy leaves out documents without the field holds. Kept on this computer, not shared with the artifact's store.
+  - `user`: one local user per data folder (`<data>/studio/user.json`).
+  - `sample` (Ask): `StudioAsk`, one read-only run of Amoebius's Claude Code CLI (plan mode, no Bash/Edit/Write/Web),
+    the answer streamed back; the AGENT page's sign-in, model and API key.
+  - `mcp` "Claude Code Remote": the session is Amoebius (`amoebius-local`, named in build.json so Sync needs no Start
+    session). `send_message` naming a job runs it.
+- **Sync jobs** (`StudioJobs`): what SKILL.md section 5 has a session do, done here: `sync_job.py` (needs Python 3)
+  in the studio checkout, its log and result written into the job. The skill's limits, checked before Python runs
+  and again by sync_job.py: never merge into or delete `bleeding-edge`, `Ys-bleeding-edge`, `main`, `master`;
+  never delete the tools branch or the checkout's branch; branch names by `StudioJobs.BranchRe`; no force-push; one job
+  at a time, 5 minutes each, `GIT_TERMINAL_PROMPT=0`. **Refresh** rebuilds the served studio from `origin/<branch>` and
+  the page reloads onto it (OPEN IN AMOEBIUS goes back to the checkout's branch).
+- Tests: `StudioServerTests.cs` (token, origin, db API, the session connector, sample, the job limits, the build).
+
+- **Phones today** use the web pages. A studio scene inside the Amoebius phone player (the game's own vessel
+  instead of the web copy) is the next step: `Docs/Studios/VESSEL_STUDIO_PLAN.md`.
+
+
+### ARTIFACTS - the artifact library
+
+Anything built as a claude.ai artifact, in any session, comes into Amoebius by its link
+(`Docs/Artifacts/README.md`). The library is `Docs/Artifacts/artifacts.json`; Amoebius reads it every few
+seconds (`ArtifactLibrary.Load`), so an import shows at once.
+
+![ARTIFACTS](architecture/launcher_artifacts.png)
+
+- **ADD WITH AGENT** (a pasted `https://claude.ai/artifact/...` link): an AGENT chat that runs
+  `/amoebius-artifact <url>` (`ArtifactLibrary.ImportPrompt`): it saves every file of the artifact with the
+  Artifact tool, imports them with `Tools/Build/amoebius_artifacts.py` and gates them. The change stays
+  uncommitted in the workspace for the GIT page.
+- **IMPORT FILE**: one downloaded page plus its link, no agent (`ArtifactLibrary.ImportPage`, the same schema
+  the script writes). BROWSE is the Windows file dialog; elsewhere type the path.
+- The same picker and one action row: **OPEN IN AMOEBIUS** (its own window), **OPEN IN BROWSER** (the live artifact on
+  claude.ai, with the viewer's features), **AGENT** (an agent chat that re-imports it).
+- The Vessel Studio is entry `vessel-studio`; **update from the artifact** under the studio card checks the published
+  studio against the repo pages (normally every file `unchanged`) and the line under it names the version last
+  matched.
+- Tests: `ArtifactLibraryTests` (parse, path safety, IMPORT FILE add/update, the repo's own library).
+
+## TIME - benchmarks
 
 **BENCHMARK** times the game on this machine. Tick scenes and replays (REPLAY rows are the parity
 harness's recorded inputs, `Port/parity/manifest.json`: they fly a real match, so they measure
@@ -75,10 +196,51 @@ faster, red slower). Every benchmark is kept in `%LOCALAPPDATA%\Amoebius\bench` 
 from the history list. `Amoebius --auto bench:Menu_Main,MinigameSkimRace:600` runs a headless
 benchmark unattended and closes Amoebius when it is saved.
 
-**MULTIPLAYER** opens 2, 3 or 4 game windows on this PC, each in its own save slot (`player1`,
-`player2` ...) with networking on and sound only in the first. They share one session folder, so
-a party or match hosted in one window shows up in the others: host in one, join from the rest.
-Start them at Bootstrap (log in, menu) or straight into a scene. **CLOSE** closes them all.
+## START ONLINE - playing with other players
+
+**START** plays offline, on your own. **START ONLINE**, beside it, plays online the way the Unity
+build does: the game signs in to Unity Gaming Services (UGS) as this profile's player, and its
+parties, invites and matches go through **UGS Lobby** (who is online, parties, sessions) and **UGS
+Relay** (the match traffic between machines). There is nothing to host, find or forward: UGS is
+always there, and players on any network meet through it (`docs/MULTIPLAYER.md` §6.10). There is no
+LAN or local-network play.
+
+**Diagnostics**: press **F3** in any game for Amoebius's diagnostics overlay (FPS, frame, CPU and GPU time,
+memory, scene, and online status: UGS sign-in, lobby, relay, ping and traffic; `ARCHITECTURE.md` §11.3).
+SETTINGS > GAME > **Diagnostics overlay** starts every game with it shown.
+
+SETTINGS > ONLINE:
+
+- **UGS environment**: the UGS environment START ONLINE signs in to. Empty uses the branch's
+  (`Network.UgsEnvironment` in `Port/ProjectSettings/AmoebiusProject.json`), else **`amoebius`**: a
+  separate environment keeps Amoebius's lobbies apart from the Unity build's, whose netcode does not
+  talk to Amoebius's. **It must exist in the UGS dashboard** (Project settings > Environments > Add);
+  until it does, sign-in fails, the console says so, and START still plays offline.
+- **UGS CHECK**: signs two test players in to UGS (the `relaycheck` profile, the same two every time),
+  allocates on UGS Relay, joins by code and sends frames both ways (`CosmicShore --ugs-relay-check`).
+
+Each player is their own UGS player. **+ PLAYER 2**, beside a running online game, starts a second
+online game on this PC as the `player2` profile (its own save and UGS sign-in; a smaller window, no
+sound, its console lines prefixed `[P2]`), so one person can party up with themselves through UGS:
+ARCADE, the party panel's **+**, Invite, accept in the other window. **CLOSE P2** closes it (its window
+first, so it writes its log; it is stopped only if it does not close within 5 s).
+
+**The test's logs collect themselves.** Every online game writes a multiplayer test log when it
+closes (`<data folder>/netlogs/net_<time>_<peer>.json`, peer `main` or `p2`): its network timeline
+(sign-in, party, clients approved and leaving, refusals) and its console. Player 2 always writes one;
+the main game does when it saw another player. When the last player has closed, a notification asks
+**Send this online test's logs to Claude?** **SEND TO CLAUDE** adds them to your `bugledger/<user>`
+branch, where the Unity editor's Send to Claude puts its logs. It never touches your checkout or
+your branch, and never sends a log twice. **NOT NOW** keeps them; they go with the next send. Claude
+reads them with `python3 Tools/Build/net_logs.py show 1`: every player in one timeline. Format and
+rules: `Docs/DIAGNOSTICS.md` § "Multiplayer test logs".
+
+## When Amoebius itself closes unexpectedly
+
+An error nothing caught is written to `last-crash.txt` in the data folder (SETTINGS > TOOLCHAIN >
+DATA FOLDER), and the next Amoebius shows it as a notification with **OPEN LOG**; the file is then
+kept as `crash-<time>.txt`. Send that file with the report. (Before 2026-10-13 Amoebius closed every
+time PLAY started the game on Windows: it read the game's process before the process had started.)
 
 ## TRACKS - Amoebius's memory of every run
 
@@ -116,6 +278,12 @@ the problem has stayed away for three runs through its scene, the card gets a gr
 and a notification offers MARK DONE (moving it stays your call). If the problem comes back, the
 card loses MET, and a DONE card reopens to TO DO. A card in DOING tells the agent's brief that a
 fix is in progress.
+
+The board is `board.json` beside the tracks. A suggestion an agent makes while Amoebius is open shows up
+within a second and survives Amoebius's next save (saves merge with the file instead of overwriting it).
+If the file cannot be read, Amoebius keeps a copy as `board.json.corrupt-<time>`, says so in CONSOLE and
+starts an empty board; the copy is never overwritten.
+How it works, how to test it on Windows, and the scheduler that builds on it: [`PRISMA_BOARD_SCHEDULER.md`](PRISMA_BOARD_SCHEDULER.md).
 
 ## BUILD
 
@@ -218,7 +386,14 @@ every reply, so they appear after the first one and are remembered.
   SESSION, PARITY CHECK (compares one system with the Unity game, in plan mode).
 - **Commands**: `/new /clear /rename TITLE /usage /plan /edit /auto /model NAME /effort LEVEL /test /smoke /session`.
   Up arrow recalls earlier messages.
-- **Voice** (Windows): the microphone dictates into the box; the speaker reads replies aloud.
+- **Voice** (Windows): the microphone dictates into the box; the speaker reads replies aloud. Dictation
+  uses Windows' modern recognizer (`Windows.Media.SpeechRecognition`, the same online model as
+  Win + H), so it hears "Unity", "prism" and "vessel". It needs **Settings > Privacy & security >
+  Speech > Online speech recognition** on (and the microphone allowed for desktop apps). If either
+  is off, the mic falls back to the old offline System.Speech engine. The mic's tooltip names the
+  engine that is listening and, when it falls back, the setting that would fix it. The modern
+  recognizer exists only in a launcher built on Windows (`net10.0-windows10.0.19041.0`; elsewhere
+  the project stays `net10.0`), in `Voice.cs`.
 
 Runs the official **Claude Code** CLI in the workspace, so it reads (and, if allowed, edits) the
 branch you are building. If it is not installed, the page offers INSTALL: it downloads Claude Code
@@ -262,7 +437,14 @@ a chat changed files.
 **In GitHub Desktop:** with *Beside my clone* the workspace shares your clone, so a commit here
 is a local branch in GitHub Desktop at once (you can push from there). With the managed clone,
 push here, then **Fetch origin** in GitHub Desktop and pick the branch. Pushing from Amoebius uses
-git's own sign-in, or the GitHub token in SETTINGS > SOURCE (Contents: read & write).
+the GitHub token in SETTINGS > SOURCE (Contents: read & write) when one is pasted, otherwise git's own
+sign-in. Every git step runs with prompts off, and Git Credential Manager honours that too. So when
+GitHub refuses a push and no token is pasted, Amoebius pushes once more with prompts allowed. Git
+Credential Manager then opens its GitHub sign-in (browser or window, up to 5 minutes) and keeps the
+result for later pushes. GitHub Desktop's own git has no credential helper, and GitHub Desktop's
+sign-in is not shared with other programs. With only GitHub Desktop installed, install Git for
+Windows (it includes Git Credential Manager) or paste a token. The error names which case it was
+(`SourceControl.PushRefused`).
 
 **START never throws edits away.** With unsaved changes in the workspace, START plays them as
 they are and skips pulling the branch (the CONSOLE says so); UPDATE refuses until they are
@@ -342,6 +524,7 @@ The agent has the same data through MCP: `asset_froglet_tools`, `asset_datasets`
 ```
 git fetch <branch>  ->  FMOD library from Git LFS  ->  dotnet build Port/src/CosmicShore.Player
                     ->  CosmicShore.exe --size ... [--fullscreen] [--scene ...]
+                        (START: COSMIC_SHORE_NET=off; START ONLINE: signed in to UGS, Lobby + Relay)
 ```
 
 Settings live in `%LOCALAPPDATA%\Amoebius\launcher.json` (its secrets in the credential store, above). The launcher never writes to your

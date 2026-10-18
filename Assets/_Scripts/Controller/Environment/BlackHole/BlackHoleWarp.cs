@@ -28,20 +28,33 @@ namespace CosmicShore.Gameplay
     public static class BlackHoleWarp
     {
         /// <summary>
-        /// Mirrors <c>PRISM_GRAVITY_WARP_SLOTS</c> in <c>PrismGravityWarp.hlsl</c> and
-        /// <see cref="BlackHolePhysics.NativeWells.Capacity"/> — change all three together.
+        /// Mirrors <c>PRISM_GRAVITY_WARP_SLOTS</c> in <c>PrismGravityWarp.hlsl</c> — change both together. Fewer than
+        /// the hole budget (<see cref="BlackHolePhysics.NativeWells.Capacity"/>): the bank holds the holes NEAREST THE
+        /// CAMERA, whose tides you can see; a far hole still pulls its prisms, it just does not stretch them on screen.
         /// </summary>
         public const int Slots = 4;
+
+        static readonly int[] s_pick = new int[BlackHolePhysics.NativeWells.Capacity];
+        static readonly float[] s_pickDistance = new float[BlackHolePhysics.NativeWells.Capacity];
 
         static readonly int CentreId = Shader.PropertyToID("_PrismGravityWarpCentre");
         static readonly int WeightId = Shader.PropertyToID("_PrismGravityWarpWeight");
         static readonly int ParamsId = Shader.PropertyToID("_PrismGravityWarpParams");
+        static readonly int WaveCentreId = Shader.PropertyToID("_PrismGravityWaveCentre");
+        static readonly int WaveAxisId = Shader.PropertyToID("_PrismGravityWaveAxis");
+        static readonly int WaveParamsId = Shader.PropertyToID("_PrismGravityWaveParams");
+
+        /// <summary>Mirrors <c>PRISM_GRAVITY_WAVE_SLOTS</c>: the newest gravitational waves the prisms feel (§5.2).</summary>
+        public const int WaveSlots = 4;
+        static readonly Vector4[] _waveCentre = new Vector4[WaveSlots];
+        static readonly Vector4[] _waveAxis = new Vector4[WaveSlots];
 
         // Always sent at full length: Unity binds an array global at the length of its first
         // write, so a short write later would silently leave the tail of the previous bank live.
         static readonly Vector4[] _centre = new Vector4[Slots];
         static readonly Vector4[] _weight = new Vector4[Slots];
         static int _publishedCount;
+        static int _publishedWaves;
 
         /// <summary>True while any hole is publishing a live slot.</summary>
         public static bool IsActive => _publishedCount > 0;
@@ -71,7 +84,7 @@ namespace CosmicShore.Gameplay
                 var h = holes[i];
                 if (h == null || h.IsSmooth) continue;
                 var d = h.transform.position - position;
-                float r = Mathf.Max(d.magnitude, h.HorizonRadius, 1e-3f);
+                float r = CosmicShore.Utility.MathfNoAlloc.Max(d.magnitude, h.HorizonRadius, 1e-3f); // 3-value Mathf.Max binds to params float[] and allocates per call
                 if (r > h.WarpReach) continue;
                 float eps = Mathf.Abs(h.GM) * tau2 * h.WarpWeight / (r * r * r);
                 if (eps <= best) continue;
@@ -95,12 +108,11 @@ namespace CosmicShore.Gameplay
             int count = 0;
             if (enabled)
             {
-                for (int i = 0; i < holes.Count && count < Slots; i++)
+                int picked = PickNearest(holes);
+                for (int k = 0; k < picked && count < Slots; k++)
                 {
-                    var h = holes[i];
-                    if (h == null) continue;
+                    var h = holes[s_pick[k]];
                     float w = h.WarpWeight;
-                    if (w <= 0.001f) continue;
                     var p = h.transform.position;
                     _centre[count] = new Vector4(p.x, p.y, p.z, h.HorizonRadius);
                     // GM·τ², eased by the weight: the tidal log-stretch at distance r is this / r³.
@@ -120,15 +132,59 @@ namespace CosmicShore.Gameplay
                 _weight[i] = Vector4.zero;
             }
 
+            // The gravitational waves (BlackHoleWaves, the studio's gwPrism): the newest four, by age.
+            int waves = 0;
+            if (config.WarpEnabled && config.GwPrism > 0f)
+            {
+                float now = BlackHoleWaves.Now;
+                var live = BlackHoleWaves.Live;
+                for (int n = live.Count - 1; n >= 0 && waves < WaveSlots; n--)
+                {
+                    var w = live[n];
+                    if (w.Kind != BlackHoleWaves.Kind.Gravitational) continue;
+                    _waveCentre[waves] = new Vector4(w.Centre.x, w.Centre.y, w.Centre.z, now - w.T0);
+                    _waveAxis[waves] = new Vector4(w.Axis.x, w.Axis.y, w.Axis.z, w.Mass);
+                    waves++;
+                }
+            }
+            for (int i = waves; i < WaveSlots; i++) { _waveCentre[i] = Vector4.zero; _waveAxis[i] = Vector4.zero; }
+
             // Nothing to say and nothing said last frame: the write is skipped entirely, so a
             // match with no hole in it costs this system nothing per frame.
-            if (count == 0 && _publishedCount == 0) return;
+            if (count == 0 && waves == 0 && _publishedCount == 0 && _publishedWaves == 0) return;
 
             Shader.SetGlobalVectorArray(CentreId, _centre);
             Shader.SetGlobalVectorArray(WeightId, _weight);
-            // x: the stretch ceiling as a log; y: the shader's MASTER sentinel (0 = the loop does not run).
-            Shader.SetGlobalVector(ParamsId, new Vector4(Mathf.Log(config.MaxTidalStretch), count, 0f, 0f));
+            Shader.SetGlobalVectorArray(WaveCentreId, _waveCentre);
+            Shader.SetGlobalVectorArray(WaveAxisId, _waveAxis);
+            Shader.SetGlobalVector(WaveParamsId, new Vector4(config.GwSpeed, config.GwPeriod, config.GwRingdown, config.GwPrism));
+            // x: the stretch ceiling as a log; y: the holes (the shader's sentinel is y + z: 0 = the map does not run);
+            // z: how many waves the prisms feel.
+            Shader.SetGlobalVector(ParamsId, new Vector4(Mathf.Log(config.MaxTidalStretch), count, waves, 0f));
             _publishedCount = count;
+            _publishedWaves = waves;
+        }
+
+        /// <summary>
+        /// The live (weighted) holes, nearest the view camera first, into <c>s_pick</c>. Returns how many.
+        /// With no camera the list order stands.
+        /// </summary>
+        static int PickNearest(IReadOnlyList<BlackHole> holes)
+        {
+            var cam = BlackHoleLens.ViewCamera();
+            Vector3 eye = cam ? cam.transform.position : Vector3.zero;
+            int n = 0;
+            for (int i = 0; i < holes.Count && n < s_pick.Length; i++)
+            {
+                var h = holes[i];
+                if (h == null || h.WarpWeight <= 0.001f) continue;
+                float d = cam ? (h.transform.position - eye).sqrMagnitude : n;
+                int j = n++;
+                while (j > 0 && s_pickDistance[j - 1] > d) { s_pick[j] = s_pick[j - 1]; s_pickDistance[j] = s_pickDistance[j - 1]; j--; }
+                s_pick[j] = i;
+                s_pickDistance[j] = d;
+            }
+            return n;
         }
 
         // ---------------- Lifecycle ----------------
@@ -144,6 +200,7 @@ namespace CosmicShore.Gameplay
             Shader.SetGlobalVectorArray(WeightId, _weight);
             Shader.SetGlobalVector(ParamsId, Vector4.zero);
             _publishedCount = 0;
+            _publishedWaves = 0;
         }
 
         /// <summary>Play-mode (re)entry: publish the off state before anything renders.</summary>

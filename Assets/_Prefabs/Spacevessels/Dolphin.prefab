@@ -1428,7 +1428,7 @@ MonoBehaviour:
   holdSpeedWhileDrifting: 1
   vectorFlightModel: 0
   driftOvershootCeiling: 1.25
-  driftThrottlePolicy: 1
+  driftThrottlePolicy: 0
   Grip: 0
   boostChanged: {fileID: 0}
   MinimumSpeed: 0
@@ -1561,7 +1561,7 @@ MonoBehaviour:
   objectiveSwitchImprovement: 0.75
   preferApproachRunDistance: 1
   breakOffClosingCosine: 0.5
-  orbitSweepDegrees: 540
+  orbitSweepDegrees: 360
   orbitProgressFraction: 0.9
   orbitTargetJumpFraction: 1.6
   abilities:

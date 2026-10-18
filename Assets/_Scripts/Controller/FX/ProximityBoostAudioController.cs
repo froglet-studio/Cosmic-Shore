@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay.Audio
     [DisallowMultipleComponent]
     public class ProximityBoostAudioController : MonoBehaviour
     {
-        enum AttachMode { None, Ship, Listener }
+        enum AttachMode { None = 0, Ship = 1, Listener = 2 }
 
         [Header("FMOD Events")]
         [SerializeField, Tooltip(

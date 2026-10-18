@@ -402,6 +402,52 @@ namespace CosmicShore.Tests
         }
 
         #endregion
+
+        #region Web profile (the browser Toybox, Docs/WEBGL_TOYBOX.md)
+
+        [Test]
+        public void WebPlayer_RunsTheWebProfile_WhateverItsTier()
+        {
+            var set = Resources.Load<PlatformProfileSetSO>(PlatformProfileSetSO.ResourcePath);
+            Assert.IsNotNull(set.Web, "no Web profile assigned on Assets/Resources/PlatformProfiles.asset");
+            foreach (DeviceTier tier in System.Enum.GetValues(typeof(DeviceTier)))
+            {
+                Assert.AreSame(set.Web, set.For(tier, webPlayer: true), $"{tier} in a browser");
+                Assert.AreSame(set.For(tier), set.For(tier, webPlayer: false), $"{tier} natively");
+            }
+        }
+
+        [Test]
+        public void WebPlayer_DoesNotChangeTheTier()
+        {
+            // The Web profile replaces the tier's PROFILE only; input and every tier read keep the tier.
+            var browser = new DeviceFacts(false, DeviceOs.Other, 16384, 12, "WebKit WebGL", isWebPlayer: true);
+            Assert.AreEqual(DeviceTier.Desktop, Classify(browser));
+        }
+
+        [Test]
+        public void Web_KeepsEveryToy_AndTheNoTrailCapLaw()
+        {
+            var web = Resources.Load<PlatformProfileSetSO>(PlatformProfileSetSO.ResourcePath).Web;
+
+            // The race trail cap is the owner's exception for MobileLow only (Docs/ECOSYSTEM.md §0).
+            Assert.IsFalse(web.SkimRaceTrail.Active, "Skim Race trail cap");
+            Assert.IsFalse(web.JoustTrail.Active, "Joust trail cap");
+
+            // The freestyle pen WAITS (the sanctioned lever), at MobileLow's numbers.
+            Assert.AreEqual(10000, web.FreestyleCellPrismBudget, "freestyle budget");
+            Assert.AreEqual(9700, web.FreestyleCellPrismResume, "freestyle resume");
+
+            // The Wanderway toy stays whole: a smaller belt, its lifeform scenes and crystals kept.
+            var authored = new CosmicShore.Gameplay.ConveyorConfig();
+            var cfg = new CosmicShore.Gameplay.ConveyorConfig();
+            web.Wanderway.ApplyTo(cfg);
+            Assert.AreEqual(4800, cfg.PoolSize * cfg.PrismBudget, "resident belt prisms");
+            Assert.AreEqual(authored.LifeformScenes, cfg.LifeformScenes, "lifeform scenes");
+            Assert.AreEqual(authored.MaxCrystalsPerScene, cfg.MaxCrystalsPerScene, "crystals");
+        }
+
+        #endregion
     }
 }
 #endif

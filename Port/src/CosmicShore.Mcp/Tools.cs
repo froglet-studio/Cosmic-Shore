@@ -52,7 +52,7 @@ namespace CosmicShore.Mcp
 
         static JsonObject P(string type, string description) => new() { ["type"] = type, ["description"] = description };
 
-        public static JsonArray List() => new()
+        public static JsonArray List() => new JsonArray
         {
             Tool("engine_build", "Compile part of the engine and report its errors. Run after every C# change (Port/src or Assets/_Scripts, which the player compiles live).",
                 new JsonObject { ["target"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("player", "launcher", "build-tool", "mcp", "all"), ["description"] = "default player (the game: engine + render + the live Assets/_Scripts compile)" } }),
@@ -122,7 +122,7 @@ namespace CosmicShore.Mcp
                     ["scene"] = P("string", "start in this scene instead of build scene 0 (Bootstrap)"),
                     ["size"] = P("string", "window size WxH (default 1280x720)"),
                     ["headless"] = P("boolean", "no window: fast ticks, no screenshots"),
-                    ["online"] = P("boolean", "real networking (default false: one offline process)"),
+                    ["online"] = P("boolean", "START ONLINE (default false: offline). Online, the game signs in to the game's live UGS project and plays through UGS Lobby and Relay: only with the owner's go-ahead"),
                     ["audio"] = P("boolean", "FMOD audio (default false)"),
                     ["profile"] = P("string", "save profile name (COSMIC_SHORE_PROFILE); a new name is a first-time user"),
                     ["build"] = P("boolean", "compile first (default true)"),

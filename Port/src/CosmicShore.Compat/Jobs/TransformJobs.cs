@@ -4,7 +4,8 @@ using Unity.Jobs;
 
 // UnityEngine.Jobs (original contract): jobs over a set of transforms. It is engine API, but its
 // schedules return Unity.Jobs.JobHandle, which lives here - so it sits beside the job types, the
-// way Compat already carries the other engine namespaces that need a package type.
+// way Compat already carries the other engine namespaces that need a package type. One home for all
+// of it: TransformAccess, TransformAccessArray, IJobParallelForTransform and its extensions.
 namespace CosmicShore.Engine.Jobs
 {
     /// <summary>
@@ -15,7 +16,8 @@ namespace CosmicShore.Engine.Jobs
     {
         readonly Transform _t;
 
-        internal TransformAccess(Transform t) => _t = t;
+        /// <summary>The access a job sees for one transform (port side of the job runner).</summary>
+        public TransformAccess(Transform t) => _t = t;
 
         public bool isValid => _t != null;
 
@@ -75,7 +77,7 @@ namespace CosmicShore.Engine.Jobs
 
         public TransformAccessArray(int capacity, int desiredJobCount = -1) => _list = new List<Transform>(Math.Max(0, capacity));
 
-        public TransformAccessArray(Transform[] transforms, int desiredJobCount = -1) => _list = new List<Transform>(transforms);
+        public TransformAccessArray(Transform[] transforms, int desiredJobCount = -1) => _list = new List<Transform>(transforms ?? Array.Empty<Transform>());
 
         public static void Allocate(int capacity, int desiredJobCount, out TransformAccessArray array) => array = new TransformAccessArray(capacity, desiredJobCount);
 
@@ -107,14 +109,15 @@ namespace CosmicShore.Engine.Jobs
         public void SetTransforms(Transform[] transforms)
         {
             List.Clear();
-            List.AddRange(transforms);
+            if (transforms != null) List.AddRange(transforms);
         }
 
         public void Dispose() => _list = null;
 
         List<Transform> List => _list ?? throw new InvalidOperationException("The TransformAccessArray has been disposed or was never created.");
 
-        internal TransformAccess Access(int index) => new(_list[index]);
+        /// <summary>The access a job sees for index <paramref name="index"/> (port side of the job runner).</summary>
+        public TransformAccess Access(int index) => new(List[index]);
     }
 
     public interface IJobParallelForTransform
@@ -162,7 +165,8 @@ namespace CosmicShore.Engine.Jobs
         public static void RunReadOnlyByRef<T>(ref this T jobData, TransformAccessArray transforms)
             where T : struct, IJobParallelForTransform => Run(jobData, transforms);
 
-        static void Run<T>(T jobData, TransformAccessArray transforms) where T : struct, IJobParallelForTransform
+        /// <summary>Runs the job now over every transform, in index order.</summary>
+        public static void Run<T>(this T jobData, TransformAccessArray transforms) where T : struct, IJobParallelForTransform
         {
             for (int i = 0; i < transforms.length; i++) jobData.Execute(i, transforms.Access(i));
         }

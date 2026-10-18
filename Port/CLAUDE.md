@@ -4,6 +4,27 @@ The repository's root `CLAUDE.md` is about the Unity game. **This file is about 
 Amoebius, Froglet's own engine that runs the same game with no Unity. Both apply when you
 edit `Assets/_Scripts`, because the engine compiles those files live.
 
+**Name.** The engine is **Amoebius** (renamed from Prisma on 2026-10-09). The code followed on
+2026-10-12: `Amoebius.exe` and `Amoebius-Windows.zip`, `Library/Amoebius`, the `AMOEBIUS_*`
+environment variables, the `amoebius_*` MCP tools (server `amoebius-mcp`), the `/amoebius` skill, the
+`amoebius-*` workflows, class names (`AmoebiusBoard`, `AmoebiusTracks`), `AMOEBIUS001`, the data folder
+`%LOCALAPPDATA%/Amoebius`. Existing installs keep working: the old data folder is moved over, and
+`PrismaProject.json`, the `PRISMA_*` variables and `prisma-session` reports are still read. A few names
+still carry the old one (the `#prisma` page hash the studio pages read, `Tools/Build/prisma_party_scenarios/`,
+`docs/PRISMA_BOARD_SCHEDULER.md`); renaming those is its own change. The game's `Prism*` names are not
+the engine's and were never renamed.
+
+**Status: UNDER EVALUATION** (2026-10-15, [`Docs/TOOLING_DECISIONS.md`](../Docs/TOOLING_DECISIONS.md) §3). The team
+(Garrett, Caleb, Shombith, Yash) has not decided what Amoebius is for. The options are: keep all of it; keep the
+engine as a headless compile / test / multiplayer harness and freeze the launcher; stop; or commit to it as Froglet's
+own engine. Until §6 there records a decision: build what the person asks for; do not grow the launcher's scope on
+your own initiative; and at the end of a task, if `Docs/TOOLING_FEEDBACK.md` has no Amoebius row from the last three
+days, ask the person whether it helped and log the answer. Who drives which part: Shombith the engine, Yash the
+launcher (`Docs/TEAM.md`). **Tell the person this status** in the first line of any answer about the engine, the
+launcher or which tool to use, even when they only asked a question: under evaluation, who drives the part they
+asked about, the core four decide, `Docs/TOOLING_DECISIONS.md`. The `team_context.py` hook shows them the same line
+once per session.
+
 ## The one rule
 
 **The port never changes the Unity project.** Nothing under `Port/` is read by Unity, and the
@@ -39,6 +60,8 @@ the game uses that the engine lacks) belongs in `Port/src/CosmicShore.Engine` / 
 | `tests/` | `CosmicShore.Tests` (engine, xunit, ~70 s, no GPU) · `CosmicShore.Tests.Ported` (the game's EditMode tests) |
 | `docs/ARCHITECTURE.md` | How it all fits; read the section for the area you touch |
 | `docs/ROADMAP.md` | The milestones (gameplay parity, then Unity-free development), checkpoints, open gaps and ready prompts. Pick work from here |
+| `../Docs/MULTIPLAYER_START_HERE.md` | **Multiplayer's front door** (Unity and Amoebius): the owner's goals and rules, current state, the hand-test list, the ordered next steps. Read before `docs/MULTIPLAYER.md` |
+| `docs/MULTIPLAYER.md` | Online play and its test tools: licensing (why NGO's code is not used), backends (UGS from our engine, own servers, Steam), the network simulator, stats, faults, the MULTIPLAYER panel, the UDP transport, the relay (Unity Relay's protocol, our relay server) and UGS sign-in. Read before touching `Networking/` |
 | `docs/ARCHITECTURE_REVIEW_2026-10-06.md` | The architecture review's 20 items: what was checked, decided (with reasons) and measured. Read it before reopening one of those questions |
 
 ## Who works where
@@ -69,6 +92,13 @@ a **done when** criterion, the check that proves it: `amoebius_board_suggest` re
 that came from the tracks is verified by them (not seen in 3 runs through its scene marks it MET; a
 relapse reopens it). Tools: `amoebius_tracks` (read this before asking what is wrong), `amoebius_board`,
 `amoebius_board_suggest`. Code: `src/Shared/AmoebiusTracks.cs`, `src/Shared/AmoebiusBoard.cs`.
+Several writers share `board.json` (Amoebius.exe and every `amoebius-mcp`): a save re-reads it and merges
+card by card (`src/Shared/Workspace/BoardMerge.cs`, cards matched by `Uid`), Amoebius pulls other writers'
+changes in once a second, and an unreadable file is copied to `board.json.corrupt-*` before anything
+replaces it. The scheduler's UI-free logic (quick add, TODAY/UPCOMING queries, repeat rules) lives in
+`src/Shared/Workspace/` - linked into the launcher, the MCP server and the tests, never a project of its
+own (the launcher's UPDATE builds only `CosmicShore.Launcher`, `Shared` and `Directory.Build.props`).
+Details, the quick-add syntax, Windows test steps and the roadmap: `docs/PRISMA_BOARD_SCHEDULER.md`.
 
 ## The editor (M2): tools, data sets, models - not a hierarchy
 
@@ -126,8 +156,25 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
   username. `profile` in `game_start` picks a save slot (a new name is a first-time user; reuse a
   name to skip them). Never accept consent on the user's behalf unless asked. Offline (`COSMIC_SHORE_NET=off`) and silent
   (`COSMIC_SHORE_AUDIO=off`) are the MCP defaults.
+- **Online play is UGS, as the Unity build's** (`docs/MULTIPLAYER.md` §6.10): the launcher's START ONLINE
+  (`game_start` `online: true`) signs in to the game's live UGS project and plays through UGS Lobby and UGS
+  Relay. START is offline, and there is no LAN play, no local server and no shared-folder sessions. **Never
+  start an online game without the owner's go-ahead** (a sign-in creates a player in the live project); the
+  tests use `UgsLobbyStandIn`, `UgsAuthStandIn` and `FrogletRelayServer`. Every player needs their own profile
+  (`COSMIC_SHORE_PROFILE`), which is their own UGS player. A match starts only when every player presses the
+  HUD's GO (the ReadyButton), not when GO appears.
+- **A player's networking is built in ONE place, `NetStack.Install`** (transport, relay, sessions, then
+  simulator and faults; `docs/MULTIPLAYER.md` §6.9). Never set `NetDriver.TransportFactory`,
+  `MultiplayerService.Instance`, `NetSimulator` or `NetFaults` from `PlayerBoot` directly: a merge did, and
+  silently disabled the UDP transport, the relay, the simulator and the faults. `NetStackTests` fails if it
+  happens again. The player calls it from `UgsSetup.InstallOnline`.
 - **Under xvfb, rendering is software**: a few frames per second. `game_wait 600` is minutes.
   Use `headless: true` when you need no pictures - it ticks as fast as the CPU allows.
+- **A scripted run (`--frames`) steps every game clock by 1/60 s**, so the game's DiagnosticsHUD (F7) reads
+  "FPS 60 · 16.7 ms" there however slow the frame is. That is deliberate: the pictures repeat. Its CPU (busy)
+  and GPU rows come from `FrameTimingManager`, which measures the real frame in every run. Judge fps from a
+  normal run, or from F3. A normal run passes the real frame time unclamped (`deltaTime` is capped at the
+  project's Maximum Allowed Timestep), and there the HUD and F3 agree within a few percent.
 - **Unity injects Reflex before Awake/OnEnable**, with the scene active. Bugs where a value
   "never updates" are often an injection-order gap in the engine, not the game.
 - **The live compile takes whatever `Assets/` is checked out.** Errors, warnings and stack traces
@@ -143,12 +190,18 @@ An unattended run without a port: `--frames N --shot F:out.png --do "F:click X,Y
 - **GL stays behind the render boundary**: only `CosmicShore.Render` (and the player window's
   present/read-back) may use the GL binding. `RenderBoundaryTests` fails otherwise, so a Metal or
   WebGPU backend later replaces one project.
+- **`src/Shared/**` is linked source, so its types are `internal`.** Every project that links a
+  file compiles its own copy, and public copies collide (CS0433) in a project that references two
+  of them (the engine tests reference Content and cs-build). A project that needs another
+  assembly's copy gets `InternalsVisibleTo` from that one assembly, as the player does from
+  Content; granted by two that link the same file, it hits CS0433 again.
 - **Debug vs Release**: Debug is a Unity development build (diagnostics overlay, logs); Release
   is the customer build. The MCP server runs Debug.
 - `--verbose` opens every `CSDebug` log channel; `game_logs grep` filters them.
 - **Session reports**: `--session-report PATH` (the launcher always passes one) writes JSON at
   exit - scenes, frame-time percentiles, CPU per loop phase (`cpu.phaseAvgMs`), allocations per
-  phase and steady-state GC (`memory`), audio, distinct errors/warnings/exceptions with counts,
+  phase and steady-state GC (`memory`), the game's own ProfilerMarkers with time, calls and KB per
+  frame (`markers`; `docs/ARCHITECTURE.md` §11.3b, `tools/amoebius_markers_run.py`), audio, distinct errors/warnings/exceptions with counts,
   crash. A user's "LAST SESSION" message points at one; read it before guessing. A `--headless`
   run has no GPU: its render figures are zero and the prism render service is off, so
   `[PrismClock]`/`[PrismFactory]` errors in a headless report are expected (xvfb renders in

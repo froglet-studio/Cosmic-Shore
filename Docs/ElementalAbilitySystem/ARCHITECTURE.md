@@ -361,7 +361,7 @@ L5 upgrades; see FLEET_MAPS.md §2 Manta and
 `SERPENT_SNIPER_SCOPE.md` — and 2026-09-25 for its Time row, Solid Fuel Pellets
 (`SERPENT_FUEL_PELLETS.md`), which bound its first icon: the Time card now shows the four-pellet
 fuel tank, while Charge/Mass/Space still render LOCKED and the Charge card's cooldown veil moves.) Run
-**FrogletTools > Vessels > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
+**FrogletTools > Vessels > Audits > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The

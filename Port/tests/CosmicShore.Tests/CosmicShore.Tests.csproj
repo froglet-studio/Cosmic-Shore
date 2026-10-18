@@ -41,6 +41,7 @@
     <!-- Amoebius's run memory and board (linked into the launcher and the MCP server the same way). -->
     <Compile Include="../../src/Shared/AmoebiusTracks.cs" Link="Shared/AmoebiusTracks.cs" />
     <Compile Include="../../src/Shared/AmoebiusBoard.cs" Link="Shared/AmoebiusBoard.cs" />
+    <Compile Include="../../src/Shared/Workspace/*.cs" Link="Shared/Workspace/%(Filename)%(Extension)" />
     <Compile Include="../../src/Shared/ParityDiff.cs" Link="Shared/ParityDiff.cs" />
     <Compile Include="../../src/Shared/Bisect.cs" Link="Shared/Bisect.cs" />
   </ItemGroup>

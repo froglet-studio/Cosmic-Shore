@@ -1,0 +1,213 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ffc013cfed95d6f7e646857240cad03, type: 3}
+  m_Name: BrittleStarConfig
+  m_EditorClassIdentifier: 
+  modeBlendSeconds: 0.35
+  speedModeMultiplier:
+    Enabled: 1
+    Value: 6
+    Min: 6
+    Max: 8
+    element: 4
+    UseFloor: 1
+    Floor: 4
+  speedModeSpacingFollow: 1
+  speedModeStretch: 1
+  prismWidthScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 2
+    UseFloor: 1
+    Floor: 1
+  creationSpacing: 6
+  creationRadiusScale: 1
+  creationOffset: 2
+  creationMaxPerFrame: 3
+  creationSpeedMultiplier: 0.5
+  creationWaitTime: 0.6
+  fireRate: 90
+  projectileSpeed: 135
+  projectileTime: 4.5
+  rangeMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 3
+    UseFloor: 1
+    Floor: 0.7
+  projectileScale: 1
+  projectileScaleMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.8
+    element: 1
+    UseFloor: 1
+    Floor: 0.6
+  roundGrowthFactor: 3
+  armFocusDistance: 120
+  armSplayDegrees: 25
+  aimDeadzone: 0.25
+  ringTurnRate: 540
+  heatPerRound: 0.000637
+  heatCapacity:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 3.3333
+    element: 3
+    UseFloor: 1
+    Floor: 1
+  coolRate: 0.12
+  chargeCoolRate: 0.6
+  overheatRecoverBelow: 0.35
+  cordLength: 80
+  cordLooseLengthScale: 1.5
+  cordLinks: 16
+  cordCutRadius: 0.6
+  cordLooseWave: 144
+  cordRigidWave: 2500
+  cordLooseDamping: 0.4
+  cordRigidDamping: 14
+  cordPose: 1600
+  cordMaxRigidity: 0.4
+  cordRigidityRate: 12
+  cordDebrisRestitution: 0.5
+  cordDebrisSpeedLimit: 200
+  cordRenderSubdivisions: 4
+  cordColor: {r: 0.07, g: 0.065, b: 0.065, a: 1}
+  cordRimBrightness: 0.75
+  cordFallbackRim: {r: 0.3, g: 0.9, b: 0.85, a: 1}
+  ringLaunchSpeed: 240
+  ringFuseSeconds: 1.1
+  ringContactRadiusScale: 1
+  ringFlightSpin: 900
+  ringBlastSeconds: 0.7
+  ringBlastFallbackRadius: 200
+  ringBlastThicknessScale: 4
+  blastScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 4
+    element: 1
+    UseFloor: 1
+    Floor: 1
+  ringBlastFrontWidth: 0.05
+  ringBlastFrontHeight: 0.04
+  ringBlastRelief: 0.12
+  ringBlastSpinDegrees: 108
+  ringBlastCrestDepth: 2.5
+  ringBlastPentagonLag: 0.8
+  ringBlastArmWidth: 0.08
+  ringBlastArmWiggle: 0.06
+  ringBlastArmCurlDegrees: 30
+  maxSpareRings: 2
+  rebuildSeconds: 3
+  ringBlastHitClass: 3
+  ringBlastHitCooldown: 0.5
+  cordHitCooldown: 0.5
+  onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  aiModeIntervalSeconds: 3
+  aiFireMinTargets: 2
+  aiDestructionMinTargets: 8
+  aiDetonateMinTargets: 18
+  aiSpeedModeDegrees: 50
+  aiTriggerMinSeconds: 0.4
+  speedModeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  creationModeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  destructionModeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  chargeModeEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  modeOffEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  fireEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  cordSliceEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  ringLaunchEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  ringBlastEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  ringRebuildEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  chargeStoredEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  overheatEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 

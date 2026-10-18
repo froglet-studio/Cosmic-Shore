@@ -9,6 +9,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] float radius = 20f;
         float constant;
 
+        // Filled each frame by the List overload: the same active children GetComponentsInChildren returned, with no
+        // new array per frame (the per-frame allocation scan's only real Update finding, 2026-10-16).
+        readonly System.Collections.Generic.List<Transform> _children = new();
+
         [RequireInterface(typeof(IVesselStatus))]
         [SerializeField] MonoBehaviour shipInstance;
         [SerializeField] Transform gunFocus;
@@ -25,8 +29,10 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             var i = 0;
-            foreach (var child in GetComponentsInChildren<Transform>())
+            GetComponentsInChildren(false, _children);
+            for (int c = 0; c < _children.Count; c++)
             {
+                var child = _children[c];
                 if (child == transform)
                     continue;
                 var j = i * constant + (Mathf.PI)/2 - Mathf.Atan2(InputStatus.RightNormalizedJoystickPosition.y,

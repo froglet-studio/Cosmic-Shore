@@ -48,6 +48,11 @@ namespace CosmicShore.Gameplay
 
         protected SkimRaceObjective(GameDataSO gameData) => GameData = gameData;
 
+        /// <summary>The pilot this objective races for, set by <see cref="SkimRacePilot.Bind"/>. Read by
+        /// an objective that coordinates a TEAM of pilots (<see cref="CrystalTrackObjective"/> and
+        /// <see cref="SkimRaceTeamPlan"/>); null when an objective is driven without a pilot.</summary>
+        public SkimRacePilot Pilot { get; internal set; }
+
         /// <summary>The racing line, from what the game actually laid. False until it exists
         /// (tracks lay over several frames); the pilot retries.</summary>
         public abstract bool TryBuildCourse(IVesselStatus status, out SkimRaceCourse course);
@@ -72,10 +77,26 @@ namespace CosmicShore.Gameplay
         /// <summary>Whether a race played by hand in the editor records itself
         /// (<see cref="SkimRaceRaceRecorder"/>, which reads Skim Race's crystals).</summary>
         public virtual bool RecordsManualRaces => false;
+
+        /// <summary>
+        /// Whether a SUPER-SHIELDED prism is this pilot's own course - the racing line it skims -
+        /// rather than mass it must keep clear of. Skim Race lays one super-shielded track, so every
+        /// such prism is the course. A race that lays several (Regatta's three braided rails) says
+        /// which one is this pilot's, and the others reach the mass guard as obstacles.
+        /// </summary>
+        public virtual bool IsCourseMass(IVesselStatus status, Prism prism) => true;
+
+        /// <summary>
+        /// Whether the driver may leave the line and fly straight at the target once its boost is
+        /// banked (<see cref="SkimRaceAIConfigSO.DirectBoost"/>). Right on Skim Race, where the
+        /// crystal sits beside the only track; wrong where the straight line crosses other mass.
+        /// </summary>
+        public virtual bool AllowsDirectFlight => true;
     }
 
-    /// <summary>Skim Race: the domain's crystal along the waypoint track. Exactly the behaviour
-    /// the pilot had before the objective was split out.</summary>
+    /// <summary>Skim Race: the domain's crystal along the waypoint track - the pilot's own Skim Race
+    /// behaviour, split out of it: nearest crystal for a lone AI, and the team plan's crystal when
+    /// two or more AI fly for one team (<see cref="SkimRaceTeamPlan"/>).</summary>
     public sealed class CrystalTrackObjective : SkimRaceObjective
     {
         Crystal _target;
@@ -93,8 +114,11 @@ namespace CosmicShore.Gameplay
 
         public override bool TryGetTarget(IVesselStatus status, Vector3 position, out SkimRaceTarget target)
         {
-            // The authoritative active crystal for this domain.
-            _target = SkimRaceTargetTracker.Select(status.Domain, position, _target);
+            // The authoritative active crystal for this domain. When other AI fly for the same team,
+            // the team plan shares the crystals out so no two chase the same one (SkimRaceTeamPlan); a
+            // lone AI - or one the plan has no crystal for - flies the nearest.
+            var planned = Pilot != null ? SkimRaceTeamPlan.TargetFor(Pilot, status.Domain) : null;
+            _target = planned != null ? planned : SkimRaceTargetTracker.Select(status.Domain, position, _target);
             target = default;
             if (_target == null) return false;
             target.Position = _target.transform.position;
@@ -121,16 +145,21 @@ namespace CosmicShore.Gameplay
         public override int Remaining(IVesselStatus status) =>
             Mathf.Max(0, GameData.CrystalTargetCount - SharedProgress(status));
 
-        /// <summary>World radius of the crystal's pickup sphere — what the hull has to touch.</summary>
+        /// <summary>World radius of the crystal's pickup sphere — what the hull has to touch. For a
+        /// race-ring crystal (<see cref="CrystalRaceRing"/>) it is the mouth the pilot must thread,
+        /// at the same inner fraction Regatta's pilot aims for, so it flies through the ring rather
+        /// than at its rim.</summary>
         float CaptureRadius(Crystal c)
         {
             if (c == _radiusOf) return _radius;
             _radiusOf = c;
             _radius = 0f;
-            if (c != null && c.TryGetComponent(out SphereCollider sc))
+            if (c != null && c.TryGetComponent(out CrystalRaceRing ring))
+                _radius = ring.MouthRadius * RegattaRingObjective.CaptureFractionOfMouth;
+            else if (c != null && c.TryGetComponent(out SphereCollider sc))
             {
                 var s = sc.transform.lossyScale;
-                _radius = sc.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
+                _radius = sc.radius * MathfNoAlloc.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
             }
             return _radius;
         }

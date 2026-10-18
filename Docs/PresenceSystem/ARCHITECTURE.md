@@ -147,7 +147,8 @@ the push missed goes out on the next refresh tick, always.
 | In-game names / scoreboards | Owner writes `Player.NetName` on profile change (`HandleProfileLoadedAfterSpawn`); replication lands in `OnNetNameValueChanged` on every peer, which mirrors into `Player.Name` AND `RoundStats.Name` (server write replicates `RoundStats.n_Name`) — scoreboard identity follows without waiting for the next scene's pair-init re-sync |
 
 **Latency:** the sender's push is immediate; each remote picks it up on
-its own refresh tick (base 1.5 s / 0.75 s boosted) — so end-to-end
+its own refresh tick (base 1.5 s / 1.1 s boosted; it was 0.75 s until B31, which put the
+presence reads alone over UGS's 1 GET/s/player) — so end-to-end
 ≈ 1-2 s. True sub-second push is the roadmap "push-based presence"
 item (deferred; it rides the same SDK path as the B1/B6 churn).
 
@@ -222,10 +223,10 @@ block (companion to the existing entry guard at the top of
 |---|---|
 | Service implementation | `Assets/_Scripts/Controller/Party/Services/PresenceLobbyService.cs` |
 | Interface | `Assets/_Scripts/Controller/Party/Interfaces/IPresenceLobbyService.cs` |
-| Property writer (mutex + retry) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
+| Property writer (mutex; save under the request policy) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
+| UGS failure classifier + retry executor | `Assets/_Scripts/Utility/UgsRequestPolicy.cs` |
 | Refresh cadence | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
-| Acceptance signal | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` |
 | Benign log filter | `Assets/_Scripts/Utility/BenignLobbyLogFilter.cs` |
 
 ## Related docs

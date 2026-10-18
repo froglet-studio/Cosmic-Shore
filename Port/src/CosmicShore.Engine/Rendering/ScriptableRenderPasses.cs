@@ -14,7 +14,9 @@ namespace CosmicShore.Engine.Rendering
     // cleared when the camera starts) for a backend to read, and RecordRenderGraph is never called,
     // so the pass's drawing does not happen. A CommandBuffer records its commands and
     // Graphics.ExecuteCommandBuffer hands it to ExecuteCommandBufferHook, which no backend installs
-    // yet. Both are stated gaps (docs/ROADMAP.md), the way texture arrays are.
+    // yet. Both are stated gaps (docs/ROADMAP.md), the way texture arrays are. So an effect that lives
+    // only in such a pass (the black hole's lens, which draws in its own LightMode with one
+    // DrawProcedural) is not drawn in Amoebius until the renderer gains a pass-injection point.
     // ─────────────────────────────────────────────────────────────────────────
 
     /// <summary>A shader pass's LightMode tag value.</summary>
@@ -177,6 +179,7 @@ namespace CosmicShore.Engine.Rendering
         public sealed record ClearRenderTarget(bool ClearDepth, bool ClearColor, Color BackgroundColor, float Depth) : RenderCommand;
         public sealed record SetViewProjection(Matrix4x4 View, Matrix4x4 Projection) : RenderCommand;
         public sealed record DrawMesh(Mesh Mesh, Matrix4x4 Matrix, Material Material, int SubmeshIndex, int ShaderPass, MaterialPropertyBlock Properties) : RenderCommand;
+        public sealed record DrawProcedural(Matrix4x4 Matrix, Material Material, int ShaderPass, MeshTopology Topology, int VertexCount, int InstanceCount, MaterialPropertyBlock Properties) : RenderCommand;
         public sealed record DrawRenderers(RendererList List) : RenderCommand;
         public sealed record Blit(RenderTargetIdentifier Source, RenderTargetIdentifier Destination, Material Material, int Pass, Vector4 ScaleBias) : RenderCommand;
         public sealed record SetGlobal(int NameID, object Value) : RenderCommand;
@@ -207,6 +210,15 @@ namespace CosmicShore.Engine.Rendering
 
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int submeshIndex = 0, int shaderPass = -1, MaterialPropertyBlock properties = null)
             => Add(new RenderCommand.DrawMesh(mesh, matrix, material, submeshIndex, shaderPass, properties));
+
+        /// <summary>A draw with no mesh: the vertex shader makes the geometry (the black hole lens's one full-screen triangle).</summary>
+        public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount,
+            int instanceCount, MaterialPropertyBlock properties)
+            => Add(new RenderCommand.DrawProcedural(matrix, material, shaderPass, topology, vertexCount, instanceCount, properties));
+
+        public void DrawProcedural(Matrix4x4 matrix, Material material, int shaderPass, MeshTopology topology, int vertexCount,
+            int instanceCount = 1)
+            => DrawProcedural(matrix, material, shaderPass, topology, vertexCount, instanceCount, null);
 
         public void DrawRendererList(RendererList rendererList) => Add(new RenderCommand.DrawRenderers(rendererList));
 
@@ -261,7 +273,7 @@ namespace CosmicShore.Engine.Rendering
     {
         public RenderPassEvent renderPassEvent { get; set; } = RenderPassEvent.AfterRenderingOpaques;
         public bool requiresIntermediateTexture { get; set; }
-        protected internal ProfilingSampler profilingSampler { get; set; }
+        public ProfilingSampler profilingSampler { get; set; }
         public ScriptableRenderPassInput input { get; private set; }
 
         protected ScriptableRenderPass() => profilingSampler = new ProfilingSampler(GetType().Name);
@@ -287,6 +299,12 @@ namespace CosmicShore.Engine.Rendering
 
         /// <summary>Called by the port's renderer when a camera starts, before beginCameraRendering.</summary>
         public void ClearQueuedPasses() => _queued.Clear();
+
+        /// <summary>The same list as <see cref="QueuedPasses"/> (the name an earlier port API used).</summary>
+        public IReadOnlyList<ScriptableRenderPass> EnqueuedPasses => _queued;
+
+        /// <summary>The same as <see cref="ClearQueuedPasses"/> (the name an earlier port API used).</summary>
+        public void ClearEnqueuedPasses() => ClearQueuedPasses();
     }
 
     /// <summary>The active URP pipeline (UnityEngine.Rendering.Universal.UniversalRenderPipeline).</summary>

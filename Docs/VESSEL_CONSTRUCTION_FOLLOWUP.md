@@ -150,7 +150,7 @@ bone and the jet is parked at the mouth centre measured off that bone's own rear
 | `jetinm.r` | (0.5751, 0.2411, −2.2824) | 0.052 forward |
 | `jetinb.r` | (0.5409, −0.0973, −2.2777) | 0.046 forward |
 
-**The tool:** `FrogletTools ▸ Vessels ▸ Swap Vessel Rig` (`VesselRigSwapper`) — dry-run first, then
+**The tool:** `FrogletTools ▸ Vessels ▸ Wiring ▸ Swap Vessel Rig` (`VesselRigSwapper`) — dry-run first, then
 write; idempotent; refuses and writes nothing if a single mapped bone or object is missing; records
 its output to the ledger and draws the ship panel. `VesselRigSwapPlanner` stays as the report-only
 sibling and now points at it.
@@ -306,7 +306,7 @@ nothing in between:
 
 The previous audit reported *"all four elements"* for all three, because it counted labels.
 
-**2–4. `FrogletTools ▸ Vessels ▸ Audit Vessel Construction`** (new, `VesselConstructionAuditor`):
+**2–4. `FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Construction`** (new, `VesselConstructionAuditor`):
 
 - **guid ownership** — resolves each vessel model's guid by the `^guid:` line of each candidate's
   OWN `.meta` and fails on anything but exactly one owner. Current: every vessel model is owned by

@@ -233,6 +233,25 @@ vessel leaves. Proxies are client-local, like swarm members; `FaunaNetworkSync.S
 **Extinction.** With no living agent for 8 s, the anchor despawns (heartless, so nothing pops), and the seeder may hatch
 a new population.
 
+### 5.1 Drawing without compute (WebGL2, GLES 3.0)
+
+The member shader reads a `StructuredBuffer` in the vertex stage, so on a device without one (WebGL2, GLES 3.0)
+`SubstrateMemberRenderer` used to refuse with a one-time warning. Every agent was then **invisible** unless it had a
+proxy, which made the bodies-only-near-a-vessel pattern read as "the substrate is empty".
+
+It now draws through the swarm's SM 3.5 instanced path, `SwarmMemberFallbackDraw` (`Docs/SWARM_FAUNA.md` §14.8):
+- **Same picture:** the same 80-byte `SwarmInstance` and the same pose and look code
+  (`SwarmMemberInstancedFallback.shader` includes `SwarmMemberInstanced.hlsl`'s core).
+- **Different carrier:** five `float4` rows per instance in the instancing constant buffer, `RenderMeshInstanced` in
+  batches of 128.
+- **Per tick,** `Upload` packs this population's slice of the cell's frame. The living agents are compacted, and the
+  hearts come from `HeartIdx[start ..]`: one element, local slot indices, exactly the list the GPU path uploads.
+- **Between ticks,** `HideSlot` zeroes the slot's rows at once.
+
+The choice is the renderer's and keys off the GPU (`SwarmMemberRenderer.Supported`), not off the toybox flag.
+`SubstrateFauna` and `SubstrateCellHost` are unchanged: `_gpu = _render.Valid` is simply true on WebGL now, so
+proxies hide their living visuals there as they do on desktop. The tick, the counts and the rules are untouched.
+
 ## 6. Proof
 
 Commands:
@@ -322,7 +341,8 @@ The main thread pays the array copies (~30 capacity-sized arrays in, 14 out); th
   one-line helpers. It checks that the kernel structs hold only blittable fields, and that the job is
   `[BurstCompile] ... : IJobParallelFor` with only NativeArray/blittable fields and calls the kernel. Negative control:
   the pre-11c step trips 7 rules. Mutations checked by hand: `var`, `Math.`, a `Vector3` local, a managed array, a
-  string field, a managed job field and a missing `[BurstCompile]` each fail it.
+  string field, a managed job field and a missing `[BurstCompile]` each fail it. Since 2026-10-07 it also fails
+  `MathF.` (§7.6): the kernel's maths go through `KernelMath`.
 - **Bit-match (group K):** each agent is stepped by the reference and by the kernel from the same saved state. All
   212,859 agent-steps were bit-identical on .NET.
 - **Split tick (group J):** the parked tick plus a main-thread `RunAgentPass` publishes exactly the plain tick.
@@ -368,6 +388,23 @@ Both holds are asserted.
 - **Burst never compiled the job.** Burst is not available here. `Span`/`ReadOnlySpan` locals, `stackalloc` into a
   `Span`, `NativeArray.AsSpan()/AsReadOnlySpan()` and `System.Numerics.Vector3` as a plain struct are Burst-supported
   as far as we know (Burst 1.8 docs), but the Burst Inspector is the proof (QA-SWARM-ROUND11-8).
+- **Burst DID reject the job, the first time it saw it (2026-10-07).** In the editor:
+  `Unable to find internal function System.MathF::Sqrt` (and `::Pow`, `::Exp`, `::Sin`, `::Cos`, `::Acos`). In
+  Unity's Mono corlib those `MathF` methods are `[MethodImpl(InternalCall)]` externs with no IL, so Burst cannot
+  compile them; it refused this job and `SwarmPoseJob` (whose `PoseMatrix` used `MathF.Sqrt`), and both ran
+  managed. The "as far as we know" above was wrong about `MathF`, and the textual gate had encoded it ("use
+  MathF"). Fix: both kernels call `KernelMath` (`FloraAndFauna/Swarm/KernelMath.cs`), which forwards to
+  `Unity.Mathematics` in Unity (`UNITY_5_3_OR_NEWER`, every Unity compile) and to `MathF` in the harness, so group
+  K's bit-match is unchanged. Both Burst gates now forbid `MathF.` in a kernel (negative control: the pre-fix
+  kernels fail them on exactly that rule), and `Tools/Build/swarm_core_harness/check_kernel_math.py` checks the
+  shim's two branches agree and that the Unity branch never calls `MathF`. Still not proved: that nothing ELSE in
+  the kernels trips Burst — the Burst Inspector is that proof.
+- **Also found on `ai-system` (2026-10-08), same root cause, fixed there with `(float)System.Math`
+  helpers (this branch kept `KernelMath`):** every Assembly-CSharp job is built into ONE Burst library, so this
+  failed link disabled Burst for ALL of them (`Burst is disabled for ... due to a failure to resolve one or more
+  extern methods`): the prism, AOE, LOD and cell-volume jobs ran managed too, from 10-05 until the fix. The
+  Burst Inspector compiled each job cleanly on its own and showed nothing. **Run `burst` in the console** to
+  check it in Unity: it prints Burst's refusal from Editor.log, if there is one.
 - **Burst's floats are not bit-matched.** Burst's math intrinsics may round differently from .NET's. The bit-match is
   .NET-to-.NET. Behaviour under Burst is expected to match to float rounding, not bits.
 - **The safety system was not run.** The job's `[NativeDisableParallelForRestriction]` writes (slot `Live[q]`, not

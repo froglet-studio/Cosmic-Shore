@@ -75,6 +75,8 @@ MEMBRANE_RADIUS = 1200.0
 # An ARENA card lists several of these in its Vessels; an arcade card exactly one. Termite,
 # Falcon and Shrike are not here because they are not shipped playable kits. The Grizzly joined
 # with Grizzly Time (2026-10): its kit was restored on grizzly-v2 and its AIPilot enabled.
+# The Thresher joined with Thresher Time (2026-10-13): a prototype hull (Toy Box flyable) whose
+# AIPilot is enabled and races at cruise - THRESHERTIME.md §4.
 VESSELS = {
     "Manta":    "b0e6ec5495dbfb6419332830d585f364",
     "Dolphin":  "c0f30e9f09616874780edc0a375ce686",
@@ -87,6 +89,7 @@ VESSELS = {
     "Butterfly": "fe4abf38579d7f84baf16a532ed4a015",
     "Grizzly":  "312ea06c4539cdc46b027615a590c94b",
     "Stoat":    "cc163188820f4e7a985561bc609da2e0",
+    "Thresher": "8e4f2a9c1b3d4e6f7a8b9c0d1e2f3a4b",
 }
 
 # VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
@@ -273,6 +276,25 @@ def num(v) -> str:
         return str(v)
     s = f"{v:.6f}".rstrip("0").rstrip(".")
     return s if s else "0"
+
+
+def wrap_yaml_scalar(text: str, width: int = 88, indent: str = "    ") -> str:
+    """Unity's style for a long string: a SINGLE-QUOTED scalar ('' escapes a quote), first
+    line inline, continuations indented. Must be quoted - plain scalars cannot hold ': ' or a
+    line ending in ':' (Unity: "Expect ':' between key and value within mapping"). Folding
+    turns each line break back into the single space it replaced, so the loaded string is
+    exactly `text`. Same helper as Tools/Build/rampage_intensity.py::_wrap_yaml_scalar."""
+    words, lines, cur = ("'" + text.replace("'", "''") + "'").split(), [], ""
+    for w in words:
+        cand = f"{cur} {w}".strip()
+        if len(cand) > width and cur:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = cand
+    if cur:
+        lines.append(cur)
+    return ("\n" + indent).join(lines)
 
 
 def toast(situation: int, template: str, tint_domain: int = 0, domain_names: int = 1,
@@ -556,6 +578,28 @@ def first_diff_line(a: str, b: str) -> str:
     return f"line {min(len(al), len(bl)) + 1} (length differs)"
 
 
+def cs_field_default(src: str, field: str):
+    """The default a C# field is declared with in `src`, as text: a literal (`int laps = 3;`,
+    `float firstGateDistance = 620f;`) or, one hop away, a constant of another class
+    (`int laps = RedlineCourseSource.DefaultLaps;`), read from that class's own file under
+    Assets/_Scripts. The second form is what the RaceCourseSource refactor gave every gate race;
+    a generator that only knew the first reported every lap count as missing, on a tree whose
+    numbers had not moved. None when neither form is found."""
+    m = re.search(rf"\b{field}\s*=\s*(-?[0-9.]+)f?\s*;", src)
+    if m:
+        return m.group(1)
+    m = re.search(rf"\b{field}\s*=\s*([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*;", src)
+    if not m:
+        return None
+    cls, const = m.groups()
+    for dirpath, _, files in os.walk(os.path.join(ROOT, "Assets", "_Scripts")):
+        if cls + ".cs" in files:
+            with open(os.path.join(dirpath, cls + ".cs"), encoding="utf-8") as fh:
+                m2 = re.search(rf"\bconst\s+\w+\s+{const}\s*=\s*(-?[0-9.]+)f?\s*;", fh.read())
+            return m2.group(1) if m2 else None
+    return None
+
+
 def _self_test() -> int:
     """Negative controls for the shared card + drift checks, run against the shipped tree:
     `python3 Tools/Build/arcade_mode_lib.py --self-test`. Each probe is a regression the checks
@@ -602,6 +646,20 @@ def _self_test() -> int:
            "drift: a .meta differing only in trailing whitespace is not drift")
     expect(drift({meta_rel: meta.replace("guid: ", "guid: 0", 1)}) != [],
            "drift: a .meta with a different guid IS drift")
+
+    expect(cs_field_default("[SerializeField] int laps = 3;", "laps") == "3",
+           "cs_field_default reads a literal")
+    expect(cs_field_default("float firstGateDistance = 620f;", "firstGateDistance") == "620",
+           "cs_field_default reads a float literal")
+    with open(os.path.join(ROOT, "Assets/_Scripts/Controller/Arcade/Redline/RedlineController.cs"),
+              encoding="utf-8") as fh:
+        redline = fh.read()
+    expect(cs_field_default(redline, "laps") == "3",
+           "cs_field_default follows `laps = RedlineCourseSource.DefaultLaps` to its const")
+    expect(cs_field_default("int laps = NoSuchClassEver.DefaultLaps;", "laps") is None,
+           "cs_field_default: a constant of a class that does not exist is not a default")
+    expect(cs_field_default("int Laps = 3;", "laps") is None,
+           "cs_field_default is case-sensitive (Laps is not laps)")
 
     print("self-test: " + ("OK" if not fails else f"{len(fails)} FAILED"))
     return 1 if fails else 0

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -33,6 +34,32 @@ namespace CosmicShore.Editor
         // release build fails in seconds, before any expensive build work starts.
         public int callbackOrder => -10000;
 
+        // Scenes a scripted build passes to BuildPipeline.BuildPlayer, declared for the length of that
+        // build (WebToyboxBuild ships three scenes of its own choosing). A preprocess callback is not
+        // told which scenes the build carries, so without this the guard could read only the global
+        // Build Settings list, and a scripted build may ship a scene that list has disabled or never
+        // held. The guard checks the UNION of the two, so declaring scenes can only widen the check.
+        static string[] s_declaredScenes = Array.Empty<string>();
+
+        /// <summary>
+        /// Declares the scenes a scripted build is about to pass to <c>BuildPipeline.BuildPlayer</c>, so
+        /// this guard checks them as well as the enabled Build Settings scenes. Dispose the scope after
+        /// the build: <c>using (UnityPipelineReleaseGuard.DeclareBuildScenes(scenes)) BuildPipeline.BuildPlayer(options);</c>
+        /// </summary>
+        public static IDisposable DeclareBuildScenes(IEnumerable<string> scenes)
+        {
+            var previous = s_declaredScenes;
+            s_declaredScenes = (scenes ?? Array.Empty<string>()).Where(p => !string.IsNullOrEmpty(p)).ToArray();
+            return new SceneScope(previous);
+        }
+
+        sealed class SceneScope : IDisposable
+        {
+            readonly string[] _previous;
+            public SceneScope(string[] previous) => _previous = previous;
+            public void Dispose() => s_declaredScenes = _previous;
+        }
+
         public void OnPreprocessBuild(BuildReport report)
         {
             // EditorUserBuildSettings.development covers editor-driven builds; the report options
@@ -62,15 +89,15 @@ namespace CosmicShore.Editor
 
             var offenders = new List<string>();
 
-            // 1) Enabled build scenes. GetDependencies is recursive, so a pipeline component nested
-            //    inside a prefab a scene instantiates is caught too.
-            foreach (var scene in EditorBuildSettings.scenes)
-            {
-                if (!scene.enabled || string.IsNullOrEmpty(scene.path))
-                    continue;
-                Collect(scene.path, AssetDatabase.GetDependencies(scene.path, true),
-                    runtimeComponents, offenders);
-            }
+            // 1) Enabled build scenes, plus any a scripted build declared (DeclareBuildScenes). GetDependencies
+            //    is recursive, so a pipeline component nested inside a prefab a scene instantiates is caught too.
+            var scenePaths = EditorBuildSettings.scenes
+                .Where(scene => scene.enabled && !string.IsNullOrEmpty(scene.path))
+                .Select(scene => scene.path)
+                .Concat(s_declaredScenes)
+                .Distinct();
+            foreach (string scenePath in scenePaths)
+                Collect(scenePath, AssetDatabase.GetDependencies(scenePath, true), runtimeComponents, offenders);
 
             // 2) Preloaded assets and everything under a non-Editor Resources/ folder — all of it
             //    ships and is loadable at runtime with no scene reference at all (this is also how

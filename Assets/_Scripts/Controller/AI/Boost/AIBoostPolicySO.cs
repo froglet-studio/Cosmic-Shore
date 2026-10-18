@@ -35,8 +35,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The vessel cannot translate right now (a stance, a stop) - never boost.</summary>
         public readonly bool Restricted;
 
+        /// <summary>From the objective to where the pilot flies AFTER it (the mode's
+        /// <see cref="AIPilot.SetNextLegProvider"/>; the gate races give the mouth, then the next ring). Zero when the
+        /// mode does not say.</summary>
+        public readonly Vector3 NextLeg;
+
         public AIBoostContext(Vector3 toTarget, Vector3 heading, Vector3 forward, float speed, float stick,
-                              bool breakingOrbit, bool commitDriftHeld, bool restricted)
+                              bool breakingOrbit, bool commitDriftHeld, bool restricted, Vector3 nextLeg = default)
         {
             ToTarget = toTarget;
             Heading = heading;
@@ -46,6 +51,7 @@ namespace CosmicShore.Gameplay
             BreakingOrbit = breakingOrbit;
             CommitDriftHeld = commitDriftHeld;
             Restricted = restricted;
+            NextLeg = nextLeg;
         }
 
         public float Distance => ToTarget.magnitude;
@@ -55,6 +61,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Seconds to the objective at the current speed - the straight still ahead.</summary>
         public float RunwaySeconds => Distance / Mathf.Max(Speed, 1f);
+
+        /// <summary>Degrees the pilot turns AT the objective (between the leg into it and <see cref="NextLeg"/>), or -1
+        /// when the mode does not say what comes after it.</summary>
+        public float CornerDegrees => NextLeg.sqrMagnitude > 1e-4f && ToTarget.sqrMagnitude > 1e-4f
+            ? Vector3.Angle(ToTarget, NextLeg)
+            : -1f;
     }
 
     /// <summary>
@@ -113,6 +125,22 @@ namespace CosmicShore.Gameplay
 
         public bool AllowsMode(GameModes mode) => disabledInModes == null || !disabledInModes.Contains(mode);
 
+        /// <summary>Resources folder of the per-mode variants <see cref="ForMode"/> looks in.</summary>
+        public const string ModeVariantFolder = "AIBoostPolicies";
+
+        /// <summary>
+        /// The variant of <paramref name="policy"/> tuned for one mode - <c>Resources/AIBoostPolicies/&lt;name&gt;_&lt;mode&gt;</c>,
+        /// e.g. <c>RhinoAIBoostPolicy_Regatta</c>, written by <c>Tools/Build/learn_drives_from_flights.py</c> from people's
+        /// editor flights - else <paramref name="policy"/> itself. The SkimRaceAIConfigSO.LoadForRegatta pattern: a mode's
+        /// learned numbers never retune the hull in every other mode. Same class as the base or it is ignored.
+        /// </summary>
+        public static AIBoostPolicySO ForMode(AIBoostPolicySO policy, GameModes mode)
+        {
+            if (!policy) return policy;
+            var variant = Resources.Load<AIBoostPolicySO>($"{ModeVariantFolder}/{policy.name}_{mode}");
+            return variant && variant.GetType() == policy.GetType() ? variant : policy;
+        }
+
         /// <summary>A straight worth starting to spend on (before the runway test).</summary>
         public bool IsStraight(in AIBoostContext c) =>
             !c.Restricted && !c.BreakingOrbit && c.AngleToTarget <= alignDegrees && c.Stick <= stickBand;
@@ -162,5 +190,21 @@ namespace CosmicShore.Gameplay
 
         /// <summary>One-shot: the driver wants the pilot to let go of its commit drift now.</summary>
         public virtual bool TakeCommitReleaseRequest() => false;
+
+        /// <summary>While true the pilot holds its throttle full (the Rhino's ramp: a lifted throttle is a bend in
+        /// the straight-line gesture, and grades the ramp down).</summary>
+        public virtual bool HoldsFullThrottle => false;
+
+        /// <summary>While 0 or more, the pilot writes exactly this throttle (the Rhino's ramp brake: a lifted throttle
+        /// grades the ramp down, so it bleeds at the ramp's own rate). -1 = the pilot's own throttle.</summary>
+        public virtual float Throttle => -1f;
+
+        /// <summary>While 0 or more, the pilot keeps its total steering (|XSum| + |YSum| + |YDiff|) at or under this,
+        /// scaling every axis down together so it still steers toward the objective, only gentler. -1 = no limit.</summary>
+        public virtual float RotationLimit => -1f;
+
+        /// <summary>What the driver is doing, in a few words, for a viewer (the Third Eye); null when it has nothing to
+        /// say. Never read by the pilot.</summary>
+        public virtual string Status => null;
     }
 }

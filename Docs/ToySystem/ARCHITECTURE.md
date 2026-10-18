@@ -1870,7 +1870,7 @@ window in which a key like this is free to move, and it closes the moment one do
 
 ### The 2D art is the encyclopedia's
 
-`ToyPortraitLibrary` resolves the portrait **FrogletTools ▸ Interface ▸ Codex** already bakes from
+`ToyPortraitLibrary` resolves the portrait **FrogletTools ▸ UI ▸ Codex** already bakes from
 each toy's own `ToyEmblem` grammar (`Docs/CODEX.md` §3.5). So the flat card is a picture of the
 thing the player flies at, re-baking an emblem re-skins the menu with nothing to re-wire, and no
 second icon set is authored.
@@ -1893,7 +1893,7 @@ Full surface + scene wiring: `Docs/HomeHub/ARCHITECTURE.md`.
    domain — `ToySwitchVocabularyTests` will otherwise fail, by design.
 3. Add the new definition asset to the `ToyboxSO` (or to `BuildDefaultToybox` for a built-in).
 4. Add a case to `ToolCodexHarvester.AddKindFacts` so the encyclopedia can say what the toy
-   offers, then run **FrogletTools ▸ Interface ▸ Codex** ▸ *Scan & Merge* and *Bake Missing*.
+   offers, then run **FrogletTools ▸ UI ▸ Codex** ▸ *Scan & Merge* and *Bake Missing*.
    The bake is also what gives the toy its app-shell portrait.
 5. Implement `IToyShellSurface` so the toy appears in the app shell's Toy Box (see "The app-shell
    face" above). Optional — a toy without it is simply freestyle-only — but the shell is where a

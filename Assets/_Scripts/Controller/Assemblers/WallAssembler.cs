@@ -17,11 +17,11 @@ namespace CosmicShore.Gameplay
 
         public enum SiteType
         {
-            Top,
-            Right,
-            Bottom,
-            Left,
-            None
+            Top = 0,
+            Right = 1,
+            Bottom = 2,
+            Left = 3,
+            None = 4
         }
 
         [SerializeField] private float ownPullSpeed = 4.0f;
@@ -287,7 +287,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (Prism == null)
                     {
-                        yield return new WaitForSeconds(1f);
+                        yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                         continue;
                     }
 
@@ -304,7 +304,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    yield return new WaitForSeconds(1f);
+                    yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                     if (BottomMate.Mate == null)
                     {
                         BottomMate = FindClosestMate(globalBondSiteBottom, SiteType.Bottom);
@@ -317,7 +317,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
-                    yield return new WaitForSeconds(1f);
+                    yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                     if (TopIsBonded && BottomIsBonded)
                     {
                         StopAllCoroutines();
@@ -417,11 +417,9 @@ namespace CosmicShore.Gameplay
                 var trailBlock = s_mateScratch[i];
                 if (trailBlock == null || trailBlock.destroyed) continue;
 
-                WallAssembler mateComponent = trailBlock.GetComponent<WallAssembler>();
-                if (mateComponent == null)
+                if (!trailBlock.TryGetComponent(out WallAssembler mateComponent))
                 {
-                    HealthPrism healthPrism = trailBlock.GetComponent<HealthPrism>();
-                    if (healthPrism != null)
+                    if (trailBlock.TryGetComponent(out HealthPrism healthPrism))
                     {
                         healthPrism.Reparent(Prism.transform.parent);
                     }
