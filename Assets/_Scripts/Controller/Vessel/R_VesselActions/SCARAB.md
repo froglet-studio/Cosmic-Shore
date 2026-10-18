@@ -159,6 +159,77 @@ behind the pilot as well as ahead and drags it forward through them (§3.9).
 
 ### 3.0 The hull, and the camera behind it
 
+**A real FBX since 2026-10-18** (`Assets/_Models/Vessel Models/Scarab.fbx`, built by `/vessel-model`
+from `Tools/Build/vessel_model/specs/scarab.py`; `build.py scarab --check` is its drift gate; sheet
+`Docs/VesselModels/sheets/scarab_after.jpg`). It replaced the procedural placeholder described
+below, which the owner had accepted only as a placeholder ("more like a low poly scarab than a space
+ship", 2026-09-01) and then judged, with every C# runtime hull, "terrible even as placeholders"
+(2026-10-17). Like the Butterfly it has no artist file behind it; it is built to the fleet
+convention for a new vessel and to the fleet's look (dark gunmetal armour, domain plates and trim
+lines, cyan glass, lime engine glows):
+
+| | |
+|---|---|
+| Nodes | mesh `mesh`, armature `rig`, root bone `hull`, preset `zup` (Blender: nose -Y, up +Z, +X = the pilot's left) |
+| Bones | each head on the placeholder's pivot (`ScarabHullForm.Generate` at the prefab's settings, run offline through `Tools/Build/scarab_icon_harness`), Blender frame: `wing.L` / `wing.R` (the elytra) (0, 0.409, -0.695), the centreline hinge; `horn` (0, -3.191, -0.180); `antenna.L/.R` (±1.134, -3.109, -0.367); `leg.1.L/.R` (aft) (±3.338, 2.700, -1.016), `leg.2.*` (±3.434, 0.900, -1.055), `leg.3.*` (fore) (±2.659, -1.391, -0.979); plus `jet.L/.R` (±1.2, 3.55, -0.5) and their `.mouth` children at the nozzle lips (±1.2, 4.62, -0.5), the FX mounts of FLEET_CONVENTION rule 2.5 (no `VesselJet` is wired to them yet) |
+| Size | span 9.65 / length 10.38 / height 4.06 against the placeholder's 9.79 / 10.30 / 4.12 (-1.4 / +0.7 / -1.5%); circumscribing radius 6.27 against 6.40 (-2%), so the occlusion corridor, the speed-tunnel camera and the r 4.5 hull trigger keep the sizes they were tuned to |
+| Slots | `Domain` (the cases' crown plates and skirt trims, the collar's plates and flank trims, the sensor fans, the knee barrels, the lance's collars, the nozzle lips, the prow's edge: 8% of the surface, inside the artist hulls' 6-29% band), `Body`, `Window` (the canopy visor and the sensor eyes), `Engine` (the twin mouths, the flank and dorsal vents, the cases' tail lights, the lance's emitter) |
+| Morphs | Charge 5.4% (the prow's teeth run out, the cases' rims flare into armour, the lance's emitter swells), Mass 4.5% (the shells dome up, the core and collar fatten, every limb rides out with its socket), Space 7.5% (the lance, the masts and the struts reach along their own axes), Time 6.8% (the cases sweep back and taper to a sharper stern, the masts rake back) of the diagonal. The nozzles never move (their `.mouth` lips are pinned) |
+| Takes | none drive it: `ScarabAnimation` springs the bones in code. `flare`, `hang`, `tuck`, `aim` are documentation poses for the sheet and the studio, authored with `ScarabAnimation`'s own signs and proven by `pose_expect` |
+| Budget | 13,928 triangles, 7,148 vertices, 16 bones |
+
+**Clade to ship, part by part:** the elytra are two hinged armour shells, cut in facets (not a smooth
+dome), each carrying a long domain plate on its crown cut by two sunken transverse panel gaps, a
+domain trim along its skirt and a lime running light at its tail; they hinge open at the centreline
+over a dark spine rail to show the engine core. The pronotum is the forward armour collar: two
+domain plates either side of a dark keel, flank trims and a sunken cyan canopy visor on its brow. The
+toothed clypeus is the dozer prow, a flat ram blade with six teeth (the sacred scarab's six) and a
+domain edge trim: the bumper that shoves balls and pilots. The horn is the forge lance, a faceted
+spar with two domain collars and a lime emitter tip. The eyes are cyan sensor domes in dark socket
+rings under the collar's margin. The lamellate antennae are sensor masts, each topped by a
+three-blade domain sensor fan facing astern. The legs are six landing struts / manipulator arms: a
+socket ball on a hip housing, a femur strut, a domain hinge barrel at the knee, a piston tibia and a
+clawed foot pad, the fore pair carrying a scarab's three digging teeth. The abdomen under the cases
+is the engine core: a flat ventral keel plate, lime vent slits along each flank and down its back
+(seen when the cases open), and twin engine nacelles at the stern under the cases' tails, which is
+what the 50 u chase camera looks at.
+
+**Integration is by NAME, not by fileID** (an FBX's sub-object fileIDs cannot be derived offline):
+the prefab's `ScarabHull` holds the model instance in place of the placeholder's MeshFilter /
+MeshRenderer / `ScarabHullBuilder`. `ScarabAnimation` resolves `wing.L`, `horn`, `antenna.L`,
+`leg.1.L` … (the placeholder's `elytron.l`, `leg.l1` … still resolve, so either hull works), finds
+the SkinnedMeshRenderer (`updateWhenOffscreen`, since the springs swing the cases past the bind
+bounds), flares it through the same per-material-index property blocks, and composes every spring
+in the HULL frame (`ScarabHull`, which the juke's roll spins) onto the rest captured there, then
+carries it into the bone's parent space: identical to the old parent-space Euler on the procedural
+parts, and what keeps a pitch a pitch on bones whose parents point wherever the rig points. The
+element morphs are the model's blend shapes, driven by `VesselAnimation` by name; the builder's
+`IProceduralElementMorphSource` duty ended with it. `VesselCustomization` resolves `ScarabHull`
+(no Renderer) to the model's SkinnedMeshRenderer and paints by material identity
+(`_domainReplacesMaterials` = the Domain material).
+
+**The wrapped Sparrow is gone from the prefab.** It was kept only because the hull trigger sphere
+(r 4.5) and the `ImpactCollider` lived on its root and repointing the instance would have dangled
+them; both moved onto `ScarabHull` (same layer 8, same identity frame, same radius;
+`verify_scarab_cavitation_plate.py` still finds the hull sphere). Its other stripped references
+(the skinned renderer, a bone, the disabled Animator) were referenced by nothing. With it went the
+last Sparrow blend shapes the morph audit had to mark INERT and the Sparrow mesh the toy and codex
+harvesters had to be told to skip.
+
+**What changed nowhere else:** the spring tuning, the amplitudes and every sign in `ScarabAnimation`
+are as they were (the doc poses were authored to them). The model's child GameObjects sit on the
+Default layer, like the Butterfly's (the procedural parts sat on Ships; only colliders read that
+layer, and the colliders stayed on Ships).
+
+**The procedural placeholder** is kept in the tree until the owner accepts the model, then retired
+(`ScarabHullForm.cs`, `ScarabHullBuilder.cs` (no longer on the prefab), `ScarabHullFormTests`,
+`ScarabHullMorphTests`, `Tools/Build/scarab_icon_harness/`, `Tools/Build/render_scarab_card_icons.py`,
+whose `--check` reads the builder's settings off the prefab and so now fails until the card art is
+re-rendered from the model). Its record follows, kept because its reasoning (spring puppetry, the
+morph meanings, the NaN and Core-offset lessons) still holds.
+
+#### The procedural placeholder (2026-08-15 to 2026-10-18)
+
 > ⚠ **DESIGN STATUS (2026-09-01, Garrett, on the shipped procedural hull): "it looks more like a
 > low poly scarab than a space ship with independent floating parts, but it is a good
 > placeholder."** Accepted as a placeholder; the silhouette is NOT the target. The gap is not
@@ -346,6 +417,10 @@ roll, with a one-shot echo flag so a host-simulated AI's own loopback doesn't do
 | Drift | full at 25° slip | drift pose ∝ `|slip| / driftSlipFullDegrees`, signed by slip |
 
 ### 3.0.2 Elemental hull morphs — the generated hull is an element display
+
+> **On the model (2026-10-18)** the morphs are `Scarab.fbx`'s `Charge` / `Mass` / `Space` / `Time`
+> blend shapes, driven by `VesselAnimation` like every blend-shape vessel; the procedural path below
+> (and the builder's rows in §3.0.1's channel table) runs only if the placeholder builder is put back.
 
 The fleet's morph contract (CLAUDE.md "Elemental Hull Morphs") assumes FBX blend shapes; the
 Scarab's hull is a pure function, so its morphs are **the four element extremes of that same
@@ -2642,7 +2717,9 @@ implementation time.
     scene). Until then: mini hulls, codex portrait and the corridor AUDITOR read the placeholder,
     while the runtime corridor is correct (it measures after `HideLegacyModel`).
 
-17. **RE-FORM THE HULL: a ship of independent floating parts, not a low-poly beetle** — the
+17. **RE-FORM THE HULL** — *superseded 2026-10-18 by `Scarab.fbx` (§3.0): a model, every part
+    joined to the next by a mechanical contact. Whether the owner wants real gaps between the modules,
+    as this item proposed, is still his call.* The original item: **a ship of independent floating parts, not a low-poly beetle** — the
     highest-value follow-up on this vessel, and the one piece of §3.0 that is explicitly a
     placeholder (design status quote at the top of §3.0). The shipped hull is a **contiguous
     creature**: a closed carapace with limbs attached to it. The target is a **machine** — parts
