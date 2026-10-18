@@ -14,7 +14,8 @@ and calls missiles down from its nests' turrets.
 | Piece | What it is |
 |---|---|
 | `ShrikeRules` | Pure rules, ported line for line from the page. Covers the nest cup, the turret, the block count, the dock-bonus clock, the sling's speed, the box and ray maths, missile turning, turret regen and the one-missile-per-paint rule. |
-| `ShrikeHullForm` / `ShrikeHullBuilder` | The procedural hull: the page's `makeHull`, with Unity's +Z nose. |
+| `Shrike.fbx` (`Tools/Build/vessel_model/specs/shrike.py`) | The hull: a real model since 2026-10-18 (§2), nested under the prefab's `ShrikeHull`. |
+| `ShrikeHullForm` / `ShrikeHullBuilder` | The retired procedural placeholder: the page's `makeHull`, with Unity's +Z nose. Off the prefab, kept in the tree until the model is accepted (§2). |
 | `ShrikeExecutor` | The whole kit, ported from the page's `stepPilot`, `fireLance`, `stepTether`, `stepSling`, `updateLock`, `launchMissiles`, `stepMissiles`, `detonate` and `stepNests`. Also holds the input-only autopilot. |
 | `ShrikeActionSO` | The six controls: Trigger, Zoom, Mass, and the Space / Charge / Time mode buttons. |
 | `ShrikeNestFlora` / `ShrikeMeshes` | The flora that grows missiles, and the missile, bud and stem meshes. |
@@ -33,29 +34,59 @@ and calls missiles down from its nests' turrets.
 
 ## 2. Hull
 
-The hull is the page's `makeHull`, turned so its nose is Unity's +Z:
+**A real FBX since 2026-10-18** (`Assets/_Models/Vessel Models/Shrike.fbx`, built by `/vessel-model` from
+`Tools/Build/vessel_model/specs/shrike.py`; `build.py shrike --check` is its drift gate; sheet
+`Docs/VesselModels/sheets/shrike_after.jpg`). It replaced the procedural placeholder (below), which the owner judged
+"terrible even as placeholders" (2026-10-17) along with every other C# runtime hull. Like the Butterfly it has no
+artist file behind it, so it is built to the fleet convention for a new vessel: a **spaceship inspired by the shrike**,
+not the bird.
 
-- a six-sided fuselage and a dark sensor head;
-- the Void Lance's barrel slung under the nose;
-- two forward-swept wings with domain stripes;
-- a tail fin;
-- the engine flame.
-
-Submesh 1 holds the accents, and `ShipHelper` paints the domain colour onto it.
-
-The element morphs follow the class document's mapping:
-
-| Element | What it changes |
+| Shrike | The ship |
 |---|---|
-| Charge | thickens the barrel |
-| Mass | fattens the fuselage |
-| Space | lengthens the barrel |
-| Time | spreads the wings and lengthens the flame |
+| hooked bill | a hooked **ram prow** (the upper mandible) over the Void Lance's barrel (the lower mandible); the muzzle brake pokes out just past the hook, its bore glowing |
+| black eye-mask | a dark **visor band** across the wraparound cyan canopy, running back along the head from the bill's root, as the mask runs bill - eye - ear |
+| big pale-crowned head | a domain-coloured **sensor cowl** with a dark crown hatch |
+| short folded wings with a pale patch | **swept fins** of layered plates (a covert plate over the root), a domain **wing-patch** panel and leading-edge trim, the trailing edge notched into three primaries; hinge collars at the shoulders |
+| long graduated tail with pale edges | a **stabiliser boom** ending in the main engine nozzle (the flame), with a dorsal fin and two canted stabilisers trimmed in domain on their outer edges |
+| perching feet | two **talon clamps** folded under the chest, lime clamp pads in the palms; they swing down to grip while docked |
+| pale underparts | a domain belly plate; a raised domain spine; two flank thrusters glowing under the fin roots |
+
+| | |
+|---|---|
+| Nodes | mesh `mesh`, armature `rig`, preset `zup` (nose -Y, up +Z, the pilot's left +X in Blender) |
+| Bones (head in Unity's frame) | `hull` (0, 0, 0) - the bank pivots the Hull about it; `gun` the barrel (0, -0.75, 1.55); `gun.mouth` at the placeholder's muzzle (0, -0.75, 6.35), skinning the muzzle brake; `wing.L` / `wing.R` (-+0.95, 0.20, 0.85); `leg.L` / `leg.R` the clamp hinges (-+0.55, -0.80, 0.55); `tail` (0, 0.08, -0.95); `jet.mouth` and `flame` at the placeholder's flame root (0, 0, -3.5) |
+| Size | the placeholder's envelope within 6%: span 9.12 (9.17), muzzle to flame tip 11.75 (11.77), height 2.62 (2.50: the folded claws hang 0.1 lower). The hit box, the trigger, the wingtip trails at x = ±4.4, the 3-unit dock radius and the on-axis 30-unit camera keep the sizes they were tuned to |
+| Slots | Domain 19% of the surface (cowl, wing patches and trim, tail edges, spine, belly), Body (gunmetal), Window 2.8% (the visor, the barrel's scope lens), Engine 2.5% (nozzle, flame, flank thrusters, muzzle bore, clamp pads). `Shrike.fbx.meta` remaps all four to the fleet's materials |
+| Morphs | Charge 4.7% (the barrel and brake thicken, the hooked ram swells: the lance radius is the Charge dial), Mass 5.0% (the hull fattens about its axis, the fins ride out, the clamps grow: the nest is Mass's), Space 11.0% (the barrel reaches forward: the lock reach), Time 9.1% (the fins spread and sweep, the boom and the flame lengthen: the sling) of the diagonal |
+| Takes | none drive it; `dock` (the clamps swing down 80°), `bankleft`, `bankright` (the 24° lean) are documentation poses, each held by `pose_expect` |
+| Budget | 7,664 triangles, 3,900 vertices, 10 bones |
+
+**Integration is by NAME, not by fileID** (an FBX's sub-object fileIDs cannot be derived offline), as the Butterfly's:
+
+- the prefab's `ShrikeHull` holds the model instance in place of the placeholder's MeshFilter / MeshRenderer /
+  `ShrikeHullBuilder` (`author_shrike_assets.py` owns this: `integrate_model`, held by `--check` and `--self-test`);
+- `ShrikeAnimation` finds the SkinnedMeshRenderer (the base class drives its four blend shapes), banks `ShrikeHull`,
+  scales the `flame` bone along whichever of its local axes runs aft (measured at rest), and grips with `leg.L` /
+  `leg.R`; the placeholder's `ShrikeFlame` still resolves, so either hull works;
+- `ShrikeExecutor.hull` is now the `ShrikeHull` Transform: the lance's beam leaves from the `gun.mouth` bone (the
+  placeholder's `Muzzle` still resolves) and the flora and missiles wear the renderer's Domain slot (slot 0 on the
+  model, slot 1 on the placeholder);
+- `VesselCustomization` paints the model's Domain slot by material identity (`_domainReplacesMaterials` =
+  GreenAccentVesselMaterial) and resolves the Hull to its skinned child.
+
+Every weapon still starts on the hull's centre axis (§3.4): the model moves nothing the aim, the eyepiece or the dock
+test reads. Docking is still the 3-unit `hullRadius` against the block's box; the clamps are the look of it.
+
+**The procedural placeholder** (kept in the tree until the owner accepts the model, then retired):
+`ShrikeHullForm.cs` (pure geometry, the page's `makeHull`), `ShrikeHullBuilder.cs` (no longer on the prefab),
+`Tools/Build/shrike_harness/` and `render_shrike_card_icon.py` (which read the form). It was a hexagonal fuselage, a
+head pyramid, a box barrel, two forward-swept box wings with stripes, a box fin and a cone flame, on two materials.
 
 ### 2.2 Animation
 
 - The flame is an ember while docked, cruise length in flight, and four times as long while slinging.
-- The hull leans into the turn.
+- The hull leans into the turn (24° at full stick).
+- The talon clamps swing down 80° while docked and fold away on leaving (`talonGripDegrees`, `talonRate`).
 
 ## 3. Controls and kit
 
