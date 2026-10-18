@@ -2693,7 +2693,7 @@ asset terms (Apple's ships as a macOS disk image under Apple's licence) before t
 
 **Rev 10 boards** (canvas page "Rev 10 - Profile + music"): `R10Profile` (fly time / games / sessions on the pilot card,
 favourite vessel = most flown, favourite pilot = your pick, fly time by vessel, a Soundtrack card, the now-playing card
-bottom right), `R10Soundtrack` (tick the tracks you want, shuffle, all on / off), `R10NowPlaying` (the FC-style card:
-slides in on a new track, resting / focused states, toast-only in a match), `R10FavPilot`, `R10AudioStudio` (Profile > Audio Studio: Master / Music / Effects faders with mute, meters and a test sound each, presets, the now-playing controls, the soundtrack; Vessels / Menus / World drawn dimmed because the FMOD project has only Master, Music and SFX buses), `R10Notes`. Not built.
+bottom right), `R10NowPlaying` (the FC-style card:
+slides in on a new track, resting / focused states, toast-only in a match), `R10FavPilot`, `R10AudioStudio` (Profile > Audio Studio, music only - the owner: "No mixer just the music": now playing with back / pause / skip, shuffle, stop; every track with Play now and a tick for the rotation; it replaced the separate `R10Soundtrack` board), `R10Notes`. Not built.
 What building them needs: per-vessel fly time and a favourite-pilot field in the profile; and the music event made
 track-addressable in the FMOD project (today `event:/Music/Music` plays its nine tracks at random) - aradia1's area.
