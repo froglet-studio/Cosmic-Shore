@@ -423,3 +423,27 @@ the line it settled.
   cards are rendered from it (`render_cards.py Goby`). Sheets: `Docs/VesselModels/sheets/goby_after.jpg`,
   `goby_cards.jpg`. **[read] for Garrett:** fly it; the bar is that it reads as the Goby from the chase camera and
   nothing floats or tears in a turn. The crystal-hull-fusion bakes read stale until re-baked in the editor.
+- 2026-10-18, **round 12 in the lab** (Garrett: "work better on mobile ... pulling back and flinging ... make the shrimp
+  very small and zoom out ... lower amplitude and higher frequency wiggles ... down more toward the goby ... warping only
+  where necessary and as invisible as possible ... at their most manageable when the shrimp encounters them"). The lab,
+  v12 of the prototype:
+  - **Slingshot** (finger, mouse and pad alike): pull back anywhere and let go; the fling is opposite the pull, as far
+    as the pull is long (`pSlingPull` of the screen's short side is a full `pLaunchRange`), with a rubber band, a power
+    pouch and the flight's dotted arc. Phone: no thumb-stick rings or Goby gauges while you fly the Pistol, a faint
+    ring round the tiny Pistol, the board and gauges shrink on a short screen.
+  - **Scale**: `pBodyR` 5 -> 2.5, `pViewWidth` 460 -> 1050; slower true speeds (pull 140 -> 95, dive x3.2 -> 2.6, launch
+    280 -> 160, drag 0.04 -> 0.35): the Pistol averages 76-86 u/s against 134 before, and breaks more (169 vs 145 over five
+    seeds). Wiggles: hinge every 2 blocks at 10 u (was 4 at 26), the Goby AI's weave 18 u at 0.55 Hz (was 50 at 0.18).
+  - **Downhill toward the Goby** (`pDownTilt` 16 deg): gravity leans toward the Goby and the side camera ROLLS by the same
+    angle, so the pull reads straight down and the world runs downhill to the Goby. Forces and camera only; launch,
+    aim, AI and touch all use the same leaning pull (`gravDir`, `launchVel`, `scr` / `unscr`, `rollClip`).
+  - **The Settled unroll** (`soft`, now the default; the old ones stay selectable): the ground's sharp vertical curves
+    (tighter than `pSoftRadius` 80 u) are eased over `pSoftReach` 48 u as a gentle height shear, settling while the Goby
+    lays the path and FROZEN behind the window and three hinges ahead of the Pistol; prisms are drawn rigid and bent
+    only where the unroll would stretch them past 12 % (full by 35 %). Measured: no settled sample ever moves; the ground
+    under the Pistol never moves (except the Goby still laying its last span, in every mode); drawn-bent prisms on a weave
+    98.6 % -> 48 %. Sideways smoothing of the spine was tried and measured worse (labmaker L-STU-117).
+  - **The Goby's real hull** in both views (`models/goby-model.js`, generated from `Goby.fbx` by
+    `Tools/Build/vessel_model/lab_mesh.py`, `--check`), in the fleet's colour scheme.
+  **Unity is behind the lab** until Garrett has played it: `studio_to_unity.py --vessel goby --check` reports the 10
+  changed numbers as drift, and the tilt / roll, the slingshot, the settled unroll and the rigid blend are lab-only.
