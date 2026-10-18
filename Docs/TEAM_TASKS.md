@@ -502,7 +502,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; .claude/skills/duo-vessel/SKILL.md on cece/sharp-tesla-j0kd7z
 
 ### T-20261017-3cbe · open · content · Crew vessels
-- **Task:** Author FMOD events for the Kite Navigator's seven empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal.
+- **Task:** Author FMOD events for the Kite Navigator's eight empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal, fauna struck.
 - **Done when:** Every slot holds a real event and plays in a playtest
 - **Who can take it:** anyone who does audio
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
@@ -730,7 +730,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/ElementalAbilitySystem/BACKLOG.md '[gate false positive] check_vessel_on_vessel_motion.py'
 
 ### T-20261018-3247 · open · dev · Crew vessels
-- **Task:** Bring the Crew Vessel Lab up to the Wrasse's round 4, which was directed in Unity on 2026-10-18: the kite view and pilot view swap (small view lower left), lime motes in their element's petal shape, the kite following the mouse or stick with no click, a one-thumb pilot whose lifted thumb spends the Time boost (2 s cooldown, none at Time L5), mote frequency weighted by the hull's petals, Charge rams on fauna, Eject below Charge L5 and Steal at it, shielded Mass clusters at Mass L5, Space L5 blasts through shields and super shields, and the Omni crystal's burst of motes (round 4e; it no longer zooms). Rounds 4d-4e also changed the pilot to two thumbs, the motes to five-petal flowers and the out-of-plane prisms: KITE_NAVIGATOR.md. Then re-run parity.cjs and verify_lab.cjs and republish.
+- **Task:** Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (2 s cooldown, none at Time L5); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish.
 - **Done when:** The lab's SHIPPED block and scorecard carry round 4 and parity.cjs still passes
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)

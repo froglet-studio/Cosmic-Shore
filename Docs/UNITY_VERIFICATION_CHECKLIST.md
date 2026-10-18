@@ -444,7 +444,7 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 
 ---
 
-### 🔴 Kite Navigator: the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
+### 🔴 Kite Navigator on the Wrasse ("Wrasse and Grouper"): the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the first multiplayer vessel, `VesselClassType.Wrasse = 19` (a Sparrow hull, in the Toybox's
 Vessel Changer), and its second seat, ported from the Crew Vessel Lab's signed-off round 3

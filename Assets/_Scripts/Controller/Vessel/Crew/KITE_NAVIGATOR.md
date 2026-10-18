@@ -1,9 +1,28 @@
-# Kite Navigator: the Kite & Tail crew seat
+# Kite Navigator: the Kite & Tail crew seat (on the Wrasse)
 
-A crew seat for a second player on one hull. The design is the Crew Vessel Lab's round 3 candidate, which Garrett
-signed off on 2026-10-17 (`Docs/Studios/CrewVesselLab.html`, write-up in `Docs/Studios/CREW_VESSEL_LAB.md`), then
-**round 4 (2026-10-18), which Garrett directed in Unity after flying it**; see "Round 4" below. Round 4 is not in the
-lab yet (task `T-20261018-3247`).
+A crew seat for a second player on one hull. It ships on the **Wrasse** (`VesselClassType.Wrasse = 19`, card **Wrasse
+and Grouper**): the navigator's kite is the Wrasse, the pilot's hull the Grouper. The design is the Crew Vessel Lab's
+round 3 candidate, which Garrett signed off on 2026-10-17 (`Docs/Studios/CrewVesselLab.html`, write-up in
+`Docs/Studios/CREW_VESSEL_LAB.md`), then **rounds 4 to 4f (2026-10-18), which Garrett directed in Unity after flying
+it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20261018-3247`).
+
+**Where it stands (after round 4f)**, in one place; the rounds below say why each part is the way it is:
+- **The Grouper (pilot):** the Sparrow's hull with its guns, missiles and buttons removed, flown on two sticks
+  (`VesselTransformer`; pitch / yaw 100, roll 120). The right trigger (right Shift; both thumbs lifted on a phone)
+  spends a boost the Wrasse saved.
+- **The Wrasse (navigator):** a kite on the hull's x-z plane that follows the mouse or stick with no click. Its head
+  pops hostile prisms and rams rivals and creatures. Its tail lassos motes of one element, drawn as lime five-petal
+  flowers in the totem's proportions, each moving like its element.
+- **The views:** the kite view is a second, top-down orthographic camera drawn by the game. It is a small square in the
+  lower left while you pilot and full screen while you navigate, with the pilot camera swapped into the square. Out of
+  the plane, prisms open with distance FROM the plane and dither in a cone above it. The pilot sees a faint kite and
+  faint dots.
+- **The HUD:** the Time card counts saved boosts, Charge the kite's rams, Space the last blast's kills, and Mass flashes
+  on a cluster (`WrasseHUDController`).
+- **L5s:** Mass clusters arrive shielded, Charge steals instead of knocking crystals loose, Space breaks shields and
+  super shields, and Time drops the boost cooldown. An **Omni crystal** drops a cluster of each element on the board.
+- **Unverified:** nothing has been played in the editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, task
+  `T-20261018-5c29`), and the seat runs on one machine (`T-20261017-b06e`).
 
 One player flies the hull. The **navigator** plays a one-thumb 2D game on a **board**, which is the hull's own x-z plane
 with the world projected onto it. The navigator flies a **kite**:
@@ -17,7 +36,7 @@ with the world projected onto it. The navigator flies a **kite**:
 |---|---|---|
 | Space | a blast at the loop's centre that destroys hostile prisms | `ExplosionHelper.CreateExplosion` with `AOEExplosion.prefab`, sparing our domain; `MaxScale = 60 × 2^(n−1)` (cap 640) |
 | Mass | a cluster of our domain's prisms | the hull's own `PrismSpawnChannel` and prism type, sized like the Sparrow's trail prism (2 × 2 × 5); `6 × 2^(n−1)` prisms (cap 240), at most 40 laid per frame |
-| Time | boost for the pilot | `1.5 × 2^(n−1)` s of `IsBoosting` (cap 30 s), spent on the pilot's trigger |
+| Time | boosts saved for the pilot | `round(2^(n−1))` boosts of 1.5 s each (at most 20, the lab's 30 s cap), spent one at a time on the pilot's trigger (round 4d) |
 | Charge | kite power | `1 × 2^(n−1)` petals; the next ram on a rival knocks out that many, and a ram kills a creature for one |
 
 A loop that holds more than one element **fizzles** (`mixedLoops = Fizzle`).
@@ -74,7 +93,7 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
     three Sparrow meters (shared world effects index a hull's meters by number, so emptying the list risks
     out-of-range; nothing fills them now).
   - **Still the Sparrow's** (in 4c): the HUD and the ability map. Round 4d gave the Wrasse its own (below).
-- **Each mote wears its crystal's effect, in lime**, round its petal (`KiteNavigatorView.CrystalEffect`, from the shipped
+- **Each mote wears its crystal's effect, in lime** (superseded by round 4d's five-petal flowers), round its petal (`KiteNavigatorView.CrystalEffect`, from the shipped
   crystals' numbers):
   - Charge: the seam walk, a bolt hopping round a pentagon every ~0.2 s with the last two seams thinning behind it.
   - Mass: the columns, six small triangles climbing out to 1.5× and down to 0.6 scale, then dropping back.
@@ -308,5 +327,25 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
   Wrasse into it as a duo design. It already follows the same shape: one hull class, the seat on the root, the
   arena's swap.
 - **Sounds.** All eight `EventReference` slots ship empty: loop closed, fizzle, pop, Mass, Time, Charge, steal, creature.
+- **The HUD is the Sparrow's view under a Wrasse controller** (inconsistency, a fix). `WrasseHUDController` drives
+  `SparrowHUDVariant` and re-enables the Charge and Space icons that `SparrowHUDView.Initialize` hides. The icons are
+  the Sparrow's art. A Wrasse HUD prefab variant (Create ▸ Prefab Variant, never a copy) with the kite's four icons
+  removes both (`T-20261018-8ff7`).
+- **The Vessel Changer's `vesselArt` list is carried twice** (a merge risk, not debt). `SO_VesselList`'s probe form,
+  `VesselChangerToyDefinitionSO.vesselArt` and the `Toy_VesselChanger.asset` wiring are byte-identical copies of the
+  in-flight `cece/determined-goodall-o1klfo` (the Toy Box's vessel pictures). Whichever lands second should merge
+  clean; if that branch edits those three hunks first, take its version.
+- **A station label falls back to the enum's name** (the legacy literal shape). `VesselChangerToy.LabelOf` shows
+  `SO_Vessel.CardName` and falls back to `VesselClassType.ToString()` when the definition has no `vesselArt` list or
+  the list misses a class. The shipped `Toy_VesselChanger.asset` wires `SO_Classlist_All`, which holds every rostered
+  class, so the fallback does not show today.
+- **`KiteNavigator.cs` is 967 lines and owns seven jobs**: board frame, motes, prism / rival / creature shadows, input,
+  head contacts, loop effects (with L5s and the Omni burst), and boosts. The effects and the boost bank are the natural
+  split: they read the config and the hull, never the board. Measured: the "tail: loops and their effects"
+  section runs lines 709-941 (233 of 967). Before splitting, list every field only those methods touch.
+- **The plane depth reaches two shader paths**: `PrismFlightSqrDistance` (every BlockGraph prism) and the swarm
+  members' spread. `ExplodingBlockGraph` (debris; constant distance) and `UnstablePrismGraph` (camera distance used
+  only for its flicker) keep the camera's distance in the kite view, which is incompleteness, not a defect. The kite
+  camera sees `viewDepth` (400 u) either side of the plane; mass beyond that is clipped.
 - **The generated-asset audit's 8 findings on `Wrasse.prefab`** (stale `ShowTopMostFoldoutHeaderGroup` keys, the
   `R_VesselElementStatsHandler.cs` file/class name) are inherited from `Sparrow.prefab`, which carries the same ones.

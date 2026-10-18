@@ -111,6 +111,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `CREW_VESSEL_LAB.md` round 1, Found 2 (mean live buff 1.06 levels; base levels 7.0/10.4/10.8/7.0 at 120 s).
 - Promoted: no
 
+### L-GEN-17 — A lab's canvas draws ported to Unity's instanced meshes: never `Sprites/Default`
+- Lab: Crew Vessel Lab → the Wrasse in Unity (`Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorView.cs`) · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: the lab's 2D overlay (kite, motes, rings) became world meshes drawn with `Graphics.RenderMeshInstanced` and a `Sprites/Default` material. It compiled, and the batching looked right. Garrett flew it and "couldn't see any petals": on the instanced path, `Sprites/Default` takes its colour from `unity_SpriteRendererColorArray`, which only a SpriteRenderer fills, so every instance drew at zero alpha.
+- Do instead: for instanced overlay draws, use `Universal Render Pipeline/Unlit` set up as a transparent, double-sided surface (`_Surface` 1, SrcAlpha/OneMinusSrcAlpha, `_ZWrite` 0, `_Cull` Off, `_SURFACE_TYPE_TRANSPARENT`). Keep `Sprites/Default` only for single non-instanced meshes whose vertices carry their own colour. When graduating a lab's look, hand the person the one thing to check first: "can you see it at all".
+- Evidence: `KiteNavigatorView.Unlit` and its comment; `KITE_NAVIGATOR.md` "Round 4b".
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -762,6 +769,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: the navigator plays on the flying vessel's x-z plane and can touch things within ±40 u of it. Motes placed in world space near the plane were touchable 1–4 times out of 30 within seconds, because every pitch and roll of the pilot swings a 160 u board through 150 × sin(angle) u. The AI planned loops round motes it could not take, and no loop ever fired.
 - Do instead: measure the touchable share of a plane-bound player's targets over time before tuning anything else. When it is low, give the targets an in-plane home (re-project them onto the plane each frame, so they flow with the world but stay touchable) and keep world-fixed as a deliberate option ("the pilot sweeps the slice").
 - Evidence: `CrewVesselLab.html` `stepMotes` (`motes: 'board'`), the Motes in the world preset; round 3 Found 6.
+- Promoted: no
+
+### L-STU-112 — A five-fold flower turned 72° looks unmoved: keep motion continuous, or break the symmetry
+- Lab: Crew Vessel Lab → the Wrasse's motes (`KiteNavigatorView.Flower`) · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: the Space motes copied the Space crystal's stepped group spin (72° in 1.1 s, then a hold). On a flower of five identical petals every rest pose is the start pose, so the spin read as a twitch. Garrett: "I didn't notice the space rotating".
+- Do instead: before porting a motion onto a symmetric shape, ask whether its rest poses are distinguishable. A step of 360°/n on an n-fold shape is invisible. Spin continuously, or mark one petal.
+- Evidence: `KITE_NAVIGATOR.md` "Round 4e" (`spaceSpinDegreesPerSecond` 150, continuous).
+- Promoted: no
+
+### L-STU-113 — To match a shipped icon's proportions, measure the shipped sprite; never shape it with free knobs
+- Lab: Crew Vessel Lab → the Wrasse's motes · Branch: `cece/compassionate-babbage-gc13io` · By: session_01C5GGXf6VL3oyrKAGWRtfMr · Date: 2026-10-18
+- What happened: to separate the petals, round 4e added `petalGap` and a non-uniform `petalWidth`. The width squashed every traced outline, so the Space dart "doesn't look the same in its proportions". The totem's flower already had the answer: each `Resources/ElementPetals/<element>_petal.png` is the whole flower, one petal at its true offset and size.
+- Do instead: trace the shipped asset (alpha bounds at 0.5 give each petal's centre offset and scale, in flower radii), scale uniformly, and delete the knobs that were standing in for that measurement.
+- Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
