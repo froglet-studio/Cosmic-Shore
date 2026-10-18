@@ -2792,3 +2792,6 @@ all three; `author_start_flow.py` now fails if any platform's order drops Apple 
 Android), alongside its existing checks that Steam is the desktop's silent provider and that Play as guest is on the
 CHOOSE face. Apple on Windows / Android / web means the login branch signs in through Apple's web flow (Sign in with
 Apple JS / REST) there, not the native iOS API.
+
+**Owner decision (2026-10-18):** the now-playing card rests on Home only (`NowPlayingCard.restingOn = { HOME }`, as
+built in §56); elsewhere in the menu it only appears briefly when the track changes.
