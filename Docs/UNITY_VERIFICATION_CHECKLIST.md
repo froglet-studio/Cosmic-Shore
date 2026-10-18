@@ -10534,3 +10534,16 @@ changed files (its errors are all in UGS multiplayer/friends files whose package
 4. Stoat foresight: rivals' predicted paths still draw.
 5. Stop Play: the auto-capture's `diag` lists `BlackHoleRegistry.LateUpdate` and the `BlackHole.*` rows by name
    (no anonymous `Driver.LateUpdate`).
+
+## 🔴 2026-10-18 — Early 4-minute auto-capture in Menu_Main (unverified: no Unity CLI in the session)
+
+**Files:** `Assets/_Scripts/Editor/Diagnostics/PerfAutoCapture.cs`, `Docs/DIAGNOSTICS.md`. What ran instead of
+`/verify-unity`: `unity_refcompile` editor (0 errors in changed files; the standing 3 are an unfetchable package),
+`perf_hunt.py --self-test`, console-logging and conditional-compilation gates.
+
+1. Code Optimization = Release. Play Menu_Main. The Scene view badge counts down `Auto-capture: S2-4min in 3:59`.
+2. At 4:00 it reads `S2-4min running; S2 follows at 8 min`, then counts down to S2.
+3. Stop Play after about 4½ minutes: the after-play pop-up shows 1 performance capture SENT, and
+   `bugledger/<you>` gets `capture_Menu_Main_S2-4min_*.json`.
+4. Play again for 8½ minutes or more: two captures go (S2-4min and S2).
+5. Skim Race (90 s) and Wildlife Liberation (2 min) behave as before: one capture each, no early one.
