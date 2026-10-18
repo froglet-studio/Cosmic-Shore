@@ -246,6 +246,20 @@ build plays like a release build.
 **To start a fresh install with the diagnostics off**, add `CS_DEV_DIAGNOSTICS_OFF` to the Android
 Build Profile's **Scripting Defines**. A choice made on the phone still wins over it.
 
+**A development APK without the Build Profiles window:** **FrogletTools > Build > Android APK
+(Development)**, or from the command line (the editor must not have the project open):
+
+```
+Unity -quit -batchmode -nographics -buildTarget Android -projectPath <proj> \
+      -executeMethod CosmicShore.Editor.CosmicShoreBuildPipeline.BuildAndroidDevelopment \
+      -buildOutput Builds/Android [-diagnosticsOff] [-buildVersion 0.2.1] -logFile <log>
+```
+
+It writes `Builds/Android/CosmicShore-<version>-<code>-dev.apk`, signed with Unity's debug key, and
+puts Player Settings back afterwards. `-diagnosticsOff` builds it with `CS_DEV_DIAGNOSTICS_OFF`.
+Install it with `adb install -r <apk>`. A phone that holds the Play (upload-key) install must
+uninstall that first, because Android refuses an update signed with a different key.
+
 What the switch does not change:
 
 - Unity's **"Development Build"** watermark in the corner. Unity has no setting for it.
