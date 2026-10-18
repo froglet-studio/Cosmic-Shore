@@ -1075,3 +1075,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), anyone; Garrett for the sign question and the deletions
 - **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/VesselModels/README.md
+
+### T-20261018-6a9d · open · test · Menu_Main / Profile / Bootstrap
+- **Task:** Hand-test the Rev 10 play-test fixes (now-playing card on the Profile tab only, Audio Studio buttons no longer overlap, navy record and friends panel, fuller pilot record) and the Bootstrap welcome card
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Rev 10 play-test fixes' and '§58 Bootstrap welcome card' steps pass in the editor
+- **Who can take it:** Shombith; Yash (offered)
+- **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §56 play-test round, §58
