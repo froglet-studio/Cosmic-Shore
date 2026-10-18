@@ -67,9 +67,9 @@ Wired today:
   `VesselOvertakeBySkimmerEffectSO`'s debuff direction → `VesselContact`. An `All` ward covers all
   three plus anything added later; the Dolphin's covers the first alone.
 - It does **not** cover the non-elemental danger-prism punishments — the speed slam
-  (`VesselChangeSpeedByPrismEffectSO`) and the Rhino's input mute
-  (`SparrowDebuffByRhinoDangerPrismEffectSO`) still land. Danger prisms still hurt; they just can't
-  drain your elements.
+  (`VesselChangeSpeedByPrismEffectSO`) still lands. (The Rhino's input mute,
+  `SparrowDebuffByRhinoDangerPrismEffectSO`, also landed until it was deleted 2026-10-17 under the
+  control-theft rule.) Danger prisms still hurt; they just can't drain your elements.
 
 The upgrade gate resolves through `IsUpgradeActive(Element.Time)` — the **replicated**
 `NetElementUnlocks` bits, never a raw local level read, so every peer agrees on who is warded.
@@ -355,7 +355,8 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
 6. **Ward, unlocked.** Raise Time to 5 (`ResourceSystem.TimeTestHarness = 0.5` on the vessel, or
    collect Time crystals) — the Time icon tints and grows its white Time petal badge. Now:
    - **while boosting**, hit the same danger prism → flowers do **not** dip. You are still slowed
-     and still take the input mute; only the elemental drain is denied.
+     (the input mute this step once listed was deleted 2026-10-17); only the elemental drain is
+     denied.
    - **not boosting**, hit it → flowers dip normally.
 
    > **"You are still slowed" was aspirational until 2026-08-15.** The immunity gate is, and always
@@ -366,7 +367,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    > `SparrowVesselChangeSpeedByPrism` (the Squirrel's numbers); this step is now actually
    > falsifiable. `SparrowDebuffByRhinoDangerPrismEffectSO` was never the slow despite its
    > `vesselSlowedByRhinoDangerPrismEvent` field and its "Slow Viewer Integration" header — it
-   > mutes an input and raises events, nothing more.
+   > muted an input and raised events, nothing more (deleted 2026-10-17).
 7. **Serpent, ungated.** Serpent in the same scene, Time at any level. Stopped (turret/weave
    stance) + danger prism → no flower dip. Moving → normal dip.
 7b. **Dolphin, SCOPED (§1.1).** Dolphin at Time 5, drifting. (a) danger prism → **no** flower dip;
@@ -379,7 +380,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
 9. **MPPM, two clients.** Both on Sparrows, one at Time 5, one below. Confirm on **both** machines
    that only the Time-5 pilot resists the elemental drain while boosting — this is what the
    replicated `NetElementUnlocks` path buys, and a local-level read would pass step 6 and fail here.
-10. **Audit.** `FrogletTools > Vessels > Audit Vessel Ability Rows` — the Sparrow row must still
+10. **Audit.** `FrogletTools > Vessels > Audits > Audit Vessel Ability Rows` — the Sparrow row must still
     report 4/4 icons in charge → mass → space → time order.
 
 ## Follow-ups

@@ -8,7 +8,7 @@ namespace CosmicShore.UI
     /// The <b>2D face of a toy</b>, for the app shell's Toy Box.
     ///
     /// <para>It resolves the portrait the in-game encyclopedia already bakes rather than authoring
-    /// a second set of icons: <c>FrogletTools &gt; Interface &gt; Codex</c> draws every toy from
+    /// a second set of icons: <c>FrogletTools &gt; UI &gt; Codex</c> draws every toy from
     /// its own <c>ToyEmblem</c> grammar (core + satellites inside the switch ring) and bakes the
     /// result to <c>Assets/_Graphics/Codex/</c>, so the flat card in the menu is a picture of the
     /// same emblem the player flies at in freestyle - and re-baking the emblem re-skins the menu

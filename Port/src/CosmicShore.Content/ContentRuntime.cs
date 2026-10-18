@@ -294,6 +294,25 @@ namespace CosmicShore.Content
 
         // ── ISceneContentBackend ─────────────────────────────────────────────
 
+        /// <summary>
+        /// Enabled build-list membership by bare scene name or asset path (case-insensitive, the
+        /// same matching <see cref="ResolveScenePath"/> uses for the list). Unlike that lookup it
+        /// never falls back to the rest of the project: a scene outside the build list is one a
+        /// Unity player cannot load by name, which is the question being asked.
+        /// </summary>
+        public bool IsInBuildList(string nameOrPath)
+        {
+            if (string.IsNullOrEmpty(nameOrPath)) return false;
+            bool isPath = nameOrPath.EndsWith(".unity", StringComparison.OrdinalIgnoreCase);
+            foreach (var (path, _, enabled) in BuildScenes)
+            {
+                if (!enabled || string.IsNullOrEmpty(path)) continue;
+                string candidate = isPath ? path : Path.GetFileNameWithoutExtension(path);
+                if (string.Equals(candidate, nameOrPath, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
         public void Load(string sceneName, LoadSceneMode mode, Scene scene)
         {
             var path = ResolveScenePath(sceneName);

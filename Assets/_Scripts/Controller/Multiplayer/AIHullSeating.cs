@@ -14,6 +14,11 @@ namespace CosmicShore.Gameplay
     /// one-pilot-per-hull rule. An <b>ally</b> seat is an AI on a domain a human flies; it flies
     /// the hull a teammate picked for it on the launch panel, or the card's ordinary draw when
     /// nobody picked (<see cref="VesselClassType.Random"/>).</para>
+    ///
+    /// <para><b>The host picks for every seat</b> (2026-10-14, "test 5 vessels on Regatta"): the
+    /// host may step ANY AI chip, an opponent's included, so one person can put a whole mixed grid
+    /// on the course; a pick on an opponent seat replaces the pinned hull for that seat only. A
+    /// guest still picks only for their own team's allies.</para>
     /// </summary>
     public static class AIHullSeating
     {
@@ -29,6 +34,25 @@ namespace CosmicShore.Gameplay
         public static bool IsOpponentSeat(VesselClassType opponentHull, Domains seatDomain,
                                           ICollection<Domains> humanDomains) =>
             IsConcrete(opponentHull) && (humanDomains == null || !humanDomains.Contains(seatDomain));
+
+        /// <summary>
+        /// Whether a pilot may pick AI seat's hull: the host for every seat, anyone else only for
+        /// an ally on their own team (<paramref name="requesterDomain"/> == <paramref name="seatDomain"/>).
+        /// </summary>
+        public static bool MayPick(bool requesterIsHost, Domains requesterDomain, Domains seatDomain) =>
+            requesterIsHost || requesterDomain == seatDomain;
+
+        /// <summary>
+        /// The hull an AI seat flies before the card's draw: a concrete <paramref name="picked"/>
+        /// hull wins (an opponent seat included); otherwise an opponent seat flies the card's pinned
+        /// <paramref name="opponentHull"/>; otherwise <see cref="VesselClassType.Random"/> (the draw).
+        /// The spawner still checks a pick is legal, built and free before it flies it.
+        /// </summary>
+        public static VesselClassType SeatHull(VesselClassType opponentHull, Domains seatDomain,
+                                               ICollection<Domains> humanDomains, VesselClassType picked) =>
+            IsConcrete(picked) ? picked
+            : IsOpponentSeat(opponentHull, seatDomain, humanDomains) ? opponentHull
+            : VesselClassType.Random;
 
         /// <summary>
         /// Step an ally seat's pick through <c>Random</c> (auto) followed by

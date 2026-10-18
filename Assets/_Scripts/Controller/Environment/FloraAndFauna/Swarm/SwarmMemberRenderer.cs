@@ -24,6 +24,12 @@ namespace CosmicShore.Gameplay
     /// crystal models off the elemental crystal set, so a member looks the same whether the swarm draws
     /// it or the platform does (after death). Colours are the palette's (plain / danger / shielded tier
     /// pairs of the swarm's domain, and the living-heart neutral pair) - read once, at bind.
+    ///
+    /// Two carriers, one picture (Docs/SWARM_FAUNA.md §14.8): where the device has vertex-stage structured
+    /// buffers (<see cref="Supported"/>) the instances live in a GraphicsBuffer as above; where it does not
+    /// (WebGL2, GLES 3.0) the same instances are drawn by <see cref="SwarmMemberFallbackDraw"/> - per-instance
+    /// constants, SM 3.5, the same pose and look code. Either way <see cref="Valid"/> is true and the swarm keeps
+    /// its members as data; only a device with neither path falls back to a GameObject per member.
     /// </summary>
     public sealed class SwarmMemberRenderer : System.IDisposable
     {
@@ -60,9 +66,14 @@ namespace CosmicShore.Gameplay
         int _heartTotal;
         readonly int[] _heartStart = new int[4], _heartCount = new int[4];
         int _layer;
+        // non-null on a device without vertex-stage structured buffers: the SM 3.5 instanced draw (§14.8)
+        readonly SwarmMemberFallbackDraw _fallback;
         static bool s_warned;
 
         public bool Valid { get; }
+
+        /// <summary>True when this renderer draws through the SM 3.5 instanced path (no compute on this device).</summary>
+        public bool UsesFallback => _fallback != null;
 
         /// <summary>
         /// Round 11a (Docs/SWARM_FAUNA.md §19.2): false while the member BODIES are drawn as ordinary prism render
@@ -71,20 +82,40 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool DrawBodies { get; set; } = true;
 
-        /// <summary>Instanced drawing needs structured buffers in the VERTEX stage (SM 4.5).</summary>
+        /// <summary>The GraphicsBuffer path needs structured buffers in the VERTEX stage (SM 4.5). Without them the
+        /// SM 3.5 path (<see cref="SwarmMemberFallbackDraw"/>) draws the same members.</summary>
         public static bool Supported =>
             SystemInfo.supportsComputeShaders && SystemInfo.maxComputeBufferInputsVertex > 0;
+
+        /// <summary>
+        /// Dev A/B only (the <c>memberdraw</c> console command, editor and development builds): renderers built while
+        /// this is on take the SM 3.5 path even where the GraphicsBuffer path is supported, so the WebGL draw can be
+        /// compared with the desktop one in the editor. Read once, at construction; never set by game code.
+        /// </summary>
+        public static bool ForceFallback { get; set; }
+
+        /// <summary>Whether a renderer built now draws through <see cref="SwarmMemberFallbackDraw"/>.</summary>
+        public static bool UseFallback => !Supported || ForceFallback;
 
         public SwarmMemberRenderer(Shader shader, SwarmTadpoleFauna prefab, int cap, int layer)
         {
             _cap = cap;
             _layer = layer;
-            if (!shader || !Supported || !prefab)
+            if (!shader || !prefab)
             {
-                Warn(!shader ? "SwarmFaunaConfigSO.MemberShader is not assigned"
-                     : !Supported ? $"this device has no vertex-stage structured buffers ({SystemInfo.graphicsDeviceType})"
-                     : "the tadpole prefab is missing");
+                Warn(!shader ? "SwarmFaunaConfigSO.MemberShader is not assigned" : "the tadpole prefab is missing");
                 return;
+            }
+            Material fallbackMaterial = null;
+            if (UseFallback)
+            {
+                fallbackMaterial = SwarmMemberFallbackDraw.LoadMaterial(out var whyNot);
+                if (!fallbackMaterial)
+                {
+                    Warn((Supported ? "the SM 3.5 path was forced (memberdraw)" :
+                          $"this device has no vertex-stage structured buffers ({SystemInfo.graphicsDeviceType})") + $" and {whyNot}");
+                    return;
+                }
             }
 
             var bodyPrism = prefab.GetComponentInChildren<HealthPrism>(true);
@@ -113,6 +144,17 @@ namespace CosmicShore.Gameplay
                 }
             }
             if (_hearts.Count == 0) Warn("no elemental crystal model was found - hearts will not be drawn");
+
+            if (fallbackMaterial)
+            {
+                _fallback = new SwarmMemberFallbackDraw(fallbackMaterial, cap);
+                _fallback.AddBody(_body.Mesh, _body.Submesh, _body.Local);
+                foreach (var part in _hearts) _fallback.AddHeart(part.Mesh, part.Submesh, part.Local, part.Element);
+                _mpbs.AddRange(_fallback.Blocks);   // the palette / spread setters below write every block
+                SwarmMemberFallbackDraw.Announce("Swarm", forced: Supported);
+                Valid = true;
+                return;
+            }
 
             _mat = new Material(shader) { name = "SwarmMemberInstanced (runtime)", hideFlags = HideFlags.DontSave };
             var bodyBlock = new MaterialPropertyBlock();
@@ -174,6 +216,13 @@ namespace CosmicShore.Gameplay
         public void Upload(SwarmInstance[] instances, uint[] heartIdx, int[] heartStart, int[] heartCount)
         {
             if (!Valid) return;
+            if (_fallback != null)
+            {
+                _fallback.UploadBodies(instances, 0);
+                _fallback.BeginHearts();
+                for (int e = 0; e < 4; e++) _fallback.UploadHearts(e, instances, 0, heartIdx, heartStart[e], heartCount[e]);
+                return;
+            }
             _inst.SetData(instances, 0, 0, _cap);
             _heartTotal = 0;
             for (int e = 0; e < 4; e++)
@@ -191,13 +240,19 @@ namespace CosmicShore.Gameplay
         {
             if (!Valid || i < 0 || i >= _cap) return;
             instances[i].Flags = 0u;
-            _inst.SetData(instances, i, i, 1);
+            if (_fallback != null) _fallback.Hide(i);
+            else _inst.SetData(instances, i, i, 1);
         }
 
         /// <summary>Once per FRAME. Nothing here scales with the member count.</summary>
         public void Draw(Bounds bounds, float alpha, float clock, float bloomTicks, Vector3 up, Vector3 upAlt, int count)
         {
             if (!Valid || count <= 0) return;
+            if (_fallback != null)
+            {
+                _fallback.Draw(bounds, _layer, DrawBodies, count, alpha, clock, bloomTicks, up, upAlt);
+                return;
+            }
             for (int q = 0; q < _mpbs.Count; q++)
             {
                 var b = _mpbs[q];

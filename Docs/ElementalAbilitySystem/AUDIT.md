@@ -56,7 +56,8 @@ the moment of fixing (all carry citations).
    (`FullAutoAction.asset`: `speedValue {Enabled:1, Min:1500, Max:4000, element:3=Space}`) **and
    does nothing.** Same for `OverheatingAction.heatDecayRate` (Charge — that asset and its SO were
    deleted in 2026-08 with the overheat mechanic), Rhino's
-   `GrowTrailAction.maxSize` (Mass), Serpent's `ConsumeBoostAction.boostMultiplier` (Time,
+   `GrowTrailAction.maxSize` (Mass — the action itself never ran and was deleted 2026-10-16; the
+   Rhino's Mass is now Afterimage, `FLEET_MAPS.md` §2), Serpent's `ConsumeBoostAction.boostMultiplier` (Time,
    also `Enabled:0`).
 2. **The binder is doubly broken even if re-enabled.** `ElementalFloatBinder.cs:33` reflects
    `GetProperty("Ship")` — the property was renamed `Vessel`; the `?.` swallows the null → silent
@@ -126,9 +127,13 @@ Full-history forensics (`git fetch --unshallow`, 7,248 commits) plus code verifi
   verified present on that branch and absent from HEAD. Its commit message describes this exact
   crash. Cherry-pick it (BACKLOG Phase 0.1).
 - Related trap: `4861801bd` (in HEAD) fixed client-side vessel injection but explicitly does not
-  cover pool replenishment. And `origin/claude/falcon-brittlestar-reintro-oyx1q1` carries a
-  `maxSyncPrewarm=8` pool cap **without** `f1f278ab4` — merging it as-is would make the NRE fire
-  after ~8 shots, i.e. strictly worse.
+  cover pool replenishment. **Correction (2026-10-14):** this row used to say
+  `origin/claude/falcon-brittlestar-reintro-oyx1q1` carries a `maxSyncPrewarm=8` pool cap; no such
+  field exists on that branch, on `Bleeding-Edge-Reintroduce-Falcon` or on HEAD (`git grep
+  maxSyncPrewarm`). The branch prewarms `max(defaultCapacity, bufferSizeTarget)` = 100 and lacks the
+  injection fix, which HEAD now has (`ProjectilePoolManager.OnInstanceCreated`). The Brittle Star
+  was rebuilt from its class document as `VesselClassType.BrittleStar = 16`: the Unity contract is
+  `R_VesselActions/BRITTLE_STAR.md`, the research and design studio `Docs/Studios/BRITTLE_STAR.md`.
 
 ### #2 — Skyburst missiles become permanent duds via pooled collider state (CONFIRMED)
 

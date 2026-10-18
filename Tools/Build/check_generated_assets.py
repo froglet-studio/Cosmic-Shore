@@ -83,6 +83,14 @@ MB_STANDARD = {"m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInst
 UNITY_OBJECT = "UnityEngine.Object"
 
 
+def is_ref_registry(v):
+    """Unity's [SerializeReference] registry: a top-level `references:` block (`version` + `RefIds`)
+    that Unity writes beside the fields of any object holding managed references, at any depth (the
+    drill SOs' MentorTip.Moment / LessonStep.Condition). It is not a field, so the schema never lists
+    it; a `references` key without that shape is still checked as an ordinary field."""
+    return isinstance(v, dict) and "version" in v and "RefIds" in v
+
+
 # --------------------------------------------------------------------------------------------
 # file access (an overlay lets --self-test inject defects without touching the tree)
 # --------------------------------------------------------------------------------------------
@@ -338,6 +346,34 @@ class Audit:
         p = self.guids.get(guid)
         return p[0] if p else None
 
+    def has_object(self, rel, fid, depth=0):
+        """True when `fid` names an object of prefab/scene `rel`: one of its own documents, OR an
+        object it inherits through a PrefabInstance that it never writes out. Unity gives such an
+        object the id `(instanceFileID XOR sourceFileID) & INT64_MAX` - so a variant of a variant
+        references, and overrides, ids that appear in no document of its source. Checking anchors
+        alone reported every one of those as missing (the Skim Race ring crystal, a variant of
+        BigCrystalVariant, which is itself a variant of Crystal.prefab)."""
+        anchors = self.anchors(rel)
+        if anchors is None or fid in anchors:
+            return True
+        if depth > 8:
+            return False
+        try:
+            want = int(fid)
+        except ValueError:
+            return False
+        for inst_fid, doc in anchors.items():
+            if doc.cls != 1001:
+                continue
+            src = (doc.data or {}).get("m_SourcePrefab") if isinstance(doc.data, dict) else None
+            src_rel = self.resolve(src.get("guid")) if isinstance(src, dict) else None
+            if not src_rel or not src_rel.endswith(YAML_EXT) or not self.tree.exists(src_rel):
+                continue
+            sid = ((want & 0xFFFFFFFFFFFFFFFF) ^ (int(inst_fid) & 0xFFFFFFFFFFFFFFFF)) & 0x7FFFFFFFFFFFFFFF
+            if self.has_object(src_rel, str(sid), depth + 1):
+                return True
+        return False
+
     def class_of(self, rel, doc):
         """Full schema name of a MonoBehaviour doc's script class, or None."""
         if doc.cls != 114 or not isinstance(doc.data, dict):
@@ -402,8 +438,7 @@ class Audit:
         if not target:
             return [("guid", rel, "%s.%s -> guid %s resolves to no asset in Assets/" % (where, path, guid))]
         if target.endswith(YAML_EXT) and self.tree.exists(target):
-            anchors = self.anchors(target)
-            if anchors is not None and fid not in anchors:
+            if not self.has_object(target, fid):
                 return [("guid", rel, "%s.%s -> fileID %s does not exist in %s" % (where, path, fid, target))]
         return []
 
@@ -443,6 +478,8 @@ class Audit:
         fields = self.schema.fields(full)
         for k, v in data.items():
             if k in standard:
+                continue
+            if depth == 0 and k == "references" and is_ref_registry(v):
                 continue
             f = fields.get(k)
             if f is None:
@@ -670,6 +707,10 @@ def run_audit(tree, schema, base, added, modified, deleted_metas, base_text):
         findings += [f for f in now if f not in old]
     # nothing may still reference a deleted file's guid
     for meta, guid in deleted_metas:
+        # A MOVED file (git mv: same guid, new path) is not deleted: its guid still has an owner, so every reference
+        # to it still resolves. Without this the moved file's own .meta was reported as referencing itself.
+        if guids.get(guid):
+            continue
         hits = subprocess.run(["git", "grep", "-l", guid, "--", "Assets"], cwd=tree.root, stdout=subprocess.PIPE,
                               text=True).stdout.split()
         hits += [k for k, v in tree.overlay.items() if guid in v]
@@ -823,12 +864,33 @@ def self_test(schema, base):
     hit = [f for f in found if f[0] == "guid" and ugui_image in f[2]]
     print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "package script guid on a new document is NOT a finding", hit[0][2][:110] if hit else ""))
     ok &= not hit
+    # Unity's [SerializeReference] registry is not a field; a `references` key without its shape is
+    registry = "  references:\n    version: 2\n    RefIds: []\n"
+    found, _ = run_audit(Tree(ROOT, {cfg: tree0.read(cfg).rstrip("\n") + "\n" + registry}),
+                         schema, base, added, [], [], lambda r: None)
+    quiet = not [f for f in found if f[0] == "field" and "`references`" in f[2]]
+    print("  [%s] %-60s" % ("ok" if quiet else "FALSE HIT", "SerializeReference registry is not reported"))
+    ok &= quiet
+    found, _ = run_audit(Tree(ROOT, {cfg: tree0.read(cfg).rstrip("\n") + "\n  references: 3\n"}),
+                         schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "field" and "`references`" in f[2]]
+    print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "a plain `references` key is still a dead field", hit[0][2][:110] if hit else ""))
+    ok &= bool(hit)
     # a deleted file still referenced
     found, _ = run_audit(Tree(ROOT, deleted=[cfg + ".meta"]), schema, base, added[2:], [],
                          [(cfg + ".meta", meta_guid(tree0, cfg))], lambda r: None)
     hit = [f for f in found if f[0] == "deleted"]
     print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "reference to a deleted asset", hit[0][2][:110] if hit else ""))
     ok &= bool(hit)
+    # an object a variant inherits without writing it out: its derived id must resolve, and a
+    # neighbouring id must not (BigCrystalVariant -> Crystal.prefab; root Transform 5535990081244205889)
+    audit = Audit(Tree(ROOT), schema, build_guid_index(Tree(ROOT))[0])
+    variant = "Assets/_Prefabs/Environment/BigCrystalVariant.prefab"
+    derived_ok = audit.has_object(variant, str(5535990081244205889 ^ 1710552517093063004))
+    bogus_ok = not audit.has_object(variant, str((5535990081244205889 ^ 1710552517093063004) - 1))
+    print("  [%s] %-60s" % ("ok" if derived_ok else "MISSED", "variant-derived fileID resolves"))
+    print("  [%s] %-60s" % ("ok" if bogus_ok else "MISSED", "a fileID derivable from nothing is still missing"))
+    ok &= derived_ok and bogus_ok
     print("self-test " + ("passed" if ok else "FAILED"))
     return 0 if ok else 1
 

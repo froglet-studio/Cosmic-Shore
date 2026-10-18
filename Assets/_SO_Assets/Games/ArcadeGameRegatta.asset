@@ -35,6 +35,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
   - {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
   - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
+  - {fileID: 11400000, guid: cc163188820f4e7a985561bc609da2e0, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 6
   MinDomainsAllowed: 2
@@ -79,6 +80,13 @@ MonoBehaviour:
       Charge: 0
       Space: 0
       Time: 1
+  - Class: 15
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
   - Class: 1
     Intensity: 2
     Levels:
@@ -107,6 +115,13 @@ MonoBehaviour:
       Charge: 0
       Space: 0
       Time: 1
+  - Class: 15
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
   - Class: 1
     Intensity: 3
     Levels:
@@ -135,6 +150,13 @@ MonoBehaviour:
       Charge: 0
       Space: 0
       Time: 1
+  - Class: 15
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
   - Class: 1
     Intensity: 4
     Levels:
@@ -157,6 +179,13 @@ MonoBehaviour:
       Space: 0
       Time: 1
   - Class: 12
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 15
     Intensity: 4
     Levels:
       Mass: 0

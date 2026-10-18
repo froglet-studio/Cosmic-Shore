@@ -15,7 +15,7 @@ targets, in priority order.
 
 **Why first.** It's the most complex orchestrator in the party system.
 Mixes Netcode transitions, lobby joins, error recovery, and UI state in
-one ~450-line class. The NetDiag overlay added in commit `aaba872` now
+one class (written as ~450 lines; **731 measured 2026-10-17**). The NetDiag overlay added in commit `aaba872` now
 makes its catch-block failure modes interpretable — so this refactor
 can be planned against real log data rather than guesswork.
 

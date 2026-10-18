@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(18, values.Length,
+            Assert.AreEqual(20, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -54,7 +54,10 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Butterfly, 13)]
         [TestCase(VesselClassType.Thresher, 14)]
         [TestCase(VesselClassType.Stoat, 15)]
-        [TestCase(VesselClassType.Goby, 16)]
+        [TestCase(VesselClassType.BrittleStar, 16)]
+        [TestCase(VesselClassType.Angler, 17)]
+        [TestCase(VesselClassType.Goby, 18)]
+        [TestCase(VesselClassType.Wrasse, 19)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -223,9 +226,11 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void GameModes_MultiplayerModes_AllContainMultiplayerInName()
+        public void GameModes_MultiplayerModes_AreFlaggedMultiplayerOnTheirCards()
         {
-            // Convention check: multiplayer modes should be identifiable by name.
+            // A multiplayer mode is marked by its card's SO_Game.IsMultiplayer, not by its name:
+            // the domain modes were named Joust and Scurry when they replaced the Multiplayer*
+            // prototypes, so the old "name contains Multiplayer" convention no longer holds.
             var multiplayerModes = new[]
             {
                 GameModes.Multiplayer2v2CoOpVsAI,
@@ -234,10 +239,19 @@ namespace CosmicShore.Tests
                 GameModes.Scurry
             };
 
+            var cards = UnityEditor.AssetDatabase.FindAssets("t:SO_Game")
+                .Select(UnityEditor.AssetDatabase.GUIDToAssetPath)
+                .Select(UnityEditor.AssetDatabase.LoadAssetAtPath<CosmicShore.ScriptableObjects.SO_Game>)
+                .Where(card => card)
+                .ToList();
+
             foreach (var mode in multiplayerModes)
             {
-                Assert.IsTrue(mode.ToString().Contains("Multiplayer"),
-                    $"Multiplayer mode {mode} should contain 'Multiplayer' in its name.");
+                var forMode = cards.Where(card => card.Mode == mode).ToList();
+                Assert.IsNotEmpty(forMode, $"Multiplayer mode {mode} has no SO_Game card.");
+                foreach (var card in forMode)
+                    Assert.IsTrue(card.IsMultiplayer,
+                        $"{UnityEditor.AssetDatabase.GetAssetPath(card)} is the {mode} card and must set IsMultiplayer.");
             }
         }
 

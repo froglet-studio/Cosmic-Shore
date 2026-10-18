@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
   m_Name: Goby
   m_EditorClassIdentifier:
-  vesselClass: 16
+  vesselClass: 18
   entries:
   - Element: 1
     AbilityLabel: Crystal Joust

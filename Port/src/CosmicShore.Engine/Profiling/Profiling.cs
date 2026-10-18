@@ -3,8 +3,8 @@ using System;
 namespace CosmicShore.Engine.Profiling
 {
     // First-party stand-ins for the Unity.Profiling surface the codebase instruments
-    // with. No-ops until the benchmark tool gets a collector in this engine; call
-    // sites port verbatim (using-swap only).
+    // with; call sites port verbatim (using-swap only). Markers record into
+    // MarkerCollector (main loop thread, inclusive time, calls, allocated bytes).
 
     public readonly struct ProfilerCategory
     {
@@ -39,13 +39,26 @@ namespace CosmicShore.Engine.Profiling
     public readonly struct ProfilerMarker
     {
         public readonly string Name;
-        public ProfilerMarker(string name) { Name = name; }
-        public ProfilerMarker(ProfilerCategory category, string name) { Name = name; }
+        /// <summary>This engine's collector id for the marker (0 for a default marker).</summary>
+        public readonly int Id;
+        public ProfilerMarker(string name) : this(ProfilerCategory.Scripts, name) { }
+        public ProfilerMarker(ProfilerCategory category, string name)
+        {
+            Name = name;
+            Id = MarkerCollector.Register(category.Name, name, declared: true);
+        }
 
-        public readonly struct AutoScope : IDisposable { public void Dispose() { } }
-        public AutoScope Auto() => default;
-        public void Begin() { }
-        public void End() { }
+        public readonly struct AutoScope : IDisposable
+        {
+            readonly int _id;
+            internal AutoScope(int id) { _id = id; }
+            public void Dispose() => MarkerCollector.End(_id);
+        }
+
+        public AutoScope Auto() { MarkerCollector.Begin(Id); return new AutoScope(Id); }
+        public void Begin() => MarkerCollector.Begin(Id);
+        public void Begin(Object contextUnityObject) => MarkerCollector.Begin(Id);
+        public void End() => MarkerCollector.End(Id);
     }
 
     // Class (not struct, unlike the original): the original wrote through native

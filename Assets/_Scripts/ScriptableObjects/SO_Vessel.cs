@@ -15,6 +15,23 @@ public class SO_Vessel : ScriptableObject
     [SerializeField] public string Name;
     [SerializeField] public string Description;
 
+    [Header("Crew (an asymmetric multiplayer vessel: one hull, two seats)")]
+    [Tooltip("Each subvessel's own name, in the order its card names them: the Wrasse's are Wrasse (the navigator's " +
+             "kite) and Grouper (the pilot's hull). Leave empty on a one-seat vessel.")]
+    [SerializeField] public string[] CrewNames;
+    [Tooltip("How a card joins the first two crew names: {0} is the first, {1} the second. Empty shows Name alone.")]
+    [SerializeField] public string CrewNameTemplate = "{0} and {1}";
+
+    /// <summary>
+    /// What a card calls this vessel: a crew vessel's two subvessel names joined by <see cref="CrewNameTemplate"/>
+    /// ("Wrasse and Grouper"), else <see cref="Name"/>. Display only: <see cref="Name"/> stays the vessel's key (the
+    /// hangar's cloud unlocks are keyed by it).
+    /// </summary>
+    public string CardName =>
+        CrewNames is { Length: >= 2 } && !string.IsNullOrEmpty(CrewNameTemplate)
+            ? CrewNameTemplate.Replace("{0}", CrewNames[0]).Replace("{1}", CrewNames[1])
+            : Name;
+
     [Header("Element Configuration")]
     [SerializeField] public Element PrimaryElement;
     [SerializeField] public SO_Element Element;

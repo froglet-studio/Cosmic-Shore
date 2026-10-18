@@ -84,6 +84,7 @@ namespace CosmicShore.Player
             s_frames++;
             if (++s_sceneFrame == 30) OpenSteadyWindow();
             long alloc = GC.GetTotalAllocatedBytes(false);
+            if (s_frames == 30) CosmicShore.Engine.Profiling.MarkerCollector.ResetTotals(); // markers too: loading is not a system's cost
             if (s_frames == 30) // steady state starts after the first frames' loading
                 (s_steady0, s_steadyPause0, s_steadyGc0, s_steadyGc1, s_steadyGc2) =
                     (DateTime.UtcNow, GC.GetTotalPauseDuration(), GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
@@ -239,6 +240,37 @@ namespace CosmicShore.Player
             };
         }
 
+        /// <summary>
+        /// Per-system cost from the game's own <c>ProfilerMarker</c>s (<see cref="CosmicShore.Engine.Profiling.MarkerCollector"/>),
+        /// from frame 30, most expensive first: the same names <c>diag</c> reports in Unity. Milliseconds
+        /// are this engine's (managed, no Burst, jobs on the loop thread), so compare them run against
+        /// run; allocations come from the game's own code and carry over to Unity.
+        /// </summary>
+        static object Markers()
+        {
+            var all = CosmicShore.Engine.Profiling.MarkerCollector.Summarize();
+            return new
+            {
+                frames = CosmicShore.Engine.Profiling.MarkerCollector.TotalFrames,
+                count = all.Count,
+                top = all.Take(60).Select(m => new
+                {
+                    name = m.Name,
+                    category = m.Category,
+                    avgMsPerFrame = Math.Round(m.AvgMsPerFrame, 4),
+                    p50Ms = m.P50Ms,
+                    p95Ms = m.P95Ms,
+                    maxMs = Math.Round(m.MaxMs, 3),
+                    callsPerFrame = Math.Round(m.CallsPerFrame, 2),
+                    kbPerFrame = Math.Round(m.KBPerFrame, 3),
+                    activeFrames = m.ActiveFrames,
+                }).ToList(),
+                // The allocators, by bytes: a zero-GC target is a row that must read 0 here.
+                allocating = all.Where(m => m.KBPerFrame > 0).OrderByDescending(m => m.KBPerFrame).Take(30)
+                    .Select(m => new { name = m.Name, kbPerFrame = Math.Round(m.KBPerFrame, 3), callsPerFrame = Math.Round(m.CallsPerFrame, 2) }).ToList(),
+            };
+        }
+
         static double Percentile(double p) => Percentile(s_buckets, p);
 
         /// <summary>The p-th percentile of a time histogram, in ms (0.1 ms resolution).</summary>
@@ -350,6 +382,7 @@ namespace CosmicShore.Player
                     cpu = Cpu(),
                     gpu = Gpu(),
                     memory = Memory(),
+                    markers = Markers(),
                     scenes,
                     perScene = s_sceneBuckets.Where(kv => kv.Value.Sum() > 0).Select(kv => new
                     {

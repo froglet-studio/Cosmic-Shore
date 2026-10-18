@@ -37,6 +37,11 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B27 | A late sign-in re-joined the presence lobby of an OFFLINE session | Fixed 2026-10-08; L1 test + negative control | 🟡 |
 | B28 | The boot gate's in-attempt retry was unbounded, so "three attempts" was a minimum and the offline fallback could arrive minutes late | Fixed 2026-10-08 (bounded by the per-attempt timeout) | 🟡 |
 | B29 | The Join/Accept pre-flight refuses on STALE presence: a party that just shrank reads as "full", and a host that just re-created its session reads as "no longer available" | **Session case fixed 2026-10-09** (an invite and the `partySession` it names now go out in one save; this was "defect 5"); the Count case is open - its cure is Block 5 (push instead of poll) | 🟡 |
+| B30 | A party guest's swapped-in vessel never moves, and the gap throws every 250 ms | Root-caused & fixed 2026-10-13; playtest-confirmed by the owner | 🟢 |
+| B31 | While a party exists, its session refresh is rate-limited (429) about every 10 s, and the record did not count it | Root-caused & fixed 2026-10-17: two GETs per 1.5 s tick (1.33/s) against UGS's 1 GET/s/player; the party GET now runs at most every 6 s (0.83/s). Needs a two-machine retest | 🟡 |
+| B32 | After a guest leaves mid-match, the host's presence lobby answers `NotInLobby` and the host sits in `Reconnecting` for the rest of the session | Root-caused & fixed 2026-10-17: the leaving player hosted the shared presence lobby and its leave DELETED it; the host then never left `Reconnecting`. Needs a two-machine retest | 🟡 |
+| B33 | In the editor, a new Play starts inside the PREVIOUS Play's party session (no domain reload), so the first ~30 s fail with "lobby not found" | Root-caused & fixed 2026-10-17: `GameDataSO.ActiveSession` outlived Play and `CreateAsync` no-oped on it. Needs an editor retest | 🟡 |
+| B34 | In the editor, `ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!…'` some time after Play stops (Bug Ledger E-c523697cae, all four testers) | Root-caused 2026-10-17 in the SDK source: B33's leaked session meets Wire's Play-exit teardown. The console copy is filtered; the leak is B33 | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1326,7 +1331,7 @@ followed "playing a game" (a game is what you leave), and why the reverted idle-
   in-scene object is legitimately un-spawned before the host starts). It runs immediately
   before each of the four calls that start a NetworkManager: party session create, party
   session join, the offline `StartHost`, and the game-scene matchmaking path.
-- `FrogletTools ▸ Validation ▸ Audit Stray Network Objects` reports the authoring combination
+- `FrogletTools ▸ Utilities ▸ Audit Stray Network Objects` reports the authoring combination
   (a fauna config whose prefab carries a NetworkObject with replication off) so the guard never
   has to fire.
 
@@ -2068,3 +2073,156 @@ destroyed object. `DomainVolumeIndicator.ResolveCell` (4 Hz) and
    stick within about a second of appearing.
 3. The console must show no `MissingReferenceException` during either swap.
 4. Repeat 2 on the host. Behaviour must be unchanged.
+
+---
+
+## B31 — While a party exists, its session refresh is rate-limited about every 10 s 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs a two-machine retest)
+
+**Seen in.** Caleb's two-machine test with ys1 on `bleeding-edge` @ `08b058966` (his multiplayer log
+`bugledger/belac`, `net_20261016_200524_main.json`; read with `python3 Tools/Build/net_logs.py show`).
+From 31 s, when his party session existed, to 678 s, the console logged
+`[HostConnectionService] Party session refresh rate-limited - backing off` (or the presence refresh's
+`Rate limited during refresh`) **69 times, 7-10 s apart, steadily**. His second log shows the same rate
+(18 in 2.8 min).
+
+**What it costs.** Each 429 backs the refresh off by `refreshIntervalSeconds * 2` (3 s), so party
+state (members, `partyCount`, the session id other players read) is refreshed late all the time. This
+is the window B29 rides on.
+
+**Measured wrong until now.** The refresh ticks count as `lobbyReads` but their 429s were never counted
+(only calls through `UgsRequestPolicy.ExecuteAsync` were), so the session record said `429s 2`. Both
+refresh catches now count `UgsRequestCounter.RateLimited`, and `net_logs.py` shows the console's count
+beside the record's.
+
+**Root cause (2026-10-17).** Every menu tick (1.5 s) read BOTH lobbies: the presence lobby
+(`PresenceLobbyService.RefreshAsync`) and the party session (`RefreshPartyMembersAsync` →
+`PartySessionService.RefreshAsync`). That is 1.33 GETs/s against UGS Lobby's **1 GET/s per player**, the
+arithmetic the request-discipline review had already written down (§3.1). The deficit is 0.33/s, and each
+429 backs off 3 s, which predicts a 429 every ~9-10 s. The log measured 7-10 s. The boosted presence poll
+(0.75 s) was over the cap on its own.
+
+**Fix.** `LobbyRefreshScheduler.TryTakePartySessionPoll`: the tick GETs the party session at most every
+`PARTY_SESSION_POLL_SECONDS` (6 s; 15 s while boosted). It still syncs the roster from `ISession.Players`
+every tick, which the SDK keeps current from its lobby events, so a join or leave still shows within a
+tick. The leave reconcile (`ReconcilePartyMembersNow`) always reads. `BOOSTED_INTERVAL_SECONDS` went from
+0.75 to 1.1 s. Budget: 0.67 + 0.17 = 0.83 GETs/s at rest, 0.91 + 0.07 = 0.98 boosted. The full cure is
+still Block 5 (push instead of poll).
+
+**Verified.** `PartyRefreshRecoveryTests` (edit mode, run on Amoebius): the poll gate, the boosted
+spacing, and the budget under 1/s with the old cadence as the negative control. **Hand test:** two
+machines party up and idle 10 minutes in the menu; `net_logs.py show` reports `429s 0` and no
+`rate-limited` line.
+
+## B32 — After a guest leaves mid-match, the host sits in `Reconnecting` for the rest of the session 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs a two-machine retest)
+
+**Seen in.** Same log as B31. ys1 joined Caleb's party (client 1 approved at 72 s), both pressed Ready in
+Regatta, and ys1 left mid-race: `clientLeft 1` and `leaverToAI ys1` at 589 s (B21's fix worked: its ship
+flew on). Then Caleb's party refresh got `NotInLobby: Player is not part of an active lobby` three
+times (606-626 s). That triggered
+`3 consecutive refresh errors - reconnecting to presence lobby`, and the party went
+`InParty->Reconnecting` at 621 s. **No later party transition is recorded** in the remaining 36 minutes,
+although Caleb played another Regatta match at 2640 s. Every transition goes through
+`PartyStateMachine.TryTransition`, which marks the record, so the machine really stayed in
+`Reconnecting`.
+
+**Why the host was "not part of" its own party lobby is unknown.** The guest's side would say; ys1's
+editor wrote no log (see the log-writer fix of 2026-10-16: a guest's record had no evidence of another
+player). By design, recovery from `Reconnecting` waits for the boot-status retry button
+(`HostConnectionService`, "Relay re-creation is driven by an explicit user action"), so the host may
+also have been shown "Connection lost".
+
+**Root cause (2026-10-17).** The `NotInLobby` came from the PRESENCE lobby (the refresh loop's outer
+catch), not the party. The presence lobby is the one lobby every online player sits in, and its creator
+hosts it. `PresenceLobbyService.LeaveAsync` DELETED it whenever the leaver was its host, so when ys1
+stopped Play (`HostConnectionService.OnDestroy` → `LeaveAsync`) it deleted the lobby under Caleb. Caleb was
+mid-match, where the refresh runs every 10 s: three `NotInLobby` errors 10 s apart, then the 3-strike
+`ForceReset` → `Reconnecting`. After the rejoin, `ApplyPostLobbyJoinState` cleared the "Connection lost"
+panel, but no code took the state machine out of `Reconnecting`, although the party (Relay) was still
+running. The converge path already refused to delete an occupied lobby for exactly this reason (B4); the
+leave path never got the same guard.
+
+**Fix.**
+- `PresenceLobbyService.DeletesOnLeave`: a host deletes the presence lobby only when alone in it. Otherwise
+  it leaves, and UGS Lobby makes another member the host.
+- `HostConnectionService.PresenceErrorForcesRejoin`: a presence refresh that answers Gone (`NotInLobby`,
+  `SessionNotFound`, deleted) rebuilds the presence layer at once instead of after three errors.
+- `LeaveReconnecting` after both background rejoins: `InParty` when the party session is still served,
+  `InPresenceLobby` otherwise (`StateAfterPresenceRejoin`). The front-door init keeps its own step.
+
+**Verified.** `PartyRefreshRecoveryTests`: the leave rule (an occupied lobby is never deleted), Gone
+versus other errors, and both ways out of `Reconnecting` are legal transitions. **Hand test:** two
+machines; the one that started first (it hosts the presence lobby) leaves a match mid-race and stops
+Play. The other stays `InParty` (`net_logs.py show`: no `->Reconnecting`, or one followed by
+`Reconnecting->InParty`), and its online list recovers within a refresh.
+
+## B33 — In the editor, a new Play starts inside the previous Play's party session 🟡 (observed 2026-10-16; root-caused & fixed 2026-10-17; needs an editor retest)
+
+**Seen in.** Caleb's second log (`net_20261016_215640_main.json`, a new Play after the session in B31/B32,
+nobody else joined). Within 1.9 s of Play the party went `Disconnected->InPresenceLobby->HostingParty->
+InParty`, straight into a party, before any join. At 4.9 s
+`[PartySessionService] UpdateLocalPlayerProperties failed: lobby not found` ×2 followed. Then came
+`Hosting<->InParty` churn and `Relay session not ready (attempt 1/3, 2/3) - retrying HCS init`. At
+31.7 s: `Party session gone server-side: lobby not found - auto-recovering to solo session`.
+
+**Likely cause.** The project enters Play without a domain reload (`ProjectSettings/EditorSettings.asset`:
+`m_EnterPlayModeOptions: 3`). The party layer has no `[RuntimeInitializeOnLoadMethod(SubsystemRegistration)]`
+reset, and the UGS SDK's own session state also outlives Play, so the new Play finds the old party
+session and tries to use it. The same carry-over made the session record hold the earlier Play's
+events and counters. The log writer now resets those at Play start.
+
+**Why it matters.** Editor only (a player build starts a fresh process), but every editor and MPPM
+multiplayer test after the first Play spends its first ~30 s recovering. Meanwhile its presence may
+advertise a dead party. That would explain Caleb's `direct-join -> ys1 failed: SessionNotFound (lobby
+not found)` at 33 s in the first log, if ys1 had just restarted Play (B29 family).
+
+**Root cause (2026-10-17).** `PartySessionService.ActiveSession` is stored on `GameDataSO.ActiveSession`,
+a property of the `Runtime GameData` asset. `ResetAllData` deliberately keeps it (the "Always InParty"
+lock), and an asset outlives Play in the Editor, so the new Play started holding the old Play's dead
+`ISession`. `UpdateLocalPlayerProperties` then hit its deleted lobby ("lobby not found", 4.9 s).
+`CreateAsync` returns early on any non-null session, so `EnsurePartySessionAsync` "created" nothing in
+3 ms and went `InParty` with no Relay host. The auth scene's "Relay session not ready ... retrying HCS
+init" then looped on it until the refresh saw the session gone at 31.7 s. Only then did a real Relay
+creation start (the QoS probe at 33.9 s). Reflex rebuilds its container every Play, so the services
+were fresh; the asset was not. `IsOfflineSession` and `HostConnectionDataSO`'s party flags (`IsPartyHost`,
+`IsSpectating`, ...) carried over the same way.
+
+**Fix.**
+- `GameDataSO` and `HostConnectionDataSO` clear that state in a `[RuntimeInitializeOnLoadMethod(SubsystemRegistration)]`
+  hook, as the project's other runtime-only state does (`SpectatorSession.ResetStatics` and friends). The
+  carried session is left in the background, so its lobby stops advertising a party.
+- `EnsurePartySessionAsync` leaves any session reference it is not serving before it creates its own, so
+  `CreateAsync` can never no-op into a fake `InParty` again (a guest's dropped session took the same path).
+
+**Verified.** `PartyRefreshRecoveryTests`: the hooks run at Play start and clear every loaded asset (an
+unloaded one is the negative control). **Hand test:** in the editor, Play, party up, stop, Play again.
+The second Play's `net_logs.py` log shows `HostingParty->InParty` more than a second apart (a real Relay
+creation), no "lobby not found", and no "Relay session not ready".
+
+## B34 — `ObjectDisposedException` on a `$lobby` channel after Play stops 🟡 (root-caused 2026-10-17; the leak itself is B33)
+
+**Seen in.** Bug Ledger `E-c523697cae`, on every tester's branch (`bugledger/yskha`, `gradi`, `mrglo`,
+`belac`; 21 sightings by 2026-10-17), always in EDIT mode, some time after a Play that had a party:
+`ObjectDisposedException: Cannot access a disposed object. Object name: '$lobby!!!<lobby id>!!!…'`, from
+`Subscription.UnsubscribeAsync` ← `LobbyChannel.UnsubscribeAsync` ← `LobbyHandler.LobbyUnsubscribeCallbacksAsync`
+← `LobbyHandler.ResetAsync` ← `LobbyHandler.OnAccessTokenChanged`.
+
+**Cause, read in the package source** (`com.unity.services.wire` 1.5.1, `com.unity.services.multiplayer` 2.3.3):
+
+1. With no domain reload (`m_EnterPlayModeOptions: 3`) the Play's party session outlives Play (B33):
+   its `LobbyHandler` keeps `State != None` and its events subscription.
+2. Wire's `Centrifuge/Client.cs` handles `ExitingPlayMode` by disconnecting and **disposing every
+   subscription**.
+3. Later, in edit mode, the access token clears (it expires, or a sign-out), and the SDK's
+   `private async void OnAccessTokenChanged(null)` calls `ResetAsync`, which unsubscribes the disposed
+   subscription. `Subscription.UnsubscribeAsync` throws `ObjectDisposedException`; being `async void` inside
+   the SDK, nothing of ours can catch it, and Unity logs it.
+
+**What changed.** `UgsRequestPolicy.IsLobbyUnsubscribeAfterWireTeardown` names that one shape (an
+`ObjectDisposedException` whose stack has the SDK's `LobbyChannel` `UnsubscribeAsync` frame; held by
+`UgsRequestPolicyTests`, with negative controls), and `BenignLobbyLogFilter` drops its console copy, as it
+already does for the LobbyPatcher stale index (Presence B1). The error itself was harmless: the handler
+it fails to reset belongs to a session that no longer exists.
+
+**Still open.** The leak behind it is B33. When B33 leaves the SDK session cleanly as Play exits, this
+error has nothing left to fire on, and the filter rule can be deleted.
+

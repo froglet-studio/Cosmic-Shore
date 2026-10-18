@@ -454,7 +454,7 @@ namespace CosmicShore.Gameplay
 
             for (int ring = 1; ring <= maxRing; ring++)
             {
-                if (cfg.ShieldRippleStep > 0f) yield return new WaitForSeconds(cfg.ShieldRippleStep);
+                if (cfg.ShieldRippleStep > 0f) yield return CosmicShore.Utility.WaitCache.Seconds(cfg.ShieldRippleStep);
                 if (!IsActive) yield break;
                 foreach (var m in _members.Values)
                 {

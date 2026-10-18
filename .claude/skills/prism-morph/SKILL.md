@@ -316,6 +316,14 @@ Properties the cradle harness proves, and the shape to copy:
 **Always carry a NEGATIVE CONTROL**, driven by a `-D` override of the file's own `#ifndef`
 dial, and assert that it FAILS. A gate nobody has watched fail is a gate nobody should trust.
 
+**Run the harness's glslang front end too, not only the C++ execution.** The C++ translation accepts names
+HLSL reserves: a parameter called `centroid` (an HLSL interpolation modifier) compiled and passed every
+executed test, and only glslang's HLSL parse of the shader passes failed on it (Collision Burst round 9,
+`cece/dreamy-pascal-7xxx1m`). Likewise `v -= N * dot(v, N)` fails the C++ shim's operators while legal HLSL
+and GLSL; spell it `v = v - …`. And **make a parametrised case prove it built the case it names**: assert a
+property only that case has (a vertex count), because a name test like `name[1] == 'i'` matched two cuts
+and ran the wrong mesh for two rounds (`.claude/skills/labmaker/LEARNINGS.md` L-STU-76).
+
 ### 7.1 Prove a derivative by CONVERGENCE RATE, not by a tolerance
 
 This is the single most reusable thing in the family.
@@ -508,6 +516,16 @@ the far side of a convex solid onto a plane EXACTLY** (a bijection onto the true
 where the obvious orthogonal projection overhangs every face slanted to the plane. Its harness
 (`verify_prism_slice.py`) adds a second proof tier this family lacks: glslang front-end-compiles
 every pass of a hand-written `.shader`, plain and DOTS-instanced, against a URP mock.
+
+**A second neighbour: the COLLISION BURST** (`Docs/PRISM_ANIMATION.md` §4.12) — prism movement's
+level-1 death, also a STAMP on the slice's carrier, drawn on an UNWELDED variant of the mesh
+(`HighPolyPrismMesh.GetUnwelded`) so it can tear along any pattern. Two findings that transfer: **when a
+visual must be indistinguishable from another at a squint, share its ENVELOPE in code, not by tuning**
+(the burst calls the explosion's own flight resolver and life, and its fade value is
+`frac(piece + grain·noise)` — uniform whatever the noise, so coverage is EXACTLY the explosion's linear
+opacity); and **prove a derivative against the measured float-noise floor, not a fixed tolerance** — its
+bend-normal check first "failed" at 10⁻⁴ tilt that did not converge, which was coordinate rounding, and
+only a cheap-normal negative control (10⁻¹, plateauing) showed the gate could still fire.
 
 **Built and NOT shipped — a retirement record.** One other member reached playtest and was removed
 with everything that carried it. It is written down because the family inherits its findings, not

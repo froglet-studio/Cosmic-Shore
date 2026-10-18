@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     [DefaultExecutionOrder(-900)]
     public sealed class CameraZoomFollowScaleProvider : MonoBehaviour
     {
-        public enum Mode { Fixed, FollowScale }
+        public enum Mode { Fixed = 0, FollowScale = 1 }
 
         [SerializeField] private Mode mode = Mode.FollowScale;
 

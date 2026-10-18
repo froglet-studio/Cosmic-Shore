@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class GrizzlyTriggerBombExecutor : ShipActionExecutorBase
     {
-        public enum BombState { Idle, Arming, InFlight, Frozen }
+        public enum BombState { Idle = 0, Arming = 1, InFlight = 2, Frozen = 3 }
 
         /// <summary>HUD hook: a trigger's bomb changed state.</summary>
         public event Action<GrizzlyBombActionSO.TriggerSide, BombState> OnBombStateChanged;

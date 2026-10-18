@@ -127,10 +127,18 @@ namespace CosmicShore.Gameplay
             if (element == CosmicShore.Data.Element.None) return EnsureElementalCrystal(owner);
 
             var crystal = owner.GetComponentInChildren<Crystal>(true);
-            if (crystal && crystal.crystalProperties.Element == element)
-                return crystal;
-
             var set = ElementalCrystalSetSO.Load();
+            if (crystal && crystal.crystalProperties.Element == element)
+            {
+                // The authored crystal is kept, so it must be collectable on its OWN wiring - and
+                // a prefab that dropped in a bare elemental crystal prefab has none (the QuadFish,
+                // Clawfish, Nerve, Pine and Wall flora all did). A heart with a Crystal and a
+                // trigger but no impactor is the worst shape there is: the skimmer's vacuum reads
+                // the Crystal off the trigger and drags it after the vessel forever, while no
+                // contact can ever collect it.
+                WireCollection(crystal, null, set);
+                return crystal;
+            }
             var prefab = set ? set.GetPrefab(element) : null;
             if (!prefab)
             {
@@ -174,11 +182,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Makes a runtime-provisioned crystal skim-collectable. The standalone elemental prefabs
-        /// in ElementalCrystalSet carry no collection components (lifeform prefabs author them as
-        /// inspector overrides), so every provisioned crystal gets the impactor + ImpactCollider
-        /// pair wired here - same pattern as the conveyor toy's pickups. Effects come from the
-        /// replaced authored crystal when there was one, else from the set's defaults.
+        /// Makes a lifeform's heart skim-collectable. The standalone elemental prefabs in
+        /// ElementalCrystalSet carry no collection components (most lifeform prefabs author them
+        /// as inspector overrides, and some never did), so every heart that lacks the impactor +
+        /// ImpactCollider pair gets it wired here - same pattern as the conveyor toy's pickups.
+        /// A no-op for a crystal that already carries an impactor. Effects come from the replaced
+        /// authored crystal when there was one, else from the set's defaults.
         /// </summary>
         static void WireCollection(Crystal provisioned, SkimmerCrystalEffectSO[] authoredEffects, ElementalCrystalSetSO set)
         {
@@ -208,6 +217,8 @@ namespace CosmicShore.Gameplay
                         $"'{element}' so it still drops a powerup. Author an elemental crystal to fix.");
                     crystal.crystalProperties.Element = element;
                 }
+                // Same as the elemental path: a kept crystal is collected on its own wiring.
+                WireCollection(crystal, null, ElementalCrystalSetSO.Load());
                 return crystal;
             }
 

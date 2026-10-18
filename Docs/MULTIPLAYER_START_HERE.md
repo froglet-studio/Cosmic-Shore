@@ -61,13 +61,14 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 | Every party bug, with status | `Docs/PartySystem/BUGS.md` |
 | MPPM test procedures (smoke, stress, failure gates) | `Docs/PartySystem/TESTS.md` |
 | What each unverified Unity change needs in the editor | `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
+| A multiplayer test's logs, every player, one timeline (sent by the after-test "Send to Claude") | `python3 Tools/Build/net_logs.py collect` / `show 1`; `Docs/DIAGNOSTICS.md` § "Multiplayer test logs" |
 | Party architecture | `Docs/PartySystem/ARCHITECTURE.md`, `Docs/MultiplayerArchitecture/` |
-| Five-player scenario harness (runs the real game code in Amoebius, no Unity) | `Tools/Build/prisma_party_scenarios/` (README) |
+| Five-player scenario harness (runs the real game code in Amoebius, no Unity; down until it moves to the UGS stand-ins, §4) | `Tools/Build/prisma_party_scenarios/` (README) |
 | The game's edit-mode tests, run in Amoebius | `Tools/Build/prisma_edit_mode_tests/run.sh` |
-| Amoebius's Launcher NET page (Multiplayer Play Mode for Amoebius) | `Port/docs/LAUNCHER.md` § NET |
-| Netcode, transports, simulator, stats, faults (code) | `Port/src/CosmicShore.Engine/Networking/Wire/` |
+| Amoebius online play: START ONLINE, + PLAYER 2, SETTINGS > ONLINE (UGS environment, UGS CHECK) | `Port/docs/LAUNCHER.md` § START ONLINE |
+| Netcode, transports, relay, UGS sign-in and Lobby, simulator, stats, faults (code; built in one place, `NetStack.cs`) | `Port/src/CosmicShore.Engine/Networking/Wire/` |
 
-## 4. Where things stand (2026-10-09)
+## 4. Where things stand (2026-10-14, after PRs #1087-#1090)
 
 ### Amoebius (our engine): built and tested
 
@@ -75,12 +76,23 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 |---|---|---|
 | 0 | `--realtime` headless pacing, save-path fallback, missing SDK error codes | Done |
 | 1 | Network simulator (latency, jitter, loss, bandwidth, pulled cable; per player, live) | Done |
-| 2 | Network stats monitor (`do net`, window titles, NET page, `net capture`) | Done |
+| 2 | Network stats monitor (`do net`, window titles, `net capture`; F3 shows online status since #1089) | Done |
 | 3 | Session-service faults (full, 429, relay failure, outage, slow) | Done |
-| 4 | Launcher NET page + MCP `net_*` tools (1-4 players at once) | Done |
+| 4 | Launcher NET page + MCP `net_*` tools (1-4 players at once) | **Removed 2026-10-14** (#1089, your call: online is UGS only, no LAN or local play). START ONLINE and + PLAYER 2 replace it |
 | 5 | Froglet's own UDP transport + unreliable channel; **the default** | Done. Party harness 14/14 clean, 14/14 on simulated 4G after the B29 fix |
 | 6 | Relay: Unity Relay's wire protocol under our UDP transport + Froglet's own relay server | Done. Party harness 14/14 through the relay, and 14/14 through it on simulated 4G (`Port/docs/MULTIPLAYER.md` §6.7) |
-| 7 | UGS sign-in for the relay (`COSMIC_SHORE_RELAY=ugs`), the one-step UGS relay check | Built and tested against local stand-ins; party harness via the UGS path on 4G: 14/14. **The live check waits for you (§5.3)** |
+| 7 | UGS sign-in for the relay, the one-step UGS relay check (now SETTINGS > ONLINE > UGS CHECK) | Built and tested against local stand-ins. **The live check waits for you (§5.3)** |
+| 8 (P8) | **UGS Lobby: START ONLINE plays through UGS Lobby + UGS Relay** (#1089, another session; `Port/docs/MULTIPLAYER.md` §6.10) | Built 2026-10-14 against stand-ins (`UgsMultiplayerTests` 6/6). **The live check waits for you (§5.3)** |
+| — | Amoebius online server (#1080) and the shared-folder sessions | **Removed 2026-10-14** (#1089) |
+
+**Networking is built in one place, `NetStack.Install`** (`Port/docs/MULTIPLAYER.md` §6.9): transport,
+UGS Relay, UGS Lobby, then the simulator and faults. A merge on 2026-10-13 had silently switched the UDP
+transport, relay, simulator and faults off; `NetStackTests` and `NetworkWiringGuardTests` now fail if that
+happens again. **When you merge into this branch, run the engine tests.**
+
+**The five-player party harness does not run at the moment:** it needs the shared session folder that
+#1089 removed, and its move to the UGS stand-ins is not done (`MULTIPLAYER.md` §6.10 "Not done yet"). Its
+last result, on 2026-10-14 just before #1089, was 8/14, stopped by the blocker below.
 
 ### Unity game: the hardening programme
 
@@ -96,43 +108,43 @@ These are on top of the root `CLAUDE.md`; they are decisions the owner has alrea
 Open bugs that matter: **B29 Count case** (a party that just shrank reads as full; Block 5 cures
 it). The B29 Session case ("defect 5") is fixed but unverified in Unity.
 
+**Blocker for match testing in Amoebius (found 2026-10-14, still there after #1087-#1090; not a network
+bug):** once a Bloomrush match starts, the scene fills with objects and the game crawls. Measured on the
+latest code with ONE OFFLINE player: 1.3k to 269k behaviours in 107 s, about 4 frames a second, and since a
+frame advances game time 1/60 s the GO button appeared only after ~107 s. Networked matches did the same on
+TCP and UDP, with and without relay and simulator. The objects are mostly flora `Branch` objects beside the
+SnowChanger's ~4k `shard` motes. It arrived with bleeding-edge content between 2026-10-09 (the harness's
+T4 passed in 38 s) and 2026-10-14. Needs an ecology/performance session (`/ecology`); until then judge
+Amoebius's lobby and party steps, not in-match ones.
+
 ## 5. What the owner tests by hand
 
 Run these when you sit down with the machines. Each has the result to expect; a different result
 is a bug, and the run's console log is what a session needs to fix it.
 
-### 5.1 Amoebius tools (no Unity; Windows, from Prisma.exe)
+**The logs collect themselves (2026-10-15).** Every player of a multiplayer test writes its own log when it
+stops: each MPPM virtual player and the main editor in Unity, each player of START ONLINE / + PLAYER 2 in
+Amoebius. When the test ends, the main editor sends every player's logs to Claude by itself (no question since 2026-10-16). Do not paste consoles. Then tell
+the session "read my multiplayer logs" and it runs `python3 Tools/Build/net_logs.py show 1`, which lines
+every player up into one timeline (`Docs/DIAGNOSTICS.md` § "Multiplayer test logs"). In Amoebius, close player 2's
+window (or press CLOSE P2) rather than killing it, or its log is lost.
 
-Open **Amoebius > NET**. A fresh profile asks for a birth year, data-collection consent (your
-choice) and a username the first time; later runs on the same profile skip them.
+### 5.1 Amoebius tools (no Unity)
 
-1. **Four players start and tile.** Players = 4, Transport = UDP, Start in = Bootstrap, START.
-   Expect four windows in a 2x2 grid, titles `Cosmic Shore · player1 · ...` up to `player4`.
-2. **They party up.** In player1 press F7, run `party invite player2` (use the names shown in
-   the windows), accept in player2. Expect player2 seated; LIVE shows player1 as `server` with
-   `client 1` and an RTT under ~50 ms, player2 as `client`.
-3. **Simulated line.** In LIVE set player2's line to `4g`. Expect its RTT to rise by roughly
-   +120-160 ms within ~10 s, and the window title to show `sim latency=60 ...`.
-4. **Pull the cable.** PULL CABLE on player2. Expect nothing for 10 s, then player2 back in its
-   own menu and player1's party back to 1/4. PLUG IN afterwards.
-5. **Session fault.** Fault `full` on player3, then `party join player1` from player3's F7
-   console. Expect the toast "That party is full." and player3 in its own menu. Join again:
-   seated.
-6. **Capture.** CAPTURE 10 S on any player. Expect a console line naming a JSON file with 600
-   frames.
-7. **TCP still works.** CLOSE, set Connection = TCP, repeat step 2. Expect the same result.
-   (The Connection switch is on its own row: UDP, RELAY, UGS RELAY, TCP.)
-8. **Through the relay.** CLOSE, set Connection = RELAY, START, repeat step 2. Expect the log to
-   show `[relay] listening ...` first, then each player's `[relay] sessions go through the relay`
-   and, as it opens its own party, `[relay] hosting through ... (join code XXXXXX)`. When player2
-   accepts: `[P2] [relay] joining XXXXXX` with player1's code. Seated as in step 2, with about the
-   same RTT as direct on one PC (measured: 25-30 ms). Then repeat step 4 (pull the cable): same
-   result as direct.
+The NET page and its local multi-player runs were removed on 2026-10-14 (#1089): Amoebius multiplayer is
+UGS only now, so its hand tests are the live ones in §5.3. The network simulator and session faults are
+still in every player (`COSMIC_SHORE_NET_SIM`, `COSMIC_SHORE_NET_FAULT`; `do netsim` / `do netfault` on the
+control port).
 
 ### 5.2 Unity (MPPM, 3-4 virtual players)
 
 Prerequisite for every test: **each virtual player has its own tag** (P2, P3, P4), or they share
 one UGS account (`Docs/PartySystem/TESTS.md` § prerequisites).
+
+**First, after pulling (MPPM 2.0, 2026-10-14):** let the project compile. Expect no "Script Updating
+Consent" dialog and no errors in `AuthenticationServiceFacade.cs` or `MultiplayerSetup.cs`; a clone still
+signs in on its own profile. If anyone clicked "Yes" on that dialog before pulling, discard their local
+rewrite of those two files first (checklist entry "No more Script Updating Consent prompt").
 
 Run in this order. The checklist entry named in the last column holds the exact steps.
 
@@ -150,15 +162,19 @@ Run in this order. The checklist entry named in the last column holds the exact 
 ### 5.3 The live UGS test (when the owner says go)
 
 This touches the real UGS project (`3030fd69-28ab-433f-b4bd-22b9b93c5118`, read from
-`ProjectSettings.asset`): the first run creates two anonymous players in it, and every later run
-signs the same two back in. Nothing before this step has called UGS.
+`ProjectSettings.asset`): the first run creates test players in it, and later runs sign the same ones
+back in (one per profile). Nothing before this step has called UGS.
 
-**Step 1: the one-click check (P7).** Amoebius > NET > **UGS RELAY CHECK** (or, from a repo checkout
-with the .NET 10 SDK: `dotnet run --project Port/src/CosmicShore.Player -- --ugs-relay-check`).
-Expect, in the log, in order:
+**Step 0: the environment.** Amoebius plays in its own UGS environment, `amoebius` by default, so its
+lobbies never show up in the Unity build's queries (the two netcodes cannot play each other). Create it
+once: UGS dashboard > Project settings > Environments > Add > `amoebius` (or name another one in Amoebius
+SETTINGS > ONLINE > UGS environment). Until it exists, sign-in fails and START ONLINE plays offline.
+
+**Step 1: the check.** Amoebius > SETTINGS > ONLINE > **UGS CHECK** (or, from a repo checkout with the .NET
+10 SDK: `dotnet run --project Port/src/CosmicShore.Player -- --ugs-relay-check`). Expect, in order:
 
 ```
-[relay-check] UGS project 3030fd69-... (default environment), region chosen by the service
+[relay-check] UGS project 3030fd69-... (...environment...), region chosen by the service
 [relay-check] host signed in (anonymous): player ...
 [relay-check] joiner signed in (anonymous): player ...
 [relay-check] allocated: region <a UGS region>, relay <ip:port>, allocation <id>
@@ -169,31 +185,17 @@ Expect, in the log, in order:
 [relay-check] PASS
 ```
 
-The average is about twice your ping to that relay region (both players are on this PC). Click it
-again: both lines say `(session-token)` with the same player ids, so no new players were made. A
-FAIL names its step (`Port/docs/MULTIPLAYER.md` §6.8 lists what each one means); paste the log to
-the next session.
+The average is about twice your ping to that relay region (both players are on this PC). Click again:
+both say `(session-token)` with the same player ids. A FAIL names its step (`Port/docs/MULTIPLAYER.md`
+§6.8); paste the log to the next session.
 
-**Step 2: the game through UGS Relay.** NET > Players = 2, Connection = **UGS RELAY**, START, then
-§5.1 step 2. Expect each player's `[relay] sessions go through UGS Relay`, the host's
-`[relay] hosting through <a UGS relay> (join code ...)`, the guest's `[relay] joining ...`, and the
-guest seated. The first such run makes one UGS player per profile (player1, player2); later runs
-reuse them. Every player allocates for its own solo party at boot, as the Unity game does (eager
-per-user Relay). The players are still on one PC with a session folder as the lobby (UGS Lobby is
-P8), so this proves the game's traffic through UGS Relay, not discovery across networks.
+**Step 2: a party through UGS Lobby + Relay on one PC.** PLAY > **START ONLINE**, then **+ PLAYER 2** (a
+second online game as the `player2` profile; its console lines start `[P2]`). In the first game press F7 and
+run `party invite <player2's name>`, accept in player2. Expect player2 seated; F3 in either shows the UGS
+sign-in, the lobby, the relay and the ping. Launching a match works, but it crawls (the blocker in §4).
 
-**After P8**, the same on two networks: two PCs (or a PC and a laptop on a phone hotspot) form a
-party through UGS Lobby and play a Bloomrush match through UGS Relay.
-
-**What you can already run across two networks, with no UGS involved** (Froglet's own relay;
-P6). On a machine both players can reach (a PC with a forwarded port, or any small server), run
-`CosmicShore --relay-server 7780 7781 <its public name or IP>` and open UDP 7780 and TCP 7781.
-On each player set `COSMIC_SHORE_RELAY=http://<that name>:7781` and
-`COSMIC_SHORE_NET_DIR` to a folder both can see (a shared drive). The session folder is still the
-lobby stand-in until P8, which is why it has to be shared. Do this only on a server you control,
-for a test: the relay's allocations endpoint has no authentication yet (`MULTIPLAYER.md` §6.7).
-This route has run on one machine (the harness), not yet across two real networks: whoever tries
-it first, record what happened here.
+**Step 3: two networks.** Two PCs, or a PC and a laptop on a phone hotspot: both START ONLINE and party up
+as in step 2. This is the goal: two networks, UGS Lobby + Relay, no ports opened.
 
 ## 6. What comes next, in order
 
@@ -205,7 +207,7 @@ Each step has the check that proves it done. Update the state in §4 when a step
 |---|---|---|
 | ~~P6~~ | ~~**Relay.**~~ Done 2026-10-09 (§4). Unity Relay's protocol under our UDP transport, Froglet's relay server (same protocol, same REST shape), session integration, switches in every tool | Contract checks pass over `relay`/`sim-relay`; party harness 14/14 with every pilot through the relay |
 | P7 | **UGS Auth for the relay.** Built 2026-10-09: anonymous sign-in and session-token resume over REST, the `idToken` as UGS Relay's bearer, `COSMIC_SHORE_RELAY=ugs`, the one-step check, our relay's secret (§4) | ~~Unit tests against a local stand-in~~ (13/13, plus the CLI and the harness via the UGS path); **the owner's live check (§5.3) still to run** |
-| P8 | **UGS Lobby** as Amoebius's session service (create, query, join, heartbeat, player data, the presence lobby) | The party harness passes on the local stand-in; two Amoebius players on two networks form a party on real UGS |
+| P8 | **UGS Lobby.** Built 2026-10-14 (#1089, `MULTIPLAYER.md` §6.10). Left: the party harness on the UGS stand-ins (it still needs the removed shared folder), join by lobby code, quick join, lobby events | The party harness passes on the stand-ins; **your §5.3 steps 2-3 on real UGS** |
 | P9 | **Less traffic.** `NetworkVariable` writes dominate (7:1 over transforms, `MULTIPLAYER.md` §6.4): batch per tick, send deltas | `net` shows the drop on the same scenario, with the harness still 14/14 |
 | P10 | Congestion control past the fixed window, measured on a real internet path | A 4-player match on two networks holds RTT and shows no resend storms in `net` |
 
@@ -216,6 +218,7 @@ Each step has the check that proves it done. Update the state in §4 when a step
 | U1 | The owner's MPPM runs in §5.2 | Each 🔴 checklist entry becomes 🟢 with a date |
 | U2 | **Block 5: push instead of poll** (hardening prompt) | GETs ≤ 4/min/client at rest; invite visible < 1 s p95; no stale-index lines in a 30-minute 4-client run |
 | U3 | Block 6: reconnection grace | A 15 s network pull mid-match hands the vessel back with no menu |
+| U4 | **What the first real logs showed** (Caleb ↔ ys1, two machines, 2026-10-16; `Docs/PartySystem/BUGS.md` B31-B33). **Fixed 2026-10-17, awaiting the hand retest:** the party session is read at most every 6 s (B31); leaving the shared presence lobby no longer deletes it under everyone, and a rejoin leaves `Reconnecting` (B32); a new editor Play no longer inherits the last Play's session (B33) | B31: no `rate-limited` lines in a 10-minute party (`net_logs.py` shows `429s 0`); B32: a guest's mid-match leave keeps the host `InParty`; B33: a second Play's log starts clean |
 
 ## 7. How a session starts here
 
@@ -225,8 +228,9 @@ Each step has the check that proves it done. Update the state in §4 when a step
    `dotnet build Port/src/CosmicShore.Player` (the .NET 10 SDK); test with
    `dotnet test Port/tests/CosmicShore.Tests`.
 4. Party logic: run `bash Tools/Build/prisma_party_scenarios/run.sh` before and after (~15 min,
-   14/14 expected; add `COSMIC_SHORE_NET_SIM=4g` for the bad-line run, `PRISMA_RELAY=1` to send
-   every pilot through the relay, `PRISMA_RELAY=ugs` for the UGS sign-in path against a local
-   stand-in). Never point a session's tests at the live UGS project: that is the owner's §5.3.
+   14/14 expected - it does not run until it moves to the UGS stand-ins, §4). Never point a session's
+   tests at the live UGS project: that is the owner's §5.3.
 5. Unity C#: follow §2's `/verify-unity` rule and add the checklist entry.
+5a. A test the owner ran: read its logs first (`python3 Tools/Build/net_logs.py collect`, then `show <n>`).
+    Ask for a pasted console only if no log reached a branch.
 6. Finish by updating §4 and §6 here.

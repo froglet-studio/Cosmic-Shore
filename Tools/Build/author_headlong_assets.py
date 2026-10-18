@@ -386,8 +386,9 @@ if not m or int(m.group(1)) != GATE_TARGET:
 # The controller's authored lap count must match this script's, or the circuit and the finish
 # line are sized from two different numbers.
 _ctrl = read("Assets/_Scripts/Controller/Arcade/Headlong/HeadlongController.cs")
-m = re.search(r"int laps\s*=\s*(\d+);", _ctrl)
-if not m or int(m.group(1)) != LAPS:
+# Literal, or one hop into the course source's const (the RaceCourseSource refactor).
+_laps = aml.cs_field_default(_ctrl, "laps")
+if _laps is None or int(float(_laps)) != LAPS:
     errors.append(f"HeadlongController.laps default is not {LAPS}")
 
 # The shell the scene authors, the shell the tests sweep, and the C# defaults are three copies

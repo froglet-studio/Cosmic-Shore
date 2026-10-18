@@ -23,6 +23,15 @@ trio, and the traps).
   ecology-specific: respect it everywhere.
 - **No imposed death.** No decay, lifespan, or fixed-period despawn timers. Populations are
   bounded by **consumption + starvation**, never an imposed clock. (Repeatedly rejected.)
+  **One authorized exception (the designer, 2026-10-16): the Angler's KEEPER.** The first
+  creature in an Angler's school does not starve, and an Angler with an empty school has one
+  born to it. It is fenced:
+  - one reader (`Fauna.IsStarving` → `IFaunaLeash.Sustains`);
+  - one implementer (`AnglerCommandExecutor`);
+  - at most one creature per Angler;
+  - only starvation is waived: predation, jousts and lost body prisms still kill it.
+
+  It is an exception, never a precedent (`Docs/ECOSYSTEM.md` §0, §61.4).
 - **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color**. Never
   cross-domain / prey-weighted / per-domain-biased spawning. The herbivore DIET is spatial in
   nucleus cells (see "Volume is the spine" below): outside the nucleus they graze **any**

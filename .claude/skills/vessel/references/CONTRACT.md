@@ -284,7 +284,7 @@ by how hard they are to see.
 **And when a report is about a COLOUR, sample the frame before re-reading the code that sets it.**
 Two colours 0.3° apart are identical in a diff and different on a screen; three consecutive passes
 of correct reasoning about the asset found three real defects and changed nothing the player saw,
-where one screenshot measured the answer. (`FrogletTools > Diagnostics > Report On-Screen UI` for
+where one screenshot measured the answer. (`FrogletTools > UI > Report On-Screen UI` for
 the layout equivalent.)
 
 
@@ -310,7 +310,9 @@ Canon: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1–7.4. The distilled 
   Resolve effective rects through the **vessel prefab's `m_Modifications` first** (instance
   overrides once split the Squirrel's row: four icons on two positions). A HUD-instance root
   that isn't stretched (0,0)-(1,1)/sizeDelta 0 collapses the whole HUD to screen centre (the
-  Serpent bug). Some icons may live in the vessel prefab, not the variant (Rhino: 3 of 4).
+  Serpent bug). Some icons may live in the vessel prefab, not the variant (the Rhino carried 3 of
+  4 that way — `LaserTargeting` / `Crystal` / `ForceField` — until 2026-10-16, when they were deleted
+  with its pre-lockup status cluster; its row now binds 4/4 from `RhinoHUDVariant`).
 - **Control hints bind to abilities, never positions**: `hint.binding` → `InputHintBindingMap`
   → `InputEvents` → map `Input` (fallback: `CollectBoundActions` shared-asset intersection) →
   `TryGetAbilityIcon`. `InputDeviceIconSetSwitcher.BindHintsToAbilities` runs once from
@@ -319,7 +321,7 @@ Canon: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1–7.4. The distilled 
   write a hint's size** (zero-sizeDelta stretch rects — collapsing the anchor span destroys
   their size); use `InverseLerpUnclamped` (anchor fractions far outside 0..1 are correct);
   `WarnIfPlacedOffScreen` closes the loop.
-- **Auditor**: `FrogletTools > Vessels > Audit Vessel Ability Rows` — asset-only; checks map
+- **Auditor**: `FrogletTools > Vessels > Audits > Audit Vessel Ability Rows` — asset-only; checks map
   completeness, 4 icons one-per-element, order, uniform size/pitch (1.5 px on a deterministic
   1920×1080 canvas), switcher + hint coverage. Blind spots: <2 resolved icons skips geometry;
   slot geometry reads the icon's PARENT rect.
@@ -330,7 +332,7 @@ The flower display is **fleet-required** (CLAUDE.md's "opt-in rollout" phrasing 
 `[RequireComponent(typeof(ElementalBarsController))]` on VesselStatus,
 `VesselController.Initialize` drives it, and every missing piece is runtime-created **with a
 loud warning naming the authoring tool** — warnings mean the prefab authoring was skipped, they
-are not the contract. Author via `FrogletTools > Vessels > Wire Elemental Petal Bars` (selected
+are not the contract. Author via `FrogletTools > Vessels > Wiring > Wire Elemental Petal Bars` (selected
 HUD prefab in Prefab Mode) or `Bake Elemental Petal Bars Into All Vessel HUDs` (fleet pass),
 then assign the view to `ElementalBarsController.elementBars`. All look/feel lives in
 `Assets/Resources/ElementalBarsConfig.asset` (`ElementalBarsConfigSO`) — never per-prefab
@@ -384,7 +386,7 @@ juice through `ElementBars` when a vessel wants it.
   Read the FBX `Geometry` sub-records of subtype `Shape` and sum the deltas. Evidence + the
   per-file table: `Docs/VESSEL_CONSTRUCTION.md` §4.
 - **Rig swaps** (Dolphin/Urchin/Rhino placeholders → their `*_shapekey_with_animations` rigs)
-  are a hands-on editor pass: run `FrogletTools > Vessels > Plan Vessel Rig Swap`
+  are a hands-on editor pass: run `FrogletTools > Vessels > Wiring > Plan Vessel Rig Swap`
   (report-only) and follow its printed procedure — migrate gameplay objects to mapped bones,
   retire legacy MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the
   animation's part fields** so they re-resolve to bones, re-run the morph audit. Order of work
@@ -398,7 +400,7 @@ juice through `ElementBars` when a vessel wants it.
   most of the cost of a swap. Re-measure only what the rig genuinely re-poses (the Rhino's
   wings sit 1.38× wider in its bind pose, and its wings stop being separate GameObjects, so
   anything parented to them re-parents to bones).
-- Audit: `FrogletTools > Vessels > Audit Vessel Elemental Morphs` (asset-only, exact runtime
+- Audit: `FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs` (asset-only, exact runtime
   discovery). Mislabeled shapes fail **silently** in game — the audit is the only detector.
   **Since 2026-08-26 it measures MAGNITUDE**, so an empty labelled shape no longer passes:
   `Travel()` reports each shape's farthest vertex travel as a fraction of its mesh's own
@@ -447,7 +449,9 @@ juice through `ElementBars` when a vessel wants it.
   either half of the swap re-show. `Show`/`Hide` are DOTween fades — nothing pops.
 - **Binding discipline** (the Dolphin branch shipped this wrong three times): one symmetric
   `Rebind()`/`Unbind()` pair, called from Initialize (detach-first — swaps re-run Initialize on
-  live components; Rhino's Unsubscribe-then-Subscribe exists because a re-init double-counted),
+  live components; Rhino's Unsubscribe-then-Subscribe existed because a re-init double-counted —
+  since 2026-10-16 its controller has no channels left and POLLS with change detection, which is
+  the other way to have no pair to leak),
   OnEnable (gated) and OnDisable/OnDestroy. Gate everything on
   `IsInitializedAsAI || !IsLocalUser` — **the base class does not gate for you** — and
   sender-filter shared SOAP channels (every vessel that wires `boostChanged` raises it — today
@@ -471,7 +475,14 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   VesselContainers/{Vessel}ImpactorDataContainer.asset`. Baseline prism trio every shipping
   vessel authors: `VesselDamagePrismEffect` + `VesselHapticsByPrismEffect` +
   `VesselElementalDebuffByDangerPrismEffect`; plus ≥1 crystal effect
-  (`{Vessel}VesselExplosionByCrystalEffect` / `...ChangeResourceByCrystalEffect`). Empty arrays
+  (`{Vessel}VesselExplosionByCrystalEffect` / `...ChangeResourceByCrystalEffect`). **The Rhino is
+  the sanctioned exception to the first slot** (2026-10-13): its hull destroys nothing, so
+  `RhinoPloughPrismEffect` REPLACES `VesselDamagePrismEffect` (`RhinoImpactorDataContainer`:
+  plough + haptics + elemental-debuff-by-danger), and its crystal pair is
+  `RhinoVesselExplosionByCrystalEffect` + `RhinoVesselSurgeByCrystalEffect` (the Surge replaced the
+  resource-change effect 2026-10-16). It also carries no `VesselChangeSpeedByPrismEffect` by design —
+  "the bulldozer ignores mass". The trio is the default, not a law: a hull whose contact verb is
+  not destruction swaps the first slot for its own verb. Empty arrays
   are a legal opt-out; a **null container is a bug that NREs on first contact by design**.
 - **Impactability**: every hittable collider carries an `ImpactCollider` whose `impactorObject`
   points at the owning impactor — colliders without one are invisible to the whole impact
@@ -596,7 +607,7 @@ already lists all 11 prefabs).
 | Sparrow | ✅ | 4/4 + 4 upgrades SHIPPED | ✅ row; no switcher (hints static, both glyph sets render); glyph art wrong | ✅ | skimmer containers all-empty; 2nd inline skimmer unwired | |
 | Manta | ✅ | 3/4 quantitative, 0 upgrades — **open slots** | 0 found (re-survey at vessel-prefab level) | ✅ (Manta meshes, also Termite/Falcon/Shrike) | ✅ | blocked on design |
 | Dolphin | ✅ | 4/4 + 4 upgrades SHIPPED (`claude/dolphin-energy-crystal-cooldown-zpvc07`) | 4/4 bound; no switcher (hints unbound) | ❌ placeholder art — rig swap pending | ✅ **since the branch** — the reference pointed at a DISABLED twin | energy economy + drift boost + cone; see `R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` |
-| Rhino | ✅ | 1/4, 0 upgrades — **open slots** | 4 icons exist (3 in vessel prefab), unbound | ❌ placeholder — rig swap pending | ✅ (sword variant) | bind once map approved |
+| Rhino | ✅ | **4/4 + 4 upgrades SHIPPED 2026-10-16** (Sword Energy / Live Wire, Afterimage / Danger Afterimages, Blade Reach / Breaker, Ramp Spool / Momentum; editor-unverified) | **4/4 bound** (placeholder icons, 2026-10-16); the old 3-in-vessel-prefab cluster deleted | ❌ `Rhino_Test.fbx` still wired — rig swap to `rhino_shapekey_with_animations.fbx` never run | ✅ (sword variant; hull = plough, not damage) | was "1/4, open slots, bind once map approved" — done. Still open: rig swap, jets unsized, no authored `ElementalBarsView` |
 | Serpent | ✅ | 1/4, 0 upgrades — **open slots** | 0 bound; HUD root was centre-collapsed (fixed) | ✅ | ❌ "VacuumSkimmer" has no SkimmerImpactor/container AND its GameObject is INACTIVE — cannot vacuum | fails Audit Vessel Skimmers |
 | Urchin / Grizzly / Termite / Falcon / Shrike | ❌ | none | none | Urchin ❌ (rig pending) · Grizzly ❌ (no art) · Termite/Falcon/Shrike ✅ | none (nested base skimmer would NRE) | prefabs exist and are already in DefaultNetworkPrefabs (all 11 are — don't re-add); Vessel Prefab Container registration unstarted; NONE of the five has a `{Vessel}CameraSettingsSO.asset`; Falcon/Shrike additionally lack SO_Class assets |
 
@@ -605,4 +616,4 @@ already lists all 11 prefabs).
 stack (`EnergySkimmer`) was the live one doing the physics, and the stack the vessel actually
 REFERENCED was a disabled leftover. Reading a prefab and concluding "looks wired" is not
 evidence; resolve the reference to its GameObject and check `m_IsActive` up the ancestor chain,
-or just run **FrogletTools > Vessels > Audit Vessel Skimmers**, which does exactly that.
+or just run **FrogletTools > Vessels > Audits > Audit Vessel Skimmers**, which does exactly that.

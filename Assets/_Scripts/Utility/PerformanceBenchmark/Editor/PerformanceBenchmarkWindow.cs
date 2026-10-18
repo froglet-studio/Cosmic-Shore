@@ -12,7 +12,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 {
     public class PerformanceBenchmarkWindow : EditorWindow
     {
-        enum Tab { Collect, Sweep, History, Compare, LoadInsights }
+        enum Tab { Collect = 0, Sweep = 1, History = 2, Compare = 3, LoadInsights = 4 }
         [SerializeField] Tab activeTab = Tab.Collect;
 
         // ── Shared assets (serialized so they survive the play-mode domain reload) ──
@@ -82,7 +82,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         BenchmarkComparer.ComparisonResult comparisonResult;
         string comparisonText;
 
-        [MenuItem("FrogletTools/Performance Benchmark", false, 20)]
+        [MenuItem("FrogletTools/Performance/Performance Benchmark", false, 170)]
         [FrogletTool(FrogletToolCategory.Performance, Importance = 5,
             Description = "Frame-cost benchmark: score, hints, sweeps, load-time insights.")]
         public static void Open()

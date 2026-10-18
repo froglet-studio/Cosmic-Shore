@@ -22,10 +22,7 @@ namespace CosmicShore.Mobile
         {
             Console.WriteLine($"[mobile] {platform}: data {dataRoot}, saves {persistentPath}");
             Environment.SetEnvironmentVariable("COSMIC_SHORE_PROJECT", dataRoot);
-            // Sessions stay in the app's own sandbox unless the build names an online server
-            // (Port/ProjectSettings/AmoebiusProject.json, Network.Server): a phone does not probe the
-            // LAN or host a server by itself, so no local-network permission prompt appears.
-            Environment.SetEnvironmentVariable("COSMIC_SHORE_NET_DIR", System.IO.Path.Combine(persistentPath, "sessions"));
+            // Online through UGS (Lobby + Relay), as the desktop's START ONLINE: nothing on the local network.
             Application.platform = platform;
             Application.persistentDataPathOverride = persistentPath;
             SystemInfo.deviceType = DeviceType.Handheld;   // the game's InputController picks touch on a handheld

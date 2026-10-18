@@ -1,5 +1,5 @@
 {
-  "comment": "The Vessel Studio catalog. Amoebius's VESSEL STUDIO page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional accent: the card colour on the hub and the Unity home, a domain key from studio-domains.js (jade, ruby, gold, blue) or a #hex. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them. \"mirror\": the live mirror, a plain https copy of the same build_artifact.py output (OPEN LIVE IN BROWSER); a mirror of the one artifact in \"web\", never a second source. Cards (/vessel-studio D35): every surface shows the hub's studio cards. index.html draws them; the native homes (Amoebius's VESSEL STUDIO page, Unity's studio home) draw them from these fields, so they carry the hub's text exactly: \"chip\", \"summary\", \"spec\" (the rows under it), \"preview\" (a thumbnail of the hub's live canvas, baked by .claude/skills/vessel-studio/bake_previews.cjs), and (no \"tuner\": Unity has no tuner of its own, D33) on the catalog \"lede\", \"fleet\", \"fleetNote\" and \"cardActions\": the card's buttons in order, the hosts they work on (web, amoebius, unity) and what a studio needs for one. parity_gate.py fails when these and the hub differ.",
+  "comment": "The Vessel Studio catalog. Amoebius's VESSEL STUDIO page lists these; index.html shows the same studios. Add a studio here and in index.html. Optional accent: the card colour on the hub and the Unity home, a domain key from studio-domains.js (jade, ruby, gold, blue) or a #hex. Optional engineMode: an arcade mode (GameModes name) that PLAY IN ENGINE opens from the main menu in the Amoebius player, the game's own vessel; engineNote says what that run is. \"shared\": files every studio page loads beside it (studio-look.js = the default graphics, /vessel-studio D19); build_artifact.py publishes them. \"mirror\": the live mirror, a plain https copy of the same build_artifact.py output (OPEN LIVE IN BROWSER); a mirror of the one artifact in \"web\", never a second source. Cards (/vessel-studio D35): every surface shows the hub's studio cards. index.html draws them; the native homes (Amoebius's VESSEL STUDIO page, Unity's studio home) draw them from these fields, so they carry the hub's text exactly: \"chip\", \"summary\", \"spec\" (the rows under it), \"preview\" (a thumbnail of the hub's live canvas, baked by .claude/skills/vessel-studio/bake_previews.cjs), and (no \"tuner\": Unity has no tuner of its own, D33) on the catalog \"lede\", \"fleet\", \"fleetNote\" and \"cardActions\": the card's buttons in order, the hosts they work on (web, amoebius, unity) and what a studio needs for one. parity_gate.py fails when these and the hub differ. \"newCard\": the hub's \"+ New studio\" card (/vessel-studio D36), its text exactly as the hub shows it; the native homes (Amoebius, Unity) draw it last in their studio grids and open the hub with #<fragment> (the panel).",
   "web": "https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa",
   "mirror": "https://yskhan61.github.io/vessel-studio/",
   "hub": "index.html",
@@ -86,28 +86,86 @@
       "engineMode": "Slingshot"
     },
     {
-      "id": "goby",
-      "name": "Goby & Pistol",
-      "file": "goby.html",
-      "kind": "duo lab - round 1",
-      "chip": "duo lab · round 1",
-      "summary": "The first duo vessel: one squad slot, two craft. The Goby flies the 3D world like the Serpent and lays the path; the Pistol plays a 2D sidescroller unrolled from that path, rides its hills Tiny Wings style and blows things up. Fly either half while the AI flies the other; swap with D-pad left / right or 1 / 2.",
+      "id": "brittlestar",
+      "name": "Brittle Star",
+      "file": "brittlestar.html",
+      "kind": "the Unity build - round 4",
+      "chip": "the Unity build · round 4",
+      "summary": "The Brittle Star as it ships (BrittleStar = 16): a cockpit inside a pentagon of five engines and five guns. Speed (x6), Creation (the slowest, a trail per ring corner), Space (five guns, RT analog, overheating into a danger trail) and Charge (five whip cords that RT stiffens into sabers), and spare rings thrown as a nucleus-wide disk. Demolition Derby and Fauna Frenzy at four intensities, AI rivals at Easy, Medium or Hard flying four element personas, and a scorecard that races every level and style.",
       "spec": [
         {
-          "k": "Goby",
-          "v": "Serpent flight · primer · flares"
+          "k": "Modes",
+          "v": "Cruise · Speed · Creation · Space · Charge"
         },
         {
-          "k": "Pistol",
-          "v": "2D · dive · launch · snap · ghost"
+          "k": "Ring",
+          "v": "a nucleus-wide disk; a spare per crystal, two at most"
         },
         {
-          "k": "Unroll",
-          "v": "World up · Arc length · Goby's up"
+          "k": "Flight",
+          "v": "one stick · 45 u/s, 270 in Speed"
+        },
+        {
+          "k": "Games",
+          "v": "Demolition Derby · Fauna Frenzy"
+        }
+      ],
+      "preview": "previews/brittlestar.png",
+      "accent": "#7fd7ff",
+      "docs": "Docs/Studios/BRITTLE_STAR.md"
+    },
+    {
+      "id": "shrike",
+      "name": "Shrike",
+      "file": "shrike.html",
+      "kind": "design studio - round 1",
+      "chip": "design studio · round 1",
+      "summary": "The sniper, from its design document: a very slow one-touch flyer that docks to any block it touches and builds nests to dock in. The Void Lance pierces everything, the Void Sling hurls it to a block in a second, and the Targeting Array sends every nest's missiles at what it paints. Thread the Needle and Den Defense at four intensities, AI Shrikes at Easy, Medium or Hard, and a scorecard with no-sling and no-array controls.",
+      "spec": [
+        {
+          "k": "Flight",
+          "v": "one stick · 18 u/s (a proposal)"
+        },
+        {
+          "k": "Kit",
+          "v": "Lance · Sling · Array · Nest"
+        },
+        {
+          "k": "Games",
+          "v": "Thread the Needle · Den Defense"
         },
         {
           "k": "Status",
-          "v": "design lab (nothing in the game yet)"
+          "v": "design only: the game's Shrike is a Manta copy"
+        }
+      ],
+      "preview": "previews/shrike.png",
+      "accent": "#ff8a5c",
+      "docs": "Docs/Studios/SHRIKE.md"
+    },
+    {
+      "id": "goby",
+      "name": "Goby and Pistol",
+      "file": "goby.html",
+      "kind": "crew vessel - in the game",
+      "chip": "crew vessel · in the game",
+      "summary": "A crew vessel: two seats, one hull, its card reads Goby and Pistol (SO_Vessel.CrewNames, as the Wrasse and Grouper). The Goby flies the 3D world on two thumbs, very fast, and lays the path; the Pistol plays a 2D side view unrolled from that path, rides its hills Tiny Wings style and blows things up. D-pad left or right swaps seats; the AI takes the empty one.",
+      "spec": [
+        {
+          "k": "Goby",
+          "v": "two thumbs · 160 u/s · primer · flares"
+        },
+        {
+          "k": "Pistol",
+          "v": "side view · dive · launch · vortex ring · ghost"
+        },
+        {
+          "k": "Seats",
+          "v": "D-pad left / right · AI in the empty seat"
+        },
+        {
+          "k": "Status",
+          "v": "in the Toybox Vessel Changer (not editor-verified)"
         }
       ],
       "preview": "previews/goby.png",
@@ -115,6 +173,12 @@
       "docs": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md"
     }
   ],
+  "newCard": {
+    "name": "New studio",
+    "summary": "Create a vessel or work on one of the fleet: its AI, how it flies, a mini-game of the game or a new one. Name the new ones, say what you want (by voice too), and Claude Code builds it on a new branch.",
+    "open": "Start →",
+    "fragment": "new-studio"
+  },
   "fleet": [
     "Manta",
     "Dolphin",
@@ -125,16 +189,16 @@
     "Grizzly",
     "Scarab",
     "Butterfly",
-    "Termite",
-    "Falcon",
-    "Shrike"
+    "Termite"
   ],
-  "fleetNote": "No studio yet. Ask the studio agent below to start one; each needs the vessel's own numbers read from its assets first.",
+  "fleetNote": "No studio yet. Press a vessel, or + New studio, to start one; each needs the vessel's own numbers read from its assets first.",
   "shared": [
     "studio-look.js",
     "studio-ide.js",
     "ai_race_panel.js",
     "studio-domains.js",
-    "studio-theme.js"
+    "studio-theme.js",
+    "studio-game.js",
+    "studio-new.js"
   ]
 }

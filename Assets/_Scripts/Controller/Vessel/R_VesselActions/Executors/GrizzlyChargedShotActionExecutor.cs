@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Normalized charge for the HUD meter (0..1).</summary>
         public event Action<float> OnChargeChanged;
 
-        public enum ShotState { Idle, Charging, InFlight, Frozen }
+        public enum ShotState { Idle = 0, Charging = 1, InFlight = 2, Frozen = 3 }
         /// <summary>State for the HUD (weapon-mode indicator / reticle hinting).</summary>
         public event Action<ShotState> OnShotStateChanged;
         public ShotState State { get; private set; } = ShotState.Idle;

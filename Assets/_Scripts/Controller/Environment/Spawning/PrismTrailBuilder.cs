@@ -174,7 +174,7 @@ namespace CosmicShore.Gameplay
                 if (!parent) yield break;
                 var block = LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
                 onEach?.Invoke(block);
-                if (interval > 0f) yield return new WaitForSeconds(interval);
+                if (interval > 0f) yield return CosmicShore.Utility.WaitCache.Seconds(interval);
             }
         }
 

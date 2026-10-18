@@ -44,6 +44,8 @@ namespace CosmicShore.Gameplay
             VesselClassType.Urchin, VesselClassType.Scarab, VesselClassType.Butterfly,
             VesselClassType.Grizzly, VesselClassType.Thresher, VesselClassType.Stoat,
             VesselClassType.Goby,
+            VesselClassType.BrittleStar, VesselClassType.Shrike, VesselClassType.Angler,
+            VesselClassType.Wrasse,
         };
 
         /// <summary>
@@ -116,9 +118,9 @@ namespace CosmicShore.Gameplay
             CSDebug.LogWarning(
                 $"[ToyVesselRoster] {vessel} is on the toybox roster but the Vessel Prefab " +
                 "Container has no prefab for it, so no station is offered for it in the Vessel " +
-                "Changer or the Spawn Matrix hangar. If this vessel is newly designed, run " +
-                $"FrogletTools > Vessels > Create {vessel} Vessel (it authors the prefab and " +
-                "registers it); otherwise the container has lost its entry.");
+                "Changer or the Spawn Matrix hangar. If this vessel is newly designed, author its " +
+                "prefab and register it (the /vessel skill's registration checklist); otherwise " +
+                "the container has lost its entry.");
         }
 
         static readonly HashSet<VesselClassType> _warnedMissingPrefab = new();

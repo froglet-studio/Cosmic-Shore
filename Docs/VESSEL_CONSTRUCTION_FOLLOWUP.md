@@ -57,7 +57,7 @@ the prefabs that use it.
 |---|---|---|
 | `dolphin_shapekey_with_animations.fbx` | a **real** 4-element hull morph (mass moves 10,909 verts, Δ 1.173; time 7,473, Δ 1.317; charge 2,339; space 1,217) · the 28-bone armature `RiptideAnimation` names · 10 flight takes · **and the six engine exhaust nozzles the shipped hull scales to 0.00095 units** (§4.3) | **extract — this is Phase 2** |
 | `rhino_shapekey_with_animations.fbx` | the 12-bone armature `RhinoAnimation` names · 9 flight takes. Element shapes are **empty** (1 indexed vertex, Δ = 0.0000) | keep for the armature + takes; the shapes buy nothing (§Phase 3) |
-| `RhinoModel.fbx` | nothing of its own — it is `Rhino_Test.fbx` **before the front wings were subdivided** (`Circle.003`, both `Cylinder`s and both `Circle.015/016` are vertex-identical; wings 245 → 476). But **both** placeholder `.meta`s remap materials into it, so removing it breaks two files | keep until the placeholders go; then it goes with them |
+| `RhinoModel.fbx` | nothing of its own — it is `Rhino_Test.fbx` **before the front wings were subdivided** (`Circle.003`, both `Cylinder`s and both `Circle.015/016` are vertex-identical; wings 245 → 476). But **both** placeholder `.meta`s remap materials into it, so removing it breaks two files *(Phase 1 measurement; the placeholders were retired in Phase 5, and a 2026-10-16 guid sweep finds 0 asset references and 0 `.meta` remaps into it)* | keep until the placeholders go; then it goes with them — *superseded: Phase 5 HELD it on its own merits (the only pre-subdivision front wings)* |
 
 ### 1c. Nothing unique found — cleared for Phase 5
 
@@ -69,7 +69,7 @@ Each was checked for shapes, bones, takes, referrers, and for geometry not prese
 | `Dolphin_split.fbx` | a 137-vert sea-animal blockout (`Fusilage`, `Dorsalfin`, `LeftTail`, `RightTail`, wings) | no armature, no takes, no shapes, no referrer |
 | `Hammerhead_split.fbx` | a 116-vert hammerhead-shark blockout (`Fusilage`, `Head`, wings, `Tail`) | same — and note both of these read as **fauna** blockouts filed under Vessel Models |
 | `Vessel_Placeholder_1.fbx` | a third-party download — nodes `supermatic sky cruiser.001/.002`, 110,850 verts, 8.6 MB | its **288 takes are not 288 animations**: 288 stacks × 288 layers × 864 curve-nodes ≈ 3 TRS channels each, the combinatorial one-node-per-take artefact of a Sketchfab/Blender import. No vessel geometry, no armature, nothing the fleet references. Its `.meta` *depends on* `Rhino_Test`/`RhinoModel`, not the reverse. |
-| `Vessel_Placeholder_2.fbx` | another third-party download — nodes `Sketchfab_model`, `nitro blade.obj.cleaner.materialmerger.gles`, 68,995 verts | no armature, no takes, no shapes, no referrer. Also remaps materials into `RhinoModel`. |
+| `Vessel_Placeholder_2.fbx` | another third-party download — nodes `Sketchfab_model`, `nitro blade.obj.cleaner.materialmerger.gles`, 68,995 verts | no armature, no takes, no shapes, no referrer. Also remapped materials into `RhinoModel` (retired in Phase 5, taking the remap with it). |
 | `Assets/_Animations/MantaAnimatorController.controller` | a duplicate of the live `_Models/Animations/` controller | referenced by **nothing**; the live one is `_Models/Animations/MantaAnimatorController.controller` (5 vessels). Not a model, but it surfaced from the same sweep and is in the same class. |
 
 ✏ **Correction, made in Phase 5.** This section originally flagged the two placeholders as an
@@ -150,7 +150,7 @@ bone and the jet is parked at the mouth centre measured off that bone's own rear
 | `jetinm.r` | (0.5751, 0.2411, −2.2824) | 0.052 forward |
 | `jetinb.r` | (0.5409, −0.0973, −2.2777) | 0.046 forward |
 
-**The tool:** `FrogletTools ▸ Vessels ▸ Swap Vessel Rig` (`VesselRigSwapper`) — dry-run first, then
+**The tool:** `FrogletTools ▸ Vessels ▸ Wiring ▸ Swap Vessel Rig` (`VesselRigSwapper`) — dry-run first, then
 write; idempotent; refuses and writes nothing if a single mapped bone or object is missing; records
 its output to the ledger and draws the ship panel. `VesselRigSwapPlanner` stays as the report-only
 sibling and now points at it.
@@ -306,7 +306,7 @@ nothing in between:
 
 The previous audit reported *"all four elements"* for all three, because it counted labels.
 
-**2–4. `FrogletTools ▸ Vessels ▸ Audit Vessel Construction`** (new, `VesselConstructionAuditor`):
+**2–4. `FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Construction`** (new, `VesselConstructionAuditor`):
 
 - **guid ownership** — resolves each vessel model's guid by the `^guid:` line of each candidate's
   OWN `.meta` and fails on anything but exactly one owner. Current: every vessel model is owned by

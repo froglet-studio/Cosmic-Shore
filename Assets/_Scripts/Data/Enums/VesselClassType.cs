@@ -25,6 +25,9 @@ namespace CosmicShore.Data
         Butterfly = 13,
         Thresher = 14,
         Stoat = 15,
-        Goby = 16,   // the Goby & Pistol duo (two craft, one slot): .claude/skills/duo-vessel
+        BrittleStar = 16,
+        Angler = 17,
+        Goby = 18,   // the Goby & Pistol crew vessel (two subvessels, one hull class): .claude/skills/duo-vessel; moved off 16 (BrittleStar)
+        Wrasse = 19,   // a cleaner wrasse and its host: the Sparrow hull with the Kite & Tail navigator seat (two players, one hull): Controller/Vessel/Crew/KITE_NAVIGATOR.md
     }
 }

@@ -9,10 +9,10 @@ namespace CosmicShore.Gameplay
 {
     public enum BlockState
     {
-        Normal,
-        Shielded,
-        SuperShielded,
-        Dangerous
+        Normal = 0,
+        Shielded = 1,
+        SuperShielded = 2,
+        Dangerous = 3
     }
 
     public class PrismStateManager : MonoBehaviour

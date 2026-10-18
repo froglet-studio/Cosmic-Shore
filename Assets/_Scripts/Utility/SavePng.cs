@@ -19,8 +19,8 @@ namespace CosmicShore.Utility
 
         public enum Aspect
         {
-            Square,
-            Wide
+            Square = 0,
+            Wide = 1
         }
 
         private void Start()
@@ -30,7 +30,7 @@ namespace CosmicShore.Utility
 
         private void Update()
         {
-            var animators = Container.GetComponentsInChildren<Animator>();
+            var animators = Container.GetComponentsInChildren<Animator>(); // perframe-ok: PhotoBooth tool scene only, never gameplay
             foreach (var animator in animators)
             {
                 animator.enabled = false;

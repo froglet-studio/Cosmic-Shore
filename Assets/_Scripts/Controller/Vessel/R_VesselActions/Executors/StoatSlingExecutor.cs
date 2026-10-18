@@ -55,6 +55,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("Every number of the sling: squeeze → orbit, slingshot, life, the crystal style, audio slots.")]
         [SerializeField] StoatSlingConfigSO config;
 
+        // The autopilot's numbers: the mode's own copy when it has one (AIModeTuning, e.g. StoatSlingConfig_Regatta learned
+        // from people's editor flights), resolved once the pilot's mode is known; this config otherwise. Only the AI's
+        // reads go through it - a person flying this hull reads `config`.
+        StoatSlingConfigSO _aiConfig;
+        StoatSlingConfigSO AIConfig
+        {
+            get
+            {
+                if (!_aiConfig) _aiConfig = AIModeTuning.ForPilot(config, _status);
+                return _aiConfig ? _aiConfig : config;
+            }
+        }
+
         struct Hold
         {
             public bool Holding;
@@ -119,6 +132,7 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
+            _aiConfig = null;
             _holds[0] = default;
             _holds[1] = default;
             _laid = false;
@@ -143,7 +157,7 @@ namespace CosmicShore.Gameplay
             _holds[i].Holding = true;
             _holds[i].HeldFor = 0f;
             // An autopilot writes no trigger, so its fixed squeeze is the hold from the start.
-            float start = config != null && _status != null && _status.AutoPilotEnabled ? config.AutopilotHold01 : 0f;
+            float start = config != null && _status != null && _status.AutoPilotEnabled ? AIConfig.AutopilotHold01 : 0f;
             _holds[i].Live = start;
             _holds[i].Peak = start;
             if (config == null) return;
@@ -193,6 +207,23 @@ namespace CosmicShore.Gameplay
         /// the circle flown (a floored speed would turn a slow hull on a smaller circle than the radius and leave the
         /// radial correction fighting it).</summary>
         float OrbitSpeed() => Mathf.Max(_status.Speed, 1f);
+
+        /// <summary>The engine's own speed: the published speed with the flight-clock warp taken out. The kick is a share of
+        /// it, as in the studio (<c>speed + flow</c>), so the warp paces the flight without compounding into the kick.</summary>
+        float EngineSpeed()
+        {
+            var transformer = _status.VesselTransformer;
+            float clock = transformer ? Mathf.Max(1f, transformer.FlightTimeScale) : 1f;
+            return Mathf.Max(_status.Speed / clock, 1f);
+        }
+
+        /// <summary>
+        /// True while the Time-mode pair is held and warps the hull's flight clock (the studio's catch warp, dpWarp): from
+        /// the press (<see cref="StoatSlingConfigSO.CatchWarpFromPress"/>) or once caught. The pathfinder, the one writer of
+        /// the clock, reads it.
+        /// </summary>
+        public bool WarpsFlight => _laid && _pair != null && _pair.IsAlive && _pair.Held && config &&
+                                   config.CatchWarpShare > 0f && (_caught || config.CatchWarpFromPress);
 
         float RadiusFor(float hold01)
         {
@@ -321,7 +352,7 @@ namespace CosmicShore.Gameplay
                 ResolveSiblings();
                 float timing = config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
                 float rate = _dipole && _dipole.Config ? _dipole.Config.BoostRatio(_status) : 1f;
-                float squeeze = StoatSlingMath.SlingBoost(OrbitSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
+                float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
                 float kick = StoatSlingMath.TimedKick(squeeze, timing, config.MissKickShare, rate);
                 _lastTiming = timing;
                 // The modifier starts at 1.5× its amount and fades over the duration (VesselTransformer). A timed kick can
@@ -436,20 +467,20 @@ namespace CosmicShore.Gameplay
             if (_laid)
             {
                 bool letGo;
-                if (!_caught) letGo = Time.time - _laidAt >= config.AiCatchGiveUpSeconds;
+                if (!_caught) letGo = Time.time - _laidAt >= AIConfig.AiCatchGiveUpSeconds;
                 else
                 {
                     float off = Vector3.Angle(hull.forward, ai.TargetPosition - hull.position);
-                    float cone = config.AiReleaseConeDegrees;
+                    float cone = AIConfig.AiReleaseConeDegrees;
                     letGo = off <= cone || (Timing01 >= 0.999f && off <= 3f * cone);
                 }
                 if (letGo && ResolveBoundInput(_orbitSide, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
                 return;
             }
-            if (config.AiSlingMinTurnDegrees <= 0f) return;
-            if (Time.time - _aiLastSlingTime < config.AiSlingIntervalSeconds) return;
+            if (AIConfig.AiSlingMinTurnDegrees <= 0f) return;
+            if (Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
             var local = hull.InverseTransformPoint(ai.TargetPosition);
-            if (!StoatSlingMath.TryAutopilotSide(local, config.AiSlingMinTurnDegrees, config.AiSlingMinDistance, out bool attractorLeft))
+            if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool attractorLeft))
                 return;
             var side = attractorLeft ? Side.Left : Side.Right;
             if (!ResolveBoundInput(side, handler, out var ie)) return;
@@ -488,7 +519,7 @@ namespace CosmicShore.Gameplay
             int i = (int)side;
             if (!_holds[i].Holding) return;
             _holds[i].HeldFor += Time.deltaTime;
-            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot, config.AutopilotHold01);
+            float sample = StoatSlingMath.Hold01(rawAnalog, _holds[i].HeldFor, analog, config.HoldRampSeconds, autopilot, AIConfig.AutopilotHold01);
             _holds[i].Live = sample;
             _holds[i].Peak = StoatSlingMath.Peak(_holds[i].Peak, sample);
         }

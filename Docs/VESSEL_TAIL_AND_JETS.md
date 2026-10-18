@@ -7,7 +7,7 @@
 
 **Status:** standard shipped, fleet migrated. Every vessel has a tail; 7 of 12 have jets.
 The Sparrow's **skyburst missile** has one too — the first non-vessel to carry a tail (§4.2).
-Audit with **FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets**.
+Audit with **FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Tails and Jets**.
 
 ## 1. Three things stream off the back of a vessel, and they are not interchangeable
 
@@ -154,7 +154,7 @@ together: particle size, emission shape, particle speed, and the `Trail` child's
 (which the Urchin was rendering at 0.63 units — one and a half hull diameters behind a ship whose
 body sphere is 0.207 in radius).
 
-**Audit it, don't remember it:** *FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets* now reports
+**Audit it, don't remember it:** *FrogletTools ▸ Vessels ▸ Audits ▸ Audit Vessel Tails and Jets* now reports
 each hull's effective plume scale against its camera-derived target and flags a jet that authors no
 scale at all as `UNSIZED`. For a bone-mounted jet it calls **`VesselJet.ResolveMountBone`** — the
 same method `MountOnBone` uses at Awake, not a second copy of the search — so what it reports is
@@ -225,12 +225,17 @@ animates. Where it does not, the jet is placed at the measured rear of the hull 
 | **Squirrel** | −17 | ±4, −12 (authored pair) | 0.85 | 4 | parented to model nodes (authored) |
 | **Sparrow** | −50 | −52.5 | 2.5 | 6 | bone-mounted at width×1.5 on `b_Tail1..3 .L/.R` (see §3.1) |
 | **Urchin** | −6.67 | −7.0 | 0.334 | 4 | parented to `JetTopLeft/Right`, `JetBottomLeft/Right` (those nodes carry a **1.75** scale, so the jets author `m_LocalScale (0.1145, 0.1145, 0.0248)` to land the plume on target — see §3) |
-| **Rhino** | −120 | −126 | 6.0 | 10 | 2 on `engine left`/`engine right` at width×10 (the wing pods); 8 on `fusalage`, one per nozzle — table below |
+| **Rhino** | **−70** ‡ | −126 (authored) | 6.0 (authored) | 10 | 2 on `engine left`/`engine right` at width×10 (the wing pods); 8 on `fusalage`, one per nozzle — table below |
 | **Grizzly** | −30 † | −31.5 | 1.5 | 4 | parented to `Ship_Wedge_Jet_UL/UR/BL/BR` |
 | **Scarab** | −50 | −52.5 | 2.5 | 2 | `(±1.50, 0.10, −4.40)` — the carapace rear |
 | **Manta** | −30 | −31.5 | 1.5 | — | see §5 |
 | **Serpent** | −250 | −262.5 | 12.5 | — | see §5 |
 | **Falcon / Shrike / Termite** | −30 † | −31.5 | 1.5 | — | see §5 |
+
+‡ **Rhino row is OPEN (2026-10-16).** `RhinoCameraSettingsSO.followOffset.z` is **−70**, not the −120
+this table was derived for. The authored tail (`z −126`, `widthScale 6.0`) is −1.05 × 120 and 120 / 20,
+so by this section's own rule it should be **`z −73.5`, `widthScale 3.5`** — not yet re-authored or
+play-checked, and the wing-pod jets' width×10 was cut against the same −120.
 
 † no `CameraSettingsSO` of its own. Falcon/Shrike/Termite are flat copies of the Manta and inherit
 its 30; the Grizzly has no sibling and takes 30 as the fleet's mid value. Both are *inherited*, not
@@ -459,9 +464,12 @@ the same pass that gives them real art, when "where is the engine" has an answer
   carry a 1.75 scale. Fixed by authoring the plume scale on the four jet instances (§3).
 - **Four hulls still author no plume scale at all**, so they render at `(1, 1, 1)` — Sparrow,
   Rhino, Grizzly and Scarab. Measured against the (0.6, 0.6, 0.13) reference scaled by their own
-  cameras, their girth lands between **0.28×** (Rhino) and **1.11×** (Grizzly) of target, which is
-  defensible, but their plume **length** is **1.28×–5.13×** because the reference is a *short* puff
-  and an unauthored jet is not. None of them is anywhere near the Urchin's 40×, and every one is a
+  cameras, their girth lands between **0.48×** (Rhino) and **1.11×** (Grizzly) of target, which is
+  defensible, but their plume **length** is **2.2×–5.13×** because the reference is a *short* puff
+  and an unauthored jet is not. *(Recomputed 2026-10-16 against the Rhino's real −70 camera: target
+  (0.6, 0.6, 0.13) × 70/20 = (2.1, 2.1, 0.455), so an effective (1, 1, 1) plume is 0.48× girth and
+  2.2× length. These bullets used to read 0.28× and 1.28×–5.13×, derived from a −120 camera the
+  Rhino does not have.)* None of them is anywhere near the Urchin's 40×, and every one is a
   look call on a hull nobody has complained about — so they are left alone deliberately rather than
   swept up. The audit names them `UNSIZED`; fixing one is a single `m_LocalScale` on its jets.
   Note the Sparrow's number is the one to actually LOOK at rather than compute: its jets are

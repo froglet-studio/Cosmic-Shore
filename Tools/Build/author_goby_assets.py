@@ -49,7 +49,7 @@ FUSION = os.path.join(ROOT, "Assets", "Resources", "CrystalHullFusionConfig.asse
 DUO_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Duo", "GobyPistol", "GobyPistolDuo.cs.meta")
 CONFIG_META = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "GobyPistol", "GobyPistolConfig.asset.meta")
 
-GOBY_CLASS_ID = 16
+GOBY_CLASS_ID = 18   # 16 is the BrittleStar on bleeding-edge; 18 was left for the Goby (VesselClassType.cs)
 SQUIRREL_CLASS_ID = 6
 PREFAB_GUID = "982ad3e4c35f4421ae0424bf7bb1ee47"
 CLASS_GUID = "b569f215d5ca452d9e4ab28af3ee55ab"
@@ -120,6 +120,11 @@ def prefab_meta() -> str:
 
 
 # ----------------------------------------------------------------------------- the class asset
+# A crew vessel's card names both subvessels (the Wrasse's rule, SO_Vessel.CrewNames / CardName): "Goby and Pistol".
+# Name stays "Goby", the vessel's key (the hangar's cloud unlocks are keyed by it).
+CREW = "  CrewNames:\n  - Goby\n  - Pistol\n  CrewNameTemplate: '{0} and {1}'\n"
+
+
 def class_asset() -> str:
     return (
         "%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
@@ -128,10 +133,12 @@ def class_asset() -> str:
         f"  m_Script: {{fileID: 11500000, guid: {SO_VESSEL_SCRIPT}, type: 3}}\n"
         "  m_Name: SO_Class_Goby\n  m_EditorClassIdentifier: \n"
         f"  Class: {GOBY_CLASS_ID}\n  Name: Goby\n"
-        "  Description: Two craft in one slot. The Goby flies on two thumbs and lays the path;\n"
-        "    the Pistol shrimp rides that path side on, as a sidescroller, diving down the\n"
-        "    hills, launching into clusters and firing vortex rings. D-pad left or right swaps\n"
-        "    which half you fly; the AI flies the other.\n"
+        "  Description: Two seats, one hull, like a goby and the pistol shrimp it shares a burrow\n"
+        "    with. One player flies the Goby, the hull, on two thumbs and lays the path; the other\n"
+        "    rides that path side on as the Pistol, a sidescroller - diving down the hills,\n"
+        "    launching into clusters and firing vortex rings. D-pad left or right swaps seats;\n"
+        "    the AI takes the empty one.\n"
+        + CREW +
         "  PrimaryElement: 3\n  Element: {fileID: 0}\n"
         "  InitialResourceLevels:\n    Mass: 0\n    Charge: 0\n    Space: 0\n    Time: 0\n"
         f"  IconActive: {{fileID: 21300000, guid: {SQUIRREL_ICON_ACTIVE}, type: 3}}\n"
@@ -252,6 +259,7 @@ def check_registrations(container: str, network: str, lists, cls: str, gmap: str
     for name, text in lists:
         want(text.count(CLASS_GUID) == 1, f"{name}: SO_Class_Goby listed {text.count(CLASS_GUID)} times, not once")
     want(f"  Class: {GOBY_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls, "SO_Class_Goby: wrong class or not owned from the start")
+    want(CREW in cls, "SO_Class_Goby: the card does not name both subvessels (CrewNames Goby, Pistol: SO_Vessel.CardName)")
     want(f"  vesselClass: {GOBY_CLASS_ID}\n" in gmap and "  m_Name: Goby\n" in gmap, "ElementalAbilityMaps/Goby: wrong class or name")
     goby, squirrel = fusion_entries(fusion, GOBY_CLASS_ID), fusion_entries(fusion, SQUIRREL_CLASS_ID)
     want(len(goby) == 4, f"CrystalHullFusionConfig: {len(goby)} Goby entries, not 4 (CrystalHullFusionConfigTests needs one per element)")
@@ -326,6 +334,7 @@ def self_test():
     expect(check_registrations(container, network, [(n, t.replace(CLASS_GUID, "x")) for n, t in lists], cls, gmap, fusion), 1, "no class list entry")
     expect(check_registrations(container, network, lists, cls, gmap, fusion.replace(f"  - vessel: {GOBY_CLASS_ID}\n", "  - vessel: 99\n", 1)), 1, "a missing fusion entry")
     expect(check_registrations(container, network, lists, cls, read(DONOR_MAP), fusion), 1, "the Squirrel's own map")
+    expect(check_registrations(container, network, lists, cls.replace(CREW, ""), gmap, fusion), 1, "no crew names on the card")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:
         fails.append("registration is not idempotent")
     for f in fails:

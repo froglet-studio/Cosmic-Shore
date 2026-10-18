@@ -189,6 +189,24 @@ def card_checks(root, natives=True):
                 errs.append(f'{rel}: the studio card spells "{lab}" itself: take the label from studios.json cardActions')
         if not re.search(r'[Ff]leet', t):
             errs.append(f'{rel}: no fleet list (studios.json "fleet")')
+    # D36/D37: the hub's "+ New studio" card is on every native home, drawn from studios.json newCard, never a copy
+    nc = cat.get('newCard')
+    if nc:
+        for rel, method, field in ((LAUNCHER_STUDIOS, 'void DrawNewStudioCard(', 'NewCard'), (UNITY_HOME, 'void DrawAddCard(', 'newCard')):
+            p = os.path.join(root, rel)
+            if not os.path.exists(p):
+                continue
+            body = code(region(read(p), method))
+            if not body:
+                errs.append(f'{rel}: no {method.split("(")[0].split()[-1]}: the hub has the + New studio card, so this home must draw it (D37)')
+                continue
+            if field not in body:
+                errs.append(f'{rel}: the + New studio card does not draw from studios.json {field}')
+            for k in ('name', 'summary', 'open'):
+                txt = (nc.get(k) or '').strip()
+                for variant in {txt, txt.upper()}:
+                    if len(variant) > 3 and '"' + variant in body:
+                        errs.append(f'{rel}: the + New studio card spells its {k} "{variant[:40]}" itself: take it from studios.json newCard')
     # D33: Unity has no tuner of its own; no card may offer one
     if any(a.get('needs') == 'tuner' or a.get('id') == 'tune' for a in cat.get('cardActions', [])) or \
             any('tuner' in x for x in cat.get('studios', [])):
@@ -207,23 +225,28 @@ def cards_self_test():
         hub = ('<style>:root { --jade: #13fff2; }</style><p class="lede">Pick a vessel.</p><div class="bays">'
                '<a class="bay" href="a.html" style="--accent: var(--jade)"><canvas id="pvA"></canvas><div><div class="name"><b>Alpha</b>'
                '<span class="chip">built · round 1</span></div><p>The first one.</p><div class="spec"><span>Speed</span><b>60 u/s</b></div></div>'
-               '<span class="open">Open studio &rarr;</span></a></div><div class="fleet"><span>Manta</span></div>'
+               '<span class="open">Open studio &rarr;</span></a><button type="button" class="bay add" id="newStudioCard"><span class="plus">+</span>'
+               '<div><div class="name"><b>New studio</b></div><p>Make one.</p></div><span class="open">Start &rarr;</span></button></div><div class="fleet"><span>Manta</span></div>'
                '<p class="lede hint">No studio yet.</p><script>\n  // ---- bay previews: x ----\n  preview();\n  // ---- the studio agent ----\n</script>')
         acts = [{'id': 'open', 'label': 'Open studio →', 'on': 'web,amoebius,unity'}, {'id': 'engine', 'label': 'PLAY IN ENGINE', 'on': 'amoebius,unity', 'needs': 'engineMode'},
                 {'id': 'live', 'label': 'OPEN LIVE IN BROWSER', 'on': 'amoebius,unity', 'needs': 'mirror'}]
         cat = {'lede': 'Pick a vessel.', 'cardActions': acts, 'fleet': ['Manta'], 'fleetNote': 'No studio yet.',
+               'newCard': {'name': 'New studio', 'summary': 'Make one.', 'open': 'Start →', 'fragment': 'new-studio'},
                'studios': [{'id': 'a', 'name': 'Alpha', 'file': 'a.html', 'chip': 'built · round 1', 'summary': 'The first one.',
                             'spec': [{'k': 'Speed', 'v': '60 u/s'}], 'accent': 'jade', 'preview': 'previews/a.png'}]}
         w(f'{DIR}/index.html', hub)
+        w(f'{DIR}/studio-new.js', "if (/(^|[#&])new-studio\\b/.test(location.hash)) open();")
         w(f'{DIR}/studios.json', json.dumps(cat, ensure_ascii=False))
         w(f'{DIR}/previews/a.png', b'png', binary=True)
         w(f'{DIR}/previews/previews.json', json.dumps({'source': studio_cards.preview_hash(tmp)}))
         good_amo = ('        List<PageAction> CardButtons(StudioCatalog cat, StudioCatalog.Studio s)\n        {\n            foreach (var a in cat.CardActions) list.Add(a.Label);\n        }\n'
                     '        void DrawStudioCard(StudioCatalog cat, StudioCatalog.Studio s)\n        {\n            Image(Preview(s)); Text(s.Chip); Rows(s.Spec);\n'
-                    '            foreach (var b in CardButtons(cat, s)) Button(b.Label);\n        }\n        void Fleet() { }\n')
+                    '            foreach (var b in CardButtons(cat, s)) Button(b.Label);\n        }\n        void Fleet() { }\n'
+                    '        void DrawNewStudioCard(StudioCatalog cat)\n        {\n            var nc = cat.NewCard!; Text(nc.Name); Text(nc.Summary); Button(nc.Open);\n        }\n')
         good_unity = ('        public static List<CardButton> CardButtons(Catalog cat, StudioEntry s)\n        {\n            foreach (var a in cat.cardActions) list.Add(a.label);\n        }\n'
                       '        void DrawCard(Rect r, StudioEntry s)\n        {\n            Tex(s.preview); Label(s.chip); Rows(s.spec);\n'
-                      '            foreach (var b in CardButtons(_catalog, s)) Button(b.Label);\n        }\n        string[] _fleet;\n')
+                      '            foreach (var b in CardButtons(_catalog, s)) Button(b.Label);\n        }\n        string[] _fleet;\n'
+                      '        void DrawAddCard(Rect r)\n        {\n            var nc = _catalog.newCard; Label(nc.name); Label(nc.summary); Button(nc.open);\n        }\n')
         w(LAUNCHER_STUDIOS, good_amo)
         w(UNITY_HOME, good_unity)
         clean = card_checks(tmp)
@@ -259,6 +282,14 @@ def cards_self_test():
         expect('Unity spelling a label', UNITY_HOME, good_unity.replace('Button(b.Label);', 'Button(b.Label); Button("OPEN STUDIO ▸");'), 'spells "OPEN STUDIO"')
         expect('Unity without the spec', UNITY_HOME, good_unity.replace('Rows(s.spec);', ''), 'spec')
         expect('a card offering a Unity tuner', cj, cat_with(studio={'tuner': True}), 'Unity tuner')
+        # D36/D37: the + New studio card, on the hub and on both native homes, with the hub's text
+        expect('a + card text that drifted', cj, cat_with(newCard={'name': 'New studio', 'summary': 'Other.', 'open': 'Start →', 'fragment': 'new-studio'}), 'New studio summary')
+        expect('a catalog without the hub\'s + card', cj, cat_with(newCard=None), 'no "newCard"')
+        expect('a + card fragment the panel ignores', cj, cat_with(newCard={'name': 'New studio', 'summary': 'Make one.', 'open': 'Start →', 'fragment': 'make'}), 'does not open on #make')
+        expect('Amoebius without the + card', LAUNCHER_STUDIOS, good_amo.split('        void DrawNewStudioCard(')[0], 'no DrawNewStudioCard')
+        expect('Unity without the + card', UNITY_HOME, good_unity.split('        void DrawAddCard(')[0], 'no DrawAddCard')
+        expect('Unity spelling the + card name', UNITY_HOME, good_unity.replace('Label(nc.name);', 'Label("NEW STUDIO");'), 'spells its name')
+        expect('Amoebius + card not from the catalog', LAUNCHER_STUDIOS, good_amo.replace('var nc = cat.NewCard!; Text(nc.Name); Text(nc.Summary); Button(nc.Open);', 'Text("x");'), 'does not draw from studios.json NewCard')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return bad

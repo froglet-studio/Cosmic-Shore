@@ -43,11 +43,11 @@ remembered:
 | MandelbulbFlora, CoralBloomFlora, WatershedFlora, ApolloniaFlora | `MandelbulbFlora` — **all four**, measured; there is no `CoralBloomFlora` class, the species differ only in their authored `GrowthRules` (`Docs/ECOSYSTEM.md` §50, §52, §53, §54, §55, §56) | `Branch` |
 | Wall | `AssembledFlora` | `AssemblyBranch` |
 | **Seaweed** | **`SegmentSpawner` — NOT a `Flora` at all** | (n/a) |
-| **oldWallFlora** | **`GyroidAssembler` — not a `Flora` either** | (n/a) |
 
-The last two rows are the reason a roster is MEASURED: both sit in the flora folder with
-`*Flora` names and carry components that are not a `Flora` at all, so "every prefab named
-`*Flora`" is not the species list. Resolve `m_Script`'s guid to a `.cs.meta` instead.
+The last row is the reason a roster is MEASURED: it sits in the flora folder with a `*Flora` name
+and carries a component that is not a `Flora` at all, so "every prefab named `*Flora`" is not the
+species list. (`oldWallFlora`, a `GyroidAssembler` prefab, was the second such row until it was
+deleted as unreferenced on 2026-10-14.) Resolve `m_Script`'s guid to a `.cs.meta` instead.
 
 ---
 

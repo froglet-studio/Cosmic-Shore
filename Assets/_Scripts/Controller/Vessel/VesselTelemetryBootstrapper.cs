@@ -23,8 +23,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var vesselStatus = GetComponent<IVesselStatus>();
-            if (vesselStatus == null)
+            if (!TryGetComponent(out IVesselStatus vesselStatus))
             {
                 Debug.LogWarning("[TelemetryBootstrap] No IVesselStatus found. Skipping.");
                 Destroy(this);

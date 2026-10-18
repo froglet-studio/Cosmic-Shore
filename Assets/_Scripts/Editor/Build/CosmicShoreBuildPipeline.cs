@@ -10,7 +10,8 @@ using CosmicShore.Editor.Froglet;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Scripted Windows x64 build entry points. This is the SOURCE OF TRUTH for what a shipping
+    /// Scripted Windows x64 and Android build entry points (Android in
+    /// <c>CosmicShoreBuildPipeline.Android.cs</c>). This is the SOURCE OF TRUTH for what a shipping
     /// build is: the in-editor Build Profile is a convenience wrapper, but CI (UGS Build Automation)
     /// and the release checklist both drive the build through here so the same commit always
     /// produces the same player.
@@ -25,7 +26,7 @@ namespace CosmicShore.Editor
     /// Exits non-zero on failure so the build server actually fails the job instead of publishing
     /// a half-written depot.
     /// </summary>
-    public static class CosmicShoreBuildPipeline
+    public static partial class CosmicShoreBuildPipeline
     {
         /// <summary>Executable name inside the build folder. Also the SteamPipe launch target.</summary>
         const string ExecutableName = "CosmicShore.exe";
@@ -43,17 +44,17 @@ namespace CosmicShore.Editor
         //  Entry points
         // ──────────────────────────────────────────────
 
-        [MenuItem("FrogletTools/Build/Windows x64 (Release)", false, 100)]
+        [MenuItem("FrogletTools/Build/Windows x64 (Release)", false, 120)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 5,
             Description = "Release player build - the artifact that ships.")]
         public static void BuildWindowsRelease() => Run(development: false);
 
-        [MenuItem("FrogletTools/Build/Windows x64 (Development)", false, 101)]
+        [MenuItem("FrogletTools/Build/Windows x64 (Development)", false, 121)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 4,
             Description = "Development player build with the profiler attached.")]
         public static void BuildWindowsDevelopment() => Run(development: true);
 
-        [MenuItem("FrogletTools/Build/Reveal Build Folder", false, 120)]
+        [MenuItem("FrogletTools/Build/Reveal Build Folder", false, 122)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 2,
             Description = "Open the last build output in the file browser.")]
         public static void RevealBuildFolder()
@@ -83,15 +84,7 @@ namespace CosmicShore.Editor
                     Debug.Log($"[Build] Version stamped: {version}");
                 }
 
-                string[] scenes = EnabledScenes();
-                if (scenes.Length == 0)
-                    throw new InvalidOperationException(
-                        "No enabled scenes in Build Settings. A player with no scenes cannot boot.");
-
-                if (!scenes[0].EndsWith("Bootstrap.unity", StringComparison.OrdinalIgnoreCase))
-                    Debug.LogWarning(
-                        $"[Build] First scene is '{scenes[0]}', not Bootstrap.unity. " +
-                        "Bootstrap MUST be build index 0 or DI registration and the splash flow never run.");
+                string[] scenes = RequireScenes();
 
                 ConfigurePlayerSettings(development, useMono);
 
@@ -185,6 +178,21 @@ namespace CosmicShore.Editor
 
         static string[] EnabledScenes() =>
             EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+
+        /// <summary>The enabled scenes; throws when there are none, warns when Bootstrap is not first.</summary>
+        static string[] RequireScenes()
+        {
+            string[] scenes = EnabledScenes();
+            if (scenes.Length == 0)
+                throw new InvalidOperationException(
+                    "No enabled scenes in Build Settings. A player with no scenes cannot boot.");
+
+            if (!scenes[0].EndsWith("Bootstrap.unity", StringComparison.OrdinalIgnoreCase))
+                Debug.LogWarning(
+                    $"[Build] First scene is '{scenes[0]}', not Bootstrap.unity. " +
+                    "Bootstrap MUST be build index 0 or DI registration and the splash flow never run.");
+            return scenes;
+        }
 
         /// <summary>
         /// Drops a build manifest next to the player. The upload script reads it so the Steam build

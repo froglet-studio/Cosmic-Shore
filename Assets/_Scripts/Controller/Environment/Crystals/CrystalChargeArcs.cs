@@ -27,7 +27,9 @@ namespace CosmicShore.Gameplay
     /// The sites are read once from <see cref="sourceMesh"/> (the crystal model this object overlays, in the same space)
     /// and shared by every crystal on that mesh (<see cref="ChargeSites"/>); the omni's pentagons are read at the
     /// thickness <see cref="OmniCrystalCadenceSO.PlateThickness"/> draws them. Lives on a child of the crystal root, so
-    /// <see cref="CrystalDepthPrisms"/>' random pose turns it with the body. A crystal nobody can see only keeps its clock.
+    /// <see cref="CrystalDepthPrisms"/>' random pose turns it with the body. A crystal nobody can see only keeps its clock,
+    /// and so does one too small on screen for a bolt to show
+    /// (<see cref="CrystalChargeArcsProfileSO.SleepBelowScreenRadiusPixels"/>): it sleeps on its unlit faces.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     [DisallowMultipleComponent]
@@ -75,6 +77,7 @@ namespace CosmicShore.Gameplay
         Vector3[] prismCentres;
         Vector3[] prismSeats;
         float[] prismRadii, prismStrike, prismPlaces, prismSeatRadii;
+        bool asleep;   // too small on screen: the unlit faces are uploaded and nothing is rebuilt until it wakes
 
         void Awake()
         {
@@ -110,6 +113,7 @@ namespace CosmicShore.Gameplay
         {
             if (mesh == null) return;
             clockStart = Time.time;
+            asleep = false;
             int seed = GetInstanceID();
             walker = new ChargeSeamWalker(sites, seed, 0f);
             chain = new ChargeFluxChain(sites, seed ^ 0x5bd1e995);
@@ -140,6 +144,17 @@ namespace CosmicShore.Gameplay
             if (!arcsRenderer.enabled || !arcsRenderer.isVisible) return;
             var view = CameraManager.ViewCamera;
             if (!view) return;
+            float pixels = ScreenRadiusPixels(view);
+            if (TooSmallToSee(pixels))
+            {
+                if (!asleep) Sleep();
+                return;
+            }
+            bool waking = asleep;
+            asleep = false;
+            // Mid-distance: rebuild on alternate frames, staggered by instance so the crystals split the work.
+            float half = profile.HalfRateBelowScreenRadiusPixels;
+            if (!waking && half > 0f && pixels < half && ((Time.frameCount + GetInstanceID()) & 1) == 1) return;
             var eye = transform.InverseTransformPoint(view.transform.position);
 
             writer.Clear();
@@ -150,6 +165,37 @@ namespace CosmicShore.Gameplay
                 StrikePrisms(seconds);
             }
             Upload();
+        }
+
+        /// <summary>True when this crystal's radius on the view camera is under the profile's sleep size (1.25x that to
+        /// wake, so one at the edge does not flicker between the two).</summary>
+        bool TooSmallToSee(float pixels)
+        {
+            float limit = profile.SleepBelowScreenRadiusPixels;
+            if (limit <= 0f) return false;
+            if (asleep) limit *= 1.25f;
+            return pixels < limit;
+        }
+
+        /// <summary>This crystal's radius on the view camera, in pixels.</summary>
+        float ScreenRadiusPixels(Camera view)
+        {
+            float radius = sites.Radius * transform.lossyScale.x;
+            float halfHeight = view.orthographic
+                ? view.orthographicSize
+                : Mathf.Max(1e-3f, Vector3.Distance(view.transform.position, transform.position))
+                  * Mathf.Tan(view.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            return radius / halfHeight * view.pixelHeight * 0.5f;
+        }
+
+        /// <summary>Goes dark the way <see cref="OnEnable"/> starts: the faces unlit, no bolt, no Mass column struck.</summary>
+        void Sleep()
+        {
+            asleep = true;
+            writer.Clear();
+            System.Array.Clear(faceLight, 0, faceLight.Length);
+            Upload();
+            if (depthPrisms && depthPrisms.Strike != null) System.Array.Clear(depthPrisms.Strike, 0, depthPrisms.Strike.Length);
         }
 
         /// <summary>Lights every protracted Mass prism a flux arc is passing through: each prism's body is carried from the

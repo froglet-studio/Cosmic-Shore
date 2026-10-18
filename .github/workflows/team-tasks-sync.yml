@@ -1,0 +1,41 @@
+# Mirror the team's to-do board (Docs/TEAM_TASKS.md, Docs/TEAM.md rule 9) to GitHub issues: one issue per task,
+# labelled team-task / kind:* / area:* / taken, closed when the task is done. The board is the source; the sync is
+# monotonic (it never reopens or moves an issue backwards), so two branches carrying different copies of the board
+# cannot fight. Runs on every push of the board to the two shared branches, nightly as a backstop, and by hand.
+name: team-tasks-sync
+
+on:
+  push:
+    branches: [bleeding-edge, Ys-bleeding-edge]
+    paths:
+      - 'Docs/TEAM_TASKS.md'
+      - 'Tools/Build/team_tasks.py'
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: team-tasks-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            Docs/TEAM_TASKS.md
+            Tools/Build/team_tasks.py
+          sparse-checkout-cone-mode: false
+      - name: Check the board
+        run: python3 Tools/Build/team_tasks.py --check
+      - name: Mirror it to issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 Tools/Build/team_tasks.py gh-sync

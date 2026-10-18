@@ -22,9 +22,12 @@ ability (`/arenagame` §1).
 | Butterfly | 3: `ButterflyAutopilotModeDriver` (Mass ↔ Dust switch) | **Waystation** (gate race), Dustup, Sirocco, Tapestry | — | — |
 | Dolphin | 1: `ChargeBoostAIPolicySO` (discharge on straights); 4: `EchoSightActionExecutor` holds while drifting | **Switchback** (gate race), Bends, Rampage | Broadside, Brood Rush, Regatta | — |
 | Sparrow | 1: `HoldBoostAIPolicySO` | **Breakwater** (gate race), Dog Fight, Salvo, Wildlife Liberation | Broadside, Brood Rush, Maelstrom, Regatta, Scurry | — |
+| Thresher (2026-10-13) | none: races at cruise, never slings (`THRESHERTIME.md` §4) | **Thresher Time** (gate race, `GameModes` 66) | — | — |
 | Rhino | none (autopilot ramps by the straight-stick gesture) | **Headlong** (gate race), Cleave | Astro League, Broadside, Brood Rush, Regatta | — |
 | Serpent | 1: `PelletBoostAIPolicySO` | none | Brood Rush, Regatta | — |
-| Termite, Falcon, Shrike | none (Falcon / Shrike classes are `_SO_Assets/_TEMP`) | none | none | Not a candidate |
+| Termite | none | none | none | Not a candidate |
+| Shrike | none (the Shrike class is `_SO_Assets/_TEMP`; the prefab a Manta copy) | none (Den Defense / Thread the Needle are design minigames) | none | **Design studio built** (2026-10-15, `shrike.html` round 1, from the Notion class document; `../SHRIKE.md`) |
+| **Brittle Star** (16; the Falcon, 9, is its legacy placeholder) | none yet (Demolition Derby / Fauna Frenzy are design minigames) | the executor's input-only autopilot | none | **Studio built and in line with the game** (2026-10-14, `brittlestar.html` round 2): it flies the shipped vessel; `studio_to_unity.py --check` guards its 35 numbers |
 
 Every other `AutoPilotEnabled` read in the vessel code (Rhino sword FX, shield swipe, gun spray,
 zoom-out, drift trail, Pip) only skips human-only feedback while the autopilot flies; none of them is
@@ -52,6 +55,10 @@ same shape, built by hand).
 
 ## 3. Recommended order
 
+> **Superseded 2026-10-14** by `Docs/AI_SYSTEM/REGATTA_AI_ROADMAP.md`: the studios now follow the Regatta six
+> (Squirrel, Stoat, Manta, Rhino, Urchin, Dolphin), and the AI race lives in one Regatta studio with a drive
+> module per hull. The table below is kept for the hulls outside Regatta.
+
 | # | Vessel | Studio map | Why this place | What its scorecard asks (D5) |
 |---|---|---|---|---|
 | 1 | **Grizzly** | Grizzly Time I1–I4 | The closest to the two built studios: a gate race with laps and golf, one AI drive whose four numbers live in one asset, and that AI has never been seen working in the editor (`GRIZZLYTIME.md` §4, roster "Intake"). It builds the gate-race core | Lap time per intensity (the AI's skill follows it); bomb-jumps per lap; launches that land the hull through the next ring vs off-line; self-blasts that cost time |
@@ -64,7 +71,9 @@ same shape, built by hand).
 | 8 | **Scarab** | Scarab Scramble | Not a race: needs ball physics, goals and rings, a new studio shape. The juke planner is pure and tested, which helps | Goals per minute per difficulty; jukes that clear a defender; dash timing |
 | 9 | **Serpent** | Regatta (arena) | No home mode. Wait for the Regatta arena studio (every hull on one circuit), which this list builds toward | Lap time vs the fleet |
 
-Not planned: Termite, Falcon, Shrike (no card, no own AI). Revisit if a card arrives.
+Not planned: Termite (no card, no own AI). Revisit if a card arrives. The Shrike got a design studio from its class
+document (2026-10-15): the game has no Shrike kit yet, so it is a design studio until one is built. The Falcon came back as the
+Brittle Star (2026-10-14): a design studio first, then the Unity build (`BrittleStar = 16`), which the studio now flies.
 
 **After the vessels: a Regatta arena studio.** Every hull above on the one shared circuit, using each
 studio's hull model. It is the fleet-wide balance question `regatta_balance.py` answers on paper today.
