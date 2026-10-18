@@ -1078,3 +1078,96 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   Space (Bunker Buster), Mass and Charge are its next round.
 - Evidence: `SKILL.md` §1.5; `Docs/Studios/SHRIKE.md` §6.
 - Promoted: §1.5
+
+### L-STU-91 — three.js r128 instanced meshes: colour before count, and turn culling off
+- Lab: Angler Command Lab (`Docs/Studios/AnglerCommandLab.html`) · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: every creature drew grey, then not at all. `InstancedMesh.setColorAt` creates `instanceColor` sized from the mesh's CURRENT `count`, and the page had set `count = 0` first, so the buffer was empty (`instanceColor.array.length` 0) and nothing errored. Separately, r128 frustum-culls an InstancedMesh by its geometry's bounding sphere at the mesh origin, so creatures 450 u from the origin vanished whenever the origin left the view. The verifier passed both: a WebGL stage skips the blank check.
+- Do instead: call `setColorAt` for every slot before lowering `count`, and set `frustumCulled = false` on any instanced mesh whose instances spread out. Expose a `gl()` hook (draw calls, instance counts, the first colour) so a probe can tell "not drawn" from "drawn black" without a screenshot.
+- Evidence: `initGL` (`fmesh`, `trails.frustumCulled`); `window.__lab.gl()`.
+- Promoted: no
+
+### L-GEN-12 — Before calling a failing column a design finding, trace one failing run frame by frame
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the Pack sling failed 3–4 of 4 orders, which read as "the sling is a bad gesture". A per-second trace of one run showed two bugs first. The commander let go after one frame because it counted the gathering ball as "busy". Creatures that latched beside a prism circled it forever: at minimum speed their turn could not catch the bearing, and at d ≈ 0 "facing it" is undefined. With both fixed, the sling turned out to be the fastest scheme on blobs, and its remaining failure (every trail, one 24 u cluster per throw) is the real design finding. A per-order breakdown (`perOrderS`) is what separated the two.
+- Do instead: when a variant fails, print its state machine every 0.5 s for one seed before writing it up. Report per-order times, not only a mean, so "fails on lines, wins on blobs" cannot hide inside "slow". For any seek-and-face creature, brake to a hover inside reach and count a meal in the mouth as faced.
+- Evidence: `ANGLER_COMMAND_LAB.md` round 1 "Found"; `faunaStep` (the hover and `d < 3`); `squadBusy`.
+- Promoted: no
+
+### L-GEN-13 — An attribution column needs a decoy control and per-order state resets
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: "on target %" charges each kill to the CURRENT order. The commander recalled its squad only before the first order (a flag never reset per order), so creatures kept eating the last order's structure and every later kill read as off-target. That made precision look about 20 points worse than it was. A planted decoy (`runMission(…, decoy = true)`: the commander aims every order at the wrong structure) must read 0% on target, and it does on all five schemes. A diet control (`dietAny` 0: "yours lost" must go to 0) proved the friendly losses come from the mouthful, not the targeting.
+- Do instead: reset every per-order flag in the function that starts an order. Plant a decoy that must drive the attribution column to zero, and a control that must zero each loss column you explain by one cause.
+- Evidence: `nextTask` (`w.ai.recalled = false`); `runMission`'s `decoy`; `ANGLER_COMMAND_LAB.md` "Checked".
+- Promoted: no
+
+### L-STU-92 — A companion slower than the hull is invisible from the chase camera; measure follower lag
+- Lab: Angler Command Lab, round 1 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the tamed squad runs at the game's fauna speeds (at most 40 u/s at L1), the same as the Angler's cruise, so it sat on average 79 u from the hull (max 102), behind a 40 u chase camera. Every screenshot showed no squad. A speed proportional to the gap added a steady ~27 u lag on top. The same speed gap broke taming: with the lure held at cruise, six creatures were never tamed in 90 s, against 14–19 s with the lure slowing the hull to 20 u/s or less.
+- Do instead: in any lab where companions follow a vessel, measure their mean and max distance from it, feed the leader's speed forward in the follow law, and put the speed gap on the page as a design question (here a lure brake and a follower-only leash tow), never as a quiet speed-up of the creature.
+- Evidence: `ANGLER_COMMAND_LAB.md` "What it says" (the last two bullets); `leashTow`, `formBack`, `lureCruise`.
+- Promoted: no
+
+
+### L-GEN-14 — A golden table from random inputs can miss a planted change; plant the change before trusting it
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the parity gate runs the page's `CORE` functions in headless Chromium on a seeded table of inputs and writes the results into the NUnit test as goldens. Its first `--self-test` planted six one-number changes in the C# port, and two of them passed every golden:
+  - The claim penalty, changed from 900 to 800: no random pick case sat near enough to the boundary for the penalty to change the winner.
+  - The esca's 2.5 u lift: every lure case used the world up vector, and the plant changed only the x component, which is always zero there.
+- Do instead: plant every constant before believing a golden table. When a plant survives, add the cases that reach it, here pick cases with two candidates either side of one claim's cost, and a lure case with a general (non-axis) up vector. Make each plant change every component it can. The gate is only evidence once every plant fails it.
+- Evidence: `Tools/Build/angler_command_parity/run.sh --self-test` (6/6), `goldens.cjs` (the boundary pick and tilted-lure cases).
+- Promoted: no
+
+### L-STU-93 — A nested enum named like a common word trips the repo's enum-member gate; name it for its owner
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the executor's per-creature state enum was first called `Order`, matching the lab's word. `check_enum_member_references.py` resolves `X.Member` by enum NAME across the repo, so every `Order.Add(...)` elsewhere (a list called `Order` in `ProfilerCapture.cs`) read as a reference to a missing member of the new enum. The gate went red on code the change never touched.
+- Do instead: give a nested enum a name only its owner would use (`LeashOrder`), even when the lab calls it something shorter. Keep the lab's word in the doc comment.
+- Evidence: `AnglerCommandExecutor.LeashOrder`; the gate's output before and after the rename.
+- Promoted: no
+
+### L-STU-94 — Port the lab's LOOK of a state with its rules; a marker at an object's centre is inside the object
+- Lab: Angler Command Lab, Unity clone · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-15
+- What happened: the lab draws a painted prism by recolouring the prism itself (75% toward white in `render()`). The Unity port kept the paint arithmetic line for line, but drew the state as camera-facing dots at each prism's centre. Every dot sat inside an opaque prism, so the first playtest reported that painting did nothing. Every gate was green, because no gate looks at pixels.
+- Do instead: when a lab state is shown by changing an object's own look, port that look onto the object with the lab's numbers (here a per-prism lift toward white, one fading stamp per change). Then list in the verification entry what the player must SEE, not only what the code does. A world-space marker for a solid object goes on its surface or above it, never at its pivot.
+- Evidence: `AnglerCommandLab.html` `render()` (the `col.lerp(WHITE, 0.75)` line); `Prism.SetColorLift`; `ANGLER.md` §1a.
+- Promoted: no
+
+### L-STU-95 — A SHIPPED key two schemes share moves both; name the key per scheme or report both rows
+- Lab: Angler Command Lab, round 3 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-16
+- What happened: the designer asked for the Sling painter's reach x20. `paintRange` is also the round-1 Spotlight's reach, and the AI commander's approach distance. Raising it moved three things: the Sling painter (85% on target, from 90%), the Spotlight (70%, from 80%), and how the scorecard's AI flies. A comparison scheme that was meant to stay put shifted with it.
+- Do instead: before changing a SHIPPED value, grep every reader (`P.<key>`): schemes, the AI commander, the renderer. Either split the key per scheme, or re-run the whole batch and report every row that moved. Here the change was meant for both painters, so both rows are reported in `ANGLER_COMMAND_LAB.md` round 3.
+- Evidence: `AnglerCommandLab.html` (`P.paintRange` in `brushStroke`, the spotlight's `aimPick`, the commander's reach); the round-3 scorecard.
+- Promoted: no
+
+### L-STU-96 — Removing a timeout can turn a harmless exclusion into a deaf unit; re-test every "skip this state" after it
+- Lab: Angler Command Lab, round 4 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-17
+- What happened: the throw had always skipped creatures still in flight, and holding RT gathered only idle and attacking ones. That was harmless while a homing throw gave up after 6 s. Round 3 removed the give-up (any distance, limited only by speed) and raised the reach to 3200 u. A creature thrown far away was then deaf to every new paint for many seconds, and the designer's next playtest said the fauna "didn't always listen". No scorecard row moved, because the scored commander never repaints mid-flight.
+- Do instead: when a change removes a timeout or a cap, grep every `state === X` skip that the timeout used to bound, and give the page a headless repro of the interaction the skip blocks (here: throw, repaint mid-flight, throw again; count who obeys). Keep that repro as a check: before 24/24 stuck, after 24/24 obey.
+- Evidence: `ANGLER_COMMAND_LAB.md` round 4; `commandStep` slingpaint (the gather now includes `ST.FLUNG`); `throwAtPaint`.
+- Promoted: no
+
+### L-STU-97 — The camera's height IS the aim's error; level the chase camera before you shrink a brush
+- Lab: Angler Command Lab, round 5 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-17
+- What happened: the designer asked for "accurate and smaller" paint cones. A beam from the nose, seen from a chase camera 56 u above the nose line, runs below the screen's centre, so whatever the pilot centred was not what got painted. Shrinking the cone alone would have made that miss worse. Putting the camera on the nose line (`chaseUp` 0) made the screen's centre the beam's axis, and then the small cone (3°) scored the painter's best on-target rate (87%).
+- Do instead: before tuning the size of any aimed volume, check where its axis lands on screen from the shipped camera. Level the camera (or aim from the camera) first. If height is wanted for overview, raise it only in the states that do not aim (here: luring and dashing, eased in and out).
+- Evidence: `ANGLER_COMMAND_LAB.md` round 5; `AnglerCommandExecutor.UpdateCameraLift`.
+- Promoted: no
+
+### L-STU-98 — An order scoped to ONE gesture's targets abandons the last gesture's; queue every live mark
+- Lab: Angler Command Lab, round 6 · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-17
+- What happened: each throw gave its creatures a set holding only that stroke's paint, and a new throw replaced it. Prisms still lit from an earlier throw were never eaten. The scorecard did not show it: its commander paints one target at a time. A headless repro did (two throws: 0 of 12 older lit prisms eaten before, 12 of 12 after).
+- Do instead: when marks persist ("lit until eaten or erased"), the units should pick from ONE queue of every live mark, not from the gesture that issued them. Spread them with a claim count, then recency. Keep a two-gesture repro as a page check.
+- Evidence: `AnglerCommandLab.html` `litQueue` / `pickTarget`; `ANGLER_COMMAND_LAB.md` round 6.
+- Promoted: no
+
+### L-STU-99 — Two kinds of bug the lab cannot catch: a world rule it waives, and a readout it shows but the clone does not
+- Lab: Angler Command Lab, round 7 (a Unity playtest) · Branch: `cece/zealous-feynman-po8k8d` · Date: 2026-10-18
+- What happened: "the QuadFish don't always listen" had two game-side causes.
+  - The lab's world is domain-blind, so every creature eats every prism. The game's creatures refuse their own domain, the nucleus claim and their pen, and an order to such a prism left a creature hovering at it for good.
+  - The lab shows the picked squad; the Unity HUD did not. One stray press of the squad button (on A, the Sparrow's Mass button) silently left every other kind out of each order.
+  No lab check could fail for either.
+- Do instead:
+  - For each rule on the lab's not-modelled list, ask what a clone must do when the game enforces it. Here the holder asks the creature's own diet before ordering (`Fauna.LeashCanEat`).
+  - Port every mode readout the lab draws (squad, selection, lock) together with the mode itself.
+  - When the designer remaps buttons, check what the OLD button did. A habit press is how a hidden mode gets entered.
+- Evidence: `R_VesselActions/ANGLER.md` §1k; `ANGLER_COMMAND_LAB.md` round 7.
+- Promoted: no

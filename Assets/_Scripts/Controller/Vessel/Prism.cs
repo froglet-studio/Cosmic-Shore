@@ -753,17 +753,20 @@ namespace CosmicShore.Gameplay
             ApplyColorShade();
         }
 
-        // Per-prism SHADE of the domain colour (SetColorShade). Identity = 1, which every prism has unless an
-        // owner asks otherwise; reset on every pooled Initialize.
+        // Per-prism SHADE of the domain colour (SetColorShade, SetColorLift). Identity = gain 1, lift 0, which every
+        // prism has unless an owner asks otherwise; reset on every pooled Initialize.
         float _colorShadeGain = 1f;
+        float _colorLift;
 
-        bool HasColorShade => _colorShadeGain != 1f;
+        bool HasColorShade => _colorShadeGain != 1f || _colorLift != 0f;
+
+        /// <summary>The lit mark this machine draws on the prism (<see cref="SetColorLift"/>), 0 when unlit.</summary>
+        public float ColorLift => _colorLift;
 
         /// <summary>
         /// Draw this prism DARKER than its domain colour: brightness scaled by <paramref name="gain"/>, clamped to
-        /// [0, 1]. Only ever darker - the hue stays the domain's, because a prism's colour is its team, and a lighter
-        /// prism reads as a state (lit, selected) the game does not have; an owner that wants a second look uses the
-        /// domain's DANGER state instead. It is re-applied after every material sync, so it survives a team change,
+        /// [0, 1]. The hue stays the domain's, because a prism's colour is its team; the one LIGHTER state is
+        /// <see cref="SetColorLift"/>. It is re-applied after every material sync, so it survives a team change,
         /// a danger or shield state and a transparency swap, and is cleared by the next pooled
         /// <see cref="Initialize"/>. The nested gyroid grades its sheets with it (Docs/ECOSYSTEM.md §58.5). Drawn on
         /// the instanced (entity) path only; while a per-prism exotic visual holds the GameObject renderer the prism
@@ -772,17 +775,39 @@ namespace CosmicShore.Gameplay
         public void SetColorShade(float gain)
         {
             _colorShadeGain = Mathf.Clamp01(gain);
-            if (PrismRenderService.IsHandleUsable(in RenderHandle) && meshRenderer != null)
-            {
-                if (HasColorShade) ApplyColorShade();
-                else PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors: true);
-            }
+            RefreshColorShade();
+        }
+
+        /// <summary>
+        /// Draw this prism LIT: its domain colour lifted toward white by <paramref name="lift"/> (0 = its own colour,
+        /// 1 = white). This is the per-prism SELECTED state: a pilot marking particular prisms (the Angler's paint,
+        /// <c>R_VesselActions/ANGLER.md</c> §1a). It is a look, never a gameplay state: nothing reads it, so it is set
+        /// on the machine that shows it and is not replicated. <paramref name="fadeSeconds"/> &gt; 0 fades from the
+        /// lift it showed (or from <paramref name="fromLift"/> when that is 0 or more) with one clock stamp, so a mark
+        /// never pops. Like the shade it survives a material sync and is cleared by the next pooled
+        /// <see cref="Initialize"/>; on the instanced (entity) path only.
+        /// </summary>
+        public void SetColorLift(float lift, float fadeSeconds = 0f, float fromLift = -1f)
+        {
+            float from = fromLift < 0f ? _colorLift : Mathf.Clamp01(fromLift);
+            _colorLift = Mathf.Clamp01(lift);
+            RefreshColorShade();
+            if (fadeSeconds > 0f && PrismRenderService.IsHandleUsable(in RenderHandle) && meshRenderer != null)
+                PrismRenderService.StampShadeTransition(in RenderHandle, meshRenderer.sharedMaterial, PrismClock.Now,
+                    fadeSeconds, _colorShadeGain, from);
+        }
+
+        void RefreshColorShade()
+        {
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle) || meshRenderer == null) return;
+            if (HasColorShade) ApplyColorShade();
+            else PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors: true);
         }
 
         void ApplyColorShade()
         {
             if (!HasColorShade || meshRenderer == null) return;
-            PrismRenderService.ApplyColorShade(in RenderHandle, meshRenderer.sharedMaterial, _colorShadeGain);
+            PrismRenderService.ApplyColorShade(in RenderHandle, meshRenderer.sharedMaterial, _colorShadeGain, _colorLift);
         }
 
         /// <summary>
@@ -872,6 +897,8 @@ namespace CosmicShore.Gameplay
             PrismRenderService.ClearPrismStamps(in RenderHandle); // nor a prior life's clock-animation stamps
             SetSuperShieldMark(false); // nor a prior life's super-shield
             _colorShadeGain = 1f;      // nor a prior owner's colour shade (the next material sync drops it)
+            _colorLift = 0f;           // nor a prior pilot's lit mark
+            PaintedPrey.Forget(this);  // nor a prior life's paint (every creature preferred it)
 
             PlayerName = playerName;
             blockCollider.enabled = false;

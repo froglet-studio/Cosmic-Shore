@@ -65,6 +65,276 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Angler round 7: A lures and B dashes (the Sparrow's buttons); "the QuadFish don't always listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1k. No `unity` CLI was available, so `/verify-unity` did NOT run. Headless: `unity_refcompile` player OK (editor: only the 3 pre-existing `UgsRequestPolicyTests` errors); `author_angler_assets --check` and `--self-test` 19/19; `element_ability_table Angler` reads Mass A / Space and Time B / T.
+
+In the editor (Menu_Main freestyle, Vessel Changer → Angler):
+
+1. **Buttons.** Hold A (Space on keyboard): the lure lights and the hull stops. Press B (T): the dash. X (Q) picks the squad, Y (F) recalls. The Mass card's chip reads A and the Time card's reads B.
+2. **The squad shows.** Tame a mix of Clawfish and QuadFish. Press X: "Clawfish xN" appears over the Mass card, and only Clawfish gather and throw. Press X until the label is blank: the whole school answers again.
+3. **QuadFish listen.** With the label blank, paint and release several times in a row, near and far: every QuadFish in the school goes each time, and none is left circling a prism.
+4. **An inedible prism.** In a cell with no nucleus, paint a prism of the cell's own colour (the creatures' domain): no creature goes to it, and the rest of the queue is still eaten.
+
+---
+
+### 🔴 Angler round 6: the lit queue - the school eats every lit prism, newest first (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1j. No `unity` CLI was available, so `/verify-unity` did NOT run. Headless: `unity_refcompile` player OK; parity 189 cases, 10/10; the lab's queue check (12/12 older lit prisms eaten, 0 before).
+
+In the editor (Menu_Main freestyle, Vessel Changer → Angler, a school of 6+):
+
+1. Paint a row of prisms one at a time (sweep RT slowly) and release. The first creature heads for the LAST prism you painted, the next for the one before it, and so on: one creature per prism.
+2. Before they finish, paint a second, smaller group elsewhere and release. Those prisms get one creature each; the rest of the school goes back to the first group.
+3. Wait: every lit prism from BOTH throws is eaten, and only then does the school return to the hull. No prism is left lit.
+4. Erase (LT) one lit prism that a creature is heading for: it un-lights, and that creature takes the next prism in the queue.
+
+---
+
+### 🔴 Angler round 5: speed back to 40, a smaller accurate brush, a level camera that rises while luring or dashing (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1h and §5. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors (0 in changed files).
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 19/19.
+- `studio_to_unity`: 27 mapped, 0 drift.
+- The lab: `verify_lab` PASS (87% on target, clear 10.9 s).
+
+In the editor (Menu_Main freestyle, Vessel Changer → Angler):
+
+1. **Speed.** Cruise reads 40 u/s and a full boost about 110 (half of round 4).
+2. **Level camera.** Fly straight: the camera sits directly behind the hull with no height; the hull is at the screen's centre, not below it.
+3. **Accurate brush.** Hold RT on a single far prism at the screen's centre: it, and only its near neighbours, light. The rim ring (60 u out) is small: about 3 u for paint, 1.6 u for erase. LT erases only what is under the centre.
+4. **Close up.** Fly into a cluster with RT held: prisms within 2 u of the nose still light.
+5. **Lure lift.** Hold X: the hull stops and the camera rises about 56 u over 0.4 s. Release: it eases back down to level.
+6. **Dash lift.** Press Y with a school out: the camera rises during the 0.35 s dash and comes back down after.
+7. **Not other cameras.** Die while luring: the death camera is not raised. Swap vessel while luring: the next vessel's camera is level.
+
+---
+
+### 🔴 Angler round 4: one-thumb, 2x speed, camera 4x, the lure stops, crystal seeds, lure growth, counts, Time speeds fauna, a spent creature per lock, "they didn't listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1d–§1i. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors.
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 19/19.
+- `studio_to_unity`: 25 mapped, 0 drift.
+- `element_ability_table`: Time scales `faunaSpeed` 1 → 2.
+- The lab: `verify_lab` PASS, and the listen bug reproduced and fixed headless.
+
+1. **One thumb.** Fly the Angler on a pad using the LEFT stick only: it pitches, yaws and banks. The right stick does nothing. RT / LT still paint and erase with analog depth. On a keyboard + mouse it flies on the one-thumb mouse scheme.
+2. **Speed and camera.**
+   - It cruises at about twice its old speed (80 u/s) and boosts with RB.
+   - The camera sits about four times further back and higher.
+   - The school is visible round the hull, and trails it at cruise.
+3. **The lure stops it.** Hold X: the hull eases to a stop (boost still moves it). Let go: it eases back up to cruise.
+4. **Lure growth.** Hold X near plants: the plants inside the light grow visibly faster than those outside it. They return to their own pace when you let go.
+5. **The fauna count.** The Mass card shows a number: the creatures you lead. It goes up as you tame, and down when one is spent or dies.
+6. **Omni crystal: a creature and a seed.**
+   - Fly through one: a creature blooms where it was and joins (the count goes up).
+   - The omni card (left of the four) shows a seed icon, bright, with "1", and flashes.
+   - Hold X, then let go: a plant of your domain grows in at the esca, and the seed icon dims.
+   - Two crystals before releasing: "2", and two plants on release.
+7. **"They listen."** Throw the squad at a far painted field. While they are still flying, hold RT on a near field and release: every creature turns to the new paint.
+8. **Charge spends one creature per lock.**
+   - Sweep LT onto a rival vessel: ONE creature (the nearest) leaves the school, the count drops by one, and it chases that vessel. Its bites take petals (at most one per second) and score.
+   - Move the beam off and back on (or release and press LT again on the same vessel): another creature goes, and the count drops again.
+   - Hold the beam steady on the vessel: no further creatures go.
+   - Each hunted hull wears a ring.
+   - The hunters ignore paint and recall. They keep chasing until they die, or go wild if the vessel leaves.
+   - With one creature left, locking spends it, and a keeper is born within a second.
+9. **Time speeds the fauna.** Raise Time (toolbox) to 10: the school keeps up with the cruising hull, and thrown and hunting creatures move about twice as fast.
+
+### 🔴 Angler round 3: the element map (Charge lock-on, Mass lure & grow, Space paint 3200 u, Time dash on Y), newest paint first, the omni creature, every creature prefers paint (`cece/zealous-feynman-po8k8d`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1c–§1g, §7. No `unity` CLI was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player OK. Editor: only the 3 pre-existing `UgsRequestPolicyTests` errors.
+- Parity: 189 cases, 10/10 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 17/17.
+- `studio_to_unity`: 25 mapped, 0 drift.
+- `element_ability_table.py Angler`: 4/4 abilities; the Mass and Space level-5 gates are found.
+- The lab: `verify_lab.cjs` PASS, plus round-3 headless checks.
+
+**What landed:**
+
+- **Input:** `InputEvents.Button4Action = 14` (pad Y / keyboard F, gamepad + keyboard + single-stick-mouse strategies, hint map, glyph row).
+- **Element map:** `ElementalAbilityMaps/Angler.asset`.
+- **Fauna:** `PaintedPrey` (+ `LightFauna` / `Boid` food rank), `Fauna.TryLeash(…, steal)`.
+- **Executor:**
+  - brush 3200 u with a 6 u near radius, read as 16 spheres along the beam;
+  - `PickRecent`, and no homing give-up;
+  - shield crack;
+  - lock-on, hunt and bites;
+  - plants;
+  - dash;
+  - `OmniMorph`.
+- **Presentation:** the HUD gauges by element; four redrawn icons.
+
+1. **The map in the HUD.** Fly the Angler. The ability row reads Erase / Lock-on (LT), Lure, Tame & Grow (X), Paint (RT) and Dash to the School (Y), with a Y chip on a pad and an F chip on a keyboard. The icons are a lock ring, an esca over a sprout, the paint beam, and a hull dashing to fish.
+2. **Reach.**
+   - Squeeze RT at prisms far across the cell (well past where it used to stop): they light up.
+   - Point at prisms right in front of the nose, closer than a hull length: they light up too.
+   - LT erases at both ranges.
+3. **Newest paint first.** Paint one field, then sweep a second, far away. Let go: the squad flies at the second sweep first, however far it is, and does not give up on the way.
+4. **Everyone prefers paint.** Paint prisms near a wild herbivore school, don't throw: wild creatures in range turn to eat the lit prisms before unlit ones.
+5. **Paint Shields (Space 5).** At Space 5 (toolbox), shielded prisms light up under RT. Thrown fauna arrive, the shield breaks off, and they eat the prism. Below Space 5, shielded prisms never light.
+6. **Lure & Grow (Mass).** Hold X: every ~2 s a plant of YOUR domain grows in near the esca.
+7. **Steal Fauna (Mass 5).** Two Anglers (bots or MPPM): at Mass 5, luring near the other Angler's school takes its creatures (its leash gauge drops). Below Mass 5 they ignore your light.
+8. **Lock-on (Charge).**
+   - Hold LT on a rival vessel: a ring appears round it, and your squad chases it.
+   - Each contact takes petals (watch its flowers) and scores a Strike, at most one per second.
+   - A teammate can't be locked.
+   - Throwing a new paint, locking another vessel, or B ends the hunt.
+9. **Dash (Time).** With a school spread out, press Y (F): the hull swoops 75% of the way to the school's centre in about a third of a second, trail continuous. With no school, nothing happens.
+10. **Omni crystal.** Fly through one: a creature (Clawfish, QuadFish or Tadpole, any element) blooms where the crystal was and joins the school. The console shows no warning.
+11. **Client pilot (MPPM).** Known limit (follow-up 7): a client Angler's dash and HUD counts are empty, because its school lives on the host.
+
+### 🔴 Angler playtest 2: the keeper (always one creature, it never starves); lit prisms stay lit until eaten or erased (`cece/zealous-feynman-po8k8d`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1a, §1b; the ecology exception is in `Docs/ECOSYSTEM.md` §0 and §61.4. No `unity` CLI was
+available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player + editor: no errors in changed files.
+- Parity: 8/8 planted changes caught.
+- `author_angler_assets.py --check`, with `--self-test` 15/15.
+- `studio_to_unity`: 0 drift.
+- The lab's `verify_lab.cjs`: PASS, scorecard unchanged.
+- Lab headless:
+  - free play starts with the keeper (school 0 → 1 on the first tick, once);
+  - a thrown-at prism stays marked;
+  - erasing it unmarks it and strikes it from all 24 creatures' orders.
+
+**What landed:**
+
+- **The keeper.** `IFaunaLeash.Sustains` + `Fauna.IsStarving`: the school's first creature never starves. `AnglerCommandExecutor.EnsureKeeper`: an empty school has a creature born behind the hull, already tamed.
+- **The keeper's species.** The cell's own first leashable herbivore, else `AnglerConfig.companionFauna` (Clawfish Space).
+- **Lit until eaten or erased.** Thrown-at prisms join `_ordered` and stay lit. LT erases a lit prism from paint AND from every order.
+
+1. **Keeper on spawn.** Pick the Angler in freestyle (Vessel Changer).
+   - Within a second, one creature blooms in behind the hull in the cell's fauna colour and follows. It must grow in, not pop in.
+   - The leash gauge reads 1.
+2. **It never starves.** Fly for well past the species' starvation time without ordering it to eat: it stays.
+   - A second creature tamed alongside it, and never ordered, may starve.
+   - The first one never does.
+3. **It can still die.** Throw it at prisms near a shark, or into a rival's fire. If it is eaten or shot:
+   - it withers and drops its heart as usual;
+   - within a second, a new keeper is born (or the next creature in the school becomes it).
+4. **Lit stays lit.** Paint a field, let go of RT: the painted prisms stay near-white while the squad eats them. Each one goes out only when eaten. Press B (recall): they stay lit.
+5. **Erase an order.** Hold LT over lit prisms after the throw:
+   - they fade back to their own colour;
+   - no creature goes on attacking them; any creature that was flying at one picks another lit prism.
+6. **Two clients (MPPM).**
+   - With a replicated herbivore species, only the host births the keeper, and the client sees it replicated.
+   - With an unreplicated species, every peer seeds its own, as every spawner does.
+   - Only the painting pilot sees the lit prisms.
+
+### 🔴 Angler playtest fixes: painted prisms light up; an omni crystal tames every herbivore near the hull (`cece/zealous-feynman-po8k8d`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md` §1, §1a. The first playtest found that taming and throwing worked, but painting and
+erasing changed nothing visible. The paint marks were dots at the prisms' centres, inside the prisms. No `unity` CLI
+was available, so `/verify-unity` did NOT run.
+
+Headless proof:
+
+- `unity_refcompile` player + editor: no errors in changed files.
+- The parity gate: 179 cases, 8 out of 8 planted changes caught, including the two omni plants.
+- `author_angler_assets.py --check`, with `--self-test` 14/14.
+- `studio_to_unity --vessel Angler --check`: 23 mapped, 0 drift.
+- The lab's `verify_lab.cjs`: PASS.
+
+**What landed:**
+
+- **The lit state.** `Prism.SetColorLift` (with `PrismRenderService.StampShadeTransition`) lifts a prism toward white with one fading clock stamp.
+- **The Angler's paint uses it:**
+  - painted = 75% toward white;
+  - at the throw, 50% fading over 1.2 s;
+  - erased = a 0.12 s fade back.
+- **The omni tame.** `AnglerTameByCrystalEffectSO` sits in a forked `AnglerImpactorDataContainer`. Before this change the Angler shared the Stoat's container, so an omni crystal ran the Stoat's Overclock.
+- **Config.** The new `omniTameRadius` (300 u) is in `AnglerConfig`, and the lab gained it too (key O).
+
+1. **Paint.** Squeeze RT at enemy prisms: every prism under the beam turns near-white within a blink, and stays lit while you keep flying.
+   - Your own prisms never light.
+   - With LT, the lit ones fade back to their own colour.
+2. **Throw.** (Superseded 2026-10-16 by the entry above: the lit prisms now STAY lit until eaten or erased.) Let go of RT: the lit prisms drop to a softer glow and fade back over ~1 s while the squad flies at them.
+3. **Nothing else changed colour.** No prism you did not paint changes colour. A painted prism that a rival's hit turns dangerous or shielded still shows that state.
+4. **Omni crystal.** Fly the Angler through an omni crystal near a school of wild herbivores: every one within ~300 u falls in behind the hull at once (the leash gauge jumps), up to 24.
+   - Sharks are not tamed.
+   - The console shows no `[StoatOverclock]` warning (that was the shared container).
+5. **Two clients.** Only the painting pilot sees the lit prisms. A client Angler's omni pickup tames server-simulated fauna.
+
+### 🔴 The Angler (17): lure, tame and command fauna with the Sling painter (`cece/zealous-feynman-po8k8d`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`R_VesselActions/ANGLER.md`; the lab `Docs/Studios/AnglerCommandLab.html` (round 2). No editor and no `unity` CLI in the
+authoring session, so `/verify-unity` did NOT run. Headless proof:
+
+- `unity_refcompile` player + editor: no errors in the Angler or fauna files. The editor config's 3 project errors are the pre-existing `UgsRequestPolicyTests` / Sessions-package ones.
+- `angler_command_parity/run.sh --self-test`: `AnglerCommandMath` equals the page's `CORE` on 169 cases, and 6 out of 6 planted changes were caught. That suite's assertions were RUN outside Unity; `AnglerCommandMathTests` itself was not run in an editor.
+- `goldens.cjs --check`.
+- `author_angler_assets.py --check` (`--self-test` 12/12) and `author_angler_icons.py --check`.
+- `studio_to_unity.py --vessel Angler --check`: 22 mapped, 0 drift.
+- The repo's C# gates.
+
+**What landed:**
+
+- `VesselClassType.Angler = 17`, registered everywhere a vessel is.
+- `Angler.prefab` / `AnglerHUDVariant.prefab`, cloned from the Stoat, with its hull as a stand-in.
+- The `AnglerCommandExecutor` (paint, erase, throw, lure, tame, squads).
+- The `AnglerVesselTransformer` lure brake.
+- `IFaunaLeash`, hooked into `Fauna` / `LightFauna` / `Boid`.
+- The HUD's four gauges.
+- No element map (design not approved).
+
+1. **Open `Angler.prefab` and `AnglerHUDVariant.prefab`.**
+   - Check:
+     - No Missing script or reference.
+     - `R_VesselActionHandler` binds X → `AnglerLure`, A → `AnglerSquad`, B → `AnglerRecall`.
+     - The executor's `config` is `AnglerConfig`.
+     - The transformer is `AnglerVesselTransformer`, with `DefaultThrottleScaler` 40.
+   - Re-save: the diff should be Unity's own key ordering only.
+2. **Spawn it.** In Menu_Main freestyle, use the Vessel Changer toy and pick the Angler (the card is the generated `Angler.png`).
+   - It flies at cruise 40, and RB / E boosts.
+   - The console stays clean.
+3. **Lure and tame.** Fly near a school of herbivores (QuadFish, Clawfish or tadpoles) and **hold X** (keyboard Q).
+   - The esca dot hangs ~14 u ahead of the nose, with the hold ring around it.
+   - The hull slows to ~12 u/s.
+   - Fauna within 70 u turn toward the light.
+   - Keep one inside the ring for ~2.5 s: the HUD's tame gauge fills, the creature tames and falls in behind the hull in a golden-angle ring, and the leash gauge counts it.
+   - Let a half-tamed one drift out: its taming fades.
+   - Sharks and other carnivores never come.
+4. **Paint.** Squeeze **RT** (keyboard Right Shift) at a field of enemy prisms.
+   - Every prism inside the beam lights up (see the playtest-fixes entry above; the first cut's dots were never visible).
+   - A light squeeze paints a thin line and a full pull a wider one.
+   - Your own domain's prisms are never painted.
+   - While RT is held, the squad balls up ~12 u ahead of the nose.
+5. **Erase.** Hold **LT** (Left Shift) over painted prisms: they unmark, under a narrower beam. RT does not paint while LT is held.
+6. **Throw.** Let go of RT. Each creature in the ball flies at its own painted prism (they spread out rather than piling onto one) and eats it by its own mouthful.
+   - A creature whose diet cannot eat a prism ignores it.
+   - With nothing painted: the ball flies along the nose, and each creature latches onto the first enemy prism it passes and eats that prism's neighbours.
+   - After the throw, creatures with nothing left return to the school.
+7. **Squads and recall.** With two kinds tamed:
+   - **A** (Space) cycles School → kind 1 → kind 2 → School. Only the picked kind balls up and throws.
+   - **B** (R) sends the picked squad back to the school mid-attack.
+8. **Death and despawn.** A leashed creature that is killed or starves leaves the squad, and the counts drop. Swapping the vessel away releases the whole school back to the wild.
+9. **Multiplayer (MPPM, host + client).**
+   - A client Angler's paint shows on its own screen.
+   - Its lure tames server-simulated fauna.
+   - Its throws are seen on both screens.
+10. **Fauna regression.** With no Angler in the scene, the herbivores graze, flee and reproduce exactly as before (the leash hooks are inert when `Leash == null`).
+
+**First-pass tuning** comes from the lab's `SHIPPED` block, and the lab is where it changes (`ANGLER.md` §5).
+
+---
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**

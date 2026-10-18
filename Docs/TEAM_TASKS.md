@@ -643,3 +643,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Caleb or Andrew (QA)
 - **Added:** 2026-10-17 by a Claude session (`Ys-bleeding-edge`)
 - **See:** Docs/QA/DEV_TASKS.md DT-003
+
+### T-20261018-9fcf · open · test · vessels
+- **Task:** Editor-verify the Angler (vessel 17): run the seven Angler entries in Docs/UNITY_VERIFICATION_CHECKLIST.md (rounds 1-7) in Menu_Main freestyle - lure/tame on A, paint RT, erase/lock LT, dash B, squad X, recall Y, the lit queue, the level camera
+- **Done when:** Every Angler checklist entry passes with a clean console, or each failure is filed as a dev task
+- **Who can take it:** Yash (editor tests), Garrett (vessel owner)
+- **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md
+
+### T-20261018-bf51 · open · decision · vessels
+- **Task:** Angler design slots still open: Charge and Time level-5 upgrades, and element scaling for Charge, Mass and Space (only Time scales today)
+- **Done when:** Garrett names the four, or says they stay open
+- **Who can take it:** Garrett
+- **Added:** 2026-10-18 by a Claude session (`cece/zealous-feynman-po8k8d`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md section 7
