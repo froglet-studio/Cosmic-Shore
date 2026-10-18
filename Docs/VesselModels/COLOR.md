@@ -140,16 +140,17 @@ render_cards.py Squirrel Rhino Thresher --compare out.jpg --candidates before.js
 
 ## 6. Open: decisions and checks owed
 
-- **Jade's ship colour sits next to the neutral Blue** (a decision for Garrett). `JadeColors.ShipColor2` is
-  (0, 0.388, 0.749), hue **209°**, an azure. The glass is 220–229° and the body 228–232°. A Jade ship's plates
-  are therefore about 20° from its own windows, and Jade is the one domain that can be read as "neutral". The
-  palette's other Jade entries sit at about 177–182° (teal). **Proposal:** move Jade's `ShipColor1` / `ShipColor2`
-  to that teal, roughly (0, 0.094, 0.082) / (0, 0.66, 0.60), so the three domains are violet, orange-gold and
-  teal, each well clear of the Blue family. This is not applied, because the UI (`MultiplayerHUD`,
-  `DomainScorePanel`) reads the same colours. The menu's default domain is Jade (`ToyVesselRoster.PlayerDomain`).
-- **Gold's ship colours run the other way**: a bright rim (1.22, 0.61, 0.03) on a dark face (0.47, 0.24, 0.04),
-  while Ruby and Jade run dark rim to bright face. Gold ships therefore glow at the edge and darken face-on. That
-  is legible, but it is the opposite of the others. Worth a look in the same decision.
+- **Jade's and Ruby's hues: deferred** (Garrett, 2026-10-18: "we'll address the jade and ruby hues later").
+  The observation stands. `JadeColors.ShipColor2` is (0, 0.388, 0.749), hue **209°**, an azure, about 20° from the
+  glass (220–229°) and the body (228–232°), so Jade is the one domain that can be read as "neutral". The
+  palette's other Jade entries sit at about 177–182° (teal), which is one option. The UI (`MultiplayerHUD`,
+  `DomainScorePanel`) reads the same colours, so this is a palette change.
+- **Gold's rim and face were swapped: fixed 2026-10-18.** Gold carried a bright `ShipColor1`
+  (1.22, 0.61, 0.03) over a dark `ShipColor2` (0.47, 0.24, 0.04), the reverse of Ruby and Jade. Gold ships
+  therefore glowed at the edge and darkened face-on. The HUD chip was inverted too: `DomainScorePanel` reads
+  `ShipColor1` as "the muted hull tone" for its backdrop and `ShipColor2` as "the bright pop". The two values are
+  swapped in `OriginalColorSetSO.GoldColors`, with Gold's own numbers kept. The unused Gold materials
+  (`YellowAccentVesselMaterial`, `YellowVesselMaterial`) carried the same reversal and are swapped too.
 - **An Editor look is owed** (`/verify-unity` was not available in the session that made this change). Fly each
   domain at the chase camera and in the hangar. Then:
   - Watch the body for self-overlap ghosting. It is transparent with no depth write, so its own parts draw in
