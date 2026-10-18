@@ -1009,6 +1009,14 @@ public class VesselTransformer : MonoBehaviour
         /// </summary>
         public float CurrentThrottleTarget => ComputeThrottleTarget();
 
+        /// <summary>
+        /// The scalar flight model's tracked cruise speed - the value <see cref="StepTowardTarget"/>
+        /// steps toward <see cref="CurrentThrottleTarget"/> - BEFORE the impact slow, the warp field
+        /// and flight time scale reach it. <c>VesselStatus.Speed</c> is the published speed after
+        /// all of those, so an ability asking "is my speed below its target?" must ask this one.
+        /// </summary>
+        public float TrackedSpeed => speed;
+
         float _speedTrackingRate;
 
         /// <summary>Put the cruise speed into constant-rate tracking: instead of the default

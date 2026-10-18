@@ -149,7 +149,7 @@ SwarmMemberVertex SwarmMemberPoseOf(SwarmInstance s, float3 positionOS, float3 n
         float4 spread = bodyTier == 1 ? _SwarmSpreadDanger : bodyTier == 2 ? _SwarmSpreadShield : _SwarmSpreadPlain;
         float3 centre = p + bz * (s.PrismZ * bloom);
         float3 dc = centre - _WorldSpaceCameraPos;
-        positionOS = SwarmPrismSpread(positionOS, normalOS, tangentOS, s.Scale, dot(dc, dc), spread);
+        positionOS = SwarmPrismSpread(positionOS, normalOS, tangentOS, s.Scale, PrismDepthSqrDistance(centre, dot(dc, dc)), spread);
     }
     float3 lp = mul(_SwarmMeshLocal, float4(positionOS, 1.0)).xyz;
     float3 ln = mul((float3x3)_SwarmMeshLocal, normalOS);

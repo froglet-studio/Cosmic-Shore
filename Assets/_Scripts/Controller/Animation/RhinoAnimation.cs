@@ -132,11 +132,18 @@ namespace CosmicShore.Gameplay
                         -(1 - throttle) * yawAnimationScaler);
         }
 
+        // Every part PerformShipPuppetry drives is listed, so Idle eases every one of them back to
+        // rest. The engines were missing, and swung through yawAnimationScaler (80 deg) like the
+        // wings, so an idling Rhino settled its wings and hull and left both engines wherever the
+        // last turn had parked them. Appended, so the index-matched InitialRotations of the first
+        // three are unchanged.
         protected override void AssignTransforms()
         {
             Transforms.Add(LeftWing);
             Transforms.Add(RightWing);
             Transforms.Add(Fusilage);
+            Transforms.Add(LeftEngine);
+            Transforms.Add(RightEngine);
         }
     }
 }

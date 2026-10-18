@@ -124,6 +124,11 @@ Until then:
 
 ### Working with the Vessel Studio (while it is kept)
 
+**"Bring it to Unity" means "put it in the Toybox's Vessel Changer"** (Garrett, 2026-10-17: "my workflow is artifact
+to vessel selector in toybox"). A port is done when the person can fly it from the freestyle Vessel Changer, not when
+a play-mode menu or a scene reaches it. Anything that is not a hull of its own (a seat, a crew role) ships on a hull
+class (`Tools/Build/author_wrasse_assets.py` is the pattern). Details: `/labmaker` §7, `/artifact-to-unity` §2.
+
 For vessel work (how a vessel flies, its AI, difficulty levels, play styles or cameras), **offer the Vessel Studio**
 to the person in one line: the ONE claude.ai artifact
 (https://claude.ai/artifact/3igBJJbNvJjsfJoBJnAMPa) where the team flies, watches and decides vessels and their AI on

@@ -32,8 +32,8 @@ namespace CosmicShore.Utility
     /// <c>CustomCameraController.EffectiveOffset</c> flips z when
     /// <see cref="CustomCameraController.RearView"/> is set, leaving <c>_followOffset</c> itself
     /// untouched. Everything that legitimately moves the camera keeps writing that field and
-    /// keeps working while the rear view is up — the Manta/Rhino zoom-out abilities
-    /// (<c>ZoomOutActionExecutor</c>, <c>CameraZoomFollowScaleProvider</c>), adaptive zoom, the
+    /// keeps working while the rear view is up — the zoom-out ability
+    /// (<c>ZoomOutAction</c>, <c>CameraZoomFollowScaleProvider</c>), adaptive zoom, the
     /// skimmer's camera-scaling prism effect, and a mid-flight vessel swap re-applying its own
     /// <c>CameraSettingsSO</c>. Had the toggle written a mirrored offset instead, the first of
     /// those to fire would have written a negative z back and silently dropped the pilot out of

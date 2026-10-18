@@ -68,7 +68,7 @@ namespace CosmicShore.UI
 
             var vessel = captain.Vessel;
             if (ShipImage != null) ShipImage.sprite = vessel != null ? vessel.SquadImage : null;
-            if (ShowShipName && ShipName != null) ShipName.text = vessel != null ? vessel.Name : string.Empty;
+            if (ShowShipName && ShipName != null) ShipName.text = vessel != null ? vessel.CardName : string.Empty;
         }
     }
 }

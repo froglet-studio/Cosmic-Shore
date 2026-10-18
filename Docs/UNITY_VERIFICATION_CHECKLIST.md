@@ -263,6 +263,114 @@ Rhino C 8 / M 4 / S 8 / T 7. Pose amplitudes: 26-30 degrees on the Squirrel (its
 elsewhere. All of it is a spec number (`Tools/Build/vessel_model/specs/<vessel>.py`); change the number, rebuild,
 `--check`.
 
+### 🔴 Rhino deep dive: step-1 fixes, HUD vestiges, full four-row kit, replication, AI (`cece/relaxed-hopper-r62hbd`, 2026-10-16) — NOT EDITOR-VERIFIED
+
+**What landed** (three code commits; design record `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
+
+- **`805eef12` step-1 audit fixes.** `Rhino.prefab`'s `ResourceSystem.ChargeTestHarness` 0.5 → **0**
+  (it pinned Charge at level 5 every frame on every Rhino). The ramp now grades on **every peer**
+  from `InputStatus`' replicated sticks (only the owner did, so a replica held `IsBoosting` and ×16.8
+  for the rest of the turn), reads Time live, and compares climb/bleed against the new
+  `VesselTransformer.TrackedSpeed`. Sword ignition re-dispatch replays super-shielded contacts only,
+  and the box-overlap set is keyed on `prismProperties.TimeCreated` (a recycled prism is never
+  re-cut). The overtake/steal haptic plays only where a local human is one of the two pilots. The
+  sword capsule is a **trigger** again (the #928 merge had made it a solid kinematic capsule that
+  shoved the Astro League ball). `RhinoAnimation` idles the engines.
+- **`3fa268cd` HUD vestiges.** The pre-lockup status cluster that came back when the Rhino bound its
+  first icon (#971) — skimmer-size ring, slowed counter, slow-line flash, debuff/shock timer,
+  LaserTargeting / Crystal / ForceField, `BoostContainer` / `VesselImpactCooldown` /
+  `TrailContainer` — is deleted from `RhinoHUDVariant`, `Rhino.prefab` and `RhinoVesselHUDView`;
+  `RhinoVesselHUDController`'s four SOAP channels are gone. Dead weight removed: GrowTrail /
+  GrowSkimmer / ZoomOut classes, assets and executors (GrowTrail's grow loop never ran), the orphaned
+  arch-burst asset, `EventOnSkimmerDebuffApplied` / `EventOnVesselSlowedByExplosion`, 14 inert
+  SkimmerImpactor/Skimmer overrides, `ShieldSkimmerScaleConfigSO.prismMaxScale`.
+- **`8a3b4161` the four rows.** Charge **Sword Energy** (energy per cut ×1 → ×2) + L5 **Live Wire**
+  (a return to the stance re-lights the tail; without it the tail now runs out once let go). Mass
+  **Afterimage** (for 5 s after the energized blade goes out the sword lays prisms in its own shape;
+  volume ×1 → ×2.5) + L5 **Danger Afterimages**. Space **Blade Reach** (30 → 50) + **Breaker**
+  (unchanged). Time **Ramp Spool** + L5 **Momentum** (above 70% of top speed, 588 of 840 u/s, danger
+  prisms cannot drain the Rhino). The omni crystal is now a **Surge**
+  (`RhinoVesselSurgeByCrystalEffect`); the per-petal sword crystal burst is deleted. Blade pose,
+  energy, energize phase and Surge replicate (`RhinoSwordNetworkRelay`, trigger mirrors). AI:
+  `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` (this branch's cut was replaced by bleeding-edge's
+  ramp / brake / off driver in merge `5b09c6896`; "The Rhino AI brakes on the ramp" below,
+  `AI/AI_BOOST.md`) and `RhinoSwordAutopilot`. HUD: the row binds
+  4/4 with placeholder icons; Charge lit while energized + cooldown veil, Mass lit while afterimages
+  lay, Time lit while Momentum holds (superseded 2026-10-17: Time lit while boosting, see item 12).
+
+**Not opened in Unity** (no editor and no `unity` CLI in the session, so `/verify-unity` did not
+run). Offline: `Tools/Build/unity_refcompile` player + editor configs, 0 errors;
+`element_ability_table.py` Rhino 4/4 abilities, 4/4 scaling, 4/4 L5, 0 disagreements.
+
+**Verify in editor** (the QA items carry the full pass/fail wording, Block G of `Docs/QA/QA_BACKLOG.md`):
+1. `Rhino.prefab` and `RhinoHUDVariant.prefab` import with no missing-script or broken-reference
+   errors; **Audit Vessel Ability Rows** reports the Rhino 4/4 (QA-RHINO-HUD-ROW).
+2. Freestyle Rhino: the four cards read Sword Energy / Afterimage / Blade Reach / Ramp Spool and
+   nothing of the old status cluster is on screen; Charge, Mass and Time cards light in their
+   windows (QA-RHINO-HUD-ROW).
+3. `ResourceSystem` → Charge Test Harness reads 0, and Charge moves with Charge crystals
+   (QA-RHINO-CHARGE-HARNESS).
+4. Energize, release: 5 s of blade-shaped prisms; for their first 1 s the sword passes through
+   them, after that it cuts them like any prism and banks energy (changed 2026-10-17 — it used to
+   never cut its own); the hull ploughs them; at Mass 5 they are danger prisms (QA-RHINO-AFTERIMAGE).
+5. Below Charge 5 the energized tail runs out ~5 s after the stance is let go; at Charge 5 a return
+   to the stance relights it (QA-RHINO-LIVE-WIRE).
+6. Time 5: above ~588 u/s a danger prism does not drain elements; below it does (QA-RHINO-MOMENTUM).
+7. Omni crystal: 6 s energized with no stance, +2 levels on all four decaying, afterimages
+   throughout, blade burst, explosion unchanged; elemental petals no longer empty the meter
+   (QA-RHINO-OMNI-SURGE).
+8. MPPM two clients: a half-pull swing cuts the same prisms on both; energize and afterimages show on
+   both; a remote ramp ends (`IsBoosting` false) once its pilot steers off (QA-RHINO-TWO-PEER).
+9. AI Rhino ramps on straights, swings at prisms, energizes near super-shields; `AIPilot`'s ability
+   list is empty (QA-RHINO-AI).
+10. Astro League as the Rhino: a swung sword tip still launches the ball; a parked blade no longer
+    shoves it as a solid (QA-RHINO-ASTROLEAGUE-BLADE).
+11. Playtest Headlong, Cleave and Astro League at the new kit — afterimage mass, Momentum and a
+    ramping AI all move their numbers, which were not re-derived.
+
+**2026-10-17 follow-up (`e1fc1771`, also not opened in Unity, `/verify-unity` unavailable):**
+
+12. Rhino Time card lights while the ramp is boosting (not only above Momentum) and flashes once
+    when Momentum takes hold (~588 u/s at Time 5); its gauge fills with speed / top speed.
+13. Charge card gauge fills with sword energy 0..1, and the card stays lit through the 5 s tail
+    after the stance is let go.
+14. Chips: L1+R1 two-trigger glyph on Charge, Mass and Space, the sticks-apart glyph on Time; on
+    keyboard they read "L+R SHIFT" and "A + '". Holding both triggers lights Charge only.
+15. Manta Soar card now draws the two-trigger chip (it drew none before).
+16. A Grizzly flying into an opposing domain's danger prism loses petals (the burn); no pilot's
+    Button2 is muted by any danger prism.
+17. Self-farm watch: energize once, then cut only your own afterimages — note whether the meter
+    refills; if it is too strong the lever is energy-per-own-afterimage, not immunity.
+
+**First-pass tuning** (never played — expect a balance pass):
+
+| knob | where | value |
+|---|---|---|
+| afterimage window | `RhinoSwordAfterimageConfig.asset` `windowSeconds` | 5 s |
+| lay cadence | same, `layIntervalSeconds` / `minTipTravel` | ≥ 0.3 s and ≥ 6 u of tip travel |
+| afterimages per window | same, `maxAfterimagesPerWindow` | 16 |
+| blade segments | same, `maxSegments` / `segmentLength` / `lengthCoverage` | ≤ 6 of ≤ 10 u, covering 90% |
+| segment cross-section | same, `width` × `thickness` | 2 × 0.8 (× cbrt of the Mass multiplier) |
+| collider delay | same, `colliderDelaySeconds` | 0.1 s |
+| Mass → afterimage volume | same, `massVolumeMultiplier` | ×1 → ×2.5, floor ×0.25 |
+| Surge length | `RhinoVesselSurgeByCrystalEffect.asset` `surgeSeconds` | 6 s |
+| Surge element lend | same, `elementBoost` | +0.2 (2 levels), decaying over the Surge |
+| Surge energy fill | same, `energyFill` | 1 |
+| Charge → energy per cut | `RhinoSkimmerDamagePrismEffect.asset` `chargeEnergyGainMultiplier` | ×1 → ×2, floor ×0.5 (on 0.04 / kill, 0.12 / super-shield pop) |
+| Momentum threshold | `Rhino.prefab` `VesselElementalImmunity` `topSpeedFraction` | 0.7 (588 of 840 u/s) |
+| AI ramp re-arm | `RhinoAIBoostPolicy.asset` `minRearmSeconds` | 0.5 s (corner speed / brake knobs: `AI/AI_BOOST.md`, Ramp) |
+| AI sword think | `Rhino.prefab` `RhinoSwordAutopilot` `thinkSeconds` | 0.15 s |
+| AI stroke / rest | same, `strokeSeconds` / `restSeconds` | 0.3 s / 0.45 s |
+| AI energize margin | same, `energizeMargin` | 0.05 over the 0.1 cost |
+| AI energize when full | same, `energizeWhenFull` | 0.75 |
+
+**Resolved 2026-10-17:** `SparrowDebuffByRhinoDangerPrismEffect` (the Button2 mute on any danger
+prism, Sparrow and Grizzly containers) is deleted; the Grizzly now carries the fleet danger burn.
+**Still open, do not fail on:** rig swap not run; jets unsized; no `ElementalBarsView` on
+the Rhino; combos have 24 empty FMOD slots, no HUD callout, and the AI never combos.
+
+---
+
 ### 🔴 Angler round 7: A lures and B dashes (the Sparrow's buttons); "the QuadFish don't always listen" fixed (`cece/zealous-feynman-po8k8d`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 `R_VesselActions/ANGLER.md` §1, §1k. No `unity` CLI was available, so `/verify-unity` did NOT run. Headless: `unity_refcompile` player OK (editor: only the 3 pre-existing `UgsRequestPolicyTests` errors); `author_angler_assets --check` and `--self-test` 19/19; `element_ability_table Angler` reads Mass A / Space and Time B / T.
@@ -533,6 +641,100 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 **First-pass tuning** comes from the lab's `SHIPPED` block, and the lab is where it changes (`ANGLER.md` §5).
 
 ---
+
+### 🔴 Kite Navigator on the Wrasse ("Wrasse and Grouper"): the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** the first multiplayer vessel, `VesselClassType.Wrasse = 19` (a Sparrow hull, in the Toybox's
+Vessel Changer), and its second seat, ported from the Crew Vessel Lab's signed-off round 3
+(`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`).
+- **The board and the kite:** a navigator flies a kite on the hull's x-z plane. The head pops hostile prisms and rams
+  rivals. The tail closes loops, and a loop of one navigator-only element fires Space (an AOEExplosion), Mass (a
+  cluster of our prisms), Time (boost) or Charge (the next ram steals petals, as a scored Strike).
+- **The seats:** the arena's swap gesture moves the human between the hull and the kite, and an AI flies whichever seat
+  is empty.
+- **What has been checked:**
+  - Compile: `unity_refcompile`, player config clean (0 errors in project code). The editor config has 0 errors in
+    the changed files; its 3 project errors are in `AuthenticationServiceFacade.cs` and `MultiplayerSetup.cs`
+    (`Unity.Multiplayer.PlayMode` is unobtainable to the harness).
+  - Parity: `Tools/Build/kite_navigator_lab/parity.cjs` PASS. The core matches the lab over 3120 frames, the asset
+    matches it on 21 fields, and the planted controls are caught.
+  - Tests: the 12 `KiteNavigatorCoreTests` pass when compiled outside Unity with an NUnit shim.
+  - `/verify-unity` was not available in this session.
+- **First-pass numbers:** all from the lab: board 160 u, kite 320 u/s, tail 1.6 radii, growth ×2, Space 60 → 640
+  MaxScale, Mass 6 → 240 prisms, Time 1.5 → 30 s, Charge 1 → 30 petals. Expect a balancing pass once it is seen in a
+  real match. The lab could not see the real blast hitting rival hulls, or the prism pool's own limits.
+
+**Round 4 (2026-10-18, Garrett's direction in Unity; `KITE_NAVIGATOR.md` "Round 4"):** the kite view is a second
+camera drawn by the game; the views swap; motes are lime petal shapes; the kite follows with no click; the pilot is
+one-thumb with no buttons, and the lifted thumb boosts; the hull's petals weight the motes; Charge rams creatures; the
+L5 upgrades (Mass shields clusters, Charge steals, Space breaks super shields, Time removes the boost cooldown); an
+Omni crystal doubles the board for 5 s. Round 4b: boost on the pilot's trigger, visible petals, unlit out-of-plane
+prisms, a 50% longer lasso, a small pilot view. Player and editor reference compiles: 0 errors in changed files.
+`author_wrasse_assets.py --check` and `--self-test` OK.
+
+**Round 4d (2026-10-18):**
+- The pilot flies on two sticks again.
+- The ability cards count the saved boosts (Time), the kite's rams (Charge) and the last blast's kills (Space); the
+  Mass card flashes when a cluster lands. This is `WrasseHUDController`, and the map has the Wrasse's own cards with no
+  button chips.
+- Each mote is a five-petal flower that moves like its element.
+- The kite view sees 400 u above and below the plane:
+  - prism depth is measured from the plane (`PrismDepthPlane`, a new HLSL include in `PrismClockAnimation.hlsl` and the
+    swarm member shaders);
+  - the mass above the board dithers in a cone (`PrismOcclusionCorridor.BeginViewOverride`).
+- Checks run:
+  - player reference compile: 0 errors;
+  - editor reference compile: the same 3 errors as before, none in the changed files;
+  - `author_wrasse_assets.py --check` and `--self-test`: OK;
+  - `verify_swarm_member_pose.py`: OK.
+- **The shader change needs a Unity import**:
+  - BlockGraph and the swarm shaders recompile with the new include;
+  - check that the pilot's own view of prisms is unchanged (the include is off by default).
+
+**Verify:**
+1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Wrasse and Grouper** station (it looks like a
+   Sparrow). The hangar's card for it reads WRASSE AND GROUPER too.
+   - Lower left: a small square kite view, the real world seen from straight above your hull.
+   - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
+   - In your own view: a faint see-through kite and faint lime dots, not in the way.
+2. Fly with two thumbs (both sticks, or the keyboard): the spread of the sticks is the throttle. Round 4e: it turns
+   faster and rolls much faster than in 4d (pitch and yaw 100, roll 120). No ability button does
+   anything, and no card shows a button chip. The hull keeps the Sparrow's tuning (top speed 60); say if it wants the
+   two-stick hulls' sharper turns.
+3. After a Time loop, the Time card shows the saved boosts (a number) and the kite view shows a lime dot each round the
+   hull. Pull the right trigger (right Shift; on a phone, lift both thumbs): one boost runs 1.5 s, the count drops by
+   one, and the Time card's veil sweeps until the next can fire (2 s after; none at Time level 5). Flying with nothing
+   held does NOT boost.
+   - The Charge card shows the kite's rams (a number), the Space card how many prisms the last Space blast destroyed,
+     and the Mass card flashes when a Mass cluster lands.
+4. Press **2** (or D-pad right).
+   - The kite view fills the screen.
+   - Your hull's view shrinks to the same small square in the lower left, flown by its AI.
+   - Each mote is a lime five-petal flower that looks like the element flower on top of the ability totem: the same
+     petal shapes, sizes and spacing (round 4f). Space spins all the time; Time flips its petals one after another; Mass
+     holds three petals in while two push out, a new pair each half second; Charge has one blue plasma bolt with a short
+     tail running round all five petals.
+   - The hull, flown by its AI, never shoots (round 4c removed the Sparrow's guns and missiles).
+   - Prisms far above or below the plane are the real prisms, never gone (round 4d). Prisms on the plane look crisp;
+     the farther out of the plane, the more their faces part, as distant mass does in the pilot view. Prisms above
+     the board dither (a shattered see-through look) so the board under them stays visible. In your small pilot view,
+     prisms look exactly as they always did.
+   - The tail is half as long again as before (2.4 board radii).
+   - Move the mouse without clicking, or lean the stick: the kite follows.
+5. Loop motes of one petal shape:
+   - **Space**: a blast takes out hostile prisms. At Space level 5 it also breaks shielded and super-shielded prisms.
+   - **Mass**: a cluster of your prisms. At Mass level 5 they are shielded.
+   - **Time**: boost for the pilot.
+   - **Charge**: gold pips round the kite.
+6. A loop with two petal shapes in it fizzles.
+7. With charge, ram a rival: crystals burst out of them (at Charge level 5, the petals come to you instead) and the
+   scoreboard counts a hit. Ram a creature: it dies, and one pip goes.
+8. Collect an Omni crystal (round 4e): four clusters of motes, one of each element, pop onto the kite's board around its
+   centre. The view does NOT zoom.
+9. Press **1**: your view is full screen again, at its old size, with no stuck input and no stuck boost.
+10. Gather petals of one element on the hull: the motes of that shape come more often.
+11. In the Vessel Changer, swap away from the Wrasse and back, once flying and once while on the kite. Every view comes
+    back to normal and the input is live.
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
@@ -3307,6 +3509,12 @@ config reports 0 errors in project code.
 2. Fly through an omni crystal: the Rhino's vessel crystal blast still fires (unchanged).
 3. The inspector on `RhinoSwordCrystalBurstEffect.asset` shows no fields, and the console is clean.
 
+> **Superseded 2026-10-16 (`cece/relaxed-hopper-r62hbd`):** `RhinoSwordCrystalBurstEffectSO` and its
+> asset are DELETED — the burst drained the whole sword meter on every elemental petal the blade
+> touched. On a build carrying that branch, step 1 reads "collected, petal gained, **no** blade burst
+> and **no** meter drain", and step 3 has no asset to open. The blade-burst look moved to the omni
+> crystal's Surge (`RhinoVesselSurgeByCrystalEffect`); the vessel blast in step 2 is unchanged.
+
 ---
 
 ### 🔴 Offline mode: the seven cases tested, B26–B28 fixed (Block 4) (`Ys-bleeding-edge`, 2026-10-08)
@@ -4445,6 +4653,11 @@ QA item: `QA-HULL-ABILITY-ROWS`.
 3. **FrogletTools > Vessels > Audits > Audit Ability Lockups**: no icon reported as not fitting its card.
 4. Rhino match: row reads LOCKED / Trail Slabs / LOCKED / Ramp Spool; the old bottom-right Rhino
    chrome stays retired; no `[VesselHUDView]` row warnings.
+   *(Superseded 2026-10-16, `cece/relaxed-hopper-r62hbd`: the Rhino binds **4/4** — Sword Energy /
+   Afterimage / Blade Reach / Ramp Spool, placeholder icons — so step 2 has no Rhino open-slot lines
+   and this step reads four live cards. The "old chrome stays retired" half did NOT hold: binding
+   this entry's first icon let the lockup spare the status cluster and it came back; that branch
+   deleted it outright.)*
 5. Serpent: Sniper Shot (RT chip) / LOCKED / Scope (LT chip) / Pellets (A chip); fire the rifle and
    the Charge card's cooldown veil sweeps over the bullet icon.
 6. Scarab: blast / ring / ball / dial icons, not Sparrow art; gauge tints still apply (blast
@@ -5158,6 +5371,13 @@ The **Rhino's energised sword** lands a Strike and drains nothing — it is now 
 verb with no drain path. Arming it is a Rhino kit decision (a skimmer drain SO on the sword's
 container), not a number, so it is reported rather than done.
 
+> **Wrong as of 2026-10-16 (re-measured on `cece/relaxed-hopper-r62hbd`):** the sword's container
+> carries `RhinoSwordStealBySkimmerEffect` (a `VesselOvertakeBySkimmerEffectSO`, landed with #928):
+> −0.08 / +0.08 per element for 3 s, cooldown 1 s, `stealScale` authored disabled (base magnitude),
+> run only for a hit `VesselCombatHitBySword` admits — i.e. the Strike price, PvP-petals-only. The
+> gap this section describes is closed; verify it as "a +8 sword hit dips the victim's four petal
+> bars".
+
 ---
 
 ### 🔴 Scarab analog juke + mirrored cavitation plate (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
@@ -5595,6 +5815,14 @@ skimmer-size ring, laser and crystal indicators. The view still writes to them �
 switched off, not unwired — so restoring one is re-activating a branch. The rule reverses itself
 the day that vessel binds its first ability icon.
 
+> **2026-10-16 — the reversal happened, and the Rhino half of this entry is now history.** #971 bound
+> the Rhino's first icons, the reference guard came back on, and the driven cluster reappeared in the
+> row's corner. `cece/relaxed-hopper-r62hbd` deleted the cluster (readouts, view fields, the SOAP
+> channels, `BoostContainer` / `VesselImpactCooldown` / `TrailContainer`, and Rhino.prefab's added
+> LaserTargeting / Crystal / ForceField / ShockIcon objects), and the Rhino now binds **4/4**. The
+> Rhino checkbox below reads, on such a build, "four LIVE cards bottom-right and nothing else" — the
+> listed objects are not inactive, they do not exist. Manta and Serpent are unchanged by it.
+
 **Verify in editor**
 
 - [ ] **Rhino**: four LOCKED cards bottom-right and nothing else on the HUD. `BoostContainer`,
@@ -5741,7 +5969,9 @@ Four defects reported from play, four fixes, all still unverified in the Editor:
    gone entirely.
 4. **Locked slots / the Rhino.** The row is always four cards; an unbound slot draws locked.
    **Verify:** fly a **Rhino** — four cards, Mass live (Trail Slabs), three drawn locked, element
-   flowers docked above all four, and no old ability-icon UI left in the corner. Same for **Manta**
+   flowers docked above all four, and no old ability-icon UI left in the corner. *(2026-10-16: on a
+   build carrying `cece/relaxed-hopper-r62hbd` the Rhino has no locked card — all four are live —
+   so use Manta / Serpent for the locked-slot half.)* Same for **Manta**
    and **Serpent**. Confirm the locked cards are clearly quieter than a live one and are not
    clickable.
 
@@ -5783,7 +6013,7 @@ retired from the style. **Verify, per vessel:**
    on-screen ability button must still respond on a device or the simulator; raycasting uses the
    RECT, not the drawn trapezoid, so the corners are live by design.
 7. **Locked slots.** On Rhino / Manta / Serpent both plates read quieter, with the placeholder bar
-   centred in the lower one.
+   centred in the lower one. *(Rhino: no locked slot since 2026-10-16, `cece/relaxed-hopper-r62hbd`.)*
 
 Then re-run **Audit Ability Lockups** (it now reports the slant and checks the icon against the
 ability plate's NARROW edge) and `AbilityLockupStyleTests` (three new/reworked tests: the gap and
@@ -5863,7 +6093,7 @@ from the assets, per vessel:
 |---|---|---|
 | Sparrow · Scarab | `Boost Button/display`, `Ammo Count`, `ActionIconHolder`, `XBOX_Icon_Root`, `PS_Icon_Root` | the four cards |
 | Dolphin | a stray root `Image`, `XBOX_Icon_Root`, `PS_Icon_Root` | its four ability buttons (already moved into the row) |
-| Rhino | `BoostContainer` | — |
+| Rhino | `BoostContainer` *(deleted from `RhinoHUDVariant` outright on 2026-10-16, `cece/relaxed-hopper-r62hbd` — nothing left to retire)* | — |
 | Serpent · Squirrel | — | their glyph roots, because their switcher references them |
 
 **Verify:** only the four-card row remains on each vessel; the Squirrel and Serpent still show
