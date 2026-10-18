@@ -22,8 +22,11 @@ WHAT IT MAKES
           turn rates;
         - the trail: the spawner swapped (same fileID) to ShrikePrismController laying thin long blocks (Mass shortens
           the wavelength; the sling's thick blocks are the executor's);
-        - the hull: BrittleStarHull becomes ShrikeHull (same fileIDs, so the paint and the renderer stay wired), its
-          builder ShrikeHullBuilder; the hit box re-sized to the long hull;
+        - the hull: BrittleStarHull becomes ShrikeHull (same fileIDs, so the paint stays wired); the hit box re-sized
+          to the long hull. Since 2026-10-18 the Hull holds the MODEL, Shrike.fbx (/vessel-model,
+          Tools/Build/vessel_model/specs/shrike.py), as a nested prefab instance: the placeholder's ShrikeHullBuilder,
+          MeshFilter and MeshRenderer come off (integrate_model, OWNED and idempotent), the executor's `hull` names the
+          Hull transform, and VesselCustomization paints the model's Domain slot by material identity;
         - the animation: ShrikeAnimation on the same fileID;
         - the executors: the Brittle Star's executor and its turrets object (gun, factory, round pool) removed;
           ShrikeExecutor added (config, hull, turn-end channel);
@@ -163,6 +166,21 @@ DONOR_TURRETS = tuple(f"441900112233445501{i}" for i in range(5))   # GO, Transf
 # ---- new documents -------------------------------------------------------------------------------------------------
 EXECUTOR_ID = "5521001122334455001"
 
+# ---- the model (Shrike.fbx, /vessel-model 2026-10-18; R_VesselActions/SHRIKE.md section 2) -------------------------
+# Integrated BY NAME, as the Butterfly is: an FBX's sub-object fileIDs exist only after Unity imports it, so the prefab
+# holds the model ROOT (the importer's constant root ids) and the code resolves the bones and the SkinnedMeshRenderer.
+MODEL = A("_Models", "Vessel Models", "Shrike.fbx")
+MODEL_GUID = "0b8274835c054340a01827652453fd35"
+MODEL_INSTANCE_ID = "3280947908647733133"
+MODEL_ROOT_TRANSFORM_ID = "2602522994830772452"
+FBX_ROOT_GO, FBX_ROOT_TRANSFORM = "919132149155446097", "-8679921383154817045"   # Unity's constant model-root ids
+HULL_TRANSFORM_ID = "5137264980012345611"
+HULL_FILTER_ID, HULL_RENDERER_ID = "5137264980012345612", "5137264980012345613"
+CUSTOMIZATION_ID = "7779107667008759293"
+DOMAIN_MATERIAL = "539a8c65974bf0b48aae77d83884c13b"   # GreenAccentVesselMaterial: what the model's Domain slot is remapped to
+MODEL_SLOT_REMAPS = {"Body": "54e78ce17120fe641904833c11bc1210", "Domain": DOMAIN_MATERIAL,
+                     "Engine": "0c127fffc48780b4d93a10811a37ae8a", "Window": "923d366546007394ea6c8aaff6a06863"}
+
 # ---- fleet guids ---------------------------------------------------------------------------------------------------
 SINGLE_STICK_SCRIPT = "b6b54993a316e0041b4bf5981190ac67"
 COMBAT_HIT_CHANNEL = "45fb43a0cddb5cc3cc4dc448df994152"
@@ -214,7 +232,7 @@ def mb(fid, go, script, ident=""):
 def executor_block() -> str:
     return (mb(EXECUTOR_ID, SHIP_ACTIONS_GO, SCRIPT["ShrikeExecutor"]) +
             f"  config: {{fileID: 11400000, guid: {CONFIG}, type: 2}}\n"
-            f"  hull: {{fileID: {HULL_BUILDER_ID}}}\n"
+            f"  hull: {{fileID: {HULL_TRANSFORM_ID}}}\n"
             f"  OnMiniGameTurnEnd: {{fileID: 11400000, guid: {TURN_END_CHANNEL}, type: 2}}\n")
 
 
@@ -348,6 +366,65 @@ def build_prefab(donor: str) -> str:
             chunk = chunk.replace("CosmicShore.UI.BrittleStarHUDView", "CosmicShore.UI.ShrikeHUDView")
             S.set_doc(docs, fid, chunk)
 
+    return S.join_docs(head, docs)
+
+
+def model_instance_docs() -> str:
+    """The model as a nested prefab under the Hull: the PrefabInstance and the stripped root Transform."""
+    mod = "".join(
+        f"    - target: {{fileID: {target}, guid: {MODEL_GUID},\n        type: 3}}\n"
+        f"      propertyPath: {path}\n      value: {value}\n      objectReference: {{fileID: 0}}\n"
+        for target, path, value in (
+            (FBX_ROOT_GO, "m_Name", "Shrike"),
+            *((FBX_ROOT_TRANSFORM, f"m_LocalPosition.{a}", "0") for a in "xyz"),
+            (FBX_ROOT_TRANSFORM, "m_LocalRotation.w", "1"),
+            *((FBX_ROOT_TRANSFORM, f"m_LocalRotation.{a}", "0") for a in "xyz"),
+            *((FBX_ROOT_TRANSFORM, f"m_LocalEulerAnglesHint.{a}", "0") for a in "xyz")))
+    return (f"--- !u!1001 &{MODEL_INSTANCE_ID}\n"
+            "PrefabInstance:\n"
+            "  m_ObjectHideFlags: 0\n"
+            "  serializedVersion: 2\n"
+            "  m_Modification:\n"
+            "    serializedVersion: 3\n"
+            f"    m_TransformParent: {{fileID: {HULL_TRANSFORM_ID}}}\n"
+            "    m_Modifications:\n" + mod +
+            "    m_RemovedComponents: []\n"
+            "    m_RemovedGameObjects: []\n"
+            "    m_AddedGameObjects: []\n"
+            "    m_AddedComponents: []\n"
+            f"  m_SourcePrefab: {{fileID: 100100000, guid: {MODEL_GUID}, type: 3}}\n"
+            f"--- !u!4 &{MODEL_ROOT_TRANSFORM_ID} stripped\n"
+            "Transform:\n"
+            f"  m_CorrespondingSourceObject: {{fileID: {FBX_ROOT_TRANSFORM}, guid: {MODEL_GUID},\n    type: 3}}\n"
+            f"  m_PrefabInstance: {{fileID: {MODEL_INSTANCE_ID}}}\n"
+            "  m_PrefabAsset: {fileID: 0}\n")
+
+
+def integrate_model(prefab: str) -> str:
+    """The shipped prefab with the MODEL in the Hull and the placeholder builder off it (idempotent). The builder's C#
+    stays in the tree until Garrett accepts the model (the swap is reversible: the code still resolves the
+    builder's part names)."""
+    head, docs = S.split_docs(prefab)
+    hull_go = S.get_doc(docs, HULL_GO_ID)
+    for fid in (HULL_FILTER_ID, HULL_RENDERER_ID, HULL_BUILDER_ID):
+        hull_go = hull_go.replace(f"  - component: {{fileID: {fid}}}\n", "")
+    S.set_doc(docs, HULL_GO_ID, hull_go)
+    S.remove_docs(docs, [HULL_FILTER_ID, HULL_RENDERER_ID, HULL_BUILDER_ID])
+    hull_tr = S.get_doc(docs, HULL_TRANSFORM_ID)
+    if MODEL_ROOT_TRANSFORM_ID not in hull_tr:
+        hull_tr = S.replace_once(hull_tr, "  m_Children: []\n", f"  m_Children:\n  - {{fileID: {MODEL_ROOT_TRANSFORM_ID}}}\n", "Hull children")
+        S.set_doc(docs, HULL_TRANSFORM_ID, hull_tr)
+    if S.doc_index(docs, MODEL_INSTANCE_ID) < 0:
+        _, model_docs = S.split_docs(model_instance_docs())
+        docs.extend(model_docs)
+    ex = S.get_doc(docs, EXECUTOR_ID)
+    S.set_doc(docs, EXECUTOR_ID, re.sub(r"  hull: \{fileID: -?\d+\}\n", f"  hull: {{fileID: {HULL_TRANSFORM_ID}}}\n", ex, count=1))
+    cust = S.get_doc(docs, CUSTOMIZATION_ID)
+    if DOMAIN_MATERIAL not in cust:
+        cust = S.replace_once(cust, "  _domainReplacesMaterials: []\n",
+                              f"  _domainReplacesMaterials:\n  - {{fileID: 2100000, guid: {DOMAIN_MATERIAL}, type: 2}}\n",
+                              "VesselCustomization domain identities")
+        S.set_doc(docs, CUSTOMIZATION_ID, cust)
     return S.join_docs(head, docs)
 
 
@@ -710,14 +787,26 @@ def check(files: "dict[str, str]") -> "list[str]":
     need(EXECUTOR_ID in ids and f"guid: {SCRIPT['ShrikeExecutor']}" in d.get(EXECUTOR_ID, ""), "ShrikeExecutor missing")
     need(f"  - {{fileID: {EXECUTOR_ID}}}\n" in d.get(REGISTRY_ID, ""), "ShrikeExecutor is not in the ActionExecutorRegistry")
     ex = d.get(EXECUTOR_ID, "")
-    need(f"guid: {CONFIG}" in ex and f"hull: {{fileID: {HULL_BUILDER_ID}}}" in ex and TURN_END_CHANNEL in ex,
+    need(f"guid: {CONFIG}" in ex and f"hull: {{fileID: {HULL_TRANSFORM_ID}}}" in ex and TURN_END_CHANNEL in ex,
          "ShrikeExecutor is not wired (config / hull / turn-end channel)")
     tr = d.get(TRANSFORMER_ID, "")
     need(f"guid: {SINGLE_STICK_SCRIPT}" in tr and "vectorFlightModel: 0" in tr, "the transformer is not the one-thumb SingleStickVesselTransformer")
     need("  DefaultMinimumSpeed: 0\n" in tr, "DefaultMinimumSpeed is not 0 (cruise is the studio's `cruise`, all throttle)")
     need(f"guid: {SCRIPT['ShrikePrismController']}" in d.get(PRISM_CONTROLLER_ID, ""), "the spawner is not ShrikePrismController")
     need(f"guid: {SCRIPT['ShrikeAnimation']}" in d.get(ANIMATION_ID, ""), "the animation is not ShrikeAnimation")
-    need(f"guid: {SCRIPT['ShrikeHullBuilder']}" in d.get(HULL_BUILDER_ID, ""), "the hull builder is not ShrikeHullBuilder")
+    # the hull is the MODEL (Shrike.fbx) nested in the Hull; the placeholder builder is off the prefab
+    need(not ({HULL_BUILDER_ID, HULL_FILTER_ID, HULL_RENDERER_ID} & ids) and SCRIPT["ShrikeHullBuilder"] not in prefab,
+         "the placeholder ShrikeHullBuilder (or its MeshFilter / MeshRenderer) is still on the prefab")
+    inst = d.get(MODEL_INSTANCE_ID, "")
+    need(f"  m_SourcePrefab: {{fileID: 100100000, guid: {MODEL_GUID}, type: 3}}\n" in inst
+         and f"    m_TransformParent: {{fileID: {HULL_TRANSFORM_ID}}}\n" in inst, "Shrike.fbx is not nested under the Hull")
+    need(f"  - {{fileID: {MODEL_ROOT_TRANSFORM_ID}}}\n" in d.get(HULL_TRANSFORM_ID, ""), "the model's root is not a child of the Hull")
+    need(f"guid: {DOMAIN_MATERIAL}" in d.get(CUSTOMIZATION_ID, ""), "VesselCustomization does not name the Domain material the model wears")
+    meta = files.get(MODEL + ".meta", "")
+    need(f"guid: {MODEL_GUID}\n" in meta and os.path.exists(MODEL), "Shrike.fbx (or its .meta with the model's guid) is missing")
+    for slot, guid in MODEL_SLOT_REMAPS.items():
+        need(re.search(r"      name: %s\n    second: \{fileID: 2100000, guid: %s, type: 2\}" % (slot, guid), meta),
+             f"Shrike.fbx.meta does not remap the {slot} slot to the fleet's material")
     need(f"guid: {SCRIPT['ShrikeHUDController']}" in d.get(HUD_CONTROLLER_ID, "")
          and f"shrike: {{fileID: {EXECUTOR_ID}}}" in d.get(HUD_CONTROLLER_ID, ""), "the HUD controller is not ShrikeHUDController wired to the executor")
     need(f"guid: {HUD_VARIANT}" in d.get(HUD_INSTANCE_ID, ""), "the HUD instance is not ShrikeHUDVariant")
@@ -776,7 +865,7 @@ def check(files: "dict[str, str]") -> "list[str]":
 
 
 def read_all() -> "dict[str, str]":
-    paths = {PREFAB, HUD_VARIANT_PATH, CONTAINER, NETWORK_PREFABS, FUSION, *CLASS_LISTS, *owned_files(), *SEEDED,
+    paths = {PREFAB, MODEL + ".meta", HUD_VARIANT_PATH, CONTAINER, NETWORK_PREFABS, FUSION, *CLASS_LISTS, *owned_files(), *SEEDED,
              CARD_ACTIVE_META, CARD_INACTIVE_META,
              os.path.join(SCRIPTS, "Data/Enums/VesselClassType.cs"),
              os.path.join(SCRIPTS, "Controller/Toys/ToyVesselRoster.cs")}
@@ -805,12 +894,12 @@ def author() -> None:
     if HUD_VARIANT_PATH not in files:
         write(HUD_VARIANT_PATH, build_hud_variant(open(HUD_DONOR, encoding="utf-8", newline="").read()))
         print("cloned BrittleStarHUDVariant.prefab -> ShrikeHUDVariant.prefab")
-    # The bindings are OWNED on the shipped prefab (a control change re-applies here; the rest of the prefab is not).
+    # The bindings and the model integration are OWNED on the shipped prefab (re-applied here; the rest is not).
     prefab = open(PREFAB, encoding="utf-8", newline="").read()
-    rebound = rebind(prefab)
+    rebound = integrate_model(rebind(prefab))
     if rebound != prefab:
         write(PREFAB, rebound)
-        print("re-applied the bindings on Shrike.prefab")
+        print("re-applied the bindings and the model integration on Shrike.prefab")
     for name in RETIRED_CONTROLS:
         for path in (os.path.join(ACTIONS_DIR, name + ".asset"), os.path.join(ACTIONS_DIR, name + ".asset.meta")):
             if os.path.exists(path):
@@ -842,7 +931,10 @@ def self_test() -> int:
     mutations = {
         "vesselType back to the donor's": (PREFAB, lambda t: t.replace(f"  vesselType: {CLASS_ID}\n", "  vesselType: 16\n")),
         "executor dropped from the registry": (PREFAB, lambda t: t.replace(f"  _executors:\n  - {{fileID: {EXECUTOR_ID}}}\n", "  _executors: []\n")),
-        "a dangling reference": (PREFAB, lambda t: t.replace(f"  hull: {{fileID: {HULL_BUILDER_ID}}}", "  hull: {fileID: 12345}")),
+        "a dangling reference": (PREFAB, lambda t: t.replace(f"  hull: {{fileID: {HULL_TRANSFORM_ID}}}", "  hull: {fileID: 12345}")),
+        "the model unhooked from the Hull": (PREFAB, lambda t: t.replace(f"  m_SourcePrefab: {{fileID: 100100000, guid: {MODEL_GUID}", "  m_SourcePrefab: {fileID: 100100000, guid: " + "0" * 32)),
+        "the domain identity dropped": (PREFAB, lambda t: t.replace(f"  _domainReplacesMaterials:\n  - {{fileID: 2100000, guid: {DOMAIN_MATERIAL}, type: 2}}\n", "  _domainReplacesMaterials: []\n")),
+        "a slot left un-remapped": (MODEL + ".meta", lambda t: t.replace("      name: Engine\n", "      name: Engine2\n")),
         "the donor's hash": (PREFAB, lambda t: re.sub(r"  GlobalObjectIdHash: \d+", "  GlobalObjectIdHash: 1", t, count=1)),
         "a Brittle Star script left behind": (PREFAB, lambda t: t.replace(SCRIPT["ShrikeAnimation"], BRITTLESTAR["BrittleStarAnimation.cs"])),
         "unregistered from the container": (CONTAINER, lambda t: t.replace(PREFAB_GUID, "0" * 32)),
