@@ -12094,3 +12094,22 @@ known errors, 0 in changed files); every menu generator `--check` passes.
    the studio makes the card slide in and out. Music off in Settings: no card.
 6. **(After aradia1 wires per-track events in Soundtrack.asset)** rows play on press, the title and progress show,
    and the playlist moves to the next ticked track when one ends.
+
+## 🔴 2026-10-18 — R9b: the providers' own sign-in buttons (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §57. `/verify-unity` was not run (no editor in the cloud session); player reference compile
+clean, editor reference compile only the 3 known pre-existing errors (0 in changed files). New script
+`KitBrandButton.cs`; changed `SignInChooser`, `SignInProvidersSO`, `AccountSettingsView`; regenerated
+`Authentication.unity`, `SignInProviders.asset`, `SettingsView.prefab`, plus text-quoting fixes in `HangarView`,
+`LeaderboardView` and the two Maelstrom score-card prefabs.
+
+1. **Authentication.unity, Play:** the window shows Google's dark "Sign in with Google" pill and Apple's white "Sign in
+   with Apple" pill, the same size, centred, neither tinted; no Steam button; then "or" and Play as guest.
+2. **Pad / keyboard:** moving onto either brand button draws the sky-blue ring AROUND it (not over it); a mouse click
+   does not leave a ring.
+3. **Editor (dev build rule):** the "Steam is not running..." note shows above the buttons (no Steam provider works yet).
+4. **SignInChooser > Preview: Steam signs you in:** the AUTO card shows the name and "Steam account" with no mark.
+5. **Settings > Account:** Google's round G and Apple's round logo beside their rows; the Steam row has no mark and no
+   white square.
+6. **Hangar abilities tab:** the "Core: skim by flying close to a prism..." line still reads in full; the Maelstrom and
+   weekly leaderboard placeholders still show "-".

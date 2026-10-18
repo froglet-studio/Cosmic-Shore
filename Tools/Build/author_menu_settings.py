@@ -73,7 +73,7 @@ S = dict(controller=C.script("GameSettingsPanelController"), tabbar=C.script("Se
          account=C.script("AccountSettingsView"), prompt=C.script("AccountPromptWindow"))
 # Rev 9 (section 54): the Account tab. SignInProviders.asset is written by author_start_flow.py (PROVIDERS_GUID there).
 PROVIDERS_GUID = "5b0c1f7e9a2d4c6e8f1a3b5d7c9e0f21"
-ACCOUNT_ROWS = (("Steam", 2, "chrome_provider_steam"), ("Google", 3, "chrome_provider_google"), ("Apple", 4, "chrome_provider_apple"))
+ACCOUNT_ROWS = (("Steam", 2, None), ("Google", 3, None), ("Apple", 4, None))   # marks come from SignInProviders.asset (R9b)
 ACCOUNT_ROWS_TOP, ACCOUNT_PITCH, ACCOUNT_ACTIONS_GAP = 34, 84, 26
 PROMPT_W, PROMPT_H, PROMPT_CONFIRM_H = 1180, 680, 330
 PACKAGE = P.PACKAGE | {DROPDOWN, TOGGLE, SCROLL}
@@ -306,13 +306,16 @@ def account_page(page, pk):
           "Body", "TextLight")
     label(page.child(N(f"{pk}/Caption", "LinkedCaption", TL(0, 164, 600, 18))), "Linked accounts", "Label", "NeutralLightest")
     rows = page.child(N(f"{pk}/Rows", "Rows", TL(0, 170, PAGE_W, 480)))
-    for i, (name, _, icon) in enumerate(ACCOUNT_ROWS):
+    for i, (name, _, _) in enumerate(ACCOUNT_ROWS):
         rk = f"{pk}/Rows/{name}"
         r = rows.child(N(rk, name, TL(0, ACCOUNT_ROWS_TOP + i * ACCOUNT_PITCH, PAGE_W, ACCOUNT_PITCH)))
-        mk = r.child(N(f"{rk}/Mark", "Mark", TL(0, 28, 28, 28)))
-        mk.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite(icon), preserve=True))
-        label(r.child(N(f"{rk}/Name", "Name", TL(48, 14, 600, 26))), name, "Body", "TextLight")
-        label(r.child(N(f"{rk}/Line", "Line", TL(48, 44, 600, 20))), "Not linked", "BodySmall", "NeutralLightest")
+        # R9b (section 57): the mark is the provider's own logo-only button, untinted, set from SignInProviders.asset at
+        # runtime; none is shipped here, and Steam's stays empty (Valve allows only its approved artwork).
+        mk = r.child(N(f"{rk}/Mark", "Mark", TL(0, 22, 40, 40)))
+        img = K.image((1, 1, 1, 1), None, preserve=True)
+        mk.add("cr", 222, K.canvas_renderer()).add("img", 114, lambda ctx, go, img=img: img(ctx, go).replace("  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
+        label(r.child(N(f"{rk}/Name", "Name", TL(56, 14, 600, 26))), name, "Body", "TextLight")
+        label(r.child(N(f"{rk}/Line", "Line", TL(56, 44, 600, 20))), "Not linked", "BodySmall", "NeutralLightest")
         image_node(r, f"{rk}/Rule", "Rule", R((0, 0), (1, 0), (0, 0), (0, 1), (0.5, 0)), "SurfaceDark")
         w, h = K.button_size("LINK", small=True)
         holder = r.child(N(f"{rk}/Link", "Link", R((1, 0.5), None, (0, 0), (w, h), (1, 0.5))))
@@ -798,6 +801,12 @@ def validate(files):
     rows_ = re.findall(r"  - provider: (\d+)\n    root: \{fileID: (-?\d+)\}\n    mark: .*\n    line: .*\n    linkButton: \{fileID: (-?\d+)\}", acc)
     assert sorted(int(v) for v, _, _ in rows_) == [2, 3, 4], "the Account tab needs a row each for Steam, Google and Apple"
     assert all(b != "0" for _, _, b in rows_), "an Account row has no LINK button"
+    # R9b (section 57): a row's mark comes from SignInProviders.asset (the providers' own logo buttons); the prefab ships
+    # none, untinted and disabled, so no stand-in or recoloured mark can show.
+    for name, _, _ in ACCOUNT_ROWS:
+        _, md = A.doc_of(view, V(f"Window/Account/Rows/{name}/Mark#img"))
+        assert md and "  m_Sprite: {fileID: 0}\n" in md, f"the {name} Account row ships a mark sprite (marks come from SignInProviders.asset)"
+        assert "  m_Color: {r: 1, g: 1, b: 1, a: 1}\n" in md and "  m_Enabled: 0\n" in md, f"the {name} Account mark is tinted or ships enabled"
     for f in ("pilotName", "playerIdText", "guestNotice", "actionsRow", "signOutButton", "deleteButton", "prompt"):
         assert not re.search(r"^  %s: \{fileID: 0\}" % f, acc, re.M), f"AccountSettingsView.{f} is not wired"
     _, pw = A.doc_of(view, V("Prompt#prompt"))
@@ -836,6 +845,13 @@ def _show_prompt(text_):
     return text_[:i] + text_[i:j].replace("  m_Alpha: 0\n", "  m_Alpha: 1\n").replace("  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n") + text_[j:]
 
 
+def _stand_in_mark(text_):
+    fid = K.FileIds(VIEW)("Window/Account/Rows/Google/Mark#img")
+    i = text_.index(f" &{fid}\n")
+    j = text_.find("\n--- ", i)
+    return text_[:i] + text_[i:j].replace("  m_Sprite: {fileID: 0}", "  m_Sprite: " + K.sprite_ref(K.chrome_sprite("chrome_provider_google"))) + text_[j:]
+
+
 def self_test(files):
     def expect(label_, mutate):
         bad = dict(files)
@@ -858,6 +874,7 @@ def self_test(files):
         ("a dropdown with no template", lambda f: f.__setitem__(view, re.sub(r"(  m_Template: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
         ("an ON / OFF pair on plain buttons", lambda f: f.__setitem__(view, f[view].replace("    onButton: {fileID: ", "    onButton: {fileID: 1", 1))),
         ("the Account page unhooked from the in-game lock", lambda f: f.__setitem__(view, re.sub(r"(  accountView: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
+        ("a stand-in mark on an Account row", lambda f: f.__setitem__(view, _stand_in_mark(f[view]))),
         ("an Account row missing", lambda f: f.__setitem__(view, re.sub(r"  - provider: 4\n    root: .*\n    mark: .*\n    line: .*\n    linkButton: .*\n    linkedMark: .*\n", "", f[view]))),
         ("the Account window ships shown", lambda f: f.__setitem__(view, _show_prompt(f[view]))),
         ("OptionsMenuContent left nested", lambda f: f.__setitem__(MODAL_PREFAB, f[MODAL_PREFAB] + f"# guid: {OPTIONS_GUID}\n")),

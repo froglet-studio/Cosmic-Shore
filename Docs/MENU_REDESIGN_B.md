@@ -2711,7 +2711,7 @@ flight-time format moved to authored templates (`hoursTemplate` / `minutesTempla
 SurfaceBlack panel with the window lattice, below the top nav; CLOSE (B).
 - Fly time, games, sessions (`PlayerProfileData.Lifecycle`).
 - Favourite vessel: the most flown, from `HangarCloudData` (per-vessel `FlightTimeSeconds`, already recorded for games
-  and menu freestyle; Yash's cloud data, read only). Its icon is `SO_Vessel.IconActive` from `SO_Classlist_All`.
+  and menu freestyle; Shombith's cloud data, read only). Its icon is `SO_Vessel.IconActive` from `SO_Classlist_All`.
 - Favourite pilot: the player's pick, saved as `ProfileIdentity.FavouritePilot` (the SO_Captain asset name; new field,
   cloud-saved with the profile, `PlayerDataService.SetFavouritePilot`). CHANGE opens `FavouritePilotPicker`: the
   Hangar's pilots (`ElementalCaptains`), four per vessel, LB / RB through the vessels, SET AS FAVOURITE / BACK.
@@ -2739,3 +2739,49 @@ emitter now quotes such values (`yaml_scalar`), and every menu generator's file 
 
 Gates: `author_menu_profile.py --self-test` adds six planted defects (the record shipping shown, an unwired skip, the
 record without its lattice, AudioSystem without the soundtrack, two tracks sharing an id, a YAML-breaking caption).
+
+## 57. R9b built: the providers' own sign-in buttons (2026-10-18, awaiting in-editor approval)
+
+The owner approved R9b and agreed to add the official logos. This replaces §54's stand-in marks and kit-styled provider
+buttons (§55 explains why those broke Google's and Apple's rules).
+
+**Sign-in window, CHOOSE face** (`author_start_flow.py`):
+- **Google**: Google's own dark "Sign in with Google" pill, `signin-assets.zip` > Android + Web > PNG @4x > Dark, the file
+  unchanged (`Assets/_Graphics/UI/Brands/google_signin_dark_pill.png`, 720 x 160). Google's kit offers only the "Sign in
+  with Google" wording as an image.
+- **Apple**: Apple's white "Sign in with Apple" pill, the same 720 x 160 (Apple's button no smaller than Google's), from
+  Apple's button image service (`appleid.cdn-apple.com/appleid/button`, the route Apple documents for showing its button
+  outside its native button API). **The Apple Design Resources logo files were NOT used**: the licence that ships with
+  them allows mock-ups for software that runs only on Apple's platforms and forbids embedding them in any program, so
+  they cannot go into a Windows or Android build.
+- Both are `KitBrandButton`s (new, `Assets/_Scripts/UI/Kit/KitBrandButton.cs`): the face is never tinted in any state;
+  the only kit mark is the sky-blue focus ring 6 px OUTSIDE the artwork. 234 x 52 each, centred.
+- **No Steam button.** A Steam build signs in on its own (AUTO face). When the silent provider is offered but could not
+  sign the player in, a note shows above the buttons ("Steam is not running. Start Steam to sign in with it, or pick a
+  way below." - `SignInChooser.silentUnavailableLine`, authored). Release builds without a working Steam provider never
+  show it (same rule as unavailable providers).
+- **AUTO face**: the Steam mark is gone (Valve allows only its approved artwork); the account name and "Steam account"
+  carry the card.
+
+**Settings > Account rows** (`author_menu_settings.py`): each row's mark is the provider's logo-only button from
+`SignInProviders.asset` (Google's dark round G from the same kit; Apple's white round logo from the same service).
+Steam's row has no mark until Valve-approved artwork is added; an empty mark hides itself. The prefab ships the mark
+images empty, white and disabled.
+
+**`SignInProvidersSO`** gains `googleButton` / `appleButton` (the chooser faces); `steamMark` / `googleMark` / `appleMark`
+are now the Account marks (Steam's empty).
+
+**Gates.** `author_start_flow.py` pins each brand file's SHA-256 (a re-export, crop or recolour fails `--check`), checks
+the chooser has exactly Google and Apple as `KitBrandButton`s with the right image, untinted, ring outside, and no Steam
+mark anywhere; it also now fails on anything a retired node leaves behind (a transform its father does not list, a
+component its GameObject does not list) - emitting over the committed scene had kept the old Steam button. Six new
+planted defects (Steam button back, Google tinted, Apple's file altered, a stand-in Steam mark, a left-behind
+component; settings: a stand-in Account mark).
+
+**Also fixed on the way.** The kit's text writer did not quote YAML-unsafe text: `HangarView` carried
+`m_text: Core: skim by flying close...` and two scoreboards `m_text: -`, which do not parse as YAML.
+`author_ui_kit_prefabs.tmp` now writes `m_text` through `yaml_scalar` (which also quotes a lone `-` / `?`), and
+the hangar, configure and Maelstrom generators were re-run (`check_generated_assets.py`: no YAML findings).
+
+The old `chrome_provider_*` stand-in glyphs are no longer referenced by any shipped asset (the self-tests still use
+them as planted stand-ins).

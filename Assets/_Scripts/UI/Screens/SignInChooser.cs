@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The sign-in window's three faces (Docs/MENU_REDESIGN_B.md §54, the approved Rev 9 boards), on the auth panel of
+    /// The sign-in window's three faces (Docs/MENU_REDESIGN_B.md §54, the approved Rev 9 boards; §57 R9b), on the auth panel of
     /// Authentication.unity:
     /// <list type="bullet">
     /// <item>CHOOSE: "Sign in to fly" - the platform's provider buttons in its order (SignInProvidersSO), the "or" rule,
@@ -28,7 +28,8 @@ namespace CosmicShore.UI
         {
             public SignInProvider provider;
             public Button button;
-            [Tooltip("The provider's mark on the button; replaced by SignInProvidersSO's mark when that is set.")]
+            [Tooltip("The button's face: SignInProvidersSO's button artwork for the provider (the provider's own image, " +
+                     "untouched) replaces it when that is set.")]
             public Image mark;
         }
 
@@ -47,6 +48,10 @@ namespace CosmicShore.UI
         [Header("Choose")]
         [SerializeField] CanvasGroup chooseGroup;
         [SerializeField] ProviderButton[] providerButtons;
+        [Tooltip("Above the buttons: shown when this platform's silent provider (Steam on PC) has no button and could not " +
+                 "sign the player in, e.g. Steam is not running.")]
+        [SerializeField] RectTransform silentNoteRow;
+        [SerializeField] TMP_Text silentNoteText;
         [SerializeField] RectTransform orRule;
         [SerializeField] RectTransform guestRow;
         [Tooltip("Rows under Play as guest, in order (the hint, the controller's status line).")]
@@ -95,6 +100,8 @@ namespace CosmicShore.UI
         [SerializeField] string cancelLabel = "Cancel";
         [SerializeField] string autoCaptionLine = "{provider} account";
         [SerializeField] string autoSigningInLine = "Signing in with {provider}...";
+        [Tooltip("The CHOOSE face's note when the silent provider could not sign you in.")]
+        [SerializeField] string silentUnavailableLine = "{provider} is not running. Start {provider} to sign in with it, or pick a way below.";
 
         /// <summary>A provider button, Try again or Open again was pressed.</summary>
         public event Action<SignInProvider> ProviderChosen;
@@ -116,8 +123,8 @@ namespace CosmicShore.UI
                 if (!p.button) continue;
                 var provider = p.provider;
                 p.button.onClick.AddListener(() => ProviderChosen?.Invoke(provider));
-                var mark = providers ? providers.MarkFor(provider) : null;
-                if (p.mark && mark) p.mark.sprite = mark;
+                var face = providers ? providers.ButtonFor(provider) : null;
+                if (p.mark && face) p.mark.sprite = face;
             }
             if (primaryButton) primaryButton.onClick.AddListener(OnPrimary);
             if (secondaryButton) secondaryButton.onClick.AddListener(OnSecondary);
@@ -156,6 +163,18 @@ namespace CosmicShore.UI
             GameObject first = null;
             var order = providers ? providers.OrderFor(providers.CurrentGroup) : null;
             int sibling = 0;
+            if (silentNoteRow)
+            {
+                // A silent provider has no button (Steam: R9b), so when it could not sign the player in, say so.
+                var silent = providers ? providers.SilentProvider : SignInProvider.None;
+                bool note = silent != SignInProvider.None && SilentProvider == SignInProvider.None && providers.Shows(silent, _service);
+                silentNoteRow.gameObject.SetActive(note);
+                if (note)
+                {
+                    Set(silentNoteText, TemplateText.Fill(silentUnavailableLine, "provider", NameOf(silent)));
+                    y = Place(silentNoteRow, y);
+                }
+            }
             if (order != null)
             {
                 foreach (var provider in order)
@@ -239,7 +258,11 @@ namespace CosmicShore.UI
             SetFace(autoGroup);
             SetHeight(autoHeight);
             var mark = providers ? providers.MarkFor(provider) : null;
-            if (autoMark && mark) autoMark.sprite = mark;
+            if (autoMark)
+            {
+                autoMark.sprite = mark;
+                autoMark.enabled = mark;
+            }
             Set(autoName, accountName);
             Set(autoCaption, TemplateText.Fill(autoCaptionLine, "provider", n));
             Set(autoLine, TemplateText.Fill(autoSigningInLine, "provider", n));

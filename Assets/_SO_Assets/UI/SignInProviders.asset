@@ -26,8 +26,10 @@ MonoBehaviour:
   - 3
   - 4
   desktopSilentProvider: 2
-  steamMark: {fileID: 21300000, guid: 744499f6ba595fdd4aeee91c3831a2e3, type: 3}
-  googleMark: {fileID: 21300000, guid: 2e4d8f76122eb05a14419ab47e95e9e6, type: 3}
-  appleMark: {fileID: 21300000, guid: 113c628a418b28be60c3d654432ce4e5, type: 3}
+  googleButton: {fileID: 21300000, guid: ede96b78c9626b6135f2c1fe75b99a53, type: 3}
+  appleButton: {fileID: 21300000, guid: 7aa0371005113bdeed864be5ae3f7657, type: 3}
+  steamMark: {fileID: 0}
+  googleMark: {fileID: 21300000, guid: ac36e3c390a77620a5db7a8df7994dfc, type: 3}
+  appleMark: {fileID: 21300000, guid: 6db8b9c03463adea3bcd7f232ecb8dc9, type: 3}
   showUnavailableInDevBuilds: 1
   editorPreview: 0

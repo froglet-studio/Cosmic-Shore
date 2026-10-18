@@ -396,7 +396,7 @@ def yaml_scalar(value):
     """A modification value as Unity writes it: a string with ": " (or a leading YAML indicator) is single-quoted,
     else the YAML does not parse ("SHUFFLE: ON" broke a prefab, 2026-10-18)."""
     v = str(value)
-    if isinstance(value, str) and (": " in v or v.endswith(":") or " #" in v or v.startswith(("- ", "? "))
+    if isinstance(value, str) and (": " in v or v.endswith(":") or " #" in v or v.startswith(("- ", "? ")) or v in ("-", "?")
                                    or (v and v[0] in "!&*{}[]#|>@`'\"%")):
         return "'" + v.replace("'", "''") + "'"
     return v
@@ -450,7 +450,7 @@ def tmp(text, role, color, align="center", raycast=False):
                     f"  m_RaycastTarget: {1 if raycast else 0}\n"
                     "  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 1\n"
                     "  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"
-                    f"  m_text: {text}\n  m_isRightToLeft: 0\n"
+                    f"  m_text: {yaml_scalar(text)}\n  m_isRightToLeft: 0\n"
                     f"  m_fontAsset: {ref(11400000, font[0], 2)}\n"
                     f"  m_sharedMaterial: {ref(font[1], font[0], 2)}\n"
                     "  m_fontSharedMaterials: []\n  m_fontMaterial: {fileID: 0}\n  m_fontMaterials: []\n"

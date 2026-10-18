@@ -26,7 +26,7 @@ namespace CosmicShore.UI
         {
             public SignInProvider provider;
             public RectTransform root;
-            [Tooltip("The provider's mark; replaced by SignInProvidersSO's mark when that is set.")]
+            [Tooltip("The provider's mark: SignInProvidersSO's mark, hidden when that is empty.")]
             public Image mark;
             [Tooltip("Under the provider's name: the linked account, \"Not linked\", or what went wrong.")]
             public TMP_Text line;
@@ -102,7 +102,11 @@ namespace CosmicShore.UI
                 var provider = r.provider;
                 if (r.linkButton) r.linkButton.onClick.AddListener(() => LinkAsync(provider).Forget());
                 var mark = providers ? providers.MarkFor(provider) : null;
-                if (r.mark && mark) r.mark.sprite = mark;
+                if (r.mark)
+                {
+                    r.mark.sprite = mark;
+                    r.mark.enabled = mark;
+                }
             }
             if (signOutButton) signOutButton.onClick.AddListener(ConfirmSignOut);
             if (deleteButton) deleteButton.onClick.AddListener(ConfirmDelete);

@@ -18,7 +18,7 @@ namespace CosmicShore.UI
     /// <list type="bullet">
     /// <item>fly time, games and sessions (PlayerProfileData.Lifecycle);</item>
     /// <item>favourite vessel - the most flown, read from the hangar's per-vessel flight time
-    /// (HangarCloudData.PreferredVessel / VesselRecord.FlightTimeSeconds, Yash's cloud data, read only);</item>
+    /// (HangarCloudData.PreferredVessel / VesselRecord.FlightTimeSeconds, Shombith's cloud data, read only);</item>
     /// <item>favourite pilot - the player's pick (ProfileIdentity.FavouritePilot), CHANGE opens
     /// <see cref="FavouritePilotPicker"/>;</item>
     /// <item>fly time by vessel - the five most flown, as bars;</item>

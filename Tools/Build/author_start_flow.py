@@ -47,6 +47,7 @@ same output (--check reports no drift).
 """
 
 import argparse
+import hashlib
 import importlib.util
 import os
 import re
@@ -81,9 +82,33 @@ S = dict(
     loader="96d427922847afd4ca2fcdffed2c2b3b",        # Loader.prefab (the rotating icon)
     chooser=HUD.script_guid("Assets/_Scripts/UI/Screens/SignInChooser.cs"),
     providers_so=HUD.script_guid("Assets/_Scripts/UI/SignInProvidersSO.cs"),
+    brand=K.kit_script("KitBrandButton"),
 )
 PROVIDERS_GUID = "5b0c1f7e9a2d4c6e8f1a3b5d7c9e0f21"          # SignInProviders.asset
 PROVIDERS = (("Steam", 2, "chrome_provider_steam"), ("Google", 3, "chrome_provider_google"), ("Apple", 4, "chrome_provider_apple"))
+# R9b (section 57): the chooser carries the providers' own button artwork, untouched; Steam has no button (a Steam build
+# signs in on its own). The files are the providers' downloads byte for byte - Google's branding kit (signin-assets.zip,
+# Android + Web / PNG @4x / Dark) and Apple's button image service (appleid.cdn-apple.com/appleid/button) - so their
+# SHA-256 is pinned: a re-export, crop or recolour fails --check.
+CHOOSER = (("Google", 3), ("Apple", 4))
+BRAND_DIR = "Assets/_Graphics/UI/Brands"
+BRANDS = {
+    "googleButton": ("google_signin_dark_pill.png", "1aa891e26e1d9ff7ad15e7e56874f3e15daa3e85c74c674fa763badc37417b55"),
+    "appleButton": ("apple_signin_white_pill.png", "14ab059af981b221b87035665572143623cc439b20ee3fdaef76c5fd6ff84b53"),
+    "googleMark": ("google_logo_dark_pill.png", "b3c9cbc019a473dc9fdee0c2e56e7f79eb78275bdbf09d4608d08fae722bdadb"),
+    "appleMark": ("apple_logo_white_pill.png", "4adbf6ff7e8a57181984302b4dae004fac942e78be33ccb26de03b94f751c1bb"),
+}
+BRAND_H = 52
+BRAND_W = BRAND_H * 720 // 160   # both button images are 720 x 160: Apple's no smaller than Google's (Apple HIG)
+
+
+R9B_RETIRED_GOS = ["SignIn/Choose/Steam", "SignIn/Auto/Mark"] + [
+    f"SignIn/Choose/{n}/{part}" for n, _ in CHOOSER for part in ("Fill", "Border", "Mark", "Label")]
+R9B_RETIRED_COMPONENTS = [(f"SignIn/Choose/{n}", "hlg") for n, _ in CHOOSER] + [(f"SignIn/Choose/{n}/FocusRing", "le") for n, _ in CHOOSER]
+
+
+def brand_sprite(field):
+    return K.meta_guid(f"{BRAND_DIR}/{BRANDS[field][0]}")
 BOOT_STATUS_CHANNEL = "8a2f3b41c9e7456db1d8f9c0a1b2e84b"   # ScriptableEventBootStatusRequest asset
 
 # Bootstrap.unity, measured 2026-10-15.
@@ -106,6 +131,7 @@ WIN_W, PAD = 600, 34
 INNER = WIN_W - 2 * PAD
 # The sign-in window (R9Chooser): rows from STACK_TOP, ROW_GAP apart; SignInChooser re-lays them at runtime.
 STACK_TOP, ROW_GAP, BTN_H, OR_H, HINT_H, STATUS_H = 166, 14, 60, 20, 22, 44
+NOTE_H = 40   # R9b: "Steam is not running" above the buttons
 PROGRESS_H, AUTO_H = 360, 250
 AUTH_H, NAME_H, RETRY_H = 330, 440, 250
 RULES = 4                      # DisplayNameRuleState.Count
@@ -333,6 +359,24 @@ def icon_button(k, name, r, variant, caption, icon=None, cap=None, align=3, sub=
     return n
 
 
+def brand_button(k, name, r, sprite):
+    """R9b: a provider's own sign-in button image, untouched (KitBrandButton never tints it), with the kit's sky-blue
+    focus ring drawn AROUND it - the ring rect is 6 px larger on every side, so it never covers the artwork."""
+    n = N(k, name, r)
+    ring = n.child(N(f"{k}/FocusRing", "FocusRing", R((0, 0), (1, 1), (0, 0), (12, 12))))
+    ring.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("Selection", 0.0), K.kit_sprite("kit_sliver10_line2"), True))
+    face_ = n.child(N(f"{k}/Face", "Face", STRETCH))
+    face_.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1, 1, 1, 1), sprite, raycast=True, preserve=True))
+    n.add("button", 114, lambda ctx, go: K.mono(go, S["brand"],
+        K.SELECTABLE_FIELDS
+        + f"  m_TargetGraphic: {{fileID: {ctx.c(f'{k}/Face', 'img')}}}\n"
+        "  m_OnClick:\n    m_PersistentCalls:\n      m_Calls: []\n"
+        f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {{fileID: {ctx.c(f'{k}/FocusRing', 'img')}}}\n"
+        "  focusRingToken: 17\n"
+        f"  face: {{fileID: {ctx.c(f'{k}/Face', 'img')}}}\n"))
+    return n
+
+
 def bare_window(key, r):
     """A slivered style-B window: fill, border and corner brackets (author_start_flow.window without its
     eyebrow and title - each of the sign-in window's faces carries its own)."""
@@ -369,10 +413,11 @@ def spinner_line(f, key, top):
 
 def chooser_rows():
     """The CHOOSE face's rows below the body, top-down, as the board lays them out with every provider shown."""
-    y, rows = STACK_TOP, []
-    for name, _, _ in PROVIDERS:
-        rows.append((f"SignIn/Choose/{name}", y, BTN_H))
-        y += BTN_H + ROW_GAP
+    y, rows = STACK_TOP, [("SignIn/Choose/SilentNote", STACK_TOP, NOTE_H)]
+    y += NOTE_H + ROW_GAP
+    for name, _ in CHOOSER:
+        rows.append((f"SignIn/Choose/{name}", y, BRAND_H))
+        y += BRAND_H + ROW_GAP
     for key, h in (("SignIn/Choose/Or", OR_H), ("SignIn/Choose/Guest", BTN_H), ("SignIn/Choose/Hint", HINT_H), ("status", STATUS_H)):
         rows.append((key, y, h))
         y += h + ROW_GAP
@@ -387,9 +432,12 @@ def auth_window():
     ch = face(w, "SignIn/Choose", True)
     heading(ch, "SignIn/Choose", "Welcome, pilot", "Cta", "Sign in to fly", "H1",
             "Your pilot, crystals and vessels follow you to every device you sign in on.")
-    for name, _, icon in PROVIDERS:
-        ch.child(icon_button(f"SignIn/Choose/{name}", f"{name}Button", TL(PAD, at[f"SignIn/Choose/{name}"], INNER, BTN_H),
-                             "Default", f"Continue with {name}", icon=icon))
+    H.label(ch.child(N("SignIn/Choose/SilentNote", "SilentNote", TL(PAD, at["SignIn/Choose/SilentNote"], INNER, NOTE_H), active=False)),
+            "Steam is not running. Start Steam to sign in with it, or pick a way below.", "BodySmall", "ElementCharge",
+            valign="top", wrap=True)
+    for name, _ in CHOOSER:
+        ch.child(brand_button(f"SignIn/Choose/{name}", f"{name}Button",
+                              TL((WIN_W - BRAND_W) / 2, at[f"SignIn/Choose/{name}"], BRAND_W, BRAND_H), brand_sprite(f"{name.lower()}Button")))
     orr = ch.child(N("SignIn/Choose/Or", "Or", TL(PAD, at["SignIn/Choose/Or"], INNER, OR_H)))
     for side, amin, amax, pos in (("L", (0, 0.5), (0.5, 0.5), (-14, 0)), ("R", (0.5, 0.5), (1, 0.5), (14, 0))):   # 24 px clear round "or"
         rule = orr.child(N(f"SignIn/Choose/Or/{side}", f"Rule{side}", R(amin, amax, (pos[0] * 6 / 7, 0), (-24, 1))))
@@ -410,10 +458,9 @@ def auth_window():
 
     au = face(w, "SignIn/Auto", False)
     H.label(au.child(N("SignIn/Auto/Eyebrow", "Eyebrow", TL(PAD, 30, INNER, 20))), "Welcome back, pilot", "Label", "Cta")
-    mk = au.child(N("SignIn/Auto/Mark", "Mark", TL(PAD, 66, 64, 64)))
-    mk.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight"), K.chrome_sprite("chrome_provider_steam"), preserve=True))
-    H.label(au.child(N("SignIn/Auto/Name", "Name", TL(PAD + 84, 70, INNER - 84, 34))), "", "H2", "TextLight")
-    H.label(au.child(N("SignIn/Auto/Caption", "Caption", TL(PAD + 84, 108, INNER - 84, 20))), "Steam account", "Label", "Cta")
+    # R9b: no Steam mark (Valve allows only its approved artwork); the account name and caption carry the card.
+    H.label(au.child(N("SignIn/Auto/Name", "Name", TL(PAD, 70, INNER, 34))), "", "H2", "TextLight")
+    H.label(au.child(N("SignIn/Auto/Caption", "Caption", TL(PAD, 108, INNER, 20))), "Steam account", "Label", "Cta")
     spinner_line(au, "SignIn/Auto", 152)
     au.child(icon_button("SignIn/Auto/OtherWays", "OtherWaysButton", TL(PAD, 190, 300, 36), "Cancel", "Other ways to sign in"))
 
@@ -432,8 +479,10 @@ def chooser_body(ctx):
             f"  chooseGroup: {{fileID: {c('SignIn/Choose', 'cg')}}}\n"
             "  providerButtons:\n" + "".join(
                 f"  - provider: {v}\n    button: {{fileID: {c(f'SignIn/Choose/{n}', 'button')}}}\n"
-                f"    mark: {{fileID: {c(f'SignIn/Choose/{n}/Mark', 'img')}}}\n" for n, v, _ in PROVIDERS)
-            + f"  orRule: {{fileID: {ctx.rt('SignIn/Choose/Or')}}}\n"
+                f"    mark: {{fileID: {c(f'SignIn/Choose/{n}/Face', 'img')}}}\n" for n, v in CHOOSER)
+            + f"  silentNoteRow: {{fileID: {ctx.rt('SignIn/Choose/SilentNote')}}}\n"
+            f"  silentNoteText: {{fileID: {c('SignIn/Choose/SilentNote', 'tmp')}}}\n"
+            f"  orRule: {{fileID: {ctx.rt('SignIn/Choose/Or')}}}\n"
             f"  guestRow: {{fileID: {ctx.rt('SignIn/Choose/Guest')}}}\n"
             "  trailingRows:\n" + "".join(
                 f"  - {{fileID: {AU['login_status_rt'] if k == 'status' else ctx.rt(k)}}}\n" for k in trailing)
@@ -449,7 +498,7 @@ def chooser_body(ctx):
             f"  secondaryLabel: {{fileID: {c('SignIn/Progress/Secondary/Label', 'tmp')}}}\n"
             f"  guestLinkButton: {{fileID: {c('SignIn/Progress/Guest', 'button')}}}\n"
             f"  autoGroup: {{fileID: {c('SignIn/Auto', 'cg')}}}\n"
-            f"  autoMark: {{fileID: {c('SignIn/Auto/Mark', 'img')}}}\n"
+            "  autoMark: {fileID: 0}\n"
             f"  autoName: {{fileID: {c('SignIn/Auto/Name', 'tmp')}}}\n"
             f"  autoCaption: {{fileID: {c('SignIn/Auto/Caption', 'tmp')}}}\n"
             f"  autoLine: {{fileID: {c('SignIn/Auto/Waiting/Line', 'tmp')}}}\n"
@@ -458,10 +507,11 @@ def chooser_body(ctx):
 
 def providers_asset():
     """SignInProviders.asset: the platforms' orders (Steam / Google / Apple on desktop; Apple first on iPhone,
-    Google first on Android), Steam as the desktop's silent provider, the stand-in marks."""
+    Google first on Android), Steam as the desktop's silent provider, the providers' own button art and logo-only marks
+    (R9b; Steam's mark stays empty - Valve allows only its approved artwork)."""
     def order(name, vals):
         return f"  {name}:\n" + "".join(f"  - {v}\n" for v in vals)
-    marks = {n: K.sprite_ref(K.chrome_sprite(icon)) for n, _, icon in PROVIDERS}
+    art = {f: K.sprite_ref(brand_sprite(f)) for f in BRANDS}
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
@@ -469,7 +519,8 @@ def providers_asset():
             "  m_Name: SignInProviders\n  m_EditorClassIdentifier: \n"
             + order("desktopOrder", (2, 3, 4)) + order("iPhoneOrder", (4, 3)) + order("androidOrder", (3, 4)) + order("webOrder", (3, 4))
             + "  desktopSilentProvider: 2\n"
-            f"  steamMark: {marks['Steam']}\n  googleMark: {marks['Google']}\n  appleMark: {marks['Apple']}\n"
+            f"  googleButton: {art['googleButton']}\n  appleButton: {art['appleButton']}\n"
+            f"  steamMark: {{fileID: 0}}\n  googleMark: {art['googleMark']}\n  appleMark: {art['appleMark']}\n"
             "  showUnavailableInDevBuilds: 1\n  editorPreview: 0\n")
 
 
@@ -528,6 +579,15 @@ def auth_text(text_):
     if p.sc.has(legacy):
         reparent(p, I["login_status_rt"], I["auth_rt"])
         remove_go(p, legacy)
+    # R9b retired the Steam button, the AUTO card's Steam mark and the kit-button parts of the Google / Apple rows
+    # (they became the providers' own images): delete them, since emitting over the committed scene keeps what it no
+    # longer writes.
+    for key in R9B_RETIRED_GOS:
+        remove_go(p, str(p.ctx.go(key)))
+    for key, comp in R9B_RETIRED_COMPONENTS:
+        fid = str(p.ctx.c(key, comp))
+        if p.sc.has(fid):
+            p.sc.remove(fid)
     aw = auth_window()
     (win_rt,) = emit_under(p, I["auth_rt"], [aw], I["auth_rt"], lambda rts: rts)
     for f in ("SignIn/Progress", "SignIn/Auto"):
@@ -627,6 +687,20 @@ def check_scene_links(path, text_):
                 assert f"m_TransformParent: {{fileID: {fid}}}" in sc.docs[pid], f"{path}: instance {pid} under {fid} names another parent"
             else:
                 assert f"  m_Father: {{fileID: {fid}}}" in kd, f"{path}: child {kid} of {fid} names another father"
+    # The other direction: nothing left behind by a retired node (a transform its father does not list, or a
+    # component its GameObject does not list) - emitting over the committed scene keeps what it no longer writes.
+    for fid, d in sc.docs.items():
+        if "stripped" in d.split("\n", 1)[0]:
+            continue
+        m = re.search(r"^  m_Father: \{fileID: (-?\d+)\}", d, re.M)
+        if d.startswith("--- !u!224 ") and m and m.group(1) != "0" and m.group(1) in sc.docs \
+                and "stripped" not in sc.docs[m.group(1)].split("\n", 1)[0]:
+            assert f"{{fileID: {fid}}}" in (re.search(r"^  m_Children:\n((?:  - .*\n)*)", sc.docs[m.group(1)], re.M) or [None, ""])[1], \
+                f"{path}: transform {fid} is not among its father's children (a node left behind)"
+        g = re.search(r"^  m_GameObject: \{fileID: (-?\d+)\}", d, re.M)
+        if g and g.group(1) != "0" and g.group(1) in sc.docs and not d.startswith("--- !u!1 ") \
+                and "stripped" not in sc.docs[g.group(1)].split("\n", 1)[0]:   # a component added to an instance
+            assert f"component: {{fileID: {fid}}}" in sc.docs[g.group(1)], f"{path}: component {fid} is not on its GameObject's list (left behind)"
     return sc
 
 
@@ -692,10 +766,25 @@ def validate(files):
     for f in ("window", "chooseGroup", "progressGroup", "autoGroup", "orRule", "guestRow", "primaryButton", "secondaryButton",
               "guestLinkButton", "progressLine", "spinner", "autoName", "otherWaysButton"):
         assert field_ref(cd, f) != "0" and au.has(field_ref(cd, f)), f"SignInChooser.{f} is not wired"
-    buttons = re.findall(r"  - provider: (\d+)\n    button: \{fileID: (-?\d+)\}", cd)
-    assert sorted(int(v) for v, _ in buttons) == [2, 3, 4], "SignInChooser needs one button each for Steam, Google and Apple"
-    for _, b in buttons:
-        assert f"guid: {S['kitbutton']}" in au.docs.get(b, ""), "a provider button is not a KitButton"
+    # R9b: Google and Apple only (Steam signs in on its own), each the provider's own artwork, untinted, ring outside.
+    buttons = re.findall(r"  - provider: (\d+)\n    button: \{fileID: (-?\d+)\}\n    mark: \{fileID: (-?\d+)\}", cd)
+    assert sorted(int(v) for v, _, _ in buttons) == [3, 4], "SignInChooser needs exactly one button each for Google and Apple (no Steam button: R9b)"
+    for v, b, face_ in buttons:
+        bd = au.docs.get(b, "")
+        assert f"guid: {S['brand']}" in bd, "a provider button is not a KitBrandButton (its artwork would be tinted)"
+        fd = au.docs.get(face_, "")
+        want = brand_sprite("googleButton" if v == "3" else "appleButton")
+        assert f"  m_Sprite: {K.sprite_ref(want)}" in fd, "a provider button does not show its provider's own button image"
+        assert "  m_Color: {r: 1, g: 1, b: 1, a: 1}\n" in fd, "a provider's button image is tinted"
+        assert f"  face: {{fileID: {face_}}}" in bd, "KitBrandButton.face is not the button image"
+        ring = field_ref(bd, "focusRing")
+        rd = au.docs.get(au.rect_of(au.go_of(ring)), "")
+        m = re.search(r"  m_SizeDelta: \{x: ([\d.]+), y: ([\d.]+)\}", rd)
+        assert m and float(m.group(1)) > 0 and float(m.group(2)) > 0, "the focus ring sits on the provider's artwork, not around it"
+    note = field_ref(cd, "silentNoteRow")
+    assert note != "0" and field_ref(cd, "silentNoteText") != "0", "SignInChooser has no Steam-not-running note"
+    assert au.field(au.go_of(note), "m_IsActive") == "0", "the Steam-not-running note ships shown"
+    assert field_ref(cd, "autoMark") == "0", "the AUTO card carries a Steam mark (Valve allows only its approved artwork)"
     trailing = re.search(r"^  trailingRows:\n((?:  - .*\n)*)", cd, re.M)
     assert trailing and f"{{fileID: {AU['login_status_rt']}}}" in trailing.group(1), "the controller's status line is not a chooser row"
     for f in ("progressGroup", "autoGroup"):
@@ -710,8 +799,14 @@ def validate(files):
     assert "  desktopOrder:\n  - 2\n  - 3\n  - 4\n" in a and "  iPhoneOrder:\n  - 4\n" in a and "  androidOrder:\n  - 3\n" in a, \
         "the platform orders differ from the approved boards (Steam, Google, Apple; Apple first on iPhone; Google first on Android)"
     assert "  desktopSilentProvider: 2\n" in a, "Steam no longer signs the player in on its own on desktop"
-    for n in ("steamMark", "googleMark", "appleMark"):
-        assert re.search(r"^  %s: \{fileID: 21300000, guid: \w{32}, type: 3\}" % n, a, re.M), f"SignInProviders.{n} has no sprite"
+    for f in BRANDS:
+        assert f"  {f}: {K.sprite_ref(brand_sprite(f))}\n" in a, f"SignInProviders.{f} is not the provider's own artwork"
+    assert "  steamMark: {fileID: 0}\n" in a, "SignInProviders.steamMark is set: only Valve-approved Steam artwork may go there"
+    for f, (name, sha) in BRANDS.items():
+        data = files.get(f"{BRAND_DIR}/{name}")
+        if data is None:
+            data = open(os.path.join(REPO, BRAND_DIR, name), "rb").read()
+        assert hashlib.sha256(data).hexdigest() == sha, f"{name} is not the provider's file byte for byte (re-exported, cropped or recoloured?)"
     # Privacy
     for f, sprite in PRIVACY_SPRITES:
         assert f"  {f}: {K.sprite_ref(K.kit_sprite(sprite))}" in files[PRIVACY], f"PrivacyConsentConfig.{f} is not set"
@@ -727,6 +822,13 @@ def _show_face(text_, field):
     i = text_.index(f" &{cg}\n")
     j = text_.find("\n--- ", i)
     return text_[:i] + text_[i:j].replace("  m_Alpha: 0\n", "  m_Alpha: 1\n").replace("  m_BlocksRaycasts: 0\n", "  m_BlocksRaycasts: 1\n") + text_[j:]
+
+
+def _tint_face(text_):
+    face_ = re.search(r"  - provider: 3\n    button: \{fileID: -?\d+\}\n    mark: \{fileID: (-?\d+)\}", text_).group(1)
+    i = text_.index(f" &{face_}\n")
+    j = text_.find("\n--- ", i)
+    return text_[:i] + text_[i:j].replace("  m_Color: {r: 1, g: 1, b: 1, a: 1}", "  m_Color: {r: 0.24, g: 0.7, b: 1, a: 1}") + text_[j:]
 
 
 def self_test(files):
@@ -771,6 +873,15 @@ def self_test(files):
         ("the controller lost its chooser", edit_doc(AUTH, AU["ctrl"], lambda d: re.sub(r"(  signInChooser: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d))),
         ("the PROGRESS face ships shown", lambda f: f.__setitem__(AUTH, _show_face(f[AUTH], "progressGroup"))),
         ("a provider button missing", lambda f: f.__setitem__(AUTH, re.sub(r"  - provider: 4\n    button: \{fileID: -?\d+\}\n    mark: \{fileID: -?\d+\}\n", "", f[AUTH]))),
+        ("a retired component left behind", lambda f: f.__setitem__(AUTH, f[AUTH] + (
+            "--- !u!114 &999000111\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_GameObject: {fileID: %s}\n  m_Enabled: 1\n"
+            % AU["auth_go"]))),
+        ("a Steam button back in the chooser", lambda f: f.__setitem__(AUTH, f[AUTH].replace(
+            "  providerButtons:\n", "  providerButtons:\n  - provider: 2\n    button: {fileID: 0}\n    mark: {fileID: 0}\n", 1))),
+        ("Google's button image tinted", lambda f: f.__setitem__(AUTH, _tint_face(f[AUTH]))),
+        ("Apple's artwork altered", lambda f: f.__setitem__(f"{BRAND_DIR}/{BRANDS['appleButton'][0]}", b"\x89PNG recoloured")),
+        ("a stand-in Steam mark", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace(
+            "  steamMark: {fileID: 0}", "  steamMark: " + K.sprite_ref(K.chrome_sprite("chrome_provider_steam"))))),
         ("Steam no longer silent", lambda f: f.__setitem__(PROVIDERS_ASSET, f[PROVIDERS_ASSET].replace("desktopSilentProvider: 2", "desktopSilentProvider: 0"))),
         ("the rule ticks judge another field", lambda f: f.__setitem__(AUTH, re.sub(r"(  input: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[AUTH], count=1))),
     ]

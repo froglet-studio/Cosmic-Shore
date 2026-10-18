@@ -476,6 +476,23 @@ links. The section headings are now sentence case ("Middleware").
 * **Entitlement.** The register proves *presence*; §0 rows 2–8 are still the money-side questions,
   and a credits line is not a licence.
 
+## §7.1 · Provider brand artwork — sign-in buttons (added 18 Oct 2026)
+
+Four images in `Assets/_Graphics/UI/Brands/`, shipped in every build that contains `Authentication.unity` or the
+settings window (`SignInProviders.asset`). Added at the owner's request ("add the official logos", Shombith,
+2026-10-18; Docs/MENU_REDESIGN_B.md §57). Each file is the provider's download byte for byte; `author_start_flow.py`
+pins their SHA-256.
+
+| File | Source | Terms | Notes |
+|---|---|---|---|
+| `google_signin_dark_pill.png`, `google_logo_dark_pill.png` | Google's Sign in with Google branding kit (`signin-assets.zip`, developers.google.com/identity/branding-guidelines), Android + Web / PNG @4x / Dark | Google's Sign in with Google branding guidelines: use the pre-approved button images unmodified, standard-colour G, approved call to action | No licence file ships inside the zip; the guidelines page is the terms. |
+| `apple_signin_white_pill.png`, `apple_logo_white_pill.png` | Apple's Sign in with Apple button image service (`appleid.cdn-apple.com/appleid/button`, `.../button/logo`), white, radius 50 %, 4x | Apple Human Interface Guidelines, Sign in with Apple; App Review checks the button | **Not** the Apple Design Resources logo files: that download's licence permits only mock-ups for Apple-only software and forbids embedding, so it was not used. |
+
+**Entitlement question for a human:** none expected, but the Apple button is used on Windows / Android / web too; if
+App Review or Apple's terms for Sign in with Apple JS ask for its own rendered button on those platforms, the login
+branch should switch to it. **Steam**: no artwork is shipped (Valve allows only its approved artwork); the Account row
+shows no mark.
+
 ## §8 · Credentials
 
 Swept by **location and filename only — no values were read or printed.**

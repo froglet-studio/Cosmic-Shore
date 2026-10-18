@@ -6,7 +6,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Which sign-in providers each platform offers, in what order, and which one signs the player in on its own
-    /// (Docs/MENU_REDESIGN_B.md §54, the approved Rev 9 boards). Read by the sign-in scene's
+    /// (Docs/MENU_REDESIGN_B.md §54, the approved Rev 9 boards; §57 R9b). Read by the sign-in scene's
     /// <see cref="SignInChooser"/> and the settings window's <see cref="AccountSettingsView"/>. A provider shows only
     /// when the build can use it (<see cref="IPlatformSignIn.IsAvailable"/>), except in the editor and development
     /// builds when <see cref="showUnavailableInDevBuilds"/> is on, so the screens can be tried before the providers work.
@@ -42,9 +42,17 @@ namespace CosmicShore.UI
                  "None always shows the chooser.")]
         [SerializeField] SignInProvider desktopSilentProvider = SignInProvider.Steam;
 
-        [Header("Marks")]
-        [Tooltip("Each provider's mark on its buttons. The shipped sprites are stand-ins; the providers' brand rules ask for " +
-                 "their official marks, which the login branch puts here.")]
+        [Header("Sign-in buttons (the providers' own artwork, never restyled)")]
+        [Tooltip("The sign-in window's button face per provider (Docs/MENU_REDESIGN_B.md §57, R9b): Google's dark " +
+                 "\"Sign in with Google\" image from its branding kit, Apple's white \"Sign in with Apple\" image from its " +
+                 "button image service, both untouched. Steam has none: a Steam build signs in on its own, and Valve allows " +
+                 "only its approved artwork.")]
+        [SerializeField] Sprite googleButton;
+        [SerializeField] Sprite appleButton;
+
+        [Header("Marks (Settings > Account rows)")]
+        [Tooltip("Each provider's logo-only button beside its Account row. Empty shows no mark - Steam's stays empty until " +
+                 "Valve-approved artwork is added.")]
         [SerializeField] Sprite steamMark;
         [SerializeField] Sprite googleMark;
         [SerializeField] Sprite appleMark;
@@ -83,6 +91,13 @@ namespace CosmicShore.UI
         };
 
         public SignInProvider SilentProvider => CurrentGroup == PlatformGroup.Desktop ? desktopSilentProvider : SignInProvider.None;
+
+        public Sprite ButtonFor(SignInProvider provider) => provider switch
+        {
+            SignInProvider.Google => googleButton,
+            SignInProvider.Apple => appleButton,
+            _ => null,
+        };
 
         public Sprite MarkFor(SignInProvider provider) => provider switch
         {

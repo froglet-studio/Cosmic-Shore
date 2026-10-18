@@ -807,7 +807,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 ### T-20261017-61b1 · open · dev · Cloud Save
 - **Task:** Move UGSCloudSaveProvider's 'Failed to save data: {error}' toast to an authored line: the provider is plain C# (no inspector), so the words need a home such as a small Resources SO or the existing cloud-data config
 - **Done when:** No C# string literal in UGSCloudSaveProvider reaches ToastNotificationAPI.Show
-- **Who can take it:** Yash (Cloud Save owner)
+- **Who can take it:** Shombith (owns cloud and backend services and data); Yash (offered)
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** CLAUDE.md Code Style: player-facing text has a human-facing control
 
@@ -840,7 +840,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/MENU_REDESIGN_B.md §54
 
 ### T-20261018-6b30 · open · dev · Sign-in
-- **Task:** Implement IPlatformSignIn (Assets/_Scripts/System/Systems/Authentication/IPlatformSignIn.cs) for Steam, Google and Apple over AuthenticationServiceFacade, replace NoPlatformSignIn's registration in AppManager, and drop the providers' official marks into Assets/_SO_Assets/UI/SignInProviders.asset (the shipped marks are stand-ins). The UI is built (Docs/MENU_REDESIGN_B.md §54); no new SDK without asking Shombith
+- **Task:** Implement IPlatformSignIn (Assets/_Scripts/System/Systems/Authentication/IPlatformSignIn.cs) for Steam, Google and Apple over AuthenticationServiceFacade, replace NoPlatformSignIn's registration in AppManager, (the providers' own button art is already in Assets/_SO_Assets/UI/SignInProviders.asset, R9b §57; Steam's Account mark stays empty until Valve-approved artwork is added). The UI is built (Docs/MENU_REDESIGN_B.md §54, §57); no new SDK without asking Shombith
 - **Done when:** a Windows build signs in with Steam silently, the chooser signs in with Google and Apple, linking keeps a guest's progress and the conflict window appears for an already-owned account
 - **Who can take it:** whoever runs the login-system chat (Shombith to assign)
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
@@ -880,3 +880,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** aradia1 (FMOD project); Shombith to confirm
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §56
+
+### T-20261018-fab2 · open · test · Sign-in
+- **Task:** Hand-test R9b: Google's and Apple's own sign-in buttons (same size, untinted, sky-blue ring around on pad focus), no Steam button, the Steam-not-running note, Settings > Account marks
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'R9b' steps 1-6 pass in the editor
+- **Who can take it:** Shombith; Yash (offered)
+- **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §57
