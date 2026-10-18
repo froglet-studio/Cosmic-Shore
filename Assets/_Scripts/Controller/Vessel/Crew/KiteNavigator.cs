@@ -121,7 +121,12 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<IVesselStatus, float> _lastRam = new();
         readonly Queue<(Vector3 pos, Quaternion rot)> _massQueue = new();
 
-        float _charge, _boostEnergy;
+        float _charge, _boostEndsAt, _massFlashAt = -99f;
+        int _savedBoosts, _lastBlastDestroyed;
+        // the last Space blast's hostile prisms, watched until the blast has run its course, to count what it destroyed
+        readonly List<Prism> _blastWatch = new();
+        readonly HashSet<Prism> _blastCounted = new();
+        float _blastWatchUntil;
         bool _humanNavigates, _weTookHull, _down, _boosting;
         float _swapReadyAt, _boostReadyAt, _omniUntil, _boardScale = 1f;
         KiteVec _aim;
@@ -135,7 +140,16 @@ namespace CosmicShore.Gameplay
         internal KiteNavigatorCore Kite => _kite;
         internal Domains OwnDomain => _status != null ? _status.Domain : Domains.Jade;
         internal float Charge => _charge;
-        internal float BoostEnergy => _boostEnergy;
+        /// <summary>Boosts the navigator's Time loops have saved for the pilot.</summary>
+        public int SavedBoosts => _savedBoosts;
+        /// <summary>Rams the kite holds power for (whole petals of Charge).</summary>
+        public int Charges => Mathf.FloorToInt(_charge);
+        /// <summary>Prisms the last Space blast destroyed (counting up while it runs).</summary>
+        public int LastBlastDestroyed => _lastBlastDestroyed;
+        /// <summary>Time.time of the last Mass cluster laid (the HUD flashes the Mass icon).</summary>
+        public float MassFlashAt => _massFlashAt;
+        /// <summary>The most boosts the pilot can hold: timeBoostCap seconds of 1.5 s boosts.</summary>
+        int MaxSavedBoosts => Mathf.Max(1, Mathf.FloorToInt(_cfg.TimeBoostCap / Mathf.Max(0.05f, _cfg.TimeBoostSeconds)));
         internal bool Down => _down;
         internal KiteVec Aim => _aim;
         internal Vector3 BoardRight => _r;
@@ -202,7 +216,7 @@ namespace CosmicShore.Gameplay
             _snapped = false;
             _humanNavigates = _weTookHull = _down = _boosting = false;
             Motes.Clear(); Effects.Clear(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
-            _charge = 0f; _boostEnergy = 0f; _boostReadyAt = 0f; _omniUntil = 0f; _boardScale = 1f;
+            _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _boostReadyAt = 0f; _omniUntil = 0f; _boardScale = 1f;
             if (_active && _active != this) Destroy(_active);
             _active = this;
             _view = new KiteNavigatorView(this);
@@ -249,6 +263,7 @@ namespace CosmicShore.Gameplay
             if (_kite.AdvanceTail(_s, _loop)) CloseLoop(_loop);
 
             StepBoost(dt);
+            CountBlast();
             LayMassQueue();
             PruneEffects();
         }
@@ -752,6 +767,7 @@ namespace CosmicShore.Gameplay
         {
             float maxScale = KiteNavigatorCore.Grow(_cfg.SpaceMaxScale, n, _cfg.Growth, _cfg.SpaceMaxScaleCap);
             Effects.Add(new Fx { Kind = FxKind.Space, X = c.X, Z = c.Z, T0 = Time.time, MaxScale = maxScale });
+            WatchBlast(at, 0.5f * maxScale);
 
             var prefabs = _cfg.SpaceExplosions;
             if (prefabs is not { Length: > 0 }) return;
@@ -776,6 +792,36 @@ namespace CosmicShore.Gameplay
                 DevastatingOverride = breaker ? true : null,
             };
             ExplosionHelper.CreateExplosion(prefabs, init, impactor ? impactor.DIContainer : null);
+        }
+
+        // The Space icon shows what the last blast destroyed: its hostile prisms are watched while it runs, and each one that
+        // goes is counted once (a pooled prism reused later cannot be counted twice, or uncounted).
+        void WatchBlast(Vector3 centre, float radius)
+        {
+            _blastWatch.Clear();
+            _blastCounted.Clear();
+            _lastBlastDestroyed = 0;
+            _blastWatchUntil = Time.time + BlastDelay + BlastDuration + 0.3f;
+            var index = PrismSpatialIndex.Instance;
+            if (!index || !index.IsAvailable) return;
+            _query.Clear();
+            index.QuerySphere(centre, radius, _query);
+            var own = OwnDomain;
+            foreach (var p in _query)
+                if (p && !p.destroyed && p.Domain != own) _blastWatch.Add(p);
+        }
+
+        void CountBlast()
+        {
+            if (_blastWatch.Count == 0) return;
+            for (int i = _blastWatch.Count - 1; i >= 0; i--)
+            {
+                var p = _blastWatch[i];
+                if (p && !p.destroyed) continue;
+                if (_blastCounted.Add(p)) _lastBlastDestroyed++;
+                _blastWatch.RemoveAt(i);
+            }
+            if (Time.time > _blastWatchUntil) _blastWatch.Clear();
         }
 
         void DropSuperShields(Vector3 centre, float radius)
@@ -804,6 +850,7 @@ namespace CosmicShore.Gameplay
                 _massQueue.Enqueue((at + dir * d, Quaternion.LookRotation(RandomUnit(), RandomUnit())));
             }
             AddFx(FxKind.Mass, c.X, c.Z);
+            _massFlashAt = Time.time;
             Play(_cfg.MassClusterSfx, at);
         }
 
@@ -845,31 +892,33 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // TIME: boost for the pilot, spent when the pilot lifts their thumb
+        // TIME: boosts saved for the pilot. A loop of n motes saves growth^(n-1) boosts of timeBoostSeconds each - the lab's
+        // timeBoost x growth^(n-1) seconds, in whole boosts the pilot spends one at a time (the Time icon counts them)
         void FireTime(int n, KiteVec c, Vector3 at)
         {
-            float s = KiteNavigatorCore.Grow(_cfg.TimeBoostSeconds, n, _cfg.Growth, _cfg.TimeBoostCap);
-            _boostEnergy = Mathf.Min(_cfg.TimeBoostCap, _boostEnergy + s);
+            int boosts = Mathf.Max(1, Mathf.RoundToInt(KiteNavigatorCore.Grow(1f, n, _cfg.Growth, MaxSavedBoosts)));
+            _savedBoosts = Mathf.Min(MaxSavedBoosts, _savedBoosts + boosts);
             AddFx(FxKind.Time, c.X, c.Z);
             Play(_cfg.TimeBoostSfx, at);
         }
 
-        // The pilot flies with one thumb and spends the navigator's Time gift on the trigger (PilotWantsBoost). A boost runs
-        // while it is held and the gift lasts; the next one waits boostCooldown after it ends, no wait at all at Time L5.
-        // With the AI on the hull (the human navigating), it spends the gift as it comes.
+        // The pilot spends a saved boost on the trigger (PilotWantsBoost): it runs timeBoostSeconds, the next waits
+        // boostCooldown after it ends (none at Time L5), and holding the trigger chains them. With the AI on the hull (the
+        // human navigating), it spends them as they come.
         void StepBoost(float dt)
         {
-            bool want = _humanNavigates || PilotWantsBoost();
             if (_boosting)
             {
-                if (!want || _boostEnergy <= 0f) { EndBoost(); return; }
-                _boostEnergy = Mathf.Max(0f, _boostEnergy - dt);
+                if (Time.time >= _boostEndsAt) { EndBoost(); return; }
                 _status.IsBoosting = true;   // what a boost executor writes; the hull's own boostMultiplier applies
                 return;
             }
-            if (want && _boostEnergy > 0f && Time.time >= _boostReadyAt)
+            bool want = _humanNavigates || PilotWantsBoost();
+            if (want && _savedBoosts > 0 && Time.time >= _boostReadyAt)
             {
+                _savedBoosts--;
                 _boosting = true;
+                _boostEndsAt = Time.time + _cfg.TimeBoostSeconds;
                 _status.IsBoosting = true;
             }
         }

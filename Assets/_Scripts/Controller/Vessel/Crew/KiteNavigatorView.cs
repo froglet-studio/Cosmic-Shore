@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -40,6 +41,9 @@ namespace CosmicShore.Gameplay
         readonly Camera _cam;
         readonly Mesh _kiteMesh, _dotMesh, _ringMesh, _quadMesh;
         readonly Mesh[] _petals = new Mesh[4];
+        readonly Vector3[][] _outlines = new Vector3[4][];   // each petal's outline in its mesh's own space
+        static readonly Color Plasma = new(0.42f, 0.72f, 1f, 1f);   // the Charge crystal's blue plasma
+        readonly Material _plasmaMat;
         readonly Mesh _tailMesh, _loopMesh;
         readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat;
         readonly Material _tailMat, _loopMat;
@@ -76,7 +80,13 @@ namespace CosmicShore.Gameplay
             _dotMesh = BuildDisc(1f, 12);
             _ringMesh = BuildRing(1f, 0.08f, 48);
             _quadMesh = BuildQuad();
-            for (int e = 0; e < 4; e++) _petals[e] = BuildPetal((Element)(e + 1));
+            for (int e = 0; e < 4; e++)
+            {
+                _petals[e] = BuildPetal((Element)(e + 1));
+                var o = ElementPetalGeometry.Outline((Element)(e + 1));
+                _outlines[e] = new Vector3[o.Length];
+                for (int k = 0; k < o.Length; k++) _outlines[e][k] = new Vector3((o[k].x - 0.5f) * 2f, 0f, (o[k].y - 0.5f) * 2f);
+            }
             _tailMesh = new Mesh { name = "KiteTail" };
             _tailMesh.MarkDynamic();
             _loopMesh = new Mesh { name = "KiteLoops" };
@@ -93,6 +103,7 @@ namespace CosmicShore.Gameplay
             _limeFaintMat = Unlit(new Color(Lime.r, Lime.g, Lime.b, cfg.PilotDotAlpha));
             _ringMat = Unlit(new Color(1f, 1f, 1f, 0.85f));
             _goldMat = Unlit(Gold);
+            _plasmaMat = Unlit(Plasma);
         }
 
         internal Camera Camera => _cam;
@@ -145,7 +156,7 @@ namespace CosmicShore.Gameplay
             if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
             foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _quadMesh, _tailMesh, _loopMesh, _tailMat, _loopMat,
-                                             _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat })
+                                             _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat, _plasmaMat })
                 if (o) Object.Destroy(o);
             foreach (var g in _ghostMats.Values) if (g) Object.Destroy(g);
         }
@@ -253,15 +264,12 @@ namespace CosmicShore.Gameplay
             {
                 if (!KiteNavigatorCore.InDisc(s, mote.X, mote.Z)) continue;
                 var pos = _nav.BoardToWorld(mote.X, mote.Z);
-                Add(_limeMat, _petals[mote.Element], kite,
-                    Matrix4x4.TRS(pos + _nav.BoardUp * (lift - 0.2f), basis * Quaternion.Euler(0f, mote.Spin, 0f), Vector3.one * ms));
-                CrystalEffect(mote.Element, mote.X, mote.Z, mote.Spin, lift - 0.3f, ms, basis, now, kite);
+                Flower(mote.Element, mote.X, mote.Z, mote.Spin, lift - 0.2f, ms, basis, now, kite);
                 if (pilot) Add(_limeFaintMat, _dotMesh, pilot, Matrix4x4.TRS(pos, PilotFacing(pilot, pos), Vector3.one * cfg.PilotDotSize));
             }
 
-            // the pilot's navigator boost, as a ring of dots round the hull in the kite view
-            float boost = Mathf.Clamp01(_nav.BoostEnergy / Mathf.Max(0.01f, cfg.TimeBoostCap));
-            int bd = Mathf.CeilToInt(boost * 24f);
+            // the pilot's saved boosts, a dot each round the hull in the kite view
+            int bd = Mathf.Min(24, _nav.SavedBoosts);
             for (int i = 0; i < bd; i++)
             {
                 float a = Mathf.PI * 0.5f + i / 24f * Mathf.PI * 2f;
@@ -301,109 +309,83 @@ namespace CosmicShore.Gameplay
             DrawDynamic(_loopMesh, _loopMat, kite);
         }
 
-        // ------------------------------------------------------------------ the crystal effects (all lime)
+        // ------------------------------------------------------------------ the motes: five-petal flowers (all lime)
         //
-        // The motes are all lime and told apart by their petal shapes; each also wears a small, flat imitation of its
-        // element's CRYSTAL effect (Garrett, 2026-10-18: "they need effects that match their crystal effects"), from the
-        // shipped crystals' own numbers:
-        //   Charge - the seam walk (CrystalChargeArcs SeamWalk): a bolt hops seam to seam round a pentagon, a strike every
-        //            ~0.2 s (0.07 s strike + 0.1-0.28 s hold), the seams it struck thinning out behind it (0.85 s fade)
-        //   Mass   - the columns (CrystalDepthPrisms): six small triangles on spokes, each climbing out to 1.5x and down to
-        //            0.6 scale (the column top, _PlateScaleStart), then dropping back flush - the ratchet
-        //   Space  - the group spins (SpaceCrystalAnimator): five kites turn 72 deg in 1.0 s and hold 0.1 s, alternating
-        //            with an inner three turning 120 deg
-        //   Time   - the flip wave (CrystalFlipWave): a ring of diamonds flips 180 deg ring by ring on a 2 s loop
-        //            (ring k at 0.2 + 0.2k s, each flip 1.0 s eased), from a new start each loop
+        // Each mote is a flower of FIVE of its element's petals, 72 deg apart with their apexes at the centre, as the
+        // elemental bars draw an element (ElementalBarsConfigSO.PetalCount / PetalSpacing), so the element's motion reads
+        // (Garrett, 2026-10-18: "use all 5 petals for each of the kite elements like we do in the element amount indicator.
+        // then you can sell their effect better"):
+        //   Space  - the flower SPINS, the Space crystal's group spin: 72 deg in 1.0 s, then a 0.1 s hold
+        //   Time   - every petal FLIPS 180 deg about its own axis, petal by petal round the flower, on the Time crystal's 2 s
+        //            loop (each flip 1.0 s, eased)
+        //   Mass   - each petal moves IN and OUT along its spoke, the Mass crystal's columns: a slow climb, a quick drop
+        //   Charge - a BLUE plasma bolt runs the perimeter of each petal, the Charge crystal's seam walk along its edges
         // Each mote's Spin seeds its phase, so a cluster does not move in lockstep.
-        void CrystalEffect(int element, float x, float z, float seed, float height, float size, Quaternion basis, float now, Camera cam)
+        void Flower(int element, float x, float z, float seed, float height, float size, Quaternion basis, float now, Camera cam)
         {
-            float phase = seed / 360f;
-            var up = _nav.BoardUp * height;
-            Vector3 At(float ox, float oz) => _nav.BoardToWorld(x + ox, z + oz) + up;
-            switch (element)
+            const int petals = ElementalBarsConfigSO.PetalCount;
+            const float spacing = ElementalBarsConfigSO.PetalSpacing;
+            float phase = seed / 360f, p = size * 0.5f;       // a petal is 2p long: the flower's radius is 2p
+            var centre = _nav.BoardToWorld(x, z) + _nav.BoardUp * height;
+
+            float spin = seed;
+            if (element == 2)
             {
-                case 0:   // Charge: the seam walk
+                float cycle = now / 1.1f + phase * 3f;
+                int c = Mathf.FloorToInt(cycle);
+                spin += c * 72f + Mathf.Clamp01((cycle - c) * 1.1f) * 72f;
+            }
+
+            for (int i = 0; i < petals; i++)
+            {
+                float deg = spin + i * spacing, out1 = p;      // the petal's centre sits one half-length out: apex at the centre
+                float width = 1f;
+                if (element == 1)                               // Mass: in and out
                 {
-                    float r = size * 1.45f, step = 0.2f, t = now / step + phase * 7f;
-                    int s0 = Mathf.FloorToInt(t);
-                    for (int back = 0; back < 3; back++)
-                    {
-                        int n = s0 - back;
-                        int k = (int)((uint)(n * 2654435761u + (uint)(seed * 97f)) % 5u);
-                        float a0 = (k * 72f + seed) * Mathf.Deg2Rad, a1 = ((k + 1) * 72f + seed) * Mathf.Deg2Rad;
-                        Vector2 p0 = new(Mathf.Cos(a0) * r, Mathf.Sin(a0) * r), p1 = new(Mathf.Cos(a1) * r, Mathf.Sin(a1) * r);
-                        // the bolt bends: its middle pushed off the seam by a flicker
-                        var mid = (p0 + p1) * 0.5f;
-                        var n2 = new Vector2(-(p1.y - p0.y), p1.x - p0.x).normalized;
-                        mid += n2 * (Mathf.Sin(now * 31f + n * 1.7f) * 0.18f * size);
-                        float width = size * (back == 0 ? 0.16f : back == 1 ? 0.09f : 0.045f);
-                        Bar(At(p0.x, p0.y), At(mid.x, mid.y), width, cam);
-                        Bar(At(mid.x, mid.y), At(p1.x, p1.y), width, cam);
-                    }
-                    break;
+                    float u = Mathf.Repeat(now * 0.6f + phase + i * 0.37f, 1f);
+                    float climb = u < 0.85f ? u / 0.85f : 1f - (u - 0.85f) / 0.15f;
+                    out1 = p * (1f + 0.6f * climb);
                 }
-                case 1:   // Mass: the columns
+                else if (element == 3)                          // Time: every petal flips, one after another
                 {
-                    for (int i = 0; i < 6; i++)
-                    {
-                        float a = (i * 60f + seed) * Mathf.Deg2Rad;
-                        float u = Mathf.Repeat(now * 0.6f + phase + i * 0.37f, 1f);
-                        float climb = u < 0.85f ? u / 0.85f : 1f - (u - 0.85f) / 0.15f;   // a slow climb, a quick drop
-                        float reach = size * (1.05f + 0.5f * climb), scale = size * 0.32f * (1f - 0.4f * climb);
-                        var p = At(Mathf.Cos(a) * reach, Mathf.Sin(a) * reach);
-                        Add(_limeMat, _petals[1], cam, Matrix4x4.TRS(p, basis * Quaternion.Euler(0f, 90f - a * Mathf.Rad2Deg, 0f), Vector3.one * scale));
-                    }
-                    break;
+                    float tl = Mathf.Repeat(now / 2f + phase, 1f) * 2f;
+                    float u = Mathf.Clamp01((tl - (0.2f + 0.2f * i)) / 1.0f);
+                    width = Mathf.Max(0.05f, Mathf.Abs(Mathf.Cos(Mathf.PI * Mathf.SmoothStep(0f, 1f, u))));
                 }
-                case 2:   // Space: the group spins
-                {
-                    float cycle = now / 1.1f + phase * 3f;
-                    int c = Mathf.FloorToInt(cycle);
-                    float turn = Mathf.Clamp01((cycle - c) * 1.1f / 1.0f);
-                    float outer = (c / 2 * 72f) + (c % 2 == 0 ? turn * 72f : 72f);
-                    float inner = ((c + 1) / 2 * 120f) + (c % 2 == 1 ? turn * 120f : 0f);
-                    for (int i = 0; i < 5; i++)
-                    {
-                        float a = (i * 72f + outer + seed) * Mathf.Deg2Rad, r = size * 1.5f;
-                        Add(_limeMat, _petals[2], cam, Matrix4x4.TRS(At(Mathf.Cos(a) * r, Mathf.Sin(a) * r),
-                            basis * Quaternion.Euler(0f, 90f - a * Mathf.Rad2Deg, 0f), Vector3.one * size * 0.3f));
-                    }
-                    for (int i = 0; i < 3; i++)
-                    {
-                        float a = (i * 120f + inner + seed) * Mathf.Deg2Rad, r = size * 0.95f;
-                        Add(_limeMat, _petals[2], cam, Matrix4x4.TRS(At(Mathf.Cos(a) * r, Mathf.Sin(a) * r),
-                            basis * Quaternion.Euler(0f, 90f - a * Mathf.Rad2Deg, 0f), Vector3.one * size * 0.2f));
-                    }
-                    break;
-                }
-                default:  // Time: the flip wave
-                {
-                    float loop = now / 2f + phase;
-                    int l = Mathf.FloorToInt(loop);
-                    float tl = (loop - l) * 2f, start = (l * 137.5f + seed) % 360f;
-                    for (int i = 0; i < 8; i++)
-                    {
-                        float deg = i * 45f, a = deg * Mathf.Deg2Rad, r = size * 1.4f;
-                        float dist = Mathf.Abs(Mathf.DeltaAngle(deg, start)) / 45f;            // rings 0..4 from the start
-                        float u = Mathf.Clamp01((tl - (0.2f + 0.2f * dist)) / 1.0f);
-                        float flip = Mathf.Abs(Mathf.Cos(Mathf.PI * Mathf.SmoothStep(0f, 1f, u)));   // 180 deg about its diagonal
-                        var p = At(Mathf.Cos(a) * r, Mathf.Sin(a) * r);
-                        var rot = basis * Quaternion.Euler(0f, 90f - deg, 0f);
-                        Add(_limeMat, _petals[3], cam, Matrix4x4.TRS(p, rot, new Vector3(size * 0.28f * Mathf.Max(0.05f, flip), 1f, size * 0.28f)));
-                    }
-                    break;
-                }
+                float a = deg * Mathf.Deg2Rad;
+                var dir = _nav.BoardRight * Mathf.Sin(a) + _nav.BoardForward * Mathf.Cos(a);
+                var rot = basis * Quaternion.Euler(0f, deg, 0f);   // the petal's local +Z (tip) points along dir
+                var m = Matrix4x4.TRS(centre + dir * out1, rot, new Vector3(p * width, 1f, p));
+                Add(_limeMat, _petals[element], cam, m);
+                if (element == 0) PlasmaRun(m, now * 1.6f + phase + i * 0.2f, size, cam);
             }
         }
 
-        // a thin lime bar from a to b on the board (a struck seam)
-        void Bar(Vector3 a, Vector3 b, float width, Camera cam)
+        // Charge: a short blue bolt running round one petal's outline (its seam), a lap every 1/1.6 s, its tail thinning
+        void PlasmaRun(Matrix4x4 petal, float t, float size, Camera cam)
+        {
+            var outline = _outlines[0];
+            int n = outline.Length;
+            float u = Mathf.Repeat(t, 1f) * n;
+            for (int k = 0; k < 3; k++)
+            {
+                float uk = Mathf.Repeat(u - k * 0.35f, n);
+                int e = Mathf.FloorToInt(uk);
+                float f0 = uk - e, f1 = Mathf.Min(1f, f0 + 0.35f);
+                var a0 = Vector3.Lerp(outline[e], outline[(e + 1) % n], f0);
+                var a1 = Vector3.Lerp(outline[e], outline[(e + 1) % n], f1);
+                Bar(petal.MultiplyPoint3x4(a0), petal.MultiplyPoint3x4(a1), size * (k == 0 ? 0.11f : k == 1 ? 0.07f : 0.04f), _plasmaMat, cam);
+            }
+        }
+
+        // a thin bar from a to b on the board
+        void Bar(Vector3 a, Vector3 b, float width, Material mat, Camera cam)
         {
             var d = b - a;
             float len = d.magnitude;
             if (len < 1e-4f) return;
             var rot = Quaternion.LookRotation(d / len, _nav.BoardUp);
-            Add(_limeMat, _quadMesh, cam, Matrix4x4.TRS((a + b) * 0.5f, rot, new Vector3(width, 1f, len)));
+            Add(mat, _quadMesh, cam, Matrix4x4.TRS((a + b) * 0.5f, rot, new Vector3(width, 1f, len)));
         }
 
         // a dot faces the pilot camera, so it reads as a dot from any angle

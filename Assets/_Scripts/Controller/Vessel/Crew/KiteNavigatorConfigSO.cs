@@ -99,9 +99,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] Vector3 massPrismScale = new(2f, 2f, 5f);
         [Tooltip("Mass prisms laid per frame at most, so a big cluster grows in over a few frames instead of in one hitch.")]
         [SerializeField, Range(4, 200)] int massPrismsPerFrame = 40;
-        [Tooltip("lab timeBoost: seconds of boost one Time mote gives the pilot, spent on the pilot's trigger.")]
+        [Tooltip("lab timeBoost: one saved boost lasts this long (s). A Time loop of n motes saves growth^(n-1) of them, the " +
+                 "lab's timeBoost x growth^(n-1) seconds in whole boosts, spent one at a time on the pilot's trigger.")]
         [SerializeField, Min(0.05f)] float timeBoostSeconds = 1.5f;
-        [Tooltip("lab timeCap: the most boost the pilot can hold from the navigator (s).")]
+        [Tooltip("lab timeCap: the most boost the pilot can hold from the navigator (s): timeCap / timeBoost saved boosts.")]
         [SerializeField, Min(0.5f)] float timeBoostCap = 30f;
         [Tooltip("Seconds after a boost ends before the next can start. Time L5 removes the wait. The pilot boosts on the " +
                  "right trigger (the left mouse button with the one-stick mouse; lifting the thumb on a touch screen).")]
