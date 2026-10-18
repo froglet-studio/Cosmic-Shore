@@ -758,3 +758,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
+
+### T-20261018-d3e5 · open · test · Vessel colour
+- **Task:** Look at the new vessel colour scheme in the Editor: fly each domain (Jade, Ruby, Gold) at the chase camera and in the hangar on a few hulls (Squirrel, Rhino, Manta, Thresher). Check the body for self-overlap ghosting (it is transparent with no depth write and now has a visible steel rim), the Manta/Termite/Falcon/Rhino domain colour on their accents and the ember on their engines (brighter on boost), and that every class card and hangar preview shows the new silver-plate render.
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md's colour-scheme entry is ticked or an issue is filed; if the body ghosts, the hull moves to BlueBaseOpaqueVesselMaterial (Docs/VesselModels/COLOR.md section 6)
+- **Who can take it:** Yash (offered), anyone with the Editor; Garrett for the look
+- **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/COLOR.md
+
+### T-20261018-be55 · open · decision · Vessel colour
+- **Task:** Decide whether Jade's ship colours move from azure (hue 209, next to the neutral Blue windows and body at 220-232) to the teal of the palette's other Jade entries (about 177-182), and whether Gold's inverted rim/face (bright edge, dark face; Ruby and Jade run dark edge to bright face) should match the others. The UI reads the same ShipColor1/2, so it is a palette change, not a vessel one.
+- **Done when:** OriginalColorSetSO JadeColors/GoldColors updated (or kept) and the decision recorded in Docs/VesselModels/COLOR.md section 6
+- **Who can take it:** Garrett (colour language owner)
+- **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/COLOR.md section 6
+
+### T-20261018-a0e2 · open · dev · Vessel colour
+- **Task:** Move the Grizzly's jet renderers (Ship_Wedge_Jet_UL/UR/BL/BR and Ship_Wedge_Body slot 3) off LimeVesselMaterial onto EngineVesselMaterial: Lime is the call-to-action colour only, a jet exit is the Fire ember (Docs/VesselModels/COLOR.md).
+- **Done when:** Grizzly.prefab references no LimeVesselMaterial; the jets flare red on boost
+- **Who can take it:** jtgjones (Grizzly, grizzly-v3 in flight)
+- **Added:** 2026-10-18 by Garrett's session (`ccr-d93a6dfb-ugbxng`)
+- **See:** Docs/VesselModels/COLOR.md section 3

@@ -92,7 +92,7 @@ Material:
     - _CastShadows: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _ColorMultiplier: 5
+    - _ColorMultiplier: 1
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
@@ -124,8 +124,8 @@ Material:
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color1: {r: 0.09463, g: 0.011443, b: 0.011469, a: 1}
-    - _Color2: {r: 0.318547, g: 0.073239, b: 0.073339, a: 1}
+    - _Color1: {r: 0.42, g: 0.11, b: 0.04, a: 1}
+    - _Color2: {r: 0.19, g: 0.04, b: 0.02, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []

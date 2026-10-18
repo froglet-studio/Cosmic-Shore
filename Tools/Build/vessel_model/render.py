@@ -11,7 +11,7 @@ iterations can be compared frame for frame:
     row 3  pose takes from the chase view (pitchup, yawright, rollright, speedup) when there are any
 
 The look is deliberate: a dark neutral backdrop, a three-point rig, and the four slots in
-flat studio colours (Domain peach, Body near-black, Window cyan, Engine lime) so what is being
+flat studio colours (Domain peach, Body near-black, Window cyan, Engine ember) so what is being
 judged is FORM and the SLOT LAYOUT - not materials the game will replace anyway.
 
 Renders from the EXPORTED file re-imported, never from the live scene, so what is looked at

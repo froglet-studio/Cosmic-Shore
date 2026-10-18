@@ -65,6 +65,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The fleet colour scheme: shared vessel materials, slot fixes, every card re-rendered (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable (no Editor, no `unity` binary). No C# changed. What ran:
+- `vessel_colors.py --check` (the four materials carry the scheme);
+- `render_cards.py --all --check` (fourteen hulls' cards match a fresh render);
+- `author_{shrike,brittlestar,stoat,angler,thresher}_assets.py --check`, `author_angler_icons.py --check`,
+  `author_urchin_card_icons.py --check` (now a pointer check, with a negative control that fired) and
+  `check_vessel_class_icons.py`.
+
+Scheme, reasons and sheets: `Docs/VesselModels/COLOR.md`. Team tasks: T-20261018-d3e5 (this look),
+T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime jets).
+
+- **Materials** (sRGB rim / face):
+  - `BlueBaseVesselMaterial` and `BlueBaseOpaqueVesselMaterial`: dark gunmetal, (0.18, 0.21, 0.33) / (0.028, 0.033, 0.065);
+  - `ScreenVesselMaterial`: sapphire, (0.70, 0.80, 1.0) / (0.06, 0.16, 0.62);
+  - `EngineVesselMaterial`: ember, (0.42, 0.11, 0.04) / (0.19, 0.04, 0.02), resting `_ColorMultiplier` 5 → 1
+    (FlareEngine still sets 5 on boost).
+- **Slots**:
+  - Manta, Termite and Falcon draw `[GreenAccent, BlueBase, Screen, Engine]`, and their live `manta` renderer is
+    in `_shipGeometries`.
+  - The Rhino's meta: `accent.005` is the domain, `BASE.005` the body, `N.005` the Engine.
+  - The inactive mantis copy's `N` is Engine.
+- **Cards**: every class card, inactive card, silhouette, large image and hangar preview of the fourteen hulls is
+  rendered from its model with the silver CLASS livery on the domain slot. The artist hulls' files are rewritten
+  in place, so `Dolphin_Square.png`'s other users and the Termite's silhouette change too.
+
+Verify in the Editor:
+1. Fly Squirrel, Rhino, Manta and Thresher in each domain at the chase camera. The domain is the brightest thing
+   on the hull, the glass reads as glass, and the body's steel rim draws the silhouette against the sky. The jet
+   exits are a dull ember at rest and hot red on boost.
+2. **Body ghosting**: the body is transparent with no depth write. Look for far parts of a hull showing through
+   near parts (rim lines where none should be). If they do, move the hull to `BlueBaseOpaqueVesselMaterial`.
+3. **Manta / Termite / Falcon**: the eye-spots take the team colour, the canopy is glass, the trailing-edge
+   stripes are ember (not lime), and `FlareEngine` lights the stripes. On the Falcon, check that
+   `VesselCustomization` no longer logs the empty-geometry error.
+4. **Rhino**: the neon stripes take the team colour, the hull is gunmetal, and the nozzles and pod rings are ember.
+5. Menu: the vessel carousel, the class cards, the hangar previews and the squad images show the new renders. No
+   white squares.
+
 ### 🔴 The fleet pass: every playable hull is a pipeline-owned model; card images from the models (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was unavailable (no Editor, no `unity` binary). What ran on the merged tree: the headless reference

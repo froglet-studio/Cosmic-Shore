@@ -1,5 +1,12 @@
 # Manta — MODEL DOSSIER (measured 2026-10-17, branch ccr-d93a6dfb-ugbxng = origin/bleeding-edge on every file named here; `git diff --stat origin/bleeding-edge` on the prefab, both FBX, the driver and the controller is EMPTY)
 
+> **COLOUR PASS, 2026-10-18 (`COLOR.md`).** The live `manta` renderer's `m_Materials` now run in FBX order
+> `[GreenAccent, BlueBase, Screen, Engine]` (was `[BlueBase, Screen, GreenAccent, Lime]`, one slot out, §1.3), and
+> the renderer's GameObject is in `_shipGeometries`, so the domain reaches the eye-spots (slot 0), the body is the
+> body, the canopy is glass and the boost stripes are the Fire ember, not Lime. The same on `Termite.prefab` and
+> `Falcon.prefab` (whose `_shipGeometries` was empty), and the inactive copy's meta remaps `N` to Engine. The
+> statements below about the array and the unpainted hull describe the file before this change.
+
 > **Record of the ARTIST file as shipped before 2026-10-17.** On 2026-10-17 the file this dossier measures was
 > rebuilt in place by `python3 Tools/Build/vessel_model/build.py manta` (spec `Tools/Build/vessel_model/specs/manta.py`,
 > skill `/vessel-model`): same path and guid, same node, geometry, bone and material names, every bone's rest pose

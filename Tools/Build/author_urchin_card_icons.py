@@ -21,6 +21,12 @@ way the Scarab's is derived - the card family's greyed look - and re-points the 
 
 Deterministic: pure-Python PNG decode/encode, zlib at a fixed level. Re-run it after the source
 art changes; never hand-edit the inactive PNG.
+
+STANDS DOWN since 2026-10-18: the Urchin's cards are rendered from its model by
+`Tools/Build/vessel_model/render_cards.py Urchin` (Urchin_Square.png, Urchin_Inactive.png and the rest,
+in place, in the fleet colour scheme), so the inactive image is no longer derived here. What is left is
+the check this script was written for: both icon fields name sprites that EXIST, the inactive one at its
+fixed guid. Nothing is written while render_cards owns the images.
 """
 import os
 import re
@@ -134,8 +140,33 @@ def want_class_asset(text, active_guid, inactive_guid):
     return text
 
 
+def render_cards_owns_urchin():
+    sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "vessel_model"))
+    import render_cards
+    return "Urchin" in render_cards.VESSELS
+
+
+def check_pointers():
+    """The pointers only: IconActive -> Urchin_Square.png, IconInactive -> Urchin_Inactive.png (its fixed guid)."""
+    with open(CLASS_ASSET, encoding="utf-8") as fh:
+        have_asset = fh.read()
+    fails = []
+    if not os.path.exists(INACTIVE) or guid_of(INACTIVE) != INACTIVE_GUID:
+        fails.append(os.path.relpath(INACTIVE, ROOT) + " missing or not at guid " + INACTIVE_GUID)
+    elif want_class_asset(have_asset, guid_of(SOURCE), INACTIVE_GUID) != have_asset:
+        fails.append(os.path.relpath(CLASS_ASSET, ROOT) + " icon fields do not name Urchin_Square / Urchin_Inactive")
+    return fails
+
+
 def main(argv):
     check = "--check" in argv
+    if render_cards_owns_urchin():
+        fails = check_pointers()
+        for f in fails:
+            print("STALE: " + f)
+        print("OK: Urchin icons resolve (render_cards.py renders the images; this script stands down)"
+              if not fails else "re-run Tools/Build/vessel_model/render_cards.py Urchin")
+        return 1 if fails else 0
     pixels = decode_png(open(SOURCE, "rb").read())
     want_png = encode_png(greyed(pixels))
     want_meta = meta_for(INACTIVE_GUID)

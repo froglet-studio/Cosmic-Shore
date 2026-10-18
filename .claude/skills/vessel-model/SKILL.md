@@ -84,6 +84,7 @@ names, same bone rest poses, same frame (section 2).
 | The pipeline: modules, commands, the verify gate, the contact sheet | `references/PIPELINE.md` |
 | How to shape a hull that reads; the critique loop; part vocabulary | `references/MODELLING.md` |
 | Every lesson paid for so far (dated, measured) | `references/LESSONS.md` |
+| How a vessel is COLOURED: the colour language (Blue neutral, Fire danger, Lime call to action, Ruby/Gold/Jade domains), the material scheme, the card livery | `Docs/VesselModels/COLOR.md`; numbers in `Tools/Build/vessel_model/vessel_colors.py` |
 | The vessel's game contract (abilities, HUD, morph rule, rig swaps) | `/vessel` -> `.claude/skills/vessel/references/CONTRACT.md` section 7 |
 | Binary FBX surgery, fileID rules, assimp validation | `/asset-surgery` section 4.8 |
 | Per-vessel dossiers (what each artist file contained, measured; the constraints a replacement meets) | `Docs/VesselModels/<Vessel>.md` (README lists them) |

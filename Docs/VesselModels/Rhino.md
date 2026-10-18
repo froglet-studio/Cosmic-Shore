@@ -1,5 +1,11 @@
 # MODEL DOSSIER — Rhino
 
+> **COLOUR PASS, 2026-10-18 (`COLOR.md`).** The rig's `.meta` now remaps `accent.005` to the domain
+> (GreenAccent), `BASE.005` to the body (BlueBase) and `N.005` to `EngineVesselMaterial`. Before, the domain covered
+> 80 % of the hull and the nozzles wore window glass. Now the artist's neon stripes carry the team colour, as the
+> hand-drawn art showed, and the nozzles are the Fire ember. `_domainReplacesMaterials = [GreenAccent]` follows the
+> swap by identity. The "Paint" line below and §1's slot table describe the file before this change.
+
 > **RIG SWAP, 2026-10-18 — the game now DRAWS the rig.** `Rhino.prefab` no longer draws the 7-mesh placeholder
 > `Rhino_Test.fbx`: its seven MeshFilter/MeshRenderer pairs are removed and `rhino_shapekey_with_animations.fbx`
 > (guid `350f1f00…`) is nested under `Rhino_Test (1)` as a model instance at local **(0, 0, −1.5545)**, identity

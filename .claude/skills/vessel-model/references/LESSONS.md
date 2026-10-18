@@ -464,3 +464,23 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       git-ignored folder beside the pipeline, and a committed sheet is a JPEG under `Docs/VesselModels/sheets/`.
     - **style_metrics stays informative.** Several new hulls sit below the artist hulls' hard-edge band and the
       Angler above their smooth band; that is a look call the sheet and the owner make, not a gate.
+
+46. **The colour pass (2026-10-18): one scheme, read by the game and the cards.** Garrett: "make the cards and
+    everything else consistent ... without disrespecting the color language" (Blue neutral and the only grey,
+    Fire danger, Lime call-to-action only, Ruby/Gold/Jade the domains). What it taught:
+    - **Put the scheme in one file both readers use.** `vessel_colors.py` writes the shared materials and
+      `render_cards.py` paints the cards from the same numbers through an emulation of VesselGraph's fresnel, so
+      a card cannot drift from the ship; `--check` on both is the gate.
+    - **Choose colours on a sheet that shows the real context**: each domain, the chase view against the arena's
+      sky and the card, old beside new (`--compare`, `--candidates`, `--boost`). The first candidate (a slate
+      body) looked fine alone and drowned Ruby's dark violet beside it.
+    - **A material's colour is in sRGB; the shader multiplies in linear.** Writing linear values into a `.mat`
+      (the first engine pass did) makes the colour far too dark and off-hue.
+    - **A static card is shared by every player, so its domain slot cannot wear a team.** The hand-drawn cards
+      put Gold (commerce) on every hull; the cards now wear a neutral silver CLASS livery.
+    - **Audit the slots, not just the materials.** Three hulls broke the language through wiring, not colour:
+      the Manta's array was one slot out (body drawn as glass, boost stripes Lime, no domain), the Rhino painted
+      80 % of its hull in the domain, its nozzles wore window glass. `grep` every renderer's `m_Materials` and
+      every `.meta` remap for the role each slot plays.
+    - **Check a material's surface mode before brightening it.** The body is transparent without depth writes;
+      near-black hid any self-overlap, a visible rim may not (an Editor look is owed, COLOR.md section 6).

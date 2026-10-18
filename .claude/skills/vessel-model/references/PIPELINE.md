@@ -119,15 +119,16 @@ from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.
 
 ## Card images follow the model (`render_cards.py`)
 
-When a vessel's DRAWN look changes (a new hull, a rig swap), its card images change in the same pass:
-`python3 Tools/Build/vessel_model/render_cards.py <Vessel> --sheet <scratch>` renders `<V>.png`,
-`<V>_Inactive.png`, `<V>_silhouette.png`, `<V>_large.png` and `Hangar/<V>_Hangar_Preview.png` from the FBX
-in the house card look (measured from the hand-drawn cards: gold domain, navy body, indigo glass, green
-engines, three cel bands, a navy outline), overwriting in place so guids survive, and wires the six fields
-of `SO_Class_<V>`. Register the vessel in its `VESSELS` table (fbx, slot roles, view, nose angle).
-When a generator writes the class asset (`author_<vessel>_assets.py`), put the new guids in the generator
-instead, so its `--check` stays the owner. `--check` re-renders and compares. A vessel whose look is
-unchanged (an exact reproduction) keeps its hand-drawn card.
+When a vessel's DRAWN look changes (a new hull, a rig swap, a slot remap) or the colour scheme changes, its card
+images change in the same pass: `python3 Tools/Build/vessel_model/render_cards.py <Vessel> --sheet <scratch>`
+(or `--all`) renders the icon, inactive, silhouette, large and hangar images from the FBX with VesselGraph's own
+look (rim-to-face fresnel, the scheme in `vessel_colors.py`, the domain slot in the neutral CLASS livery, a navy
+outline), overwriting in place so guids survive, and wires the six fields of `SO_Class_<V>`. Register the vessel
+in `VESSELS` (fbx, slot roles, view, nose angle; `files` when its class asset already names other PNGs, as the
+artist hulls' do). When a generator writes the class asset (`author_<vessel>_assets.py`), put the new guids in the
+generator instead, so its `--check` stays the owner. `--check` re-renders and compares. Every playable hull is
+registered: the hand-drawn cards (gold plates, lime engines) were replaced on 2026-10-18 because they broke the
+colour language. The scheme, the language and the comparison sheets: `Docs/VesselModels/COLOR.md`.
 
 An artist mesh node that is not at identity (the Sparrow's carries 0.2034, its vertices 4.9x larger):
 `rig.restore_node_scale(mesh)` after the build and `"mesh_node_scale": s` in the spec keep the node as the

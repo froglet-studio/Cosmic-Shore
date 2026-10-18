@@ -7,11 +7,15 @@ A vessel's renderer wears FOUR materials, by slot INDEX, and the game writes slo
                      slot 0 of every SkinnedMeshRenderer (VesselHelper.cs); `FlareBody` flashes
                      materials[0]. This is the team colour the pilot reads across a cell.
     slot 1  HULL     the body: the dark base the artist models ship as 'Body' / 'BASE'
-                     (BlueBaseVesselMaterial in the older prefabs).
+                     (BlueBaseVesselMaterial: neutral Blue, dark gunmetal).
     slot 2  WINDOW   cockpit glass / eyes / screens ('Window' / 'windsheild';
-                     ScreenVesselMaterial).
+                     ScreenVesselMaterial: neutral Blue, saturated sapphire).
     slot 3  JET      engines and nozzles: `FlareEngine` sets materials[3]._ColorMultiplier
-                     to 5 while boosting ('Engine' / 'accent'; LimeVesselMaterial).
+                     to 5 while boosting ('Engine' / 'N'; EngineVesselMaterial: a low-value
+                     Fire ember). Never Lime: Lime is the call-to-action colour only.
+
+The colours of the three shared materials are the fleet scheme in vessel_colors.py
+(Docs/VesselModels/COLOR.md); the domain slot wears the palette's team colour.
 
 The shipped Squirrel measures Domain 1804 / Body 4400 / Window 186 / Engine 440 polygons: the
 domain is a third of the hull's faces, the glass a handful, the engines a tenth. A new model
@@ -33,7 +37,7 @@ STUDIO_COLOURS = {
     "Domain": (0.95, 0.56, 0.22, 1.0),   # the peach/orange accent the artist models use
     "Body": (0.07, 0.07, 0.085, 1.0),    # near-black hull
     "Window": (0.25, 0.85, 0.95, 1.0),   # glass cyan
-    "Engine": (0.35, 0.95, 0.15, 1.0),   # lime jets (the CTA lime of the game)
+    "Engine": (0.60, 0.08, 0.02, 1.0),   # the ember jet exits (Fire; vessel_colors.py)
 }
 # The older artist files name their slots differently; measured against the prefabs (the
 # Dolphin dossier): accent = the DOMAIN panels (slot 0), BASE = body, windsheild = window,

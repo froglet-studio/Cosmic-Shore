@@ -13,6 +13,8 @@ the numbered constraints (section 8) a replacement meets; the specs under
 `Tools/Build/vessel_model/specs/` were written against them, and every name, bone rest pose,
 slot order and frame they keep is explained here.
 
+How every vessel is coloured (the colour language, the shared materials' scheme, the card livery): [COLOR.md](COLOR.md).
+
 | vessel | dossier | live file the prefab draws | rebuilt file (2026-10-17) | spec |
 |---|---|---|---|---|
 | Squirrel | [Squirrel.md](Squirrel.md) | `SquirrelVessel_CosmicShoresTest1.fbx` | the same, in place | `specs/squirrel.py` |
