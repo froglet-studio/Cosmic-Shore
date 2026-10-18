@@ -782,7 +782,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (fleet pass entry); Docs/VesselModels/README.md; Docs/VesselModels/sheets/
 
 ### T-20261018-2070 · open · decision · Vessel models
-- **Task:** Fleet-pass calls: (1) Scarab: connected modules vs the 'floating parts' reading of your 2026-09-01 note; its elytra open on the INSIDE of a turn in code, the OUTSIDE in the doc. (2) Stoat: the tail curls with the bend in code, 'swings out' in the doc. (3) Shrike: a new talon grip while docked (keep, change, drop). (4) Angler: first-cut swim/jaw/esca numbers; its hit box is still the Stoat's (narrower than the new bow). (5) Brittle Star: flames now lime (Engine slot), the arms curl one way (chiral). (6) Butterfly 41% domain share. (7) When each placeholder (HullForm/HullBuilder/harness) is retired
+- **Task:** Fleet-pass calls: (1) Scarab: connected modules vs the 'floating parts' reading of your 2026-09-01 note; its elytra open on the INSIDE of a turn in code, the OUTSIDE in the doc. (2) Stoat: the tail curls with the bend in code, 'swings out' in the doc. (3) Shrike: a new talon grip while docked (keep, change, drop). (4) Angler: first-cut swim/jaw/esca numbers; its hit box is still the Stoat's (narrower than the new bow). (5) Brittle Star: flames wear the Engine slot (the Fire ember since the 2026-10-18 colour pass, Docs/VesselModels/COLOR.md), the arms curl one way (chiral). (6) Butterfly 41% domain share. (7) When each placeholder (HullForm/HullBuilder/harness) is retired
 - **Done when:** each call is answered and recorded in the vessel's doc
 - **Who can take it:** Garrett
 - **Added:** 2026-10-18 by Claude session ccr-d93a6dfb (fleet pass) (`ccr-d93a6dfb-ugbxng`)
