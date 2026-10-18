@@ -167,6 +167,53 @@ namespace CosmicShore.Gameplay
         /// <summary>The camera-centred form (the lab's first parallax, kept for the tests that hold the halving).</summary>
         public static Vector3 Parallax(float x, float h, float d, float scX, float scY, float D) => Parallax(x, h, d, scX, scY, scX, scY, D);
 
+        /// <summary>The side camera's off-axis frustum at its near plane: the eye at (cx, cy, -D) looking into the depth, the
+        /// plane d = 0 showing W × W / aspect centred on (scX, scY). Its projection IS <see cref="Parallax"/> - a real
+        /// perspective camera draws the lab's 2.5D parallax about the Pistol exactly, so the world can be drawn as itself.</summary>
+        public static void Frustum(float scX, float scY, float cx, float cy, float D, float W, float aspect, float near,
+            out float left, out float right, out float bottom, out float top)
+        {
+            float H = W / Mathf.Max(0.2f, aspect), k = near / Mathf.Max(1f, D);
+            left = (scX - 0.5f * W - cx) * k; right = (scX + 0.5f * W - cx) * k;
+            bottom = (scY - 0.5f * H - cy) * k; top = (scY + 0.5f * H - cy) * k;
+        }
+
+        /// <summary>A world transform (a prism's or a renderer's localToWorld) taken into the Pistol's flat world: its rotation and
+        /// scale seen from the ribbon's frame (rows T, U, R: x along the path, h up, d across), placed at <paramref name="xhd"/>.
+        /// The columns are what <see cref="RigidCorners"/> does to a box's half-axes, so a prism drawn with its OWN mesh through
+        /// this matrix lands exactly where its rigid box did.</summary>
+        public static Matrix4x4 FlatTransform(in Matrix4x4 localToWorld, Vector3 T, Vector3 U, Vector3 R, Vector3 xhd)
+        {
+            var m = Matrix4x4.identity;
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 c = localToWorld.GetColumn(i);
+                m.SetColumn(i, new Vector4(Vector3.Dot(c, T), Vector3.Dot(c, U), Vector3.Dot(c, R), 0f));
+            }
+            m.SetColumn(3, new Vector4(xhd.x, xhd.y, xhd.z, 1f));
+            return m;
+        }
+
+        /// <summary>A ground tile's transform: the block's box (<see cref="TileCorners"/>) as a matrix for its own mesh - axis-aligned
+        /// on the line at x, tilted to the slope, at its depth; <paramref name="extents"/> and <paramref name="centre"/> are the
+        /// mesh's local bounds, so the mesh's box lands on the tile's.</summary>
+        public static Matrix4x4 TileTransform(float x, float groundY, float slope, float d, Vector3 ax, Vector3 ay, Vector3 az,
+            Vector3 T, Vector3 U, Vector3 R, Vector3 extents, Vector3 centre)
+        {
+            float hT = Mathf.Abs(Vector3.Dot(ax, T)) + Mathf.Abs(Vector3.Dot(ay, T)) + Mathf.Abs(Vector3.Dot(az, T));
+            float hU = Mathf.Abs(Vector3.Dot(ax, U)) + Mathf.Abs(Vector3.Dot(ay, U)) + Mathf.Abs(Vector3.Dot(az, U));
+            float hR = Mathf.Abs(Vector3.Dot(ax, R)) + Mathf.Abs(Vector3.Dot(ay, R)) + Mathf.Abs(Vector3.Dot(az, R));
+            float th = Mathf.Atan(slope), cs = Mathf.Cos(th), sn = Mathf.Sin(th);
+            float sx = hT / Mathf.Max(1e-6f, extents.x), sy = hU / Mathf.Max(1e-6f, extents.y), sz = hR / Mathf.Max(1e-6f, extents.z);
+            var m = Matrix4x4.identity;
+            m.SetColumn(0, new Vector4(cs * sx, sn * sx, 0f, 0f));
+            m.SetColumn(1, new Vector4(-sn * sy, cs * sy, 0f, 0f));
+            m.SetColumn(2, new Vector4(0f, 0f, sz, 0f));
+            Vector3 at = new Vector3(x, groundY, d) - (Vector3)(m * new Vector4(centre.x, centre.y, centre.z, 0f));
+            m.SetColumn(3, new Vector4(at.x, at.y, at.z, 1f));
+            return m;
+        }
+
         /// <summary>Where a prism at (x, h, d) is drawn on a W × (W / aspect) screen, with its size allowed for.</summary>
         public static bool OnScreen(float x, float h, float d, float scX, float scY, float cx, float cy, float D, float W, float aspect, float size)
         {

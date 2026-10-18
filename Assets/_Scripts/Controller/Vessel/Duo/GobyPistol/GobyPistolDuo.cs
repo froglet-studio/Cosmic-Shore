@@ -95,6 +95,11 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Prism, float> _barSince = new();         // when a prism became a bar (hysteresis, grow-in)
         readonly List<Prism> _expiredK = new();
         readonly PistolWorldMesh _world = new();
+        readonly PistolTrueDraw _true = new();                      // the world drawn as itself: real meshes, real materials, lit, under the sky
+        readonly Dictionary<Prism, Renderer> _renderers = new(2048); // each prism's renderer (its live sharedMaterials)
+        readonly List<Renderer> _gobyRenderers = new();              // the hull's own renderers, drawn at the end of the ground
+        readonly List<Mesh> _baked = new();                          // a SkinnedMeshRenderer's pose, baked each frame
+        static readonly Material[] s_oneMaterial = new Material[1];
         GameObject _view; Camera _cam; float _scX, _scY; bool _scLive;
         Quaternion _frame = Quaternion.identity; bool _frameLive;
         float _squash, _shake, _nextSweep;
@@ -127,6 +132,7 @@ namespace CosmicShore.Gameplay
         void Bind(IVessel vessel)
         {
             _goby = vessel; _gt = transform; _tf = vessel.VesselStatus != null ? vessel.VesselStatus.VesselTransformer : null;
+            _gobyRenderers.Clear(); _gt.GetComponentsInChildren(true, _gobyRenderers);
             if (!config) config = ScriptableObject.CreateInstance<GobyPistolConfigSO>();
             _body = Config.Body; _vs = Config.Vortex; _ais = Config.AI; _lay = Config.Lay;
             _primer = Mathf.RoundToInt(Config.PrimerCharges); _flare = Mathf.RoundToInt(Config.FlareCharges);
@@ -145,6 +151,9 @@ namespace CosmicShore.Gameplay
             ReleaseAllRings(); _flares.Clear(); _primed.Clear(); _hot.Clear();
             if (_view) Destroy(_view);
             _world.Dispose(); _fx.Clear(); _tail.Clear(); _seen.Clear(); _foreground.Clear(); _lastK.Clear(); _barSince.Clear();
+            _true.Dispose(); _renderers.Clear(); _gobyRenderers.Clear();
+            foreach (var m in _baked) if (m) Destroy(m);
+            _baked.Clear();
             foreach (var o in new UnityEngine.Object[] { _torus, _ringMat, _flareMat })
                 if (o) Destroy(o);
             if (_tf) _tf.ThrottleScaler = _tf.DefaultThrottleScaler;   // the Goby's cruise is its own again
@@ -557,19 +566,21 @@ namespace CosmicShore.Gameplay
         // ================================ the side view (the lab's renderSide3D, grown up) ================================
         // What the Pistol SEES. Every prism in a wide depth window, warped through the unroll (PistolWarp: a prism the
         // Goby circles stretches out, as the unroll says it must; one holding a lap's centre is the bar of the whole lap)
-        // and laid on the screen plane with 2.5D parallax about the Pistol (the lab's pParallax: a layer that deep draws
-        // at half size), vivid and rimmed inside the band its body spans, fogged in the near field, a rigid box sinking
-        // into the fog in the deep background, see-through in the foreground, a fogged forecast past the Goby. The
-        // Goby's own trail is the GROUND it rides: a domain-coloured line on the hinge hills, warm on the downslopes,
-        // with the trail's blocks sitting on it. The Pistol end on (a cone whose axis is one screen point), its tiny
-        // trail, the rings, the flares, the aim, and the pops, puffs and shakes that say what just happened. One mesh a
-        // frame in two passes (solid, then glass far to near); the frame at the Pistol turns the sky with the Goby's heading.
+        // and drawn AS THE GAME DRAWS IT (Garrett, 2026-10-18: as true to the game as possible): a real perspective camera
+        // whose off-axis frustum IS the lab's parallax about the Pistol (the lab's pParallax: a layer that deep draws at
+        // half size), every prism with its own mesh and material under the scene's lights and sky (PistolTrueDraw), the
+        // deep background rigid, the foreground real and opaque (it may only not cover the Pistol), no fog, no glass, no
+        // tint. The Goby's own trail is the GROUND it rides: its blocks sit on the hinge hills, under a thin domain-coloured
+        // line, warm on the downslopes; the Goby is its own hull at the end of it. The Pistol end on (a cone), its tiny
+        // trail, the rings, the flares, the aim, the primed / hot / held rings and the pops, puffs and shakes are the MARKS
+        // over the world (PistolWorldMesh, one mesh a frame); the frame at the Pistol turns the sky with the Goby's heading.
 
         void BuildView()
         {
             _view = new GameObject("PistolSideView");   // at the scene root: the hull's scale and pose are not the view's
             _cam = _view.AddComponent<Camera>();
-            _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = true; _cam.nearClipPlane = 0.1f; _cam.cullingMask = 1;
+            // a real perspective camera: its off-axis frustum (PistolWarp.Frustum) IS the lab's parallax, so the world is drawn as itself
+            _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.cullingMask = 1;
             _cube = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
             _torus = BuildTorus(1f, 0.08f, 40, 8);
             _ringMat = Unlit(new Color(0.62f, 0.91f, 1f)); _flareMat = Unlit(new Color(1f, 0.9f, 0.5f));
@@ -671,11 +682,16 @@ namespace CosmicShore.Gameplay
                 _rb.FrameAt(_p.x, out var fT, out var fU, out var fR);
                 var target = PistolWarp.FlatFrame(fT, fU, fR);
                 _frame = _frameLive ? Quaternion.Slerp(_frame, target, Mathf.Clamp01(Time.deltaTime * 6f)) : target; _frameLive = true;
-                _cam.orthographicSize = 0.5f * W / aspect;
-                _cam.farClipPlane = 4f * D + 50f;
+                // the eye at (cx, cy, -D) in the flat frame, the plane d = 0 showing W across centred on (scX, scY): the lab's parallax
+                float near = _cam.nearClipPlane, far = 3f * D + 80f;
+                _cam.farClipPlane = far;
+                PistolWarp.Frustum(_scX, _scY, cx, cy, D, W, aspect, near, out float fl, out float fr, out float fb, out float ft);
+                _cam.projectionMatrix = Matrix4x4.Frustum(fl, fr, fb, ft, near, far);
                 var shake = _shake > 0f ? new Vector3(Mathf.Sin(_t * 47f), Mathf.Cos(_t * 31f), 0f) * (_shake * _shake * 3f) : Vector3.zero;
-                _cam.transform.SetPositionAndRotation(Stage + _frame * (new Vector3(0f, _scY, -D) + shake), _frame);
+                _cam.transform.SetPositionAndRotation(Stage + _frame * (new Vector3(cx, cy, -D) + shake), _frame);
 
+                var stage = Matrix4x4.TRS(Stage, _frame, Vector3.one);
+                _true.Begin(stage, new Bounds(_cam.transform.position, Vector3.one * (2f * far)));
                 _world.Begin(_scX, _scY, cx, cy, D);
                 _rb.SegTests = 0; _cntMapped = _cntWarped = _cntBars = _cntBoxes = _cntTiles = 0;
                 float xLo = _scX - 2f * W, xHi = _scX + 2f * W;   // the ribbon the far background can still show
@@ -684,7 +700,8 @@ namespace CosmicShore.Gameplay
                 DrawActors(W, aspect, D, xLo, xHi);
                 DrawForeground(W, D, xLo, xHi);
                 DrawFx();
-                _world.End(_cam, Matrix4x4.TRS(Stage, _frame, Vector3.one));
+                _true.End();
+                _world.End(_cam, stage);
             }
             Draw3D();
         }
@@ -703,7 +720,7 @@ namespace CosmicShore.Gameplay
                 _linePts.Add(new Vector3(x, y, 0f));
                 _lineCols.Add(Tint(domain, C_Body, PistolWarp.DiveTint(slope)));
             }
-            _world.AddLine(_linePts, _lineCols, 0.45f, 1f, true);
+            _world.AddLine(_linePts, _lineCols, 0.45f, 1f, false);   // a mark over the world, unlit
         }
 
         // ---- the prisms: gathered, mapped (through last frame's segment when it still fits), zoned, chosen, then
@@ -761,45 +778,54 @@ namespace CosmicShore.Gameplay
             foreach (var e in _foreground) DrawPrism(e, D, xLo, xHi, kSpan);
         }
 
+        Material[] MaterialsOf(Prism prism)
+        {
+            if (!_renderers.TryGetValue(prism, out var r) || !r) { prism.TryGetComponent(out r); _renderers[prism] = r; }
+            return r ? r.sharedMaterials : null;
+        }
+
         void DrawPrism(in Seen e, float D, float xLo, float xHi, int kSpan)
         {
             var prism = e.Prism; var tr = prism.transform; var m = e.M; var z = e.Z;
             var mesh = prism.EffectiveRenderMesh();
+            var mats = MaterialsOf(prism);
+            if (!mesh || mats == null) return;
             var data = PistolWorldMesh.DataOf(mesh);
-            Bounds b = mesh ? mesh.bounds : new Bounds(Vector3.zero, Vector3.one);
+            Bounds b = mesh.bounds;
             Vector3 c = tr.TransformPoint(b.center);
             Vector3 ax = tr.TransformVector(new Vector3(b.extents.x, 0f, 0f)), ay = tr.TransformVector(new Vector3(0f, b.extents.y, 0f)), az = tr.TransformVector(new Vector3(0f, 0f, b.extents.z));
             _rb.Frame(m.K, m.T, out var T, out var U, out var R);
+            float hd = Mathf.Sqrt(ax.sqrMagnitude + ay.sqrMagnitude + az.sqrMagnitude);
 
             if (e.Ground)
             {
-                // the trail is the ground: each block sits rigid on the line at its x, tilted to the slope, at its own depth
+                // the trail is the ground: each block, its own mesh and material, rigid on the line at its x, tilted to the slope, at its depth
                 float gy = _rb.Ground(m.X, out float slope);
-                PistolWarp.TileCorners(m.X, gy, slope, m.D, ax, ay, az, T, U, R, _xhd);
-                _world.AddWarped(PistolWorldMesh.Box, _xhd, Tint(PrismColor(prism), new Color32(255, 255, 255, 255), 0.35f), 0f, 1f, 0f, true);
+                _true.Rigid(mesh, mats, PistolWarp.TileTransform(m.X, gy, slope, m.D, ax, ay, az, T, U, R, b.extents, b.center));
                 _cntTiles++;
                 return;
             }
+            // the foreground (between the eye and the plane) is real and opaque, so the one thing it may not do is cover the Pistol
+            if (m.D < -(Config.Vision + 4f) && Mathf.Abs(m.X - _p.x) < hd + 8f && Mathf.Abs(m.H - _p.y) < hd + 8f) return;
 
-            Color32 color = PrismColor(prism); float glow = 0f;
-            if (m.X > _rb.GobyX + 2f) PistolWarp.Forecast(ref z);   // the forecast: not laid yet
-            if (IsPrimed(prism)) { color = Tint(color, C_Primed, 0.75f); glow = 0.35f + 0.25f * Mathf.Sin(_t * 6f); z.Fog *= 0.3f; z.Alpha = Mathf.Max(z.Alpha, 0.7f); }
-            else if (IsHot(prism)) { color = C_Hot; glow = 0.3f + 0.2f * Mathf.Sin(_t * 9f); }
-            if (_held.Contains(prism)) { color = Tint(color, C_Held, 0.5f); glow = Mathf.Max(glow, 0.5f); }
+            // the marks (the lab's own): rings about the prism, unlit, pulsing - the prism itself keeps its own look
+            Vector3 at = new(m.X, m.H, z.D);
+            if (IsPrimed(prism)) _world.AddRing(at, Vector3.forward, hd + 1.5f, 0.5f, 24, 4, Alpha(C_Primed, 0.55f + 0.3f * Mathf.Sin(_t * 6f)), 1f);
+            else if (IsHot(prism)) _world.AddRing(at, Vector3.forward, hd + 1.5f, 0.5f, 24, 4, Alpha(C_Hot, 0.5f + 0.3f * Mathf.Sin(_t * 9f)), 1f);
+            if (_held.Contains(prism)) _world.AddRing(at, Vector3.forward, hd + 2.5f, 0.6f, 24, 4, Alpha(C_Held, 0.7f), 1f);
             // the ghost cue: a friendly block the AI would ghost through, while ghost is ready (PistolAI's own rule)
             if (_t >= _p.ghostAt && Friendly(prism) && Mathf.Abs(m.D) <= Config.Vision && m.X > _p.x && m.X - _p.x < 60f && Mathf.Abs(m.H - _p.y) < 25f)
-                glow = Mathf.Max(glow, 0.25f * (0.5f + 0.5f * Mathf.Sin(_t * 8f)));
-            var col = Alpha(color, z.Alpha);
+                _world.AddRing(at, Vector3.forward, hd + 1f, 0.35f, 20, 4, Alpha(C_Held, 0.25f * (0.5f + 0.5f * Mathf.Sin(_t * 8f))), 1f);
 
-            if (!z.Warped)
+            if (!z.Warped || data == null)
             {
-                PistolWarp.RigidCorners(new Vector3(m.X, m.H, z.D), ax, ay, az, T, U, R, _xhd);
-                _world.AddWarped(PistolWorldMesh.Box, _xhd, col, glow, z.Reach, z.Fog, z.Solid);
+                // rigid: the prism's own mesh, its orientation seen from the ribbon's frame, at its unrolled place (the window's depth beyond it)
+                _true.Rigid(mesh, mats, PistolWarp.FlatTransform(tr.localToWorldMatrix, T, U, R, new Vector3(m.X, m.H, z.D)));
                 _cntBoxes++;
                 return;
             }
 
-            float hd = Mathf.Sqrt(ax.sqrMagnitude + ay.sqrMagnitude + az.sqrMagnitude), kappa = _rb.Curvature(m.K), gap = _lay.SampleGap;
+            float kappa = _rb.Curvature(m.K), gap = _lay.SampleGap;
             var kind = PistolWarp.Classify(hd, kappa, m.D, gap, kSpan, out int window);
             // the bar: a prism holding the bend's centre is beside the whole lap (hysteresis so a wobbling lap cannot flicker it)
             float r = PistolWarp.CentreDistance(kappa, m.D);
@@ -812,7 +838,7 @@ namespace CosmicShore.Gameplay
                 PistolWarp.BarExtent(_rb, c, m.K, 1f / Mathf.Max(1e-6f, Mathf.Abs(kappa)), hd, _corners, xLo, xHi, out float xA, out float xB);
                 float grow = 0.5f + 0.5f * Mathf.Clamp01((_t - since) / 0.25f);
                 PistolWarp.BarCorners(xA, xB, new Vector3(m.X, m.H, m.D), ax, ay, az, U, R, grow, _xhd);
-                _world.AddWarped(PistolWorldMesh.Box, _xhd, col, glow, z.Reach, z.Fog, z.Solid);
+                _true.Warped(data, _xhd, mats);
                 _cntBars++;
                 return;
             }
@@ -821,8 +847,8 @@ namespace CosmicShore.Gameplay
             PistolWarp.BoxCorners(c, ax, ay, az, _corners);
             bool warped = PistolWarp.WarpBox(_rb, m.K, _corners, xLo, xHi, window, _xhd, true)
                           && PistolWarp.XRange(_xhd) <= PistolWarp.TearBound(hd, kappa, m.D, gap);
-            if (!warped) PistolWarp.RigidCorners(new Vector3(m.X, m.H, m.D), ax, ay, az, T, U, R, _xhd);   // a fold: a corner landed on another pass
-            _world.AddWarped(data, _xhd, col, glow, z.Reach, z.Fog, z.Solid);
+            if (!warped) { _true.Rigid(mesh, mats, PistolWarp.FlatTransform(tr.localToWorldMatrix, T, U, R, new Vector3(m.X, m.H, m.D))); _cntBoxes++; return; }   // a fold: a corner landed on another pass
+            _true.Warped(data, _xhd, mats);
             _cntWarped++;
         }
 
@@ -845,12 +871,27 @@ namespace CosmicShore.Gameplay
             _world.AddTube(_p.x, _p.y, -half, half, r, r * 0.92f, ViewSides, body, 0.1f, 1f, lean, _t * 2f, !ghost);
             _world.AddDisc(new Vector3(_p.x - lean.x * half, _p.y - lean.y * half, -half + 0.05f), r, ViewSides, body, Tint(body, new Color32(0, 0, 0, body.a), 0.25f), 0.1f, !ghost, _t * 2f);
             _world.AddDisc(new Vector3(_p.x - lean.x * half, _p.y - lean.y * half, -half - 0.3f), r * 0.42f, 12, new Color32(255, 250, 230, 255), Alpha(C_Body, 1f), 1f, false);
-            // the Goby, at the end of the ground, nosing along it; an arrow at the edge when it is off screen
+            // the Goby, at the end of the ground: its OWN hull (every renderer under it, a skinned one baked in its pose), turned by
+            // the frame at its x and seen from it, so it noses along the line as it does in the world; an arrow at the edge when it is off screen
             {
-                float gx = _rb.GobyX, gyEnd = _rb.EndY; _rb.Ground(Mathf.Max(0f, gx - 3f), out float slope); float th = Mathf.Atan(slope);
-                Vector3 axv = new Vector3(Mathf.Cos(th), Mathf.Sin(th), 0f) * 7f, ayv = new Vector3(-Mathf.Sin(th), Mathf.Cos(th), 0f) * 2.4f, azv = new Vector3(0f, 0f, 2.4f);
-                _world.AddBox(new Vector3(gx, gyEnd, 0f), axv, ayv, azv, domain, 0.6f, 1f, 0f, true);
-                _world.AddDisc(new Vector3(gx + axv.x * 0.6f, gyEnd + axv.y * 0.6f, -2.6f), 1.2f, 8, new Color32(255, 255, 255, 255), domain, 1f, false);
+                float gx = _rb.GobyX, gyEnd = _rb.EndY;
+                _rb.FrameAt(gx, out var T, out var U, out var R);
+                Vector3 gobyPos = _gt.position; int baked = 0;
+                foreach (var rend in _gobyRenderers)
+                {
+                    if (!rend || !rend.enabled || !rend.gameObject.activeInHierarchy) continue;
+                    Mesh mesh = null;
+                    if (rend is SkinnedMeshRenderer skin)
+                    {
+                        if (baked == _baked.Count) _baked.Add(new Mesh { name = "GobyBaked", hideFlags = HideFlags.DontSave });
+                        mesh = _baked[baked++]; skin.BakeMesh(mesh);
+                    }
+                    else if (rend.TryGetComponent(out MeshFilter mf)) mesh = mf.sharedMesh;
+                    if (!mesh) continue;
+                    Vector3 off = rend.transform.position - gobyPos;
+                    var at = new Vector3(gx + Vector3.Dot(off, T), gyEnd + Vector3.Dot(off, U), Vector3.Dot(off, R));
+                    _true.Rigid(mesh, rend.sharedMaterials, PistolWarp.FlatTransform(rend.transform.localToWorldMatrix, T, U, R, at));
+                }
                 if (PistolWarp.ArrowPlace(gx, gyEnd, _scX, _scY, W, aspect, out float arrowX, out float arrowY))
                     _world.AddDisc(new Vector3(arrowX, arrowY, 0f), 4f, 3, domain, domain, 1f, false);
             }
@@ -977,7 +1018,7 @@ namespace CosmicShore.Gameplay
             GUILayout.Label(_human == Half.Pistol
                 ? "Pistol: hold Space / mouse / A to dive; drag (or RT + right stick) and let go to launch; F launch; G / B ghost; Q E / X Y Snap"
                 : "Goby: fly the vessel as usual; 3 / D-pad up primer; 4 / D-pad down flares");
-            GUILayout.Label($"view    mapped {_cntMapped}   warped {_cntWarped}   bars {_cntBars}   boxes {_cntBoxes}   tiles {_cntTiles}   segTests {_rb.SegTests}   verts {_world.VertexCount}");
+            GUILayout.Label($"view    mapped {_cntMapped}   warped {_cntWarped}   bars {_cntBars}   rigid {_cntBoxes}   tiles {_cntTiles}   segTests {_rb.SegTests}   draws {_true.Draws}   marks {_world.VertexCount} v");
             GUILayout.EndArea();
 #endif
         }

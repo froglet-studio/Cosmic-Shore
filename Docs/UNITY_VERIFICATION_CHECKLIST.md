@@ -65,6 +65,38 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Pistol's view drawn as the game draws it (`cece/sharp-tesla-j0kd7z`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-18: "render the shrimp view as true to the game as possible; err on the side of being too true to the game."
+The side camera is now a REAL perspective camera whose off-axis frustum (`PistolWarp.Frustum`, `Matrix4x4.Frustum` set on
+`projectionMatrix` every frame) IS the lab's parallax about the Pistol, and `PistolTrueDraw` draws every prism, every trail
+block and the Goby's own hull with their OWN meshes and materials (`MeshRenderer.sharedMaterials`; a skinned renderer baked
+in its pose), lit by the scene under the real skybox, instanced per (mesh, submesh, material) - only positions and
+orientations go through the unroll (`PistolWarp.FlatTransform` / `TileTransform`), and a lapped prism's own mesh is deformed
+into its bar (a pooled mesh, uv kept, normals recomputed). Gone: the fog, the glass, the depth fades, the tints and the custom
+prism look (`PistolWorld.shader` now draws only the MARKS: the ground line, the Pistol's tube and trail, the rings, the aim,
+the pops). Primed / hot / held are rings about the prism. The one concession: a foreground prism (between the eye and the
+plane) that would cover the Pistol is not drawn. The lab's side view follows the same principles (its 3D view's prism
+material, lit, the same camera). No editor and no `unity` CLI, so `/verify-unity` did NOT run. Headless: 53/53 outside Unity
+(the frustum equals the parallax; `FlatTransform` lands where `RigidCorners` did; `TileTransform` where `TileCorners` did; the
+lab's frustum golden), refcompile player + editor 0 errors in project code, Amoebius builds with a `Graphics.RenderMesh` shim.
+NOT proven here: that URP lights the instanced draws at the stage as it lights the scene (directional light: yes by
+construction; probes/reflections: no), nor the skinned bake's scale on the Goby's rigged model.
+
+1. **Vessel Changer ▸ Goby, look at the inset:** the prisms look EXACTLY like the ones around you (same material, same colour
+   animation state, lit from the same side, the same skybox behind them turning with your heading), only laid out along your
+   path; the trail's blocks are your trail's blocks; the Goby at the end of the line is the Goby (its model, its jets).
+2. **Depth:** nearer layers bigger, farther smaller, by perspective; nothing fogs, nothing is see-through; prisms beyond
+   ~3 × pParallax are not drawn.
+3. **The stretch:** circle a cluster twice at ~29 u: the lapped prisms stretch (their own mesh, their own material) and the
+   centre one is a bar across the screen; its shading follows the stretched geometry.
+4. **Press 2:** a prism in front of the plane that would sit on top of you is skipped; everything else in front is opaque.
+   Prime from the Goby (3) first: primed prisms wear a violet ring; broken ones' neighbours an orange ring; carried ones a
+   light-blue ring. The prisms themselves never change colour.
+5. **Never:** a prism in the inset with a different material than its twin in the world; a lit prism with a black face
+   (a normal problem on a warped mesh); the Goby model missing or mis-scaled at the line's end; the dev box's `draws` over
+   ~500 or the frame rate dropping with the inset on (say the counts).
+
 ### 🔴 The Goby zips, the Pistol's launch is a commitment (`cece/sharp-tesla-j0kd7z`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-16: "make the shrimp launch have a significant cooldown; make the goby zip around crazy fast so it is

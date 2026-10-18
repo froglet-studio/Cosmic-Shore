@@ -591,6 +591,13 @@ namespace CosmicShore.Tests
             Near(new Vector3(-92.0f, 19.5f, 480.0f), PistolWarp.Parallax(100f, 27f, 480f, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@480");
         }
 
+        [Test]
+        public void View_Frustum_MatchesTheLab()
+        {
+            PistolWarp.Frustum(192f, 40f, 100f, 17f, 160f, 460f, 1.6f, 0.5f, out float l, out float r, out float b, out float t);
+            Assert.AreEqual(-0.43125f, l, 1e-5f, "left"); Assert.AreEqual(1.00625f, r, 1e-5f, "right"); Assert.AreEqual(-0.377344f, b, 1e-5f, "bottom"); Assert.AreEqual(0.521094f, t, 1e-5f, "top");
+        }
+
     }
 }
 #endif

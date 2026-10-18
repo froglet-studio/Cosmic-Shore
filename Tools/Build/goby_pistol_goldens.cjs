@@ -124,7 +124,8 @@ const page = path.resolve(__dirname, '../../Docs/Studios/VesselStudio/goby.html'
     const zones = [0, 49, 55, 61, 100, 135, 136, 480, -49, -80].map((d) => { const z = VV.zone(d); return { d, reach: r6(z.reach), fog: r6(z.fog), alpha: r6(z.alpha), solid: z.solid, warped: z.warped }; });
     // the projection about the Pistol: p.x = 100, the camera at (192, 40) with a lift of 23, P = 160, for the point (100, 40 - 23 + 10, d)
     const par = [-80, -49, 0, 49, 160, 480].map((d) => ({ d, p: rv(VV.parallax(100, 40 - 23 + 10, d, 192, 40, 100, 40 - 23, 160, V(0, 0, 0))) }));
-    const view = { lap: { n: rbL.n, lastX: r6(rbL.sig[rbL.n - 1]), gx: r6(VW.gx) }, boxes, zones, parallax: par };
+    const frustum = VV.frustumOf(192, 40, 100, 17, 160, 460, 1.6, 0.5);   // PistolWarp.Frustum: the camera the parallax is
+    const view = { lap: { n: rbL.n, lastX: r6(rbL.sig[rbL.n - 1]), gx: r6(VW.gx) }, boxes, zones, parallax: par, frustum: { left: r6(frustum.left), right: r6(frustum.right), bottom: r6(frustum.bottom), top: r6(frustum.top) } };
     // the Goby's speed with the Pistol behind it, and the Goby AI's throttle by the gap (GobyMath in Unity)
     const goby = [0, 50, 160, 319, 320, 400, 800].map((gap) => ({ gap, cm: r6(C.closeness(P, gap)), thr: r6(C.aiGapThrottle(P, gap)) }));
     return { shipped: P, ribbon, body, vring, rngSeq, ai, mixes, view, goby };

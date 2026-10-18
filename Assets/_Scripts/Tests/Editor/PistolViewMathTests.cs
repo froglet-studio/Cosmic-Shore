@@ -165,6 +165,57 @@ namespace CosmicShore.Tests
             }
         }
 
+        [Test]
+        public void Frustum_ProjectsExactlyAsTheParallax()
+        {
+            // the eye at (cx, cy, -D): a point's screen fraction through the off-axis frustum equals the parallax formula's place on a W-wide screen
+            float scX = 192f, scY = 40f, cx = 100f, cy = 17f, D = 160f, near = 0.5f;
+            PistolWarp.Frustum(scX, scY, cx, cy, D, W, Aspect, near, out float l, out float r, out float b, out float t);
+            Assert.Less(l, r); Assert.Less(b, t);
+            foreach (var d in new[] { -70f, -20f, 0f, 49f, 160f, 470f })
+                foreach (var x in new[] { 40f, 100f, 300f })
+                {
+                    float h = 27f + 0.3f * x;
+                    float xv = x - cx, yv = h - cy, zv = D + d;                          // view space: right, up, into the depth
+                    float u = (xv * near / zv - l) / (r - l), v = (yv * near / zv - b) / (t - b);
+                    var p = PistolWarp.Parallax(x, h, d, scX, scY, cx, cy, D);
+                    Near((p.x + 0.5f * W) / W, u, 1e-4f, $"x fraction at d={d} x={x}");
+                    Near((p.y - scY + 0.5f * W / Aspect) / (W / Aspect), v, 1e-4f, $"y fraction at d={d} x={x}");
+                }
+        }
+
+        [Test]
+        public void FlatTransform_PutsABoxWhereRigidCornersDo()
+        {
+            Vector3 T = new Vector3(0.6f, 0.1f, 0.79f).normalized, U = Vector3.Cross(Vector3.Cross(T, Vector3.up), T).normalized, R = Vector3.Cross(T, U);
+            var rot = Quaternion.LookRotation(new Vector3(0.3f, -0.2f, 0.9f), new Vector3(0.1f, 1f, 0.2f)); var scale = new Vector3(2f, 3f, 5f);
+            var l2w = Matrix4x4.TRS(new Vector3(300f, 20f, -40f), rot, scale);
+            Vector3 ax = (Vector3)(l2w * new Vector4(0.5f, 0f, 0f, 0f)), ay = (Vector3)(l2w * new Vector4(0f, 0.5f, 0f, 0f)), az = (Vector3)(l2w * new Vector4(0f, 0f, 0.5f, 0f));   // half-axes of a unit cube
+            var at = new Vector3(120f, 30f, 12f);
+            var want = new Vector3[8]; PistolWarp.RigidCorners(at, ax, ay, az, T, U, R, want);
+            var m = PistolWarp.FlatTransform(l2w, T, U, R, at);
+            for (int i = 0; i < 8; i++)
+            {
+                var c = new Vector3((i & 1) == 0 ? -0.5f : 0.5f, (i & 2) == 0 ? -0.5f : 0.5f, (i & 4) == 0 ? -0.5f : 0.5f);
+                Near(want[i], m.MultiplyPoint3x4(c), 1e-4f, "corner " + i);
+            }
+        }
+
+        [Test]
+        public void TileTransform_PutsABlockWhereTileCornersDo()
+        {
+            Vector3 T = Vector3.forward, U = Vector3.up, R = Vector3.right;
+            Vector3 ax = new Vector3(2.5f, 0f, 0f), ay = new Vector3(0f, 0.45f, 0f), az = new Vector3(0f, 0f, 6.5f);   // a block 5 x 0.9 x 13 along the path
+            var want = new Vector3[8]; PistolWarp.TileCorners(200f, 15f, 0.4f, 7f, ax, ay, az, T, U, R, want);
+            var m = PistolWarp.TileTransform(200f, 15f, 0.4f, 7f, ax, ay, az, T, U, R, new Vector3(2.5f, 0.45f, 6.5f), Vector3.zero);
+            for (int i = 0; i < 8; i++)
+            {
+                var c = new Vector3((i & 1) == 0 ? -2.5f : 2.5f, (i & 2) == 0 ? -0.45f : 0.45f, (i & 4) == 0 ? -6.5f : 6.5f);
+                Near(want[i], m.MultiplyPoint3x4(c), 1e-4f, "corner " + i);
+            }
+        }
+
+        static void Near(float want, float got, float tol, string what) => Assert.AreEqual(want, got, tol, what);
         static void Near(Vector3 want, Vector3 got, float tol, string what)
         {
             Assert.AreEqual(want.x, got.x, tol, what + ".x"); Assert.AreEqual(want.y, got.y, tol, what + ".y"); Assert.AreEqual(want.z, got.z, tol, what + ".z");

@@ -150,6 +150,14 @@ namespace CosmicShore.Engine
             Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Amoebius backend yet.");
         }
 
+        /// <summary>Original signature: one instance of one submesh at <paramref name="objectToWorld"/> (a material need not
+        /// enable instancing). Headless: recorded as a one-instance submission.</summary>
+        public static void RenderMesh(in RenderParams rparams, Mesh mesh, int submeshIndex, CosmicShore.Engine.Matrix4x4 objectToWorld, CosmicShore.Engine.Matrix4x4? prevObjectToWorld = null)
+        {
+            if (mesh is null) return;
+            RenderMeshInstanced(rparams, mesh, submeshIndex, new[] { objectToWorld }, 1);
+        }
+
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,
             CosmicShore.Engine.Matrix4x4[] instanceData, int instanceCount = -1, int startInstance = 0)
         {

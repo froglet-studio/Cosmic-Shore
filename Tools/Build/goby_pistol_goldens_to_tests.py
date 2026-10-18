@@ -257,5 +257,10 @@ if view:
     for pt in view['parallax']:
         w('            Near(%s, PistolWarp.Parallax(100f, 27f, %sf, 192f, 40f, 100f, 17f, 160f), 1e-3f, "parallax@%s");' % (v3(pt['p']), pt['d'], pt['d']))
     w('        }\n')
+    fr = view['frustum']
+    w('        [Test]\n        public void View_Frustum_MatchesTheLab()\n        {')
+    w('            PistolWarp.Frustum(192f, 40f, 100f, 17f, 160f, 460f, 1.6f, 0.5f, out float l, out float r, out float b, out float t);')
+    w('            Assert.AreEqual(%s, l, 1e-5f, "left"); Assert.AreEqual(%s, r, 1e-5f, "right"); Assert.AreEqual(%s, b, 1e-5f, "bottom"); Assert.AreEqual(%s, t, 1e-5f, "top");' % (f(fr['left']), f(fr['right']), f(fr['bottom']), f(fr['top'])))
+    w('        }\n')
 w('    }\n}\n#endif')
 print('\n'.join(o))

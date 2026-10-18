@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
         public const int MaxWarpedVertices = 512;
 
         /// <summary>A mesh's vertices as fractions of its bounds (u, v, w ∈ [0, 1]) and its triangles: what the warp deforms.</summary>
-        public sealed class MeshData { public Vector3[] Local01; public int[] Tris; }
+        public sealed class MeshData { public Vector3[] Local01; public int[] Tris; public Vector2[] UV; public int[][] SubTris; }
 
         static Dictionary<Mesh, MeshData> s_cache = new();
         static Material s_solid, s_glass; static bool s_warned;
@@ -67,7 +67,10 @@ namespace CosmicShore.Gameplay
                 local[i] = new Vector3(size.x > 1e-6f ? (verts[i].x - min.x) / size.x : 0.5f,
                                        size.y > 1e-6f ? (verts[i].y - min.y) / size.y : 0.5f,
                                        size.z > 1e-6f ? (verts[i].z - min.z) / size.z : 0.5f);
-            data = new MeshData { Local01 = local, Tris = mesh.triangles };
+            var subs = new int[Mathf.Max(1, mesh.subMeshCount)][];
+            for (int s = 0; s < subs.Length; s++) subs[s] = mesh.subMeshCount > 0 ? mesh.GetTriangles(s) : mesh.triangles;
+            var uv = mesh.uv; if (uv == null || uv.Length != verts.Length) uv = new Vector2[verts.Length];
+            data = new MeshData { Local01 = local, Tris = mesh.triangles, UV = uv, SubTris = subs };
             s_cache[mesh] = data;
             return data;
         }
@@ -80,8 +83,10 @@ namespace CosmicShore.Gameplay
             _scX = scX; _scY = scY; _cx = cx; _cy = cy; _depth = Mathf.Max(1f, depth);
         }
 
-        /// <summary>(x, h, d) in the Pistol's world to where it is drawn, in the flat frame (x right, h up, d into the screen).</summary>
-        public Vector3 Project(float x, float h, float d) => PistolWarp.Parallax(x, h, d, _scX, _scY, _cx, _cy, _depth);
+        /// <summary>(x, h, d) in the Pistol's world is where it is drawn, in the flat frame (x right, h up, d into the screen): the
+        /// side camera is a real perspective camera whose off-axis frustum IS <see cref="PistolWarp.Parallax"/>, so nothing is
+        /// projected here any more (the world is drawn as itself; this mesh is the marks over it).</summary>
+        public Vector3 Project(float x, float h, float d) => new(x, h, d);
         public Vector3 Project(Vector3 xhd) => Project(xhd.x, xhd.y, xhd.z);
         public float ScaleAt(float d) => PistolWarp.Scale(d, _depth);
 
