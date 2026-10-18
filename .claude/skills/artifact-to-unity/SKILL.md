@@ -39,7 +39,7 @@ unity that means put it in the vessel selector. my workflow is artifact to vesse
 done when a play-mode menu or a scene can reach it: it is done when the person can fly it from the freestyle Vessel
 Changer. The changer offers hulls (`ToyVesselRoster.Default` + the `Vessel Prefab Container`), so a mechanic that is
 not a hull of its own (a seat, a crew role, a mode of flight) ships ON a hull class: clone a donor prefab with the
-component on its root and register it, as `Tools/Build/author_kite_assets.py` (the Kite navigator on the Sparrow) and
+component on its root and register it, as `Tools/Build/author_wrasse_assets.py` (the Kite navigator on the Sparrow hull, the Wrasse) and
 `author_goby_assets.py` (the Goby & Pistol duo, `cece/sharp-tesla-j0kd7z`) do. The `/vessel` contract §1 lists every
 registration; take the class id only after checking `bleeding-edge` and every in-flight branch.
 

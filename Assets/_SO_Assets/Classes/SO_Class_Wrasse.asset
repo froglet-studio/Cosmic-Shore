@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
-  m_Name: SO_Class_Kite
+  m_Name: SO_Class_Wrasse
   m_EditorClassIdentifier: 
   Class: 19
-  Name: Kite
-  Description: Two seats in one Sparrow. One player flies; the navigator flies a kite on
-    the ship's own plane with one thumb - its head pops enemy prisms, its tail lassos
-    motes into blasts, prism clusters, boost and petal steals. D-pad left or right
-    swaps seats; the AI takes the empty one.
+  Name: Wrasse
+  Description: Two seats, one hull, like a cleaner wrasse and the fish it keeps clean. One
+    player flies the hull; the other flies a kite on the hull's own plane - its head picks
+    enemy prisms off, its tail lassos motes into blasts, prism clusters, saved boosts and
+    crystal rams. D-pad left or right swaps seats; the AI takes the empty one.
   PrimaryElement: 0
   Element: {fileID: 0}
   InitialResourceLevels:

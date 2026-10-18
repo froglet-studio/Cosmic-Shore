@@ -323,7 +323,7 @@ GameObject:
   - component: {fileID: 3901220300008001}
   - component: {fileID: 5137264980016000019}
   m_Layer: 0
-  m_Name: Kite
+  m_Name: Wrasse
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -526,7 +526,7 @@ MonoBehaviour:
   vesselHUDController: {fileID: 223934081028988333}
   boostMultiplier: 5
   inertia: 1
-  _name: Kite
+  _name: Wrasse
   vesselType: 19
   _nearFieldSkimmer: {fileID: 6062314127581257774}
   _farFieldSkimmer: {fileID: 0}

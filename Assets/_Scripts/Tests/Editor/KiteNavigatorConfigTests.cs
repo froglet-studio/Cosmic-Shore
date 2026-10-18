@@ -96,30 +96,30 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void KiteHull_CarriesTheSeat_WiredToThisConfig_SoTheVesselChangerOffersAPlayableKite()
+        public void WrasseHull_CarriesTheSeat_WiredToThisConfig_SoTheVesselChangerOffersAPlayableKite()
         {
             // "Bring it to Unity" = the Toybox's Vessel Changer offers it (Garrett, 2026-10-17); the changer offers hulls,
-            // so the seat ships on its own hull (Tools/Build/author_kite_assets.py)
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Prefabs/Spacevessels/Kite.prefab");
-            Assert.IsNotNull(prefab, "no Kite.prefab: run Tools/Build/author_kite_assets.py");
-            Assert.IsTrue(prefab.TryGetComponent(out KiteNavigator seat), "the Kite's root carries no KiteNavigator");
+            // so the seat ships on its own hull (Tools/Build/author_wrasse_assets.py)
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Prefabs/Spacevessels/Wrasse.prefab");
+            Assert.IsNotNull(prefab, "no Wrasse.prefab: run Tools/Build/author_wrasse_assets.py");
+            Assert.IsTrue(prefab.TryGetComponent(out KiteNavigator seat), "the Wrasse's root carries no KiteNavigator");
             var wired = new SerializedObject(seat).FindProperty("config").objectReferenceValue;
             Assert.AreEqual(Load(), wired, "the seat is not wired to KiteNavigatorConfig.asset (a null config never seats the navigator)");
             Assert.IsTrue(prefab.TryGetComponent(out IVesselStatus status));
-            Assert.AreEqual(VesselClassType.Kite, status.VesselType);
-            CollectionAssert.Contains(ToyVesselRoster.Default, VesselClassType.Kite, "the Vessel Changer offers only the roster");
+            Assert.AreEqual(VesselClassType.Wrasse, status.VesselType);
+            CollectionAssert.Contains(ToyVesselRoster.Default, VesselClassType.Wrasse, "the Vessel Changer offers only the roster");
         }
 
         [Test]
-        public void KiteHull_FliesOnTwoSticks_AndItsHudReadsTheSeat()
+        public void WrasseHull_FliesOnTwoSticks_AndItsHudReadsTheSeat()
         {
             // round 4d (Garrett, 2026-10-18): "lets go back to two thumb flying for the pilot", and the ability cards show
             // the saved boosts, the charges, the last blast and the Mass flash
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Prefabs/Spacevessels/Kite.prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Prefabs/Spacevessels/Wrasse.prefab");
             Assert.IsNotNull(prefab);
             Assert.IsTrue(prefab.TryGetComponent(out VesselTransformer transformer));
-            Assert.AreEqual(typeof(VesselTransformer), transformer.GetType(), "the Kite's hull is not the two-stick VesselTransformer");
-            Assert.IsTrue(prefab.TryGetComponent(out KiteHUDController hud), "the Kite's HUD controller is not KiteHUDController");
+            Assert.AreEqual(typeof(VesselTransformer), transformer.GetType(), "the Wrasse's hull is not the two-stick VesselTransformer");
+            Assert.IsTrue(prefab.TryGetComponent(out WrasseHUDController hud), "the Wrasse's HUD controller is not WrasseHUDController");
             Assert.AreEqual(prefab.GetComponent<KiteNavigator>(), new SerializedObject(hud).FindProperty("navigator").objectReferenceValue,
                 "the HUD does not read this hull's seat");
         }

@@ -220,8 +220,8 @@
         "Tools/Build/kite_navigator_lab",
         "Docs/Studios/CrewVesselLab.html",
         "Docs/Studios/CREW_VESSEL_LAB.md",
-        "Assets/_Prefabs/Spacevessels/Kite.prefab",
-        "Tools/Build/author_kite_assets.py"
+        "Assets/_Prefabs/Spacevessels/Wrasse.prefab",
+        "Tools/Build/author_wrasse_assets.py"
       ],
       "docs": [
         "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
@@ -239,7 +239,7 @@
       ],
       "test": [
         "Check out cece/compassionate-babbage-gc13io, open Unity, wait for the compile.",
-        "Open the Toybox, fly into the Vessel Changer and fly the Kite station (a Sparrow): the board appears bottom right and the AI flies the kite.",
+        "Open the Toybox, fly into the Vessel Changer and fly the Wrasse station (a Sparrow): the board appears bottom right and the AI flies the kite.",
         "Press 2 (or D-pad right) to take the kite; the hull's AI flies. Draw loops round one colour of motes; press 1 to fly again.",
         "Run the 8 steps of the Kite Navigator entry in Docs/UNITY_VERIFICATION_CHECKLIST.md."
       ]

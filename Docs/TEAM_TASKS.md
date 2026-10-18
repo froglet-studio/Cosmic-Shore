@@ -467,7 +467,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset
 
 ### T-20261017-aca2 · open · test · Crew vessels
-- **Task:** Playtest the Kite in the Unity Editor: open the Toybox, fly the Kite station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Kite). It has only been compiled headlessly.
+- **Task:** Playtest the Wrasse in the Unity Editor: open the Toybox, fly the Wrasse station in the Vessel Changer, then the 9 verify steps of its checklist entry (board draws, AI loops, 2/D-pad right swaps to the kite, each element's loop fires, a charged ram steals and scores, 1 swaps back with no stuck input or boost, the changer swaps cleanly in and out of the Wrasse). It has only been compiled headlessly.
 - **Done when:** The checklist entry is marked verified, or each failing step is a dev task naming what was seen
 - **Who can take it:** Yash (offered), anyone with the Editor
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
@@ -645,30 +645,30 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/QA/DEV_TASKS.md DT-003
 
 ### T-20261018-3247 · open · dev · Crew vessels
-- **Task:** Bring the Crew Vessel Lab up to the Kite's round 4, which was directed in Unity on 2026-10-18: the kite view and pilot view swap (small view lower left), lime motes in their element's petal shape, the kite following the mouse or stick with no click, a one-thumb pilot whose lifted thumb spends the Time boost (2 s cooldown, none at Time L5), mote frequency weighted by the hull's petals, Charge rams on fauna, Eject below Charge L5 and Steal at it, shielded Mass clusters at Mass L5, Space L5 blasts through shields and super shields, and the Omni crystal's burst of motes (round 4e; it no longer zooms). Rounds 4d-4e also changed the pilot to two thumbs, the motes to five-petal flowers and the out-of-plane prisms: KITE_NAVIGATOR.md. Then re-run parity.cjs and verify_lab.cjs and republish.
+- **Task:** Bring the Crew Vessel Lab up to the Wrasse's round 4, which was directed in Unity on 2026-10-18: the kite view and pilot view swap (small view lower left), lime motes in their element's petal shape, the kite following the mouse or stick with no click, a one-thumb pilot whose lifted thumb spends the Time boost (2 s cooldown, none at Time L5), mote frequency weighted by the hull's petals, Charge rams on fauna, Eject below Charge L5 and Steal at it, shielded Mass clusters at Mass L5, Space L5 blasts through shields and super shields, and the Omni crystal's burst of motes (round 4e; it no longer zooms). Rounds 4d-4e also changed the pilot to two thumbs, the motes to five-petal flowers and the out-of-plane prisms: KITE_NAVIGATOR.md. Then re-run parity.cjs and verify_lab.cjs and republish.
 - **Done when:** The lab's SHIPPED block and scorecard carry round 4 and parity.cjs still passes
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 4); Docs/Studios/CrewVesselLab.html
 
 ### T-20261018-49d0 · done · content · Crew vessels
-- **Task:** Give the Kite its own HUD. It still wears the Sparrow's (SparrowHUDController + SparrowHUDVariant): the four-icon ability row shows the Sparrow's gun, missile and barrel-roll icons, though the Kite has none of those since round 4c. Its four icons should be the kite's four loop effects (Space blast, Mass cluster, Time boost, Charge ram), each with its L5 upgrade (LOCKED four-icon row). Also give it its own ElementalAbilityMap entries (Kite.asset is still the Sparrow's map, kept only for the L5 unlock levels).
-- **Done when:** The Kite's HUD shows its own four icons and no Sparrow ability
+- **Task:** Give the Wrasse its own HUD. It still wears the Sparrow's (SparrowHUDController + SparrowHUDVariant): the four-icon ability row shows the Sparrow's gun, missile and barrel-roll icons, though the Wrasse has none of those since round 4c. Its four icons should be the kite's four loop effects (Space blast, Mass cluster, Time boost, Charge ram), each with its L5 upgrade (LOCKED four-icon row). Also give it its own ElementalAbilityMap entries (Wrasse.asset is still the Sparrow's map, kept only for the L5 unlock levels).
+- **Done when:** The Wrasse's HUD shows its own four icons and no Sparrow ability
 - **Who can take it:** Garrett (vessels, icons); any session for the wiring
 - **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 4c); Docs/claude/VESSEL_HUD_AND_ELEMENTS.md (four-icon row)
-- **Done:** 2026-10-18, Round 4d: KiteHUDController drives the four cards (saved boosts, rams, last blast, Mass flash) and Kite.asset has the Kite's own cards with no button chips. The icon ART is still the Sparrow's: see the follow-up task.
+- **Done:** 2026-10-18, Round 4d: WrasseHUDController drives the four cards (saved boosts, rams, last blast, Mass flash) and Wrasse.asset has the Wrasse's own cards with no button chips. The icon ART is still the Sparrow's: see the follow-up task.
 
 ### T-20261018-8ff7 · open · content · Crew vessels
-- **Task:** Draw the Kite's four ability-card icons. Since round 4d the cards read the navigator (KiteHUDController: Time = saved boosts, Charge = kite rams, Space = last blast's kills, Mass = flash on a cluster) and ElementalAbilityMaps/Kite.asset names them Space Blast, Saved Boosts, Mass Cluster and Kite Ram, but the sprites on the HUD (SparrowHUDVariant) are still the Sparrow's gun, missile and stance icons.
-- **Done when:** The Kite's HUD shows its own four icons (a Kite HUD variant of SparrowHUDVariant, made with Create > Prefab Variant), each with its L5 upgrade art, on the LOCKED four-icon row.
+- **Task:** Draw the Wrasse's four ability-card icons. Since round 4d the cards read the navigator (WrasseHUDController: Time = saved boosts, Charge = kite rams, Space = last blast's kills, Mass = flash on a cluster) and ElementalAbilityMaps/Wrasse.asset names them Space Blast, Saved Boosts, Mass Cluster and Kite Ram, but the sprites on the HUD (SparrowHUDVariant) are still the Sparrow's gun, missile and stance icons.
+- **Done when:** The Wrasse's HUD shows its own four icons (a Wrasse HUD variant of SparrowHUDVariant, made with Create > Prefab Variant), each with its L5 upgrade art, on the LOCKED four-icon row.
 - **Who can take it:** Garrett (vessels, icons); any session for the variant wiring
 - **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md Round 4d
 
 ### T-20261018-5c29 · open · test · Crew vessels
-- **Task:** Fly the Kite's round 4d in the Unity Editor: let BlockGraph and the swarm member shaders re-import with the new PrismDepthPlane.hlsl include, confirm the pilot's own view of prisms is unchanged, then run Docs/UNITY_VERIFICATION_CHECKLIST.md's Kite steps 2-4 (two-thumb flight, the HUD counts, the five-petal motes, out-of-plane prisms opening with distance from the plane and dithering above it).
-- **Done when:** The checklist's Kite entry is ticked or its failures are filed, and the two-thumb tuning (the Sparrow's numbers today) is kept or re-tuned.
+- **Task:** Fly the Wrasse's round 4d in the Unity Editor: let BlockGraph and the swarm member shaders re-import with the new PrismDepthPlane.hlsl include, confirm the pilot's own view of prisms is unchanged, then run Docs/UNITY_VERIFICATION_CHECKLIST.md's Wrasse steps 2-4 (two-thumb flight, the HUD counts, the five-petal motes, out-of-plane prisms opening with distance from the plane and dithering above it).
+- **Done when:** The checklist's Wrasse entry is ticked or its failures are filed, and the two-thumb tuning (the Sparrow's numbers today) is kept or re-tuned.
 - **Who can take it:** Garrett (sign-off); Yash can run the editor pass
 - **Added:** 2026-10-18 by a Claude session (`cece/compassionate-babbage-gc13io`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Kite Navigator

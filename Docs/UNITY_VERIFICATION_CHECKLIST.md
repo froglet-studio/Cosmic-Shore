@@ -67,7 +67,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ### 🔴 Kite Navigator: the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
 
-**What landed:** the first multiplayer vessel, `VesselClassType.Kite = 19` (a Sparrow hull, in the Toybox's
+**What landed:** the first multiplayer vessel, `VesselClassType.Wrasse = 19` (a Sparrow hull, in the Toybox's
 Vessel Changer), and its second seat, ported from the Crew Vessel Lab's signed-off round 3
 (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`).
 - **The board and the kite:** a navigator flies a kite on the hull's x-z plane. The head pops hostile prisms and rams
@@ -93,12 +93,12 @@ one-thumb with no buttons, and the lifted thumb boosts; the hull's petals weight
 L5 upgrades (Mass shields clusters, Charge steals, Space breaks super shields, Time removes the boost cooldown); an
 Omni crystal doubles the board for 5 s. Round 4b: boost on the pilot's trigger, visible petals, unlit out-of-plane
 prisms, a 50% longer lasso, a small pilot view. Player and editor reference compiles: 0 errors in changed files.
-`author_kite_assets.py --check` and `--self-test` OK.
+`author_wrasse_assets.py --check` and `--self-test` OK.
 
 **Round 4d (2026-10-18):**
 - The pilot flies on two sticks again.
 - The ability cards count the saved boosts (Time), the kite's rams (Charge) and the last blast's kills (Space); the
-  Mass card flashes when a cluster lands. This is `KiteHUDController`, and the map has the Kite's own cards with no
+  Mass card flashes when a cluster lands. This is `WrasseHUDController`, and the map has the Wrasse's own cards with no
   button chips.
 - Each mote is a five-petal flower that moves like its element.
 - The kite view sees 400 u above and below the plane:
@@ -108,14 +108,14 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 - Checks run:
   - player reference compile: 0 errors;
   - editor reference compile: the same 3 errors as before, none in the changed files;
-  - `author_kite_assets.py --check` and `--self-test`: OK;
+  - `author_wrasse_assets.py --check` and `--self-test`: OK;
   - `verify_swarm_member_pose.py`: OK.
 - **The shader change needs a Unity import**:
   - BlockGraph and the swarm shaders recompile with the new include;
   - check that the pilot's own view of prisms is unchanged (the include is off by default).
 
 **Verify:**
-1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Kite** station (it looks like a Sparrow).
+1. Open the Toybox. Fly into the **Vessel Changer** and fly the **Wrasse** station (it looks like a Sparrow).
    - Lower left: a small square kite view, the real world seen from straight above your hull.
    - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
    - In your own view: a faint see-through kite and faint lime dots, not in the way.
@@ -154,7 +154,7 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
    centre. The view does NOT zoom.
 9. Press **1**: your view is full screen again, at its old size, with no stuck input and no stuck boost.
 10. Gather petals of one element on the hull: the motes of that shape come more often.
-11. In the Vessel Changer, swap away from the Kite and back, once flying and once while on the kite. Every view comes
+11. In the Vessel Changer, swap away from the Wrasse and back, once flying and once while on the kite. Every view comes
     back to normal and the input is live.
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 

@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fde7d8c2dacf45f99e46799ffeea15e6, type: 3}
-  m_Name: KiteImpactorDataContainer
+  m_Name: WrasseImpactorDataContainer
   m_EditorClassIdentifier: 
   vesselPrismEffects:
   - {fileID: 11400000, guid: 66cae311ef174118a0fcefec37c858c7, type: 2}

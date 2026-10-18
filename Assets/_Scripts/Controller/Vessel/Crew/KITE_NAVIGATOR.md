@@ -60,12 +60,12 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
 
 **Round 4c (2026-10-18):**
 - **No Sparrow kit.** "The pilot is shooting when I am controlling the kite": the Sparrow's `AIPilot.abilities` cycled
-  its guns and missiles whenever the autopilot flew, which is whenever the human is on the kite. `author_kite_assets.py`
-  now strips the Sparrow's kit from the Kite:
+  its guns and missiles whenever the autopilot flew, which is whenever the human is on the kite. `author_wrasse_assets.py`
+  now strips the Sparrow's kit from the Wrasse:
   - the AI's ability cycle;
   - the guns, the bullet and Skyburst missile factories and their four action executors;
   - the missile rearm, the barrel roll, the Omni ward and the Time-L5 immunity;
-  - the Omni ward effect from `KiteImpactorDataContainer`;
+  - the Omni ward effect from `WrasseImpactorDataContainer`;
   - the gun telemetry, which becomes `DefaultVesselTelemetry`.
 
   `--check` holds the prefab to having none of them and no dangling local reference.
@@ -73,7 +73,7 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
     policy (`check_vessel_shared_channels` requires it; it is inert with no boost binding), and the `ResourceSystem`'s
     three Sparrow meters (shared world effects index a hull's meters by number, so emptying the list risks
     out-of-range; nothing fills them now).
-  - **Still the Sparrow's** (in 4c): the HUD and the ability map. Round 4d gave the Kite its own (below).
+  - **Still the Sparrow's** (in 4c): the HUD and the ability map. Round 4d gave the Wrasse its own (below).
 - **Each mote wears its crystal's effect, in lime**, round its petal (`KiteNavigatorView.CrystalEffect`, from the shipped
   crystals' numbers):
   - Charge: the seam walk, a bolt hopping round a pentagon every ~0.2 s with the last two seams thinning behind it.
@@ -83,13 +83,13 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
 
 **Round 4d (2026-10-18):**
 - **Two thumbs.** "Lets go back to two thumb flying for the pilot so it can choose the fly in a way that brings more mass
-  into plane for the kite." `author_kite_assets.py` swaps the Sparrow's `SingleStickVesselTransformer` for its base,
-  `VesselTransformer` (no field of its own, so the swap is the script guid); `--check` holds it. The Kite left
+  into plane for the kite." `author_wrasse_assets.py` swaps the Sparrow's `SingleStickVesselTransformer` for its base,
+  `VesselTransformer` (no field of its own, so the swap is the script guid); `--check` holds it. The Wrasse left
   `OneThumbVesselCoverageTests.OneThumbVessels` and joined the two-stick row of `ONE_THUMB_MOUSE_CONTROLS.md`.
   - **The hull still has the Sparrow's tuning**: `ThrottleScaler` 50, `MinimumSpeed` 10, pitch/yaw 80, roll 30. On two
     sticks the throttle is the sticks' spread (`XDiff`), so top speed is the Sparrow's 60, reached by spreading the
-    thumbs; the two-stick hulls (the Squirrel: 0 / 60 / 120 / 120 / 130) turn harder. Re-tune on the Kite in Unity.
-- **The HUD reads the navigator.** `KiteHUDController` replaces `SparrowHUDController` on the hull (the generator
+    thumbs; the two-stick hulls (the Squirrel: 0 / 60 / 120 / 120 / 130) turn harder. Re-tune on the Wrasse in Unity.
+- **The HUD reads the navigator.** `WrasseHUDController` replaces `SparrowHUDController` on the hull (the generator
   retrofits it, wired to the seat). On the Sparrow's HUD view:
   - **Time:** the saved boosts as a number, and the boost's recharge on the card's veil.
   - **Charge:** the rams the kite holds, as a number. The icon is shown again: the Sparrow's view hides it until its guns
@@ -98,7 +98,7 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
   - **Mass:** the card flashes each time a Mass cluster is laid (`PlayAbilityFlash`).
 
   The counts are generated into the cards at runtime (the Shrike's missile count is the pattern). Their text is the
-  `countTemplate` field (`{count}`), so the words are the team's. The Kite's ability map has its own cards now ("Space
+  `countTemplate` field (`{count}`), so the words are the team's. The Wrasse's ability map has its own cards now ("Space
   Blast", "Saved Boosts", "Mass Cluster", "Kite Ram", each with its L5), every input 0, so no Sparrow button chip is
   drawn.
 - **Five petals per mote, moving like its element.** Each mote is a five-petal flower, as the element amount indicator
@@ -147,10 +147,10 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
     spark lapping each petal's outline (`chargeSparkSize` 0.32 of the mote). Round 4d's plasma bars were about a pixel
     wide in the full-screen view, which is why nobody saw them.
 - **A more agile pilot, the roll especially.** Pitch and yaw 80 → 100, roll 30 → 120. On two sticks, `RollScaler` is a
-  real roll axis; the Sparrow's 30 only banked its single stick into turns. `author_kite_assets.py` writes these once,
+  real roll axis; the Sparrow's 30 only banked its single stick into turns. `author_wrasse_assets.py` writes these once,
   while the hull still carries the Sparrow's numbers, so a value tuned in Unity afterwards is never overwritten.
 
-Every "L5" is the fleet's gate, `ElementalAbilityHandler.IsUpgradeActive(element)`. The Kite's map lists all four
+Every "L5" is the fleet's gate, `ElementalAbilityHandler.IsUpgradeActive(element)`. The Wrasse's map lists all four
 elements: each unlocks at level 5 and relocks below 4.
 
 ## Seats: the swap is the arena's
@@ -174,11 +174,11 @@ always flies the empty seat:
 | `KiteNavigatorAI.cs` | The AI navigator (the lab's `navAI` / `planLoop`). Engine-free. |
 | `KiteNavigatorConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset`. |
 | `KiteNavigator.cs` | The seat on the hull: board frame, motes, prism and rival shadows, thumb, head contacts, effects, swap. |
-| `Assets/_Prefabs/Spacevessels/Kite.prefab`, `Tools/Build/author_kite_assets.py` | The Kite hull (the Sparrow plus this seat) and the tool that authors and registers it. |
+| `Assets/_Prefabs/Spacevessels/Wrasse.prefab`, `Tools/Build/author_wrasse_assets.py` | The Wrasse hull (the Sparrow plus this seat) and the tool that authors and registers it. |
 | `KiteNavigatorView.cs` | The two views: the kite camera, the picture-in-picture swap, every kite, tail, mote and ring draw (the game's renderer, `Graphics.RenderMeshInstanced`). |
-| `UI/Controller/KiteHUDController.cs` | The four ability cards read the seat: saved boosts, charges, the last blast, the Mass flash. |
+| `UI/Controller/WrasseHUDController.cs` | The four ability cards read the seat: saved boosts, charges, the last blast, the Mass flash. |
 | `Utility/PrismDepthPlane.cs`, `_Graphics/Materials/Graphs/PrismDepthPlane.hlsl` | Prism depth from a plane, for one camera's render (the kite view). |
-| `ImpactEffects/EffectsSO/Vessel Crystal Effects/KiteOmniCrystalEffectSO.cs` | An Omni crystal drops a burst of motes on the board (asset `KiteOmniCrystalEffect`, in `KiteImpactorDataContainer`). |
+| `ImpactEffects/EffectsSO/Vessel Crystal Effects/KiteOmniCrystalEffectSO.cs` | An Omni crystal drops a burst of motes on the board (asset `KiteOmniCrystalEffect`, in `WrasseImpactorDataContainer`). |
 | `Assets/_Scripts/Editor/Studios/KiteNavigatorHarnessMenu.cs` | **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull (Play mode)** and **Remove**. |
 | `Assets/_Scripts/Tests/Editor/KiteNavigatorCoreTests.cs`, `KiteNavigatorConfigTests.cs` | The core's rules, and the asset's numbers and wiring. |
 | `Tools/Build/kite_navigator_lab/parity.cjs` | Compiles the shipped C# core and diffs it against the lab page frame by frame, over 6 scripted thumbs. Also diffs the asset against the page key by key. Planted controls must be caught. |
@@ -187,7 +187,7 @@ always flies the empty seat:
 
 **In the Toybox** (how every lab port is tried: Garrett, 2026-10-17):
 
-1. Open the Toybox (menu freestyle) and fly into the **Vessel Changer**. Fly the **Kite** station.
+1. Open the Toybox (menu freestyle) and fly into the **Vessel Changer**. Fly the **Wrasse** station.
 2. You fly the hull, a Sparrow body, with two thumbs (both sticks, or the keyboard) and no buttons. The kite view is a
    small square in the lower left, with the AI flying the kite. Pull the right trigger (right Shift; lift both thumbs on a
    phone) to spend a boost a Time loop saved. The Time card counts them, the Charge card counts the kite's rams, the
@@ -199,18 +199,28 @@ always flies the empty seat:
 The same seat can ride any other hull in a match: **FrogletTools > Vessels > Kite Navigator > Seat On Local Hull
 (Play mode)**.
 
-## The Kite hull
+## The Wrasse hull
+
+**The name** (Garrett, 2026-10-18: "lets give this vessel a good name based on a mutualistic pair"): the **cleaner
+wrasse** and the big fish it keeps. The wrasse darts round its host picking parasites off, and the host gets cleaned
+while the wrasse gets fed. On this hull, the navigator's kite darts round the hull popping the enemy prisms around it,
+and what its lasso gathers feeds the pilot (blasts, clusters, saved boosts, rams). The hull was called the Kite until
+then. The hull-level names moved with it: `VesselClassType.Wrasse` (still 19), `Wrasse.prefab`, `SO_Class_Wrasse`,
+`ElementalAbilityMaps/Wrasse`, `WrasseImpactorDataContainer`, `WrasseHUDController` and
+`Tools/Build/author_wrasse_assets.py`. Every `.meta` guid was kept, so no reference changed. The SEAT keeps its name:
+the navigator still flies a kite, so `KiteNavigator*`, `KiteOmniCrystalEffect`, this doc and the lab's "Kite & Tail"
+are unchanged.
 
 The navigator is a seat, not a hull, and the Vessel Changer offers hulls. So the seat ships on its own hull class:
-`VesselClassType.Kite = 19`.
+`VesselClassType.Wrasse = 19`.
 
-- **The hull:** `Kite.prefab` is a clone of `Sparrow.prefab` with `KiteNavigator` on its root, wired to
-  `KiteNavigatorConfig.asset`. `Tools/Build/author_kite_assets.py` authors and registers it; it is the duo branch's
+- **The hull:** `Wrasse.prefab` is a clone of `Sparrow.prefab` with `KiteNavigator` on its root, wired to
+  `KiteNavigatorConfig.asset`. `Tools/Build/author_wrasse_assets.py` authors and registers it; it is the duo branch's
   `author_goby_assets.py` cloned for the Sparrow.
 - **Its registrations:**
-  - `SO_Class_Kite`, owned from the start, in both class lists;
+  - `SO_Class_Wrasse`, owned from the start, in both class lists;
   - the Vessel Prefab Container and `DefaultNetworkPrefabs`;
-  - `ElementalAbilityMaps/Kite`, the Sparrow's map with the Kite's own cards, every input 0 (round 4d);
+  - `ElementalAbilityMaps/Wrasse`, the Sparrow's map with the Wrasse's own cards, every input 0 (round 4d);
   - four `CrystalHullFusionConfig` entries, the Sparrow's;
   - `ToyVesselRoster.Default` and `EnumIntegrityTests` in code.
 - **The checks:** `--check` validates the shipped set and `--self-test` proves each check fires.
@@ -238,7 +248,7 @@ back, as well as any menu that parks the hull on its AI. On an AI hull or a remo
   while the human navigates.
 - **The kite view sees 400 u either side of the plane**, depth measured from the plane and the mass above it dithered; the
   lab drew prisms beyond the slice as faint ghosts.
-- **The Omni burst comes only on the Kite hull**: the play-mode menu's seat on another hull has no Omni effect in its
+- **The Omni burst comes only on the Wrasse hull**: the play-mode menu's seat on another hull has no Omni effect in its
   container.
 
 ## Gates
@@ -246,7 +256,7 @@ back, as well as any menu that parks the hull on its AI. On an AI hull or a remo
 ```
 node Tools/Build/kite_navigator_lab/parity.cjs        # core vs page, asset vs page, planted controls
 bash Tools/Build/unity_refcompile/run.sh              # the player compile
-python3 Tools/Build/author_kite_assets.py --check     # the hull: no Sparrow kit, two sticks, the Kite HUD, the map
+python3 Tools/Build/author_wrasse_assets.py --check     # the hull: no Sparrow kit, two sticks, the Wrasse HUD, the map
 python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' spread with the depth-plane include
 ```
 
@@ -258,8 +268,8 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
   `InputController` polls it, and is paused only while the human navigates. A crew hull in an arena needs one owner
   for the gesture.
 - **Duo vessels.** When the duo-vessel system lands (branch `cece/sharp-tesla-j0kd7z`, skill `/duo-vessel`), fold the
-  Kite into it as a duo design. It already follows the same shape: one hull class, the seat on the root, the
+  Wrasse into it as a duo design. It already follows the same shape: one hull class, the seat on the root, the
   arena's swap.
 - **Sounds.** All eight `EventReference` slots ship empty: loop closed, fizzle, pop, Mass, Time, Charge, steal, creature.
-- **The generated-asset audit's 8 findings on `Kite.prefab`** (stale `ShowTopMostFoldoutHeaderGroup` keys, the
+- **The generated-asset audit's 8 findings on `Wrasse.prefab`** (stale `ShowTopMostFoldoutHeaderGroup` keys, the
   `R_VesselElementStatsHandler.cs` file/class name) are inherited from `Sparrow.prefab`, which carries the same ones.

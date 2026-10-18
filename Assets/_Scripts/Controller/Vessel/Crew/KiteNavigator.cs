@@ -78,7 +78,7 @@ namespace CosmicShore.Gameplay
         const int MaxPrismShadows = 900;
 
         [Header("Config")]
-        [Tooltip("Every number of the kite (KiteNavigatorConfig.asset, the lab's signed-off candidate). The Kite hull's " +
+        [Tooltip("Every number of the kite (KiteNavigatorConfig.asset, the lab's signed-off candidate). The Wrasse hull's " +
                  "prefab wires it; the play-mode menu hands it to a hull it attaches to.")]
         [SerializeField] KiteNavigatorConfigSO config;
 
@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
         public void OnOmniCrystal() => _omniPending++;
 
         /// <summary>
-        /// Seat a navigator on the hull the local player flies (the FrogletTools play-mode menu calls this; the Kite hull
+        /// Seat a navigator on the hull the local player flies (the FrogletTools play-mode menu calls this; the Wrasse hull
         /// carries one on its prefab). The human keeps the hull; the AI takes the kite until the swap gesture moves them.
         /// Returns null, with a warning, when no local hull is flying.
         /// </summary>
@@ -914,7 +914,7 @@ namespace CosmicShore.Gameplay
             return input.RightTriggerAnalog > 0.5f || input.Idle;
         }
 
-        // The hull's level-5 upgrade in an element: the fleet's replicated gate (the Kite's ElementalAbilityMap lists all four
+        // The hull's level-5 upgrade in an element: the fleet's replicated gate (the Wrasse's ElementalAbilityMap lists all four
         // elements, unlocking at 5 and relocking below 4).
         bool Upgraded(Element element)
         {

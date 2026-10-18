@@ -245,8 +245,8 @@ namespace CosmicShore.Utility
                 player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
-            // Sparrow keeps laying prisms forever otherwise (the Kite is a Sparrow hull with a navigator seat).
-            if (status.VesselType is VesselClassType.Sparrow or VesselClassType.Kite && status.VesselPrismController != null)
+            // Sparrow keeps laying prisms forever otherwise (the Wrasse is a Sparrow hull with a navigator seat).
+            if (status.VesselType is VesselClassType.Sparrow or VesselClassType.Wrasse && status.VesselPrismController != null)
                 status.VesselPrismController.StopSpawn();
 
             var behavior = status.AICinematicBehavior;

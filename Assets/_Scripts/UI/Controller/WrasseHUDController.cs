@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Kite's four ability cards read the navigator's loops (Garrett, 2026-10-18; design:
+    /// The Wrasse's four ability cards read the navigator's loops (Garrett, 2026-10-18; design:
     /// <c>Controller/Vessel/Crew/KITE_NAVIGATOR.md</c> "Round 4d"):
     /// <list type="bullet">
     /// <item><b>Charge</b> — the rams the kite holds power for, as a number on the card.</item>
@@ -17,14 +17,14 @@ namespace CosmicShore.UI
     /// boost's recharge on the card's veil.</item>
     /// </list>
     /// The view is the Sparrow's HUD (the hull is a Sparrow clone), whose Initialize hides the Charge and Space
-    /// icons until its guns report; the Kite has no guns, so this controller shows them. The counts are GENERATED
+    /// icons until its guns report; the Wrasse has no guns, so this controller shows them. The counts are GENERATED
     /// into the cards at runtime (the Shrike's missile count is the pattern), so the HUD prefab carries no extra
     /// object. Polled from this hull's own seat, a serialized reference (vessel rule 14), behind the fleet's pilot
     /// gate (rule 5).
     /// </summary>
-    public class KiteHUDController : VesselHUDController
+    public class WrasseHUDController : VesselHUDController
     {
-        [Header("Kite")]
+        [Header("Wrasse")]
         [Tooltip("This hull's navigator seat: the saved boosts, the charges, the last blast and the Mass flash.")]
         [SerializeField] KiteNavigator navigator;
 

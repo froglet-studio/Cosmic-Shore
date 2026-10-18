@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
-  m_Name: Kite
+  m_Name: Wrasse
   m_EditorClassIdentifier:
   vesselClass: 19
   entries:

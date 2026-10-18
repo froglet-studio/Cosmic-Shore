@@ -1115,7 +1115,7 @@ some content look better, or one taken for longer than the vantage it exists for
 **The one re-shaping view, `PrismOcclusionCorridor.BeginViewOverride` / `EndViewOverride`
 (2026-10-18).** Not a hold and not a re-point to somewhere else: a SECOND VIEW of the bound
 vessel's own play that looks down a different line needs the same protection the law gives the
-pilot's eye. The one caller is the Kite's navigator board (`Controller/Vessel/Crew/KiteNavigatorView.cs`).
+pilot's eye. The one caller is the Wrasse's navigator board (`Controller/Vessel/Crew/KiteNavigatorView.cs`).
 That is a top-down orthographic camera over the hull's plane, where the mass between the lens and the
 plane hides the board the navigator flies on (Garrett: "for the prisms above the plane just use
 the dither effect in a cone to preserve the viewing area visibility").
