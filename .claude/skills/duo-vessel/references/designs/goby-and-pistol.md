@@ -377,3 +377,14 @@ the line it settled.
   `closeness` / `aiGapThrottle` factored into named functions and held by a golden. The straight boost stays lab-only.
   **[read] for Garrett:** with 160 u/s and x2.4 the human Goby outruns the Pistol outright (35 u/s on the ground, 280 at
   launch): the Pistol's game is the world the Goby lays, not the chase; the AI Goby still waits beyond 260 u.
+- 2026-10-18, Garrett: **"render the shrimp view as true to the game as possible; err on the side of being too true to
+  the game."** The view is no longer a stylised re-rendering: a real perspective camera (its off-axis frustum IS the
+  parallax about the Pistol, `PistolWarp.Frustum`), every prism / trail block / the Goby's hull drawn with their OWN
+  meshes and materials under the scene's lights and sky (`PistolTrueDraw`), only positions and orientations unrolled
+  (`FlatTransform`, `TileTransform`), a lapped prism's own mesh deformed into the bar. Dropped: fog, glass, depth fades,
+  tints, the custom prism look; the marks (primed / hot / held, the ghost cue) are rings; the ground line, the Pistol's
+  tube and trail, the aim and the pops stay as unlit marks. One concession: a foreground prism that would cover the
+  Pistol is not drawn. The lab's side view follows the same principles (its 3D view's prism material, lit, the same
+  camera; `frustumOf` held by a golden). **[read] for Garrett:** the brief's §4.3 "may distort" and the review's fog /
+  glass awareness-of-depth are superseded by "true": depth is perspective alone now; if the near field needs a hint of
+  distance back, a depth-of-field or the game's own fog is the true way, not a tint.
