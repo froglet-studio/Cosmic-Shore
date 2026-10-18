@@ -2671,3 +2671,29 @@ sprites into `SignInProviders.asset`, and every button picks them up.
 Gates: `author_start_flow.py --self-test` adds five planted defects (the splash's lattice, the controller's chooser, a
 shown PROGRESS face, a missing provider button, Steam not silent); `author_menu_settings.py --self-test` adds three
 (the Account page out of the in-game lock, a missing Account row, a shown Account window).
+
+## 55. Provider logos must be the originals; Rev 10 boards (2026-10-18)
+
+**The §54 sign-in buttons cannot ship as built.** Checked against each provider's published rules (the owner asked):
+- **Google** (Sign in with Google branding guidelines): the button must carry the standard-colour G on a light, dark or
+  neutral fill - no recolouring, no monochrome G, no custom icon - with an approved call to action. Its pre-approved
+  button images (`signin-assets.zip`, PNG/SVG, light / dark / neutral) are the safe route.
+- **Apple** (HIG, Sign in with Apple): logo artwork only from Apple Design Resources, never redrawn; logo and title black
+  or white on a black or white button; "Sign in / Sign up / Continue with Apple"; no smaller than any other sign-in
+  button. App Review checks custom buttons. App Store 4.8 requires an Apple-like private option when Google sign-in is
+  offered on iOS.
+- **Steam** (Valve brand guidelines): only Valve-approved artwork, unaltered, standalone, with the ® attribution.
+
+So the stand-in marks AND the style-B treatment (glass fill, element rim, tinted mark) break Google's and Apple's
+rules. The fix, drawn as `R9bChooser` on the Rev 9 page: Google's own dark button image untouched, Apple's white button
+the same size, focus as a sky-blue ring AROUND a button (never on it), and no Steam button at all (a Steam build signs in
+silently; if Steam is not running the chooser says so). Waiting on the owner: approve R9b, and agree to the providers'
+asset terms (Apple's ships as a macOS disk image under Apple's licence) before the files go into the repo with
+`THIRD_PARTY_REGISTER.md` rows.
+
+**Rev 10 boards** (canvas page "Rev 10 - Profile + music"): `R10Profile` (fly time / games / sessions on the pilot card,
+favourite vessel = most flown, favourite pilot = your pick, fly time by vessel, a Soundtrack card, the now-playing card
+bottom right), `R10Soundtrack` (tick the tracks you want, shuffle, all on / off), `R10NowPlaying` (the FC-style card:
+slides in on a new track, resting / focused states, toast-only in a match), `R10FavPilot`, `R10Notes`. Not built.
+What building them needs: per-vessel fly time and a favourite-pilot field in the profile; and the music event made
+track-addressable in the FMOD project (today `event:/Music/Music` plays its nine tracks at random) - aradia1's area.
