@@ -13,24 +13,95 @@ namespace CosmicShore.Gameplay
         [SerializeField] float animationScaler = 25f;
         [SerializeField] float yawAnimationScaler = 80f;
 
-        // Bone names of the rigged rhino model (rhino_shapekey_with_animations.fbx): a 'fuse'
-        // body, front wings 'wing1.*' carrying the back wings 'wing2.*' and the engines 'jet.*'.
-        // Legacy part names from the placeholder model follow as fallbacks, so this resolves on
-        // either art. See VesselAnimation.ResolvePart.
+        // The DRAWN hull is the rigged model (rhino_shapekey_with_animations.fbx, nested under
+        // 'Rhino_Test (1)' since 2026-10-18): a 'fuse' body, front armour plates 'wing1.*' carrying
+        // the back plates 'wing2.*' and the disc engines 'jet.*'. The puppetry still turns the
+        // prefab's own part transforms ('Wing front left', 'engine left' ...), because they carry
+        // the hull colliders and the pod jets; each drawn bone FOLLOWS its part rigidly (see
+        // FollowParts), so the hull moves exactly as the placeholder did, every collider keeps
+        // enclosing its drawn plate, and no rest-frame or sign question can arise on the bones.
+        const string LeftWingBone = "wing1.l";
+        const string RightWingBone = "wing1.r";
+        const string LeftEngineBone = "jet.l";
+        const string RightEngineBone = "jet.r";
+
+        /// <summary>A drawn bone held rigidly in the frame of the part the puppetry turns.</summary>
+        struct BoneFollower
+        {
+            public Transform Bone;
+            public Transform Part;
+            public Vector3 PositionInPart;
+            public Quaternion RotationInPart;
+        }
+
+        // Wings first: the engine bones are their children, so they are placed after their parents.
+        readonly BoneFollower[] _followers = new BoneFollower[4];
+        int _followerCount;
+
+        public override void Initialize(IVesselStatus vesselStatus)
+        {
+            // The model is found, not wired: its sub-objects' fileIDs exist only after Unity imports
+            // it. Its element shapes are driven by the base class by name; the flares need the
+            // renderer; and the wing fold (up to 80 degrees) and the morphs reach past the bind-pose
+            // bounds, so it must not be culled on them.
+            if (!SkinnedMeshRenderer) SkinnedMeshRenderer = GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.updateWhenOffscreen = true;
+            base.Initialize(vesselStatus);
+        }
+
+        // Part names: the authored references win (the prefab wires the placeholder's transforms);
+        // the rig's bone names come first among the fallbacks, so an unwired prefab drives the bones
+        // directly. See VesselAnimation.ResolvePart.
         protected override void ResolveParts()
         {
             Fusilage = ResolvePart(Fusilage, "fuse", "Fusilage", "Rhino_Test (1)");
-            LeftWing = ResolvePart(LeftWing, "wing1.l", "Wing front left");
-            RightWing = ResolvePart(RightWing, "wing1.r", "Wing front right");
-            LeftEngine = ResolvePart(LeftEngine, "jet.l", "engine left");
-            RightEngine = ResolvePart(RightEngine, "jet.r", "engine right");
+            LeftWing = ResolvePart(LeftWing, LeftWingBone, "Wing front left");
+            RightWing = ResolvePart(RightWing, RightWingBone, "Wing front right");
+            LeftEngine = ResolvePart(LeftEngine, LeftEngineBone, "engine left");
+            RightEngine = ResolvePart(RightEngine, RightEngineBone, "engine right");
 
-            // The legacy parts all rest at identity, so this is a no-op on the current art; the
-            // rig's bones rest at large angles (wing1.l ~42 deg, jet.l ~115) and must be driven
-            // relative to that pose or the ship tears flat the moment it animates.
+            // The prefab's parts rest at identity, so this is a no-op on them; a bone driven directly
+            // (an unwired prefab) rests at its bind angle and must be driven relative to it.
             CaptureRestRotations(Fusilage, LeftWing, RightWing, LeftEngine, RightEngine);
 
+            // Captured here, at the authored pose, before anything animates.
+            _followerCount = 0;
+            Follow(LeftWing, ResolvePart(null, LeftWingBone));
+            Follow(RightWing, ResolvePart(null, RightWingBone));
+            Follow(LeftEngine, ResolvePart(null, LeftEngineBone));
+            Follow(RightEngine, ResolvePart(null, RightEngineBone));
+
             ReportUnresolvedParts();
+        }
+
+        void Follow(Transform part, Transform bone)
+        {
+            // A part that IS the bone (an unwired prefab resolved the rig directly) needs no follower.
+            if (!part || !bone || part == bone || _followerCount >= _followers.Length) return;
+            _followers[_followerCount++] = new BoneFollower
+            {
+                Bone = bone,
+                Part = part,
+                PositionInPart = part.InverseTransformPoint(bone.position),
+                RotationInPart = Quaternion.Inverse(part.rotation) * bone.rotation,
+            };
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            FollowParts();
+        }
+
+        /// <summary>Places every drawn bone where its puppeted part carries it. Per frame, no allocation.</summary>
+        void FollowParts()
+        {
+            for (int i = 0; i < _followerCount; i++)
+            {
+                ref readonly var f = ref _followers[i];
+                if (!f.Bone || !f.Part) continue;
+                f.Bone.SetPositionAndRotation(f.Part.TransformPoint(f.PositionInPart), f.Part.rotation * f.RotationInPart);
+            }
         }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)

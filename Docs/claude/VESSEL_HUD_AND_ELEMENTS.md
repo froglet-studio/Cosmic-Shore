@@ -103,7 +103,9 @@ oversight — their prefabs wired fundamentally different models. `Dolphin_Test.
 static part meshes, `Urchan_Test.fbx` 14, and Rhino wires `Rhino_Test.fbx` (7 meshes); none carries
 a single blend shape. **The Dolphin left this set on 2026-08-26**: its prefab now wires
 `dolphin_shapekey_with_animations.fbx` and it morphs on all four elements (Mass 12.056%, Charge
-4.314%, Space 3.140%, Time 13.538% of the hull diagonal). Rhino and Urchin remain, by decision
+4.314%, Space 3.140%, Time 13.538% of the hull diagonal). (**Rhino and Urchin left it on 2026-10-18**: both prefabs draw
+their rebuilt rigs, with four real morphs each, `Docs/VesselModels/README.md`; the next sentence is the record before
+that.) Rhino and Urchin remain, by decision
 rather than by omission — see the swap section below. **That last one used to read "Rhino wires `Vessel_Placeholder_1.fbx`", which
 was this very document repeating the guid trap `VESSEL_CONSTRUCTION.md` §2 exists to warn about** —
 `Rhino_Test.fbx.meta` is the file whose own `guid:` line carries `4a58…`; the placeholder merely

@@ -22,11 +22,11 @@ MonoBehaviour:
   InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}
   IconActive: {fileID: 21300000, guid: 84d4fdddc15bfb5246661dd737f1f4e1, type: 3}
   IconInactive: {fileID: 21300000, guid: 1645d894dd99fb1a573436492c56acc2, type: 3}
-  PreviewImage: {fileID: 0}
-  SquadImage: {fileID: 0}
+  PreviewImage: {fileID: 21300000, guid: 8145058f0ce1725594320d89ad341fe0, type: 3}
+  SquadImage: {fileID: 21300000, guid: 84d140bd415cafb66af261a3210bf794, type: 3}
   TrailPreviewImage: {fileID: 0}
-  CardSilohoutteActive: {fileID: 0}
-  CardSilohoutteInactive: {fileID: 0}
+  CardSilohoutteActive: {fileID: 21300000, guid: 84d4fdddc15bfb5246661dd737f1f4e1, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: 93e726e377c7d1007ba943700bf825e7, type: 3}
   Abilities: []
   Games: []
   TrainingGames: []

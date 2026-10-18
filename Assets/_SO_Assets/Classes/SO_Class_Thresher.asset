@@ -27,11 +27,11 @@ MonoBehaviour:
     Time: 0
   IconActive: {fileID: 21300000, guid: 26e24fdeb0182aa62989f7fe93ff34a3, type: 3}
   IconInactive: {fileID: 21300000, guid: 044f1f35b65954e51562a8ac664f021e, type: 3}
-  PreviewImage: {fileID: 0}
-  SquadImage: {fileID: 0}
+  PreviewImage: {fileID: 21300000, guid: 6c79c1457f13001d2f6a028652845d95, type: 3}
+  SquadImage: {fileID: 21300000, guid: a0271f997d38177eadc5953600c0406b, type: 3}
   TrailPreviewImage: {fileID: 0}
-  CardSilohoutteActive: {fileID: 0}
-  CardSilohoutteInactive: {fileID: 0}
+  CardSilohoutteActive: {fileID: 21300000, guid: 26e24fdeb0182aa62989f7fe93ff34a3, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: bdb07f5dc95cfcbbc839849d1a451d2f, type: 3}
   Abilities: []
   Games: []
   TrainingGames: []

@@ -1,6 +1,7 @@
 // Runs every [Test] in the compiled assembly by reflection and prints a pass/fail line per test. Exit 0 = all passed.
 // `--obj <dir>` instead writes the SHIPPED hull as OBJ (base.obj, flames omitted, plus one per element extreme; two
-// materials, body and accent) for Tools/Build/render_brittlestar_card_icon.py.
+// materials, body and accent); its card consumer, render_brittlestar_card_icon.py, was retired 2026-10-18 (the card is
+// rendered from BrittleStar.fbx by Tools/Build/vessel_model/render_cards.py).
 using System;
 using System.Collections.Generic;
 using System.Globalization;

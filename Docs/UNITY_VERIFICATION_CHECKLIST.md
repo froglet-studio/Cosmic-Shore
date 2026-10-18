@@ -277,6 +277,212 @@ player-dev and editor configs (0 project errors); `GobyPistolMathTests` (10 test
    **4 / D-pad down** sends a flare to each hot prism.
 7. **Look for:** no prism popping in or out in the 3D world; no console errors; a super-shielded prism is never carried or
    broken; the frame rate holds with the inset on.
+
+### 🔴 The fleet colour scheme: shared vessel materials, slot fixes, every card re-rendered (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable (no Editor, no `unity` binary). No C# changed. What ran:
+- `vessel_colors.py --check` (the four materials carry the scheme);
+- `render_cards.py --all --check` (fourteen hulls' cards match a fresh render);
+- `author_{shrike,brittlestar,stoat,angler,thresher}_assets.py --check`, `author_angler_icons.py --check`,
+  `author_urchin_card_icons.py --check` (now a pointer check, with a negative control that fired) and
+  `check_vessel_class_icons.py`.
+
+Scheme, reasons and sheets: `Docs/VesselModels/COLOR.md`. Team tasks: T-20261018-d3e5 (this look),
+T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime jets).
+
+- **Materials** (sRGB rim / face):
+  - `BlueBaseVesselMaterial` and `BlueBaseOpaqueVesselMaterial`: dark gunmetal, (0.18, 0.21, 0.33) / (0.028, 0.033, 0.065);
+  - `ScreenVesselMaterial`: sapphire, (0.70, 0.80, 1.0) / (0.06, 0.16, 0.62);
+  - `EngineVesselMaterial`: ember, (0.42, 0.11, 0.04) / (0.19, 0.04, 0.02), resting `_ColorMultiplier` 5 → 1
+    (FlareEngine still sets 5 on boost).
+- **Slots**:
+  - Manta, Termite and Falcon draw `[GreenAccent, BlueBase, Screen, Engine]`. Their live `manta` renderer is in
+    `_shipGeometries`, painted by identity (`_domainReplacesMaterials = [GreenAccent]`, the sharedMaterials
+    path, which clones nothing).
+  - Every skinned hull's engine and body flares now write a per-slot property block, not `renderer.materials`
+    (`VesselAnimation.ApplyFlare`; ship review: the models made the old cloning path live on nine more hulls).
+    Check that the jet exits still brighten on boost and the domain still pulses on a speed burst.
+  - The Rhino's meta: `accent.005` is the domain, `BASE.005` the body, `N.005` the Engine.
+  - The inactive mantis copy's `N` is Engine.
+- **Cards**: every class card, inactive card, silhouette, large image and hangar preview of the fourteen hulls is
+  rendered from its model with the silver CLASS livery on the domain slot. The artist hulls' files are rewritten
+  in place, so `Dolphin_Square.png`'s other users and the Termite's silhouette change too.
+- **Follow-up, same day**: Gold's `ShipColor1`/`ShipColor2` were swapped (they had been entered reversed) in
+  `OriginalColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
+  right.
+
+Verify in the Editor:
+1. Fly Squirrel, Rhino, Manta and Thresher in each domain at the chase camera. The domain is the brightest thing
+   on the hull, the glass reads as glass, and the body's steel rim draws the silhouette against the sky. The jet
+   exits are a dull ember at rest and hot red on boost.
+2. **Body ghosting**: the body is transparent with no depth write. Look for far parts of a hull showing through
+   near parts (rim lines where none should be). If they do, move the hull to `BlueBaseOpaqueVesselMaterial`.
+3. **Manta / Termite / Falcon**: the eye-spots take the team colour, the canopy is glass, the trailing-edge
+   stripes are ember (not lime), and `FlareEngine` lights the stripes. On the Falcon, check that
+   `VesselCustomization` no longer logs the empty-geometry error.
+4. **Rhino**: the neon stripes take the team colour, the hull is gunmetal, and the nozzles and pod rings are ember.
+5. Menu: the vessel carousel, the class cards, the hangar previews and the squad images show the new renders. No
+   white squares.
+6. **Gold**: a Gold ship is dark at its silhouette and bright face-on, like Ruby and Jade. In a match, the Gold
+   score chip's backdrop is the muted brown and its accent strip the bright gold.
+
+### 🔴 The fleet pass: every playable hull is a pipeline-owned model; card images from the models (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable (no Editor, no `unity` binary). What ran on the merged tree: the headless reference
+compile (80 assemblies, no errors in project code); `build.py <vessel> --check` for all fourteen specs; every touched
+generator's `--check` (thresher, shrike, brittlestar, stoat, angler, urchin, rhino sword combos, butterfly dust,
+preview spawns, the icon tools); `render_cards.py <V> --check` for the seven re-carded hulls; the fleet gates
+(console logging, class icons, network prefab hashes, prefab container, shared channels, camera far clip,
+conditional compilation). Contact sheets: `Docs/VesselModels/sheets/`. Team tasks T-20261018-3ec7 / 97b6 / 987b /
+1432 / 2070.
+
+For every hull below: reimport its FBX; run **FrogletTools ▸ Vessels ▸ Audits ▸** Vessel Elemental Morphs (four real
+shapes), Vessel Construction, Vessel Tails and Jets; fly it in Menu_Main freestyle; change domain (the domain colour
+lands on the Domain plates); upgrade each element (each visibly morphs the hull); check the class card, the
+inactive card and the hangar preview are the new hull. Then run **Wiring ▸ Bake Crystal Hull Fusions** once and
+push the bakes (Thresher, Scarab, Brittle Star, Urchin and Rhino are stale until then; they solve at runtime).
+
+1. **Sparrow, Serpent, Manta** (reproduced exactly): indistinguishable from before.
+2. **Thresher** (`Thresher.fbx`): a right turn swings the whip LEFT (out of the turn; the swim's yaw sign was
+   fixed), a planted whip curls toward the ball, a crack flicks toward it; the chain hangs from the shackle.
+3. **Scarab** (`Scarab.fbx`; the hidden Sparrow is gone from the prefab): the elytra open in a turn and on
+   throttle, the legs hang and tuck, the juke roll carries every part; the hull collider still triggers.
+4. **Stoat** (`Stoat.fbx`): the lope, the turn bend and the tail swing; spaghettification near a horizon still
+   stretches the drawn hull.
+5. **Angler** (`Angler.fbx`, its own `AnglerAnimation`): the swim beat, the jaw opens and the esca bulb swells
+   while luring (A held); the world-mark lure dot is unchanged.
+6. **Brittle Star** (`BrittleStar.fbx`): the ring turns with the firing rotation, is gone while thrown and blooms
+   back; muzzles fire from the barrel mouths; thruster flames lengthen; the 28 degree bank.
+   **Ring Detonation** (fixed at ship review): the thrown ring spins in its OWN plane, around the nose axis (it
+   used to take the mesh node's frame, whose Z is the hull's UP, so it tumbled), it leaves without frozen
+   plumes, and the blast disk faces along the nose.
+7. **Shrike** (`Shrike.fbx`): the beam leaves `gun.mouth`; the flame scales aft; docking swings the talon clamps.
+8. **Urchin** (rig swap): pods extend in flight and tuck flush when riding, the colliders stay on the drawn pods
+   (gizmos) through pitch/yaw/roll, plumes leave the four jet mouths, Slip/GhostAction still phase the colliders.
+9. **Rhino** (rig swap): wings fold at low throttle with the drawn plates inside their colliders (the plough's
+   reach), pod plumes leave the drawn rings, the pods now also wear the domain colour.
+
+### 🔴 The Butterfly's new model replaces its procedural hull (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable in this session (no Editor, no `unity` binary). What did run: the headless
+reference compile (`Tools/Build/unity_refcompile/run.sh`, 80 assemblies, no errors in project code),
+`build.py butterfly --check` (OK), `author_butterfly_dust.py --check` (OK) and a prefab self-check (every local
+reference resolves). Changed: `Assets/_Models/Vessel Models/Butterfly.fbx` (+ `.meta`, new guid, four slots
+remapped), `Butterfly.prefab` (the model under `Hull` in place of the MeshFilter / MeshRenderer /
+`ButterflyHullBuilder`), `ButterflyAnimation.cs` (bones by name, finds the SkinnedMeshRenderer, wing side signs
+fixed), `FoldActionExecutor.cs` (the ghost bakes the skinned mesh), `VesselCustomization.cs` (a model geometry
+with no Renderer resolves to its child SkinnedMeshRenderer). Verify in the Editor:
+1. The project compiles; the model imports with its four slots remapped (Domain / Body / Window / Engine).
+2. Fly it in Menu_Main freestyle: four wings beat from the hinges, the fore and hind a little apart; the
+   domain colour is on the wings; change domain and the wings change.
+3. Mass mode spreads the wings; the Fold (hold LT) closes them OVER THE BACK and the ghost is a butterfly.
+4. Upgrade each element: Charge, Mass, Space, Time each visibly change the hull.
+5. `FrogletTools ▸ Vessels ▸` Audit Vessel Elemental Morphs (four, none INERT), Audit Vessel Construction.
+
+### 🔴 The seven vessel models rebuilt in place by `/vessel-model` (Squirrel, Dolphin, Sparrow, Serpent, Manta live files; Urchin and Rhino rigs) (`ccr-d93a6dfb-ugbxng`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett (2026-10-17): "procedural vessel models are terrible even as placeholders". A new skill,
+`/vessel-model` (`.claude/skills/vessel-model/`), and its tools (`Tools/Build/vessel_model/`, Blender 5.2 as a Python
+module, no GUI) rebuilt the seven hulls from Python specs and wrote them **in place over the artist files** (same
+path, same guid, same mesh-node / geometry / armature / bone / material names, every bone's rest pose reproduced to
+0.000 by `rest_compare.py`, the same file frame per file). Each file: one skinned mesh, four REAL element shape
+keys (`charge/mass/space/time`, 4-18% of the diagonal; the Urchin and Rhino artist rigs had four EMPTY ones), the
+takes the Animators / `.meta` bind by name (Squirrel 9, Serpent 6, Sparrow 12, Dolphin 10 motion takes, Manta 9,
+Urchin / Rhino 9 standard poses), four material slots in the shipped order with polygons on every slot. Verified
+offline by three readers (the repo FBX codec + `fbx_probe`, `assimp info`, a Blender re-import), `build.py --check`
+green on all seven, `measure_vessel_models.py` green. **Nothing here ran in the Unity Editor**: `/verify-unity`
+was not available in the session (no editor, no `unity` binary). No C# changed. Live files rewritten:
+`SquirrelVessel_CosmicShoresTest1.fbx`, `dolphin_shapekey_with_animations.fbx`, `SparrowModel1.fbx`,
+`SerpentExport.fbx`, `Manta_shapekey_rigged.fbx`; rig files rewritten (not yet drawn by any prefab):
+`urchan_shapekey_with_animations.fbx`, `rhino_shapekey_with_animations.fbx`. Before/after contact sheets:
+`Docs/VesselModels/sheets/`.
+
+**Verify:** (1) Check out the branch; let Unity reimport the seven FBX files. Console: no "self-intersecting and
+has been discarded", no missing-bone or missing-clip warning; each `.meta` still resolves its clip ids (the take
+names are unchanged) and its `externalObjects` material remaps (names unchanged; the Dolphin's `N.001` never had a
+remap and still wears its Blender material, dossier `Docs/VesselModels/Dolphin.md` §2). (2) Open each prefab
+(`Assets/_Prefabs/Spacevessels/`: Squirrel, Dolphin, Sparrow, Serpent, Manta, plus Falcon / Shrike / Termite, which
+draw the Manta file): the SkinnedMeshRenderer shows the new hull, no bone binding broke, the jets / colliders /
+flares still sit on the hull (they hang off bones whose rest poses are unchanged). (3) `FrogletTools > Vessels >
+Audits > Audit Vessel Elemental Morphs`: all four shapes REAL on the five live files (the editor reads root-bone
+bounds and reports ~1.28x smaller than the offline number). `Audit Vessel Construction` and `Audit Vessel Tails and
+Jets`: no new row. (4) `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` for the Squirrel, Dolphin and
+Manta (the bakes store a vertex count and hash and are stale on any new mesh; the runtime falls back to a worker
+solve meanwhile). (5) Fly each of the five in freestyle: the hull reads at the chase camera; pitch / yaw / roll /
+throttle move the whole hull (Squirrel, Serpent, Sparrow through their Animator poses, Dolphin and Manta through code
+puppetry); the domain colour lands on the domain slot (slot 0 on the Dolphin / Manta family, `Body` on the Squirrel /
+Serpent / Sparrow as shipped); the glass and the engine mouths read; each element's morph is nameable in the
+elemental lab (Space = reach, Time = speed, Charge = weapon, Mass = volume). **Sparrow, read first:** the artist
+file flew BACKWARDS (`Docs/VesselModels/Sparrow.md` 1.4: the jet-hosting `b_Tail*` blades led, the cockpit trailed,
+`PitchUp` was inverted as flown); the rebuilt Sparrow is nose-first (beak and canopy forward, the six engine tubes
+at the stern) and its six `b_Tail1..3.L/.R` bones were MOVED to the stern, orientation kept, so the prefab's six
+`VesselJet` instances now stream from the engines: fly it and confirm the beak leads, the jets trail, pull back
+raises the nose, and the skyburst missiles (b_Missile bones, unchanged) still launch forward. The Squirrel, Urchin
+and Rhino files now carry the artist's parked pose baked into the rest (the node chain Unity builds the bone
+Transforms from equals the artist's, both readers 0.000), so their jets and colliders sit where they did. (6) The Scarab draws its own
+`ScarabHullBuilder` hull over the Sparrow file with renderers off: unchanged, confirm it still does. (7) Urchin and
+Rhino: their prefabs still draw the part-per-mesh placeholders. The rebuilt rigs are the swap targets for
+`FrogletTools > Vessels > Wiring > Swap Vessel Rig` (`Docs/VESSEL_CONSTRUCTION.md`: geometry, materials AND
+animation; the Urchin rig is 2.105x the live hull and the swapper fits the instance transform). At the swap, map the
+materials by MEANING, not by the artist's names: the rebuilt rigs paint the domain band on `accent` (slot 0) and the
+hull on `BASE` (slot 1), while the live Rhino placeholder had it the other way round (`Docs/VesselModels/Rhino.md`
+8.6: `BASE` carried the domain colour); the convention is slot 0 = Domain. The Urchin artist rig carried a 1.75 scale on its `winggrowrot*` nodes (the
+prefab's jets under them were authored at 1/1.75); the rebuilt rig bakes that scale into the bone lengths, models the
+appendages 1.75x out and 1.75x bigger (what Unity draws for the artist rig) and writes the nodes at scale 1, so
+the swapper (or a hand pass) sets those jets' local scale to the fleet plume (0.6, 0.6, 0.13) x |camera| / 20
+directly. After a swap, (3) must report four REAL morphs on each.
+
+**2026-10-18, after Garrett's Editor test: WITHDRAWN.** The rebuilt Sparrow flew backwards, the Urchin did not
+change (its prefab draws the placeholder), and the Squirrel, Dolphin and Sparrow read as cheap remakes. All seven
+FBX files were restored from the artist commit (5344a6530). The paragraphs above and the Round 3 paragraph below
+describe the withdrawn files; the only rebuilt file now live is the **Squirrel, round 7, on the artist's hull**:
+`specs/squirrel.py` keeps the artist's mesh, slots and colours exactly, bakes the parked pose into the rest, adds a
+ten-segment tail spine the nine chevrons hang on, and strengthens Mass 2.5% -> 3.7%. Garrett flew round 7 (2026-10-18):
+"big improvement", but the rear jet ports stayed still and roll twisted the wing panels, not the wing - its takes had
+been re-authored. **Round 8** carries the ARTIST'S nine takes (retargeted bone by bone; the new `take_parity.py` gate
+matches every part of every take to the artist's within 0.001 units / 0.1 degrees, and reports 310 differences on the
+round-7 file) and weights the spine between chevrons so it bends with them. Rest bounds equal the artist's drawn
+bounds; rest_compare 0.000; `--check` green. **Verify (Squirrel only):** every take moves like the artist's Squirrel
+(rear engines included; roll banks the whole wing with its pods), the spine follows the chevrons with no gap, and Mass
+reads from the chase camera. Then say keep / change / remove before the next vessel is attempted.
+**PASSED in the Editor, 2026-10-18 (Garrett):** "This passes. I upgraded its elements. changed domain. I can't tell
+it isn't the original." The Squirrel (round 8, commit 70824a8fd) is verified.
+
+**The Dolphin, 2026-10-18 (loop round 4), NOT EDITOR-VERIFIED:** `dolphin_shapekey_with_animations.fbx` is rebuilt
+in place from `specs/dolphin.py` - the artist's hull, 28-bone rig, four morphs, four materials and ten motion takes,
+kept and gated (take parity 0.0000 units / 0.00 degrees over 146 part-takes, moving bones identical take by take,
+morph and material parity, rest_compare 0.000, `--check` green). Nothing visible was added. **Verify:** it looks and
+flies exactly like the original (`RiptideAnimation` puppets it by bone name: jaws, wings, the six engine cases);
+upgrade its elements and change its domain as on the Squirrel; if the hull-fusion bake for its crystals looks off,
+re-run `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` for the Dolphin. The other five vessels carry the
+artist's files unchanged.
+
+**Round 3 (same day, after a reader review):** three gates had been dead or wrong and are now live, and the files
+were rebuilt under them. (a) The artist-reference block of `build.py` had a swallowed `NameError`, so the size,
+slot-order and colour checks were OFF: every file carried grey `DiffuseColor`; the files now carry the ARTIST
+file's colours by slot name (Unity generates the model's materials from them and remaps only the slots the `.meta`
+names). (b) The "drawn size" reader read each artist file with all four morphs at 100% (the files store
+DeformPercent 100 as the channel's static value), which had sent the Dolphin's wing span to 3.80; the span is back
+to the dossier's +-2.64, the Manta's reference is its real 3.95-wide hull, and the Squirrel now sits at the heights
+the artist's parked pose draws (1.23 tall, not 1.66). (c) A pose-DIRECTION gate (`pose_expect`, re-import centroid
+deltas) found yaw inverted on the Dolphin, Rhino, Urchin and Manta (a right turn is a negative rotation about up),
+roll inverted on five, and the Sparrow's mirrored poses turning the wrong way; all fixed. (d) The Sparrow's tail
+vanes now span the artist's z -0.82..+0.96. (e) The Urchin rig's appendages (guns, pads, jets, shrouds) are modelled
+1.75x out and 1.75x bigger, which is how Unity draws the artist rig (its hold bones carry S 1.75 over a scale-1
+bind) and how the live prefab authors them. One open asymmetry on the Urchin rig: in yaw and roll its `.r` shrouds and top jet deflect about a tenth of what
+the `.l` ones do (the pose gate reads the shields, which are symmetric); the `.r` chains inherit a different bone
+roll from the artist rig - look at it at the rig swap, it is a rig fact, not a model one. **Verify, in flight (every
+vessel):** pull back = nose up, stick right
+= nose right AND the right side drops; the Squirrel's tail swings to the OUTSIDE of a turn and drops on pull-back;
+the Sparrow's tail tubes swing left in a right turn. A wrong sign here is a spec number
+(`Tools/Build/vessel_model/specs/<vessel>.py`, the `pose()` builder), not a prefab or driver change.
+
+**First-pass tuning:** morph travel per file (offline, % of diagonal): Squirrel C 6 / M 4 / S 9 / T 7; Dolphin
+C 8 / M 4 / S 10 / T 7; Sparrow S 9 / C 7 / T 6 / M 4; Serpent 5-9; Manta 6-11; Urchin C 18 / M 5 / S 7 / T 9;
+Rhino C 8 / M 4 / S 8 / T 7. Pose amplitudes: 26-30 degrees on the Squirrel (its top blend tree halves them), 20-25
+elsewhere. All of it is a spec number (`Tools/Build/vessel_model/specs/<vessel>.py`); change the number, rebuild,
+`--check`.
+
 ### 🔴 Rhino deep dive: step-1 fixes, HUD vestiges, full four-row kit, replication, AI (`cece/relaxed-hopper-r62hbd`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed** (three code commits; design record `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
@@ -874,7 +1080,7 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 - `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
   is byte-identical to the shipped prefab.
 - `studio_to_unity.py --vessel shrike --check`: 29/29 match.
-- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass.
+- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass (the latter retired 2026-10-18: the card is rendered from the model by `vessel_model/render_cards.py Shrike --check`).
 - These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_vessel_camera_farclip`,
   `check_vessel_class_icons`, `check_network_prefab_hashes`, `check_console_logging`, `check_conditional_compilation`,
   `check_using_directives` and `check_elemental_floats`.
@@ -2066,7 +2272,7 @@ icons rendered from the hull (`render_thresher_card_icon.py`). All authored by `
 
 **Proved offline**: `thresher_hull_harness` (shipped forms RUN: winding by parity ray, morph bounds, tail chain
 never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--self-test` (6 negative controls);
-`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check`; `check_vessel_class_icons.py`;
+`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check` (retired 2026-10-18: `vessel_model/render_cards.py Thresher --check`); `check_vessel_class_icons.py`;
 `unity_refcompile` (see the branch's commit message for the run). Nothing here has been seen in the editor.
 
 **Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /

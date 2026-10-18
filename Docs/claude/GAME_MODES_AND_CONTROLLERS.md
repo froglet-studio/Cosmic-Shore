@@ -1068,8 +1068,9 @@ Scarab's hull is generated at Awake and its wrapped Sparrow model is hidden at A
 asset the real hull is an empty `MeshFilter` beside a still-enabled Sparrow. Both harvesters now
 skip `IProceduralElementMorphSource.HiddenLegacyModelRoot` and harvest **`IProceduralHullSource`**
 (the Scarab answers it off the asset with the same parts `EmitParts` lays), the codex bake is
-therefore correct on its next run, and the card icons are rendered from the SHIPPED hull by
-`Tools/Build/render_scarab_card_icons.py` (`--check`, fails on a hull retune until re-run) into
+therefore correct on its next run, and the card icons are rendered from the SHIPPED hull (since
+2026-10-18 the model, `Scarab.fbx`) by `Tools/Build/vessel_model/render_cards.py Scarab` (`--check`,
+fails on a model change until re-run) into
 `CardImages/Scarab.png` / `Scarab_Inactive.png`. `ArenaRosterTests` holds both: every arena hull
 has both icons, no two hulls on a card wear byte-identical icon FILES (the two sprites were
 different assets with the same pixels, which a reference check cannot see), and the roster

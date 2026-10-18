@@ -124,6 +124,11 @@ run the `/reorient` skill first and act on its verdict before shipping.
   the same branch, `git diff` between the two merge commits' trees was EMPTY, which is better
   evidence the resolution is right than any amount of re-reading it.
 
+- **A `.prefab` / `.unity` conflict is resolved per OBJECT, never per line:** `/asset-surgery` § "resolve a
+  `.unity` / `.prefab` MERGE per OBJECT" and `Tools/Build/merge_unity_scene.py`, with its five assertions. That
+  includes the shape where each side DELETED different adjacent documents. Git then pairs one side's deleted
+  object against the other's surviving neighbour, and every "keep both" builds an object out of two. (2026-10-18:
+  the Rhino rig swap against bleeding-edge's HUD cleanup, 74 deletions and 0 genuine conflicts.)
 - **Merge the base branch in before reviewing**, so you resolve conflicts rather than
   leaving them for a reviewer, and so §2 reviews the tree that will actually land.
   **`git fetch` the base again right before you open the PR, and treat a moved tip as a

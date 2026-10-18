@@ -151,7 +151,7 @@ Regatta's pattern), with a pure course class the harness can compile and run.
 python3 Tools/Build/<mode>_balance.py                 # prints the model; read the spread
 python3 Tools/Build/author_<mode>_assets.py --check   # asserts the spread, the course hash, the rails
 python3 Tools/Build/check_gamelist_scenes.py          # the arena grid's coverage line
-python3 Tools/Build/render_scarab_card_icons.py --check  # the one generated card icon, if the Scarab is on the card
+python3 Tools/Build/vessel_model/render_cards.py <Vessel> --check  # a hull's card images, rendered from its model (render_cards.py --list)
 python3 Tools/Build/check_vessel_class_icons.py       # every hull's IconActive/IconInactive resolves (a dangling sprite is a white square)
 python3 Tools/Build/author_arena_launch_panel_layout.py --check  # the SELECT VESSEL button is in the carousel, not on Play
 bash Tools/Build/regatta_course_harness/run.sh        # after ANY edit to a pure course file
