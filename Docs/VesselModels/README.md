@@ -22,6 +22,12 @@ slot order and frame they keep is explained here.
 | Manta | [Manta.md](Manta.md) | `mantis_shapekey_with_animations.fbx` + `Manta_shapekey_rigged.fbx` (two coincident hulls, VESSEL_CONSTRUCTION.md 3.4) | `Manta_shapekey_rigged.fbx`, in place | `specs/manta.py` |
 | Urchin | [Urchin.md](Urchin.md) | `Urchan_Test.fbx` (part-per-mesh placeholder) | `urchan_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs where the artist rig had none | `specs/urchin.py` |
 | Butterfly | (none: the vessel had no model; `BUTTERFLY.md` section 2 is its brief) | `Butterfly.fbx` (new, 2026-10-18), replacing the procedural `ButterflyHullBuilder` | the same | `specs/butterfly.py` |
+| Thresher | (none; `THRESHER.md` section 5b) | `Thresher.fbx` (new, 2026-10-18), replacing `ThresherHullBuilder` | the same | `specs/thresher.py` |
+| Scarab | (none; `SCARAB.md` section 3.0) | `Scarab.fbx` (new), replacing `ScarabHullBuilder` and its hidden Sparrow | the same | `specs/scarab.py` |
+| Stoat | (none; `STOAT.md` section 2.1) | `Stoat.fbx` (new), replacing `StoatHullBuilder` | the same | `specs/stoat.py` |
+| Angler | (none; `ANGLER.md` section 9) | `Angler.fbx` (new), replacing the Stoat stand-in | the same | `specs/angler.py` |
+| Brittle Star | (none; `BRITTLE_STAR.md` section 2) | `BrittleStar.fbx` (new), replacing `BrittleStarHullBuilder` | the same | `specs/brittlestar.py` |
+| Shrike | (none; `SHRIKE.md` section 2) | `Shrike.fbx` (new), replacing `ShrikeHullBuilder` | the same | `specs/shrike.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 
 **2026-10-18, withdrawn after the owner's Editor test:** the rebuilt Sparrow flew backwards, the Urchin did not
@@ -39,9 +45,11 @@ convention and the fleet's look, for the owner's Editor test (`LESSONS.md` 44).
 **The fleet pass (2026-10-18, Garrett: "please continue with the rest of the fleet, and get the card images etc.
 updated as well"):** the **Sparrow**, **Serpent** and **Manta** are reproduced exactly through the loop
 (`specs/sparrow.py`, `serpent.py`, `manta.py`; every take, morph, material and node proven against the artist
-file; sheets `sheets/<vessel>_after.jpg`). The Urchin and Rhino get the rig swap (the prefab draws the artist's
-RIG with four real morphs); the procedural hulls (Thresher, Scarab, Stoat, Angler, Brittle Star, Shrike) get new
-models like the Butterfly's. Card images for every hull whose look changed are rendered from its model by
+file; sheets `sheets/<vessel>_after.jpg`). The **Urchin** and **Rhino** got the rig swap: since 2026-10-18 their prefabs draw the artist's
+RIG (`urchan_shapekey_with_animations.fbx`, `rhino_shapekey_with_animations.fbx`) with four real morphs instead of the
+part-per-mesh placeholders (`sheets/urchin_rig_swap.jpg`, `rhino_rig_swap.jpg`). The procedural hulls (**Thresher**,
+**Scarab**, **Stoat**, **Angler**, **Brittle Star**, **Shrike**) got new models like the Butterfly's
+(`sheets/<vessel>_after.jpg`). Card images for every hull whose look changed are rendered from its model by
 `Tools/Build/vessel_model/render_cards.py`.
 
 **Round 3, 2026-10-17 (after a review of the gates; files since withdrawn):** the artist-reference gate had been dead (a swallowed

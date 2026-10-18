@@ -65,6 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The fleet pass: every playable hull is a pipeline-owned model; card images from the models (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable (no Editor, no `unity` binary). What ran on the merged tree: the headless reference
+compile (80 assemblies, no errors in project code); `build.py <vessel> --check` for all fourteen specs; every touched
+generator's `--check` (thresher, shrike, brittlestar, stoat, angler, urchin, rhino sword combos, butterfly dust,
+preview spawns, the icon tools); `render_cards.py <V> --check` for the seven re-carded hulls; the fleet gates
+(console logging, class icons, network prefab hashes, prefab container, shared channels, camera far clip,
+conditional compilation). Contact sheets: `Docs/VesselModels/sheets/`. Team tasks T-20261018-3ec7 / 97b6 / 987b /
+1432 / 2070.
+
+For every hull below: reimport its FBX; run **FrogletTools ▸ Vessels ▸ Audits ▸** Vessel Elemental Morphs (four real
+shapes), Vessel Construction, Vessel Tails and Jets; fly it in Menu_Main freestyle; change domain (the domain colour
+lands on the Domain plates); upgrade each element (each visibly morphs the hull); check the class card, the
+inactive card and the hangar preview are the new hull. Then run **Wiring ▸ Bake Crystal Hull Fusions** once and
+push the bakes (Thresher, Scarab, Brittle Star, Urchin and Rhino are stale until then; they solve at runtime).
+
+1. **Sparrow, Serpent, Manta** (reproduced exactly): indistinguishable from before.
+2. **Thresher** (`Thresher.fbx`): a right turn swings the whip LEFT (out of the turn; the swim's yaw sign was
+   fixed), a planted whip curls toward the ball, a crack flicks toward it; the chain hangs from the shackle.
+3. **Scarab** (`Scarab.fbx`; the hidden Sparrow is gone from the prefab): the elytra open in a turn and on
+   throttle, the legs hang and tuck, the juke roll carries every part; the hull collider still triggers.
+4. **Stoat** (`Stoat.fbx`): the lope, the turn bend and the tail swing; spaghettification near a horizon still
+   stretches the drawn hull.
+5. **Angler** (`Angler.fbx`, its own `AnglerAnimation`): the swim beat, the jaw opens and the esca bulb swells
+   while luring (A held); the world-mark lure dot is unchanged.
+6. **Brittle Star** (`BrittleStar.fbx`): the ring turns with the firing rotation, is gone while thrown and blooms
+   back; muzzles fire from the barrel mouths; thruster flames lengthen; the 28 degree bank.
+7. **Shrike** (`Shrike.fbx`): the beam leaves `gun.mouth`; the flame scales aft; docking swings the talon clamps.
+8. **Urchin** (rig swap): pods extend in flight and tuck flush when riding, the colliders stay on the drawn pods
+   (gizmos) through pitch/yaw/roll, plumes leave the four jet mouths, Slip/GhostAction still phase the colliders.
+9. **Rhino** (rig swap): wings fold at low throttle with the drawn plates inside their colliders (the plough's
+   reach), pod plumes leave the drawn rings, the pods now also wear the domain colour.
+
 ### 🔴 The Butterfly's new model replaces its procedural hull (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 `/verify-unity` was unavailable in this session (no Editor, no `unity` binary). What did run: the headless

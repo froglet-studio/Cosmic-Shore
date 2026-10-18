@@ -105,6 +105,18 @@ from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.
    the model root (constant fileIDs) and the code resolves bones and the SkinnedMeshRenderer by name
    at runtime; keep the old names resolving too, so the swap is reversible.
 
+## The rig-swap path (the prefab draws a placeholder; the artist made a rig of the same art: Urchin, Rhino)
+
+1. The spec builds from the artist's RIG with the artist-hull path, but first finds the true rest (LESSONS 45):
+   the bind, or the first key every take starts from; gate parity against a reference with only those nodes
+   rested (`specs/rhino.py: bindrest_reference`, `specs/urchin.py: rested_reference`).
+2. Add four REAL morphs on the artist's topology, declared in `shape_parity_allow`; keep the file's shape-name case.
+3. The prefab draws the rig as a nested model instance; the placeholder's MeshFilter/MeshRenderer pairs go, its
+   part transforms STAY (colliders, jets, muzzles live there). The animation drives the parts as before and the
+   bones follow them each frame (no allocation). The `.meta` remaps the slots to what the placeholder wore.
+4. Crystal-hull-fusion bakes cannot be rebuilt offline: they go stale (a runtime warning, a worker solve) until
+   **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** is run in the Editor.
+
 ## Card images follow the model (`render_cards.py`)
 
 When a vessel's DRAWN look changes (a new hull, a rig swap), its card images change in the same pass:

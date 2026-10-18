@@ -432,3 +432,35 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     - **A model with a top and a bottom exposes the code's sign bugs.** `ButterflyAnimation` had
       the side signs reversed; on the flat placeholder no one could see that the Fold closed
       under the belly. Check every puppetry direction on the sheet against the vessel's doc.
+
+45. **The fleet pass (2026-10-18): fourteen hulls in one pass, one worker per vessel.** Garrett asked for "the
+    rest of the fleet, and ... the card images" after the Squirrel, Dolphin and Butterfly. What it taught:
+    - **One brief, one worker, one vessel, its own files.** Each worker got the same brief (the Butterfly as the
+      worked example, the clade rule, the gates, a do-not list that kept them out of shared docs and the shared
+      library) and owned only its vessel's spec, FBX, prefab, animation and doc; the lead merged them one at a
+      time, looked at every sheet, and wrote the shared docs. Seven merges, zero conflicts. Breakage came from the
+      lead's own cleanup instead: retiring the per-hull card renderers broke two OTHER tools that imported their
+      helpers (`author_angler_icons`, `author_urchin_card_icons`). **Before deleting a tool, grep for imports of
+      it, not just for its name in docs.**
+    - **An artist file's saved pose is often not a rest.** The Rhino's is the last frame of `rhino_pitchdown` (a
+      66.5-degree wing fold), the Urchin's the last frame of `urchan_yawright` (one-sided). Baking it gives a
+      hull the game never drew. Find the real rest: the BIND (the Rhino), or the first key every take starts
+      from (the Urchin's `urchan_fly`), and gate against a reference with only those nodes rested (the codec
+      edits the Lcl transforms; mesh, skin, takes and materials stay the artist's bytes).
+    - **Blender cannot hold a bone's rest SCALE** (the Urchin's pod holds rest at 1.75): retargeting absolute
+      posed matrices double-scales their children. Retarget each bone's motion RELATIVE to its rest instead.
+    - **A rig swap keeps the placeholder's parts.** The colliders, jets, muzzles and gameplay hooks live on the
+      part transforms; the animation keeps driving them exactly as before and the rig's bones FOLLOW them each
+      frame. Zero behaviour change and no new sign risk; the drawn pods stay inside their colliders.
+    - **A model with a top and a bottom exposes puppetry signs.** Fixed: the Butterfly's Fold (closed under the
+      belly) and the Thresher's swim (the tail swung INTO a turn). Flagged for the owner, where doc and code
+      disagree: the Scarab's elytra (inside vs outside of the turn) and the Stoat's tail (with vs out of the bend).
+    - **An exact reproduction keeps the artist's node transforms**, not only the drawn result: the Sparrow's mesh
+      node carries 0.2034 with 4.9x vertices (`rig.restore_node_scale`, `mesh_node_scale`); `rest_compare` saw it.
+    - **Cards follow the model.** `render_cards.py` renders the five card images from the FBX in the house look
+      measured from the hand-drawn cards; a generator that writes the class asset names the same deterministic
+      guids (`card_guid`), so neither undoes the other. A reproduced hull keeps its hand-drawn card.
+    - **`build.py`'s sheets belong outside `Assets/`** (a PNG there becomes an asset): the default is now a
+      git-ignored folder beside the pipeline, and a committed sheet is a JPEG under `Docs/VesselModels/sheets/`.
+    - **style_metrics stays informative.** Several new hulls sit below the artist hulls' hard-edge band and the
+      Angler above their smooth band; that is a look call the sheet and the owner make, not a gate.
