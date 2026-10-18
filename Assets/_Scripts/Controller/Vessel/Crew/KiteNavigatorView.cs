@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -20,9 +21,13 @@ namespace CosmicShore.Gameplay
     /// visible to the pilot without getting in the way.</para>
     ///
     /// <para><b>Which is big.</b> Piloting: the pilot camera has the screen and the kite view is a small square in the
-    /// lower left. Navigating: the kite view has the screen and the pilot camera is lifted over it as a small view in
-    /// the lower left. The pilot camera's rect and depth are restored the moment the human flies again, the camera
-    /// changes, or the seat is unbound.</para>
+    /// lower left. Navigating: the kite view has the screen and the pilot camera is lifted over it in the same small
+    /// square (Garrett, 2026-10-18: "the kite view when flying the pilot was good; use that"). The pilot camera's rect and
+    /// depth are restored the moment the human flies again, the camera changes, or the seat is unbound.</para>
+    ///
+    /// <para><b>Out of the slice.</b> A prism further than reachY from the plane cannot be touched, so the camera clips it
+    /// away, and it is drawn back in UNLIT: a flat box in its domain's tint, dimmed, under everything in the slice
+    /// (Garrett, 2026-10-18: "the prisms that go out of plane for the kite should be unlit but not disappear").</para>
     /// </summary>
     sealed class KiteNavigatorView
     {
@@ -37,6 +42,9 @@ namespace CosmicShore.Gameplay
         readonly Mesh[] _petals = new Mesh[4];
         readonly Mesh _tailMesh, _loopMesh;
         readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat;
+        readonly Material _tailMat, _loopMat;
+        readonly Mesh _boxMesh;
+        readonly Dictionary<CosmicShore.Data.Domains, Material> _ghostMats = new();
         readonly List<Vector3> _verts = new();
         readonly List<Color> _colors = new();
         readonly List<int> _tris = new();
@@ -74,6 +82,9 @@ namespace CosmicShore.Gameplay
             _loopMesh.MarkDynamic();
 
             var cfg = nav.Config;
+            _boxMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+            _tailMat = VertexColoured(Lime);
+            _loopMat = VertexColoured(new Color(1f, 1f, 1f, 0.85f));
             _kiteMat = Unlit(KiteWhite);
             _kiteChargedMat = Unlit(Gold);
             _kiteFaintMat = Unlit(new Color(1f, 1f, 1f, cfg.PilotKiteAlpha));
@@ -85,14 +96,46 @@ namespace CosmicShore.Gameplay
 
         internal Camera Camera => _cam;
 
-        // Sprites/Default: unlit, vertex-coloured, alpha-blended and double-sided, and in every build's always-included
-        // shaders. A transparent URP/Unlit needs its surface keywords set by hand and is the shader GobyPistolDuo falls
-        // back FROM.
+        // Instanced draws: URP/Unlit set up as a transparent, double-sided surface (the shader GobyPistolDuo draws with).
+        // NOT Sprites/Default: its instanced path reads the colour from unity_SpriteRendererColorArray, which only a
+        // SpriteRenderer fills, so a RenderMeshInstanced draw with it comes out at zero alpha - which is why the motes
+        // could not be seen (Garrett, 2026-10-18).
         static Material Unlit(Color c)
         {
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (!shader) return VertexColoured(c);
+            var m = new Material(shader) { enableInstancing = true };
+            m.SetColor("_BaseColor", c);
+            m.SetFloat("_Surface", 1f);
+            m.SetFloat("_Blend", 0f);
+            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            m.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
+            m.SetFloat("_ZWrite", 0f);
+            m.SetFloat("_Cull", (float)CullMode.Off);
+            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            m.renderQueue = (int)RenderQueue.Transparent + 100;
+            return m;
+        }
+
+        // Single-mesh draws whose vertices carry their own fade (the tail, the loops): Sprites/Default, which multiplies
+        // vertex colour in and, drawn without instancing, takes its renderer colour from the material (white).
+        static Material VertexColoured(Color c)
+        {
             var shader = Shader.Find("Sprites/Default");
-            if (!shader) shader = Shader.Find("Universal Render Pipeline/Unlit");
-            return new Material(shader) { color = c, enableInstancing = true, renderQueue = 3100 };
+            return new Material(shader) { color = c, renderQueue = (int)RenderQueue.Transparent + 100 };
+        }
+
+        Material GhostMaterial(CosmicShore.Data.Domains domain)
+        {
+            if (_ghostMats.TryGetValue(domain, out var m)) return m;
+            var c = PrismLit.DomainTint(domain) * _nav.Config.GhostBrightness;
+            c.a = _nav.Config.GhostAlpha;
+            var ghost = Unlit(c);
+            ghost.renderQueue = (int)RenderQueue.Transparent - 50;   // under the kite, its tail and the motes
+            _ghostMats[domain] = ghost;
+            return ghost;
         }
 
         internal void Dispose()
@@ -100,9 +143,10 @@ namespace CosmicShore.Gameplay
             RestorePilot();
             if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
-            foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh,
+            foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh, _tailMat, _loopMat,
                                              _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat })
                 if (o) Object.Destroy(o);
+            foreach (var g in _ghostMats.Values) if (g) Object.Destroy(g);
         }
 
         // ------------------------------------------------------------------ cameras
@@ -138,7 +182,7 @@ namespace CosmicShore.Gameplay
                 _cam.depth = baseDepth + 1f;
                 if (_pilot)
                 {
-                    _pilot.rect = new Rect(m, m, h * 1.25f, h * 1.25f);   // a small window keeping the screen's shape
+                    _pilot.rect = new Rect(m / aspect, m, h / aspect, h);  // the kite view's own small square
                     _pilot.depth = baseDepth + 2f;
                     _pilotLifted = true;
                 }
@@ -240,11 +284,19 @@ namespace CosmicShore.Gameplay
                     Matrix4x4.TRS(c, basis, Vector3.one * r));
             }
 
+            // the prisms out of the slice: unlit, dimmed, flat on the floor of the view
+            var floor = -_nav.BoardUp * (cfg.ReachY * 0.95f);
+            foreach (var g in _nav.Ghosts)
+            {
+                var pos = _nav.BoardToWorld(g.X, g.Z) + floor;
+                Add(GhostMaterial(g.Domain), _boxMesh, kite, Matrix4x4.TRS(pos, g.Rotation, g.Scale));
+            }
+
             BuildTail(lift);
             BuildLoops(lift, now);
             Flush();
-            DrawDynamic(_tailMesh, _limeMat, kite);
-            DrawDynamic(_loopMesh, _ringMat, kite);
+            DrawDynamic(_tailMesh, _tailMat, kite);
+            DrawDynamic(_loopMesh, _loopMat, kite);
         }
 
         // a dot faces the pilot camera, so it reads as a dot from any angle

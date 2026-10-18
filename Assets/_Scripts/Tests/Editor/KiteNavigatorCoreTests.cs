@@ -15,7 +15,7 @@ namespace CosmicShore.Tests
     {
         const float Dt = 1f / 60f;
 
-        // the signed-off candidate (KiteNavigatorConfig.asset)
+        // round 3's signed-off kite (the shipped tail is 2.4 since 2026-10-18; these rules hold at any length)
         static KiteSettings Candidate() => new() { BoardRadius = 160f, Anchor = 0.3f, KiteSpeed = 320f, KiteAccel = 12f, TailLength = 1.6f };
 
         static KiteNavigatorCore Kite(KiteSettings s)

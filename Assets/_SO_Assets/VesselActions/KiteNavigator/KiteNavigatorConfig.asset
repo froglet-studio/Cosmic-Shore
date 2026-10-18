@@ -20,7 +20,7 @@ MonoBehaviour:
   kiteRadius: 8
   kiteSpeed: 320
   kiteAccel: 12
-  tailLength: 1.6
+  tailLength: 2.4
   thumbOffsetMillimetres: 21
   offsetMouse: 0
   stickDeadzone: 0.15
@@ -59,6 +59,10 @@ MonoBehaviour:
   pilotKiteAlpha: 0.22
   pilotDotAlpha: 0.35
   pilotDotSize: 0.9
+  ghostDepth: 240
+  ghostCap: 1500
+  ghostBrightness: 0.45
+  ghostAlpha: 0.55
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   loopClosedSfx:
     Guid:

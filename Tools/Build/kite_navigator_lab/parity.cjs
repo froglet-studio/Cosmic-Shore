@@ -20,7 +20,8 @@ const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '../../..');
 const PAGE = path.join(ROOT, 'Docs/Studios/CrewVesselLab.html');
-// The candidate's kite numbers (KiteNavigatorConfig.asset carries the same; the Unity test KiteNavigatorConfigTests checks it).
+// The scenarios' kite numbers: round 3's (the shipped tail is 2.4 since 2026-10-18; the core is length-agnostic). The
+// asset is held to the PAGE's own numbers below, not to these.
 const P = { planeRange: 160, anchor: 0.3, kiteSpeed: 320, kiteAccel: 12, tailLen: 1.6 };
 const DT = 1 / 60, TOL = 0.02, REL = 1e-4;
 const ASSET = path.join(ROOT, 'Assets/_SO_Assets/VesselActions/KiteNavigator/KiteNavigatorConfig.asset');

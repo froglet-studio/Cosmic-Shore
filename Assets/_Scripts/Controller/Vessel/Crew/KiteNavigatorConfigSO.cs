@@ -53,8 +53,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(10f)] float kiteSpeed = 320f;
         [Tooltip("lab kiteAccel: how fast the kite reaches the speed it is asked for (1/s).")]
         [SerializeField, Min(0.1f)] float kiteAccel = 12f;
-        [Tooltip("lab tailLen: the tail's length in board radii. Cross it to close a loop. 1.0 is too short to circle a cluster.")]
-        [SerializeField, Range(0.4f, 4f)] float tailLength = 1.6f;
+        [Tooltip("lab tailLen: the tail's length in board radii. Cross it to close a loop. 1.0 is too short to circle a cluster. " +
+                 "2.4 = the signed-off 1.6 + 50% (Garrett, 2026-10-18).")]
+        [SerializeField, Range(0.4f, 4f)] float tailLength = 2.4f;
         [Tooltip("lab thumbOffset (80 CSS px on a phone): on a touch screen the kite aims this far ABOVE the thumb, in millimetres " +
                  "of glass, so the thumb never covers the kite or what is coming.")]
         [SerializeField, Range(0f, 40f)] float thumbOffsetMillimetres = 21f;
@@ -98,11 +99,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] Vector3 massPrismScale = new(2f, 2f, 5f);
         [Tooltip("Mass prisms laid per frame at most, so a big cluster grows in over a few frames instead of in one hitch.")]
         [SerializeField, Range(4, 200)] int massPrismsPerFrame = 40;
-        [Tooltip("lab timeBoost: seconds of boost one Time mote gives the pilot. The pilot spends it by lifting the thumb.")]
+        [Tooltip("lab timeBoost: seconds of boost one Time mote gives the pilot, spent on the pilot's trigger.")]
         [SerializeField, Min(0.05f)] float timeBoostSeconds = 1.5f;
         [Tooltip("lab timeCap: the most boost the pilot can hold from the navigator (s).")]
         [SerializeField, Min(0.5f)] float timeBoostCap = 30f;
-        [Tooltip("Seconds after a boost ends before the next can start. Time L5 removes the wait.")]
+        [Tooltip("Seconds after a boost ends before the next can start. Time L5 removes the wait. The pilot boosts on the " +
+                 "right trigger (the left mouse button with the one-stick mouse; lifting the thumb on a touch screen).")]
         [SerializeField, Min(0f)] float boostCooldownSeconds = 2f;
         [Tooltip("lab chargePetals: kite power one Charge mote gives: petals the next ram on a rival hull steals.")]
         [SerializeField, Min(0.05f)] float chargePetals = 1f;
@@ -129,8 +131,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float omniZoomRate = 3f;
 
         [Header("Views (the game's renderer)")]
-        [Tooltip("The small view's height, as a fraction of the screen: the kite view while piloting (a square), the pilot's " +
-                 "view while navigating. Both sit in the lower left.")]
+        [Tooltip("The small view's height, as a fraction of the screen: a square in the lower left, the kite view while " +
+                 "piloting and the pilot's view while navigating.")]
         [SerializeField, Range(0.15f, 0.6f)] float pipSize = 0.32f;
         [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
@@ -144,6 +146,15 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float pilotDotAlpha = 0.35f;
         [Tooltip("The size of a mote's dot in the pilot's view (u).")]
         [SerializeField, Min(0.1f)] float pilotDotSize = 0.9f;
+        [Tooltip("The kite view draws prisms out of the touchable slice UNLIT, down to this far from the plane (u); further " +
+                 "ones are not drawn. At or under reachY, none are.")]
+        [SerializeField, Min(0f)] float ghostDepth = 240f;
+        [Tooltip("Most out-of-slice prisms drawn in a frame.")]
+        [SerializeField, Range(0, 3000)] int ghostCap = 1500;
+        [Tooltip("An out-of-slice prism's brightness: its domain's tint times this.")]
+        [SerializeField, Range(0f, 1f)] float ghostBrightness = 0.45f;
+        [Tooltip("An out-of-slice prism's opacity.")]
+        [SerializeField, Range(0f, 1f)] float ghostAlpha = 0.55f;
 
         [Header("Game")]
         [Tooltip("The runtime game data: its player list is how the board finds the rival hulls.")]
@@ -189,6 +200,10 @@ namespace CosmicShore.Gameplay
         public float PilotKiteAlpha => pilotKiteAlpha;
         public float PilotDotAlpha => pilotDotAlpha;
         public float PilotDotSize => pilotDotSize;
+        public float GhostDepth => ghostDepth;
+        public int GhostCap => ghostCap;
+        public float GhostBrightness => ghostBrightness;
+        public float GhostAlpha => ghostAlpha;
         public KiteMoteHome MoteHome => moteHome;
         public int MoteCount => moteCount;
         public int MoteCluster => moteCluster;

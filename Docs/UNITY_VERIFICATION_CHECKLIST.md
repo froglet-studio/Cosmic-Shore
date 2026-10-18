@@ -91,7 +91,8 @@ Vessel Changer), and its second seat, ported from the Crew Vessel Lab's signed-o
 camera drawn by the game; the views swap; motes are lime petal shapes; the kite follows with no click; the pilot is
 one-thumb with no buttons, and the lifted thumb boosts; the hull's petals weight the motes; Charge rams creatures; the
 L5 upgrades (Mass shields clusters, Charge steals, Space breaks super shields, Time removes the boost cooldown); an
-Omni crystal doubles the board for 5 s. Player and editor reference compiles: 0 errors in changed files.
+Omni crystal doubles the board for 5 s. Round 4b: boost on the pilot's trigger, visible petals, unlit out-of-plane
+prisms, a 50% longer lasso, a small pilot view. Player and editor reference compiles: 0 errors in changed files.
 `author_kite_assets.py --check` and `--self-test` OK.
 
 **Verify:**
@@ -99,12 +100,16 @@ Omni crystal doubles the board for 5 s. Player and editor reference compiles: 0 
    - Lower left: a small square kite view, the real world seen from straight above your hull.
    - In it: the kite, its tail, and lime motes in four petal shapes, with the AI's kite looping clusters.
    - In your own view: a faint see-through kite and faint lime dots, not in the way.
-2. Fly with one thumb: the stick, the mouse, or one touch. No button does anything.
-3. After a green (Time, diamond) loop, lift your thumb (or centre the stick). The hull boosts while it is up. Boost
-   again at once: refused for 2 s (and not refused at Time level 5).
+2. Fly with one thumb: the stick, the mouse, or one touch. No ability button does anything.
+3. After a Time (diamond) loop, hold the right trigger (left mouse button; on a phone, lift your thumb). The hull boosts
+   while it is held. Flying straight with nothing held does NOT boost. Boost again at once: refused for 2 s (and not
+   refused at Time level 5).
 4. Press **2** (or D-pad right).
    - The kite view fills the screen.
-   - Your hull's view shrinks to the lower left, flown by its AI.
+   - Your hull's view shrinks to the same small square in the lower left, flown by its AI.
+   - The motes show as lime petal shapes (Round 4b fixed them drawing invisible).
+   - Prisms far above or below the plane show as dim, flat, unlit boxes in their domain's tint, not gone.
+   - The tail is half as long again as before (2.4 board radii).
    - Move the mouse without clicking, or lean the stick: the kite follows.
 5. Loop motes of one petal shape:
    - **Space**: a blast takes out hostile prisms. At Space level 5 it also breaks shielded and super-shielded prisms.

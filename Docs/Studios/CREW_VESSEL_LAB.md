@@ -194,7 +194,9 @@ registration, and sounds.
 - the Omni crystal's wide board.
 
 The game's `Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` ("Round 4") is the record until this lab catches
-up (task `T-20261018-3247`). The parity gate still holds the kite core, which round 4 did not change.
+up (task `T-20261018-3247`). The parity gate still holds the kite core, which round 4 did not change. One round 4 number
+is already here: the lasso is 50% longer (`tailLen` 2.4, was 1.6). On the scorecard the candidate now reads 20 loops,
+87% pure, a mean of 2.14 motes and 32 prisms blasted (was 18.33 / 86% / 2.25 / 12).
 
 **Not yet seen in the Editor.** The play-mode menu, the board's look and the feel on a phone are unverified (entry in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`).
