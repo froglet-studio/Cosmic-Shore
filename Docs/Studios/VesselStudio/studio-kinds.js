@@ -6,7 +6,8 @@
  *
  * The ten kinds of the concept fleet (Docs/Studios/CONCEPT_FLEET.md), each a movement players are loving right now:
  *   swing      (round 1)  tether to any prism, pendulum round it, reel in, fling; the Gibbon's round-1 kind, kept for the record
- *   tether     Gibbon     round 2: TIME mode auto-tethers (the Tether prototype) / SPACE mode two tethers, one per stick + trigger
+ *   tether     (round 2.1) TIME mode auto-tethers (the Tether prototype) / SPACE mode two tethers; superseded by `web`, kept for the record
+ *   web        Gibbon     no engine: elastic webs from both hands, latch on anything, swing and zip like Spider-Man without gravity
  *   ricochet   Flea       bounce off mass; a press inside the window banks momentum (pinball + perfect-landing timing)
  *   soar       Albatross  no engine: dive for speed, spread for lift, ride the updraft over mass (glider / dynamic soaring)
  *   slipstream Remora     fast only in a rival's wake; latch on, get towed, sling past (racing draft)
@@ -363,6 +364,201 @@
       bg(g, w, h); const u = (t * 0.5) % 2;
       if (u < 1) { const x = w * (0.1 + u * 0.6), y = h * 0.55 + Math.sin(u * 18) * 4; const k = Math.floor(u * 6); blocks(g, '#3a4380', [0, 1, 2, 3, 4, 5, 6].map((i) => [w * (0.18 + i * 0.1), h * (i % 2 ? 0.38 : 0.72)]), 6); g.strokeStyle = accent + 'aa'; g.lineWidth = 1; const ax = w * (0.18 + (k + 1) * 0.1), ay = h * (k % 2 ? 0.72 : 0.38); g.beginPath(); g.moveTo(x, y); g.lineTo(ax, ay); g.stroke(); dart(g, accent, x, y, 0); g.fillStyle = '#9fb0d0'; g.font = '10px sans-serif'; g.fillText('TIME', 8, 14); }
       else { const v = u - 1, ax = w * 0.5, ay = h * 0.2, th = -1.9 + v * 3.6, x = ax + Math.sin(th) * 62, y = ay + Math.cos(th) * 62; blocks(g, '#3a4380', [[ax, ay], [w * 0.15, h * 0.2]], 8); g.strokeStyle = accent; g.lineWidth = 2.5; g.beginPath(); g.moveTo(ax, ay); g.lineTo(x, y); g.stroke(); dart(g, accent, x, y, th + Math.PI); g.fillStyle = '#7fd7ff'; g.font = '10px sans-serif'; g.fillText('SPACE', 8, 14); }
+    },
+  };
+
+  // ================= web: the Gibbon, round 2 session 2 (Yash 2026-10-18: "like Spider-Man", CONCEPT_FLEET.md section 8.3) =================
+  // NO ENGINE. The Gibbon starts at rest and never moves on its own: no throttle, no auto-tethers, no rigid swing. It moves
+  // only by its webs. The sticks turn it (they aim); LT shoots the left hand's web, RT the right's, at whatever lies near the
+  // crosshair: any prism, a crystal. A web flies out (it takes time), latches, and is an ELASTIC spring: it pulls only past its
+  // rest length, the rest length reels in while the trigger is held, and the damping is light, so the hull overshoots and
+  // bounces like a body on a bungee. A spring is a CENTRAL force, so a hull that latches off its line of travel swings round the
+  // anchor and spins up as the web shortens (angular momentum kept) with no scripted swing; two webs pull against each other.
+  // Let go and the momentum carries; a little space drag (lab-only) lets a hull come to rest. Hull contact bounces, never resets.
+  const WB = {
+    hand(ctx, P, side) { const { right, up } = ctx.axes(P); return P.pos.clone().addScaledVector(right, side * 1.8).addScaledVector(up, 0.6); },
+    // every latchable thing near the crosshair: prisms (any kind, any owner), crystals; each hand prefers its own side of it
+    target(W, P, ctx, side, m, other) {
+      const { fwd, right } = ctx.axes(P), cone = Math.cos(m.aimCone * ctx.DEG); let best = null, bs = -1e9;
+      const consider = (o, isCrystal) => {
+        if (o === other) return; const d = o.pos.clone().sub(P.pos), dist = d.length(); if (dist < m.minWeb || dist > m.webRange) return;
+        d.divideScalar(dist); const c = d.dot(fwd); if (c < cone) return;
+        const s = c * 1.0 + (dist / m.webRange) * m.farBias + (Math.sign(d.dot(right)) === side ? 0.15 : 0) + (isCrystal ? 0.3 : 0);
+        if (s > bs) { bs = s; best = o; }
+      };
+      for (const p of ctx.near(W, P.pos, m.webRange)) if (!p.dead) consider(p, false);
+      for (const X of W.pilots) if (X.crystal) { X.crystal.isCrystal = true; consider(X.crystal, true); }
+      return best;
+    },
+    alive(W, a) { return a.isCrystal ? W.pilots.some((X) => X.crystal === a) : !a.dead; },
+    fire(W, P, ctx, side) {
+      const Kk = P.K, m = P.m, t = WB.target(W, P, ctx, side, m, Kk.web[-side] && Kk.web[-side].anchor), from = WB.hand(ctx, P, side);
+      const to = t ? t.pos.clone() : from.clone().addScaledVector(ctx.axes(P).fwd, m.webRange);
+      Kk.web[side] = { state: 'shoot', anchor: t, tip: from.clone(), to, rest: 0, len0: 0, tension: 0, t0: W.t, phase: Kk.shots * 1.7 };
+      P.stats.uses++; Kk.shots++;
+    },
+    latch(W, P, ctx, side) {
+      const Kk = P.K, w = Kk.web[side], m = P.m, d = w.anchor.pos.distanceTo(P.pos);
+      w.state = 'held'; w.len0 = d; w.rest = Math.max(m.minRest, d * m.restFraction); w.tip.copy(w.anchor.pos);
+      if (w.anchor.flash !== undefined) { w.anchor.flash = 1; W.dirty = true; }
+      Kk.latches++; ctx.event(W, P, (side < 0 ? 'Left' : 'Right') + ' web ' + Math.round(d) + ' u');
+    },
+    let(W, P, side) { const w = P.K.web[side]; if (!w) return; P.K.web[side] = { state: 'retract', tip: w.tip.clone(), t0: W.t, from: w.tip.clone(), phase: w.phase || 0 }; },
+  };
+  K.web = {
+    mechanicName: 'webbing', keyLayout: 'fly', trail: true,
+    aiRule: 'It turns to its aim and shoots the web on the side it is not already using at the farthest thing near the crosshair (the course ribbon, mass, its crystal). It lets go of a web once the anchor is within 30 u or falls behind its motion, and shoots the next one: hand over hand. Input-only: the sticks and the two triggers.',
+    defaults: { webRange: 220, minWeb: 15, aimCone: 22, farBias: 0.6, webSpeed: 900, stiffness: 4.5, damping: 0.35, restFraction: 0.75, reelRate: 70, minRest: 10, topSpeed: 260, drag: 0.12, bounce: 0.55, perch: 3, perchLead: 0.15, pad: 0.5, look: 1 },
+    spec: [
+      ['webRange', 60, 400, 5, 'Web range', 'How far a web reaches (u)'],
+      ['aimCone', 5, 60, 1, 'Aim cone', 'How far off the crosshair a web will still latch (deg): Spider-Man aims for you inside it'],
+      ['farBias', 0, 2, 0.05, 'Prefer far', 'How much a web prefers the farthest anchor in the cone over the one nearest the crosshair (long webs, big arcs)'],
+      ['webSpeed', 200, 3000, 50, 'Web speed', 'How fast a web flies out before it latches (u/s)'],
+      ['stiffness', 0.5, 15, 0.1, 'Springiness', 'The web\'s spring: pull per unit of stretch (per s squared). High = a snappy yank, low = a soft bungee'],
+      ['damping', 0, 3, 0.05, 'Bounce damping', 'How fast the bungee stops bouncing (per s). Low = springy, high = dead'],
+      ['restFraction', 0.2, 1, 0.01, 'Latch slack', 'The web\'s rest length at latch, as a share of the distance: below 1 it is born stretched and yanks at once'],
+      ['reelRate', 0, 200, 5, 'Pull', 'How fast a held web shortens its rest length (u/s): the zip. Shortening a web you swing on spins you up'],
+      ['minRest', 2, 40, 1, 'Shortest web', 'A web never reels shorter than this (u), so the pull never slams you into the anchor'],
+      ['perch', 0, 20, 0.5, 'Perch', 'How hard a zip brakes as it reaches its anchor (per s, from Perch lead out)'],
+      ['pad', 0, 0.95, 0.05, 'Landing bounce', 'How much of its speed a zip keeps when it lands on its anchor and bounces back (a restitution): 0 = a dead stop, the web then pulls it back in for the next bob'],
+      ['perchLead', 0, 0.5, 0.01, 'Perch lead', 'How early a zip starts braking for its anchor (s of closing speed)'],
+      ['topSpeed', 80, 500, 5, 'Top speed', 'Speed cap (u/s)'],
+      ['drag', 0, 1, 0.01, 'Space drag', 'Lab-only: how fast a coasting hull slows (per s). 0 = true space, it never stops'],
+      ['bounce', 0, 1, 0.05, 'Hull bounce', 'How much speed a hull keeps when it bounces off a prism (it never resets)'],
+    ],
+    init(P) { P.K = { web: { '-1': null, '1': null }, ghost: { '-1': null, '1': null }, shots: 0, latches: 0, bounces: 0, active: false, nextHand: 1 }; P.vel.set(0, 0, 0); P.speed = 0; },
+    step(W, P, inp, dt, ctx) {
+      const m = P.m, Kk = P.K;
+      // the sticks only turn the hull (aim); nothing here pushes it
+      ctx.steer(P, inp, dt, m.look);
+      const trig = { '-1': W.mech && inp.lt > 0.5, '1': W.mech && inp.rt > 0.5 };
+      for (const side of [-1, 1]) {
+        const held = trig[side], was = !!Kk['held' + side]; Kk['held' + side] = held;
+        const w = Kk.web[side];
+        if (held && !was) WB.fire(W, P, ctx, side);
+        else if (!held && was && w && w.state !== 'retract') WB.let(W, P, side);
+      }
+      const acc = new ctx.V();
+      for (const side of [-1, 1]) {
+        const w = Kk.web[side]; if (!w) continue;
+        if (w.state === 'shoot') {
+          if (w.anchor && !WB.alive(W, w.anchor)) { WB.let(W, P, side); continue; }
+          if (w.anchor) w.to.copy(w.anchor.pos);
+          const d = w.to.clone().sub(w.tip), L = d.length(), step = m.webSpeed * dt;
+          if (L <= step) { w.tip.copy(w.to); if (w.anchor) WB.latch(W, P, ctx, side); else WB.let(W, P, side); } else w.tip.addScaledVector(d, step / L);
+          continue;
+        }
+        if (w.state === 'retract') { const k = (W.t - w.t0) / 0.18; if (k >= 1) Kk.web[side] = null; else w.tip.copy(w.from).lerp(WB.hand(ctx, P, side), k); continue; }
+        // held: the elastic web. Reel the rest length while the trigger is held, pull past it, damp only lightly
+        if (!WB.alive(W, w.anchor)) { WB.let(W, P, side); continue; }
+        w.rest = Math.max(m.minRest, w.rest - m.reelRate * dt);
+        const d = w.anchor.pos.clone().sub(P.pos), L = d.length(); if (L < 1e-3) continue;
+        const dir = d.divideScalar(L), stretch = L - w.rest; w.tension = stretch > 0 ? clamp(stretch / Math.max(1, w.len0), 0, 1) : 0;
+        // damping resists STRETCHING only (TetherMath.ElasticPull's rule): damping the closing speed would brake the zip itself
+        if (stretch > 0) { acc.addScaledVector(dir, m.stiffness * stretch); const vr = P.vel.dot(dir); if (vr < 0) acc.addScaledVector(dir, -vr * m.damping * 2); }
+        // the perch: close to the anchor the closing speed bleeds off, so a head-on zip lands on what it zipped to and bobs,
+        // instead of flying through it (a spring pulled dead-on has nothing to stop it there)
+        { const vc = P.vel.dot(dir); if (vc > 0 && L - m.minRest < Math.max(m.minRest * 0.5, vc * m.perchLead)) acc.addScaledVector(dir, -vc * m.perch); }   // braking starts ~0.3 s out
+        // the landing: at the shortest web the closing speed REFLECTS at `pad` (a restitution), the web pulls the hull back in, and
+        // each bob is that share of the last, a bungee at the end of its drop. (A pad SPRING was tried: stopping 150 u/s inside
+        // 10 u needs ~1100 u/s^2, so every setting punched through the anchor.)
+        if (L < m.minRest) { const vc = P.vel.dot(dir); if (vc > 0) P.vel.addScaledVector(dir, -(1 + m.pad) * vc); P.pos.copy(w.anchor.pos).addScaledVector(dir, -m.minRest); }
+        w.tip.copy(w.anchor.pos);
+      }
+      P.vel.addScaledVector(acc, dt);
+      const held = (Kk.web[-1] && Kk.web[-1].state === 'held') || (Kk.web[1] && Kk.web[1].state === 'held');
+      if (!held) P.vel.multiplyScalar(Math.exp(-m.drag * dt));
+      const sp = P.vel.length(); if (sp > m.topSpeed) P.vel.multiplyScalar(m.topSpeed / sp);
+      ctx.moveVel(P, dt);
+      Kk.active = !!held;
+      for (const side of [-1, 1]) Kk.ghost[side] = W.mech && !Kk.web[side] ? WB.target(W, P, ctx, side, m, Kk.web[-side] && Kk.web[-side].anchor) : null;
+    },
+    // a hull that meets a prism bounces off it (a web-slinger kicks off walls); it never resets
+    onContact(W, P, p, ctx) {
+      const Kk = P.K; for (const s of [-1, 1]) if (Kk.web[s] && Kk.web[s].anchor === p && Kk.web[s].state === 'held') return true;
+      const n = P.pos.clone().sub(p.pos); if (n.lengthSq() < 1e-6) n.copy(ctx.axes(P).up); n.normalize();
+      const vn = P.vel.dot(n); if (vn < 0) P.vel.addScaledVector(n, -(1 + P.m.bounce) * vn); P.pos.addScaledVector(n, 1.5);
+      Kk.bounces++; return true;
+    },
+    // the AI: hand over hand toward its aim (input-only: it turns with the sticks and squeezes the triggers)
+    ai(W, P, aim, base, ctx) {
+      const Kk = P.K, out = {}, toAim = aim.clone().sub(P.pos), distAim = toAim.length(); toAim.normalize();
+      let holding = 0;
+      for (const side of [-1, 1]) {
+        const w = Kk.web[side]; if (!w || w.state === 'retract') continue;
+        if (w.state === 'held') {
+          const d = w.anchor.pos.clone().sub(P.pos), L = d.length(), behind = P.speed > 20 && d.dot(P.vel) < 0;
+          // a web that stops bringing the hull closer is an ORBIT (a spring is a central pull: a hull flying past its anchor keeps its
+          // sideways speed and circles); the first rule held its crystal web and circled it for 23 s
+          // (only while the motion is mostly SIDEWAYS to the web: a hull flying away from its anchor is being braked, not orbiting)
+          const sideways = Math.abs(P.vel.dot(d) / Math.max(1e-3, L)) < 0.35 * P.speed;
+          if (w.aiL != null && L >= w.aiL - 0.02 && sideways) w.aiStall = (w.aiStall || 0) + (W.t - w.aiT); else w.aiStall = 0; w.aiL = L; w.aiT = W.t;
+          if (L > 30 && w.aiStall > 0.35) continue;
+          // let go once the anchor is close or behind the motion, unless it is the crystal itself
+          if ((L < 30 || behind) && !w.anchor.isCrystal) continue;
+          holding++;
+        }
+        if (side < 0) out.lt = 1; else out.rt = 1;
+      }
+      // shoot the next web when nothing is pulling, the nose is on the aim, and a target sits in the cone
+      if (!holding && !(Kk.web[-1] && Kk.web[-1].state === 'shoot') && !(Kk.web[1] && Kk.web[1].state === 'shoot') && base.err < P.m.aimCone * 0.8) {
+        const side = Kk.nextHand; if (Kk.ghost[side] && !Kk.web[side]) { if (side < 0) out.lt = 1; else out.rt = 1; Kk.nextHand = -side; }
+      }
+      return out;
+    },
+    // the AI aims at what it would web to: its crystal when it is in range, else the course line far ahead
+    // ...else the course line FAR ahead (three quarters of a web), where the next anchor is: the generic pilot looks ~24 u ahead,
+    // which suits a hull that flies itself, and webbed whatever was nearest (447 webs, 35 u/s, DNF on I1)
+    aiAim(W, P, aim, why, ctx) {
+      // the crystal only when the hull is slow or already heading roughly at it (else a web on it is an orbit, see ai)
+      if (P.crystal && P.crystal.pos.distanceTo(P.pos) < P.m.webRange * 0.9 && (P.speed < 120 || P.crystal.pos.clone().sub(P.pos).normalize().dot(P.course) > 0.8)) return { aim: P.crystal.pos.clone(), why: 'crystal' };
+      if (why === 'turn back') return null;
+      // the farthest course point still inside a web's reach (aiming past reach found nothing to web, and a hull with no engine
+      // that coasts out of reach of everything is stranded: it drifted 700 u off I1); off the course, the nearest thing at all
+      const L = W.track.line, n = L.length, R = P.m.webRange * 0.85; let best = null;
+      for (let k = 1; k <= 40; k++) { const q = L[(P.hint + k) % n]; if (q.distanceTo(P.pos) < R) best = q; }
+      if (best) return { aim: best.clone(), why: 'web ahead' };
+      // ("the nearest thing" was first its own trail, 11 u beside it, inside the shortest web: it never fired again)
+      const home = L[P.hint]; let back = null, bd = Infinity;
+      for (const p of ctx.near(W, P.pos, P.m.webRange)) { if (p.dead || p.owner === P.i || p.pos.distanceTo(P.pos) < P.m.minWeb * 2) continue; const dh = p.pos.distanceTo(home); if (dh < bd) { bd = dh; back = p; } }
+      return back ? { aim: back.pos.clone(), why: 'web back' } : { aim: home.clone(), why: 'stranded' };
+    },
+    hud(P) {
+      const Kk = P.K, row = (side, name) => { const w = Kk.web[side]; if (!w) return [name, Kk.ghost[side] ? 'ready: target in sight' : 'no target in sight', 0, Kk.ghost[side] ? '#9dff5a' : '']; if (w.state === 'shoot') return [name, 'shooting', 0.3, '#7fd7ff']; if (w.state === 'retract') return [name, 'let go', 0, '']; return [name, 'latched \u00b7 ' + Math.round(w.anchor.pos.distanceTo(P.pos)) + ' u', w.tension, '#ffc640']; };
+      return [row(-1, 'Left web'), row(1, 'Right web')];
+    },
+    abilityStates(P) { const m = P.m; return { charge: 'spring ' + m.stiffness.toFixed(1), mass: Math.round(m.topSpeed) + ' u/s cap', space: Math.round(m.webRange) + ' u webs', time: Math.round(m.reelRate) + ' u/s pull' }; },
+    hull(ctx, color) { return K.swing.hull(ctx, color); },
+    // the web: a twisted two-strand line like a spindle's stem, wavy while it flies or hangs slack, pulled straight as it tightens
+    mount(ctx, scene, P) {
+      const N = 32, strand = () => { const l = line(ctx, 0xf4f6ff, N); l.material.opacity = 0.95; scene.add(l); return l; };
+      const ring = () => { const r = new ctx.THREE.Mesh(new ctx.THREE.TorusGeometry(3.5, 0.3, 6, 24), new ctx.THREE.MeshBasicMaterial({ color: P.domain.color, transparent: true, opacity: 0.5 })); scene.add(r); return r; };
+      const o = { N, webs: { '-1': [strand(), strand()], '1': [strand(), strand()] }, rings: { '-1': ring(), '1': ring() } };
+      o.dispose = () => { for (const s of [-1, 1]) { scene.remove(o.webs[s][0]); scene.remove(o.webs[s][1]); scene.remove(o.rings[s]); } };
+      return o;
+    },
+    draw(W, P, o, t, ctx) {
+      const Kk = P.K, mine = !P.spec.ai || P.i === W.watch, { up, right } = ctx.axes(P);
+      for (const s of [-1, 1]) {
+        const w = Kk.web[s], st = o.webs[s];
+        if (!w) { st[0].visible = st[1].visible = false; } else {
+          const a = WB.hand(ctx, P, s), b = w.tip, d = b.clone().sub(a), L = Math.max(1e-3, d.length()), dir = d.clone().divideScalar(L);
+          let u = new ctx.V().crossVectors(dir, up); if (u.lengthSq() < 1e-4) u = new ctx.V().crossVectors(dir, right); u.normalize(); const v = new ctx.V().crossVectors(dir, u);
+          // amplitude: big and travelling while it flies, a slack wave when held loose, nearly straight taut
+          const slack = w.state === 'held' ? 1 - w.tension : 1, amp = Math.min(3.2, 0.6 + L * 0.03) * (0.15 + 0.85 * slack) * (w.state === 'retract' ? 0.6 : 1), turns = Math.max(2, L / 18), speed = w.state === 'shoot' ? 18 : 7;
+          for (let k = 0; k < 2; k++) {
+            const pts = []; for (let i = 0; i < o.N; i++) { const f = i / (o.N - 1), env = Math.sin(Math.PI * f), ph = f * turns * Math.PI * 2 - t * speed + w.phase + k * Math.PI; pts.push(a.clone().addScaledVector(d, f).addScaledVector(u, Math.cos(ph) * amp * env).addScaledVector(v, Math.sin(ph) * amp * env)); }
+            setLine(st[k], pts); st[k].visible = true; st[k].material.color.set(w.state === 'held' ? (w.tension > 0.05 ? 0xffe6a0 : 0xf4f6ff) : 0xcfe9ff);
+          }
+        }
+        const g = Kk.ghost[s], r = o.rings[s]; r.visible = mine && !!g; if (r.visible) { r.position.copy(g.pos); r.lookAt(P.pos); r.material.opacity = 0.35 + 0.25 * Math.sin(t * 6 + s); r.scale.setScalar(s < 0 ? 0.9 : 1.1); }
+      }
+    },
+    preview(g, w, h, t, accent) {
+      bg(g, w, h); const u = (t * 0.45) % 1, ax = w * 0.62, ay = h * 0.22; blocks(g, '#3a4380', [[ax, ay], [w * 0.2, h * 0.3], [w * 0.9, h * 0.75]], 8);
+      const th = -2.4 + u * 3.2, r = 90 - u * 40, x = ax + Math.sin(th) * r * 1.4, y = ay + Math.cos(th) * r;
+      g.strokeStyle = '#f4f6ff'; g.lineWidth = 1.2; for (const k of [0, 1]) { g.beginPath(); for (let i = 0; i <= 24; i++) { const f = i / 24, wv = Math.sin(f * 14 - t * 8 + k * Math.PI) * 4 * Math.sin(Math.PI * f); g.lineTo(lerp(x, ax, f) + wv, lerp(y, ay, f) + wv * 0.5); } g.stroke(); }
+      dart(g, accent, x, y, th + Math.PI * 0.5 + 0.3);
     },
   };
 

@@ -1230,3 +1230,17 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `BrittleStarBlastForm`, `BrittleStarTests.Blast_IsAVolume_NotAFlatSheet` (with its flatten control), the
   LOCKED rule in `Docs/claude/SHADERS_AND_PERFORMANCE.md`, and `/vessel` §4.ab5.
 
+
+### L-STU-104 — A spring cannot land a fast body; a landing is a restitution, and the spring is what brings it back
+- Lab: Concept fleet, the Gibbon web-slinger (`studio-kinds.js`, kind `web`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: an elastic web pulled dead-on has nothing to stop the hull AT the anchor, so a zip flew through it and yo-yoed (closest 0.7 u). A braking "perch" made it land dead (0 bounces): not the springy feel asked for. A landing-pad SPRING inside the shortest web punched through at every setting tried: stopping 150 u/s inside 10 u needs about 1100 u/s^2, far past any pad that still feels soft.
+- Do instead: model the arrival as a bounce with a restitution (the closing speed reflects at e, the position clamps to the shortest web) and let the web's own spring pull the body back for the next bob: each bob is e of the last, it never passes through and it always settles. Sweep the knobs with a script that prints arrival speed, closest approach, bounce count and the distance trace; a single "settled / not settled" flag hid that the springy setting was the right one.
+- Evidence: `sweep_web.cjs` rows (pad spring 3-6: closest 0.0-0.6 u; restitution 0.5: closest 9.8 u, trace 148 125 80 24 22 32 31 19 11 15 16 14 12 11 10); `CONCEPT_FLEET.md` section 8.3.
+- Promoted: no
+
+### L-STU-105 — An AI for a hull with no engine must never aim past its reach, and must read an orbit as sideways motion, not distance
+- Lab: Concept fleet, the Gibbon web-slinger · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: the generic line pilot (aim ~24 u ahead) webbed whatever was nearest (447 webs, 35 u/s, DNF). Aiming farther fixed that and exposed three more: a web on a crystal it was flying past ORBITED it for 23 s (a spring is a central pull: the sideways speed stays); an "it is not closing, let go" rule then dropped every web that was still braking the hull; and an aim point past web reach let the hull coast 700 u into empty space, where a hull with no engine is stranded. Its "nearest anchor" fallback then picked its own trail 11 u away, inside the shortest web, and it never fired again.
+- Do instead: (1) aim at the farthest point still inside reach, and off the course at the anchor nearest the course, never its own trail; (2) count a web as an orbit only while the motion is mostly sideways to it; (3) never cap a thrustless AI's speed by letting go early (it strands itself). Still open: the AI moves (32-41 u/s) but finishes no course; a racing pilot for this hull needs a plan (which anchor brakes, which redirects), not rules.
+- Evidence: `trace_web_ai.cjs` traces in the session; smoke rows I1 avg 35 / 6 / 41 across the variants.
+- Promoted: no

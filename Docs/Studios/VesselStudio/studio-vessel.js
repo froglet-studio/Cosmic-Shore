@@ -548,7 +548,10 @@
         save(); if (key === 'course') newRace();
       },
     });
-    $('idleHold').checked = S.idleHold; $('idleHold').addEventListener('change', (e) => { S.idleHold = e.target.checked; save(); });
+    // a recipe may turn the idle takeover off (the Gibbon: a hull that must never move unless you web), over an older save too,
+    // until the person ticks the box themselves
+    if (RECIPE.idleHold === false && !S.idleHoldChosen) S.idleHold = false;
+    $('idleHold').checked = S.idleHold; $('idleHold').addEventListener('change', (e) => { S.idleHold = e.target.checked; S.idleHoldChosen = true; save(); });
     $('aiMech').checked = S.aiMech; $('aiMech').addEventListener('change', (e) => { S.aiMech = e.target.checked; save(); if (W) W.mech = S.aiMech; });
     $('aiRule').textContent = KIND.aiRule || 'The AI uses the mechanic whenever it helps it toward its crystal.';
     // Scene Config: course mass (lab-only)
@@ -589,8 +592,8 @@
     // Input: the controls card from the recipe
     (function controls() {
       const c = RECIPE.controls || {}, box = $('controls'); box.textContent = '';
-      const rows = [['Gamepad', (keyLayout === 'omni' ? 'left stick moves (strafe, forward), right stick turns' : 'both sticks steer (the game\'s mix)') + (c.lt ? ' \u00b7 LT ' + c.lt : '') + (c.rt ? ' \u00b7 RT ' + c.rt : '') + (c.a ? ' \u00b7 A ' + c.a : '') + (c.b ? ' \u00b7 B ' + c.b : '')],
-        ['Keys', (keyLayout === 'omni' ? 'W A S D move \u00b7 arrows turn' : 'W S pitch \u00b7 A D yaw \u00b7 Q E roll \u00b7 \u2191 \u2193 throttle') + (c.lt ? ' \u00b7 Space ' + c.lt : '') + (c.rt ? ' \u00b7 F ' + c.rt : '') + (c.a ? ' \u00b7 G ' + c.a : '') + (c.b ? ' \u00b7 H ' + c.b : '')],
+      const rows = [['Gamepad', c.gamepad || (keyLayout === 'omni' ? 'left stick moves (strafe, forward), right stick turns' : 'both sticks steer (the game\'s mix)') + (c.lt ? ' \u00b7 LT ' + c.lt : '') + (c.rt ? ' \u00b7 RT ' + c.rt : '') + (c.a ? ' \u00b7 A ' + c.a : '') + (c.b ? ' \u00b7 B ' + c.b : '')],
+        ['Keys', c.keys || (keyLayout === 'omni' ? 'W A S D move \u00b7 arrows turn' : 'W S pitch \u00b7 A D yaw \u00b7 Q E roll \u00b7 \u2191 \u2193 throttle') + (c.lt ? ' \u00b7 Space ' + c.lt : '') + (c.rt ? ' \u00b7 F ' + c.rt : '') + (c.a ? ' \u00b7 G ' + c.a : '') + (c.b ? ' \u00b7 H ' + c.b : '')],
         ['Free cam', 'orbits the viewed hull: drag to turn \u00b7 wheel to zoom \u00b7 J L / I K turn \u00b7 U O zoom'],
         ['Transport', 'Enter play \u00b7 P pause / resume \u00b7 R stop \u00b7 C next camera'],
         ['Phone', 'opens by itself on a phone: two thumb sticks, LT / RT handles, A / B buttons']].concat(c.rows || []);   // a recipe's own rows (a mode that remaps the sticks)

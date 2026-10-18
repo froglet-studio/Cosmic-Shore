@@ -148,25 +148,25 @@
       "name": "Gibbon",
       "file": "gibbon.html",
       "group": "concept",
-      "kind": "concept studio - round 1 (recipe-driven, movement kind tether)",
-      "chip": "round 2 · two modes",
-      "summary": "Round 2, after Garrett's review: two modes. TIME mode feels like flying: the Gibbon plants its own anchor prisms ahead, alternating sides, and yanks itself along them on short elastic tethers (the Tether prototype's auto-tethers). Squeeze a trigger and you are in SPACE mode: each trigger fires its own tether and its stick aims it, then reels it. One tether is a swing round its anchor, two is a bolas round the line between them, none is a fling through space until time mode takes the sticks back. Every tether is a light sword: what it sweeps through, it cuts.",
+      "kind": "concept studio - round 1 (recipe-driven, movement kind web)",
+      "chip": "round 2 · web-slinger",
+      "summary": "The web-slinger (Yash, 2026-10-18: like Spider-Man). No engine at all: the Gibbon sits still until it shoots a web. The sticks turn it to aim; LT shoots the left hand's web and RT the right's at whatever is near the crosshair (a prism of the course, mass, a rival's trail, a crystal). A web flies out, latches, and is an elastic bungee: hold the trigger and it pulls you in, springy and bouncing; latch off to the side and you swing round the anchor, faster as the web shortens. Let go and you fly on your momentum; shoot the next web before you lose it. Hand over hand, never a thruster.",
       "spec": [
         {
-          "k": "Time mode",
-          "v": "auto-tethers every 0.35 s, 0.8 s ahead, 20° off the nose"
+          "k": "Moves",
+          "v": "only on its webs: no throttle, no thruster"
         },
         {
-          "k": "Space mode",
-          "v": "LT + left stick = left tether · RT + right stick = right tether"
+          "k": "Webs",
+          "v": "LT left hand · RT right hand · 220 u, latch on anything"
         },
         {
-          "k": "Swing",
-          "v": "reel 40 u/s, spin limit 0.6 rev/s, +20% past a half turn, cap 358"
+          "k": "Feel",
+          "v": "elastic bungee: springy pull, swing, spin-up, bounce off walls"
         },
         {
-          "k": "From",
-          "v": "the Tether prototype (cece/loving-feynman-hlgf18) + Garrett's review"
+          "k": "Like",
+          "v": "Spider-Man's web swing, without gravity"
         }
       ],
       "preview": "previews/gibbon.png",

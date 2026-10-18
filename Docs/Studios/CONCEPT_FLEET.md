@@ -131,7 +131,7 @@ Scorecard tab re-runs its own row live.
 
 | Vessel | I1 | I2 | I3 | I4 | Top u/s | Reading |
 |---|---|---|---|---|---|---|
-| Gibbon | 73 / 85 / 79 | 136 / 127 / 111 | 235 / 293 / 254 | 182 / 177 / 123 | 253 | Round 2 (§8.2): two modes. The auto-tethers alone beat the control on I1 and I3 (I3 with zero swings); the AI's swings cost on the twisting courses, where a 1.6 s fling cannot steer. Round 1's swing kind: 159 / 161 / 161, 216 / 212 / 220, 537 / DNF / DNF, 314 / 233 / 218 |
+| Gibbon | DNF / DNF / DNF | DNF / DNF / DNF | DNF / DNF / DNF | DNF / DNF / DNF | 260 | Round 2.2, the web-slinger (§8.3): no engine, so its control cannot move at all, and the AI moves (32-41 u/s, up to 4 crystals) but finishes nothing yet; fly it yourself. Round 2.1 (§8.2, two modes): 73 / 85 / 79, 136 / 127 / 111, 235 / 293 / 254, 182 / 177 / 123 |
 | Flea | 294 / 326 / 326 | 388 / 458 / 458 | DNF / DNF / DNF | 496 / 475 / 475 | 258 | The bounce chain pays 10-15% on the flat courses, loses on I4; the AI never hits the rail (0 resets) |
 | Albatross | 266 / 266 / DNF | DNF / DNF / DNF | DNF / DNF / DNF | DNF / DNF / DNF | 144 | Finishes the flat octagon only; the climbing and twisting courses need an energy plan the round-1 pilot lacks. Fly it yourself |
 | Remora | 80 / 168 / 222 | 118 / 256 / 297 | 394 / DNF / DNF | 260 / 264 / 282 | 240 | Two Hard rivals to draft (its scorecard seats them); the draft is worth 2-3x on the flat courses. The slipstream chain finding stands |
@@ -329,3 +329,43 @@ a shield pops and survives that contact, own and own-domain prisms, the hooked a
 
 **Not done this session:** the Tether branch is not merged into `Ys-bleeding-edge` (its id 14 collides with the
 Thresher; T-20261017-e64b), so nothing reached Unity; the AI never holds two tethers.
+
+### 8.3 Session 1, second pass: the Gibbon as a web-slinger (2026-10-18)
+
+Yash flew §8.2 and redirected it: "like Spider-Man. Remove the auto moving: it should never auto move. No swing like that.
+Make it stationary; it should move only when it shoots a web. Exactly how a Spider-Man web works, just without gravity.
+Latch on to whatever we find: prisms, crystals. The effect wavy, like spindles. Very smooth, very elastic and springy."
+(The "Given" in the notes and in this request is the Gibbon.) The Gibbon's kind is now `web`; `tether` (§8.2) and `swing`
+(round 1) stay in `studio-kinds.js` for the record.
+
+**What it is.** No engine and no throttle: it starts at rest and the sticks only turn it (they aim). LT shoots the left
+hand's web, RT the right's, at the best thing near the crosshair (any prism, any crystal; each hand prefers its own side,
+long webs preferred, a 22° cone as the Spider-Man games give). A web flies out at 900 u/s and latches. It is an **elastic
+bungee**: it pulls only past its rest length (born at 75% of the distance, so it yanks at once), the rest length reels in
+at 70 u/s while the trigger is held, and the damping is light and acts on stretching only, so the hull overshoots and
+bounces. A spring is a central pull, so a web latched off your line of travel makes you **swing round the anchor and spin
+up** as it shortens (angular momentum is kept by the physics, not scripted). Arriving at the anchor, a zip **perches with a
+bounce**: it brakes from about 0.15 s out and its closing speed reflects at 50% at the shortest web (10 u), so it bobs a
+few times and settles. Let go and you fly on your momentum (space drag 0.12/s lets a coasting hull come to rest; 0 is true
+space). A wall bounces you, never resets you. The idle AI takeover is off for this page (it would look like auto-moving).
+The web is drawn as a twisted two-strand line, after the flora's spindles: loose and waving while it flies or hangs slack,
+pulled straight as it tightens.
+
+**Measured** (`probe_web.cjs`, free space):
+
+| | |
+|---|---|
+| Idle 3 s, then 3 s of full stick | 0.000 u moved, speed 0 |
+| Zip to a prism 150 u ahead | latched in 0.18 s, peak 177 u/s, lands at 1.3 s, bobs 4 times, never closer than 9.8 u |
+| Swing (120 u/s, anchor 20° off the path, held 3 s) | 328° round the anchor, peaks at 147 u/s |
+| Miss (nothing in the cone) | the web flies out and comes back; the hull does not move |
+| Two webs, left and right | both latch, pulled straight between them (0.0 u sideways drift) |
+| Hitting a prism at 150 u/s | bounces back at 73 u/s, no reset |
+| A crystal 100 u ahead | webbed and caught at 1.08 s |
+
+**Found.** A spring cannot land a fast body: it flies through or, with a pad spring, punches through; the landing is a
+restitution (L-STU-104). And a thrustless AI strands itself in several distinct ways (L-STU-105): it is not raced yet.
+
+**Decisions needed (Yash, by flying it).** The feel knobs are all in Play Style Config: Springiness, Bounce damping, Latch
+slack, Pull, Landing bounce, Perch, Prefer far, Aim cone, Web speed, Space drag. And: should a web pass through what it hits
+(a prism between you and the anchor) or latch the first thing on its line? Today it latches what the crosshair picked.

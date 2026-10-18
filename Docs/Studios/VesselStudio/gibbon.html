@@ -139,8 +139,8 @@
   <header class="top">
     <a class="back" href="index.html">&larr; Vessel Studio</a>
     <h1 id="h1">Gibbon Studio</h1>
-    <span class="round" id="round">round 2 · two modes</span>
-    <p class="sub" id="sub">Round 2, after Garrett&#x27;s review: two modes. TIME mode feels like flying: the Gibbon plants its own anchor prisms ahead, alternating sides, and yanks itself along them on short elastic tethers (the Tether prototype&#x27;s auto-tethers). Squeeze a trigger and you are in SPACE mode: each trigger fires its own tether and its stick aims it, then reels it. One tether is a swing round its anchor, two is a bolas round the line between them, none is a fling through space until time mode takes the sticks back. Every tether is a light sword: what it sweeps through, it cuts.</p>
+    <span class="round" id="round">round 2 · web-slinger</span>
+    <p class="sub" id="sub">The web-slinger (Yash, 2026-10-18: like Spider-Man). No engine at all: the Gibbon sits still until it shoots a web. The sticks turn it to aim; LT shoots the left hand&#x27;s web and RT the right&#x27;s at whatever is near the crosshair (a prism of the course, mass, a rival&#x27;s trail, a crystal). A web flies out, latches, and is an elastic bungee: hold the trigger and it pulls you in, springy and bouncing; latch off to the side and you swing round the anchor, faster as the web shortens. Let go and you fly on your momentum; shoot the next web before you lose it. Hand over hand, never a thruster.</p>
   </header>
 
   <div class="layout">
@@ -300,28 +300,28 @@
   "id": "gibbon",
   "order": 1,
   "name": "Gibbon",
-  "tagline": "time mode flies on its own tethers; space mode swings and slices on two",
-  "round": "round 2 \u00b7 two modes",
+  "tagline": "no engine: it moves only on its webs, like Spider-Man without gravity",
+  "round": "round 2 \u00b7 web-slinger",
   "accent": "#7fe08a",
-  "kind": "tether",
-  "chip": "round 2 \u00b7 two modes",
-  "summary": "Round 2, after Garrett's review: two modes. TIME mode feels like flying: the Gibbon plants its own anchor prisms ahead, alternating sides, and yanks itself along them on short elastic tethers (the Tether prototype's auto-tethers). Squeeze a trigger and you are in SPACE mode: each trigger fires its own tether and its stick aims it, then reels it. One tether is a swing round its anchor, two is a bolas round the line between them, none is a fling through space until time mode takes the sticks back. Every tether is a light sword: what it sweeps through, it cuts.",
+  "kind": "web",
+  "chip": "round 2 \u00b7 web-slinger",
+  "summary": "The web-slinger (Yash, 2026-10-18: like Spider-Man). No engine at all: the Gibbon sits still until it shoots a web. The sticks turn it to aim; LT shoots the left hand's web and RT the right's at whatever is near the crosshair (a prism of the course, mass, a rival's trail, a crystal). A web flies out, latches, and is an elastic bungee: hold the trigger and it pulls you in, springy and bouncing; latch off to the side and you swing round the anchor, faster as the web shortens. Let go and you fly on your momentum; shoot the next web before you lose it. Hand over hand, never a thruster.",
   "spec": [
     {
-      "k": "Time mode",
-      "v": "auto-tethers every 0.35 s, 0.8 s ahead, 20\u00b0 off the nose"
+      "k": "Moves",
+      "v": "only on its webs: no throttle, no thruster"
     },
     {
-      "k": "Space mode",
-      "v": "LT + left stick = left tether \u00b7 RT + right stick = right tether"
+      "k": "Webs",
+      "v": "LT left hand \u00b7 RT right hand \u00b7 220 u, latch on anything"
     },
     {
-      "k": "Swing",
-      "v": "reel 40 u/s, spin limit 0.6 rev/s, +20% past a half turn, cap 358"
+      "k": "Feel",
+      "v": "elastic bungee: springy pull, swing, spin-up, bounce off walls"
     },
     {
-      "k": "From",
-      "v": "the Tether prototype (cece/loving-feynman-hlgf18) + Garrett's review"
+      "k": "Like",
+      "v": "Spider-Man's web swing, without gravity"
     }
   ],
   "fantasy": "A brachiator in space. It never flies straight for long: it hooks the world and swings through it, and the mass other pilots lay is its forest canopy.",
@@ -332,49 +332,49 @@
     "roll": 130,
     "grip": 8,
     "accel": 1.5,
-    "topSpeed": 358
+    "topSpeed": 260
   },
   "params": {},
   "elements": {
     "charge": {
-      "name": "Blade",
-      "param": "cutRadius",
-      "range": [
-        1,
-        1.8
-      ],
-      "l5": "Shield Breaker",
-      "tip": "A proposal (the Tether's): Charge is the blade. Its cutting width grows; at level 5 a beam cuts shielded prisms outright instead of popping the shield."
-    },
-    "mass": {
-      "name": "Anchor",
-      "param": "anchorScale",
+      "name": "Snap",
+      "param": "stiffness",
       "range": [
         1,
         1.6
       ],
-      "l5": "Harvest",
-      "tip": "A proposal: Mass is the anchors' size. At level 5 a rival's prism you swung off becomes yours when you let go."
+      "l5": "Slingshot",
+      "tip": "A proposal: Charge is the web's spring. A stiffer web yanks harder and bounces quicker."
+    },
+    "mass": {
+      "name": "Momentum",
+      "param": "topSpeed",
+      "range": [
+        1,
+        1.4
+      ],
+      "l5": "Wrecking Ball",
+      "tip": "A proposal: Mass is how much speed the Gibbon can carry."
     },
     "space": {
       "name": "Reach",
-      "param": "range",
+      "param": "webRange",
       "range": [
         1,
         1.6
       ],
       "l5": "Far Reach",
-      "tip": "The Tether's proposal: Space is how far a tether reaches."
+      "tip": "A proposal (the Tether's): Space is how far a web reaches."
     },
     "time": {
-      "name": "Reel",
+      "name": "Pull",
       "param": "reelRate",
       "range": [
         1,
         1.8
       ],
       "l5": "Winch",
-      "tip": "The Tether's proposal: Time is how fast a stick reels its tether in."
+      "tip": "A proposal (the Tether's): Time is how fast a held web pulls you in."
     }
   },
   "styles": [
@@ -386,27 +386,27 @@
         "space": 0,
         "time": 0
       },
-      "info": "Every element at 0: TetherConfig's numbers."
+      "info": "Every element at 0: the studio's numbers."
     },
     {
-      "name": "Acrobat",
+      "name": "Swinger",
       "lv": {
         "charge": 0,
-        "mass": 0,
-        "space": 10,
-        "time": 10
-      },
-      "info": "Long reach and a fast reel: chains swings far apart."
-    },
-    {
-      "name": "Slicer",
-      "lv": {
-        "charge": 10,
         "mass": 10,
-        "space": 0,
+        "space": 10,
         "time": 0
       },
-      "info": "A wide blade and big anchors: flies through mass cutting it."
+      "info": "Long webs and lots of momentum: big arcs, few webs."
+    },
+    {
+      "name": "Zipper",
+      "lv": {
+        "charge": 10,
+        "mass": 0,
+        "space": 0,
+        "time": 10
+      },
+      "info": "A stiff web and a fast pull: short sharp zips, hand over hand."
     },
     {
       "name": "Maxed",
@@ -428,34 +428,33 @@
     }
   ],
   "controls": {
-    "lt": "left tether (hold = SPACE mode)",
-    "rt": "right tether (hold = SPACE mode)",
+    "lt": "left web (hold = pull, let go = fly)",
+    "rt": "right web (hold = pull, let go = fly)",
     "rows": [
       [
-        "Time mode",
-        "no trigger: the sticks fly, the auto-tethers pull you along on the beat; ghost rings mark what each trigger would hook"
+        "Webs",
+        "the sticks only turn the Gibbon (it has no engine) \u00b7 aim near something and squeeze: the web flies out, latches and pulls \u00b7 hold to keep pulling, let go to fly on \u00b7 the rings show what each hand would hit"
       ],
       [
-        "Space mode",
-        "a trigger held: its stick aims that tether (W A S D left, arrows right), then stick up reels in, down lets out \u00b7 one tether swings, two make a bolas \u00b7 the hull follows the rope"
-      ],
-      [
-        "Fling",
-        "let go of every trigger: you fly on, the sticks still aim; time mode takes the sticks back after the fling (1.6 s) \u00b7 squeeze again to chain"
+        "Swing",
+        "latch off to one side of where you are going and you swing round the anchor, faster as the web shortens \u00b7 two webs pull against each other \u00b7 a wall you hit bounces you"
       ]
-    ]
+    ],
+    "gamepad": "sticks turn the Gibbon to aim (it has no engine and no throttle) \u00b7 LT left web \u00b7 RT right web (hold = pull, let go = fly)",
+    "keys": "W S pitch \u00b7 A D yaw \u00b7 Q E roll (aim) \u00b7 Space left web \u00b7 F right web (hold = pull, let go = fly)"
   },
   "notModelled": [
-    "The Tether prototype's long tether aims with a SEARCH PLANE that roll tilts; here each tether aims with its own stick (Garrett's space mode). The stick aim is the studio's proposal: neutral points ahead and out on its own side.",
-    "Two tethers (the bolas) are new here: the hull keeps both ropes rigid and orbits the line between the anchors. The Tether in Unity holds one long tether at a time.",
-    "The blade never cuts the course ribbon (it is the course) or this hull's own prisms; shields pop and survive that contact, as the Rhino sword's rule. Super-shields, crystals as hook targets and the hook RPC are not modelled.",
-    "Auto-anchors stay in the world as in the game, but the studio keeps only each hull's last 150.",
-    "Charge and mass MODES (Garrett: later) are not here; the element rows are proposals until Garrett signs them off."
+    "There is no gravity: a 'swing' is the elastic web's central pull, not a pendulum. Real Spider-Man swings fall into the bottom of the arc; this one orbits the anchor.",
+    "Space drag (0.12 per s, lab-only) lets a coasting Gibbon come to rest; true space would be 0.",
+    "The aim helps you the way the Spider-Man games do: a web latches on the best thing inside a 22-degree cone round the crosshair, preferring far anchors, each hand preferring its own side.",
+    "Webs latch on prisms of every kind (the course ribbon included) and on crystals; they never cut, own or move what they hold. The Unity Tether prototype on cece/loving-feynman-hlgf18 is a different design (auto-tethers, a rigid long tether) kept for reference.",
+    "The web is drawn as a twisted two-strand line, after the flora's spindles; the game would need its own web visual."
   ],
   "sources": [
-    "Design: Docs/Studios/CONCEPT_FLEET.md sections 8.1 (the merge) and 9 (Garrett's review, 2026-10-17). Unity side: Assets/_Scripts/Controller/Vessel/R_VesselActions/TETHER.md, AutoTetherRig.cs and TetherMath.cs on cece/loving-feynman-hlgf18; the numbers are TetherConfig.asset's."
+    "Design: Yash 2026-10-18 ('like Spider-Man, no auto moving, it moves only when it shoots a web, elastic and springy'); Docs/Studios/CONCEPT_FLEET.md section 8.3. The previous round-2 version (two modes on the Tether prototype) is section 8.2 and the `tether` kind."
   ],
-  "docs": "Docs/Studios/CONCEPT_FLEET.md"
+  "docs": "Docs/Studios/CONCEPT_FLEET.md",
+  "idleHold": false
 };
   VesselStudioEngine.start(RECIPE);
 </script>
