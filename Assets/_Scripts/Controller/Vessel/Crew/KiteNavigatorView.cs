@@ -124,28 +124,32 @@ namespace CosmicShore.Gameplay
         // variant. Copies of it are tinted per use below.
         const string UnlitTemplateResource = "KiteNavigatorUnlit";
 
-        static Material LoadUnlitTemplate()
+        // The material to copy, or the shader alone when the material is missing (it then has to be found by name).
+        static Object LoadUnlitTemplate()
         {
             var template = Resources.Load<Material>(UnlitTemplateResource);
             if (template && template.shader && template.shader.isSupported) return template;
 
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader) return new Material(shader);
+            if (shader) return shader;
             CSDebug.LogError($"[KiteNavigatorView] Resources/{UnlitTemplateResource}.mat or its URP/Unlit shader is " +
                              "missing from this build, so the kite and its motes cannot be drawn.");
             return null;
         }
 
-        static Material Unlit(Material template, Color c)
+        static Material Unlit(Object template, Color c)
         {
-            if (!template)
+            Material m;
+            if (template is Material material) m = new Material(material);
+            else if (template is Shader shader) m = new Material(shader);
+            else
             {
                 // Instancing on so the draw does not throw; it still cannot show colour (see above).
                 var fallback = VertexColoured(c);
                 fallback.enableInstancing = true;
                 return fallback;
             }
-            var m = new Material(template) { enableInstancing = true };
+            m.enableInstancing = true;
             m.SetColor("_BaseColor", c);
             m.SetFloat("_Surface", 1f);
             m.SetFloat("_Blend", 0f);
