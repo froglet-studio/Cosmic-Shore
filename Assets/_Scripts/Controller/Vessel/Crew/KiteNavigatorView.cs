@@ -96,16 +96,17 @@ namespace CosmicShore.Gameplay
             _loopMesh.MarkDynamic();
 
             var cfg = nav.Config;
+            var unlit = LoadUnlitTemplate();
             _tailMat = VertexColoured(Lime);
             _loopMat = VertexColoured(new Color(1f, 1f, 1f, 0.85f));
-            _kiteMat = Unlit(KiteWhite);
-            _kiteChargedMat = Unlit(Gold);
-            _kiteFaintMat = Unlit(new Color(1f, 1f, 1f, cfg.PilotKiteAlpha));
-            _limeMat = Unlit(Lime);
-            _limeFaintMat = Unlit(new Color(Lime.r, Lime.g, Lime.b, cfg.PilotDotAlpha));
-            _ringMat = Unlit(new Color(1f, 1f, 1f, 0.85f));
-            _goldMat = Unlit(Gold);
-            _plasmaMat = Unlit(Plasma);
+            _kiteMat = Unlit(unlit, KiteWhite);
+            _kiteChargedMat = Unlit(unlit, Gold);
+            _kiteFaintMat = Unlit(unlit, new Color(1f, 1f, 1f, cfg.PilotKiteAlpha));
+            _limeMat = Unlit(unlit, Lime);
+            _limeFaintMat = Unlit(unlit, new Color(Lime.r, Lime.g, Lime.b, cfg.PilotDotAlpha));
+            _ringMat = Unlit(unlit, new Color(1f, 1f, 1f, 0.85f));
+            _goldMat = Unlit(unlit, Gold);
+            _plasmaMat = Unlit(unlit, Plasma);
             _plasmaMat.renderQueue += 1;                     // the bolt over the lime petals
         }
 
@@ -115,11 +116,36 @@ namespace CosmicShore.Gameplay
         // NOT Sprites/Default: its instanced path reads the colour from unity_SpriteRendererColorArray, which only a
         // SpriteRenderer fills, so a RenderMeshInstanced draw with it comes out at zero alpha - which is why the motes
         // could not be seen (Garrett, 2026-10-18).
-        static Material Unlit(Color c)
+        //
+        // The shader comes from a Resources material (Resources/KiteNavigatorUnlit.mat), never from Shader.Find alone:
+        // nothing else in the project references URP/Unlit, so a player build stripped it and Shader.Find returned null
+        // on the phone - the kite, its tail and the motes drew nothing while the editor drew them (Garrett, Android dev
+        // build, 2026-10-19). The material is what makes the build carry the shader and its transparent + instanced
+        // variant. Copies of it are tinted per use below.
+        const string UnlitTemplateResource = "KiteNavigatorUnlit";
+
+        static Material LoadUnlitTemplate()
         {
+            var template = Resources.Load<Material>(UnlitTemplateResource);
+            if (template && template.shader && template.shader.isSupported) return template;
+
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (!shader) return VertexColoured(c);
-            var m = new Material(shader) { enableInstancing = true };
+            if (shader) return new Material(shader);
+            CSDebug.LogError($"[KiteNavigatorView] Resources/{UnlitTemplateResource}.mat or its URP/Unlit shader is " +
+                             "missing from this build, so the kite and its motes cannot be drawn.");
+            return null;
+        }
+
+        static Material Unlit(Material template, Color c)
+        {
+            if (!template)
+            {
+                // Instancing on so the draw does not throw; it still cannot show colour (see above).
+                var fallback = VertexColoured(c);
+                fallback.enableInstancing = true;
+                return fallback;
+            }
+            var m = new Material(template) { enableInstancing = true };
             m.SetColor("_BaseColor", c);
             m.SetFloat("_Surface", 1f);
             m.SetFloat("_Blend", 0f);
@@ -254,6 +280,16 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True when <paramref name="screen"/> falls inside the kite view's rect.</summary>
         internal bool Contains(Vector2 screen) => _cam.pixelRect.Contains(screen);
+
+        /// <summary>
+        /// True when <paramref name="screen"/> is inside the small view in the lower left: the kite's own view while the
+        /// human pilots, the pilot's view while the human navigates (Frame lifts the pilot camera into that square).
+        /// </summary>
+        internal bool PipContains(Vector2 screen, bool humanNavigates)
+        {
+            var small = humanNavigates ? (_pilotLifted ? _pilot : null) : _cam;
+            return small && small.enabled && small.pixelRect.Contains(screen);
+        }
 
         // ------------------------------------------------------------------ drawing
 
