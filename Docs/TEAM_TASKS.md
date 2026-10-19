@@ -1133,3 +1133,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
 - **Added:** 2026-10-19 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §59
+
+### T-20261019-dfe5 · open · dev · Vessel Studio / Amoebius
+- **Task:** Take the Vessel Studio out of the engine (Shombith's decision, 2026-10-19: the studio is an artifact, the engine is focused solely on the game): plan where the launcher's VESSEL STUDIO page and the studio server go, and whether Shombith's proposed artifact-storing webpage (synced artifacts anyone thinks important) replaces them
+- **Done when:** A plan agreed with Shombith, recorded as a row in Docs/TOOLING_DECISIONS.md section 6
+- **Who can take it:** Yash (drives the Vessel Studio and the launcher)
+- **Added:** 2026-10-19 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/TOOLING_DECISIONS.md section 6

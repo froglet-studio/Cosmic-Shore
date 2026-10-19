@@ -127,7 +127,10 @@ The feedback log is how we find out.
 
 | Date | Question | Decision | Who decided | Follow-up |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-19 | Amoebius: keep, narrow, or stop? | **Amoebius stays.** It is a long-term goal: Froglet's own engine, so that one day the team can leave Unity completely. Doing that now is not plausible (legal challenges, the porting, other problems), so Unity stays the engine the game ships on. The engine is focused solely on the game. Sessions no longer ask whether it helped; Shombith drives what is good for it. | Shombith (started the engine and drives it) | Garrett, Caleb and Yash told through this row. |
+| 2026-10-19 | The Vessel Studio: keep, narrow, or remove? | **The Vessel Studio is an artifact and is not part of the engine.** The engine carries no studio work; the studio is its own task. Whether the studio artifact itself is kept is not decided here. | Shombith (for the engine's side) | Yash (drives the studio and the launcher) plans taking the studio out of the engine; the artifact's own future stays with the team. |
+| 2026-10-19 | One tool that builds every Froglet game? | **No.** Unifying everything into one tool costs far more than Shombith is willing to put resources into. | Shombith | §5's recommendation is not taken up. |
+| 2026-10-19 | (proposal) Where synced artifacts live | An artifact-storing webpage that keeps the synced artifacts anyone thinks are important. | Proposed by Shombith | Open: who builds it and where. |
 
 When a decision is recorded:
 - update CLAUDE.md's "Tools under evaluation" section, `Port/CLAUDE.md`, and the `/vessel-studio`,

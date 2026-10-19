@@ -117,8 +117,8 @@ def team_notice(base):
 def tools_notice(base):
     recorded, deadline = decision(base)
     if recorded:
-        return ('Amoebius (the engine in Port/ and the Amoebius.exe launcher): the team recorded a decision about it '
-                'in Docs/TOOLING_DECISIONS.md section 6; Claude follows it.')
+        return ('Amoebius (the engine in Port/) stays: a long-term goal of Froglet\'s own engine, focused solely on '
+                'the game; Shombith drives it (Docs/TOOLING_DECISIONS.md section 6).')
     return ('Amoebius (the engine in Port/ and the Amoebius.exe launcher) is UNDER EVALUATION. '
             f'{core_names(base)} decide after {deadline} whether to keep it, keep only the engine as a '
             'test harness, or stop (Docs/TOOLING_DECISIONS.md). Shombith drives the engine, Yash the launcher. '
@@ -150,9 +150,11 @@ def team_context(base):
 def tools_context(base):
     recorded, deadline = decision(base)
     if recorded:
-        return ('This prompt is about the engine or the tools. The team recorded its decision about Amoebius in '
-                'Docs/TOOLING_DECISIONS.md section 6: read it, follow it, and tell the person what it says in one '
-                'line at the start of your answer.')
+        return ('This prompt is about the engine or the tools. The decision about Amoebius is recorded in '
+                'Docs/TOOLING_DECISIONS.md section 6: Amoebius stays, focused solely on the game, and Shombith drives '
+                'it; the Vessel Studio is an artifact and not part of the engine. Follow it quietly: do NOT open your '
+                'answer with a status line and do NOT ask whether Amoebius or the Vessel Studio helped (Shombith '
+                'asked sessions to stop). Keep Vessel Studio work out of Port/.')
     text = ('This prompt is about the engine or the tools. AMOEBIUS IS UNDER EVALUATION (Docs/TOOLING_DECISIONS.md '
             f'section 3): the core four ({core_names(base)}) decide after {deadline} whether to keep it, narrow '
             'it to the engine as a headless verification harness, or stop. Section 5 holds Claude\'s '
@@ -225,12 +227,16 @@ def self_test():
         bad.append('the first prompt did not show the person the team notice')
     if second is not None:
         bad.append('the team notice repeated in one session')
-    if not eng or 'UNDER EVALUATION' not in eng['systemMessage'] or 'START your answer' not in \
+    # The live repo is checked in whichever state its decision record is in (open, or recorded on 2026-10-19).
+    recorded_live = decision(base)[0]
+    status_word = 'stays' if recorded_live else 'UNDER EVALUATION'
+    context_word = 'do NOT ask' if recorded_live else 'START your answer'
+    if not eng or status_word not in eng['systemMessage'] or context_word not in \
             eng['hookSpecificOutput']['additionalContext']:
         bad.append('an engine prompt did not show and pass on the status')
     if eng2 is not None:
         bad.append('the engine status repeated in one session')
-    if not both or 'Cosmic Shore team' not in both['systemMessage'] or 'UNDER EVALUATION' not in both['systemMessage']:
+    if not both or 'Cosmic Shore team' not in both['systemMessage'] or status_word not in both['systemMessage']:
         bad.append('a first prompt about the tools did not get both notices')
     for yes in ('open Amoebius.exe', 'the game engine', 'Port/src/CosmicShore.Engine', 'which tool builds it',
                 'the launcher crashed', 'tooling decision'):
@@ -263,6 +269,8 @@ def self_test():
         write('TOOLING_DECISIONS.md', open_doc.replace('| | |', '| 2026-11-06 | Amoebius |'))
         if not decision(d)[0] or 'UNDER EVALUATION' in tools_notice(d) or 'recorded' not in team_notice(d):
             bad.append('a recorded decision still read as open')
+        if 'ask the person' in tools_context(d) or 'do NOT ask' not in tools_context(d):
+            bad.append('a recorded decision still asks whether Amoebius helped')
     print('team_context self-test: ' + ('ok' if not bad else 'FAILED: ' + '; '.join(bad)))
     return 0 if not bad else 1
 
