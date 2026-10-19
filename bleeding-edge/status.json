@@ -133,7 +133,7 @@
     }
   ],
   "gatesOk": true,
-  "generatedUtc": "2026-10-18T09:55:25Z",
+  "generatedUtc": "2026-10-19T11:19:11Z",
   "next": [
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker Inl_UniversalRenderTotal 0.9318 -> 1.3824 ms/frame (+48%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-10-16 13:10:56): marker UniTaskLoopRunnerPreLateUpdate 0.0007 -> 0.3666 ms/frame (+52271%)",
