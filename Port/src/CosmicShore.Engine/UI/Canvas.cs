@@ -8,18 +8,6 @@ namespace CosmicShore.Engine
         WorldSpace = 2,
     }
 
-    /// <summary>
-    /// The UI root component (original contract: Canvas). A ROOT screen-space canvas
-    /// drives its own <see cref="RectTransform"/>: rect size = screen / scaleFactor,
-    /// pose = screen centre, scale = scaleFactor — so child anchor math resolves in
-    /// canvas units and world corners land in pixels (the RectTransform pulls this
-    /// through <c>DrivingCanvas</c>; see RectTransform.cs).
-    ///
-    /// Pull-based deviation (deliberate): the original engine PUSHES the scale factor
-    /// from an attached CanvasScaler during its render pass; headless there is no render
-    /// pass, so <see cref="scaleFactor"/> PULLS from the scaler on read. Steady-state
-    /// values are identical; the port is simply never stale.
-    /// </summary>
     /// <summary>Original contract: the extra vertex channels a canvas passes to its shaders.</summary>
     [System.Flags]
     public enum AdditionalCanvasShaderChannels
@@ -32,6 +20,18 @@ namespace CosmicShore.Engine
         Tangent = 16,
     }
 
+    /// <summary>
+    /// The UI root component (original contract: Canvas). A ROOT screen-space canvas
+    /// drives its own <see cref="RectTransform"/>: rect size = screen / scaleFactor,
+    /// pose = screen centre, scale = scaleFactor — so child anchor math resolves in
+    /// canvas units and world corners land in pixels (the RectTransform pulls this
+    /// through <c>DrivingCanvas</c>; see RectTransform.cs).
+    ///
+    /// Pull-based deviation (deliberate): the original engine PUSHES the scale factor
+    /// from an attached CanvasScaler during its render pass; headless there is no render
+    /// pass, so <see cref="scaleFactor"/> PULLS from the scaler on read. Steady-state
+    /// values are identical; the port is simply never stale.
+    /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public class Canvas : Behaviour
     {

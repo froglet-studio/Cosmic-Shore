@@ -1,10 +1,10 @@
 # Open tooling decisions: Amoebius, the Vessel Studio, and the one tool that builds Froglet's games
 
-**Status: OPEN** (raised by Yash, 2026-10-15). **Decided by:** Garrett, Caleb, Shombith and Yash. Claude
-gathers the evidence and records the decision; it does not make it. Until a decision is recorded in §6, both
-tools stay as they are, marked **under evaluation**. Sessions recommend them as an option, never as a
-requirement. Sessions also ask the people using them, now and then, whether they helped: see
-[`TOOLING_FEEDBACK.md`](TOOLING_FEEDBACK.md).
+**Status: DECIDED 2026-10-19** (raised by Yash, 2026-10-15; decided by Shombith, who started and drives the
+engine; §6). Amoebius stays as the long-term engine goal, focused solely on the game; the Vessel Studio is an
+artifact and not part of the engine (whether the artifact stays is still open, and Yash drives it); there is no
+single unifying tool. Sessions no longer ask whether these tools helped. §1-§5 below are the evidence and options
+as written on 2026-10-15, kept for the record.
 
 ## 1. The questions
 

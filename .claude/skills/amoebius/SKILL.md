@@ -108,5 +108,24 @@ the engine.
      you need into the engine (`FrameTimingWindow` went to `Engine/Rendering/`), where the tests already
      reach it. Linking into `CosmicShore.Mobile` is fine: the phone build has no such type.
 
+14. **Traps from the style-B menu branch (2026-10-19, `claude/new-session-76hnyc`).**
+   - **One live-compile error can hide the rest.** The perf-daily `amoebius` job reported exactly ONE error
+     (`KitSelectableBase.DoStateTransition(SelectionState, bool)`: no method to override). That is a
+     declaration error, and with it present Roslyn never reported the method-body errors behind it. Fixing it
+     surfaced 15 more: 9 from this branch's UI code and 6 already red on bleeding-edge. So never estimate the
+     size of an Amoebius break from the first CI run. Build locally until 0 errors.
+   - **A/B the live compile against bleeding-edge before calling an error yours.** `git worktree add --detach
+     <scratch> origin/bleeding-edge`, then build the player there too. Six errors (`NativeParallelHashMap.Capacity`,
+     `RenderParams.camera`, `Graphics.RenderMesh`, `Mesh.bindposeCount`) were the base's own.
+   - **The fix is a stand-in with Unity's exact signature, never a game edit.** Match Unity's member as declared
+     (`DoStateTransition(SelectionState state, bool instant)`, `GetPreferredValues(string, float, float)`), and
+     keep any old overload as a non-virtual forwarder so existing callers still bind.
+   - **Inserting a stand-in above a member steals that member's `///` doc.** Two insertions did this (`Canvas`,
+     `Mesh.bindposes`). Put new members AFTER the neighbour, and run the ship doubled-`<summary>` scan.
+   - **Engine tests that read the game's scenes go red when a UI redesign lands.** `ContentSceneTests
+     .MenuMainInstantiatesItsUiTree` asserted an `AvatarStrip` override the redesign deleted. Repoint it at an
+     override that still exists, and pick one whose value differs from the prefab's own (a same-value override
+     proves nothing).
+
 Report what you saw (attach the screenshot path) and what you verified; say plainly if a check
 did not run.

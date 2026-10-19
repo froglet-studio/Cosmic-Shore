@@ -13,8 +13,8 @@ This file holds only the rules every session needs. Everything else moved verbat
 - [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **The shared to-do board** - tests, playtests, setup, content and decisions one collaborator's session leaves for another (`Tools/Build/team_tasks.py`). Yash has offered to take tasks.
   Sections: How to use it; The board
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
-  Sections: The people; The rules for every session; What happened without this; The map (generated); Open decisions about our tools
-- [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **OPEN decision**: keep, narrow or stop Amoebius and the Vessel Studio, and which one tool builds Froglet's games. Evidence, options, recommendation, decision record. Feedback log: `Docs/TOOLING_FEEDBACK.md`.
+  Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
+- [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **DECIDED 2026-10-19 (§6)**: Amoebius stays (Shombith drives it), the Vessel Studio is an artifact and not part of the engine, no single unifying tool. The evidence, options and recommendation that led there. Volunteered feedback: `Docs/TOOLING_FEEDBACK.md`.
   Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
