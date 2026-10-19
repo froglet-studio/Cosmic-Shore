@@ -275,9 +275,68 @@ namespace CosmicShore.Gameplay
         void PollSwap()
         {
             int dir = PilotSwapGesture.DirectionThisFrame();
+            if (dir == 0 && PipDoubleTapped()) dir = 1;
             if (dir == 0 || Time.unscaledTime < _swapReadyAt) return;
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             SetHumanNavigates(!_humanNavigates);
+        }
+
+        // A double tap on the small view swaps seats - the touch swap (Garrett, 2026-10-19: "when I double tap the pip
+        // window to the other vessel it should switch"); 1 / 2 and the D-pad stay the pad and keyboard swap. Two SHORT
+        // taps, the second starting soon after the first and near it, both inside the small view. Short is what keeps a
+        // flying thumb out: the left thumb lands in that corner, and re-planting it quickly is a drift, not a swap - but
+        // a planted thumb stays down, so it never counts as a tap.
+        const float PipTapMaxSeconds = 0.3f, PipDoubleTapWindowSeconds = 0.45f, PipDoubleTapMaxPixels = 120f;
+        int _pipPressId = int.MinValue;
+        float _pipPressAt, _pipLastTapAt = -99f;
+        Vector2 _pipPressPos, _pipLastTapPos;
+
+        bool PipDoubleTapped()
+        {
+            if (_view == null) return false;
+            bool doubled = false;
+
+            var touchscreen = Touchscreen.current;
+            if (touchscreen != null)
+            {
+                var touches = touchscreen.touches;
+                for (int i = 0; i < touches.Count; i++)
+                {
+                    var t = touches[i];
+                    if (t.press.wasPressedThisFrame) PipPress(t.touchId.ReadValue(), t.position.ReadValue());
+                    if (t.press.wasReleasedThisFrame) doubled |= PipRelease(t.touchId.ReadValue());
+                }
+            }
+
+            var mouse = Mouse.current;
+            if (mouse != null)
+            {
+                if (mouse.leftButton.wasPressedThisFrame) PipPress(-1, mouse.position.ReadValue());
+                if (mouse.leftButton.wasReleasedThisFrame) doubled |= PipRelease(-1);
+            }
+            return doubled;
+        }
+
+        void PipPress(int id, Vector2 at)
+        {
+            if (!_view.PipContains(at, _humanNavigates)) return;
+            _pipPressId = id;
+            _pipPressAt = Time.unscaledTime;
+            _pipPressPos = at;
+        }
+
+        bool PipRelease(int id)
+        {
+            if (id != _pipPressId) return false;
+            _pipPressId = int.MinValue;
+            float now = Time.unscaledTime;
+            if (now - _pipPressAt > PipTapMaxSeconds) return false;
+
+            bool doubled = _pipPressAt - _pipLastTapAt <= PipDoubleTapWindowSeconds
+                           && (_pipPressPos - _pipLastTapPos).sqrMagnitude <= PipDoubleTapMaxPixels * PipDoubleTapMaxPixels;
+            _pipLastTapAt = doubled ? -99f : now;
+            _pipLastTapPos = _pipPressPos;
+            return doubled;
         }
 
         void SetHumanNavigates(bool navigate)
@@ -550,6 +609,8 @@ namespace CosmicShore.Gameplay
                 case Pointer.Touch:
                 {
                     if (!touching) { _down = false; return; }
+                    // a tap on the small view is the seat swap, not an aim
+                    if (_view.PipContains(touchscreen.primaryTouch.startPosition.ReadValue(), true)) { _down = false; return; }
                     var at = touchscreen.primaryTouch.position.ReadValue();
                     at.y += ThumbOffsetPixels();
                     _aim = _view.ScreenToBoard(at);
