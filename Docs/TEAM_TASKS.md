@@ -1147,3 +1147,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Andrew (QA); Yash could also take it
 - **Added:** 2026-10-19 by Caleb (`claude/fix-breakwater-preview-controls-3evnnj`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Breakwater preview — one-thumb flight), Assets/_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md
+
+### T-20261019-3cbb · open · test · Activation
+- **Task:** Re-test the first-login guide Skip and the every-Lesson Skip now that the tutorial is back on (they were superseded by the 10-15 switch-off before anyone tested them)
+- **Done when:** Steps 1-2 of the checklist entry 'Style-B playtest fixes' and the 'Tutorial back on' entry pass in the editor with no local flag edits
+- **Who can take it:** Yash (offered; FTUE owner), Caleb
+- **Added:** 2026-10-19 by a Claude session (claude/training-ftue-mbxf1o) (`claude/training-ftue-mbxf1o`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/ModePreview/TRAINING_PLAN.md D12

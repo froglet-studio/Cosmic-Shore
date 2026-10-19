@@ -65,7 +65,7 @@ static class RunnerDriver
                     Condition = new DriftHeldCondition { Seconds = 0.5f } },
         });
         var lib = new DrillLibrarySO();
-        // The shipped library has the coaching switched off (tutorialsEnabled); the runner is tested with it on.
+        // The runner is tested with the coaching on (tutorialsEnabled), whatever the shipped library says.
         Set(lib, "tutorialsEnabled", true);
         // ...and every Lesson made skippable (everyLessonSkippable); the forced-Lesson path is tested here.
         Set(lib, "everyLessonSkippable", false);

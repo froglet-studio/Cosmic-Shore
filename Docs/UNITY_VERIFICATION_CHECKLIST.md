@@ -65,14 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Tutorial back on: first-login guide, Lesson, ghost demo and Mentor run by default (`claude/training-ftue-mbxf1o`, 2026-10-19) — NOT EDITOR-VERIFIED
+
+Undoes the data switch-off of 2026-10-15 (`736092ba2`, `Docs/MENU_REDESIGN_B.md` §29) on Caleb's
+decision that a tutorial ships (`Docs/ModePreview/TRAINING_PLAN.md` D12): `MainQuest.asset`
+`questEnabled: 1`, `DrillLibrary.asset` `tutorialsEnabled: 1`, and `DrillLibrarySO.tutorialsEnabled`
+defaults to on. No code path changed. Affects Shombith's style-B §29 and Yash's FTUE quest and Lesson.
+No editor in the session, so `/verify-unity` did not run; offline gates listed in the commit.
+
+**Verify in editor (no local flag edits first):**
+1. Reset with FrogletTools > Quest Graph > Reset Microgame Lessons (testing) and the Quest Graph
+   Editor's restart button. Enter Play from Bootstrap: the first-login guide dims the menu and
+   spotlights the Game of the Week card; SKIP shows bottom right.
+2. Follow the guide into the microgame preview: the Lesson starts, its ghost demo plays, and the
+   Mentor's tips follow when the Lesson ends or is skipped.
+3. The Quest Graph Editor shows MainQuest without "(off)".
+
 ### 🔴 Tutorial off, Spectate label, configure preview visible, opaque configure veil (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 29 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE quest and Lesson (switched off in data).
 
 **Verify in editor:**
-1. Fresh profile: no first-login guide, no dim, no "This week's game" caption anywhere.
+1. ~~Fresh profile: no first-login guide, no dim, no "This week's game" caption anywhere.~~ Superseded
+   2026-10-19: the tutorial is back on (entry above).
 2. Open any card with a preview (Skim Race, Skein): the preview window shows at the top left, the
-   arena plays in it, tapping it flies the vessel; no Lesson or Mentor lines appear.
+   arena plays in it, tapping it flies the vessel. (The "no Lesson or Mentor lines" half is superseded
+   2026-10-19: the Lesson and Mentor run again.)
    Root cause fixed: the +1 toast component no longer sits on the preview window's GameObject (its
    Hide() switched the whole window off on every card open). Score a point in the preview: the +1
    pops and the window stays.

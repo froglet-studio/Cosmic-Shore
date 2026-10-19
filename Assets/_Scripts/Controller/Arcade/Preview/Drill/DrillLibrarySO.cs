@@ -105,9 +105,9 @@ namespace CosmicShore.Gameplay
 
         [Header("Switch")]
         [Tooltip("Run the preview's coaching at all - the Lesson, its ghost demo and the Mentor's tips. " +
-                 "Off (the owner, 2026-10-15: \"I do not want the tutorial at all\"): every preview flies " +
-                 "plainly, exactly as before the drill existed.")]
-        [SerializeField] bool tutorialsEnabled = false;
+                 "On: a tutorial ships (Caleb, 2026-10-19). Off: every preview flies plainly, exactly as " +
+                 "before the drill existed.")]
+        [SerializeField] bool tutorialsEnabled = true;
 
         [Header("Lesson")]
         [SerializeField] LessonTemplateSO twoThumbLesson;

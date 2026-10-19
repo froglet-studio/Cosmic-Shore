@@ -1735,6 +1735,12 @@ From the owner's first play of the redesign.
 
 ## 29. Tutorial off, Spectate, configure preview and opacity (2026-10-15)
 
+> **Reversed 2026-10-19 (Caleb): the tutorial is back on.** A tutorial/FTUE will ship
+> (`Docs/ModePreview/TRAINING_PLAN.md` D12). Both flags below are on again (`questEnabled: 1`,
+> `tutorialsEnabled: 1`, and `DrillLibrarySO`'s default is on), on branch
+> `claude/training-ftue-mbxf1o`. The rest of this section (Spectate, the configure preview, the veil)
+> stands.
+
 - **The tutorial is switched off** (the owner: "I do not want the tutorial at all"). Both switches are
   data, so turning it back on is one tick each:
   - `MainQuest.asset` `questEnabled: 0`. The first-login guide ("This week's game. Open it.") and

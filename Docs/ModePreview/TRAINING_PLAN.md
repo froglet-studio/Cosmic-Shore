@@ -20,6 +20,7 @@ separate thread; this plan only assumes it names one `GameModes` value, whose ca
 | D9 | **"Near the top" = top ten, or within 10% of tenth place's time.** Likely the long-term rule |
 | D10 | **Mentor pacing:** ~6 s on screen, ~8 s gap, and a tip waiting for its Moment fires anyway after **14 s** |
 | D11 | **`DeveloperUnlockGate` gets out of the way, minimally** — a quest may opt in to running under the gate; its lock-applying nodes pass through. The gate's longer-term paradigm is decided separately (§5) |
+| D12 | **A tutorial/FTUE ships** (Caleb, 2026-10-19). The 2026-10-15 switch-off (`736092ba2`, `Docs/MENU_REDESIGN_B.md` §29) is undone: `MainQuest.asset` `questEnabled: 1` and `DrillLibrary.asset` `tutorialsEnabled: 1` (the field's default is now on too), so the first-login guide, the Lesson with its ghost demo and the Mentor run without local flag edits. Do not question shipping one; what it teaches and how is still open |
 | D6 | **Architecture: plans B + C combined** — a linear drill layer (B) for the Lesson and a curated tip sequence (C, re-cut from "reactive" to "curated" by D3) for the Mentor, sharing one runner, one condition set and one view |
 
 ---
