@@ -2853,3 +2853,8 @@ never gave it back. Fixed at the source (taken once, given back exactly once, on
 net: `ScreenSwitcher` restores navigation whenever it is off outside freestyle while no preview window holds the stick,
 with one warning per leak. The other lines in that log (camera lost its target, no projectile factory) follow the
 preview vessel being swapped back and are not the blocker.
+Follow-up the same day: the leak was not only in the bookkeeping. A Hangar TRY / showcase kept flying after the
+player left, because screens hide by alpha (no OnDisable) and the hub windows (Arcade, Toy Box) open over the Hangar
+rather than leaving it, so nothing ended the preview and it legitimately held the stick. `ModalWindowIn` now ends a
+flying preview (`ModePreviewWindow.ReleaseAnyFocus`) and refuses only in freestyle; `HangarScreen.OnScreenExit` ends
+its ability previews.

@@ -12582,3 +12582,10 @@ Docs/MENU_REDESIGN_B.md (play-test fix, 2026-10-19). Changed `ModePreviewSession
 3. If navigation ever leaks again, the Console shows one "[ScreenSwitcher] EventSystem navigation was left off..."
    warning and the windows open anyway (no "declined to open" lines).
 4. Freestyle (lava lamp) still hands the pad to the vessel: the menu does not navigate while flying.
+
+**Follow-up, 2026-10-19 (step 1 still failed in the editor):** the Hangar preview kept the stick because leaving the
+Hangar never ended it (screens hide by alpha, so its OnDisable never runs) and Arcade / Toy Box are windows opened over
+the Hangar, not a screen change. Now `ModalWindowManager.ModalWindowIn` hands the stick back from any flying preview
+(`ModePreviewWindow.ReleaseAnyFocus`) and only freestyle refuses; a leaked flag outside freestyle is restored there too;
+and `HangarScreen.OnScreenExit` ends every `HangarAbilityPreview`. Re-run steps 1-4 above; in step 1, also try opening
+Arcade with the mouse while still flying the TRY vessel: the flight ends and Arcade opens.

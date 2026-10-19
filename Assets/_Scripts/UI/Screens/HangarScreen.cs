@@ -92,7 +92,17 @@ namespace CosmicShore.UI
             LoadView();
         }
 
-        public void OnScreenExit() { }
+        // Leaving the Hangar ends TRY / the ability showcase. Screens hide by alpha and are never disabled, so the
+        // preview's own OnDisable never runs: it kept flying with the stick, and every window opened after it refused
+        // (2026-10-19 play test, "cannot play vessel").
+        HangarAbilityPreview[] _previews;
+
+        public void OnScreenExit()
+        {
+            _previews ??= GetComponentsInChildren<HangarAbilityPreview>(true);
+            foreach (var preview in _previews)
+                if (preview) preview.End();
+        }
 
         public void LoadView()
         {

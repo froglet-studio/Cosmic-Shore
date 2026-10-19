@@ -91,6 +91,20 @@ namespace CosmicShore.UI
         /// </summary>
         public static bool AnyHasFocus { get; private set; }
 
+        static ModePreviewWindow s_focused;
+
+        /// <summary>
+        /// Hand the stick back from whichever preview window holds it (no-op when none does). For a deliberate move
+        /// elsewhere in the menu - a window opened over a flying preview - which must end the flight rather than be
+        /// refused: the screens hide by alpha, so a preview on a screen the player leaves is never disabled and would
+        /// otherwise hold the pad, and every modal behind it, forever (2026-10-19 play test).
+        /// </summary>
+        public static void ReleaseAnyFocus()
+        {
+            if (s_focused) s_focused.ReleaseFocus();
+            else AnyHasFocus = false;
+        }
+
         /// <summary>Raised when the player taps the live window to take control.</summary>
         public event Action OnFocusRequested;
 
@@ -355,6 +369,7 @@ namespace CosmicShore.UI
             if (HasFocus) return;
             HasFocus = true;
             AnyHasFocus = true;
+            s_focused = this;
             RefreshHint();
         }
 
@@ -364,6 +379,7 @@ namespace CosmicShore.UI
             if (!HasFocus) return;
             HasFocus = false;
             AnyHasFocus = false;
+            if (s_focused == this) s_focused = null;
             RefreshHint();
             OnFocusReleased?.Invoke();
         }

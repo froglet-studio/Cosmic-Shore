@@ -219,16 +219,29 @@ namespace CosmicShore.UI
             // path asked (direct pollers, EventSystem Submit, scene-wired onClick). The
             // appshell UI is hidden and non-raycastable in freestyle, so there is no
             // legitimate open; the freestyle pause menu is not a ModalWindowManager.
+            // A preview holding the stick is not freestyle: the player clicked a window, so the flight ends (the
+            // preview gives the pad back) and the window opens. Only freestyle, where the appshell is hidden, refuses.
+            if (!isOn && ModePreviewWindow.AnyHasFocus && !(screenSwitcher && screenSwitcher.IsInFreestyle))
+                ModePreviewWindow.ReleaseAnyFocus();
+
+            if (!isOn && EventSystem.current && !EventSystem.current.sendNavigationEvents
+                && screenSwitcher && !screenSwitcher.IsInFreestyle)
+            {
+                // Outside freestyle with no preview flying, navigation off is a leak: give the pad back and open.
+                CSDebug.LogWarningFormat("{0} - EventSystem navigation was off outside freestyle when '{1}' opened; " +
+                                         "restored (a preview ended without giving the pad back).", nameof(ModalWindowManager), name);
+                EventSystem.current.sendNavigationEvents = true;
+            }
+
             if (!isOn && EventSystem.current && !EventSystem.current.sendNavigationEvents)
             {
                 // Say so. This was the codebase's only silent, log-free modal refusal, and on
                 // screen it is indistinguishable from a dead button - a press arrives, is
                 // accepted, and nothing opens. That is exactly the symptom the arcade's 13th
                 // card produced for five rounds from a completely different cause, so the two
-                // must not look alike in a console. Note the flag can also be LEAKED rather than
-                // legitimately held: ModePreviewSession clears sendNavigationEvents when a
-                // preview takes the stick and restores it only on focus release, so a preview
-                // torn down without one leaves every appshell modal refusing to open.
+                // must not look alike in a console. Only freestyle reaches here now: a flying
+                // preview is told to give the stick back above, and a leaked flag outside
+                // freestyle is restored above (2026-10-19).
                 CSDebug.LogWarningFormat(
                     "{0} - '{1}' declined to open because EventSystem navigation is off (the " +
                     "appshell does not own the pad). If no freestyle flight or preview is " +
