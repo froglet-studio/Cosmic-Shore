@@ -301,6 +301,18 @@ once, and a big hull scrapes them (a ram slows the Manta, Dolphin and Sparrow an
   missed-mouth test, so an Easy pilot's mistakes and a missed ring are still flown the gate way (a missed ring is flown
   the gate way until threaded, or the closed line would carry the pilot a whole lap round to it). The point a second
   look-ahead further on is the boost drivers' corner (`AIBoostContext.CornerDegrees`).
+- **The speed drives judge the RING, not the steering point** (2026-10-17, found checking the Dolphin): every boost
+  driver gauges its runway as distance ÷ speed to its target, and on the line the target is one look-ahead (0.35-0.8 s)
+  ahead. The Rhino ramps only with 1.5 s of runway and the Dolphin spends only with 2.5 s, so on the line neither would
+  ever have fired its speed verb. `AIPilot.TickBoostPolicy` now hands the drivers the ring the mode reports
+  (`AIPilot.ObjectivePosition`: bearing, range and the turn there; a difficulty mistake keeps the believed point), and
+  the line's "after" is a look-ahead past the RING, so `CornerDegrees` is the turn at the ring. The Manta's drive reads
+  the stick and was unaffected.
+- **The Stoat needed one fix for it** (2026-10-17): its field and sling autopilots judged RANGE by the point they
+  steer for, and the line keeps that point one look-ahead ahead (60 u at cruise), inside their "far enough to lay a
+  pair" tests (90 u, 120 u). It would have laid no pair, warped nowhere and raced at cruise. They now take the bearing
+  from the line and the range from the ring they are after (`AIPilot.ObjectivePosition`,
+  `StoatDipoleMath.AutopilotGauge`; `StoatDipoleTests`). The mode switch reads only the angle and was unaffected.
 - **Not on a line:** the Squirrel (its own Skim Race pilot; Yash's own Squirrel crosses rings 11 u from the centre,
   median of 1,042 crossings: the braid's middle IS the Squirrel's line) and the Urchin (rides its own lane).
 - **Tests:** `RegattaRaceLineTests` (clearance, radius, the centre line as the negative control, the loop, the

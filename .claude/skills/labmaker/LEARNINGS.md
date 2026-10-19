@@ -1240,6 +1240,47 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   - Port every mode readout the lab draws (squad, selection, lock) together with the mode itself.
   - When the designer remaps buttons, check what the OLD button did. A habit press is how a hidden mode gets entered.
 - Evidence: `R_VesselActions/ANGLER.md` §1k; `ANGLER_COMMAND_LAB.md` round 7.
+
+### L-STU-102 — One cooldown for the skim and the hull hides every hull contact
+- Lab: Concept fleet (`Docs/Studios/VesselStudio/studio-vessel.js`) · Branch: `Ys-bleeding-edge` · By: the concept-fleet session · Date: 2026-10-17
+- What happened: the platform baseline inherited from the Squirrel studio cooled a prism for 0.6 s per pilot on a SKIM (12 u out) and used the same cooldown for the HULL contact, so a hull flying through a prism it had just skimmed registered nothing. Invisible in every studio whose hull avoids prisms; the Flea, whose mechanic IS the contact, never bounced (uses 2 in 300 s), and every concept's contact count read 0.
+- Do instead: keep two cooldowns (`p.cool` for the skim, `p.hull` for the contact) and test the hull branch with a vessel that wants to hit things. The game's `SkimmerImpactor` / `VesselImpactor` are separate components; worth confirming they never share a cooldown.
+- Evidence: the Flea's smoke rows before and after (uses 2 -> 111 on I1); `studio-vessel.js` stepPilot.
+- Promoted: no
+
+### L-STU-103 — A chain walker needs "ahead" and "not where I came from", or a cluster is a treadmill
+- Lab: Concept fleet (`studio-kinds.js`, the Gecko's `nextOnChain`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-17
+- What happened: the Gecko picked the next prism as "the neighbour most along my course", which inside a 14 u cluster ping-ponged A -> B -> A, and once it had run past a segment's end the clearance lerp pulled it back to the end while the run pushed it forward: a hull at 130 u/s standing still for 60 s, finishing 1 crystal of 24. Only a per-0.5 s trace of pos / stuck / next showed it; the 3 s trace read as "running".
+- Do instead: exclude the previous prism, require forward progress (dot > 0.3), and step to the next prism when the projection passes the segment's end, not only when the hull is near it. Trace position, not state, when a state machine reads healthy and nothing moves.
+- Evidence: `probe_gecko.cjs` trace (34-42 s, dNext 21.3 constant) in the session; Gecko I1 Hard DNF -> 160 s.
+- Promoted: no
+
+### L-GEN-15 — Give every mechanic scorecard a "same pilot, mechanic forbidden" column
+- Lab: Concept fleet · Branch: `Ys-bleeding-edge` · Date: 2026-10-17
+- What happened: ten movement mechanics, one AI each. The column that decided most was not Easy / Medium / Hard but the Hard pilot with its mechanic switched off (`W.mech = false`: triggers ignored, passive bonuses off). It said NO to the Gibbon's straight-line swings (Hard 15% behind its own control on I1), YES to the other nine, and separated "the mechanic IS the engine" (Marlin, Octopus: the control cannot move) from "the mechanic is a bonus" (Eel +28%, Gecko +39%, Dragonfly +35%).
+- Do instead: build the no-mechanic control into the engine from the first round (one flag the kinds honour), and read it before any tuning: a mechanic that does not beat its own control is decoration, however good it feels.
+- Evidence: `studio-vessel.js` raceHeadless `{ mech: false }`; `CONCEPT_FLEET.md` section 4.
+- Promoted: no
+
+### L-STU-87 — A dive is an attitude, lift is perpendicular to the path, and a stick held for seconds is a loop
+- Lab: Concept fleet (`studio-kinds.js`, the Albatross's `soar` kind) · Branch: `Ys-bleeding-edge` · Date: 2026-10-17
+- What happened: eight AI attempts (aim heights, airbrakes, lift caps, contact rules) left the Albatross DNF on every course, because the PHYSICS was never audited: (1) lift acted along hull-up, so a pull-up with the nose 50 degrees above the path put ~90 u/s^2 against the velocity and bled 127 u/s to 54 in two seconds; (2) drag 0.0004 at 125 u/s gave a glide ratio of 1.6, so a dive bought nothing; (3) the updraft (22) outpulled the ballast (10) at neutral wings, and the ribbon made the whole line a column, so no dive got down through it; (4) the AI's dive ADDED a pitch push to the base aim (a full stick-up toward a point 120 u above the line), which never nosed down, and once made absolute it was a pitch RATE held for the whole dive, which looped the hull 400 degrees in eight seconds. The scripted probe held its stick the same way and its loop read as "physics".
+- Do instead: audit energy first (E = v^2/2 + g*y, printed per second in free space far from the course) before touching the pilot; make lift perpendicular to the flight path (hull-up minus its along-track part) with the angle of attack as its magnitude, so only gravity and drag change the speed; set the glide ratio and the ballast as design numbers (a racer's dive must be a short plunge); give a scripted or AI dive an ATTITUDE through the aim controller (`ctx.aimAt(P, pos + flat * 120 - up * 100)`), never a held stick.
+- Evidence: `probe_soar2.cjs` energy audit (dE -4.4k/s in a pull-up, half of it drag) and the Hard AI trace (diving=1, Ly=-0.70 for 32 s, speed 90 -> 56); smoke I1 Hard DNF -> 357 -> 266 s across the three fixes (`CONCEPT_FLEET.md` section 4).
+- Promoted: no
+
+### L-STU-100 — A mode switch must not read the input of the mode it is leaving: the press acts on what the screen showed
+- Lab: Concept fleet, the Gibbon's two modes (`studio-kinds.js`, kind `tether`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: Garrett's space mode gives each stick to a tether (it aims it, then reels it), and a trigger press is the door into that mode. The first version aimed the hook with the stick in the frame of the press, but in that frame the thumbs were still STEERING (time mode), so a held pitch-up aimed the tether 45 degrees up and hooked nothing; the ghost ring had shown a different prism.
+- Do instead: when an input changes meaning across a mode switch, resolve the switch frame with the OLD mode's reading (here: hook the prism the ring showed, from the time-mode neutral aim) and let the new meaning start on the next frame. Test it with a scripted pad that is already deflected at the press, not a neutral one.
+- Evidence: `probe_given.cjs` "space, one tether": hooked never -> hooked at 0.02 s; `CONCEPT_FLEET.md` section 8.2.
+- Promoted: no
+
+### L-STU-101 — Two rigid ropes are one constraint (a circle about the anchors' line), not two constraints solved in turn
+- Lab: Concept fleet, the Gibbon's bolas · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: projecting the velocity onto each rope's sphere in turn (Gauss-Seidel, 4 passes) kept both ropes exact (error 0.000 u) and still STALLED the hull: 1 degree swept in 3 s. A hull flying between two anchors planted ahead has almost no velocity along the only circle the two ropes allow, so the projections ate it; "rope error 0" read as success while nothing moved.
+- Do instead: solve the pair as what it is, a rotation about the line A-B on the circle the two lengths define (x = (la^2 - lb^2 + d^2) / 2d along the axis, radius sqrt(la^2 - x^2)), with the speed redirected onto that circle at the hook. Measure motion (swept angle, distance travelled) beside any constraint error: a solver that freezes the body satisfies every constraint.
+- Evidence: `probe_given.cjs` "space, two tethers": swept 1 -> 722 degrees in 3 s, rope error 0.000 u both times.
 - Promoted: no
 
 ### L-STU-102 — A studio that draws a world effect as an additive flat sheet is deciding a UI look
@@ -1259,3 +1300,17 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `BrittleStarBlastForm`, `BrittleStarTests.Blast_IsAVolume_NotAFlatSheet` (with its flatten control), the
   LOCKED rule in `Docs/claude/SHADERS_AND_PERFORMANCE.md`, and `/vessel` §4.ab5.
 
+
+### L-STU-104 — A spring cannot land a fast body; a landing is a restitution, and the spring is what brings it back
+- Lab: Concept fleet, the Gibbon web-slinger (`studio-kinds.js`, kind `web`) · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: an elastic web pulled dead-on has nothing to stop the hull AT the anchor, so a zip flew through it and yo-yoed (closest 0.7 u). A braking "perch" made it land dead (0 bounces): not the springy feel asked for. A landing-pad SPRING inside the shortest web punched through at every setting tried: stopping 150 u/s inside 10 u needs about 1100 u/s^2, far past any pad that still feels soft.
+- Do instead: model the arrival as a bounce with a restitution (the closing speed reflects at e, the position clamps to the shortest web) and let the web's own spring pull the body back for the next bob: each bob is e of the last, it never passes through and it always settles. Sweep the knobs with a script that prints arrival speed, closest approach, bounce count and the distance trace; a single "settled / not settled" flag hid that the springy setting was the right one.
+- Evidence: `sweep_web.cjs` rows (pad spring 3-6: closest 0.0-0.6 u; restitution 0.5: closest 9.8 u, trace 148 125 80 24 22 32 31 19 11 15 16 14 12 11 10); `CONCEPT_FLEET.md` section 8.3.
+- Promoted: no
+
+### L-STU-105 — An AI for a hull with no engine must never aim past its reach, and must read an orbit as sideways motion, not distance
+- Lab: Concept fleet, the Gibbon web-slinger · Branch: `Ys-bleeding-edge` · Date: 2026-10-18
+- What happened: the generic line pilot (aim ~24 u ahead) webbed whatever was nearest (447 webs, 35 u/s, DNF). Aiming farther fixed that and exposed three more: a web on a crystal it was flying past ORBITED it for 23 s (a spring is a central pull: the sideways speed stays); an "it is not closing, let go" rule then dropped every web that was still braking the hull; and an aim point past web reach let the hull coast 700 u into empty space, where a hull with no engine is stranded. Its "nearest anchor" fallback then picked its own trail 11 u away, inside the shortest web, and it never fired again.
+- Do instead: (1) aim at the farthest point still inside reach, and off the course at the anchor nearest the course, never its own trail; (2) count a web as an orbit only while the motion is mostly sideways to it; (3) never cap a thrustless AI's speed by letting go early (it strands itself). Still open: the AI moves (32-41 u/s) but finishes no course; a racing pilot for this hull needs a plan (which anchor brakes, which redirects), not rules.
+- Evidence: `trace_web_ai.cjs` traces in the session; smoke rows I1 avg 35 / 6 / 41 across the variants.
+- Promoted: no
