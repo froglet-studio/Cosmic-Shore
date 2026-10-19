@@ -2,8 +2,8 @@ namespace CosmicShore.Core
 {
     public enum DialogueSpeaker
     {
-        None,
-        Speaker1,
-        Speaker2
+        None = 0,
+        Speaker1 = 1,
+        Speaker2 = 2
     }
 }

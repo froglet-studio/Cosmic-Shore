@@ -37,6 +37,8 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HLSL = os.path.join(ROOT, "Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.hlsl")
+# included ahead of it by both member shaders (the plane-depth view swap; all-zero = off, as here)
+DEPTH_PLANE_HLSL = os.path.join(ROOT, "Assets/_Graphics/Materials/Graphs/PrismDepthPlane.hlsl")
 
 SHIM = r"""
 #include <cmath>
@@ -333,7 +335,8 @@ def spread_check(L, n=3000, seed=11):
 
 
 def main():
-    text = open(HLSL).read()
+    depth_plane = re.sub(r"#ifndef PRISM_DEPTH_PLANE_INCLUDED|#define PRISM_DEPTH_PLANE_INCLUDED", "", open(DEPTH_PLANE_HLSL).read())
+    text = depth_plane + open(HLSL).read()   # translate() drops every #endif
     L = build(text, "shipped")
     ok = True
     wb, wh, leaks = check(L)

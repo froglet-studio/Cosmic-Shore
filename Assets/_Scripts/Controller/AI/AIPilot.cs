@@ -152,6 +152,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
         /// </summary>
+        /// <summary>The mode this pilot races in, once its game data is known (a hull's drive reads its mode's tuning).</summary>
+        public bool TryGetGameMode(out GameModes mode)
+        {
+            mode = gameData != null ? gameData.GameMode : default;
+            return gameData != null;
+        }
+
         public void ConfigureForGameMode(GameDataSO gameDataRef, bool shouldSeekPlayers, float skill)
         {
             gameData = gameDataRef;
@@ -175,10 +182,10 @@ namespace CosmicShore.Gameplay
 
         enum Corner 
         {
-            TopRight,
-            BottomRight,
-            BottomLeft,
-            TopLeft,
+            TopRight = 0,
+            BottomRight = 1,
+            BottomLeft = 2,
+            TopLeft = 3,
         };
 
         IVessel vessel;
@@ -264,9 +271,22 @@ namespace CosmicShore.Gameplay
         public void ClearExternalTargetProvider()
         {
             _externalTargetProvider = null;
+            _nextLegProvider = null;
             _objective = default;
             _throttleFloor = 0f;
         }
+
+        // Where the mode sends the pilot AFTER its current steering target, or null when it does not know.
+        Func<Vector3?> _nextLegProvider;
+
+        /// <summary>
+        /// Where the pilot flies AFTER the point <see cref="SetExternalTargetProvider"/> gives (the gate races: the
+        /// mouth after the approach point, the next ring after the mouth), or null when the mode does not know. Read only
+        /// by the boost driver, as <see cref="AIBoostContext.CornerDegrees"/>: how sharp the coming corner is, so a ramp
+        /// brakes as much as that corner needs (REGATTA_AI_ROADMAP.md: the one fact a Rhino lacked). Cleared with
+        /// <see cref="ClearExternalTargetProvider"/> and carried by <see cref="TakeModeHooksFrom"/>.
+        /// </summary>
+        public void SetNextLegProvider(Func<Vector3?> provider) => _nextLegProvider = provider;
 
         // The least throttle a mode asks for (a race: full). The skill throttle still applies above it.
         float _throttleFloor;
@@ -354,6 +374,18 @@ namespace CosmicShore.Gameplay
 
         Func<Vector3?> _driftLookTargetProvider;
 
+        AIPilotBelief _belief;
+
+        /// <summary>
+        /// The lobby AI difficulty's mistakes on this pilot (<see cref="AIPilotBelief"/>): late notice
+        /// and a misjudged target, applied to whatever point this pilot wants to reach. Null on Hard
+        /// and on every mode that does not offer the difficulty - the pilot then flies exactly as shipped.
+        /// </summary>
+        public void SetTargetBelief(AIPilotBelief belief) => _belief = belief;
+
+        /// <summary>The belief this pilot flies on, or null (diagnostics; the Third Eye reads it).</summary>
+        public AIPilotBelief Belief => _belief;
+
         /// <summary>
         /// Move the MODE's steering hooks (<see cref="SetExternalTargetProvider"/> and
         /// <see cref="SetDriftLookTargetProvider"/>) off <paramref name="source"/> and onto this
@@ -372,9 +404,13 @@ namespace CosmicShore.Gameplay
             if (!source || source == this) return;
             _externalTargetProvider = source._externalTargetProvider;
             _driftLookTargetProvider = source._driftLookTargetProvider;
+            _belief = source._belief;
             _throttleFloor = source._throttleFloor;
+            _nextLegProvider = source._nextLegProvider;
+            source._nextLegProvider = null;
             source._externalTargetProvider = null;
             source._driftLookTargetProvider = null;
+            source._belief = null;
             source._throttleFloor = 0f;
         }
 
@@ -632,7 +668,7 @@ namespace CosmicShore.Gameplay
             while (AutoPilotEnabled)
             {
                 SelectClosestOpponent();
-                yield return new WaitForSeconds(
+                yield return CosmicShore.Utility.WaitCache.Seconds(
                     _targetVesselTransform != null ? playerSeekUpdateInterval : playerReacquireInterval);
             }
         }
@@ -712,7 +748,10 @@ namespace CosmicShore.Gameplay
             // The boost driver, built against THIS vessel's bindings (null when it binds none of
             // the ability the policy drives). A re-Initialize lets go of the previous one first.
             _boostDriver?.Release();
-            _boostDriver = boostPolicy ? boostPolicy.CreateDriver(VesselStatus, actionExecutorRegistry) : null;
+            // A mode's own tuning when it has one (AIBoostPolicySO.ForMode: e.g. RhinoAIBoostPolicy_Regatta, learned from
+            // editor flights); the hull's policy otherwise.
+            var policy = gameData != null ? AIBoostPolicySO.ForMode(boostPolicy, gameData.GameMode) : boostPolicy;
+            _boostDriver = policy ? policy.CreateDriver(VesselStatus, actionExecutorRegistry) : null;
             _boostActive = false;
         }
 
@@ -856,6 +895,11 @@ namespace CosmicShore.Gameplay
             if (_externalTargetProvider != null)
                 _targetPosition = _externalTargetProvider();
 
+            // The lobby difficulty edits what the pilot BELIEVES about that target - never how it
+            // flies to it. Null on Hard, so Hard is the shipped pilot.
+            if (_belief != null)
+                _targetPosition = _belief.Believe(_targetPosition, transform.position, HeadingDirection(), Time.time);
+
             // Where the pilot WANTS to be is _targetPosition; where it steers may differ, because a
             // pursuer with a bounded turn radius cannot fly straight at an objective sitting inside
             // its own turning circle - it orbits instead. UpdateOrbitBreak decides, and while it
@@ -982,6 +1026,8 @@ namespace CosmicShore.Gameplay
             if (_boostActive && !VesselStatus.IsSingleStickControls)
             {
                 if (_boostDriver.HoldsFullThrottle) _inputStatus.XDiff = 1f;
+                float driverThrottle = _boostDriver.Throttle;
+                if (driverThrottle >= 0f) _inputStatus.XDiff = Mathf.Clamp01(driverThrottle);
                 float rotationLimit = _boostDriver.RotationLimit;
                 if (rotationLimit >= 0f) LimitRotation(rotationLimit);
             }
@@ -1263,9 +1309,11 @@ namespace CosmicShore.Gameplay
         {
             if (!_boostActive) return;
 
+            // The leg after the objective, from the objective (zero when the mode does not say, or while breaking off).
+            Vector3 nextLeg = !_extending && _nextLegProvider?.Invoke() is Vector3 after ? after - _targetPosition : default;
             _boostDriver.Tick(new AIBoostContext(
                 toObjective, HeadingDirection(), transform.forward, VesselStatus.Speed, LastStickDeflection(),
-                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted));
+                _extending, _commitDriftHeld, VesselStatus.IsTranslationRestricted, nextLeg));
 
             // The drift-charge driver spends the bank by ending the commit drift on a straight -
             // the same release the off-course branch performs, just earlier.
@@ -1323,10 +1371,10 @@ namespace CosmicShore.Gameplay
             {
                 action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
                 _activeAbilities.Add(action);
-                yield return new WaitForSeconds(action.Duration);
+                yield return CosmicShore.Utility.WaitCache.Seconds(action.Duration);
                 _activeAbilities.Remove(action);
                 action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
-                yield return new WaitForSeconds(action.Cooldown);
+                yield return CosmicShore.Utility.WaitCache.Seconds(action.Cooldown);
             }
         }
         
@@ -1405,7 +1453,7 @@ namespace CosmicShore.Gameplay
                 {
                     _targetPosition = _crystalPosition;
                 }
-                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
+                yield return CosmicShore.Utility.WaitCache.Seconds(targetUpdateFrequencySeconds);
             }
         }*/
 

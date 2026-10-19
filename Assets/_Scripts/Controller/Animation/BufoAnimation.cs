@@ -55,8 +55,14 @@ namespace CosmicShore.Gameplay
             RotatePart(Fusilage, pitch * animationScalar, yaw * animationScalar, 0);
             //AnimatePart(Turret, pitchScalar * .7f, yawScalar, rollScalar);
 
-            foreach (var part in new List<Transform>() { ThrusterTopRight, TopWing, ThrusterBottomRight, ThrusterBottomLeft, BottomWing, ThrusterTopLeft })
-                RotatePart(part, pitchScalar, yawScalar, -yawScalar);
+            // Six explicit calls, same parts and order as the list this used to build: a new List every frame was the
+            // vessel's only per-frame allocation in the first shared Unity capture (Grizzly Charge, 2026-10-16).
+            RotatePart(ThrusterTopRight, pitchScalar, yawScalar, -yawScalar);
+            RotatePart(TopWing, pitchScalar, yawScalar, -yawScalar);
+            RotatePart(ThrusterBottomRight, pitchScalar, yawScalar, -yawScalar);
+            RotatePart(ThrusterBottomLeft, pitchScalar, yawScalar, -yawScalar);
+            RotatePart(BottomWing, pitchScalar, yawScalar, -yawScalar);
+            RotatePart(ThrusterTopLeft, pitchScalar, yawScalar, -yawScalar);
         }
 
         protected override void RotatePart(Transform part, float pitch, float yaw, float roll)

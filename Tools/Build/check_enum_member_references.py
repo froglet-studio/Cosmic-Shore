@@ -20,6 +20,16 @@ base type matters — and stubbing the monolith is not a thing anyone will maint
 So renames are checked TEXTUALLY, which needs no compiler and cannot be degraded by a
 missing type. Cheap enough to run on every commit (~0.3 s over ~1,900 files).
 
+Scope: an enum NESTED in a type can be named unqualified only inside that type (from
+outside it is `Outer.Enum.Member`, a chain this gate skips), so it is checked only
+against references in its own file. Without this, `enum Placement { InView, BehindCamera }` - private to an editor
+benchmark window - made every `Placement.BodyRadius` on the toys' `Placement` PROPERTY
+(type `ToyPlacement`) read as a missing enum member: 14 false findings that kept this gate
+red on bleeding-edge from 2026-10-08 to 2026-10-17, and the public nested
+`OnlineInfoEntry.Status` made `Status.Speed` on DrillRunner's `Status` property read the
+same way. Limit: a DERIVED type in another file naming an inherited nested enum
+unqualified is no longer checked.
+
 Limits, stated rather than implied: this understands `EnumName.Member`. It does not see
 a member reached through a `using static`, an alias, or a variable of the enum's type,
 and it does not type-check anything else. It is a targeted guard for the one failure
@@ -54,6 +64,7 @@ INHERITED_MEMBERS = {
 }
 
 ATTR_RE = re.compile(r"\[[^\]]*\]")
+NAMESPACE_RE = re.compile(r"\bnamespace\b")
 LEADING_IDENT_RE = re.compile(r"^\s*([A-Za-z_]\w*)")
 
 
@@ -71,6 +82,33 @@ def enum_members(body: str) -> "set[str]":
         if m:
             out.add(m.group(1))
     return out
+
+
+def is_type_scoped(code: str, enum_pos: int) -> bool:
+    """True when the enum declared at `enum_pos` is NESTED in a type.
+
+    Unqualified, a nested enum can only be named inside its own type (or a derived
+    one); from anywhere else it is `Outer.Enum.Member`, which main() already skips as a
+    chain it cannot reason about. So whatever its access modifier, a bare `Enum.Member`
+    in another file never means the nested enum, and is checked only in its own file.
+    Nesting is read from the braces open at `enum_pos`: any open brace that is not a
+    `namespace` block is a type body. `code` must already have comments and strings
+    stripped, so braces inside them do not count.
+    """
+    stack = []  # one bool per open brace: True when it opened a namespace block
+    seg_start = 0
+    for i in range(enum_pos):
+        c = code[i]
+        if c == "{":
+            stack.append(bool(NAMESPACE_RE.search(code[seg_start:i])))
+            seg_start = i + 1
+        elif c == "}":
+            if stack:
+                stack.pop()
+            seg_start = i + 1
+        elif c == ";":
+            seg_start = i + 1
+    return any(not is_namespace for is_namespace in stack)
 
 
 def strip_comments_and_strings(src: str) -> str:
@@ -145,10 +183,16 @@ def main() -> int:
     members: "dict[str, set[str]]" = {}
     ambiguous: "set[str]" = set()
     declared_in: "dict[str, str]" = {}
+    # Enums only their own file can name unqualified (see is_type_scoped): path -> name -> members.
+    file_private: "dict[str, dict[str, set[str]]]" = {}
     for path, src in sources.items():
-        for m in ENUM_RE.finditer(strip_comments_and_strings(src)):
+        code = strip_comments_and_strings(src)
+        for m in ENUM_RE.finditer(code):
             name, body = m.group(1), m.group(2)
             found = enum_members(body)
+            if is_type_scoped(code, m.start()):
+                file_private.setdefault(path, {})[name] = found
+                continue
             if name in members and found != members[name]:
                 # Two different enums share a name - a reference is unresolvable
                 # textually, so stand down on that name rather than guess.
@@ -160,14 +204,24 @@ def main() -> int:
     for name in ambiguous:
         members.pop(name, None)
 
-    # 2. Check every `EnumName.Member` reference against it.
-    ref_re = re.compile(r"\b(" + "|".join(sorted(map(re.escape, members))) + r")\.(\w+)")
+    # 2. Check every `EnumName.Member` reference against it. A file sees the global
+    #    enums plus its own private ones, which shadow a global enum of the same name.
+    def ref_pattern(names):
+        return re.compile(r"\b(" + "|".join(sorted(map(re.escape, names))) + r")\.(\w+)")
+
+    global_re = ref_pattern(members)
     bad = []
     for path, src in sources.items():
         code = strip_comments_and_strings(src)
+        visible, ref_re, decl_of = members, global_re, declared_in
+        if path in file_private:
+            visible = {**members, **file_private[path]}
+            ref_re = ref_pattern(visible)
+            here = os.path.relpath(path, ROOT)
+            decl_of = {**declared_in, **{n: here for n in file_private[path]}}
         for m in ref_re.finditer(code):
             enum_name, member = m.group(1), m.group(2)
-            if member in members[enum_name] or member in INHERITED_MEMBERS:
+            if member in visible[enum_name] or member in INHERITED_MEMBERS:
                 continue
 
             # A DOT before the enum name means this is not the enum. Two shapes hit
@@ -188,14 +242,13 @@ def main() -> int:
 
             line = code.count("\n", 0, m.start()) + 1
             bad.append((os.path.relpath(path, ROOT), line, enum_name, member,
-                        declared_in[enum_name]))
+                        decl_of[enum_name], sorted(visible[enum_name])))
 
     if bad:
         print("enum-member reference check: FAILED\n")
-        for path, line, enum_name, member, decl in bad:
+        for path, line, enum_name, member, decl, declared in bad:
             print(f"  {path}({line}): '{enum_name}' has no member '{member}'")
-            print(f"      declared in {decl}: "
-                  f"{', '.join(sorted(members[enum_name])) or '(none)'}")
+            print(f"      declared in {decl}: {', '.join(declared) or '(none)'}")
         return 1
 
     skipped = f", {len(ambiguous)} ambiguous name(s) skipped" if ambiguous else ""
@@ -255,6 +308,25 @@ def self_test() -> int:
         ("a reference inside a string is not a defect",
          classify('var s = "CombatHitClass.Missile";',
                   "CombatHitClass", valid) == [], None),
+    ]
+
+    # Scope: a nested enum is file-local whatever its modifier; a top-level one is not.
+    nested = "namespace N { class W { enum Placement { InView = 0 } } }"
+    nested_public = "namespace N { class W { public enum Placement { InView = 0 } } }"
+    top_level = "namespace N { public enum Placement { InView = 0 } }"
+    file_scoped_ns = "namespace N;\nenum Placement { InView = 0 }"
+    after_a_class = "namespace N { class A { void F() { } } enum Placement { InView = 0 } }"
+
+    def scoped_at(code: str) -> bool:
+        return is_type_scoped(code, code.index("enum Placement"))
+
+    checks += [
+        ("a nested enum is file-local (the 2026-10-08 false positive)", scoped_at(nested), None),
+        ("a public nested enum is file-local too", scoped_at(nested_public), None),
+        ("a top-level enum in a namespace block is global", not scoped_at(top_level), None),
+        ("a top-level enum under a file-scoped namespace is global",
+         not scoped_at(file_scoped_ns), None),
+        ("an enum after a closed class body is global", not scoped_at(after_a_class), None),
     ]
 
     failed = [(name, extra) for name, ok, extra in checks if not ok]

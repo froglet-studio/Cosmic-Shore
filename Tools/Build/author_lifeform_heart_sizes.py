@@ -129,6 +129,12 @@ FLORA_BUDGET_CEILING = 400
 FLORA_SCRIPT_GUID = "a32a297a7606432885f4d3e1f83bea9a"
 FAUNA_SCRIPT_GUID = "c778cfbe4dfc4c5c8401e40c17802311"
 
+# The sized canonical set: 27 species x 4 elements. The Nested Gyroid's four configs also sit in
+# _SO_Assets/Lifeforms but are NOT sized here - their heart is pinned at HEART_MAX by
+# author_nested_gyroid_flora_assets.py (Docs/ECOSYSTEM.md 58.6) - so LifeformHeartSizeTests'
+# CanonicalVariantCount (every species x element asset, 112) is this plus 4. Move both together.
+EXPECTED_CANONICAL = 108
+
 ELEMENTS = {1: "Charge", 2: "Mass", 3: "Space", 4: "Time"}
 
 # Per-element apparent extent, in Unity units per unit of ROOT scale — measured from each
@@ -621,7 +627,7 @@ def read_deployment_variants():
 
 
 def read_canonical_variants():
-    """The 88 canonical (species × element) assets in _SO_Assets/Lifeforms."""
+    """The EXPECTED_CANONICAL sized (species × element) assets in _SO_Assets/Lifeforms."""
     out = []
     for path in sorted(LIFEFORMS.glob("*.asset")):
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -921,9 +927,10 @@ def main():
     canonical = read_canonical_variants()
     deployments = read_deployment_variants()
     variants = canonical + deployments
-    if len(canonical) != 88:
+    if len(canonical) != EXPECTED_CANONICAL:
         print(f"WARNING: found {len(canonical)} canonical (species x element) assets, "
-              f"expected 88 (22 species x 4 elements)", file=sys.stderr)
+              f"expected {EXPECTED_CANONICAL} ({EXPECTED_CANONICAL // 4} sized species x 4 elements)",
+              file=sys.stderr)
     print(f"{len(canonical)} canonical variants + {len(deployments)} per-cell deployments "
           f"that author their own variant block", file=sys.stderr)
     compute_body_diameters(variants)

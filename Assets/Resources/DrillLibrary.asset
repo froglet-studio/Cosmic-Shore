@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   twoThumbLesson: {fileID: 11400000, guid: 1c7bc41571655ea9f57b11d3af1a4125, type: 2}
   oneThumbLesson: {fileID: 11400000, guid: 2f4a9cc8c965873a4e31f8f04b85b520, type: 2}
+  tutorialsEnabled: 0
+  everyLessonSkippable: 1
   lessonSkipDelaySeconds: 3
   defaultHintAfterSeconds: 8
   ghostDemoSeconds: 3

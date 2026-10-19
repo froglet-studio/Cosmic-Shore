@@ -1,0 +1,124 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 713b4be361fdbd769198a55281fe9de7, type: 3}
+  m_Name: Soundtrack
+  m_EditorClassIdentifier: 
+  tracks:
+  - id: space-gliding
+    title: Space Gliding
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: SPACE GLIDING
+  - id: sky-fire
+    title: Sky Fire
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: SKY FIRE
+  - id: cosmic-shore-2-tune
+    title: Cosmic Shore 2 Tune
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: COSMIC SHORE 2 TUNE
+  - id: chill-time-3
+    title: Chill Time 3
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: cosmic shore chill time 3
+  - id: ive-waited-so-long
+    title: I've Waited So Long
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: I've waited so long
+  - id: cosmic-shore-3
+    title: Cosmic Shore 3
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: cosmic shore 3 looped 1
+  - id: severity
+    title: Severity
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: SEVERITY
+  - id: disoriented
+    title: Disoriented
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: DISORIENTED
+  - id: secret-hide-away
+    title: Secret Hide Away
+    artist: 
+    trackEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onByDefault: 1
+    soundName: SECRET HIDE AWAY
+  artistLine: Cosmic Shore Original Soundtrack

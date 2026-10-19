@@ -123,10 +123,12 @@ source — no risk of divergent capture sites.
 | Yield one frame for PlayerLoop processing (NOT thread marshaling) | `await UniTask.Yield(PlayerLoopTiming.Update)` — fine for sequencing, not for affinity |
 | Assert main thread (debug) | `MainThreadDispatcher.IsOnMainThread` |
 
-The three remaining `Yield(PlayerLoopTiming.Update)` calls in
+The remaining `Yield(PlayerLoopTiming.Update)` calls in
 `Controller/Party/PartyInviteController.cs` (in catch / recovery blocks) are intentional —
 they are "wait for the next PlayerLoop tick before handling this exception" semantics, not
-threading.
+threading. This paragraph was written when there were three; **measured 2026-10-17 there are
+six** (lines 273, 281, 461, 466, 556, 692), and the three added since have not been reviewed
+against this rule.
 
 **Anti-patterns to avoid:**
 

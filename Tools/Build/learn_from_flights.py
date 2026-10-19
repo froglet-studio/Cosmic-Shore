@@ -46,6 +46,7 @@ REPORTS_PREFIX = "BugLedger/shared/reports/"
 SCHEMA = "cosmic-shore.flight/2"
 SCHEMAS = ("cosmic-shore.flight/1", SCHEMA, "cosmic-shore.flight/3")   # /1 carried the rail measures; /2 is measured here; /3 adds the situation columns (SITUATION_RECORDING_PLAN.md)
 SKIM_REACH = 7.5              # the Squirrel's skimmer sphere (SkimRaceAIConfigSO.PlannerSkimReach)
+LAST_RING_REACH = 30.0        # u: a pre-fix flight whose last sample is this close to its last ring finished (finished_of)
 BEGIN = "# learn_from_flights:begin"
 END = "# learn_from_flights:end"
 
@@ -109,6 +110,7 @@ def parse(name, text):
     d["rows"] = [dict(zip(cols, r)) for r in rows]
     d["name"] = name
     return d, None
+
 
 
 # ---------------------------------------------------------------- the rail
@@ -207,6 +209,21 @@ def derive(f, lane):
         f["skimLift"] = max(0.0, hy - f.get("referenceShellHeight", 1.5))
 
 
+
+def finished_of(f):
+    """A finished race. Flights recorded before 2026-10-16's recorder fix stopped one sample before the last ring counted
+    (written 23 / 24): those count as finished when the race ended on its own and the last sample is at the last ring."""
+    if f.get("finished"):
+        return True
+    target, rings, rl = int(f.get("raceTarget") or 0), int(f.get("rings") or 0), f.get("ringList") or []
+    if f.get("ended") != "race over" or target <= 0 or rings != target - 1 or not rl or not f.get("samples"):
+        return False
+    cols = f["columns"]
+    last = f["samples"][-1]
+    ring = rl[(target - 1) % len(rl)]
+    pos = [last[cols.index(k)] for k in ("x", "y", "z")]
+    return math.dist(pos, ring[1:4]) <= LAST_RING_REACH
+
 def measure(f):
     if not f.get("lane"):
         return None
@@ -216,7 +233,12 @@ def measure(f):
     # held = 1: the AI flew the hull (the Third Eye's You / AI toggle); that is not the human's flight.
     rows = [r for r in f["rows"] if r.get("speed", 0) > 5 and not r.get("held", 0) > 0.5]
     skim = [r for r in rows if 0 <= r.get("gap", -1) < SKIM_REACH]
-    line_h = statistics.median([r["height"] for r in skim]) if skim else None
+    # Which FACE of the rail the pilot skims (+ along the prisms' up axis, - the other face) and how far from its centre.
+    # The AI holds the same split: SkimHeight's sign picks the face, |SkimHeight| + the lift is the distance
+    # (SkimRaceDriver.LaneSkimHeight). Regatta's rings all sit 22 u off the rails' - face (measured 2026-10-17).
+    side_share = sum(1 for r in skim if r["height"] < 0) / len(skim) if skim else 0.0
+    line_side = -1.0 if side_share > 0.5 else 1.0
+    line_h = statistics.median([abs(r["height"]) for r in skim]) if skim else None
 
     # Look-ahead: the distance down the rail whose skim-line point the human's heading points at most nearly.
     looks = []
@@ -226,7 +248,7 @@ def measure(f):
         for L in range(20, 420, 10):
             q, up = lane.at(r["s"] + L)
             if line_h is not None:
-                q = tuple(a + b * line_h for a, b in zip(q, up))
+                q = tuple(a + b * line_side * line_h for a, b in zip(q, up))
             a = angle_deg(fwd, tuple(x - y for x, y in zip(q, pos)))
             if a < best:
                 best, best_l = a, L
@@ -241,7 +263,7 @@ def measure(f):
             L = min(max(r["speed"] * look_s, 20.0), 500.0)
             q, up = lane.at(r["s"] + L)
             if line_h is not None:
-                q = tuple(a + b * line_h for a, b in zip(q, up))
+                q = tuple(a + b * line_side * line_h for a, b in zip(q, up))
             err = angle_deg((r["fx"], r["fy"], r["fz"]), tuple(x - y for x, y in zip(q, (r["x"], r["y"], r["z"]))))
             stick = math.hypot(r["xSum"], r["ySum"])
             if 3.0 <= err <= 30.0 and stick < 0.95:
@@ -259,17 +281,31 @@ def measure(f):
     seconds = max(rows[-1]["t"] - rows[0]["t"], 1e-3) if rows else 1e-3
     gaps = [r["gap"] for r in rows if r.get("gap", -1) >= 0]
     return {
-        "name": os.path.basename(f["name"]), "finished": bool(f.get("finished")), "raceSeconds": f.get("raceSeconds"),
-        "rings": f.get("rings"), "target": f.get("raceTarget"), "intensity": f.get("intensity"), "skimLift": f.get("skimLift", 0.0),
+        "name": os.path.basename(f["name"]), "finished": finished_of(f), "raceSeconds": f.get("raceSeconds"),
+        "rings": f.get("rings") + (1 if finished_of(f) and not f.get("finished") else 0), "target": f.get("raceTarget"), "intensity": f.get("intensity"), "skimLift": f.get("skimLift", 0.0),
         "samples": len(rows), "skimShare": len(skim) / max(len(rows), 1),
-        "lineHeight": line_h, "gapP10": pct([r["gap"] for r in skim], 0.1), "gapMedian": pct([r["gap"] for r in skim], 0.5),
+        "lineHeight": line_h, "lineSide": line_side, "minusFaceShare": side_share, "gapP10": pct([r["gap"] for r in skim], 0.1), "gapMedian": pct([r["gap"] for r in skim], 0.5),
         "contactShare": sum(1 for g in gaps if g <= 0.05) / max(len(gaps), 1),
         "lookSeconds": look_s, "lookP10": pct([l for l, _ in looks], 0.1), "gain": pct(gains, 0.5),
         "turnsPerSecond": crossings / seconds, "meanStick": statistics.mean(abs(x) for x in xs) if xs else 0.0,
         "meanSpeed": statistics.mean(r["speed"] for r in rows) if rows else 0.0,
         "meanBoost": statistics.mean(r["boost"] for r in rows) if rows else 0.0,
         "lateralMedian": pct([r["lateral"] for r in skim], 0.5),
+        "reactionLag": reaction_lag(f),
     }
+
+
+def reaction_lag(f):
+    """How late the pilot answers the ring (SITUATION_RECORDING_PLAN.md §7 V4), measured by situation_features.py: from
+    the screen when the flight recorded the camera, else from the hull's frame. Reported, never applied to the AI here."""
+    try:
+        import situation_features as sf
+        C = sf.course_from(sf.load_course_js(), int(f.get("intensity") or 1))
+        if not C or not f.get("columns"):
+            return None
+        return sf.analyze(f, C)["lag"]
+    except Exception as e:   # the rail learner must not fail on the situation reader
+        return {"error": f"{type(e).__name__}: {e}"}
 
 
 # ---------------------------------------------------------------- from measurements to the policy
@@ -302,9 +338,13 @@ def learn(ms, base):
     out, notes = {}, []
     h, lift = med("lineHeight"), med("skimLift") or 0.0
     if h is not None:
-        out["SkimHeight"] = clamp("SkimHeight", h - lift)
+        minus = med("minusFaceShare") or 0.0
+        side = -1.0 if minus > 0.5 else 1.0
+        out["SkimHeight"] = round(side * clamp("SkimHeight", h - lift), 3)
+        face = "the rail's - face (the side its rings are on)" if side < 0 else "the rail's + face"
         notes.append(("SkimHeight", base.get("SkimHeight"), out["SkimHeight"],
-                      f"you skim {h:.2f} u above your rail's centre; minus the course's skim lift {lift:.2f}"))
+                      f"you skim {h:.2f} u from your rail's centre on {face} ({minus:.0%} of skimming on the - face); "
+                      f"minus the course's skim lift {lift:.2f}; the sign picks the face"))
     g = med("gapP10")
     if g is not None:
         for key in ("TrackGuardMargin", "MassGuardMargin"):
@@ -330,17 +370,23 @@ def learn(ms, base):
 
 
 def report(ms, notes, used, why_used):
-    lines = ["| Race | Finished | Time (s) | Rings | Skimming | Contact | Height above rail | Closest 10% gap | Look-ahead | Turns/s |",
-             "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    lines = ["| Race | Finished | Time (s) | Rings | Skimming | Contact | Skim height (- = ring face) | Closest 10% gap | Look-ahead | Turns/s | Reaction lag |",
+             "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for m in ms:
         lines.append(f"| {m['name']} | {'yes' if m['finished'] else 'no'} | {m['raceSeconds'] or 0:.1f} | {m['rings']}/{m['target']} | "
-                     f"{m['skimShare']:.0%} | {m['contactShare']:.1%} | {fmt(m['lineHeight'])} | {fmt(m['gapP10'])} | "
-                     f"{fmt(m['lookSeconds'], 's')} | {m['turnsPerSecond']:.2f} |")
+                     f"{m['skimShare']:.0%} | {m['contactShare']:.1%} | {fmt(m['lineHeight'] * m.get('lineSide', 1) if m['lineHeight'] is not None else None)} | {fmt(m['gapP10'])} | "
+                     f"{fmt(m['lookSeconds'], 's')} | {m['turnsPerSecond']:.2f} | {fmt_lag(m.get('reactionLag'))} |")
     lines += ["", f"Learned from {why_used}: {', '.join(m['name'] for m in used)}.", "",
               "| Setting | Was | Learned | Why |", "|---|---:|---:|---|"]
     for key, was, new, why in notes:
         lines.append(f"| `{key}` | {fmt(was)} | **{fmt(new)}** | {why} |")
     return "\n".join(lines)
+
+
+def fmt_lag(g):
+    if not g or "lag" not in g:
+        return "-"
+    return f"{g['lag']} s ({g['source']})"
 
 
 def fmt(v, unit=""):
@@ -454,6 +500,9 @@ def self_test():
             if k in learned:
                 assert lo <= learned[k] <= hi, (k, learned[k])
         # A flight inside the shell (gap 0) cannot pull the margins in, and a height below the plate is clamped.
+        under = learn([measure(parse("u", json.dumps(flight(30, True, h=-11.0)))[0])], {"TrackGuardMargin": 1.642, "MassGuardMargin": 1.3})[0]
+        assert abs(under["SkimHeight"] + 3.5) < 0.05, under              # the other face: same distance, negative sign
+        assert 0.35 <= under["LookaheadSeconds"] <= 0.65, under          # ...and the look-ahead aims at THAT face's line
         low = learn([measure(parse("x", json.dumps(flight(30, True, h=7.0)))[0])], {"TrackGuardMargin": 1.642, "MassGuardMargin": 1.3})[0]
         assert low["TrackGuardMargin"] == 1.642 and low["SkimHeight"] == BANDS["SkimHeight"][0], low
     # Format 2: the raw flight only (no rail columns); the learner measures it against the rail itself.

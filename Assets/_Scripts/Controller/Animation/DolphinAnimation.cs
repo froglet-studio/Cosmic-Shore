@@ -33,8 +33,12 @@ namespace CosmicShore.Gameplay
             var yawScalar = yaw * animationScaler;
             var rollScalar = roll * animationScaler;
 
-            foreach (var part in new List<Transform>() { Fusilage, TailStart, TailEnd, LeftTail, RightTail })
-                RotatePart(part, pitchScalar, yawScalar, rollScalar);
+            // Explicit calls, same parts and order: no new List per frame (the Grizzly's twin, 2026-10-16).
+            RotatePart(Fusilage, pitchScalar, yawScalar, rollScalar);
+            RotatePart(TailStart, pitchScalar, yawScalar, rollScalar);
+            RotatePart(TailEnd, pitchScalar, yawScalar, rollScalar);
+            RotatePart(LeftTail, pitchScalar, yawScalar, rollScalar);
+            RotatePart(RightTail, pitchScalar, yawScalar, rollScalar);
         }
 
         protected override void AssignTransforms()

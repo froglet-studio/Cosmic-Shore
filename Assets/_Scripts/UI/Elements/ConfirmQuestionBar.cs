@@ -31,6 +31,8 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("The question text. Set per-Ask by the caller.")]
         TMP_Text questionLabel;
 
+        [SerializeField, Tooltip("Optional. A second line under the question saying what accepting changes; set per-Ask.")]
+        TMP_Text noteLabel;
         [SerializeField] Button acceptButton;
         [SerializeField] Button cancelButton;
 
@@ -112,12 +114,20 @@ namespace CosmicShore.UI
         /// Shows <paramref name="question"/> and calls <paramref name="onAccept"/> if the player
         /// accepts. A second call replaces any pending question; the replaced callback is dropped.
         /// </summary>
-        public void Ask(string question, Action onAccept)
+        public void Ask(string question, Action onAccept) => Ask(question, null, onAccept);
+
+        /// <summary>
+        /// As <see cref="Ask(string, Action)"/>, with <paramref name="note"/> written to the optional
+        /// note line (empty when null).
+        /// </summary>
+        public void Ask(string question, string note, Action onAccept)
         {
             _onAccept = onAccept;
 
             if (questionLabel != null)
                 questionLabel.text = question;
+            if (noteLabel != null)
+                noteLabel.text = note ?? string.Empty;
 
             Open();
         }

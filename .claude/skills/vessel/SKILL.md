@@ -41,6 +41,7 @@ touching before editing; read all of it when creating or completing a vessel.
 | HUD icons, hints, gauges, HUD lifecycle | §5 Ability row, §8 HUD pair | ARCHITECTURE.md §7.1–7.4 |
 | Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs; `Docs/VESSEL_CONSTRUCTION.md` |
 | Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
+| The MODEL itself: the FBX hull, its armature, element shape keys, puppetry takes, material slots; "the procedural model looks terrible" | — | **`/vessel-model`** (the Squirrel passed the owner's Editor test on 2026-10-18 by keeping the artist's hull and takes and adding the framework on top; its section 4 is the loop) (`.claude/skills/vessel-model/SKILL.md`): Blender-as-a-module specs under `Tools/Build/vessel_model/specs/`, verified and rendered before an in-place write; dossiers in `Docs/VesselModels/` |
 | Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
 | Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
 | Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
@@ -384,8 +385,9 @@ applies to new abilities, new resources on the meter list, and anything that add
     upgrade description. Per-vessel reality differs: the Dolphin carries the slow and an energy
     halving, its boost effect is a `retainedFraction` halving that deliberately **skips its
     correction while drifting** (i.e. exactly inside a drift-gated ward's window), and the input
-    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) is wired into **no container on any
-    vessel**. Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
+    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) — which this rule once said was wired into
+    no container, when the Sparrow's and Grizzly's both carried it — is **deleted** (2026-10-17;
+    the Grizzly's container held only the mute and had no danger burn at all). Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
     `SkimmerImpactorDataContainerSO` and read the effects you are about to make claims about —
     the ship protocol's "find the PRODUCER" rule, aimed at your own new prose rather than at
     inherited docs. (Dolphin Drift Ward, 2026-08-18.)
@@ -782,6 +784,26 @@ applies to new abilities, new resources on the meter list, and anything that add
     .NET 10 SDK) whenever a change calls an engine API the game did not call before, and write to the overloads
     both have (`RenderMeshInstanced` with one identity instance, list-based mesh setters). A game branch does not
     edit `Port/` (Port/CLAUDE.md); a missing API worth having is a port-branch row.
+52. **Anything a peer DECIDES from input must read input every peer has - and a GESTURE is input no
+    AI has.** Three Rhino defects, one shape (2026-10-16, `R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
+    - **A press/release event is not a pose.** Remote replicas posed the sword from the replayed
+      press events - a full ±1 swing the moment a trigger crossed its deadzone - while the pilot
+      posed it from the analog depth, and every peer cuts prisms against its own blade, so a
+      half-pull that missed for the pilot cut on every other screen. `InputStatus` already
+      replicates the analog trigger MIRRORS (owner-write) and the DEVICE; pose from those on every
+      peer and keep events only for a device that writes no mirrors.
+    - **An owner-only grader with no event to end it latches every replica.** The graded ramp ends
+      only when its own `Tick` sees the pilot leave the grace band (its release event is the top of
+      the slope, not an end), and `Tick` returned early off the owner - so every replica held
+      `IsBoosting` and ×16.8 for the rest of the turn. Grade from the replicated sticks everywhere.
+    - **Owner-authoritative STATE needs a relay, not a hope.** Energy banked from per-peer kills and
+      an energize phase run on per-peer clocks decided what pops; `RhinoSwordNetworkRelay` (energy,
+      phase, surge bit, owner-write) is the shape. Route the mirrored phase through the same setter
+      the owner uses, so the edges (ignition re-dispatch, FX, the afterimage window) fire everywhere.
+    - **No AI raises `FullSpeedStraightAction`** - only a human input strategy does - so an ability
+      bound to the gesture is human-only until an `AIBoostPolicySO` presses it; and an ability posed
+      by TRIGGERS is human-only until something writes the trigger mirrors for the autopilot
+      (`RhinoSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
@@ -1047,6 +1069,43 @@ size the turret's pool (`defaultCapacity` / `bufferSizeTarget` / `maxSize`, and 
 the vessel doc with the cheap knob (the fire rate) beside it, and check two side effects: a hull flying faster than its
 own rounds outruns them within T (own-domain hulls are immune, `Projectile.DisallowImpactOnVessel`), and an in-flight
 growth factor (`Gun.FireGun`'s `flightGrowthFactor`, the Sparrow's look) grows the HIT radius too.
+
+### 4.ab4 Analog-trigger-driven STATE diverges across peers; a heat limit bounds the pool
+
+The fleet's analog triggers (`InputStatus.RightTriggerAnalog`) do not replicate — the Thresher, the Manta's analog turn
+boost and the Brittle Star all read the owner's depth and fall back to "a press is a full pull" on remote copies and the
+autopilot (`ThresherExecutor.PollTriggers`). That is tolerable for something cosmetic or per-peer (a fire RATE, a cord's
+stiffness), but anything the depth ACCUMULATES into is state: the Brittle Star's gun heat runs hotter on a remote copy
+during a partial pull, so its overheat — and the danger trail it switches on — can differ by peer (vessel rule 48).
+Before keying gameplay state off an analog depth, either replicate the depth (two bytes a frame) or write down the gap in
+the vessel doc and its verification list, as `BRITTLE_STAR.md` §3.4 and follow-up F13 do. And when a gun overheats, the
+burst length — not the sustained rate — sizes its pool (4.ab3): rounds alive ≈ rate × guns × seconds-to-overheat for a
+burst that outlives its flight time, not rate × guns × T forever (the Brittle Star's five guns, measured at the first
+heat numbers: ~1,100, not 4,050). The cap only holds while the burst is SHORTER than the flight: once a later round
+lengthened the bursts (6 s at Space 0, 20 s at Space 10, `cece/gallant-bell-eq7kul`) the 20 s burst outlives the 9 s
+flight and the count is back to rate × guns × T, ~4,000 — so re-derive the pool whenever heat or range is retuned.
+
+### 4.ab5 A hull's effect mesh is a pure FORM: tested, twinned in its studio, and never flat
+
+The Brittle Star's ring explosion (`BrittleStarBlastForm`, `cece/gallant-bell-eq7kul`, 2026-10-18) set the pattern for
+a vessel effect drawn as one dynamic mesh:
+- **The shape is a pure static function** (settings in, flat-shaded triangle lists out, no Unity object), so
+  `BrittleStarTests` run it under the Roslyn harness and the executor only uploads it (lists reused: no allocation but the
+  mesh upload). The studio page carries a line-for-line JS twin, and parity is checked by dumping the C# corners and the
+  JS corners for the same settings and comparing point sets (farthest point 0.001 u).
+- **Nothing in the world looks flat** (LOCKED, `Docs/claude/SHADERS_AND_PERFORMANCE.md`): every part is a faceted beam
+  or crystal the domain material lights, and **every thickness scales with the effect's own size** — a 6 u beam across a
+  780 u blast read as wire. Pin it with a test a flat sheet fails (most facets face sideways; it stands out of the plane)
+  and a negative control that flattens it.
+- **Honest in the direction that decides play**: never drawn past the edge where prisms stop breaking (tested, with a
+  negative control). Where the gameplay volume is thinner than any readable look (a 1.76 u disk), let the look stand out
+  of the plane and say so in the vessel doc.
+- **Draw it in the thrown object's own frame** (`Detonate(at, ring.rotation)`), so its symmetry starts from the object's
+  points and keeps its spin.
+- **Two traps.** The fleet spawner lays a SINGLE (gapless) trail at `BaseScale.x / 2` (`VesselPrismController.CreateBlock`:
+  `BaseScale.x * XScaler / 2f - |halfGap|`), so a hull that lays extra trails from `TrailBaseScale` lays them twice as
+  wide as its base trail unless it halves x too. And the harness's `UnityEngine` stub has `.normalized` but no
+  `Normalize()`: write `v = v.normalized` in pure code the harness compiles.
 
 ### 4.ac A per-VIEWER rule on something an ability places must fail OPEN — and must know its owner
 

@@ -25,22 +25,33 @@ MonoBehaviour:
   chipHeight: 24
   chipGap: 6
   bloomPadding: 26
+  keycapChips: 1
+  keycapFillSprite: {fileID: 21300000, guid: 9a86abd8613e387afc691f6e48d9830a, type: 3}
+  keycapBorderSprite: {fileID: 21300000, guid: 98099cf4a35661dd88b7e9cb399386b7, type: 3}
+  keycapFont: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
+  keycapTextSize: 13
+  keycapPadding: 8
+  keycapFillToken: 4
+  keycapBorderToken: 6
+  keycapTextToken: 0
+  keycapHeldFillToken: 0
+  keycapHeldTextToken: 3
   slantEdgeThickness: 3
   slantEdgeWrap: 14
   slantEdgeAntialias: 1
-  slantEdgeColor: {r: 0.51, g: 0.53, b: 0.61, a: 0.85}
+  slantEdgeColor: {r: 0.455, g: 0.482, b: 0.678, a: 0.85}
   upgradedSlantEdgeColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   gaugeCellFraction: 1
   bloomSprite: {fileID: 21300000, guid: 006e134e05ff461bbd48ab3fd31629b4, type: 3}
   coreAbilityEmblems:
   - ability: 2
     sprite: {fileID: 21300000, guid: 4206d9fa3d98d9c4cbe20d38fddaadce, type: 3}
-  plateColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.86}
+  plateColor: {r: 0, g: 0.016, b: 0.122, a: 0.86}
   bloomColor: {r: 0.96, g: 0.96, b: 1, a: 0.3}
   upgradedPlateColor: {r: 0.11, g: 0.12, b: 0.17, a: 0.92}
   gaugeTrackColor: {r: 0.086, g: 0.094, b: 0.129, a: 0.9}
   gaugeFillColor: {r: 0.22, g: 0.51, b: 1, a: 0.55}
-  lockedPlateColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.55}
+  lockedPlateColor: {r: 0, g: 0.016, b: 0.122, a: 0.55}
   lockedMarkColor: {r: 0.361, g: 0.373, b: 0.439, a: 0.55}
   lockedMarkThickness: 2
   cooldownVeilColor: {r: 0.024, g: 0.031, b: 0.063, a: 0.72}

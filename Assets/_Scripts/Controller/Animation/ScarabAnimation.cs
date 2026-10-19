@@ -9,8 +9,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Puppeteers the Scarab's hull (parts built by <see cref="ScarabHullBuilder"/> /
-    /// <see cref="ScarabHullForm"/>). Design record: R_VesselActions/SCARAB.md §3.0.
+    /// Puppeteers the Scarab's hull: the bones of Scarab.fbx (Tools/Build/vessel_model/specs/scarab.py,
+    /// 2026-10-18), or the parts of the retired procedural <see cref="ScarabHullBuilder"/> /
+    /// <see cref="ScarabHullForm"/> by their old names. Design record: R_VesselActions/SCARAB.md §3.0.
     ///
     /// A vessel that does not move its own parts does not read as flying, however good the
     /// flight model underneath it is. AMPLITUDES ARE FLEET-SCALE ON PURPOSE — `RhinoAnimation`
@@ -147,6 +148,12 @@ namespace CosmicShore.Gameplay
         struct Springs
         {
             public AngularSpring.State Pitch, Yaw, Roll;
+            // The part's rest and its parent's orientation, both in the HULL frame (the transform
+            // the juke's roll spins), captured once at the authored pose. On the procedural hull
+            // both parts hang off that frame at identity and these are identity; on the model the
+            // parts are BONES whose parents point wherever the rig points, and a parent-space
+            // Euler would roll a bone it meant to pitch (VesselAnimation.RotatePartFromRestInFrame).
+            public Quaternion RestInHull, ParentFromHull;
         }
 
         readonly Dictionary<Transform, Springs> _springs = new();
@@ -181,19 +188,21 @@ namespace CosmicShore.Gameplay
 
         protected override void ResolveParts()
         {
-            LeftElytron = ResolvePart(LeftElytron, "elytron.l");
-            RightElytron = ResolvePart(RightElytron, "elytron.r");
+            // The model's BONES first (the fleet convention: the elytra are the forewings, `wing`;
+            // .L = the pilot's left; legs indexed aft to fore as the placeholder's were), the
+            // procedural builder's part names after, so either hull resolves. Resolution is
+            // case-insensitive, so `antenna.L` / `horn` serve both. An authored reference wins.
+            LeftElytron = ResolvePart(LeftElytron, "wing.L", "elytron.l");
+            RightElytron = ResolvePart(RightElytron, "wing.R", "elytron.r");
             Horn = ResolvePart(Horn, "horn");
-            LeftAntenna = ResolvePart(LeftAntenna, "antenna.l");
-            RightAntenna = ResolvePart(RightAntenna, "antenna.r");
+            LeftAntenna = ResolvePart(LeftAntenna, "antenna.L");
+            RightAntenna = ResolvePart(RightAntenna, "antenna.R");
 
             for (int i = 0; i < LeftLegs.Length; i++)
-                LeftLegs[i] = ResolvePart(LeftLegs[i], $"leg.l{i + 1}");
+                LeftLegs[i] = ResolvePart(LeftLegs[i], LegBoneNames[i, 0], LegPartNames[i, 0]);
             for (int i = 0; i < RightLegs.Length; i++)
-                RightLegs[i] = ResolvePart(RightLegs[i], $"leg.r{i + 1}");
+                RightLegs[i] = ResolvePart(RightLegs[i], LegBoneNames[i, 1], LegPartNames[i, 1]);
 
-            // The procedural parts rest at identity, so this is currently a no-op — but it is
-            // what lets authored art with angled rest poses drop in later without tearing flat.
             CaptureRestRotations(LeftElytron, RightElytron, Horn, LeftAntenna, RightAntenna);
             CaptureRestRotations(LeftLegs);
             CaptureRestRotations(RightLegs);
@@ -209,11 +218,30 @@ namespace CosmicShore.Gameplay
             ReportUnresolvedParts();
         }
 
+        static readonly string[,] LegBoneNames = { { "leg.1.L", "leg.1.R" }, { "leg.2.L", "leg.2.R" }, { "leg.3.L", "leg.3.R" } };
+        static readonly string[,] LegPartNames = { { "leg.l1", "leg.r1" }, { "leg.l2", "leg.r2" }, { "leg.l3", "leg.r3" } };
+
         void RegisterSpring(Transform part, Vector2 springParams)
         {
             if (!part) return;
-            _springs[part] = default;
+            Transform hull = HullFrameOf(part);
+            Quaternion toHull = Quaternion.Inverse(hull.rotation);
+            _springs[part] = new Springs
+            {
+                RestInHull = toHull * part.rotation,
+                ParentFromHull = part.parent ? Quaternion.Inverse(toHull * part.parent.rotation) : Quaternion.identity,
+            };
             _springParams[part] = springParams;
+        }
+
+        /// <summary>The hull frame a part is posed in: the vessel root's child that holds it (the
+        /// prefab's ScarabHull, which the juke's 360-degree roll spins), so the parts roll with the
+        /// hull as they did when they were its direct children.</summary>
+        Transform HullFrameOf(Transform part)
+        {
+            Transform t = part;
+            while (t.parent && t.parent != transform) t = t.parent;
+            return t == part || !t.parent ? transform : t;
         }
 
         public override void Initialize(IVesselStatus vesselStatus)
@@ -221,6 +249,13 @@ namespace CosmicShore.Gameplay
             base.Initialize(vesselStatus);
             _scarabTransformer = vesselStatus.VesselTransformer as ScarabVesselTransformer;
             _hullBuilder = GetComponentInChildren<ScarabHullBuilder>(true);
+            // The model (Scarab.fbx, nested under the prefab's ScarabHull) is found, not wired: its
+            // sub-objects' fileIDs exist only after Unity imports it. The base drives its Charge /
+            // Mass / Space / Time blend shapes by name; the flare needs the renderer; and the
+            // springs swing the cases and struts past the bind-pose bounds, so it must not be culled
+            // on them.
+            if (!SkinnedMeshRenderer) SkinnedMeshRenderer = GetComponentInChildren<SkinnedMeshRenderer>(true);
+            if (SkinnedMeshRenderer) SkinnedMeshRenderer.updateWhenOffscreen = true;
 
             // Detach-first: a vessel swap re-runs Initialize on live components, and a stranded
             // handler is the recorded triple-shipped bug class. The teardown in OnDisable is
@@ -287,7 +322,11 @@ namespace CosmicShore.Gameplay
             // Never leave a half-played flourish or a lifted flare behind (pooling / vessel
             // swap safety): springs to rest velocity, hull back to rest brightness.
             foreach (var part in new List<Transform>(_springs.Keys))
-                _springs[part] = default;
+            {
+                var settled = _springs[part];
+                settled.Pitch = settled.Yaw = settled.Roll = default;
+                _springs[part] = settled;
+            }
             ApplyFlare(1f);
         }
 
@@ -433,9 +472,12 @@ namespace CosmicShore.Gameplay
             springs.Roll = AngularSpring.Step(springs.Roll, roll, p.x, p.y, dt);
             _springs[part] = springs;
 
-            part.localRotation =
-                Quaternion.Euler(springs.Pitch.Position, springs.Yaw.Position, springs.Roll.Position)
-                * RestRotationOf(part);
+            // Composed in the HULL frame onto the rest captured there, then carried into the part's
+            // parent space. On the procedural hull (parent = the hull frame, rest = identity) this is
+            // exactly the old `Euler * rest`; on the model's bones it keeps pitch a pitch.
+            part.localRotation = springs.ParentFromHull
+                * Quaternion.Euler(springs.Pitch.Position, springs.Yaw.Position, springs.Roll.Position)
+                * springs.RestInHull;
         }
 
         // ---- event flourishes -------------------------------------------------------------
@@ -487,7 +529,13 @@ namespace CosmicShore.Gameplay
             _flareRenderers.Clear();
             _flareMaterialCounts.Clear();
             var builder = _hullBuilder ? _hullBuilder : GetComponentInChildren<ScarabHullBuilder>(true);
-            if (!builder) return;
+            if (!builder)
+            {
+                // The model: one skinned renderer, every slot flared together (the procedural hull
+                // flared all of its parts' submeshes the same way).
+                if (SkinnedMeshRenderer) AddFlareRenderer(SkinnedMeshRenderer);
+                return;
+            }
             var own = builder.GetComponent<MeshRenderer>();
             if (own) AddFlareRenderer(own);
             for (int i = 0; i < builder.transform.childCount; i++)
@@ -504,7 +552,7 @@ namespace CosmicShore.Gameplay
             // access, and ApplyFlare runs per frame through a shove's decaying tail (the
             // velocity-modifier envelope calls FlareBody every frame) — reading it there was a
             // per-renderer per-frame allocation (review finding). The count is fixed at emit
-            // (two submeshes per part) and CollectFlareRenderers re-runs on Initialize.
+            // (two submeshes per part, four slots on the model) and CollectFlareRenderers re-runs on Initialize.
             _flareMaterialCounts.Add(r.sharedMaterials.Length);
         }
 

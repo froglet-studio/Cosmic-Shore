@@ -13,6 +13,7 @@ else:
 | Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` |
 | Scarab | `ScarabVesselTransformer` (single-stick steering, its own throttle integrator) |
 | Brittle Star | `BrittleStarVesselTransformer` (a `SingleStickVesselTransformer` subclass: Speed Mode's multiplier on the throttle target) |
+| Angler | `AnglerVesselTransformer` (a `SingleStickVesselTransformer` subclass since 2026-10-17: the lure brake caps the throttle target, to a stop) |
 
 ## 1. Why these vessels needed their own scheme
 
@@ -450,7 +451,7 @@ Both duplicates are excised. The roster now reads:
 | Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` | ✅ |
 | Scarab | `ScarabVesselTransformer` | ✅ |
 | Brittle Star | `BrittleStarVesselTransformer` (single-stick subclass) | ✅ |
-| Dolphin, Manta, Rhino, Squirrel | `VesselTransformer` | — |
+| Dolphin, Manta, Rhino, Squirrel, Wrasse | `VesselTransformer` | — |
 | Urchin | `GunVesselTransformer` | — |
 
 `OneThumbVesselCoverageTests` holds all three halves of that as source laws — exactly one

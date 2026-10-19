@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -113,8 +114,13 @@ namespace CosmicShore.Gameplay
             void LateUpdate() => Tick();
         }
 
+        // Named so diag / prof attribute the driver's frame (see BlackHoleRegistry's markers, 2026-10-18).
+        static readonly ProfilerMarker s_tickMarker = new("Wormhole.Tick");
+        static readonly ProfilerMarker s_renderMarker = new("Wormhole.SelectAndRender");
+
         static void Tick()
         {
+            using var tick = s_tickMarker.Auto();
             // A borrowed pose never outlives the render it was borrowed for.
             RestoreMainPose();
             _carriedMouth = null;
@@ -139,7 +145,7 @@ namespace CosmicShore.Gameplay
             {
                 Shader.SetGlobalFloat(ClearanceId, WormholeGeometry.Clearance(_mainView.nearClipPlane));
                 ResolveSubject(controller);
-                SelectAndRender(_mainView, controller);
+                using (s_renderMarker.Auto()) SelectAndRender(_mainView, controller);
             }
 
             for (int i = 0; i < live.Count; i++)

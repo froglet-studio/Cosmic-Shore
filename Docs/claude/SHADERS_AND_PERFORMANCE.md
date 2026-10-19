@@ -4,6 +4,28 @@
 
 ## Shader & Visual Development
 
+### Nothing in the world looks flat (LOCKED, Garrett 2026-10-18)
+
+> "Nothing in the environment should ever look flat like this, that is reserved for ui."
+
+Flat is the UI's look. Anything drawn in the world - an effect, a wave, a marker, a trail, a blast - is a **volume**:
+geometry with real depth that the scene's light and the domain materials shade (faceted, the prism-cut read of the
+hulls, crystals and prisms), never a flat sheet, an unlit fill, a plain additive ribbon or a billboard that reads as a
+sticker.
+- **Scale the volume with the thing.** A beam a few units thick across a 780 u blast reads as wire, which is flat
+  again: tie thicknesses to the effect's own size (`BrittleStarBlastForm`: every thickness is a share of the front's
+  radius).
+- **Lab and studio pages follow the same rule**: draw the volume lit and flat-shaded, not an additive sheet, so what is
+  decided there is what the game shows.
+- **Prove it where the shape is pure code**: a test that a flat sheet would fail (`BrittleStarTests.Blast_IsAVolume_NotAFlatSheet`:
+  most facets face sideways, and it stands well out of the plane), with a negative control that flattens it.
+- **Where gameplay is thin and the look needs depth** (a 1.76 u disk), keep the look honest in the direction that
+  decides play (never drawn past the edge where things stop breaking) and say in the doc where the volume overstates.
+- **An owner's explicit call for one specific view wins over this rule**, and is recorded where it is made, so nobody
+  "fixes" it back: the Kite's view draws prisms out of its plane as unlit ghost boxes because Garrett asked for exactly
+  that (2026-10-18, `cece/compassionate-babbage-gc13io`, "the prisms that go out of plane for the kite should be unlit
+  but not disappear"). Ask before applying this rule to someone else's deliberate look.
+
 ### HLSL / Shader Graph
 
 - Custom Function nodes use HLSL files stored in a consistent location
@@ -41,8 +63,8 @@
   `/perf-hunt` is how it is resolved (rank by measured cost, fix against the checklist, prove before/after, adopt the
   new baseline). `Docs/PERFORMANCE_OPTIMIZATION.md` §3.4.
 - **One measurement, one file:** the editor captures by itself in Play (`PerfAutoCapture`, once per scene after its time;
-  no button), or `capture <label> 15` in the HUD console, runs burst + diag + prof + renderers + cells as ONE JSON; after Play,
-  Unity's "Send to Claude?" sends it to the person's `bugledger/<user>` branch, and the sweep judges it
+  no button), or `capture <label> 15` in the HUD console, runs burst + diag + prof + renderers + cells as ONE JSON; after Play the
+  editor sends it by itself (no question) to the person's `bugledger/<user>` branch, and the sweep judges it
   (`Tools/Build/perf_capture_report.py`, validity first). Ask for this, never for screenshots. Status and next steps:
   ask any session "performance status" (the `health_status.py` hook answers from `Docs/perf/status.json`).
 - **Instruments in the game:** the console commands `diag` (per-system timings, a report to JSON),

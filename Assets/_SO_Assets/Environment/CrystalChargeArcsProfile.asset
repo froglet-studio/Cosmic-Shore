@@ -36,3 +36,4 @@ MonoBehaviour:
   writheSpeed: 3
   flickerSpeed: 4
   sleepBelowScreenRadiusPixels: 24
+  halfRateBelowScreenRadiusPixels: 64

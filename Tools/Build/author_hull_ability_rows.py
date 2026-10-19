@@ -27,8 +27,10 @@ What this writes:
   Scarab   ScarabHUDVariant.prefab: the four icon Images' m_Sprite swapped from the Sparrow's
            art to the Scarab's own placeholders. Bindings, gauges and tints are untouched.
 
-OPEN DESIGN SLOTS are bound as an entry with `icon: {fileID: 0}` - the Rhino's Charge and
-Space (the Serpent's Mass was one until the Seed Wall, which serpent_add_slots adds). That is the contract for a slot with no ability behind it: the
+OPEN DESIGN SLOTS are bound as an entry with `icon: {fileID: 0}` (none today: the Serpent's Mass
+was one until the Seed Wall, which serpent_add_slots adds, and the Rhino's Charge and Space were
+two until 2026-10-16, which rhino_add_slots adds - the same pass swaps the retired Trail Slabs art
+on the Mass icon for the Afterimage's). That is the contract for a slot with no ability behind it: the
 lockup draws a LOCKED card (AbilityLockupView.ResolveLockedHost), and keeping the entry makes
 the list four long so ValidateAbilityIconRow checks the ORDER instead of stopping at the count.
 No icon object is created for them, so nothing about an undesigned ability is invented
@@ -175,32 +177,51 @@ MonoBehaviour:
 
 def slot_ids(base, element):
     b = base + element * 10
-    return dict(host_go=b, host_rt=b + 1, icon_go=b + 2, icon_rt=b + 3, icon_cr=b + 4, icon_img=b + 5)
+    return dict(host_go=b, host_rt=b + 1, icon_go=b + 2, icon_rt=b + 3, icon_cr=b + 4, icon_img=b + 5,
+                gauge_go=b + 6, gauge_rt=b + 7, gauge_cr=b + 8, gauge_img=b + 9)
 
 
-def host_blocks(ids, element, parent_rt, host_frame, guid):
-    """One host (the card's re-homed parent) holding one icon Image."""
+def gauge_blocks(ids, element):
+    """A card's GAUGE: one sprite-less Image under the host. The lockup adopts it
+    (AbilityLockupView.AdoptGauge) - re-homes it into the card's gauge clip and restyles it as the
+    fleet's one linear fill - so nothing here is layout or look; the vessel only writes fillAmount."""
+    name = NAMES[element]
+    img = image(ids["gauge_img"], ids["gauge_go"], "0" * 32).replace(
+        f"  m_Sprite: {{fileID: 21300000, guid: {'0' * 32}, type: 3}}", "  m_Sprite: {fileID: 0}")
+    return [
+        game_object(ids["gauge_go"], f"{name}Gauge", [ids["gauge_rt"], ids["gauge_cr"], ids["gauge_img"]]),
+        rect(ids["gauge_rt"], ids["gauge_go"], ids["host_rt"], [], (0, 0), (1, 1), (0, 0), (0, 0), (0.5, 0.5)),
+        canvas_renderer(ids["gauge_cr"], ids["gauge_go"]),
+        img,
+    ]
+
+
+def host_blocks(ids, element, parent_rt, host_frame, guid, gauge=False):
+    """One host (the card's re-homed parent) holding one icon Image - and, with `gauge`, the
+    card's meter beside it (drawn first, so it sits behind the icon)."""
     amin, amax, pos, size, pivot = host_frame
     name = NAMES[element]
+    kids = ([ids["gauge_rt"]] if gauge else []) + [ids["icon_rt"]]
     return [
         game_object(ids["host_go"], f"{name}Button", [ids["host_rt"]]),
-        rect(ids["host_rt"], ids["host_go"], parent_rt, [ids["icon_rt"]], amin, amax, pos, size, pivot),
+        rect(ids["host_rt"], ids["host_go"], parent_rt, kids, amin, amax, pos, size, pivot),
         game_object(ids["icon_go"], f"{name}Icon", [ids["icon_rt"], ids["icon_cr"], ids["icon_img"]]),
         rect(ids["icon_rt"], ids["icon_go"], ids["host_rt"], [], (0.5, 0.5), (0.5, 0.5),
              (0, 0), (ICON_BOX, ICON_BOX), (0.5, 0.5)),
         canvas_renderer(ids["icon_cr"], ids["icon_go"]),
         image(ids["icon_img"], ids["icon_go"], guid),
-    ]
+    ] + (gauge_blocks(ids, element) if gauge else [])
 
 
-def bindings(icon_ids):
+def bindings(icon_ids, gauge_ids=None):
     """Four entries in AbilityDisplayOrder; an open slot is bound with no icon (LOCKED card)."""
+    gauge_ids = gauge_ids or {}
     out = []
     for element in ORDER:
         out.append(f"""  - element: {element}
     icon: {{fileID: {icon_ids.get(element, 0)}}}
     upgradedSprite: {{fileID: 0}}
-    gauge: {{fileID: 0}}""")
+    gauge: {{fileID: {gauge_ids.get(element, 0)}}}""")
     return "  abilityIcons:\n" + "\n".join(out) + "\n"
 
 
@@ -223,7 +244,17 @@ RHINO_PREFAB = f"{HUD_DIR}/RhinoHUDVariant.prefab"
 RHINO_ROOT_RT = "1335802071243411841"
 RHINO_VIEW = "5161366343835098938"
 RHINO_BASE = 7720000000000003000
-RHINO_ICONS = {MASS: "Rhino_TrailSlabs-PLACEHOLDER.png", TIME: "Rhino_RampSpool-PLACEHOLDER.png"}
+RHINO_ICONS = {CHARGE: "Rhino_SwordEnergy-PLACEHOLDER.png", MASS: "Rhino_Afterimage-PLACEHOLDER.png",
+               SPACE: "Rhino_BladeReach-PLACEHOLDER.png", TIME: "Rhino_RampSpool-PLACEHOLDER.png"}
+# The Mass and Time hosts were the first pass (2026-10-06); Charge and Space were open design slots.
+RHINO_FIRST_PASS = (MASS, TIME)
+# Cards with a meter (2026-10-17): Charge fills with the sword's energy, Time with speed as a
+# fraction of the ramp's top speed. RhinoVesselHUDController writes both.
+RHINO_GAUGES = (CHARGE, TIME)
+
+
+def rhino_gauge_ids():
+    return {el: slot_ids(RHINO_BASE, el)["gauge_img"] for el in RHINO_GAUGES}
 
 
 def rhino_frame(element):
@@ -236,17 +267,18 @@ def rhino(src):
     for element, png in RHINO_ICONS.items():
         ids = slot_ids(RHINO_BASE, element)
         blocks += host_blocks(ids, element, RHINO_ROOT_RT, rhino_frame(element),
-                              sprite_guid("Rhino", png))
+                              sprite_guid("Rhino", png), gauge=element in RHINO_GAUGES)
         icon_ids[element] = ids["icon_img"]
         hosts.append(ids["host_rt"])
 
     out = src
-    # The root's children: append the two hosts after the shipped three.
+    # The root's children: append the hosts after whatever the root already holds. (The first pass
+    # anchored on the retired TrailContainer and the legacy press highlight, both deleted with the
+    # pre-lockup status cluster on 2026-10-16, so the anchors are the list's END and the field name.)
     s, e = component_block(out, RHINO_ROOT_RT)
     root = out[s:e]
-    new_root = replace_once(root, "  - {fileID: 5864610081205471824}\n  m_Father: {fileID: 0}\n",
-                            "  - {fileID: 5864610081205471824}\n"
-                            + "".join(f"  - {{fileID: {h}}}\n" for h in hosts)
+    new_root = replace_once(root, "  m_Father: {fileID: 0}\n",
+                            "".join(f"  - {{fileID: {h}}}\n" for h in hosts)
                             + "  m_Father: {fileID: 0}\n", "Rhino root children")
     out = out[:s] + new_root + out[e:]
 
@@ -254,11 +286,61 @@ def rhino(src):
     s, e = component_block(out, RHINO_VIEW)
     view = out[s:e]
     assert "abilityIcons" not in view, "Rhino view already serializes abilityIcons"
-    new_view = replace_once(view, "  highlights:\n  - input: 0\n    image: {fileID: 8279697361072404982}\n",
-                            "  highlights:\n  - input: 0\n    image: {fileID: 8279697361072404982}\n"
-                            + bindings(icon_ids), "Rhino view highlights")
+    new_view = re.sub(r"  highlights:.*?\n(?=  \w)", lambda m: m.group(0) + bindings(icon_ids, rhino_gauge_ids()), view,
+                      count=1, flags=re.S)
+    assert new_view != view, "Rhino view highlights"
     out = out[:s] + new_view + out[e:]
     return out.rstrip("\n") + "\n" + "".join(blocks), icon_ids
+
+
+def rhino_add_slots(src, late):
+    """The Charge and Space hosts for a row authored before they were designed, the four-entry
+    bindings re-pointed at them, and any icon still carrying a sprite its ability no longer uses
+    (the retired Trail Slabs art on the Mass icon) swapped for its own."""
+    out = src
+    hosts = []
+    blocks = []
+    for element in late:
+        ids = slot_ids(RHINO_BASE, element)
+        blocks += host_blocks(ids, element, RHINO_ROOT_RT, rhino_frame(element),
+                              sprite_guid("Rhino", RHINO_ICONS[element]), gauge=element in RHINO_GAUGES)
+        hosts.append(ids["host_rt"])
+    if hosts:
+        s, e = component_block(out, RHINO_ROOT_RT)
+        root = out[s:e]
+        out = out[:s] + replace_once(root, "  m_Father: {fileID: 0}\n",
+                                     "".join(f"  - {{fileID: {h}}}\n" for h in hosts)
+                                     + "  m_Father: {fileID: 0}\n", "Rhino root children") + out[e:]
+
+    for element in RHINO_FIRST_PASS:
+        fid = slot_ids(RHINO_BASE, element)["icon_img"]
+        s, e = component_block(out, fid)
+        blk = out[s:e]
+        want = sprite_guid("Rhino", RHINO_ICONS[element])
+        new_blk = re.sub(r"(  m_Sprite: \{fileID: 21300000, guid: )[0-9a-f]{32}", rf"\g<1>{want}", blk)
+        out = out[:s] + new_blk + out[e:]
+
+    # A gauge for a card whose host was authored before cards had meters (2026-10-17).
+    for element in RHINO_GAUGES:
+        if element in late:
+            continue
+        ids = slot_ids(RHINO_BASE, element)
+        if f"&{ids['gauge_img']}\n" in out:
+            continue
+        s, e = component_block(out, ids["host_rt"])
+        out = out[:s] + replace_once(out[s:e], f"  m_Children:\n  - {{fileID: {ids['icon_rt']}}}\n",
+                                     f"  m_Children:\n  - {{fileID: {ids['gauge_rt']}}}\n"
+                                     f"  - {{fileID: {ids['icon_rt']}}}\n", f"{NAMES[element]} host children") + out[e:]
+        blocks += gauge_blocks(ids, element)
+
+    s, e = component_block(out, RHINO_VIEW)
+    view = out[s:e]
+    ids = {el: slot_ids(RHINO_BASE, el)["icon_img"] for el in RHINO_ICONS}
+    want = bindings(ids, rhino_gauge_ids())
+    new_view = re.sub(r"  abilityIcons:\n(?:  - element: .*\n(?:    .*\n)+)+", want, view, count=1)
+    assert new_view != view or want in view, "Rhino view abilityIcons"
+    out = out[:s] + new_view + out[e:]
+    return out.rstrip("\n") + "\n" + "".join(blocks)
 
 
 # -- Serpent -------------------------------------------------------------------
@@ -432,10 +514,15 @@ def main() -> int:
             write(RHINO_PREFAB, want); wrote.append(RHINO_PREFAB)
     else:
         ids = {el: slot_ids(RHINO_BASE, el)["icon_img"] for el in RHINO_ICONS}
-        needles = [bindings(ids)]
+        needles = [bindings(ids, rhino_gauge_ids())]
         for el, png in RHINO_ICONS.items():
             needles += host_blocks(slot_ids(RHINO_BASE, el), el, RHINO_ROOT_RT, rhino_frame(el),
-                                   sprite_guid("Rhino", png))
+                                   sprite_guid("Rhino", png), gauge=el in RHINO_GAUGES)
+        late = [el for el in RHINO_ICONS if el not in RHINO_FIRST_PASS and f"&{ids[el]}\n" not in have]
+        stale = any(n not in have for n in needles)
+        if stale and not CHECK:
+            write(RHINO_PREFAB, rhino_add_slots(have, late)); wrote.append(RHINO_PREFAB)
+            have = read(RHINO_PREFAB)
         ok &= verify(RHINO_PREFAB, have, needles, "the Rhino row")
 
     # Serpent - the variant and the vessel move together.

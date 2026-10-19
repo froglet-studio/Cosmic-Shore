@@ -20,9 +20,13 @@ namespace CosmicShore.Gameplay
     /// <para><b>MATERIAL CONTRACT.</b> <c>ShipHelper.ApplyShipMaterial</c> paints the domain colour onto slot <b>1</b>
     /// of the object in <c>VesselCustomization._shipGeometries</c> — this one — so the plating is submesh 0 and the
     /// accents (nozzles, canopy, flames) submesh 1.</para>
+    ///
+    /// <para><b>Retired from the prefab 2026-10-18</b>: the shipped hull is <see cref="BrittleStarHullModel"/>
+    /// (<c>BrittleStar.fbx</c>). This placeholder is kept, behind the same <see cref="BrittleStarHullSource"/>, until the
+    /// model is accepted, so swapping the one component back restores it.</para>
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-    public class BrittleStarHullBuilder : MonoBehaviour, IProceduralElementMorphSource, IProceduralHullSource
+    public class BrittleStarHullBuilder : BrittleStarHullSource, IProceduralElementMorphSource, IProceduralHullSource
     {
         [Header("Cockpit (world units, +Z forward)")]
         [Tooltip("Half-width of the cockpit hub. Mass grows it (the Fabricator's larger cockpit).")]
@@ -70,17 +74,58 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The support ring (struts, arms, pods, guns). Spins about its local Z with the firing rotation;
         /// Ring Detonation hides it and throws a copy of <see cref="RingMesh"/>.</summary>
-        public Transform Ring => _ring;
+        public override Transform Ring => _ring;
         /// <summary>The ring's live (morphed) mesh, in the ring's local space.</summary>
         public Mesh RingMesh => _ringMesh;
         /// <summary>The cockpit flame (index -1) or point <paramref name="index"/>'s flame.</summary>
         public Transform Flame(int index) => _flames[index + 1];
         /// <summary>The cockpit gun's muzzle (index -1) or point <paramref name="index"/>'s, which ride the ring.</summary>
-        public Transform Muzzle(int index) => _muzzles[index + 1];
-        public float RingRadius => ringRadius;
+        public override Transform Muzzle(int index) => _muzzles[index + 1];
+        public override float RingRadius => ringRadius;
         /// <summary>Half the support ring's thickness across its plane (a strut's half-width) — what Ring Detonation's
         /// disk is as thick as.</summary>
-        public float RingHalfThickness => strutThickness;
+        public override float RingHalfThickness => strutThickness;
+        public override float RingPlaneZ => _ring ? _ring.localPosition.z : ringZ;
+
+        public override void SetRingPose(float phaseRadians, float presenceScale)
+        {
+            if (!_ring) return;
+            _ring.localRotation = Quaternion.Euler(0f, 0f, phaseRadians * Mathf.Rad2Deg);
+            _ring.localScale = Vector3.one * presenceScale;
+        }
+
+        public override void ResetRingPose()
+        {
+            if (!_ring) return;
+            _ring.localRotation = Quaternion.identity;
+            _ring.localScale = Vector3.one;
+        }
+
+        public override void SetFlame(int index, float girth, float length)
+        {
+            var flame = _flames[index + 1];
+            if (flame) flame.localScale = new Vector3(girth, girth, length);
+        }
+
+        public override Material DomainMaterial
+        {
+            get
+            {
+                var source = _sourceRenderer ? _sourceRenderer : GetComponent<MeshRenderer>();
+                var mats = source ? source.sharedMaterials : null;
+                return mats is { Length: > 0 } ? mats[mats.Length > 1 ? 1 : 0] : null;
+            }
+        }
+
+        public override void DressThrownRing(GameObject body)
+        {
+            if (!body || !_ring) return;
+            body.GetComponent<MeshFilter>().sharedMesh = _ringMesh;
+            if (TryGetComponent<MeshRenderer>(out var source))
+                body.GetComponent<MeshRenderer>().sharedMaterials = source.sharedMaterials;
+            body.transform.SetPositionAndRotation(_ring.position, _ring.rotation);
+            body.transform.localScale = _ring.lossyScale;
+        }
 
         static readonly Element[] MorphedElements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
         public IReadOnlyList<Element> ProceduralMorphElements => MorphedElements;
@@ -243,7 +288,7 @@ namespace CosmicShore.Gameplay
         /// changed; only parts an element moves are rewritten, bounds untouched. Driven from
         /// <see cref="BrittleStarAnimation"/>'s LateUpdate, whose tweens carry the fleet's morph feel.
         /// </summary>
-        public void ApplyElementMorphWeights(float charge, float mass, float space, float time)
+        public override void ApplyElementMorphWeights(float charge, float mass, float space, float time)
         {
             if (_morphSet == null) return;
             var w = _blendWeights;

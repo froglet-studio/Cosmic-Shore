@@ -89,7 +89,7 @@ namespace CosmicShore.Editor
                 string file = DiagnosticsHUD.LastCapturePath;
                 _note = string.IsNullOrEmpty(file)
                     ? "Capture finished."
-                    : $"Auto-capture saved {Path.GetFileName(file)}. Stop Play: Unity asks to send it to Claude.";
+                    : $"Auto-capture saved {Path.GetFileName(file)}. Stop Play and it goes to Claude by itself.";
                 SceneView.RepaintAll();
             }
             else if (capturing != _wasCapturing)

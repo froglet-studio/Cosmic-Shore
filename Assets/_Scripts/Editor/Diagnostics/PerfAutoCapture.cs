@@ -19,8 +19,8 @@ namespace CosmicShore.Editor
     /// renderers, cells, one JSON. The scenario table comes from <c>Docs/perf/status.json</c> (written by
     /// <c>Tools/Build/perf_hunt.py</c>: scene, label, afterSeconds), so a scenario scene gets its record label (S2,
     /// SkimRace, S5) at its record time; any other gameplay scene is captured under its own name after
-    /// <see cref="DefaultAfterSeconds"/>. When Play stops, the Bug Ledger's one question ("Send to Claude?",
-    /// <see cref="BugHuntAutoSend"/>) offers the new file; the daily sweep judges it.</para>
+    /// <see cref="DefaultAfterSeconds"/>. When Play stops, <see cref="BugHuntAutoSend"/> sends the new file to
+    /// <c>bugledger/&lt;user&gt;</c> with no question; the daily sweep judges it.</para>
     ///
     /// <para>Skipped, and said so on the badge: Code Optimization = Debug (C# ~5x slower, the sweep would refuse it
     /// anyway), a paused editor, the boot scenes. Costs the play session one 15 s sampling window, a 180-frame
@@ -97,7 +97,7 @@ namespace CosmicShore.Editor
                 if (!DiagnosticsHUD.CaptureRunning && answer != null && answer.StartsWith("no DiagnosticsHUD", StringComparison.Ordinal))
                     return;
                 s_captured.Add(scene);
-                StatusLine = $"Auto-capture: {label} running (15 s, then the Profiler). Stop Play afterwards to send it.";
+                StatusLine = $"Auto-capture: {label} running (15 s, then the Profiler). Stop Play and it goes to Claude by itself.";
             }
             catch (Exception e)
             {

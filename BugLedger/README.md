@@ -3,8 +3,9 @@
 The data store of the Unity editor's Bug Ledger (full documentation: `Docs/DIAGNOSTICS.md`
 § "The Bug Ledger"). It lives at the project root, outside `Assets/`, so Unity never imports it.
 
-**There is no window and nothing to press except one question.** After a play test that logged a
-new red error, the editor asks **"Send to Claude?"** — Send or Not now. That is the whole UI.
+**There is no window and nothing to press.** After a play test that logged a new red error (or made a
+performance capture, an AI training record or multiplayer logs), the editor sends it to Claude by itself
+and logs one console line saying what went (2026-10-16; it was a "Send to Claude?" question before).
 
 ## Layout
 
@@ -33,7 +34,7 @@ nothing to pull first. Older issues published into a working branch's `shared/is
 - **Custom** (`C-…`): filed on the Team Bug Board artifact, imported by Claude's daily sweep.
 - **Fixed**: Claude (`Tools/Build/bug_ledger.py mark-fixed`) marks it VALIDATING on your branch with
   the commit that fixes it. Once you have pulled that commit, the next two play tests without the
-  error close it. If it happens again it reopens and the next play test asks "Send to Claude?".
+  error close it. If it happens again it reopens and the next play test sends it again by itself.
 
 ## Editing by hand
 

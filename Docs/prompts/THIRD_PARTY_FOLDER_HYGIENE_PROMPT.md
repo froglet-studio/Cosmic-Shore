@@ -63,7 +63,7 @@ verification pass.** Leaving it is a defensible answer; renaming it blind is not
 | Finding | Measured | Action |
 |---|---|---|
 | **`Assets/.DS_Store` and `Assets/_Scripts/Controller/.DS_Store` are tracked** | `.gitignore` already ignores `.DS_Store` at lines 108–109 — these predate it | `git rm --cached` both |
-| **`Assets/ArcadeDPadNav.cs` sits loose at the `Assets/` root** | first-party `MonoBehaviour` (`CosmicShore.Core`), **is used** — `Menu_Main.unity` | `git mv` (+ `.meta`) to `_Scripts/UI/Elements/` or `_Scripts/Controller/IO/` |
+| ~~**`Assets/ArcadeDPadNav.cs` sits loose at the `Assets/` root**~~ | **Deleted 2026-10-14** - the component was retired from every window (`Docs/MENU_REDESIGN_B.md` §12) | nothing left to move |
 | **`Assets/Environment/` is empty** | zero files | delete |
 | **`Assets/Resolvers/ObjectResolver.cs`** | first-party, whole-file `#if UNITY_EDITOR`, uses `UnityEditor` — and is referenced by **nothing** | it is dead; delete it, or move it under an `Editor/` folder if it is wanted. Do **not** leave editor-only code outside an `Editor/` folder relying on a guard |
 
@@ -101,8 +101,8 @@ Do this in **small commits, one folder per commit**, each verified:
 
 ## Definition of done
 
-1. The `.DS_Store` files untracked, `Assets/Environment/` gone, `ArcadeDPadNav.cs` and the
-   `ObjectResolver` question resolved.
+1. The `.DS_Store` files untracked, `Assets/Environment/` gone, the `ObjectResolver` question
+   resolved. (`ArcadeDPadNav.cs` was deleted on 2026-10-14.)
 2. Third-party folders consolidated per whichever convention was chosen, **with the convention and its
    exceptions written into `Docs/THIRD_PARTY_DECISIONS.md` §5.**
 3. `Adaptive Performance` and `Unity Assests` either left alone with the reason recorded, or moved in

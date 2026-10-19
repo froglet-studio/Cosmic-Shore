@@ -136,6 +136,7 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             ReleaseStick();
+            RestoreNavigation();
             TearDownOrbitCamera();
         }
 
@@ -431,19 +432,43 @@ namespace CosmicShore.Gameplay
             // The pad flies the ship, so it stops driving the UI at the same moment. This is the
             // EventSystem half; anything that polls a device directly checks
             // ModePreviewWindow.AnyHasFocus instead.
-            if (EventSystem.current)
-            {
-                _navigationWasEnabled = EventSystem.current.sendNavigationEvents;
-                EventSystem.current.sendNavigationEvents = false;
-            }
+            TakeNavigation();
 
             window?.GrantFocus(vessel.VesselStatus.IsSingleStickControls);
         }
 
+        // ── EventSystem navigation (the pad flies the ship, so it stops driving the UI) ──────
+
+        // Recorded once, on the FIRST hand-over, and given back exactly once. It used to be re-read on
+        // every grant and given back only on a focus release: a second grant saved the already-off
+        // value, so the release turned navigation OFF for good, and a preview ended by Stop, a launch
+        // or teardown without a release never gave it back at all. Either way every modal after it
+        // refused to open (ModalWindowManager: "sendNavigationEvents has been leaked"), and with the
+        // Arcade and Toy Box windows refusing, no vessel could be launched (2026-10-19 play test; the same pattern as ModePreviewSession).
+        bool _navigationTaken;
+
+        void TakeNavigation()
+        {
+            var events = EventSystem.current;
+            if (!events) return;
+            if (!_navigationTaken)
+            {
+                _navigationWasEnabled = events.sendNavigationEvents;
+                _navigationTaken = true;
+            }
+            events.sendNavigationEvents = false;
+        }
+
+        void RestoreNavigation()
+        {
+            if (!_navigationTaken) return;
+            _navigationTaken = false;
+            if (EventSystem.current) EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+        }
+
         void HandleFocusReleased()
         {
-            if (EventSystem.current)
-                EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+            RestoreNavigation();
 
             if (!_flying) return;
             ReleaseStick();
@@ -491,6 +516,10 @@ namespace CosmicShore.Gameplay
             // on - hiding it would stop the host that is meant to be driving the preview.
             if (launchPanel)
             {
+                // No description on the Maelstrom card (the owner, 2026-10-17: "In maelstrom remove the
+                // description text from the cards" - it ran over the round's name). An empty override
+                // hides the briefing block; Bind keeps honouring it on every redraw.
+                launchPanel.SetBriefingOverride(string.Empty);
                 launchPanel.Bind(game, _intensity);
                 launchPanel.HideObjective();
                 return;
@@ -508,7 +537,7 @@ namespace CosmicShore.Gameplay
                 if (changed && game != null) MaelstromTransitions.Reveal(modeNameText);
             }
 
-            if (briefing) briefing.Show(game);
+            if (briefing) briefing.Clear();
         }
 
         // ── Helper ───────────────────────────────────────────────────────────────

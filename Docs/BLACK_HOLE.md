@@ -191,6 +191,22 @@ The render and index writes are the two halves of `Prism.NotifyPositionChanged` 
 once, exactly as the swarm and the builders do. Nothing per prism is managed except admission and
 the verdicts.
 
+**A body is a MOVING prism (2026-10-14, `Docs/PRISM_MOTION.md`).** Prism movement is a fundamental,
+and its rule holds here: a body that runs into another prism destroys both. Every body's step is
+swept for its earliest contact BEFORE the bulk index write (the index's stored positions are the
+pre-step ones) — static prisms where they stand, other bodies along their own step (`IntegrateJob` now
+also emits each body's pre-step point). **The body count puts the field on a rung of prism movement's
+LADDER** (`PrismMotion.NextLevel`, `Resources/PrismMotionConfig`): at or under 64 bodies (level 1) each
+body's exact oriented box is swept on the main thread (`BoxContacts` → `PrismMotion.TryFirstContact`)
+and each destroyed prism comes apart as a COLLISION BURST on the ultra-high-res prism
+(`Docs/PRISM_ANIMATION.md` §4.12) while its budget allows; up to 256 (level 2), boxes and the ordinary
+explosion; above 256 (level 3) a fourth Burst job, `PrismMotion.ContactJob`, tests the spheres of the
+prisms' volumes. Each line is crossed back down at three quarters of it (48, 192). `ApplyContacts` annihilates each pair on the main thread, scored to the
+hole nearest the body (its owner, or the anonymous "Black Hole"), before `ApplyVerdicts`, which drops
+the destroyed bodies — a collision outranks a capture or a throat transit on the same frame. Bodies
+already touching when the step began (a ribbon of trail falling in together) are at rest, not a
+collision. Session counter: `BlackHoleGravityField.CollisionsTotal`.
+
 **Admission** runs every `admissionInterval` (0.1 s): each hole asks `PrismSpatialIndex.QuerySphere`
 for the prisms inside its influence sphere, new ones are ranked nearest-first and admitted up to
 `maxBodies` (6,000 across every hole). Nearest first because the field DECAYS with distance — the

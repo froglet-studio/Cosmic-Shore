@@ -368,10 +368,10 @@ namespace CosmicShore.Gameplay
             {
                 if (Prism == null)
                 {
-                    yield return new WaitForSeconds(1f);
+                    yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                     continue;
                 }
-                yield return new WaitForSeconds(1f);
+                yield return CosmicShore.Utility.WaitCache.Seconds(1f);
                 // TopLeftMate
                 if (depth == 0)
                 {
@@ -557,8 +557,7 @@ namespace CosmicShore.Gameplay
                 if (candidate == null || candidate.destroyed) return;
                 considered++;
 
-                var mateComponent = candidate.GetComponent<GyroidAssembler>();
-                if (mateComponent == null)
+                if (!candidate.TryGetComponent(out GyroidAssembler mateComponent))
                 {
                     mateComponent = ConvertBlock(candidate);
                 }
@@ -608,8 +607,7 @@ namespace CosmicShore.Gameplay
 
         GyroidAssembler ConvertBlock(Prism prism)
         {
-            HealthPrism healthPrism = prism.GetComponent<HealthPrism>();
-            if (healthPrism != null)
+            if (prism.TryGetComponent(out HealthPrism healthPrism))
             {
                 healthPrism.Reparent(Prism.transform.parent);
             }

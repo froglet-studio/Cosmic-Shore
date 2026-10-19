@@ -37,11 +37,11 @@ namespace CosmicShore.Utility
 
         enum SceneState
         {
-            Loaded,
-            Unloaded,
-            Loading,
-            Unloading,
-            WaitingToUnload,
+            Loaded = 0,
+            Unloaded = 1,
+            Loading = 2,
+            Unloading = 3,
+            WaitingToUnload = 4,
         }
 
         SceneState m_SceneState = SceneState.Unloaded;

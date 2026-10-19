@@ -12,6 +12,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] int repetitions = 1;
         [SerializeField] float delayBetweenSpawns = 0.3f;
 
+        /// <summary>
+        /// Pooled (<see cref="AOEExplosionPool"/>, lever L13): this shell only lays pooled ring
+        /// prisms and its own state is the pose and domain <see cref="AOEExplosion.Initialize"/>
+        /// rewrites, so a reused instance behaves as a fresh one. It was the Squirrel's
+        /// one-Instantiate-per-omni-collect.
+        /// </summary>
+        public override bool Poolable => true;
+
         protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
             try
@@ -40,10 +48,10 @@ namespace CosmicShore.Gameplay
             finally
             {
                 // The rings are pooled prisms parented under the Boost pool, so this spawner shell
-                // has nothing left to own once spawning finishes - destroy it instead of leaking an
-                // empty AOE object per hit (same lifecycle as AOEDangerHemisphereBlocks).
+                // has nothing left to own once spawning finishes - retire it (back to the pool)
+                // instead of leaking an empty AOE object per hit.
                 if (!ct.IsCancellationRequested && this != null)
-                    Destroy(gameObject);
+                    Retire();
             }
         }
     }

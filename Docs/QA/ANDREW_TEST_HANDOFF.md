@@ -116,7 +116,7 @@ Use the QA loop; it is built so a result can be picked up cold.
    leave the backlog for good, failures become `DT-nnn` dev tasks in `Docs/QA/DEV_TASKS.md`.
 
 **Red errors in the Console are reported separately, and automatically.** After any play test that
-logs a new red error, Unity asks **"Send to Claude?"** — press Send. It pushes the error to your own
+logs a new red error, the editor sends it to Claude by itself — nothing to press. It pushes the error to your own
 branch `bugledger/<you>` (never the branch you are working on) and Claude fixes it from there
 (`/bug-ledger`). Pull afterwards to get the fix; two clean play tests close it. Details:
 `Docs/DIAGNOSTICS.md` § "Send to Claude". Do not copy-paste console text for these; for QA items

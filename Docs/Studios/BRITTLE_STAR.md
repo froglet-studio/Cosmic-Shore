@@ -16,6 +16,10 @@ hull under its old name.
 
 ## 1. Status in one paragraph
 
+**Redesigned 2026-10-16 (round 4, §5.4)**: four modes (Speed, Creation, Space's five analog guns with heat, Charge's five
+whip cords that stiffen into sabers), one aimed turret in the other modes, and a spare-ring stock instead of the charge
+and Overdrive.
+
 **In the game since 2026-10-14 as `VesselClassType.BrittleStar = 16`** (built from the design document with Garrett's
 decisions: x6 Speed, Creation the slowest, the five auto-firing arms, a trail per ring corner, a 2.5x ring, the nucleus-wide
 ring explosion, a level camera; contract `R_VesselActions/BRITTLE_STAR.md`). **The studio flies that build by default**
@@ -288,6 +292,100 @@ Styles at Hard I3, Derby: Zephyr 18.6 s, Balanced 22.0, Hunter 25.0, Shipped 25.
 6. **The studio pilot is not the fastest level on Derby I1 / I4 and Frenzy I4** (D24 unmet there; Medium beats Hard on
    both I4s). That is the lab-only
    pilot, not the vessel; the next studio round should re-tune its Speed-in and threading for x6.
+
+### 5.3 Round 3: the five cords (2026-10-15)
+
+Garrett: *"instead of a ton of projectiles lets create 5 cords similar to the thresher's cord but without the weight at
+the end. so the 5 cords are still controlled by the right thumbstick and slice through prisms."* Destruction Mode's five
+streams of rounds are gone; one cord hangs from each turret (`BrittleStarCord`, contract
+`R_VesselActions/BRITTLE_STAR.md` §3.4). The studio's Unity build steps the same model line for line (`stepCords`:
+pose spring stiff at the root and soft at the tip, follow-the-leader length cap, 1/120 s sub-steps) and draws each link
+as a thin cylinder in the pilot's colour; Vessel Config's Unity sliders gained Cord length / width / root / tip / drag.
+In the studio a cord also hits a creature (2 hit points, once per `cordHitCooldown`) — lab-only, the game's fauna die
+by their prisms.
+
+Scorecard with the cords (median of seeds 11/22/33, seconds; `brittlestar_score.cjs`, 2026-10-15; round 2's arms in
+brackets where they differ):
+
+| | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
+|---|---|---|---|---|---|
+| Derby I1 | 20.2 | 20.1 | 21.1 | 21.1 | 73.9 |
+| Derby I2 | 21.6 | 24.1 | 22.8 (21.3) | 22.8 (21.3) | 75.0 |
+| Derby I3 | 24.5 (26.4) | 22.3 (22.5) | 22.0 | 21.6 | 77.8 |
+| Derby I4 | 64.7 | 59.7 | 69.8 | 69.8 | 84.7 |
+| Frenzy I1 | 26.4 | 26.4 | 26.0 | 26.0 | 78.1 |
+| Frenzy I2 | 34.4 | 34.4 | 34.0 | 34.0 | 163.7 |
+| Frenzy I3 | 66.8 (81.0) | 78.2 (68.9) | 57.1 (60.9) | 57.1 (60.7) | DNF |
+| Frenzy I4 | 148.7 (DNF) | 100.7 (135.2) | 106.8 (153.6) | 74.5 (DNF) | DNF |
+
+Styles at Hard I3, Derby: Balanced 22.0, Zephyr 22.0 (18.6), Hunter 25.6, Shipped 27.0, Rolling Thunder 42.3 (36.8, 5
+rings), Fabricator 50.2. Frenzy: Zephyr 55.5, Fabricator 55.8, Balanced 57.1, Hunter 57.9, Shipped 64.0, Rolling Thunder 71.7.
+
+**Findings** (round 3):
+
+1. **The Derby barely moves.** Walls in a corridor fall as fast to five 80 u cords flown through them as to 450 rounds a
+   second: I1, I4 and "no modes" are unchanged to the tenth, I2/I3 within 2 s. Round 2's finding 4 (a level race on
+   I1-I3) still stands; the cords did not make the ladder bite.
+2. **The Frenzy got easier at I3-I4**: Easy now finishes I4 (148.7 s, was DNF) and Hard I4 drops 154 → 107 s. The cords
+   kill creatures that cross them without the pilot aiming, and they only cut what they touch, so they no longer pour
+   rounds down a line that runs through the pilot's own target mass.
+3. **The ring still does not pay in the Frenzy** ("no ring" 74.5 against Hard 106.8 on I4: round 2's finding 1).
+4. **Zephyr lost its Derby lead** (18.6 → 22.0 s): at x6 in Overdrive the arms' rounds used to reach far ahead; the cords
+   are 80 u, so the fastest pilot now meets walls with less ahead of it. Cord length is the Space dial (x1.6 at Space 10);
+   the Hunter's 25.6 s is where a longer reach would show.
+
+### 5.4 Round 4: four modes, analog guns with heat, whip cords, the ring stock (2026-10-16)
+
+Garrett's redesign, built in Unity and in the studio's Unity set in the same change (contract
+`R_VesselActions/BRITTLE_STAR.md` §1, §3):
+
+- **Charge Mode** (RB; key 4 / the CHARGE touch button in the studio): the five cords become **whips** — a wave equation on
+  the link directions (`BrittleStarCord`), inextensible, heavy, 150% long (120 u) — that RT, analog, shortens to 100% (80 u)
+  and stiffens into **five sabers**. Using them cools the guns.
+- **Space Mode** (X, `Mode.Destruction` in code): the five projectile streams are back, RT's pull setting their rate (up to
+  90/s each). **Every other mode** fires the one turret the ring has turned to the aim, no spread.
+- **Heat**: each round heats the guns (heat/s = pull × guns); overheated they stop, and in Space Mode the trail lays
+  **danger prisms** (drawn red-tinted in the studio). Base gun range 387 u (150%), ×2 at Space 10.
+- **Speed Mode**'s trail prisms stretch with their spacing; **every trail lays one smaller block** (1.5 × 1.5 × 3).
+- **The ring**: thrown only with a **spare** (one per crystal, two at most); the mounted ring regrows on its own. Overdrive
+  and the ringless state are retired.
+
+Checked headlessly on the page's hook (`makeWorld` / `stepWorld`): LT without a spare does nothing; half a pull fires
+half the rounds of a full one (225 vs 455 in 1 s); five guns at a full pull overheat in ~3 s, fire nothing while hot and
+lay 15 danger prisms in the next 1.5 s; Charge Mode cools them in 0.72 s; the whip is 120 u and the saber 80 u; Charge Mode
+fires no rounds; Cruise fires one gun at 88/s with zero spread; three crystals hold two spares; a throw spends one and the
+ring regrows in 0.5 s. `check_studio.cjs` passes (no console errors on desktop, 400 px and a phone held sideways).
+
+Scorecard (median of seeds 11/22/33, seconds; `brittlestar_score.cjs`, 2026-10-16; round 3 in brackets):
+
+| | Easy | Medium | Hard | Hard, no ring | Hard, no modes |
+|---|---|---|---|---|---|
+| Derby I1 | 18.4 (20.2) | 19.3 (20.1) | 18.6 (21.1) | 18.6 | 74.0 |
+| Derby I2 | 21.9 (21.6) | 20.4 (24.1) | 22.9 (22.8) | 22.9 | 75.3 |
+| Derby I3 | 23.1 (24.5) | 27.6 (22.3) | 28.2 (22.0) | 28.2 | 78.1 |
+| Derby I4 | 72.6 (64.7) | 77.5 (59.7) | 84.5 (69.8) | 84.5 | 84.7 |
+| Frenzy I1 | 26.4 | 26.4 | 26.0 | 26.0 | 78.3 |
+| Frenzy I2 | 34.4 | 34.4 | 34.0 | 34.0 | 157.9 |
+| Frenzy I3 | 79.0 (66.8) | 70.6 (78.2) | 54.8 (57.1) | 54.8 | DNF |
+| Frenzy I4 | 215.2 (148.7) | 163.6 (100.7) | 110.6 (106.8) | 134.5 (74.5) | DNF |
+
+Styles at Hard I3 (time · destroyed or killed · rings · Speed / Creation / Space / Charge share): Derby — Zephyr 21.9,
+Balanced 28.2, Hunter 29.6, Shipped 30.5, Rolling Thunder 40.0 (4 rings), Fabricator 99.7. Frenzy — Balanced 54.8,
+Fabricator 56.4, Hunter 57.8, Shipped 57.8, Zephyr 58.7, Rolling Thunder 156.0 (51% in Charge Mode).
+
+**Findings** (round 4):
+
+1. **The ring is rarely thrown now.** It needs a spare, the studio pilot starts with none and spends crystals on the
+   course, so "Hard, no ring" equals Hard on every Derby row (only Rolling Thunder throws, 4 times). Starting with one
+   spare, or a cheaper first ring, would bring it back into play — Garrett's call.
+2. **Derby I4 is now as slow with the modes as without** (84.5 vs 84.7): the sealed walls are super-shielded, neither guns
+   nor cords break them, and the ring that strips their shield needs a spare. Round 3's Derby I4 (69.8) leaned on the ring.
+3. **Medium and Easy beat Hard on Derby I3 / I4** (D24 unmet there): the studio pilot (lab-only) has not learnt heat — it
+   holds a full pull in Space Mode, overheats, and only then swaps to Charge. Teaching it to feather the trigger is the
+   next pilot round.
+4. **Charge Mode is the strong melee answer in the Frenzy**: Hard I3 54.8 s (57.1); Rolling Thunder, which lives in
+   Charge Mode, is slowest because its sabers cut its own target mass (friendly fire) — the cords spare only trail under
+   a second old.
 
 ## 6. Bringing it into the game (done 2026-10-14)
 

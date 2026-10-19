@@ -608,7 +608,7 @@ and the reward tooltip in the mock-up is that system's surface, not this one's.
 | Which regional board this player is on | `_Scripts/System/WeeklyChallenge/WeeklyChallengeRegion.cs` |
 | The ROW LIST | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
 | The WINDOW (tabs, countdown, reward tooltip, close) | `_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs` |
-| Wiring it up | `_Scripts/Editor/FrogletTools/WeeklyChallengeLeaderboardWirer.cs` |
+| Wiring it up | `Tools/Build/author_menu_configure.py` (the style-B board, `LeaderboardView.prefab`; the old FrogletTools wirer is retired) |
 | The ids | `WeeklyChallengeCatalogSO.leaderboardId` + `.regionalLeaderboards` (authored in the tool) |
 
 **`WeeklyChallengeRanking` is a project type, not the UGS entry it is built from.** A view taking a
@@ -931,10 +931,11 @@ Fixed three ways, deliberately overlapping:
    relying on an attribute a later cleanup might remove.
 3. The card made **genuinely optional** in `PopulateGameSelectionList`. It already was eight lines
    later (`if (WeeklyChallengeCard) …Bind(this)`), so optional was the intent all along and the
-   unguarded line was simply the bug. It now takes the grid's first dpad row when it is present and
-   **no row at all** when it is not — an empty row is not equivalent, because `ArcadeDPadNav` clamps
-   a column into `row.Count - 1`, which is `-1` on an empty row and throws the moment the dpad walks
-   into it. The game rows are consequently **counted**, not `i + 1`.
+   unguarded line was simply the bug. It took the grid's first dpad row when it was present and
+   **no row at all** when it was not — an empty row is not equivalent, because `ArcadeDPadNav` clamped
+   a column into `row.Count - 1`, which is `-1` on an empty row and threw the moment the dpad walked
+   into it. (`ArcadeDPadNav` was retired on 2026-10-14, `Docs/MENU_REDESIGN_B.md` §12; the EventSystem
+   navigates the grid now, so the row bookkeeping went with it.)
 
 **General:** *renaming a serialized field is a data migration, not a refactor* — `FormerlySerializedAs`
 is the migration, and a `git mv` of the `.cs` + `.meta` protects only the guid, never the field
