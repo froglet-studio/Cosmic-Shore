@@ -31,7 +31,8 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Kinds:** `test` (run something and report pass or fail), `dev` (code), `content` (words, tips, art),
   `setup` (a dashboard, a service, a key), `decision` (the owner or the core four decide), `docs`.
 - Ids are `T-<date>-<hash>`, never "the next number", so two branches cannot collide. If two branches both
-  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board.
+  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board, and fails on
+  any conflict marker left in it (a half-resolved merge still parses, so it used to pass).
 - QA's own failures stay in `Docs/QA/DEV_TASKS.md` (written by `/qa-backlog`); vessel and AI test scripts stay
   in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. A task here may point at either.
 
