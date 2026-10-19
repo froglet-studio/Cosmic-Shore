@@ -1066,6 +1066,8 @@ push the bakes (Thresher, Scarab, Brittle Star, Urchin and Rhino are stale until
 1. **Sparrow, Serpent, Manta** (reproduced exactly): indistinguishable from before.
 2. **Thresher** (`Thresher.fbx`): a right turn swings the whip LEFT (out of the turn; the swim's yaw sign was
    fixed), a planted whip curls toward the ball, a crack flicks toward it; the chain hangs from the shackle.
+   *Superseded 2026-10-19 (`cece/elegant-goldberg-eanwgx`): the tail no longer beats or swings with the
+   stick; it hangs along the cord and lags a turn (THRESHER.md §5b, H2-H4b). Test those instead.*
 3. **Scarab** (`Scarab.fbx`; the hidden Sparrow is gone from the prefab): the elytra open in a turn and on
    throttle, the legs hang and tuck, the juke roll carries every part; the hull collider still triggers.
 4. **Stoat** (`Stoat.fbx`): the lope, the turn bend and the tail swing; spaghettification near a horizon still
