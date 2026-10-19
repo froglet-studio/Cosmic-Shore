@@ -12615,3 +12615,16 @@ Reference compile clean (player; editor: the 3 known errors only); Amoebius buil
 4. Leave the Hangar or switch tab: the demo stops (no stage effects behind Home). Open Arcade / Toy Box from the Hangar:
    they open at once.
 5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
+
+## 🔴 2026-10-19 — Song names and Arena hull icons (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §60. Changed `AudioSystem`, `SoundtrackPlayer`, `SoundtrackSO`, `AudioStudioPanel`,
+`NowPlayingCard`, `KitArenaGameCard`, `Soundtrack.asset` (soundName per track); Amoebius FMOD stand-ins. Reference
+compile clean; Amoebius builds.
+1. Profile > EXPAND: the Audio Studio's title shows the song playing (e.g. "Severity"), not "Cosmic Shore soundtrack",
+   and that song's row is lit. The now-playing card on the Profile tab shows the same name.
+2. SKIP: the music restarts; within a moment the title changes to the new song. STOP: "Music stopped"; START: a name
+   again. Leave the menu playing past a song's end: the title follows the next song.
+3. If a title stays generic, the Console has no error: the sound FMOD reported matched no `soundName` - check its name
+   against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
+4. Arena: every card's hull chips show the vessel icons, no white squares.

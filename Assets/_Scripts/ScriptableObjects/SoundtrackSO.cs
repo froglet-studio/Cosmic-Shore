@@ -29,6 +29,9 @@ namespace CosmicShore.ScriptableObjects
             public EventReference trackEvent;
             [Tooltip("In the rotation until the player unticks it.")]
             public bool onByDefault = true;
+            [Tooltip("This track's audio file in the random music event (FMOD names each sound as it starts; case and " +
+                     "extension are ignored). It is how the Audio Studio names the song while the random event plays.")]
+            public string soundName;
         }
 
         [SerializeField] List<Track> tracks = new();

@@ -2902,3 +2902,25 @@ words: "WATCH THE AI PLAY EACH CONTROL" / "Labels follow your device. Press one 
 and fail if a retired TRY file comes back (planted defects: the step time dropped; TRY's window back over the stage).
 The camera guard and the petal-warning change from the follow-ups above stay: arcade card previews still borrow the
 gameplay camera.
+
+## 60. Song names while the random music plays; Arena hull icons (2026-10-19, awaiting in-editor approval)
+
+**Song names.** The owner: "Soundtrack good but also show song names". The Audio Studio and the now-playing card named a
+song only when the game had picked it (`SoundtrackPlayer.Current`), and with no per-track FMOD events yet the music is
+still the one random event, so both showed "Cosmic Shore soundtrack". Now:
+- `AudioSystem` registers FMOD's `SOUND_PLAYED` callback on the music event. FMOD raises it on its own thread with the
+  sound the random playlist started; the callback only stores `Sound.getName`, and `Update` hands the name to
+  `SoundtrackPlayer.NoteLegacySound` on the main thread. A late callback from an instance being faded out is ignored
+  (handle check), and the delegate is a static field so the GC cannot collect it under FMOD.
+- Each `SoundtrackSO` track carries an authored `soundName`: its audio file in `event:/Music/Music` (case and extension
+  ignored). `SoundtrackPlayer.NowPlaying` is the picked track, else the heard one; both views name it, and the Audio
+  Studio lights its row. The event loops, so each new song renames on its own.
+- `author_menu_profile.py` adds a missing `soundName` to each track of the existing asset (it never overwrites what the
+  audio owner wired) and checks every name against the FMOD project's Music event when the FMOD project is in the
+  checkout (planted defects: a track without a sound name; a sound name not in the event).
+- Amoebius gained the FMOD members this needs (`EVENT_CALLBACK_TYPE.SOUND_PLAYED`, `EventInstance.setCallback`,
+  `Sound`); it never reports which sound played, so the generic title stays there.
+
+**Arena hull icons.** The vessel chips on Arena cards drew white squares: `KitArenaGameCard` put each vessel's icon on
+the chip's FIRST child, which is the chip frame's fill (`Fill`, `Border`, `Icon`), and left the sprite-less `Icon`
+drawing a white quad on top. It now finds the `Icon` child by name.

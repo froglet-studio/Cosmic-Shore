@@ -71,6 +71,28 @@ SOUNDTRACK_GUID = "6a1c3e5b7d9f4b2a8c0e1f3a5b7c9d10"
 TRACKS = (("space-gliding", "Space Gliding"), ("sky-fire", "Sky Fire"), ("cosmic-shore-2-tune", "Cosmic Shore 2 Tune"),
           ("chill-time-3", "Chill Time 3"), ("ive-waited-so-long", "I've Waited So Long"), ("cosmic-shore-3", "Cosmic Shore 3"),
           ("severity", "Severity"), ("disoriented", "Disoriented"), ("secret-hide-away", "Secret Hide Away"))
+# Each track's audio file in that random event, as FMOD names the sound it starts (extension dropped). AudioSystem's
+# SOUND_PLAYED callback reports the name and the soundtrack matches it here to name the song (2026-10-19).
+SOUND_NAMES = {"space-gliding": "SPACE GLIDING", "sky-fire": "SKY FIRE", "cosmic-shore-2-tune": "COSMIC SHORE 2 TUNE",
+               "chill-time-3": "cosmic shore chill time 3", "ive-waited-so-long": "I've waited so long",
+               "cosmic-shore-3": "cosmic shore 3 looped 1", "severity": "SEVERITY", "disoriented": "DISORIENTED",
+               "secret-hide-away": "SECRET HIDE AWAY"}
+FMOD_METADATA = "Cosmic Shore/Metadata"
+FMOD_MUSIC_EVENT = "{03de9ea9-9b51-400a-b0cb-8bcc12a12697}"   # event:/Music/Music
+
+
+def fmod_music_sounds():
+    """The audio files in the FMOD project's Music event, extension dropped and lower-cased; None without the project."""
+    ev = os.path.join(REPO, FMOD_METADATA, "Event", FMOD_MUSIC_EVENT + ".xml")
+    if not os.path.exists(ev):
+        return None
+    names = set()
+    for fid in re.findall(r'<relationship name="audioFile">\s*<destination>(\{[^}]+\})', open(ev, encoding="utf-8").read()):
+        af = os.path.join(REPO, FMOD_METADATA, "AudioFile", fid + ".xml")
+        m = re.search(r'name="assetPath">\s*<value>([^<]+)', open(af, encoding="utf-8").read()) if os.path.exists(af) else None
+        if m:
+            names.add(os.path.splitext(m.group(1))[0].strip().lower())
+    return names
 VESSEL_ROWS, PILOT_TILES = 8, 4
 VESSEL_PITCH, VESSEL_ROW_H = 38, 32
 FAV_STATS = (("Games", "Games"), ("Drift", "Best drift"), ("Boost", "Best boost"), ("Prisms", "Prisms broken"))
@@ -686,11 +708,24 @@ def build_now_playing():
     return root
 
 
+def add_sound_names(text):
+    """Adds a missing `soundName` to each track of an existing soundtrack (after `onByDefault`), leaving every line the
+    audio owner authored alone. A track whose soundName is already set keeps it."""
+    def one(m):
+        block = m.group(0)
+        if "\n    soundName:" in block:
+            return block
+        name = SOUND_NAMES.get(m.group(1).strip())
+        return block if name is None else re.sub(r"(\n    onByDefault: \d\n)", r"\1    soundName: " + name.replace("\\", "") + "\n", block, count=1)
+    return re.sub(r"  - id: (.+)\n(?:    .*\n|      .*\n|        .*\n)*", one, text)
+
+
 def soundtrack_asset():
     rows = "".join(
         f"  - id: {tid}\n    title: {title}\n    artist: \n"
         "    trackEvent:\n      Guid:\n        Data1: 0\n        Data2: 0\n        Data3: 0\n        Data4: 0\n      Path: \n"
-        "    onByDefault: 1\n" for tid, title in TRACKS)
+        "    onByDefault: 1\n"
+        f"    soundName: {SOUND_NAMES[tid]}\n" for tid, title in TRACKS)
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
@@ -977,7 +1012,7 @@ def outputs():
     # Created once, then the asset is the audio owner's to edit (each track's event is wired in the inspector):
     # a re-run keeps what is on disk.
     st = os.path.join(REPO, SOUNDTRACK_ASSET)
-    out[SOUNDTRACK_ASSET] = open(st, encoding="utf-8").read() if os.path.exists(st) else soundtrack_asset()
+    out[SOUNDTRACK_ASSET] = add_sound_names(open(st, encoding="utf-8").read()) if os.path.exists(st) else soundtrack_asset()
     out[SOUNDTRACK_ASSET + ".meta"] = ("fileFormatVersion: 2\nguid: %s\nNativeFormatImporter:\n  externalObjects: {}\n"
                                       "  mainObjectFileID: 11400000\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n" % SOUNDTRACK_GUID)
     out["Assets/_SO_Assets/Audio.meta"] = K.FOLDER_META.format(g=asset_guid("folder/SO_Audio"))
@@ -1118,6 +1153,16 @@ def validate_rev10(files, sc):
     st = files[SOUNDTRACK_ASSET]
     ids = re.findall(r"^  - id: (.+)$", st, re.M)
     assert ids and len(ids) == len(set(ids)), "the soundtrack's track ids are missing or repeat (they key the player's ticks)"
+    # Song names while the random event plays: every track names its audio file, and each names a file that is really
+    # in the FMOD project's Music event (checked when the FMOD project is in the checkout).
+    sounds = re.findall(r"^    soundName: (.*)$", st, re.M)
+    assert len(sounds) == len(ids) and all(s.strip() for s in sounds), \
+        "every soundtrack track needs a soundName (its audio file in event:/Music/Music), or its title never shows"
+    fmod = fmod_music_sounds()
+    if fmod is not None:
+        for s in sounds:
+            assert os.path.splitext(s.strip())[0].lower() in fmod, \
+                f"soundName '{s.strip()}' is not an audio file in the FMOD Music event ({sorted(fmod)})"
 
 
 def drift(files):
@@ -1160,6 +1205,8 @@ def self_test(files):
         ("the record without its lattice", lambda f: f.__setitem__(prefab_path("ProfileView"),
             f[prefab_path("ProfileView")].replace(M.LATTICE_WINDOW_MAT, "0" * 32))),
         ("AudioSystem without the soundtrack", lambda f: f.__setitem__(AUDIO_PREFAB, re.sub(r"  soundtrack: .*\n", "", f[AUDIO_PREFAB]))),
+        ("a track without its sound name", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("    soundName: SKY FIRE\n", "", 1))),
+        ("a sound name that is not in the FMOD event", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("soundName: SEVERITY", "soundName: SEVERITY 2", 1))),
         ("two tracks sharing an id", lambda f: f.__setitem__(SOUNDTRACK_ASSET, f[SOUNDTRACK_ASSET].replace("id: sky-fire", "id: space-gliding"))),
         ("the card rests on Home again", lambda f: f.__setitem__(prefab_path("NowPlayingCard"),
             f[prefab_path("NowPlayingCard")].replace("  restingOn:\n  - 5\n", "  restingOn:\n  - 2\n"))),

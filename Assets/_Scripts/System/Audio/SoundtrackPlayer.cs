@@ -14,7 +14,8 @@ namespace CosmicShore.Core
     /// Two modes. PLAYLIST: the soundtrack has per-track events, so this plays the ticked tracks one after another and
     /// knows which one is playing. LEGACY: no track has an event yet (today), so the old random music event keeps
     /// playing through <see cref="ILegacyMusic"/>; back / skip restart it (it picks again), pause and stop work, and
-    /// no track can be picked or named.
+    /// no track can be picked. It can still be NAMED: AudioSystem reports each sound the event starts
+    /// (<see cref="NoteLegacySound"/>), matched to a track by its authored <c>soundName</c>.
     /// </para>
     /// The ticks and shuffle are saved on this device (PlayerPrefs). Stop lasts for the session.
     /// </summary>
@@ -67,6 +68,10 @@ namespace CosmicShore.Core
         public bool CanPickTracks => _soundtrack && _soundtrack.AnyTrackPlayable;
         /// <summary>The playing track, or -1 when none is known (legacy mode, or stopped).</summary>
         public int Current { get; private set; } = -1;
+        /// <summary>The track the legacy random event is playing, as FMOD reported it, or -1.</summary>
+        public int Heard { get; private set; } = -1;
+        /// <summary>The track to name on screen: the picked one, else the one the random event is heard playing.</summary>
+        public int NowPlaying => Stopped ? -1 : Current >= 0 ? Current : CanPickTracks ? -1 : Heard;
         public bool Paused { get; private set; }
         public bool Stopped { get; private set; }
         public bool Shuffle { get; private set; }
@@ -148,6 +153,7 @@ namespace CosmicShore.Core
             if (!CanPickTracks)
             {
                 Stopped = Paused = false;
+                Heard = -1;
                 _legacy?.RestartLegacyMusic();
                 Changed?.Invoke();
                 return;
@@ -187,6 +193,7 @@ namespace CosmicShore.Core
             if (CanPickTracks) Release();
             else _legacy?.StopLegacyMusic();
             Current = -1;
+            Heard = -1;
             Changed?.Invoke();
         }
 
@@ -202,6 +209,29 @@ namespace CosmicShore.Core
             if (!_started || Stopped || Paused || !_instance.isValid()) return;
             if (_instance.getPlaybackState(out var state) == FMOD.RESULT.OK && state == PLAYBACK_STATE.STOPPED)
                 Next();
+        }
+
+        /// <summary>The legacy random event started <paramref name="soundName"/> (main thread). Names the track whose
+        /// authored soundName matches, ignoring case and extension; an unknown sound leaves the title generic.</summary>
+        public void NoteLegacySound(string soundName)
+        {
+            int heard = -1;
+            string key = SoundKey(soundName);
+            for (int i = 0; i < TrackCount && key.Length > 0; i++)
+                if (Valid(i) && SoundKey(_soundtrack.Tracks[i].soundName) == key) { heard = i; break; }
+            if (heard == Heard) return;
+            Heard = heard;
+            Changed?.Invoke();
+        }
+
+        /// <summary>"SPACE GLIDING.ogg" and "space gliding" are the same sound.</summary>
+        public static string SoundKey(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return string.Empty;
+            name = name.Trim();
+            int dot = name.LastIndexOf('.');
+            if (dot > 0 && name.Length - dot <= 5) name = name.Substring(0, dot);
+            return name.Trim().ToLowerInvariant();
         }
 
         public void ApplyVolume()

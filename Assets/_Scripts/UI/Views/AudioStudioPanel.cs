@@ -130,9 +130,9 @@ namespace CosmicShore.UI
         {
             var p = _player;
             if (p == null) return;
-            bool known = p.Current >= 0;
-            Set(titleText, p.Stopped ? stoppedTitle : known ? p.Title(p.Current) : unknownTrackTitle);
-            Set(artistText, known ? p.Artist(p.Current) : p.ArtistLine);
+            bool known = p.NowPlaying >= 0;
+            Set(titleText, p.Stopped ? stoppedTitle : known ? p.Title(p.NowPlaying) : unknownTrackTitle);
+            Set(artistText, known ? p.Artist(p.NowPlaying) : p.ArtistLine);
             Set(pauseLabel, p.Paused || p.Stopped ? resumeWord : pauseWord);
             Set(shuffleLabel, p.Shuffle ? shuffleOnWord : shuffleOffWord);
             Set(stopLabel, p.Stopped ? startWord : stopWord);
@@ -149,10 +149,10 @@ namespace CosmicShore.UI
                 bool on = p.IsOn(i);
                 Set(r.titleText, p.Title(i));
                 if (r.tickMark) r.tickMark.SetActive(on);
-                if (r.playingMark) r.playingMark.SetActive(i == p.Current && !p.Stopped);
+                if (r.playingMark) r.playingMark.SetActive(i == p.NowPlaying && !p.Stopped);
                 if (r.tile)
                 {
-                    r.tile.IsSelected = i == p.Current && !p.Stopped;
+                    r.tile.IsSelected = i == p.NowPlaying && !p.Stopped;
                     r.tile.IsLocked = !p.Playable(i);
                 }
             }

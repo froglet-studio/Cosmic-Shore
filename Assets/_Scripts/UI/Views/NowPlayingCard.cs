@@ -110,15 +110,15 @@ namespace CosmicShore.UI
         {
             var p = _player;
             if (p == null) return;
-            bool known = p.Current >= 0;
-            if (titleText) titleText.text = known ? p.Title(p.Current) : unknownTrackTitle;
-            if (artistText) artistText.text = known ? p.Artist(p.Current) : p.ArtistLine;
+            bool known = p.NowPlaying >= 0;
+            if (titleText) titleText.text = known ? p.Title(p.NowPlaying) : unknownTrackTitle;
+            if (artistText) artistText.text = known ? p.Artist(p.NowPlaying) : p.ArtistLine;
             if (pauseLabel) pauseLabel.text = p.Paused ? resumeWord : pauseWord;
-            if (p.Current != _lastTrack)
+            if (p.NowPlaying != _lastTrack)
             {
                 // A new track (or the random music restarting) announces itself.
                 if (_lastTrack != int.MinValue) _toastUntil = Time.unscaledTime + toastSeconds;
-                _lastTrack = p.Current;
+                _lastTrack = p.NowPlaying;
             }
         }
 

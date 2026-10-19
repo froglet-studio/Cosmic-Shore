@@ -24,6 +24,7 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: SPACE GLIDING
   - id: sky-fire
     title: Sky Fire
     artist: 
@@ -35,6 +36,7 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: SKY FIRE
   - id: cosmic-shore-2-tune
     title: Cosmic Shore 2 Tune
     artist: 
@@ -46,6 +48,7 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: COSMIC SHORE 2 TUNE
   - id: chill-time-3
     title: Chill Time 3
     artist: 
@@ -57,6 +60,7 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: cosmic shore chill time 3
   - id: ive-waited-so-long
     title: I've Waited So Long
     artist: 
@@ -68,6 +72,7 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: I've waited so long
   - id: cosmic-shore-3
     title: Cosmic Shore 3
     artist: 
@@ -79,6 +84,7 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: cosmic shore 3 looped 1
   - id: severity
     title: Severity
     artist: 
@@ -90,6 +96,7 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: SEVERITY
   - id: disoriented
     title: Disoriented
     artist: 
@@ -101,6 +108,7 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: DISORIENTED
   - id: secret-hide-away
     title: Secret Hide Away
     artist: 
@@ -112,4 +120,5 @@ MonoBehaviour:
         Data4: 0
       Path: 
     onByDefault: 1
+    soundName: SECRET HIDE AWAY
   artistLine: Cosmic Shore Original Soundtrack

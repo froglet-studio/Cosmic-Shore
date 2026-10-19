@@ -53,6 +53,8 @@ namespace CosmicShore.UI
         /// <summary>"2" when the bounds agree, "2 - 6" otherwise.</summary>
         public static string Range(int min, int max) => min == max ? min.ToString() : $"{min} - {max}";
 
+        const string IconChildName = "Icon";
+
         private void DrawHulls(SO_ArcadeGame game)
         {
             if (!hullRow || hullRow.childCount == 0) return;
@@ -69,8 +71,14 @@ namespace CosmicShore.UI
                     if (shown == _chips.Count)
                         _chips.Add(Instantiate(_chips[0], hullRow));
                     var chip = _chips[shown++];
-                    var icon = chip.transform.childCount > 0 ? chip.transform.GetChild(0).GetComponent<Image>() : null;
-                    if (icon) icon.sprite = sprite;
+                    // By name, not index: the chip's frame (Fill, Border) comes before its Icon, so child 0 put the
+                    // vessel art on the fill and left the sprite-less Icon drawing a white square on top (2026-10-19).
+                    var iconNode = chip.transform.Find(IconChildName);
+                    if (iconNode && iconNode.TryGetComponent(out Image icon))
+                    {
+                        icon.sprite = sprite;
+                        icon.enabled = true;
+                    }
                     ShowHull(chip, true);
                 }
             }
