@@ -110,8 +110,10 @@ namespace CosmicShore.Utility
                 s_logEnabledBeforeOff = CSDebug.LogEnabled;
                 CSDebug.LogEnabled = false;
             }
-#if !UNITY_EDITOR
-            // Unity's own on-screen console that a development player pops open on an error.
+#if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE || UNITY_WEBGL)
+            // Unity's own on-screen console that a development player pops open on an error. Behind the platform
+            // symbols because Amoebius compiles this file as a development build with none of them and its Debug
+            // has no developer console (vessel skill rule 51); every real player defines one.
             Debug.developerConsoleEnabled = on;
             if (!on) Debug.developerConsoleVisible = false;
 #endif
