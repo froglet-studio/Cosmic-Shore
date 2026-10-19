@@ -165,6 +165,13 @@ namespace CosmicShore.Engine.Audio.Fmod
             return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
         }
 
+        /// <summary>Original contract. The local model keeps no timeline, so the position reads 0.</summary>
+        public RESULT getTimelinePosition(out int position)
+        {
+            position = 0;
+            return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+
         public RESULT getDescription(out EventDescription description)
         {
             description = State == null ? default : new EventDescription { Path = State.Path };

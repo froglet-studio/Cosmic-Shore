@@ -19,6 +19,13 @@ namespace CosmicShore.UI
     /// and the vessel's own HUD icon art; the control name comes from the fleet's one glyph table
     /// (<see cref="ControlGlyphSetSO"/>) through <see cref="InputHintBindingMap"/>, the same path the
     /// in-match keycaps take, so the Hangar can never name a different button than the HUD does.</para>
+    ///
+    /// <para><b>The AI demo</b> (the owner, 2026-10-19: "the preview should only be played by AI and it should be low
+    /// cost, very low cost ... just light weight to show the controls"). While the tab is on screen the AI presses each
+    /// ability's control in turn: the keycap sinks, the row lights and the stage's display copy performs the move. It
+    /// costs what the stage already costs - no world, no hull swap, no camera loan. It replaced TRY and the flown
+    /// showcase, which stood a whole Barren cell, swapped the menu hull and borrowed the gameplay camera. A press of
+    /// the player's own pauses the demo for a moment and it carries on from the next ability.</para>
     /// </summary>
     public class HangarAbilitiesPage : MonoBehaviour, IHangarTabPage
     {
@@ -44,6 +51,7 @@ namespace CosmicShore.UI
             public KitElementHalo halo;
             [HideInInspector] public HintBinding pad, key;
             [HideInInspector] public float lit;
+            [HideInInspector] public float pressed;
             [HideInInspector] public HangarAbilityKind kind;
             [HideInInspector] public bool open;
         }
@@ -85,19 +93,24 @@ namespace CosmicShore.UI
                  "overrides that reading for one vessel's element.")]
         [SerializeField] private KindOverride[] kindOverrides = new KindOverride[0];
 
-        [Header("Try it")]
-        [Tooltip("TRY: the selected vessel flown for real in a bare arena (the stage's move is a stand-in).")]
-        [SerializeField] private HangarAbilityPreview tryPreview;
+        [Header("AI demo")]
+        [Tooltip("Seconds between the AI's presses: each ability's control in turn, and the vessel performs it.")]
+        [SerializeField, Min(0.5f)] private float demoStepSeconds = 2.4f;
+        [Tooltip("Seconds before the first press after the tab opens or the vessel changes.")]
+        [SerializeField, Min(0f)] private float demoLeadSeconds = 0.8f;
+        [Tooltip("Seconds the AI waits after the player presses a control before it carries on.")]
+        [SerializeField, Min(0f)] private float demoResumeSeconds = 4f;
+        [Tooltip("Seconds a pressed keycap stays sunk.")]
+        [SerializeField, Min(0.05f)] private float keyPressSeconds = 0.35f;
+        [Tooltip("Keycap scale at the bottom of a press.")]
+        [SerializeField, Range(0.5f, 1f)] private float keyPressScale = 0.84f;
 
         SO_Vessel _vessel;
         HangarVesselStage _stage;
         bool _active;
         bool _keyboard;
-
-        readonly System.Collections.Generic.List<HangarAbilityPreview.ShowcaseAbility> _showcase = new();
-
-        void OnEnable() { if (tryPreview) tryPreview.ShowcasePlayed += LightRow; }
-        void OnDisable() { if (tryPreview) tryPreview.ShowcasePlayed -= LightRow; }
+        float _demoClock;
+        int _demoNext;
 
         void Awake()
         {
@@ -107,7 +120,8 @@ namespace CosmicShore.UI
             {
                 if (row?.button == null) continue;
                 var r = row;
-                r.button.onClick.AddListener(() => Fire(r));
+                int index = System.Array.IndexOf(rows, r);
+                r.button.onClick.AddListener(() => PlayerFire(index));
             }
         }
 
@@ -115,7 +129,8 @@ namespace CosmicShore.UI
         {
             _vessel = vessel;
             _stage = stage;
-            if (tryPreview) tryPreview.SetVessel(vessel);
+            _demoNext = 0;
+            _demoClock = demoLeadSeconds;
             var map = vessel ? ElementalAbilityMapSO.LoadFor(vessel.Class) : null;
             VesselHUDView hud = null;
             if (vessel && prefabs && prefabs.TryGetShipPrefab(vessel.Class, out Transform prefab, reportMissing: false))
@@ -153,35 +168,45 @@ namespace CosmicShore.UI
                 row.pad = open ? HintBinding.None : InputHintBindingMap.BindingFor(entry.Input, keyboard: false);
                 row.key = open ? HintBinding.None : InputHintBindingMap.BindingFor(entry.Input, keyboard: true);
                 row.lit = 0f;
+                row.pressed = 0f;
+                if (row.keycapGroup) row.keycapGroup.transform.localScale = Vector3.one;
                 row.open = open;
                 if (row.glow) row.glow.color = new Color(c.r, c.g, c.b, 0f);
             }
-            _showcase.Clear();
-            foreach (var row in rows)
-            {
-                if (row == null || row.open || map == null) continue;
-                var entry = map.GetEntry(row.element);
-                bool presses = row.pad != HintBinding.None || row.key != HintBinding.None;
-                _showcase.Add(new HangarAbilityPreview.ShowcaseAbility(row.element, entry.Input, presses));
-            }
-            if (tryPreview) tryPreview.SetShowcaseAbilities(_showcase);
             RefreshKeycaps();
         }
 
         public void SetActivePage(bool active)
         {
+            if (active && !_active) _demoClock = demoLeadSeconds;
             _active = active;
-            if (!active && tryPreview) tryPreview.End();    // TRY never outlives its tab
         }
 
         void Update()
         {
             if (HangarControlInput.TrackDevice() || _keyboard != HangarControlInput.LastWasKeyboard) RefreshKeycaps();
             float dt = Time.unscaledDeltaTime;
-            foreach (var row in rows)
+            if (_active && _stage && _stage.Showing)
             {
+                _demoClock -= dt;
+                if (_demoClock <= 0f)
+                {
+                    _demoClock = demoStepSeconds;
+                    DemoStep();
+                }
+            }
+            for (int i = 0; i < rows.Length; i++)
+            {
+                var row = rows[i];
                 if (row == null) continue;
-                if (_active && (HangarControlInput.WasPressed(row.pad) || HangarControlInput.WasPressed(row.key))) Fire(row);
+                if (_active && (HangarControlInput.WasPressed(row.pad) || HangarControlInput.WasPressed(row.key)))
+                    PlayerFire(i);
+                if (row.pressed > 0f)
+                {
+                    row.pressed = Mathf.Max(0f, row.pressed - dt / keyPressSeconds);
+                    if (row.keycapGroup)
+                        row.keycapGroup.transform.localScale = Vector3.one * Mathf.Lerp(1f, keyPressScale, Mathf.Sin(row.pressed * Mathf.PI));
+                }
                 if (row.lit <= 0f) continue;
                 row.lit = Mathf.Max(0f, row.lit - dt / glowSeconds);
                 if (row.glow)
@@ -192,25 +217,36 @@ namespace CosmicShore.UI
             }
         }
 
-        void Fire(Row row)
+        /// <summary>A row tapped or its control pressed by the player: play it, then let the AI carry on after it.</summary>
+        void PlayerFire(int index)
         {
-            if (row.button && !row.button.interactable) return;
-            row.lit = 1f;
-            if (row.halo) row.halo.Flash();
-            // While TRY flies, the real ability is firing in the preview; the row only lights.
-            if (_stage && !(tryPreview && tryPreview.IsRunning)) _stage.Perform(Colour(row.element), row.kind);
-            // The real thing: the showcase stands the arena (or jumps to this ability) and the vessel performs it.
-            if (tryPreview && (!tryPreview.IsRunning || tryPreview.IsShowcase)) tryPreview.Showcase(row.element);
+            if (!Fire(rows[index], holdTurn: true)) return;
+            _demoNext = index + 1;
+            _demoClock = demoResumeSeconds;
         }
 
-        void LightRow(Element element)
+        /// <summary>The AI's press: the next ability this vessel has, round and round.</summary>
+        void DemoStep()
         {
-            foreach (var row in rows)
+            for (int n = 0; n < rows.Length; n++)
             {
-                if (row == null || row.element != element) continue;
-                row.lit = 1f;
-                if (row.halo) row.halo.Flash();
+                int i = (_demoNext + n) % rows.Length;
+                var row = rows[i];
+                if (row == null || row.open) continue;
+                _demoNext = i + 1;
+                Fire(row, holdTurn: false);
+                return;
             }
+        }
+
+        bool Fire(Row row, bool holdTurn)
+        {
+            if (row == null || row.open || (row.button && !row.button.interactable)) return false;
+            row.lit = 1f;
+            row.pressed = 1f;
+            if (row.halo) row.halo.Flash();
+            if (_stage) _stage.Perform(Colour(row.element), row.kind, holdTurn);
+            return true;
         }
 
         HangarAbilityKind KindOf(VesselClassType vessel, Element element, ElementalAbilityEntry entry)

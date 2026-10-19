@@ -313,6 +313,17 @@ namespace CosmicShore.Engine.UI
             catch (Exception) { r = null; }
             return r == null ? Vector2.zero : new Vector2(r.preferredWidth, r.preferredHeight);
         }
+        /// <summary>Original contract: <paramref name="text"/>'s preferred size in a width x height box.</summary>
+        public Vector2 GetPreferredValues(string text, float width, float height)
+        {
+            string saved = m_text;
+            m_text = text ?? string.Empty;
+            m_havePropertiesChanged = true;
+            var v = GetPreferredValues(width, height);
+            m_text = saved;
+            m_havePropertiesChanged = true;
+            return v;
+        }
         public Vector2 GetRenderedValues() => new(renderedWidth, renderedHeight);
         public Vector2 GetRenderedValues(bool onlyVisibleCharacters) => GetRenderedValues();
 

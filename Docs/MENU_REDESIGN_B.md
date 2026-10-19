@@ -2869,3 +2869,32 @@ ability lockup builds each card's flower socket at runtime, so building its peta
 warn for a lockup-built socket; a flower container AUTHORED without petals still warns. "No projectile factory found"
 is a shot outliving the hull it came from after a swap (Garrett's `Projectile.ReturnToFactory`); it destroys itself and
 is left as is.
+
+## 59. The Hangar preview is the AI's, on the stage, at almost no cost (2026-10-19, awaiting in-editor approval)
+
+The owner: "the preview of the vessel is still not working in hangar. The preview should only be played by AI and it
+should be low cost, very low cost. Should not provide a whole environment and everything, just light weight to show the
+controls."
+
+**What went.** TRY ("TRY IT FOR REAL") and the flown ability showcase (§35, §51). Both borrowed the menu's
+`ModePreviewSession`: they stood a Barren-cell satellite world, swapped the menu vessel's hull to the selected one,
+parked it 120,000 units away, lent it the gameplay camera and drew it in a window over the stage. That is a cell build,
+two hull swaps and a camera loan per press, and its teardown is where the play-test bugs came from (navigation left off,
+"Display 1 / No cameras rendering", runtime petal warnings per swap). Removed: `HangarAbilityPreview`, the TRY button and
+line, the preview window and STOP hint over the stage, `Assets/_SO_Assets/Hangar/HangarTryPreview.asset`, and the
+`DemoPilot` / `PressAbility` members this branch had added to `ModePreviewSession` (the session now carries only the
+navigation fix).
+
+**What replaced it.** `HangarAbilitiesPage` runs an AI demo on the Hangar's existing stage (the display copy of the
+hull, its own hand-stepped camera, `HangarStageFx`): every `demoStepSeconds` (2.4 s) the AI presses the next ability's
+control, so its keycap sinks (`keyPressSeconds`, `keyPressScale`), its row lights and the hull performs that ability's
+move (§46's kinds: a shot recoils and fires, a boost surges, a strike rolls through a slash). It runs only while the tab
+is open and the stage is actually drawn (`HangarVesselStage.Showing`), and the AI's presses do not stop the idle turn.
+A press of the player's own (the control, or tapping the row) plays that ability and the AI carries on from the next one
+after `demoResumeSeconds` (4 s). The cost is the stage's own: nothing is built, swapped, spawned or borrowed. Header
+words: "WATCH THE AI PLAY EACH CONTROL" / "Labels follow your device. Press one to see it again."
+
+`author_menu_hangar.py` authors it; its checks require the demo fields, refuse any TRY node or a forward to a preview,
+and fail if a retired TRY file comes back (planted defects: the step time dropped; TRY's window back over the stage).
+The camera guard and the petal-warning change from the follow-ups above stay: arcade card previews still borrow the
+gameplay camera.

@@ -535,12 +535,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 4 and follow-up F12
 
-### T-20261017-147f · open · test · Menu_Main / Hangar
+### T-20261017-147f · done · test · Menu_Main / Hangar
 - **Task:** Play-test the Hangar's TRY IT FOR REAL (Abilities tab): the selected vessel flown for real in open water, its abilities firing on the real controls, the drill coach; START / Esc / STOP back; no screen paging or tab switch while flying
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Hangar TRY' items 1-4 pass or are filed as bugs
 - **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
 - **Added:** 2026-10-17 by claude/new-session-76hnyc (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md section 35
+- **Done:** 2026-10-19, Superseded 2026-10-19: TRY was removed; the owner asked for an AI-only, very low-cost Hangar preview (MENU_REDESIGN_B §59).
 
 ### T-20261017-2c75 · open · test · Menu_Main / Hangar
 - **Task:** Playtest Hangar rev 4: lit bay, vessel fires, UPGRADE with its animation (look-only)
@@ -854,12 +855,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** .claude/skills/perf-hunt/SKILL.md section 1; Docs/DIAGNOSTICS.md (Bug Hunt & Performance badge)
 
-### T-20261017-13fb · open · test · Menu_Main / Hangar
+### T-20261017-13fb · done · test · Menu_Main / Hangar
 - **Task:** Play-test the Hangar ability showcase: press an ability and watch the vessel fire each of its real abilities in turn (autopilot), jump with another press, TRY to take the stick, START/Esc to end; list any ability that shows nothing
 - **Done when:** All six checklist steps pass, or each failure is reported back with the vessel and ability
 - **Who can take it:** Shombith (Menu_Main); Yash (offered)
 - **Added:** 2026-10-17 by Claude session (Shombith) (`claude/new-session-76hnyc`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (2026-10-18 Hangar ability showcase); Docs/MENU_REDESIGN_B.md section 51
+- **Done:** 2026-10-19, Superseded 2026-10-19: the flown showcase was removed; replaced by the AI demo on the stage (MENU_REDESIGN_B §59).
 
 ### T-20261018-5b28 · open · test · Sign-in / Settings
 - **Task:** Hand-test the Rev 9 sign-in UI on claude/new-session-76hnyc: the lattice drifting over the splash and sign-in art; Sign in to fly with Steam / Google / Apple / Play as guest (providers answer 'not ready in this build' until the login branch); the SignInChooser and AccountSettingsView context-menu previews; Settings > Account (fifth tab), locked in a match
@@ -1124,3 +1126,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (or whoever owns copy)
 - **Added:** 2026-10-18 by session triage 2026-10-18 (cece/friendly-goldberg-206rx0) (`cece/friendly-goldberg-206rx0`)
 - **See:** Docs/prompts/SESSION_TRIAGE_HANDOFFS_2026-10-18.md section 7
+
+### T-20261019-39a8 · open · test · Menu_Main / Hangar
+- **Task:** Play-test the Hangar AI demo (Abilities tab): the AI presses each ability's control in turn (keycap sinks, row lights, the 3D hull performs the move); a press of your own plays that one and the AI resumes after ~4 s; no hull swap, no world, no camera change; frame time on the tab stays at the plain stage's
+- **Done when:** Each vessel's four abilities play on the stage with their keycaps pressing, and the Profiler shows no extra cost over the stage
+- **Who can take it:** Shombith (Menu_Main); Yash has offered to take tasks
+- **Added:** 2026-10-19 by a Claude session (`claude/new-session-76hnyc`)
+- **See:** Docs/MENU_REDESIGN_B.md §59

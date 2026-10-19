@@ -178,15 +178,24 @@ namespace CosmicShore.UI
         /// over the render both follow the ability's <paramref name="kind"/> (section 46) - a shot recoils and fires,
         /// a boost surges with exhaust, a stance settles under a closing ring, a strike rolls through a slash.
         /// </summary>
-        public void Perform(Color colour, HangarAbilityKind kind)
+        public void Perform(Color colour, HangarAbilityKind kind) => Perform(colour, kind, holdTurn: true);
+
+        /// <summary>
+        /// <paramref name="holdTurn"/> false keeps the idle turn going: the Abilities tab's AI demo presses every couple
+        /// of seconds, and counting each press as the player's input would stop the turntable for good.
+        /// </summary>
+        public void Perform(Color colour, HangarAbilityKind kind, bool holdTurn)
         {
             _performColour = colour;
             _performKind = kind;
             _performT = 0f;
             if (fx && TryGetNoseViewport(out var from, out var dir)) fx.Play(kind, colour, from, dir);
             if (kind is HangarAbilityKind.Burst or HangarAbilityKind.Passive) Pulse(colour);
-            _lastInput = Time.unscaledTime;
+            if (holdTurn) _lastInput = Time.unscaledTime;
         }
+
+        /// <summary>True while the stage is actually drawn: not covered, not faded out and on screen.</summary>
+        public bool Showing => _model && !Covered && (_sight == null || _sight.Visible) && OnScreen();
 
         /// <summary>How each kind moves the hull: forward lunge and roll (as multiples of performLunge /
         /// performRollDegrees) and how small the hull blinks at the middle (1 = not at all).</summary>

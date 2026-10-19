@@ -131,6 +131,9 @@ namespace CosmicShore.Engine
         }
 
         /// <summary>Inverse bind matrices, one per bone of the skinned renderer (bone-from-mesh space).</summary>
+        /// <summary>Original contract: how many bind poses the mesh holds.</summary>
+        public int bindposeCount => _bindposes.Length;
+
         public CosmicShore.Engine.Matrix4x4[] bindposes
         {
             get => Copy(_bindposes);

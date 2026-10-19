@@ -12600,3 +12600,18 @@ Reference compile clean.
    the four flowers still sit in the ability cards and change colour with the element levels.
 7. Maelstrom hub: tap in still flies (if it shows "[CameraManager] A windowed camera was asked for while the player
    camera draws the screen", report it: the hub reached a state where the rig was left as the screen camera).
+
+## 🔴 2026-10-19 — Hangar AI demo replaces TRY (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §59. Changed `HangarAbilitiesPage`, `HangarVesselStage`, `HangarScreen`, `ModePreviewSession`
+(demo members removed), `HangarView.prefab` (regenerated); deleted `HangarAbilityPreview` and `HangarTryPreview.asset`.
+Reference compile clean (player; editor: the 3 known errors only); Amoebius builds.
+1. Hangar > Abilities on three vessels (Squirrel, Sparrow, Rhino): within a second the AI presses the first ability; every
+   ~2.4 s the next one. The keycap sinks, the row glows, the hull performs the move with its effect; the turntable keeps
+   turning.
+2. Press a control yourself (pad or keyboard) or tap a row: that ability plays; the AI waits ~4 s and resumes after it.
+3. No TRY button, no window over the stage, no STOP hint. The menu vessel never changes hull and the Console shows no
+   "[ModePreview]", "[ElementalBarsView]" or camera lines from the Hangar.
+4. Leave the Hangar or switch tab: the demo stops (no stage effects behind Home). Open Arcade / Toy Box from the Hangar:
+   they open at once.
+5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).

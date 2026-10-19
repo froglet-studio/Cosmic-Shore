@@ -295,14 +295,11 @@ PILOTS_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarPilotsPage
 HALO_SCRIPT = K.kit_script("KitElementHalo")
 FX_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarStageFx.cs")
 BLOOM = "006e134e05ff461bbd48ab3fd31629b4"            # AbilityLockupStyle.bloomSprite: the soft round glow
-TRY_SCRIPT = K.meta_guid("Assets/_Scripts/UI/Elements/Hangar/HangarAbilityPreview.cs")
-PREVIEW_WINDOW = K.meta_guid("Assets/_Scripts/UI/View/ModePreviewWindow.cs")
-PREVIEW_DEF_SCRIPT = K.meta_guid("Assets/_Scripts/ScriptableObjects/ModePreviewDefinitionSO.cs")
-BARREN_CELL = K.meta_guid("Assets/_SO_Assets/Cell Configs/Barren Cell/Barren Cell Config.asset")
-# TRY's bare arena (T-20261016-1ec1). Its own folder, NOT Mode Previews: generators and the card-art
-# renderer glob that folder for one definition per arcade card, and this one is no card.
-TRY_DIR = "Assets/_SO_Assets/Hangar"
-TRY_ASSET = f"{TRY_DIR}/HangarTryPreview.asset"
+# Retired with TRY (2026-10-19, the owner: the Hangar preview is played by the AI, on the stage, at very low cost).
+# The generator stands guard that they stay gone.
+RETIRED_FILES = ("Assets/_SO_Assets/Hangar/HangarTryPreview.asset", "Assets/_SO_Assets/Hangar/HangarTryPreview.asset.meta",
+                 "Assets/_SO_Assets/Hangar.meta", "Assets/_Scripts/UI/Elements/Hangar/HangarAbilityPreview.cs",
+                 "Assets/_Scripts/UI/Elements/Hangar/HangarAbilityPreview.cs.meta")
 KIT_TEXT_TAB = K.kit_script("KitTextTab")
 MENU_AUDIO = K.meta_guid("Assets/_Scripts/UI/MenuAudio.cs")
 VESSEL_PREFABS = K.meta_guid("Assets/_SO_Assets/Vessel Prefab Container.asset")
@@ -411,7 +408,7 @@ def page_header(page, key, title, line):
 
 def abilities_page(panel):
     page = page_node(panel, "Abilities", True, own_canvas=True)
-    page_header(page, "Tabs/Abilities", "PRESS A CONTROL TO TRY IT", "Labels follow your device. The vessel performs each one.")
+    page_header(page, "Tabs/Abilities", "WATCH THE AI PLAY EACH CONTROL", "Labels follow your device. Press one to see it again.")
     lst = list_node(page, "Tabs/Abilities/List", 54)
     for name, _ in ELEMENTS:
         k = f"Tabs/Abilities/{name}"
@@ -435,13 +432,6 @@ def abilities_page(panel):
         label(cap.child(N(f"{k}/Keycap/Label", "Label", STRETCH)), "RT", "Label", "TextLight", align="center")
     label(page.child(N("Tabs/Abilities/Core", "Core", R((0, 0), (1, 0), (0, 8), (0, 18), (0.5, 0)))),
           "Core: skim by flying close to a prism, drift with the left stick.", "BodySmall", "NeutralLightest")
-    # TRY (T-20261016-1ec1): the real thing - the selected vessel flown in open water, its abilities
-    # firing for real and the drill coaching them. The rows above still play the stage's stand-in.
-    try_w = 16 + K.label_width("TRY IT FOR REAL", "ButtonSmall") + 16
-    text_button(page, "Tabs/Abilities/Try", "TryButton", "TRY IT FOR REAL", R((0, 0), None, (0, 40), (try_w, 44), (0, 0)),
-                "Tabs/Abilities", "try", "CosmicShore.UI.HangarAbilityPreview", "Try", "Cta")
-    label(page.child(N("Tabs/Abilities/TryLine", "TryLine", R((0, 0), (1, 0), ((try_w + 16) / 2, 52), (-(try_w + 16), 20), (0.5, 0)))),
-          "Fly it in open water. START or Esc hands it back.", "BodySmall", "NeutralLightest")
 
     def body(ctx, go):
         rows = ""
@@ -459,15 +449,10 @@ def abilities_page(panel):
                       f"  lockupStyle: {K.ref(11400000, LOCKUP_STYLE, 2)}\n"
                       "  elementNames:\n  - Charge\n  - Mass\n  - Space\n  - Time\n"
                       "  openSlotName: Open slot\n  openSlotLine: Not designed yet.\n  passiveWord: Passive\n  glowSeconds: 0.9\n"
-                      f"  tryPreview: {ref(ctx.c('Tabs/Abilities', 'try'))}\n")
+                      "  kindOverrides: []\n"
+                      "  demoStepSeconds: 2.4\n  demoLeadSeconds: 0.8\n  demoResumeSeconds: 4\n"
+                      "  keyPressSeconds: 0.35\n  keyPressScale: 0.84\n")
     page.add("logic", 114, body)
-    page.add("try", 114, lambda ctx, go: K.mono(go, TRY_SCRIPT,
-             f"  window: {ref(ctx.c('Hero/Clip/Try', 'window'))}\n"
-             f"  windowGroup: {ref(ctx.c('Hero/Clip/Try', 'cg'))}\n"
-             f"  flyingHint: {ref(ctx.c('Hero/TryHint', 'cg'))}\n"
-             f"  definition: {K.ref(11400000, asset_guid('HangarTryPreview'), 2)}\n"
-             "  session: {fileID: 0}\n"
-             f"  stage: {ref(ctx.c('Hero/Clip/Stage', 'stage'))}\n  placeName: Hangar\n"))
     return page
 
 
@@ -879,35 +864,6 @@ def build_view(row_guid):
              f"  fx: {ref(ctx.c('Hero/Clip/Fx', 'fx'))}\n  pulseSeconds: 0.6\n  pulseScale: 0.12\n"
              "  renderRate: 30\n  resolution: 768\n"))
     stage_fx(clip)
-    # TRY's window over the stage (HangarAbilityPreview): hidden until TRY, then the live picture of the
-    # selected vessel flown in open water. The tap surface is navigation None - TRY already asked for
-    # the stick, and the pad must not land on an invisible control.
-    tw = clip.child(N("Hero/Clip/Try", "TryPreview", STRETCH))
-    tw.add("cg", 225, canvas_group(False))
-    tw.child(N("Hero/Clip/Try/Backing", "Backing", STRETCH)).add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceBlack"))).add("th", 114, themed("SurfaceBlack"))
-    tw.child(N("Hero/Clip/Try/Surface", "Surface", STRETCH)).add("cr", 222, K.canvas_renderer()) \
-        .add("raw", 114, lambda ctx, go: K.mono(go, RAW_IMAGE,
-             "  m_Material: {fileID: 0}\n  m_Color: {r: 1, g: 1, b: 1, a: 1}\n  m_RaycastTarget: 0\n"
-             "  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 1\n"
-             "  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"
-             "  m_Texture: {fileID: 0}\n  m_UVRect:\n    serializedVersion: 2\n    x: 0\n    y: 0\n    width: 1\n    height: 1\n",
-             enabled=False))
-    st = tw.child(N("Hero/Clip/Try/Status", "Status", R(size=(600, 60))))
-    st.add("cr", 222, K.canvas_renderer()) \
-        .add("tmp", 114, text("LOADING...", "Label", tok("NeutralLightest"), align="center", wrap=True)) \
-        .add("kt", 114, K.kit_text("Label", "NeutralLightest"))
-    fc = tw.child(N("Hero/Clip/Try/Focus", "Focus", STRETCH))
-    fc.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
-        .add("button", 114, lambda ctx, go: K.mono(go, A_BUTTON,
-             K.SELECTABLE_FIELDS.replace("    m_Mode: 3\n", "    m_Mode: 0\n").replace("  m_Transition: 1\n", "  m_Transition: 0\n")
-             + f"  m_TargetGraphic: {ref(ctx.c('Hero/Clip/Try/Focus', 'img'))}\n" + EMPTY_CALLS))
-    tw.add("window", 114, lambda ctx, go: K.mono(go, PREVIEW_WINDOW,
-           f"  surface: {ref(ctx.c('Hero/Clip/Try/Surface', 'raw'))}\n"
-           f"  statusLabel: {ref(ctx.c('Hero/Clip/Try/Status', 'tmp'))}\n"
-           f"  focusButton: {ref(ctx.c('Hero/Clip/Try/Focus', 'button'))}\n"
-           "  focusHint: {fileID: 0}\n  renderHeight: 360\n  maxRenderHeight: 720\n"
-           "  doubleTapToFocus: 0\n  doubleTapSeconds: 0.4\n  guideTarget: {fileID: 0}\n"))
     clip.child(N("Hero/Clip/Fallback", "FallbackIcon", R(size=(256, 256)))) \
         .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), preserve=True)) \
         .add("cg", 225, canvas_group(False))
@@ -926,18 +882,6 @@ def build_view(row_guid):
           "Owned", "Label", "TextLight")
     label(hero.child(N("Hero/Turn", "TurnHint", R((1, 1), None, (-24, -28), (360, 18), (1, 1)))),
           "Drag or right stick to turn", "Label", "NeutralLightest", align="right")
-    # While TRY runs: how to hand the vessel back, and STOP for touch (no START / Esc there) - which
-    # also cancels a slow build. Navigation None: the pad's way back is START.
-    th = hero.child(N("Hero/TryHint", "TryHint", R((0.5, 1), None, (0, -20), (560, 40), (0.5, 1))))
-    th.add("cg", 225, canvas_group(False))
-    th.add("hlg", 114, K.hv_layout(False, (0, 0, 0, 0), 16, 4, (0, 0), (0, 0)))
-    tt = th.child(N("Hero/TryHint/Text", "Text", R((0, 0.5), None, (0, 0), (300, 18), (0, 0.5))))
-    tt.add("le", 114, le(pw=300, ph=18))
-    label(tt, "START or Esc to stop flying", "Label", "TextLight", align="right")
-    stop_w = 16 + K.label_width("STOP", "ButtonSmall") + 16
-    text_button(th, "Hero/TryHint/Stop", "StopButton", "STOP", R((0, 0.5), None, (0, 0), (stop_w, 40), (0, 0.5)),
-                "Tabs/Abilities", "try", "CosmicShore.UI.HangarAbilityPreview", "End", nav=0) \
-        .add("le", 114, le(pw=stop_w, ph=40))
     label(hero.child(N("Hero/Name", "Name", R((0, 0), None, (28, 64), (820, 62), (0, 0)))),
           "SQUIRREL", "Display", "TextLight", valign="bottom")
     label(hero.child(N("Description", "Description", R((0, 0), None, (30, 14), (820, 48), (0, 0)))),
@@ -1069,32 +1013,7 @@ def outputs():
     for name in PREFABS:
         out[f"{OUT_DIR}/{name}.prefab.meta"] = PREFAB_META.format(g=asset_guid(name))
     out[OUT_DIR + ".meta"] = K.FOLDER_META.format(g=asset_guid("folder/Hangar"))
-    out[TRY_ASSET] = try_definition()
-    out[TRY_ASSET + ".meta"] = ("fileFormatVersion: 2\nguid: " + asset_guid("HangarTryPreview") +
-                                "\nNativeFormatImporter:\n  externalObjects: {}\n  mainObjectFileID: 11400000\n"
-                                "  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
-    out[TRY_DIR + ".meta"] = K.FOLDER_META.format(g=asset_guid("folder/SOHangar"))
     return out, tile_comp
-
-
-def try_definition():
-    """TRY's bare arena: the Barren cell, the vessel the Hangar hands in (Vessel -1 = Any), no
-    objective, no clock (DurationSeconds 0), spawned on the cell's ring. Mode 0 (Random) is the
-    session's idle mode: no card, no gate course, no first-login guide step points at it."""
-    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
-            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
-            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
-            f"  m_Script: {{fileID: 11500000, guid: {PREVIEW_DEF_SCRIPT}, type: 3}}\n"
-            "  m_Name: HangarTryPreview\n  m_EditorClassIdentifier: \n  Mode: 0\n"
-            "  Notes: 'The Hangar''s TRY (author_menu_hangar.py): the selected vessel in open water on the\n"
-            "    Barren cell, so its abilities can be fired for real and the drill can coach them. Not\n"
-            "    an arcade card.'\n"
-            f"  PreviewCell: {{fileID: 11400000, guid: {BARREN_CELL}, type: 2}}\n"
-            "  PreviewCellsByIntensity: []\n  StructurePrefab: {fileID: 0}\n  TrackSpawnablesByIntensity: []\n"
-            "  CourseStructurePrefab: {fileID: 0}\n  PreviewFauna: {fileID: 0}\n  PreviewFaunaCount: 4\n"
-            "  Vessel: -1\n  ObjectiveText: \n  ObjectiveMetric: 0\n  ObjectiveTarget: 0\n  DurationSeconds: 0\n"
-            "  SpawnFromCellRing: 1\n  SpawnDistanceOutsideNucleus: 70\n  SpawnRingRadiusFloor: 0\n"
-            "  SpawnRingRadiusFloorByIntensity: []\n  SpawnFormation: 0\n  SpawnPoints: []\n")
 
 
 # --------------------------------------------------------------------------------------------
@@ -1298,24 +1217,15 @@ def validate_prefabs(files, guids):
     _, abil = doc_of(view, hv("Tabs/Abilities#logic"))
     assert abil and [int(x) for x in re.findall(r"  - element: (\d+)", abil)] == [i for _, i in ELEMENTS], \
         "the Abilities rows must be Charge, Mass, Space, Time"
-    # TRY (T-20261016-1ec1): the page forwards to it, it reaches its window, group, hint and bare arena,
-    # TRY / STOP call it, and the hidden tap surface never takes the pad's focus.
-    assert f"  tryPreview: {{fileID: {hv('Tabs/Abilities#try')}}}" in abil, "the Abilities page does not forward to TRY"
-    _, trp = doc_of(view, hv("Tabs/Abilities#try"))
-    for field, want in (("window", hv("Hero/Clip/Try#window")), ("windowGroup", hv("Hero/Clip/Try#cg")),
-                        ("flyingHint", hv("Hero/TryHint#cg"))):
-        assert f"  {field}: {{fileID: {want}}}" in trp, f"HangarAbilityPreview.{field} is not wired"
-    assert f"definition: {{fileID: 11400000, guid: {asset_guid('HangarTryPreview')}" in trp, "TRY has no bare-arena definition"
-    for key, method in (("Tabs/Abilities/Try", "Try"), ("Hero/TryHint/Stop", "End")):
-        _, btn = doc_of(view, hv(f"{key}#button"))
-        assert f"m_Target: {{fileID: {hv('Tabs/Abilities#try')}}}" in btn and f"m_MethodName: {method}\n" in btn, \
-            f"{key.split('/')[-1]} must call HangarAbilityPreview.{method}"
-    _, focus = doc_of(view, hv("Hero/Clip/Try/Focus#button"))
-    assert "m_Navigation:\n    m_Mode: 0\n" in focus, "TRY's hidden tap surface must be navigation None"
-    tdef = files[TRY_ASSET]
-    assert f"PreviewCell: {{fileID: 11400000, guid: {BARREN_CELL}" in tdef and "\n  Mode: 0\n" in tdef \
-        and "\n  DurationSeconds: 0\n" in tdef and "\n  ObjectiveTarget: 0\n" in tdef, \
-        "TRY's definition must be the Barren cell, Mode 0, no clock and no objective"
+    # The AI demo (2026-10-19): the page plays the stage itself, so it carries the demo timings and nothing of TRY
+    # survives - no forward to a preview, no window over the stage, no hint, no bare-arena asset on disk.
+    for field in ("demoStepSeconds", "demoLeadSeconds", "demoResumeSeconds", "keyPressSeconds", "keyPressScale"):
+        assert f"\n  {field}: " in abil, f"the Abilities page has no AI demo field {field}"
+    assert "tryPreview" not in abil, "the Abilities page still forwards to TRY"
+    for gone in ("TryButton", "TryPreview", "TryHint", "TryLine"):
+        assert f"m_Name: {gone}\n" not in view, f"retired TRY node {gone} is back in HangarView"
+    for path in RETIRED_FILES:
+        assert path not in files and not os.path.exists(os.path.join(REPO, path)), f"retired TRY file is back: {path}"
     # A label stretched across its row with a LEFT pivot starts at its anchoredPosition.x: a negative
     # one starts outside the row (2026-10-17: every ability name and line sat under the icon, x -38).
     for m in re.finditer(r"^--- !u!224 &(-?\d+)\n((?:(?!--- ).*\n)*)", view, re.M):
@@ -1437,9 +1347,8 @@ def self_test(current, files, guids):
             f"page: {{fileID: {K.FileIds('HangarView')('Tabs/Games#cg')}}}", "page: {fileID: 0}", 1)),
         "an ability name starting left of its row": view_plant(lambda t: re.sub(
             r"(m_AnchorMin: \{x: 0, y: 1\}\n  m_AnchorMax: \{x: 1, y: 1\}\n  m_AnchoredPosition: \{x: )86(, y: -14\})", r"\g<1>-38\2", t, count=1)),
-        "TRY calling nothing": view_plant(lambda t: t.replace("m_MethodName: Try\n", "m_MethodName: Hide\n", 1)),
-        "the Abilities page not forwarding to TRY": view_plant(lambda t: re.sub(
-            r"(  tryPreview: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
+        "the AI demo losing its step time": view_plant(lambda t: t.replace("\n  demoStepSeconds: 2.4\n", "\n", 1)),
+        "TRY's window back over the stage": view_plant(lambda t: t.replace("m_Name: FallbackIcon\n", "m_Name: TryPreview\n", 1)),
         "the stage not reaching its effects": view_plant(lambda t: re.sub(
             r"(\n  fx: )\{fileID: -?\d+\}", r"\1{fileID: 0}", t, count=1)),
         "the bay batching on the screen's canvas": view_plant(lambda t: t.replace(

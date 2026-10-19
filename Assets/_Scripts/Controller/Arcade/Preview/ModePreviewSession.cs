@@ -507,12 +507,9 @@ namespace CosmicShore.Gameplay
                 // The objective counts from the take-over, which is now also the arrival.
                 if (!_runnerStarted) StartRunner(definition);
 
-                // A demo (the Hangar's ability showcase): the autopilot keeps the stick and the caller presses the
-                // abilities, so there is no lesson to coach.
-                if (_demoPilot) ApplyDemoPilot();
                 // The coach: the Lesson, then the Mentor (TRAINING_PLAN §4). After the stick is
                 // granted, so the first step's condition reads a vessel the player is flying.
-                else StartDrill(definition);
+                StartDrill(definition);
 
                 // A duel needs somebody to duel: modes that seat two or more get a sparring
                 // partner - a dummy in the mode's own hull, nothing clever.
@@ -751,7 +748,6 @@ namespace CosmicShore.Gameplay
 
             StopRunner();
             StopDrill();
-            _demoPilot = false;
             StrikeGateCourse();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
@@ -1234,46 +1230,6 @@ namespace CosmicShore.Gameplay
         }
 
         bool _drillHoldApplied;
-
-        // ── Demo pilot (the Hangar's ability showcase, Docs/MENU_REDESIGN_B.md section 51) ──────────
-
-        bool _demoPilot;
-
-        /// <summary>
-        /// The autopilot flies and the caller presses the abilities (<see cref="PressAbility"/>); the player watches.
-        /// Set before <see cref="SetDefinition"/> for a run that arrives as a demo; set false mid-run to hand the
-        /// player the stick (the Hangar's TRY). Cleared by every <see cref="Stop"/>.
-        /// </summary>
-        public bool DemoPilot
-        {
-            get => _demoPilot;
-            set
-            {
-                if (_demoPilot == value) return;
-                _demoPilot = value;
-                if (_state == State.Live) ApplyDemoPilot();
-            }
-        }
-
-        void ApplyDemoPilot()
-        {
-            var player = gameData?.LocalPlayer;
-            if (player == null || !Alive(player.Vessel)) return;
-            player.InputController?.SetPause(_demoPilot);
-            player.Vessel.ToggleAIPilot(_demoPilot);
-        }
-
-        /// <summary>Press or release one of the flying vessel's controls through its own action handler - the path an
-        /// AI pilot's press takes. False when nothing is flying yet.</summary>
-        public bool PressAbility(InputEvents input, bool pressed)
-        {
-            if (_state != State.Live) return false;
-            var handler = gameData?.LocalPlayer?.Vessel?.VesselStatus?.ActionHandler;
-            if (!handler) return false;
-            if (pressed) handler.PerformShipControllerActionsReplicated(input);
-            else handler.StopShipControllerActionsReplicated(input);
-            return true;
-        }
 
         void HandleDrillChanged() => ApplyDrillHold(DrillHoldsPlay);
 
