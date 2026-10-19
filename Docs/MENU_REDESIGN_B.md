@@ -2842,3 +2842,14 @@ current status line. It reads the boot status channel the splash already listens
 Every word is an authored field. The splash now carries two entrances (retry and welcome). Gates: the generator checks
 the card's wiring and that it ships hidden (planted defect: "the welcome card ships shown"); the old "retry panel ships
 shown" defect now targets the retry panel by field (it had started flipping the welcome card instead).
+
+**Play-test fix, 2026-10-19 ("everything breaking, cannot play vessel"):** after a preview (the Hangar's TRY / ability
+showcase, "Planting model for 'Barren'"), the Toy Box and Arcade windows refused to open
+("ModalWindowManager ... declined to open because EventSystem navigation is off ... sendNavigationEvents has been
+leaked"), so no vessel could be launched. Cause: `ModePreviewSession` (and `MaelstromPreviewHost`, same pattern)
+re-read `sendNavigationEvents` on every stick hand-over and gave it back only on a focus release, so a second
+hand-over saved "off" and the release locked it off, and a preview ended by Stop / launch / teardown without a release
+never gave it back. Fixed at the source (taken once, given back exactly once, on every exit) and with a menu-side
+net: `ScreenSwitcher` restores navigation whenever it is off outside freestyle while no preview window holds the stick,
+with one warning per leak. The other lines in that log (camera lost its target, no projectile factory) follow the
+preview vessel being swapped back and are not the blocker.

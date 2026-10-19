@@ -12570,3 +12570,15 @@ New `BootWelcomeCard.cs`; regenerated `Bootstrap.unity`. Reference compiles clea
 2. Before sign-in ("Connecting...", "Signing in...") no card; on a fresh account with no name it reads "Welcome, pilot".
 3. Menu_Main appears: the card is gone. Pull the network mid-boot: the Connection lost window replaces it.
 4. Launch a game from the menu: the loading splash shows no welcome card.
+
+## 🔴 2026-10-19 — Preview navigation leak (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md (play-test fix, 2026-10-19). Changed `ModePreviewSession`, `MaelstromPreviewHost`,
+`ScreenSwitcher`; reference compiles clean (editor: the 3 known errors only).
+1. Hangar: press an ability (showcase) and TRY, take the stick, then leave the Hangar without pressing START. Open
+   Arcade and Toy Box: both open, and the pad navigates them. Launch a vessel from either.
+2. Arcade card preview: take the stick, release with START, take it again, release again, close the card: other
+   windows still open with the pad.
+3. If navigation ever leaks again, the Console shows one "[ScreenSwitcher] EventSystem navigation was left off..."
+   warning and the windows open anyway (no "declined to open" lines).
+4. Freestyle (lava lamp) still hands the pad to the vessel: the menu does not navigate while flying.

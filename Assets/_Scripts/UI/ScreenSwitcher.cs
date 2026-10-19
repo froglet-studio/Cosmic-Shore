@@ -757,6 +757,18 @@ namespace CosmicShore.UI
                 && EventSystem.current && EventSystem.current.sendNavigationEvents)
                 ApplyFreestyleInputGate(true);
 
+            // The mirror heal (2026-10-19 play test: "everything breaking, cannot play vessel"). Outside freestyle
+            // the pad belongs to the UI unless a preview window holds the stick; navigation left OFF there is a
+            // leak from a preview that ended without giving it back, and every modal (Arcade, Toy Box) refuses to
+            // open until it is restored - so nothing can be launched. Give it back and say so once per leak.
+            if (!inFreestyle && !_appliedFreestyleGate && !ModePreviewWindow.AnyHasFocus
+                && EventSystem.current && !EventSystem.current.sendNavigationEvents)
+            {
+                CSDebug.LogWarning("[ScreenSwitcher] EventSystem navigation was left off outside freestyle and preview " +
+                                   "flight (a preview ended without giving the pad back); restored so menus can open.", this);
+                ApplyFreestyleInputGate(false);
+            }
+
             if (inFreestyle != _appliedFreestyleGate)
             {
                 ApplyFreestyleInputGate(inFreestyle);
