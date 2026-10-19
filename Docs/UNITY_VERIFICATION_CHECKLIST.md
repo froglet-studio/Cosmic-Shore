@@ -1204,6 +1204,28 @@ Rhino C 8 / M 4 / S 8 / T 7. Pose amplitudes: 26-30 degrees on the Squirrel (its
 elsewhere. All of it is a spec number (`Tools/Build/vessel_model/specs/<vessel>.py`); change the number, rebuild,
 `--check`.
 
+### 🔴 Phone round: ability cards are buttons, the Wrasse draws in a build, double-tap the small view to swap (`cece/charming-wright-4ayoce`, 2026-10-19) — NOT EDITOR-VERIFIED
+
+**What landed:** `AbilityCardPress` + `FlightTouchClaims` (every vessel: a finger on an ability card presses its
+input; a touch that starts on a card is not a flight thumb), `Resources/KiteNavigatorUnlit.mat` (the Wrasse's kite,
+tail and motes had no shader in a player build), and a double-tap swap on the Wrasse's small view
+(`KiteNavigator.PipDoubleTapped`). Docs: `Docs/ABILITY_LOCKUP.md` "Tap a card", `KITE_NAVIGATOR.md` "Round 5".
+
+**Proven offline:** `unity_refcompile` player-dev shows no errors; `peer_press_harness` passes (0 stranded, 0 wrong stops);
+Amoebius `CosmicShore.Live` builds; `author_wrasse_assets.py --check` ok.
+
+**Verify on a phone (Android development build):**
+1. Squirrel in Toybox freestyle: tap each pressable card; each fires what its button fires, and the card lights.
+   Hold the drift card: the drift holds until you lift. Locked and passive cards do nothing.
+2. Fly with two thumbs and tap a card with a third finger: no steering jump, no drift, no three-finger stall.
+3. Repeat step 1 on the Sparrow and the Dolphin. On the Rhino, the sticks-apart card does nothing.
+4. Wrasse in the Vessel Changer: the small lower-left view shows the kite, its lime tail and the motes.
+5. Double-tap the small view: the seats swap (kite full screen, pilot in the small view). Double-tap again to swap back.
+   Fly with the left thumb in that corner and drift a few times: no swap.
+6. Two-device match on any vessel: a card tap on one phone runs the ability on the other phone too.
+
+---
+
 ### 🔴 Development build plays like release: the `DevDiagnostics` switch (`cece/charming-wright-4ayoce`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 **What landed:** `Assets/_Scripts/Utility/DevDiagnostics.cs` + `DevDiagnosticsToggle.cs`. One switch

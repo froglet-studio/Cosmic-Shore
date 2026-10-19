@@ -1077,6 +1077,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (asked for it); Yash can take it
 - **Added:** 2026-10-18 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** Docs/ANDROID_BUILD.md §8, Assets/_Scripts/Utility/DevDiagnostics.cs
+
 ### T-20261018-2c7e · open · dev · Vessel models
 - **Task:** Work the nine follow-ups the ship review of the vessel-model branch left (Docs/VesselModels/README.md 'Follow-ups from the ship review'): one Editor check (BakeMesh scale), the Shrike beam origin under the Space morph, a Thresher pectoral sign question, two latent Rhino/VesselCustomization nits, two deletion proposals (GhostAction, the six procedural hull builders: check Amoebius first) and two per-spawn/per-frame perf trims.
 - **Done when:** each row is fixed, filed or answered in the README's table
@@ -1146,3 +1147,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (drives the Vessel Studio and the launcher)
 - **Added:** 2026-10-19 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/TOOLING_DECISIONS.md section 6
+
+### T-20261019-382a · open · test · Crew vessels
+- **Task:** On an Android development build of cece/charming-wright-4ayoce, run the 'Phone round' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md: tap-to-press ability cards on Squirrel, Sparrow, Dolphin, Rhino; the Wrasse's kite, tail and motes drawing; double-tap the small view to swap seats; a card tap replicating to a second phone
+- **Done when:** All six steps pass on a phone, or each failure is filed as a dev task
+- **Who can take it:** Garrett (asked for it); Yash can take it (two phones for step 6)
+- **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Phone round; Docs/ABILITY_LOCKUP.md Tap a card
+
+### T-20261019-41bb · open · dev · Vessel HUD
+- **Task:** Give the remaining runtime Shader.Find("Universal Render Pipeline/Unlit") callers a Resources material for the variant each uses (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, GrizzlyClawConeVisual, SegmentSpawnerPreview); a player build strips the shader, which is why the Wrasse's kite drew nothing on Android
+- **Done when:** Each caller loads its shader through a referenced material and draws in an Android development build
+- **Who can take it:** any session; Yash (offered) to check on a phone
+- **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
+- **See:** KITE_NAVIGATOR.md Round 5; Assets/Resources/KiteNavigatorUnlit.mat
