@@ -19,8 +19,6 @@ namespace CosmicShore.Gameplay
 
         public override GameModes Mode => GameModes.ThresherTime;
 
-        public override string ModeName => "Thresher Time";
-
         public override int LapsPerRace(int intensity) => Mathf.Max(1, Laps);
 
         public override int AuthoredGateTarget(int intensity)
@@ -31,16 +29,11 @@ namespace CosmicShore.Gameplay
                 : EndConditionOverridesSO.DefaultThresherTimeGateTarget;
         }
 
-        /// <summary>
-        /// The authored target is the RACE length; the circuit only needs one lap of rings
-        /// (<see cref="HeadlongCourseSource.BuildCircuit"/> rounds up).
-        /// the equatorial spawn ring's pole.
-        /// </summary>
         public override List<RaceGate> Build(in RaceCourseRequest request, out string failure)
         {
             failure = null;
-            var settings = ThresherTimeCourse.ForIntensity(request.Intensity);
-            return HeadlongCourseSource.BuildCircuit(settings, request, LapsPerRace(request.Intensity));
+            return HeadlongCourseSource.BuildCircuit(ThresherTimeCourse.ForIntensity(request.Intensity),
+                                                     request, LapsPerRace(request.Intensity));
         }
     }
 }
