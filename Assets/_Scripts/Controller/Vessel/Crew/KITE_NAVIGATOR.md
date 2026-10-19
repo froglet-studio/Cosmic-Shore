@@ -202,8 +202,11 @@ the other vessel it should switch."
   references that shader, so the build stripped it, the fallback (Sprites/Default, no instancing) made
   `RenderMeshInstanced` throw every frame, and the small view showed the world with no kite, tail or motes. The shader
   now ships through `Assets/Resources/KiteNavigatorUnlit.mat` (transparent, instancing on) and the view tints copies of
-  it. The same `Shader.Find("Universal Render Pipeline/Unlit")` shape is in about ten other runtime files (see
-  Follow-ups); the material now puts URP/Unlit in the build, but only its transparent, instanced variant.
+  it. The same `Shader.Find("Universal Render Pipeline/Unlit")` shape is in 12 other runtime files (counted
+  2026-10-19 with `grep -rln 'Shader.Find("Universal Render Pipeline/Unlit")' Assets/_Scripts`, Editor folders
+  excluded; see Follow-ups). The material now puts URP/Unlit in the build, but only its transparent, instanced
+  variants: those files now FIND the shader in a player, where they used to get null, and run on the nearest kept
+  variant until each ships its own material.
 - **Double-tap the small view to swap seats.** Two short taps (each under 0.3 s, within 0.45 s and 120 px of each
   other) inside the lower-left view call the same `PollSwap` the 1 / 2 keys and the D-pad do. Short is what keeps the
   flying left thumb, which lands in that corner, from counting. While navigating, a touch that starts on the small view
@@ -336,9 +339,8 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
 
 ## Follow-ups
 
-- **Other runtime `Shader.Find("…/Unlit")` calls** (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall,
-  BlackHole, ThresherExecutor, SniperBeam, GrizzlyClawConeVisual, SegmentSpawnerPreview) carry the same build-stripping
-  risk; each should get a Resources material for the variant it uses (2026-10-19).
+- **Other runtime `Shader.Find("Universal Render Pipeline/Unlit")` calls** (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, BrittleStarExecutor, ShrikeExecutor, GrizzlyClawConeVisual, ArcLightningFallback, SegmentSpawnerPreview: 12, counted 2026-10-19) carry
+  the same build-stripping risk; each should get a Resources material for the variant it uses (T-20261019-41bb).
 - **`cece/sharp-tesla-j0kd7z`** moves the swap into `CrewSeat.PollSwap` and the small view into `CrewPictureInPicture`:
   carry the double-tap and the Resources material there when it merges.
 

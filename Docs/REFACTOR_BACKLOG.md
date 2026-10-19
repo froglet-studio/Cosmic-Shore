@@ -98,6 +98,9 @@ which is `#if false`).
 | S26 | `AIPilot.cs` `#region Unused Methods` | Vestige | `AIPilot.cs:1381` | |
 | S27 | `CoOpScoreBoard.OppponentScoreTextField` typo | Honesty | `CoOpScoreBoard.cs:9` | `[FormerlySerializedAs]` |
 | S28 | Docs honesty pass: close/re-measure the stale rows above (H1–H8) | Honesty | see "What the docs were wrong about" | Docs-only |
+| S29 | Delete the dead `EventTrigger` on `Boost Button/display` (VesselHUDPrefab, Sparrow, Scarab, Serpent HUD variants) | Vestige | `grep -rln PerformButtonActions Assets --include=*.prefab` = 4; the target method is commented out (`IVessel.cs:52`); the image raycasts (`m_RaycastTarget: 1`, Sparrow) | Added 2026-10-19 (`cece/charming-wright-4ayoce`). Now that cards are tap-pressable, a live raycast image at the HUD root may sit over the row: if a Sparrow/Scarab card ignores taps on a phone, this is the first suspect |
+| S30 | Two doc comments adopted by the wrong member (a `</summary>` followed by `/// <summary>`) | Honesty | `AbilityLockupView.cs` (the press-flash doc above the cooldown doc, ~:1067), `VesselHUDView.cs` (`TryGetAbilityIcon`'s doc above `TryGetAbilityGauge`, ~:167); both present at merge base `fcd2a2d45` | Found by the ship scan 2026-10-19; re-grep, the numbers drift |
+| S31 | Runtime `Shader.Find("Universal Render Pipeline/Unlit")` → a referenced Resources material per variant | Consistency | 12 runtime files besides `KiteNavigatorView` (grep, Editor folders excluded, 2026-10-19) | Team task T-20261019-41bb. Since `KiteNavigatorUnlit.mat` ships URP/Unlit, these find the shader in a player with only the transparent + instanced variants kept |
 
 ## 2. Bounded — M (20)
 

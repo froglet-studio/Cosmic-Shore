@@ -1218,7 +1218,9 @@ Amoebius `CosmicShore.Live` builds; `author_wrasse_assets.py --check` ok.
 1. Squirrel in Toybox freestyle: tap each pressable card; each fires what its button fires, and the card lights.
    Hold the drift card: the drift holds until you lift. Locked and passive cards do nothing.
 2. Fly with two thumbs and tap a card with a third finger: no steering jump, no drift, no three-finger stall.
-3. Repeat step 1 on the Sparrow and the Dolphin. On the Rhino, the sticks-apart card does nothing.
+3. Repeat step 1 on the Sparrow and the Dolphin. On the Rhino, the sticks-apart card does nothing. If a Sparrow (or
+   Scarab) card ignores taps, suspect the dead raycasting `Boost Button/display` image at the HUD root
+   (`Docs/REFACTOR_BACKLOG.md` S29).
 4. Wrasse in the Vessel Changer: the small lower-left view shows the kite, its lime tail and the motes.
 5. Double-tap the small view: the seats swap (kite full screen, pilot in the small view). Double-tap again to swap back.
    Fly with the left thumb in that corner and drift a few times: no swap.

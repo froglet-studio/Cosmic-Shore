@@ -1156,7 +1156,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Phone round; Docs/ABILITY_LOCKUP.md Tap a card
 
 ### T-20261019-41bb · open · dev · Vessel HUD
-- **Task:** Give the remaining runtime Shader.Find("Universal Render Pipeline/Unlit") callers a Resources material for the variant each uses (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, GrizzlyClawConeVisual, SegmentSpawnerPreview); a player build strips the shader, which is why the Wrasse's kite drew nothing on Android
+- **Task:** Give the remaining runtime Shader.Find("Universal Render Pipeline/Unlit") callers a Resources material for the variant each uses (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, BrittleStarExecutor, ShrikeExecutor, GrizzlyClawConeVisual, ArcLightningFallback, SegmentSpawnerPreview); a player build strips the shader, which is why the Wrasse's kite drew nothing on Android
 - **Done when:** Each caller loads its shader through a referenced material and draws in an Android development build
 - **Who can take it:** any session; Yash (offered) to check on a phone
 - **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
