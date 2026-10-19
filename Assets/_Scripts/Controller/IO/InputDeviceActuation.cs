@@ -103,6 +103,13 @@ namespace CosmicShore.Gameplay
             if (pad != null && IsGamepadButtonActuated(pad))
                 return InputDeviceFamily.Gamepad;
 
+            // A finger before the mouse: on a phone (and a phone's browser) every tap and drag also
+            // SYNTHESIZES mouse presses and motion, so asking the mouse first named a touch player
+            // a keyboard player - and every control hint then read "RShift" on a phone.
+            var finger = Touchscreen.current;
+            if (finger != null && (finger.primaryTouch.press.wasPressedThisFrame || finger.primaryTouch.press.isPressed))
+                return InputDeviceFamily.Touch;
+
             var mouseDevice = Mouse.current;
             bool moving = mouseDevice != null
                        && mouseMotion.Tick(mouseDevice.delta.ReadValue(), deltaTime);
@@ -138,7 +145,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static InputDeviceFamily DetectInitial()
         {
-            if (SystemInfo.deviceType == DeviceType.Handheld && Gamepad.current == null)
+            // Application.isMobilePlatform also covers a phone's BROWSER (WebGL reports a desktop
+            // device type there).
+            if ((SystemInfo.deviceType == DeviceType.Handheld || Application.isMobilePlatform) && Gamepad.current == null)
                 return InputDeviceFamily.Touch;
             if (Gamepad.current != null)
                 return InputDeviceFamily.Gamepad;

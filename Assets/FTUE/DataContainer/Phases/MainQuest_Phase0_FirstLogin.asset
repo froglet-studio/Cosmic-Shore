@@ -25,6 +25,8 @@ MonoBehaviour:
   arcadeCaption: Your first race is waiting. Open the Arcade.
   cardCaption: This week's game. Open it.
   previewCaption: Tap the window to fly.
+  skipLabel: Skip tutorial
+  skipKeycap: Y
   dimAlpha: 0.7
   lostStepGraceSeconds: 1.5
 --- !u!114 &520233618915992469

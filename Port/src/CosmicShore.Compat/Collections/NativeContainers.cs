@@ -229,6 +229,7 @@ namespace CosmicShore.Engine.Collections
         public NativeParallelHashMap(int capacity, Allocator allocator) { _m = new NativeHashMap<TKey, TValue>(capacity, allocator); }
         public bool IsCreated => _m.IsCreated;
         public int Count() => _m.Count;
+        public int Capacity { get => _m.Capacity; set => _m.Capacity = value; }
         public TValue this[TKey key] { get => _m[key]; set => _m[key] = value; }
         public bool TryAdd(TKey key, TValue value) => _m.TryAdd(key, value);
         public bool Remove(TKey key) => _m.Remove(key);

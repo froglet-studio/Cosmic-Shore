@@ -82,6 +82,14 @@ namespace CosmicShore.UI
 
         [SerializeField, Min(16f)] float builtEntrySize = 64f;
 
+        [Header("Count line (Rev 8 scoreboard, Docs/MENU_REDESIGN_B.md section 49) - optional")]
+        [Tooltip("Beside the faces: how many want a rematch. Shown and hidden with the faces.")]
+        [SerializeField] TMPro.TMP_Text countText;
+        [Tooltip("One vote. {count} is the number. Empty: no line.")]
+        [SerializeField] string oneVoteLine = "{count} wants a rematch";
+        [Tooltip("Two or more votes. {count} is the number. Empty: no line.")]
+        [SerializeField] string manyVotesLine = "{count} want a rematch";
+
         class Chip
         {
             public IPlayer Player;
@@ -243,6 +251,17 @@ namespace CosmicShore.UI
             }
 
             ShowContainer(_chips.Count > 0);
+            RefreshCount();
+        }
+
+        void RefreshCount()
+        {
+            if (!countText) return;
+            int n = _chips.Count;
+            string line = n == 1 ? oneVoteLine : manyVotesLine;
+            countText.text = n == 0 || string.IsNullOrEmpty(line) ? string.Empty : line.Replace("{count}", n.ToString());
+            // Last in the strip, so it sits after the faces however many arrive.
+            if (countText.transform.parent == _container) countText.transform.SetAsLastSibling();
         }
 
         /// <summary>

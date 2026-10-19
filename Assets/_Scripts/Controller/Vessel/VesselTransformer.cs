@@ -1468,9 +1468,10 @@ public class VesselTransformer : MonoBehaviour
 
             throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0f);
 
-            // Edge-triggered, like the body flare: FlareEngine/StopFlareEngine write through
-            // SkinnedMeshRenderer.materials[3], which allocates the array (and instances the
-            // materials) on every call - and this ran every frame for every flying hull.
+            // Edge-triggered, like the body flare: FlareEngine/StopFlareEngine used to write through
+            // SkinnedMeshRenderer.materials[3], which allocated the array (and instanced the
+            // materials) on every call - and this ran every frame for every flying hull. They now
+            // write a per-slot property block, and only on a change (VesselAnimation.ApplyFlare).
             bool engineFlaring = throttleMultiplier > 1f;
             if (engineFlaring != _engineFlaring)
             {

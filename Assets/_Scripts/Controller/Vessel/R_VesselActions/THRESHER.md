@@ -430,11 +430,76 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
 
 ## 5b. Its own vessel — the shark hull, the swim, the ball, the icons (2026-10-13)
 
+### The hull model (2026-10-18)
+
+**A real FBX since 2026-10-18** (`Assets/_Models/Vessel Models/Thresher.fbx`, new guid
+`7afd7f83…`, built by `/vessel-model` from `Tools/Build/vessel_model/specs/thresher.py`;
+`build.py thresher --check` is its drift gate; sheet `Docs/VesselModels/sheets/thresher_after.jpg`).
+It replaced the procedural placeholder described below, which the owner judged "terrible even as
+placeholders" (2026-10-17) along with every other C# runtime hull. Like the Butterfly it has NO
+artist file behind it, so it is built to the fleet convention for a new vessel and to the fleet's
+look: a SPACESHIP inspired by the thresher shark, not a shark costume.
+
+| | |
+|---|---|
+| Nodes | mesh `mesh`, armature `rig` (preset `zup`: Blender nose -Y, up +Z, pilot's left +X) |
+| Bones (heads at the placeholder's hinges) | `hull` (root); `wing.L` / `wing.R` at the pectoral roots, Unity (∓0.475, -0.220, 0.748); `tail` at the peduncle hinge (0, 0, -2.2); `tail.2` → `tail.3` → `tail.4`, the whip's three segment hinges on the placeholder's lobe curve (`LobePoint(k/3)`: the fork (0, 0.02, -2.7), then (0, 0.524, -3.789), (0, 1.118, -4.831)); `hitch` (child of `tail.4`): the tow shackle just past the whip's tip, hung back and 30° down like a towing eye (moved from the placeholder's `HitchCenter` under the fork on 2026-10-18, Garrett: "the thresher cord should begin at the tip of the tail") |
+| Size | snout to whip tip 8.14 (placeholder 8.06), 3.62 across the wing tips (3.52), 2.63 tall (2.54): within 4%, so the 1.6 × 1.4 × 5.2 body box, the 2.2 × 1.9 × 5.8 hitbox, the jets and the 55-unit camera keep what they were tuned to |
+| Slots | Domain (the dorsal blade, the whip's trailing blade, two sunk saddle plates each side of the spine, the flank trim lines, the wing panels, the tow ring, the nacelle and tail-collar trims: 18% of the surface), Body (gunmetal), Window (the sensor eyes, the canopy, the snout sensor), Engine (the gill louvres, the nacelle mouths, the chin intake's throat, the wing and whip-tip lights) |
+| Morphs | Charge (the dorsal blade stands 1.55× and the whip's blade widens) 6.1%, Mass (hull, nacelles and peduncle fatten, the tow shackle swells 1.9×, the wings ride out — Mass Mode) 4.1%, Space (the whip's last segment telescopes 1.7×, the wings reach 1.18× along their span) 9.5%, Time (wings sweep back and spread, dorsal and whip rake back) 6.3% of the diagonal |
+| Takes | none drive it — `ThresherAnimation` poses the bones in code; `beatleft`, `beatright`, `curl` (planted, toward a ball on the right) and `flare` (wings brake down) are documentation poses for the sheet and the studio |
+| Budget | 9,100 triangles, 4,646 vertices |
+
+**Clade → ship**, part by part: the shark body is a lofted gunmetal predator hull whose countershading
+boundary is a domain trim line down each flank; the snout is a sensor ram with a cyan tip; the huge eye
+is sensor glass in a dark bezel, with a low cockpit canopy on the back behind it; the gill slits are
+five glowing intake louvres per side on a dark plate; the mouth is a chin intake with a glowing throat;
+the dorsal fin is the domain-coloured stabiliser blade with a dark leading-edge spar; the pectorals are
+swept, drooped wings on hinge fairings with sunk domain panels and lime nav lights; the pelvic fins are
+two engine nacelles on the rear flanks whose glowing mouths sit where the prefab's two `VesselJet`s already
+are; the second dorsal and anal fins are small stabilisers; the caudal peduncle is the tail-boom root
+behind a mechanical joint collar; the lower caudal lobe is a ventral skeg; the upper caudal lobe — the
+read — is the whip, a three-jointed boom with a dark spar, a domain blade, a knuckle at every joint and a
+lime light at the tip; and the chain leaves through a tow shackle (a domain ring on a clevis and pin) at the
+TIP of the whip (2026-10-18, Garrett: "the thresher cord should begin at the tip of the tail"), so it rides
+every swing of the whip and the element morphs carry it with the tip.
+
+**Integration is by NAME, not by fileID** (an FBX's sub-object fileIDs cannot be derived offline), all
+written by `author_thresher_assets.py` (`--check` validates it): `ThresherHull` keeps its Transform and the
+two jets and now holds the model instance in place of the placeholder's MeshFilter / MeshRenderer /
+`ThresherHullBuilder`. `ThresherAnimation` resolves the bones by name (`tail`, `tail.2`–`tail.4`,
+`wing.L`, `wing.R`; the placeholder's `ThresherTailBase`, `ThresherLobe0`–`2`, `ThresherPectoralL/R`
+still resolve, so either hull swims), banks and sways `ThresherHull` (its new `hullRoot` field), poses
+every part in the hull's frame onto the rest captured there, and finds the SkinnedMeshRenderer
+(`updateWhenOffscreen`); the element morphs are the model's blend shapes, driven by `VesselAnimation` by
+name, and the builder's morph push runs only while a prefab still carries the builder. `ThresherExecutor`
+draws the chain from the model's `hitch` bone (or the builder's ring), plus the shackle's own blend-shape
+travel (read once from the mesh: Space telescopes the whip, Time rakes it, and the bone does not move with
+either), eased out over the drawn points that cover twice the offset so the curve leaves the tip cleanly.
+Drawing only: the gameplay chain, its sweep and its physics still hang from the ship's centre. `VesselCustomization` paints the hull,
+which resolves to the model's SkinnedMeshRenderer, and names `GreenAccentVesselMaterial` (the model's
+`Domain` slot, remapped by the `.meta`) as the material the domain colour replaces. **Hull fusion**: the
+asset now HAS a hull mesh (readable), so the four `CrystalHullFusionConfig` entries are no longer
+"runtime-generated"; they carry no bake yet (the bake test reports that as inconclusive and the runtime
+solves on a worker) until `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` is run in the editor.
+
+**One sign fix rode with it.** `ThresherSwimMath`'s yaw is positive toward the pilot's RIGHT (its steer
+term is negative so a right turn swings the tail LEFT, "out of the turn"; its curl and crack are positive
+toward a ball on the right), but Unity's `Euler(0, +a, 0)` carries a part that trails its pivot to the
+LEFT. So the procedural tail swung INTO a turn, curled and cracked AWAY from a planted ball, and the
+body's counter-sway moved with the tail instead of against it. Nobody had opened the hull in Unity, so
+nobody saw it. `ThresherAnimation` now turns the chain by `-yaw`; the math, its tests and the harness are
+unchanged.
+
+**The procedural placeholder** (`ThresherHullForm`, `ThresherHullBuilder`, `thresher_hull_harness`,
+`ThresherHullFormTests`) stays in the tree until the owner accepts the
+model, then it is retired. Its description follows, kept because its numbers are the model's contract.
+
 The Thresher was a text clone of the Squirrel and flew its model, its animation controller, its jets
 and a placeholder icon row. The own-vessel pass replaced every one of them. All of it is authored by
 script and proved offline; nothing is hand-edited YAML.
 
-**The hull** (`ThresherHullForm` — pure — emitted by `ThresherHullBuilder` on a `ThresherHull` child of
+**The placeholder hull, 2026-10-13 → 2026-10-18** (`ThresherHullForm` — pure — emitted by `ThresherHullBuilder` on a `ThresherHull` child of
 the root, the `StoatHullForm`/`StoatHullBuilder` shape): a thresher shark cut from flat facets like the
 HyperSea's prisms. A six-sided fuselage lofted from a pointed snout through a girth station a third of
 the way back to a slim peduncle (4.4 u), a swept **dorsal** fin, two drooping **pectorals**, a small
@@ -458,7 +523,7 @@ pectorals like ailerons. The ball drives the rest, read off the vessel's own `Th
 (Pivot), the tail **curls toward the ball** (48° at the tip) and the hull **banks into the orbit** (34°),
 both growing with the spin; while the ball **stops** (Skidding) the pectorals **flare** down 40° like
 brakes; a new smash in the combo, the ball turning red-hot, or a launch **cracks** the tip 55° toward the
-ball and decays. Transforms only — the builder owns the vertices.
+ball and decays. Transforms only — the morph is the model's blend shapes (the builder's vertices on the placeholder). The chain's yaw sign was fixed on 2026-10-18 (see "The hull model" above).
 
 **Colliders and jets**: the Squirrel FBX's two box colliders and `ImpactCollider` went with it;
 `ThresherBody` (box 1.6 × 1.4 × 5.2 + `ImpactCollider`, layer Default) and `ThresherHitbox` (trigger
@@ -475,8 +540,10 @@ whip's arcs behind it), **Mass Mode** (the ball laying a growing row of prisms �
 wore was never what the ability does; the file was renamed `Thresher_MassMode.png` with its guid kept),
 Winch (a chain hauled round a drum), Plant (the ball as the pivot, the hull swinging on its orbit). The
 **card icons** (`SO_Class_Thresher.IconActive/IconInactive`, which reused the Wrecking Ball glyph) are now
-renders of the shark hull in the house card look (`Tools/Build/render_thresher_card_icon.py`, the
-Stoat's renderer).
+renders of the shark hull in the house card look. Since 2026-10-18 they are rendered from the MODEL by
+`Tools/Build/vessel_model/render_cards.py Thresher` (`--check`), which also writes the large, silhouette and
+hangar-preview images and wires them into the class asset; the placeholder-era `render_thresher_card_icon.py`
+was retired with it, because it drew the procedural hull over them.
 
 **Authored by** `Tools/Build/author_thresher_assets.py` (idempotent; `--check` validates the shipped
 prefab — no Squirrel FBX / DriftJet / Manta animation left, the hull, colliders, paint, animation and two
@@ -523,11 +590,12 @@ is the fix.
 | File | What |
 |---|---|
 | `Controller/Vessel/ThresherChainSolver.cs` | Pure physics, `ThresherDials` (the defaults), `ThresherChainLinks` |
-| `Controller/Vessel/ThresherHullForm.cs`, `ThresherHullBuilder.cs` | The shark hull: pure geometry + element morph set; the emitter (§5b) |
+| `_Models/Vessel Models/Thresher.fbx`, `Tools/Build/vessel_model/specs/thresher.py` | The hull MODEL since 2026-10-18 and the spec it is built from (`build.py thresher --check`; §5b) |
+| `Controller/Vessel/ThresherHullForm.cs`, `ThresherHullBuilder.cs` | The procedural placeholder hull (off the prefab since 2026-10-18; kept until the model is accepted): pure geometry + element morph set; the emitter (§5b) |
 | `Controller/Animation/ThresherAnimation.cs`, `ThresherSwimMath.cs` | The swim: tail wave, bank, pectorals, ball-driven curl / flare / crack (§5b) |
 | `Controller/Vessel/ThresherBallForm.cs` | The morning-star ball mesh (§5) |
 | `Tools/Build/author_thresher_assets.py`, `Tools/Build/thresher_hull_harness/` | The prefab pass (`--check`, `--self-test`); the offline geometry/swim/ball harness |
-| `Tools/Build/author_thresher_icons.py`, `Tools/Build/render_thresher_card_icon.py` | Ability icons; class card icons rendered from the hull |
+| `Tools/Build/author_thresher_icons.py`, `Tools/Build/vessel_model/render_cards.py` | Ability icons; class card images rendered from the model |
 | `Tests/Editor/ThresherHullFormTests.cs` | Hull parts, accents, morphs, bounds, the tail chain, the ball |
 | `Controller/Vessel/ThresherVesselTransformer.cs` | Seam overrides |
 | `Controller/Vessel/VesselTransformer.cs` | + `ComputeExternalAcceleration`, `NoseConvergence` (default-off) |

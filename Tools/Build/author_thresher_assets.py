@@ -13,23 +13,27 @@ remove_instance, dangling_refs, ...):
       two box colliders and ImpactCollider (re-authored below at the shark's size), two of its four jets,
       and the DriftJet steering on the other two (it turns a plume SIDEWAYS unless drifting - a Squirrel
       behaviour). The kept jets are re-homed onto the hull, flanking the peduncle, pointing back.
-    - ADDS ThresherHull under the root: Transform, MeshFilter (filled at Awake), MeshRenderer (body + domain
-      materials), ThresherHullBuilder. Proportions are NOT serialized - the builder's field initializers are
-      the shipped values (ThresherHullForm.Defaults), so the C# is the one source.
+    - ADDS ThresherHull under the root: a Transform holding the hull MODEL (Thresher.fbx, built by
+      /vessel-model from Tools/Build/vessel_model/specs/thresher.py, 2026-10-18) as a nested prefab instance,
+      and the two kept jets. Until 2026-10-18 the hull carried a MeshFilter, a MeshRenderer and the procedural
+      ThresherHullBuilder; re-running the pass on a prefab that still has them removes them. The builder's
+      C# stays in the tree until Garrett accepts the model.
     - ADDS ThresherBody (non-trigger box + ImpactCollider, layer Default) and ThresherHitbox (trigger box,
       layer Ships) - the two shapes the FBX's two GameObjects carried, sized to the shark.
     - SWAPS the root's VesselAnimation from the clone's MantaAnimationContoller to ThresherAnimation on the
       SAME fileID (so VesselStatus's reference holds); the swim's numbers are the C# initializers
       (ThresherSwimMath.Default*), only the base fields and cruiseSpeed are written.
-    - POINTS VesselCustomization's paint at the hull (slot 1 = the domain accents).
-    - CrystalHullFusionConfig: the Thresher's four entries lose their bakes (the hull is generated at
-      runtime, so the fusion solves on a worker - CRYSTAL_HULL_FUSION.md), and the four Squirrel-keyed bake
-      assets are deleted.
+    - POINTS VesselCustomization's paint at the hull (which resolves to the model's SkinnedMeshRenderer) and
+      names GreenAccentVesselMaterial - what the model's Domain slot is remapped to - as the material the domain
+      colour replaces (paint by identity, FLEET_CONVENTION 3.3).
+    - CrystalHullFusionConfig: the four bakes keyed to the Squirrel model the clone carried are stripped and
+      their assets deleted (a spent one-shot since 2026-10-13: it now only stands guard). A bake against the
+      Thresher's own model (the FrogletTools bake tool, in the editor) is left alone.
     - Authors the .meta of every new script (deterministic guids).
 
 --check validates the shipped prefab: no Squirrel FBX / DriftJet / Manta animation left, the hull, its
-builder and the colliders present and wired, the paint on the hull, the animation swapped, two jets on the
-hull, NO dangling local reference, the fusion entries bake-free and the bake assets gone, every script meta
+model (no procedural builder) and the colliders present and wired, the paint on the hull, the animation swapped, two jets on the
+hull, NO dangling local reference, no fusion entry on a Squirrel-keyed bake and those assets gone, every script meta
 unique. --self-test mutates a copy in memory and proves each check fires.
 """
 import hashlib
@@ -64,6 +68,17 @@ VESSEL_JET_GUID = "55ceca573be662744948afc745f8840b"
 BODY_MATERIAL = "54e78ce17120fe641904833c11bc1210"     # BlueBaseVesselMaterial  (slot 0, the hide)
 ACCENT_MATERIAL = "539a8c65974bf0b48aae77d83884c13b"   # GreenAccentVesselMaterial (slot 1, repainted to the domain)
 SHIPS_LAYER = 8
+# The hull model (/vessel-model, specs/thresher.py) and its nested instance under ThresherHull. A model's root
+# GameObject / Transform fileIDs are constants of the importer; the instance and its stripped Transform are ours.
+MODEL_GUID = "7afd7f8333454ad7b4417f1bdab7fa29"          # Assets/_Models/Vessel Models/Thresher.fbx
+MODEL_META = os.path.join(ROOT, "Assets", "_Models", "Vessel Models", "Thresher.fbx.meta")
+MODEL_ROOT_GO = "919132149155446097"
+MODEL_ROOT_TRANSFORM = "-8679921383154817045"
+MODEL_INSTANCE_ID = "8333434907443222190"
+MODEL_TRANSFORM_ID = "1945698819565915686"
+# The four bakes the 2026-10-13 pass removed: keyed to the Squirrel FBX the clone carried (never the shark).
+SQUIRREL_KEYED_BAKES = ("eb63e1fdbcaca2a4da87e864d4939cb2", "0628d54ba9c99e844a3eae33cca5726d",
+                        "724bc06c870361f468d8e75ecda38cc9", "320ec7cbdff541243be27d82e9468bcc")
 
 # (PrefabInstance, its root Transform (stripped), local x): the two jets kept, re-homed onto the hull.
 JETS_KEPT = (("3003162917154485572", "2617076957950753345", -0.32), ("3287304896823774770", "2333430861380747575", 0.32))
@@ -117,6 +132,20 @@ def v3(x, y, z) -> str:
 
 # ----------------------------------------------------------------------------- the documents
 def hull_blocks() -> str:
+    """ThresherHull: a Transform that holds the model (nested) and the two kept jets. ThresherAnimation banks and
+    sways THIS transform, so the model and the jets move together; the model's bones carry the swim."""
+    model_mods = [
+        (MODEL_ROOT_GO, "m_Name", "Thresher"),
+        (MODEL_ROOT_TRANSFORM, "m_LocalPosition.x", 0), (MODEL_ROOT_TRANSFORM, "m_LocalPosition.y", 0),
+        (MODEL_ROOT_TRANSFORM, "m_LocalPosition.z", 0), (MODEL_ROOT_TRANSFORM, "m_LocalRotation.w", 1),
+        (MODEL_ROOT_TRANSFORM, "m_LocalRotation.x", 0), (MODEL_ROOT_TRANSFORM, "m_LocalRotation.y", 0),
+        (MODEL_ROOT_TRANSFORM, "m_LocalRotation.z", 0), (MODEL_ROOT_TRANSFORM, "m_LocalEulerAnglesHint.x", 0),
+        (MODEL_ROOT_TRANSFORM, "m_LocalEulerAnglesHint.y", 0), (MODEL_ROOT_TRANSFORM, "m_LocalEulerAnglesHint.z", 0),
+    ]
+    mods = "".join(
+        f"    - target: {{fileID: {fid}, guid: {MODEL_GUID},\n        type: 3}}\n"
+        f"      propertyPath: {path}\n      value: {v if isinstance(v, str) else S.num(v)}\n"
+        "      objectReference: {fileID: 0}\n" for fid, path, v in model_mods)
     return (
         f"--- !u!1 &{HULL_GO_ID}\n"
         "GameObject:\n"
@@ -127,9 +156,6 @@ def hull_blocks() -> str:
         "  serializedVersion: 6\n"
         "  m_Component:\n"
         f"  - component: {{fileID: {HULL_TRANSFORM_ID}}}\n"
-        f"  - component: {{fileID: {HULL_FILTER_ID}}}\n"
-        f"  - component: {{fileID: {HULL_RENDERER_ID}}}\n"
-        f"  - component: {{fileID: {HULL_BUILDER_ID}}}\n"
         f"  m_Layer: {SHIPS_LAYER}\n"
         "  m_Name: ThresherHull\n"
         "  m_TagString: Untagged\n"
@@ -150,63 +176,28 @@ def hull_blocks() -> str:
         "  m_LocalScale: {x: 1, y: 1, z: 1}\n"
         "  m_ConstrainProportionsScale: 0\n"
         "  m_Children:\n" + "".join(f"  - {{fileID: {tr}}}\n" for _, tr, _ in JETS_KEPT) +
+        f"  - {{fileID: {MODEL_TRANSFORM_ID}}}\n"
         f"  m_Father: {{fileID: {ROOT_TRANSFORM_ID}}}\n"
         "  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\n"
-        f"--- !u!33 &{HULL_FILTER_ID}\n"
-        "MeshFilter:\n"
+        f"--- !u!1001 &{MODEL_INSTANCE_ID}\n"
+        "PrefabInstance:\n"
         "  m_ObjectHideFlags: 0\n"
-        "  m_CorrespondingSourceObject: {fileID: 0}\n"
-        "  m_PrefabInstance: {fileID: 0}\n"
+        "  serializedVersion: 2\n"
+        "  m_Modification:\n"
+        "    serializedVersion: 3\n"
+        f"    m_TransformParent: {{fileID: {HULL_TRANSFORM_ID}}}\n"
+        "    m_Modifications:\n" + mods +
+        "    m_RemovedComponents: []\n"
+        "    m_RemovedGameObjects: []\n"
+        "    m_AddedGameObjects: []\n"
+        "    m_AddedComponents: []\n"
+        f"  m_SourcePrefab: {{fileID: 100100000, guid: {MODEL_GUID}, type: 3}}\n"
+        f"--- !u!4 &{MODEL_TRANSFORM_ID} stripped\n"
+        "Transform:\n"
+        f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_TRANSFORM}, guid: {MODEL_GUID},\n"
+        "    type: 3}\n"
+        f"  m_PrefabInstance: {{fileID: {MODEL_INSTANCE_ID}}}\n"
         "  m_PrefabAsset: {fileID: 0}\n"
-        f"  m_GameObject: {{fileID: {HULL_GO_ID}}}\n"
-        "  m_Mesh: {fileID: 0}\n"
-        f"--- !u!23 &{HULL_RENDERER_ID}\n"
-        "MeshRenderer:\n"
-        "  m_ObjectHideFlags: 0\n"
-        "  m_CorrespondingSourceObject: {fileID: 0}\n"
-        "  m_PrefabInstance: {fileID: 0}\n"
-        "  m_PrefabAsset: {fileID: 0}\n"
-        f"  m_GameObject: {{fileID: {HULL_GO_ID}}}\n"
-        "  m_Enabled: 1\n"
-        "  m_CastShadows: 1\n"
-        "  m_ReceiveShadows: 1\n"
-        "  m_DynamicOccludee: 1\n"
-        "  m_StaticShadowCaster: 0\n"
-        "  m_MotionVectors: 1\n"
-        "  m_LightProbeUsage: 1\n"
-        "  m_ReflectionProbeUsage: 1\n"
-        "  m_RayTracingMode: 2\n"
-        "  m_RayTraceProcedural: 0\n"
-        "  m_RayTracingAccelStructBuildFlagsOverride: 0\n"
-        "  m_RayTracingAccelStructBuildFlags: 1\n"
-        "  m_SmallMeshCulling: 1\n"
-        "  m_RenderingLayerMask: 1\n"
-        "  m_RendererPriority: 0\n"
-        "  m_Materials:\n"
-        f"  - {{fileID: 2100000, guid: {BODY_MATERIAL}, type: 2}}\n"
-        f"  - {{fileID: 2100000, guid: {ACCENT_MATERIAL}, type: 2}}\n"
-        "  m_StaticBatchInfo:\n"
-        "    firstSubMesh: 0\n"
-        "    subMeshCount: 0\n"
-        "  m_StaticBatchRoot: {fileID: 0}\n"
-        "  m_ProbeAnchor: {fileID: 0}\n"
-        "  m_LightProbeVolumeOverride: {fileID: 0}\n"
-        "  m_ScaleInLightmap: 1\n"
-        "  m_ReceiveGI: 1\n"
-        "  m_PreserveUVs: 0\n"
-        "  m_IgnoreNormalsForChartDetection: 0\n"
-        "  m_ImportantGI: 0\n"
-        "  m_StitchLightmapSeams: 1\n"
-        "  m_SelectedEditorRenderState: 3\n"
-        "  m_MinimumChartSize: 4\n"
-        "  m_AutoUVMaxDistance: 0.5\n"
-        "  m_AutoUVMaxAngle: 89\n"
-        "  m_LightmapParameters: {fileID: 0}\n"
-        "  m_SortingLayerID: 0\n"
-        "  m_SortingLayer: 0\n"
-        "  m_SortingOrder: 0\n"
-        "  m_AdditionalVertexStreams: {fileID: 0}\n"
-        + S.mb_header(HULL_BUILDER_ID, HULL_GO_ID, HULL_BUILDER_SCRIPT)
     )
 
 
@@ -220,7 +211,8 @@ def animation_block() -> str:
             "  brakeThreshold: 0.65\n"
             "  lerpAmount: 2\n"
             "  smallLerpAmount: 0.7\n"
-            f"  cruiseSpeed: {S.num(cruise_speed_placeholder())}\n")
+            f"  cruiseSpeed: {S.num(cruise_speed_placeholder())}\n"
+            f"  hullRoot: {{fileID: {HULL_TRANSFORM_ID}}}\n")
 
 
 _CRUISE = [110.0]
@@ -339,7 +331,10 @@ def apply_prefab(text: str) -> str:
         docs[at:at] = hull
         S.add_child(docs, ROOT_TRANSFORM_ID, HULL_TRANSFORM_ID)
     else:
-        start, end = S.doc_index(docs, HULL_GO_ID), S.doc_index(docs, HULL_BUILDER_ID)
+        # the procedural era's MeshFilter / MeshRenderer / ThresherHullBuilder go; the GO, its Transform and the
+        # model instance are re-authored in place (idempotent)
+        S.remove_docs(docs, [HULL_FILTER_ID, HULL_RENDERER_ID, HULL_BUILDER_ID, MODEL_INSTANCE_ID, MODEL_TRANSFORM_ID])
+        start, end = S.doc_index(docs, HULL_GO_ID), S.doc_index(docs, HULL_TRANSFORM_ID)
         _, hull = S.split_docs(hull_blocks())
         docs[start:end + 1] = hull
 
@@ -360,7 +355,7 @@ def apply_prefab(text: str) -> str:
     # 3. The shark's own colliders under the root.
     if S.get_doc(docs, BODY_GO_ID) is None:
         _, cols = S.split_docs(collider_blocks())
-        at = S.doc_index(docs, HULL_BUILDER_ID) + 1
+        at = S.doc_index(docs, MODEL_TRANSFORM_ID) + 1
         docs[at:at] = cols
         S.add_child(docs, ROOT_TRANSFORM_ID, BODY_TRANSFORM_ID)
         S.add_child(docs, ROOT_TRANSFORM_ID, TRIGGER_TRANSFORM_ID)
@@ -368,6 +363,8 @@ def apply_prefab(text: str) -> str:
     # 4. The paint and the animation.
     cust = S.get_doc(docs, CUSTOMIZATION_ID)
     cust = re.sub(r"(  _shipGeometries:\n)(?:  - \{fileID: -?\d+\}\n)+", r"\g<1>" + f"  - {{fileID: {HULL_GO_ID}}}\n", cust, count=1)
+    cust = re.sub(r"  _domainReplacesMaterials:(?: \[\]\n|\n(?:  - \{[^}]*\}\n)+)",
+                  f"  _domainReplacesMaterials:\n  - {{fileID: 2100000, guid: {ACCENT_MATERIAL}, type: 2}}\n", cust, count=1)
     S.set_doc(docs, CUSTOMIZATION_ID, cust)
     anim = S.get_doc(docs, ANIMATION_ID)
     if anim is None or (MANTA_ANIMATION_SCRIPT not in anim and ANIMATION_SCRIPT not in anim):
@@ -377,15 +374,23 @@ def apply_prefab(text: str) -> str:
 
 
 def apply_fusion(text: str) -> str:
-    """The Thresher's four entries: no bake (a runtime-generated hull is solved on a worker)."""
+    """The Thresher's four entries: never a bake keyed to the Squirrel model the clone carried. A spent one-shot
+    (2026-10-13) that now only stands guard: a bake against the Thresher's own model is left alone."""
     def fix(m):
-        return re.sub(r"    bake: \{fileID: 11400000, guid: \w+, type: 2\}\n", "    bake: {fileID: 0}\n", m.group(0), count=1)
+        return re.sub(r"    bake: \{fileID: 11400000, guid: (%s), type: 2\}\n" % "|".join(SQUIRREL_KEYED_BAKES),
+                      "    bake: {fileID: 0}\n", m.group(0), count=1)
     return re.sub(r"  - vessel: %d\n(?:    .*\n)*?(?=  - vessel: |\Z|\S)" % THRESHER_CLASS_ID, fix, text)
 
 
 def bake_assets():
-    return sorted(os.path.join(FUSION_DIR, f) for f in os.listdir(FUSION_DIR)
-                  if f.startswith("Thresher_") and f.endswith("_HullFusionBake.asset"))
+    """The Squirrel-keyed Thresher bake assets still on disk (by guid: a bake of the model is not one)."""
+    out = []
+    for f in sorted(os.listdir(FUSION_DIR)):
+        meta = os.path.join(FUSION_DIR, f + ".meta")
+        if f.startswith("Thresher_") and f.endswith("_HullFusionBake.asset") and os.path.exists(meta):
+            if any(f"guid: {g}" in read(meta) for g in SQUIRREL_KEYED_BAKES):
+                out.append(os.path.join(FUSION_DIR, f))
+    return out
 
 
 # ----------------------------------------------------------------------------- checks
@@ -397,24 +402,40 @@ def check_prefab(text: str):
         errs.append("a DriftJet (the Squirrel's sideways plume steering) is still on a jet")
     if MANTA_ANIMATION_SCRIPT in text:
         errs.append("the clone's MantaAnimationContoller is still on the root")
-    for fid, what in ((HULL_GO_ID, "ThresherHull"), (HULL_BUILDER_ID, "ThresherHullBuilder"), (BODY_GO_ID, "ThresherBody"),
+    for fid, what in ((HULL_GO_ID, "ThresherHull"), (MODEL_INSTANCE_ID, "the hull model instance"), (BODY_GO_ID, "ThresherBody"),
                       (TRIGGER_GO_ID, "ThresherHitbox"), (BODY_IMPACT_ID, "the body's ImpactCollider")):
-        if f"&{fid}\n" not in text:
+        if f"&{fid}\n" not in text and f"&{fid} stripped\n" not in text:
             errs.append(f"{what} is missing")
-    if f"m_Script: {{fileID: 11500000, guid: {HULL_BUILDER_SCRIPT}, type: 3}}" not in text:
-        errs.append("ThresherHullBuilder's script guid is not on the prefab")
+    docs = S.split_docs(text)[1]
+    if f"guid: {HULL_BUILDER_SCRIPT}" in text or any(S.get_doc(docs, f) for f in (HULL_FILTER_ID, HULL_RENDERER_ID, HULL_BUILDER_ID)):
+        errs.append("the procedural ThresherHullBuilder (or its MeshFilter / MeshRenderer) is still on the hull - the model replaced it")
+    inst = S.get_doc(docs, MODEL_INSTANCE_ID) or ""
+    if f"m_SourcePrefab: {{fileID: 100100000, guid: {MODEL_GUID}, type: 3}}" not in inst:
+        errs.append("the hull model instance does not source Thresher.fbx")
+    if f"m_TransformParent: {{fileID: {HULL_TRANSFORM_ID}}}" not in inst:
+        errs.append("the hull model is not parented under ThresherHull")
+    hull_tr = S.get_doc(docs, HULL_TRANSFORM_ID) or ""
+    if f"  - {{fileID: {MODEL_TRANSFORM_ID}}}\n" not in hull_tr.split("  m_Father")[0]:
+        errs.append("the hull model's Transform is not a child of ThresherHull")
+    if not os.path.exists(MODEL_META) or f"guid: {MODEL_GUID}\n" not in read(MODEL_META):
+        errs.append("Assets/_Models/Vessel Models/Thresher.fbx.meta is missing or does not carry the model guid")
     anim = S.get_doc(S.split_docs(text)[1], ANIMATION_ID)
     if not anim or ANIMATION_SCRIPT not in anim:
         errs.append("the root's VesselAnimation is not ThresherAnimation")
     elif f"  cruiseSpeed: {S.num(read_cruise(text))}\n" not in anim:
         errs.append("ThresherAnimation.cruiseSpeed is not the hull's DefaultThrottleScaler")
+    elif f"  hullRoot: {{fileID: {HULL_TRANSFORM_ID}}}\n" not in anim:
+        errs.append("ThresherAnimation.hullRoot is not ThresherHull")
     if not re.search(r"  _shipGeometries:\n  - \{fileID: %s\}\n(?!  - )" % HULL_GO_ID, text):
         errs.append("VesselCustomization does not paint the hull (and only the hull)")
+    if not re.search(r"  _domainReplacesMaterials:\n  - \{fileID: 2100000, guid: %s, type: 2\}\n(?!  - )" % ACCENT_MATERIAL, text):
+        errs.append("VesselCustomization does not name GreenAccentVesselMaterial (the model's Domain slot) as the domain material")
     root_children = re.search(r"--- !u!4 &%s\n(?:.*\n)*?  m_Children:\n((?:  - \{fileID: -?\d+\}\n)*)" % ROOT_TRANSFORM_ID, text)
     for fid, what in ((HULL_TRANSFORM_ID, "the hull"), (BODY_TRANSFORM_ID, "the body collider"), (TRIGGER_TRANSFORM_ID, "the hitbox")):
         if not root_children or f"{{fileID: {fid}}}" not in root_children.group(1):
             errs.append(f"{what} is not a child of the root")
-    jets_on_hull = len(re.findall(r"m_TransformParent: \{fileID: %s\}" % HULL_TRANSFORM_ID, text))
+    jets_on_hull = sum(1 for _, chunk in docs if f"m_TransformParent: {{fileID: {HULL_TRANSFORM_ID}}}" in chunk
+                       and f"m_SourcePrefab: {{fileID: 100100000, guid: {VESSEL_JET_GUID}, type: 3}}" in chunk)
     if jets_on_hull != len(JETS_KEPT):
         errs.append(f"{jets_on_hull} jets ride the hull (want {len(JETS_KEPT)})")
     dangling = S.dangling_refs(text)
@@ -434,8 +455,8 @@ def check_fusion(text: str):
     if len(entries) != 4:
         errs.append(f"CrystalHullFusionConfig lists {len(entries)} Thresher entries (want 4)")
     for e in entries:
-        if "    bake: {fileID: 0}\n" not in e:
-            errs.append("a Thresher hull-fusion entry still names a bake (the hull is generated at runtime)")
+        if any(g in e for g in SQUIRREL_KEYED_BAKES):
+            errs.append("a Thresher hull-fusion entry names a bake keyed to the Squirrel model the clone carried")
     return errs
 
 
@@ -494,8 +515,9 @@ def check_all():
 def self_test():
     shipped = read(PREFAB)
     controls = (
-        ("re-add the Squirrel FBX guid", shipped.replace(f"guid: {BODY_MATERIAL}", f"guid: {SQUIRREL_FBX_GUID}", 1), "Squirrel FBX"),
-        ("drop the hull builder", shipped.replace(f"&{HULL_BUILDER_ID}\n", "&1\n", 1), "ThresherHullBuilder is missing"),
+        ("re-add the Squirrel FBX guid", shipped.replace(f"guid: {ACCENT_MATERIAL}", f"guid: {SQUIRREL_FBX_GUID}", 1), "Squirrel FBX"),
+        ("drop the hull model", shipped.replace(f"&{MODEL_INSTANCE_ID}\n", "&1\n", 1), "hull model instance is missing"),
+        ("put the procedural builder back", shipped.replace(f"guid: {ACCENT_MATERIAL}", f"guid: {HULL_BUILDER_SCRIPT}", 1), "ThresherHullBuilder"),
         ("dangle a reference", shipped.replace(f"impactorObject: {{fileID: {VESSEL_IMPACTOR_ID}}}", "impactorObject: {fileID: 42}", 1), "dangling"),
         ("paint the wrong object", shipped.replace(f"  _shipGeometries:\n  - {{fileID: {HULL_GO_ID}}}", f"  _shipGeometries:\n  - {{fileID: {BODY_GO_ID}}}", 1), "paint"),
         ("put the clone's animation back", shipped.replace(ANIMATION_SCRIPT, MANTA_ANIMATION_SCRIPT, 1), "MantaAnimationContoller"),
@@ -508,7 +530,7 @@ def self_test():
     bad_fusion = read(FUSION_CONFIG)
     bad_fusion = re.sub(r"(  - vessel: 14\n(?:    .*\n)*?    )bake: \{fileID: 0\}", r"\1bake: {fileID: 11400000, guid: eb63e1fdbcaca2a4da87e864d4939cb2, type: 2}", bad_fusion, count=1)
     found = check_fusion(bad_fusion)
-    print(("  ok   " if found else "  FAIL ") + f"negative control: a Thresher fusion entry with a bake -> {found[:1] or 'NOT CAUGHT'}")
+    print(("  ok   " if found else "  FAIL ") + f"negative control: a Thresher fusion entry on a Squirrel-keyed bake -> {found[:1] or 'NOT CAUGHT'}")
     fails += 0 if found else 1
     print("author_thresher_assets --self-test: " + ("OK" if not fails else f"{fails} control(s) NOT caught"))
     return 1 if fails else 0

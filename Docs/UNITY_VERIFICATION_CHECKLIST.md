@@ -65,6 +65,1145 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Tutorial off, Spectate label, configure preview visible, opaque configure veil (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 29 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE quest and Lesson (switched off in data).
+
+**Verify in editor:**
+1. Fresh profile: no first-login guide, no dim, no "This week's game" caption anywhere.
+2. Open any card with a preview (Skim Race, Skein): the preview window shows at the top left, the
+   arena plays in it, tapping it flies the vessel; no Lesson or Mentor lines appear.
+   Root cause fixed: the +1 toast component no longer sits on the preview window's GameObject (its
+   Hide() switched the whole window off on every card open). Score a point in the preview: the +1
+   pops and the window stays.
+3. The configure window hides the Arcade behind it (no "Explore games" title or cards showing through).
+4. A friend in a match shows SPECTATE, not WATCH.
+5. At 16:10 (Game view 1728 x 1080) the Arcade grid's right column is fully on screen.
+
+---
+
+### 🔴 Style-B playtest fixes: guide Skip, connecting backdrop + random camera, pause D-pad, touch keycaps (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 28 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE guide, Lesson and input detection
+(`QuestGraphRunner`, `MenuSpotlight`, `DrillRunner`, `InputDeviceActuation`). No editor in the session,
+so `/verify-unity` is still owed. Offline: player and editor reference compiles clean apart from the
+known package errors; every generator `--check` and the repo gates pass.
+
+**Verify in editor:**
+1. Fresh profile (reset quest progress): the first-login guide shows SKIP bottom right. Click it (or
+   press Y): the dim goes, the menu is free, and a relaunch does not show the guide again.
+2. Open a microgame preview on a fresh profile: the Lesson offers Skip after ~3 s.
+3. Launch any mode: the connecting screen shows that mode's card art drifting behind the readout;
+   the arena preview moves differently on each launch (orbit, low sweep, crane, spiral, drift).
+4. Party panel with an online friend: INVITE and JOIN side by side, no overlap.
+5. In a match, pause with a pad: Resume is highlighted, D-pad up/down moves, A presses. Open and
+   close Settings: the highlight returns to Settings.
+6. The START keycap sits straight, centred under the pause hex.
+7. Mobile build (or Device Simulator, no pad): no keycaps anywhere (hub buttons, pause, ability row,
+   pause hex), no "RShift"; connect a pad and they return.
+8. Set the Game view to 4:3 and 21:9: Menu_Main, a match HUD and the Maelstrom hub stay fully on
+   screen.
+
+---
+
+### 🔴 Style-B Maelstrom game UI: hub, stats, summary (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 27 of `Docs/MENU_REDESIGN_B.md`. Written by `Tools/Build/author_maelstrom_ui.py`: the three
+Maelstrom card prefabs (regenerated in place, same guids) and `Maelstrom.unity`. `MaelstromSceneView`,
+`MaelstromRoundCard`, `MaelstromPlayerCard` and `MaelstromSummaryPlayerCard` gained optional fields;
+`MaelstromStandingRow` and `MaelstromReadySeat` are new. There is no editor in the session, so
+`/verify-unity` is still owed. Offline: the player and editor reference compiles are clean apart from
+the known package errors; the generator's `--check` and `--self-test` (eight negative controls) pass.
+
+**Verify in editor:**
+1. Open `Maelstrom.unity` and the three prefabs in `Assets/_Prefabs/MaelStrom/`. No missing scripts;
+   `MaelstromSceneView` shows its new Style B fields wired.
+2. Start a Maelstrom from the Arcade with AI. Hub: "MAELSTROM" / "Round 1" / the win target; the
+   three chips top right; one outlined card reading "To be drawn" that names the mode a moment
+   later; the preview on the right; Race to N bars at zero; your face under Pilots ready.
+3. Press A: READY becomes READY! and the tally moves; your face ticks ready. With everyone ready the
+   countdown shows 3-2-1 and the round loads.
+4. Back in the hub after a round: the played card shows the mode art, the winner pill, each pilot's
+   mode score, +points and total; the bars moved; the upcoming card is last and outlined. LB / RB
+   step the cards; flying the preview, LB / RB do not scroll.
+5. Finish the tournament: the stats screen ("Maelstrom results", NEXT focused, no Pilots ready).
+   NEXT shows the summary: winner line in the winner's colour, the rule grows, the domain chips,
+   the ranked pilot cards. A plays again (host), Y returns to stats, B leaves.
+6. As a client in a party: the summary has no PLAY AGAIN and STATS is focused.
+
+---
+
+### 🔴 Style-B start flow: Bootstrap splash, connection lost, sign-in, pilot name, privacy overlay (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 26 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's boot/auth flow: `AuthenticationSceneController`
+(selects each panel's control as it appears; one retry message), `SceneLoader` (the splash holds
+while the boot world builds), `BootStatusPanel` (retry window), and both scenes. Scenes written by
+`Tools/Build/author_start_flow.py`. There is no editor in the session, so `/verify-unity` is still
+owed. Offline: the player and editor reference compiles are clean apart from the known package
+errors; the generator's `--check` and `--self-test` (eight negative controls) pass.
+
+**Verify in editor:**
+1. Open `Bootstrap.unity` and `Authentication.unity`. No missing scripts, no missing references on
+   `BootStatusPanel` (statusText, retryButton, retryPanel, retryMessageText, readoutGroup) or on
+   `AuthenticationSceneController`.
+2. Play from Bootstrap on a fresh install (clear PlayerPrefs). The splash shows the feature art,
+   dimmed, with LOADING and a thin bar at the bottom. No spinning icon.
+3. The age gate: slivered panel, "FIRST FLIGHT", the field already focused - type a year and press
+   Enter. Consent: "PRIVACY", I AGREE selected; press B or Esc - it declines and the flow continues.
+   Repeat with a pad.
+4. Sign-in scene: the bottom readout shows the boot status lines ("Signing in...") while it works,
+   and disappears when a panel asks the player something.
+5. Auth panel (force it: no cached session): "Welcome, pilot" window; PLAY AS GUEST is selected, A
+   or Enter presses it once (watch the log for a single guest sign-in).
+6. Pilot-name panel (a profile with a default name): the field takes focus; the four ticks fill as
+   you type; the count reads "n / 25"; a refused name turns the border red; a taken name shows the
+   error line under the ticks. CONFIRM presses once on A.
+7. Neither panel flashes on the scene's first frame.
+8. After sign-in: the splash holds until Garland is built, then one fade into Home. No black screen
+   in between.
+9. Connection lost (kill the network after the menu loads, or raise a Retry from the Boot channel):
+   the "Connection lost" window rises, the LOADING bar hides, RETRY is selected and works on A.
+
+---
+
+### 🔴 Menu_Main: the boot world loads before the menu is revealed; subtle loading readout (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 25 of `Docs/MENU_REDESIGN_B.md`. Affects Garrett's ecology area: one call from
+`Cell.Start` (`CoverBootWorld`). There is no editor in the session, so `/verify-unity` is still
+owed. Offline: the player and editor reference compiles are clean apart from the known package
+errors, and `EnvironmentLoadVeilTests` is new.
+
+**Verify in editor:**
+1. Play from Bootstrap. After sign-in, the screen stays black with a small "LOADING" and a thin bar
+   at the bottom. The menu never shows before Garland is built. Then one fade reveals the finished
+   world with Home's blocks rising in.
+2. There is no "GROWING GARLAND" headline and no prism count, anywhere.
+3. Play a match and return to the menu: same single reveal.
+4. Cell Selector: pick another world. The subtle cover holds while it builds, then lets go.
+5. Toy Box: launch the Arkway and a microscene toy. Their load uses the same subtle readout.
+6. A game scene (Skim Race): the connecting screen is unchanged and no black cover sits on top of
+   it.
+7. Timing to note: how long the black cover holds on boot. Its floor is the time the local player
+   takes to spawn plus Garland's build.
+
+---
+
+### 🔴 Style-B redesign: the ambient layer sleeps while hidden; spectator bar settles (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 24 of `Docs/MENU_REDESIGN_B.md`. There is no editor in the session, so `/verify-unity` is
+still owed. Offline: the player and editor reference compiles are clean apart from the known
+Playmode package errors, and `KitMotionTests` has 6 new cases.
+
+**Verify in editor:**
+1. **Profiler, Menu_Main, Home, not flying:** `Canvas.BuildBatch` / `Canvas.SendWillRenderCanvases`
+   should no longer show every frame from objects under closed windows. Open Arcade, then the
+   configure window: the sparks and loops run there, and stop when the window closes.
+2. Fly freestyle (the lava lamp): no UI rebuild every frame from the menu behind it. Compare frame
+   time with bleeding-edge (`CrystalChargeArcs` is fixed on both now).
+3. Configure window, solo: "Waiting for others..." is NOT shown. In a party, after confirming, it
+   shows and breathes.
+4. A match: Profiler, GameCanvas should not re-batch every frame while the spectator bar and the
+   connecting panel are hidden.
+5. Hangar, Profile, Ark: their loops (Ark's sparks, the quest cards' pulse) run while you are on
+   that screen and still run after you return to it.
+
+---
+
+### 🔴 Style-B redesign: bleeding-edge merged, AI difficulty row in style B, Home avatar opens the profile window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 23 of `Docs/MENU_REDESIGN_B.md`. The whole-session playtest script is
+`Docs/MENU_REDESIGN_B_PLAYTEST.md`. There is no editor in the session, so `/verify-unity` is still
+owed. Offline checks:
+- The player reference compile is clean.
+- The editor compile's only errors are in `AuthenticationServiceFacade.cs`, which is identical to
+  bleeding-edge; they come from the unfetchable Unity Playmode package.
+- Every Menu_Main generator passes `--check`.
+- `author_menu_configure` and `author_menu_home` each have a new negative control.
+
+**Verify in editor:**
+1. Skim Race configure window: an "AI pilots" row with Easy / Medium / Hard sits under the domain
+   columns. A press lights the plate, and a guest sees the host's pick but cannot change it. On
+   Joust the row is absent and the pad skips it.
+2. Home: pressing the avatar opens the profile window on the Avatar tab. The lamp on its corner
+   still only asks "Go offline?".
+3. The Cell Selector lists the Black Hole and Crystal Wormhole cells (bleeding-edge's Menu_Main
+   change, merged).
+
+---
+
+### 🔴 Style-B redesign, motion pass: menu windows replay their entrances on open (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 22.8 of `Docs/MENU_REDESIGN_B.md`. There is no editor in the session, so `/verify-unity`
+is still owed. Offline checks:
+- The player and editor reference compiles are clean.
+- These generators pass `--check` and `--self-test`, each with a new entrance-strip control:
+  - `author_menu_arcade`, `arena`, `mission`, `toybox`, `toyconfigure`
+  - `author_menu_hangar`, `purchase`, `configure`, `home`
+  - `author_ingame_hud`
+- Every other Menu_Main generator still passes `--check`.
+
+**Verify in editor:**
+1. Open Arcade, close it, open it again. The header and body rise in both times, and the cards
+   still pop in. Do the same for Arena, Toy Box and Missions. The mission cards now pop in too.
+2. Open a game's configure window twice. The tree, steps and panels rise in both times. A
+   **closed domain column and an out-of-range intensity node stay dimmed** after the entrance:
+   this is the regression to look for.
+3. Weekly leaderboard with fewer than three ranked pilots: the empty podium steps stay
+   **hidden** when the window opens.
+4. Go to the Hangar, leave, and come back. The header and body rise in, and the vessel rows rise
+   in order. Locked vessels stay dim.
+5. Go to Profile, Ark and Home from the nav. Their blocks rise in on every visit, not only at
+   launch. Fly freestyle and exit: Home's blocks rise in again.
+6. Pick a toy. The variant tiles rise in by grid position, and the preview, variants and about
+   panels step in.
+7. Receive a party invite. The popup drops in from above. It still auto-hides after 3 s, and
+   Join / Decline still work on a pad.
+8. A match scoreboard: the stat tiles rise one after another.
+
+---
+
+### 🔴 Style-B redesign, motion pass: in-game UI + KitEntrance layout fix (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Section 22.7 of `Docs/MENU_REDESIGN_B.md`. No editor in the session, so `/verify-unity` is still
+owed. Offline: the player and editor reference compiles are clean; `author_ingame_hud.py` passes
+`--check` and `--self-test` (24 controls).
+
+**Verify in editor:**
+1. Settings, Profile (quest cards) and the configure windows: rows rise into their **final**
+   places. Before the fix, a row could land stacked at its list's origin until something
+   re-laid the list out.
+2. A match: the score columns pop in one by one. Collecting a crystal makes the goal bar slide
+   and the count swell. READY rises in. Holding an ability's control shrinks its keycap slightly.
+3. Party Ready: the waiting plate rises in, and a chip swells as that pilot readies.
+4. Pause: the dark scrim fades, the window rises, then Resume, Settings and Leave step in.
+5. Connecting: the headline re-rises when it changes from "Building the arena" to "Waiting for
+   pilots".
+6. Match end: the reveal line punches, then "Jade wins" drops in above it, the rule grows
+   outward, and the detail rises in. The scoreboard: banner pop, rule grow, rows stagger, then
+   stats, then buttons.
+7. Spectating: the bar drops into place as it fades in.
+
+---
+
+### 🔴 Style-B menu redesign, item 12 follow-ups: match toasts, ThumbCursors (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab` was patched by `Tools/Build/author_ingame_hud.py` (`--check`, `--self-test`
+green) - see `Docs/MENU_REDESIGN_B.md` section 22.6. No editor in the session, so `/verify-unity`
+is still owed.
+
+**Verify in editor:**
+1. Finish a match that completes a quest, or unlocks an intensity: the "Quest complete" /
+   "Intensity N unlocked" toast drops in at the bottom centre over the scoreboard, and the
+   scoreboard's buttons stay clickable under it. The console no longer warns "No GameObject named
+   'ToastNotificationContainer'".
+2. Back in Menu_Main, menu toasts still appear at the top (the menu's own container).
+3. GameCanvas no longer has a ThumbCursors object, and nothing logs a missing reference.
+4. The objective arrow and its distance read in your domain's colour (Jade: cyan; Ruby: violet;
+   Gold: amber). In a toy mode it is still lime.
+5. Under the pause hex: a "Start" keycap on a pad, which becomes "Esc" as soon as you touch the
+   keyboard.
+6. Spectating: under the pilot's name, "Ruby - Sparrow" (their domain and hull), and it updates
+   as you switch pilot.
+
+---
+
+### 🔴 Style-B menu redesign, item 12e: spectating, match feed, freestyle HUD (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`SpectatorOverlay.cs`, `GameFeedText.prefab`, `NotificationUI.prefab`, `GameToastSettings.asset`,
+`InGameInstructionSet.prefab` and Menu_Main's `MenuMiniGameHUD` were changed (the assets through
+`Tools/Build/author_ingame_hud.py`, `--check` and `--self-test` green; 20 controls) - see
+`Docs/MENU_REDESIGN_B.md` section 22.5. No editor in the session, so `/verify-unity` is still owed.
+Offline: the player and editor reference compiles are clean.
+
+**Verify in editor:**
+1. Spectate (join a match as a viewer): one navy bar under the score columns reading SPECTATING |
+   the pilot in their domain colour, "1 / 3", < >, CAM: PILOT; LEAVE outlined in red at top right;
+   the hint line under it. LB/RB, Q/E, Y/C and Esc behave as before. No default-font text.
+2. Match feed (Skim Race with AI): rows appear bottom left, sliding in from the left. Each is a
+   dark glass strip that hugs its text, with a coloured bar on its left in the toaster's domain.
+   Older rows dim to half after about 6 s instead of disappearing, and at most 5 are kept.
+3. Menu_Main freestyle (tap the cell): the exit hex shows an X in its centre and still exits. The
+   ability row matches the in-game one (keycaps). The FTUE "Skim prisms ... 0 / 10" counter is in
+   Aldrich.
+
+---
+
+### 🔴 Style-B menu redesign, item 12d: end reveal, scoreboard (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`EndGameStatsPanel.prefab` and `GameCanvas.prefab` were patched, and `ScoreboardPanel.prefab`,
+`ScoreboardRow.prefab` and `ScoreboardStat.prefab` were authored, by
+`Tools/Build/author_ingame_hud.py` (`--check` and `--self-test` green; 18 controls) - see
+`Docs/MENU_REDESIGN_B.md` section 22.4. No editor in the session, so `/verify-unity` is still owed.
+Offline: the player and editor reference compiles are clean, and `EndOfMatchTextTests` compiles.
+
+**Verify in editor (Skim Race with AI, then a two-client party):**
+1. At the finish, the scene dims and shows "Jade wins" (in the winner's colour), the crowd line in
+   white, a short rule and "Race time ...". It holds for about 3 s. A long line such as NOT BEATING
+   THE ALLEGATIONS shrinks to fit.
+2. The scoreboard: the mode line, then "Jade victory" in Jade with a rule. Rows are ranked 1..n,
+   with octagon avatars ringed in their domain, your row outlined in white with "(you)", the scores,
+   and a gold "+200" on the winners. The stats tiles sit under the list. More than four pilots
+   scroll.
+3. Host: PLAY AGAIN (A) replays, and MAIN MENU (B) returns everyone. Each pad button fires exactly
+   one of them.
+4. Guest: REMATCH? (A) votes, and the faces appear under it. LEAVE LOBBY (B) leaves.
+5. Maelstrom: the host sees CONTINUE (A) and the guest sees LEAVE LOBBY (B).
+6. FrogletTools > Game Modes > GameCanvas Unifier: Fix prefab / Validate reports nothing new.
+
+---
+
+### 🔴 Style-B menu redesign, item 12c: pause window, connecting panel (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`R_Pause_Menu_Panel.prefab`, `ConnectingPanel.prefab` and `GameCanvas.prefab` were patched by
+`Tools/Build/author_ingame_hud.py` (`--check` and `--self-test` green; 15 controls) - see
+`Docs/MENU_REDESIGN_B.md` section 22.3. No editor in the session, so `/verify-unity` is still owed.
+Offline: the player and editor reference compiles are clean, and `PauseMenuTests` compiles.
+
+**Verify in editor:**
+1. Solo match: Start (or the pause hex) opens one window over a dark scrim (the pause SFX plays
+   once): "Paused", the mode name, the setup line, and your goal rows matching the HUD. Time is
+   frozen.
+2. B resumes, Start resumes, and Resume resumes. X opens Settings over the window. B closes
+   Settings and leaves you on the pause window (the match stays paused). Y leaves to the menu, and
+   A does nothing.
+3. As a party guest: Resume is visible and works, and the leave button reads "Leave party" and
+   leaves the party.
+4. Connecting (any multiplayer launch): "CONNECTING TO SHORE" top left with a breathing diamond,
+   then the headline "Building the arena" with a filling cyan bar, "42%  (n / m prisms)" and the
+   seconds counting on the right. Then "Waiting for pilots" with "1 / 2 ready". No pixel font
+   anywhere, including the Maelstrom rank list.
+
+---
+
+### 🔴 Style-B menu redesign, item 12b: Ready, waiting for pilots, countdown (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab` was patched in place by `Tools/Build/author_ingame_hud.py` (`--check` and
+`--self-test` green) - see `Docs/MENU_REDESIGN_B.md` section 22.2. No editor in the session, so
+`/verify-unity` is still owed. Offline: the player reference compile is clean.
+
+**Verify in editor:**
+1. Solo Skim Race: after the intro, READY shows as a green Play button with an A keycap and the
+   caption under it. A on the pad (or a click) presses it. The countdown reads 3, 2, 1 in white and
+   GO in green, large and centred, about one second per beat, and the race starts on GO as before.
+2. Two clients (party): the first to press sees "Waiting for pilots 1 / 2" with both avatars, the
+   other pilot dimmed as "Picking". When the second presses, their chip lights in their domain
+   colour, then the panel hides as the countdown starts.
+3. Play Again: READY returns and the waiting panel is gone.
+4. A client that leaves while the other waits: the countdown still starts (the existing ready gate),
+   and the panel hides with it.
+
+---
+
+### 🔴 Style-B menu redesign, item 12a: in-game HUD chrome (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab`, `DomainScorePanel.prefab`, `AbilityLockupStyle.asset` and
+`ControlGlyphSet.asset` were restyled in place by `Tools/Build/author_ingame_hud.py` (`--check`
+and `--self-test` green; `gamecanvas_unification_report.py --check` green) - see
+`Docs/MENU_REDESIGN_B.md` section 22.1. No editor in the session, so `/verify-unity` is still owed.
+Offline: the player and editor reference compiles are clean.
+
+**Verify in editor (any domain mode, e.g. Skim Race with AI):**
+1. Ability row: same cards in the same places on every vessel, now on a navy plate with a grey-blue
+   slant edge. Each chip is a keycap reading LT / RT / A / B on a pad, LSHIFT / RSHIFT / SPACE on a
+   keyboard. Switching device swaps the names. Holding a control lights its keycap. A locked slot
+   shows a dash and no keycap. Check the Squirrel's steal count still fits (`check_squirrel_card_fit.py`
+   passed offline).
+2. Goal row (top left): a slivered glass plate, "COLLECT CRYSTALS" in Chakra Petch, the count in
+   tabular digits with a dim /target, and a bar in your domain's colour. A score flares the plate.
+3. Score columns (top centre): Team Dark tint with a light hairline and a team-colour cap on top,
+   the score in the team colour. A score punches the number and flares the column; nothing breathes
+   at rest.
+4. Pause hex (top right): pause bars in the centre of the volume gauge, and pressing it still opens
+   pause. In Menu_Main freestyle, the exit button shows no glyph (unchanged).
+5. Hangar: the ability row there uses the same style asset, so its plates and keycaps change too.
+
+---
+
+### 🔴 Style-B menu redesign, item 6b: Home - Up next, party invite (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Up next cards and the new `PartyInvitePopup` were added by `Tools/Build/author_menu_home.py`
+(`Docs/MENU_REDESIGN_B.md` section 21.2). No editor in the session, so `/verify-unity` is still
+owed. Offline: the player and editor reference compiles are clean, and `HomeUpNextTests` compiles.
+
+**Verify in editor:**
+1. HOME shows two cards above the hubs:
+   - the weekly challenge, with its mode art, objective, a countdown ticking each second, and your
+     best (or "None yet");
+   - the current quest, with its art, its next goal and the intensity meter filled to your unlock.
+2. Press the weekly card: the Arcade opens with this week's challenge in the configure window.
+   Press the quest card: Profile opens.
+3. Open any window from Home: the Up next cards fade with the hub row and return when it closes.
+4. Party invite (two clients): the invite drops in under Settings, showing the host's avatar, name
+   and "Party N / M". The Jade bar drains over 3 s and the invite hides; Join joins, Decline
+   declines. Going offline hides it.
+5. FrogletTools > Interface > Wire Offline Menu Surfaces still reports the invite as gated.
+
+---
+
+### 🔴 Style-B menu redesign, item 6a: Home - hubs, pilot chip, settings (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+Home was restyled in place in Menu_Main by `Tools/Build/author_menu_home.py` (`--check` and
+`--self-test` green; `wire_home_hub_scene.py --check` clean) - see `Docs/MENU_REDESIGN_B.md`
+section 21.1. No editor in the session, so `/verify-unity` is still owed. Offline: the player and
+editor reference compiles are clean.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings under `HomeScreen`, and no
+   console noise about a removed component.
+2. Play to HOME:
+   - the hub row sits along the bottom: Toy Box, Arcade (gradient, A keycap), Arena, Mission
+     (grey), each with its glyph;
+   - hover shows press feedback; pressing a hub opens its window; Mission does nothing.
+3. Pad: focus lands on Arcade. D-pad moves the CTA ring. A on Toy Box opens only the Toy Box, not
+   the Arcade too. With nothing focused, A opens the Arcade.
+4. The pilot chip shows the avatar in an octagon, your name, Online in green, and your crystal
+   balance. Changing the avatar or name in the profile window updates the chip.
+5. Press the lamp: only the question opens ("Go offline?" with its note line). Yes switches,
+   No closes.
+6. X opens Settings once. The gear turns slowly. "Tap the cell to fly" breathes, and tapping the
+   cell starts freestyle.
+
+---
+
+### 🔴 Style-B menu redesign, item 11: menu toasts (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+The menu toasts were rebuilt from the approved Toasts board (`Docs/MENU_REDESIGN_B.md` section 20)
+by `Tools/Build/author_menu_toasts.py` (`--check` and `--self-test` green). There is a new
+`ToastKind` argument on `ToastNotificationAPI.Show`. No editor in the session, so `/verify-unity`
+is still owed. Offline: the player and editor reference compiles are clean.
+
+**Verify in editor:**
+1. Play Menu_Main and press the locked PORT tab. A toast drops in at the top centre below the nav,
+   reading "Not open yet." with a lock glyph. It hugs the text (not a 100 x 100 square), its Jade
+   bar drains over 5 s, and it fades out.
+2. Press PORT four times quickly. Three toasts show, newest on top, and the fourth waits and
+   appears as one leaves.
+3. Drag a toast to the right past about 60 px: it dismisses. Click a button under the empty stack
+   area: the click goes through.
+4. Fire a long message (for example a cloud-save failure). It wraps at 720 wide and the toast
+   grows taller.
+5. Success, error and goal toasts show the check (green), the diamond (red) and the crystal
+   (neutral). Trigger them with a friend accept, a party-join failure, and a locked intensity in
+   game configure.
+
+---
+
+### 🔴 Style-B menu redesign, item 8d: the Mission window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`MissionScreenModal` was rebuilt in the Arena window's style (`Docs/MENU_REDESIGN_B.md` section
+17.2) by `Tools/Build/author_menu_mission.py` (`--check` and `--self-test` green). Missions keep
+their own data path: `SO_Mission` is unchanged and the window draws `MissionGames` through the new
+`MissionExploreView`. No editor in the session, so `/verify-unity` is still owed. Offline: the
+player and editor reference compiles are clean, and the new `MissionCardTests` compiles.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `MissionScreenModal`. The
+   Home Mission hub still reads Unavailable.
+2. To see the window, temporarily set the Mission hub's `MenuAvailabilityView` to Available
+   (do not commit). Opening it should show "MISSIONS / Explore missions" with Back (B), the party
+   panel, and "ALL MISSIONS 1" above a Protect Mission card reading "Mission - difficulty 1 - 9",
+   "Protect Mission", the threat count and "Can you protect the cell?".
+3. Press the card. It shakes, plays the Denied sting and toasts "Missions open with the full
+   release.". Nothing launches.
+4. Pad: focus lands on the card, and B closes the window.
+5. Revert the hub's availability.
+
+---
+
+### 🔴 Style-B menu redesign, item 10: purchase confirmation, drawn blind (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`PurchaseItemConfirmationModal` in Menu_Main was rebuilt from the approved PurchaseConfirm board
+(`Docs/MENU_REDESIGN_B.md` section 19) by `Tools/Build/author_menu_purchase.py` (`--check` and
+`--self-test` green). No editor in the session, so `/verify-unity` is still owed. Offline: the
+player and editor reference compiles are clean.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on
+   `PurchaseItemConfirmationModal`, `StoreScreen` or the modal's `IconEmitter`.
+2. Shipping state: a captain upgrade buy in the Hangar still refuses with "Purchases open with the
+   full release." and the window never opens.
+3. Blind check: temporarily set `catalogPurchase` to Available in `SO_CommerceAvailability`
+   (do not commit), then buy an upgrade. Expected:
+   - the window pops in with "Spend [crystal] N to upgrade <captain>?" and the captain art;
+   - the bar's Gold share matches N against your balance, and the captions read "You keep ..." /
+     "Spend N of ...";
+   - the button reads SPEND N.
+4. SPEND confirms once: one purchase, the crystals fly to the spend line, and the balance counts
+   down. CANCEL and pad B each close the window once.
+5. Revert `SO_CommerceAvailability`.
+
+---
+
+### 🔴 Style-B menu redesign, item 9b: Credits (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`Panels/CreditsModal.prefab` authored from the approved Credits board (`Docs/MENU_REDESIGN_B.md`
+section 18.2) by `Tools/Build/author_menu_credits.py` (`--check`, `--self-test` green), with one
+instance in Menu_Main under `ModalWindows`, registered in `ScreenSwitcher.Modals`. `CreditsModal`
+gained row styles, grouped entries, right-stick scrolling and open entrances. No editor in the
+session: `/verify-unity` still owed. Offline: player + editor reference compiles clean.
+
+**Verify in editor:**
+1. Open Menu_Main: `ModalWindows/CreditsModal` exists, is invisible at start, and has no
+   missing-script or missing-reference warnings. In Play mode, no `CreditsModal (built)` appears
+   under the root canvas.
+2. Settings > General > CREDITS: the window pops in over Settings. The band drops in, the list
+   rises in, and "Credits" is the title.
+3. The rows read in hierarchy: "Cosmic Shore", "Middleware" and "Third-party notices" as section
+   headings; entry names larger than their roles; a rule above each entry; notices dimmer than
+   roles. The FMOD line is legible: "Made with FMOD Studio by Firelight Technologies Pty Ltd."
+4. Scroll to the bottom with the mouse wheel, the scrollbar, and the pad's right stick. The
+   EmojiOne notice is reachable, and the list neither stops short nor overshoots.
+5. Close with CLOSE, then re-open and close with B. Each closes only Credits and returns to
+   Settings. Re-opening starts at the top.
+
+---
+
+### 🔴 Style-B menu redesign, item 9a: the Settings window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`SettingsModal.prefab` rebuilt from the approved Settings boards (`Docs/MENU_REDESIGN_B.md`
+section 18.1) by `Tools/Build/author_menu_settings.py` (`--check`, `--self-test` green). It also
+prunes the overrides orphaned in Menu_Main and GameCanvas.prefab. No editor in the session:
+`/verify-unity` still owed. Offline: player + editor reference compiles clean.
+
+**Verify in editor:**
+1. Open Menu_Main and GameCanvas.prefab: no missing-script / missing-reference warnings on
+   `SettingsModal` or `R_Pause_Menu_Panel`; the console shows no "unresolvable modification" noise.
+2. Open Settings from HOME: the window pops in on the General page, title "General", gear tab
+   selected; the four tabs switch pages and the title (mouse and pad shoulder / d-pad).
+3. Each dropdown opens a themed list and applies; ON / OFF pairs show the active side selected and
+   apply. The FOV, music and SFX sliders move, and their readouts update (degrees, percent).
+4. Performance: pick a preset, then change anti-aliasing. The preset reads "Custom" and the restart
+   notice appears. Picking "Custom" itself snaps back. Auto detect and Run benchmark still work.
+5. General links: Credits opens the credits window; Quit asks or quits as before; the version text shows.
+6. In a match, pause > Settings: the same window, with the menu-only options disabled and their
+   notice showing.
+7. Pad: focus lands inside the page; B closes the window.
+
+---
+
+### 🔴 Style-B menu redesign, item 8c: Toy configure (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`ModalWindows/ToyboxGameConfigureModal` rebuilt from the approved ToyConfigure boards
+(`Docs/MENU_REDESIGN_B.md` section 17.4) by `Tools/Build/author_menu_toyconfigure.py` (`--check`,
+`--self-test` green). No editor in the session: `/verify-unity` still owed. Offline: player + editor
+reference compiles clean.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `ToyboxGameConfigureModal`.
+2. Toy Box > Vessel Changer: the window pops in with "PILOT / Vessel Changer", the live preview orbiting
+   the toy, About with its description, and one tile per offered hull (icon, name; the hull you fly reads
+   "flying" in green and is not pressable); the count matches the tiles.
+3. Pick a hull: its tile takes the selected border, the status reads "<Hull> selected", the preview
+   caption names it, SWITCH lights; SWITCH swaps the hull.
+4. Spawn Matrix > Fauna > Shark: the breadcrumb follows, the panel's BACK appears (no "< Back" row), the
+   element tiles show their petals, the button reads SPAWN; BACK steps one layer at a time; the header
+   Back steps out of the branch before it closes the window.
+5. NAVIGATE takes the player to the toy.
+6. Pad: focus lands on the first tile; A on a tile selects it without also navigating; B inside a branch
+   steps back one layer and only B on the top layer closes the window.
+
+---
+
+### 🔴 Style-B menu redesign, item 8b: the Toy Box (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`ModalWindows/ToyboxScreenModal` rebuilt from the approved ToyBox board (`Docs/MENU_REDESIGN_B.md`
+section 17.3) by `Tools/Build/author_menu_toybox.py` (`--check`, `--self-test` green). No editor in the
+session: `/verify-unity` still owed. Offline: player + editor reference compiles clean.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `ToyboxScreenModal`.
+2. HOME > Toy Box: "TOY BOX / Explore toys", Back (B), the party panel, today's activity (green border,
+   portrait, activity, toy, "ENDS IN" countdown ticking, "TRY IT +10") and the shuffle card.
+3. ALL TOYS shows the live count; each toy card shows its accent stripe, portrait, section, name and
+   tagline; a card opens Toy configure for that toy.
+4. Today's activity opens the toy with the activity selected; after trying it the chip reads "DONE".
+5. Shuffle: the window closes into freestyle and the world / domain / hull re-roll; the detail line then
+   names what changed. With no toy standing it reads "Nothing to shuffle".
+6. With freestyle not built yet, the grid is empty and "No toys are standing right now." shows.
+7. Pad: focus lands on today's activity; the grid, the panel and Back are reachable; B closes.
+
+---
+
+### 🔴 Style-B menu redesign, item 8a: the Arena window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`ModalWindows/ArenaScreenModal` rebuilt from the approved ArenaWindow board (`Docs/MENU_REDESIGN_B.md`
+section 17.1) by `Tools/Build/author_menu_arena.py` (`--check`, `--self-test` green). No editor in the
+session: `/verify-unity` still owed. Offline: player + editor reference compiles clean; the new
+`ArenaGameCardTests` compile but have not run.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `ArenaScreenModal`.
+2. HOME > Arena: the window opens full screen with "ARENA / Explore arena", Back (B), the shared party
+   panel on the left and the arena cards in two columns ("ALL GAMES" with the count).
+3. Each card: art, "ARENA - 2 - 6 PILOTS" (its own range), title, tagline, "2 - 3 DOMAINS", one hull chip
+   per seated vessel class (no gaps); the star toggles the favourite and favourites sort first.
+4. A card opens the Arena configure window (item 4) for that game; a locked card shows the lock.
+5. Party: seats, invites and the online list work as in the Arcade window; offline greys the panel.
+6. Pad: focus lands on the first card; D-pad moves through the grid, the panel and Back; B closes.
+
+---
+
+### 🔴 Style-B menu redesign, item 7: the Ark screen's converter overlay (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`ArkScreen/ElementalConverter` gains the approved Ark / ArkConverting overlay (`Docs/MENU_REDESIGN_B.md`
+section 16) from `Tools/Build/author_menu_ark.py` (`--check`, `--self-test` green;
+`author_elemental_converter.py --check` and `--self-test` green again). No editor in the session:
+`/verify-unity` still owed. Offline: player + editor reference compiles clean; the new
+`OmniCombineTests` clock cases compile but have not run.
+
+**Verify in editor:**
+1. ARK tab: the crystals idle full-bleed (the picture runs under the nav); the title band, recipe panel
+   (four rows "Ready", Omni dim) and converter bar ("Ready", "00:00 / --:--", CONVERT green with the
+   sweep) draw over it; no legacy "ELEMENTAL CONVERTER" title or green block button.
+2. Pad: focus lands on CONVERT; A presses it.
+3. CONVERT: the button greys to "CONVERTING..." and ignores presses; the clock counts against the run's
+   length; each row turns "Merging" (green, crystal bobbing) then "Merged" as its crystal lands, its
+   segment fills and then carries a spark; "N of 4 merged" follows.
+4. When the omni forms the Omni block pops in and floats; at the end the bar reads "Converted" and the
+   button "CONVERT AGAIN", which plays a fresh run.
+5. Leave and re-enter the Ark mid-run: it returns to the idle four with the overlay reset.
+
+---
+
+### 🔴 Style-B menu redesign, item 5b: the profile window (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`PlayerDataSelectModal` (ProfileIconSelectView) rebuilt from the approved ProfileModal / ProfileName /
+ProfileNameError boards (`Docs/MENU_REDESIGN_B.md` section 15.2) by
+`Tools/Build/author_menu_profile_window.py` (`--check`, `--self-test` green). No editor in the session:
+`/verify-unity` still owed. Offline: player + editor reference compiles clean; new
+`DisplayNameValidatorTests` cases (live rules) compile but have not run.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `PlayerDataSelectModal`.
+2. Profile > Change avatar: the window pops in on AVATAR (one page only, underline under AVATAR); the
+   preview column shows your avatar, name, Online and the party-slot chip.
+3. Pick an avatar: the ring moves, the preview and the Profile screen update, the note reads "Saved to
+   your profile."; close and reopen - the ring is on the saved avatar.
+4. DISPLAY NAME tab (and Rename): the field holds your name with "N / 25"; type `Gr__adies` - three rules
+   tick, "No doubled spaces or punctuation" stays open, the red strip reads "Names cannot contain
+   back-to-back spaces or punctuation.", the border turns red, Submit greys; the preview name follows.
+5. Type a taken name and Submit (or Enter): the hex spins, then the strip reads the taken message and
+   the field shakes; type again - the strip clears.
+6. A valid new name: Submit saves and closes; Profile, Home and the party slot show it. Cancel restores
+   the old name and closes.
+7. Pad: focus lands on the first avatar (Avatar) or the field (Display name); the tabs, Done, Submit,
+   Cancel and Close are reachable; B closes.
+8. The lamp (Online indicator) still opens the window.
+
+---
+
+### 🔴 Style-B menu redesign, item 5a: the Profile screen (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+`Screens/ProfileScreen` rebuilt from the approved Profile boards (`Docs/MENU_REDESIGN_B.md` section 15)
+by `Tools/Build/author_menu_profile.py` (`--check`, `--self-test` green). No editor in the session:
+`/verify-unity` still owed. Offline: player + editor reference compiles clean.
+
+**Verify in editor:**
+1. PROFILE tab: pilot card shows your avatar, name, crystals, games, flight time ("6h 12m"), sessions;
+   play a freestyle flight, come back - flight time moved.
+2. Avatar and Change avatar open the profile window on Avatar; Rename opens it on Display name.
+3. Episodes card: locked look; pressing it plays Denied, shakes the card, toasts "Episodes arrive with
+   the full release.".
+4. Five quest cards fit with no scroll; card art is each mode's card image; states read Completed /
+   Ready to claim / In progress / Locked; goals tick per intensity; "N of 5 complete" and the bar match.
+5. Claim on a ready card: pop + sweep, the next card unlocks (sequence unchanged); Play opens the Arcade.
+6. The track nodes fill as quests are claimed; the frontier segment carries a spark.
+7. Pad: focus lands on the frontier card's Claim / Play.
+
+---
+
+### 🔴 Style-B menu redesign, item 4: the game configure windows and the weekly leaderboard (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
+
+The arcade card window (`ArcadeGameConfigureModal.prefab`) and the Arena and Maelstrom windows in
+Menu_Main rebuilt from the approved Configure boards (`Docs/MENU_REDESIGN_B.md` section 14): one
+configure tree per window (vessel / intensity / pilots), per-domain "+ AI", named seat rows, Start's
+refusal and waiting lines. Generated by `Tools/Build/author_menu_configure.py` (`--check`,
+`--self-test` green). No editor and no `unity` CLI in the authoring session, so `/verify-unity`, the
+Game Mode Prefab Kit Validate and every step below are still owed. Offline: player and editor
+reference compiles clean; `check_generated_assets.py` at its 788 baseline.
+
+**Verify in editor:**
+1. Open Menu_Main: no missing-script or missing-reference warnings on `ArcadeGameConfigureModal`,
+   `ArenaGameConfigureModal`, `MaelstromGameConfigurationModal`.
+2. Arcade > any card: the window opens over the Arcade; the tree draws in (rise-in, routes grow, a
+   spark runs the buses); the hull node shows the card's hangar render and class text.
+3. Intensity: a locked level shows its goal and refuses with the Denied sting, a shake and a toast
+   naming THAT level's goal; an open level selects, its bars grow, the route stub moves under it.
+4. Pilots: your seat row (name, "You / Host") sits under Jade; tapping Ruby moves it; each column's
+   "+ AI" places a bot there (row named by its hull or "AI pilot", with a kick X); the count on each
+   tile follows; "+ AI" disappears when the house is full and for guests.
+5. Start: "Ready to launch" until pressed, then "Waiting for others..." (multiplayer); a spent weekly
+   challenge greys Start with "Played today - come back tomorrow."
+6. Weekly challenge card: eyebrow "Weekly challenge", LEADERBOARD button beside Back, only the pinned
+   intensity offered and never drawn locked, no "+ AI".
+7. ONE B press closes ONLY the configure window (ModalType moved 10 -> 1), the Arcade stays open.
+8. Arena: the hull strip lists the card's hulls; tapping one shows it, a hull another pilot holds is
+   locked and shakes; CLAIM claims it; Start reads "Claim a hull to start." until then; the controls
+   block follows the shown hull.
+9. Maelstrom: the clip plays in the preview; the format block reads 6 points / up to 7 / 2 / 1 / 0 /
+   4; the pool list fills per intensity with its "N of M games" summary; Start fires once.
+10. Favourite star toggles on all three windows.
+11. Pad: focus lands on the tree (never Back); d-pad left/right no longer changes hidden steppers.
+12. Weekly leaderboard (LEADERBOARD on the weekly card): title is the card name, "Ends in 6d hh:mm:ss"
+    ticks; World / Regional / Friends hex tabs select through the tile (Friends dim while disabled);
+    ranks 1-3 on the podium (1st centre, floating face), the list starts at 4th, your row tinted with
+    " *"; "Your best run" shows your ordinal and this week's best time; your reward band is outlined
+    with "You"; an empty board reads "No times yet - be the first."; B / Back closes only the board.
+
+---
+
+### 🔴 Style-B menu redesign, item 3: the Arcade and the shared party panel (`claude/new-session-76hnyc`, 2026-10-14) — NOT EDITOR-VERIFIED
+
+`ModalWindows/ArcadeScreenModal` rebuilt from the approved Arcade boards (`Docs/MENU_REDESIGN_B.md`
+§12): one party panel (seats, invites, online pilots), the weekly and Maelstrom feature cards and a
+7 x 4 grid of kit cards. No editor and no `unity` CLI in the authoring session, so `/verify-unity`,
+the new edit-mode tests and the Game Mode Prefab Kit Validate did NOT run. Offline:
+`unity_refcompile` player and editor configs report 0 project errors (a planted CS1061 in
+`KitGameCard.cs` failed the gate first); `author_menu_arcade.py --check` validates the committed
+wiring and `--self-test` catches 12 planted defects; every neighbouring generator's `--check`
+passes; `check_generated_assets.py` reports only known false-positive classes on the branch
+(package script guids, `KitButtonSmall` variant-derived ids - each proven derivable - and the
+audit's missing `m_PersistentCalls` schema, which item 0's working `KitButton` trips too), and a
+planted unknown field on `KitGameCard` was caught.
+
+**What landed**
+
+1. Code: `KitPartySlot`, `KitOnlineRow`, `KitRequestRow`, `KitGameCard` (kit subclasses of the
+   legacy row / card classes, which now draw through virtual hooks); `ArcadeLobbyList` (roles, count,
+   Leave hidden while solo, open seat focuses the list); `FriendsListPanel` (embedded, focus, your own
+   party left out of the online list); `ArcadeExploreView` (Maelstrom card, ALL GAMES count);
+   `ModalWindowCloseButton`; kit `KitVisibility`, `KitScrollIntoView`, `KitListCounter`,
+   `KitFocusKeeper`, `KitTile` (selected border token, lock label), `KitCoverImage` (refits on any
+   sprite change). Tests: `KitVisibilityTests`.
+2. Prefabs: `_Prefabs/UI Elements/Main Menu Screens/Party/` (`PartySlot`, `PartyRequestRow`,
+   `PartyOnlineRow`, `PartyPanel`) and `.../Arcade/` (`ArcadeGameCard`, `ArcadeView`). Sprites
+   `kit_fade_h`, `kit_oct_fill`; glyphs `chrome_plus`, `chrome_star`, `chrome_star_fill`.
+3. `Menu_Main.unity`: the old Header, GameSelectScrollView, ArcadeLobbyList, CloseButton and
+   FriendListPanel are gone; one `ArcadeView` under `Arcade_Panel/Explore`; the modal root
+   stretches full screen; `Arcade_Panel`'s gradient Image is off; the OfflineUIGate gates the party
+   panel; `QuestGraphRunner.gameCards` names the 28 new cards.
+
+**Verify in editor**
+
+1. Let the project import and compile. Expect no console errors and no missing-script or
+   missing-prefab warnings on Menu_Main load. Run the edit-mode tests (`KitVisibilityTests` should
+   pass) and FrogletTools > Game Modes > Game Mode Prefab Kit > Validate.
+2. Open `Assets/_Prefabs/UI Elements/Main Menu Screens/Arcade/ArcadeView.prefab`: header top-left
+   with BACK + B keycap top-right, the party panel left (four "Open slot" tiles), two feature cards
+   and the card grid right. Open `ArcadeGameCard.prefab`: art, vessel chip top-left, star top-right,
+   title bottom-left, no visible padlock.
+3. Play from Bootstrap; on HOME press the Arcade hub button. Compare with `Arcade.dc.html` on
+   https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2.
+   - **Window:** the nav band is dimmed, the rest is the dark backdrop. The cards pop in.
+   - **Party panel (solo):** "PARTY 1 / 4", "N Players Online"; your seat reads your name and
+     "YOU / HOST" (or "YOU") with your domain colour ring; three "Open slot" tiles; no Leave button;
+     ONLINE lists other pilots or the empty line.
+   - **Cards:** 28, favourites first then A to Z; vessel icons and genre petals present; click a
+     star: it fills Control Active and the card moves to the front. Click a card: its configure
+     window opens as before. With the developer unlock off, locked cards show the padlock and
+     "LOCKED" over dimmed art and do not open.
+   - **Feature cards:** the weekly card shows this week's mode, art and countdown and opens the
+     weekly launch; the Maelstrom card opens the Maelstrom panel.
+4. **Gamepad:** on opening, focus lands on the weekly card (green ring). D-pad down through all
+   seven rows: the grid scrolls so the focused card is always fully visible. Left from the first
+   column reaches the party panel (open slot tiles). Press A on an open slot: focus moves into the
+   ONLINE list (if anyone is online). B closes the window with the out animation; so does BACK.
+   Reopen: no stray overlay.
+5. **With a second client** (two editors / a build): invite them from the ONLINE row: the button
+   reads "INVITED" (inactive) and the ✕ beside it retracts. On the other client the invite appears
+   under INVITES with accept / decline; accept: both see two seats, the host sees a kick icon on
+   the guest's seat, the guest's seat reads "PILOT", and LEAVE PARTY appears. Pick a card each and
+   check the pick avatars and your own card's Control Active border. Kick and leave behave as before.
+6. **Offline session:** the party panel is hidden and the explore area takes the full width.
+6b. **`ArcadeDPadNav` retired (all four windows):** with a gamepad connected, on HOME press the d-pad
+   and A with no window open: nothing in the (hidden) Arcade, Arena, Mission or Toy Box grid is
+   selected or opened, and HOME's own focus moves normally. Inside the Arena / Mission / Toy Box
+   windows the pad still moves between cards (automatic navigation, as before). Expect no
+   missing-script warning anywhere (the script and every component are gone).
+7. Narrow the Game view to 16:10 (1728x1080) and 4:3: the party panel stays 420 wide; cards shrink
+   and long titles wrap to two lines; nothing overlaps.
+
+---
+
+### 🟢 Style-B menu redesign, item 2: the Hangar as one three-zone view (`claude/new-session-76hnyc`, 2026-10-14) — approved in editor 2026-10-14
+
+`Screens/Hangar Screen` rebuilt from the approved Hangar boards (`Docs/MENU_REDESIGN_B.md` §11):
+vessel list, selected vessel, abilities, and the spend-crystals popup. No editor and no `unity`
+CLI in the authoring session, so `/verify-unity` and the Game Mode Prefab Kit Validate did NOT run.
+Prisma could not stand in either: its live compile fails on existing engine gaps and on the kit's
+`DoStateTransition(state, instant)` override (filed as a separate task). Offline:
+`unity_refcompile` player and editor configs report 0 project errors (a planted CS1061 in
+`HangarVesselTile.cs` failed the gate first); `author_menu_hangar.py --check` validates the
+committed wiring and `--self-test` catches 7 planted defects; `check_generated_assets.py` reports
+only package-script guids on the new files, and a planted unknown field on the detail view was
+caught.
+
+**What landed**
+
+1. Code: `HangarScreen` (list + selection follows focus), `HangarVesselDetailView` (centre zone,
+   ability column, popup), new `HangarVesselTile`, `HangarAbilityRow`, kit `KitCoverImage`.
+2. Prefabs in `_Prefabs/UI Elements/Main Menu Screens/Hangar/`: `HangarVesselTile` (a variant of
+   `KitTile`), `HangarAbilityRow`, `HangarView`. Kit sprite `kit_fade_v`.
+3. `Menu_Main.unity`: `GridPanel` and `DetailPanel` replaced by one `HangarView` instance;
+   `HangarScreen`'s list / detail fields point into it.
+
+**Verify in editor**
+
+1. Let the project import and compile. Expect no console errors and no missing-script or
+   missing-prefab warnings on Menu_Main load, in particular none naming `HangarVesselTile`,
+   `HangarAbilityRow`, `HangarVesselDetailView` or `KitCoverImage`.
+2. Open `Assets/_Prefabs/UI Elements/Main Menu Screens/Hangar/HangarView.prefab` (Game view
+   1920x1080 if you preview it in a scene): header top-left, list left, empty hero frame centre,
+   ability panel right. The popup is present but hidden (CanvasGroup alpha 0).
+3. Run FrogletTools > Game Modes > Game Mode Prefab Kit > Validate.
+4. Play from Bootstrap as usual; the menu opens on HOME. Click HANGAR in the top nav (or press LT
+   twice). Compare with `Hangar.dc.html` on https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2.
+   - **List:** 11 tiles fade in one after another. In the editor the developer unlock gate is ON by
+     default, so every tile reads "OWNED" and every vessel shows "UNLOCKED". To see the shipping
+     state, untick "Unlock everything (vessels, modes, intensities, hangar)" under Master Developer
+     Unlock in FrogletTools > Toolbox (Quest or Vessels tab; it is a PlayerPrefs switch and the list
+     rebuilds live). Expect Squirrel "OWNED" first and the rest locked with the padlock and a gold
+     "LOCKED / 4000" (or / 100, / FREE for the Stoat). Tick it again afterwards.
+   - **Click** a tile: its border goes light, the hero shows that vessel's preview (Butterfly,
+     Thresher, Scarab and Stoat show their icon instead), the name, chip, description and every
+     ability update.
+   - **Gamepad / arrow keys:** on entering, the first tile is focused (green ring). Up / down moves
+     focus AND selection. Right reaches the unlock button. LT / RT still change screens.
+5. **Unlock (gate off, a locked vessel selected):** the button reads "UNLOCK - 4000" in gold.
+   - Press it: the screen dims, the popup reads "4000 to unlock Manta" with your balance; Confirm
+     (gold) sits left of Cancel on the popup's bottom edge; focus is on Confirm. Left / right move
+     between the two only.
+   - With too few crystals: Confirm is grey and disabled, "You need N more crystals." shows, focus
+     is on Cancel.
+   - Cancel: the popup closes and focus returns to the unlock button.
+   - Confirm with enough crystals: with cloud progression off the purchase is still refused and
+     the popup stays open (unchanged, known). If your setup lets it succeed: the vessel moves to
+     the owned group, its chip reads OWNED and focus is on its tile.
+6. Narrow the Game view to 16:10 (1728x1080 at the reference) and 4:3: the list stays 350 wide, the
+   centre and the ability column shrink, the preview still fills its frame, nothing overlaps.
+7. Report any text that is clipped or any glyph box: the Squirrel and Butterfly descriptions and
+   Sparrow's Skyburst Rockets contain characters the fonts do not have (known content issue).
+
+---
+
+### 🟢 Style-B menu redesign, item 1: the top nav in Menu_Main (`claude/new-session-76hnyc`, 2026-10-14) — approved in editor 2026-10-14
+
+`Safe Area/NavBar` restyled to the approved Menu Redesign B boards (`Docs/MENU_REDESIGN_B.md` §10).
+Look and layout only: no navigation code changed. No editor and no `unity` CLI in the authoring
+session, so `/verify-unity` and the Game Mode Prefab Kit Validate did NOT run. Offline:
+`unity_refcompile` player and editor configs report 0 project errors (a planted CS1061 in
+`KitHoverTint.cs` failed the gate first); `Tools/Build/author_menu_topnav.py --check` validates the
+committed wiring and `--self-test` catches all 7 planted defects; `check_generated_assets.py` reports
+only package-script guids on the new scene documents, and a planted unknown field on the PORT
+`MenuAvailabilityView` was caught.
+
+**What landed**
+
+1. `KitHoverTint` (`_Scripts/UI/Kit/`) - pointer-only hover lift for kit surfaces that are not
+   `KitButton`s.
+2. `KitTopNavTab.prefab` - its root is now the hit area and carries `KitHoverTint`; a `Lock` child
+   (off by default) is the locked look.
+3. `Menu_Main.unity` - NavBar 84 tall with a band and a 1 px rule; five `KitTopNavTab` instances
+   (HangarLink..ProfileLink) keep their `EventTrigger` -> `OnClick<X>Nav`; `LeftArrrow` /
+   `RightArrow` keep their Buttons and wear `KitKeycap` "LT" / "RT"; `L1` / `R1 Indicator`,
+   `NavBarGradient` and `NavBarLine` deleted; PORT has an authored `MenuAvailabilityView`.
+
+**Verify in editor**
+
+1. Let the project import and compile. Expect no console errors, in particular none naming
+   `KitHoverTint`, and no "missing prefab" or "missing script" warnings on Menu_Main load.
+2. Open `Assets/_Scenes/Menu_Main.unity`. In the Hierarchy, `UI_Refactored/Safe Area/NavBar` should
+   hold `Band`, `Rule`, `NavBarButtons`; under `NavBarButtons`: `LeftArrrow`, `HangarLink`, `ArkLink`,
+   `HomeLink`, `PortLink`, `ProfileLink`, `RightArrow`, the five links shown as prefab instances
+   (blue). Game view at 1920x1080: a thin dark band across the top with LT, HANGAR, ARK, HOME (Jade,
+   underlined), PORT, PROFILE, RT centred. Compare with `Main.dc.html` on
+   https://claude.ai/artifact/W8DBZaW6pu3L28egCjrKo2. In edit mode PORT reads like the other tabs;
+   its padlock and dim come from runtime state.
+3. Select `UI_Refactored/Safe Area/Screens` (it holds `ScreenSwitcher`): `Nav Active Images` / `Nav Inactive Images` list the
+   five links' `ActiveImage` / `InactiveImage` (none missing); `Nav Bar Line` is None and
+   `Nav Bar Line Sprites` is empty, on purpose.
+4. Run FrogletTools > Game Modes > Game Mode Prefab Kit > Validate (required before a scene commit).
+5. Enter Play mode from Bootstrap as usual and reach the menu (it opens on HOME).
+   - **Locked PORT**: grey word with a padlock to its left. Click it: the Denied sting plus the
+     "Not open yet." toast (today's toast look until item 11), and the screen does not change.
+   - **Mouse**: hover each unlocked tab - the grey word turns near-white and returns on exit; the
+     active tab stays Jade. Click HANGAR, ARK, PROFILE, HOME in turn: the screen changes, the Jade
+     word and underline move to the clicked tab. Hover the LT / RT keycaps: border and letters turn
+     near-white. Click RT from HOME: lands on PROFILE (PORT skipped); LT from PROFILE: back to HOME.
+   - **Whole tab is clickable**: click in the band just above or below a word - it still navigates.
+   - **Gamepad**: LT / RT step screens left / right, skipping PORT, exactly as before.
+   - **Freestyle round trip**: toggle freestyle and back. The nav hides and returns, and PORT is
+     still grey with its padlock.
+6. Narrow the Game view (or use a notch/safe-area simulator) - the row stays centred in the safe
+   area and nothing overlaps.
+7. Report any word that looks clipped or crowded: tab widths come from a PIL measurement of the
+   font, not TMP's own layout.
+
+---
+
+### 🔴 Style-B menu redesign, item 0: the component kit (`claude/new-session-76hnyc`, 2026-10-13) — NOT EDITOR-VERIFIED
+
+The reusable kit every later style-B item is built from (`Docs/MENU_REDESIGN_B.md`). No editor and no
+`unity` CLI in the authoring session, so `/verify-unity` did NOT run. Offline: `unity_refcompile`
+player and editor configs report 0 project errors and 0 diagnostics in the changed files (a planted
+CS1061 failed the gate first); `check_generated_assets.py` reports only its known limits on new
+files (package script guids, UnityEvent's private `m_PersistentCalls`, variant-derived fileIDs - the
+XOR rule was proved 12/12 against Menu_Main's shipped variant instance), and its negative control
+fires; the three generators hold their output under `--check`. **No shipping prefab or scene is
+touched.**
+
+**What landed**
+
+1. `UIThemeSO` gains `controlActive` 00D4FF, `purchase` FFAE00, `tooltip` A600FF (UI roles, not team
+   identity) and `UIColorToken` 10-12.
+2. `_Graphics/UI/Kit/` - 19 white+alpha sprites (slivers 14/10 as fill, 1px, 2px, normal and
+   flipped; hexagon tile and handle; end-game banner and caps). PPU 480 against the canvas' 240.
+3. `_Graphics/Fonts/ChakraPetch/` - Chakra Petch SemiBold TTF + OFL and a DYNAMIC TMP asset.
+4. `_Scripts/UI/Kit/` - `KitButton`, `KitTile` (Button subclasses painting every state from tokens),
+   `KitText` + `UITypeRolesSO`, `TabularText`, `KitThemedGraphic`, `KitGradient`, and an inspector.
+5. `_Prefabs/UI Elements/Kit/` - 12 prefabs (KitButtonSmall is a Prefab Variant of KitButton) and
+   `_SO_Assets/UI/UITypeRoles.asset`.
+6. `_Scenes/Game_TestDesign/UIKitTestScene.unity` - not in Build Settings.
+
+**Verify in editor**
+
+1. Let the project import and compile. Expect **no** console errors, in particular none naming
+   `KitSelectableBase` (it overrides `Selectable.Awake` / `OnDisable` / `DoStateTransition`, whose
+   access the offline compile could only take from uGUI's documentation).
+2. Open `Assets/_Scenes/Game_TestDesign/UIKitTestScene.unity`, Game view at 1920x1080.
+   - Left half: every kit sprite at three widths. The corner cuts stay the same size at every width
+     (14 on the `kit_sliver14_*` rows, 10 on `kit_sliver10_*`); `_flip` rows cut the other two
+     corners; the outlines are hollow; the hexagons are flat-topped.
+   - Right half: the top-nav strip (HANGAR in Jade with an underline, PORT grey), the button matrix,
+     three vessel tiles (Squirrel selected with a 2px light border; Dolphin and Manta dimmed with a
+     lock), four hex tiles (GENERAL selected), chips, a currency pill, a panel and a popup whose two
+     buttons sit ON its bottom edge, CONFIRM left of CANCEL.
+3. Compare against the approved board `Menu B · Item 0 · Component kit` on
+   https://claude.ai/artifact/KtM3MAtYnrwu9biej4uXuM - colours and shapes should match.
+4. **Chakra Petch SemiBold renders**: every caps label/button text is a semibold face, not a
+   fallback box or Liberation Sans. (Dynamic font: the first play fills
+   `ChakraPetch-SemiBold SDF.asset`, which then shows as modified - commit it, or flip it to Static.)
+5. Enter Play mode. **Mouse:** hover a button (fill brightens), press (opaque darkens), release -
+   no CTA ring after a click. **Gamepad / keyboard:** the test scene has no first-selected object, so
+   click any button once, then move with the D-pad / arrow keys - a CTA green ring appears and
+   follows focus around buttons and tiles; the disabled UNLOCKED buttons are skipped.
+6. Select `KitButton.prefab`: the inspector shows Variant / Fill / Parts and no Transition block.
+   Change Variant on a scene button - it repaints immediately.
+7. Run **FrogletTools > Game Modes > Game Mode Prefab Kit > Validate** with the test scene open
+   (the scene instances the new kit prefabs; it contains no shared game prefab).
+
+**Known gaps (by design, item 0):** no shipping screen uses the kit yet; the party panel prefab, the
+two-label toggle and the slider prefab arrive with the items that need them (3 and 9).
+
+---
+
+---
+
+### 🔴 The fleet colour scheme: shared vessel materials, slot fixes, every card re-rendered (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable (no Editor, no `unity` binary). No C# changed. What ran:
+- `vessel_colors.py --check` (the four materials carry the scheme);
+- `render_cards.py --all --check` (fourteen hulls' cards match a fresh render);
+- `author_{shrike,brittlestar,stoat,angler,thresher}_assets.py --check`, `author_angler_icons.py --check`,
+  `author_urchin_card_icons.py --check` (now a pointer check, with a negative control that fired) and
+  `check_vessel_class_icons.py`.
+
+Scheme, reasons and sheets: `Docs/VesselModels/COLOR.md`. Team tasks: T-20261018-d3e5 (this look),
+T-20261018-be55 (Jade/Gold palette decision), T-20261018-a0e2 (Grizzly's Lime jets).
+
+- **Materials** (sRGB rim / face):
+  - `BlueBaseVesselMaterial` and `BlueBaseOpaqueVesselMaterial`: dark gunmetal, (0.18, 0.21, 0.33) / (0.028, 0.033, 0.065);
+  - `ScreenVesselMaterial`: sapphire, (0.70, 0.80, 1.0) / (0.06, 0.16, 0.62);
+  - `EngineVesselMaterial`: ember, (0.42, 0.11, 0.04) / (0.19, 0.04, 0.02), resting `_ColorMultiplier` 5 → 1
+    (FlareEngine still sets 5 on boost).
+- **Slots**:
+  - Manta, Termite and Falcon draw `[GreenAccent, BlueBase, Screen, Engine]`. Their live `manta` renderer is in
+    `_shipGeometries`, painted by identity (`_domainReplacesMaterials = [GreenAccent]`, the sharedMaterials
+    path, which clones nothing).
+  - Every skinned hull's engine and body flares now write a per-slot property block, not `renderer.materials`
+    (`VesselAnimation.ApplyFlare`; ship review: the models made the old cloning path live on nine more hulls).
+    Check that the jet exits still brighten on boost and the domain still pulses on a speed burst.
+  - The Rhino's meta: `accent.005` is the domain, `BASE.005` the body, `N.005` the Engine.
+  - The inactive mantis copy's `N` is Engine.
+- **Cards**: every class card, inactive card, silhouette, large image and hangar preview of the fourteen hulls is
+  rendered from its model with the silver CLASS livery on the domain slot. The artist hulls' files are rewritten
+  in place, so `Dolphin_Square.png`'s other users and the Termite's silhouette change too.
+- **Follow-up, same day**: Gold's `ShipColor1`/`ShipColor2` were swapped (they had been entered reversed) in
+  `OriginalColorSetSO` and the unused Yellow materials. Every card now uses one camera, with the nose to the upper
+  right.
+
+Verify in the Editor:
+1. Fly Squirrel, Rhino, Manta and Thresher in each domain at the chase camera. The domain is the brightest thing
+   on the hull, the glass reads as glass, and the body's steel rim draws the silhouette against the sky. The jet
+   exits are a dull ember at rest and hot red on boost.
+2. **Body ghosting**: the body is transparent with no depth write. Look for far parts of a hull showing through
+   near parts (rim lines where none should be). If they do, move the hull to `BlueBaseOpaqueVesselMaterial`.
+3. **Manta / Termite / Falcon**: the eye-spots take the team colour, the canopy is glass, the trailing-edge
+   stripes are ember (not lime), and `FlareEngine` lights the stripes. On the Falcon, check that
+   `VesselCustomization` no longer logs the empty-geometry error.
+4. **Rhino**: the neon stripes take the team colour, the hull is gunmetal, and the nozzles and pod rings are ember.
+5. Menu: the vessel carousel, the class cards, the hangar previews and the squad images show the new renders. No
+   white squares.
+6. **Gold**: a Gold ship is dark at its silhouette and bright face-on, like Ruby and Jade. In a match, the Gold
+   score chip's backdrop is the muted brown and its accent strip the bright gold.
+
+### 🔴 The fleet pass: every playable hull is a pipeline-owned model; card images from the models (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable (no Editor, no `unity` binary). What ran on the merged tree: the headless reference
+compile (80 assemblies, no errors in project code); `build.py <vessel> --check` for all fourteen specs; every touched
+generator's `--check` (thresher, shrike, brittlestar, stoat, angler, urchin, rhino sword combos, butterfly dust,
+preview spawns, the icon tools); `render_cards.py <V> --check` for the seven re-carded hulls; the fleet gates
+(console logging, class icons, network prefab hashes, prefab container, shared channels, camera far clip,
+conditional compilation). Contact sheets: `Docs/VesselModels/sheets/`. Team tasks T-20261018-3ec7 / 97b6 / 987b /
+1432 / 2070.
+
+For every hull below: reimport its FBX; run **FrogletTools ▸ Vessels ▸ Audits ▸** Vessel Elemental Morphs (four real
+shapes), Vessel Construction, Vessel Tails and Jets; fly it in Menu_Main freestyle; change domain (the domain colour
+lands on the Domain plates); upgrade each element (each visibly morphs the hull); check the class card, the
+inactive card and the hangar preview are the new hull. Then run **Wiring ▸ Bake Crystal Hull Fusions** once and
+push the bakes (Thresher, Scarab, Brittle Star, Urchin and Rhino are stale until then; they solve at runtime).
+
+1. **Sparrow, Serpent, Manta** (reproduced exactly): indistinguishable from before.
+2. **Thresher** (`Thresher.fbx`): a right turn swings the whip LEFT (out of the turn; the swim's yaw sign was
+   fixed), a planted whip curls toward the ball, a crack flicks toward it; the chain hangs from the shackle.
+3. **Scarab** (`Scarab.fbx`; the hidden Sparrow is gone from the prefab): the elytra open in a turn and on
+   throttle, the legs hang and tuck, the juke roll carries every part; the hull collider still triggers.
+4. **Stoat** (`Stoat.fbx`): the lope, the turn bend and the tail swing; spaghettification near a horizon still
+   stretches the drawn hull.
+5. **Angler** (`Angler.fbx`, its own `AnglerAnimation`): the swim beat, the jaw opens and the esca bulb swells
+   while luring (A held); the world-mark lure dot is unchanged.
+6. **Brittle Star** (`BrittleStar.fbx`): the ring turns with the firing rotation, is gone while thrown and blooms
+   back; muzzles fire from the barrel mouths; thruster flames lengthen; the 28 degree bank.
+   **Ring Detonation** (fixed at ship review): the thrown ring spins in its OWN plane, around the nose axis (it
+   used to take the mesh node's frame, whose Z is the hull's UP, so it tumbled), it leaves without frozen
+   plumes, and the blast disk faces along the nose.
+7. **Shrike** (`Shrike.fbx`): the beam leaves `gun.mouth`; the flame scales aft; docking swings the talon clamps.
+8. **Urchin** (rig swap): pods extend in flight and tuck flush when riding, the colliders stay on the drawn pods
+   (gizmos) through pitch/yaw/roll, plumes leave the four jet mouths, Slip/GhostAction still phase the colliders.
+9. **Rhino** (rig swap): wings fold at low throttle with the drawn plates inside their colliders (the plough's
+   reach), pod plumes leave the drawn rings, the pods now also wear the domain colour.
+
+### 🔴 The Butterfly's new model replaces its procedural hull (`ccr-d93a6dfb-ugbxng`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+`/verify-unity` was unavailable in this session (no Editor, no `unity` binary). What did run: the headless
+reference compile (`Tools/Build/unity_refcompile/run.sh`, 80 assemblies, no errors in project code),
+`build.py butterfly --check` (OK), `author_butterfly_dust.py --check` (OK) and a prefab self-check (every local
+reference resolves). Changed: `Assets/_Models/Vessel Models/Butterfly.fbx` (+ `.meta`, new guid, four slots
+remapped), `Butterfly.prefab` (the model under `Hull` in place of the MeshFilter / MeshRenderer /
+`ButterflyHullBuilder`), `ButterflyAnimation.cs` (bones by name, finds the SkinnedMeshRenderer, wing side signs
+fixed), `FoldActionExecutor.cs` (the ghost bakes the skinned mesh), `VesselCustomization.cs` (a model geometry
+with no Renderer resolves to its child SkinnedMeshRenderer). Verify in the Editor:
+1. The project compiles; the model imports with its four slots remapped (Domain / Body / Window / Engine).
+2. Fly it in Menu_Main freestyle: four wings beat from the hinges, the fore and hind a little apart; the
+   domain colour is on the wings; change domain and the wings change.
+3. Mass mode spreads the wings; the Fold (hold LT) closes them OVER THE BACK and the ghost is a butterfly.
+4. Upgrade each element: Charge, Mass, Space, Time each visibly change the hull.
+5. `FrogletTools ▸ Vessels ▸` Audit Vessel Elemental Morphs (four, none INERT), Audit Vessel Construction.
+
+### 🔴 The seven vessel models rebuilt in place by `/vessel-model` (Squirrel, Dolphin, Sparrow, Serpent, Manta live files; Urchin and Rhino rigs) (`ccr-d93a6dfb-ugbxng`, 2026-10-17) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett (2026-10-17): "procedural vessel models are terrible even as placeholders". A new skill,
+`/vessel-model` (`.claude/skills/vessel-model/`), and its tools (`Tools/Build/vessel_model/`, Blender 5.2 as a Python
+module, no GUI) rebuilt the seven hulls from Python specs and wrote them **in place over the artist files** (same
+path, same guid, same mesh-node / geometry / armature / bone / material names, every bone's rest pose reproduced to
+0.000 by `rest_compare.py`, the same file frame per file). Each file: one skinned mesh, four REAL element shape
+keys (`charge/mass/space/time`, 4-18% of the diagonal; the Urchin and Rhino artist rigs had four EMPTY ones), the
+takes the Animators / `.meta` bind by name (Squirrel 9, Serpent 6, Sparrow 12, Dolphin 10 motion takes, Manta 9,
+Urchin / Rhino 9 standard poses), four material slots in the shipped order with polygons on every slot. Verified
+offline by three readers (the repo FBX codec + `fbx_probe`, `assimp info`, a Blender re-import), `build.py --check`
+green on all seven, `measure_vessel_models.py` green. **Nothing here ran in the Unity Editor**: `/verify-unity`
+was not available in the session (no editor, no `unity` binary). No C# changed. Live files rewritten:
+`SquirrelVessel_CosmicShoresTest1.fbx`, `dolphin_shapekey_with_animations.fbx`, `SparrowModel1.fbx`,
+`SerpentExport.fbx`, `Manta_shapekey_rigged.fbx`; rig files rewritten (not yet drawn by any prefab):
+`urchan_shapekey_with_animations.fbx`, `rhino_shapekey_with_animations.fbx`. Before/after contact sheets:
+`Docs/VesselModels/sheets/`.
+
+**Verify:** (1) Check out the branch; let Unity reimport the seven FBX files. Console: no "self-intersecting and
+has been discarded", no missing-bone or missing-clip warning; each `.meta` still resolves its clip ids (the take
+names are unchanged) and its `externalObjects` material remaps (names unchanged; the Dolphin's `N.001` never had a
+remap and still wears its Blender material, dossier `Docs/VesselModels/Dolphin.md` §2). (2) Open each prefab
+(`Assets/_Prefabs/Spacevessels/`: Squirrel, Dolphin, Sparrow, Serpent, Manta, plus Falcon / Shrike / Termite, which
+draw the Manta file): the SkinnedMeshRenderer shows the new hull, no bone binding broke, the jets / colliders /
+flares still sit on the hull (they hang off bones whose rest poses are unchanged). (3) `FrogletTools > Vessels >
+Audits > Audit Vessel Elemental Morphs`: all four shapes REAL on the five live files (the editor reads root-bone
+bounds and reports ~1.28x smaller than the offline number). `Audit Vessel Construction` and `Audit Vessel Tails and
+Jets`: no new row. (4) `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` for the Squirrel, Dolphin and
+Manta (the bakes store a vertex count and hash and are stale on any new mesh; the runtime falls back to a worker
+solve meanwhile). (5) Fly each of the five in freestyle: the hull reads at the chase camera; pitch / yaw / roll /
+throttle move the whole hull (Squirrel, Serpent, Sparrow through their Animator poses, Dolphin and Manta through code
+puppetry); the domain colour lands on the domain slot (slot 0 on the Dolphin / Manta family, `Body` on the Squirrel /
+Serpent / Sparrow as shipped); the glass and the engine mouths read; each element's morph is nameable in the
+elemental lab (Space = reach, Time = speed, Charge = weapon, Mass = volume). **Sparrow, read first:** the artist
+file flew BACKWARDS (`Docs/VesselModels/Sparrow.md` 1.4: the jet-hosting `b_Tail*` blades led, the cockpit trailed,
+`PitchUp` was inverted as flown); the rebuilt Sparrow is nose-first (beak and canopy forward, the six engine tubes
+at the stern) and its six `b_Tail1..3.L/.R` bones were MOVED to the stern, orientation kept, so the prefab's six
+`VesselJet` instances now stream from the engines: fly it and confirm the beak leads, the jets trail, pull back
+raises the nose, and the skyburst missiles (b_Missile bones, unchanged) still launch forward. The Squirrel, Urchin
+and Rhino files now carry the artist's parked pose baked into the rest (the node chain Unity builds the bone
+Transforms from equals the artist's, both readers 0.000), so their jets and colliders sit where they did. (6) The Scarab draws its own
+`ScarabHullBuilder` hull over the Sparrow file with renderers off: unchanged, confirm it still does. (7) Urchin and
+Rhino: their prefabs still draw the part-per-mesh placeholders. The rebuilt rigs are the swap targets for
+`FrogletTools > Vessels > Wiring > Swap Vessel Rig` (`Docs/VESSEL_CONSTRUCTION.md`: geometry, materials AND
+animation; the Urchin rig is 2.105x the live hull and the swapper fits the instance transform). At the swap, map the
+materials by MEANING, not by the artist's names: the rebuilt rigs paint the domain band on `accent` (slot 0) and the
+hull on `BASE` (slot 1), while the live Rhino placeholder had it the other way round (`Docs/VesselModels/Rhino.md`
+8.6: `BASE` carried the domain colour); the convention is slot 0 = Domain. The Urchin artist rig carried a 1.75 scale on its `winggrowrot*` nodes (the
+prefab's jets under them were authored at 1/1.75); the rebuilt rig bakes that scale into the bone lengths, models the
+appendages 1.75x out and 1.75x bigger (what Unity draws for the artist rig) and writes the nodes at scale 1, so
+the swapper (or a hand pass) sets those jets' local scale to the fleet plume (0.6, 0.6, 0.13) x |camera| / 20
+directly. After a swap, (3) must report four REAL morphs on each.
+
+**2026-10-18, after Garrett's Editor test: WITHDRAWN.** The rebuilt Sparrow flew backwards, the Urchin did not
+change (its prefab draws the placeholder), and the Squirrel, Dolphin and Sparrow read as cheap remakes. All seven
+FBX files were restored from the artist commit (5344a6530). The paragraphs above and the Round 3 paragraph below
+describe the withdrawn files; the only rebuilt file now live is the **Squirrel, round 7, on the artist's hull**:
+`specs/squirrel.py` keeps the artist's mesh, slots and colours exactly, bakes the parked pose into the rest, adds a
+ten-segment tail spine the nine chevrons hang on, and strengthens Mass 2.5% -> 3.7%. Garrett flew round 7 (2026-10-18):
+"big improvement", but the rear jet ports stayed still and roll twisted the wing panels, not the wing - its takes had
+been re-authored. **Round 8** carries the ARTIST'S nine takes (retargeted bone by bone; the new `take_parity.py` gate
+matches every part of every take to the artist's within 0.001 units / 0.1 degrees, and reports 310 differences on the
+round-7 file) and weights the spine between chevrons so it bends with them. Rest bounds equal the artist's drawn
+bounds; rest_compare 0.000; `--check` green. **Verify (Squirrel only):** every take moves like the artist's Squirrel
+(rear engines included; roll banks the whole wing with its pods), the spine follows the chevrons with no gap, and Mass
+reads from the chase camera. Then say keep / change / remove before the next vessel is attempted.
+**PASSED in the Editor, 2026-10-18 (Garrett):** "This passes. I upgraded its elements. changed domain. I can't tell
+it isn't the original." The Squirrel (round 8, commit 70824a8fd) is verified.
+
+**The Dolphin, 2026-10-18 (loop round 4), NOT EDITOR-VERIFIED:** `dolphin_shapekey_with_animations.fbx` is rebuilt
+in place from `specs/dolphin.py` - the artist's hull, 28-bone rig, four morphs, four materials and ten motion takes,
+kept and gated (take parity 0.0000 units / 0.00 degrees over 146 part-takes, moving bones identical take by take,
+morph and material parity, rest_compare 0.000, `--check` green). Nothing visible was added. **Verify:** it looks and
+flies exactly like the original (`RiptideAnimation` puppets it by bone name: jaws, wings, the six engine cases);
+upgrade its elements and change its domain as on the Squirrel; if the hull-fusion bake for its crystals looks off,
+re-run `FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions` for the Dolphin. The other five vessels carry the
+artist's files unchanged.
+
+**Round 3 (same day, after a reader review):** three gates had been dead or wrong and are now live, and the files
+were rebuilt under them. (a) The artist-reference block of `build.py` had a swallowed `NameError`, so the size,
+slot-order and colour checks were OFF: every file carried grey `DiffuseColor`; the files now carry the ARTIST
+file's colours by slot name (Unity generates the model's materials from them and remaps only the slots the `.meta`
+names). (b) The "drawn size" reader read each artist file with all four morphs at 100% (the files store
+DeformPercent 100 as the channel's static value), which had sent the Dolphin's wing span to 3.80; the span is back
+to the dossier's +-2.64, the Manta's reference is its real 3.95-wide hull, and the Squirrel now sits at the heights
+the artist's parked pose draws (1.23 tall, not 1.66). (c) A pose-DIRECTION gate (`pose_expect`, re-import centroid
+deltas) found yaw inverted on the Dolphin, Rhino, Urchin and Manta (a right turn is a negative rotation about up),
+roll inverted on five, and the Sparrow's mirrored poses turning the wrong way; all fixed. (d) The Sparrow's tail
+vanes now span the artist's z -0.82..+0.96. (e) The Urchin rig's appendages (guns, pads, jets, shrouds) are modelled
+1.75x out and 1.75x bigger, which is how Unity draws the artist rig (its hold bones carry S 1.75 over a scale-1
+bind) and how the live prefab authors them. One open asymmetry on the Urchin rig: in yaw and roll its `.r` shrouds and top jet deflect about a tenth of what
+the `.l` ones do (the pose gate reads the shields, which are symmetric); the `.r` chains inherit a different bone
+roll from the artist rig - look at it at the rig swap, it is a rig fact, not a model one. **Verify, in flight (every
+vessel):** pull back = nose up, stick right
+= nose right AND the right side drops; the Squirrel's tail swings to the OUTSIDE of a turn and drops on pull-back;
+the Sparrow's tail tubes swing left in a right turn. A wrong sign here is a spec number
+(`Tools/Build/vessel_model/specs/<vessel>.py`, the `pose()` builder), not a prefab or driver change.
+
+**First-pass tuning:** morph travel per file (offline, % of diagonal): Squirrel C 6 / M 4 / S 9 / T 7; Dolphin
+C 8 / M 4 / S 10 / T 7; Sparrow S 9 / C 7 / T 6 / M 4; Serpent 5-9; Manta 6-11; Urchin C 18 / M 5 / S 7 / T 9;
+Rhino C 8 / M 4 / S 8 / T 7. Pose amplitudes: 26-30 degrees on the Squirrel (its top blend tree halves them), 20-25
+elsewhere. All of it is a spec number (`Tools/Build/vessel_model/specs/<vessel>.py`); change the number, rebuild,
+`--check`.
+
 ### 🔴 Development build plays like release: the `DevDiagnostics` switch (`cece/charming-wright-4ayoce`, 2026-10-18) — NOT EDITOR-VERIFIED
 
 **What landed:** `Assets/_Scripts/Utility/DevDiagnostics.cs` + `DevDiagnosticsToggle.cs`. One switch
@@ -686,7 +1825,7 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 - `author_shrike_assets.py`: `--check` passes and `--self-test` fires 11/11 negative controls. A rebuild from the donor
   is byte-identical to the shipped prefab.
 - `studio_to_unity.py --vessel shrike --check`: 29/29 match.
-- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass.
+- `author_shrike_icons.py --check` and `render_shrike_card_icon.py --check` pass (the latter retired 2026-10-18: the card is rendered from the model by `vessel_model/render_cards.py Shrike --check`).
 - These gates pass: `check_vessel_shared_channels`, `check_vessel_prefab_container`, `check_vessel_camera_farclip`,
   `check_vessel_class_icons`, `check_network_prefab_hashes`, `check_console_logging`, `check_conditional_compilation`,
   `check_using_directives` and `check_elemental_floats`.
@@ -1878,7 +3017,7 @@ icons rendered from the hull (`render_thresher_card_icon.py`). All authored by `
 
 **Proved offline**: `thresher_hull_harness` (shipped forms RUN: winding by parity ray, morph bounds, tail chain
 never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--self-test` (6 negative controls);
-`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check`; `check_vessel_class_icons.py`;
+`author_thresher_icons.py --check`; `render_thresher_card_icon.py --check` (retired 2026-10-18: `vessel_model/render_cards.py Thresher --check`); `check_vessel_class_icons.py`;
 `unity_refcompile` (see the branch's commit message for the run). Nothing here has been seen in the editor.
 
 **Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /
@@ -10563,6 +11702,113 @@ counts, same effects fire), the logging and conditional-compilation gates.
    the impactor, and the rest of that contact's effects still running - the same as before.
 
 
+## 🔴 2026-10-16 — Menu rev 3, Home (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+No editor in the session. Checked offline: `unity_refcompile` (no project errors), the logging / conditional / using
+gates, every `author_*.py --check`, and the changed generators' `--self-test` negative controls.
+
+1. **Nav glyphs** (`author_nav_glyphs.py`, `author_menu_topnav.py`, KitTopNavTab): Menu_Main shows the old Hangar /
+   Ark / Home / Port / Profile icons LEFT of each word, grey when idle, white when lit, brightening on hover; the
+   blue underline sits under the word. Glyph + word look centred on each tab; PORT's lock still clears its glyph.
+   **Fail:** a white square (sprite not imported as Sprite), an icon over the word, or tabs overlapping.
+2. **Focus ring** (KitSelectableBase.focusRingToken): move through any menu with a pad - the focus ring is WHITE, not
+   green. Clicking with the mouse still hides it.
+3. **Toasts on the right** (`author_menu_toasts.py`, `author_ingame_hud.py`): in Menu_Main a toast (e.g. press a
+   locked PORT) appears top-RIGHT under the Settings hex, right-aligned, newest on top. A party invite now drops in
+   lower, under the toast stack (y 452). In a match: end-of-match quest / intensity toasts appear top-right under
+   the pause hex, and the in-match feed lines stack on the right under them, sliding in from the right.
+   **Fail:** a toast behind the Settings hex or pause hex, feed text cut off at the screen edge, or the feed
+   overlapping a vessel's ability row.
+4. **Fly hint ×** (DismissibleHint): Home's "Tap the cell to fly" has a small × at its right end. Press it: the
+   hint disappears; restart Play - it stays gone (PlayerPrefs `menu.hint.fly.closed`; delete the key to see it
+   again). The × is reachable with the pad and shows the white focus ring.
+5. **Docked Home cards** (HomeDockCard, HomeUpNext): the Weekly challenge and Current quest cards sit on the LEFT
+   under the pilot chip, stacked 12 apart, each with – and × at its top right. – folds a card to a 48-tall strip
+   (art slice + eyebrow) and back in ~0.2 s; restart Play - the fold is remembered. × hides the card for the session
+   and the other card moves up into its place; it returns on the next launch. Pad focus on a card is BLUE now, not
+   green. Press "Go offline?" on the pilot chip: its question bar draws OVER the cards.
+   **Fail:** the cards overlap the pilot chip or each other, a closed card reappears within a second (HomeUpNext
+   re-showing it), or the question bar hides behind them.
+6. **Friends drawer** (FriendsDrawer, `author_menu_friends_drawer.py`): a small "Friends" tab sits on the LEFT edge
+   of Menu_Main on every screen, also while the Arcade / Arena / Toy Box / Mission windows are open (they no longer
+   have a party panel - their games fill the width). Press it: a glass window slides in from the left with the party
+   panel (party seats, invites, online friends) fully working: invite, accept, join, leave. – slides it back to the
+   tab; the screen button grows it to 720 x 900 and the chevron restores it. Go offline: the drawer disappears; back
+   online it returns. Fly in the menu (tap the cell): the drawer fades out with the menu.
+   **Fail:** two party panels anywhere, a panel row overflowing the window, the drawer under a window's backdrop,
+   or the tab still visible while flying.
+7. **Glass window backdrops**: the Arcade / Arena / Toy Box / Mission windows show the menu scene dimly through
+   their backdrop (55 %), not a solid black sheet.
+
+## 🔴 2026-10-16 — Lava-lamp HUD (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+AbilityLockupView + AbilityLockupStyleSO (elementColour). Checked offline: refcompile player + editor (no new
+errors), AbilityLockupStyleTests gains `ElementColour_GivesEachElementItsOwnVisibleColour` (not run - no editor).
+
+1. Fly the Sparrow, Squirrel and Dolphin in any arcade mode: each ability card shows slow soft colour blobs behind its
+   icon - Charge gold, Mass blue, Space violet, Time teal - drifting out of step with each other; the card's slanted
+   edges and its keycap edge are the same colour. The Squirrel's drift card is blue; a vessel's omni card, where
+   it is not locked (Squirrel, Dolphin), carries all four colours. Compare with the canvas's Rev 3 `R3Hud<Vessel>` boards.
+2. Locked cards (e.g. Rhino Charge/Space, most omni cards) stay dim with no colour and no motion.
+3. The flower petals keep their level colours exactly as before (white / blue / green ladder) - never tinted.
+4. Gauges, cooldown veils, press flashes and the L5 upgrade (white edge + bloom) still read over the colour.
+5. Perf: Profiler on a phone build - the HUD canvas rebuild cost with `lavaMotion` on vs off. If it shows up, turn
+   `lavaMotion` off on AbilityLockupStyle (colour stays, motion stops).
+
+## 🔴 2026-10-16 — Hangar rev 3 (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Checked offline: refcompile player + editor (no new errors), gates, `author_menu_hangar.py --check` / `--self-test`
+(10 planted defects incl. tab page and stage table). Compare with the canvas's Rev 3 Hangar boards.
+
+1. **3D stage:** open the Hangar - the selected vessel stands as a real 3D model in the centre, turning slowly; drag it
+   or push the right stick to turn it; it resumes turning after ~2.5 s. Select other vessels: the model swaps. Every
+   vessel shows a model (fallback icon only if a prefab has no hull mesh). **Fail:** a black / white box, a tiny model
+   in a corner (render target sized before layout), the model drawn in the menu world, magenta materials.
+2. **Vibe sliders** under the model: Casual-Challenging / Relaxing-Thrilling / Solo-Social with the thumb at the
+   vessel's value (Dolphin far right on the first two, Squirrel far left).
+3. **Tabs:** five tabs; LB / RB or a click swaps them with the slide + skew + scan line; never two pages at once.
+4. **Abilities:** Sparrow shows Pulsefire (RT) / Skyburst (LT) / Turret Stance (A) / Afterburner (B) on a pad,
+   R SHIFT / L SHIFT / SPACE / R on the keyboard (labels flip with the last device used); pressing RT makes the model
+   lunge + roll with a violet burst and lights the Pulsefire row. Touch: no keycaps; tapping a row performs it.
+   Note: RB is also LB/RB tab switching - on a vessel with an RB ability it does both.
+5. **Upgrades:** opens with every element at 0 and the hull in its default form; press Mass: 3 pips, the hull swells
+   (Sparrow / Manta / Dolphin / Squirrel / Serpent have shapes); press again: 5, 10, back to 0. A hull with no shapes
+   says so in the header.
+6. **Games:** the vessel's games as art tiles (its own first); pressing one opens that game's configure window.
+7. **Pilots:** the four captains (Sparrow: Feist, Shrapnel, Longshift, Flux) with portrait, line, quote and wingmate
+   behaviour; the cards switch the hero. **Artifacts:** the "Undiscovered" slot.
+8. **Unlock:** the unlock button / spend-crystals popup still work as before on a locked vessel.
+
+## 🔴 2026-10-16 — Windows rev 3 layout (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Prefab and scene changes only (no C#). Checked offline: `--check` / `--self-test` of the arcade, arena, toybox and
+mission generators (each with a "body under the friends handle" planted defect) and of every generator that imports
+them.
+
+1. **Clear of the handle:** open Arcade, Arena, Toy Box and Mission - the friends handle on the left edge covers no card
+   or title; the header's title lines up with the cards.
+2. **Arcade:** Weekly challenge and Maelstrom are two tall cards side by side across the full width; the grid shows
+   five cards per row; every mode reachable by scrolling and pressable (the last card too).
+3. **Arena:** the four games in one row of tall cards; title, tagline, hull chips, eyebrow and domain count readable and
+   not overlapping on each; a press opens the configure window as before.
+4. **Pad:** D-pad moves across the five-wide grid and into the feature row; focus lands on a card when a window opens.
+
+## 🔴 2026-10-16 — Configure rev 3: cinema preview + step cards (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New `ConfigureCinema.cs`; `ModePreviewWindow.RequestFocus()` (additive). Checked offline: refcompile player OK, editor
+(the 3 known errors, 0 in changed files), gates, `author_menu_configure.py --check` / `--self-test`.
+
+1. **Open any Arcade card:** the live game fills the window behind the settings; Briefing top-left, Controls top-right,
+   the game visible between them; three glass cards along the bottom (01 Vessel, 02 Intensity + objective, 03 Pilots);
+   START bottom-right. Nothing overlaps at 1920 x 1080 or at 16:10 / 21:9. **Fail:** the preview blank/black once live,
+   text unreadable over a bright arena (scrims too weak), a card clipped.
+2. **Pad:** the window opens with focus on an intensity node (Arena: a hull), not on FLY or Back; D-pad reaches FLY;
+   A on FLY flies the vessel.
+3. **Flying:** tap the game (or FLY) - the cards, band and header fade away, "START or Esc to stop flying" + STOP appear;
+   START, Esc or STOP hand control back and the settings fade in. While flying, B does not close the window.
+4. **Arena:** the eight hulls in a 4 x 2 grid in card 01; Claim works. **Maelstrom:** the clip fills the window; pool list
+   readable in the right panel (names not overlapping the tier text); Format in card 03.
+5. **Cost:** with the Profiler open, the preview's render texture is at most 720 tall.
 ## 🔴 Human flight recorder + learn_from_flights (2026-10-15, `Ys-bleeding-edge`) - NOT EDITOR-VERIFIED
 
 Checked offline only: unity_refcompile player, player-dev and editor configurations; gates; `learn_from_flights.py --self-test`.
@@ -10685,6 +11931,66 @@ verification, steps 2-9. The short version:
 5. **LT** needs a spare ring (Charge card: half per crystal, two at most); the ring regrows on its own after a throw.
 6. Touch caveat: Charge Mode is `FlipAction`, which a phone raises when turned — expect a landscape flip to toggle it.
 
+## 🔴 2026-10-17 — Bleeding-edge merge + first-login guide on the rev-3 menu (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`ModePreviewWindow.guideTarget` / `GuideRect` (new, optional); `QuestGuideToMicrogameNode` asks `GuideRect`. Checked
+offline: refcompile player OK, editor (the 3 known errors, 0 in changed files), every `author_*.py --check`, gates.
+
+1. **Arena AI row:** open an Arena card - EASY / MEDIUM / HARD under the domains in card 03, one lit; picking one sticks
+   and reaches the match (Regatta, Astro League, Brood Rush, Broadside).
+2. **Guide walk** (fresh profile, or reset the quest): Home - the spotlight is on ARCADE, everything else dim and dead
+   except Settings (press Settings: it opens); ARCADE - the spotlight lands on the target card; the card - the configure
+   window opens and the spotlight is on **FLY** with its caption readable; press FLY - the spotlight steps aside while
+   flying. Skip ends the tutorial at any step.
+
+## 🔴 2026-10-17 — Hangar TRY: real ability playback (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New `HangarAbilityPreview.cs`, `Assets/_SO_Assets/Hangar/HangarTryPreview.asset`; `ScreenSwitcher` LT / RT paging and
+`HangarTabsView` LB / RB stand down while a preview has focus. Checked offline: refcompile player OK, editor (the 3 known
+errors, 0 in changed files), gates, `author_menu_hangar.py --check` / `--self-test` (12 planted defects).
+
+1. **TRY:** Hangar > Sparrow > Abilities > TRY IT FOR REAL - the stage turns into the live picture (a cell model, then the
+   Sparrow in open water); "START or Esc to stop flying" + STOP above it. RT fires Pulsefire, LT Skyburst, A Turret Stance,
+   B Afterburner - for real; the matching row lights; the drill coach appears over the picture. **Fail:** frozen vessel
+   (pause not lifted), RT pages to another screen, RB switches tab, the wrong hull.
+2. **Back:** START, Esc, STOP (touch) or a tap outside each end it: the turntable returns, the menu vessel is the
+   player's own hull again, Home's lava lamp still flies normally.
+3. **Leave mid-flight / mid-build:** switch tab, pick another vessel, open Games > a card (the configure window must get a
+   working preview of its own), or leave the Hangar - nothing stays standing; no console errors.
+4. Try a locked vessel and the Urchin / Squirrel too (any hull with an ability map).
+
+## 🔴 2026-10-17 — Playtest round: speed, windows, Hangar text, glyphs, double tap (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New `KitElementHalo.cs`; `HangarVesselStage` (visibility gate), `AbilityLockupView` (nested Canvas), `ModePreviewWindow`
+(double tap). Checked offline: refcompile player OK, editor (the 3 known errors, 0 in changed files), gates, every menu
+generator `--check` / `--self-test`.
+
+1. **Speed:** Home FPS back to what bleeding-edge shows (Profiler: no `Camera.Render` from the Hangar stage while on
+   Home); in a match, `Canvas.BuildBatch` no longer every frame from the ability row.
+2. **Windows:** open Arcade - no pilot chip, crystals, gear or "Tap the cell to fly" behind the title / Back; close it and
+   they fade back (a dismissed fly hint stays gone).
+3. **Hangar:** ability names and lines start right of the glyph, never under the keycap; each row has a coloured hex and a
+   breathing glow; pressing a control flashes it. Upgrades rows the same. The 3D vessel still turns and morphs.
+4. **Configure:** a single tap on the game does nothing; a double tap (or FLY) flies.
+
+## 🔴 2026-10-17 — Hangar rev 4: bay stage, firing FX, look-only UPGRADE (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `HangarStageFx.cs`, `HangarUpgradeStore.cs`. Changed: `HangarVesselStage` (post off, fx, pulse, animated morph)
+and `HangarUpgradesPage` (UPGRADE + animation). `/verify-unity` was not run (no editor in a cloud session).
+Checked offline:
+- refcompile player OK; editor shows the 3 known errors, 0 in changed files;
+- the gates;
+- `author_menu_hangar.py --check` / `--self-test` (16 plants).
+
+1. **Stage:** the Hangar shows the lit bay (rings breathing, scan line sweeping), with no black rectangle round the vessel.
+2. **Fire:** Abilities > pick an ability. Bolts and a flash leave the vessel's nose in that ability's colour.
+3. **Upgrade:** on Upgrades, the button reads "UPGRADE 100" at level 0. Press it with enough crystals:
+   - crystals fly to the hull, a pip flashes then fills, the hull morphs and swells, and a ring plus "LEVEL 1" appear;
+   - the wallet drops by 100 and the next price reads 200.
+4. **Can't afford:** the button is greyed out and pressing does nothing.
+5. **Max:** at level 10 the button reads MAX.
+6. **Persists:** leave the Hangar, return and switch vessels. Each vessel shows its own bought levels and hull form. Starting a match does not change how the vessel plays.
+7. **Speed:** Profiler on Home: the bay costs nothing while the Hangar is hidden.
 ## 🔴 Brittle Star tuning pass — 3 s regrow, 40% rigid sabers (70% first), softer whip, Space heat capacity, slim long blocks with Mass girth, a 4x thick five-fold ring explosion (`cece/gallant-bell-eq7kul`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 No `unity` CLI in the session (`/verify-unity` could not run). Proved offline: player `unity_refcompile` (0 errors in
@@ -10746,3 +12052,603 @@ confirmation and the Project Record".
    Froglet Master Tool board under Diagnostics.
 6. Pull the plug (no network) and stop Play with something new: the pill reads NOT SENT with the reason, and the next
    send carries it.
+
+## 🔴 2026-10-17 — Kit labels shrink to fit (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`KitText` (shrinkToFit, minSizeScale) plus every style-B prefab re-emitted with auto-size on. `/verify-unity` was not
+run (no editor in a cloud session). Checked offline: refcompile player OK; editor shows the 3 known errors (0 in
+changed files); gates; every generator `--check` / `--self-test`.
+
+1. Menu_Main at 16:9, then at a narrow window (4:3) and on a phone aspect. Look at the Home cards, the Arcade cards,
+   the configure briefing and settings, the Hangar rows and tabs, Profile, Settings and the toasts: no text runs
+   outside its panel; long names shrink.
+2. Short labels (nav tabs, buttons) look the same size as before.
+3. A label edited in the inspector still keeps its role's font and colour.
+
+## 🔴 2026-10-17 — Configure Rev 4 simple + AI seat info in style B (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Changed: `DomainAvatarChip` (hoverReplacesText), `VesselInfoPopup` (abilityRows, authored words) and
+`ArcadeGameConfigureModal` (vesselInfoPopupPrefab). Prefabs: the three configure views, `ConfigureSeatChip`, the new
+`VesselInfoCard`, the modal, and Menu_Main's two modal copies. `/verify-unity` was not run. Checked offline:
+refcompile player OK; editor shows the 3 known errors (0 in changed files); gates; every generator `--check` /
+`--self-test`.
+
+1. **Arcade card:**
+   - the preview is framed on the left with FLY bottom-left and the objective bottom-right;
+   - the briefing and the controls grid are under it;
+   - one settings column (Vessel, Intensity, Pilots, AI) is on the right, with START under it;
+   - nothing overlaps at 16:9 or 4:3.
+2. **Fly:** double-tap or FLY flies inside the frame; FULL SCREEN grows it; STOP or START hands control back.
+3. **Arena card:** eight hull tiles in one row, CLAIM under them. Maelstrom: Intensity, Pilots and Format in the column,
+   the pool under the clip.
+4. **AI seats:**
+   - add AI on Ruby; hover its row: the row does not grow, its edge lights, and the hull's name replaces "Ruby AI / AI";
+   - moving off brings them back;
+   - the hex (i) opens the card beside the column, with art, "Ruby AI - Space vessel", the name, the line and four
+     coloured abilities;
+   - X or a tap outside closes it.
+5. **Pad:** the first focus is in the settings column; Back is last.
+
+## 🔴 2026-10-17 — Ark layout, fly hint x, flat - / x (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Scene and generator changes only; no C#. `/verify-unity` was not run. Checked offline: refcompile player OK; editor
+shows the 3 known errors; every generator `--check` / `--self-test`; gates.
+
+1. **Ark:** the title band sits under the nav (not behind it), the recipe panel's top row is fully visible, and the
+   converter bar stays at the bottom.
+2. **Home:** the fly hint's x hides the hint, and it stays hidden on the next visit. A double tap on empty space over
+   the cell still flies; a single tap does nothing.
+3. **Docked cards:** - folds and x closes. The glyphs are flat, dim at rest, white on hover and accent-coloured when
+   pressed or focused by the pad. The friends drawer's - and maximise look the same.
+
+## 🔴 2026-10-17 — Rev 6 step 1: element colours as meaning (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Changed:
+- `UIColorToken` 13-16, `UIThemeSO` element fields, `UITheme` fallbacks;
+- `KitButton` (Play = Charge, Purchase = Mass, new Mass / Space / Time variants);
+- `KitOnlineRow` (statuses and JOIN / WATCH by element), `HomeUpNext` (quest meter in Time);
+- every style-B prefab re-emitted.
+
+`/verify-unity` was not run. Checked offline: refcompile player OK; editor shows the 3 known errors (0 in changed files);
+gates; every generator `--check` / `--self-test`.
+
+1. **Play buttons in Charge yellow:** Home's ARCADE hub, START GAME, PLAY on the Arcade cards, the Ark's CONVERT and the
+   in-match READY. The opaque START keeps its gradient, now yellow to pale yellow.
+2. **Mass blue:** crystal balances (Home chip, Profile), prices and spends (purchase window, Hangar unlock, UPGRADE).
+3. **Space violet:** in the friends panel, "Online" / "In your party", INVITE, JOIN and ACCEPT. WATCH on a friend in a
+   match is Charge.
+4. **Time teal:** the weekly challenge card (Home and Arcade), its countdown, the current quest card and its lit meter.
+5. **Theme asset:** UITheme.asset in the inspector shows the four element colours under "Elements".
+
+## 🔴 2026-10-17 — Rev 6 step 2: the living lattice (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `Lattice.shader` + `UILattice.cginc`, `Lattice_Panel.mat`, `Lattice_Window.mat`; every former `kit_grid` node and
+five window backdrops re-emitted. `/verify-unity` was not run. Checked offline:
+- clang compile + render of the shipped maths (`lattice_preview.py`);
+- refcompile player OK;
+- every generator `--check` / `--self-test`;
+- gates.
+
+1. **The shader compiles in Unity:** no pink. The Console shows no shader error for `CosmicShore/UI/Lattice`
+   (target 3.0, CGPROGRAM like SilhouetteHolo).
+2. **Arcade window:** a faint crystal lattice drifts behind the cards; short comets of yellow / blue / violet / teal run
+   along a few lines; a few nodes twinkle. Opening the window grows the lattice out from the centre.
+3. **The panels that had the grid** (Ark recipe, leaderboard, Profile card, Toy Box cards, Toy configure) show the finer
+   lattice, clipped to the panel (RectMask2D) with corners fading.
+4. **Speed:** the Profiler shows no Canvas.BuildBatch from the lattice (it animates in the shader only). Check the GPU
+   frame time on a phone with the Arcade window open.
+
+## 🔴 2026-10-17 — Rev 6 step 3: elemental rims (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `ElementRim.shader` + `UIElementRim.cginc`, `KitRimMesh.cs`, five `ElementRim_*.mat`. `/verify-unity` was not
+run. Checked offline:
+- clang compile + asserts of the shipped rim maths;
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- every generator `--check` / `--self-test`;
+- gates.
+
+1. **The shader compiles:** no pink borders, and no Console error for `CosmicShore/UI/ElementRim`.
+2. **Ark:** the recipe panel's border carries all four element colours, slowly turning, with a bright sweep.
+3. **Configure:** the settings column's border has a yellow comet running round it. In the Hangar the tab panel's comet
+   is blue; on Home the weekly and quest cards' comets are teal.
+4. **Arcade:** a feature card's rim lights up (comet bright) only when focused; unfocused cards stay dim. The weekly
+   card's comet is teal and Maelstrom's is all four.
+5. **Comet shape:** it follows the rect (not stretched oddly) on wide and narrow panels. If the comet is missing, check
+   Menu_Main's root canvas has TexCoord1 in Additional Shader Channels.
+
+## 🔴 2026-10-17 — Rev 6 step 4: presence orb + party molecule (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `Presence.shader`, `Bond.shader` + `UIPresence.cginc`, `Presence_Orb.mat`, `Bond_Party.mat`, `KitPresenceOrb.cs`;
+`ArcadeLobbyList` gains `PresenceChanged` / `TryGetSeat` / `seatBonds` and authored online lines; `PartySlot` /
+`PartyPanel` re-emitted as the molecule; the drawer's Handle replaced by the orb in Menu_Main. `/verify-unity` was not
+run. Checked offline:
+- clang compile + asserts of the shipped presence and bond maths, with 3 planted shader defects caught;
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- every Menu_Main generator `--check`, the drawer / arcade / lattice / home / window `--self-test`;
+- gates.
+
+1. **The shaders compile:** no pink orb or bonds, and no Console error for `CosmicShore/UI/Presence` or
+   `CosmicShore/UI/Bond`.
+2. **The orb, alone:** bottom-left on Home, a violet glow with your avatar in the middle, a dashed ring slowly turning
+   and "FRIENDS" under it. Hover brightens it; pressing it (or Submit with it focused) opens the party panel. It also
+   shows over the Arcade / Arena / Toy Box / Mission windows without covering their cards.
+3. **With players online:** one dot per other player online rides the turning ring (at most 8) and the line under the
+   orb reads "N online". The dots move smoothly with no canvas rebuild in the Profiler.
+4. **In a party (two devices):** each member's avatar appears on the orb's inner ring in their domain colour, with a
+   short flowing bond from your avatar to theirs. The bond appears when they join and goes when they leave.
+5. **The party panel:** the leader (host) sits in the middle, the other seats round it. Bonds run to each seated pilot
+   in their domain colour; open seats show a violet "+" tile with "Invite a friend", and pressing it moves focus to the
+   online list. The host sees the kick (x) on each member's avatar. The panel's border has a violet comet and a
+   lattice behind it.
+6. **Offline:** the orb disappears with the drawer (OfflineUIGate), as the panel did.
+7. **Freestyle (flying):** the orb fades out with the rest of the menu.
+
+## 🔴 2026-10-17 — Hangar ability kinds + Settings lock (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New: `HangarAbilityKind.cs` (the kinds and the classifier), `HangarStageFx.Play` (one effect per kind),
+`HangarVesselStage.Perform(colour, kind)`, `HangarAbilitiesPage.kindOverrides`, and
+`GameSettingsPanelController.IsMenuState`. `/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- `check_hangar_ability_kinds.py` and its `--self-test`;
+- the C# classifier compiled with dotnet agrees with the Python check on all 52 abilities.
+
+1. **Hangar, Abilities tab, Sparrow:**
+   - Pulsefire Cannons: the hull recoils and bolts leave the nose.
+   - Afterburner: it surges forward with a roll and exhaust streams from the tail.
+   - Turret Stance: it settles back and a ring closes onto it.
+   - Skyburst Rockets: bolts.
+2. **Other vessels:**
+   - Serpent: Scope pings radar rings; Seed Wall lays blocks behind.
+   - Butterfly: Fold blinks ahead with a ghost.
+   - Thresher: Wrecking Ball rolls through a slash arc; Winch pulls motes in.
+   - Manta: Kabloom bursts a shock ring.
+   - Each move is in the element's colour.
+3. **TRY** still flies the real ability; while it runs, a press only lights the row.
+4. **Settings in the main menu:**
+   - The Performance tab shows no "Change these from the main menu." line.
+   - Every dropdown opens, including after clicking outside the Game view and back.
+5. **Settings during a match** (the pause menu's Settings): Performance stays locked with the line shown; Display
+   and audio stay editable.
+6. **Edit-mode tests:** `HangarAbilityKindsTests` and `GameSettingsContextLockTests` pass.
+
+## 🔴 2026-10-17 — Menu performance: closed windows sleep, shaders skip what they cannot show (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`ModalWindowManager.SleepAnimator`; alpha early-outs in `Lattice`, `ElementRim`, `Presence` and `Bond`; branch skips in
+`UILattice.cginc`; rims stop filling their centre; `GameBriefingView` gated on `KitSightline`. `/verify-unity` was not
+run. Checked offline:
+- lattice renders before and after are identical in every channel;
+- the harness asserts pass;
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- every rim generator regenerated and passes `--check`;
+- gates.
+
+1. **Windows still open and close as before:** Arcade, Arena, Toy Box, Mission, Configure, Settings, Profile, the
+   party drawer.
+   - Each fades and scales in, each closes.
+   - Each opens again a second and third time.
+   - A force-close (pressing Fly from a configure) still clears the screen.
+2. **Nothing missing:** the lattice behind open windows, the rims (Ark, Configure, Hangar, Home cards, Arcade
+   feature cards, the party drawer), the orb.
+3. **The capture (team task T-20261015-d4f5):** Release, Scene view hidden, Home idle.
+   - `Canvas.BuildBatch` / `UGUI.Rendering.UpdateBatches` should no longer fire every frame with no window open.
+   - In the Frame Debugger, no `CosmicShore/UI/Lattice` draw on Home with every window closed.
+
+## 🔴 2026-10-17 — The end-of-match scoreboard fills the screen (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab`'s `ScoreboardController` now stretches over the canvas (it was a 0x0 point, so the style-B board
+collapsed in every mode). `/verify-unity` was not run. Checked offline:
+- `author_ingame_hud.py --check` and `--self-test`, with the new planted defect caught;
+- `gamecanvas_unification_report.py --check`;
+- every GameCanvas generator passes `--check`.
+
+1. **The prefab:** open `GameCanvas.prefab`, select `ScoreboardController`: anchors stretch-stretch and offsets 0. Its
+   child `ScoreboardPanel` fills it.
+2. **Finish a match** (to get there fast, set Crystal Capture to 3 in FrogletTools > Game Modes > End Game
+   Conditions; the Build value restores itself before a build). After the 3 s reveal:
+   - the screen dims;
+   - the header sits at the top;
+   - every pilot's row shows;
+   - the stats show;
+   - Play again / Main menu are on screen and work (mouse and pad).
+3. **Another mode** (a gate race or Skim Race) shows the same full board.
+
+
+## 🔴 2026-10-17 — Rev 7: the sky-blue glowing selection (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`UIColorToken.Selection` (#3DB2FF) with `SelectionRim.mat` / `SelectionBar.mat` (the elemental rim shader with
+`_Linear` and `_Breathe`), lit by `KitSelectableBase.SetSelectionLight` on KitTile, the focus ring, KitTextTab and
+KitTopNavTab, plus the configure AI plates. `/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- every kit and menu generator regenerated and passes `--check` and `--self-test`, with the new planted defects caught;
+- `lattice_preview.py --check` (breathing and linear head);
+- gates.
+
+1. **Compile and tests:** no new console errors; `SelectionStyleTests` passes in the Test Runner.
+2. **Shader:** select `SelectionRim.mat`. It uses `CosmicShore/UI/ElementRim`, `_Breathe` is 0.35, and the element
+   rims (`ElementRim_*.mat`) show `_Breathe` 0 and `_Linear` 0. The Ark, Configure and Hangar rims look as before.
+3. **Menu_Main, mouse and pad:**
+   - the selected Arcade / Arena / Mission / Toy Box card has a sky-blue border with a light running round it, breathing
+     slowly, and a faint blue fill;
+   - the top nav's shown screen has a blue word and a blue underline with a light running along it;
+   - the focus ring on buttons is blue;
+   - the Toy Box daily card is still green.
+4. **Configure, AI seat:** Easy / Medium / Hard; the picked plate is lit blue, the others plain.
+5. **Legacy panels using `AIDifficultyPicker`** (any non-style-B screen): the plates look as before.
+6. **Profiler, Home with the Arcade window open and a card selected:** no `Canvas.BuildBatch` every frame from the
+   lit card.
+
+## 🔴 2026-10-17 — Rev 7: LT / RT and edge arrows slide between the hub windows (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`ScreenSwitcher` hub slide (`hubWindowOrder`, `SlideHubWindow`, `CanOpenHubWindow`, `ModalStackChanged`), `HubWindowNav`
+and its `HubWindowNavHost` in Menu_Main (`author_menu_hub_nav.py`), `chrome_chevron`. `/verify-unity` was not run.
+Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- `author_menu_hub_nav.py --check` / `--self-test`, the friends drawer and every other Menu_Main generator `--check`;
+- the layout schematic (strip clear of the window title and BACK; arrows inside the gutters);
+- gates.
+
+1. **Compile and tests:** no new console errors; `HubWindowSlideTests` passes.
+2. **Home:** nothing new shows (the strip and arrows are hidden with no window open).
+3. **Open the Arcade from Home** (pad A or click):
+   - the strip under the nav reads LT, TOY BOX, ARCADE (underlined blue, light running), ARENA, MISSION, RT;
+   - a left arrow names TOY BOX, a right arrow names ARENA.
+4. **RT:** the Arcade slides out left as the Arena slides in from the right; focus is on the Arena's first card.
+   - RT again does nothing: Mission is Unavailable, so the right arrow is hidden.
+   - LT twice: back to Arcade, then Toy Box; on Toy Box the left arrow is hidden.
+5. **Mouse:** the edge arrows and the strip's words do the same; MISSION does not answer.
+6. **Open a game's configure** from the Arcade: the strip and arrows hide, and LT / RT do nothing. B back to the
+   Arcade: they return.
+7. **B on any hub window** closes it as before; the Home hub buttons come back once, with no flash during a slide.
+8. **Friends drawer** opened over a hub window covers the left arrow (the drawer draws above it).
+9. **First-login guide:** while the guide is active, the strip and arrows stay hidden.
+
+## 🔴 2026-10-17 — Rev 7: an online pilot's profile card on avatar hover / focus (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`FriendProfilePopup` (Menu_Main, in the friends drawer), `FriendProfileHover` relays on `PartyOnlineRow.prefab` (the
+avatar and the three buttons) and `PartySlot.prefab` (the avatar), `IFriendProfileSource` on `OnlineInfoEntry` and
+`KitPartySlot`. `/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- the arcade and friends drawer generators `--check` / `--self-test` with the new planted defects;
+- every Menu_Main generator `--check`;
+- gates.
+
+1. **Compile and tests:** no new console errors; `FriendProfileSourceTests` passes.
+2. **Two clients signed in** (or a second account online). Open the friends drawer (the orb).
+3. **Rest the pointer on an online pilot's avatar.** After about 0.3 s a card opens to the right of the drawer, level
+   with the avatar:
+   - their picture and name;
+   - FRIEND only if they are on your friends list; ONLINE;
+   - the status (Online / In a lobby 2 / 4 / In a match + Game row);
+   - JOIN or SPECTATE and INVITE as the row offers them.
+4. **Move onto the card and press INVITE:** the row and the card both read "Invited". Pressing JOIN joins as the
+   row's JOIN does, and the card closes.
+5. **Leave the avatar and the card:** it closes. Sweeping the pointer down the list does not flash cards.
+6. **Pad:** move down the online list; the card follows the focused row. Moving off the list closes it.
+7. **Party seat:** hover a member's avatar for a card with "In your party" and no buttons. Your own seat shows none.
+8. **Offline (party layer down):** the drawer is gated, and no card can open.
+
+## 🔴 2026-10-17 — Rev 7: the cell-change loading screen (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`EnvironmentLoadVeil` gains its stage: the lattice, `LoadCrystalGraphic`, the cell's name and line, four steps and a
+tip. All words come from `Assets/Resources/UI/EnvironmentLoadVeilContent.asset` (`author_load_veil_content.py`).
+`/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- `author_load_veil_content.py --check` / `--self-test`;
+- `EnvironmentLoadVeilStageTests`;
+- gates.
+
+1. **Compile and tests:** no new console errors, and no "No EnvironmentLoadVeilContentSO" warning;
+   `EnvironmentLoadVeilStageTests` passes.
+2. **Boot into Menu_Main:**
+   - the cover shows the lattice, ENTERING GARLAND and "A flowering bough wound twice around the seed of the world";
+   - the crystal fills Mass then Time;
+   - LAYING PRISMS lights, then GROWING PRISMS, then SETTLING THE CELL;
+   - one tip;
+   - the bar and LOADING at the bottom.
+
+   It fades out onto the finished world as before.
+3. **Change cell** (the cell selector toy, e.g. to Geode or Zephyr): the same screen names the new cell with its line.
+   A cell with no line (e.g. Barren) shows its name alone.
+4. **Steps never go back,** and the crystal never drains during one load.
+5. **Frame rate:** the screen reads well at the build's ~10 FPS (no stutter-prone motion). The build takes as long as
+   before (compare with Load Time Insights if in doubt).
+6. **Edit a word** in the content asset (e.g. a tip). It shows on the next load.
+
+## 🔴 2026-10-17 — Pad Y on Home toggles freestyle again (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`ScreenSwitcher.crystalClickHandler` is wired to the scene's `MenuCrystalClickHandler` (`author_menu_home.py`) and found
+at Awake when empty. `/verify-unity` was not run. Checked offline:
+- refcompile player OK; editor shows the 3 known errors (0 in changed files);
+- `author_menu_home.py --check` / `--self-test` (new planted defect caught);
+- every Menu_Main generator `--check`;
+- gates.
+
+1. **The scene:** select `Screens` in Menu_Main. ScreenSwitcher > Gamepad Freestyle Toggle > Crystal Click Handler
+   names the MenuCrystalClickHandler object.
+2. **Home with a pad:** Y flies into the cell. After the 3 s cooldown, Y brings you back to Home. Y does nothing
+   while a window is open or on another screen.
+3. **First-login guide:** Y skips the guide (MenuSpotlight) and does not fly.
+4. **Party (two clients):** the guest flies, then the host opens a game card. The guest leaves freestyle and the card
+   opens once the exit blend ends (`RequestExitFreestyle` now runs; it used to return false).
+5. **Double-tap on empty Home** still flies as before.
+
+## 🔴 2026-10-17 — Maelstrom card without description; friends drawer on the lattice (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`MaelstromPreviewHost` sets an empty briefing override on the launch panel, which hides the description and tips. The
+panel-less path clears them. `PartyPanel.prefab`'s frame fill is now transparent, and the drawer window's lattice is
+`Lattice_Window.mat`. `/verify-unity` was not run. Checked offline: refcompile player OK; every menu generator
+`--check`; arcade and friends drawer `--self-test`.
+
+1. **Maelstrom hub, NEXT ROUND card:** the round's name, with no description text over or under it. The main menu's
+   own arcade cards still show their descriptions.
+2. **Friends drawer:** behind the party panel is the living lattice (two layers, element pulses) through glass, not a
+   flat dark-blue slab. The seats, the orb design and the online list read clearly over it.
+
+## 🔴 2026-10-17 — End screen self-heals and names what hid it; friends drawer more opaque (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The owner: "Skim Race solo with AI, reveal shows then nothing - even in Maelstrom end". The scene wiring checks out
+offline (event asset, sequencer, board, rects, overrides), so the fault is a runtime one. `EndGameSequencer` now checks
+whether its end-screen raise reached a board (`Scoreboard.ShowCount`); if not, `Scoreboard.ShowUnreached` turns the
+board and its parents back on and shows it. `Scoreboard.EnsureBoardVisible` fixes any parent that hides the shown
+board (inactive, CanvasGroup alpha 0, disabled Canvas). Each fix logs a warning naming the culprit. The friends drawer
+window's glass is 0.9 (was 0.62). `/verify-unity` was not run.
+
+1. **Skim Race solo with AI, and a Maelstrom round:** after the reveal the scoreboard appears. Copy any `[Scoreboard]`
+   warning from the console: it names what was hiding the board, and that object is the real fix.
+2. **Friends drawer:** Home no longer reads through the party panel; the lattice still shows.
+
+## 🔴 2026-10-17 — End-screen safety net independent of the reveal (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+After a Scurry game the board did not show and the console had no `[Scoreboard]` warning. So the end screen was never
+raised, and the most likely silent cause is EndGameSequencer's reveal coroutine being stopped by its object being
+disabled mid-reveal. Now:
+- the sequencer warns when that happens;
+- Scoreboard hears `OnWinnerCalculated` itself and, on an unscaled UniTask timer (`endScreenGraceSeconds` = 5),
+  shows the board with a warning if no end screen came.
+
+1. **Finish Scurry, Skim Race and a Maelstrom round:** the board shows within ~5 s of the reveal.
+2. **Read the console:** `[EndGameSequencer] ... disabled during the end reveal` or `[Scoreboard] The winner was
+   decided ...` names the path. If NEITHER appears and there is still no board, the winner was never decided (no
+   reveal either) - say which.
+
+## 🔴 2026-10-17 — The board counts as shown only once its panel is up (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The Scurry console (ArcadeMatch on) showed the reveal end, the end screen raised and the crystals awarded, but no
+`[Scoreboard] Shown:` line and no reveal toast. So a board answered the raise without reaching its panel, and because
+`ShowCount` ticked on entry, every safety net stood down. Now:
+- `ShowCount` ticks only after a panel is switched on, so the sequencer's `ShowUnreached` and the 5 s net still fire;
+- a destroyed board still subscribed to the end screen drops itself with a warning (it no longer pays the wallet or
+  stands in for the real board);
+- a board with no panel warns, naming its object and scene;
+- two frames after showing, the board checks it is still on screen and re-shows it with a warning naming what hid it;
+- the reveal toast warns when it finds no `ScoreRevealToast`, logs its state on ArcadeMatch, and its tweens run on
+  unscaled time;
+- with ArcadeMatch on, the board lists the overlay canvases sorted over it.
+`/verify-unity` was not run; the player reference compile is clean.
+
+1. **Finish Scurry, Skim Race and a Maelstrom round:** the board shows.
+2. **If it still does not**, with FrogletTools > Toolbox > Logging > ArcadeMatch on, copy every `[Scoreboard]` and
+   `[EndGameSequencer]` line, including `Overlay canvases over the board` and `Reveal toast`.
+
+## 🔴 2026-10-17 — End-screen witness: who destroys the scoreboard panel and the reveal toast (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The Scurry console proved the scoreboard panel and the reveal toast are DESTROYED during play (Scoreboard: "has no
+scoreboard panel"; DOTween: "RectTransform / CanvasGroup has been destroyed") while their owners survive. New
+`EndScreenWitness` (added in code to both at load) warns `[EndScreen] The <piece> '<path>' was destroyed during play`
+(with frame and call stack) or `... was moved to '<path>'`. `/verify-unity` was not run; player reference compile clean.
+
+1. **Finish a Scurry match** and copy every `[EndScreen]` line - its path, frame and stack name the destroyer.
+
+## 🔴 2026-10-17 — ROOT CAUSE: two stand-ins for the scoreboard panel (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+`GameCanvas.prefab` carried TWO stripped stand-ins for the one nested ScoreboardPanel root (648516251028933473 and
+1094188840384582599, both from `author_ingame_hud.py`: `K.emit_instance` writes one, the field stub writes another).
+Unity binds only one, so `Scoreboard.scoreboardPanel` and the host's child entry (both on the unbound one) read as
+destroyed - "has no scoreboard panel" in every mode since item 12d. The generator now reuses the existing stand-in;
+`T.duplicate_stubs` (author_menu_topnav.py) fails any generated file with a twin, with a planted defect in each
+generator's `--self-test`. A repo-wide scan found one more: Menu_Main's purchase window IconEmitter `Container`
+(`author_menu_purchase.py`, same pattern) - the crystal fly animation had no container. Both fixed; no twins remain.
+`/verify-unity` was not run.
+
+1. **Finish Scurry, Skim Race and a Maelstrom round:** the scoreboard shows after the reveal, with no
+   `[Scoreboard] ... has no scoreboard panel` warning.
+2. **Open GameCanvas.prefab:** ScoreboardController has one ScoreboardPanel child, and its Scoreboard's
+   Scoreboard Panel field is filled.
+3. **Store > buy something:** the crystal icons fly into the window on confirm.
+4. If the reveal toast still fails to show, copy any `[EndScreen]` line (the witness stays in for that).
+
+## 🔴 2026-10-17 — The end screen owns the screen: no feed or ability row over the board (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The owner's screenshot of the working board showed the match feed ("joined", "Ready", "collected 10 crystals") and the
+vessel ability row drawing over it. `Scoreboard.ShowScoreboard` now hides the local vessel HUD
+(`VesselHUDController.HideHUD`; the next turn or a replay restores it as before), and `GameToastController` hides the
+feed on `OnShowGameEndScreen` (`GameToastView.SetHidden`, CanvasGroup alpha 0, lines kept), showing it again on the next
+turn start or replay. `/verify-unity` was not run; player reference compile clean.
+
+1. **Finish a Skim Race:** the board shows with no feed lines on the right and no ability icons at the bottom right.
+2. **PLAY AGAIN:** in the replay the feed and the ability row are back.
+
+## 🔴 2026-10-17 — Scoreboard Rev 8 option B, the glass ladder (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §49. New: ScoreboardLadder (+ ScoreboardLadderTests), ScoreboardTeamHeader (+ prefab),
+ScoreboardRewardStrip; PlayerScoreCard, Scoreboard and RematchVoteRoster gain optional fields; ScoreboardPanel / Row /
+Stat regenerated. `/verify-unity` was not run; player and editor reference compiles clean (editor: the 3 known errors,
+0 in changed files); generator `--check` / `--self-test` pass.
+
+1. **Skim Race 3 v 1 with AI:** JADE / RUBY headers; "Won - 00:44:93" once on the Jade header, not on the rows; dark
+   glass rows with a thin team stripe; teal share lines (12 / 8 / 0 of 20); your row lit sky blue with a running rim;
+   Jade rows run a teal rim, Ruby a violet one.
+2. **Reward strip** bottom right: "+200" and the balance counting up; absent when you earned nothing.
+3. **Stats** inline under the ladder; **PLAY AGAIN** gold-rimmed, **MAIN MENU** blue-rimmed; A and B still work.
+4. **A client votes rematch:** their face and "1 wants a rematch" under PLAY AGAIN.
+5. **Solo free-for-all mode** (every pilot their own domain): no headers, every row shows its own score.
+6. **Run the edit-mode tests:** ScoreboardLadderTests passes.
+
+## 🔴 2026-10-17 — Player text moved into authored fields (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+The LOCKED player-text rule, applied to the code-built lines on surfaces this branch touched. Every line keeps its
+wording as the field's default (Unity fills a new field's initializer on load, so nothing in a scene needed editing);
+an emptied field now shows nothing. New `TemplateText.Fill` fills `{tokens}`.
+- Scoreboard: banner ("{domain} victory" / "Game over"), the mode line, Play again / Rematch? / Rematch sent and both tallies.
+- EndGameSequencer: "{domain} wins", Victory / Defeat, the quest-complete and intensity-unlocked toasts.
+- KitArenaGameCard (eyebrow, domains), KitQuestCard (play, unlocks after, meter, goal rows), ArcadeLaunchPanel
+  (intensity chip, seats, pilots), MiniGameHUD skip, CreditsModal close, Settings version + credits row, ModePreviewWindow
+  unavailable, QuestItemCard + EpisodeScreen "Completed", FriendsListPanel's 13 toasts, the sign-in name error.
+Left for Yash: UGSCloudSaveProvider's save-failed toast (plain C#, team task). `/verify-unity` was not run; both
+reference compiles clean; every menu generator `--check` passes.
+
+1. **Finish a match:** the banner, mode line, Play again and the reveal lines read exactly as before.
+2. **Blank `bannerWinLine` on GameCanvas > ScoreboardController > Scoreboard** and finish again: the banner is empty
+   (then undo).
+3. **Arena window, Profile quest track, configure window:** chips and captions read as before.
+
+## 🔴 2026-10-18 — Hangar ability showcase: each vessel's real abilities (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §51. `/verify-unity` was not run; player and editor reference compiles clean (editor: the 3
+known errors, 0 in changed files).
+
+1. **Hangar > a vessel > Abilities, press one ability:** the stand-in move plays, then within a few seconds the arena
+   shows the vessel flown by the autopilot firing THAT ability for real; then each other ability in turn, its row
+   lighting as it plays. No coaching prompts appear.
+2. **Press another ability** mid-showcase: it plays next.
+3. **TRY** during the showcase: you get the stick (abilities fire on your own presses).
+4. **START / Esc / STOP**, another vessel, or another tab: the showcase ends and the bay returns.
+5. Do this on Sparrow, Squirrel, Manta, Serpent, Grizzly and Stoat; note any ability that shows nothing (its map input
+   and its prefab binding may disagree).
+6. **Arcade configure preview** still coaches and hands you the stick as before (it never sets DemoPilot).
+
+## 🔴 2026-10-18 — Rev 9 sign-in UI and the Account tab (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §54. `/verify-unity` was not run; the player reference compile is clean. The providers are not
+built yet (`NoPlatformSignIn`), so in the editor every provider shows and answers "not ready in this build".
+
+1. **Boot with no cached session** (sign out or clear the UGS session): the splash and the sign-in screen show the
+   lattice drifting over the art. The sign-in window reads "Sign in to fly" with Steam, Google and Apple, "or", Play as
+   guest and the hint; the pad lands on Steam.
+2. **Press Google:** "Google is not ready yet" with Other ways and Play as guest. **Other ways** returns to the chooser.
+3. **Play as guest** (from either face) signs in as before: pilot name if needed, then the menu.
+4. **SignInChooser context menus** (select the sign-in window in Play): Google in the browser, did not finish, Steam
+   signs you in - each face lays out cleanly; Other ways returns to the chooser.
+5. **SignInProviders.asset > Editor Preview = IPhone:** Apple then Google; = Android: Google then Apple.
+6. **Settings > Account** (fifth tab): your pilot name and player ID, the guest notice, Steam / Google / Apple rows
+   reading "Not ready in this build"; no Sign out or Delete. **In a match** the LINK buttons are locked.
+7. **AccountSettingsView > Preview: link conflict** (in Play, settings open on Account): the two pilot cards and Fly
+   Shomboss / Keep Nova Runner / Cancel; **Preview: delete account** shows the short confirmation.
+8. **Release build:** the sign-in window shows only Play as guest (and is short); the Account tab shows no rows.
+
+## 🔴 2026-10-18 — Rev 10: pilot record, Audio Studio, now-playing card (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §56. `/verify-unity` was not run; player and editor reference compiles clean (editor: the 3
+known errors, 0 in changed files); every menu generator `--check` passes.
+
+1. **Profile:** looks exactly as before, plus EXPAND beside Change avatar / Rename.
+2. **EXPAND:** a solid panel with the lattice drifting over it: your name, fly time / games / sessions, favourite
+   vessel (your most flown, with its icon and time), favourite pilot ("None picked" at first), fly time by vessel
+   (up to five bars), the Audio Studio on the right. CLOSE or B closes it; switching screens closes it too.
+3. **CHANGE (favourite pilot):** four pilots per vessel; LB / RB change vessel; pick one, SET AS FAVOURITE: the record
+   shows it; reopen the game: it is still your favourite.
+4. **Audio Studio (today, one random music event):** the notice says picking arrives with the next update; SKIP and
+   BACK change the music; PAUSE / PLAY and STOP MUSIC / START MUSIC work; ticking / unticking rows saves (reopen the
+   game: the ticks are kept); the last ticked row cannot be unticked.
+5. **Now-playing card:** bottom right on Home; hover shows BACK / PAUSE / SKIP; on another menu screen, SKIP from
+   the studio makes the card slide in and out. Music off in Settings: no card.
+6. **(After aradia1 wires per-track events in Soundtrack.asset)** rows play on press, the title and progress show,
+   and the playlist moves to the next ticked track when one ends.
+
+## 🔴 2026-10-18 — R9b: the providers' own sign-in buttons (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §57. `/verify-unity` was not run (no editor in the cloud session); player reference compile
+clean, editor reference compile only the 3 known pre-existing errors (0 in changed files). New script
+`KitBrandButton.cs`; changed `SignInChooser`, `SignInProvidersSO`, `AccountSettingsView`; regenerated
+`Authentication.unity`, `SignInProviders.asset`, `SettingsView.prefab`, plus text-quoting fixes in `HangarView`,
+`LeaderboardView` and the two Maelstrom score-card prefabs.
+
+1. **Authentication.unity, Play:** the window shows Google's dark "Sign in with Google" pill and Apple's white "Sign in
+   with Apple" pill, the same size, centred, neither tinted; no Steam button; then "or" and Play as guest.
+2. **Pad / keyboard:** moving onto either brand button draws the sky-blue ring AROUND it (not over it); a mouse click
+   does not leave a ring.
+3. **Editor (dev build rule):** the "Steam is not running..." note shows above the buttons (no Steam provider works yet).
+4. **SignInChooser > Preview: Steam signs you in:** the AUTO card shows the name and "Steam account" with no mark.
+5. **Settings > Account:** Google's round G and Apple's round logo beside their rows; the Steam row has no mark and no
+   white square.
+6. **Hangar abilities tab:** the "Core: skim by flying close to a prism..." line still reads in full; the Maelstrom and
+   weekly leaderboard placeholders still show "-".
+
+## 🔴 2026-10-18 — Rev 10 play-test fixes (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §56 (play-test round). Reference compiles clean (editor: the 3 known errors, none in changed files).
+1. **Home, Hangar, Arcade:** no now-playing card, even when a track changes. **Profile tab:** the card shows bottom right;
+   open EXPAND and it hides; close the record and it returns.
+2. **Profile > EXPAND > Audio Studio:** BACK, PAUSE, SKIP, SHUFFLE, STOP MUSIC sit in one row with clear gaps; press
+   SHUFFLE and STOP MUSIC so they read "SHUFFLE: OFF" / "START MUSIC": still no overlap.
+3. The record and the CHANGE pilot picker read navy, not black, with the lattice drifting over them.
+4. Stats show Fly time, Games, Sessions and Pilot since (month and year). The favourite vessel card shows Games, Best
+   drift, Best boost, Prisms broken. Fly time by vessel lists your flown hulls first, then playable hulls you have not
+   flown, dimmed, "Not flown yet" (no Grizzly / Termite / Falcon).
+
+## 🔴 2026-10-18 — §58 Bootstrap welcome card (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+New `BootWelcomeCard.cs`; regenerated `Bootstrap.unity`. Reference compiles clean (editor: the 3 known errors only).
+1. Play from Bootstrap with a cached sign-in: while "Loading profile..." / "Joining lobby..." / "Creating session..."
+   show, a centred card reads "Welcome back, pilot", your pilot name, a spinner and the same status line.
+2. Before sign-in ("Connecting...", "Signing in...") no card; on a fresh account with no name it reads "Welcome, pilot".
+3. Menu_Main appears: the card is gone. Pull the network mid-boot: the Connection lost window replaces it.
+4. Launch a game from the menu: the loading splash shows no welcome card.
+
+## 🔴 2026-10-19 — Preview navigation leak (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md (play-test fix, 2026-10-19). Changed `ModePreviewSession`, `MaelstromPreviewHost`,
+`ScreenSwitcher`; reference compiles clean (editor: the 3 known errors only).
+1. Hangar: press an ability (showcase) and TRY, take the stick, then leave the Hangar without pressing START. Open
+   Arcade and Toy Box: both open, and the pad navigates them. Launch a vessel from either.
+2. Arcade card preview: take the stick, release with START, take it again, release again, close the card: other
+   windows still open with the pad.
+3. If navigation ever leaks again, the Console shows one "[ScreenSwitcher] EventSystem navigation was left off..."
+   warning and the windows open anyway (no "declined to open" lines).
+4. Freestyle (lava lamp) still hands the pad to the vessel: the menu does not navigate while flying.
+
+**Follow-up, 2026-10-19 (step 1 still failed in the editor):** the Hangar preview kept the stick because leaving the
+Hangar never ended it (screens hide by alpha, so its OnDisable never runs) and Arcade / Toy Box are windows opened over
+the Hangar, not a screen change. Now `ModalWindowManager.ModalWindowIn` hands the stick back from any flying preview
+(`ModePreviewWindow.ReleaseAnyFocus`) and only freestyle refuses; a leaked flag outside freestyle is restored there too;
+and `HangarScreen.OnScreenExit` ends every `HangarAbilityPreview`. Re-run steps 1-4 above; in step 1, also try opening
+Arcade with the mouse while still flying the TRY vessel: the flight ends and Arcade opens.
+
+**Second follow-up, 2026-10-19 ("Display 1 / No cameras rendering" after a preview):** changed `CameraManager`
+(`SetActiveCamera` takes the player rig back from a preview loan; `BeginWindowedPlayerCamera` refuses while the rig
+draws the screen) and `ElementalBarsView` (no runtime-petal warning for a flower socket the ability lockup built).
+Reference compile clean.
+5. Hangar TRY and the ability showcase, leave, go HOME, fly (freestyle): the screen shows the flight, never "No cameras
+   rendering". Exit freestyle, open an Arcade card, tap in: the card's window shows the flight.
+6. Spawn a Sparrow, Dolphin or Rhino (TRY or Vessel Changer): no "[ElementalBarsView] Created 5 petal(s)" warnings, and
+   the four flowers still sit in the ability cards and change colour with the element levels.
+7. Maelstrom hub: tap in still flies (if it shows "[CameraManager] A windowed camera was asked for while the player
+   camera draws the screen", report it: the hub reached a state where the rig was left as the screen camera).
+
+## 🔴 2026-10-19 — Hangar AI demo replaces TRY (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §59. Changed `HangarAbilitiesPage`, `HangarVesselStage`, `HangarScreen`, `ModePreviewSession`
+(demo members removed), `HangarView.prefab` (regenerated); deleted `HangarAbilityPreview` and `HangarTryPreview.asset`.
+Reference compile clean (player; editor: the 3 known errors only); Amoebius builds.
+1. Hangar > Abilities on three vessels (Squirrel, Sparrow, Rhino): within a second the AI presses the first ability; every
+   ~2.4 s the next one. The keycap sinks, the row glows, the hull performs the move with its effect; the turntable keeps
+   turning.
+2. Press a control yourself (pad or keyboard) or tap a row: that ability plays; the AI waits ~4 s and resumes after it.
+3. No TRY button, no window over the stage, no STOP hint. The menu vessel never changes hull and the Console shows no
+   "[ModePreview]", "[ElementalBarsView]" or camera lines from the Hangar.
+4. Leave the Hangar or switch tab: the demo stops (no stage effects behind Home). Open Arcade / Toy Box from the Hangar:
+   they open at once.
+5. Profiler on the Abilities tab: no cost above the plain stage (one 30 Hz render of the hull).
+
+## 🔴 2026-10-19 — Song names and Arena hull icons (`claude/new-session-76hnyc`) - NOT EDITOR-VERIFIED
+
+Docs/MENU_REDESIGN_B.md §60. Changed `AudioSystem`, `SoundtrackPlayer`, `SoundtrackSO`, `AudioStudioPanel`,
+`NowPlayingCard`, `KitArenaGameCard`, `Soundtrack.asset` (soundName per track); Amoebius FMOD stand-ins. Reference
+compile clean; Amoebius builds.
+1. Profile > EXPAND: the Audio Studio's title shows the song playing (e.g. "Severity"), not "Cosmic Shore soundtrack",
+   and that song's row is lit. The now-playing card on the Profile tab shows the same name.
+2. SKIP: the music restarts; within a moment the title changes to the new song. STOP: "Music stopped"; START: a name
+   again. Leave the menu playing past a song's end: the title follows the next song.
+3. If a title stays generic, the Console has no error: the sound FMOD reported matched no `soundName` - check its name
+   against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
+4. Arena: every card's hull chips show the vessel icons, no white squares.

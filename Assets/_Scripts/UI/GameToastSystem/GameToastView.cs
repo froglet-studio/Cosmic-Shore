@@ -59,6 +59,19 @@ namespace CosmicShore.UI
                 scrollRect.verticalNormalizedPosition = 0f;
         }
 
+        CanvasGroup _group;
+
+        /// <summary>
+        /// Hides the feed without losing its lines (the end screen owns the screen; the next turn shows the feed again).
+        /// </summary>
+        public void SetHidden(bool hidden)
+        {
+            if (!_group && !TryGetComponent(out _group))
+                _group = gameObject.AddComponent<CanvasGroup>();
+            _group.alpha = hidden ? 0f : 1f;
+            _group.blocksRaycasts = !hidden;
+        }
+
         public void Clear()
         {
             if (contentContainer == null) return;

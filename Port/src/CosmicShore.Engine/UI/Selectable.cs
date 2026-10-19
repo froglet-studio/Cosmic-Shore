@@ -115,7 +115,12 @@ namespace CosmicShore.Engine.UI
             m_HasSelection = false;
         }
 
-        protected virtual void DoStateTransition(SelectionState state)
+        void DoStateTransition(SelectionState state) => DoStateTransition(state, true);
+
+        /// <summary>Unity's signature (uGUI <c>Selectable.DoStateTransition(SelectionState, bool instant)</c>), so a
+        /// game Selectable that overrides it (the style-B kit's <c>KitSelectableBase</c>) compiles here as it does in
+        /// Unity. This port always applies a state instantly (see class doc), so <paramref name="instant"/> is unused.</summary>
+        protected virtual void DoStateTransition(SelectionState state, bool instant)
         {
             if (!gameObject.activeInHierarchy) return;
 
