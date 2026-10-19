@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
 {
@@ -218,7 +219,11 @@ namespace CosmicShore.Gameplay
 
         private void InitializeStrategies()
         {
-            multiMouseService = new MultiMouseService();
+            // The Windows raw-input half of dual-mouse is opt-in, and never for an AI or remote
+            // player: it takes mouse movement away from Unity process-wide (MultiMouseService).
+            bool localPilot = ownerPlayer == null || ownerPlayer.IsLocalPilot;
+            multiMouseService = new MultiMouseService(
+                localPilot && MouseFlightConfigSO.Instance.DualMouseRawInput);
 
             touchStrategy = new TouchInputStrategy();
             gamepadStrategy = new GamepadInputStrategy();
