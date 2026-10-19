@@ -34,6 +34,9 @@ namespace CosmicShore.UI
         [Tooltip("Three-wedge per-domain volume indicator on the pause button face. " +
                  "Optional - leave null if the button has no indicator wired yet.")]
         [SerializeField] DomainVolumeIndicator domainVolumeIndicator;
+        [Tooltip("What the freestyle button does, drawn in the middle of its volume hex: leave " +
+                 "freestyle (chrome_close). Empty = no glyph (Docs/MENU_REDESIGN_B.md section 22.5).")]
+        [SerializeField] Sprite exitGlyph;
         [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
@@ -71,6 +74,7 @@ namespace CosmicShore.UI
                 domainVolumeIndicator = volumePauseButton.gameObject.AddComponent<DomainVolumeIndicator>();
 
             domainVolumeIndicator.SetGameData(gameData);
+            if (exitGlyph) domainVolumeIndicator.SetCentreGlyph(exitGlyph, 40f);
         }
 
         void OnEnable()

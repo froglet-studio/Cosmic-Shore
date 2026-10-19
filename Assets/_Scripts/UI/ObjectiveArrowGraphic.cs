@@ -31,6 +31,32 @@ namespace CosmicShore.UI
         [Tooltip("Bright inner core, sits on top.")]
         [SerializeField] Color innerColor = new Color(0.86f, 1.00f, 0.62f, 1.00f);
 
+        Color? _accent;
+
+        /// <summary>
+        /// Wear a domain's colour instead of the authored lime (the HUD's arrow points at the LOCAL
+        /// pilot's objective, so it is theirs - Docs/MENU_REDESIGN_B.md section 22.6). The three
+        /// tones keep their roles: the halo is the accent dimmed and faint, the stroke is the
+        /// accent, the core is the accent lifted halfway to Light. One rebuild per change, never
+        /// per frame - the pulse stays a canvasRenderer alpha.
+        /// </summary>
+        public void SetAccent(Color accent)
+        {
+            accent.a = 1f;
+            if (_accent.HasValue && _accent.Value == accent) return;
+            _accent = accent;
+            var glow = accent * 0.55f;
+            glow.a = glowColor.a;
+            var outer = accent;
+            outer.a = outerColor.a;
+            var inner = Color.Lerp(accent, UITheme.Resolve(null, UIColorToken.TextLight), 0.6f);
+            inner.a = innerColor.a;
+            glowColor = glow;
+            outerColor = outer;
+            innerColor = inner;
+            SetVerticesDirty();
+        }
+
         [Header("Shape")]
         [Tooltip("How far the shoulder sits ahead of the rect centre (fraction of half-width).")]
         [Range(-0.4f, 0.6f)]

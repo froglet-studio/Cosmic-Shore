@@ -59,6 +59,14 @@ namespace CosmicShore.UI
         [Tooltip("Optional: the week's mode, e.g. 'SCURRY'.")]
         [SerializeField] TMP_Text challengeTitleText;
 
+        [Tooltip("Optional: the card list the title is read from, so it shows the card's DisplayName " +
+                 "(\"Skim Race\") instead of the enum's name in capitals.")]
+        [SerializeField] SO_GameList games;
+
+        [Tooltip("Count down in days once more than a day is left (\"6d 03:12:09\"); off keeps the " +
+                 "hours-only form (\"147:12:09\").")]
+        [SerializeField] bool countdownInDays;
+
         [Header("Scope tabs (all optional)")]
         [SerializeField] Button worldTab;
         [SerializeField] Button regionalTab;
@@ -323,6 +331,18 @@ namespace CosmicShore.UI
 
             button.interactable = usable && !selected;   // pressing the open tab does nothing
 
+            // A style-B tab paints itself: KitTile owns the selected look and its focus ring, so the
+            // colour fades below would only fight it.
+            if (button is KitTile tile)
+            {
+                // Pressing the open tab is already a no-op (SelectScope), and a non-interactable
+                // KitTile draws at half strength - the selected tab must not read as disabled.
+                tile.interactable = usable;
+                tile.IsSelected = selected;
+                tile.IsLocked = !usable;
+                return;
+            }
+
             var target = !usable ? unavailableTabColor
                        : selected ? activeTabColor
                        : inactiveTabColor;
@@ -373,15 +393,16 @@ namespace CosmicShore.UI
             if (challengeTitleText)
             {
                 var challenge = service != null ? service.ThisWeek : default;
-                challengeTitleText.text = challenge.IsValid
-                    ? challenge.GameMode.ToString().ToUpperInvariant()
-                    : "WEEKLY CHALLENGE";
+                challengeTitleText.text = !challenge.IsValid ? "WEEKLY CHALLENGE"
+                    : CardName(challenge.GameMode) ?? challenge.GameMode.ToString().ToUpperInvariant();
             }
 
             if (timeLeftText)
             {
                 timeLeftText.text = service != null
-                    ? timeLeftPrefix + FormatHoursMinutesSeconds(service.TimeUntilNextChallenge)
+                    ? timeLeftPrefix + (countdownInDays
+                        ? FormatDaysCountdown(service.TimeUntilNextChallenge)
+                        : FormatHoursMinutesSeconds(service.TimeUntilNextChallenge))
                     : string.Empty;
             }
         }
@@ -399,6 +420,24 @@ namespace CosmicShore.UI
         /// units as the week runs down (<c>6d 3h</c> → <c>7:12:33</c> → <c>1:04</c>) because it is
         /// glanced at on a card. This is a clock and stays a clock.</para>
         /// </summary>
+        string CardName(GameModes mode)
+        {
+            if (!games || games.Games == null) return null;
+            foreach (var game in games.Games)
+                if (game && game.Mode == mode && !string.IsNullOrEmpty(game.DisplayName))
+                    return game.DisplayName;
+            return null;
+        }
+
+        /// <summary>"6d 03:12:09" once a day or more is left; "03:12:09" under a day.</summary>
+        public static string FormatDaysCountdown(TimeSpan span)
+        {
+            if (span < TimeSpan.Zero) span = TimeSpan.Zero;
+            return span.Days > 0
+                ? $"{span.Days}d {span.Hours:D2}:{span.Minutes:D2}:{span.Seconds:D2}"
+                : $"{span.Hours:D2}:{span.Minutes:D2}:{span.Seconds:D2}";
+        }
+
         public static string FormatHoursMinutesSeconds(TimeSpan span)
         {
             if (span < TimeSpan.Zero) span = TimeSpan.Zero;

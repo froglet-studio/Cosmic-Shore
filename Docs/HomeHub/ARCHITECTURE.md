@@ -668,9 +668,12 @@ its **own** two rather than copies of the arcade's:
 | left | weekly challenge — one curated mode a week, ranked by time | **today's activity** — one activity a day, paid for TRYING it |
 | right | Maelstrom — a tournament of other modes | **shuffle** — re-roll every setting the toys own |
 
-Both are authored by `Tools/Build/author_toybox_top_buttons.py` (`--check`, `--self-test`), which
-also writes the one asset they read (`Resources/ToyboxDailyActivityConfig`, optional — every field
-has a code default, so a missing asset costs the feature nothing).
+Both were first authored into the scene by `Tools/Build/author_toybox_top_buttons.py`; since the
+style-B rebuild (2026-10-15, `Docs/MENU_REDESIGN_B.md` section 17.3) they are the `Daily` and
+`Shuffle` cards of `ToyboxView.prefab` (`Tools/Build/author_menu_toybox.py`), and the older tool's
+scene half stands down. It still writes the one asset they read
+(`Resources/ToyboxDailyActivityConfig`, optional — every field has a code default, so a missing
+asset costs the feature nothing; its strings are sentence case now).
 
 ### 4.0.1 One flag divides them, and it already existed
 

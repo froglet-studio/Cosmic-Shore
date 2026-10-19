@@ -118,6 +118,8 @@ namespace CosmicShore.Engine.UI
         Graphic m_Graphic;
         protected Graphic graphic => m_Graphic ??= GetComponent<Graphic>();
         public abstract void ModifyMesh(VertexHelper vh);
+        /// <summary>Original contract (UIBehaviour.IsActive): enabled on an active object.</summary>
+        public virtual bool IsActive() => isActiveAndEnabled;
         protected virtual void OnEnable() => graphic?.SetVerticesDirty();
         protected virtual void OnDisable() => graphic?.SetVerticesDirty();
     }

@@ -308,7 +308,8 @@ Current state, measured:
   moves this section was sequenced to protect no longer have to happen at all, which is the
   cheapest way a folder gets tidied.
 * **`Assets/Environment/` is empty.**
-* **`Assets/ArcadeDPadNav.cs`** — a first-party script — sits loose at the `Assets/` root.
+* ~~**`Assets/ArcadeDPadNav.cs`** — a first-party script — sits loose at the `Assets/` root.~~
+  Deleted 2026-10-14: the component was retired from every window (`Docs/MENU_REDESIGN_B.md` §12).
 * **`Assets/.DS_Store` is tracked in git** (2 `.DS_Store` files are).
 * `Assets/Unity Assests/` is a **typo** that is now load-bearing in every guid-free path reference.
 

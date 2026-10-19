@@ -11,6 +11,8 @@ using Obvious.Soap;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
@@ -44,6 +46,12 @@ namespace CosmicShore.Gameplay
     /// Runs on every peer; only the host drives transitions. Roster/history are read from the
     /// persistent <see cref="MaelstromDataSO"/> (the scene's own
     /// <c>gameData.Players/Results</c> are cleared per scene).</para>
+    ///
+    /// <para><b>Style B</b> (Docs/MENU_REDESIGN_B.md section 27): a mode eyebrow over "Round n", the
+    /// pool / round / leading chips, the round cards side by side (LB / RB scroll them) with the round
+    /// about to be played as the last, outlined card, the "Race to N" standings, a face per pilot that
+    /// ticks ready, and the summary's winner line, domain ranking and ranked pilot cards. Every new
+    /// part is optional: an unwired one is simply not drawn.</para>
     /// </summary>
     public class MaelstromSceneView : MonoBehaviour
     {
@@ -65,7 +73,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("The panel the entrance/exit animation moves - normally the modal's Content child.")]
         [SerializeField] RectTransform configureContent;
         [SerializeField] TMP_Text titleText;
-        [Tooltip("\"GAME POOL : 10 OF 16 MODES (INTENSITY 2)\".")]
+        [Tooltip("\"10 of 16 modes, intensity 2\" - the Game pool chip's value.")]
         [FormerlySerializedAs("gameModesText")]
         [SerializeField] TMP_Text poolText;
         [Tooltip("\"ROUND N\" in the hub, \"N ROUNDS PLAYED\" on the stats screen.")]
@@ -127,6 +135,65 @@ namespace CosmicShore.Gameplay
         [Header("Avatars")]
         [SerializeField] SO_ProfileIconList profileIconList;
         [SerializeField] SO_AIProfileList aiProfileList;
+
+        [Header("Style B hub (optional)")]
+        [Tooltip("The mode's name over the title (\"MAELSTROM\").")]
+        [SerializeField] TMP_Text modeEyebrowText;
+        [Tooltip("The Leading chip's pill: its tinted plate and hex mark (the name is leadingDomainText).")]
+        [SerializeField] Image leadingPillBackground;
+        [SerializeField] Image leadingPillMark;
+        [Tooltip("\"Race to 12\".")]
+        [SerializeField] TMP_Text standingsLabelText;
+        [Tooltip("One row per domain, in standings order. Extra rows hide.")]
+        [SerializeField] MaelstromStandingRow[] standingRows = { };
+        [Tooltip("The Pilots ready block - hidden on the stats screen, where nobody readies.")]
+        [SerializeField] CanvasGroup readySeatsGroup;
+        [SerializeField] MaelstromReadySeat[] readySeats = { };
+        [Tooltip("\"Next round\" / \"Last arena\" over the preview's mode name.")]
+        [SerializeField] TMP_Text previewEyebrowText;
+        [Tooltip("The line under READY / NEXT.")]
+        [SerializeField] TMP_Text captionText;
+        [Tooltip("The pad hints along the bottom.")]
+        [SerializeField] TMP_Text keyHintText;
+
+        [Header("Words (every line the hub and summary write; empty = the line shows nothing)")]
+        [Tooltip("Tokens: {round} {mode} {played} {target} {domain} {drawable} {total} {ceiling}.")]
+        [SerializeField] string hubTitle = "Round {round}";
+        [SerializeField] string statsTitle = "{mode} results";
+        [SerializeField] string hubRoundChip = "Round {round}";
+        [SerializeField] string statsRoundChip = "{played} rounds played";
+        [SerializeField] string hubInfo = "First domain to {target} points wins";
+        [SerializeField] string statsInfo = "Final standings";
+        [SerializeField] string poolChip = "{drawable} of {total} modes, intensity {ceiling}";
+        [SerializeField] string standingsLabel = "Race to {target}";
+        [SerializeField] string previewNextLabel = "Next round";
+        [SerializeField] string previewLastLabel = "Last arena";
+        [SerializeField] string hubCaption = "When every pilot is ready, the countdown drops to 3.";
+        [SerializeField] string statsCaptionWinner = "{domain} takes the {mode}. Next shows the trophy.";
+        [SerializeField] string statsCaptionNoWinner = "The tournament is decided. Next shows the trophy.";
+        [Tooltip("Pad hints. Shown only where controls are named (a phone with no pad shows none).")]
+        [SerializeField] string hubKeyHints = "LB / RB  scroll rounds     A  ready";
+        [SerializeField] string statsKeyHints = "LB / RB  scroll rounds     A  next";
+        [SerializeField] string summaryWinner = "{domain} WINS";
+        [SerializeField] string summaryNoWinner = "No winner";
+        [SerializeField] string rankLabel = "Domain rank";
+
+        /// <summary>An authored template with its tokens filled. Empty stays empty.</summary>
+        string Words(string template, int round = 0, int played = 0, int target = 0, string domain = null,
+                     int drawable = 0, int total = 0, int ceiling = 0)
+        {
+            if (string.IsNullOrEmpty(template)) return string.Empty;
+            return template.Replace("{round}", round.ToString()).Replace("{mode}", ModeName())
+                .Replace("{played}", played.ToString()).Replace("{target}", target.ToString())
+                .Replace("{domain}", domain ?? string.Empty).Replace("{drawable}", drawable.ToString())
+                .Replace("{total}", total.ToString()).Replace("{ceiling}", ceiling.ToString());
+        }
+
+        [Header("Style B summary (optional)")]
+        [Tooltip("The rule under the winner line, in the winner's colour.")]
+        [SerializeField] Image summaryWinnerRule;
+        [Tooltip("The domain ranking: one chip per domain, best first. Used instead of summaryRankText's list.")]
+        [SerializeField] MaelstromStandingRow[] rankChips = { };
 
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
 
@@ -192,6 +259,31 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (_screen == MaelstromScreen.Hub) TickHub();
+            if (_screen is MaelstromScreen.Hub or MaelstromScreen.Stats) TickRoundScroll();
+        }
+
+        /// <summary>
+        /// LB / RB step the round cards one card at a time. Skipped while the preview is being flown -
+        /// the shoulders are the vessel's then.
+        /// </summary>
+        void TickRoundScroll()
+        {
+            var pad = Gamepad.current;
+            if (pad == null || !historyScrollRect || !historyScrollRect.horizontal) return;
+            if (previewHost != null && previewHost.IsFlying) return;
+
+            int dir = pad.rightShoulder.wasPressedThisFrame ? 1 : pad.leftShoulder.wasPressedThisFrame ? -1 : 0;
+            if (dir == 0 || historyContent is not RectTransform content || content.childCount == 0) return;
+
+            var viewport = historyScrollRect.viewport ? historyScrollRect.viewport : (RectTransform)historyScrollRect.transform;
+            float overflow = content.rect.width - viewport.rect.width;
+            if (overflow <= 0f) return;
+
+            var first = (RectTransform)content.GetChild(0);
+            float spacing = content.TryGetComponent<HorizontalLayoutGroup>(out var row) ? row.spacing : 0f;
+            float step = (first.rect.width + spacing) / overflow;
+            historyScrollRect.horizontalNormalizedPosition =
+                Mathf.Clamp01(historyScrollRect.horizontalNormalizedPosition + dir * step);
         }
 
         // ── The hub ──────────────────────────────────────────────────────────────
@@ -249,6 +341,7 @@ namespace CosmicShore.Gameplay
             _revealedGame = game;
             if (game == null) return;
 
+            if (_upcomingCard) _upcomingCard.SetUpcomingRound(game.DisplayName, game.CardBackground);
             previewHost?.ShowRound(game, lobby.PendingIntensity, allowFlight: true);
             MaelstromTransitions.PulseScale(configurationContent, 0.06f);
         }
@@ -289,6 +382,43 @@ namespace CosmicShore.Gameplay
                 _lastReadyCount = ready;
                 MaelstromTransitions.PulseScale(readyTallyText ? readyTallyText.transform : readyButton?.transform);
             }
+
+            RefreshReadySeats();
+        }
+
+        int _seatSignature = int.MinValue;
+
+        /// <summary>
+        /// A face per human pilot, ringed in their domain once they are ready. Redrawn only when a
+        /// pilot joins, leaves or readies: the signature is a hash, so nothing is built per frame.
+        /// </summary>
+        void RefreshReadySeats()
+        {
+            if (readySeats == null || readySeats.Length == 0) return;
+            var humans = lobby.HumanPlayers;
+            int signature = humans.Count;
+            for (int i = 0; i < humans.Count; i++)
+            {
+                var h = humans[i];
+                signature = signature * 31 + (h.Name != null ? h.Name.GetHashCode() : 0);
+                signature = signature * 31 + (h.IsMaelstromReady ? 1 : 0) + (int)h.Domain * 2;
+            }
+            if (signature == _seatSignature) return;
+            _seatSignature = signature;
+
+            for (int i = 0; i < readySeats.Length; i++)
+            {
+                var seat = readySeats[i];
+                if (!seat) continue;
+                if (i >= humans.Count)
+                {
+                    seat.Hide();
+                    continue;
+                }
+                var h = humans[i];
+                var face = ResolveAvatar(new MaelstromPlayerSnapshot { Name = h.Name, Domain = h.Domain, AvatarId = h.AvatarId });
+                seat.Show(h.Name, face, DomainColor(h.Domain), h.IsMaelstromReady);
+            }
         }
 
         void RefreshCountdown()
@@ -303,7 +433,9 @@ namespace CosmicShore.Gameplay
 
                 if (show)
                 {
-                    gameStartText.text = $"GAME STARTS IN {Mathf.Max(secs, 1)}";
+                    // The number alone: the "Game starts in" caption is a child of this object, so it
+                    // shows and hides with it.
+                    gameStartText.text = Mathf.Max(secs, 1).ToString();
                     if (secs != _lastShownSecs)
                         MaelstromTransitions.CountdownTick(gameStartText, secs, Color.white, CountdownRestColor());
                 }
@@ -346,18 +478,18 @@ namespace CosmicShore.Gameplay
 
             int gamesPlayed = tournamentData != null ? tournamentData.GamesPlayed : 0;
 
-            if (titleText) titleText.text = stats
-                ? $"{ModeName().ToUpperInvariant()} RESULTS"
-                : ModeName().ToUpperInvariant();
-            if (poolText) poolText.text = $"GAME POOL : {GameModesPool()}";
-            if (roundStatusText) roundStatusText.text = stats
-                ? $"{gamesPlayed} ROUNDS PLAYED"
-                : $"ROUND {gamesPlayed + 1}";
+            if (modeEyebrowText) modeEyebrowText.text = ModeName();
+            if (titleText) titleText.text = Words(stats ? statsTitle : hubTitle, round: gamesPlayed + 1);
+            if (poolText) poolText.text = GameModesPool();
+            if (roundStatusText) roundStatusText.text = Words(stats ? statsRoundChip : hubRoundChip,
+                                                              round: gamesPlayed + 1, played: gamesPlayed);
             if (infoText && tournamentData != null)
-                infoText.text = stats
-                    ? "Final standings"
-                    : $"First domain to {tournamentData.EffectiveWinTarget} points wins";
+                infoText.text = Words(stats ? statsInfo : hubInfo, target: tournamentData.EffectiveWinTarget);
             RenderLeadingDomain();
+            RenderStandings();
+            RenderHubCopy(stats);
+            _seatSignature = int.MinValue;
+            KitVisibility.SetShown(readySeatsGroup, !stats);
 
             _shownRoster = null;          // a re-entry rebuilds; see RefreshRoster
             PopulateRoundCards(includePreviewWhenEmpty: !stats);
@@ -379,6 +511,7 @@ namespace CosmicShore.Gameplay
             if (stats) ShowStatsEnvironment();
 
             MaelstromTransitions.PanelIn(_configureGroup, configureContent);
+            Select(stats ? nextButton : readyButton);
             WarnIfHubExitIsUnreachable();
             WarnIfASecondLaunchAuthorityIsPresent();
         }
@@ -469,10 +602,15 @@ namespace CosmicShore.Gameplay
             if (summaryInfoText)
                 summaryInfoText.text = (local != Domains.Blue && local == winner) ? "GAME WON!" : "GAME OVER";
 
+            Color winnerColor = winner == Domains.Blue ? UITheme.Resolve(null, UIColorToken.TextLight) : DomainColor(winner);
             if (summaryWinningDomainText)
+            {
                 summaryWinningDomainText.text = winner == Domains.Blue
-                    ? "WINNING DOMAIN : -"
-                    : $"WINNING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(DomainColor(winner))}>{winner.ToString().ToUpperInvariant()}</color>";
+                    ? Words(summaryNoWinner)
+                    : Words(summaryWinner, domain: winner.ToString().ToUpperInvariant());
+                summaryWinningDomainText.color = winnerColor;
+            }
+            if (summaryWinnerRule) summaryWinnerRule.color = winnerColor;
 
             BuildSummaryRankText();
             PopulateSummaryCards();
@@ -484,6 +622,14 @@ namespace CosmicShore.Gameplay
             if (statsScreenButton) statsScreenButton.gameObject.SetActive(true);
 
             MaelstromTransitions.PanelIn(_summaryGroup, summaryContent);
+            Select(IsHost ? playAgainButton : statsScreenButton);
+        }
+
+        /// <summary>Puts the pad on the screen's one action, so A presses it.</summary>
+        static void Select(Button button)
+        {
+            var events = EventSystem.current;
+            if (events && button && button.gameObject.activeInHierarchy) events.SetSelectedGameObject(button.gameObject);
         }
 
         // ── Buttons ──────────────────────────────────────────────────────────────
@@ -583,22 +729,18 @@ namespace CosmicShore.Gameplay
         // bottom). The last card is marked current; the scroll auto-scrolls DOWN to it. Total Score
         // is the domain cumulative points as-of that round. Before any round, a single preview card
         // shows the upcoming roster.
+        MaelstromRoundCard _upcomingCard;
+
         void PopulateRoundCards(bool includePreviewWhenEmpty)
         {
             if (!roundCardPrefab || !historyContent || tournamentData == null) return;
             ClearChildren(historyContent);
+            _upcomingCard = null;
 
+            // The hub (includePreviewWhenEmpty) ends on the round about to be played, outlined and
+            // marked current; the stats screen ends on the last round played.
+            bool upcoming = includePreviewWhenEmpty;
             var history = tournamentData.History;
-            if (history.Count == 0)
-            {
-                if (includePreviewWhenEmpty)
-                {
-                    var preview = Instantiate(roundCardPrefab, historyContent);
-                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), ResolveAvatar, _ => 0, DomainColor);
-                    MaelstromTransitions.CardIn(preview.transform, 0);
-                }
-                return;
-            }
 
             // Running per-domain totals, accumulated chronologically (so each card shows the
             // standings after that round). PointsForPlacement (not PointsForPlace) so this
@@ -608,19 +750,34 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < history.Count; i++)
             {
                 var rec = history[i];
+                var paid = new Dictionary<Domains, int>();
                 for (int place = 0; place < rec.DomainOrder.Count; place++)
                 {
                     var d = rec.DomainOrder[place];
+                    int points = tournamentData.PointsForPlacement(place + 1, rec.DomainOrder.Count);
+                    paid[d] = points;
                     running.TryGetValue(d, out int cur);
-                    running[d] = cur + tournamentData.PointsForPlacement(place + 1, rec.DomainOrder.Count);
+                    running[d] = cur + points;
                 }
 
                 var asOf = new Dictionary<Domains, int>(running);
                 var card = Instantiate(roundCardPrefab, historyContent);
+                var game = GameByDisplayName(rec.ModeDisplayName);
                 card.Setup(rec, ResolveAvatar, d => asOf.TryGetValue(d, out int v) ? v : 0, DomainColor,
-                           isCurrent: i == history.Count - 1);
+                           isCurrent: !upcoming && i == history.Count - 1,
+                           pointsOf: d => paid.TryGetValue(d, out int v) ? v : 0,
+                           art: game != null ? game.CardBackground : null);
                 MaelstromTransitions.CardIn(card.transform, i);
             }
+
+            if (!upcoming) return;
+            var pending = lobby != null ? lobby.PendingGame : null;
+            _upcomingCard = Instantiate(roundCardPrefab, historyContent);
+            _upcomingCard.SetupPreview(history.Count + 1, OrderRoster(BuildActiveRoster()), ResolveAvatar,
+                                       history.Count > 0 ? StandingPoints : _ => 0, DomainColor,
+                                       pending != null ? pending.DisplayName : null,
+                                       pending != null ? pending.CardBackground : null);
+            MaelstromTransitions.CardIn(_upcomingCard.transform, history.Count);
         }
 
         // Scroll DOWN to the latest round (bottom). Deferred a frame so the layout group / size
@@ -638,7 +795,10 @@ namespace CosmicShore.Gameplay
             if (historyContent is RectTransform rt)
                 LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
             Canvas.ForceUpdateCanvases();
-            if (historyScrollRect) historyScrollRect.verticalNormalizedPosition = 0f;
+            if (!historyScrollRect) yield break;
+            // Side by side (style B) the latest card is at the RIGHT end; stacked, at the bottom.
+            if (historyScrollRect.horizontal) historyScrollRect.horizontalNormalizedPosition = 1f;
+            else historyScrollRect.verticalNormalizedPosition = 0f;
         }
 
         // ── Summary content ──────────────────────────────────────────────────────
@@ -646,6 +806,18 @@ namespace CosmicShore.Gameplay
         // "DOMAIN RANK :" + the ranked domains (each coloured), revealed with a typewriter + pop.
         void BuildSummaryRankText()
         {
+            if (rankChips != null && rankChips.Length > 0)
+            {
+                var standings = tournamentData != null ? tournamentData.BuildSortedStandings() : new List<MaelstromDomainStanding>();
+                for (int i = 0; i < rankChips.Length; i++)
+                {
+                    if (!rankChips[i]) continue;
+                    if (i < standings.Count) rankChips[i].Show(standings[i].Domain, DomainColor(standings[i].Domain), standings[i].TotalPoints, 0);
+                    else rankChips[i].Hide();
+                }
+                if (summaryRankText) summaryRankText.text = Words(rankLabel);
+                return;
+            }
             if (!summaryRankText) return;
 
             var sb = new StringBuilder("DOMAIN RANK :");
@@ -674,6 +846,7 @@ namespace CosmicShore.Gameplay
                 var card = Instantiate(summaryCardPrefab, summaryCardContainer);
                 card.transform.localScale = i == 0 ? Vector3.one : Vector3.one * 0.9f;
                 card.Setup(s.Name, ResolveAvatar(s), s.Domain, StandingPoints(s.Domain), DomainColor(s.Domain));
+                card.SetRank(DomainRank(s.Domain));
                 card.PlayEntrance(i);
             }
         }
@@ -684,6 +857,16 @@ namespace CosmicShore.Gameplay
             if (tournamentData != null && tournamentData.History.Count > 0)
                 return new List<MaelstromPlayerSnapshot>(tournamentData.History[tournamentData.History.Count - 1].Players);
             return BuildActiveRoster();
+        }
+
+        /// <summary>1-based place of a domain in the standings (0 when it has none).</summary>
+        int DomainRank(Domains domain)
+        {
+            if (tournamentData == null) return 0;
+            var sorted = tournamentData.BuildSortedStandings();
+            for (int i = 0; i < sorted.Count; i++)
+                if (sorted[i].Domain == domain) return i + 1;
+            return 0;
         }
 
         int StandingPoints(Domains domain)
@@ -697,10 +880,43 @@ namespace CosmicShore.Gameplay
         {
             if (!leadingDomainText) return;
             var lead = WinningDomain();
-            leadingDomainText.text = lead == Domains.Blue
-                ? "LEADING DOMAIN : -"
-                : $"LEADING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(DomainColor(lead))}>{lead.ToString().ToUpperInvariant()}</color>";
+            Color c = lead == Domains.Blue ? UITheme.Resolve(null, UIColorToken.NeutralLightest) : DomainColor(lead);
+            leadingDomainText.text = lead == Domains.Blue ? "-" : lead.ToString().ToUpperInvariant();
+            leadingDomainText.color = c;
+            if (leadingPillMark) leadingPillMark.color = c;
+            if (leadingPillBackground) leadingPillBackground.color = new Color(c.r, c.g, c.b, lead == Domains.Blue ? 0f : 0.14f);
             MaelstromTransitions.PulseScale(leadingDomainText.transform);
+        }
+
+        /// <summary>"Race to N": each domain's points against the win target, best first.</summary>
+        void RenderStandings()
+        {
+            if (standingRows == null || standingRows.Length == 0 || tournamentData == null) return;
+            int target = tournamentData.EffectiveWinTarget;
+            if (standingsLabelText) standingsLabelText.text = Words(standingsLabel, target: target);
+            var sorted = tournamentData.BuildSortedStandings();
+            for (int i = 0; i < standingRows.Length; i++)
+            {
+                if (!standingRows[i]) continue;
+                if (i < sorted.Count) standingRows[i].Show(sorted[i].Domain, DomainColor(sorted[i].Domain), sorted[i].TotalPoints, target);
+                else standingRows[i].Hide();
+            }
+        }
+
+        void RenderHubCopy(bool stats)
+        {
+            if (previewEyebrowText) previewEyebrowText.text = Words(stats ? previewLastLabel : previewNextLabel);
+            // Pad hints mean nothing on a phone with no pad (KitInputDevice).
+            if (keyHintText)
+                keyHintText.text = !KitInputDevice.ShowsControlHints ? string.Empty
+                    : Words(stats ? statsKeyHints : hubKeyHints);
+            if (!captionText) return;
+            var lead = WinningDomain();
+            captionText.text = !stats
+                ? Words(hubCaption)
+                : lead == Domains.Blue
+                    ? Words(statsCaptionNoWinner)
+                    : Words(statsCaptionWinner, domain: lead.ToString());
         }
 
         // ── Roster sourcing / ordering ───────────────────────────────────────────
@@ -795,7 +1011,7 @@ namespace CosmicShore.Gameplay
             int ceiling = Mathf.Clamp(tournamentData.IntensityCeiling <= 0 ? 1 : tournamentData.IntensityCeiling, 1, 4);
             int drawable = tournamentData.GamesForIntensity(ceiling).Count;
 
-            return $"{drawable} OF {total} MODES (INTENSITY {ceiling})";
+            return Words(poolChip, drawable: drawable, total: total, ceiling: ceiling);
         }
 
         Domains WinningDomain()

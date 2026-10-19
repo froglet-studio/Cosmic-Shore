@@ -25,7 +25,7 @@ MonoBehaviour:
     UpgradeDescription: 'Once an energized blade''s stance is let go its 5 s tail runs out whatever the fingers do; with Live Wire every return to the chop stance re-lights it, so a blade kept coming back to the chop stays energized. ShieldSkimmerScaleConfigSO.liveWireUpgradeElement, gated on IsUpgradeActive(Charge) in ShieldSkimmerScaleDriver.'
   - Element: 2
     AbilityLabel: 'Afterimage'
-    AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (RhinoSwordAfterimage, RhinoSwordAfterimageConfig). An omni-crystal surge lays them for its whole length. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass. They are not immune to the Rhino's own blade: past the 1 s self-trail grace it cuts them like any prism.'
+    AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (RhinoSwordAfterimage, RhinoSwordAfterimageConfig). An omni-crystal surge lays them for its whole length. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass. They are not immune to the Rhino''s own blade: past the 1 s self-trail grace it cuts them like any prism.'
     Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4

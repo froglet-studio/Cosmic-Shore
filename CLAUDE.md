@@ -13,8 +13,8 @@ This file holds only the rules every session needs. Everything else moved verbat
 - [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **The shared to-do board** - tests, playtests, setup, content and decisions one collaborator's session leaves for another (`Tools/Build/team_tasks.py`). Yash has offered to take tasks.
   Sections: How to use it; The board
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
-  Sections: The people; The rules for every session; What happened without this; The map (generated); Open decisions about our tools
-- [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **OPEN decision**: keep, narrow or stop Amoebius and the Vessel Studio, and which one tool builds Froglet's games. Evidence, options, recommendation, decision record. Feedback log: `Docs/TOOLING_FEEDBACK.md`.
+  Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
+- [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **DECIDED 2026-10-19 (§6)**: Amoebius stays (Shombith drives it), the Vessel Studio is an artifact and not part of the engine, no single unifying tool. The evidence, options and recommendation that led there. Volunteered feedback: `Docs/TOOLING_FEEDBACK.md`.
   Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
@@ -96,31 +96,25 @@ engine or anything"). On a session's first prompt, whatever it is about, `.claud
 one-line team notice. Claude's first reply then says who else works in the area the task touches, or that nobody
 does. `team_activity.py` lists what the others pushed since the last prompt.
 
-## Tools under evaluation: Amoebius and the Vessel Studio (OPEN DECISION, 2026-10-15)
+## Amoebius and the Vessel Studio (DECIDED 2026-10-19, `Docs/TOOLING_DECISIONS.md` §6)
 
-**Amoebius** (`Port/`) and **the Vessel Studio** (the artifact and its pages) are in a grey area: the team has not
-decided that they help enough to keep. The single tool that should build Cosmic Shore and Froglet's later games is
-also undecided. The evidence, the options and Claude's recommendation are in
-[`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md). The core four decide, and record the decision in §6 there.
-Until then:
-- **Tell people, every time they ask.** When anyone asks about Amoebius, "the engine", `Port/`, the launcher, the
-  Vessel Studio or which tool to use, open the answer with one line covering:
-  - that the tool is under evaluation;
-  - who drives it: Shombith the engine; Yash the launcher and the Vessel Studio;
-  - that the core four decide after the feedback date in `Docs/TOOLING_DECISIONS.md` §7;
-  - where to say whether it helped (`Docs/TOOLING_FEEDBACK.md`).
+Shombith, who started the engine and drives it, settled it on 2026-10-19:
+- **Amoebius stays.** It is a long-term goal: Froglet's own engine, so the team can one day leave Unity completely.
+  That is not plausible now (legal challenges, the porting, other problems), so Unity stays the engine the game
+  ships on. The engine is focused solely on the game, and Shombith drives what is good for it.
+- **The Vessel Studio is an artifact, not part of the engine.** The engine carries no studio work. Whether the
+  artifact itself is kept is still the team's call; Yash drives it.
+- **No single tool unifying everything**: the cost is more than the team will put in.
+- Proposed: an artifact-storing webpage that keeps the synced artifacts anyone thinks are important (open).
 
-  Do this even for a plain question. The hooks show the person the same line, once per session (`team_context.py`
-  for the engine and tools, `vessel_studio_nudge.py` for vessels). Claude's answer carries it every time.
-- **Offer the tools; do not require them.** Recommending the Vessel Studio for vessel work is one line, an option.
-- **Do not grow either tool's scope on your own initiative** (new launcher pages, Sync / jobs / studio-server
-  machinery). Build what the person asks for, and mention once that the tool is under evaluation.
-- **Ask the person, now and then.** At the end of a task that used or touched one of these tools, if
-  [`Docs/TOOLING_FEEDBACK.md`](Docs/TOOLING_FEEDBACK.md) has no row for that tool from the last three days, ask ONE
-  short question: "Did <tool> help with this: keep, change or remove? Why, in a line?". Append their answer as a row
-  and commit it with the work. Record only what they said.
-- **The rules below stay in force while the tools exist.** But before writing artifact numbers over Unity values that
-  someone play-tuned in Unity, ask: `who_works_where.py` shows who tuned them.
+What sessions do:
+- **Do not ask whether Amoebius or the Vessel Studio helped**, and do not open answers with an "under evaluation"
+  line. Shombith asked for this ("please stop asking these questions"). `Docs/TOOLING_FEEDBACK.md` stays as a log for
+  anything someone volunteers.
+- Do not put Vessel Studio work into `Port/`. Build engine work and studio work as separate tasks.
+- Offer the Vessel Studio for vessel work in one line, as an option; never require it.
+- **The rules below stay in force while the studio exists.** But before writing artifact numbers over Unity values
+  that someone play-tuned in Unity, ask: `who_works_where.py` shows who tuned them.
 
 ### Working with the Vessel Studio (while it is kept)
 
@@ -297,7 +291,8 @@ shared across scenes.
   rule in practice:
   - **Never** put a C# string literal that reaches a `TMP_Text`, toast, dialogue or button label.
   - Text whose facts are computed is an **authored template with tokens** (`Hold {glyph:Time} to
-    boost`). Code fills the tokens; a human owns the sentence.
+    boost`). Code fills the tokens; a human owns the sentence. `TemplateText.Fill(template, "token", value, ...)`
+    (`Assets/_Scripts/UI/TemplateText.cs`) is the one filler; it returns empty for an empty template.
   - An empty field shows nothing. That is how a line is deleted, so never fall back to a hardcoded
     default.
   - **Excluded:** logs, dev/diagnostic overlays and editor-tool UI.

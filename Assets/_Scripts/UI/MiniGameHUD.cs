@@ -22,6 +22,10 @@ namespace CosmicShore.UI
     [RequireComponent(typeof(MiniGameHUDView))]
     public class MiniGameHUD : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("The skip button's label on the first-login guide.")]
+        [SerializeField] string skipLabel = "SKIP >";
+
         [Header("Data")]
         [Inject] protected GameDataSO gameData;
         [Inject] protected Container _diContainer;
@@ -156,7 +160,7 @@ namespace CosmicShore.UI
             textRect.sizeDelta = Vector2.zero;
 
             var tmpText = textGO.AddComponent<TextMeshProUGUI>();
-            tmpText.text = "SKIP >";
+            tmpText.text = skipLabel;
             tmpText.fontSize = 18;
             tmpText.alignment = TextAlignmentOptions.Center;
             tmpText.color = Color.white;
@@ -213,6 +217,10 @@ namespace CosmicShore.UI
         {
             var button = view != null ? view.ReadyButton : null;
             if (button == null) return;
+
+            // The waiting state listens to the press whoever starts the countdown.
+            button.onClick.RemoveListener(OnLocalReadyPressed);
+            button.onClick.AddListener(OnLocalReadyPressed);
 
             if (HasPersistentControllerListener(button)) return;
 
@@ -961,6 +969,33 @@ namespace CosmicShore.UI
             // any other pathway from showing the button before the cinematic finishes.
             if (toggle && !_readyButtonUnlocked) return;
             view.ReadyButton.gameObject.SetActive(toggle);
+            // A new round brings the button back: nobody is ready any more.
+            if (toggle && view.ReadyWaiting) view.ReadyWaiting.Hide();
+        }
+
+        readonly List<ReadyWaitingPanel.Pilot> _readyPilots = new();
+
+        /// <summary>
+        /// The local pilot pressed Ready. With other humans in the match, show who is still picking
+        /// until the countdown starts (Docs/MENU_REDESIGN_B.md section 22.2). Solo, and against AI
+        /// only, the countdown follows the press at once, so there is nothing to wait for.
+        /// </summary>
+        void OnLocalReadyPressed()
+        {
+            var panel = view != null ? view.ReadyWaiting : null;
+            if (!panel || gameData == null) return;
+
+            _readyPilots.Clear();
+            var players = gameData.Players;
+            for (int i = 0, n = players.Count; i < n; i++)
+            {
+                var p = players[i];
+                if (p == null || p.IsInitializedAsAI) continue;
+                _readyPilots.Add(new ReadyWaitingPanel.Pilot(p.Name, ResolveAvatarSprite(p.AvatarId),
+                    DomainAccent(p.Domain) ?? UITheme.Resolve(null, UIColorToken.ControlActive)));
+            }
+            if (_readyPilots.Count <= 1) return;
+            panel.Begin(_readyPilots, gameData.LocalPlayer != null ? gameData.LocalPlayer.Name : null);
         }
 
         /// <summary>
@@ -1009,10 +1044,33 @@ namespace CosmicShore.UI
             var stack = view != null ? view.GoalStack : null;
             if (stack == null) return;
 
+            var accent = LocalDomainAccent();
+            stack.SetAccent(accent);
+            // The objective arrow points at the local pilot's goal: it wears their colour too.
+            if (accent.HasValue && _autoCreatedIndicator != null) _autoCreatedIndicator.SetAccent(accent.Value);
+
             var rule = gameData != null ? gameData.ScoringRule : null;
             stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,
                                rule != null ? rule.TargetFor(gameData) : 0,
                                ResolveTurnMonitor()?.PublishesSecondsRemaining ?? false);
+        }
+
+        /// <summary>
+        /// The local pilot's domain colour (its bright crystal colour, the one the score column's
+        /// number wears), or null when there is no domain to wear.
+        /// </summary>
+        Color? LocalDomainAccent()
+            => DomainAccent(gameData != null && gameData.LocalPlayer != null ? gameData.LocalPlayer.Domain : Domains.Blue);
+
+        /// <summary>A domain's bright crystal colour, or null for no domain / no palette.</summary>
+        Color? DomainAccent(Domains domain)
+        {
+            if (gameData == null || domain == Domains.Blue || (int)domain == 0) return null;
+            var palette = gameData.ThemeManagerData != null ? gameData.ThemeManagerData.ColorSet : null;
+            if (palette == null || !palette.TryGetColorSetByDomain(domain, out var set) || set == null) return null;
+            var c = set.BrightCrystalColor;
+            c.a = 1f;
+            return c;
         }
 
         TurnMonitor _turnMonitor;

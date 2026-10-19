@@ -4,6 +4,7 @@ using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
@@ -97,9 +98,23 @@ namespace CosmicShore.UI
 
         #region Construction
 
+        // Style B (Docs/MENU_REDESIGN_B.md section 26; the StartAgeGate / StartConsent boards).
+        const string TitleFontPath = "Fonts & Materials/ALDRICH-REGULAR SDF";
+        const string LabelFontPath = "Fonts & Materials/ChakraPetch-Regular SDF";
+        const float AgePanelWidth = 520f;
+        const float ConsentPanelWidth = 860f;
+        const float FadeInSeconds = 0.2f;
+
+        TMP_FontAsset _titleFont;
+        TMP_FontAsset _labelFont;
+        CanvasGroup _group;
+        Button _acceptButton;
+
         void Build()
         {
             EnsureEventSystem();
+            _titleFont = Resources.Load<TMP_FontAsset>(TitleFontPath);
+            _labelFont = Resources.Load<TMP_FontAsset>(LabelFontPath);
 
             var canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -108,9 +123,13 @@ namespace CosmicShore.UI
             var scaler = gameObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            // Expand: the whole 1920 x 1080 design stays on screen at any aspect (a 4:3 tablet, a
+            // 20:9 phone) - Docs/MENU_REDESIGN_B.md section 28.
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 
             gameObject.AddComponent<GraphicRaycaster>();
+            _group = gameObject.AddComponent<CanvasGroup>();
+            _group.alpha = 0f;
 
             // Scrim: dims the game behind and swallows clicks so nothing underneath reacts.
             // It BLEEDS - a dimmer that stopped at the safe area would leave lit strips of live
@@ -119,10 +138,10 @@ namespace CosmicShore.UI
             var scrim = NewRect("Scrim", transform);
             Stretch(scrim);
             var scrimImage = scrim.gameObject.AddComponent<Image>();
-            scrimImage.color = new Color(0.02f, 0.02f, 0.04f, 0.88f);
+            scrimImage.color = Tint(UIColorToken.SurfaceBlack, 0.72f);
 
-            // Both panels are centred and fixed-size, so nothing is clipped today; fitted anyway so
-            // that under a ONE-SIDED cutout they stay centred in the usable area rather than in a
+            // Both panels are centred and hug their content, so nothing is clipped today; fitted anyway
+            // so that under a ONE-SIDED cutout they stay centred in the usable area rather than in a
             // screen a slice of which the player cannot see.
             var content = SafeAreaLayer.Create(transform);
 
@@ -130,52 +149,74 @@ namespace CosmicShore.UI
             _consentPanel = BuildConsent(content).gameObject;
 
             // Resume mid-flow: an age-checked player only owes the consent answer.
-            bool ageDone = _analytics.AgeChecked;
-            _agePanel.SetActive(!ageDone);
-            _consentPanel.SetActive(ageDone);
+            ShowStep(_analytics.AgeChecked);
         }
 
         RectTransform BuildAgeGate(RectTransform parent)
         {
-            var panel = NewPanel("AgeGate", parent, 720f, 460f);
-            var col = NewColumn(panel);
+            var panel = NewPanel("AgeGate", parent, AgePanelWidth);
 
-            AddTitle(col, _config != null ? _config.AgeTitle : "Before you fly");
-            AddBody(col, _config != null ? _config.AgeBody : "What year were you born?");
+            AddEyebrow(panel, _config != null ? _config.AgeEyebrow : "First flight");
+            AddTitle(panel, _config != null ? _config.AgeTitle : "Before you fly");
+            AddBody(panel, _config != null ? _config.AgeBody : "What year were you born?");
 
             // A birth-year question rather than "are you 13 or older?" - a yes/no age question
             // nudges the player toward the answer that unlocks collection, which is exactly what
             // COPPA guidance says a neutral age screen must not do.
-            _birthYearField = AddInputField(col, "YYYY");
-            _ageError = AddNote(col, "");
-            _ageError.color = new Color(0.90f, 0.36f, 0.42f);
+            _birthYearField = AddInputField(panel, "YYYY");
+            _birthYearField.onSubmit.AddListener(_ => SubmitBirthYear());
+            _ageError = AddNote(panel, "");
+            _ageError.color = Tint(UIColorToken.Danger);
             _ageError.gameObject.SetActive(false);
 
-            var row = NewRow(col);
-            _continueButton = AddButton(row, _config != null ? _config.ContinueLabel : "Continue",
-                new Color(0.16f, 0.62f, 0.52f), SubmitBirthYear);
+            var row = NewRow(panel);
+            _continueButton = AddButton(row, _config != null ? _config.ContinueLabel : "Continue", _config != null ? _config.PrimaryKeycap : "A", true, SubmitBirthYear);
 
             return panel;
         }
 
         RectTransform BuildConsent(RectTransform parent)
         {
-            var panel = NewPanel("Consent", parent, 860f, 660f);
-            var col = NewColumn(panel);
+            var panel = NewPanel("Consent", parent, ConsentPanelWidth);
 
-            AddTitle(col, _config != null ? _config.ConsentTitle : "Help us improve Cosmic Shore");
-            AddBody(col, _config != null ? _config.ConsentBody : "");
+            AddEyebrow(panel, _config != null ? _config.ConsentEyebrow : "Privacy");
+            AddTitle(panel, _config != null ? _config.ConsentTitle : "Help us improve Cosmic Shore");
+            AddBody(panel, _config != null ? _config.ConsentBody : "");
 
             if (_config != null && _config.HasPrivacyPolicyUrl)
-                AddLinkButton(col, _config.PolicyLabel, () => Application.OpenURL(_config.PrivacyPolicyUrl));
+                AddLinkButton(panel, _config.PolicyLabel, () => Application.OpenURL(_config.PrivacyPolicyUrl));
 
-            var row = NewRow(col);
-            AddButton(row, _config != null ? _config.DeclineLabel : "No thanks",
-                new Color(0.28f, 0.30f, 0.35f), Decline);
-            AddButton(row, _config != null ? _config.AcceptLabel : "I agree",
-                new Color(0.16f, 0.62f, 0.52f), Accept);
+            var row = NewRow(panel);
+            _acceptButton = AddButton(row, _config != null ? _config.AcceptLabel : "I agree", _config != null ? _config.PrimaryKeycap : "A", true, Accept);
+            AddButton(row, _config != null ? _config.DeclineLabel : "No thanks", _config != null ? _config.SecondaryKeycap : "B", false, Decline);
 
             return panel;
+        }
+
+        /// <summary>Shows one step and puts the pad and keyboard on it: the birth-year field (type at
+        /// once; Enter continues), or the consent's primary action (B / Esc declines, see Update).</summary>
+        void ShowStep(bool consent)
+        {
+            _agePanel.SetActive(!consent);
+            _consentPanel.SetActive(consent);
+            var events = EventSystem.current;
+            if (!events) return;
+            var target = consent ? (_acceptButton ? _acceptButton.gameObject : null)
+                                 : (_birthYearField ? _birthYearField.gameObject : null);
+            if (target) events.SetSelectedGameObject(target);
+        }
+
+        void Update()
+        {
+            if (_group && _group.alpha < 1f)
+                _group.alpha = Mathf.Min(1f, _group.alpha + Time.unscaledDeltaTime / FadeInSeconds);
+
+            // B / Esc is the consent step's back: it declines, the same as No thanks. The age gate has
+            // no back - it asks a question with no default answer.
+            if (_consentPanel == null || !_consentPanel.activeSelf) return;
+            bool back = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+                        || (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame);
+            if (back) Decline();
         }
 
         static void EnsureEventSystem()
@@ -210,8 +251,7 @@ namespace CosmicShore.UI
 
             if (thisYear - year >= MinimumAge)
             {
-                _agePanel.SetActive(false);
-                _consentPanel.SetActive(true);
+                ShowStep(true);
                 return;
             }
 
@@ -248,6 +288,13 @@ namespace CosmicShore.UI
 
         #region Tiny UI toolkit
 
+        static Color Tint(UIColorToken token, float alpha = 1f)
+        {
+            var c = UITheme.Resolve(null, token);
+            c.a *= alpha;
+            return c;
+        }
+
         static RectTransform NewRect(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform));
@@ -263,115 +310,141 @@ namespace CosmicShore.UI
             r.offsetMax = Vector2.zero;
         }
 
-        static RectTransform NewPanel(string name, Transform parent, float width, float height)
+        Image NewImage(RectTransform r, Sprite sprite, Color color)
+        {
+            var image = r.gameObject.AddComponent<Image>();
+            image.sprite = sprite;
+            image.type = sprite ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = color;
+            return image;
+        }
+
+        /// <summary>A layer that fills its parent and stays out of the parent's layout.</summary>
+        Image AddLayer(RectTransform parent, string name, Sprite sprite, Color color, float outset = 0f)
+        {
+            var r = NewRect(name, parent);
+            Stretch(r);
+            r.offsetMin = new Vector2(-outset, -outset);
+            r.offsetMax = new Vector2(outset, outset);
+            r.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            var image = NewImage(r, sprite, color);
+            image.raycastTarget = false;
+            return image;
+        }
+
+        /// <summary>A slivered panel of a fixed width whose height hugs its column.</summary>
+        RectTransform NewPanel(string name, Transform parent, float width)
         {
             var panel = NewRect(name, parent);
             panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
             panel.pivot = new Vector2(0.5f, 0.5f);
-            panel.sizeDelta = new Vector2(width, height);
+            panel.sizeDelta = new Vector2(width, 0f);
 
-            var bg = panel.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.09f, 0.10f, 0.13f, 0.99f);
-            return panel;
-        }
+            var fill = NewImage(panel, _config != null ? _config.PanelFillSprite : null, Tint(UIColorToken.SurfaceVeryDark, 0.94f));
+            fill.raycastTarget = true;
+            AddLayer(panel, "Border", _config != null ? _config.PanelBorderSprite : null, Tint(UIColorToken.SurfaceDark));
 
-        static RectTransform NewColumn(RectTransform parent)
-        {
-            var col = NewRect("Column", parent);
-            Stretch(col);
-            col.offsetMin = new Vector2(48f, 40f);
-            col.offsetMax = new Vector2(-48f, -40f);
-
-            var layout = col.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 20f;
+            var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(34, 34, 30, 32);
+            layout.spacing = 10f;
             layout.childAlignment = TextAnchor.UpperLeft;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
-            layout.childForceExpandWidth = true;
+            layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
-            return col;
+
+            var fitter = panel.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            return panel;
         }
 
         static RectTransform NewRow(RectTransform parent)
         {
             var row = NewRect("Row", parent);
             var layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = 16f;
-            layout.childAlignment = TextAnchor.MiddleRight;
-            layout.childControlWidth = false;
-            layout.childControlHeight = false;
+            layout.spacing = 14f;
+            layout.padding = new RectOffset(0, 0, 18, 0);
+            layout.childAlignment = TextAnchor.MiddleLeft;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
             layout.childForceExpandWidth = false;
-
-            var fitter = row.gameObject.AddComponent<LayoutElement>();
-            fitter.minHeight = 64f;
+            layout.childForceExpandHeight = false;
             return row;
         }
 
-        static TMP_Text AddTitle(Transform parent, string text)
+        void AddEyebrow(Transform parent, string text)
         {
-            var t = AddText(parent, text, 42f, FontStyles.Bold);
-            t.color = new Color(0.94f, 0.95f, 0.97f);
+            if (string.IsNullOrEmpty(text)) return;
+            var t = AddText(parent, text.ToUpperInvariant(), 14f, _labelFont);
+            t.characterSpacing = 14f;
+            t.color = Tint(UIColorToken.NeutralLightest);
+        }
+
+        void AddTitle(Transform parent, string text)
+        {
+            var t = AddText(parent, text, 30f, _titleFont);
+            t.color = Tint(UIColorToken.TextLight);
+        }
+
+        void AddBody(Transform parent, string text)
+        {
+            var t = AddText(parent, text, 18f, _labelFont);
+            t.lineSpacing = 12f;
+            t.color = Tint(UIColorToken.NeutralLightest);
+        }
+
+        TMP_Text AddNote(Transform parent, string text)
+        {
+            var t = AddText(parent, text, 16f, _labelFont);
+            t.color = Tint(UIColorToken.NeutralLightest);
             return t;
         }
 
-        static TMP_Text AddBody(Transform parent, string text)
-        {
-            var t = AddText(parent, text, 24f, FontStyles.Normal);
-            t.color = new Color(0.76f, 0.78f, 0.83f);
-            return t;
-        }
-
-        static TMP_Text AddNote(Transform parent, string text)
-        {
-            var t = AddText(parent, text, 20f, FontStyles.Normal);
-            t.color = new Color(0.60f, 0.63f, 0.70f);
-            return t;
-        }
-
-        static TMP_Text AddText(Transform parent, string text, float size, FontStyles style)
+        static TMP_Text AddText(Transform parent, string text, float size, TMP_FontAsset font)
         {
             var r = NewRect("Text", parent);
             var tmp = r.gameObject.AddComponent<TextMeshProUGUI>();
+            if (font) tmp.font = font;
             tmp.text = text;
             tmp.fontSize = size;
-            tmp.fontStyle = style;
             tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.alignment = TextAlignmentOptions.TopLeft;
-
-            var fitter = r.gameObject.AddComponent<ContentSizeFitter>();
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            tmp.raycastTarget = false;
             return tmp;
         }
 
-        static TMP_InputField AddInputField(Transform parent, string placeholder)
+        TMP_InputField AddInputField(Transform parent, string placeholder)
         {
             var r = NewRect("BirthYear", parent);
             var element = r.gameObject.AddComponent<LayoutElement>();
-            element.minHeight = 64f;
-            element.preferredHeight = 64f;
+            element.preferredWidth = 220f;
+            element.minHeight = 58f;
+            element.preferredHeight = 58f;
 
-            var bg = r.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.16f, 0.17f, 0.21f);
+            var bg = NewImage(r, _config != null ? _config.ButtonFillSprite : null, Tint(UIColorToken.SurfaceBlack));
+            AddLayer(r, "Border", _config != null ? _config.ButtonBorderSprite : null, Tint(UIColorToken.ControlActive));
 
             var textArea = NewRect("TextArea", r);
             Stretch(textArea);
-            textArea.offsetMin = new Vector2(16f, 8f);
-            textArea.offsetMax = new Vector2(-16f, -8f);
+            textArea.offsetMin = new Vector2(18f, 8f);
+            textArea.offsetMax = new Vector2(-18f, -8f);
             textArea.gameObject.AddComponent<RectMask2D>();
 
             var textR = NewRect("Text", textArea);
             Stretch(textR);
             var text = textR.gameObject.AddComponent<TextMeshProUGUI>();
-            text.fontSize = 28f;
-            text.color = new Color(0.94f, 0.95f, 0.97f);
+            if (_titleFont) text.font = _titleFont;
+            text.fontSize = 24f;
+            text.color = Tint(UIColorToken.TextLight);
             text.alignment = TextAlignmentOptions.Left;
 
             var phR = NewRect("Placeholder", textArea);
             Stretch(phR);
             var ph = phR.gameObject.AddComponent<TextMeshProUGUI>();
+            if (_titleFont) ph.font = _titleFont;
             ph.text = placeholder;
-            ph.fontSize = 28f;
-            ph.color = new Color(0.45f, 0.47f, 0.53f);
+            ph.fontSize = 24f;
+            ph.color = Tint(UIColorToken.SurfaceLight);
             ph.alignment = TextAlignmentOptions.Left;
 
             var field = r.gameObject.AddComponent<TMP_InputField>();
@@ -384,51 +457,90 @@ namespace CosmicShore.UI
             return field;
         }
 
-        static Button AddButton(Transform parent, string label, Color tint, Action onClick)
+        /// <summary>
+        /// A kit-styled button: slivered fill and border, a keycap naming its pad button, an upper-case
+        /// label. The primary is the Play style (Cta fill, dark text); the secondary the Cancel style
+        /// (Neutral border, light text). A focus ring shows while it is selected, so the pad can see
+        /// where A will land.
+        /// </summary>
+        Button AddButton(Transform parent, string label, string keycap, bool primary, Action onClick)
         {
             var r = NewRect($"Button_{label}", parent);
-            r.sizeDelta = new Vector2(240f, 64f);
+            var element = r.gameObject.AddComponent<LayoutElement>();
+            element.minWidth = 200f;
+            element.preferredHeight = 56f;
 
-            var image = r.gameObject.AddComponent<Image>();
-            image.color = tint;
+            var content = primary ? Tint(UIColorToken.SurfaceBlack) : Tint(UIColorToken.TextLight);
+            var fill = NewImage(r, _config != null ? _config.ButtonFillSprite : null,
+                                primary ? Tint(UIColorToken.Cta) : Tint(UIColorToken.SurfaceVeryDark));
+            AddLayer(r, "Border", _config != null ? _config.ButtonBorderSprite : null,
+                     primary ? Tint(UIColorToken.Cta) : Tint(UIColorToken.NeutralLightest));
+            var ring = AddLayer(r, "FocusRing", _config != null ? _config.FocusRingSprite : null, Tint(UIColorToken.TextLight), 6f);
 
-            var labelR = NewRect("Label", r);
-            Stretch(labelR);
-            var tmp = labelR.gameObject.AddComponent<TextMeshProUGUI>();
-            tmp.text = label;
-            tmp.fontSize = 26f;
-            tmp.fontStyle = FontStyles.Bold;
-            tmp.color = Color.white;
+            var layout = r.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(24, 24, 0, 0);
+            layout.spacing = 12f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            // No keycap where controls are not named (a phone or tablet with no pad).
+            var cap = NewRect("Keycap", r);
+            cap.gameObject.SetActive(KitInputDevice.ShowsControlHints && !string.IsNullOrEmpty(keycap));
+            var capElement = cap.gameObject.AddComponent<LayoutElement>();
+            capElement.preferredWidth = 26f;
+            capElement.preferredHeight = 24f;
+            var capBorder = NewImage(cap, _config != null ? _config.ButtonBorderSprite : null, new Color(content.r, content.g, content.b, 0.75f));
+            capBorder.raycastTarget = false;
+            var capText = AddText(cap, keycap, 13f, _labelFont);
+            Stretch((RectTransform)capText.transform);
+            capText.alignment = TextAlignmentOptions.Center;
+            capText.color = content;
+
+            var tmp = AddText(r, label.ToUpperInvariant(), 18f, _labelFont);
+            tmp.characterSpacing = 8f;
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
             tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = content;
 
             var button = r.gameObject.AddComponent<Button>();
-            button.targetGraphic = image;
+            // The ring is the tint target: clear at rest, lit when selected or hovered, dimmer pressed.
+            button.targetGraphic = ring;
+            var colors = button.colors;
+            colors.normalColor = new Color(1f, 1f, 1f, 0f);
+            colors.highlightedColor = Color.white;
+            colors.selectedColor = Color.white;
+            colors.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+            colors.disabledColor = new Color(1f, 1f, 1f, 0f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+            fill.raycastTarget = true;
             button.onClick.AddListener(() => onClick?.Invoke());
             return button;
         }
 
-        static Button AddLinkButton(Transform parent, string label, Action onClick)
+        void AddLinkButton(Transform parent, string label, Action onClick)
         {
             var r = NewRect($"Link_{label}", parent);
             var element = r.gameObject.AddComponent<LayoutElement>();
-            element.minHeight = 40f;
-            element.preferredHeight = 40f;
+            element.minHeight = 32f;
+            element.preferredHeight = 32f;
 
             var image = r.gameObject.AddComponent<Image>();
             image.color = new Color(0f, 0f, 0f, 0f); // click target only
 
-            var labelR = NewRect("Label", r);
-            Stretch(labelR);
-            var tmp = labelR.gameObject.AddComponent<TextMeshProUGUI>();
-            tmp.text = $"<u>{label}</u>";
-            tmp.fontSize = 22f;
-            tmp.color = new Color(0.35f, 0.72f, 0.95f);
+            var tmp = AddText(r, label, 15f, _labelFont);
+            Stretch((RectTransform)tmp.transform);
+            tmp.fontStyle = FontStyles.Underline;
+            tmp.characterSpacing = 4f;
+            tmp.color = Tint(UIColorToken.ControlActive);
             tmp.alignment = TextAlignmentOptions.Left;
 
             var button = r.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
             button.onClick.AddListener(() => onClick?.Invoke());
-            return button;
         }
 
         #endregion

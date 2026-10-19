@@ -38,20 +38,20 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Copy")]
         [SerializeField, Tooltip("Heading on the daily-activity button.")]
-        string activityTitle = "TODAY'S ACTIVITY";
+        string activityTitle = "Today's activity";
 
         [SerializeField, Tooltip("Heading on the shuffle button.")]
-        string shuffleTitle = "SHUFFLE THE TOY BOX";
+        string shuffleTitle = "Shuffle the toy box";
 
         [SerializeField, Tooltip("Second line on the shuffle button - what a press will do.")]
-        string shuffleDetail = "NEW WORLD, NEW COLOURS, NEW HULL";
+        string shuffleDetail = "New world, new colours, new hull";
 
         /// <summary>Crystals a day's first start pays. Never negative.</summary>
         public int RewardCrystals => Mathf.Max(0, rewardCrystals);
 
-        public string ActivityTitle => Fallback(activityTitle, "TODAY'S ACTIVITY");
-        public string ShuffleTitle => Fallback(shuffleTitle, "SHUFFLE THE TOY BOX");
-        public string ShuffleDetail => Fallback(shuffleDetail, "NEW WORLD, NEW COLOURS, NEW HULL");
+        public string ActivityTitle => Fallback(activityTitle, "Today's activity");
+        public string ShuffleTitle => Fallback(shuffleTitle, "Shuffle the toy box");
+        public string ShuffleDetail => Fallback(shuffleDetail, "New world, new colours, new hull");
 
         static string Fallback(string value, string ifBlank) =>
             string.IsNullOrWhiteSpace(value) ? ifBlank : value;

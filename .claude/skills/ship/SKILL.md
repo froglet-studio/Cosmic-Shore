@@ -962,9 +962,8 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   add ...`), naming who can take it (Yash has offered to take tasks). Close the tasks the branch finished. Then put
   `python3 Tools/Build/team_tasks.py pr-section` in the PR body as its **Hand-offs** section, and run
   `team_tasks.py --check`.
-- If the branch used or touched Amoebius or the Vessel Studio (both under evaluation, `Docs/TOOLING_DECISIONS.md`)
-  and `Docs/TOOLING_FEEDBACK.md` has no row for that tool from the last three days, ask the person the one feedback
-  question and commit their answer before opening the PR.
+- Do not ask whether Amoebius or the Vessel Studio helped: the decision is recorded (`Docs/TOOLING_DECISIONS.md`
+  §6, 2026-10-19) and Shombith asked sessions to stop. Keep Vessel Studio work out of `Port/`.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
   structure if present.
 - PR body: what & why, per-system summary, **verification status** (what a human must

@@ -25,15 +25,26 @@ namespace CosmicShore.UI
             FirstAppLaunch = 0
         }
 
+        bool _subscribed;
+
+        // Subscribed on enable and dropped on disable, so a Home disabled and re-enabled (the
+        // freestyle round trip, a scene reload) keeps following the profile. It used to subscribe
+        // once in Start and unsubscribe in OnDisable, which left it deaf after the first disable.
+        void OnEnable() => Subscribe();
+
+        void Subscribe()
+        {
+            if (_subscribed || playerDataService == null) return;
+            playerDataService.OnProfileChanged += OnProfileChanged;
+            _subscribed = true;
+            if (playerDataService.CurrentProfile != null)
+                OnProfileChanged(playerDataService.CurrentProfile);
+        }
+
         public void Start()
         {
-            if (playerDataService != null)
-            {
-                playerDataService.OnProfileChanged += OnProfileChanged;
-
-                if (playerDataService.CurrentProfile != null)
-                    OnProfileChanged(playerDataService.CurrentProfile);
-            }
+            // Injection can land after OnEnable on the first frame.
+            Subscribe();
 
             if (FirstAppLaunchExperience())
             {
@@ -92,8 +103,9 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            if (playerDataService != null)
+            if (_subscribed && playerDataService != null)
                 playerDataService.OnProfileChanged -= OnProfileChanged;
+            _subscribed = false;
         }
     }
 }

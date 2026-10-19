@@ -490,6 +490,7 @@ MonoBehaviour:
   DriftEndAudioClip: {fileID: 8300000, guid: 3bff4f173ca4a4ff69bc9367e92f0247, type: 3}
   EnergyGainAudioClip: {fileID: 8300000, guid: 989a0e48e804482bbf3a677ada7d4ae8, type: 3}
   SpeedBurstAudioClip: {fileID: 8300000, guid: 653de36067c848a78ac947c561ec5143, type: 3}
+  soundtrack: {fileID: 11400000, guid: 6a1c3e5b7d9f4b2a8c0e1f3a5b7c9d10, type: 2}
 --- !u!114 &1452114705
 MonoBehaviour:
   m_ObjectHideFlags: 0
