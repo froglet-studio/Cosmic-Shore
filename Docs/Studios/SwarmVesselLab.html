@@ -1,0 +1,2171 @@
+<title>Swarm Vessel Lab</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  SWARM VESSEL LAB, round 1 (2026-10-19, cece/inspiring-einstein-k6syi5).
+  A vessel that IS a swarm: you do not fly one ship, you direct a population. This page is a toy box of
+  "fun moments" for many swarm animals (termite, ant, locust, pigeon, rat, bee, wasp, starling, bat,
+  firefly, mosquito, crow, piranha, slime mold, spider, siphonophore, tadpole) and a workbench that
+  combines the MECHANICS a swarm vessel is made of: a body (how members move and what verb they do),
+  a control scheme, an economy, and a meta layer (cards, draft, roulette, merge, evolution).
+  Every combination is scored in the four element minigames (Time race, Space destruction, Mass
+  creation, Charge dogfight), so its role on a team shows up as a fingerprint.
+  Built from Docs/Studios/SwarmVesselLab/src/*  by  python3 Docs/Studios/SwarmVesselLab/build.py
+  Verify:   node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SwarmVesselLab.html
+  Write-up: Docs/Studios/SWARM_VESSEL_LAB.md
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: an editor. Stage centre (a top-down slice of one cell); a right dock with the toy box, the
+     workbench and the tuning sliders; a bottom dock with the scorecard, the team builder, the decision log
+     and the honest not-modelled list. Below 900 px the stage leads and the docks become a tabbed sheet. */
+  :root {
+    --bg: #eef1f0; --panel: #ffffff; --ink: #18211f; --muted: #57635f; --line: #d6ddda;
+    --accent: #b9650d;            /* pheromone amber: the swarm's own colour */
+    --accent-ink: #ffffff;
+    --ok: #1d7a45; --warn: #a8540b; --changed: #9a5208;
+    --stage: #061014;             /* the hypersea, same in both themes */
+    --jade: #1fb8b0; --ruby: #c2368e; --gold: #d9a73a; --neutral: #4f78d6;
+    --chip: #f3ece2;
+    --f-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --f-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1113; --panel: #121a1d; --ink: #e3ebe8; --muted: #93a29d; --line: #24302f;
+      --accent: #f0a043; --accent-ink: #1b1206; --ok: #5ccb8b; --warn: #f0a050; --changed: #f3b36a;
+      --chip: #2a2116; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1113; --panel: #121a1d; --ink: #e3ebe8; --muted: #93a29d; --line: #24302f;
+    --accent: #f0a043; --accent-ink: #1b1206; --ok: #5ccb8b; --warn: #f0a050; --changed: #f3b36a;
+    --chip: #2a2116; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--f-ui); overflow: hidden; }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr) 236px;
+         grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 6px 12px; align-items: center; flex-wrap: wrap; background: var(--panel); border-bottom: 1px solid var(--line);
+           padding: 7px max(16px, env(safe-area-inset-right, 0px)) 7px max(16px, env(safe-area-inset-left, 0px)); }
+  header h1 { font: 700 16px/1 var(--f-display); letter-spacing: .02em; margin: 0; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; left: 12px; top: 10px; right: 12px; color: #d6e4e0; font: 12px/1.45 var(--f-mono); pointer-events: none; display: flex; justify-content: space-between; gap: 12px; }
+  #hud .toyline { font: 600 14px/1.2 var(--f-display); color: #fff; letter-spacing: .02em; }
+  #hud .fun { color: #f6c27f; max-width: 52ch; }
+  #hud .right { text-align: right; white-space: pre; }
+  #toast { position: absolute; left: 50%; top: 56px; transform: translateX(-50%); background: rgba(8,16,18,.88); color: #ffe2b8; border: 1px solid #f0a043; border-radius: 6px; padding: 5px 12px; font: 12px var(--f-mono); pointer-events: none; white-space: normal; text-align: center; max-width: min(560px, calc(100% - 32px)); opacity: 0; transition: opacity .25s; }
+  #toast.show { opacity: 1; }
+  /* The control bar along the bottom of the stage: the card hand and the scheme's own buttons.
+     Big targets, because on a phone this IS the controller. */
+  #ctrlBar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;
+             padding: 8px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+             pointer-events: none; }
+  #ctrlBar > * { pointer-events: auto; }
+  .card { width: 66px; min-height: 84px; border-radius: 8px; border: 1px solid #3a4a49; background: rgba(12,22,24,.92); color: #eaf2ef; padding: 6px 5px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; text-align: left; position: relative; overflow: hidden; }
+  .card .cost { position: absolute; right: 5px; top: 4px; font: 700 15px var(--f-display); color: #f6c27f; }
+  .card .nm { font: 600 11px/1.15 var(--f-display); margin-top: 16px; }
+  .card .ky { font: 10px var(--f-mono); color: #8fa39e; }
+  .card.poor { opacity: .45; }
+  .card.armed { border-color: #f0a043; box-shadow: 0 0 0 2px rgba(240,160,67,.55) inset; }
+  .card .veil { position: absolute; left: 0; right: 0; top: 0; background: rgba(0,0,0,.55); pointer-events: none; }
+  .ctl { min-width: 54px; height: 44px; border-radius: 22px; border: 1px solid #3a4a49; background: rgba(12,22,24,.9); color: #eaf2ef; padding: 0 14px; cursor: pointer; font: 600 12px var(--f-display); }
+  .ctl[aria-pressed="true"] { background: #f0a043; color: #1b1206; border-color: #f0a043; }
+  .meter { min-width: 150px; color: #d6e4e0; font: 11px var(--f-mono); display: flex; flex-direction: column; gap: 3px; background: rgba(8,16,18,.75); border: 1px solid #2c3a39; border-radius: 6px; padding: 5px 8px; }
+  .meter .bar { height: 8px; border-radius: 4px; background: #1d2a2a; overflow: hidden; display: flex; }
+  .meter .bar i { display: block; height: 100%; background: #f0a043; }
+  .moodWrap { display: flex; flex-direction: column; color: #d6e4e0; font: 11px var(--f-mono); background: rgba(8,16,18,.75); border: 1px solid #2c3a39; border-radius: 6px; padding: 5px 8px; min-width: 180px; }
+  .moodWrap input { width: 100%; accent-color: #f0a043; }
+  #draftBox { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(10,18,20,.96); border: 1px solid #f0a043; border-radius: 10px; padding: 14px; color: #eaf2ef; width: min(520px, calc(100% - 32px)); }
+  #draftBox h3 { font: 700 15px var(--f-display); margin: 0 0 8px; }
+  #draftBox .opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  #draftBox button { text-align: left; padding: 8px; border-radius: 8px; border: 1px solid #3a4a49; background: #13201f; color: #eaf2ef; cursor: pointer; min-height: 88px; }
+  #draftBox button b { display: block; font: 600 13px var(--f-display); margin-bottom: 4px; }
+
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; min-width: 0; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; min-width: 0; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; position: sticky; top: -8px; background: var(--panel); padding-top: 2px; z-index: 1; }
+  .tabs button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  h2.sec { font: 600 13px var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 4px 0; }
+  .toyList { display: grid; gap: 6px; }
+  .toy { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; background: var(--panel); text-align: left; display: grid; gap: 2px; width: 100%; }
+  .toy:hover { border-color: var(--accent); }
+  .toy[aria-current="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .toy .t { font: 600 13px var(--f-display); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .toy .t small { font: 11px var(--f-mono); color: var(--muted); }
+  .toy .f { font-size: 12px; color: var(--muted); }
+  .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .chip { font: 10px var(--f-mono); background: var(--chip); color: var(--ink); border-radius: 99px; padding: 1px 7px; }
+  .chip.el-time { background: color-mix(in srgb, var(--neutral) 22%, transparent); }
+  .chip.el-space { background: color-mix(in srgb, var(--ruby) 22%, transparent); }
+  .chip.el-mass { background: color-mix(in srgb, var(--jade) 26%, transparent); }
+  .chip.el-charge { background: color-mix(in srgb, var(--gold) 30%, transparent); }
+  .field { display: grid; gap: 3px; margin: 8px 0; }
+  .field > span { color: var(--muted); font-size: 12px; }
+  select, textarea, input[type=text] { width: 100%; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; }
+  .desc { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px var(--f-mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .tblWrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.best { font-weight: 700; color: var(--ok); }
+  td.role { font: 600 12px var(--f-display); }
+  .spark { display: inline-flex; gap: 2px; vertical-align: middle; }
+  .spark i { display: inline-block; width: 10px; border-radius: 2px; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .note { border-left: 3px solid var(--line); padding: 2px 10px; margin: 6px 0; font-size: 12px; color: var(--muted); }
+  .flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* Phone / narrow: the stage leads at a playable height, the docks follow as one tabbed sheet. */
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { height: auto; overflow: visible; }
+    #stage { height: 58vh; min-height: 320px; }
+    #ctrlBar { position: static; padding-top: 6px; background: var(--stage); }
+    .meter { min-width: 0; flex: 1 1 100%; }
+    #hud .right { font-size: 11px; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); overflow: visible; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #hud .fun { display: none; }
+    .card { width: 58px; min-height: 76px; }
+    #draftBox .opts { grid-template-columns: 1fr; }
+    #draftBox button { min-height: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+<div id="app">
+  <header>
+    <h1 id="title">Swarm Vessel Lab</h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage" aria-label="The swarm, top-down"></canvas>
+    <div id="hud"><div><div class="toyline" id="hudToy"></div><div class="fun" id="hudFun"></div></div><div class="right" id="hudRight"></div></div>
+    <div id="toast"></div>
+    <div id="ctrlBar"></div>
+    <div id="draftBox" hidden></div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+'use strict';
+// ---- src/core.js ----
+// ============================================================================================
+// core.js — the lab meta, the shipped numbers, the sliders, and THE MODEL (world + swarm step).
+// simStep never draws and never reads a device: input arrives as one object (touch, mouse, gamepad
+// and the AI commander all write the same shape), so the batch can run it headless thousands of times.
+// ============================================================================================
+const $ = (id) => document.getElementById(id);
+
+// ================= (1) LAB meta + the shipped numbers =================
+// A READER of the shipped numbers, never their authority. Every value that exists in the game names the
+// asset or field it was copied from; everything else is a lab knob ("lab:"). The game has no swarm VESSEL
+// yet, so most of this page is proposal — the Termite deck and the locust's rules are the shipped anchors.
+const LAB = { name: 'Swarm Vessel Lab', branch: 'cece/inspiring-einstein-k6syi5', round: 1, doc: 'Docs/Studios/SWARM_VESSEL_LAB.md' };
+const SHIPPED = {
+  cruise: 70,          // TermiteCommandTransformer.commandCruiseSpeed (Time 0; 112 at Time 10)
+  accel: 90,           // TermiteCommandTransformer.commandAcceleration (u/s per s)
+  pherMax: 10,         // TermitePheromoneAction.asset maxPheromone
+  pherStart: 5,        // TermitePheromoneAction.asset startPheromone
+  pherRegen: 0.357,    // TermitePheromoneAction.asset regenPerSecond.Value (0.714 at Time 10)
+  droneSpeed: 55,      // TermiteDroneTuning.speed
+  forage: 70,          // TermiteDroneTuning.forageRadius
+  carry: 3,            // TermiteDroneTuning.carryCapacity
+  droneCap: 36,        // TermiteDeckExecutor.maxLiveDrones
+  locustMarch: 135,    // Tools/Ecology/bestiary/species/locust.py (gregarious march, u/s)
+  locustCrowd: 40,     // locust.py: neighbours inside 40 u set the phase
+  elTime: 2,           // lab: the swarm's TIME level 0..10 (Notion fauna concepts: Time = movement speed, spawn rate)
+  elSpace: 2,          // lab: SPACE level (reach, spread, sense radius)
+  elMass: 2,           // lab: MASS level (body size, hit points, carry)
+  elCharge: 2,         // lab: CHARGE level (aggression thresholds, damage, debuff length)
+  pop: 1,              // lab: population scale on every species' base count
+  aggression: 0.5,     // lab: the B5 knob (NCA backlog B5 "calm <-> centroid-rush"), read by the Mood control
+  rivalSkill: 0.5,     // lab: rival vessel accuracy and fire rate
+  aiNoise: 0.15,       // lab: the AI commander's sloppiness (0 = expert, 1 = rookie)
+  round: 45,           // lab: seconds per minigame round
+};
+
+// ================= (2) SPEC: one row per slider =================
+const SPEC = [
+  ['Elements', 'elTime',   0, 10, 1, 'Time',   'Swarm speed and how fast it breeds (+6% speed and +8% birth rate per level). Hull cruise follows the shipped 70 -> 112 curve.'],
+  ['Elements', 'elSpace',  0, 10, 1, 'Space',  'How far members sense and reach (+8% per level), and how wide the swarm spreads.'],
+  ['Elements', 'elMass',   0, 10, 1, 'Mass',   'Member size, hit points and carry capacity (+8% per level).'],
+  ['Elements', 'elCharge', 0, 10, 1, 'Charge', 'Damage, sting and drain strength, debuff length (+8% per level). Lowers the locust crowd threshold.'],
+  ['Swarm', 'pop',        0.25, 3, 0.05, 'Population scale', 'Multiplies every species\' base member count. Phones stay smooth up to about 2.'],
+  ['Swarm', 'aggression', 0, 1, 0.01, 'Aggression (B5 knob)', 'Calm (escort the hull, avoid threats) to centroid-rush (charge the nearest enemy mass). Read live by the Mood control.'],
+  ['Swarm', 'droneSpeed', 20, 160, 1, 'Member base speed', 'Shipped Termite drone speed. Each species scales it by its own factor.'],
+  ['Swarm', 'forage', 20, 240, 1, 'Forage radius', 'Shipped Termite forage radius: how far a member looks for work around its focus.'],
+  ['Swarm', 'carry', 1, 8, 1, 'Carry capacity', 'Shipped Termite carry: prisms a carrier moves per trip (the lab moves them as one parcel).'],
+  ['Swarm', 'locustCrowd', 15, 90, 1, 'Locust crowd radius', 'locust.py: neighbours inside this radius push a locust toward the gregarious phase.'],
+  ['Swarm', 'locustMarch', 60, 220, 1, 'Locust march speed', 'locust.py: gregarious march speed.'],
+  ['Economy', 'pherMax', 4, 20, 1, 'Pheromone tank', 'Shipped Termite tank. Elixir-style economies and card costs are priced in it.'],
+  ['Economy', 'pherStart', 0, 20, 1, 'Starting pheromone', 'Shipped start.'],
+  ['Economy', 'pherRegen', 0.1, 2, 0.01, 'Pheromone per second', 'Shipped 0.357/s at Time 0 (0.714 at Time 10).'],
+  ['Economy', 'droneCap', 6, 120, 1, 'Deck member cap', 'Shipped Termite cap on live drones; the deck economy respects it.'],
+  ['Hull', 'cruise', 30, 200, 1, 'Hull cruise', 'Shipped Termite commanded cruise at Time 0.'],
+  ['Hull', 'accel', 20, 300, 1, 'Hull acceleration', 'Shipped Termite commanded acceleration.'],
+  ['Arena', 'rivalSkill', 0, 1, 0.05, 'Rival skill', 'Rival vessels\' fire rate and aim.'],
+  ['Arena', 'aiNoise', 0, 1, 0.05, 'AI commander noise', '0 = an expert commander, 1 = a rookie. The scorecard runs both.'],
+  ['Arena', 'round', 20, 120, 5, 'Round length (s)', 'Seconds per minigame round.'],
+];
+
+const LS_KEY = 'lab:' + LAB.name + ':P';
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+// ================= seeded RNG =================
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// ================= geometry =================
+const R = 600;            // cell membrane radius (lab units, about one game unit each)
+const NUC = 90;           // nucleus radius
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const len = (x, y) => Math.sqrt(x * x + y * y);
+const DOM = { NEUTRAL: 0, JADE: 1, RUBY: 2, GOLD: 3 };
+const ME = DOM.JADE;
+
+// Element multipliers (Notion "Fauna Concepts": Mass bigger blocks, Space reach/separation, Time speed,
+// Charge thresholds/debuff duration). Each is 1 at level 0.
+const EL = {
+  spd:   () => 1 + 0.06 * P.elTime,
+  birth: () => 1 + 0.08 * P.elTime,
+  reach: () => 1 + 0.08 * P.elSpace,
+  size:  () => 1 + 0.08 * P.elMass,
+  dmg:   () => (1 + 0.08 * P.elCharge) * (W && W.mods ? W.mods.bite : 1),
+};
+const hullCruise = () => P.cruise * (1 + 0.6 * P.elTime / 10);   // shipped 70 -> 112 over Time 0..10
+
+// ================= spatial hash (prisms) =================
+const CELL = 24;
+function hkey(cx, cy) { return (cx + 512) * 1024 + (cy + 512); }
+function hashBuild(list) {
+  const m = new Map();
+  for (const p of list) {
+    if (!p.alive) continue;
+    const k = hkey(Math.floor(p.x / CELL), Math.floor(p.y / CELL));
+    let b = m.get(k); if (!b) { b = []; m.set(k, b); } b.push(p);
+  }
+  return m;
+}
+function hashQuery(m, x, y, r, fn) {
+  const c0 = Math.floor((x - r) / CELL), c1 = Math.floor((x + r) / CELL), d0 = Math.floor((y - r) / CELL), d1 = Math.floor((y + r) / CELL), r2 = r * r;
+  for (let cx = c0; cx <= c1; cx++) for (let cy = d0; cy <= d1; cy++) {
+    const b = m.get(hkey(cx, cy)); if (!b) continue;
+    for (const p of b) { if (!p.alive) continue; const dx = p.x - x, dy = p.y - y; if (dx * dx + dy * dy <= r2) if (fn(p, dx * dx + dy * dy) === false) return; }
+  }
+}
+
+// ================= fields (pheromone, trail, blood) on a coarse grid =================
+const FG = 80, FS = (2 * R) / FG;
+function fieldIdx(x, y) { const i = Math.floor((x + R) / FS), j = Math.floor((y + R) / FS); return (i < 0 || j < 0 || i >= FG || j >= FG) ? -1 : j * FG + i; }
+function fieldDiffuse(f, keep, spread) {
+  const out = new Float32Array(f.length);
+  for (let j = 1; j < FG - 1; j++) for (let i = 1; i < FG - 1; i++) {
+    const k = j * FG + i, n = (f[k - 1] + f[k + 1] + f[k - FG] + f[k + FG]) * 0.25;
+    out[k] = (f[k] * (1 - spread) + n * spread) * keep;
+  }
+  f.set(out);
+}
+function fieldGrad(f, x, y) {
+  const k = fieldIdx(x, y); if (k < FG || k >= f.length - FG) return [0, 0];
+  return [f[k + 1] - f[k - 1], f[k + FG] - f[k - FG]];
+}
+
+// ================= the world =================
+let W = null;   // the live world; the batch swaps it out and back
+function newWorld(seed) {
+  return {
+    seed, rnd: mulberry32(seed), t: 0, prisms: [], crystals: [], rivals: [], agents: [], fauna: [], proj: [], fx: [],
+    homes: [], baits: [], marks: [], webs: [], paint: [], gates: null,
+    hash: null, ahash: null, pher: new Float32Array(FG * FG), trail: new Float32Array(FG * FG), blood: new Float32Array(FG * FG),
+    hull: null, econ: null, meta: null, ctl: null, sp: null, scene: 'sandbox', game: null,
+    stats: { eaten: 0, destroyed: 0, built: 0, delivered: 0, crystals: 0, petalsTaken: 0, petalsLost: 0, births: 0, deaths: 0, stings: 0, flashes: 0, plays: 0, merges: 0, revealed: 0, snared: 0 },
+    focus: null, selection: null, mood: P.aggression, order: 0, orderAt: 0, sync: 0, syncKick: 0, leaderIdx: -1, formation: 'ring', cast: false,
+    tick: 0, done: false, finishT: null, fortress: 0, drafts: 0, nextDraft: 20, nextRoulette: 15, toast: null, rouletteIdx: 0,
+  };
+}
+
+function addPrism(x, y, dom, opt) {
+  if (len(x, y) > R - 8) return null;
+  const p = { x, y, dom, alive: true, hp: (opt && opt.hp) || 1, sh: (opt && opt.sh) || 0, carried: -1, mark: 0, built: (opt && opt.built) || 0, claims: 0, tag: (opt && opt.tag) || 0, hidden: false };
+  W.prisms.push(p);
+  return p;
+}
+function killPrism(p, cause) {
+  if (!p.alive) return;
+  p.alive = false;
+  W.stats.destroyed++;
+  if (p.dom !== ME && p.dom !== DOM.NEUTRAL && cause !== 'fauna') W.stats.hostileKills = (W.stats.hostileKills || 0) + 1;
+  if (p.tag === 1) W.fortress--;
+  const k = fieldIdx(p.x, p.y); if (k >= 0) W.blood[k] += 1;
+  if (cause !== 'quiet') W.fx.push({ k: 'pop', x: p.x, y: p.y, t: 0, dom: p.dom });
+}
+function addCrystal(x, y, opt) {
+  const c = { x, y, alive: true, kind: (opt && opt.kind) || 'omni', hidden: !!(opt && opt.hidden), order: (opt && opt.order) != null ? opt.order : -1, carriedBy: -1, decoy: !!(opt && opt.decoy) };
+  W.crystals.push(c); return c;
+}
+function addRival(x, y, dom, mode) {
+  const r = { x, y, vx: 0, vy: 0, dom, petals: 10, petalDebt: 0, alive: true, cd: 1 + W.rnd(), mode: mode || 'hunt', marked: 0, respawn: 0, slow: 0, stun: 0, tx: x, ty: y, retarget: 0, trailT: 0, latched: 0, heat: 0 };
+  W.rivals.push(r); return r;
+}
+function addHome(x, y, kind) { const h = { x, y, kind, r: 16, sites: 0, nestHp: 0, spawnT: 0, stock: 0 }; W.homes.push(h); return h; }
+
+// clump of prisms (a resource patch, a wall arc, a ring)
+function clump(cx, cy, n, spread, dom, opt) {
+  for (let i = 0; i < n; i++) { const a = W.rnd() * TAU, r = Math.sqrt(W.rnd()) * spread; addPrism(cx + Math.cos(a) * r, cy + Math.sin(a) * r, dom, opt); }
+}
+function ring(cx, cy, rad, thick, step, dom, opt) {
+  for (let r = rad; r < rad + thick; r += step) {
+    const n = Math.floor(TAU * r / step);
+    for (let i = 0; i < n; i++) { const a = i / n * TAU; const o = Object.assign({}, opt); if (opt && opt.shieldFrac && W.rnd() < opt.shieldFrac) o.sh = 1; addPrism(cx + Math.cos(a) * r, cy + Math.sin(a) * r, dom, o); }
+  }
+}
+function arc(cx, cy, rad, a0, a1, step, dom, opt) {
+  const n = Math.max(2, Math.floor(Math.abs(a1 - a0) * rad / step));
+  for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; addPrism(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, dom, opt); }
+}
+function line(x0, y0, x1, y1, step, dom, opt) {
+  const L = len(x1 - x0, y1 - y0), n = Math.max(1, Math.floor(L / step));
+  for (let i = 0; i <= n; i++) addPrism(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, dom, opt);
+}
+
+// ================= the hull (the vessel the swarm belongs to) =================
+function makeHull(x, y) { return { x, y, vx: 0, vy: 0, hx: 1, hy: 0, petals: 10, mode: 'auto', tx: x, ty: y, trailT: 0, ramCd: 0, hp: 1, alive: true, roam: null, stick: false }; }
+
+function stepHull(dt, input) {
+  const h = W.hull, ctl = W.ctl;
+  let tx = h.x, ty = h.y, want = 0;
+  const mode = ctl.hull;                 // 'auto' | 'stick' | 'anchor'
+  if (mode === 'stick') {
+    if (input.down && input.px != null) { tx = input.px; ty = input.py; want = hullCruise(); }
+    else if (W.ctl.id === 'school' || W.ctl.id === 'formation' || W.ctl.id === 'leash' || W.ctl.id === 'sheepdog') { tx = h.tx; ty = h.ty; want = len(tx - h.x, ty - h.y) > 8 ? hullCruise() : 0; }
+    if (input.down && input.px != null) { h.tx = input.px; h.ty = input.py; }
+  } else if (mode === 'auto') {
+    // The queen flies herself: roam the cell band and swing toward a crystal she may collect.
+    if (!h.roam || len(h.roam.x - h.x, h.roam.y - h.y) < 14 || W.t > h.roam.until) {
+      let best = null, bd = 1e9;
+      for (const c of W.crystals) if (c.alive && !c.hidden && c.carriedBy < 0 && !c.decoy && (W.game !== 'time' || c.order === W.gateNext)) { const d = len(c.x - h.x, c.y - h.y); if (d < bd && (d < 320 || W.game === 'time')) { bd = d; best = c; } }
+      const threat = W.game === 'charge' ? nearestRival(h.x, h.y, 220) : null;
+      if (threat) { const ax = h.x - threat.x, ay = h.y - threat.y, ad = len(ax, ay) || 1; best = { x: clamp(h.x + (ax / ad - ay / ad * 0.8) * 160, -R * 0.8, R * 0.8), y: clamp(h.y + (ay / ad + ax / ad * 0.8) * 160, -R * 0.8, R * 0.8) }; }
+      if (best) h.roam = { x: best.x, y: best.y, until: W.t + (threat ? 1.2 : 6) };
+      else { const a = W.rnd() * TAU, r = NUC * 1.6 + W.rnd() * (R * 0.7 - NUC * 1.6); h.roam = { x: Math.cos(a) * r, y: Math.sin(a) * r, until: W.t + 9 }; }
+    }
+    tx = h.roam.x; ty = h.roam.y; want = hullCruise() * 0.7;
+  }
+  const dx = tx - h.x, dy = ty - h.y, d = len(dx, dy);
+  let ax = 0, ay = 0;
+  if (d > 4 && want > 0) { const s = Math.min(want, Math.sqrt(2 * P.accel * d)); ax = dx / d * s - h.vx; ay = dy / d * s - h.vy; }
+  else { ax = -h.vx; ay = -h.vy; }
+  const am = len(ax, ay), lim = P.accel * dt;
+  if (am > lim) { ax *= lim / am; ay *= lim / am; }
+  h.vx += ax; h.vy += ay;
+  h.x += h.vx * dt; h.y += h.vy * dt;
+  const r = len(h.x, h.y); if (r > R - 12) { h.x *= (R - 12) / r; h.y *= (R - 12) / r; h.vx *= 0.5; h.vy *= 0.5; }
+  const sp = len(h.vx, h.vy); if (sp > 1) { h.hx = h.vx / sp; h.hy = h.vy / sp; }
+  // The hull lays its own thin trail: conserved mass, the Mass baseline every vessel has.
+  h.trailT -= dt;
+  if (sp > 20 && h.trailT <= 0) { h.trailT = 0.55; addPrism(h.x - h.hx * 6, h.y - h.hy * 6, ME, { built: 2 }); }
+  // A weak ram: the hull breaks one hostile prism it flies into, and collects crystals it touches.
+  h.ramCd -= dt;
+  if (h.ramCd <= 0) hashQuery(W.hash, h.x, h.y, 7, (p) => { if (p.dom !== ME && p.sh === 0 && p.carried < 0) { killPrism(p); h.ramCd = 0.4; return false; } });
+  for (const c of W.crystals) if (c.alive && !c.hidden && c.carriedBy < 0 && len(c.x - h.x, c.y - h.y) < 10) collectCrystal(c, 'hull');
+}
+
+function collectCrystal(c, by) {
+  if (c.decoy) return;
+  if (W.game === 'time' && c.order >= 0 && c.order !== W.gateNext) return;
+  c.alive = false; c.carriedBy = -1;
+  W.stats.crystals++;
+  if (W.game === 'time' && c.order >= 0) { W.gateNext++; if (W.gateNext >= W.gateCount && W.finishT == null) W.finishT = W.t; }
+  econOnCrystal(c);
+  W.fx.push({ k: 'ring', x: c.x, y: c.y, t: 0, r: 26, col: '#9ff7c6' });
+  if (W.game !== 'time' && W.scene !== 'dark') {
+    // respawn somewhere else (crystals are the cell's, not the swarm's)
+    const a = W.rnd() * TAU, r = NUC * 1.4 + W.rnd() * (R * 0.75 - NUC * 1.4);
+    addCrystal(Math.cos(a) * r, Math.sin(a) * r, { kind: W.rnd() < 0.5 ? 'omni' : 'el' });
+  }
+}
+
+// ================= rivals (vessels of another domain) =================
+function nearestRival(x, y, maxD) {
+  let best = null, bd = maxD || 1e9;
+  for (const r of W.rivals) { if (!r.alive) continue; const d = len(r.x - x, r.y - y); if (d < bd) { bd = d; best = r; } }
+  return best;
+}
+function stepRivals(dt) {
+  const h = W.hull;
+  for (const r of W.rivals) {
+    if (!r.alive) continue;
+    r.stun = Math.max(0, r.stun - dt); r.slow = Math.max(0, r.slow - dt);
+    r.retarget -= dt;
+    if (r.retarget <= 0) {
+      r.retarget = 1.2 + W.rnd();
+      const lure = W.crystals.find((c) => c.alive && c.decoy && len(c.x - r.x, c.y - r.y) < 320);
+      if (lure) { r.tx = lure.x; r.ty = lure.y; }
+      else if (r.mode === 'hunt') { r.tx = h.x + (W.rnd() - .5) * 60; r.ty = h.y + (W.rnd() - .5) * 60; }
+      else if (r.mode === 'graze') {
+        // grazes our mass: pick a jade prism, else a crystal, else roam
+        let best = null, bd = 1e9; for (let i = 0; i < 40; i++) { const p = W.prisms[Math.floor(W.rnd() * W.prisms.length)]; if (p && p.alive && p.dom === ME) { const d = len(p.x - r.x, p.y - r.y); if (d < bd) { bd = d; best = p; } } }
+        if (best) { r.tx = best.x; r.ty = best.y; } else { const a = W.rnd() * TAU; r.tx = Math.cos(a) * R * 0.6; r.ty = Math.sin(a) * R * 0.6; }
+      } else if (r.mode === 'guard') { const a = W.t * 0.4 + r.dom; r.tx = W.fortX + Math.cos(a) * 110; r.ty = W.fortY + Math.sin(a) * 110; }
+      else { // decoy-crystal bait: rivals chase crystals they can see
+        let best = null, bd = 400; for (const c of W.crystals) if (c.alive && !c.hidden) { const d = len(c.x - r.x, c.y - r.y); if (d < bd) { bd = d; best = c; } }
+        if (best) { r.tx = best.x; r.ty = best.y; } else { const a = W.rnd() * TAU; r.tx = Math.cos(a) * R * 0.5; r.ty = Math.sin(a) * R * 0.5; }
+      }
+    }
+    const spd = (r.stun > 0 ? 0 : (r.slow > 0 ? 45 : 95)) * (1 - Math.min(0.6, r.latched * 0.05));
+    const dx = r.tx - r.x, dy = r.ty - r.y, d = len(dx, dy) || 1;
+    r.vx += (dx / d * spd - r.vx) * Math.min(1, 2.5 * dt); r.vy += (dy / d * spd - r.vy) * Math.min(1, 2.5 * dt);
+    r.x += r.vx * dt; r.y += r.vy * dt;
+    const rr = len(r.x, r.y); if (rr > R - 12) { r.x *= (R - 12) / rr; r.y *= (R - 12) / rr; }
+    // rivals lay their own trail (hostile mass the swarm can eat or carry)
+    r.trailT -= dt; if (r.trailT <= 0 && spd > 0) { r.trailT = 0.6; addPrism(r.x, r.y, r.dom, { built: 3 }); }
+    // and eat our mass on contact
+    hashQuery(W.hash, r.x, r.y, 8, (p) => { if (p.dom === ME && p.sh === 0 && p.carried < 0) { killPrism(p); } });
+    // shoot
+    r.cd -= dt * (0.6 + P.rivalSkill);
+    if (r.cd <= 0 && r.stun <= 0) {
+      r.cd = 1.9 + W.rnd() * 0.8;
+      let tx = h.x, ty = h.y;
+      // decoy: a dense cloud near the hull draws fire onto a member instead (starling, bat)
+      const cloud = W.sp.decoy ? decoyAgentNear(h.x, h.y, 90) : null;
+      if (cloud && W.rnd() < Math.min(0.85, W.decoyDensity)) { tx = cloud.x; ty = cloud.y; }
+      const dd = len(tx - r.x, ty - r.y);
+      if (dd < 300) {
+        const spread = (1 - P.rivalSkill) * 0.5 + 0.08;
+        const a = Math.atan2(ty - r.y, tx - r.x) + (W.rnd() - 0.5) * spread;
+        W.proj.push({ x: r.x, y: r.y, vx: Math.cos(a) * 220, vy: Math.sin(a) * 220, life: 1.5, dom: r.dom });
+      }
+    }
+    // stings and drains accrue as a debt; whole petals transfer
+    if (r.petalDebt >= 1) { const n = Math.floor(r.petalDebt); r.petalDebt -= n; const take = Math.min(n, r.petals); r.petals -= take; W.hull.petals += take; W.stats.petalsTaken += take; if (take) econOnPetal(take); if (take) W.fx.push({ k: 'petal', x: r.x, y: r.y, t: 0 }); }
+    r.latched = 0;
+  }
+}
+function decoyAgentNear(x, y, rad) {
+  let n = 0, pick = null;
+  for (const a of W.agents) if (a.alive && Math.abs(a.x - x) < rad && Math.abs(a.y - y) < rad) { n++; if (!pick || W.rnd() < 1 / n) pick = a; }
+  W.decoyDensity = n / 40;
+  return pick;
+}
+function stepProjectiles(dt) {
+  const h = W.hull;
+  for (const q of W.proj) {
+    if (q.life <= 0) continue;
+    q.x += q.vx * dt; q.y += q.vy * dt; q.life -= dt;
+    // members in the way absorb the shot (shield, bridge, decoy)
+    for (const a of W.agents) {
+      if (!a.alive) continue;
+      const dx = a.x - q.x, dy = a.y - q.y, rr = 3 + a.size;
+      if (dx * dx + dy * dy < rr * rr) { q.life = 0; hurtAgent(a, 1); break; }
+    }
+    if (q.life <= 0) continue;
+    if (len(h.x - q.x, h.y - q.y) < 9) { q.life = 0; const r = nearestRival(q.x, q.y, 1e9); if (h.petals > 0) { h.petals--; W.stats.petalsLost++; if (r) r.petals++; } W.fx.push({ k: 'hit', x: h.x, y: h.y, t: 0 }); continue; }
+    hashQuery(W.hash, q.x, q.y, 5, (p) => { if (p.dom === ME && p.carried < 0) { if (p.sh) p.sh = 0; else killPrism(p); q.life = 0; return false; } });
+  }
+  W.proj = W.proj.filter((q) => q.life > 0);
+}
+
+// ================= neutral fauna (grazers that eat any mass outside the nucleus) =================
+function stepFauna(dt) {
+  for (const f of W.fauna) {
+    if (!f.alive) continue;
+    f.t -= dt;
+    if (f.t <= 0 || !f.tgt || !f.tgt.alive) {
+      f.t = 2; f.tgt = null; let bd = 140;
+      hashQuery(W.hash, f.x, f.y, 140, (p, d2) => { const d = Math.sqrt(d2); if (p.carried < 0 && p.sh === 0 && len(p.x, p.y) > NUC && d < bd) { bd = d; f.tgt = p; } });
+      if (!f.tgt) { const a = W.rnd() * TAU; f.wx = f.x + Math.cos(a) * 80; f.wy = f.y + Math.sin(a) * 80; }
+    }
+    const tx = f.tgt ? f.tgt.x : f.wx, ty = f.tgt ? f.tgt.y : f.wy, dx = tx - f.x, dy = ty - f.y, d = len(dx, dy) || 1;
+    f.x += dx / d * 30 * dt; f.y += dy / d * 30 * dt;
+    if (f.tgt && d < 4) { f.chew -= dt; if (f.chew <= 0) { killPrism(f.tgt, 'fauna'); f.chew = 1.5; f.tgt = null; } }
+  }
+}
+
+// ================= the swarm: members, genes and verbs =================
+// A member is one body. Its SPECIES gives it genes (how it moves) and one VERB (what it does to the world).
+// The CONTROL scheme only ever writes a focus point, an order, a mood or a selection — it never moves a
+// member directly. That separation is the whole point of the lab: a swarm vessel is a combination of
+// (species verb) x (control) x (economy) x (meta), and each axis can be swapped while the others hold.
+function addAgent(x, y, opt) {
+  const sp = W.sp, s = (opt && opt.species) ? SPECIES_BY_ID[opt.species] : sp;
+  if (W.agents.filter((a) => a.alive).length >= agentCap()) return null;
+  const a = {
+    x, y, vx: 0, vy: 0, alive: true, sp: s.id, verb: (opt && opt.verb) || s.verb, hp: s.hp * EL.size(), size: s.size * EL.size() * ((opt && opt.big) || 1),
+    state: 'idle', tgt: null, carry: null, cd: W.rnd(), phase: W.rnd() * TAU, g: 0, age: 0, sq: (opt && opt.sq) || 0, sel: true, link: -1,
+    caste: (opt && opt.caste) || 'worker', born: W.t, gene: (opt && opt.gene) ? Object.assign({}, opt.gene) : { spd: 1, sense: 1, bite: 1 }, kills: 0, big: (opt && opt.big) || 1,
+  };
+  a.hp *= W.mods.hp / ((opt && opt.costHp) || 1);
+  W.agents.push(a); W.stats.births++;
+  W.fx.push({ k: 'birth', x, y, t: 0 });
+  return a;
+}
+function agentCap() { return Math.round(Math.min(220, (W.econ && W.econ.cap) || P.droneCap) ); }
+function liveAgents() { return W.agents.filter((a) => a.alive); }
+function hurtAgent(a, dmg) {
+  a.hp -= dmg;
+  if (a.hp <= 0 && a.alive) {
+    a.alive = false; W.stats.deaths++;
+    // a body is conserved mass: a dead member leaves one neutral prism where it fell (the §26 skeleton, in miniature)
+    if (W.sp.leavesBody) addPrism(a.x, a.y, DOM.NEUTRAL, { built: 0 });
+    if (a.carry && a.carry.kind === 'crystal') { a.carry.c.carriedBy = -1; a.carry.c.x = a.x; a.carry.c.y = a.y; }
+    W.fx.push({ k: 'die', x: a.x, y: a.y, t: 0 });
+  }
+}
+function memberSpeed(a) {
+  const s = SPECIES_BY_ID[a.sp];
+  let v = P.droneSpeed * s.speedK * EL.spd() * a.gene.spd * W.mods.spd / Math.sqrt(a.big);
+  if (s.id === 'locust') v = P.droneSpeed * 0.55 + (P.locustMarch - P.droneSpeed * 0.55) * a.g;
+  if (W.buff.frenzy > 0) v *= 1.45;
+  if (a.verb === 'frenzy') { const k = fieldIdx(a.x, a.y); v *= 1 + Math.min(1.5, (k >= 0 ? W.blood[k] : 0) * 0.4); }
+  return v;
+}
+const senseR = (a) => P.forage * EL.reach() * a.gene.sense * W.mods.sense * SPECIES_BY_ID[a.sp].senseK;
+
+// the focus a member is pulled toward: the control's focus point, its squad's focus, or the hull
+function focusFor(a) {
+  if (W.ctl.id === 'split') return a.sq === 1 ? (W.focusB || W.hull) : (W.focus || W.hull);
+  if (W.ctl.id === 'select' && !a.sel) return a.homeFocus || W.hull;
+  if (W.ctl.id === 'leader' && W.leaderIdx >= 0 && W.agents[W.leaderIdx] && W.agents[W.leaderIdx].alive && W.agents[W.leaderIdx] !== a) return W.agents[W.leaderIdx];
+  if (W.order === 1) return W.hull;                                    // Gather
+  if (W.order === 3 && W.homes.length) return W.homes[0];              // Defend
+  if (W.bait && W.bait.t > 0) return W.bait;
+  return W.focus || W.hull;
+}
+
+// work targets — every verb asks the world the same kind of question with its own filter
+function findPrism(a, rad, pred) {
+  let best = null, bd = rad;
+  hashQuery(W.hash, a.x, a.y, rad, (p, d2) => { const d = Math.sqrt(d2); if (d < bd && pred(p)) { bd = d; best = p; } });
+  return best;
+}
+const hostile = (p) => p.dom !== ME && p.carried < 0 && !p.hidden;
+const edible = (p) => hostile(p) && p.sh === 0 && len(p.x, p.y) > NUC * 0.6;
+function findCrystal(a, rad) {
+  let best = null, bd = rad;
+  for (const c of W.crystals) {
+    if (!c.alive || c.carriedBy >= 0 || (c.hidden && !c.revealed) || c.decoy) continue;
+    if (W.game === 'time' && c.order >= 0 && c.order !== W.gateNext) continue;
+    const d = len(c.x - a.x, c.y - a.y); if (d < bd) { bd = d; best = c; }
+  }
+  return best;
+}
+function buildSite(a) {
+  // where carried mass is laid: next to the swarm's newest construction near the focus, so a mound GROWS
+  const f = W.homes.length ? W.homes[W.homes.length - 1] : (W.focus || W.hull);
+  const ang = W.rnd() * TAU, r = 10 + Math.sqrt(W.rnd()) * (18 + 2.2 * Math.sqrt(W.stats.built + 1));
+  return { x: f.x + Math.cos(ang) * r, y: f.y + Math.sin(ang) * r };
+}
+
+// The verb table. Each entry returns the member's GOAL (a point) and may act on arrival.
+// Keep each one small: a verb is the species' one sentence.
+const VERBS = {
+  graze(a, dt) {                         // eat hostile mass outside the nucleus (locust, tadpole, the fleet's herbivores)
+    if (!a.tgt || !a.tgt.alive || !edible(a.tgt)) a.tgt = findPrism(a, senseR(a), edible);
+    if (!a.tgt) return null;
+    if (len(a.tgt.x - a.x, a.tgt.y - a.y) < 4 + a.size) { a.cd -= dt * EL.dmg() * a.gene.bite * a.big * (SPECIES_BY_ID[a.sp].id === 'locust' ? 0.35 + 1.4 * a.g : 1); if (a.cd <= 0) { killPrism(a.tgt); W.stats.eaten++; econOnEat(a); a.tgt = null; a.cd = 0.9; } }
+    return a.tgt;
+  },
+  gnaw(a, dt) {                          // rats: chew THROUGH shields; prefer the armoured prism the fleet cannot eat
+    if (!a.tgt || !a.tgt.alive || !hostile(a.tgt)) a.tgt = findPrism(a, senseR(a), (p) => hostile(p) && p.sh > 0) || findPrism(a, senseR(a), hostile);
+    if (!a.tgt) return null;
+    if (len(a.tgt.x - a.x, a.tgt.y - a.y) < 4 + a.size) { a.cd -= dt * EL.dmg() * a.big; if (a.cd <= 0) { if (a.tgt.sh) { a.tgt.sh = 0; W.fx.push({ k: 'shed', x: a.tgt.x, y: a.tgt.y, t: 0 }); } else { killPrism(a.tgt); W.stats.eaten++; econOnEat(a); a.tgt = null; } a.cd = 0.7; } }
+    return a.tgt;
+  },
+  build(a) {                             // termites: carry hostile or neutral mass home and lay it as OUR mass — creation by conversion
+    if (a.carry) {
+      if (!a.site) a.site = buildSite(a);
+      if (len(a.site.x - a.x, a.site.y - a.y) < 5) { for (let i = 0; i < a.carry.n; i++) { const s = i ? buildSite(a) : a.site; const p = addPrism(s.x, s.y, ME, { built: 1, tag: W.game === 'mass' ? 0 : 0 }); if (p) W.stats.built++; } a.carry = null; a.site = null; W.stats.delivered++; }
+      return a.site;
+    }
+    if (!a.tgt || !a.tgt.alive || a.tgt.carried >= 0 || !(a.tgt.dom !== ME && a.tgt.sh === 0)) a.tgt = findPrism(a, senseR(a), (p) => p.dom !== ME && p.sh === 0 && p.carried < 0 && !p.hidden && p.claims < 1);
+    if (!a.tgt) return null;
+    a.tgt.claims = 1;
+    if (len(a.tgt.x - a.x, a.tgt.y - a.y) < 4 + a.size) {
+      // take up to `carry` prisms from around the target as one parcel (conserved: they leave and come back as ours)
+      let n = 0; const cap = Math.max(1, Math.round(P.carry * EL.size() * 0.5));
+      hashQuery(W.hash, a.x, a.y, 9, (p) => { if (n < cap && p.dom !== ME && p.sh === 0 && p.carried < 0) { p.alive = false; n++; } });
+      a.carry = { kind: 'mass', n: Math.max(1, n) }; a.tgt = null;
+    }
+    return a.tgt;
+  },
+  claim(a, dt) {                         // bees: pollinate — dwell on a neutral flora prism and it turns ours, in place
+    if (!a.tgt || !a.tgt.alive || a.tgt.dom === ME) a.tgt = findPrism(a, senseR(a), (p) => p.dom === DOM.NEUTRAL && p.carried < 0 && !p.hidden) || findPrism(a, senseR(a) * 0.6, (p) => hostile(p) && p.sh === 0);
+    if (!a.tgt) return null;
+    if (len(a.tgt.x - a.x, a.tgt.y - a.y) < 4 + a.size) { a.cd -= dt * EL.dmg(); if (a.cd <= 0) { a.tgt.dom = ME; a.tgt.built = 1; W.stats.built++; W.fx.push({ k: 'claim', x: a.tgt.x, y: a.tgt.y, t: 0 }); a.tgt = null; a.cd = 1.2; } }
+    return a.tgt;
+  },
+  fetch(a) {                             // pigeons, crows: grab a crystal and bring it to the hull (or straight to the gate)
+    if (a.carry && a.carry.kind === 'crystal') {
+      const c = a.carry.c; c.x = a.x; c.y = a.y;
+      if (len(W.hull.x - a.x, W.hull.y - a.y) < 10 || (W.game === 'time' && c.order >= 0)) { a.carry = null; c.carriedBy = -1; collectCrystal(c, 'member'); }
+      return W.hull;
+    }
+    if (!a.tgt || !a.tgt.alive || a.tgt.carriedBy >= 0) a.tgt = findCrystal(a, senseR(a) * 2.2);
+    if (!a.tgt) return VERBS.graze(a, 0);
+    if (len(a.tgt.x - a.x, a.tgt.y - a.y) < 5) { a.tgt.carriedBy = W.agents.indexOf(a); a.carry = { kind: 'crystal', c: a.tgt }; a.tgt = null; }
+    return a.tgt;
+  },
+  trail(a, dt) {                         // ants: stigmergy — carry food home and LAY pheromone, so the colony converges on the best patch
+    const k = fieldIdx(a.x, a.y);
+    if (a.carry) {
+      if (k >= 0) W.trail[k] = Math.min(6, W.trail[k] + 1.6 * dt * 4);
+      const home = W.homes[0] || W.hull;
+      if (len(home.x - a.x, home.y - a.y) < 12) { a.carry = null; W.stats.delivered++; econOnEat(a); const p = addPrism(home.x + (W.rnd() - .5) * 30, home.y + (W.rnd() - .5) * 30, ME, { built: 1 }); if (p) W.stats.built++; }
+      return home;
+    }
+    if (a.tgt && a.tgt.alive && edible(a.tgt)) {
+      if (len(a.tgt.x - a.x, a.tgt.y - a.y) < 4 + a.size) { killPrism(a.tgt, 'quiet'); W.stats.eaten++; a.carry = { kind: 'food' }; a.tgt = null; }
+      return a.tgt;
+    }
+    a.tgt = findPrism(a, senseR(a) * 0.45, edible);
+    if (a.tgt) return a.tgt;
+    // no food in sight: climb the trail gradient (with noise), which is how the trail recruits
+    const g = fieldGrad(W.trail, a.x, a.y), gm = len(g[0], g[1]);
+    if (gm > 0.01) return { x: a.x + g[0] / gm * 30, y: a.y + g[1] / gm * 30 };
+    return null;
+  },
+  sting(a, dt) {                         // wasps (and bees, as a second verb): attack a rival; bees die stinging, wasps retreat and return
+    const s = SPECIES_BY_ID[a.sp];
+    if (W.mood < 0.25 && a.state !== 'sting') return null;
+    const r = (a.tgt && a.tgt.petals != null && a.tgt.alive) ? a.tgt : nearestRival(a.x, a.y, senseR(a) * (1 + W.mood * 2.5));
+    if (!r) { a.tgt = null; return null; }
+    a.tgt = r; a.state = 'sting';
+    if (a.cd > 0) { a.cd -= dt; if (a.cd > 0.6) { const away = len(a.x - r.x, a.y - r.y) || 1; return { x: a.x + (a.x - r.x) / away * 40, y: a.y + (a.y - r.y) / away * 40 }; } }
+    if (len(r.x - a.x, r.y - a.y) < 8 + a.size) {
+      r.petalDebt += 0.12 * EL.dmg() * a.big; r.slow = Math.max(r.slow, 0.8 * EL.dmg()); W.stats.stings++;
+      W.fx.push({ k: 'sting', x: r.x, y: r.y, t: 0 });
+      if (s.suicideSting) hurtAgent(a, 99); else a.cd = 1.4;
+    }
+    return r;
+  },
+  drain(a, dt) {                         // mosquitoes: latch on and drink — the rival slows under the load and leaks petals
+    const r = (a.tgt && a.tgt.petals != null && a.tgt.alive) ? a.tgt : nearestRival(a.x, a.y, senseR(a) * 2);
+    if (!r) { a.tgt = null; a.state = 'idle'; return VERBS.graze(a, dt); }
+    a.tgt = r;
+    if (len(r.x - a.x, r.y - a.y) < 9 + a.size) {
+      a.state = 'latch'; r.latched++; r.petalDebt += 0.018 * EL.dmg() * dt * 10;
+      a.x = r.x + Math.cos(a.phase) * 7; a.y = r.y + Math.sin(a.phase) * 7; a.vx = r.vx; a.vy = r.vy; a.phase += dt * 3;
+      if (W.rnd() < dt * 0.05) { a.state = 'idle'; a.tgt = null; hurtAgent(a, 0.5); }   // swatted
+      return null;
+    }
+    a.state = 'idle';
+    return r;
+  },
+  murmur(a) {                            // starlings: no work at all — the cloud IS the ability. Dense near the hull, it draws fire (decoy)
+    const f = focusFor(a), t = W.t * (1.2 + W.mood * 2) + a.phase;
+    const rad = 26 + 20 * Math.sin(t * 0.7 + a.phase * 3) + 40 * W.mood;
+    return { x: f.x + Math.cos(t) * rad, y: f.y + Math.sin(t * 1.3) * rad };
+  },
+  ping(a, dt) {                          // bats: echolocate — every ping reveals hidden crystals and hidden mass nearby
+    a.cd -= dt;
+    if (a.cd <= 0) {
+      a.cd = 1.6 + W.rnd() * 0.8; const rr = senseR(a) * 1.6;
+      W.fx.push({ k: 'ping', x: a.x, y: a.y, t: 0, r: rr });
+      for (const c of W.crystals) if (c.alive && c.hidden && !c.revealed && len(c.x - a.x, c.y - a.y) < rr) { c.revealed = true; W.stats.revealed++; }
+      hashQuery(W.hash, a.x, a.y, rr, (p) => { if (p.hidden) { p.hidden = false; W.stats.revealed++; } });
+    }
+    const c = findCrystal(a, senseR(a) * 2.2);
+    if (c) return VERBS.fetch(a);
+    if (a.carry) return VERBS.fetch(a);
+    const t = W.t * 0.9 + a.phase, f = focusFor(a);
+    return { x: f.x + Math.cos(t) * 140, y: f.y + Math.sin(t * 0.8) * 140 };
+  },
+  flash(a, dt) {                         // fireflies: coupled oscillators (Kuramoto). In sync, one flash stuns every rival in range
+    return VERBS.graze(a, dt);           // the phase coupling + burst live in stepSync, because they are a property of the SWARM
+  },
+  steal(a, dt) {                         // crows: mob a rival and pick its pocket (petals), or snatch a crystal
+    const r = nearestRival(a.x, a.y, senseR(a) * (1 + W.mood * 2));
+    if (r && (W.mood > 0.4 || r.marked > 0)) {
+      a.tgt = r;
+      if (len(r.x - a.x, r.y - a.y) < 9 + a.size) { a.cd -= dt; if (a.cd <= 0) { r.petalDebt += 0.2 * EL.dmg(); r.marked = 6; a.cd = 2.2; W.fx.push({ k: 'steal', x: r.x, y: r.y, t: 0 }); } }
+      return r;
+    }
+    return VERBS.fetch(a);
+  },
+  frenzy(a, dt) {                        // piranhas: damage calls more damage — blood in the water multiplies speed AND bite
+    if (!a.tgt || !a.tgt.alive || !hostile(a.tgt)) {
+      // smell blood first: the gradient of recent kills
+      const g = fieldGrad(W.blood, a.x, a.y), gm = len(g[0], g[1]);
+      a.tgt = findPrism(a, senseR(a), (p) => hostile(p) && p.sh === 0);
+      if (!a.tgt && gm > 0.02) return { x: a.x + g[0] / gm * 30, y: a.y + g[1] / gm * 30 };
+    }
+    if (!a.tgt) return null;
+    const k = fieldIdx(a.x, a.y), blood = k >= 0 ? W.blood[k] : 0;
+    if (len(a.tgt.x - a.x, a.tgt.y - a.y) < 4 + a.size) { a.cd -= dt * EL.dmg() * (1 + blood * 1.2); if (a.cd <= 0) { killPrism(a.tgt); W.stats.eaten++; econOnEat(a); a.tgt = null; a.cd = 0.8; } }
+    return a.tgt;
+  },
+  network(a, dt) {                       // slime mold: explore, lay trail, and where the trail runs thick between two meals it hardens into a road of OUR mass
+    const k = fieldIdx(a.x, a.y);
+    if (k >= 0) { W.trail[k] = Math.min(8, W.trail[k] + dt * 1.2); if (W.trail[k] > 6.5 && W.rnd() < dt * 0.6) { const p = addPrism(a.x, a.y, ME, { built: 1 }); if (p) { W.stats.built++; W.trail[k] = 3; } } }
+    const food = findPrism(a, senseR(a) * 0.8, edible);
+    if (food) { if (len(food.x - a.x, food.y - a.y) < 5) { killPrism(food, 'quiet'); W.stats.eaten++; econOnEat(a); } return food; }
+    // Physarum sensing: steer toward the stronger of three samples ahead
+    const h = Math.atan2(a.vy, a.vx) || a.phase, s = 22, best = [-1, 0];
+    for (const off of [-0.6, 0, 0.6]) { const kk = fieldIdx(a.x + Math.cos(h + off) * s, a.y + Math.sin(h + off) * s); const v = kk >= 0 ? W.trail[kk] : -1; if (v > best[0]) best[0] = v, best[1] = off; }
+    const hh = h + best[1] + (W.rnd() - 0.5) * 0.8;
+    return { x: a.x + Math.cos(hh) * 30, y: a.y + Math.sin(hh) * 30 };
+  },
+  web(a, dt) {                           // spiders: string webs between nearby anchors; a rival crossing a strand is SNARED
+    a.cd -= dt;
+    if (a.cd <= 0 && W.webs.length < 26) {
+      a.cd = 3 + W.rnd() * 2;
+      const anchor = findPrism(a, 60, (p) => p.dom === ME && !p.hidden);
+      if (anchor) { const ang = W.rnd() * TAU, L = 40 + W.rnd() * 50 * EL.reach(); W.webs.push({ x0: anchor.x, y0: anchor.y, x1: anchor.x + Math.cos(ang) * L, y1: anchor.y + Math.sin(ang) * L, hp: 3 }); }
+      else { const ang = W.rnd() * TAU, L = 40 + W.rnd() * 40; W.webs.push({ x0: a.x, y0: a.y, x1: a.x + Math.cos(ang) * L, y1: a.y + Math.sin(ang) * L, hp: 2 }); }
+    }
+    return null;
+  },
+  link(a) {                              // siphonophores: a chain of bodies, each following the one ahead — a living wall that eats shots
+    const i = W.chain.indexOf(a);
+    if (i <= 0) return null;                    // the head steers by the ordinary pull
+    const ahead = W.chain[i - 1]; const dx = a.x - ahead.x, dy = a.y - ahead.y, d = len(dx, dy) || 1, gap = 9 * a.size / 3;
+    return { x: ahead.x + dx / d * gap, y: ahead.y + dy / d * gap, tight: true };
+  },
+  plasma(a, dt) {                        // the Notion School: six fish bound by plasma. They hold a ring; the LINES between them cut
+    const live = W.chain, i = live.indexOf(a), n = live.length; if (i < 0 || n < 2) return null;
+    const f = focusFor(a), t = W.t * (0.6 + W.mood * 1.2), rad = 30 + 26 * EL.reach() + 40 * (W.spread || 0);
+    return { x: f.x + Math.cos(t + i / n * TAU) * rad, y: f.y + Math.sin(t + i / n * TAU) * rad, tight: true };
+  },
+  merge(a, dt) {                         // tadpoles: graze, and when five crowd together they METAMORPHOSE into a frog (stepMerge)
+    if (a.big > 1) {                     // a frog: a tongue that snaps crystals and prisms from range
+      a.cd -= dt;
+      const c = findCrystal(a, 90 * EL.reach());
+      if (c && a.cd <= 0) { W.fx.push({ k: 'tongue', x: a.x, y: a.y, x1: c.x, y1: c.y, t: 0 }); collectCrystal(c, 'frog'); a.cd = 1.2; return null; }
+      const p = findPrism(a, 70 * EL.reach(), edible);
+      if (p && a.cd <= 0) { W.fx.push({ k: 'tongue', x: a.x, y: a.y, x1: p.x, y1: p.y, t: 0 }); killPrism(p); W.stats.eaten++; econOnEat(a); a.cd = 0.5; }
+      return p;
+    }
+    return VERBS.graze(a, dt);
+  },
+  march(a, dt) { return VERBS.graze(a, dt); },
+};
+
+// ---- swarm-level behaviours (a property of the whole population, not of one member) ----
+function stepSync(dt) {
+  // Kuramoto: every firefly nudges its phase toward its neighbours'. Order parameter r in [0,1] is the HUD's sync.
+  const live = W.agents.filter((a) => a.alive && a.verb === 'flash'); if (!live.length) { W.sync = 0; return; }
+  let cx = 0, cy = 0; for (const a of live) { cx += Math.cos(a.phase); cy += Math.sin(a.phase); }
+  const K = 1.6 * (1 + W.syncKick), psi = Math.atan2(cy, cx), r = len(cx, cy) / live.length;
+  for (const a of live) { a.phase += dt * (2.4 + (a.gene.spd - 1) * 2 + K * r * Math.sin(psi - a.phase)); if (a.phase > TAU) { a.phase -= TAU; } }
+  W.syncKick = Math.max(0, W.syncKick - dt * 0.5);
+  W.sync = r;
+  W.flashCd -= dt;
+  if (r > 0.82 && W.flashCd <= 0 && Math.cos(psi) > 0.95) {
+    W.flashCd = 2.5; W.stats.flashes++;
+    let mx = 0, my = 0; for (const a of live) { mx += a.x; my += a.y; } mx /= live.length; my /= live.length;
+    const rad = 70 + 14 * Math.sqrt(live.length) * EL.reach();
+    W.fx.push({ k: 'flash', x: mx, y: my, t: 0, r: rad });
+    for (const rv of W.rivals) if (rv.alive && len(rv.x - mx, rv.y - my) < rad) { rv.stun = Math.max(rv.stun, 1.2 * EL.dmg()); rv.petalDebt += 0.25 * EL.dmg(); }
+  }
+}
+function stepLocustPhase(dt) {
+  // locust.py: crowding pushes the gregarious factor g up, solitude lets it relax. Charge lowers the threshold.
+  const thr = Math.max(2, 6 - P.elCharge * 0.35);
+  for (const a of W.agents) {
+    if (!a.alive || a.sp !== 'locust') continue;
+    let n = 0; hashQuery(W.ahash, a.x, a.y, P.locustCrowd, () => { n++; });
+    const want = n - 1 >= thr ? 1 : 0;
+    a.g += (want - a.g) * Math.min(1, dt * (want ? 0.8 : 0.25));
+  }
+}
+function stepMerge(dt) {
+  // tadpoles: five within 14 u fuse into one frog (the frog keeps every hit point the five had; mass is conserved)
+  W.mergeT -= dt; if (W.mergeT > 0) return; W.mergeT = 0.5;
+  const need = 5;
+  for (const a of W.agents) {
+    if (!a.alive || a.big > 1 || a.verb !== 'merge') continue;
+    const pals = []; hashQuery(W.ahash, a.x, a.y, 14, (b) => { if (b !== a && b.alive && b.big === 1 && b.verb === 'merge') pals.push(b); });
+    if (pals.length >= need - 1) {
+      let hp = a.hp; for (const b of pals.slice(0, need - 1)) { b.alive = false; hp += b.hp; }
+      a.big = 3; a.size *= 2.2; a.hp = hp; W.stats.merges++;
+      W.fx.push({ k: 'ring', x: a.x, y: a.y, t: 0, r: 30, col: '#7fe08a' }); toast('Metamorphosis: five tadpoles became a frog');
+      return;
+    }
+  }
+}
+function stepWebs() {
+  for (const w of W.webs) {
+    if (w.hp <= 0) continue;
+    for (const r of W.rivals) {
+      if (!r.alive || r.stun > 0.2) continue;
+      if (segDist(r.x, r.y, w.x0, w.y0, w.x1, w.y1) < 6) { r.stun = 1.6 * EL.dmg(); w.hp--; W.stats.snared++; W.fx.push({ k: 'snare', x: r.x, y: r.y, t: 0 }); }
+    }
+  }
+  W.webs = W.webs.filter((w) => w.hp > 0);
+}
+function segDist(px, py, x0, y0, x1, y1) {
+  const dx = x1 - x0, dy = y1 - y0, L2 = dx * dx + dy * dy || 1, t = clamp(((px - x0) * dx + (py - y0) * dy) / L2, 0, 1);
+  return len(px - (x0 + dx * t), py - (y0 + dy * t));
+}
+function stepPlasma(dt) {
+  // the lines between consecutive school members cut hostile mass and burn rivals that cross them
+  const live = W.chain; if (live.length < 2 || live[0].verb !== 'plasma') return;
+  for (let i = 0; i < live.length; i++) {
+    const a = live[i], b = live[(i + 1) % live.length];
+    if (live.length === 2 && i === 1) break;
+    const L = len(b.x - a.x, b.y - a.y); if (L > 160 * EL.reach()) continue;     // the plasma snaps if the fish drift too far apart
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    hashQuery(W.hash, mx, my, L / 2 + 4, (p) => { if (hostile(p) && p.sh === 0 && segDist(p.x, p.y, a.x, a.y, b.x, b.y) < 3.5) { killPrism(p); W.stats.eaten++; } });
+    for (const r of W.rivals) if (r.alive && segDist(r.x, r.y, a.x, a.y, b.x, b.y) < 5) { r.petalDebt += 0.9 * dt * EL.dmg(); r.slow = 0.5; }
+  }
+}
+function rebuildChain() {
+  const v = W.sp.verb;
+  W.chain = (v === 'link' || v === 'plasma') ? W.agents.filter((a) => a.alive && a.verb === v) : [];
+}
+
+function stepAgents(dt) {
+  const sp = W.sp, gen = sp.genes;
+  W.ahash = hashBuild(W.agents);
+  rebuildChain();
+  if (sp.id === 'locust' || W.agents.some((a) => a.sp === 'locust')) stepLocustPhase(dt);
+  const aggr = W.mood;
+  for (const a of W.agents) {
+    if (!a.alive) continue;
+    a.age += dt;
+    const f = focusFor(a);
+    // (1) the verb's goal, unless an order overrides it
+    let goal = null, tight = false;
+    if (W.order === 1) goal = null;                                              // Gather: everyone home to the hull
+    else if (W.order === 2) { const r = nearestRival(a.x, a.y, 600); goal = r ? r : null; if (r && len(r.x - a.x, r.y - a.y) < 9) { r.petalDebt += 0.05 * dt * 10 * EL.dmg(); } }
+    else if (W.cast && W.castT > 0 && !a.carry && a.state !== 'latch' && len(W.castPt.x - a.x, W.castPt.y - a.y) > 30) goal = W.castPt;   // fly to the landing, then work
+    else {
+      const verb = VERBS[a.verb] || VERBS.graze;
+      // calm swarms keep to the focus and only work close to it; a rushing swarm works anywhere (B5 knob)
+      goal = verb(a, dt);
+      if (goal && goal.tight) tight = true;
+      if (goal && !tight && !a.carry && a.state !== 'latch' && a.state !== 'sting') {
+        const leash = (sp.leash * EL.reach()) * (0.6 + aggr * 2.4);
+        if (len(goal.x - f.x, goal.y - f.y) > leash && W.ctl.id !== 'paint' && a.verb !== 'network' && a.verb !== 'trail') { goal = null; a.tgt = null; }
+      }
+    }
+    if (a.state === 'latch') continue;
+    // (2) the desired velocity
+    let dx = 0, dy = 0;
+    const spd = memberSpeed(a);
+    if (goal) { const gx = goal.x - a.x, gy = goal.y - a.y, gd = len(gx, gy) || 1; const s = tight ? Math.min(spd * 1.6, gd * 4) : spd; dx += gx / gd * s; dy += gy / gd * s; }
+    else {
+      // no work: orbit the focus inside the species' leash, with a little wander
+      const fx = f.x - a.x, fy = f.y - a.y, fd = len(fx, fy) || 1, home = sp.idleRing * (W.formation === 'blob' ? 0.6 : 1);
+      const pull = (fd - home) / Math.max(20, home);
+      dx += fx / fd * spd * clamp(pull, -0.6, 1); dy += fy / fd * spd * clamp(pull, -0.6, 1);
+      dx += -fy / fd * spd * 0.35 * gen.orbit; dy += fx / fd * spd * 0.35 * gen.orbit;
+      if (W.formation && W.ctl.id === 'formation') { const slot = formationSlot(a); dx = (slot.x - a.x) * 3; dy = (slot.y - a.y) * 3; }
+    }
+    // (3) the pheromone brush: the painted field is a road every member climbs
+    if (W.ctl.id === 'paint' && !a.carry) { const g = fieldGrad(W.pher, a.x, a.y), gm = len(g[0], g[1]); if (gm > 0.004) { dx += g[0] / gm * spd * 0.9; dy += g[1] / gm * spd * 0.9; } }
+    // (4) the sheepdog: members flee the hull, so you steer the herd by where you put your ship
+    if (W.ctl.id === 'sheepdog') { const hx = a.x - W.hull.x, hy = a.y - W.hull.y, hd = len(hx, hy) || 1; if (hd < 110) { const k = (110 - hd) / 110; dx += hx / hd * spd * 2.4 * k; dy += hy / hd * spd * 2.4 * k; } }
+    // (5) boids: separation always; alignment + cohesion by gene (a locust's alignment grows with its phase)
+    let sx = 0, sy = 0, ax = 0, ay = 0, cx = 0, cy = 0, n = 0;
+    const ali = gen.ali + (a.sp === 'locust' ? a.g * 1.4 : 0);
+    hashQuery(W.ahash, a.x, a.y, 22, (b, d2) => {
+      if (b === a) return; n++;
+      const d = Math.sqrt(d2) || 0.01, minD = (a.size + b.size) * 1.4;
+      if (d < minD) { sx += (a.x - b.x) / d * (minD - d) / minD; sy += (a.y - b.y) / d * (minD - d) / minD; }
+      ax += b.vx; ay += b.vy; cx += b.x; cy += b.y;
+    });
+    if (n) {
+      dx += sx * spd * 1.6 * gen.sep; dy += sy * spd * 1.6 * gen.sep;
+      const am = len(ax, ay) || 1; dx += ax / am * spd * 0.5 * ali; dy += ay / am * spd * 0.5 * ali;
+      cx /= n; cy /= n; const cm = len(cx - a.x, cy - a.y) || 1; dx += (cx - a.x) / cm * spd * 0.25 * gen.coh; dy += (cy - a.y) / cm * spd * 0.25 * gen.coh;
+    }
+    dx += (W.rnd() - 0.5) * spd * gen.wander; dy += (W.rnd() - 0.5) * spd * gen.wander;
+    // (6) integrate with the species' agility, cap at speed
+    const dm = len(dx, dy), cap = spd * (tight ? 1.6 : 1.15);
+    if (dm > cap) { dx *= cap / dm; dy *= cap / dm; }
+    const k = Math.min(1, dt * sp.agility);
+    a.vx += (dx - a.vx) * k; a.vy += (dy - a.vy) * k;
+    a.x += a.vx * dt; a.y += a.vy * dt;
+    const rr = len(a.x, a.y); if (rr > R - 6) { a.x *= (R - 6) / rr; a.y *= (R - 6) / rr; a.vx *= -0.3; a.vy *= -0.3; }
+  }
+  if (W.agents.some((a) => a.alive && a.verb === 'flash')) stepSync(dt);
+  if (W.agents.some((a) => a.alive && a.verb === 'merge')) stepMerge(dt);
+  stepWebs(); stepPlasma(dt);
+  if (W.agents.length > 600) W.agents = W.agents.filter((a) => a.alive || a.carry);
+}
+function formationSlot(a) {
+  const live = W.agents.filter((b) => b.alive), i = live.indexOf(a), n = live.length, h = W.hull, hx = h.hx, hy = h.hy;
+  if (W.formation === 'line') { const off = (i - n / 2) * 7; return { x: h.x - hx * 30 - hy * off, y: h.y - hy * 30 + hx * off }; }
+  if (W.formation === 'wedge') { const row = Math.floor(Math.sqrt(i)), col = i - row * row - row; return { x: h.x + hx * (24 - row * 10) - hy * col * 8, y: h.y + hy * (24 - row * 10) + hx * col * 8 }; }
+  if (W.formation === 'blob') { const ang = i * 2.39996, r = 5 * Math.sqrt(i); return { x: h.x + Math.cos(ang) * r, y: h.y + Math.sin(ang) * r }; }
+  const ang = i / n * TAU + W.t * 0.3, r = 36 + n * 0.6; return { x: h.x + Math.cos(ang) * r, y: h.y + Math.sin(ang) * r };
+}
+
+// ---- src/species.js ----
+// ============================================================================================
+// species.js — the four axes a swarm vessel is built from. Pure data: the model reads it, the UI lists it.
+//   SPECIES   a body: how members move (genes) and the one VERB they do to the world
+//   CONTROLS  how the pilot talks to the swarm (it only ever writes focus / order / mood / selection)
+//   ECONOMIES what pays for members and cards
+//   METAS     the layer above a match: deck, draft, roulette, merge, castes, evolution
+//   CARDS     the spells a deck can hold, priced in the economy's pool
+// `source` says where an idea came from: "shipped" (in the game today), "notion" (a design doc), "ecology"
+// (Tools/Ecology bestiary), or "lab" (proposed here — nothing in the game or the docs backs it yet).
+// ============================================================================================
+const G = (sep, ali, coh, wander, orbit) => ({ sep, ali, coh, wander, orbit });
+const SPECIES = [
+  { id: 'termite', name: 'Termite', col: '#f0a043', n: 18, speedK: 1.0, size: 2.6, hp: 1, verb: 'build', alt: 'sting', genes: G(1, 0.2, 0.2, 0.3, 0.3), agility: 6, leash: 170, idleRing: 34, senseK: 1,
+    control: 'focus', economy: 'pheromone', meta: 'deck', scene: 'mass', source: 'shipped',
+    deck: ['brood', 'rally', 'autothysis', 'mound', 'teamCrystal', 'teleport', 'scout', 'frenzy'],
+    fun: 'Point at somebody else\'s mass and watch it walk home and become YOUR mound.', role: 'Builder' },
+  { id: 'ant', name: 'Ant', col: '#c9693c', n: 26, speedK: 1.0, size: 2.2, hp: 1, verb: 'trail', alt: 'sting', genes: G(1, 0.1, 0.05, 0.6, 0.1), agility: 7, leash: 999, idleRing: 40, senseK: 1,
+    control: 'focus', economy: 'foodweb', meta: 'none', scene: 'mass', source: 'lab',
+    fun: 'One ant finds food, lays a scent line home, and seconds later a highway of ants is running it.', role: 'Builder' },
+  { id: 'locust', name: 'Locust', col: '#b5c24a', n: 34, speedK: 1.0, size: 2.4, hp: 1, verb: 'march', alt: 'graze', genes: G(1, 0.1, 0.25, 0.7, 0.2), agility: 5, leash: 220, idleRing: 50, senseK: 0.9,
+    control: 'mood', economy: 'biomass', meta: 'none', scene: 'space', source: 'ecology',
+    fun: 'Crowd them and they SNAP gregarious: aligned, fast, eating everything in a marching front.', role: 'Breaker' },
+  { id: 'pigeon', name: 'Pigeon', col: '#9aa9c9', n: 16, speedK: 2.2, size: 2.8, hp: 1, verb: 'fetch', alt: 'graze', genes: G(1, 1.6, 0.4, 0.15, 0.6), agility: 3, leash: 260, idleRing: 60, senseK: 1.4,
+    control: 'leash', economy: 'crystal', meta: 'none', scene: 'time', source: 'lab',
+    fun: 'The whole flock wheels as one, peels off two couriers, and they come home with the crystal.', role: 'Runner' },
+  { id: 'rat', name: 'Rat', col: '#8f8a85', n: 14, speedK: 1.25, size: 2.6, hp: 1.4, verb: 'gnaw', alt: 'graze', genes: G(0.8, 0.2, 0.5, 0.5, 0.2), agility: 8, leash: 190, idleRing: 30, senseK: 1,
+    control: 'bait', economy: 'biomass', meta: 'none', scene: 'space', source: 'lab', leavesBody: true,
+    fun: 'They chew THROUGH armour nobody else can eat, and every meal is another rat.', role: 'Breaker' },
+  { id: 'bee', name: 'Bee', col: '#f2c84b', n: 20, speedK: 1.5, size: 2.2, hp: 1, verb: 'claim', alt: 'sting', genes: G(1, 0.5, 0.3, 0.35, 0.5), agility: 7, leash: 200, idleRing: 40, senseK: 1.2,
+    control: 'orders', economy: 'hive', meta: 'none', scene: 'mass', source: 'lab', suicideSting: true,
+    fun: 'Bees settle on wild flora and it turns yours where it stands; order an attack and each sting costs a bee.', role: 'Builder' },
+  { id: 'wasp', name: 'Wasp', col: '#e0702f', n: 12, speedK: 1.7, size: 2.6, hp: 1.6, verb: 'sting', alt: 'graze', genes: G(1, 0.3, 0.2, 0.4, 0.7), agility: 8, leash: 180, idleRing: 34, senseK: 1.3,
+    control: 'mood', economy: 'hive', meta: 'none', scene: 'charge', source: 'lab',
+    fun: 'Turn the mood up and the nest boils over: wasps pour out, sting, fall back, and sting again.', role: 'Hunter' },
+  { id: 'starling', name: 'Starling', col: '#7f8fa6', n: 40, speedK: 2.0, size: 1.8, hp: 1, verb: 'murmur', alt: 'graze', genes: G(1.2, 1.4, 0.6, 0.1, 0.0), agility: 4, leash: 120, idleRing: 40, senseK: 1,
+    control: 'leash', economy: 'fixed', meta: 'none', scene: 'charge', source: 'lab', decoy: true,
+    fun: 'A murmuration around your ship: the rival fires into the cloud, and the cloud reforms.', role: 'Support' },
+  { id: 'bat', name: 'Bat', col: '#8a6fb5', n: 12, speedK: 2.0, size: 2.4, hp: 1, verb: 'ping', alt: 'fetch', genes: G(1, 0.2, 0.1, 0.5, 0.4), agility: 6, leash: 320, idleRing: 70, senseK: 1.3,
+    control: 'focus', economy: 'hive', meta: 'none', scene: 'dark', source: 'lab', decoy: true,
+    fun: 'Every ping lights up what was hidden, and the colony dives on what it found.', role: 'Scout' },
+  { id: 'firefly', name: 'Firefly', col: '#d7f25a', n: 24, speedK: 1.0, size: 2.0, hp: 1, verb: 'flash', alt: 'graze', genes: G(1, 0.3, 0.4, 0.4, 0.5), agility: 5, leash: 150, idleRing: 40, senseK: 1,
+    control: 'rhythm', economy: 'fixed', meta: 'none', scene: 'charge', source: 'lab',
+    fun: 'Tap on the beat until the whole swarm blinks together, and that one flash stuns every rival in range.', role: 'Support' },
+  { id: 'mosquito', name: 'Mosquito', col: '#c95b5b', n: 22, speedK: 1.8, size: 1.6, hp: 0.6, verb: 'drain', alt: 'graze', genes: G(0.9, 0.2, 0.3, 0.6, 0.3), agility: 9, leash: 260, idleRing: 30, senseK: 1.4,
+    control: 'cast', economy: 'biomass', meta: 'none', scene: 'charge', source: 'lab',
+    fun: 'Fling a cloud onto a rival: it slows under the weight and leaks petals into your tank.', role: 'Hunter' },
+  { id: 'crow', name: 'Crow', col: '#3f4652', n: 10, speedK: 2.0, size: 3.0, hp: 1.6, verb: 'steal', alt: 'fetch', genes: G(1, 0.6, 0.3, 0.3, 0.6), agility: 5, leash: 260, idleRing: 50, senseK: 1.5,
+    control: 'select', economy: 'crystal', meta: 'none', scene: 'charge', source: 'lab',
+    fun: 'Drag a box round three crows, tap a rival: they mob it and pick its pocket.', role: 'Hunter' },
+  { id: 'piranha', name: 'Piranha', col: '#d24a4a', n: 16, speedK: 1.3, size: 2.6, hp: 1.2, verb: 'frenzy', alt: 'graze', genes: G(1, 0.4, 0.5, 0.4, 0.5), agility: 7, leash: 200, idleRing: 34, senseK: 1,
+    control: 'bait', economy: 'foodweb', meta: 'none', scene: 'space', source: 'lab',
+    fun: 'The first bite puts blood in the water and the school goes into a feeding frenzy.', role: 'Breaker' },
+  { id: 'slime', name: 'Slime mold', col: '#e6d36a', n: 30, speedK: 0.7, size: 2.0, hp: 1, verb: 'network', alt: 'graze', genes: G(0.6, 0, 0, 0.5, 0), agility: 4, leash: 999, idleRing: 60, senseK: 1,
+    control: 'focus', economy: 'foodweb', meta: 'none', scene: 'mass', source: 'notion',
+    fun: 'Explorers lay scent; where it runs thick between two meals it hardens into a road of your mass.', role: 'Builder' },
+  { id: 'spider', name: 'Spider', col: '#a3a3a3', n: 6, speedK: 1.2, size: 3.2, hp: 2, verb: 'web', alt: 'sting', genes: G(1, 0.2, 0.2, 0.3, 0.5), agility: 5, leash: 160, idleRing: 40, senseK: 1,
+    control: 'focus', economy: 'fixed', meta: 'none', scene: 'charge', source: 'lab',
+    fun: 'Strands go up across the lane; a rival that flies through is caught and stops dead.', role: 'Support' },
+  { id: 'siphon', name: 'Siphonophore', col: '#6fd4e6', n: 16, speedK: 1.6, size: 3.0, hp: 2, verb: 'link', alt: 'graze', genes: G(0.5, 0, 0, 0, 0), agility: 9, leash: 150, idleRing: 40, senseK: 1,
+    control: 'leash', economy: 'fixed', meta: 'none', scene: 'charge', source: 'notion',
+    fun: 'A chain of bodies trails you like a tail; whip it between you and a rival and it eats the shots.', role: 'Support' },
+  { id: 'school', name: 'Plasma School', col: '#5fe0ff', n: 6, speedK: 2.2, size: 3.4, hp: 3, verb: 'plasma', alt: 'graze', genes: G(0.4, 0, 0, 0, 0), agility: 8, leash: 999, idleRing: 60, senseK: 1,
+    control: 'leash', economy: 'fixed', meta: 'none', scene: 'space', source: 'notion',
+    fun: 'Six fish hold a ring around you and the lines between them CUT whatever passes through.', role: 'Breaker' },
+  { id: 'tadpole', name: 'Tadpole', col: '#5aa86a', n: 30, speedK: 1.1, size: 1.8, hp: 0.6, verb: 'merge', alt: 'graze', genes: G(1, 0.8, 0.5, 0.3, 0.4), agility: 7, leash: 200, idleRing: 34, senseK: 1,
+    control: 'split', economy: 'hive', meta: 'none', scene: 'space', source: 'shipped',
+    fun: 'Five tadpoles crowd together and pop into a frog whose tongue snaps crystals from range.', role: 'Breaker' },
+  { id: 'octopus', name: 'Octopus', col: '#d77fb7', n: 8, speedK: 1.5, size: 3.2, hp: 2, verb: 'graze', verbs: ['graze', 'gnaw', 'fetch', 'sting', 'claim', 'build', 'ping', 'web'], alt: 'graze', genes: G(1, 0.2, 0.4, 0.2, 0.6), agility: 6, leash: 200, idleRing: 40, senseK: 1.1,
+    control: 'focus', economy: 'pheromone', meta: 'roulette', scene: 'sandbox', source: 'notion',
+    fun: 'Eight arms, eight different verbs, and every few seconds they all shuffle one seat along.', role: 'Flex' },
+];
+const SPECIES_BY_ID = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
+
+const CONTROLS = [
+  { id: 'focus', name: 'Commander point', hull: 'auto', source: 'shipped', how: 'Tap or click the arena: the swarm works around that point. The queen flies herself.' },
+  { id: 'paint', name: 'Pheromone brush', hull: 'auto', source: 'notion', how: 'Drag across the arena to paint scent; members climb the painted road.' },
+  { id: 'leash', name: 'Escort', hull: 'stick', source: 'lab', how: 'Hold and drag to fly the ship; the swarm stays with you.' },
+  { id: 'orders', name: 'D-pad orders', hull: 'auto', source: 'notion', how: 'Four orders: Forage, Gather (to the ship), Attack (nearest rival), Defend (the mound). Tap sets the focus. Keys Q W E R.' },
+  { id: 'mood', name: 'Mood dial', hull: 'auto', source: 'notion', how: 'One slider from calm (escort, avoid) to rush (charge the nearest enemy mass). The NCA B5 knob.' },
+  { id: 'select', name: 'Select and send', hull: 'auto', source: 'lab', how: 'Drag a box to select members, then tap where they go. "All" reselects everyone.' },
+  { id: 'formation', name: 'Formations', hull: 'stick', source: 'lab', how: 'Fly the ship; pick Ring, Line, Wedge or Blob and the swarm holds that shape around you.' },
+  { id: 'bait', name: 'Bait', hull: 'auto', source: 'notion', how: 'Tap to drop bait; members (and wild fauna) swarm it for six seconds.' },
+  { id: 'sheepdog', name: 'Sheepdog', hull: 'stick', source: 'notion', how: 'You cannot order the swarm at all. Members flee your ship, so you herd them by where you fly.' },
+  { id: 'cast', name: 'Throw', hull: 'auto', source: 'lab', how: 'Hold to wind up, release on a point: the swarm is flung there as a volley, then comes back.' },
+  { id: 'split', name: 'Two squads', hull: 'auto', source: 'notion', how: 'Members are dealt into squad A and B. Tap toggles which squad your next tap sends.' },
+  { id: 'rhythm', name: 'Rhythm', hull: 'auto', source: 'lab', how: 'Tap the Beat button (or Space) in time with the pulse. On-beat taps sync and empower the swarm; off-beat taps cost it.' },
+  { id: 'leader', name: 'Possess one', hull: 'auto', source: 'lab', how: 'Hold and drag: one member follows your finger and every other member follows IT.' },
+  { id: 'cards', name: 'Cards only', hull: 'auto', source: 'shipped', how: 'The swarm and the ship run themselves; you only play cards (the Termite\'s deck, the Clash Royale model).' },
+];
+const CONTROLS_BY_ID = Object.fromEntries(CONTROLS.map((c) => [c.id, c]));
+
+const ECONOMIES = [
+  { id: 'pheromone', name: 'Pheromone tank', unit: 'pher', source: 'shipped', how: 'A tank that refills on a clock (the Termite: 10 max, 0.357/s). Cards spend it. Members only come from cards.' },
+  { id: 'biomass', name: 'Biomass brood', unit: 'food', source: 'ecology', how: 'Every few prisms eaten becomes a new member where it was eaten. The swarm grows on what it destroys.' },
+  { id: 'crystal', name: 'Crystal tithe', unit: 'gems', source: 'lab', how: 'Every crystal collected hatches a clutch at the ship and banks a gem to spend on cards.' },
+  { id: 'hive', name: 'Hive clock', unit: 'jelly', source: 'lab', how: 'The mound (or the ship, with no mound) lays a member on a clock up to the cap. Time breeds faster.' },
+  { id: 'fixed', name: 'Fixed squad', unit: 'focus', source: 'notion', how: 'The squad you start with is the squad you have. No births, every loss is permanent (the School of six).' },
+  { id: 'tiered', name: 'Tiered tanks', unit: 'fuel', source: 'notion', how: 'Three tanks (fast, medium, slow) refilling at different rates; each card draws on one (Boldt\'s tiered fuel).' },
+  { id: 'foodweb', name: 'Food web', unit: 'food', source: 'ecology', how: 'Members cost upkeep and STARVE when food runs out; eating breeds. Population is bounded by consumption, never a timer.' },
+];
+const ECONOMIES_BY_ID = Object.fromEntries(ECONOMIES.map((e) => [e.id, e]));
+
+const METAS = [
+  { id: 'none', name: 'None', source: 'lab', how: 'Just the swarm.' },
+  { id: 'deck', name: 'Card deck', source: 'shipped', how: 'A hand of four drawn from a deck of eight; a played card goes to the back. Keys 1-4.' },
+  { id: 'draft', name: 'Draft', source: 'lab', how: 'Every 20 s the match pauses: pick one of three upgrades (roguelike).' },
+  { id: 'roulette', name: 'Roulette', source: 'notion', how: 'Every 12 s every member\'s verb shifts one seat along a wheel (the Shuffle octopus).' },
+  { id: 'merge', name: 'Merge', source: 'lab', how: 'Every 8 s three ordinary members fuse into one elite: fewer, tougher, harder-hitting.' },
+  { id: 'castes', name: 'Castes', source: 'lab', how: 'Newborns are dealt into workers (the species verb), soldiers (sting) and scouts (ping + fetch) by the ratio you set.' },
+  { id: 'evolve', name: 'Evolution', source: 'notion', how: 'Each newborn copies a living parent\'s genes, weighted by how long that parent has SURVIVED, plus mutation. Fitness is survival, never a score.' },
+];
+const METAS_BY_ID = Object.fromEntries(METAS.map((m) => [m.id, m]));
+
+// A card targets the swarm's current focus (or the ship). `tier` is used by the tiered economy.
+const CARDS = [
+  { id: 'brood', name: 'Brood', cost: 3, tier: 1, src: 'Termite: Queen Drones', desc: '+6 members at the ship.' },
+  { id: 'rally', name: 'Rally', cost: 1, tier: 0, src: 'lab', desc: 'Every member to the focus for 4 s.' },
+  { id: 'frenzy', name: 'Frenzy', cost: 3, tier: 1, src: 'lab', desc: '6 s of +45% speed and full aggression.' },
+  { id: 'autothysis', name: 'Autothysis', cost: 3, tier: 2, src: 'Termite: Autothysis', desc: 'Up to 8 members by the focus burst: hostile mass around each dies, rivals are stunned. The members die too.' },
+  { id: 'mound', name: 'New Mound', cost: 5, tier: 2, src: 'Termite: New Mound', desc: 'Found a mound at the focus: builders lay there, the hive breeds there.' },
+  { id: 'teamCrystal', name: 'Team Crystal', cost: 2, tier: 1, src: 'Termite: Team Crystal', desc: 'A crystal appears at the focus.' },
+  { id: 'teleport', name: 'Teleport', cost: 2, tier: 0, src: 'Termite: Teleport', desc: 'The ship jumps to the focus.' },
+  { id: 'scout', name: 'Scout', cost: 2, tier: 0, src: 'lab', desc: 'Reveal everything hidden within 220 of the focus.' },
+  { id: 'decoy', name: 'Decoy Crystal', cost: 2, tier: 0, src: 'Notion: Angler fake crystal', desc: 'A fake crystal at the focus: rivals chase it for 8 s.' },
+  { id: 'webs', name: 'Web Burst', cost: 3, tier: 1, src: 'lab', desc: 'Six web strands around the focus.' },
+  { id: 'molt', name: 'Molt', cost: 2, tier: 1, src: 'lab', desc: 'For 10 s every member uses the species\' second verb.' },
+  { id: 'shield', name: 'Shield Wall', cost: 2, tier: 0, src: 'lab', desc: 'For 6 s every member rings the ship and eats shots.' },
+];
+const CARDS_BY_ID = Object.fromEntries(CARDS.map((c) => [c.id, c]));
+const DEFAULT_DECK = ['brood', 'rally', 'frenzy', 'autothysis', 'scout', 'decoy', 'mound', 'shield'];
+
+const SCENES = [
+  { id: 'sandbox', name: 'Sandbox', el: '', how: 'A bit of everything: flora, a rival fortress, two rivals, crystals, grazers.' },
+  { id: 'time', name: 'Time: race', el: 'time', how: 'Eight gate crystals in order. Score: gates, plus seconds to spare if you finish.' },
+  { id: 'space', name: 'Space: destruction', el: 'space', how: 'A rival fortress (part armoured) and fields of hostile mass. Score: hostile prisms destroyed.' },
+  { id: 'mass', name: 'Mass: creation', el: 'mass', how: 'Wild flora to work and two rivals grazing your mass. Score: your prisms standing at the end.' },
+  { id: 'charge', name: 'Charge: dogfight', el: 'charge', how: 'Two rival ships hunting you. Score: petals taken minus petals lost, plus 3 per rival knocked out.' },
+  { id: 'dark', name: 'Dark: hidden crystals', el: 'time', how: 'Ten crystals you cannot see until something reveals them. Score: crystals collected.' },
+];
+const SCENES_BY_ID = Object.fromEntries(SCENES.map((s) => [s.id, s]));
+const GAMES = ['time', 'space', 'mass', 'charge'];
+
+// ---- src/game.js ----
+// ============================================================================================
+// game.js — economies, metas, cards, scenes, scoring, the AI commander, simStep, reset and the batch.
+// ============================================================================================
+const BUILD_KEY = 'lab:' + LAB.name + ':build';
+const BUILD = Object.assign({ species: 'termite', control: 'focus', economy: 'pheromone', meta: 'deck', scene: 'mass', deck: null, castes: { worker: 0.6, soldier: 0.25, scout: 0.15 }, toy: 'termite-mound', ai: false }, lsGet(BUILD_KEY, {}));
+function saveBuild() { lsSet(BUILD_KEY, BUILD); }
+function toast(m) { if (W) W.toast = { m, t: 2.2 }; }
+
+// ================= economies =================
+function initEcon() {
+  const id = W.build.economy, e = { id, pool: 0, max: 10, regen: 0, food: 0, gems: 0, tanks: null, cap: P.droneCap, hiveT: 0, label: ECONOMIES_BY_ID[id].unit };
+  if (id === 'pheromone') { e.max = P.pherMax; e.pool = P.pherStart; e.regen = P.pherRegen * (1 + P.elTime / 10); }
+  else if (id === 'tiered') { e.tanks = [{ v: 2, max: 4, regen: 0.8 }, { v: 2, max: 6, regen: 0.35 }, { v: 1, max: 8, regen: 0.12 }]; }
+  else if (id === 'hive') { e.max = 8; e.pool = 3; e.regen = 0.18; e.cap = Math.round(P.droneCap * 1.2); }
+  else if (id === 'fixed') { e.max = 8; e.pool = 4; e.regen = 0.25; }
+  else if (id === 'biomass') { e.max = 12; e.pool = 3; e.cap = Math.round(P.droneCap * 2.2); }
+  else if (id === 'foodweb') { e.max = 12; e.pool = 3; e.food = 6; e.cap = Math.round(P.droneCap * 2.5); }
+  else if (id === 'crystal') { e.max = 12; e.pool = 2; e.cap = Math.round(P.droneCap * 1.6); }
+  W.econ = e;
+}
+function econOnEat(a) {
+  const e = W.econ;
+  if (e.id === 'biomass') { e.food += 1; const need = 3 * EL.size() / EL.birth(); if (e.food >= need) { e.food -= need; addAgent(a.x, a.y, childOf(a)); } e.pool = Math.min(e.max, e.pool + 0.15); }
+  else if (e.id === 'foodweb') { e.food += 1; e.pool = Math.min(e.max, e.pool + 0.15); if (e.food > 4 && W.rnd() < 0.35 * EL.birth()) { e.food -= 2.5; addAgent(a.x, a.y, childOf(a)); } }
+}
+function econOnPetal(n) {
+  // a petal drained or stung out of a rival is food for a swarm that breeds on what it takes
+  const e = W.econ; if (e.id === 'biomass' || e.id === 'foodweb') { e.food += 2 * n; while (e.food >= 3) { e.food -= 3; addAgent(W.hull.x + (W.rnd() - .5) * 20, W.hull.y + (W.rnd() - .5) * 20, childOf(null)); } }
+  else if (e.pool != null) e.pool = Math.min(e.max, e.pool + n);
+}
+function econOnCrystal(c) {
+  const e = W.econ;
+  if (e.id === 'crystal') { e.gems++; e.pool = Math.min(e.max, e.pool + 2); for (let i = 0; i < 4; i++) addAgent(W.hull.x + (W.rnd() - .5) * 20, W.hull.y + (W.rnd() - .5) * 20, childOf(null)); }
+  else if (e.id === 'pheromone' || e.id === 'hive' || e.id === 'fixed') e.pool = Math.min(e.max, e.pool + 1);
+  else if (e.id === 'tiered') e.tanks[2].v = Math.min(e.tanks[2].max, e.tanks[2].v + 1);
+  else e.pool = Math.min(e.max, e.pool + 1);
+}
+function stepEcon(dt) {
+  const e = W.econ;
+  if (e.tanks) { for (const t of e.tanks) t.v = Math.min(t.max, t.v + t.regen * dt * (1 + P.elTime / 20)); }
+  else if (e.regen) e.pool = Math.min(e.max, e.pool + e.regen * dt);
+  if (e.id === 'hive') {
+    e.hiveT -= dt * EL.birth();
+    if (e.hiveT <= 0) { e.hiveT = 2.6; const h = W.homes[W.homes.length - 1] || W.hull; addAgent(h.x + (W.rnd() - .5) * 14, h.y + (W.rnd() - .5) * 14, childOf(null)); }
+  }
+  if (e.id === 'foodweb') {
+    // upkeep: every member eats a little; with nothing in the larder, the oldest-hungry starve (withers, never a timer)
+    const live = liveAgents(); e.food -= live.length * 0.035 * dt * EL.size();
+    if (e.food < 0) { e.food = 0; if (W.rnd() < dt * 0.6 * Math.min(4, live.length / 10)) { const v = live[Math.floor(W.rnd() * live.length)]; if (v) { hurtAgent(v, 99); W.stats.starved = (W.stats.starved || 0) + 1; } } }
+  }
+}
+function canPay(card) {
+  const e = W.econ;
+  if (e.tanks) return e.tanks[card.tier].v >= Math.min(card.cost, e.tanks[card.tier].max);
+  return e.pool >= card.cost;
+}
+function pay(card) { const e = W.econ; if (e.tanks) e.tanks[card.tier].v -= Math.min(card.cost, e.tanks[card.tier].max); else e.pool -= card.cost; }
+
+// ================= metas =================
+function initMeta() {
+  const m = { id: W.build.meta, deck: [], hand: [], drafts: [], wheel: 0, t: 0 };
+  if (m.id === 'deck') { m.deck = (W.build.deck || W.sp.deck || DEFAULT_DECK).slice(0, 8); m.hand = m.deck.slice(0, 4); m.queue = m.deck.slice(4); }
+  W.meta = m;
+}
+// What a newborn inherits. Evolution copies a SURVIVOR (weight = age), the ecology's endogenous-selection rule.
+function childOf(parent) {
+  const o = { sq: W.agents.length % 2 };
+  if (W.build.meta === 'castes') {
+    const c = W.build.castes, r = W.rnd() * (c.worker + c.soldier + c.scout);
+    o.caste = r < c.worker ? 'worker' : r < c.worker + c.soldier ? 'soldier' : 'scout';
+    if (o.caste === 'soldier') o.verb = 'sting'; else if (o.caste === 'scout') o.verb = 'ping';
+  }
+  if (W.sp.verbs) o.verb = W.sp.verbs[(W.agents.length + W.meta.wheel) % W.sp.verbs.length];
+  if (W.molt > 0) o.verb = W.sp.alt;
+  if (W.build.meta === 'evolve') {
+    const live = liveAgents(); let src = parent;
+    if (live.length) { let tot = 0; for (const a of live) tot += 1 + a.age; let r = W.rnd() * tot; for (const a of live) { r -= 1 + a.age; if (r <= 0) { src = a; break; } } }
+    const g = src ? src.gene : { spd: 1, sense: 1, bite: 1 }, mu = () => 1 + (W.rnd() - 0.5) * 0.24;
+    o.gene = { spd: clamp(g.spd * mu(), 0.5, 2.2), sense: clamp(g.sense * mu(), 0.5, 2.2), bite: clamp(g.bite * mu(), 0.5, 2.2) };
+    // a fast, far-seeing body is a hungry one: genes cost hit points, so survival is the only judge
+    o.costHp = (o.gene.spd + o.gene.sense + o.gene.bite) / 3;
+  }
+  return o;
+}
+const DRAFT_POOL = [
+  { id: 'swift', name: 'Swift', desc: '+20% member speed', apply: () => { W.mods.spd *= 1.2; } },
+  { id: 'keen', name: 'Keen', desc: '+30% sense radius', apply: () => { W.mods.sense *= 1.3; } },
+  { id: 'jaws', name: 'Jaws', desc: '+35% bite and sting', apply: () => { W.mods.bite *= 1.35; } },
+  { id: 'clutch', name: 'Clutch', desc: '+8 members now', apply: () => { for (let i = 0; i < 8; i++) addAgent(W.hull.x + (W.rnd() - .5) * 30, W.hull.y + (W.rnd() - .5) * 30, childOf(null)); } },
+  { id: 'carapace', name: 'Carapace', desc: '+60% member hit points', apply: () => { W.mods.hp *= 1.6; for (const a of liveAgents()) a.hp *= 1.6; } },
+  { id: 'bloom', name: 'Bloom', desc: 'Your economy fills now and refills 40% faster', apply: () => { const e = W.econ; if (e.tanks) e.tanks.forEach((t) => { t.v = t.max; t.regen *= 1.4; }); else { e.pool = e.max; e.regen *= 1.4; } } },
+  { id: 'second', name: 'Second verb', desc: 'A third of members permanently take the species\' second verb', apply: () => { let i = 0; for (const a of liveAgents()) if (i++ % 3 === 0) a.verb = W.sp.alt; } },
+  { id: 'mound', name: 'Free mound', desc: 'A mound at the swarm\'s centre', apply: () => { const c = swarmCentre(); addHome(c.x, c.y, 'mound'); } },
+];
+function stepMeta(dt) {
+  const m = W.meta; m.t += dt;
+  if (m.id === 'roulette') {
+    W.wheelT = (W.wheelT || 12) - dt;
+    if (W.wheelT <= 0) {
+      W.wheelT = 12; m.wheel++;
+      const wheel = W.sp.verbs || ['graze', 'sting', 'build', 'fetch', 'ping', 'frenzy'];
+      for (const a of liveAgents()) { const i = wheel.indexOf(a.verb); a.verb = wheel[(i + 1 + wheel.length) % wheel.length]; a.tgt = null; a.carry = null; }
+      toast('Roulette: every verb shifts one seat');
+    }
+  } else if (m.id === 'merge') {
+    W.mergeMetaT = (W.mergeMetaT || 8) - dt;
+    if (W.mergeMetaT <= 0) {
+      W.mergeMetaT = 8;
+      const live = liveAgents().filter((a) => a.big < 3);
+      if (live.length >= 3) {
+        const a = live[0], pals = live.slice(1).sort((p, q) => len(p.x - a.x, p.y - a.y) - len(q.x - a.x, q.y - a.y)).slice(0, 2);
+        for (const b of pals) { b.alive = false; a.hp += b.hp; }
+        a.big += 1; a.size *= 1.45; W.stats.merges++; W.fx.push({ k: 'ring', x: a.x, y: a.y, t: 0, r: 24, col: '#f6c27f' });
+      }
+    }
+  } else if (m.id === 'draft') {
+    if (W.t >= W.nextDraft && !W.draftOffer) {
+      W.nextDraft += 20; const pool = DRAFT_POOL.slice(), offer = [];
+      for (let i = 0; i < 3; i++) offer.push(pool.splice(Math.floor(W.rnd() * pool.length), 1)[0]);
+      W.draftOffer = offer;
+      if (W.headless) pickDraft(Math.floor(W.rnd() * 3));
+    }
+  }
+}
+function pickDraft(i) { const o = W.draftOffer && W.draftOffer[i]; if (!o) return; o.apply(); W.meta.drafts.push(o.id); W.draftOffer = null; toast('Drafted: ' + o.name); }
+
+// ================= cards =================
+function cardTarget() { return W.focus || W.hull; }
+function playCard(idx) {
+  const m = W.meta; if (m.id !== 'deck') return false;
+  const id = m.hand[idx]; if (!id) return false;
+  const c = CARDS_BY_ID[id]; if (!canPay(c)) return false;
+  pay(c); castCard(c, cardTarget());
+  m.hand.splice(idx, 1, m.queue.shift()); m.queue.push(id);
+  W.stats.plays++; return true;
+}
+function castCard(c, t) {
+  const live = liveAgents();
+  switch (c.id) {
+    case 'brood': for (let i = 0; i < 6; i++) addAgent(W.hull.x + (W.rnd() - .5) * 24, W.hull.y + (W.rnd() - .5) * 24, childOf(null)); break;
+    case 'rally': W.cast = true; W.castPt = { x: t.x, y: t.y }; W.castT = 4; break;
+    case 'frenzy': W.buff.frenzy = 6; W.moodBoost = 6; break;
+    case 'autothysis': {
+      const near = live.slice().sort((p, q) => len(p.x - t.x, p.y - t.y) - len(q.x - t.x, q.y - t.y)).slice(0, 8);
+      for (const a of near) {
+        const rr = 22 * EL.reach();
+        hashQuery(W.hash, a.x, a.y, rr, (p) => { if (hostile(p) && p.sh === 0) { killPrism(p); W.stats.eaten++; } });
+        for (const r of W.rivals) if (r.alive && len(r.x - a.x, r.y - a.y) < rr * 1.5) { r.stun = Math.max(r.stun, 1.2); r.petalDebt += 0.3 * EL.dmg(); }
+        W.fx.push({ k: 'boom', x: a.x, y: a.y, t: 0, r: rr }); hurtAgent(a, 99);
+      }
+      break;
+    }
+    case 'mound': addHome(t.x, t.y, 'mound'); W.fx.push({ k: 'ring', x: t.x, y: t.y, t: 0, r: 30, col: '#f0a043' }); break;
+    case 'teamCrystal': addCrystal(t.x + (W.rnd() - .5) * 20, t.y + (W.rnd() - .5) * 20, { kind: 'omni' }); break;
+    case 'teleport': W.fx.push({ k: 'ring', x: W.hull.x, y: W.hull.y, t: 0, r: 20, col: '#9ff7c6' }); W.hull.x = t.x; W.hull.y = t.y; W.hull.vx = W.hull.vy = 0; W.hull.roam = null; break;
+    case 'scout': W.fx.push({ k: 'ping', x: t.x, y: t.y, t: 0, r: 220 }); for (const cc of W.crystals) if (cc.hidden && len(cc.x - t.x, cc.y - t.y) < 220) { cc.revealed = true; W.stats.revealed++; } for (const p of W.prisms) if (p.hidden && len(p.x - t.x, p.y - t.y) < 220) { p.hidden = false; W.stats.revealed++; } break;
+    case 'decoy': addCrystal(t.x, t.y, { decoy: true }).decoyT = 8; break;
+    case 'webs': for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; W.webs.push({ x0: t.x, y0: t.y, x1: t.x + Math.cos(a) * 70, y1: t.y + Math.sin(a) * 70, hp: 2 }); } break;
+    case 'molt': W.molt = 10; for (const a of live) { a.prevVerb = a.verb; a.verb = W.sp.alt; a.tgt = null; } break;
+    case 'shield': W.buff.shield = 6; break;
+  }
+  W.fx.push({ k: 'card', x: t.x, y: t.y, t: 0, name: c.name });
+}
+
+// ================= scenes =================
+function setupScene(id) {
+  const rnd = W.rnd, RUBY = DOM.RUBY, GOLD = DOM.GOLD, N = DOM.NEUTRAL;
+  const at = (a, r) => ({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+  W.fortX = 0; W.fortY = 0;
+  if (id === 'time') {
+    W.gateCount = 8; W.gateNext = 0;
+    for (let i = 0; i < 8; i++) { const a = i / 8 * TAU + 0.3, r = 300 + (i % 2) * 140; const p = at(a, r); addCrystal(p.x, p.y, { order: i, kind: 'gate' }); }
+    for (let i = 0; i < 8; i += 2) { const a = (i + 0.5) / 8 * TAU + 0.3; const p = at(a, 370); const q = at(a + 0.12, 370); line(p.x, p.y, q.x, q.y, 6, RUBY); }
+    for (let i = 0; i < 5; i++) { const p = at(rnd() * TAU, 180 + rnd() * 300); clump(p.x, p.y, 18, 30, N); }
+  } else if (id === 'space') {
+    W.fortX = 230; W.fortY = -60; ring(W.fortX, W.fortY, 50, 14, 7, RUBY, { shieldFrac: 0.45 }); clump(W.fortX, W.fortY, 40, 40, RUBY);
+    for (let i = 0; i < 6; i++) { const p = at(i / 6 * TAU + rnd(), 260 + rnd() * 220); clump(p.x, p.y, 55, 42, i % 2 ? RUBY : GOLD); }
+    addRival(W.fortX + 100, W.fortY, RUBY, 'guard');
+  } else if (id === 'mass') {
+    for (let i = 0; i < 9; i++) { const p = at(i / 9 * TAU + rnd() * 0.5, 160 + rnd() * 330); clump(p.x, p.y, 34, 34, N); }
+    for (let i = 0; i < 3; i++) { const p = at(rnd() * TAU, 250 + rnd() * 250); clump(p.x, p.y, 30, 30, RUBY); }
+    addRival(-300, 250, RUBY, 'graze'); addRival(320, -260, GOLD, 'graze');
+  } else if (id === 'charge') {
+    for (let i = 0; i < 6; i++) { const p = at(rnd() * TAU, 150 + rnd() * 350); clump(p.x, p.y, 14, 24, N); }
+    addRival(-320, 200, RUBY, 'hunt'); addRival(320, 220, GOLD, 'hunt');
+    for (let i = 0; i < 4; i++) { const p = at(rnd() * TAU, 200 + rnd() * 250); addCrystal(p.x, p.y, { kind: 'omni' }); }
+  } else if (id === 'dark') {
+    for (let i = 0; i < 10; i++) { const p = at(rnd() * TAU, 140 + rnd() * 400); addCrystal(p.x, p.y, { hidden: true, kind: 'el' }); }
+    for (let i = 0; i < 6; i++) { const p = at(rnd() * TAU, 160 + rnd() * 340); clump(p.x, p.y, 20, 30, N); }
+    for (let i = 0; i < 4; i++) { const p = at(rnd() * TAU, 200 + rnd() * 300); clump(p.x, p.y, 24, 26, RUBY, {}); }
+    for (const p of W.prisms) if (p.dom === RUBY) p.hidden = true;
+    addRival(300, -200, RUBY, 'bait');
+  } else { // sandbox
+    W.fortX = -260; W.fortY = 180; ring(W.fortX, W.fortY, 44, 12, 7, RUBY, { shieldFrac: 0.4 });
+    for (let i = 0; i < 6; i++) { const p = at(i / 6 * TAU + 0.4, 220 + rnd() * 250); clump(p.x, p.y, 30, 32, N); }
+    for (let i = 0; i < 4; i++) { const p = at(rnd() * TAU, 240 + rnd() * 280); clump(p.x, p.y, 34, 32, i % 2 ? RUBY : GOLD); }
+    addRival(300, 260, RUBY, 'graze'); addRival(-200, -330, GOLD, 'hunt');
+    for (let i = 0; i < 6; i++) { const p = at(rnd() * TAU, 180 + rnd() * 300); addCrystal(p.x, p.y, { kind: rnd() < 0.5 ? 'omni' : 'el' }); }
+    const hp = at(rnd() * TAU, 380); addCrystal(hp.x, hp.y, { hidden: true });
+    for (let i = 0; i < 4; i++) { const p = at(rnd() * TAU, 200 + rnd() * 300); W.fauna.push({ x: p.x, y: p.y, alive: true, t: 0, tgt: null, chew: 1.5, wx: p.x, wy: p.y }); }
+  }
+  if (id === 'mass' || id === 'space') for (let i = 0; i < 3; i++) { const p = at(rnd() * TAU, 200 + rnd() * 300); addCrystal(p.x, p.y, { kind: 'omni' }); }
+}
+function countMine() { let n = 0; for (const p of W.prisms) if (p.alive && p.dom === ME) n++; return n; }
+
+// ================= rivals' lives =================
+function stepRivalLife(dt) {
+  for (const r of W.rivals) {
+    r.marked = Math.max(0, (r.marked || 0) - dt);
+    if (r.alive && r.petals <= 0) { r.alive = false; r.respawn = 4; W.stats.kills = (W.stats.kills || 0) + 1; W.fx.push({ k: 'boom', x: r.x, y: r.y, t: 0, r: 30 }); }
+    else if (!r.alive) { r.respawn -= dt; if (r.respawn <= 0) { const a = W.rnd() * TAU; r.x = Math.cos(a) * (R - 40); r.y = Math.sin(a) * (R - 40); r.petals = 10; r.petalDebt = 0; r.alive = true; } }
+  }
+  for (const c of W.crystals) if (c.decoy && c.alive) { c.decoyT -= dt; if (c.decoyT <= 0) c.alive = false; }
+}
+
+// ================= scoring: one number per element game =================
+function gameScore() {
+  const s = W.stats, g = W.game;
+  if (g === 'time') return +(W.gateNext * 10 + (W.finishT != null ? Math.max(0, P.round - W.finishT) : 0)).toFixed(1);
+  if (g === 'space') return s.hostileKills || 0;
+  if (g === 'mass') return countMine() - W.mineStart;
+  if (g === 'charge') return s.petalsTaken - s.petalsLost + 3 * (s.kills || 0);
+  if (W.scene === 'dark') return s.crystals;
+  return s.crystals * 2 + s.built + s.eaten;
+}
+function score() {
+  return { game: W.game || W.scene, score: gameScore(), t: +W.t.toFixed(2), members: liveAgents().length, built: W.stats.built, eaten: W.stats.eaten, crystals: W.stats.crystals, petals: W.stats.petalsTaken - W.stats.petalsLost, deaths: W.stats.deaths, births: W.stats.births };
+}
+
+// ================= the AI commander: it writes INPUTS only =================
+// It reads the world the way a player reads the screen, picks one objective per game, and then expresses
+// it through whatever control scheme is loaded — so "how well can an expert play this scheme" is measurable.
+function aiObjective() {
+  const h = W.hull, g = W.game || W.scene;
+  if (g === 'time') { const c = W.crystals.find((cc) => cc.alive && cc.order === W.gateNext); if (c) return c; }
+  if (g === 'charge') { const r = nearestRival(h.x, h.y, 1e9); if (r) return r; }
+  if (g === 'dark') { const c = W.crystals.find((cc) => cc.alive && (!cc.hidden || cc.revealed)); if (c) return c; return { x: Math.cos(W.t * 0.2) * 300, y: Math.sin(W.t * 0.2) * 300 }; }
+  // space and mass: the densest patch of what this species' verb wants (sampled, so it stays cheap)
+  const wantMine = false, wantNeutral = g === 'mass' && (W.sp.verb === 'claim' || W.sp.verb === 'build');
+  let best = null, bs = -1;
+  for (let i = 0; i < 24; i++) {
+    const p = W.prisms[Math.floor(W.rnd() * W.prisms.length)]; if (!p || !p.alive || p.dom === ME || p.hidden) continue;
+    if (g === 'space' && p.dom === DOM.NEUTRAL) continue;
+    let n = 0; hashQuery(W.hash, p.x, p.y, 40, (q) => { if (q.dom === p.dom) n++; });
+    const s = n * (wantNeutral && p.dom === DOM.NEUTRAL ? 1.5 : 1) - len(p.x - h.x, p.y - h.y) * 0.02;
+    if (s > bs) { bs = s; best = p; }
+  }
+  if (best) W.aiPatch = { x: best.x, y: best.y };
+  return W.aiPatch || h;
+}
+function aiInput(dt) {
+  const inp = { down: false, px: null, py: null, tap: null, key: null, card: null, mood: null, box: null, release: null };
+  const noise = P.aiNoise, h = W.hull;
+  W.aiT = (W.aiT || 0) - dt;
+  if (W.aiT > 0 && !W.aiHold) return inp;
+  W.aiT = 0.5 + noise * 1.5 + W.rnd() * 0.3;
+  if (W.rnd() < noise * 0.5) return inp;                       // a rookie misses decisions
+  const o = aiObjective(), jit = noise * 90;
+  const tx = o.x + (W.rnd() - .5) * jit, ty = o.y + (W.rnd() - .5) * jit;
+  const id = W.ctl.id;
+  if (id === 'focus' || id === 'bait' || id === 'split' || id === 'cards' || id === 'select') { inp.tap = { x: tx, y: ty }; if (id === 'split' && W.rnd() < 0.3) inp.key = 'squad'; }
+  else if (id === 'paint') { inp.down = true; inp.px = h.x + (tx - h.x) * W.rnd(); inp.py = h.y + (ty - h.y) * W.rnd(); inp.tap = { x: tx, y: ty }; }
+  else if (id === 'leash' || id === 'formation') { inp.down = true; inp.px = tx; inp.py = ty; if (id === 'formation') inp.key = (W.game === 'charge') ? 'ring' : 'wedge'; }
+  else if (id === 'orders') { inp.tap = { x: tx, y: ty }; inp.key = (W.game === 'charge') ? 'attack' : (W.game === 'mass' && W.homes.length) ? 'forage' : 'forage'; }
+  else if (id === 'mood') { inp.tap = { x: tx, y: ty }; inp.mood = (W.game === 'charge' || W.game === 'space') ? 0.9 : 0.45; }
+  else if (id === 'sheepdog') {
+    // get behind the herd, opposite the objective, and push
+    const c = swarmCentre(), vx = c.x - tx, vy = c.y - ty, d = len(vx, vy) || 1;
+    inp.down = true; inp.px = c.x + vx / d * 60; inp.py = c.y + vy / d * 60;
+  }
+  else if (id === 'cast') { if (!W.aiHold) { W.aiHold = true; W.aiHoldT = 0.6; inp.down = true; inp.px = tx; inp.py = ty; } else { W.aiHoldT -= dt; inp.down = true; inp.px = tx; inp.py = ty; if (W.aiHoldT <= 0) { inp.down = false; inp.release = { x: tx, y: ty }; W.aiHold = false; } } }
+  else if (id === 'rhythm') { inp.tap = { x: tx, y: ty }; inp.key = (W.rnd() > noise * 0.8) ? 'beatGood' : 'beatBad'; }
+  else if (id === 'leader') { inp.down = true; inp.px = tx; inp.py = ty; }
+  // cards: play the first affordable card whose job matches the game
+  if (W.meta.id === 'deck') {
+    const prefer = { time: ['teleport', 'rally', 'teamCrystal', 'brood'], space: ['autothysis', 'frenzy', 'brood', 'rally'], mass: ['mound', 'brood', 'teamCrystal', 'molt'], charge: ['frenzy', 'decoy', 'shield', 'autothysis', 'brood'] }[W.game] || ['brood', 'frenzy'];
+    for (const want of prefer) { const i = W.meta.hand.indexOf(want); if (i >= 0 && canPay(CARDS_BY_ID[want]) && !(want === 'mound' && W.homes.length > 1)) { inp.card = i; break; } }
+    if (inp.card == null && W.econ.pool >= (W.econ.max || 10) * 0.95) inp.card = W.meta.hand.findIndex((cid) => canPay(CARDS_BY_ID[cid]));
+    if (inp.card != null && inp.card < 0) inp.card = null;
+  }
+  if (W.draftOffer) pickDraft(0);
+  return inp;
+}
+function swarmCentre() { const live = liveAgents(); if (!live.length) return { x: W.hull.x, y: W.hull.y }; let x = 0, y = 0; for (const a of live) { x += a.x; y += a.y; } return { x: x / live.length, y: y / live.length }; }
+
+// ================= control: turn an input into focus / order / mood / selection =================
+const BEAT = 0.75;
+function applyControl(inp, dt) {
+  const id = W.ctl.id;
+  if (inp.mood != null) W.mood = clamp(inp.mood, 0, 1);
+  if (id === 'focus' || id === 'cards' || id === 'mood') { if (inp.tap) W.focus = { x: inp.tap.x, y: inp.tap.y }; }
+  else if (id === 'paint') {
+    if (inp.down && inp.px != null) { for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const k = fieldIdx(inp.px + dx * FS, inp.py + dy * FS); if (k >= 0) W.pher[k] = Math.min(8, W.pher[k] + (dx || dy ? 1.2 : 3)); } W.focus = { x: inp.px, y: inp.py }; }
+  }
+  else if (id === 'orders') { if (inp.tap) W.focus = { x: inp.tap.x, y: inp.tap.y }; const map = { forage: 0, gather: 1, attack: 2, defend: 3 }; if (inp.key in map) W.order = map[inp.key]; }
+  else if (id === 'select') {
+    if (inp.box) { const { x0, y0, x1, y1 } = inp.box; for (const a of liveAgents()) { a.sel = a.x >= Math.min(x0, x1) && a.x <= Math.max(x0, x1) && a.y >= Math.min(y0, y1) && a.y <= Math.max(y0, y1); if (!a.sel) a.homeFocus = { x: a.x, y: a.y }; } }
+    if (inp.key === 'all') for (const a of liveAgents()) a.sel = true;
+    if (inp.tap) W.focus = { x: inp.tap.x, y: inp.tap.y };
+  }
+  else if (id === 'formation') { if (['ring', 'line', 'wedge', 'blob'].includes(inp.key)) W.formation = inp.key; }
+  else if (id === 'bait') { if (inp.tap) { W.bait = { x: inp.tap.x, y: inp.tap.y, t: 6 }; W.focus = { x: inp.tap.x, y: inp.tap.y }; } }
+  else if (id === 'sheepdog') { W.focus = swarmCentre(); }
+  else if (id === 'cast') {
+    if (inp.down) W.castCharge = Math.min(2, (W.castCharge || 0) + dt);
+    if (inp.release) { W.cast = true; W.castPt = { x: inp.release.x, y: inp.release.y }; W.castT = 1.4 + (W.castCharge || 0); W.castCharge = 0; W.focus = W.castPt; W.mood = Math.max(W.mood, 0.8); }
+  }
+  else if (id === 'split') {
+    if (inp.key === 'squad') W.squadNext = 1 - (W.squadNext || 0);
+    if (inp.tap) { if ((W.squadNext || 0) === 1) W.focusB = { x: inp.tap.x, y: inp.tap.y }; else W.focus = { x: inp.tap.x, y: inp.tap.y }; }
+  }
+  else if (id === 'rhythm') {
+    W.beatT = (W.beatT || 0) + dt;
+    const k = inp.key;
+    if (k === 'beat' || k === 'beatGood' || k === 'beatBad') {
+      const ph = (W.beatT % BEAT) / BEAT, off = Math.min(ph, 1 - ph), good = k === 'beatGood' || (k === 'beat' && off < 0.16);
+      if (good) { W.syncKick = Math.min(3, W.syncKick + 0.6); W.buff.frenzy = Math.max(W.buff.frenzy, 1.2); W.streak = (W.streak || 0) + 1; W.fx.push({ k: 'beat', x: W.hull.x, y: W.hull.y, t: 0, good: true }); }
+      else { W.syncKick = Math.max(0, W.syncKick - 0.8); W.streak = 0; for (const a of liveAgents()) a.phase += (W.rnd() - .5) * 1.5; W.fx.push({ k: 'beat', x: W.hull.x, y: W.hull.y, t: 0, good: false }); }
+    }
+    if (inp.tap) W.focus = { x: inp.tap.x, y: inp.tap.y };
+  }
+  else if (id === 'leader') {
+    if (inp.down && inp.px != null) {
+      let L = W.agents[W.leaderIdx];
+      if (!L || !L.alive) { let bd = 1e9; W.agents.forEach((a, i) => { if (a.alive) { const d = len(a.x - inp.px, a.y - inp.py); if (d < bd) { bd = d; W.leaderIdx = i; } } }); L = W.agents[W.leaderIdx]; }
+      if (L) { const dx = inp.px - L.x, dy = inp.py - L.y, d = len(dx, dy) || 1, s = Math.min(memberSpeed(L) * 1.5, d * 4); L.vx = dx / d * s; L.vy = dy / d * s; L.x += L.vx * dt; L.y += L.vy * dt; }
+      W.focus = { x: inp.px, y: inp.py };
+    }
+  }
+  if (inp.card != null) playCard(inp.card);
+}
+
+// ================= simStep =================
+let liveInput = { down: false, px: null, py: null, tap: null, key: null, card: null, mood: null, box: null, release: null };
+function takeLiveInput() { const i = liveInput; liveInput = { down: i.down, px: i.px, py: i.py, tap: null, key: null, card: null, mood: null, box: null, release: null }; return i; }
+function simStep(dt) {
+  if (!W || W.done) return;
+  if (W.draftOffer && !W.headless) return;               // the draft pauses the match until you pick
+  W.t += dt; W.tick++;
+  const inp = (W.headless || W.build.ai) ? aiInput(dt) : takeLiveInput();
+  W.hash = hashBuild(W.prisms);
+  applyControl(inp, dt);
+  // buffs and timed states
+  for (const k of Object.keys(W.buff)) W.buff[k] = Math.max(0, W.buff[k] - dt);
+  if (W.castT > 0) { W.castT -= dt; if (W.castT <= 0) W.cast = false; }
+  if (W.bait && W.bait.t > 0) W.bait.t -= dt;
+  if (W.molt > 0) { W.molt -= dt; if (W.molt <= 0) for (const a of liveAgents()) if (a.prevVerb) { a.verb = a.prevVerb; a.prevVerb = null; a.tgt = null; } }
+  if (W.moodBoost > 0) { W.moodBoost -= dt; }
+  const baseMood = W.ctl.id === 'mood' ? W.mood : P.aggression;
+  W.mood = W.moodBoost > 0 ? 1 : (W.ctl.id === 'mood' ? W.mood : baseMood);
+  if (W.buff.shield > 0) W.formation = 'ring';
+  stepHull(dt, inp);
+  stepAgents(dt);
+  if (W.buff.shield > 0) for (const a of liveAgents()) { const ang = W.agents.indexOf(a) * 2.4 + W.t * 2; a.x += (W.hull.x + Math.cos(ang) * 22 - a.x) * Math.min(1, dt * 6); a.y += (W.hull.y + Math.sin(ang) * 22 - a.y) * Math.min(1, dt * 6); }
+  stepRivals(dt); stepRivalLife(dt); stepProjectiles(dt); stepFauna(dt);
+  stepEcon(dt); stepMeta(dt);
+  W.fieldT = (W.fieldT || 0) - dt;
+  if (W.fieldT <= 0) { W.fieldT = 0.1; fieldDiffuse(W.pher, 0.985, 0.2); fieldDiffuse(W.trail, 0.992, 0.12); fieldDiffuse(W.blood, 0.95, 0.25); }
+  if (W.tick % 60 === 0) W.prisms = W.prisms.filter((p) => p.alive);
+  for (const f of W.fx) f.t += dt; W.fx = W.fx.filter((f) => f.t < 1.2);
+  if (W.toast) { W.toast.t -= dt; if (W.toast.t <= 0) W.toast = null; }
+  if (W.game && W.t >= P.round) { W.done = true; W.final = score(); }
+}
+
+// ================= reset =================
+let seed = 1;
+function reset(s) {
+  if (s != null) seed = s;
+  const sc = BUILD.scene;
+  W = newWorld(seed);
+  W.build = JSON.parse(JSON.stringify(BUILD));
+  W.sp = SPECIES_BY_ID[W.build.species] || SPECIES[0];
+  W.ctl = CONTROLS_BY_ID[W.build.control] || CONTROLS[0];
+  W.ctl = Object.assign({}, W.ctl, { hull: W.ctl.hull });
+  W.scene = sc; W.game = GAMES.includes(sc) ? sc : (sc === 'dark' ? 'dark' : null);
+  W.buff = { frenzy: 0, shield: 0 }; W.mods = { spd: 1, sense: 1, bite: 1, hp: 1 };
+  W.chain = []; W.webs = []; W.decoyDensity = 0; W.flashCd = 0; W.mergeT = 0; W.gateNext = 0; W.gateCount = 0; W.molt = 0; W.moodBoost = 0;
+  W.mood = W.ctl.id === 'mood' ? 0.35 : P.aggression;
+  setupScene(sc);
+  W.hull = makeHull(-60, 40);
+  initEcon(); initMeta();
+  if (W.sp.verb === 'build' || W.sp.verb === 'trail' || W.build.economy === 'hive') addHome(W.hull.x + 30, W.hull.y + 10, 'mound');
+  const n = Math.max(0, Math.round(W.sp.n * P.pop));
+  for (let i = 0; i < n; i++) { const a = W.rnd() * TAU, r = 10 + W.rnd() * 30; const m = addAgent(W.hull.x + Math.cos(a) * r, W.hull.y + Math.sin(a) * r, childOf(null)); if (m) m.sq = i % 2; }
+  W.stats.births = 0;
+  W.hostileStart = W.prisms.filter((p) => p.dom !== ME && p.dom !== DOM.NEUTRAL).length;
+  W.mineStart = countMine();
+  W.hash = hashBuild(W.prisms);
+  W.toast = { m: W.ctl.name + ': ' + W.ctl.how, t: 5 };
+}
+
+// ================= the headless batch =================
+// Default: the loaded build in all four element games, one seed, 12 s at 10 Hz — small enough that the
+// verifier can run it three times. The Scorecard panel drives bigger sweeps with the same function.
+function runBatch(opts) {
+  opts = opts || {};
+  const builds = opts.builds || [Object.assign({}, BUILD)], games = opts.games || GAMES, seeds = opts.seeds || [1], seconds = opts.seconds || 12, dt = opts.dt || 0.1;
+  const savedBuild = JSON.parse(JSON.stringify(BUILD)), savedW = W, savedSeed = seed, savedP = Object.assign({}, P), savedRound = P.round, rows = [];
+  for (const b of builds) {
+    for (const g of games) {
+      let sum = 0;
+      for (const s of seeds) {
+        Object.assign(BUILD, savedBuild, b, { scene: g, ai: true }); Object.assign(P, savedP, b.P || {}); P.round = seconds;
+        reset(s); W.headless = true;
+        const steps = Math.round(seconds / dt); for (let i = 0; i < steps && !W.done; i++) simStep(dt);
+        sum += gameScore();
+      }
+      rows.push({ build: b.label || (b.species + '/' + b.control + '/' + b.economy + '/' + b.meta), game: g, score: +(sum / seeds.length).toFixed(1) });
+    }
+  }
+  Object.assign(BUILD, savedBuild); Object.assign(P, savedP); P.round = savedRound; W = savedW; seed = savedSeed;
+  return rows;
+}
+
+// ---- src/toys.js ----
+// ============================================================================================
+// toys.js — the toy box. Each toy is ONE fun moment worth testing, expressed as a build
+// (species x control x economy x meta) in one arena. `fun` is the hypothesis, `try` is what to do,
+// `watch` is the number on the HUD that says whether it happened. Keep / Cut / Merge buttons on each toy
+// write to the decision log, so a play session leaves a record the next round can read.
+// ============================================================================================
+const T = (id, title, species, control, economy, meta, scene, fun, tryIt, watch, extra) => Object.assign({ id, title, species, control, economy, meta, scene, fun, try: tryIt, watch }, extra || {});
+const TOYS = [
+  // ---- Termite: the shipped anchor ----
+  T('termite-mound', 'Mound rising', 'termite', 'focus', 'pheromone', 'deck', 'mass',
+    'Somebody else\'s mass walks home on tiny legs and becomes YOUR mound.', 'Tap a ruby patch or a wild flora clump. Play New Mound where you want the city.', 'Mass score: your prisms standing'),
+  T('termite-highway', 'Paint a highway', 'termite', 'paint', 'pheromone', 'none', 'mass',
+    'You draw a road and the colony starts running it.', 'Drag a line from your mound to a flora clump and keep it fresh.', 'Built prisms'),
+  T('termite-commander', 'Cell or queen? (2024)', 'termite', 'split', 'hive', 'none', 'mass',
+    'The 2024 order system: half the colony works the mound while the other half guards the queen.', 'Send squad A to a clump, toggle, send squad B home. Feel the trade.', 'Mass score vs petals lost', { notion: 'Termite commander concept (2024): distributing termites between cell and queen' }),
+  T('termite-clash', 'Clash commander', 'termite', 'cards', 'pheromone', 'deck', 'charge',
+    'You never fly and never point. Every decision is which card, when, and where the swarm happens to be.', 'Play cards 1-4 against three hunting rivals.', 'Charge score'),
+  T('termite-castes', 'Workers, soldiers, scouts', 'termite', 'orders', 'hive', 'castes', 'mass',
+    'One colony, three jobs: the ratio IS your strategy.', 'Set the caste ratio in Build, then flip between Forage and Defend.', 'Mass score'),
+
+  // ---- Ant ----
+  T('ant-trail', 'The trail recruits', 'ant', 'focus', 'foodweb', 'none', 'mass',
+    'One scout finds food; within seconds a scent highway forms and the colony streams down it.', 'Just watch the first minute. Then tap a far clump and see whether the trail follows.', 'Built prisms, members'),
+  T('ant-starve', 'Starve or thrive', 'ant', 'paint', 'foodweb', 'none', 'space',
+    'The colony breathes: it booms on a rich patch and starves back when it runs dry. No timer anywhere.', 'Paint them away from food and watch the population fall; paint them onto a clump and it booms.', 'Members, starved'),
+  T('ant-draft', 'Roguelike colony', 'ant', 'focus', 'biomass', 'draft', 'space',
+    'Every twenty seconds you pick one of three mutations and the colony becomes something new.', 'Take Jaws + Swift, then try a run of Keen + Clutch.', 'Space score'),
+
+  // ---- Locust ----
+  T('locust-snap', 'The phase snap', 'locust', 'mood', 'biomass', 'none', 'space',
+    'Alone they dawdle. Crowded, they SNAP gregarious: aligned, fast, eating everything in a marching front.', 'Keep the mood low, then rush them into one clump and watch the colour change.', 'Space score, members'),
+  T('locust-plague', 'Herd the plague', 'locust', 'sheepdog', 'biomass', 'none', 'space',
+    'You cannot order them at all; you push a living front of mouths with your hull.', 'Fly round behind the swarm and drive it into the fortress.', 'Space score'),
+  T('locust-evolve', 'Survival of the swarm', 'locust', 'mood', 'foodweb', 'evolve', 'sandbox',
+    'Genes drift toward whatever SURVIVES — no score picks them. Watch speed and sense creep.', 'Run it a minute. Read the gene bars in the HUD.', 'Mean genes'),
+
+  // ---- Pigeon ----
+  T('pigeon-wheel', 'The homing wheel', 'pigeon', 'leash', 'crystal', 'none', 'time',
+    'The whole flock wheels as one around your ship and peels off couriers to snatch the next gate.', 'Fly toward each gate. Let the flock take the ones you cannot reach.', 'Time score: gates'),
+  T('pigeon-relay', 'Message relay', 'pigeon', 'focus', 'crystal', 'none', 'time',
+    'You never touch a gate: you point, the flock carries.', 'Tap the next gate (it pulses). The ship just follows along.', 'Time score'),
+  T('pigeon-leader', 'Possess the lead bird', 'pigeon', 'leader', 'fixed', 'none', 'time',
+    'You ARE one bird; the flock follows you, and its slack is your skill.', 'Hold and drag a path through the gates.', 'Time score'),
+
+  // ---- Rat ----
+  T('rat-wall', 'Through the wall', 'rat', 'bait', 'biomass', 'none', 'space',
+    'They chew through armour nobody else can eat — the fortress has a back door.', 'Drop bait on the fortress ring and watch the shields peel.', 'Space score'),
+  T('rat-piper', 'Pied Piper', 'rat', 'rhythm', 'biomass', 'none', 'space',
+    'Keep the beat and the horde follows the tune; miss it and they scatter.', 'Tap Beat (or Space) on the pulse; tap the arena to lead them.', 'Space score, streak'),
+  T('rat-boom', 'Breeding explosion', 'rat', 'sheepdog', 'biomass', 'none', 'sandbox',
+    'Twelve rats become sixty because you let them eat.', 'Herd them onto the biggest ruby patch and stand back.', 'Members'),
+
+  // ---- Bee / Wasp ----
+  T('bee-meadow', 'Claim the meadow', 'bee', 'orders', 'hive', 'none', 'mass',
+    'Bees settle on wild flora and it turns yours where it stands. No carrying, no building.', 'Order Forage and tap a flora clump. Then try Defend.', 'Mass score'),
+  T('bee-kamikaze', 'Each sting is a life', 'bee', 'orders', 'hive', 'none', 'charge',
+    'Order an attack and you SPEND bees: a sting is permanent damage paid for with a body.', 'Hold Attack, then switch back before the hive is gone.', 'Charge score vs deaths'),
+  T('wasp-nest', 'The nest boils over', 'wasp', 'mood', 'hive', 'none', 'charge',
+    'One dial: calm, they hover; angry, they pour out and sting in waves.', 'Ride the mood slider. Find the setting where they win without dying.', 'Charge score'),
+  T('wasp-tiers', 'Tiered fuel deck', 'wasp', 'cards', 'tiered', 'deck', 'charge',
+    'Three tanks refilling at different speeds: cheap cards are spam, big cards are a plan.', 'Watch which tank you run dry first.', 'Charge score, plays'),
+  T('wasp-merge', 'Three into one', 'wasp', 'focus', 'hive', 'merge', 'charge',
+    'Your swarm shrinks into champions: fewer bodies, bigger stings.', 'Watch the elite count. Is fewer-but-bigger better here?', 'Charge score'),
+
+  // ---- Starling / Bat / Firefly ----
+  T('starling-decoy', 'Murmuration decoy', 'starling', 'leash', 'fixed', 'none', 'charge',
+    'The rival fires into the cloud instead of you, and the cloud reforms.', 'Fly away from the hunters. Count the petals you DON\'T lose.', 'Petals lost'),
+  T('starling-shape', 'Shape the cloud', 'starling', 'formation', 'fixed', 'none', 'charge',
+    'Ring, line, wedge, blob — the same forty birds, four different shields.', 'Switch shapes while fleeing. Which one eats the most shots?', 'Petals lost, deaths'),
+  T('bat-echo', 'Echo reveal', 'bat', 'focus', 'hive', 'none', 'dark',
+    'Every ping lights up what was hidden, and the colony dives on what it found.', 'Tap dark areas. The rings are pings.', 'Crystals found'),
+  T('firefly-sync', 'Sync flash', 'firefly', 'rhythm', 'fixed', 'none', 'charge',
+    'Tap on the beat until the whole swarm blinks together — one flash stuns every rival in range.', 'Tap Beat on the pulse. Watch the sync meter climb.', 'Sync, flashes'),
+
+  // ---- Mosquito / Crow / Piranha ----
+  T('mosquito-throw', 'Throw the cloud', 'mosquito', 'cast', 'biomass', 'none', 'charge',
+    'Wind up, fling: a cloud lands on a rival and it slows and bleeds petals into your tank.', 'Hold on a rival, release. Throw again when they drift back.', 'Charge score'),
+  T('crow-mob', 'Mob and pickpocket', 'crow', 'select', 'crystal', 'none', 'charge',
+    'Box three crows, tap a rival: they mob it, mark it, and the whole murder remembers.', 'Drag to select, tap to send. Send a second group to the same rival.', 'Charge score'),
+  T('crow-heist', 'Crystal heist', 'crow', 'focus', 'crystal', 'none', 'time',
+    'Crows steal every shiny thing, including the gate you are racing for.', 'Point at the next gate.', 'Time score'),
+  T('piranha-blood', 'Blood in the water', 'piranha', 'bait', 'foodweb', 'none', 'space',
+    'The first bite calls the school; the more they kill the faster they kill.', 'Drop bait on a ruby patch and watch the frenzy spread.', 'Space score'),
+
+  // ---- Slime / Spider / Siphonophore / School / Tadpole / Octopus ----
+  T('slime-road', 'Grow a road', 'slime', 'focus', 'foodweb', 'none', 'mass',
+    'Explorers lay scent; where it runs thick between meals it hardens into a road of your mass.', 'Let it run. Tap between two clumps to bias the explorers.', 'Mass score'),
+  T('spider-lane', 'Web the lane', 'spider', 'focus', 'fixed', 'none', 'charge',
+    'Strands go up across the lane; a rival that flies through stops dead.', 'Tap where the hunters will pass. Then play bait with your ship.', 'Snared'),
+  T('siphon-wall', 'Living wall', 'siphon', 'leash', 'fixed', 'none', 'charge',
+    'A chain of bodies trails you like a tail; swing it between you and a rival and it eats the shots.', 'Circle so the tail sits between you and the hunters.', 'Petals lost'),
+  T('school-ring', 'Plasma ring', 'school', 'leash', 'fixed', 'none', 'space',
+    'Six fish, six cutting lines: fly THROUGH a patch and the ring scythes it.', 'Fly straight through ruby patches.', 'Space score'),
+  T('school-lasso', 'Plasma lasso', 'school', 'mood', 'fixed', 'none', 'charge',
+    'Widen the ring around a rival and close it: they burn crossing the lines.', 'Raise the mood to spin the ring faster.', 'Charge score'),
+  T('tadpole-frog', 'Metamorphosis', 'tadpole', 'split', 'hive', 'none', 'space',
+    'Five tadpoles crowd together and POP into a frog whose tongue snaps crystals from range.', 'Bring both squads to one spot so they crowd.', 'Merges'),
+  T('octopus-shuffle', 'Shuffle arms', 'octopus', 'focus', 'pheromone', 'roulette', 'sandbox',
+    'Eight arms, eight verbs, and every twelve seconds they all shuffle one seat along.', 'Watch the colours (verbs) rotate. Plan for the next seat.', 'Crystals + built + eaten'),
+];
+const TOYS_BY_ID = Object.fromEntries(TOYS.map((t) => [t.id, t]));
+
+// ---- src/ui.js ----
+// ============================================================================================
+// ui.js — drawing, input, the HUD and control bar, the docks, the decision log, the loop, window.__lab.
+// ============================================================================================
+const canvas = $('stage'), g2 = canvas.getContext('2d');
+const DOM_COL = ['#4f78d6', '#1fb8b0', '#c2368e', '#d9a73a'];
+const VERB_COL = { graze: '#b5c24a', gnaw: '#9b948d', build: '#f0a043', claim: '#f2c84b', fetch: '#9aa9c9', trail: '#c9693c', sting: '#ff6a3d', drain: '#c95b5b', murmur: '#7f8fa6', ping: '#a98be0', flash: '#d7f25a', steal: '#59606d', frenzy: '#e04545', network: '#e6d36a', web: '#cfcfcf', link: '#6fd4e6', plasma: '#5fe0ff', merge: '#5aa86a', march: '#b5c24a' };
+
+// ================= platform =================
+function detectPlatform() {
+  const host = window.__labHost || {}, ua = navigator.userAgent || '';
+  const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+  return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+}
+const PLATFORM = detectPlatform();
+$('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+// ================= view transform =================
+let view = { s: 1, cx: 0, cy: 0 };
+function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+function computeView() {
+  const cb = $('ctrlBar'), over = getComputedStyle(cb).position === 'absolute';
+  const w = canvas.width, h = canvas.height, bar = over ? (cb.offsetHeight || 0) * (canvas.width / Math.max(1, canvas.clientWidth)) : 0;
+  const avail = Math.max(80, h - bar * 0.85);
+  view.s = Math.min(w, avail) / (2 * R + 40); view.cx = w / 2; view.cy = avail / 2 + h * 0.01;
+}
+const wx = (x) => view.cx + x * view.s, wy = (y) => view.cy + y * view.s;
+function toWorld(clientX, clientY) { const r = canvas.getBoundingClientRect(), k = canvas.width / Math.max(1, r.width); return { x: ((clientX - r.left) * k - view.cx) / view.s, y: ((clientY - r.top) * k - view.cy) / view.s }; }
+
+// ================= fields as a small image =================
+const fieldCanvas = document.createElement('canvas'); fieldCanvas.width = FG; fieldCanvas.height = FG;
+const fctx = fieldCanvas.getContext('2d'), fimg = fctx.createImageData(FG, FG);
+function drawFields() {
+  const d = fimg.data; let any = false;
+  for (let k = 0; k < FG * FG; k++) {
+    const p = W.pher[k], t = W.trail[k], b = W.blood[k], i = k * 4;
+    const a = Math.min(1, p * 0.12 + t * 0.07 + b * 0.25); if (a > 0.01) any = true;
+    d[i] = Math.min(255, 240 * Math.min(1, p * 0.2) + 230 * Math.min(1, t * 0.12) + 220 * Math.min(1, b * 0.4));
+    d[i + 1] = Math.min(255, 160 * Math.min(1, p * 0.2) + 210 * Math.min(1, t * 0.12) + 40 * Math.min(1, b * 0.4));
+    d[i + 2] = Math.min(255, 60 * Math.min(1, p * 0.2) + 90 * Math.min(1, t * 0.12) + 40 * Math.min(1, b * 0.4));
+    d[i + 3] = a * 150;
+  }
+  if (!any) return;
+  fctx.putImageData(fimg, 0, 0);
+  g2.imageSmoothingEnabled = true;
+  g2.drawImage(fieldCanvas, wx(-R), wy(-R), 2 * R * view.s, 2 * R * view.s);
+}
+
+// ================= render =================
+function render() {
+  if (!W) return;
+  computeView();
+  const s = view.s, w = canvas.width, h = canvas.height;
+  g2.fillStyle = '#061014'; g2.fillRect(0, 0, w, h);
+  // the cell: membrane + nucleus
+  g2.strokeStyle = 'rgba(120,200,210,.35)'; g2.lineWidth = Math.max(1, 2 * s); g2.beginPath(); g2.arc(wx(0), wy(0), R * s, 0, TAU); g2.stroke();
+  g2.fillStyle = 'rgba(80,140,170,.08)'; g2.beginPath(); g2.arc(wx(0), wy(0), NUC * s, 0, TAU); g2.fill();
+  drawFields();
+  // prisms, batched by colour
+  const ps = Math.max(1.6, 4.2 * s), buckets = {};
+  for (const p of W.prisms) {
+    if (!p.alive || (p.hidden && W.scene === 'dark')) continue;
+    const key = p.dom + (p.dom === ME && p.built === 1 ? 'b' : '') + (p.sh ? 's' : '');
+    (buckets[key] || (buckets[key] = [])).push(p);
+  }
+  for (const key of Object.keys(buckets)) {
+    const dom = +key[0], built = key.includes('b'), sh = key.includes('s');
+    g2.fillStyle = built ? '#5ff0e0' : DOM_COL[dom]; g2.globalAlpha = dom === DOM.NEUTRAL ? 0.7 : 0.95;
+    for (const p of buckets[key]) g2.fillRect(wx(p.x) - ps / 2, wy(p.y) - ps / 2, ps, ps);
+    if (sh) { g2.strokeStyle = '#e8f6ff'; g2.lineWidth = Math.max(1, s); for (const p of buckets[key]) { const x = wx(p.x), y = wy(p.y), r = ps * 1.2; g2.beginPath(); g2.moveTo(x, y - r); g2.lineTo(x + r, y); g2.lineTo(x, y + r); g2.lineTo(x - r, y); g2.closePath(); g2.stroke(); } }
+  }
+  g2.globalAlpha = 1;
+  // homes
+  for (const hm of W.homes) { g2.strokeStyle = '#f0a043'; g2.lineWidth = Math.max(1.5, 2.5 * s); g2.beginPath(); g2.arc(wx(hm.x), wy(hm.y), 14 * s, 0, TAU); g2.stroke(); }
+  // webs
+  g2.strokeStyle = 'rgba(230,230,230,.6)'; g2.lineWidth = Math.max(1, 1.2 * s);
+  for (const wb of W.webs) { g2.beginPath(); g2.moveTo(wx(wb.x0), wy(wb.y0)); g2.lineTo(wx(wb.x1), wy(wb.y1)); g2.stroke(); }
+  // crystals
+  for (const c of W.crystals) {
+    if (!c.alive || c.carriedBy >= 0) continue;
+    if (c.hidden && !c.revealed) { if (W.scene !== 'dark') { g2.strokeStyle = 'rgba(160,255,200,.15)'; g2.beginPath(); g2.arc(wx(c.x), wy(c.y), 5 * s, 0, TAU); g2.stroke(); } continue; }
+    const r = (c.kind === 'gate' ? 9 : 7) * s * (c.order === W.gateNext && W.game === 'time' ? 1.15 + 0.15 * Math.sin(W.t * 6) : 1);
+    g2.fillStyle = c.decoy ? '#ff9adf' : c.kind === 'gate' ? (c.order === W.gateNext ? '#9ff7c6' : 'rgba(159,247,198,.35)') : '#9ff7c6';
+    g2.beginPath(); g2.moveTo(wx(c.x), wy(c.y) - r); g2.lineTo(wx(c.x) + r * 0.7, wy(c.y)); g2.lineTo(wx(c.x), wy(c.y) + r); g2.lineTo(wx(c.x) - r * 0.7, wy(c.y)); g2.closePath(); g2.fill();
+    if (c.order >= 0) { g2.fillStyle = '#061014'; g2.font = (10 * Math.max(0.8, s)) + 'px IBM Plex Mono, monospace'; g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillText(String(c.order + 1), wx(c.x), wy(c.y)); }
+  }
+  // neutral fauna
+  g2.fillStyle = '#7d9fd9'; for (const f of W.fauna) if (f.alive) { g2.beginPath(); g2.arc(wx(f.x), wy(f.y), 4 * s, 0, TAU); g2.fill(); }
+  // swarm links (siphonophore chain / plasma school)
+  if (W.chain.length > 1) {
+    const plasma = W.chain[0].verb === 'plasma';
+    g2.strokeStyle = plasma ? 'rgba(95,224,255,.85)' : 'rgba(111,212,230,.5)'; g2.lineWidth = Math.max(1, (plasma ? 2.4 : 1.6) * s);
+    g2.beginPath(); W.chain.forEach((a, i) => { if (i === 0) g2.moveTo(wx(a.x), wy(a.y)); else g2.lineTo(wx(a.x), wy(a.y)); }); if (plasma && W.chain.length > 2) g2.closePath(); g2.stroke();
+  }
+  // members
+  for (const a of W.agents) {
+    if (!a.alive) continue;
+    const sp = SPECIES_BY_ID[a.sp];
+    let col = a.verb === sp.verb || (sp.id === 'locust' && a.verb === 'march') ? sp.col : (VERB_COL[a.verb] || sp.col);
+    if (sp.id === 'locust') col = a.g > 0.5 ? '#e2b33c' : '#7fb24a';
+    if (a.verb === 'flash') { const b = 0.35 + 0.65 * Math.max(0, Math.cos(a.phase)) ** 6; g2.globalAlpha = b; col = '#e9ff7a'; }
+    g2.fillStyle = col;
+    const r = Math.max(1.3, a.size * s * 0.9);
+    g2.beginPath(); g2.arc(wx(a.x), wy(a.y), r, 0, TAU); g2.fill();
+    g2.globalAlpha = 1;
+    if (a.carry) { g2.fillStyle = a.carry.kind === 'crystal' ? '#9ff7c6' : '#5ff0e0'; g2.fillRect(wx(a.x) - r * 0.6, wy(a.y) - r * 2.2, r * 1.2, r * 1.2); }
+    if (W.ctl.id === 'select' && a.sel) { g2.strokeStyle = 'rgba(255,255,255,.7)'; g2.lineWidth = 1; g2.beginPath(); g2.arc(wx(a.x), wy(a.y), r + 2, 0, TAU); g2.stroke(); }
+    if (W.ctl.id === 'leader' && W.agents[W.leaderIdx] === a) { g2.strokeStyle = '#f0a043'; g2.lineWidth = 2; g2.beginPath(); g2.arc(wx(a.x), wy(a.y), r + 4, 0, TAU); g2.stroke(); }
+  }
+  // rivals
+  for (const r of W.rivals) {
+    if (!r.alive) continue;
+    const a = Math.atan2(r.vy, r.vx), x = wx(r.x), y = wy(r.y), z = 9 * s;
+    g2.fillStyle = DOM_COL[r.dom]; g2.beginPath(); g2.moveTo(x + Math.cos(a) * z * 1.4, y + Math.sin(a) * z * 1.4); g2.lineTo(x + Math.cos(a + 2.4) * z, y + Math.sin(a + 2.4) * z); g2.lineTo(x + Math.cos(a - 2.4) * z, y + Math.sin(a - 2.4) * z); g2.closePath(); g2.fill();
+    if (r.stun > 0) { g2.strokeStyle = '#e9ff7a'; g2.lineWidth = 1.5; g2.beginPath(); g2.arc(x, y, z * 1.6, 0, TAU); g2.stroke(); }
+    if (r.marked > 0) { g2.strokeStyle = '#59606d'; g2.setLineDash([3, 3]); g2.beginPath(); g2.arc(x, y, z * 2, 0, TAU); g2.stroke(); g2.setLineDash([]); }
+    g2.fillStyle = '#e8eeee'; g2.font = (10 * Math.max(0.8, s)) + 'px IBM Plex Mono, monospace'; g2.textAlign = 'center'; g2.fillText(String(r.petals), x, y - z * 2);
+  }
+  // projectiles
+  g2.fillStyle = '#ffd1e8'; for (const q of W.proj) g2.fillRect(wx(q.x) - 1.5, wy(q.y) - 1.5, 3, 3);
+  // the hull (the queen / the vessel)
+  { const hh = W.hull, x = wx(hh.x), y = wy(hh.y), a = Math.atan2(hh.hy, hh.hx), z = 11 * s;
+    g2.fillStyle = '#f0a043'; g2.strokeStyle = '#fff3df'; g2.lineWidth = Math.max(1, 1.5 * s);
+    g2.beginPath(); g2.moveTo(x + Math.cos(a) * z * 1.5, y + Math.sin(a) * z * 1.5); g2.lineTo(x + Math.cos(a + 2.2) * z, y + Math.sin(a + 2.2) * z); g2.lineTo(x + Math.cos(a + Math.PI) * z * 0.6, y + Math.sin(a + Math.PI) * z * 0.6); g2.lineTo(x + Math.cos(a - 2.2) * z, y + Math.sin(a - 2.2) * z); g2.closePath(); g2.fill(); g2.stroke();
+    g2.fillStyle = '#fff3df'; g2.font = (10 * Math.max(0.8, s)) + 'px IBM Plex Mono, monospace'; g2.textAlign = 'center'; g2.fillText(String(hh.petals), x, y - z * 1.9); }
+  // markers: focus, squad B, bait, cast wind-up, select box
+  const mark = (p, col, rr) => { if (!p) return; g2.strokeStyle = col; g2.lineWidth = 1.5; const x = wx(p.x), y = wy(p.y); g2.beginPath(); g2.arc(x, y, rr, 0, TAU); g2.moveTo(x - rr - 4, y); g2.lineTo(x - rr + 4, y); g2.moveTo(x + rr - 4, y); g2.lineTo(x + rr + 4, y); g2.stroke(); };
+  if (W.ctl.id !== 'leash' && W.ctl.id !== 'formation' && W.ctl.id !== 'sheepdog') mark(W.focus, 'rgba(240,160,67,.8)', 9);
+  if (W.ctl.id === 'split') mark(W.focusB, 'rgba(159,247,198,.8)', 9);
+  if (W.bait && W.bait.t > 0) mark(W.bait, '#ff9adf', 6 + 3 * Math.sin(W.t * 8));
+  if (ui.box) { g2.strokeStyle = 'rgba(255,255,255,.7)'; g2.setLineDash([4, 4]); g2.strokeRect(wx(Math.min(ui.box.x0, ui.box.x1)), wy(Math.min(ui.box.y0, ui.box.y1)), Math.abs(ui.box.x1 - ui.box.x0) * s, Math.abs(ui.box.y1 - ui.box.y0) * s); g2.setLineDash([]); }
+  if (W.ctl.id === 'cast' && liveInput.down && liveInput.px != null) { const c = swarmCentre(); g2.strokeStyle = 'rgba(201,91,91,.8)'; g2.lineWidth = 1 + (W.castCharge || 0) * 2; g2.beginPath(); g2.moveTo(wx(c.x), wy(c.y)); g2.lineTo(wx(liveInput.px), wy(liveInput.py)); g2.stroke(); }
+  // fx
+  for (const f of W.fx) {
+    const k = f.t / 1.2, x = wx(f.x), y = wy(f.y);
+    g2.globalAlpha = Math.max(0, 1 - k);
+    if (f.k === 'ring' || f.k === 'ping' || f.k === 'flash' || f.k === 'boom') { g2.strokeStyle = f.k === 'flash' ? '#f4ff9a' : f.k === 'boom' ? '#ff8a4a' : f.k === 'ping' ? '#b49cf0' : (f.col || '#fff'); g2.lineWidth = f.k === 'flash' ? 4 : 1.5; g2.beginPath(); g2.arc(x, y, (f.r || 20) * s * (0.3 + k), 0, TAU); g2.stroke(); }
+    else if (f.k === 'tongue') { g2.strokeStyle = '#ff9a9a'; g2.lineWidth = 2; g2.beginPath(); g2.moveTo(x, y); g2.lineTo(wx(f.x1), wy(f.y1)); g2.stroke(); }
+    else if (f.k === 'card') { g2.fillStyle = '#f6c27f'; g2.font = '600 ' + Math.round(13 * Math.max(0.9, s)) + 'px Chakra Petch, sans-serif'; g2.textAlign = 'center'; g2.fillText(f.name, x, y - 18 - k * 20); }
+    else if (f.k === 'sting' || f.k === 'steal' || f.k === 'snare' || f.k === 'hit') { g2.strokeStyle = f.k === 'hit' ? '#ff5d5d' : f.k === 'snare' ? '#e6e6e6' : f.k === 'steal' ? '#aab2c0' : '#ff6a3d'; g2.lineWidth = 2; g2.beginPath(); g2.arc(x, y, 6 + k * 10, 0, TAU); g2.stroke(); }
+    else if (f.k === 'beat') { g2.strokeStyle = f.good ? '#9ff7c6' : '#ff5d5d'; g2.lineWidth = 3; g2.beginPath(); g2.arc(x, y, 16 + k * 26, 0, TAU); g2.stroke(); }
+    else if (f.k === 'pop' || f.k === 'claim' || f.k === 'shed') { g2.fillStyle = f.k === 'claim' ? '#5ff0e0' : f.k === 'shed' ? '#e8f6ff' : '#ffffff'; g2.fillRect(x - 1.5, y - 1.5 - k * 6, 3, 3); }
+  }
+  g2.globalAlpha = 1;
+  // dark scene: a vignette, so the reveal reads
+  if (W.scene === 'dark') { const gr = g2.createRadialGradient(wx(W.hull.x), wy(W.hull.y), 30 * s, wx(W.hull.x), wy(W.hull.y), 360 * s); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.55)'); g2.fillStyle = gr; g2.fillRect(0, 0, w, h); }
+  // rhythm pulse ring around the ship
+  if (W.ctl.id === 'rhythm') { const ph = ((W.beatT || 0) % BEAT) / BEAT; g2.strokeStyle = `rgba(240,160,67,${0.25 + 0.6 * (1 - ph)})`; g2.lineWidth = 2; g2.beginPath(); g2.arc(wx(W.hull.x), wy(W.hull.y), (18 + ph * 26) * s, 0, TAU); g2.stroke(); }
+  drawHud();
+}
+
+// ================= HUD =================
+let hudFrame = 0;
+function drawHud() {
+  if (hudFrame++ % 6) return;
+  const toy = TOYS_BY_ID[BUILD.toy];
+  $('hudToy').textContent = (toy ? toy.title : 'Custom build') + '  ·  ' + SPECIES_BY_ID[BUILD.species].name + ' / ' + CONTROLS_BY_ID[BUILD.control].name;
+  $('hudFun').textContent = toy ? toy.fun : (SPECIES_BY_ID[BUILD.species].fun);
+  const sc = score(), live = sc.members, lines = [];
+  const sceneName = SCENES_BY_ID[W.scene].name;
+  lines.push(sceneName + (W.game ? '  ' + Math.max(0, P.round - W.t).toFixed(0) + 's' : ''));
+  lines.push('score ' + sc.score + (W.done ? '  (final)' : ''));
+  lines.push('members ' + live + (W.econ.cap ? '/' + agentCap() : ''));
+  if (W.game === 'time') lines.push('gate ' + Math.min(W.gateNext + 1, W.gateCount) + '/' + W.gateCount);
+  if (W.agents.some((a) => a.alive && a.verb === 'flash')) lines.push('sync ' + (W.sync * 100).toFixed(0) + '%  flashes ' + W.stats.flashes);
+  if (W.sp.id === 'locust') { const l = liveAgents().filter((a) => a.sp === 'locust'); lines.push('gregarious ' + (l.length ? Math.round(100 * l.filter((a) => a.g > 0.5).length / l.length) : 0) + '%'); }
+  if (W.build.meta === 'evolve') { const l = liveAgents(); if (l.length) { const m = (k) => (l.reduce((t, a) => t + a.gene[k], 0) / l.length).toFixed(2); lines.push('genes spd ' + m('spd') + ' sense ' + m('sense') + ' bite ' + m('bite')); } }
+  if (W.ctl.id === 'orders') lines.push('order ' + ['Forage', 'Gather', 'Attack', 'Defend'][W.order]);
+  if (W.ctl.id === 'rhythm') lines.push('streak ' + (W.streak || 0));
+  if (W.stats.starved) lines.push('starved ' + W.stats.starved);
+  if (W.stats.merges) lines.push('merges ' + W.stats.merges);
+  if (W.stats.snared) lines.push('snared ' + W.stats.snared);
+  $('hudRight').textContent = lines.join('\n');
+  const t = $('toast');
+  if (W.done) { t.textContent = 'Round over — score ' + W.final.score + '. Restart to go again.'; t.classList.add('show'); }
+  else if (W.toast) { t.textContent = W.toast.m; t.classList.add('show'); } else t.classList.remove('show');
+  updateCtrlBar();
+  updateDraft();
+}
+
+// ================= control bar =================
+function ctlButton(label, key, pressed) { const b = document.createElement('button'); b.className = 'ctl'; b.textContent = label; b.dataset.key = key; if (pressed != null) b.setAttribute('aria-pressed', String(pressed)); b.onclick = () => { liveInput.key = key; }; return b; }
+function buildCtrlBar() {
+  const bar = $('ctrlBar'); bar.replaceChildren();
+  const id = BUILD.control, meter = document.createElement('div'); meter.className = 'meter'; meter.id = 'econMeter'; bar.appendChild(meter);
+  if (id === 'orders') { const ks = [['Forage', 'forage', 'Q'], ['Gather', 'gather', 'W'], ['Attack', 'attack', 'E'], ['Defend', 'defend', 'R']]; for (const [l, k, h] of ks) { const b = ctlButton(l + ' ' + h, k, false); b.dataset.order = k; bar.appendChild(b); } }
+  if (id === 'formation') for (const [l, k, h] of [['Ring', 'ring', 'Q'], ['Line', 'line', 'W'], ['Wedge', 'wedge', 'E'], ['Blob', 'blob', 'R']]) { const b = ctlButton(l + ' ' + h, k, false); b.dataset.form = k; bar.appendChild(b); }
+  if (id === 'split') { const b = ctlButton('Next tap: A', 'squad', null); b.id = 'squadBtn'; bar.appendChild(b); }
+  if (id === 'select') bar.appendChild(ctlButton('Select all', 'all', null));
+  if (id === 'rhythm') { const b = ctlButton('Beat (Space)', 'beat', null); b.style.minWidth = '120px'; bar.appendChild(b); }
+  if (id === 'mood') { const w = document.createElement('label'); w.className = 'moodWrap'; w.innerHTML = '<span>Mood: calm &harr; rush</span><input type="range" min="0" max="1" step="0.01" id="moodRange">'; bar.appendChild(w); const r = w.querySelector('input'); r.value = W.mood; r.oninput = () => { liveInput.mood = parseFloat(r.value); }; }
+  if (BUILD.meta === 'deck') { const hand = document.createElement('div'); hand.id = 'hand'; hand.style.display = 'flex'; hand.style.gap = '6px'; bar.appendChild(hand); }
+  const ai = document.createElement('button'); ai.className = 'ctl'; ai.id = 'aiBtn'; ai.textContent = 'Watch AI'; ai.setAttribute('aria-pressed', String(!!BUILD.ai)); ai.title = 'Let the AI commander drive this control scheme'; ai.onclick = () => { BUILD.ai = !BUILD.ai; W.build.ai = BUILD.ai; saveBuild(); ai.setAttribute('aria-pressed', String(BUILD.ai)); }; bar.appendChild(ai);
+  lastHandSig = '';
+}
+let lastHandSig = '';
+function updateCtrlBar() {
+  const e = W.econ, m = $('econMeter');
+  if (m) {
+    let html = '<span>' + ECONOMIES_BY_ID[e.id].name + '</span>';
+    if (e.tanks) html += e.tanks.map((t, i) => '<div class="bar" title="tank ' + (i + 1) + '"><i style="width:' + (100 * t.v / t.max).toFixed(0) + '%;background:' + ['#f6c27f', '#f0a043', '#c46a12'][i] + '"></i></div>').join('');
+    else html += '<div class="bar"><i style="width:' + (100 * e.pool / e.max).toFixed(0) + '%"></i></div><span>' + e.pool.toFixed(1) + ' / ' + e.max + ' ' + e.label + (e.id === 'foodweb' || e.id === 'biomass' ? ' · food ' + e.food.toFixed(1) : '') + (e.id === 'crystal' ? ' · gems ' + e.gems : '') + '</span>';
+    m.innerHTML = html;
+  }
+  for (const b of document.querySelectorAll('#ctrlBar [data-order]')) b.setAttribute('aria-pressed', String(['forage', 'gather', 'attack', 'defend'][W.order] === b.dataset.order));
+  for (const b of document.querySelectorAll('#ctrlBar [data-form]')) b.setAttribute('aria-pressed', String((W.formation || 'ring') === b.dataset.form));
+  const sq = $('squadBtn'); if (sq) sq.textContent = 'Next tap: ' + ((W.squadNext || 0) ? 'B' : 'A');
+  const hand = $('hand');
+  if (hand && W.meta.id === 'deck') {
+    const sig = W.meta.hand.join(',') + '|' + W.meta.hand.map((id) => canPay(CARDS_BY_ID[id]) ? 1 : 0).join('');
+    if (sig !== lastHandSig) {
+      lastHandSig = sig; hand.replaceChildren();
+      W.meta.hand.forEach((id, i) => {
+        const c = CARDS_BY_ID[id], b = document.createElement('button'); b.className = 'card' + (canPay(c) ? '' : ' poor');
+        b.innerHTML = '<span class="cost"></span><span class="nm"></span><span class="ky"></span>';
+        b.querySelector('.cost').textContent = e.tanks ? 'T' + (c.tier + 1) + ':' + c.cost : c.cost; b.querySelector('.nm').textContent = c.name; b.querySelector('.ky').textContent = 'key ' + (i + 1);
+        b.title = c.desc + ' (' + c.src + ')'; b.onclick = () => { liveInput.card = i; };
+        hand.appendChild(b);
+      });
+    }
+  }
+}
+function updateDraft() {
+  const box = $('draftBox');
+  if (!W.draftOffer) { if (!box.hidden) box.hidden = true; return; }
+  if (!box.hidden) return;
+  box.innerHTML = '<h3>Draft: pick one</h3><div class="opts"></div>';
+  W.draftOffer.forEach((o, i) => { const b = document.createElement('button'); b.innerHTML = '<b></b><span></span>'; b.querySelector('b').textContent = o.name; b.querySelector('span').textContent = o.desc; b.onclick = () => { pickDraft(i); box.hidden = true; }; box.querySelector('.opts').appendChild(b); });
+  box.hidden = false;
+}
+
+// ================= input: pointer + keyboard =================
+const ui = { down: false, t0: 0, x0: 0, y0: 0, box: null, moved: 0 };
+canvas.addEventListener('pointerdown', (ev) => {
+  canvas.setPointerCapture(ev.pointerId); const p = toWorld(ev.clientX, ev.clientY);
+  ui.down = true; ui.t0 = performance.now(); ui.x0 = ev.clientX; ui.y0 = ev.clientY; ui.moved = 0; ui.w0 = p;
+  liveInput.down = true; liveInput.px = p.x; liveInput.py = p.y;
+});
+canvas.addEventListener('pointermove', (ev) => {
+  if (!ui.down) return; const p = toWorld(ev.clientX, ev.clientY);
+  ui.moved = Math.max(ui.moved, Math.hypot(ev.clientX - ui.x0, ev.clientY - ui.y0));
+  liveInput.px = p.x; liveInput.py = p.y;
+  if (BUILD.control === 'select' && ui.moved > 10) ui.box = { x0: ui.w0.x, y0: ui.w0.y, x1: p.x, y1: p.y };
+});
+function endPointer(ev) {
+  if (!ui.down) return; ui.down = false; const p = toWorld(ev.clientX, ev.clientY);
+  const quick = performance.now() - ui.t0 < 300 && ui.moved < 12;
+  if (ui.box) { liveInput.box = ui.box; ui.box = null; }
+  else if (quick || BUILD.control !== 'cast') liveInput.tap = { x: p.x, y: p.y };
+  if (BUILD.control === 'cast') liveInput.release = { x: p.x, y: p.y };
+  liveInput.down = false;
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+addEventListener('keydown', (ev) => {
+  if (ev.target && /INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) return;
+  const k = ev.key.toLowerCase();
+  if (k >= '1' && k <= '4') { liveInput.card = +k - 1; return; }
+  const row = { q: 0, w: 1, e: 2, r: 3 }[k];
+  if (row != null) { const o = BUILD.control === 'orders' ? ['forage', 'gather', 'attack', 'defend'] : BUILD.control === 'formation' ? ['ring', 'line', 'wedge', 'blob'] : null; if (o) liveInput.key = o[row]; return; }
+  if (k === ' ') { ev.preventDefault(); if (BUILD.control === 'rhythm') liveInput.key = 'beat'; else togglePause(); }
+  if (k === 'a' && BUILD.control === 'split') liveInput.key = 'squad';
+});
+
+// ================= shipped-vs-yours + params =================
+const outputs = {};
+function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+function refreshDiff() {
+  const n = Object.keys(diffOnly()).length;
+  $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+  for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o || !o.out.isConnected) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key]; }
+}
+function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); if (key === 'pop' || key === 'droneCap' || key === 'pherMax' || key === 'pherStart') reset(); refreshDiff(); }
+
+// ================= tabs =================
+function makeTabs(barId, bodyId, tabs, storeKey) {
+  const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+  function show(name) { for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name); }
+  for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+  show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  return show;
+}
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+// ---- Toys ----
+let toyFilter = lsGet('lab:' + LAB.name + ':toyFilter', 'all');
+function toysPanel() {
+  const box = el('div');
+  box.appendChild(el('p', 'hint', TOYS.length + ' toys. Each is one fun moment to test. Tap a toy to load it, play it, then Keep / Cut / Merge it — the vote goes to the decision log.'));
+  const f = el('div', 'flex'); f.style.marginBottom = '8px';
+  for (const [k, l] of [['all', 'All'], ['time', 'Time'], ['space', 'Space'], ['mass', 'Mass'], ['charge', 'Charge'], ['other', 'Other']]) {
+    const b = el('button', 'btn', l); b.setAttribute('aria-pressed', String(toyFilter === k)); b.onclick = () => { toyFilter = k; lsSet('lab:' + LAB.name + ':toyFilter', k); box.replaceWith(toysPanel()); }; f.appendChild(b);
+  }
+  box.appendChild(f);
+  const list = el('div', 'toyList');
+  for (const t of TOYS) {
+    const elx = (SCENES_BY_ID[t.scene] || {}).el || '', bucket = GAMES.includes(t.scene) ? t.scene : 'other';
+    if (toyFilter !== 'all' && toyFilter !== bucket) continue;
+    const card = el('div', 'toy'); card.setAttribute('role', 'button'); card.tabIndex = 0; if (BUILD.toy === t.id) card.setAttribute('aria-current', 'true');
+    const title = el('div', 't'); title.appendChild(el('span', '', t.title)); title.appendChild(el('small', '', SPECIES_BY_ID[t.species].name)); card.appendChild(title);
+    const chips = el('div', 'chips');
+    chips.appendChild(el('span', 'chip', CONTROLS_BY_ID[t.control].name)); chips.appendChild(el('span', 'chip', ECONOMIES_BY_ID[t.economy].name));
+    if (t.meta !== 'none') chips.appendChild(el('span', 'chip', METAS_BY_ID[t.meta].name));
+    chips.appendChild(el('span', 'chip el-' + elx, SCENES_BY_ID[t.scene].name)); card.appendChild(chips);
+    card.appendChild(el('div', 'f', t.fun));
+    if (BUILD.toy === t.id) {
+      card.appendChild(el('div', 'f', 'Try: ' + t.try)); card.appendChild(el('div', 'f', 'Watch: ' + t.watch));
+      if (t.notion) card.appendChild(el('div', 'f', 'Source: ' + t.notion));
+      const v = el('div', 'flex'); v.style.marginTop = '4px';
+      for (const [l, c] of [['Keep', 'keep'], ['Cut', 'cut'], ['Merge into a vessel', 'merge']]) { const b = el('button', 'btn', l); b.onclick = async (ev) => { ev.stopPropagation(); const where = await record('toy:' + t.id, c, t.title); b.textContent = l + (where === 'shared' ? ' (saved)' : ' (saved here)'); }; v.appendChild(b); }
+      card.appendChild(v);
+    }
+    card.onclick = () => { loadToy(t.id); };
+    card.onkeydown = (ev) => { if (ev.key === 'Enter') card.onclick(); };
+    list.appendChild(card);
+  }
+  box.appendChild(list);
+  return box;
+}
+function loadToy(id) {
+  const t = TOYS_BY_ID[id]; if (!t) return;
+  Object.assign(BUILD, { toy: id, species: t.species, control: t.control, economy: t.economy, meta: t.meta, scene: t.scene, deck: null });
+  saveBuild(); reset(); buildCtrlBar();
+  if (typeof refreshDock === 'function') refreshDock();
+}
+
+// ---- Build (the workbench) ----
+function selectField(label, value, items, onChange, descOf) {
+  const f = el('label', 'field'); f.appendChild(el('span', '', label));
+  const s = el('select'); for (const it of items) { const o = el('option', '', it.name + (it.source ? '  [' + it.source + ']' : '')); o.value = it.id; s.appendChild(o); } s.value = value;
+  const d = el('p', 'desc', descOf(value)); s.onchange = () => { onChange(s.value); d.textContent = descOf(s.value); };
+  f.appendChild(s); f.appendChild(d); return f;
+}
+function buildPanel() {
+  const box = el('div');
+  box.appendChild(el('p', 'hint', 'A swarm vessel is a combination. Change any axis; the others hold. Changing anything restarts the arena.'));
+  const change = (k) => (v) => { BUILD[k] = v; BUILD.toy = null; if (k === 'species') BUILD.deck = null; saveBuild(); reset(); buildCtrlBar(); box.replaceWith(buildPanel()); };
+  box.appendChild(selectField('Body (species and its verb)', BUILD.species, SPECIES, change('species'), (v) => { const s = SPECIES_BY_ID[v]; return s.fun + ' Verb: ' + (s.verbs ? s.verbs.join(', ') : s.verb) + '; second verb: ' + s.alt + '. Role guess: ' + s.role + '.'; }));
+  box.appendChild(selectField('Control', BUILD.control, CONTROLS, change('control'), (v) => CONTROLS_BY_ID[v].how));
+  box.appendChild(selectField('Economy', BUILD.economy, ECONOMIES, change('economy'), (v) => ECONOMIES_BY_ID[v].how));
+  box.appendChild(selectField('Meta', BUILD.meta, METAS, change('meta'), (v) => METAS_BY_ID[v].how));
+  box.appendChild(selectField('Arena', BUILD.scene, SCENES, change('scene'), (v) => SCENES_BY_ID[v].how));
+  if (BUILD.meta === 'deck') {
+    box.appendChild(el('h2', 'sec', 'Deck (pick 8)'));
+    const deck = (BUILD.deck || SPECIES_BY_ID[BUILD.species].deck || DEFAULT_DECK).slice(0, 8), grid = el('div', 'chips');
+    for (const c of CARDS) {
+      const lab = el('label', 'chip'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = deck.includes(c.id);
+      cb.onchange = () => { const d = new Set(BUILD.deck || deck); if (cb.checked) d.add(c.id); else d.delete(c.id); const arr = [...d]; while (arr.length < 4) arr.push(DEFAULT_DECK.find((x) => !arr.includes(x))); BUILD.deck = arr.slice(0, 8); saveBuild(); reset(); buildCtrlBar(); box.replaceWith(buildPanel()); };
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + c.name + ' ' + c.cost)); lab.title = c.desc + ' — ' + c.src; grid.appendChild(lab);
+    }
+    box.appendChild(grid);
+  }
+  if (BUILD.meta === 'castes') {
+    box.appendChild(el('h2', 'sec', 'Caste ratio'));
+    for (const k of ['worker', 'soldier', 'scout']) {
+      const row = el('div', 'row'); row.innerHTML = '<label><span></span></label><output></output><input type="range" min="0" max="1" step="0.05">';
+      row.querySelector('span').textContent = { worker: 'Workers (the species verb)', soldier: 'Soldiers (sting)', scout: 'Scouts (ping + fetch)' }[k];
+      const inp = row.querySelector('input'), out = row.querySelector('output'); inp.value = BUILD.castes[k]; out.textContent = BUILD.castes[k];
+      inp.oninput = () => { BUILD.castes[k] = parseFloat(inp.value); out.textContent = inp.value; saveBuild(); W.build.castes = BUILD.castes; };
+      box.appendChild(row);
+    }
+  }
+  box.appendChild(el('h2', 'sec', 'This combination'));
+  const fp = el('div'); const run = el('button', 'btn primary', 'Fingerprint it (4 games, AI commander)'); const out = el('div', 'tblWrap');
+  run.onclick = () => { run.disabled = true; run.textContent = 'Scoring…'; setTimeout(() => { const rows = runBatch({ seconds: 15 }); out.replaceChildren(fingerprintTable([{ label: 'This build', rows }])); run.disabled = false; run.textContent = 'Fingerprint it again'; }, 30); };
+  fp.appendChild(run); fp.appendChild(out); box.appendChild(fp);
+  return box;
+}
+
+// ---- Tune ----
+function tunePanel() {
+  const box = el('div');
+  for (const group of [...new Set(SPEC.map((r) => r[0]))]) {
+    box.appendChild(el('h2', 'sec', group));
+    for (const [gname, key, lo, hi, step, label, tip] of SPEC) {
+      if (gname !== group) continue;
+      const row = el('div', 'row'); row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key] });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+  }
+  queueMicrotask(refreshDiff);
+  return box;
+}
+
+// ---- Scorecard + Team ----
+// A fingerprint is a build's score in each element game, normalised against two baselines that are measured
+// in the same pass: "Hull only" (the same arena with no swarm at all) and the best build in the table.
+let SCORES = lsGet('lab:' + LAB.name + ':scores', null);
+function normalise(sets) {
+  const base = sets.find((s) => s.label === 'Hull only'), out = {};
+  for (const g of GAMES) {
+    const b = base ? (base.rows.find((r) => r.game === g) || { score: 0 }).score : 0;
+    const top = Math.max(b + 1, ...sets.map((s) => (s.rows.find((r) => r.game === g) || { score: 0 }).score));
+    out[g] = { base: b, top };
+  }
+  return out;
+}
+function roleOf(n) {
+  const names = { time: 'Runner', space: 'Breaker', mass: 'Builder', charge: 'Hunter' };
+  const sorted = GAMES.slice().sort((a, b) => n[b] - n[a]);
+  if (n[sorted[0]] < 15) return 'Passenger';
+  return names[sorted[0]] + (n[sorted[1]] > 0.7 * n[sorted[0]] && n[sorted[1]] > 25 ? ' / ' + names[sorted[1]] : '');
+}
+function fingerprintTable(sets) {
+  const norm = normalise(sets), t = el('table');
+  const hr = el('tr'); for (const h of ['Build', 'Time', 'Space', 'Mass', 'Charge', 'Role']) hr.appendChild(el('th', '', h)); t.appendChild(hr);
+  const best = {}; for (const g of GAMES) best[g] = Math.max(...sets.map((s) => (s.rows.find((r) => r.game === g) || { score: -1e9 }).score));
+  for (const s of sets) {
+    const tr = el('tr'); tr.appendChild(el('td', '', s.label)); const n = {};
+    for (const g of GAMES) {
+      const r = s.rows.find((x) => x.game === g) || { score: 0 }, nb = norm[g];
+      n[g] = Math.round(100 * (r.score - nb.base) / Math.max(1, nb.top - nb.base));
+      const td = el('td', r.score === best[g] && sets.length > 1 ? 'best' : '', r.score + '  (' + n[g] + ')'); td.title = 'raw score (normalised 0-100 against Hull only and the best build)'; tr.appendChild(td);
+    }
+    tr.appendChild(el('td', 'role', s.label === 'Hull only' ? 'baseline' : roleOf(n)));
+    s.norm = n; t.appendChild(tr);
+  }
+  return t;
+}
+function speciesBuilds() {
+  return SPECIES.map((s) => ({ label: s.name, species: s.id, control: s.control, economy: s.economy, meta: s.meta, deck: null }));
+}
+function scorecardPanel() {
+  const box = el('div');
+  box.appendChild(el('p', 'hint', 'Every species in its default build, played by the AI commander in all four element games (15 s each, seed 1). "Hull only" is the same arena with no swarm, so a swarm that adds nothing scores 0. The rookie row re-runs the loaded build with the AI at full noise: a scheme whose rookie score collapses is a scheme that needs skill.'));
+  const run = el('button', 'btn primary', 'Score every species'), status = el('span', 'hint'), out = el('div', 'tblWrap');
+  const row = el('div', 'flex'); row.appendChild(run); row.appendChild(status); box.appendChild(row); box.appendChild(out);
+  const show = () => { if (SCORES) out.replaceChildren(fingerprintTable(SCORES)); };
+  run.onclick = () => {
+    const builds = [{ label: 'Hull only', species: BUILD.species, control: 'focus', economy: 'fixed', meta: 'none', P: { pop: 0 } }].concat(speciesBuilds());
+    const cur = Object.assign({}, BUILD, { label: 'Loaded build, rookie AI', P: { aiNoise: 1 } });
+    builds.push(Object.assign({}, BUILD, { label: 'Loaded build, expert AI', P: { aiNoise: 0 } }), cur);
+    const sets = []; let i = 0; run.disabled = true;
+    (function next() {
+      if (i >= builds.length) { SCORES = sets; lsSet('lab:' + LAB.name + ':scores', sets); status.textContent = 'Done — ' + sets.length + ' builds.'; run.disabled = false; show(); return; }
+      status.textContent = 'Scoring ' + builds[i].label + ' (' + (i + 1) + '/' + builds.length + ')…';
+      sets.push({ label: builds[i].label, species: builds[i].species, rows: runBatch({ builds: [builds[i]], seconds: 15 }) }); i++;
+      setTimeout(next, 0);
+    })();
+  };
+  show();
+  return box;
+}
+function teamPanel() {
+  const box = el('div');
+  box.appendChild(el('p', 'hint', 'Pick three swarm vessels for one team. The bars sum their normalised fingerprints (from the Scorecard), so you can see which element games the team covers and where two vessels are doing the same job.'));
+  if (!SCORES) { box.appendChild(el('p', 'status-warn', 'Run "Score every species" on the Scorecard tab first.')); return box; }
+  const sets = SCORES.filter((s) => s.label !== 'Hull only' && !/Loaded build/.test(s.label)); fingerprintTable(SCORES);
+  const team = lsGet('lab:' + LAB.name + ':team', [sets[0].label, sets[3] ? sets[3].label : sets[0].label, sets[6] ? sets[6].label : sets[0].label]);
+  const picks = el('div', 'grid2'), result = el('div');
+  const draw = () => {
+    const sum = { time: 0, space: 0, mass: 0, charge: 0 }, roles = [];
+    for (const lbl of team) { const s = sets.find((x) => x.label === lbl); if (!s) continue; for (const g of GAMES) sum[g] += Math.max(0, s.norm[g]); roles.push(roleOf(s.norm)); }
+    result.replaceChildren();
+    const t = el('table'); const tr = el('tr'); for (const h of ['Time', 'Space', 'Mass', 'Charge']) tr.appendChild(el('th', '', h)); t.appendChild(tr);
+    const vr = el('tr'); for (const g of GAMES) { const td = el('td'); const bar = el('span', 'spark'); const i = el('i'); i.style.height = '10px'; i.style.width = Math.min(160, sum[g] * 0.8) + 'px'; i.style.background = 'var(--accent)'; bar.appendChild(i); td.appendChild(bar); td.appendChild(document.createTextNode(' ' + sum[g])); vr.appendChild(td); } t.appendChild(vr);
+    result.appendChild(t);
+    const dup = roles.filter((r, i) => roles.indexOf(r) !== i);
+    const gaps = GAMES.filter((g) => sum[g] < 40).map((g) => ({ time: 'Time', space: 'Space', mass: 'Mass', charge: 'Charge' })[g]);
+    result.appendChild(el('p', 'note', 'Roles: ' + roles.join(', ') + (dup.length ? '. Overlap: ' + [...new Set(dup)].join(', ') + '.' : '.') + (gaps.length ? ' Uncovered: ' + gaps.join(', ') + '.' : ' Every element game covered.')));
+  };
+  for (let k = 0; k < 3; k++) {
+    const s = el('select'); for (const x of sets) { const o = el('option', '', x.label); o.value = x.label; s.appendChild(o); } s.value = team[k];
+    s.onchange = () => { team[k] = s.value; lsSet('lab:' + LAB.name + ':team', team); draw(); };
+    const f = el('label', 'field'); f.appendChild(el('span', '', 'Vessel ' + (k + 1))); f.appendChild(s); picks.appendChild(f);
+  }
+  box.appendChild(picks); box.appendChild(result); draw();
+  const save = el('button', 'btn', 'Record this team'); save.onclick = async () => { const w = await record('team', team.join(' + '), result.textContent); save.textContent = w === 'shared' ? 'Recorded (shared)' : 'Recorded (this browser)'; };
+  box.appendChild(save);
+  return box;
+}
+
+// ---- Decision log ----
+let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+function snapshot() { return { round: LAB.round, seed, build: Object.assign({}, BUILD), changed: diffOnly() }; }
+async function record(topic, choice, note) {
+  const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+  if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through to local */ } }
+  localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); renderLog(); return 'local';
+}
+function logPanel() {
+  const box = el('div');
+  box.innerHTML = '<p class="hint" id="logStatus"></p><input type="text" id="logTopic" placeholder="Topic (e.g. Which swarm is the Builder?)"><textarea id="logChoice" rows="2" placeholder="Your decision"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tblWrap"><table id="logTable"></table></div>';
+  const status = box.querySelector('#logStatus');
+  status.textContent = db ? 'Shared log: saved with the lab, readable by Claude next round.' : 'Kept in this browser (use Copy log to send it).';
+  status.className = db ? 'status-ok' : 'status-warn';
+  box.querySelector('#logChoice').value = 'Build: ' + BUILD.species + ' / ' + BUILD.control + ' / ' + BUILD.economy + ' / ' + BUILD.meta;
+  box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value || 'General', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+  box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {}); };
+  renderLog(box);
+  return box;
+}
+function renderLog(box) {
+  const t = (box || document).querySelector('#logTable'); if (!t) return;
+  const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 60);
+  t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+  for (const d of rows) { const tr = el('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) tr.appendChild(el('td', '', v)); t.appendChild(tr); }
+}
+(async function connect() {
+  const c = window.claude;
+  if (!c || typeof c.use !== 'function') return;
+  try { db = await c.use('db'); } catch (e) { db = null; }
+  try { const u = await c.use('user'); if (u && u.id) me = (await u.id()) || ''; } catch (e) { me = ''; }
+  if (!db) return;
+  try { db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; }); } catch (e) { db = null; }
+})();
+
+// ---- About ----
+function aboutPanel() {
+  const box = el('div');
+  box.appendChild(el('p', '', LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc));
+  const g = el('div', 'grid2');
+  const sec = (title, items) => { const d = el('div'); d.appendChild(el('h2', 'sec', title)); const u = el('ul'); for (const i of items) u.appendChild(el('li', 'hint', i)); d.appendChild(u); return d; };
+  g.appendChild(sec('How to read it', [
+    'A swarm vessel = a BODY (species + verb) x a CONTROL x an ECONOMY x a META. The Build tab swaps one axis at a time.',
+    'Controls only ever write a focus point, an order, a mood or a selection. Members decide their own moves — so a scheme is a question of what you get to say, not of steering bodies.',
+    'The four arenas are the element minigames: Time = race, Space = destruction, Mass = creation, Charge = dogfight (petals). A build\'s scores across them are its team role.',
+    'Watch AI lets an expert commander drive whatever scheme is loaded; the Scorecard runs it headless, including a rookie run.',
+  ]));
+  g.appendChild(sec('Where the ideas came from', [
+    'Shipped: the Termite\'s six cards and pheromone tank, the tadpole boid, the locust\'s phase rules (Tools/Ecology bestiary).',
+    'Notion: the School (six fish bound by plasma), D-pad fauna orders, Shepherd / sheepdog herding, Boldt\'s tiered fuel, the Shuffle octopus, the Angler\'s fake crystal, Beast Tamer bait, the 2024 termite commander (cell vs queen), the NCA backlog\'s aggression knob (B5), slime-mold and siphonophore concepts.',
+    'Lab: ants, pigeons, rats, bees, wasps, starlings, bats, fireflies, mosquitoes, crows, piranhas, spiders — the docs name few of these, so their verbs are proposals.',
+  ]));
+  g.appendChild(sec('What this does NOT model', [
+    '2D, top-down. The game is 3D: a swarm that surrounds a ship in a sphere reads (and defends) very differently from a ring.',
+    'Member counts here (6-60) are far below what the GPU could draw and far above what the collider budget allows if every member were a game lifeform. A shipped swarm needs the drone path (vessel agents, not lifeforms), and its collider cost is not modelled.',
+    'Rivals are simple scripted ships, not other players. Petal transfer follows the elemental economy\'s rule (whole petals move; nothing partial leaves) but not its full crystal ejection.',
+    'Networking is absent: no replication cost, no ownership, no latency on orders.',
+    'No gamepad. Touch, mouse and keyboard only.',
+    'Prism mass here is a dot with one hit point, no volume, no growth. Mass scores count prisms, not volume.',
+    'The AI commander is a heuristic, not a skilled player. Its scores rank schemes coarsely; treat a 10% gap as noise.',
+  ]));
+  box.appendChild(g);
+  return box;
+}
+
+// ================= wiring =================
+const showDock = makeTabs('dockTabs', 'dockBody', [{ name: 'Toys', build: toysPanel }, { name: 'Build', build: buildPanel }, { name: 'Tune', build: tunePanel }], 'lab:' + LAB.name + ':dock');
+function refreshDock() { const cur = [...$('dockTabs').children].find((b) => b.getAttribute('aria-selected') === 'true'); if (cur) showDock(cur.dataset.name); }
+makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Team', build: teamPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+$('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round + ' · ' + TOYS.length + ' toys · ' + SPECIES.length + ' species';
+let paused = false;
+function togglePause() { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; }
+$('pause').onclick = togglePause;
+$('restart').onclick = () => { reset(); buildCtrlBar(); };
+$('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet(LS_KEY, {}); for (const k in outputs) if (outputs[k].inp) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+
+addEventListener('resize', resize);
+let manualClock = false, last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  if (!manualClock) { resize(); if (!paused) simStep(dt); render(); }
+  requestAnimationFrame(frame);
+}
+if (BUILD.toy && !TOYS_BY_ID[BUILD.toy]) BUILD.toy = null;
+reset(); buildCtrlBar(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+// ================= the test surface =================
+window.__lab = {
+  LAB, SHIPPED, SPEC, P, PLATFORM, SPECIES, CONTROLS, ECONOMIES, METAS, CARDS, TOYS,
+  set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+  tick(dt, n) { n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); hudFrame = 0; render(); },
+  reset: (s) => { reset(s); buildCtrlBar(); }, score, runBatch, setParam, record, loadToy,
+  input: (o) => Object.assign(liveInput, o),
+  state: () => ({ t: W.t, seed, build: Object.assign({}, BUILD), members: liveAgents().length, prisms: W.prisms.filter((p) => p.alive).length, score: gameScore(), done: W.done }),
+};
+
+})();
+</script>

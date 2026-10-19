@@ -261,3 +261,7 @@ control; the standing gates; `check_elemental_economy` now holds the Termite to 
    Drones: workers graze and the spire grows. RT (Autothysis, once flipped back) ruptures soldiers.
 5. Party of two: plays appear on both machines; a refused press (empty tank) appears on neither.
 6. Re-run `python3 Tools/Build/element_ability_table.py Termite` after the prefab rebuild.
+
+## See also: the Swarm Vessel Lab
+
+The Termite is the shipped anchor of a wider study of swarm vessels: 19 swarm bodies, 14 control schemes, 7 economies and 7 meta layers, each scored in the four element minigames. Live page and findings: `Docs/Studios/SWARM_VESSEL_LAB.md`. Two findings bear on this vessel directly: a noisy commander point out-built a precise one (dispersal beats precision for a builder), and a universal Attack order turns any body into a hunter.

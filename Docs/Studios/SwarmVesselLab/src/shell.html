@@ -1,0 +1,187 @@
+<title>Swarm Vessel Lab</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  SWARM VESSEL LAB, round 1 (2026-10-19, cece/inspiring-einstein-k6syi5).
+  A vessel that IS a swarm: you do not fly one ship, you direct a population. This page is a toy box of
+  "fun moments" for many swarm animals (termite, ant, locust, pigeon, rat, bee, wasp, starling, bat,
+  firefly, mosquito, crow, piranha, slime mold, spider, siphonophore, tadpole) and a workbench that
+  combines the MECHANICS a swarm vessel is made of: a body (how members move and what verb they do),
+  a control scheme, an economy, and a meta layer (cards, draft, roulette, merge, evolution).
+  Every combination is scored in the four element minigames (Time race, Space destruction, Mass
+  creation, Charge dogfight), so its role on a team shows up as a fingerprint.
+  Built from Docs/Studios/SwarmVesselLab/src/*  by  python3 Docs/Studios/SwarmVesselLab/build.py
+  Verify:   node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SwarmVesselLab.html
+  Write-up: Docs/Studios/SWARM_VESSEL_LAB.md
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: an editor. Stage centre (a top-down slice of one cell); a right dock with the toy box, the
+     workbench and the tuning sliders; a bottom dock with the scorecard, the team builder, the decision log
+     and the honest not-modelled list. Below 900 px the stage leads and the docks become a tabbed sheet. */
+  :root {
+    --bg: #eef1f0; --panel: #ffffff; --ink: #18211f; --muted: #57635f; --line: #d6ddda;
+    --accent: #b9650d;            /* pheromone amber: the swarm's own colour */
+    --accent-ink: #ffffff;
+    --ok: #1d7a45; --warn: #a8540b; --changed: #9a5208;
+    --stage: #061014;             /* the hypersea, same in both themes */
+    --jade: #1fb8b0; --ruby: #c2368e; --gold: #d9a73a; --neutral: #4f78d6;
+    --chip: #f3ece2;
+    --f-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --f-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1113; --panel: #121a1d; --ink: #e3ebe8; --muted: #93a29d; --line: #24302f;
+      --accent: #f0a043; --accent-ink: #1b1206; --ok: #5ccb8b; --warn: #f0a050; --changed: #f3b36a;
+      --chip: #2a2116; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1113; --panel: #121a1d; --ink: #e3ebe8; --muted: #93a29d; --line: #24302f;
+    --accent: #f0a043; --accent-ink: #1b1206; --ok: #5ccb8b; --warn: #f0a050; --changed: #f3b36a;
+    --chip: #2a2116; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--f-ui); overflow: hidden; }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr) 236px;
+         grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 6px 12px; align-items: center; flex-wrap: wrap; background: var(--panel); border-bottom: 1px solid var(--line);
+           padding: 7px max(16px, env(safe-area-inset-right, 0px)) 7px max(16px, env(safe-area-inset-left, 0px)); }
+  header h1 { font: 700 16px/1 var(--f-display); letter-spacing: .02em; margin: 0; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; left: 12px; top: 10px; right: 12px; color: #d6e4e0; font: 12px/1.45 var(--f-mono); pointer-events: none; display: flex; justify-content: space-between; gap: 12px; }
+  #hud .toyline { font: 600 14px/1.2 var(--f-display); color: #fff; letter-spacing: .02em; }
+  #hud .fun { color: #f6c27f; max-width: 52ch; }
+  #hud .right { text-align: right; white-space: pre; }
+  #toast { position: absolute; left: 50%; top: 56px; transform: translateX(-50%); background: rgba(8,16,18,.88); color: #ffe2b8; border: 1px solid #f0a043; border-radius: 6px; padding: 5px 12px; font: 12px var(--f-mono); pointer-events: none; white-space: normal; text-align: center; max-width: min(560px, calc(100% - 32px)); opacity: 0; transition: opacity .25s; }
+  #toast.show { opacity: 1; }
+  /* The control bar along the bottom of the stage: the card hand and the scheme's own buttons.
+     Big targets, because on a phone this IS the controller. */
+  #ctrlBar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;
+             padding: 8px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+             pointer-events: none; }
+  #ctrlBar > * { pointer-events: auto; }
+  .card { width: 66px; min-height: 84px; border-radius: 8px; border: 1px solid #3a4a49; background: rgba(12,22,24,.92); color: #eaf2ef; padding: 6px 5px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; text-align: left; position: relative; overflow: hidden; }
+  .card .cost { position: absolute; right: 5px; top: 4px; font: 700 15px var(--f-display); color: #f6c27f; }
+  .card .nm { font: 600 11px/1.15 var(--f-display); margin-top: 16px; }
+  .card .ky { font: 10px var(--f-mono); color: #8fa39e; }
+  .card.poor { opacity: .45; }
+  .card.armed { border-color: #f0a043; box-shadow: 0 0 0 2px rgba(240,160,67,.55) inset; }
+  .card .veil { position: absolute; left: 0; right: 0; top: 0; background: rgba(0,0,0,.55); pointer-events: none; }
+  .ctl { min-width: 54px; height: 44px; border-radius: 22px; border: 1px solid #3a4a49; background: rgba(12,22,24,.9); color: #eaf2ef; padding: 0 14px; cursor: pointer; font: 600 12px var(--f-display); }
+  .ctl[aria-pressed="true"] { background: #f0a043; color: #1b1206; border-color: #f0a043; }
+  .meter { min-width: 150px; color: #d6e4e0; font: 11px var(--f-mono); display: flex; flex-direction: column; gap: 3px; background: rgba(8,16,18,.75); border: 1px solid #2c3a39; border-radius: 6px; padding: 5px 8px; }
+  .meter .bar { height: 8px; border-radius: 4px; background: #1d2a2a; overflow: hidden; display: flex; }
+  .meter .bar i { display: block; height: 100%; background: #f0a043; }
+  .moodWrap { display: flex; flex-direction: column; color: #d6e4e0; font: 11px var(--f-mono); background: rgba(8,16,18,.75); border: 1px solid #2c3a39; border-radius: 6px; padding: 5px 8px; min-width: 180px; }
+  .moodWrap input { width: 100%; accent-color: #f0a043; }
+  #draftBox { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(10,18,20,.96); border: 1px solid #f0a043; border-radius: 10px; padding: 14px; color: #eaf2ef; width: min(520px, calc(100% - 32px)); }
+  #draftBox h3 { font: 700 15px var(--f-display); margin: 0 0 8px; }
+  #draftBox .opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  #draftBox button { text-align: left; padding: 8px; border-radius: 8px; border: 1px solid #3a4a49; background: #13201f; color: #eaf2ef; cursor: pointer; min-height: 88px; }
+  #draftBox button b { display: block; font: 600 13px var(--f-display); margin-bottom: 4px; }
+
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; min-width: 0; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; min-width: 0; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; position: sticky; top: -8px; background: var(--panel); padding-top: 2px; z-index: 1; }
+  .tabs button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  h2.sec { font: 600 13px var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+  .hint { color: var(--muted); font-size: 12px; margin: 4px 0; }
+  .toyList { display: grid; gap: 6px; }
+  .toy { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; background: var(--panel); text-align: left; display: grid; gap: 2px; width: 100%; }
+  .toy:hover { border-color: var(--accent); }
+  .toy[aria-current="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .toy .t { font: 600 13px var(--f-display); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .toy .t small { font: 11px var(--f-mono); color: var(--muted); }
+  .toy .f { font-size: 12px; color: var(--muted); }
+  .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .chip { font: 10px var(--f-mono); background: var(--chip); color: var(--ink); border-radius: 99px; padding: 1px 7px; }
+  .chip.el-time { background: color-mix(in srgb, var(--neutral) 22%, transparent); }
+  .chip.el-space { background: color-mix(in srgb, var(--ruby) 22%, transparent); }
+  .chip.el-mass { background: color-mix(in srgb, var(--jade) 26%, transparent); }
+  .chip.el-charge { background: color-mix(in srgb, var(--gold) 30%, transparent); }
+  .field { display: grid; gap: 3px; margin: 8px 0; }
+  .field > span { color: var(--muted); font-size: 12px; }
+  select, textarea, input[type=text] { width: 100%; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; }
+  .desc { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px var(--f-mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .tblWrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.best { font-weight: 700; color: var(--ok); }
+  td.role { font: 600 12px var(--f-display); }
+  .spark { display: inline-flex; gap: 2px; vertical-align: middle; }
+  .spark i { display: inline-block; width: 10px; border-radius: 2px; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .note { border-left: 3px solid var(--line); padding: 2px 10px; margin: 6px 0; font-size: 12px; color: var(--muted); }
+  .flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* Phone / narrow: the stage leads at a playable height, the docks follow as one tabbed sheet. */
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { height: auto; overflow: visible; }
+    #stage { height: 58vh; min-height: 320px; }
+    #ctrlBar { position: static; padding-top: 6px; background: var(--stage); }
+    .meter { min-width: 0; flex: 1 1 100%; }
+    #hud .right { font-size: 11px; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); overflow: visible; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #hud .fun { display: none; }
+    .card { width: 58px; min-height: 76px; }
+    #draftBox .opts { grid-template-columns: 1fr; }
+    #draftBox button { min-height: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+<div id="app">
+  <header>
+    <h1 id="title">Swarm Vessel Lab</h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage" aria-label="The swarm, top-down"></canvas>
+    <div id="hud"><div><div class="toyline" id="hudToy"></div><div class="fun" id="hudFun"></div></div><div class="right" id="hudRight"></div></div>
+    <div id="toast"></div>
+    <div id="ctrlBar"></div>
+    <div id="draftBox" hidden></div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+/*__SCRIPT__*/
+</script>
