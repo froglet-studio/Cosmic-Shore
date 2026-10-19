@@ -2858,3 +2858,14 @@ player left, because screens hide by alpha (no OnDisable) and the hub windows (A
 rather than leaving it, so nothing ended the preview and it legitimately held the stick. `ModalWindowIn` now ends a
 flying preview (`ModePreviewWindow.ReleaseAnyFocus`) and refuses only in freestyle; `HangarScreen.OnScreenExit` ends
 its ability previews.
+Second follow-up (the owner: "same happens / fix these elemental views", a screenshot of "Display 1 / No cameras
+rendering" with the vessel HUD over a frozen frame): the gameplay camera was still on loan to a preview window, drawing
+into its RenderTexture, when freestyle made it the screen camera and stood the scene camera down. `CameraManager` now
+takes the rig back from any loan whenever it becomes the screen view (`SetActiveCamera`), and
+`BeginWindowedPlayerCamera` refuses, with a warning, while the rig is the screen, so the preview shows its unavailable
+face instead of blanking the display. The four "[ElementalBarsView] Created 5 petal(s) ... at RUNTIME" warnings per
+spawn came from hulls without baked flowers (Sparrow, Dolphin, Manta, Rhino, Serpent, Urchin, Scarab, Butterfly): the
+ability lockup builds each card's flower socket at runtime, so building its petals there is the design. They no longer
+warn for a lockup-built socket; a flower container AUTHORED without petals still warns. "No projectile factory found"
+is a shot outliving the hull it came from after a swap (Garrett's `Projectile.ReturnToFactory`); it destroys itself and
+is left as is.

@@ -12589,3 +12589,14 @@ the Hangar, not a screen change. Now `ModalWindowManager.ModalWindowIn` hands th
 (`ModePreviewWindow.ReleaseAnyFocus`) and only freestyle refuses; a leaked flag outside freestyle is restored there too;
 and `HangarScreen.OnScreenExit` ends every `HangarAbilityPreview`. Re-run steps 1-4 above; in step 1, also try opening
 Arcade with the mouse while still flying the TRY vessel: the flight ends and Arcade opens.
+
+**Second follow-up, 2026-10-19 ("Display 1 / No cameras rendering" after a preview):** changed `CameraManager`
+(`SetActiveCamera` takes the player rig back from a preview loan; `BeginWindowedPlayerCamera` refuses while the rig
+draws the screen) and `ElementalBarsView` (no runtime-petal warning for a flower socket the ability lockup built).
+Reference compile clean.
+5. Hangar TRY and the ability showcase, leave, go HOME, fly (freestyle): the screen shows the flight, never "No cameras
+   rendering". Exit freestyle, open an Arcade card, tap in: the card's window shows the flight.
+6. Spawn a Sparrow, Dolphin or Rhino (TRY or Vessel Changer): no "[ElementalBarsView] Created 5 petal(s)" warnings, and
+   the four flowers still sit in the ability cards and change colour with the element levels.
+7. Maelstrom hub: tap in still flies (if it shows "[CameraManager] A windowed camera was asked for while the player
+   camera draws the screen", report it: the hub reached a state where the rig was left as the screen camera).
