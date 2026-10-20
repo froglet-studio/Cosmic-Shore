@@ -434,7 +434,7 @@ namespace CosmicShore.Gameplay
             // ModePreviewWindow.AnyHasFocus instead.
             TakeNavigation();
 
-            window?.GrantFocus();
+            window?.GrantFocus(vessel.VesselStatus.IsSingleStickControls);
         }
 
         // ── EventSystem navigation (the pad flies the ship, so it stops driving the UI) ──────

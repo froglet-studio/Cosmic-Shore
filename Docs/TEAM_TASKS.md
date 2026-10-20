@@ -1141,6 +1141,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/TOOLING_DECISIONS.md section 6
 
+### T-20261019-6778 · open · test · preview
+- **Task:** Find what makes the cursor briefly reappear during one-thumb mouse flight in the Breakwater microgame window (Sparrow). Control is no longer lost, but Caleb saw the cursor pop out for a moment and suspects a particular screen position triggers it.
+- **Done when:** Steps that reproduce the cursor pop-out (screen position, window placement, pad connected or not, Editor or build) are recorded in Docs/UNITY_VERIFICATION_CHECKLIST.md under the Breakwater preview entry, or 20 minutes of flight with no pop-out is recorded.
+- **Who can take it:** Andrew (QA); Yash could also take it
+- **Added:** 2026-10-19 by Caleb (`claude/fix-breakwater-preview-controls-3evnnj`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Breakwater preview — one-thumb flight), Assets/_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md
+
 ### T-20261019-3b72 · open · test · Thresher
 - **Task:** Fly the Thresher on cece/elegant-goldberg-eanwgx, on a phone and in the Editor: the tail no longer beats - it hangs along the chain, lags a hard turn, sways back past straight and settles; lifting the thumb eases the bank flat instead of snapping it; planted, the tail swings round to the ball. In Thresher Time (and Skim Race, and an arcade preview) swing the BALL through the lit ring while the hull passes outside it - the ring counts.
 - **Done when:** THRESHER.md In-editor verification H2-H4b and THRESHERTIME.md step 9 pass on a phone build and in the Editor, with ThresherHullFormTests and RingThreadProbeTests green
