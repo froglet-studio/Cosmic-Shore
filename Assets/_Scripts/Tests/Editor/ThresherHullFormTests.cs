@@ -7,8 +7,9 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Thresher's own hull, swim and wrecking ball (<c>R_VesselActions/THRESHER.md</c> §5b): the pure
-    /// shark form's parts, element morphs and bounds, the tail posed as a chain, and the morning-star ball.
+    /// The Thresher's own hull, tail and wrecking ball (<c>R_VesselActions/THRESHER.md</c> §5b): the pure
+    /// shark form's parts, element morphs and bounds, the tail hanging along its cord as a chain of springs,
+    /// and the morning-star ball.
     /// The offline twin is <c>Tools/Build/thresher_hull_harness</c>, which runs the same forms plus a
     /// parity-ray winding test over every closed piece.
     /// </summary>
@@ -99,38 +100,125 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Swim_TheTailChainNeverOpensAJoint()
+        public void Tail_TheChainNeverOpensAJoint()
         {
             var parts = ThresherHullForm.Generate(S);
             var chain = new List<Vector3> { parts.First(p => p.Kind == ThresherHullForm.PartKind.TailBase).Pivot };
             chain.AddRange(parts.Where(p => p.Kind == ThresherHullForm.PartKind.Lobe).Select(p => p.Pivot));
             var rest = chain.ToArray();
             int n = rest.Length;
-            var yaws = new float[n];
-            var local = new Quaternion[n];
-            var pos = new Vector3[n];
             var rot = new Quaternion[n];
-            var swim = ThresherSwimMath.Defaults;
+            var pos = new Vector3[n];
             for (int i = 0; i < 72; i++)
             {
-                ThresherSwimMath.JointYaws(swim, i * Mathf.PI / 36f, 1f, 0.6f, -0.8f, 1f, 1f, yaws);
-                for (int j = 0; j < n; j++) local[j] = Quaternion.Euler(0f, yaws[j], 0f);
-                ThresherSwimMath.PoseChain(rest, local, pos, rot);
+                for (int j = 0; j < n; j++)
+                    rot[j] = ThresherSwimMath.JointRotation(new ThresherSwimMath.Joint { Yaw = 90f * Mathf.Sin(i * 0.3f + j), Pitch = 40f * Mathf.Cos(i * 0.2f - j) });
+                ThresherSwimMath.PoseChain(rest, rot, pos);
                 for (int k = 0; k + 1 < n; k++)
                     Assert.Less((pos[k] + rot[k] * (rest[k + 1] - rest[k]) - pos[k + 1]).magnitude, 1e-4f, $"joint {k + 1} at step {i}");
             }
         }
 
+        // Garrett, 2026-10-19: "remove the tail wiggle when flying". Nothing in the tail is a function of time on
+        // its own: with the cord straight behind and the hull flying straight, it never moves off its rest.
         [Test]
-        public void Swim_ATurnSwingsTheTailOutOfIt()
+        public void Tail_FlyingStraight_NeverWiggles()
         {
-            var swim = ThresherSwimMath.Defaults;
-            swim.BaseSwingDegrees = 0f;
-            swim.LobeSwingDegrees = 0f;
-            var yaws = new float[4];
-            ThresherSwimMath.JointYaws(swim, 0f, 1f, 1f, 0f, 0f, 1f, yaws);
-            Assert.IsTrue(yaws.All(y => y < 0f), "a right turn swings every joint left");
-            Assert.AreEqual(-swim.TurnSwingDegrees, yaws.Sum(), 1e-3f, "the tip reaches the authored swing");
+            var tail = ThresherSwimMath.Defaults;
+            var joints = new ThresherSwimMath.Joint[4];
+            var yawT = new float[4];
+            var pitchT = new float[4];
+            ThresherSwimMath.CordBend(tail, Vector3.back * 6f, Vector3.back * 12f, 6f, out float bendYaw, out float bendPitch);
+            ThresherSwimMath.JointTargets(bendYaw, bendPitch, yawT, pitchT);
+            for (int f = 0; f < 600; f++)
+            {
+                ThresherSwimMath.Step(tail, joints, yawT, pitchT, 0f, 0f, 0f, 1f / 60f);
+                foreach (var j in joints)
+                    Assert.AreEqual(0f, Mathf.Abs(j.Yaw) + Mathf.Abs(j.Pitch), 1e-5f, $"frame {f}");
+            }
+        }
+
+        // "...as though it is the last links of the cord": a cord leaving to the pilot's right lays the tail along
+        // it - every joint swings right (negative yaw in Unity's convention), the tip by the whole bend - and the
+        // same pose is reached at a phone's 30 fps and a PC's 144.
+        [Test]
+        public void Tail_SettlesAlongTheCord_AtAnyFrameRate()
+        {
+            var tail = ThresherSwimMath.Defaults;
+            Vector3 toCord = new Vector3(8f, 0f, -8f);   // back and to the right, 45 degrees off the rest line
+            float follow = ThresherSwimMath.CordBend(tail, Vector3.back * 6f, toCord, 6f, out float bendYaw, out float bendPitch);
+            Assert.AreEqual(1f, follow, 1e-4f, "a cord behind the hull is followed fully");
+            Assert.AreEqual(-45f, bendYaw, 1e-3f, "the bend is the cord's angle off the rest line, to the right");
+            Assert.AreEqual(0f, bendPitch, 1e-3f);
+
+            float Settle(float fps)
+            {
+                var joints = new ThresherSwimMath.Joint[4];
+                var yawT = new float[4];
+                var pitchT = new float[4];
+                ThresherSwimMath.JointTargets(bendYaw, bendPitch, yawT, pitchT);
+                for (int f = 0; f < Mathf.RoundToInt(4f * fps); f++)
+                    ThresherSwimMath.Step(tail, joints, yawT, pitchT, 0f, 0f, 0f, 1f / fps);
+                Assert.IsTrue(joints.All(j => j.Yaw < 0f), "every joint swings toward the cord");
+                return joints[3].Yaw;
+            }
+            float phone = Settle(30f), pc = Settle(144f);
+            Assert.AreEqual(bendYaw, phone, 0.5f, "the tip lies along the cord (30 fps)");
+            Assert.AreEqual(pc, phone, 0.5f, "30 fps and 144 fps settle to the same pose");
+        }
+
+        // A cord swinging round AHEAD of the hull is where the side of the bend would flip; the tail stops
+        // following it there instead of snapping from one side to the other.
+        [Test]
+        public void Tail_ACordAhead_IsNotFollowed()
+        {
+            var tail = ThresherSwimMath.Defaults;
+            float follow = ThresherSwimMath.CordBend(tail, Vector3.back * 6f, new Vector3(0.01f, 0f, 12f), 6f, out float y, out float p);
+            Assert.AreEqual(0f, follow, 1e-6f);
+            Assert.AreEqual(0f, y, 1e-6f);
+            Assert.AreEqual(0f, p, 1e-6f);
+            ThresherSwimMath.CordBend(tail, Vector3.back * 6f, new Vector3(-0.01f, 0f, 12f), 6f, out float y2, out _);
+            Assert.AreEqual(y, y2, 1e-6f, "either side of dead ahead poses the same tail");
+        }
+
+        // The sway: the hull turning right leaves the tail pointing where it was (it lags, to the right of the
+        // hull's back) and its spring brings it round, overshooting a little, then it settles straight.
+        [Test]
+        public void Tail_AHullTurnSwaysTheTail_ThenItSettles()
+        {
+            var tail = ThresherSwimMath.Defaults;
+            var joints = new ThresherSwimMath.Joint[4];
+            var zero = new float[4];
+            const float dt = 1f / 60f;
+            for (int f = 0; f < 30; f++)   // half a second at the hull's 120 deg/s
+                ThresherSwimMath.Step(tail, joints, zero, zero, 120f * dt, 0f, 0f, dt);
+            Assert.Less(joints[3].Yaw, -5f, "a right turn leaves the tip lagging to the hull's right");
+            Assert.Less(joints[3].Yaw, joints[0].Yaw, "the tip lags more than the root");
+            float overshoot = 0f;
+            for (int f = 0; f < 300; f++)
+            {
+                ThresherSwimMath.Step(tail, joints, zero, zero, 0f, 0f, 0f, dt);
+                overshoot = Mathf.Max(overshoot, joints[3].Yaw);
+            }
+            Assert.Greater(overshoot, 0.5f, "it sways past straight once the turn stops (damping under 1)");
+            Assert.AreEqual(0f, joints[3].Yaw, 0.05f, "and settles straight");
+        }
+
+        // A hitch, a pause or a respawn hands the springs one huge frame; they stay bounded.
+        [Test]
+        public void Tail_AHugeFrame_StaysBounded()
+        {
+            var tail = ThresherSwimMath.Defaults;
+            var joints = new ThresherSwimMath.Joint[4];
+            var target = new[] { -30f, -60f, -90f, -110f };
+            var zero = new float[4];
+            ThresherSwimMath.Step(tail, joints, target, zero, 180f, -90f, 5000f, 3f);
+            foreach (var j in joints)
+            {
+                Assert.LessOrEqual(Mathf.Abs(j.Yaw), tail.MaxYawDegrees + ThresherSwimMath.OvershootDegrees + 1e-3f);
+                Assert.LessOrEqual(Mathf.Abs(j.Pitch), tail.MaxPitchDegrees + ThresherSwimMath.OvershootDegrees + 1e-3f);
+                Assert.IsFalse(float.IsNaN(j.Yaw) || float.IsNaN(j.Pitch));
+            }
         }
 
         [Test]

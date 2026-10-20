@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using DG.Tweening;
@@ -81,6 +82,7 @@ namespace CosmicShore.UI
             public bool Upgraded;
             public bool HasTint;        // rev 3: the card wears its element's colour
             public Color Tint;
+            public AbilityCardPress Press;   // a tap on the card presses its ability
         }
 
         /// <summary>One drifting colour blob of the rev 3 lava lamp, behind a card's icon.</summary>
@@ -537,6 +539,12 @@ namespace CosmicShore.UI
             ApplySlantEdge(slot.AbilityPlate, slot.Locked, upgraded: false);
             slot.AbilityPlate.raycastTarget = false;
             AdoptButtonTarget(host, slot.AbilityPlate);
+
+            // The card is its ability's button (SetSlotControl decides whether it is pressable).
+            if (!host.TryGetComponent(out slot.Press))
+                slot.Press = host.gameObject.AddComponent<AbilityCardPress>();
+            slot.Press.SetRegion(card);
+            slot.Press.SetInput(InputEvents.FullSpeedStraightAction, pressable: false);
 
             // The gauge lines the ABILITY plate, so the fill reads as the icon filling up. It stays
             // INVISIBLE until a meter is actually adopted onto this card (AdoptGauge turns it on):
@@ -1241,6 +1249,11 @@ namespace CosmicShore.UI
             slot.PadBinding = pad;
             slot.KeyBinding = key;
             RefreshChip(slot);
+
+            // A tap presses the control's own event when it has one; a gesture no button names
+            // (the Rhino's sticks pushed apart) cannot be pressed from a card.
+            var events = InputHintBindingMap.InputEventsFor(InputHintBindingMap.Canonical(pad));
+            SetSlotPressInput(slot, events.Count > 0 ? events[0] : InputEvents.FullSpeedStraightAction);
         }
 
         /// <summary>The same chip on a NON-elemental card.</summary>
@@ -1254,6 +1267,30 @@ namespace CosmicShore.UI
             slot.PadBinding = InputHintBindingMap.BindingFor(input, keyboard: false);
             slot.KeyBinding = InputHintBindingMap.BindingFor(input, keyboard: true);
             RefreshChip(slot);
+            SetSlotPressInput(slot, input);
+        }
+
+        /// <summary>
+        /// Arms the card's tap to press <paramref name="input"/>. A locked card or the passive sentinel
+        /// is not pressable. A pressable card's plates take hits, so a finger anywhere on the totem counts.
+        /// </summary>
+        void SetSlotPressInput(Slot slot, InputEvents input)
+        {
+            if (!slot.Press) return;
+            bool pressable = !slot.Locked && input != InputEvents.FullSpeedStraightAction;
+            slot.Press.SetInput(input, pressable);
+            if (!pressable) return;
+            if (slot.AbilityPlate) slot.AbilityPlate.raycastTarget = true;
+            if (slot.ElementPlate) slot.ElementPlate.raycastTarget = true;
+        }
+
+        /// <summary>Who a tapped card presses for: the pilot's input status and the vessel's action handler.</summary>
+        public void SetPressSource(IInputStatus input, R_VesselActionHandler actions)
+        {
+            foreach (var slot in _slots.Values)
+                if (slot.Press) slot.Press.Bind(input, actions);
+            foreach (var slot in _coreSlots.Values)
+                if (slot.Press) slot.Press.Bind(input, actions);
         }
 
         /// <summary>Which device the chips should speak for. Pushed on every set change.</summary>

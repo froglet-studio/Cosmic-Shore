@@ -1066,6 +1066,8 @@ push the bakes (Thresher, Scarab, Brittle Star, Urchin and Rhino are stale until
 1. **Sparrow, Serpent, Manta** (reproduced exactly): indistinguishable from before.
 2. **Thresher** (`Thresher.fbx`): a right turn swings the whip LEFT (out of the turn; the swim's yaw sign was
    fixed), a planted whip curls toward the ball, a crack flicks toward it; the chain hangs from the shackle.
+   *Superseded 2026-10-19 (`cece/elegant-goldberg-eanwgx`): the tail no longer beats or swings with the
+   stick; it hangs along the cord and lags a turn (THRESHER.md §5b, H2-H4b). Test those instead.*
 3. **Scarab** (`Scarab.fbx`; the hidden Sparrow is gone from the prefab): the elytra open in a turn and on
    throttle, the legs hang and tuck, the juke roll carries every part; the hull collider still triggers.
 4. **Stoat** (`Stoat.fbx`): the lope, the turn bend and the tail swing; spaghettification near a horizon still
@@ -1203,6 +1205,56 @@ C 8 / M 4 / S 10 / T 7; Sparrow S 9 / C 7 / T 6 / M 4; Serpent 5-9; Manta 6-11; 
 Rhino C 8 / M 4 / S 8 / T 7. Pose amplitudes: 26-30 degrees on the Squirrel (its top blend tree halves them), 20-25
 elsewhere. All of it is a spec number (`Tools/Build/vessel_model/specs/<vessel>.py`); change the number, rebuild,
 `--check`.
+
+### 🟢 Phone round: ability cards are buttons, the Wrasse draws in a build, double-tap the small view to swap (`cece/charming-wright-4ayoce`, 2026-10-19) — PHONE-VERIFIED 2026-10-20
+
+**Result (Garrett, 2026-10-20):** the phone test passed on an Android development build. (Not opened in the Unity Editor.)
+
+**What landed:** `AbilityCardPress` + `FlightTouchClaims` (every vessel: a finger on an ability card presses its
+input; a touch that starts on a card is not a flight thumb), `Resources/KiteNavigatorUnlit.mat` (the Wrasse's kite,
+tail and motes had no shader in a player build), and a double-tap swap on the Wrasse's small view
+(`KiteNavigator.PipDoubleTapped`). Docs: `Docs/ABILITY_LOCKUP.md` "Tap a card", `KITE_NAVIGATOR.md` "Round 5".
+
+**Proven offline:** `unity_refcompile` player-dev shows no errors; `peer_press_harness` passes (0 stranded, 0 wrong stops);
+Amoebius `CosmicShore.Live` builds; `author_wrasse_assets.py --check` ok.
+
+**Verify on a phone (Android development build):**
+1. Squirrel in Toybox freestyle: tap each pressable card; each fires what its button fires, and the card lights.
+   Hold the drift card: the drift holds until you lift. Locked and passive cards do nothing.
+2. Fly with two thumbs and tap a card with a third finger: no steering jump, no drift, no three-finger stall.
+3. Repeat step 1 on the Sparrow and the Dolphin. On the Rhino, the sticks-apart card does nothing. If a Sparrow (or
+   Scarab) card ignores taps, suspect the dead raycasting `Boost Button/display` image at the HUD root
+   (`Docs/REFACTOR_BACKLOG.md` S30).
+4. Wrasse in the Vessel Changer: the small lower-left view shows the kite, its lime tail and the motes.
+5. Double-tap the small view: the seats swap (kite full screen, pilot in the small view). Double-tap again to swap back.
+   Fly with the left thumb in that corner and drift a few times: no swap.
+6. Two-device match on any vessel: a card tap on one phone runs the ability on the other phone too.
+
+---
+
+### 🔴 Development build plays like release: the `DevDiagnostics` switch (`cece/charming-wright-4ayoce`, 2026-10-18) — NOT EDITOR-VERIFIED
+
+**What landed:** `Assets/_Scripts/Utility/DevDiagnostics.cs` + `DevDiagnosticsToggle.cs`. One switch
+turns off the diagnostics HUD, the AI-training flight recorder (new races only), the load-insights
+host (unless `-csmloadinsights` is passed), Unity's on-screen developer console and `CSDebug.Log`
+info logs in a development player. It is flipped by the HUD's new **Off** button, a four-finger hold
+for 2 s, or Shift+F7, and stored in PlayerPrefs (`CosmicShore.DevDiagnostics`). The Editor starts
+every Play session ON and never stores it. Define `CS_DEV_DIAGNOSTICS_OFF` makes a fresh install
+start off. Workflow: `Docs/ANDROID_BUILD.md` §8.
+
+**Proven offline:** `unity_refcompile` player, player-dev and editor configs show no errors in the
+changed files. A negative control (an undefined call beside `Debug.developerConsoleEnabled`) fails
+player-dev. `check_conditional_compilation.py` and `check_console_logging.py` pass. No Unity CLI in
+the authoring session, so `/verify-unity` did not run.
+
+**Verify in editor:**
+1. Play: the HUD appears as before. Press **Off**: the HUD goes away. Shift+F7: it comes back.
+2. Stop and Play again: the HUD is there (the Editor does not store the choice).
+3. Android dev build: **Off**, relaunch, Patch And Run a change. The HUD stays gone and an error
+   does not open Unity's red console. A four-finger hold of 2 s brings the HUD back.
+4. With it off, race to the end: no new `flight_*.json` under the Diagnostics `Flights` folder.
+
+---
 
 ### 🔴 Rhino deep dive: step-1 fixes, HUD vestiges, full four-row kit, replication, AI (`cece/relaxed-hopper-r62hbd`, 2026-10-16) — NOT EDITOR-VERIFIED
 
@@ -2999,6 +3051,10 @@ never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--
 **Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /
 turn swing / whip curl / crack / bank), `ThresherHullBuilder` (every proportion), the hit box sizes in
 `author_thresher_assets.py` (`BODY_BOX_*`).
+*Superseded in part 2026-10-19 (`cece/elegant-goldberg-eanwgx`): the tail no longer beats, swings with the
+stick or curls by a fixed angle; it hangs along the cord on springs (THRESHER.md §5b), and its tuning knobs are
+`ThresherAnimation`'s Tail header (cord sample distance, bend limits, root/tip frequency, damping, inertia, crack
+kick). Verify H2-H4b as rewritten.*
 
 ### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
 

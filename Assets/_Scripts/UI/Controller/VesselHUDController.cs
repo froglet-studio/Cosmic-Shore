@@ -82,6 +82,9 @@ namespace CosmicShore.UI
             // This is where it happens because this is where the ability map lives.
             SeedAbilityControls();
 
+            // A tap on a card is a press of its control, raised on this pilot's input like the control itself.
+            baseView?.SetAbilityPressSource(vesselStatus.InputStatus, Actions);
+
             // The switcher is what knows which device the player is holding. It is ENSURED rather
             // than required: three HUDs never had one, which is exactly why their authored glyphs
             // were never lit, never device-matched and never placed.
