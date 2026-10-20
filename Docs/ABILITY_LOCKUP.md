@@ -327,6 +327,30 @@ The legacy `highlights` list is still written, for a HUD the lockup could not cl
 vessel those images are retired chrome, so the write is a deliberate no-op rather than a second,
 divergent press glow.
 
+## Tap a card to press its ability (2026-10-19)
+
+Garrett, on a phone: "For all vessels when I tap their ability's icon/element totem it should be the same as using
+the glyph input." Every card is now its ability's button (`AbilityCardPress`, on the card's host):
+
+- **Finger down presses, finger up releases**, so a tap is a tap and a hold is a hold (a drift held on the card holds).
+- **The press is the control's own press.** It is raised on the pilot's `InputStatus.OnButtonPressed`, the event every
+  input strategy raises, so it passes the same autopilot / mute / suppression gates in `R_VesselActionHandler`, replicates
+  the same way (the press carries the device it resolved against; `peer_press_harness` is the check), and lights the
+  card through the same `OnInputEventStarted`.
+- **Which input.** The card's own (the map entry's `Input`, or a core card's binding). When that input runs nothing on
+  the device in hand, the first event of the same control that does (`R_VesselActionHandler.ResolvesOnActiveDevice`;
+  a trigger raises both the held and the "only" event, and the Squirrel binds drift to different ones on touch and pad).
+- **Not pressable:** a locked card, a passive card (`Input: 0`, the "no button" sentinel), and a card whose chip is a
+  gesture no button names (`SetAbilityControlBinding` with no event: the Rhino's sticks pushed apart).
+- **A pressable card takes hits on both plates**, so a finger anywhere on the totem counts.
+- **A touch that STARTS on a pressable card is not a thumb.** `TouchInputStrategy` reads every finger through
+  `flightTouches`, which leaves out touches claimed by `FlightTouchClaims`. Before this, a card tap with two thumbs down
+  was the three-finger path, and lifting a thumb to reach a card fired the one-thumb drift edges.
+
+Known limits: a tap leaves the analog trigger depth at 0 (`InputStatus.Left/RightTriggerAnalog`), so an ability that
+reads depth (Manta turn boost, Grizzly bombs, Thresher, Stoat sling) gets the press without a depth; a desktop mouse
+click on a card may also reach the mouse flight strategies.
+
 ## The row's frame — the HUD root IS the screen
 
 The row anchors to `(1, 0)` of the HUD root with the style's margins, which assumes that root is the

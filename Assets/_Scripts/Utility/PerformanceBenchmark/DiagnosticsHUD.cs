@@ -19,7 +19,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
     /// In-build diagnostics overlay (uGUI). Auto-spawns in the Editor and Development builds only
-    /// (stripped from Release). Shows live performance data and can record a "diagnostic" - a
+    /// (stripped from Release), while the <see cref="DevDiagnostics"/> switch is on - its Off
+    /// button, a four-finger hold or Shift+F7 makes a development build play like a release one.
+    /// Shows live performance data and can record a "diagnostic" - a
     /// timed spike capture written to the user's Documents folder as JSON + a readable .txt.
     ///
     /// • Normal mode: FPS + Frame Time (ms) + CPU/GPU split (busy CPU work vs GPU time) and a
@@ -142,10 +144,25 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void AutoSpawn()
         {
-            if (_instance != null) return;
+            // The HUD follows the development-build diagnostics switch (four-finger hold,
+            // Shift+F7, or the Off button below): off, a dev build plays like a release one.
+            DevDiagnostics.Changed -= OnDevDiagnosticsChanged;
+            DevDiagnostics.Changed += OnDevDiagnosticsChanged;
+            Spawn();
+        }
+
+        static void Spawn()
+        {
+            if (_instance != null || !DevDiagnostics.Enabled) return;
             var go = new GameObject("[DiagnosticsHUD]");
             DontDestroyOnLoad(go);
             _instance = go.AddComponent<DiagnosticsHUD>();
+        }
+
+        static void OnDevDiagnosticsChanged(bool on)
+        {
+            if (on) Spawn();
+            else if (_instance != null) Destroy(_instance.gameObject);
         }
 
         // ── config ──
@@ -1456,6 +1473,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _cmdInput.onEndEdit.AddListener(OnCommandEndEdit);
 
             CreateButton("Run", _commandRow, 202, 52, RunCommandFromInput);
+            // Turns every development-build diagnostic off until the four-finger hold (or
+            // Shift+F7) turns it back on; the choice survives relaunches and Patch builds.
+            CreateButton("Off", _commandRow, 260, 44, () => DevDiagnostics.SetEnabled(false));
 
             SetVisible(_visible);
             RefreshText();
