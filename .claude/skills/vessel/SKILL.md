@@ -41,6 +41,7 @@ touching before editing; read all of it when creating or completing a vessel.
 | HUD icons, hints, gauges, HUD lifecycle | §5 Ability row, §8 HUD pair | ARCHITECTURE.md §7.1–7.4 |
 | Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs; `Docs/VESSEL_CONSTRUCTION.md` |
 | Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
+| The MODEL itself: the FBX hull, its armature, element shape keys, puppetry takes, material slots; "the procedural model looks terrible" | — | **`/vessel-model`** (the Squirrel passed the owner's Editor test on 2026-10-18 by keeping the artist's hull and takes and adding the framework on top; its section 4 is the loop) (`.claude/skills/vessel-model/SKILL.md`): Blender-as-a-module specs under `Tools/Build/vessel_model/specs/`, verified and rendered before an in-place write; dossiers in `Docs/VesselModels/` |
 | Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
 | Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
 | Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
@@ -384,8 +385,9 @@ applies to new abilities, new resources on the meter list, and anything that add
     upgrade description. Per-vessel reality differs: the Dolphin carries the slow and an energy
     halving, its boost effect is a `retainedFraction` halving that deliberately **skips its
     correction while drifting** (i.e. exactly inside a drift-gated ward's window), and the input
-    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) is wired into **no container on any
-    vessel**. Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
+    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) — which this rule once said was wired into
+    no container, when the Sparrow's and Grizzly's both carried it — is **deleted** (2026-10-17;
+    the Grizzly's container held only the mute and had no danger burn at all). Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
     `SkimmerImpactorDataContainerSO` and read the effects you are about to make claims about —
     the ship protocol's "find the PRODUCER" rule, aimed at your own new prose rather than at
     inherited docs. (Dolphin Drift Ward, 2026-08-18.)
@@ -782,6 +784,26 @@ applies to new abilities, new resources on the meter list, and anything that add
     .NET 10 SDK) whenever a change calls an engine API the game did not call before, and write to the overloads
     both have (`RenderMeshInstanced` with one identity instance, list-based mesh setters). A game branch does not
     edit `Port/` (Port/CLAUDE.md); a missing API worth having is a port-branch row.
+52. **Anything a peer DECIDES from input must read input every peer has - and a GESTURE is input no
+    AI has.** Three Rhino defects, one shape (2026-10-16, `R_VesselActions/RHINO_SWORD_AFTERIMAGE.md`):
+    - **A press/release event is not a pose.** Remote replicas posed the sword from the replayed
+      press events - a full ±1 swing the moment a trigger crossed its deadzone - while the pilot
+      posed it from the analog depth, and every peer cuts prisms against its own blade, so a
+      half-pull that missed for the pilot cut on every other screen. `InputStatus` already
+      replicates the analog trigger MIRRORS (owner-write) and the DEVICE; pose from those on every
+      peer and keep events only for a device that writes no mirrors.
+    - **An owner-only grader with no event to end it latches every replica.** The graded ramp ends
+      only when its own `Tick` sees the pilot leave the grace band (its release event is the top of
+      the slope, not an end), and `Tick` returned early off the owner - so every replica held
+      `IsBoosting` and ×16.8 for the rest of the turn. Grade from the replicated sticks everywhere.
+    - **Owner-authoritative STATE needs a relay, not a hope.** Energy banked from per-peer kills and
+      an energize phase run on per-peer clocks decided what pops; `RhinoSwordNetworkRelay` (energy,
+      phase, surge bit, owner-write) is the shape. Route the mirrored phase through the same setter
+      the owner uses, so the edges (ignition re-dispatch, FX, the afterimage window) fire everywhere.
+    - **No AI raises `FullSpeedStraightAction`** - only a human input strategy does - so an ability
+      bound to the gesture is human-only until an `AIBoostPolicySO` presses it; and an ability posed
+      by TRIGGERS is human-only until something writes the trigger mirrors for the autopilot
+      (`RhinoSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

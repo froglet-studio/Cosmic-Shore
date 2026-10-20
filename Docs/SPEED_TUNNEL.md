@@ -155,12 +155,15 @@ zero authoring.
 Cruise = full throttle, unboosted (`DefaultThrottleScaler + DefaultMinimumSpeed`). Top applies
 the vessel's **real** boost source to the *scaler only* and then adds the minimum
 (`DefaultThrottleScaler × boost + DefaultMinimumSpeed` — the minimum is added AFTER the multiply,
-per `VesselTransformer.ComputeThrottleTarget`; that is why the Rhino's ×6 gives 310 and not 360).
+per `VesselTransformer.ComputeThrottleTarget`). *(This sentence used to illustrate that with "the
+Rhino's ×6 gives 310 and not 360"; the Rhino now authors `DefaultMinimumSpeed` **0**, so its ramp is
+the plain product 50 × 16.8 = 840 and no longer shows the ordering. The Dolphin, also minimum 0, is
+the same.)*
 
 **FrogletTools > Vessels > Audits > Validate Speed Tunnel Law** prints the **cruise** column live and is
 the gate for it. Its `top(rest)` column is NOT this table's top: the tool reads only the prefab's
 resting `VesselStatus.boostMultiplier`, while four vessels get their real top from elsewhere —
-the Rhino's ×6 from `RhinoRampBoostAction.asset`, the Squirrel's ×5 from the skim-boost clamp, the
+the Rhino's ×16.8 from `RhinoRampBoostAction.asset` (`maxBoostMultiplier`), the Squirrel's ×5 from the skim-boost clamp, the
 Serpent's from its consume-boost, and the Scarab's from a C# field initializer its prefab does not
 serialize at all (`SCARAB.md` §13) — none of which a prefab sweep can resolve. Teaching the tool to
 chase them is a much larger change for a column that is explicitly a report, not a check, so the
@@ -169,7 +172,7 @@ boosted numbers below are maintained by hand.
 | Vessel | cruise | effect | top speed | effect | notes |
 |---|---|---|---|---|---|
 | **Manta** | 180 | **0.52** | 720 | 1.00 | `DefaultThrottleScaler` 180 — 3.6× the fleet norm |
-| Rhino | 60 | 0.00 | 310 | 1.00 | ramp boost SO sets ×6 |
+| Rhino | 50 | 0.00 | 840 | 1.00 | ramp boost SO sets ×16.8 (`DefaultThrottleScaler` 50, `DefaultMinimumSpeed` 0; retuned 2026-09-25 from ×24 / 1200). Time scales only how fast the ramp winds up (220 → 550 u/s²), never this ceiling. *(Row corrected 2026-10-16; it read 60 / 310 / ×6.)* |
 | Squirrel | 60 | 0.00 | 300 | 1.00 | skim boost clamps to ×5 |
 | Serpent | 60 | 0.00 | 210 → 330 | 0.67 → 1.00 | Time elemental up to ×1.6 |
 | Dolphin | 68 | 0.00 | 347 | 1.00 | `DefaultMinimumSpeed` **0** — throttle-off is a real stop; boost multiplier is squared in use (2.259² = ×5.103) |

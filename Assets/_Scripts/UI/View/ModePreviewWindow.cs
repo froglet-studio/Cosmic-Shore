@@ -31,6 +31,10 @@ namespace CosmicShore.UI
     /// </summary>
     public class ModePreviewWindow : MonoBehaviour
     {
+        [Header("Words (empty shows nothing)")]
+        [Tooltip("Shown when there is no preview, or the build failed.")]
+        [SerializeField] string unavailableLine = "LEVEL PREVIEW\nNOT AVAILABLE";
+
         [Header("Surface")]
         [SerializeField, Tooltip("The RawImage inside the modal's preview frame the live camera " +
                                  "renders into.")]
@@ -58,6 +62,20 @@ namespace CosmicShore.UI
                                  "hand a card's small window a needlessly large surface.")]
         [Min(64)] int maxRenderHeight = 1080;
 
+        [Header("Tap to fly")]
+        [SerializeField, Tooltip("Take focus only on a DOUBLE tap of the surface. For a surface that fills the window " +
+                                 "behind its settings, where a single stray tap would otherwise launch the player " +
+                                 "into the game. A FLY control (RequestFocus) still goes in on one press.")]
+        bool doubleTapToFocus;
+        [SerializeField, Min(0.1f), Tooltip("Seconds between the two taps of a double tap.")]
+        float doubleTapSeconds = 0.4f;
+
+        [Header("Guided path")]
+        [SerializeField, Tooltip("What a guided path spotlights to say 'fly here' (optional; empty = the surface). " +
+                                 "A window whose surface fills the screen points this at its FLY control: a " +
+                                 "full-screen spotlight hole dims nothing and leaves its caption nowhere to sit.")]
+        RectTransform guideTarget;
+
         RenderTexture _renderTexture;
         RectTransform _surfaceRect;
         int _textureHeight;
@@ -72,6 +90,20 @@ namespace CosmicShore.UI
         /// EventSystem-driven UI, and a direct device poll sails straight past it.
         /// </summary>
         public static bool AnyHasFocus { get; private set; }
+
+        static ModePreviewWindow s_focused;
+
+        /// <summary>
+        /// Hand the stick back from whichever preview window holds it (no-op when none does). For a deliberate move
+        /// elsewhere in the menu - a window opened over a flying preview - which must end the flight rather than be
+        /// refused: the screens hide by alpha, so a preview on a screen the player leaves is never disabled and would
+        /// otherwise hold the pad, and every modal behind it, forever (2026-10-19 play test).
+        /// </summary>
+        public static void ReleaseAnyFocus()
+        {
+            if (s_focused) s_focused.ReleaseFocus();
+            else AnyHasFocus = false;
+        }
 
         /// <summary>Raised when the player taps the live window to take control.</summary>
         public event Action OnFocusRequested;
@@ -147,6 +179,10 @@ namespace CosmicShore.UI
 
         /// <summary>The live picture's rect - what an overlay drawn on the picture parents to.</summary>
         public RectTransform SurfaceRect => _surfaceRect ? _surfaceRect : transform as RectTransform;
+
+        /// <summary>What a guided path spotlights to send the player into this preview: the authored
+        /// <see cref="guideTarget"/> while it is on screen, otherwise the surface.</summary>
+        public RectTransform GuideRect => guideTarget && guideTarget.gameObject.activeInHierarchy ? guideTarget : SurfaceRect;
 
         // ── States (driven by the session) ───────────────────────────────────
 
@@ -254,7 +290,7 @@ namespace CosmicShore.UI
         /// <summary>"LEVEL PREVIEW NOT AVAILABLE" — no definition, or the build failed.</summary>
         public void ShowUnavailable()
         {
-            if (statusLabel) statusLabel.text = "LEVEL PREVIEW\nNOT AVAILABLE";
+            if (statusLabel) statusLabel.text = unavailableLine;
             Apply(State.Unavailable);
         }
 
@@ -301,11 +337,32 @@ namespace CosmicShore.UI
 
         // ── Focus ────────────────────────────────────────────────────────────
 
+        float _lastTap = -10f;
+
         void HandleFocusButton()
+        {
+            if (doubleTapToFocus)
+            {
+                float now = Time.unscaledTime;
+                bool second = now - _lastTap <= doubleTapSeconds;
+                _lastTap = second ? -10f : now;
+                if (!second) return;
+            }
+            Request();
+        }
+
+        void Request()
         {
             if (!_focusEnabled || _state != State.Live || HasFocus) return;
             OnFocusRequested?.Invoke();
         }
+
+        /// <summary>
+        /// Ask for focus exactly as a tap on the surface does. For a separate "fly" control the pad
+        /// can reach: the rev-3 configure window draws this surface full-bleed BEHIND its settings,
+        /// where it cannot also be the first control in focus order.
+        /// </summary>
+        public void RequestFocus() => Request();
 
         /// <summary>
         /// Grant focus. Called by the session once it has actually handed input to the vessel —
@@ -319,6 +376,7 @@ namespace CosmicShore.UI
             HasFocus = true;
             _mouseFlies = mouseFlies;
             AnyHasFocus = true;
+            s_focused = this;
             RefreshHint();
         }
 
@@ -328,6 +386,7 @@ namespace CosmicShore.UI
             if (!HasFocus) return;
             HasFocus = false;
             AnyHasFocus = false;
+            if (s_focused == this) s_focused = null;
             RefreshHint();
             OnFocusReleased?.Invoke();
         }
@@ -423,7 +482,9 @@ namespace CosmicShore.UI
 
             float aspect = 16f / 9f;
             if (_surfaceRect && _surfaceRect.rect.height > 1f)
-                aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height, 0.25f, 4f);
+                // 8:1, not 4:1: the configure window's preview is a wide banner (~6.3:1); a 4:1 texture
+                // drawn into it stretched the arena sideways by 1.6x.
+                aspect = Mathf.Clamp(_surfaceRect.rect.width / _surfaceRect.rect.height, 0.25f, 8f);
 
             _textureHeight = height;
             _renderTexture = new RenderTexture(Mathf.Max(64, Mathf.RoundToInt(height * aspect)), height, 24)

@@ -59,6 +59,12 @@ namespace CosmicShore.UI
                                  "world appearing, and a fast orbit competes with it.")]
         float orbitDegreesPerSecond = 6f;
 
+        [SerializeField, Tooltip("Pick a different camera move for every game (the owner, 2026-10-15: " +
+                                 "\"make the preview camera interesting and change on every game\"): " +
+                                 "a slow orbit, a low sweep past the build, a crane down from above, a " +
+                                 "spiral in and out, or a counter-orbit drift. Off = the plain orbit.")]
+        bool randomShot = true;
+
         [SerializeField, Tooltip("Narrower than the arcade card's 60 — the second half of the " +
                                  "zoom, spent optically rather than by moving the camera, so the " +
                                  "shot tightens without pushing the near geometry off frame.")]
@@ -116,6 +122,56 @@ namespace CosmicShore.UI
         Camera _ownedCamera;
         float _angle;
         float _renderAccumulator;
+
+        // The move this game's preview makes (randomShot). Explicit values: never reorder.
+        enum ShotStyle { Orbit = 0, LowSweep = 1, Crane = 2, Spiral = 3, Drift = 4 }
+        ShotStyle _shot;
+        float _shotTime;
+        float _shotDirection = 1f;
+        float _shotSpeed = 1f;
+
+        /// <summary>A new move, start angle and direction for this bring-up.</summary>
+        void PickShot()
+        {
+            _shotTime = 0f;
+            _angle = Random.Range(0f, 360f);
+            _shotDirection = Random.value < 0.5f ? -1f : 1f;
+            _shot = randomShot ? (ShotStyle)Random.Range(0, 5) : ShotStyle.Orbit;
+            _shotSpeed = _shot switch
+            {
+                ShotStyle.LowSweep => 2.2f,
+                ShotStyle.Crane => 0.8f,
+                ShotStyle.Spiral => 1.4f,
+                ShotStyle.Drift => 0.5f,
+                _ => 1f,
+            };
+        }
+
+        /// <summary>The lift and distance multipliers the current move wants at this moment.</summary>
+        void ShotShape(out float lift, out float distance)
+        {
+            float t = _shotTime;
+            lift = liftFactor;
+            distance = 1f;
+            switch (_shot)
+            {
+                case ShotStyle.LowSweep:
+                    lift = 0.04f * Mathf.Sin(t * 0.5f);
+                    distance = 0.85f;
+                    break;
+                case ShotStyle.Crane:
+                    lift = Mathf.Lerp(0.65f, 0.08f, Mathf.SmoothStep(0f, 1f, Mathf.PingPong(t / 14f, 1f)));
+                    break;
+                case ShotStyle.Spiral:
+                    lift = 0.15f + 0.25f * Mathf.Sin(t * 0.3f);
+                    distance = Mathf.Lerp(1f, 0.6f, Mathf.SmoothStep(0f, 1f, Mathf.PingPong(t / 12f, 1f)));
+                    break;
+                case ShotStyle.Drift:
+                    lift = 0.4f + 0.06f * Mathf.Sin(t * 0.7f);
+                    distance = 0.95f + 0.05f * Mathf.Sin(t * 0.45f);
+                    break;
+            }
+        }
         bool _running;
 
         /// <summary>
@@ -167,6 +223,7 @@ namespace CosmicShore.UI
             _framedRadius = 0f;
             _framedOrigin = Vector3.zero;
             _renderAccumulator = float.PositiveInfinity;   // draw the first frame immediately
+            PickShot();
             Frame(0f);
         }
 
@@ -249,7 +306,8 @@ namespace CosmicShore.UI
             var cam = previewCamera;
             if (!cam) return;
 
-            _angle = Mathf.Repeat(_angle + orbitDegreesPerSecond * deltaTime, 360f);
+            _shotTime += deltaTime;
+            _angle = Mathf.Repeat(_angle + orbitDegreesPerSecond * _shotSpeed * _shotDirection * deltaTime, 360f);
 
             var cell = Cell.FindNearestActiveCell(Vector3.zero);
             Vector3 cellCentre = cell ? cell.transform.position : Vector3.zero;
@@ -291,8 +349,9 @@ namespace CosmicShore.UI
                 radius = FramingRadius(cell);
             }
 
+            ShotShape(out float lift, out float distanceScale);
             var offset = Quaternion.Euler(0f, _angle, 0f) *
-                         new Vector3(0f, radius * liftFactor, -radius * framingFactor);
+                         new Vector3(0f, radius * lift, -radius * framingFactor * distanceScale);
 
             var t = cam.transform;
             t.position = ClampInsideCell(origin + offset, cellCentre, cell);

@@ -10,6 +10,11 @@ namespace CosmicShore.UI
     /// - LocalPlayer: shows the current user's avatar, add button hidden
     /// - Occupied: shows a party member's avatar and name
     /// - Empty: shows the "+" add button
+    ///
+    /// <para>What a state LOOKS like goes through three virtual hooks -
+    /// <see cref="SetPartShown"/>, <see cref="SetDomainGlow"/> and <see cref="SetRole"/> - so the
+    /// style-B party slot (<see cref="KitPartySlot"/>) draws the same states without a second copy
+    /// of the seating rules. This class draws the legacy look.</para>
     /// </summary>
     public class FriendInfoSlot : MonoBehaviour
     {
@@ -40,7 +45,7 @@ namespace CosmicShore.UI
         /// Structural rather than opt-in: a slot that quietly lacks the halo is a slot whose
         /// pilot has no visible team, and there is no per-slot reason to ever want that.
         /// </summary>
-        void EnsureDomainGlow()
+        protected virtual void EnsureDomainGlow()
         {
             if (domainGlow == null && avatarIcon != null)
                 domainGlow = PartySlotDomainGlow.EnsureFor(avatarIcon);
@@ -70,7 +75,7 @@ namespace CosmicShore.UI
         /// snapshotting one at population time - domain is re-picked mid-lobby and a snapshot
         /// would go stale silently.
         /// </summary>
-        public void SetDomainGlow(Color? domainColour)
+        public virtual void SetDomainGlow(Color? domainColour)
         {
             EnsureDomainGlow();
             if (domainGlow == null) return;
@@ -78,6 +83,24 @@ namespace CosmicShore.UI
             if (domainColour.HasValue) domainGlow.Show(domainColour.Value);
             else                       domainGlow.Hide();
         }
+
+        /// <summary>
+        /// Who this seat is, for a slot that says so ("You / Host", "Pilot"). Called by the party
+        /// panel after <see cref="SetAsLocalPlayer"/> / <see cref="SetPlayer"/>. The legacy slot
+        /// shows no role line, so this draws nothing here.
+        /// </summary>
+        public virtual void SetRole(bool isLocal, bool isHost) { }
+
+        /// <summary>
+        /// Shows or hides one part of the slot (the avatar, the name, the add or kick button). The
+        /// legacy prefab toggles the GameObject; a style-B slot overrides this with CanvasGroups.
+        /// </summary>
+        protected virtual void SetPartShown(Component part, bool shown) => part.gameObject.SetActive(shown);
+
+        protected Image AvatarIcon => avatarIcon;
+        protected Button AddButton => addButton;
+        protected Button KickButton => kickButton;
+        protected TMP_Text DisplayNameText => displayNameText;
 
         /// <summary>
         /// Configures this slot as the local player's slot.
@@ -92,11 +115,11 @@ namespace CosmicShore.UI
             SetDisplayName(displayName);
 
             if (addButton)
-                addButton.gameObject.SetActive(false);
+                SetPartShown(addButton, false);
 
             // You can never kick yourself - the local slot has no ✕.
             if (kickButton)
-                kickButton.gameObject.SetActive(false);
+                SetPartShown(kickButton, false);
         }
 
         /// <summary>
@@ -113,11 +136,11 @@ namespace CosmicShore.UI
             SetDisplayName(displayName);
 
             if (addButton)
-                addButton.gameObject.SetActive(false);
+                SetPartShown(addButton, false);
 
             if (kickButton)
             {
-                kickButton.gameObject.SetActive(canKick);
+                SetPartShown(kickButton, canKick);
                 kickButton.interactable = true;
             }
         }
@@ -135,21 +158,21 @@ namespace CosmicShore.UI
             {
                 avatarIcon.sprite = null;
                 avatarIcon.enabled = false;
-                avatarIcon.gameObject.SetActive(false);
+                SetPartShown(avatarIcon, false);
             }
 
             if (displayNameText)
             {
                 displayNameText.text = string.Empty;
                 displayNameText.enabled = false;
-                displayNameText.gameObject.SetActive(false);
+                SetPartShown(displayNameText, false);
             }
 
             if (addButton)
-                addButton.gameObject.SetActive(true);
+                SetPartShown(addButton, true);
 
             if (kickButton)
-                kickButton.gameObject.SetActive(false);
+                SetPartShown(kickButton, false);
 
             // An empty slot has no pilot and therefore no domain.
             SetDomainGlow(null);
@@ -178,7 +201,7 @@ namespace CosmicShore.UI
             if (!kickButton) return;
             kickButton.onClick.RemoveAllListeners();
             kickButton.onClick.AddListener(HandleKickClicked);
-            kickButton.gameObject.SetActive(false);
+            SetPartShown(kickButton, false);
         }
 
         void HandleKickClicked()
@@ -203,12 +226,12 @@ namespace CosmicShore.UI
             {
                 avatarIcon.sprite = sprite;
                 avatarIcon.enabled = true;
-                avatarIcon.gameObject.SetActive(true);
+                SetPartShown(avatarIcon, true);
             }
             else
             {
                 avatarIcon.enabled = false;
-                avatarIcon.gameObject.SetActive(false);
+                SetPartShown(avatarIcon, false);
             }
         }
 
@@ -223,7 +246,7 @@ namespace CosmicShore.UI
             // the next party refresh overwrites it.
             displayNameText.text = string.IsNullOrEmpty(name) ? "Pilot" : name;
             displayNameText.enabled = true;
-            displayNameText.gameObject.SetActive(true);
+            SetPartShown(displayNameText, true);
         }
     }
 }

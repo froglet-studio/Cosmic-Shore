@@ -367,7 +367,7 @@ namespace CosmicShore.Gameplay
         /// however far the hole opens.
         ///
         /// Nothing else bounds the two against each other - <see cref="Gap"/> and
-        /// <see cref="XScaler"/> are driven independently (<c>GrowTrailActionExecutor</c> moves
+        /// <see cref="XScaler"/> are driven independently (<c>GrowTrailAction</c> moves
         /// both, on separate weights, with no clamp on the gap) - and a hole wider than its slab
         /// gives a ZERO OR NEGATIVE rail. That does not fail loudly:
         /// <c>PrismScaleAnimator.SetTargetScale</c> silently clamps the axis up to its 0.5 floor

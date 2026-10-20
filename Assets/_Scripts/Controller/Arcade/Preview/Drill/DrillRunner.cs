@@ -228,6 +228,9 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
+            // The coaching is switched off in the library (tutorialsEnabled): nothing starts.
+            if (!_library.TutorialsEnabled) return false;
+
             _ctx = context;
             var status = Status;
             if (status == null) return false;
@@ -243,7 +246,7 @@ namespace CosmicShore.Gameplay
             RebuildFacts();
 
             var scheme = _facts.Scheme;
-            _skippable = context.PartyGuest || DrillProgressStore.IsLessonSkippable(scheme);
+            _skippable = context.PartyGuest || _library.EveryLessonSkippable || DrillProgressStore.IsLessonSkippable(scheme);
             _steps = DrillComposer.ComposeLesson(_library, _facts);
             _resumeKey = (context.Mode, status.VesselType);
 

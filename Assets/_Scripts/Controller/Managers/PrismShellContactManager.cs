@@ -193,8 +193,11 @@ namespace CosmicShore.Gameplay
         /// this to have the standing contact re-evaluated without waiting for an
         /// exit/re-enter. Pairs whose prism died or whose shield dropped since entry
         /// are skipped (the trigger path owns them again).
+        /// <para><paramref name="superShieldedOnly"/> limits the replay to super-shielded prisms —
+        /// all an ignition exists to reach. A shielded prism resting against the blade is shell-owned
+        /// too, and replaying it handed it a second cut for free.</para>
         /// </summary>
-        public static void RedispatchPairsForOwner(ImpactorBase owner)
+        public static void RedispatchPairsForOwner(ImpactorBase owner, bool superShieldedOnly = false)
         {
             var inst = Instance;
             if (inst == null || owner == null || ForceLegacyBoxInteraction) return;
@@ -214,6 +217,8 @@ namespace CosmicShore.Gameplay
                 var pair = inst._redispatchBuffer[i];
                 var prism = pair.Prism;
                 if (prism == null || prism.destroyed || !ShellOwnsContact(prism))
+                    continue;
+                if (superShieldedOnly && prism.prismProperties is not { IsSuperShielded: true })
                     continue;
                 owner.AcceptImpacteeFromShellContact(pair.PrismImpactor);
             }

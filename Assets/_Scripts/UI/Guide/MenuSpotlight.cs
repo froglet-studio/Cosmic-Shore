@@ -24,6 +24,11 @@ namespace CosmicShore.UI
     /// wanders off the target (or a Settings control) is put back on the target, so A presses the
     /// right thing and the D-pad cannot reach a dimmed one.</para>
     ///
+    /// <para><b>Skip is always offered</b> (the owner, 2026-10-15: "even if those come we need a skip
+    /// button"): a SKIP button in the bottom-right corner, above the dim, with the pad's Y as its
+    /// shortcut, asks <see cref="MenuGuide.RequestSkip"/>. Its words come from the driver (an authored
+    /// field); an empty label hides it.</para>
+    ///
     /// <para>Built entirely in code on its own screen-space overlay canvas, so no scene has to
     /// carry one and none can be missing it. It FADES in and out and the cut-out GLIDES between
     /// targets - continuity of existence applies to UI too.</para>
@@ -49,6 +54,12 @@ namespace CosmicShore.UI
         SpotlightFrameGraphic _frame;
         TextMeshProUGUI _caption;
         Image _captionBacking;
+        RectTransform _skipRect;
+        Button _skipButton;
+        TextMeshProUGUI _skipLabel;
+        GameObject _skipKeycap;
+        string _skipText;
+        string _skipCapText;
 
         RectTransform _target;
         string _captionText;
@@ -83,8 +94,15 @@ namespace CosmicShore.UI
         /// Point the spotlight at <paramref name="target"/>. Called every frame by the driver with
         /// whatever the current step is; re-pointing glides the cut-out rather than jumping it.
         /// </summary>
-        public void Show(RectTransform target, string caption, Color cta, float dimAlpha)
+        public void Show(RectTransform target, string caption, Color cta, float dimAlpha) =>
+            Show(target, caption, cta, dimAlpha, null, null);
+
+        /// <summary>As <see cref="Show(RectTransform,string,Color,float)"/>, with the Skip button's
+        /// label (null or empty hides Skip) and the pad button named on its keycap.</summary>
+        public void Show(RectTransform target, string caption, Color cta, float dimAlpha, string skipLabel, string skipKeycap)
         {
+            _skipText = skipLabel;
+            _skipCapText = skipKeycap;
             _wantVisible = target;
             _target = target;
             _captionText = caption;
@@ -139,6 +157,81 @@ namespace CosmicShore.UI
             _caption.alignment = TextAlignmentOptions.Center;
             _caption.raycastTarget = false;
             _caption.textWrappingMode = TextWrappingModes.Normal;
+
+            BuildSkip();
+        }
+
+        /// <summary>The Skip button: bottom right, above the dim, so a press reaches it.</summary>
+        void BuildSkip()
+        {
+            _skipRect = new GameObject("Skip", typeof(RectTransform)).GetComponent<RectTransform>();
+            _skipRect.SetParent(transform, false);
+            _skipRect.anchorMin = _skipRect.anchorMax = new Vector2(1f, 0f);
+            _skipRect.pivot = new Vector2(1f, 0f);
+            var plate = _skipRect.gameObject.AddComponent<Image>();
+            plate.color = new Color(0f, 0f, 0f, 0.78f);
+            _skipButton = _skipRect.gameObject.AddComponent<Button>();
+            _skipButton.targetGraphic = plate;
+            _skipButton.onClick.AddListener(MenuGuide.RequestSkip);
+
+            var label = new GameObject("Label", typeof(RectTransform)).GetComponent<RectTransform>();
+            label.SetParent(_skipRect, false);
+            label.anchorMin = Vector2.zero;
+            label.anchorMax = Vector2.one;
+            label.offsetMin = label.offsetMax = Vector2.zero;
+            _skipLabel = label.gameObject.AddComponent<TextMeshProUGUI>();
+            _skipLabel.alignment = TextAlignmentOptions.Center;
+            _skipLabel.raycastTarget = false;
+            _skipLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            _skipLabel.color = Color.white;
+
+            // The pad's shortcut, named on a small cap; hidden while no pad is connected.
+            var cap = new GameObject("Keycap", typeof(RectTransform)).GetComponent<RectTransform>();
+            cap.SetParent(_skipRect, false);
+            cap.anchorMin = cap.anchorMax = new Vector2(0f, 0.5f);
+            cap.pivot = new Vector2(0f, 0.5f);
+            var capText = cap.gameObject.AddComponent<TextMeshProUGUI>();
+            capText.alignment = TextAlignmentOptions.Center;
+            capText.raycastTarget = false;
+            capText.color = new Color(1f, 1f, 1f, 0.75f);
+            _skipKeycap = cap.gameObject;
+            _skipRect.gameObject.SetActive(false);
+        }
+
+        void PlaceSkip(float scale, bool visible)
+        {
+            bool show = visible && !string.IsNullOrEmpty(_skipText);
+            if (_skipRect.gameObject.activeSelf != show) _skipRect.gameObject.SetActive(show);
+            if (!show) return;
+
+            if (_skipLabel.text != _skipText) _skipLabel.text = _skipText;
+            if (!_skipLabel.font || _skipLabel.font == TMP_Settings.defaultFontAsset)
+            {
+                var font = ResolveFont();
+                if (font) _skipLabel.font = font;
+            }
+            bool pad = Gamepad.current != null && !string.IsNullOrEmpty(_skipCapText);
+            if (_skipKeycap.activeSelf != pad) _skipKeycap.SetActive(pad);
+
+            _skipLabel.fontSize = 26f * scale;
+            float capW = pad ? 34f * scale : 0f;
+            var capRect = (RectTransform)_skipKeycap.transform;
+            capRect.sizeDelta = new Vector2(capW, 30f * scale);
+            capRect.anchoredPosition = new Vector2(18f * scale, 0f);
+            var capText = _skipKeycap.GetComponent<TextMeshProUGUI>();
+            capText.fontSize = 20f * scale;
+            if (capText.text != _skipCapText) capText.text = _skipCapText;
+            if (_skipLabel.font) capText.font = _skipLabel.font;
+
+            var labelRect = _skipLabel.rectTransform;
+            labelRect.offsetMin = new Vector2(18f * scale + capW, 0f);
+            labelRect.offsetMax = new Vector2(-18f * scale, 0f);
+            float textW = _skipLabel.GetPreferredValues(_skipText).x;
+            _skipRect.sizeDelta = new Vector2(textW + capW + 36f * scale + (pad ? 8f * scale : 0f), 56f * scale);
+            _skipRect.anchoredPosition = new Vector2(-32f * scale, 32f * scale);
+
+            if (Gamepad.current != null && Gamepad.current.buttonNorth.wasPressedThisFrame)
+                MenuGuide.RequestSkip();
         }
 
         T MakeChild<T>(string childName) where T : Graphic
@@ -168,6 +261,7 @@ namespace CosmicShore.UI
             if (!visible)
             {
                 if (_group.alpha <= 0f) _hasHole = false;
+                PlaceSkip(1f, false);
                 return;
             }
 
@@ -215,6 +309,7 @@ namespace CosmicShore.UI
             _frame.SetVerticesDirty();
 
             PlaceCaption(scale, bounds);
+            PlaceSkip(scale, true);
             HoldPadOnPath();
         }
 
@@ -316,6 +411,7 @@ namespace CosmicShore.UI
         bool OnPath(Transform t)
         {
             if (t.IsChildOf(_target) || _target.IsChildOf(t)) return true;
+            if (_skipRect && t.IsChildOf(_skipRect)) return true;
             foreach (var allowed in _allowed)
                 if (allowed && t.IsChildOf(allowed)) return true;
             return false;

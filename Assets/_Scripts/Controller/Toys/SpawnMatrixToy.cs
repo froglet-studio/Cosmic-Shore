@@ -299,6 +299,14 @@ namespace CosmicShore.Gameplay
         // The last lifeform a shell press released, so the window can turn its picture onto it.
         Transform _lastShellRelease;
 
+        static ElementalBarsConfigSO _bars;
+
+        static Sprite PetalFor(Element element)
+        {
+            if (!_bars) _bars = Resources.Load<ElementalBarsConfigSO>(ElementalBarsConfigSO.ResourcePath);
+            return _bars ? _bars.GetPetalSprite(element) : null;
+        }
+
         List<ToyShellOption> BuildShellFaunaSpecies()
         {
             var options = new List<ToyShellOption>();
@@ -372,6 +380,8 @@ namespace CosmicShore.Gameplay
                 options.Add(new ToyShellOption
                 {
                     Label = element.ToString(),
+                    // The element's own petal - the art the vessel HUD and the arcade card draw.
+                    Icon = PetalFor(element),
                     Detail = capturedFlora && floraFrozen ? "Growth frozen" : "",
                     // Empty unless frozen: the layer then shows the species row's own description.
                     Description = capturedFlora ? frozenDescription : "",

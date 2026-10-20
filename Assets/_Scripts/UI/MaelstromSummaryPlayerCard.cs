@@ -12,6 +12,9 @@ namespace CosmicShore.UI
     /// tournament points). The background tints to the player's domain colour the view passes in (the
     /// theme's per-domain UI accent, same as the in-round Player Data Card). The authored "stats"
     /// placeholder text is left untouched. Pops in with a staggered entrance.
+    ///
+    /// <para>Style B (Docs/MENU_REDESIGN_B.md section 27): the domain's rank ("#1"), a domain pill,
+    /// and the total as a bare number under its own "Total score" label.</para>
     /// </summary>
     public class MaelstromSummaryPlayerCard : MonoBehaviour
     {
@@ -23,6 +26,16 @@ namespace CosmicShore.UI
         [Tooltip("Background image tinted to the player's domain colour.")]
         [SerializeField] Image domainBackground;
 
+        [Header("Style B (optional)")]
+        [Tooltip("\"#1\": the player's domain's place in the final standings.")]
+        [SerializeField] TMP_Text rankText;
+        [Tooltip("The card's frame, in the domain colour.")]
+        [SerializeField] Image frameBorder;
+        [SerializeField] Image pillBackground;
+        [SerializeField] Image pillMark;
+        [SerializeField] TMP_Text domainText;
+        [SerializeField, Range(0f, 1f)] float pillAlpha = 0.14f;
+
         CanvasGroup _cg;
         Sequence _seq;
 
@@ -30,8 +43,23 @@ namespace CosmicShore.UI
         {
             if (nameText) nameText.text = playerName;
             SetAvatar(avatar);
-            if (totalScoreText) totalScoreText.text = $"Total Score : {totalScore}";
+            if (totalScoreText) totalScoreText.text = totalScore.ToString();
             if (domainBackground) domainBackground.color = domainColor;
+            if (frameBorder) frameBorder.color = domainColor;
+            if (rankText) rankText.color = domainColor;
+            if (pillMark) pillMark.color = domainColor;
+            if (pillBackground) pillBackground.color = new Color(domainColor.r, domainColor.g, domainColor.b, pillAlpha);
+            if (domainText)
+            {
+                domainText.text = domain.ToString().ToUpperInvariant();
+                domainText.color = domainColor;
+            }
+        }
+
+        /// <summary>The player's domain's place in the final standings (1 = winner).</summary>
+        public void SetRank(int rank)
+        {
+            if (rankText) rankText.text = rank > 0 ? $"#{rank}" : string.Empty;
         }
 
         /// <summary>

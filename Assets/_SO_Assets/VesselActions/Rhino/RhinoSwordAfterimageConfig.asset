@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f60ec7a0855e2245ff5f4ef9b9a85aa8, type: 3}
+  m_Name: RhinoSwordAfterimageConfig
+  m_EditorClassIdentifier: 
+  windowSeconds: 5
+  layIntervalSeconds: 0.3
+  minTipTravel: 6
+  maxAfterimagesPerWindow: 16
+  segmentLength: 10
+  maxSegments: 6
+  lengthCoverage: 0.9
+  width: 2
+  thickness: 0.8
+  colliderDelaySeconds: 0.1
+  massVolumeMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 2
+    UseFloor: 1
+    Floor: 0.25
+  dangerUpgradeElement: 2
