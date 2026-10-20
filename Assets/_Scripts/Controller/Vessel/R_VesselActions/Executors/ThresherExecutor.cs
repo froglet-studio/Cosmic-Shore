@@ -173,8 +173,6 @@ namespace CosmicShore.Gameplay
         public ThresherMode Mode => _solver?.Mode ?? ThresherMode.Free;
         /// <summary>True while a MULTIPLAYER hit-stop is holding this hull and its ball still.</summary>
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
-        /// <summary>Releasing the right trigger now would crack the ball past smash speed.</summary>
-        public bool IsReady { get; private set; }
         public float BallSpeed => _solver?.BallSpeed ?? 0f;
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
 
@@ -228,9 +226,6 @@ namespace CosmicShore.Gameplay
                 return cap > 1f ? Mathf.Clamp01((EnergyScale(_energy) - 1f) / (cap - 1f)) : 0f;
             }
         }
-        /// <summary>A release NOW would barely wait: the ship reaches the launch point within
-        /// <c>launchCueSeconds</c>. The crosshair's lime cue only - every aimed launch takes the same boost.</summary>
-        public bool IsLaunchImminent { get; private set; }
         /// <summary>The local pilot is spectating a planted spin and the sticks aim the release, not the orbit.</summary>
         public bool IsAiming => _spectating;
         /// <summary>
@@ -245,8 +240,9 @@ namespace CosmicShore.Gameplay
         public bool LaunchViewUp { get; private set; }
         /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>
         public Color BallColorNow => _shownValid ? _shownHue : config && _solver != null ? BallColor(out _) : Color.white;
-        /// <summary>The READY lime (LINEAR).</summary>
-        public Color ReadyColorNow => config ? ReadyColor() : Color.green;
+        /// <summary>The palette's CTA lime (LINEAR): the HUD's energy gauge fills toward it. Nothing on the
+        /// vessel itself wears it (Garrett, 2026-10-20: the crack and the launch timing are left to feel).</summary>
+        public Color CtaColorNow => config ? CtaColor() : Color.green;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -480,16 +476,7 @@ namespace CosmicShore.Gameplay
             CutWithChain(dt);
 
             UpdateLaunchView(dt);
-            IsLaunchImminent = _spectating && config && _solver.Mode == ThresherMode.Pivot &&
-                               _solver.SecondsToLaunchPoint(shipPosition, _aimDir) <= config.LaunchCueSeconds;
-
             UpdateCombo(dt);
-            // READY: tightening the chain now (analog: pulling RT to rigid; digital: releasing it) would crack
-            // the ball past smash speed - both reel the ball in to rest length by spin conservation.
-            bool ready = _settings.Analog ? _solver.Rigidity < (config ? config.FullPull : 0.97f) : _payOut;
-            IsReady = ready && _solver.Mode == ThresherMode.Free &&
-                      _solver.PredictReelCrackSpeed(shipPosition, result.ShipVelocity)
-                          >= _settings.SmashSpeed * (config ? config.ReadyMargin : 1f);
             return result.ShipVelocity;
         }
 
@@ -1197,7 +1184,7 @@ namespace CosmicShore.Gameplay
             ShowVantage(_easeFromPos, fromRot, eye, look, _camEase);
             _lastCamRotation = _cam.transform.rotation;
 
-            // The launch sight: the crosshair (lime while a release would barely wait) and the Time-petal
+            // The launch sight: the crosshair (one colour; the release timing is left to feel) and the Time-petal
             // zoom window down the same trajectory, zoomed by LT's depth alone. (Analog triggers: LT is at a
             // full pull whenever this view is up, so its depth cannot zoom; the window stays wide.)
             float zoomDepth = analog ? 0f : (input != null ? input.LeftTriggerAnalog : 0f);
@@ -1207,7 +1194,7 @@ namespace CosmicShore.Gameplay
             if (!_sight) _sight = ThresherLaunchSight.Create(name);
             _sight.Tick(launch, _aimDir, _aimUp,
                 Mathf.Lerp(config.SightWideFieldOfView, config.SightZoomFieldOfView, _sightZoom01),
-                IsLaunchImminent ? ReadyColor().gamma : new Color(1f, 1f, 1f, 0.9f));
+                new Color(1f, 1f, 1f, 0.9f));
         }
 
         /// <summary>Start aiming at the moment of detaching: the aim starts as the way the camera
@@ -1363,7 +1350,7 @@ namespace CosmicShore.Gameplay
             return c.a > 0f ? c : config.FallbackDangerColor;
         }
 
-        Color ReadyColor()
+        Color CtaColor()
         {
             var palette = Palette;
             if (!palette) return config.FallbackReadyColor;
@@ -1407,10 +1394,11 @@ namespace CosmicShore.Gameplay
         void BallShade(out Color body, out Color rim)
         {
             BallShadeForState(out body, out rim);
-            // The bank: the rim leans toward the CTA lime as the chain's kills charge the next
-            // explosion, so a charged ball is legible before it hits anything.
+            // The bank: the rim burns toward white as the chain's kills charge the next explosion, so a
+            // charged ball reads as explosive before it hits anything - in its own hue, never the HUD's lime.
             float e = Energy01;
-            if (e > 0f) rim = Color.Lerp(rim, WithMaxChannel(ReadyColor(), config.BallRimHot), e * config.EnergyRimTint);
+            if (e > 0f) rim = Color.Lerp(rim, new Color(config.BallRimHot, config.BallRimHot, config.BallRimHot, 1f),
+                                         e * config.EnergyRimTint);
         }
 
         void BallShadeForState(out Color body, out Color rim)
@@ -1438,17 +1426,13 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The chain tube's two colours: an iron body (<c>chainColor</c>), and a rim in the
-        /// ball's hue — dim while slack, brighter while taut (the state in which it cuts) — that
-        /// turns the palette's CTA lime while READY. A target: the drawn colour eases to it.</summary>
+        /// ball's hue — dim while slack, brighter while taut (the state in which it cuts). There is
+        /// no READY cue: when a tightening will crack past smash speed is left to feel. A target:
+        /// the drawn colour eases to it.</summary>
         void ChainShade(out Color body, out Color rim)
         {
             body = config.ChainColor;
             body.a = 1f;
-            if (IsReady)
-            {
-                rim = WithMaxChannel(ReadyColor(), config.ChainRimReady);
-                return;
-            }
             bool taut = _solver.Mode == ThresherMode.Pivot || _solver.IsTaut;
             rim = WithMaxChannel(BallColor(out _), taut ? config.ChainRimTaut : config.ChainRimSlack);
         }
@@ -1476,7 +1460,7 @@ namespace CosmicShore.Gameplay
         MaterialPropertyBlock _chainMpb;
 
         // The colours actually DRAWN. Every state change (domain -> red at smash, slack -> taut,
-        // -> READY lime) is a quick ease to the new colour (colorBlendRate), never a cut or a
+        // charged rim) is a quick ease to the new colour (colorBlendRate), never a cut or a
         // flicker: the change is the signal, and a strobe read as noise.
         bool _shownValid;
         Color _shownHue, _shownBody, _shownRim, _shownChainRim;
@@ -1756,7 +1740,7 @@ namespace CosmicShore.Gameplay
                 if (_ballRenderers[i]) _ballRenderers[i].SetPropertyBlock(_mpb);
 
             // Chain: the gameplay links, drawn as a fresnel tube at the width that CUTS. Iron body;
-            // the rim takes the ball's hue, brighter while taut (it is slicing), lime at READY.
+            // the rim takes the ball's hue, brighter while taut (it is slicing).
             _chain.startWidth = _chain.endWidth = 2f * config.ChainCutRadius;
             _chainMpb.Clear();
             _chainMpb.SetColor(DarkColorId, chainBody);

@@ -43,7 +43,7 @@ namespace CosmicShore.UI
         {
             if (!_isLocalPilotHud || !view || !thresher) return;
             view.SetBallHeat(thresher.Gauge01, thresher.BallColorNow.gamma);
-            view.SetEnergy(thresher.EnergyRadius01, thresher.ReadyColorNow.gamma);
+            view.SetEnergy(thresher.EnergyRadius01, thresher.CtaColorNow.gamma);
         }
     }
 }

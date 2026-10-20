@@ -1200,26 +1200,7 @@ namespace CosmicShore.Gameplay
             return p.normalized;
         }
 
-        // ------------------------------------------------------------------ prediction + smash rules
-
-        /// <summary>
-        /// The READY cue: the ball's speed if the right trigger were released NOW and the chain
-        /// reeled all the way in, by spin conservation from the current length. Deliberately
-        /// ignores the snap crack and the ship's own turning — so it UNDERESTIMATES during a fast
-        /// snap (a known weakness, recorded in THRESHER.md).
-        /// </summary>
-        public float PredictReelCrackSpeed(Vector3 shipPosition, Vector3 shipVelocity)
-        {
-            if (Mode != ThresherMode.Free) return BallSpeed;
-            Vector3 r = BallPosition - shipPosition;
-            float dist = r.magnitude;
-            if (dist < 1e-5f) return BallSpeed;
-            Vector3 n = r / dist;
-            Vector3 relative = BallVelocity - shipVelocity;
-            Vector3 tangential = relative - n * Vector3.Dot(relative, n);
-            float mult = dist > Settings.RestLength ? dist / Settings.RestLength : 1f;
-            return Mathf.Min(Settings.MaxBallSpeed, (shipVelocity + tangential * mult).magnitude);
-        }
+        // ------------------------------------------------------------------ smash rules
 
         /// <summary>How white-hot a ball at <paramref name="speed"/> is: 0 at smash speed, 1 at
         /// <see cref="ThresherChainSettings.WhiteHotSpeed"/>.</summary>
