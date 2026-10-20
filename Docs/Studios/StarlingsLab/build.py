@@ -1,6 +1,6 @@
-"""Build Docs/Studios/KrillLab.html from src/lab.html and the card list.
+"""Build Docs/Studios/StarlingsLab.html from src/lab.html and the card list.
 
-    python3 Docs/Studios/KrillLab/build.py
+    python3 Docs/Studios/StarlingsLab/build.py
 
 The card numbers come from Docs/Studios/SwarmCardVessel/cards.json (built by that folder's build.py),
 so the lab and the deck page read one source.
@@ -11,7 +11,7 @@ import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "src", "lab.html")
 CARDS = os.path.join(HERE, "..", "SwarmCardVessel", "cards.json")
-OUT = os.path.join(HERE, "..", "KrillLab.html")
+OUT = os.path.join(HERE, "..", "StarlingsLab.html")
 
 page = open(SRC, encoding="utf-8").read()
 marker = "/*CARDS*/null"

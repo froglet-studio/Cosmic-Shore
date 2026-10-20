@@ -1,8 +1,8 @@
 <!doctype html>
 <!--
-  KRILL LAB — the passive swarm card vessel (Garrett, 2026-10-20). Source of Docs/Studios/KrillLab.html:
-    python3 Docs/Studios/KrillLab/build.py     (injects Docs/Studios/SwarmCardVessel/cards.json)
-    node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/KrillLab.html
+  STARLINGS LAB — the passive swarm card vessel (Garrett, 2026-10-20). Source of Docs/Studios/StarlingsLab.html:
+    python3 Docs/Studios/StarlingsLab/build.py     (injects Docs/Studios/SwarmCardVessel/cards.json)
+    node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/StarlingsLab.html
   Built from .claude/skills/labmaker/template/lab.html (the lab contract: SHIPPED, SPEC, seeded runs,
   manual clock, window.__lab, headless scorecard, decision log, an honest not-modelled list).
 -->
@@ -10,7 +10,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Krill Lab</title>
+<title>Starlings Lab</title>
 <style>
   :root {
     --bg: #eef2f6; --panel: #ffffff; --ink: #142030; --muted: #586579; --line: #d6dde6;
@@ -126,7 +126,7 @@
   // ================= (1) LAB meta + the numbers =================
   // Nothing of this vessel is in the game yet, so almost every number is the lab's PROPOSAL. Card numbers are
   // read from cards.json (the card list is their source). Game rules the lab copies are named.
-  const LAB = { name: 'Krill Lab', branch: 'claude/project-thread-pkoq70', round: 1, doc: 'Docs/Studios/KRILL_LAB.md', cards: 'revision ' + CARDS.revision };
+  const LAB = { name: 'Starlings Lab', branch: 'claude/project-thread-pkoq70', round: 1, doc: 'Docs/Studios/STARLINGS_LAB.md', cards: 'revision ' + CARDS.revision };
   const SHIPPED = {
     tOmni: 30,        // lab proposal: Omnicrystal phase timer (s)            (SWARM_CARD_VESSEL.md, the phase table)
     tElem: 25,        // lab proposal: Elemental crystals phase timer (s)
@@ -182,7 +182,7 @@
     Charge: ['charge-lasers', 'charge-emp', 'charge-tesla-coil', 'charge-short-circuit', 'charge-sting', 'charge-chain-lightning'],
   };
   const CARD = {}; for (const c of CARDS.cards) CARD[c.id] = c;
-  for (const el of ELS) for (const id of IMPL[el]) if (!CARD[id]) throw new Error('Krill Lab: card ' + id + ' is not in cards.json');
+  for (const el of ELS) for (const id of IMPL[el]) if (!CARD[id]) throw new Error('Starlings Lab: card ' + id + ' is not in cards.json');
   function sv(id, i, L) {           // stat i of card id at level L, by the card's own formula (same rule as the deck page)
     const s = CARD[id].stats[i];
     const v = s.kind === 'lin' ? s.a + s.b * (L - 1) : s.a * Math.pow(s.b, L - 1);
@@ -374,7 +374,7 @@
     const bitesNeed = has('space-shield-eaters') ? Math.max(1, sv('space-shield-eaters', 0, lv('space-shield-eaters'))) : Infinity;
     const baseBite = 0.5;    // lab: a bare member's chance per second to break a plain enemy prism it touches
     for (const m of ms) {
-      for (const c of W.crystals) if (c.alive && d2(c.p, m.p) < 28 * 28) { c.alive = false; c.respawn = 6; W.stats.crystals++; if (PHASES[W.phase].key === 'elem' || (nSw > 1)) W.gotY++; if (alive().length < cap) addMember(c.p); }   // lab: each elemental crystal hatches one krill
+      for (const c of W.crystals) if (c.alive && d2(c.p, m.p) < 28 * 28) { c.alive = false; c.respawn = 6; W.stats.crystals++; if (PHASES[W.phase].key === 'elem' || (nSw > 1)) W.gotY++; if (alive().length < cap) addMember(c.p); }   // lab: each elemental crystal hatches one starling
       if (W.omni && d2(W.omni.p, m.p) < 20 * 20) { W.omni = null; W.omniRespawn = 4; W.stats.omnis++; if (PHASES[W.phase].key === 'omni') endPhase(true); else dealHand(); }
       near(m.p, reach, (q) => {
         if (q.team !== 'E') return;
@@ -446,7 +446,7 @@
       if (r.ko) { r.ko -= dt; if (r.ko <= 0) Object.assign(r, newRival()); continue; }
       r.silenced = Math.max(0, r.silenced - dt); r.slowT = Math.max(0, r.slowT - dt);
       if (d2(r.p, r.way) < 60 * 60) r.way = inBall(rnd, R * 0.8);
-      const to = sub(r.way, r.p), l = len(to) || 1, sp = 90 * (r.slowT > 0 ? 0.6 : 1);   // lab: rivals cruise 90 u/s, slower than the krill
+      const to = sub(r.way, r.p), l = len(to) || 1, sp = 90 * (r.slowT > 0 ? 0.6 : 1);   // lab: rivals cruise 90 u/s, slower than the starlings
       r.v = to.map((x) => x / l * sp); for (let a = 0; a < 3; a++) r.p[a] += r.v[a] * dt;
       r.layT += dt; if (r.layT > 1.5) { r.layT = 0; W.prisms.push({ p: r.p.slice(), team: 'E', shield: 0, danger: false, alive: true, bites: 0 }); }
       for (const c of W.crystals) if (c.alive && d2(c.p, r.p) < 20 * 20) { c.alive = false; c.respawn = 6; r.crystals++; }
@@ -571,11 +571,11 @@
       ctx.beginPath(); ctx.moveTo(12 * dpr, 0); ctx.lineTo(-8 * dpr, 7 * dpr); ctx.lineTo(-8 * dpr, -7 * dpr); ctx.closePath(); ctx.fill(); ctx.restore();
       ctx.fillStyle = '#ffd6c8'; ctx.font = (10 * dpr) + 'px system-ui'; ctx.fillText(r.petals.toFixed(1) + '✿' + (r.silenced > 0 ? ' silenced' : ''), s[0] + 12 * dpr, s[1] - 8 * dpr);
     }
-    // the swarm: one krill body per member, oriented along its motion
+    // the swarm: one starling per member, oriented along its motion
     const ms = alive();
     for (const m of ms) {
       const s = proj(m.p), t = proj([m.p[0] + m.v[0] * 0.1, m.p[1] + m.v[1] * 0.1, m.p[2] + m.v[2] * 0.1]), ang = Math.atan2(t[1] - s[1], t[0] - s[0]);
-      ctx.globalAlpha = Math.max(0.4, fade(s[2])); krill(s[0], s[1], ang, dpr * (W.form === 'Snowball' ? 0.8 : 1), m.shells);
+      ctx.globalAlpha = Math.max(0.4, fade(s[2])); starling(s[0], s[1], ang, dpr * (W.form === 'Snowball' ? 0.8 : 1.15), m.shells, W.t * 14 + m.id);
     }
     ctx.globalAlpha = 1;
     // events: shots, lasers, EMP rings, black hole
@@ -590,14 +590,17 @@
     hud();
   }
   function diamond(x, y, r, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.fill(); }
-  function krill(x, y, ang, k, shells) {   // a curled krill: tapered body, tail fan, two antennae
+  function starling(x, y, ang, k, shells, flap) {   // a starling seen from above: swept wings that beat, a short tail, a sharp beak
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(k, k);
-    ctx.fillStyle = '#ffb0a0'; ctx.beginPath(); ctx.ellipse(0, 0, 7, 2.6, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = '#ff7f6e'; ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(-10, 3); ctx.lineTo(-10, -3); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#ffd9cf'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(6, -1); ctx.lineTo(11, -4); ctx.moveTo(6, 1); ctx.lineTo(11, 4); ctx.stroke();
-    if (shells) { ctx.strokeStyle = COL.mass; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, 0, 8.5, 4, 0, 0, 7); ctx.stroke(); }
+    const w = 5 + 2.5 * Math.sin(flap);
+    ctx.fillStyle = '#b9c8ff'; ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(-3, w); ctx.lineTo(-1, 0); ctx.lineTo(-3, -w); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e4ebff'; ctx.beginPath(); ctx.ellipse(0, 0, 4.5, 1.8, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(-7, 1.6); ctx.lineTo(-7, -1.6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f2c14e'; ctx.beginPath(); ctx.moveTo(4.2, -0.5); ctx.lineTo(6.5, 0); ctx.lineTo(4.2, 0.5); ctx.closePath(); ctx.fill();
+    if (shells) { ctx.strokeStyle = COL.mass; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, 0, 7.5, 4, 0, 0, 7); ctx.stroke(); }
     ctx.restore();
   }
+
 
   function hud() {
     const ph = $('phases'); if (ph.children.length !== 4) ph.innerHTML = PHASES.map(() => '<div><span></span><i></i></div>').join('');
@@ -609,7 +612,7 @@
       d.lastChild.style.width = on ? (100 * Math.min(1, W.phaseT / L)) + '%' : '0';
     });
     const s = score(), held = Object.keys(W.held).length;
-    $('hudText').textContent = 'Krill ' + s.members + ' / cap ' + capNow() + ' (safe at ' + minNow() + ')' + '  ·  hands ' + s.hands + '  ·  cards held ' + held + '  ·  enemy prisms removed ' + s.spaceRemoved + '  ·  your prisms ' + W.prisms.filter((q) => q.alive && q.team === 'Y').length + '  ·  petals taken ' + W.stats.petals.toFixed(1) + (paused ? '  [paused]' : '');
+    $('hudText').textContent = 'Starlings ' + s.members + ' / cap ' + capNow() + ' (safe at ' + minNow() + ')' + '  ·  hands ' + s.hands + '  ·  cards held ' + held + '  ·  enemy prisms removed ' + s.spaceRemoved + '  ·  your prisms ' + W.prisms.filter((q) => q.alive && q.team === 'Y').length + '  ·  petals taken ' + W.stats.petals.toFixed(1) + (paused ? '  [paused]' : '');
     drawHand();
   }
   let handShown = null;
@@ -748,7 +751,7 @@
     db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
   })();
 
-  const COLS = [['timeRace', 'Time: crystal race (s, lower wins)', -1], ['spaceRemoved', 'Space: enemy prisms removed', 1], ['massStanding', 'Mass: your prisms standing', 1], ['chargeScore', 'Charge: petals + KOs + fauna', 1], ['hands', 'Hands', 0], ['members', 'Krill at end', 0]];
+  const COLS = [['timeRace', 'Time: crystal race (s, lower wins)', -1], ['spaceRemoved', 'Space: enemy prisms removed', 1], ['massStanding', 'Mass: your prisms standing', 1], ['chargeScore', 'Charge: petals + KOs + fauna', 1], ['hands', 'Hands', 0], ['members', 'Starlings at end', 0]];
   function scorecardPanel() {
     const box = document.createElement('div');
     box.innerHTML = '<p><button class="btn primary" id="runBatch">Run the scorecard</button> <span class="hint">headless, seeds 1–3, 300 s each at the current intensity, with every element\'s upgrade level at 5 so a few picks show; the AI picks cards by the rule in each row. Each "X first" build should win its own element\'s column.</span></p><div style="overflow-x:auto"><table id="scoreTable"></table></div>';
@@ -766,14 +769,14 @@
   function aboutPanel() {
     const box = document.createElement('div');
     box.innerHTML = '<p id="aboutHead"></p>' +
-      '<p><b>How to play.</b> You do not steer the krill. Drag anywhere on the stage to turn your view (it works like a joystick and stops when you let go; arrow keys work too). The swarm works four objectives in turn on timers; each phase ends early when its goal is met. When the Omnicrystal phase ends, crystal or not, you get four cards, one per element. Pick one; the swarm keeps going while you read. A card you already hold adds its level, up to 15.</p>' +
-      '<p class="hint"><b>What this lab does NOT model.</b> The view is a 2D canvas projection with a depth fade, a stand-in for the Wrasse\'s 2.5D look. Rivals are scripted wanderers that lay prisms, take crystals and shoot krill; they are not players and they do not use abilities. Fauna only graze your prisms. A prism is a point with no volume. Only 24 of the 80 cards are wired, and their side effects are simplified. Every number is a proposal: nothing of this vessel exists in the game yet. No networking, no frame-time measurement on a phone GPU, no collider budget.</p>';
+      '<p><b>How to play.</b> You do not steer the starlings. Drag anywhere on the stage to turn your view (it works like a joystick and stops when you let go; arrow keys work too). The swarm works four objectives in turn on timers; each phase ends early when its goal is met. When the Omnicrystal phase ends, crystal or not, you get four cards, one per element. Pick one; the swarm keeps going while you read. A card you already hold adds its level, up to 15.</p>' +
+      '<p class="hint"><b>What this lab does NOT model.</b> The view is a 2D canvas projection with a depth fade, a stand-in for the Wrasse\'s 2.5D look. Rivals are scripted wanderers that lay prisms, take crystals and shoot starlings; they are not players and they do not use abilities. Fauna only graze your prisms. A prism is a point with no volume. Only 24 of the 80 cards are wired, and their side effects are simplified. Every number is a proposal: nothing of this vessel exists in the game yet. No networking, no frame-time measurement on a phone GPU, no collider budget.</p>';
     box.querySelector('#aboutHead').textContent = LAB.name + ' · round ' + LAB.round + ' · cards ' + LAB.cards + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
     return box;
   }
   makeTabs('bottomTabs', 'bottomBody', [{ name: 'About', build: aboutPanel }, { name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }], 'lab:' + LAB.name + ':bottom');
 
-  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round + ' · the Krill';
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round + ' · the Starlings';
   let paused = false, mult = 1;
   $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
   $('speed').onclick = () => { mult = mult === 1 ? 4 : 1; $('speed').textContent = '×' + mult; };

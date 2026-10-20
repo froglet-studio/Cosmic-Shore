@@ -1,8 +1,11 @@
-# Swarm Card Vessel: the 80 cards (revision 3, 2026-10-20)
+# The Starlings: the 80 cards (revision 3, 2026-10-20)
+
+*The vessel is named the Starlings (Garrett, 2026-10-20): a swarm of vessels. It was the Krill until then; the Jacks and the Marlin herd actual fauna.*
 
 **Review page:** https://claude.ai/artifact/QB2oYkL8P8Cv7KPGyhdHp2 (filter by element or phase, drag the level slider, mark each card Keep / Tweak / Cut with a note; the next revision reads those marks).
 **Data:** `Docs/Studios/SwarmCardVessel/cards.py` is the single source; `python3 Docs/Studios/SwarmCardVessel/build.py` writes this file, `cards.json` and the page (`Docs/Studios/SwarmDeck.html`).
-**Status:** design list only. Nothing is in the lab or in Unity yet. Revision 3 follows Garrett's second brief (timed objective cycle, passive swarm); he reviews again.
+**Lab:** https://claude.ai/artifact/QsSVVTcxL4PxXsrK2MBeVY ([STARLINGS_LAB.md](STARLINGS_LAB.md)), 24 of the 80 cards wired.
+**Status:** design list. Revision 3 follows Garrett's second brief (timed objective cycle, passive swarm); he reviews again.
 
 ## The vessel (Garrett's brief, 2026-10-20, revised the same day; not built yet)
 
