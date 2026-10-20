@@ -1,0 +1,277 @@
+<title>Swarm Deck</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a sticky deck toolbar over a flowing grid of 80 ability cards, grouped by element; each card is reviewable in place. */
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --surface-2:#f4f6fa; --fg:#151a2b; --muted:#5a6280; --line:#d9deea;
+  --mass:#2f6fe0; --time:#0f9488; --space:#7a4fd8; --charge:#b07a00;
+  --keep:#1d8a4e; --tweak:#b46a00; --cut:#c23a3a;
+  --f-display:"Aldrich","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0f1e; --surface:#141a2e; --surface-2:#1a2139; --fg:#e7eaf6; --muted:#97a0c2; --line:#273052;
+  --mass:#6aa0ff; --time:#3fd6c5; --space:#a988ff; --charge:#f2c14e;
+  --keep:#4fcf86; --tweak:#f0a443; --cut:#ff7a7a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b0f1e; --surface:#141a2e; --surface-2:#1a2139; --fg:#e7eaf6; --muted:#97a0c2; --line:#273052;
+  --mass:#6aa0ff; --time:#3fd6c5; --space:#a988ff; --charge:#f2c14e;
+  --keep:#4fcf86; --tweak:#f0a443; --cut:#ff7a7a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1240px;margin:0 auto}
+header{padding-block:28px 8px;display:grid;gap:10px}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,5vw,44px);letter-spacing:.02em;margin:0;text-wrap:balance}
+.lede{max-width:68ch;color:var(--muted);margin:0}
+details.ctx{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;max-width:880px}
+details.ctx summary{cursor:pointer;font-weight:600}
+details.ctx ul{margin:8px 0 4px;padding-left:20px;display:grid;gap:4px}
+details.ctx p{margin:8px 0}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+select,input[type=search]{font:14px var(--f-body);background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+input[type=search]{width:150px}
+.lvl{display:flex;align-items:center;gap:8px;font:500 13px var(--f-body)}
+.lvl input{width:150px;accent-color:var(--fg)}
+.lvl output{font:500 15px var(--f-mono);min-width:3.2ch}
+.tally{font:13px var(--f-mono);color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.tally b{font-weight:500}
+.tally .k{color:var(--keep)}.tally .t{color:var(--tweak)}.tally .c{color:var(--cut)}
+.store{font-size:12px;color:var(--muted)}
+section.el{padding-top:22px}
+section.el>h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0 0 2px;display:flex;align-items:center;gap:10px}
+section.el>h2 i{width:14px;height:14px;border-radius:3px;transform:rotate(45deg);display:inline-block}
+section.el>p{margin:0 0 14px;color:var(--muted);max-width:70ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card[data-v="keep"]{border-color:var(--keep)}.card[data-v="tweak"]{border-color:var(--tweak)}.card[data-v="cut"]{opacity:.62;border-style:dashed;border-color:var(--cut)}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.top h3{margin:0;font:600 17px var(--f-body)}
+.top h3 small{font:12px var(--f-mono);color:var(--muted);margin-right:6px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
+.tag{border-radius:4px;padding:2px 6px;background:var(--surface-2);color:var(--muted)}
+.tag.el{color:var(--c);border:1px solid var(--c);background:transparent}
+.tag.form{color:var(--fg);font-weight:600}
+.desc{margin:0;font-size:14.5px}
+.why{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted)}
+.why b{font-weight:600;color:var(--c);text-transform:uppercase;font-size:11px;letter-spacing:.05em;margin-right:4px}
+.rev{margin:0;font-size:12.5px;color:var(--muted);background:var(--surface-2);border-radius:6px;padding:5px 8px}
+.tag.chg{color:var(--tweak);border:1px solid var(--tweak);background:transparent}
+section.el>p.job{color:var(--fg);font-size:14px}
+section.el>p.job span{font:12.5px var(--f-mono);color:var(--muted);margin-left:6px}
+.stats{display:grid;gap:6px}
+.stat{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;border-top:1px solid var(--line);padding-top:6px}
+.stat .lab{font-size:13px;color:var(--muted)}
+.stat .now{font:500 17px var(--f-mono);color:var(--c);font-variant-numeric:tabular-nums;text-align:right}
+.spark{grid-column:1/-1;display:flex;gap:2px;align-items:flex-end;height:20px}
+.spark span{flex:1;background:var(--line);border-radius:1px;min-height:2px}
+.spark span.on{background:var(--c)}
+.keys{grid-column:1/-1;font:12px var(--f-mono);color:var(--muted);display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.ms{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:13px}
+.ms li{color:var(--muted)}
+.ms li b{font:500 12px var(--f-mono);margin-right:6px}
+.ms li.hit{color:var(--fg)}
+.ms li.hit b{color:var(--c)}
+.fb{display:grid;gap:6px;margin-top:auto;border-top:1px solid var(--line);padding-top:8px}
+.vbtns{display:flex;gap:6px}
+.vbtns button{flex:1;font:500 13px var(--f-body);border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:7px;padding:5px 0;cursor:pointer}
+.vbtns button[aria-pressed="true"][data-v="keep"]{background:var(--keep);border-color:var(--keep);color:var(--surface)}
+.vbtns button[aria-pressed="true"][data-v="tweak"]{background:var(--tweak);border-color:var(--tweak);color:var(--surface)}
+.vbtns button[aria-pressed="true"][data-v="cut"]{background:var(--cut);border-color:var(--cut);color:var(--surface)}
+.fb textarea{font:13px var(--f-body);background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:7px;padding:6px 8px;resize:vertical;min-height:34px;width:100%}
+.saved{font-size:11.5px;color:var(--muted);min-height:1em}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.empty{color:var(--muted);padding:24px 0}
+@media (max-width:560px){input[type=search]{width:100%}.lvl input{width:120px}}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Swarm Deck</h1>
+  <p class="lede">The 80 cards of the mobile swarm vessel, revision 3. Each element has 20 and owns one job no other element does; each card goes from level 1 to 15. Drag the level to see every card at that level, then mark each one <b>Keep</b>, <b>Tweak</b> or <b>Cut</b> with a note. The next revision starts from your marks. Cards marked <b>Changed</b> say what revision 3 changed.</p>
+  <details class="ctx">
+    <summary>The vessel these cards are for, and the open questions</summary>
+    <ul>
+      <li><b>The swarm plays itself.</b> It roams the whole cell in 3D. Nothing you do steers it.</li>
+      <li><b>You watch.</b> You turn a viewing plane through the cell (drawn like the Wrasse's 2.5D), centred on the swarm's sampled centroid. Turning it changes what you see, never what the swarm does.</li>
+      <li><b>Phases.</b> Omnicrystal → Elemental crystals → Opposing vessels → Opposing mass, then round again. A phase ends on its timer or when its goal is met: collect an omnicrystal, collect Y elemental crystals, debuff a vessel, reduce opposing mass by X. Proposed: 30 / 25 / 25 / 25 s, Y = 5, X = 30 prisms.</li>
+      <li><b>Minimum size.</b> Like every vessel, the swarm has a floor: below its minimum size (proposed 6 members) nothing can harm it.</li>
+      <li><b>Hands.</b> The end of the Omnicrystal phase deals four cards, one per element, crystal or not. Pick one; the other three go. Each card names the phase it shines in.</li>
+      <li><b>Levels.</b> Upgrading an element makes its cards arrive at that level. Drawing a card you hold adds its level to yours, up to 15.</li>
+    </ul>
+    <p><b>Each element's job.</b> Mass: prism production (danger or base), shielding, supershielding. Time: your maneuverability, speed, positioning, movement. Space: more range or more prisms you can destroy, steal or shrink. Charge: silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels.</p>
+    <p><b>No stuns.</b> No card stuns another vessel or takes its control away (no stun, hijack, blind or shove); that protects the fun economy. Silencing Charge and Space abilities, slows, petals and stripping crystals are fine.</p>
+    <p><b>Readings to confirm:</b> element upgrades are between-run (meta) progress; levels past 15 are lost; one form at a time; the phase timers and goals above are proposals.</p>
+    <p>Numbers assume a swarm of about 24 (cap 40, protected minimum 6), about 60 u/s cruise and a 1,400 u view. Each number is linear or a steady percentage step from level 1 to 15; counts round down.</p>
+  </details>
+</header>
+
+<div class="bar" role="toolbar" aria-label="Filters">
+  <div class="seg" id="els"></div>
+  <select id="obj" aria-label="Phase">
+    <option value="">Every phase</option><option>Omnicrystal</option><option>Elemental crystals</option><option>Opposing vessels</option><option>Opposing mass</option><option>Any</option>
+  </select>
+  <select id="vf" aria-label="Review state">
+    <option value="">Every card</option><option value="none">Not reviewed</option><option value="keep">Keep</option><option value="tweak">Tweak</option><option value="cut">Cut</option><option value="form">Forms only</option><option value="role">Does its element's job</option><option value="phys">Plays on physics</option><option value="rev">Changed in revision 3</option>
+  </select>
+  <input type="search" id="q" placeholder="Search cards" aria-label="Search cards">
+  <label class="lvl" for="lv">Level <input type="range" id="lv" min="1" max="15" value="1"><output id="lvo">L1</output></label>
+  <div class="tally" id="tally"></div>
+  <div class="store" id="store">Connecting to the shared review log…</div>
+</div>
+
+<main id="main"></main>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+const ELS = ["Mass","Time","Space","Charge"];
+const COL = {Mass:"var(--mass)",Time:"var(--time)",Space:"var(--space)",Charge:"var(--charge)"};
+const state = {el:"", obj:"", vf:"", q:"", lv:1};
+let fb = {};          // id -> {verdict, note}
+let db = null;
+function lsGet(){try{return JSON.parse(localStorage.getItem("swarmdeck-fb")||"{}")}catch(e){return {}}}
+function lsSet(){try{localStorage.setItem("swarmdeck-fb",JSON.stringify(fb))}catch(e){}}
+try{const s=JSON.parse(localStorage.getItem("swarmdeck-ui")||"{}");Object.assign(state,s)}catch(e){}
+function saveUi(){try{localStorage.setItem("swarmdeck-ui",JSON.stringify({el:state.el,lv:state.lv}))}catch(e){}}
+
+function val(s,L){
+  if(s.kind==="pts") return null;
+  const v = s.kind==="lin" ? s.a+s.b*(L-1) : s.a*Math.pow(s.b,L-1);
+  return s.dec===0 ? Math.floor(v+1e-9) : Number(v.toFixed(s.dec));
+}
+function fmt(v,s){
+  const n = s.dec ? v.toFixed(s.dec) : String(v);
+  if(["%","×","/s"].includes(s.unit)) return n+s.unit;
+  if(["s","u","u/s"].includes(s.unit)) return n+" "+s.unit;
+  return n+s.unit;
+}
+function ptsAt(s,L){return L>=15?s.pts[3]:L>=10?s.pts[2]:L>=5?s.pts[1]:s.pts[0]}
+const esc = t => String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function statHtml(s,L){
+  if(s.kind==="pts"){
+    return `<div class="stat"><span class="lab">${esc(s.label)}</span><span class="now">${esc(ptsAt(s,L))}</span>
+      <div class="keys"><span>L1 ${esc(s.pts[0])}</span><span>L5 ${esc(s.pts[1])}</span></div></div>`;
+  }
+  const vals = Array.from({length:15},(_,i)=>val(s,i+1));
+  const lo=Math.min(...vals), hi=Math.max(...vals);
+  const bars = vals.map((v,i)=>`<span class="${i<L?"on":""}" style="height:${hi===lo?100:15+85*(v-lo)/(hi-lo)}%"></span>`).join("");
+  return `<div class="stat"><span class="lab">${esc(s.label)}</span><span class="now">${esc(fmt(val(s,L),s))}</span>
+    <div class="spark" aria-hidden="true">${bars}</div>
+    <div class="keys"><span>L1 ${esc(s.key[0])}</span><span>L5 ${esc(s.key[1])}</span><span>L10 ${esc(s.key[2])}</span><span>L15 ${esc(s.key[3])}</span></div></div>`;
+}
+function cardHtml(c,L){
+  const f = fb[c.id]||{};
+  const isForm = c.kind==="Form";
+  return `<article class="card" id="${c.id}" data-v="${f.verdict||""}" style="--c:${COL[c.element]}">
+    <div class="top"><h3><small>${c.element[0]}${c.n}</small>${esc(c.name)}</h3></div>
+    <div class="tags"><span class="tag el">${c.element}</span><span class="tag ${isForm?"form":""}">${esc(c.kind)}</span><span class="tag">${c.objective==="Any"?"Any phase":esc(c.objective)+" phase"}</span>${c.rev?`<span class="tag chg">Changed</span>`:""}</div>
+    ${(c.role||c.phys)?`<div class="why">${c.role?`<span><b>Job</b> ${esc(c.role)}</span>`:""}${c.phys?`<span><b>Physics</b> ${esc(c.phys)}</span>`:""}</div>`:""}
+    ${c.rev?`<p class="rev">${esc(c.rev)}</p>`:""}
+    <p class="desc">${esc(c.text)}</p>
+    <div class="stats">${c.stats.map(s=>statHtml(s,L)).join("")}</div>
+    ${c.milestones.length?`<ul class="ms">${c.milestones.map(m=>`<li class="${L>=m.level?"hit":""}"><b>L${m.level}</b>${esc(m.text)}</li>`).join("")}</ul>`:""}
+    <div class="fb">
+      <div class="vbtns">${["keep","tweak","cut"].map(v=>`<button type="button" data-id="${c.id}" data-v="${v}" aria-pressed="${f.verdict===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join("")}</div>
+      <textarea id="n-${c.id}" data-id="${c.id}" rows="1" placeholder="Note for the next revision">${esc(f.note||"")}</textarea>
+      <div class="saved" id="s-${c.id}"></div>
+    </div></article>`;
+}
+function match(c){
+  if(state.el && c.element!==state.el) return false;
+  if(state.obj && c.objective!==state.obj) return false;
+  const v=(fb[c.id]||{}).verdict||"";
+  if(state.vf==="none" && v) return false;
+  if(["keep","tweak","cut"].includes(state.vf) && v!==state.vf) return false;
+  if(state.vf==="form" && c.kind!=="Form") return false;
+  if(state.vf==="role" && !c.role) return false;
+  if(state.vf==="phys" && !c.phys) return false;
+  if(state.vf==="rev" && !c.rev) return false;
+  if(state.q){const q=state.q.toLowerCase(); if(!(c.name+" "+c.text+" "+c.kind).toLowerCase().includes(q)) return false;}
+  return true;
+}
+function render(){
+  const L=state.lv; let html="";
+  for(const el of ELS){
+    if(state.el && el!==state.el) continue;
+    const cs = DATA.cards.filter(c=>c.element===el && match(c));
+    if(!cs.length) continue;
+    html += `<section class="el" style="--c:${COL[el]}"><h2><i style="background:${COL[el]}"></i>${el}</h2><p>${esc(DATA.meanings[el])}</p><p class="job"><b>Job only ${el} does:</b> ${esc(DATA.roles[el])}. <span>${DATA.cards.filter(c=>c.element===el&&c.role).length}/20 do it · ${DATA.cards.filter(c=>c.element===el&&c.phys).length}/20 play on physics</span></p>
+      <div class="grid">${cs.map(c=>cardHtml(c,L)).join("")}</div></section>`;
+  }
+  document.getElementById("main").innerHTML = html || `<p class="empty">No card matches these filters.</p>`;
+  tally();
+}
+function tally(){
+  const n={keep:0,tweak:0,cut:0};
+  for(const c of DATA.cards){const v=(fb[c.id]||{}).verdict; if(v) n[v]++;}
+  const done=n.keep+n.tweak+n.cut;
+  document.getElementById("tally").innerHTML=`<span><b>${done}</b>/80 reviewed</span><span class="k">${n.keep} keep</span><span class="t">${n.tweak} tweak</span><span class="c">${n.cut} cut</span>`;
+}
+function chips(){
+  const box=document.getElementById("els");
+  box.innerHTML=[["","All 80"],...ELS.map(e=>[e,e])].map(([v,l])=>`<button type="button" class="chip" data-el="${v}" aria-pressed="${state.el===v}">${v?`<span class="dot" style="background:${COL[v]}"></span>`:""}${l}</button>`).join("");
+}
+document.getElementById("els").addEventListener("click",e=>{const b=e.target.closest("[data-el]"); if(!b) return; state.el=b.dataset.el; saveUi(); chips(); render();});
+document.getElementById("obj").addEventListener("change",e=>{state.obj=e.target.value; render();});
+document.getElementById("vf").addEventListener("change",e=>{state.vf=e.target.value; render();});
+document.getElementById("q").addEventListener("input",e=>{state.q=e.target.value.trim(); render();});
+const lv=document.getElementById("lv"), lvo=document.getElementById("lvo");
+lv.value=state.lv; lvo.textContent="L"+state.lv;
+lv.addEventListener("input",()=>{state.lv=+lv.value; lvo.textContent="L"+state.lv; saveUi(); render();});
+
+async function persist(id){
+  const f=fb[id]||{};
+  const el=document.getElementById("s-"+id);
+  lsSet();
+  if(!db){ if(el) el.textContent="Saved in this browser"; return; }
+  try{
+    await db.collection("feedback").doc(id).set({verdict:f.verdict||"",note:f.note||"",updated:new Date().toISOString()});
+    if(el) el.textContent="Saved";
+  }catch(err){ if(el) el.textContent="Not saved to the shared log ("+(err&&err.code||"error")+"); kept in this browser"; }
+}
+document.getElementById("main").addEventListener("click",e=>{
+  const b=e.target.closest(".vbtns button"); if(!b) return;
+  const id=b.dataset.id, v=b.dataset.v; const f=fb[id]||(fb[id]={});
+  f.verdict = f.verdict===v ? "" : v;
+  const card=document.getElementById(id); card.dataset.v=f.verdict;
+  card.querySelectorAll(".vbtns button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.v===f.verdict)));
+  tally(); persist(id);
+});
+const timers={};
+document.getElementById("main").addEventListener("input",e=>{
+  if(e.target.tagName!=="TEXTAREA") return;
+  const id=e.target.dataset.id; (fb[id]||(fb[id]={})).note=e.target.value;
+  const s=document.getElementById("s-"+id); if(s) s.textContent="Typing…";
+  clearTimeout(timers[id]); timers[id]=setTimeout(()=>persist(id),700);
+});
+
+fb = lsGet(); chips(); render();
+(async()=>{
+  const store=document.getElementById("store");
+  try{ db = window.claude && window.claude.use ? await window.claude.use("db") : null; }catch(e){ db=null; }
+  if(!db){ store.textContent="Marks are kept in this browser only"; return; }
+  store.textContent="Marks go to the shared review log";
+  db.collection("feedback").onSnapshot(snap=>{
+    let changed=false;
+    for(const d of snap.docs){
+      const x=d.data()||{}; const cur=fb[d.id]||{};
+      const active=document.activeElement && document.activeElement.dataset && document.activeElement.dataset.id===d.id;
+      if(active) continue;
+      if(cur.verdict!==(x.verdict||"")||cur.note!==(x.note||"")){fb[d.id]={verdict:x.verdict||"",note:x.note||""}; changed=true;}
+    }
+    if(changed){ lsSet(); render(); }
+  },()=>{ store.textContent="Shared log unavailable; marks kept in this browser"; });
+})();
+</script>
