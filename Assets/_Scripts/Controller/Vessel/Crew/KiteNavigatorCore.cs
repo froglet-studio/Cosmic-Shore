@@ -47,6 +47,15 @@ namespace CosmicShore.Gameplay
         public float SlingDrag, SlingFreeDrag;
         /// <summary>Sling: the kite's top speed (u/s).</summary>
         public float SlingMaxSpeed;
+        /// <summary>
+        /// The kite's own bounds as a RECTANGLE - the kite view's screen (Garrett, 2026-10-20: "Let the wrasse travel the whole
+        /// screen space") - when both half extents are &gt; 0: |x| ≤ HalfWidth, |z − BoundsCentreZ| ≤ HalfDepth (u). Zero
+        /// keeps the round board of radius <see cref="BoardRadius"/> about the board's centre (the labs' bounds).
+        /// </summary>
+        public float HalfWidth, HalfDepth, BoundsCentreZ;
+
+        /// <summary>True when the kite is bounded by a rectangle (the screen) rather than the round board.</summary>
+        public readonly bool Rectangular => HalfWidth > 0f && HalfDepth > 0f;
     }
 
     /// <summary>
@@ -93,9 +102,15 @@ namespace CosmicShore.Gameplay
         /// <summary>The board's centre, in board units.</summary>
         public static KiteVec Centre(in KiteSettings s) => new(0f, s.Anchor * s.BoardRadius);
 
-        /// <summary>A point clamped inside the board's reachable disc (the lab's <c>onBoard</c>).</summary>
+        /// <summary>A point clamped inside the board's reachable disc (the lab's <c>onBoard</c>), or inside the screen's
+        /// rectangle when the settings carry one.</summary>
         public static KiteVec OnBoard(in KiteSettings s, float x, float z)
         {
+            if (s.Rectangular)
+            {
+                float hx = s.HalfWidth * RimFraction, hz = s.HalfDepth * RimFraction, c = s.BoundsCentreZ;
+                return new KiteVec(x < -hx ? -hx : x > hx ? hx : x, z < c - hz ? c - hz : z > c + hz ? c + hz : z);
+            }
             float a = s.Anchor * s.BoardRadius, r = s.BoardRadius * RimFraction, dz = z - a, d = MathF.Sqrt(x * x + dz * dz);
             return d <= r ? new KiteVec(x, z) : new KiteVec(x / d * r, a + dz / d * r);
         }
@@ -106,6 +121,15 @@ namespace CosmicShore.Gameplay
             float dz = z - s.Anchor * s.BoardRadius;
             return x * x + dz * dz <= s.BoardRadius * s.BoardRadius;
         }
+
+        /// <summary>Is this point where the kite can go: inside the screen's rectangle, or the disc when there is none.</summary>
+        public static bool InBounds(in KiteSettings s, float x, float z) =>
+            s.Rectangular ? MathF.Abs(x) <= s.HalfWidth && MathF.Abs(z - s.BoundsCentreZ) <= s.HalfDepth : InDisc(s, x, z);
+
+        /// <summary>The farthest the kite can be from where the bounds are centred (u): the rectangle's half diagonal, or the
+        /// board's radius.</summary>
+        public static float BoundsReach(in KiteSettings s) =>
+            s.Rectangular ? MathF.Sqrt(s.HalfWidth * s.HalfWidth + s.HalfDepth * s.HalfDepth) : s.BoardRadius;
 
         /// <summary>
         /// One step of the kite (the lab's <c>kiteMove</c>): with the thumb down it accelerates toward the aim point (clamped
@@ -179,9 +203,20 @@ namespace CosmicShore.Gameplay
             Velocity.Z -= nz * a * dt;
         }
 
-        // the lab's rimBounce, about the board's centre
+        // the lab's rimBounce, about the board's centre; on a rectangle each edge bounces its own axis
         void Bounce(in KiteSettings s)
         {
+            if (s.Rectangular)
+            {
+                float hx = s.HalfWidth * RimFraction, hz = s.HalfDepth * RimFraction, c = s.BoundsCentreZ;
+                float px = Position.X, pz = Position.Z;
+                if (px > hx) { px = hx; if (Velocity.X > 0f) Velocity.X -= RimBounce * Velocity.X; }
+                else if (px < -hx) { px = -hx; if (Velocity.X < 0f) Velocity.X -= RimBounce * Velocity.X; }
+                if (pz > c + hz) { pz = c + hz; if (Velocity.Z > 0f) Velocity.Z -= RimBounce * Velocity.Z; }
+                else if (pz < c - hz) { pz = c - hz; if (Velocity.Z < 0f) Velocity.Z -= RimBounce * Velocity.Z; }
+                Position = new KiteVec(px, pz);
+                return;
+            }
             float a = s.Anchor * s.BoardRadius, r = s.BoardRadius * RimFraction, dx = Position.X, dz = Position.Z - a, d = MathF.Sqrt(dx * dx + dz * dz);
             if (d <= r) return;
             float nx = dx / d, nz = dz / d;

@@ -29,7 +29,9 @@ does not change either. It reads the shipped kite and changes only how the thumb
 
 The same change made the kite a switch threader and built a race around it: Wrasse Run
 (`Assets/_Scripts/Controller/Arcade/WRASSERUN.md`). The page's numbers are now the shipped asset's, so a retune
-goes to the asset first and this page follows (`sling_parity.cjs` fails until it does). Plant, Hook and Well stay
+goes to the asset first and this page follows (`sling_parity.cjs` fails until it does). Round 7 (Garrett, 2026-10-20)
+moved two: `slingMaxSpeed` 520 → 364 ("70% of current") and `tailLength` 2.4 → 4.8 ("double the max length of the
+lasso"); the page's `SHIPPED` block follows, and the scorecard below was measured before them. Plant, Hook and Well stay
 here as archived options.
 
 

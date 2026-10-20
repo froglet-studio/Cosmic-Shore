@@ -15,6 +15,10 @@ namespace CosmicShore.Gameplay
         Locked = 1,
         /// <summary>The board stays level and turns only with heading (a comparison, not the design).</summary>
         Level = 2,
+        /// <summary>The board tilts with the hull's bank and pitch (as Eased), but turns to the hull's HEADING only as the
+        /// hull travels: a yaw in place turns the Grouper on the screen and leaves the board, its motes and the kite where
+        /// they are; over a medium distance the view comes round behind it (Garrett, 2026-10-20).</summary>
+        Heading = 3,
     }
 
     /// <summary>Where the navigator's motes live.</summary>
@@ -40,8 +44,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(10f)] float boardRadius = 160f;
         [Tooltip("lab anchor: the board's centre sits this many board radii AHEAD of the hull, so more of it is ahead.")]
         [SerializeField, Range(0f, 0.7f)] float anchor = 0.3f;
-        [Tooltip("How the board follows the hull. Eased is the signed-off frame.")]
-        [SerializeField] KiteBoardFrame frame = KiteBoardFrame.Eased;
+        [Tooltip("How the board follows the hull. Heading (2026-10-20): it tilts with the hull but turns to its heading only " +
+                 "as the hull travels, so a yaw turns the Grouper in place instead of dragging the motes round. Eased was " +
+                 "the signed-off frame before it.")]
+        [SerializeField] KiteBoardFrame frame = KiteBoardFrame.Heading;
+        [Tooltip("Heading frame: the board turns to the hull's heading by 63% (one e-fold) for every this many units the hull " +
+                 "flies (Garrett: \"slowly move toward the groupers so it aligns after medium distances\"). Standing still or " +
+                 "turning in place never turns it. The kite keeps its place on the board, so the turn never moves it on screen.")]
+        [SerializeField, Min(1f)] float headingAlignDistance = 220f;
         [Tooltip("lab easeRate: Eased frame, how fast the board follows a bank or pitch (1/s).")]
         [SerializeField, Min(0.1f)] float easeRate = 3f;
         [Tooltip("lab reachY: anything within this of the plane (u) can be touched; further away it is out of reach (still seen).")]
@@ -55,8 +65,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab kiteAccel: how fast the kite reaches the speed it is asked for (1/s).")]
         [SerializeField, Min(0.1f)] float kiteAccel = 12f;
         [Tooltip("lab tailLen: the tail's length in board radii. Cross it to close a loop. 1.0 is too short to circle a cluster. " +
-                 "2.4 = the signed-off 1.6 + 50% (Garrett, 2026-10-18).")]
-        [SerializeField, Range(0.4f, 4f)] float tailLength = 2.4f;
+                 "2.4 = the signed-off 1.6 + 50% (Garrett, 2026-10-18); 4.8 = doubled (Garrett, 2026-10-20: \"double the max " +
+                 "length of the lasso\"). One lap must fit in it: a loop is at most tail / 2 pi across the radius.")]
+        [SerializeField, Range(0.4f, 8f)] float tailLength = 4.8f;
         [Tooltip("lab thumbOffset (80 CSS px on a phone): on a touch screen the kite aims this far ABOVE the thumb, in millimetres " +
                  "of glass, so the thumb never covers the kite or what is coming.")]
         [SerializeField, Range(0f, 40f)] float thumbOffsetMillimetres = 21f;
@@ -85,8 +96,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 4f)] float slingDrag = 0.35f;
         [Tooltip("lab slFreeDrag: after the thumb lets go, how fast the free kite slows (1/s).")]
         [SerializeField, Range(0f, 8f)] float slingFreeDrag = 0.9f;
-        [Tooltip("lab slMaxSpeed: the slung kite's top speed (u/s).")]
-        [SerializeField, Range(100f, 1200f)] float slingMaxSpeed = 520f;
+        [Tooltip("lab slMaxSpeed: the slung kite's top speed (u/s). 364 = 70% of the lab's 520 (Garrett, 2026-10-20: " +
+                 "\"slow down the max speed of the wrasse to 70% of current\").")]
+        [SerializeField, Range(100f, 1200f)] float slingMaxSpeed = 364f;
         [Tooltip("Sling on a thumbstick: the stick is the hand's place on the board, as a mouse is - centred is the board's " +
                  "centre, a full lean this many board radii out. Circle the stick and the hand circles; small circles whirl " +
                  "the kite.")]
@@ -181,6 +193,19 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.15f, 0.6f)] float pipSize = 0.32f;
         [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
+        [Tooltip("The kite view's half height in board radii. 1.04 framed the board; 1.352 = 30% further out (Garrett, " +
+                 "2026-10-20: \"zoom out 30% more and center the grouper in the wrasses camera\"). The view is centred on the " +
+                 "hull.")]
+        [SerializeField, Range(0.5f, 3f)] float viewScale = 1.352f;
+        [Tooltip("The kite flies the whole kite view - a rectangle the screen's shape, viewScale board radii high - instead of " +
+                 "the round board (Garrett, 2026-10-20: \"Let the wrasse travel the whole screen space\").")]
+        [SerializeField] bool wholeScreen = true;
+        [Tooltip("The rope from the hand (a thumb, the cursor, the stick's point, the AI's hand) to the kite, drawn in the kite " +
+                 "view while it is held (Garrett: \"make the wrasse cord visible to the wrasse player\"). Its width, as a share " +
+                 "of the tail's.")]
+        [SerializeField, Range(0.1f, 2f)] float cordWidth = 0.6f;
+        [Tooltip("How visible the cord is (alpha).")]
+        [SerializeField, Range(0f, 1f)] float cordAlpha = 0.75f;
         [Tooltip("A mote's flower radius in the kite view (u). The petals sit in it in the totem's own proportions (the " +
                  "element flower above each ability card).")]
         [SerializeField, Min(0.5f)] float moteSize = 4.5f;
@@ -266,6 +291,11 @@ namespace CosmicShore.Gameplay
         public int OmniMotesPerElement => omniMotesPerElement;
         public float OmniClusterRadius => omniClusterRadius;
         public float PipSize => pipSize;
+        public float ViewScale => viewScale;
+        public bool WholeScreen => wholeScreen;
+        public float CordWidth => cordWidth;
+        public float CordAlpha => cordAlpha;
+        public float HeadingAlignDistance => headingAlignDistance;
         public float ViewMargin => viewMargin;
         public float MoteSize => moteSize;
         public float SpaceSpinDegreesPerSecond => spaceSpinDegreesPerSecond;

@@ -243,7 +243,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < motes.Count; i++)
             {
                 var m = motes[i];
-                if (!KiteNavigatorCore.InDisc(s, m.X, m.Z)) continue;
+                if (!KiteNavigatorCore.InBounds(s, m.X, m.Z)) continue;
                 if ((float)_rng.NextDouble() < P.ReachAware && !m.Touchable) continue;
                 _cand.Add(i);
             }

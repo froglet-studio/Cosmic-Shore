@@ -171,7 +171,7 @@
     kiteRadius: 8,               // .kiteRadius (u): the head's contact radius
     kiteSpeed: 320,              // .kiteSpeed (u/s)
     kiteAccel: 12,               // .kiteAccel (1/s)
-    tailLength: 2.4,             // .tailLength (board radii)
+    tailLength: 4.8,             // .tailLength (board radii): 2.4 until 2026-10-20, doubled in Unity ("double the max length of the lasso")
     thumbOffsetMillimetres: 21,  // .thumbOffsetMillimetres: on touch the kite aims this far above the thumb
     moteCount: 26,               // .moteCount
     moteCluster: 4,              // .moteCluster (average motes per one-element cluster)
@@ -190,7 +190,8 @@
     labFlow: 40,                 // lab: how fast the world (and its motes) flows down the board, u/s. The hull is always flying.
     labSnap: 0,                  // lab proposal: a loop also closes when the head passes this close to its own tail (u). 0 = shipped (crossing only)
     // lab proposal: SLING - the thumb is a hand on a rope
-    slRope: 42, slStiff: 260, slDamp: 5, slDrag: 0.35, slFreeDrag: 0.9, slMaxSpeed: 520,
+    // KiteNavigatorConfig.asset's sling* fields since the Sling graduated (2026-10-20); slMaxSpeed 520 -> 364 there ("70% of current")
+    slRope: 42, slStiff: 260, slDamp: 5, slDrag: 0.35, slFreeDrag: 0.9, slMaxSpeed: 364,
     // lab proposal: PLANT - touch plants an anchor in the world (the Thresher's plant)
     plMin: 22, plMax: 50, plHook: 6, plReelIn: 180, plSpin: 240, plMaxSpeed: 420, plSteer: 0.35, plReel: 0, plFling: 1.15, plDrag: 0.8,
     // lab proposal: HOOK - flick to throw, a hooked flick throws loop-de-loops
@@ -203,7 +204,7 @@
   const SPEC = [
     ['Board', 'labFlow', 0, 120, 1, 'World flow (u/s)', 'Lab. How fast motes stream down the board. The hull always flies, so the game never sits at 0; 0 is a practice board.'],
     ['Board', 'labSnap', 0, 40, 1, 'Snap-shut distance (u)', 'Proposal. A loop also closes when the head passes this close to its own tail. 0 is the game (the tail must be crossed).'],
-    ['Board', 'tailLength', 0.8, 4, 0.1, 'Tail length (board radii)', 'Shipped 2.4 (round 4b). Longer: bigger loops fit.'],
+    ['Board', 'tailLength', 0.8, 8, 0.1, 'Tail length (board radii)', 'Shipped 4.8 (2.4 in round 4b, doubled 2026-10-20). Longer: bigger loops fit.'],
     ['Board', 'moteCount', 6, 60, 1, 'Motes on the board', 'Shipped 26.'],
     ['Board', 'moteCluster', 1, 10, 1, 'Cluster size', 'Average motes per one-element cluster. Shipped 4.'],
     ['Board', 'moteSpread', 6, 40, 1, 'Cluster spread (u)', 'Shipped 18. The Crew lab measured this as a balance knob as strong as the exponent.'],

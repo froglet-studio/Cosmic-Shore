@@ -85,7 +85,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0.3f, s.Anchor, 1e-6f);
             Assert.AreEqual(320f, s.KiteSpeed);
             Assert.AreEqual(12f, s.KiteAccel);
-            Assert.AreEqual(2.4f, s.TailLength, 1e-6f, "round 3's 1.6 + 50% (Garrett, 2026-10-18)");
+            Assert.AreEqual(4.8f, s.TailLength, 1e-6f, "round 3's 1.6 + 50% (Garrett, 2026-10-18), doubled (2026-10-20)");
         }
 
         [Test]

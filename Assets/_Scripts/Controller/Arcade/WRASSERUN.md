@@ -15,10 +15,11 @@ ring collector and align the wrasse to collect them."*
 - **The Wrasse collects the rings.** A ring counts only when the navigator's **kite** threads it:
   `KiteNavigator` is the hull's `IRingThreadProbe`, and `WrasseRunController` answers
   `HullThreadsWhileProbeLive => false`. The hull flying through on its own does nothing.
-- **The Grouper aligns the Wrasse.** The kite lives on a 160 u board in the hull's x-z plane, its centre
-  48 u ahead of the hull. The pilot does not have to thread the mouth: the pilot has to put the lit ring
-  IN the kite's plane (its centre within its radius of the plane, its axis not along the board's up) and
-  ON the board. Rings are lifted out of the circuit's plane (`LateralPerturbation` 60 / 100 / 140 / 180),
+- **The Grouper aligns the Wrasse.** The kite flies the whole kite view (round 7): a plane through the hull,
+  ~216 u deep and that times the screen's aspect wide, centred on the hull. It turns toward the hull's heading
+  over ~220 u flown, so a yaw in place does not swing it. The pilot does not have to thread the mouth: the pilot
+  has to put the lit ring IN the kite's plane (its centre within its radius of the plane, its axis not along the
+  board's up) and ON the screen. Rings are lifted out of the circuit's plane (`LateralPerturbation` 60 / 100 / 140 / 180),
   so each one asks the Grouper to roll and pitch the board onto it.
 - **Time is the fuel.** The Grouper cruises at **60 u/s**. Every boost is the Wrasse's: a Time loop of
   n motes saves `round(2^(n−1))` boosts of 1.5 s, spent on the pilot's right trigger (both thumbs lifted
@@ -28,10 +29,10 @@ ring collector and align the wrasse to collect them."*
   - the AI squad mate values a Time loop 3× a loop of another element the same size
     (`raceTimeLoopPreference`).
 - **The kite is slung** (the Sling, `KiteNavigatorCore.Sling`, from the Wrasse Lasso Lab) by every input:
-  drag a thumb and the kite trails it on an invisible 42 u rope, small circles whirl it round, lift to let it
-  fly; the mouse and a thumbstick are hands that never let go (the stick places the hand on the board, as
-  the mouse does); and the AI squad mate holds the same rope. Whirl it through the ring, or let it fly
-  through.
+  drag a thumb and the kite trails it on a 42 u rope (drawn for its player while held), small circles whirl it
+  round, lift to let it fly; the mouse and a thumbstick are hands too (the stick places the hand on the screen,
+  as the mouse does), and holding a mouse button or a trigger lets go; and the AI squad mate holds the same
+  rope. Whirl it through the ring, or let it fly through.
 
 ## 2. What the mode does NOT add
 
@@ -106,9 +107,9 @@ at full throttle. Two laps of ~4.6 k u are ~150 s at cruise; every boost buys ~3
 | rings per lap / base circle | `WrasseRunCourse.GatesPerLap` / `.BaseRadius` | **8** / **640** |
 | corner profile, spread, floor, mouth, lift, presentation | `WrasseRunCourse.ForIntensity` | §3 |
 | AI commit / lead / through | scene → `GateRaceController` | 72 / 80 / 55 |
-| detection clamp (hull and kite) | scene → `maxPlausibleSpeed` | **2400** (2× the kite's ~1130 u/s worst world speed) |
+| detection clamp (hull and kite) | scene → `maxPlausibleSpeed` | **3800** (2× the kite's ~1860 u/s worst world speed: 260 + 364 + the board turning under a kite at a 2.4:1 screen's corner, ~560 u out) |
 | Time mote bonus / AI Time preference | `KiteNavigatorConfig.asset` → `raceTimeMoteBonus`, `raceTimeLoopPreference` | 2 / 3 |
-| the sling | `KiteNavigatorConfig.asset` → `sling*` | rope 42, stiffness 260, damping 5, drag 0.35 / 0.9, top 520 |
+| the sling | `KiteNavigatorConfig.asset` → `sling*` | rope 42, stiffness 260, damping 5, drag 0.35 / 0.9, top 364 (round 7: 70% of 520); tail 4.8 board radii |
 | comeback rate | `ArcadeGameWrasseRun.asset` | **0.5** (4 rings behind buys 2 levels) |
 
 ## 6. Assets — all authored by `Tools/Build/author_wrasse_run_assets.py`
@@ -122,8 +123,8 @@ arithmetic, the constants it shares with the C#, the HUD provider row, the clamp
 approach against the cruise circle, the AI prefab state, the hull's numbers and the toybox roster.
 `--check` diffs every file. `arcade_mode_lib.VESSELS` gained the Wrasse.
 
-**Card art:** not yet rendered. Run `/cardart` for `WrasseRun` (a gate-circuit recipe like Thresher
-Time's); until then the card wears the placeholder.
+**Card art:** `CardBackgrounds/WrasseRun.png`, rendered offline by `/cardart` (the COURSE tier: the
+intensity-2 circuit from the shipped `HeadlongCircuit`).
 
 ## 7. Verification status
 
@@ -147,7 +148,7 @@ Time's); until then the card wears the placeholder.
    view), let the AI pilot bring the ring to you, sling the kite through it: it counts once.
 5. **Time is the fuel.** In the race, more of the board's motes are Time diamonds; a Time loop banks
    boosts, and the right trigger (both thumbs lifted on a phone) spends one at ~260 u/s.
-6. **AI crews.** Add AI Wrasses: each one's kite (seen from the host only) slings through its rings and
+6. **AI crews.** Add AI Wrasses: each one's Wrasse (simulated on the host, its body seen by everyone) slings through its rings and
    loops Time; its hull boosts on the straights; they finish. A pad's stick places the rope's hand like
    a mouse.
 7. **Two clients.** A client's ring reports are credited once.
@@ -156,9 +157,8 @@ Time's); until then the card wears the placeholder.
 ## 8. Known limitations / follow-ups
 
 - **Not editor-verified.** Nobody has flown it.
-- **The kite is local.** Like everything on the seat, the kite runs on its human's machine. Ring credit is
-  owner-detected and server-recorded, so scores agree; a remote peer does not see the kite.
-- **An AI crew's kite is seen only where it is simulated** (the host): a client sees AI hulls threading
-  rings their kites collected. Its effects (blasts, Mass clusters) run on the host only, as a human's run
-  on the human's machine.
+- **The kite runs locally; its body is seen everywhere.** Like everything on the seat, the kite runs on the
+  machine that flies the hull (its human's, or the host for an AI crew). Ring credit is owner-detected and
+  server-recorded, so scores agree. Since round 7 every peer sees the Wrasse's body where the kite flies
+  (`WrasseCrewBodies`); the board, motes and effects (blasts, Mass clusters) stay on the flying machine.
 - **Card art** (`/cardart`) and an idle hint toast are follow-ups.

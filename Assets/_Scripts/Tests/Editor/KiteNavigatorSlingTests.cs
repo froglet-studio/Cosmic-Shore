@@ -18,8 +18,8 @@ namespace CosmicShore.Tests
         // the shipped asset's sling (KiteNavigatorConfig.asset), on a board centred at the origin
         static KiteSettings Shipped() => new()
         {
-            BoardRadius = 160f, Anchor = 0f, KiteSpeed = 320f, KiteAccel = 12f, TailLength = 2.4f,
-            SlingRope = 42f, SlingStiffness = 260f, SlingDamping = 5f, SlingDrag = 0.35f, SlingFreeDrag = 0.9f, SlingMaxSpeed = 520f,
+            BoardRadius = 160f, Anchor = 0f, KiteSpeed = 320f, KiteAccel = 12f, TailLength = 4.8f,
+            SlingRope = 42f, SlingStiffness = 260f, SlingDamping = 5f, SlingDrag = 0.35f, SlingFreeDrag = 0.9f, SlingMaxSpeed = 364f,
         };
 
         static KiteNavigatorCore Kite() { var k = new KiteNavigatorCore(); k.Reset(new KiteVec(0f, 0f)); return k; }
@@ -56,7 +56,8 @@ namespace CosmicShore.Tests
             {
                 float hx = -100f + i * Dt * 40f;
                 k.Sling(s, hx, 0f, true, Dt);
-                if (i > 60) Assert.LessOrEqual(MathF.Abs(k.Position.X - hx), s.SlingRope + 10f, $"frame {i}: the rope stretched far past its length");
+                // the first 1.5 s is the yank from the kite's start 100 u away (the 364 u/s cap settles it in ~90 frames)
+                if (i > 90) Assert.LessOrEqual(MathF.Abs(k.Position.X - hx), s.SlingRope + 10f, $"frame {i}: the rope stretched far past its length");
             }
             Assert.Greater(k.Position.X, 60f, "the towed kite came along with the hand");
         }
@@ -153,6 +154,63 @@ namespace CosmicShore.Tests
             for (int i = 0; i < 30; i++) k.Sling(s, 0f, 0f, false, Dt);
             k.Sling(s, 41f, 0f, true, Dt);   // grab again 41 u away, inside the rope
             Assert.AreEqual(0f, Speed(k), 1e-5f);
+        }
+
+        // --- the whole screen (round 7; Garrett, 2026-10-20: "Let the wrasse travel the whole screen space") ---------------
+
+        // a 16:9 landscape screen at the shipped view scale: 1.352 x 160 u deep, that times the aspect wide, less the kite
+        static KiteSettings Screen()
+        {
+            var s = Shipped();
+            s.HalfDepth = 160f * 1.352f - 8f;
+            s.HalfWidth = 160f * 1.352f * 16f / 9f - 8f;
+            return s;
+        }
+
+        [Test]
+        public void Screen_TheCornersAreReachable_PastTheBoardsDisc()
+        {
+            var s = Screen();
+            Assert.IsTrue(s.Rectangular);
+            var corner = KiteNavigatorCore.OnBoard(s, 1e4f, 1e4f);
+            Assert.AreEqual(s.HalfWidth * KiteNavigatorCore.RimFraction, corner.X, 1e-3f);
+            Assert.AreEqual(s.HalfDepth * KiteNavigatorCore.RimFraction, corner.Z, 1e-3f);
+            Assert.Greater(MathF.Sqrt(corner.X * corner.X + corner.Z * corner.Z), s.BoardRadius, "the corner lies outside the old disc");
+            Assert.IsTrue(KiteNavigatorCore.InBounds(s, corner.X, corner.Z));
+            Assert.IsFalse(KiteNavigatorCore.InDisc(s, corner.X, corner.Z));
+            Assert.IsFalse(KiteNavigatorCore.InBounds(s, s.HalfWidth + 1f, 0f));
+            Assert.AreEqual(MathF.Sqrt(s.HalfWidth * s.HalfWidth + s.HalfDepth * s.HalfDepth), KiteNavigatorCore.BoundsReach(s), 1e-3f);
+        }
+
+        [Test]
+        public void Screen_NoRectangle_KeepsTheDisc()
+        {
+            var s = Shipped();
+            Assert.IsFalse(s.Rectangular);
+            var p = KiteNavigatorCore.OnBoard(s, 1e4f, 0f);
+            Assert.AreEqual(s.BoardRadius * KiteNavigatorCore.RimFraction, p.X, 1e-3f);
+            Assert.AreEqual(s.BoardRadius, KiteNavigatorCore.BoundsReach(s), 1e-3f);
+        }
+
+        [Test]
+        public void Screen_AFlungKite_BouncesOffASideEdge_OnItsOwnAxis()
+        {
+            var s = Screen(); var k = Kite();
+            k.Velocity = new KiteVec(s.SlingMaxSpeed, 50f);
+            float hx = s.HalfWidth * KiteNavigatorCore.RimFraction, hz = s.HalfDepth * KiteNavigatorCore.RimFraction;
+            bool bounced = false;
+            for (int i = 0; i < 240; i++)
+            {
+                k.Sling(s, 0f, 0f, false, Dt);   // let go: it flies free
+                Assert.LessOrEqual(MathF.Abs(k.Position.X), hx + 1e-3f, $"frame {i}: left the screen sideways");
+                Assert.LessOrEqual(MathF.Abs(k.Position.Z), hz + 1e-3f, $"frame {i}: left the screen lengthwise");
+                if (!bounced && k.Velocity.X < 0f)
+                {
+                    bounced = true;
+                    Assert.Greater(k.Velocity.Z, 0f, "a side edge reverses x only");
+                }
+            }
+            Assert.IsTrue(bounced, "the kite never reached the side edge");
         }
     }
 }

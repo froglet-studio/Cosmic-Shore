@@ -1205,3 +1205,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Arcade/WRASSERUN.md §5, KITE_NAVIGATOR.md Follow-ups
+
+### T-20261020-d09f · open · test · Crew vessels
+- **Task:** Round 7 of the Wrasse on cece/loving-fermat-ntdnbu: reimport Grouper.fbx and WrasseKite.fbx, open Wrasse.prefab, then fly it - the Grouper and Wrasse bodies and their puppetry, the whole-screen kite, the 30% zoom centred on the Grouper, yaw in place, the drawn cord, let go by lift / held click / held trigger, top speed 364 and the doubled lasso, and two machines seeing each other's Wrasse
+- **Done when:** Every step of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is written down
+- **Who can take it:** Yash (offered) runs the Editor pass; Garrett judges the feel
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 7)
+
+### T-20261020-a9f5 · open · dev · Crew vessels
+- **Task:** Fit the Wrasse hull's parts to the Grouper model: a hit box sized to Docs/VesselModels/Grouper.md (it is still the Sparrow's flat 10.3 x 0.46 x 4.4 box, the Grouper is 5.6 u tall), the two jets re-homed to the engine mouths (+-0.78, -0.30, -2.62), FlareEngine pointed at the Grouper's Engine slot, and the Wrasse's CrystalHullFusion bakes re-baked on the Grouper mesh
+- **Done when:** The Grouper's collisions, plumes, engine flash and crystal fusion all sit on the Grouper in play
+- **Who can take it:** Yash (offered) or anyone with the Editor; Garrett signs off the fit
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)

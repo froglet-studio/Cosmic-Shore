@@ -48,9 +48,9 @@ namespace CosmicShore.Gameplay
         readonly Vector3[][] _outlines = new Vector3[4][];   // each petal's outline in its mesh's own space
         static readonly Color Plasma = new(0.42f, 0.72f, 1f, 1f);   // the Charge crystal's blue plasma
         readonly Material _plasmaMat;
-        readonly Mesh _tailMesh, _loopMesh;
+        readonly Mesh _tailMesh, _loopMesh, _cordMesh;
         readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat;
-        readonly Material _tailMat, _loopMat;
+        readonly Material _tailMat, _loopMat, _cordMat;
         readonly List<Vector3> _verts = new();
         readonly List<Color> _colors = new();
         readonly List<int> _tris = new();
@@ -94,11 +94,14 @@ namespace CosmicShore.Gameplay
             _tailMesh.MarkDynamic();
             _loopMesh = new Mesh { name = "KiteLoops" };
             _loopMesh.MarkDynamic();
+            _cordMesh = new Mesh { name = "KiteCord" };
+            _cordMesh.MarkDynamic();
 
             var cfg = nav.Config;
             var unlit = LoadUnlitTemplate();
             _tailMat = VertexColoured(Lime);
             _loopMat = VertexColoured(new Color(1f, 1f, 1f, 0.85f));
+            _cordMat = VertexColoured(new Color(1f, 1f, 1f, cfg.CordAlpha));
             _kiteMat = Unlit(unlit, KiteWhite);
             _kiteChargedMat = Unlit(unlit, Gold);
             _kiteFaintMat = Unlit(unlit, new Color(1f, 1f, 1f, cfg.PilotKiteAlpha));
@@ -180,7 +183,7 @@ namespace CosmicShore.Gameplay
             RestorePilot();
             if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
-            foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh, _tailMat, _loopMat,
+            foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh, _cordMesh, _tailMat, _loopMat, _cordMat,
                                              _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat, _plasmaMat })
                 if (o) Object.Destroy(o);
         }
@@ -203,11 +206,13 @@ namespace CosmicShore.Gameplay
                 _cam.backgroundColor = _pilot.backgroundColor;
             }
 
-            // straight down the board's up axis, centred on the disc, seeing viewDepth either side of the plane
+            // straight down the board's up axis, centred on the HULL (Garrett, 2026-10-20: "center the grouper in the wrasses
+            // camera"), viewScale board radii high (1.04 framed the disc; 1.352 is 30% further out), seeing viewDepth either
+            // side of the plane
             Vector3 up = _nav.BoardUp, fwd = _nav.BoardForward;
-            _cam.transform.SetPositionAndRotation(_nav.BoardToWorld(0f, s.Anchor * s.BoardRadius) + up * cfg.ViewDepth,
+            _cam.transform.SetPositionAndRotation(_nav.BoardToWorld(0f, KiteNavigator.ViewCentreZ) + up * cfg.ViewDepth,
                                                   Quaternion.LookRotation(-up, fwd));
-            _cam.orthographicSize = s.BoardRadius * 1.04f;
+            _cam.orthographicSize = s.BoardRadius * cfg.ViewScale;
             _cam.farClipPlane = 2f * cfg.ViewDepth + 1f;
 
             float baseDepth = _pilot ? _pilotDepth : 0f;
@@ -312,10 +317,14 @@ namespace CosmicShore.Gameplay
             var at = _nav.Kite.Position;
             var kiteRot = basis * heading;
             float kr = cfg.KiteRadius;
-            Add(_nav.Charge >= 1f ? _kiteChargedMat : _kiteMat, _kiteMesh, kite,
-                Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z) + _nav.BoardUp * lift, kiteRot, Vector3.one * kr));
-            if (pilot)
-                Add(_kiteFaintMat, _kiteMesh, pilot, Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z), kiteRot, Vector3.one * kr));
+            // a crew body draws the Wrasse as a model everyone sees (WrasseCrewBodies); the flat kite is the fallback
+            if (!_nav.BodyDrawsKite)
+            {
+                Add(_nav.Charge >= 1f ? _kiteChargedMat : _kiteMat, _kiteMesh, kite,
+                    Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z) + _nav.BoardUp * lift, kiteRot, Vector3.one * kr));
+                if (pilot)
+                    Add(_kiteFaintMat, _kiteMesh, pilot, Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z), kiteRot, Vector3.one * kr));
+            }
 
             // charge pips round the kite
             int pips = Mathf.Min(12, Mathf.FloorToInt(_nav.Charge));
@@ -330,7 +339,7 @@ namespace CosmicShore.Gameplay
             float ms = cfg.MoteSize;
             foreach (var mote in _nav.Motes)
             {
-                if (!KiteNavigatorCore.InDisc(s, mote.X, mote.Z)) continue;
+                if (!KiteNavigatorCore.InBounds(s, mote.X, mote.Z)) continue;
                 var pos = _nav.BoardToWorld(mote.X, mote.Z);
                 Flower(mote.Element, mote.X, mote.Z, mote.Spin, lift - 0.2f, ms, basis, now, kite);
                 if (pilot) Add(_limeFaintMat, _dotMesh, pilot, Matrix4x4.TRS(pos, PilotFacing(pilot, pos), Vector3.one * cfg.PilotDotSize));
@@ -364,9 +373,21 @@ namespace CosmicShore.Gameplay
 
             BuildTail(lift);
             BuildLoops(lift, now);
+            BuildCord(lift);
             Flush();
             DrawDynamic(_tailMesh, _tailMat, kite);
             DrawDynamic(_loopMesh, _loopMat, kite);
+            DrawDynamic(_cordMesh, _cordMat, kite);
+        }
+
+        // the rope, hand to kite, while it is held (Garrett, 2026-10-20: "make the wrasse cord visible to the wrasse player");
+        // gone the moment the thumb lifts or the trigger or click lets go
+        void BuildCord(float lift)
+        {
+            _verts.Clear(); _colors.Clear(); _tris.Clear();
+            if (_nav.CordHeld)
+                Segment(_nav.Aim, _nav.Kite.Position, _nav.Config.TailWidth * _nav.Config.CordWidth * 0.5f, 1f, lift + 0.1f);
+            Fill(_cordMesh);
         }
 
         // ------------------------------------------------------------------ the motes: five-petal flowers (all lime)

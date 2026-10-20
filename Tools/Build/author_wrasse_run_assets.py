@@ -27,7 +27,8 @@ GateRaceScoringRuleSO), whose rings are already threaded by a second body. The c
   3. the AI approach numbers, sized to the Grouper's 32 u cruise circle (an AI crew is TWO AIs: the
      hull's AIPilot flies the Grouper through the ring, a navigator AI slings the kite through its
      mouth), and the plausible-speed clamp, sized to the kite: the
-     probe's world step is the hull's boosted 260 u/s plus the slung kite's 520 u/s plus the board's turn.
+     probe's world step is the hull's boosted 260 u/s plus the slung kite's 364 u/s plus the board's turn
+     at the kite's farthest reach (a screen corner).
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh.
   5. the arcade card's Vessels list: the Wrasse.
 
@@ -122,11 +123,16 @@ AI_THROUGH_DISTANCE = 55
 
 # Detection clamp: a frame's motion longer than this x dt x 2 + 5 is read as a respawn - for the hull AND
 # for the probe (the kite). The kite's world step is the hull's boosted 260 u/s + the slung kite's
-# 520 u/s (KiteNavigatorConfig slingMaxSpeed) + the board turning under it (the hull's ~126 deg/s at boost
-# over the 160 u board, ~350 u/s at the rim): ~1130 u/s. 2400 covers twice that - a ~85 u step at 60 fps,
-# still under a respawn's jump onto a 640 u circuit.
-MAX_PLAUSIBLE_SPEED = 2400
-KITE_WORST_SPEED = BOOST_SPEED + 520 + 126 * 3.141592653589793 / 180.0 * 160
+# 364 u/s (KiteNavigatorConfig slingMaxSpeed) + the board turning under it at the kite's farthest reach.
+# The kite flies the whole screen (round 7): a rectangle viewScale x 160 u deep and that times the aspect
+# wide, so its corner sits ~560 u out on a 2.4:1 screen; the board turns no faster than the hull (~126 deg/s
+# at boost), ~1240 u/s there. ~1860 u/s in all; 3800 covers twice that - a ~127 u step at 60 fps, still
+# under a respawn's jump onto a 640 u circuit.
+MAX_PLAUSIBLE_SPEED = 3800
+KITE_VIEW_SCALE = 1.352
+KITE_MAX_ASPECT = 2.4
+KITE_REACH = 160 * KITE_VIEW_SCALE * (1 + KITE_MAX_ASPECT ** 2) ** 0.5
+KITE_WORST_SPEED = BOOST_SPEED + 364 + 126 * 3.141592653589793 / 180.0 * KITE_REACH
 
 # The comeback strength, a FUNCTION OF THE TARGET: at 0.5 a quarter-of-race deficit (4 gates) buys 2
 # element levels. The buff lands on the mode's axis: a trailing hull's Time petals make Time motes come
@@ -372,7 +378,8 @@ for key, want in (("MinimumSpeed", 10.0), ("ThrottleScaler", 50.0), ("boostMulti
     if not m or float(m.group(1)) != want:
         errors.append(f"Wrasse.prefab {key} is not {want} - re-cut WrasseRunCourse (WRASSERUN.md)")
 _kite = read_or_empty(KITE_CONFIG)
-for key, want in (("control", 1.0), ("slingMaxSpeed", 520.0), ("boardRadius", 160.0), ("aiCrewNavigates", 1.0)):
+for key, want in (("control", 1.0), ("slingMaxSpeed", 364.0), ("boardRadius", 160.0), ("aiCrewNavigates", 1.0),
+                  ("viewScale", KITE_VIEW_SCALE), ("wholeScreen", 1.0)):
     m = re.search(rf"^  {key}: ([0-9.]+)$", _kite, re.M)
     if not m or float(m.group(1)) != want:
         errors.append(f"KiteNavigatorConfig.asset {key} is not {want} - re-check the clamp and the course")

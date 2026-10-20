@@ -1635,6 +1635,62 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 
 ---
 
+### 🔴 The Wrasse and Grouper get real bodies; the kite flies the whole screen (`cece/loving-fermat-ntdnbu`, 2026-10-20, round 7) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 7):
+- **Two models** from `/vessel-model`, `Grouper.fbx` and `WrasseKite.fbx` (dossiers in `Docs/VesselModels/`), nested
+  in `Wrasse.prefab` by `author_wrasse_assets.py`:
+  - The Grouper is the ship geometry. The Sparrow's mesh renderer is off; its bones, jets, colliders and Animator stay.
+  - `WrasseCrewBodies` (a NetworkBehaviour on the root) animates both. It replicates the Wrasse's pose, so every peer
+    sees it.
+- **The kite:**
+  - `slingMaxSpeed` 520 → 364, `tailLength` 2.4 → 4.8.
+  - It flies the whole kite view (`wholeScreen`).
+  - The view is zoomed out 30% (`viewScale` 1.352) and centred on the hull.
+  - The board turns to the hull's heading over ~220 u flown (`KiteBoardFrame.Heading`), so a yaw in place does not drag
+    the motes.
+  - The cord is drawn while held.
+  - Holding a mouse button or a trigger lets go; lifting a thumb still does.
+- Wrasse Run's detection clamp is 2400 → 3800.
+
+**Checked headless:**
+- `unity_refcompile`: the player config has 0 errors in project code. The editor config has 0 errors in changed files;
+  its 3 are on bleeding-edge.
+- `sling_parity.cjs` PASS, worst 0.006 × tolerance, all controls caught.
+  - Its tow scenario's hand swing moved 60 → 64 u, off a 41.97 u knife edge of the 42 u rope that float and double
+    resolve differently.
+- `parity.cjs` PASS.
+- `verify_lab.cjs` PASS on both labs.
+- Offline NUnit shim: 34/34, including 3 new whole-screen tests.
+- `author_wrasse_assets.py --check` OK and `--self-test` ok (6 new negative controls for the bodies).
+- `author_wrasse_run_assets.py --check` OK.
+- `build.py grouper|wrassekite --check` OK. The three readers agree, and the contact sheets were looked at.
+
+**Verify:**
+1. **Import** - both FBXs import with four slots (Domain, Body, Window, Engine) and four shape keys. The Wrasse prefab
+   shows `Grouper` and `WrasseKite` under the root, with no missing references.
+2. **The Grouper** - Toybox, Vessel Changer, the Wrasse:
+   - The hull is the Grouper in your domain colour; no Sparrow shows through.
+   - Its tail beats faster with speed and bends OUT of a turn.
+   - The jaw opens and the dorsal rises when you boost.
+   - Each element upgrade morphs it.
+3. **The Wrasse** - the kite view shows the Wrasse model, not a flat diamond. It swims faster when slung fast and points
+   where it flies. The chase camera sees it too.
+4. **Whole screen** - the kite reaches every edge and corner of the kite view and bounces off each edge.
+5. **Zoom and centre** - the kite view is ~30% wider than before, with the Grouper in its centre.
+6. **Yaw in place** - yaw the Grouper on the spot: the board, the motes and the kite stay put. Fly a few hundred units
+   on a new heading: the view eases round to it.
+7. **The cord** - while you hold the kite, a thin line runs from your thumb, cursor or stick hand to the kite. It is
+   gone when you let go.
+8. **Let go and grab** - each of these flings the kite and hides the cord: lifting the thumb, holding left or right
+   click, holding either trigger. Touching down or releasing grabs it again.
+9. **Speed and lasso** - the kite's top speed feels ~70% of before. Loops can be about twice as big before the tail
+   trims.
+10. **Two machines** - host and client both fly Wrasses: each sees the other's Grouper and Wrasse. A host's AI Wrasse's
+    kite is seen on the client.
+11. **Feel** - tune the `WrasseCrewBodies` numbers in the inspector (swim, tail, jaw, dorsal, fins). Flip a sign if a
+    part moves the wrong way.
+
 ### 🔴 The Wrasse's Sling, AI crews, the flail's toys, and Wrasse Run (68) (`cece/loving-fermat-ntdnbu`, 2026-10-20) — NOT EDITOR-VERIFIED
 
 **What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 6, `_Scripts/Controller/Arcade/WRASSERUN.md`):

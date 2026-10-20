@@ -118,7 +118,7 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _blastWatch = new();
         readonly HashSet<Prism> _blastCounted = new();
         float _blastWatchUntil;
-        bool _humanNavigates, _weTookHull, _down, _boosting;
+        bool _humanNavigates, _weTookHull, _down, _boosting, _clickOnPip;
         // this frame's aim is a thumb or a mouse holding the kite's rope (KiteControl.Sling), not a point it flies to
         bool _sling;
         // the kite as a SWITCH THREADER (IRingThreadProbe): bumped whenever the kite is re-placed rather than flown, so a
@@ -156,6 +156,9 @@ namespace CosmicShore.Gameplay
         int MaxSavedBoosts => Mathf.Max(1, Mathf.FloorToInt(_cfg.TimeBoostCap / Mathf.Max(0.05f, _cfg.TimeBoostSeconds)));
         internal bool Down => _down;
         internal KiteVec Aim => _aim;
+        /// <summary>The kite hangs on the rope this frame (Sling, held): the view draws the cord from <see cref="Aim"/>,
+        /// the hand, to the kite (Garrett, 2026-10-20: "make the wrasse cord visible to the wrasse player").</summary>
+        internal bool CordHeld => _sling && _down;
         internal Vector3 BoardRight => _r;
         internal Vector3 BoardForward => _f;
         internal Vector3 BoardUp => _u;
@@ -212,6 +215,37 @@ namespace CosmicShore.Gameplay
                    && status.Player != null && status.Player.IsNetworkOwner && !status.Player.IsLocalUser;
         }
 
+        /// <summary>
+        /// The kite's pose in the world this frame - where the Wrasse's body is drawn (WrasseCrewBodies places the model there
+        /// and replicates it, so others see the Wrasse). Its heading follows the kite's flight, eased so a near-standstill does
+        /// not spin it. False while no navigator is seated on this machine.
+        /// </summary>
+        public bool TryGetKitePose(out Vector3 position, out Quaternion rotation)
+        {
+            if (_vessel == null || !UnityLiveness.Alive(_vessel.Transform)) { position = default; rotation = Quaternion.identity; return false; }
+            position = BoardToWorld(_kite.Position.X, _kite.Position.Z);
+            var dir = _r * _kiteHeading.X + _f * _kiteHeading.Z;
+            rotation = Quaternion.LookRotation(dir.sqrMagnitude > 1e-6f ? dir : _f, _u);
+            return true;
+        }
+
+        /// <summary>True while a crew body draws the kite as a model (the view then draws no flat kite of its own).</summary>
+        internal bool BodyDrawsKite { get; set; }
+
+        // the kite's heading on the board, eased toward its velocity (a unit vector; forward until it first moves)
+        KiteVec _kiteHeading = new(0f, 1f);
+
+        void EaseKiteHeading(float dt)
+        {
+            var v = _kite.Velocity;
+            float sp = Mathf.Sqrt(v.X * v.X + v.Z * v.Z);
+            if (sp < 2f) return;
+            float a = 1f - Mathf.Exp(-12f * dt);
+            float hx = _kiteHeading.X + (v.X / sp - _kiteHeading.X) * a, hz = _kiteHeading.Z + (v.Z / sp - _kiteHeading.Z) * a;
+            float n = Mathf.Sqrt(hx * hx + hz * hz);
+            if (n > 1e-4f) _kiteHeading = new KiteVec(hx / n, hz / n);
+        }
+
         /// <summary>True when this seat's kite is flown by an AI crew (both seats AI; no human on this hull).</summary>
         public bool IsAICrew => _aiCrew;
         bool _aiCrew;
@@ -222,7 +256,7 @@ namespace CosmicShore.Gameplay
             _vessel = vessel;
             _status = vessel.VesselStatus;
             _player = _status?.Player;
-            _s = _cfg.ToSettings();
+            _s = ScreenSettings();
             int seed = System.Environment.TickCount;
             _ai = new KiteNavigatorAI(seed) { Level = _cfg.AISkill };
             _rng = new System.Random(seed ^ 0x5f3759df);
@@ -240,6 +274,25 @@ namespace CosmicShore.Gameplay
             _active = this;
             _view = new KiteNavigatorView(this);
         }
+
+        // The settings, with the kite's bounds set to the kite view's screen when wholeScreen is on (Garrett, 2026-10-20: "Let
+        // the wrasse travel the whole screen space"): a rectangle the screen's shape, viewScale board radii high, centred on
+        // the hull as the view is ("center the grouper in the wrasses camera"). An AI crew, which has no view, takes this
+        // machine's screen shape too, so its kite ranges as a human's would.
+        KiteSettings ScreenSettings()
+        {
+            var s = _cfg.ToSettings();
+            if (!_cfg.WholeScreen) return s;
+            float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
+            float h = s.BoardRadius * _cfg.ViewScale;
+            s.HalfDepth = Mathf.Max(1f, h - _cfg.KiteRadius);
+            s.HalfWidth = Mathf.Max(1f, h * aspect - _cfg.KiteRadius);
+            s.BoundsCentreZ = 0f;
+            return s;
+        }
+
+        /// <summary>Where the kite view is centred on the board (u along the board's forward): the hull.</summary>
+        internal const float ViewCentreZ = 0f;
 
         void Unbind()
         {
@@ -267,7 +320,7 @@ namespace CosmicShore.Gameplay
             if (!_aiCrew) PollSwap();
             if (dt <= 0f) return;
 
-            _s = _cfg.ToSettings();
+            _s = ScreenSettings();
             UpdateBoard(dt);
             _view?.Frame(_humanNavigates);
             ShadowRaceRing(dt);
@@ -283,6 +336,7 @@ namespace CosmicShore.Gameplay
             var prev = _sling ? _kite.Sling(_s, _aim.X, _aim.Z, _down, dt) : _kite.Move(_s, _aim.X, _aim.Z, _down, dt);
             HeadContacts(prev);
             if (_kite.AdvanceTail(_s, _loop)) CloseLoop(_loop);
+            EaseKiteHeading(dt);
 
             StepBoost(dt);
             CountBlast();
@@ -414,6 +468,29 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            if (_cfg.Frame == KiteBoardFrame.Heading)
+            {
+                // tilt with the hull as Eased does...
+                float a = 1f - Mathf.Exp(-_cfg.EaseRate * dt);
+                _u += (hu - _u) * a;
+                _u.Normalize();
+                // ...but turn to its HEADING only by the distance flown: a yaw in place turns the Grouper on the screen and
+                // leaves the board (and every mote on it) where it is; a medium run brings the view round behind it
+                var fp = Vector3.ProjectOnPlane(_f, _u);
+                if (fp.sqrMagnitude < 1e-6f) fp = Vector3.ProjectOnPlane(hf, _u);
+                fp.Normalize();
+                var tp = Vector3.ProjectOnPlane(hf, _u);
+                if (tp.sqrMagnitude > 1e-6f && _status != null)
+                {
+                    float flown = Mathf.Abs(_status.Speed) * dt;
+                    fp = Vector3.Slerp(fp, tp.normalized, 1f - Mathf.Exp(-flown / _cfg.HeadingAlignDistance)).normalized;
+                }
+                _f = fp;
+                _r = Vector3.Cross(_u, _f).normalized;
+                _f = Vector3.Cross(_r, _u);
+                return;
+            }
+
             if (_cfg.Frame == KiteBoardFrame.Eased)
             {
                 float a = 1f - Mathf.Exp(-_cfg.EaseRate * dt);
@@ -466,7 +543,8 @@ namespace CosmicShore.Gameplay
                 m.X = x; m.Z = z; m.Y = y; m.Has = true;
                 if (board) { m.World = BoardToWorld(x, z); m.Y = 0f; }   // flow with the world, stay in the plane
                 float dz = m.Z - A;
-                if (Mathf.Sqrt(m.X * m.X + dz * dz) >= R * 1.9f || Mathf.Abs(m.Y) >= Mathf.Max(_cfg.ReachY * 5f, 160f))
+                if (Mathf.Sqrt(m.X * m.X + dz * dz) >= Mathf.Max(R * 1.9f, KiteNavigatorCore.BoundsReach(_s) * 1.15f + A)
+                    || Mathf.Abs(m.Y) >= Mathf.Max(_cfg.ReachY * 5f, 160f))
                     Motes.RemoveAt(i);
                 else Motes[i] = m;
             }
@@ -561,7 +639,7 @@ namespace CosmicShore.Gameplay
             Shadow(ring.transform.position, out float x, out float z, out float y);
             Vector3 axis = ring.Axis;
             float ax = Vector3.Dot(axis, _r), az = Vector3.Dot(axis, _f), inPlane = Mathf.Sqrt(ax * ax + az * az);
-            bool reachable = Mathf.Abs(y) < ring.Radius * 0.85f && inPlane > 0.35f && KiteNavigatorCore.InDisc(_s, x, z);
+            bool reachable = Mathf.Abs(y) < ring.Radius * 0.85f && inPlane > 0.35f && KiteNavigatorCore.InBounds(_s, x, z);
             if (!reachable) { _ringOnBoard = false; return; }
             ax /= inPlane; az /= inPlane;
             // go through from the kite's side: the overshoot points away from the kite
@@ -588,17 +666,18 @@ namespace CosmicShore.Gameplay
             var index = PrismSpatialIndex.Instance;
             if (!index || !index.IsAvailable) return;
 
-            float R = _s.BoardRadius;
-            var centre = BoardToWorld(0f, _s.Anchor * R);
+            // everywhere the kite can go: the screen's rectangle about the hull, or the round board about its centre
+            float reach = KiteNavigatorCore.BoundsReach(_s);
+            var centre = BoardToWorld(0f, _s.Rectangular ? _s.BoundsCentreZ : _s.Anchor * _s.BoardRadius);
             _query.Clear();
-            index.QuerySphere(centre, Mathf.Sqrt(R * R + _cfg.ReachY * _cfg.ReachY * 4f), _query);
+            index.QuerySphere(centre, Mathf.Sqrt(reach * reach + _cfg.ReachY * _cfg.ReachY * 4f), _query);
 
             var own = OwnDomain;
             foreach (var p in _query)
             {
                 if (!p || p.destroyed) continue;
                 Shadow(p.transform.position, out float x, out float z, out float y);
-                if (!KiteNavigatorCore.InDisc(_s, x, z)) continue;
+                if (!KiteNavigatorCore.InBounds(_s, x, z)) continue;
                 var domain = p.Domain;
                 Prisms.Add(new PrismShadow { Prism = p, X = x, Z = z, Y = y, Domain = domain, Hostile = domain != own });
                 if (Prisms.Count >= MaxPrismShadows) break;
@@ -653,7 +732,7 @@ namespace CosmicShore.Gameplay
                     var f = fauna[i];
                     if (!f || f.IsDying || !f.isActiveAndEnabled) continue;
                     Shadow(f.transform.position, out float x, out float z, out float y);
-                    if (!KiteNavigatorCore.InDisc(_s, x, z) || !Touchable(y)) continue;
+                    if (!KiteNavigatorCore.InBounds(_s, x, z) || !Touchable(y)) continue;
                     Creatures.Add(new FaunaShadow { Fauna = f, X = x, Z = z, Y = y });
                 }
             }
@@ -710,10 +789,12 @@ namespace CosmicShore.Gameplay
                     {
                         _sling = true;
                         if (stick.magnitude <= _cfg.StickDeadzone) stick = Vector2.zero;
-                        var c = KiteNavigatorCore.Centre(_s);
-                        float reachU = _cfg.SlingStickReach * _s.BoardRadius;
-                        _aim = new KiteVec(c.X + stick.x * reachU, c.Z + stick.y * reachU);
-                        _down = true;
+                        float cz = _s.Rectangular ? _s.BoundsCentreZ : KiteNavigatorCore.Centre(_s).Z;
+                        float rx = _cfg.SlingStickReach * (_s.Rectangular ? _s.HalfWidth : _s.BoardRadius);
+                        float rz = _cfg.SlingStickReach * (_s.Rectangular ? _s.HalfDepth : _s.BoardRadius);
+                        _aim = new KiteVec(stick.x * rx, cz + stick.y * rz);
+                        // a trigger held lets go - the cord drops and the kite flies free; released, the rope takes it again
+                        _down = !(pad != null && (pad.leftTrigger.ReadValue() > 0.5f || pad.rightTrigger.ReadValue() > 0.5f));
                         return;
                     }
                     // the kite's full speed is reached this far from its aim (KiteNavigatorCore.Move), so a full lean is
@@ -731,7 +812,12 @@ namespace CosmicShore.Gameplay
                     _sling = _cfg.Control == KiteControl.Sling;
                     if (_cfg.OffsetMouse && !_sling) at.y += ThumbOffsetPixels();
                     _aim = _view.ScreenToBoard(at);
-                    _down = true;
+                    // Sling: a click held lets go - the cord drops and the kite flies free; released, the rope takes it again
+                    // (a press that starts on the small view is the swap's, not a let-go)
+                    if (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame)
+                        _clickOnPip = _view.PipContains(at, true);
+                    bool held = (mouse.leftButton.isPressed || mouse.rightButton.isPressed) && !_clickOnPip;
+                    _down = !(_sling && held);
                     return;
                 }
             }
@@ -763,7 +849,7 @@ namespace CosmicShore.Gameplay
             bool anyRival = false;
             foreach (var r in Rivals)
             {
-                if (!KiteNavigatorCore.InDisc(_s, r.X, r.Z)) continue;
+                if (!KiteNavigatorCore.InBounds(_s, r.X, r.Z)) continue;
                 anyRival = true;
                 if (!Touchable(r.Y) || !OffRamCooldown(r.Status)) continue;
                 _aiRivals.Add(new KiteTarget { Id = r.Id, X = r.X, Z = r.Z, VX = r.VX, VZ = r.VZ });
