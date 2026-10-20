@@ -1176,3 +1176,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner's eye, the mobile run); Yash (offered) can run the Editor steps and the two test fixtures
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
+
+### T-20261020-3bfe · open · test · vessels
+- **Task:** Fly the Sparrow (Toybox Vessel Changer or any mode): flying, the camera sits level directly behind the hull; press the turret/MASS stance and it eases up to the old elevated view; leave the stance (press again, or a turn end) and it drops back. Check the Serpent and the Stoat cameras are unchanged in and out of their stance.
+- **Done when:** All three behave as described in Play mode, or the failure is noted with the camera height seen
+- **Who can take it:** Yash or Garrett
+- **Added:** 2026-10-20 by a Claude session (`cece/youthful-johnson-7c8xh2`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md
