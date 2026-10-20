@@ -1147,3 +1147,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Andrew (QA); Yash could also take it
 - **Added:** 2026-10-19 by Caleb (`claude/fix-breakwater-preview-controls-3evnnj`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Breakwater preview — one-thumb flight), Assets/_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md
+
+### T-20261020-bbc3 · open · decision · crew-vessels
+- **Task:** Play the Wrasse Lasso Lab on a phone and pick the kite's phone control: the shipped Follow, Sling (thumb on a tether), Plant (the Thresher's anchor), Hook (curled flick) or Well (gravity); also keep or drop snap-shut loops. Round 1's scorecard picks Plant (29 mm of thumb per loop against Follow's 147, 3.3 motes per loop).
+- **Done when:** A 'Which control goes to Unity' entry is in the lab's Decisions tab (shared log)
+- **Who can take it:** Garrett (Wrasse owner); Yash can play it and record a second opinion
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** https://claude.ai/artifact/T5EBvmTvFw4KNRMQtwXDQb, Docs/Studios/WRASSE_LASSO_LAB.md

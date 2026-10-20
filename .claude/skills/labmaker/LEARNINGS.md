@@ -1259,3 +1259,19 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `BrittleStarBlastForm`, `BrittleStarTests.Blast_IsAVolume_NotAFlatSheet` (with its flatten control), the
   LOCKED rule in `Docs/claude/SHADERS_AND_PERFORMANCE.md`, and `/vessel` §4.ab5.
 
+
+### L-STU-119 — An orbit control must fit one lap inside the tail, and closes loops only because something drifts
+- Lab: Wrasse Lasso Lab (`Docs/Studios/WrasseLassoLab.html`) · Branch: `cece/loving-fermat-ntdnbu` · By: Claude session for Garrett · Date: 2026-10-20
+- What happened: the first tether (70 u) and anchor (110 u) ropes scored 0 loops in 12 s. The shipped Wrasse tail is
+  2.4 × 160 = 384 u, and a 110 u orbit is 691 u round, so a lap never fits in the tail and the crossing test never
+  fires. Shrunk to 42 u and 22-50 u, the Plant control went to 19 loops/min. Second trap: a clean circle round a fixed
+  point retraces itself, so its segments meet tangentially and do not cross, and an inward spiral never crosses either.
+  Loops closed only because the planted anchor drifts with the world (40 u/s), which makes the orbit a self-crossing
+  trochoid. Third: a pull-only rope planted far away flings the kite straight through the anchor (a pendulum); the
+  Thresher hooks onto the orbit at once, so the lab turns radial speed into swing at a fixed speed (`plHook`).
+- Do instead: before tuning any orbit, swing or spin control for a lasso, check 2π × radius ≤ the tail length, and
+  give it a drift (world flow, a moving anchor) or a snap-shut rule. Measure on a still board too, where the drift is
+  gone. Trace the AI's thumb, the anchor and the loop counts frame by frame (`__lab.world()`) before blaming the
+  mechanic.
+- Evidence: `Docs/Studios/WRASSE_LASSO_LAB.md` round 1 "Found" 1-3; `stepKite` case `'plant'`; `advanceTail` with `labSnap`.
+- Promoted: no
