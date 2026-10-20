@@ -118,6 +118,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.Unlit` and its comment; `KITE_NAVIGATOR.md` "Round 4b".
 - Promoted: no
 
+### L-GEN-19 — Trace a few runs' state every ten seconds before reading any aggregate
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the first scorecard looked plausible (Gate Run points 81, 62 boardings, 8 cast-offs). A 10-second state trace of one run showed the crew's skiff holding the Artifact from 20 s to the 180 s limit, chasing its old boarding target instead of flying home, and rival boarders re-boarding a fully drained hull every second. Both bugs had produced numbers that looked like a strong boarding meta.
+- Do instead: before the first aggregate, dump `state()` every 10 s for a few seeds of each game and read it; a value pinned for a whole run (a carrier that never docks, a level stuck at its floor) is a behaviour bug, not a balance finding.
+- Evidence: `CrewOfFourLab.html` `skiffAI` (the early return for `sk.art`, the drained-victim recall); `CREW_OF_FOUR_LAB.md` §4 Found 9.
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -783,6 +790,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: to separate the petals, round 4e added `petalGap` and a non-uniform `petalWidth`. The width squashed every traced outline, so the Space dart "doesn't look the same in its proportions". The totem's flower already had the answer: each `Resources/ElementPetals/<element>_petal.png` is the whole flower, one petal at its true offset and size.
 - Do instead: trace the shipped asset (alpha bounds at 0.5 give each petal's centre offset and scale, in flower radii), scale uniformly, and delete the knobs that were standing in for that measurement.
 - Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
+- Promoted: no
+
+### L-STU-118 — In a multi-team lab, step the teams in a rotating order: a fixed order decides the ties
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: every crew was stepped in the order of the `crews` array, so crew 0 (the player's) moved, picked up and blasted first in every step. In mirror Breach matches the Corsair won 85% over 20 seeds: two skiff charges in one fortress core, and the first blast processed took the prisms both reached. With the crews (and the blasts) taking turns going first each step, the same run read 25%, and the other mirror matches moved by 15-30 points too.
+- Do instead: in any lab with several teams or crews, rotate the step order (`order = crews.slice(step % n).concat(crews.slice(0, step % n))`) for movement, pickups and area effects, and run a 20-seed mirror match as a fairness check before quoting win rates. A mirror match that is not near 50% is a stepping bug until shown otherwise.
+- Evidence: `CrewOfFourLab.html` `simStep` (the `order` array) and `stepBlasts`; `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 Found 8.
+- Promoted: no
+
+### L-STU-119 — A "seat value" column needs a floor under its denominator, and a won-or-lost game needs more seeds
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: seat value (points lost when one station is left empty, as % of the full crew's points) read −1319% and −2164% in Gate Run, where points are 100+ for an escape and a few for a loss, so a 3-seed base of 6-11 points turned one lucky escape into thousands of percent. Rookie share read 2344% the same way.
+- Do instead: divide by max(|points|, a per-game scale) (`POINT_SCALE`), give a binary-outcome game more seeds (12 against 6), print the standard error beside every points column, and say in the write-up which seat values sit inside the noise.
+- Evidence: `CrewOfFourLab.html` `POINT_SCALE`, `scoreOpts`; `CREW_OF_FOUR_LAB.md` §4 "Noise".
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

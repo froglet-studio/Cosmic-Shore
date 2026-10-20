@@ -1,0 +1,1597 @@
+<!doctype html>
+<!--
+  CREW OF FOUR LAB - a /labmaker browser studio (round 1).
+  The question: what four-seat multiplayer vessel captures the magic of Wildgate (Moonshot Games, 2025:
+  crews of four share one ship, fly / shoot / repair / board, and race the Artifact out through the Wildgate)
+  inside Cosmic Shore's rules (petals are the only PvP currency, LOCKED 2026-10-10).
+  One model, five crew concepts, four element games (Time race, Space destruction, Mass creation, Charge dogfight),
+  each at I1-I4 against Easy / Medium / Hard rival crews, and a scorecard of the Wildgate qualities.
+  Source of truth: this file. Write-up: Docs/Studios/CREW_OF_FOUR_LAB.md. Verify:
+    node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Crew of Four Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: an editor - stage (the Reach, north-up, following our hull) + right dock (concepts, dials) + bottom dock (scorecard, decisions). */
+  :root {
+    --bg: #edf1f3; --panel: #fbfcfd; --ink: #13202a; --muted: #576976; --line: #d3dce2;
+    --accent: #0a8a84; --accent-ink: #ffffff; --warn: #a65208; --ok: #1d7543; --changed: #0a6fd0;
+    --stage: #050b10; --chip: #e2e9ed;
+    --f-display: 'Saira Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+    --f-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --f-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a1117; --panel: #0f1920; --ink: #e2ecf1; --muted: #8aa0ad; --line: #1f2f3a;
+      --accent: #13fff2; --accent-ink: #04211f; --warn: #f0a050; --ok: #5cd08e; --changed: #7cc0ff;
+      --stage: #03080c; --chip: #18262f; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a1117; --panel: #0f1920; --ink: #e2ecf1; --muted: #8aa0ad; --line: #1f2f3a;
+    --accent: #13fff2; --accent-ink: #04211f; --warn: #f0a050; --ok: #5cd08e; --changed: #7cc0ff;
+    --stage: #03080c; --chip: #18262f; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--f-body); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr) 230px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 6px 10px; align-items: center; padding: 6px 16px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font: 700 19px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; margin: 0; }
+  header .meta { color: var(--muted); font-size: 12px; }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); font-size: 12px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-right: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 3px 8px; font: 600 12px var(--f-body); cursor: pointer; }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .lbl { font: 600 10px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; touch-action: none; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #toast { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: rgba(6,16,22,.88); color: #e8fffd; border: 1px solid #13fff2; border-radius: 6px; padding: 4px 12px; font: 12px var(--f-mono); pointer-events: none; white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
+  #actBtns { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 8px; }
+  #actBtns button { font: 700 14px var(--f-display); letter-spacing: .06em; text-transform: uppercase; padding: 8px 14px; border-radius: 8px; border: 1px solid #13fff2; background: rgba(4,30,32,.8); color: #d9fffd; cursor: pointer; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 14px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 6px 16px 10px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 3px 9px; cursor: pointer; font: 600 12px var(--f-body); }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--changed); outline-offset: 1px; }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 7px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px var(--f-mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .row output { text-align: right; font: 12px var(--f-mono); }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .row.bool { grid-template-columns: auto 1fr 64px; align-items: baseline; }
+  .row.bool .tip { grid-column: 2 / -1; }
+  .cards { display: grid; gap: 8px; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; background: var(--panel); text-align: left; color: var(--ink); font: inherit; }
+  .card[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .card h3 { margin: 0 0 2px; font: 700 16px/1.1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; }
+  .card .seats { display: flex; gap: 4px; flex-wrap: wrap; margin: 4px 0; }
+  .chip { font: 600 11px var(--f-mono); background: var(--chip); border-radius: 4px; padding: 1px 6px; }
+  .card p { margin: 2px 0; color: var(--muted); font-size: 12px; }
+  .card .ctl { color: var(--warn); font: 600 10px var(--f-body); letter-spacing: .08em; text-transform: uppercase; }
+  table { border-collapse: collapse; width: 100%; font: 12px var(--f-mono); }
+  th, td { text-align: right; padding: 2px 7px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font: 600 11px var(--f-body); color: var(--muted); }
+  .tblwrap { overflow-x: auto; }
+  .best { font-weight: 700; color: var(--ok); }
+  .hint { color: var(--muted); font-size: 12px; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  .prose { max-width: 70ch; }
+  .prose h4 { font: 700 14px var(--f-display); letter-spacing: .05em; text-transform: uppercase; margin: 10px 0 2px; }
+  .prose p, .prose li { margin: 3px 0; }
+  .prose ul { padding-left: 18px; margin: 4px 0; }
+  kbd { font: 11px var(--f-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    header { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #stageWrap { aspect-ratio: 4 / 5; max-height: 74vh; width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #bottom { max-height: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title">Crew of Four Lab</h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="lbl">Game</span><select id="gameSel" aria-label="Game"></select>
+    <span class="seg" id="intSeg" aria-label="Intensity"></span>
+    <span class="lbl">Rivals</span><select id="diffSel" aria-label="Rival difficulty"><option value="0">Easy</option><option value="1">Medium</option><option value="2" selected>Hard</option></select>
+    <span class="lbl">Seat</span><span class="seg" id="seatSeg" aria-label="Your seat"></span>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="resetAll" title="Put every dial back to the shipped / round-1 numbers">Shipped</button>
+    <span class="meta" id="platform"></span>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas><div id="toast" hidden></div><div id="actBtns"><button id="actBtn" hidden>Ward</button></div></div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  // A READER of the shipped numbers: every constant names the asset / class field it was copied from.
+  // "lab" marks a proposal with no game field yet (the four-seat hull does not exist in the game).
+  const LAB = { name: 'Crew of Four Lab', branch: 'cece/happy-noether-m54hz6', round: 1, doc: 'Docs/Studios/CREW_OF_FOUR_LAB.md' };
+  const SHIPPED = {
+    // Hull: the Sparrow's flight numbers (Assets/_Prefabs/Spacevessels/Sparrow.prefab), scaled for a four-seat hull
+    minSpeed: 10,        // VesselTransformer.DefaultMinimumSpeed
+    throttleScaler: 25,  // VesselTransformer.DefaultThrottleScaler (cruise 35 u/s)
+    boostMul: 5,         // VesselStatus.boostMultiplier (the throttle term x5 while boosting)
+    yawRate: 80,         // VesselTransformer.YawScaler (deg/s)
+    hullSpeedMul: 0.85,  // lab: a four-seat hull flies at this share of the Sparrow's speed
+    hullTurnMul: 0.55,   // lab: and turns at this share of its yaw rate
+    hullRadius: 9,       // lab: hull contact radius (u)
+    boostTank: 2.5,      // lab: seconds of boost the tank holds at Time 0
+    // Trail prisms: Sparrow VesselPrismController
+    prismW: 2,           // BaseScale.x
+    prismL: 5,           // BaseScale.z
+    wavelength: 7,       // initialWavelength: one prism per 7 u flown
+    trailCap: 90,        // lab: trail prisms kept per hull at Mass 0 (+4 per Mass level)
+    // Elements: petals are element levels, ElementalBarsConfigSO.MinLevel -5 .. MaxLevel 15 (PetalCount 5)
+    startLevel: 3,       // lab: each hull's level in every element at spawn
+    kTime: 0.6, kSpace: 0.8, kMass: 0.8, kCharge: 0.8,   // lab: an element's effect at level 15 is 1 + k
+    // Crew
+    walkTime: 2.5,       // lab: seconds to cross the deck from one station to another
+    swapCooldown: 0.75,  // PilotSwap.CooldownSeconds (the shortest seat change, a console swap)
+    reassign: 0.8,       // lab: an AI crew re-plans its stations this often (s)
+    // Ward: the hull's shield. It keeps petals, so a bolt on it scores nothing (CombatHitDrain wards)
+    wardHits: 4,         // lab: bolts the ward absorbs at Mass 0
+    wardPerMass: 0.34,   // lab: extra hits per Mass level
+    wardRegen: 0.5,      // lab: hits regained per second while the Core is manned
+    wardRegenIdle: 0.12, // lab: ... with nobody at a Core
+    wardBreakCd: 5,      // lab: seconds a broken ward stays down
+    wardSpeed: 0.35,     // lab: speed bonus with the ward down (Wildgate: +35% base speed with shields lowered)
+    wardGuns: 1,         // lab rule: your own ward blocks your guns, so firing means dropping it (the Wildgate gamble)
+    // Guns
+    fireRate: 1.6,       // lab: shots per second at Space 0
+    boltSpeed: 260,      // lab (u/s)
+    boltRange: 230,      // lab (u)
+    turretTurn: 220,     // lab (deg/s)
+    // Core
+    refine: 1,           // lab rule: crystals land in the hold and only a manned Core turns them into petals
+    refineTime: 1.2,     // lab: seconds per crystal refined
+    forgeCost: 2,        // lab: hold crystals spent to forge one prism block
+    forgePrisms: 8,      // lab: prisms in a forged block
+    // Skiff: the boarder's craft
+    skiffSpeed: 95,      // lab (u/s at Charge 0)
+    boardDrain: 0.8,     // lab: petals per second a boarder siphons into its bag
+    bagMax: 6,           // lab: petals a skiff's bag holds
+    stealTime: 4,        // lab: seconds aboard a carrier to lift the Artifact
+    repelTime: 2.2,      // lab: seconds a defender needs on deck to cast a boarder off
+    recallTime: 1.5,     // lab: channel to recall a skiff home (not while it carries the Artifact)
+    boardBypass: 1,      // lab rule: a boarder works under the ward (Wildgate: the ship's shields never stop a boarder)
+    // Breach charge: the skiff's blast is AOEExplosion (Assets/_Prefabs/.../AOEExplosion.prefab)
+    spaceScale: 60,      // AOEExplosion MaxScale (radius 0.5 x MaxScale), x(1 + kCharge x Charge/15) for a skiff charge
+    blastDuration: 3,    // AOEExplosion ExplosionDuration (s), radius eased by sin(t pi/2)
+    blastDelay: 0.2,     // AOEExplosion ExplosionDelay (s)
+    // Match
+    arenaR: 420,         // lab: the arena's radius (the game's cell is 320 u; a Reach wants room to hunt)
+    sightRange: 220,     // lab: what a crew sees without a Scope (the Crew Vessel Lab's viewRange)
+    matchLen: 90,        // lab: Breach / Anchorage / Broadside length (s)
+    gateCap: 180,        // lab: a Gate Run ends here if nobody escapes (s)
+    crystalRespawn: 6,   // lab (s)
+    rivalsGalleon: 0,    // lab: 1 = every rival crew flies the Galleon instead of your concept
+  };
+
+  // ================= (2) SPEC: one row per dial =================
+  const SPEC = [
+    ['Crew', 'walkTime', 0, 6, 0.1, 'Walk between stations (s)', 'How long a crew member takes to cross the deck. 0 = consoles (a seat swap still costs PilotSwap 0.75 s). Long walks make every job a decision.'],
+    ['Crew', 'swapCooldown', 0.25, 2, 0.05, 'Shortest seat change (s)', 'PilotSwap.CooldownSeconds. The floor under any move between stations.'],
+    ['Crew', 'reassign', 0.2, 3, 0.1, 'AI re-plan interval (s)', 'How often an AI crew reconsiders who stands where. Easy crews wait 1.8x longer.'],
+    ['Ward', 'wardGuns', 0, 1, 1, 'Ward blocks your own guns', 'Wildgate\'s gamble: to fire you drop your shield. Off: guns fire through your own ward.'],
+    ['Ward', 'wardSpeed', 0, 1, 0.05, 'Speed with ward down (x)', 'Bonus speed while the ward is down. Wildgate: +35%.'],
+    ['Ward', 'wardHits', 1, 12, 1, 'Ward hits at Mass 0', 'Bolts the ward absorbs before it breaks.'],
+    ['Ward', 'wardPerMass', 0, 1, 0.02, 'Extra hits per Mass level', 'Mass petals thicken the ward.'],
+    ['Ward', 'wardRegen', 0, 2, 0.05, 'Regen, Core manned (hits/s)', 'A manned Core recharges the ward this fast.'],
+    ['Ward', 'wardRegenIdle', 0, 1, 0.02, 'Regen, no Core (hits/s)', 'With nobody at a Core (or no Core seat) the ward only trickles back.'],
+    ['Ward', 'wardBreakCd', 0, 15, 0.5, 'Broken ward downtime (s)', 'A ward knocked to 0 stays down this long.'],
+    ['Hull', 'hullSpeedMul', 0.4, 1.5, 0.05, 'Hull speed (x Sparrow)', 'The four-seat hull\'s share of the Sparrow\'s 35 u/s cruise and 135 u/s boost.'],
+    ['Hull', 'hullTurnMul', 0.2, 1.5, 0.05, 'Hull turn (x Sparrow)', 'Share of the Sparrow\'s 80 deg/s yaw.'],
+    ['Hull', 'hullRadius', 4, 20, 1, 'Hull radius (u)', 'Contact radius for bolts, boarders, crystals and prisms.'],
+    ['Hull', 'boostTank', 0, 8, 0.25, 'Boost tank (s)', 'Seconds of boost at Time 0; refills slowly, faster with Time.'],
+    ['Hull', 'trailCap', 20, 300, 5, 'Trail prisms kept', 'Trail prisms each hull keeps at Mass 0; +4 per Mass level.'],
+    ['Hull', 'minSpeed', 0, 40, 1, 'Minimum speed (u/s)', 'Sparrow DefaultMinimumSpeed.'],
+    ['Hull', 'throttleScaler', 5, 80, 1, 'Throttle scaler (u/s)', 'Sparrow DefaultThrottleScaler.'],
+    ['Hull', 'boostMul', 1, 8, 0.25, 'Boost multiplier', 'Sparrow boostMultiplier on the throttle term.'],
+    ['Hull', 'yawRate', 20, 200, 5, 'Yaw rate (deg/s)', 'Sparrow YawScaler.'],
+    ['Hull', 'wavelength', 3, 20, 1, 'Prism every (u)', 'Sparrow initialWavelength.'],
+    ['Hull', 'prismW', 1, 6, 0.5, 'Prism width (u)', 'Sparrow BaseScale.x.'],
+    ['Hull', 'prismL', 2, 12, 0.5, 'Prism length (u)', 'Sparrow BaseScale.z.'],
+    ['Guns', 'fireRate', 0.3, 5, 0.1, 'Fire rate at Space 0 (/s)', 'Shots per second per gun deck; Space petals raise it.'],
+    ['Guns', 'boltSpeed', 80, 600, 10, 'Bolt speed (u/s)', 'Faster bolts need less lead.'],
+    ['Guns', 'boltRange', 80, 500, 10, 'Bolt range (u)', 'How far a bolt flies.'],
+    ['Guns', 'turretTurn', 40, 720, 10, 'Turret turn (deg/s)', 'How fast a gunner swings the turret.'],
+    ['Core', 'refine', 0, 1, 1, 'Crystals need refining', 'On: crystals land in the hold and a manned Core turns them into petals (Wildgate\'s ice into the reactor). Off: a crystal is a petal on pickup, as in the game.'],
+    ['Core', 'refineTime', 0.2, 5, 0.1, 'Refine time (s per crystal)', 'Core work per crystal.'],
+    ['Core', 'forgeCost', 1, 6, 1, 'Forge cost (crystals)', 'Hold crystals spent per forged block (Anchorage).'],
+    ['Core', 'forgePrisms', 2, 24, 1, 'Prisms per block', 'Size of a forged block.'],
+    ['Skiff', 'skiffSpeed', 30, 250, 5, 'Skiff speed (u/s)', 'At Charge 0; Charge petals add up to 1 + kCharge.'],
+    ['Skiff', 'boardBypass', 0, 1, 1, 'Boarders work under the ward', 'On: a boarder siphons petals whatever the ward says (Wildgate). Off: a warded hull cannot be boarded.'],
+    ['Skiff', 'boardDrain', 0, 3, 0.05, 'Siphon (petals/s)', 'Petals a boarder moves into its bag per second. Every one is a scored hit.'],
+    ['Skiff', 'bagMax', 1, 15, 1, 'Bag size (petals)', 'A boarder leaves when its bag is full.'],
+    ['Skiff', 'stealTime', 0.5, 15, 0.5, 'Lift the Artifact (s)', 'Seconds aboard a carrier to take the Artifact.'],
+    ['Skiff', 'repelTime', 0.2, 8, 0.1, 'Cast off a boarder (s)', 'Seconds a defender spends on deck to cast a boarder off. Two defenders take half.'],
+    ['Skiff', 'recallTime', 0, 5, 0.1, 'Recall channel (s)', 'A skiff can recall home, never with the Artifact (Wildgate: no teleport with the Artifact).'],
+    ['Skiff', 'spaceScale', 10, 200, 5, 'Breach blast MaxScale', 'AOEExplosion MaxScale; the skiff\'s charge in Breach.'],
+    ['Skiff', 'blastDuration', 0.5, 6, 0.1, 'Blast duration (s)', 'AOEExplosion ExplosionDuration.'],
+    ['Skiff', 'blastDelay', 0, 2, 0.05, 'Blast delay (s)', 'AOEExplosion ExplosionDelay.'],
+    ['Match', 'arenaR', 250, 800, 10, 'Arena radius (u)', 'The game cell is 320 u.'],
+    ['Match', 'sightRange', 80, 600, 10, 'Sight without a Scope (u)', 'Rivals and the loose Artifact are known only this close unless a Scope is manned.'],
+    ['Match', 'matchLen', 30, 300, 5, 'Match length (s)', 'Breach, Anchorage and Broadside.'],
+    ['Match', 'gateCap', 60, 400, 10, 'Gate Run time limit (s)', 'Nobody escaped by then: everyone failed.'],
+    ['Match', 'crystalRespawn', 1, 30, 1, 'Crystal respawn (s)', ''],
+    ['Match', 'startLevel', -5, 15, 1, 'Starting level, every element', 'ElementalBarsConfigSO levels run -5 to 15.'],
+    ['Match', 'rivalsGalleon', 0, 1, 1, 'Rivals always fly the Galleon', 'Off: rival crews fly your concept (a mirror match). On: every rival flies the Galleon, the Wildgate-literal reference.'],
+    ['Elements', 'kTime', 0, 2, 0.05, 'Time: speed at 15 (+x)', 'Hull speed and boost refill gain this much at Time 15.'],
+    ['Elements', 'kSpace', 0, 2, 0.05, 'Space: fire rate at 15 (+x)', 'Gun fire rate gains this much at Space 15.'],
+    ['Elements', 'kMass', 0, 2, 0.05, 'Mass: ward regen at 15 (+x)', 'Ward regen gains this much at Mass 15 (Mass also adds hits).'],
+    ['Elements', 'kCharge', 0, 2, 0.05, 'Charge: skiff at 15 (+x)', 'Skiff speed, siphon rate and breach blast gain this much at Charge 15.'],
+  ];
+  const BOOLS = new Set(['wardGuns', 'refine', 'boardBypass', 'rivalsGalleon']);
+
+  // ================= the concepts, seats and games =================
+  const EL = ['Time', 'Space', 'Mass', 'Charge'];
+  const ELC = ['#36d39a', '#8f84ff', '#ff6b4a', '#f2c14e'];   // the Crew Vessel Lab's element hues (HUD bars only)
+  const DOMS = [   // studio-domains.js (OriginalColorSetSO GetDomainSignalColor)
+    { name: 'Jade', c: '#13fff2' }, { name: 'Ruby', c: '#ff00f9' }, { name: 'Gold', c: '#ffa700' },
+  ];
+  const HAZ = '#6680ff';   // Blue, the neutral domain: hazards and the Breach fortress
+  const LIME = '#c6ff3d';
+  const SEATS = {
+    helm:  { name: 'Helm',  short: 'HLM', tip: 'Steer, boost, raise and drop the ward.' },
+    guns:  { name: 'Guns',  short: 'GUN', tip: 'Swing the turret. A bolt on an unwarded hull steals a petal; on prisms it destroys them.' },
+    core:  { name: 'Core',  short: 'COR', tip: 'Refine hold crystals into petals, recharge the ward, forge prism blocks.' },
+    skiff: { name: 'Skiff', short: 'SKF', tip: 'Leave the hull: gather crystals, grab the Artifact, board a rival and siphon its petals.' },
+    scope: { name: 'Scope', short: 'SCP', tip: 'See every rival and the loose Artifact, wherever they are.' },
+  };
+  const CONCEPTS = [
+    { key: 'galleon', name: 'Galleon', seats: ['helm', 'guns', 'core', 'skiff'],
+      pitch: 'Wildgate taken literally: one of each job, a long deck to cross, a ward you drop to shoot, crystals refined in the Core, one skiff to board with.',
+      chases: 'Every crisis pulls someone off a station.', v: { walkTime: 2.5, wardGuns: 1, refine: 1, boardBypass: 1 } },
+    { key: 'corsair', name: 'Corsair', seats: ['helm', 'guns', 'skiff', 'skiff'],
+      pitch: 'Two skiffs and no Core: half the crew lives outside the hull, raiding and boarding. Crystals are petals on pickup; the ward only trickles back.',
+      chases: 'The boarding stories: two thieves on a rival\'s deck.', v: { walkTime: 1.5, wardGuns: 1, refine: 0, boardBypass: 1 } },
+    { key: 'lantern', name: 'Lantern', seats: ['helm', 'guns', 'core', 'scope'],
+      pitch: 'Consoles instead of a deck (a swap is PilotSwap\'s 0.75 s), a Scope that sees the whole Reach, guns that fire through the ward. Nobody can board.',
+      chases: 'Information and timing; the probe station.', v: { walkTime: 0, wardGuns: 0, refine: 1, boardBypass: 1 } },
+    { key: 'ironclad', name: 'Ironclad', seats: ['helm', 'guns', 'guns', 'core'],
+      pitch: 'Two gun decks and a Core, no skiff: a broadside ship that wins shootouts and has to answer boarders from its own deck.',
+      chases: 'The ship-to-ship duel and the ward gamble.', v: { walkTime: 2.5, wardGuns: 1, refine: 1, boardBypass: 1 } },
+    { key: 'solo', name: 'Solo crew', control: true, crew: 1, seats: ['helm', 'guns', 'core', 'skiff'],
+      pitch: 'Control: the Galleon with ONE crew member running between all four stations, against full Galleon crews.',
+      chases: 'What a crew of four buys.', v: { walkTime: 2.5, wardGuns: 1, refine: 1, boardBypass: 1 } },
+  ];
+  const GAMES = [   // /labmaker 1.5: one per element, in the order Time, Space, Mass, Charge
+    { key: 'gate', el: 0, name: 'Gate Run', kind: 'race', unit: 's to escape', lower: true,
+      tip: 'The Artifact lies somewhere in the Reach. Lift it (hull or skiff), carry it aboard your hull, and fly it through the gate when it opens. Holding it reveals you to everyone.' },
+    { key: 'breach', el: 1, name: 'Breach', kind: 'destruction', unit: 'prisms destroyed',
+      tip: 'A neutral fortress of rings. Destroy more of it than the rival crews in the time limit. A skiff that reaches its core plants an AOEExplosion charge.' },
+    { key: 'anchor', el: 2, name: 'Anchorage', kind: 'creation', unit: 'prisms standing',
+      tip: 'Lay and forge prisms and keep them standing. Raiders shoot your mass; your guns shoot theirs.' },
+    { key: 'broadside', el: 3, name: 'Broadside', kind: 'dogfight', unit: 'net petal hits',
+      tip: 'Crew against crew. Every petal moved is a scored hit: bolts on unwarded hulls, siphons by boarders, a boarder cast off with a full bag.' },
+  ];
+  // Intensity ladders I1-I4, one per game.
+  const INT = {
+    gate:      [{ rivals: 1, gateOpen: 30, crystals: 14, haz: 0 }, { rivals: 1, gateOpen: 40, crystals: 12, haz: 1 }, { rivals: 2, gateOpen: 50, crystals: 10, haz: 2 }, { rivals: 2, gateOpen: 60, crystals: 8, haz: 3 }],
+    breach:    [{ rivals: 1, rings: 2, crystals: 10, haz: 0 }, { rivals: 1, rings: 3, crystals: 10, haz: 0 }, { rivals: 2, rings: 4, crystals: 10, haz: 1 }, { rivals: 2, rings: 5, crystals: 8, haz: 2 }],
+    anchor:    [{ rivals: 1, crystals: 16, haz: 0 }, { rivals: 1, crystals: 14, haz: 1 }, { rivals: 2, crystals: 14, haz: 1 }, { rivals: 2, crystals: 12, haz: 2 }],
+    broadside: [{ rivals: 1, crystals: 12, haz: 0 }, { rivals: 1, crystals: 10, haz: 1 }, { rivals: 2, crystals: 10, haz: 1 }, { rivals: 2, crystals: 8, haz: 2 }],
+  };
+  // The Breach fortress: rings of neutral prisms (one per wavelength). The first ring sits inside a Charge-3
+  // skiff charge (0.5 x 60 x 1.16 = 35 u), so the boarder's blast has something to break.
+  const FORT_R0 = 26, FORT_DR = 18;
+  const SKILL = [   // Easy / Medium / Hard AI crews (inputs only)
+    { name: 'Easy',   aimSd: 9, lead: 0, reassignMul: 1.8, wardTol: 3, toggleGap: 1.6, steerSd: 0.35, react: 0.6 },
+    { name: 'Medium', aimSd: 5, lead: 0.5, reassignMul: 1.25, wardTol: 1.5, toggleGap: 1.1, steerSd: 0.15, react: 0.3 },
+    { name: 'Hard',   aimSd: 2.5, lead: 1, reassignMul: 1, wardTol: 0.5, toggleGap: 0.8, steerSd: 0.05, react: 0.15 },
+  ];
+
+  // Saved settings: only the DIFF from SHIPPED (a per-viewer convenience; localStorage is never the record).
+  const LS = 'lab:' + LAB.name + ':';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet('P', {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+  const G = Object.assign({ game: 0, intensity: 1, diff: 2, crewSkill: 2, concept: 0, seat: -1 }, lsGet('G', {}));
+  G.seat = -1;   // always open watching; a seat is one click away
+
+  // ================= helpers =================
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const TAU = Math.PI * 2, D2R = Math.PI / 180;
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const angDiff = (a, b) => { let d = (a - b) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
+  const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+  function gauss(rng) { let u = 0, v = 0; while (u === 0) u = rng(); v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); }
+  function segPointD2(ax, ay, bx, by, px, py) { const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy; let t = l2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0; t = clamp(t, 0, 1); const x = ax + dx * t - px, y = ay + dy * t - py; return x * x + y * y; }
+
+  // ================= (3) THE MODEL =================
+  // simStep never draws and never reads a device: the human's seat reads `humanIn`, which the frame loop fills.
+  let world = null, seed = 7;
+  const humanIn = { turn: 0, boost: 0, brake: 0, fire: 0, aim: null, edge: 0, seatReq: null, ping: null };
+
+  function lv(c, e) { return clamp(c.lv[e], -5, 15); }
+  function mul(c, e, k) { return 1 + k * lv(c, e) / 15; }
+  function wardMax(c) { return Math.max(1, Math.round(P.wardHits + P.wardPerMass * Math.max(0, lv(c, 2)))); }
+  function event(w, text, col) { if (w.live) { w.events.push({ t: w.t, text, col: col || '#13fff2' }); if (w.events.length > 30) w.events.shift(); } }
+
+  function conceptFor(w, i) { const o = w.o; if (i === 0) return CONCEPTS[o.concept]; return (P.rivalsGalleon || CONCEPTS[o.concept].control) ? CONCEPTS[0] : CONCEPTS[o.concept]; }
+
+  function buildWorld(o) {
+    const rng = mulberry32((o.seed * 9973 + 17) >>> 0);
+    const game = GAMES[o.game], I = INT[game.key][o.intensity], R = P.arenaR;
+    const w = { t: 0, rng, o, game, I, R, live: !!o.live, crews: [], prisms: [], bolts: [], blasts: [], crystals: [], events: [],
+      gHead: null, gNext: null, gDim: 0, gOff: 0, deadCount: 0,
+      over: false, winner: -1, art: null, gate: null, fort: null, leader: -1, reversals: 0, lastCarrier: -1, secT: 0, endT: 0 };
+    buildGrid(w);
+    const n = 1 + I.rivals;
+    for (let i = 0; i < n; i++) {
+      const C = conceptFor(w, i);
+      const ang = -Math.PI / 2 + i * TAU / n + (rng() - 0.5) * 0.3, r = (game.key === 'breach' ? 0.8 : 0.66) * R;
+      const crew = {
+        i, dom: i, col: DOMS[i].c, concept: C, seats: C.seats.slice(), isUs: i === 0,
+        skill: SKILL[i === 0 ? o.crewSkill : o.diff], disabled: i === 0 ? o.idleSeat : -1,
+        hull: { x: Math.cos(ang) * r, y: Math.sin(ang) * r, a: ang + Math.PI, v: 20, tank: P.boostTank, boosting: false, slowT: 0,
+          ward: { up: true, hp: 0, cd: 0, lastToggle: -9, dropT: -1, punishedThisDrop: false } },
+        home: { x: Math.cos(ang) * r * 0.75, y: Math.sin(ang) * r * 0.75 },
+        lv: [P.startLevel, P.startLevel, P.startLevel, P.startLevel], hold: [0, 0, 0, 0], refineT: 0,
+        turret: [], fireCd: [], skiffs: [], members: [], trail: [], distAcc: 0, knowsAll: false,
+        repel: 0, score: 0, ai: { reassignT: 0.2 + i * 0.13, searchT: 0, wp: null, orbitDir: rng() < 0.5 ? 1 : -1, forgeT: 0 },
+        stats: { dealt: 0, taken: 0, swaps: 0, gambles: 0, punished: 0, boards: 0, boardedBy: 0, repelled: 0, held: 0, escapeT: 0, destroyed: 0, forged: 0, maxIdle: 0, idleSum: 0 },
+      };
+      crew.hull.ward.hp = wardMax(crew);
+      crew.idx = {}; for (const k of Object.keys(SEATS)) crew.idx[k] = []; crew.seats.forEach((k, s) => crew.idx[k].push(s));
+      crew.seats.forEach((k, s) => {
+        crew.turret[s] = crew.hull.a; crew.fireCd[s] = 0;
+        if (k === 'skiff') crew.skiffs.push({ seat: s, out: false, x: 0, y: 0, a: 0, bag: 0, cry: [0, 0, 0, 0], art: false, board: -1, boardT: 0, drainAcc: 0, recallT: 0, launchT: 0, task: null, tgt: -1, armed: true, castOff: false });
+      });
+      const nm = i === 0 && o.idleSeat >= 0 ? 3 : (C.crew || 4);
+      const free = crew.seats.map((_, s) => s).filter((s) => s !== crew.disabled);
+      for (let m = 0; m < nm; m++) crew.members.push({ id: m, loc: free[m] != null ? free[m] : free[0], walk: null, idle: 0, human: false, from: -1 });
+      w.crews.push(crew);
+    }
+    // the human takes seat G.seat on our hull; the AI member there moves to the human's old station
+    if (o.humanSeat != null && o.humanSeat >= 0) {
+      const us = w.crews[0], h = us.members[0]; h.human = true;
+      const s = o.humanSeat < us.seats.length ? o.humanSeat : 0;
+      const other = us.members.find((m) => m !== h && m.loc === s);
+      if (other) other.loc = h.loc;
+      h.loc = s;
+    }
+    // hazards: clusters of neutral Blue prisms
+    for (let k = 0; k < I.haz; k++) {
+      const a = rng() * TAU, r = (0.25 + rng() * 0.55) * R, cx = Math.cos(a) * r, cy = Math.sin(a) * r;
+      for (let j = 0; j < 14; j++) addPrism(w, cx + gauss(rng) * 16, cy + gauss(rng) * 16, rng() * TAU, 3, 'haz', -1);
+    }
+    for (let k = 0; k < I.crystals; k++) w.crystals.push(newCrystal(w));
+    if (game.key === 'gate') {
+      const a = rng() * TAU, r = (0.25 + rng() * 0.4) * R;
+      w.art = { x: Math.cos(a) * r, y: Math.sin(a) * r, crew: -1, skiff: null, a: 0 };
+      const ga = a + Math.PI + (rng() - 0.5) * 1.2;
+      w.gate = { x: Math.cos(ga) * 0.72 * R, y: Math.sin(ga) * 0.72 * R, r: 20, openAt: I.gateOpen, open: false };
+    }
+    if (game.key === 'breach') {
+      w.fort = { x: 0, y: 0, alive: 0, total: 0 };
+      for (let ring = 0; ring < I.rings; ring++) {
+        const rr = FORT_R0 + ring * FORT_DR, cnt = Math.round(TAU * rr / P.wavelength);
+        for (let j = 0; j < cnt; j++) { const a = j / cnt * TAU; addPrism(w, Math.cos(a) * rr, Math.sin(a) * rr, a + Math.PI / 2, 3, 'fort', -1); }
+      }
+      w.fort.total = w.prisms.filter((p) => p.kind === 'fort').length;
+    }
+    return w;
+  }
+  function newCrystal(w) { const a = w.rng() * TAU, r = Math.sqrt(0.02 + w.rng() * 0.82) * w.R; return { x: Math.cos(a) * r, y: Math.sin(a) * r, e: Math.floor(w.rng() * 4), alive: true, t: 0 }; }
+  function addPrism(w, x, y, a, dom, kind, owner) { const p = { x, y, a, dom, kind, owner, dead: false }; w.prisms.push(p); if (w.gHead) gridInsert(w, w.prisms.length - 1); return p; }
+
+  // ---- spatial grid over the prisms: per world, linked lists in typed arrays, a prism inserted when laid,
+  //      dead ones skipped and dropped when the list is compacted ----
+  const GCELL = 16;
+  function gridCell(w, x, y) { const d = w.gDim; return clamp(Math.floor((y + w.gOff) / GCELL), 0, d - 1) * d + clamp(Math.floor((x + w.gOff) / GCELL), 0, d - 1); }
+  function gridInsert(w, i) {
+    if (i >= w.gNext.length) { const n = new Int32Array(w.gNext.length * 2); n.set(w.gNext); w.gNext = n; }
+    const p = w.prisms[i], c = gridCell(w, p.x, p.y); w.gNext[i] = w.gHead[c]; w.gHead[c] = i;
+  }
+  function buildGrid(w) {
+    w.gDim = Math.ceil((w.R * 2 + 200) / GCELL); w.gOff = w.R + 100;
+    w.gHead = new Int32Array(w.gDim * w.gDim).fill(-1); w.gNext = new Int32Array(Math.max(2048, w.prisms.length * 2));
+    for (let i = 0; i < w.prisms.length; i++) gridInsert(w, i);
+  }
+  function forPrismsNear(w, x, y, r, fn) {
+    const d = w.gDim, off = w.gOff, head = w.gHead, next = w.gNext, list = w.prisms;
+    const x0 = clamp(Math.floor((x - r + off) / GCELL), 0, d - 1), x1 = clamp(Math.floor((x + r + off) / GCELL), 0, d - 1);
+    const y0 = clamp(Math.floor((y - r + off) / GCELL), 0, d - 1), y1 = clamp(Math.floor((y + r + off) / GCELL), 0, d - 1);
+    for (let gy = y0; gy <= y1; gy++) for (let gx = x0; gx <= x1; gx++) {
+      for (let i = head[gy * d + gx]; i !== -1; i = next[i]) { const p = list[i]; if (!p.dead && fn(p) === true) return; }
+    }
+  }
+  function killPrism(w, p, byCrew) {
+    if (p.dead) return; p.dead = true; w.deadCount++;
+    if (byCrew >= 0) { const c = w.crews[byCrew]; if (w.game.key === 'breach' ? p.kind === 'fort' : p.dom !== c.dom) c.stats.destroyed++; if (w.game.key === 'breach' && p.kind === 'fort') c.score++; }
+  }
+
+  // ---- the economy: every vessel-on-vessel effect moves petals, and every move is a scored hit ----
+  function fullest(c) { let b = 0; for (let e = 1; e < 4; e++) if (c.lv[e] > c.lv[b]) b = e; return b; }
+  function emptiest(c) { let b = 0; for (let e = 1; e < 4; e++) if (c.lv[e] < c.lv[b]) b = e; return b; }
+  function takePetal(w, victim) { const e = fullest(victim); if (victim.lv[e] <= -5) return -1; victim.lv[e]--; return e; }
+  function givePetal(c, e) { if (e < 0) e = emptiest(c); c.lv[e] = Math.min(15, c.lv[e] + 1); }
+  function scoredHit(w, attacker, victim, toBag) {   // returns true when a petal moved
+    const e = takePetal(w, victim); if (e < 0) return false;
+    if (!toBag) givePetal(attacker, e);
+    attacker.stats.dealt++; victim.stats.taken++;
+    if (w.game.key === 'broadside') { attacker.score++; victim.score--; }
+    const wd = victim.hull.ward; if (!wd.up && wd.dropT >= 0 && !wd.punishedThisDrop) { wd.punishedThisDrop = true; victim.stats.punished++; }
+    return true;
+  }
+
+  // ---- what a crew knows: everything with a manned Scope, else what is within sight of its hull or skiffs ----
+  function sees(w, c, x, y) {
+    if (c.knowsAll) return true;
+    const r2 = P.sightRange * P.sightRange, h = c.hull;
+    if ((h.x - x) ** 2 + (h.y - y) ** 2 < r2) return true;
+    for (const s of c.skiffs) if (s.out && (s.x - x) ** 2 + (s.y - y) ** 2 < r2 * 0.5) return true;
+    return false;
+  }
+  function knowsArt(w, c) { if (!w.art) return false; if (w.art.crew >= 0) return true; if (c.artKnown) return true; if (sees(w, c, w.art.x, w.art.y)) { c.artKnown = true; return true; } return false; }
+  function artPos(w) { const a = w.art; if (a.crew < 0) return a; const c = w.crews[a.crew]; return a.skiff ? a.skiff : c.hull; }
+  function manned(c, s) { if (s === c.disabled) return null; for (const m of c.members) if (m.loc === s && !m.walk) return m; return null; }
+  function seatIdx(c, kind) { return c.idx[kind]; }
+  function boardersOn(w, c) { const r = []; for (const o of w.crews) if (o !== c) for (const s of o.skiffs) if (s.out && s.board === c.i) r.push(s); return r; }
+
+  // ---- AI: station needs (what an AI crew would want staffed right now) ----
+  function gunTarget(w, c, s) {
+    if (c._gtT === w.t && c._gtW === w) return c._gt;
+    c._gt = gunTargetScan(w, c); c._gtT = w.t; c._gtW = w;
+    return c._gt;
+  }
+  function gunTargetScan(w, c) {
+    const h = c.hull, range = P.boltRange; let best = null, bestScore = -1;
+    for (const o of w.crews) {
+      if (o === c) continue;
+      for (const sk of o.skiffs) if (sk.out && sk.board < 0) {
+        const d = dist(h.x, h.y, sk.x, sk.y);
+        if (d < Math.min(range, 140) && sees(w, c, sk.x, sk.y)) { const sc = 3 - d / 140; if (sc > bestScore) { bestScore = sc; best = { x: sk.x, y: sk.y, vx: Math.cos(sk.a) * skiffSpeed(o, sk), vy: Math.sin(sk.a) * skiffSpeed(o, sk) }; } }
+      }
+      const oh = o.hull, d = dist(h.x, h.y, oh.x, oh.y);
+      if (d < range && sees(w, c, oh.x, oh.y)) {
+        const sc = 2 - d / range + (w.art && w.art.crew === o.i ? 1.5 : 0) + (oh.ward.up ? 0 : 0.4);
+        if (sc > bestScore) { bestScore = sc; best = { x: oh.x, y: oh.y, vx: Math.cos(oh.a) * oh.v, vy: Math.sin(oh.a) * oh.v }; }
+      }
+    }
+    if (w.game.key === 'breach' || w.game.key === 'anchor') {
+      if (!best || bestScore < 1.6) {
+        // prisms hold still, so the nearest one is searched four times a second, not every step
+        if (!c._pt || c._pt.dead || c._ptW !== w || w.t - c._ptT > 0.25) {
+          let pb = null, pd = range * range * 0.81;
+          const want = w.game.key === 'breach' ? (p) => p.kind === 'fort' : (p) => p.dom !== c.dom && p.kind !== 'haz';
+          for (const p of w.prisms) { if (p.dead || !want(p)) continue; const d = (p.x - h.x) ** 2 + (p.y - h.y) ** 2; if (d < pd) { pd = d; pb = p; } }
+          c._pt = pb; c._ptT = w.t; c._ptW = w;
+        }
+        const pb = c._pt;
+        if (pb && (pb.x - h.x) ** 2 + (pb.y - h.y) ** 2 < range * range) best = { x: pb.x, y: pb.y, vx: 0, vy: 0, prism: true };
+      }
+    }
+    return best;
+  }
+  function skiffSpeed(c, sk) { return P.skiffSpeed * mul(c, 3, P.kCharge) * (sk.art ? 0.7 : 1); }
+  function skiffTask(w, c, sk) {   // what a docked skiff would go and do, with its value
+    const h = c.hull, g = w.game.key; let best = { task: null, v: 0, tgt: -1 };
+    const consider = (task, v, tgt) => { if (v > best.v) best = { task, v, tgt }; };
+    if (g === 'gate' && w.art) {
+      if (w.art.crew < 0 && knowsArt(w, c) && dist(h.x, h.y, w.art.x, w.art.y) > 70) consider('art', 0.9, -1);
+      if (w.art.crew >= 0 && w.art.crew !== c.i) { const o = w.crews[w.art.crew], p = artPos(w); if (dist(h.x, h.y, p.x, p.y) < 280) consider('board', 0.92, o.i); }
+    }
+    if (g === 'breach' && sk.armed && w.fort.alive > 0) consider('breach', 0.85, -1);
+    for (const o of w.crews) if (o !== c) {
+      const d = dist(h.x, h.y, o.hull.x, o.hull.y);
+      if (d < 230 && o.lv[fullest(o)] > -3 && sees(w, c, o.hull.x, o.hull.y) && (P.boardBypass || !o.hull.ward.up)) consider('board', (g === 'broadside' ? 0.65 : g === 'anchor' ? 0.5 : 0.45) - d / 2000, o.i);
+    }
+    let near = 0; for (const cr of w.crystals) if (cr.alive && dist(h.x, h.y, cr.x, cr.y) < 190 && sees(w, c, cr.x, cr.y)) near++;
+    if (near >= 2) consider('cry', 0.42 + (g === 'anchor' ? 0.1 : 0), -1);
+    return best;
+  }
+  function seatNeed(w, c, s) {
+    const k = c.seats[s], g = w.game.key, h = c.hull;
+    if (k === 'helm') {
+      const racing = g === 'gate' && w.art && (w.art.crew === c.i || w.art.crew < 0 || dist(h.x, h.y, artPos(w).x, artPos(w).y) > P.boltRange);
+      return racing ? 1.0 : 0.62 + (c.rivalNear ? 0.16 : 0) + (Math.hypot(h.x, h.y) > w.R - 70 ? 0.3 : 0);
+    }
+    if (k === 'guns') { const t = gunTarget(w, c, s); const second = seatIdx(c, 'guns')[0] !== s ? 0.8 : 1; return (t ? (t.prism ? 0.7 : 0.88) : 0.22) * second; }
+    if (k === 'core') {
+      let n = 0.15; const hold = c.hold[0] + c.hold[1] + c.hold[2] + c.hold[3];
+      if (P.refine && hold > 0) n = Math.max(n, 0.55 + Math.min(0.25, hold * 0.05));
+      if (h.ward.hp < wardMax(c)) n = Math.max(n, 0.45 + (h.ward.up ? 0 : 0.1));
+      if (g === 'anchor' && hold >= P.forgeCost) n = Math.max(n, 0.78);
+      return n;
+    }
+    if (k === 'skiff') {
+      const sk = c.skiffs.find((x) => x.seat === s); if (sk.out) return 2;   // whoever is out stays out
+      const second = seatIdx(c, 'skiff')[0] !== s ? 0.85 : 1;
+      return Math.max(0.1, skiffTask(w, c, sk).v) * second;
+    }
+    if (k === 'scope') {
+      let n = 0.3;
+      if (w.art && w.art.crew < 0 && !knowsArt(w, c)) n = 0.75;
+      else for (const o of w.crews) if (o !== c && dist(h.x, h.y, o.hull.x, o.hull.y) > P.sightRange) { n = 0.45; break; }
+      return n;
+    }
+    return 0;
+  }
+  function aiAllocate(w, c) {
+    const avail = c.members.filter((m) => !m.human && !(m.loc >= 0 && c.seats[m.loc] === 'skiff' && c.skiffs.find((x) => x.seat === m.loc).out));
+    if (!avail.length) return;
+    const slots = [];
+    c.seats.forEach((k, s) => {
+      if (s === c.disabled) return;
+      if (c.members.some((m) => (m.human || !avail.includes(m)) && (m.loc === s || (m.walk && m.walk.to === s)))) return;
+      slots.push({ s, need: seatNeed(w, c, s) });
+    });
+    const b = boardersOn(w, c);
+    for (let i = 0; i < b.length; i++) slots.push({ s: 'deck', need: 0.95 - i * 0.05 });
+    if (c.members.some((m) => m.human && m.loc === 'deck') && b.length) slots.forEach((x) => { if (x.s === 'deck') x.need -= 0.5; });
+    // current occupants keep their slot unless something clearly better needs them (hysteresis)
+    const target = (m) => (m.walk ? m.walk.to : m.loc);
+    for (const sl of slots) if (avail.some((m) => target(m) === sl.s)) sl.need += 0.15;
+    slots.sort((a, b2) => b2.need - a.need);
+    const top = slots.slice(0, avail.length), taken = new Set(), assigned = new Map();
+    for (const sl of top) { const m = avail.find((mm) => target(mm) === sl.s && !assigned.has(mm)); if (m) { assigned.set(m, sl.s); taken.add(sl); } }
+    for (const sl of top) { if (taken.has(sl)) continue; const m = avail.find((mm) => !assigned.has(mm)); if (m) { assigned.set(m, sl.s); taken.add(sl); } }
+    for (const [m, s] of assigned) if (target(m) !== s) moveMember(w, c, m, s);
+  }
+  function moveMember(w, c, m, to) {
+    if (to !== 'deck' && (to === c.disabled || to < 0 || to >= c.seats.length)) return;
+    const from = m.walk ? m.walk.to : m.loc;
+    if (from === to) return;
+    if (from !== 'deck' && from >= 0 && c.seats[from] === 'skiff') { const sk = c.skiffs.find((x) => x.seat === from); if (sk.out) return; }
+    const eta = Math.max(P.swapCooldown, to === 'deck' || from === 'deck' ? P.walkTime * 0.6 : P.walkTime);
+    m.from = m.walk ? m.walk.from : m.loc;
+    m.walk = { to, from: m.from, eta, dur: eta }; m.loc = -1;
+    c.stats.swaps++;
+  }
+
+  // ---- AI inputs per station (the same input objects the human writes) ----
+  function steerTo(c, heading) { const sk = c.skill; return clamp(angDiff(heading, c.hull.a) / (35 * D2R), -1, 1); }
+  function orbitHeading(h, cx, cy, R, dir) {
+    const dx = h.x - cx, dy = h.y - cy, d = Math.hypot(dx, dy) || 1, tx = -dy / d * dir, ty = dx / d * dir, k = clamp((d - R) / 60, -1, 1);
+    return Math.atan2(ty - dy / d * k, tx - dx / d * k);
+  }
+  function helmAI(w, c) {
+    const h = c.hull, g = w.game.key, sk = c.skill, R = w.R;
+    let tx = null, ty = null, heading = null, boost = 0, race = false;
+    const nearestRival = () => { let b = null, bd = 1e9; for (const o of w.crews) if (o !== c && sees(w, c, o.hull.x, o.hull.y)) { const d = dist(h.x, h.y, o.hull.x, o.hull.y); if (d < bd) { bd = d; b = o; } } return b; };
+    if (g === 'gate') {
+      const a = w.art;
+      if (a.crew === c.i && !a.skiff) {
+        race = true;
+        if (w.gate.open) { tx = w.gate.x; ty = w.gate.y; boost = dist(h.x, h.y, tx, ty) > 40 ? 1 : 0; }
+        else { const o = nearestRival(); heading = orbitHeading(h, w.gate.x, w.gate.y, 120, c.ai.orbitDir); if (o && dist(h.x, h.y, o.hull.x, o.hull.y) < 160) boost = 1; }
+      } else if (a.crew === c.i && a.skiff) { tx = a.skiff.x; ty = a.skiff.y; }
+      else if (a.crew < 0 && knowsArt(w, c)) { tx = a.x; ty = a.y; boost = dist(h.x, h.y, tx, ty) > 140 ? 1 : 0; race = true; }
+      else if (a.crew >= 0) { const p = artPos(w), o = w.crews[a.crew], d = dist(h.x, h.y, p.x, p.y); race = true; if (d > P.boltRange * 0.55) { tx = p.x + Math.cos(o.hull.a) * o.hull.v * 1.2; ty = p.y + Math.sin(o.hull.a) * o.hull.v * 1.2; boost = d > 200 ? 1 : 0; } else heading = orbitHeading(h, p.x, p.y, P.boltRange * 0.45, c.ai.orbitDir); }
+      else {   // search: wander deterministic waypoints until the Artifact is seen (a Scope sees it at once)
+        if (!c.ai.wp || dist(h.x, h.y, c.ai.wp.x, c.ai.wp.y) < 40) { const aa = w.rng() * TAU, rr = Math.sqrt(0.1 + w.rng() * 0.7) * R; c.ai.wp = { x: Math.cos(aa) * rr, y: Math.sin(aa) * rr }; }
+        tx = c.ai.wp.x; ty = c.ai.wp.y;
+      }
+    } else if (g === 'breach') {
+      heading = orbitHeading(h, 0, 0, FORT_R0 + (w.I.rings - 1) * FORT_DR + P.boltRange * 0.5, c.ai.orbitDir);
+    } else if (g === 'anchor') {
+      const o = nearestRival();
+      heading = orbitHeading(h, c.home.x, c.home.y, 105, c.ai.orbitDir);
+      if (o && dist(o.hull.x, o.hull.y, c.home.x, c.home.y) < 200) heading = orbitHeading(h, o.hull.x, o.hull.y, P.boltRange * 0.5, c.ai.orbitDir);
+    } else {
+      const o = nearestRival();
+      if (o) { const d = dist(h.x, h.y, o.hull.x, o.hull.y); if (d > P.boltRange * 0.75) { tx = o.hull.x; ty = o.hull.y; boost = d > 260 ? 1 : 0; } else heading = orbitHeading(h, o.hull.x, o.hull.y, P.boltRange * 0.5, c.ai.orbitDir); }
+      else heading = orbitHeading(h, 0, 0, R * 0.35, c.ai.orbitDir);
+    }
+    // a crystal close ahead is worth a small detour when not racing
+    if (!race) {
+      let best = null, bd = 75 * 75;
+      for (const cr of w.crystals) if (cr.alive) { const d = (cr.x - h.x) ** 2 + (cr.y - h.y) ** 2; if (d < bd && Math.abs(angDiff(Math.atan2(cr.y - h.y, cr.x - h.x), h.a)) < 1.1) { bd = d; best = cr; } }
+      if (best) { tx = best.x; ty = best.y; heading = null; }
+    }
+    // pull back in from the rim
+    if (tx != null) heading = Math.atan2(ty - h.y, tx - h.x);
+    if (heading == null) heading = h.a;
+    const rr = Math.hypot(h.x, h.y);
+    if (rr > R - 50) heading = Math.atan2(-h.y, -h.x);
+    const turn = clamp(steerTo(c, heading) + gauss(w.rng) * sk.steerSd, -1, 1);
+    // the ward: the Wildgate gamble, from the helm
+    const wd = h.ward; let wantUp = wd.up;
+    const humanGunner = c.isUs && seatIdx(c, 'guns').some((s) => { const m = manned(c, s); return m && m.human; });
+    const wantFire = humanGunner ? !!humanIn.fire : seatIdx(c, 'guns').some((s) => manned(c, s) && gunTarget(w, c, s));
+    const threat = c.threat;
+    if (P.wardGuns) {
+      if (humanGunner && humanIn.fire) wantUp = false;   // an AI helm drops the ward for a human gunner who is shooting
+      else if (wantFire) wantUp = threat > sk.wardTol && wd.hp > 1 ? true : false;
+      else if (race && threat === 0 && !c.rivalNear) wantUp = false;
+      else wantUp = true;
+    } else wantUp = !(race && threat === 0 && !c.rivalNear && P.wardSpeed > 0);
+    const edge = wantUp !== wd.up && (wd.up || wd.cd <= 0) && w.t - wd.lastToggle > sk.toggleGap ? 1 : 0;
+    return { turn, boost: boost && h.tank > 0.4 ? 1 : 0, brake: 0, edge };
+  }
+  function gunsAI(w, c, s) {
+    const t = gunTarget(w, c, s), h = c.hull, sk = c.skill;
+    if (!t) return { aim: null, fire: 0 };
+    const d = dist(h.x, h.y, t.x, t.y), tt = d / P.boltSpeed * sk.lead;
+    let aim = Math.atan2(t.y + t.vy * tt - h.y, t.x + t.vx * tt - h.x);
+    if (!c.aimNoise) c.aimNoise = [];
+    if (c.aimNoise[s] == null || w.rng() < 0.08) c.aimNoise[s] = gauss(w.rng) * sk.aimSd * D2R;
+    aim += c.aimNoise[s];
+    return { aim, fire: Math.abs(angDiff(aim, c.turret[s])) < 8 * D2R ? 1 : 0 };
+  }
+  function coreAI(w, c) {
+    const hold = c.hold[0] + c.hold[1] + c.hold[2] + c.hold[3];
+    let edge = 0;
+    if (w.game.key === 'anchor' && hold >= P.forgeCost && w.t - c.ai.forgeT > 1.5) edge = 1;
+    else if (!c.hull.ward.up && c.hull.ward.cd > 1 && c.threat > 0 && c.lv[2] >= 1 && c.skill.name === 'Hard') edge = 1;
+    return { edge };
+  }
+  function skiffAI(w, c, sk) {
+    const h = c.hull;
+    if (!sk.out) { const t = skiffTask(w, c, sk); if (t.v >= 0.4 && w.t - sk.launchT > 2) { sk.task = t.task; sk.tgt = t.tgt; return { edge: 1, turn: 0 }; } return { edge: 0, turn: 0 }; }
+    let tx = h.x, ty = h.y, recall = false;
+    if (sk.art) return { edge: 0, turn: clamp(angDiff(Math.atan2(h.y - sk.y, h.x - sk.x), sk.a) / (25 * D2R), -1, 1), leave: false, hold: false };
+    if (sk.board >= 0) {   // aboard a rival: stay while the bag fills / the Artifact lifts
+      const v = w.crews[sk.board], carrier = w.art && w.art.crew === v.i && !w.art.skiff;
+      const leave = sk.art || sk.bag >= P.bagMax || (!carrier && sk.boardT > 12) || (!carrier && v.lv[fullest(v)] <= -4);
+      return { edge: 0, turn: 0, leave };
+    }
+    if (sk.art) { tx = h.x; ty = h.y; }
+    else if (sk.task === 'art' && w.art) {
+      if (w.art.crew < 0) { tx = w.art.x; ty = w.art.y; }
+      else if (w.art.crew !== c.i) { sk.task = 'board'; sk.tgt = w.art.crew; }
+      else recall = true;
+    }
+    if (sk.task === 'board' && sk.tgt >= 0) {
+      const v = w.crews[sk.tgt];
+      if (sk.bag >= P.bagMax || sk.castOff || (sk.leaveT != null && sk.leaveT > sk.launchT) || v.lv[fullest(v)] <= -4) recall = true;
+      else { const d = dist(sk.x, sk.y, v.hull.x, v.hull.y), lt = d / skiffSpeed(c, sk); tx = v.hull.x + Math.cos(v.hull.a) * v.hull.v * lt; ty = v.hull.y + Math.sin(v.hull.a) * v.hull.v * lt; }
+    } else if (sk.task === 'breach') {
+      if (!sk.armed) recall = true; else { tx = 0; ty = 0; }
+    } else if (sk.task === 'cry') {
+      let best = null, bd = 1e12;
+      for (const cr of w.crystals) if (cr.alive) { const d = (cr.x - sk.x) ** 2 + (cr.y - sk.y) ** 2; if (d < bd) { bd = d; best = cr; } }
+      const carried = sk.cry[0] + sk.cry[1] + sk.cry[2] + sk.cry[3];
+      if (!best || carried >= 4 || bd > 220 * 220) recall = true; else { tx = best.x; ty = best.y; }
+    } else if (!sk.task) recall = true;
+    if (recall && sk.art) { recall = false; tx = h.x; ty = h.y; }
+    const head = Math.atan2(ty - sk.y, tx - sk.x);
+    return { edge: recall ? 1 : 0, turn: clamp(angDiff(head, sk.a) / (25 * D2R), -1, 1) + gauss(w.rng) * c.skill.steerSd, leave: false, hold: recall };
+  }
+
+  // ---- one step of the world ----
+  function simStep(dt) {
+    const w = world; if (w.over) { w.endT += dt; return; }
+    w.t += dt;
+    const g = w.game.key;
+    if (w.gate && !w.gate.open && w.t >= w.gate.openAt) { w.gate.open = true; event(w, 'The gate is open', '#ffffff'); }
+    // threat: hostile bolts closing on each hull, and rivals in gun range
+    for (const c of w.crews) {
+      c.threat = 0; c.rivalNear = false;
+      for (const b of w.bolts) { if (b.crew === c.i) continue; const dx = c.hull.x - b.x, dy = c.hull.y - b.y; if (dx * dx + dy * dy < 90 * 90 && dx * b.vx + dy * b.vy > 0) c.threat++; }
+      for (const o of w.crews) if (o !== c && dist(c.hull.x, c.hull.y, o.hull.x, o.hull.y) < P.boltRange) { c.rivalNear = true; if (!P.wardGuns || !o.hull.ward.up) c.threat += 0.5; }
+      c.knowsAll = seatIdx(c, 'scope').some((s) => manned(c, s));
+    }
+    // crews: walking, AI planning, idle bookkeeping
+    for (const c of w.crews) {
+      for (const m of c.members) if (m.walk) { m.walk.eta -= dt; if (m.walk.eta <= 0) { m.loc = m.walk.to; m.walk = null; } }
+      c.ai.reassignT -= dt;
+      if (c.ai.reassignT <= 0) { aiAllocate(w, c); c.ai.reassignT = P.reassign * c.skill.reassignMul; }
+      if (c.isUs && humanIn.seatReq != null && c.members[0].human) {
+        const h = c.members[0], to = humanIn.seatReq; humanIn.seatReq = null;
+        const cur = h.walk ? h.walk.to : h.loc;
+        if (to !== cur) {
+          if (cur !== 'deck' && cur >= 0 && c.seats[cur] === 'skiff') { const sk = c.skiffs.find((x) => x.seat === cur); if (sk.out) { if (sk.art) { event(w, 'The skiff carries the Artifact: fly it home first'); } else { dockSkiff(w, c, sk); event(w, 'Skiff recalled'); } } }
+          const blocker = c.members.find((m) => m !== h && !m.human && (m.walk ? m.walk.to : m.loc) === to);
+          if (blocker && to !== 'deck' && c.seats[to] === 'skiff' && c.skiffs.find((x) => x.seat === to).out && blocker.loc === to) {
+            // lab convenience: you take the stick of a skiff that is already out; its pilot heads for your old station
+            const back = cur === -1 ? 0 : cur;
+            h.walk = null; h.loc = to; blocker.loc = -1; blocker.walk = { to: back, from: 'deck', eta: Math.max(P.swapCooldown, P.walkTime), dur: Math.max(P.swapCooldown, P.walkTime) };
+            c.stats.swaps++;
+          } else {
+          const curOk = !(cur !== 'deck' && cur >= 0 && c.seats[cur] === 'skiff' && c.skiffs.find((x) => x.seat === cur).out);
+          if (curOk) { moveMember(w, c, h, to); if (blocker && cur !== -1) moveMember(w, c, blocker, cur); }
+          }
+        }
+      }
+      for (const m of c.members) {
+        const busy = memberBusy(w, c, m);
+        if (busy) m.idle = 0; else { m.idle += dt; c.stats.idleSum += dt; if (m.idle > c.stats.maxIdle) c.stats.maxIdle = m.idle; }
+      }
+    }
+    // crews take turns going first, so a tie (two hulls on one crystal, two charges in one core) favours nobody
+    w.step = (w.step || 0) + 1;
+    const order = w.crews.slice(w.step % w.crews.length).concat(w.crews.slice(0, w.step % w.crews.length));
+    // stations
+    for (const c of order) runStations(w, c, dt);
+    // hulls move, lay prisms, touch things
+    for (const c of order) moveHull(w, c, dt);
+    for (const c of order) for (const sk of c.skiffs) if (sk.out) moveSkiff(w, c, sk, dt);
+    // repel boarders
+    for (const c of w.crews) {
+      const b = boardersOn(w, c), def = c.members.filter((m) => m.loc === 'deck' && !m.walk).length;
+      if (!b.length) { c.repel = 0; continue; }
+      if (def > 0) { c.repel += dt * def; if (c.repel >= P.repelTime) { c.repel = 0; castOff(w, c, b[0]); } }
+    }
+    stepBolts(w, dt);
+    stepBlasts(w, dt);
+    // crystals respawn
+    for (let k = 0; k < w.crystals.length; k++) { const cr = w.crystals[k]; if (!cr.alive) { cr.t += dt; if (cr.t >= P.crystalRespawn) w.crystals[k] = newCrystal(w); } }
+    // game state
+    if (g === 'gate') {
+      const a = w.art;
+      if (a.crew >= 0) { w.crews[a.crew].stats.held += dt; if (a.crew !== w.lastCarrier) { if (w.lastCarrier >= 0) w.reversals++; w.lastCarrier = a.crew; } }
+      if (a.crew >= 0 && !a.skiff && w.gate.open) { const c = w.crews[a.crew]; if (dist(c.hull.x, c.hull.y, w.gate.x, w.gate.y) < w.gate.r + P.hullRadius) { w.over = true; w.winner = c.i; c.stats.escapeT = w.t; c.score = w.t; event(w, DOMS[c.dom].name + ' escaped through the gate at ' + w.t.toFixed(1) + ' s', c.col); } }
+      if (w.t >= P.gateCap) { w.over = true; event(w, 'Nobody escaped', '#ffffff'); }
+    } else {
+      if (g === 'anchor') for (const c of w.crews) c.score = 0;
+      if (g === 'anchor') for (const p of w.prisms) if (!p.dead && p.owner >= 0) w.crews[p.owner].score++;
+      if (g === 'breach') { let alive = 0; for (const p of w.prisms) if (!p.dead && p.kind === 'fort') alive++; w.fort.alive = alive; if (alive === 0) w.over = true; }
+      if (w.t >= P.matchLen) w.over = true;
+      if (w.over) { let b = -1, bs = -1e9; for (const c of w.crews) if (c.score > bs) { bs = c.score; b = c.i; } w.winner = b; event(w, (b >= 0 ? DOMS[w.crews[b].dom].name + ' wins ' : '') + w.game.name, b >= 0 ? w.crews[b].col : '#fff'); }
+      w.secT += dt;
+      if (w.secT >= 1) { w.secT -= 1; let b = -1, bs = -1e9, tie = false; for (const c of w.crews) { if (c.score > bs) { bs = c.score; b = c.i; tie = false; } else if (c.score === bs) tie = true; } if (!tie && bs > 0) { if (w.leader >= 0 && b !== w.leader) w.reversals++; w.leader = b; } }
+    }
+    // compaction: drop dead prisms from the list now and then
+    if (w.deadCount > 300) { w.prisms = w.prisms.filter((p) => !p.dead); w.deadCount = 0; for (const c of w.crews) c.trail = c.trail.filter((p) => !p.dead); buildGrid(w); }
+  }
+  function memberBusy(w, c, m) {
+    if (m.walk) return false;
+    if (m.loc === 'deck') return boardersOn(w, c).length > 0;
+    const k = c.seats[m.loc];
+    if (k === 'helm') return true;
+    if (k === 'guns') return !!gunTarget(w, c, m.loc);
+    if (k === 'core') { const hold = c.hold[0] + c.hold[1] + c.hold[2] + c.hold[3]; return (P.refine && hold > 0) || c.hull.ward.hp < wardMax(c) || (w.game.key === 'anchor' && hold >= P.forgeCost); }
+    if (k === 'skiff') return c.skiffs.find((x) => x.seat === m.loc).out;
+    if (k === 'scope') return seatNeed(w, c, m.loc) > 0.4;
+    return false;
+  }
+  function inputFor(w, c, s, m, kind) {
+    if (m.human && c.isUs) {
+      const hi = humanIn;
+      if (kind === 'helm') { const e = hi.edge; hi.edge = 0; return { turn: hi.turn, boost: hi.boost, brake: hi.brake, edge: e }; }
+      if (kind === 'guns') return { aim: hi.aim, fire: hi.fire, turn: hi.turn };
+      if (kind === 'core') { const e = hi.edge; hi.edge = 0; return { edge: e }; }
+      if (kind === 'skiff') { const e = hi.edge; hi.edge = 0; return { edge: e, turn: hi.turn, brake: hi.brake, leave: e === 1 }; }
+      if (kind === 'scope') { const p = hi.ping; hi.ping = null; return { ping: p }; }
+    }
+    if (kind === 'helm') return helmAI(w, c);
+    if (kind === 'guns') return gunsAI(w, c, s);
+    if (kind === 'core') return coreAI(w, c);
+    if (kind === 'skiff') return skiffAI(w, c, c.skiffs.find((x) => x.seat === s));
+    return {};
+  }
+  function runStations(w, c, dt) {
+    const h = c.hull, wd = h.ward;
+    let helm = null, coreManned = false;
+    c.seats.forEach((kind, s) => {
+      const m = manned(c, s); if (!m) return;
+      const inp = inputFor(w, c, s, m, kind);
+      if (kind === 'helm') helm = inp;
+      else if (kind === 'guns') {
+        let aim = inp.aim;
+        if (aim == null && inp.turn) aim = c.turret[s] + inp.turn * 1.2;   // keyboard swing
+        if (aim != null) { const d = angDiff(aim, c.turret[s]), mx = P.turretTurn * D2R * dt; c.turret[s] += clamp(d, -mx, mx); }
+        c.fireCd[s] -= dt;
+        if (inp.fire && c.fireCd[s] <= 0 && !(P.wardGuns && wd.up)) {
+          const a = c.turret[s], sp = P.boltSpeed;
+          w.bolts.push({ x: h.x + Math.cos(a) * (P.hullRadius + 2), y: h.y + Math.sin(a) * (P.hullRadius + 2), vx: Math.cos(a) * sp + Math.cos(h.a) * h.v * 0.5, vy: Math.sin(a) * sp + Math.sin(h.a) * h.v * 0.5, life: P.boltRange / sp, crew: c.i, pierce: 1 + Math.floor(Math.max(0, lv(c, 1)) / 5) });
+          c.fireCd[s] = 1 / (P.fireRate * mul(c, 1, P.kSpace));
+        }
+      } else if (kind === 'core') {
+        coreManned = true;
+        const hold = c.hold[0] + c.hold[1] + c.hold[2] + c.hold[3];
+        if (P.refine && hold > 0) { c.refineT += dt; if (c.refineT >= P.refineTime) { c.refineT = 0; let e = 0; for (let k = 1; k < 4; k++) if (c.hold[k] > c.hold[e]) e = k; c.hold[e]--; givePetal(c, e); } }
+        if (inp.edge) {
+          if (w.game.key === 'anchor' && hold >= P.forgeCost) { forge(w, c); }
+          else if (!wd.up && wd.cd > 0 && c.lv[2] >= 1) { c.lv[2]--; wd.cd = 0; wd.hp = wardMax(c); wd.up = true; wd.lastToggle = w.t; event(w, DOMS[c.dom].name + ' Core restarted the ward', c.col); }
+        }
+      } else if (kind === 'skiff') {
+        const sk = c.skiffs.find((x) => x.seat === s);
+        if (!sk.out) { if (inp.edge) launchSkiff(w, c, sk); }
+        else {
+          if (sk.board >= 0) { if (inp.leave) { sk.board = -1; sk.boardT = 0; sk.leaveT = w.t; } }
+          else {
+            sk.a += clamp(inp.turn || 0, -1, 1) * 260 * D2R * dt;
+            sk.slow = inp.brake ? 1 : 0;
+            if (m.human) { if (inp.edge && !sk.art) sk.recalling = !sk.recalling; }
+            else sk.recalling = !!inp.hold && !sk.art;
+            if (sk.recalling && !sk.art) { sk.recallT += dt; if (sk.recallT >= P.recallTime) dockSkiff(w, c, sk); }
+            else sk.recallT = 0;
+          }
+        }
+      } else if (kind === 'scope') {
+        if (inp.ping) c.ai.wp = { x: inp.ping.x, y: inp.ping.y };
+      }
+    });
+    // the helm
+    if (helm) {
+      h.turn = helm.turn; h.boosting = !!helm.boost && h.tank > 0; h.brake = helm.brake;
+      if (helm.edge) {
+        if (wd.up) { wd.up = false; wd.lastToggle = w.t; wd.dropT = w.t; wd.punishedThisDrop = false; c.stats.gambles++; }
+        else if (wd.cd <= 0) { wd.up = true; wd.lastToggle = w.t; wd.dropT = -1; }
+      }
+    } else { h.turn = 0; h.boosting = false; h.brake = 0; }
+    // ward regen / breakage cooldown
+    if (wd.cd > 0) { wd.cd -= dt; if (wd.cd <= 0) { wd.cd = 0; wd.hp = Math.max(1, wd.hp); } }
+    if (wd.cd <= 0) wd.hp = Math.min(wardMax(c), wd.hp + (coreManned ? P.wardRegen : P.wardRegenIdle) * mul(c, 2, P.kMass) * dt);
+  }
+  function forge(w, c) {
+    let spent = 0;
+    while (spent < P.forgeCost) { let e = 0; for (let k = 1; k < 4; k++) if (c.hold[k] > c.hold[e]) e = k; if (c.hold[e] <= 0) break; c.hold[e]--; spent++; }
+    const h = c.hull, bx = h.x - Math.cos(h.a) * (P.hullRadius + 8), by = h.y - Math.sin(h.a) * (P.hullRadius + 8);
+    const n = Math.round(P.forgePrisms), cols = Math.ceil(n / 2);
+    for (let j = 0; j < n; j++) { const row = j % 2, col = Math.floor(j / 2) - (cols - 1) / 2; const px = bx + Math.cos(h.a + Math.PI / 2) * col * (P.prismW + 0.6) - Math.cos(h.a) * row * (P.prismL + 0.6), py = by + Math.sin(h.a + Math.PI / 2) * col * (P.prismW + 0.6) - Math.sin(h.a) * row * (P.prismL + 0.6); addPrism(w, px, py, h.a, c.dom, 'forge', c.i); }
+    c.stats.forged++; c.ai.forgeT = w.t;
+  }
+  function launchSkiff(w, c, sk) {
+    const h = c.hull; sk.out = true; sk.x = h.x; sk.y = h.y; sk.a = h.a + (sk.seat % 2 ? 1 : -1) * 1.2; sk.launchT = w.t; sk.recallT = 0; sk.board = -1; sk.castOff = false; sk.leaveT = null;
+    if (c.isUs && c.members.some((m) => m.human && m.loc === sk.seat)) { sk.task = sk.task || 'cry'; }
+  }
+  function dockSkiff(w, c, sk) {
+    sk.out = false; sk.board = -1; sk.boardT = 0; sk.recallT = 0; sk.recalling = false; sk.launchT = w.t; sk.castOff = false; sk.armed = true;
+    for (let e = 0; e < 4; e++) { if (P.refine) c.hold[e] += sk.cry[e]; else for (let k = 0; k < sk.cry[e]; k++) givePetal(c, e); sk.cry[e] = 0; }
+    for (let k = 0; k < sk.bag; k++) givePetal(c, -1);
+    sk.bag = 0;
+    if (sk.art) { sk.art = false; w.art.skiff = null; event(w, DOMS[c.dom].name + ' has the Artifact aboard', c.col); }
+    sk.task = null;
+  }
+  function castOff(w, c, sk) {   // a defender casts a boarder off: its bag comes home as scored hits, its own recall fires
+    const o = w.crews.find((x) => x.skiffs.includes(sk));
+    for (let k = 0; k < sk.bag; k++) { givePetal(c, -1); c.stats.dealt++; o.stats.taken++; if (w.game.key === 'broadside') { c.score++; o.score--; } }
+    sk.bag = 0; c.stats.repelled++;
+    event(w, DOMS[c.dom].name + ' cast off a ' + DOMS[o.dom].name + ' boarder', c.col);
+    if (sk.art) { sk.board = -1; return; }
+    dockSkiff(w, o, sk);
+  }
+  function moveHull(w, c, dt) {
+    const h = c.hull, wd = h.ward;
+    const tankMax = P.boostTank * mul(c, 0, P.kTime);
+    if (h.boosting) { h.tank -= dt; if (h.tank <= 0) { h.tank = 0; h.boosting = false; } } else h.tank = Math.min(tankMax, h.tank + 0.2 * mul(c, 0, P.kTime) * dt);
+    h.a += clamp(h.turn || 0, -1, 1) * P.yawRate * P.hullTurnMul * D2R * dt;
+    // with nobody at the helm the hull's own autopilot keeps it inside the arena (an arena rule, not a pilot)
+    if (!seatIdx(c, 'helm').some((s) => manned(c, s))) { const rr = Math.hypot(h.x, h.y); if (rr > w.R - 50) h.a += clamp(angDiff(Math.atan2(-h.y, -h.x), h.a), -1, 1) * P.yawRate * P.hullTurnMul * D2R * dt; }
+    const thr = h.brake ? 0.2 : 1;
+    let target = (P.minSpeed + P.throttleScaler * thr * (h.boosting ? P.boostMul : 1)) * P.hullSpeedMul * mul(c, 0, P.kTime) * (wd.up ? 1 : 1 + P.wardSpeed);
+    if (h.slowT > 0) { h.slowT -= dt; target *= 0.5; }
+    h.v += (target - h.v) * (1 - Math.exp(-2.2 * dt));
+    h.x += Math.cos(h.a) * h.v * dt; h.y += Math.sin(h.a) * h.v * dt;
+    const rr = Math.hypot(h.x, h.y); if (rr > w.R) { h.x *= w.R / rr; h.y *= w.R / rr; }
+    // trail
+    c.distAcc += h.v * dt;
+    while (c.distAcc >= P.wavelength) {
+      c.distAcc -= P.wavelength;
+      c.trail.push(addPrism(w, h.x - Math.cos(h.a) * (P.hullRadius + 3), h.y - Math.sin(h.a) * (P.hullRadius + 3), h.a, c.dom, 'trail', c.i));
+      const cap = Math.round(P.trailCap + 4 * Math.max(0, lv(c, 2)));
+      while (c.trail.length > cap) { const p = c.trail.shift(); if (!p.dead) { p.dead = true; w.deadCount++; } }
+    }
+    // hostile prisms: an arena effect (the hull slows and the prism breaks)
+    forPrismsNear(w, h.x, h.y, P.hullRadius + 4, (p) => {
+      if (p.dom === c.dom) return;
+      if ((p.x - h.x) ** 2 + (p.y - h.y) ** 2 < (P.hullRadius + 2) ** 2) { killPrism(w, p, c.i); h.slowT = 0.5; }
+    });
+    // crystals
+    for (const cr of w.crystals) if (cr.alive && (cr.x - h.x) ** 2 + (cr.y - h.y) ** 2 < (P.hullRadius + 4) ** 2) { cr.alive = false; cr.t = 0; if (P.refine) c.hold[cr.e]++; else givePetal(c, cr.e); }
+    // the Artifact
+    if (w.art && w.art.crew < 0 && dist(h.x, h.y, w.art.x, w.art.y) < P.hullRadius + 6) { w.art.crew = c.i; w.art.skiff = null; event(w, DOMS[c.dom].name + ' lifted the Artifact. Everyone can see them.', c.col); }
+  }
+  function moveSkiff(w, c, sk, dt) {
+    if (sk.board >= 0) {
+      const v = w.crews[sk.board], vh = v.hull;
+      sk.x = vh.x + Math.cos(vh.a + 2.2) * P.hullRadius * 0.7; sk.y = vh.y + Math.sin(vh.a + 2.2) * P.hullRadius * 0.7; sk.a = vh.a;
+      sk.boardT += dt;
+      if (!P.boardBypass && vh.ward.up) { sk.board = -1; sk.leaveT = w.t; return; }
+      sk.drainAcc += P.boardDrain * mul(c, 3, P.kCharge) * dt;
+      while (sk.drainAcc >= 1) { sk.drainAcc -= 1; if (sk.bag < P.bagMax && scoredHit(w, c, v, true)) sk.bag++; }
+      if (w.art && w.art.crew === v.i && !w.art.skiff && sk.boardT >= P.stealTime) {
+        w.art.crew = c.i; w.art.skiff = sk; sk.art = true; sk.board = -1; sk.leaveT = w.t;
+        event(w, DOMS[c.dom].name + ' boarder lifted the Artifact off ' + DOMS[v.dom].name, c.col);
+      }
+      return;
+    }
+    const sp = skiffSpeed(c, sk) * (sk.slow ? 0.35 : 1);
+    sk.x += Math.cos(sk.a) * sp * dt; sk.y += Math.sin(sk.a) * sp * dt;
+    const rr = Math.hypot(sk.x, sk.y); if (rr > w.R) { sk.x *= w.R / rr; sk.y *= w.R / rr; sk.a = Math.atan2(-sk.y, -sk.x); }
+    for (const cr of w.crystals) if (cr.alive && (cr.x - sk.x) ** 2 + (cr.y - sk.y) ** 2 < 49) { cr.alive = false; cr.t = 0; sk.cry[cr.e]++; }
+    if (w.art && w.art.crew < 0 && dist(sk.x, sk.y, w.art.x, w.art.y) < 9) { w.art.crew = c.i; w.art.skiff = sk; sk.art = true; event(w, DOMS[c.dom].name + ' skiff lifted the Artifact. No recall with it aboard.', c.col); }
+    if (w.game.key === 'breach' && sk.armed && w.fort.alive > 0 && Math.hypot(sk.x, sk.y) < 10) {
+      sk.armed = false;
+      w.blasts.push({ x: 0, y: 0, t: -P.blastDelay, crew: c.i, max: 0.5 * P.spaceScale * mul(c, 3, P.kCharge) });
+      event(w, DOMS[c.dom].name + ' planted a charge in the fortress core', c.col);
+    }
+    for (const o of w.crews) {
+      if (o === c || (sk.leaveT != null && w.t - sk.leaveT < 1.2)) continue;
+      if (dist(sk.x, sk.y, o.hull.x, o.hull.y) < P.hullRadius + 3 && !sk.art && (P.boardBypass || !o.hull.ward.up)) {
+        sk.board = o.i; sk.boardT = 0; sk.drainAcc = 0; c.stats.boards++; o.stats.boardedBy++;
+        event(w, DOMS[c.dom].name + ' boarded ' + DOMS[o.dom].name + '!', c.col);
+        return;
+      }
+    }
+    if (w.t - sk.launchT > 1.5 && dist(sk.x, sk.y, c.hull.x, c.hull.y) < P.hullRadius + 4 && (sk.art || sk.task !== 'board' || sk.bag > 0 || sk.castOff)) dockSkiff(w, c, sk);
+  }
+  function stepBolts(w, dt) {
+    const out = [];
+    for (const b of w.bolts) {
+      const nx = b.x + b.vx * dt, ny = b.y + b.vy * dt; let alive = true;
+      const c = w.crews[b.crew];
+      for (const o of w.crews) {
+        if (o === c) continue;
+        if (segPointD2(b.x, b.y, nx, ny, o.hull.x, o.hull.y) < P.hullRadius * P.hullRadius) {
+          const wd = o.hull.ward;
+          if (wd.up && wd.hp >= 1) { wd.hp -= 1; if (wd.hp < 1) { wd.up = false; wd.hp = 0; wd.cd = P.wardBreakCd; wd.dropT = -1; event(w, DOMS[o.dom].name + ' ward broken', o.col); } }
+          else scoredHit(w, c, o, false);
+          alive = false; break;
+        }
+        for (const sk of o.skiffs) if (sk.out && sk.board < 0 && segPointD2(b.x, b.y, nx, ny, sk.x, sk.y) < 16) {
+          if (sk.bag > 0) { sk.bag--; givePetal(c, -1); c.stats.dealt++; o.stats.taken++; if (w.game.key === 'broadside') { c.score++; o.score--; } }
+          else scoredHit(w, c, o, false);
+          alive = false; break;
+        }
+        if (!alive) break;
+      }
+      if (alive) {
+        const mx = (b.x + nx) / 2, my = (b.y + ny) / 2, half = Math.hypot(nx - b.x, ny - b.y) / 2 + 4;
+        forPrismsNear(w, mx, my, half, (p) => {
+          if (p.dom === c.dom) return;
+          if (segPointD2(b.x, b.y, nx, ny, p.x, p.y) < 9) { killPrism(w, p, c.i); b.pierce--; if (b.pierce <= 0) { alive = false; return true; } }
+        });
+      }
+      b.x = nx; b.y = ny; b.life -= dt;
+      if (alive && b.life > 0) out.push(b);
+    }
+    w.bolts = out;
+  }
+  function stepBlasts(w, dt) {
+    const out = [], k = w.blasts.length ? (w.step || 0) % w.blasts.length : 0;
+    for (const bl of w.blasts.slice(k).concat(w.blasts.slice(0, k))) {
+      bl.t += dt;
+      if (bl.t > 0) { const r = bl.max * Math.sin(Math.min(1, bl.t / P.blastDuration) * Math.PI / 2); bl.r = r; forPrismsNear(w, bl.x, bl.y, r, (p) => { if (p.kind === 'fort' && (p.x - bl.x) ** 2 + (p.y - bl.y) ** 2 < r * r) killPrism(w, p, bl.crew); }); }
+      if (bl.t < P.blastDuration) out.push(bl);
+    }
+    w.blasts = out;
+  }
+
+  // ---- the score for one run: our crew (index 0), in the game's own unit plus the magic columns ----
+  function points(w, c) {   // higher is better, used for seat value and rookie share
+    const g = w.game.key;
+    if (g === 'gate') return w.winner === c.i ? 100 + (P.gateCap - c.stats.escapeT) : c.stats.held * 0.5;
+    if (g === 'broadside') return c.stats.dealt + c.stats.taken > 0 ? 100 * c.stats.dealt / (c.stats.dealt + c.stats.taken) : 50;
+    return c.score;
+  }
+  function score() {
+    const w = world, c = w.crews[0], min = Math.max(1e-6, w.t / 60);
+    return {
+      game: w.game.name, t: +w.t.toFixed(2), over: w.over, win: w.winner === 0,
+      score: w.game.key === 'gate' ? (w.winner === 0 ? +c.stats.escapeT.toFixed(1) : null) : c.score,
+      points: +points(w, c).toFixed(2),
+      swapsPerMin: +(c.stats.swaps / min).toFixed(2), gamblesPerMin: +(c.stats.gambles / min).toFixed(2),
+      punishedPct: c.stats.gambles ? +(100 * c.stats.punished / c.stats.gambles).toFixed(1) : 0,
+      boardsPerMin: +(c.stats.boards / min).toFixed(2), boardedBy: c.stats.boardedBy, repelled: c.stats.repelled,
+      reversals: w.reversals, maxIdle: +c.stats.maxIdle.toFixed(1), dealt: c.stats.dealt, taken: c.stats.taken,
+    };
+  }
+
+  // ================= headless batch: the scorecard =================
+  // Concepts x (the full crew, each seat left empty, an Easy crew) x seeds, run without drawing.
+  const BATCH_DT = 1 / 30;
+  function runOne(o) {
+    const saved = Object.assign({}, P), savedWorld = world;
+    Object.assign(P, CONCEPTS[o.concept].v, o.v || {});
+    world = buildWorld(Object.assign({ live: false, humanSeat: -1, idleSeat: -1 }, o));
+    const cap = (world.game.key === 'gate' ? P.gateCap : P.matchLen) + 1;
+    while (!world.over && world.t < cap) simStep(BATCH_DT);
+    const r = score(); r.seatsUsed = world.crews[0].seats.slice();
+    world = savedWorld; Object.assign(P, saved);
+    return r;
+  }
+  // Seat value and rookie share divide by max(|points|, this), so a small base cannot turn noise into 2000%.
+  const POINT_SCALE = { gate: 60, breach: 40, anchor: 60, broadside: 30 };
+  function mean(a) { return a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0; }
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2], game = opts.game != null ? opts.game : G.game, intensity = opts.intensity != null ? opts.intensity : G.intensity, diff = opts.diff != null ? opts.diff : G.diff;
+    const concepts = opts.concepts || CONCEPTS.map((_, i) => i), withSeats = !!opts.seats, withRookie = !!opts.rookie, scale = POINT_SCALE[GAMES[game].key];
+    const rows = [];
+    for (const ci of concepts) {
+      const C = CONCEPTS[ci], base = { concept: ci, game, intensity, diff, crewSkill: 2 };
+      const full = seeds.map((s) => runOne(Object.assign({ seed: s }, base)));
+      const row = { concept: C.name, control: !!C.control, seats: C.seats.slice(), game: GAMES[game].name };
+      const avg = (k) => +mean(full.map((r) => r[k])).toFixed(2);
+      row.points = avg('points'); row.winPct = +(100 * mean(full.map((r) => (r.win ? 1 : 0)))).toFixed(0);
+      const sc = full.filter((r) => r.score != null).map((r) => r.score);
+      row.score = sc.length ? +mean(sc).toFixed(1) : null; row.escapedPct = GAMES[game].key === 'gate' ? +(100 * sc.length / full.length).toFixed(0) : null;
+      for (const k of ['swapsPerMin', 'gamblesPerMin', 'punishedPct', 'boardsPerMin', 'reversals', 'maxIdle', 'dealt', 'taken']) row[k] = avg(k);
+      row.repelPct = (() => { const b = mean(full.map((r) => r.boardedBy)), rp = mean(full.map((r) => r.repelled)); return b > 0 ? +(100 * rp / b).toFixed(0) : null; })();
+      const sd = Math.sqrt(mean(full.map((r) => (r.points - row.points) ** 2)) / Math.max(1, full.length - 1));
+      row.se = +sd.toFixed(2);
+      if (withSeats && !C.control) {
+        row.seatValue = C.seats.map((k, s) => { const p = mean(seeds.map((sd2) => runOne(Object.assign({ seed: sd2, idleSeat: s }, base)).points)); return +(100 * (row.points - p) / Math.max(scale, Math.abs(row.points))).toFixed(0); });
+        let wi = 0; row.seatValue.forEach((v, i) => { if (v < row.seatValue[wi]) wi = i; });
+        row.weakest = row.seatValue[wi]; row.weakestSeat = SEATS[C.seats[wi]].name + ' ' + (wi + 1);
+      }
+      if (withRookie && !C.control) { const e = mean(seeds.map((s) => runOne(Object.assign({ seed: s }, base, { crewSkill: 0 })).points)); row.rookiePct = +(100 - 100 * (row.points - e) / Math.max(scale, Math.abs(row.points))).toFixed(0); }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // ================= drawing =================
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  const cam = { x: 0, y: 0, z: 1 };
+  function w2s(x, y) { return [(x - cam.x) * cam.z + canvas.width / 2, (y - cam.y) * cam.z + canvas.height / 2]; }
+  function s2w(px, py) { return [(px - canvas.width / 2) / cam.z + cam.x, (py - canvas.height / 2) / cam.z + cam.y]; }
+  function focusPoint() { const c = world.crews[0], h = c.members.find((m) => m.human); if (h && h.loc >= 0 && c.seats[h.loc] === 'skiff') { const sk = c.skiffs.find((x) => x.seat === h.loc); if (sk.out) return sk; } return c.hull; }
+  function polyShape(n, r, rot) { ctx.beginPath(); for (let i = 0; i < n; i++) { const a = rot + i / n * TAU; i ? ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r) : ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); }
+  function hullPath(L, W) { ctx.beginPath(); ctx.moveTo(L, 0); ctx.lineTo(L * 0.3, W); ctx.lineTo(-L * 0.75, W * 0.85); ctx.lineTo(-L, 0); ctx.lineTo(-L * 0.75, -W * 0.85); ctx.lineTo(L * 0.3, -W); ctx.closePath(); }
+  const SEAT_POS = [[0.62, 0], [0.05, -0.55], [0.05, 0.55], [-0.62, 0]];   // deck plan: bow, port, starboard, stern
+
+  function render() {
+    const w = world, W = canvas.width, H = canvas.height, dpr = W / Math.max(1, canvas.clientWidth || W);
+    const f = focusPoint();
+    cam.z = Math.min(W, H) / 400;
+    cam.x += (f.x - cam.x) * 0.15; cam.y += (f.y - cam.y) * 0.15;
+    if (!render.inited) { cam.x = f.x; cam.y = f.y; render.inited = true; }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#03080c'; ctx.fillRect(0, 0, W, H);
+    // grid
+    ctx.strokeStyle = 'rgba(80,140,160,0.08)'; ctx.lineWidth = 1;
+    const step = 60 * cam.z, ox = ((-cam.x * cam.z + W / 2) % step + step) % step, oy = ((-cam.y * cam.z + H / 2) % step + step) % step;
+    ctx.beginPath(); for (let x = ox; x < W; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, H); } for (let y = oy; y < H; y += step) { ctx.moveTo(0, y); ctx.lineTo(W, y); } ctx.stroke();
+    ctx.setTransform(cam.z, 0, 0, cam.z, W / 2 - cam.x * cam.z, H / 2 - cam.y * cam.z);
+    // arena rim
+    ctx.strokeStyle = 'rgba(120,200,220,0.35)'; ctx.lineWidth = 2 / cam.z; ctx.beginPath(); ctx.arc(0, 0, w.R, 0, TAU); ctx.stroke();
+    const us = w.crews[0];
+    // sight ring of our crew
+    if (!us.knowsAll) { ctx.strokeStyle = 'rgba(19,255,242,0.08)'; ctx.setLineDash([6 / cam.z, 6 / cam.z]); ctx.beginPath(); ctx.arc(us.hull.x, us.hull.y, P.sightRange, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+    // prisms
+    const vw = W / cam.z / 2 + 20, vh = H / cam.z / 2 + 20;
+    for (const p of w.prisms) {
+      if (p.dead || Math.abs(p.x - cam.x) > vw || Math.abs(p.y - cam.y) > vh) continue;
+      const col = p.dom === 3 ? HAZ : DOMS[p.dom].c;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+      ctx.fillStyle = col; ctx.globalAlpha = p.kind === 'trail' ? 0.55 : 0.8; ctx.fillRect(-P.prismL / 2, -P.prismW / 2, P.prismL, P.prismW);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    // crystals: the game's lime, element told by shape (Docs/PALETTE.md: colour is who may collect, element is shape)
+    for (const cr of w.crystals) {
+      if (!cr.alive) continue;
+      ctx.save(); ctx.translate(cr.x, cr.y); ctx.rotate(w.t * 0.8 + cr.x);
+      ctx.fillStyle = LIME; ctx.globalAlpha = 0.9;
+      if (cr.e === 0) { ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(3, 0); ctx.lineTo(0, 5); ctx.lineTo(-3, 0); ctx.closePath(); }
+      else if (cr.e === 1) polyShape(4, 4.2, Math.PI / 4);
+      else if (cr.e === 2) polyShape(3, 4.8, -Math.PI / 2);
+      else polyShape(5, 4.4, -Math.PI / 2);
+      ctx.fill(); ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    // gate
+    if (w.gate) {
+      const gt = w.gate; ctx.save(); ctx.translate(gt.x, gt.y);
+      ctx.strokeStyle = gt.open ? '#ffffff' : 'rgba(255,255,255,0.35)'; ctx.lineWidth = (gt.open ? 3 : 1.5) / cam.z * 1.5;
+      if (!gt.open) ctx.setLineDash([4, 5]);
+      ctx.beginPath(); ctx.arc(0, 0, gt.r, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+      if (gt.open) { ctx.rotate(w.t); for (let i = 0; i < 6; i++) { ctx.rotate(TAU / 6); ctx.beginPath(); ctx.moveTo(gt.r * 0.4, 0); ctx.lineTo(gt.r * 0.9, 3); ctx.stroke(); } }
+      ctx.restore();
+    }
+    // fortress core
+    if (w.fort && w.fort.alive > 0) { ctx.strokeStyle = HAZ; ctx.lineWidth = 2 / cam.z; ctx.beginPath(); ctx.arc(0, 0, 9, 0, TAU); ctx.stroke(); }
+    // blasts
+    for (const bl of w.blasts) if (bl.r) { ctx.strokeStyle = DOMS[w.crews[bl.crew].dom].c; ctx.globalAlpha = 0.7 * (1 - bl.t / P.blastDuration); ctx.lineWidth = 3 / cam.z; ctx.beginPath(); ctx.arc(bl.x, bl.y, bl.r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+    // bolts
+    ctx.lineCap = 'round';
+    for (const b of w.bolts) { ctx.strokeStyle = DOMS[w.crews[b.crew].dom].c; ctx.lineWidth = 2.2 / cam.z * 1.4; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * 0.025, b.y - b.vy * 0.025); ctx.stroke(); }
+    // hulls
+    for (const c of w.crews) {
+      const h = c.hull, seen = c.isUs || sees(w, us, h.x, h.y) || (w.art && w.art.crew === c.i);
+      ctx.save(); ctx.translate(h.x, h.y);
+      if (!seen) { ctx.globalAlpha = 0.25; }
+      // ward
+      if (h.ward.up) { const k = h.ward.hp / wardMax(c); ctx.strokeStyle = c.col; ctx.globalAlpha *= 0.25 + 0.5 * k; ctx.lineWidth = 1.6 / cam.z * 1.5; ctx.beginPath(); ctx.arc(0, 0, P.hullRadius + 6, 0, TAU); ctx.stroke(); ctx.globalAlpha = seen ? 1 : 0.25; }
+      ctx.rotate(h.a);
+      const L = P.hullRadius * 1.5, Wd = P.hullRadius * 0.75;
+      hullPath(L, Wd); ctx.fillStyle = '#0b1820'; ctx.fill(); ctx.strokeStyle = c.col; ctx.lineWidth = 1.8 / cam.z * 1.3; ctx.stroke();
+      // stations as lights on the deck
+      c.seats.forEach((k, s) => { const sp = SEAT_POS[s]; ctx.fillStyle = manned(c, s) ? c.col : 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.arc(sp[0] * L, sp[1] * Wd, 1.6, 0, TAU); ctx.fill(); });
+      if (h.boosting) { ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(-L, -2); ctx.lineTo(-L - 9, 0); ctx.lineTo(-L, 2); ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.rotate(-h.a);
+      // turrets
+      c.seats.forEach((k, s) => { if (k !== 'guns') return; ctx.strokeStyle = manned(c, s) ? '#ffffff' : 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.4 / cam.z * 1.3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(c.turret[s]) * (P.hullRadius + 5), Math.sin(c.turret[s]) * (P.hullRadius + 5)); ctx.stroke(); });
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+    // skiffs
+    for (const c of w.crews) for (const sk of c.skiffs) {
+      if (!sk.out) continue;
+      if (!c.isUs && !sees(w, us, sk.x, sk.y) && !sk.art) continue;
+      ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.a);
+      ctx.fillStyle = c.col; ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3.5, 3); ctx.lineTo(-2, 0); ctx.lineTo(-3.5, -3); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      if (sk.board >= 0) { ctx.strokeStyle = c.col; ctx.globalAlpha = 0.5 + 0.5 * Math.sin(w.t * 10); ctx.lineWidth = 1.5 / cam.z; ctx.beginPath(); ctx.arc(sk.x, sk.y, 6, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+      if (sk.recallT > 0) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 / cam.z; ctx.beginPath(); ctx.arc(sk.x, sk.y, 8, -Math.PI / 2, -Math.PI / 2 + TAU * sk.recallT / Math.max(0.01, P.recallTime)); ctx.stroke(); }
+    }
+    // the Artifact
+    if (w.art) {
+      const p = artPos(w), shown = w.art.crew >= 0 || knowsArt(w, us);
+      if (shown) {
+        ctx.save(); ctx.translate(p.x, p.y);
+        const pulse = 1 + 0.15 * Math.sin(w.t * 4);
+        ctx.fillStyle = '#ffffff'; ctx.shadowColor = LIME; ctx.shadowBlur = 12;
+        ctx.rotate(w.t); polyShape(5, 4.5 * pulse, 0); ctx.fill(); ctx.shadowBlur = 0;
+        if (w.art.crew >= 0) { ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1 / cam.z; const rr = 14 + (w.t * 30) % 40; ctx.globalAlpha = 1 - ((w.t * 30) % 40) / 40; ctx.beginPath(); ctx.arc(0, 0, rr, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+        ctx.restore();
+      }
+    }
+    // screen-space overlays
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // direction markers to the objective when off screen
+    const mark = (x, y, col, label) => { const [sx, sy] = w2s(x, y); if (sx > 0 && sx < W && sy > 0 && sy < H) return; const a = Math.atan2(sy - H / 2, sx - W / 2), r = Math.min(W, H) / 2 - 18 * dpr; const px = W / 2 + Math.cos(a) * r, py = H / 2 + Math.sin(a) * r; ctx.fillStyle = col; ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(8 * dpr, 0); ctx.lineTo(-5 * dpr, 6 * dpr); ctx.lineTo(-5 * dpr, -6 * dpr); ctx.fill(); ctx.restore(); ctx.font = (10 * dpr) + 'px ' + 'IBM Plex Mono, monospace'; ctx.fillText(label, px - 20 * dpr, py + 18 * dpr); };
+    if (w.gate) mark(w.gate.x, w.gate.y, '#ffffff', w.gate.open ? 'GATE' : 'gate');
+    if (w.art && (w.art.crew >= 0 || knowsArt(w, us))) { const p = artPos(w); mark(p.x, p.y, LIME, 'ARTIFACT'); }
+    drawHud(w, dpr);
+    drawDeck(w, dpr);
+  }
+  function drawHud(w, dpr) {
+    const W = canvas.width; ctx.font = (12 * dpr) + 'px IBM Plex Mono, monospace'; ctx.textAlign = 'left';
+    let y = 18 * dpr; const x = 12 * dpr;
+    const line = (t, col) => { ctx.fillStyle = col || '#cfd9e0'; ctx.fillText(t, x, y); y += 16 * dpr; };
+    const g = w.game, lim = g.key === 'gate' ? P.gateCap : P.matchLen;
+    ctx.font = '700 ' + (16 * dpr) + 'px Saira Condensed, Arial Narrow, sans-serif';
+    ctx.fillStyle = ELC[g.el]; ctx.fillText(EL[g.el].toUpperCase() + ' · ' + g.name.toUpperCase() + '  I' + (w.o.intensity + 1), x, y); y += 18 * dpr;
+    ctx.font = (12 * dpr) + 'px IBM Plex Mono, monospace';
+    line(w.t.toFixed(1) + ' / ' + lim + ' s   ' + CONCEPTS[w.o.concept].name + (paused ? '   [paused]' : ''));
+    if (g.key === 'gate') {
+      line(w.gate.open ? 'Gate OPEN' : 'Gate opens in ' + Math.max(0, w.gate.openAt - w.t).toFixed(0) + ' s', w.gate.open ? '#ffffff' : '#9fb0ba');
+      line(w.art.crew < 0 ? (knowsArt(w, w.crews[0]) ? 'Artifact sighted' : 'Artifact: unseen') : 'Artifact: ' + DOMS[w.crews[w.art.crew].dom].name + (w.art.skiff ? ' skiff' : ' hull'), w.art.crew >= 0 ? w.crews[w.art.crew].col : LIME);
+    } else for (const c of w.crews) line(DOMS[c.dom].name + '  ' + c.score + (g.key === 'breach' ? ' / ' + w.fort.total : ''), c.col);
+    const you = w.crews[0].members.find((m) => m.human);
+    if (you) {
+      const c = w.crews[0], k = you.walk ? null : you.loc === 'deck' ? 'deck' : c.seats[you.loc];
+      let t = you.walk ? 'You: crossing the deck…' : 'You: ' + (k === 'deck' ? 'on deck' : SEATS[k].name);
+      if (k === 'guns' && P.wardGuns && c.hull.ward.up) t += ' · ward UP: the helm must drop it before you can fire';
+      if (k === 'helm') t += ' · Space ' + (c.hull.ward.up ? 'drops' : 'raises') + ' the ward';
+      if (k === 'skiff') { const sk = c.skiffs.find((x) => x.seat === you.loc); t += sk.out ? (sk.board >= 0 ? ' · aboard ' + DOMS[w.crews[sk.board].dom].name + ', bag ' + sk.bag + ' · Space leaves' : sk.art ? ' · fly the Artifact home' : ' · Space recalls') : ' · Space launches'; }
+      if (k === 'deck') t += boardersOn(w, c).length ? ' · casting off the boarder' : ' · no boarder aboard';
+      line(t, '#ffffff');
+    }
+    if (w.over) {
+      const H = canvas.height; ctx.textAlign = 'center'; ctx.font = '700 ' + (30 * dpr) + 'px Saira Condensed, Arial Narrow, sans-serif';
+      const win = w.winner >= 0 ? w.crews[w.winner] : null;
+      ctx.fillStyle = win ? win.col : '#ffffff';
+      ctx.fillText(win ? (win.isUs ? 'YOUR CREW WINS' : DOMS[win.dom].name.toUpperCase() + ' WINS') : 'NOBODY ESCAPED', W / 2, H * 0.38);
+      ctx.font = (12 * dpr) + 'px IBM Plex Mono, monospace'; ctx.fillStyle = '#cfd9e0'; ctx.fillText('Restarting… (Restart for a new seed)', W / 2, H * 0.38 + 22 * dpr);
+      ctx.textAlign = 'left';
+    }
+  }
+  function drawDeck(w, dpr) {
+    const c = w.crews[0], W = canvas.width, H = canvas.height;
+    const bw = Math.min(250 * dpr, W * (W < H ? 0.4 : 0.46)), bh = bw * 0.72, x0 = 10 * dpr, y0 = H - bh - 10 * dpr;
+    ctx.fillStyle = 'rgba(4,12,16,0.82)'; ctx.strokeStyle = 'rgba(19,255,242,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0, y0, bw, bh, 8 * dpr) : ctx.rect(x0, y0, bw, bh); ctx.fill(); ctx.stroke();
+    // hull plan
+    const cx = x0 + bw * 0.5, cy = y0 + bh * 0.36, L = bw * 0.38, Wd = bh * 0.24;
+    ctx.save(); ctx.translate(cx, cy); hullPath(L, Wd); ctx.fillStyle = 'rgba(19,255,242,0.06)'; ctx.fill(); ctx.strokeStyle = c.col; ctx.lineWidth = 1.2 * dpr; ctx.stroke(); ctx.restore();
+    const seatXY = (s) => s === 'deck' ? [cx, cy] : [cx + SEAT_POS[s][0] * L, cy + SEAT_POS[s][1] * Wd * 1.25];
+    ctx.font = (9 * dpr) + 'px IBM Plex Mono, monospace'; ctx.textAlign = 'center';
+    c.seats.forEach((k, s) => {
+      const [sx, sy] = seatXY(s), m = manned(c, s), dis = s === c.disabled;
+      ctx.fillStyle = dis ? 'rgba(255,80,80,0.35)' : m ? c.col : 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.arc(sx, sy, 7 * dpr, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#d7e3ea'; ctx.fillText((s + 1) + ' ' + SEATS[k].name, sx, sy + (SEAT_POS[s][1] < 0 ? -10 : SEAT_POS[s][1] > 0 ? 17 : -10) * dpr);
+    });
+    const boarders = boardersOn(w, c);
+    if (boarders.length) { ctx.fillStyle = '#ff4d6d'; ctx.beginPath(); ctx.arc(cx, cy, 5 * dpr * (1 + 0.3 * Math.sin(w.t * 12)), 0, TAU); ctx.fill(); ctx.fillText('BOARDER ON DECK · 5 to repel', cx, y0 + 11 * dpr); }
+    // crew tokens
+    c.members.forEach((m, j) => {
+      let p;
+      if (m.walk) { const a = seatXY(m.walk.from === -1 || m.walk.from == null ? 'deck' : m.walk.from), b = seatXY(m.walk.to), t = 1 - m.walk.eta / m.walk.dur; p = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+      else p = seatXY(m.loc === -1 ? 'deck' : m.loc);
+      const off = (j - 1.5) * 2 * dpr;
+      ctx.fillStyle = m.human ? '#ffffff' : '#0b1820'; ctx.strokeStyle = m.human ? c.col : '#d7e3ea'; ctx.lineWidth = 1.2 * dpr;
+      ctx.beginPath(); ctx.arc(p[0] + off, p[1] + off, 4 * dpr, 0, TAU); ctx.fill(); ctx.stroke();
+      if (m.human) { ctx.fillStyle = '#ffffff'; ctx.fillText('YOU', p[0] + off, p[1] + off + 13 * dpr); }
+    });
+    // petal bars
+    const by = y0 + bh * 0.66, bwid = (bw - 24 * dpr) / 4;
+    for (let e = 0; e < 4; e++) {
+      const bx = x0 + 12 * dpr + e * bwid, v = c.lv[e];
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(bx, by, bwid - 6 * dpr, 6 * dpr);
+      ctx.fillStyle = ELC[e]; ctx.fillRect(bx, by, (bwid - 6 * dpr) * clamp((v + 5) / 20, 0, 1), 6 * dpr);
+      ctx.textAlign = 'left'; ctx.fillStyle = '#d7e3ea'; ctx.fillText(EL[e][0] + ' ' + v + (P.refine && c.hold[e] ? ' +' + c.hold[e] : ''), bx, by + 17 * dpr);
+    }
+    // ward + tank
+    const wd = c.hull.ward, wy = y0 + bh - 10 * dpr; ctx.textAlign = 'left';
+    ctx.fillStyle = wd.up ? c.col : wd.cd > 0 ? '#ff4d6d' : '#9fb0ba';
+    ctx.fillText('WARD ' + (wd.up ? 'UP ' + Math.floor(wd.hp) + '/' + wardMax(c) : wd.cd > 0 ? 'BROKEN ' + wd.cd.toFixed(1) + 's' : 'DOWN (guns free)'), x0 + 12 * dpr, wy);
+    ctx.fillStyle = '#9fb0ba'; ctx.fillText('boost ' + c.hull.tank.toFixed(1) + 's', x0 + bw * 0.62, wy);
+    ctx.textAlign = 'left';
+  }
+
+  // ================= input devices -> humanIn (the frame loop, never simStep) =================
+  const keys = new Set();
+  addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+    if (!keys.has(e.code)) {
+      if (e.code === 'Space') { humanIn.edge = 1; e.preventDefault(); }
+      const n = parseInt(e.key, 10);
+      if (n >= 1 && n <= 4) takeSeat(n - 1);
+      if (e.key === '5') takeSeat('deck');
+      if (e.key === '0' || e.code === 'Escape') takeSeat(-1);
+    }
+    keys.add(e.code);
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+  });
+  addEventListener('keyup', (e) => keys.delete(e.code));
+  addEventListener('blur', () => keys.clear());
+  let mouse = null, mouseDown = false, touchStick = null, touchCount = 0;
+  const stageWrap = $('stageWrap');
+  function stagePt(e) { const r = canvas.getBoundingClientRect(), dpr = canvas.width / Math.max(1, r.width); return [(e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr]; }
+  canvas.addEventListener('pointerdown', (e) => {
+    touchCount++;
+    const [px, py] = stagePt(e); mouse = [px, py];
+    if (e.pointerType === 'touch') { if (!touchStick) touchStick = { id: e.pointerId, x0: px, y0: py, x: px, y: py }; }
+    else mouseDown = true;
+    const kind = humanKind();
+    if (kind === 'scope') { const [wx, wy] = s2w(px, py); humanIn.ping = { x: wx, y: wy }; }
+    canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => { const [px, py] = stagePt(e); mouse = [px, py]; if (touchStick && e.pointerId === touchStick.id) { touchStick.x = px; touchStick.y = py; } });
+  const up = (e) => { touchCount = Math.max(0, touchCount - 1); if (touchStick && e.pointerId === touchStick.id) touchStick = null; if (e.pointerType !== 'touch') mouseDown = false; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  function humanKind() { if (!world) return null; const c = world.crews[0], h = c.members.find((m) => m.human); if (!h || h.walk) return null; if (h.loc === 'deck') return 'deck'; return h.loc >= 0 ? c.seats[h.loc] : null; }
+  function pollDevices() {
+    let turn = 0, boost = 0, brake = 0, fire = 0, aim = null;
+    if (keys.has('KeyA') || keys.has('ArrowLeft')) turn -= 1;
+    if (keys.has('KeyD') || keys.has('ArrowRight')) turn += 1;
+    if (keys.has('KeyW') || keys.has('ArrowUp')) boost = 1;
+    if (keys.has('KeyS') || keys.has('ArrowDown')) brake = 1;
+    const kind = humanKind();
+    if (kind === 'guns') { if (keys.has('Space') || mouseDown) fire = 1; if (mouse && (mouseDown || matchMedia('(any-pointer: fine)').matches)) { const [wx, wy] = s2w(mouse[0], mouse[1]); const h = world.crews[0].hull; aim = Math.atan2(wy - h.y, wx - h.x); } }
+    if (touchStick && (kind === 'helm' || kind === 'skiff')) { const dpr = canvas.width / Math.max(1, canvas.clientWidth); turn = clamp((touchStick.x - touchStick.x0) / (50 * dpr), -1, 1); if (touchCount >= 2) boost = 1; }
+    if (touchStick && kind === 'guns') { const [wx, wy] = s2w(touchStick.x, touchStick.y); const h = world.crews[0].hull; aim = Math.atan2(wy - h.y, wx - h.x); fire = 1; }
+    let pads = []; try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; } catch (e) { pads = []; }
+    const gp = pads[0];
+    if (gp) {
+      const ax = (i) => (Math.abs(gp.axes[i] || 0) > 0.15 ? gp.axes[i] : 0), bt = (i) => (gp.buttons[i] ? gp.buttons[i].value : 0);
+      if (ax(0)) turn = ax(0);
+      if (bt(7) > 0.2) { boost = 1; if (kind === 'guns') fire = 1; }
+      if (bt(6) > 0.2) brake = 1;
+      if (kind === 'guns' && (ax(2) || ax(3))) aim = Math.atan2(ax(3), ax(2));   // screen y down = world y down here
+      const prev = pollDevices.prev || [];
+      const pressed = (i) => bt(i) > 0.5 && !(prev[i] > 0.5);
+      if (pressed(0)) humanIn.edge = 1;
+      if (pressed(4) || pressed(14)) cycleSeat(-1);
+      if (pressed(5) || pressed(15)) cycleSeat(1);
+      if (pressed(12)) takeSeat('deck');
+      pollDevices.prev = gp.buttons.map((b) => b.value);
+    }
+    if (kind !== 'helm' && kind !== 'core' && kind !== 'skiff') humanIn.edge = 0;
+    humanIn.turn = turn; humanIn.boost = boost; humanIn.brake = brake; humanIn.fire = fire; humanIn.aim = aim;
+    updateActBtn(kind);
+  }
+  function updateActBtn(kind) {
+    const b = $('actBtn'); let label = null;
+    if (kind === 'helm') label = world.crews[0].hull.ward.up ? 'Drop ward' : 'Raise ward';
+    else if (kind === 'core') label = world.game.key === 'anchor' ? 'Forge' : 'Restart ward';
+    else if (kind === 'skiff') { const c = world.crews[0], h = c.members.find((m) => m.human), sk = c.skiffs.find((x) => x.seat === h.loc); label = sk.out ? (sk.board >= 0 ? 'Leave deck' : 'Recall') : 'Launch'; }
+    b.hidden = !label; if (label && b.textContent !== label) b.textContent = label;
+  }
+  $('actBtn').addEventListener('click', () => { humanIn.edge = 1; });
+
+  // ================= seats, games, concepts: the header =================
+  function takeSeat(s) {
+    if (s === -1) { if (G.seat !== -1) { G.seat = -1; world.crews[0].members.forEach((m) => { m.human = false; }); renderSeatSeg(); } return; }
+    if (G.seat === -1) { G.seat = s === 'deck' ? 0 : s; const us = world.crews[0], h = us.members[0]; h.human = true; renderSeatSeg(); }
+    humanIn.seatReq = s; G.seat = s; renderSeatSeg();
+  }
+  function cycleSeat(d) { const n = world.crews[0].seats.length; const cur = typeof G.seat === 'number' && G.seat >= 0 ? G.seat : 0; takeSeat(((cur + d) % n + n) % n); }
+  function renderSeatSeg() {
+    const seg = $('seatSeg'); seg.replaceChildren();
+    const add = (label, val, title) => { const b = document.createElement('button'); b.textContent = label; b.title = title || ''; b.setAttribute('aria-pressed', String(G.seat === val)); b.onclick = () => takeSeat(val); seg.appendChild(b); };
+    add('Watch', -1, 'An AI crew flies; you watch (0 / Esc)');
+    CONCEPTS[G.concept].seats.forEach((k, s) => add((s + 1) + ' ' + SEATS[k].name, s, SEATS[k].tip + ' (key ' + (s + 1) + ')'));
+    add('5 Deck', 'deck', 'Stand on deck and cast off boarders (key 5)');
+  }
+  function fillHeader() {
+    const gs = $('gameSel'); gs.replaceChildren();
+    GAMES.forEach((g, i) => { const o = document.createElement('option'); o.value = i; o.textContent = EL[g.el] + ' · ' + g.name; gs.appendChild(o); });
+    gs.value = G.game; gs.onchange = () => { G.game = +gs.value; saveG(); restart(); refreshScoreHint(); };
+    const is = $('intSeg'); is.replaceChildren();
+    for (let i = 0; i < 4; i++) { const b = document.createElement('button'); b.textContent = 'I' + (i + 1); b.setAttribute('aria-pressed', String(G.intensity === i)); b.onclick = () => { G.intensity = i; saveG(); fillHeader(); restart(); }; is.appendChild(b); }
+    $('diffSel').value = G.diff; $('diffSel').onchange = () => { G.diff = +$('diffSel').value; saveG(); restart(); };
+    renderSeatSeg(); refreshScoreHint();
+  }
+  function saveG() { lsSet('G', { game: G.game, intensity: G.intensity, diff: G.diff, crewSkill: G.crewSkill, concept: G.concept }); }
+  function applyConcept(i) {
+    G.concept = i; saveG();
+    for (const [k, v] of Object.entries(CONCEPTS[i].v)) P[k] = v;
+    lsSet('P', diffOnly());
+    for (const k in outputs) { outputs[k].inp.value = P[k]; if (outputs[k].inp.type === 'checkbox') outputs[k].inp.checked = !!P[k]; }
+    if (G.seat !== -1 && G.seat !== 'deck' && G.seat >= CONCEPTS[i].seats.length) G.seat = -1;
+    refreshDiff(); renderSeatSeg(); restart();
+  }
+  function restart(newSeed) { if (newSeed) seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; reset(); render.inited = false; }
+
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    const humanSeat = G.seat === -1 ? -1 : G.seat === 'deck' ? 0 : G.seat;
+    world = buildWorld({ seed, game: G.game, intensity: G.intensity, diff: G.diff, crewSkill: G.crewSkill, concept: G.concept, humanSeat, idleSeat: -1, live: true });
+    if (G.seat === 'deck') humanIn.seatReq = 'deck';
+  }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {};
+    const ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= dock: concepts and dials =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, (String(step).split('.')[1] || '').length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const changed = Object.keys(diffOnly());
+    $('diff').textContent = changed.length ? changed.length + ' dial' + (changed.length > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+    $('diff').title = changed.map((k) => k + ': shipped ' + SHIPPED[k] + ' · yours ' + P[k]).join('\n');
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o) continue; const ch = Math.abs(P[key] - SHIPPED[key]) > 1e-9; o.out.textContent = BOOLS.has(key) ? (P[key] ? 'on' : 'off') : fmt(P[key], step); o.out.classList.toggle('changed', ch); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key] + ' · effective ' + P[key]; }
+  }
+  function setParam(key, v) { P[key] = v; lsSet('P', diffOnly()); refreshDiff(); if (['arenaR', 'startLevel', 'rivalsGalleon'].includes(key)) restart(); }
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) { for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name); }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div');
+      if (BOOLS.has(key)) {
+        row.className = 'row bool';
+        row.innerHTML = '<input type="checkbox"><label><span></span><span class="key"></span></label><output></output><div class="tip"></div>';
+        const inp = row.querySelector('input'); inp.id = 'dial-' + key; inp.checked = !!P[key]; inp.onchange = () => setParam(key, inp.checked ? 1 : 0);
+        row.querySelector('label').htmlFor = inp.id;
+        outputs[key] = { out: row.querySelector('output'), inp };
+      } else {
+        row.className = 'row';
+        row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+        const inp = row.querySelector('input'); inp.id = 'dial-' + key; Object.assign(inp, { min: lo, max: hi, step, value: P[key] });
+        inp.oninput = () => setParam(key, parseFloat(inp.value));
+        row.querySelector('label').htmlFor = inp.id;
+        outputs[key] = { out: row.querySelector('output'), inp };
+      }
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  function conceptPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint">Pick the vessel under test. Each card writes its rules into the dials (Crew, Ward, Core, Skiff tabs), so you can mix them. Your rival crews fly the same concept unless Match ▸ Rivals always fly the Galleon is on.</p><div class="cards"></div><p class="lbl" style="margin-top:12px">Your crew\'s AI</p><div class="seg" id="crewSkillSeg"></div>';
+    const cards = box.querySelector('.cards');
+    CONCEPTS.forEach((C, i) => {
+      const b = document.createElement('button'); b.className = 'card'; b.setAttribute('aria-pressed', String(G.concept === i));
+      b.innerHTML = (C.control ? '<span class="ctl">control</span>' : '') + '<h3></h3><div class="seats"></div><p class="pitch"></p><p class="chases"></p>';
+      b.querySelector('h3').textContent = C.name;
+      C.seats.forEach((k, s) => { const ch = document.createElement('span'); ch.className = 'chip'; ch.textContent = (s + 1) + ' ' + SEATS[k].name; b.querySelector('.seats').appendChild(ch); });
+      if (C.crew) { const ch = document.createElement('span'); ch.className = 'chip'; ch.textContent = C.crew + ' crew'; b.querySelector('.seats').appendChild(ch); }
+      b.querySelector('.pitch').textContent = C.pitch; b.querySelector('.chases').textContent = 'Chases: ' + C.chases;
+      b.onclick = () => { applyConcept(i); for (const x of cards.children) x.setAttribute('aria-pressed', String(x === b)); };
+      cards.appendChild(b);
+    });
+    const seg = box.querySelector('#crewSkillSeg');
+    SKILL.forEach((s, i) => { const b = document.createElement('button'); b.textContent = s.name; b.setAttribute('aria-pressed', String(G.crewSkill === i)); b.onclick = () => { G.crewSkill = i; saveG(); for (const x of seg.children) x.setAttribute('aria-pressed', String(x === b)); restart(); }; seg.appendChild(b); });
+    return box;
+  }
+  function controlsPanel() {
+    const box = document.createElement('div'); box.className = 'prose';
+    box.innerHTML = '<h4>Taking a seat</h4><p>Pick a seat in the header, press <kbd>1</kbd>–<kbd>4</kbd>, or <kbd>5</kbd> for the deck. <kbd>0</kbd> / <kbd>Esc</kbd> watches. A move costs the walk time; the AI crewmate at that station walks to the one you left. Gamepad: <kbd>LB</kbd>/<kbd>RB</kbd> change station, D-pad up is the deck.</p>' +
+      '<h4>Helm</h4><p><kbd>A</kbd>/<kbd>D</kbd> turn, <kbd>W</kbd> boost, <kbd>S</kbd> brake, <kbd>Space</kbd> drops or raises the ward. Pad: left stick, <kbd>RT</kbd> boost, <kbd>LT</kbd> brake, <kbd>A</kbd> ward. Touch: drag left or right; a second finger boosts.</p>' +
+      '<h4>Guns</h4><p>Aim with the mouse, hold the button or <kbd>Space</kbd> to fire. Pad: right stick aims, <kbd>RT</kbd> fires. Touch: hold where you want to shoot. With "Ward blocks your own guns" on, nothing leaves the barrel until the helm drops the ward.</p>' +
+      '<h4>Core</h4><p>Refines on its own while you stand there and recharges the ward. <kbd>Space</kbd> forges a prism block (Anchorage) or spends a Mass petal to restart a broken ward.</p>' +
+      '<h4>Skiff</h4><p><kbd>Space</kbd> launches. Taking the seat while the skiff is already out hands you its stick at once (a lab convenience). <kbd>A</kbd>/<kbd>D</kbd> steer, <kbd>S</kbd> slows. Touch a rival hull to board it and siphon its petals; <kbd>Space</kbd> again leaves their deck, and away from a hull it recalls you home (never with the Artifact). Fly back onto your hull to dock.</p>' +
+      '<h4>Scope</h4><p>While manned your crew sees every rival and the loose Artifact. Click the map to send the helm there.</p>' +
+      '<h4>Deck</h4><p>Stand on deck while a boarder is aboard to cast them off; their bag comes back to you.</p>' +
+      '<p class="hint">The claude.ai viewer can block the Gamepad API; open the repo file in Chrome for a pad.</p>';
+    return box;
+  }
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', [{ name: 'Concept', build: conceptPanel }].concat(groups.map((g) => ({ name: g, build: () => sliderGroup(g) })), [{ name: 'Controls', build: controlsPanel }]), LS + 'dock');
+
+  // ================= the decision log =================
+  let db = null, me = '', remote = [], localLog = lsGet('log', []);
+  function snapshot() { return { round: LAB.round, seed, concept: CONCEPTS[G.concept].key, game: GAMES[G.game].key, intensity: G.intensity + 1, diff: SKILL[G.diff].name, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('log', localLog); return 'local';
+  }
+  const TOPICS = ['Concept', 'Ward rule', 'Boarding', 'Walking the deck', 'Refining', 'Games', 'General'];
+  function currentChoice(topic) {
+    const C = CONCEPTS[G.concept];
+    if (topic === 'Concept') return C.name + ' (' + C.seats.map((k) => SEATS[k].name).join(' / ') + ')';
+    if (topic === 'Ward rule') return 'Ward blocks own guns: ' + (P.wardGuns ? 'yes' : 'no') + '; speed with ward down +' + Math.round(P.wardSpeed * 100) + '%';
+    if (topic === 'Boarding') return 'Boarders under the ward: ' + (P.boardBypass ? 'yes' : 'no') + '; siphon ' + P.boardDrain + '/s, bag ' + P.bagMax + ', cast off ' + P.repelTime + ' s';
+    if (topic === 'Walking the deck') return 'Walk ' + P.walkTime + ' s between stations';
+    if (topic === 'Refining') return 'Crystals need refining: ' + (P.refine ? 'yes, ' + P.refineTime + ' s each' : 'no');
+    return '';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><div style="display:grid;grid-template-columns:160px 1fr;gap:6px"><select id="logTopic"></select><input type="text" id="logChoice"></div><textarea id="logNote" rows="2" placeholder="Why (what you felt, what you saw)" style="margin-top:6px"></textarea><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tblwrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus'), sel = box.querySelector('#logTopic'), ch = box.querySelector('#logChoice');
+    TOPICS.forEach((t) => { const o = document.createElement('option'); o.textContent = t; sel.appendChild(o); });
+    const prefill = () => { ch.value = currentChoice(sel.value); };
+    sel.onchange = prefill; prefill();
+    status.textContent = db ? 'Shared log: saved with the lab, read by Claude at the start of the next round.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logSave').onclick = async () => { const where = await record(sel.value, ch.value, box.querySelector('#logNote').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; box.querySelector('#logNote').value = ''; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + (d.note ? ' (' + d.note + ')' : '') + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* no clipboard */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th><th>Note</th></tr>';
+    if (!rows.length) { const tr = document.createElement('tr'); tr.innerHTML = '<td colspan="4" class="hint">No decisions yet. Fly a concept, then record which one feels like a crew.</td>'; t.appendChild(tr); }
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice, d.note || '']) { const td = document.createElement('td'); td.textContent = v; td.style.textAlign = 'left'; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    try {
+      db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+      for (const d of localLog.splice(0)) { try { await db.collection('decisions').add(d); } catch (e) { localLog.push(d); } }
+      lsSet('log', localLog);
+    } catch (e) { db = null; }
+  })();
+
+  // ================= bottom dock: scorecard, seat value, about =================
+  // Round 1 as measured (runBatch at I2 against Hard rivals; Gate Run 12 seeds, the others 6), shown until you re-run.
+  const ROUND1 = {"gate":[{"concept":"Galleon","control":false,"seats":["helm","guns","core","skiff"],"game":"Gate Run","points":98.79,"se":31.64,"score":57.6,"escapedPct":42,"winPct":42,"weakest":-116,"weakestSeat":"Guns 2","seatValue":[69,-116,35,98],"rookiePct":101,"swapsPerMin":6.73,"gamblesPerMin":23.18,"punishedPct":41.69,"boardsPerMin":3.66,"repelPct":48,"reversals":2.42,"maxIdle":9.1,"dealt":26.33,"taken":22.17},{"concept":"Corsair","control":false,"seats":["helm","guns","skiff","skiff"],"game":"Gate Run","points":159.28,"se":31.82,"score":46.3,"escapedPct":67,"winPct":67,"weakest":26,"weakestSeat":"Skiff 3","seatValue":[83,37,26,85],"rookiePct":40,"swapsPerMin":9.61,"gamblesPerMin":15.57,"punishedPct":48.32,"boardsPerMin":6.78,"repelPct":69,"reversals":2,"maxIdle":8.93,"dealt":38.08,"taken":29.25},{"concept":"Lantern","control":false,"seats":["helm","guns","core","scope"],"game":"Gate Run","points":77.49,"se":33.06,"score":47.5,"escapedPct":33,"winPct":33,"weakest":-2,"weakestSeat":"Guns 2","seatValue":[100,-2,0,-1],"rookiePct":102,"swapsPerMin":0,"gamblesPerMin":2.31,"punishedPct":4.17,"boardsPerMin":0,"repelPct":null,"reversals":0,"maxIdle":37.48,"dealt":10.33,"taken":8.5},{"concept":"Ironclad","control":false,"seats":["helm","guns","guns","core"],"game":"Gate Run","points":97.38,"se":34.76,"score":46.3,"escapedPct":42,"winPct":42,"weakest":-1,"weakestSeat":"Core 4","seatValue":[100,20,20,-1],"rookiePct":101,"swapsPerMin":0,"gamblesPerMin":21.27,"punishedPct":48.83,"boardsPerMin":0,"repelPct":null,"reversals":0,"maxIdle":12.69,"dealt":32.83,"taken":33},{"concept":"Solo crew","control":true,"seats":["helm","guns","core","skiff"],"game":"Gate Run","points":1.96,"se":1.06,"score":null,"escapedPct":0,"winPct":0,"swapsPerMin":2.08,"gamblesPerMin":1.88,"punishedPct":2.77,"boardsPerMin":0.17,"repelPct":56,"reversals":0.25,"maxIdle":1.38,"dealt":3.42,"taken":18}],"breach":[{"concept":"Galleon","control":false,"seats":["helm","guns","core","skiff"],"game":"Breach","points":63.33,"se":4.61,"score":63.3,"escapedPct":null,"winPct":67,"weakest":-2,"weakestSeat":"Core 3","seatValue":[45,76,-2,26],"rookiePct":93,"swapsPerMin":0.28,"gamblesPerMin":10.72,"punishedPct":27.05,"boardsPerMin":0.42,"repelPct":100,"reversals":0.67,"maxIdle":19.47,"dealt":7.17,"taken":6.5},{"concept":"Corsair","control":false,"seats":["helm","guns","skiff","skiff"],"game":"Breach","points":53.33,"se":2.56,"score":53.3,"escapedPct":null,"winPct":17,"weakest":-3,"weakestSeat":"Skiff 4","seatValue":[32,93,1,-3],"rookiePct":96,"swapsPerMin":0.9,"gamblesPerMin":9.73,"punishedPct":42.65,"boardsPerMin":0.17,"repelPct":100,"reversals":0.67,"maxIdle":3.07,"dealt":8.17,"taken":7.83},{"concept":"Lantern","control":false,"seats":["helm","guns","core","scope"],"game":"Breach","points":60.17,"se":2.44,"score":60.2,"escapedPct":null,"winPct":50,"weakest":-1,"weakestSeat":"Scope 4","seatValue":[13,95,4,-1],"rookiePct":99,"swapsPerMin":0,"gamblesPerMin":0,"punishedPct":0,"boardsPerMin":0,"repelPct":null,"reversals":2.33,"maxIdle":16.38,"dealt":0,"taken":0},{"concept":"Ironclad","control":false,"seats":["helm","guns","guns","core"],"game":"Breach","points":65.17,"se":3.13,"score":65.2,"escapedPct":null,"winPct":67,"weakest":1,"weakestSeat":"Core 4","seatValue":[73,39,39,1],"rookiePct":79,"swapsPerMin":0,"gamblesPerMin":11.83,"punishedPct":35.48,"boardsPerMin":0,"repelPct":null,"reversals":1.5,"maxIdle":9.48,"dealt":6.33,"taken":7.17},{"concept":"Solo crew","control":true,"seats":["helm","guns","core","skiff"],"game":"Breach","points":15.33,"se":0.71,"score":15.3,"escapedPct":null,"winPct":0,"swapsPerMin":0.89,"gamblesPerMin":0,"punishedPct":0,"boardsPerMin":0,"repelPct":null,"reversals":0,"maxIdle":2.82,"dealt":0,"taken":5.83}],"anchor":[{"concept":"Galleon","control":false,"seats":["helm","guns","core","skiff"],"game":"Anchorage","points":167.33,"se":6.63,"score":167.3,"escapedPct":null,"winPct":50,"weakest":-9,"weakestSeat":"Guns 2","seatValue":[20,-9,41,34],"rookiePct":104,"swapsPerMin":1.67,"gamblesPerMin":5.77,"punishedPct":13.75,"boardsPerMin":0.67,"repelPct":100,"reversals":3.83,"maxIdle":19.03,"dealt":7.83,"taken":8.83},{"concept":"Corsair","control":false,"seats":["helm","guns","skiff","skiff"],"game":"Anchorage","points":141.83,"se":2.57,"score":141.8,"escapedPct":null,"winPct":83,"weakest":7,"weakestSeat":"Guns 2","seatValue":[16,7,9,10],"rookiePct":96,"swapsPerMin":4,"gamblesPerMin":6.11,"punishedPct":18.87,"boardsPerMin":0.78,"repelPct":100,"reversals":2.83,"maxIdle":17.03,"dealt":15.5,"taken":13.33},{"concept":"Lantern","control":false,"seats":["helm","guns","core","scope"],"game":"Anchorage","points":104.83,"se":2.93,"score":104.8,"escapedPct":null,"winPct":50,"weakest":-3,"weakestSeat":"Guns 2","seatValue":[26,-3,4,-3],"rookiePct":105,"swapsPerMin":0,"gamblesPerMin":0,"punishedPct":0,"boardsPerMin":0,"repelPct":null,"reversals":1.67,"maxIdle":35.33,"dealt":0,"taken":0},{"concept":"Ironclad","control":false,"seats":["helm","guns","guns","core"],"game":"Anchorage","points":109.67,"se":3.81,"score":109.7,"escapedPct":null,"winPct":50,"weakest":2,"weakestSeat":"Guns 2","seatValue":[35,2,2,8],"rookiePct":93,"swapsPerMin":0,"gamblesPerMin":5.33,"punishedPct":17.03,"boardsPerMin":0,"repelPct":null,"reversals":3.33,"maxIdle":27.68,"dealt":2.17,"taken":2.5},{"concept":"Solo crew","control":true,"seats":["helm","guns","core","skiff"],"game":"Anchorage","points":119.83,"se":4.17,"score":119.8,"escapedPct":null,"winPct":0,"swapsPerMin":6.77,"gamblesPerMin":0,"punishedPct":0,"boardsPerMin":0,"repelPct":88,"reversals":0.33,"maxIdle":3.17,"dealt":4.33,"taken":6.5}],"broadside":[{"concept":"Galleon","control":false,"seats":["helm","guns","core","skiff"],"game":"Broadside","points":59.28,"se":8.27,"score":4,"escapedPct":null,"winPct":67,"weakest":7,"weakestSeat":"Skiff 4","seatValue":[21,35,32,7],"rookiePct":67,"swapsPerMin":11.66,"gamblesPerMin":19.32,"punishedPct":54.35,"boardsPerMin":5.77,"repelPct":94,"reversals":3.67,"maxIdle":16.18,"dealt":76.17,"taken":72.17},{"concept":"Corsair","control":false,"seats":["helm","guns","skiff","skiff"],"game":"Broadside","points":48.19,"se":1.25,"score":-8,"escapedPct":null,"winPct":50,"weakest":13,"weakestSeat":"Skiff 4","seatValue":[15,21,14,13],"rookiePct":96,"swapsPerMin":17.77,"gamblesPerMin":7.77,"punishedPct":51.42,"boardsPerMin":8.44,"repelPct":84,"reversals":4.33,"maxIdle":23.37,"dealt":96.5,"taken":104.5},{"concept":"Lantern","control":false,"seats":["helm","guns","core","scope"],"game":"Broadside","points":30.15,"se":11.5,"score":-15.5,"escapedPct":null,"winPct":17,"weakest":-129,"weakestSeat":"Helm 1","seatValue":[-129,100,100,-37],"rookiePct":0,"swapsPerMin":0,"gamblesPerMin":0,"punishedPct":0,"boardsPerMin":0,"repelPct":null,"reversals":0.83,"maxIdle":71.58,"dealt":15.67,"taken":31.17},{"concept":"Ironclad","control":false,"seats":["helm","guns","guns","core"],"game":"Broadside","points":43.6,"se":4.14,"score":-15.5,"escapedPct":null,"winPct":33,"weakest":8,"weakestSeat":"Core 4","seatValue":[13,29,29,8],"rookiePct":70,"swapsPerMin":0,"gamblesPerMin":10.55,"punishedPct":60.47,"boardsPerMin":0,"repelPct":null,"reversals":1.33,"maxIdle":21.68,"dealt":50,"taken":65.5},{"concept":"Solo crew","control":true,"seats":["helm","guns","core","skiff"],"game":"Broadside","points":14.27,"se":2.07,"score":-30.7,"escapedPct":null,"winPct":0,"swapsPerMin":5.22,"gamblesPerMin":0,"punishedPct":0,"boardsPerMin":0,"repelPct":30,"reversals":0,"maxIdle":3.58,"dealt":6.67,"taken":37.33}]};
+  let lastRows = null, lastRowsBaked = true;
+  const POINTS_NOTE = 'Points (higher is better): Gate Run 100 + seconds to spare when you escape, else 0.5 per second you held the Artifact; Breach and Anchorage your prisms; Broadside your share of petal hits (%). Seat value and Rookie divide by the larger of the points and a game scale (Gate Run 60, Breach 40, Anchorage 60, Broadside 30). Gate Run runs 12 seeds because a run is won or lost; the others run 6. Read differences under about two standard errors as noise.';
+  function scoreOpts() { return { seeds: GAMES[G.game].key === 'gate' ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [1, 2, 3, 4, 5, 6], seats: true, rookie: true }; }
+  function refreshScoreHint() { if (lastRows && lastRows[0] && lastRows[0].game !== GAMES[G.game].name) lastRows = null; const h = document.querySelector('#scoreHint'); if (h && !lastRows) { const box = h.closest('div').parentNode; if (box && box.querySelector('#scoreTable')) { drawScore(box, ROUND1[GAMES[G.game].key]); box.querySelector('#scoreNote').textContent = 'Showing round 1 as measured for ' + GAMES[G.game].name + ' at I2 against Hard rivals, with every dial at its round-1 value. Score every concept re-runs it on your settings. ' + POINTS_NOTE; } } if (h) h.textContent = GAMES[G.game].name + ' · I' + (G.intensity + 1) + ' · rivals ' + SKILL[G.diff].name + ' · ' + scoreOpts().seeds.length + ' seeds · Hard crew, plus each seat empty and an Easy crew'; }
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every concept</button> <span class="hint" id="scoreHint"></span></p><div class="tblwrap"><table id="scoreTable"></table></div><p class="hint" id="scoreNote"></p>';
+    const draw = () => {
+      const baked = !lastRows, rows = lastRows || ROUND1[GAMES[G.game].key];
+      drawScore(box, rows);
+      if (baked) box.querySelector('#scoreNote').textContent = 'Showing round 1 as measured for ' + GAMES[G.game].name + ' at I2 against Hard rivals, with every dial at its round-1 value. Score every concept re-runs it on your settings. ' + POINTS_NOTE;
+    };
+    box.querySelector('#runBatch').onclick = () => {
+      const t0 = performance.now(), note = box.querySelector('#scoreNote'), btn = box.querySelector('#runBatch');
+      const opts = scoreOpts(), rows = []; let i = 0; btn.disabled = true;
+      const next = () => {
+        if (i >= CONCEPTS.length) { lastRows = rows; draw(); btn.disabled = false; note.textContent = 'Ran ' + CONCEPTS.length + ' concepts in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s. ' + POINTS_NOTE; return; }
+        note.textContent = 'Running ' + CONCEPTS[i].name + ' (' + (i + 1) + ' of ' + CONCEPTS.length + ')…';
+        setTimeout(() => { rows.push(runBatch(Object.assign({}, opts, { concepts: [i] }))[0]); lastRows = rows.slice(); draw(); i++; next(); }, 16);
+      };
+      next();
+    };
+    queueMicrotask(refreshScoreHint); draw();
+    return box;
+  }
+  function drawScore(box, rows) {
+    const t = box.querySelector('#scoreTable'), gate = rows[0] && rows[0].game === 'Gate Run';
+    const cols = [
+      ['concept', 'Concept', 'The vessel under test'],
+      ['points', 'Points', 'The game\'s points (see the note); averaged over seeds'],
+      ['se', '± SE', 'Standard error of points over seeds'],
+      gate ? ['escapedPct', 'Escaped %', 'Runs where your crew flew the Artifact out'] : ['score', 'Score', 'In the game\'s own unit'],
+      gate ? ['score', 'Escape s', 'Seconds to escape, when you did'] : ['winPct', 'Win %', 'Runs your crew won'],
+      ['weakest', 'Weakest seat %', 'How much the LEAST useful seat is worth: points lost with that station empty (one crew member fewer). Every seat should matter.'],
+      ['weakestSeat', 'which', ''],
+      ['rookiePct', 'Rookie %', 'An Easy crew against a Hard one: 100 minus the points lost, as % of the larger of the points and the game scale'],
+      ['swapsPerMin', 'Swaps/min', 'Station changes by your crew: how fluid the roles are'],
+      ['gamblesPerMin', 'Ward drops/min', 'How often the helm dropped the ward'],
+      ['punishedPct', 'Punished %', 'Ward drops during which a bolt landed on your hull'],
+      ['boardsPerMin', 'Boards/min', 'Your boarders reaching a rival deck'],
+      ['repelPct', 'Cast off %', 'Boarders on your deck that a defender cast off'],
+      ['reversals', 'Reversals', 'Lead changes, and the Artifact changing hands'],
+      ['maxIdle', 'Longest wait s', 'The longest any of your crew stood with nothing to do'],
+      ['dealt', 'Hits dealt', 'Petals your crew moved off rivals'], ['taken', 'Hits taken', 'Petals rivals moved off you'],
+    ];
+    t.replaceChildren();
+    const hr = document.createElement('tr'); for (const [, label, tip] of cols) { const th = document.createElement('th'); th.textContent = label; th.title = tip; hr.appendChild(th); } t.appendChild(hr);
+    const real = rows.filter((r) => !r.control), best = (k, low) => { const v = real.map((r) => r[k]).filter((x) => x != null); return v.length ? (low ? Math.min(...v) : Math.max(...v)) : null; };
+    const bests = { points: best('points'), weakest: best('weakest'), reversals: best('reversals'), swapsPerMin: best('swapsPerMin'), maxIdle: best('maxIdle', true) };
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      for (const [k] of cols) { const td = document.createElement('td'); const v = r[k]; td.textContent = v == null ? '' : (k === 'concept' && r.control ? v + ' (control)' : v); if (bests[k] != null && v === bests[k] && !r.control) td.className = 'best'; tr.appendChild(td); }
+      t.appendChild(tr);
+    }
+    // seat value table
+    const tr2 = document.createElement('tr'); tr2.innerHTML = '<td colspan="' + cols.length + '" class="hint" style="text-align:left;padding-top:8px">Seat value: points lost with each station empty (seat 1 / 2 / 3 / 4)</td>'; t.appendChild(tr2);
+    for (const r of rows) if (r.seatValue) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.textContent = r.concept; tr.appendChild(td); const td2 = document.createElement('td'); td2.colSpan = cols.length - 1; td2.style.textAlign = 'left'; td2.textContent = r.seats.map((k, i) => (i + 1) + ' ' + SEATS[k].name + ' ' + r.seatValue[i] + '%').join('   '); tr.appendChild(td2); t.appendChild(tr); }
+  }
+  function aboutPanel() {
+    const box = document.createElement('div'); box.className = 'prose';
+    box.innerHTML = '<p><b>' + LAB.name + '</b> · round ' + LAB.round + ' · <code>' + LAB.branch + '</code> · write-up <code>' + LAB.doc + '</code></p>' +
+      '<p>A design lab for a four-seat multiplayer vessel that captures what makes Wildgate (Moonshot Games, 2025) work: a crew of four sharing one ship, splitting the flying, the guns, the repairs and the boarding in real time, gambling with the shield to shoot, and racing the Artifact out through the gate while the whole Reach hunts the carrier. Wildgate\'s names are used here only to describe what the lab borrows.</p>' +
+      '<h4>How it maps to Cosmic Shore</h4><ul><li>Hull damage becomes petals: every bolt, siphon and cast-off moves element levels and is a scored hit (PvP is petals only, LOCKED). Nothing pushes, slows or stuns a rival vessel.</li><li>The ward is the shield: it keeps petals, so a bolt on it scores nothing. Breaking it takes hits; regrowing it takes a manned Core.</li><li>Ice into the reactor becomes crystals refined into petals at the Core.</li><li>Boarding becomes a skiff that siphons petals into a bag it must bring home; a defender on deck casts it off and the bag comes back.</li><li>The four games follow /labmaker 1.5: Time is a race (Gate Run), Space a destruction game (Breach), Mass a creation game (Anchorage), Charge a dogfight (Broadside).</li></ul>' +
+      '<h4>What this lab does NOT model</h4><ul><li>It is 2D and top-down; the game is a 3D chase view. Nothing here says how a deck reads in 3D, or what four cameras on one hull look like.</li><li>Only one seat is a person; the other three, and every rival, are input-only AI crews. Real crews talk, argue and improvise; that is most of Wildgate\'s magic and no AI here has it.</li><li>No networking: who owns the hull, the seats and the skiff across machines is not modelled.</li><li>Fires, breaches, reactor overloads and stolen cannons are left out: in Cosmic Shore they would be effects on another vessel beyond petals, which the LOCKED rule forbids. Where Wildgate has them, this lab has the bag, the ward and the cast-off.</li><li>The hull, ward, guns, skiff and all their numbers are proposals (marked "lab"); only the flight numbers, prism sizes, element level range, PilotSwap cooldown and the AOEExplosion dials are copied from the game.</li><li>Crystals are lime with their element told by shape, as in the game; the element bars use lab colours.</li><li>No PvE dungeons, upgrades, probes as items, or a 20-player Reach: at most three crews (the game\'s three playable domains).</li></ul>' +
+      '<h4>Sources</h4><ul><li>Xbox Wire deep dive (2025-03-26) and ship guide (2025-07-21); Dignitas quick guide; the Steam page; Gamerant and Gideon\'s Gaming previews and reviews.</li></ul>';
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'About', build: aboutPanel }], LS + 'bottom');
+
+  // ================= header wiring =================
+  $('meta').textContent = 'round ' + LAB.round;
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('restart').onclick = () => restart(true);
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); lsSet('P', {}); for (const k in outputs) { outputs[k].inp.value = P[k]; if (outputs[k].inp.type === 'checkbox') outputs[k].inp.checked = !!P[k]; } G.concept = 0; saveG(); refreshDiff(); renderSeatSeg(); restart(); };
+  fillHeader();
+
+  // ================= sizing + loop =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now(), acc = 0, toastT = 0, shownEvents = 0;
+  const STEP = 1 / 30;
+  function showToasts() {
+    const ev = world.events; if (ev.length && ev[ev.length - 1] !== showToasts.last) { showToasts.last = ev[ev.length - 1]; const t = $('toast'); t.textContent = showToasts.last.text; t.style.borderColor = showToasts.last.col; t.hidden = false; toastT = 2.6; }
+  }
+  function frame(now) {
+    const dt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      resize(); pollDevices();
+      if (!paused) { acc += dt; while (acc >= STEP) { simStep(STEP); acc -= STEP; } }
+      if (world.over && world.endT > 4) restart(true);
+      showToasts(); if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').hidden = true; }
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  reset(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  // ================= the test surface =================
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, CONCEPTS, GAMES, SEATS, G,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || STEP; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, runOne, setParam, record, applyConcept, takeSeat,
+    setGame(g, i, d) { if (g != null) G.game = g; if (i != null) G.intensity = i; if (d != null) G.diff = d; fillHeader(); restart(); },
+    state: () => { const w = world; return { t: w.t, seed, over: w.over, winner: w.winner, crews: w.crews.map((c) => ({ dom: DOMS[c.dom].name, lv: c.lv.slice(), hold: c.hold.slice(), score: c.score, ward: { up: c.hull.ward.up, hp: c.hull.ward.hp }, members: c.members.map((m) => (m.walk ? '→' + m.walk.to : m.loc)), skiffs: c.skiffs.map((s) => ({ out: s.out, board: s.board, bag: s.bag, art: s.art })) })), art: w.art && { crew: w.art.crew }, prisms: w.prisms.filter((p) => !p.dead).length, bolts: w.bolts.length }; },
+    humanIn,
+  };
+})();
+</script>
+</body>
+</html>
