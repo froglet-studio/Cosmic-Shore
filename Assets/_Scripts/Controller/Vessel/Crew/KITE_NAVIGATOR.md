@@ -193,6 +193,27 @@ surface (as GobyPistolDuo draws). The tail and the loops, single meshes whose ve
 Every "L5" is the fleet's gate, `ElementalAbilityHandler.IsUpgradeActive(element)`. The Wrasse's map lists all four
 elements: each unlocks at level 5 and relocks below 4.
 
+## Round 5: the phone (Garrett, Android development build, 2026-10-19)
+
+"I played wrasse and grouper but the wrasse and its lasso elements didn't show up. When I double tap the pip window to
+the other vessel it should switch."
+
+- **Nothing drew in a player build.** `KiteNavigatorView` took URP/Unlit from `Shader.Find`; nothing in the project
+  references that shader, so the build stripped it, the fallback (Sprites/Default, no instancing) made
+  `RenderMeshInstanced` throw every frame, and the small view showed the world with no kite, tail or motes. The shader
+  now ships through `Assets/Resources/KiteNavigatorUnlit.mat` (transparent, instancing on) and the view tints copies of
+  it. The same `Shader.Find("Universal Render Pipeline/Unlit")` shape is in 12 other runtime files (counted
+  2026-10-19 with `grep -rln 'Shader.Find("Universal Render Pipeline/Unlit")' Assets/_Scripts`, Editor folders
+  excluded; see Follow-ups). The material now puts URP/Unlit in the build, but only its transparent, instanced
+  variants: those files now FIND the shader in a player, where they used to get null, and run on the nearest kept
+  variant until each ships its own material.
+- **Double-tap the small view to swap seats.** Two short taps (each under 0.3 s, within 0.45 s and 120 px of each
+  other) inside the lower-left view call the same `PollSwap` the 1 / 2 keys and the D-pad do. Short is what keeps the
+  flying left thumb, which lands in that corner, from counting. While navigating, a touch that starts on the small view
+  no longer aims the kite. A mouse double-click does the same in the Editor.
+- **The ability cards are buttons now** for every vessel, the Wrasse included (`Docs/ABILITY_LOCKUP.md`, "Tap a card").
+  All four Wrasse map entries are `Input: 0`, so its cards are not pressable until they name an input.
+
 ## Seats: the swap is the arena's
 
 The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
@@ -317,6 +338,11 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
 ```
 
 ## Follow-ups
+
+- **Other runtime `Shader.Find("Universal Render Pipeline/Unlit")` calls** (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, BrittleStarExecutor, ShrikeExecutor, GrizzlyClawConeVisual, ArcLightningFallback, SegmentSpawnerPreview: 12, counted 2026-10-19) carry
+  the same build-stripping risk; each should get a Resources material for the variant it uses (T-20261019-41bb).
+- **`cece/sharp-tesla-j0kd7z`** moves the swap into `CrewSeat.PollSwap` and the small view into `CrewPictureInPicture`:
+  carry the double-tap and the Resources material there when it merges.
 
 - **Networking.** Everything runs on the hull's local human's machine: the board, the motes, the AI and the effects.
   A second human on another machine needs the seat replicated, plus a decision on which machine decides the effects.

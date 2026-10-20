@@ -203,6 +203,9 @@ namespace CosmicShore.Gameplay
             {
                 if (now < _nextLook) return;
                 _nextLook = now + LookEvery;
+                // Development diagnostics switched off (DevDiagnostics): the build plays like a release one, which
+                // records nothing. A race already being recorded when they go off still finishes and is stored.
+                if (!DevDiagnostics.Enabled) { _waiting = "development diagnostics are off"; return; }
                 if (!TryFindLocalHuman()) { _waiting = "waiting for your hull (AI-only races are not recorded)"; return; }
                 _recording = true;
                 _startRings = _player.RoundStats?.SwitchesThreaded ?? 0;

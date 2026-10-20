@@ -67,6 +67,11 @@ namespace CosmicShore.Editor
             Description = "Signed .aab for Google Play, checked for everything Play rejects. Docs/ANDROID_BUILD.md.")]
         public static void BuildAndroidRelease() => RunAndroid();
 
+        [MenuItem("FrogletTools/Build/Android APK (Development)", false, 112)]
+        [FrogletTool(FrogletToolCategory.Build, Importance = 4,
+            Description = "Development .apk to install on a phone; its diagnostics can be switched off on the device. Docs/ANDROID_BUILD.md §8.")]
+        public static void BuildAndroidDevelopment() => RunAndroidDevelopment();
+
         [MenuItem("FrogletTools/Build/Check Android App Bundle...", false, 111)]
         [FrogletTool(FrogletToolCategory.Build, Importance = 3,
             Description = "Run the pre-upload Play check on an existing .aab.")]
@@ -175,6 +180,96 @@ namespace CosmicShore.Editor
 
             if (batch) EditorApplication.Exit(ok ? 0 : 1);
         }
+
+        /// <summary>
+        /// The development APK: installable straight onto a phone (<c>adb install -r</c>), signed with
+        /// Unity's debug key, never uploaded to Play. <c>-diagnosticsOff</c> compiles it with
+        /// <c>CS_DEV_DIAGNOSTICS_OFF</c>, so a fresh install starts with the development diagnostics
+        /// off (<c>DevDiagnostics</c>). Player Settings are put back afterwards, as for the release build.
+        /// </summary>
+        static void RunAndroidDevelopment()
+        {
+            bool batch = Application.isBatchMode;
+            bool ok = false;
+            var saved = AndroidBuildSettingsSnapshot.Capture();
+
+            try
+            {
+                if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Android, BuildTarget.Android))
+                    throw new InvalidOperationException(
+                        "Android Build Support is not installed for this editor. Unity Hub > Installs > " +
+                        "this version > Add modules > Android Build Support (with OpenJDK and Android SDK & NDK).");
+
+                if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+                    throw new InvalidOperationException(
+                        "The editor is not on Android. File > Build Profiles > Android > Switch Platform " +
+                        "(it reimports assets once), then build again. Batchmode: pass -buildTarget Android.");
+
+                string outputFolder = GetArg("-buildOutput") ?? AndroidOutputFolder;
+                string version = GetArg("-buildVersion");
+                bool diagnosticsOff = HasArg("-diagnosticsOff");
+                string[] scenes = RequireScenes();
+
+                RequireAndroidPlayerSettings();
+                // Unity's debug key: a sideloaded test build. A phone holding the Play (upload-key)
+                // install must uninstall it first; Android refuses an update signed by another key.
+                PlayerSettings.Android.useCustomKeystore = false;
+
+                if (!string.IsNullOrWhiteSpace(version))
+                    PlayerSettings.bundleVersion = version;
+
+                int versionCode = ResolveVersionCode(GetArg("-buildVersionCode"));
+                PlayerSettings.Android.bundleVersionCode = versionCode;
+                SetAppCategoryGame();
+
+                EditorUserBuildSettings.buildAppBundle = false;
+                EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
+
+                Directory.CreateDirectory(outputFolder);
+                string outputPath = Path.Combine(outputFolder,
+                    $"CosmicShore-{PlayerSettings.bundleVersion}-{versionCode}-dev.apk");
+
+                Debug.Log($"[Build] Android development APK {PlayerSettings.bundleVersion} (code {versionCode}), " +
+                          $"diagnostics {(diagnosticsOff ? "off" : "on")} at first launch -> " +
+                          $"{Path.GetFullPath(outputPath)}  ({scenes.Length} scenes)");
+
+                var options = new BuildPlayerOptions
+                {
+                    scenes = scenes,
+                    locationPathName = outputPath,
+                    target = BuildTarget.Android,
+                    targetGroup = BuildTargetGroup.Android,
+                    options = BuildOptions.Development,
+                    extraScriptingDefines = diagnosticsOff ? new[] { "CS_DEV_DIAGNOSTICS_OFF" } : null,
+                };
+
+                BuildReport build = BuildPipeline.BuildPlayer(options);
+                BuildSummary summary = build.summary;
+                if (summary.result != BuildResult.Succeeded)
+                    throw new Exception(
+                        $"Build {summary.result}. {summary.totalErrors} error(s). See the log above.");
+
+                Debug.Log($"[Build] Succeeded in {summary.totalTime:hh\\:mm\\:ss}. " +
+                          $"Size: {new FileInfo(outputPath).Length / (1024f * 1024f):F1} MB.");
+
+                if (!batch) EditorUtility.RevealInFinder(outputPath);
+                ok = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Build] Android development FAILED: {ex.Message}\n{ex}");
+                if (!batch) EditorUtility.DisplayDialog("Android build stopped", ex.Message, "OK");
+            }
+            finally
+            {
+                saved.Restore();
+            }
+
+            if (batch) EditorApplication.Exit(ok ? 0 : 1);
+        }
+
+        static bool HasArg(string name) =>
+            Environment.GetCommandLineArgs().Any(a => string.Equals(a, name, StringComparison.OrdinalIgnoreCase));
 
         static int ResolveVersionCode(string requested)
         {

@@ -822,6 +822,24 @@ applies to new abilities, new resources on the meter list, and anything that add
     fade its weight out before it gets there; and a `Mathf.Sign(local.x)` of a body towed on the centreline
     flickers every frame - hold the side until the body is clearly across (|x| > 0.2 |d|).
 
+55. **A shader you only `Shader.Find` is not in the phone build - and the ability works in the Editor.** The
+    Wrasse's kite, tail and motes drew nothing on an Android development build (2026-10-19): `KiteNavigatorView`
+    found URP/Unlit by name, nothing in the project referenced it, so the build stripped it, `Shader.Find` returned
+    null, and the fallback (Sprites/Default without instancing) made `RenderMeshInstanced` throw every frame. The
+    Editor has every shader, so no editor playtest can show this. Ship the shader through a REFERENCED material
+    (`Resources/KiteNavigatorUnlit.mat`: transparent, `m_EnableInstancingVariants: 1`, the keywords the code sets)
+    and tint copies of it. Two consequences: that material now puts URP/Unlit in every build with only ITS variants,
+    so the 12 other runtime `Shader.Find("Universal Render Pipeline/Unlit")` callers start finding the shader and
+    run on the nearest kept variant (T-20261019-41bb); and a failed lookup must log an error, because "the effect
+    is simply not there" is the only symptom otherwise. `/asset-surgery` records the particle-shader twin.
+56. **Raise a UI press on the pilot's `InputStatus`, never on the action handler.** Every on-screen control that
+    fires an ability (`AbilityCardPress`, 2026-10-19) calls `InputStatus.OnButtonPressed.Raise` / `OnButtonReleased`,
+    the channel every input strategy uses, so it inherits the autopilot / mute / suppression gates, the device byte
+    the press replicates with, and the card highlight. `PerformShipControllerActions` is local-only and skips the
+    RPC; `PerformShipControllerActionsReplicated` is the AI's path and skips the gates. And a touch that starts on
+    such a control must be kept out of touch flight (`FlightTouchClaims`), or the same finger also steers and fires
+    the one-thumb drift edges.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
