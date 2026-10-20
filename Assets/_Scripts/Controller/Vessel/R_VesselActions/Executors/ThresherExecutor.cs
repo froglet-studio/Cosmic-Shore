@@ -625,7 +625,15 @@ namespace CosmicShore.Gameplay
                 if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                 _touchingNext.Add(prism);
-                if (_touching.Contains(prism)) continue;   // one hit per contact
+                if (_touching.Contains(prism))
+                {
+                    // One HIT per contact - but own armour the Mass Mode ball is still inside stays
+                    // lit for as long as it is inside, as the chain's does (PublishAcknowledged).
+                    if (_massMode && prism.Domain == own && prism.prismProperties is { } held &&
+                        (held.IsShielded || held.IsSuperShielded))
+                        Acknowledge(prism);
+                    continue;
+                }
 
                 Vector3 at = from + ab * _hits[i].t;
                 float speed = _solver.BallSpeed;

@@ -49,6 +49,25 @@ same answer every other hit on it gets. The one deliberate exception is the flee
 grace (`SelfTrailContactConfigSO`): the cord trails through the mass its own hull laid a moment ago
 on every step, and lighting that would make the producer always-on (see below).
 
+The same rule, applied across the fleet on 2026-10-20 (a sweep for every place a mover tested a
+prism and then silently skipped it):
+
+| Where | Was | Now |
+|---|---|---|
+| `PrismTeamManager.Steal` (hull, skimmer, Urchin spike, black hole, Thresher Mass Mode) | super-shielded: silent `return` | deflection jiggle |
+| `AstroLeagueBall` (also the Scarab's forged balls) | super-shielded passed "untouched"; own already-shielded mass: nothing | jiggle; own armour LIT (`ownDomainOnly`, the ball's colour) |
+| `BrittleStarExecutor.CutWithCords` | super-shielded skipped before the touch test | jiggle on touch |
+| `ShrikeExecutor.FireLance` (below the pierce upgrade) | super-shielded skipped before the ray test | jiggle where the beam meets it |
+| `GrizzlyFlamethrowerActionExecutor` | super-shielded refused inside `Ignite`, spending an ignite | jiggle, no ignite spent |
+
+**Still open (each a call for the vessel's owner, `Docs/TEAM_TASKS.md`):** own-domain mass a
+round with friendly fire off flies through (`Projectile.DisallowImpactOnPrism`: Urchin spikes,
+explodable and energised spikes), the Serpent sniper's own-domain and sub-Charge-5 super-shielded
+pass-through (its cone query reaches the full range, so the prisms the round actually passed
+need the stop point first), the Kite navigator's head through own mass, the Butterfly dust on own
+super-shielded mass, and every own-fresh-trail grace window. Lighting these risks always-on
+producers (see below), which is why they are decisions rather than fixes.
+
 **A producer that wants to say TWO things about one force should look for a different CHANNEL, not a
 second light.** The fuze row was briefly paired with a prism *ripple* on the same round — a vertex
 morph rather than a light — the sphere saying **WHERE** the warhead goes off and the ripple **HOW

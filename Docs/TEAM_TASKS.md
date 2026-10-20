@@ -1212,3 +1212,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner's eye); Yash (offered) for the Editor run
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/LIT.md (Contact acknowledgement row); ThresherExecutor.PublishAcknowledged
+
+### T-20261020-8fd0 · open · decision · Vessels
+- **Task:** Dynamic contact never does nothing - the remaining silent pass-throughs: own-domain mass a friendly-fire-off round flies through (Urchin spikes, explodable/energised spikes), the Serpent sniper through own mass and through super-shielded mass below Charge 5, the Kite navigator head through own mass, Butterfly dust on own super-shielded mass, and the own-fresh-trail grace window (every hull and skimmer, ~1 s). Decide which should light (risk: always-on lights crowd the 8 LIT slots)
+- **Done when:** Each listed case either acknowledges the contact (LIT or jiggle) or has a recorded reason in Docs/LIT.md
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/LIT.md (Contact acknowledgement section, 'Still open')
