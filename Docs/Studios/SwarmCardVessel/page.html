@@ -63,6 +63,12 @@ section.el>p{margin:0 0 14px;color:var(--muted);max-width:70ch}
 .tag.el{color:var(--c);border:1px solid var(--c);background:transparent}
 .tag.form{color:var(--fg);font-weight:600}
 .desc{margin:0;font-size:14.5px}
+.why{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--muted)}
+.why b{font-weight:600;color:var(--c);text-transform:uppercase;font-size:11px;letter-spacing:.05em;margin-right:4px}
+.rev{margin:0;font-size:12.5px;color:var(--muted);background:var(--surface-2);border-radius:6px;padding:5px 8px}
+.tag.chg{color:var(--tweak);border:1px solid var(--tweak);background:transparent}
+section.el>p.job{color:var(--fg);font-size:14px}
+section.el>p.job span{font:12.5px var(--f-mono);color:var(--muted);margin-left:6px}
 .stats{display:grid;gap:6px}
 .stat{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;border-top:1px solid var(--line);padding-top:6px}
 .stat .lab{font-size:13px;color:var(--muted)}
@@ -92,7 +98,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 <div class="wrap">
 <header>
   <h1>Swarm Deck</h1>
-  <p class="lede">The 80 cards of the mobile swarm vessel, revision 1. Each element has 20; each card goes from level 1 to 15. Drag the level to see every card at that level, then mark each one <b>Keep</b>, <b>Tweak</b> or <b>Cut</b> with a note. Revision 2 starts from your marks.</p>
+  <p class="lede">The 80 cards of the mobile swarm vessel, revision 2. Each element has 20 and owns one job no other element does; each card goes from level 1 to 15. Drag the level to see every card at that level, then mark each one <b>Keep</b>, <b>Tweak</b> or <b>Cut</b> with a note. Revision 3 starts from your marks; your revision 1 notes are answered on the cards marked <b>Changed</b>.</p>
   <details class="ctx">
     <summary>The vessel these cards are for, and the open questions</summary>
     <ul>
@@ -102,6 +108,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
       <li><b>Draw.</b> An omnicrystal draws four cards, one per element. Play one and the other three go. The next omnicrystal draws four more.</li>
       <li><b>Levels.</b> Upgrading an element makes its cards arrive at that level. Drawing a card you hold adds its level to yours, up to 15.</li>
     </ul>
+    <p><b>Each element's job.</b> Mass: prism production (danger or base), shielding, supershielding. Time: your maneuverability, speed, positioning, movement. Space: more range or more prisms you can destroy, steal or shrink. Charge: silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels.</p>
     <p><b>Readings to confirm:</b> element upgrades are between-run (meta) progress; levels past 15 are lost; one form at a time; every card is passive once picked (no tap-to-fire).</p>
     <p>Numbers assume a swarm of about 24 (cap 40), about 60 u/s cruise and a 1,400 u view. Each number is linear or a steady percentage step from level 1 to 15; counts round down.</p>
   </details>
@@ -113,7 +120,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
     <option value="">Every objective</option><option>Omnicrystal</option><option>Elemental crystals</option><option>Opposing vessels</option><option>Opposing mass</option><option>Any</option>
   </select>
   <select id="vf" aria-label="Review state">
-    <option value="">Every card</option><option value="none">Not reviewed</option><option value="keep">Keep</option><option value="tweak">Tweak</option><option value="cut">Cut</option><option value="form">Forms only</option>
+    <option value="">Every card</option><option value="none">Not reviewed</option><option value="keep">Keep</option><option value="tweak">Tweak</option><option value="cut">Cut</option><option value="form">Forms only</option><option value="role">Does its element's job</option><option value="phys">Plays on physics</option><option value="rev">Changed in revision 2</option>
   </select>
   <input type="search" id="q" placeholder="Search cards" aria-label="Search cards">
   <label class="lvl" for="lv">Level <input type="range" id="lv" min="1" max="15" value="1"><output id="lvo">L1</output></label>
@@ -167,7 +174,9 @@ function cardHtml(c,L){
   const isForm = c.kind==="Form";
   return `<article class="card" id="${c.id}" data-v="${f.verdict||""}" style="--c:${COL[c.element]}">
     <div class="top"><h3><small>${c.element[0]}${c.n}</small>${esc(c.name)}</h3></div>
-    <div class="tags"><span class="tag el">${c.element}</span><span class="tag ${isForm?"form":""}">${esc(c.kind)}</span><span class="tag">${esc(c.objective)}</span></div>
+    <div class="tags"><span class="tag el">${c.element}</span><span class="tag ${isForm?"form":""}">${esc(c.kind)}</span><span class="tag">${esc(c.objective)}</span>${c.rev?`<span class="tag chg">Changed</span>`:""}</div>
+    ${(c.role||c.phys)?`<div class="why">${c.role?`<span><b>Job</b> ${esc(c.role)}</span>`:""}${c.phys?`<span><b>Physics</b> ${esc(c.phys)}</span>`:""}</div>`:""}
+    ${c.rev?`<p class="rev">${esc(c.rev)}</p>`:""}
     <p class="desc">${esc(c.text)}</p>
     <div class="stats">${c.stats.map(s=>statHtml(s,L)).join("")}</div>
     ${c.milestones.length?`<ul class="ms">${c.milestones.map(m=>`<li class="${L>=m.level?"hit":""}"><b>L${m.level}</b>${esc(m.text)}</li>`).join("")}</ul>`:""}
@@ -184,6 +193,9 @@ function match(c){
   if(state.vf==="none" && v) return false;
   if(["keep","tweak","cut"].includes(state.vf) && v!==state.vf) return false;
   if(state.vf==="form" && c.kind!=="Form") return false;
+  if(state.vf==="role" && !c.role) return false;
+  if(state.vf==="phys" && !c.phys) return false;
+  if(state.vf==="rev" && !c.rev) return false;
   if(state.q){const q=state.q.toLowerCase(); if(!(c.name+" "+c.text+" "+c.kind).toLowerCase().includes(q)) return false;}
   return true;
 }
@@ -193,7 +205,7 @@ function render(){
     if(state.el && el!==state.el) continue;
     const cs = DATA.cards.filter(c=>c.element===el && match(c));
     if(!cs.length) continue;
-    html += `<section class="el" style="--c:${COL[el]}"><h2><i style="background:${COL[el]}"></i>${el}</h2><p>${esc(DATA.meanings[el])}</p>
+    html += `<section class="el" style="--c:${COL[el]}"><h2><i style="background:${COL[el]}"></i>${el}</h2><p>${esc(DATA.meanings[el])}</p><p class="job"><b>Job only ${el} does:</b> ${esc(DATA.roles[el])}. <span>${DATA.cards.filter(c=>c.element===el&&c.role).length}/20 do it · ${DATA.cards.filter(c=>c.element===el&&c.phys).length}/20 play on physics</span></p>
       <div class="grid">${cs.map(c=>cardHtml(c,L)).join("")}</div></section>`;
   }
   document.getElementById("main").innerHTML = html || `<p class="empty">No card matches these filters.</p>`;

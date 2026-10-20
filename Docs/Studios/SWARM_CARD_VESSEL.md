@@ -1,8 +1,8 @@
-# Swarm Card Vessel: the 80 cards (revision 1, 2026-10-20)
+# Swarm Card Vessel: the 80 cards (revision 2, 2026-10-20)
 
 **Review page:** https://claude.ai/artifact/QB2oYkL8P8Cv7KPGyhdHp2 (filter by element or objective, drag the level slider, mark each card Keep / Tweak / Cut with a note; the next revision reads those marks).
 **Data:** `Docs/Studios/SwarmCardVessel/cards.py` is the single source; `python3 Docs/Studios/SwarmCardVessel/build.py` writes this file, `cards.json` and the page (`Docs/Studios/SwarmDeck.html`).
-**Status:** design list only. Nothing is in the lab or in Unity yet. Garrett reviews this list, then revision 2.
+**Status:** design list only. Nothing is in the lab or in Unity yet. Revision 2 answers Garrett's first review; he reviews again.
 
 ## The vessel (Garrett's brief, 2026-10-20, captured as context; not built yet)
 
@@ -14,6 +14,22 @@ The second swarm vessel after the Shepherd ([SWARM_VESSEL_LAB.md](SWARM_VESSEL_L
 - **Objective toggle.** The swarm travels in the plane toward one of: **Omnicrystal**, **Elemental crystals**, **Opposing vessels**, **Opposing mass**. Each card below names the objective it works best with.
 - **Card draw.** Collecting an omnicrystal draws four cards, one per element. Playing one discards the other three. The next omnicrystal draws four new cards.
 - **Levels.** Each element has 20 cards, and each card goes from level 1 to 15. Upgrading an element means the cards you draw for it already arrive at that level. Drawing a card you already have adds its level to the one you hold.
+
+## Revision 2 rules (Garrett, 2026-10-20)
+
+Each element owns a job, and no card of another element does that job:
+
+| Element | Its job (no other element does this) |
+|---|---|
+| Mass | Prism production (danger or base), shielding, supershielding |
+| Time | Your maneuverability, speed, positioning and movement |
+| Space | More range or more prisms you can destroy, steal or shrink |
+| Charge | Silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels |
+
+- At least half of each element's cards do its job (the **Job** column).
+- At least half lean on the element's real physics (the **Physics** column): gravity, inertia and density for Mass; dilation, rewinds and phase for Time; folded, curved and expanding space for Space; static, arcs and magnetism for Charge.
+- Exotic effects outside these jobs are welcome, as long as they do not take another element's job. `build.py` fails if an element drops under 10 in either column.
+- Garrett's page notes: Meteor Drop moved to Space, Sticky Tar became Danger Drip, Hourglass was replaced (not multiplayer friendly). The full list of changes is at the end.
 
 ## How to read the scaling
 
@@ -31,108 +47,156 @@ The second swarm vessel after the Shepherd ([SWARM_VESSEL_LAB.md](SWARM_VESSEL_L
 
 ## Mass (20 cards)
 
-*Bodies, building and weight: the swarm grows, breeds, lays your prisms and turns into heavy things.*
+*Weight, gravity and matter: the swarm lays your prisms, shields them and turns heavy.*
 
-| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones |
-|---|---|---|---|---|---|---|
-| 1 | **Brood** | Growth | Any | The swarm breeds: a new member hatches at the centroid every few seconds, up to the swarm cap. | Hatch every: 6.0 s / 3.6 s / 1.9 s / 1.0 s | L10: Hatchlings arrive full size<br>L15: Twins: two members per hatch |
-| 2 | **Big Family** | Growth | Any | Raises the swarm cap. | Swarm cap: 46 / 70 / 100 / 130 | L10: Members over the cap wait in a reserve and refill losses at once |
-| 3 | **Bulk Up** | Body | Opposing mass | Members grow bigger and heavier. Bigger members hit harder and take more to kill. | Member size: 1.05× / 1.25× / 1.50× / 1.75×<br>Toughness: 1.0× / 1.8× / 2.8× / 3.8× | L10: Heavy members shove enemy prisms aside instead of bouncing off |
-| 4 | **Mound Builders** | Build | Any | The swarm lays your team's prisms along its path. | Prisms laid: 0.50/s / 1.50/s / 2.75/s / 4.00/s | L5: Laid prisms join into a solid wall with no gaps<br>L15: Laid prisms are shielded |
-| 5 | **Snowball** | Form | Opposing mass | Every 20 s the swarm rolls into one ball for a few seconds. It rolls up every enemy prism it touches and grows with each one. | Ball lasts: 3.0 s / 5.0 s / 7.5 s / 10.0 s<br>Prisms it can hold: 10 / 50 / 100 / 150 | L10: When the ball breaks, the rolled-up prisms land as yours |
-| 6 | **Golem** | Form | Opposing vessels | Every 25 s the swarm stacks into a giant walking golem. Each stomp bursts prisms and knocks vessels back in a ring. | Golem lasts: 4.0 s / 6.0 s / 8.5 s / 11.0 s<br>Stomp radius: 60 u / 100 u / 150 u / 200 u | L15: The golem takes no damage |
-| 7 | **Gravity Well** | Pull | Elemental crystals | The centroid pulls loose crystals and enemy prisms toward the swarm. | Pull radius: 50 u / 110 u / 185 u / 260 u | L10: Also drags enemy vessels (25% slow inside the well) |
-| 8 | **Mitosis Feast** | Growth | Opposing mass | A member that eats enough enemy prisms splits into two. | Prisms per split: 8 / 5 / 3 / 1 | - |
-| 9 | **Carapace** | Defense | Opposing vessels | Members grow shells. A shell soaks one hit and regrows. | Shell regrows in: 12.0 s / 7.2 s / 3.8 s / 2.0 s | L8: Two shells per member<br>L15: Three shells per member |
-| 10 | **Pack Mules** | Economy | Elemental crystals | Elemental crystals the swarm carries home count for more element. | Extra element per crystal: 10% / 50% / 100% / 150% | - |
-| 11 | **Mass Tug** | Hook | Opposing vessels | Members latch onto enemy vessels and weigh them down. | Most slow on one vessel: 15% / 31% / 51% / 71% | L10: A weighed-down vessel drops a petal every 5 s |
-| 12 | **Martyr Bricks** | Build | Any | A member that dies leaves a small block of your prisms where it fell. | Prisms per death: 1 / 3 / 5 / 8 | - |
-| 13 | **Wall Weavers** | Build | Opposing vessels | Every few seconds the swarm drops a straight wall of your prisms across its wake to block chasers. | Wall length: 4 prisms / 8 prisms / 13 prisms / 18 prisms<br>Every: 10.0 s / 8.1 s / 6.3 s / 4.9 s | - |
-| 14 | **Fortress** | Build | Omnicrystal | When the swarm reaches its objective and holds there, it builds a ring of shielded prisms round itself. | Ring size: 8 prisms / 16 prisms / 26 prisms / 36 prisms<br>Build time: 4.0 s / 2.6 s / 1.5 s / 0.9 s | - |
-| 15 | **Stampede** | Charge-in | Opposing mass | Against enemy mass the swarm lines up and charges. Each member flattens the prisms in its lane. | Prisms per member per charge: 1 / 3 / 5 / 8 | L10: The charge also knocks vessels out of the lane |
-| 16 | **Clutch** | Growth | Elemental crystals | Each crystal the swarm collects lays eggs that hatch a few seconds later. | Eggs per crystal: 1 / 3 / 5 / 8 | L10: Eggs hatch at once |
-| 17 | **Neutron Star** | Form | Opposing mass | Every 30 s the swarm crushes into one dense star that ploughs through anything and cannot be hurt. | Star lasts: 1.5 s / 2.9 s / 4.7 s / 6.4 s | - |
-| 18 | **Queen** | Growth | Any | One member is crowned. While she lives the swarm breeds faster and members near her are tougher. If she falls, the crown passes after a delay. | Breeding bonus: 20% / 60% / 110% / 160%<br>Crown passes in: 15.0 s / 7.8 s / 3.5 s / 1.5 s | L15: Two queens |
-| 19 | **Sticky Tar** | Trap | Opposing vessels | Members drip tar prisms. An enemy that flies through tar is slowed. | Tar slow: 10% / 22% / 37% / 52% | - |
-| 20 | **Meteor Drop** | Slam | Opposing mass | Every few seconds one member leaves the plane, climbs, and slams down on the objective, bursting prisms round where it lands. | Every: 8.0 s / 5.7 s / 3.8 s / 2.5 s<br>Blast radius: 30 u / 54 u / 84 u / 114 u | L10: Two meteors at a time |
+**Mass's job:** Prism production (danger or base), shielding, supershielding. 14 of 20 cards do it; 11 of 20 play on its physics.
+
+| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones | Job | Physics |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **Mound Builders** | Build | Any | The swarm lays your team's prisms along its path. | Prisms laid: 0.50/s / 1.50/s / 2.75/s / 4.00/s | L5: Laid prisms join into a solid wall with no gaps<br>L15: Laid prisms are shielded | Prism production | - |
+| 2 | **Danger Drip** | Build | Opposing vessels | Members drip danger prisms behind them. A rival that flies through one is slowed and loses a petal, as any danger prism does. | Danger prisms: 0.30/s / 0.90/s / 1.65/s / 2.40/s | L10: Drips fall in short lines across the swarm's wake | Danger prism production | - |
+| 3 | **Conservation of Mass** | Build | Any | Mass is never lost. A member that dies becomes your prisms where it fell. | Prisms per death: 1 / 3 / 5 / 8 | L10: The prisms are shielded | Prism production | Conservation of mass |
+| 4 | **Inertial Wall** | Build | Opposing vessels | Every few seconds the swarm drops a straight wall of your prisms along its line of travel. The faster it flies, the longer the wall, because momentum carries the bricks. | Wall length at cruise: 4 prisms / 8 prisms / 13 prisms / 18 prisms<br>Every: 10.0 s / 8.1 s / 6.3 s / 4.9 s | L10: The wall is laid as danger prisms | Prism production | Inertia and momentum |
+| 5 | **Accretion Disk** | Build | Omnicrystal | Members circling the objective lay a ring of your prisms round it, the way matter collects in orbit round a heavy body. | Ring size: 8 prisms / 16 prisms / 26 prisms / 36 prisms<br>Build time: 4.0 s / 2.6 s / 1.5 s / 0.9 s | L10: The ring is shielded<br>L15: The ring is supershielded | Prism production and shielding | Accretion in orbit |
+| 6 | **Snowball** | Form | Any | Every 20 s the swarm rolls into one ball. It packs on a layer of your prisms each second, and when it breaks they land as a mound. | Ball lasts: 3.0 s / 5.0 s / 7.5 s / 10.0 s<br>Prisms per second: 2 / 6 / 11 / 16 | L10: The mound lands shielded | Prism production | Accretion |
+| 7 | **Density** | Build | Any | Your prisms laid close together compress into fewer, bigger prisms, so the same mass holds more volume and takes more to break. | Merge radius: 10 u / 22 u / 37 u / 52 u<br>Volume per merge: 1.2× / 1.6× / 2.1× / 2.6× | L15: Merged prisms are supershielded | Prism production | Density and compression |
+| 8 | **Neutron Star** | Form | Any | Every 30 s the swarm crushes into one dense star that cannot be hurt. When it ends it leaves a supershielded core of your prisms. | Star lasts: 1.5 s / 2.9 s / 4.7 s / 6.4 s<br>Core size: 3 prisms / 7 prisms / 12 prisms / 17 prisms | - | Supershielding | Degenerate matter |
+| 9 | **Golem** | Form | Opposing vessels | Every 25 s the swarm stacks into a giant walking golem. Each stomp leaves a footprint of your prisms, and its own body is shielded. | Golem lasts: 4.0 s / 6.0 s / 8.5 s / 11.0 s<br>Prisms per footprint: 2 / 4 / 6 / 9 | L10: Footprints are danger prisms<br>L15: The golem is supershielded | Prism production and shielding | Weight |
+| 10 | **Supershield Core** | Shield | Any | Your prisms near the swarm's centroid are supershielded while the swarm stays close. | Core radius: 40 u / 80 u / 130 u / 180 u | L10: The shield lasts a few seconds after the swarm leaves | Supershielding | - |
+| 11 | **Carapace** | Shield | Opposing vessels | Members grow shells. A shell soaks one hit, then regrows. | Shell regrows in: 12.0 s / 7.2 s / 3.8 s / 2.0 s | L8: Two shells per member<br>L15: Three shells per member | Shielding | - |
+| 12 | **Gravity Well** | Pull | Elemental crystals | The centroid's gravity pulls loose crystals toward the swarm, and your prisms inside the well pack into a shielded clump. | Pull radius: 50 u / 110 u / 185 u / 260 u | L10: Enemy vessels inside the well are dragged (25% slow) | Shielding | Gravity |
+| 13 | **Bulk Up** | Body | Opposing vessels | Members grow bigger and heavier. Heavy members take more to kill and do not get knocked about. | Member size: 1.05× / 1.25× / 1.50× / 1.75×<br>Toughness: 1.0× / 1.8× / 2.8× / 3.8× | L10: A heavy member shoves enemy vessels aside | - | Inertia |
+| 14 | **Mass Tug** | Hook | Opposing vessels | Members latch onto enemy vessels and weigh them down. | Most slow on one vessel: 15% / 31% / 51% / 71% | L10: A weighed-down vessel drops a petal every 5 s | - | Added mass |
+| 15 | **Brood** | Growth | Any | The swarm breeds: a new member hatches at the centroid every few seconds, up to the swarm cap. | Hatch every: 6.0 s / 3.6 s / 1.9 s / 1.0 s | L10: Hatchlings arrive full size<br>L15: Twins: two members per hatch | - | - |
+| 16 | **Big Family** | Growth | Any | Raises the swarm cap. | Swarm cap: 46 / 70 / 100 / 130 | L10: Members over the cap wait in a reserve and refill losses at once | - | - |
+| 17 | **Queen** | Growth | Any | One member is crowned. While she lives the swarm breeds faster and her guards are shielded. If she falls, the crown passes after a delay. | Breeding bonus: 20% / 60% / 110% / 160%<br>Crown passes in: 15.0 s / 7.8 s / 3.5 s / 1.5 s | L15: Two queens | Shielding | - |
+| 18 | **Clutch** | Growth | Elemental crystals | Each crystal the swarm collects lays eggs that hatch a few seconds later. | Eggs per crystal: 1 / 3 / 5 / 8 | L10: Eggs hatch at once | - | - |
+| 19 | **Pack Mules** | Economy | Elemental crystals | Elemental crystals the swarm carries home count for more element. | Extra element per crystal: 10% / 50% / 100% / 150% | - | - | - |
+| 20 | **Critical Mass** | Burst | Opposing mass | When the swarm passes a size, it throws off a shell of your prisms all round it in one go, then has to grow back past the size to do it again. | Swarm size needed: 36 / 29 / 22 / 17<br>Prisms thrown: 8 / 20 / 35 / 50 | L10: The shell is shielded | Prism production | Critical mass |
 
 ## Time (20 cards)
 
-*Speed, tempo and second chances: the swarm moves faster, rewinds, repeats and bends time round it.*
+*Speed, tempo and second chances: the swarm moves faster, turns sharper and gets where it needs to be.*
 
-| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones |
-|---|---|---|---|---|---|---|
-| 1 | **Dragonfly** | Form | Elemental crystals | Every 15 s the swarm morphs into a giant dragonfly and darts at the objective in fast straight hops, collecting everything it passes. | Dart speed: 2.00× / 2.60× / 3.35× / 4.10×<br>Dragonfly lasts: 3.0 s / 4.6 s / 6.6 s / 8.6 s | L10: Each hop leaves a slipstream lane |
-| 2 | **Quickening** | Speed | Any | The swarm cruises faster. | Cruise speed: 4% / 20% / 40% / 60% | - |
-| 3 | **Rewind** | Survive | Opposing vessels | A member that is killed may rewind 2 s and come back. | Chance: 10% / 30% / 55% / 80% | - |
-| 4 | **Echo Swarm** | Copy | Any | A ghost of the swarm replays its path a moment behind it. Ghosts collect crystals and hit like the real swarm. | Ghost strength: 20% / 36% / 56% / 76% | L8: Two ghosts<br>L15: Three ghosts |
-| 5 | **Second Look** | Cards | Omnicrystal | Reroll a hand of four cards. Rerolls recharge as you collect omnicrystals. | Omnicrystals per reroll: 5 / 3 / 1 / 1 | L15: Keep two cards from a hand instead of one |
-| 6 | **Slipstream** | Speed | Any | Members drafting behind other members fly faster, so a long thin swarm is a fast one. | Draft bonus: 5% / 17% / 32% / 47% | - |
-| 7 | **Stopwatch** | Field | Opposing vessels | Enemy vessels and shots near the swarm run slow. | Slow: 10% / 22% / 37% / 52%<br>Radius: 80 u / 120 u / 170 u / 220 u | - |
-| 8 | **Hourglass** | Freeze | Any | Every so often time stops for everything except your swarm. | Freeze: 0.30 s / 0.90 s / 1.65 s / 2.40 s<br>Every: 25.0 s / 19.5 s / 14.3 s / 10.5 s | - |
-| 9 | **Metronome** | Rhythm | Opposing mass | The swarm surges on a beat. On each beat members hit and collect for more. | Beat bonus: 1.5× / 1.9× / 2.4× / 2.9× | L10: The beat speeds up as the swarm grows |
-| 10 | **Fast Forward** | Speed | Any | Every 20 s the swarm runs on double time (speed, breeding, cooldowns) for a few seconds. | Double time lasts: 2.0 s / 3.6 s / 5.6 s / 7.6 s | - |
-| 11 | **Rapid Molt** | Cooldown | Any | Every card with a cooldown recharges faster. | Cooldown cut: 3% / 15% / 30% / 45% | - |
-| 12 | **Hummingbird** | Form | Elemental crystals | At the objective the swarm becomes a hummingbird that hovers and sips. Crystals and prisms within reach are drawn in fast. | Sip radius: 60 u / 92 u / 132 u / 172 u<br>Sips: 2.0/s / 4.0/s / 6.5/s / 9.0/s | - |
-| 13 | **Mayfly Couriers** | Fetch | Elemental crystals | Short-lived mayflies hatch, race to the nearest crystals and bring them back. | Couriers: 1 / 3 / 5 / 8<br>Courier speed: 150 u/s / 210 u/s / 285 u/s / 360 u/s | - |
-| 14 | **Déjà Vu** | Economy | Elemental crystals | A collected crystal may count twice. | Chance: 5% / 17% / 32% / 47% | L15: Omnicrystals can repeat too (an extra hand) |
-| 15 | **Skim Rush** | Speed | Opposing mass | Members that skim close past enemy prisms gain speed, like a vessel's skim. | Speed per skim: 3% / 7% / 12% / 17% | L10: Skims also refill card cooldowns a little |
-| 16 | **Age Ray** | Breaker | Opposing mass | Enemy prisms the swarm touches age and crumble a moment later. | Crumble after: 6.0 s / 3.6 s / 1.9 s / 1.0 s | L10: A crumbling prism ages its neighbours |
-| 17 | **Second Wind** | Survive | Any | When the swarm falls under a third of its cap, it surges: faster and breeding hard for a few seconds. | Surge lasts: 3.0 s / 5.0 s / 7.5 s / 10.0 s<br>Cooldown: 40 s / 29 s / 20 s / 14 s | - |
-| 18 | **Save Point** | Survive | Any | Once per omnicrystal, if the swarm is nearly wiped, it rewinds to where it was and how big it was a few seconds ago. | Rewinds: 3.0 s / 5.0 s / 7.5 s / 10.0 s | L10: The rewind also returns the petals you lost |
-| 19 | **Synchrony** | Rhythm | Opposing vessels | Members fall into sync like fireflies. Each synced flash blinds nearby enemies and bursts the swarm forward. | Flash every: 6.0 s / 4.3 s / 2.8 s / 1.9 s<br>Blind: 0.5 s / 0.9 s / 1.4 s / 1.9 s | - |
-| 20 | **Reflexes** | Control | Any | The swarm settles onto a newly turned plane faster, so plane flicks feel snappy. | Settle time: 1.50 s / 0.86 s / 0.43 s / 0.21 s | - |
+**Time's job:** Your maneuverability, speed, positioning and movement. 16 of 20 cards do it; 11 of 20 play on its physics.
+
+| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones | Job | Physics |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **Dragonfly** | Form | Elemental crystals | Every 15 s the swarm morphs into a giant dragonfly and darts at the objective in fast straight hops, collecting crystals on the way. | Dart speed: 2.00× / 2.60× / 3.35× / 4.10×<br>Dragonfly lasts: 3.0 s / 4.6 s / 6.6 s / 8.6 s | L10: Each hop leaves a slipstream lane | Speed and movement | - |
+| 2 | **Quickening** | Speed | Any | The swarm cruises faster. | Cruise speed: 4% / 20% / 40% / 60% | - | Speed | - |
+| 3 | **Slipstream** | Speed | Any | Members drafting behind other members fly faster, so a long thin swarm is a fast one. | Draft bonus: 5% / 17% / 32% / 47% | - | Speed | - |
+| 4 | **Skim Rush** | Speed | Opposing mass | Members that skim close past enemy prisms gain speed, like a vessel's skim. | Speed per skim: 3% / 7% / 12% / 17% | L10: Skims also refill card cooldowns a little | Speed | - |
+| 5 | **Reflexes** | Control | Any | The swarm settles onto a newly turned plane faster, so plane flicks feel snappy. | Settle time: 1.50 s / 0.86 s / 0.43 s / 0.21 s | - | Maneuverability | - |
+| 6 | **Hummingbird** | Form | Elemental crystals | At the objective the swarm becomes a hummingbird: it holds dead still, turns on the spot and sips nearby crystals in. | Sip radius: 60 u / 92 u / 132 u / 172 u<br>Turn rate: 180°/s / 300°/s / 450°/s / 600°/s | - | Maneuverability and positioning | - |
+| 7 | **Lead Time** | Aim | Opposing vessels | The swarm flies to where its objective will be in a moment, not where it is now, so it meets moving targets head on. | Looks ahead: 0.2 s / 0.6 s / 1.1 s / 1.6 s | L10: Also leads the plane's turn, so a flick lands the swarm on the new line | Positioning | Prediction along a worldline |
+| 8 | **Skip Ahead** | Teleport | Omnicrystal | Every few seconds the swarm skips a moment of travel and arrives further along its path toward the objective. | Cooldown: 24.0 s / 15.1 s / 8.4 s / 4.7 s<br>Distance skipped: 300 u / 500 u / 750 u / 1000 u | - | Positioning | Skipping time |
+| 9 | **Blink Step** | Dodge | Opposing vessels | A member about to be hit skips a fraction of a second ahead and is not there when the shot lands. | Chance: 10% / 26% / 46% / 66% | - | Movement | Skipping time |
+| 10 | **Out of Phase** | Pass | Any | Every 15 s the swarm slips out of phase with the world and passes through prisms and vessels. | Phase lasts: 1.0 s / 2.2 s / 3.7 s / 5.2 s | - | Movement | Phase |
+| 11 | **Slingshot** | Launch | Omnicrystal | When the objective is far, the swarm draws back and flings itself at it. | Fling distance: 200 u / 360 u / 560 u / 760 u<br>Cooldown: 12.0 s / 9.0 s / 6.2 s / 4.3 s | - | Movement | - |
+| 12 | **Save Point** | Rewind | Any | Once per omnicrystal, if the swarm is nearly wiped, it rewinds to where it was and how big it was a few seconds ago. | Rewinds: 3.0 s / 5.0 s / 7.5 s / 10.0 s | L10: The rewind also returns the petals you lost | Positioning | Rewind |
+| 13 | **Fast Forward** | Speed | Any | Every 20 s the swarm runs on double time (speed, breeding, cooldowns) for a few seconds. | Double time lasts: 2.0 s / 3.6 s / 5.6 s / 7.6 s | - | Speed | Faster clock |
+| 14 | **Metronome** | Rhythm | Any | The swarm surges forward on a beat, then glides. The beat quickens as the card levels. | Beat every: 2.00 s / 1.63 s / 1.26 s / 0.98 s<br>Surge speed: 1.5× / 1.9× / 2.4× / 2.9× | L10: The beat follows your plane flicks | Speed | Period and frequency |
+| 15 | **Synchrony** | Rhythm | Opposing vessels | Members fall into sync like fireflies. Each synced flash blinds nearby enemies and bursts the swarm forward. | Flash every: 6.0 s / 4.3 s / 2.8 s / 1.9 s<br>Burst speed: 1.30× / 1.50× / 1.75× / 2.00× | - | Movement | Coupled oscillators |
+| 16 | **Mayfly Couriers** | Fetch | Elemental crystals | Short-lived mayflies hatch, race to the nearest crystals and bring them back. | Couriers: 1 / 3 / 5 / 8<br>Courier speed: 150 u/s / 210 u/s / 285 u/s / 360 u/s | - | Speed | - |
+| 17 | **Rewind** | Survive | Opposing vessels | A member that is killed may rewind 2 s and come back. | Chance: 10% / 30% / 55% / 80% | - | - | Rewind |
+| 18 | **Echo Swarm** | Copy | Elemental crystals | A ghost of the swarm replays its path a moment behind it, collecting crystals the real swarm missed. | Ghost strength: 20% / 36% / 56% / 76% | L8: Two ghosts<br>L15: Three ghosts | - | Echo of the past |
+| 19 | **Stopwatch** | Field | Opposing vessels | Shots and vessels near the swarm move slower in its time bubble, so it can slip past them. | Slow: 10% / 22% / 37% / 52%<br>Radius: 80 u / 120 u / 170 u / 220 u | - | - | Time dilation |
+| 20 | **Second Look** | Cards | Omnicrystal | Reroll a hand of four cards. Rerolls recharge as you collect omnicrystals. | Omnicrystals per reroll: 5 / 3 / 1 / 1 | L15: Keep two cards from a hand instead of one | - | - |
 
 ## Space (20 cards)
 
-*Reach, shape and breaking: the swarm splits, spreads, teleports, eats through shields and bends the plane.*
+*Reach and geometry: the swarm reaches further and takes apart, steals or shrinks more of the enemy's prisms.*
 
-| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones |
-|---|---|---|---|---|---|---|
-| 1 | **Split** | Split | Any | The swarm splits. Each extra swarm chases the next objective on the toggle, and the camera frames them all. | Swarms: 2 for 8 s, every 30 s / 2, for good / 3 / 4 (one per objective) | L5: The split is permanent<br>L10: Three swarms<br>L15: Four swarms, one per objective |
-| 2 | **Wide Spread** | Reach | Opposing mass | Members spread out and cover more ground. | Swarm radius: 106% / 130% / 160% / 190% | - |
-| 3 | **Portal Hop** | Teleport | Omnicrystal | Every few seconds a portal opens at the objective and the swarm pours through it. | Cooldown: 24.0 s / 15.1 s / 8.4 s / 4.7 s<br>Range: 300 u / 500 u / 750 u / 1000 u | - |
-| 4 | **Phase Fold** | Pass | Any | Every 15 s the swarm folds out of phase and passes through prisms and vessels. | Fold lasts: 1.0 s / 2.2 s / 3.7 s / 5.2 s | - |
-| 5 | **Shield Eaters** | Breaker | Opposing mass | Members can bite shielded prisms. | Bites per shield: 6 / 3 / 1 / 1 | L10: Eaten shields come back as your shielded prisms |
-| 6 | **Hole Punch** | Breaker | Opposing mass | Each member bursts enemy prisms it flies through. | Prisms per member: 0.2/s / 0.6/s / 1.1/s / 1.6/s | - |
-| 7 | **Shockwave** | Burst | Opposing vessels | Every 10 s the swarm flares into an expanding ring that shoves vessels and bursts prisms. | Ring radius: 80 u / 140 u / 215 u / 290 u<br>Shove: 50 u/s / 110 u/s / 185 u/s / 260 u/s | - |
-| 8 | **Murmuration** | Decoy | Opposing vessels | The swarm swirls a huge shifting ghost cloud round itself. Enemy aim and AI lock onto the cloud instead of the swarm. | Shots fooled: 10% / 26% / 46% / 66% | - |
-| 9 | **Manta Sheet** | Form | Opposing mass | Every 20 s the swarm flattens into one wide manta that sweeps the plane, bursting every prism under its wings. | Wingspan: 150 u / 250 u / 375 u / 500 u<br>Manta lasts: 3.0 s / 4.2 s / 5.7 s / 7.2 s | - |
-| 10 | **Orbit Guard** | Defense | Opposing vessels | A share of the members orbit the centroid as a spinning ring that blocks shots. | Members on guard: 10% / 18% / 28% / 38%<br>Ring radius: 60 u / 84 u / 114 u / 144 u | - |
-| 11 | **Depth Dive** | 2.5D | Elemental crystals | Members may leave the plane to reach crystals and prisms above and below it. | Reach off the plane: 40 u / 100 u / 175 u / 250 u | - |
-| 12 | **Scouts** | Vision | Elemental crystals | Scouts fly ahead and mark crystals and enemies on the map. | Reveal radius: 300 u / 500 u / 750 u / 1000 u | L10: Marked crystals pull the swarm a little even off-objective |
-| 13 | **Wide Lens** | Camera | Any | The camera pulls back so you see more of the plane. | View span: 1460 u / 1700 u / 2000 u / 2300 u | L10: An edge arrow points to the objective |
-| 14 | **Shrink Ray** | Weird | Opposing vessels | Enemy vessels the swarm touches shrink: smaller hull, shorter trail, slower. | Shrink: 5% / 15% / 27% / 40%<br>Lasts: 2.0 s / 4.0 s / 6.5 s / 9.0 s | - |
-| 15 | **Mirror Swarm** | Copy | Any | A mirror-image swarm flies reflected across the camera's centre line, and it collects and hits for real. | Mirror strength: 25% / 45% / 70% / 95% | - |
-| 16 | **Slingshot** | Launch | Omnicrystal | When the objective is far, the swarm draws back and flings itself at it. | Fling distance: 200 u / 360 u / 560 u / 760 u<br>Cooldown: 12.0 s / 9.0 s / 6.2 s / 4.3 s | - |
-| 17 | **Whale Gulp** | Form | Opposing mass | Every 20 s the swarm becomes a whale mouth and gulps a cone of prisms in one bite. Gulped prisms feed breeding. | Cone length: 120 u / 200 u / 300 u / 400 u<br>Most prisms per gulp: 10 / 34 / 64 / 94 | - |
-| 18 | **Black Hole** | Ultimate | Any | Once per omnicrystal the swarm collapses into a black hole that pulls in and eats everything near it. | Black hole lasts: 2.0 s / 3.6 s / 5.6 s / 7.6 s<br>Pull radius: 150 u / 250 u / 375 u / 500 u | - |
-| 19 | **Blink Dodge** | Defense | Opposing vessels | A member about to be hit blinks a short hop aside. | Chance: 10% / 26% / 46% / 66% | - |
-| 20 | **Claim Zone** | Territory | Omnicrystal | Where the swarm lingers it claims a zone. Enemy prisms inside decay and yours grow. | Zone radius: 100 u / 180 u / 280 u / 380 u<br>Decay: 1.0 prisms/s / 3.0 prisms/s / 5.5 prisms/s / 8.0 prisms/s | - |
+**Space's job:** More range or more prisms you can destroy, steal or shrink. 16 of 20 cards do it; 10 of 20 play on its physics.
+
+| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones | Job | Physics |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **Annex** | Steal | Opposing mass | Enemy prisms a member touches change hands and become yours. | Steals per member: 0.10/s / 0.30/s / 0.55/s / 0.80/s | L10: Shielded prisms can be stolen and keep their shield | Steal | - |
+| 2 | **Tesseract** | Steal | Opposing mass | The swarm folds space and steals enemy prisms from a distance, as if they were right next to it. | Steal reach: 30 u / 70 u / 120 u / 170 u | L10: Two prisms per fold | Steal range | Folded space |
+| 3 | **Hole Punch** | Breaker | Opposing mass | Each member bursts enemy prisms it flies through. | Prisms per member: 0.2/s / 0.6/s / 1.1/s / 1.6/s | - | Destroy | - |
+| 4 | **Wide Bite** | Reach | Opposing mass | Members reach further when they break, steal or shrink a prism. | Member reach: 106% / 130% / 160% / 190% | - | Destroy and steal range | - |
+| 5 | **Shield Eaters** | Breaker | Opposing mass | Members can bite through shielded prisms. | Bites per shield: 6 / 3 / 1 / 1 | L10: One bite breaks a whole cluster of shielded prisms | Destroy | - |
+| 6 | **Shrink Ray** | Shrink | Opposing mass | Enemy prisms the swarm passes shrink, and so do enemy vessels it touches. | Shrink: 5% / 15% / 27% / 40%<br>Vessel shrink lasts: 2.0 s / 4.0 s / 6.5 s / 9.0 s | - | Shrink | Scale |
+| 7 | **Hubble Flow** | Shrink | Opposing mass | Space expands round the swarm. Nearby enemy prisms drift apart and shrink the longer they stay close. | Radius: 80 u / 128 u / 188 u / 248 u<br>Shrink rate: 2%/s / 6%/s / 11%/s / 16%/s | - | Shrink | Expanding space |
+| 8 | **Curvature** | Territory | Omnicrystal | Where the swarm lingers, space curves. Enemy prisms inside slide toward the centre and shrink. | Zone radius: 100 u / 180 u / 280 u / 380 u<br>Shrink rate: 1.0%/s / 3.0%/s / 5.5%/s / 8.0%/s | - | Shrink range | Curved spacetime |
+| 9 | **Black Hole** | Ultimate | Any | Once per omnicrystal the swarm collapses into a black hole that pulls in and eats every enemy prism near it. | Black hole lasts: 2.0 s / 3.6 s / 5.6 s / 7.6 s<br>Pull radius: 150 u / 250 u / 375 u / 500 u | - | Destroy range | Event horizon |
+| 10 | **Meteor Drop** | Slam | Opposing mass | Every few seconds one member leaves the plane, climbs, and slams down on the objective, bursting enemy prisms round where it lands. | Every: 8.0 s / 5.7 s / 3.8 s / 2.5 s<br>Blast radius: 30 u / 54 u / 84 u / 114 u | L10: Two meteors at a time | Destroy range | Impact |
+| 11 | **Shockwave** | Burst | Opposing vessels | Every 10 s the swarm flares into an expanding ring that bursts enemy prisms and shoves vessels. | Ring radius: 80 u / 140 u / 215 u / 290 u | - | Destroy range | Pressure wave |
+| 12 | **Orbital Scythe** | Orbit | Opposing mass | A share of members orbit the centroid at speed and cut every enemy prism on their circle. | Members in orbit: 10% / 18% / 28% / 38%<br>Orbit radius: 60 u / 84 u / 114 u / 144 u | - | Destroy range | Orbits |
+| 13 | **Manta Sheet** | Form | Opposing mass | Every 20 s the swarm flattens into one wide manta that sweeps the plane, bursting every enemy prism under its wings. | Wingspan: 150 u / 250 u / 375 u / 500 u<br>Manta lasts: 3.0 s / 4.2 s / 5.7 s / 7.2 s | - | Destroy range | - |
+| 14 | **Whale Gulp** | Form | Opposing mass | Every 20 s the swarm becomes a whale mouth and gulps a cone of enemy prisms in one bite. Gulped prisms feed breeding. | Cone length: 120 u / 200 u / 300 u / 400 u<br>Most prisms per gulp: 10 / 34 / 64 / 94 | - | Destroy amount | - |
+| 15 | **Depth Dive** | 2.5D | Opposing mass | Members may leave the plane to break and steal prisms above and below it. | Reach off the plane: 40 u / 100 u / 175 u / 250 u | - | Destroy and steal range | A third dimension |
+| 16 | **Mirror Swarm** | Copy | Opposing mass | A mirror-image swarm flies reflected across the camera's centre line and breaks enemy prisms for real. | Mirror strength: 25% / 45% / 70% / 95% | - | Destroy amount | Reflection |
+| 17 | **Split** | Split | Any | The swarm splits. Each extra swarm chases the next objective on the toggle, and the camera frames them all. | Swarms: 2 for 8 s, every 30 s / 2, for good / 3 / 4 (one per objective) | L5: The split is permanent<br>L10: Three swarms<br>L15: Four swarms, one per objective | - | - |
+| 18 | **Murmuration** | Decoy | Opposing vessels | The swarm swirls a huge shifting ghost cloud round itself. Enemy aim and AI lock onto the cloud instead of the swarm. | Shots fooled: 10% / 26% / 46% / 66% | - | - | - |
+| 19 | **Scouts** | Vision | Elemental crystals | Scouts fly ahead and mark crystals and enemies on the map. | Reveal radius: 300 u / 500 u / 750 u / 1000 u | L10: Marked crystals pull the swarm a little even off-objective | - | - |
+| 20 | **Wide Lens** | Camera | Any | The camera pulls back so you see more of the plane. | View span: 1460 u / 1700 u / 2000 u / 2300 u | L10: An edge arrow points to the objective | - | - |
 
 ## Charge (20 cards)
 
-*Fighting and petals: the swarm shoots, stings, shocks and turns into weapons.*
+*Current, fields and lightning: the swarm silences rivals, kills fauna and knocks the crystals out of other vessels.*
 
-| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones |
-|---|---|---|---|---|---|---|
-| 1 | **Lasers** | Weapon | Opposing vessels | Members fire lasers at the nearest enemy prism or vessel. | Members armed: 9% / 35% / 67% / 100%<br>Range: 120 u / 180 u / 255 u / 330 u | L10: Beams pierce<br>L15: Beams on one vessel merge into one big beam |
-| 2 | **Danger Swarm** | Danger | Opposing vessels | A share of members are danger prisms. A rival that touches one is slowed and loses a petal. | Danger members: 7% / 33% / 66% / 100% | - |
-| 3 | **Chain Lightning** | Weapon | Opposing mass | Every hit arcs on to nearby targets. | Jumps: 1 / 3 / 5 / 8 | - |
-| 4 | **Sting** | Weapon | Opposing vessels | Members within reach dive at enemy vessels. Enough stings take a petal. | Stings per petal: 12 / 6 / 3 / 1<br>Reach: 80 u / 120 u / 170 u / 220 u | - |
-| 5 | **Kamikaze** | Burst | Opposing mass | Members that hit an enemy explode, bursting prisms round them. | Blast radius: 20 u / 40 u / 65 u / 90 u<br>Chance the member lives: 0% / 20% / 45% / 70% | - |
-| 6 | **Plasma Net** | Trap | Opposing vessels | Members link into a plasma net. An enemy that crosses a strand is stunned. | Stun: 0.3 s / 0.7 s / 1.2 s / 1.7 s<br>Strand length: 40 u / 72 u / 112 u / 152 u | - |
-| 7 | **Wasp** | Form | Opposing vessels | Every 20 s the swarm fuses into a giant wasp that lunges at the nearest enemy vessel with its stinger. | Lunge range: 200 u / 320 u / 470 u / 620 u | L1: Lunge takes 1 petal<br>L8: Lunge takes 2 petals<br>L15: Lunge takes 3 petals |
-| 8 | **Static Shield** | Defense | Opposing vessels | Hits on the swarm are soaked up as static, and the stored charge powers your other Charge cards. | Hits soaked: 10% / 26% / 46% / 66% | - |
-| 9 | **Tesla Coil** | Weapon | Opposing mass | Every few seconds the centroid zaps the nearest enemy prisms. | Zaps per pulse: 1 / 3 / 5 / 8<br>Every: 3.0 s / 2.2 s / 1.6 s / 1.1 s | - |
-| 10 | **Polarity** | Push | Opposing vessels | The swarm repels enemy vessels like a matching magnet pole, shoving them off its path. | Push radius: 60 u / 100 u / 150 u / 200 u | L10: Repelled vessels drop crystals |
-| 11 | **Frenzy** | Hunt | Opposing vessels | When an enemy vessel is under half its petals, the swarm smells it and gets faster and harder-hitting near it. | Bonus: 10% / 30% / 55% / 80% | - |
-| 12 | **Spark Trail** | Trap | Opposing vessels | The swarm leaves a crackling trail. An enemy that crosses it is slowed. | Trail lasts: 2.0 s / 4.0 s / 6.5 s / 9.0 s<br>Slow: 10% / 22% / 37% / 52% | - |
-| 13 | **Missiles** | Weapon | Opposing vessels | Every few seconds members launch as homing missiles at enemy vessels. | Missiles per volley: 1 / 3 / 5 / 8<br>Every: 8.0 s / 6.5 s / 5.0 s / 3.9 s | - |
-| 14 | **Overcharge** | Burst | Elemental crystals | Each crystal collected charges the swarm. At full charge it lets out a big blast round the centroid. | Crystals to full: 10 / 5 / 3 / 1<br>Blast radius: 100 u / 180 u / 280 u / 380 u | - |
-| 15 | **Mind Control** | Weird | Opposing vessels | A vessel swarmed by enough members is hijacked and flies where your plane points for a moment. | Hijack lasts: 0.5 s / 1.3 s / 2.3 s / 3.3 s<br>Members needed: 20 / 14 / 9 / 6 | - |
-| 16 | **Thunderhead** | Form | Opposing mass | Every 25 s the swarm puffs into a storm cloud that rains lightning on everything under it. | Cloud lasts: 3.0 s / 4.6 s / 6.6 s / 8.6 s<br>Strikes: 2.0/s / 4.4/s / 7.4/s / 10.4/s | - |
-| 17 | **Bounty** | Economy | Opposing vessels | Each petal the swarm takes hatches new members. | Members per petal: 1 / 3 / 5 / 8 | L10: A knockout drops an omnicrystal |
-| 18 | **EMP** | Disable | Opposing vessels | Every 20 s the swarm pulses an EMP that switches off enemy abilities in range. | Abilities off for: 0.5 s / 1.3 s / 2.3 s / 3.3 s<br>Radius: 120 u / 180 u / 255 u / 330 u | - |
-| 19 | **Thorns** | Defense | Opposing vessels | An enemy that kills a member may get a shock back that stuns it for half a second. | Chance: 5% / 25% / 50% / 75% | - |
-| 20 | **Dragon** | Form | Opposing mass | Every 25 s the swarm becomes a long serpent dragon that breathes a cone of plasma, bursting prisms and scorching vessels. | Breath length: 100 u / 180 u / 280 u / 380 u<br>Dragon lasts: 3.0 s / 4.6 s / 6.6 s / 8.6 s | L15: The breath takes a petal a second |
+**Charge's job:** Silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels. 15 of 20 cards do it; 12 of 20 play on its physics.
+
+| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones | Job | Physics |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **EMP** | Silence | Opposing vessels | Every 20 s the swarm pulses an EMP that silences enemy Charge and Space abilities in range. | Silenced for: 0.5 s / 1.3 s / 2.3 s / 3.3 s<br>Radius: 120 u / 180 u / 255 u / 330 u | - | Silence | Electromagnetic pulse |
+| 2 | **Lightning Rod** | Silence | Opposing vessels | One member stands as a lightning rod. Enemy Charge abilities fired near the swarm are drawn into it and fizzle. | Draw radius: 60 u / 108 u / 168 u / 228 u<br>Rods: 1 / 1 / 2 / 3 | - | Silence | Grounding |
+| 3 | **Plasma Net** | Silence | Opposing vessels | Members link into a plasma net. An enemy that crosses a strand is stunned and its Charge and Space abilities go quiet. | Stunned for: 0.3 s / 0.7 s / 1.2 s / 1.7 s<br>Strand length: 40 u / 72 u / 112 u / 152 u | - | Silence | Plasma |
+| 4 | **Thorns** | Silence | Opposing vessels | An enemy that kills a member may get a shock back that silences it for half a second. | Chance: 5% / 25% / 50% / 75% | - | Silence | Static discharge |
+| 5 | **Static Members** | Drain | Opposing vessels | Members carry static. A rival that brushes one has its Charge element drained. | Charge drained per touch: 2% / 6% / 11% / 16% | L10: The drained charge feeds your other Charge cards | Strip elements | Static charge |
+| 6 | **Short Circuit** | Strip | Opposing vessels | A vessel swarmed by enough members shorts out and drops elemental crystals, which your swarm can collect. | Members needed: 16 / 11 / 7 / 4<br>Crystals knocked loose: 1 / 2 / 3 / 4 | - | Strip crystals | Short circuit |
+| 7 | **Polarity** | Push | Opposing vessels | The swarm repels enemy vessels like a matching magnet pole, shoving them off its path. | Push radius: 60 u / 100 u / 150 u / 200 u | L10: Repelled vessels drop elemental crystals | Strip crystals | Magnetism |
+| 8 | **Dragon** | Form | Opposing vessels | Every 25 s the swarm becomes a long serpent dragon that breathes a cone of plasma. Vessels it scorches lose elemental crystals; fauna in it burn. | Breath length: 100 u / 180 u / 280 u / 380 u<br>Dragon lasts: 3.0 s / 4.6 s / 6.6 s / 8.6 s | L15: The breath takes a petal a second | Strip crystals and kill fauna | - |
+| 9 | **Chain Lightning** | Weapon | Any | The swarm's hits arc on from target to target through fauna and vessels. | Jumps: 1 / 3 / 5 / 8 | - | Kill fauna | Arc discharge |
+| 10 | **Tesla Coil** | Weapon | Any | Every few seconds the centroid zaps the nearest fauna. | Zaps per pulse: 1 / 3 / 5 / 8<br>Every: 3.0 s / 2.2 s / 1.6 s / 1.1 s | - | Kill fauna | Resonant coil |
+| 11 | **Thunderhead** | Form | Any | Every 25 s the swarm puffs into a storm cloud that rains lightning on the fauna and vessels under it. | Cloud lasts: 3.0 s / 4.6 s / 6.6 s / 8.6 s<br>Strikes: 2.0/s / 4.4/s / 7.4/s / 10.4/s | - | Kill fauna | Storm charge separation |
+| 12 | **Lasers** | Weapon | Opposing vessels | Members fire lasers at the nearest fauna or enemy vessel. | Members armed: 9% / 35% / 67% / 100%<br>Range: 120 u / 180 u / 255 u / 330 u | L10: Beams pierce<br>L15: Beams on one vessel merge into one big beam | Kill fauna | - |
+| 13 | **Overcharge** | Burst | Elemental crystals | Each crystal collected charges the swarm. At full charge it lets out a blast that kills fauna round it and silences vessels. | Crystals to full: 10 / 5 / 3 / 1<br>Blast radius: 100 u / 180 u / 280 u / 380 u | - | Kill fauna and silence | Capacitor |
+| 14 | **Spark Trail** | Trap | Opposing vessels | The swarm leaves a crackling trail. An enemy that crosses it is slowed and its abilities sputter. | Trail lasts: 2.0 s / 4.0 s / 6.5 s / 9.0 s<br>Slow: 10% / 22% / 37% / 52% | - | Silence | Live current |
+| 15 | **Kamikaze** | Burst | Opposing vessels | Members that hit an enemy vessel or fauna explode in a spark that silences what it touches. | Blast radius: 20 u / 40 u / 65 u / 90 u<br>Chance the member lives: 0% / 20% / 45% / 70% | - | Silence and kill fauna | - |
+| 16 | **Sting** | Weapon | Opposing vessels | Members within reach dive at enemy vessels. Enough stings take a petal. | Stings per petal: 12 / 6 / 3 / 1<br>Reach: 80 u / 120 u / 170 u / 220 u | - | - | - |
+| 17 | **Wasp** | Form | Opposing vessels | Every 20 s the swarm fuses into a giant wasp that lunges at the nearest enemy vessel with its stinger. | Lunge range: 200 u / 320 u / 470 u / 620 u | L1: Lunge takes 1 petal<br>L8: Lunge takes 2 petals<br>L15: Lunge takes 3 petals | - | - |
+| 18 | **Missiles** | Weapon | Opposing vessels | Every few seconds members launch as homing missiles at enemy vessels. | Missiles per volley: 1 / 3 / 5 / 8<br>Every: 8.0 s / 6.5 s / 5.0 s / 3.9 s | - | - | - |
+| 19 | **Frenzy** | Hunt | Opposing vessels | When an enemy vessel is under half its petals, the swarm smells it and hits harder near it. | Bonus: 10% / 30% / 55% / 80% | - | - | - |
+| 20 | **Mind Control** | Weird | Opposing vessels | A vessel swarmed by enough members is hijacked and flies where your plane points for a moment. | Hijack lasts: 0.5 s / 1.3 s / 2.3 s / 3.3 s<br>Members needed: 20 / 14 / 9 / 6 | - | - | - |
+
+## What changed since revision 1
+
+| Card | Change |
+|---|---|
+| Mass: **Danger Drip** | Was Sticky Tar. Your note: just use danger prisms. |
+| Mass: **Conservation of Mass** | Was Martyr Bricks. |
+| Mass: **Inertial Wall** | Was Wall Weavers. |
+| Mass: **Accretion Disk** | Was Fortress. |
+| Mass: **Snowball** | It rolled up enemy prisms, which is Space's job. It now builds your own. |
+| Mass: **Density** | New. Replaces Stampede, which flattened prisms (Space's job). |
+| Mass: **Neutron Star** | It ploughed through prisms (Space's job). It now leaves a supershielded core. |
+| Mass: **Golem** | Its stomp burst prisms (Space's job). It now builds. |
+| Mass: **Supershield Core** | New. Replaces Mitosis Feast, which ate enemy prisms (Space's job). |
+| Mass: **Gravity Well** | It pulled enemy prisms in (a step toward stealing, Space's job). It now shields yours. |
+| Mass: **Bulk Up** | Its L10 shoved prisms aside (Space's job). It now shoves vessels. |
+| Mass: **Critical Mass** | New. Meteor Drop moved to Space, as you noted. |
+| Time: **Hummingbird** | It also sipped prisms (Space's job). It now hovers and turns. |
+| Time: **Lead Time** | New. Replaces Hourglass (your note: not multiplayer friendly). |
+| Time: **Skip Ahead** | Was Portal Hop in Space. Getting somewhere is Time's job. |
+| Time: **Blink Step** | Was Blink Dodge in Space. |
+| Time: **Out of Phase** | Was Phase Fold in Space. |
+| Time: **Slingshot** | Moved from Space. |
+| Time: **Metronome** | Its beat made members hit harder (destroying more is Space's job). The beat is now a speed surge. |
+| Time: **Echo Swarm** | Ghosts no longer hit prisms (Space's job). |
+| Space: **Wide Bite** | Was Wide Spread. It now widens the reach of every Space card. |
+| Space: **Shrink Ray** | It shrank only vessels. It now shrinks prisms too. |
+| Space: **Hubble Flow** | New. |
+| Space: **Curvature** | Was Claim Zone. Your prisms no longer grow in it (Mass's job). |
+| Space: **Meteor Drop** | Moved from Mass, as you noted. |
+| Space: **Orbital Scythe** | Was Orbit Guard, which blocked shots (shielding is Mass's job). |
+| Charge: **Lightning Rod** | New. Replaces Static Shield (soaking hits is shielding, Mass's job). |
+| Charge: **Static Members** | Was Danger Swarm (making danger prisms is Mass's job). |
+| Charge: **Short Circuit** | New. Replaces Bounty. |
+| Charge: **Dragon** | Its breath burst prisms (Space's job). It now strips crystals and burns fauna. |
+| Charge: **Tesla Coil** | It zapped enemy prisms (Space's job). It now zaps fauna. |
+| Charge: **Thunderhead** | It struck prisms too (Space's job). |
+| Charge: **Lasers** | It also shot prisms (Space's job). |
+| Charge: **Kamikaze** | Its blast burst prisms (Space's job). |
+| Charge: **Frenzy** | It also made the swarm faster (speed is Time's job). |

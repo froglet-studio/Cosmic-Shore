@@ -1,8 +1,8 @@
-# Swarm Card Vessel: the 80 cards (revision 1, 2026-10-20)
+# Swarm Card Vessel: the 80 cards (revision 2, 2026-10-20)
 
 **Review page:** https://claude.ai/artifact/QB2oYkL8P8Cv7KPGyhdHp2 (filter by element or objective, drag the level slider, mark each card Keep / Tweak / Cut with a note; the next revision reads those marks).
 **Data:** `Docs/Studios/SwarmCardVessel/cards.py` is the single source; `python3 Docs/Studios/SwarmCardVessel/build.py` writes this file, `cards.json` and the page (`Docs/Studios/SwarmDeck.html`).
-**Status:** design list only. Nothing is in the lab or in Unity yet. Garrett reviews this list, then revision 2.
+**Status:** design list only. Nothing is in the lab or in Unity yet. Revision 2 answers Garrett's first review; he reviews again.
 
 ## The vessel (Garrett's brief, 2026-10-20, captured as context; not built yet)
 
@@ -14,6 +14,22 @@ The second swarm vessel after the Shepherd ([SWARM_VESSEL_LAB.md](SWARM_VESSEL_L
 - **Objective toggle.** The swarm travels in the plane toward one of: **Omnicrystal**, **Elemental crystals**, **Opposing vessels**, **Opposing mass**. Each card below names the objective it works best with.
 - **Card draw.** Collecting an omnicrystal draws four cards, one per element. Playing one discards the other three. The next omnicrystal draws four new cards.
 - **Levels.** Each element has 20 cards, and each card goes from level 1 to 15. Upgrading an element means the cards you draw for it already arrive at that level. Drawing a card you already have adds its level to the one you hold.
+
+## Revision 2 rules (Garrett, 2026-10-20)
+
+Each element owns a job, and no card of another element does that job:
+
+| Element | Its job (no other element does this) |
+|---|---|
+| Mass | Prism production (danger or base), shielding, supershielding |
+| Time | Your maneuverability, speed, positioning and movement |
+| Space | More range or more prisms you can destroy, steal or shrink |
+| Charge | Silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels |
+
+- At least half of each element's cards do its job (the **Job** column).
+- At least half lean on the element's real physics (the **Physics** column): gravity, inertia and density for Mass; dilation, rewinds and phase for Time; folded, curved and expanding space for Space; static, arcs and magnetism for Charge.
+- Exotic effects outside these jobs are welcome, as long as they do not take another element's job. `build.py` fails if an element drops under 10 in either column.
+- Garrett's page notes: Meteor Drop moved to Space, Sticky Tar became Danger Drip, Hourglass was replaced (not multiplayer friendly). The full list of changes is at the end.
 
 ## How to read the scaling
 
