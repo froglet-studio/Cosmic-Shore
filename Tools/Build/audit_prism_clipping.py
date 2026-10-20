@@ -134,7 +134,9 @@ def scale_window(prefab, fid, shape):
     if admits_authored_scale(shape):
         return None
     body = rcb.docs(rcb.read(prefab))[str(fid)][1]
-    prism = rcb.ref(body, "prism") or rcb.ref(body, "leafPrefab")
+    # The field a shape lays its prism through: most call it `prism`, the older shapes still
+    # serialize it under its pre-rename name `trailBlock` (FormerlySerializedAs), the base `leafPrefab`.
+    prism = rcb.ref(body, "prism") or rcb.ref(body, "trailBlock") or rcb.ref(body, "leafPrefab")
     if prism is None:
         return None
     for _, (cls, b) in rcb.docs(rcb.read(prism)).items():
