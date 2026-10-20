@@ -1,4 +1,4 @@
-// Runs the SHIPPED ThresherHullForm offline: the parts the swim animates all exist, every face is
+// Runs the SHIPPED ThresherHullForm offline: the parts the tail animates all exist, every face is
 // wound outward (a parity ray test inside each closed piece — the hull has non-convex pieces: the
 // hitch is a torus, the scythe a curved blade), the scythe's segments join end to end, the hitch sits
 // under the tail fork, the hull is the size of the Squirrel it replaced, every element moves the hull,
@@ -132,51 +132,76 @@ static class Driver
             Check(hits % 2 == 1, "negative control: the parity test flags a flipped body face");
         }
 
-        // The swim (ThresherSwimMath): the tail posed as a chain never opens a joint, at rest it is the rest
-        // pose, a full beat reads at chase distance (rule 24: tens of degrees, not a handful), the wave
-        // reaches the tip last, and a turn swings the tail OUT of it.
+        // The tail (ThresherSwimMath, 2026-10-19: no beat, the last links of the cord): posed as a chain it never
+        // opens a joint; flying straight it never leaves its rest; a cord to the side lays it along the cord at a
+        // phone's 30 fps as at 144; a cord dead ahead is not followed (no flip); a turn sways it and it settles.
         {
-            var swim = ThresherSwimMath.Defaults;
+            var tail = ThresherSwimMath.Defaults;
             var tailBase = parts.First(p => p.Kind == ThresherHullForm.PartKind.TailBase);
             int n = 1 + lobes.Count;
             var rest = new Vector3[n]; rest[0] = tailBase.Pivot;
             for (int k = 0; k < lobes.Count; k++) rest[k + 1] = lobes[k].Pivot;
-            var yaws = new float[n]; var local = new Quaternion[n]; var pos = new Vector3[n]; var rot = new Quaternion[n];
-            float worstJoint = 0f, worstTip = 0f, peakPhaseTip = 0f, peakPhaseRoot = 0f, bestTip = -1f, bestRoot = -1f;
             Vector3 tipRest = ThresherHullForm.LobePoint(s, 1f);
+            Vector3 restDir = tipRest - rest[0];
+            float tailLength = restDir.magnitude;
+            var rot = new Quaternion[n]; var pos = new Vector3[n];
+            var joints = new ThresherSwimMath.Joint[n]; var yawT = new float[n]; var pitchT = new float[n];
+
+            float worstJoint = 0f;
             for (int i = 0; i < 360; i++)
             {
-                float phase = i * Mathf.PI * 2f / 360f;
-                ThresherSwimMath.JointYaws(swim, phase, 1f, 0f, 0f, 0f, 1f, yaws);
-                for (int j = 0; j < n; j++) local[j] = Quaternion.AngleAxis(yaws[j], Vector3.up);
-                ThresherSwimMath.PoseChain(rest, local, pos, rot);
-                // Each segment's END, carried by its own pose, must land on the next segment's pivot.
+                for (int j = 0; j < n; j++)
+                    rot[j] = ThresherSwimMath.JointRotation(new ThresherSwimMath.Joint { Yaw = 100f * Mathf.Sin(i * 0.05f + j), Pitch = 45f * Mathf.Cos(i * 0.07f - j) });
+                ThresherSwimMath.PoseChain(rest, rot, pos);
                 for (int k = 0; k + 1 < n; k++)
-                {
-                    var end = pos[k] + rot[k] * (rest[k + 1] - rest[k]);
-                    worstJoint = Math.Max(worstJoint, (end - pos[k + 1]).magnitude);
-                }
-                var tip = pos[n - 1] + rot[n - 1] * (tipRest - rest[n - 1]);
-                var a = tipRest - rest[0]; var b = tip - pos[0];
-                float ang = Mathf.Acos(Mathf.Clamp(Vector3.Dot(new Vector3(a.x, 0f, a.z).normalized, new Vector3(b.x, 0f, b.z).normalized), -1f, 1f)) * Mathf.Rad2Deg;
-                worstTip = Math.Max(worstTip, ang);
-                if (yaws[n - 1] > bestTip) { bestTip = yaws[n - 1]; peakPhaseTip = phase; }
-                if (yaws[0] > bestRoot) { bestRoot = yaws[0]; peakPhaseRoot = phase; }
+                    worstJoint = Math.Max(worstJoint, (pos[k] + rot[k] * (rest[k + 1] - rest[k]) - pos[k + 1]).magnitude);
             }
-            Check(worstJoint < 1e-4f, $"a beating tail never opens a joint (worst {worstJoint:E1} u)");
-            Console.WriteLine($"  full beat: tip swings +-{worstTip:F1} deg about the peduncle");
-            Check(worstTip > 25f && worstTip < 80f, "a full beat reads at chase distance (25-80 deg at the tip)");
-            Check(peakPhaseTip > peakPhaseRoot, "the wave reaches the tip after the root");
-            ThresherSwimMath.JointYaws(swim, 0f, 0f, 0f, 0f, 0f, 1f, yaws);
-            for (int j = 0; j < n; j++) local[j] = Quaternion.AngleAxis(0f, Vector3.up);
-            ThresherSwimMath.PoseChain(rest, local, pos, rot);
-            float restErr = 0f; for (int j = 0; j < n; j++) restErr = Math.Max(restErr, (pos[j] - rest[j]).magnitude);
-            Check(restErr < 1e-6f, "zero yaw poses the rest hull");
-            // Right turn (+1): every joint's steer term is negative, i.e. the tail swings to the LEFT, out of the turn.
-            var steerOnly = swim; steerOnly.BaseSwingDegrees = 0f; steerOnly.LobeSwingDegrees = 0f;
-            ThresherSwimMath.JointYaws(steerOnly, 0f, 1f, 1f, 0f, 0f, 1f, yaws);
-            Check(yaws.All(y => y < 0f) && Math.Abs(yaws.Sum() + swim.TurnSwingDegrees) < 1e-3f,
-                  $"a full right turn swings the tail {-yaws.Sum():F1} deg out of it (TurnSwingDegrees)");
+            Check(worstJoint < 1e-4f, $"a bending tail never opens a joint (worst {worstJoint:E1} u)");
+
+            ThresherSwimMath.CordBend(tail, restDir, restDir * 3f, tailLength, out float by, out float bp);
+            ThresherSwimMath.JointTargets(by, bp, yawT, pitchT);
+            float drift = 0f;
+            for (int f = 0; f < 600; f++)
+            {
+                ThresherSwimMath.Step(tail, joints, yawT, pitchT, 0f, 0f, 0f, 1f / 60f);
+                foreach (var j in joints) drift = Math.Max(drift, Math.Abs(j.Yaw) + Math.Abs(j.Pitch));
+            }
+            Check(drift < 1e-5f, $"flying straight, the cord behind, the tail never wiggles (worst {drift:E1} deg over 10 s)");
+
+            Vector3 side = new Vector3(-restDir.z, 0f, restDir.x);   // the rest line turned square, to the pilot's right (+X)
+            float Settle(float fps, Vector3 toCord, out float bend)
+            {
+                var js = new ThresherSwimMath.Joint[n];
+                ThresherSwimMath.CordBend(tail, restDir, toCord, tailLength, out bend, out float pitch);
+                ThresherSwimMath.JointTargets(bend, pitch, yawT, pitchT);
+                for (int f = 0; f < (int)Math.Round(4f * fps); f++)
+                    ThresherSwimMath.Step(tail, js, yawT, pitchT, 0f, 0f, 0f, 1f / fps);
+                return js[n - 1].Yaw;
+            }
+            Vector3 backRight = (restDir.normalized + side.normalized) * 10f;
+            float phone = Settle(30f, backRight, out float bend45), pc = Settle(144f, backRight, out _);
+            Console.WriteLine($"  cord 45 deg to the right: bend {bend45:F1} deg; tip settles at {phone:F2} (30 fps) / {pc:F2} (144 fps)");
+            Check(bend45 < -40f && Math.Abs(phone - bend45) < 0.5f && Math.Abs(phone - pc) < 0.5f,
+                  "a cord to the right lays the tip along it, the same at 30 and 144 fps");
+            float planted = Settle(60f, side * 10f, out float bend90);
+            Console.WriteLine($"  planted (cord square to the right): tip at {planted:F1} deg");
+            Check(planted < -60f && planted > -tail.MaxYawDegrees - 1f, "planted, the tail swings round toward the ball (fleet-scale, rule 24)");
+
+            float ahead = ThresherSwimMath.CordBend(tail, restDir, -restDir * 3f + side * 0.01f, tailLength, out float ya, out _);
+            ThresherSwimMath.CordBend(tail, restDir, -restDir * 3f - side * 0.01f, tailLength, out float yb, out _);
+            Check(ahead == 0f && ya == 0f && yb == 0f, "a cord dead ahead is not followed, from either side (no flip)");
+
+            var zero = new float[n];
+            joints = new ThresherSwimMath.Joint[n];
+            for (int f = 0; f < 30; f++) ThresherSwimMath.Step(tail, joints, zero, zero, 2f, 0f, 0f, 1f / 60f);
+            float lag = joints[n - 1].Yaw, sway = 0f;
+            for (int f = 0; f < 300; f++)
+            {
+                ThresherSwimMath.Step(tail, joints, zero, zero, 0f, 0f, 0f, 1f / 60f);
+                sway = Math.Max(sway, joints[n - 1].Yaw);
+            }
+            Console.WriteLine($"  half a second of a 120 deg/s right turn: tip lags {lag:F1} deg, sways {sway:F1} past straight, settles at {joints[n - 1].Yaw:F3}");
+            Check(lag < -5f && sway > 0.5f && Math.Abs(joints[n - 1].Yaw) < 0.05f, "a turn drags the tail, it sways back past straight, and settles");
         }
 
         // The wrecking ball (ThresherBallForm): an 80-facet core and twelve closed spikes, every face wound

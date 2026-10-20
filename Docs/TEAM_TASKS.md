@@ -1147,3 +1147,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Andrew (QA); Yash could also take it
 - **Added:** 2026-10-19 by Caleb (`claude/fix-breakwater-preview-controls-3evnnj`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Breakwater preview — one-thumb flight), Assets/_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md
+
+### T-20261019-3b72 · open · test · Thresher
+- **Task:** Fly the Thresher on cece/elegant-goldberg-eanwgx, on a phone and in the Editor: the tail no longer beats - it hangs along the chain, lags a hard turn, sways back past straight and settles; lifting the thumb eases the bank flat instead of snapping it; planted, the tail swings round to the ball. In Thresher Time (and Skim Race, and an arcade preview) swing the BALL through the lit ring while the hull passes outside it - the ring counts.
+- **Done when:** THRESHER.md In-editor verification H2-H4b and THRESHERTIME.md step 9 pass on a phone build and in the Editor, with ThresherHullFormTests and RingThreadProbeTests green
+- **Who can take it:** Garrett (owner's eye, the mobile run); Yash (offered) can run the Editor steps and the two test fixtures
+- **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b

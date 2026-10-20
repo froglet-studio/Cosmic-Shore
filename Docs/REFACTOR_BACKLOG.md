@@ -66,7 +66,7 @@ which is `#if false`).
   nested `enum Placement` in the editor-only `CrystalFlipWaveBenchmarkWindow.cs:42` (2026-10-08).
   A permanently red gate stops being read.
 
-## 1. Quick wins — S (28)
+## 1. Quick wins — S (29)
 
 | # | Refactor | Kind | Evidence | Notes |
 |---|---|---|---|---|
@@ -98,6 +98,7 @@ which is `#if false`).
 | S26 | `AIPilot.cs` `#region Unused Methods` | Vestige | `AIPilot.cs:1381` | |
 | S27 | `CoOpScoreBoard.OppponentScoreTextField` typo | Honesty | `CoOpScoreBoard.cs:9` | `[FormerlySerializedAs]` |
 | S28 | Docs honesty pass: close/re-measure the stale rows above (H1–H8) | Honesty | see "What the docs were wrong about" | Docs-only |
+| S29 | Ease the stick terms in `StoatAnimation` and `AnglerAnimation` (the Thresher, Shrike and Brittle Star pattern: `Lerp(_yaw, yaw, 1 - Exp(-10·dt))`) | Consistency | `TouchInputStrategy` sets `InputStatus.Idle = true` the frame every thumb lifts (`:216-219`), and `VesselAnimation.Update` then calls `Idle()` INSTEAD of puppetry; both hulls' `Idle()` is `Drive(0…)` and their poses take the raw stick: `StoatAnimation:322,328,338` (`yaw * turnBendDegrees / headTurnDegrees / tailSwingDegrees`), `AnglerAnimation:165,167,172` (`yaw * turnTailDegrees`, `pitch * finPitchDegrees`). So on a phone a turn's bend/tail swing SNAPS to rest in one frame on touch-lift. Found by the Thresher's mobile report, 2026-10-19 (`cece/elegant-goldberg-eanwgx`); Scarab and Riptide not checked | A fix, not a design gap. Re-check on a phone after: lift the thumb mid-turn, the pose eases back |
 
 ## 2. Bounded — M (20)
 

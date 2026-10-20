@@ -21,8 +21,9 @@ remove_instance, dangling_refs, ...):
     - ADDS ThresherBody (non-trigger box + ImpactCollider, layer Default) and ThresherHitbox (trigger box,
       layer Ships) - the two shapes the FBX's two GameObjects carried, sized to the shark.
     - SWAPS the root's VesselAnimation from the clone's MantaAnimationContoller to ThresherAnimation on the
-      SAME fileID (so VesselStatus's reference holds); the swim's numbers are the C# initializers
-      (ThresherSwimMath.Default*), only the base fields and cruiseSpeed are written.
+      SAME fileID (so VesselStatus's reference holds); the tail's numbers are the C# initializers
+      (ThresherSwimMath.Default*), only the base fields and hullRoot are written. (cruiseSpeed was written too
+      until 2026-10-19, when the tail stopped beating with speed and the field went.)
     - POINTS VesselCustomization's paint at the hull (which resolves to the model's SkinnedMeshRenderer) and
       names GreenAccentVesselMaterial - what the model's Domain slot is remapped to - as the material the domain
       colour replaces (paint by identity, FLEET_CONVENTION 3.3).
@@ -203,23 +204,14 @@ def hull_blocks() -> str:
 
 def animation_block() -> str:
     """The root's VesselAnimation, switched to ThresherAnimation on the SAME fileID. The base fields keep their
-    authored values; the swim is the C# initializers (ThresherSwimMath.Default*), except cruiseSpeed, which is
-    the hull's own DefaultThrottleScaler and is written so a retune of the prefab shows up here."""
+    authored values; the tail is the C# initializers (ThresherSwimMath.Default*)."""
     return (S.mb_header(ANIMATION_ID, ROOT_GO, ANIMATION_SCRIPT) +
             "  SkinnedMeshRenderer: {fileID: 0}\n"
             "  SaveNewPositions: 1\n"
             "  brakeThreshold: 0.65\n"
             "  lerpAmount: 2\n"
             "  smallLerpAmount: 0.7\n"
-            f"  cruiseSpeed: {S.num(cruise_speed_placeholder())}\n"
             f"  hullRoot: {{fileID: {HULL_TRANSFORM_ID}}}\n")
-
-
-_CRUISE = [110.0]
-
-
-def cruise_speed_placeholder() -> float:
-    return _CRUISE[0]
 
 
 def collider_blocks() -> str:
@@ -312,16 +304,8 @@ def rehome_jet(docs, inst_fid, side):
     S.set_doc(docs, inst_fid, chunk)
 
 
-def read_cruise(text: str) -> float:
-    m = re.search(r"^  DefaultThrottleScaler: ([-\d.]+)$", text, re.M)
-    if not m:
-        raise RuntimeError("Thresher.prefab drifted: DefaultThrottleScaler not found on its transformer")
-    return float(m.group(1))
-
-
 def apply_prefab(text: str) -> str:
     """The own-vessel pass on the committed prefab. Idempotent; raises on a drifted anchor."""
-    _CRUISE[0] = read_cruise(text)
     head, docs = S.split_docs(text)
 
     # 1. The hull goes in FIRST (the kept jets are re-parented onto its transform).
@@ -422,8 +406,8 @@ def check_prefab(text: str):
     anim = S.get_doc(S.split_docs(text)[1], ANIMATION_ID)
     if not anim or ANIMATION_SCRIPT not in anim:
         errs.append("the root's VesselAnimation is not ThresherAnimation")
-    elif f"  cruiseSpeed: {S.num(read_cruise(text))}\n" not in anim:
-        errs.append("ThresherAnimation.cruiseSpeed is not the hull's DefaultThrottleScaler")
+    elif "  cruiseSpeed: " in anim:
+        errs.append("ThresherAnimation still carries cruiseSpeed, retired 2026-10-19 (re-run the pass)")
     elif f"  hullRoot: {{fileID: {HULL_TRANSFORM_ID}}}\n" not in anim:
         errs.append("ThresherAnimation.hullRoot is not ThresherHull")
     if not re.search(r"  _shipGeometries:\n  - \{fileID: %s\}\n(?!  - )" % HULL_GO_ID, text):

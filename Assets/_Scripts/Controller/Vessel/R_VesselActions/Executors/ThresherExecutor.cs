@@ -69,7 +69,7 @@ namespace CosmicShore.Gameplay
     /// <c>R_VesselActionHandler</c>, so every peer runs the same chain from the same inputs; a peer
     /// can disagree on a marginal hit by a frame of drift.
     /// </summary>
-    public sealed class ThresherExecutor : ShipActionExecutorBase
+    public sealed class ThresherExecutor : ShipActionExecutorBase, IRingThreadProbe
     {
         [Tooltip("Every Thresher dial: chain physics, elements, explosion, chain cut, feel, look.")]
         [SerializeField] ThresherConfigSO config;
@@ -108,6 +108,7 @@ namespace CosmicShore.Gameplay
         ThresherChainSettings _baseSettings;
         ThresherChainSettings _settings;
         bool _seeded;
+        int _seedEpoch;             // bumped on every (re)seed: the ball was placed, not flown (IRingThreadProbe)
         bool _payOut;
         bool _plantHeld;
         // Analog triggers: this frame's LT and RT depths (0..1), read by PollTriggers.
@@ -176,6 +177,39 @@ namespace CosmicShore.Gameplay
         public bool IsReady { get; private set; }
         public float BallSpeed => _solver?.BallSpeed ?? 0f;
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
+
+        /// <summary>The ball threads race rings as the hull does (Garrett, 2026-10-19: "the thresher should
+        /// activate rings like in its racing game with either the vessel or the ball"). The epoch changes on
+        /// every re-seed, so a ball re-placed beside a respawned hull threads nothing on the way.</summary>
+        public bool TryGetRingProbe(out Vector3 position, out int epoch)
+        {
+            epoch = _seedEpoch;
+            position = _solver != null ? _solver.BallPosition : default;
+            return _solver != null && _seeded;
+        }
+
+        /// <summary>A point <paramref name="distance"/> along the chain from the hull (its gameplay links, ship
+        /// centre first), or the ball when the chain is shorter. The tail reads it to hang along the cord
+        /// (<see cref="ThresherAnimation"/>). False before the chain exists.</summary>
+        public bool TryGetCordPoint(float distance, out Vector3 point)
+        {
+            point = default;
+            if (_links == null || !_seeded) return false;
+            var pts = _links.Points;
+            float run = 0f;
+            for (int i = 1; i < pts.Length; i++)
+            {
+                float seg = Vector3.Distance(pts[i - 1], pts[i]);
+                if (run + seg >= distance && seg > 1e-5f)
+                {
+                    point = Vector3.Lerp(pts[i - 1], pts[i], (distance - run) / seg);
+                    return true;
+                }
+                run += seg;
+            }
+            point = pts[pts.Length - 1];
+            return true;
+        }
         /// <summary>The ball is at smash speed: red, destroys anything, explodes.</summary>
         public bool IsHot => _solver != null && ThresherChainSolver.IsSmash(_solver.BallSpeed, _settings);
         /// <summary>Ball speed as a fraction of smash speed — the HUD heat gauge, and the ball's brightening.</summary>
@@ -528,6 +562,7 @@ namespace CosmicShore.Gameplay
             _solver.Reset(shipPosition, forward, shipVelocity);
             _links.Reset(shipPosition, _solver.BallPosition);
             _seeded = true;
+            _seedEpoch++;
             _touching.Clear();
         }
 
