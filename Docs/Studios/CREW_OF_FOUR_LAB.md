@@ -6,12 +6,13 @@ A `/labmaker` browser studio for a **four-seat multiplayer vessel** that capture
 > Look up the game Wildgate and make an artifact lab that can explore concepts for a 4 player multiplayer vessel
 > that captures the magic of that game. (Garrett, 2026-10-20)
 
-- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html`. Open it in Chrome to use a gamepad
-  (the claude.ai viewer can block the Gamepad API).
+- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 2, 3D). Round 1's 2D page is kept
+  as `CrewOfFourLab.round1.html`, and its numbers are on the page's Archive tab. Open it in Chrome to use a gamepad (the
+  claude.ai viewer can block the Gamepad API).
 - **Live page:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb (private to the owner until shared from its Share
   menu; decisions recorded there land in the shared log, collection `decisions`, that Claude reads at the start of each
   round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 1).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 2).
 - **Nearest lab:** the Crew Vessel Lab (`Docs/Studios/CrewVesselLab.html`, `CREW_VESSEL_LAB.md`), the two-seat
   "Maverick and Goose" lab that graduated as the Wrasse (`VesselClassType` 19). This lab does not replace it or touch
   it: the Wrasse is a pilot plus a 2D navigator; this lab asks what a crew of **four** on one hull should be. Round 1 of
@@ -80,7 +81,7 @@ Rival crews fly the same concept (a mirror match) unless **Match ▸ Rivals alwa
 | Element | Game | Kind | Scores | I1 → I4 |
 |---|---|---|---|---|
 | Time | **Gate Run** | race | seconds to escape (points: 100 + seconds to spare, else 0.5 per second you held the Artifact) | 1, 1, 2, 2 rival crews; gate opens at 30 / 40 / 50 / 60 s; 14 → 8 crystals; 0 → 3 hazard clusters |
-| Space | **Breach** | destruction | fortress prisms destroyed in 90 s | 2 → 5 rings (first ring at 26 u, inside a Charge-3 skiff charge); 1, 1, 2, 2 rivals |
+| Space | **Breach** | destruction | fortress prisms destroyed in 90 s | 2 → 5 levels (round 2: each level three orthogonal rings, an armillary sphere; the first at 26 u, inside a Charge-3 skiff charge); 1, 1, 2, 2 rivals |
 | Mass | **Anchorage** | creation | your prisms standing at 90 s (trail + forged blocks) | 1, 1, 2, 2 raider crews; 16 → 12 crystals; 0 → 2 hazards |
 | Charge | **Broadside** | dogfight | net petal hits (points: your share of the hits) | 1, 1, 2, 2 rivals; 12 → 8 crystals |
 
@@ -88,7 +89,126 @@ Rivals: Easy / Medium / Hard AI crews (aim error 9° / 5° / 2.5°, lead 0 / ½ 
 ward tolerance 3 / 1.5 / 0.5 threats). Your own crew's AI has the same three levels. Every AI writes the same input
 objects a person does (`/labmaker` §2.4).
 
-## 4. Round 1 (2026-10-20)
+## 4. Round 2 (2026-10-20): 3D with the game's chase camera
+
+**Input this round** (Garrett): "make it 3D with a chase camera like the game". The decision log was empty; this
+message is the round's input. Round 1's 2D page is kept as `CrewOfFourLab.round1.html` and its scorecard on the
+Archive tab.
+
+### What changed
+
+- **The model is 3D.** The arena is a sphere of the game cell's radius (320 u). Every hull and skiff has a forward and
+  an up vector and turns by yaw, pitch and roll at the Sparrow's rates (`YawScaler` / `PitchScaler` 80 °/s,
+  `RollScaler` 30 °/s, times the hull's 0.55). Turrets aim in 3D. Crystals, hazards and the Artifact sit anywhere in the
+  ball; the gate is a ring; the Breach fortress is an armillary sphere (three orthogonal rings per level). AI crews orbit
+  in their own tilted planes and still write only inputs.
+- **The view is a three.js chase camera** (r128 from cdnjs, as the other studios load it) at
+  `SparrowCameraSettingsSO`'s numbers: `followOffset` (0, 10, −50) in the hull's own frame, `followSmoothTime` 0.2 s,
+  near 0.3, far 12 000; it follows your skiff when you fly it. **C** (pad **Y**) switches to an overview of the whole arena.
+  Everything in the world is lit and faceted (the LOCKED "nothing in the world looks flat" rule): prisms are instanced
+  boxes at the Sparrow's `BaseScale`, the ward is a faceted translucent shell, bolts are lit volumes.
+- **The game's occlusion corridor.** Prisms between the camera and the hull are not drawn, as the game's
+  `PrismOcclusionCorridor` hides them (`Docs/PRISM_ANIMATION.md` §4.7). Without it the hull's own trail streamed into
+  the lens and filled the screen.
+- **An overlay** keeps the deck plan and adds a radar (top right: your hull seen from above, a tick up or down for
+  above or below), labels and edge arrows for rivals, the gate, the Artifact and the fortress, and at the Guns a
+  crosshair (where you point) and a diamond (where the turret points; red while your ward blocks it).
+- **Controls:** **A/D** yaw, **W/S** pitch, **Q/E** roll, **Shift** boost, **X** brake, **Space** the station's action
+  (Controls tab: invert pitch). The guns aim with the mouse along the camera ray; a pad aims with the right stick; touch
+  drags to steer and holds to fire.
+- **The Camera tab** exposes `camBack`, `camUp`, `camSmooth` (from the asset) and `camFov` (lab).
+
+### Scorecard (I2, Hard rivals, mirror matches, every dial at its round-2 value)
+
+Same columns and rules as round 1 (below). Re-run for this write-up on the final page with `runBatch`; 4.7–8.3 s per
+game.
+
+#### Gate Run (Time race, 12 seeds)
+
+| Concept | Points | ± SE | Escaped % | Escape s | Seat value % (1/2/3/4) | Rookie % | Swaps/min | Ward drops/min | Punished % | Boards/min | Cast off % | Reversals | Longest wait s | Hits dealt/taken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Galleon | 118.32 | 33.13 | 50 | 52 | Helm 91 / Guns -19 / Core 14 / Skiff 98 | 118 | 5.29 | 25.32 | 41.09 | 4.32 | 33 | 2.5 | 10.18 | 22.25 / 21.25 |
+| Corsair | 120.69 | 33.3 | 50 | 49 | Helm 92 / Guns 17 / Skiff 0 / Skiff 15 | 70 | 9.89 | 17.26 | 41.77 | 6.54 | 53 | 2.67 | 6.28 | 32.92 / 33.75 |
+| Lantern | 98.41 | 35.11 | 42 | 43.8 | Helm 100 / Guns 2 / Core 0 / Scope 40 | 120 | 0 | 1.6 | 0 | 0 | — | 0 | 39.84 | 11.67 / 13 |
+| Ironclad | 79.01 | 33.69 | 33 | 43 | Helm 100 / Guns 0 / Guns 0 / Core 0 | 100 | 0 | 27.13 | 52.57 | 0 | — | 0 | 8.36 | 24 / 23.75 |
+| Solo crew (control) | 2.81 | 0.91 | 0 |  | — | — | 1.96 | 1.7 | 0 | 0.31 | 60 | 0.67 | 1.3 | 5.08 / 18 |
+
+#### Breach (Space destruction, 6 seeds)
+
+| Concept | Points | ± SE | Score | Win % | Seat value % (1/2/3/4) | Rookie % | Swaps/min | Ward drops/min | Punished % | Boards/min | Cast off % | Reversals | Longest wait s | Hits dealt/taken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Galleon | 55.67 | 3.92 | 55.7 | 0 | Helm 47 / Guns 100 / Core 8 / Skiff 10 | 92 | 0 | 4 | 37.25 | 0 | — | 1 | 48.17 | 1.33 / 1.83 |
+| Corsair | 66.67 | 9.33 | 66.7 | 17 | Helm 52 / Guns 83 / Skiff 16 / Skiff 15 | 106 | 0 | 4 | 51.02 | 0 | — | 0.83 | 2.02 | 1.5 / 1.67 |
+| Lantern | 76.33 | 2.4 | 76.3 | 50 | Helm -34 / Guns 100 / Core 4 / Scope 0 | 93 | 0 | 0 | 0 | 0 | — | 2.83 | 43.2 | 0 / 0 |
+| Ironclad | 93.83 | 4.92 | 93.8 | 0 | Helm 66 / Guns 34 / Guns 34 / Core -5 | 114 | 0 | 5.89 | 12.5 | 0 | — | 3.67 | 46.25 | 3.5 / 4 |
+| Solo crew (control) | 0 | 0 | 0 | 0 | — | — | 0.89 | 0 | 0 | 0 | — | 0 | 2.62 | 0 / 1 |
+
+#### Anchorage (Mass creation, 6 seeds)
+
+| Concept | Points | ± SE | Score | Win % | Seat value % (1/2/3/4) | Rookie % | Swaps/min | Ward drops/min | Punished % | Boards/min | Cast off % | Reversals | Longest wait s | Hits dealt/taken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Galleon | 133.17 | 7.94 | 133.2 | 50 | Helm -5 / Guns 9 / Core 33 / Skiff 30 | 93 | 5.44 | 23.88 | 31.45 | 3.78 | 84 | 5.33 | 13.53 | 37.83 / 37.17 |
+| Corsair | 129.67 | 6.69 | 129.7 | 50 | Helm 15 / Guns 10 / Skiff 4 / Skiff 15 | 88 | 13.44 | 13 | 41.23 | 4.89 | 89 | 4.83 | 10.6 | 59.17 / 61.83 |
+| Lantern | 92.17 | 6.71 | 92.2 | 33 | Helm -8 / Guns -1 / Core 12 / Scope 1 | 97 | 0 | 0 | 0 | 0 | — | 5.5 | 73.33 | 0 / 0 |
+| Ironclad | 89.33 | 2.63 | 89.3 | 100 | Helm -3 / Guns 7 / Guns 7 / Core 7 | 92 | 0 | 23.1 | 24.92 | 0 | — | 7.33 | 15.98 | 44.67 / 26.5 |
+| Solo crew (control) | 93.83 | 5.09 | 93.8 | 0 | — | — | 4.44 | 0 | 0 | 0 | 75 | 0.17 | 3.23 | 8.17 / 20.33 |
+
+#### Broadside (Charge dogfight, 6 seeds)
+
+| Concept | Points | ± SE | Score | Win % | Seat value % (1/2/3/4) | Rookie % | Swaps/min | Ward drops/min | Punished % | Boards/min | Cast off % | Reversals | Longest wait s | Hits dealt/taken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Galleon | 49.95 | 0.58 | 0 | 50 | Helm 4 / Guns 18 / Core 14 / Skiff 6 | 77 | 14.11 | 24.21 | 67.33 | 7.22 | 95 | 5 | 6.85 | 91.67 / 91.67 |
+| Corsair | 50.29 | 0.87 | 0.2 | 33 | Helm 17 / Guns 21 / Skiff 10 / Skiff 10 | 81 | 19.88 | 10.33 | 51.92 | 8.89 | 87 | 5.33 | 10.08 | 99.67 / 99.5 |
+| Lantern | 51.63 | 12.05 | 0.8 | 50 | Helm -21 / Guns 100 / Core 100 / Scope -5 | 0 | 0 | 0 | 0 | 0 | — | 0.33 | 88.87 | 33.5 / 32.67 |
+| Ironclad | 51.95 | 3.37 | 7.2 | 67 | Helm 10 / Guns 38 / Guns 38 / Core 21 | 18 | 0 | 14.22 | 61.13 | 0 | — | 2.83 | 5.45 | 90.17 / 83 |
+| Solo crew (control) | 17.85 | 1.41 | -30.2 | 0 | — | — | 4.89 | 0 | 0 | 0 | 43 | 0 | 2.95 | 8.5 / 38.67 |
+
+### Checked
+
+- `verify_lab.cjs` PASS (the stage is WebGL, so its blank check is skipped and the screenshots were read: desktop and
+  iPhone 13 both show the hull under the chase camera, the deck plan and the radar).
+- A scripted person in headless Chromium with SwiftShader: at the Helm, holding W+D wrote yaw 1 and pitch 1 and Space
+  dropped the ward; at the Guns the mouse aimed along the camera ray and bolts flew; at the Skiff Space launched it and
+  the camera moved to it; C switched to the overview. No console or page errors.
+- Mirror fairness: Gate Run over 20 seeds 35–60% wins; Breach over 60 seeds 45% (Ironclad) and 53% (Galleon).
+
+### Found
+
+1. **The round-1 findings survive the move to 3D.** Concepts with no skiff (Lantern, Ironclad) change stations
+   0 times a minute in every game and have 0 reversals in Gate Run. The solo control loses everywhere: 2.8 points in
+   Gate Run, 0 prisms in Breach, a 17.9% hit share in Broadside. In Anchorage it keeps 94 prisms, level with full
+   Lantern (92) and Ironclad (89) crews.
+2. **Galleon and Corsair tie as racers in 3D** (118 and 121 points, 50% escapes each; Lantern 98 and 42%, Ironclad 79
+   and 33%, all inside a standard error of about 33). The Corsair still needs a skilled crew (rookie share 70 against the
+   Galleon's 118). The Galleon's Helm and Skiff are its seats that matter in the race (91% and 98%).
+3. **The Corsair keeps everyone busy.** In Broadside it changes stations 19.9 times a minute, boards 8.9 times, and every
+   seat is worth 10–21% (Galleon 4–18%). In Anchorage every Corsair seat is worth 4–15%.
+4. **Breach became a shooting gallery in 3D.** Crews orbit the fortress in their own planes and barely meet (0–4 hits a
+   match); the single gun deck is worth 83–100% and the skiff 10–16%; the Galleon's longest wait is 48 s. Ironclad (two
+   gun decks) scores most (94).
+5. **The ward gamble holds:** helms that must drop the ward to fire drop it 4–27 times a minute, and 12–67% of drops
+   are punished. The Lantern drops it 0–1.6 times a minute, and its Broadside is still degenerate (Helm −21%, Scope −5%,
+   rookie share 0, a crew member waiting 89 s).
+6. **A 3D arena empties fast.** At round 1's 420 u radius the ball holds about 560 times the 2D disc's area in volume:
+   Anchorage crews never met (0 hits) and a Core waited the whole 90 s. The arena is now the game cell's 320 u and
+   Anchorage crews spend every third 20 s spell raiding the nearest rival's mass.
+7. **In Breach the first charge takes the inner ring.** Two skiffs that launch together reach the core a step apart
+   (3.60 s and 3.67 s in one trace) and the first blast clears all 69 inner prisms before the second grows. A prism
+   inside two blasts in the same step now goes to one of them at random (seeded). Winner-takes-the-ring stays, and is a
+   design question (below).
+
+### Decision needed (designer), added this round
+
+- **Is the chase camera's offset right for a four-seat hull?** The Sparrow's (0, 10, −50) frames a 23 u hull tightly;
+  the Camera tab moves it.
+- **Breach's first charge.** Should a skiff charge in the fortress core clear the whole inner ring for whoever gets there
+  first, or should charges be smaller and repeatable?
+- **What the other three crew see.** Only the helm's chase camera exists; a gunner's or a skiff pilot's own view is open.
+
+## 4b. Round 1 (2026-10-20): 2D top-down (superseded)
+
+> **Superseded by the designer (2026-10-20):** "make it 3D with a chase camera like the game". The page is kept as
+> `Docs/Studios/CrewOfFourLab.round1.html` and its numbers are on the live page's Archive tab.
 
 ### The model, and where its numbers come from
 
@@ -229,7 +349,7 @@ other games' standard errors are 1–12 points. Read Gate Run's seat values for 
 
 ### What this lab does NOT model
 
-2D top-down only (the game is a 3D chase view: four cameras on one hull and how a deck reads in 3D are open);
+round 2 is 3D with one chase camera and stand-in shapes (the hull, skiffs and fortress are not game models; four cameras on one hull and a turret's own view are open);
 only one seat is a person, and real crews talk, which is most of Wildgate's magic; no networking (who owns the hull,
 seats and skiff across machines); no fires, breaches, overloads or stolen guns (forbidden by the LOCKED rule); no PvE
 dungeons, upgrades or probes as items; at most three crews (the game's three playable domains), not five; the hull,

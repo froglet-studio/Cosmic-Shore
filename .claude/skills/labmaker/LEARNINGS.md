@@ -806,6 +806,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `CrewOfFourLab.html` `POINT_SCALE`, `scoreOpts`; `CREW_OF_FOUR_LAB.md` §4 "Noise".
 - Promoted: no
 
+### L-STU-120 — Taking a lab from 2D to 3D: shrink the arena by volume, and hide the prisms between the chase camera and the hull
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`, round 2) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the round-1 2D model went to a 3D sphere at the same 420 u radius. Encounter rates collapsed (the ball holds about 560 times the disc's area in volume): Anchorage crews never met (0 hits in 90 s) and a Core waited the whole match. Separately, the chase camera at the Sparrow's followOffset (0, 10, −50) sat inside the hull's own trail, so trail prisms streamed into the lens and filled the screen.
+- Do instead: when a lab gains a dimension, re-measure the encounter columns before anything else and shrink the arena (here to the game cell's 320 u) or raise densities; give AI a reason to go where the others are (an Anchorage raid phase). Under a chase camera, skip drawing prisms inside a corridor from the camera to the hull, as the game's `PrismOcclusionCorridor` does (`Docs/PRISM_ANIMATION.md` §4.7).
+- Evidence: `CrewOfFourLab.html` `SHIPPED.arenaR`, `helmAI` (Anchorage raid), `draw3d` (the corridor test); `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 round 2, Found 6.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
