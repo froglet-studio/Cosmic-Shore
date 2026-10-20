@@ -28,7 +28,7 @@ from the Thresher Plant Lab round 2, `Docs/Studios/THRESHER_PLANT_LAB.md`; physi
 |---|---|
 | **LT depth** (Plant) | A **brake**. A partial pull slows the ball and swings the ship round it like a sliding anchor (the deeper, the more of the chain's pull the ship feels). Only a **full pull** (`fullPull` 0.97) stops the ball, along an S-curve of whatever speed is left, and the ship hooks onto the orbit round it from that moment. |
 | **LT eased below `letGoBelow`** (0.9) | Let go: fly off along the tangent, or (launch view up) arm the aimed launch — exactly the old LT-up. A ball let go while still stopping keeps its own speed. |
-| **RT depth** (Winch) | The chain's **rigidity**, flipped from the old winch: **released = slack** (a soft bungee the turns and the spin carry the ball, or a planted ship, out on), **pulled = rigid**. Tightening reels the ball in and spins it up by angular momentum — the old crack — at most `rigiditySlew` 2/s of the trigger's travel per second. The chain turns lime (READY) while tightening now would crack the ball past smash speed. |
+| **RT depth** (Winch) | The chain's **rigidity**, flipped from the old winch: **released = slack** (a soft bungee the turns and the spin carry the ball, or a planted ship, out on), **pulled = rigid**. Tightening reels the ball in and spins it up by angular momentum — the old crack — at most `rigiditySlew` 2/s of the trigger's travel per second. There is no READY cue: when a tightening will crack past smash speed is left to feel (Garrett, 2026-10-20). |
 | **Both at a full pull, planted** | The camera switches to the launch view (§5a) — only then. Easing RT below `letGoBelow` hands it back. |
 
 A device with no analog trigger channel (touch, the one-thumb mouse) and every remote replica read a
@@ -41,9 +41,9 @@ The digital controls (until 2026-10-13; `analogTriggers` off):
 |---|---|---|---|
 | Sticks | — | — | Normal flight, exactly a Squirrel's (vector flight model, 120°/s pitch/yaw). Turn one way and snap back to whip; pitch and yaw snaps both work. |
 | **RT hold** (Winch) | `RightStickAction` (1) | `OnlyRightStickAction` (11) | Let chain out (`payOut`) up to `maxLen` × the Space scaling: longer reach, slower whip. |
-| **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. The chain turns **lime** (the palette's CTA colour, a quick ease, never a flicker) while releasing now would reach smash speed (READY). |
+| **RT release** | | | Chain reels in fast (`reelIn`) conserving spin — **the crack**. No cue says when a release will reach smash speed: players learn it by feel (the lime READY chain was removed 2026-10-20). |
 | **LT hold** (Plant) | `LeftStickAction` (2) | `OnlyLeftStickAction` (12) | The ball skids to a stop (`skidSeconds`, still destructive) and becomes a pivot; the ship swings round it, faster every lap. RT up winds you in and spins you faster; RT held lets you out. The sticks keep a **low-sensitivity** say: they steer your path round the ball at `pivotSteer` 45 °/s (under half of free flight's 120), never the spin. |
-| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, along the **aim** the sticks have set (§5a): the ship keeps circling and leaves from the launch point whose tangent is the aim (at most a lap later; no wait inside the lime window), always at the **launch boost** (`launchBoost` ×4.8 the orbit's speed, whatever the timing); the ball is yanked after you (`yank`). |
+| **LT release** | | | Fly off along the orbit's tangent — or, while the camera spectates the spin, along the **aim** the sticks have set (§5a): the ship keeps circling and leaves from the launch point whose tangent is the aim (at most a lap later), always at the **launch boost** (`launchBoost` ×4.8 the orbit's speed, whatever the timing); the ball is yanked after you (`yank`). |
 | **A press** (Mass Mode) | `Button1Action` (6), shared map | `Button1Action` (on-screen button) | **Toggle** Mass Mode (§2b). The release is ignored (rule 37). |
 
 The trigger bindings use the Squirrel's InputEvents slots, so no input plumbing changed. Keyboard:
@@ -108,8 +108,10 @@ smash — and a smash's own explosion spends it too. The bank multiplies the dia
 `× min(energyMaxDiameterScale, 1 + energyDiameterPerUnit 0.1 × energy)`, where the cap is **Space**:
 ×4 at rest → ×8 at full Space (floor ×2). So 10 slices = ×2 (90 u); 30 = ×4 (180 u, the rest-Space
 cap); 70 = ×8 (360 u) only at full Space. The **Space card** shows the bank as a fraction of that cap. A hit that
-lands inside `explosionMinInterval` keeps the bank for the next one. The ball's rim leans toward
-the CTA lime with the bank (`energyRimTint` 0.6 at full), so a charged ball reads before it hits.
+lands inside `explosionMinInterval` keeps the bank for the next one. The ball's rim burns toward
+white with the bank (`energyRimTint` 0.6 at full), so a charged ball reads as explosive before it hits. It was
+lime (the CTA colour) until 2026-10-20; Garrett: the exact amount is on the Space icon, so the ball keeps its own
+hue and only shows that it is charged.
 Own-domain bounces never spend it.
 
 ## 2b. Mass Mode (A, toggle) — the ball builds instead of breaking
@@ -287,20 +289,21 @@ holds the lab page's solver to this C# frame by frame on 4 digital and 5 analog 
   the chain is a few pixels wide at chase distance, so the rim has to cover most of it to read). It
   is drawn at the width that CUTS (`2 × chainCutRadius`). Iron body (`chainColor`, under the bloom
   threshold); the rim takes the ball's hue, `chainRimSlack` 0.35 while slack and `chainRimTaut`
-  0.75 while taut (the state in which it slices), CTA lime (`chainRimReady` 0.95) at READY.
+  0.75 while taut (the state in which it slices). No READY lime (removed 2026-10-20, with `chainRimReady`,
+  `readyMargin` and `ThresherChainSolver.PredictReelCrackSpeed`): the crack is left to feel.
 - **Every state change is a quick EASE to the new colour, never a cut or a flicker**
   (`colorBlendRate` 15/s: 95% in 0.2 s, on unscaled time so a smash's turn to red lands inside its
-  hit-stop): ball domain → red / lit at smash speed, chain slack → taut → READY lime, and the HUD's
+  hit-stop): ball domain → red / lit at smash speed, the charged rim whitening, chain slack → taut, and the HUD's
   energy gauge (its own matching `colorBlendRate`). A strobing READY flicker was tried and read
-  as noise; the change itself is the signal. The skid trail keeps `lineMaterial` (vertex colour).
+  as noise (the READY cue itself is gone since 2026-10-20); the change itself is the signal. The skid trail keeps `lineMaterial` (vertex colour).
 - **HUD** (`ThresherHUDController` / `ThresherHUDView`, `ThresherHUDVariant.prefab`, a variant of
   `VesselHUDPrefab`): the four-icon row Wrecking Ball · Mass Mode · Winch · Plant
   (`Tools/Build/author_thresher_icons.py`, `--check`; the art pass, §5b), a **ball-heat gauge** on the
   Charge card in the ball's colour and an **energy gauge** on the Space card (2026-10-13; it was the
   chain-out gauge): how much explosion RADIUS the chain's kills have banked
   (`ThresherExecutor.EnergyRadius01` = (energy scale − 1) / (`energyMaxDiameterScale` − 1)), iron
-  when empty easing to lime when full, emptied by the blast that spends it. The READY cue now lives
-  on the chain alone. (Field `energyGauge`, `[FormerlySerializedAs("chainOutGauge")]`; the
+  when empty easing to lime when full, emptied by the blast that spends it. This gauge is now the
+  only lime on the Thresher. (Field `energyGauge`, `[FormerlySerializedAs("chainOutGauge")]`; the
   GameObject is `EnergyGauge`.) Petal bars are authored (transplanted from the Squirrel's variant).
 - **Camera**: `ThresherCameraSettingsSO` at `(0, 8, -55)` so the reeled-in ball is in front of the
   lens. Beyond that the executor drives the local pilot's camera (§5a).
@@ -367,10 +370,9 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     returns zero while `IsAiming`.
   - **The launch sight** (`ThresherLaunchSight`, round 4 — it replaced the dotted line, which
     degenerates to a point once the camera is ON the trajectory). A **crosshair** at screen centre:
-    every point of the trajectory projects there. White while a release would wait; the palette's
-    **CTA lime while a release would barely wait** — the ship will reach the launch point within
-    `launchCueSeconds` 0.25 s (`IsLaunchImminent`, `ThresherChainSolver.SecondsToLaunchPoint`). A cue
-    only: it pays nothing (below).
+    every point of the trajectory projects there. Always white: the lime timing cue
+    (`launchCueSeconds`, `IsLaunchImminent`) was removed on 2026-10-20 (Garrett: "we can let players get
+    a feel for that"). It paid nothing anyway: every aimed launch takes the same boost (below).
     Beside it, a **zoom window shaped like the TIME petal** (the Plant is the Time ability), in the
     Serpent eyepiece's slot (top-left, 45% of screen height): a second camera looking down the same
     trajectory from the launch point, with its own crosshair, **zoomed by LT's depth** like the
@@ -386,7 +388,7 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   - **The release is timed for you.** LT up ARMS the launch (`ThresherChainSolver.ArmLaunch`): the
     ship keeps circling and leaves from the chosen point, along the aim, on the frame it would
     otherwise carry past it (the angle still to go is within that frame's angular step) — at most one
-    lap later (≈ 2 s at 3 rad/s, ≈ 7 s at the 0.9 threshold). Released inside the lime window the wait
+    lap later (≈ 2 s at 3 rad/s, ≈ 7 s at the 0.9 threshold). Released just before the point, the wait
     is little to none. **Every aimed launch is boosted** (2026-10-13, Garrett: "boost it out of a cross
     hair move every time instead of rewarding timing … triple the boost"): it leaves `launchBoost` **×4.8**
     the orbit's speed however long it waited for its point (`ThresherChainSolver.ArmLaunch(aim, boost)`;
@@ -708,8 +710,6 @@ Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObj
   would invert that peer's Mass Mode until the next press (the same exposure every edge has).
 - The windmill and Mass Mode have **no FMOD events of their own** yet: the trail and shield reuse
   nothing, a steal plays `crushEvent`, an energy blast `smashEvent`.
-- READY underestimates during fast snaps (it projects the current spin through a full reel and
-  ignores the snap crack).
 
 ## In-editor verification
 
@@ -751,8 +751,8 @@ A1. **Partial LT**: tow at cruise, squeeze LT to about half — the ball slows a
 A2. **Full LT**: squeeze LT all the way — the ball eases to a stop (no snap) and the ship hooks smoothly onto
     the orbit, continuing the way it was already turning. Slam LT instead: still no single-frame stop.
 A3. **RT**: with RT released, a hard turn lets the ball swing out (~30 u); planted, the ship swings wide.
-    Squeeze RT: the chain draws in over ~0.5 s and the spin speeds up; the chain eases to lime when a
-    tighten would crack. Slam RT from slack while planted: a fast but not instantaneous haul.
+    Squeeze RT: the chain draws in over ~0.5 s and the spin speeds up; the chain's colour does not change
+    when a tighten would crack (no READY cue). Slam RT from slack while planted: a fast but not instantaneous haul.
 A4. **Camera**: planted with LT full and RT eased off — no launch view. Pull RT full — the camera glides in
     (keeps its turn, then settles; no freeze). Ease RT below ~90% — it glides back out.
 A5. **Let go**: ease LT below ~90% — the ship leaves smoothly (the hull eases out of the spin; no snap),
@@ -766,13 +766,13 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
    Plant) and petal bars. Console clean.
 2. **Slow ball**: tow gently into a RIVAL trail — prisms are destroyed, no explosion, the ball is in
    your domain colour. Into your OWN older trail — the ball bounces off, nothing breaks.
-3. **Whip**: hold RT ~1 s, turn hard ~1 s, snap back briefly, release. The chain eases to lime first;
+3. **Whip**: hold RT ~1 s, turn hard ~1 s, snap back briefly, release. No lime on the chain;
    on release the ball goes red, destroys everything including your own trail, each hit a blast
    (string, not per prism), first hit with a hit-stop, debris along its path, `x2, x3…` counter.
 4. **Chain**: let the chain out and swing it slack — it curves smoothly, no kinks; taut it is
    straight. Sweep it, taut OR slack, through rival prisms: sliced (a shielded one loses its shield,
    then dies on the next pass); through your own older trail: shields appear.
-5. **Chain energy**: slice a few rival prisms — the ball's rim leans lime and the SPACE card's gauge
+5. **Chain energy**: slice a few rival prisms — the ball's rim burns toward white and the SPACE card's gauge
    fills. Tow the slow ball into a rival prism — it explodes, bigger the more you sliced; rim and
    gauge empty. Bounce off your own trail — no blast, nothing spent.
 6. **Mass Mode** (A): the ball turns your lit colour. Through a rival trail: prisms flip to your
@@ -781,16 +781,15 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
 7. **Plant and spin** (LT): from straight flight with the ball behind, the ship swings wide and
    curves onto the orbit (no snap, no stall); RT up winds in and spins faster.
 8. **Launch view**: once it spins, the camera glides (~0.9 s, no wobble) to sit level behind a point
-   on the circle, looking along the launch path; a crosshair at screen centre flashes lime as the ship
-   is about to pass the point. Stick X slides the point round the circle; stick Y tilts the whole
+   on the circle, looking along the launch path; a white crosshair at screen centre (it never turns lime). Stick X slides the point round the circle; stick Y tilts the whole
    orbit with the camera. Hold RT: the point stays on the ship's own circle. **The hull lays no trail
    while the crosshair is up** — no ring of your prisms round the orbit — and laying resumes the
    moment you launch (or the view drops).
 9. **Sight**: a Time-petal (diamond) window top-left shows the path magnified with its own crosshair;
    squeeze LT deeper to zoom (to 6°), ease to a light hold to widen; the main view never zooms.
 10. **Launch**: release LT anywhere in the lap — the ship leaves exactly from the point along the
-    crosshair; released while lime, almost no wait. **Every** such launch leaves boosted (×4.8 the
-    orbit — far faster than any plain release), whether released while lime or a lap early; compare
+    crosshair; released just before the point, almost no wait. **Every** such launch leaves boosted (×4.8 the
+    orbit — far faster than any plain release), whether released just before the point or a lap early; compare
     with a plain release from a slow orbit (no crosshair), which leaves at orbit speed. The camera
     glides back behind the ship (~0.8 s, no swing, no pop). Let a spin decay instead (pay out RT): the
     same glide.
@@ -809,13 +808,13 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
     hit-stop does not freeze the guest; the host's camera never moves the guest's. Expect the guest's
     copy of the ball to look off for up to a lap during an aimed launch (§9).
 16. **Ball and chain look**: a dark ball with a bright rim in your domain colour; studs legible when
-    white hot; red and blooming when hot. The chain a round iron tube, rim brighter while taut, lime at
-    READY — every colour change a quick blend, never a flicker.
+    white hot; red and blooming when hot. The chain a round iron tube, rim brighter while taut, never
+    lime — every colour change a quick blend, never a flicker.
 
 Tuning order if it feels wrong: `maxLen` vs the hull's turn rate (whether the ball swings or falls
 slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Camera: `spectateSpinRate`
 (when it detaches), `aimYawRate` / `aimElevationDegrees` (how the aim feels), then `cameraZoomInRate`
-(how lazily it comes home), `launchBoost` (the aimed launch's speed) / `launchCueSeconds` (the lime cue). Energy:
+(how lazily it comes home), `launchBoost` (the aimed launch's speed). Energy:
 `energyDiameterPerUnit` / `energyMaxDiameterScale`. Vessel hits: `vesselHitPetals`, `magnetRange`. Mass Mode:
 `massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 

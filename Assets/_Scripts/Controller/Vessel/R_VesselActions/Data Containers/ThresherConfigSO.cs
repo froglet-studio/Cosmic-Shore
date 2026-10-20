@@ -61,7 +61,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("Each unit of banked energy adds this much to the explosion's diameter multiplier (1 + this x energy), " +
                  "up to the Space-scaled energyMaxDiameterScale.")]
         [SerializeField, Min(0f)] float energyDiameterPerUnit = 0.1f;
-        [Tooltip("How far the ball's rim leans toward the CTA lime at a FULL bank (0 = no cue, 1 = pure lime).")]
+        [Tooltip("How far the ball's rim burns toward white at a FULL bank, in place of its own hue (0 = no cue, " +
+                 "1 = pure white). The ball's explosiveness; the HUD's Space gauge carries the exact amount.")]
         [SerializeField, Range(0f, 1f)] float energyRimTint = 0.6f;
 
         [Header("Mass Mode (A button: toggle)")]
@@ -94,10 +95,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float magnetAcceleration = 220f;
 
         [Header("Aimed launch (the crosshair)")]
-        [Tooltip("A CUE only: the launch crosshair turns lime while the ship will reach the launch point within this " +
-                 "many seconds, i.e. a release now barely waits. It pays nothing - every aimed launch takes launchBoost.")]
-        [FormerlySerializedAs("perfectWindowSeconds")]
-        [SerializeField, Min(0f)] float launchCueSeconds = 0.25f;
         [Tooltip("EVERY launch out of the crosshair view (an aimed launch) leaves this many times faster than the " +
                  "orbit, however long it waited for its point - aiming is rewarded, timing is not. A plain " +
                  "release (no crosshair) leaves at the orbit's speed. Was the Time L5 'Perfect Release' x1.6 on a " +
@@ -140,11 +137,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("A whip ends (and the combo counter resets) once the ball has stayed below smash speed this long (seconds).")]
         [SerializeField, Min(0f)] float comboGraceSeconds = 0.4f;
 
-        [Header("READY cue")]
-        [Tooltip("READY shows while the predicted reel-in crack is at least this multiple of smash speed.")]
-        [SerializeField, Min(0f)] float readyMargin = 1.05f;
+        [Header("Colour easing")]
         [Tooltip("How fast the ball and chain ease to a new state's colour (1/s, exponential): domain -> red at " +
-                 "smash speed, slack -> taut, -> READY lime. 15 = 95% in 0.2 s - a quick, visible change, never a " +
+                 "smash speed, slack -> taut, the charged rim. 15 = 95% in 0.2 s - a quick, visible change, never a " +
                  "cut or a flicker. The HUD gauges ease at their own matching rate.")]
         [SerializeField, Min(0f)] float colorBlendRate = 15f;
 
@@ -270,8 +265,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float chainRimSlack = 0.35f;
         [Tooltip("Rim brightness while the chain is TAUT - the state in which it cuts.")]
         [SerializeField, Range(0f, 1f)] float chainRimTaut = 0.75f;
-        [Tooltip("Rim brightness of the READY lime.")]
-        [SerializeField, Range(0f, 1f)] float chainRimReady = 0.95f;
 
         [Header("Look")]
         [Tooltip("Rendered ball radius as a multiple of the physics radius.")]
@@ -288,7 +281,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] Color fallbackDomainColor = new Color(0.3f, 0.9f, 0.85f);
         [Tooltip("Fallback hot colour when the palette has no danger colour.")]
         [SerializeField] Color fallbackDangerColor = new Color(1f, 0.05f, 0.05f);
-        [Tooltip("Fallback READY colour when the palette has no CTA colour.")]
+        [Tooltip("Fallback CTA colour (the HUD energy gauge's full colour) when the palette has no CTA colour.")]
         [SerializeField] Color fallbackReadyColor = new Color(0.55f, 0.95f, 0.15f);
         [Tooltip("Skid-trail lifetime while planting (seconds).")]
         [SerializeField, Min(0f)] float skidTrailSeconds = 0.6f;
@@ -316,7 +309,6 @@ namespace CosmicShore.Gameplay
         public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
         public float MagnetRange => magnetRange;
         public float MagnetAcceleration => magnetAcceleration;
-        public float LaunchCueSeconds => launchCueSeconds;
         public float LaunchBoost => launchBoost;
         public float ChainCutRadius => chainCutRadius;
         public float ChainDebrisRestitution => chainDebrisRestitution;
@@ -331,7 +323,6 @@ namespace CosmicShore.Gameplay
         public float DebrisRestitution => debrisRestitution;
         public float DebrisSpeedLimit => debrisSpeedLimit;
         public float ComboGraceSeconds => comboGraceSeconds;
-        public float ReadyMargin => readyMargin;
         public float ColorBlendRate => colorBlendRate;
         public bool CameraFraming => cameraFraming;
         public float CameraZoomOutRate => cameraZoomOutRate;
@@ -370,7 +361,6 @@ namespace CosmicShore.Gameplay
         public float BallMaxVisualSpin => ballMaxVisualSpin;
         public float ChainRimSlack => chainRimSlack;
         public float ChainRimTaut => chainRimTaut;
-        public float ChainRimReady => chainRimReady;
         public float BallVisualScale => ballVisualScale;
         public int ChainLinks => chainLinks;
         public int ChainRenderSubdivisions => chainRenderSubdivisions;
