@@ -13,7 +13,7 @@ the Decisions tab. The Unity port (phase 2) starts only after that.
 
 - **Source (the page is published from it):** `Docs/Studios/HoneyguideLab.html`. Open it in Chrome to use a gamepad
   (the claude.ai viewer can block the Gamepad API).
-- **Live page:** https://claude.ai/artifact/HONEYGUIDE_LAB_URL (private to the owner until shared; decisions recorded
+- **Live page:** https://claude.ai/artifact/4B7oZwb5aYxFJR7XKyWx7v (private to the owner until shared; decisions recorded
   there land in the shared log Claude reads at the start of each round).
 - **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 1).
 - **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` (PASS, round 1; see Checked).
