@@ -318,7 +318,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             string hidden = RendererHideSwitch.HiddenCount > 0
                 ? $" [{RendererHideSwitch.HiddenCount:N0} hidden by 'renderers hide']"
                 : "";
-            return _lastCensus.Describe() + hidden;
+            // Far spindles drawn by SpindleLodSystem's instanced batch have their renderers switched
+            // off, so the census alone would undercount the family; the LOD's own line says where
+            // every limb is drawn.
+            return _lastCensus.Describe() + hidden + " | " + CosmicShore.Gameplay.SpindleLodSystem.Describe();
         }
 
         /// <summary>

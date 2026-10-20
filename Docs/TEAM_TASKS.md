@@ -1176,3 +1176,31 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner's eye, the mobile run); Yash (offered) can run the Editor steps and the two test fixtures
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
+
+### T-20261020-86b5 · open · test · Performance
+- **Task:** Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile_IsSaneAndMeasured checks the LOD meshes against the braid Unity imported), then Play Menu_Main > Cell Selector > Lattice and fly in and out of a plant: no pop as limbs cross ~140 / ~590 / ~2,660 units, and the HUD console 'renderers' line shows far limbs as instanced. If a graph imports magenta, untick lodEnabled on Resources/SpindleLodProfile and report it.
+- **Done when:** Both graphs import clean, SpindleLodTests pass, and a fly-through shows no visible swap
+- **Who can take it:** Garrett (the look), Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §5
+
+### T-20261020-fb02 · open · test · Performance
+- **Task:** Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; compare CPU/GPU ms, draws, and the renderers census (the capture's spindle LOD line).
+- **Done when:** Two S2 captures on the bugledger branch, the delta written into Docs/PERFORMANCE_OPTIMIZATION.md L1
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §4-5; T-20261015-56dd
+
+### T-20261020-09fe · open · decision · Performance
+- **Task:** Judge the far spindle look in Unity and tune it on Resources/SpindleLodProfile: threadGlow (1.35), threadBase/threadFacet (0.35/0.55), minThreadPixels (1.25), and how far threads stay (farFadeStart/End 1300/1900 girths, ~1,800/2,660 units for a flora branch). Keep, tune, or shorten the reach for mobile.
+- **Done when:** The profile values are play-tuned and the decision is noted in Docs/SPINDLE_LOD.md §2
+- **Who can take it:** Garrett (spindles, product look)
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §2 'The far look'
+
+### T-20261020-1fd6 · open · dev · Amoebius
+- **Task:** Amoebius: draw the spindle LOD graphs. Port SpindleLodVertex_float, SpindleLodSurface_float and SpindleLodThread_float (Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl) into the engine's GLSL custom-function library, declare the globals _SpindleLodBands/_SpindleLodLook/_SpindleLodLook2, and map the SpindleLodMidGraph / SpindleLodFarGraph guids to the Spindle family in MaterialFamilies.ByGuid. Also: Graphics.RenderMeshInstanced records instanceData without honouring startInstance (a chunked call redraws the first chunk), and NativeList.AsArray copies instead of aliasing.
+- **Done when:** A Menu_Main run under xvfb draws mid and far spindles with no untranslated-shader warning
+- **Who can take it:** Shombith (the Amoebius engine)
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §5; Port/src/CosmicShore.Content/Shaders/ShaderGraphCompiler.cs EmitCustomFunction

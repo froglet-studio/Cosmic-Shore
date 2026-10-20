@@ -12745,3 +12745,22 @@ compile clean; Amoebius builds.
 3. If a title stays generic, the Console has no error: the sound FMOD reported matched no `soundName` - check its name
    against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
 4. Arena: every card's hull chips show the vessel icons, no white squares.
+
+## 🔴 2026-10-20 — Spindle distance LOD (`cece/gallant-keller-6mr1u4`) - NOT EDITOR-VERIFIED
+
+Docs/SPINDLE_LOD.md. New `SpindleLodSystem`, `SpindleLodProfileSO` (+ `Resources/SpindleLodProfile.asset`),
+`SpindleLodMidGraph` / `SpindleLodFarGraph` (generated from SpindleGraph, which is untouched), `SpindleLod.hlsl`,
+`SpindleLodMid.mat` / `SpindleLodFar.mat`, `Assets/_Models/Spindles/` meshes; changed `Spindle.cs`, `DiagnosticsHUD`,
+`EcosystemPerfProbe`. The Unity CLI (`/verify-unity`) was not available in the session: reference compile clean
+(player, player-dev; editor: the 3 known errors only), Amoebius builds and runs it (Garland: 865 of 910 limbs instanced),
+the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
+1. Open the project: `SpindleLodMidGraph` and `SpindleLodFarGraph` import with no error and preview without magenta.
+2. Test Runner > EditMode > `SpindleLodTests`: all pass (`ShippedProfile_IsSaneAndMeasured` proves the LOD meshes match
+   the braid Unity imported; if it fails, run `python3 Tools/Build/author_spindle_lod_meshes.py --report` and report).
+3. Play Menu_Main > Cell Selector > Lattice. Fly slowly away from a plant: past ~140 units the braid keeps its lace;
+   from ~150 to ~540 the three strands draw together into one thread; past ~590 a thin glowing thread; gone by ~2,660.
+   No frame shows a jump. Fly back in: the same in reverse.
+4. HUD console `renderers`: the line ends with `spindle LOD: N limbs - near · mid · far own + instanced · culled`, most
+   of a grown forest under "instanced".
+5. A plant that dies far away still withers outside-in (its limbs leave the instanced batch for their fade).
+6. `Resources/SpindleLodProfile` > untick `lodEnabled` in Play: every limb returns to the authored braid at once.

@@ -103,6 +103,17 @@ namespace CosmicShore.Gameplay
         float _swayPhase;
         bool _swayPhaseResolved;
 
+        // ── Distance LOD (SpindleLodSystem, Docs/SPINDLE_LOD.md) ─────────────────────────────
+        // One handle per renderer that draws a mesh the LOD profile knows (null where it does not,
+        // e.g. a creature's own body mesh; the whole array is null when none does). The system
+        // owns that renderer's mesh, material and enabled flag while the handle is registered;
+        // this class keeps owning life and death, and hands the renderer back before either.
+        SpindleLodSystem.Handle[] _lodHandles;
+        bool _started;
+        // A condense/evaporate MPB stamp is live on the renderers. Such a limb must draw through
+        // its own renderer, so the LOD never batches it.
+        bool _fadeActive;
+
         void CleanupDeadRefs()
         {
             healthBlocks.RemoveWhere(h => !h);
@@ -187,6 +198,11 @@ namespace CosmicShore.Gameplay
             if (!isPermanentlyWithered)
                 deregistered = false;
 
+            // A living limb re-enabled after Start (its plant was switched off and on) rejoins the
+            // LOD; the first enable is Start's to handle, once the limb is posed.
+            if (!isPermanentlyWithered && _started && _lodHandles == null)
+                RegisterLod();
+
             if (!isPermanentlyWithered) return;
 
             SetRenderersEnabled(false);
@@ -237,6 +253,44 @@ namespace CosmicShore.Gameplay
             if (!parentSpindle && transform.parent)
                 parentSpindle = transform.parent.GetComponentInParent<Spindle>();
             if (parentSpindle) parentSpindle.AddSpindle(this);
+
+            // Last: the limb is posed (a flora poses a spindle between Instantiate and its Start)
+            // and wears its phase variant, which is the near tier the LOD derives its tiers from.
+            _started = true;
+            RegisterLod();
+        }
+
+        void RegisterLod()
+        {
+            CacheRenderers();
+            SpindleLodSystem.Handle[] handles = null;
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                if (!_renderers[i] || !_phaseVariants[i]) continue;
+                var handle = SpindleLodSystem.Register(_renderers[i], _phaseVariants[i], _fadeActive);
+                if (handle == null) continue;
+                handles ??= new SpindleLodSystem.Handle[_renderers.Length];
+                handles[i] = handle;
+            }
+            _lodHandles = handles;
+        }
+
+        /// <summary>Hands every renderer back to this limb: its authored mesh, its phase variant and
+        /// enabled. <paramref name="restore"/> false when the renderers are being destroyed.</summary>
+        void UnregisterLod(bool restore)
+        {
+            if (_lodHandles == null) return;
+            for (int i = 0; i < _lodHandles.Length; i++)
+                SpindleLodSystem.Unregister(_lodHandles[i], restore);
+            _lodHandles = null;
+        }
+
+        void SetLodFading(bool fading)
+        {
+            _fadeActive = fading;
+            if (_lodHandles == null) return;
+            for (int i = 0; i < _lodHandles.Length; i++)
+                SpindleLodSystem.SetFading(_lodHandles[i], fading);
         }
 
         // A shared material identical to baseMat but with a fixed _Phase, bucketed by world
@@ -503,7 +557,12 @@ namespace CosmicShore.Gameplay
             {
                 var partRenderer = _renderers[i];
                 if (!partRenderer) continue;
-                if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
+                // A limb the LOD is drawing keeps its TIER's material (a clone of the same phase
+                // variant on the mid/far graph); writing the near variant back would put the
+                // braid's shader on the thread's mesh.
+                var tierMaterial = _lodHandles != null ? SpindleLodSystem.CurrentMaterial(_lodHandles[i]) : null;
+                if (tierMaterial) partRenderer.sharedMaterial = tierMaterial;
+                else if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
                 partRenderer.SetPropertyBlock(null);
             }
         }
@@ -522,6 +581,8 @@ namespace CosmicShore.Gameplay
 
         void StampDeathFade(float startTime, float duration, float direction, Action onSettle)
         {
+            // Out of the instanced batch first: the fade is this renderer's own stamp.
+            SetLodFading(true);
             CancelFadeSettle();
             CacheRenderers();
             s_fadeMpb ??= new MaterialPropertyBlock();
@@ -546,12 +607,14 @@ namespace CosmicShore.Gameplay
         void OnCondenseSettled()
         {
             RestoreOriginalMaterial();
+            SetLodFading(false);
         }
 
         void OnEvaporateSettled()
         {
             // Must run even if the renderer is gone: bailing here leaves a dying=true
             // spindle registered forever and stalls LifeForm.DieCoroutine's empty-tracker wait.
+            UnregisterLod(restore: true);
             RestoreOriginalMaterial();
             SetRenderersEnabled(false);
             DisableSpindle();
@@ -604,6 +667,10 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            // Before anything else: whatever happens next to this limb, its renderers are its own
+            // again (a pooled or deactivated limb must come back as the authored braid).
+            UnregisterLod(restore: gameObject.scene.isLoaded);
+
             if (deregistered) return;
 
             // only deregister if we are truly gone (dying/perma-wither) or being unloaded
@@ -641,6 +708,7 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            UnregisterLod(restore: false);
             CancelFadeSettle();
             if (deregistered) return;
             deregistered = true;

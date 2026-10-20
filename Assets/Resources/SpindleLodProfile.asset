@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2752eb76f9dbc45b6da7297e4b92ad42, type: 3}
+  m_Name: SpindleLodProfile
+  m_EditorClassIdentifier:
+  lodEnabled: 1
+  tickIntervalSeconds: 0.2
+  maxTransitionsPerFrame: 384
+  batchFarThreads: 1
+  nearEndGirths: 100
+  midEndGirths: 420
+  hysteresis: 0.08
+  convergeStartGirths: 110
+  farFadeStartGirths: 1300
+  farFadeEndGirths: 1900
+  minThreadPixels: 1.25
+  threadBase: 0.35
+  threadFacet: 0.55
+  threadGlow: 1.35
+  threadAlpha: 0.85
+  midTemplate: {fileID: 2100000, guid: 20a1e347c703b74989b4c9e9c90e94e4, type: 2}
+  farTemplate: {fileID: 2100000, guid: e504df112b682b68f8997daade6a4fbe, type: 2}
+  meshSets:
+  - source: {fileID: 1825875415147931077, guid: c9a0b575455114844a1b087dd889626e, type: 3}
+    mid: {fileID: 4300000, guid: c1aecf9c0373a5b17d09bdbd0936b107, type: 2}
+    far: {fileID: 4300000, guid: 9e3c5af8d6c4ef453fe29b2282c8abe8, type: 2}
+    girth: 1.401072
+    strandRadius: 0.08083986
+    expectedSourceCenter: {x: -0.06366834, y: 0.008492053, z: -0.7069523}
+    expectedSourceExtent: {x: 0.619967, y: 0.66188765, z: 1.2596264}

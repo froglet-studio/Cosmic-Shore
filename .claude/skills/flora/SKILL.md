@@ -551,6 +551,12 @@ author_<cell>_cell.py           # a cell built FROM a species; grows it to size 
 * **A flora prefab holds exactly ONE prism** (the seed), because a plant is a growth RULE.
   Anything that photographs or measures a flora must run the rule
   (`Flora.TryPreviewGrowth`), never harvest the prefab's meshes.
+* **A spindle's renderer is not yours to write once the limb is posed.** `SpindleLodSystem` owns its
+  mesh, material and `enabled` flag while the limb is registered (`Docs/SPINDLE_LOD.md`): a far limb's
+  renderer is OFF and the limb is drawn instanced. Pose and stretch a spindle BEFORE its `Start` (every
+  species already does), and change a limb's look through its material asset or `Spindle`, never by
+  writing `sharedMaterial`/`enabled`/`sharedMesh` on the renderer. A new spindle MESH gets no LOD until
+  `Tools/Build/author_spindle_lod_meshes.py` measures it.
 * **`Flora.TryPreviewGrowth` must not touch `UnityEngine.Random`** — it is a pure preview and
   must not advance a sequence the simulation is drawing from. Seed a `System.Random`.
 
