@@ -7,7 +7,6 @@ namespace CosmicShore.Gameplay
     public class SpawnableBaseballCurve : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-        protected override Prism ClearancePrism => prism;
 
         public float radius = 1.0f;
         public int numSegments = 16;

@@ -30,30 +30,6 @@ namespace CosmicShore.Gameplay
         public bool AuditIsComposite => children.Count > 0;
     }
 
-    public abstract partial class CellEnvironmentSpawnableBase
-    {
-        /// <summary>CellEnvironmentSpawnableBase.ResolveClearance, against the shim's lay list:
-        /// the lays in place, gameplay kinds first, then the single trail rebuilt from them.</summary>
-        public PrismClearance.Result AuditResolve(SpawnTrailData[] trailData, Vector3? min, Vector3? max)
-        {
-            if (_cachedLays == null || _cachedLays.Count < 2) return default;
-            int n = _cachedLays.Count;
-            var points = new SpawnPoint[n];
-            var priority = new int[n];
-            for (int i = 0; i < n; i++)
-            {
-                points[i] = _cachedLays[i].Point;
-                priority[i] = _cachedLays[i].Kind == PrismKind.Plain ? 0 : 1;
-            }
-            var result = PrismClearance.Resolve(points, min, max, priority);
-            for (int i = 0; i < n; i++)
-                _cachedLays[i] = new PrismLay(points[i], _cachedLays[i].Domain, _cachedLays[i].Kind);
-            if (trailData is { Length: > 0 } && trailData[0].Points?.Length == n)
-                System.Array.Copy(points, trailData[0].Points, n);
-            return result;
-        }
-    }
-
     public static partial class PrismTrailBuilder
     {
         public static IEnumerator LayGradual(Prism prefab, SpawnPoint[] points, Domains domain, Transform parent,

@@ -43,7 +43,6 @@ CHECK_ONLY = "--check" in sys.argv
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import boneyard_budget as budget  # noqa: E402
-import prism_clearance  # noqa: E402  - what PrismClearance takes out of the baseline
 import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 
@@ -694,10 +693,7 @@ for i in INTENSITIES:
         "Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design. "
         "PhaseThresholds ride THIS intensity's own baseline; regenerate with "
         "Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.")
-    # The model prices what the generator AUTHORS; the cell starts at what the game LAYS once
-    # PrismClearance has resolved the clipping (prism_clearance.py).
-    th = budget.phase_thresholds(*prism_clearance.rebase(
-        row["total"], row["volume"], f"Assets/_Prefabs/Spawnables/SpawnableBoneyard{i}.prefab"))
+    th = budget.phase_thresholds(row["total"], row["volume"])
     thresholds = f"""  PhaseThresholds:
     RestlessEnter: {th['RestlessEnter']}
     RestlessExit: {th['RestlessExit']}

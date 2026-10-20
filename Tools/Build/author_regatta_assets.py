@@ -46,7 +46,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib  # noqa: E402
 import regatta_balance as RB   # noqa: E402
-import prism_clearance  # noqa: E402  - what PrismClearance takes out of the baseline
 
 guid = lib.guid
 
@@ -140,19 +139,13 @@ def prisms_at(i: int) -> int:
     return int(COURSE["intensities"][str(i)]["prismCount"])
 
 
-def phase_thresholds(prisms: int, intensity: int) -> dict:
+def phase_thresholds(prisms: int) -> dict:
     """Ride the rails' own measured volume plus a trail band. Nearly inert in a cell with no
     flora and no fauna (the ladder gates production, and nothing here produces), but a cell
     whose prisms are 18x nominal volume must never inherit the count x 16 derivation, which
     would pin it at Frenzy from frame one. Restless +60,000 / Frenzy +400,000 volume above the
-    rails: a four-hull grid laying trail for a ninety-second race, with room.
-
-    The baseline is what the game LAYS: PrismClearance shortens a rail prism that overlaps its
-    neighbour along the braid, so the rails lay less volume than count x (6,6,8) authors
-    (prism_clearance.py)."""
-    prisms, v = prism_clearance.rebase(prisms, prisms * int(PRISM_VOLUME),
-                                       f"{PREFAB_DIR}/SpawnableRegattaRails{intensity}.prefab", intensity)
-    v = round(v)
+    rails: a four-hull grid laying trail for a ninety-second race, with room."""
+    v = prisms * int(PRISM_VOLUME)
     return {
         "RestlessEnter": prisms + 700, "RestlessExit": prisms + 500,
         "FrenzyEnter": prisms + 3600, "FrenzyExit": prisms + 3000,
@@ -250,7 +243,7 @@ for _i in range(1, 5):
 # ── 4. Cell configs, one per intensity ──────────────────────────────────────
 for _i in range(1, 5):
     c = COURSE["intensities"][str(_i)]
-    t = phase_thresholds(prisms_at(_i), _i)
+    t = phase_thresholds(prisms_at(_i))
     desc = lib.wrap_yaml_scalar(
         f"Regatta at intensity {_i} of 4 (CellTypeChoiceOptions.IntensityWise, list order = "
         f"intensity): a closed circuit of {c['rings']} rings with three super-shielded rails - one "
@@ -521,7 +514,7 @@ for i in range(1, 5):
         errors.append(f"intensity {i}: lane lengths spread {(hi - lo) / lo:.1%} (> 3%) - a domain races shorter")
     if c["minLaneSeparation"] < 3 * PRISM_SCALE[0]:
         errors.append(f"intensity {i}: lanes come within {c['minLaneSeparation']:.1f}u - fused super-shield cables")
-    t = phase_thresholds(prisms_at(i), i)
+    t = phase_thresholds(prisms_at(i))
     if not (t["RestlessExit"] < t["RestlessEnter"] < t["FrenzyExit"] < t["FrenzyEnter"]):
         errors.append(f"intensity {i}: count ladder is not ordered")
     if not (t["RestlessExitVolume"] < t["RestlessEnterVolume"] < t["FrenzyExitVolume"] < t["FrenzyEnterVolume"]):

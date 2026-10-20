@@ -24,7 +24,6 @@ namespace CosmicShore.Gameplay
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
-        protected override Prism ClearancePrism => prism;
         [SerializeField] Vector3 blockScale = new Vector3(2f, 2f, 4f);
 
         [Header("Geodesic Structure")]
@@ -93,13 +92,10 @@ namespace CosmicShore.Gameplay
                 vertexPoints[i] = new SpawnPoint(position, rotation, blockScale * 1.5f);
             }
 
-            // Vertices FIRST: PrismClearance yields in lay order, and a junction is the one prism
-            // every edge meeting it must make room for - laid after the edges, every vertex block
-            // was the one cleared and the sphere lost its gold nodes.
             return new[]
             {
-                new SpawnTrailData(vertexPoints, false, vertexDomain),
                 new SpawnTrailData(edgePoints.ToArray(), false, edgeDomain),
+                new SpawnTrailData(vertexPoints, false, vertexDomain),
             };
         }
 

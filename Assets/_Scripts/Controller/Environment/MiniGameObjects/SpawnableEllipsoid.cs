@@ -10,7 +10,6 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("trailBlock")]
         [Header("Trail")]
         [SerializeField] protected Prism prism;
-        protected override Prism ClearancePrism => prism;
 
         [Header("Spawnable Properties")]
         public float maxlength;

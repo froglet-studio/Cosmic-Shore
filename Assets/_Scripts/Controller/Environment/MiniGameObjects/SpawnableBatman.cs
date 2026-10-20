@@ -10,7 +10,6 @@ namespace CosmicShore.Gameplay
     public class SpawnableBatman : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-        protected override Prism ClearancePrism => prism;
 
         protected override SpawnPoint[] GeneratePoints()
         {

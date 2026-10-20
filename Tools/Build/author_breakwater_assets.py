@@ -99,7 +99,6 @@ CHECK_ONLY = "--check" in sys.argv
 
 sys.path.insert(0, HERE)
 import breakwater_arena as arena          # noqa: E402  - the measured model IS the authority
-import prism_clearance                    # noqa: E402  - what PrismClearance takes out of the baseline
 import arcade_mode_lib as aml          # noqa: E402  - card background + retired-key checks
 
 # Nothing in this file raises. Every problem lands here and the run reports all of them together,
@@ -608,14 +607,8 @@ CELL_TOTALS = []
 for _idx in range(4):
     _cfg = arena.INTENSITIES[_idx]
     _tot = arena.arena_totals(_idx)
-    # The model prices what the generator AUTHORS; the cell starts at what the game LAYS once
-    # PrismClearance has resolved the dishes' overlapping shell plates (prism_clearance.py,
-    # measured on a representative course - the clearance is structural, so a match's own course
-    # moves it little).
-    _laid_n, _laid_v = prism_clearance.rebase(_tot["prisms"], _tot["volume"],
-                                              "Assets/_Prefabs/Spawnables/SpawnableBreakwater.prefab", _idx + 1)
-    _th = arena.phase_thresholds(round(_laid_v), _laid_n)
-    CELL_TOTALS.append((_cfg, dict(_tot, laid_volume=_laid_v, laid_prisms=_laid_n), _th))
+    _th = arena.phase_thresholds(_tot["volume"], _tot["prisms"])
+    CELL_TOTALS.append((_cfg, _tot, _th))
 
     _intensity = _idx + 1
     _name = f"Breakwater Cell Config {_intensity}"
@@ -1116,7 +1109,7 @@ require(SHELL_INNER < CRYSTAL_SPAWN_RADIUS < SHELL_OUTER,
 
 # ── The phase ladder must sit ABOVE this arena's own mass at every intensity ─────────────────
 for _i, (_cfg, _tot, _th) in enumerate(CELL_TOTALS, start=1):
-    require(_th["RestlessEnterVolume"] > _tot["laid_volume"],
+    require(_th["RestlessEnterVolume"] > _tot["volume"],
             f"I{_i}: RestlessEnterVolume does not clear the arena's own volume - the cell would "
             f"boot pinned above Calm")
     require(_th["FrenzyEnterVolume"] > _th["RestlessEnterVolume"],
@@ -1124,7 +1117,7 @@ for _i, (_cfg, _tot, _th) in enumerate(CELL_TOTALS, start=1):
     require(_th["RestlessExitVolume"] < _th["RestlessEnterVolume"]
             and _th["FrenzyExitVolume"] < _th["FrenzyEnterVolume"],
             f"I{_i}: an exit threshold is not below its enter (no hysteresis band)")
-    require(_th["RestlessEnterCount"] > _tot["laid_prisms"],
+    require(_th["RestlessEnterCount"] > _tot["prisms"],
             f"I{_i}: the count backstop does not clear the arena's own prism count")
 
 # ── The folded prose must RE-READ as the text that went in ──────────────────────────────────

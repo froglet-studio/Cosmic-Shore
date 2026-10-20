@@ -7,7 +7,6 @@ namespace CosmicShore.Gameplay
     public class SpawnableSingleTrailBlock : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-        protected override Prism ClearancePrism => prism;
         [SerializeField] Vector3 blockScale = Vector3.one;
 
         protected override SpawnPoint[] GeneratePoints()

@@ -7,7 +7,6 @@ namespace CosmicShore.Gameplay
     public class SpawnableDriftCourse : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-        protected override Prism ClearancePrism => prism;
         [SerializeField] Vector3 blockScale = new Vector3(1, 3, 5);
         [SerializeField] float spawnDistance = 5f;
         [SerializeField] Vector3 Orgin;

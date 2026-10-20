@@ -34,7 +34,6 @@ CHECK_ONLY = "--check" in sys.argv
 # raises instead of writing.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cleave_budget as budget  # noqa: E402
-import prism_clearance  # noqa: E402  - what PrismClearance takes out of the baseline
 import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
 
 MEASURED, ARENAS = budget.ladder()
@@ -386,10 +385,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameCleave.asset.meta", asset_meta(G_ASSET["
 emit("Assets/_SO_Assets/Cell Configs/Cleave Cell.meta", meta(G_ASSET["CleaveCellFolder"], folder=True))
 
 for a in ARENAS:
-    # The measurement prices what the generator AUTHORS; the cell starts at what the game LAYS
-    # once PrismClearance has resolved the clipping (prism_clearance.py).
-    i = a["intensity"]
-    th = budget.phase_thresholds(*prism_clearance.rebase(a["prisms"], a["volume"], a["prefab"], i))
+    i, th = a["intensity"], a["thresholds"]
     emit(f"Assets/_SO_Assets/Cell Configs/Cleave Cell/Cleave Cell Config {i}.asset",
          HEADER_FOR(EXISTING["CellConfigDataSO"], f"Cleave Cell Config {i}") + f"""  CellName: Cleave
   Description: '{a['label']} - intensity {i} of Cleave: {a['blurb']}.

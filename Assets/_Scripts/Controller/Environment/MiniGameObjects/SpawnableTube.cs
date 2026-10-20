@@ -7,7 +7,6 @@ namespace CosmicShore.Gameplay
     public class SpawnableTube : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-        protected override Prism ClearancePrism => prism;
         [SerializeField] int radius = 3;
         [SerializeField] int length = 20;
         [SerializeField] int segments = 8;

@@ -151,10 +151,7 @@ namespace CosmicShore.Gameplay
         {
             if (!prefab) return;
             for (int i = 0; i < elems.Count; i++)
-            {
-                if (PrismClearance.IsCleared(elems[i].Point)) continue;
                 LayOne(prefab, elems[i], parent, trail, $"{ownerPrefix}::{i}", admitAuthoredScale);
-            }
         }
 
         /// <summary>Convenience overload for the single-domain, plain-kind environment path.</summary>
@@ -162,10 +159,7 @@ namespace CosmicShore.Gameplay
         {
             if (!prefab) return;
             for (int i = 0; i < points.Length; i++)
-            {
-                if (PrismClearance.IsCleared(points[i])) continue;
                 LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
-            }
         }
 
         // ── Gradual (coroutine) ──────────────────────────────────────────────
@@ -178,7 +172,6 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < points.Length; i++)
             {
                 if (!parent) yield break;
-                if (PrismClearance.IsCleared(points[i])) continue;
                 var block = LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
                 onEach?.Invoke(block);
                 if (interval > 0f) yield return CosmicShore.Utility.WaitCache.Seconds(interval);
@@ -194,7 +187,6 @@ namespace CosmicShore.Gameplay
             perFrame = Mathf.Max(1, perFrame);
             for (int i = 0; i < elems.Count; i++)
             {
-                if (PrismClearance.IsCleared(elems[i].Point)) continue;
                 var block = LayOne(prefab, elems[i], parent, trail, $"{ownerPrefix}::{i}");
                 collected?.Add(block);
                 if ((i + 1) % perFrame == 0)
@@ -596,9 +588,8 @@ namespace CosmicShore.Gameplay
             Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame)
         {
             if (!prefab || points == null || points.Length == 0) return UniTask.CompletedTask;
-            var elems = new List<PrismLay>(points.Length);
-            for (int i = 0; i < points.Length; i++)
-                if (!PrismClearance.IsCleared(points[i])) elems.Add(new PrismLay(points[i], domain));
+            var elems = new PrismLay[points.Length];
+            for (int i = 0; i < points.Length; i++) elems[i] = new PrismLay(points[i], domain);
             return LayBudgetedAsync(prefab, elems, parent, trail, ownerPrefix, budgetMsPerFrame);
         }
 
@@ -614,11 +605,6 @@ namespace CosmicShore.Gameplay
             List<Prism> collected = null, CancellationToken ct = default, bool admitAuthoredScale = false)
         {
             if (!prefab || elems == null || elems.Count == 0) return;
-            // The clone batches are sized up front, so a lay PrismClearance cleared is taken out
-            // before anything is cloned for it (a clone made and then skipped would sit in the
-            // container as a stray prism at the prefab's pose).
-            elems = WithoutCleared(elems);
-            if (elems.Count == 0) return;
 
             int count = elems.Count;
 
@@ -691,19 +677,6 @@ namespace CosmicShore.Gameplay
                 s_activeBudgetedLays--;
                 LoadInsights.End(laySpan);
             }
-        }
-
-        /// <summary>The list itself when nothing in it was cleared (the common case allocates
-        /// nothing), else a copy without the cleared lays.</summary>
-        static IReadOnlyList<PrismLay> WithoutCleared(IReadOnlyList<PrismLay> elems)
-        {
-            int i = 0;
-            while (i < elems.Count && !PrismClearance.IsCleared(elems[i].Point)) i++;
-            if (i == elems.Count) return elems;
-            var kept = new List<PrismLay>(elems.Count);
-            for (int k = 0; k < elems.Count; k++)
-                if (!PrismClearance.IsCleared(elems[k].Point)) kept.Add(elems[k]);
-            return kept;
         }
 
         /// <summary>

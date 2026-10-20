@@ -9,7 +9,6 @@ namespace CosmicShore.Gameplay
     public class SpawnableComet : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-        protected override Prism ClearancePrism => prism;
 
         #region Attributes for Explosion Parameters
         [Header("Block Parameters")]

@@ -9,7 +9,6 @@ namespace CosmicShore.Gameplay
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
-        protected override Prism ClearancePrism => prism;
         [SerializeField] Vector3 blockScale = Vector3.one;
 
         /// <summary>Laying slice per frame before the load gate takes over (it raises the slice
@@ -67,10 +66,6 @@ namespace CosmicShore.Gameplay
         protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
             if (prism == null || _cachedNodes == null) return;
-            // Pose and size come from the RESOLVED trail (SpawnableBase.ResolveClearance shrinks or
-            // clears a node that clips its neighbours); the node list carries only the domain.
-            var resolved = trailData is { Length: > 0 } ? trailData[0].Points : null;
-            if (resolved == null || resolved.Length != _cachedNodes.Count) return;
 
             // A gyroid is a 2D prismscape - a SHELL, not a ribbon. The Trail here is the
             // general lay container, and the layer declares the shape it laid so topology
@@ -93,7 +88,7 @@ namespace CosmicShore.Gameplay
                 Domains blockDomain = (colorDangerousBlocks && isDangerous) ? dangerousDomain : domain;
 
                 elems[i] = new PrismLay(
-                    resolved[i], blockDomain);
+                    new SpawnPoint(node.Position, node.Rotation, blockScale), blockDomain);
             }
 
             // Streamed + batched at play time (this assembly is the intensity-4 structure in both

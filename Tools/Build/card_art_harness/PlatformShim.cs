@@ -206,9 +206,6 @@ namespace CosmicShore.Gameplay
         public int intensityLevel = 1;
 
         protected abstract int GetParameterHash();
-        // The shipped base's clearance hook (PrismClearance). Declared so the shapes that override
-        // it compile; the card renders what the generator EMITS, so nothing here resolves.
-        protected virtual Prism ClearancePrism => null;
         protected virtual SpawnPoint[] GeneratePoints() => null;
         protected virtual SpawnTrailData[] GenerateTrailData()
         {
@@ -270,6 +267,12 @@ namespace CosmicShore.Gameplay
         protected Vector3 Jit(Vector3 s, float amt = 0.2f)
         {
             float k = 1f + RangeF(-amt, amt);
+            return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
+        }
+        // CellEnvironmentSpawnableBase.JitDown, verbatim: a jitter that only shrinks a flush size.
+        protected Vector3 JitDown(Vector3 s, float amt = 0.2f)
+        {
+            float k = 1f - RangeF(0f, 2f * amt);
             return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
         }
 

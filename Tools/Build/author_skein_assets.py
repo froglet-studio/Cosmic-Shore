@@ -29,7 +29,6 @@ import re
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key checks
-import prism_clearance  # noqa: E402  - what PrismClearance takes out of the baseline
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
@@ -226,16 +225,8 @@ STUB = ("  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
         "  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n")
 
 
-def laid(i: int, prisms: int, volume: int):
-    """The model prices what the generator AUTHORS; the cell starts at what the game LAYS once
-    PrismClearance has shortened the rail prisms that overlap their neighbours and cleared the
-    few that sit inside a crossing rail (prism_clearance.py)."""
-    n, v = prism_clearance.rebase(prisms, volume, f"Assets/_Prefabs/Spawnables/SpawnableSkein{i}.prefab", i)
-    return n, round(v)
-
-
 def cell_config(i: int, prisms: int, volume: int, n: int) -> str:
-    t = phase_thresholds(*laid(i, prisms, volume))
+    t = phase_thresholds(prisms, volume)
     return (HEADER + STUB
             + f"  m_Script: {{fileID: 11500000, guid: {EXISTING['CellConfigDataSO']}, type: 3}}\n"
             + f"  m_Name: Skein Cell Config {i}\n  m_EditorClassIdentifier:\n"
@@ -573,7 +564,7 @@ def main():
     print("\nphase ladder, derived from skein_budget (NEVER count x 16 - a (6,6,8) prism is 288):")
     for i in (1, 2, 3, 4):
         prisms, volume, n = nums[i]
-        t = phase_thresholds(*laid(i, prisms, volume))
+        t = phase_thresholds(prisms, volume)
         print(f"  I{i}  N={n}  {prisms:6d} prisms  {volume:9,d} volume  "
               f"RestlessEnterVolume {t['RestlessEnterVolume']:9,d}  FrenzyEnterVolume {t['FrenzyEnterVolume']:9,d}")
 

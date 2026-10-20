@@ -120,6 +120,12 @@ namespace CosmicShore.Gameplay
             float k = 1f + RangeF(-amt, amt);
             return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
         }
+        // CellEnvironmentSpawnableBase.JitDown, verbatim: a jitter that only shrinks a flush size.
+        protected Vector3 JitDown(Vector3 s, float amt = 0.2f)
+        {
+            float k = 1f - RangeF(0f, 2f * amt);
+            return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
+        }
 
         protected static float Hash01(int n)
         {

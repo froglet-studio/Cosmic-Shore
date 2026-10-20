@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
-using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using System.Linq;
 namespace CosmicShore.Gameplay
@@ -123,75 +122,9 @@ namespace CosmicShore.Gameplay
 
             rng = seed != 0 ? new System.Random(seed) : new System.Random();
             _cachedTrails = GenerateTrailData();
-            // A COMPOSITE node's points are placements for its children, not prisms, so only a
-            // leaf's lays are held to the clearance rule.
-            if (children.Count == 0) ResolveClearance(_cachedTrails);
             _cachedHash = hash;
             _cacheValid = true;
             return _cachedTrails;
-        }
-
-        /// <summary>
-        /// The prism prefab this spawnable lays, read for its scale window by
-        /// <see cref="ResolveClearance"/>. Null means the leaves are not prisms (a crystal, a
-        /// flora, a sign) and nothing is resolved. Every shape that lays through its own
-        /// <c>prism</c> field overrides this to return it.
-        /// </summary>
-        protected virtual Prism ClearancePrism => leafPrefab ? leafPrefab.GetComponent<Prism>() : null;
-
-        /// <summary>
-        /// Hold the generated lays to NO PRISM MAY INTERPENETRATE ANOTHER (<see cref="PrismClearance"/>):
-        /// every trail's points together, in trail order, against each other - two trails that
-        /// cross clip each other as surely as one trail clips itself. Runs once per generation,
-        /// inside the cache, so every reader of <see cref="GetTrailData"/> (the lay, the mode
-        /// preview's miniature, the planting model) sees the same resolved structure. A cleared
-        /// point keeps its slot with a zero scale and <see cref="PrismTrailBuilder"/> skips it.
-        /// </summary>
-        protected virtual void ResolveClearance(SpawnTrailData[] trailData)
-        {
-            var prefab = ClearancePrism;
-            if (!prefab || trailData == null || trailData.Length == 0) return;
-
-            int total = 0;
-            foreach (var td in trailData) total += td?.Points?.Length ?? 0;
-            if (total < 2) return;
-
-            var all = new SpawnPoint[total];
-            int k = 0;
-            foreach (var td in trailData)
-            {
-                if (td?.Points == null) continue;
-                System.Array.Copy(td.Points, 0, all, k, td.Points.Length);
-                k += td.Points.Length;
-            }
-
-            var window = ScaleWindow(prefab);
-            var result = PrismClearance.Resolve(all, window.min, window.max);
-
-            k = 0;
-            foreach (var td in trailData)
-            {
-                if (td?.Points == null) continue;
-                System.Array.Copy(all, k, td.Points, 0, td.Points.Length);
-                k += td.Points.Length;
-            }
-            LogClearance(result);
-        }
-
-        /// <summary>The per-axis window <c>PrismScaleAnimator.SetTargetScale</c> clamps a laid
-        /// prism into, read off the prefab; nulls when it has no animator (nothing is clamped).</summary>
-        protected static (Vector3? min, Vector3? max) ScaleWindow(Prism prefab)
-        {
-            if (prefab && prefab.TryGetComponent(out PrismScaleAnimator animator))
-                return (animator.MinScale, animator.MaxScale);
-            return (null, null);
-        }
-
-        protected void LogClearance(in PrismClearance.Result result)
-        {
-            if (result.Shrunk + result.Cleared == 0 || !CSDebug.IsVerbose(CSLogChannel.PrismRuntime)) return;
-            CSDebug.LogVerbose(CSLogChannel.PrismRuntime,
-                $"[{GetType().Name}] {name}: clearance shrank {result.Shrunk} and cleared {result.Cleared} of {result.Tested} prisms");
         }
 
         /// <summary>

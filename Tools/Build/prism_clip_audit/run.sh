@@ -25,10 +25,12 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 for f in UnityShim PlatformShim; do
   sed -E 's/^(    public )((static |abstract |sealed )*)(class|struct) /\1\2partial \4 /' "$CARD/$f.cs" > "$OUT/$f.cs"
 done
-# Every generation passes through ClipAudit.Hook, which applies the shipped PrismClearance pass the
-# way SpawnableBase.GetTrailData does when the audit asks for the resolved run.
+# Every generation passes through ClipAudit.Hook, which tags a shape's lays by trail.
 sed -i 's/public SpawnTrailData\[\] GenerateForHarness() => GenerateTrailData();/public SpawnTrailData[] GenerateForHarness() => ClipAudit.Hook(this, GenerateTrailData());/' "$OUT/PlatformShim.cs"
 grep -q 'ClipAudit.Hook' "$OUT/PlatformShim.cs" || { echo "FAIL: the card-art GenerateForHarness moved; re-point run.sh's hook" >&2; exit 1; }
+# ...and every cell-environment lay is tagged with the generator methods that emitted it.
+sed -i 's/^\(            _cachedLays.Add(new PrismLay(new SpawnPoint(pos, rot, scale), dom, kind));\)/            ClipAudit.TagEmit();\n\1/' "$OUT/PlatformShim.cs"
+grep -q 'ClipAudit.TagEmit' "$OUT/PlatformShim.cs" || { echo "FAIL: the card-art Emit moved; re-point run.sh's family tag" >&2; exit 1; }
 # The shapes name UnityEngine.Renderer (ClipShim), which makes the card-art driver's bare
 # `Renderer.Render` ambiguous; qualify it in the copy.
 # And every leaf lay passes through the prism prefab's per-axis scale window, as it does in the
