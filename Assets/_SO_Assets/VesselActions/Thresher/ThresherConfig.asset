@@ -106,7 +106,6 @@ MonoBehaviour:
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   magnetRange: 150
   magnetAcceleration: 220
-  launchCueSeconds: 0.25
   launchBoost: 4.8
   chainCutRadius: 0.6
   chainDebrisRestitution: 0.5
@@ -121,7 +120,6 @@ MonoBehaviour:
   debrisRestitution: 0.33333334
   debrisSpeedLimit: 200
   comboGraceSeconds: 0.4
-  readyMargin: 1.05
   colorBlendRate: 15
   cameraFraming: 1
   cameraZoomOutRate: 12
@@ -160,7 +158,6 @@ MonoBehaviour:
   ballMaxVisualSpin: 540
   chainRimSlack: 0.35
   chainRimTaut: 0.75
-  chainRimReady: 0.95
   ballVisualScale: 1.25
   chainLinks: 24
   chainRenderSubdivisions: 6

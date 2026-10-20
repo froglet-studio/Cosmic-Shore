@@ -1183,3 +1183,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash or Garrett
 - **Added:** 2026-10-20 by a Claude session (`cece/youthful-johnson-7c8xh2`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md
+
+### T-20261020-41eb · open · test · Thresher
+- **Task:** Fly the Thresher on cece/tender-hamilton-qcd1hi (Editor and phone): the chain never turns lime, the launch crosshair stays white the whole lap, and a charged ball's rim burns toward white (not lime) as the Space gauge fills
+- **Done when:** All four steps of the 2026-10-20 'no lime' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, and the charged ball reads as explosive (energyRimTint tuned if not)
+- **Who can take it:** Garrett (owner's eye on how the charged ball reads); Yash (offered) can run the Editor steps
+- **Added:** 2026-10-20 by a Claude session (`cece/tender-hamilton-qcd1hi`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261020-13f4 · open · test · Menu_Main
+- **Task:** Play-test Toy Box Navigate's new stand-off: open the Toy Box, pick a toy (e.g. the Vessel Changer), press Navigate - the vessel should land about 3x further from the switch than before (7.2 ring radii), facing it, with time to steer around it instead of flying into it; repeat once while already flying
+- **Done when:** Navigate lands well clear of the switch from both the menu and mid-freestyle, and the toy still sits ahead on arrival
+- **Who can take it:** Garrett (asked for it) or Yash
+- **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
+- **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
