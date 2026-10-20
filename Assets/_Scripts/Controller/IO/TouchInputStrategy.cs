@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
@@ -182,7 +183,8 @@ namespace CosmicShore.Gameplay
 
         public override void ProcessInput()
         {
-            var touchCount = Touch.activeTouches.Count;
+            CollectFlightTouches();
+            var touchCount = flightTouches.Count;
 
             // Detect transitions that start or stop drift
             HandleDriftTransitions(touchCount);
@@ -274,7 +276,7 @@ namespace CosmicShore.Gameplay
                 // The held throttle already embodies any earlier carry.
                 throttleCarry = 0f;
 
-                var remainingPosition = Touch.activeTouches[0].screenPosition;
+                var remainingPosition = flightTouches[0].screenPosition;
                 bool remainingIsLeft = remainingPosition.x < Screen.width * 0.5f;
 
                 if (remainingIsLeft)
@@ -358,7 +360,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                if (Touch.activeTouches[0].screenPosition.x <= Touch.activeTouches[1].screenPosition.x)
+                if (flightTouches[0].screenPosition.x <= flightTouches[1].screenPosition.x)
                 {
                     leftTouchIndex = 0;
                     rightTouchIndex = 1;
@@ -370,8 +372,8 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            leftJoystickValue = Touch.activeTouches[leftTouchIndex].screenPosition;
-            rightJoystickValue = Touch.activeTouches[rightTouchIndex].screenPosition;
+            leftJoystickValue = flightTouches[leftTouchIndex].screenPosition;
+            rightJoystickValue = flightTouches[rightTouchIndex].screenPosition;
 
             if (rebaseSticks)
             {
@@ -388,7 +390,7 @@ namespace CosmicShore.Gameplay
 
         private void ProcessSingleTouch()
         {
-            var position = Touch.activeTouches[0].screenPosition;
+            var position = flightTouches[0].screenPosition;
 
             if (inputStatus.CommandStickControls)
             {
@@ -431,7 +433,7 @@ namespace CosmicShore.Gameplay
             );
 
             if (tempThreeDPosition.sqrMagnitude < 10000 &&
-                Touch.activeTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
+                flightTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
             {
                 inputStatus.OnButtonPressed.Raise(InputEvents.NodeTapAction);
             }
@@ -467,7 +469,7 @@ namespace CosmicShore.Gameplay
 
         private void HandleJoystick(ref Vector2 joystickStart, int touchIndex, ref Vector2 joystick, ref Vector2 clampedPosition)
         {
-            Touch touch = Touch.activeTouches[touchIndex];
+            Touch touch = flightTouches[touchIndex];
 
             if (touch.phase == UnityEngine.InputSystem.TouchPhase.Began || joystickStart == Vector2.zero)
                 joystickStart = touch.screenPosition;
@@ -582,15 +584,29 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // The fingers flight reads: every active touch except one that started on a control which
+        // owns it (an ability card, FlightTouchClaims). Every read below goes through this list, so
+        // a card tap is never also a thumb, a three-finger fumble or a drift edge.
+        private readonly List<Touch> flightTouches = new();
+
+        private void CollectFlightTouches()
+        {
+            flightTouches.Clear();
+            var touches = Touch.activeTouches;
+            for (int i = 0; i < touches.Count; i++)
+                if (!FlightTouchClaims.Claims(touches[i].startScreenPosition))
+                    flightTouches.Add(touches[i]);
+        }
+
         private int GetClosestTouch(Vector2 target)
         {
             int touchIndex = 0;
             float minSqrDistance = float.MaxValue;
 
-            for (int i = 0; i < Touch.activeTouches.Count; i++)
+            for (int i = 0; i < flightTouches.Count; i++)
             {
                 // argmin over distance == argmin over squared distance - no sqrt needed.
-                float sqrDistance = (target - Touch.activeTouches[i].screenPosition).sqrMagnitude;
+                float sqrDistance = (target - flightTouches[i].screenPosition).sqrMagnitude;
                 if (sqrDistance < minSqrDistance)
                 {
                     minSqrDistance = sqrDistance;

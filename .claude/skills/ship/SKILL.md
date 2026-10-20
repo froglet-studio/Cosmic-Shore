@@ -78,6 +78,13 @@ ten minutes, a green run of it (negative-controlled) IS evidence, and the verifi
 "compiled against Unity reference assemblies (`unity_refcompile`), not opened in the editor" instead
 of "not compiled". How to run it, and its false positives: `/asset-surgery` §4.
 
+**A green `unity_refcompile` does not cover Amoebius.** Amoebius compiles the same `Assets/_Scripts` against its own
+`UnityEngine` shim, as a development build with no platform symbol, so a Unity API the shim lacks breaks the engine
+and nothing on the Unity side notices (2026-10-19: `Debug.developerConsoleEnabled`, CS0117). When the branch calls a
+Unity API the game did not call before, `dotnet build Port/src/CosmicShore.Live` (.NET 10 SDK, `dotnet-install.sh
+--channel 10.0`, about 2 minutes) is the check; `Docs/CONDITIONAL_COMPILATION.md` "The Amoebius variant" has the
+guard that keeps player-only APIs out of it.
+
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
 runs in full, in every mode.
