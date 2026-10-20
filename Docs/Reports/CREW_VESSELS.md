@@ -72,6 +72,30 @@ counts, five-petal motes, depth measured from the plane and a dither cone in the
 HUD, the flowers, the L5s, the Omni burst, the out-of-plane look). The real blast can also hit rival hulls, and it all
 runs on one machine. Each is explained in `Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md`.
 
+## 3b. The Orca: the 4-seat vessel (2026-10-20, branch `cece/happy-noether-m54hz6`)
+
+The second crew vessel, Garrett's design from the **Crew of Four Lab**
+([artifact](https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb), `Docs/Studios/CREW_OF_FOUR_LAB.md`). Its card reads
+**Orca · 4 seat**: Garrett asked for multiplayer vessels to be named by their seats ("that lets players know it supports
+four players or brings in 4 AI"), so `SO_Vessel` gained `SeatCount`, and the Wrasse's card now reads "Wrasse and
+Grouper · 2 seat".
+- **The seats.** One **helm** flies with two thumbs, boosts from a tank and rings the hull in danger prisms that leave
+  the front open. Three **gunners** sit in gyro-stabilized first-person turrets on outriggers. Each gunner launches
+  and flies missiles from one shared magazine. Omni crystals refill the magazine. The AI fills every empty seat.
+- **The stabilization (lab round 4)** cut a gunner's unsteered view sway from 47–54 °/s to 3–6 °/s (12 seeds, every
+  game). The gunner's aim lives in the world; the view's horizon is held, then eased; the turrets sit on outriggers
+  that follow a lagged copy of the hull's frame.
+- **In Unity:** `VesselClassType.Orca = 20`, `Orca.prefab` (the Sparrow without its kit, on two sticks), `OrcaCrew` and
+  its engine-free core, the view, the HUD controller and the omni effect. It is in the Toybox Vessel Changer. The
+  author tool is `Tools/Build/author_orca_assets.py`; the parity gate is `Tools/Build/orca_crew_lab/parity.cjs`.
+  Design doc: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`.
+- **Checked:**
+  - The C# core matches the page step by step, and the asset matches the lab's numbers; planted controls are caught.
+  - Unity reference compile: no project errors.
+  - 14 core tests pass under .NET.
+  - All static gates pass.
+- **Not checked: it has not been flown in the Unity editor.** It also runs on one machine only, like the Wrasse.
+
 ## 4. Open items, and what is asked of you
 
 - **Fly it in the editor** (`T-20261018-5c29`; Yash can run the editor pass). Let the shaders re-import, check the pilot

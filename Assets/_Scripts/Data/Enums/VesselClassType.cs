@@ -29,5 +29,6 @@ namespace CosmicShore.Data
         Angler = 17,
         // 18 is left for the Goby (cece/sharp-tesla-j0kd7z), which must move off 16
         Wrasse = 19,   // a cleaner wrasse and its host: the Sparrow hull with the Kite & Tail navigator seat (two players, one hull): Controller/Vessel/Crew/KITE_NAVIGATOR.md
+        Orca = 20,     // the 4-seat vessel: one helm and three gunner seats on one hull, every empty seat an AI: Controller/Vessel/Crew/ORCA_CREW.md
     }
 }

@@ -595,9 +595,27 @@ dungeons, upgrades or probes as items; at most three crews (the game's three pla
 ward, guns, Core, skiff and their numbers are proposals; crystals are lime with their element told by shape, and the
 element bars use lab colours.
 
-## 5. Graduation (not started)
+## 5. Graduation: the Orca (2026-10-20)
 
-Per `/labmaker` §7, "bring it to Unity" means the Toybox's Vessel Changer offers it: a crew hull ships on a hull class
-the way the Wrasse does (`Tools/Build/author_wrasse_assets.py`), seats would ride the duo-vessel system
-(`cece/sharp-tesla-j0kd7z`), and the online question is the Wrasse's open `T-20261017-b06e`. Nothing is ported in
-round 1, and no enum value or `GameModes` id is claimed.
+Garrett: "stabilize the gunners guns as best you can... then bring this into unity". Round 4 graduated as the **Orca**,
+`VesselClassType.Orca = 20`, card **Orca · 4 seat**. It is in the Toybox Vessel Changer, which is what "bring it to
+Unity" means (`/labmaker` §7). Design and files: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`.
+
+**The crew rules are ported line for line** into `OrcaCrewCore.cs` (no engine): the stabilized turret, the held
+horizon, the lagged mounts, the flown missile, the magazine, the shield's shape and the AI's stick.
+- The page exposes the functions it flies as `window.__lab.parity`. Round 4 lifted `holdHorizon`, `shieldDirs` and
+  `flyMissile` out of their inline blocks; a 12-seed batch is byte-identical before and after.
+- `node Tools/Build/orca_crew_lab/parity.cjs` compiles the shipped C# and diffs it against those functions step by
+  step (600 turret steps, 300 missile steps, 60 AI sticks, 144 shield directions).
+- It also checks `OrcaCrewConfig.asset` against SHIPPED, key by key, and planted controls must be caught.
+
+**The numbers belong to this lab.** The asset was seeded once from SHIPPED; tune here and re-seed.
+- The lab's element factors (an effect at level 15 is 1 + k) are `ElementalFloat` channels in the game. Each channel
+  runs from rest to rest × (1 + 2k/3) at level 10, which is the same line.
+- The hull takes the lab's 0.85 × the Sparrow's speed and 0.55 × its turn rates.
+
+**What the game does differently** (ORCA_CREW.md):
+- The AI helm is the hull's own `AIPilot`.
+- The burst is the real `AOEExplosion`, and its vessel effect decides what a caught hull loses.
+- Missiles collect crystals through the game's own skimmer and sweep paths.
+- The crew runs on one machine until it is networked.

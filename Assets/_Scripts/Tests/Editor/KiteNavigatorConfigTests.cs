@@ -120,7 +120,8 @@ namespace CosmicShore.Tests
             var cls = AssetDatabase.LoadAssetAtPath<SO_Vessel>("Assets/_SO_Assets/Classes/SO_Class_Wrasse.asset");
             Assert.IsNotNull(cls);
             Assert.AreEqual("Wrasse", cls.Name, "Name stays the vessel's key (the hangar's cloud unlocks)");
-            Assert.AreEqual("Wrasse and Grouper", cls.CardName);
+            Assert.AreEqual(2, cls.SeatCount, "a multiplayer vessel is named by its seats (Garrett, 2026-10-20)");
+            Assert.AreEqual("Wrasse and Grouper \u00b7 2 seat", cls.CardName);
 
             var solo = ScriptableObject.CreateInstance<SO_Vessel>();
             solo.Name = "Sparrow";

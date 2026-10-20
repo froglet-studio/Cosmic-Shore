@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Orca
+  m_EditorClassIdentifier:
+  vesselClass: 20
+  entries:
+  - Element: 1
+    AbilityLabel: 'Flown Missiles'
+    AbilityDescription: 'Three gunners launch missiles from one shared magazine and fly them by hand; Charge makes them faster and sharper. Omni crystals refill the magazine. The card counts the missiles left.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: 'Burst'
+    AbilityDescription: 'A missile bursts on contact, after five seconds, or when its gunner presses Release again; Space widens the blast. The card flashes on every burst.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: 'Danger Shield'
+    AbilityDescription: 'The helm rings the hull in danger prisms, open ahead, on the left trigger; Mass holds the ring longer. The card shows its recharge.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 4
+    AbilityLabel: 'Boost Tank'
+    AbilityDescription: 'The helm boosts on the right trigger while the tank lasts; it refills on its own, faster with Time. The card shows the tank.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 

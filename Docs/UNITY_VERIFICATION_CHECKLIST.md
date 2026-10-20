@@ -65,6 +65,57 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Orca, the 4-seat vessel: helm, three stabilized gunner turrets, flown missiles (`cece/happy-noether-m54hz6`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+`VesselClassType.Orca = 20`, card "Orca · 4 seat" (`Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`). No Unity
+Editor or `unity` CLI was available in the session, so `/verify-unity` did not run. What did run:
+- the Unity reference compile (player config: no project errors; editor config: no errors in changed files);
+- the lab parity gate (`node Tools/Build/orca_crew_lab/parity.cjs`);
+- `author_orca_assets.py --check` and `--self-test`;
+- the 14 core tests under .NET.
+
+Affects Garrett's crew vessels: the Wrasse's card now reads "Wrasse and Grouper · 2 seat" (`SO_Vessel.SeatCount`).
+
+**Verify in editor:**
+1. The project compiles; `OrcaCrewCoreTests`, `EnumIntegrityTests`, `KiteNavigatorConfigTests`,
+   `CrystalHullFusionConfigTests` and `ToyVesselRosterCoverageTests` pass in the Test Runner.
+2. Toybox → Vessel Changer: an **Orca · 4 seat** station is offered. Fly it: a Sparrow body with three pods on struts
+   (one above, two on side booms), in your domain colour, lit and faceted.
+3. Helm:
+   - It flies on two sticks.
+   - Right trigger / right Shift boosts and the Time card's veil fills as the tank empties, then refills.
+   - Left trigger / left Shift rings the hull in danger prisms with the front open; they ride with the hull for ~4 s,
+     then go. The Mass card flashes, then shows its recharge.
+   - Meanwhile the AI gunners launch missiles: darts fly from the pods, burst on prisms or rivals, and the Charge card's
+     count drops.
+4. Press **2**:
+   - You look out of the top turret, with the chase view as a square in the lower left. The seat line at the top reads
+     "Gunner 1 · N missiles · 1-4 to change seat".
+   - Mouse / stick aims. With the AI flying hard turns, the aim stays on its point and the horizon drifts back slowly
+     (no whipping).
+5. Release (Space / left click / A):
+   - A missile launches and the camera rides behind it. W A S D / stick steers it.
+   - Release again bursts it. Otherwise it bursts on contact, or after 5 s.
+   - A burst destroys hostile prisms; on a rival hull it scores a hit.
+6. Fly a missile through an **omni** crystal: the count rises by 3 (max 12). Through an elemental crystal: the hull's
+   petal for it grows.
+7. Press **1**: the helm is back, flight input works, the cursor is unlocked.
+8. Touch (phone build): a two-finger tap steps seats; a tap in a gunner seat releases; a drag aims or steers.
+9. Clean console in play mode (no NRE from `OrcaCrew` / `OrcaCrewView` / `OrcaHUDController`), and no shield prisms left
+   behind after a seat change or a Vessel Changer swap.
+
+**First-pass tuning** (the lab's, in `OrcaCrewConfig.asset`; tune in the lab and re-seed):
+
+| Field | Value | Note |
+|---|---|---|
+| hull Pitch/Yaw/Roll | 44 / 44 / 16.5 | the lab's 0.55 × the Sparrow's; the roll will likely feel slow (the Wrasse went to 120) |
+| missileSpeed / missileTurn | 180 u/s / 150 °/s | × 1 → 1.4 with Charge |
+| blastRadius | 30 → 46 u (Space) | |
+| magazine | 6 at start, 12 max, +3 per omni | |
+| shield | 144 prisms, 50–70 u, open 45°, 4 → 6.1 s (Mass), 9 s recharge | |
+
+---
+
 ### 🔴 Tutorial off, Spectate label, configure preview visible, opaque configure veil (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 29 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE quest and Lesson (switched off in data).

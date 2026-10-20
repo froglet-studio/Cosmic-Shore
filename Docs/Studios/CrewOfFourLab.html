@@ -481,15 +481,20 @@
 
   // ---- the shield: danger prisms on a shell around the hull, the forward cone left open ----
   function raiseShield(w, c) {
-    const sh = c.shield, n = Math.round(P.shieldBlocks), open = Math.cos(P.shieldOpenDeg * D2R), rng = w.rng;
+    const sh = c.shield, n = Math.round(P.shieldBlocks), rng = w.rng;
     sh.blocks = []; sh.t = P.shieldTime * mul(c, 2, P.kMass); sh.cd = P.shieldCd; c.stats.shields++;
-    for (let k = 0; k < n * 2 && sh.blocks.length < n; k++) {   // a Fibonacci sphere, skipping the opening
-      const y = 1 - 2 * (k + 0.5) / (n * 2), rr = Math.sqrt(1 - y * y), th = k * 2.39996, d = V(Math.cos(th) * rr, y, Math.sin(th) * rr);
-      if (d.z > open) continue;
-      sh.blocks.push({ l: d, rad: P.shieldMinR + rng() * Math.max(0, P.shieldMaxR - P.shieldMinR), alive: true, prism: null });
-    }
+    for (const d of shieldDirs(n, P.shieldOpenDeg)) sh.blocks.push({ l: d, rad: P.shieldMinR + rng() * Math.max(0, P.shieldMaxR - P.shieldMinR), alive: true, prism: null });
     if (!P.shieldAttached) for (const b of sh.blocks) { const wd = toWorld(c.hull, b.l); b.prism = addPrism(w, add(c.hull.pos, scale(wd, b.rad)), wd, c.dom, 'danger', c.i); }
     event(w, DOMS[c.dom].name + ' raised its shield', c.col);
+  }
+  function shieldDirs(n, openDeg) {   // a Fibonacci sphere of n hull-local directions, skipping the forward opening
+    const open = Math.cos(openDeg * D2R), out = [];
+    for (let k = 0; k < n * 2 && out.length < n; k++) {
+      const y = 1 - 2 * (k + 0.5) / (n * 2), rr = Math.sqrt(1 - y * y), th = k * 2.39996, d = V(Math.cos(th) * rr, y, Math.sin(th) * rr);
+      if (d.z > open) continue;
+      out.push(d);
+    }
+    return out;
   }
   function shieldBlockPos(c, b) { return b.prism ? b.prism.pos : add(c.hull.pos, scale(toWorld(c.hull, b.l), b.rad)); }
   function shieldHit(w, c, p, r) {   // the alive block of c's shield within r of point p, or null
@@ -638,12 +643,8 @@
           t.az += clamp(da, -mx, mx); t.el = clamp(t.el + clamp(el - t.el, -mx, mx), -1.0, 1.45);
         }
         if (P.turretStab) {   // the view's horizon: keep it square to the aim, hold it still, ease it back to the hull's up
-          let up = sub(t.upW, scale(t.aimW, dot(t.upW, t.aimW))); if (len(up) < 1e-3) up = sub(c.hull.u, scale(t.aimW, dot(c.hull.u, t.aimW)));
-          const hu = sub(c.hull.u, scale(t.aimW, dot(c.hull.u, t.aimW))), k = 1 - Math.exp(-dt / Math.max(0.05, P.horizonSmooth));
-          const held = norm(up);
-          if (len(hu) > 1e-3) up = add(held, scale(sub(norm(hu), held), k));
-          t.upW = norm(up);
-          if (s === 1 && c.isUs) c.stats.sway += angBetween(held, t.upW) / D2R;   // only the drift moves a still gunner's view
+          const swayed = holdHorizon(t, c.hull.u, dt, P.horizonSmooth);
+          if (s === 1 && c.isUs) c.stats.sway += swayed;   // only the drift moves a still gunner's view
         }
         const idle = c.mag <= 0 || (!human && !inp.aimTo);
         if (idle) { t.wait += dt; if (c.isUs && t.wait > c.stats.maxWait) c.stats.maxWait = t.wait; } else t.wait = 0;
@@ -652,6 +653,15 @@
         if (t.queued > 0) { t.queued -= dt; if (t.cd <= 0 && c.mag > reserve) { t.queued = 0; launch(w, c, s); } }
       }
     }
+  }
+  // a stabilized turret's view: keep its up square to the aim, hold it still, ease it toward the hull's up; returns degrees moved
+  function holdHorizon(t, hullU, dt, smooth) {
+    let up = sub(t.upW, scale(t.aimW, dot(t.upW, t.aimW))); if (len(up) < 1e-3) up = sub(hullU, scale(t.aimW, dot(hullU, t.aimW)));
+    const hu = sub(hullU, scale(t.aimW, dot(hullU, t.aimW))), k = 1 - Math.exp(-dt / Math.max(0.05, smooth));
+    const held = norm(up);
+    if (len(hu) > 1e-3) up = add(held, scale(sub(norm(hu), held), k));
+    t.upW = norm(up);
+    return angBetween(held, t.upW) / D2R;
   }
   function rotateToward(cur, want, maxA) {
     const cc = clamp(dot(cur, want), -1, 1), a = Math.acos(cc);
@@ -716,9 +726,7 @@
     for (const m of w.missiles) {
       if (m.dead) continue;
       const c = w.crews[m.crew], sp = P.missileSpeed * mul(c, 3, P.kCharge), rate = P.missileTurn * mul(c, 3, P.kCharge) * D2R * dt;
-      const st = m.stick || { yaw: 0, pitch: 0, roll: 0 };
-      turnBody(m, clamp(st.yaw, -1, 1) * rate, clamp(st.pitch, -1, 1) * rate, clamp(st.roll || 0, -1, 1) * rate);
-      const prev = m.pos; m.pos = add(m.pos, scale(m.f, sp * dt)); m.t += dt; c.stats.flight += dt;
+      const prev = flyMissile(m, sp, rate, dt); c.stats.flight += dt;
       if (len(m.pos) > w.R + 40) { explode(w, m, 'timeout'); continue; }
       for (const cr of w.crystals) if (cr.alive && d2(cr.pos, m.pos) < 81) collect(w, c, cr, true);
       let hit = null;
@@ -733,6 +741,12 @@
       else if (m.t >= P.missileLife) explode(w, m, 'timeout');
     }
     w.missiles = w.missiles.filter((m) => !m.dead);
+  }
+  function flyMissile(m, sp, rate, dt) {   // the stick turns it (rate: radians this step), then it flies straight ahead; returns where it was
+    const st = m.stick || { yaw: 0, pitch: 0, roll: 0 };
+    turnBody(m, clamp(st.yaw, -1, 1) * rate, clamp(st.pitch, -1, 1) * rate, clamp(st.roll || 0, -1, 1) * rate);
+    const prev = m.pos; m.pos = add(m.pos, scale(m.f, sp * dt)); m.t += dt;
+    return prev;
   }
   function explode(w, m, why) {
     if (m.dead) return; m.dead = true;
@@ -1405,6 +1419,8 @@
     setGame(g, i, d) { if (g != null) G.game = g; if (i != null) G.intensity = i; if (d != null) G.diff = d; fillHeader(); restart(); },
     state: () => { const w = world; return { t: w.t, seed, over: w.over, winner: w.winner, missiles: w.missiles.length, prisms: w.prisms.filter((p) => !p.dead).length, crews: w.crews.map((c) => ({ dom: DOMS[c.dom].name, lv: c.lv.slice(), mag: c.mag, score: c.score, ring: c.ringIdx, shield: +c.shield.t.toFixed(2), human: c.members.map((m) => m.human), turrets: [1, 2, 3].map((s) => !!c.turrets[s].missile), hull: { f: c.hull.f, v: +c.hull.v.toFixed(1) } })) }; },
     humanIn, world: () => world,
+    // the pure functions Tools/Build/orca_crew_lab/parity.cjs holds the shipped C# OrcaCrewCore to
+    parity: { turnBody, followFrame, rotateToward, steerToward, holdHorizon, shieldDirs, flyMissile },
   };
 })();
 </script>

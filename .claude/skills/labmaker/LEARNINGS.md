@@ -834,6 +834,26 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `CrewOfFourLab.html` `turretDir`, `mountPos`, `followFrame`, the `swayDegS` score; `CREW_OF_FOUR_LAB.md` §4.
 - Promoted: no
 
+### L-STU-124 — Porting a lab: write element factors as the game's channel, lift inline rules into named functions, and measure small angles with atan2
+- Lab: Crew of Four Lab (graduation as the Orca) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened:
+  - The lab scaled four numbers as `1 + k × level / 15`, while the game's element channel is `ElementalFloat`
+    (`LerpUnclamped(Min, Max, level / 10)`). Porting the factor as code would have left `element_ability_table.py` reading
+    "NO SCALING" on two of the hull's four elements.
+  - Three rules lived inline in the lab's step function (the horizon hold, the shield's shape, the missile step), so a
+    parity harness had nothing to call.
+  - The C# sway readout returned 0 every step: `acos(dot)` of a one-step turn rounds to zero in float32 (the page is
+    float64).
+- Do instead:
+  - A lab factor of that shape IS an `ElementalFloat`: Min = base, Max = base × (1 + 2k/3). Port it as one, and have
+    the parity gate check Min and Max against the page's SHIPPED base and k.
+  - Before porting, lift every rule the harness must hold into a named pure function, expose them on
+    `window.__lab.parity`, and prove a batch is byte-identical before and after.
+  - Measure angles in a float port with `atan2(|a × b|, a · b)`, never `acos(a · b)`.
+- Evidence: `OrcaCrewConfigSO.cs` (`boostRefill`, `shieldSeconds`, `blastRadius`, `missileScale`); `CrewOfFourLab.html`
+  `holdHorizon` / `shieldDirs` / `flyMissile`; `OrcaTurret.HoldHorizon`; `Tools/Build/orca_crew_lab/parity.cjs`.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

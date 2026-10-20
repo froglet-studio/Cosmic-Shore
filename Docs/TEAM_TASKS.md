@@ -1198,3 +1198,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (vessels, product decisions)
 - **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb, Docs/Studios/CREW_OF_FOUR_LAB.md section 4
+
+### T-20261020-440c · open · test · Crew vessels
+- **Task:** Fly the Orca (the 4-seat vessel) in the Unity editor from the Toybox Vessel Changer on cece/happy-noether-m54hz6: the helm (two thumbs, right-trigger boost tank, left-trigger danger shield), then keys 2-4 for each gunner turret (stabilized aim while the AI turns the hull, Release launches a missile you fly, a second Release bursts it, an omni crystal through a missile adds 3 to the Charge card's count), then 1 back to the helm. Steps and expected results: Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Orca'.
+- **Done when:** Every step of the checklist entry ticked (or a bug filed per failure), and the console clean in play mode
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-20 by a Claude session (`cece/happy-noether-m54hz6`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+
+### T-20261020-3967 · open · decision · Crew vessels
+- **Task:** Orca design calls the port left open: (1) the four level-5 upgrades (Charge missiles, Space burst, Mass shield, Time boost tank - none designed, every UpgradeLabel is empty), (2) the hull's turn rates (the lab's 0.55 x Sparrow gives roll 16.5, likely slow - the Wrasse went to 120), (3) the shield on a touch screen (the left trigger has no touch equivalent), (4) which machine decides bursts once the crew is networked.
+- **Done when:** Decisions recorded on the Crew of Four Lab's Decisions tab or in ORCA_CREW.md, and the lab re-seeded where a number changed
+- **Who can take it:** Garrett (vessels, product decisions)
+- **Added:** 2026-10-20 by a Claude session (`cece/happy-noether-m54hz6`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md#follow-ups

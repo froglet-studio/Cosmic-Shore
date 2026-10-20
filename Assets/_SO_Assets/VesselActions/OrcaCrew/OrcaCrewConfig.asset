@@ -1,0 +1,118 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cb77c5f589c404eb1770678f24d97b9, type: 3}
+  m_Name: OrcaCrewConfig
+  m_EditorClassIdentifier: 
+  hullRadius: 9
+  boostTank: 3
+  boostRefill: 
+    Enabled: 1
+    Value: 0.25
+    Min: 0.25
+    Max: 0.35
+    element: 4
+    UseFloor: 1
+    Floor: 0.05
+  shieldBlocks: 144
+  shieldMinRadius: 50
+  shieldMaxRadius: 70
+  shieldOpenDeg: 45
+  shieldSeconds: 
+    Enabled: 1
+    Value: 4
+    Min: 4
+    Max: 6.1333333
+    element: 2
+    UseFloor: 1
+    Floor: 0.5
+  shieldCooldown: 9
+  shieldBlockScale: {x: 10, y: 1, z: 1}
+  mountSmooth: 0.35
+  horizonSmooth: 3
+  turretTurn: 160
+  mouseAimRadiansPerPixel: 0.0035
+  missileSpeed: 180
+  missileTurn: 150
+  missileScale: 
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.4
+    element: 1
+    UseFloor: 1
+    Floor: 0.5
+  missileLife: 5
+  launchCooldown: 0.6
+  blastRadius: 
+    Enabled: 1
+    Value: 30
+    Min: 30
+    Max: 46
+    element: 3
+    UseFloor: 1
+    Floor: 5
+  blastSeconds: 0.5
+  missileCollectRadius: 9
+  missileContactRadius: 3.46
+  startMissiles: 6
+  maxMissiles: 12
+  omniMissiles: 3
+  aiReserve: 1
+  aiSkill: 2
+  aiRetargetSeconds: 0.4
+  turretFov: 75
+  missileCamBack: 14
+  missileCamUp: 3
+  explosions:
+  - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  missileLaunchSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  missileBurstSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  shieldRaiseSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  omniRefillSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  emptyMagazineSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  seatLineTemplate: "{seat}  \xB7  {count} missiles  \xB7  1-4 to change seat"
+  seatNames:
+  - Helm
+  - Gunner 1
+  - Gunner 2
+  - Gunner 3
