@@ -1,5 +1,6 @@
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -29,6 +30,11 @@ namespace CosmicShore.Gameplay
     {
         static SilenceScreenFeedback s_instance;
 
+        /// <summary>The console command (DiagnosticsHUD, dev builds and the editor):
+        /// <c>silence</c> reports what silence did this session, <c>silence test [seconds]</c>
+        /// silences your own pilot so the shake and vignette can be judged without a fight.</summary>
+        public const string CommandName = "silence";
+
         string _watchedPilot;
         float _weight;
         bool _pushed;
@@ -36,6 +42,7 @@ namespace CosmicShore.Gameplay
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
         {
+            DiagnosticsHUD.RegisterCommand(CommandName, Handle);
             if (s_instance) return;
             var go = new GameObject("[Silence Screen Feedback]") { hideFlags = HideFlags.HideInHierarchy };
             DontDestroyOnLoad(go);
@@ -119,6 +126,55 @@ namespace CosmicShore.Gameplay
             if (CameraManager.Instance != null &&
                 CameraManager.Instance.GetActiveController() is CustomCameraController cam)
                 cam.Shake(config.OnsetShakeIntensity, config.OnsetShakeSeconds);
+        }
+
+        /// <summary>
+        /// <c>silence</c>: every pilot this machine settled a take for - hits that reached the
+        /// economy, how many took nothing because the pilot held no petals (every mode's pot starts
+        /// empty, so a fight between fresh pilots silences nobody), petals lost, silences begun - and
+        /// who is silenced now. <c>silence test [seconds]</c>: silence your own pilot for that long
+        /// (default 4), to look at the shake and vignette in isolation from the economy.
+        /// </summary>
+        static string Handle(string[] args)
+        {
+            if (args != null && args.Length > 0 && args[0] == "test")
+            {
+                float seconds = 4f;
+                if (args.Length > 1) float.TryParse(args[1], System.Globalization.NumberStyles.Float,
+                                                    System.Globalization.CultureInfo.InvariantCulture, out seconds);
+                var local = FindLocalPilot();
+                if (local == null) return "silence test: no local human pilot is flying.";
+                VesselSilence.Record(local, Mathf.Max(0.1f, seconds));
+                return $"silence test: {local.PlayerName} silenced for {Mathf.Max(0.1f, seconds):0.#} s (screen feedback only " +
+                       "on this machine; peers are not told).";
+            }
+
+            var sb = new System.Text.StringBuilder();
+            var post = PostProcessingManager.Instance;
+            sb.Append("silence: post-processing ").Append(post ? "found" : "MISSING (no vignette can show)")
+              .Append(" | vignette weight ").Append(s_instance ? s_instance._weight.ToString("0.00") : "-");
+            if (VesselSilence.Tallies.Count == 0)
+                sb.Append(" | no hit has reached the elemental economy on this machine yet");
+            foreach (var kv in VesselSilence.Tallies)
+            {
+                var t = kv.Value;
+                sb.Append("\n  ").Append(kv.Key).Append(": ").Append(t.Takes).Append(" hits settled, ")
+                  .Append(t.EmptyTakes).Append(" took nothing (no petals held), ").Append(t.Petals)
+                  .Append(" petals lost, silenced ").Append(t.Silences).Append("x");
+                float left = VesselSilence.RemainingSeconds(kv.Key);
+                if (left > 0f) sb.Append(" - SILENCED, ").Append(left.ToString("0.0")).Append(" s left");
+            }
+            return sb.ToString();
+        }
+
+        static IVesselStatus FindLocalPilot()
+        {
+            foreach (var s in FindObjectsByType<VesselStatus>(FindObjectsSortMode.None))
+            {
+                IVesselStatus status = s;
+                if (IsLocalHumanPilot(status)) return status;
+            }
+            return null;
         }
 
         static bool IsLocalHumanPilot(IVesselStatus status)

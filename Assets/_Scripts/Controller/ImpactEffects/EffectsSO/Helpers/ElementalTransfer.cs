@@ -416,7 +416,9 @@ namespace CosmicShore.Gameplay
         static void SilenceVictim(ElementalTransferForm form, IVesselStatus victim, int petals,
                                   ElementalDebuffSources source)
         {
-            if (form == ElementalTransferForm.Burn || petals <= 0) return;
+            if (form == ElementalTransferForm.Burn) return;
+            // Called with 0 too: a take that found nothing to take is what the `silence` console
+            // command reports, and OnPetalsTaken silences nobody for it.
             VesselSilence.OnPetalsTaken(victim, petals, source);
         }
     }

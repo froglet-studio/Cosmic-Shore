@@ -121,6 +121,17 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
   deflect: a rival prism wobbles instead of breaking, a rival pilot's flowers do not step down, and
   nothing scores. The ability row's cooldown veil was not used, because it says "you cannot use this"
   and every ability still works.
+- **⚠ A fight between fresh pilots silences NOBODY, so it shows nothing.** Every mode's pot starts
+  empty (`Docs/ELEMENTAL_ECONOMY.md` §2.1): Dog Fight runs on `AstroLeagueComebackProfile`
+  (`Initial*: 0`) and its card authors no `StartingElements`, so a pilot who has not collected an
+  elemental crystal holds no petals, every hit takes nothing, and silence is never triggered.
+  Garrett's first Dog Fight run (2026-10-20: the AI scored well over 20 points, no vignette) was
+  exactly this, not a rendering fault. Two console commands (`DiagnosticsHUD`, editor and dev
+  builds) separate the two causes:
+  - `silence`: per pilot, hits that reached the economy, how many **took nothing** (no petals
+    held), petals lost, silences begun, who is silenced now, and whether post-processing is there;
+  - `silence test [seconds]`: silences your own pilot (default 4 s) so the shake and the vignette can
+    be judged with no fight at all.
 - **Autopilots do not know they are silenced.** An AI keeps attacking through its silence and wastes
   the window. Teaching it to retreat and collect crystals instead is part of the plan in §6.
 - **Not covered:** a blast that MATERIALISES a virtual swarm member before it reaches `Prism.Damage`
@@ -228,7 +239,8 @@ In the editor, with a victim holding petals (`Docs/ELEMENTAL_ECONOMY.md` §8 ste
 4. Kill a lifeform while silenced (joust, Stoat ripple): it lives. After the window: it dies.
 5. MPPM host + client: silence the client's pilot from the host; on BOTH windows the client's shots
    deflect for the same window (within a frame or two), and the client's flowers agree.
-6. Silence a human pilot (any hull): one small camera nudge as it lands (no shake again while it is
+6. Silence a human pilot (any hull; `silence test` in the console does it without a fight): one small camera nudge as it lands (no shake again while it is
    extended), a soft danger-red edge on the screen for the window, draining over about half a second
    when it ends. An AI or a rival being silenced shows nothing on your screen. Tune it on
-   `VesselSilenceConfig.asset` > *Feedback*.
+   `VesselSilenceConfig.asset` > *Feedback*. In a real fight, first collect elemental crystals (a
+   lifeform heart) so you have petals to lose; `silence` then shows your hits settling petals.

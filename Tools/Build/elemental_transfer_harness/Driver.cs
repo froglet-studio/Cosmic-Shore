@@ -343,6 +343,11 @@ static class Driver
         ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Eject, empty, FakeStatus.On(null),
             ElementalTransfer.AllElementsMask, 0.5f, UnityEngine.Vector3.zero, ElementalDebuffSources.Other);
         Check(!VesselSilence.IsSilenced(empty.PlayerName), "a pilot with nothing to lose is not silenced");
+        Check(VesselSilence.Tallies.TryGetValue(empty.PlayerName, out var et) && et.Takes == 1 && et.EmptyTakes == 1 &&
+              et.Petals == 0 && et.Silences == 0,
+              "  ... and the `silence` command can say why: one hit settled, it took nothing, nobody was silenced");
+        Check(VesselSilence.Tallies.TryGetValue(victimOff.PlayerName, out var vt) && vt.Petals == 11 && vt.Silences == 2,
+              $"the robbed pilot's tally reads 11 petals lost over 2 silences ({vt.Petals}, {vt.Silences})");
 
         // Networked: the victim's OWNER settles and publishes; a copy that does not own the victim
         // records nothing of its own (it waits for the owner's publish).

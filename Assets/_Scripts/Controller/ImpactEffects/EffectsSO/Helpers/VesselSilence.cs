@@ -82,6 +82,7 @@ namespace CosmicShore.Gameplay
         static void ResetStatics()
         {
             s_byPlayer.Clear();
+            s_tally.Clear();
             s_config = null;
             s_configResolved = false;
             Changed = null;
@@ -196,18 +197,25 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static float OnPetalsTaken(IVesselStatus victim, int petals, ElementalDebuffSources source)
         {
-            if (victim == null || petals <= 0) return 0f;
-
-            var config = Config;
-            if (!Silences(source, config.SilencingSources)) return 0f;
+            if (victim == null) return 0f;
 
             var relay = RelayOf(victim);
             if (relay != null && relay.IsNetworked && !relay.IsOwnedHere) return 0f;   // not this copy's take
+
+            // Counted before anything can refuse it: "hit, but nothing came loose" is the commonest
+            // reason a playtester sees no silence (every mode's pot starts empty), and the `silence`
+            // console command has to be able to say so.
+            Note(victim.PlayerName, petals, silenced: false);
+            if (petals <= 0) return 0f;
+
+            var config = Config;
+            if (!Silences(source, config.SilencingSources)) return 0f;
 
             float seconds = Extend(RemainingSeconds(victim.PlayerName),
                                    SecondsFor(petals, config.SecondsPerPetal), config.MaxSeconds);
             if (seconds <= 0f) return 0f;
 
+            Note(victim.PlayerName, 0, silenced: true);
             Record(victim, seconds);
             if (relay != null && relay.IsNetworked) relay.PublishSilence(seconds);
             return seconds;
@@ -244,8 +252,40 @@ namespace CosmicShore.Gameplay
             if (!string.IsNullOrEmpty(playerName)) s_byPlayer.Remove(playerName);
         }
 
-        /// <summary>Lifts every silence (the tests).</summary>
-        public static void ClearAll() => s_byPlayer.Clear();
+        /// <summary>Lifts every silence and forgets the counts (the tests).</summary>
+        public static void ClearAll()
+        {
+            s_byPlayer.Clear();
+            s_tally.Clear();
+        }
+
+        // ── Diagnostics (the `silence` console command, SilenceScreenFeedback) ─────
+
+        /// <summary>Per victim, on the copy whose takes count: settled takes, how many of them took
+        /// nothing, the petals lost and the silences that began.</summary>
+        public struct Tally
+        {
+            public int Takes, EmptyTakes, Petals, Silences;
+        }
+
+        static readonly Dictionary<string, Tally> s_tally = new();
+
+        /// <summary>Every victim this machine has settled a take for, with its counts.</summary>
+        public static IReadOnlyDictionary<string, Tally> Tallies => s_tally;
+
+        static void Note(string playerName, int petals, bool silenced)
+        {
+            if (string.IsNullOrEmpty(playerName)) return;
+            s_tally.TryGetValue(playerName, out var t);
+            if (silenced) t.Silences++;
+            else
+            {
+                t.Takes++;
+                if (petals <= 0) t.EmptyTakes++;
+                else t.Petals += petals;
+            }
+            s_tally[playerName] = t;
+        }
 
         static ISilenceRelay RelayOf(IVesselStatus status)
         {
