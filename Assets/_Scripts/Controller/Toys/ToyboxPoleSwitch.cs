@@ -44,8 +44,10 @@ namespace CosmicShore.Gameplay
             Shuffle = 1,
         }
 
-        /// <summary>Stand-off in front of the arrival ring, in ring radii - the Toy Box's own
-        /// Navigate distance, so both ways of being taken somewhere arrive the same way.</summary>
+        /// <summary>Stand-off in front of the arrival ring, in ring radii. Deliberately SHORTER than
+        /// the Toy Box's Navigate (<c>ToyConfigureModal.arrivalDistanceFactor</c>, 7.2): Navigate
+        /// lands a player who already chose and wants room to steer clear of the switch, while this
+        /// lands them at a ring they are meant to thread next.</summary>
         const float ArrivalRingFactor = 2.4f;
 
         /// <summary>Seconds of flight added to the stand-off: the ring may still be blooming (a
