@@ -60,6 +60,10 @@ BAR_CROSS = 3.0            # bar cross-section (x and y)
 COLLAR_COUNT = 12
 COLLAR_RADIUS = 22.0
 COLLAR_CUBE = 8.0
+# The circle in the port plane that just contains every collar block: a block's outer corners
+# stand half a block outside COLLAR_RADIUS and half a block round. Plug bars START on it (see
+# plug_runs), so no bar passes through a block. Mirrors BreakwaterStationBuilder.CollarClearRadius.
+COLLAR_CLEAR_RADIUS = math.hypot(COLLAR_RADIUS + COLLAR_CUBE * 0.5, COLLAR_CUBE * 0.5)
 
 DISH_RATIO = 1.75          # R_dish / R_port
 DISH_PITCH = 14.0          # radial spacing of rings, and the plate pitch along a ring
@@ -230,10 +234,30 @@ CEILING_TURN_RADIUS = min_turn_radius(FLIGHT_STATES[-1][1])
 
 # ── One station, closed form ────────────────────────────────────────────────────────────────
 
+def dish_inner_reach(port):
+    """How close to the axis the dish's innermost ring reaches (BreakwaterStationBuilder.
+    DishInnerReach). Its plates are centred ON the port rim; a plate's half-width down the slope
+    (sin a of it) plus its half-thickness across the shell (cos a of it) bring its inner edge
+    toward the axis, at the top of the jitter. The plug's bars end inside this radius."""
+    a = math.radians(DISH_HALF_ANGLE_DEG)
+    return port - (1.0 + DISH_JITTER) * (DISH_PLATE[0] * 0.5 * math.sin(a)
+                                         + DISH_PLATE[2] * 0.5 * math.cos(a))
+
+
 def plug_runs(port):
-    """Every bar RUN in the plug, as lengths. Three rakes of parallel lines at 0/60/120 degrees,
-    offset half a pitch so no line runs through the eye; each line clipped to the annulus
-    [EYE_RADIUS, port], which splits a line that passes the eye into two runs.
+    """Every bar RUN in the plug, as (count_length, laid_length) pairs. Three rakes of parallel
+    lines at 0/60/120 degrees, offset half a pitch so no line runs through the eye; each line
+    clipped to the annulus [EYE_RADIUS, port], which splits a line that passes the eye into two
+    runs. `count_length` is that eye-to-rim run, and it alone sets how many bars the run is cut
+    into (plug_bars).
+
+    `laid_length` is what the bars actually cover, FLUSH (no prism passes through another,
+    Docs/ECOSYSTEM.md §49.10): a run that passes the eye starts on COLLAR_CLEAR_RADIUS instead of
+    the eye, so no bar runs through a collar block, and every run stops where its outer corner
+    meets dish_inner_reach, so no bar runs into the dish's innermost ring. The bars shrink; their
+    count does not. (The third crossing - the three rakes cutting through each other in one plane
+    - is solved by LAYERING the rakes a cross-section apart along the axis, which moves no length
+    and so prices nothing here.)
 
     THE CLIP IS AGAINST THE BAR'S NEAR EDGE, NOT ITS CENTRELINE. A bar is BAR_CROSS wide, so a
     line whose centre stands exactly EYE_RADIUS off centre still puts BAR_CROSS/2 of prism inside
@@ -243,18 +267,23 @@ def plug_runs(port):
     advertised a mouth it did not have. Clipping the near edge (`d - BAR_CROSS/2`) and taking the
     eye's half-chord THERE puts the nearest corner of the nearest bar at exactly EYE_RADIUS."""
     runs = []
+    reach = dish_inner_reach(port)
     k = 0
     while (k + 0.5) * RAKE_PITCH < port - RAKE_EDGE_MARGIN:
         d = (k + 0.5) * RAKE_PITCH
         near = max(0.0, d - BAR_CROSS * 0.5)         # the bar's inner face, not its centreline
+        far = d + BAR_CROSS * 0.5                    # ...and its outer face
         half = math.sqrt(port * port - d * d)
+        end = math.sqrt(max(0.0, reach * reach - far * far))
         for _sign in (+1, -1):                       # both sides of the rake's centre line
             if near < EYE_RADIUS:
                 inner = math.sqrt(EYE_RADIUS * EYE_RADIUS - near * near)
-                runs.append(half - inner)
-                runs.append(half - inner)            # one run each side of the eye
+                start = math.sqrt(COLLAR_CLEAR_RADIUS * COLLAR_CLEAR_RADIUS - near * near)
+                laid = max(0.0, end - start)
+                runs.append((half - inner, laid))
+                runs.append((half - inner, laid))    # one run each side of the eye
             else:
-                runs.append(2.0 * half)
+                runs.append((2.0 * half, 2.0 * end))
         k += 1
     return runs * len(RAKE_ANGLES)
 
@@ -263,30 +292,42 @@ def eye_clearance(port):
     """The radius of the largest disc in the port plane that NO plug bar body intrudes on.
 
     For a line at perpendicular offset d, the bar body's nearest point to centre is at
-    (perp = d - BAR_CROSS/2, along = the run's inner end), so this is exactly what plug_runs'
-    near-edge clip is written to hold at EYE_RADIUS."""
+    (perp = d - BAR_CROSS/2, along = the LAID run's inner end). The near-edge clip holds it at
+    EYE_RADIUS at the very least; since the flush pass the laid bars start on the collar's clear
+    circle, so it now reads COLLAR_CLEAR_RADIUS (26.31) - the rim from 18 out is the collar's."""
     worst = float('inf')
     k = 0
     while (k + 0.5) * RAKE_PITCH < port - RAKE_EDGE_MARGIN:
         d = (k + 0.5) * RAKE_PITCH
         near = max(0.0, d - BAR_CROSS * 0.5)
-        along = math.sqrt(EYE_RADIUS * EYE_RADIUS - near * near) if near < EYE_RADIUS else 0.0
+        along = (math.sqrt(COLLAR_CLEAR_RADIUS * COLLAR_CLEAR_RADIUS - near * near)
+                 if near < EYE_RADIUS else 0.0)
         worst = min(worst, math.hypot(near, along))
         k += 1
     return worst
 
 
 def plug_bars(port):
-    """(bar count, total bar length, longest single bar). A run is cut into EQUAL bars no longer
-    than MAX_BAR_LEN, so no emitted z ever reaches the prism clamp."""
-    runs = plug_runs(port)
+    """(bar count, total LAID bar length, longest single bar). A run is cut into as many EQUAL
+    bars as its eye-to-rim length needs to stay under MAX_BAR_LEN (BreakwaterStationBuilder.
+    BarsFor), and those bars share the shorter laid length end to end - so no emitted z ever
+    reaches the prism clamp and the flush trims change no count."""
     count = 0
     longest = 0.0
-    for r in runs:
-        n = max(1, math.ceil(r / MAX_BAR_LEN))
+    laid_total = 0.0
+    for count_len, laid in plug_runs(port):
+        n = max(1, math.ceil(count_len / MAX_BAR_LEN))
         count += n
-        longest = max(longest, r / n)
-    return count, sum(runs), longest
+        laid_total += laid
+        longest = max(longest, laid / n)
+    return count, laid_total, longest
+
+
+def shortest_bar(port):
+    """The shortest bar the flush trims leave, for the prism-clamp proof (an axis under MIN_SCALE
+    would be silently grown back by the clamp - into the collar or the dish)."""
+    return min(laid / max(1, math.ceil(count_len / MAX_BAR_LEN))
+               for count_len, laid in plug_runs(port))
 
 
 def dish_rings(port):
@@ -789,7 +830,15 @@ def check_scales():
 
     for cfg in INTENSITIES:
         _, _, longest = plug_bars(cfg['port'])
-        chk(f"plug bar (port {cfg['port']:.0f})", [BAR_CROSS, BAR_CROSS, longest])
+        chk(f"plug bar (port {cfg['port']:.0f})",
+            [BAR_CROSS, BAR_CROSS, longest, shortest_bar(cfg['port'])])
+        # The flush trim stops each bar's outer corner on the dish's inner reach; a line whose
+        # outer FACE already stands outside that reach would have nothing to lay.
+        k_last = max(k for k in range(200) if (k + 0.5) * RAKE_PITCH < cfg['port'] - RAKE_EDGE_MARGIN)
+        far = (k_last + 0.5) * RAKE_PITCH + BAR_CROSS * 0.5
+        if far >= dish_inner_reach(cfg['port']):
+            problems.append(f"plug (port {cfg['port']:.0f}): the outermost line's face ({far:.2f}) "
+                            f"stands outside the dish's inner reach ({dish_inner_reach(cfg['port']):.2f})")
     chk("collar", [COLLAR_CUBE] * 3)
     for cfg in INTENSITIES:
         lo, hi = dish_extreme_axes(cfg['port'])
@@ -926,8 +975,11 @@ def main():
         # bar bodies must leave EYE_RADIUS clear - the radius the keystone collar's inner faces
         # already advertise - and the Sparrow must fit through it with margin.
         clear = eye_clearance(c['port'])
-        print(f"    clear eye radius         : {clear:.3f} u "
-              f"({clear / SPARROW_HULL_RADIUS:.2f} x hull)")
+        # The open eye is the collar's (its inner faces stand on EYE_RADIUS); since the flush
+        # pass the danger weave starts outside the collar, on COLLAR_CLEAR_RADIUS.
+        eye = min(clear, EYE_RADIUS)
+        print(f"    clear eye radius         : {eye:.3f} u "
+              f"({eye / SPARROW_HULL_RADIUS:.2f} x hull); danger weave from {clear:.3f} u")
         if clear < EYE_RADIUS - 1e-4:
             fail.append(f"I{r['intensity']}: plug bars intrude on the eye "
                         f"({clear:.3f} < {EYE_RADIUS})")
