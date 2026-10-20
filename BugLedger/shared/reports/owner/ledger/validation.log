@@ -5,3 +5,7 @@
 2026-10-19T21:24:44.944Z PlayMode session ended (1s play run, exiting play mode): not counted (capture=True, long enough=False)
 2026-10-19T21:26:18.835Z PlayMode session ended (94s play run, exiting play mode): 1 fix(es) waiting; counted: none
 2026-10-19T21:33:45.549Z PlayMode session ended (441s play run, exiting play mode): 1 fix(es) waiting; counted: none; fired: E-1f28d58e0c
+2026-10-20T19:27:23.858Z editor load: play=False capture=True minPlay=15s issues=38
+2026-10-20T19:31:33.573Z PlayMode session ended (249s play run, exiting play mode): 1 fix(es) waiting; counted: none
+2026-10-20T19:31:53.230Z editor load: play=False capture=True minPlay=15s issues=39
+2026-10-20T19:40:44.325Z PlayMode session ended (539s play run, exiting play mode): 1 fix(es) waiting; counted: none
