@@ -139,6 +139,12 @@ mass at the same speed with or without the spatial index. Detail: `Docs/SPATIAL_
   panels) acts on whoever flies into the prism, whoever laid it. What is forbidden is aiming one
   of those at a pilot: the Rhino sword's danger dome was removed for that reason. The Squirrel
   joust's danger ring stays: it is danger prisms on the arena, and it hits whoever flies into it.
+- **Silence (Garrett, 2026-10-20) is the one consequence a petal theft carries beyond the petals.** A
+  strip or a steal silences its victim for 1 s per petal lost (capped at 8 s): every ability still
+  works, but nothing it does can harm a vessel, fauna or a rival's prisms, and it lays no new danger.
+  It takes no motion and no control, and it follows the theft rather than being a hit of its own, so
+  this rule's one-to-one holds: `CombatHitDrain.TryAdmit` refuses a silenced attacker, so they neither
+  score nor take. `Docs/ElementalAbilitySystem/SILENCE.md`.
 - **Retired 2026-10-10:** `VesselImpulseByExplosionEffectSO`'s knockback on other vessels (it is
   self-launch only), `VesselShrinkSkimmerEffectSO` (deleted; orphaned), the Rhino's
   `VesselDangerBlockFormationBySkimmerEffectSO` (deleted), the

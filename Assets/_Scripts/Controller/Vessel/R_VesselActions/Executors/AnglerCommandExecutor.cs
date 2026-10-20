@@ -846,7 +846,8 @@ namespace CosmicShore.Gameplay
                 // off when it arrives, and the prism is then ordinary food for its own mouthful.
                 if (Fauna.IsShieldedMass(m.Target) && m.Creature
                     && (m.Target.transform.position - m.Creature.transform.position).sqrMagnitude
-                       <= Sq(m.Creature.LeashMouthReach + config.LockBiteReach))
+                       <= Sq(m.Creature.LeashMouthReach + config.LockBiteReach)
+                    && !m.Target.DeflectsSilenced(_status?.PlayerName, 0f))   // VesselSilence
                     m.Target.DeactivateShields();
             }
         }

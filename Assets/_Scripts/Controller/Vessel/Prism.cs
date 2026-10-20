@@ -914,7 +914,14 @@ namespace CosmicShore.Gameplay
             _creationRoutine = StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
 
             if (prismProperties.IsShielded) ActivateShield();
-            if (prismProperties.IsDangerous) MakeDangerous();
+            if (prismProperties.IsDangerous)
+            {
+                // A silenced pilot lays no new danger (VesselSilence): the request is dropped here,
+                // at birth, so the prism is plain in every respect - the flag is what danger effects
+                // read, not only the look.
+                if (VesselSilence.SuppressesDanger(playerName)) prismProperties.IsDangerous = false;
+                else MakeDangerous();
+            }
         }
 
         private void ResetState()
@@ -1620,6 +1627,12 @@ namespace CosmicShore.Gameplay
                            float debrisSpeedLimit = 0f, bool byGunfire = false)
         {
             if (destroyed) return;
+            // A SILENCED attacker's hit on anything but their own domain's mass deflects
+            // (VesselSilence, Docs/ElementalAbilitySystem/SILENCE.md): the weapon still connects and
+            // the prism still answers with the deflection wobble, so the shot reads as blocked rather
+            // than as a miss - and nothing about the prism changes. Every damage source funnels here
+            // (rounds, blasts, blades, flails, rams, sweeps), which is why the gate is here.
+            if (DeflectsSilenced(playerName, impactVector.magnitude)) return;
             // Super-shielded prisms are invulnerable to Damage itself. A source that may
             // break them (the Rhino energy sword, arena teardowns) must call
             // DeactivateShields() first, then Damage(devastate: true) — the sanctioned
@@ -1702,6 +1715,7 @@ namespace CosmicShore.Gameplay
         public void Vanish(string playerName)
         {
             if (destroyed) return;
+            if (DeflectsSilenced(playerName, 0f)) return;
             SetupDestruction(Domain, playerName, devastate: true);
         }
 
@@ -1711,6 +1725,7 @@ namespace CosmicShore.Gameplay
             // is stamped at the floor magnitude rather than derived from a direction that
             // describes where the mass was being pulled, not how hard it was struck.
             if (destroyed) return;
+            if (DeflectsSilenced(playerName, 0f)) return;
             if (AbsorbSuperShieldHit(0f)) return;
             // Impact-less on purpose, for the same reason the deflection above is stamped
             // at the floor: a consume carries no impact vector, only a suction sink, and
@@ -1764,12 +1779,39 @@ namespace CosmicShore.Gameplay
         public bool AbsorbSuperShieldHit(float impactSpeed)
         {
             if (prismProperties is not { IsSuperShielded: true }) return false;
+            StampDeflection(impactSpeed);
+            return true;
+        }
+
+        /// <summary>
+        /// The deflection wobble on its own - photons only, no state change of any kind. The read a
+        /// super-shield gives a hit it survives, and the read a SILENCED pilot's hit gets on any
+        /// prism (<see cref="DeflectsSilenced"/>). Rate-limited per prism by the same slot.
+        /// </summary>
+        public void StampDeflection(float impactSpeed) =>
             PrismSuperShieldJiggle.TryStamp(this, impactSpeed, ref _lastSuperShieldJiggleTime);
+
+        /// <summary>
+        /// THE silence gate on prism harm. True (and the hit is deflected) when
+        /// <paramref name="attackerName"/> is silenced and this prism is not their own domain's
+        /// (<see cref="VesselSilence.Protects"/>). Every call that destroys, consumes, steals or strips
+        /// the shield off a prism on a pilot's behalf asks it first.
+        /// </summary>
+        public bool DeflectsSilenced(string attackerName, float impactSpeed)
+        {
+            if (!VesselSilence.Protects(attackerName, Domain)) return false;
+            StampDeflection(impactSpeed);
             return true;
         }
 
         // State Management Methods
-        public void MakeDangerous() => stateManager?.MakeDangerous();
+        public void MakeDangerous()
+        {
+            // A silenced pilot's abilities turn nothing dangerous (VesselSilence). Danger that is
+            // already standing keeps its danger, so a re-apply on a dangerous prism goes through.
+            if (!prismProperties.IsDangerous && VesselSilence.SuppressesDanger(PlayerName)) return;
+            stateManager?.MakeDangerous();
+        }
         public void DeactivateShields() => stateManager?.DeactivateShields();
 
         /// <summary>
@@ -1805,8 +1847,21 @@ namespace CosmicShore.Gameplay
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 
         // Team Management Methods
-        public void Steal(string playerName, Domains domain, bool superSteal = false) =>
+        public void Steal(string playerName, Domains domain, bool superSteal = false)
+        {
+            // A silenced pilot steals no prism (VesselSilence) - the steal deflects like a hit.
+            if (DeflectsSilenced(playerName, 0f)) return;
             teamManager.Steal(playerName, domain, superSteal);
+        }
+
+        /// <summary>
+        /// Hands this prism BACK to the pilot it was taken from - a restitution, not a theft, so it
+        /// is the one ownership change silence does not refuse (a builder colony giving back what it
+        /// took, <c>BuilderPrismWorld.GiveBack</c>). Everything else that changes a prism's owner on
+        /// a pilot's behalf goes through <see cref="Steal"/>.
+        /// </summary>
+        public void ReturnTo(string playerName, Domains domain) =>
+            teamManager.Steal(playerName, domain, false);
         public void ChangeTeam(Domains domain) => teamManager?.ChangeTeam(domain);
 
         /// <summary>

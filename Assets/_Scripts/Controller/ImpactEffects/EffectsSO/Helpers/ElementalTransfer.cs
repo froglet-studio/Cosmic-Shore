@@ -58,6 +58,14 @@ namespace CosmicShore.Gameplay
     /// route is <see cref="ElementalTransferRoute.Local"/>. A burn has no attacker and is not
     /// relayed. The crystals stay per-peer local objects, like the food web's crystals - see
     /// <see cref="ElementalCrystalEjector"/>.</para>
+    ///
+    /// <para><b>Silence (Oct 2026).</b> A steal or an eject that settles petals SILENCES its victim
+    /// for a time proportional to what came loose (<see cref="VesselSilence"/>), decided where the
+    /// petals settle - <see cref="Apply"/> offline and <see cref="SettleTake"/> on a networked
+    /// victim's owner. And a silenced attacker takes nothing: every entry point refuses a strip or a
+    /// steal by a silenced attacker, so the gate holds even for a caller that never asked
+    /// <see cref="CombatHitDrain.TryAdmit"/>. A burn has no attacker and never silences - a danger
+    /// prism is the arena, not a weapon.</para>
     /// </summary>
     public static class ElementalTransfer
     {
@@ -89,6 +97,18 @@ namespace CosmicShore.Gameplay
         public static int Apply(ElementalTransferForm form, IVesselStatus victim, IVesselStatus attacker,
                                 Element element, float normalizedAmount, Vector3 impactVelocity,
                                 ElementalDebuffSources source)
+        {
+            if (AttackerSilenced(form, attacker)) return 0;
+            int petals = ApplyCore(form, victim, attacker, element, normalizedAmount, impactVelocity, source);
+            SilenceVictim(form, victim, petals, source);
+            return petals;
+        }
+
+        /// <summary><see cref="Apply"/> without the silence bookkeeping, so a multi-element take
+        /// silences ONCE for its total rather than once per element.</summary>
+        static int ApplyCore(ElementalTransferForm form, IVesselStatus victim, IVesselStatus attacker,
+                             Element element, float normalizedAmount, Vector3 impactVelocity,
+                             ElementalDebuffSources source)
         {
             var resources = victim?.ResourceSystem;
             if (resources == null || normalizedAmount <= 0f) return 0;
@@ -205,6 +225,7 @@ namespace CosmicShore.Gameplay
         {
             elementMask &= AllElementsMask;
             if (elementMask == 0 || normalizedAmountPerElement <= 0f) return 0;
+            if (AttackerSilenced(form, attacker)) return 0;
 
             var victimRelay = RelayOf(victim);
             var attackerRelay = RelayOf(attacker);
@@ -230,8 +251,9 @@ namespace CosmicShore.Gameplay
                     int total = 0;
                     for (int i = 0; i < AllElements.Length; i++)
                         if (InMask(elementMask, AllElements[i]))
-                            total += Apply(form, victim, attacker, AllElements[i],
-                                           normalizedAmountPerElement, impactVelocity, source);
+                            total += ApplyCore(form, victim, attacker, AllElements[i],
+                                               normalizedAmountPerElement, impactVelocity, source);
+                    SilenceVictim(form, victim, total, source);
                     return total;
             }
         }
@@ -257,6 +279,9 @@ namespace CosmicShore.Gameplay
                 int petals = resources.AccrueElementalLoss(AllElements[i], normalizedAmountPerElement, source);
                 packed = WithPetals(packed, AllElements[i], petals);
             }
+            // A relayed take is always a strip or a steal (a burn is never relayed), so whatever
+            // settled here silences the victim - decided on the owner, published to every peer.
+            VesselSilence.OnPetalsTaken(victim, TotalPetals(packed), source);
             return packed;
         }
 
@@ -372,11 +397,27 @@ namespace CosmicShore.Gameplay
                                    float normalizedAmountPerElement, Vector3 impactVelocity,
                                    ElementalDebuffSources source)
         {
+            if (AttackerSilenced(form, attacker)) return 0;
             int total = 0;
             for (int i = 0; i < AllElements.Length; i++)
-                total += Apply(form, victim, attacker, AllElements[i], normalizedAmountPerElement,
-                               impactVelocity, source);
+                total += ApplyCore(form, victim, attacker, AllElements[i], normalizedAmountPerElement,
+                                   impactVelocity, source);
+            SilenceVictim(form, victim, total, source);
             return total;
+        }
+
+        /// <summary>A silenced pilot's strips and steals take nothing (<see cref="VesselSilence"/>).
+        /// A burn has no attacker and is never refused.</summary>
+        static bool AttackerSilenced(ElementalTransferForm form, IVesselStatus attacker) =>
+            form != ElementalTransferForm.Burn && VesselSilence.IsSilenced(attacker);
+
+        /// <summary>Petals that came loose to a strip or a steal silence their victim. A burn does
+        /// not: danger prisms are never a reason to be silenced.</summary>
+        static void SilenceVictim(ElementalTransferForm form, IVesselStatus victim, int petals,
+                                  ElementalDebuffSources source)
+        {
+            if (form == ElementalTransferForm.Burn || petals <= 0) return;
+            VesselSilence.OnPetalsTaken(victim, petals, source);
         }
     }
 

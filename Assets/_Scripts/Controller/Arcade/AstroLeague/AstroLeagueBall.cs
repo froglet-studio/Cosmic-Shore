@@ -1360,6 +1360,10 @@ namespace CosmicShore.Gameplay
                     var prism = _prismQueryBuffer[i];
                     if (prism == null || prism.destroyed) continue;
 
+                    // A ball flown by a SILENCED pilot passes through mass it does not own without
+                    // popping, eating or scoring anything (VesselSilence); its own domain still shields.
+                    if (prism.DeflectsSilenced(PilotName, 0f)) continue;
+
                     // SUPER-shielded prisms are fully invulnerable structure (Prism.Damage/Consume
                     // no-op on them - e.g. the arena's edge lining): the ball passes through
                     // untouched regardless of domain - never unshielded, never eaten, no speed cost.

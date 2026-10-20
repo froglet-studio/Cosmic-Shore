@@ -26,6 +26,11 @@ namespace CosmicShore.Gameplay
 
             if (!prism.prismProperties.IsSuperShielded) return;
 
+            // A silenced shooter cracks nothing (VesselSilence); the round deflects.
+            var projectile = impactor ? impactor.Projectile : null;
+            var shooter = projectile ? projectile.VesselStatus : null;
+            if (shooter != null && prism.DeflectsSilenced(shooter.PlayerName, 0f)) return;
+
             prism.DeactivateShields();
             if (leaveRegularShield)
                 prism.ActivateShield();

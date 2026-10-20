@@ -15,6 +15,10 @@ exactly one of three places:
 | **Eject** | nobody yet: they are knocked out of the hull as free-for-all crystals | ranged — guns, rockets, blasts, the Serpent's rifle; and a rival threading a Butterfly's wormhole (the toll, left on the mouth's surface — `Docs/WORMHOLES.md` §5) | yes |
 | **Burn** | nobody, ever — destroyed | a **hostile danger prism**, and nothing else | **no — this is the sink** |
 
+**And a strip or a steal SILENCES its victim (Oct 2026).** For a time proportional to the petals they
+lost, nothing the victim's abilities do can harm another pilot's vessel, fauna or prisms, and they lay
+no new danger: §10 and `Docs/ElementalAbilitySystem/SILENCE.md`.
+
 So elements circulate. Inside a match, lifeform reproduction and spawning are the only **source**,
 a hostile danger prism is the only **sink**, and everything in between is pilots trading the same
 material back and forth. (Two freestyle TOYS also mint petals - the Wanderway's crystals and the
@@ -560,3 +564,32 @@ control-theft calls, which moved from the must-NOT list to the must list when th
 The `Vessel Prism Effects/` family stays outside the gate for the reason above — it is the arena
 (the bounce off mass, the danger prism's slow and burn) — so the gate never has to know which hull
 laid the prism. Since 2026-10-17 that family holds no input mute either.
+
+---
+
+## 10. SILENCE: a strip or a steal also buys a window (Oct 2026)
+
+Garrett, 2026-10-20: taking a rival's elements was *"a good deterrent, but it is not protection"*: a
+pilot with fewer petals could still strip you back, steal your prisms or break the health prisms of
+your ark. So every petal that comes loose to a **strip or a steal** now silences its victim for
+`secondsPerPetal` (1 s) per petal, added to what is left, capped at 8 s
+(`Resources/VesselSilenceConfig.asset`). While silenced, every ability still works and every control
+answers, but nothing the pilot does can harm another pilot's vessel, fauna or prisms, and a prism they
+lay or turn dangerous comes out plain. Danger prisms already standing keep their danger, and a burn
+never silences.
+
+**It is not a third tier for §9 to forbid.** It moves nothing and mutes no input: the victim flies,
+presses and builds their own mass exactly as before. What it removes is the HARM of their abilities,
+and it follows from the petal theft itself, never from a separate hit.
+
+It is decided where the take settles (`ElementalTransfer.Apply` offline, `ElementalTransfer.SettleTake`
+on the victim's owner), so it is exactly as long as the petals that really came loose, and a warded or
+empty pilot is never silenced. The owner publishes the window to every peer
+(`NetworkVesselImpactor.PublishSilence`), because prism damage is simulated on every peer. A silenced
+attacker is refused at `CombatHitDrain.TryAdmit` and inside every `ElementalTransfer` entry point,
+so the one-to-one between a scored hit and a petal theft holds.
+
+Everything else (the full table of gates, what the player sees, the HUD gap, and **the balancing plan**
+that sets these numbers: each hull's AI plateau in its Charge arcade game, then in the Time arena game,
+until every hull plateaus at the same score) is in `Docs/ElementalAbilitySystem/SILENCE.md`. Harness
+block T11 proves the transfer half (`bash Tools/Build/elemental_transfer_harness/run.sh`).

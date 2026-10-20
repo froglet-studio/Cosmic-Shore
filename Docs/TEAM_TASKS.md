@@ -1176,3 +1176,38 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner's eye, the mobile run); Yash (offered) can run the Editor steps and the two test fixtures
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
+
+### T-20261020-1ffa · open · test · vessels
+- **Task:** Editor-verify SILENCE (cece/sleepy-shannon-9qk646): run SILENCE.md §8 steps 1-5 - a stripped/robbed pilot's hits deflect off rival prisms with a wobble for ~1 s per petal lost, take and score nothing, kill no lifeform and lay no new danger, while every ability and control still works (Thresher flail on both triggers, Sparrow guns and turret prisms); MPPM host+client agree on the window
+- **Done when:** All five steps observed in the editor, including the MPPM step, with any mismatch filed as a dev task
+- **Who can take it:** Yash (offered; editor + MPPM), Garrett (owner's eye)
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-83ca · open · decision · vessels
+- **Task:** Silence HUD readout: the silenced pilot has no HUD signal today (hits just deflect). The cooldown veil is the wrong read because every ability still works. Pick a look for the ability row or the vessel; VesselSilence.RemainingSeconds / Remaining01 / Changed are ready to drive it
+- **Done when:** A readout is chosen and a dev task is filed for it
+- **Who can take it:** Garrett (vessel HUD owner)
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-89f4 · open · decision · vessels
+- **Task:** Name each hull's Charge arcade game and THE Time arena game for the silence balancing plan (SILENCE.md §6). Candidates today: Grizzly Charge, Dog Fight, Joust, The Bends, Undertow; eleven hulls have none named. No arena card is a Time game yet: Regatta (every hull's AI drives it, but it scores rings) gains a petal score, or a new arena card via /arenagame
+- **Done when:** SILENCE.md §6's table names a Charge game per hull and the Time arena game
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-eafd · open · dev · vessels
+- **Task:** Petals-caused-lost ledger, the score the silence balancing plan measures (SILENCE.md §6): count per attacker the petals every opponent loses that the attacker caused - strips and steals where ElementalTransfer settles them (attacker named), danger-prism burns attributed to the prism's layer (VesselElementalDebuffByDangerPrismEffectSO knows the prism) - and report it per match and per minute
+- **Done when:** A match can report score(i) for every pilot, offline and on the host, and an AI-vs-AI run can read it headless
+- **Who can take it:** Yash (AI / diagnostics), any session
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-a619 · open · dev · vessels
+- **Task:** Teach the autopilots silence both ways (SILENCE.md §5-6): press the attack while an opponent is silenced (VesselSilence.IsSilenced), and while silenced stop wasting attacks and go collect crystals
+- **Done when:** AIs measurably change behaviour during a silence window in a mirror match
+- **Who can take it:** Yash (AI on Ys-bleeding-edge)
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md

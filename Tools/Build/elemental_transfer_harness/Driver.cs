@@ -250,14 +250,132 @@ static class Driver
                                                    ElementalDebuffSources.Other) == 0,
               "an empty mask takes nothing");
 
+        T11Silence();
+
         Console.WriteLine(_fail == 0 ? "\nALL PASS" : $"\n{_fail} FAILED");
         return _fail == 0 ? 0 : 1;
     }
+
+    // SILENCE (Docs/ElementalAbilitySystem/SILENCE.md): a strip or a steal silences its victim for a
+    // time proportional to the petals that came loose, and a silenced attacker takes and scores
+    // nothing. Driven against the REAL ElementalTransfer / CombatHitDrain / VesselSilence on the
+    // config SO's own defaults (1 s per petal, 8 s ceiling, Explosion | VesselContact | Other).
+    static void T11Silence()
+    {
+        Console.WriteLine("T11 a strip or a steal silences its victim, and a silenced attacker takes nothing");
+        double now = 100d;
+        VesselSilence.Clock = () => now;
+        VesselSilence.ClearAll();
+
+        // The pure rules.
+        Check(VesselSilence.SecondsFor(3, 1f) == 3f && VesselSilence.SecondsFor(0, 1f) == 0f &&
+              VesselSilence.SecondsFor(-2, 1f) == 0f, "seconds are proportional to petals, and nothing buys nothing");
+        Check(VesselSilence.Extend(2f, 3f, 8f) == 5f, "a new take ADDS to the silence left");
+        Check(VesselSilence.Extend(6f, 5f, 8f) == 8f, "  ... up to the ceiling");
+        Check(VesselSilence.Extend(-1f, 2f, 8f) == 2f, "  ... and an expired window counts as none");
+        Check(VesselSilence.Extend(1f, 2f, 0f) == 0f, "a zero ceiling switches silence off");
+        var src = ElementalDebuffSources.Explosion | ElementalDebuffSources.VesselContact | ElementalDebuffSources.Other;
+        Check(VesselSilence.Silences(ElementalDebuffSources.VesselContact, src) &&
+              !VesselSilence.Silences(ElementalDebuffSources.DangerPrism, src) &&
+              !VesselSilence.Silences(ElementalDebuffSources.WormholeToll, src) &&
+              !VesselSilence.Silences(ElementalDebuffSources.None, src),
+              "contact, blast and gun takes silence; a danger prism, the toll and an unclassed take do not");
+
+        // Offline steal: three petals come loose, the victim is silenced for three seconds.
+        var thiefOff = FakeStatus.On(null);
+        var victimOff = FakeStatus.On(null);
+        victimOff.Domain = Domains.Ruby;
+        victimOff.ResourceSystem.Settles[(int)Element.Mass] = 2;
+        victimOff.ResourceSystem.Settles[(int)Element.Time] = 1;
+        int took = ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Steal, victimOff, thiefOff,
+            ElementalTransfer.AllElementsMask, 0.5f, UnityEngine.Vector3.zero, ElementalDebuffSources.VesselContact);
+        Check(took == 3 && Math.Abs(VesselSilence.RemainingSeconds(victimOff.PlayerName) - 3f) < 1e-4f,
+              $"an offline steal of 3 petals silences the victim for 3 s ({VesselSilence.RemainingSeconds(victimOff.PlayerName)})");
+        Check(!VesselSilence.IsSilenced(thiefOff.PlayerName), "  ... and the thief is not silenced");
+
+        // The silenced victim can no longer take: neither a steal nor a scored hit is admitted.
+        var bystander = FakeStatus.On(null);
+        bystander.ResourceSystem.Settles[(int)Element.Charge] = 4;
+        int back = ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Steal, bystander, victimOff,
+            ElementalTransfer.AllElementsMask, 0.5f, UnityEngine.Vector3.zero, ElementalDebuffSources.VesselContact);
+        Check(back == 0 && bystander.ResourceSystem.Asked[(int)Element.Charge] == 0 &&
+              victimOff.ResourceSystem.Granted[(int)Element.Charge] == 0,
+              "a silenced pilot's steal asks nothing of its victim and is paid nothing");
+        Check(ElementalTransfer.Apply(ElementalTransferForm.Eject, bystander, victimOff, Element.Charge, 0.5f,
+                                      UnityEngine.Vector3.zero, ElementalDebuffSources.Other) == 0,
+              "  ... nor does a silenced pilot's ranged strip");
+        Check(!CombatHitDrain.TryAdmit(bystander, victimOff, CombatHitClass.Bullet, 0f, ElementalDebuffSources.Other, out _),
+              "  ... and CombatHitDrain.TryAdmit refuses the silenced pilot's hit, so it scores nothing");
+        Check(CombatHitDrain.TryAdmit(victimOff, bystander, CombatHitClass.Bullet, 0f, ElementalDebuffSources.Other, out _),
+              "  ... while the silenced pilot can still be hit by anybody else");
+
+        // A burn never silences, and is never refused for an attacker's silence.
+        var burnt = FakeStatus.On(null);
+        burnt.ResourceSystem.Settles[(int)Element.Space] = 2;
+        ElementalTransfer.Apply(ElementalTransferForm.Burn, burnt, null, Element.Space, 0.2f,
+                                UnityEngine.Vector3.zero, ElementalDebuffSources.DangerPrism);
+        Check(!VesselSilence.IsSilenced(burnt.PlayerName), "a danger-prism burn never silences");
+
+        // Protects: the silenced pilot's hits deflect off everything but their own domain's mass.
+        Check(VesselSilence.Protects(victimOff.PlayerName, Domains.Jade) &&
+              !VesselSilence.Protects(victimOff.PlayerName, Domains.Ruby) &&
+              !VesselSilence.Protects(thiefOff.PlayerName, Domains.Jade),
+              "a silenced pilot's hit is refused on rival mass, allowed on their own, and nobody else is touched");
+        Check(VesselSilence.SuppressesDanger(victimOff.PlayerName) && !VesselSilence.SuppressesDanger(thiefOff.PlayerName),
+              "a silenced pilot lays no new danger; an unsilenced one does");
+
+        // Stacking and expiry.
+        victimOff.ResourceSystem.Settles[(int)Element.Mass] = 4;
+        victimOff.ResourceSystem.Settles[(int)Element.Time] = 4;
+        var thief2 = FakeStatus.On(null);
+        ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Steal, victimOff, thief2,
+            ElementalTransfer.AllElementsMask, 0.5f, UnityEngine.Vector3.zero, ElementalDebuffSources.VesselContact);
+        Check(Math.Abs(VesselSilence.RemainingSeconds(victimOff.PlayerName) - 8f) < 1e-4f,
+              "3 s left + an 8-petal take clamps to the 8 s ceiling");
+        now += 7.9;
+        Check(VesselSilence.IsSilenced(victimOff.PlayerName), "  ... still silenced at 7.9 s");
+        now += 0.2;
+        Check(!VesselSilence.IsSilenced(victimOff.PlayerName) && !VesselSilence.Protects(victimOff.PlayerName, Domains.Jade),
+              "  ... and free at 8.1 s, with every gate open again");
+
+        // A warded or empty victim loses nothing and is not silenced.
+        var empty = FakeStatus.On(null);
+        ElementalTransfer.ApplyAuthoritative(ElementalTransferForm.Eject, empty, FakeStatus.On(null),
+            ElementalTransfer.AllElementsMask, 0.5f, UnityEngine.Vector3.zero, ElementalDebuffSources.Other);
+        Check(!VesselSilence.IsSilenced(empty.PlayerName), "a pilot with nothing to lose is not silenced");
+
+        // Networked: the victim's OWNER settles and publishes; a copy that does not own the victim
+        // records nothing of its own (it waits for the owner's publish).
+        var ownerRelay = new FakeRelay { Networked = true, Owned = true };
+        var ownedVictim = FakeStatus.On(ownerRelay);
+        ownedVictim.ResourceSystem.Settles[(int)Element.Charge] = 1;
+        ownedVictim.ResourceSystem.Settles[(int)Element.Space] = 1;
+        ElementalTransfer.SettleTake(ownedVictim, ElementalTransfer.AllElementsMask, 0.5f, ElementalDebuffSources.Explosion);
+        Check(ownerRelay.Publishes == 1 && Math.Abs(ownerRelay.LastPublished - 2f) < 1e-4f &&
+              VesselSilence.IsSilenced(ownedVictim.PlayerName),
+              "the victim's owner silences its pilot for the settled petals and publishes the window once");
+        var remoteRelay = new FakeRelay { Networked = true, Owned = false };
+        var remoteVictim = FakeStatus.On(remoteRelay);
+        Check(VesselSilence.OnPetalsTaken(remoteVictim, 3, ElementalDebuffSources.Other) == 0f &&
+              remoteRelay.Publishes == 0 && !VesselSilence.IsSilenced(remoteVictim.PlayerName),
+              "a copy that does not own the victim neither records nor publishes");
+        VesselSilence.Record(remoteVictim.PlayerName, Domains.Gold, 2.5f);
+        Check(Math.Abs(VesselSilence.RemainingSeconds(remoteVictim.PlayerName) - 2.5f) < 1e-4f,
+              "  ... and the owner's publish lands on it as the same remaining window");
+        VesselSilence.Lift(remoteVictim.PlayerName);
+        Check(!VesselSilence.IsSilenced(remoteVictim.PlayerName), "a turn reset lifts the silence");
+
+        VesselSilence.ClearAll();
+    }
 }
 
-// A hull's relay as ElementalTransfer sees it: two facts and two calls, recorded.
-class FakeRelay : IElementalLossRelay
+// A hull's relay as ElementalTransfer sees it: two facts and two calls, recorded. It is also the
+// hull's silence relay (NetworkVesselImpactor implements both), so a publish is recorded too.
+class FakeRelay : IElementalLossRelay, ISilenceRelay
 {
+    public int Publishes;
+    public float LastPublished;
+    public void PublishSilence(float seconds) { Publishes++; LastPublished = seconds; }
     public bool Networked, Owned;
     public int Takes, Grants;
     public ElementalTransferForm LastForm;
@@ -283,8 +401,11 @@ class FakeVessel : IVessel
 class FakeStatus : IVesselStatus
 {
     public IVessel Vessel { get; set; }
-    public string PlayerName => "fake";
-    public Domains Domain => default;
+    // Every fake is a different pilot: silence is keyed by player name, so two fakes sharing one
+    // would silence each other.
+    static int s_next;
+    public string PlayerName { get; } = "fake" + (++s_next);
+    public Domains Domain { get; set; }
     public ResourceSystem ResourceSystem { get; } = new ResourceSystem();
     public UnityEngine.Vector3 Course { get; set; }
     public float Speed { get; set; }

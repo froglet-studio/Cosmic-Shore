@@ -4,7 +4,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     [RequireComponent(typeof(VesselImpactor))]
-    public class NetworkVesselImpactor : NetworkBehaviour, IElementalLossRelay
+    public class NetworkVesselImpactor : NetworkBehaviour, IElementalLossRelay, ISilenceRelay
     {
         [SerializeField] VesselImpactor vesselImpactor;
 
@@ -236,6 +236,32 @@ namespace CosmicShore.Gameplay
             // conserve; it needs an ownership swap inside one round trip.
             if (!IsOwner) return;
             ElementalTransfer.GrantSettled(VesselStatusHere, packedPetals);
+        }
+
+        // ── Silence (ISilenceRelay, Docs/ElementalAbilitySystem/SILENCE.md) ─────────
+        //
+        // The owner settles every take on this hull (above), so the owner decides how long its
+        // pilot is silenced. Every peer has to refuse the same hits - prism damage is simulated on
+        // every peer - so the owner publishes the window. It sends REMAINING seconds rather than an
+        // absolute time: each peer counts down on its own clock, and the latency of one hop is noise
+        // against a window of seconds.
+
+        public void PublishSilence(float seconds)
+        {
+            if (!IsSpawned || !IsOwner || seconds <= 0f) return;
+            PublishSilence_ServerRpc(seconds);
+        }
+
+        // Owner-only (the default): only the owner settled the take that bought the silence.
+        [ServerRpc]
+        void PublishSilence_ServerRpc(float seconds) => PublishSilence_ClientRpc(seconds);
+
+        [ClientRpc]
+        void PublishSilence_ClientRpc(float seconds)
+        {
+            if (IsOwner) return;   // the owner recorded its own when it settled
+            var status = VesselStatusHere;
+            if (status != null) VesselSilence.Record(status.PlayerName, status.Domain, seconds);
         }
 
         IVesselStatus VesselStatusHere => vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;

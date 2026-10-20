@@ -49,7 +49,20 @@ namespace UnityEngine
         public static bool Approximately(float a, float b) => Math.Abs(a - b) < 1e-6f;
         public static float MoveTowards(float a, float b, float d) => a;
     }
-    public static class Time { public static float deltaTime => 0.016f; public static float time => 0f; }
+    public static class Time
+    {
+        public static float deltaTime => 0.016f;
+        public static float time => 0f;
+        public static double timeAsDouble => 0d;   // VesselSilence's default clock; the driver swaps the clock
+    }
+    // VesselSilence's config lookup. Load answers null, so the harness runs on the config SO's own
+    // field initializers - the defaults the shipped asset also authors.
+    public static class Resources { public static T Load<T>(string path) where T : Object => null; }
+    public enum RuntimeInitializeLoadType { SubsystemRegistration = 4 }
+    public class RuntimeInitializeOnLoadMethodAttribute : AttrBase
+    {
+        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { }
+    }
     public static class Random
     {
         public static Vector3 onUnitSphere => new Vector3(0, 1, 0);
@@ -80,7 +93,10 @@ namespace UnityEngine
     }
     public class Behaviour : Component { public bool enabled { get; set; } }
     public class MonoBehaviour : Behaviour { }
-    public class ScriptableObject : Object { }
+    public class ScriptableObject : Object
+    {
+        public static T CreateInstance<T>() where T : ScriptableObject => Activator.CreateInstance<T>();
+    }
     public class Transform : Component { public Vector3 position { get; set; } public Vector3 localScale { get; set; } }
     public class GameObject : Object
     {

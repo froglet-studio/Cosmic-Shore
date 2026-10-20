@@ -134,6 +134,10 @@ namespace CosmicShore.Gameplay
         /// Before this a missile scored through a ward ("a rocket that hits you hit you") while the
         /// victim kept every petal, and the stopped Serpent could be farmed for points it never
         /// paid.</para>
+        ///
+        /// <para>A SILENCED attacker is refused too (<see cref="VesselSilence"/>): their weapons
+        /// still fire and still connect, but a pilot who was just stripped or robbed can neither
+        /// score on nor take from anybody until the window runs out.</para>
         /// </summary>
         public static bool TryAdmit(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
                                     float cooldownSeconds, ElementalDebuffSources source,
@@ -141,6 +145,7 @@ namespace CosmicShore.Gameplay
         {
             supersededRank = 0;
             if (victim == null || attacker == null) return false;
+            if (VesselSilence.IsSilenced(attacker)) return false;
             if (victim.IsImmuneToElementalDebuff(source)) return false;
             return VesselCombatHitLatch.TryAdmit(attacker.PlayerName, victim.PlayerName, hitClass,
                                                  cooldownSeconds, out supersededRank);
