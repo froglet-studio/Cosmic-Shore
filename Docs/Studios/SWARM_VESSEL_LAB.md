@@ -1,9 +1,69 @@
-# Swarm Vessel Lab — round 2 (2026-10-20): the Shepherd
+# Swarm Vessel Lab — round 3 (2026-10-20): Marlin and Jacks (the Shepherd, rebuilt)
 
 **Live page:** https://claude.ai/artifact/Q7BgQYrT9xq5kmNtqCudmw (private to Garrett until shared)
-**Shepherd, straight in:** https://claude.ai/artifact/Q7BgQYrT9xq5kmNtqCudmw#shepherd (or the **Shepherd** button in the header)
+**Straight in:** https://claude.ai/artifact/Q7BgQYrT9xq5kmNtqCudmw#shepherd (or the **Marlin and Jacks** button in the header)
 **Source:** `Docs/Studios/SwarmVesselLab/src/` → `python3 Docs/Studios/SwarmVesselLab/build.py` → `Docs/Studios/SwarmVesselLab.html`
 **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SwarmVesselLab.html` (PASS, desktop + phone)
+
+## Round 3: top-down, a two-thumb pilot whose roll sets the plane (Garrett, 2026-10-20)
+
+Garrett played round 2 and sent five notes. Each one, and what the lab now does:
+
+| Garrett's note | What the lab does now | Reading that is the lab's |
+|---|---|---|
+| 1. The thumb ring felt great. Zoom out more; drop the isometric view for the Wrasse's top-down | The camera is the Wrasse's kite view (`KiteNavigatorView`): orthographic, straight down the plane's up axis, the plane's forward up the screen (heading up). The view span is 1,800 u (was 1,400). Settings has a **North up** box for comparison | The thumb floor is fixed on screen, so it grows in the world as the view zooms out: 400 u floor, 568 u ring at Space 2. |
+| 2. The Time L5 decoy is a pilot ability built on the dog's decoy | At Time L5 the pilot drops **the** decoy where it is (F, X button or the DECOY pad), 4 s cooldown. It is the same one-at-a-time decoy, so it replaces a dog's. Teleporting back to it is the combo. The round-2 swap is gone | The 4 s cooldown is a lab knob. |
+| 3. The pilot flies on two thumbs like the Grouper, helps the dogs, and its **roll** controls the plane the dogs move in and the sheep are drawn to | The pilot flies the Grouper's axes (`VesselTransformer`, `DualStickMix`): stick sum = yaw and pitch, difference = roll, spread = throttle. It uses the Grouper's rates (pitch/yaw 100, roll 120, +0.1 °/s per u/s; `Wrasse.prefab`) and keeps the Rhino's speed and straight ramp. The plane is the hull's own x-z plane, eased at 3/s, the Wrasse's signed-off board (`KiteBoardFrame.Eased`). Dogs, the decoy and the flock's spring all use it. Settings → **Plane frame** also offers Locked and Level (round 2) | "Straight" for the ramp means yaw, pitch and roll near zero; the spread does not count. Pitch tilts the plane too, because the board is the hull's whole x-z plane. |
+| 4. Danger sheep collide with the pilot under the existing mechanics, without a permanent loss | A danger sheep the pilot touches dies. The pilot takes the own-domain danger hit (`IMPACT_EFFECTS_AND_AUDIO.md`): a full stop that recovers over 3 s, a ramp reset, and every element down 2 levels decaying over 4 s (1 s cooldown). There is no burn | The 2-level size is the lab's reading of the shipped `debuffMagnitude -0.5`. The debuff is real here, so it briefly shrinks the ring, slows the flock and thins the danger share. |
+| 5. Name it "X and Ys" with real clades | The page now uses the proposed name **Marlin and Jacks** (one constant, `SHEP_NAME`, in `src/shepherd.js`) | Waiting on Garrett's pick. |
+
+**The world is 3D now, so the plane matters.** Pasture patches sit at many heights. The Space fort floats
+380 u above the start. The Time pens are spheres at 0, +420, −360, +520 and −480. Each pen draws its outline
+(faint dashes) and the circle where the plane cuts it (solid), with a ▲/▼ height on the current pen. The
+lower right shows the plane's tilt from level.
+
+**The AI pilot** rolls toward the plane that passes through itself and the flock's target, as level as that
+allows. It holds the flank opposite the driving dog on that plane, steers by elevation only (so a goal behind
+it is a turn, not a loop), and avoids its own danger sheep. At Time L5 it leaves a decoy on station and
+teleports back to it.
+
+### Measured: round 3 scorecard
+
+Same method as round 2 (AI crews, 30 s, seeds 1-2, round-3 values; deterministic across two calls). The
+world changed, so compare rows with each other, not with round 2's table.
+
+| Build | Time | Space | Mass | Charge |
+|---|---|---|---|---|
+| Pilot only (no dogs) | 0 | 0 | 6 | 1.5 |
+| Dogs only (no pilot) | 10 | **0** | 0 | 12.5 |
+| **Pilot + 2 dogs** | 20 | 138 | 2 | 2 |
+| Level plane (round 2 frame) | 20 | 48 | 1 | 2 |
+| Small thumb (14 mm floor) | 10 | 128 | 7 | 0 |
+| Rookie crew (noise 0.6) | 10 | 92.5 | 8.5 | 2 |
+| Time 5 (pilot decoy) | 20 | 124 | 2 | 4.5 |
+| Space 5 (eat shields) | 20 | **263** | 3 | 5 |
+| Mass 5 (poop mass) | 20 | 121.5 | **45** | 0.5 |
+| Charge 5 (attack) | 20 | 138 | 2 | 14 |
+| Charge 15 (all danger) | 20 | 138 | 2 | **19.5** |
+
+### Checked / Found (round 3)
+
+- **Checked:**
+  - `verify_lab.cjs` PASS, and the mode loads on desktop and on a landscape phone with no console errors.
+  - Holding roll for 0.6 s from level tilts the board 39°, easing on to 73°, and the dogs stay on it (height 0).
+  - At Time 5 the pilot's decoy lands where the pilot is, and a teleport two seconds later brings it back.
+  - Flying straight through a 100%-danger flock during a call: three hits, each a full stop and a −2 element debuff that is gone 4 s later, with the ring shrinking and recovering with it.
+- **Found:**
+  1. **The pilot now matters.** Without the pilot's plane the dogs cannot reach the floating fort (Space 0). With the round-2 level plane the crew grazes 48. With the roll plane it grazes 138. This answers round 2's "what is the pilot for": it carries the flock to a height.
+  2. **The pilot's repulsion keeps its own danger sheep away.** The AI pilot took no danger hits even at Charge 15. Hits come from the call (the pilot stops repelling while it calls) and from teleporting into the flock. That makes the call a real risk at high Charge.
+  3. **Mass is weak without Mass L5 (2 against 45).** Pasture spread over heights means fewer meals per sheep, and a lamb takes 2.4 meals. If Mass should matter below L5, lower meals per lamb or put more pasture near the plane.
+  4. **The AI pens slowly** (two of five in 30 s). The plane eases at 3/s and the AI rolls only when the next pen is out of plane. A human pilot who tilts ahead of time should beat it.
+
+### Decision needed (Garrett), round 3
+
+1. **The name** (decision card in the thread). The proposal is **Marlin and Jacks**: the marlin is the fast straight-line lunger, and jacks are the pack fish that herd bait balls.
+2. **Fly the pilot** ("You: the pilot", two thumbs or a gamepad). Does rolling the plane feel like steering the flock? Is the eased board (3/s) too slow or too fast?
+3. **Mass below L5**: is a weak Mass game acceptable (finding 3), or should breeding be easier?
 
 ## Round 2: the Shepherd (Garrett's direction, 2026-10-20)
 
@@ -234,6 +294,7 @@ The axes measured one at a time, the others held:
 
 ## Round log
 
+- **Round 3 (2026-10-20, `claude/project-thread-iu9brp`):** the Wrasse's top-down camera zoomed out; the pilot on the Grouper's two sticks with the plane as its eased x-z board (roll tilts it); a 3D world (floating fort, spherical pens, pasture at heights); Time L5 as the pilot's own decoy; own danger sheep hit the pilot (slow plus a decaying element debuff, no burn); the proposed name Marlin and Jacks.
 - **Round 2 (2026-10-20, `claude/project-thread-4slpcz`):** the Shepherd mode (`src/shepherd.js`): Rhino pilot, two thumb-driven sheepdogs with a thumb-occlusion floor, decoys, call, teleport, the four element rules and their L5s, four games with I1-I4, a ten-row scorecard; learning L-STU-118.
 
 - **Round 1 (2026-10-19, `cece/inspiring-einstein-k6syi5`):** built the lab, the 37 toys, the scorecard and team builder, and the decision log; made `verify_lab.cjs` hermetic (L-GEN-18); learnings L-STU-114 and L-STU-115.
