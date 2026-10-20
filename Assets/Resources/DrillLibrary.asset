@@ -105,4 +105,4 @@ MonoBehaviour:
     - Control: 0
       Scheme: 1
       Keyboard: 1
-      Label: 'the mouse'
+      Label: 'the mouse or WASD'

@@ -1161,3 +1161,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Yash (offered) to check on a phone
 - **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** KITE_NAVIGATOR.md Round 5; Assets/Resources/KiteNavigatorUnlit.mat
+
+### T-20261019-6778 · open · test · preview
+- **Task:** Find what makes the cursor briefly reappear during one-thumb mouse flight in the Breakwater microgame window (Sparrow). Control is no longer lost, but Caleb saw the cursor pop out for a moment and suspects a particular screen position triggers it.
+- **Done when:** Steps that reproduce the cursor pop-out (screen position, window placement, pad connected or not, Editor or build) are recorded in Docs/UNITY_VERIFICATION_CHECKLIST.md under the Breakwater preview entry, or 20 minutes of flight with no pop-out is recorded.
+- **Who can take it:** Andrew (QA); Yash could also take it
+- **Added:** 2026-10-19 by Caleb (`claude/fix-breakwater-preview-controls-3evnnj`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Breakwater preview — one-thumb flight), Assets/_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md
