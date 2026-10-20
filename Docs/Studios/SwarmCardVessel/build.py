@@ -59,14 +59,14 @@ for el in E:
     cs = [c for c in cards if c["element"] == el]
     md += [f"## {el} (20 cards)", "", f"*{meanings[el]}*", "",
            f"**{el}'s job:** {ROLES[el]}. {sum(1 for c in cs if c['role'])} of 20 cards do it; {sum(1 for c in cs if c['phys'])} of 20 play on its physics.", "",
-           "| # | Card | Kind | Best with | What it does | Scales: L1 / L5 / L10 / L15 | Milestones | Job | Physics |",
+           "| # | Card | Kind | Shines in phase | What it does | Scales: L1 / L5 / L10 / L15 | Milestones | Job | Physics |",
            "|---|---|---|---|---|---|---|---|---|"]
     for c in cs:
         sc = "<br>".join(f"{s['label']}: " + " / ".join(s["pts"] if s["kind"] == "pts" else s["key"]) for s in c["stats"])
         mi = "<br>".join(f"L{m['level']}: {m['text']}" for m in c["milestones"]) or "-"
         md.append(f"| {c['n']} | **{c['name']}** | {c['kind']} | {c['objective']} | {c['text']} | {sc} | {mi} | {c['role'] or '-'} | {c['phys'] or '-'} |")
     md.append("")
-md += ["## What changed since revision 1", "", "| Card | Change |", "|---|---|"]
+md += ["## What changed since revision 2", "", "| Card | Change |", "|---|---|"]
 md += [f"| {c['element']}: **{c['name']}** | {c['rev']} |" for c in cards if c["rev"]]
 md.append("")
 os.makedirs(os.path.dirname(REPO_JSON), exist_ok=True)

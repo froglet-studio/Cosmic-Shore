@@ -98,29 +98,30 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 <div class="wrap">
 <header>
   <h1>Swarm Deck</h1>
-  <p class="lede">The 80 cards of the mobile swarm vessel, revision 2. Each element has 20 and owns one job no other element does; each card goes from level 1 to 15. Drag the level to see every card at that level, then mark each one <b>Keep</b>, <b>Tweak</b> or <b>Cut</b> with a note. Revision 3 starts from your marks; your revision 1 notes are answered on the cards marked <b>Changed</b>.</p>
+  <p class="lede">The 80 cards of the mobile swarm vessel, revision 3. Each element has 20 and owns one job no other element does; each card goes from level 1 to 15. Drag the level to see every card at that level, then mark each one <b>Keep</b>, <b>Tweak</b> or <b>Cut</b> with a note. The next revision starts from your marks. Cards marked <b>Changed</b> say what revision 3 changed.</p>
   <details class="ctx">
     <summary>The vessel these cards are for, and the open questions</summary>
     <ul>
-      <li><b>Plane.</b> The swarm is pulled onto a 2D plane, drawn the way the Wrasse draws 2.5D. A touch on the map is a joystick that turns the plane on one or both of its relative axes; each turn resets.</li>
-      <li><b>Camera.</b> Centred on the swarm's approximate centroid, from a sample of members.</li>
-      <li><b>Objective toggle.</b> Omnicrystal, Elemental crystals, Opposing vessels, Opposing mass. Each card names the one it works best with.</li>
-      <li><b>Draw.</b> An omnicrystal draws four cards, one per element. Play one and the other three go. The next omnicrystal draws four more.</li>
+      <li><b>The swarm plays itself.</b> It roams the whole cell in 3D. Nothing you do steers it.</li>
+      <li><b>You watch.</b> You turn a viewing plane through the cell (drawn like the Wrasse's 2.5D), centred on the swarm's sampled centroid. Turning it changes what you see, never what the swarm does.</li>
+      <li><b>Phases.</b> Omnicrystal → Elemental crystals → Opposing vessels → Opposing mass, then round again. A phase ends on its timer or when its goal is met: collect an omnicrystal, collect Y elemental crystals, debuff a vessel, reduce opposing mass by X. Proposed: 30 / 25 / 25 / 25 s, Y = 5, X = 30 prisms.</li>
+      <li><b>Minimum size.</b> Like every vessel, the swarm has a floor: below its minimum size (proposed 6 members) nothing can harm it.</li>
+      <li><b>Hands.</b> The end of the Omnicrystal phase deals four cards, one per element, crystal or not. Pick one; the other three go. Each card names the phase it shines in.</li>
       <li><b>Levels.</b> Upgrading an element makes its cards arrive at that level. Drawing a card you hold adds its level to yours, up to 15.</li>
     </ul>
     <p><b>Each element's job.</b> Mass: prism production (danger or base), shielding, supershielding. Time: your maneuverability, speed, positioning, movement. Space: more range or more prisms you can destroy, steal or shrink. Charge: silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels.</p>
-    <p><b>Readings to confirm:</b> element upgrades are between-run (meta) progress; levels past 15 are lost; one form at a time; every card is passive once picked (no tap-to-fire).</p>
-    <p>Numbers assume a swarm of about 24 (cap 40), about 60 u/s cruise and a 1,400 u view. Each number is linear or a steady percentage step from level 1 to 15; counts round down.</p>
+    <p><b>Readings to confirm:</b> element upgrades are between-run (meta) progress; levels past 15 are lost; one form at a time; the phase timers and goals above are proposals.</p>
+    <p>Numbers assume a swarm of about 24 (cap 40, protected minimum 6), about 60 u/s cruise and a 1,400 u view. Each number is linear or a steady percentage step from level 1 to 15; counts round down.</p>
   </details>
 </header>
 
 <div class="bar" role="toolbar" aria-label="Filters">
   <div class="seg" id="els"></div>
-  <select id="obj" aria-label="Objective">
-    <option value="">Every objective</option><option>Omnicrystal</option><option>Elemental crystals</option><option>Opposing vessels</option><option>Opposing mass</option><option>Any</option>
+  <select id="obj" aria-label="Phase">
+    <option value="">Every phase</option><option>Omnicrystal</option><option>Elemental crystals</option><option>Opposing vessels</option><option>Opposing mass</option><option>Any</option>
   </select>
   <select id="vf" aria-label="Review state">
-    <option value="">Every card</option><option value="none">Not reviewed</option><option value="keep">Keep</option><option value="tweak">Tweak</option><option value="cut">Cut</option><option value="form">Forms only</option><option value="role">Does its element's job</option><option value="phys">Plays on physics</option><option value="rev">Changed in revision 2</option>
+    <option value="">Every card</option><option value="none">Not reviewed</option><option value="keep">Keep</option><option value="tweak">Tweak</option><option value="cut">Cut</option><option value="form">Forms only</option><option value="role">Does its element's job</option><option value="phys">Plays on physics</option><option value="rev">Changed in revision 3</option>
   </select>
   <input type="search" id="q" placeholder="Search cards" aria-label="Search cards">
   <label class="lvl" for="lv">Level <input type="range" id="lv" min="1" max="15" value="1"><output id="lvo">L1</output></label>
@@ -174,7 +175,7 @@ function cardHtml(c,L){
   const isForm = c.kind==="Form";
   return `<article class="card" id="${c.id}" data-v="${f.verdict||""}" style="--c:${COL[c.element]}">
     <div class="top"><h3><small>${c.element[0]}${c.n}</small>${esc(c.name)}</h3></div>
-    <div class="tags"><span class="tag el">${c.element}</span><span class="tag ${isForm?"form":""}">${esc(c.kind)}</span><span class="tag">${esc(c.objective)}</span>${c.rev?`<span class="tag chg">Changed</span>`:""}</div>
+    <div class="tags"><span class="tag el">${c.element}</span><span class="tag ${isForm?"form":""}">${esc(c.kind)}</span><span class="tag">${c.objective==="Any"?"Any phase":esc(c.objective)+" phase"}</span>${c.rev?`<span class="tag chg">Changed</span>`:""}</div>
     ${(c.role||c.phys)?`<div class="why">${c.role?`<span><b>Job</b> ${esc(c.role)}</span>`:""}${c.phys?`<span><b>Physics</b> ${esc(c.phys)}</span>`:""}</div>`:""}
     ${c.rev?`<p class="rev">${esc(c.rev)}</p>`:""}
     <p class="desc">${esc(c.text)}</p>
@@ -182,7 +183,7 @@ function cardHtml(c,L){
     ${c.milestones.length?`<ul class="ms">${c.milestones.map(m=>`<li class="${L>=m.level?"hit":""}"><b>L${m.level}</b>${esc(m.text)}</li>`).join("")}</ul>`:""}
     <div class="fb">
       <div class="vbtns">${["keep","tweak","cut"].map(v=>`<button type="button" data-id="${c.id}" data-v="${v}" aria-pressed="${f.verdict===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join("")}</div>
-      <textarea id="n-${c.id}" data-id="${c.id}" rows="1" placeholder="Note for revision 2">${esc(f.note||"")}</textarea>
+      <textarea id="n-${c.id}" data-id="${c.id}" rows="1" placeholder="Note for the next revision">${esc(f.note||"")}</textarea>
       <div class="saved" id="s-${c.id}"></div>
     </div></article>`;
 }

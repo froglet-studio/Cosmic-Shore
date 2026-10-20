@@ -78,7 +78,7 @@
    ],
    "role": "Danger prism production",
    "phys": null,
-   "rev": "Was Sticky Tar. Your note: just use danger prisms.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -112,7 +112,7 @@
    ],
    "role": "Prism production",
    "phys": "Conservation of mass",
-   "rev": "Was Martyr Bricks.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -160,7 +160,7 @@
    ],
    "role": "Prism production",
    "phys": "Inertia and momentum",
-   "rev": "Was Wall Weavers.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -208,7 +208,7 @@
    ],
    "role": "Prism production and shielding",
    "phys": "Accretion in orbit",
-   "rev": "Was Fortress.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -260,7 +260,7 @@
    ],
    "role": "Prism production",
    "phys": "Accretion",
-   "rev": "It rolled up enemy prisms, which is Space's job. It now builds your own.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -308,7 +308,7 @@
    ],
    "role": "Prism production",
    "phys": "Density and compression",
-   "rev": "New. Replaces Stampede, which flattened prisms (Space's job).",
+   "rev": null,
    "milestones": [
     {
      "level": 15,
@@ -356,7 +356,7 @@
    ],
    "role": "Supershielding",
    "phys": "Degenerate matter",
-   "rev": "It ploughed through prisms (Space's job). It now leaves a supershielded core.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -399,7 +399,7 @@
    ],
    "role": "Prism production and shielding",
    "phys": "Weight",
-   "rev": "Its stomp burst prisms (Space's job). It now builds.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -437,7 +437,7 @@
    ],
    "role": "Supershielding",
    "phys": null,
-   "rev": "New. Replaces Mitosis Feast, which ate enemy prisms (Space's job).",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -509,7 +509,7 @@
    ],
    "role": "Shielding",
    "phys": "Gravity",
-   "rev": "It pulled enemy prisms in (a step toward stealing, Space's job). It now shields yours.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -557,7 +557,7 @@
    ],
    "role": null,
    "phys": "Inertia",
-   "rev": "Its L10 shoved prisms aside (Space's job). It now shoves vessels.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -644,7 +644,7 @@
    "name": "Big Family",
    "kind": "Growth",
    "objective": "Any",
-   "text": "Raises the swarm cap.",
+   "text": "Raises the swarm cap and the protected minimum size.",
    "stats": [
     {
      "label": "Swarm cap",
@@ -659,11 +659,25 @@
       "100",
       "130"
      ]
+    },
+    {
+     "label": "Minimum size",
+     "kind": "lin",
+     "a": 6,
+     "b": 0.5,
+     "unit": "",
+     "dec": 0,
+     "key": [
+      "6",
+      "8",
+      "10",
+      "13"
+     ]
     }
    ],
    "role": null,
    "phys": null,
-   "rev": null,
+   "rev": "Also raises the new minimum size, below which nothing can harm the swarm.",
    "milestones": [
     {
      "level": 10,
@@ -822,7 +836,7 @@
    ],
    "role": "Prism production",
    "phys": "Critical mass",
-   "rev": "New. Meteor Drop moved to Space, as you noted.",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -971,33 +985,38 @@
    ]
   },
   {
-   "id": "time-reflexes",
+   "id": "time-agility",
    "n": 5,
    "element": "Time",
-   "name": "Reflexes",
-   "kind": "Control",
+   "name": "Agility",
+   "kind": "Turn",
    "objective": "Any",
-   "text": "The swarm settles onto a newly turned plane faster, so plane flicks feel snappy.",
+   "text": "The swarm turns tighter, so it whips round to a new target instead of looping wide.",
    "stats": [
     {
-     "label": "Settle time",
-     "kind": "geo",
-     "a": 1.5,
-     "b": 0.87,
-     "unit": "s",
-     "dec": 2,
+     "label": "Turn rate",
+     "kind": "lin",
+     "a": 90,
+     "b": 15,
+     "unit": "°/s",
+     "dec": 0,
      "key": [
-      "1.50 s",
-      "0.86 s",
-      "0.43 s",
-      "0.21 s"
+      "90°/s",
+      "150°/s",
+      "225°/s",
+      "300°/s"
      ]
     }
    ],
    "role": "Maneuverability",
    "phys": null,
-   "rev": null,
-   "milestones": []
+   "rev": "Was Reflexes, which settled the swarm onto your turned plane. You no longer steer, so it now sharpens the swarm's own turns.",
+   "milestones": [
+    {
+     "level": 10,
+     "text": "Members bank like starlings: the whole swarm turns as one"
+    }
+   ]
   },
   {
    "id": "time-hummingbird",
@@ -1039,7 +1058,7 @@
    ],
    "role": "Maneuverability and positioning",
    "phys": null,
-   "rev": "It also sipped prisms (Space's job). It now hovers and turns.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1068,11 +1087,11 @@
    ],
    "role": "Positioning",
    "phys": "Prediction along a worldline",
-   "rev": "New. Replaces Hourglass (your note: not multiplayer friendly).",
+   "rev": "Its L10 led your plane turns; it now leads the phase change.",
    "milestones": [
     {
      "level": 10,
-     "text": "Also leads the plane's turn, so a flick lands the swarm on the new line"
+     "text": "Sets off toward the next phase's objective in the last seconds of the timer"
     }
    ]
   },
@@ -1116,7 +1135,7 @@
    ],
    "role": "Positioning",
    "phys": "Skipping time",
-   "rev": "Was Portal Hop in Space. Getting somewhere is Time's job.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1145,7 +1164,7 @@
    ],
    "role": "Movement",
    "phys": "Skipping time",
-   "rev": "Was Blink Dodge in Space.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1174,7 +1193,7 @@
    ],
    "role": "Movement",
    "phys": "Phase",
-   "rev": "Was Phase Fold in Space.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1217,7 +1236,7 @@
    ],
    "role": "Movement",
    "phys": null,
-   "rev": "Moved from Space.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1227,7 +1246,7 @@
    "name": "Save Point",
    "kind": "Rewind",
    "objective": "Any",
-   "text": "Once per omnicrystal, if the swarm is nearly wiped, it rewinds to where it was and how big it was a few seconds ago.",
+   "text": "Once per cycle, when the swarm is knocked down to its minimum size, it rewinds to where it was and how big it was a few seconds ago.",
    "stats": [
     {
      "label": "Rewinds",
@@ -1246,7 +1265,7 @@
    ],
    "role": "Positioning",
    "phys": "Rewind",
-   "rev": null,
+   "rev": "It fired when the swarm was nearly wiped; with the minimum size the swarm cannot be wiped, so it fires at the floor.",
    "milestones": [
     {
      "level": 10,
@@ -1323,11 +1342,11 @@
    ],
    "role": "Speed",
    "phys": "Period and frequency",
-   "rev": "Its beat made members hit harder (destroying more is Space's job). The beat is now a speed surge.",
+   "rev": "Its L10 followed your plane flicks; it now fires on each phase change.",
    "milestones": [
     {
      "level": 10,
-     "text": "The beat follows your plane flicks"
+     "text": "A big surge as each new phase starts"
     }
    ]
   },
@@ -1472,7 +1491,7 @@
    ],
    "role": null,
    "phys": "Echo of the past",
-   "rev": "Ghosts no longer hit prisms (Space's job).",
+   "rev": null,
    "milestones": [
     {
      "level": 8,
@@ -1528,36 +1547,36 @@
    "milestones": []
   },
   {
-   "id": "time-second-look",
+   "id": "time-hurry-up",
    "n": 20,
    "element": "Time",
-   "name": "Second Look",
-   "kind": "Cards",
-   "objective": "Omnicrystal",
-   "text": "Reroll a hand of four cards. Rerolls recharge as you collect omnicrystals.",
+   "name": "Hurry Up",
+   "kind": "Phase",
+   "objective": "Any",
+   "text": "Every phase timer runs shorter, so the cycle comes round and new hands arrive sooner.",
    "stats": [
     {
-     "label": "Omnicrystals per reroll",
-     "kind": "geo",
-     "a": 5,
-     "b": 0.892,
-     "unit": "",
+     "label": "Phase time cut",
+     "kind": "lin",
+     "a": 3,
+     "b": 2,
+     "unit": "%",
      "dec": 0,
      "key": [
-      "5",
-      "3",
-      "1",
-      "1"
+      "3%",
+      "11%",
+      "21%",
+      "31%"
      ]
     }
    ],
    "role": null,
-   "phys": null,
-   "rev": null,
+   "phys": "A faster clock",
+   "rev": "Was Second Look (reroll a hand). A reroll adds a choice with stakes; you asked for no tension when picking.",
    "milestones": [
     {
      "level": 15,
-     "text": "Keep two cards from a hand instead of one"
+     "text": "A phase whose goal is met early gives its leftover time to the next phase"
     }
    ]
   },
@@ -1684,7 +1703,7 @@
    ],
    "role": "Destroy and steal range",
    "phys": null,
-   "rev": "Was Wide Spread. It now widens the reach of every Space card.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1761,7 +1780,7 @@
    ],
    "role": "Shrink",
    "phys": "Scale",
-   "rev": "It shrank only vessels. It now shrinks prisms too.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1804,7 +1823,7 @@
    ],
    "role": "Shrink",
    "phys": "Expanding space",
-   "rev": "New.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1847,7 +1866,7 @@
    ],
    "role": "Shrink range",
    "phys": "Curved spacetime",
-   "rev": "Was Claim Zone. Your prisms no longer grow in it (Mass's job).",
+   "rev": null,
    "milestones": []
   },
   {
@@ -1900,7 +1919,7 @@
    "name": "Meteor Drop",
    "kind": "Slam",
    "objective": "Opposing mass",
-   "text": "Every few seconds one member leaves the plane, climbs, and slams down on the objective, bursting enemy prisms round where it lands.",
+   "text": "Every few seconds one member climbs high above the swarm and slams down on the objective, bursting enemy prisms round where it lands.",
    "stats": [
     {
      "label": "Every",
@@ -1933,7 +1952,7 @@
    ],
    "role": "Destroy range",
    "phys": "Impact",
-   "rev": "Moved from Mass, as you noted.",
+   "rev": "Now climbs above the swarm instead of leaving your plane.",
    "milestones": [
     {
      "level": 10,
@@ -2010,7 +2029,7 @@
    ],
    "role": "Destroy range",
    "phys": "Orbits",
-   "rev": "Was Orbit Guard, which blocked shots (shielding is Mass's job).",
+   "rev": null,
    "milestones": []
   },
   {
@@ -2020,7 +2039,7 @@
    "name": "Manta Sheet",
    "kind": "Form",
    "objective": "Opposing mass",
-   "text": "Every 20 s the swarm flattens into one wide manta that sweeps the plane, bursting every enemy prism under its wings.",
+   "text": "Every 20 s the swarm flattens into one wide manta that sweeps through the cell, bursting every enemy prism under its wings.",
    "stats": [
     {
      "label": "Wingspan",
@@ -2100,16 +2119,16 @@
    "milestones": []
   },
   {
-   "id": "space-depth-dive",
+   "id": "space-spaghettify",
    "n": 15,
    "element": "Space",
-   "name": "Depth Dive",
-   "kind": "2.5D",
+   "name": "Spaghettify",
+   "kind": "Breaker",
    "objective": "Opposing mass",
-   "text": "Members may leave the plane to break and steal prisms above and below it.",
+   "text": "Near the swarm's densest point, tidal pull stretches enemy prisms long and thin until they snap.",
    "stats": [
     {
-     "label": "Reach off the plane",
+     "label": "Tidal radius",
      "kind": "lin",
      "a": 40,
      "b": 15,
@@ -2121,11 +2140,25 @@
       "175 u",
       "250 u"
      ]
+    },
+    {
+     "label": "Snap after",
+     "kind": "geo",
+     "a": 3,
+     "b": 0.9,
+     "unit": "s",
+     "dec": 1,
+     "key": [
+      "3.0 s",
+      "2.0 s",
+      "1.2 s",
+      "0.7 s"
+     ]
     }
    ],
-   "role": "Destroy and steal range",
-   "phys": "A third dimension",
-   "rev": null,
+   "role": "Destroy range",
+   "phys": "Tidal forces",
+   "rev": "New. Replaces Depth Dive: the swarm already roams the whole cell, so leaving the plane meant nothing.",
    "milestones": []
   },
   {
@@ -2135,7 +2168,7 @@
    "name": "Mirror Swarm",
    "kind": "Copy",
    "objective": "Opposing mass",
-   "text": "A mirror-image swarm flies reflected across the camera's centre line and breaks enemy prisms for real.",
+   "text": "A mirror-image swarm flies point-reflected through the real swarm's centroid and breaks enemy prisms for real.",
    "stats": [
     {
      "label": "Mirror strength",
@@ -2154,7 +2187,7 @@
    ],
    "role": "Destroy amount",
    "phys": "Reflection",
-   "rev": null,
+   "rev": "It reflected across your camera's centre line; the camera no longer touches the swarm, so it reflects through the centroid.",
    "milestones": []
   },
   {
@@ -2164,7 +2197,7 @@
    "name": "Split",
    "kind": "Split",
    "objective": "Any",
-   "text": "The swarm splits. Each extra swarm chases the next objective on the toggle, and the camera frames them all.",
+   "text": "The swarm splits. Each extra swarm works the next objective in the cycle at the same time, so a later phase can be met before its timer starts.",
    "stats": [
     {
      "label": "Swarms",
@@ -2179,7 +2212,7 @@
    ],
    "role": null,
    "phys": null,
-   "rev": null,
+   "rev": "Extra swarms follow the phase cycle instead of the toggle.",
    "milestones": [
     {
      "level": 5,
@@ -2265,7 +2298,7 @@
    "name": "Wide Lens",
    "kind": "Camera",
    "objective": "Any",
-   "text": "The camera pulls back so you see more of the plane.",
+   "text": "Your view pulls back so you see more of the cell round the swarm.",
    "stats": [
     {
      "label": "View span",
@@ -2284,11 +2317,11 @@
    ],
    "role": null,
    "phys": null,
-   "rev": null,
+   "rev": "Reworded for the free view.",
    "milestones": [
     {
      "level": 10,
-     "text": "An edge arrow points to the objective"
+     "text": "An edge arrow points to the current objective"
     }
    ]
   },
@@ -2375,7 +2408,7 @@
    ],
    "role": "Silence",
    "phys": "Grounding",
-   "rev": "New. Replaces Static Shield (soaking hits is shielding, Mass's job).",
+   "rev": null,
    "milestones": []
   },
   {
@@ -2476,7 +2509,7 @@
    ],
    "role": "Strip elements",
    "phys": "Static charge",
-   "rev": "Was Danger Swarm (making danger prisms is Mass's job).",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -2524,7 +2557,7 @@
    ],
    "role": "Strip crystals",
    "phys": "Short circuit",
-   "rev": "New. Replaces Bounty.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -2601,7 +2634,7 @@
    ],
    "role": "Strip crystals and kill fauna",
    "phys": null,
-   "rev": "Its breath burst prisms (Space's job). It now strips crystals and burns fauna.",
+   "rev": null,
    "milestones": [
     {
      "level": 15,
@@ -2678,7 +2711,7 @@
    ],
    "role": "Kill fauna",
    "phys": "Resonant coil",
-   "rev": "It zapped enemy prisms (Space's job). It now zaps fauna.",
+   "rev": null,
    "milestones": []
   },
   {
@@ -2721,7 +2754,7 @@
    ],
    "role": "Kill fauna",
    "phys": "Storm charge separation",
-   "rev": "It struck prisms too (Space's job).",
+   "rev": null,
    "milestones": []
   },
   {
@@ -2764,7 +2797,7 @@
    ],
    "role": "Kill fauna",
    "phys": null,
-   "rev": "It also shot prisms (Space's job).",
+   "rev": null,
    "milestones": [
     {
      "level": 10,
@@ -2869,7 +2902,7 @@
    "name": "Kamikaze",
    "kind": "Burst",
    "objective": "Opposing vessels",
-   "text": "Members that hit an enemy vessel or fauna explode in a spark that silences what it touches.",
+   "text": "Members that hit an enemy vessel or fauna explode in a spark that silences what it touches. Members never explode below the swarm's minimum size.",
    "stats": [
     {
      "label": "Blast radius",
@@ -2902,7 +2935,7 @@
    ],
    "role": "Silence and kill fauna",
    "phys": null,
-   "rev": "Its blast burst prisms (Space's job).",
+   "rev": "Stops at the minimum size.",
    "milestones": []
   },
   {
@@ -3059,7 +3092,7 @@
    ],
    "role": null,
    "phys": null,
-   "rev": "It also made the swarm faster (speed is Time's job).",
+   "rev": null,
    "milestones": []
   },
   {
@@ -3069,7 +3102,7 @@
    "name": "Mind Control",
    "kind": "Weird",
    "objective": "Opposing vessels",
-   "text": "A vessel swarmed by enough members is hijacked and flies where your plane points for a moment.",
+   "text": "A vessel swarmed by enough members is hijacked for a moment and flies along with the swarm. A hijack counts as debuffing a vessel.",
    "stats": [
     {
      "label": "Hijack lasts",
@@ -3102,7 +3135,7 @@
    ],
    "role": null,
    "phys": null,
-   "rev": null,
+   "rev": "The hijacked vessel followed your plane, which no longer steers anything.",
    "milestones": []
   }
  ]
