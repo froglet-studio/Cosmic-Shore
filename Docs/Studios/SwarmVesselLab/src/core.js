@@ -9,7 +9,7 @@ const $ = (id) => document.getElementById(id);
 // A READER of the shipped numbers, never their authority. Every value that exists in the game names the
 // asset or field it was copied from; everything else is a lab knob ("lab:"). The game has no swarm VESSEL
 // yet, so most of this page is proposal — the Termite deck and the locust's rules are the shipped anchors.
-const LAB = { name: 'Swarm Vessel Lab', branch: 'claude/project-thread-4slpcz', round: 2, doc: 'Docs/Studios/SWARM_VESSEL_LAB.md' };
+const LAB = { name: 'Swarm Vessel Lab', branch: 'claude/project-thread-iu9brp', round: 3, doc: 'Docs/Studios/SWARM_VESSEL_LAB.md' };
 const SHIPPED = {
   cruise: 70,          // TermiteCommandTransformer.commandCruiseSpeed (Time 0; 112 at Time 10)
   accel: 90,           // TermiteCommandTransformer.commandAcceleration (u/s per s)
