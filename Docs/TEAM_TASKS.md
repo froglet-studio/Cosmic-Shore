@@ -1178,7 +1178,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
 ### T-20261020-1ffa · open · test · vessels
-- **Task:** Editor-verify SILENCE (cece/sleepy-shannon-9qk646): run SILENCE.md §8 steps 1-6 (step 6: the onset shake and the danger vignette) - a stripped/robbed pilot's hits deflect off rival prisms with a wobble for ~1 s per petal lost, take and score nothing, kill no lifeform and lay no new danger, while every ability and control still works (Thresher flail on both triggers, Sparrow guns and turret prisms); MPPM host+client agree on the window
+- **Task:** Editor-verify SILENCE (cece/sleepy-shannon-9qk646): run SILENCE.md §8 steps 1-6 (step 6: the onset shake and the danger vignette) - a pilot who took a scored hit (no petals needed) has their hits deflect off rival prisms with a wobble for the hit's worth (a Strike 3.2 s, a rocket 4-8 s), take and score nothing, kill no lifeform and lay no new danger, while every ability and control still works (Thresher flail on both triggers, Sparrow guns and turret prisms); MPPM host+client agree on the window
 - **Done when:** All six steps observed in the editor, including the MPPM step, with any mismatch filed as a dev task
 - **Who can take it:** Yash (offered; editor + MPPM), Garrett (owner's eye)
 - **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)

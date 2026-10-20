@@ -136,8 +136,11 @@ namespace CosmicShore.Gameplay
         /// paid.</para>
         ///
         /// <para>A SILENCED attacker is refused too (<see cref="VesselSilence"/>): their weapons
-        /// still fire and still connect, but a pilot who was just stripped or robbed can neither
-        /// score on nor take from anybody until the window runs out.</para>
+        /// still fire and still connect, but a pilot who was just hit can neither score on nor take
+        /// from anybody until the window runs out. And an ADMITTED hit silences its victim, for what
+        /// it is worth (ten points to the petal, on four elements; a missile that upgrades a tier
+        /// adds only the difference, as its score does) - whether or not the victim holds petals.
+        /// This runs on the machine that decides the hit, which is the only one that admits it.</para>
         /// </summary>
         public static bool TryAdmit(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
                                     float cooldownSeconds, ElementalDebuffSources source,
@@ -147,8 +150,14 @@ namespace CosmicShore.Gameplay
             if (victim == null || attacker == null) return false;
             if (VesselSilence.IsSilenced(attacker)) return false;
             if (victim.IsImmuneToElementalDebuff(source)) return false;
-            return VesselCombatHitLatch.TryAdmit(attacker.PlayerName, victim.PlayerName, hitClass,
-                                                 cooldownSeconds, out supersededRank);
+            if (!VesselCombatHitLatch.TryAdmit(attacker.PlayerName, victim.PlayerName, hitClass,
+                                               cooldownSeconds, out supersededRank))
+                return false;
+
+            int points = PointsFor(hitClass);
+            if (supersededRank > 0) points -= PointsFor(ClassForMissileRank(supersededRank));
+            VesselSilence.OnHitAdmitted(victim, points, source);
+            return true;
         }
 
         /// <summary>

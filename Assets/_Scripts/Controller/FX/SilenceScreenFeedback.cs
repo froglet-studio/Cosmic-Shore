@@ -129,10 +129,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// <c>silence</c>: every pilot this machine settled a take for - hits that reached the
-        /// economy, how many took nothing because the pilot held no petals (every mode's pot starts
-        /// empty, so a fight between fresh pilots silences nobody), petals lost, silences begun - and
-        /// who is silenced now. <c>silence test [seconds]</c>: silence your own pilot for that long
+        /// <c>silence</c>: every pilot this machine has seen hit - the scored hits it decided against
+        /// them (each one silences), the silence windows that began, the takes it settled for them
+        /// and how many of those found nothing - and who is silenced now. <c>silence test [seconds]</c>: silence your own pilot for that long
         /// (default 4), to look at the shake and vignette in isolation from the economy.
         /// </summary>
         static string Handle(string[] args)
@@ -154,13 +153,13 @@ namespace CosmicShore.Gameplay
             sb.Append("silence: post-processing ").Append(post ? "found" : "MISSING (no vignette can show)")
               .Append(" | vignette weight ").Append(s_instance ? s_instance._weight.ToString("0.00") : "-");
             if (VesselSilence.Tallies.Count == 0)
-                sb.Append(" | no hit has reached the elemental economy on this machine yet");
+                sb.Append(" | no scored hit has landed on anybody on this machine yet");
             foreach (var kv in VesselSilence.Tallies)
             {
                 var t = kv.Value;
-                sb.Append("\n  ").Append(kv.Key).Append(": ").Append(t.Takes).Append(" hits settled, ")
-                  .Append(t.EmptyTakes).Append(" took nothing (no petals held), ").Append(t.Petals)
-                  .Append(" petals lost, silenced ").Append(t.Silences).Append("x");
+                sb.Append("\n  ").Append(kv.Key).Append(": ").Append(t.Hits).Append(" scored hits decided here, ")
+                  .Append("silenced ").Append(t.Silences).Append("x | takes settled here ").Append(t.Takes)
+                  .Append(" (").Append(t.EmptyTakes).Append(" took nothing), ").Append(t.Petals).Append(" petals lost");
                 float left = VesselSilence.RemainingSeconds(kv.Key);
                 if (left > 0f) sb.Append(" - SILENCED, ").Append(left.ToString("0.0")).Append(" s left");
             }

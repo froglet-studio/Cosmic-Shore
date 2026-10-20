@@ -25,6 +25,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AHitIsWorthItsPointsAtTenToThePetalOnFourElements()
+        {
+            Assert.AreEqual(0.4f, VesselSilence.SecondsForPoints(1, 1f), 1e-5f, "a bullet");
+            Assert.AreEqual(3.2f, VesselSilence.SecondsForPoints(8, 1f), 1e-5f, "a Strike");
+            Assert.AreEqual(4f, VesselSilence.SecondsForPoints(10, 1f), 1e-5f, "a missile shockwave");
+            Assert.AreEqual(0f, VesselSilence.SecondsForPoints(0, 1f));
+            Assert.AreEqual(0f, VesselSilence.SecondsForPoints(10, 0f));
+        }
+
+        [Test]
         public void ANewTakeAddsUpToTheCeiling()
         {
             Assert.AreEqual(5f, VesselSilence.Extend(2f, 3f, 8f));

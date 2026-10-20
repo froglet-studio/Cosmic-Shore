@@ -21,8 +21,8 @@
 
 ## 1. The rule
 
-**A pilot who loses petals to a strip or a steal is SILENCED for a time proportional to the petals they
-lost. While silenced, every ability still works, but nothing it does can harm another pilot's vessel,
+**Every scored hit on a pilot SILENCES them for a time proportional to what the hit is worth - the
+petals it is priced at, whether or not they had petals to lose. While silenced, every ability still works, but nothing it does can harm another pilot's vessel,
 fauna or prisms, and nothing it lays comes out dangerous.**
 
 | Silence takes away | Silence leaves alone |
@@ -46,26 +46,45 @@ maneuvering and cultivating new mass.
 
 ## 2. How long
 
-`seconds = petals lost × secondsPerPetal`, added to whatever silence is left, capped at `maxSeconds`.
+`seconds = the hit's points / 10 × 4 elements × secondsPerPetal`, added to whatever silence is left,
+capped at `maxSeconds`. That is the hit's worth in petals at the fleet price (ten points to the petal,
+on each of the four elements; `CombatHitDrain.PointsFor`) - exactly what the same hit takes from a
+pilot who holds enough. A missile that upgrades its tier against the same pilot adds only the
+difference, as its score does.
+
+**Worth, not petals settled (Garrett, 2026-10-20).** The first cut silenced for the petals that
+actually came loose. Every mode's pot starts empty (`Docs/ELEMENTAL_ECONOMY.md` §2.1), so in Garrett's
+first Dog Fight run the AI scored well over 20 points and silenced nobody: a fresh pilot holds no
+petals, so no hit takes any. Asked to choose between a starting stake in the combat modes, silencing
+every scored hit by its worth, or leaving it, Garrett chose **silence every scored hit**.
 
 | Knob (`VesselSilenceConfigSO`) | Shipped | Meaning |
 |---|---|---|
 | `secondsPerPetal` | **1** | one petal = one element level = one second |
 | `maxSeconds` | **8** | the ceiling on one pilot's silence, however many hits land. 0 switches silence off |
-| `silencingSources` | Explosion, VesselContact, Other | which take classes silence (`ElementalDebuffSources`). A danger prism BURNS, so it never silences. The Butterfly's wormhole toll is left out: it is a price the rival chose by threading the mouth |
+| `silencingSources` | Explosion, VesselContact, Other | which hit classes silence (`ElementalDebuffSources`). A danger prism is not a hit (it burns), so it never silences. The Butterfly's wormhole toll scores but is left out: it is a price the rival chose by threading the mouth |
 | `suppressDangerProduction` | on | a silenced pilot lays no new danger |
 
 These are **starting values**. They are to be set by the plan in §6, not by feel.
 
-Worked numbers at the shipped values: a Thresher hit at Charge 0 steals 1 petal on each of four
-elements, so 4 s; a Sparrow rocket's direct hit (30 points = 3 petals per element) is 8 s (capped);
-ten Sparrow bullets (0.1 petal each per element) settle one petal per element, so 4 s.
+Worked numbers at the shipped values:
 
-**Silence is self-limiting.** It only follows petals that truly came loose: the victim's own
-`ResourceSystem.AccrueElementalLoss` clamps every take to what they hold. A pilot stripped to level 0
-loses nothing more, so they are silenced no further, and their silence runs out. A warded pilot loses
-nothing and is never silenced. A silenced pilot cannot strip or steal, so they cannot silence anybody
-back. A turn reset (`VesselStatus.ResetForPlay`) lifts it.
+| Hit | Points | Silence |
+|---|---|---|
+| a Sparrow bullet | 1 | 0.4 s (ten bullets: 4 s) |
+| a Strike (Squirrel joust, Rhino sword, Thresher ball, Angler, Wrasse kite) | 8 | 3.2 s |
+| a missile shockwave | 10 | 4 s |
+| a Debuff (Dolphin cone, Scarab plate, Manta bloom, Serpent rifle) | 12 | 4.8 s |
+| a missile blast | 20 | 8 s |
+| a missile direct hit | 30 | 8 s (capped) |
+
+**What limits it now.** It no longer runs dry with the victim's petals: a pilot at level 0 is still
+silenced by every hit. What bounds it is the 8 s ceiling, the per-victim cooldown each reporter
+already has (`VesselCombatHitLatch`), and the fact that a silenced pilot cannot score a hit, so cannot
+silence anybody back. A warded pilot is not admitted, so is never silenced. A turn reset
+(`VesselStatus.ResetForPlay`) lifts it. A pilot who keeps getting hit can be kept silenced for as long
+as they stay hittable, and flying away is the answer the game gives them (every Time and Mass ability
+still works). This is the first thing to watch in playtest and in the balancing plan (§6).
 
 ## 3. Where it is enforced
 
@@ -90,13 +109,16 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
 
 ## 4. Who decides, and how every peer agrees
 
-- **Decided on the victim's owner**, where the petals settle: `ElementalTransfer.Apply` offline,
-  `ElementalTransfer.SettleTake` on a networked victim's owner. So the window is exactly as long as
-  the petals that really came loose.
-- **Published to every peer**: prism damage is simulated on every peer, so every peer has to refuse the
-  same hits. The owner sends the REMAINING seconds through `NetworkVesselImpactor.PublishSilence`
-  (`ISilenceRelay`, a ServerRpc then a ClientRpc), and each peer counts down on its own clock. One hop
-  of latency is noise against a window of seconds.
+- **Decided where the hit is admitted**: `CombatHitDrain.TryAdmit` -> `VesselSilence.OnHitAdmitted`,
+  on the machine that DECIDES the hit (the attacker's owner: a human's own client, the server for an
+  AI; every reporter asks `ElementalTransfer.IsDecidedHere` first). So a hit silences once however
+  many peers replay it, and silence and score are decided together.
+- **Published to every peer** as an EXTENSION: prism damage is simulated on every peer, so every peer
+  has to refuse the same hits. The decider sends the seconds it added through the victim hull's
+  `NetworkVesselImpactor.PublishSilence` (`ISilenceRelay`; a ServerRpc any machine may call, then a
+  ClientRpc that every peer but the sender applies with `VesselSilence.ExtendBy`). An extension rather
+  than an absolute time, so two attackers on two machines landing hits inside one window both count.
+  One hop of latency is noise against a window of seconds.
 - **Keyed by player name**, the identity every harm site already carries (`Prism.Damage` knows only
   the attacker's name and domain; scoring is keyed the same way).
 - **Wire change:** `NetworkConfig.ProtocolVersion` 9 → 10 (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`).
@@ -121,15 +143,13 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
   deflect: a rival prism wobbles instead of breaking, a rival pilot's flowers do not step down, and
   nothing scores. The ability row's cooldown veil was not used, because it says "you cannot use this"
   and every ability still works.
-- **⚠ A fight between fresh pilots silences NOBODY, so it shows nothing.** Every mode's pot starts
-  empty (`Docs/ELEMENTAL_ECONOMY.md` §2.1): Dog Fight runs on `AstroLeagueComebackProfile`
-  (`Initial*: 0`) and its card authors no `StartingElements`, so a pilot who has not collected an
-  elemental crystal holds no petals, every hit takes nothing, and silence is never triggered.
-  Garrett's first Dog Fight run (2026-10-20: the AI scored well over 20 points, no vignette) was
-  exactly this, not a rendering fault. Two console commands (`DiagnosticsHUD`, editor and dev
-  builds) separate the two causes:
-  - `silence`: per pilot, hits that reached the economy, how many **took nothing** (no petals
-    held), petals lost, silences begun, who is silenced now, and whether post-processing is there;
+- **Fresh pilots are silenced too** (§2): Garrett's first Dog Fight run showed no vignette because
+  the first cut silenced only for petals that came loose, and nobody in Dog Fight holds any at the
+  start. Two console commands (`DiagnosticsHUD`, editor and dev builds) tell a silence that never
+  began from one that did not draw:
+  - `silence`: per pilot, the scored hits this machine decided against them, the windows that began,
+    the takes settled and how many **took nothing**, petals lost, who is silenced now, and whether
+    post-processing is there;
   - `silence test [seconds]`: silences your own pilot (default 4 s) so the shake and the vignette can
     be judged with no fight at all.
 - **Autopilots do not know they are silenced.** An AI keeps attacking through its silence and wastes
@@ -219,7 +239,7 @@ AI's skill, not the hull's strength, and a balance pass would buff a hull for ha
 
 | What | How | Result (2026-10-20) |
 |---|---|---|
-| The rules, the gates on vessels, the network split | `bash Tools/Build/elemental_transfer_harness/run.sh`, block **T11** (25 checks, real `VesselSilence` + `ElementalTransfer` + `CombatHitDrain` against fake hulls) | ALL PASS. Negative control: removing the `TryAdmit` gate, the transfer gate and the owner's silence call fails 4 checks |
+| The rules, the gates on vessels, the network split | `bash Tools/Build/elemental_transfer_harness/run.sh`, block **T11** (28 checks, real `VesselSilence` + `CombatHitDrain` + `VesselCombatHitLatch` + `ElementalTransfer` against fake hulls, including the Dog Fight case: a fresh pilot hit by a Strike is silenced 3.2 s) | ALL PASS. Negative controls: removing the silence call in `TryAdmit` fails 11 checks; removing the missile-tier netting fails 1 |
 | Runtime C# binds against real Unity | `bash Tools/Build/unity_refcompile/run.sh` | OK: no errors in project code (80 assemblies) |
 | Static gates | `check_conditional_compilation`, `check_enum_member_references`, `check_switch_label_collisions`, `check_self_referential_locals`, `check_console_logging`, `check_using_directives`, `check_abstract_member_implementations`, `check_elemental_economy` | all OK |
 
@@ -227,12 +247,12 @@ The harness was already red on bleeding-edge before this change: its stubs had n
 `CombatHitDrain.TryAdmit` (2026-10-10) or `CellConfigDataSO`'s warp field. Both are fixed here.
 
 **Not run in the editor.** The prism and lifeform gates live on MonoBehaviours the harness cannot bind.
-In the editor, with a victim holding petals (`Docs/ELEMENTAL_ECONOMY.md` §8 step 0):
+In the editor (no petals needed - any scored hit silences):
 
-1. Thresher vs Thresher (Thresher Time, or freestyle with an AI): land a ball hit on a pilot holding
-   petals. For about 4 s the victim's ball and chain bounce off your prisms with a wobble and take
+1. Thresher vs Thresher (Thresher Time, or freestyle with an AI): land a ball hit on a pilot. For about
+   3 s the victim's ball and chain bounce off your prisms with a wobble and take
    nothing from you, while both triggers still work the flail. Then their hits land again.
-2. Sparrow (Dog Fight): get stripped by a rocket, then fire both guns and turret-stance prisms at a
+2. Sparrow (Dog Fight): take a rocket hit (4-8 s of silence), then fire both guns and turret-stance prisms at a
    rival trail. Rounds deflect (wobble), turret prisms still land as your own mass, nothing scores.
 3. Rhino with danger afterimages, or a Butterfly dusting its own prisms: while silenced, no new
    danger appears; danger prisms already out still burn on contact.
@@ -242,5 +262,5 @@ In the editor, with a victim holding petals (`Docs/ELEMENTAL_ECONOMY.md` §8 ste
 6. Silence a human pilot (any hull; `silence test` in the console does it without a fight): one small camera nudge as it lands (no shake again while it is
    extended), a soft danger-red edge on the screen for the window, draining over about half a second
    when it ends. An AI or a rival being silenced shows nothing on your screen. Tune it on
-   `VesselSilenceConfig.asset` > *Feedback*. In a real fight, first collect elemental crystals (a
-   lifeform heart) so you have petals to lose; `silence` then shows your hits settling petals.
+   `VesselSilenceConfig.asset` > *Feedback*. In Dog Fight, the first AI hit on you should start it;
+   `silence` in the console then shows the hits decided against you and the windows that began.

@@ -8,11 +8,17 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// SILENCE: a pilot who has petals STRIPPED or STOLEN is silenced for a time proportional to the
-    /// petals they lost (Docs/ElementalAbilitySystem/SILENCE.md, Garrett 2026-10-20). Taking a
-    /// rival's elements was a deterrent but not protection: a pilot with fewer elements could still
-    /// strip you back, steal your prisms or break the health prisms of your ark. Now the take also
-    /// buys a window in which the victim cannot retaliate.
+    /// SILENCE: every SCORED HIT on a pilot silences them for a time proportional to what the hit is
+    /// worth (Docs/ElementalAbilitySystem/SILENCE.md, Garrett 2026-10-20). Taking a rival's elements
+    /// was a deterrent but not protection: a pilot with fewer elements could still strip you back,
+    /// steal your prisms or break the health prisms of your ark. Now the hit also buys a window in
+    /// which the victim cannot retaliate.
+    ///
+    /// <para><b>Worth, not petals settled (Garrett's call after the first Dog Fight run).</b> The
+    /// first cut silenced for the petals that actually came loose, and every mode's pot starts empty,
+    /// so a fight between fresh pilots silenced nobody: the AI scored 20+ points and nothing happened.
+    /// A hit is now priced the way <see cref="CombatHitDrain"/> prices its take - ten points to the
+    /// petal, on each of the four elements - whether or not the victim had petals to give.</para>
     ///
     /// <para><b>What silence blocks, and what it leaves alone.</b> A silenced pilot keeps EVERY
     /// ability and every control: the Sparrow still fires, the Thresher still works its flail with
@@ -35,12 +41,13 @@ namespace CosmicShore.Gameplay
     /// <item>danger: <c>Prism.Initialize</c> and <c>Prism.MakeDangerous</c>.</item>
     /// </list>
     ///
-    /// <para><b>Where it is decided.</b> On the machine that OWNS the victim, at the moment its petals
-    /// settle - the same place <see cref="ElementalTransfer"/> already settles every take, so the
-    /// silence is exactly as long as the petals that truly came loose (a warded or empty pilot loses
-    /// nothing and is not silenced). The owner then publishes the remaining seconds through the
-    /// hull's <see cref="ISilenceRelay"/>, and every peer records the same window, because prism
-    /// damage is simulated on every peer and each one has to refuse the same hits.</para>
+    /// <para><b>Where it is decided.</b> In <see cref="CombatHitDrain.TryAdmit"/>, the moment a hit is
+    /// admitted - which is on the machine that DECIDES the hit (the attacker's owner; every reporter
+    /// asks <see cref="ElementalTransfer.IsDecidedHere"/> first), so a hit silences once however many
+    /// peers replay it. A warded victim is not admitted and is not silenced. The decider extends the
+    /// victim's window here and sends the SAME extension to every other peer through the victim
+    /// hull's <see cref="ISilenceRelay"/>, because prism damage is simulated on every peer and each
+    /// one has to refuse the same hits.</para>
     ///
     /// <para><b>Keyed by player name</b>, because that is the identity every harm site already
     /// carries: <c>Prism.Damage</c> knows only the attacker's name and domain. Scoring is keyed the
@@ -118,6 +125,22 @@ namespace CosmicShore.Gameplay
         public static float SecondsFor(int petals, float secondsPerPetal) =>
             petals <= 0 || secondsPerPetal <= 0f ? 0f : petals * secondsPerPetal;
 
+        /// <summary>The elements a scored hit is priced on: all four, the fleet price's convention
+        /// (<see cref="CombatHitDrain"/>: "ten points is one petal, on every element the hit
+        /// touches").</summary>
+        public const int ElementsAHitIsPricedOn = 4;
+
+        /// <summary>
+        /// Seconds of silence a hit worth <paramref name="points"/> buys: its worth in petals (ten
+        /// points to the petal, on each of the four elements) times <paramref name="secondsPerPetal"/>.
+        /// A bullet (1 point) is 0.4 petals, a Strike (8) 3.2, a missile shockwave (10) 4 - exactly
+        /// what the same hit would take from a pilot who held enough.
+        /// </summary>
+        public static float SecondsForPoints(int points, float secondsPerPetal) =>
+            points <= 0 || secondsPerPetal <= 0f
+                ? 0f
+                : points / CombatHitDrain.PointsPerLevel * ElementsAHitIsPricedOn * secondsPerPetal;
+
         /// <summary>
         /// The silence left after a new take of <paramref name="addSeconds"/> lands on a pilot who
         /// still had <paramref name="remainingSeconds"/>: the two ADD, up to
@@ -189,41 +212,62 @@ namespace CosmicShore.Gameplay
         // ── Writes ──────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// The VICTIM's half: <paramref name="petals"/> just came loose from
-        /// <paramref name="victim"/> under <paramref name="source"/> (a strip or a steal, never a
-        /// burn). Called from <see cref="ElementalTransfer"/> where the take settles. Acts only on the
-        /// copy whose take counts - offline, or the victim's owner - and publishes the result so every
-        /// other peer records the same window. Returns the seconds of silence the victim now has.
+        /// A scored hit worth <paramref name="points"/> was just ADMITTED against
+        /// <paramref name="victim"/> under <paramref name="source"/> (<see cref="CombatHitDrain.TryAdmit"/>,
+        /// on the machine that decides the hit). Extends the victim's silence by the hit's worth
+        /// (<see cref="SecondsForPoints"/>) here and sends the same extension to every other peer.
+        /// Returns the seconds added.
         /// </summary>
-        public static float OnPetalsTaken(IVesselStatus victim, int petals, ElementalDebuffSources source)
+        public static float OnHitAdmitted(IVesselStatus victim, int points, ElementalDebuffSources source)
         {
-            if (victim == null) return 0f;
-
-            var relay = RelayOf(victim);
-            if (relay != null && relay.IsNetworked && !relay.IsOwnedHere) return 0f;   // not this copy's take
-
-            // Counted before anything can refuse it: "hit, but nothing came loose" is the commonest
-            // reason a playtester sees no silence (every mode's pot starts empty), and the `silence`
-            // console command has to be able to say so.
-            Note(victim.PlayerName, petals, silenced: false);
-            if (petals <= 0) return 0f;
+            if (victim == null || points <= 0) return 0f;
 
             var config = Config;
             if (!Silences(source, config.SilencingSources)) return 0f;
 
-            float seconds = Extend(RemainingSeconds(victim.PlayerName),
-                                   SecondsFor(petals, config.SecondsPerPetal), config.MaxSeconds);
-            if (seconds <= 0f) return 0f;
+            float add = SecondsForPoints(points, config.SecondsPerPetal);
+            if (add <= 0f) return 0f;
 
-            Note(victim.PlayerName, 0, silenced: true);
-            Record(victim, seconds);
-            if (relay != null && relay.IsNetworked) relay.PublishSilence(seconds);
-            return seconds;
+            NoteHit(victim.PlayerName);
+            ExtendBy(victim, add);
+            var relay = RelayOf(victim);
+            if (relay != null && relay.IsNetworked) relay.PublishSilence(add);
+            return add;
+        }
+
+        /// <summary>
+        /// Adds <paramref name="addSeconds"/> to the silence <paramref name="status"/>'s pilot has
+        /// left, up to the ceiling (<see cref="Extend"/>). The decider calls it for its own hit, and
+        /// every other peer calls it when that hit's publish arrives, so each machine extends its own
+        /// copy of the window by the same amount.
+        /// </summary>
+        public static void ExtendBy(IVesselStatus status, float addSeconds)
+        {
+            if (status == null || addSeconds <= 0f) return;
+            float left = RemainingSeconds(status.PlayerName);
+            float total = Extend(left, addSeconds, Config.MaxSeconds);
+            if (total <= 0f) return;
+            if (left <= 0f) NoteOnset(status.PlayerName);
+            Record(status, total);
+        }
+
+        /// <summary>
+        /// Counts what a take settled on <paramref name="victim"/>, for the <c>silence</c> console
+        /// command. It silences nobody - a hit's silence is decided when it is admitted, whatever it
+        /// manages to take - and counts only on the copy whose take is real (offline, or the victim's
+        /// owner). "Hit, took nothing" is what a fight between fresh pilots looks like.
+        /// </summary>
+        public static void OnPetalsTaken(IVesselStatus victim, int petals, ElementalDebuffSources source)
+        {
+            if (victim == null) return;
+            var relay = RelayOf(victim);
+            if (relay != null && relay.IsNetworked && !relay.IsOwnedHere) return;   // not this copy's take
+            NoteTake(victim.PlayerName, petals);
         }
 
         /// <summary>Records <paramref name="seconds"/> of silence for <paramref name="playerName"/>
-        /// from now, replacing whatever window was there (the owner's figure already includes it).
-        /// Called by the owner and by every peer that receives the owner's publish.</summary>
+        /// from now, replacing whatever window was there. <see cref="ExtendBy"/> is the gameplay
+        /// path; this is its last step, and the <c>silence test</c> console command.</summary>
         public static void Record(string playerName, Domains domain, float seconds)
         {
             if (string.IsNullOrEmpty(playerName)) return;
@@ -261,11 +305,12 @@ namespace CosmicShore.Gameplay
 
         // ── Diagnostics (the `silence` console command, SilenceScreenFeedback) ─────
 
-        /// <summary>Per victim, on the copy whose takes count: settled takes, how many of them took
-        /// nothing, the petals lost and the silences that began.</summary>
+        /// <summary>Per pilot, as this machine saw it: scored hits it decided against them, silences
+        /// that began, and (on the copy whose takes are real) takes settled, how many took nothing,
+        /// and the petals lost.</summary>
         public struct Tally
         {
-            public int Takes, EmptyTakes, Petals, Silences;
+            public int Hits, Silences, Takes, EmptyTakes, Petals;
         }
 
         static readonly Dictionary<string, Tally> s_tally = new();
@@ -273,15 +318,22 @@ namespace CosmicShore.Gameplay
         /// <summary>Every victim this machine has settled a take for, with its counts.</summary>
         public static IReadOnlyDictionary<string, Tally> Tallies => s_tally;
 
-        static void Note(string playerName, int petals, bool silenced)
+        static void NoteHit(string playerName) => Bump(playerName, hits: 1, silences: 0, petals: -1);
+        static void NoteOnset(string playerName) => Bump(playerName, hits: 0, silences: 1, petals: -1);
+        static void NoteTake(string playerName, int petals) => Bump(playerName, 0, 0, petals < 0 ? 0 : petals);
+
+        /// <summary>One edit to a pilot's tally. <paramref name="petals"/> -1 means "not a take";
+        /// 0 or more counts one settled take of that many petals.</summary>
+        static void Bump(string playerName, int hits, int silences, int petals)
         {
             if (string.IsNullOrEmpty(playerName)) return;
             s_tally.TryGetValue(playerName, out var t);
-            if (silenced) t.Silences++;
-            else
+            t.Hits += hits;
+            t.Silences += silences;
+            if (petals >= 0)
             {
                 t.Takes++;
-                if (petals <= 0) t.EmptyTakes++;
+                if (petals == 0) t.EmptyTakes++;
                 else t.Petals += petals;
             }
             s_tally[playerName] = t;
@@ -309,8 +361,9 @@ namespace CosmicShore.Gameplay
         /// <summary>This machine owns this hull.</summary>
         bool IsOwnedHere { get; }
 
-        /// <summary>Owner only: tells every other peer this hull's pilot is silenced for
-        /// <paramref name="seconds"/> from now.</summary>
-        void PublishSilence(float seconds);
+        /// <summary>Tells every OTHER peer to extend this hull's pilot's silence by
+        /// <paramref name="addSeconds"/> (<see cref="VesselSilence.ExtendBy"/>). Called by whichever
+        /// machine decided the hit - the attacker's owner, which usually does not own this hull.</summary>
+        void PublishSilence(float addSeconds);
     }
 }

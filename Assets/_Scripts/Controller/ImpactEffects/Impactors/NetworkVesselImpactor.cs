@@ -240,28 +240,31 @@ namespace CosmicShore.Gameplay
 
         // ── Silence (ISilenceRelay, Docs/ElementalAbilitySystem/SILENCE.md) ─────────
         //
-        // The owner settles every take on this hull (above), so the owner decides how long its
-        // pilot is silenced. Every peer has to refuse the same hits - prism damage is simulated on
-        // every peer - so the owner publishes the window. It sends REMAINING seconds rather than an
-        // absolute time: each peer counts down on its own clock, and the latency of one hop is noise
-        // against a window of seconds.
+        // A scored hit silences its victim when it is ADMITTED, and only the machine that decides
+        // the hit admits it - the attacker's owner, which usually does not own this hull. Every peer
+        // has to refuse the same hits (prism damage is simulated on every peer), so the decider sends
+        // the EXTENSION it applied, and each other peer extends its own copy of the window by the
+        // same amount. An extension rather than an absolute time: two attackers on two machines can
+        // each land one inside the same window, and both must count.
 
-        public void PublishSilence(float seconds)
+        public void PublishSilence(float addSeconds)
         {
-            if (!IsSpawned || !IsOwner || seconds <= 0f) return;
-            PublishSilence_ServerRpc(seconds);
+            if (!IsSpawned || addSeconds <= 0f) return;
+            PublishSilence_ServerRpc(addSeconds);
         }
 
-        // Owner-only (the default): only the owner settled the take that bought the silence.
-        [ServerRpc]
-        void PublishSilence_ServerRpc(float seconds) => PublishSilence_ClientRpc(seconds);
+        // RequireOwnership = false: the sender is the hit's decider, not this hull's owner.
+        [ServerRpc(RequireOwnership = false)]
+        void PublishSilence_ServerRpc(float addSeconds, ServerRpcParams rpcParams = default) =>
+            PublishSilence_ClientRpc(addSeconds, rpcParams.Receive.SenderClientId);
 
         [ClientRpc]
-        void PublishSilence_ClientRpc(float seconds)
+        void PublishSilence_ClientRpc(float addSeconds, ulong decidedBy)
         {
-            if (IsOwner) return;   // the owner recorded its own when it settled
+            // The decider extended its own copy when it admitted the hit.
+            if (NetworkManager != null && NetworkManager.LocalClientId == decidedBy) return;
             var status = VesselStatusHere;
-            if (status != null) VesselSilence.Record(status, seconds);
+            if (status != null) VesselSilence.ExtendBy(status, addSeconds);
         }
 
         IVesselStatus VesselStatusHere => vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;
