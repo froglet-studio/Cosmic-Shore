@@ -16,3 +16,11 @@ MonoBehaviour:
   maxSeconds: 8
   silencingSources: 14
   suppressDangerProduction: 1
+  onsetShakeIntensity: 0.18
+  onsetShakeSeconds: 0.3
+  vignetteIntensity: 0.26
+  vignetteSmoothness: 0.55
+  vignetteColorStrength: 0.75
+  fallbackDangerColor: {r: 1, g: 0.12, b: 0.08, a: 1}
+  vignetteFadeInSeconds: 0.2
+  vignetteFadeOutSeconds: 0.6

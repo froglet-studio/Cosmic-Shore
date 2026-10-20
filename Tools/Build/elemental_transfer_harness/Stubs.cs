@@ -27,6 +27,12 @@ namespace UnityEngine
             new Vector3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
         public static Vector3 ClampMagnitude(Vector3 v, float max) => v;
     }
+    // VesselSilenceConfigSO's fallback danger colour (type-checked only).
+    public struct Color
+    {
+        public float r, g, b, a;
+        public Color(float r, float g, float b, float a) { this.r = r; this.g = g; this.b = b; this.a = a; }
+    }
     public struct Quaternion
     {
         public static Quaternion identity => default;

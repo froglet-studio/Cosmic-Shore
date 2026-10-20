@@ -103,11 +103,24 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
 
 ## 5. What the player sees, and what is not covered yet
 
-- **The pilot who is silenced** sees their hits deflect: a rival prism wobbles instead of breaking, a
-  rival pilot's flowers do not step down, and nothing scores. **There is no HUD readout yet.** The
-  ability row's cooldown veil is the wrong read (it says "you cannot use this", and every ability still
-  works). `VesselSilence.RemainingSeconds` / `Remaining01` / the `Changed` event are there for a
-  readout; the design is the vessel HUD owner's call (team task).
+- **The pilot who is silenced** feels it land and sees it hold (Garrett, 2026-10-20: "a very subtle
+  camera shake on the onset and ... a subtle danger colored vignette that fits the game's aesthetics to
+  signal the silenced state on all vessels"). `SilenceScreenFeedback` (`Controller/FX/`) gives the
+  local human pilot, on every hull:
+  - a **very subtle onset shake** (`CustomCameraController.Shake`, 0.18 for 0.3 s; the Serpent's shot
+    is 0.6, the Thresher's lightest crack 0.35). Only at the onset, not when a live window is extended;
+  - a **subtle danger-coloured vignette** for the whole window: the gameplay post-processing profile's
+    own Vignette override, driven through `PostProcessingManager.SetSilenceVignette` (the speed
+    tunnel's home/offset shape, so the profile is exactly restored after). Its colour is the active
+    palette's DANGER signal colour (`SO_ColorSet.GetDangerSignalColor`, the rim every danger prism
+    wears) darkened toward black (`vignetteColorStrength` 0.75), at intensity 0.26, smoothness 0.55;
+    it rises in 0.2 s and drains over 0.6 s when the window runs out.
+
+  Every number is on `VesselSilenceConfig.asset` under *Feedback*. It plays for the local human pilot
+  only: a rival's or an AI's silence changes nothing on your screen. On top of that their hits still
+  deflect: a rival prism wobbles instead of breaking, a rival pilot's flowers do not step down, and
+  nothing scores. The ability row's cooldown veil was not used, because it says "you cannot use this"
+  and every ability still works.
 - **Autopilots do not know they are silenced.** An AI keeps attacking through its silence and wastes
   the window. Teaching it to retreat and collect crystals instead is part of the plan in §6.
 - **Not covered:** a blast that MATERIALISES a virtual swarm member before it reaches `Prism.Damage`
@@ -131,12 +144,15 @@ in which the opponent cannot answer is worth exactly the petals it lets *i* take
    rising: the **plateau**. Each round of AI work must beat the last on score; when several rounds
    in a row improve it by less than the noise between seeds, that is the asymptote. A mirror match
    isolates the AI's skill from the hull's strength, because both sides have the same hull.
-2. **Each hull fights the other hulls in the Time arena game.** Bring the hull into the Time arena
-   game and keep optimizing its AI against the other hulls' AIs until its score plateaus there too.
-   This is where hull-against-hull strength shows.
+2. **Each hull fights the other hulls in the Charge arena game, Broadside.** Broadside is the arena
+   brawl - a mixed fleet in one rumble, every pilot attacking every other (Garrett, 2026-10-20: "the
+   charge arena game ... that is like a dogfight rumble where players attack each other";
+   `Assets/_Scripts/Controller/Arcade/BROADSIDE.md`). Bring the hull into Broadside and keep
+   optimizing its AI against the other hulls' AIs until its score plateaus there too. This is where
+   hull-against-hull strength shows.
 3. **Balance the hulls so every plateau is the same.** Adjust each hull's effects (its strip and steal
    magnitudes, its danger-prism burn, and only then the silence knobs) until every hull plateaus at
-   the same score in the Time arena game. Then re-check stage 1: a change that moves a hull's arena
+   the same score in Broadside. Then re-check stage 1: a change that moves a hull's arena
    plateau moves its mirror plateau too.
 
 **Never balance against an AI that has not plateaued.** Before the asymptote, a low score measures the
@@ -162,10 +178,12 @@ AI's skill, not the hull's strength, and a balance pass would buff a hull for ha
 | Scarab | Cavitation Blast | Undertow (scored on the cavitation plate's debuff) |
 | Rhino, Manta, Butterfly, Urchin, Stoat, Thresher, Serpent, Shrike, Brittle Star, Angler, Wrasse | see `python3 Tools/Build/element_ability_table.py <Hull>` | **not named yet** (Cleave, Bloomrush, Dustup and Hijack are single-hull cards that could be) |
 
-- **The Time arena game is not named yet.** The four arena cards today are Astro League, Brood Rush,
-  Regatta and Broadside (`ArenaGames.asset`). Regatta is the one every hull's AI already drives
-  (`Docs/AI_SYSTEM/VESSEL_MODE_CHART.md`), but it scores rings, not petals. Either it gains the
-  score above or a new arena card is authored with `/arenagame`. Garrett's call (team task).
+- **Broadside seats seven hulls today** (Manta, Dolphin, Rhino, Urchin, Squirrel, Sparrow, Scarab;
+  `ArcadeGameBroadside.asset`). Every other hull - Grizzly, Serpent, Butterfly, Stoat, Thresher,
+  Shrike, Brittle Star, Angler, Wrasse - has to join the card (`/arenagame`) before it can reach
+  stage 2. Broadside's board scores combat-hit POINTS, which the drain table prices at ten points to
+  the petal (`CombatHitDrain.PointsFor`), so it already tracks the plan's score closely; the ledger
+  below makes it exact (a hit on a pilot with nothing to lose scores points and takes no petals).
 - **The score has no counter yet.** Every take already settles in one place (`ElementalTransfer`, with
   the attacker named), and the danger burn knows the prism and therefore its layer, so a per-attacker
   ledger is a small addition there. It is the first dev task of the plan, because nothing in stages 1
@@ -210,3 +228,7 @@ In the editor, with a victim holding petals (`Docs/ELEMENTAL_ECONOMY.md` §8 ste
 4. Kill a lifeform while silenced (joust, Stoat ripple): it lives. After the window: it dies.
 5. MPPM host + client: silence the client's pilot from the host; on BOTH windows the client's shots
    deflect for the same window (within a frame or two), and the client's flowers agree.
+6. Silence a human pilot (any hull): one small camera nudge as it lands (no shake again while it is
+   extended), a soft danger-red edge on the screen for the window, draining over about half a second
+   when it ends. An AI or a rival being silenced shows nothing on your screen. Tune it on
+   `VesselSilenceConfig.asset` > *Feedback*.

@@ -590,6 +590,6 @@ attacker is refused at `CombatHitDrain.TryAdmit` and inside every `ElementalTran
 so the one-to-one between a scored hit and a petal theft holds.
 
 Everything else (the full table of gates, what the player sees, the HUD gap, and **the balancing plan**
-that sets these numbers: each hull's AI plateau in its Charge arcade game, then in the Time arena game,
+that sets these numbers: each hull's AI plateau in its Charge arcade game, then in Broadside (the Charge arena game),
 until every hull plateaus at the same score) is in `Docs/ElementalAbilitySystem/SILENCE.md`. Harness
 block T11 proves the transfer half (`bash Tools/Build/elemental_transfer_harness/run.sh`).

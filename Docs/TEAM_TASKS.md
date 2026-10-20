@@ -1178,22 +1178,23 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
 ### T-20261020-1ffa · open · test · vessels
-- **Task:** Editor-verify SILENCE (cece/sleepy-shannon-9qk646): run SILENCE.md §8 steps 1-5 - a stripped/robbed pilot's hits deflect off rival prisms with a wobble for ~1 s per petal lost, take and score nothing, kill no lifeform and lay no new danger, while every ability and control still works (Thresher flail on both triggers, Sparrow guns and turret prisms); MPPM host+client agree on the window
-- **Done when:** All five steps observed in the editor, including the MPPM step, with any mismatch filed as a dev task
+- **Task:** Editor-verify SILENCE (cece/sleepy-shannon-9qk646): run SILENCE.md §8 steps 1-6 (step 6: the onset shake and the danger vignette) - a stripped/robbed pilot's hits deflect off rival prisms with a wobble for ~1 s per petal lost, take and score nothing, kill no lifeform and lay no new danger, while every ability and control still works (Thresher flail on both triggers, Sparrow guns and turret prisms); MPPM host+client agree on the window
+- **Done when:** All six steps observed in the editor, including the MPPM step, with any mismatch filed as a dev task
 - **Who can take it:** Yash (offered; editor + MPPM), Garrett (owner's eye)
 - **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
 - **See:** Docs/ElementalAbilitySystem/SILENCE.md
 
-### T-20261020-83ca · open · decision · vessels
+### T-20261020-83ca · done · decision · vessels
 - **Task:** Silence HUD readout: the silenced pilot has no HUD signal today (hits just deflect). The cooldown veil is the wrong read because every ability still works. Pick a look for the ability row or the vessel; VesselSilence.RemainingSeconds / Remaining01 / Changed are ready to drive it
 - **Done when:** A readout is chosen and a dev task is filed for it
 - **Who can take it:** Garrett (vessel HUD owner)
 - **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
 - **See:** Docs/ElementalAbilitySystem/SILENCE.md
+- **Done:** 2026-10-20, Garrett chose it 2026-10-20: a very subtle onset camera shake plus a subtle danger-coloured vignette for the window, on every hull. Built as SilenceScreenFeedback (cece/sleepy-shannon-9qk646); its editor check is step 6 of T-20261020-1ffa.
 
 ### T-20261020-89f4 · open · decision · vessels
-- **Task:** Name each hull's Charge arcade game and THE Time arena game for the silence balancing plan (SILENCE.md §6). Candidates today: Grizzly Charge, Dog Fight, Joust, The Bends, Undertow; eleven hulls have none named. No arena card is a Time game yet: Regatta (every hull's AI drives it, but it scores rings) gains a petal score, or a new arena card via /arenagame
-- **Done when:** SILENCE.md §6's table names a Charge game per hull and the Time arena game
+- **Task:** Name each hull's Charge arcade game for the silence balancing plan (SILENCE.md §6). Candidates today: Grizzly Charge, Dog Fight, Joust, The Bends, Undertow; eleven hulls have none named. (The arena half is decided: Broadside, the Charge arena rumble - Garrett 2026-10-20.)
+- **Done when:** SILENCE.md §6's table names a Charge game per hull
 - **Who can take it:** Garrett
 - **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
 - **See:** Docs/ElementalAbilitySystem/SILENCE.md
@@ -1209,5 +1210,12 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Task:** Teach the autopilots silence both ways (SILENCE.md §5-6): press the attack while an opponent is silenced (VesselSilence.IsSilenced), and while silenced stop wasting attacks and go collect crystals
 - **Done when:** AIs measurably change behaviour during a silence window in a mirror match
 - **Who can take it:** Yash (AI on Ys-bleeding-edge)
+- **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261020-363d · open · dev · Broadside
+- **Task:** Bring the hulls Broadside does not seat yet (Grizzly, Serpent, Butterfly, Stoat, Thresher, Shrike, Brittle Star, Angler, Wrasse) onto the Broadside card (/arenagame), so every hull can reach stage 2 of the silence balancing plan (SILENCE.md §6): AI vs AI in the Charge arena rumble
+- **Done when:** Every hull is offered on Broadside and an AI can fly it there
+- **Who can take it:** Garrett (Broadside / arena owner), Yash (AI)
 - **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
 - **See:** Docs/ElementalAbilitySystem/SILENCE.md

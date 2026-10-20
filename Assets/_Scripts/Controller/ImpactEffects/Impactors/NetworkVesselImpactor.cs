@@ -261,7 +261,7 @@ namespace CosmicShore.Gameplay
         {
             if (IsOwner) return;   // the owner recorded its own when it settled
             var status = VesselStatusHere;
-            if (status != null) VesselSilence.Record(status.PlayerName, status.Domain, seconds);
+            if (status != null) VesselSilence.Record(status, seconds);
         }
 
         IVesselStatus VesselStatusHere => vesselImpactor ? vesselImpactor.Vessel?.VesselStatus : null;

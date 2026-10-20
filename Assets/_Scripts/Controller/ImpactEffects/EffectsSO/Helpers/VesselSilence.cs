@@ -71,6 +71,13 @@ namespace CosmicShore.Gameplay
         /// rest; there is no "lifted" event because a window simply runs out.</summary>
         public static event Action<string> Changed;
 
+        /// <summary>The same moment as <see cref="Changed"/>, with the pilot's vessel, raised only
+        /// where the silence is recorded for a vessel this machine holds (its owner's settle, or the
+        /// owner's publish arriving). The silenced pilot's own screen listens here
+        /// (<c>SilenceScreenFeedback</c>), because only a vessel can say whether it is the local
+        /// pilot's.</summary>
+        public static event Action<IVesselStatus> VesselSilenced;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
@@ -78,7 +85,11 @@ namespace CosmicShore.Gameplay
             s_config = null;
             s_configResolved = false;
             Changed = null;
+            VesselSilenced = null;
         }
+
+        /// <summary>The live tuning (the Resources asset, or its defaults when it is missing).</summary>
+        public static VesselSilenceConfigSO Settings => Config;
 
         static VesselSilenceConfigSO Config
         {
@@ -197,7 +208,7 @@ namespace CosmicShore.Gameplay
                                    SecondsFor(petals, config.SecondsPerPetal), config.MaxSeconds);
             if (seconds <= 0f) return 0f;
 
-            Record(victim.PlayerName, victim.Domain, seconds);
+            Record(victim, seconds);
             if (relay != null && relay.IsNetworked) relay.PublishSilence(seconds);
             return seconds;
         }
@@ -215,6 +226,15 @@ namespace CosmicShore.Gameplay
             }
             s_byPlayer[playerName] = new Entry { Until = Clock() + seconds, Domain = domain, Total = seconds };
             Changed?.Invoke(playerName);
+        }
+
+        /// <summary><see cref="Record(string, Domains, float)"/> for a vessel this machine holds, and
+        /// <see cref="VesselSilenced"/> after it.</summary>
+        public static void Record(IVesselStatus status, float seconds)
+        {
+            if (status == null) return;
+            Record(status.PlayerName, status.Domain, seconds);
+            if (seconds > 0f) VesselSilenced?.Invoke(status);
         }
 
         /// <summary>Lifts <paramref name="playerName"/>'s silence - their vessel was reset for a new
