@@ -1198,9 +1198,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.4; Tools/Build/measure_mandelbulb_flora.py
 
-### T-20261020-a3c2 · open · decision · card-art
+### T-20261020-a3c2 · done · decision · card-art
 - **Task:** Card-art renders draw what a generator emits, not what PrismClearance lays (indistinguishable at card size today). Decide whether the card harness should apply the pass
 - **Done when:** Either card_art_harness applies PrismClearance as prism_clip_audit/Audit.cs Hook does, or a note in the /cardart skill says why it does not
 - **Who can take it:** Caleb
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Tools/Build/prism_clip_audit/Audit.cs (ClipAudit.Hook); Tools/Build/card_art_harness/PlatformShim.cs
+- **Done:** 2026-10-20, Moot: the runtime PrismClearance pass was removed (Garrett, 2026-10-20: fix clipping at authoring time). The card art draws what the generators emit, which is now what the game lays.
+
+### T-20261020-2cee · open · test · Thresher
+- **Task:** Thresher cord on own shielded mass: in Mass Mode shield some of your own trail with the ball, then drag the cord (taut and slack) and the ball back through it. The shielded prisms must light in your domain colour while the cord is in them and fade out after; a super-shielded rival prism the cord crosses must jiggle. Nothing else changes (no damage, no steal)
+- **Done when:** No contact between the cord or ball and a prism reads as a clip: own armoured mass lights, super-shielded rival mass jiggles, on PC and phone
+- **Who can take it:** Garrett (owner's eye); Yash (offered) for the Editor run
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/LIT.md (Contact acknowledgement row); ThresherExecutor.PublishAcknowledged
