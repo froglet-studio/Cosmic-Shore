@@ -12770,3 +12770,7 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
    rippling root to tip, a glow riding the ripple; gone by ~1,900. Switch `style` to COVERT in Play: everything
    returns to the braid and re-tiers within a fraction of a second. EditMode `SpindleLodTests` (now 9 tests,
    including the overt lockstep and `ShippedIncorporealDepth_ReadsTheDangerPrism`) all pass.
+8. (Round 3) In the Lattice, a CHARGE plant's limbs fan clearly wider than a Mass/Space/Time plant's (~10 vs ~3 units
+   at ~400 units away). Fly AWAY from a plant past ~470 units: the fan eases closed over a long stretch (no point where
+   it jumps) and by ~1,300 units each limb is a single thin glowing thread, fading out by ~2,500. The HUD console
+   `renderers` line splits the far limbs into braid / low / thread.

@@ -9,11 +9,12 @@ namespace CosmicShore.ScriptableObjects
     /// Mass has a depth language: a prism OPENS with distance on a squared-distance ramp. The
     /// incorporeal parts - spindles today; the snow shards, the toy switches, the membrane and the
     /// nucleus as each adopts the include - speak the same one, so the sea reads as one thing: they
-    /// open on the prisms' own ramp, as hard as DANGER mass does, and a wave travels through what has
-    /// opened so the part reads as alive. The ramp and the strength are READ off the theme's danger
-    /// prism, never copied, so a retune of the prism materials moves every incorporeal part with it.
-    /// What is authored here is only what the prisms do not have: how strongly to follow them, and
-    /// the wave.
+    /// open on the prisms' own ramp, as hard as DANGER mass does, a wave travels through what has
+    /// opened so the part reads as alive, and past the prisms' over-distance they settle smoothly back
+    /// to rest over a long distance, so a far part arrives on screen as a minimal presence. The ramp
+    /// and the strength are READ off the theme's danger prism, never copied, so a retune of the prism
+    /// materials moves every incorporeal part with it. What is authored here is only what the prisms
+    /// do not have: how strongly to follow them, how they settle back, and the wave.
     /// </summary>
     [CreateAssetMenu(fileName = "IncorporealDepth", menuName = "ScriptableObjects/Environment/Incorporeal Depth")]
     public class IncorporealDepthSO : ScriptableObject
@@ -26,6 +27,13 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Multiplier on the danger prisms' spread. 1 = on par with danger mass; above 1, stronger.")]
         [Range(0f, 3f)] public float strength = 1f;
+
+        [Header("The far side: settling back to a minimal presence")]
+        [Tooltip("Where the parts START settling back, in the prisms' normalised squared distance (1 = fully open, ~316 units). 2.25 = 1.5x the ramp's distance, ~474 units: the peak holds until here.")]
+        [Min(1.01f)] public float recedeStartNorm = 2.25f;
+
+        [Tooltip("Where they are back at rest. The recede is smooth in DISTANCE between the two, so it eases in over a long way. 16 = 4x the ramp's distance, ~1,265 units.")]
+        [Min(1.02f)] public float recedeEndNorm = 16f;
 
         [Header("Alive: the wave through what has opened")]
         [Tooltip("How much the opening breathes with the wave, as a fraction of the opening (0 = still). Scales with how open the part is, so a closed part never moves.")]
@@ -55,6 +63,8 @@ namespace CosmicShore.ScriptableObjects
         }
 
         public Vector4 Flow => new(flowAmplitude, flowWaves, flowSpeed, pulseGlow);
+
+        public Vector4 Recede => new(recedeStartNorm, Mathf.Max(recedeEndNorm, recedeStartNorm + 0.01f), 0f, 0f);
 
         static IncorporealDepthSO _instance;
         static bool _resolved;

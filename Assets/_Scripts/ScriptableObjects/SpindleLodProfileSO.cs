@@ -73,11 +73,18 @@ namespace CosmicShore.ScriptableObjects
         [Min(1f)] public float farFadeEndGirths = 1900f;
 
         [Header("Overt fade (the prisms' normalised squared distance: 1 = fully open, ~316 units)")]
-        [Tooltip("OVERT: where the opened braid starts fading out, in units of the prisms' ramp (d^2 / _SqrDistance). 16 = 4x the ramp's distance, ~1,265 units.")]
-        [Min(1.01f)] public float overtFadeStartNorm = 16f;
+        [Tooltip("OVERT: where the minimal thread (what the braid settles back to, Resources/IncorporealDepth's recede) starts fading out, in units of the prisms' ramp (d^2 / _SqrDistance). 36 = 6x the ramp's distance, ~1,900 units.")]
+        [Min(1.01f)] public float overtFadeStartNorm = 36f;
 
-        [Tooltip("OVERT: where it is gone and stops being drawn. 36 = 6x the ramp's distance, ~1,900 units.")]
-        [Min(1.02f)] public float overtFadeEndNorm = 36f;
+        [Tooltip("OVERT: where it is gone and stops being drawn. 64 = 8x the ramp's distance, ~2,530 units.")]
+        [Min(1.02f)] public float overtFadeEndNorm = 64f;
+
+        [Header("Overt strength (share of the danger prisms' spread, Resources/IncorporealDepth)")]
+        [Tooltip("OVERT: how far a CHARGE lifeform's limbs fan open, as a share of the danger prisms' face travel (0.7 = a tip travels ~10.6 units at the peak).")]
+        [Range(0f, 2f)] public float chargeStrength = 0.7f;
+
+        [Tooltip("OVERT: how far every other lifeform's limbs fan open (Mass, Space, Time, Omni and none). 0.2 = ~3 units at the peak.")]
+        [Range(0f, 2f)] public float otherStrength = 0.2f;
 
         [Header("The thread's look")]
         [Tooltip("The narrowest a thread is ever DRAWN, in screen pixels. Thinner geometry rasterises as broken, sparkling dots; past this width the thread is drawn wider and its alpha pays for the difference (coverage), so it reads as a continuous line of the right brightness.")]
@@ -112,6 +119,8 @@ namespace CosmicShore.ScriptableObjects
             public Mesh source;
             [Tooltip("The braid at every third ring, with the convergence channels.")]
             public Mesh mid;
+            [Tooltip("The braid at every sixth ring (overt: the far-side recede).")]
+            public Mesh low;
             [Tooltip("The single converged thread.")]
             public Mesh far;
             [Tooltip("Object-space width of the braid: the unit every band is measured in.")]
@@ -133,7 +142,7 @@ namespace CosmicShore.ScriptableObjects
             public bool MatchesImport(out string why)
             {
                 why = null;
-                if (!source || !mid || !far) { why = "a mesh reference is missing"; return false; }
+                if (!source || !mid || !low || !far) { why = "a mesh reference is missing"; return false; }
                 if (!(girth > 0f) || !(strandRadius > 0f)) { why = "girth / strand radius not measured"; return false; }
                 var b = source.bounds;
                 float tol = Mathf.Max(1e-4f, expectedSourceExtent.magnitude * 0.005f);
@@ -152,6 +161,21 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>The bands are in the order the tiers need them. A profile that is not falls
         /// back to the authored braid everywhere rather than drawing a tier out of its range.</summary>
+        /// <summary>The overt ladder against the shared recede: the peak must hold past the far tier's
+        /// band, and the thread must only fade once the braid has settled back to it.</summary>
+        public bool OvertBandsAreSane(Vector4 recede, out string why)
+        {
+            why = null;
+            float keep = 1f - hysteresis;
+            if (!(recede.x > 1f / keep)) why = "IncorporealDepth.recedeStart must lie past the over-distance band (1 / (1 - hysteresis))";
+            else if (!(recede.y > recede.x / keep)) why = "IncorporealDepth.recedeEnd must lie past recedeStart's band";
+            else if (!(overtFadeStartNorm >= recede.y / keep)) why = "overtFadeStart must not begin before the braid has settled back into the thread";
+            return why == null;
+        }
+
+        /// <summary>A limb's overt strength: Charge lifeforms part hardest.</summary>
+        public float StrengthFor(bool charge) => charge ? chargeStrength : otherStrength;
+
         public bool IsSane(out string why)
         {
             if (!BandsAreSane(out why)) return false;

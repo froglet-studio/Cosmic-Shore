@@ -263,11 +263,13 @@ namespace CosmicShore.Gameplay
         void RegisterLod()
         {
             CacheRenderers();
+            // A Charge lifeform's limbs part hardest in the overt style (SpindleLodProfileSO.chargeStrength).
+            bool charge = LifeForm && LifeForm.Element == CosmicShore.Data.Element.Charge;
             SpindleLodSystem.Handle[] handles = null;
             for (int i = 0; i < _renderers.Length; i++)
             {
                 if (!_renderers[i] || !_phaseVariants[i]) continue;
-                var handle = SpindleLodSystem.Register(_renderers[i], _phaseVariants[i], _fadeActive);
+                var handle = SpindleLodSystem.Register(_renderers[i], _phaseVariants[i], _fadeActive, charge);
                 if (handle == null) continue;
                 handles ??= new SpindleLodSystem.Handle[_renderers.Length];
                 handles[i] = handle;

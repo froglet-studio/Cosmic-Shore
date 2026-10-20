@@ -33,10 +33,12 @@ WHAT THIS WRITES (Assets/_Models/Spindles/):
                                            leans off the centreline (the overt style fans along it)
                           so `SpindleLod.hlsl` can draw the three strands together into one thread
                           as the camera pulls away, continuously, with no pop.
-  SpindleThreadFar.asset  what the braid converges TO: ONE faceted thread of triangular cross-
-                          section on the centreline, 5 rings carrying the strand's own taper
-                          (thin - thick - thin: literally a spindle), 24 triangles. TEXCOORD1 = 0
-                          (already converged), TEXCOORD2 = the radial arm.
+  SpindleBraidLow.asset   the braid at every SIXTH ring (72 triangles), same channels: the overt
+                          style's far-side recede, where the fan closes and the strands converge.
+  SpindleThreadFar.asset  what the braid converges TO, at the lowest cost that still shows a spindle:
+                          ONE faceted thread of triangular cross-section on the centreline, 3 rings
+                          carrying the strand's taper (root, belly, tip: thin - thick - thin), 12
+                          triangles. TEXCOORD1 = 0 (already converged), TEXCOORD2 = the radial arm.
 
 and the MEASURED block of `Assets/Resources/SpindleLodProfile.asset` (the source mesh, the two LOD
 meshes, the braid girth, the reference strand radius and the source mesh's expected bounds). The
@@ -75,6 +77,7 @@ SOURCE_MESH_FILE_ID = 1825875415147931077          # BezierCurve.001, as every s
 SOURCE_NODE = b"BezierCurve.001"
 OUT_DIR = "Assets/_Models/Spindles"
 MID_NAME = "SpindleBraidMid"
+LOW_NAME = "SpindleBraidLow"
 FAR_NAME = "SpindleThreadFar"
 PROFILE = "Assets/Resources/SpindleLodProfile.asset"
 PROFILE_SCRIPT = "Assets/_Scripts/ScriptableObjects/SpindleLodProfileSO.cs"
@@ -85,7 +88,8 @@ RINGS = 25
 CORNERS = 3
 UNIT = 0.01                                     # UnitScaleFactor 1 (cm) x useFileScale
 MID_RINGS = (0, 3, 6, 9, 12, 15, 18, 21, 24)    # every third ring; 12 (the pinch) and both ends kept
-FAR_RINGS = (0, 6, 12, 18, 24)                  # the taper's breakpoints along the straight centreline
+LOW_RINGS = (0, 6, 12, 18, 24)                  # every sixth ring: the overt style's far-side recede
+FAR_RINGS = (0, 12, 24)                         # root, belly, tip: the spindle taper in 12 triangles
 
 # The reference display the --report pixel figures assume. Only a REPORT: the shipped bands are in
 # girths (unit-free) and the shader measures real pixels from the live camera.
@@ -98,6 +102,7 @@ def guid_for(name):
 
 
 MID_GUID = guid_for(MID_NAME)
+LOW_GUID = guid_for(LOW_NAME)
 FAR_GUID = guid_for(FAR_NAME)
 FOLDER_GUID = guid_for("folder")
 PROFILE_GUID = guid_for("profile")
@@ -245,7 +250,7 @@ def _emit_quad(out, corners):
         out["t"].append(tri)
 
 
-def build_mid(pos, quads, m):
+def build_mid(pos, quads, m, rings=MID_RINGS):
     look = _corner_lookup(quads)
     out = {"v": [], "t": []}
     faces = ((0, 1), (1, 2), (2, 0))
@@ -259,7 +264,7 @@ def build_mid(pos, quads, m):
         d = _sub(m["centres"][s][tip], m["centreline"][tip])
         splay.append(_norm((d[0], d[1], 0.0)))
     for s in range(STRANDS):
-        for a, b in zip(MID_RINGS, MID_RINGS[1:]):
+        for a, b in zip(rings, rings[1:]):
             for c0, c1 in faces:
                 corners = []
                 for ring, c, nrm_ring in ((a, c0, a), (a, c1, a), (b, c1, b - 1), (b, c0, b - 1)):
@@ -413,8 +418,10 @@ MonoBehaviour:
   convergeStartGirths: 110
   farFadeStartGirths: 1300
   farFadeEndGirths: 1900
-  overtFadeStartNorm: 16
-  overtFadeEndNorm: 36
+  overtFadeStartNorm: 36
+  overtFadeEndNorm: 64
+  chargeStrength: 0.7
+  otherStrength: 0.2
   minThreadPixels: 1.25
   threadBase: 0.35
   threadFacet: 0.55
@@ -433,6 +440,7 @@ def measured_block(m):
         "  meshSets:\n"
         f"  - source: {{fileID: {SOURCE_MESH_FILE_ID}, guid: {FBX_GUID}, type: 3}}\n"
         f"    mid: {{fileID: 4300000, guid: {MID_GUID}, type: 2}}\n"
+        f"    low: {{fileID: 4300000, guid: {LOW_GUID}, type: 2}}\n"
         f"    far: {{fileID: 4300000, guid: {FAR_GUID}, type: 2}}\n"
         f"    girth: {fmt(m['girth'])}\n"
         f"    strandRadius: {fmt(m['r_ref'])}\n"
@@ -457,6 +465,18 @@ def profile_text(existing, m):
 # --------------------------------------------------------------------------------------------
 # Checks
 # --------------------------------------------------------------------------------------------
+
+def validate_braid(pos, braid, rings):
+    """A decimated braid's own contract: the triangle count its rings imply, and every vertex one of the
+    braid's own (so the lace and the strand path stay the authored ones)."""
+    errs = []
+    if len(braid["t"]) != STRANDS * (len(rings) - 1) * CORNERS * 2:
+        errs.append(f"mid: {len(braid['t'])} triangles for {len(rings)} rings")
+    kept = {pos[vid(s, k, c)] for s in range(STRANDS) for k in rings for c in range(CORNERS)}
+    if any(v[0] not in kept for v in braid["v"]):
+        errs.append("mid: a vertex is not one of the braid's own")
+    return errs
+
 
 def validate(pos, quads, m, mid, far):
     errs = []
@@ -501,7 +521,8 @@ def validate(pos, quads, m, mid, far):
 def report(m, mid, far):
     px_per_unit_at_1 = REF_SCREEN_HEIGHT / (2.0 * math.tan(math.radians(REF_VFOV_DEG) / 2.0))
     thick = 2.0 * max(m["radius"])
-    print(f"braid: 432 tris -> mid {len(mid['t'])} tris ({len(mid['v'])} verts) -> far {len(far['t'])} tris ({len(far['v'])} verts)")
+    low_tris = STRANDS * (len(LOW_RINGS) - 1) * CORNERS * 2
+    print(f"braid: 432 tris -> mid {len(mid['t'])} tris ({len(mid['v'])} verts) -> low {low_tris} tris -> far thread {len(far['t'])} tris ({len(far['v'])} verts)")
     print(f"centreline off the z axis by at most {m['axis_off']:.4f}; girth {m['girth']:.4f}; mean strand radius {m['r_ref']:.4f}")
     print(f"strand radius by ring: {' '.join(f'{r:.3f}' for r in m['radius'])}")
     print(f"strand spread by ring: {' '.join(f'{s:.3f}' for s in m['spread'])}")
@@ -515,14 +536,18 @@ def outputs():
     pos, quads = read_braid()
     m = measure(pos)
     mid = build_mid(pos, quads, m)
+    low = build_mid(pos, quads, m, LOW_RINGS)
     far = build_far(m)
     errs = validate(pos, quads, m, mid, far)
+    errs += [e.replace("mid:", "low:") for e in validate_braid(pos, low, LOW_RINGS)]
     profile_path = os.path.join(REPO, PROFILE)
     existing = open(profile_path).read() if os.path.exists(profile_path) else None
     files = {
         f"{OUT_DIR}.meta": FOLDER_META.format(guid=FOLDER_GUID),
         f"{OUT_DIR}/{MID_NAME}.asset": mesh_text(mid, MID_NAME),
         f"{OUT_DIR}/{MID_NAME}.asset.meta": MESH_META.format(guid=MID_GUID),
+        f"{OUT_DIR}/{LOW_NAME}.asset": mesh_text(low, LOW_NAME),
+        f"{OUT_DIR}/{LOW_NAME}.asset.meta": MESH_META.format(guid=LOW_GUID),
         f"{OUT_DIR}/{FAR_NAME}.asset": mesh_text(far, FAR_NAME),
         f"{OUT_DIR}/{FAR_NAME}.asset.meta": MESH_META.format(guid=FAR_GUID),
         PROFILE: profile_text(existing, m),

@@ -132,6 +132,7 @@ Material:
     - _SpecularHighlights: 1
     - _SpindleLodGirth: 0
     - _SpindleLodStrand: 0
+    - _SpindleLodStrength: 0
     - _SrcBlend: 5
     - _SrcBlendAlpha: 1
     - _Surface: 1

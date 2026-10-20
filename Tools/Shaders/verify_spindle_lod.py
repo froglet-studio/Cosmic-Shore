@@ -117,21 +117,21 @@ int main() {
         if (zero) globals(0, 0, 0, 0, 0); else globals(180, 386, 1300, 1900, 1.25f);
         for (float d : {1.f, 50.f, 400.f, 5000.f}) {
             place(d * G, 1.f);
-            SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, 0.f, R, 0.f, 0.f, out);
+            SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, 0.f, R, 1.f, 0.f, 0.f, out);
             CHECK(length(out - pos) == 0.f, "girth 0 moved a vertex (zero=%d d=%g)", zero, d);
-            SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, 0.f, R, 0.f, 0.f, col, a);
+            SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, 0.f, R, 1.f, 0.f, 0.f, col, a);
             CHECK(length(col - lace) == 0.f && a == 0.4f, "girth 0 changed the lace (zero=%d)", zero);
         }
     }
     globals(0, 0, 0, 0, 0);
     for (float d : {1.f, 400.f, 5000.f}) {
         place(d * G, 1.f);
-        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 0.f, 0.f, out);
+        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.f, 0.f, 0.f, out);
         CHECK(finite3(out) && length(out - pos) < 1e-6f, "unset globals moved a vertex at %g girths", d);
-        SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 0.f, 0.f, col, a);
+        SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 0.f, 0.f, col, a);
         CHECK(finite3(col) && std::isfinite(a) && length(col - lace) < 1e-6f && std::fabs(a - 0.4f) < 1e-6f,
               "unset globals changed the lace at %g girths", d);
-        SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 0.f, 0.f, col, a);
+        SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 0.f, 0.f, col, a);
         CHECK(finite3(col) && std::isfinite(a) && a > 0.f, "unset globals: the far thread must still draw");
     }
 
@@ -141,22 +141,22 @@ int main() {
     // 2. below convergeStart: exact lace, vertex where the mesh put it (no inflation yet at 120 girths:
     //    the thinnest-on-average strand is still > minPx wide there).
     place(120 * G, 1.f);
-    SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 0.f, 0.f, out);
+    SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.f, 0.f, 0.f, out);
     CHECK(length(out - pos) < 1e-6f, "below convergeStart the vertex moved");
-    SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 0.f, 0.f, col, a);
+    SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 0.f, 0.f, col, a);
     CHECK(length(col - lace) < 1e-6f && std::fabs(a - 0.4f) < 1e-6f, "below convergeStart the lace changed");
 
     // 3. at/after convergeEnd: mid == far construction, mid surface == far thread
     for (float m : {ce, ce * 1.05f, 900.f, fs, 1600.f}) {
         place(m * G, 1.f);
-        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 0.f, 0.f, out);
+        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.f, 0.f, 0.f, out);
         float trueWidth = 2.f * R * _ScreenParams.y * 0.5f * UNITY_MATRIX_P._m11 / (m * G);
         float k = clamp(minPx / trueWidth, 1.f, 32.f);
         float3 farCtor = (pos - radial) + toAxis + radial * k;
         CHECK(length(out - farCtor) < 1e-5f, "at %g girths the mid vertex is not the far thread's", m);
         float3 c2; float a2;
-        SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 0.f, 0.f, col, a);
-        SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 0.f, 0.f, c2, a2);
+        SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 0.f, 0.f, col, a);
+        SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 0.f, 0.f, c2, a2);
         CHECK(length(col - c2) < 1e-5f && std::fabs(a - a2) < 1e-5f, "at %g girths mid surface != far thread", m);
     }
 
@@ -184,12 +184,12 @@ int main() {
 
     // 5. it leaves
     place(fe * G, 1.f);
-    SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 0.f, 0.f, col, a);
+    SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 0.f, 0.f, col, a);
     CHECK(a == 0.f, "alpha at farFadeEnd is %g", a);
     place(600 * G, 1.f);
-    SpindleLodThread_float(dull, bright, 1.f, nrm, view, uvf, G, R, 0.f, 0.f, col, a);
+    SpindleLodThread_float(dull, bright, 1.f, nrm, view, uvf, G, R, 1.f, 0.f, 0.f, col, a);
     CHECK(a == 0.f, "a fully evaporated thread still has alpha %g", a);
-    SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 0.f, 0.f, col, a);
+    SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 0.f, 0.f, col, a);
     CHECK(a > 0.f, "a living thread at 600 girths has no alpha");
 
     // 6. convergence is monotone in distance
@@ -226,9 +226,9 @@ int main() {
     // O2. closed up close: below t0 the mid tier is the near tier - no opening, no hold, the exact lace
     for (float n : {0.f, 0.1f, t0 * 0.95f}) {
         place(std::sqrt(n * SQR), 1.f);
-        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.3f, 7.7f, out);
+        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.f, 1.3f, 7.7f, out);
         CHECK(length(out - pos) < 1e-5f, "overt, closed at norm %g: the vertex moved %g", n, length(out - pos));
-        SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 1.3f, 7.7f, col, a);
+        SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 1.3f, 7.7f, col, a);
         CHECK(length(col - lace) < 1e-6f && std::fabs(a - 0.4f) < 1e-6f, "overt, closed at norm %g: the lace changed", n);
     }
     // O3. fully open at the prisms' over-distance: progress 1, so the mid surface IS the far thread,
@@ -238,8 +238,8 @@ int main() {
         SpindleLodView v = SpindleLod_View(G);
         CHECK(std::fabs(v.progress - 1.f) < 1e-5f, "overt at norm %g: progress %g, not fully open", n, v.progress);
         float3 c2; float a2;
-        SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 1.3f, 7.7f, col, a);
-        SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 1.3f, 7.7f, c2, a2);
+        SpindleLodSurface_float(lace, 0.4f, dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 1.3f, 7.7f, col, a);
+        SpindleLodThread_float(dull, bright, 0.f, nrm, view, uvf, G, R, 1.f, 1.3f, 7.7f, c2, a2);
         CHECK(length(col - c2) < 1e-5f && std::fabs(a - a2) < 1e-5f, "overt at norm %g: mid surface != far thread", n);
         float3 o = IncorporealDepth_Opening(n, danger);
         CHECK(std::fabs(o.x - 4.41f) < 1e-3f && std::fabs(o.y - 9.86f) < 1e-3f && std::fabs(o.z - 15.2f) < 1e-3f,
@@ -256,12 +256,12 @@ int main() {
     {
         place(std::sqrt(2.f * SQR), 1.f);
         float3 a1, a2b;
-        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.3f, 0.0f, a1);
-        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.3f, 0.4f, a2b);
+        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.f, 1.3f, 0.0f, a1);
+        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.f, 1.3f, 0.4f, a2b);
         CHECK(length(a1 - a2b) > 0.05f, "open spindle is still: the wave moved it only %g", length(a1 - a2b));
         place(std::sqrt(0.05f * SQR), 1.f);
-        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.3f, 0.0f, a1);
-        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.3f, 0.4f, a2b);
+        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.f, 1.3f, 0.0f, a1);
+        SpindleLodVertex_float(pos, nrmOS, uvf, toAxis, radial, splay, G, R, 1.f, 1.3f, 0.4f, a2b);
         CHECK(length(a1 - a2b) < 1e-6f, "closed spindle moves with the clock");
         // and the pulse of light rides the crest only while open
         CHECK(IncorporealDepth_Pulse(0.2f, 0.f, 0.f, 1.f) == 0.f, "a closed part pulses");
@@ -295,8 +295,8 @@ int main() {
     {
         place(std::sqrt(2.f * SQR), 1.f);
         float3 root, tip;
-        SpindleLodVertex_float(pos, nrmOS, mk3(0.f, 0.5f, 0.f), toAxis, radial, splay, G, R, 0.f, 0.f, root);
-        SpindleLodVertex_float(pos, nrmOS, mk3(1.f, 0.5f, 0.f), toAxis, radial, splay, G, R, 0.f, 0.f, tip);
+        SpindleLodVertex_float(pos, nrmOS, mk3(0.f, 0.5f, 0.f), toAxis, radial, splay, G, R, 1.f, 0.f, 0.f, root);
+        SpindleLodVertex_float(pos, nrmOS, mk3(1.f, 0.5f, 0.f), toAxis, radial, splay, G, R, 1.f, 0.f, 0.f, tip);
         // the width hold moves both the same way (radial arm only); compare against that held point
         SpindleLodView v = SpindleLod_View(G);
         float3 held = (pos - radial) + radial * SpindleLod_Hold(v, R);
@@ -304,6 +304,49 @@ int main() {
         CHECK(std::fabs(length(tip - held) - 15.2f) < 1e-3f, "overt: the tip fanned %g, not the danger face's 15.2", length(tip - held));
         CHECK(length(normalize(tip - held) - splay) < 1e-5f, "overt: the tip fanned off its splay");
     }
+    // R. The far side (round 3): the effect settles back with distance, and a limb's Strength scales it.
+    _IncorporealRecede = float4{2.25f, 16.f, 0, 0};
+    {
+        // R1. the recede is 1 to its start, 0 from its end, monotone and SMOOTH in distance between (no
+        //     step bigger than 1.5% of the effect per 1% of distance: the onset eases in over a long way)
+        float prevR = 2.f, worstStep = 0.f;
+        for (float d = 200.f; d < 2000.f; d *= 1.01f) {
+            float r = IncorporealDepth_Recede(d * d / SQR);
+            CHECK(r <= prevR + 1e-6f, "recede rose with distance at %g units", d);
+            if (prevR <= 1.f) worstStep = std::max(worstStep, prevR - r);
+            prevR = r;
+        }
+        // ... measured against the NEAR side, the prisms' own ramp (the part Garrett called great): the far
+        //     side must ease in more gently than the near side opens, per step of distance.
+        float prevO = -1.f, nearWorst = 0.f;
+        for (float d = 100.f; d < 400.f; d *= 1.01f) {
+            float o = IncorporealDepth_RampOpenness(d * d / SQR, danger);
+            if (prevO >= 0.f) nearWorst = std::max(nearWorst, o - prevO);
+            prevO = o;
+        }
+        CHECK(worstStep < nearWorst, "far side steps %g per 1%% of distance, the near ramp only %g: the onset is the abrupt side", worstStep, nearWorst);
+        std::printf("onset: far side %.4f, near ramp %.4f per 1%% of distance\n", worstStep, nearWorst);
+        CHECK(IncorporealDepth_Recede(2.25f) == 1.f && IncorporealDepth_Recede(16.f) == 0.f, "recede band edges");
+        // R2. at the recede's end the braid IS the thread's construction: no fan, strands on the centreline
+        place(std::sqrt(16.f * SQR), 1.f);
+        SpindleLodView v = SpindleLod_View(G);
+        float3 o;
+        SpindleLodVertex_float(pos, nrmOS, mk3(0.8f, 0.5f, 0.f), toAxis, radial, splay, G, R, 1.f, 0.3f, 1.7f, o);
+        float3 thread = (pos - radial) + toAxis + radial * SpindleLod_Hold(v, R);
+        CHECK(length(o - thread) < 1e-5f, "a fully receded braid is %g off the thread's construction", length(o - thread));
+        // ... and past the peak the lace stays closed (progress 1) while it recedes
+        CHECK(std::fabs(v.progress - 1.f) < 1e-5f, "the lace came back on the far side");
+        // R3. Strength: at the peak a limb's tip travels Strength x the danger face's 15.2 units
+        for (float S : {0.7f, 0.2f}) {
+            place(std::sqrt(2.f * SQR), 1.f);
+            SpindleLodView vp = SpindleLod_View(G);
+            float3 tip;
+            SpindleLodVertex_float(pos, nrmOS, mk3(1.f, 0.5f, 0.f), toAxis, radial, splay, G, R, S, 0.f, 0.f, tip);
+            float3 held = (pos - radial) + radial * SpindleLod_Hold(vp, R);
+            CHECK(std::fabs(length(tip - held) - 15.2f * S) < 1e-3f, "strength %g: the tip fanned %g, not %g", S, length(tip - held), 15.2f * S);
+        }
+    }
+    _IncorporealRecede = float4{0, 0, 0, 0};
     // O7. nothing published (all-zero globals) = a no-op, never a NaN
     _IncorporealSpread = float4{0, 0, 0, 0};
     _IncorporealFlow = float4{0, 0, 0, 0};
@@ -349,11 +392,14 @@ def compile_and_run(hlsl_text, incorporeal_text=None):
 def self_test():
     text = open(HLSL).read()
     mutants = {
+        "the braid does not converge on the recede": ("v.converge = 1.0 - IncorporealDepth_Recede(v.metric);", "v.converge = 0.0;"),
+        "strength ignored by the fan": ("IncorporealDepthPart_float(held, Splay, UV.x, Phase, Clock, Strength, parted, openness);",
+                                        "IncorporealDepthPart_float(held, Splay, UV.x, Phase, Clock, 1.0, parted, openness);"),
         "the fan is not root-anchored": ("Out = held + (parted - held) * saturate(UV.x);", "Out = parted;"),
         "convergence ignores its band": ("return SpindleLod_Ramp(_SpindleLodBands.x, _SpindleLodBands.y, metric);",
                                          "return SpindleLod_Ramp(_SpindleLodBands.x, _SpindleLodBands.y * 1.5, metric);"),
-        "overt lace closes off the opening schedule": ("Color = SpindleLod_Pulse(lerp(LaceColor, threadColor, v.progress), UV.x, Phase, Clock);",
-                                                       "Color = SpindleLod_Pulse(lerp(LaceColor, threadColor, saturate(v.metric)), UV.x, Phase, Clock);"),
+        "overt lace closes off the opening schedule": ("Color = SpindleLod_Pulse(lerp(LaceColor, threadColor, v.progress), UV.x, Phase, Clock, Strength);",
+                                                       "Color = SpindleLod_Pulse(lerp(LaceColor, threadColor, saturate(v.metric)), UV.x, Phase, Clock, Strength);"),
         "coverage not paid": ("float coverage = 1.0 / SpindleLod_Hold(v, strandRadius);", "float coverage = 1.0;"),
         "girth guard dropped": ("    if (!(Girth > 0.0)) return;\n    SpindleLodView v = SpindleLod_View(Girth);\n    float inflate",
                                 "    SpindleLodView v = SpindleLod_View(Girth);\n    float inflate"),
@@ -375,6 +421,9 @@ def self_test():
                                                 "return 2.0 * dot(d, d) / max(_IncorporealSpread.w, 1.0);"),
         # (A wave left running while closed is NOT a mutant: a closed part has zero opening for it to move.)
         "the wave does not travel": ("_IncorporealFlow.z * clock) + phase);", "0.0 * clock) + phase);"),
+        "the recede is ignored by a part": ("    float3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);\n    Openness = IncorporealDepth_Openness(norm, spread);\n    if (!(dirLen",
+                                            "    float3 opening = IncorporealDepth_Opening(norm, spread);\n    Openness = IncorporealDepth_Openness(norm, spread);\n    if (!(dirLen"),
+        "the recede steps (no ease)": ("return 1.0 - smoothstep(sqrt(a), sqrt(b), sqrt(max(norm, 0.0)));", "return norm > 0.5 * (a + b) ? 0.0 : 1.0;"),
         "a part's push not in world units": ("Out = PositionOS + DirectionOS * (amount * flow / max(worldLen, 1e-6));",
                                              "Out = PositionOS + DirectionOS * (amount * flow);"),
         "opening not divided by object scale": ("Out = PositionOS + NormalOS * (opening / IncorporealDepth_ObjectScale()) * flow;",

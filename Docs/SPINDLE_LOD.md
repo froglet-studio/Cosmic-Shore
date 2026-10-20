@@ -195,20 +195,58 @@ prism retune moves them too, and `strength` (1) scales it ("on par with danger";
   open inside the band above it); the lace closes into the thread shading on the opening's own schedule. The far
   tier draws the SAME 144-triangle braid the mid tier does. A fully opened strand travels 15 units, so the two
   tiers must open identically: the 5-ring alternative (72 tris) already sits 0.19 units off the 9-ring braid
-  before opening, and its normals would then carry its strands visibly elsewhere. Faded out between norm 16 and 36 (~1,265–1,900 units), then culled.
-- **Culling bounds** grow by `IncorporealDepth.MaxOpening` (the danger face travel × (1 + flowAmplitude), ~20.5
-  units) on mid/far renderers and the instanced batch, so an opened limb just off screen never blinks out.
+  before opening, and its normals would then carry its strands visibly elsewhere. (Round 3: past the peak it
+  settles back and steps down to the 72-triangle braid and the 12-triangle thread, §7.2b.)
+- **Culling bounds** grow by `IncorporealDepth.MaxOpening` × the limb's strength (the danger face travel × (1 +
+  flowAmplitude), ~20.5 units at strength 1) on mid/far renderers and the instanced batch, so an opened limb just off screen never blinks out.
 
 **What was tried first and rejected (measured in the preview, §7.3):** the literal prism rule on the braid's 216
 small faces, with its per-axis anisotropy, shredded every limb into a hairball - the skeleton gone. Then a rigid
 part along each strand's radial direction: that direction turns with the spiral, so parted strands curled into
 coils, and the roots left their node. The root-anchored fan along a fixed splay is what keeps the wireframe read.
 
+### 7.2b Round 3: strength by element, and the far side settles back
+
+Garrett, after the first overt pass: *"I love to see things overtuned so we can learn what to do next. Reduce the
+magnitude to 70% and tie that to spindles on charge lifeforms, then 20% for everything else. The effect from its
+peak sqrdistance to 0 looks great, but the onset is very abrupt: have it smoothly come in too, over greater
+distance, with a lower-poly effect that transitions to the lowest performance cost we can that still signals its
+minimal presence."*
+
+- **Strength by element** (`SpindleLodProfileSO.chargeStrength` 0.7 / `otherStrength` 0.2): a limb's share of the
+  danger prisms' face travel, read from its lifeform's element (`LifeForm.Element`, the crystal's) when it registers,
+  and written on its LOD materials as `_SpindleLodStrength`. A Charge tip travels ~10.6 units at the peak, every
+  other ~3. The shared `Resources/IncorporealDepth.strength` stays 1 (the danger tier itself).
+- **The far side recedes** (`IncorporealDepth.recedeStartNorm` 2.25 / `recedeEndNorm` 16, ~474 / ~1,265 units):
+  the peak holds past the prisms' over-distance, then the fan closes - smooth in DISTANCE, not squared distance -
+  while the three strands draw onto the centreline, so a fully receded braid IS the thread's construction. The
+  harness measures the onset: 1.7% of the effect per 1% of distance at its steepest, against the near ramp's 3.2%
+  (the side Garrett called great). It lives in the shared include, so every incorporeal part will settle back alike.
+- **Geometry steps down with it**: the 144-triangle braid at the peak, the 72-triangle braid (every sixth ring,
+  0.19 units of decimation, a third of a pixel there) from the recede's start, and the **12-triangle thread** (root,
+  belly, tip: the spindle's taper and nothing else) from its end - the cheapest form that still draws a spindle,
+  held at `minThreadPixels` with coverage alpha, faint glow, faded out between norm 36 and 64 (~1,900–2,530 units),
+  then culled. All three far tiers are instanced while still.
+
+| tier | overt range (norm, ~units) | mesh | draws |
+|---|---|---|---|
+| Near | < 0.34 (184) | authored braid, 432 | own renderer, SpindleGraph |
+| Mid | 0.34 – 1.09 (330) | braid, 144 | own renderer, opening ramp |
+| Far | 1.09 – 2.25 (474) | braid, 144 | instanced, the peak |
+| Low | 2.25 – 17.4 (1,318) | braid, 72 | instanced, settling back |
+| Min | 17.4 – 69.6 (2,640) | thread, 12 | instanced, fading from norm 36 |
+| Culled | beyond | — | nothing |
+
+(Each boundary moves outward at the value shown and back inward at value × (1 − hysteresis); every band sits where
+the two tiers draw the same picture, `SpindleLodTests.Overt_StepsDownAsTheEffectSettlesBack`.) Amoebius, Garland, the
+last of six samples: 910 limbs - braid 24, low 799, thread 87, 890 of them instanced.
+
 ### 7.3 Seeing it without Unity
 
-`python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert` compiles the SHIPPED
+`python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert [--strength 0.7]` compiles the SHIPPED
 `SpindleLod.hlsl` + `IncorporealDepth.hlsl` + `SpindleSway.hlsl` with clang, runs them on the real mid braid posed
-as the Branch prefab poses it (a star of 8 limbs, like one lattice node), and writes a sheet (five points on the ramp:
+as the Branch prefab poses it (a star of 8 limbs, like one lattice node), drawing the tier's own mesh at each
+distance, and writes a sheet (seven points from rest through the peak to the fading thread:
 the shape framed large with the width hold off, and below it the true size on a 1080p screen with the hold on) and a
 two-second animation of the open star. Colour is the far tier's thread shading (the lace's Voronoi is a Shader Graph
 node with no HLSL here) and the raster has no bloom: judge shape and motion, not grading.

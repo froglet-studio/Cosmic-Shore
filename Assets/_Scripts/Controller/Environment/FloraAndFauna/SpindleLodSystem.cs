@@ -23,11 +23,13 @@ namespace CosmicShore.Gameplay
     /// <item><b>Mid</b> - the braid at every third ring (432 -> 144 triangles) on SpindleLodMidGraph:
     /// the same lace, then the three strands drawing together into one thread as the camera pulls
     /// away (SpindleLod.hlsl).</item>
-    /// <item><b>Far</b> - the converged thread, 24 triangles on SpindleLodFarGraph, held at a visible
-    /// width and glowing faintly. A still far spindle is not a renderer at all: its renderer is
-    /// switched off and it is drawn in ONE <c>Graphics.RenderMeshInstanced</c> call per material,
-    /// which is what removes the per-limb culling and submission cost that grew with the forest.</item>
-    /// <item><b>Culled</b> - past farFadeEnd, where the thread's alpha has reached zero: nothing.</item>
+    /// <item><b>Far / Low / Min</b> - on SpindleLodFarGraph, and while still, not a renderer at all:
+    /// its renderer is switched off and it is drawn in ONE <c>Graphics.RenderMeshInstanced</c> call
+    /// per material and mesh, which is what removes the per-limb culling and submission cost that grew
+    /// with the forest. OVERT steps the mesh down as the effect settles back with distance - the 144-
+    /// triangle braid at the peak, the 72-triangle braid while it recedes, the 12-triangle thread once
+    /// it has (the cheapest form that still draws a spindle); COVERT goes straight to the thread.</item>
+    /// <item><b>Culled</b> - past the fade's end, where the thread's alpha has reached zero: nothing.</item>
     /// </list>
     ///
     /// Classification is ONE Burst pass per tick over a read-only <see cref="TransformAccessArray"/>
@@ -55,7 +57,10 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public sealed class SpindleLodSystem : MonoBehaviour
     {
-        public enum Tier : byte { Near = 0, Mid = 1, Far = 2, Culled = 3 }
+        public enum Tier : byte { Near = 0, Mid = 1, Far = 2, Low = 3, Min = 4, Culled = 5 }
+
+        /// <summary>The tiers drawn on the far graph, instanced while still.</summary>
+        static bool IsFarFamily(Tier t) => t is Tier.Far or Tier.Low or Tier.Min;
 
         /// <summary>One registered renderer. Held by its <see cref="Spindle"/>; the index is
         /// rewritten when a swap-back removal moves the entry, and is -1 once unregistered.</summary>
@@ -71,12 +76,20 @@ namespace CosmicShore.Gameplay
             public Material near;
             public Material mid;
             public Material far;
-            public FarBatch batch;
+            public float strength;
+            // One instanced batch per far-family tier: they share the far material, not the mesh.
+            public FarBatch farBatch;
+            public FarBatch lowBatch;
+            public FarBatch minBatch;
+
+            public FarBatch BatchFor(Tier t) => t switch { Tier.Far => farBatch, Tier.Low => lowBatch, _ => minBatch };
         }
 
         sealed class FarBatch
         {
             public int set;
+            public Tier tier;
+            public float strength;
             public Material material;
             public Mesh mesh;
             public readonly List<int> entries = new();
@@ -98,6 +111,7 @@ namespace CosmicShore.Gameplay
             public bool batched;
             public bool stillOnce;        // has been seen still for a whole pass
             public int batchSlot;
+            public FarBatch batch;        // the batch it is in while batched
         }
 
         // ── Shader globals (declared in SpindleLod.hlsl) ────────────────────────────────────────
@@ -106,6 +120,7 @@ namespace CosmicShore.Gameplay
         static readonly int Look2Id = Shader.PropertyToID("_SpindleLodLook2");
         static readonly int GirthId = Shader.PropertyToID("_SpindleLodGirth");
         static readonly int StrandId = Shader.PropertyToID("_SpindleLodStrand");
+        static readonly int StrengthId = Shader.PropertyToID("_SpindleLodStrength");
 
         // SpindleGraph's own exposed blackboard, which both LOD graphs carry verbatim (they are
         // generated from it by Tools/Shaders/wire_spindle_lod.py): copied from each limb's phase
@@ -137,16 +152,24 @@ namespace CosmicShore.Gameplay
         public static int FarBatchedCount { get; private set; }
         public static int CulledCount { get; private set; }
 
+        /// <summary>The same line as a property, for a probe that reads static members (Amoebius's eval).</summary>
+        public static string Summary => Describe();
+
         /// <summary>One line for the perf instruments: where every registered limb is drawn.</summary>
         public static string Describe() => s_instance
-            ? $"spindle LOD: {RegisteredCount:N0} limbs - near {NearCount:N0} · mid {MidCount:N0} · far {FarRendererCount:N0} own + {FarBatchedCount:N0} instanced · culled {CulledCount:N0}"
+            ? $"spindle LOD ({(s_instance.Overt ? "overt" : "covert")}): {RegisteredCount:N0} limbs - near {NearCount:N0} · mid {MidCount:N0} · " +
+              $"braid {s_tierCount[(int)Tier.Far]:N0} · low {s_tierCount[(int)Tier.Low]:N0} · thread {s_tierCount[(int)Tier.Min]:N0} " +
+              $"({FarBatchedCount:N0} of the far ones instanced) · culled {CulledCount:N0}"
             : "spindle LOD: off";
+
+        // Limbs per tier, batched or not (the far family's split for Describe).
+        static readonly int[] s_tierCount = new int[6];
 
         SpindleLodProfileSO _profile;
         SpindleLodProfileSO.Style _style;
         TierBounds _bounds;
         readonly Dictionary<Mesh, int> _setOfMesh = new();
-        readonly Dictionary<(int, Material), TierMaterials> _materials = new();
+        readonly Dictionary<(int, Material, bool), TierMaterials> _materials = new();
         readonly List<Material> _ownedMaterials = new();
         readonly List<Entry> _entries = new(1024);
         readonly List<Handle> _pending = new(1024);
@@ -172,13 +195,13 @@ namespace CosmicShore.Gameplay
         /// LOD clones are derived from it. Returns null when the limb is not LOD-managed, which is
         /// the ordinary answer for a creature's own body mesh - a probe, so it never logs.
         /// </summary>
-        public static Handle Register(Renderer renderer, Material nearMaterial, bool fading)
+        public static Handle Register(Renderer renderer, Material nearMaterial, bool fading, bool charge)
         {
             if (!renderer || !nearMaterial || s_unavailable) return null;
             if (!renderer.TryGetComponent(out MeshFilter filter) || !filter.sharedMesh) return null;
             var system = EnsureInstance();
             if (!system || !system._setOfMesh.TryGetValue(filter.sharedMesh, out int set)) return null;
-            return system.Add(renderer, filter, set, nearMaterial, fading);
+            return system.Add(renderer, filter, set, nearMaterial, fading, charge);
         }
 
         /// <summary>
@@ -205,7 +228,7 @@ namespace CosmicShore.Gameplay
             if (e.fading == fading) return;
             e.fading = fading;
             system._entries[i] = e;
-            if (fading && e.batched) system.Apply(i, Tier.Far, batch: false);
+            if (fading && e.batched) system.Apply(i, e.tier, batch: false);
         }
 
         /// <summary>The material this limb should draw with right now (its tier's), or null when
@@ -256,6 +279,7 @@ namespace CosmicShore.Gameplay
             s_instance = null;
             s_unavailable = false;
             NearCount = MidCount = FarRendererCount = FarBatchedCount = CulledCount = 0;
+            System.Array.Clear(s_tierCount, 0, s_tierCount.Length);
         }
 
         bool Initialize(SpindleLodProfileSO profile)
@@ -295,27 +319,46 @@ namespace CosmicShore.Gameplay
             var p = _profile;
             IncorporealDepth.Publish();
             bool overt = Overt;
+            Vector4 recede = IncorporealDepth.Recede;
             Shader.SetGlobalVector(BandsId, overt
-                ? new Vector4(0f, 1f, p.overtFadeStartNorm, p.overtFadeEndNorm)
+                ? new Vector4(recede.x, recede.y, p.overtFadeStartNorm, p.overtFadeEndNorm)
                 : new Vector4(p.convergeStartGirths, p.ConvergeEndGirths, p.farFadeStartGirths, p.farFadeEndGirths));
             Shader.SetGlobalVector(LookId, new Vector4(p.minThreadPixels, p.threadBase, p.threadFacet, p.threadGlow));
             Shader.SetGlobalVector(Look2Id, new Vector4(p.threadAlpha, overt ? 1f : 0f, 0f, 0f));
-            _bounds = BoundsFor(p, overt, IncorporealDepth.Spread);
+            _bounds = BoundsFor(p, overt, IncorporealDepth.Spread, recede);
         }
 
-        /// <summary>OVERT needs the prisms' ramp to follow; with nothing published (no
-        /// Resources/IncorporealDepth, or no danger tier on it) the braid could not open, so the
-        /// style falls back to covert rather than draw a closed braid on the far meshes.</summary>
-        bool Overt => _style == SpindleLodProfileSO.Style.Overt && IncorporealDepth.Spread.sqrMagnitude > 0f;
+        bool _warnedOvertBands;
+
+        /// <summary>OVERT needs the prisms' ramp to follow and a recede that fits the ladder; with
+        /// nothing published (no Resources/IncorporealDepth, no danger tier on it) or bands out of order,
+        /// the style falls back to covert rather than draw a tier outside the range where it matches its
+        /// neighbours. The bad-band case is a real fault, so it says so once.</summary>
+        bool Overt
+        {
+            get
+            {
+                if (_style != SpindleLodProfileSO.Style.Overt || !(IncorporealDepth.Spread.sqrMagnitude > 0f)) return false;
+                if (_profile.OvertBandsAreSane(IncorporealDepth.Recede, out string why)) return true;
+                if (!_warnedOvertBands)
+                {
+                    _warnedOvertBands = true;
+                    CSDebug.LogWarning($"[SpindleLod] overt style off ({why}); spindles use the covert LOD.");
+                }
+                return false;
+            }
+        }
 
         /// <summary>A style's three boundaries in its own units, and the keep fraction.</summary>
         internal struct TierBounds
         {
             public bool overt;
             public float sqrDistance;
-            public float nearEnd;
-            public float midEnd;
-            public float cull;
+            public float nearEnd;    // Near -> Mid
+            public float midEnd;     // Mid  -> Far
+            public float lowStart;   // Far  -> Low
+            public float minStart;   // Low  -> Min
+            public float cull;       // Min  -> Culled
             public float keep;
         }
 
@@ -326,19 +369,25 @@ namespace CosmicShore.Gameplay
         /// inward edge is the prisms' over-distance (both tiers fully open inside the band above 1).
         /// Either way the cull's inward edge is the fade's end, where the alpha is zero.
         /// </summary>
-        internal static TierBounds BoundsFor(SpindleLodProfileSO p, bool overt, Vector4 spread)
+        internal static TierBounds BoundsFor(SpindleLodProfileSO p, bool overt, Vector4 spread, Vector4 recede)
         {
             float keep = 1f - p.hysteresis;
+            // OVERT: the 144 -> 72 step comes as the recede STARTS (the two braids differ by their
+            // decimation alone, 0.19 units, a third of a pixel there), and the 72 -> thread step's
+            // inward edge is the recede's END, where the braid has converged into the thread's own
+            // construction. COVERT goes straight from the converging braid to the thread.
             return overt
                 ? new TierBounds
                 {
                     overt = true, sqrDistance = Mathf.Max(spread.w, 1f), keep = keep,
-                    nearEnd = IncorporealDepth.OpeningStartNorm(spread), midEnd = 1f / keep, cull = p.overtFadeEndNorm / keep,
+                    nearEnd = IncorporealDepth.OpeningStartNorm(spread), midEnd = 1f / keep,
+                    lowStart = recede.x, minStart = recede.y / keep, cull = p.overtFadeEndNorm / keep,
                 }
                 : new TierBounds
                 {
                     overt = false, sqrDistance = 1f, keep = keep,
-                    nearEnd = p.nearEndGirths, midEnd = p.midEndGirths, cull = p.farFadeEndGirths / keep,
+                    nearEnd = p.nearEndGirths, midEnd = p.midEndGirths, lowStart = p.midEndGirths, minStart = p.midEndGirths,
+                    cull = p.farFadeEndGirths / keep,
                 };
         }
 
@@ -351,14 +400,23 @@ namespace CosmicShore.Gameplay
             _style = _profile.style;
             PublishGlobals();
             for (int b = 0; b < _batches.Count; b++)
-                _batches[b].mesh = FarMesh(_profile.meshSets[_batches[b].set]);
+                _batches[b].mesh = TierMesh(_profile.meshSets[_batches[b].set], _batches[b].tier);
             _nextTickAt = 0f;
         }
 
-        /// <summary>The far tier's mesh: the converged thread (covert), or - overt - the same braid the mid
-        /// tier draws, because a fully opened face pushes 15 units along its normal and only the
-        /// identical mesh opens identically (a 5-ring braid's normals would land its slats elsewhere).</summary>
-        Mesh FarMesh(SpindleLodProfileSO.MeshSet set) => Overt ? set.mid : set.far;
+        /// <summary>
+        /// The mesh a tier draws. OVERT: Far is the SAME braid the mid tier draws (the peak, where the
+        /// fan is widest and the two must open identically), Low the 72-triangle braid while the fan
+        /// closes, Min the 12-triangle thread. COVERT never uses Far or Low (zero-width bands).
+        /// </summary>
+        Mesh TierMesh(SpindleLodProfileSO.MeshSet set, Tier tier) => tier switch
+        {
+            Tier.Near => set.source,
+            Tier.Mid => set.mid,
+            Tier.Far => Overt ? set.mid : set.far,
+            Tier.Low => Overt ? set.low : set.far,
+            _ => set.far,
+        };
 
         void Grow(int capacity)
         {
@@ -380,7 +438,7 @@ namespace CosmicShore.Gameplay
             _tier = tier;
         }
 
-        Handle Add(Renderer renderer, MeshFilter filter, int set, Material nearMaterial, bool fading)
+        Handle Add(Renderer renderer, MeshFilter filter, int set, Material nearMaterial, bool fading, bool charge)
         {
             int i = _entries.Count;
             if (i >= _lastPose.Length) Grow(_lastPose.Length * 2);
@@ -391,7 +449,7 @@ namespace CosmicShore.Gameplay
                 renderer = renderer,
                 filter = filter,
                 set = set,
-                materials = MaterialsFor(set, nearMaterial),
+                materials = MaterialsFor(set, nearMaterial, charge),
                 tier = Tier.Near,
                 fading = fading,
                 batchSlot = -1,
@@ -401,6 +459,7 @@ namespace CosmicShore.Gameplay
             _girth[i] = _profile.meshSets[set].girth;
             _tier[i] = (byte)Tier.Near;
             NearCount++;
+            s_tierCount[(int)Tier.Near]++;
             return handle;
         }
 
@@ -423,7 +482,7 @@ namespace CosmicShore.Gameplay
                 var moved = _entries[last];
                 _entries[i] = moved;
                 moved.handle.index = i;
-                if (moved.batched) moved.materials.batch.entries[moved.batchSlot] = i;
+                if (moved.batched) moved.batch.entries[moved.batchSlot] = i;
             }
             _entries.RemoveAt(last);
             _transforms.RemoveAtSwapBack(i);
@@ -436,28 +495,39 @@ namespace CosmicShore.Gameplay
 
         // ── Materials ───────────────────────────────────────────────────────────────────────────
 
-        TierMaterials MaterialsFor(int set, Material near)
+        TierMaterials MaterialsFor(int set, Material near, bool charge)
         {
-            if (_materials.TryGetValue((set, near), out var m) && m.mid && m.far) return m;
+            if (_materials.TryGetValue((set, near, charge), out var m) && m.mid && m.far) return m;
             var ms = _profile.meshSets[set];
+            float strength = _profile.StrengthFor(charge);
+            string suffix = charge ? "_Charge" : "";
             m = new TierMaterials
             {
                 near = near,
-                mid = Derive(_profile.midTemplate, near, ms, "_LodMid", instanced: false),
-                far = Derive(_profile.farTemplate, near, ms, "_LodFar", instanced: true),
+                strength = strength,
+                mid = Derive(_profile.midTemplate, near, ms, "_LodMid" + suffix, instanced: false, strength),
+                far = Derive(_profile.farTemplate, near, ms, "_LodFar" + suffix, instanced: true, strength),
             };
-            m.batch = new FarBatch { set = set, material = m.far, mesh = FarMesh(ms) };
-            m.batch.renderParams = new RenderParams(m.far)
-            {
-                shadowCastingMode = ShadowCastingMode.Off,
-                receiveShadows = false,
-            };
-            _batches.Add(m.batch);
-            _materials[(set, near)] = m;
+            m.farBatch = NewBatch(set, Tier.Far, m);
+            m.lowBatch = NewBatch(set, Tier.Low, m);
+            m.minBatch = NewBatch(set, Tier.Min, m);
+            _materials[(set, near, charge)] = m;
             return m;
         }
 
-        Material Derive(Material template, Material near, SpindleLodProfileSO.MeshSet set, string suffix, bool instanced)
+        FarBatch NewBatch(int set, Tier tier, TierMaterials m)
+        {
+            var b = new FarBatch
+            {
+                set = set, tier = tier, strength = m.strength, material = m.far,
+                mesh = TierMesh(_profile.meshSets[set], tier),
+                renderParams = new RenderParams(m.far) { shadowCastingMode = ShadowCastingMode.Off, receiveShadows = false },
+            };
+            _batches.Add(b);
+            return b;
+        }
+
+        Material Derive(Material template, Material near, SpindleLodProfileSO.MeshSet set, string suffix, bool instanced, float strength)
         {
             var mat = new Material(template) { name = near.name + suffix, enableInstancing = instanced };
             for (int i = 0; i < CopiedColors.Length; i++)
@@ -466,6 +536,7 @@ namespace CosmicShore.Gameplay
                 if (near.HasProperty(CopiedFloats[i])) mat.SetFloat(CopiedFloats[i], near.GetFloat(CopiedFloats[i]));
             mat.SetFloat(GirthId, set.girth);
             mat.SetFloat(StrandId, set.strandRadius);
+            mat.SetFloat(StrengthId, strength);
             mat.renderQueue = near.renderQueue;
             _ownedMaterials.Add(mat);
             return mat;
@@ -473,10 +544,9 @@ namespace CosmicShore.Gameplay
 
         static Material MaterialFor(TierMaterials m, Tier tier) => tier switch
         {
+            Tier.Near => m.near,
             Tier.Mid => m.mid,
-            Tier.Far => m.far,
-            Tier.Culled => m.far,
-            _ => m.near,
+            _ => m.far,
         };
 
         // ── The pass ────────────────────────────────────────────────────────────────────────────
@@ -518,10 +588,7 @@ namespace CosmicShore.Gameplay
                     Camera = cam.transform.position,
                     Overt = _bounds.overt,
                     SqrDistance = _bounds.sqrDistance,
-                    NearEnd = _bounds.nearEnd,
-                    MidEnd = _bounds.midEnd,
-                    FarEnd = _bounds.cull,
-                    Keep = _bounds.keep,
+                    Bounds = _bounds,
                     Girth = _girth.GetSubArray(0, n),
                     Current = _tier.GetSubArray(0, n),
                     LastPose = _lastPose.GetSubArray(0, n),
@@ -546,7 +613,7 @@ namespace CosmicShore.Gameplay
                     }
                     bool still = moved[i] == 0;
                     var want = (Tier)desired[i];
-                    bool wantBatch = batchFar && want == Tier.Far && still && e.stillOnce && !e.fading;
+                    bool wantBatch = batchFar && IsFarFamily(want) && still && e.stillOnce && !e.fading;
 
                     if (e.stillOnce != still)
                     {
@@ -589,7 +656,7 @@ namespace CosmicShore.Gameplay
                     // Re-derive from the pass's verdict, which _tier does not yet hold for a limb
                     // still waiting: recompute it here from the pose the pass read.
                     var want = Classify(i, camPos);
-                    bool wantBatch = _profile.batchFarThreads && want == Tier.Far && e.stillOnce && !e.fading;
+                    bool wantBatch = _profile.batchFarThreads && IsFarFamily(want) && e.stillOnce && !e.fading;
                     if (want == e.tier && wantBatch == e.batched) continue;
                     Apply(i, want, wantBatch);
                     budget--;
@@ -600,7 +667,7 @@ namespace CosmicShore.Gameplay
         Tier Classify(int i, Vector3 camPos)
         {
             float metric = ClassifyJob.Metric(_lastPose[i], camPos, _girth[i], _bounds.overt, _bounds.sqrDistance);
-            return (Tier)ClassifyJob.TierFor(metric, _tier[i], _bounds.nearEnd, _bounds.midEnd, _bounds.cull, _bounds.keep);
+            return (Tier)ClassifyJob.TierFor(metric, _tier[i], _bounds);
         }
 
         /// <summary>The far -> culled boundary, set so its INWARD edge (bound x keep) is exactly
@@ -612,13 +679,14 @@ namespace CosmicShore.Gameplay
         /// <summary>The tier a limb at <paramref name="metric"/> (its style's units) moves to from
         /// <paramref name="current"/> under <paramref name="b"/> - the Burst pass's own rule.</summary>
         internal static Tier TierFor(float metric, Tier current, TierBounds b) =>
-            (Tier)ClassifyJob.TierFor(metric, (byte)current, b.nearEnd, b.midEnd, b.cull, b.keep);
+            (Tier)ClassifyJob.TierFor(metric, (byte)current, b);
 
         void Apply(int i, Tier tier, bool batch)
         {
             var e = _entries[i];
             CountOut(e.tier, e.batched);
-            if (e.batched && !batch) LeaveBatch(i);
+            // Leave the batch on any change: a far-family step moves the limb to another tier's batch.
+            if (e.batched) LeaveBatch(i);
             e = _entries[i];
 
             var set = _profile.meshSets[e.set];
@@ -633,14 +701,16 @@ namespace CosmicShore.Gameplay
                 case Tier.Mid:
                     e.filter.sharedMesh = set.mid;
                     e.renderer.sharedMaterial = e.materials.mid;
-                    FitBounds(e.renderer, set.mid);
+                    FitBounds(e.renderer, set.mid, e.materials.strength);
                     e.renderer.enabled = true;
                     break;
                 case Tier.Far:
-                    var far = FarMesh(set);
-                    e.filter.sharedMesh = far;
+                case Tier.Low:
+                case Tier.Min:
+                    var mesh = TierMesh(set, tier);
+                    e.filter.sharedMesh = mesh;
                     e.renderer.sharedMaterial = e.materials.far;
-                    FitBounds(e.renderer, far);
+                    FitBounds(e.renderer, mesh, e.materials.strength);
                     e.renderer.enabled = !batch;
                     break;
                 default:
@@ -650,7 +720,7 @@ namespace CosmicShore.Gameplay
             e.tier = tier;
             _tier[i] = (byte)tier;
             _entries[i] = e;
-            if (batch && !e.batched) JoinBatch(i);
+            if (batch) JoinBatch(i, e.materials.BatchFor(tier));
             e = _entries[i];
             CountIn(e.tier, e.batched);
         }
@@ -660,22 +730,22 @@ namespace CosmicShore.Gameplay
         /// its mesh, in the vertex shader, where culling cannot see them: without room in the bounds the
         /// opened slats of a limb just off screen would blink out at the frame edge. Covert needs none.
         /// </summary>
-        void FitBounds(Renderer renderer, Mesh mesh)
+        void FitBounds(Renderer renderer, Mesh mesh, float strength)
         {
             if (!Overt) { renderer.ResetLocalBounds(); return; }
             var b = mesh.bounds;
             Vector3 s = renderer.transform.lossyScale;
-            float open = IncorporealDepth.MaxOpening;
+            float open = IncorporealDepth.MaxOpening * strength;
             b.Expand(new Vector3(2f * open / Mathf.Max(Mathf.Abs(s.x), 1e-4f),
                                  2f * open / Mathf.Max(Mathf.Abs(s.y), 1e-4f),
                                  2f * open / Mathf.Max(Mathf.Abs(s.z), 1e-4f)));
             renderer.localBounds = b;
         }
 
-        void JoinBatch(int i)
+        void JoinBatch(int i, FarBatch b)
         {
             var e = _entries[i];
-            var b = e.materials.batch;
+            e.batch = b;
             e.batched = true;
             e.batchSlot = b.entries.Count;
             _entries[i] = e;
@@ -686,7 +756,7 @@ namespace CosmicShore.Gameplay
         void LeaveBatch(int i)
         {
             var e = _entries[i];
-            var b = e.materials.batch;
+            var b = e.batch;
             int slot = e.batchSlot;
             int last = b.entries.Count - 1;
             if (slot != last)
@@ -701,28 +771,31 @@ namespace CosmicShore.Gameplay
             b.dirty = true;
             e.batched = false;
             e.batchSlot = -1;
+            e.batch = null;
             _entries[i] = e;
         }
 
         void CountIn(Tier tier, bool batched)
         {
+            s_tierCount[(int)tier]++;
             switch (tier)
             {
                 case Tier.Near: NearCount++; break;
                 case Tier.Mid: MidCount++; break;
-                case Tier.Far: if (batched) FarBatchedCount++; else FarRendererCount++; break;
-                default: CulledCount++; break;
+                case Tier.Culled: CulledCount++; break;
+                default: if (batched) FarBatchedCount++; else FarRendererCount++; break;
             }
         }
 
         void CountOut(Tier tier, bool batched)
         {
+            s_tierCount[(int)tier]--;
             switch (tier)
             {
                 case Tier.Near: NearCount--; break;
                 case Tier.Mid: MidCount--; break;
-                case Tier.Far: if (batched) FarBatchedCount--; else FarRendererCount--; break;
-                default: CulledCount--; break;
+                case Tier.Culled: CulledCount--; break;
+                default: if (batched) FarBatchedCount--; else FarRendererCount--; break;
             }
         }
 
@@ -767,7 +840,7 @@ namespace CosmicShore.Gameplay
                 var box = new Bounds(c, r * 2f);
                 if (j == 0) world = box; else world.Encapsulate(box);
             }
-            world.Expand(world.size.magnitude * 0.05f + 1f + (Overt ? 2f * IncorporealDepth.MaxOpening : 0f));
+            world.Expand(world.size.magnitude * 0.05f + 1f + (Overt ? 2f * IncorporealDepth.MaxOpening * batch.strength : 0f));
             batch.bounds = world;
             batch.renderParams.worldBounds = world;
             batch.dirty = false;
@@ -803,6 +876,7 @@ namespace CosmicShore.Gameplay
             _ownedMaterials.Clear();
             _materials.Clear();
             NearCount = MidCount = FarRendererCount = FarBatchedCount = CulledCount = 0;
+            System.Array.Clear(s_tierCount, 0, s_tierCount.Length);
         }
 
         // ── The Burst pass ──────────────────────────────────────────────────────────────────────
@@ -817,10 +891,7 @@ namespace CosmicShore.Gameplay
             public float3 Camera;
             public bool Overt;
             public float SqrDistance;
-            public float NearEnd;
-            public float MidEnd;
-            public float FarEnd;
-            public float Keep;
+            public TierBounds Bounds;
             [ReadOnly] public NativeArray<float> Girth;
             [ReadOnly] public NativeArray<byte> Current;
             public NativeArray<float4x4> LastPose;
@@ -845,7 +916,7 @@ namespace CosmicShore.Gameplay
                 LastPose[i] = pose;
                 Valid[i] = 1;
 
-                Desired[i] = TierFor(Metric(pose, Camera, Girth[i], Overt, SqrDistance), Current[i], NearEnd, MidEnd, FarEnd, Keep);
+                Desired[i] = TierFor(Metric(pose, Camera, Girth[i], Overt, SqrDistance), Current[i], Bounds);
             }
 
             /// <summary>The style's distance, measured exactly as the shader measures it (the object
@@ -861,17 +932,24 @@ namespace CosmicShore.Gameplay
             /// <summary>Outward a limb moves past a boundary; inward it must come back inside
             /// boundary x keep. Between the two it stays where it is - and both tiers draw the
             /// same picture there, which is the whole reason the swap is invisible.</summary>
-            public static byte TierFor(float metric, byte current, float nearEnd, float midEnd, float farEnd, float keep)
+            public static byte TierFor(float metric, byte current, TierBounds b)
             {
                 int t = current;
                 if (t > (int)Tier.Culled) t = (int)Tier.Near;
-                while (t < (int)Tier.Culled && metric > Bound(t, nearEnd, midEnd, farEnd)) t++;
-                while (t > (int)Tier.Near && metric < Bound(t - 1, nearEnd, midEnd, farEnd) * keep) t--;
+                while (t < (int)Tier.Culled && metric > Bound(t, b)) t++;
+                while (t > (int)Tier.Near && metric < Bound(t - 1, b) * b.keep) t--;
                 return (byte)t;
             }
 
-            static float Bound(int t, float nearEnd, float midEnd, float farEnd) =>
-                t == 0 ? nearEnd : t == 1 ? midEnd : farEnd;
+            /// <summary>The boundary leaving tier <paramref name="t"/> outward.</summary>
+            static float Bound(int t, TierBounds b) => t switch
+            {
+                0 => b.nearEnd,
+                1 => b.midEnd,
+                2 => b.lowStart,
+                3 => b.minStart,
+                _ => b.cull,
+            };
         }
     }
 }

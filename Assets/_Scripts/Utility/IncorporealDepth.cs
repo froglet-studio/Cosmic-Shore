@@ -13,6 +13,7 @@ namespace CosmicShore.Utility
     {
         static readonly int SpreadId = Shader.PropertyToID("_IncorporealSpread");
         static readonly int FlowId = Shader.PropertyToID("_IncorporealFlow");
+        static readonly int RecedeId = Shader.PropertyToID("_IncorporealRecede");
 
         /// <summary>The spread (xyz) and ramp (w) last published; zero spread = the effect is off.</summary>
         public static Vector4 Spread { get; private set; }
@@ -21,17 +22,24 @@ namespace CosmicShore.Utility
         /// wave's breathing - what a culling volume around an opened part must allow for.</summary>
         public static float MaxOpening { get; private set; }
 
+        /// <summary>Where the parts start settling back (x) and are back at rest (y), in the prisms'
+        /// normalised squared distance; zero when nothing is published (never recedes).</summary>
+        public static Vector4 Recede { get; private set; }
+
         public static void Publish()
         {
             var config = IncorporealDepthSO.Instance;
             Vector4 spread = config ? config.TierSpread() : new Vector4(0f, 0f, 0f, 100000f);
             Vector4 flow = config ? config.Flow : Vector4.zero;
+            Vector4 recede = config ? config.Recede : Vector4.zero;
             Spread = spread;
+            Recede = recede;
             // The prism rule's full opening beyond rest: spread x (50, 35, 20) - spread, per axis.
             var full = new Vector3(spread.x * 49f, spread.y * 34f, spread.z * 19f);
             MaxOpening = Mathf.Max(full.x, Mathf.Max(full.y, full.z)) * (1f + Mathf.Max(flow.x, 0f));
             Shader.SetGlobalVector(SpreadId, spread);
             Shader.SetGlobalVector(FlowId, flow);
+            Shader.SetGlobalVector(RecedeId, recede);
         }
 
         /// <summary>
@@ -56,6 +64,7 @@ namespace CosmicShore.Utility
         static void ResetStatics()
         {
             Spread = Vector4.zero;
+            Recede = Vector4.zero;
             MaxOpening = 0f;
         }
     }

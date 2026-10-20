@@ -47,7 +47,10 @@
 //           FAN OPEN - tips travelling as far as danger mass's faces do, roots still on their node -
 //           and a wave travels root to tip through them -
 //           the plant reads, from afar, as mass with something alive moving through it.
-//           Bands: x unused, y 1 (the prisms' over-distance), z/w far fade, all in norm units.
+//           Bands: x recedeStart, y recedeEnd (the glow ramps up from here), z/w far fade, all in
+//           norm units; the recede itself is IncorporealDepth's (_IncorporealRecede).
+//           Strength (_SpindleLodStrength, per material) is this limb's share of the shared spread:
+//           a Charge lifeform's limbs part hardest (SpindleLodProfileSO.chargeStrength).
 // All-zero (no system running: a tool scene, Amoebius) leaves every function a pass-through on
 // the mid graph and an unfaded thread on the far one, never a NaN.
 //
@@ -69,7 +72,9 @@ bool SpindleLod_Overt() { return _SpindleLodLook2.y > 0.5; }
 struct SpindleLodView
 {
     float metric;      // the style's distance: girths (covert) or the prisms' norm (overt)
-    float progress;    // 0 = the braid as authored, 1 = fully transformed (converged / opened)
+    float progress;    // 0 = the braid as authored, 1 = fully transformed (converged / opened): lace + hold
+    float converge;    // how far the strands have drawn onto the centreline (covert: = progress;
+                       // overt: as the far-side recede closes the fan, so the braid ends as the thread)
     float pxPerUnit;   // screen pixels per world unit at the object's distance
     float scaleXY;     // the object's cross-section scale (girth axis), world units per object unit
 };
@@ -92,6 +97,7 @@ SpindleLodView SpindleLod_View(float girth)
     SpindleLodView v;
     v.metric = 0.0;
     v.progress = 0.0;
+    v.converge = 0.0;
     v.pxPerUnit = 1e6;
     v.scaleXY = 1.0;
 #if !defined(SHADERGRAPH_PREVIEW)
@@ -108,12 +114,16 @@ SpindleLodView SpindleLod_View(float girth)
     if (SpindleLod_Overt())
     {
         v.metric = IncorporealDepth_Norm(origin);
-        v.progress = IncorporealDepth_Openness(v.metric, _IncorporealSpread.xyz);
+        // The near side follows the prisms' ramp and STAYS transformed past it (the lace never comes
+        // back); the far side's recede closes the fan while drawing the strands together.
+        v.progress = IncorporealDepth_RampOpenness(v.metric, _IncorporealSpread.xyz);
+        v.converge = 1.0 - IncorporealDepth_Recede(v.metric);
     }
     else
     {
         v.metric = dist / max(girth * v.scaleXY, 1e-6);
         v.progress = SpindleLod_Converge(v.metric);
+        v.converge = v.progress;
     }
 #endif
     return v;
@@ -160,11 +170,12 @@ void SpindleLod_Thread(float3 dull, float3 bright, float deathState, float3 norm
     alpha = threadAlpha * coverage * life * farFade;
 }
 
-// The overt style's pulse on any colour (zero in the covert style and while the braid is closed).
-float3 SpindleLod_Pulse(float3 color, float flowCoord, float phase, float clock)
+// The overt style's pulse on any colour (zero in the covert style, while the braid is closed, and once
+// it has receded). Strength = this limb's share of the shared spread (_SpindleLodStrength).
+float3 SpindleLod_Pulse(float3 color, float flowCoord, float phase, float clock, float strength)
 {
     if (!SpindleLod_Overt()) return color;
-    return color * (1.0 + IncorporealDepth_Pulse(flowCoord, phase, clock, 1.0));
+    return color * (1.0 + IncorporealDepth_Pulse(flowCoord, phase, clock, strength));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -178,7 +189,7 @@ float3 SpindleLod_Pulse(float3 color, float flowCoord, float phase, float clock)
 // The result feeds SpindleSway, so either form sways exactly as the braid it replaced.
 // ---------------------------------------------------------------------------------------------
 void SpindleLodVertex_float(float3 PositionOS, float3 NormalOS, float3 UV, float3 ToAxis, float3 Radial,
-    float3 Splay, float Girth, float StrandRadius, float Phase, float Clock, out float3 Out)
+    float3 Splay, float Girth, float StrandRadius, float Strength, float Phase, float Clock, out float3 Out)
 {
     Out = PositionOS;
 #if !defined(SHADERGRAPH_PREVIEW)
@@ -191,15 +202,17 @@ void SpindleLodVertex_float(float3 PositionOS, float3 NormalOS, float3 UV, float
         // The braid's parts are its three STRANDS. Each FANS along its own splay (TEXCOORD3: the way
         // its tip already leans), anchored at the root and reaching the danger prisms' face travel at
         // the tip: the braid blooms like a whisk opening, and stays a bond to the node it grows from.
-        float3 held = strandCentre + Radial * inflate;
+        // Past the recede the strands also draw onto the centreline, so a fully receded braid is the
+        // far thread's own construction and the swap to the 12-triangle thread is never seen.
+        float3 held = strandCentre + ToAxis * v.converge + Radial * inflate;
         float3 parted;
         float openness;
-        IncorporealDepthPart_float(held, Splay, UV.x, Phase, Clock, 1.0, parted, openness);
+        IncorporealDepthPart_float(held, Splay, UV.x, Phase, Clock, Strength, parted, openness);
         Out = held + (parted - held) * saturate(UV.x);
     }
     else
     {
-        Out = strandCentre + ToAxis * v.progress + Radial * inflate;
+        Out = strandCentre + ToAxis * v.converge + Radial * inflate;
     }
 #endif
 }
@@ -210,8 +223,8 @@ void SpindleLodVertex_float(float3 PositionOS, float3 NormalOS, float3 UV, float
 // returns the lace exactly, which is what makes the near -> mid mesh swap invisible.
 // ---------------------------------------------------------------------------------------------
 void SpindleLodSurface_float(float3 LaceColor, float LaceAlpha, float3 Dull, float3 Bright, float DeathState,
-    float3 NormalWS, float3 ViewWS, float3 UV, float Girth, float StrandRadius, float Phase, float Clock,
-    out float3 Color, out float Alpha)
+    float3 NormalWS, float3 ViewWS, float3 UV, float Girth, float StrandRadius, float Strength, float Phase,
+    float Clock, out float3 Color, out float Alpha)
 {
     Color = LaceColor;
     Alpha = LaceAlpha;
@@ -221,7 +234,7 @@ void SpindleLodSurface_float(float3 LaceColor, float LaceAlpha, float3 Dull, flo
     float3 threadColor;
     float threadAlpha;
     SpindleLod_Thread(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, threadColor, threadAlpha);
-    Color = SpindleLod_Pulse(lerp(LaceColor, threadColor, v.progress), UV.x, Phase, Clock);
+    Color = SpindleLod_Pulse(lerp(LaceColor, threadColor, v.progress), UV.x, Phase, Clock, Strength);
     Alpha = lerp(LaceAlpha, threadAlpha, v.progress);
 #endif
 }
@@ -232,11 +245,11 @@ void SpindleLodSurface_float(float3 LaceColor, float LaceAlpha, float3 Dull, flo
 // draw that replaces one renderer per limb.
 // ---------------------------------------------------------------------------------------------
 void SpindleLodThread_float(float3 Dull, float3 Bright, float DeathState, float3 NormalWS, float3 ViewWS,
-    float3 UV, float Girth, float StrandRadius, float Phase, float Clock, out float3 Color, out float Alpha)
+    float3 UV, float Girth, float StrandRadius, float Strength, float Phase, float Clock, out float3 Color, out float Alpha)
 {
     SpindleLodView v = SpindleLod_View(max(Girth, 1e-6));
     SpindleLod_Thread(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, Color, Alpha);
-    Color = SpindleLod_Pulse(Color, UV.x, Phase, Clock);
+    Color = SpindleLod_Pulse(Color, UV.x, Phase, Clock, Strength);
 }
 
 #endif

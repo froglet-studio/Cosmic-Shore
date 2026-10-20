@@ -81,27 +81,28 @@ for t in TIERS.values():
     t["graph_guid"] = guid_for(t["graph"])
     t["material_guid"] = guid_for(t["material"])
 
-NEW_PROPS = [("SpindleLodGirth", "_SpindleLodGirth"), ("SpindleLodStrand", "_SpindleLodStrand")]
+NEW_PROPS = [("SpindleLodGirth", "_SpindleLodGirth"), ("SpindleLodStrand", "_SpindleLodStrand"),
+             ("SpindleLodStrength", "_SpindleLodStrength")]
 
 # (slot id, name, kind, is_output) - order IS the HLSL signature.
 VERTEX_SLOTS = [
     (0, "PositionOS", "v3", False), (1, "NormalOS", "v3", False), (2, "UV", "v3", False),
     (3, "ToAxis", "v3", False), (4, "Radial", "v3", False), (5, "Splay", "v3", False),
-    (6, "Girth", "v1", False), (7, "StrandRadius", "v1", False), (8, "Phase", "v1", False),
-    (9, "Clock", "v1", False), (10, "Out", "v3", True),
+    (6, "Girth", "v1", False), (7, "StrandRadius", "v1", False), (8, "Strength", "v1", False),
+    (9, "Phase", "v1", False), (10, "Clock", "v1", False), (11, "Out", "v3", True),
 ]
 SURFACE_SLOTS = [
     (0, "LaceColor", "v3", False), (1, "LaceAlpha", "v1", False), (2, "Dull", "v3", False),
     (3, "Bright", "v3", False), (4, "DeathState", "v1", False), (5, "NormalWS", "v3", False),
     (6, "ViewWS", "v3", False), (7, "UV", "v3", False), (8, "Girth", "v1", False),
-    (9, "StrandRadius", "v1", False), (10, "Phase", "v1", False), (11, "Clock", "v1", False),
-    (12, "Color", "v3", True), (13, "Alpha", "v1", True),
+    (9, "StrandRadius", "v1", False), (10, "Strength", "v1", False), (11, "Phase", "v1", False),
+    (12, "Clock", "v1", False), (13, "Color", "v3", True), (14, "Alpha", "v1", True),
 ]
 THREAD_SLOTS = [
     (0, "Dull", "v3", False), (1, "Bright", "v3", False), (2, "DeathState", "v1", False),
     (3, "NormalWS", "v3", False), (4, "ViewWS", "v3", False), (5, "UV", "v3", False),
-    (6, "Girth", "v1", False), (7, "StrandRadius", "v1", False), (8, "Phase", "v1", False),
-    (9, "Clock", "v1", False), (10, "Color", "v3", True), (11, "Alpha", "v1", True),
+    (6, "Girth", "v1", False), (7, "StrandRadius", "v1", False), (8, "Strength", "v1", False),
+    (9, "Phase", "v1", False), (10, "Clock", "v1", False), (11, "Color", "v3", True), (12, "Alpha", "v1", True),
 ]
 FUNCTIONS = {"SpindleLodVertex": VERTEX_SLOTS, "SpindleLodSurface": SURFACE_SLOTS, "SpindleLodThread": THREAD_SLOTS}
 
@@ -236,9 +237,10 @@ def build(tier):
     def lod_props(x, y, tag):
         g = add(_property_node(phase_pn, donor_v1, prop_oids["SpindleLodGirth"], "SpindleLodGirth", f"{seed}/{tag}/girth", x, y))
         s = add(_property_node(phase_pn, donor_v1, prop_oids["SpindleLodStrand"], "SpindleLodStrand", f"{seed}/{tag}/strand", x, y + 60.0))
-        return g, s
+        k = add(_property_node(phase_pn, donor_v1, prop_oids["SpindleLodStrength"], "SpindleLodStrength", f"{seed}/{tag}/strength", x, y + 120.0))
+        return g, s, k
 
-    vg, vs = lod_props(bx, by + 300.0, "v")
+    vg, vs, vk = lod_props(bx, by + 300.0, "v")
     normal_docs = load_docs(os.path.join(REPO, NORMAL_DONOR))
     view_docs = load_docs(os.path.join(REPO, VIEW_DONOR))
     nrm_os = add(_simple_node(normal_docs, "NormalVectorNode", f"{seed}/normalOS", bx, by - 300.0, m_Space=SPACE_OBJECT))
@@ -250,9 +252,9 @@ def build(tier):
     # Position -> SpindleLodVertex -> SpindleSway.PositionOS (the old direct edge is replaced).
     graph["m_Edges"].remove(pos_edge)
     for src, slot in ((pos_node, 0), (nrm_os, 1), (uv0, 2), (uv1, 3), (uv2, 4), (uv3, 5), (vg, 6), (vs, 7),
-                      (vphase, 8), (vclock, 9)):
+                      (vk, 8), (vphase, 9), (vclock, 10)):
         graph["m_Edges"].append(edge(src["m_ObjectId"], 0, vcf["m_ObjectId"], slot))
-    graph["m_Edges"].append(edge(vcf["m_ObjectId"], 10, sway["m_ObjectId"], 0))
+    graph["m_Edges"].append(edge(vcf["m_ObjectId"], 11, sway["m_ObjectId"], 0))
 
     # Fragment.
     fx, fy = -3300.0, 2600.0
@@ -260,7 +262,7 @@ def build(tier):
     view = add(_simple_node(view_docs, "ViewDirectionNode", f"{seed}/view", fx, fy + 140.0, m_Space=SPACE_WORLD))
     dpn = add(_property_node(dull_pn, donor_color_slot, dull["m_ObjectId"], "DullColor", f"{seed}/dull", fx, fy + 300.0))
     bpn = add(_property_node(dull_pn, donor_color_slot, bright["m_ObjectId"], "BrightColor", f"{seed}/bright", fx, fy + 360.0))
-    fg, fs = lod_props(fx, fy + 440.0, "f")
+    fg, fs, fk = lod_props(fx, fy + 440.0, "f")
     fuv0 = add(_simple_node(uv_docs, "UVNode", f"{seed}/fuv0", fx, fy + 560.0, m_OutputChannel=0))
     fphase = add(_property_node(phase_pn, donor_v1, phase["m_ObjectId"], "Phase", f"{seed}/f/phase", fx, fy + 700.0))
     fclock = add(_property_node(phase_pn, donor_v1, clock["m_ObjectId"], "PrismClock", f"{seed}/f/clock", fx, fy + 760.0))
@@ -282,15 +284,15 @@ def build(tier):
                  ((dpn["m_ObjectId"], 0), 2), ((bpn["m_ObjectId"], 0), 3),
                  ((death["m_ObjectId"], 5), 4), ((nrm["m_ObjectId"], 0), 5), ((view["m_ObjectId"], 0), 6),
                  ((fuv0["m_ObjectId"], 0), 7), ((fg["m_ObjectId"], 0), 8), ((fs["m_ObjectId"], 0), 9),
-                 ((fphase["m_ObjectId"], 0), 10), ((fclock["m_ObjectId"], 0), 11)]
-        color_out, alpha_out = 12, 13
+                 ((fk["m_ObjectId"], 0), 10), ((fphase["m_ObjectId"], 0), 11), ((fclock["m_ObjectId"], 0), 12)]
+        color_out, alpha_out = 13, 14
     else:
         scf = add(_cf(death, donor_v1, donor_v3, "SpindleLodThread", seed, fx + 460.0, fy))
         feeds = [((dpn["m_ObjectId"], 0), 0), ((bpn["m_ObjectId"], 0), 1), ((death["m_ObjectId"], 5), 2),
                  ((nrm["m_ObjectId"], 0), 3), ((view["m_ObjectId"], 0), 4), ((fuv0["m_ObjectId"], 0), 5),
-                 ((fg["m_ObjectId"], 0), 6), ((fs["m_ObjectId"], 0), 7),
-                 ((fphase["m_ObjectId"], 0), 8), ((fclock["m_ObjectId"], 0), 9)]
-        color_out, alpha_out = 10, 11
+                 ((fg["m_ObjectId"], 0), 6), ((fs["m_ObjectId"], 0), 7), ((fk["m_ObjectId"], 0), 8),
+                 ((fphase["m_ObjectId"], 0), 9), ((fclock["m_ObjectId"], 0), 10)]
+        color_out, alpha_out = 11, 12
     for (src, src_slot), dst_slot in feeds:
         graph["m_Edges"].append(edge(src, src_slot, scf["m_ObjectId"], dst_slot))
     graph["m_Edges"].append(edge(scf["m_ObjectId"], color_out, base_block["m_ObjectId"], base_slot))

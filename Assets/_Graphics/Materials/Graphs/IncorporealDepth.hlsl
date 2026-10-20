@@ -25,9 +25,17 @@
 // running root to tip, and a glow rides the same crest. Both vanish with the opening: up close the part
 // is exactly its authored self.
 //
+// AND IT SETTLES BACK WITH DISTANCE. The prisms stay fully open forever; an incorporeal part does not.
+// Past the peak (the prisms' over-distance, norm 1) it holds open to `recedeStart`, then RECEDES
+// smoothly - linear in DISTANCE, not in squared distance, so it eases over a long way - back to rest
+// by `recedeEnd`. A far plant arrives on screen as a minimal presence and the effect grows as you
+// close in, instead of appearing at full strength wherever its fade-in happens to start (Garrett,
+// 2026-10-20: "the onset is very abrupt"). The near side is the prisms' ramp, untouched (lockstep).
+//
 // Globals (IncorporealDepth.Publish, from Resources/IncorporealDepth):
 //   _IncorporealSpread  xyz the danger tier's _Spread (x strength), w its _SqrDistance
 //   _IncorporealFlow    x amplitude, y waves along the flow coordinate, z waves per second, w pulse glow
+//   _IncorporealRecede  x recedeStart, y recedeEnd (normalised squared distance; y <= x = never recedes)
 // All zero (nothing published: a tool scene, Amoebius before its port) = closed, still, unlit: a no-op.
 //
 // ADOPTING it on another surface: include this file from the graph's Custom Function and pick the
@@ -42,6 +50,7 @@
 
 float4 _IncorporealSpread;
 float4 _IncorporealFlow;
+float4 _IncorporealRecede;
 
 #define INCORPOREAL_DEPTH_FAR_GAIN float3(50.0, 35.0, 20.0)
 #define INCORPOREAL_DEPTH_NEAR_START -7.0
@@ -64,14 +73,29 @@ float3 IncorporealDepth_Opening(float norm, float3 spread)
     return max(eff - spread, float3(0.0, 0.0, 0.0));
 }
 
-// 0 = at rest, 1 = fully open (the prisms' over-distance), monotone in distance.
-float IncorporealDepth_Openness(float norm, float3 spread)
+// The prisms' ramp alone: 0 = at rest, 1 = fully open (the over-distance), monotone in distance.
+float IncorporealDepth_RampOpenness(float norm, float3 spread)
 {
     float3 full = spread * INCORPOREAL_DEPTH_FAR_GAIN - spread;
     float denom = dot(full, full);
     if (!(denom > 1e-12)) return 0.0;
     float3 o = IncorporealDepth_Opening(norm, spread);
     return saturate(sqrt(dot(o, o) / denom));
+}
+
+// The far side: 1 out to recedeStart, easing to 0 by recedeEnd, smooth in DISTANCE (sqrt of the norm).
+float IncorporealDepth_Recede(float norm)
+{
+    float a = _IncorporealRecede.x;
+    float b = _IncorporealRecede.y;
+    if (!(b > a) || !(a > 0.0)) return 1.0;
+    return 1.0 - smoothstep(sqrt(a), sqrt(b), sqrt(max(norm, 0.0)));
+}
+
+// How open the part is overall: the prisms' ramp coming in, the recede going out.
+float IncorporealDepth_Openness(float norm, float3 spread)
+{
+    return IncorporealDepth_RampOpenness(norm, spread) * IncorporealDepth_Recede(norm);
 }
 
 // The travelling wave: +1 crest .. -1 trough, moving toward +flowCoord.
@@ -114,7 +138,7 @@ void IncorporealDepthOpen_float(float3 PositionOS, float3 NormalOS, float FlowCo
 #if !defined(SHADERGRAPH_PREVIEW)
     float3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
     float norm = IncorporealDepth_Norm(IncorporealDepth_Origin());
-    float3 opening = IncorporealDepth_Opening(norm, spread);
+    float3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);
     Openness = IncorporealDepth_Openness(norm, spread);
     float flow = 1.0 + _IncorporealFlow.x * Openness * IncorporealDepth_Wave(FlowCoord, Phase, Clock);
     Out = PositionOS + NormalOS * (opening / IncorporealDepth_ObjectScale()) * flow;
@@ -139,7 +163,7 @@ void IncorporealDepthPart_float(float3 PositionOS, float3 DirectionOS, float Flo
     float dirLen = length(DirectionOS);
     float3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
     float norm = IncorporealDepth_Norm(IncorporealDepth_Origin());
-    float3 opening = IncorporealDepth_Opening(norm, spread);
+    float3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);
     Openness = IncorporealDepth_Openness(norm, spread);
     if (!(dirLen > 1e-6)) return;
     float amount = max(opening.x, max(opening.y, opening.z));
