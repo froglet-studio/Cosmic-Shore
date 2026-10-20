@@ -160,6 +160,10 @@ namespace CosmicShore.Gameplay
         // the first is still landing must not run the whole entry twice.
         bool _enteringFlight;
 
+        // Whether the screen was NOT the gameplay rig when this flight was asked for (the menu's
+        // own camera). Only then may the preview stand the rig down from the screen.
+        bool _screenCameraWasMenu;
+
         /// <summary>The window this session draws into (null while detached) - what a guided path
         /// spotlights for the player to tap. Nothing outside the window may tap it for them.</summary>
         public ModePreviewWindow Window => _window;
@@ -426,6 +430,7 @@ namespace CosmicShore.Gameplay
         async UniTaskVoid EnterFlightAsync(CancellationToken ct)
         {
             _enteringFlight = true;
+            _screenCameraWasMenu = !GameplayRigIsScreen();
             try
             {
                 var definition = _definition;
@@ -1138,8 +1143,39 @@ namespace CosmicShore.Gameplay
 
             if (remember) _restoreVesselClass = current;
 
+            // The new hull announces itself as the player's vessel (VesselCameraCustomizer ->
+            // OnInitializePlayerCamera -> CameraManager.SetupGamePlayCameras), which makes the
+            // gameplay rig the SCREEN camera. In the menu that is wrong twice over: the menu
+            // loses its own camera, and BeginWindowedPlayerCamera then refuses the loan (it never
+            // lends the rig while it is the screen), so every card whose hull differs from the
+            // menu's failed with "no gameplay camera to lend" (Waystation's Butterfly, Caleb's
+            // 2026-10-20 play test). A preview's swap leaves the screen camera as it found it.
+            bool rigWasScreen = GameplayRigIsScreen();
+
             vesselInitializer.RequestSwap(target);
             await WaitWhile(() => vesselInitializer && vesselInitializer.IsSwapping, ct);
+
+            if (!rigWasScreen) StandGameplayRigDownFromScreen();
+        }
+
+        /// <summary>True while the gameplay rig ("CM PlayerCam") is the camera drawing the screen.</summary>
+        static bool GameplayRigIsScreen()
+        {
+            var manager = CameraManager.Instance;
+            if (!manager) return false;
+            var active = manager.GetActiveController() as CustomCameraController;
+            return active && active.transform == manager.GetCloseCamera();
+        }
+
+        /// <summary>
+        /// Hand the screen back to the menu's scene camera after a swap made the gameplay rig
+        /// the screen view. A rig that is lent to this window keeps drawing into it: the loan
+        /// is re-taken (or ended) by the caller, which owns the window.
+        /// </summary>
+        static void StandGameplayRigDownFromScreen()
+        {
+            var manager = CameraManager.Instance;
+            if (manager && GameplayRigIsScreen()) manager.DeactivateAllCameras();
         }
 
         async UniTask RestoreVessel(CancellationToken ct)
@@ -1157,6 +1193,10 @@ namespace CosmicShore.Gameplay
             var vessel = gameData?.LocalPlayer?.Vessel;
             var texture = _window ? _window.LiveTexture : null;
             if (!manager || !Alive(vessel) || vessel.VesselStatus == null || !texture) return false;
+
+            // The swap's announcement can land after IsSwapping clears; the menu never wants the
+            // rig as its screen camera, so take it down again before asking for the loan.
+            if (_screenCameraWasMenu) StandGameplayRigDownFromScreen();
 
             return manager.BeginWindowedPlayerCamera(vessel.VesselStatus.CameraFollowTarget, texture) != null;
         }

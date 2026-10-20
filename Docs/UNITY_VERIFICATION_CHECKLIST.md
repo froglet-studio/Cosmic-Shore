@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Microgame preview flies a card whose hull differs from the menu's (`claude/training-ftue-mbxf1o`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+Caleb's play test (Bug Ledger E-1eea72bc60): Waystation's FLY showed "LEVEL PREVIEW NOT AVAILABLE",
+then a black window; console `[ModePreview] Could not enter flight: no gameplay camera to lend.`
+Cause: the preview swaps to the card's hull (the Butterfly) before borrowing the camera; the new hull
+raises OnInitializePlayerCamera, `CameraManager.SetupGamePlayCameras` makes the gameplay rig the
+screen camera, and since 3ab5b8b6e (10-19) `BeginWindowedPlayerCamera` refuses to lend the rig while
+it is the screen. Fix in `ModePreviewSession`: a preview's own hull swap hands the screen back to the
+menu camera (`DeactivateAllCameras`) when the rig was not the screen before it, on the way in and on
+both restores. `CameraManager` is unchanged (Garrett's). No editor in the session.
+
+**Verify in editor:**
+1. Menu_Main, open Waystation (Butterfly), press FLY: the window flies the Butterfly; no
+   "no gameplay camera to lend" error and no "[CameraManager] A windowed camera was asked for" warning.
+2. Tap out of the window and back in, then close the card: the menu's own camera view returns (no
+   gameplay chase view full screen, no "No cameras rendering").
+3. A card on the menu's own hull (Breakwater) still flies as before.
+4. Freestyle (lava lamp) still has its camera after a Hangar TRY (the 10-19 case 3ab5b8b6e fixed).
+
 ### 🔴 Tutorial back on: first-login guide, Lesson, ghost demo and Mentor run by default (`claude/training-ftue-mbxf1o`, 2026-10-19) — NOT EDITOR-VERIFIED
 
 Undoes the data switch-off of 2026-10-15 (`736092ba2`, `Docs/MENU_REDESIGN_B.md` §29) on Caleb's
