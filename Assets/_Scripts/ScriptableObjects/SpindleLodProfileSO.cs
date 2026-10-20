@@ -25,6 +25,21 @@ namespace CosmicShore.ScriptableObjects
     {
         public const string ResourcePath = "SpindleLodProfile";
 
+        /// <summary>How the LOD shows itself (Docs/SPINDLE_LOD.md §2 and §7).</summary>
+        public enum Style
+        {
+            /// <summary>The LOD hides itself: bands in girths, the braid converges into one thread.</summary>
+            Covert = 0,
+            /// <summary>The LOD IS the effect: in lockstep with the prisms' squared-distance ramp, the braid
+            /// opens face by face as hard as danger mass and a wave travels through it
+            /// (<c>IncorporealDepth.hlsl</c>, tuned on <c>Resources/IncorporealDepth</c>).</summary>
+            Overt = 1,
+        }
+
+        [Header("Style")]
+        [Tooltip("COVERT hides the LOD (the braid converges into a thread; bands below in girths). OVERT makes it the effect: the tiers swap exactly where the prisms' own depth ramp says the braid is closed or fully open, and the braid opens like danger mass with a wave running through it (bands from the prisms + the overt fade below; the look on Resources/IncorporealDepth). Switchable in Play.")]
+        public Style style = Style.Overt;
+
         [Header("System")]
         [Tooltip("Master switch. OFF returns every spindle to its authored braid and stops the system - the kill switch if a tier ever looks wrong in play.")]
         public bool lodEnabled = true;
@@ -56,6 +71,13 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("...and is gone here, where it stops being drawn at all (zero cost).")]
         [Min(1f)] public float farFadeEndGirths = 1900f;
+
+        [Header("Overt fade (the prisms' normalised squared distance: 1 = fully open, ~316 units)")]
+        [Tooltip("OVERT: where the opened braid starts fading out, in units of the prisms' ramp (d^2 / _SqrDistance). 16 = 4x the ramp's distance, ~1,265 units.")]
+        [Min(1.01f)] public float overtFadeStartNorm = 16f;
+
+        [Tooltip("OVERT: where it is gone and stops being drawn. 36 = 6x the ramp's distance, ~1,900 units.")]
+        [Min(1.02f)] public float overtFadeEndNorm = 36f;
 
         [Header("The thread's look")]
         [Tooltip("The narrowest a thread is ever DRAWN, in screen pixels. Thinner geometry rasterises as broken, sparkling dots; past this width the thread is drawn wider and its alpha pays for the difference (coverage), so it reads as a continuous line of the right brightness.")]
@@ -147,6 +169,8 @@ namespace CosmicShore.ScriptableObjects
             else if (!(ConvergeEndGirths > convergeStartGirths)) why = "midEnd x (1 - hysteresis) must exceed convergeStart";
             else if (!(farFadeStartGirths > midEndGirths)) why = "farFadeStart must exceed midEnd";
             else if (!(farFadeEndGirths > farFadeStartGirths)) why = "farFadeEnd must exceed farFadeStart";
+            else if (!(overtFadeStartNorm > 1f / (1f - hysteresis))) why = "overtFadeStart must lie past the over-distance band (1 / (1 - hysteresis))";
+            else if (!(overtFadeEndNorm > overtFadeStartNorm)) why = "overtFadeEnd must exceed overtFadeStart";
             return why == null;
         }
 

@@ -29,6 +29,8 @@ WHAT THIS WRITES (Assets/_Models/Spindles/):
                           the CONVERGENCE geomorph the mid tier runs:
                             TEXCOORD1.xyz  centreline point minus this ring's strand centre
                             TEXCOORD2.xyz  this vertex minus its strand centre (its radial arm)
+                            TEXCOORD3.xyz  its strand's SPLAY: the unit direction the strand's tip
+                                           leans off the centreline (the overt style fans along it)
                           so `SpindleLod.hlsl` can draw the three strands together into one thread
                           as the camera pulls away, continuously, with no pop.
   SpindleThreadFar.asset  what the braid converges TO: ONE faceted thread of triangular cross-
@@ -247,6 +249,15 @@ def build_mid(pos, quads, m):
     look = _corner_lookup(quads)
     out = {"v": [], "t": []}
     faces = ((0, 1), (1, 2), (2, 0))
+    # Each strand's SPLAY: the unit direction its tip already leans away from the centreline (the
+    # authored braid splays 0.69 there). The overt style fans a strand along it, root-anchored, so the
+    # effect amplifies a shape the braid already has instead of inventing one. One constant per
+    # strand: a direction that turned with the spiral would curl a parted strand into a coil.
+    tip = RINGS - 1
+    splay = []
+    for s in range(STRANDS):
+        d = _sub(m["centres"][s][tip], m["centreline"][tip])
+        splay.append(_norm((d[0], d[1], 0.0)))
     for s in range(STRANDS):
         for a, b in zip(MID_RINGS, MID_RINGS[1:]):
             for c0, c1 in faces:
@@ -257,7 +268,7 @@ def build_mid(pos, quads, m):
                     centre = m["centres"][s][ring]
                     to_axis = _sub(m["centreline"][ring], centre)
                     radial = _sub(pos[v], centre)
-                    corners.append((pos[v], n, uv, to_axis, radial))
+                    corners.append((pos[v], n, uv, to_axis, radial, splay[s]))
                 _emit_quad(out, corners)
     return out
 
@@ -288,7 +299,7 @@ def build_far(m):
             v0 = c0 / 2.0
             v1 = 1.0 if c1 == 0 else c1 / 2.0
             uvs = [(u0, v0), (u0, v1), (u1, v1), (u1, v0)]
-            corners = [(p, n, uv, (0.0, 0.0, 0.0), radial) for (p, radial), uv in zip(quad, uvs)]
+            corners = [(p, n, uv, (0.0, 0.0, 0.0), radial, (0.0, 0.0, 0.0)) for (p, radial), uv in zip(quad, uvs)]
             _emit_quad(out, corners)
     return out
 
@@ -308,19 +319,19 @@ def _v3(a):
 def mesh_text(mesh, name):
     verts = mesh["v"]
     tris = mesh["t"]
-    tangent_input = [(p, n, uv) for p, n, uv, _, _ in verts]
+    tangent_input = [(p, n, uv) for p, n, uv, _, _, _ in verts]
     tangents = compute_tangents(tangent_input, tris)
     vbuf = bytearray()
-    for (p, n, uv, uv1, uv2), t in zip(verts, tangents):
-        # stride 72: position, normal, tangent, uv0, then TEXCOORD1.xyz and TEXCOORD2.xyz.
-        vbuf += struct.pack("<3f3f4f2f3f3f", *p, *n, *t, *uv, *uv1, *uv2)
+    for (p, n, uv, uv1, uv2, uv3), t in zip(verts, tangents):
+        # stride 84: position, normal, tangent, uv0, then TEXCOORD1/2/3.xyz.
+        vbuf += struct.pack("<3f3f4f2f3f3f3f", *p, *n, *t, *uv, *uv1, *uv2, *uv3)
     indices = [i for tri in tris for i in tri]
     ibuf = struct.pack("<%dH" % len(indices), *indices)
     lo = [min(v[0][k] for v in verts) for k in range(3)]
     hi = [max(v[0][k] for v in verts) for k in range(3)]
     ctr = [(lo[k] + hi[k]) / 2 for k in range(3)]
     ext = [(hi[k] - lo[k]) / 2 for k in range(3)]
-    used = {0: (0, 3), 1: (12, 3), 2: (24, 4), 4: (40, 2), 5: (48, 3), 6: (60, 3)}
+    used = {0: (0, 3), 1: (12, 3), 2: (24, 4), 4: (40, 2), 5: (48, 3), 6: (60, 3), 7: (72, 3)}
     channels = "".join(
         "    - stream: 0\n      offset: %d\n      format: 0\n      dimension: %d\n"
         % used.get(i, (0, 0)) for i in range(14))
@@ -391,6 +402,7 @@ MonoBehaviour:
   m_Script: {{fileID: 11500000, guid: {script}, type: 3}}
   m_Name: SpindleLodProfile
   m_EditorClassIdentifier:
+  style: 1
   lodEnabled: 1
   tickIntervalSeconds: 0.2
   maxTransitionsPerFrame: 384
@@ -401,6 +413,8 @@ MonoBehaviour:
   convergeStartGirths: 110
   farFadeStartGirths: 1300
   farFadeEndGirths: 1900
+  overtFadeStartNorm: 16
+  overtFadeEndNorm: 36
   minThreadPixels: 1.25
   threadBase: 0.35
   threadFacet: 0.55
@@ -455,7 +469,7 @@ def validate(pos, quads, m, mid, far):
             if _dot(_cross(_sub(p[1], p[0]), _sub(p[2], p[0])), n) <= 0.0:
                 errs.append(f"{name}: a triangle faces away from its own normals")
                 break
-        for p, _, _, to_axis, radial in mesh["v"]:
+        for p, _, _, to_axis, radial, _ in mesh["v"]:
             # The geomorph's whole contract: the vertex = strand centre + radial, and the strand
             # centre + to_axis lies on the centreline (x = y = 0, within the measured axis offset).
             centre = _sub(p, radial)
@@ -463,6 +477,9 @@ def validate(pos, quads, m, mid, far):
             if math.hypot(target[0], target[1]) > m["axis_off"] + 1e-6:
                 errs.append(f"{name}: a vertex's convergence target is off the centreline")
                 break
+    splays = {tuple(round(c, 6) for c in v[5]) for v in mid["v"]}
+    if len(splays) != STRANDS or any(abs(_len(s) - 1.0) > 1e-5 for s in splays):
+        errs.append(f"mid: expected {STRANDS} unit splay directions, found {len(splays)}")
     if len(mid["t"]) != STRANDS * (len(MID_RINGS) - 1) * CORNERS * 2:
         errs.append(f"mid: {len(mid['t'])} triangles")
     if len(far["t"]) != (len(FAR_RINGS) - 1) * CORNERS * 2:
@@ -536,7 +553,7 @@ def self_test():
     failures += not any("faces away" in e for e in validate(pos, quads, m, bad, far))
     # 2. A convergence target pushed off the centreline must be caught.
     v0 = mid["v"][0]
-    bad = {"v": [(v0[0], v0[1], v0[2], _add(v0[3], (0.1, 0.0, 0.0)), v0[4])] + mid["v"][1:], "t": mid["t"]}
+    bad = {"v": [(v0[0], v0[1], v0[2], _add(v0[3], (0.1, 0.0, 0.0)), v0[4], v0[5])] + mid["v"][1:], "t": mid["t"]}
     failures += not any("off the centreline" in e for e in validate(pos, quads, m, bad, far))
     # 3. A mid vertex that is not one of the braid's own (the lace would move) must be caught.
     bad = {"v": [((v0[0][0] + 0.01, v0[0][1], v0[0][2]),) + v0[1:]] + mid["v"][1:], "t": mid["t"]}

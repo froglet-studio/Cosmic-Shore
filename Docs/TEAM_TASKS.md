@@ -1192,15 +1192,22 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/SPINDLE_LOD.md §4-5; T-20261015-56dd
 
 ### T-20261020-09fe · open · decision · Performance
-- **Task:** Judge the far spindle look in Unity and tune it on Resources/SpindleLodProfile: threadGlow (1.35), threadBase/threadFacet (0.35/0.55), minThreadPixels (1.25), and how far threads stay (farFadeStart/End 1300/1900 girths, ~1,800/2,660 units for a flora branch). Keep, tune, or shorten the reach for mobile.
-- **Done when:** The profile values are play-tuned and the decision is noted in Docs/SPINDLE_LOD.md §2
+- **Task:** Pick the spindle LOD style and tune it in Unity. Resources/SpindleLodProfile > style: OVERT (default; the braid fans open on the prisms' own depth ramp, as far as danger prisms' faces travel, with a wave running root to tip - tune it on Resources/IncorporealDepth: strength 1, flowAmplitude 0.35, flowWaves 1.5, flowSpeed 0.6, pulseGlow 0.8; fade overtFadeStart/End 16/36 norm, ~1,265/1,900 units) or COVERT (the braid converges into a thread nobody notices; threadGlow 1.35, minThreadPixels 1.25, farFadeStart/End 1300/1900 girths). The style switches live in Play. Preview without Unity: python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert.
+- **Done when:** One style is chosen, its values play-tuned, and the decision noted in Docs/SPINDLE_LOD.md §7
 - **Who can take it:** Garrett (spindles, product look)
 - **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
 - **See:** Docs/SPINDLE_LOD.md §2 'The far look'
 
 ### T-20261020-1fd6 · open · dev · Amoebius
-- **Task:** Amoebius: draw the spindle LOD graphs. Port SpindleLodVertex_float, SpindleLodSurface_float and SpindleLodThread_float (Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl) into the engine's GLSL custom-function library, declare the globals _SpindleLodBands/_SpindleLodLook/_SpindleLodLook2, and map the SpindleLodMidGraph / SpindleLodFarGraph guids to the Spindle family in MaterialFamilies.ByGuid. Also: Graphics.RenderMeshInstanced records instanceData without honouring startInstance (a chunked call redraws the first chunk), and NativeList.AsArray copies instead of aliasing.
+- **Task:** Amoebius: draw the spindle LOD graphs. Port SpindleLodVertex_float, SpindleLodSurface_float and SpindleLodThread_float (Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl) and the shared IncorporealDepth.hlsl it includes (IncorporealDepthOpen/Part/Glow - the depth effect every incorporeal part will share) into the engine's GLSL custom-function library, declare the globals _SpindleLodBands/_SpindleLodLook/_SpindleLodLook2/_IncorporealSpread/_IncorporealFlow, and map the SpindleLodMidGraph / SpindleLodFarGraph guids to the Spindle family in MaterialFamilies.ByGuid. Also: Graphics.RenderMeshInstanced records instanceData without honouring startInstance (a chunked call redraws the first chunk), NativeList.AsArray copies instead of aliasing, and Vector4 has no [] indexer (Unity's does).
 - **Done when:** A Menu_Main run under xvfb draws mid and far spindles with no untranslated-shader warning
 - **Who can take it:** Shombith (the Amoebius engine)
 - **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
 - **See:** Docs/SPINDLE_LOD.md §5; Port/src/CosmicShore.Content/Shaders/ShaderGraphCompiler.cs EmitCustomFunction
+
+### T-20261020-3b39 · open · decision · Ecology
+- **Task:** Give the rest of the HyperSea's incorporeal parts the spindles' depth effect (Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl, tuned on Resources/IncorporealDepth, published by Utility/IncorporealDepth): snow shards (SnowGraph, drawn instanced by SnowChanger), the toy switch rings, the cell membrane and the nucleus. Per surface: per-FACE form (IncorporealDepthOpen, prism-exact; needs split normals - shards, switches) or per-PART form (IncorporealDepthPart along a direction - membrane panels, nucleus shells), a Strength, and IncorporealDepthGlow in the fragment. Decide the order and who owns each graph, then wire them (each is a wire_*.py splice like Tools/Shaders/wire_spindle_lod.py).
+- **Done when:** Each chosen surface opens on the prisms' ramp with the shared wave, verified in Unity
+- **Who can take it:** Garrett (decides; membrane/nucleus owner), Yash (snow shards, L6), the toy-system owner (switches)
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §7.4

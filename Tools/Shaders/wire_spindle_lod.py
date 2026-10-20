@@ -62,6 +62,7 @@ UV_DONOR = "Assets/_Graphics/Materials/Lifeform_World_Shader Graphs/CreatureText
 NORMAL_DONOR = f"{GRAPH_DIR}/TimeCrystalGraph.shadergraph"
 VIEW_DONOR = f"{GRAPH_DIR}/ShepardGraph.shadergraph"
 
+SPACE_OBJECT = 0
 SPACE_WORLD = 2
 
 
@@ -70,6 +71,8 @@ def guid_for(name):
 
 
 HLSL_GUID = guid_for("SpindleLod.hlsl")
+INCORPOREAL_HLSL = f"{GRAPH_DIR}/IncorporealDepth.hlsl"
+INCORPOREAL_GUID = guid_for("IncorporealDepth.hlsl")
 TIERS = {
     "mid": dict(graph="SpindleLodMidGraph", material="SpindleLodMid"),
     "far": dict(graph="SpindleLodFarGraph", material="SpindleLodFar"),
@@ -82,19 +85,23 @@ NEW_PROPS = [("SpindleLodGirth", "_SpindleLodGirth"), ("SpindleLodStrand", "_Spi
 
 # (slot id, name, kind, is_output) - order IS the HLSL signature.
 VERTEX_SLOTS = [
-    (0, "PositionOS", "v3", False), (1, "ToAxis", "v3", False), (2, "Radial", "v3", False),
-    (3, "Girth", "v1", False), (4, "StrandRadius", "v1", False), (5, "Out", "v3", True),
+    (0, "PositionOS", "v3", False), (1, "NormalOS", "v3", False), (2, "UV", "v3", False),
+    (3, "ToAxis", "v3", False), (4, "Radial", "v3", False), (5, "Splay", "v3", False),
+    (6, "Girth", "v1", False), (7, "StrandRadius", "v1", False), (8, "Phase", "v1", False),
+    (9, "Clock", "v1", False), (10, "Out", "v3", True),
 ]
 SURFACE_SLOTS = [
     (0, "LaceColor", "v3", False), (1, "LaceAlpha", "v1", False), (2, "Dull", "v3", False),
     (3, "Bright", "v3", False), (4, "DeathState", "v1", False), (5, "NormalWS", "v3", False),
-    (6, "ViewWS", "v3", False), (7, "Girth", "v1", False), (8, "StrandRadius", "v1", False),
-    (9, "Color", "v3", True), (10, "Alpha", "v1", True),
+    (6, "ViewWS", "v3", False), (7, "UV", "v3", False), (8, "Girth", "v1", False),
+    (9, "StrandRadius", "v1", False), (10, "Phase", "v1", False), (11, "Clock", "v1", False),
+    (12, "Color", "v3", True), (13, "Alpha", "v1", True),
 ]
 THREAD_SLOTS = [
     (0, "Dull", "v3", False), (1, "Bright", "v3", False), (2, "DeathState", "v1", False),
-    (3, "NormalWS", "v3", False), (4, "ViewWS", "v3", False), (5, "Girth", "v1", False),
-    (6, "StrandRadius", "v1", False), (7, "Color", "v3", True), (8, "Alpha", "v1", True),
+    (3, "NormalWS", "v3", False), (4, "ViewWS", "v3", False), (5, "UV", "v3", False),
+    (6, "Girth", "v1", False), (7, "StrandRadius", "v1", False), (8, "Phase", "v1", False),
+    (9, "Clock", "v1", False), (10, "Color", "v3", True), (11, "Alpha", "v1", True),
 ]
 FUNCTIONS = {"SpindleLodVertex": VERTEX_SLOTS, "SpindleLodSurface": SURFACE_SLOTS, "SpindleLodThread": THREAD_SLOTS}
 
@@ -185,9 +192,10 @@ def build(tier):
     assert sway is not None and death is not None, "SpindleGraph lost its sway or death clock"
 
     phase = find_property(docs, "Phase")
+    clock = find_property(docs, "PrismClock")
     dull = find_property(docs, "DullColor")
     bright = find_property(docs, "BrightColor")
-    assert phase and dull and bright, "SpindleGraph lost Phase / DullColor / BrightColor"
+    assert phase and dull and bright and clock, "SpindleGraph lost Phase / PrismClock / DullColor / BrightColor"
     phase_pn = property_node_for(docs, phase["m_ObjectId"])
     dull_pn = property_node_for(docs, dull["m_ObjectId"])
     donor_v1 = idx[phase_pn["m_Slots"][0]["m_Id"]]
@@ -223,6 +231,7 @@ def build(tier):
     uv_docs = load_docs(os.path.join(REPO, UV_DONOR))
     uv1 = add(_simple_node(uv_docs, "UVNode", f"{seed}/uv1", bx, by, m_OutputChannel=1))
     uv2 = add(_simple_node(uv_docs, "UVNode", f"{seed}/uv2", bx, by + 140.0, m_OutputChannel=2))
+    uv3 = add(_simple_node(uv_docs, "UVNode", f"{seed}/uv3", bx, by + 600.0, m_OutputChannel=3))
 
     def lod_props(x, y, tag):
         g = add(_property_node(phase_pn, donor_v1, prop_oids["SpindleLodGirth"], "SpindleLodGirth", f"{seed}/{tag}/girth", x, y))
@@ -230,23 +239,31 @@ def build(tier):
         return g, s
 
     vg, vs = lod_props(bx, by + 300.0, "v")
+    normal_docs = load_docs(os.path.join(REPO, NORMAL_DONOR))
+    view_docs = load_docs(os.path.join(REPO, VIEW_DONOR))
+    nrm_os = add(_simple_node(normal_docs, "NormalVectorNode", f"{seed}/normalOS", bx, by - 300.0, m_Space=SPACE_OBJECT))
+    uv0 = add(_simple_node(uv_docs, "UVNode", f"{seed}/uv0", bx, by - 160.0, m_OutputChannel=0))
+    vphase = add(_property_node(phase_pn, donor_v1, phase["m_ObjectId"], "Phase", f"{seed}/v/phase", bx, by + 420.0))
+    vclock = add(_property_node(phase_pn, donor_v1, clock["m_ObjectId"], "PrismClock", f"{seed}/v/clock", bx, by + 480.0))
     vcf = add(_cf(find_cf(docs, "PrismDeathClock"), donor_v1, donor_v3, "SpindleLodVertex", seed, bx + 420.0, by + 60.0))
 
     # Position -> SpindleLodVertex -> SpindleSway.PositionOS (the old direct edge is replaced).
     graph["m_Edges"].remove(pos_edge)
-    for src, slot in ((pos_node, 0), (uv1, 1), (uv2, 2), (vg, 3), (vs, 4)):
+    for src, slot in ((pos_node, 0), (nrm_os, 1), (uv0, 2), (uv1, 3), (uv2, 4), (uv3, 5), (vg, 6), (vs, 7),
+                      (vphase, 8), (vclock, 9)):
         graph["m_Edges"].append(edge(src["m_ObjectId"], 0, vcf["m_ObjectId"], slot))
-    graph["m_Edges"].append(edge(vcf["m_ObjectId"], 5, sway["m_ObjectId"], 0))
+    graph["m_Edges"].append(edge(vcf["m_ObjectId"], 10, sway["m_ObjectId"], 0))
 
     # Fragment.
     fx, fy = -3300.0, 2600.0
-    normal_docs = load_docs(os.path.join(REPO, NORMAL_DONOR))
-    view_docs = load_docs(os.path.join(REPO, VIEW_DONOR))
     nrm = add(_simple_node(normal_docs, "NormalVectorNode", f"{seed}/normal", fx, fy, m_Space=SPACE_WORLD))
     view = add(_simple_node(view_docs, "ViewDirectionNode", f"{seed}/view", fx, fy + 140.0, m_Space=SPACE_WORLD))
     dpn = add(_property_node(dull_pn, donor_color_slot, dull["m_ObjectId"], "DullColor", f"{seed}/dull", fx, fy + 300.0))
     bpn = add(_property_node(dull_pn, donor_color_slot, bright["m_ObjectId"], "BrightColor", f"{seed}/bright", fx, fy + 360.0))
     fg, fs = lod_props(fx, fy + 440.0, "f")
+    fuv0 = add(_simple_node(uv_docs, "UVNode", f"{seed}/fuv0", fx, fy + 560.0, m_OutputChannel=0))
+    fphase = add(_property_node(phase_pn, donor_v1, phase["m_ObjectId"], "Phase", f"{seed}/f/phase", fx, fy + 700.0))
+    fclock = add(_property_node(phase_pn, donor_v1, clock["m_ObjectId"], "PrismClock", f"{seed}/f/clock", fx, fy + 760.0))
 
     base_block = _block(docs, "SurfaceDescription.BaseColor")
     alpha_block = _block(docs, "SurfaceDescription.Alpha")
@@ -264,14 +281,16 @@ def build(tier):
                  ((alpha_edge["m_OutputSlot"]["m_Node"]["m_Id"], alpha_edge["m_OutputSlot"]["m_SlotId"]), 1),
                  ((dpn["m_ObjectId"], 0), 2), ((bpn["m_ObjectId"], 0), 3),
                  ((death["m_ObjectId"], 5), 4), ((nrm["m_ObjectId"], 0), 5), ((view["m_ObjectId"], 0), 6),
-                 ((fg["m_ObjectId"], 0), 7), ((fs["m_ObjectId"], 0), 8)]
-        color_out, alpha_out = 9, 10
+                 ((fuv0["m_ObjectId"], 0), 7), ((fg["m_ObjectId"], 0), 8), ((fs["m_ObjectId"], 0), 9),
+                 ((fphase["m_ObjectId"], 0), 10), ((fclock["m_ObjectId"], 0), 11)]
+        color_out, alpha_out = 12, 13
     else:
         scf = add(_cf(death, donor_v1, donor_v3, "SpindleLodThread", seed, fx + 460.0, fy))
         feeds = [((dpn["m_ObjectId"], 0), 0), ((bpn["m_ObjectId"], 0), 1), ((death["m_ObjectId"], 5), 2),
-                 ((nrm["m_ObjectId"], 0), 3), ((view["m_ObjectId"], 0), 4),
-                 ((fg["m_ObjectId"], 0), 5), ((fs["m_ObjectId"], 0), 6)]
-        color_out, alpha_out = 7, 8
+                 ((nrm["m_ObjectId"], 0), 3), ((view["m_ObjectId"], 0), 4), ((fuv0["m_ObjectId"], 0), 5),
+                 ((fg["m_ObjectId"], 0), 6), ((fs["m_ObjectId"], 0), 7),
+                 ((fphase["m_ObjectId"], 0), 8), ((fclock["m_ObjectId"], 0), 9)]
+        color_out, alpha_out = 10, 11
     for (src, src_slot), dst_slot in feeds:
         graph["m_Edges"].append(edge(src, src_slot, scf["m_ObjectId"], dst_slot))
     graph["m_Edges"].append(edge(scf["m_ObjectId"], color_out, base_block["m_ObjectId"], base_slot))
@@ -417,7 +436,8 @@ def material_text(tier):
 
 
 def outputs():
-    files = {HLSL + ".meta": HLSL_META.format(guid=HLSL_GUID)}
+    files = {HLSL + ".meta": HLSL_META.format(guid=HLSL_GUID),
+             INCORPOREAL_HLSL + ".meta": HLSL_META.format(guid=INCORPOREAL_GUID)}
     errs = hlsl_errors()
     for tier, t in TIERS.items():
         docs = build(tier)

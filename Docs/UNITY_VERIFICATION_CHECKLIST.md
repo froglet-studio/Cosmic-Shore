@@ -12764,3 +12764,9 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
    of a grown forest under "instanced".
 5. A plant that dies far away still withers outside-in (its limbs leave the instanced batch for their fade).
 6. `Resources/SpindleLodProfile` > untick `lodEnabled` in Play: every limb returns to the authored braid at once.
+7. (Round 2) Fly the vessel through the Lattice (Cell Selector > Lattice): no plant shows straight "star" threads
+   and braids at the same time (the camera fix). With `style` OVERT (default): limbs within ~180 units are the plain
+   braid; from ~180 to ~316 their strands fan open from the root as the prisms' faces part; beyond, fully fanned and
+   rippling root to tip, a glow riding the ripple; gone by ~1,900. Switch `style` to COVERT in Play: everything
+   returns to the braid and re-tiers within a fraction of a second. EditMode `SpindleLodTests` (now 9 tests,
+   including the overt lockstep and `ShippedIncorporealDepth_ReadsTheDangerPrism`) all pass.

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2752eb76f9dbc45b6da7297e4b92ad42, type: 3}
   m_Name: SpindleLodProfile
   m_EditorClassIdentifier:
+  style: 1
   lodEnabled: 1
   tickIntervalSeconds: 0.2
   maxTransitionsPerFrame: 384
@@ -22,6 +23,8 @@ MonoBehaviour:
   convergeStartGirths: 110
   farFadeStartGirths: 1300
   farFadeEndGirths: 1900
+  overtFadeStartNorm: 16
+  overtFadeEndNorm: 36
   minThreadPixels: 1.25
   threadBase: 0.35
   threadFacet: 0.55

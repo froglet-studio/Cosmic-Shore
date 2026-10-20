@@ -1,9 +1,18 @@
 # Spindle LOD — the braid, the drawing-together, the thread
 
-**Owner:** Garrett (spindles, ecology look). **Status (2026-10-20):** built on `cece/gallant-keller-6mr1u4`,
-compiled (Unity reference compile, player and editor; Amoebius live build), the shader's contract proven by
-compiling the shipped HLSL, the runtime run in Amoebius. **Not yet opened in Unity**: the two new graphs have not
-been imported by the Shader Graph importer and nobody has looked at the tiers. See *What is not verified*.
+**Owner:** Garrett (spindles, ecology look). **Status (2026-10-20, round 2):** built on `cece/gallant-keller-6mr1u4`.
+Two styles on one set of meshes (`SpindleLodProfileSO.style`, live-switchable): **COVERT** (§2, the first round:
+the LOD hides itself) and **OVERT** (§7, the default since round 2: the LOD IS the effect, in lockstep with the
+prisms' own depth ramp, through the shared `IncorporealDepth.hlsl`). Compiled (Unity reference compile, Amoebius),
+the shader contracts proven by compiling the shipped HLSL (12 mutants caught), the runtime run in Amoebius, the look
+previewed offline from the shipped shader code (§7.3). The graphs have still not been through Unity's importer.
+
+**Round 1's play bug, fixed.** Garrett, Lattice cell, in flight: one gyroid showed its limbs' near AND far forms
+at once (the far thread as bright straight "stars" through every prism, braids around them). Cause: the system
+tiered by `Camera.main`, which in flight is Bootstrap's MainCamera-tagged menu camera and never follows the vessel
+(the depth prisms froze from the same mistake; `CameraManager.ViewCamera` exists for it). Limbs near the vessel were
+classified by their distance from a fixed point and handed the far mesh, while the shader blended for the real
+camera. Fixed by tiering from `CameraManager.ViewCamera`.
 
 ## 1. Why
 
@@ -44,7 +53,7 @@ long and ~1.4 across, so its sphere is big at the very distance its three strand
 **girths**: camera distance over the braid's world-space width. That unit means the same picture on a gyroid
 branch, a lattice-stretched limb (a stretch along the length leaves the girth alone) and a tadpole body.
 
-## 2. The tiers
+## 2. The tiers (the COVERT style; OVERT is §7)
 
 | tier | girths (default) | mesh | shader | draws |
 |---|---|---|---|---|
@@ -103,7 +112,9 @@ these is a dial on the profile — **the look is Garrett's call** (see the open 
 | `Assets/_Models/Spindles/` | `SpindleBraidMid.asset`, `SpindleThreadFar.asset`, baked by `Tools/Build/author_spindle_lod_meshes.py` (`--check`, `--report`, `--self-test`). |
 | `SpindleLodMidGraph` / `SpindleLodFarGraph` | Generated FROM SpindleGraph by `Tools/Shaders/wire_spindle_lod.py` (`--check` is the drift gate: edit SpindleGraph, re-run it). SpindleGraph itself is not touched — it also draws BranchingMembrane and the Sparrow's exhaust projectile. |
 | `SpindleLodMid.mat` / `SpindleLodFar.mat` | Template materials: SpindleMaterial with the shader swapped. They exist so the BUILD keeps the shader variants the runtime clones use (`_ALPHATEST_ON`, `_SURFACE_TYPE_TRANSPARENT`, instancing). Runtime LOD materials clone them and copy each limb's phase-variant colours, sway and phase. |
-| `Tools/Shaders/verify_spindle_lod.py` | Compiles the shipped `SpindleLod.hlsl` with clang and proves: pass-through when unset, the near→mid and mid→far hand-offs, the width hold and its coverage, the fades, monotone convergence. `--self-test`: 6 mutants, all caught. |
+| `Tools/Shaders/verify_spindle_lod.py` | Compiles the shipped `SpindleLod.hlsl` + `IncorporealDepth.hlsl` with clang and proves: pass-through when unset, the near→mid and mid→far hand-offs in both styles, the width hold and its coverage, the fades; for OVERT, the opening against an independent transcription of SpreadSubGraph at every distance, exact rest up close, the danger magnitudes, world units under scale, the root-anchored fan, motion only while open. `--self-test`: 12 mutants, all caught. |
+| `Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl`, `Resources/IncorporealDepth`, `Utility/IncorporealDepth.cs` | The shared depth effect of the incorporeal parts (§7), its tuning, and its publisher. |
+| `Tools/Shaders/render_spindle_lod_preview.py` | The offline preview from the shipped shader code (§7.3). |
 | `Assets/_Scripts/Tests/Editor/SpindleLodTests.cs` | Tier hysteresis, band order, the cull edge, and `ShippedProfile_IsSaneAndMeasured`, which checks the LOD meshes against the braid Unity actually imported. |
 
 **Telemetry.** `renderers` (HUD console) appends `spindle LOD: N limbs - near · mid · far own + instanced ·
@@ -140,11 +151,82 @@ Amoebius's own FBX importer passes the same check.
 
 ## 6. Known limits
 
-- Tiering follows `Camera.main`. A second camera (the Third Eye, a minimap) sees the main camera's meshes; the
-  shader still blends for its own distance, so it is never wrong, only less efficient.
+- Tiering follows `CameraManager.ViewCamera` (the camera the player looks through). A second camera (the Third Eye,
+  a minimap) sees that camera's meshes; the shader still blends for its own distance.
 - The instanced batch is culled by one box per material, not per limb; instances off screen still run 24-triangle
   vertex work. Per-instance culling is the next step if a capture asks for it.
 - A limb that moves never batches (a creature's body would lag its creature). Tadpoles and other moving users of
   the braid mesh still get the mid and far meshes on their own renderers.
 - The ordered wither, the tree links, the sway constants handed to prisms (`PrismSway`) and the death fades are
   unchanged; a fading limb leaves the batch for its fade.
+
+## 7. OVERT: the LOD as an effect, in lockstep with the prisms
+
+Garrett, round 2: *"explore an overt approach ... instead of trying to disguise the LOD, lean in and make it into a
+really cool effect that signals this mass is still alive because it has spindles moving through it. Its depth
+effects should be even stronger than the base prisms and on par with the danger prisms."* And: *"the model LOD
+should work in lockstep with a sqrdistance shader effect that ranges like the prisms. Then we can use the same
+shader effects on the shards and switches, membranes, and nucleus to give a connection between the incorporeal
+parts of the hypersea."*
+
+### 7.1 The prisms' depth effect, measured
+
+Traced out of BlockGraph (`DistanceSpreadAndColors` + `SpreadSubGraph`; `Docs/SWARM_FAUNA.md` §15 traced the same):
+`norm = |objectOrigin − camera|² / _SqrDistance` (100,000 on every prism material: the ramp ends at ~316 units),
+`far = _Spread × (50, 35, 20)`, `eff = norm > 1 ? far : lerp(−7, far, norm)`, `eff = max(eff, _Spread)`, and each
+face moves `eff / objectScale` along its normal. Base prisms (`PrismMaterial`, spread 0.1) open (5, 3.5, 2) units;
+**danger** prisms (`DangerBlockMaterial`, the theme's `OriginalMaterialSet` tier, spread 0.09/0.29/0.8) open
+(4.5, 10.2, 16). The incorporeal parts READ the danger tier (`Resources/IncorporealDepth.tierMaterialSet`), so a
+prism retune moves them too, and `strength` (1) scales it ("on par with danger"; above 1, stronger).
+
+### 7.2 What the spindle does with it
+
+- **The same ramp, less the resting spread**: `opening = eff − spread`, so up close the opening is exactly zero and
+  the braid is exactly SpindleGraph's. The first axis starts opening at norm 0.339 (~184 units for the danger tier);
+  everything is fully open at norm 1 (~316 units).
+- **The braid's parts are its STRANDS, and they FAN.** Each strand moves along its own splay (TEXCOORD3: the way its
+  tip already leans off the centreline), anchored at the root and reaching the danger face travel (15.2 units) at
+  the tip. The limb blooms like a whisk opening and stays a bond to the node it grows from.
+- **Alive**: a wave travels root to tip (`flowWaves` crests, `flowSpeed` crests/s), breathing the fan ±`flowAmplitude`
+  and lighting a pulse on its crest (`pulseGlow`), both in proportion to how open the limb is (a closed limb is
+  still).
+- **Lockstep tiers**, in the prisms' norm: near → mid at the ramp's first opening (both tiers closed inside the
+  hysteresis band below it); mid → far at 1 / (1 − hysteresis), so the far tier's inward edge is norm 1 (both fully
+  open inside the band above it); the lace closes into the thread shading on the opening's own schedule. The far
+  tier draws the SAME 144-triangle braid the mid tier does. A fully opened strand travels 15 units, so the two
+  tiers must open identically: the 5-ring alternative (72 tris) already sits 0.19 units off the 9-ring braid
+  before opening, and its normals would then carry its strands visibly elsewhere. Faded out between norm 16 and 36 (~1,265–1,900 units), then culled.
+- **Culling bounds** grow by `IncorporealDepth.MaxOpening` (the danger face travel × (1 + flowAmplitude), ~20.5
+  units) on mid/far renderers and the instanced batch, so an opened limb just off screen never blinks out.
+
+**What was tried first and rejected (measured in the preview, §7.3):** the literal prism rule on the braid's 216
+small faces, with its per-axis anisotropy, shredded every limb into a hairball - the skeleton gone. Then a rigid
+part along each strand's radial direction: that direction turns with the spiral, so parted strands curled into
+coils, and the roots left their node. The root-anchored fan along a fixed splay is what keeps the wireframe read.
+
+### 7.3 Seeing it without Unity
+
+`python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert` compiles the SHIPPED
+`SpindleLod.hlsl` + `IncorporealDepth.hlsl` + `SpindleSway.hlsl` with clang, runs them on the real mid braid posed
+as the Branch prefab poses it (a star of 8 limbs, like one lattice node), and writes a sheet (five points on the ramp:
+the shape framed large with the width hold off, and below it the true size on a 1080p screen with the hold on) and a
+two-second animation of the open star. Colour is the far tier's thread shading (the lace's Voronoi is a Shader Graph
+node with no HLSL here) and the raster has no bloom: judge shape and motion, not grading.
+
+### 7.4 One effect for every incorporeal part
+
+`IncorporealDepth.hlsl` is written for adoption: include it from a graph's Custom Function and choose the form
+that fits what the surface is made of.
+
+| surface | form | why |
+|---|---|---|
+| snow shards | `IncorporealDepthOpen` (per face, prism-exact) | faceted solids with a few big split-normal faces |
+| toy switch rings | `IncorporealDepthOpen` | the ring's segments are faceted |
+| membrane | `IncorporealDepthPart` along each panel's outward direction | parting panels, not shredding triangles |
+| nucleus | `IncorporealDepthPart` per shell | the same |
+| spindles | `IncorporealDepthPart` along each strand's splay, root-anchored | §7.2 |
+
+Then `IncorporealDepthGlow` in the fragment and a per-surface Strength. The ramp, the tier and the wave are global
+(`Utility/IncorporealDepth.Publish`), so every part opens at the same distances, as hard as danger mass, with one
+wave, which is the connection between the incorporeal parts. Nothing but the spindles is wired yet
+(T-20261020-3b39).

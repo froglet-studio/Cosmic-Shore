@@ -37,6 +37,18 @@ namespace CosmicShore.Gameplay
     /// limb that moved never joins the instanced batch (a creature's body would lag its creature),
     /// and one that moves while batched leaves it the same pass, unbudgeted.
     ///
+    /// TWO STYLES (<see cref="SpindleLodProfileSO.Style"/>, switchable in Play). COVERT measures in
+    /// girths and hides itself. OVERT runs in LOCKSTEP with the prisms' own depth effect: distance is
+    /// the prisms' normalised squared distance (d^2 / _SqrDistance, read off the danger prism through
+    /// <see cref="IncorporealDepth"/>), the near -> mid swap sits where that ramp starts opening the
+    /// braid and the mid -> far swap where it is fully open, so both swaps land on a flat end of the
+    /// ramp and the only thing anyone sees is the effect itself: the braid opening like danger mass,
+    /// a wave running through it.
+    ///
+    /// Distance is measured from <see cref="CameraManager.ViewCamera"/>, the camera the player looks
+    /// through - never <c>Camera.main</c>, which in flight is Bootstrap's menu camera and never moves
+    /// (measuring from it drew near and far tiers side by side around the vessel, 2026-10-20).
+    ///
     /// Spindle keeps owning life and death: a fading limb (condense at birth, evaporate at death) is
     /// never batched, because its fade is a per-renderer MaterialPropertyBlock stamp
     /// (<see cref="SetFading"/>), and the ordered wither and tree links never see this system.
@@ -64,6 +76,7 @@ namespace CosmicShore.Gameplay
 
         sealed class FarBatch
         {
+            public int set;
             public Material material;
             public Mesh mesh;
             public readonly List<int> entries = new();
@@ -130,6 +143,8 @@ namespace CosmicShore.Gameplay
             : "spindle LOD: off";
 
         SpindleLodProfileSO _profile;
+        SpindleLodProfileSO.Style _style;
+        TierBounds _bounds;
         readonly Dictionary<Mesh, int> _setOfMesh = new();
         readonly Dictionary<(int, Material), TierMaterials> _materials = new();
         readonly List<Material> _ownedMaterials = new();
@@ -270,6 +285,7 @@ namespace CosmicShore.Gameplay
 
             _transforms = new TransformAccessArray(1024);
             Grow(1024);
+            _style = profile.style;
             PublishGlobals();
             return true;
         }
@@ -277,10 +293,72 @@ namespace CosmicShore.Gameplay
         void PublishGlobals()
         {
             var p = _profile;
-            Shader.SetGlobalVector(BandsId, new Vector4(p.convergeStartGirths, p.ConvergeEndGirths, p.farFadeStartGirths, p.farFadeEndGirths));
+            IncorporealDepth.Publish();
+            bool overt = Overt;
+            Shader.SetGlobalVector(BandsId, overt
+                ? new Vector4(0f, 1f, p.overtFadeStartNorm, p.overtFadeEndNorm)
+                : new Vector4(p.convergeStartGirths, p.ConvergeEndGirths, p.farFadeStartGirths, p.farFadeEndGirths));
             Shader.SetGlobalVector(LookId, new Vector4(p.minThreadPixels, p.threadBase, p.threadFacet, p.threadGlow));
-            Shader.SetGlobalVector(Look2Id, new Vector4(p.threadAlpha, 0f, 0f, 0f));
+            Shader.SetGlobalVector(Look2Id, new Vector4(p.threadAlpha, overt ? 1f : 0f, 0f, 0f));
+            _bounds = BoundsFor(p, overt, IncorporealDepth.Spread);
         }
+
+        /// <summary>OVERT needs the prisms' ramp to follow; with nothing published (no
+        /// Resources/IncorporealDepth, or no danger tier on it) the braid could not open, so the
+        /// style falls back to covert rather than draw a closed braid on the far meshes.</summary>
+        bool Overt => _style == SpindleLodProfileSO.Style.Overt && IncorporealDepth.Spread.sqrMagnitude > 0f;
+
+        /// <summary>A style's three boundaries in its own units, and the keep fraction.</summary>
+        internal struct TierBounds
+        {
+            public bool overt;
+            public float sqrDistance;
+            public float nearEnd;
+            public float midEnd;
+            public float cull;
+            public float keep;
+        }
+
+        /// <summary>
+        /// COVERT: girths; near/mid below convergeStart, mid/far at convergeEnd = midEnd x keep.
+        /// OVERT, in the prisms' norm: the near -> mid boundary is where the ramp first opens an axis
+        /// (both tiers closed inside its band below it), the mid -> far boundary is 1 / keep so its
+        /// inward edge is the prisms' over-distance (both tiers fully open inside the band above 1).
+        /// Either way the cull's inward edge is the fade's end, where the alpha is zero.
+        /// </summary>
+        internal static TierBounds BoundsFor(SpindleLodProfileSO p, bool overt, Vector4 spread)
+        {
+            float keep = 1f - p.hysteresis;
+            return overt
+                ? new TierBounds
+                {
+                    overt = true, sqrDistance = Mathf.Max(spread.w, 1f), keep = keep,
+                    nearEnd = IncorporealDepth.OpeningStartNorm(spread), midEnd = 1f / keep, cull = p.overtFadeEndNorm / keep,
+                }
+                : new TierBounds
+                {
+                    overt = false, sqrDistance = 1f, keep = keep,
+                    nearEnd = p.nearEndGirths, midEnd = p.midEndGirths, cull = p.farFadeEndGirths / keep,
+                };
+        }
+
+        /// <summary>The style changed in Play: every limb back to its braid, the far batches onto the
+        /// style's far mesh, and the next pass re-tiers everything under the new style's bands.</summary>
+        void Restyle()
+        {
+            for (int i = 0; i < _entries.Count; i++)
+                if (_entries[i].tier != Tier.Near || _entries[i].batched) Apply(i, Tier.Near, batch: false);
+            _style = _profile.style;
+            PublishGlobals();
+            for (int b = 0; b < _batches.Count; b++)
+                _batches[b].mesh = FarMesh(_profile.meshSets[_batches[b].set]);
+            _nextTickAt = 0f;
+        }
+
+        /// <summary>The far tier's mesh: the converged thread (covert), or - overt - the same braid the mid
+        /// tier draws, because a fully opened face pushes 15 units along its normal and only the
+        /// identical mesh opens identically (a 5-ring braid's normals would land its slats elsewhere).</summary>
+        Mesh FarMesh(SpindleLodProfileSO.MeshSet set) => Overt ? set.mid : set.far;
 
         void Grow(int capacity)
         {
@@ -334,6 +412,7 @@ namespace CosmicShore.Gameplay
             {
                 e.filter.sharedMesh = _profile.meshSets[e.set].source;
                 e.renderer.sharedMaterial = e.materials.near;
+                e.renderer.ResetLocalBounds();
                 e.renderer.enabled = true;
             }
             CountOut(e.tier, e.batched);
@@ -367,7 +446,7 @@ namespace CosmicShore.Gameplay
                 mid = Derive(_profile.midTemplate, near, ms, "_LodMid", instanced: false),
                 far = Derive(_profile.farTemplate, near, ms, "_LodFar", instanced: true),
             };
-            m.batch = new FarBatch { material = m.far, mesh = ms.far };
+            m.batch = new FarBatch { set = set, material = m.far, mesh = FarMesh(ms) };
             m.batch.renderParams = new RenderParams(m.far)
             {
                 shadowCastingMode = ShadowCastingMode.Off,
@@ -410,6 +489,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            if (_profile.style != _style) Restyle();
+
             if (Time.unscaledTime >= _nextTickAt && _entries.Count > 0)
             {
                 _nextTickAt = Time.unscaledTime + _profile.tickIntervalSeconds;
@@ -422,7 +503,7 @@ namespace CosmicShore.Gameplay
 
         void Tick()
         {
-            var cam = Camera.main;
+            var cam = CameraManager.ViewCamera;
             if (!cam) return;
 
             using (s_tickMarker.Auto())
@@ -435,10 +516,12 @@ namespace CosmicShore.Gameplay
                 new ClassifyJob
                 {
                     Camera = cam.transform.position,
-                    NearEnd = _profile.nearEndGirths,
-                    MidEnd = _profile.midEndGirths,
-                    FarEnd = CullBound,
-                    Keep = 1f - _profile.hysteresis,
+                    Overt = _bounds.overt,
+                    SqrDistance = _bounds.sqrDistance,
+                    NearEnd = _bounds.nearEnd,
+                    MidEnd = _bounds.midEnd,
+                    FarEnd = _bounds.cull,
+                    Keep = _bounds.keep,
                     Girth = _girth.GetSubArray(0, n),
                     Current = _tier.GetSubArray(0, n),
                     LastPose = _lastPose.GetSubArray(0, n),
@@ -494,7 +577,7 @@ namespace CosmicShore.Gameplay
             using (s_drainMarker.Auto())
             {
                 int budget = _profile.maxTransitionsPerFrame;
-                var cam = Camera.main;
+                var cam = CameraManager.ViewCamera;
                 Vector3 camPos = cam ? cam.transform.position : Vector3.zero;
                 while (_pendingCursor < _pending.Count && budget > 0)
                 {
@@ -516,25 +599,20 @@ namespace CosmicShore.Gameplay
 
         Tier Classify(int i, Vector3 camPos)
         {
-            float4x4 m = _lastPose[i];
-            float scale = math.max(math.min(math.length(m.c0.xyz), math.length(m.c1.xyz)), 1e-6f);
-            float metric = math.distance(m.c3.xyz, (float3)camPos) / math.max(_girth[i] * scale, 1e-6f);
-            return (Tier)ClassifyJob.TierFor(metric, _tier[i], _profile.nearEndGirths, _profile.midEndGirths,
-                CullBound, 1f - _profile.hysteresis);
+            float metric = ClassifyJob.Metric(_lastPose[i], camPos, _girth[i], _bounds.overt, _bounds.sqrDistance);
+            return (Tier)ClassifyJob.TierFor(metric, _tier[i], _bounds.nearEnd, _bounds.midEnd, _bounds.cull, _bounds.keep);
         }
 
         /// <summary>The far -> culled boundary, set so its INWARD edge (bound x keep) is exactly
         /// farFadeEnd: a thread is only ever switched back on where its alpha is still zero, and
         /// fades in from there. (Every boundary is placed by the same rule: near/mid swaps happen
         /// below convergeStart, mid/far ones above convergeEnd = midEnd x keep.)</summary>
-        float CullBound => CullBoundFor(_profile);
-
         internal static float CullBoundFor(SpindleLodProfileSO p) => p.farFadeEndGirths / (1f - p.hysteresis);
 
-        /// <summary>The tier a limb at <paramref name="metric"/> girths moves to from
-        /// <paramref name="current"/> under <paramref name="p"/> - the Burst pass's own rule.</summary>
-        internal static Tier TierFor(float metric, Tier current, SpindleLodProfileSO p) =>
-            (Tier)ClassifyJob.TierFor(metric, (byte)current, p.nearEndGirths, p.midEndGirths, CullBoundFor(p), 1f - p.hysteresis);
+        /// <summary>The tier a limb at <paramref name="metric"/> (its style's units) moves to from
+        /// <paramref name="current"/> under <paramref name="b"/> - the Burst pass's own rule.</summary>
+        internal static Tier TierFor(float metric, Tier current, TierBounds b) =>
+            (Tier)ClassifyJob.TierFor(metric, (byte)current, b.nearEnd, b.midEnd, b.cull, b.keep);
 
         void Apply(int i, Tier tier, bool batch)
         {
@@ -549,16 +627,20 @@ namespace CosmicShore.Gameplay
                 case Tier.Near:
                     e.filter.sharedMesh = set.source;
                     e.renderer.sharedMaterial = e.materials.near;
+                    e.renderer.ResetLocalBounds();
                     e.renderer.enabled = true;
                     break;
                 case Tier.Mid:
                     e.filter.sharedMesh = set.mid;
                     e.renderer.sharedMaterial = e.materials.mid;
+                    FitBounds(e.renderer, set.mid);
                     e.renderer.enabled = true;
                     break;
                 case Tier.Far:
-                    e.filter.sharedMesh = set.far;
+                    var far = FarMesh(set);
+                    e.filter.sharedMesh = far;
                     e.renderer.sharedMaterial = e.materials.far;
+                    FitBounds(e.renderer, far);
                     e.renderer.enabled = !batch;
                     break;
                 default:
@@ -571,6 +653,23 @@ namespace CosmicShore.Gameplay
             if (batch && !e.batched) JoinBatch(i);
             e = _entries[i];
             CountIn(e.tier, e.batched);
+        }
+
+        /// <summary>
+        /// An overt limb's faces travel up to <see cref="IncorporealDepth.MaxOpening"/> world units off
+        /// its mesh, in the vertex shader, where culling cannot see them: without room in the bounds the
+        /// opened slats of a limb just off screen would blink out at the frame edge. Covert needs none.
+        /// </summary>
+        void FitBounds(Renderer renderer, Mesh mesh)
+        {
+            if (!Overt) { renderer.ResetLocalBounds(); return; }
+            var b = mesh.bounds;
+            Vector3 s = renderer.transform.lossyScale;
+            float open = IncorporealDepth.MaxOpening;
+            b.Expand(new Vector3(2f * open / Mathf.Max(Mathf.Abs(s.x), 1e-4f),
+                                 2f * open / Mathf.Max(Mathf.Abs(s.y), 1e-4f),
+                                 2f * open / Mathf.Max(Mathf.Abs(s.z), 1e-4f)));
+            renderer.localBounds = b;
         }
 
         void JoinBatch(int i)
@@ -668,7 +767,7 @@ namespace CosmicShore.Gameplay
                 var box = new Bounds(c, r * 2f);
                 if (j == 0) world = box; else world.Encapsulate(box);
             }
-            world.Expand(world.size.magnitude * 0.05f + 1f);
+            world.Expand(world.size.magnitude * 0.05f + 1f + (Overt ? 2f * IncorporealDepth.MaxOpening : 0f));
             batch.bounds = world;
             batch.renderParams.worldBounds = world;
             batch.dirty = false;
@@ -716,6 +815,8 @@ namespace CosmicShore.Gameplay
         internal struct ClassifyJob : IJobParallelForTransform
         {
             public float3 Camera;
+            public bool Overt;
+            public float SqrDistance;
             public float NearEnd;
             public float MidEnd;
             public float FarEnd;
@@ -744,9 +845,17 @@ namespace CosmicShore.Gameplay
                 LastPose[i] = pose;
                 Valid[i] = 1;
 
+                Desired[i] = TierFor(Metric(pose, Camera, Girth[i], Overt, SqrDistance), Current[i], NearEnd, MidEnd, FarEnd, Keep);
+            }
+
+            /// <summary>The style's distance, measured exactly as the shader measures it (the object
+            /// origin): girths, or the prisms' normalised squared distance.</summary>
+            public static float Metric(float4x4 pose, float3 camera, float girth, bool overt, float sqrDistance)
+            {
+                float3 d = pose.c3.xyz - camera;
+                if (overt) return math.dot(d, d) / math.max(sqrDistance, 1f);
                 float scale = math.max(math.min(math.length(pose.c0.xyz), math.length(pose.c1.xyz)), 1e-6f);
-                float metric = math.distance(pose.c3.xyz, Camera) / math.max(Girth[i] * scale, 1e-6f);
-                Desired[i] = TierFor(metric, Current[i], NearEnd, MidEnd, FarEnd, Keep);
+                return math.length(d) / math.max(girth * scale, 1e-6f);
             }
 
             /// <summary>Outward a limb moves past a boundary; inward it must come back inside

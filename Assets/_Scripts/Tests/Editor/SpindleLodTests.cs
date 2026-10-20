@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -29,16 +30,32 @@ namespace CosmicShore.Tests
             return p;
         }
 
+        static SpindleLodSystem.TierBounds Covert(SpindleLodProfileSO p) => SpindleLodSystem.BoundsFor(p, false, default);
+
+        // The theme's danger prism (DangerBlockMaterial): _Spread (0.09, 0.29, 0.8), _SqrDistance 100000.
+        static readonly Vector4 Danger = new(0.09f, 0.29f, 0.8f, 100000f);
+
+        // The prisms' own depth rule (SpreadSubGraph), per axis, beyond rest - transcribed independently.
+        static float PrismOpening(float spread, float gain, float norm)
+        {
+            float far = spread * gain;
+            float eff = norm > 1f ? far : Mathf.Lerp(-7f, far, norm);
+            return Mathf.Max(eff, spread) - spread;
+        }
+
+        static float MaxPrismOpening(float norm) => Mathf.Max(PrismOpening(Danger.x, 50f, norm),
+            Mathf.Max(PrismOpening(Danger.y, 35f, norm), PrismOpening(Danger.z, 20f, norm)));
+
         [Test]
         public void Outward_SwapsExactlyAtEachBoundary()
         {
             var p = Profile();
-            Assert.AreEqual(Tier.Near, SpindleLodSystem.TierFor(99.9f, Tier.Near, p));
-            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(100.1f, Tier.Near, p));
-            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(419.9f, Tier.Mid, p));
-            Assert.AreEqual(Tier.Far, SpindleLodSystem.TierFor(420.1f, Tier.Mid, p));
-            Assert.AreEqual(Tier.Far, SpindleLodSystem.TierFor(2000f, Tier.Far, p), "inside the cull band a thread stays drawn");
-            Assert.AreEqual(Tier.Culled, SpindleLodSystem.TierFor(SpindleLodSystem.CullBoundFor(p) + 1f, Tier.Far, p));
+            Assert.AreEqual(Tier.Near, SpindleLodSystem.TierFor(99.9f, Tier.Near, Covert(p)));
+            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(100.1f, Tier.Near, Covert(p)));
+            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(419.9f, Tier.Mid, Covert(p)));
+            Assert.AreEqual(Tier.Far, SpindleLodSystem.TierFor(420.1f, Tier.Mid, Covert(p)));
+            Assert.AreEqual(Tier.Far, SpindleLodSystem.TierFor(2000f, Tier.Far, Covert(p)), "inside the cull band a thread stays drawn");
+            Assert.AreEqual(Tier.Culled, SpindleLodSystem.TierFor(SpindleLodSystem.CullBoundFor(p) + 1f, Tier.Far, Covert(p)));
             Object.DestroyImmediate(p);
         }
 
@@ -47,10 +64,10 @@ namespace CosmicShore.Tests
         {
             var p = Profile();
             float keep = 1f - p.hysteresis;
-            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(p.nearEndGirths * keep + 0.1f, Tier.Mid, p), "mid holds inside the band");
-            Assert.AreEqual(Tier.Near, SpindleLodSystem.TierFor(p.nearEndGirths * keep - 0.1f, Tier.Mid, p));
-            Assert.AreEqual(Tier.Far, SpindleLodSystem.TierFor(p.midEndGirths * keep + 0.1f, Tier.Far, p), "far holds inside the band");
-            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(p.midEndGirths * keep - 0.1f, Tier.Far, p));
+            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(p.nearEndGirths * keep + 0.1f, Tier.Mid, Covert(p)), "mid holds inside the band");
+            Assert.AreEqual(Tier.Near, SpindleLodSystem.TierFor(p.nearEndGirths * keep - 0.1f, Tier.Mid, Covert(p)));
+            Assert.AreEqual(Tier.Far, SpindleLodSystem.TierFor(p.midEndGirths * keep + 0.1f, Tier.Far, Covert(p)), "far holds inside the band");
+            Assert.AreEqual(Tier.Mid, SpindleLodSystem.TierFor(p.midEndGirths * keep - 0.1f, Tier.Far, Covert(p)));
             Object.DestroyImmediate(p);
         }
 
@@ -68,6 +85,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(p.ConvergeEndGirths, p.midEndGirths * keep, 1e-4f);
             // far <-> culled: the inward edge is farFadeEnd itself, where the thread's alpha is zero.
             Assert.AreEqual(p.farFadeEndGirths, SpindleLodSystem.CullBoundFor(p) * keep, 1e-3f);
+            Assert.AreEqual(SpindleLodSystem.CullBoundFor(p), Covert(p).cull, 1e-4f);
             Object.DestroyImmediate(p);
         }
 
@@ -81,19 +99,58 @@ namespace CosmicShore.Tests
             Tier previous = t;
             for (float m = 1f; m < 3000f; m *= 1.01f)
             {
-                t = SpindleLodSystem.TierFor(m, t, p);
+                t = SpindleLodSystem.TierFor(m, t, Covert(p));
                 Assert.GreaterOrEqual((int)t, (int)previous, $"tier went backwards walking out at {m}");
                 previous = t;
             }
             Assert.AreEqual(Tier.Culled, t);
             for (float m = 3000f; m > 1f; m /= 1.01f)
             {
-                t = SpindleLodSystem.TierFor(m, t, p);
+                t = SpindleLodSystem.TierFor(m, t, Covert(p));
                 Assert.LessOrEqual((int)t, (int)previous, $"tier went backwards walking in at {m}");
                 previous = t;
             }
             Assert.AreEqual(Tier.Near, t);
             Object.DestroyImmediate(p);
+        }
+
+        [Test]
+        public void Overt_SwapsOnlyOnTheFlatEndsOfThePrismsRamp()
+        {
+            // Lockstep: near and mid swap only where the prisms' ramp has opened nothing yet; mid and far
+            // only where it has opened everything. Inside both bands the two tiers draw the same braid.
+            var p = Profile();
+            var b = SpindleLodSystem.BoundsFor(p, true, Danger);
+            Assert.IsTrue(b.overt);
+            Assert.AreEqual(0f, MaxPrismOpening(b.nearEnd), 1e-4f, "the braid has opened at the near/mid boundary");
+            Assert.AreEqual(0f, MaxPrismOpening(b.nearEnd * b.keep), 1e-4f);
+            Assert.Greater(MaxPrismOpening(b.nearEnd * 1.05f), 0f, "the boundary is not where opening STARTS");
+            Assert.AreEqual(1f, b.midEnd * b.keep, 1e-5f, "the far tier's inward edge must be the prisms' over-distance");
+            Assert.AreEqual(Danger.z * 20f - Danger.z, MaxPrismOpening(b.midEnd * b.keep), 1e-4f, "not fully open at the far edge");
+            Assert.AreEqual(p.overtFadeEndNorm, b.cull * b.keep, 1e-3f, "the cull's inward edge is the fade's end");
+            Object.DestroyImmediate(p);
+        }
+
+        [Test]
+        public void Overt_OpeningStart_IsTheFirstAxisToOpen()
+        {
+            // z (spread 0.8, gain 20) opens first for the danger tier: (0.8 + 7) / (16 + 7).
+            Assert.AreEqual((0.8f + 7f) / (16f + 7f), IncorporealDepth.OpeningStartNorm(Danger), 1e-5f);
+            Assert.AreEqual(1f, IncorporealDepth.OpeningStartNorm(Vector4.zero), "nothing published opens nothing");
+        }
+
+        [Test]
+        public void ShippedIncorporealDepth_ReadsTheDangerPrism()
+        {
+            var config = AssetDatabase.LoadAssetAtPath<IncorporealDepthSO>("Assets/Resources/IncorporealDepth.asset");
+            Assert.IsNotNull(config, "Resources/IncorporealDepth is missing");
+            Assert.IsNotNull(config.tierMaterialSet, "IncorporealDepth has no tier material set");
+            var danger = config.tierMaterialSet.DangerousBlockMaterial;
+            Assert.IsNotNull(danger);
+            Vector4 s = config.TierSpread();
+            Vector4 want = danger.GetVector("_Spread") * config.strength;
+            Assert.AreEqual(want.z, s.z, 1e-5f, "the spread is not the danger prism's");
+            Assert.AreEqual(danger.GetFloat("_SqrDistance"), s.w, 1e-3f, "the ramp is not the prisms'");
         }
 
         [Test]
