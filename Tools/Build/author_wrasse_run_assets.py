@@ -125,13 +125,15 @@ AI_THROUGH_DISTANCE = 55
 # for the probe (the kite). The kite's world step is the hull's boosted 260 u/s + the slung kite's
 # 364 u/s (KiteNavigatorConfig slingMaxSpeed) + the board turning under it at the kite's farthest reach.
 # The kite flies the whole screen (round 7): a rectangle viewScale x 160 u deep and that times the aspect
-# wide, so its corner sits ~560 u out on a 2.4:1 screen; the board turns no faster than the hull (~126 deg/s
-# at boost), ~1240 u/s there. ~1860 u/s in all; 3800 covers twice that - a ~127 u step at 60 fps, still
-# under a respawn's jump onto a 640 u circuit.
-MAX_PLAUSIBLE_SPEED = 3800
+# wide, plus offscreenOverhang past the bottom (round 8), so its far corner sits ~580 u out on a 2.4:1 screen;
+# the board turns no faster than the hull (~126 deg/s at boost), ~1275 u/s there. ~1900 u/s in all; 4000
+# covers twice that - a ~133 u step at 60 fps, still under a respawn's jump onto a 640 u circuit.
+MAX_PLAUSIBLE_SPEED = 4000
 KITE_VIEW_SCALE = 1.352
 KITE_MAX_ASPECT = 2.4
-KITE_REACH = 160 * KITE_VIEW_SCALE * (1 + KITE_MAX_ASPECT ** 2) ** 0.5
+KITE_OVERHANG = 40
+_KITE_H = 160 * KITE_VIEW_SCALE
+KITE_REACH = ((_KITE_H * KITE_MAX_ASPECT) ** 2 + (_KITE_H + KITE_OVERHANG) ** 2) ** 0.5
 KITE_WORST_SPEED = BOOST_SPEED + 364 + 126 * 3.141592653589793 / 180.0 * KITE_REACH
 
 # The comeback strength, a FUNCTION OF THE TARGET: at 0.5 a quarter-of-race deficit (4 gates) buys 2
@@ -379,7 +381,7 @@ for key, want in (("MinimumSpeed", 10.0), ("ThrottleScaler", 50.0), ("boostMulti
         errors.append(f"Wrasse.prefab {key} is not {want} - re-cut WrasseRunCourse (WRASSERUN.md)")
 _kite = read_or_empty(KITE_CONFIG)
 for key, want in (("control", 1.0), ("slingMaxSpeed", 364.0), ("boardRadius", 160.0), ("aiCrewNavigates", 1.0),
-                  ("viewScale", KITE_VIEW_SCALE), ("wholeScreen", 1.0)):
+                  ("viewScale", KITE_VIEW_SCALE), ("wholeScreen", 1.0), ("offscreenOverhang", KITE_OVERHANG)):
     m = re.search(rf"^  {key}: ([0-9.]+)$", _kite, re.M)
     if not m or float(m.group(1)) != want:
         errors.append(f"KiteNavigatorConfig.asset {key} is not {want} - re-check the clamp and the course")

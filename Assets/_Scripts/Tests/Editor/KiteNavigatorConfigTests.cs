@@ -31,7 +31,8 @@ namespace CosmicShore.Tests
             var c = Load();
             Assert.AreEqual(160f, c.BoardRadius);
             Assert.AreEqual(0.3f, c.Anchor, 1e-6f);
-            Assert.AreEqual(KiteBoardFrame.Eased, c.Frame);
+            Assert.AreEqual(KiteBoardFrame.Heading, c.Frame, "round 7: a yaw in place does not drag the board");
+            Assert.AreEqual(220f, c.HeadingAlignDistance);
             Assert.AreEqual(3f, c.EaseRate);
             Assert.AreEqual(40f, c.ReachY);
             Assert.AreEqual(8f, c.KiteRadius);
@@ -75,6 +76,22 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1.6f, c.ChargeBoltLapSeconds, 1e-6f);
             Assert.AreEqual(0.22f, c.ChargeSparkSize, 1e-6f);
             Assert.AreEqual(7, c.ChargeBoltTrail);
+        }
+
+        [Test]
+        public void Asset_CarriesTheScreenLayout()
+        {
+            var c = Load();
+            // round 7 (Garrett, 2026-10-20): the whole screen, zoomed out 30%, the cord drawn
+            Assert.IsTrue(c.WholeScreen);
+            Assert.AreEqual(1.352f, c.ViewScale, 1e-6f, "1.04 x 1.3");
+            Assert.AreEqual(0.6f, c.CordWidth, 1e-6f);
+            Assert.AreEqual(0.75f, c.CordAlpha, 1e-6f);
+            // round 8: the hand line above the totems, the kite off the bottom, the pilot's larger stand-in
+            Assert.AreEqual(0.012f, c.HandLineGap, 1e-6f);
+            Assert.AreEqual(0.2f, c.HandLineFallback, 1e-6f);
+            Assert.AreEqual(40f, c.OffscreenOverhang, "Tools/Build/author_wrasse_run_assets.py sizes the race clamp to it");
+            Assert.AreEqual(2.5f, c.PilotKiteScale, 1e-6f);
         }
 
         [Test]

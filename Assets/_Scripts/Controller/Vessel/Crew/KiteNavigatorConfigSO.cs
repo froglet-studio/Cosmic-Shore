@@ -206,6 +206,18 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.1f, 2f)] float cordWidth = 0.6f;
         [Tooltip("How visible the cord is (alpha).")]
         [SerializeField, Range(0f, 1f)] float cordAlpha = 0.75f;
+
+        [Header("The hand line (round 8; Garrett, 2026-10-20)")]
+        [Tooltip("\"pick a nice horizontal line just above the ability totems and don't let the cursor travel below that " +
+                 "line\": the line sits this far above the top of the ability cards, as a fraction of the screen height. " +
+                 "The hand (a thumb, the cursor, the stick's point, the AI's hand) never goes below it; the kite still " +
+                 "swings across it. Below it, left of the cards, is the pilot's view while navigating.")]
+        [SerializeField, Range(0f, 0.1f)] float handLineGap = 0.012f;
+        [Tooltip("The line's height (a fraction of the screen) when the HUD has no ability cards to sit above.")]
+        [SerializeField, Range(0f, 0.5f)] float handLineFallback = 0.2f;
+        [Tooltip("How far (u) the kite can fly past the bottom of the kite view, off the screen (\"allow the wrasse to " +
+                 "extend across that line and off the screen\").")]
+        [SerializeField, Min(0f)] float offscreenOverhang = 40f;
         [Tooltip("A mote's flower radius in the kite view (u). The petals sit in it in the totem's own proportions (the " +
                  "element flower above each ability card).")]
         [SerializeField, Min(0.5f)] float moteSize = 4.5f;
@@ -230,6 +242,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.2f)] float tailWidth = 1.4f;
         [Tooltip("How visible the kite is to the pilot: a faint, see-through kite (0 = hidden).")]
         [SerializeField, Range(0f, 1f)] float pilotKiteAlpha = 0.22f;
+        [Tooltip("The pilot's stand-in for the Wrasse: a faint kite this many times the kite's radius, drawn in the pilot's " +
+                 "view even when the Wrasse's model draws, so the Grouper keeps a larger representative view of the Wrasse.")]
+        [SerializeField, Range(1f, 6f)] float pilotKiteScale = 2.5f;
         [Tooltip("How visible the motes are to the pilot: faint lime dots (0 = hidden).")]
         [SerializeField, Range(0f, 1f)] float pilotDotAlpha = 0.35f;
         [Tooltip("The size of a mote's dot in the pilot's view (u).")]
@@ -295,6 +310,10 @@ namespace CosmicShore.Gameplay
         public bool WholeScreen => wholeScreen;
         public float CordWidth => cordWidth;
         public float CordAlpha => cordAlpha;
+        public float HandLineGap => handLineGap;
+        public float HandLineFallback => handLineFallback;
+        public float OffscreenOverhang => offscreenOverhang;
+        public float PilotKiteScale => pilotKiteScale;
         public float HeadingAlignDistance => headingAlignDistance;
         public float ViewMargin => viewMargin;
         public float MoteSize => moteSize;

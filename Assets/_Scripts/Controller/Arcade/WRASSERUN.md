@@ -107,7 +107,7 @@ at full throttle. Two laps of ~4.6 k u are ~150 s at cruise; every boost buys ~3
 | rings per lap / base circle | `WrasseRunCourse.GatesPerLap` / `.BaseRadius` | **8** / **640** |
 | corner profile, spread, floor, mouth, lift, presentation | `WrasseRunCourse.ForIntensity` | §3 |
 | AI commit / lead / through | scene → `GateRaceController` | 72 / 80 / 55 |
-| detection clamp (hull and kite) | scene → `maxPlausibleSpeed` | **3800** (2× the kite's ~1860 u/s worst world speed: 260 + 364 + the board turning under a kite at a 2.4:1 screen's corner, ~560 u out) |
+| detection clamp (hull and kite) | scene → `maxPlausibleSpeed` | **4000** (2× the kite's ~1900 u/s worst world speed: 260 + 364 + the board turning under a kite at a 2.4:1 screen's far corner, ~580 u out with the 40 u off-screen overhang) |
 | Time mote bonus / AI Time preference | `KiteNavigatorConfig.asset` → `raceTimeMoteBonus`, `raceTimeLoopPreference` | 2 / 3 |
 | the sling | `KiteNavigatorConfig.asset` → `sling*` | rope 42, stiffness 260, damping 5, drag 0.35 / 0.9, top 364 (round 7: 70% of 520); tail 4.8 board radii |
 | comeback rate | `ArcadeGameWrasseRun.asset` | **0.5** (4 rings behind buys 2 levels) |

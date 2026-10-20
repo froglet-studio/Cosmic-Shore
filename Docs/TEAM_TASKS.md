@@ -1219,3 +1219,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered) or anyone with the Editor; Garrett signs off the fit
 - **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
+
+### T-20261020-8dbc · open · test · Crew vessels
+- **Task:** Round 8 of the Wrasse on cece/loving-fermat-ntdnbu: on the kite, the hand stops at a line just above the ability cards while the kite swings past it and off the bottom; the Grouper's view fills the box left of the cards and below the line; the Grouper's view keeps a larger faint Wrasse stand-in. Check a phone and a wide monitor
+- **Done when:** Steps 12 and 13 of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or each failure is written down
+- **Who can take it:** Garrett (feel); Yash (offered) can run it
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8)

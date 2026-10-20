@@ -57,6 +57,8 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<(Material, Mesh, Camera), Batch> _batches = new();
 
         Camera _pilot;
+        AbilityLockupView _lockup;
+        float _lockupRetryAt, _line01;
         Rect _pilotRect;
         float _pilotDepth;
         bool _pilotLifted;
@@ -217,13 +219,20 @@ namespace CosmicShore.Gameplay
 
             float baseDepth = _pilot ? _pilotDepth : 0f;
             float m = cfg.ViewMargin, h = cfg.PipSize, aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 1.78f;
+            float cardsLeft01 = FrameHandLine(cfg);
             if (humanNavigates)
             {
                 _cam.rect = new Rect(0f, 0f, 1f, 1f);
                 _cam.depth = baseDepth + 1f;
                 if (_pilot)
                 {
-                    _pilot.rect = new Rect(m / aspect, m, h / aspect, h);  // the kite view's own small square
+                    // below the hand line, left of the ability cards (Garrett, 2026-10-20: "to the left of the totem fill the
+                    // space below that line with the grouper's view and don't let that view go above that line"); the old
+                    // small square when there are no cards to fit beside
+                    var below = Rect.MinMaxRect(m / aspect, m, cardsLeft01 - m / aspect, _line01 - m);
+                    _pilot.rect = cardsLeft01 > 0f && below.width > 0.05f && below.height > 0.05f
+                        ? below
+                        : new Rect(m / aspect, m, h / aspect, h);
                     _pilot.depth = baseDepth + 2f;
                     _pilotLifted = true;
                 }
@@ -234,6 +243,26 @@ namespace CosmicShore.Gameplay
                 _cam.rect = new Rect(m / aspect, m, h / aspect, h);       // a square in the lower left
                 _cam.depth = baseDepth + 1f;
             }
+        }
+
+        /// <summary>The hand line, as a fraction of the screen's height: just above the ability cards (handLineGap), or
+        /// handLineFallback with no cards. While the human navigates, the hand never goes below it.</summary>
+        internal float HandLine01 => _line01;
+
+        // The line from the HUD's ability cards (the totems), read live so it follows the HUD's layout and the screen's shape.
+        // Returns the cards' left edge as a fraction of the screen's width, or -1 with no cards.
+        float FrameHandLine(KiteNavigatorConfigSO cfg)
+        {
+            _line01 = cfg.HandLineFallback;
+            if (!_lockup && Time.unscaledTime >= _lockupRetryAt)
+            {
+                _lockupRetryAt = Time.unscaledTime + 1f;   // the HUD builds after the seat binds: look again once a second
+                foreach (var l in _nav.GetComponentsInChildren<AbilityLockupView>(true))
+                    if (l.isActiveAndEnabled) { _lockup = l; break; }
+            }
+            if (!_lockup || Screen.width <= 0 || Screen.height <= 0 || !_lockup.TryGetCardsScreenRect(out var cards)) return -1f;
+            _line01 = Mathf.Clamp01(cards.yMax / Screen.height + cfg.HandLineGap);
+            return Mathf.Clamp01(cards.xMin / Screen.width);
         }
 
         bool _corridorOverridden, _planePublished;
@@ -319,12 +348,13 @@ namespace CosmicShore.Gameplay
             float kr = cfg.KiteRadius;
             // a crew body draws the Wrasse as a model everyone sees (WrasseCrewBodies); the flat kite is the fallback
             if (!_nav.BodyDrawsKite)
-            {
                 Add(_nav.Charge >= 1f ? _kiteChargedMat : _kiteMat, _kiteMesh, kite,
                     Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z) + _nav.BoardUp * lift, kiteRot, Vector3.one * kr));
-                if (pilot)
-                    Add(_kiteFaintMat, _kiteMesh, pilot, Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z), kiteRot, Vector3.one * kr));
-            }
+            // the pilot keeps a larger, faint stand-in for the Wrasse, model or not (Garrett, 2026-10-20: "The grouper can keep
+            // a larger representative view of the wrasse")
+            if (pilot)
+                Add(_kiteFaintMat, _kiteMesh, pilot,
+                    Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z), kiteRot, Vector3.one * kr * cfg.PilotKiteScale));
 
             // charge pips round the kite
             int pips = Mathf.Min(12, Mathf.FloorToInt(_nav.Charge));

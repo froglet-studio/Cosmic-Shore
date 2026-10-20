@@ -253,6 +253,17 @@ Gates this round:
 - `author_wrasse_assets.py --self-test` holds the bodies, with six negative controls.
 - Wrasse Run's detection clamp is 3800, twice the kite's new worst world speed of ~1 860 u/s at a 2.4:1 screen's corner (`WRASSERUN.md` §5).
 
+## Round 8: the hand line and the Grouper's corner (Garrett, 2026-10-20)
+
+| Asked | In the game |
+|---|---|
+| "pick a nice horizontal line just above the ability totems and don't let the cursor travel below that line" | The **hand line** sits `handLineGap` (1.2% of the screen) above the top of the HUD's ability cards. `AbilityLockupView.TryGetCardsScreenRect` gives the cards' screen rect, read live, so the line follows the HUD's layout and the screen's shape. With no cards it sits at `handLineFallback` (20%). While the human navigates, the hand (a thumb, the cursor, the stick's point) is clamped to the line or above (`KiteNavigator.TryHandFloor`). A full stick lean now spans the screen above the line, not the whole screen. |
+| "but allow the wrasse to extend across that line and off the screen" | The kite's bounds run `offscreenOverhang` (40 u) past the bottom edge: the rectangle's centre drops 20 u and it grows 20 u deeper, so the top edge does not move. The kite swings across the line on its rope and off the bottom of the screen. Wrasse Run's clamp is 4000, sized to that far corner. |
+| "to the left of the totem fill the space below that line with the grouper's view and don't let that view go above that line" | While navigating, the pilot camera's rect runs from the screen's lower-left margin to the cards' left edge and up to the hand line, each less `viewMargin`. A tap or click that starts in it is still the swap's. With no cards to fit beside, it falls back to the old square. While piloting, the kite's small view is unchanged. |
+| "The grouper can keep a larger representative view of the wrasse" | The pilot view's faint kite stays drawn even when the Wrasse model draws, at `pilotKiteScale` (2.5) × the kite's radius. |
+
+Also fixed: `KiteNavigatorConfigTests` still asserted the board frame was `Eased` after round 7 set `Heading`, so it would have failed in the Editor. It now asserts `Heading` and pins the round-7 and round-8 screen numbers.
+
 ## Seats: the swap is the arena's
 
 The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with

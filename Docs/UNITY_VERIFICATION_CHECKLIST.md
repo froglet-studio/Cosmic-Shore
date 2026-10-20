@@ -1690,6 +1690,12 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
     kite is seen on the client.
 11. **Feel** - tune the `WrasseCrewBodies` numbers in the inspector (swim, tail, jaw, dorsal, fins). Flip a sign if a
     part moves the wrong way.
+12. **Round 8, the hand line** - on the kite: drag, move the cursor or lean the stick toward the ability cards. The hand
+    (where the cord starts) stops just above them, and the kite still swings across that line and off the bottom of the
+    screen.
+13. **Round 8, the Grouper's corner** - on the kite, the Grouper's view fills the box left of the ability cards, below
+    the line, and never rises above it. Double-tap it to swap. In it, the Wrasse has a large faint stand-in. Try a phone
+    and a wide monitor: the box follows the cards.
 
 ### 🔴 The Wrasse's Sling, AI crews, the flail's toys, and Wrasse Run (68) (`cece/loving-fermat-ntdnbu`, 2026-10-20) — NOT EDITOR-VERIFIED
 

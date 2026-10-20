@@ -166,6 +166,41 @@ namespace CosmicShore.UI
             return Mathf.Max(size.x, size.y);
         }
 
+        static readonly Vector3[] s_corners = new Vector3[4];
+
+        /// <summary>
+        /// The screen rectangle, in pixels, that the built cards cover together - so a view or an input can keep clear of
+        /// the totems (the Wrasse's hand line sits just above it). False before <see cref="Build"/>, or while no card is
+        /// showing. A question, not a demand: a miss is an answer.
+        /// </summary>
+        public bool TryGetCardsScreenRect(out Rect rect)
+        {
+            rect = default;
+            if (!_built) return false;
+            var canvas = GetComponentInParent<Canvas>();
+            var root = canvas ? canvas.rootCanvas : null;
+            Camera cam = root && root.renderMode != RenderMode.ScreenSpaceOverlay ? root.worldCamera : null;
+            bool any = false;
+            float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+            foreach (var slot in _slots.Values) Grow(slot.Card, cam, ref any, ref xMin, ref yMin, ref xMax, ref yMax);
+            foreach (var slot in _coreSlots.Values) Grow(slot.Card, cam, ref any, ref xMin, ref yMin, ref xMax, ref yMax);
+            if (any) rect = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+            return any;
+        }
+
+        static void Grow(RectTransform card, Camera cam, ref bool any, ref float xMin, ref float yMin, ref float xMax, ref float yMax)
+        {
+            if (!card || !card.gameObject.activeInHierarchy) return;
+            card.GetWorldCorners(s_corners);
+            for (int i = 0; i < 4; i++)
+            {
+                var p = RectTransformUtility.WorldToScreenPoint(cam, s_corners[i]);
+                xMin = Mathf.Min(xMin, p.x); xMax = Mathf.Max(xMax, p.x);
+                yMin = Mathf.Min(yMin, p.y); yMax = Mathf.Max(yMax, p.y);
+            }
+            any = true;
+        }
+
         /// <summary>The flower socket for an element, if a card was built for it.</summary>
         public RectTransform GetFlowerSocket(Element element)
             => _slots.TryGetValue(element, out var slot) ? slot.FlowerSocket : null;

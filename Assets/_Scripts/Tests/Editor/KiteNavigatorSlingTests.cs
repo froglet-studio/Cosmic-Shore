@@ -183,6 +183,21 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Screen_TheOverhang_LetsTheKitePastTheBottomEdge_NotTheTop()
+        {
+            // round 8 (KiteNavigator.ScreenSettings): the bottom edge runs offscreenOverhang past the screen
+            var s = Screen();
+            float o = 40f, top = s.HalfDepth * KiteNavigatorCore.RimFraction;
+            s.HalfDepth += 0.5f * o;
+            s.BoundsCentreZ = -0.5f * o;
+            var low = KiteNavigatorCore.OnBoard(s, 0f, -1e4f);
+            var high = KiteNavigatorCore.OnBoard(s, 0f, 1e4f);
+            Assert.Less(low.Z, -(160f * 1.352f), "the kite reaches below the screen's bottom edge");
+            Assert.LessOrEqual(high.Z, 160f * 1.352f, "the top edge stays on the screen");
+            Assert.Greater(high.Z, top - o, "the top edge moved by no more than the overhang's share");
+        }
+
+        [Test]
         public void Screen_NoRectangle_KeepsTheDisc()
         {
             var s = Shipped();

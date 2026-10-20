@@ -284,11 +284,25 @@ namespace CosmicShore.Gameplay
             var s = _cfg.ToSettings();
             if (!_cfg.WholeScreen) return s;
             float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
-            float h = s.BoardRadius * _cfg.ViewScale;
-            s.HalfDepth = Mathf.Max(1f, h - _cfg.KiteRadius);
+            float h = s.BoardRadius * _cfg.ViewScale, o = _cfg.OffscreenOverhang;
+            // the bottom edge runs offscreenOverhang past the screen, so the kite can swing across the hand line and off the
+            // screen (Garrett, 2026-10-20: "allow the wrasse to extend across that line and off the screen")
+            s.HalfDepth = Mathf.Max(1f, h - _cfg.KiteRadius + 0.5f * o);
             s.HalfWidth = Mathf.Max(1f, h * aspect - _cfg.KiteRadius);
-            s.BoundsCentreZ = 0f;
+            s.BoundsCentreZ = -0.5f * o;
             return s;
+        }
+
+        // The hand line on the board (u along forward): the kite view is centred on the hull, viewScale board radii high, so
+        // a fraction f of the screen's height is ViewCentreZ + (2f - 1) x that. While the human navigates, the hand (a
+        // thumb, the cursor, the stick's point) never goes below it (Garrett, 2026-10-20: "pick a nice horizontal line just
+        // above the ability totems and don't let the cursor travel below that line"); the kite still swings across it.
+        bool TryHandFloor(out float z)
+        {
+            z = 0f;
+            if (_view == null || !_humanNavigates) return false;
+            z = ViewCentreZ + (2f * _view.HandLine01 - 1f) * _s.BoardRadius * _cfg.ViewScale;
+            return true;
         }
 
         /// <summary>Where the kite view is centred on the board (u along the board's forward): the hull.</summary>
@@ -332,6 +346,7 @@ namespace CosmicShore.Gameplay
             _sling = false;
             if (_humanNavigates) ReadKiteInput();
             else StepAI(dt);
+            if (TryHandFloor(out float floor) && _aim.Z < floor) _aim = new KiteVec(_aim.X, floor);
 
             var prev = _sling ? _kite.Sling(_s, _aim.X, _aim.Z, _down, dt) : _kite.Move(_s, _aim.X, _aim.Z, _down, dt);
             HeadContacts(prev);
@@ -792,6 +807,12 @@ namespace CosmicShore.Gameplay
                         float cz = _s.Rectangular ? _s.BoundsCentreZ : KiteNavigatorCore.Centre(_s).Z;
                         float rx = _cfg.SlingStickReach * (_s.Rectangular ? _s.HalfWidth : _s.BoardRadius);
                         float rz = _cfg.SlingStickReach * (_s.Rectangular ? _s.HalfDepth : _s.BoardRadius);
+                        // the hand's span is the screen above the hand line: centred there, a full lean to its edges
+                        if (_s.Rectangular && TryHandFloor(out float lo))
+                        {
+                            float hi = _s.BoundsCentreZ + _s.HalfDepth;
+                            if (hi > lo) { cz = 0.5f * (lo + hi); rz = _cfg.SlingStickReach * 0.5f * (hi - lo); }
+                        }
                         _aim = new KiteVec(stick.x * rx, cz + stick.y * rz);
                         // a trigger held lets go - the cord drops and the kite flies free; released, the rope takes it again
                         _down = !(pad != null && (pad.leftTrigger.ReadValue() > 0.5f || pad.rightTrigger.ReadValue() > 0.5f));
