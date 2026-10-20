@@ -1178,7 +1178,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
 ### T-20261020-74d8 · open · test · ecology
-- **Task:** Fly the freestyle cells (Orrery, Yggdra, Daedala, Caldera, Geode, Zephyr, Ourobor, Hesperides) and Scurry's Atlantis after the generator fixes. Their prisms are now sized flush with their neighbours at authoring time, and every prism is kept. Look for any prism inside another and for gaps that read as broken structure. The Orrery keeps 35% of its volume, Yggdra 63% and Daedala 66%. Also time the veiled build against bleeding-edge: Atlantis is ~+90 ms and Yggdra ~+50 ms in the .NET harness
+- **Task:** Fly the freestyle cells (Orrery, Yggdra, Daedala, Caldera, Geode, Zephyr, Ourobor, Hesperides) and Scurry's Atlantis after the generator fixes. Their prisms are now sized flush with their neighbours at authoring time, and every prism is kept. Look for any prism inside another and for gaps that read as broken structure. The Orrery keeps 35% of its volume, Yggdra 63% and Daedala 66%. Also time the veiled build against bleeding-edge: the worlds now load from baked layouts (T-20261020-ad7e), so each should build faster than before, not slower
 - **Done when:** Each world shows no interpenetrating prisms, still reads as its own shape, and its build time is within a second of bleeding-edge on PC (note the phone number too)
 - **Who can take it:** Yash, or Garrett
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
@@ -1255,9 +1255,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2 (Panes); SpawnableCleavePanes PaneSpecs
 
-### T-20261020-8f9d · open · decision · ecology
+### T-20261020-8f9d · done · decision · ecology
 - **Task:** Accept or reject the authoring-time load cost of the flush fits, measured per build in the .NET 8 harness (IL2CPP on a phone will be slower). Atlantis +90 ms (~0.45 s total), Yggdra +50 ms, Caldera 14 -> 40 ms, Zephyr 12.5 -> 20 ms, Hesperides 3.7 -> 13 ms, Daedala and Geode 6.6 -> 13 ms, Cleave +0.4 to +3 ms; the Orrery and Ourobor are unmeasured. The fits run inside the generator once per build, which is not a runtime pass. Baking the fitted lays into an asset would make the cost zero
 - **Done when:** A choice is recorded; if baking is chosen, a task exists for it
 - **Who can take it:** Garrett
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.3
+- **Done:** 2026-10-20, 2026-10-20, Garrett chose baking ("bake the fitted layouts into assets so load cost is zero"). Done on cece/relaxed-hopper-ns2hdu: the 22 cell-environment prefabs load from offline bakes; live generation measured 3.8-289 ms per world (1.09 s across all 22) becomes 0.2-3.4 ms of decoding (22 ms in all). Hand test: the new PrismLayoutBakeTests task. See Docs/ECOSYSTEM.md §62.2b
+
+### T-20261020-ad7e · open · test · ecology
+- **Task:** The cell environments now load from offline-baked layouts (Assets/Resources/PrismLayouts, made by Tools/Build/bake_prism_layouts.py) instead of generating while the game loads. In the Unity Editor: run the EditMode tests PrismLayoutBakeTests (4 tests). The first two prove what only Unity can: every baked prefab, as Unity loads it, finds its bake, and each bake is the layout Unity's own math generates (the test log prints the worst position, scale and rotation difference per world). Then enter Menu_Main freestyle and swap through the Cell Selector worlds, and play Dog Fight and Cleave I1: the console must show no [PrismLayoutBake] warning, and each world must look as it did before
+- **Done when:** PrismLayoutBakeTests pass in the Editor; no [PrismLayoutBake] warning in Menu_Main, Dog Fight or Cleave; the veiled builds of Atlantis, Yggdra and Ourobor are visibly faster than on bleeding-edge on PC (note a phone number if you have one)
+- **Who can take it:** Yash (offered), or Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b; Assets/_Scripts/Tests/Editor/PrismLayoutBakeTests.cs

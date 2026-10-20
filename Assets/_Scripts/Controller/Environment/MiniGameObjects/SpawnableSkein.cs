@@ -66,6 +66,11 @@ namespace CosmicShore.Gameplay
         readonly List<int> _railLayStart = new();
 
         protected override int DefaultSeed => 20260909;
+
+        /// <summary>Never baked (PrismLayoutBake): its lay is split into trails by build state the
+        /// bake does not carry, and its fit is closed-form and cheap.</summary>
+        protected override bool BakesLayout => false;
+
         protected override int LayCapacity => 14000;
 
         /// <summary>The rings this cable's course wants, published so the controller lays exactly

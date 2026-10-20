@@ -140,14 +140,29 @@ namespace CosmicShore.Gameplay
             _plantingSites = null;
         }
 
+        /// <summary>
+        /// True when this world's layout may be served from its BAKE (<see cref="PrismLayoutBake"/>)
+        /// instead of running <see cref="BuildEnvironment"/> while the game loads. Its whole
+        /// output must be the lay list and the planting sites. A world whose
+        /// <see cref="SpawnLeafObjects"/> reads other build state (a rail world that indexes its
+        /// lays by range) overrides this false and always generates live.
+        /// </summary>
+        protected virtual bool BakesLayout => true;
+
         protected override SpawnTrailData[] GenerateTrailData()
         {
-            _noiseSeed = seed != 0 ? seed : DefaultSeed;
-            _r = new System.Random(_noiseSeed);
-            _cachedLays = new List<PrismLay>(LayCapacity);
-            _plantingSites = new List<FloraPlantingSite>();
+            // The layout is fitted flush at authoring time (Docs/ECOSYSTEM.md §62), and that fit
+            // is the expensive part of a build, so the bake made by Tools/Build/bake_prism_layouts.py
+            // is read instead whenever one exists for these exact parameters.
+            if (!BakesLayout || !PrismLayoutBake.TryLoad(this, out _cachedLays, out _plantingSites))
+            {
+                _noiseSeed = seed != 0 ? seed : DefaultSeed;
+                _r = new System.Random(_noiseSeed);
+                _cachedLays = new List<PrismLay>(LayCapacity);
+                _plantingSites = new List<FloraPlantingSite>();
 
-            BuildEnvironment();
+                BuildEnvironment();
+            }
 
             var points = new SpawnPoint[_cachedLays.Count];
             for (int i = 0; i < _cachedLays.Count; i++)

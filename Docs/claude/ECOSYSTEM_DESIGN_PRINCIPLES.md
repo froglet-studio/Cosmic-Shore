@@ -1260,7 +1260,10 @@ trio, and the traps).
   at I1-I4 and reports clipping by family. The residuals are random scatter (Boneyard, Caldera,
   Zephyr), the Gyroid's walk drift and two shapes under the 0.5 scale floor; each one is an open
   decision (§62.4). **A cell's `PhaseThresholds` ride its laid VOLUME**: a generator change that
-  moves it re-measures the ladder in the same change. **Dynamic contact never does nothing**
+  moves it re-measures the ladder in the same change. **A cell environment loads from its BAKE**
+  (§62.2b): a change to its generator, its prefab or `CellEnvironmentSpawnableBase` re-runs
+  `python3 Tools/Build/bake_prism_layouts.py` in the same change (`--check` is the gate), or the
+  world is generated live with a `[PrismLayoutBake]` warning. **Dynamic contact never does nothing**
   (§62.6). A mover that touches a prism it cannot affect acknowledges the hit: own armoured mass
   LIGHTS, and super-shielded mass jiggles. Still open: the Mandelbulb flora family gates an
   interpenetration BOUND, not a zero (§62.5).

@@ -45,10 +45,14 @@ static class ClipAudit
 
     static readonly List<string> s_tags = new();
 
+    /// <summary>Off while baking: the tag walks the stack per lay, which would swamp the timing.</summary>
+    static bool s_tagging = true;
+
     /// <summary>Called by the harness's CellEnvironmentSpawnableBase.Emit (run.sh points it here)
     /// for every lay: the first two generator methods above Emit name the family.</summary>
     public static void TagEmit()
     {
+        if (!s_tagging) return;
         var frames = new StackTrace(2, false).GetFrames();
         var names = new List<string>(2);
         foreach (var f in frames)
@@ -130,6 +134,7 @@ static class ClipAudit
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        if (args.Length > 1 && args[0] == "--bake") return Bake(args[1]);
         var spec = JsonDocument.Parse(File.ReadAllText(args[0])).RootElement;
 
         var program = typeof(ClipAudit).Assembly.GetType("Program");
@@ -312,6 +317,96 @@ static class ClipAudit
         foreach (var lay in ((CellEnvironmentSpawnableBase)gen).CachedLays)
             sink.Add((new SpawnPoint(lay.Point.Position, lay.Point.Rotation, Clamp(lay.Point.Scale)), lay.Domain, lay.Kind));
     }
+
+    // ── baking (Tools/Build/bake_prism_layouts.py) ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Write the layout bake of every cell environment in the spec (entries: name, node, source, out) with
+    /// the SHIPPED PrismLayoutBakeFormat, so the fingerprint and bytes are exactly what the game
+    /// reads. Each world is generated twice: the first pass warms the JIT, the second is timed (the
+    /// load cost the bake removes). The bake is decoded back and compared bit for bit before it is
+    /// reported, and the decode is timed too (the load cost that is left).
+    /// </summary>
+    static int Bake(string specPath)
+    {
+        s_tagging = false;
+        var spec = JsonDocument.Parse(File.ReadAllText(specPath)).RootElement;
+        var program = typeof(ClipAudit).Assembly.GetType("Program");
+        var setField = program.GetMethod("SetField", BindingFlags.NonPublic | BindingFlags.Static);
+        var findField = program.GetMethod("FindField", BindingFlags.NonPublic | BindingFlags.Static);
+
+        CellEnvironmentSpawnableBase Make(JsonElement node)
+        {
+            var type = typeof(ClipAudit).Assembly.GetTypes().First(t => t.Name == node.GetProperty("type").GetString());
+            var gen = (CellEnvironmentSpawnableBase)Activator.CreateInstance(type);
+            foreach (var f in node.GetProperty("fields").EnumerateObject())
+                setField.Invoke(null, new object[] { gen, f.Name, f.Value });
+            ((FieldInfo)findField.Invoke(null, new object[] { type, "rng" })).SetValue(gen, new System.Random(1));
+            return gen;
+        }
+
+        using var stdout = Console.OpenStandardOutput();
+        using var w = new Utf8JsonWriter(stdout, new JsonWriterOptions { Indented = true });
+        w.WriteStartArray();
+        int failures = 0;
+        foreach (var entry in spec.EnumerateArray())
+        {
+            string name = entry.GetProperty("name").GetString();
+            var node = entry.GetProperty("node");
+            Make(node).GenerateForHarness();
+            var gen = Make(node);
+            var clock = Stopwatch.StartNew();
+            gen.GenerateForHarness();
+            double generateMs = clock.Elapsed.TotalMilliseconds;
+
+            ulong fingerprint = PrismLayoutBakeFormat.Fingerprint(gen);
+            ulong sourceHash = PrismLayoutBakeFormat.SourceHash(File.ReadAllText(entry.GetProperty("source").GetString()));
+            var lays = gen.CachedLays;
+            var sites = gen.PlantingSites ?? new List<FloraPlantingSite>();
+            byte[] data = PrismLayoutBakeFormat.Encode(fingerprint, sourceHash, lays, sites);
+            File.WriteAllBytes(entry.GetProperty("out").GetString(), data);
+
+            PrismLayoutBakeFormat.TryDecode(data, fingerprint, out _, out _);   // warm
+            clock.Restart();
+            bool ok = PrismLayoutBakeFormat.TryDecode(data, fingerprint, out var back, out var backSites);
+            double decodeMs = clock.Elapsed.TotalMilliseconds;
+            string mismatch = !ok ? "did not decode" : back.Count != lays.Count ? "lay count" :
+                backSites.Count != sites.Count ? "site count" : null;
+            for (int i = 0; mismatch == null && i < lays.Count; i++)
+            {
+                var a = lays[i]; var b = back[i];
+                if (!Same(a.Point.Position, b.Point.Position) || !Same(a.Point.Scale, b.Point.Scale) ||
+                    a.Point.Rotation.x != b.Point.Rotation.x || a.Point.Rotation.y != b.Point.Rotation.y ||
+                    a.Point.Rotation.z != b.Point.Rotation.z || a.Point.Rotation.w != b.Point.Rotation.w ||
+                    a.Domain != b.Domain || a.Kind != b.Kind)
+                    mismatch = $"lay {i}";
+            }
+            for (int i = 0; mismatch == null && i < sites.Count; i++)
+                if (!Same(sites[i].Position, backSites[i].Position) || sites[i].Kind != backSites[i].Kind ||
+                    (sites[i].Up - backSites[i].Up).magnitude > 1e-6f)
+                    mismatch = $"site {i}";
+            if (mismatch != null) { failures++; Console.Error.WriteLine($"[bake] {name}: round trip failed at {mismatch}"); }
+
+            w.WriteStartObject();
+            w.WriteString("name", name);
+            w.WriteString("type", gen.GetType().Name);
+            w.WriteString("fingerprint", fingerprint.ToString("x16"));
+            w.WriteString("stem", PrismLayoutBakeFormat.FileStem(gen.GetType(), fingerprint));
+            w.WriteNumber("prisms", lays.Count);
+            w.WriteNumber("sites", sites.Count);
+            w.WriteNumber("bytes", data.Length);
+            w.WriteNumber("generate_ms", Math.Round(generateMs, 2));
+            w.WriteNumber("decode_ms", Math.Round(decodeMs, 2));
+            w.WriteBoolean("round_trip", mismatch == null);
+            w.WriteEndObject();
+            w.Flush();
+        }
+        w.WriteEndArray();
+        w.Flush();
+        return failures == 0 ? 0 : 1;
+    }
+
+    static bool Same(Vector3 a, Vector3 b) => a.x == b.x && a.y == b.y && a.z == b.z;
 
     static Vector3 V(JsonElement e) { var a = e.EnumerateArray().Select(x => (float)x.GetDouble()).ToArray(); return new Vector3(a[0], a[1], a[2]); }
 }

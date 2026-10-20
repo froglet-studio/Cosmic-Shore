@@ -112,6 +112,8 @@ namespace CosmicShore.Gameplay
         // lay list carries the authored scale either way), which is exactly the point - the
         // harness measures what the generator STATES and the engine is what can trim it.
         protected virtual bool AdmitsAuthoredPrismScale => false;
+        // CellEnvironmentSpawnableBase.BakesLayout: the rail worlds override it false (PrismLayoutBake).
+        protected virtual bool BakesLayout => true;
 
         protected float RangeF(float min, float max) => (float)(_r.NextDouble() * (max - min) + min);
 

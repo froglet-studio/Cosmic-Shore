@@ -96,6 +96,10 @@ namespace CosmicShore.Gameplay
 
         protected override int DefaultSeed => RegattaCourse.DefaultSeed;
 
+        /// <summary>Never baked (PrismLayoutBake): its lay is split into trails by build state the
+        /// bake does not carry, and its fit is closed-form and cheap.</summary>
+        protected override bool BakesLayout => false;
+
         protected override int LayCapacity => 8192;
 
         protected override void BuildEnvironment()

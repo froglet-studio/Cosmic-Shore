@@ -126,6 +126,10 @@ namespace CosmicShore.Gameplay
         /// requires it and because a future variant might want a draw.</summary>
         protected override int DefaultSeed => 45;
 
+        /// <summary>Never baked (PrismLayoutBake): its lay is split into trails by build state the
+        /// bake does not carry, and its fit is closed-form and cheap.</summary>
+        protected override bool BakesLayout => false;
+
         protected override int LayCapacity => 12000;
 
         /// <summary>

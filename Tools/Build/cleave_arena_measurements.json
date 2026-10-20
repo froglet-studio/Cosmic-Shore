@@ -9,7 +9,7 @@
     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRibcage.cs": "19df1fb5d6abd530",
     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableTwistbands.cs": "7d8dc0d1de2d8a1c",
     "Assets/_Scripts/Controller/Toys/PaintingStrokeToolkit.cs": "0af5d3b0148e8fe1",
-    "Tools/Build/cleave_arena_harness/PlatformShim.cs": "4049f48b49275477",
+    "Tools/Build/cleave_arena_harness/PlatformShim.cs": "9b6db09118a97035",
     "Tools/Build/cleave_arena_harness/UnityShim.cs": "c6010e85402eae87",
     "Tools/Build/cleave_arena_harness/Program.cs": "0623289728a9f7fe"
   },

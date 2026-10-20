@@ -11848,6 +11848,61 @@ Two shapes changed visibly, not just in size:
 The Orrery and the Ourobor now admit their authored scale (`AdmitsAuthoredPrismScale`): a few flush
 sizes sit under the prism prefab's 0.5 floor, and the floor would grow them back into a clip.
 
+### 62.2b The layouts are BAKED: the game does not run the fit while it loads
+
+The load column above is what the fits cost. Garrett, 2026-10-20: *"bake the fitted layouts into
+assets so load cost is zero."* A cell environment's output depends only on its generator's code
+and its serialized fields, so it is now computed once, offline, and the game reads it:
+
+- **`Tools/Build/bake_prism_layouts.py`** runs every `CellEnvironmentSpawnableBase` prefab through the
+  prism clip audit's harness (the same shipped C# the audit proves flush) and writes
+  `Assets/Resources/PrismLayouts/<Type>_<fingerprint>.bytes`: every lay (pose, scale, domain,
+  kind) and every planting site, exact float32. It bakes each world at intensities 1 and 4 and
+  fails if they differ. `--check` re-bakes and fails on any drifted, missing or orphan bake;
+  `--self-test` proves `--check` catches each of those. Per-bake sizes and timings go to
+  `Tools/Build/prism_layout_bakes.json`.
+- **The key is a FINGERPRINT of the generator's fields** (`PrismLayoutBakeFormat.Fingerprint`:
+  FNV-1a over seed, density, spawn clearance and every serialized field the subclass declares).
+  The harness compiles the same file, so the baked fingerprint is the one the game computes. An
+  edited prefab asks for a fingerprint with no file, and the world is generated live with one
+  `[PrismLayoutBake]` warning naming the script. A stale bake is never served for new fields.
+- **A code change is caught twice.** `--check` fails on it, and in the Editor each bake carries a
+  hash of its generator's own script, so a world whose `.cs` was edited is generated live in
+  Play mode until it is re-baked. A player build always trusts its bakes.
+- **Read path:** `CellEnvironmentSpawnableBase.GenerateTrailData` asks `PrismLayoutBake.TryLoad`
+  first. It loads the bake from `Resources`, unloads it as soon as it is decoded (so the Cell
+  Selector, which references every world, keeps none of them resident), and falls back to
+  `BuildEnvironment` on any miss. `using (PrismLayoutBake.Bypass())` forces live generation.
+- **Not baked:** the four rail worlds (Skein, Regatta rails, Switchyard, Breakwater). They split
+  their lay into trails by build state a bake does not carry, so they override
+  `BakesLayout => false`. Their fits are closed-form and cheap. The `SpawnableBase` shapes
+  (Spherene, Helicoid, the torus knot, Hopf, SchwarzP, Gyroid) are not cell environments and
+  still generate live; their fits are closed-form too.
+
+| | live generation (.NET 8) | bake decode | bake size |
+|---|---:|---:|---:|
+| Atlantis | 289 ms | 3.4 ms | 2.84 MB |
+| Ourobor | 203 ms (never measured before) | 2.0 ms | 1.59 MB |
+| Yggdra | 201 ms | 1.2 ms | 1.44 MB |
+| Caldera | 108 ms | 0.9 ms | 1.74 MB |
+| Daedala / Geode | 44 / 34 ms | 1.3 / 1.6 ms | 1.42 / 1.44 MB |
+| the other 16 (Orrery, Zephyr, Hesperides, Garland, Cleave ×4, Boneyard ×4, Wildlife cages ×4) | 4–24 ms each | 0.2–1.8 ms | 0.18–1.51 MB |
+| **all 22** | **~1.09 s** | **~22 ms** | **22.3 MB** |
+
+Timings are one run each, as `Tools/Build/prism_layout_bakes.json` records them. They move by
+tens of percent from run to run, and a phone running IL2CPP will be several times slower on both
+sides.
+
+**The cost is size.** Exact float32 is ~40 bytes per prism, and deduplication buys almost nothing:
+the fits make nearly every scale and rotation unique. The bakes are 22.3 MB on disk, about 13 MB
+once a build compresses them (11 MB with a byte-shuffle). Quantizing would roughly halve that,
+but a quantized rotation can reopen a flush contact the fit closed, so the bakes stay exact.
+
+**Amoebius** reads the same bakes: its `Resources.Load` now resolves a `.bytes` TextAsset, and
+`Resources.UnloadAsset` exists as a no-op. A Menu_Main boot there served the Garland cell from its
+bake. Before the loader fix it computed the same fingerprint and fell back to live, which is a
+second engine agreeing with the harness's fingerprint.
+
 ### 62.3 The phase ladders moved with the volume
 
 `Cell.LiveVolume` counts every laid prism, the environment's too. So a cell's `PhaseThresholds` are
@@ -11878,8 +11933,7 @@ None of these can be fixed by fitting a size, and each fix would change somethin
   finds them. That search was built and cost +53 ms, so it was reverted (T-20261020-c358).
 - **Under the scale floor**: Batman's head strokes and every Pumpkin block are flush only below the
   prefab's 0.5 floor (T-20261020-c71f). Pumpkin is a stress test and is not shipped.
-- **The load cost** of the fits above (T-20261020-8f9d). Baking the fitted lays into an asset would
-  make it zero.
+- ~~The load cost of the fits~~: resolved by baking (§62.2b, T-20261020-8f9d done).
 
 ### 62.5 What this does NOT cover yet
 
@@ -11925,6 +11979,13 @@ Offline, measured on this branch:
 - Every touched budget model and author script passes its `--check`.
 - The headless reference compile passes: player config RESULT OK, editor config 0 errors in changed files.
 - `render_card_backgrounds.py --check` passes.
+- `bake_prism_layouts.py --check` and `--self-test` pass. Its negative controls were run by hand: a
+  changed `DefaultSeed` reads as a drifted bake, and a changed prefab field reads as missing plus
+  orphan.
+- Amoebius: `dotnet build Port/src/CosmicShore.Live` passes. A headless Menu_Main boot serves the
+  Garland cell from its bake. `CosmicShore.Tests` has 1978 of 1979 passing; the one failure
+  (`UnityWrittenOverrideListsReplayByteForByte`) fails the same with the port changes removed.
 
 **Nothing has been run in the Unity editor.** The hand tests are T-20261020-74d8 (freestyle cells
-and Atlantis), T-20261020-fa54 (arcade arenas) and T-20261020-2cee (the Thresher acknowledgement).
+and Atlantis), T-20261020-fa54 (arcade arenas), T-20261020-2cee (the Thresher acknowledgement) and
+T-20261020-ad7e (the bakes: `PrismLayoutBakeTests`, no `[PrismLayoutBake]` warning in play).

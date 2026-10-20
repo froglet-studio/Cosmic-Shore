@@ -51,6 +51,8 @@ HARNESS = ROOT / "Tools/Build/prism_clip_audit/run.sh"
 MG = "Assets/_Scripts/Controller/Environment/MiniGameObjects"
 INTENSITIES = (1, 2, 3, 4)
 # SpawnableGyroid walks the shipped bond-mate table (its enum is lifted by run.sh).
+# The shipped bake format, so bake_prism_layouts.py writes exactly what the game reads.
+BAKE_FORMAT = "Assets/_Scripts/Controller/Environment/Spawning/PrismLayoutBakeFormat.cs"
 GYROID_TABLES = ["Assets/_Scripts/Controller/Assemblers/CornerSiteType.cs",
                  "Assets/_Scripts/Controller/Assemblers/GyroidBondMateData.cs",
                  "Assets/_Scripts/Controller/Assemblers/GyroidBondMateDataContainer.cs"]
@@ -79,7 +81,7 @@ def shapes():
 
 def list_sources():
     seen, out = set(), []
-    for s in rcb.SOURCES + GYROID_TABLES + shapes():
+    for s in rcb.SOURCES + GYROID_TABLES + [BAKE_FORMAT] + shapes():
         if s not in seen:
             seen.add(s)
             out.append(s)
