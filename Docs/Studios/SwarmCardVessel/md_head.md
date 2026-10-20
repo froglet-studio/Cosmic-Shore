@@ -16,7 +16,7 @@ The second swarm vessel after the Shepherd ([SWARM_VESSEL_LAB.md](SWARM_VESSEL_L
   |---|---|---|
   | Omnicrystal | Collect an omnicrystal | 30 s |
   | Elemental crystals | Collect Y elemental crystals | 25 s, Y = 5 |
-  | Opposing vessels | Debuff a vessel (silence, slow, petal, stripped crystal, hijack) | 25 s |
+  | Opposing vessels | Debuff a vessel (silence, slow, petal, stripped crystal) | 25 s |
   | Opposing mass | Reduce opposing mass by X | 25 s, X = 30 prisms |
 
 - **Cards.** The end of the Omnicrystal phase deals four cards, one per element, whether or not an omnicrystal was collected. The player picks one; the other three go. The phase bar and timer show when the next hand comes.
@@ -39,6 +39,7 @@ Each element owns a job, and no card of another element does that job:
 
 - At least half of each element's cards do its job (the **Job** column).
 - At least half lean on the element's real physics (the **Physics** column): gravity, inertia and density for Mass; dilation, rewinds and phase for Time; folded, curved and expanding space for Space; static, arcs and magnetism for Charge.
+- **No stuns (Garrett, 2026-10-20).** No card stuns another vessel or takes its control away: no stun, hijack, blind or shove. That rule protects the fun economy. Silencing Charge and Space abilities, slowing, taking petals and stripping crystals are all allowed.
 - Exotic effects outside these jobs are welcome, as long as they do not take another element's job. `build.py` fails if an element drops under 10 in either column.
 - Revision 3 removed everything that leaned on the player steering the swarm: plane flicks, the camera line, the objective toggle, the card reroll. The list of changes is at the end.
 

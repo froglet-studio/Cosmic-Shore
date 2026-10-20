@@ -16,7 +16,7 @@ The second swarm vessel after the Shepherd ([SWARM_VESSEL_LAB.md](SWARM_VESSEL_L
   |---|---|---|
   | Omnicrystal | Collect an omnicrystal | 30 s |
   | Elemental crystals | Collect Y elemental crystals | 25 s, Y = 5 |
-  | Opposing vessels | Debuff a vessel (silence, slow, petal, stripped crystal, hijack) | 25 s |
+  | Opposing vessels | Debuff a vessel (silence, slow, petal, stripped crystal) | 25 s |
   | Opposing mass | Reduce opposing mass by X | 25 s, X = 30 prisms |
 
 - **Cards.** The end of the Omnicrystal phase deals four cards, one per element, whether or not an omnicrystal was collected. The player picks one; the other three go. The phase bar and timer show when the next hand comes.
@@ -39,6 +39,7 @@ Each element owns a job, and no card of another element does that job:
 
 - At least half of each element's cards do its job (the **Job** column).
 - At least half lean on the element's real physics (the **Physics** column): gravity, inertia and density for Mass; dilation, rewinds and phase for Time; folded, curved and expanding space for Space; static, arcs and magnetism for Charge.
+- **No stuns (Garrett, 2026-10-20).** No card stuns another vessel or takes its control away: no stun, hijack, blind or shove. That rule protects the fun economy. Silencing Charge and Space abilities, slowing, taking petals and stripping crystals are all allowed.
 - Exotic effects outside these jobs are welcome, as long as they do not take another element's job. `build.py` fails if an element drops under 10 in either column.
 - Revision 3 removed everything that leaned on the player steering the swarm: plane flicks, the camera line, the objective toggle, the card reroll. The list of changes is at the end.
 
@@ -76,7 +77,7 @@ Each element owns a job, and no card of another element does that job:
 | 10 | **Supershield Core** | Shield | Any | Your prisms near the swarm's centroid are supershielded while the swarm stays close. | Core radius: 40 u / 80 u / 130 u / 180 u | L10: The shield lasts a few seconds after the swarm leaves | Supershielding | - |
 | 11 | **Carapace** | Shield | Opposing vessels | Members grow shells. A shell soaks one hit, then regrows. | Shell regrows in: 12.0 s / 7.2 s / 3.8 s / 2.0 s | L8: Two shells per member<br>L15: Three shells per member | Shielding | - |
 | 12 | **Gravity Well** | Pull | Elemental crystals | The centroid's gravity pulls loose crystals toward the swarm, and your prisms inside the well pack into a shielded clump. | Pull radius: 50 u / 110 u / 185 u / 260 u | L10: Enemy vessels inside the well are dragged (25% slow) | Shielding | Gravity |
-| 13 | **Bulk Up** | Body | Opposing vessels | Members grow bigger and heavier. Heavy members take more to kill and do not get knocked about. | Member size: 1.05× / 1.25× / 1.50× / 1.75×<br>Toughness: 1.0× / 1.8× / 2.8× / 3.8× | L10: A heavy member shoves enemy vessels aside | - | Inertia |
+| 13 | **Bulk Up** | Body | Opposing vessels | Members grow bigger and heavier. Heavy members take more to kill and do not get knocked about. | Member size: 1.05× / 1.25× / 1.50× / 1.75×<br>Toughness: 1.0× / 1.8× / 2.8× / 3.8× | L10: A heavy member that rams a vessel takes a third of a petal | - | Inertia |
 | 14 | **Mass Tug** | Hook | Opposing vessels | Members latch onto enemy vessels and weigh them down. | Most slow on one vessel: 15% / 31% / 51% / 71% | L10: A weighed-down vessel drops a petal every 5 s | - | Added mass |
 | 15 | **Brood** | Growth | Any | The swarm breeds: a new member hatches at the centroid every few seconds, up to the swarm cap. | Hatch every: 6.0 s / 3.6 s / 1.9 s / 1.0 s | L10: Hatchlings arrive full size<br>L15: Twins: two members per hatch | - | - |
 | 16 | **Big Family** | Growth | Any | Raises the swarm cap and the protected minimum size. | Swarm cap: 46 / 70 / 100 / 130<br>Minimum size: 6 / 8 / 10 / 13 | L10: Members over the cap wait in a reserve and refill losses at once | - | - |
@@ -107,7 +108,7 @@ Each element owns a job, and no card of another element does that job:
 | 12 | **Save Point** | Rewind | Any | Once per cycle, when the swarm is knocked down to its minimum size, it rewinds to where it was and how big it was a few seconds ago. | Rewinds: 3.0 s / 5.0 s / 7.5 s / 10.0 s | L10: The rewind also returns the petals you lost | Positioning | Rewind |
 | 13 | **Fast Forward** | Speed | Any | Every 20 s the swarm runs on double time (speed, breeding, cooldowns) for a few seconds. | Double time lasts: 2.0 s / 3.6 s / 5.6 s / 7.6 s | - | Speed | Faster clock |
 | 14 | **Metronome** | Rhythm | Any | The swarm surges forward on a beat, then glides. The beat quickens as the card levels. | Beat every: 2.00 s / 1.63 s / 1.26 s / 0.98 s<br>Surge speed: 1.5× / 1.9× / 2.4× / 2.9× | L10: A big surge as each new phase starts | Speed | Period and frequency |
-| 15 | **Synchrony** | Rhythm | Opposing vessels | Members fall into sync like fireflies. Each synced flash blinds nearby enemies and bursts the swarm forward. | Flash every: 6.0 s / 4.3 s / 2.8 s / 1.9 s<br>Burst speed: 1.30× / 1.50× / 1.75× / 2.00× | - | Movement | Coupled oscillators |
+| 15 | **Synchrony** | Rhythm | Opposing vessels | Members fall into sync like fireflies. Each synced flash bursts the whole swarm forward at once. | Flash every: 6.0 s / 4.3 s / 2.8 s / 1.9 s<br>Burst speed: 1.30× / 1.50× / 1.75× / 2.00× | - | Movement | Coupled oscillators |
 | 16 | **Mayfly Couriers** | Fetch | Elemental crystals | Short-lived mayflies hatch, race to the nearest crystals and bring them back. | Couriers: 1 / 3 / 5 / 8<br>Courier speed: 150 u/s / 210 u/s / 285 u/s / 360 u/s | - | Speed | - |
 | 17 | **Rewind** | Survive | Opposing vessels | A member that is killed may rewind 2 s and come back. | Chance: 10% / 30% / 55% / 80% | - | - | Rewind |
 | 18 | **Echo Swarm** | Copy | Elemental crystals | A ghost of the swarm replays its path a moment behind it, collecting crystals the real swarm missed. | Ghost strength: 20% / 36% / 56% / 76% | L8: Two ghosts<br>L15: Three ghosts | - | Echo of the past |
@@ -132,7 +133,7 @@ Each element owns a job, and no card of another element does that job:
 | 8 | **Curvature** | Territory | Omnicrystal | Where the swarm lingers, space curves. Enemy prisms inside slide toward the centre and shrink. | Zone radius: 100 u / 180 u / 280 u / 380 u<br>Shrink rate: 1.0%/s / 3.0%/s / 5.5%/s / 8.0%/s | - | Shrink range | Curved spacetime |
 | 9 | **Black Hole** | Ultimate | Any | Once per omnicrystal the swarm collapses into a black hole that pulls in and eats every enemy prism near it. | Black hole lasts: 2.0 s / 3.6 s / 5.6 s / 7.6 s<br>Pull radius: 150 u / 250 u / 375 u / 500 u | - | Destroy range | Event horizon |
 | 10 | **Meteor Drop** | Slam | Opposing mass | Every few seconds one member climbs high above the swarm and slams down on the objective, bursting enemy prisms round where it lands. | Every: 8.0 s / 5.7 s / 3.8 s / 2.5 s<br>Blast radius: 30 u / 54 u / 84 u / 114 u | L10: Two meteors at a time | Destroy range | Impact |
-| 11 | **Shockwave** | Burst | Opposing vessels | Every 10 s the swarm flares into an expanding ring that bursts enemy prisms and shoves vessels. | Ring radius: 80 u / 140 u / 215 u / 290 u | - | Destroy range | Pressure wave |
+| 11 | **Shockwave** | Burst | Opposing vessels | Every 10 s the swarm flares into an expanding ring that bursts enemy prisms. | Ring radius: 80 u / 140 u / 215 u / 290 u | - | Destroy range | Pressure wave |
 | 12 | **Orbital Scythe** | Orbit | Opposing mass | A share of members orbit the centroid at speed and cut every enemy prism on their circle. | Members in orbit: 10% / 18% / 28% / 38%<br>Orbit radius: 60 u / 84 u / 114 u / 144 u | - | Destroy range | Orbits |
 | 13 | **Manta Sheet** | Form | Opposing mass | Every 20 s the swarm flattens into one wide manta that sweeps through the cell, bursting every enemy prism under its wings. | Wingspan: 150 u / 250 u / 375 u / 500 u<br>Manta lasts: 3.0 s / 4.2 s / 5.7 s / 7.2 s | - | Destroy range | - |
 | 14 | **Whale Gulp** | Form | Opposing mass | Every 20 s the swarm becomes a whale mouth and gulps a cone of enemy prisms in one bite. Gulped prisms feed breeding. | Cone length: 120 u / 200 u / 300 u / 400 u<br>Most prisms per gulp: 10 / 34 / 64 / 94 | - | Destroy amount | - |
@@ -147,17 +148,17 @@ Each element owns a job, and no card of another element does that job:
 
 *Current, fields and lightning: the swarm silences rivals, kills fauna and knocks the crystals out of other vessels.*
 
-**Charge's job:** Silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels. 15 of 20 cards do it; 12 of 20 play on its physics.
+**Charge's job:** Silencing other vessels' Charge and Space abilities, killing fauna, stripping elemental crystals from other vessels. 16 of 20 cards do it; 13 of 20 play on its physics.
 
 | # | Card | Kind | Shines in phase | What it does | Scales: L1 / L5 / L10 / L15 | Milestones | Job | Physics |
 |---|---|---|---|---|---|---|---|---|
 | 1 | **EMP** | Silence | Opposing vessels | Every 20 s the swarm pulses an EMP that silences enemy Charge and Space abilities in range. | Silenced for: 0.5 s / 1.3 s / 2.3 s / 3.3 s<br>Radius: 120 u / 180 u / 255 u / 330 u | - | Silence | Electromagnetic pulse |
 | 2 | **Lightning Rod** | Silence | Opposing vessels | One member stands as a lightning rod. Enemy Charge abilities fired near the swarm are drawn into it and fizzle. | Draw radius: 60 u / 108 u / 168 u / 228 u<br>Rods: 1 / 1 / 2 / 3 | - | Silence | Grounding |
-| 3 | **Plasma Net** | Silence | Opposing vessels | Members link into a plasma net. An enemy that crosses a strand is stunned and its Charge and Space abilities go quiet. | Stunned for: 0.3 s / 0.7 s / 1.2 s / 1.7 s<br>Strand length: 40 u / 72 u / 112 u / 152 u | - | Silence | Plasma |
-| 4 | **Thorns** | Silence | Opposing vessels | An enemy that kills a member may get a shock back that silences it for half a second. | Chance: 5% / 25% / 50% / 75% | - | Silence | Static discharge |
+| 3 | **Plasma Net** | Silence | Opposing vessels | Members link into a plasma net. An enemy that crosses a strand keeps flying, but its Charge and Space abilities go quiet. | Silenced for: 0.5 s / 1.3 s / 2.3 s / 3.3 s<br>Strand length: 40 u / 72 u / 112 u / 152 u | - | Silence | Plasma |
+| 4 | **Thorns** | Silence | Opposing vessels | An enemy that kills a member may get a shock back that silences its Charge and Space abilities for a moment. | Chance: 5% / 25% / 50% / 75%<br>Silenced for: 0.5 s / 0.9 s / 1.4 s / 1.9 s | - | Silence | Static discharge |
 | 5 | **Static Members** | Drain | Opposing vessels | Members carry static. A rival that brushes one has its Charge element drained. | Charge drained per touch: 2% / 6% / 11% / 16% | L10: The drained charge feeds your other Charge cards | Strip elements | Static charge |
-| 6 | **Short Circuit** | Strip | Opposing vessels | A vessel swarmed by enough members shorts out and drops elemental crystals, which your swarm can collect. | Members needed: 16 / 11 / 7 / 4<br>Crystals knocked loose: 1 / 2 / 3 / 4 | - | Strip crystals | Short circuit |
-| 7 | **Polarity** | Push | Opposing vessels | The swarm repels enemy vessels like a matching magnet pole, shoving them off its path. | Push radius: 60 u / 100 u / 150 u / 200 u | L10: Repelled vessels drop elemental crystals | Strip crystals | Magnetism |
+| 6 | **Short Circuit** | Strip | Opposing vessels | A vessel swarmed by enough members sparks and drops elemental crystals, which your swarm can collect. It keeps full control of its flight. | Members needed: 16 / 11 / 7 / 4<br>Crystals knocked loose: 1 / 2 / 3 / 4 | - | Strip crystals | Short circuit |
+| 7 | **Polarity** | Strip | Opposing vessels | The swarm's magnetic field tugs elemental crystals off enemy vessels that fly near it, without pushing the vessels themselves. | Field radius: 60 u / 100 u / 150 u / 200 u<br>Crystals tugged off: 0.2/s / 0.6/s / 1.1/s / 1.6/s | - | Strip crystals | Magnetism |
 | 8 | **Dragon** | Form | Opposing vessels | Every 25 s the swarm becomes a long serpent dragon that breathes a cone of plasma. Vessels it scorches lose elemental crystals; fauna in it burn. | Breath length: 100 u / 180 u / 280 u / 380 u<br>Dragon lasts: 3.0 s / 4.6 s / 6.6 s / 8.6 s | L15: The breath takes a petal a second | Strip crystals and kill fauna | - |
 | 9 | **Chain Lightning** | Weapon | Any | The swarm's hits arc on from target to target through fauna and vessels. | Jumps: 1 / 3 / 5 / 8 | - | Kill fauna | Arc discharge |
 | 10 | **Tesla Coil** | Weapon | Any | Every few seconds the centroid zaps the nearest fauna. | Zaps per pulse: 1 / 3 / 5 / 8<br>Every: 3.0 s / 2.2 s / 1.6 s / 1.1 s | - | Kill fauna | Resonant coil |
@@ -165,27 +166,33 @@ Each element owns a job, and no card of another element does that job:
 | 12 | **Lasers** | Weapon | Opposing vessels | Members fire lasers at the nearest fauna or enemy vessel. | Members armed: 9% / 35% / 67% / 100%<br>Range: 120 u / 180 u / 255 u / 330 u | L10: Beams pierce<br>L15: Beams on one vessel merge into one big beam | Kill fauna | - |
 | 13 | **Overcharge** | Burst | Elemental crystals | Each crystal collected charges the swarm. At full charge it lets out a blast that kills fauna round it and silences vessels. | Crystals to full: 10 / 5 / 3 / 1<br>Blast radius: 100 u / 180 u / 280 u / 380 u | - | Kill fauna and silence | Capacitor |
 | 14 | **Spark Trail** | Trap | Opposing vessels | The swarm leaves a crackling trail. An enemy that crosses it is slowed and its abilities sputter. | Trail lasts: 2.0 s / 4.0 s / 6.5 s / 9.0 s<br>Slow: 10% / 22% / 37% / 52% | - | Silence | Live current |
-| 15 | **Kamikaze** | Burst | Opposing vessels | Members that hit an enemy vessel or fauna explode in a spark that silences what it touches. Members never explode below the swarm's minimum size. | Blast radius: 20 u / 40 u / 65 u / 90 u<br>Chance the member lives: 0% / 20% / 45% / 70% | - | Silence and kill fauna | - |
+| 15 | **Kamikaze** | Burst | Opposing vessels | Members that hit an enemy vessel or fauna explode in a spark that kills fauna and silences a vessel's Charge and Space abilities. Members never explode below the swarm's minimum size. | Blast radius: 20 u / 40 u / 65 u / 90 u<br>Chance the member lives: 0% / 20% / 45% / 70% | - | Silence and kill fauna | - |
 | 16 | **Sting** | Weapon | Opposing vessels | Members within reach dive at enemy vessels. Enough stings take a petal. | Stings per petal: 12 / 6 / 3 / 1<br>Reach: 80 u / 120 u / 170 u / 220 u | - | - | - |
 | 17 | **Wasp** | Form | Opposing vessels | Every 20 s the swarm fuses into a giant wasp that lunges at the nearest enemy vessel with its stinger. | Lunge range: 200 u / 320 u / 470 u / 620 u | L1: Lunge takes 1 petal<br>L8: Lunge takes 2 petals<br>L15: Lunge takes 3 petals | - | - |
 | 18 | **Missiles** | Weapon | Opposing vessels | Every few seconds members launch as homing missiles at enemy vessels. | Missiles per volley: 1 / 3 / 5 / 8<br>Every: 8.0 s / 6.5 s / 5.0 s / 3.9 s | - | - | - |
 | 19 | **Frenzy** | Hunt | Opposing vessels | When an enemy vessel is under half its petals, the swarm smells it and hits harder near it. | Bonus: 10% / 30% / 55% / 80% | - | - | - |
-| 20 | **Mind Control** | Weird | Opposing vessels | A vessel swarmed by enough members is hijacked for a moment and flies along with the swarm. A hijack counts as debuffing a vessel. | Hijack lasts: 0.5 s / 1.3 s / 2.3 s / 3.3 s<br>Members needed: 20 / 14 / 9 / 6 | - | - | - |
+| 20 | **Electroreception** | Hunt | Any | Like sharks, members sense the electric fields of living things and hunt fauna anywhere in range, killing it. | Sensing range: 100 u / 200 u / 325 u / 450 u<br>Members hunting: 10% / 22% / 37% / 52% | L10: A killed fauna drops an elemental crystal | Kill fauna | Bioelectric fields |
 
 ## What changed since revision 2
 
 | Card | Change |
 |---|---|
+| Mass: **Bulk Up** | No stuns: its L10 shoved vessels aside; it now takes a third of a petal on a ram. |
 | Mass: **Big Family** | Also raises the new minimum size, below which nothing can harm the swarm. |
 | Time: **Agility** | Was Reflexes, which settled the swarm onto your turned plane. You no longer steer, so it now sharpens the swarm's own turns. |
 | Time: **Lead Time** | Its L10 led your plane turns; it now leads the phase change. |
 | Time: **Save Point** | It fired when the swarm was nearly wiped; with the minimum size the swarm cannot be wiped, so it fires at the floor. |
 | Time: **Metronome** | Its L10 followed your plane flicks; it now fires on each phase change. |
+| Time: **Synchrony** | No stuns: the flash no longer blinds enemies. |
 | Time: **Hurry Up** | Was Second Look (reroll a hand). A reroll adds a choice with stakes; you asked for no tension when picking. |
 | Space: **Meteor Drop** | Now climbs above the swarm instead of leaving your plane. |
+| Space: **Shockwave** | No stuns: the ring no longer shoves vessels. |
 | Space: **Spaghettify** | New. Replaces Depth Dive: the swarm already roams the whole cell, so leaving the plane meant nothing. |
 | Space: **Mirror Swarm** | It reflected across your camera's centre line; the camera no longer touches the swarm, so it reflects through the centroid. |
 | Space: **Split** | Extra swarms follow the phase cycle instead of the toggle. |
 | Space: **Wide Lens** | Reworded for the free view. |
+| Charge: **Plasma Net** | No stuns: crossing a strand silences abilities instead of stunning the vessel. |
+| Charge: **Thorns** | No stuns: the shock silences abilities and the vessel keeps flying. |
+| Charge: **Polarity** | No stuns: it shoved vessels off their path, taking control from the pilot. The field now pulls crystals, not hulls. |
 | Charge: **Kamikaze** | Stops at the minimum size. |
-| Charge: **Mind Control** | The hijacked vessel followed your plane, which no longer steers anything. |
+| Charge: **Electroreception** | New. Replaces Mind Control: a hijack takes the pilot's control away, which the fun economy rules out. |

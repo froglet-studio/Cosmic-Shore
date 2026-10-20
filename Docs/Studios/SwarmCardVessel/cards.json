@@ -557,11 +557,11 @@
    ],
    "role": null,
    "phys": "Inertia",
-   "rev": null,
+   "rev": "No stuns: its L10 shoved vessels aside; it now takes a third of a petal on a ram.",
    "milestones": [
     {
      "level": 10,
-     "text": "A heavy member shoves enemy vessels aside"
+     "text": "A heavy member that rams a vessel takes a third of a petal"
     }
    ]
   },
@@ -1357,7 +1357,7 @@
    "name": "Synchrony",
    "kind": "Rhythm",
    "objective": "Opposing vessels",
-   "text": "Members fall into sync like fireflies. Each synced flash blinds nearby enemies and bursts the swarm forward.",
+   "text": "Members fall into sync like fireflies. Each synced flash bursts the whole swarm forward at once.",
    "stats": [
     {
      "label": "Flash every",
@@ -1390,7 +1390,7 @@
    ],
    "role": "Movement",
    "phys": "Coupled oscillators",
-   "rev": null,
+   "rev": "No stuns: the flash no longer blinds enemies.",
    "milestones": []
   },
   {
@@ -1967,7 +1967,7 @@
    "name": "Shockwave",
    "kind": "Burst",
    "objective": "Opposing vessels",
-   "text": "Every 10 s the swarm flares into an expanding ring that bursts enemy prisms and shoves vessels.",
+   "text": "Every 10 s the swarm flares into an expanding ring that bursts enemy prisms.",
    "stats": [
     {
      "label": "Ring radius",
@@ -1986,7 +1986,7 @@
    ],
    "role": "Destroy range",
    "phys": "Pressure wave",
-   "rev": null,
+   "rev": "No stuns: the ring no longer shoves vessels.",
    "milestones": []
   },
   {
@@ -2418,20 +2418,20 @@
    "name": "Plasma Net",
    "kind": "Silence",
    "objective": "Opposing vessels",
-   "text": "Members link into a plasma net. An enemy that crosses a strand is stunned and its Charge and Space abilities go quiet.",
+   "text": "Members link into a plasma net. An enemy that crosses a strand keeps flying, but its Charge and Space abilities go quiet.",
    "stats": [
     {
-     "label": "Stunned for",
+     "label": "Silenced for",
      "kind": "lin",
-     "a": 0.3,
-     "b": 0.1,
+     "a": 0.5,
+     "b": 0.2,
      "unit": "s",
      "dec": 1,
      "key": [
-      "0.3 s",
-      "0.7 s",
-      "1.2 s",
-      "1.7 s"
+      "0.5 s",
+      "1.3 s",
+      "2.3 s",
+      "3.3 s"
      ]
     },
     {
@@ -2451,7 +2451,7 @@
    ],
    "role": "Silence",
    "phys": "Plasma",
-   "rev": null,
+   "rev": "No stuns: crossing a strand silences abilities instead of stunning the vessel.",
    "milestones": []
   },
   {
@@ -2461,7 +2461,7 @@
    "name": "Thorns",
    "kind": "Silence",
    "objective": "Opposing vessels",
-   "text": "An enemy that kills a member may get a shock back that silences it for half a second.",
+   "text": "An enemy that kills a member may get a shock back that silences its Charge and Space abilities for a moment.",
    "stats": [
     {
      "label": "Chance",
@@ -2476,11 +2476,25 @@
       "50%",
       "75%"
      ]
+    },
+    {
+     "label": "Silenced for",
+     "kind": "lin",
+     "a": 0.5,
+     "b": 0.1,
+     "unit": "s",
+     "dec": 1,
+     "key": [
+      "0.5 s",
+      "0.9 s",
+      "1.4 s",
+      "1.9 s"
+     ]
     }
    ],
    "role": "Silence",
    "phys": "Static discharge",
-   "rev": null,
+   "rev": "No stuns: the shock silences abilities and the vessel keeps flying.",
    "milestones": []
   },
   {
@@ -2524,7 +2538,7 @@
    "name": "Short Circuit",
    "kind": "Strip",
    "objective": "Opposing vessels",
-   "text": "A vessel swarmed by enough members shorts out and drops elemental crystals, which your swarm can collect.",
+   "text": "A vessel swarmed by enough members sparks and drops elemental crystals, which your swarm can collect. It keeps full control of its flight.",
    "stats": [
     {
      "label": "Members needed",
@@ -2565,12 +2579,12 @@
    "n": 7,
    "element": "Charge",
    "name": "Polarity",
-   "kind": "Push",
+   "kind": "Strip",
    "objective": "Opposing vessels",
-   "text": "The swarm repels enemy vessels like a matching magnet pole, shoving them off its path.",
+   "text": "The swarm's magnetic field tugs elemental crystals off enemy vessels that fly near it, without pushing the vessels themselves.",
    "stats": [
     {
-     "label": "Push radius",
+     "label": "Field radius",
      "kind": "lin",
      "a": 60,
      "b": 10,
@@ -2582,17 +2596,26 @@
       "150 u",
       "200 u"
      ]
+    },
+    {
+     "label": "Crystals tugged off",
+     "kind": "lin",
+     "a": 0.2,
+     "b": 0.1,
+     "unit": "/s",
+     "dec": 1,
+     "key": [
+      "0.2/s",
+      "0.6/s",
+      "1.1/s",
+      "1.6/s"
+     ]
     }
    ],
    "role": "Strip crystals",
    "phys": "Magnetism",
-   "rev": null,
-   "milestones": [
-    {
-     "level": 10,
-     "text": "Repelled vessels drop elemental crystals"
-    }
-   ]
+   "rev": "No stuns: it shoved vessels off their path, taking control from the pilot. The field now pulls crystals, not hulls.",
+   "milestones": []
   },
   {
    "id": "charge-dragon",
@@ -2902,7 +2925,7 @@
    "name": "Kamikaze",
    "kind": "Burst",
    "objective": "Opposing vessels",
-   "text": "Members that hit an enemy vessel or fauna explode in a spark that silences what it touches. Members never explode below the swarm's minimum size.",
+   "text": "Members that hit an enemy vessel or fauna explode in a spark that kills fauna and silences a vessel's Charge and Space abilities. Members never explode below the swarm's minimum size.",
    "stats": [
     {
      "label": "Blast radius",
@@ -3096,47 +3119,52 @@
    "milestones": []
   },
   {
-   "id": "charge-mind-control",
+   "id": "charge-electroreception",
    "n": 20,
    "element": "Charge",
-   "name": "Mind Control",
-   "kind": "Weird",
-   "objective": "Opposing vessels",
-   "text": "A vessel swarmed by enough members is hijacked for a moment and flies along with the swarm. A hijack counts as debuffing a vessel.",
+   "name": "Electroreception",
+   "kind": "Hunt",
+   "objective": "Any",
+   "text": "Like sharks, members sense the electric fields of living things and hunt fauna anywhere in range, killing it.",
    "stats": [
     {
-     "label": "Hijack lasts",
+     "label": "Sensing range",
      "kind": "lin",
-     "a": 0.5,
-     "b": 0.2,
-     "unit": "s",
-     "dec": 1,
+     "a": 100,
+     "b": 25,
+     "unit": "u",
+     "dec": 0,
      "key": [
-      "0.5 s",
-      "1.3 s",
-      "2.3 s",
-      "3.3 s"
+      "100 u",
+      "200 u",
+      "325 u",
+      "450 u"
      ]
     },
     {
-     "label": "Members needed",
-     "kind": "geo",
-     "a": 20,
-     "b": 0.92,
-     "unit": "",
+     "label": "Members hunting",
+     "kind": "lin",
+     "a": 10,
+     "b": 3,
+     "unit": "%",
      "dec": 0,
      "key": [
-      "20",
-      "14",
-      "9",
-      "6"
+      "10%",
+      "22%",
+      "37%",
+      "52%"
      ]
     }
    ],
-   "role": null,
-   "phys": null,
-   "rev": "The hijacked vessel followed your plane, which no longer steers anything.",
-   "milestones": []
+   "role": "Kill fauna",
+   "phys": "Bioelectric fields",
+   "rev": "New. Replaces Mind Control: a hijack takes the pilot's control away, which the fun economy rules out.",
+   "milestones": [
+    {
+     "level": 10,
+     "text": "A killed fauna drops an elemental crystal"
+    }
+   ]
   }
  ]
 }
