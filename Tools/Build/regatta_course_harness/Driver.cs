@@ -34,16 +34,26 @@ public static class Driver
             }
             float minSep = float.MaxValue;
             for (int a = 0; a < 3; a++) for (int b = a+1; b < 3; b++) { var pa = rails.LanePositions[a]; var pb = rails.LanePositions[b]; for (int x = 0; x < pa.Length; x += 2) for (int y = 0; y < pb.Length; y += 2) minSep = Mathf.Min(minSep, (pa[x]-pb[y]).magnitude); }
+            // The laid volume: every prism at the length RegattaCourse.FlushRailLengths fits it to
+            // (flush with its neighbours), so the cell's phase ladder prices what is laid rather than
+            // count x 288. (6,6,8) is SpawnableRegattaRails.prismScale, asserted by
+            // author_regatta_assets.py.
+            var prismScale = new Vector3(6f, 6f, 8f);
+            double railVolume = 0; float minLen = float.MaxValue;
+            for (int lane = 0; lane < rails.LanePositions.Count; lane++)
+                foreach (float len in RegattaCourse.FlushRailLengths(rails.LanePositions[lane], rails.LaneRotations[lane], prismScale))
+                { railVolume += prismScale.x * prismScale.y * len; minLen = Mathf.Min(minLen, len); }
             float maxStepErr = 0f; foreach (var lp in rails.LanePositions) for (int k = 0; k < lp.Length; k++) maxStepErr = Mathf.Max(maxStepErr, Mathf.Abs((lp[(k+1)%lp.Length]-lp[k]).magnitude - rs.PrismSpacing));
             sb.Append($"    \"{i}\": {{\n");
             sb.Append($"      \"seed\": {seed},\n      \"rings\": {n},\n      \"ringRadius\": {s.RingRadius.ToString(ci)},\n      \"cornerFloor\": {s.CornerFloorRadius.ToString(ci)},\n");
             sb.Append($"      \"spineLength\": {rails.SpineLength.ToString("F1", ci)},\n      \"laneLengths\": [{string.Join(", ", rails.LaneLengths.ConvertAll(v => v.ToString("F1", ci)))}],\n");
+            sb.Append($"      \"railVolume\": {railVolume.ToString("F0", ci)},\n      \"minPrismLength\": {minLen.ToString("F3", ci)},\n");
             sb.Append($"      \"prismCount\": {rails.PrismCount},\n      \"minLaneSeparation\": {minSep.ToString("F2", ci)},\n      \"maxSpacingError\": {maxStepErr.ToString("F3", ci)},\n");
             sb.Append($"      \"cornerRadii\": [{string.Join(", ", corners.ConvertAll(v => (float.IsInfinity(v) ? 1e9f : v).ToString("F1", ci)))}],\n");
             sb.Append($"      \"legLengths\": [{string.Join(", ", legs.ConvertAll(v => v.ToString("F1", ci)))}],\n");
             sb.Append($"      \"gate0\": [{gates[0].Position.x.ToString("F2", ci)}, {gates[0].Position.y.ToString("F2", ci)}, {gates[0].Position.z.ToString("F2", ci)}]\n");
             sb.Append(i < 4 ? "    },\n" : "    }\n");
-            Console.Error.WriteLine($"i{i}: seed {seed} spine {rails.SpineLength:F0} lanes {string.Join("/", rails.LaneLengths.ConvertAll(v=>v.ToString("F0")))} prisms {rails.PrismCount} minSep {minSep:F1} stepErr {maxStepErr:F3} corners {string.Join(",", corners.ConvertAll(v=>v.ToString("F0")))}");
+            Console.Error.WriteLine($"i{i}: seed {seed} spine {rails.SpineLength:F0} lanes {string.Join("/", rails.LaneLengths.ConvertAll(v=>v.ToString("F0")))} prisms {rails.PrismCount} volume {railVolume:F0} minLen {minLen:F2} minSep {minSep:F1} stepErr {maxStepErr:F3} corners {string.Join(",", corners.ConvertAll(v=>v.ToString("F0")))}");
         }
         sb.Append("  }\n}\n");
         // The sweep the editor tests run, mirrored: 60 seeds x 4 intensities.

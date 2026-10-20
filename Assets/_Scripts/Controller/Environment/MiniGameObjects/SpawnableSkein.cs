@@ -50,8 +50,9 @@ namespace CosmicShore.Gameplay
                  "a PhysX trigger sampled once per 0.04 s fixed step while MoveShip teleports in " +
                  "Update: the sample step is 6.00 u at the 150 u/s a launch carries, against a " +
                  "3.46-3.53 u catch window for a 3-wide rail - about 41% of perpendicular " +
-                 "re-attaches MISS, frame-rate dependently, with nothing logged. Re-run " +
-                 "Tools/Build/skein_budget.py after any change.")]
+                 "re-attaches MISS, frame-rate dependently, with nothing logged. z is the NOMINAL " +
+                 "length: each prism is laid at the length that keeps it flush with its neighbours " +
+                 "(SkeinCourse.FitFlush). Re-run Tools/Build/skein_budget.py after any change.")]
         [SerializeField] Vector3 prismScale = new(6f, 6f, 8f);
 
         [Tooltip("0 = use DefaultSeed. Non-zero pins the cable, which is how a reported arena is " +
@@ -116,15 +117,23 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Flush, not overlapping (Docs/ECOSYSTEM.md 49.10): each prism's length is fitted to
+            // its neighbours - its own rail's, and across a strand's seam the abutting rail's - at
+            // authoring time. The 6 u cross-section is the catch window and is never touched; only
+            // a bend's (or a seam's) prisms give up length, and a seam node that landed on its
+            // strand's first node is slid back the least that clears it.
+            var lengths = SkeinCourse.FitFlush(build, prismScale);
+
             for (int i = 0; i < build.Rails.Count; i++)
             {
                 var rail = build.Rails[i];
                 var pos = build.Positions[i];
                 var rot = build.Rotations[i];
 
+                var len = lengths[i];
                 _railLayStart.Add(_cachedLays.Count);
                 for (int k = 0; k < pos.Length; k++)
-                    Emit(pos[k], rot[k], prismScale, rail.Domain);
+                    Emit(pos[k], rot[k], new Vector3(prismScale.x, prismScale.y, len[k]), rail.Domain);
 
                 _rails.Add(rail);
                 _positions.Add(pos);
@@ -207,6 +216,6 @@ namespace CosmicShore.Gameplay
         }
 
         protected override int BuildParameterHash() =>
-            System.HashCode.Combine(strandCount, prismScale, cableSeed, /* layout revision */ 1);
+            System.HashCode.Combine(strandCount, prismScale, cableSeed, /* layout revision */ 2);
     }
 }

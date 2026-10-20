@@ -1036,9 +1036,160 @@ def domain_shares(segments, colours):
     return {d: tot[d] / n for d in TRIAD}, n
 
 
-def budget(spine, strands, segments):
+# ─────────────────────────────────────────────────────────────────────────────
+# 5b. THE FLUSH FIT - no prism interpenetrates another (Docs/ECOSYSTEM.md 49.10)
+#
+# A node is dropped every PRISM_SPACING of accumulated SUB-chord, so on a bend the straight chord
+# between two nodes is a little under 8 u, and each prism looks down the central difference - two
+# 6 u-wide boxes meet at an angle and cross at their inner corners. At a strand's SEAM (its last
+# rail ends on its last node, its first starts on node 0, and the strand is closed) the last node
+# lands anywhere from 0 to 8 u short of the first. Measured on the C# before the fit: 14% of
+# consecutive pairs clipped, and one seam per prefab was a duplicate (centres 0.07-1.2 u apart).
+#
+# The fit is SkeinCourse.FlushRailLengths, mirrored here so the cell's phase ladder prices the
+# volume actually laid: every prism keeps its 6 u cross-section (the catch window, section 7) and
+# takes the longest length that only TOUCHES each neighbour; a seam whose last node sits on its
+# first is slid back along the chord the smallest amount that leaves both SEAM_MIN_LENGTH.
+# ─────────────────────────────────────────────────────────────────────────────
+
+FLUSH_MARGIN = 0.998    # SkeinCourse.FlushMargin: a hair under exact contact
+SEAM_MIN_LENGTH = 0.6   # SkeinCourse.SeamMinLength: above the prism prefab's 0.5 u length floor
+
+
+def _look_axes(forward, up):
+    """Unity's Quaternion.LookRotation(forward, up) as its three axes (x, y, z)."""
+    z = unit(forward)
+    x = cross(up, z)
+    if norm(x) < 1e-9:
+        x = cross((1.0, 0.0, 0.0) if abs(z[0]) < 0.9 else (0.0, 1.0, 0.0), z)
+    x = unit(x)
+    return x, cross(z, x), z
+
+
+def rail_poses(spine, strand, a, b):
+    """The prism poses SkeinCourse.BuildAll lays on nodes a..b (inclusive) of one strand: +z along
+    the central difference, +y radially out of the spine."""
+    out = []
+    for node in range(a, b + 1):
+        p = strand.pts[node]
+        along = unit(sub(strand.pts[min(node + 1, strand.n - 1)], strand.pts[max(node - 1, 0)]))
+        c = spine.frame_at_arc(strand.spine_arc[node])[0]
+        off = sub(p, c)
+        outward = unit(off) if norm(off) > 1e-3 else (0.0, 1.0, 0.0)
+        if abs(dot(outward, along)) > 0.99: outward = (0.0, 1.0, 0.0)
+        out.append((p, _look_axes(along, outward)))
+    return out
+
+
+def flush_pair_length(pa, axa, pb, axb, width, height):
+    """SkeinCourse.FlushPairLength: the longest length two neighbours can BOTH take and only touch,
+    separated on the plane normal to the chord between their centres."""
+    d = sub(pb, pa)
+    dist = norm(d)
+    if dist < 1e-5: return 0.0
+    n = mul(d, 1.0 / dist)
+    lateral = (0.5 * width * (abs(dot(axa[0], n)) + abs(dot(axb[0], n)))
+               + 0.5 * height * (abs(dot(axa[1], n)) + abs(dot(axb[1], n))))
+    along = abs(dot(axa[2], n)) + abs(dot(axb[2], n))
+    if along < 1e-5: return float("inf")
+    return 2.0 * max(0.0, dist - lateral) / along
+
+
+def rail_fit(spine, strands, segments):
+    """Every laid prism's pose and fitted length, per segment, plus the seam links - the C#'s
+    SeamNext/SeamPrev (BuildAll) and its FitFlush (the duplicate-seam slide, then the lengths)."""
+    poses = [rail_poses(spine, strands[si], a, b) for (si, a, b) in segments]
+    nxt = [-1] * len(segments)
+    prv = [-1] * len(segments)
+    for i, (si, a, b) in enumerate(segments):
+        if b != strands[si].n - 1: continue
+        for j, (sj, aj, _) in enumerate(segments):
+            if sj != si or aj != 0: continue
+            nxt[i], prv[j] = j, i
+            break
+    w, h, nominal = PRISM_SCALE
+    for i, j in enumerate(nxt):
+        if j < 0: continue
+        (pl, axl), (pf, axf) = poses[i][-1], poses[j][0]
+        if FLUSH_MARGIN * flush_pair_length(pl, axl, pf, axf, w, h) >= SEAM_MIN_LENGTH: continue
+        away = sub(pl, pf)
+        if norm(away) < 1e-4:
+            away = sub(poses[i][-2][0], pf) if len(poses[i]) > 1 else mul(axl[2], -1.0)
+        n = unit(away)
+        lateral = (0.5 * w * (abs(dot(axl[0], n)) + abs(dot(axf[0], n)))
+                   + 0.5 * h * (abs(dot(axl[1], n)) + abs(dot(axf[1], n))))
+        along = abs(dot(axl[2], n)) + abs(dot(axf[2], n))
+        poses[i][-1] = (add(pf, mul(n, (lateral + along * 0.5 * SEAM_MIN_LENGTH / FLUSH_MARGIN) * 1.0001)), axl)
+    lengths = []
+    for i, ps in enumerate(poses):
+        ln = [nominal] * len(ps)
+        for k in range(len(ps) - 1):
+            l = FLUSH_MARGIN * flush_pair_length(ps[k][0], ps[k][1], ps[k + 1][0], ps[k + 1][1], w, h)
+            ln[k], ln[k + 1] = min(ln[k], l), min(ln[k + 1], l)
+        if ps and prv[i] >= 0:
+            q = poses[prv[i]][-1]
+            ln[0] = min(ln[0], FLUSH_MARGIN * flush_pair_length(q[0], q[1], ps[0][0], ps[0][1], w, h))
+        if ps and nxt[i] >= 0:
+            q = poses[nxt[i]][0]
+            ln[-1] = min(ln[-1], FLUSH_MARGIN * flush_pair_length(ps[-1][0], ps[-1][1], q[0], q[1], w, h))
+        lengths.append(ln)
+    return poses, lengths, nxt
+
+
+def _box_separation(pa, axa, ha, pb, axb, hb):
+    """Signed separation of two oriented boxes by the 15-axis separating test (POSITIVE clears,
+    negative is the penetration depth) - the measure Tools/Build/audit_prism_clipping.py holds."""
+    d = sub(pb, pa)
+    best = -float("inf")
+    cands = list(axa) + list(axb) + [cross(u, v) for u in axa for v in axb]
+    for L in cands:
+        ln = norm(L)
+        if ln < 1e-6: continue
+        ra = sum(abs(dot(axa[k], L)) * ha[k] for k in range(3))
+        rb = sum(abs(dot(axb[k], L)) * hb[k] for k in range(3))
+        best = max(best, (abs(dot(d, L)) - ra - rb) / ln)
+    return best
+
+
+def prove_rails_flush(poses, lengths, nxt):
+    """
+    NO RAIL PRISM INTERPENETRATES ITS NEIGHBOUR - along its rail, or across a strand's seam.
+
+    Held on the fitted lengths with the full 15-axis test (not the closed form the fit uses, which
+    would pass by construction), at the audit's tolerance. Returns the worst separation and the
+    shortest prism. Negative control: FLUSH_MARGIN 0.998 -> 1.05.
+    """
+    w, h, _ = PRISM_SCALE
+    worst, shortest = float("inf"), float("inf")
+
+    def check(i, k, j, m):
+        nonlocal worst
+        (pa, axa), (pb, axb) = poses[i][k], poses[j][m]
+        ha, hb = (0.5 * w, 0.5 * h, 0.5 * lengths[i][k]), (0.5 * w, 0.5 * h, 0.5 * lengths[j][m])
+        sep = _box_separation(pa, axa, ha, pb, axb, hb)
+        worst = min(worst, sep)
+        tol = 1e-3 * min(min(ha), min(hb)) + 1e-5
+        assert sep >= -tol, (f"rail prisms interpenetrate: rail {i} prism {k} and rail {j} prism {m} "
+                             f"cross by {-sep:.3f}u - the flush fit no longer holds")
+
+    for i, ps in enumerate(poses):
+        shortest = min([shortest] + lengths[i])
+        for k in range(len(ps) - 1): check(i, k, i, k + 1)
+        if nxt[i] >= 0: check(i, len(ps) - 1, nxt[i], 0)
+    assert shortest >= 0.5, (f"a rail prism is {shortest:.3f}u long - under the prism prefab's 0.5u "
+                             f"floor, which would grow it back into its neighbour")
+    return worst, shortest
+
+
+def budget(spine, strands, segments, lengths=None):
+    """Prisms, volume, trails, longest trail. Volume prices what is LAID: the counted prisms at the
+    mean volume of the fitted prisms (rail_fit), never count x the nominal 288."""
     prisms = sum(b - a for (_, a, b) in segments)
-    vol = prisms * PRISM_SCALE[0] * PRISM_SCALE[1] * PRISM_SCALE[2]
+    per_prism = PRISM_SCALE[0] * PRISM_SCALE[1] * PRISM_SCALE[2]
+    if lengths:
+        laid = [l for ln in lengths for l in ln]
+        per_prism = PRISM_SCALE[0] * PRISM_SCALE[1] * sum(laid) / len(laid)
+    vol = prisms * per_prism
     per_seg = [b - a for (_, a, b) in segments]
     return prisms, vol, len(segments), (max(per_seg) if per_seg else 0)
 
@@ -1443,7 +1594,9 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     pins = sum(1 for g in gates if g[0] != "spine")
     colours = rebalance(segments, paint(segments))
     shares, laid = domain_shares(segments, colours)
-    prisms, vol, nseg, worst_seg = budget(spine, strands, segments)
+    poses, lengths, seam_next = rail_fit(spine, strands, segments)
+    flush_sep, shortest = prove_rails_flush(poses, lengths, seam_next)
+    prisms, vol, nseg, worst_seg = budget(spine, strands, segments, lengths)
 
     worst_turn = max(per_prism_turn_in_segments(s, segments) for s in strands)
     tangent_ratio = prove_tangent_speed(strands)
@@ -1506,6 +1659,9 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
         print(f"        next ring on screen from this one: {seen*100:5.1f}% "
               f"(worst {worst_edge:4.1f} deg outside a {VIS_HALF_FOV:.1f} deg half-frame, "
               f"smallest subtense {worst_sub:4.1f} deg)")
+        print(f"        flush: every rail prism only touches its neighbours (worst separation "
+              f"{flush_sep:+.4f}u, shortest prism {shortest:.2f}u, volume "
+              f"{vol / (prisms * PRISM_SCALE[0] * PRISM_SCALE[1] * PRISM_SCALE[2]) * 100:.2f}% of nominal)")
         print(f"        paint: " + "  ".join(f"{d} {shares[d]*100:5.2f}%" for d in TRIAD)
               + f"   outermost mass {outer:6.1f}u")
 
@@ -1861,6 +2017,8 @@ CONTROLS = [
     ("r 200 -> 120 interpenetrates the knot's own lobes", dict(r=120.0), "lobes are"),
     ("RADIAL_CYCLES 3 -> 3.5 leaves the strand open at s = L", dict(RADIAL_CYCLES=3.5),
      "does not close"),
+    ("FLUSH_MARGIN 0.998 -> 1.05 lays bend prisms longer than the room their neighbours leave",
+     dict(FLUSH_MARGIN=1.05), "rail prisms interpenetrate"),
     ("PRISM_SCALE cross-section 6 -> 40 fuses two lanes under MASS-5 armour",
      dict(PRISM_SCALE=(40.0, 40.0, 8.0)), "armoured lanes fuse"),
 ]

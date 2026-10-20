@@ -75,19 +75,38 @@ namespace CosmicShore.Gameplay
                     ? strandDomains[s % strandDomains.Length]
                     : domain;
 
-                var points = new SpawnPoint[blocksAlongKnot];
-
-                for (int i = 0; i < blocksAlongKnot; i++)
+                int n = blocksAlongKnot;
+                var positions = new Vector3[n];
+                var rotations = new Quaternion[n];
+                for (int i = 0; i < n; i++)
                 {
-                    float t = 2f * Mathf.PI * i / blocksAlongKnot;
-                    float tNext = 2f * Mathf.PI * (i + 1) / blocksAlongKnot;
+                    float t = 2f * Mathf.PI * i / n;
+                    float tNext = 2f * Mathf.PI * (i + 1) / n;
 
                     Vector3 position = EvaluateKnot(t, strandOffset);
                     Vector3 nextPosition = EvaluateKnot(tNext, strandOffset);
 
-                    var rotation = SpawnPoint.LookRotation(nextPosition, position, Vector3.up);
+                    positions[i] = position;
+                    rotations[i] = SpawnPoint.LookRotation(nextPosition, position, Vector3.up);
+                }
 
-                    points[i] = new SpawnPoint(position, rotation, blockScale);
+                // FLUSH, not overlapping (Docs/ECOSYSTEM.md 49.10). The strand is a closed loop of
+                // blocksAlongKnot equal steps in t, and the knot's speed swings with cos(q t): on the
+                // shipped (3,5) knot at 500 blocks the step runs 2.05-3.57 u against a 4 u block, so
+                // every block crossed both neighbours. Each block keeps its cross-section and pose
+                // and takes the longest length it can share with each neighbour and only touch
+                // (FlushPairLength), the tighter side kept - the loop wraps, last block to first.
+                // Measured: 1,500 clipping pairs -> 0, blocks 2.0-3.5 u long, volume -33% (the
+                // step, not the block, was always the knot's real pitch).
+                var points = new SpawnPoint[n];
+                float prevPair = FlushPairLength(positions[n - 1], rotations[n - 1], positions[0], rotations[0]);
+                for (int i = 0; i < n; i++)
+                {
+                    int j = (i + 1) % n;
+                    float nextPair = FlushPairLength(positions[i], rotations[i], positions[j], rotations[j]);
+                    float length = Mathf.Min(blockScale.z, FlushMargin * Mathf.Min(prevPair, nextPair));
+                    points[i] = new SpawnPoint(positions[i], rotations[i], new Vector3(blockScale.x, blockScale.y, length));
+                    prevPair = nextPair;
                 }
 
                 trailDataList.Add(new SpawnTrailData(points, false, strandDomain));
@@ -105,6 +124,30 @@ namespace CosmicShore.Gameplay
         protected override int GetParameterHash()
         {
             return System.HashCode.Combine(p, q, majorRadius, minorRadius, blocksAlongKnot, strands, seed, blockScale);
+        }
+
+        /// <summary>How far under exact contact a fitted block stops, so float noise in the poses
+        /// can never flip two touching faces into a clip.</summary>
+        const float FlushMargin = 0.998f;
+
+        /// <summary>
+        /// The longest length two neighbouring blocks (this shape's cross-section, +z down the
+        /// knot) can BOTH take and still only touch: separated on the plane normal to the chord
+        /// between their centres, each box reaches <c>half-length |z.n| + half-width |x.n| +
+        /// half-height |y.n|</c> along it, and the two reaches may sum to the chord and no more.
+        /// Closed form; for blocks laid down a curve the chord is the separating axis.
+        /// </summary>
+        float FlushPairLength(Vector3 pa, Quaternion ra, Vector3 pb, Quaternion rb)
+        {
+            Vector3 d = pb - pa;
+            float dist = d.magnitude;
+            if (dist < 1e-5f) return 0f;
+            Vector3 n = d / dist;
+            float lateral = 0.5f * blockScale.x * (Mathf.Abs(Vector3.Dot(ra * Vector3.right, n)) + Mathf.Abs(Vector3.Dot(rb * Vector3.right, n)))
+                          + 0.5f * blockScale.y * (Mathf.Abs(Vector3.Dot(ra * Vector3.up, n)) + Mathf.Abs(Vector3.Dot(rb * Vector3.up, n)));
+            float along = Mathf.Abs(Vector3.Dot(ra * Vector3.forward, n)) + Mathf.Abs(Vector3.Dot(rb * Vector3.forward, n));
+            if (along < 1e-5f) return float.PositiveInfinity;
+            return 2f * Mathf.Max(0f, dist - lateral) / along;
         }
 
         static int Gcd(int a, int b)
