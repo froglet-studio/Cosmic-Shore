@@ -1176,3 +1176,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner's eye, the mobile run); Yash (offered) can run the Editor steps and the two test fixtures
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
+
+### T-20261020-13f4 · open · test · Menu_Main
+- **Task:** Play-test Toy Box Navigate's new stand-off: open the Toy Box, pick a toy (e.g. the Vessel Changer), press Navigate - the vessel should land about 3x further from the switch than before (7.2 ring radii), facing it, with time to steer around it instead of flying into it; repeat once while already flying
+- **Done when:** Navigate lands well clear of the switch from both the menu and mid-freestyle, and the toy still sits ahead on arrival
+- **Who can take it:** Garrett (asked for it) or Yash
+- **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
+- **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
