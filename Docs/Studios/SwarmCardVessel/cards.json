@@ -1,5 +1,5 @@
 {
- "revision": 2,
+ "revision": 3,
  "roles": {
   "Mass": "Prism production (danger or base), shielding, supershielding",
   "Time": "Your maneuverability, speed, positioning and movement",

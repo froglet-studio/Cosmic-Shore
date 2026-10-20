@@ -71,7 +71,7 @@ md += [f"| {c['element']}: **{c['name']}** | {c['rev']} |" for c in cards if c["
 md.append("")
 os.makedirs(os.path.dirname(REPO_JSON), exist_ok=True)
 open(REPO_MD, "w").write("\n".join(md))
-json.dump(dict(revision=2, roles=ROLES, date="2026-10-20", meanings=meanings, cards=cards), open(REPO_JSON, "w"), indent=1, ensure_ascii=False)
+json.dump(dict(revision=3, roles=ROLES, date="2026-10-20", meanings=meanings, cards=cards), open(REPO_JSON, "w"), indent=1, ensure_ascii=False)
 
 # ---- page ----
 page = open(os.path.join(HERE, "page.html")).read()
