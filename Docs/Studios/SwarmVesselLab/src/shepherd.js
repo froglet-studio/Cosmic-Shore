@@ -20,6 +20,18 @@
 //      own x-z plane, eased like the Wrasse's board (KiteBoardFrame.Eased), so dogs and flock live on it;
 //   4. a danger sheep the pilot hits dies, and the pilot takes the existing own-domain danger hit: the full
 //      stop slow and boost reset plus the 4 s decaying element debuff, never the permanent burn.
+// Round 4 (Garrett, after playing round 3 on a phone and a gamepad, 2026-10-20):
+//   1. on a gamepad the two thumbsticks steer the two jacks (left stick the left jack, right stick the right);
+//      a bumper or trigger is the thumb's lift, so it leaves the decoy;
+//   2. the marlin no longer swings the jacks' camera: the jacks' view (Steady) never turns with the marlin's
+//      heading; it tilts only as far as the plane tilts (the smallest turn that keeps it looking straight down
+//      the plane) and pans only when the flock leaves a slack box in the middle of the screen;
+//   3. the herd is the cell's real FAUNA, not a swarm of vessel agents (Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md,
+//      locked): a creature eats by the game's mouthful (LightFaunaDataSO: face the meal, hold 2 s, eat it plus its
+//      neighbours, at most 8), a feed fills its stomach and moves it toward a birth, an empty stomach withers it
+//      (no imposed death, starvationSeconds 30), births bloom in and deaths wither out, and shielded mass is never
+//      food: at Space L5 a bite sheds a shield (what Prism.Consume does) so the next mouthful can eat it.
+//      In the code a creature is still `s` in `w.sheep`.
 // Same contract as the rest of the lab: shepStep never draws and never reads a device; the AI pilot and
 // the AI dogs write the SAME input object two thumbs, the keys or a gamepad do; every run is seeded.
 // ============================================================================================
@@ -49,6 +61,8 @@ const SHEP_SHIPPED = {
   thumbMm: 22,          // lab: a BIG thumb's occlusion, in mm (the disc of screen a thumb hides)
   thumbMargin: 1.25,    // lab: the smallest ring is this many thumb radii
   viewSpan: 1800,       // lab: world units across the screen's SHORT side (round 2: 1400; Garrett: "zoom out a bit more")
+  camSlack: 0.45,       // lab: Steady view, share of the half-screen the flock may wander before the view pans (round 4)
+  padDogSpeed: 1,       // lab: a full stick runs a jack at this share of dogSpeed (round 4)
   sheep: 60,            // lab: flock size at the start
   sheepCap: 180,        // lab: most sheep alive at once
   sheepSpeed: 70,       // lab: sheep cruise (u/s) at Time 0; panic adds up to +80%
@@ -57,7 +71,13 @@ const SHEP_SHIPPED = {
   callTime: 2.5,        // lab: seconds the pilot's call lasts
   callCooldown: 20,     // lab: seconds before the call is ready again
   decoyCooldown: 4,     // lab: Time L5, seconds between the pilot's own decoys
-  breedFood: 4,         // lab: prisms a sheep eats to have a lamb at Mass -5 (fewer as Mass rises)
+  breedFood: 4,         // lab: feeds (mouthfuls) a creature needs for a birth at Mass -5 (fewer as Mass rises); the game's FeedsPerOffspring
+  birthCooldown: 3,     // lab: seconds between one creature's births (the game's reproduction cooldown)
+  consumeHold: 2,       // LightFaunaDataSO.consumeHoldSeconds: a mouthful is a 2 s hold facing the meal
+  maxBites: 8,          // LightFaunaDataSO.maxClusterBites: prisms per mouthful at most
+  biteRadius: 40,       // lab: LightFaunaDataSO.feedingClusterRadius (12) at the lab's scale, where a creature is ~3x the game's
+  starvation: 30,       // Fauna.starvationSeconds: one full meal buys this many seconds; an empty stomach withers the creature
+  stomachMeals: 2,      // lab: meals a creature can bank (the game's stomach Capacity is authored per species; 1 nominal meal = shipped)
   pooEvery: 6,          // lab: Mass L5, seconds between clusters
   attackRange: 200,     // lab: Charge L5, how close a rival must be for the flock to go for it
   intensity: 2,         // lab: I1..I4 for every game (rivals, shields, pen size)
@@ -67,31 +87,38 @@ const SHEP_SHIPPED = {
 const FRAME_NAMES = ['Eased (Wrasse)', 'Locked to the hull', 'Level (round 2)'];
 const SHEP_SPEC = [
   ['Elements', 'elTime', -5, 15, 1, 'Time', 'Flock speed: +6% per level (floor 40%). L5: the pilot drops the decoy where it is (F, X button or the DECOY pad), then can teleport back to it.'],
-  ['Elements', 'elSpace', -5, 15, 1, 'Space', 'Repulsion radius of pilot, both dogs and the decoy: the thumb floor at -5, +6% of it per level. L5: sheep can eat shielded prisms.'],
-  ['Elements', 'elMass', -5, 15, 1, 'Mass', 'Breeding: prisms a sheep eats per lamb fall from 4 at -5 to about 1.3 at 15. L5: the flock poops a cluster of mass every few seconds.'],
-  ['Elements', 'elCharge', -5, 15, 1, 'Charge', 'Share of danger sheep: 0% at -5, 35% at 2, 75% at 10, 100% at 15. L5: sheep near a rival go for it.'],
+  ['Elements', 'elSpace', -5, 15, 1, 'Space', 'Repulsion radius of pilot, both dogs and the decoy: the thumb floor at -5, +6% of it per level. L5: a bite sheds a shield, so the next mouthful eats the prism (shielded mass is never food).'],
+  ['Elements', 'elMass', -5, 15, 1, 'Mass', 'Breeding: feeds per birth fall from 4 at -5 to about 1.3 at 15. L5: the herd poops a cluster of mass every few seconds.'],
+  ['Elements', 'elCharge', -5, 15, 1, 'Charge', 'Share of danger creatures: 0% at -5, 35% at 2, 75% at 10, 100% at 15. L5: creatures near a rival go for it.'],
   ['Plane', 'frame', 0, 2, 1, 'Plane frame', 'How the plane follows the pilot. 0 Eased: the hull\'s x-z plane, eased (the Wrasse\'s signed-off board). 1 Locked: the hull\'s plane every frame. 2 Level: flat, turning with heading only (round 2).'],
   ['Plane', 'easeRate', 0.5, 10, 0.5, 'Ease rate', 'Shipped Wrasse board ease (1/s). Higher follows the roll sooner.'],
-  ['Plane', 'planePull', 0.2, 4, 0.1, 'Pull to the plane', 'How strongly sheep are drawn to the pilot\'s plane. Roll or climb and the flock follows.'],
+  ['Plane', 'planePull', 0.2, 4, 0.1, 'Pull to the plane', 'How strongly the creatures are drawn to the pilot\'s plane. Roll or climb and the herd follows.'],
   ['Thumb', 'thumbMm', 0, 30, 1, 'Big thumb (mm)', 'The disc of screen a big thumb hides. 0 turns the floor off (what a mouse would allow).'],
   ['Thumb', 'thumbMargin', 1, 2, 0.05, 'Ring / thumb', 'The smallest repulsion ring, in thumb radii. Above 1 the ring always peeks out round the thumb.'],
   ['Thumb', 'viewSpan', 800, 3000, 50, 'View span', 'World units across the screen\'s short side (the zoom). The ring floor is fixed on screen, so it grows in the world as you zoom out.'],
-  ['Flock', 'sheep', 10, 150, 1, 'Starting flock', 'Sheep at the start of a round.'],
-  ['Flock', 'sheepCap', 40, 300, 5, 'Flock cap', 'Most sheep alive at once.'],
-  ['Flock', 'sheepSpeed', 30, 160, 1, 'Sheep speed', 'Cruise at Time 0. Fleeing adds up to +80%.'],
-  ['Flock', 'breedFood', 1, 10, 0.5, 'Meals per lamb', 'At Mass -5. Mass divides it by 1 + 0.1 per level above -5.'],
+  ['Thumb', 'camSlack', 0, 0.9, 0.05, 'View slack', 'Steady view only: how far from the middle (share of the half-screen) the flock may drift before the view pans. 0 follows it every frame.'],
+  ['Thumb', 'padDogSpeed', 0.2, 1.5, 0.05, 'Stick jack speed', 'Gamepad: a full stick runs its jack at this share of the dog speed.'],
+  ['Flock', 'sheep', 10, 150, 1, 'Starting herd', 'Creatures at the start of a round.'],
+  ['Flock', 'sheepCap', 40, 300, 5, 'Herd cap', 'Most creatures alive at once.'],
+  ['Flock', 'sheepSpeed', 30, 160, 1, 'Creature speed', 'Cruise at Time 0. Fleeing adds up to +80%.'],
+  ['Flock', 'breedFood', 1, 10, 0.5, 'Feeds per birth', 'Mouthfuls per birth at Mass -5 (the game\'s FeedsPerOffspring). Mass divides it by 1 + 0.1 per level above -5.'],
+  ['Flock', 'birthCooldown', 0, 10, 0.5, 'Birth cooldown', 'Seconds between one creature\'s births.'],
+  ['Flock', 'consumeHold', 0.2, 4, 0.1, 'Mouthful hold', 'Shipped 2 s: a creature brakes and holds this long on its meal. A herder that scares it breaks the hold.'],
+  ['Flock', 'maxBites', 1, 16, 1, 'Bites per mouthful', 'Shipped 8: the meal plus its neighbours, at most this many prisms.'],
+  ['Flock', 'starvation', 0, 120, 5, 'Starvation (s)', 'Shipped 30: seconds one meal lasts. Empty = the creature withers. 0 = never starves.'],
+  ['Flock', 'stomachMeals', 1, 4, 0.5, 'Stomach (meals)', 'Meals a creature banks (the game\'s per-species stomach Capacity). 1 = the shipped nominal stomach: an unfed herd withers 30 s in. Creatures start half to fully fed.'],
   ['Crew', 'dogSpeed', 150, 1200, 10, 'Dog speed', 'How fast a dog runs to its thumb. Fast reads as "under my thumb".'],
-  ['Crew', 'callTime', 0.5, 6, 0.1, 'Call length (s)', 'How long the pilot pulls the flock in.'],
+  ['Crew', 'callTime', 0.5, 6, 0.1, 'Call length (s)', 'How long the pilot pulls the herd in.'],
   ['Crew', 'callCooldown', 3, 60, 1, 'Call cooldown (s)', 'The long cooldown on the call.'],
   ['Crew', 'decoyCooldown', 0, 20, 0.5, 'Pilot decoy cooldown (s)', 'Time L5: seconds between the pilot\'s own decoys.'],
   ['Crew', 'pooEvery', 2, 20, 0.5, 'Poop every (s)', 'Mass L5: seconds between clusters of mass.'],
-  ['Crew', 'attackRange', 60, 500, 10, 'Attack range', 'Charge L5: how close a rival must be before the flock goes for it.'],
+  ['Crew', 'attackRange', 60, 500, 10, 'Attack range', 'Charge L5: how close a rival must be before the herd goes for it.'],
   ['Hull', 'rhinoCruise', 20, 120, 1, 'Cruise (full throttle)', 'Shipped Rhino throttle scaler. The two sticks\' spread is the throttle: neutral is half.'],
   ['Hull', 'rhinoMaxBoost', 1, 24, 0.1, 'Straight boost', 'Shipped Rhino ramp ceiling (x cruise). Straight means yaw, pitch and roll near zero; the spread does not count.'],
   ['Hull', 'rhinoAccel', 20, 600, 5, 'Ramp acceleration', 'Shipped ramp wind-up (u/s per s).'],
   ['Hull', 'pilotTurn', 30, 200, 5, 'Pitch / yaw', 'Shipped Grouper pitch and yaw scalers (deg/s).'],
   ['Hull', 'pilotRoll', 30, 240, 5, 'Roll', 'Shipped Grouper roll scaler (deg/s). Roll is what tilts the plane.'],
-  ['Danger hit', 'dangerDebuff', 0, 5, 0.5, 'Element debuff', 'Levels every element loses when the pilot hits its own danger sheep, decaying over the debuff time. Own domain: never a permanent burn.'],
+  ['Danger hit', 'dangerDebuff', 0, 5, 0.5, 'Element debuff', 'Levels every element loses when the pilot hits its own danger creatures, decaying over the debuff time. Own domain: never a permanent burn.'],
   ['Danger hit', 'debuffTime', 1, 10, 0.5, 'Debuff time (s)', 'Shipped debuffDuration.'],
   ['Danger hit', 'dangerSlow', 0, 6, 0.5, 'Slow (s)', 'Full stop at the hit, back to full speed over this long (shipped 1 s x 3). The ramp resets.'],
   ['Arena', 'intensity', 1, 4, 1, 'Intensity', 'I1-I4: Charge rivals 1-4, Space shields 25-55%, Time pens shrink, rivals faster.'],
@@ -104,13 +131,13 @@ for (const k of Object.keys(SP)) if (!(k in SHEP_SHIPPED)) delete SP[k];
 const SHEP_NAME = 'Marlin and Jacks', PILOT_NAME = 'marlin', DOG_NAME = 'jacks';
 
 const SHEP_GAMES = [
-  { id: 'time', name: 'Time: pen race', el: 'time', how: 'Five pens in a loop, some above and below the start. A pen counts when 60% of the flock is inside it at once, so the pilot rolls the plane through each pen. Score: pens x 10, plus seconds to spare.' },
-  { id: 'space', name: 'Space: graze the fort', el: 'space', how: 'A ruby fort, part shielded, floating above the start. Sheep eat the plain prisms; Space L5 lets them eat the shielded ones. Score: enemy prisms eaten.' },
-  { id: 'mass', name: 'Mass: grow the flock', el: 'mass', how: 'Pasture in patches at many heights. Every meal brings a lamb closer; Mass L5 poops clusters of your own mass. Score: lambs born plus your mass standing.' },
-  { id: 'charge', name: 'Charge: wolves', el: 'charge', how: 'Rival ships hunt the pilot and eat plain sheep. A danger sheep they touch costs them a petal and slows them. Score: petals taken - lost + 3 per knockout.' },
+  { id: 'time', name: 'Time: pen race', el: 'time', how: 'Five pens in a loop, some above and below the start. A pen counts when 60% of the herd is inside it at once, so the pilot rolls the plane through each pen. Score: pens x 10, plus seconds to spare.' },
+  { id: 'space', name: 'Space: graze the fort', el: 'space', how: 'A ruby fort, part shielded, floating above the start. The creatures graze the plain prisms; at Space L5 a bite sheds a shield, then the next mouthful eats it. Score: enemy prisms eaten.' },
+  { id: 'mass', name: 'Mass: grow the herd', el: 'mass', how: 'Pasture in patches at many heights. Every mouthful brings a birth closer, and a creature that goes 30 s without one withers; Mass L5 poops clusters of your own mass. Score: births plus your mass standing.' },
+  { id: 'charge', name: 'Charge: wolves', el: 'charge', how: 'Rival ships hunt the pilot and eat plain creatures. A danger creature they touch costs them a petal and slows them. Score: petals taken - lost + 3 per knockout.' },
 ];
 const SHEP_ROLES = [
-  { id: 'dogs', name: 'You: the dogs', how: 'One thumb per dog (or drag with the mouse). Lift a thumb to leave a decoy. The AI flies the pilot and rolls the plane.' },
+  { id: 'dogs', name: 'You: the dogs', how: 'One thumb per dog (or drag with the mouse). Lift a thumb to leave a decoy. Gamepad: left stick the left jack, right stick the right; a bumper or trigger on that side leaves the decoy. The AI flies the pilot and rolls the plane.' },
   { id: 'pilot', name: 'You: the pilot', how: 'Two thumbs like the Grouper: left and right halves of the screen, or a gamepad\'s two sticks. Sum = yaw and pitch, difference = roll (the plane), spread = throttle. Keys: A/D yaw, W/S pitch, Q/E roll, Shift throttle. Call: C, A button or CALL. Teleport: Space, right trigger, or lift both thumbs. Time L5 decoy: F, X button or DECOY. The AI runs the dogs.' },
   { id: 'both', name: 'You: both (hot seat)', how: 'Pilot on keyboard or gamepad, dogs on touch or mouse.' },
   { id: 'ai', name: 'Watch the AI', how: 'Both crews are AI. Use it to see the scheme work before you try it.' },
@@ -153,7 +180,7 @@ function shepWorld(seed, game, opt) {
     board: { f: fr.f, u: fr.u, r: fr.r },
     dogs: [{ x: -300, y: 0, z: 260, down: false, id: 0, off: !!(opt && opt.noDogs) }, { x: -300, y: 0, z: -260, down: false, id: 1, off: !!(opt && opt.noDogs) }],
     decoy: null, sheep: [], prisms: [], rivals: [], pens: [], penNext: 0, fx: [], prev: { tele: false, call: false, decoy: false, d0: false, d1: false },
-    stats: { eaten: 0, enemyEaten: 0, born: 0, lost: 0, pooped: 0, petalsTaken: 0, petalsLost: 0, ko: 0, teleports: 0, calls: 0, decoys: 0, pilotDecoys: 0, dangerHits: 0, selfHits: 0 },
+    stats: { eaten: 0, enemyEaten: 0, feeds: 0, shed: 0, starved: 0, born: 0, lost: 0, pooped: 0, petalsTaken: 0, petalsLost: 0, ko: 0, teleports: 0, calls: 0, decoys: 0, pilotDecoys: 0, dangerHits: 0, selfHits: 0 },
     hits: [], deb: 0, pooT: SP.pooEvery, regrowT: 0, finishT: null, done: false, phash: null, phashDirty: true,
     ai: { noiseT: 0, nx: 0, nz: 0, liftT: 4, lift: 0, pnx: 0, pnz: 0, decoyT: 3 },
   };
@@ -191,7 +218,7 @@ function shepWorld(seed, game, opt) {
 }
 function addSheep(x, y, z) {
   if (SW.sheep.length >= SP.sheepCap) return null;
-  const s = { x, y, z, vx: 0, vy: 0, vz: 0, fed: 0, eatCd: SW.rnd(), roll: SW.rnd(), ph: SW.rnd() * TAU, tgt: null, panic: 0, h: 0 };
+  const s = { x, y, z, vx: 0, vy: 0, vz: 0, fed: 0, eatCd: SW.rnd(), roll: SW.rnd(), ph: SW.rnd() * TAU, tgt: null, panic: 0, h: 0, hold: 0, stomach: SP.starvation * SP.stomachMeals * (0.5 + 0.5 * SW.rnd()), birthCd: SP.birthCooldown, age: 0 };
   SW.sheep.push(s); SW.stats.born++;
   return s;
 }
@@ -201,7 +228,9 @@ function addShPrism(x, y, z, kind, shielded) {
   SW.prisms.push(p); SW.phashDirty = true; return p;
 }
 const isDanger = (s) => s.roll < SEL.danger();
+// what a creature may steer to: never shielded mass (locked), except that at Space L5 a bite sheds the shield
 const edibleFor = (p) => p.alive && p.kind !== 'jade' && (!p.sh || L5k('elSpace'));
+const foodFor = (p) => p.alive && p.kind !== 'jade' && !p.sh;   // what a mouthful actually eats: never shielded
 
 // the plane: through the pilot, normal = the board's up
 const height = (o) => (o.x - SW.pilot.x) * SW.board.u.x + (o.y - SW.pilot.y) * SW.board.u.y + (o.z - SW.pilot.z) * SW.board.u.z;
@@ -392,13 +421,14 @@ function stepSheep(dt) {
     // graze: an unafraid sheep wanders to the nearest edible prism it can sense (in 3D)
     s.eatCd -= dt;
     let gz = 0;
-    if (panic < 0.5) {
+    if (s.hold > 0 && panic >= 0.5) s.hold = 0;   // a herder scared it off its meal
+    if (panic < 0.5 && s.hold <= 0) {
       if (!s.tgt || !s.tgt.alive || !edibleFor(s.tgt)) {
         s.tgt = null; let bd = 130 * 130;
         if (s.eatCd <= 0) shQuery(w.phash, s.x, s.z, 130, (q) => { if (!edibleFor(q)) return; const d = (q.x - s.x) ** 2 + (q.y - s.y) ** 2 + (q.z - s.z) ** 2; if (d < bd) { bd = d; s.tgt = q; } });
       }
       if (s.tgt) { const dv = v3(s.tgt.x - s.x, s.tgt.y - s.y, s.tgt.z - s.z), d = vlen(dv) || 1; g = vadd(g, vmul(dv, 0.9 / d)); gz = vdot(dv, U) / d; }
-    } else s.tgt = null;
+    } else if (s.hold <= 0) s.tgt = null;
     // wander (seeded per sheep, smooth), along the board
     s.ph += dt * (0.6 + s.roll * 0.8);
     g = vadd(g, vadd(vmul(w.board.r, Math.cos(s.ph * 1.7 + s.roll * 9) * 0.25), vmul(w.board.f, Math.sin(s.ph * 1.3 + s.roll * 5) * 0.25)));
@@ -407,27 +437,41 @@ function stepSheep(dt) {
     // steer along the plane; across it a spring pulls the sheep home to the plane
     const gn = vdot(g, U), gp = vsub(g, vmul(U, gn));
     const gm = vlen(gp), vmax = vmax0 * (1 + 0.8 * panic);
-    const want = gm > 0.02 ? vmul(gp, vmax * Math.min(1, gm) / gm) : v3(0, 0, 0);
+    const want = gm > 0.02 && s.hold <= 0 ? vmul(gp, vmax * Math.min(1, gm) / gm) : v3(0, 0, 0);
     const vel = v3(s.vx, s.vy, s.vz);
     let vn = vdot(vel, U); const vp = vsub(vel, vmul(U, vn));
-    const ag = Math.min(1, 3 * dt);
+    const ag = Math.min(1, (s.hold > 0 ? 4 : 3) * dt);   // feedingBrakeSharpness 4: it brakes to a hover on its meal
     const vp2 = vadd(vp, vmul(vsub(want, vp), ag));
     const h = height(s);
     vn += (-h * SP.planePull - vn * 1.8 + (gn - gz * 0.9) * 40 + gz * 60 + Math.sin(s.ph * 2.1 + s.roll * 3) * 18) * dt;
     s.vx = vp2.x + U.x * vn; s.vy = vp2.y + U.y * vn; s.vz = vp2.z + U.z * vn;
     s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
     s.panic = panic; s.h = h;
-    // eat on contact
-    if (s.tgt && s.eatCd <= 0) {
+    // the mouthful (LightFauna): reach the meal, hold consumeHold facing it, then eat it and its neighbours
+    s.age += dt; s.birthCd -= dt;
+    if (s.tgt && s.hold <= 0 && s.eatCd <= 0 && (s.tgt.x - s.x) ** 2 + (s.tgt.y - s.y) ** 2 + (s.tgt.z - s.z) ** 2 < 22 * 22) s.hold = SP.consumeHold;
+    if (s.hold > 0) {
+      s.hold -= dt;
       const q = s.tgt;
-      if ((q.x - s.x) ** 2 + (q.y - s.y) ** 2 + (q.z - s.z) ** 2 < 22 * 22) {
-        q.alive = false; w.phashDirty = true; s.tgt = null; s.eatCd = 0.9; s.fed++; w.stats.eaten++;
-        if (q.kind === 'enemy') w.stats.enemyEaten++;
-        if (s.fed >= SEL.meals()) { s.fed -= SEL.meals(); born.push(s); }
+      if (!q || !q.alive || !edibleFor(q)) { s.hold = 0; s.tgt = null; }
+      else if (s.hold <= 0) {
+        s.tgt = null; s.eatCd = 0.4;
+        if (q.sh) { q.sh = false; w.stats.shed++; w.fx.push({ k: 'shed', x: q.x, y: q.y, z: q.z, t: 0 }); }   // Prism.Consume on shielded mass: the shield goes, nothing is eaten
+        else {
+          let bites = 0;
+          const eat = (o) => { o.alive = false; bites++; w.stats.eaten++; if (o.kind === 'enemy') w.stats.enemyEaten++; };
+          eat(q);
+          shQuery(w.phash, q.x, q.z, SP.biteRadius, (o) => { if (bites >= SP.maxBites || o === q || !foodFor(o)) return; if ((o.x - q.x) ** 2 + (o.y - q.y) ** 2 + (o.z - q.z) ** 2 < SP.biteRadius * SP.biteRadius) eat(o); });
+          w.phashDirty = true; s.stomach = Math.min(SP.starvation * SP.stomachMeals, s.stomach + SP.starvation * Math.min(1, bites / 2)); s.fed++; w.stats.feeds++;
+          if (s.fed >= SEL.meals() && s.birthCd <= 0) { s.fed -= SEL.meals(); s.birthCd = SP.birthCooldown; born.push(s); }
+        }
       }
     }
+    // starvation: no imposed clock, only an empty stomach (it withers out, never pops)
+    if (SP.starvation > 0) { s.stomach -= dt; if (s.stomach <= 0) s.starved = true; }
   }
-  for (const s of born) { const l = addSheep(s.x + (w.rnd() - 0.5) * 20, s.y, s.z + (w.rnd() - 0.5) * 20); if (l) w.fx.push({ k: 'lamb', x: l.x, y: l.y, z: l.z, t: 0 }); }
+  for (let i = S.length - 1; i >= 0; i--) if (S[i].starved) { const s = S[i]; S.splice(i, 1); w.stats.lost++; w.stats.starved++; w.fx.push({ k: 'wither', x: s.x, y: s.y, z: s.z, t: 0, danger: isDanger(s) }); }
+  for (const s of born) { const l = addSheep(s.x + (w.rnd() - 0.5) * 20, s.y, s.z + (w.rnd() - 0.5) * 20); if (l) w.fx.push({ k: 'birth', x: l.x, y: l.y, z: l.z, t: 0 }); }
   if (w.phashDirty) w.prisms = w.prisms.filter((q) => q.alive);
 }
 
@@ -485,8 +529,15 @@ function shepScore() {
 
 // ================= (5) the AI crews: inputs only =================
 // Where the flock should go, in 3D (a pen, the fort, a rival, the nearest pasture).
+// Fauna starve (round 4), so a hungry herd goes to pasture first: the crew's job includes letting it graze.
+function herdHunger() { const S = SW.sheep; if (!S.length || SP.starvation <= 0) return 0; let h = 0; for (const s of S) h += 1 - s.stomach / (SP.starvation * SP.stomachMeals); return h / S.length; }
 function shTarget() {
   const w = SW, F = flockStats().w;
+  if (w.game !== 'time' && herdHunger() > 0.6 && !(w.game === 'space' && w.fort && Math.hypot(w.fort.x - F.x, w.fort.y - F.y, w.fort.z - F.z) < 500)) {
+    let best = null, bd = 1e9;
+    for (const q of w.prisms) { if (!foodFor(q)) continue; const d = Math.hypot(q.x - F.x, q.y - F.y, q.z - F.z); if (d < bd) { bd = d; best = q; } }
+    if (best) return v3(best.x, best.y, best.z);
+  }
   if (w.game === 'time') { const p = w.pens[Math.min(w.penNext, w.pens.length - 1)]; return v3(p.x, p.y, p.z); }
   if (w.game === 'charge') { let best = null, bd = 1e9; for (const r of w.rivals) if (r.out <= 0) { const d = Math.hypot(r.x - F.x, r.y - F.y, r.z - F.z); if (d < bd) { bd = d; best = r; } } if (best) return v3(best.x, best.y, best.z); }
   if (w.game === 'space' && w.fort) {
@@ -508,7 +559,9 @@ function shAI(role) {
   if (w.ai.noiseT <= 0) { w.ai.noiseT = 0.5; w.ai.nx = (w.rnd() - 0.5) * 2 * nz * 260; w.ai.nz = (w.rnd() - 0.5) * 2 * nz * 260; w.ai.pnx = (w.rnd() - 0.5) * nz; w.ai.pnz = (w.rnd() - 0.5) * nz; }
   if (role === 'dogs' || role === 'all') {
     // in board coordinates: dog 0 collects the straggler; dog 1 drives from behind, on a flank
-    const drive = drivePoint(F, T, F.r + R * 0.55);
+    // a hungry herd at its pasture is left to graze: the drive stands off so the rings stop breaking its mouthfuls
+    const graze = w.game !== 'time' && herdHunger() > 0.6 && Math.hypot(T.x - F.x, T.z - F.z) < F.r + 200;
+    const drive = drivePoint(F, T, F.r + R * (graze ? 1.6 : 0.55));
     const far = F.far, spread = F.r;
     let a;
     if (far && spread > 150) { const ox = far.x - F.x, oz = far.z - F.z, L = Math.hypot(ox, oz) || 1; a = { x: far.x + ox / L * R * 0.55, z: far.z + oz / L * R * 0.55 }; }
@@ -599,10 +652,10 @@ function shepBatch(opts) {
 
 // ================= (7) the page: overlay, camera, drawing, touch =================
 let shepOn = false;
-const shepState = { game: lsGet('lab:' + LAB.name + ':shepGame', 'space'), role: lsGet('lab:' + LAB.name + ':shepRole', PLATFORM.device === 'phone' ? 'dogs' : 'ai'), seed: 1, paused: false, manual: false, sheet: false, showThumb: true, batch: null, view: lsGet('lab:' + LAB.name + ':shepView', 'heading') };
+const shepState = { game: lsGet('lab:' + LAB.name + ':shepGame', 'space'), role: lsGet('lab:' + LAB.name + ':shepRole', PLATFORM.device === 'phone' ? 'dogs' : 'ai'), seed: 1, paused: false, manual: false, sheet: false, showThumb: true, batch: null, view: lsGet('lab:' + LAB.name + ':shepView4', 'auto') };
 const shepRoot = el('div'); shepRoot.id = 'shep'; shepRoot.hidden = true;
 shepRoot.innerHTML =
-  '<canvas id="shepCanvas" aria-label="' + SHEP_NAME + ': the flock, the pilot and two dogs on the pilot\'s plane, seen from above"></canvas>' +
+  '<canvas id="shepCanvas" aria-label="' + SHEP_NAME + ': the herd, the pilot and two dogs on the pilot\'s plane, seen from above"></canvas>' +
   '<div id="shepTop">' +
   '<button class="sbtn" id="shepBack" title="Back to the lab">&#8592; Lab</button>' +
   '<b class="stitle">' + SHEP_NAME + '</b>' +
@@ -659,20 +712,34 @@ $('shepGame').value = shepState.game; $('shepRole').value = shepState.role;
 
 // ---- camera: the Wrasse's kite view (KiteNavigatorView): orthographic, straight down the board's up axis ----
 // Heading up (the Wrasse): the board's forward is up the screen. North up: world +z projected onto the plane.
+// Steady (round 4, the jacks' default): the view never turns with the marlin's heading. Each frame the last
+// forward is laid onto the new plane (the smallest turn that keeps looking straight down it), and the view
+// pans only when the flock leaves a slack box in the middle of the screen.
 const cam = { c: v3(0, 0, 0), sf: v3(0, 0, 1), sr: v3(1, 0, 0), k: 1, kpx: 1, cx: 0, cy: 0, short: 390 };
+const VIEW_NAMES = { auto: 'Auto (Steady for the jacks, Heading up for the marlin)', steady: 'Steady (no turning with the marlin)', heading: 'Heading up (the Wrasse\'s kite view)', north: 'North up' };
+function camView() { const v = shepState.view; return v !== 'auto' ? v : shepState.role === 'pilot' ? 'heading' : 'steady'; }
 function shepResize() { const r = sc.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (sc.width !== w || sc.height !== h) { sc.width = w; sc.height = h; } cam.kpx = sc.width / Math.max(1, r.width); }
 function camUpdate(dt) {
   const F = flockStats(), p = SW.pilot, U = SW.board.u;
   const wgt = p.off ? 0 : shepState.role === 'pilot' ? 0.45 : 0.25;
   const goal = onPlane(F.n ? vadd(vmul(F.w, 1 - wgt), vmul(v3(p.x, p.y, p.z), wgt)) : v3(p.x, p.y, p.z));
-  const a = dt > 0 ? Math.min(1, dt * 1.6) : 1;
-  cam.c = onPlane(vadd(cam.c, vmul(vsub(goal, cam.c), a)));
-  if (shepState.view === 'north') {
+  const a = dt > 0 ? Math.min(1, dt * 1.6) : 1, view = camView();
+  cam.cx = sc.width / 2; cam.cy = sc.height * 0.54; cam.short = Math.min(sc.width, sc.height);
+  cam.k = cam.short / SP.viewSpan;
+  let pan = vsub(goal, cam.c);
+  if (view === 'steady' && dt > 0) {
+    // only the part of the offset outside the slack box moves the view
+    const ga = vdot(pan, cam.sr), gb = vdot(pan, cam.sf), hw = cam.cx / cam.k * SP.camSlack, hh = Math.min(cam.cy, sc.height - cam.cy) / cam.k * SP.camSlack;
+    pan = vadd(vmul(cam.sr, ga - clamp(ga, -hw, hw)), vmul(cam.sf, gb - clamp(gb, -hh, hh)));
+  }
+  cam.c = onPlane(vadd(cam.c, vmul(pan, a)));
+  if (view === 'steady') {
+    let nf = vsub(cam.sf, vmul(U, vdot(cam.sf, U))); if (vlen(nf) < 0.2) nf = SW.board.f;   // past 78 deg in one frame: take the heading
+    const fr = frameFrom(nf, U); cam.sf = fr.f; cam.sr = fr.r;
+  } else if (view === 'north') {
     let nf = vsub(v3(0, 0, 1), vmul(U, U.z)); if (vlen(nf) < 0.2) nf = vsub(v3(1, 0, 0), vmul(U, U.x));
     const fr = frameFrom(nf, U); cam.sf = fr.f; cam.sr = fr.r;
   } else { cam.sf = SW.board.f; cam.sr = SW.board.r; }
-  cam.cx = sc.width / 2; cam.cy = sc.height * 0.54; cam.short = Math.min(sc.width, sc.height);
-  cam.k = cam.short / SP.viewSpan;
 }
 // world -> screen (device px); h is the height above the plane (the Wrasse's depth from the plane)
 function proj(x, y, z) {
@@ -761,7 +828,8 @@ function gatherHuman() {
   if (keys.has('q')) m.roll -= 1; if (keys.has('e')) m.roll += 1;
   if (keys.has('c')) call = true; if (keys.has(' ')) tele = true; if (keys.has('f')) decoy = true;
   const g = readPad();
-  if (g) {
+  if (g && shepState.role === 'dogs') gatherPadDogs(g);
+  else if (g) {
     const dz = (v) => Math.abs(v || 0) > 0.12 ? v : 0, lx = dz(g.axes[0]), ly = dz(g.axes[1]), rx = dz(g.axes[2]), ry = dz(g.axes[3]);
     if (lx || ly || rx || ry) m = mixSticks(lx, ly, rx, ry);
     if (g.buttons[0] && g.buttons[0].pressed) call = true;
@@ -779,6 +847,35 @@ function gatherHuman() {
   if (teleLatch > 0) { tele = true; teleLatch--; }
   if (decoyLatch > 0) { decoy = true; decoyLatch--; }
   Object.assign(shIn.pilot, m, { call, tele, decoy });
+}
+// ---- gamepad jacks (round 4): left stick the left jack, right stick the right; a bumper or trigger is the lift ----
+// A stick runs its jack across the screen (stick up = screen up) at padDogSpeed x dogSpeed; at rest the jack holds.
+// When both sticks rest, the left stick takes whichever jack is further left on screen. The jack stays on screen.
+const padDog = { map: [0, 1], was: [false, false] };
+const touchHolds = (k) => [...touches.values()].some((t) => t.kind === 'dog' && t.dog === k);
+function gatherPadDogs(g) {
+  const dz = (v) => { const a = Math.abs(v || 0); return a < 0.15 ? 0 : Math.sign(v) * (a - 0.15) / 0.85; };
+  const st = [[dz(g.axes[0]), dz(g.axes[1])], [dz(g.axes[2]), dz(g.axes[3])]];
+  if (!st[0][0] && !st[0][1] && !st[1][0] && !st[1][1]) {
+    const qa = proj(SW.dogs[0].x, SW.dogs[0].y, SW.dogs[0].z), qb = proj(SW.dogs[1].x, SW.dogs[1].y, SW.dogs[1].z);
+    padDog.map = qa.x <= qb.x ? [0, 1] : [1, 0];
+  }
+  for (let s = 0; s < 2; s++) {
+    const k = padDog.map[s], d = SW.dogs[k], T = shIn.dogs[k];
+    if (touchHolds(k) || d.off) continue;
+    const bump = g.buttons[4 + s], trig = g.buttons[6 + s];
+    const lift = !!((bump && bump.pressed) || (trig && trig.value > 0.5)), edge = lift && !padDog.was[s]; padDog.was[s] = lift;
+    if (edge) { T.down = false; continue; }     // one step up: the step drops the decoy where the jack stands
+    const [x, y] = st[s], m = Math.min(1, Math.hypot(x, y));
+    let a = vdot(vsub(d, cam.c), cam.sr), b = vdot(vsub(d, cam.c), cam.sf);
+    if (m > 0) {
+      const step = SP.dogSpeed * SP.padDogSpeed * Math.pow(m, 1.4) / 60 / Math.hypot(x, y), mx = 24 * cam.kpx / cam.k;
+      a = clamp(a + x * step, -(cam.cx / cam.k - mx), cam.cx / cam.k - mx);
+      b = clamp(b - y * step, -((sc.height - cam.cy) / cam.k - mx), cam.cy / cam.k - mx);
+    }
+    const p = vadd(cam.c, vadd(vmul(cam.sr, a), vmul(cam.sf, b)));
+    T.down = true; T.x = p.x; T.y = p.y; T.z = p.z;
+  }
 }
 let shTestPilot = null;   // the test surface's pilot input (window.__lab.shep.input), standing in for the devices
 function liveInputFor() {
@@ -842,9 +939,10 @@ function shepRender() {
       sg.fillRect(q.x - s / 2, q.y - s / 2, s, s);
       if (o.sh) { sg.strokeStyle = '#f4f1ff'; sg.lineWidth = 1.2 * kp; sg.strokeRect(q.x - s / 2 - 1.5 * kp, q.y - s / 2 - 1.5 * kp, s + 3 * kp, s + 3 * kp); }
     } else if (it.t === 's') {
-      const r = Math.max(2.5 * kp, 13 * q.s * (1 + clamp(q.h / 1500, -0.4, 0.4)));
+      const r = Math.max(2.5 * kp, 13 * q.s * (1 + clamp(q.h / 1500, -0.4, 0.4))) * Math.min(1, 0.15 + o.age / 0.6);   // a birth blooms in
       sg.fillStyle = o.panic > 0.3 ? SHC.woolDim : SHC.wool; sg.beginPath(); sg.arc(q.x, q.y, r, 0, TAU); sg.fill();
       if (isDanger(o)) { sg.strokeStyle = SHC.danger; sg.lineWidth = Math.max(1.2 * kp, r * 0.38); sg.stroke(); }
+      if (o.hold > 0) { sg.strokeStyle = SHC.pasture; sg.lineWidth = 1.5 * kp; sg.beginPath(); sg.arc(q.x, q.y, r + 3 * kp, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - o.hold / SP.consumeHold)); sg.stroke(); }
       const hd = Math.hypot(o.vx, o.vy, o.vz) || 1, hq = proj(o.x + o.vx / hd * 10, o.y + o.vy / hd * 10, o.z + o.vz / hd * 10);
       sg.fillStyle = '#2b3433'; sg.beginPath(); sg.arc(q.x + (hq.x - q.x) * 0.9, q.y + (hq.y - q.y) * 0.9, r * 0.45, 0, TAU); sg.fill();
     } else {
@@ -859,9 +957,10 @@ function shepRender() {
   // dogs: the ring is the floor-respecting repulsion radius; the thumb disc is what a big thumb hides
   for (const d of w.dogs) {
     if (d.off) continue;
+    const held = touchHolds(d.id);
     planeRing(d, R, d.down ? SHC.ring : 'rgba(242,200,75,.3)', d.down ? 2.5 : 1.5, d.down ? null : [3, 5]);
     const q = proj(d.x, d.y, d.z);
-    if (shepState.showThumb && humanDogs() && d.down) { const tr = (SP.thumbMm / 2) * 6.3 * kp; sg.fillStyle = 'rgba(255,255,255,.07)'; sg.beginPath(); sg.arc(q.x, q.y, tr, 0, TAU); sg.fill(); }
+    if (shepState.showThumb && humanDogs() && held) { const tr = (SP.thumbMm / 2) * 6.3 * kp; sg.fillStyle = 'rgba(255,255,255,.07)'; sg.beginPath(); sg.arc(q.x, q.y, tr, 0, TAU); sg.fill(); }
     sg.fillStyle = SHC.dog; sg.beginPath(); sg.arc(q.x, q.y, 9 * kp, 0, TAU); sg.fill();
     sg.fillStyle = '#1b1206'; sg.font = '700 ' + 11 * kp + 'px "Chakra Petch", system-ui'; sg.textAlign = 'center'; sg.fillText(d.id ? 'B' : 'A', q.x, q.y + 4 * kp);
     const t = humanDogs() ? shIn.dogs[d.id] : null;
@@ -885,8 +984,9 @@ function shepRender() {
   for (const f of w.fx) {
     const q = proj(f.x, f.y, f.z), k = f.t / 1.2;
     sg.globalAlpha = 1 - k;
-    if (f.k === 'tele' && f.x2 != null) { const q2 = proj(f.x2, f.y2, f.z2); sg.strokeStyle = SHC.pilot; sg.lineWidth = 2 * kp; sg.setLineDash([3 * kp, 5 * kp]); sg.beginPath(); sg.moveTo(q.x, q.y); sg.lineTo(q2.x, q2.y); sg.stroke(); sg.setLineDash([]); }
-    else { sg.strokeStyle = { sting: SHC.danger, eaten: '#ff9aa6', lamb: '#ffffff', poo: SHC.jade, decoy: SHC.decoy, call: '#9ff7c6', pen: '#9ff7c6', hit: '#ff5a3c', ko: '#ffd0ec' }[f.k] || '#fff'; sg.lineWidth = 2 * kp; sg.beginPath(); sg.arc(q.x, q.y, (6 + 40 * k) * kp * (f.k === 'pen' || f.k === 'call' ? 3 : 1), 0, TAU); sg.stroke(); }
+    if (f.k === 'wither') { const r = Math.max(2.5 * kp, 13 * cam.k) * (1 - k); sg.fillStyle = SHC.woolDim; sg.beginPath(); sg.arc(q.x, q.y, r, 0, TAU); sg.fill(); if (f.danger) { sg.strokeStyle = SHC.danger; sg.lineWidth = Math.max(1, r * 0.38); sg.stroke(); } }   // starved: withers out
+    else if (f.k === 'tele' && f.x2 != null) { const q2 = proj(f.x2, f.y2, f.z2); sg.strokeStyle = SHC.pilot; sg.lineWidth = 2 * kp; sg.setLineDash([3 * kp, 5 * kp]); sg.beginPath(); sg.moveTo(q.x, q.y); sg.lineTo(q2.x, q2.y); sg.stroke(); sg.setLineDash([]); }
+    else { sg.strokeStyle = { sting: SHC.danger, eaten: '#ff9aa6', birth: '#ffffff', shed: '#f4f1ff', poo: SHC.jade, decoy: SHC.decoy, call: '#9ff7c6', pen: '#9ff7c6', hit: '#ff5a3c', ko: '#ffd0ec' }[f.k] || '#fff'; sg.lineWidth = 2 * kp; sg.beginPath(); sg.arc(q.x, q.y, (6 + 40 * k) * kp * (f.k === 'pen' || f.k === 'call' ? 3 : 1), 0, TAU); sg.stroke(); }
     sg.globalAlpha = 1;
   }
   // the touch sticks
@@ -911,9 +1011,9 @@ let shHudT = 0;
 function shepHud() {
   const w = SW, p = w.pilot, s = w.stats, g = SHEP_GAMES.find((x) => x.id === w.game);
   const badges = [['Time', 'elTime'], ['Space', 'elSpace'], ['Mass', 'elMass'], ['Charge', 'elCharge']].filter((e) => L5k(e[1])).map((e) => e[0] + ' L5').join(' · ');
-  const extra = w.game === 'time' ? 'pens ' + w.penNext + '/5' : w.game === 'space' ? 'enemy eaten ' + s.enemyEaten : w.game === 'mass' ? 'lambs ' + s.born + ' · your mass ' + w.prisms.filter((q) => q.kind === 'jade').length : 'petals +' + s.petalsTaken + ' -' + s.petalsLost + ' · KO ' + s.ko;
+  const extra = w.game === 'time' ? 'pens ' + w.penNext + '/5' : w.game === 'space' ? 'enemy eaten ' + s.enemyEaten : w.game === 'mass' ? 'births ' + s.born + ' · your mass ' + w.prisms.filter((q) => q.kind === 'jade').length : 'petals +' + s.petalsTaken + ' -' + s.petalsLost + ' · KO ' + s.ko;
   $('shepHud').innerHTML = '<span class="big">' + shepScore() + '</span>  ' + g.name + '  ·  ' + Math.max(0, Math.ceil(SP.round - w.t)) + ' s\n' +
-    extra + '\nflock ' + w.sheep.length + ' · danger ' + Math.round(SEL.danger() * 100) + '% · ring ' + Math.round(SEL.ring()) + ' u\n' +
+    extra + '\nherd ' + w.sheep.length + (s.starved ? ' (starved ' + s.starved + ')' : '') + ' · danger ' + Math.round(SEL.danger() * 100) + '% · ring ' + Math.round(SEL.ring()) + ' u\n' +
     PILOT_NAME + ' ' + Math.round(p.v) + ' u/s · ' + p.petals + '✿ · call ' + (p.callT > 0 ? 'ON' : p.callCd > 0 ? Math.ceil(p.callCd) + ' s' : 'ready') + ' · decoy ' + (w.decoy ? (w.decoy.by === 'pilot' ? 'pilot\'s' : 'set') : 'none') +
     (w.deb < -0.05 ? '\ndanger hit: elements ' + w.deb.toFixed(1) + (p.slowT > 0 ? ' · slowed' : '') : '') + (badges ? '\n' + badges : '');
   const callBtn = $('shepCall'); callBtn.disabled = p.callCd > 0; callBtn.textContent = p.callCd > 0 ? Math.ceil(p.callCd) + ' s' : 'CALL';
@@ -945,7 +1045,8 @@ function shepReset(seed) {
   if (seed != null) shepState.seed = seed;
   shepWorld(shepState.seed, shepState.game);
   for (const d of shIn.dogs) d.down = false; touches.clear(); hadBoth = false;
-  cam.c = v3(SW.pilot.x, SW.pilot.y, SW.pilot.z);
+  cam.c = v3(SW.pilot.x, SW.pilot.y, SW.pilot.z); cam.sf = SW.board.f; cam.sr = SW.board.r;
+  padDog.was = [false, false];
   $('shepEnd').hidden = true;
   camUpdate(0); shepHud();
 }
@@ -960,7 +1061,7 @@ function shepEndCard() {
   const box = $('shepEnd'), w = SW;
   box.innerHTML = '';
   box.appendChild(el('h3', '', SHEP_GAMES.find((g) => g.id === w.game).name + ': ' + shepScore()));
-  box.appendChild(el('div', '', 'Flock ' + w.sheep.length + ' (born ' + w.stats.born + ', lost ' + w.stats.lost + ') · decoys ' + w.stats.decoys + ' (pilot ' + w.stats.pilotDecoys + ') · teleports ' + w.stats.teleports + ' · calls ' + w.stats.calls + ' · danger hits on the pilot ' + w.stats.selfHits));
+  box.appendChild(el('div', '', 'Herd ' + w.sheep.length + ' (born ' + w.stats.born + ', lost ' + w.stats.lost + ', starved ' + w.stats.starved + ') · decoys ' + w.stats.decoys + ' (pilot ' + w.stats.pilotDecoys + ') · teleports ' + w.stats.teleports + ' · calls ' + w.stats.calls + ' · danger hits on the pilot ' + w.stats.selfHits));
   const row = el('div', 'row2');
   const b1 = el('button', 'sbtn', 'Play again'); b1.onclick = () => shepReset(shepState.seed + 1);
   const b2 = el('button', 'sbtn', 'Keep this direction'); b2.onclick = async () => { const where = await shepRecord('keep', ''); shToast(where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'); };
@@ -969,7 +1070,7 @@ function shepEndCard() {
 }
 function shepDiff() { const o = {}; for (const k of Object.keys(SHEP_SHIPPED)) if (Math.abs(SP[k] - SHEP_SHIPPED[k]) > 1e-9) o[k] = SP[k]; return o; }
 async function shepRecord(choice, note) {
-  const settings = { round: 3, game: SW ? SW.game : shepState.game, role: shepState.role, view: shepState.view, seed: shepState.seed, changed: shepDiff(), score: SW ? shepScore() : null };
+  const settings = { round: 4, game: SW ? SW.game : shepState.game, role: shepState.role, view: shepState.view, seed: shepState.seed, changed: shepDiff(), score: SW ? shepScore() : null };
   return record('shepherd:' + settings.game, choice, (note ? note + ' ' : '') + JSON.stringify(settings));
 }
 
@@ -997,7 +1098,9 @@ function buildSheet() {
   }
   const tb = el('label', 'flex'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = 'shepThumb'; cb.checked = shepState.showThumb; cb.onchange = () => { shepState.showThumb = cb.checked; }; tb.append(cb, el('span', '', 'Show the big-thumb disc under a held dog'));
   box.appendChild(tb);
-  const vb = el('label', 'flex'); const vc = document.createElement('input'); vc.type = 'checkbox'; vc.id = 'shepNorth'; vc.checked = shepState.view === 'north'; vc.onchange = () => { shepState.view = vc.checked ? 'north' : 'heading'; lsSet('lab:' + LAB.name + ':shepView', shepState.view); }; vb.append(vc, el('span', '', 'North up (off: heading up, as the Wrasse\'s kite view)'));
+  const vb = el('label', 'flex'); const vc = document.createElement('select'); vc.id = 'shepView'; vc.setAttribute('aria-label', 'View');
+  for (const [id, name] of Object.entries(VIEW_NAMES)) { const o = el('option', '', name); o.value = id; vc.appendChild(o); }
+  vc.value = shepState.view; vc.onchange = () => { shepState.view = vc.value; lsSet('lab:' + LAB.name + ':shepView4', shepState.view); }; vb.append(el('span', '', 'View '), vc);
   box.appendChild(vb);
   const rs = el('button', 'btn', 'Back to shipped / round-3 values'); rs.onclick = () => { Object.assign(SP, SHEP_SHIPPED); lsSet(SHEP_LS, {}); buildSheet(); shepReset(); }; box.appendChild(el('p')).appendChild(rs);
   // scorecard
@@ -1026,11 +1129,12 @@ function buildSheet() {
   for (const t of [
     'One screen for both crews. In the game the pilot and the dog player have their own screens; here the dog view (the Wrasse\'s top-down kite view) is shown for both.',
     'The thumb floor uses a nominal phone (6.3 CSS px per mm, 390 px tall in landscape). Real phones differ by about 15%.',
-    'The pilot flies the Grouper\'s two-stick axes and turn rates with the Rhino\'s speed and straight-line ramp, but not the Rhino\'s sword, shield swipe or trail. Time does not speed its ramp here (Time is the flock\'s).',
+    'The pilot flies the Grouper\'s two-stick axes and turn rates with the Rhino\'s speed and straight-line ramp, but not the Rhino\'s sword, shield swipe or trail. Time does not speed its ramp here (Time is the herd\'s).',
     'The danger hit\'s element debuff is modelled as levels off every element, decaying over 4 s (the lab\'s reading of the shipped -0.5 magnitude). It is real here: it lowers Charge, so it briefly thins the danger share too.',
     'Depth from the plane is drawn as fading and size, not the game\'s face spread and dither cone.',
-    'Repulsion is a cylinder along the plane\'s normal round each herder, so it reads from above; sheep far off the plane still flee.',
-    'Sheep are not prisms with colliders. 180 of them would need the drone path (vessel agents, never lifeforms).',
+    'Repulsion is a cylinder along the plane\'s normal round each herder, so it reads from above; creatures far off the plane still flee (in the game every vessel is already in a creature\'s separation, LightFauna\'s vessel scan).',
+    'The herd is the cell\'s fauna (round 4), drawn as dots: no body prisms, no crystal heart dropped on death, no nucleus (so no spatial diet) and one colour, the player\'s, as if the player held the cell. A 180 cap of real LightFauna would cost body-prism colliders; the game\'s cells hold fewer.',
+    'The herd does not eat your own mass (Mass L5\'s clusters); in the game a herbivore outside the nucleus grazes any domain\'s mass, so it would.',
     'Rivals are scripted wolves, not players. No networking, so no latency between the dog player and the pilot.',
     'The AI crew is a heuristic (Strombom-style drive and collect; the AI pilot rolls toward the plane through itself, the flock and the target). Treat a gap under ~10% as noise.',
   ]) ul.appendChild(el('li', 'hint', t));
@@ -1054,7 +1158,7 @@ addEventListener('resize', () => { if (shepOn) shepResize(); });
 
 // the lab header gets the door in; #shepherd on the link opens straight into it
 {
-  const b = el('button', 'btn primary', SHEP_NAME); b.id = 'shepOpen'; b.title = 'Round 3: the pilot, two dogs and a flock (the Shepherd)';
+  const b = el('button', 'btn primary', SHEP_NAME); b.id = 'shepOpen'; b.title = 'Round 4: the marlin, two jacks and a herd of fauna (the Shepherd)';
   $('platform').before(b); b.onclick = shepOpen;
   if (location.hash === '#shepherd') setTimeout(shepOpen, 0);
 }
@@ -1068,7 +1172,7 @@ window.__lab.shep = {
   reset: (seed, game) => { if (game) { shepState.game = game; $('shepGame').value = game; } shepReset(seed); },
   tick(dt, n) { n = n || 1; for (let i = 0; i < n; i++) shepStep(dt || 1 / 60, liveInputFor()); camUpdate(0); shepRender(); },
   input: (o) => { if (o.pilot === null) shTestPilot = null; else if (o.pilot) shTestPilot = Object.assign(shTestPilot || { yaw: 0, pitch: 0, roll: 0, thr: 0.5 }, o.pilot); if (o.dogs) o.dogs.forEach((d, k) => Object.assign(shIn.dogs[k], d)); },
-  toPlane, proj: (x, y, z) => proj(x, y, z), view: (v) => { if (v) shepState.view = v; return shepState.view; },
+  toPlane, proj: (x, y, z) => proj(x, y, z), view: (v) => { if (v) shepState.view = v; return camView(); }, cam: () => ({ c: cam.c, sf: cam.sf, sr: cam.sr }), pad: (g) => { if (g) gatherPadDogs(g); return { map: padDog.map.slice(), dogs: shIn.dogs.map((d) => Object.assign({}, d)) }; },
   run: shepRun, runBatch: shepBatch, score: () => shepScore(),
   state: () => ({ t: SW.t, game: SW.game, sheep: SW.sheep.length, score: shepScore(), ring: SEL.ring(), floor: SEL.floorU(), danger: SEL.danger(), decoy: SW.decoy ? { x: SW.decoy.x, y: SW.decoy.y, z: SW.decoy.z, by: SW.decoy.by } : null, pilot: { x: SW.pilot.x, y: SW.pilot.y, z: SW.pilot.z, v: SW.pilot.v, callT: SW.pilot.callT, callCd: SW.pilot.callCd, decoyCd: SW.pilot.decoyCd, slowT: SW.pilot.slowT, up: SW.pilot.u }, board: { up: SW.board.u, tilt: Math.acos(clamp(SW.board.u.y, -1, 1)) * 180 / Math.PI }, deb: SW.deb, dogs: SW.dogs.map((d) => ({ x: d.x, y: d.y, z: d.z, down: d.down, h: height(d) })), stats: Object.assign({}, SW.stats), done: SW.done }),
 };

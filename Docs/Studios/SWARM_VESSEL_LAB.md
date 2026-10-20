@@ -1,9 +1,45 @@
-# Swarm Vessel Lab — round 3 (2026-10-20): Marlin and Jacks (the Shepherd, rebuilt)
+# Swarm Vessel Lab — round 4 (2026-10-20): Marlin and Jacks (the Shepherd, rebuilt)
 
 **Live page:** https://claude.ai/artifact/Q7BgQYrT9xq5kmNtqCudmw (private to Garrett until shared)
 **Straight in:** https://claude.ai/artifact/Q7BgQYrT9xq5kmNtqCudmw#shepherd (or the **Marlin and Jacks** button in the header)
 **Source:** `Docs/Studios/SwarmVesselLab/src/` → `python3 Docs/Studios/SwarmVesselLab/build.py` → `Docs/Studios/SwarmVesselLab.html`
 **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SwarmVesselLab.html` (PASS, desktop + phone)
+
+## Round 4: gamepad jacks, a steady view, and a herd of real fauna (Garrett, 2026-10-20)
+
+Garrett played round 3 on a phone and a gamepad: "on gamepad the thumbsticks should control the jacks. the
+marlin should not turn the jack's camera about. it should respond as necessary but minimally." Then: "the
+krill will be a swarm of vessels ... the jacks and marlin will herd actual fauna."
+
+| Garrett's note | What the lab does now | Reading that is the lab's |
+|---|---|---|
+| The thumbsticks control the jacks | With **You: the dogs** on a gamepad, the left stick runs the left jack and the right stick the right one, screen-relative (stick up = up the screen), at `padDogSpeed` x `dogSpeed` (520 u/s at a full stick). A jack holds still when its stick rests, so releasing a stick drops nothing. The bumper or trigger on that side is the thumb's lift: it leaves the one decoy where that jack stands. When both sticks rest, the left stick takes whichever jack is further left on screen. A stick never drives its jack off the screen | The bumper/trigger as the lift, the 1.4 response curve and the left/right re-pairing are the lab's. |
+| The marlin should not turn the jacks' camera; respond as needed, but minimally | A new **Steady** view, the default whenever you play the jacks (Settings → View; **Auto** keeps Heading up for the marlin alone). It never turns with the marlin's heading: each frame the last forward is laid onto the new plane, the smallest turn that keeps the view straight down the plane, so it only tilts as far as the plane does. It pans only when the flock (weighted a quarter toward the marlin) leaves a slack box of `camSlack` = 45% of the half-screen | Measured: two seconds of full yaw turn the Steady view 0° and the Heading-up view 64°. |
+
+| They herd actual fauna (not a swarm of vessel agents) | The herd now follows the game's fauna rules (`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`, locked; `LightFauna`, `Fauna`). A creature eats by the **mouthful**: it brakes on its meal, holds `consumeHoldSeconds` 2 s (a green arc fills), then eats the meal plus neighbours, at most `maxClusterBites` 8. A herder close enough to scare it breaks the hold. Each mouthful is a **feed**: it fills the stomach and moves it toward a **birth** (`FeedsPerOffspring`, Mass scales it as before, plus a 3 s birth cooldown). An empty stomach **withers** it out (`starvationSeconds` 30 per meal; no imposed clock). Births bloom in. **Shielded mass is never food**: at Space L5 a bite sheds a shield (what `Prism.Consume` does to shielded mass) and the next mouthful can eat the prism. The AI takes a hungry herd (Mass and Charge games) to pasture and stands its drive off while it grazes. Words on the page say herd, creatures and births | The 40 u bite radius is the shipped 12 u at the lab's scale. **The stomach banks 2 meals** (Settings → Stomach; 1 = the shipped nominal stomach), and creatures start half to fully fed. Not modelled: body prisms, the crystal heart, the nucleus diet, and the herd eating your own Mass L5 clusters (the game's herbivores would). |
+
+**Finding: real fauna make herding a feeding job.** With the shipped one-meal stomach (30 s), a herd that
+does not graze withers about 30 s in. That happened in every game: 49 of 60 starved in the pen race, where
+the AI has no reason to stop at pasture. A 2-meal stomach keeps the round playable. A hungry herd now has to
+be taken to food and left alone while it eats, because a jack's ring breaks the 2 s mouthful.
+
+**Measured** (AI crew, 3 seeds, 45 s, round 3 → round 4): pen race 26.7 → 30; Space 164 → 117 (the 2 s
+mouthful is slower than eating on contact); Mass 9 → 1 (feeds per birth were already high, and the herd now
+loses some to starvation); Charge 1.7 → 1.7. Space L5 307 → 150, because a shield now costs a mouthful to
+shed before the prism can be eaten. Mass L5 72 → 58.
+
+Checked: `verify_lab.cjs` PASS (desktop + phone), plus a scripted check of the steady view (0° vs 64° under
+full yaw), a stick run (the left jack moves 519 u right in 1 s) and a bumper lift (one dog decoy dropped).
+Not checked: a real gamepad in the claude.ai viewer, and how the slack box feels on a phone.
+
+### Decision needed (Garrett), round 4
+
+1. **Space L5 against the locked diet rule.** Your round-2 note was "Space L5: the swarm can eat shielded
+   prisms". The ecology rule (locked) says shielded mass is never food and never a steering target. The lab
+   does the nearest thing the game already allows: the bite sheds the shield, and the next mouthful eats the
+   prism. That still lets herded fauna steer at shielded mass, which is one exception to ask for.
+2. **Stomach size.** Keep the shipped one-meal stomach (herding is mostly about feeding), or give herded
+   species a bigger authored stomach (the lab's 2 meals).
 
 ## Round 3: top-down, a two-thumb pilot whose roll sets the plane (Garrett, 2026-10-20)
 
@@ -294,6 +330,7 @@ The axes measured one at a time, the others held:
 
 ## Round log
 
+- **Round 4 (2026-10-20, `claude/project-thread-mv0e7a`):** gamepad sticks steer the jacks (bumper/trigger = the lift, the decoy); the jacks' Steady view no longer turns with the marlin, tilting only with the plane and panning only past a slack box; the herd is the cell's real fauna (mouthful feeding, births from feeds, starvation, shields never food).
 - **Round 3 (2026-10-20, `claude/project-thread-iu9brp`):** the Wrasse's top-down camera zoomed out; the pilot on the Grouper's two sticks with the plane as its eased x-z board (roll tilts it); a 3D world (floating fort, spherical pens, pasture at heights); Time L5 as the pilot's own decoy; own danger sheep hit the pilot (slow plus a decaying element debuff, no burn); the proposed name Marlin and Jacks.
 - **Round 2 (2026-10-20, `claude/project-thread-4slpcz`):** the Shepherd mode (`src/shepherd.js`): Rhino pilot, two thumb-driven sheepdogs with a thumb-occlusion floor, decoys, call, teleport, the four element rules and their L5s, four games with I1-I4, a ten-row scorecard; learning L-STU-118.
 
