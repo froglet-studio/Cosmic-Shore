@@ -5,7 +5,7 @@
 **Live page:** https://claude.ai/artifact/QsSVVTcxL4PxXsrK2MBeVY (private to Garrett until shared)
 **Source:** `Docs/Studios/KrillLab/src/lab.html` → `python3 Docs/Studios/KrillLab/build.py` → `Docs/Studios/KrillLab.html`. The card numbers are read from `Docs/Studios/SwarmCardVessel/cards.json`, the same source as the [deck page](https://claude.ai/artifact/QB2oYkL8P8Cv7KPGyhdHp2).
 **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/KrillLab.html` (PASS on desktop and phone)
-**Status:** lab only. Nothing is in Unity. There is no class id, prefab or model yet.
+**Status (2026-10-20):** in Unity on `claude/project-thread-ytyab2`, not yet editor-verified. Class 21, `Krill.fbx`, `Krill.prefab`, in the Toybox Vessel Changer. Design and files: `Assets/_Scripts/Controller/Vessel/R_VesselActions/KRILL.md`; generator `Tools/Build/author_krill_assets.py`.
 
 ## What you do in it
 

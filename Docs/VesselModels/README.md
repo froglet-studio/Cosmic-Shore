@@ -30,6 +30,7 @@ How every vessel is coloured (the colour language, the shared materials' scheme,
 | Angler | (none; `ANGLER.md` section 9) | `Angler.fbx` (new), replacing the Stoat stand-in | the same | `specs/angler.py` |
 | Brittle Star | (none; `BRITTLE_STAR.md` section 2) | `BrittleStar.fbx` (new), replacing `BrittleStarHullBuilder` | the same | `specs/brittlestar.py` |
 | Shrike | (none; `SHRIKE.md` section 2) | `Shrike.fbx` (new), replacing `ShrikeHullBuilder` | the same | `specs/shrike.py` |
+| Krill | (none; `KRILL.md` section 6) | `Krill.fbx` (new, 2026-10-20); each swarm member is a copy of it | the same | `specs/krill.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 
 **2026-10-18, withdrawn after the owner's Editor test:** the rebuilt Sparrow flew backwards, the Urchin did not

@@ -12745,3 +12745,22 @@ compile clean; Amoebius builds.
 3. If a title stays generic, the Console has no error: the sound FMOD reported matched no `soundName` - check its name
    against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
 4. Arena: every card's hull chips show the vessel icons, no white squares.
+
+## 🔴 2026-10-20 — The Krill, vessel class 21 (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. `R_VesselActions/KRILL.md`. New: `KrillRules`, `KrillSwarmExecutor`, `KrillVesselTransformer`,
+`KrillAnimation`, `KrillActionSO`, `KrillConfigSO`, `KrillCardDeckSO`, `KrillHUDView`, `KrillHUDController`, `Krill.prefab`,
+`KrillHUDVariant.prefab`, `Krill.fbx`; changed `VesselClassType` (Krill = 21), `ToyVesselRoster`, the class lists, the
+prefab container and `DefaultNetworkPrefabs`. Reference compile clean; `author_krill_assets.py --check` OK;
+`krill_rules_parity/run.sh --self-test` 10/10.
+1. Let Unity import: `Krill.fbx` imports with four blend shapes (Charge, Mass, Space, Time); no missing-script or
+   missing-reference warnings on `Krill.prefab` or `KrillHUDVariant.prefab`.
+2. Test Runner: `KrillRulesTests`, `EnumIntegrityTests` and the Toybox roster coverage tests pass.
+3. Toybox (freestyle) > Vessel Changer > Krill: about 24 krill appear and roam; the carrier hull is hidden; the left
+   stick turns the view and it stops when let go.
+4. Watch a cycle: the phase line counts down Omnicrystal 30 s, Elemental crystals, Opposing vessels, Opposing mass. When
+   the Omnicrystal phase ends four cards show names and levels over the ability row; A/B/X/Y pick Mass/Time/Charge/Space,
+   and the picked element's gauge rises.
+5. The krill collect crystals (score and elements move) and bite rival-domain prisms; with an AI rival, nips land as
+   petal hits only. The swarm never drops below 6.
+6. Console: no errors and no per-frame logs while the Krill flies.

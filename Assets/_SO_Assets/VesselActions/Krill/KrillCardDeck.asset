@@ -1,0 +1,1699 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf481cf8d22ef22c33c272aebbdc9e62, type: 3}
+  m_Name: KrillCardDeck
+  m_EditorClassIdentifier: 
+  revision: 3
+  cards:
+  - id: mass-mound-builders
+    element: 2
+    displayName: 'Mound Builders'
+    kind: 'Build'
+    shinesIn: 'Any'
+    text: 'The swarm lays your team''s prisms along its path.'
+    stats:
+    - label: 'Prisms laid'
+      kind: 0
+      a: 0.5
+      b: 0.25
+      unit: '/s'
+      decimals: 2
+      steps: []
+    milestones:
+    - level: 5
+      text: 'Laid prisms join into a solid wall with no gaps'
+    - level: 15
+      text: 'Laid prisms are shielded'
+    wired: 1
+  - id: mass-danger-drip
+    element: 2
+    displayName: 'Danger Drip'
+    kind: 'Build'
+    shinesIn: 'Opposing vessels'
+    text: 'Members drip danger prisms behind them. A rival that flies through one is slowed and loses a petal, as any danger prism does.'
+    stats:
+    - label: 'Danger prisms'
+      kind: 0
+      a: 0.3
+      b: 0.15
+      unit: '/s'
+      decimals: 2
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Drips fall in short lines across the swarm''s wake'
+    wired: 1
+  - id: mass-conservation-of-mass
+    element: 2
+    displayName: 'Conservation of Mass'
+    kind: 'Build'
+    shinesIn: 'Any'
+    text: 'Mass is never lost. A member that dies becomes your prisms where it fell.'
+    stats:
+    - label: 'Prisms per death'
+      kind: 0
+      a: 1
+      b: 0.5
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'The prisms are shielded'
+    wired: 0
+  - id: mass-inertial-wall
+    element: 2
+    displayName: 'Inertial Wall'
+    kind: 'Build'
+    shinesIn: 'Opposing vessels'
+    text: 'Every few seconds the swarm drops a straight wall of your prisms along its line of travel. The faster it flies, the longer the wall, because momentum carries the bricks.'
+    stats:
+    - label: 'Wall length at cruise'
+      kind: 0
+      a: 4
+      b: 1
+      unit: ' prisms'
+      decimals: 0
+      steps: []
+    - label: 'Every'
+      kind: 1
+      a: 10
+      b: 0.95
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 10
+      text: 'The wall is laid as danger prisms'
+    wired: 0
+  - id: mass-accretion-disk
+    element: 2
+    displayName: 'Accretion Disk'
+    kind: 'Build'
+    shinesIn: 'Omnicrystal'
+    text: 'Members circling the objective lay a ring of your prisms round it, the way matter collects in orbit round a heavy body.'
+    stats:
+    - label: 'Ring size'
+      kind: 0
+      a: 8
+      b: 2
+      unit: ' prisms'
+      decimals: 0
+      steps: []
+    - label: 'Build time'
+      kind: 1
+      a: 4
+      b: 0.9
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 10
+      text: 'The ring is shielded'
+    - level: 15
+      text: 'The ring is supershielded'
+    wired: 0
+  - id: mass-snowball
+    element: 2
+    displayName: 'Snowball'
+    kind: 'Form'
+    shinesIn: 'Any'
+    text: 'Every 20 s the swarm rolls into one ball. It packs on a layer of your prisms each second, and when it breaks they land as a mound.'
+    stats:
+    - label: 'Ball lasts'
+      kind: 0
+      a: 3
+      b: 0.5
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Prisms per second'
+      kind: 0
+      a: 2
+      b: 1
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'The mound lands shielded'
+    wired: 1
+  - id: mass-density
+    element: 2
+    displayName: 'Density'
+    kind: 'Build'
+    shinesIn: 'Any'
+    text: 'Your prisms laid close together compress into fewer, bigger prisms, so the same mass holds more volume and takes more to break.'
+    stats:
+    - label: 'Merge radius'
+      kind: 0
+      a: 10
+      b: 3
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Volume per merge'
+      kind: 0
+      a: 1.2
+      b: 0.1
+      unit: '×'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 15
+      text: 'Merged prisms are supershielded'
+    wired: 0
+  - id: mass-neutron-star
+    element: 2
+    displayName: 'Neutron Star'
+    kind: 'Form'
+    shinesIn: 'Any'
+    text: 'Every 30 s the swarm crushes into one dense star that cannot be hurt. When it ends it leaves a supershielded core of your prisms.'
+    stats:
+    - label: 'Star lasts'
+      kind: 0
+      a: 1.5
+      b: 0.35
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Core size'
+      kind: 0
+      a: 3
+      b: 1
+      unit: ' prisms'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: mass-golem
+    element: 2
+    displayName: 'Golem'
+    kind: 'Form'
+    shinesIn: 'Opposing vessels'
+    text: 'Every 25 s the swarm stacks into a giant walking golem. Each stomp leaves a footprint of your prisms, and its own body is shielded.'
+    stats:
+    - label: 'Golem lasts'
+      kind: 0
+      a: 4
+      b: 0.5
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Prisms per footprint'
+      kind: 0
+      a: 2
+      b: 0.5
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Footprints are danger prisms'
+    - level: 15
+      text: 'The golem is supershielded'
+    wired: 0
+  - id: mass-supershield-core
+    element: 2
+    displayName: 'Supershield Core'
+    kind: 'Shield'
+    shinesIn: 'Any'
+    text: 'Your prisms near the swarm''s centroid are supershielded while the swarm stays close.'
+    stats:
+    - label: 'Core radius'
+      kind: 0
+      a: 40
+      b: 10
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'The shield lasts a few seconds after the swarm leaves'
+    wired: 0
+  - id: mass-carapace
+    element: 2
+    displayName: 'Carapace'
+    kind: 'Shield'
+    shinesIn: 'Opposing vessels'
+    text: 'Members grow shells. A shell soaks one hit, then regrows.'
+    stats:
+    - label: 'Shell regrows in'
+      kind: 1
+      a: 12
+      b: 0.88
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 8
+      text: 'Two shells per member'
+    - level: 15
+      text: 'Three shells per member'
+    wired: 1
+  - id: mass-gravity-well
+    element: 2
+    displayName: 'Gravity Well'
+    kind: 'Pull'
+    shinesIn: 'Elemental crystals'
+    text: 'The centroid''s gravity pulls loose crystals toward the swarm, and your prisms inside the well pack into a shielded clump.'
+    stats:
+    - label: 'Pull radius'
+      kind: 0
+      a: 50
+      b: 15
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Enemy vessels inside the well are dragged (25% slow)'
+    wired: 0
+  - id: mass-bulk-up
+    element: 2
+    displayName: 'Bulk Up'
+    kind: 'Body'
+    shinesIn: 'Opposing vessels'
+    text: 'Members grow bigger and heavier. Heavy members take more to kill and do not get knocked about.'
+    stats:
+    - label: 'Member size'
+      kind: 0
+      a: 1.05
+      b: 0.05
+      unit: '×'
+      decimals: 2
+      steps: []
+    - label: 'Toughness'
+      kind: 0
+      a: 1
+      b: 0.2
+      unit: '×'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 10
+      text: 'A heavy member that rams a vessel takes a third of a petal'
+    wired: 0
+  - id: mass-mass-tug
+    element: 2
+    displayName: 'Mass Tug'
+    kind: 'Hook'
+    shinesIn: 'Opposing vessels'
+    text: 'Members latch onto enemy vessels and weigh them down.'
+    stats:
+    - label: 'Most slow on one vessel'
+      kind: 0
+      a: 15
+      b: 4
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'A weighed-down vessel drops a petal every 5 s'
+    wired: 0
+  - id: mass-brood
+    element: 2
+    displayName: 'Brood'
+    kind: 'Growth'
+    shinesIn: 'Any'
+    text: 'The swarm breeds: a new member hatches at the centroid every few seconds, up to the swarm cap.'
+    stats:
+    - label: 'Hatch every'
+      kind: 1
+      a: 6
+      b: 0.88
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Hatchlings arrive full size'
+    - level: 15
+      text: 'Twins: two members per hatch'
+    wired: 1
+  - id: mass-big-family
+    element: 2
+    displayName: 'Big Family'
+    kind: 'Growth'
+    shinesIn: 'Any'
+    text: 'Raises the swarm cap and the protected minimum size.'
+    stats:
+    - label: 'Swarm cap'
+      kind: 0
+      a: 46
+      b: 6
+      unit: ''
+      decimals: 0
+      steps: []
+    - label: 'Minimum size'
+      kind: 0
+      a: 6
+      b: 0.5
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Members over the cap wait in a reserve and refill losses at once'
+    wired: 1
+  - id: mass-queen
+    element: 2
+    displayName: 'Queen'
+    kind: 'Growth'
+    shinesIn: 'Any'
+    text: 'One member is crowned. While she lives the swarm breeds faster and her guards are shielded. If she falls, the crown passes after a delay.'
+    stats:
+    - label: 'Breeding bonus'
+      kind: 0
+      a: 20
+      b: 10
+      unit: '%'
+      decimals: 0
+      steps: []
+    - label: 'Crown passes in'
+      kind: 1
+      a: 15
+      b: 0.85
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 15
+      text: 'Two queens'
+    wired: 0
+  - id: mass-clutch
+    element: 2
+    displayName: 'Clutch'
+    kind: 'Growth'
+    shinesIn: 'Elemental crystals'
+    text: 'Each crystal the swarm collects lays eggs that hatch a few seconds later.'
+    stats:
+    - label: 'Eggs per crystal'
+      kind: 0
+      a: 1
+      b: 0.5
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Eggs hatch at once'
+    wired: 0
+  - id: mass-pack-mules
+    element: 2
+    displayName: 'Pack Mules'
+    kind: 'Economy'
+    shinesIn: 'Elemental crystals'
+    text: 'Elemental crystals the swarm carries home count for more element.'
+    stats:
+    - label: 'Extra element per crystal'
+      kind: 0
+      a: 10
+      b: 10
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: mass-critical-mass
+    element: 2
+    displayName: 'Critical Mass'
+    kind: 'Burst'
+    shinesIn: 'Opposing mass'
+    text: 'When the swarm passes a size, it throws off a shell of your prisms all round it in one go, then has to grow back past the size to do it again.'
+    stats:
+    - label: 'Swarm size needed'
+      kind: 1
+      a: 36
+      b: 0.95
+      unit: ''
+      decimals: 0
+      steps: []
+    - label: 'Prisms thrown'
+      kind: 0
+      a: 8
+      b: 3
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'The shell is shielded'
+    wired: 0
+  - id: time-dragonfly
+    element: 4
+    displayName: 'Dragonfly'
+    kind: 'Form'
+    shinesIn: 'Elemental crystals'
+    text: 'Every 15 s the swarm morphs into a giant dragonfly and darts at the objective in fast straight hops, collecting crystals on the way.'
+    stats:
+    - label: 'Dart speed'
+      kind: 0
+      a: 2
+      b: 0.15
+      unit: '×'
+      decimals: 2
+      steps: []
+    - label: 'Dragonfly lasts'
+      kind: 0
+      a: 3
+      b: 0.4
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Each hop leaves a slipstream lane'
+    wired: 1
+  - id: time-quickening
+    element: 4
+    displayName: 'Quickening'
+    kind: 'Speed'
+    shinesIn: 'Any'
+    text: 'The swarm cruises faster.'
+    stats:
+    - label: 'Cruise speed'
+      kind: 0
+      a: 4
+      b: 4
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: time-slipstream
+    element: 4
+    displayName: 'Slipstream'
+    kind: 'Speed'
+    shinesIn: 'Any'
+    text: 'Members drafting behind other members fly faster, so a long thin swarm is a fast one.'
+    stats:
+    - label: 'Draft bonus'
+      kind: 0
+      a: 5
+      b: 3
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-skim-rush
+    element: 4
+    displayName: 'Skim Rush'
+    kind: 'Speed'
+    shinesIn: 'Opposing mass'
+    text: 'Members that skim close past enemy prisms gain speed, like a vessel''s skim.'
+    stats:
+    - label: 'Speed per skim'
+      kind: 0
+      a: 3
+      b: 1
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Skims also refill card cooldowns a little'
+    wired: 0
+  - id: time-agility
+    element: 4
+    displayName: 'Agility'
+    kind: 'Turn'
+    shinesIn: 'Any'
+    text: 'The swarm turns tighter, so it whips round to a new target instead of looping wide.'
+    stats:
+    - label: 'Turn rate'
+      kind: 0
+      a: 90
+      b: 15
+      unit: '°/s'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Members bank like starlings: the whole swarm turns as one'
+    wired: 1
+  - id: time-hummingbird
+    element: 4
+    displayName: 'Hummingbird'
+    kind: 'Form'
+    shinesIn: 'Elemental crystals'
+    text: 'At the objective the swarm becomes a hummingbird: it holds dead still, turns on the spot and sips nearby crystals in.'
+    stats:
+    - label: 'Sip radius'
+      kind: 0
+      a: 60
+      b: 8
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Turn rate'
+      kind: 0
+      a: 180
+      b: 30
+      unit: '°/s'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-lead-time
+    element: 4
+    displayName: 'Lead Time'
+    kind: 'Aim'
+    shinesIn: 'Opposing vessels'
+    text: 'The swarm flies to where its objective will be in a moment, not where it is now, so it meets moving targets head on.'
+    stats:
+    - label: 'Looks ahead'
+      kind: 0
+      a: 0.2
+      b: 0.1
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Sets off toward the next phase''s objective in the last seconds of the timer'
+    wired: 0
+  - id: time-skip-ahead
+    element: 4
+    displayName: 'Skip Ahead'
+    kind: 'Teleport'
+    shinesIn: 'Omnicrystal'
+    text: 'Every few seconds the swarm skips a moment of travel and arrives further along its path toward the objective.'
+    stats:
+    - label: 'Cooldown'
+      kind: 1
+      a: 24
+      b: 0.89
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Distance skipped'
+      kind: 0
+      a: 300
+      b: 50
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: time-blink-step
+    element: 4
+    displayName: 'Blink Step'
+    kind: 'Dodge'
+    shinesIn: 'Opposing vessels'
+    text: 'A member about to be hit skips a fraction of a second ahead and is not there when the shot lands.'
+    stats:
+    - label: 'Chance'
+      kind: 0
+      a: 10
+      b: 4
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: time-out-of-phase
+    element: 4
+    displayName: 'Out of Phase'
+    kind: 'Pass'
+    shinesIn: 'Any'
+    text: 'Every 15 s the swarm slips out of phase with the world and passes through prisms and vessels.'
+    stats:
+    - label: 'Phase lasts'
+      kind: 0
+      a: 1
+      b: 0.3
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-slingshot
+    element: 4
+    displayName: 'Slingshot'
+    kind: 'Launch'
+    shinesIn: 'Omnicrystal'
+    text: 'When the objective is far, the swarm draws back and flings itself at it.'
+    stats:
+    - label: 'Fling distance'
+      kind: 0
+      a: 200
+      b: 40
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Cooldown'
+      kind: 1
+      a: 12
+      b: 0.93
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-save-point
+    element: 4
+    displayName: 'Save Point'
+    kind: 'Rewind'
+    shinesIn: 'Any'
+    text: 'Once per cycle, when the swarm is knocked down to its minimum size, it rewinds to where it was and how big it was a few seconds ago.'
+    stats:
+    - label: 'Rewinds'
+      kind: 0
+      a: 3
+      b: 0.5
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 10
+      text: 'The rewind also returns the petals you lost'
+    wired: 0
+  - id: time-fast-forward
+    element: 4
+    displayName: 'Fast Forward'
+    kind: 'Speed'
+    shinesIn: 'Any'
+    text: 'Every 20 s the swarm runs on double time (speed, breeding, cooldowns) for a few seconds.'
+    stats:
+    - label: 'Double time lasts'
+      kind: 0
+      a: 2
+      b: 0.4
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-metronome
+    element: 4
+    displayName: 'Metronome'
+    kind: 'Rhythm'
+    shinesIn: 'Any'
+    text: 'The swarm surges forward on a beat, then glides. The beat quickens as the card levels.'
+    stats:
+    - label: 'Beat every'
+      kind: 1
+      a: 2
+      b: 0.95
+      unit: 's'
+      decimals: 2
+      steps: []
+    - label: 'Surge speed'
+      kind: 0
+      a: 1.5
+      b: 0.1
+      unit: '×'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 10
+      text: 'A big surge as each new phase starts'
+    wired: 0
+  - id: time-synchrony
+    element: 4
+    displayName: 'Synchrony'
+    kind: 'Rhythm'
+    shinesIn: 'Opposing vessels'
+    text: 'Members fall into sync like fireflies. Each synced flash bursts the whole swarm forward at once.'
+    stats:
+    - label: 'Flash every'
+      kind: 1
+      a: 6
+      b: 0.92
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Burst speed'
+      kind: 0
+      a: 1.3
+      b: 0.05
+      unit: '×'
+      decimals: 2
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-mayfly-couriers
+    element: 4
+    displayName: 'Mayfly Couriers'
+    kind: 'Fetch'
+    shinesIn: 'Elemental crystals'
+    text: 'Short-lived mayflies hatch, race to the nearest crystals and bring them back.'
+    stats:
+    - label: 'Couriers'
+      kind: 0
+      a: 1
+      b: 0.5
+      unit: ''
+      decimals: 0
+      steps: []
+    - label: 'Courier speed'
+      kind: 0
+      a: 150
+      b: 15
+      unit: 'u/s'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-rewind
+    element: 4
+    displayName: 'Rewind'
+    kind: 'Survive'
+    shinesIn: 'Opposing vessels'
+    text: 'A member that is killed may rewind 2 s and come back.'
+    stats:
+    - label: 'Chance'
+      kind: 0
+      a: 10
+      b: 5
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-echo-swarm
+    element: 4
+    displayName: 'Echo Swarm'
+    kind: 'Copy'
+    shinesIn: 'Elemental crystals'
+    text: 'A ghost of the swarm replays its path a moment behind it, collecting crystals the real swarm missed.'
+    stats:
+    - label: 'Ghost strength'
+      kind: 0
+      a: 20
+      b: 4
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 8
+      text: 'Two ghosts'
+    - level: 15
+      text: 'Three ghosts'
+    wired: 0
+  - id: time-stopwatch
+    element: 4
+    displayName: 'Stopwatch'
+    kind: 'Field'
+    shinesIn: 'Opposing vessels'
+    text: 'Shots and vessels near the swarm move slower in its time bubble, so it can slip past them.'
+    stats:
+    - label: 'Slow'
+      kind: 0
+      a: 10
+      b: 3
+      unit: '%'
+      decimals: 0
+      steps: []
+    - label: 'Radius'
+      kind: 0
+      a: 80
+      b: 10
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: time-hurry-up
+    element: 4
+    displayName: 'Hurry Up'
+    kind: 'Phase'
+    shinesIn: 'Any'
+    text: 'Every phase timer runs shorter, so the cycle comes round and new hands arrive sooner.'
+    stats:
+    - label: 'Phase time cut'
+      kind: 0
+      a: 3
+      b: 2
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 15
+      text: 'A phase whose goal is met early gives its leftover time to the next phase'
+    wired: 1
+  - id: space-annex
+    element: 3
+    displayName: 'Annex'
+    kind: 'Steal'
+    shinesIn: 'Opposing mass'
+    text: 'Enemy prisms a member touches change hands and become yours.'
+    stats:
+    - label: 'Steals per member'
+      kind: 0
+      a: 0.1
+      b: 0.05
+      unit: '/s'
+      decimals: 2
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Shielded prisms can be stolen and keep their shield'
+    wired: 1
+  - id: space-tesseract
+    element: 3
+    displayName: 'Tesseract'
+    kind: 'Steal'
+    shinesIn: 'Opposing mass'
+    text: 'The swarm folds space and steals enemy prisms from a distance, as if they were right next to it.'
+    stats:
+    - label: 'Steal reach'
+      kind: 0
+      a: 30
+      b: 10
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Two prisms per fold'
+    wired: 0
+  - id: space-hole-punch
+    element: 3
+    displayName: 'Hole Punch'
+    kind: 'Breaker'
+    shinesIn: 'Opposing mass'
+    text: 'Each member bursts enemy prisms it flies through.'
+    stats:
+    - label: 'Prisms per member'
+      kind: 0
+      a: 0.2
+      b: 0.1
+      unit: '/s'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 1
+  - id: space-wide-bite
+    element: 3
+    displayName: 'Wide Bite'
+    kind: 'Reach'
+    shinesIn: 'Opposing mass'
+    text: 'Members reach further when they break, steal or shrink a prism.'
+    stats:
+    - label: 'Member reach'
+      kind: 0
+      a: 106
+      b: 6
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: space-shield-eaters
+    element: 3
+    displayName: 'Shield Eaters'
+    kind: 'Breaker'
+    shinesIn: 'Opposing mass'
+    text: 'Members can bite through shielded prisms.'
+    stats:
+    - label: 'Bites per shield'
+      kind: 1
+      a: 6
+      b: 0.88
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'One bite breaks a whole cluster of shielded prisms'
+    wired: 1
+  - id: space-shrink-ray
+    element: 3
+    displayName: 'Shrink Ray'
+    kind: 'Shrink'
+    shinesIn: 'Opposing mass'
+    text: 'Enemy prisms the swarm passes shrink, and so do enemy vessels it touches.'
+    stats:
+    - label: 'Shrink'
+      kind: 0
+      a: 5
+      b: 2.5
+      unit: '%'
+      decimals: 0
+      steps: []
+    - label: 'Vessel shrink lasts'
+      kind: 0
+      a: 2
+      b: 0.5
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-hubble-flow
+    element: 3
+    displayName: 'Hubble Flow'
+    kind: 'Shrink'
+    shinesIn: 'Opposing mass'
+    text: 'Space expands round the swarm. Nearby enemy prisms drift apart and shrink the longer they stay close.'
+    stats:
+    - label: 'Radius'
+      kind: 0
+      a: 80
+      b: 12
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Shrink rate'
+      kind: 0
+      a: 2
+      b: 1
+      unit: '%/s'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-curvature
+    element: 3
+    displayName: 'Curvature'
+    kind: 'Territory'
+    shinesIn: 'Omnicrystal'
+    text: 'Where the swarm lingers, space curves. Enemy prisms inside slide toward the centre and shrink.'
+    stats:
+    - label: 'Zone radius'
+      kind: 0
+      a: 100
+      b: 20
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Shrink rate'
+      kind: 0
+      a: 1
+      b: 0.5
+      unit: '%/s'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-black-hole
+    element: 3
+    displayName: 'Black Hole'
+    kind: 'Ultimate'
+    shinesIn: 'Any'
+    text: 'Once per omnicrystal the swarm collapses into a black hole that pulls in and eats every enemy prism near it.'
+    stats:
+    - label: 'Black hole lasts'
+      kind: 0
+      a: 2
+      b: 0.4
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Pull radius'
+      kind: 0
+      a: 150
+      b: 25
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: space-meteor-drop
+    element: 3
+    displayName: 'Meteor Drop'
+    kind: 'Slam'
+    shinesIn: 'Opposing mass'
+    text: 'Every few seconds one member climbs high above the swarm and slams down on the objective, bursting enemy prisms round where it lands.'
+    stats:
+    - label: 'Every'
+      kind: 1
+      a: 8
+      b: 0.92
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Blast radius'
+      kind: 0
+      a: 30
+      b: 6
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Two meteors at a time'
+    wired: 0
+  - id: space-shockwave
+    element: 3
+    displayName: 'Shockwave'
+    kind: 'Burst'
+    shinesIn: 'Opposing vessels'
+    text: 'Every 10 s the swarm flares into an expanding ring that bursts enemy prisms.'
+    stats:
+    - label: 'Ring radius'
+      kind: 0
+      a: 80
+      b: 15
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-orbital-scythe
+    element: 3
+    displayName: 'Orbital Scythe'
+    kind: 'Orbit'
+    shinesIn: 'Opposing mass'
+    text: 'A share of members orbit the centroid at speed and cut every enemy prism on their circle.'
+    stats:
+    - label: 'Members in orbit'
+      kind: 0
+      a: 10
+      b: 2
+      unit: '%'
+      decimals: 0
+      steps: []
+    - label: 'Orbit radius'
+      kind: 0
+      a: 60
+      b: 6
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-manta-sheet
+    element: 3
+    displayName: 'Manta Sheet'
+    kind: 'Form'
+    shinesIn: 'Opposing mass'
+    text: 'Every 20 s the swarm flattens into one wide manta that sweeps through the cell, bursting every enemy prism under its wings.'
+    stats:
+    - label: 'Wingspan'
+      kind: 0
+      a: 150
+      b: 25
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Manta lasts'
+      kind: 0
+      a: 3
+      b: 0.3
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-whale-gulp
+    element: 3
+    displayName: 'Whale Gulp'
+    kind: 'Form'
+    shinesIn: 'Opposing mass'
+    text: 'Every 20 s the swarm becomes a whale mouth and gulps a cone of enemy prisms in one bite. Gulped prisms feed breeding.'
+    stats:
+    - label: 'Cone length'
+      kind: 0
+      a: 120
+      b: 20
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Most prisms per gulp'
+      kind: 0
+      a: 10
+      b: 6
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-spaghettify
+    element: 3
+    displayName: 'Spaghettify'
+    kind: 'Breaker'
+    shinesIn: 'Opposing mass'
+    text: 'Near the swarm''s densest point, tidal pull stretches enemy prisms long and thin until they snap.'
+    stats:
+    - label: 'Tidal radius'
+      kind: 0
+      a: 40
+      b: 15
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Snap after'
+      kind: 1
+      a: 3
+      b: 0.9
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-mirror-swarm
+    element: 3
+    displayName: 'Mirror Swarm'
+    kind: 'Copy'
+    shinesIn: 'Opposing mass'
+    text: 'A mirror-image swarm flies point-reflected through the real swarm''s centroid and breaks enemy prisms for real.'
+    stats:
+    - label: 'Mirror strength'
+      kind: 0
+      a: 25
+      b: 5
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-split
+    element: 3
+    displayName: 'Split'
+    kind: 'Split'
+    shinesIn: 'Any'
+    text: 'The swarm splits. Each extra swarm works the next objective in the cycle at the same time, so a later phase can be met before its timer starts.'
+    stats:
+    - label: 'Swarms'
+      kind: 2
+      a: 0
+      b: 0
+      unit: ''
+      decimals: 0
+      steps:
+      - '2 for 8 s, every 30 s'
+      - '2, for good'
+      - '3'
+      - '4 (one per objective)'
+    milestones:
+    - level: 5
+      text: 'The split is permanent'
+    - level: 10
+      text: 'Three swarms'
+    - level: 15
+      text: 'Four swarms, one per objective'
+    wired: 1
+  - id: space-murmuration
+    element: 3
+    displayName: 'Murmuration'
+    kind: 'Decoy'
+    shinesIn: 'Opposing vessels'
+    text: 'The swarm swirls a huge shifting ghost cloud round itself. Enemy aim and AI lock onto the cloud instead of the swarm.'
+    stats:
+    - label: 'Shots fooled'
+      kind: 0
+      a: 10
+      b: 4
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: space-scouts
+    element: 3
+    displayName: 'Scouts'
+    kind: 'Vision'
+    shinesIn: 'Elemental crystals'
+    text: 'Scouts fly ahead and mark crystals and enemies on the map.'
+    stats:
+    - label: 'Reveal radius'
+      kind: 0
+      a: 300
+      b: 50
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Marked crystals pull the swarm a little even off-objective'
+    wired: 0
+  - id: space-wide-lens
+    element: 3
+    displayName: 'Wide Lens'
+    kind: 'Camera'
+    shinesIn: 'Any'
+    text: 'Your view pulls back so you see more of the cell round the swarm.'
+    stats:
+    - label: 'View span'
+      kind: 0
+      a: 1460
+      b: 60
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'An edge arrow points to the current objective'
+    wired: 0
+  - id: charge-emp
+    element: 1
+    displayName: 'EMP'
+    kind: 'Silence'
+    shinesIn: 'Opposing vessels'
+    text: 'Every 20 s the swarm pulses an EMP that silences enemy Charge and Space abilities in range.'
+    stats:
+    - label: 'Silenced for'
+      kind: 0
+      a: 0.5
+      b: 0.2
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Radius'
+      kind: 0
+      a: 120
+      b: 15
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: charge-lightning-rod
+    element: 1
+    displayName: 'Lightning Rod'
+    kind: 'Silence'
+    shinesIn: 'Opposing vessels'
+    text: 'One member stands as a lightning rod. Enemy Charge abilities fired near the swarm are drawn into it and fizzle.'
+    stats:
+    - label: 'Draw radius'
+      kind: 0
+      a: 60
+      b: 12
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Rods'
+      kind: 0
+      a: 1
+      b: 0.2
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-plasma-net
+    element: 1
+    displayName: 'Plasma Net'
+    kind: 'Silence'
+    shinesIn: 'Opposing vessels'
+    text: 'Members link into a plasma net. An enemy that crosses a strand keeps flying, but its Charge and Space abilities go quiet.'
+    stats:
+    - label: 'Silenced for'
+      kind: 0
+      a: 0.5
+      b: 0.2
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Strand length'
+      kind: 0
+      a: 40
+      b: 8
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-thorns
+    element: 1
+    displayName: 'Thorns'
+    kind: 'Silence'
+    shinesIn: 'Opposing vessels'
+    text: 'An enemy that kills a member may get a shock back that silences its Charge and Space abilities for a moment.'
+    stats:
+    - label: 'Chance'
+      kind: 0
+      a: 5
+      b: 5
+      unit: '%'
+      decimals: 0
+      steps: []
+    - label: 'Silenced for'
+      kind: 0
+      a: 0.5
+      b: 0.1
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-static-members
+    element: 1
+    displayName: 'Static Members'
+    kind: 'Drain'
+    shinesIn: 'Opposing vessels'
+    text: 'Members carry static. A rival that brushes one has its Charge element drained.'
+    stats:
+    - label: 'Charge drained per touch'
+      kind: 0
+      a: 2
+      b: 1
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'The drained charge feeds your other Charge cards'
+    wired: 0
+  - id: charge-short-circuit
+    element: 1
+    displayName: 'Short Circuit'
+    kind: 'Strip'
+    shinesIn: 'Opposing vessels'
+    text: 'A vessel swarmed by enough members sparks and drops elemental crystals, which your swarm can collect. It keeps full control of its flight.'
+    stats:
+    - label: 'Members needed'
+      kind: 1
+      a: 16
+      b: 0.92
+      unit: ''
+      decimals: 0
+      steps: []
+    - label: 'Crystals knocked loose'
+      kind: 0
+      a: 1
+      b: 0.25
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: charge-polarity
+    element: 1
+    displayName: 'Polarity'
+    kind: 'Strip'
+    shinesIn: 'Opposing vessels'
+    text: 'The swarm''s magnetic field tugs elemental crystals off enemy vessels that fly near it, without pushing the vessels themselves.'
+    stats:
+    - label: 'Field radius'
+      kind: 0
+      a: 60
+      b: 10
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Crystals tugged off'
+      kind: 0
+      a: 0.2
+      b: 0.1
+      unit: '/s'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-dragon
+    element: 1
+    displayName: 'Dragon'
+    kind: 'Form'
+    shinesIn: 'Opposing vessels'
+    text: 'Every 25 s the swarm becomes a long serpent dragon that breathes a cone of plasma. Vessels it scorches lose elemental crystals; fauna in it burn.'
+    stats:
+    - label: 'Breath length'
+      kind: 0
+      a: 100
+      b: 20
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Dragon lasts'
+      kind: 0
+      a: 3
+      b: 0.4
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones:
+    - level: 15
+      text: 'The breath takes a petal a second'
+    wired: 0
+  - id: charge-chain-lightning
+    element: 1
+    displayName: 'Chain Lightning'
+    kind: 'Weapon'
+    shinesIn: 'Any'
+    text: 'The swarm''s hits arc on from target to target through fauna and vessels.'
+    stats:
+    - label: 'Jumps'
+      kind: 0
+      a: 1
+      b: 0.5
+      unit: ''
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: charge-tesla-coil
+    element: 1
+    displayName: 'Tesla Coil'
+    kind: 'Weapon'
+    shinesIn: 'Any'
+    text: 'Every few seconds the centroid zaps the nearest fauna.'
+    stats:
+    - label: 'Zaps per pulse'
+      kind: 0
+      a: 1
+      b: 0.5
+      unit: ''
+      decimals: 0
+      steps: []
+    - label: 'Every'
+      kind: 1
+      a: 3
+      b: 0.93
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 1
+  - id: charge-thunderhead
+    element: 1
+    displayName: 'Thunderhead'
+    kind: 'Form'
+    shinesIn: 'Any'
+    text: 'Every 25 s the swarm puffs into a storm cloud that rains lightning on the fauna and vessels under it.'
+    stats:
+    - label: 'Cloud lasts'
+      kind: 0
+      a: 3
+      b: 0.4
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Strikes'
+      kind: 0
+      a: 2
+      b: 0.6
+      unit: '/s'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-lasers
+    element: 1
+    displayName: 'Lasers'
+    kind: 'Weapon'
+    shinesIn: 'Opposing vessels'
+    text: 'Members fire lasers at the nearest fauna or enemy vessel.'
+    stats:
+    - label: 'Members armed'
+      kind: 0
+      a: 9
+      b: 6.5
+      unit: '%'
+      decimals: 0
+      steps: []
+    - label: 'Range'
+      kind: 0
+      a: 120
+      b: 15
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'Beams pierce'
+    - level: 15
+      text: 'Beams on one vessel merge into one big beam'
+    wired: 1
+  - id: charge-overcharge
+    element: 1
+    displayName: 'Overcharge'
+    kind: 'Burst'
+    shinesIn: 'Elemental crystals'
+    text: 'Each crystal collected charges the swarm. At full charge it lets out a blast that kills fauna round it and silences vessels.'
+    stats:
+    - label: 'Crystals to full'
+      kind: 1
+      a: 10
+      b: 0.88
+      unit: ''
+      decimals: 0
+      steps: []
+    - label: 'Blast radius'
+      kind: 0
+      a: 100
+      b: 20
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-spark-trail
+    element: 1
+    displayName: 'Spark Trail'
+    kind: 'Trap'
+    shinesIn: 'Opposing vessels'
+    text: 'The swarm leaves a crackling trail. An enemy that crosses it is slowed and its abilities sputter.'
+    stats:
+    - label: 'Trail lasts'
+      kind: 0
+      a: 2
+      b: 0.5
+      unit: 's'
+      decimals: 1
+      steps: []
+    - label: 'Slow'
+      kind: 0
+      a: 10
+      b: 3
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-kamikaze
+    element: 1
+    displayName: 'Kamikaze'
+    kind: 'Burst'
+    shinesIn: 'Opposing vessels'
+    text: 'Members that hit an enemy vessel or fauna explode in a spark that kills fauna and silences a vessel''s Charge and Space abilities. Members never explode below the swarm''s minimum size.'
+    stats:
+    - label: 'Blast radius'
+      kind: 0
+      a: 20
+      b: 5
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Chance the member lives'
+      kind: 0
+      a: 0
+      b: 5
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-sting
+    element: 1
+    displayName: 'Sting'
+    kind: 'Weapon'
+    shinesIn: 'Opposing vessels'
+    text: 'Members within reach dive at enemy vessels. Enough stings take a petal.'
+    stats:
+    - label: 'Stings per petal'
+      kind: 1
+      a: 12
+      b: 0.86
+      unit: ''
+      decimals: 0
+      steps: []
+    - label: 'Reach'
+      kind: 0
+      a: 80
+      b: 10
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 1
+  - id: charge-wasp
+    element: 1
+    displayName: 'Wasp'
+    kind: 'Form'
+    shinesIn: 'Opposing vessels'
+    text: 'Every 20 s the swarm fuses into a giant wasp that lunges at the nearest enemy vessel with its stinger.'
+    stats:
+    - label: 'Lunge range'
+      kind: 0
+      a: 200
+      b: 30
+      unit: 'u'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 1
+      text: 'Lunge takes 1 petal'
+    - level: 8
+      text: 'Lunge takes 2 petals'
+    - level: 15
+      text: 'Lunge takes 3 petals'
+    wired: 0
+  - id: charge-missiles
+    element: 1
+    displayName: 'Missiles'
+    kind: 'Weapon'
+    shinesIn: 'Opposing vessels'
+    text: 'Every few seconds members launch as homing missiles at enemy vessels.'
+    stats:
+    - label: 'Missiles per volley'
+      kind: 0
+      a: 1
+      b: 0.5
+      unit: ''
+      decimals: 0
+      steps: []
+    - label: 'Every'
+      kind: 1
+      a: 8
+      b: 0.95
+      unit: 's'
+      decimals: 1
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-frenzy
+    element: 1
+    displayName: 'Frenzy'
+    kind: 'Hunt'
+    shinesIn: 'Opposing vessels'
+    text: 'When an enemy vessel is under half its petals, the swarm smells it and hits harder near it.'
+    stats:
+    - label: 'Bonus'
+      kind: 0
+      a: 10
+      b: 5
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones: []
+    wired: 0
+  - id: charge-electroreception
+    element: 1
+    displayName: 'Electroreception'
+    kind: 'Hunt'
+    shinesIn: 'Any'
+    text: 'Like sharks, members sense the electric fields of living things and hunt fauna anywhere in range, killing it.'
+    stats:
+    - label: 'Sensing range'
+      kind: 0
+      a: 100
+      b: 25
+      unit: 'u'
+      decimals: 0
+      steps: []
+    - label: 'Members hunting'
+      kind: 0
+      a: 10
+      b: 3
+      unit: '%'
+      decimals: 0
+      steps: []
+    milestones:
+    - level: 10
+      text: 'A killed fauna drops an elemental crystal'
+    wired: 0

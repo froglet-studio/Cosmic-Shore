@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Krill
+  m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
+  Class: 21
+  Name: Krill
+  Description: A swarm, not a ship. The krill roam the cell on their own after each objective in turn -
+    the omnicrystal, elemental crystals, rival vessels, rival mass. You turn the view and pick one card
+    from every hand; the cards you pick are what your swarm becomes.
+  PrimaryElement: 0
+  Element: {fileID: 0}
+  InitialResourceLevels: {Mass: 0, Charge: 0, Space: 0, Time: 0}
+  IconActive: {fileID: 21300000, guid: 55cc964b4b95b2d97a412ab5eb81a746, type: 3}
+  IconInactive: {fileID: 21300000, guid: f48e729688857c10b6b751bcb842646e, type: 3}
+  PreviewImage: {fileID: 21300000, guid: caecab1c3f5b529eff3807c5c7f45e07, type: 3}
+  SquadImage: {fileID: 21300000, guid: eb0229f4e165272245b46dfff54ce3fd, type: 3}
+  TrailPreviewImage: {fileID: 0}
+  CardSilohoutteActive: {fileID: 21300000, guid: 55cc964b4b95b2d97a412ab5eb81a746, type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: df336e5ddb4ae7a1dc8b0026ae9a17fc, type: 3}
+  Abilities: []
+  Games: []
+  TrainingGames: []
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.3
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.3
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.4
+  isLocked: 0
+  ownedFromStart: 0
+  UnlockCost: 100
