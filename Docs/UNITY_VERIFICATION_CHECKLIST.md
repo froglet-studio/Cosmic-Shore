@@ -1204,7 +1204,9 @@ Rhino C 8 / M 4 / S 8 / T 7. Pose amplitudes: 26-30 degrees on the Squirrel (its
 elsewhere. All of it is a spec number (`Tools/Build/vessel_model/specs/<vessel>.py`); change the number, rebuild,
 `--check`.
 
-### 🔴 Phone round: ability cards are buttons, the Wrasse draws in a build, double-tap the small view to swap (`cece/charming-wright-4ayoce`, 2026-10-19) — NOT EDITOR-VERIFIED
+### 🟢 Phone round: ability cards are buttons, the Wrasse draws in a build, double-tap the small view to swap (`cece/charming-wright-4ayoce`, 2026-10-19) — PHONE-VERIFIED 2026-10-20
+
+**Result (Garrett, 2026-10-20):** the phone test passed on an Android development build. (Not opened in the Unity Editor.)
 
 **What landed:** `AbilityCardPress` + `FlightTouchClaims` (every vessel: a finger on an ability card presses its
 input; a touch that starts on a card is not a flight thumb), `Resources/KiteNavigatorUnlit.mat` (the Wrasse's kite,

@@ -1148,12 +1148,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/TOOLING_DECISIONS.md section 6
 
-### T-20261019-382a · open · test · Crew vessels
+### T-20261019-382a · done · test · Crew vessels
 - **Task:** On an Android development build of cece/charming-wright-4ayoce, run the 'Phone round' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md: tap-to-press ability cards on Squirrel, Sparrow, Dolphin, Rhino; the Wrasse's kite, tail and motes drawing; double-tap the small view to swap seats; a card tap replicating to a second phone
 - **Done when:** All six steps pass on a phone, or each failure is filed as a dev task
 - **Who can take it:** Garrett (asked for it); Yash can take it (two phones for step 6)
 - **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md Phone round; Docs/ABILITY_LOCKUP.md Tap a card
+- **Done:** 2026-10-20, Garrett, 2026-10-20: the phone test passed (Phone round, Android development build)
 
 ### T-20261019-41bb · open · dev · Vessel HUD
 - **Task:** Give the remaining runtime Shader.Find("Universal Render Pipeline/Unlit") callers a Resources material for the variant each uses (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, BrittleStarExecutor, ShrikeExecutor, GrizzlyClawConeVisual, ArcLightningFallback, SegmentSpawnerPreview); a player build strips the shader, which is why the Wrasse's kite drew nothing on Android
