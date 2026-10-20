@@ -1251,19 +1251,19 @@ trio, and the traps).
   the timed culler §0 rejects, wearing a new costume. Detail: `Docs/ECOSYSTEM.md §19`.
 
 - **NO PRISM MAY INTERPENETRATE ANOTHER holds for EVERY generated lay list, not only the species
-  fitted under it** (`Docs/ECOSYSTEM.md §62`). `PrismClearance` resolves each Spawnable's lays
-  before anything is laid — a short-pitch run is trimmed as one, then every prism yields in lay
-  order (shrunk about its centre to the largest size that clears, or CLEARED in its slot at scale
-  zero, which `PrismTrailBuilder` never lays), gameplay kinds before Plain, never below the prefab's
-  scale floor. `Tools/Build/audit_prism_clipping.py --check` runs every shipped generator and the
-  pass and fails on any pair the GAME would lay; it found 42 of 57 generators clipping before the
-  pass (two were generator bugs: Joust's torus knot laid its three strands on one curve, and
-  Spherene stacked every edge's first block on its vertex). **A cell's `PhaseThresholds` ride what
-  is LAID, not what is authored**: the budget models subtract the measured correction
-  (`Tools/Build/prism_clearance.py`), the hand-measured freestyle cells are rebased by
-  `rebase_freestyle_thresholds.py`, and a generator change that moves an environment's clipping
-  re-runs `audit_prism_clipping.py --write-baselines` and then every reader. Still open: the
-  Mandelbulb flora family gates an interpenetration BOUND, not a zero (§62.4).
+  fitted under it** (`Docs/ECOSYSTEM.md §62`). **It is held at AUTHORING time, inside each
+  generator, never by a runtime pass.** Garrett, 2026-10-20: *"we don't want to bloat our run time
+  load when this is a strictly editor time solvable problem ... don't reduce prism count. minimally
+  reduce scale so they are flush."* A prism is sized flush with the neighbours its own construction
+  knows (analytic indices, not a search). No prism is removed, and the draws stay the same (`JitDown`
+  where `Jit` would undo a fit). `Tools/Build/audit_prism_clipping.py` runs every shipped generator
+  at I1-I4 and reports clipping by family. The residuals are random scatter (Boneyard, Caldera,
+  Zephyr), the Gyroid's walk drift and two shapes under the 0.5 scale floor; each one is an open
+  decision (§62.4). **A cell's `PhaseThresholds` ride its laid VOLUME**: a generator change that
+  moves it re-measures the ladder in the same change. **Dynamic contact never does nothing**
+  (§62.6). A mover that touches a prism it cannot affect acknowledges the hit: own armoured mass
+  LIGHTS, and super-shielded mass jiggles. Still open: the Mandelbulb flora family gates an
+  interpenetration BOUND, not a zero (§62.5).
 
 **Protocol:** (1) restate which invariants the change touches + confirm none are violated;
 (2) confirm at genuine forks (AskUserQuestion); (3) implement surgically, config-driven; (4) state

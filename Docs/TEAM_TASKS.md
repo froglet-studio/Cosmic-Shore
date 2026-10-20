@@ -1178,15 +1178,15 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
 ### T-20261020-74d8 · open · test · ecology
-- **Task:** Fly the freestyle cells (Orrery, Yggdra, Daedala, Caldera, Geode, Zephyr, Ourobor, Hesperides) and Scurry's Atlantis after PrismClearance: look for any prism inside another, for gaps that read as broken structure, and time the veiled build against bleeding-edge
+- **Task:** Fly the freestyle cells (Orrery, Yggdra, Daedala, Caldera, Geode, Zephyr, Ourobor, Hesperides) and Scurry's Atlantis after the generator fixes. Their prisms are now sized flush with their neighbours at authoring time, and every prism is kept. Look for any prism inside another and for gaps that read as broken structure. The Orrery keeps 35% of its volume, Yggdra 63% and Daedala 66%. Also time the veiled build against bleeding-edge: Atlantis is ~+90 ms and Yggdra ~+50 ms in the .NET harness
 - **Done when:** Each world shows no interpenetrating prisms, still reads as its own shape, and its build time is within a second of bleeding-edge on PC (note the phone number too)
 - **Who can take it:** Yash, or Garrett
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
-- **See:** Docs/ECOSYSTEM.md §62; Tools/Build/audit_prism_clipping.py --render <png> for the before/after sheet
+- **See:** Docs/ECOSYSTEM.md §62.2; Tools/Build/audit_prism_clipping.py -v
 
 ### T-20261020-fa54 · open · test · arcade
-- **Task:** Play Joust, Cleave I1-I4, Breakwater, Regatta, Skein, Dog Fight and Wildlife Liberation after PrismClearance: Joust's torus knot is now three separate parallel rails (it was one tube with three colours through each other), rails are trimmed to their pitch, Breakwater's dish keeps 54% of its volume
-- **Done when:** No clipping prisms in any arena; rails still read as continuous to skim; Breakwater's dish still blocks as a dish; each cell reaches Restless after the same amount of play it did before
+- **Task:** Play Joust, Cleave I1-I4, Breakwater, Regatta, Skein, Dog Fight and Wildlife Liberation after the generator fixes. Joust's torus knot is now three separate parallel rails; before, it was one tube with three colours threaded through each other. Rail prisms are fitted to their pitch, and Breakwater's three plug rakes sit one bar apart along the axis. In Cleave I1 (Panes), 1,221 mullions slid along their own rail, 344 of them by more than 20 u
+- **Done when:** No clipping prisms in any arena; rails still read as continuous to skim; Breakwater's plug still blocks; Panes still reads as panes; each cell reaches Restless after the same amount of play it did before
 - **Who can take it:** Yash, or Caleb on a QA run
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2-62.3
@@ -1196,7 +1196,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done when:** Either a /flora change gives MandelbulbFlora.Claim an oriented-box test and re-measures its gates to a zero, or the exception is written into Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md
 - **Who can take it:** Garrett
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
-- **See:** Docs/ECOSYSTEM.md §62.4; Tools/Build/measure_mandelbulb_flora.py
+- **See:** Docs/ECOSYSTEM.md §62.5; Tools/Build/measure_mandelbulb_flora.py
 
 ### T-20261020-a3c2 · done · decision · card-art
 - **Task:** Card-art renders draw what a generator emits, not what PrismClearance lays (indistinguishable at card size today). Decide whether the card harness should apply the pass
@@ -1219,3 +1219,45 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/LIT.md (Contact acknowledgement section, 'Still open')
+
+### T-20261020-b391 · open · decision · ecology
+- **Task:** Boneyard 1-4 (Dog Fight, Salvo, Dustup, Broadside, Grizzly Charge) still lays 277 / 674 / 1,285 / 2,392 clipping pairs, all from random scatter: rubble on rubble and hulks scattered into each other. No size fit parts a random overlap. The options are a placement retry (redraw a scattered piece that lands in another, which moves every later draw and so every prism), accepting scatter as the one exception, or a neighbourhood pass at authoring time
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4 and, if a fix is chosen, the audit reads 0 for the Boneyards
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; audit_prism_clipping.py -v
+
+### T-20261020-c358 · open · decision · ecology
+- **Task:** Gyroid (Joust I4, Crystal Capture) still lays 1,233 clipping pairs (2 coincident) after the per-block-type length fix. Those are walk drift: the random walk revisits near-duplicate sites that only a neighbourhood search finds. The search was tried and cost +53 ms at load, so it was dropped. Choose between: accept the residual, pay the search, or add a site-hash dedupe to the walk (it changes the lay)
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; SpawnableGyroid.cs
+
+### T-20261020-c71f · open · decision · ecology
+- **Task:** Batman AOE spawner (363 pairs) and the stress-test Pumpkin (36,538 pairs) clip only because their flush size sits under the prism prefab's 0.5 scale floor, which grows them back. The fix is either to let them admit their authored scale (AdmitsAuthoredPrismScale, as the Orrery and Ourobor now do), to space their strokes wider (this changes their look), or to leave them. Pumpkin is a stress test and is not shipped
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4 and the audit agrees
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; PrismScaleAnimator min scale
+
+### T-20261020-7b07 · open · decision · ecology
+- **Task:** Zephyr (6,692 pairs: rivers converging on one streamline, plus hash-scattered clouds, discs and rain) and Caldera (5,097: hash-scattered flank shards, vent discs and basins) are the residual clipping in the freestyle cells. Same choice as the Boneyard scatter: a placement retry, an authoring-time neighbourhood pass, or accept
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; Zephyr/Caldera in audit_prism_clipping.py -v
+
+### T-20261020-086a · open · decision · arcade
+- **Task:** Cleave I1 (Panes): panes 0, 4 and 7 meet along three lines within 3 degrees, so their mullions lay inside each other for ~500 u. Keeping every prism meant sliding 1,221 members along their own rail, 344 by more than 20 u (max 499). Changing one PaneSpecs normal by a few degrees would remove the near-collinear meeting and most of the slides. It is a gameplay call because it moves a wall
+- **Done when:** Either a pane normal is changed and the Cleave thresholds are regenerated, or the slides are accepted in CLEAVE.md
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2 (Panes); SpawnableCleavePanes PaneSpecs
+
+### T-20261020-8f9d · open · decision · ecology
+- **Task:** Accept or reject the authoring-time load cost of the flush fits, measured per build in the .NET 8 harness (IL2CPP on a phone will be slower). Atlantis +90 ms (~0.45 s total), Yggdra +50 ms, Caldera 14 -> 40 ms, Zephyr 12.5 -> 20 ms, Hesperides 3.7 -> 13 ms, Daedala and Geode 6.6 -> 13 ms, Cleave +0.4 to +3 ms; the Orrery and Ourobor are unmeasured. The fits run inside the generator once per build, which is not a runtime pass. Baking the fitted lays into an asset would make the cost zero
+- **Done when:** A choice is recorded; if baking is chosen, a task exists for it
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.3

@@ -1653,9 +1653,10 @@ Measure Cell Environment Baselines). Re-baselined 2026-08-02 post clock-material
 Restless at 552,356 / 549,156, Frenzy at 598,756 / 589,156, counts
 35,040/34,840/37,940/37,340. As grazing wears the garden down the cell relaxes deeper
 into Calm — an emergent "aging" of the biome with no clock anywhere. **Re-baselined again
-2026-10-20** onto what each world actually LAYS once `PrismClearance` has resolved its clipping
-(§62.3, `Tools/Build/rebase_freestyle_thresholds.py`) — the numbers above are the pre-clearance
-ones that script starts from.
+2026-10-20** when the generators were fitted to lay their prisms flush (§62.2). The counts did not
+change, but the volume dropped by what had been inside other prisms, and each ladder moved down by
+that drop (§62.3). Yggdra now measures 34,340 / 341,545, so it enters Restless at 352,745 / 349,545
+and Frenzy at 399,145 / 389,545. The numbers above are the 2026-08-02 ones.
 
 **The Yggdra cell** (`_SO_Assets/Cell Configs/Yggdra Cell/Yggdra Cell Config.asset`) is
 the first user: a Blob-family cell (same membrane/nucleus/cytoplasm/modifiers/spawn
@@ -1713,9 +1714,9 @@ danger), and **Ourobor** (see §18.2 — the pastoral pole: three interlocked UL
 bands carrying rolling countryside with a cityscape on both faces; zero danger). All extend
 `CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
 contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
-a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedala
-33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 41.4k/1,211k, Geode 34.4k/561k,
-Ourobor 37.9k/751k —
+a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/342k, Daedala
+33.9k/421k, Orrery 34.6k/68k, Zephyr 36.1k/418k, Caldera 41.4k/1,154k, Geode 34.4k/503k,
+Ourobor 37.9k/744k (the flush lays of §62.2, 2026-10-20) —
 confirm in-engine via FrogletTools > Ecology > Measure Cell Environment Baselines before
 retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
 `density` knob (0.5-1.3) is the per-cell fallback lever.
@@ -1807,7 +1808,8 @@ that is geometry, not a tuning miss. The levers are coverage (holier mountains) 
 it reproduced 31,194 / 430,691 to the unit before any edit): **41,353 prisms / 1,210,753 volume**
 (the de-gravitized pass alone measured 25,055 / 374,907 before the 2× scale-up). Outer extent
 460 → **903**. PhaseThresholds re-authored as baseline + Blob deltas: 42053/41853/44953/44353
-count, 1221953/1218753/1268353/1258753 volume. This is now the heaviest cell in the rotation by
+count, 1221953/1218753/1268353/1258753 volume. *(2026-10-20: the flush lays of §62.2 measure
+41,353 / 1,154,048, so the volume ladder is now 1165248/1162048/1211648/1202048; counts unchanged.)* This is now the heaviest cell in the rotation by
 volume — `density` (0.5–1.3) on `SpawnableCaldera.prefab` is the fallback lever, and the
 soak-before-ship rule in §18 applies double.
 
@@ -1880,7 +1882,8 @@ in the cell. Plus a centreline *road* and drifting *motes*.
 **Baseline** (same offline sim): **37,889 prisms / 751,449 volume**, extent 422 → 982, **zero
 prisms inside the nucleus** (every `BandSpec` is authored so `Radius − HalfWidth − RollAmp −
 TowerDepth` clears `NucleusR`). PhaseThresholds 38589/38389/41489/40889 count,
-762649/759449/809049/799449 volume.
+762649/759449/809049/799449 volume. *(2026-10-20: the flush lays of §62.2 measure 37,889 / 744,294,
+so the volume ladder is now 755494/752294/801894/792294; counts unchanged.)*
 
 **Zero danger** — the pastoral pole, alongside Geode. Its risk is disorientation, not damage, and
 that is the deliberate contrast with Caldera sitting next to it in the rotation. It is also NOT
@@ -1911,7 +1914,8 @@ Neither cell has been opened in Unity. Run these in order; each has a specific f
    and the prefab's serialized field set is byte-identical to `SpawnableCaldera.prefab`'s, but an
    import pass is the only real proof.)
 2. **Baselines.** `FrogletTools > Ecology > Measure Cell Environment Baselines`. Expect
-   `SpawnableCaldera` **41,353 / 1,210,753** and `SpawnableOurobor` **37,889 / 751,449**. These
+   `SpawnableCaldera` **41,353 / 1,154,048** and `SpawnableOurobor` **37,889 / 744,294** (the
+flush lays of §62.2; they were 1,210,753 and 751,449 before). These
    came from an offline bit-exact port of the generators (validated by reproducing the shipped
    Caldera's 31,194 / 430,691 to the unit), so a divergence of more than a few hundred count /
    few thousand volume means the port drifted — re-author the two `PhaseThresholds` blocks from
@@ -6692,8 +6696,9 @@ five-playtest failure class).
   authored leaves):** mixed-element average ≈ 46.4 vol/strut × 59 × 14 plants ≈ **38.3k**.
   The `Blob Cell Spawn Profile` this config sits in is no longer Blob's — §36.10 retired that
   cell and the profile is now the population of all seven authored freestyle worlds — so the
-  number to hold it against is the **tightest** of them, Orrery's `FrenzyEnterVolume` 253,386:
-  **15.1%**, and 3.0% of the widest (Caldera, 1,268,353). Mass's 3×3 cross-section carries most
+  number to hold it against is the **tightest** of them, Orrery's `FrenzyEnterVolume` 125,368
+  (since the flush lays of §62.2, 2026-10-20; it was 253,386): **30.6%**, and 3.2% of the widest
+  (Caldera, 1,211,648). It still sits under the 57.6k Frenzy delta every cell adds to its baseline. Mass's 3×3 cross-section carries most
   of it at 135/strut. Every one of the seven absorbs the species without re-authoring its
   ladder. Level spread multiplier is ×1 (lattice species, §34.9 — and ×1 everywhere since §40). *(A profile named for a cell
   that no longer exists is §36.10's stated debt; the lesson here is that a ladder claim must be
@@ -11777,109 +11782,149 @@ Four kinds of clip, each with a different fix:
      the distinct parallel rails the class doc always described.
    - **SpawnableSpherene laid the first block of every edge on its start vertex**, so five or six
      edge blocks plus the gold vertex block stacked in one place at every vertex (5,047 coincident
-     pairs). Edge blocks sit at segment midpoints now, and the vertex trail is laid FIRST so the
-     junction is the prism the edges make room for (laid last, every vertex block was the one
-     cleared and the sphere lost its gold nodes).
+     pairs). Edge blocks sit at segment midpoints now, and each one is capped against the vertex
+     block and its sibling edges at that vertex (shorter or thinner, whichever keeps more), so the
+     gold node stays whole.
 
-### 62.2 The fix — `PrismClearance`, in the one place every generated lay passes
+### 62.2 The fix — at AUTHORING time, inside each generator; every prism kept
 
-`Assets/_Scripts/Controller/Environment/Spawning/PrismClearance.cs` resolves a lay list in place,
-deterministically (clients build environments locally with no seed sync):
+A first version of this section resolved every lay list at runtime (`PrismClearance`: shrink each
+prism in lay order, clear what cannot be shrunk). Garrett rejected it on 2026-10-20: *"we don't want
+to bloat our run time load when this is a strictly editor time solvable problem. ... don't reduce
+prism count. minimally reduce scale so they are flush."* It cost up to 700 ms at load and cleared
+thousands of prisms. It was removed in full. The cell configs, budget generators, card art and lay
+paths went back to bleeding-edge. What replaced it:
 
-1. **Runs are trimmed as one.** A run of consecutive lays where each clips the next is one trail
-   with a short pitch, so every member is shortened along its long axis by ONE factor — the largest
-   that clears every consecutive pair. Left to step 2 alone a rail alternates long-short-long (the
-   second prism yields, which frees the third to stay whole); the first version of this pass did
-   exactly that and the unit test that pins it was written because of it.
-2. **Then everything yields in lay order** (the Garland shore, §48.10, made universal): each prism
-   is tested against the prisms already accepted and, if it clips, shrunk about its own centre to
-   the largest size that clears — trying its long axis, its footprint, its thin axis and a uniform
-   shrink, and keeping whichever leaves the most volume.
-3. **A prism no shrink can clear is CLEARED** — a duplicate, a joint whose centres coincide, or a
-   shrink that would keep under 10% of it. Its scale becomes zero **in its slot**, and
-   `PrismTrailBuilder` lays nothing for a zero-scale lay (every lay path checks
-   `PrismClearance.IsCleared`). Keeping the slot is what leaves Skein's rails, Regatta's lanes and
-   the Switchyard and Breakwater segments — which index the lay list by RANGE — untouched.
-4. **A gameplay prism never yields to a decorative one**: in the cell-environment family a Danger,
-   Shielded or SuperShielded lay is placed before every Plain one.
-5. **The scale window is respected.** The pass resolves the size that will be on screen (an
-   authored 0.2 plate on a 0.5 floor is a 0.5 plate) and never shrinks an axis below the floor —
-   a shrink the lay's clamp would undo is not a fix. A world that admits its authored scale (the
-   four Cleave arenas) has no window.
+- **Each generator lays its prisms flush, where its geometry is decided.** A prism's size is fitted
+  to the neighbours its own construction already knows: the next step along a rail, the ring
+  spacing, the lane step, a vertex's sibling edges, a planet's orbit. Those are analytic indices,
+  not a search of the lay list. The fit is the longest size at which the two oriented boxes only
+  touch (`FlushPairLength`, ×0.998 for float noise). Where two families cross by design, the
+  generator decides which one yields.
+- **No prism is removed, and none is added.** The draws are the same, in the same order. A
+  `Jit(s)` whose result would undo a flush size became `JitDown(s)`
+  (`CellEnvironmentSpawnableBase`). It is one draw, like `Jit`, so swapping it in moves no other
+  prism, and it only ever shrinks. Where no shrink can part a pair (a duplicate, two centres that
+  coincide), the later prism slides along its own rail by the smallest separating travel.
+- **The audit is the gate, and it runs at editor time.** `audit_prism_clipping.py` tags every lay
+  with the generator family that emitted it (the stack frames above `Emit`, or "X trail k" for a
+  trail shape). Its report is per family: self pairs, cross pairs, and the uniform scale at which
+  that family would be flush. That is how each generator was fixed where its geometry is wrong.
+  The audit's shim copy carries the REAL `PaintingStrokeToolkit.CurlNoise`. The card-art shim stubs
+  it, so curl-driven worlds had been measured straight: Zephyr lays 36,069 prisms, not 52,917.
 
-Where it runs: `SpawnableBase.GetTrailData`, inside the cache, for a LEAF node only (a composite's
-points place its children); `CellEnvironmentSpawnableBase` resolves its lay list (pose, domain and
-kind) instead and rebuilds its trail from it; `SpawnableSchwarzPSurface` and `SpawnableGyroid` lay
-from the resolved points rather than re-posing their nodes at `blockScale`. A shape names the prism
-it lays through `ClearancePrism` (its `prism` field), which is how the pass finds the scale window;
-a shape whose leaves are not prisms (a crystal, a flora, a sign) returns null and is not resolved.
+**Result** (236 runs, `audit_prism_clipping.py`; count unchanged everywhere; load is one build in the
+.NET 8 harness, and IL2CPP on a phone will be slower):
 
-**Result: the game lays 0 interpenetrating pairs across all 59 generators at every intensity**
-(`audit_prism_clipping.py --check`, which measures what the GAME lays — the resolved lays where the
-pass runs, the raw generator output where it does not). The cost, per environment (generate +
-resolve, .NET 8 on the build container — IL2CPP and Mono on a phone will be slower):
+| environment | clipping pairs before → after | volume kept | load per build |
+|---|---|---:|---|
+| Orrery | 77,661 → 0 | 35% (the overlap WAS the volume) | unmeasured |
+| Atlantis | 45,529 → 0 | 73% | ~+90 ms (~0.45 s total) |
+| Twistbands / Swell / Ribcage / Panes (Cleave I4/I2/I3/I1) | 42,252 / 31,402 / 26,762 / 15,903 → 0 | 53% / 58% / 61% / 79% | +0.4 to +3 ms |
+| Yggdra | 30,692 → 0 | 63% | ~+50 ms |
+| Daedala / Geode | 25,784 / 23,447 → 0 | 66% / 89% | 6.6 → ~13 ms |
+| Spherene, concentric spheres | 7,397 / 22,191 → 0 | 79% | — |
+| Helicoid | 9,427 → 0 | 95.5% | — |
+| Breakwater | 1,785–6,015 → 0 | 85–90% | — |
+| Wildlife cages 1–4 | 2,596–7,786 → 0 | — | — |
+| Hesperides | 5,742 → 0 | 90% | 3.7 → ~13 ms |
+| TorusKnot / Hopf / SchwarzP / Ourobor | 1,500 / 791 / 288 / 804 → 0 | 67% / 85% / — / 99% | — |
+| Regatta rails / Skein | 1,812–2,199 / 512–865 → 0 | 98.6–99.8% | — |
+| Ellipsoid, comets, LinkedRings | → 0 | — | — |
+| **Caldera** | 12,926 → **5,097** | 95% | 14 → ~40 ms |
+| **Zephyr** | 11,353 → **6,692** (real curl) | 98% | 12.5 → ~20 ms |
+| **Gyroid** | 6,487 → **1,233** | — | none (per-block-type lengths) |
+| **Boneyard 1–4** | 2,995–13,548 → **277 / 674 / 1,285 / 2,392** | — | — |
+| **Batman AOE / Pumpkin** | 464 → **363** / **36,538** | — | — |
 
-| | volume kept | prisms cleared | ms |
-|---|---:|---:|---:|
-| Orrery | 40% | 2,695 | 259 |
-| Twistbands / Swell / Ribcage / Panes | 50% / 56% / 60% / 73% | 839 / 37 / 3,983 / 417 | 197 / 115 / 102 / 45 |
-| Breakwater | 54% | 660 | 18 |
-| Yggdra / Daedala | 59% / 68% | 1,523 / 1,908 | 186 / 202 |
-| Atlantis | 72% | 4,069 | 708 |
-| Geode / Caldera / Hesperides | 89% / 85% / 87% | 834 / 1,069 / 858 | 114 / 171 / 23 |
-| Boneyard 1–4 | 82–86% | 413–2,143 | 26–130 |
-| Wildlife cage 1–4 | 89–95% | 235–479 | 26–72 |
-| Regatta rails / Skein | 94–97% / ~100% | 0 / 1–2 | 5–10 / 28–64 |
+Two shapes changed visibly, not just in size:
+- **Panes (Cleave I1).** Panes 0, 4 and 7 meet along three lines within 3°, so their mullions lay
+  inside each other for ~500 u. 1,221 members slid along their own rail, 344 of them by more than
+  20 u (max 499). Changing one `PaneSpecs` normal would remove that; it moves a wall, so it is a
+  gameplay call (T-20261020-086a).
+- **Breakwater's plug weave.** The three rakes now sit one bar section apart along the axis
+  (9 u deep). Before, they were three passes through one plane.
 
-The volume is what was INSIDE other prisms — the look keeps its silhouettes (see the before/after
-sheet `audit_prism_clipping.py --render`), but a dense shell becomes a tiling of separated plates,
-the same cost §49.10 stated for the Borromean membrane. The one shape the pass cannot rescue is the
-stress-test Pumpkin (7% kept): it is drawn with overlapping planks by construction.
+The Orrery and the Ourobor now admit their authored scale (`AdmitsAuthoredPrismScale`): a few flush
+sizes sit under the prism prefab's 0.5 floor, and the floor would grow them back into a clip.
 
-### 62.3 The phase ladders moved with the baselines
+### 62.3 The phase ladders moved with the volume
 
-`Cell.LiveVolume` counts every laid prism, the environment's too, so a cell's `PhaseThresholds` are
-its environment's baseline plus the mode's deltas (§18). A baseline priced on the AUTHORED lays now
-sits above what the cell really starts with — by 117k volume for the Orrery, whose Restless delta is
-11.2k, so Restless would never have fired. Every affected ladder is rebased on what is LAID:
+`Cell.LiveVolume` counts every laid prism, the environment's too. So a cell's `PhaseThresholds` are
+its environment's baseline plus the mode's deltas (§18). The counts did not move, but the volume
+did, so every ladder moved down by the measured volume drop:
 
-- `audit_prism_clipping.py --write-baselines` records, per generator and intensity, the authored
-  and the laid count and volume (`Tools/Build/prism_clearance_baselines.json`, source-hashed;
-  `--check` fails when it is stale).
-- `Tools/Build/prism_clearance.py` is the one reader. The budget models keep pricing what their
-  generator AUTHORS — the mirror they were built to be — and subtract the measured correction:
-  `author_dogfight_assets.py` (Boneyard), `author_cleave_assets.py`, `author_wildlife_liberation_assets.py`,
-  `author_regatta_assets.py`, `author_skein_assets.py`, `author_breakwater_assets.py`, and
-  `author_hijack_assets.py` (Switchyard, a zero correction today).
-- `Tools/Build/rebase_freestyle_thresholds.py` holds the hand-measured cells' pre-clearance
-  thresholds (Orrery, Daedala, Yggdra, Caldera, Geode, Hesperides, Ourobor, Zephyr) and rebases
-  them by the same correction, idempotently (`--check`).
-- `FrogletTools > Ecology > Measure Cell Environment Baselines` and the Cell Selector's miniatures
-  skip cleared lays, so the measurer reports what is laid.
+- **The mirror budget models** replay the fitted C# and price it exactly. Each has an author script
+  and a `--check`: `boneyard_budget.py` (Dog Fight, Salvo, Dustup, Broadside, Grizzly Charge),
+  `wildlife_cage_budget.py`, `breakwater_arena.py`, `skein_budget.py` (with a 15-axis
+  `prove_rails_flush` proof and its negative control), the Regatta harness
+  (`regatta_course_measurements.json`), and the Cleave harness (`cleave_arena_measurements.json`).
+- **The hand-measured freestyle cells** (§18) were moved by hand, by the drop the audit measured:
+  Orrery Restless 206,986 → 78,968, Yggdra → 352,745, Daedala 648,504 → 432,298, Geode 574,650 →
+  514,429, Caldera → 1,165,248, Zephyr → 429,484 and Ourobor 762,649 → 755,494.
+  `Tools/ecosim/gen_hesperides_assets.py` writes Hesperides' ladder (Restless 550,182).
 
-### 62.4 What this does NOT cover yet
+**A generator change that moves an environment's volume re-measures its ladder in the same change.**
+
+### 62.4 What is still clipping, and why it is a decision
+
+None of these can be fixed by fitting a size, and each fix would change something else:
+
+- **Random scatter**: Boneyard 1–4 (rubble on rubble, hulks scattered into each other), plus
+  Caldera's and Zephyr's hash-scattered shards, discs, clouds and rain. Parting two random overlaps
+  means moving one piece. A redraw moves every later draw, so it moves every prism after it.
+  T-20261020-b391 (Boneyard) and T-20261020-7b07 (Zephyr/Caldera).
+- **Gyroid walk drift**: the walk revisits near-duplicate sites, and only a neighbourhood search
+  finds them. That search was built and cost +53 ms, so it was reverted (T-20261020-c358).
+- **Under the scale floor**: Batman's head strokes and every Pumpkin block are flush only below the
+  prefab's 0.5 floor (T-20261020-c71f). Pumpkin is a stress test and is not shipped.
+- **The load cost** of the fits above (T-20261020-8f9d). Baking the fitted lays into an asset would
+  make it zero.
+
+### 62.5 What this does NOT cover yet
 
 - **The Mandelbulb flora family** (FractalFoliage, Coral Bloom, Watershed, Apollonia) clips BY ITS
-  OWN DESIGN: `MandelbulbFlora.Claim` refuses only a prism laid essentially inside another
-  ("two ribbons meeting at an angle legitimately overlap — that is what a cage is"), and
-  `measure_mandelbulb_flora.py` gates a BOUND rather than a zero — 8–66% of touching pairs
-  interpenetrate across the species and elements, and a Charge plant's core chain is 100%
-  interpenetrating at its armour. Holding it to the rule means an oriented-box claim against the
-  plant's own laid prisms and a re-measure of every one of its gates (FALL, FULL FORM, LADDER), so
-  it is its own change, under the /flora skill.
-- **Vessel trails** are laid live from flight and overlap on tight turns; they are not generated
-  lists and this pass does not see them.
+  OWN DESIGN. `MandelbulbFlora.Claim` refuses only a prism laid essentially inside another ("two
+  ribbons meeting at an angle legitimately overlap — that is what a cage is"), and
+  `measure_mandelbulb_flora.py` gates a BOUND rather than a zero: 8–66% of touching pairs
+  interpenetrate across the species and elements. That is its own change, under the /flora skill
+  (T-20261020-2529).
+- **Vessel trails** are laid live from flight and overlap on tight turns. They are not generated
+  lists.
 - **Fauna bodies** move; the rule is about laid structure.
 - **Scene overrides**: the audit reads prefabs. A scene that overrides a shape's numbers on an
   instance is measured at the prefab's values.
-- **The card-art renders** draw what a generator emits, not the resolved lay; at card size the two
-  are indistinguishable on every card (the before/after sheet), so the cards were left as they are.
 
-### 62.5 Verification
+### 62.6 Dynamic contact never does nothing (the clip Garrett found)
 
-Offline, all measured on this branch: the audit (0 pairs laid, 236 runs); `PrismClearanceTests`
-(6 cases, run against a NUnit stand-in and with two negative controls — the run trim removed, and
-the clearance test disabled — each failing the cases it should); the headless reference compile
-(player config, 0 errors in project code); every threshold generator's `--check`;
-`render_card_backgrounds.py --check` (Scurry and Maelstrom re-rendered for the Spherene change).
-**Nothing has been run in the Unity editor.** The hand tests are on the team board.
+The clip Garrett found was not a laid one. It was the **Thresher cord passing through the pilot's
+own shielded mass**. The cord can do nothing to that mass, so it did nothing, and that reads on
+screen as clipping. The rule (Garrett, 2026-10-20): **dynamic clipping should never do nothing.**
+A contact with no mechanical effect still acknowledges the hit:
+
+- **Own armoured mass enters the LIT state.** `ThresherExecutor` gathers the step's touches on own
+  shielded prisms (chain links, the Mass Mode ball, a ball that stays inside) and publishes ONE
+  own-domain light per Thresher over their span: `PrismLit.PublishLight(..., ownDomainOnly: true)`,
+  a cylinder, or a sphere for a single touch. It is cleared on disable. This is the fifth `PrismLit`
+  producer (`Docs/LIT.md`, "Contact acknowledgement").
+- **Super-shielded rival mass answers with its deflection jiggle**
+  (`Prism.AbsorbSuperShieldHit`), as every other hit on it does. This is now true for the Thresher
+  chain and Mass Mode, `PrismTeamManager.Steal` (every steal source: hull, skimmer, Urchin spike,
+  black hole), the AstroLeague and Scarab balls, the Brittle Star cords, the Shrike lance below
+  pierce and the Grizzly flamethrower (which no longer spends an ignite on it).
+- The AstroLeague ball lights own already-shielded mass in the ball's colour.
+
+Still open: own-domain pass-throughs that would light on every frame of normal flight (a vessel
+flying through its own trail). Lighting those would be noise, so it is a decision
+(T-20261020-8fd0, `Docs/LIT.md` "Still open").
+
+### 62.7 Verification
+
+Offline, measured on this branch:
+- `audit_prism_clipping.py`: 236 runs. Every environment in §62.2 reads 0, except the §62.4 residuals.
+- Every touched budget model and author script passes its `--check`.
+- The headless reference compile passes: player config RESULT OK, editor config 0 errors in changed files.
+- `render_card_backgrounds.py --check` passes.
+
+**Nothing has been run in the Unity editor.** The hand tests are T-20261020-74d8 (freestyle cells
+and Atlantis), T-20261020-fa54 (arcade arenas) and T-20261020-2cee (the Thresher acknowledgement).
