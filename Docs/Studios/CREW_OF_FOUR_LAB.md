@@ -6,14 +6,14 @@ A `/labmaker` browser studio for a **four-seat multiplayer vessel** that capture
 > Look up the game Wildgate and make an artifact lab that can explore concepts for a 4 player multiplayer vessel
 > that captures the magic of that game. (Garrett, 2026-10-20)
 
-- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 3: one helm, three gunner seats).
+- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 4: the 4-seat vessel, one helm and three stabilized gunner seats).
   Rounds 1 (2D) and 2 (3D) are kept as `CrewOfFourLab.round1.html` and `.round2.html`, and their numbers are on the
   page's Archive tab. Open it in Chrome to use a gamepad (the
   claude.ai viewer can block the Gamepad API).
 - **Live page:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb (private to the owner until shared from its Share
   menu; decisions recorded there land in the shared log, collection `decisions`, that Claude reads at the start of each
   round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 3).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 4).
 - **Nearest lab:** the Crew Vessel Lab (`Docs/Studios/CrewVesselLab.html`, `CREW_VESSEL_LAB.md`), the two-seat
   "Maverick and Goose" lab that graduated as the Wrasse (`VesselClassType` 19). This lab does not replace it or touch
   it: the Wrasse is a pilot plus a 2D navigator; this lab asks what a crew of **four** on one hull should be. Round 1 of
@@ -63,7 +63,7 @@ petals, so the lab leaves them out. Every vessel-on-vessel effect here moves pet
 
 The ward is a petal ward, the way `CombatHitDrain`'s wards are: a bolt it absorbs scores nothing.
 
-## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4)
+## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4a)
 
 Each concept is a seat set plus rules; the card writes the rules into the dials so they can be mixed.
 
@@ -90,7 +90,111 @@ Rivals: Easy / Medium / Hard AI crews (aim error 9° / 5° / 2.5°, lead 0 / ½ 
 ward tolerance 3 / 1.5 / 0.5 threats). Your own crew's AI has the same three levels. Every AI writes the same input
 objects a person does (`/labmaker` §2.4).
 
-## 4. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
+## 4. Round 4 (2026-10-20): stabilized turrets on outriggers, and "4 seat"
+
+**Input this round** (Garrett): "stabilize the gunners guns as best you can. you can place them outside the vessel to do
+this. then bring this into unity", and "we can start referring to multiplayer vessels by their seats. this is a 4 seat
+vessel. that lets players know it supports four players or brings in 4 AI." The page and this doc now call it **the
+4-seat vessel**; the Unity card says "4 seat" (§5).
+
+### How the guns are stabilized (the order matters; each step removes what the one before leaves)
+
+1. **The aim lives in the world, not on the hull.** Each turret keeps its own world-space aim direction (`aimW`). The
+   gunner's input turns that direction; the hull's yaw, pitch and roll never reach it. In round 3 the aim was a local
+   direction on the hull, so a 80 °/s helm turn swung every gunner's view 80 °/s.
+2. **The horizon is held, then eased.** Each turret keeps its own up (`upW`), kept square to the aim. It drifts toward
+   the hull's up over `horizonSmooth` (3 s), so a barrel roll does not spin the gunner's picture, but after a long
+   inverted run the gunner's "up" ends up matching the ship's.
+3. **The mounts sit outside the hull, on outriggers** (`mountOut`): gunner 1 on a dorsal mast (0, 1.8 R, −0.2 R),
+   gunners 2 and 3 on side booms (±2.4 R, 0.35 R, −0.5 R), drawn as struts. Outside the hull the turret's view is never
+   blocked by its own ship and the launch point is clear of it.
+4. **The outriggers ride a lagged frame** (`mountSmooth` 0.35 s): the mount's position follows a copy of the hull's frame
+   that eases toward it, so a snap turn swings the turret through a soft arc instead of whipping its eye point round
+   the hull at 2.4 R. The aim is unaffected (step 1); only where the eye sits lags.
+5. **The AI aims the same way** (it turns `aimW` toward its lead point at the turret rate), so AI and human gunners
+   share one turret model.
+
+`turretStab 0, mountOut 0` is round 3's hull-locked turret, kept as the **Hull-locked turrets** control. The new
+**View sway °/s** column measures how fast a gunner's view turns *without* the gunner asking: the rotation of the
+turret's view (aim plus horizon) minus the rotation the gunner's own input made, averaged over the match for crew 0's
+gunner 1. A first version counted the AI gunner's own aiming; it now counts only motion nobody steered.
+
+### Scorecard (I2, Hard rivals, mirror matches, every dial at its round-4 value, 12 seeds)
+
+`runBatch({ game, intensity: 1, diff: 2, seeds: [1..12], seats: true, rookie: true })`; 9–18 s per game. Baked into the
+page's Scorecard tab (`ROUND4`).
+
+**Ring Race**
+
+| Preset | Points | ± | Win % | Seat value H/G1/G2/G3 | Sway °/s | Missiles/min | Hit % | Dry % | Omni by missile % | Stops/min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Round 4 | 215.09 | 3.08 | 42 | 100/-1/-1/1 | 6.04 | 46 | 66.26 | 44.8 | 89.08 | 4.07 |
+| Fast darts | 209.77 | 3.47 | 8 | 100/1/-1/-3 | 7.78 | 40.05 | 65.57 | 56.99 | 82.82 | 4.66 |
+| Heavy shells | 202.48 | 17.96 | 58 | 100/-8/-7/-8 | 4.82 | 45.45 | 60.66 | 32.6 | 85.17 | 1.6 |
+| Dropped shield | 217.5 | 1.24 | 33 | 100/-1/0/0 | 5.57 | 53.74 | 67.89 | 38.44 | 88.5 | 1.25 |
+| Scarce omnis | 215.91 | 1.43 | 42 | 100/0/2/7 | 8.38 | 15.27 | 76.36 | 91.5 | 66.8 | 0.72 |
+| Hull-locked turrets (control) | 212.85 | 2.27 | 25 | (control) | 47.3 | 35.96 | 70.54 | 60.16 | 79.92 | 3.12 |
+| No shield (control) | 201.74 | 15.19 | 17 | (control) | 5.81 | 43.68 | 63.27 | 43.83 | 92.9 | 0 |
+| One gunner (control) | 215.41 | 1.85 | 17 | (control) | 4.38 | 20.67 | 70.22 | 23.47 | 77.75 | 3.06 |
+
+**Breach**
+
+| Preset | Points | ± | Win % | Seat value H/G1/G2/G3 | Sway °/s | Missiles/min | Hit % | Dry % | Omni by missile % | Stops/min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Round 4 | 171.25 | 11.64 | 42 | 29/1/3/9 | 4.67 | 54.46 | 73.9 | 43.04 | 84.5 | 0.62 |
+| Fast darts | 159 | 15.07 | 42 | 44/-17/1/-6 | 7.29 | 44.15 | 73.49 | 60.48 | 77 | 1.63 |
+| Heavy shells | 146.08 | 14.92 | 33 | -7/-9/7/-3 | 2.86 | 49.85 | 63.92 | 33.7 | 86.83 | 0.97 |
+| Dropped shield | 167.08 | 13.99 | 33 | 28/0/1/6 | 4.41 | 53.77 | 74.97 | 41.4 | 88.17 | 0.6 |
+| Scarce omnis | 165 | 13.08 | 75 | 44/11/14/15 | 8.58 | 10.72 | 82.47 | 91.84 | 47.17 | 0.39 |
+| Hull-locked turrets (control) | 194 | 12.4 | 67 | (control) | 54.15 | 52.87 | 76.72 | 39.52 | 90.17 | 0.51 |
+| No shield (control) | 183.17 | 11.77 | 58 | (control) | 4.22 | 55 | 73.92 | 37.65 | 88.58 | 0 |
+| One gunner (control) | 130.67 | 6.23 | 0 | (control) | 3.92 | 26.96 | 94.98 | 15.92 | 88.33 | 0.4 |
+
+**Anchorage**
+
+| Preset | Points | ± | Win % | Seat value H/G1/G2/G3 | Sway °/s | Missiles/min | Hit % | Dry % | Omni by missile % | Stops/min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Round 4 | 90.42 | 15.61 | 67 | 79/61/70/53 | 3.32 | 55.59 | 75.72 | 15.55 | 96.33 | 3.44 |
+| Fast darts | 93.42 | 15.04 | 67 | 79/33/72/55 | 4.11 | 68.75 | 81.15 | 12.72 | 98.42 | 7.44 |
+| Heavy shells | 83.75 | 17.7 | 58 | 60/19/15/26 | 3.23 | 44.76 | 67.63 | 19.76 | 92.92 | 2.17 |
+| Dropped shield | 72.5 | 16.55 | 42 | 63/45/39/26 | 4.26 | 49.93 | 71.78 | 24.75 | 94 | 3.67 |
+| Scarce omnis | 98.5 | 7.06 | 58 | 28/0/2/-4 | 8.42 | 11.61 | 85.05 | 87.94 | 58 | 1.28 |
+| Hull-locked turrets (control) | 82.83 | 16.13 | 58 | (control) | 52.27 | 56.03 | 73.74 | 15.69 | 97.58 | 3 |
+| No shield (control) | 99.17 | 15.26 | 75 | (control) | 3.38 | 58.48 | 75.88 | 13.18 | 97 | 0 |
+| One gunner (control) | 9.42 | 1.34 | 0 | (control) | 3.38 | 22.6 | 58.63 | 11.24 | 94.08 | 5.33 |
+
+**Broadside**
+
+| Preset | Points | ± | Win % | Seat value H/G1/G2/G3 | Sway °/s | Missiles/min | Hit % | Dry % | Omni by missile % | Stops/min |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Round 4 | 46.06 | 7.92 | 50 | 25/13/-1/-8 | 4.88 | 49.98 | 66.77 | 40.31 | 88.17 | 4.72 |
+| Fast darts | 48.26 | 6.33 | 42 | 37/2/29/29 | 6.31 | 52.48 | 76.85 | 48.97 | 91.58 | 6.27 |
+| Heavy shells | 46.74 | 7.45 | 42 | 29/5/4/-5 | 5.64 | 37.15 | 61.54 | 49.67 | 84.5 | 2.72 |
+| Dropped shield | 53.48 | 6.71 | 58 | 13/34/30/22 | 4.84 | 55.09 | 73.99 | 33.32 | 95.83 | 2.78 |
+| Scarce omnis | 39.96 | 5.92 | 25 | 60/-30/-25/-44 | 9.63 | 9.22 | 71.54 | 91.79 | 60.58 | 1.83 |
+| Hull-locked turrets (control) | 48.21 | 8.27 | 50 | (control) | 53.17 | 48.87 | 64.92 | 40.46 | 85.17 | 4.77 |
+| No shield (control) | 49.87 | 6.97 | 50 | (control) | 5.55 | 49.81 | 70.09 | 42.26 | 88.83 | 0 |
+| One gunner (control) | 27.53 | 1.9 | 0 | (control) | 5.63 | 22.32 | 58.9 | 30.11 | 88.58 | 5.83 |
+
+### Found
+
+1. **Stabilization removes about 90% of the view's sway**: 3–6 °/s against 47–54 °/s hull-locked, in every game. The
+   residue is the eased horizon (step 2) and the lagged mount (step 4), both slow by design.
+2. **It costs the AI nothing measurable.** Points with and without it sit within about one standard error in every game
+   (Breach 171 ± 12 against 194 ± 12 is the widest gap, under 1.5 SE). The AI never felt sway; the person in the seat
+   does. Earlier 3-seed runs showed a big Anchorage gain (126 against 54); 12 seeds erased it, so it was noise.
+3. **Every seat still matters in the fights.** One gunner keeps 9 Anchorage prisms against 90 and a 28% Broadside share
+   against 46%; in Breach 131 against 171. The race is still the helm's alone (seat value 100 / 0 / 0 / 0 within noise).
+4. **The shield's value is not resolved.** Round 3 measured +17 points of Broadside share; round 4's No shield control
+   scores within one standard error of Round 4 in every game. Both rounds are within noise of each other, so the
+   designer's decision on the shield (§4a) stays open and needs a person at the helm, not more seeds.
+
+### Checked
+
+- `verify_lab.cjs` PASS. Chase and turret screenshots read: the outrigger struts and pods show on the hull; the
+  turret's view holds level while the helm turns under it.
+
+## 4a. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
 
 **Input this round** (Garrett, in substance; the decision log was empty):
 - The guns get a first-person camera. The skiff was glitchy, as if it controlled both at once.

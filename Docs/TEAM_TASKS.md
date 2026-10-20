@@ -1186,8 +1186,8 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done:** 2026-10-20, Garrett chose in round 3 (2026-10-20): one Helm and three unified gunner/skiff seats, always four crew; no Artifact. The ward/boarding/cast-off questions no longer apply. Round 3's open questions are in T-20261020 (new decision task) and Docs/Studios/CREW_OF_FOUR_LAB.md §4.
 
 ### T-20261020-d102 · open · test · Crew vessels
-- **Task:** Playtest the Crew of Four Lab by hand, on PC and phone: take every seat (1-4, 5 for the deck) in each concept and each of the four games at I2, and record on the Decisions tab which seats felt like a job and which felt like waiting. The AI crews can't tell us whether walking the deck (Galleon 2.5 s) is fun for a person or whether Lantern consoles are better.
-- **Done when:** At least one Decisions entry per concept from a person, with the seat and game it came from
+- **Task:** Playtest the Crew of Four Lab (round 4, the 4-seat vessel) by hand, on PC and phone: take the helm and a gunner seat in each of the four games at I2, compare the Round 4 preset (stabilized turrets on outriggers) with the Hull-locked turrets control from a gunner seat, and record on the Decisions tab which seats felt like a job, which felt like waiting, and whether the turret view feels steady enough. The AI cannot feel sway (its points are the same with and without stabilization), and the shield's worth is within noise, so a person at the helm decides both.
+- **Done when:** At least one Decisions entry from a person for the helm and one for a gunner seat, with the game it came from
 - **Who can take it:** Yash (offered), Garrett, anyone
 - **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb

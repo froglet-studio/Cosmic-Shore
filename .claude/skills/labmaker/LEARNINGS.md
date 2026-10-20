@@ -827,6 +827,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `CrewOfFourLab.html` `runCrew` (`reserve`, `t.queued`); the round-3 write-up's "What changed".
 - Promoted: no
 
+### L-STU-123 — Stabilize a mounted camera in world space, then measure the sway nobody asked for
+- Lab: Crew of Four Lab (round 4) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: turrets aimed in the hull's local frame swung every gunner's view at the helm's turn rate (47–54 °/s). Moving the aim to a world-space direction the gunner turns, holding each turret's own horizon and easing it toward the hull's up over 3 s, and mounting the turrets on outriggers whose position follows a lagged copy of the hull's frame cut that to 3–6 °/s. The first sway metric also counted the AI gunner's own aiming, so it barely moved. And a 3-seed run showed a large points gain (Anchorage 126 against 54) that 12 seeds erased.
+- Do instead: for any camera or weapon mounted on a moving body, keep the aim in world space and let only the seat's own input turn it; hold the horizon and ease it, never lock it; let the mount position lag on a smoothed frame. Measure "sway" as the view's rotation minus the rotation the seat's own input commanded, and keep the hull-locked version as a control preset. Check any points gain from a feel change at 12 seeds before reporting it: an AI does not feel sway, so a feel fix should leave AI points unchanged.
+- Evidence: `CrewOfFourLab.html` `turretDir`, `mountPos`, `followFrame`, the `swayDegS` score; `CREW_OF_FOUR_LAB.md` §4.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were
