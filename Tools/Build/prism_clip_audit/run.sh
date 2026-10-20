@@ -31,6 +31,24 @@ grep -q 'ClipAudit.Hook' "$OUT/PlatformShim.cs" || { echo "FAIL: the card-art Ge
 # ...and every cell-environment lay is tagged with the generator methods that emitted it.
 sed -i 's/^\(            _cachedLays.Add(new PrismLay(new SpawnPoint(pos, rot, scale), dom, kind));\)/            ClipAudit.TagEmit();\n\1/' "$OUT/PlatformShim.cs"
 grep -q 'ClipAudit.TagEmit' "$OUT/PlatformShim.cs" || { echo "FAIL: the card-art Emit moved; re-point run.sh's family tag" >&2; exit 1; }
+# The card-art shim stubs PaintingStrokeToolkit.CurlNoise (no photographed arena calls it). The
+# audit must measure the SHIPPED geometry of the worlds that do (Atlantis' kelp and currents,
+# Yggdra's veils), so its copy carries the real one, lifted verbatim with the two potential offsets
+# it reads; the shim's ValueNoise is already a verbatim copy of the real field.
+python3 - "$ROOT/Assets/_Scripts/Controller/Toys/PaintingStrokeToolkit.cs" "$OUT/PlatformShim.cs" <<'PY'
+import re, sys
+real, shim = open(sys.argv[1]).read(), open(sys.argv[2]).read()
+pots = "".join(m.group(0) + "\n" for m in re.finditer(r"^\s*static readonly Vector3 Pot[BC] = .*;$", real, re.M))
+def method(text):
+    a = text.index("        public static Vector3 CurlNoise(")
+    b = text.index("\n        }\n", a) + len("\n        }\n")
+    return a, b
+ra, rb = method(real)
+sa, sb = method(shim)
+assert pots.count("Pot") == 2, "PaintingStrokeToolkit's curl potentials moved; re-point run.sh"
+shim = shim[:sa] + pots + real[ra:rb] + shim[sb:]
+open(sys.argv[2], "w").write(shim)
+PY
 # The shapes name UnityEngine.Renderer (ClipShim), which makes the card-art driver's bare
 # `Renderer.Render` ambiguous; qualify it in the copy.
 # And every leaf lay passes through the prism prefab's per-axis scale window, as it does in the
