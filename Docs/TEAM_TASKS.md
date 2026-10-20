@@ -1177,16 +1177,16 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
-### T-20261020-26a6 · open · test · Krill vessel
-- **Task:** Fly the Krill (class 21) from the Toybox Vessel Changer and run its edit-mode tests; branch claude/project-thread-ytyab2
-- **Done when:** Every step of the Krill entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or the failures are reported
+### T-20261020-26a6 · open · test · Starling vessel
+- **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer and run its edit-mode tests; branch claude/project-thread-ytyab2
+- **Done when:** Every step of the Starlings entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or the failures are reported
 - **Who can take it:** Garrett or Yash
 - **Added:** 2026-10-20 by a Claude session (`claude/project-thread-ytyab2`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/KRILL.md
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
 
-### T-20261020-4e20 · open · decision · Krill vessel
-- **Task:** Decide the Krill's L5 upgrades and Krill-specific crystal fusion entries (now none, and the Angler's copied)
-- **Done when:** ElementalAbilityMaps/Krill.asset and the fusion config carry the decided entries
+### T-20261020-4e20 · open · decision · Starling vessel
+- **Task:** Decide the Starlings' L5 upgrades and Starling-specific crystal fusion entries (now none, and the Angler's copied)
+- **Done when:** ElementalAbilityMaps/Starling.asset and the fusion config carry the decided entries
 - **Who can take it:** Garrett
 - **Added:** 2026-10-20 by a Claude session (`claude/project-thread-ytyab2`)
-- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/KRILL.md
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md

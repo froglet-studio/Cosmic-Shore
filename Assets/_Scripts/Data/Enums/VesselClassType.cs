@@ -30,6 +30,6 @@ namespace CosmicShore.Data
         // 18 is left for the Goby (cece/sharp-tesla-j0kd7z), which must move off 16
         Wrasse = 19,   // a cleaner wrasse and its host: the Sparrow hull with the Kite & Tail navigator seat (two players, one hull): Controller/Vessel/Crew/KITE_NAVIGATOR.md
         // 20 is the Orca's (cece/happy-noether-m54hz6, the 4-seat vessel)
-        Krill = 21,    // the passive swarm card vessel: the swarm roams on its own, the pilot turns the view and picks cards: Controller/Vessel/R_VesselActions/KRILL.md
+        Starling = 21,    // the passive swarm card vessel: the swarm roams on its own, the pilot turns the view and picks cards: Controller/Vessel/R_VesselActions/STARLING.md
     }
 }
