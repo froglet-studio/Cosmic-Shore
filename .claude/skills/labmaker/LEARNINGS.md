@@ -813,6 +813,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `CrewOfFourLab.html` `SHIPPED.arenaR`, `helmAI` (Anchorage raid), `draw3d` (the corridor test); `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 round 2, Found 6.
 - Promoted: no
 
+### L-STU-121 — A respawn that keeps re-rolling a crystal's kind lets the uncollected kind crowd the sought one out
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`, round 3) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: each respawned crystal rolled omni with probability 0.25. The AI collected omni crystals (they refill missiles) and ignored elemental ones, so elemental crystals sat in their slots forever and never respawned, and within a minute the arena held 13-14 crystals and 0 omni. The magazine read "empty 92% of the match" and looked like an economy-tuning problem; the fix was a slot that keeps its kind (`newCrystal(w, omni)`), after which the same settings read 69-80% and the tuned ones 31-42%.
+- Do instead: when pickups of several kinds share respawn slots, give each slot a fixed kind (or respawn on a timer whether collected or not), and dump the live counts by kind in a trace before tuning the economy around a scarcity the spawner caused.
+- Evidence: `CrewOfFourLab.html` `newCrystal`, `buildWorld` (`nOmni`); `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 round 3, "What changed".
+- Promoted: no
+
+### L-STU-122 — A shared resource drained by AI teammates starves the human seat; reserve some for the person
+- Lab: Crew of Four Lab (round 3) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the three gunner seats share one magazine. In a scripted run the human's first Release did nothing because the two AI gunners had spent the last missiles in the same second; every human gunner would meet that. A Release pressed during the 0.6 s reload was also silently lost.
+- Do instead: in any lab where AI crewmates share a pool with a person, make the AI leave a reserve for each human seat (a dial, `aiReserve`, so the designer can turn it off) and buffer a person's button press briefly across a cooldown. Test the human seat through the real key path, not only by setting the input object.
+- Evidence: `CrewOfFourLab.html` `runCrew` (`reserve`, `t.queued`); the round-3 write-up's "What changed".
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

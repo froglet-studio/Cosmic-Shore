@@ -1148,12 +1148,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by Caleb (`claude/fix-breakwater-preview-controls-3evnnj`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Breakwater preview — one-thumb flight), Assets/_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md
 
-### T-20261020-50d2 · open · decision · Crew vessels
+### T-20261020-50d2 · done · decision · Crew vessels
 - **Task:** Pick the four-seat crew vessel concept from the Crew of Four Lab round 1 (Galleon, Corsair, Lantern, Ironclad, or a mix) and rule on its open questions: should your own ward block your guns (the shield-drop gamble), should boarders work under the ward, and does the cast-off (a defender takes the bag back and the boarder's own recall fires) count as petals-only under the LOCKED PvP rule.
 - **Done when:** A decision is recorded on the lab's Decisions tab (shared log) and copied into Docs/Studios/CREW_OF_FOUR_LAB.md
 - **Who can take it:** Garrett (vessels, product decisions)
 - **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb, Docs/Studios/CREW_OF_FOUR_LAB.md
+- **Done:** 2026-10-20, Garrett chose in round 3 (2026-10-20): one Helm and three unified gunner/skiff seats, always four crew; no Artifact. The ward/boarding/cast-off questions no longer apply. Round 3's open questions are in T-20261020 (new decision task) and Docs/Studios/CREW_OF_FOUR_LAB.md §4.
 
 ### T-20261020-d102 · open · test · Crew vessels
 - **Task:** Playtest the Crew of Four Lab by hand, on PC and phone: take every seat (1-4, 5 for the deck) in each concept and each of the four games at I2, and record on the Decisions tab which seats felt like a job and which felt like waiting. The AI crews can't tell us whether walking the deck (Galleon 2.5 s) is fun for a person or whether Lantern consoles are better.
@@ -1161,3 +1162,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered), Garrett, anyone
 - **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb
+
+### T-20261020-1607 · open · decision · Crew vessels
+- **Task:** Rule on the Crew of Four Lab round 3 questions: the ammo economy (missiles per omni crystal and the omni share; 3 and 40% proposed because 2 and 25% left magazines empty 70-80% of a match), a shared magazine for the three gunners or one per seat, whether AI gunners keep a missile for a human gunner, the helm's shield riding with the hull or dropped in place (its 50-70 u radius is the DangerHemisphereConfig asset's), what gives gunners a job in the Ring Race (they are worth nothing there today), and how many petals a blast takes from a hull (2 proposed).
+- **Done when:** Decisions recorded on the lab's Decisions tab and copied into Docs/Studios/CREW_OF_FOUR_LAB.md
+- **Who can take it:** Garrett (vessels, product decisions)
+- **Added:** 2026-10-20 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb, Docs/Studios/CREW_OF_FOUR_LAB.md section 4

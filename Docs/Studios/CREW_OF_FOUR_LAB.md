@@ -6,13 +6,14 @@ A `/labmaker` browser studio for a **four-seat multiplayer vessel** that capture
 > Look up the game Wildgate and make an artifact lab that can explore concepts for a 4 player multiplayer vessel
 > that captures the magic of that game. (Garrett, 2026-10-20)
 
-- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 2, 3D). Round 1's 2D page is kept
-  as `CrewOfFourLab.round1.html`, and its numbers are on the page's Archive tab. Open it in Chrome to use a gamepad (the
+- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 3: one helm, three gunner seats).
+  Rounds 1 (2D) and 2 (3D) are kept as `CrewOfFourLab.round1.html` and `.round2.html`, and their numbers are on the
+  page's Archive tab. Open it in Chrome to use a gamepad (the
   claude.ai viewer can block the Gamepad API).
 - **Live page:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb (private to the owner until shared from its Share
   menu; decisions recorded there land in the shared log, collection `decisions`, that Claude reads at the start of each
   round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 2).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 3).
 - **Nearest lab:** the Crew Vessel Lab (`Docs/Studios/CrewVesselLab.html`, `CREW_VESSEL_LAB.md`), the two-seat
   "Maverick and Goose" lab that graduated as the Wrasse (`VesselClassType` 19). This lab does not replace it or touch
   it: the Wrasse is a pilot plus a 2D navigator; this lab asks what a crew of **four** on one hull should be. Round 1 of
@@ -62,7 +63,7 @@ petals, so the lab leaves them out. Every vessel-on-vessel effect here moves pet
 
 The ward is a petal ward, the way `CombatHitDrain`'s wards are: a bolt it absorbs scores nothing.
 
-## 2. The concepts
+## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4)
 
 Each concept is a seat set plus rules; the card writes the rules into the dials so they can be mixed.
 
@@ -80,7 +81,7 @@ Rival crews fly the same concept (a mirror match) unless **Match ▸ Rivals alwa
 
 | Element | Game | Kind | Scores | I1 → I4 |
 |---|---|---|---|---|
-| Time | **Gate Run** | race | seconds to escape (points: 100 + seconds to spare, else 0.5 per second you held the Artifact) | 1, 1, 2, 2 rival crews; gate opens at 30 / 40 / 50 / 60 s; 14 → 8 crystals; 0 → 3 hazard clusters |
+| Time | **Gate Run** (rounds 1–2; round 3: **Ring Race**, §4) | race | seconds to escape (points: 100 + seconds to spare, else 0.5 per second you held the Artifact) | 1, 1, 2, 2 rival crews; gate opens at 30 / 40 / 50 / 60 s; 14 → 8 crystals; 0 → 3 hazard clusters |
 | Space | **Breach** | destruction | fortress prisms destroyed in 90 s | 2 → 5 levels (round 2: each level three orthogonal rings, an armillary sphere; the first at 26 u, inside a Charge-3 skiff charge); 1, 1, 2, 2 rivals |
 | Mass | **Anchorage** | creation | your prisms standing at 90 s (trail + forged blocks) | 1, 1, 2, 2 raider crews; 16 → 12 crystals; 0 → 2 hazards |
 | Charge | **Broadside** | dogfight | net petal hits (points: your share of the hits) | 1, 1, 2, 2 rivals; 12 → 8 crystals |
@@ -89,7 +90,141 @@ Rivals: Easy / Medium / Hard AI crews (aim error 9° / 5° / 2.5°, lead 0 / ½ 
 ward tolerance 3 / 1.5 / 0.5 threats). Your own crew's AI has the same three levels. Every AI writes the same input
 objects a person does (`/labmaker` §2.4).
 
-## 4. Round 2 (2026-10-20): 3D with the game's chase camera
+## 4. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
+
+**Input this round** (Garrett, in substance; the decision log was empty):
+- The guns get a first-person camera. The skiff was glitchy, as if it controlled both at once.
+- The helm is a two-thumb flyer, with a defensive Mass ability (surround itself in danger prisms except forward) and a
+  boost button.
+- The vessel's feel is the goal, so the rest of Wildgate (the Artifact) goes.
+- "1 helm, 3 guns/skiffs", unified: the vessel always has four players (AI if not people).
+- The gun-skiff seats are first-person turrets with a release button. Release flies a fast fly-by-wire missile with one
+  thumb; it explodes on contact or after 5 s into a sizable sphere. Flown missiles collect elemental crystals and omni
+  crystals; omni crystals add missiles; missiles are spent when the gunner seats fire them.
+
+### The design under test
+
+| Seat | What it does | Controls | From the game |
+|---|---|---|---|
+| **Helm** | Flies the hull with two thumbs; **Boost** (held, a tank); **Shield**: danger prisms on a shell round the hull, the forward cone open, for 4 s | Left stick W A S D, right stick the arrows (or P L ; ' as in the game); Space boost, E shield; a pad's two sticks, A / RT boost, B / RB shield; on a phone a thumbstick on each half of the view | `DualStickMix` (yaw = eased sum of the sticks' x, pitch = of their y, roll = their y difference, throttle = their x difference, XDiff 0.5 at rest) through `VesselTransformer`'s formulas at the Sparrow's numbers (`YawScaler`/`PitchScaler` 80, `RollScaler` 30, `RotationThrottleScaler` 0.1, speed 10 + 25 × XDiff, ×5 boost); the shell from `DangerHemisphereConfig.asset` (12 rays × 12 blocks, radius 50–70, blocks 10 × 1 × 1); touching a danger prism costs −0.5 on every element for 4 s (`VesselElementalDebuffByDangerPrismEffectSO`) |
+| **Gunner 1–3** | A first-person turret. **Release** launches a missile from the hull's shared magazine and hands the gunner its controls: one thumb bends it; it bursts on contact, at 5 s, or on a second Release; it collects crystals it flies through (elemental: a petal; omni: +3 missiles). When it bursts the gunner is back in the turret | Mouse look (click to lock), W A S D, a pad stick or a drag aims; Space / click / A / RT / the on-screen button releases; in flight W A S D, the left stick or a drag | The blast's radius is `AOEExplosion`'s (MaxScale 60 → 30 u); everything else is a lab proposal |
+
+Rivals fly the same vessel. A blast that catches a rival hull takes 2 petals (scored hits); a missile that touches a
+rival's danger prism bursts on it and breaks it; blasts break prisms and other missiles.
+
+### What changed
+
+- **Four seats, fixed.** The Core, Scope, ward, walking and Artifact are gone. Presets replace concepts: Round 3,
+  Fast darts, Heavy shells, Dropped shield, Scarce omnis, and two controls, No shield and One gunner.
+- **The glitch is gone by construction.** Each seat reads its own controller and only its own; the human's sticks never
+  reach a body the seat does not own. Checked: holding D while flying a missile turned the missile about 80° in 0.45 s while
+  the hull's sticks stayed the AI helm's.
+- **Cameras per seat:** the helm keeps the chase camera (`SparrowCameraSettingsSO`); a gunner looks out of its turret
+  (first person, FOV 75, lab) and, in flight, from just behind its missile (14 u back, 3 u up, lab).
+- **The Time game is now a Ring Race** (rings on a tilted, wavy loop; at I2 and up some rings are walled with neutral
+  prisms a blast clears for everyone), replacing the Artifact's Gate Run.
+- **Three things the first traces broke, fixed before the numbers below:** crystal slots filled with uncollected
+  elemental crystals and the omni crystals vanished (each slot now keeps its kind); AI gunners emptied the shared
+  magazine before a human could fire (they now leave one missile per human gunner, `aiReserve`); a Release pressed
+  during the 0.6 s reload was lost (it is now held for half a second).
+- **The economy is tuned to leave some tension** (a lab proposal): 3 missiles per omni and 40% of crystal slots omni.
+  At 2 per omni and 25%, magazines sat empty 69–80% of a match and gunners waited over a minute.
+
+### Scorecard (I2, Hard rivals, mirror matches, every dial at its round-3 value, 6 seeds)
+
+`runBatch({ game, intensity: 1, diff: 2, seeds: [1..6], seats: true, rookie: true })`; 5.1–8.6 s per game. Seat value is
+Helm / Gunner 1 / Gunner 2 / Gunner 3. Points: Ring Race 100 + seconds to spare when finished (else 60 × rings passed /
+rings); Breach and Anchorage prisms; Broadside your share of petal hits (%).
+
+#### Ring Race (Time race)
+
+| Preset | Points | ± SE | Finished % | Finish s | Seat value % (H/G1/G2/G3) | Rookie % | Missiles/min | Hit % | Fuse-out % | Flight s | Omnis/min | by missile % | Dry % | Shields/min | Stops/min | Longest wait s | Hits dealt/taken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 3 | 211.42 | 3.63 | 100 | 38.57 | 100 / -1 / -2 / 6 | 105 | 40.78 | 77.4 | 9.4 | 1.36 | 12.83 | 88.17 | 54.15 | 4.43 | 2.03 | 20.2 | 23.83 / 24.83 |
+| Fast darts | 214.19 | 3.7 | 100 | 35.8 | 100 / -1 / -1 / -1 | 101 | 43.5 | 72.63 | 9.67 | 1.07 | 13.51 | 80.6 | 54.18 | 4.83 | 6.58 | 14.03 | 21.17 / 30.33 |
+| Heavy shells | 215.65 | 4.09 | 100 | 34.35 | 100 / 0 / 0 / 0 | 102 | 35.04 | 73.98 | 15.52 | 1.56 | 9.64 | 88.83 | 59.33 | 3.88 | 2.68 | 20.95 | 20.67 / 22.67 |
+| Dropped shield | 207.13 | 8.17 | 100 | 42.87 | 100 / -6 / -3 / -4 | 103 | 33.46 | 58.78 | 14.53 | 1.53 | 9.78 | 78.17 | 64.35 | 5.05 | 1.58 | 33.85 | 15.33 / 31.17 |
+| Scarce omnis | 187.5 | 30.31 | 83 | 32.2 | 100 / 0 / -15 / -13 | 100 | 11.49 | 88.47 | 9.45 | 1.25 | 3.44 | 71.6 | 92.02 | 2.24 | 0.95 | 51.38 | 8 / 10.67 |
+| No shield (control) | 216.1 | 4.34 | 100 | 33.92 | — | — | 40.25 | 59.6 | 17.5 | 1.68 | 13.51 | 92.67 | 45.6 | 0 | 0 | 20.13 | 20.83 / 36.33 |
+| One gunner (control) | 214.91 | 3.4 | 100 | 35.08 | — | — | 14.55 | 67.5 | 10.8 | 1.26 | 4.94 | 80.25 | 52 | 5.61 | 4.44 | 25.65 | 7.33 / 32.67 |
+
+#### Breach (Space destruction)
+
+| Preset | Points | ± SE | Score | Win % | Seat value % (H/G1/G2/G3) | Rookie % | Missiles/min | Hit % | Fuse-out % | Flight s | Omnis/min | by missile % | Dry % | Shields/min | Stops/min | Longest wait s | Hits dealt/taken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 3 | 194.83 | 18.07 | 194.83 | 67 | 46 / 25 / 14 / 19 | 79 | 51.15 | 76.13 | 5 | 1.69 | 13.84 | 90.33 | 40.15 | 5.2 | 1.01 | 8.47 | 0 / 0.33 |
+| Fast darts | 166.67 | 8.5 | 166.67 | 33 | 55 / -9 / -3 / -13 | 89 | 40.06 | 76.48 | 5.25 | 1.13 | 11.96 | 75 | 64.1 | 4.08 | 0.62 | 18.77 | 3 / 1.67 |
+| Heavy shells | 175.33 | 21.12 | 175.33 | 33 | 23 / 13 / 9 / 27 | 78 | 51.14 | 64.93 | 10.65 | 2.39 | 13.07 | 91.17 | 24.33 | 5.56 | 0.46 | 2.35 | 0 / 0.33 |
+| Dropped shield | 199.17 | 21.04 | 199.17 | 67 | 47 / 28 / 19 / 17 | 78 | 54.13 | 76.08 | 5.9 | 1.72 | 14.57 | 92.33 | 36.68 | 5.63 | 0 | 6.67 | 0.67 / 0.33 |
+| Scarce omnis | 157.33 | 18.74 | 157.33 | 83 | 32 / 24 / 31 / 7 | 78 | 10.66 | 85.55 | 6.83 | 1.64 | 6.66 | 56.17 | 92.68 | 2.78 | 1.22 | 31.08 | 0.67 / 1.67 |
+| No shield (control) | 168 | 28.47 | 168 | 33 | — | — | 45.78 | 70.45 | 4.8 | 1.49 | 12.22 | 81 | 50.43 | 0 | 0 | 10.7 | 2.33 / 0.67 |
+| One gunner (control) | 147.17 | 21.63 | 147.17 | 33 | — | — | 28.89 | 95.65 | 1.9 | 1.16 | 8.28 | 80.5 | 11.62 | 6.02 | 2.98 | 3.17 | 0 / 0.33 |
+
+#### Anchorage (Mass creation)
+
+| Preset | Points | ± SE | Score | Win % | Seat value % (H/G1/G2/G3) | Rookie % | Missiles/min | Hit % | Fuse-out % | Flight s | Omnis/min | by missile % | Dry % | Shields/min | Stops/min | Longest wait s | Hits dealt/taken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 3 | 86.67 | 24.02 | 86.67 | 67 | 87 / 62 / 55 / 47 | 67 | 58.31 | 73.75 | 6.32 | 1.99 | 18.66 | 97.33 | 15.07 | 4.55 | 3.33 | 8.22 | 39 / 28.67 |
+| Fast darts | 109.33 | 20.08 | 109.33 | 83 | 92 / 86 / 69 / 43 | 20 | 72.42 | 84.77 | 4.42 | 1.53 | 23.55 | 99.5 | 9.57 | 5.22 | 4.89 | 6.78 | 50.67 / 27.17 |
+| Heavy shells | 96.17 | 26.49 | 96.17 | 67 | 71 / 62 / 80 / 83 | 57 | 47.76 | 62.27 | 19.97 | 2.54 | 15.44 | 90.67 | 15.65 | 4.44 | 2.33 | 5.58 | 32.17 / 21.33 |
+| Dropped shield | 115.5 | 17.92 | 115.5 | 83 | 47 / 63 / 45 / 45 | 47 | 57.98 | 76.38 | 7.63 | 2.27 | 18.88 | 99.5 | 5.18 | 5.11 | 2.78 | 1.9 | 53 / 32.17 |
+| Scarce omnis | 103.5 | 7.19 | 103.5 | 50 | 31 / -2 / 5 / -4 | 89 | 12.88 | 87.22 | 7.03 | 2.19 | 8.88 | 58 | 86.18 | 2.78 | 2.11 | 22.85 | 14.33 / 9 |
+| No shield (control) | 72.33 | 27.14 | 72.33 | 50 | — | — | 53.09 | 65.32 | 12.62 | 2.23 | 16.99 | 94.33 | 15.35 | 0 | 0 | 5.03 | 36.67 / 37.33 |
+| One gunner (control) | 19.33 | 4.33 | 19.33 | 0 | — | — | 24.32 | 61.47 | 7.22 | 1.61 | 7.77 | 89.67 | 9.37 | 6.33 | 4.66 | 6.82 | 13 / 46.83 |
+
+#### Broadside (Charge dogfight)
+
+| Preset | Points | ± SE | Score | Win % | Seat value % (H/G1/G2/G3) | Rookie % | Missiles/min | Hit % | Fuse-out % | Flight s | Omnis/min | by missile % | Dry % | Shields/min | Stops/min | Longest wait s | Hits dealt/taken |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Round 3 | 60.7 | 9.75 | 10.67 | 67 | 27 / 21 / 20 / -1 | 29 | 58.87 | 78.88 | 4.98 | 1.63 | 18.66 | 94.17 | 27.57 | 4.44 | 4.44 | 12.37 | 51.17 / 40.5 |
+| Fast darts | 59.4 | 11.43 | 13.17 | 67 | 35 / 46 / 35 / 10 | 51 | 67.64 | 80.98 | 6.18 | 1.19 | 21.66 | 95.33 | 30.07 | 3.78 | 6.66 | 17.22 | 41.17 / 28 |
+| Heavy shells | 70.39 | 8.47 | 22.5 | 83 | 64 / 6 / 54 / 20 | 53 | 49.09 | 78.98 | 10.88 | 2.11 | 15.33 | 91.33 | 29.07 | 3.33 | 1.45 | 14.3 | 45.17 / 22.67 |
+| Dropped shield | 57.76 | 7.7 | 10.83 | 67 | 27 / 6 / 33 / 18 | 42 | 59.42 | 78.98 | 5.83 | 1.62 | 18.88 | 92.83 | 28.05 | 4.33 | 2.44 | 10.97 | 52.17 / 41.33 |
+| Scarce omnis | 60.47 | 6.01 | 7.67 | 67 | 66 / 26 / 23 / 29 | 55 | 11.66 | 82.9 | 3.47 | 1.87 | 7.66 | 52.5 | 88.13 | 3.33 | 2.56 | 25.47 | 23 / 15.33 |
+| No shield (control) | 43.73 | 7.32 | -8.67 | 33 | — | — | 40.65 | 61.5 | 9.5 | 1.66 | 12.44 | 87.83 | 47.88 | 0 | 0 | 22.9 | 49.5 / 58.17 |
+| One gunner (control) | 24.98 | 2.37 | -33.17 | 0 | — | — | 22.66 | 54.9 | 7.78 | 1.27 | 6.55 | 91.17 | 28.75 | 6.33 | 6.22 | 17.87 | 18.33 / 51.5 |
+
+### Found
+
+1. **Every seat matters in the fights, none of the gunners matter in the race.** In Anchorage the four seats are worth
+   87 / 62 / 55 / 47% and a lone gunner keeps 19 prisms against 87; in Broadside 27 / 21 / 20 / −1% and a lone gunner
+   takes a 25% share against 61%. In the Ring Race the helm is worth 100% and each gunner −15 to 6%: a hull flies
+   through a wall's prisms at the cost of a 0.4 s slow, so clearing walls buys nothing. **Design hole:** walls (or the
+   race) need a reason for gunners.
+2. **The shield earns its button in the fights.** Without it the Broadside share falls from 61% to 44% and Anchorage
+   from 87 to 72 prisms. Helms raise it 4–5 times a minute and it stops 1–4 rival missiles a minute. Dropping it in
+   place (instead of riding with the hull) scores the same within the noise.
+3. **Missiles do the collecting.** 88–97% of omni crystals are taken by a flown missile, not the hull, so the gunners
+   own the ammo economy, as the design intends. Magazines sit empty 15–54% of a match (Anchorage least, the race most).
+   Scarce omnis (20%, one missile each) empties them 86–93% of the time and gunners wait 22–51 s.
+4. **Skill matters most in the dogfight.** An Easy crew keeps 29% of a Hard crew's Broadside points against 67–105%
+   elsewhere.
+5. **Missile feel:** a missile flies 1.4–2.0 s on average; 5–10% fuse out (Heavy shells 11–20%); 74–79% of missiles hit
+   something. Fast darts edge Round 3 in Anchorage (109 against 87) and lose in Breach (167 against 195); Heavy shells
+   lead Broadside (70%); every difference but the controls sits within about two standard errors.
+
+### Checked
+
+- `verify_lab.cjs` PASS; desktop and iPhone 13 screenshots read (helm chase view with the shield up, turret crosshair,
+  missile view with its fuse bar, the crew panel and radar).
+- A scripted person: at the helm, W + Up wrote YSum −1.0 (full pitch), A + Right wrote XDiff 1 (full speed), E raised
+  the shield; at a gunner seat the camera was the turret's, Release launched (or burst an inherited missile), D turned
+  the missile and not the hull; no console or page errors.
+
+### Decision needed (designer), round 3
+
+- **The ammo economy:** how many missiles an omni gives and how many omni crystals exist (3 and 40% proposed), and
+  whether the magazine is shared by the three gunners (as built) or per seat.
+- **Should the AI keep missiles for human gunners** (`aiReserve` 1)?
+- **The shield:** rides with the hull (as built) or is dropped in place; its 50–70 u radius (the game asset's) is far
+  outside the hull, so a rival flying near you touches it.
+- **What gives gunners a job in the race.**
+- **What a blast takes from a hull** (2 petals proposed).
+
+## 4b. Round 2 (2026-10-20): 3D with the game's chase camera (superseded)
+
+> **Superseded by the designer (2026-10-20)** by round 3 ("1 helm, 3 guns/skiffs ... we don't need other parts of
+> wildgate gameplay like the artifact"). The page is kept as `Docs/Studios/CrewOfFourLab.round2.html`.
 
 **Input this round** (Garrett): "make it 3D with a chase camera like the game". The decision log was empty; this
 message is the round's input. Round 1's 2D page is kept as `CrewOfFourLab.round1.html` and its scorecard on the
@@ -205,7 +340,7 @@ game.
   first, or should charges be smaller and repeatable?
 - **What the other three crew see.** Only the helm's chase camera exists; a gunner's or a skiff pilot's own view is open.
 
-## 4b. Round 1 (2026-10-20): 2D top-down (superseded)
+## 4c. Round 1 (2026-10-20): 2D top-down (superseded)
 
 > **Superseded by the designer (2026-10-20):** "make it 3D with a chase camera like the game". The page is kept as
 > `Docs/Studios/CrewOfFourLab.round1.html` and its numbers are on the live page's Archive tab.
