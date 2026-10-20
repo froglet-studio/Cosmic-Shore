@@ -806,6 +806,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `core.js` `focusFor` / `stepAgents`; `game.js` `applyControl` / `aiInput`.
 - Promoted: no
 
+### L-STU-118 — A touch-size rule belongs in WORLD units from one nominal phone, and it reshapes the whole game
+- Lab: Swarm Vessel Lab, round 2 Shepherd (`Docs/Studios/SwarmVesselLab/src/shepherd.js`) · Branch: `claude/project-thread-4slpcz` · By: Garrett's project thread · Date: 2026-10-20
+- What happened: the brief said a dog's repulsion ring must be larger than a big thumb's occlusion. Computed per device, the same settings would play a different game on every screen. Fixed once from a nominal landscape phone (6.3 CSS px/mm, 390 px tall), the floor is 311 u at a 1,400 u view, and every herder ring (442 u at Space 2) is then several times the flock's radius. Two knock-on effects showed only in the scorecard: a small-thumb floor (14 mm) made the Time pen race impossible (0 against 20), and the big rings kept the flock panicking, which stopped it grazing, so Mass and the pilot-only baseline moved the wrong way.
+- Do instead: express any touch-ergonomics floor in world units from ONE named nominal device, draw the thumb disc on screen so the designer can judge it, and put a "smaller floor" row in the scorecard. The floor is a game-design number, not a UI detail: re-tune the flock, pens and arena round it.
+- Evidence: `shepherd.js` `SEL.floorU`, `SEL.ring`; scorecard rows `crew` / `smallthumb` in `Docs/Studios/SWARM_VESSEL_LAB.md` round 2.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

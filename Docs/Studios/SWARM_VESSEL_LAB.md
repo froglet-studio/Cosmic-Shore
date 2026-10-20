@@ -1,10 +1,84 @@
-# Swarm Vessel Lab — round 1 (2026-10-19)
+# Swarm Vessel Lab — round 2 (2026-10-20): the Shepherd
 
 **Live page:** https://claude.ai/artifact/Q7BgQYrT9xq5kmNtqCudmw (private to Garrett until shared)
+**Shepherd, straight in:** https://claude.ai/artifact/Q7BgQYrT9xq5kmNtqCudmw#shepherd (or the **Shepherd** button in the header)
 **Source:** `Docs/Studios/SwarmVesselLab/src/` → `python3 Docs/Studios/SwarmVesselLab/build.py` → `Docs/Studios/SwarmVesselLab.html`
 **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SwarmVesselLab.html` (PASS, desktop + phone)
 
-## Why it exists
+## Round 2: the Shepherd (Garrett's direction, 2026-10-20)
+
+Garrett played the toys and asked for new directions, starting with this one. The only vote in the log
+before it was **"Herd the plague" → merge**, the round-1 sheepdog toy, so this is that toy grown into a crew.
+It lives in `src/shepherd.js` as a full-screen mode of the same page, with its own model, loop, scorecard
+and `window.__lab.shep` test surface. It writes to the same decision log (topic `shepherd:<game>`).
+
+### The spec (as asked, and how the lab reads each line)
+
+| Garrett's line | What the lab does | Reading that is the lab's, not Garrett's |
+|---|---|---|
+| A **shepherd (pilot)**, with the Rhino's full speed and its fly-straight zoom | The pilot flies the Rhino's shipped numbers: cruise 50 u/s, the straight-line ramp to ×16.8 = 840 u/s at 220 u/s², bleed 300, coast 120, full boost below 0.3 stick deviation and none at 1.0, turn rate (speed × 0.2 + 90) °/s (`Rhino.prefab`, `RhinoRampBoostAction.asset`, `StraightLineGesture.EngageThreshold`) | No sword, shield swipe or trail. Time does not speed the ramp here, because Time is the flock's. |
+| **Two sheepdogs**, one mobile player, **one thumb per dog** | Each new touch claims the nearest free dog; the dog runs to the point under the thumb on the pilot's plane at 520 u/s | Mouse drag works too, for testing at a desk. |
+| **Minimum repulsion radius larger than a big thumb's occlusion** | Floor = (big thumb 22 mm ÷ 2) × 6.3 px/mm × 1.25 margin, fixed in world units from a 390 px landscape phone: **311 u** at the 1,400 u view. The ring is never smaller than that. A translucent disc shows what the thumb hides | The thumb size, the margin, the nominal phone and the view span are lab knobs. |
+| **Sheep = the swarm**, 3D, **very attracted to the pilot's XZ plane** (where the dogs are) | Boids in 3D (separation, alignment, cohesion, wander) with a strong spring to the plane at the pilot's altitude. Fly up or down and the plane, the dogs and the flock follow | Repulsion is a vertical cylinder round each herder, so it reads from above. |
+| **The pilot is repulsive**, and can **briefly call the sheep** on a long cooldown | Same ring as the dogs. Call: 2.5 s of pull toward the pilot, 20 s cooldown | Both lengths are lab guesses. |
+| **Lift a thumb → a repulsive decoy**; one at a time, the new replaces the old | A lift leaves a decoy where the dog stood, with the same ring | The dog stays where it was until a thumb comes back. |
+| The pilot **teleports to the decoy** with a trigger or by lifting a thumb | Right trigger, Space, or lifting the touch-stick thumb. The decoy is used up | 0.6 s guard between teleports. |
+| **Mass** controls the reproduction rate | A sheep has a lamb after 4 ÷ (1 + 0.1 × (Mass + 5)) meals: 4 at −5, 2.4 at 2, 1.3 at 15 | Sheep graze any non-team prism they touch. |
+| **Time** controls the speed of the swarm | Sheep cruise 70 u/s × (1 + 0.06 × Time); fleeing adds up to +80% | |
+| **Space** controls the repulsion radius of all three sub-vessels | Ring = floor × (1 + 0.06 × (Space + 5)): the floor at −5, 442 u at 2, 591 u at 10 | Space scales *above* the floor, so no level is dead. The decoy gets the same ring. |
+| **Charge** sets the share of **danger prisms** in the swarm: 0% at −5, 100% at 15 | Each sheep rolls once at birth; it is a danger sheep while its roll is under (Charge + 5) ÷ 20 (35% at 2). Danger sheep wear the danger rim | "Danger prism" is read as the game's danger prism (`PrismKinds`): a rival that touches one is slowed and loses a petal, and the sheep is spent. The game's band stops at 10 (75%). |
+| **Mass L5**: the swarm periodically **poops a cluster of mass** | Every 6 s a random sheep leaves 7 of your prisms | |
+| **Space L5**: the swarm can **eat shielded prisms** | Shielded prisms (white outline) become edible | "Shielded prism" is read as the game's shielded tier. |
+| **Charge L5**: the swarm **attacks players** once in proximity | Sheep within 200 u of a rival go for it; a plain sheep's nip is worth a third of a petal | |
+| **Time L5** leaves a decoy **in the pilot's location** | When the pilot teleports, a new decoy is left where it was, so a second teleport swaps back | **Decision needed:** is that the meaning, or should the pilot drop decoys on its own? |
+
+**The four games** (one per element, the labmaker rule): Time = a race of five pens (60% of the flock at
+once fills one), Space = graze a ruby fort that is 35% shielded at I2, Mass = grow the flock on regrowing
+pasture, Charge = rival "wolves" that hunt the pilot and eat plain sheep. Each has an I1-I4 intensity.
+**You play:** the dogs (AI pilot), the pilot (AI dogs), both (pilot on keys or pad, dogs on touch or
+mouse), or watch the AI.
+
+### Measured: the Shepherd scorecard
+
+AI pilot and AI dogs (Strömbom-style drive and collect), 30 s, seeds 1-2 averaged, shipped / round-2
+values, produced by **Settings → Run scorecard** (`window.__lab.shep.runBatch({seeds: [1, 2]})`,
+deterministic across two calls). Time = pens × 10 + seconds spare; Space = enemy prisms eaten; Mass =
+lambs + your mass standing; Charge = petals taken − lost + 3 per knockout.
+
+| Build | Time | Space | Mass | Charge |
+|---|---|---|---|---|
+| Pilot only (no dogs) | 0 | 0 | 15.5 | 2 |
+| Dogs only (no pilot) | 20 | 116.5 | 22 | 8.5 |
+| **Shepherd + 2 dogs** | 20 | 107.5 | 13.5 | 3 |
+| Small thumb (14 mm floor) | **0** | 98 | 27 | 3.5 |
+| Rookie crew (noise 0.6) | 15 | 112 | 18 | 3 |
+| Time 5 (swap decoy) | 20 | 128 | 29.5 | 4.5 |
+| Space 5 (eat shields) | 20 | **201** | 18 | 2.5 |
+| Mass 5 (poop mass) | 20 | 147.5 | **70** | 3.5 |
+| Charge 5 (attack) | 20 | 107.5 | 13.5 | 9.5 |
+| Charge 15 (all danger) | 20 | 107.5 | 13.5 | **18** |
+
+### Checked / Found (round 2)
+
+- **Checked:**
+  - `verify_lab.cjs` PASS on desktop and phone (the round-1 lab is unchanged: its batch reads the same before and after).
+  - The Shepherd batch gives identical tables on two calls.
+  - A scripted landscape-phone thumb (844 × 390, touch) grabbed dog B, dragged it, and on lift left one decoy where the dog stood. No horizontal scroll on the phone.
+- **Found:**
+  1. **Three of the four L5 upgrades win their own element's column**: Space 5 doubles the fort grazed (107.5 → 201), Mass 5 multiplies Mass by five (13.5 → 70), and Charge 15 is the Charge top (18). **Time 5 does not move Time** (20 → 20): the swap decoy helps Space and Mass, but nothing in the pen race rewards it. Time 5 needs a racing reason, or the race needs a teleport-shaped shortcut.
+  2. **The AI pilot adds nothing over two dogs** (Space 116.5 without it, 107.5 with it), and alone it cannot herd at all (0). A Rhino cannot hover: it circles on station, and its ring sweeps through the flock. In Charge it does something the score cannot see. It pulls the wolves onto itself, so in a 45 s run (seed 1) 38 of 60 sheep live, against 5 without it, but fewer danger sheep meet a wolf. Whether the pilot is a herder, a decoy for wolves, or mainly the call-and-teleport is the design question this crew raises.
+  3. **The thumb floor is a game rule, not a UI detail.** At a 14 mm floor the ring is too small to move a 60-sheep flock into a pen (Time 0). At 22 mm the rings are so big that the flock panics most of the time, and panicking sheep do not graze, so Mass is low (13.5) until Mass L5 poops mass. Herding and grazing compete. (L-STU-118)
+  4. **Wolves eat the flock fast.** Before rivals were given a 1.2 s pause per sheep, they ate 58 of 60 sheep in 45 s. Danger sheep are the flock's only defence below Charge 5.
+  5. **A rookie crew out-grazes an expert in Space** (112 vs 107.5), as in round 1: a noisy herd spreads over more prisms.
+
+### Decision needed (Garrett), round 2
+
+1. **Play it on your phone in landscape**, as "You: the dogs". Does a 311 u floor (a ring about 1.8 thumbs wide) feel right, or is it so big that one dog moves the whole flock?
+2. **Time L5**: is "teleport leaves a decoy behind (swap)" what you meant?
+3. **What is the pilot for?** Herding, drawing the wolves, or gathering (call) and repositioning (teleport)?
+4. **Danger sheep vs your own team**: here they hurt only rivals. Should they also slow your own pilot?
+
+## Why it exists (round 1)
 
 The Termite came back as a commander queen with a card deck, and playing it was the first time the
 studio held a vessel that *is* a swarm. The question this lab answers is wider than the Termite:
@@ -159,5 +233,7 @@ The axes measured one at a time, the others held:
 - The AI commander is a heuristic; treat a gap under ~10% as noise.
 
 ## Round log
+
+- **Round 2 (2026-10-20, `claude/project-thread-4slpcz`):** the Shepherd mode (`src/shepherd.js`): Rhino pilot, two thumb-driven sheepdogs with a thumb-occlusion floor, decoys, call, teleport, the four element rules and their L5s, four games with I1-I4, a ten-row scorecard; learning L-STU-118.
 
 - **Round 1 (2026-10-19, `cece/inspiring-einstein-k6syi5`):** built the lab, the 37 toys, the scorecard and team builder, and the decision log; made `verify_lab.cjs` hermetic (L-GEN-18); learnings L-STU-114 and L-STU-115.

@@ -253,6 +253,7 @@ function endPointer(ev) {
 canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', endPointer);
 addEventListener('keydown', (ev) => {
+  if (shepOn) return;   // the Shepherd overlay owns the keyboard while it is open
   if (ev.target && /INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) return;
   const k = ev.key.toLowerCase();
   if (k >= '1' && k <= '4') { liveInput.card = +k - 1; return; }
@@ -555,7 +556,7 @@ addEventListener('resize', resize);
 let manualClock = false, last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
-  if (!manualClock) { resize(); if (!paused) simStep(dt); render(); }
+  if (!manualClock && !shepOn) { resize(); if (!paused) simStep(dt); render(); }
   requestAnimationFrame(frame);
 }
 if (BUILD.toy && !TOYS_BY_ID[BUILD.toy]) BUILD.toy = null;

@@ -4,9 +4,10 @@
     python3 Docs/Studios/SwarmVesselLab/build.py          # writes Docs/Studios/SwarmVesselLab.html
     python3 Docs/Studios/SwarmVesselLab/build.py --check  # exits 1 if the committed page is stale
 
-The page is src/shell.html with the five script files concatenated, in order, into ONE strict-mode IIFE
+The page is src/shell.html with the six script files concatenated, in order, into ONE strict-mode IIFE
 (so the lab leaks nothing onto window except window.__lab). The order matters only for top-level code:
-core (model) -> species (data) -> game (economy, AI, simStep) -> toys (data) -> ui (DOM, loop, hooks).
+core (model) -> species (data) -> game (economy, AI, simStep) -> toys (data) -> ui (DOM, loop, hooks)
+-> shepherd (round 2: the Shepherd overlay, its own model, loop and window.__lab.shep).
 """
 import os
 import sys
@@ -14,7 +15,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, 'src')
 OUT = os.path.join(os.path.dirname(HERE), 'SwarmVesselLab.html')
-ORDER = ['core.js', 'species.js', 'game.js', 'toys.js', 'ui.js']
+ORDER = ['core.js', 'species.js', 'game.js', 'toys.js', 'ui.js', 'shepherd.js']
 
 
 def build():
