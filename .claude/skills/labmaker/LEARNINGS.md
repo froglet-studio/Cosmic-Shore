@@ -118,6 +118,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.Unlit` and its comment; `KITE_NAVIGATOR.md` "Round 4b".
 - Promoted: no
 
+### L-GEN-18 — When dotnet-install is blocked, build the SDK from api.nuget.org packages
+- Lab: Honeyguide Lab → the Dynamo C# parity gate · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: the cloud proxy refused builds.dotnet.microsoft.com and www.nuget.org (403), so the parity gate had no compiler. api.nuget.org/v3-flatcontainer was open, and its packages carry everything a headless compile needs.
+- Do instead: assemble `~/.dotnet` from the flat-container packages (the runtime pack, `Microsoft.NETCore.App.Ref` and `Microsoft.Net.Compilers.Toolset` for csc) and compile with csc against the reference pack. The Kite and Dynamo parity gates both pass on that layout. Details in `Docs/Studios/HONEYGUIDE_LAB.md` "Port notes".
+- Evidence: `Tools/Build/dynamo_lab/trace.sh`.
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -783,6 +790,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: to separate the petals, round 4e added `petalGap` and a non-uniform `petalWidth`. The width squashed every traced outline, so the Space dart "doesn't look the same in its proportions". The totem's flower already had the answer: each `Resources/ElementPetals/<element>_petal.png` is the whole flower, one petal at its true offset and size.
 - Do instead: trace the shipped asset (alpha bounds at 0.5 give each petal's centre offset and scale, in flower radii), scale uniformly, and delete the knobs that were standing in for that measurement.
 - Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
+- Promoted: no
+
+### L-STU-114 — Score each event's signed gain toward the goal; a coarse race column hides the mechanic
+- Lab: Honeyguide Lab · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: the first scorecard counted whole destinations per minute. Slips (teleports along a trail) moved the hull a long way, but most runs reached the same whole number of destinations, so every variant read alike and the always-armed brief looked harmless. Counting the share of the last leg flown and recording each slip's signed gain toward the destination showed always-armed lifting the race 2% with 32% of slips going the wrong way, against 25% for hold-to-arm.
+- Do instead: when a mechanic acts in discrete events, score every event's signed contribution to the goal (and the share that went backwards), and make the race column continuous (partial legs), before reading any variant.
+- Evidence: `HoneyguideLab.html` score columns `slipGain`, `badSlips`, `destsPerMin`; `HONEYGUIDE_LAB.md` Found 1.
+- Promoted: no
+
+### L-STU-115 — An ordering control is only caught by a scenario where the order matters
+- Lab: Honeyguide Lab → the Dynamo C# parity gate · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: a planted control reversed the placement scan in the C# core. Every scenario still matched, because the shipped patterns never offered two legal placements at once. Adding synthetic tiny patterns (two or three cells, many legal placements) made the control fire.
+- Do instead: for each planted control, name the scenario that makes it observable; if none exists, build one (a synthetic input that forces the ambiguity) rather than calling the control a pass.
+- Evidence: `Tools/Build/dynamo_lab/parity.cjs` variant 2 (synthetic patterns) and the reversed-scan plant.
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)

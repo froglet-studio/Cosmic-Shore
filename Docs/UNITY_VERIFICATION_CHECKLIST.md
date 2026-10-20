@@ -12745,3 +12745,12 @@ compile clean; Amoebius builds.
 3. If a title stays generic, the Console has no error: the sound FMOD reported matched no `soundName` - check its name
    against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
 4. Arena: every card's hull chips show the vessel icons, no white squares.
+
+## 🔴 2026-10-20 — Honeyguide Dynamo core (`claude/honeyguide-ratel`) - NOT EDITOR-VERIFIED
+
+Docs/Studios/HONEYGUIDE_LAB.md. Added `Assets/_Scripts/Controller/Vessel/Crew/DynamoCore.cs` (engine-free, no
+MonoBehaviour, nothing references it yet). Compiled headlessly with Roslyn on .NET 8 and held step for step to the lab's
+core by `Tools/Build/dynamo_lab/parity.cjs` (PASS, four planted controls caught). `/verify-unity` could not run here.
+1. Open the project: the Console shows no compile error or warning from `DynamoCore.cs`.
+2. Nothing else to check until the Honeyguide is ported (phase 2): no scene, prefab or enum member uses it.
+
