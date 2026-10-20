@@ -450,7 +450,7 @@ look: a SPACESHIP inspired by the thresher shark, not a shark costume.
 | Size | snout to whip tip 8.14 (placeholder 8.06), 3.62 across the wing tips (3.52), 2.63 tall (2.54): within 4%, so the 1.6 × 1.4 × 5.2 body box, the 2.2 × 1.9 × 5.8 hitbox, the jets and the 55-unit camera keep what they were tuned to |
 | Slots | Domain (the dorsal blade, the whip's trailing blade, two sunk saddle plates each side of the spine, the flank trim lines, the wing panels, the tow ring, the nacelle and tail-collar trims: 18% of the surface), Body (gunmetal), Window (the sensor eyes, the canopy, the snout sensor), Engine (the gill louvres, the nacelle mouths, the chin intake's throat, the wing and whip-tip lights) |
 | Morphs | Charge (the dorsal blade stands 1.55× and the whip's blade widens) 6.1%, Mass (hull, nacelles and peduncle fatten, the tow shackle swells 1.9×, the wings ride out — Mass Mode) 4.1%, Space (the whip's last segment telescopes 1.7×, the wings reach 1.18× along their span) 9.5%, Time (wings sweep back and spread, dorsal and whip rake back) 6.3% of the diagonal |
-| Takes | none drive it — `ThresherAnimation` poses the bones in code; `beatleft`, `beatright`, `curl` (planted, toward a ball on the right) and `flare` (wings brake down) are documentation poses for the sheet and the studio |
+| Takes | none drive it — `ThresherAnimation` poses the bones in code; `beatleft`, `beatright`, `curl` (planted, toward a ball on the right) and `flare` (wings brake down) are documentation poses for the sheet and the studio (the beat poses describe the swim retired 2026-10-19; the runtime tail now hangs along the cord) |
 | Budget | 9,100 triangles, 4,646 vertices |
 
 **Clade → ship**, part by part: the shark body is a lofted gunmetal predator hull whose countershading
@@ -472,7 +472,7 @@ written by `author_thresher_assets.py` (`--check` validates it): `ThresherHull` 
 two jets and now holds the model instance in place of the placeholder's MeshFilter / MeshRenderer /
 `ThresherHullBuilder`. `ThresherAnimation` resolves the bones by name (`tail`, `tail.2`–`tail.4`,
 `wing.L`, `wing.R`; the placeholder's `ThresherTailBase`, `ThresherLobe0`–`2`, `ThresherPectoralL/R`
-still resolve, so either hull swims), banks and sways `ThresherHull` (its new `hullRoot` field), poses
+still resolve, so either hull is posed), banks `ThresherHull` (its new `hullRoot` field), poses
 every part in the hull's frame onto the rest captured there, and finds the SkinnedMeshRenderer
 (`updateWhenOffscreen`); the element morphs are the model's blend shapes, driven by `VesselAnimation` by
 name, and the builder's morph push runs only while a prefab still carries the builder. `ThresherExecutor`
@@ -492,7 +492,9 @@ toward a ball on the right), but Unity's `Euler(0, +a, 0)` carries a part that t
 LEFT. So the procedural tail swung INTO a turn, curled and cracked AWAY from a planted ball, and the
 body's counter-sway moved with the tail instead of against it. Nobody had opened the hull in Unity, so
 nobody saw it. `ThresherAnimation` now turns the chain by `-yaw`; the math, its tests and the harness are
-unchanged.
+unchanged. *(Moot since 2026-10-19: `ThresherSwimMath` now works in Unity's own convention throughout and
+aims at the cord's real direction, so no side sign is carried by hand; see "The tail is the last links of
+the cord" below.)*
 
 **The procedural placeholder** (`ThresherHullForm`, `ThresherHullBuilder`, `thresher_hull_harness`,
 `ThresherHullFormTests`) stays in the tree until the owner accepts the

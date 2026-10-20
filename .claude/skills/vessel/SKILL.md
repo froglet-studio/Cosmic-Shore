@@ -804,6 +804,23 @@ applies to new abilities, new resources on the meter list, and anything that add
       bound to the gesture is human-only until an `AIBoostPolicySO` presses it; and an ability posed
       by TRIGGERS is human-only until something writes the trigger mirrors for the autopilot
       (`RhinoSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
+53. **On a PHONE, lifting the thumb is an instant `Idle()`: ease every stick term INSIDE the animation.**
+    `TouchInputStrategy` sets `InputStatus.Idle = true` the frame the last thumb leaves the glass, and
+    `VesselAnimation.Update` then calls `Idle()` INSTEAD of `PerformShipPuppetry`. An animation whose `Idle()` is
+    `Drive(0f, 0f)` and whose pose takes the raw stick (`yaw * bankDegrees`) snaps a full-stick bank or tail swing to
+    rest in one frame - invisible on a pad (it rarely goes idle mid-turn), a "glitch" on mobile. The eased stick
+    (`EasedLeftJoystickPosition`) does not help: `Idle()` never sees it. Keep `_yaw = Lerp(_yaw, yaw, 1 - Exp(-10 dt))`
+    in the animation (Thresher, Shrike, Brittle Star do; Stoat and Angler did not, `Docs/REFACTOR_BACKLOG.md` S29).
+    Garrett's Thresher mobile run, 2026-10-19 (`cece/elegant-goldberg-eanwgx`).
+54. **Secondary motion (a tail, a cord, a fin) is driven by STATE, never by a clock - and must be frame-rate proof.**
+    A sine "beat" is a wiggle the pilot did not cause; it reads as noise, and worse at 30 fps. The Thresher's tail
+    (2026-10-19, `ThresherSwimMath`) is the shape: aim at something real (a point down its own chain), give each
+    joint a damped spring (stiffer at the root, softer at the tip, damping under 1 for a sway), drag it by the
+    hull's OWN rotation delta (read off the vessel root, not the banking hull the animation itself writes), and
+    integrate in fixed sub-steps (<= 1/120 s) with a clamped frame, so the pure math can be tested at 30 and 144 fps
+    for the same pose. Two traps on the way: a target that can swing to DEAD AHEAD flips sides through 180 deg -
+    fade its weight out before it gets there; and a `Mathf.Sign(local.x)` of a body towed on the centreline
+    flickers every frame - hold the side until the body is clearly across (|x| > 0.2 |d|).
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

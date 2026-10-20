@@ -3001,6 +3001,10 @@ never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--
 **Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /
 turn swing / whip curl / crack / bank), `ThresherHullBuilder` (every proportion), the hit box sizes in
 `author_thresher_assets.py` (`BODY_BOX_*`).
+*Superseded in part 2026-10-19 (`cece/elegant-goldberg-eanwgx`): the tail no longer beats, swings with the
+stick or curls by a fixed angle; it hangs along the cord on springs (THRESHER.md §5b), and its tuning knobs are
+`ThresherAnimation`'s Tail header (cord sample distance, bend limits, root/tip frequency, damping, inertia, crack
+kick). Verify H2-H4b as rewritten.*
 
 ### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
 
