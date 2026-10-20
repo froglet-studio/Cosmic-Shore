@@ -97,6 +97,53 @@ namespace CosmicShore.Tests
             }
         }
 
+        // ── The AI holds the kite the same way (Garrett, 2026-10-20: "the gamepad and AI should be consistent with mouse
+        //    and touch"): its aim is the hand on the rope, and the kite is driven by Sling ──
+
+        static KiteNavigatorAI SlingAI(KiteSettings s) =>
+            new KiteNavigatorAI(7) { Level = KiteNavigatorAI.Skill.Hard, Control = KiteControl.Sling, SlingRope = s.SlingRope };
+
+        static readonly List<KiteTarget> None = new();
+
+        [Test]
+        public void AI_OnTheSling_WhirlsALoopRoundAOneElementCluster()
+        {
+            var s = Shipped(); var k = Kite(); var ai = SlingAI(s);
+            ai.Reset(k.Position);
+            var motes = new List<KiteMote>();
+            float[] ox = { 0f, 8f, -7f, 4f, -3f }, oz = { 0f, 5f, 3f, -8f, -6f };
+            for (int i = 0; i < 5; i++) motes.Add(new KiteMote { X = 40f + ox[i], Z = 60f + oz[i], Element = 3, Touchable = true });
+            var loop = new List<KiteVec>();
+            bool caught = false;
+            for (int i = 0; i < 900 && !caught; i++)
+            {
+                ai.Step(s, 2f, k, 0f, motes, None, None, false, Dt);
+                k.Sling(s, ai.Aim.X, ai.Aim.Z, ai.Down, Dt);
+                if (!k.AdvanceTail(s, loop)) continue;
+                ai.OnLoopClosed();
+                foreach (var m in motes) if (KiteNavigatorCore.PointInPolygon(m.X, m.Z, loop)) caught = true;
+            }
+            Assert.IsTrue(caught, "within 15 s the slinging AI closes a loop round the cluster");
+        }
+
+        [Test]
+        public void AI_OnTheSling_DragsTheKiteThroughAGoal()
+        {
+            var s = Shipped(); var k = Kite(); var ai = SlingAI(s);
+            ai.Reset(k.Position);
+            ai.HasGoal = true;
+            ai.Goal = new KiteVec(-60f, 90f);
+            var motes = new List<KiteMote>();
+            float nearest = float.MaxValue;
+            for (int i = 0; i < 240; i++)
+            {
+                ai.Step(s, 2f, k, 0f, motes, None, None, false, Dt);
+                k.Sling(s, ai.Aim.X, ai.Aim.Z, ai.Down, Dt);
+                nearest = MathF.Min(nearest, MathF.Sqrt((k.Position.X + 60f) * (k.Position.X + 60f) + (k.Position.Z - 90f) * (k.Position.Z - 90f)));
+            }
+            Assert.Less(nearest, 12f, "within 4 s the rope drags the kite through the goal (a ring's mouth is 36-60 u)");
+        }
+
         [Test]
         public void Sling_RegrabAfterLettingGo_DoesNotKickTheKite()
         {

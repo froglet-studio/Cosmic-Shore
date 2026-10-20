@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class KiteNavigator : MonoBehaviour, ISwitchThreadProbe
+    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe
     {
         internal struct Mote
         {
@@ -195,12 +195,26 @@ namespace CosmicShore.Gameplay
         // The local pilot's own hull, flown by a human - or handed to the AI by this component's own swap. Anything else
         // (an AI hull, a remote copy, a hull the Vessel Changer has just spawned on autopilot, a menu that parked the
         // hull on its AI) unbinds, exactly as GobyPistolDuo does on the duo-vessel branch.
-        bool ShouldRun(out IVessel vessel)
+        //
+        // An AI CREW is the other case that runs (Garrett, 2026-10-20: "AI vessels should be controlled by two AI, one for the
+        // wrasse, and one for the grouper"): a hull that is not the local pilot's, flown by its AIPilot on THIS machine (the
+        // host owns every AI). Its kite is flown by the navigator AI and has no view, swap or human input.
+        bool ShouldRun(out IVessel vessel, out bool aiCrew)
         {
             vessel = null;
-            if (!config || VesselVisionShading.LocalVessel != transform || !TryGetComponent(out vessel)) return false;
-            return _weTookHull || vessel.VesselStatus == null || !vessel.VesselStatus.AutoPilotEnabled;
+            aiCrew = false;
+            if (!config || !TryGetComponent(out vessel)) return false;
+            var status = vessel.VesselStatus;
+            if (VesselVisionShading.LocalVessel == transform)
+                return _weTookHull || status == null || !status.AutoPilotEnabled;
+            aiCrew = true;
+            return config.AICrewNavigates && status != null && status.AutoPilotEnabled
+                   && status.Player != null && status.Player.IsNetworkOwner && !status.Player.IsLocalUser;
         }
+
+        /// <summary>True when this seat's kite is flown by an AI crew (both seats AI; no human on this hull).</summary>
+        public bool IsAICrew => _aiCrew;
+        bool _aiCrew;
 
         void Bind(IVessel vessel)
         {
@@ -220,6 +234,8 @@ namespace CosmicShore.Gameplay
             _humanNavigates = _weTookHull = _down = _boosting = false;
             Motes.Clear(); Effects.Clear(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
             _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _boostReadyAt = 0f; _omniPending = 0;
+            // the views, the swap and the static handle belong to the local pilot's seat; an AI crew draws nothing
+            if (_aiCrew) return;
             if (_active && _active != this) Destroy(_active);
             _active = this;
             _view = new KiteNavigatorView(this);
@@ -243,16 +259,17 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!ShouldRun(out var vessel)) { Unbind(); return; }
-            if (_vessel == null) Bind(vessel);
+            if (!ShouldRun(out var vessel, out bool aiCrew)) { Unbind(); return; }
+            if (_vessel != null && aiCrew != _aiCrew) Unbind();   // the hull changed hands: seat it afresh
+            if (_vessel == null) { _aiCrew = aiCrew; Bind(vessel); }
             float dt = Time.deltaTime;
 
-            PollSwap();
+            if (!_aiCrew) PollSwap();
             if (dt <= 0f) return;
 
             _s = _cfg.ToSettings();
             UpdateBoard(dt);
-            _view.Frame(_humanNavigates);
+            _view?.Frame(_humanNavigates);
             ShadowRaceRing(dt);
             StepMotes(dt);
             ShadowPrisms();
@@ -508,16 +525,21 @@ namespace CosmicShore.Gameplay
             Mathf.Max(0.01f, _cfg.MoteBaseWeight + _cfg.MoteWeightPerLevel * (rs ? rs.GetLevel((Element)(e + 1)) : 0)
                              + (e == 3 && Racing ? _cfg.RaceTimeMoteBonus : 0f));
 
-        /// <summary>A gate race has lit a ring for the local pilot.</summary>
-        static bool Racing => RaceGateRing.LitForLocalPilot;
+        /// <summary>A gate race is running and this hull has a next ring.</summary>
+        bool Racing => _raceRing;
 
-        // ------------------------------------------------------------------ switches: the kite threads them
+        // this hull's next race ring this frame (GateRaceController.TryGetNextRing), or null
+        RaceGateRing _raceRing;
+
+        // ------------------------------------------------------------------ race rings: the kite threads them
 
         /// <summary>
-        /// The kite is a second body this hull threads switches with (<see cref="IRingThreadProbe"/>): every gate race's
-        /// rings (and the Skim Race's, and a mode preview's), and the Toybox's switches (<see cref="ISwitchThreadProbe"/>).
-        /// Garrett, 2026-10-20: "make it so the wrasse can hit switches". False while no navigator is seated (an AI or remote
-        /// hull), so those hulls thread with the hull alone.
+        /// The kite is a second body this hull threads race rings with (<see cref="IRingThreadProbe"/>): every gate race's
+        /// rings, the Skim Race's and a mode preview's (Garrett, 2026-10-20: "make it so the wrasse can hit switches"). It does
+        /// NOT trip the Toybox's toys: it is not an <see cref="ISwitchThreadProbe"/> ("lets flip things so the wrasse does not
+        /// activate toys, but the thresher flail does").
+        /// False while no navigator is seated (a remote hull, or an AI hull with aiCrewNavigates off), so those hulls thread
+        /// with the hull alone.
         /// </summary>
         public bool TryGetRingProbe(out Vector3 position, out int epoch)
         {
@@ -527,13 +549,14 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        // The ring a gate race has lit for this pilot, as the board sees it. The human navigator sees it in the kite view
+        // The ring a gate race has lit for this pilot (this hull's next ring, whoever flies it), as the board sees it. The human navigator sees it in the kite view
         // (it is a world object the kite camera draws); the AI squad mate is handed a point just THROUGH its mouth as its
         // first goal. The kite can thread it only when the board plane cuts its mouth: the ring's centre within its radius
         // of the plane, and its axis not along the board's up (a ring lying flat in the plane has no mouth to cross).
         void ShadowRaceRing(float dt)
         {
-            var ring = RaceGateRing.LitForLocalPilot;
+            _raceRing = GateRaceController.TryGetNextRing(_vessel, out var next) ? next : null;
+            var ring = _raceRing;
             if (!ring) { _ringOnBoard = false; return; }
             Shadow(ring.transform.position, out float x, out float z, out float y);
             Vector3 axis = ring.Axis;
@@ -644,9 +667,9 @@ namespace CosmicShore.Gameplay
         // The kite follows; nothing is clicked (Garrett, 2026-10-18). The mouse: the kite flies to the cursor. A thumbstick:
         // the kite flies the way the stick leans, as fast as it leans (circle the stick, the kite circles). A touch: the kite
         // flies to a point thumbOffset above the thumb, and coasts when the thumb lifts. Whichever was used last leads.
-        // With pointerControl Sling (Garrett, 2026-10-20) a thumb or the mouse holds the kite on a rope instead: the aim is
-        // the hand itself, with no offset (the rope keeps the kite clear of the thumb); lifting the thumb lets go. The mouse
-        // never lets go: it is a hand that is always holding, as the no-click rule has it.
+        // With control Sling (Garrett, 2026-10-20) every input holds the kite on a rope instead: the aim is the hand itself,
+        // with no offset (the rope keeps the kite clear of the thumb); lifting the thumb lets go. The mouse and the stick
+        // never let go: each is a hand that is always holding, as the no-click rule has it. The AI holds it the same way.
         void ReadKiteInput()
         {
             var pad = Gamepad.current;
@@ -669,7 +692,7 @@ namespace CosmicShore.Gameplay
                 case Pointer.Touch:
                 {
                     // a lifted thumb lets go of the rope: the kite flies free (Sling), or coasts (Follow)
-                    _sling = _cfg.PointerControl == KiteControl.Sling;
+                    _sling = _cfg.Control == KiteControl.Sling;
                     if (!touching) { _down = false; return; }
                     // a tap on the small view is the seat swap, not an aim
                     if (_view.PipContains(touchscreen.primaryTouch.startPosition.ReadValue(), true)) { _down = false; return; }
@@ -681,6 +704,18 @@ namespace CosmicShore.Gameplay
                 }
                 case Pointer.Stick:
                 {
+                    // Sling: the stick is the hand's place on the board, as the mouse is - centred is the board's centre,
+                    // a full lean slingStickReach board radii out - and, like the mouse, it never lets go
+                    if (_cfg.Control == KiteControl.Sling)
+                    {
+                        _sling = true;
+                        if (stick.magnitude <= _cfg.StickDeadzone) stick = Vector2.zero;
+                        var c = KiteNavigatorCore.Centre(_s);
+                        float reachU = _cfg.SlingStickReach * _s.BoardRadius;
+                        _aim = new KiteVec(c.X + stick.x * reachU, c.Z + stick.y * reachU);
+                        _down = true;
+                        return;
+                    }
                     // the kite's full speed is reached this far from its aim (KiteNavigatorCore.Move), so a full lean is
                     // full speed and the centre is a hover
                     float reach = _s.KiteSpeed / KiteNavigatorCore.ApproachGain;
@@ -693,7 +728,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (mouse == null) { _down = false; return; }
                     var at = mouse.position.ReadValue();
-                    _sling = _cfg.PointerControl == KiteControl.Sling;
+                    _sling = _cfg.Control == KiteControl.Sling;
                     if (_cfg.OffsetMouse && !_sling) at.y += ThumbOffsetPixels();
                     _aim = _view.ScreenToBoard(at);
                     _down = true;
@@ -744,9 +779,13 @@ namespace CosmicShore.Gameplay
             _ai.Goal = _ringAt;
             _ai.GoalVelocity = _ringVel;
             _ai.ElementWeight[3] = Racing ? _cfg.RaceTimeLoopPreference : 1f;
+            _ai.Control = _cfg.Control;
+            _ai.SlingRope = _s.SlingRope;
+            _ai.SlingLead = _cfg.AISlingLead;
             _ai.Step(_s, _cfg.Growth, _kite, _charge, _aiMotes, _aiPrisms, _aiRivals, anyRival, dt);
             _aim = _ai.Aim;
             _down = _ai.Down;
+            _sling = _cfg.Control == KiteControl.Sling;   // the AI's aim is the hand on the rope, as a thumb's is
         }
 
         // ------------------------------------------------------------------ the head: pop and ram
@@ -838,6 +877,7 @@ namespace CosmicShore.Gameplay
 
         void CloseLoop(List<KiteVec> poly)
         {
+            _ai.OnLoopClosed();
             var centre = KiteNavigatorCore.Centroid(poly);
             Effects.Add(new Fx { Kind = FxKind.Loop, X = centre.X, Z = centre.Z, T0 = Time.time, Loop = poly.ToArray() });
 
@@ -1021,7 +1061,7 @@ namespace CosmicShore.Gameplay
                 _status.IsBoosting = true;   // what a boost executor writes; the hull's own boostMultiplier applies
                 return;
             }
-            bool want = _humanNavigates || PilotWantsBoost();
+            bool want = _aiCrew || _humanNavigates ? AIPilotWantsBoost() : PilotWantsBoost();
             if (want && _savedBoosts > 0 && Time.time >= _boostReadyAt)
             {
                 _savedBoosts--;
@@ -1035,6 +1075,17 @@ namespace CosmicShore.Gameplay
         // the right trigger on a pad, right Shift on the keyboard (both are RightTriggerAnalog), and on a touch screen,
         // where there is no trigger, lifting both thumbs (the touch strategy's Idle). The hull flies on two sticks since
         // round 4d, so the pilot can steer the hull's plane through the mass the kite wants.
+        // The AI Grouper's boost (the hull's AI flies whenever the human navigates, and in an AI crew): spend a saved boost
+        // while the next race ring is far and roughly ahead, so a boost is not thrown into a turn; outside a race, as they
+        // come (the AI pilot has no trigger of its own).
+        bool AIPilotWantsBoost()
+        {
+            if (!_raceRing) return true;
+            var to = _raceRing.transform.position - HullPosition;
+            float d = to.magnitude;
+            return d >= _cfg.AIBoostRingDistance && Vector3.Dot(_vessel.Transform.forward, to / Mathf.Max(1e-3f, d)) > 0.7f;
+        }
+
         bool PilotWantsBoost()
         {
             var input = _player?.InputStatus;

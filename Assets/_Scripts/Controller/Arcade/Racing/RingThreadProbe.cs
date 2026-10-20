@@ -18,9 +18,9 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// A probe that also trips the Toybox's switches (<see cref="Toy"/>): the Wrasse's kite (Garrett, 2026-10-20: "make it
-    /// so the wrasse can hit switches"). A separate opt-in, so a probe that only threads race rings (the Thresher's ball)
-    /// does not start firing every toy it swings past.
+    /// A probe that also trips the Toybox's switches (<see cref="Toy"/>): the Thresher's ball, the flail (Garrett,
+    /// 2026-10-20: "lets flip things so the wrasse does not activate toys, but the thresher flail does"). A separate opt-in,
+    /// so a probe that only threads race rings (the Wrasse's kite) does not fire every toy it swings past.
     /// </summary>
     public interface ISwitchThreadProbe : IRingThreadProbe { }
 

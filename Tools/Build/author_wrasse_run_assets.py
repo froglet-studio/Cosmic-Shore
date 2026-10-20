@@ -24,8 +24,9 @@ GateRaceScoringRuleSO), whose rings are already threaded by a second body. The c
 
   1. the controller script (WrasseRunController), keeping the donor's `laps` field (now 2).
   2. its scoring rule ASSET (another asset on the same GateRaceScoringRuleSO script).
-  3. the AI approach numbers, sized to the Grouper's 32 u cruise circle (an AI crew seats no kite,
-     so its hull threads and it cruises), and the plausible-speed clamp, sized to the kite: the
+  3. the AI approach numbers, sized to the Grouper's 32 u cruise circle (an AI crew is TWO AIs: the
+     hull's AIPilot flies the Grouper through the ring, a navigator AI slings the kite through its
+     mouth), and the plausible-speed clamp, sized to the kite: the
      probe's world step is the hull's boosted 260 u/s plus the slung kite's 520 u/s plus the board's turn.
   4. the scene's Netcode GlobalObjectIdHash values, minted fresh.
   5. the arcade card's Vessels list: the Wrasse.
@@ -112,8 +113,9 @@ BOOST_SPEED = 260.0
 CRUISE_RADIUS = CRUISE_SPEED / ((CRUISE_SPEED * 0.1 + 100.0) * 3.141592653589793 / 180.0)
 
 # AI approach geometry, Slingshot's ratios (commit 2.2x, lead 2.5x, through 1.7x) on the 32 u cruise
-# circle: an AI crew seats no kite (the seat runs only on the local human's hull), so its hull threads
-# and it races at cruise.
+# circle: the AI Grouper flies its hull through each ring - which puts the ring in the kite's plane, on
+# its board - and the AI navigator slings the kite through the mouth (KiteNavigatorConfig
+# aiCrewNavigates). The Grouper spends the boosts the Wrasse saves while the next ring is far ahead.
 AI_COMMIT_DISTANCE = 72
 AI_APPROACH_LEAD = 80
 AI_THROUGH_DISTANCE = 55
@@ -370,7 +372,7 @@ for key, want in (("MinimumSpeed", 10.0), ("ThrottleScaler", 50.0), ("boostMulti
     if not m or float(m.group(1)) != want:
         errors.append(f"Wrasse.prefab {key} is not {want} - re-cut WrasseRunCourse (WRASSERUN.md)")
 _kite = read_or_empty(KITE_CONFIG)
-for key, want in (("pointerControl", 1.0), ("slingMaxSpeed", 520.0), ("boardRadius", 160.0)):
+for key, want in (("control", 1.0), ("slingMaxSpeed", 520.0), ("boardRadius", 160.0), ("aiCrewNavigates", 1.0)):
     m = re.search(rf"^  {key}: ([0-9.]+)$", _kite, re.M)
     if not m or float(m.group(1)) != want:
         errors.append(f"KiteNavigatorConfig.asset {key} is not {want} - re-check the clamp and the course")

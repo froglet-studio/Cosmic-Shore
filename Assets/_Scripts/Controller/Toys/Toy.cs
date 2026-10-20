@@ -273,8 +273,9 @@ namespace CosmicShore.Gameplay
         // the toy would never fire. Overrides must call base.Update().
         protected virtual void Update()
         {
-            // The local hull's second body threads switches too (ISwitchThreadProbe: the Wrasse's kite, Garrett 2026-10-20:
-            // "make it so the wrasse can hit switches"). Sampled every frame, so its next segment is one frame long.
+            // The local hull's second body threads switches too (ISwitchThreadProbe: the Thresher's ball, the flail - Garrett,
+            // 2026-10-20: "the wrasse does not activate toys, but the thresher flail does"). Sampled every frame, so its
+            // next segment is one frame long.
             bool probeFlew = SampleSwitchProbe(out var probePrev, out var probeCur);
             if (_blooming || _activating) return;
             if (_armed)
@@ -303,7 +304,7 @@ namespace CosmicShore.Gameplay
             if (vessel == null || vessel is Object uo && !uo || !vessel.Transform) { _probeHas = false; return false; }
             if (!ReferenceEquals(vessel, _probeVessel))
             {
-                // resolved once per hull; a hull without one (every hull but the Wrasse) is cached as null
+                // resolved once per hull; a hull without one (every hull but the Thresher) is cached as null
                 _probeVessel = vessel;
                 _switchProbe = vessel.Transform.GetComponentInChildren<ISwitchThreadProbe>(true);
                 _probeHas = false;
@@ -330,7 +331,7 @@ namespace CosmicShore.Gameplay
             if ((prev + d * t - c).sqrMagnitude > _triggerWorldRadius * _triggerWorldRadius) return;
             var status = ResolveLocalVessel();
             if (status == null) return;
-            _armed = false; // re-armed only once the hull AND the probe are clear (LocalVesselOutsideTrigger)
+            _armed = false; // re-armed only once the hull AND the ball are clear (LocalVesselOutsideTrigger)
             _activating = true;
             ActivateDeferred(status).Forget();
         }
@@ -378,7 +379,7 @@ namespace CosmicShore.Gameplay
             if (!t) return false;
 
             float exitR = _triggerWorldRadius * Mathf.Max(1f, exitRadiusMultiplier);
-            if (_probeHas && (_probeLast - transform.position).sqrMagnitude <= exitR * exitR) return false;   // the kite is still in it
+            if (_probeHas && (_probeLast - transform.position).sqrMagnitude <= exitR * exitR) return false;   // the ball is still in it
             return (t.position - transform.position).sqrMagnitude > exitR * exitR;
         }
 

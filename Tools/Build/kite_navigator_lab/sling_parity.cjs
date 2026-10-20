@@ -32,7 +32,7 @@ function readAsset() {
 function assetDrift(asset, labP) {
   const bad = [];
   for (const [k, lk] of Object.entries(ASSET_KEYS)) if (!(k in asset) || Math.abs(asset[k] - labP[lk]) > 1e-6) bad.push(`${k} ${asset[k]} vs lab ${lk} ${labP[lk]}`);
-  if (asset.pointerControl !== 1) bad.push(`pointerControl ${asset.pointerControl} (1 = Sling, the designer's pick)`);
+  if (asset.control !== 1) bad.push(`control ${asset.control} (1 = Sling, the designer's pick)`);
   return bad;
 }
 

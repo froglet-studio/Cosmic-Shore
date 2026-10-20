@@ -160,21 +160,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The gate lit as the LOCAL pilot's next one, in whichever gate race is running, or null. A second body that
-        /// threads rings reads it to know where to go: the Wrasse's kite AI flies through it (KiteNavigator), and the kite
-        /// favours Time loops while one is lit.
-        /// </summary>
-        public static RaceGateRing LitForLocalPilot { get; private set; }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => LitForLocalPilot = null;
-
-        void OnDestroy()
-        {
-            if (LitForLocalPilot == this) LitForLocalPilot = null;
-        }
-
-        /// <summary>
         /// Mark this gate as the LOCAL pilot's next one, or clear the mark.
         ///
         /// <para>A repaint, not a second renderer: <see cref="ToyFactory.RepaintSwitchRing"/>
@@ -188,9 +173,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetIsNextForLocalPilot(bool isNext)
         {
-            if (isNext) LitForLocalPilot = this;
-            else if (LitForLocalPilot == this) LitForLocalPilot = null;
-
             // Forwarded, never mirrored: the paint state belongs to whoever owns the ring, and
             // the controller always clears the old gate before setting the new one, so two gates
             // sharing one ring hand it back and forth cleanly.

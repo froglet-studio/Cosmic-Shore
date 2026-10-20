@@ -1186,22 +1186,22 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Done:** 2026-10-20, Garrett picked the Sling (2026-10-20: 'Sling is excellent. bring it to unity'); ported as KiteNavigatorCore.Sling on cece/loving-fermat-ntdnbu. Snap-shut loops stay open.
 
 ### T-20261020-1187 · open · test · crew-vessels
-- **Task:** Play the Wrasse's new Sling control in the Unity Editor and on a phone: Toybox > Vessel Changer > Wrasse, swap to the kite (double-tap the small view or press 2), then drag (the kite trails on a rope), make small circles (it whirls round in big ones and closes loops) and lift (it flies free). Also swing the kite through a Toybox toy's ring: it should fire once.
+- **Task:** Play the Wrasse's new Sling control in the Unity Editor and on a phone: Toybox > Vessel Changer > Wrasse, swap to the kite (double-tap the small view or press 2), then drag (the kite trails on a rope), make small circles (it whirls round in big ones and closes loops) and lift (it flies free). Also: the pad's stick places the rope's hand on the board; swinging the kite through a Toybox toy fires nothing, while the Thresher's ball (the flail) swung through one fires it once.
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Wrasse's Sling, switches, and Wrasse Run' steps 1-4 pass, with any feel notes (rope length, stiffness, drag) recorded
 - **Who can take it:** Garrett (feel sign-off, phone); Yash (offered) for the Editor pass
 - **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md round 6
 
 ### T-20261020-ec68 · open · test · crew-vessels
-- **Task:** Play Wrasse Run (GameModes 68) in the Editor: the Arcade card, a 2-player launch, the hull alone not counting, the kite collecting rings (AI navigating and you navigating), Time boosts, AI crews finishing, and Thresher Time's ball still threading.
+- **Task:** Play Wrasse Run (GameModes 68) in the Editor: the Arcade card, a 2-player launch, the hull alone not counting, the kite collecting rings (AI navigating and you navigating), Time boosts, AI crews (two AIs: the hull's pilot and a kite navigator) slinging through their rings and finishing, and Thresher Time's ball still threading.
 - **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Wrasse's Sling, switches, and Wrasse Run' steps 5-10 pass
 - **Who can take it:** Yash (offered; editor tests), Garrett (sign-off); Caleb or Andrew for a QA run
 - **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Arcade/WRASSERUN.md §7
 
 ### T-20261020-24a4 · open · decision · crew-vessels
-- **Task:** Wrasse Run tuning after a first play: race length (16 = two laps of eight), how far rings lift out of the lap's plane (60-180 u), the Time mote bonus (2) and the AI's Time preference (3), and whether the kite firing every Toybox toy it brushes is wanted.
-- **Done when:** The numbers are kept or changed in author_wrasse_run_assets.py / WrasseRunCourse.cs / KiteNavigatorConfig.asset, and the toy behaviour is decided
+- **Task:** Wrasse Run tuning after a first play: race length (16 = two laps of eight), how far rings lift out of the lap's plane (60-180 u), the Time mote bonus (2) and the AI's Time preference (3), and the AI Grouper's boost rule (spend while the next ring is 180 u or more ahead).
+- **Done when:** The numbers are kept or changed in author_wrasse_run_assets.py / WrasseRunCourse.cs / KiteNavigatorConfig.asset, and the AI boost rule is kept or changed
 - **Who can take it:** Garrett
 - **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
 - **See:** Assets/_Scripts/Controller/Arcade/WRASSERUN.md §5, KITE_NAVIGATOR.md Follow-ups

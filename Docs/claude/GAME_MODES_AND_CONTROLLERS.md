@@ -954,14 +954,16 @@ run in the editor.
 `WrasseRun(68)` is the **Wrasse and Grouper's circuit race** — Thresher Time's shape (`GateRaceController`,
 `RaceGateTurnMonitor`, the shared `HeadlongCircuit`: 8 rings x 2 laps = 16) where **a ring counts only when
 the WRASSE threads it**: the navigator's kite is the hull's `IRingThreadProbe`, and the controller answers
-`HullThreadsWhileProbeLive => false` (a hull with no live kite - every AI crew - threads with the hull, so an
-all-AI domain finishes). The Grouper carries the kite's plane through the lit ring (rings lifted 60-180 u out
+`HullThreadsWhileProbeLive => false`. An AI crew is two AIs: the hull's AIPilot flies the Grouper and spends
+boosts on the straights, and the navigator AI slings the kite through each ring (a hull with no live kite
+threads with the hull). The Grouper carries the kite's plane through the lit ring (rings lifted 60-180 u out
 of the lap's plane); the Wrasse slings the kite through the mouth (the Sling control, from the Wrasse Lasso
 Lab). The Grouper cruises at 60 u/s and every boost is a Time loop's saved boost (260 u/s): while a ring is
 lit, Time motes come more often and the AI squad mate prefers Time loops. Floors 0.80-0.45 x the 118 u
 boosted circle, all >= 1.6x the 32 u cruise circle. Metric 9, golf; `wrasseRunGateTarget` 16;
 `RaceGateObjectiveProvider`; comeback 0.5. Platform additions: `GateRaceController.HullThreadsWhileProbeLive`,
-`RaceGateRing.LitForLocalPilot`, `ISwitchThreadProbe` (the kite also trips Toybox switches). Generator
+`GateRaceController.TryGetNextRing`, `ISwitchThreadProbe` (the Thresher's ball trips Toybox toys; the kite
+does not). Generator
 `author_wrasse_run_assets.py` (donor: Thresher Time's scene). See `_Scripts/Controller/Arcade/WRASSERUN.md`.
 Authored headless — not yet run in the editor.
 

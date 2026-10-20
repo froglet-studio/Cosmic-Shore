@@ -69,7 +69,9 @@ namespace CosmicShore.Gameplay
     /// <c>R_VesselActionHandler</c>, so every peer runs the same chain from the same inputs; a peer
     /// can disagree on a marginal hit by a frame of drift.
     /// </summary>
-    public sealed class ThresherExecutor : ShipActionExecutorBase, IRingThreadProbe
+    // ISwitchThreadProbe: the ball threads race rings AND trips the Toybox's toys (Garrett, 2026-10-20: "lets flip things so
+    // the wrasse does not activate toys, but the thresher flail does").
+    public sealed class ThresherExecutor : ShipActionExecutorBase, ISwitchThreadProbe
     {
         [Tooltip("Every Thresher dial: chain physics, elements, explosion, chain cut, feel, look.")]
         [SerializeField] ThresherConfigSO config;

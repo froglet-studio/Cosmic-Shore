@@ -22,14 +22,16 @@ ring collector and align the wrasse to collect them."*
   so each one asks the Grouper to roll and pitch the board onto it.
 - **Time is the fuel.** The Grouper cruises at **60 u/s**. Every boost is the Wrasse's: a Time loop of
   n motes saves `round(2^(n−1))` boosts of 1.5 s, spent on the pilot's right trigger (both thumbs lifted
-  on a touch screen) at the prefab's ×5 throttle, **260 u/s**. While a ring is lit for the pilot:
+  on a touch screen) at the prefab's ×5 throttle, **260 u/s**. While a race has a next ring for the hull:
   - Time motes come more often, among the others (`KiteNavigatorConfig.raceTimeMoteBonus` 2, added to
     their weight of 1 + 1 per petal);
   - the AI squad mate values a Time loop 3× a loop of another element the same size
     (`raceTimeLoopPreference`).
-- **The kite is slung** (the Sling, `KiteNavigatorCore.Sling`, from the Wrasse Lasso Lab): drag the thumb
-  and the kite trails it on an invisible 42 u rope; small circles whirl it round; lift to let it fly.
-  Whirl it through the ring, or let it fly through.
+- **The kite is slung** (the Sling, `KiteNavigatorCore.Sling`, from the Wrasse Lasso Lab) by every input:
+  drag a thumb and the kite trails it on an invisible 42 u rope, small circles whirl it round, lift to let it
+  fly; the mouse and a thumbstick are hands that never let go (the stick places the hand on the board, as
+  the mouse does); and the AI squad mate holds the same rope. Whirl it through the ring, or let it fly
+  through.
 
 ## 2. What the mode does NOT add
 
@@ -43,11 +45,14 @@ saved boosts are round 4d's).
 - `GateRaceController.HullThreadsWhileProbeLive` (virtual, true everywhere else): a mode can make the
   second body the only collector. A hull whose probe is not live (`RingThreadProbeSample.Live`) always
   threads, so an all-AI domain can still finish (the Tollway rule).
-- `RaceGateRing.LitForLocalPilot`: the ring lit for the local pilot in whichever gate race is running, so
-  a second body knows where to go. The Wrasse's AI kite flies through it in EVERY gate race.
+- `GateRaceController.TryGetNextRing(vessel)`: the ring a hull must thread next in the gate race running on
+  this machine, for any pilot this machine simulates, so a second body knows where to go. The Wrasse's
+  navigator (human crew or AI crew) flies through it in EVERY gate race.
 - `ISwitchThreadProbe` (opt-in, on `IRingThreadProbe`): a probe that also trips the Toybox's switches
   (`Toy.Update` samples it and fires the toy when its segment passes through the trigger sphere; the toy
-  re-arms once the hull AND the kite are clear). The Thresher's ball does not opt in.
+  re-arms once the hull AND the probe are clear). The Thresher's ball (the flail) opts in; the Wrasse's kite
+  does not (Garrett, 2026-10-20: "lets flip things so the wrasse does not activate toys, but the thresher
+  flail does").
 
 ## 3. The cut
 
@@ -74,13 +79,20 @@ at full throttle. Two laps of ~4.6 k u are ~150 s at cruise; every boost buys ~3
 
 ## 4. AI
 
-- **An AI crew seats no kite**: the seat runs only on the local human's hull (`KiteNavigator.ShouldRun`).
-  Its probe is never live, so its HULL threads the rings and it races at cruise on the gate-race
-  platform's approach steering, sized to the 32 u cruise circle: commit **72** / lead **80** / through
-  **55** (Slingshot's ratios). `Wrasse.prefab`'s `AIPilot` is enabled (asserted).
-- **A human's AI squad mate** (the human pilots, the AI navigates) flies the kite through the lit ring
-  first, whenever it is on the board and in reach, aiming a point just past the mouth along the ring's
-  axis; otherwise it loops, preferring Time.
+- **An AI crew is two AIs** (Garrett, 2026-10-20: "AI vessels should be controlled by two AI, one for the
+  wrasse, and one for the grouper"; `KiteNavigatorConfig.aiCrewNavigates`). On the machine that simulates
+  it (the host), an AI Wrasse seats its kite too (`KiteNavigator.ShouldRun`: not the local pilot's hull,
+  on autopilot, network-owned here), with no view, swap or human input:
+  - **the Grouper's AI** is the hull's `AIPilot` on the gate-race approach steering, sized to the 32 u
+    cruise circle: commit **72** / lead **80** / through **55** (Slingshot's ratios). Flying the hull
+    through the ring puts the ring in the kite's plane, on its board. It spends a saved boost while the next
+    ring is at least `aiBoostRingDistance` (180 u) away and roughly ahead (`AIPilotWantsBoost`).
+    `Wrasse.prefab`'s `AIPilot` is enabled (asserted).
+  - **the Wrasse's AI** is `KiteNavigatorAI` on the Sling: it drags the kite through the next ring
+    (`TryGetNextRing`) whenever the board plane cuts its mouth, and otherwise whirls loops, preferring Time.
+  - With `aiCrewNavigates` off, an AI hull seats no kite, its probe is never live, and its HULL threads.
+- **A human's AI squad mate** (the human pilots, the AI navigates) is the same navigator AI on the same
+  rope: through the ring first, aiming a point just past the mouth along the ring's axis, else loops.
 - **A human navigator with an AI pilot** (the human took the kite with the swap): the hull's `AIPilot`
   steers toward the next ring on the platform's approach, so the ring comes to the board; the human
   slings the kite through it.
@@ -135,7 +147,9 @@ Time's); until then the card wears the placeholder.
    view), let the AI pilot bring the ring to you, sling the kite through it: it counts once.
 5. **Time is the fuel.** In the race, more of the board's motes are Time diamonds; a Time loop banks
    boosts, and the right trigger (both thumbs lifted on a phone) spends one at ~260 u/s.
-6. **AI crews.** Add AI Wrasses: their hulls thread the rings at cruise and finish.
+6. **AI crews.** Add AI Wrasses: each one's kite (seen from the host only) slings through its rings and
+   loops Time; its hull boosts on the straights; they finish. A pad's stick places the rope's hand like
+   a mouse.
 7. **Two clients.** A client's ring reports are credited once.
 8. **Regressions.** Thresher Time's ball still threads; Headlong, Redline, Grizzly Time unchanged.
 
@@ -144,5 +158,7 @@ Time's); until then the card wears the placeholder.
 - **Not editor-verified.** Nobody has flown it.
 - **The kite is local.** Like everything on the seat, the kite runs on its human's machine. Ring credit is
   owner-detected and server-recorded, so scores agree; a remote peer does not see the kite.
-- **An AI crew never boosts** (no kite, no Time loops), so it is a cruise-pace field.
+- **An AI crew's kite is seen only where it is simulated** (the host): a client sees AI hulls threading
+  rings their kites collected. Its effects (blasts, Mass clusters) run on the host only, as a human's run
+  on the human's machine.
 - **Card art** (`/cardart`) and an idle hint toast are follow-ups.

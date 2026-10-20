@@ -10,10 +10,13 @@ it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20
 - **The Grouper (pilot):** the Sparrow's hull with its guns, missiles and buttons removed, flown on two sticks
   (`VesselTransformer`; pitch / yaw 100, roll 120). The right trigger (right Shift; both thumbs lifted on a phone)
   spends a boost the Wrasse saved.
-- **The Wrasse (navigator):** a kite on the hull's x-z plane. A thumb or the mouse holds it on an invisible rope
-  (**the Sling**, round 6): drag and it trails, small circles whirl it round in big ones, lift the thumb to let it fly.
-  A thumbstick still leans it (Follow). Its head pops hostile prisms and rams rivals and creatures, and threads
-  **switches**: every race's rings and the Toybox's switches (round 6). Its tail lassos motes of one element, drawn as lime five-petal
+- **The Wrasse (navigator):** a kite on the hull's x-z plane, held on an invisible rope by EVERY input (**the Sling**,
+  round 6): a thumb (drag and it trails, small circles whirl it round in big ones, lift to let it fly), the mouse and
+  a thumbstick (hands that never let go; the stick places the hand on the board) and the AI squad mate. Its head
+  pops hostile prisms and rams rivals and creatures, and threads every race's rings (round 6). It does not trip
+  Toybox toys; the Thresher's ball does.
+- **AI crews:** an AI-flown Wrasse is two AIs, the hull's `AIPilot` for the Grouper and the navigator AI for the
+  Wrasse (round 6b). Its tail lassos motes of one element, drawn as lime five-petal
   flowers in the totem's proportions, each moving like its element.
 - **The views:** the kite view is a second, top-down orthographic camera drawn by the game. It is a small square in the
   lower left while you pilot and full screen while you navigate, with the pilot camera swapped into the square. Out of
@@ -221,8 +224,11 @@ the other vessel it should switch."
 | Asked | In the game |
 |---|---|
 | "Sling is excellent. bring it to unity" (the Wrasse Lasso Lab, `Docs/Studios/WRASSE_LASSO_LAB.md`) | `KiteNavigatorCore.Sling`, the lab's `stepKite` 'sling' + `ropeForce` + `rimBounce` line for line: the pointer is a hand on a `slingRope` 42 u rope that pulls back only when stretched (`slingStiffness` 260, `slingDamping` 5 on the stretch rate measured against the moving hand), `slingDrag` 0.35 while held, `slingFreeDrag` 0.9 once let go, `slingMaxSpeed` 520, bouncing off the board's rim (×1.4 of the outward speed). `pointerControl` (Sling, the asset's value) picks it for a touch and the mouse; no thumb offset (the rope keeps the kite off the thumb). A lifted thumb lets go; the mouse is a hand that never lets go (the no-click rule). A thumbstick leans the kite as before (Follow), and the AI squad mate aims (Follow). Held to the page by `Tools/Build/kite_navigator_lab/sling_parity.cjs` (3 240 frames, 10 loops, worst 0.002 × tolerance; three planted dial changes caught; the asset's 9 sling fields equal the lab's). |
-| "make it so the wrasse can hit switches" | The kite is the hull's `ISwitchThreadProbe` (an `IRingThreadProbe`, the Thresher ball's interface): `TryGetRingProbe` returns the kite's world point and an epoch bumped whenever the kite is re-placed. So it threads **every gate race's rings** (`GateRaceController`), the Skim Race's (`CrystalRaceRing`) and a mode preview's (`ModePreviewGateCourse`), and it **trips the Toybox's switches** (`Toy.Update`; the toy re-arms once the hull AND the kite are clear). False while no navigator is seated, so an AI or remote hull threads with the hull alone. |
-| A Wrasse and Grouper race | **Wrasse Run** (`GameModes.WrasseRun = 68`, `Assets/_Scripts/Controller/Arcade/WRASSERUN.md`): a ring counts only when the kite threads it. While a gate race has lit a ring for this pilot (`RaceGateRing.LitForLocalPilot`): Time motes come more often (`raceTimeMoteBonus` 2 added to their weight), the AI squad mate values a Time loop ×`raceTimeLoopPreference` 3, and it flies the kite through the lit ring first whenever the board plane cuts its mouth (the ring's centre within 0.85 of its radius of the plane, its axis at least 0.35 in the plane), aiming a point just past the mouth along the ring's axis. |
+| "make it so the wrasse can hit switches" | The kite is the hull's `IRingThreadProbe` (the Thresher ball's interface): `TryGetRingProbe` returns the kite's world point and an epoch bumped whenever the kite is re-placed. So it threads **every gate race's rings** (`GateRaceController`), the Skim Race's (`CrystalRaceRing`) and a mode preview's (`ModePreviewGateCourse`). (It tripped Toybox toys too until round 6b flipped that to the Thresher's ball.) False while no navigator is seated, so a remote hull threads with the hull alone. |
+| Round 6b, the same day: "AI vessels should be controlled by two AI, one for the wrasse, and one for the grouper" | An AI-flown Wrasse that THIS machine simulates (`ShouldRun`: not the local pilot's hull, on autopilot, `Player.IsNetworkOwner`, not a local user) seats its kite too, flown by `KiteNavigatorAI`, with no view, swap, static handle or human input (`IsAICrew`). The hull's `AIPilot` is the Grouper's AI; it spends a saved boost while the next race ring is ≥ `aiBoostRingDistance` (180 u) away and ahead (`AIPilotWantsBoost`; outside a race, as they come) - the same rule now applies whenever the human navigates. `aiCrewNavigates` (on) switches it. |
+| Round 6b: "lets flip things so the wrasse does not activate toys, but the thresher flail does" | The kite is an `IRingThreadProbe` only (race rings); `ThresherExecutor` is the `ISwitchThreadProbe` (the ball trips toys, `Toy.Update`). |
+| Round 6b: "the gamepad and AI should be consistent with mouse and touch" | `control` (was `pointerControl`, `FormerlySerializedAs`) applies to every input. With Sling a thumbstick is a hand that never lets go, placed on the board as the mouse is: centred = the board's centre, a full lean `slingStickReach` (0.6) board radii out. The AI's aim is the hand on the rope (`KiteNavigatorAI.Control`): a loop is whirled with a hand circle `aiSlingLead` (0.25) × the rope that leads the kite a quarter turn round the cluster (the lab's sling pilot), a ring / rival / prism is reached by pulling the hand 0.6 ropes past it, and a loop plan ends when the kite closes a loop (`OnLoopClosed`). `KiteNavigatorSlingTests` runs the AI on the core: it whirls a loop round a cluster and drags the kite through a goal; planted defects fail both. |
+| A Wrasse and Grouper race | **Wrasse Run** (`GameModes.WrasseRun = 68`, `Assets/_Scripts/Controller/Arcade/WRASSERUN.md`): a ring counts only when the kite threads it. While a gate race has a next ring for this hull (`GateRaceController.TryGetNextRing`): Time motes come more often (`raceTimeMoteBonus` 2 added to their weight), the AI squad mate values a Time loop ×`raceTimeLoopPreference` 3, and it flies the kite through the lit ring first whenever the board plane cuts its mouth (the ring's centre within 0.85 of its radius of the plane, its axis at least 0.35 in the plane), aiming a point just past the mouth along the ring's axis. |
 
 ## Seats: the swap is the arena's
 
@@ -352,8 +358,8 @@ python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' sprea
 - **The Sling is not in the Crew Vessel Lab** (it came from the Wrasse Lasso Lab, which models the board alone). The
   thumb-travel and loop numbers there are the lab's AI; a phone playtest decides the feel (`T-20261020-bbc3` closed
   with the pick, playtest task on the board).
-- **The kite trips toys wherever it flies** in the Toybox: a station the kite brushes fires. If that is too eager, the
-  fix is a radius or a kite-only toy list in `Toy.TryProbeActivate`, not a second mechanism.
+- **An AI crew's kite runs where its hull is simulated** (the host): its loops' effects are the host's, as a human
+  crew's are its own machine's (the seat's networking follow-up).
 
 - **Other runtime `Shader.Find("Universal Render Pipeline/Unlit")` calls** (ToyFactory, ToyModelBuilder, AstroLeagueArena, AstroLeagueBall, BlackHole, ThresherExecutor, SniperBeam, BrittleStarExecutor, ShrikeExecutor, GrizzlyClawConeVisual, ArcLightningFallback, SegmentSpawnerPreview: 12, counted 2026-10-19) carry
   the same build-stripping risk; each should get a Resources material for the variant it uses (T-20261019-41bb).

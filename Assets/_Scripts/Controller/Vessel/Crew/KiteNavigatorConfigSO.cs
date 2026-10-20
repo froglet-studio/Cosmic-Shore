@@ -2,6 +2,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
@@ -66,11 +67,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 0.5f)] float stickDeadzone = 0.15f;
 
         [Header("Sling: the thumb holds the kite on an invisible rope (Wrasse Lasso Lab round 1)")]
-        [Tooltip("How a thumb or a mouse holds the kite. Sling (Garrett, 2026-10-20: \"Sling is excellent. bring it to unity\"): " +
-                 "the pointer is a hand on a rope; drag and the kite trails, small circles whirl it round in big ones, lift the " +
-                 "thumb to let it fly. Follow: the kite flies to a point above the thumb (round 3). A thumbstick always leans the " +
-                 "kite (Follow), and the AI squad mate always aims (Follow).")]
-        [SerializeField] KiteControl pointerControl = KiteControl.Sling;
+        [Tooltip("How EVERY input holds the kite - a thumb, the mouse, a thumbstick and the AI squad mate alike (Garrett, " +
+                 "2026-10-20: \"the gamepad and AI should be consistent with mouse and touch\"). Sling (\"Sling is excellent. " +
+                 "bring it to unity\"): the input is a hand on a rope; drag and the kite trails, small circles whirl it round in " +
+                 "big ones, lift the thumb to let it fly (a mouse and a stick never let go). Follow: the kite flies to a point " +
+                 "above the thumb, the cursor, or the way the stick leans (round 3).")]
+        [FormerlySerializedAs("pointerControl")]
+        [SerializeField] KiteControl control = KiteControl.Sling;
         [Tooltip("lab slRope: the rope's length (u). One lap must fit in the tail (2 pi x rope < tail length x board radius), " +
                  "so above ~55 u no orbit can close a loop (Wrasse Lasso Lab, Found 1).")]
         [SerializeField, Range(10f, 120f)] float slingRope = 42f;
@@ -84,6 +87,13 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 8f)] float slingFreeDrag = 0.9f;
         [Tooltip("lab slMaxSpeed: the slung kite's top speed (u/s).")]
         [SerializeField, Range(100f, 1200f)] float slingMaxSpeed = 520f;
+        [Tooltip("Sling on a thumbstick: the stick is the hand's place on the board, as a mouse is - centred is the board's " +
+                 "centre, a full lean this many board radii out. Circle the stick and the hand circles; small circles whirl " +
+                 "the kite.")]
+        [SerializeField, Range(0.1f, 1f)] float slingStickReach = 0.6f;
+        [Tooltip("Sling, the AI squad mate: the radius of its whirling hand circle as a share of the rope (the Wrasse " +
+                 "Lasso Lab's sling pilot, 0.25). The hand leads the kite a quarter turn round the cluster.")]
+        [SerializeField, Range(0.05f, 1f)] float aiSlingLead = 0.25f;
 
         [Header("Races: the Wrasse collects the rings (Wrasse Run, 2026-10-20)")]
         [Tooltip("While a gate race has lit a ring for this pilot, Time motes come this much more often (added to their " +
@@ -147,6 +157,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
 
         [Header("AI squad mate (flies the kite while you fly the hull)")]
+        [Tooltip("An AI-flown Wrasse (an AI crew this machine simulates) is flown by TWO AIs: the hull's AIPilot flies the " +
+                 "Grouper and decides when to spend a saved boost, and a navigator AI flies the Wrasse's kite (Garrett, " +
+                 "2026-10-20). Off: an AI hull seats no kite and threads rings with the hull.")]
+        [SerializeField] bool aiCrewNavigates = true;
+        [Tooltip("An AI Grouper spends a saved boost while the next race ring is at least this far (u) and roughly ahead; " +
+                 "outside a race it spends them as they come.")]
+        [SerializeField, Min(0f)] float aiBoostRingDistance = 180f;
         [Tooltip("The navigator AI's skill: thumb speed, reaction, aim noise and judgement (never the kite itself).")]
         [SerializeField] KiteNavigatorAI.Skill aiSkill = KiteNavigatorAI.Skill.Hard;
 
@@ -236,7 +253,11 @@ namespace CosmicShore.Gameplay
         public float ThumbOffsetMillimetres => thumbOffsetMillimetres;
         public bool OffsetMouse => offsetMouse;
         public float StickDeadzone => stickDeadzone;
-        public KiteControl PointerControl => pointerControl;
+        public KiteControl Control => control;
+        public float SlingStickReach => slingStickReach;
+        public float AISlingLead => aiSlingLead;
+        public bool AICrewNavigates => aiCrewNavigates;
+        public float AIBoostRingDistance => aiBoostRingDistance;
         public float RaceTimeMoteBonus => raceTimeMoteBonus;
         public float RaceTimeLoopPreference => raceTimeLoopPreference;
         public float MoteBaseWeight => moteBaseWeight;

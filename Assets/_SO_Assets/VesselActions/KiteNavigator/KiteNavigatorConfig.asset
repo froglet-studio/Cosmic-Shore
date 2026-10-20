@@ -24,13 +24,15 @@ MonoBehaviour:
   thumbOffsetMillimetres: 21
   offsetMouse: 0
   stickDeadzone: 0.15
-  pointerControl: 1
+  control: 1
   slingRope: 42
   slingStiffness: 260
   slingDamping: 5
   slingDrag: 0.35
   slingFreeDrag: 0.9
   slingMaxSpeed: 520
+  slingStickReach: 0.6
+  aiSlingLead: 0.25
   raceTimeMoteBonus: 2
   raceTimeLoopPreference: 3
   moteHome: 0
@@ -57,6 +59,8 @@ MonoBehaviour:
   stealCooldown: 1
   faunaChargeCost: 1
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
+  aiCrewNavigates: 1
+  aiBoostRingDistance: 180
   aiSkill: 2
   omniMotesPerElement: 6
   omniClusterRadius: 0.5
