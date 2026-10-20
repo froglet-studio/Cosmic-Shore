@@ -1225,6 +1225,20 @@
     tick(dt, n) { dt = dt || DT; n = n || 1; for (let i = 0; i < n; i++) step(dt); resize(); render(); },
     reset, runBatch, runOne, selfTest, setParam, record,
     world: () => w,   // the live world, for a recorder or a debugging session (read it, never write it)
+    // The sling's own step and the shipped tail over a scripted thumb, for Tools/Build/kite_navigator_lab/sling_parity.cjs,
+    // which holds the shipped C# KiteNavigatorCore.Sling to these rows frame by frame.
+    slingTrace(scn) {
+      const saved = Object.assign({}, P), keep = w; Object.assign(P, scn.P || {});
+      const W = newWorld(1, 'sling', 'free', 'idle', 1), rows = []; W.headless = true; w = keep;
+      W.kite = { x: 0, y: 0, vx: 0, vy: 0 }; W.tail = [];
+      for (const a of scn.aims) {
+        stepKite(W, { x: a[0], y: a[1], down: !!a[2] }, scn.dt);
+        const poly = advanceTail(W);
+        rows.push({ x: W.kite.x, z: W.kite.y, vx: W.kite.vx, vz: W.kite.vy, tail: W.tail.length, loop: poly ? poly.length : 0 });
+      }
+      Object.assign(P, saved);
+      return rows;
+    },
     score: () => ({ scheme: w.scheme, drill: w.drill, score: drillScore(w), loops: w.st.loops, fizzles: w.st.fizzles, motes: w.st.motes, value: w.st.value, thumbU: +w.st.travel.toFixed(1), t: +w.t.toFixed(3) }),
     state: () => ({ t: w.t, seed, scheme: w.scheme, drill: w.drill, pilot: w.pilot, kite: Object.assign({}, w.kite), tail: w.tail.length, motes: w.motes.length, done: w.done }),
     use(scheme, drill, pilot) { if (scheme) OPT.scheme = scheme; if (drill) OPT.drill = drill; if (pilot) OPT.pilot = pilot; schemeChips(); fillSelects(); setHint(); reset(); },

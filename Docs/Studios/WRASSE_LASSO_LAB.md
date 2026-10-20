@@ -17,7 +17,21 @@ does not change either. It reads the shipped kite and changes only how the thumb
 `cece/charming-wright-4ayoce` (the Wrasse's phone round: tap-to-press cards, the PIP swap) and `cece/sharp-tesla-j0kd7z`
 (the Goby). Neither touches the kite's controls.
 
-## Round 1 (2026-10-20)
+## Graduated: the Sling (Garrett, 2026-10-20)
+
+"Sling is excellent. bring it to unity." The Sling is the Wrasse's control for a thumb and the mouse:
+`KiteNavigatorCore.Sling` (this page's `stepKite` 'sling', `ropeForce` and `rimBounce` line for line) and the
+`sling*` fields of `KiteNavigatorConfig.asset`, equal to this page's `SHIPPED` block.
+`Tools/Build/kite_navigator_lab/sling_parity.cjs` holds the C# to `window.__lab.slingTrace` frame by frame:
+- PASS over 3 240 frames and 10 loops;
+- three planted dial changes are caught;
+- the asset's nine fields equal the page's.
+
+The same change made the kite a switch threader and built a race around it: Wrasse Run
+(`Assets/_Scripts/Controller/Arcade/WRASSERUN.md`). The page's numbers are now the shipped asset's, so a retune
+goes to the asset first and this page follows (`sling_parity.cjs` fails until it does). Plant, Hook and Well stay
+here as archived options.
+
 
 ### What the page is
 

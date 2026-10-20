@@ -24,6 +24,15 @@ MonoBehaviour:
   thumbOffsetMillimetres: 21
   offsetMouse: 0
   stickDeadzone: 0.15
+  pointerControl: 1
+  slingRope: 42
+  slingStiffness: 260
+  slingDamping: 5
+  slingDrag: 0.35
+  slingFreeDrag: 0.9
+  slingMaxSpeed: 520
+  raceTimeMoteBonus: 2
+  raceTimeLoopPreference: 3
   moteHome: 0
   moteCount: 26
   moteCluster: 4

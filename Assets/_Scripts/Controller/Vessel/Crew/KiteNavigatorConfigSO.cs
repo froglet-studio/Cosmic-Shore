@@ -65,6 +65,34 @@ namespace CosmicShore.Gameplay
                  "mouse or the thumb; nothing is clicked.")]
         [SerializeField, Range(0f, 0.5f)] float stickDeadzone = 0.15f;
 
+        [Header("Sling: the thumb holds the kite on an invisible rope (Wrasse Lasso Lab round 1)")]
+        [Tooltip("How a thumb or a mouse holds the kite. Sling (Garrett, 2026-10-20: \"Sling is excellent. bring it to unity\"): " +
+                 "the pointer is a hand on a rope; drag and the kite trails, small circles whirl it round in big ones, lift the " +
+                 "thumb to let it fly. Follow: the kite flies to a point above the thumb (round 3). A thumbstick always leans the " +
+                 "kite (Follow), and the AI squad mate always aims (Follow).")]
+        [SerializeField] KiteControl pointerControl = KiteControl.Sling;
+        [Tooltip("lab slRope: the rope's length (u). One lap must fit in the tail (2 pi x rope < tail length x board radius), " +
+                 "so above ~55 u no orbit can close a loop (Wrasse Lasso Lab, Found 1).")]
+        [SerializeField, Range(10f, 120f)] float slingRope = 42f;
+        [Tooltip("lab slStiff: how hard a stretched rope pulls back (1/s²). Low: a bungee. High: a chain.")]
+        [SerializeField, Range(20f, 800f)] float slingStiffness = 260f;
+        [Tooltip("lab slDamp: damping of the rope's stretch, measured against the moving thumb (1/s).")]
+        [SerializeField, Range(0f, 30f)] float slingDamping = 5f;
+        [Tooltip("lab slDrag: speed lost per second while the thumb holds the rope (1/s). Low: a whirl keeps going on its own.")]
+        [SerializeField, Range(0f, 4f)] float slingDrag = 0.35f;
+        [Tooltip("lab slFreeDrag: after the thumb lets go, how fast the free kite slows (1/s).")]
+        [SerializeField, Range(0f, 8f)] float slingFreeDrag = 0.9f;
+        [Tooltip("lab slMaxSpeed: the slung kite's top speed (u/s).")]
+        [SerializeField, Range(100f, 1200f)] float slingMaxSpeed = 520f;
+
+        [Header("Races: the Wrasse collects the rings (Wrasse Run, 2026-10-20)")]
+        [Tooltip("While a gate race has lit a ring for this pilot, Time motes come this much more often (added to their " +
+                 "weight; base 1 + 1 per petal), among the others: a Time loop saves the boosts that reach the next ring.")]
+        [SerializeField, Range(0f, 8f)] float raceTimeMoteBonus = 2f;
+        [Tooltip("While a gate race has lit a ring, the AI squad mate values a Time loop this many times a loop of another " +
+                 "element the same size. 1 = no preference.")]
+        [SerializeField, Range(1f, 8f)] float raceTimeLoopPreference = 3f;
+
         [Header("Motes (navigator only)")]
         [Tooltip("Where the motes live. Board is the signed-off home.")]
         [SerializeField] KiteMoteHome moteHome = KiteMoteHome.Board;
@@ -208,6 +236,9 @@ namespace CosmicShore.Gameplay
         public float ThumbOffsetMillimetres => thumbOffsetMillimetres;
         public bool OffsetMouse => offsetMouse;
         public float StickDeadzone => stickDeadzone;
+        public KiteControl PointerControl => pointerControl;
+        public float RaceTimeMoteBonus => raceTimeMoteBonus;
+        public float RaceTimeLoopPreference => raceTimeLoopPreference;
         public float MoteBaseWeight => moteBaseWeight;
         public float MoteWeightPerLevel => moteWeightPerLevel;
         public float BoostCooldownSeconds => boostCooldownSeconds;
@@ -266,6 +297,8 @@ namespace CosmicShore.Gameplay
         public KiteSettings ToSettings() => new()
         {
             BoardRadius = boardRadius, Anchor = anchor, KiteSpeed = kiteSpeed, KiteAccel = kiteAccel, TailLength = tailLength,
+            SlingRope = slingRope, SlingStiffness = slingStiffness, SlingDamping = slingDamping,
+            SlingDrag = slingDrag, SlingFreeDrag = slingFreeDrag, SlingMaxSpeed = slingMaxSpeed,
         };
     }
 }

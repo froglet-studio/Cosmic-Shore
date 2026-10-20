@@ -24,6 +24,12 @@ but **it has not been played in the Unity editor**. That playtest is the next st
 - **The design came from a browser lab** that ran three rounds. It was signed off on 2026-10-17 ("this is fun, build
   it in Unity").
 
+**Since 2026-10-20 (`cece/loving-fermat-ntdnbu`):** the kite is held by **the Sling** on a thumb or the mouse
+(picked in the Wrasse Lasso Lab, https://claude.ai/artifact/T5EBvmTvFw4KNRMQtwXDQb); it **threads switches** (every
+race's rings, the Toybox's toys); and **Wrasse Run** (`GameModes` 68, `WRASSERUN.md`) is its race: a ring counts
+only when the kite threads it, and Time loops fuel the Grouper's boosts. Not editor-verified (`T-20261020-1187`,
+`T-20261020-ec68`).
+
 ## 2. Try it
 
 **The browser lab:** [Crew Vessel Lab](https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct). Private to Garrett until

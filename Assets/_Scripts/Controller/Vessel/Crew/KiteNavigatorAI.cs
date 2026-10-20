@@ -46,6 +46,14 @@ namespace CosmicShore.Gameplay
         public bool Down;
         public Skill Level = Skill.Hard;
 
+        /// <summary>A goal the kite must reach before anything else - a race ring lit for this pilot that lies on the board
+        /// (Wrasse Run). Off by default, so the signed-off navigator is unchanged.</summary>
+        public bool HasGoal;
+        public KiteVec Goal, GoalVelocity;
+        /// <summary>A loop's value is multiplied by this for its element (0 Charge, 1 Mass, 2 Space, 3 Time). All 1 is the
+        /// lab's planLoop; a race raises Time, whose loops save the pilot's boosts.</summary>
+        public readonly float[] ElementWeight = { 1f, 1f, 1f, 1f };
+
         readonly Random _rng;
         readonly List<KiteVec> _pts = new();
         readonly List<int> _cand = new();
@@ -93,6 +101,15 @@ namespace CosmicShore.Gameplay
             _t += dt;
             if (idle) { Down = false; return; }
             _thinkT -= dt;
+            if (HasGoal)
+            {
+                // a ring first: the thumb flies the kite onto it, led by how the ring drifts across the board
+                float lead = Dist(Goal.X, Goal.Z, kite.Position) / s.KiteSpeed * P.Lead;
+                MoveAim(s, Goal.X + GoalVelocity.X * lead, Goal.Z + GoalVelocity.Z * lead, dt);
+                Down = true;
+                _plan = PlanKind.None;
+                return;
+            }
             if (_plan != PlanKind.None && (_t > _until || (_plan == PlanKind.Loop && _ptIndex >= _pts.Count))) _plan = PlanKind.None;
 
             if (_thinkT <= 0f)
@@ -192,7 +209,7 @@ namespace CosmicShore.Gameplay
                 }
                 int kinds = (counts[0] > 0 ? 1 : 0) + (counts[1] > 0 ? 1 : 0) + (counts[2] > 0 ? 1 : 0) + (counts[3] > 0 ? 1 : 0);
                 if (kinds > 1 && (float)_rng.NextDouble() < P.Purity) continue;      // a careful navigator loops one element only
-                float v = MathF.Pow(growth, counts[a.Element] - 1) * (kinds > 1 ? 0.3f : 1f);
+                float v = MathF.Pow(growth, counts[a.Element] - 1) * (kinds > 1 ? 0.3f : 1f) * ElementWeight[a.Element];
                 if (a.Element == 0 && !anyRival) v *= 0.2f;                          // Charge with nobody to ram
                 cx /= k; cz /= k;
                 v /= 1f + Dist(cx, cz, kite.Position) / R;                            // nearer is better

@@ -1635,6 +1635,45 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 
 ---
 
+### 🔴 The Wrasse's Sling, switches, and Wrasse Run (68) (`cece/loving-fermat-ntdnbu`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 6, `_Scripts/Controller/Arcade/WRASSERUN.md`):
+- **The Sling** (Garrett: "Sling is excellent. bring it to unity"): a touch or the mouse holds the Wrasse's kite on an
+  invisible 42 u rope (`KiteNavigatorCore.Sling`, `KiteNavigatorConfig.pointerControl` = Sling and the `sling*` fields).
+  A thumbstick still leans it; the AI squad mate still aims.
+- **Switches:** the kite is the hull's `ISwitchThreadProbe` - it threads every gate race's rings, the Skim Race's and a
+  preview course's, and trips Toybox toys (`Toy.Update`).
+- **Wrasse Run** (`GameModes.WrasseRun = 68`): a ring counts only when the kite threads it
+  (`GateRaceController.HullThreadsWhileProbeLive`); Time motes come more often and the AI kite prefers Time loops and
+  flies through the lit ring (`RaceGateRing.LitForLocalPilot`). Every asset by `Tools/Build/author_wrasse_run_assets.py`;
+  card art `CardBackgrounds/WrasseRun.png` (`/cardart` COURSE tier).
+
+**Checked headless:** `unity_refcompile` player config 0 errors in project code; editor config 0 errors in changed
+files (its 3 are on bleeding-edge). `sling_parity.cjs` PASS (C# vs the lab page, 3 controls caught) and `parity.cjs`
+PASS. `KiteNavigatorSlingTests`, `WrasseRunCourseTests` and `KiteNavigatorCoreTests` RUN out of editor (a scratch NUnit
+shim): 29/29, and two planted sling defects fail three of them. `author_wrasse_run_assets.py --check` OK (and caught a
+planted edit); the arcade gates and `render_card_backgrounds.py --check` / `author_card_backgrounds.py --strict` pass.
+
+**Verify:**
+1. **Compiles; tests** - Test Runner: `KiteNavigatorSlingTests` (6), `WrasseRunCourseTests` (11 with cases),
+   `KiteNavigatorCoreTests`, `KiteNavigatorConfigTests`, `EnumIntegrityTests` (63 modes).
+2. **Sling on a phone** - Toybox, Vessel Changer, the Wrasse; swap to the kite (double-tap the small view). Drag: the
+   kite trails your thumb on a rope. Small circles: it whirls round in big ones and closes loops. Lift: it flies free
+   and slows. Feel: rope length (`slingRope`), stiffness, drag.
+3. **Sling with a mouse** - the kite trails the cursor without a click; circling the cursor whirls it. A pad's stick still
+   leans it.
+4. **Switches in the Toybox** - swing the kite through a toy's ring: the toy fires once; it fires again only after both
+   the hull and the kite have left it. Thresher's ball does NOT fire toys.
+5. **Wrasse Run card** - Menu → Arcade: **Wrasse Run**, its course render; the launch panel pins the Wrasse.
+6. **Wrasse Run, the hull alone** - fly the Grouper through the lit ring: no credit.
+7. **Wrasse Run, the kite** - with the AI navigating, bring the lit ring onto the kite's board: the AI flies the kite
+   through it and it counts; the goal row reads 1/16. Swap to the kite and sling it through the next one: it counts once.
+8. **Time is the fuel** - in the race more motes are Time diamonds; a Time loop banks boosts on the Time card; the right
+   trigger (both thumbs lifted on a phone) spends one.
+9. **AI crews** - add AI Wrasses: their hulls thread rings at cruise and finish the race.
+10. **Regressions** - Thresher Time's ball still threads its rings; Headlong / Redline / Skim Race unchanged; Toybox toys
+    still fire for every other hull.
+
 ### 🔴 Kite Navigator on the Wrasse ("Wrasse and Grouper"): the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** the first multiplayer vessel, `VesselClassType.Wrasse = 19` (a Sparrow hull, in the Toybox's

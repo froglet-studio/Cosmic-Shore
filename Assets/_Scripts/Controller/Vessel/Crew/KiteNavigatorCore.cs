@@ -21,6 +21,16 @@ namespace CosmicShore.Gameplay
         Majority = 1,
     }
 
+    /// <summary>How a pointer (a thumb or a mouse) holds the kite.</summary>
+    public enum KiteControl
+    {
+        /// <summary>The kite flies to a point above the thumb (round 3, the Crew Vessel Lab).</summary>
+        Follow = 0,
+        /// <summary>The thumb holds an invisible rope: the kite trails it and small circles whirl it round in big ones
+        /// (Wrasse Lasso Lab round 1, Garrett 2026-10-20: "Sling is excellent. bring it to unity").</summary>
+        Sling = 1,
+    }
+
     /// <summary>The kite numbers the core reads, from <see cref="KiteNavigatorConfigSO"/>. A plain struct so the core and its
     /// tests need no ScriptableObject.</summary>
     public struct KiteSettings
@@ -31,6 +41,12 @@ namespace CosmicShore.Gameplay
         public float KiteSpeed, KiteAccel;
         /// <summary>Tail length in board radii.</summary>
         public float TailLength;
+        /// <summary>Sling: the rope's length (u), its stiffness when stretched (1/s²) and damping of the stretch (1/s).</summary>
+        public float SlingRope, SlingStiffness, SlingDamping;
+        /// <summary>Sling: speed lost per second while the thumb holds the rope, and after it lets go (1/s).</summary>
+        public float SlingDrag, SlingFreeDrag;
+        /// <summary>Sling: the kite's top speed (u/s).</summary>
+        public float SlingMaxSpeed;
     }
 
     /// <summary>
@@ -54,8 +70,14 @@ namespace CosmicShore.Gameplay
         /// <summary>A loop's crossing ignores the newest few tail segments, which always touch the head.</summary>
         const int SkipNewest = 3;
 
+        /// <summary>A sling's kite bounces off the board's rim with this much of its outward speed reversed (the lab's rimBounce).</summary>
+        public const float RimBounce = 1.4f;
+
         public KiteVec Position;
         public KiteVec Velocity;
+        // the rope's hand last frame (its velocity damps the stretch) and whether the thumb held it last frame
+        KiteVec _hand;
+        bool _wasDown;
         /// <summary>Oldest point first; the newest is where the kite was when it last laid a point.</summary>
         public readonly List<KiteVec> Tail = new();
 
@@ -64,6 +86,8 @@ namespace CosmicShore.Gameplay
             Position = at;
             Velocity = default;
             Tail.Clear();
+            _hand = default;
+            _wasDown = false;
         }
 
         /// <summary>The board's centre, in board units.</summary>
@@ -108,7 +132,62 @@ namespace CosmicShore.Gameplay
             }
             var prev = Position;
             Position = OnBoard(s, Position.X + Velocity.X * dt, Position.Z + Velocity.Z * dt);
+            _wasDown = down;
             return prev;
+        }
+
+        /// <summary>
+        /// One step of the SLING (the Wrasse Lasso Lab's <c>stepKite</c> case 'sling' and <c>ropeForce</c>, line for line).
+        /// The thumb at (<paramref name="handX"/>, <paramref name="handZ"/>) holds an invisible rope: stretched past its length
+        /// it pulls the kite back like a spring, damped on the stretch's rate measured against the moving hand, so a hand that
+        /// leads the kite round a circle whirls it. With the thumb up the kite flies free and slows. It bounces off the
+        /// board's rim. Returns where the kite was, so the caller can sweep the move for head contacts.
+        /// </summary>
+        public KiteVec Sling(in KiteSettings s, float handX, float handZ, bool down, float dt)
+        {
+            if (down && !_wasDown) _hand = new KiteVec(handX, handZ);
+            if (down)
+            {
+                RopeForce(s, handX, handZ, dt);
+                float c = MathF.Exp(-s.SlingDrag * dt);
+                Velocity.X *= c; Velocity.Z *= c;
+            }
+            else
+            {
+                float c = MathF.Exp(-s.SlingFreeDrag * dt);
+                Velocity.X *= c; Velocity.Z *= c;
+            }
+            float sp = MathF.Sqrt(Velocity.X * Velocity.X + Velocity.Z * Velocity.Z);
+            if (sp > s.SlingMaxSpeed) { Velocity.X *= s.SlingMaxSpeed / sp; Velocity.Z *= s.SlingMaxSpeed / sp; }
+            var prev = Position;
+            Position = new KiteVec(Position.X + Velocity.X * dt, Position.Z + Velocity.Z * dt);
+            Bounce(s);
+            _wasDown = down;
+            return prev;
+        }
+
+        // the lab's ropeForce: a rope pulls only when stretched
+        void RopeForce(in KiteSettings s, float ax, float az, float dt)
+        {
+            float dx = Position.X - ax, dz = Position.Z - az, d = MathF.Sqrt(dx * dx + dz * dz);
+            float avx = (ax - _hand.X) / dt, avz = (az - _hand.Z) / dt;
+            _hand = new KiteVec(ax, az);
+            if (d <= s.SlingRope || d < 1e-6f) return;
+            float nx = dx / d, nz = dz / d, vr = (Velocity.X - avx) * nx + (Velocity.Z - avz) * nz;
+            float a = s.SlingStiffness * (d - s.SlingRope) + s.SlingDamping * vr;
+            Velocity.X -= nx * a * dt;
+            Velocity.Z -= nz * a * dt;
+        }
+
+        // the lab's rimBounce, about the board's centre
+        void Bounce(in KiteSettings s)
+        {
+            float a = s.Anchor * s.BoardRadius, r = s.BoardRadius * RimFraction, dx = Position.X, dz = Position.Z - a, d = MathF.Sqrt(dx * dx + dz * dz);
+            if (d <= r) return;
+            float nx = dx / d, nz = dz / d;
+            Position = new KiteVec(nx * r, a + nz * r);
+            float vn = Velocity.X * nx + Velocity.Z * nz;
+            if (vn > 0f) { Velocity.X -= RimBounce * vn * nx; Velocity.Z -= RimBounce * vn * nz; }
         }
 
         /// <summary>

@@ -800,6 +800,14 @@ namespace CosmicShore.Gameplay
         protected virtual bool RaceToastsSumTeams => false;
 
         /// <summary>
+        /// Does the HULL still thread gates while its vessel has a live second body (<see cref="IRingThreadProbe"/>)? True for
+        /// every race (hull OR probe, the Thresher's rule). Wrasse Run answers false: there the Wrasse's kite collects the
+        /// rings and the Grouper only carries it to them. A hull with no live probe (an AI Wrasse, which seats no kite)
+        /// always threads, so an all-AI domain can still finish (the Tollway rule).
+        /// </summary>
+        protected virtual bool HullThreadsWhileProbeLive => true;
+
+        /// <summary>
         /// Feed the race beats. The FINAL LAP threshold is where the last lap's first gate
         /// falls - the race length of a course one lap shorter - so it means the same thing on
         /// a plain circuit (Headlong, Redline) and behind a lead-in (Breakwater), and an open
@@ -936,7 +944,8 @@ namespace CosmicShore.Gameplay
 
                 var ring = _rings[RingIndexFor(index)];
                 if (!ring) continue;
-                if (!ring.CrossedMouth(prev, cur) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))) continue;
+                bool hullThreads = HullThreadsWhileProbeLive || !run.Probe.Live;
+                if (!(hullThreads && ring.CrossedMouth(prev, cur)) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))) continue;
 
                 run.Optimistic = index + 1;
                 run.LastReportTime = Time.time;

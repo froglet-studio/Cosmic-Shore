@@ -273,9 +273,66 @@ namespace CosmicShore.Gameplay
         // the toy would never fire. Overrides must call base.Update().
         protected virtual void Update()
         {
-            if (_armed || _blooming || _activating) return;
+            // The local hull's second body threads switches too (ISwitchThreadProbe: the Wrasse's kite, Garrett 2026-10-20:
+            // "make it so the wrasse can hit switches"). Sampled every frame, so its next segment is one frame long.
+            bool probeFlew = SampleSwitchProbe(out var probePrev, out var probeCur);
+            if (_blooming || _activating) return;
+            if (_armed)
+            {
+                if (probeFlew) TryProbeActivate(probePrev, probeCur);
+                return;
+            }
             if (LocalVesselOutsideTrigger())
                 _armed = true;
+        }
+
+        // ---- the switch probe: a second body of the LOCAL hull that threads this toy's ring (the trigger sphere) ----
+        IVessel _probeVessel;
+        ISwitchThreadProbe _switchProbe;
+        Vector3 _probeLast;
+        int _probeEpoch;
+        bool _probeHas;
+
+        /// <summary>A probe step longer than this (u) is a jump, not a flight (a respawn, a hitch).</summary>
+        const float MaxProbeStep = 250f;
+
+        bool SampleSwitchProbe(out Vector3 prev, out Vector3 cur)
+        {
+            prev = cur = default;
+            var vessel = Context?.GameData?.LocalPlayer?.Vessel;
+            if (vessel == null || vessel is Object uo && !uo || !vessel.Transform) { _probeHas = false; return false; }
+            if (!ReferenceEquals(vessel, _probeVessel))
+            {
+                // resolved once per hull; a hull without one (every hull but the Wrasse) is cached as null
+                _probeVessel = vessel;
+                _switchProbe = vessel.Transform.GetComponentInChildren<ISwitchThreadProbe>(true);
+                _probeHas = false;
+            }
+            if (_switchProbe == null || _switchProbe is Object po && !po || !_switchProbe.TryGetRingProbe(out cur, out int epoch))
+            {
+                _probeHas = false;
+                return false;
+            }
+            bool flew = _probeHas && epoch == _probeEpoch && (cur - _probeLast).sqrMagnitude <= MaxProbeStep * MaxProbeStep;
+            prev = _probeLast;
+            _probeLast = cur;
+            _probeEpoch = epoch;
+            _probeHas = true;
+            return flew;
+        }
+
+        // the probe's segment passed through the trigger sphere: the same activation a hull's trigger entry makes
+        void TryProbeActivate(Vector3 prev, Vector3 cur)
+        {
+            if (Context?.IsFreestyleActive != null && !Context.IsFreestyleActive()) return;
+            Vector3 c = transform.position, d = cur - prev;
+            float l2 = d.sqrMagnitude, t = l2 > 0f ? Mathf.Clamp01(Vector3.Dot(c - prev, d) / l2) : 0f;
+            if ((prev + d * t - c).sqrMagnitude > _triggerWorldRadius * _triggerWorldRadius) return;
+            var status = ResolveLocalVessel();
+            if (status == null) return;
+            _armed = false; // re-armed only once the hull AND the probe are clear (LocalVesselOutsideTrigger)
+            _activating = true;
+            ActivateDeferred(status).Forget();
         }
 
         void OnTriggerEnter(Collider other)
@@ -321,6 +378,7 @@ namespace CosmicShore.Gameplay
             if (!t) return false;
 
             float exitR = _triggerWorldRadius * Mathf.Max(1f, exitRadiusMultiplier);
+            if (_probeHas && (_probeLast - transform.position).sqrMagnitude <= exitR * exitR) return false;   // the kite is still in it
             return (t.position - transform.position).sqrMagnitude > exitR * exitR;
         }
 

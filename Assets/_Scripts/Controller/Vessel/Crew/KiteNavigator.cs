@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class KiteNavigator : MonoBehaviour
+    public sealed class KiteNavigator : MonoBehaviour, ISwitchThreadProbe
     {
         internal struct Mote
         {
@@ -119,6 +119,15 @@ namespace CosmicShore.Gameplay
         readonly HashSet<Prism> _blastCounted = new();
         float _blastWatchUntil;
         bool _humanNavigates, _weTookHull, _down, _boosting;
+        // this frame's aim is a thumb or a mouse holding the kite's rope (KiteControl.Sling), not a point it flies to
+        bool _sling;
+        // the kite as a SWITCH THREADER (IRingThreadProbe): bumped whenever the kite is re-placed rather than flown, so a
+        // jump threads nothing
+        int _probeEpoch;
+        // the race ring lit for this pilot, when it lies on the board within reach (Garrett, 2026-10-20: the Wrasse collects
+        // the rings) - the AI squad mate flies the kite through it before anything else
+        bool _ringOnBoard;
+        KiteVec _ringAt, _ringVel, _ringCentre;
         float _swapReadyAt, _boostReadyAt;
         int _omniPending;
         KiteVec _aim;
@@ -204,6 +213,7 @@ namespace CosmicShore.Gameplay
             _ai = new KiteNavigatorAI(seed) { Level = _cfg.AISkill };
             _rng = new System.Random(seed ^ 0x5f3759df);
             _kite.Reset(new KiteVec(0f, _s.Anchor * _s.BoardRadius * 0.5f));
+            _probeEpoch++;
             _ai.Reset(_kite.Position);
             _aim = _kite.Position;
             _snapped = false;
@@ -243,15 +253,17 @@ namespace CosmicShore.Gameplay
             _s = _cfg.ToSettings();
             UpdateBoard(dt);
             _view.Frame(_humanNavigates);
+            ShadowRaceRing(dt);
             StepMotes(dt);
             ShadowPrisms();
             ShadowRivals(dt);
             ShadowCreatures();
 
+            _sling = false;
             if (_humanNavigates) ReadKiteInput();
             else StepAI(dt);
 
-            var prev = _kite.Move(_s, _aim.X, _aim.Z, _down, dt);
+            var prev = _sling ? _kite.Sling(_s, _aim.X, _aim.Z, _down, dt) : _kite.Move(_s, _aim.X, _aim.Z, _down, dt);
             HeadContacts(prev);
             if (_kite.AdvanceTail(_s, _loop)) CloseLoop(_loop);
 
@@ -474,7 +486,8 @@ namespace CosmicShore.Gameplay
         }
 
         // The hull's own petals set how often each element comes to the kite: weight = base + perLevel x the hull's level
-        // in it, so a pilot who has gathered Space sees more Space to loop.
+        // in it, so a pilot who has gathered Space sees more Space to loop. In a race (a ring is lit for this pilot) Time
+        // comes more often still, among the others: the pilot's boosts are what reach the next ring.
         int PickElement()
         {
             var rs = _status.ResourceSystem;
@@ -492,7 +505,51 @@ namespace CosmicShore.Gameplay
         readonly float[] _weights = new float[4];
 
         float ElementWeight(ResourceSystem rs, int e) =>
-            Mathf.Max(0.01f, _cfg.MoteBaseWeight + _cfg.MoteWeightPerLevel * (rs ? rs.GetLevel((Element)(e + 1)) : 0));
+            Mathf.Max(0.01f, _cfg.MoteBaseWeight + _cfg.MoteWeightPerLevel * (rs ? rs.GetLevel((Element)(e + 1)) : 0)
+                             + (e == 3 && Racing ? _cfg.RaceTimeMoteBonus : 0f));
+
+        /// <summary>A gate race has lit a ring for the local pilot.</summary>
+        static bool Racing => RaceGateRing.LitForLocalPilot;
+
+        // ------------------------------------------------------------------ switches: the kite threads them
+
+        /// <summary>
+        /// The kite is a second body this hull threads switches with (<see cref="IRingThreadProbe"/>): every gate race's
+        /// rings (and the Skim Race's, and a mode preview's), and the Toybox's switches (<see cref="ISwitchThreadProbe"/>).
+        /// Garrett, 2026-10-20: "make it so the wrasse can hit switches". False while no navigator is seated (an AI or remote
+        /// hull), so those hulls thread with the hull alone.
+        /// </summary>
+        public bool TryGetRingProbe(out Vector3 position, out int epoch)
+        {
+            epoch = _probeEpoch;
+            if (_vessel == null || !UnityLiveness.Alive(_vessel.Transform)) { position = default; return false; }
+            position = BoardToWorld(_kite.Position.X, _kite.Position.Z);
+            return true;
+        }
+
+        // The ring a gate race has lit for this pilot, as the board sees it. The human navigator sees it in the kite view
+        // (it is a world object the kite camera draws); the AI squad mate is handed a point just THROUGH its mouth as its
+        // first goal. The kite can thread it only when the board plane cuts its mouth: the ring's centre within its radius
+        // of the plane, and its axis not along the board's up (a ring lying flat in the plane has no mouth to cross).
+        void ShadowRaceRing(float dt)
+        {
+            var ring = RaceGateRing.LitForLocalPilot;
+            if (!ring) { _ringOnBoard = false; return; }
+            Shadow(ring.transform.position, out float x, out float z, out float y);
+            Vector3 axis = ring.Axis;
+            float ax = Vector3.Dot(axis, _r), az = Vector3.Dot(axis, _f), inPlane = Mathf.Sqrt(ax * ax + az * az);
+            bool reachable = Mathf.Abs(y) < ring.Radius * 0.85f && inPlane > 0.35f && KiteNavigatorCore.InDisc(_s, x, z);
+            if (!reachable) { _ringOnBoard = false; return; }
+            ax /= inPlane; az /= inPlane;
+            // go through from the kite's side: the overshoot points away from the kite
+            if (ax * (x - _kite.Position.X) + az * (z - _kite.Position.Z) < 0f) { ax = -ax; az = -az; }
+            float over = ring.Radius + 20f;
+            var at = new KiteVec(x + ax * over, z + az * over);
+            _ringVel = _ringOnBoard && dt > 0f ? new KiteVec((x - _ringCentre.X) / dt, (z - _ringCentre.Z) / dt) : default;
+            _ringCentre = new KiteVec(x, z);
+            _ringAt = at;
+            _ringOnBoard = true;
+        }
 
         float Gauss()
         {
@@ -587,6 +644,9 @@ namespace CosmicShore.Gameplay
         // The kite follows; nothing is clicked (Garrett, 2026-10-18). The mouse: the kite flies to the cursor. A thumbstick:
         // the kite flies the way the stick leans, as fast as it leans (circle the stick, the kite circles). A touch: the kite
         // flies to a point thumbOffset above the thumb, and coasts when the thumb lifts. Whichever was used last leads.
+        // With pointerControl Sling (Garrett, 2026-10-20) a thumb or the mouse holds the kite on a rope instead: the aim is
+        // the hand itself, with no offset (the rope keeps the kite clear of the thumb); lifting the thumb lets go. The mouse
+        // never lets go: it is a hand that is always holding, as the no-click rule has it.
         void ReadKiteInput()
         {
             var pad = Gamepad.current;
@@ -608,11 +668,13 @@ namespace CosmicShore.Gameplay
             {
                 case Pointer.Touch:
                 {
+                    // a lifted thumb lets go of the rope: the kite flies free (Sling), or coasts (Follow)
+                    _sling = _cfg.PointerControl == KiteControl.Sling;
                     if (!touching) { _down = false; return; }
                     // a tap on the small view is the seat swap, not an aim
                     if (_view.PipContains(touchscreen.primaryTouch.startPosition.ReadValue(), true)) { _down = false; return; }
                     var at = touchscreen.primaryTouch.position.ReadValue();
-                    at.y += ThumbOffsetPixels();
+                    if (!_sling) at.y += ThumbOffsetPixels();
                     _aim = _view.ScreenToBoard(at);
                     _down = true;
                     return;
@@ -631,7 +693,8 @@ namespace CosmicShore.Gameplay
                 {
                     if (mouse == null) { _down = false; return; }
                     var at = mouse.position.ReadValue();
-                    if (_cfg.OffsetMouse) at.y += ThumbOffsetPixels();
+                    _sling = _cfg.PointerControl == KiteControl.Sling;
+                    if (_cfg.OffsetMouse && !_sling) at.y += ThumbOffsetPixels();
                     _aim = _view.ScreenToBoard(at);
                     _down = true;
                     return;
@@ -677,6 +740,10 @@ namespace CosmicShore.Gameplay
                 _aiRivals.Add(new KiteTarget { Id = c.Fauna.GetInstanceID(), X = c.X, Z = c.Z });
             }
 
+            _ai.HasGoal = _ringOnBoard;
+            _ai.Goal = _ringAt;
+            _ai.GoalVelocity = _ringVel;
+            _ai.ElementWeight[3] = Racing ? _cfg.RaceTimeLoopPreference : 1f;
             _ai.Step(_s, _cfg.Growth, _kite, _charge, _aiMotes, _aiPrisms, _aiRivals, anyRival, dt);
             _aim = _ai.Aim;
             _down = _ai.Down;
