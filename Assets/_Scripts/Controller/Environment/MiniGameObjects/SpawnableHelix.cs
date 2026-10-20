@@ -8,6 +8,7 @@ namespace CosmicShore.Gameplay
     public class SpawnableHelix : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
         [SerializeField] Vector3 scale;
         [SerializeField] public float firstOrderRadius = 1;
         [SerializeField] public float secondOrderRadius = 1;

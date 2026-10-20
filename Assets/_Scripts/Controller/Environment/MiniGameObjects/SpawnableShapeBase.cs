@@ -120,6 +120,8 @@ public abstract class SpawnableShapeBase : SpawnableBase
         return leafPrefab ? leafPrefab.GetComponent<Prism>() : null;
     }
 
+    protected override Prism ClearancePrism => GetPrismPrefab();
+
     ShapeCollisionTrigger AttachTrigger(GameObject container)
     {
         if (shapeDefinition == null) return null;

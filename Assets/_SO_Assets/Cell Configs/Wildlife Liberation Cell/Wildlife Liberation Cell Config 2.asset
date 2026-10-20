@@ -31,11 +31,11 @@ MonoBehaviour:
   EnvironmentIntensity: 2
   SenseRadiusOverride: 1200
   PhaseThresholds:
-    RestlessEnter: 13396
-    RestlessExit: 13196
-    FrenzyEnter: 16296
-    FrenzyExit: 15696
-    RestlessEnterVolume: 12053535
-    RestlessExitVolume: 12050335
-    FrenzyEnterVolume: 12099935
-    FrenzyExitVolume: 12090335
+    RestlessEnter: 12917
+    RestlessExit: 12717
+    FrenzyEnter: 15817
+    FrenzyExit: 15217
+    RestlessEnterVolume: 11619628
+    RestlessExitVolume: 11616428
+    FrenzyEnterVolume: 11666028
+    FrenzyExitVolume: 11656428

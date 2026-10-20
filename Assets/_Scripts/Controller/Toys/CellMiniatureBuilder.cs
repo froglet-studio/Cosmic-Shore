@@ -160,6 +160,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < lays.Count; i += stride)
                 {
                     var lay = lays[i];
+                    if (PrismClearance.IsCleared(lay.Point)) continue; // never laid
                     samples.Add(new Sample(lay.Point.Position, lay.Point.Rotation, lay.Point.Scale, lay.Domain));
                 }
                 return;
@@ -193,6 +194,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (index % fallbackStride != 0) continue;
                     var point = trail.Points[i];
+                    if (PrismClearance.IsCleared(point)) continue; // never laid
                     samples.Add(new Sample(point.Position, point.Rotation, point.Scale, trail.Domain));
                 }
             }

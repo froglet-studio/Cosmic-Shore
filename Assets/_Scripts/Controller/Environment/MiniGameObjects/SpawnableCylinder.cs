@@ -9,6 +9,7 @@ namespace CosmicShore.Gameplay
     public class SpawnableCylinder : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
 
         #region Attributes for Explosion Parameters
         [Header("Block Parameters")]

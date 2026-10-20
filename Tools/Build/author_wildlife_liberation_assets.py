@@ -42,6 +42,7 @@ POPULATION_ONLY = "--population" in sys.argv
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import wildlife_cage_budget as budget  # noqa: E402
+import prism_clearance  # noqa: E402  - what PrismClearance takes out of the baseline
 
 
 def guid(name: str) -> str:
@@ -519,7 +520,10 @@ for i in INTENSITIES:
          asset_meta(G_ASSET[f"WildlifeSpawnProfile{i}"]))
 
     n, v, danger = budget.cumulative(i)
-    th = budget.phase_thresholds(n, v)
+    # The model prices what the generator AUTHORS; the cell starts at what the game LAYS once
+    # PrismClearance has resolved the clipping (prism_clearance.py).
+    th = budget.phase_thresholds(*prism_clearance.rebase(
+        n, v, f"Assets/_Prefabs/Spawnables/SpawnableWildlifeCage{i}.prefab"))
     forms = " / ".join(budget.shell_rows(i, s)["form"] for s in range(budget.SHELL_COUNT))
     emit(f"{FOLDER}/Wildlife Liberation Cell Config {i}.asset",
          HEADER_FOR(EXISTING["CellConfigDataSO"], f"Wildlife Liberation Cell Config {i}") +

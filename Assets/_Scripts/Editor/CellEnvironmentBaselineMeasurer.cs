@@ -39,6 +39,8 @@ namespace CosmicShore.Editor
                 foreach (var td in trails)
                     foreach (var pt in td.Points)
                     {
+                        // A lay PrismClearance cleared keeps its slot but is never laid.
+                        if (PrismClearance.IsCleared(pt)) continue;
                         count++;
                         volume += (double)pt.Scale.x * pt.Scale.y * pt.Scale.z;
                     }

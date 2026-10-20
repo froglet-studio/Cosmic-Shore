@@ -156,6 +156,41 @@ namespace CosmicShore.Gameplay
             return new[] { new SpawnTrailData(points, false, domain) };
         }
 
+        protected override Prism ClearancePrism => prism;
+
+        /// <summary>
+        /// The base resolves the trail points; this family lays from <see cref="CachedLays"/>
+        /// instead (pose AND domain AND kind), so the lay list itself is resolved and the single
+        /// trail rebuilt from it. In place, slot for slot: Skein's rails, Regatta's lanes and the
+        /// Switchyard and Breakwater segments index this list by range, so a cleared prism keeps
+        /// its slot (scale zero) rather than shifting every range after it. A gameplay prism
+        /// (Danger, Shielded, SuperShielded) is placed before any Plain one, so decoration yields
+        /// to it and never the other way round. A world that admits its authored scale has no
+        /// window to respect.
+        /// </summary>
+        protected override void ResolveClearance(SpawnTrailData[] trailData)
+        {
+            if (!prism || _cachedLays == null || _cachedLays.Count < 2) return;
+
+            int n = _cachedLays.Count;
+            var points = new SpawnPoint[n];
+            var priority = new int[n];
+            for (int i = 0; i < n; i++)
+            {
+                points[i] = _cachedLays[i].Point;
+                priority[i] = _cachedLays[i].Kind == PrismKind.Plain ? 0 : 1;
+            }
+
+            (Vector3? min, Vector3? max) window = AdmitsAuthoredPrismScale ? (null, null) : ScaleWindow(prism);
+            var result = PrismClearance.Resolve(points, window.min, window.max, priority);
+
+            for (int i = 0; i < n; i++)
+                _cachedLays[i] = new PrismLay(points[i], _cachedLays[i].Domain, _cachedLays[i].Kind);
+            if (trailData is { Length: > 0 } && trailData[0].Points?.Length == n)
+                System.Array.Copy(points, trailData[0].Points, n);
+            LogClearance(result);
+        }
+
         protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
             if (prism == null || _cachedLays == null) return;

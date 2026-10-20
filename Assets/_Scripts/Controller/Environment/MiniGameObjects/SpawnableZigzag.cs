@@ -7,6 +7,7 @@ namespace CosmicShore.Gameplay
     public class SpawnableZigzag : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
         [SerializeField] float amplitude = 25;
         [SerializeField] float period = 26;
         [SerializeField] int blockCount = 160;

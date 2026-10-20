@@ -1250,6 +1250,21 @@ trio, and the traps).
   its own: no auto-rotate, no idle re-roll, no "the cell has been up too long" reset. That would be
   the timed culler §0 rejects, wearing a new costume. Detail: `Docs/ECOSYSTEM.md §19`.
 
+- **NO PRISM MAY INTERPENETRATE ANOTHER holds for EVERY generated lay list, not only the species
+  fitted under it** (`Docs/ECOSYSTEM.md §62`). `PrismClearance` resolves each Spawnable's lays
+  before anything is laid — a short-pitch run is trimmed as one, then every prism yields in lay
+  order (shrunk about its centre to the largest size that clears, or CLEARED in its slot at scale
+  zero, which `PrismTrailBuilder` never lays), gameplay kinds before Plain, never below the prefab's
+  scale floor. `Tools/Build/audit_prism_clipping.py --check` runs every shipped generator and the
+  pass and fails on any pair the GAME would lay; it found 42 of 57 generators clipping before the
+  pass (two were generator bugs: Joust's torus knot laid its three strands on one curve, and
+  Spherene stacked every edge's first block on its vertex). **A cell's `PhaseThresholds` ride what
+  is LAID, not what is authored**: the budget models subtract the measured correction
+  (`Tools/Build/prism_clearance.py`), the hand-measured freestyle cells are rebased by
+  `rebase_freestyle_thresholds.py`, and a generator change that moves an environment's clipping
+  re-runs `audit_prism_clipping.py --write-baselines` and then every reader. Still open: the
+  Mandelbulb flora family gates an interpenetration BOUND, not a zero (§62.4).
+
 **Protocol:** (1) restate which invariants the change touches + confirm none are violated;
 (2) confirm at genuine forks (AskUserQuestion); (3) implement surgically, config-driven; (4) state
 the collider-budget impact + exact in-editor verification. The `/ecology` skill encodes this.

@@ -1652,7 +1652,10 @@ Measure Cell Environment Baselines). Re-baselined 2026-08-02 post clock-material
 (volume is final at spawn now) — e.g. Yggdra measures 34,340 prisms / 541,156 volume →
 Restless at 552,356 / 549,156, Frenzy at 598,756 / 589,156, counts
 35,040/34,840/37,940/37,340. As grazing wears the garden down the cell relaxes deeper
-into Calm — an emergent "aging" of the biome with no clock anywhere.
+into Calm — an emergent "aging" of the biome with no clock anywhere. **Re-baselined again
+2026-10-20** onto what each world actually LAYS once `PrismClearance` has resolved its clipping
+(§62.3, `Tools/Build/rebase_freestyle_thresholds.py`) — the numbers above are the pre-clearance
+ones that script starts from.
 
 **The Yggdra cell** (`_SO_Assets/Cell Configs/Yggdra Cell/Yggdra Cell Config.asset`) is
 the first user: a Blob-family cell (same membrane/nucleus/cytoplasm/modifiers/spawn
@@ -11700,3 +11703,183 @@ cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impac
   - It reads; it changes nothing. The diet is still the creature's (§61.2): a holder can only skip a prism the creature would refuse, never make one edible.
   - Without it a leashed creature was ordered to a prism its diet refused (its own domain in a cell with no nucleus, the nucleus claim, outside its pen) and hovered there for good. That is the "the fauna don't always listen" the designer saw.
   - The Angler's `PickTarget` is its one caller. A shielded prism stays a candidate: only Space 5 paints one, and the squad cracks the shield (§61.5).
+
+## 62. NO PRISM MAY INTERPENETRATE ANOTHER — everywhere, not species by species (Oct 2026)
+
+§49.10 made the rule (*a plate may not pass through a plate; a limb may pass through a plate*),
+and until this section it was held only by the generators that had been fitted under it: the
+Garland cell (§48.10), the Borromean (§49.10) and Schwarz P flora, the quasicrystal struts and the
+shields. Every Spawnable shape — the cell environments, the menu's freestyle worlds and the arcade
+arenas — had never been measured at all. Garrett found a clip in the game and asked for an audit
+of every clipping moment and a fix for all of them.
+
+### 62.1 The audit — `Tools/Build/audit_prism_clipping.py`
+
+It reads every prefab whose generator is a compiled Spawnable shape (or a `*Generator`) the way the
+card-art renderer reads it (`render_card_backgrounds.generator_node`: every serialized value, nested
+child generators followed), RUNS the shipped C# through `prism_clip_audit/` (Roslyn + the card-art
+shims, compiled as partial copies so nothing in Caleb's harness is forked) at intensities 1–4, and
+puts every pair of laid prisms whose bounding spheres meet through the 15-axis separating-axis test.
+A prism is its oriented box at its lay scale, clamped into its prefab's `PrismScaleAnimator` window
+the way the lay clamps it (`SpawnablePrism.prefab`: 0.5–100 per axis). Breakwater, which lays
+nothing until its controller hands it a course, is posed with the shipped `BreakwaterCourse` at the
+card recipe's settings. **59 generators on 57 prefabs, 236 runs.**
+
+**What it found: 42 of the 57 generators laid interpenetrating prisms**, most of them in the shipped
+cells. In the order a player would meet them:
+
+| environment | where it ships | prisms | clipping pairs | of which a trail into its own neighbour | duplicates |
+|---|---|---:|---:|---:|---:|
+| Orrery | freestyle cell | 34,573 | 77,672 | 1,930 | 2 |
+| Atlantis | Scurry | 69,303 | 46,623 | 9,846 | 0 |
+| Twistbands | Cleave I4 | 16,423 | 42,257 | 5,683 | 0 |
+| Swell | Cleave I2 | 14,277 | 31,406 | 4,124 | 0 |
+| Yggdra | freestyle cell | 34,340 | 29,323 | 6,739 | 0 |
+| Ribcage | Cleave I3 | 14,731 | 26,771 | 3,839 | 213 |
+| Daedala | freestyle cell | 33,858 | 25,797 | 2,897 | 425 |
+| Geode | freestyle cell | 34,367 | 23,453 | 13,972 | 732 |
+| Concentric spheres (Spherene shells) | Scurry | 24,966 | 22,197 | 417 | 0 |
+| Panes | Cleave I1 | 15,380 | 15,906 | 13,815 | 0 |
+| Boneyard 1–4 | Dog Fight, Salvo, Dustup, Broadside, Grizzly Charge | 9,043–34,654 | 2,995–13,548 | 351–1,462 | 72–264 |
+| Caldera | freestyle cell | 41,353 | 12,929 | 3,055 | 5 |
+| Helicoid | Scurry | 57,840 | 9,427 | 0 | 0 |
+| Wildlife cage 1–4 | Wildlife Liberation | 9,206–13,956 | 2,598–7,788 | 104–884 | 0 |
+| Zephyr | freestyle cell | 52,917 | 6,611 | 2,294 | 0 |
+| Gyroid | Joust I4, Crystal Capture | 40,851 | 6,487 | 1,771 | 2 |
+| Breakwater | Breakwater | 4,575 | 6,015 | 15 | 0 |
+| Hesperides | freestyle garden cell | 12,060 | 5,744 | 2,879 | 101 |
+| TorusKnot | Joust | 1,500 | **6,020** | 1,497 | 0 |
+| Spherene | the concentric-spheres shell | 8,322 | 5,047 | — | **5,047** |
+| Regatta rails 1–4 | Regatta | 1,812–2,209 | 1,812–2,199 | all | 0 |
+| Skein 1–4 | Skein | 3,602–6,165 | 525–890 | nearly all | 0 |
+| Hopf fibration | Joust | 2,304 | 791 | 605 | 1 |
+| Ourobor | freestyle cell | 37,889 | 804 | 0 | 0 |
+| SchwarzP | Joust | 49,856 | 288 | 96 | 0 |
+
+(and the stress-test Pumpkin and Ellipsoid, the unreferenced LinkedRings and LongComet, and the
+Batman AOE spawner). Clean: the Garland, the four Switchyards, the Skim Race waypoint track, the
+race torus, the Clifford torus, the comets, the dart board, the Hilbert mazes and the other two AOE
+spawners.
+
+Four kinds of clip, each with a different fix:
+
+1. **A trail whose pitch is shorter than its prisms** — every consecutive pair overlaps (the
+   Regatta and Skein rails, the torus knot, most of Panes and Geode). One structural fix per trail.
+2. **Structures that cross with no clearance** — rings through rings, bands through bands, the
+   Orrery's orbits through its planets. The bulk of the big environments.
+3. **Joints where several trails share one point** — branch nodes, cage corners.
+4. **The same prism laid twice.** Two of these were GENERATOR BUGS, fixed at source:
+   - **SpawnableTorusKnot laid its three "parallel" strands on ONE curve.** A strand's minor phase
+     was `2π·s/strands`, but shifting a (p,q) knot's phase by a multiple of `2π·gcd(p,q)/p` gives
+     back the same curve — and with p = 3 and 3 strands, `2π/3` is exactly that period. Joust's knot
+     was one tube with blue, jade and gold prisms threaded through each other (6,020 clipping pairs,
+     every prism inside two others). Strands are now spread over one symmetry period, so they are
+     the distinct parallel rails the class doc always described.
+   - **SpawnableSpherene laid the first block of every edge on its start vertex**, so five or six
+     edge blocks plus the gold vertex block stacked in one place at every vertex (5,047 coincident
+     pairs). Edge blocks sit at segment midpoints now, and the vertex trail is laid FIRST so the
+     junction is the prism the edges make room for (laid last, every vertex block was the one
+     cleared and the sphere lost its gold nodes).
+
+### 62.2 The fix — `PrismClearance`, in the one place every generated lay passes
+
+`Assets/_Scripts/Controller/Environment/Spawning/PrismClearance.cs` resolves a lay list in place,
+deterministically (clients build environments locally with no seed sync):
+
+1. **Runs are trimmed as one.** A run of consecutive lays where each clips the next is one trail
+   with a short pitch, so every member is shortened along its long axis by ONE factor — the largest
+   that clears every consecutive pair. Left to step 2 alone a rail alternates long-short-long (the
+   second prism yields, which frees the third to stay whole); the first version of this pass did
+   exactly that and the unit test that pins it was written because of it.
+2. **Then everything yields in lay order** (the Garland shore, §48.10, made universal): each prism
+   is tested against the prisms already accepted and, if it clips, shrunk about its own centre to
+   the largest size that clears — trying its long axis, its footprint, its thin axis and a uniform
+   shrink, and keeping whichever leaves the most volume.
+3. **A prism no shrink can clear is CLEARED** — a duplicate, a joint whose centres coincide, or a
+   shrink that would keep under 10% of it. Its scale becomes zero **in its slot**, and
+   `PrismTrailBuilder` lays nothing for a zero-scale lay (every lay path checks
+   `PrismClearance.IsCleared`). Keeping the slot is what leaves Skein's rails, Regatta's lanes and
+   the Switchyard and Breakwater segments — which index the lay list by RANGE — untouched.
+4. **A gameplay prism never yields to a decorative one**: in the cell-environment family a Danger,
+   Shielded or SuperShielded lay is placed before every Plain one.
+5. **The scale window is respected.** The pass resolves the size that will be on screen (an
+   authored 0.2 plate on a 0.5 floor is a 0.5 plate) and never shrinks an axis below the floor —
+   a shrink the lay's clamp would undo is not a fix. A world that admits its authored scale (the
+   four Cleave arenas) has no window.
+
+Where it runs: `SpawnableBase.GetTrailData`, inside the cache, for a LEAF node only (a composite's
+points place its children); `CellEnvironmentSpawnableBase` resolves its lay list (pose, domain and
+kind) instead and rebuilds its trail from it; `SpawnableSchwarzPSurface` and `SpawnableGyroid` lay
+from the resolved points rather than re-posing their nodes at `blockScale`. A shape names the prism
+it lays through `ClearancePrism` (its `prism` field), which is how the pass finds the scale window;
+a shape whose leaves are not prisms (a crystal, a flora, a sign) returns null and is not resolved.
+
+**Result: the game lays 0 interpenetrating pairs across all 59 generators at every intensity**
+(`audit_prism_clipping.py --check`, which measures what the GAME lays — the resolved lays where the
+pass runs, the raw generator output where it does not). The cost, per environment (generate +
+resolve, .NET 8 on the build container — IL2CPP and Mono on a phone will be slower):
+
+| | volume kept | prisms cleared | ms |
+|---|---:|---:|---:|
+| Orrery | 40% | 2,695 | 259 |
+| Twistbands / Swell / Ribcage / Panes | 50% / 56% / 60% / 73% | 839 / 37 / 3,983 / 417 | 197 / 115 / 102 / 45 |
+| Breakwater | 54% | 660 | 18 |
+| Yggdra / Daedala | 59% / 68% | 1,523 / 1,908 | 186 / 202 |
+| Atlantis | 72% | 4,069 | 708 |
+| Geode / Caldera / Hesperides | 89% / 85% / 87% | 834 / 1,069 / 858 | 114 / 171 / 23 |
+| Boneyard 1–4 | 82–86% | 413–2,143 | 26–130 |
+| Wildlife cage 1–4 | 89–95% | 235–479 | 26–72 |
+| Regatta rails / Skein | 94–97% / ~100% | 0 / 1–2 | 5–10 / 28–64 |
+
+The volume is what was INSIDE other prisms — the look keeps its silhouettes (see the before/after
+sheet `audit_prism_clipping.py --render`), but a dense shell becomes a tiling of separated plates,
+the same cost §49.10 stated for the Borromean membrane. The one shape the pass cannot rescue is the
+stress-test Pumpkin (7% kept): it is drawn with overlapping planks by construction.
+
+### 62.3 The phase ladders moved with the baselines
+
+`Cell.LiveVolume` counts every laid prism, the environment's too, so a cell's `PhaseThresholds` are
+its environment's baseline plus the mode's deltas (§18). A baseline priced on the AUTHORED lays now
+sits above what the cell really starts with — by 117k volume for the Orrery, whose Restless delta is
+11.2k, so Restless would never have fired. Every affected ladder is rebased on what is LAID:
+
+- `audit_prism_clipping.py --write-baselines` records, per generator and intensity, the authored
+  and the laid count and volume (`Tools/Build/prism_clearance_baselines.json`, source-hashed;
+  `--check` fails when it is stale).
+- `Tools/Build/prism_clearance.py` is the one reader. The budget models keep pricing what their
+  generator AUTHORS — the mirror they were built to be — and subtract the measured correction:
+  `author_dogfight_assets.py` (Boneyard), `author_cleave_assets.py`, `author_wildlife_liberation_assets.py`,
+  `author_regatta_assets.py`, `author_skein_assets.py`, `author_breakwater_assets.py`, and
+  `author_hijack_assets.py` (Switchyard, a zero correction today).
+- `Tools/Build/rebase_freestyle_thresholds.py` holds the hand-measured cells' pre-clearance
+  thresholds (Orrery, Daedala, Yggdra, Caldera, Geode, Hesperides, Ourobor, Zephyr) and rebases
+  them by the same correction, idempotently (`--check`).
+- `FrogletTools > Ecology > Measure Cell Environment Baselines` and the Cell Selector's miniatures
+  skip cleared lays, so the measurer reports what is laid.
+
+### 62.4 What this does NOT cover yet
+
+- **The Mandelbulb flora family** (FractalFoliage, Coral Bloom, Watershed, Apollonia) clips BY ITS
+  OWN DESIGN: `MandelbulbFlora.Claim` refuses only a prism laid essentially inside another
+  ("two ribbons meeting at an angle legitimately overlap — that is what a cage is"), and
+  `measure_mandelbulb_flora.py` gates a BOUND rather than a zero — 8–66% of touching pairs
+  interpenetrate across the species and elements, and a Charge plant's core chain is 100%
+  interpenetrating at its armour. Holding it to the rule means an oriented-box claim against the
+  plant's own laid prisms and a re-measure of every one of its gates (FALL, FULL FORM, LADDER), so
+  it is its own change, under the /flora skill.
+- **Vessel trails** are laid live from flight and overlap on tight turns; they are not generated
+  lists and this pass does not see them.
+- **Fauna bodies** move; the rule is about laid structure.
+- **Scene overrides**: the audit reads prefabs. A scene that overrides a shape's numbers on an
+  instance is measured at the prefab's values.
+- **The card-art renders** draw what a generator emits, not the resolved lay; at card size the two
+  are indistinguishable on every card (the before/after sheet), so the cards were left as they are.
+
+### 62.5 Verification
+
+Offline, all measured on this branch: the audit (0 pairs laid, 236 runs); `PrismClearanceTests`
+(6 cases, run against a NUnit stand-in and with two negative controls — the run trim removed, and
+the clearance test disabled — each failing the cases it should); the headless reference compile
+(player config, 0 errors in project code); every threshold generator's `--check`;
+`render_card_backgrounds.py --check` (Scurry and Maelstrom re-rendered for the Spherene change).
+**Nothing has been run in the Unity editor.** The hand tests are on the team board.

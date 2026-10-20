@@ -42,6 +42,7 @@ import arcade_mode_lib as aml  # noqa: E402  - card background + retired-key che
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
 
+import prism_clearance  # noqa: E402  - what PrismClearance takes out of the baseline
 # The mirror of SpawnableSwitchyard.cs. Imported, never copied.
 _spec = importlib.util.spec_from_file_location(
     "hijack_budget", os.path.join(os.path.dirname(os.path.abspath(__file__)), "hijack_budget.py"))
@@ -377,7 +378,10 @@ emit("Assets/_SO_Assets/Cell Configs/Switchyard Cell.meta", meta(guid("folder/Sw
 for i in INTENSITIES:
     big_shells, small_shells = budget.INTENSITIES[i - 1]
     row = budget.budget(big_shells, small_shells)
-    th = budget.phase_thresholds(row["total"], row["volume"])
+    # The model prices what the generator AUTHORS; the cell starts at what the game LAYS once
+    # PrismClearance has resolved any clipping (prism_clearance.py - zero for the Switchyard today).
+    th = budget.phase_thresholds(*prism_clearance.rebase(
+        row["total"], row["volume"], f"Assets/_Prefabs/Spawnables/SpawnableSwitchyard{i}.prefab"))
     emit(f"Assets/_SO_Assets/Cell Configs/Switchyard Cell/Switchyard Cell Config {i}.asset",
          HEADER_FOR(EXISTING["CellConfigDataSO"], f"Switchyard Cell Config {i}") + f"""  CellName: Switchyard
   Description: The Switchyard at intensity {i} - 24 rails of {budget.RAIL_PRISMS} prisms on three

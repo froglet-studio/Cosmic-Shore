@@ -313,7 +313,7 @@ since a ring is centred on ONE rail and *"which rail am I on"* has to have an an
 tightest same-shell separation **64.7 u** at N=9 against **18 u** of combined reach — **46.7 u
 clear** — and the shell gap 65 u likewise. `prove_shield_clearance` asserts all three (lane-to-lane,
 shell-to-shell, and that a gate mouth clears its own rail's armour), and fires when broken.
-Consecutive armoured prisms *along* a rail do interpenetrate; that is one rail, and it is fine.
+Consecutive armoured prisms *along* a rail do interpenetrate; that is one rail, and it is fine. (That is their ARMOUR. The prisms themselves no longer do: since 2026-10-20 `PrismClearance` trims every rail to its pitch, `Docs/ECOSYSTEM.md §62`.)
 
 **Volume is 1.55–3.07 M**, against Drumfire's 1.37 M and Hijack's 0.15–0.54 M. That is the direct
 price of the tunnelling-safe prism: `(6,6,8)` is **288 per prism against `(3,3,6)`'s 54 — 5.33×,

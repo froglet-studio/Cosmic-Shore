@@ -1,0 +1,1775 @@
+{
+ "generators": {
+  "Assets/_Prefabs/Environment/MiniGames/DartBoard.prefab#145180626581237984": {
+   "intensities": {
+    "1": {
+     "authored_count": 2790,
+     "authored_volume": 844769,
+     "laid_count": 2790,
+     "laid_volume": 844769
+    },
+    "2": {
+     "authored_count": 2790,
+     "authored_volume": 844769,
+     "laid_count": 2790,
+     "laid_volume": 844769
+    },
+    "3": {
+     "authored_count": 2790,
+     "authored_volume": 844769,
+     "laid_count": 2790,
+     "laid_volume": 844769
+    },
+    "4": {
+     "authored_count": 2790,
+     "authored_volume": 844769,
+     "laid_count": 2790,
+     "laid_volume": 844769
+    }
+   },
+   "prefab": "Assets/_Prefabs/Environment/MiniGames/DartBoard.prefab",
+   "shape": "SpawnableDartBoard"
+  },
+  "Assets/_Prefabs/Environment/Spawners/HilbertMazeSpawner.prefab#2530874233327190238": {
+   "intensities": {
+    "1": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "2": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "3": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "4": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    }
+   },
+   "prefab": "Assets/_Prefabs/Environment/Spawners/HilbertMazeSpawner.prefab",
+   "shape": "SpawnableWall"
+  },
+  "Assets/_Prefabs/Environment/Spawners/SavedHilbertMazeSpawner.prefab#2530874233327190238": {
+   "intensities": {
+    "1": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "2": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "3": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "4": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    }
+   },
+   "prefab": "Assets/_Prefabs/Environment/Spawners/SavedHilbertMazeSpawner.prefab",
+   "shape": "SpawnableWall"
+  },
+  "Assets/_Prefabs/Environment/Spawners/SavedHilbertMazeSpawner.prefab#7627241801619013983": {
+   "intensities": {
+    "1": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "2": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "3": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    },
+    "4": {
+     "authored_count": 4,
+     "authored_volume": 291.6,
+     "laid_count": 4,
+     "laid_volume": 291.6
+    }
+   },
+   "prefab": "Assets/_Prefabs/Environment/Spawners/SavedHilbertMazeSpawner.prefab",
+   "shape": "SpawnableWall"
+  },
+  "Assets/_Prefabs/Environment/Spawners/SkimRaceWaypointTrack.prefab#919132148000000003": {
+   "intensities": {
+    "1": {
+     "authored_count": 360,
+     "authored_volume": 12480,
+     "laid_count": 360,
+     "laid_volume": 12480
+    },
+    "2": {
+     "authored_count": 360,
+     "authored_volume": 12480,
+     "laid_count": 360,
+     "laid_volume": 12480
+    },
+    "3": {
+     "authored_count": 360,
+     "authored_volume": 12480,
+     "laid_count": 360,
+     "laid_volume": 12480
+    },
+    "4": {
+     "authored_count": 360,
+     "authored_volume": 12480,
+     "laid_count": 360,
+     "laid_volume": 12480
+    }
+   },
+   "prefab": "Assets/_Prefabs/Environment/Spawners/SkimRaceWaypointTrack.prefab",
+   "shape": "SpawnableWaypointTrack"
+  },
+  "Assets/_Prefabs/Environment/Spawners/SpawnableHopf.prefab#938910552520234231": {
+   "intensities": {
+    "1": {
+     "authored_count": 2304,
+     "authored_volume": 34944,
+     "laid_count": 2277,
+     "laid_volume": 28638.1
+    },
+    "2": {
+     "authored_count": 2304,
+     "authored_volume": 34944,
+     "laid_count": 2277,
+     "laid_volume": 28638.1
+    },
+    "3": {
+     "authored_count": 2304,
+     "authored_volume": 34944,
+     "laid_count": 2277,
+     "laid_volume": 28638.1
+    },
+    "4": {
+     "authored_count": 2304,
+     "authored_volume": 34944,
+     "laid_count": 2277,
+     "laid_volume": 28638.1
+    }
+   },
+   "prefab": "Assets/_Prefabs/Environment/Spawners/SpawnableHopf.prefab",
+   "shape": "SpawnableHopfFibration"
+  },
+  "Assets/_Prefabs/Projectile/AOEBatmanSpawner.prefab#338372563534182169": {
+   "intensities": {
+    "1": {
+     "authored_count": 212,
+     "authored_volume": 212,
+     "laid_count": 159,
+     "laid_volume": 141.2
+    },
+    "2": {
+     "authored_count": 212,
+     "authored_volume": 212,
+     "laid_count": 159,
+     "laid_volume": 141.2
+    },
+    "3": {
+     "authored_count": 212,
+     "authored_volume": 212,
+     "laid_count": 159,
+     "laid_volume": 141.2
+    },
+    "4": {
+     "authored_count": 212,
+     "authored_volume": 212,
+     "laid_count": 159,
+     "laid_volume": 141.2
+    }
+   },
+   "prefab": "Assets/_Prefabs/Projectile/AOEBatmanSpawner.prefab",
+   "shape": "SpawnableBatman"
+  },
+  "Assets/_Prefabs/Projectile/AOESinglePrismSpawner.prefab#7830009105258529006": {
+   "intensities": {
+    "1": {
+     "authored_count": 1,
+     "authored_volume": 100,
+     "laid_count": 1,
+     "laid_volume": 100
+    },
+    "2": {
+     "authored_count": 1,
+     "authored_volume": 100,
+     "laid_count": 1,
+     "laid_volume": 100
+    },
+    "3": {
+     "authored_count": 1,
+     "authored_volume": 100,
+     "laid_count": 1,
+     "laid_volume": 100
+    },
+    "4": {
+     "authored_count": 1,
+     "authored_volume": 100,
+     "laid_count": 1,
+     "laid_volume": 100
+    }
+   },
+   "prefab": "Assets/_Prefabs/Projectile/AOESinglePrismSpawner.prefab",
+   "shape": "SpawnableSingleTrailBlock"
+  },
+  "Assets/_Prefabs/Projectile/AOEWideFiveRingSpawner.prefab#1144906062442093120": {
+   "intensities": {
+    "1": {
+     "authored_count": 315,
+     "authored_volume": 22050,
+     "laid_count": 315,
+     "laid_volume": 15750
+    },
+    "2": {
+     "authored_count": 315,
+     "authored_volume": 22050,
+     "laid_count": 315,
+     "laid_volume": 15750
+    },
+    "3": {
+     "authored_count": 315,
+     "authored_volume": 22050,
+     "laid_count": 315,
+     "laid_volume": 15750
+    },
+    "4": {
+     "authored_count": 315,
+     "authored_volume": 22050,
+     "laid_count": 315,
+     "laid_volume": 15750
+    }
+   },
+   "prefab": "Assets/_Prefabs/Projectile/AOEWideFiveRingSpawner.prefab",
+   "shape": "SpawnableFiveRings"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableAtlantis.prefab#4711172930391493203": {
+   "intensities": {
+    "1": {
+     "authored_count": 69303,
+     "authored_volume": 962332.9,
+     "laid_count": 65234,
+     "laid_volume": 694621.8
+    },
+    "2": {
+     "authored_count": 69303,
+     "authored_volume": 962332.9,
+     "laid_count": 65234,
+     "laid_volume": 694621.8
+    },
+    "3": {
+     "authored_count": 69303,
+     "authored_volume": 962332.9,
+     "laid_count": 65234,
+     "laid_volume": 694621.8
+    },
+    "4": {
+     "authored_count": 69303,
+     "authored_volume": 962332.9,
+     "laid_count": 65234,
+     "laid_volume": 694621.8
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableAtlantis.prefab",
+   "shape": "SpawnableAtlantis"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableBoneyard1.prefab#5260000000000503": {
+   "intensities": {
+    "1": {
+     "authored_count": 9043,
+     "authored_volume": 602313.5,
+     "laid_count": 8630,
+     "laid_volume": 516977.9
+    },
+    "2": {
+     "authored_count": 9043,
+     "authored_volume": 602313.5,
+     "laid_count": 8630,
+     "laid_volume": 516977.9
+    },
+    "3": {
+     "authored_count": 9043,
+     "authored_volume": 602313.5,
+     "laid_count": 8630,
+     "laid_volume": 516977.9
+    },
+    "4": {
+     "authored_count": 9043,
+     "authored_volume": 602313.5,
+     "laid_count": 8630,
+     "laid_volume": 516977.9
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableBoneyard1.prefab",
+   "shape": "SpawnableBoneyard"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableBoneyard2.prefab#5260000000000503": {
+   "intensities": {
+    "1": {
+     "authored_count": 16100,
+     "authored_volume": 1070852.4,
+     "laid_count": 15196,
+     "laid_volume": 908905.1
+    },
+    "2": {
+     "authored_count": 16100,
+     "authored_volume": 1070852.4,
+     "laid_count": 15196,
+     "laid_volume": 908905.1
+    },
+    "3": {
+     "authored_count": 16100,
+     "authored_volume": 1070852.4,
+     "laid_count": 15196,
+     "laid_volume": 908905.1
+    },
+    "4": {
+     "authored_count": 16100,
+     "authored_volume": 1070852.4,
+     "laid_count": 15196,
+     "laid_volume": 908905.1
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableBoneyard2.prefab",
+   "shape": "SpawnableBoneyard"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableBoneyard3.prefab#5260000000000503": {
+   "intensities": {
+    "1": {
+     "authored_count": 24807,
+     "authored_volume": 1646957.8,
+     "laid_count": 23467,
+     "laid_volume": 1392349.2
+    },
+    "2": {
+     "authored_count": 24807,
+     "authored_volume": 1646957.8,
+     "laid_count": 23467,
+     "laid_volume": 1392349.2
+    },
+    "3": {
+     "authored_count": 24807,
+     "authored_volume": 1646957.8,
+     "laid_count": 23467,
+     "laid_volume": 1392349.2
+    },
+    "4": {
+     "authored_count": 24807,
+     "authored_volume": 1646957.8,
+     "laid_count": 23467,
+     "laid_volume": 1392349.2
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableBoneyard3.prefab",
+   "shape": "SpawnableBoneyard"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableBoneyard4.prefab#5260000000000503": {
+   "intensities": {
+    "1": {
+     "authored_count": 34654,
+     "authored_volume": 2306287,
+     "laid_count": 32511,
+     "laid_volume": 1888892.1
+    },
+    "2": {
+     "authored_count": 34654,
+     "authored_volume": 2306287,
+     "laid_count": 32511,
+     "laid_volume": 1888892.1
+    },
+    "3": {
+     "authored_count": 34654,
+     "authored_volume": 2306287,
+     "laid_count": 32511,
+     "laid_volume": 1888892.1
+    },
+    "4": {
+     "authored_count": 34654,
+     "authored_volume": 2306287,
+     "laid_count": 32511,
+     "laid_volume": 1888892.1
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableBoneyard4.prefab",
+   "shape": "SpawnableBoneyard"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableBreakwater.prefab#5230000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 4575,
+     "authored_volume": 837677.2,
+     "laid_count": 3915,
+     "laid_volume": 454808.3
+    },
+    "2": {
+     "authored_count": 3795,
+     "authored_volume": 641833.2,
+     "laid_count": 3195,
+     "laid_volume": 360904.8
+    },
+    "3": {
+     "authored_count": 2730,
+     "authored_volume": 456895.6,
+     "laid_count": 2310,
+     "laid_volume": 258411.3
+    },
+    "4": {
+     "authored_count": 2385,
+     "authored_volume": 356842.1,
+     "laid_count": 2070,
+     "laid_volume": 218439.7
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableBreakwater.prefab",
+   "shape": "SpawnableBreakwater"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableCaldera.prefab#5250000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 41353,
+     "authored_volume": 1210753.2,
+     "laid_count": 40284,
+     "laid_volume": 1029177.7
+    },
+    "2": {
+     "authored_count": 41353,
+     "authored_volume": 1210753.2,
+     "laid_count": 40284,
+     "laid_volume": 1029177.7
+    },
+    "3": {
+     "authored_count": 41353,
+     "authored_volume": 1210753.2,
+     "laid_count": 40284,
+     "laid_volume": 1029177.7
+    },
+    "4": {
+     "authored_count": 41353,
+     "authored_volume": 1210753.2,
+     "laid_count": 40284,
+     "laid_volume": 1029177.7
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableCaldera.prefab",
+   "shape": "SpawnableCaldera"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableCliffordTorus.prefab#7606682149800798904": {
+   "intensities": {
+    "1": {
+     "authored_count": 1296,
+     "authored_volume": 10368,
+     "laid_count": 1296,
+     "laid_volume": 10368
+    },
+    "2": {
+     "authored_count": 1296,
+     "authored_volume": 10368,
+     "laid_count": 1296,
+     "laid_volume": 10368
+    },
+    "3": {
+     "authored_count": 1296,
+     "authored_volume": 10368,
+     "laid_count": 1296,
+     "laid_volume": 10368
+    },
+    "4": {
+     "authored_count": 1296,
+     "authored_volume": 10368,
+     "laid_count": 1296,
+     "laid_volume": 10368
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableCliffordTorus.prefab",
+   "shape": "SpawnableCliffordTorus"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableComet.prefab#4496723737295881431": {
+   "intensities": {
+    "1": {
+     "authored_count": 208,
+     "authored_volume": 587.4,
+     "laid_count": 208,
+     "laid_volume": 587.4
+    },
+    "2": {
+     "authored_count": 208,
+     "authored_volume": 587.4,
+     "laid_count": 208,
+     "laid_volume": 587.4
+    },
+    "3": {
+     "authored_count": 208,
+     "authored_volume": 587.4,
+     "laid_count": 208,
+     "laid_volume": 587.4
+    },
+    "4": {
+     "authored_count": 208,
+     "authored_volume": 587.4,
+     "laid_count": 208,
+     "laid_volume": 587.4
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableComet.prefab",
+   "shape": "SpawnableComet"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableConcetricSpheres.prefab#8565176333109452482": {
+   "intensities": {
+    "1": {
+     "authored_count": 24966,
+     "authored_volume": 236322,
+     "laid_count": 24933,
+     "laid_volume": 99246.9
+    },
+    "2": {
+     "authored_count": 24966,
+     "authored_volume": 236322,
+     "laid_count": 24933,
+     "laid_volume": 99246.9
+    },
+    "3": {
+     "authored_count": 24966,
+     "authored_volume": 236322,
+     "laid_count": 24933,
+     "laid_volume": 99246.9
+    },
+    "4": {
+     "authored_count": 24966,
+     "authored_volume": 236322,
+     "laid_count": 24933,
+     "laid_volume": 99246.9
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableConcetricSpheres.prefab",
+   "shape": "ConcentricLayersGenerator"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableDaedala.prefab#5220000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 33858,
+     "authored_volume": 637304.1,
+     "laid_count": 31950,
+     "laid_volume": 432568.1
+    },
+    "2": {
+     "authored_count": 33858,
+     "authored_volume": 637304.1,
+     "laid_count": 31950,
+     "laid_volume": 432568.1
+    },
+    "3": {
+     "authored_count": 33858,
+     "authored_volume": 637304.1,
+     "laid_count": 31950,
+     "laid_volume": 432568.1
+    },
+    "4": {
+     "authored_count": 33858,
+     "authored_volume": 637304.1,
+     "laid_count": 31950,
+     "laid_volume": 432568.1
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableDaedala.prefab",
+   "shape": "SpawnableDaedala"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableEllipsoid.prefab#3362770344326874105": {
+   "intensities": {
+    "1": {
+     "authored_count": 90,
+     "authored_volume": 90,
+     "laid_count": 86,
+     "laid_volume": 67.5
+    },
+    "2": {
+     "authored_count": 90,
+     "authored_volume": 90,
+     "laid_count": 86,
+     "laid_volume": 67.5
+    },
+    "3": {
+     "authored_count": 90,
+     "authored_volume": 90,
+     "laid_count": 86,
+     "laid_volume": 67.5
+    },
+    "4": {
+     "authored_count": 90,
+     "authored_volume": 90,
+     "laid_count": 86,
+     "laid_volume": 67.5
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableEllipsoid.prefab",
+   "shape": "SpawnableEllipsoid"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableGarland.prefab#5260000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 4259,
+     "authored_volume": 2177498.6,
+     "laid_count": 4259,
+     "laid_volume": 2177498.6
+    },
+    "2": {
+     "authored_count": 4259,
+     "authored_volume": 2177498.6,
+     "laid_count": 4259,
+     "laid_volume": 2177498.6
+    },
+    "3": {
+     "authored_count": 4259,
+     "authored_volume": 2177498.6,
+     "laid_count": 4259,
+     "laid_volume": 2177498.6
+    },
+    "4": {
+     "authored_count": 4259,
+     "authored_volume": 2177498.6,
+     "laid_count": 4259,
+     "laid_volume": 2177498.6
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableGarland.prefab",
+   "shape": "SpawnableGarland"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableGeode.prefab#5260000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 34367,
+     "authored_volume": 563449.7,
+     "laid_count": 33533,
+     "laid_volume": 503063.3
+    },
+    "2": {
+     "authored_count": 34367,
+     "authored_volume": 563449.7,
+     "laid_count": 33533,
+     "laid_volume": 503063.3
+    },
+    "3": {
+     "authored_count": 34367,
+     "authored_volume": 563449.7,
+     "laid_count": 33533,
+     "laid_volume": 503063.3
+    },
+    "4": {
+     "authored_count": 34367,
+     "authored_volume": 563449.7,
+     "laid_count": 33533,
+     "laid_volume": 503063.3
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableGeode.prefab",
+   "shape": "SpawnableGeode"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableGyroid.prefab#4959367395204161429": {
+   "intensities": {
+    "1": {
+     "authored_count": 40851,
+     "authored_volume": 561701.2,
+     "laid_count": 40338,
+     "laid_volume": 546261.1
+    },
+    "2": {
+     "authored_count": 40851,
+     "authored_volume": 561701.2,
+     "laid_count": 40338,
+     "laid_volume": 546261.1
+    },
+    "3": {
+     "authored_count": 40851,
+     "authored_volume": 561701.2,
+     "laid_count": 40338,
+     "laid_volume": 546261.1
+    },
+    "4": {
+     "authored_count": 40851,
+     "authored_volume": 561701.2,
+     "laid_count": 40338,
+     "laid_volume": 546261.1
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableGyroid.prefab",
+   "shape": "SpawnableGyroid"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableHelicoid.prefab#934516435980311962": {
+   "intensities": {
+    "1": {
+     "authored_count": 57840,
+     "authored_volume": 462720,
+     "laid_count": 56020,
+     "laid_volume": 438440.4
+    },
+    "2": {
+     "authored_count": 57840,
+     "authored_volume": 462720,
+     "laid_count": 56020,
+     "laid_volume": 438440.4
+    },
+    "3": {
+     "authored_count": 57840,
+     "authored_volume": 462720,
+     "laid_count": 56020,
+     "laid_volume": 438440.4
+    },
+    "4": {
+     "authored_count": 57840,
+     "authored_volume": 462720,
+     "laid_count": 56020,
+     "laid_volume": 438440.4
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableHelicoid.prefab",
+   "shape": "SpawnableHelicoid"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableHesperides.prefab#5210000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 12060,
+     "authored_volume": 511711.1,
+     "laid_count": 11202,
+     "laid_volume": 445911
+    },
+    "2": {
+     "authored_count": 12060,
+     "authored_volume": 511711.1,
+     "laid_count": 11202,
+     "laid_volume": 445911
+    },
+    "3": {
+     "authored_count": 12060,
+     "authored_volume": 511711.1,
+     "laid_count": 11202,
+     "laid_volume": 445911
+    },
+    "4": {
+     "authored_count": 12060,
+     "authored_volume": 511711.1,
+     "laid_count": 11202,
+     "laid_volume": 445911
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableHesperides.prefab",
+   "shape": "SpawnableHesperides"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableJadeComet.prefab#4496723737295881431": {
+   "intensities": {
+    "1": {
+     "authored_count": 208,
+     "authored_volume": 587.4,
+     "laid_count": 208,
+     "laid_volume": 587.4
+    },
+    "2": {
+     "authored_count": 208,
+     "authored_volume": 587.4,
+     "laid_count": 208,
+     "laid_volume": 587.4
+    },
+    "3": {
+     "authored_count": 208,
+     "authored_volume": 587.4,
+     "laid_count": 208,
+     "laid_volume": 587.4
+    },
+    "4": {
+     "authored_count": 208,
+     "authored_volume": 587.4,
+     "laid_count": 208,
+     "laid_volume": 587.4
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableJadeComet.prefab",
+   "shape": "SpawnableComet"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableLinkedRings.prefab#3536741365802097788": {
+   "intensities": {
+    "1": {
+     "authored_count": 7776,
+     "authored_volume": 62208,
+     "laid_count": 7776,
+     "laid_volume": 60915.5
+    },
+    "2": {
+     "authored_count": 7776,
+     "authored_volume": 62208,
+     "laid_count": 7776,
+     "laid_volume": 60915.5
+    },
+    "3": {
+     "authored_count": 7776,
+     "authored_volume": 62208,
+     "laid_count": 7776,
+     "laid_volume": 60915.5
+    },
+    "4": {
+     "authored_count": 7776,
+     "authored_volume": 62208,
+     "laid_count": 7776,
+     "laid_volume": 60915.5
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableLinkedRings.prefab",
+   "shape": "SpawnableSchwarzPSurface"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableLinkedRings.prefab#8890675842724360944": {
+   "intensities": {
+    "1": {
+     "authored_count": 504,
+     "authored_volume": 8064,
+     "laid_count": 438,
+     "laid_volume": 6773.9
+    },
+    "2": {
+     "authored_count": 504,
+     "authored_volume": 8064,
+     "laid_count": 438,
+     "laid_volume": 6773.9
+    },
+    "3": {
+     "authored_count": 504,
+     "authored_volume": 8064,
+     "laid_count": 438,
+     "laid_volume": 6773.9
+    },
+    "4": {
+     "authored_count": 504,
+     "authored_volume": 8064,
+     "laid_count": 438,
+     "laid_volume": 6773.9
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableLinkedRings.prefab",
+   "shape": "SpawnableLinkedRings"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableLongComet.prefab#4496723737295881431": {
+   "intensities": {
+    "1": {
+     "authored_count": 216,
+     "authored_volume": 513.7,
+     "laid_count": 216,
+     "laid_volume": 460.8
+    },
+    "2": {
+     "authored_count": 216,
+     "authored_volume": 513.7,
+     "laid_count": 216,
+     "laid_volume": 460.8
+    },
+    "3": {
+     "authored_count": 216,
+     "authored_volume": 513.7,
+     "laid_count": 216,
+     "laid_volume": 460.8
+    },
+    "4": {
+     "authored_count": 216,
+     "authored_volume": 513.7,
+     "laid_count": 216,
+     "laid_volume": 460.8
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableLongComet.prefab",
+   "shape": "SpawnableComet"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableOrrery.prefab#5230000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 34573,
+     "authored_volume": 195796.2,
+     "laid_count": 31878,
+     "laid_volume": 78302.8
+    },
+    "2": {
+     "authored_count": 34573,
+     "authored_volume": 195796.2,
+     "laid_count": 31878,
+     "laid_volume": 78302.8
+    },
+    "3": {
+     "authored_count": 34573,
+     "authored_volume": 195796.2,
+     "laid_count": 31878,
+     "laid_volume": 78302.8
+    },
+    "4": {
+     "authored_count": 34573,
+     "authored_volume": 195796.2,
+     "laid_count": 31878,
+     "laid_volume": 78302.8
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableOrrery.prefab",
+   "shape": "SpawnableOrrery"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableOurobor.prefab#5250000000000203": {
+   "intensities": {
+    "1": {
+     "authored_count": 37889,
+     "authored_volume": 751448.8,
+     "laid_count": 37642,
+     "laid_volume": 744827.2
+    },
+    "2": {
+     "authored_count": 37889,
+     "authored_volume": 751448.8,
+     "laid_count": 37642,
+     "laid_volume": 744827.2
+    },
+    "3": {
+     "authored_count": 37889,
+     "authored_volume": 751448.8,
+     "laid_count": 37642,
+     "laid_volume": 744827.2
+    },
+    "4": {
+     "authored_count": 37889,
+     "authored_volume": 751448.8,
+     "laid_count": 37642,
+     "laid_volume": 744827.2
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableOurobor.prefab",
+   "shape": "SpawnableOurobor"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnablePanes.prefab#5260000000000203": {
+   "intensities": {
+    "1": {
+     "authored_count": 15380,
+     "authored_volume": 38522828.7,
+     "laid_count": 14963,
+     "laid_volume": 28005521.6
+    },
+    "2": {
+     "authored_count": 15380,
+     "authored_volume": 38522828.7,
+     "laid_count": 14963,
+     "laid_volume": 28005521.6
+    },
+    "3": {
+     "authored_count": 15380,
+     "authored_volume": 38522828.7,
+     "laid_count": 14963,
+     "laid_volume": 28005521.6
+    },
+    "4": {
+     "authored_count": 15380,
+     "authored_volume": 38522828.7,
+     "laid_count": 14963,
+     "laid_volume": 28005521.6
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnablePanes.prefab",
+   "shape": "SpawnablePanes"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnablePumpkin.prefab#7021355307236778": {
+   "intensities": {
+    "1": {
+     "authored_count": 720,
+     "authored_volume": 31.6,
+     "laid_count": 340,
+     "laid_volume": 2.3
+    },
+    "2": {
+     "authored_count": 720,
+     "authored_volume": 31.6,
+     "laid_count": 340,
+     "laid_volume": 2.3
+    },
+    "3": {
+     "authored_count": 720,
+     "authored_volume": 31.6,
+     "laid_count": 340,
+     "laid_volume": 2.3
+    },
+    "4": {
+     "authored_count": 720,
+     "authored_volume": 31.6,
+     "laid_count": 340,
+     "laid_volume": 2.3
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnablePumpkin.prefab",
+   "shape": "SpawnablePumpkin"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableRaceTorus.prefab#7606682149800798904": {
+   "intensities": {
+    "1": {
+     "authored_count": 129600,
+     "authored_volume": 1036800,
+     "laid_count": 129600,
+     "laid_volume": 1036800
+    },
+    "2": {
+     "authored_count": 129600,
+     "authored_volume": 1036800,
+     "laid_count": 129600,
+     "laid_volume": 1036800
+    },
+    "3": {
+     "authored_count": 129600,
+     "authored_volume": 1036800,
+     "laid_count": 129600,
+     "laid_volume": 1036800
+    },
+    "4": {
+     "authored_count": 129600,
+     "authored_volume": 1036800,
+     "laid_count": 129600,
+     "laid_volume": 1036800
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableRaceTorus.prefab",
+   "shape": "SpawnableCliffordTorus"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableRegattaRails1.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 1812,
+     "authored_volume": 521856,
+     "laid_count": 1812,
+     "laid_volume": 508757
+    },
+    "2": {
+     "authored_count": 1812,
+     "authored_volume": 521856,
+     "laid_count": 1812,
+     "laid_volume": 508757
+    },
+    "3": {
+     "authored_count": 1812,
+     "authored_volume": 521856,
+     "laid_count": 1812,
+     "laid_volume": 508757
+    },
+    "4": {
+     "authored_count": 1812,
+     "authored_volume": 521856,
+     "laid_count": 1812,
+     "laid_volume": 508757
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableRegattaRails1.prefab",
+   "shape": "SpawnableRegattaRails"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableRegattaRails2.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 2038,
+     "authored_volume": 586944,
+     "laid_count": 2038,
+     "laid_volume": 560923.5
+    },
+    "2": {
+     "authored_count": 2038,
+     "authored_volume": 586944,
+     "laid_count": 2038,
+     "laid_volume": 560923.5
+    },
+    "3": {
+     "authored_count": 2038,
+     "authored_volume": 586944,
+     "laid_count": 2038,
+     "laid_volume": 560923.5
+    },
+    "4": {
+     "authored_count": 2038,
+     "authored_volume": 586944,
+     "laid_count": 2038,
+     "laid_volume": 560923.5
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableRegattaRails2.prefab",
+   "shape": "SpawnableRegattaRails"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableRegattaRails3.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 2209,
+     "authored_volume": 636192,
+     "laid_count": 2209,
+     "laid_volume": 597365.3
+    },
+    "2": {
+     "authored_count": 2209,
+     "authored_volume": 636192,
+     "laid_count": 2209,
+     "laid_volume": 597365.3
+    },
+    "3": {
+     "authored_count": 2209,
+     "authored_volume": 636192,
+     "laid_count": 2209,
+     "laid_volume": 597365.3
+    },
+    "4": {
+     "authored_count": 2209,
+     "authored_volume": 636192,
+     "laid_count": 2209,
+     "laid_volume": 597365.3
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableRegattaRails3.prefab",
+   "shape": "SpawnableRegattaRails"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableRegattaRails4.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 2201,
+     "authored_volume": 633888,
+     "laid_count": 2201,
+     "laid_volume": 598620.1
+    },
+    "2": {
+     "authored_count": 2201,
+     "authored_volume": 633888,
+     "laid_count": 2201,
+     "laid_volume": 598620.1
+    },
+    "3": {
+     "authored_count": 2201,
+     "authored_volume": 633888,
+     "laid_count": 2201,
+     "laid_volume": 598620.1
+    },
+    "4": {
+     "authored_count": 2201,
+     "authored_volume": 633888,
+     "laid_count": 2201,
+     "laid_volume": 598620.1
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableRegattaRails4.prefab",
+   "shape": "SpawnableRegattaRails"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableRibcage.prefab#5260000000000203": {
+   "intensities": {
+    "1": {
+     "authored_count": 14731,
+     "authored_volume": 23357560.9,
+     "laid_count": 10748,
+     "laid_volume": 13996701.3
+    },
+    "2": {
+     "authored_count": 14731,
+     "authored_volume": 23357560.9,
+     "laid_count": 10748,
+     "laid_volume": 13996701.3
+    },
+    "3": {
+     "authored_count": 14731,
+     "authored_volume": 23357560.9,
+     "laid_count": 10748,
+     "laid_volume": 13996701.3
+    },
+    "4": {
+     "authored_count": 14731,
+     "authored_volume": 23357560.9,
+     "laid_count": 10748,
+     "laid_volume": 13996701.3
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableRibcage.prefab",
+   "shape": "SpawnableRibcage"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSchwarzP.prefab#1670082815129230080": {
+   "intensities": {
+    "1": {
+     "authored_count": 49856,
+     "authored_volume": 1196544,
+     "laid_count": 49856,
+     "laid_volume": 1195003
+    },
+    "2": {
+     "authored_count": 49856,
+     "authored_volume": 1196544,
+     "laid_count": 49856,
+     "laid_volume": 1195003
+    },
+    "3": {
+     "authored_count": 49856,
+     "authored_volume": 1196544,
+     "laid_count": 49856,
+     "laid_volume": 1195003
+    },
+    "4": {
+     "authored_count": 49856,
+     "authored_volume": 1196544,
+     "laid_count": 49856,
+     "laid_volume": 1195003
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSchwarzP.prefab",
+   "shape": "SpawnableSchwarzPSurface"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSkein1.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 3602,
+     "authored_volume": 1037376,
+     "laid_count": 3600,
+     "laid_volume": 1033136
+    },
+    "2": {
+     "authored_count": 3602,
+     "authored_volume": 1037376,
+     "laid_count": 3600,
+     "laid_volume": 1033136
+    },
+    "3": {
+     "authored_count": 3602,
+     "authored_volume": 1037376,
+     "laid_count": 3600,
+     "laid_volume": 1033136
+    },
+    "4": {
+     "authored_count": 3602,
+     "authored_volume": 1037376,
+     "laid_count": 3600,
+     "laid_volume": 1033136
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSkein1.prefab",
+   "shape": "SpawnableSkein"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSkein2.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 5103,
+     "authored_volume": 1469664,
+     "laid_count": 5101,
+     "laid_volume": 1464236
+    },
+    "2": {
+     "authored_count": 5103,
+     "authored_volume": 1469664,
+     "laid_count": 5101,
+     "laid_volume": 1464236
+    },
+    "3": {
+     "authored_count": 5103,
+     "authored_volume": 1469664,
+     "laid_count": 5101,
+     "laid_volume": 1464236
+    },
+    "4": {
+     "authored_count": 5103,
+     "authored_volume": 1469664,
+     "laid_count": 5101,
+     "laid_volume": 1464236
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSkein2.prefab",
+   "shape": "SpawnableSkein"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSkein3.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 4728,
+     "authored_volume": 1361664,
+     "laid_count": 4727,
+     "laid_volume": 1356546
+    },
+    "2": {
+     "authored_count": 4728,
+     "authored_volume": 1361664,
+     "laid_count": 4727,
+     "laid_volume": 1356546
+    },
+    "3": {
+     "authored_count": 4728,
+     "authored_volume": 1361664,
+     "laid_count": 4727,
+     "laid_volume": 1356546
+    },
+    "4": {
+     "authored_count": 4728,
+     "authored_volume": 1361664,
+     "laid_count": 4727,
+     "laid_volume": 1356546
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSkein3.prefab",
+   "shape": "SpawnableSkein"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSkein4.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 6165,
+     "authored_volume": 1775520,
+     "laid_count": 6164,
+     "laid_volume": 1768807
+    },
+    "2": {
+     "authored_count": 6165,
+     "authored_volume": 1775520,
+     "laid_count": 6164,
+     "laid_volume": 1768807
+    },
+    "3": {
+     "authored_count": 6165,
+     "authored_volume": 1775520,
+     "laid_count": 6164,
+     "laid_volume": 1768807
+    },
+    "4": {
+     "authored_count": 6165,
+     "authored_volume": 1775520,
+     "laid_count": 6164,
+     "laid_volume": 1768807
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSkein4.prefab",
+   "shape": "SpawnableSkein"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSpherene.prefab#2348215282272801469": {
+   "intensities": {
+    "1": {
+     "authored_count": 8322,
+     "authored_volume": 78774,
+     "laid_count": 8303,
+     "laid_volume": 67931.6
+    },
+    "2": {
+     "authored_count": 8322,
+     "authored_volume": 78774,
+     "laid_count": 8303,
+     "laid_volume": 67931.6
+    },
+    "3": {
+     "authored_count": 8322,
+     "authored_volume": 78774,
+     "laid_count": 8303,
+     "laid_volume": 67931.6
+    },
+    "4": {
+     "authored_count": 8322,
+     "authored_volume": 78774,
+     "laid_count": 8303,
+     "laid_volume": 67931.6
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSpherene.prefab",
+   "shape": "SpawnableSpherene"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSwell.prefab#5260000000000203": {
+   "intensities": {
+    "1": {
+     "authored_count": 14277,
+     "authored_volume": 103293704.3,
+     "laid_count": 14240,
+     "laid_volume": 57476054.5
+    },
+    "2": {
+     "authored_count": 14277,
+     "authored_volume": 103293704.3,
+     "laid_count": 14240,
+     "laid_volume": 57476054.5
+    },
+    "3": {
+     "authored_count": 14277,
+     "authored_volume": 103293704.3,
+     "laid_count": 14240,
+     "laid_volume": 57476054.5
+    },
+    "4": {
+     "authored_count": 14277,
+     "authored_volume": 103293704.3,
+     "laid_count": 14240,
+     "laid_volume": 57476054.5
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSwell.prefab",
+   "shape": "SpawnableSwell"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSwitchyard1.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 2772,
+     "authored_volume": 149688,
+     "laid_count": 2772,
+     "laid_volume": 149688
+    },
+    "2": {
+     "authored_count": 2772,
+     "authored_volume": 149688,
+     "laid_count": 2772,
+     "laid_volume": 149688
+    },
+    "3": {
+     "authored_count": 2772,
+     "authored_volume": 149688,
+     "laid_count": 2772,
+     "laid_volume": 149688
+    },
+    "4": {
+     "authored_count": 2772,
+     "authored_volume": 149688,
+     "laid_count": 2772,
+     "laid_volume": 149688
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSwitchyard1.prefab",
+   "shape": "SpawnableSwitchyard"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSwitchyard2.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 3978,
+     "authored_volume": 214812,
+     "laid_count": 3978,
+     "laid_volume": 214812
+    },
+    "2": {
+     "authored_count": 3978,
+     "authored_volume": 214812,
+     "laid_count": 3978,
+     "laid_volume": 214812
+    },
+    "3": {
+     "authored_count": 3978,
+     "authored_volume": 214812,
+     "laid_count": 3978,
+     "laid_volume": 214812
+    },
+    "4": {
+     "authored_count": 3978,
+     "authored_volume": 214812,
+     "laid_count": 3978,
+     "laid_volume": 214812
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSwitchyard2.prefab",
+   "shape": "SpawnableSwitchyard"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSwitchyard3.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 7218,
+     "authored_volume": 389772,
+     "laid_count": 7218,
+     "laid_volume": 389772
+    },
+    "2": {
+     "authored_count": 7218,
+     "authored_volume": 389772,
+     "laid_count": 7218,
+     "laid_volume": 389772
+    },
+    "3": {
+     "authored_count": 7218,
+     "authored_volume": 389772,
+     "laid_count": 7218,
+     "laid_volume": 389772
+    },
+    "4": {
+     "authored_count": 7218,
+     "authored_volume": 389772,
+     "laid_count": 7218,
+     "laid_volume": 389772
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSwitchyard3.prefab",
+   "shape": "SpawnableSwitchyard"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableSwitchyard4.prefab#5260000000000303": {
+   "intensities": {
+    "1": {
+     "authored_count": 9930,
+     "authored_volume": 536220,
+     "laid_count": 9930,
+     "laid_volume": 536220
+    },
+    "2": {
+     "authored_count": 9930,
+     "authored_volume": 536220,
+     "laid_count": 9930,
+     "laid_volume": 536220
+    },
+    "3": {
+     "authored_count": 9930,
+     "authored_volume": 536220,
+     "laid_count": 9930,
+     "laid_volume": 536220
+    },
+    "4": {
+     "authored_count": 9930,
+     "authored_volume": 536220,
+     "laid_count": 9930,
+     "laid_volume": 536220
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSwitchyard4.prefab",
+   "shape": "SpawnableSwitchyard"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableTorusKnot.prefab#6514606624884080306": {
+   "intensities": {
+    "1": {
+     "authored_count": 1500,
+     "authored_volume": 24000,
+     "laid_count": 1500,
+     "laid_volume": 12047.4
+    },
+    "2": {
+     "authored_count": 1500,
+     "authored_volume": 24000,
+     "laid_count": 1500,
+     "laid_volume": 12047.4
+    },
+    "3": {
+     "authored_count": 1500,
+     "authored_volume": 24000,
+     "laid_count": 1500,
+     "laid_volume": 12047.4
+    },
+    "4": {
+     "authored_count": 1500,
+     "authored_volume": 24000,
+     "laid_count": 1500,
+     "laid_volume": 12047.4
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableTorusKnot.prefab",
+   "shape": "SpawnableTorusKnot"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableTwistbands.prefab#5260000000000203": {
+   "intensities": {
+    "1": {
+     "authored_count": 16423,
+     "authored_volume": 32466038.3,
+     "laid_count": 15584,
+     "laid_volume": 16263420.8
+    },
+    "2": {
+     "authored_count": 16423,
+     "authored_volume": 32466038.3,
+     "laid_count": 15584,
+     "laid_volume": 16263420.8
+    },
+    "3": {
+     "authored_count": 16423,
+     "authored_volume": 32466038.3,
+     "laid_count": 15584,
+     "laid_volume": 16263420.8
+    },
+    "4": {
+     "authored_count": 16423,
+     "authored_volume": 32466038.3,
+     "laid_count": 15584,
+     "laid_volume": 16263420.8
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableTwistbands.prefab",
+   "shape": "SpawnableTwistbands"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage1.prefab#5260000000000403": {
+   "intensities": {
+    "1": {
+     "authored_count": 9206,
+     "authored_volume": 4350358.5,
+     "laid_count": 8971,
+     "laid_volume": 4130957.1
+    },
+    "2": {
+     "authored_count": 9206,
+     "authored_volume": 4350358.5,
+     "laid_count": 8971,
+     "laid_volume": 4130957.1
+    },
+    "3": {
+     "authored_count": 9206,
+     "authored_volume": 4350358.5,
+     "laid_count": 8971,
+     "laid_volume": 4130957.1
+    },
+    "4": {
+     "authored_count": 9206,
+     "authored_volume": 4350358.5,
+     "laid_count": 8971,
+     "laid_volume": 4130957.1
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage1.prefab",
+   "shape": "SpawnableWildlifeCage"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage2.prefab#5260000000000403": {
+   "intensities": {
+    "1": {
+     "authored_count": 12696,
+     "authored_volume": 5999491.7,
+     "laid_count": 12217,
+     "laid_volume": 5565584.7
+    },
+    "2": {
+     "authored_count": 12696,
+     "authored_volume": 5999491.7,
+     "laid_count": 12217,
+     "laid_volume": 5565584.7
+    },
+    "3": {
+     "authored_count": 12696,
+     "authored_volume": 5999491.7,
+     "laid_count": 12217,
+     "laid_volume": 5565584.7
+    },
+    "4": {
+     "authored_count": 12696,
+     "authored_volume": 5999491.7,
+     "laid_count": 12217,
+     "laid_volume": 5565584.7
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage2.prefab",
+   "shape": "SpawnableWildlifeCage"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage3.prefab#5260000000000403": {
+   "intensities": {
+    "1": {
+     "authored_count": 13244,
+     "authored_volume": 6328809.1,
+     "laid_count": 12797,
+     "laid_volume": 5720417
+    },
+    "2": {
+     "authored_count": 13244,
+     "authored_volume": 6328809.1,
+     "laid_count": 12797,
+     "laid_volume": 5720417
+    },
+    "3": {
+     "authored_count": 13244,
+     "authored_volume": 6328809.1,
+     "laid_count": 12797,
+     "laid_volume": 5720417
+    },
+    "4": {
+     "authored_count": 13244,
+     "authored_volume": 6328809.1,
+     "laid_count": 12797,
+     "laid_volume": 5720417
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage3.prefab",
+   "shape": "SpawnableWildlifeCage"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage4.prefab#5260000000000403": {
+   "intensities": {
+    "1": {
+     "authored_count": 13956,
+     "authored_volume": 6792526.7,
+     "laid_count": 13649,
+     "laid_volume": 6027528.4
+    },
+    "2": {
+     "authored_count": 13956,
+     "authored_volume": 6792526.7,
+     "laid_count": 13649,
+     "laid_volume": 6027528.4
+    },
+    "3": {
+     "authored_count": 13956,
+     "authored_volume": 6792526.7,
+     "laid_count": 13649,
+     "laid_volume": 6027528.4
+    },
+    "4": {
+     "authored_count": 13956,
+     "authored_volume": 6792526.7,
+     "laid_count": 13649,
+     "laid_volume": 6027528.4
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableWildlifeCage4.prefab",
+   "shape": "SpawnableWildlifeCage"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableYggdra.prefab#5210000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 34340,
+     "authored_volume": 541156.4,
+     "laid_count": 32817,
+     "laid_volume": 320142.9
+    },
+    "2": {
+     "authored_count": 34340,
+     "authored_volume": 541156.4,
+     "laid_count": 32817,
+     "laid_volume": 320142.9
+    },
+    "3": {
+     "authored_count": 34340,
+     "authored_volume": 541156.4,
+     "laid_count": 32817,
+     "laid_volume": 320142.9
+    },
+    "4": {
+     "authored_count": 34340,
+     "authored_volume": 541156.4,
+     "laid_count": 32817,
+     "laid_volume": 320142.9
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableYggdra.prefab",
+   "shape": "SpawnableYggdra"
+  },
+  "Assets/_Prefabs/Spawnables/SpawnableZephyr.prefab#5240000000000103": {
+   "intensities": {
+    "1": {
+     "authored_count": 52917,
+     "authored_volume": 542538.2,
+     "laid_count": 52244,
+     "laid_volume": 510464.8
+    },
+    "2": {
+     "authored_count": 52917,
+     "authored_volume": 542538.2,
+     "laid_count": 52244,
+     "laid_volume": 510464.8
+    },
+    "3": {
+     "authored_count": 52917,
+     "authored_volume": 542538.2,
+     "laid_count": 52244,
+     "laid_volume": 510464.8
+    },
+    "4": {
+     "authored_count": 52917,
+     "authored_volume": 542538.2,
+     "laid_count": 52244,
+     "laid_volume": 510464.8
+    }
+   },
+   "prefab": "Assets/_Prefabs/Spawnables/SpawnableZephyr.prefab",
+   "shape": "SpawnableZephyr"
+  }
+ },
+ "sources_sha256": "46e725c2f2eb37c5788e4a8421120d546246a69198d3c692f71e9fe80674c9ff"
+}

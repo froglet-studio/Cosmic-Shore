@@ -25,6 +25,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
         [SerializeField] Vector3 blockScale = new Vector3(2f, 2f, 2f);
 
         /// <summary>Laying slice per frame before the load gate takes over (it raises the slice
@@ -142,6 +143,10 @@ namespace CosmicShore.Gameplay
         protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
             if (prism == null || _cachedNodes == null) return;
+            // Pose and size come from the RESOLVED trail (SpawnableBase.ResolveClearance shrinks or
+            // clears a node that clips its neighbours); the node list carries only the domain.
+            var resolved = trailData is { Length: > 0 } ? trailData[0].Points : null;
+            if (resolved == null || resolved.Length != _cachedNodes.Count) return;
 
             // A minimal surface is a 2D prismscape - a SHELL, not a ribbon. The Trail here is
             // the general lay container, and the layer declares the shape it laid so topology
@@ -158,7 +163,7 @@ namespace CosmicShore.Gameplay
             {
                 var node = nodes[i];
                 elems[i] = new PrismLay(
-                    new SpawnPoint(node.Position, node.Rotation, blockScale), node.BlockDomain);
+                    resolved[i], node.BlockDomain);
             }
 
             // Streamed + batched at play time (this surface is Joust intensity 3 — the heaviest

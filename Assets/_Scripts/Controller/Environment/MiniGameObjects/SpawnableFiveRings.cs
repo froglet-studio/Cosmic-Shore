@@ -9,6 +9,7 @@ namespace CosmicShore.Gameplay
     public class SpawnableFiveRings : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
         [SerializeField] int blocksPerRing = 12;
         [SerializeField] float ringRadius = 10f;
         [SerializeField] Vector3 scale = new Vector3(4, 4, 9);

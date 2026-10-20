@@ -27,6 +27,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
         [SerializeField] Vector3 blockScale = new Vector3(2.5f, 2.5f, 2.5f);
 
         [Header("Helicoid Shape")]

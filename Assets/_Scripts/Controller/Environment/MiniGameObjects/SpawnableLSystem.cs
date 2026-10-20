@@ -22,6 +22,7 @@ namespace CosmicShore.Gameplay
         }
 
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
         [SerializeField] LSystemPreset preset = LSystemPreset.BasicTree;
         [SerializeField] float baseLength = 5f;
         [SerializeField] float baseWidth = 1f;

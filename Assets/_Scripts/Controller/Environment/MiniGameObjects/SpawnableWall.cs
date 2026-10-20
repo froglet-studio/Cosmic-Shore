@@ -7,6 +7,7 @@ namespace CosmicShore.Gameplay
     public class SpawnableWall : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
         [SerializeField] Crystal crystal;
         [SerializeField] float blockSize = 1f;
         [SerializeField] float padding = .1f;

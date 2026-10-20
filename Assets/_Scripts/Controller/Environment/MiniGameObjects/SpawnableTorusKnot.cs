@@ -25,6 +25,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
+        protected override Prism ClearancePrism => prism;
         [SerializeField] Vector3 blockScale = new Vector3(2f, 2f, 4f);
 
         [Header("Knot Parameters")]
@@ -60,9 +61,17 @@ namespace CosmicShore.Gameplay
         {
             var trailDataList = new List<SpawnTrailData>();
 
+            // Strand phases are spread over ONE SYMMETRY PERIOD of the knot, 2π·gcd(p,q)/p, not
+            // over the whole minor circle. Shifting the minor phase by a multiple of that period
+            // gives back the SAME curve (t → t + 2πk/p moves the minor angle by 2πqk/p), so the
+            // old 2π·s/strands put every strand of the shipped (3,5) knot with 3 strands on one
+            // curve: three domains' prisms interleaved along a single tube, each clipping the
+            // other two (Tools/Build/audit_prism_clipping.py). Inside one period every phase is a
+            // distinct curve parallel to the rest on the torus, so the strands never meet.
+            float period = 2f * Mathf.PI * Gcd(Mathf.Abs(p), Mathf.Abs(q)) / Mathf.Max(1, Mathf.Abs(p));
             for (int s = 0; s < strands; s++)
             {
-                float strandOffset = 2f * Mathf.PI * s / strands;
+                float strandOffset = period * s / strands;
                 Domains strandDomain = colorByStrand && strandDomains.Length > 0
                     ? strandDomains[s % strandDomains.Length]
                     : domain;
@@ -97,6 +106,12 @@ namespace CosmicShore.Gameplay
         protected override int GetParameterHash()
         {
             return System.HashCode.Combine(p, q, majorRadius, minorRadius, blocksAlongKnot, strands, seed, blockScale);
+        }
+
+        static int Gcd(int a, int b)
+        {
+            while (b != 0) (a, b) = (b, a % b);
+            return Mathf.Max(1, a);
         }
 
         Vector3 EvaluateKnot(float t, float strandOffset)

@@ -1147,3 +1147,31 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Andrew (QA); Yash could also take it
 - **Added:** 2026-10-19 by Caleb (`claude/fix-breakwater-preview-controls-3evnnj`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Breakwater preview — one-thumb flight), Assets/_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md
+
+### T-20261020-74d8 · open · test · ecology
+- **Task:** Fly the freestyle cells (Orrery, Yggdra, Daedala, Caldera, Geode, Zephyr, Ourobor, Hesperides) and Scurry's Atlantis after PrismClearance: look for any prism inside another, for gaps that read as broken structure, and time the veiled build against bleeding-edge
+- **Done when:** Each world shows no interpenetrating prisms, still reads as its own shape, and its build time is within a second of bleeding-edge on PC (note the phone number too)
+- **Who can take it:** Yash, or Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62; Tools/Build/audit_prism_clipping.py --render <png> for the before/after sheet
+
+### T-20261020-fa54 · open · test · arcade
+- **Task:** Play Joust, Cleave I1-I4, Breakwater, Regatta, Skein, Dog Fight and Wildlife Liberation after PrismClearance: Joust's torus knot is now three separate parallel rails (it was one tube with three colours through each other), rails are trimmed to their pitch, Breakwater's dish keeps 54% of its volume
+- **Done when:** No clipping prisms in any arena; rails still read as continuous to skim; Breakwater's dish still blocks as a dish; each cell reaches Restless after the same amount of play it did before
+- **Who can take it:** Yash, or Caleb on a QA run
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2-62.3
+
+### T-20261020-2529 · open · decision · ecology
+- **Task:** Decide whether the Mandelbulb flora family (FractalFoliage, Coral Bloom, Watershed, Apollonia) is held to no-clip: its claim lets crossing ribbons overlap by design and its gates allow 8-66% of touching pairs to interpenetrate
+- **Done when:** Either a /flora change gives MandelbulbFlora.Claim an oriented-box test and re-measures its gates to a zero, or the exception is written into Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; Tools/Build/measure_mandelbulb_flora.py
+
+### T-20261020-a3c2 · open · decision · card-art
+- **Task:** Card-art renders draw what a generator emits, not what PrismClearance lays (indistinguishable at card size today). Decide whether the card harness should apply the pass
+- **Done when:** Either card_art_harness applies PrismClearance as prism_clip_audit/Audit.cs Hook does, or a note in the /cardart skill says why it does not
+- **Who can take it:** Caleb
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Tools/Build/prism_clip_audit/Audit.cs (ClipAudit.Hook); Tools/Build/card_art_harness/PlatformShim.cs

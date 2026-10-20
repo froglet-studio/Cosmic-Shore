@@ -206,6 +206,9 @@ namespace CosmicShore.Gameplay
         public int intensityLevel = 1;
 
         protected abstract int GetParameterHash();
+        // The shipped base's clearance hook (PrismClearance). Declared so the shapes that override
+        // it compile; the card renders what the generator EMITS, so nothing here resolves.
+        protected virtual Prism ClearancePrism => null;
         protected virtual SpawnPoint[] GeneratePoints() => null;
         protected virtual SpawnTrailData[] GenerateTrailData()
         {
