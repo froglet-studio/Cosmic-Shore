@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Thresher: no lime on the chain, the crosshair or the ball (`cece/tender-hamilton-qcd1hi`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+Garrett: "remove the lime from the chain and the crosshair. we can let players get a feel for that. the lime on the
+ball isn't necessary either because the information is on the icon. the ball should still indicate its explosiveness
+but not with lime." `R_VesselActions/THRESHER.md` §3, §4, §5a, §5b. Removed: the chain's READY rim
+(`IsReady`, `chainRimReady`, `readyMargin`, `ThresherChainSolver.PredictReelCrackSpeed`) and the crosshair's timing
+cue (`IsLaunchImminent`, `launchCueSeconds`). The banked-energy rim now burns toward WHITE in the ball's own hue
+(`energyRimTint` 0.6 at a full bank). The Space card's energy gauge still fills toward lime; it is the only lime left.
+Also supersedes the "lime" steps of the older Thresher entries below. `/verify-unity` was unavailable (no Editor, no
+`unity` binary); the headless reference compile ran (result in the commit message).
+
+Toy Box > Vessel Changer → Thresher:
+1. Whip (hold RT, turn hard, release): the chain's rim is the ball's hue, dim slack and brighter taut. It never turns lime.
+2. Plant and spin until the launch view comes up: the crosshair stays white the whole lap, including just before
+   the launch point. A release still leaves boosted (×4.8).
+3. Slice rival prisms with the chain: the ball's rim brightens toward white as the Space gauge fills. A charged ball
+   looks clearly hotter than an uncharged one. Hit a rival prism: the blast spends the bank, and the rim and gauge
+   ease back. If the white reads too weakly (or like the red-hot ball's white rim), raise or lower `energyRimTint`.
+4. Console clean; the `ThresherConfig` asset shows no missing-field warnings after a reimport.
+
 ### 🔴 Tutorial off, Spectate label, configure preview visible, opaque configure veil (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 29 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE quest and Lesson (switched off in data).
