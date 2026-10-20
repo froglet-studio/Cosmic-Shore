@@ -1066,6 +1066,8 @@ push the bakes (Thresher, Scarab, Brittle Star, Urchin and Rhino are stale until
 1. **Sparrow, Serpent, Manta** (reproduced exactly): indistinguishable from before.
 2. **Thresher** (`Thresher.fbx`): a right turn swings the whip LEFT (out of the turn; the swim's yaw sign was
    fixed), a planted whip curls toward the ball, a crack flicks toward it; the chain hangs from the shackle.
+   *Superseded 2026-10-19 (`cece/elegant-goldberg-eanwgx`): the tail no longer beats or swings with the
+   stick; it hangs along the cord and lags a turn (THRESHER.md §5b, H2-H4b). Test those instead.*
 3. **Scarab** (`Scarab.fbx`; the hidden Sparrow is gone from the prefab): the elytra open in a turn and on
    throttle, the legs hang and tuck, the juke roll carries every part; the hull collider still triggers.
 4. **Stoat** (`Stoat.fbx`): the lope, the turn bend and the tail swing; spaghettification near a horizon still
@@ -1222,7 +1224,7 @@ Amoebius `CosmicShore.Live` builds; `author_wrasse_assets.py --check` ok.
 2. Fly with two thumbs and tap a card with a third finger: no steering jump, no drift, no three-finger stall.
 3. Repeat step 1 on the Sparrow and the Dolphin. On the Rhino, the sticks-apart card does nothing. If a Sparrow (or
    Scarab) card ignores taps, suspect the dead raycasting `Boost Button/display` image at the HUD root
-   (`Docs/REFACTOR_BACKLOG.md` S29).
+   (`Docs/REFACTOR_BACKLOG.md` S30).
 4. Wrasse in the Vessel Changer: the small lower-left view shows the kite, its lime tail and the motes.
 5. Double-tap the small view: the seats swap (kite full screen, pilot in the small view). Double-tap again to swap back.
    Fly with the left thumb in that corner and drift a few times: no swap.
@@ -3049,6 +3051,10 @@ never opens a joint, ball watertight); `author_thresher_assets.py --check` / `--
 **Verify** — THRESHER.md "In-editor verification" H1–H10. First-pass tuning: `ThresherAnimation` (beat rate / swing /
 turn swing / whip curl / crack / bank), `ThresherHullBuilder` (every proportion), the hit box sizes in
 `author_thresher_assets.py` (`BODY_BOX_*`).
+*Superseded in part 2026-10-19 (`cece/elegant-goldberg-eanwgx`): the tail no longer beats, swings with the
+stick or curls by a fixed angle; it hangs along the cord on springs (THRESHER.md §5b), and its tuning knobs are
+`ThresherAnimation`'s Tail header (cord sample distance, bend limits, root/tip frequency, damping, inertia, crack
+kick). Verify H2-H4b as rewritten.*
 
 ### 🔴 Rhino Space-5 "Breaker" — the sword cuts shielded prisms in one slice (`cece/magical-meitner-56obj5`, 2026-10-13) — NOT EDITOR-VERIFIED
 

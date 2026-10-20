@@ -9,9 +9,12 @@ and prisms are **binary** — there is no partial damage anywhere. The chain's k
 ball's next explosion; **A** switches to **Mass Mode**, where the ball builds instead of breaking;
 an **omni crystal** windmills the ball round the ship (§2a–2c, added 2026-10-13). Since the
 own-vessel pass (2026-10-13, `cece/dazzling-hypatia-nmdhle`) it flies its **own hull** — a faceted
-thresher shark whose long scythe of a tail beats as it swims and cracks like a whip — tows a faceted
+thresher shark whose long scythe of a tail hangs along the chain like its last links and cracks like a whip — tows a faceted
 **morning-star** ball, and wears finished icons (§5b). Its race is **Thresher Time**
-(`Controller/Arcade/THRESHERTIME.md`).
+(`Controller/Arcade/THRESHERTIME.md`). **The ball threads race rings as the hull does** (Garrett,
+2026-10-19: "the thresher should activate rings like in its racing game with either the vessel or the
+ball"): every gate race (Thresher Time included), Skim Race's rings and the arcade previews' rings count a
+crossing of the mouth by either (`IRingThreadProbe`, which `ThresherExecutor` implements; §5b).
 
 The mechanic was prototyped in a 2D browser sandbox (cruise 380 u/s). Every chain dial is authored
 in the sandbox's units and scaled to this game by one factor (§4), so the two read side by side.
@@ -447,7 +450,7 @@ look: a SPACESHIP inspired by the thresher shark, not a shark costume.
 | Size | snout to whip tip 8.14 (placeholder 8.06), 3.62 across the wing tips (3.52), 2.63 tall (2.54): within 4%, so the 1.6 × 1.4 × 5.2 body box, the 2.2 × 1.9 × 5.8 hitbox, the jets and the 55-unit camera keep what they were tuned to |
 | Slots | Domain (the dorsal blade, the whip's trailing blade, two sunk saddle plates each side of the spine, the flank trim lines, the wing panels, the tow ring, the nacelle and tail-collar trims: 18% of the surface), Body (gunmetal), Window (the sensor eyes, the canopy, the snout sensor), Engine (the gill louvres, the nacelle mouths, the chin intake's throat, the wing and whip-tip lights) |
 | Morphs | Charge (the dorsal blade stands 1.55× and the whip's blade widens) 6.1%, Mass (hull, nacelles and peduncle fatten, the tow shackle swells 1.9×, the wings ride out — Mass Mode) 4.1%, Space (the whip's last segment telescopes 1.7×, the wings reach 1.18× along their span) 9.5%, Time (wings sweep back and spread, dorsal and whip rake back) 6.3% of the diagonal |
-| Takes | none drive it — `ThresherAnimation` poses the bones in code; `beatleft`, `beatright`, `curl` (planted, toward a ball on the right) and `flare` (wings brake down) are documentation poses for the sheet and the studio |
+| Takes | none drive it — `ThresherAnimation` poses the bones in code; `beatleft`, `beatright`, `curl` (planted, toward a ball on the right) and `flare` (wings brake down) are documentation poses for the sheet and the studio (the beat poses describe the swim retired 2026-10-19; the runtime tail now hangs along the cord) |
 | Budget | 9,100 triangles, 4,646 vertices |
 
 **Clade → ship**, part by part: the shark body is a lofted gunmetal predator hull whose countershading
@@ -469,7 +472,7 @@ written by `author_thresher_assets.py` (`--check` validates it): `ThresherHull` 
 two jets and now holds the model instance in place of the placeholder's MeshFilter / MeshRenderer /
 `ThresherHullBuilder`. `ThresherAnimation` resolves the bones by name (`tail`, `tail.2`–`tail.4`,
 `wing.L`, `wing.R`; the placeholder's `ThresherTailBase`, `ThresherLobe0`–`2`, `ThresherPectoralL/R`
-still resolve, so either hull swims), banks and sways `ThresherHull` (its new `hullRoot` field), poses
+still resolve, so either hull is posed), banks `ThresherHull` (its new `hullRoot` field), poses
 every part in the hull's frame onto the rest captured there, and finds the SkinnedMeshRenderer
 (`updateWhenOffscreen`); the element morphs are the model's blend shapes, driven by `VesselAnimation` by
 name, and the builder's morph push runs only while a prefab still carries the builder. `ThresherExecutor`
@@ -489,7 +492,9 @@ toward a ball on the right), but Unity's `Euler(0, +a, 0)` carries a part that t
 LEFT. So the procedural tail swung INTO a turn, curled and cracked AWAY from a planted ball, and the
 body's counter-sway moved with the tail instead of against it. Nobody had opened the hull in Unity, so
 nobody saw it. `ThresherAnimation` now turns the chain by `-yaw`; the math, its tests and the harness are
-unchanged.
+unchanged. *(Moot since 2026-10-19: `ThresherSwimMath` now works in Unity's own convention throughout and
+aims at the cord's real direction, so no side sign is carried by hand; see "The tail is the last links of
+the cord" below.)*
 
 **The procedural placeholder** (`ThresherHullForm`, `ThresherHullBuilder`, `thresher_hull_harness`,
 `ThresherHullFormTests`) stays in the tree until the owner accepts the
@@ -514,16 +519,37 @@ element, baked base + four extremes like the Stoat's): Charge — the dorsal sta
 widens; Mass — the body thickens 1.42× and the hitch swells; Space — the scythe draws out 1.45× (reach);
 Time — the pectorals spread 1.5× and sweep back.
 
-**The swim** (`ThresherAnimation`, on the root's VesselAnimation fileID; the beat is `ThresherSwimMath`,
-pure): the scythe beats side to side as a **travelling wave** (each segment 0.7 rad behind the last, the
-tip landing last), 0.55 → 1.1 beats/s from a standstill to cruise (110 u/s), the tip sweeping **±39°** —
-fleet-scale (vessel rule 24). The segments are siblings posed as ONE chain (`PoseChain`), so a curl never
-opens a joint. The stick banks the hull 22° into a turn, swings the tail 34° out of it and twists the
-pectorals like ailerons. The ball drives the rest, read off the vessel's own `ThresherExecutor`: planted
-(Pivot), the tail **curls toward the ball** (48° at the tip) and the hull **banks into the orbit** (34°),
-both growing with the spin; while the ball **stops** (Skidding) the pectorals **flare** down 40° like
-brakes; a new smash in the combo, the ball turning red-hot, or a launch **cracks** the tip 55° toward the
-ball and decays. Transforms only — the morph is the model's blend shapes (the builder's vertices on the placeholder). The chain's yaw sign was fixed on 2026-10-18 (see "The hull model" above).
+**The tail is the last links of the cord** (`ThresherAnimation`, on the root's VesselAnimation fileID; the
+math is `ThresherSwimMath`, pure; since 2026-10-19, Garrett: "remove the tail wiggle when flying. let the
+tail more naturally sway as though it is the last links of the cord. it seamed a bit glitchy in the mobile
+test"). The chain leaves from the whip's tip, so the tail hangs along it: `CordBend` aims the tail at a
+point 12 u down the gameplay chain (`ThresherExecutor.TryGetCordPoint`), each joint takes `(j+1)/n` of that
+bend (so the last segment, where the chain leaves, lies along it; up to 110° sideways and 50° up or down),
+and every joint follows its share on a **damped spring** (2.4 Hz at the peduncle to 1.2 Hz at the tip,
+damping 0.45) that also **lags behind the hull's own turns** (the peduncle keeps 20% of where it pointed in
+the world, the tip 85%). Towed straight, it lies straight; a turn drags it (~12° at the tip in a 120 °/s
+turn), it sways back past straight when the turn ends and settles; planted, the ball sits beside the hull
+and the tail swings round to it. A cord swinging round AHEAD of the hull fades out instead of flipping
+sides. The springs integrate in ≤ 1/120 s sub-steps and clamp a frame at 0.1 s, so a phone at 30 fps poses
+the same tail as a PC at 144. **The beat is gone**: until 2026-10-19 the scythe beat side to side as a
+travelling sine wave (0.55 → 1.1 beats/s, ±39° at the tip), the body counter-swayed with it, the stick
+swung the tail 34° out of a turn and a planted ball curled it 48°; the cord now does all of that. The
+segments are siblings posed as ONE chain (`PoseChain`, absolute rotations), so a bend never opens a joint.
+The stick banks the hull 22° into a turn and twists the pectorals like ailerons, both eased (10/s): the
+base calls `Idle()` with centred sticks the frame a touch lifts, which used to snap the bank flat. The ball
+drives the rest: planted (Pivot), the hull **banks into the orbit** (34°, growing with the spin); while the
+ball **stops** (Skidding) the pectorals **flare** down 40° like brakes; a new smash in the combo, the ball
+turning red-hot, or a launch **cracks** the tip with a 600 °/s kick toward the ball that its spring brings
+back. The ball's side is held until the ball is clearly across (towed on the centreline, a bare sign
+flickered). Transforms only — the morph is the model's blend shapes (the builder's vertices on the
+placeholder). The chain's yaw sign was fixed on 2026-10-18 (see "The hull model" above).
+
+**Rings** (2026-10-19): `ThresherExecutor` implements `IRingThreadProbe` (the ball's position, and an
+epoch bumped on every re-seed), and each ring system samples it beside the hull with a
+`RingThreadProbeSample` (`Controller/Arcade/Racing/RingThreadProbe.cs`): `GateRaceController` (every gate
+race, Thresher Time included), `CrystalRaceRing` (Skim Race) and `ModePreviewGateCourse` (the arcade
+previews). A ring is threaded by the hull's segment OR the ball's, the same mouth test, one credit a
+frame; a re-seed (respawn) or a step past `maxPlausibleSpeed` threads nothing. `RingThreadProbeTests`.
 
 **Colliders and jets**: the Squirrel FBX's two box colliders and `ImpactCollider` went with it;
 `ThresherBody` (box 1.6 × 1.4 × 5.2 + `ImpactCollider`, layer Default) and `ThresherHitbox` (trigger
@@ -552,7 +578,9 @@ negative controls fire). **Proved offline** by `Tools/Build/thresher_hull_harnes
 `ThresherHullForm` / `ThresherSwimMath` / `ThresherBallForm` RUN against a math stub): every face of the
 hull and the ball wound outward (a parity-ray test inside each closed piece), the scythe continuous and
 3.6 u along its curve, every element moving the hull, blend at one weight = that extreme, baked bounds
-holding all 16 weight corners, the beating tail never opening a joint, the ball a core plus twelve evenly
+holding all 16 weight corners, the bending tail never opening a joint and never moving flying straight,
+the tail laid along a side cord identically at 30 and 144 fps, a cord ahead not followed, a turn swaying the
+tail and settling, the ball a core plus twelve evenly
 spread spikes. `ThresherHullFormTests` (edit mode) asserts the same.
 
 ## 6. Flight model hooks
@@ -592,7 +620,8 @@ is the fix.
 | `Controller/Vessel/ThresherChainSolver.cs` | Pure physics, `ThresherDials` (the defaults), `ThresherChainLinks` |
 | `_Models/Vessel Models/Thresher.fbx`, `Tools/Build/vessel_model/specs/thresher.py` | The hull MODEL since 2026-10-18 and the spec it is built from (`build.py thresher --check`; §5b) |
 | `Controller/Vessel/ThresherHullForm.cs`, `ThresherHullBuilder.cs` | The procedural placeholder hull (off the prefab since 2026-10-18; kept until the model is accepted): pure geometry + element morph set; the emitter (§5b) |
-| `Controller/Animation/ThresherAnimation.cs`, `ThresherSwimMath.cs` | The swim: tail wave, bank, pectorals, ball-driven curl / flare / crack (§5b) |
+| `Controller/Animation/ThresherAnimation.cs`, `ThresherSwimMath.cs` | The tail hanging along the cord (springs, hull-turn lag), bank, pectorals, ball-driven orbit bank / flare / crack (§5b) |
+| `Controller/Arcade/Racing/RingThreadProbe.cs` | `IRingThreadProbe` / `RingThreadProbeSample`: the ball threads race rings as the hull does (§5b) |
 | `Controller/Vessel/ThresherBallForm.cs` | The morning-star ball mesh (§5) |
 | `Tools/Build/author_thresher_assets.py`, `Tools/Build/thresher_hull_harness/` | The prefab pass (`--check`, `--self-test`); the offline geometry/swim/ball harness |
 | `Tools/Build/author_thresher_icons.py`, `Tools/Build/vessel_model/render_cards.py` | Ability icons; class card images rendered from the model |
@@ -690,12 +719,18 @@ H1. **Toy Box > Vessel Changer → Thresher**: a faceted shark, not the Squirrel
     back, dorsal fin, the dorsal / eyes / scythe blade / hitch ring in your domain colour. No Squirrel mesh
     anywhere (Hierarchy: `ThresherHull` with `ThresherPectoralL/R`, `ThresherTailBase`, `ThresherLobe0..2`).
     Console clean (no "has no ThresherHullBuilder" warning).
-H2. **Swim**: hands off, the scythe beats slowly side to side, the tip landing last; at cruise it beats
-    faster and wider. No gap opens between the scythe's segments at any point of a beat.
-H3. **Stick**: a hard turn banks the hull into it, swings the tail out of it, twists the pectorals.
-H4. **Ball**: full LT — while the ball stops the pectorals flare down; planted, the tail curls toward the
-    ball and the hull banks into the orbit, harder as the spin builds. A smash (or a launch) flicks the
-    scythe's tip toward the ball. The chain is drawn from the ring under the tail fork, without a kink.
+H2. **Tail (2026-10-19)**: flying straight, hands off or at cruise, the tail does NOT beat — it lies along
+    the towed chain. No gap opens between the scythe's segments. Test on a phone too (the 2026-10-19 report
+    was a mobile run).
+H3. **Stick**: a hard turn banks the hull into it and twists the pectorals; the tail lags out of line,
+    sways back past straight when the turn ends, and settles. Lifting the thumb off the screen eases the
+    bank flat instead of snapping it.
+H4. **Ball**: full LT — while the ball stops the pectorals flare down; planted, the tail swings round toward
+    the ball and the hull banks into the orbit, harder as the spin builds. A smash (or a launch) cracks the
+    scythe's tip toward the ball. The chain leaves the shackle at the whip's tip along the tail's own line,
+    without a kink.
+H4b. **Rings (2026-10-19)**: in Thresher Time (and Skim Race, and an arcade card's preview), swing the BALL
+    through the lit ring while the hull passes outside it — the ring counts; the hull alone still counts.
 H5. **The ball** is a spiked morning star, the spikes legible as it rolls; colours unchanged (§5).
 H6. **Elements** (FrogletTools element tools or crystals): Charge raises the dorsal and widens the blade,
     Mass fattens the body, Space lengthens the scythe, Time spreads the pectorals — each eased in.

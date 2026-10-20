@@ -848,7 +848,6 @@ MonoBehaviour:
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
-  cruiseSpeed: 110
   hullRoot: {fileID: 7788112233445567702}
 --- !u!114 &5086360743770514783
 MonoBehaviour:
