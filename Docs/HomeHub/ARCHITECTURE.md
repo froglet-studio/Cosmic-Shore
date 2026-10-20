@@ -1762,8 +1762,9 @@ In practice, for every step of the path:
    (Y for freestyle, the triggers for screen paging, B to back out of a window on the path) stand
    down, and a pad selection that wanders off the path is put back on it.
 3. **Settings is never taken away** (and the credits it opens). It is cut out of the dim on every
-   step, and while it is open the spotlight stands aside entirely. A player who cannot turn the
-   volume down while being guided has been trapped, not guided.
+   step where the menu draws the gear (Home, and in game; see §8.1), and while it is open the
+   spotlight stands aside entirely. A player who cannot turn the volume down while being guided has
+   been trapped, not guided.
 4. **The player presses the real control.** The cut-out is a hole, not a button: a press inside
    it falls through to the actual Arcade entry, card or window underneath.
 
@@ -1830,11 +1831,12 @@ preview, with B refused → tap in and the spotlight fades.
   the gear; cutting a hole there showed an empty square and passed the press to the window beneath.
 - **The caption has a dark backing**, because white text over dimmed card art is still unreadable.
 
-**Open, and not the guide's to fix:** inside the Arcade and the launch window, the menu's own panels
-are drawn over the gear (`Arcade_Panel` covers it), so Settings cannot be pressed there with or
-without a guide. "Settings is always reachable" therefore holds on Home only today. Making it hold
-everywhere is a menu change - the gear above every window, or pad West opening Settings from any
-menu window - and wants its own decision.
+**Decided (Caleb and the team, 2026-10-19): Settings only needs to be reachable from Home and in
+game.** Inside the Arcade and the launch window the menu's own panels are drawn over the gear
+(`Arcade_Panel` covers it), so Settings cannot be pressed there with or without a guide, and that
+is accepted: no gear above every window, no pad West shortcut. The guide keeps cutting Settings out
+only where a press would reach it (above), which is Home; a player inside the Arcade backs out to
+Home for Settings.
 
 ### 8.2 Second playtest: the real cause - the dim had no CanvasRenderer
 
