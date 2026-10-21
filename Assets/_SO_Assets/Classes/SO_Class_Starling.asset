@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SO_Class_Starling
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
   Class: 21
-  Name: Starling
+  Name: Starlings
   Description: A swarm, not a ship. The starlings roam the cell on their own after each objective in turn -
     the omnicrystal, elemental crystals, rival vessels, rival mass. You turn the view and pick one card
     from every hand; the cards you pick are what your swarm becomes.

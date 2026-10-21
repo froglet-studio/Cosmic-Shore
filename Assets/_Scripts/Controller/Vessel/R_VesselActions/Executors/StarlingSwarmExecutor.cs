@@ -95,6 +95,13 @@ namespace CosmicShore.Gameplay
         readonly int[] _groupSize = new int[MaxGroups];
         readonly Vector3[] _sum = new Vector3[MaxGroups];
 
+        // The separation grid: members bucketed into SeparationReach-sized cells, so each member checks its 27 cells instead
+        // of the whole swarm (a murmuration is 120-230 members; the all-pairs loop was 24-46 when it was written).
+        const float SeparationReach = 20f;
+        readonly Dictionary<long, int> _cellHead = new();
+        Vector3[] _snap = System.Array.Empty<Vector3>();
+        int[] _next = System.Array.Empty<int>();
+
         bool _started;
         uint _seed, _draws;
         float _contactOwed, _vesselScanAt, _faunaScanAt, _cellScanAt, _materialSyncAt, _aiPickAt;
@@ -258,6 +265,52 @@ namespace CosmicShore.Gameplay
             }
             _members.Add(m);
         }
+
+        /// <summary>Snapshots every member's position at the start of the step and buckets it into the separation grid.</summary>
+        void BuildSeparationGrid(int n)
+        {
+            if (_snap.Length < n)
+            {
+                _snap = new Vector3[Mathf.NextPowerOfTwo(n)];
+                _next = new int[_snap.Length];
+            }
+            _cellHead.Clear();
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 p = _members[i].P;
+                _snap[i] = p;
+                long key = CellKey(GridCell(p.x), GridCell(p.y), GridCell(p.z));
+                _next[i] = _cellHead.TryGetValue(key, out int head) ? head : -1;
+                _cellHead[key] = i;
+            }
+        }
+
+        /// <summary>Member <paramref name="i"/>'s push away from same-group members closer than SeparationReach.</summary>
+        Vector3 Separation(int i, int group, float push)
+        {
+            Vector3 p = _snap[i], sum = Vector3.zero;
+            int cx = GridCell(p.x), cy = GridCell(p.y), cz = GridCell(p.z);
+            for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+            for (int dz = -1; dz <= 1; dz++)
+            {
+                if (!_cellHead.TryGetValue(CellKey(cx + dx, cy + dy, cz + dz), out int j)) continue;
+                for (; j >= 0; j = _next[j])
+                {
+                    if (j == i || _members[j].Group != group) continue;
+                    Vector3 away = p - _snap[j];
+                    float dd = away.sqrMagnitude;
+                    if (dd < SeparationReach * SeparationReach && dd > 0f) sum += away * (push / Mathf.Sqrt(dd));
+                }
+            }
+            return sum;
+        }
+
+        static int GridCell(float v) => Mathf.FloorToInt(v / SeparationReach);
+
+        /// <summary>A cell's exact key (21 bits an axis, so no two cells within a million cells of the origin share one).</summary>
+        static long CellKey(int x, int y, int z) =>
+            ((long)(x & 0x1FFFFF) << 42) | ((long)(y & 0x1FFFFF) << 21) | (uint)(z & 0x1FFFFF);
 
         void Retire(Member m)
         {
@@ -430,6 +483,7 @@ namespace CosmicShore.Gameplay
             float push = _form == Form.Snowball ? 0.3f : 1f;
             float maxA = turn * dt * (_form != Form.None ? 2f : 1f);
             float edge = _cellRadius * 0.95f;
+            BuildSeparationGrid(n);
             for (int i = 0; i < n; i++)
             {
                 var m = _members[i];
@@ -441,15 +495,7 @@ namespace CosmicShore.Gameplay
                 Vector3 toC = _centroid[m.Group] - m.P;
                 float lc = Mathf.Max(toC.magnitude, 1e-3f);
                 want += toC / lc * (tight * Mathf.Min(1f, lc / 80f));
-                for (int j = 0; j < n; j++)
-                {
-                    if (j == i) continue;
-                    var o = _members[j];
-                    if (o.Group != m.Group) continue;
-                    Vector3 away = m.P - o.P;
-                    float dd = away.sqrMagnitude;
-                    if (dd < 400f && dd > 0f) want += away * (push / Mathf.Sqrt(dd));
-                }
+                want += Separation(i, m.Group, push);
                 want += new Vector3(Rnd() - 0.5f, Rnd() - 0.5f, Rnd() - 0.5f) * 0.6f;
                 Vector3 fromCell = m.P - _cellCenter;
                 float r0 = fromCell.magnitude;

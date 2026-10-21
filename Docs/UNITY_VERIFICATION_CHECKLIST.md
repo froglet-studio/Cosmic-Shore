@@ -13641,6 +13641,22 @@ prefab container and `DefaultNetworkPrefabs`. Reference compile clean; `author_s
    petal hits only. The swarm never drops below 6.
 6. Console: no errors and no per-frame logs while the Starlings flies.
 
+## 🔴 2026-10-21 — The Starlings round 3: a murmuration, browsable ability details, flight-sense camera (`cece/quirky-gates-skplxp`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. Changed `StarlingRules` (`StarlingPickPress` browsing, `StarlingPilotControls.StickRoll` /
+`SpinRoll`), `StarlingVesselTransformer`, `StarlingSwarmExecutor` (separation grid), `StarlingHUDController`,
+`StarlingHUDView`, `StarlingConfig.asset` (start 120, cap 200, minimum 30), `SO_Class_Starling` (Name: Starlings).
+Reference compile: 0 errors in changed files; `author_starling_assets.py --check` OK; `starling_rules_parity/run.sh`
+19/19, `--self-test` fires.
+1. Test Runner: `StarlingRulesTests` pass.
+2. Toybox > Vessel Changer > Starlings (the card reads "Starlings"): about 120 starlings roam as one murmuration.
+3. Pad: y-diff rolls the world the way flight rolls a hull. Phone: a two-finger spin turns the world with the fingers,
+   and two thumbs keep turning the view while they pinch.
+4. Pick a few cards, then with no hand dealt hold A: every Mass card held shows its name, level, text, numbers and reached
+   jolts. While holding, press B / X / Y: the card turns to Time / Charge / Space and nothing is picked; letting go of
+   all buttons closes it, and a quick press afterwards picks again.
+5. Profiler: the swarm executor's Update and the member renderers at 120-200 members (team task T-20261021-d6dc).
+
 ## 🔴 2026-10-21 — The Thresher spawns in Mass Mode (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
 
 Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.Initialize` now sets `_massMode = true`
@@ -13783,10 +13799,11 @@ Files: `Cytoplasm/SnowChanger.cs` (`AddMorphedShard`, `CondenseTick`, growable s
 (player config, 0 errors in project code). No `unity` CLI in the session, so `/verify-unity` did not run.
 Team task: T-20261021-6fa4.
 
-1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: each limb fades
+1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: every fifth
+   limb (`SnowChanger.limbsPerMorphedShard`, toned down from every limb on 2026-10-21) fades
    while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the order the limbs go. No
    limb pops out and no shard pops in.
-2. Kill a creature with spindles (a tadpole): each body limb leaves a shard too.
+2. Kill a creature with spindles (a tadpole): its body limbs leave shards too, one per five.
 3. Console stays clean. The `renderers` line still shows the snow as one instanced family.
-4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` limbs have made one; after that limbs
+4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` (800 x 0.25 = 200) limbs have made one; after that limbs
    only fade.

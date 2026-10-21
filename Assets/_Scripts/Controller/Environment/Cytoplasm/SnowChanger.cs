@@ -37,7 +37,13 @@ namespace CosmicShore.Gameplay
                  "cytoplasm density the device tier / quality preset allows, like the field itself. " +
                  "Past it a limb evaporates exactly as it always did. A performance backstop, not a " +
                  "look knob: each shard is one more instance to draw and reorient.")]
-        [SerializeField] int maxMorphedShards = 4000;
+        [SerializeField] int maxMorphedShards = 800;
+
+        [Tooltip("How many dying limbs it takes to leave one shard: 1 = every limb, 5 = every fifth " +
+                 "(Garrett, 2026-10-21: a fifth as many as one per limb). The other limbs evaporate as " +
+                 "they always did. Counted per cell, so a plant's ordered wither still leaves its " +
+                 "shards in order.")]
+        [SerializeField, Min(1)] int limbsPerMorphedShard = 5;
 
         // A List, not an array: dying limbs append to it (AddMorphedShard).
         List<GameObject> shards;
@@ -84,6 +90,7 @@ namespace CosmicShore.Gameplay
 
         readonly List<Condensing> _condensing = new();
         int _morphedShards;
+        int _dyingLimbs;
 
         void OnEnable()
         {
@@ -102,6 +109,7 @@ namespace CosmicShore.Gameplay
 
             _condensing.Clear();
             _morphedShards = 0;
+            _dyingLimbs = 0;
 
             if (cellData.Cell != null)
             {
@@ -174,13 +182,15 @@ namespace CosmicShore.Gameplay
         /// starts at zero scale facing <paramref name="limbRotation"/>, and condenses to an ordinary
         /// shard (its law scale, facing the crystal) over <paramref name="duration"/> seconds from
         /// <paramref name="startTime"/> (a <see cref="PrismClock"/> time: the limb's own fade start,
-        /// so an ordered wither stays ordered). Returns false, adding nothing, once the field holds
-        /// <see cref="maxMorphedShards"/> limb shards or before <see cref="Initialize"/> built it.
+        /// so an ordered wither stays ordered). Only every <see cref="limbsPerMorphedShard"/>-th dying
+        /// limb leaves one. Returns false, adding nothing, for the limbs in between, once the field holds
+        /// <see cref="maxMorphedShards"/> limb shards, or before <see cref="Initialize"/> built it.
         /// </summary>
         public bool AddMorphedShard(Vector3 position, Quaternion limbRotation, float startTime, float duration)
         {
             if (_morphedShards >= MorphedShardCap) return false;
             if (!_instanced && shards == null) return false;
+            if (_dyingLimbs++ % Mathf.Max(1, limbsPerMorphedShard) != 0) return false;
 
             int index;
             if (_instanced)

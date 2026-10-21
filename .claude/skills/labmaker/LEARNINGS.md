@@ -1576,3 +1576,22 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   `OrcaMissileVisual`; `Docs/claude/SHADERS_AND_PERFORMANCE.md` "In the world, not on the screen"; `CREW_OF_FOUR_LAB.md`
   §4 round 8.
 - Promoted: yes (the LOCKED rule in `SHADERS_AND_PERFORMANCE.md`)
+
+### L-STU-142 — Scaling a lab's population baseline leaves every card written in absolute counts behind
+- Lab: Starlings Lab (round 1 numbers, raised in Unity's round 3) · Branch: `cece/quirky-gates-skplxp` · Date: 2026-10-21
+- What happened: Garrett asked for 5x the starlings ("a small pack not a group of starlings in a murmuration"). The
+  baselines moved (start 24 → 120, cap 40 → 200, minimum 6 → 30) in one line of `SHIPPED`, but the card list states
+  some numbers as absolute member counts (Big Family: "Swarm cap 46" at L1, read as `cap + value - 40`) and others
+  per member (Hole Punch, Annex, Danger Drip, the base bite and nip). The first now adds a negligible +6 to a cap of
+  200; the second multiplies the swarm's output by about 5. The lab scorecard still ran green, because nothing in it
+  compares a card's effect to the baseline it was written against. The game's flocking loop was also all-pairs, fine
+  at 24 and about 70x the work at 200 (fixed with a separation grid).
+- Do instead:
+  - When a population baseline moves, list every card or stat written in absolute counts or per member, and decide
+    each with the owner (keep, scale, or restate relative to the baseline). Do not let the scorecard's green stand in
+    for that decision.
+  - Write population cards relative to the baseline (`+15% cap`) when the baseline is still being tuned.
+  - Before raising a count, find any loop over pairs of members in the lab and the game.
+- Evidence: `StarlingsLab.html` `SHIPPED`, `minNow`; `StarlingRules.CapNow`; `StarlingSwarmExecutor.Separation`; team
+  task T-20261021-729e (the card decision).
+- Promoted: no
