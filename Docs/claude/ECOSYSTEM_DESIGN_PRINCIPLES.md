@@ -61,7 +61,10 @@ trio, and the traps).
   pinned it to the race leader until its fauna were removed; `Cell.SetModeControlOverride`
   survives as the platform capability) — but the spawn colour is still
   exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
-  cell can never hold two fauna colours at once. A mode may also PEN a cell's fauna
+  cell can never hold two fauna colours at once. (A tamed creature's MARK is not a second fauna
+  colour: its spindles lean a little toward its tamer's domain hue so a player can tell their herd
+  or school from the wild (Garrett, 2026-10-21, `IFaunaLeash.TryGetLeashMark`), while its domain,
+  body prisms and diet stay the cell's.) A mode may also PEN a cell's fauna
   (`Cell.FaunaContainmentRadius` = the OUTER wall, `Cell.FaunaExclusionRadius` = the INNER one —
   together a cell-level annulus a mode can open and close while the match runs; Astro League holds
   its cleanup crew outside the court and drops the inner wall when the cell's own volume ladder

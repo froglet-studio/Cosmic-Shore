@@ -855,6 +855,14 @@ namespace CosmicShore.Gameplay
         /// <summary>The keeper: the school's first creature (the one exception to starvation, <see cref="IFaunaLeash.Sustains"/>).</summary>
         public bool Sustains(Fauna creature) => _tamed.Count > 0 && _tamed[0].Creature == creature;
 
+        /// <summary>The school's mark: a tamed creature's spindles lean toward the Angler's domain hue (<c>tameHueLean</c>).</summary>
+        public bool TryGetLeashMark(out Domains domain, out float lean)
+        {
+            domain = _status != null ? _status.Domain : default;
+            lean = config ? config.TameHueLean : 0f;
+            return _status != null && lean > 0f;
+        }
+
         // ---- orders: an attacker moves on through its set, and comes home when the set is gone ----
 
         void UpdateOrders()

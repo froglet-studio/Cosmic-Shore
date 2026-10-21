@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Names of the two jack model roots (Jack.fbx nested under the hull), in the executor's jack order.")]
         [SerializeField] string[] jackModelNames = { "Jack A", "Jack B" };
         [Tooltip("World size of a jack model relative to its authored 16 units, whatever the hull's own scale. Sized to " +
-                 "read in the jacks' view (viewSpan across the short side).")]
+                 "read in the jacks' view (MarlinJacksConfigSO.ViewSpan across the short side).")]
         [SerializeField, Min(0.01f)] float jackModelScale = 2.5f;
         [Tooltip("Rotation (degrees) from a jack's swim frame (+Z along its heading, +Y the board's up) to the model's own " +
                  "frame. Zero when the model's nose is +Z and its back +Y in Unity.")]

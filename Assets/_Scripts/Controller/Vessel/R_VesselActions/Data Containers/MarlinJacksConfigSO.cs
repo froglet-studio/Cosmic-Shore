@@ -24,8 +24,18 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float thumbMm = 22f;
         [Tooltip("thumbMargin: the smallest ring is this many thumb radii.")]
         [SerializeField, Min(0.1f)] float thumbMargin = 1.25f;
-        [Tooltip("viewSpan: world units across the screen's SHORT side (lab units).")]
+        [Tooltip("viewSpan: the LAB's view, world units across the screen's SHORT side (lab units). It sizes the smallest " +
+                 "ring in the world (a big thumb on the lab's nominal phone at this span); the jacks' view itself is framed " +
+                 "by phoneShortMm and thumbCover.")]
         [SerializeField, Min(10f)] float viewSpan = 1800f;
+        [Tooltip("phoneShortMm: a FULL-SIZE phone's screen, short side (mm; a 6.7-inch 19.5:9 phone is about 71). The jacks' " +
+                 "view is framed for it.")]
+        [SerializeField, Min(10f)] float phoneShortMm = 71f;
+        [Tooltip("thumbCover: on that phone, the smallest ring's diameter as a share of a big thumb's occlusion (thumbMm). " +
+                 "Just under 1 = the thumb barely covers it (Garrett, 2026-10-21: \"zoomed out enough that on a full size " +
+                 "mobile device an above average sized thumb barely covers the smallest jack repulsion radius\"). Lower " +
+                 "zooms the view out further; the ring's size in the world does not change.")]
+        [SerializeField, Range(0.2f, 2f)] float thumbCover = 0.9f;
         [Tooltip("camSlack: Steady view, share of the half-screen the herd may wander before the view pans.")]
         [SerializeField, Range(0f, 1f)] float camSlack = 0.45f;
 
@@ -40,13 +50,17 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float grazeSense = 130f;
         [Tooltip("The minimum herd: it starves only down to this many (Garrett, 2026-10-21: \"should only starve down to a " +
                  "minimum size\"). An empty herd has this many born to it, as the Angler's empty school has its keeper.")]
-        [SerializeField, Min(0)] int minHerd = 12;
+        [SerializeField, Min(0)] int minHerd = 30;
         [Tooltip("The most creatures the herd holds. Wild herbivores that come inside a herder's ring join it until it is full.")]
-        [SerializeField, Min(1)] int herdCap = 60;
+        [SerializeField, Min(1)] int herdCap = 150;
         [Tooltip("Seconds between births while an empty herd is being given its floor.")]
-        [SerializeField, Min(0.05f)] float floorBirthSeconds = 0.25f;
+        [SerializeField, Min(0.05f)] float floorBirthSeconds = 0.12f;
         [Tooltip("The species an empty herd is given when its cell grows no leashable herbivore of its own.")]
         [SerializeField] FaunaConfigurationSO companionFauna;
+        [Tooltip("The herd's mark: how far (0..1 of the way round the hue circle) a herded creature's spindles lean toward " +
+                 "our domain's hue, so the herd reads as ours (Garrett, 2026-10-21: \"a slight hue shift in your domain\"). " +
+                 "0 = no mark.")]
+        [SerializeField, Range(0f, 1f)] float herdHueLean = 0.35f;
 
         [Header("The jacks")]
         [Tooltip("dogSpeed: how fast a jack runs to its thumb (lab units/s).")]
@@ -119,8 +133,13 @@ namespace CosmicShore.Gameplay
         public float LabScale => labScale;
         public float ThumbMm => thumbMm;
         public float ThumbMargin => thumbMargin;
-        /// <summary>The view span in GAME units.</summary>
-        public float ViewSpan => viewSpan * labScale;
+        /// <summary>The lab's view span in GAME units: what the ring's floor is measured against.</summary>
+        public float LabViewSpan => viewSpan * labScale;
+        /// <summary>The jacks' view in GAME units across the screen's short side: zoomed out until the smallest ring is
+        /// <c>thumbCover</c> of a big thumb on a full-size phone (<see cref="MarlinJacksMath.ThumbViewSpan"/>).</summary>
+        public float ViewSpan => MarlinJacksMath.ThumbViewSpan(RingFloor, thumbMm, thumbCover, phoneShortMm);
+        public float PhoneShortMm => phoneShortMm;
+        public float ThumbCover => thumbCover;
         public float CamSlack => camSlack;
         public float PlanePull => planePull;
         public float Separation => separation * labScale;
@@ -130,6 +149,7 @@ namespace CosmicShore.Gameplay
         public int HerdCap => Mathf.Max(minHerd, herdCap);
         public float FloorBirthSeconds => floorBirthSeconds;
         public FaunaConfigurationSO CompanionFauna => companionFauna;
+        public float HerdHueLean => herdHueLean;
         public float DogSpeed => dogSpeed * labScale;
         public float PadDogSpeed => padDogSpeed;
         public float AINoise => aiNoise;
@@ -156,7 +176,7 @@ namespace CosmicShore.Gameplay
         public EventReference DecoySfx => decoySfx;
         public EventReference TeleportSfx => teleportSfx;
 
-        /// <summary>The ring's floor in GAME units: a big thumb on the nominal phone, at this view span.</summary>
-        public float RingFloor => MarlinJacksMath.FloorUnits(thumbMm, thumbMargin, ViewSpan);
+        /// <summary>The ring's floor in GAME units: a big thumb on the lab's nominal phone, at the lab's view span.</summary>
+        public float RingFloor => MarlinJacksMath.FloorUnits(thumbMm, thumbMargin, LabViewSpan);
     }
 }
