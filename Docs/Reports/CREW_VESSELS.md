@@ -135,7 +135,7 @@ Grouper · 2 seat".
   - All static gates pass.
 - **Not checked: it has not been flown in the Unity editor.** It also runs on one machine only, like the Wrasse.
 - **Status: a stub, shipped as one** (Garrett, 2026-10-21: "this is a good stub of a vessel"). Every seat, gun and
-  missile works end to end in the Toybox; networking, level-5 upgrades, sounds, a prefab fitted to the model and its own
+  missile is built and wired (Garrett flew it through round 7; rounds 8 and 9 are not flown yet); networking, level-5 upgrades, sounds, a prefab fitted to the model and its own
   HUD art are the follow-ups in `ORCA_CREW.md`.
 - **Round 9 (2026-10-21).** After Garrett flew round 8: each flown missile is the Sparrow's skyburst rocket with an
   igniting motor, a light, a bank into the stick and a lit faceted plume trail (`OrcaMissileVisual`). The bomb's ring and

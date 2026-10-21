@@ -9,9 +9,9 @@ The design is the Crew of Four Lab, rounds 3 to 8: `Docs/Studios/CrewOfFourLab.h
 the port on 2026-10-20: "stabilize the gunners guns as best you can. you can place them outside the vessel to do this.
 then bring this into unity".
 
-**Status: a stub (Garrett, 2026-10-21: "this is a good stub of a vessel").** It flies from the Toybox Vessel Changer
+**Status: a stub (Garrett, 2026-10-21: "this is a good stub of a vessel").** It is in the Toybox Vessel Changer
 with all four seats, its three guns, per-seat missiles, the helm's shield, its own hovering-assembly model, the
-missiles' look and the bomb's lit blast. It has not been opened in the Unity editor: every round's steps are in
+missiles' look and the bomb's lit blast. Garrett flew it through round 7; rounds 8 and 9 are compiled, not flown. Every round's steps are in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Orca round 5" to "Orca round 9"). What a full vessel still needs is the
 Follow-ups list at the end: networking, level-5 upgrades, sounds, a prefab fitted to the model, its own HUD art.
 
