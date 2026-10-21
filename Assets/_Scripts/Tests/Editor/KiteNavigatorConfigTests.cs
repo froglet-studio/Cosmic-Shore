@@ -90,8 +90,11 @@ namespace CosmicShore.Tests
             {
                 var col = c.ElementColor(e, Color.clear);
                 Assert.AreEqual(1f, col.a, $"element {e} has no colour: run Tools/Build/kite_mote_colors.py");
-                Assert.GreaterOrEqual(col.g, col.r, $"element {e} is not lime (green leads)");
-                Assert.Greater(col.g, col.b, $"element {e} is not lime (green leads)");
+                // "it has to have green in the yellow and yellow in the green. it can not have any blue or orange at all"
+                Assert.AreEqual(0f, col.b, $"element {e} has blue in it");
+                Assert.Greater(col.g, col.r, $"element {e} has orange in it (red leads green)");
+                float share = col.r / col.g;
+                Assert.That(share, Is.InRange(0.249f, 0.751f), $"element {e}: red is {share:F2} of green, not a quarter to three quarters (yellow in the green, green in the yellow)");
                 Color.RGBToHSV(col, out _, out float sat, out float val);
                 Assert.Greater(sat, 0.3f, $"element {e} is too grey for lime (grey is Blue's)");
                 Assert.Greater(val, 0.7f, $"element {e} is too dark for lime");

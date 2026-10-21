@@ -1699,9 +1699,10 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 14. **Round 8b, only the cord** - on the kite, with the mouse, a thumb and a stick: the hand stops ~10 u inside the
     screen's sides and top (and at the line at the bottom), and the Wrasse swings past every edge on its cord. Fling it
     off the side: it flies on and stops by drag; grab again and the cord pulls it back.
-15. **Round 9, four limes** - the kite view's motes are four limes: Charge pale yellow `#ffff00`, Mass olive `#a1c417`,
-    Space vivid green `#00ff00`, Time pale mint `#c0fb93`. The pilot's faint dots match. Each is told from Jade, Gold and
-    the neutral blue at a glance, and the tail and saved-boost dots are still the CTA lime.
+15. **Round 9b, four green-yellows** - the kite view's motes are four limes with no blue or orange in them: Charge
+    bright yellow-green `#a0ff00`, Mass deep green `#5ec600`, Space green with a little yellow `#40ff00`, and Time
+    chartreuse `#9bcf00`. The pilot's faint dots match. None reads as Jade, Gold or the neutral blue, the four are told
+    apart, and the tail and saved-boost dots are still the CTA lime.
 
 ### 🔴 The Wrasse's Sling, AI crews, the flail's toys, and Wrasse Run (68) (`cece/loving-fermat-ntdnbu`, 2026-10-20) — NOT EDITOR-VERIFIED
 

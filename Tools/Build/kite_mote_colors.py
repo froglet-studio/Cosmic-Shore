@@ -25,17 +25,21 @@ live from the assets so the boundary follows the palette:
 THE BOUNDARY is every sRGB colour whose distance to the nearest lime anchor, plus MARGIN, is no more than its distance
 to the nearest anchor of every other family: lime's cell of the families' Voronoi partition, shrunk by MARGIN (0.05,
 about 2.5 just-noticeable differences) so nothing on its edge could be mistaken for a neighbour, and clipped to what a
-screen can show (the sRGB cube).
+screen can show (the sRGB cube). Inside that, a lime is GREEN-YELLOW (Garrett, 2026-10-21, after the first cut: "pull
+time [and] space away from jade and charge away from gold" - "it has to have green in the yellow and yellow in the
+green. it can not have any blue or orange at all"): red and green only, blue 0; green leading red; red between a
+quarter and three quarters of green, i.e. an HSV hue of 75-105 degrees, a quarter of the way in from pure yellow and
+from pure green (GREEN_YELLOW_HUES). With blue at 0 the space is a curved SHEET (hue x value) in OKLab, not a volume:
+saturation still differs from corner to corner, but only as hue and value carry it.
 
 THE TETRAHEDRON is the largest-volume one (OKLab volume) with its four corners in the boundary AND four distinct
-hues, saturations and values: every pair of corners differs by APART (0.03, 1.5 just-noticeable differences) in
-value (L), in saturation (chroma) and in hue (the arc between them at their mean chroma). Without that rule the
-largest tetrahedron puts two corners at one hue (#00ff00 and #a5ff95, 142 and 141 degrees), which is not what was
-asked. 0.03 is the most the boundary allows: inside it value, saturation and hue move together (the most saturated
-lime is the 142-degree green, the brightest is the yellow edge), and at 0.04 no four corners fit (0 of 8 million
-random draws). The distinct optimum keeps 90% of the unconstrained volume.
-Searched over the boundary's surface on a 1/32 sRGB grid (the maximum of a volume, linear in each corner, sits on the
-surface), from seeded restarts, then each corner climbed continuously to 1/1536 (2.6 s). Its corners are the four colours.
+hues, saturations and values: every pair of corners differs by APART in value (L), in saturation (chroma) and in hue
+(the arc between them at their mean chroma). Without that rule the largest one can put two corners at one hue
+(#00ff00 and #a5ff95, 142 and 141 degrees, in the first cut). APART is the largest of APART_STEPS that fits: on the
+green-yellow sheet value, saturation and hue move together, and 0.02 (one just-noticeable difference) is what fits.
+On a sheet the tetrahedron is nearly flat; its corners are the sheet's most spread four.
+Searched over the boundary's surface on a 1/64 sRGB grid (the maximum of a volume, linear in each corner, sits on the
+surface), from seeded restarts, then each corner climbed continuously to 1/1536. Its corners are the four colours.
 
 THE ASSIGNMENT reads each corner's character: the lowest value is Mass (weight), the highest is Charge (the bright
 spark), and of the other two the cooler hue (toward Jade) is Space and the warmer is Time.
@@ -63,8 +67,13 @@ ASSET = os.path.join(REPO, "Assets", "_SO_Assets", "VesselActions", "KiteNavigat
 LAB = os.path.join(REPO, "Docs", "Studios", "WrasseLassoLab.html")
 
 MARGIN = 0.05          # OKLab: a corner is at least this much nearer lime than any other family
-APART = 0.03           # OKLab: every pair of corners differs by this much in value, in saturation AND in hue
-GRID = 32              # the search grid, steps per sRGB channel
+# Garrett, 2026-10-21: "it has to have green in the yellow and yellow in the green. it can not have any blue or orange at
+# all." So a lime is red and green only (blue 0), green leads red (no orange), and red is a real share of green: its HSV
+# hue, 120 - 60 r/g, sits strictly inside yellow (60) .. green (120), in this window.
+GREEN_YELLOW_HUES = (75.0, 105.0)
+APART_STEPS = (0.03, 0.025, 0.02)   # OKLab: the most distinct that fits - every pair of corners differs by APART
+APART = APART_STEPS[0]               # in value, in saturation AND in hue (derive() sets it)
+GRID = 64              # the search grid, steps per sRGB channel (only the blue-0 face is searched)
 RESTARTS = 64
 SEED = 7
 ELEMENTS = ("Charge", "Mass", "Space", "Time")   # index = Element - 1, the HUD's order
@@ -145,8 +154,17 @@ def family_distances(lab, fam):
     return out
 
 
+def green_yellow(rgb):
+    """Red and green only, green leading, the hue inside GREEN_YELLOW_HUES (no blue, no orange, no pure yellow or green)."""
+    r, g, b = rgb
+    if b > 1e-9 or g <= 1e-9 or r > g:
+        return False
+    hue = 120.0 - 60.0 * r / g
+    return GREEN_YELLOW_HUES[0] - 0.01 <= hue <= GREEN_YELLOW_HUES[1] + 0.01   # 0.01 degrees: the colours' 4-place rounding
+
+
 def in_lime(rgb, fam, margin=MARGIN):
-    if any(v < 0.0 or v > 1.0 for v in rgb):
+    if any(v < 0.0 or v > 1.0 for v in rgb) or not green_yellow(rgb):
         return False
     d = family_distances(oklab(rgb), fam)
     return all(d["lime"] + margin <= d[k] for k in d if k != "lime")
@@ -180,7 +198,9 @@ def region(fam):
     for i in range(n + 1):
         for j in range(n + 1):
             for k in range(n + 1):
-                inside[(i, j, k)] = in_lime((i / n, j / n, k / n), fam)
+                c = (i / n, j / n, k / n)
+                if green_yellow(c):
+                    inside[(i, j, k)] = in_lime(c, fam)
     pts = [key for key, ok in inside.items() if ok]
     surface = [key for key in pts
                if any(not inside.get((key[0] + dx, key[1] + dy, key[2] + dz), False)
@@ -276,9 +296,17 @@ def assign(corners):
 
 
 def derive():
+    """The four colours, at the most distinct APART that fits."""
+    global APART
     fam, _ = families()
-    corners, n_in, n_surface = largest_tetrahedron(fam)
-    return fam, assign(corners), n_in, n_surface
+    for step in APART_STEPS:
+        APART = step
+        try:
+            corners, n_in, n_surface = largest_tetrahedron(fam)
+        except SystemExit:
+            continue
+        return fam, assign(corners), n_in, n_surface
+    raise SystemExit("kite_mote_colors: no four distinct corners fit at any of %s" % (APART_STEPS,))
 
 
 # ----------------------------------------------------------------------------- where they land
@@ -348,7 +376,7 @@ def report(fam, colors, n_in, n_surface):
     print("kite_mote_colors: the lime boundary holds %d of %d grid colours (%d on its surface), margin %.2f OKLab"
           % (n_in, (GRID + 1) ** 3, n_surface, MARGIN))
     labs = [oklab(c) for c in colors]
-    print("  largest tetrahedron: OKLab volume %.6f" % volume(labs))
+    print("  largest tetrahedron: OKLab volume %.3g, every pair %.3f apart in value, saturation and hue" % (volume(labs), APART))
     for e, c, lab in zip(ELEMENTS, colors, labs):
         L, C, h = lch(lab)
         d = family_distances(lab, fam)
@@ -363,12 +391,15 @@ def report(fam, colors, n_in, n_surface):
 def self_test():
     fam, raw = families()
     bad = []
-    for name, c in (("the CTA lime", raw["lime"][0]), ("pure green", (0.0, 1.0, 0.0))):
+    for name, c in (("half red, full green", (0.5, 1.0, 0.0)), ("a darker green-yellow", (0.45, 0.85, 0.0))):
         if not in_lime(c, fam):
-            bad.append("%s is not lime" % name)
+            bad.append("%s %s is not lime" % (name, hexof(c)))
     for name, c in (("Jade", raw["jade"][1]), ("Ruby", raw["ruby"][1]), ("Gold", raw["gold"][1]),
                     ("the Blue domain", raw["blue"][1]), ("the danger red", raw["fire"][0]), ("mid grey", (0.5, 0.5, 0.5)),
-                    ("white", (1.0, 1.0, 1.0)), ("dark olive (DarkCTA raw)", (0.28125, 0.5, 0.078125))):
+                    ("white", (1.0, 1.0, 1.0)), ("dark olive (DarkCTA raw)", (0.28125, 0.5, 0.078125)),
+                    ("pure yellow (no green in it)", (1.0, 1.0, 0.0)), ("pure green (no yellow in it)", (0.0, 1.0, 0.0)),
+                    ("the first cut's mint (blue in it)", (0.7539, 0.9844, 0.5781)), ("orange", (1.0, 0.6, 0.0)),
+                    ("the CTA lime (a touch of blue)", raw["lime"][0])):
         if in_lime(c, fam):
             bad.append("%s %s is inside the lime boundary" % (name, hexof(c)))
     _, colors, _, _ = derive()

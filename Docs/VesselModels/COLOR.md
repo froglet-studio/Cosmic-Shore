@@ -159,23 +159,38 @@ render_cards.py Squirrel Rhino Thresher --compare out.jpg --candidates before.js
 
   The region is small. Its value runs 0.73–0.97, its chroma 0.14–0.29 and its hue 104–154°. Jade's teal takes the dark
   greens (the "dark olive is not lime" finding, `Docs/PALETTE.md` §2.5), and the grey axis takes the pale ones.
-- **The tetrahedron** has the largest OKLab volume among those whose four corners differ pairwise by at least 0.03 in
-  value, in saturation and in hue. Without that rule, the largest one puts two corners at one hue (#00ff00 and #a5ff95,
-  142° and 141°). 0.03 (1.5 just-noticeable differences) is the most the region allows: inside it, value, saturation and
-  hue move together. The distinct one keeps 90% of the unconstrained volume.
-- **The assignment** reads each corner: Mass is the lowest value (weight), Charge the highest (the spark), and of the
-  other two Space is the cooler hue (toward Jade) and Time the warmer.
+- **Green-yellow, round 2** (Garrett, 2026-10-21, after the first cut: "pull time [and] space away from jade and charge
+  away from gold" and "it has to have green in the yellow and yellow in the green. it can not have any blue or orange at
+  all"). The boundary keeps only red + green:
+  - blue is 0;
+  - green leads red (no orange);
+  - red is a quarter to three quarters of green, an HSV hue of 75–105°: a quarter of the way in from pure yellow and from
+    pure green (`GREEN_YELLOW_HUES`).
 
-| element | colour | sRGB | L (value) | chroma | hue |
-|---|---|---|---|---|---|
-| Charge | `#ffff00` | (1, 1, 0) | 0.968 | 0.211 | 110° |
-| Mass | `#a1c417` | (0.631, 0.769, 0.092) | 0.767 | 0.181 | 122° |
-| Space | `#00ff00` | (0, 1, 0) | 0.866 | 0.295 | 142° |
-| Time | `#c0fb93` | (0.754, 0.984, 0.578) | 0.925 | 0.146 | 133° |
+  With blue at 0, lime is a curved sheet of hue × value in OKLab, not a volume. Saturation (chroma) still differs from
+  corner to corner, but only as hue and value carry it.
+- **The tetrahedron** has the largest OKLab volume among those whose four corners differ pairwise in value, in saturation
+  and in hue by the largest of 0.03 / 0.025 / 0.02 that fits. On the sheet that is 0.02, one just-noticeable difference,
+  because value, saturation and hue move together there. The tetrahedron is nearly flat (volume 5e-9): its corners are the
+  sheet's four most spread colours. Without the distinctness rule, the first cut put two corners at one hue (#00ff00 and
+  #a5ff95).
+- **The assignment** reads each corner: Mass is the lowest value (weight), Charge the highest (the spark), and of the
+  other two Space is the cooler hue (toward green) and Time the warmer (toward yellow).
+
+| element | colour | sRGB | red / green | HSV hue | L (value) | chroma | nearest other family, beyond lime |
+|---|---|---|---|---|---|---|---|
+| Charge | `#a0ff00` | (0.626, 1, 0) | 0.63 | 82° | 0.905 | 0.250 | Jade +0.19 (Gold further) |
+| Mass | `#5ec600` | (0.368, 0.776, 0) | 0.47 | 92° | 0.735 | 0.220 | Jade +0.05 |
+| Space | `#40ff00` | (0.25, 1, 0) | 0.25 | 105° | 0.872 | 0.287 | Jade +0.16 |
+| Time | `#9bcf00` | (0.609, 0.813, 0) | 0.75 | 75° | 0.789 | 0.200 | Gold +0.10 (Jade further) |
+
+The first cut (`#ffff00`, `#a1c417`, `#00ff00`, `#c0fb93`) had pure yellow, pure green and a blue-tinted mint. The window
+moves Charge off Gold (its gap to Gold went from 0.11 to over 0.19) and puts yellow into Space (red 0 → a quarter of
+green).
 
 The motes in the kite view and the pilot's faint mote dots wear them. The kite's tail, the saved-boost dots and every
-other call to action keep the palette's one lime. Charge's corner is pure yellow, where Lime meets Gold, but still 0.05
-nearer lime. If it reads too yellow, a larger margin against Gold alone pulls it in; rerun the tool and the check.
+other call to action keep the palette's one lime. Mass sits on the boundary's Jade edge (+0.05): the dark green-yellows
+are the ones nearest Jade's teal. Narrowing the window further squeezes the four together (at 78–102°, under 0.02 apart).
 
 ## 6. Open: decisions and checks owed
 

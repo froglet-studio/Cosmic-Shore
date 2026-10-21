@@ -1228,7 +1228,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8)
 
 ### T-20261021-3d24 · open · test · Crew vessels
-- **Task:** Rounds 8b and 9 of the Wrasse on cece/loving-fermat-ntdnbu: the hand stops a small margin inside the screen's sides and top while the Wrasse swings past every edge on its cord; the four lasso elements' motes are four limes (Charge #ffff00, Mass #a1c417, Space #00ff00, Time #c0fb93). Say if Charge reads too yellow (a larger margin against Gold pulls it in)
+- **Task:** Rounds 8b and 9 of the Wrasse on cece/loving-fermat-ntdnbu: the hand stops a small margin inside the screen's sides and top while the Wrasse swings past every edge on its cord; the four lasso elements' motes are four green-yellows with no blue or orange (Charge #a0ff00, Mass #5ec600, Space #40ff00, Time #9bcf00); say if any two are hard to tell apart in play
 - **Done when:** Steps 14 and 15 of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or each failure is written down
 - **Who can take it:** Garrett (feel and colour call); Yash (offered) can run it
 - **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)

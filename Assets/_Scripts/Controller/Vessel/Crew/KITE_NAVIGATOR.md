@@ -269,7 +269,23 @@ Also fixed: `KiteNavigatorConfigTests` still asserted the board frame was `Eased
 | Asked | In the game |
 |---|---|
 | "the edges of the screen on the sides and top are still backwards with the mouse able to go past where it should and the wrasse not able to go where it should. the wrasse should only be limited by the tether. the mouse should be limited by a small margin significantly less than the cord length." | The screen's rectangle (`_s`) is no longer a wall for the kite. It stays the board's CONTENT (mote spawns, prism and rival queries, the AI's plans), and the kite flies `FlightSettings()`: that rectangle plus `kiteOffscreenReach` (240 u) on every side. The cord holds the kite; only a long fling meets the far wall. Round 8's bottom-only `offscreenOverhang` is gone. While the human navigates, the hand is clamped to `TryHandRect`: `handEdgeMargin` (10 u, under a quarter of the 42 u cord) inside the screen's sides and top, with the hand line as its bottom. A stick spans that whole rectangle, the way the mouse does. Wrasse Run's clamp is 5200, sized to the kite's far corner (~890 u out). |
-| "make all four of the lasso elements different hues, saturations and values within the lime green color family" ... "the largest tetrahedron within that space" | Each element's motes (kite view) and faint dots (pilot view) wear their own lime, `KiteNavigatorConfig.elementColors`: Charge `#ffff00`, Mass `#a1c417`, Space `#00ff00`, Time `#c0fb93`. They are derived and checked by `Tools/Build/kite_mote_colors.py`; the boundary, the tetrahedron and the assignment are in `Docs/VesselModels/COLOR.md` §5b. The tail and the saved-boost dots keep the palette's lime. The Wrasse Lasso Lab draws the same four (`LIME_E`). |
+| "make all four of the lasso elements different hues, saturations and values within the lime green color family" ... "the largest tetrahedron within that space" | Each element's motes (kite view) and faint dots (pilot view) wear their own lime, `KiteNavigatorConfig.elementColors`. The first cut was Charge `#ffff00`, Mass `#a1c417`, Space `#00ff00`, Time `#c0fb93`; round 9b replaced it. They are derived and checked by `Tools/Build/kite_mote_colors.py`; the boundary, the tetrahedron and the assignment are in `Docs/VesselModels/COLOR.md` §5b. The tail and the saved-boost dots keep the palette's lime. The Wrasse Lasso Lab draws the same four (`LIME_E`). |
+
+### Round 9b: green-yellow only (Garrett, 2026-10-21)
+
+"pull time [and] space away from jade and charge away from gold" - "it has to have green in the yellow and yellow in the
+green. it can not have any blue or orange at all." The boundary keeps only red + green: blue 0, green leading, and red a
+quarter to three quarters of green (an HSV hue of 75–105°). The four are now:
+
+| Element | Colour | Character |
+|---|---|---|
+| Charge | `#a0ff00` | bright yellow-green |
+| Mass | `#5ec600` | the darkest, a deep green |
+| Space | `#40ff00` | the greenest, with a quarter of yellow |
+| Time | `#9bcf00` | the yellowest, a mid-value chartreuse |
+
+All four are 0.02 apart (one just-noticeable difference) in value, saturation and hue, the most the blue-free sheet
+allows. `Docs/VesselModels/COLOR.md` §5b has the numbers.
 
 ## Seats: the swap is the arena's
 

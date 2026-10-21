@@ -77,10 +77,10 @@ MonoBehaviour:
   kiteOffscreenReach: 240
   moteSize: 4.5
   elementColors:
-  - {r: 1, g: 1, b: 0, a: 1}
-  - {r: 0.6309, g: 0.7686, b: 0.0918, a: 1}
-  - {r: 0, g: 1, b: 0, a: 1}
-  - {r: 0.7539, g: 0.9844, b: 0.5781, a: 1}
+  - {r: 0.626, g: 1, b: 0, a: 1}
+  - {r: 0.3682, g: 0.7764, b: 0, a: 1}
+  - {r: 0.25, g: 1, b: 0, a: 1}
+  - {r: 0.6094, g: 0.8125, b: 0, a: 1}
   spaceSpinDegreesPerSecond: 150
   massPulse: 0.72
   massPetalsOut: 2
