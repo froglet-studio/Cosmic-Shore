@@ -54,6 +54,12 @@ namespace UnityEngine
         public static int FloorToInt(float f) => (int)Math.Floor(f);
         public static bool Approximately(float a, float b) => Math.Abs(a - b) < 1e-6f;
         public static float MoveTowards(float a, float b, float d) => a;
+        // SilenceVignetteMask (compiled with VesselSilenceConfigSO, which hands out its Shape).
+        public const float PI = (float)Math.PI;
+        public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
+        public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
+        public static float Cos(float f) => (float)Math.Cos(f);
+        public static float Floor(float f) => (float)Math.Floor(f);
     }
     public static class Time
     {

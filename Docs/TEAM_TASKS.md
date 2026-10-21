@@ -1219,3 +1219,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (Broadside / arena owner), Yash (AI)
 - **Added:** 2026-10-20 by Garrett (`cece/sleepy-shannon-9qk646`)
 - **See:** Docs/ElementalAbilitySystem/SILENCE.md
+
+### T-20261021-7e2e · open · decision · vessels
+- **Task:** Pick the silenced pilot's screen-edge look in the Silence Vignette Lab (https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC): the shipped edge is overtuned on purpose (strength 0.75); compare Ember, Faceted window, Prism rim, Hard frame, Breathing over the Dog Fight scenes, log the pick in Decisions, and the next session writes its To-Unity lines into VesselSilenceConfig.asset
+- **Done when:** a pick is logged in the lab's Decisions and VesselSilenceConfig.asset carries it
+- **Who can take it:** Garrett (art direction)
+- **Added:** 2026-10-21 by Garrett's session (cece/sleepy-shannon-9qk646) (`cece/sleepy-shannon-9qk646`)
+- **See:** Docs/Studios/SILENCE_VIGNETTE_LAB.md

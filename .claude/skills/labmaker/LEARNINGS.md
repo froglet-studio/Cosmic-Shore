@@ -785,6 +785,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
 - Promoted: no
 
+### L-STU-125 — URP's Vignette multiplies: a coloured vignette over dark space is invisible, and a lab yardstick must score that cut near zero
+- Lab: Silence Vignette Lab (`Docs/Studios/SilenceVignetteLab.html`) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
+- What happened: the silence feedback's first cut drove the gameplay profile's URP Vignette in the palette's danger colour (intensity 0.26). Garrett played Dog Fight twice and never saw it. URP's `ApplyVignette` lerps the frame toward `frame × colour`, so red can only darken, and the arena's sky is (0, 0, 0.1): red times near-black is near-black. The driver was proven to reach weight 1.0 in Amoebius, so "the code runs" said nothing about "the player sees it". The lab's scorecard (OKLab ΔE ×100 over the edge band, 480×270, seeds 1-3) reads that cut at 2.8 on open space, about the just-noticeable difference, against 45 for an alpha-blended overlay at 0.75.
+- Do instead: signal a state with an overlay that ADDS colour (a ScreenSpaceOverlay canvas with a baked mask texture), keep URP's Vignette only for black darkening, and put the shipped look in the lab as a baseline row ("Round 0") that the yardstick must score near the just-noticeable difference, or the yardstick is not measuring sight.
+- Evidence: `SilenceVignetteMask.cs`, `SilenceScreenFeedback.EnsureOverlay`; the lab's scorecard and yardstick check; `Tools/Build/silence_vignette_parity/run.sh`.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-NCA-1 — The yardstick was wrong four times before the creatures were

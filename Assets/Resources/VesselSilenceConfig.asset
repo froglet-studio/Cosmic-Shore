@@ -20,9 +20,23 @@ MonoBehaviour:
   onsetShakeSeconds: 0.35
   hitShakeIntensity: 0.2
   hitShakeSeconds: 0.15
-  vignetteIntensity: 0.26
-  vignetteSmoothness: 0.55
-  vignetteColorStrength: 0.75
+  vignetteIntensity: 0.75
+  vignetteStyle: 0
+  vignetteFacets: 10
+  vignetteInner: 0.55
+  vignetteFeather: 0.5
+  vignetteRoundness: 0.25
+  vignetteFill: 1
+  vignetteRimStrength: 0.35
+  vignetteRimWidth: 0.04
+  vignetteColorStrength: 1
   fallbackDangerColor: {r: 1, g: 0.12, b: 0.08, a: 1}
-  vignetteFadeInSeconds: 0.2
+  vignetteBreatheDepth: 0.25
+  vignetteBreatheHz: 0.8
+  vignetteHitPulse: 0.35
+  vignetteHitPulseSeconds: 0.35
+  vignetteDarken: 0.3
+  vignetteSmoothness: 0.55
+  vignetteFadeInSeconds: 0.15
   vignetteFadeOutSeconds: 0.6
+  vignetteSortingOrder: -50

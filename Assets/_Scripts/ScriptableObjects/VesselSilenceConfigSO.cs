@@ -65,32 +65,92 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)]
         [SerializeField] float hitShakeSeconds = 0.15f;
 
-        [Tooltip("Peak strength of the danger-coloured vignette while silenced (URP Vignette " +
-                 "intensity). Subtle on purpose: it sits at the screen's edge for the whole " +
-                 "window. 0 = no vignette.")]
+        [Header("Vignette - a danger-coloured edge drawn OVER the frame")]
+        [Tooltip("Peak opacity of the danger-coloured edge while silenced. It is an overlay that ADDS " +
+                 "the colour (URP's Vignette multiplies, so on near-black space a red one is invisible - " +
+                 "the first cut was). Overtuned on purpose until the Silence Vignette Lab picks a look. " +
+                 "0 = no edge.")]
         [Range(0f, 1f)]
-        [SerializeField] float vignetteIntensity = 0.26f;
+        [SerializeField] float vignetteIntensity = 0.75f;
 
-        [Tooltip("URP Vignette smoothness: higher spreads the edge softer and further in.")]
-        [Range(0.01f, 1f)]
-        [SerializeField] float vignetteSmoothness = 0.55f;
+        [Tooltip("0 = Soft (a smooth ellipse), 1 = Faceted (a polygonal window, the prisms' language).")]
+        [Range(0, 1)]
+        [SerializeField] int vignetteStyle = 0;
 
-        [Tooltip("How much of the palette's danger colour the vignette carries: 1 is the full " +
-                 "danger signal colour, 0 darkens to black. Below 1 reads as a deep, lit-from-" +
-                 "inside red rather than a flat UI red.")]
+        [Tooltip("Sides of the Faceted window.")]
+        [Range(3, 16)]
+        [SerializeField] int vignetteFacets = 10;
+
+        [Tooltip("Where the edge starts: 0 = the centre of the screen, 1 = the top and bottom edges.")]
+        [Range(0f, 1.5f)]
+        [SerializeField] float vignetteInner = 0.55f;
+
+        [Tooltip("How far the edge takes to rise from nothing to full, in the same units.")]
+        [Range(0f, 1.5f)]
+        [SerializeField] float vignetteFeather = 0.5f;
+
+        [Tooltip("0 = the edge follows the screen's own shape (an ellipse), 1 = a circle in pixels " +
+                 "(reaches the top and bottom before the sides).")]
         [Range(0f, 1f)]
-        [SerializeField] float vignetteColorStrength = 0.75f;
+        [SerializeField] float vignetteRoundness = 0.25f;
+
+        [Tooltip("Opacity of the outer fill, relative to the peak. 0 leaves only the rim line.")]
+        [Range(0f, 1f)]
+        [SerializeField] float vignetteFill = 1f;
+
+        [Tooltip("Opacity of a bright line traced along the edge's inner boundary. 0 = no line.")]
+        [Range(0f, 1f)]
+        [SerializeField] float vignetteRimStrength = 0.35f;
+
+        [Tooltip("Half-width of that line, in the same distance units.")]
+        [Range(0f, 0.3f)]
+        [SerializeField] float vignetteRimWidth = 0.04f;
+
+        [Tooltip("How much of the palette's danger colour the edge carries: 1 is the full danger " +
+                 "signal colour (the rim every danger prism wears), 0 is black.")]
+        [Range(0f, 1f)]
+        [SerializeField] float vignetteColorStrength = 1f;
 
         [Tooltip("Used only when the active palette authors no danger colour.")]
         [SerializeField] Color fallbackDangerColor = new Color(1f, 0.12f, 0.08f, 1f);
 
-        [Tooltip("Seconds for the vignette to rise when a silence lands.")]
-        [Min(0f)]
-        [SerializeField] float vignetteFadeInSeconds = 0.2f;
+        [Tooltip("How much the edge breathes while silenced: 0 = steady, 0.3 = it dips to 70% and back.")]
+        [Range(0f, 1f)]
+        [SerializeField] float vignetteBreatheDepth = 0.25f;
 
-        [Tooltip("Seconds for the vignette to drain once the silence runs out.")]
+        [Tooltip("Breaths per second.")]
+        [Range(0f, 4f)]
+        [SerializeField] float vignetteBreatheHz = 0.8f;
+
+        [Tooltip("Extra opacity every hit that extends a live silence adds to the edge, decaying - the " +
+                 "edge flares with each hit you take.")]
+        [Range(0f, 1f)]
+        [SerializeField] float vignetteHitPulse = 0.35f;
+
+        [Tooltip("Seconds for a hit's flare to decay to a third.")]
+        [Range(0.05f, 2f)]
+        [SerializeField] float vignetteHitPulseSeconds = 0.35f;
+
+        [Tooltip("A darkening at the screen's edge under the colour (URP Vignette, black), so the edge " +
+                 "still reads over a bright scene. 0 = none.")]
+        [Range(0f, 1f)]
+        [SerializeField] float vignetteDarken = 0.3f;
+
+        [Tooltip("URP Vignette smoothness of that darkening.")]
+        [Range(0.01f, 1f)]
+        [SerializeField] float vignetteSmoothness = 0.55f;
+
+        [Tooltip("Seconds for the edge to rise when a silence lands.")]
+        [Min(0f)]
+        [SerializeField] float vignetteFadeInSeconds = 0.15f;
+
+        [Tooltip("Seconds for the edge to drain once the silence runs out.")]
         [Min(0f)]
         [SerializeField] float vignetteFadeOutSeconds = 0.6f;
+
+        [Tooltip("Sorting order of the overlay canvas. Below the HUD's canvases, so the edge sits " +
+                 "over the world and under the HUD.")]
+        [SerializeField] int vignetteSortingOrder = -50;
 
         public float SecondsPerPetal => secondsPerPetal;
         public float MaxSeconds => maxSeconds;
@@ -101,10 +161,29 @@ namespace CosmicShore.ScriptableObjects
         public float HitShakeIntensity => hitShakeIntensity;
         public float HitShakeSeconds => hitShakeSeconds;
         public float VignetteIntensity => vignetteIntensity;
-        public float VignetteSmoothness => vignetteSmoothness;
         public float VignetteColorStrength => vignetteColorStrength;
         public Color FallbackDangerColor => fallbackDangerColor;
+        public float VignetteBreatheDepth => vignetteBreatheDepth;
+        public float VignetteBreatheHz => vignetteBreatheHz;
+        public float VignetteHitPulse => vignetteHitPulse;
+        public float VignetteHitPulseSeconds => vignetteHitPulseSeconds;
+        public float VignetteDarken => vignetteDarken;
+        public float VignetteSmoothness => vignetteSmoothness;
         public float VignetteFadeInSeconds => vignetteFadeInSeconds;
         public float VignetteFadeOutSeconds => vignetteFadeOutSeconds;
+        public int VignetteSortingOrder => vignetteSortingOrder;
+
+        /// <summary>The mask's shape, as <see cref="CosmicShore.Gameplay.SilenceVignetteMask"/> takes it.</summary>
+        public CosmicShore.Gameplay.SilenceVignetteMask.Shape VignetteShape => new()
+        {
+            Style = vignetteStyle,
+            Facets = vignetteFacets,
+            Inner = vignetteInner,
+            Feather = vignetteFeather,
+            Roundness = vignetteRoundness,
+            Fill = vignetteFill,
+            RimStrength = vignetteRimStrength,
+            RimWidth = vignetteRimWidth,
+        };
     }
 }

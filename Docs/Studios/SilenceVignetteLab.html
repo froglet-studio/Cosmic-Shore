@@ -1,0 +1,692 @@
+<!doctype html>
+<!--
+  SILENCE VIGNETTE LAB — a /labmaker browser lab (round 1).
+  Question: what should the silenced pilot's danger-coloured screen edge look like, so it is noticed for
+  sure and still fits the game (Docs/ElementalAbilitySystem/SILENCE.md §5)?
+  The mask is a line-for-line twin of Assets/_Scripts/Controller/FX/SilenceVignetteMask.cs (between the
+  <mask-twin> markers); Tools/Build/silence_vignette_parity/run.sh holds the two together. Every SHIPPED
+  key is a VesselSilenceConfigSO field (Assets/Resources/VesselSilenceConfig.asset).
+  Write-up: Docs/Studios/SILENCE_VIGNETTE_LAB.md. Live: https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC
+  Verify: node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SilenceVignetteLab.html
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Silence Vignette Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: an editor - the stand-in Dog Fight in the middle, settings dock right, scorecard and
+     decisions below. The stage is always the game's own night; the chrome follows the viewer's theme. */
+  :root {
+    --bg: #f3f4f7; --panel: #ffffff; --ink: #161a22; --muted: #586172; --line: #d9dde5;
+    --accent: #c4161c; --accent-ink: #ffffff; --ok: #1b7a45; --warn: #a65a08; --changed: #c4161c;
+    --stage: #00001a;
+    --display: "Chakra Petch", "Barlow", system-ui, sans-serif;
+    --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0d14; --panel: #121520; --ink: #e5e8f0; --muted: #929bb0; --line: #252a38;
+      --accent: #ff4a4f; --accent-ink: #12060a; --ok: #58c98a; --warn: #f0a050; --changed: #ff6a6e; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0d14; --panel: #121520; --ink: #e5e8f0; --muted: #929bb0; --line: #252a38;
+    --accent: #ff4a4f; --accent-ink: #12060a; --ok: #58c98a; --warn: #f0a050; --changed: #ff6a6e; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--body); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 350px; grid-template-rows: auto minmax(0, 1fr) 210px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 12px; align-items: center; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font: 600 17px/1.2 var(--display); letter-spacing: 0.02em; margin: 0; text-wrap: balance; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: var(--stage); overflow: hidden; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; left: 12px; top: 10px; color: #c9d3ea; font: 12px/1.55 var(--mono); pointer-events: none; text-shadow: 0 1px 2px #000; }
+  #stageBar { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 24px); }
+  #stageBar .btn { background: rgba(10, 12, 26, 0.78); color: #e5e8f0; border-color: rgba(255, 255, 255, 0.18); }
+  #stageBar .btn.on { background: #c4161c; border-color: #ff6a6e; color: #fff; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 4px; padding: 4px 10px; cursor: pointer; font: 500 13px/1.3 var(--body); }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn:focus-visible, .tabs button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 9px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+  .row label .key { color: var(--muted); font: 11px var(--mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .row output { text-align: right; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12.5px; }
+  .presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 4px 0 10px; }
+  .presets .btn { text-align: left; }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 4px 0; }
+  .eyebrow { font: 600 11px/1.2 var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 2px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font: 600 12px var(--body); color: var(--muted); }
+  td.num { font: 12px var(--mono); text-align: right; }
+  .best { font-weight: 700; color: var(--ok); }
+  .bad { color: var(--warn); }
+  .tablewrap { overflow-x: auto; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+  .flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  pre.export { font: 12px/1.5 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; overflow-x: auto; margin: 6px 0; }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { aspect-ratio: 16 / 10; max-width: 100%; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    #bottom { max-height: none; }
+    .presets { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <label class="meta" for="backdrop">Scene</label>
+    <select id="backdrop" style="width:auto"></select>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pause" type="button">Pause</button>
+    <button class="btn" id="resetAll" type="button">Shipped</button>
+  </header>
+  <div id="stageWrap">
+    <canvas id="stage"></canvas>
+    <div id="hud"></div>
+    <div id="stageBar">
+      <button class="btn" id="hitBullet" type="button">Bullet hit</button>
+      <button class="btn" id="hitRocket" type="button">Rocket hit</button>
+      <button class="btn" id="silence4" type="button">Silence 4 s</button>
+      <button class="btn" id="autoRival" type="button">Rival firing</button>
+      <button class="btn" id="hold" type="button">Hold full</button>
+    </div>
+  </div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  const LAB = { name: 'Silence Vignette Lab', branch: 'cece/sleepy-shannon-9qk646', round: 1, doc: 'Docs/Studios/SILENCE_VIGNETTE_LAB.md' };
+  // Every key is a VesselSilenceConfigSO field, read off Assets/Resources/VesselSilenceConfig.asset
+  // (the "overtuned" first cut of the overlay, 2026-10-21). Lab-only knobs carry the lab* prefix.
+  const SHIPPED = {
+    vignetteIntensity: 0.75,      // VesselSilenceConfigSO.vignetteIntensity (peak overlay opacity)
+    vignetteColorStrength: 1,     // .vignetteColorStrength (black .. the palette's danger colour)
+    vignetteDarken: 0.3,          // .vignetteDarken (URP Vignette, black, under the colour)
+    vignetteSmoothness: 0.55,     // .vignetteSmoothness (that darkening's URP smoothness)
+    vignetteStyle: 0,             // .vignetteStyle (0 Soft, 1 Faceted)
+    vignetteFacets: 10,           // .vignetteFacets
+    vignetteInner: 0.55,          // .vignetteInner
+    vignetteFeather: 0.5,         // .vignetteFeather
+    vignetteRoundness: 0.25,      // .vignetteRoundness
+    vignetteFill: 1,              // .vignetteFill
+    vignetteRimStrength: 0.35,    // .vignetteRimStrength
+    vignetteRimWidth: 0.04,       // .vignetteRimWidth
+    vignetteBreatheDepth: 0.25,   // .vignetteBreatheDepth
+    vignetteBreatheHz: 0.8,       // .vignetteBreatheHz
+    vignetteHitPulse: 0.35,       // .vignetteHitPulse
+    vignetteHitPulseSeconds: 0.35,// .vignetteHitPulseSeconds
+    vignetteFadeInSeconds: 0.15,  // .vignetteFadeInSeconds
+    vignetteFadeOutSeconds: 0.6,  // .vignetteFadeOutSeconds
+    onsetShakeIntensity: 0.45,    // .onsetShakeIntensity (world units, CustomCameraController.Shake)
+    onsetShakeSeconds: 0.35,      // .onsetShakeSeconds
+    hitShakeIntensity: 0.2,       // .hitShakeIntensity
+    hitShakeSeconds: 0.15,        // .hitShakeSeconds
+    secondsPerPetal: 1,           // .secondsPerPetal
+    maxSeconds: 8,                // .maxSeconds
+    labHitsPerSecond: 1.2,        // lab: how often the stand-in rival lands a hit while firing
+  };
+  // OriginalColorSetSO.asset (the live palette, Docs/PALETTE.md §1).
+  const PALETTE = {
+    sky: [0, 0, 0.102],                                   // EnvironmentColors.SkyColor
+    danger: [1.4979111, 0.0058463, 0.0068495],            // EnvironmentColors.Danger (HDR; the game normalises it)
+    jade: { base: [0, 0.16, 0.34], rim: [0, 0.5884546, 1.1353014] },
+    ruby: { base: [0.11906711, 0.006783697, 0.30817598], rim: [0.5490196, 0, 1.4980392] },
+    gold: { base: [0.23899364, 0.124818474, 0], rim: [0.9964046, 0.4048625, 0.0185709] },
+  };
+  // SO_ColorSet.GetDangerSignalColor: the rim's hue with its brightest channel driven to 1.
+  const DANGER = (() => { const c = PALETTE.danger, p = Math.max(...c); return c.map((x) => x / p); })();
+
+  // ================= (2) SPEC: one row per slider =================
+  const SPEC = [
+    ['Edge',   'vignetteIntensity',      0, 1, 0.01, 'Strength', 'Peak opacity of the danger-coloured edge while silenced. The overlay ADDS colour, so it shows on black space.'],
+    ['Edge',   'vignetteColorStrength',  0, 1, 0.01, 'Danger colour', '1 = the palette\'s danger signal colour (the rim every danger prism wears); toward 0 it darkens to black.'],
+    ['Edge',   'vignetteDarken',         0, 1, 0.01, 'Darken under it', 'URP Vignette, black, under the colour: helps the edge read over a bright scene. On its own it is invisible on black space.'],
+    ['Edge',   'vignetteSmoothness',  0.01, 1, 0.01, 'Darken smoothness', 'URP smoothness of that darkening.'],
+    ['Shape',  'vignetteStyle',          0, 1, 1,    'Style (0 soft, 1 faceted)', 'Soft: a smooth ellipse. Faceted: a polygonal window, the prisms\' language.'],
+    ['Shape',  'vignetteFacets',         3, 16, 1,   'Facets', 'Sides of the faceted window.'],
+    ['Shape',  'vignetteInner',          0, 1.5, 0.01, 'Starts at', '0 = the centre of the screen, 1 = the top and bottom edges.'],
+    ['Shape',  'vignetteFeather',        0, 1.5, 0.01, 'Feather', 'How far the edge takes to reach full strength.'],
+    ['Shape',  'vignetteRoundness',      0, 1, 0.01, 'Roundness', '0 = the screen\'s own ellipse; 1 = a circle in pixels (reaches the top and bottom first).'],
+    ['Shape',  'vignetteFill',           0, 1, 0.01, 'Fill', 'Opacity of the outer fill. 0 leaves only the rim line.'],
+    ['Shape',  'vignetteRimStrength',    0, 1, 0.01, 'Rim line', 'A bright line along the edge\'s inner boundary.'],
+    ['Shape',  'vignetteRimWidth',       0, 0.3, 0.005, 'Rim width', 'Half-width of that line.'],
+    ['Motion', 'vignetteBreatheDepth',   0, 1, 0.01, 'Breathe depth', 'How far the edge dips and returns while silenced.'],
+    ['Motion', 'vignetteBreatheHz',      0, 4, 0.05, 'Breaths / s', 'Speed of the breathing.'],
+    ['Motion', 'vignetteHitPulse',       0, 1, 0.01, 'Hit flare', 'Extra opacity each hit adds while silenced, decaying.'],
+    ['Motion', 'vignetteHitPulseSeconds', 0.05, 2, 0.01, 'Flare decay (s)', 'Time for a flare to fall to a third.'],
+    ['Motion', 'vignetteFadeInSeconds',  0, 2, 0.05, 'Fade in (s)', 'How fast the edge rises when a silence lands.'],
+    ['Motion', 'vignetteFadeOutSeconds', 0, 3, 0.05, 'Fade out (s)', 'How long it drains when the silence ends.'],
+    ['Motion', 'onsetShakeIntensity',    0, 1.5, 0.01, 'Onset shake', 'Camera shake when a silence begins (world units; shown here as an approximate pixel offset).'],
+    ['Motion', 'onsetShakeSeconds',      0, 1, 0.01, 'Onset shake (s)', 'Its decay time.'],
+    ['Motion', 'hitShakeIntensity',      0, 1, 0.01, 'Hit shake', 'A lighter shake on each further hit.'],
+    ['Motion', 'hitShakeSeconds',        0, 1, 0.01, 'Hit shake (s)', 'Its decay time.'],
+    ['Silence', 'secondsPerPetal',       0, 3, 0.05, 'Seconds per petal', 'A hit silences for its worth: points / 10 x 4 elements x this.'],
+    ['Silence', 'maxSeconds',            0, 15, 0.5, 'Ceiling (s)', 'The most silence one pilot carries.'],
+    ['Silence', 'labHitsPerSecond',      0.1, 4, 0.1, 'Rival hit rate (lab)', 'Hits a second the stand-in rival lands while "Rival firing" is on.'],
+  ];
+
+  const LS_KEY = 'lab:' + LAB.name + ':P';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet(LS_KEY, {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  // ================= (3) THE MODEL =================
+  // <mask-twin> SilenceVignetteMask.cs, line for line. Tools/Build/silence_vignette_parity extracts this block.
+  const MASK = (() => {
+    const StyleFaceted = 1;
+    const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+    const lerp = (a, b, t) => a + (b - a) * clamp01(t);
+    const repeat = (t, length) => t - Math.floor(t / length) * length;
+    function smoothStep(a, b, x) {
+      if (b <= a) return x >= a ? 1 : 0;
+      const t = clamp01((x - a) / (b - a));
+      return t * t * (3 - 2 * t);
+    }
+    function distance(u, v, aspect, s) {
+      const x = (u - 0.5) * 2 * lerp(1, Math.max(0.01, aspect), clamp01(s.roundness));
+      const y = (v - 0.5) * 2;
+      const r = Math.sqrt(x * x + y * y);
+      if (s.style !== StyleFaceted || s.facets < 3) return r;
+      const seg = 2 * Math.PI / s.facets;
+      const start = Math.PI * 0.5 - seg * 0.5;
+      const a = repeat(Math.atan2(y, x) - start, seg) - seg * 0.5;
+      return r * Math.cos(a);
+    }
+    function alpha(u, v, aspect, s) {
+      const d = distance(u, v, aspect, s);
+      const fill = smoothStep(s.inner, s.inner + Math.max(0, s.feather), d) * clamp01(s.fill);
+      let rim = 0;
+      if (s.rimStrength > 0 && s.rimWidth > 0)
+        rim = clamp01(1 - Math.abs(d - s.inner) / s.rimWidth) * clamp01(s.rimStrength);
+      return clamp01(fill + rim);
+    }
+    function breathe(time, depth, hz) {
+      if (depth <= 0 || hz <= 0) return 1;
+      const wave = 0.5 + 0.5 * Math.cos(2 * Math.PI * hz * time);
+      return 1 - clamp01(depth) * (1 - wave);
+    }
+    function opacity(mask, weight, intensity, breatheValue, pulse) {
+      return clamp01(mask) * clamp01(clamp01(weight) * clamp01(intensity) * breatheValue + Math.max(0, pulse));
+    }
+    return { distance, alpha, breathe, opacity };
+  })();
+  // </mask-twin>
+
+  // The shape the mask reads, from the lab's settings (VesselSilenceConfigSO.VignetteShape).
+  function shapeOf(p) {
+    return { style: Math.round(p.vignetteStyle), facets: Math.round(p.vignetteFacets), inner: p.vignetteInner,
+      feather: p.vignetteFeather, roundness: p.vignetteRoundness, fill: p.vignetteFill,
+      rimStrength: p.vignetteRimStrength, rimWidth: p.vignetteRimWidth };
+  }
+  // URP's UberPost ApplyVignette (Universal RP 17): input * lerp(color, 1, pow(saturate(1 - dot(d, d)), smoothness*5)),
+  // d = |uv - centre| * intensity*3, d.x *= aspect when rounded. Round 0 shipped it in danger red; it now only darkens.
+  function urpFactor(u, v, aspect, intensity, smoothness, rounded) {
+    let dx = Math.abs(u - 0.5) * intensity * 3, dy = Math.abs(v - 0.5) * intensity * 3;
+    if (rounded) dx *= aspect;
+    const t = Math.max(0, Math.min(1, 1 - (dx * dx + dy * dy)));
+    return Math.pow(t, smoothness * 5);
+  }
+
+  // ---- the silence timeline: the game's own rules, so the edge is judged in motion ----
+  // VesselSilence.SecondsForPoints / Extend; SilenceScreenFeedback.Update (MoveTowards weight, SmoothStep drive,
+  // pulse decay exp(-dt / seconds), onset vs per-hit shake).
+  const HIT = { bullet: 1, strike: 8, shockwave: 10, debuff: 12, blast: 20, direct: 30 };   // CombatHitDrain.PointsFor
+  let world = null, seed = 7;
+  function reset(s) {
+    if (s != null) seed = s >>> 0;
+    world = { t: 0, rnd: mulberry32(seed), left: 0, weight: 0, pulse: 0, shakeLeft: 0, shakeDur: 0, shakeAmp: 0,
+              hits: 0, onsets: 0, nextHit: 0, auto: world ? world.auto : true, hold: world ? world.hold : false, flashes: [] };
+    world.nextHit = 0.6;
+  }
+  function shake(amp, dur) {
+    if (amp <= 0 || dur <= 0) return;
+    if (world.shakeLeft > 0 && amp < world.shakeAmp * (world.shakeLeft / world.shakeDur)) return;   // a stronger one keeps playing
+    world.shakeAmp = amp; world.shakeDur = dur; world.shakeLeft = dur;
+  }
+  function hit(kind) {
+    const pts = HIT[kind] || 1;
+    const add = pts / 10 * 4 * P.secondsPerPetal;
+    if (add <= 0 || P.maxSeconds <= 0) return;
+    const onset = world.weight <= 0.0001;
+    world.left = Math.min(P.maxSeconds, Math.max(0, world.left) + add);
+    world.hits++;
+    if (onset) { world.onsets++; shake(P.onsetShakeIntensity, P.onsetShakeSeconds); }
+    else { shake(P.hitShakeIntensity, P.hitShakeSeconds); world.pulse = Math.min(1, world.pulse + P.vignetteHitPulse); }
+    world.flashes.push({ t: world.t, kind });
+  }
+  function simStep(dt) {
+    const w = world;
+    w.t += dt;
+    if (w.auto && !w.hold) {
+      w.nextHit -= dt;
+      if (w.nextHit <= 0) {
+        hit(w.rnd() < 0.12 ? 'shockwave' : 'bullet');
+        w.nextHit = (0.5 + w.rnd()) / Math.max(0.1, P.labHitsPerSecond);
+      }
+    }
+    if (w.hold) w.left = Math.max(w.left, 1);
+    w.left = Math.max(0, w.left - dt);
+    const silenced = w.left > 0;
+    const secs = silenced ? P.vignetteFadeInSeconds : P.vignetteFadeOutSeconds;
+    const target = silenced ? 1 : 0;
+    w.weight = secs > 0 ? (w.weight < target ? Math.min(target, w.weight + dt / secs) : Math.max(target, w.weight - dt / secs)) : target;
+    w.pulse = P.vignetteHitPulseSeconds > 0 ? w.pulse * Math.exp(-dt / P.vignetteHitPulseSeconds) : 0;
+    if (w.weight <= 0.0001) w.pulse = 0;
+    w.shakeLeft = Math.max(0, w.shakeLeft - dt);
+    w.flashes = w.flashes.filter((f) => w.t - f.t < 0.25);
+  }
+  const smooth = (x) => x * x * (3 - 2 * x);
+
+  // ---- the stand-in Dog Fight: the shipped palette, drawn deterministically from a seed ----
+  const BACKDROPS = [
+    { key: 'space', name: 'Open space (Dog Fight)' },
+    { key: 'bright', name: 'Bright cell' },
+    { key: 'danger', name: 'Busy mass + danger prisms' },
+  ];
+  let backdrop = lsGet('lab:' + LAB.name + ':backdrop', 'space');
+  if (!BACKDROPS.some((b) => b.key === backdrop)) backdrop = 'space';
+  const css = (c, a) => 'rgba(' + Math.round(Math.min(1, c[0]) * 255) + ',' + Math.round(Math.min(1, c[1]) * 255) + ',' + Math.round(Math.min(1, c[2]) * 255) + ',' + (a == null ? 1 : a) + ')';
+  function drawBackdrop(g, w, h, kind, sd, t) {
+    const rnd = mulberry32(sd * 977 + kind.length);
+    g.fillStyle = css(PALETTE.sky); g.fillRect(0, 0, w, h);
+    // a faint far field of specks
+    g.fillStyle = 'rgba(160,180,255,0.35)';
+    for (let i = 0; i < 140; i++) { const x = rnd() * w, y = rnd() * h, s = rnd() < 0.1 ? 2 : 1; g.fillRect(x, y, s, s); }
+    if (kind === 'bright') {
+      const gr = g.createRadialGradient(w * 0.62, h * 0.35, 10, w * 0.62, h * 0.35, Math.max(w, h) * 0.75);
+      gr.addColorStop(0, 'rgba(255,214,140,0.95)'); gr.addColorStop(0.25, 'rgba(255,150,40,0.55)'); gr.addColorStop(0.6, 'rgba(90,40,120,0.35)'); gr.addColorStop(1, 'rgba(0,0,26,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    }
+    // prism trails: domain base faces with a fresnel rim, scrolling toward the camera
+    const trails = kind === 'danger' ? 9 : kind === 'bright' ? 6 : 5;
+    const unit = Math.min(w, h) / 30;
+    for (let k = 0; k < trails; k++) {
+      const dom = [PALETTE.jade, PALETTE.ruby, PALETTE.gold][k % 3];
+      const x0 = rnd() * w, y0 = rnd() * h, ang = rnd() * Math.PI * 2, curl = (rnd() - 0.5) * 0.08;
+      const n = 18 + Math.floor(rnd() * 16), step = unit * 1.5;
+      let x = x0, y = y0, a = ang;
+      for (let i = 0; i < n; i++) {
+        const danger = kind === 'danger' && (i + k) % 5 === 0;
+        const drift = (t * 22) % step;
+        const px = x + Math.cos(a) * drift, py = y + Math.sin(a) * drift;
+        g.save(); g.translate(px, py); g.rotate(a);
+        g.fillStyle = css(dom.base); g.strokeStyle = danger ? css(DANGER) : css(dom.rim, 0.9); g.lineWidth = danger ? 2.2 : 1.4;
+        g.fillRect(-unit * 0.55, -unit * 0.3, unit * 1.1, unit * 0.6); g.strokeRect(-unit * 0.55, -unit * 0.3, unit * 1.1, unit * 0.6);
+        g.restore();
+        x += Math.cos(a) * step; y += Math.sin(a) * step; a += curl;
+      }
+    }
+    // the rival, ahead and slightly high
+    const rx = w * 0.56 + Math.sin(t * 0.7) * w * 0.08, ry = h * 0.36 + Math.cos(t * 0.9) * h * 0.05;
+    ship(g, rx, ry, unit * 1.4, PALETTE.ruby.rim, Math.PI * 0.5 + Math.sin(t * 0.7) * 0.3);
+    // the pilot, below centre in the chase view
+    ship(g, w * 0.5, h * 0.66, unit * 2.2, PALETTE.jade.rim, -Math.PI * 0.5);
+    return { rx, ry };
+  }
+  function ship(g, x, y, s, col, ang) {
+    g.save(); g.translate(x, y); g.rotate(ang);
+    g.fillStyle = css([col[0] * 0.25, col[1] * 0.25, col[2] * 0.25]); g.strokeStyle = css(col); g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(s, 0); g.lineTo(-s * 0.7, s * 0.55); g.lineTo(-s * 0.35, 0); g.lineTo(-s * 0.7, -s * 0.55); g.closePath(); g.fill(); g.stroke();
+    g.restore();
+  }
+
+  // ---- the overlay: the same product the game draws (baked mask x danger colour x opacity) ----
+  const maskCanvas = document.createElement('canvas'), maskCtx = maskCanvas.getContext('2d');
+  let maskKey = '';
+  function bakeMask(aspect, p) {
+    const s = shapeOf(p), key = JSON.stringify(s) + '|' + aspect.toFixed(3) + '|' + p.vignetteColorStrength;
+    if (key === maskKey) return;
+    maskKey = key;
+    const W = 256, H = Math.max(16, Math.min(512, Math.round(W / Math.max(0.1, aspect))));   // SilenceScreenFeedback.EnsureOverlay
+    maskCanvas.width = W; maskCanvas.height = H;
+    const img = maskCtx.createImageData(W, H), col = edgeColour(p);
+    for (let y = 0; y < H; y++) {
+      const v = 1 - (y + 0.5) / H;   // Unity's texture rows run bottom-up
+      for (let x = 0; x < W; x++) {
+        const u = (x + 0.5) / W, a = MASK.alpha(u, v, aspect, s), i = (y * W + x) * 4;
+        img.data[i] = Math.round(col[0] * 255); img.data[i + 1] = Math.round(col[1] * 255); img.data[i + 2] = Math.round(col[2] * 255);
+        img.data[i + 3] = Math.round(a * 255);
+      }
+    }
+    maskCtx.putImageData(img, 0, 0);
+  }
+  function edgeColour(p) { const k = Math.max(0, Math.min(1, p.vignetteColorStrength)); return DANGER.map((c) => c * k); }
+  const darkCanvas = document.createElement('canvas'), darkCtx = darkCanvas.getContext('2d');
+  function drawDarken(g, w, h, intensity, smoothness, colour) {
+    // URP multiply, rendered at low resolution and stretched (it is smooth). colour = the vignette colour.
+    if (intensity <= 0) return;
+    const W = 192, H = Math.max(8, Math.round(W * h / w)), img = darkCtx.createImageData(W, H), aspect = w / h;
+    darkCanvas.width = W; darkCanvas.height = H;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const f = urpFactor((x + 0.5) / W, (y + 0.5) / H, aspect, intensity, smoothness, false), i = (y * W + x) * 4;
+      // multiply by lerp(colour, 1, f) == draw colour with alpha (1 - f) in 'multiply' over the frame
+      img.data[i] = Math.round(colour[0] * 255); img.data[i + 1] = Math.round(colour[1] * 255); img.data[i + 2] = Math.round(colour[2] * 255);
+      img.data[i + 3] = Math.round((1 - f) * 255);
+    }
+    darkCtx.putImageData(img, 0, 0);
+    g.save(); g.globalCompositeOperation = 'multiply'; g.imageSmoothingEnabled = true; g.drawImage(darkCanvas, 0, 0, w, h); g.restore();
+  }
+
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  function render() {
+    const w = canvas.width, h = canvas.height, W = world;
+    const amp = W.shakeLeft > 0 ? W.shakeAmp * (W.shakeLeft / W.shakeDur) : 0;
+    // CustomCameraController.ApplyShake: Perlin-ish offset, ~10 Hz. 1 world unit at the chase distance ~ h/40 px.
+    const ox = amp * (h / 40) * Math.sin(W.t * 63.1) , oy = amp * (h / 40) * Math.cos(W.t * 57.7);
+    ctx.save(); ctx.translate(ox, oy);
+    const pos = drawBackdrop(ctx, w, h, backdrop, seed, W.t);
+    // tracer rounds from the rival toward the pilot while firing
+    if (W.auto && !W.hold) {
+      ctx.strokeStyle = css(PALETTE.ruby.rim, 0.85); ctx.lineWidth = Math.max(1, h / 450);
+      for (let i = 0; i < 3; i++) { const f = ((W.t * 2.3 + i / 3) % 1); const x = pos.rx + (w * 0.5 - pos.rx) * f, y = pos.ry + (h * 0.66 - pos.ry) * f; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (w * 0.5 - pos.rx) * 0.04, y + (h * 0.66 - pos.ry) * 0.04); ctx.stroke(); }
+    }
+    for (const f of W.flashes) { const a = 1 - (W.t - f.t) / 0.25; ctx.fillStyle = 'rgba(255,240,220,' + (0.7 * a) + ')'; ctx.beginPath(); ctx.arc(w * 0.5, h * 0.66, h / 30 * (f.kind === 'bullet' ? 1 : 2.4), 0, 7); ctx.fill(); }
+    ctx.restore();
+    const drive = smooth(Math.max(0, Math.min(1, W.weight)));
+    if (drive > 0.0001) {
+      drawDarken(ctx, w, h, P.vignetteDarken * drive, P.vignetteSmoothness, [0, 0, 0]);
+      bakeMask(w / h, P);
+      const b = MASK.breathe(W.t, P.vignetteBreatheDepth, P.vignetteBreatheHz);
+      ctx.save(); ctx.globalAlpha = MASK.opacity(1, drive, P.vignetteIntensity, b, W.pulse * drive); ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(maskCanvas, 0, 0, w, h); ctx.restore();
+    }
+    $('hud').textContent = 'silenced ' + W.left.toFixed(1) + ' s   edge ' + drive.toFixed(2) + '   flare ' + W.pulse.toFixed(2)
+      + '\nhits ' + W.hits + '   onsets ' + W.onsets + '   scene ' + BACKDROPS.find((x) => x.key === backdrop).name + (paused ? '   [paused]' : '');
+    $('hud').style.whiteSpace = 'pre';
+  }
+
+  // ================= the yardstick: does the edge READ, and does it keep the centre clear? =================
+  // Scored on a fixed 480 x 270 frame, at full weight, breathing at its peak, no flare. Per scene: the mean
+  // OKLab colour difference x100 the effect makes in the outer band (12% of the height in from every edge)
+  // and in the centre box (the middle 40% x 40%), and the red it adds at the edge. The backdrop is drawn by
+  // the same deterministic painter the stage uses (t = 0).
+  const SW = 480, SH = 270, scoreCanvas = document.createElement('canvas'); scoreCanvas.width = SW; scoreCanvas.height = SH;
+  const scoreCtx = scoreCanvas.getContext('2d', { willReadFrequently: true });
+  const backdropCache = {};
+  function backdropPixels(kind, sd) {
+    const k = kind + ':' + sd;
+    if (!backdropCache[k]) { drawBackdrop(scoreCtx, SW, SH, kind, sd, 0); backdropCache[k] = scoreCtx.getImageData(0, 0, SW, SH).data.slice(); }
+    return backdropCache[k];
+  }
+  const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  function oklab(r, g, b) {
+    r = lin(r); g = lin(g); b = lin(b);
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+  }
+  // One variant = settings plus an optional legacy URP-red pass (Round 0, the cut that showed nothing).
+  function compositeScore(p, legacy, kind, sd) {
+    const src = backdropPixels(kind, sd), aspect = SW / SH, s = shapeOf(p), col = edgeColour(p);
+    const op = MASK.opacity(1, 1, p.vignetteIntensity, 1, 0);
+    let edgeSum = 0, edgeN = 0, midSum = 0, midN = 0, redSum = 0;
+    const band = Math.round(SH * 0.12), cx0 = SW * 0.3, cx1 = SW * 0.7, cy0 = SH * 0.3, cy1 = SH * 0.7;
+    for (let y = 0; y < SH; y += 2) for (let x = 0; x < SW; x += 2) {
+      const inEdge = x < band || y < band || x >= SW - band || y >= SH - band, inMid = x >= cx0 && x < cx1 && y >= cy0 && y < cy1;
+      if (!inEdge && !inMid) continue;
+      const i = (y * SW + x) * 4, u = (x + 0.5) / SW, v = 1 - (y + 0.5) / SH;
+      let r = src[i] / 255, g = src[i + 1] / 255, b = src[i + 2] / 255;
+      const r0 = r, g0 = g, b0 = b;
+      if (legacy) { const f = urpFactor(u, 1 - v, aspect, legacy.intensity, legacy.smoothness, false); r *= legacy.color[0] + (1 - legacy.color[0]) * f; g *= legacy.color[1] + (1 - legacy.color[1]) * f; b *= legacy.color[2] + (1 - legacy.color[2]) * f; }
+      if (p.vignetteDarken > 0) { const f = urpFactor(u, 1 - v, aspect, p.vignetteDarken, p.vignetteSmoothness, false); r *= f; g *= f; b *= f; }
+      const a = MASK.alpha(u, v, aspect, s) * op;
+      if (a > 0) { r += (col[0] - r) * a; g += (col[1] - g) * a; b += (col[2] - b) * a; }
+      const A = oklab(r0, g0, b0), B = oklab(r, g, b), dE = 100 * Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+      if (inEdge) { edgeSum += dE; edgeN++; redSum += Math.max(0, (r - Math.max(g, b)) - (r0 - Math.max(g0, b0))); }
+      if (inMid) { midSum += dE; midN++; }
+    }
+    return { edge: edgeSum / Math.max(1, edgeN), mid: midSum / Math.max(1, midN), red: redSum / Math.max(1, edgeN) };
+  }
+  // Baselines first: the effect OFF (a negative control: every column must read 0) and Round 0 (URP red, the
+  // cut Garrett could not see - the yardstick must score it near the just-noticeable difference on open space, or it is not measuring sight).
+  const VARIANTS = [
+    { name: 'Off (control)', v: { vignetteIntensity: 0, vignetteDarken: 0, vignetteRimStrength: 0 } },
+    { name: 'Round 0: URP red multiply', v: { vignetteIntensity: 0, vignetteDarken: 0, vignetteRimStrength: 0 }, legacy: { intensity: 0.26, smoothness: 0.55, color: [0.75, 0, 0] } },
+    { name: 'Shipped (overtuned)', v: {} },
+    { name: 'Ember (subtle)', v: { vignetteIntensity: 0.45, vignetteInner: 0.7, vignetteFeather: 0.45, vignetteRimStrength: 0, vignetteDarken: 0.2 } },
+    { name: 'Faceted window', v: { vignetteStyle: 1, vignetteFacets: 10, vignetteInner: 0.62, vignetteFeather: 0.25, vignetteFill: 0.85, vignetteRimStrength: 0.6, vignetteRimWidth: 0.025 } },
+    { name: 'Prism rim', v: { vignetteInner: 0.75, vignetteFeather: 0.4, vignetteFill: 0.25, vignetteRimStrength: 0.9, vignetteRimWidth: 0.05 } },
+    { name: 'Hard frame', v: { vignetteIntensity: 0.9, vignetteInner: 0.45, vignetteFeather: 0.3, vignetteDarken: 0.5 } },
+    { name: 'Breathing', v: { vignetteBreatheDepth: 0.6, vignetteBreatheHz: 1.2 } },
+    { name: 'Yours (current settings)', v: null },
+  ];
+  const SCORE_SEEDS = [1, 2, 3];
+  function scoreVariant(base) {
+    const out = {};
+    for (const b of BACKDROPS) {
+      let e = 0, m = 0, r = 0;
+      for (const sd of SCORE_SEEDS) { const s = compositeScore(base.p, base.legacy, b.key, sd); e += s.edge; m += s.mid; r += s.red; }
+      out[b.key] = { edge: +(e / SCORE_SEEDS.length).toFixed(2), mid: +(m / SCORE_SEEDS.length).toFixed(2), red: +(r / SCORE_SEEDS.length).toFixed(3) };
+    }
+    return out;
+  }
+  function runBatch() {
+    const rows = [];
+    for (const va of VARIANTS) {
+      const p = Object.assign({}, va.v === null ? P : SHIPPED, va.v || {});
+      const s = scoreVariant({ p, legacy: va.legacy });
+      rows.push({ variant: va.name, edgeSpace: s.space.edge, edgeBright: s.bright.edge, edgeDanger: s.danger.edge,
+        centre: +((s.space.mid + s.bright.mid + s.danger.mid) / 3).toFixed(2), redSpace: s.space.red });
+    }
+    return rows;
+  }
+  function score() { const s = scoreVariant({ p: Object.assign({}, P) }); return { edgeSpace: s.space.edge, edgeBright: s.bright.edge, edgeDanger: s.danger.edge, centre: +((s.space.mid + s.bright.mid + s.danger.mid) / 3).toFixed(2), t: +world.t.toFixed(2) }; }
+
+  // ================= platform =================
+  function detectPlatform() {
+    const host = window.__labHost || {}, ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= UI =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function refreshDiff() {
+    const n = Object.keys(diffOnly()).length;
+    $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from shipped' : 'shipped numbers';
+    for (const [, key, , , step] of SPEC) {
+      const o = outputs[key]; if (!o) continue;
+      o.out.textContent = fmt(P[key], step); o.inp.value = P[key];
+      const changed = Math.abs(P[key] - SHIPPED[key]) > 1e-9;
+      o.out.classList.toggle('changed', changed);
+      o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key];
+    }
+  }
+  function setParam(key, v) { P[key] = v; lsSet(LS_KEY, diffOnly()); refreshDiff(); }
+  function applyPreset(v) { Object.assign(P, SHIPPED, v || {}); lsSet(LS_KEY, diffOnly()); refreshDiff(); if (world.weight < 0.5) hit('shockwave'); }
+
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) {
+      for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name));
+      body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name);
+    }
+    for (const t of tabs) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function presetsBox() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="eyebrow">Looks</p><div class="presets"></div><p class="hint">A look loads its settings over the shipped ones and lands a hit so you see it. Shipped = what the game draws today.</p>';
+    const grid = box.querySelector('.presets');
+    for (const va of VARIANTS) {
+      if (va.v === null || va.legacy) continue;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = va.name; b.onclick = () => applyPreset(va.v); grid.appendChild(b);
+    }
+    return box;
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    if (group === 'Edge') box.appendChild(presetsBox());
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      const id = 'p_' + key;
+      row.querySelector('label').htmlFor = id; row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); inp.id = id; Object.assign(inp, { min: lo, max: hi, step, value: P[key] });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', groups.map((g) => ({ name: g, build: () => sliderGroup(g) })), 'lab:' + LAB.name + ':dock');
+
+  // ================= decision log =================
+  let db = null, me = '', remote = [], localLog = lsGet('lab:' + LAB.name + ':log', []);
+  function snapshot() { return { round: LAB.round, seed, backdrop, changed: diffOnly() }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through to this browser */ } }
+    localLog.push(doc); lsSet('lab:' + LAB.name + ':log', localLog); return 'local';
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><div class="flex"><input type="text" id="logTopic" placeholder="Topic" value="Silence vignette look" style="max-width:260px"><button class="btn primary" id="logSave" type="button">Record decision</button><button class="btn" id="logCopy" type="button">Copy log</button></div><textarea id="logChoice" rows="2" style="margin-top:6px" placeholder="What you picked and why"></textarea><div class="tablewrap"><table id="logTable"></table></div>';
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab and read by Claude at the start of the next round. Your current settings are attached.' : 'Kept in this browser (Copy log to send it). Your current settings are attached.';
+    status.className = db ? 'status-ok' : 'status-warn';
+    box.querySelector('#logChoice').value = Object.keys(diffOnly()).length ? 'This look, with these settings.' : 'The shipped look.';
+    box.querySelector('#logSave').onclick = async () => { const where = await record(box.querySelector('#logTopic').value || 'Silence vignette look', box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => {
+      const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n');
+      try { navigator.clipboard.writeText(t).catch(() => {}); } catch (e) { /* the viewer refused the clipboard */ }
+    };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th><th>Settings</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice, Object.keys((d.settings && d.settings.changed) || {}).length + ' changed']) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    try { db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; }); } catch (e) { db = null; }
+  })();
+
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<div class="flex"><button class="btn primary" id="runBatch" type="button">Score the looks</button><span class="hint">Edge = how much the edge changes the picture (OKLab difference x100, higher reads more). Centre = how much it touches the middle of the screen (lower keeps play clear). Seeds 1-3, full strength, at the breath's peak (breathing is judged by eye).</span></div><p class="hint" id="yard"></p><div class="tablewrap"><table id="scoreTable"></table></div>';
+    box.querySelector('#runBatch').onclick = () => {
+      const rows = runBatch(), t = box.querySelector('#scoreTable');
+      const best = (k, hi) => (hi ? Math.max : Math.min)(...rows.filter((r) => !/control|Round 0/.test(r.variant)).map((r) => r[k]));
+      t.innerHTML = '<tr><th>Look</th><th>Edge: open space</th><th>Edge: bright cell</th><th>Edge: danger prisms</th><th>Centre</th><th>Red added (space)</th></tr>';
+      const hiKeys = { edgeSpace: 1, edgeBright: 1, edgeDanger: 1, redSpace: 1 }, bests = {};
+      for (const k of ['edgeSpace', 'edgeBright', 'edgeDanger', 'centre', 'redSpace']) bests[k] = best(k, !!hiKeys[k]);
+      for (const r of rows) {
+        const tr = document.createElement('tr'), cells = [r.variant, r.edgeSpace, r.edgeBright, r.edgeDanger, r.centre, r.redSpace];
+        cells.forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (i) td.className = 'num'; tr.appendChild(td); });
+        ['edgeSpace', 'edgeBright', 'edgeDanger', 'centre', 'redSpace'].forEach((k, i) => { if (!/control|Round 0/.test(r.variant) && r[k] === bests[k]) tr.children[i + 1].classList.add('best'); });
+        if (/Round 0/.test(r.variant)) tr.children[1].classList.add('bad');
+        t.appendChild(tr);
+      }
+      const off = rows[0], r0 = rows[1], sh = rows[2];
+      const ok = off.edgeSpace === 0 && off.centre === 0 && r0.edgeSpace < 4 && sh.edgeSpace > 10 * Math.max(0.1, r0.edgeSpace);
+      box.querySelector('#yard').textContent = (ok ? 'Yardstick check passed: ' : 'Yardstick check FAILED: ') + 'Off reads ' + off.edgeSpace + ' / ' + off.centre + ' (must be 0), Round 0 reads ' + r0.edgeSpace + ' on open space (must be under 4, near the just-noticeable difference of about 2: nobody saw it), Shipped reads ' + sh.edgeSpace + '.';
+      box.querySelector('#yard').className = 'hint ' + (ok ? 'status-ok' : 'status-warn');
+    };
+    return box;
+  }
+  function exportPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint">Your settings as the lines of Assets/Resources/VesselSilenceConfig.asset that would change. Record a decision and Claude ports it; this is for reading.</p><pre class="export" id="exportText"></pre><button class="btn" id="exportCopy" type="button">Copy lines</button>';
+    const d = diffOnly(), keys = Object.keys(d).filter((k) => !k.startsWith('lab'));
+    box.querySelector('#exportText').textContent = keys.length ? keys.map((k) => '  ' + k + ': ' + d[k]).join('\n') : '(no change from the shipped asset)';
+    box.querySelector('#exportCopy').onclick = () => { try { navigator.clipboard.writeText(box.querySelector('#exportText').textContent).catch(() => {}); } catch (e) { /* refused */ } };
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p id="aboutLine"></p>'
+      + '<p class="hint"><strong>Why an overlay.</strong> URP\'s Vignette multiplies the frame by its colour, so a red one only darkens. Over the arena\'s near-black space that is invisible; Round 0 shipped exactly that and Garrett saw nothing in Dog Fight. The game now draws the edge as an overlay in the palette\'s danger colour (it adds colour), with an optional black URP darkening under it.</p>'
+      + '<p class="hint"><strong>What this lab does NOT model.</strong> The scene is a 2D stand-in drawn in the shipped palette, not the game\'s 3D render: no bloom, no tonemapping, no HDR, no HUD. The URP darkening uses URP 17\'s formula without its colour grading. The shake is an approximate pixel offset (1 world unit at the chase camera taken as 1/40 of the height). The rival\'s hits are a seeded schedule, not an AI. Phones draw the same overlay; the game\'s mobile render path is not modelled.</p>';
+    box.querySelector('#aboutLine').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc + ' · the mask is SilenceVignetteMask.cs, line for line';
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Scorecard', build: scorecardPanel }, { name: 'Decisions', build: logPanel }, { name: 'To Unity', build: exportPanel }, { name: 'About', build: aboutPanel }], 'lab:' + LAB.name + ':bottom');
+
+  // ================= header, stage buttons =================
+  $('title').textContent = LAB.name; $('meta').textContent = 'round ' + LAB.round;
+  for (const b of BACKDROPS) { const o = document.createElement('option'); o.value = b.key; o.textContent = b.name; $('backdrop').appendChild(o); }
+  $('backdrop').value = backdrop;
+  $('backdrop').onchange = () => { backdrop = $('backdrop').value; lsSet('lab:' + LAB.name + ':backdrop', backdrop); };
+  let paused = false;
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('resetAll').onclick = () => applyPreset({});
+  $('hitBullet').onclick = () => hit('bullet');
+  $('hitRocket').onclick = () => hit('shockwave');
+  $('silence4').onclick = () => { const onset = world.weight <= 0.0001; world.left = Math.min(P.maxSeconds || 4, Math.max(world.left, 4)); if (onset) { world.onsets++; shake(P.onsetShakeIntensity, P.onsetShakeSeconds); } };
+  function syncToggles() { $('autoRival').classList.toggle('on', world.auto); $('hold').classList.toggle('on', world.hold); }
+  $('autoRival').onclick = () => { world.auto = !world.auto; syncToggles(); };
+  $('hold').onclick = () => { world.hold = !world.hold; syncToggles(); };
+
+  // ================= sizing + loop =================
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) { resize(); if (!paused) simStep(dt); render(); }
+    requestAnimationFrame(frame);
+  }
+  reset(); syncToggles(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, PLATFORM, VARIANTS, MASK, PALETTE, DANGER,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || 1 / 60; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
+    reset, score, runBatch, setParam, record, hit,
+    state: () => ({ t: world.t, seed, left: world.left, weight: world.weight, pulse: world.pulse, hits: world.hits, onsets: world.onsets, backdrop }),
+  };
+})();
+</script>
+</body>
+</html>

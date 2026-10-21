@@ -2,13 +2,14 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// What the SILENCED pilot sees on their own screen (Docs/ElementalAbilitySystem/SILENCE.md §5):
-    /// a very subtle camera shake at the onset, and a subtle danger-coloured vignette that holds for
-    /// the whole window and drains when it runs out. Fleet-wide by construction - it listens to
+    /// a camera shake at the onset and a lighter one on every further hit, and a danger-coloured edge
+    /// that holds for the whole window, flares with each hit and drains when it runs out. Fleet-wide by construction - it listens to
     /// <see cref="VesselSilence.VesselSilenced"/>, not to any vessel - so every hull, present and
     /// future, signals silence the same way.
     ///
@@ -16,12 +17,18 @@ namespace CosmicShore.Gameplay
     /// a replica of another peer's hull) changes nothing on this screen. Which pilot is watched is
     /// re-decided at every onset, so a vessel swap or a Hijack pilot swap follows the pilot.</para>
     ///
-    /// <para>The vignette is the gameplay post-processing profile's own Vignette override, driven
-    /// through <see cref="PostProcessingManager.SetSilenceVignette"/> (the speed tunnel's home/offset
-    /// shape). Its colour is the active palette's DANGER signal colour - the rim every danger prism
-    /// wears - so the edge of the screen says "danger" in the game's own red. The shake is
-    /// <see cref="CustomCameraController.Shake"/>, which keeps a stronger shake already playing.
-    /// Every number is on <see cref="VesselSilenceConfigSO"/>.</para>
+    /// <para><b>The edge is an OVERLAY, not URP's Vignette.</b> URP's Vignette multiplies the frame by
+    /// its colour, so a red one can only darken, and over the arena's near-black space it showed
+    /// nothing (Garrett's Dog Fight run, 2026-10-21). The edge is a full-screen <c>RawImage</c> on
+    /// its own Screen Space Overlay canvas, under the HUD, whose alpha is
+    /// <see cref="SilenceVignetteMask"/> baked into a small texture and whose colour is the active
+    /// palette's DANGER signal colour - the rim every danger prism wears - so it ADDS the game's own
+    /// red over whatever is behind it. URP's Vignette is kept for one job only: an optional black
+    /// darkening under the colour (<see cref="PostProcessingManager.SetSilenceVignette"/>), so the
+    /// edge still reads over a bright scene. The shake is <see cref="CustomCameraController.Shake"/>,
+    /// which keeps a stronger shake already playing. Every number is on
+    /// <see cref="VesselSilenceConfigSO"/>, and the Silence Vignette Lab
+    /// (<c>Docs/Studios/SilenceVignetteLab.html</c>) explores them over a stand-in Dog Fight.</para>
     ///
     /// <para>Self-installs once per play session, like <c>HumanFlightRecorder</c>: a hidden,
     /// scene-independent object with nothing to wire.</para>
@@ -37,7 +44,16 @@ namespace CosmicShore.Gameplay
 
         string _watchedPilot;
         float _weight;
+        float _pulse;
         bool _pushed;
+
+        // The overlay: built on first use, kept for the session, hidden while nobody is silenced.
+        Canvas _canvas;
+        RawImage _edge;
+        Texture2D _mask;
+        int _maskWidth, _maskHeight;
+        SilenceVignetteMask.Shape _maskShape;
+        float _maskAspect;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
@@ -57,6 +73,11 @@ namespace CosmicShore.Gameplay
             Release();
         }
 
+        void OnDestroy()
+        {
+            if (_mask) Destroy(_mask);
+        }
+
         void OnVesselSilenced(IVesselStatus status)
         {
             if (!IsLocalHumanPilot(status)) return;
@@ -69,7 +90,11 @@ namespace CosmicShore.Gameplay
             bool onset = _weight <= 0.0001f;
             _watchedPilot = status.PlayerName;
             if (onset) ShakeCamera(config.OnsetShakeIntensity, config.OnsetShakeSeconds);
-            else ShakeCamera(config.HitShakeIntensity, config.HitShakeSeconds);
+            else
+            {
+                ShakeCamera(config.HitShakeIntensity, config.HitShakeSeconds);
+                _pulse = Mathf.Min(1f, _pulse + config.VignetteHitPulse);   // the edge flares with the hit
+            }
         }
 
         void Update()
@@ -84,6 +109,9 @@ namespace CosmicShore.Gameplay
                 ? Mathf.MoveTowards(_weight, target, Time.unscaledDeltaTime / seconds)
                 : target;
 
+            float decay = config.VignetteHitPulseSeconds;
+            _pulse = decay > 0f ? _pulse * Mathf.Exp(-Time.unscaledDeltaTime / decay) : 0f;
+
             if (_weight > 0.0001f)
             {
                 // SmoothStep on the drive so the edge eases in and out rather than ramping linearly.
@@ -97,10 +125,22 @@ namespace CosmicShore.Gameplay
 
         void Push(float weight, VesselSilenceConfigSO config)
         {
+            EnsureOverlay(config);
+            float breathe = SilenceVignetteMask.Breathe(Time.unscaledTime, config.VignetteBreatheDepth,
+                                                        config.VignetteBreatheHz);
+            // The mask texture carries the shape; the image's alpha is everything else (Opacity with
+            // a mask of 1 - the texture multiplies the shape back in).
+            var c = VignetteColor(config);
+            c.a = SilenceVignetteMask.Opacity(1f, weight, config.VignetteIntensity, breathe, _pulse * weight);
+            if (_edge)
+            {
+                _edge.color = c;
+                if (!_edge.gameObject.activeSelf) _edge.gameObject.SetActive(true);
+            }
+
             var post = PostProcessingManager.Instance;
-            if (!post) return;
-            post.SetSilenceVignette(weight, VignetteColor(config), config.VignetteIntensity,
-                                    config.VignetteSmoothness);
+            if (post && config.VignetteDarken > 0f)
+                post.SetSilenceVignette(weight, Color.black, config.VignetteDarken, config.VignetteSmoothness);
             _pushed = true;
         }
 
@@ -109,9 +149,80 @@ namespace CosmicShore.Gameplay
             if (!_pushed) return;
             _pushed = false;
             _weight = 0f;
+            _pulse = 0f;
+            if (_edge) _edge.gameObject.SetActive(false);
             var post = PostProcessingManager.Instance;
             if (post) post.SetSilenceVignette(0f, Color.black, 0f, 0f);
         }
+
+        /// <summary>
+        /// Builds the overlay canvas and image on first use, and re-bakes the mask texture whenever
+        /// the screen's shape or the config's shape fields change (a few float compares a frame;
+        /// a bake is a 256-wide texture, once).
+        /// </summary>
+        void EnsureOverlay(VesselSilenceConfigSO config)
+        {
+            if (!_canvas)
+            {
+                var root = new GameObject("SilenceVignette");
+                root.transform.SetParent(transform, false);
+                _canvas = root.AddComponent<Canvas>();
+                _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+                var image = new GameObject("Edge");
+                image.transform.SetParent(root.transform, false);
+                _edge = image.AddComponent<RawImage>();
+                _edge.raycastTarget = false;
+                var rect = _edge.rectTransform;
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                image.SetActive(false);
+            }
+            _canvas.sortingOrder = config.VignetteSortingOrder;
+
+            float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
+            var shape = config.VignetteShape;
+            if (_mask && Mathf.Abs(aspect - _maskAspect) < 0.01f && SameShape(shape, _maskShape)) return;
+
+            const int width = 256;
+            int height = Mathf.Clamp(Mathf.RoundToInt(width / Mathf.Max(0.1f, aspect)), 16, 512);
+            if (!_mask || _maskWidth != width || _maskHeight != height)
+            {
+                if (_mask) Destroy(_mask);
+                _mask = new Texture2D(width, height, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Bilinear,
+                    name = "SilenceVignetteMask",
+                };
+                _maskWidth = width;
+                _maskHeight = height;
+            }
+
+            var pixels = new Color32[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                float v = (y + 0.5f) / height;
+                for (int x = 0; x < width; x++)
+                {
+                    float u = (x + 0.5f) / width;
+                    byte a = (byte)Mathf.RoundToInt(255f * SilenceVignetteMask.Alpha(u, v, aspect, shape));
+                    pixels[y * width + x] = new Color32(255, 255, 255, a);
+                }
+            }
+            _mask.SetPixels32(pixels);
+            _mask.Apply(false);
+            _edge.texture = _mask;
+            _maskAspect = aspect;
+            _maskShape = shape;
+        }
+
+        static bool SameShape(in SilenceVignetteMask.Shape a, in SilenceVignetteMask.Shape b) =>
+            a.Style == b.Style && a.Facets == b.Facets && a.Inner == b.Inner && a.Feather == b.Feather &&
+            a.Roundness == b.Roundness && a.Fill == b.Fill && a.RimStrength == b.RimStrength &&
+            a.RimWidth == b.RimWidth;
 
         static Color VignetteColor(VesselSilenceConfigSO config)
         {
@@ -153,8 +264,10 @@ namespace CosmicShore.Gameplay
 
             var sb = new System.Text.StringBuilder();
             var post = PostProcessingManager.Instance;
-            sb.Append("silence: post-processing ").Append(post ? "found" : "MISSING (no vignette can show)")
-              .Append(" | vignette weight ").Append(s_instance ? s_instance._weight.ToString("0.00") : "-");
+            sb.Append("silence: post-processing ").Append(post ? "found" : "missing (no darkening)")
+              .Append(" | edge weight ").Append(s_instance ? s_instance._weight.ToString("0.00") : "-")
+              .Append(", overlay ").Append(s_instance && s_instance._edge && s_instance._edge.gameObject.activeSelf
+                  ? "showing, alpha " + s_instance._edge.color.a.ToString("0.00") : "hidden");
             if (VesselSilence.Tallies.Count == 0)
                 sb.Append(" | no scored hit has landed on anybody on this machine yet");
             foreach (var kv in VesselSilence.Tallies)

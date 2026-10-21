@@ -135,12 +135,21 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
     shook once at 0.18 and never again: Garrett's second Dog Fight run (2026-10-21) "felt nothing from
     the enemy Sparrow hits", because the AI's rounds kept ONE window open for the whole fight and
     0.18 world units at chase distance is under a degree;
-  - a **subtle danger-coloured vignette** for the whole window: the gameplay post-processing profile's
-    own Vignette override, driven through `PostProcessingManager.SetSilenceVignette` (the speed
-    tunnel's home/offset shape, so the profile is exactly restored after). Its colour is the active
-    palette's DANGER signal colour (`SO_ColorSet.GetDangerSignalColor`, the rim every danger prism
-    wears) darkened toward black (`vignetteColorStrength` 0.75), at intensity 0.26, smoothness 0.55;
-    it rises in 0.2 s and drains over 0.6 s when the window runs out.
+  - a **danger-coloured edge** for the whole window, drawn as an alpha-blended OVERLAY (a
+    ScreenSpaceOverlay canvas sorted under the HUD, `vignetteSortingOrder` -50) whose image is a mask
+    baked from `SilenceVignetteMask` and tinted with the active palette's DANGER signal colour
+    (`SO_ColorSet.GetDangerSignalColor`, the rim every danger prism wears). It rises in 0.15 s,
+    **breathes** while the silence holds (25% at 0.8 Hz), **flares** on every hit that extends it
+    (+0.35, decaying over 0.35 s) and drains over 0.6 s. The URP Vignette is kept only for a black
+    darkening under it (0.3, through `PostProcessingManager.SetSilenceVignette`, restored after).
+    **The first cut was invisible**: it drove URP's Vignette in the danger colour at 0.26, and URP
+    MULTIPLIES the frame by that colour, so on the arena's near-black sky red can only darken.
+    Garrett saw nothing in two Dog Fight runs (2026-10-21), and he asked to "overtune it so it is for
+    sure noticeable". The shipped look is overtuned on purpose (strength 0.75, the edge starting at
+    0.55 of the way to the top, a 0.35 rim) until the **Silence Vignette Lab** picks one:
+    https://claude.ai/artifact/Hequw1VLdwXi2ztrDeuXQC (`Docs/Studios/SilenceVignetteLab.html`,
+    write-up `Docs/Studios/SILENCE_VIGNETTE_LAB.md`), which compares six looks against the
+    invisible cut over Dog Fight scenes in the shipped palette.
 
   Every number is on `VesselSilenceConfig.asset` under *Feedback*. It plays for the local human pilot
   only: a rival's or an AI's silence changes nothing on your screen. On top of that their hits still
@@ -246,6 +255,7 @@ AI's skill, not the hull's strength, and a balance pass would buff a hull for ha
 | The rules, the gates on vessels, the network split | `bash Tools/Build/elemental_transfer_harness/run.sh`, block **T11** (28 checks, real `VesselSilence` + `CombatHitDrain` + `VesselCombatHitLatch` + `ElementalTransfer` against fake hulls, including the Dog Fight case: a fresh pilot hit by a Strike is silenced 3.2 s) | ALL PASS. Negative controls: removing the silence call in `TryAdmit` fails 11 checks; removing the missile-tier netting fails 1 |
 | Runtime C# binds against real Unity | `bash Tools/Build/unity_refcompile/run.sh` | OK: no errors in project code (80 assemblies) |
 | The real game code, end to end, in Dog Fight (2026-10-21) | Amoebius headless (`Port/`, the game's own `Assets/_Scripts` compiled live): Menu_Main -> `arcade DogFight`, 2 seats (pilot + AI), `arcade ready`, the pilot flies nothing; then `console silence` and `get "CM PlayerCam" CustomCameraController _shakeTimeRemaining / _shakeIntensity` sampled every 3 frames | The AI's hits on a pilot holding NO petals are decided, admitted and silence them (29-40 hits, every take empty, one window held at the 8 s ceiling); the vignette driver reaches weight 1.00 with post-processing present; the camera receives the 0.45 onset shake and then 0.2 per-hit shakes. Amoebius draws no URP vignette, so the vignette's LOOK is still an editor check |
+| The vignette's shape is the lab's shape, and the lab's numbers are the asset's | `bash Tools/Build/silence_vignette_parity/run.sh`; `SilenceVignetteMaskTests` (edit mode); `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/SilenceVignetteLab.html` | PASS (2026-10-21): 5214 values, worst difference 4e-7, 24 asset fields equal, four planted controls caught; the lab scores the URP cut at 2.8 (about the just-noticeable difference) and the shipped overlay at 45 on open space |
 | Static gates | `check_conditional_compilation`, `check_enum_member_references`, `check_switch_label_collisions`, `check_self_referential_locals`, `check_console_logging`, `check_using_directives`, `check_abstract_member_implementations`, `check_elemental_economy` | all OK |
 
 The harness was already red on bleeding-edge before this change: its stubs had not followed
@@ -265,7 +275,8 @@ In the editor (no petals needed - any scored hit silences):
 5. MPPM host + client: silence the client's pilot from the host; on BOTH windows the client's shots
    deflect for the same window (within a frame or two), and the client's flowers agree.
 6. Silence a human pilot (any hull; `silence test` in the console does it without a fight): a camera
-   shake as it lands, a lighter one on every further hit while it lasts, a soft danger-red edge on the screen for the window, draining over about half a second
-   when it ends. An AI or a rival being silenced shows nothing on your screen. Tune it on
+   shake as it lands, a lighter one on every further hit while it lasts, an unmistakable danger-red edge over the frame (an overlay, under the
+   HUD) that breathes while the window lasts, flares on each further hit and drains over about half a
+   second when it ends. If it is missing, `silence` in the console prints the overlay's state and alpha. An AI or a rival being silenced shows nothing on your screen. Tune it on
    `VesselSilenceConfig.asset` > *Feedback*. In Dog Fight, the first AI hit on you should start it;
    `silence` in the console then shows the hits decided against you and the windows that began.
