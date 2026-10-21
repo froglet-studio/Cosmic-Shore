@@ -1697,6 +1697,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner), anyone who does VFX or audio
 - **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
 ### T-20261021-18a1 · open · test · vessels
 - **Task:** Fly Marlin and Jacks in the editor (UNITY_VERIFICATION_CHECKLIST 2026-10-21, steps 1-10: the models and the host-client crew included) and the Frenzy shield-food rule
 - **Done when:** Every step of the checklist entry passes, or each failure is written up on the PR
@@ -1831,3 +1832,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
 - **Added:** 2026-10-21 by Garrett (`cece/sharp-faraday-gq7m65`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/MARLIN_JACKS.md
+
+### T-20261021-362a · open · setup · Crew vessels
+- **Task:** The Wrasse draws Grouper.fbx but keeps the Sparrow's four crystal-fusion bakes (vessel 19 in CrystalHullFusionConfig) and its VesselAnimation flare still names the hidden Sparrow mesh, so boost lights nothing. Apply the Honeyguide's two fixes (drop the copied bakes, hand the flare to the drawn mesh) or re-bake in the editor.
+- **Done when:** Wrasse fusion entries name Grouper bakes or none, and boost lights the Grouper.
+- **Who can take it:** Garrett (Wrasse owner), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (/ship of claude/honeyguide-ratel) (`claude/honeyguide-ratel`)
+- **See:** .claude/skills/vessel-model/references/LESSONS.md lesson 50

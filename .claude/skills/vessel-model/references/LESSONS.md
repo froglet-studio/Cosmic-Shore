@@ -531,3 +531,18 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       outrigger plates as a chain between the hull and the lagged turret frame, bobs every part on its own phase and
       leans the engines into turns. And a rig must read REST from the skin's bind poses, never from the bones as found:
       a crew that re-bound to a hull it had already posed took an aimed turret as rest and drew it off its aim for good.
+
+50. **Giving a CLONED hull its own model leaves three Sparrow-shaped references behind (2026-10-21, `claude/honeyguide-ratel`,
+    the Honeyguide).** A crew vessel cloned from `Sparrow.prefab` (the Wrasse, the Honeyguide) keeps the Sparrow's bones,
+    jets and colliders when its own model is nested in (`author_honeyguide_assets.model_retrofit`, after the Wrasse's
+    `bodies_retrofit`). Retargeting `_shipGeometries` and switching the Sparrow's SMR off is not the whole swap:
+    - **The fusion bakes.** `CrystalHullFusionConfig` entries copied from the Sparrow name bakes OF THE SPARROW'S MESH. Once
+      the Sparrow mesh is off, `FindHullRenderer` picks the new model and the bake lands the crystal off it. Drop the
+      copied bakes (`{fileID: 0}`: the fusion solves at runtime) and leave a team task to run the editor baker. The
+      generator must keep a bake the baker writes later, so it drops only the bakes that equal the Sparrow's.
+    - **The flare renderer.** `VesselAnimation.SkinnedMeshRenderer` is serialized on the hidden Sparrow mesh, and an FBX
+      sub-object id cannot be written offline, so boost lights nothing. Hand it the drawn mesh at runtime
+      (`HoneyguideBody.Awake`). The Wrasse has neither fix yet.
+    - **The rule that landed while you built.** The model was built welded the morning `/vessel-model` §0.5 (hovering
+      assembly) landed on bleeding-edge; only the `/ship` merge showed it. After merging the base, run
+      `assembly_report.py` on every model the branch made, not only on the ones made after the rule.
