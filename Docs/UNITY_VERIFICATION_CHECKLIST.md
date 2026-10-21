@@ -65,6 +65,50 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Phone controls for the whole fleet, idle parity, arena swap tiles (`cece/admiring-hamilton-gyzzh8`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
+
+Garrett's decisions after the mobile audit (`Docs/Reports/MOBILE_VESSELS.md` §8; the touch scheme in
+`Docs/ABILITY_LOCKUP.md` "On a phone"). Every hull has a row in `Resources/TouchControlProfiles`
+(`Tools/Build/author_touch_profiles.py`): ThumbLifts hulls keep their lifts and show lift glyphs; TotemButtons hulls
+press only cards and extra buttons laid out round the right thumb. Idle parity (both thumbs off = a released pad),
+tilt (gravity sensor), the arena pilot-swap tiles, the idle-animation fixes. `/verify-unity` was unavailable (no Editor,
+no `unity` binary); the headless reference compile (player + editor configs), the static gates,
+`touch_controls_harness`, `thresher_chain_harness`, `peer_press_harness` and every touched `author_*_assets --check` ran
+green (commit messages carry the results).
+
+Editor (Device Simulator, a phone model selected - it reports a touch-first device):
+1. Toy Box > Vessel Changer, each hull: the HUD builds with no console error. A TotemButtons hull (Sparrow, Grizzly,
+   Brittle Star) shows its cards and discs in an arc in the bottom-right, the passive cards small along the bottom edge;
+   a ThumbLifts hull (Squirrel, Dolphin) keeps the row and shows a thumb glyph under each lift card.
+2. Connect a pad (or leave Device Simulator): the row returns to the fleet layout, keycaps return, the discs hide.
+3. Edit-mode tests: `TouchControlsTests`, `PilotSwapIndicatorTests`, `ScarabTouchThrottleTests`, the six
+   `ThresherAnalogTriggerTests.Touch_*`, `StoatSlingTests` all green.
+
+On an Android development build (the real test - tilt, millimetre sizes and thumbs cannot be simulated):
+4. Urchin: let go of the glass - it holds course at half throttle, it does NOT back away.
+5. Scarab: the slider on the right sets speed and holds it; Drift button; Switch card; a second right-hand touch jukes,
+   the steering thumb never does.
+6. Brittle Star: six buttons reachable with the right thumb; drag from the held Fire disc aims while firing; a touch
+   elsewhere on the right aims without firing; a hard turn no longer splays the guns.
+7. Dolphin: lift either thumb - drift, charge and Echo together; turn the phone like a wheel - it rolls.
+8. Manta: lift both thumbs - flat-out soar (720 u/s), steered by tilt; a thumb back ends it; nothing soars on the
+   start line before the first touch.
+9. Rhino: a lift swings that side's blade; both thumbs off drops the blade into the chop and ignites in ~0.5 s.
+10. Thresher: right lift plants; then the left lift too - the launch view comes up, tilt aims the crosshair, a thumb
+    back down launches along it. The Mass Mode card toggles without planting.
+11. Stoat: the Space card lays a pair, Dipole Right and Hold buttons, the Mode card. Angler: hold the Space card with
+    the right thumb while the left flies - it paints, release throws; the Charge card erases; Squad and Recall buttons.
+12. Serpent: tap the Scope card - full zoom, latched; tap the Charge card to shoot; tap the Scope card again to drop it.
+    Shrike: the Zoom disc toggles the eyepiece; the Trigger disc fires the mode.
+13. Every hull: lift the last thumb mid-turn - the pose eases back, it never snaps (Squirrel and Serpent especially).
+14. Arena (Brood Rush or Broadside, 2+ AI teammates): the swap tiles sit between the goal stack and the score bar; a
+    tap swaps hulls and does not steer.
+15. Turn the phone upside down mid-flight: nothing toggles (orientation no longer raises FlipAction).
+
+First-pass tuning (`Resources/TouchControlProfiles`): buttons 10 mm (floor 7 mm), gap 1.5 mm, inner arc 22 mm, arc step
+12 mm, corner box 36 % x 55 %; tilt full scale 25°, dead zone 2.5°, smoothing 12/s, forward tilt dives; slider 9 x 32 mm;
+Thresher lift delay 0.12 s; Rhino touch energize x2 (`ShieldSkimmerScaleConfig.touchEnergizeRateMultiplier`).
+
 ### 🔴 Thresher: no lime on the chain, the crosshair or the ball (`cece/tender-hamilton-qcd1hi`, 2026-10-20) — NOT EDITOR-VERIFIED
 
 Garrett: "remove the lime from the chain and the crosshair. we can let players get a feel for that. the lime on the

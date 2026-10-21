@@ -2,6 +2,9 @@
 
 **From:** an audit session, 2026-10-21, at `bleeding-edge` `077edc3e`. **Asked by:** Garrett ("do a mobile friendly audit
 on all vessels. what doesn't translate. what can be fixed, what needs a solution").
+**Update 2026-10-21 (same day):** Garrett decided the open questions and the phone controls were built on this
+branch - see **§8** first. Sections 1-7 are the audit as it stood before; §8 says what changed for each row.
+
 **Method:** I read the code and assets of all 18 hulls and the shared touch layer (`TouchInputStrategy`,
 `AbilityCardPress`, `FlightTouchClaims`, `DeviceOrientationHandler`). **No phone was used, and no change was made.**
 A line marked *(inferred)* is reasoning from code that a phone test still has to confirm. Every other line was read in
@@ -282,3 +285,48 @@ Whoever runs it: Yash has offered to take phone tests, and Garrett ran the last 
   - Both thumbs off = IdleAction plus "release everything".
   - Thumbs spread / squeezed with no steering = FullSpeedStraight / MinimumSpeedStraight.
   - Button1–4 and BothSticks = card tap only. FlipAction = card only (D12).
+
+## 8. Decided and built (2026-10-21)
+
+Garrett's answers to §3, built on `cece/admiring-hamilton-gyzzh8`. **None of it has been flown on a phone or opened
+in the Unity Editor** - the hand tests are `Docs/UNITY_VERIFICATION_CHECKLIST.md` "Phone controls for the whole
+fleet" (steps 1-15). The machinery is one per-hull row in `Resources/TouchControlProfiles`
+(`Tools/Build/author_touch_profiles.py`, whose `--check` also fails if a phone button would press nothing) and the
+touch scheme in `Docs/ABILITY_LOCKUP.md` "On a phone".
+
+| Decision (Garrett's words, shortened) | What was built |
+|---|---|
+| "urchin solution is that idle should have parity with controller idle" | Both thumbs off now reads a released pad (`XDiff` 0.5) on every hull, so the Urchin holds course instead of reversing. `IdleAction` is pressed once (it was re-pressed every frame) and only after the first touch. Fixes the Wrasse's boost too (§2 row 11). |
+| "any vessel that requires thumb movement onto the icons ... no lifting thumb input action, just the totems as buttons", sized and placed ergonomically on every screen | **TotemButtons** scheme: Urchin, Sparrow, Serpent, Grizzly, Scarab, Shrike, Brittle Star, Stoat, Angler raise nothing on a thumb lift; cards plus extra buttons are laid out round the right thumb in millimetres (`TouchButtonLayout`: 10 mm, down to 7 mm, in a 36 % × 55 % corner, inside the safe area; measured 8.5 mm for six buttons on a 6" 1080p phone, 7 mm on a 4.4" 720p one, 10 mm on a tablet). Closes D1 and D2 for these hulls. |
+| Brittle Star: "all four totems and two fire buttons ... The fire button can become the right joystick once held ... rotated without firing by touching down elsewhere" | Fire and Ring discs whose drag is the right stick while held (`FlightTouchClaims.AddAim`); a second right-hand touch aims without firing; one thumb no longer splays the guns. |
+| Scarab: "a throttle ... slider that is set. the juke ... from anywhere with the right thumb. drift becomes a button, and the ring is another button" | Set-and-hold slider writing `InputStatus.Throttle` (the Scarab reads it on touch: it now moves, and Scarab Scramble is playable); Drift disc; Switch card; juke from a second right-hand touch; the steering thumb no longer jukes. |
+| Dolphin: "combine the scope and the drift into one when you lift either thumb ... recover [roll] with the phone's gyro" | Either lift runs drift + charge + trail + Echo Sight; tilting the phone like a wheel rolls while one thumb flies (`TouchTilt`, the gravity sensor). |
+| Manta: "fly ultra fast when you lift both thumbs and then steer with the gyro" | Both thumbs off = Soar at full throttle (720 u/s), steered by tilt. |
+| Rhino: "energize by lifting both thumbs ... go quicker" | Both thumbs off pulls both trigger mirrors (energize); the touch energize is twice as fast. A single lift now swings that side's blade (the pad's mapping). |
+| "The stoat should join the mobile fleet" | Touch bindings mirror the pad; Space card, Dipole Right and Hold discs, Mode card. |
+| Angler: "work with 1 thumb controls ... while painting or erasing" | Paint and erase now work from the held Space and Charge cards (a press counts as a full pull); squad and recall discs. |
+| "the serpent's scope should open to max zoom" | Full zoom on touch; the Scope card latches (tap on, tap off) so the Charge card can shoot. |
+| "the shrike's zoom should be a toggle button on mobile" | Zoom disc toggles; Trigger disc fires the mode. |
+| "the thresher's aimed launch should be both thumbs off and aimed with gyro" | Planted, lift the other thumb too: the launch view comes up, tilt aims the crosshair, a thumb back launches. |
+| "passive cards should not swallow taps" | A card that presses nothing on the device in hand (passive, locked, or unbound on touch) neither presses nor claims the finger. |
+| "create glyphs for thumb lifts for the vessels that use them" | Five glyphs (`Tools/Build/touch_glyph_art.py`): lift left, lift right, lift either, lift both, thumbs apart, under the cards of the ThumbLifts hulls (Squirrel, Dolphin, Manta, Rhino, Butterfly, Thresher). Those cards are no longer buttons, so reaching for one cannot fire a lift by accident; the Thresher's Mass card stays a button and its lifts wait 0.12 s for it. |
+| "fix the idles" | Squirrel, Serpent, Sparrow (scale and sign mismatch), Stoat, Angler, Butterfly (raw stick) now ease to rest. |
+| Arena: an indicator between the scores and the end condition, clickable, showing the two hulls the D-pad would go to | `PilotSwapIndicator`: the left/right swap targets as class icons, tappable, at least 9 mm. |
+
+Also done because the work needed it: orientation no longer raises FlipAction (D12 option a; tilt now enables the
+accelerometer, which would have woken the old 0.1 g flip); the Grizzly claw cone can no longer throw on a stripped
+shader (§2 row 15).
+
+**Still open from this audit:**
+- **D9:** the Butterfly's re-grip Fold.
+- **D10:** the Wrasse across two phones.
+- **D11:** Termite / Falcon.
+- **§2 row 7:** the touch nose response on the other hulls.
+- **§2 row 14:** Invert Y on touch.
+- **§2 rows 13 and 16-18:** the remaining small fixes.
+- **§4:** every performance lever. No phone capture yet; T-20261021-d476.
+- **AI Dolphins on a phone host** resolve presses as Touch, so their drift now also lights Echo. This is harmless,
+  noted in `DOLPHIN_ENERGY_ECONOMY.md` §2b.
+- **Snap Dash on touch** needs a tap high, a tap at the very bottom and a tap high on the slider. It is reachable,
+  but a phone test should judge whether it is usable.
+- **A drift on a phone is always the sharp tier** (no trigger depth), on every drift hull.

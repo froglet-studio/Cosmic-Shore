@@ -1200,33 +1200,37 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
 - **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
 
-### T-20261021-2d87 · open · dev · vessels
+### T-20261021-2d87 · done · dev · vessels
 - **Task:** Phone movement bugs: the Urchin flies full reverse whenever no thumb is on the glass (GunVesselTransformer.ReadThrottle reads XDiff 0 as -1; return 0 while InputStatus.Idle), and the Scarab never thrusts on touch (ScarabVesselTransformer.ReadThrottle01 reads only RightTriggerAnalog; treat Touch && !Idle like autopilot as a stopgap)
 - **Done when:** On an Android build the Urchin stops (not reverses) when both thumbs lift, and the Scarab flies in Scarab Scramble
 - **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 1-2
+- **Done:** 2026-10-21, Done on cece/admiring-hamilton-gyzzh8: idle parity (both thumbs off reads XDiff 0.5) stops the Urchin reversing; the Scarab reads the touch throttle slider. Phone check is in the new phone-controls test task.
 
-### T-20261021-985e · open · dev · vessels
+### T-20261021-985e · done · dev · vessels
 - **Task:** Touch card fixes: (a) a card whose input does not resolve on touch must not be pressable or claim the touch (AbilityLockupView.SetSlotPressInput vs AbilityCardPress.TryResolveInput); (b) R_VesselActionHandler.StartPressedActions ignores a press of an input already held (a lift + a card started toggles twice)
 - **Done when:** Rhino sword, Stoat and Angler Space/Charge cards no longer eat right-thumb touches; the Butterfly Dust card toggles once when the left thumb is also lifted
 - **Who can take it:** Garrett (touch input), any session
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 3-4
+- **Done:** 2026-10-21, Done: AbilityCardPress.RefreshPressable - a card that presses nothing on the device neither presses nor claims. The double start cannot arise any more (lift cards are not buttons on ThumbLifts hulls; lifts raise nothing on TotemButtons hulls).
 
-### T-20261021-bb9f · open · dev · vessels
+### T-20261021-bb9f · done · dev · vessels
 - **Task:** Touch feel pass: fix the Squirrel/Serpent idle snap (MantaAnimationContoller Idle writes +p,x against puppetry's -2p,2x), ease the stick in StoatAnimation, AnglerAnimation and ButterflyAnimation (rule 53), set touchNoseResponse 9 on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip, and honour Invert Y on touch
 - **Done when:** On a phone, lifting the last thumb eases every hull to rest and the dual-stick hulls answer the thumb without the 0.67 s nose lag
 - **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 5-7, 14
+- **Done:** 2026-10-21, Idle snaps fixed (Squirrel, Serpent, Sparrow, Stoat, Angler, Butterfly). The touch nose response and Invert Y on touch were not part of Garrett's list: moved to a new dev task.
 
-### T-20261021-9708 · open · decision · vessels
+### T-20261021-9708 · done · decision · vessels
 - **Task:** Mobile vessel decisions D1-D12: lift-to-reach-a-card fires abilities (grace window recommended), card size/placement on touch, gesture hints, two-trigger abilities (Rhino sword, Manta Soar, Shrike, Thresher launch), no trigger depth (hold-time ramp as fleet standard?), Stoat on phones, Angler Squad/Recall with no card, Scarab throttle, Butterfly re-grip Fold, Wrasse on two phones, Termite/Falcon retire, retire phone-flip FlipAction
 - **Done when:** Each D row in the report carries a decision (or 'later') and the follow-up dev rows exist
 - **Who can take it:** Garrett (vessel owner); Shombith for D2/D3 (UI)
 - **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md §3
+- **Done:** 2026-10-21, Garrett decided 2026-10-21 (MOBILE_VESSELS.md section 8) and it was built. D9 (Butterfly re-grip Fold), D10 (Wrasse on two phones) and D11 (Termite/Falcon) remain: moved to a new decision task.
 
 ### T-20261021-d476 · open · test · vessels
 - **Task:** First phone captures of the vessels with a second render or full-screen pass: Stoat dropping a dipole (black-hole lens), Wrasse in either seat, Thresher launch view, Serpent scoped, Brittle Star at full fire, Butterfly by a wormhole; plus the D1 check (move the right thumb to a card on Grizzly, Sparrow, Squirrel) and a ruler on a card
@@ -1277,3 +1281,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (UI art) or Yash
 - **Added:** 2026-10-21 by Garrett (`cece/admiring-hamilton-gyzzh8`)
 - **See:** Docs/GAME_MODE_TOPBAR.md §2.7
+
+### T-20261021-9fd3 · open · test · vessels
+- **Task:** Phone-test the fleet's new touch controls on an Android development build of cece/admiring-hamilton-gyzzh8: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' steps 4-15 (Urchin let-go, Scarab slider/juke, Brittle Star aim discs, Dolphin lift-either + tilt roll, Manta tilt soar, Rhino both-off energize, Thresher tilt launch, Stoat, Angler paint, Serpent/Shrike zoom, idle easing, arena swap tiles, no flip toggle)
+- **Done when:** Each step passes on a phone, or each failure is filed as a dev task; tilt signs and button sizes judged by hand
+- **Who can take it:** Garrett (asked for it; owner's feel), Yash (offered, phone tests)
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 8
+
+### T-20261021-1716 · open · decision · vessels
+- **Task:** Remaining mobile decisions after 2026-10-21: D9 Butterfly - should a quick right-thumb re-grip (under ~0.35 s) fold? D10 Wrasse - which machine owns the seat's effects when the two seats are two phones? D11 Termite and Falcon - retire or design?
+- **Done when:** Each has a decision or 'later' recorded in MOBILE_VESSELS.md section 8
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 3 and 8
+
+### T-20261021-cb48 · open · dev · vessels
+- **Task:** Touch feel leftovers: set touchNoseResponse on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip (the Angler's 9 is ignored there); honour Invert Y / Invert Throttle in TouchInputStrategy.Reparameterize and the one-thumb Pitch()
+- **Done when:** Dual-stick hulls answer the thumb without the 0.67 s nose lag on a phone; the invert settings change touch flight
+- **Who can take it:** any session (Garrett's vessels); Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 2 rows 7 and 14
