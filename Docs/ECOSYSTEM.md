@@ -11924,7 +11924,26 @@ Inside the lay, the per-prism work was only 0.8 s. The lay was FRAME-bound: it a
 (`AsyncInstantiateOperation.SetIntegrationTimeMS`) is raised to the gate's lay slice (80 ms
 under the menu veil) and restored when the gate releases. The swap now also records the trail
 return separately from the world release, the clone wait per batch, how many prisms were reused
-or newly made, the creation completions, and how many prisms had no render entity at suction. **A swap now records in Load
+or newly made, the creation completions, and how many prisms had no render entity at suction.
+
+**Second capture (same swap, after the batch fix): 13.9 s at 18.8 fps.**
+
+| stage | time |
+|---|---:|
+| settle | 5.8 s |
+| lay | 5.7 s |
+| release | 1.1 s |
+| suction | 0.9 s |
+
+Inside the lay, 15 clone batches spent 3.6 s integrating 30,314 new prisms; 4,259 were reused from
+the pool. Prism creation completions cost 0.07 ms each, 2.5 s in all, at the unchanged 512 a
+frame. The settle had grown because the backlog moved there. Most of it was not work: at
+`growthRate` 0.5 (k = 1.25/s) and a settle epsilon of 0.1, a 10–30 u prism counts as settled
+3.7–4.6 s after its creation completes, so the gate waited out the last prisms' bloom behind an
+opaque black screen. **Behind the menu veil only** (`PrismTrailBuilder.LoadGateCovered`, set once
+the veil has fully faded in), the gate now settles each created prism's grow-in at once with
+`Prism.CompleteGrowthImmediately`, the method made for "loading-screen use — the world must be
+covered". Game loads keep the full bloom, because the connecting screen previews the arena live. **A swap now records in Load
 Time Insights**: arm Record Insight Mode, then swap. The report has a span for the suction, the
 release, the layout bake, the streamed lay and the settle, and it ends when the veil lifts. Fix
 the stage that report names, not a guess.

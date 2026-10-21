@@ -222,6 +222,7 @@ namespace CosmicShore.Gameplay
             UseBatchedInstantiate = true;
             LoadGateLayBudgetOverrideMs = 0f;
             LoadGateCreationBudgetMsOverride = 0f;
+            LoadGateCovered = false;
             s_integrationMsBeforeGate = -1f;
         }
 
@@ -327,6 +328,7 @@ namespace CosmicShore.Gameplay
                 // veil's own clears stay as the explicit statement of intent.
                 LoadGateLayBudgetOverrideMs = 0f;
                 LoadGateCreationBudgetMsOverride = 0f;
+                LoadGateCovered = false;
                 RestoreIntegrationSlice();
             }
             EndSettleSpan();
@@ -415,10 +417,18 @@ namespace CosmicShore.Gameplay
         static int SettleGrowWatch()
         {
             var list = s_growWatch;
+            bool snapCovered = s_loadGateHolding && LoadGateCovered;
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 var p = list[i];
                 bool drop = p == null || !p.isActiveAndEnabled || p.IsSettledForReveal;
+                if (!drop && snapCovered && p.IsCreationComplete)
+                {
+                    // Behind an opaque veil the bloom is invisible: settle it now (one clock
+                    // stamp rewrite, Prism.CompleteGrowthImmediately) rather than wait it out.
+                    p.CompleteGrowthImmediately();
+                    drop = p.IsSettledForReveal;
+                }
 
                 if (drop)
                 {
@@ -749,6 +759,18 @@ namespace CosmicShore.Gameplay
         /// whoever holds the gate; cleared with the hold.
         /// </summary>
         public static float LoadGateLayBudgetOverrideMs { get; set; }
+
+        /// <summary>
+        /// True while the hold is behind a screen that is fully OPAQUE: the menu's
+        /// <see cref="EnvironmentLoadVeil"/> once it has faded in. Nobody can see the world then, so
+        /// the gate snaps each laid prism's grow-in the moment its creation completes instead of
+        /// waiting out the bloom. At growthRate 0.5 a 10-30 u prism takes 3.7-4.6 s to count as
+        /// settled, and an Orrery swap spent ~4 s of its 5.8 s settle on bloom nobody could see
+        /// (Load Time Insights, 2026-10-21). NOT set by the game's connecting screen, which shows
+        /// the arena building in a live preview: a snap there would be a visible pop
+        /// (continuity of existence). Owned by the veil; cleared with the hold.
+        /// </summary>
+        public static bool LoadGateCovered { get; set; }
 
         /// <summary>
         /// Per-frame TIME slice for prism CREATION completions while the gate holds, in

@@ -1279,9 +1279,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/ECOSYSTEM.md §62.2b (What the bake does NOT speed up); Cell.SwapCellConfigRoutine
 - **Done:** 2026-10-21, 2026-10-21, Garrett's capture: Orrery swap 21.3 s, streamed lay 16.1 s of it with 0.8 s of per-prism work (frame-bound: one 256-prism async clone batch per frame). Fixed on cece/relaxed-hopper-ns2hdu: 2,048-prism batches and a raised integration slice while the gate holds; the re-capture is the next test task on this board
 
-### T-20261021-8321 · open · test · ecology
+### T-20261021-8321 · done · test · ecology
 - **Task:** Re-capture the Orrery swap after the lay fix, exactly as before: Load Time Insights armed, Menu_Main, Cell Selector to the Orrery, Copy the report into a session. The last capture was 21.3 s (lay 16.1 s, settle 2.8 s, release 1.4 s). The lay now clones 2,048 prisms per batch behind the veil, so it should drop by several seconds. Watch for: the settle growing (creation still completes 512 per frame), and the new rows for the clone wait, reused vs new prisms, creation completions, the trail return, and prisms with no render entity at suction. Also say whether the world looks right after the veil lifts
 - **Done when:** A new Orrery swap report is in a session; the lay span is clearly shorter than 16.1 s and the world looks as before; the next stage to fix is named from it
 - **Who can take it:** Garrett, or Yash (offered)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Docs/ECOSYSTEM.md §62.2b (Measured); PrismTrailBuilder.LoadGateCloneBatchSize
+- **Done:** 2026-10-21, 2026-10-21, Garrett's second capture: Orrery swap 21.3 -> 13.9 s (lay 16.1 -> 5.7 s). The settle grew to 5.8 s, mostly the last prisms' invisible grow-in (3.7-4.6 s at growthRate 0.5) behind the opaque menu veil; now snapped there (PrismTrailBuilder.LoadGateCovered). Re-capture is the next ecology test task
+
+### T-20261021-a96c · open · test · ecology
+- **Task:** Third Orrery swap capture, same steps (Load Time Insights armed, Menu_Main, Cell Selector to the Orrery, Copy the report into a session). The last one was 13.9 s: settle 5.8 s, lay 5.7 s, release 1.1 s, suction 0.9 s. Behind the menu veil the grow-in is now settled the moment each prism's creation completes, so the settle should drop by about 4 s. Check by eye that when the veil lifts the Orrery is whole, with nothing still blooming, popping or missing. Then play one arcade game and check its connecting screen still shows the arena growing in (that path must not snap)
+- **Done when:** A third report is in a session with the settle well under 5.8 s; the Orrery looks right as the veil lifts; an arcade game's connecting preview still blooms
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (Second capture); PrismTrailBuilder.LoadGateCovered
