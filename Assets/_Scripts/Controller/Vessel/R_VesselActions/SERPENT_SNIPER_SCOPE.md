@@ -1664,3 +1664,13 @@ Both graphics now declare `[RequireComponent(typeof(CanvasRenderer))]`, and
 yet confirmed in the editor for the scope:** scope in on the Serpent; the reticle ring, its posts and
 the recharge arc should now draw. If they do, this was the cause. Check the console for a
 `MissingComponentException` on a `Ring`/`Cross` object if they still do not.
+
+## Second caller: the Orca's sniper turret (2026-10-21)
+
+The Orca's sniper seat keeps this eyepiece open for as long as its gunner holds the seat (Garrett: "always have the pip
+scope open like the serpent does when holding the left trigger"). Its sight is a turret, not the hull's nose, and its
+flight view is the turret's own camera, so `SniperScopeOverlay` gained a second `Tick(eye, rotation, flightCamera, ...)`.
+It uses the pip's explicit-eye path (`ScopePipView.Tick(eye, rotation, fov)`, which the Thresher's launch sight already
+used) and projects the flight reticle through the camera it is given. The Serpent's `Tick(vessel, ...)` runs the same
+instrument code in the same order, through `CameraManager.ViewCamera`, so its behaviour is unchanged. Caller:
+`OrcaCrewView.TickScope` (`Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`, round 7).

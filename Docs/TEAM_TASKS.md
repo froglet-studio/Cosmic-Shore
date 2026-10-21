@@ -1233,3 +1233,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner, the feel), Yash (offered)
 - **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Follow-ups'; Docs/VesselModels/Orca.md
+
+### T-20261021-3fbb · open · test · Crew vessels
+- **Task:** Fly the Orca's round 7 in the Unity editor on cece/happy-noether-m54hz6, boosting and turning hard: the fast gun's rounds and the bomb leave the barrel tips and fly straight through their crosshairs (not sideways with the hull); the sniper's view is normal with the Serpent's pip scope always open in the upper left and the beam passing through both reticles; missiles leave the turret tubes; the Serpent's own scope is unchanged.
+- **Done when:** Every step of 'Orca round 7' in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is filed as a dev task.
+- **Who can take it:** Garrett (owner), Yash (offered)
+- **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 7'

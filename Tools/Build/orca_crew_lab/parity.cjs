@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // parity.cjs - holds the Crew of Four Lab's crew rules (Docs/Studios/CrewOfFourLab.html: turnBody, followFrame,
-// rotateToward, steerToward, holdHorizon, shieldDirs, flyMissile, rapidStep, penLay, penFlush, penLanding, exposed as window.__lab.parity) to the SHIPPED C#
+// rotateToward, steerToward, holdHorizon, shieldDirs, flyMissile, rapidStep, penLay, penFlush, penLanding, shotVel, exposed as window.__lab.parity) to the SHIPPED C#
 // OrcaCrewCore, step by step, over scripted inputs.
 //
 //   node Tools/Build/orca_crew_lab/parity.cjs
@@ -35,6 +35,7 @@ const ASSET_KEYS = {
   fastGunPenRate: 'rapidPenRate', fastGunPenReach: 'rapidPenReach', fastGunPenSpacing: 'rapidPenSpacing', fastGunPenFill: 'rapidPenFill',
   fastGunPenGap: 'rapidPenGap', fastGunPenCap: 'rapidPenCap', sniperScopeFov: 'sniperFov', fastGunCamBack: 'rapidCamBack',
   fastGunCamUp: 'rapidCamUp', bombCamBack: 'bombCamBack', bombCamUp: 'bombCamUp', gunCamAim: 'gunCamAim',
+  sniperCamBack: 'sniperCamBack', sniperCamUp: 'sniperCamUp', shotInherit: 'shotInherit',
   shieldMaxRadius: 'shieldMaxR', shieldOpenDeg: 'shieldOpenDeg', shieldCooldown: 'shieldCd', boostTank: 'boostTank',
   turretFov: 'turretFov', missileCamBack: 'missileCamBack', missileCamUp: 'missileCamUp',
 };
@@ -57,7 +58,7 @@ function pageTrace(par) {
   const V = (x, y, z) => ({ x, y, z }), M = (v) => V(-v.x, v.y, v.z), A = (v) => [-v.x, v.y, v.z];
   const norm = (v) => { const l = Math.hypot(v.x, v.y, v.z) || 1; return V(v.x / l, v.y / l, v.z / l); };
   const add = (a, b) => V(a.x + b.x, a.y + b.y, a.z + b.z), scale = (a, s) => V(a.x * s, a.y * s, a.z * s), dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
-  const out = { turret: [], missile: [], steer: [], shield: [], rapid: [], pen: [], landing: [] };
+  const out = { turret: [], missile: [], steer: [], shield: [], rapid: [], pen: [], landing: [], shot: [] };
   // A. the turrets and the pod
   const hull = { f: V(0, 0, 1), u: V(0, 1, 0) }, pod = { f: V(0, 0, 1), u: V(0, 1, 0) };
   const person = { aimW: M(norm(V(0.3, 0.1, 1))), upW: V(0, 1, 0) }, ai = { aimW: V(0, 0, 1), upW: V(0, 1, 0) };
@@ -115,13 +116,18 @@ function pageTrace(par) {
     out.pen.push(row);
   }
   for (let k = 0; k <= 20; k++) { const l = F.penLanding(50 + k * 20, 4.5, 120); out.landing.push([l.d, l.t]); }
+  // G. a shot's launch velocity: the same 40 aims and hull velocities (the planted control turns the along-aim rule off)
+  for (let k = 0; k < 40; k++) {
+    const aim = norm(V(Math.sin(k * 0.7), 0.4 * Math.cos(k * 1.1), Math.cos(k * 0.7))), hv = V(60 * Math.cos(k * 0.37), 20 * Math.sin(k * 0.53), 120 * Math.sin(k * 0.29));
+    out.shot.push([A(F.shotVel(M(aim), 135, M(hv), par.shotInherit)), A(F.shotVel(M(aim), 90, M(hv), 0))]);
+  }
   return out;
 }
 
 function flat(x, acc = []) { if (Array.isArray(x)) for (const y of x) flat(y, acc); else acc.push(x); return acc; }
 function compare(cs, pg) {
   const bad = [];
-  for (const k of ['turret', 'missile', 'steer', 'shield', 'rapid', 'pen', 'landing']) {
+  for (const k of ['turret', 'missile', 'steer', 'shield', 'rapid', 'pen', 'landing', 'shot']) {
     if (cs[k].length !== pg[k].length) { bad.push(`${k}: ${cs[k].length} steps in C#, ${pg[k].length} on the page`); continue; }
     for (let i = 0; i < cs[k].length; i++) {
       const a = flat(cs[k][i]), b = flat(pg[k][i]);
@@ -171,11 +177,11 @@ function assetDiff(asset, shipped) {
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('file://' + PAGE); await page.waitForTimeout(600);
   const run = (par) => page.evaluate(pageTrace, par);
-  const base = { horizon: 3, missileTurn: 150, openDeg: 45, heat: 6, penSpacing: 5 };
+  const base = { horizon: 3, missileTurn: 150, openDeg: 45, heat: 6, penSpacing: 5, shotInherit: 1 };
   const diff = compare(cs, await run(base));
   if (diff.length) { failed = true; console.log('FAIL core vs page:\n  ' + diff.join('\n  ')); }
-  else console.log(`PASS core vs page: ${cs.turret.length} turret steps, ${cs.missile.length} missile steps, ${cs.steer.length} AI sticks, ${cs.shield.length} shield directions, ${cs.rapid.length} fast-gun steps, ${cs.pen.length} pen landings, ${cs.landing.length} pen reaches within ${TOL}`);
-  for (const [name, plant] of [['horizonSmooth 3 -> 2.7', { horizon: 2.7 }], ['missileTurn 150 -> 140', { missileTurn: 140 }], ['shieldOpenDeg 45 -> 44', { openDeg: 44 }], ['rapidHeatTime 6 -> 5.7', { heat: 5.7 }], ['rapidPenSpacing 5 -> 4.8', { penSpacing: 4.8 }]]) {
+  else console.log(`PASS core vs page: ${cs.turret.length} turret steps, ${cs.missile.length} missile steps, ${cs.steer.length} AI sticks, ${cs.shield.length} shield directions, ${cs.rapid.length} fast-gun steps, ${cs.pen.length} pen landings, ${cs.landing.length} pen reaches, ${cs.shot.length} shot velocities within ${TOL}`);
+  for (const [name, plant] of [['horizonSmooth 3 -> 2.7', { horizon: 2.7 }], ['missileTurn 150 -> 140', { missileTurn: 140 }], ['shieldOpenDeg 45 -> 44', { openDeg: 44 }], ['rapidHeatTime 6 -> 5.7', { heat: 5.7 }], ['rapidPenSpacing 5 -> 4.8', { penSpacing: 4.8 }], ['shotInherit 1 -> 0', { shotInherit: 0 }]]) {
     const d = compare(cs, await run(Object.assign({}, base, plant)));
     if (d.length) console.log(`PASS planted control caught (${name}): ${d[0]}`);
     else { failed = true; console.log(`FAIL planted control NOT caught (${name})`); }

@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Every number of the Orca's crew (the 4-seat vessel: one helm, three gunner seats, each seat an element; Crew of Four Lab round 6,
+    /// Every number of the Orca's crew (the 4-seat vessel: one helm, three gunner seats, each seat an element; Crew of Four Lab round 7,
     /// <c>Docs/Studios/CREW_OF_FOUR_LAB.md</c>). The lab is the record: each field names the lab key it came from, and
     /// <c>Tools/Build/orca_crew_lab/parity.cjs</c> holds the shipped asset to the lab's SHIPPED block. Read by
     /// <see cref="OrcaCrew"/>; see <c>Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md</c>.
@@ -92,7 +92,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("The element each seat owns, helm first: its ability icon on the HUD lights for the person in that seat and shows its recharge (and a gunner seat's missiles). Lab EL by seat: Time, Space, Mass, Charge.")]
         [SerializeField] Element[] seatElements = { Element.Time, Element.Space, Element.Mass, Element.Charge };
 
-        [Header("The Space seat: the sniper (the Serpent's sniper shot, SniperShotAction.asset), always scoped")]
+        [Header("Every gun")]
+        [Tooltip("lab shotInherit (round 7, Garrett 2026-10-21: \"not shooting where they were aiming\"): on, a round or bomb keeps only the part of the hull's velocity along its aim, so it flies exactly down the aimed line (the barrel, the crosshair); off, round 6's whole hull velocity, which slews every shot off the aim.")]
+        [SerializeField] bool shotInherit = true;
+
+        [Header("The Space seat: the sniper (the Serpent's sniper shot, SniperShotAction.asset), with the Serpent's pip scope always open")]
         [Tooltip("lab sniperCd: seconds between shots (the Serpent's 12).")]
         [SerializeField, Min(0.1f)] float sniperCooldown = 12f;
         [Tooltip("lab sniperRange: the cone's length (u).")]
@@ -163,11 +167,14 @@ namespace CosmicShore.Gameplay
         [Tooltip("How often an AI gunner re-picks its target (s; the lab's 0.4).")]
         [SerializeField, Min(0.05f)] float aiRetargetSeconds = 0.4f;
 
-        [Header("Cameras (round 6: the sniper looks down its scope; the fast gun and the bomb look over their turret)")]
-        [Tooltip("lab turretFov: the fast gun's and the bomb's views (deg).")]
+        [Header("Cameras (round 7: every gun looks over its turret; the sniper also keeps the Serpent's pip scope open)")]
+        [Tooltip("lab turretFov: every gunner's view (deg).")]
         [SerializeField, Range(20f, 120f)] float turretFov = 75f;
-        [Tooltip("lab sniperFov: the sniper is ALWAYS scoped (Garrett 2026-10-21: \"the scope should always be out for the sniper\"); SniperScopeAction fieldOfViewAtFullZoom, the Serpent's 22.")]
+        [Tooltip("lab sniperFov: the sniper's PIP scope, always open in the upper left (Garrett 2026-10-21: \"always have the pip scope open like the serpent does when holding the left trigger, not have the whole camera zoomed in\"); SniperScopeAction fieldOfViewAtFullZoom, the Serpent's 22.")]
         [SerializeField, Range(2f, 90f)] float sniperScopeFov = 22f;
+        [Tooltip("lab sniperCamBack / sniperCamUp: the sniper's view sits this far behind its turret and above it (u).")]
+        [SerializeField, Min(0f)] float sniperCamBack = 12f;
+        [SerializeField, Min(0f)] float sniperCamUp = 6f;
         [Tooltip("lab rapidCamBack / rapidCamUp: the fast gun's view sits this far behind its turret and above it (u), so its rounds stream away from the eye instead of filling it.")]
         [SerializeField, Min(0f)] float fastGunCamBack = 14f;
         [SerializeField, Min(0f)] float fastGunCamUp = 8f;
@@ -215,9 +222,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] string gunCooldownTemplate = "{seconds}s";
         [SerializeField] string gunHotText = "overheated";
         [SerializeField] string bombOutText = "bomb out";
-        [Tooltip("Inside the sniper's scope: ready, and its recharge ({seconds}).")]
-        [SerializeField] string scopeReadyText = "READY";
-        [SerializeField] string scopeCooldownTemplate = "{seconds} s";
         [Tooltip("Over a bomb in flight: what a press would do.")]
         [SerializeField] string bombBurstText = "BURST";
 
@@ -230,8 +234,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] Color crosshairHotColor = new(1f, 0.302f, 0.427f, 1f);
         [Tooltip("The fast gun's heat and a bomb in flight: amber.")]
         [SerializeField] Color crosshairWarmColor = new(1f, 0.655f, 0f, 1f);
-        [Tooltip("The scope's dark surround (alpha is how dark).")]
-        [SerializeField] Color scopeSurroundColor = new(0f, 0f, 0f, 0.82f);
 
         public float HullRadius => hullRadius;
         public float BoostTank => boostTank;
@@ -324,19 +326,20 @@ namespace CosmicShore.Gameplay
         public int FastGunPenCap => fastGunPenCap;
         public Vector3 FastGunPenScale => fastGunPenScale;
         public float SniperScopeFov => sniperScopeFov;
+        public float SniperCamBack => sniperCamBack;
+        public float SniperCamUp => sniperCamUp;
+        public bool ShotInherit => shotInherit;
         public float FastGunCamBack => fastGunCamBack;
         public float FastGunCamUp => fastGunCamUp;
         public float BombCamBack => bombCamBack;
         public float BombCamUp => bombCamUp;
         public float GunCamAim => gunCamAim;
-        public string ScopeReadyText => scopeReadyText;
-        public string ScopeCooldownTemplate => scopeCooldownTemplate;
         public string BombBurstText => bombBurstText;
         public Color CrosshairColor => crosshairColor;
         public Color CrosshairReadyColor => crosshairReadyColor;
         public Color CrosshairHotColor => crosshairHotColor;
         public Color CrosshairWarmColor => crosshairWarmColor;
-        public Color ScopeSurroundColor => scopeSurroundColor;
+
         public string SeatName(int seat) => seatNames != null && seat >= 0 && seat < seatNames.Length ? seatNames[seat] : string.Empty;
 
         /// <summary>The core's numbers, as a plain struct.</summary>

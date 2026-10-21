@@ -119,6 +119,17 @@ public static class TraceDriver
             if (k > 0) Sb.Append(',');
             Sb.Append('['); Num(d); Sb.Append(','); Num(t); Sb.Append(']');
         }
+        Sb.Append("],");
+
+        // G. a shot's launch velocity (round 7): 40 aims against 40 hull velocities, along-aim and whole-hull
+        Sb.Append("\"shot\":[");
+        for (int k = 0; k < 40; k++)
+        {
+            var aim = V3.Normalize(new V3(MathF.Sin(k * 0.7f), 0.4f * MathF.Cos(k * 1.1f), MathF.Cos(k * 0.7f)));
+            var hullV = new V3(60f * MathF.Cos(k * 0.37f), 20f * MathF.Sin(k * 0.53f), 120f * MathF.Sin(k * 0.29f));
+            if (k > 0) Sb.Append(',');
+            Sb.Append('['); Vec(OrcaCrewCore.ShotVelocity(aim, 135f, hullV, true)); Sb.Append(','); Vec(OrcaCrewCore.ShotVelocity(aim, 90f, hullV, false)); Sb.Append(']');
+        }
         Sb.Append("]}");
         Console.WriteLine(Sb.ToString());
         return 0;

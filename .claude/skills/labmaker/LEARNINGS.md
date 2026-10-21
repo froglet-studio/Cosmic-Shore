@@ -1346,3 +1346,23 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `CrewOfFourLab.html` `penLay`, `penLanding`, `SHIPPED.rapidPenReach`; C# `OrcaPen` held to it by
   `Tools/Build/orca_crew_lab/parity.cjs` (400 landings); `CREW_OF_FOUR_LAB.md` §4 round 6.
 - Promoted: no
+
+### L-STU-127 — A turret on a moving hull must not hand its shots the hull's whole velocity
+- Lab: Crew of Four Lab, round 7 (the Orca, after Garrett flew round 6 in Unity) · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the lab and the game both launched a turret's round at `aim × speed + hull velocity`, the rule a
+  forward-firing gun gets away with. On a turret that fires sideways from a hull flying 50–175 u/s, with rounds at
+  135, every shot slewed far off the barrel and the crosshair in the direction of flight. The lab's scorecard never
+  showed it, because the AI hit what it hit and nobody watched a crosshair. The owner saw it in the first flight: "not
+  shooting where they were aiming". A frame-old muzzle (the shot fired in `Update` before the hull moved, posed in
+  `LateUpdate` after) added up to 3 u more.
+- Do instead:
+  - Give an aimed shot only the hull velocity ALONG its aim: `aim × (speed + max(0, aim · hullVelocity))`. It flies
+    exactly down the aimed line, still outruns its hull forward, and never slows below its own speed astern.
+  - Make the barrel, the crosshair and the shot one line: pose the turret the moment it fires, fire after the hull has
+    moved that frame, spawn at the drawn barrel tip, and project the crosshair from that tip along the aim.
+  - In a lab with aimed weapons, add a check a scorecard cannot make: draw (or measure) the shot's path against the
+    crosshair while the hull flies fast and turns.
+- Evidence: `CrewOfFourLab.html` `shotVel`, `SHIPPED.shotInherit`, the Round 6 shots control (gun hull hits 38 → 64 in
+  Broadside with the fix); C# `OrcaCrewCore.ShotVelocity` held to it by `parity.cjs`; `OrcaHullRig.PoseSeat`;
+  `CREW_OF_FOUR_LAB.md` §4 round 7.
+- Promoted: no

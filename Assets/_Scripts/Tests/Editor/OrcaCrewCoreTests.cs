@@ -240,6 +240,20 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Shot_FliesDownTheAim_WhateverTheHullDoes()
+        {
+            var aim = V3.Normalize(new V3(1f, 0.2f, 0.3f));
+            var hull = new V3(0f, 0f, 150f);   // flying forward fast, the gun aimed off to starboard
+            var v = OrcaCrewCore.ShotVelocity(aim, 135f, hull, alongAimOnly: true);
+            Assert.Greater(V3.Dot(V3.Normalize(v), aim), 0.99999f, "the round goes where the barrel and the crosshair point");
+            Assert.AreEqual(135f + V3.Dot(aim, hull), v.Length(), 1e-3f, "and keeps the hull's speed along its aim, so it outruns the hull");
+            var back = OrcaCrewCore.ShotVelocity(-V3.UnitZ, 135f, hull, true);
+            Assert.AreEqual(135f, back.Length(), 1e-3f, "a shot aimed astern never goes slower than its own speed");
+            var old = OrcaCrewCore.ShotVelocity(aim, 135f, hull, alongAimOnly: false);
+            Assert.Less(V3.Dot(V3.Normalize(old), aim), 0.9f, "negative control: round 6's whole hull velocity slews the shot off the aim");
+        }
+
+        [Test]
         public void Shield_LeavesTheForwardConeOpen()
         {
             var dirs = new List<V3>();

@@ -186,6 +186,15 @@ namespace CosmicShore.Gameplay
         internal Transform BombTransform => _bomb ? _bomb.transform : null;
         internal float BombBlastRadius => _cfg && _status != null ? _cfg.BombBlastRadiusAt(_status) : 0f;
         internal float SniperCooldownLeft => _gunCd[SniperSeat];
+        /// <summary>This hull's domain signal colour (the sniper's tracer and its scope share it).</summary>
+        internal Color DomainSignalColour
+        {
+            get
+            {
+                var colorSet = _cfg && _cfg.GameData && _cfg.GameData.ThemeManagerData ? _cfg.GameData.ThemeManagerData.ColorSet : null;
+                return colorSet != null && _status != null ? colorSet.GetDomainSignalColor(_status.Domain) : Color.white;
+            }
+        }
 
         /// <summary>The hull collected an Omni crystal (its own contact, or a missile's): every gunner seat gets a missile.</summary>
         public void OnOmniCrystal()
@@ -287,19 +296,25 @@ namespace CosmicShore.Gameplay
             if (dt <= 0f) return;
             _s = _cfg.ToSettings();
 
-            StepHelm(dt);
-            _pod.Follow(HullFrame(), dt, _s.MountSmooth);
-            for (int s = 1; s < Seats; s++) StepSeat(s, dt);
-            for (int s = 1; s < Seats; s++) if (_missiles[s] != null) StepMissile(s, dt);
-            StepBomb(dt);
-            StepPen();
-            if (_dropped.Count > 0 && Time.time >= _droppedCheckAt) { _droppedCheckAt = Time.time + 0.5f; ExpireDropped(); }
+            StepHelm(dt);   // before the hull's own transformer reads the boost
         }
 
-        // after the hull has moved: the shield rides with it, and the view follows and draws
+        // After the hull has moved this frame (round 7): the gunners aim and fire from where the turrets now ARE, so a
+        // round leaves the drawn barrel tip rather than where it was a frame ago; then the shield rides with the hull, and
+        // the view follows and draws.
         void LateUpdate()
         {
             if (_vessel == null || !UnityLiveness.Alive(_vessel.Transform)) return;
+            float dt = Time.deltaTime;
+            if (dt > 0f)
+            {
+                _pod.Follow(HullFrame(), dt, _s.MountSmooth);
+                for (int s = 1; s < Seats; s++) StepSeat(s, dt);
+                for (int s = 1; s < Seats; s++) if (_missiles[s] != null) StepMissile(s, dt);
+                StepBomb(dt);
+                StepPen();
+                if (_dropped.Count > 0 && Time.time >= _droppedCheckAt) { _droppedCheckAt = Time.time + 0.5f; ExpireDropped(); }
+            }
             PoseShield();
             _view?.Frame(_mode == Mode.LocalHuman ? _humanSeat : Helm);
             _view?.Draw();
@@ -596,6 +611,9 @@ namespace CosmicShore.Gameplay
         {
             var t = _turrets[s];
             var mount = OrcaCrewCore.MountPosition(N(transform.position), _pod, s, _s.HullRadius);
+            _view?.Rig.PoseSeat(this, s);
+            if (_view != null && _view.Rig.TryMissileTube(s, out var tube))   // the model's missile tube: Launch adds the standoff back
+                mount = N(tube) - t.Aim * OrcaCrewCore.LaunchStandoff;
             var m = new OrcaMissile();
             m.Launch(mount, t.Aim, _pod.U, N(transform.right));
             _mags[s].Take();
@@ -726,6 +744,7 @@ namespace CosmicShore.Gameplay
             if (_gunCd[s] > 0f) _gunCd[s] -= dt;
             Vector3 mount = U(OrcaCrewCore.MountPosition(N(transform.position), _pod, s, _s.HullRadius));
             Vector3 muzzleTip = default;
+            _view?.Rig.PoseSeat(this, s);   // this frame's barrel, not last frame's
             bool fromBarrel = _view != null && _view.Rig.TryMuzzle(s, out muzzleTip);   // the model's barrel tip, when it draws one
             Vector3 aim = U(_turrets[s].Aim);
             switch (s)
@@ -783,8 +802,7 @@ namespace CosmicShore.Gameplay
                 }
             }
             StripVessels(origin, direction, range);
-            var colorSet = _cfg.GameData && _cfg.GameData.ThemeManagerData ? _cfg.GameData.ThemeManagerData.ColorSet : null;
-            var colour = colorSet != null ? colorSet.GetDomainSignalColor(_status.Domain) : Color.white;
+            var colour = DomainSignalColour;
             float distance = Vector3.Distance(origin, stop);
             float endRadius = Mathf.Max(minR, distance * Mathf.Tan(cone * Mathf.Deg2Rad));
             SniperBeam.Fire(origin, stop, _cfg.SniperBeamStartWidth, endRadius * 2f, colour, _cfg.SniperBeamSeconds,
@@ -841,11 +859,21 @@ namespace CosmicShore.Gameplay
             if (!fastGun) return;
             var muzzle = fastGun.transform;
             muzzle.SetPositionAndRotation(mount + aim * 3f, Quaternion.LookRotation(aim, transform.up));
-            var velocity = HullVelocity;
-            fastGun.FireGun(muzzle, _cfg.FastGunRoundSpeed, velocity, _cfg.FastGunRoundScale, true, _cfg.FastGunRoundSeconds, 0f,
+            var (speed, inherit) = ShotLaunch(aim, _cfg.FastGunRoundSpeed);
+            fastGun.FireGun(muzzle, speed, inherit, _cfg.FastGunRoundScale, true, _cfg.FastGunRoundSeconds, 0f,
                 FiringPatterns.Default, 0, detachAfterSpawn: true, stopOnFirstPrismImpact: true, spareOwnDomain: true,
                 aimDirection: aim, flightGrowthFactor: _cfg.FastGunRoundGrowth);
-            QueuePen(muzzle.position, aim, aim * _cfg.FastGunRoundSpeed + velocity);
+            QueuePen(muzzle.position, aim, aim * speed + inherit);
+        }
+
+        // A shot's launch as the Gun takes it (direction x speed + inherited), from OrcaCrewCore.ShotVelocity (round 7): with
+        // shotInherit the hull's velocity along the aim joins the speed and nothing is added sideways, so the round flies
+        // down the aimed line; off, round 6's whole hull velocity rides along.
+        (float speed, Vector3 inherit) ShotLaunch(Vector3 aim, float baseSpeed)
+        {
+            var hull = HullVelocity;
+            if (!_cfg.ShotInherit) return (baseSpeed, hull);
+            return (U(OrcaCrewCore.ShotVelocity(N(aim), baseSpeed, N(hull), true)).magnitude, Vector3.zero);
         }
 
         // The pen (round 6): at most fastGunPenRate rounds a second also leave a prism where they reach the paper. Where and
@@ -909,7 +937,8 @@ namespace CosmicShore.Gameplay
             if (!bombGun) return;
             var muzzle = bombGun.transform;
             muzzle.SetPositionAndRotation(mount + aim * 4f, Quaternion.LookRotation(aim, transform.up));
-            bombGun.FireGun(muzzle, _cfg.BombSpeed, HullVelocity, _cfg.BombScale, true, 1f, 0.5f, FiringPatterns.Default, 0,
+            var (speed, inherit) = ShotLaunch(aim, _cfg.BombSpeed);
+            bombGun.FireGun(muzzle, speed, inherit, _cfg.BombScale, true, 1f, 0.5f, FiringPatterns.Default, 0,
                 detachAfterSpawn: true, stopOnFirstPrismImpact: false, spareOwnDomain: true, aimDirection: aim);
             var shot = bombGun.LastProjectile;
             if (!shot) return;

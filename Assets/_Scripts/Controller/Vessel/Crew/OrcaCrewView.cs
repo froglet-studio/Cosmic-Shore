@@ -10,9 +10,11 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// What the Orca's crew looks like and what a gunner sees (<see cref="OrcaCrew"/>; <c>ORCA_CREW.md</c>).
     /// <list type="bullet">
-    /// <item><b>The gunner's camera</b> (round 6). The sniper looks down its scope, always (first person at the lab's
-    /// sniperFov); the fast gun and the bomb look over their turret from behind and above it (lab rapidCamBack / Up,
-    /// bombCamBack / Up) at the gun's line gunCamAim out, so their rounds stream away from the eye instead of filling it.
+    /// <item><b>The gunner's camera</b> (round 7). Every gun looks over its turret from behind and above it (lab
+    /// sniperCamBack / Up, rapidCamBack / Up, bombCamBack / Up) at the gun's line gunCamAim out from its barrel tip, so its
+    /// rounds stream away from the eye toward the crosshair. The sniper also keeps the Serpent's PIP scope open in the
+    /// upper left (<see cref="SniperScopeOverlay"/>, the eyepiece Serpent pilots open with the left trigger), looking from
+    /// its barrel tip down its aim at the lab's sniperFov, with the same cone reticle over this view.
     /// Every view keeps the turret's own held horizon; while a missile flies, from just behind it (lab missileCamBack /
     /// missileCamUp). The hull's chase camera keeps rendering in a small square in the lower left, as the Wrasse's kite
     /// view does, so the gunner always sees where the helm is taking them.</item>
@@ -40,6 +42,7 @@ namespace CosmicShore.Gameplay
         readonly TMP_Text _crossLabel;
         Canvas _crossCanvas;
         int _crossKey = int.MinValue;
+        SniperScopeOverlay _scope;
         Camera _pilot;
         /// <summary>The model's turrets, when the hull draws the Orca model (else the view draws pods).</summary>
         public OrcaHullRig Rig { get; }
@@ -100,6 +103,7 @@ namespace CosmicShore.Gameplay
         public void Dispose()
         {
             RestorePilot();
+            if (_scope) Object.Destroy(_scope.gameObject);
             if (_root) Object.Destroy(_root);
             if (_mat) Object.Destroy(_mat);
         }
@@ -136,8 +140,8 @@ namespace CosmicShore.Gameplay
             if (humanSeat == OrcaCrew.Helm || !UnityLiveness.Alive(hull))
             {
                 _cam.enabled = false;
-                _scopedSeat = -1;
                 if (_crossCanvas) _crossCanvas.enabled = false;
+                if (_scope) _scope.Hide();
                 RestorePilot();
                 return;
             }
@@ -170,25 +174,26 @@ namespace CosmicShore.Gameplay
                 var aim = OrcaCrew.U(t.Aim);
                 up = OrcaCrew.U(t.Up);
                 var mount = OrcaCrew.U(OrcaCrewCore.MountPosition(OrcaCrew.N(hull.position), _crew.Pod, humanSeat, cfg.HullRadius));
-                if (guns && humanSeat == OrcaCrew.SniperSeat && Rig.TryMuzzle(humanSeat, out var muzzle)) mount = muzzle;   // the scope sees past its own barrel
-                if (guns && humanSeat != OrcaCrew.SniperSeat)
+                // the line every shot flies (round 7): from this frame's barrel tip along the aim, so the view, the
+                // crosshair, the barrel and the rounds all agree
+                Rig.PoseSeat(_crew, humanSeat);
+                var tip = Rig.TryMuzzle(humanSeat, out var muzzle) ? muzzle : mount + aim * 3f;
+                if (guns)
                 {
-                    // over the turret (round 6): behind and above it, looking at the gun's line gunCamAim out, where the
-                    // crosshair then sits on that line
-                    bool fast = humanSeat == OrcaCrew.FastGunSeat;
-                    pos = mount - aim * (fast ? cfg.FastGunCamBack : cfg.BombCamBack) + up * (fast ? cfg.FastGunCamUp : cfg.BombCamUp);
-                    aimPoint = mount + aim * cfg.GunCamAim;
-                    fwd = (aimPoint - pos).normalized;
+                    float back = humanSeat == OrcaCrew.FastGunSeat ? cfg.FastGunCamBack : humanSeat == OrcaCrew.BombSeat ? cfg.BombCamBack : cfg.SniperCamBack;
+                    float high = humanSeat == OrcaCrew.FastGunSeat ? cfg.FastGunCamUp : humanSeat == OrcaCrew.BombSeat ? cfg.BombCamUp : cfg.SniperCamUp;
+                    pos = mount - aim * back + up * high;
+                    aimPoint = tip + aim * (humanSeat == OrcaCrew.SniperSeat ? Mathf.Max(cfg.GunCamAim, 1000f) : cfg.GunCamAim);
+                    fwd = (tip + aim * cfg.GunCamAim - pos).normalized;
                 }
                 else
                 {
-                    pos = mount + up * (PodSize(cfg) * 0.6f);   // the scope sits on the barrel
+                    pos = mount + up * (PodSize(cfg) * 0.6f);
                     fwd = aim;
                     aimPoint = mount + aim * 1000f;
-                    if (guns) fov = cfg.SniperScopeFov;   // always scoped (Garrett 2026-10-21)
                 }
             }
-            _scopedSeat = m == null && guns && humanSeat == OrcaCrew.SniperSeat ? humanSeat : -1;
+            TickScope(humanSeat, m == null && guns, cfg);
             _cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, up));
             _cam.fieldOfView = fov;
 
@@ -210,6 +215,30 @@ namespace CosmicShore.Gameplay
             DrawCrosshair(humanSeat, m != null, aimPoint, cfg);
         }
 
+        // ------------------------------------------------------------------ the sniper's pip scope (round 7)
+
+        // The Serpent's eyepiece, open for as long as the person holds the sniper seat (Garrett 2026-10-21: "always have the
+        // pip scope open like the serpent does when holding the left trigger, not have the whole camera zoomed in"). It
+        // looks from the barrel tip down the aim, and its flight reticle is projected through this turret camera.
+        void TickScope(int seat, bool open, OrcaCrewConfigSO cfg)
+        {
+            if (!open || seat != OrcaCrew.SniperSeat)
+            {
+                if (_scope) _scope.Hide();
+                return;
+            }
+            if (!_scope) _scope = SniperScopeOverlay.Create();
+            var t = _crew.TurretOf(seat);
+            var aim = OrcaCrew.U(t.Aim);
+            var up = OrcaCrew.U(t.Up);
+            var hull = _crew.Hull;
+            var eye = Rig.TryMuzzle(seat, out var tip) ? tip
+                : OrcaCrew.U(OrcaCrewCore.MountPosition(OrcaCrew.N(hull.position), _crew.Pod, seat, cfg.HullRadius)) + aim * (cfg.HullRadius * 1.8f);
+            float cooldown01 = cfg.SniperCooldown > 0f ? Mathf.Clamp01(_crew.SniperCooldownLeft / cfg.SniperCooldown) : 0f;
+            _scope.Tick(eye, Quaternion.LookRotation(aim, up), _cam, cfg.SniperScopeFov, cfg.SniperConeDeg, cfg.SniperRange,
+                cooldown01, _crew.DomainSignalColour);
+        }
+
         // ------------------------------------------------------------------ the crosshairs (round 6)
 
         void DrawCrosshair(int seat, bool missileFlying, Vector3 aimPoint, OrcaCrewConfigSO cfg)
@@ -221,28 +250,16 @@ namespace CosmicShore.Gameplay
             var g = _crosshair;
             g.Scale = scale;
             g.LineColor = cfg.CrosshairColor; g.ReadyColor = cfg.CrosshairReadyColor; g.HotColor = cfg.CrosshairHotColor;
-            g.WarmColor = cfg.CrosshairWarmColor; g.SurroundColor = cfg.ScopeSurroundColor;
+            g.WarmColor = cfg.CrosshairWarmColor;
             var sp = _cam.WorldToScreenPoint(aimPoint);
             g.Aim = sp.z > 0f ? (Vector2)sp - half : Vector2.zero;
             float focal = h * 0.5f / Mathf.Tan(_cam.fieldOfView * 0.5f * Mathf.Deg2Rad);   // px per unit of tangent
-            int key = -3;   // which words the label shows: -3 none, -2 the bomb's, -1 the scope ready, else its seconds left
+            int key = -3;   // which words the label shows: -3 none, -2 the bomb's
             Vector2 textAt = Vector2.zero;
             Color textColor = cfg.CrosshairColor;
 
             if (missileFlying || !cfg.GunsOn) g.Kind = OrcaCrosshairGraphic.Style.Missile;
-            else if (seat == OrcaCrew.SniperSeat)
-            {
-                g.Kind = OrcaCrosshairGraphic.Style.Scope;
-                g.Aim = Vector2.zero;
-                g.Radius = Mathf.Min(w, h) * 0.44f;
-                g.ConeRadius = Mathf.Tan(cfg.SniperConeDeg * Mathf.Deg2Rad) * focal;
-                float left = _crew.SniperCooldownLeft;
-                g.Ready = left <= 0f;
-                g.Value01 = cfg.SniperCooldown > 0f ? Mathf.Clamp01(left / cfg.SniperCooldown) : 0f;
-                key = g.Ready ? -1 : Mathf.CeilToInt(left);
-                textAt = new Vector2(0f, g.Radius * 0.62f);
-                textColor = g.Ready ? cfg.CrosshairReadyColor : cfg.CrosshairHotColor;
-            }
+            else if (seat == OrcaCrew.SniperSeat) g.Kind = OrcaCrosshairGraphic.Style.None;   // the Serpent's scope draws both of its reticles
             else if (seat == OrcaCrew.FastGunSeat)
             {
                 g.Kind = OrcaCrosshairGraphic.Style.Nib;
@@ -278,8 +295,7 @@ namespace CosmicShore.Gameplay
             if (key != _crossKey)   // the words change only with the key: no per-frame strings
             {
                 _crossKey = key;
-                _crossLabel.text = key == -3 ? string.Empty : key == -2 ? cfg.BombBurstText : key == -1 ? cfg.ScopeReadyText
-                    : TemplateText.Fill(cfg.ScopeCooldownTemplate, "seconds", key.ToString());
+                _crossLabel.text = key == -2 ? cfg.BombBurstText : string.Empty;
             }
             _crossLabel.enabled = !string.IsNullOrEmpty(_crossLabel.text);
             _crossLabel.color = textColor;
@@ -299,8 +315,6 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ the crew in the world
 
         static float PodSize(OrcaCrewConfigSO cfg) => cfg.HullRadius * 0.35f;
-
-        int _scopedSeat = -1;
 
         public void Draw()
         {
@@ -327,7 +341,7 @@ namespace CosmicShore.Gameplay
                 if (m != null)
                     Graphics.RenderMesh(rp, _octa, 0, Matrix4x4.TRS(OrcaCrew.U(m.Position),
                         Quaternion.LookRotation(OrcaCrew.U(m.Frame.F), OrcaCrew.U(m.Frame.U)), new Vector3(1.4f, 1.4f, 5f)));
-                if (Rig.Bound || s == _scopedSeat) continue;   // the model draws its own turrets; the scoped sniper hides its pod
+                if (Rig.Bound) continue;   // the model draws its own turrets
                 // each gun reads at a glance (round 5): the sniper long and thin, the fast gun middling, the bomb short and fat
                 var podScale = s == OrcaCrew.SniperSeat ? new Vector3(pod * 0.8f, pod * 0.8f, pod * 3.2f)
                     : s == OrcaCrew.BombSeat ? new Vector3(pod * 1.4f, pod * 1.4f, pod * 1.3f)

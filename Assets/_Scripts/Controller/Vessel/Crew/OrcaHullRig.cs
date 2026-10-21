@@ -15,6 +15,9 @@ namespace CosmicShore.Gameplay
     /// points along the seat's stabilized aim. Each is posed RELATIVE to its rest (the bone's local axes are the model's
     /// business; only "rest aims straight ahead" is assumed).</item>
     /// </list>
+    /// The crew poses a seat again the moment it fires (<see cref="PoseSeat"/>), so a round leaves this frame's barrel tip
+    /// and not last frame's: at 175 u/s a frame-old muzzle is 3 u behind the drawn one (round 7, Garrett 2026-10-21: "not
+    /// shooting where they were aiming").
     /// A model without the bones (or with no model) leaves <see cref="Bound"/> false and the view draws its faceted pods
     /// instead, so the crew never depends on the art.
     /// </summary>
@@ -24,10 +27,12 @@ namespace CosmicShore.Gameplay
         static readonly string[] YawNames = { null, "SniperYaw", "FastGunYaw", "BombYaw" };
         static readonly string[] PitchNames = { null, "SniperPitch", "FastGunPitch", "BombPitch" };
         static readonly string[] MuzzleNames = { null, "SniperMuzzle", "FastGunMuzzle", "BombMuzzle" };
+        static readonly string[] MissileNames = { null, "SniperMissile", "FastGunMissile", "BombMissile" };
 
         readonly Transform _hull;
-        readonly Transform[] _yaw = new Transform[OrcaCrew.Seats], _pitch = new Transform[OrcaCrew.Seats], _muzzle = new Transform[OrcaCrew.Seats];
-        // each bone's rest rotation relative to the hull, and the muzzle's rest offset from its pitch bone
+        readonly Transform[] _yaw = new Transform[OrcaCrew.Seats], _pitch = new Transform[OrcaCrew.Seats], _muzzle = new Transform[OrcaCrew.Seats],
+            _missile = new Transform[OrcaCrew.Seats];
+        // each bone's rest rotation relative to the hull
         readonly Quaternion[] _yawRest = new Quaternion[OrcaCrew.Seats], _pitchRest = new Quaternion[OrcaCrew.Seats];
 
         public bool Bound { get; }
@@ -43,6 +48,7 @@ namespace CosmicShore.Gameplay
                 _yaw[s] = FindDeep(model, YawNames[s]);
                 _pitch[s] = FindDeep(model, PitchNames[s]);
                 _muzzle[s] = FindDeep(model, MuzzleNames[s]);
+                _missile[s] = FindDeep(model, MissileNames[s]);   // optional: missiles launch from the mount without it
                 if (!_yaw[s] || !_pitch[s] || !_muzzle[s]) { all = false; continue; }
                 var inv = Quaternion.Inverse(hull.rotation);
                 _yawRest[s] = inv * _yaw[s].rotation;
@@ -60,18 +66,32 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>Where a seat's missiles leave from: its missile tube's mouth (posed this frame), or false.</summary>
+        public bool TryMissileTube(int seat, out Vector3 position)
+        {
+            position = default;
+            if (!Bound || seat <= OrcaCrew.Helm || seat >= OrcaCrew.Seats || !_missile[seat]) return false;
+            position = _missile[seat].position;
+            return true;
+        }
+
         /// <summary>Stand each turret at its lagged mount and point it along its seat's aim.</summary>
         public void Pose(OrcaCrew crew)
         {
-            if (!Bound || !UnityLiveness.Alive(_hull)) return;
+            for (int s = 1; s < OrcaCrew.Seats; s++) PoseSeat(crew, s);
+        }
+
+        /// <summary>One seat's turret, posed now (the crew calls it as the seat fires).</summary>
+        public void PoseSeat(OrcaCrew crew, int s)
+        {
+            if (!Bound || s <= OrcaCrew.Helm || s >= OrcaCrew.Seats || !UnityLiveness.Alive(_hull)) return;
+            var t = crew.TurretOf(s);
+            if (t == null) return;
             var cfg = crew.Config;
             var pod = crew.Pod;
             var podRot = Quaternion.LookRotation(OrcaCrew.U(pod.F), OrcaCrew.U(pod.U));
             var hullPos = OrcaCrew.N(_hull.position);
-            for (int s = 1; s < OrcaCrew.Seats; s++)
             {
-                var t = crew.TurretOf(s);
-                if (t == null) continue;
                 _yaw[s].position = OrcaCrew.U(OrcaCrewCore.MountPosition(hullPos, pod, s, cfg.HullRadius));
                 // the aim in the outrigger frame: yaw about its up, then pitch about the turret's right
                 var local = Quaternion.Inverse(podRot) * OrcaCrew.U(t.Aim);

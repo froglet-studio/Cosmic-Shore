@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Orca round 7: shots fly down the aim; the sniper's pip scope always open; model, crosshair and shot on one line (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21, after flying round 6: the sniper should keep the Serpent's pip scope open instead of zooming the
+whole camera, and the fast gun's and the bomb's turrets and crosshairs did not shoot where they aimed. Design:
+`ORCA_CREW.md` (round 7); lab round 7 (`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). `/verify-unity` did not run. What did run:
+the reference compile (player: no project errors), parity (with 40 shot velocities and a planted control), 22 core tests
+under .NET, `author_orca_assets.py --check` / `--self-test`, the gate battery. Affects the Serpent's
+`SniperScopeOverlay`: a second `Tick` overload; the Serpent's own path is unchanged.
+
+**Verify in editor** (the Orca in the Toybox Vessel Changer; fly the helm fast, boosting, then take each gunner seat):
+1. **Fast gun (key 3).** Hold Fire while the hull turns and boosts: the rounds leave the barrel tips and fly **straight
+   through the nib crosshair**, not sideways in the direction of flight. The pen's line draws where the crosshair sweeps.
+2. **Bomb (key 4).** The bomb leaves the drum's mouth and flies through the centre of the dashed ring.
+3. **Sniper (key 2).** The view is normal, over the turret (not zoomed). The Serpent's petal-shaped pip scope is open in
+   the upper left the whole time, showing what the barrel points at, with its cone reticle and recharge ring; the same
+   reticle sits over the main view. Fire: the beam leaves the barrel tip and passes through both reticles.
+4. **Missiles** leave each turret's missile tube.
+5. Fly the **Serpent** and hold the left trigger: its scope works exactly as before.
+
+---
+
 ### 🔴 Orca round 6: seats are elements, an always-scoped sniper, a one-at-a-time bomb, the fast gun's pen, over-the-turret views and bespoke crosshairs (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21. Design: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md` (round 6, "The pen", "The views and

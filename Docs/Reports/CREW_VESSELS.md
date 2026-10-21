@@ -95,6 +95,10 @@ Grouper · 2 seat".
   - 14 core tests pass under .NET.
   - All static gates pass.
 - **Not checked: it has not been flown in the Unity editor.** It also runs on one machine only, like the Wrasse.
+- **Round 7 (2026-10-21).** After Garrett flew round 6: every shot now flies down its aim (it keeps only the hull's
+  velocity along the aim), and the turret model, the crosshair and the shot share one line (posed and fired after the
+  hull moves, from the barrel tips). The sniper looks over its turret with the Serpent's pip scope always open. In the
+  lab, gun hits on rival hulls rise 60–130%. Not flown yet.
 - **Round 6 (2026-10-21).**
   - **Every seat is an element**: Helm Time, Sniper Space, Fast gun Mass, Bomb Charge. The person's seat lights its
     ability card, and each gunner card shows its own missiles and its gun's recharge.

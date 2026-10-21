@@ -157,6 +157,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The lab's gunner aim: the unit direction from <paramref name="from"/> to a target led by
         /// <paramref name="lead"/> × its flight time at <paramref name="missileSpeed"/>, plus a small aim error.</summary>
+        /// <summary>A round's (or a bomb's) launch velocity (the lab's <c>shotVel</c>, round 7; Garrett 2026-10-21: "not
+        /// shooting where they were aiming"). <paramref name="alongAimOnly"/>: it keeps only the part of the hull's velocity
+        /// that runs along the aim, so it flies exactly down the aimed line - where the barrel points and the crosshair
+        /// sits - and a forward shot still outruns its hull. Off: round 6's whole hull velocity, which slews every shot
+        /// sideways off the aim.</summary>
+        public static V3 ShotVelocity(V3 aim, float speed, V3 hullVelocity, bool alongAimOnly) =>
+            alongAimOnly ? aim * (speed + MathF.Max(0f, V3.Dot(aim, hullVelocity))) : aim * speed + hullVelocity;
+
         public static V3 LeadAim(V3 from, V3 leadFrom, V3 targetPos, V3 targetVel, float missileSpeed, float lead, V3 noise)
         {
             float tt = V3.Distance(leadFrom, targetPos) / MathF.Max(1f, missileSpeed) * lead;

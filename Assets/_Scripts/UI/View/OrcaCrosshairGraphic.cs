@@ -10,31 +10,29 @@ namespace CosmicShore.UI
     /// zero-alpha feather (a canvas gives generated geometry no antialiasing) and a dark halo under it so it reads over a
     /// lit arena.
     /// <list type="bullet">
-    /// <item><b>Scope</b> (the sniper, always scoped): a dark surround outside a round eyepiece, fine cross wires with mil
-    /// ticks and heavy outer posts, the sniper cone drawn at its true angular size, and the recharge as a ring round the
-    /// eyepiece.</item>
     /// <item><b>Nib</b> (the fast gun, a pen): a fine dot, a slanted nib stroke at the pen's 45 degrees, a lime tip while
     /// the next round is a pen round, and the heat as an arc under it.</item>
     /// <item><b>Bomb</b>: before the throw, a dashed ring the size of the blast where the view converges, with a chevron;
     /// with a bomb in the air, the same ring round the live bomb, pulsing, so the gunner sees what a press would catch.</item>
     /// <item><b>Missile</b>: a small ring (the missile's own view steers by its nose).</item>
     /// </list>
+    /// The sniper's sight is the Serpent's own pip scope (<c>SniperScopeOverlay</c>, round 7), not drawn here.
     /// Positions are canvas pixels from the rect's centre; <c>OrcaCrewView</c> sets them every frame. A HUD crosshair is
     /// UI, so it is flat by design (the LOCKED "nothing in the world looks flat" rule is the world's).
     /// </summary>
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class OrcaCrosshairGraphic : MaskableGraphic
     {
-        public enum Style { None = 0, Scope = 1, Nib = 2, Bomb = 3, Missile = 4 }
+        public enum Style { None = 0, Nib = 2, Bomb = 3, Missile = 4 }
 
         public Style Kind = Style.None;
         /// <summary>Where the weapon's line meets the view (canvas px from the centre).</summary>
         public Vector2 Aim;
-        /// <summary>Scope: the eyepiece's radius and the cone's radius (px). Bomb: the blast ring's radius at the aim (px).</summary>
-        public float Radius, ConeRadius;
-        /// <summary>Scope: the recharge left (1 just fired, 0 ready). Nib: the heat (0-1).</summary>
+        /// <summary>Bomb: the blast ring's radius at the aim (px).</summary>
+        public float Radius;
+        /// <summary>Nib: the heat (0-1).</summary>
         public float Value01;
-        public bool Ready, Hot, PenReady, BombOut;
+        public bool Hot, PenReady, BombOut;
         /// <summary>A bomb in the air: where it is on screen, whether it is in front of the camera, and its blast ring (px).</summary>
         public Vector2 BombAt;
         public bool BombVisible;
@@ -42,7 +40,6 @@ namespace CosmicShore.UI
         /// <summary>Line widths scale with the screen (1 at 1080 px tall).</summary>
         public float Scale = 1f;
         public Color LineColor = Color.white, ReadyColor = Color.green, HotColor = Color.red, WarmColor = new(1f, 0.65f, 0f, 1f);
-        public Color SurroundColor = new(0f, 0f, 0f, 0.82f);
 
         static readonly Color Halo = new(0f, 0f, 0f, 0.5f);
         const float Feather = 1f;
@@ -57,35 +54,10 @@ namespace CosmicShore.UI
             float s = Mathf.Max(0.5f, Scale);
             switch (Kind)
             {
-                case Style.Scope: Scope(vh, c, s); break;
                 case Style.Nib: Nib(vh, c + Aim, s); break;
                 case Style.Bomb: Bomb(vh, c, s); break;
                 case Style.Missile: Arc(vh, c + Aim, 7f * s, 0f, 360f, 1.5f * s, LineColor, true); break;
             }
-        }
-
-        void Scope(VertexHelper vh, Vector2 c, float s)
-        {
-            var rect = GetPixelAdjustedRect();
-            float r = Mathf.Max(20f, Radius), far = Mathf.Max(rect.width, rect.height) * 1.5f;
-            Annulus(vh, c, r, far, SurroundColor);
-            var ring = Ready ? ReadyColor : HotColor;
-            Arc(vh, c, r, 0f, 360f, 2f * s, new Color(1f, 1f, 1f, 0.18f), false);
-            Arc(vh, c, r + 5f * s, 90f, 90f - 360f * (Ready ? 1f : 1f - Mathf.Clamp01(Value01)), 3f * s, ring, false);
-            float cone = Mathf.Max(5f * s, ConeRadius), gap = cone + 6f * s;
-            var wire = new Color(LineColor.r, LineColor.g, LineColor.b, 0.85f);
-            foreach (var d in Axes)
-            {
-                Line(vh, c + d * gap, c + d * r, 1f * s, wire, false);
-                if (d.y <= 0f) Line(vh, c + d * (r * 0.55f), c + d * r, 3f * s, wire, false);   // heavy posts below and to the sides
-                for (int k = 1; k <= 4; k++)
-                {
-                    float o = gap + k * (r * 0.5f - gap) / 4f;
-                    var side = new Vector2(-d.y, d.x) * 3f * s;
-                    Line(vh, c + d * o - side, c + d * o + side, 1f * s, wire, false);
-                }
-            }
-            Arc(vh, c, cone, 0f, 360f, 1.5f * s, ring, false);
         }
 
         void Nib(VertexHelper vh, Vector2 c, float s)
@@ -128,8 +100,6 @@ namespace CosmicShore.UI
             Line(vh, at + Vector2.left * (rr + 8f * s), at + Vector2.left * (rr - 4f * s), 2f * s, ReadyColor, true);
             Line(vh, at + Vector2.right * (rr - 4f * s), at + Vector2.right * (rr + 8f * s), 2f * s, ReadyColor, true);
         }
-
-        static readonly Vector2[] Axes = { Vector2.up, Vector2.right, Vector2.down, Vector2.left };
 
         // ------------------------------------------------------------------ primitives
 
@@ -196,27 +166,6 @@ namespace CosmicShore.UI
             int i = vh.currentVertCount;
             vh.AddVert(a, color, Vector2.zero); vh.AddVert(b, color, Vector2.zero); vh.AddVert(c, color, Vector2.zero);
             vh.AddTriangle(i, i + 1, i + 2);
-        }
-
-        // The scope's surround: everything between the eyepiece and far off screen, with a feathered inner edge.
-        static void Annulus(VertexHelper vh, Vector2 c, float inner, float outer, Color color)
-        {
-            const int n = 96;
-            Color32 solid = color, clear = new Color(color.r, color.g, color.b, 0f);
-            int i0 = vh.currentVertCount;
-            for (int k = 0; k <= n; k++)
-            {
-                var d = Dir(k * 360f / n);
-                vh.AddVert(c + d * (inner - 1.5f), clear, Vector2.zero);
-                vh.AddVert(c + d * (inner + 1.5f), solid, Vector2.zero);
-                vh.AddVert(c + d * outer, solid, Vector2.zero);
-            }
-            for (int k = 0; k < n; k++)
-            {
-                int a = i0 + k * 3, b = a + 3;
-                vh.AddTriangle(a, b, b + 1); vh.AddTriangle(a, b + 1, a + 1);
-                vh.AddTriangle(a + 1, b + 1, b + 2); vh.AddTriangle(a + 1, b + 2, a + 2);
-            }
         }
     }
 }

@@ -6,14 +6,14 @@ A `/labmaker` browser studio for a **four-seat multiplayer vessel** that capture
 > Look up the game Wildgate and make an artifact lab that can explore concepts for a 4 player multiplayer vessel
 > that captures the magic of that game. (Garrett, 2026-10-20)
 
-- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 6: the 4-seat vessel; every seat an element; a gun and missiles on every gunner seat, an always-scoped sniper, a fast gun that writes prisms like a pen, a one-at-a-time bomb; a shield carried super-shielded, then dropped as danger prisms).
+- **Source (the page is published from it):** `Docs/Studios/CrewOfFourLab.html` (round 7: the 4-seat vessel; every shot flies down its aim; every seat an element; a gun and missiles on every gunner seat, a sniper with the Serpent's pip scope always open, a fast gun that writes prisms like a pen, a one-at-a-time bomb; a shield carried super-shielded, then dropped as danger prisms).
   Rounds 1 (2D) and 2 (3D) are kept as `CrewOfFourLab.round1.html` and `.round2.html`, and their numbers are on the
   page's Archive tab. Open it in Chrome to use a gamepad (the
   claude.ai viewer can block the Gamepad API).
 - **Live page:** https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb (private to the owner until shared from its Share
   menu; decisions recorded there land in the shared log, collection `decisions`, that Claude reads at the start of each
   round).
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 6).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/CrewOfFourLab.html` (PASS, round 7).
 - **Nearest lab:** the Crew Vessel Lab (`Docs/Studios/CrewVesselLab.html`, `CREW_VESSEL_LAB.md`), the two-seat
   "Maverick and Goose" lab that graduated as the Wrasse (`VesselClassType` 19). This lab does not replace it or touch
   it: the Wrasse is a pilot plus a 2D navigator; this lab asks what a crew of **four** on one hull should be. Round 1 of
@@ -63,7 +63,7 @@ petals, so the lab leaves them out. Every vessel-on-vessel effect here moves pet
 
 The ward is a petal ward, the way `CombatHitDrain`'s wards are: a bolt it absorbs scores nothing.
 
-## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4c)
+## 2. The concepts (rounds 1–2; round 3 replaced them with one vessel, §4d)
 
 Each concept is a seat set plus rules; the card writes the rules into the dials so they can be mixed.
 
@@ -90,7 +90,56 @@ Rivals: Easy / Medium / Hard AI crews (aim error 9° / 5° / 2.5°, lead 0 / ½ 
 ward tolerance 3 / 1.5 / 0.5 threats). Your own crew's AI has the same three levels. Every AI writes the same input
 objects a person does (`/labmaker` §2.4).
 
-## 4. Round 6 (2026-10-21): every seat an element, a scoped sniper, a pen, and bespoke crosshairs
+## 4. Round 7 (2026-10-21): every shot flies down the aim, and the sniper's pip scope
+
+**Input this round** (Garrett, after flying round 6 in Unity):
+- "the sniper should always have the pip scope open like the serpent does when holding the left trigger, not have the
+  whole camera zoomed in. the fast gun and the rocket both had models and crosshairs that were not shooting where they
+  were aiming or where the trajectory head. the vessel inheritance is challenging to deal with but we need to make all of
+  these things properly coordinated to make it easier on players."
+
+### What changed
+
+- **Shots fly down the aim** (`shotInherit`, `shotVel`). Round 6 launched every round and bomb at `aim × speed + the
+  hull's whole velocity`. With the Orca at 50–175 u/s and rounds at 135, a shot slewed far off the barrel and the
+  crosshair, in the direction the hull was flying. A shot now keeps only the part of the hull's velocity that runs
+  **along its aim**: it flies exactly down the aimed line, a forward shot still outruns the hull, and a shot aimed
+  astern never goes slower than its own speed. The **Round 6 shots** control keeps the old rule.
+- **The sniper looks over its turret** (`sniperCamBack` 12, `sniperCamUp` 6) like the other gunners, at the normal
+  field of view. The **pip scope** is always open in the upper left, at `sniperFov` 22. It is the Serpent's eyepiece
+  (`SniperScopeOverlay`): it looks from the barrel tip down the aim, with the cone at its true size, posts, a dot and
+  the recharge ring. The same cone reticle sits over the main view at the shot's point.
+- **In Unity, the model, the crosshair and the shot share one line** (the lab has no model): each turret is posed at the
+  moment it fires, rounds, bombs and missiles leave the barrel tips and missile tubes, the crosshair is projected from
+  the barrel tip, and the gunners fire after the hull has moved that frame (`ORCA_CREW.md`, round 7).
+
+### Scorecard (I2, Hard rivals, mirror matches, every dial at its round-7 value, 12 seeds)
+
+Baked into the page as `ROUND7`; the full tables are on the page's Scorecard tab.
+
+| Game | Round 7 points | Round 6 shots (control) | Gun hull hits, R7 / R6 shots | Gun kills/min, R7 / R6 shots | Seat value H/S/F/B |
+|---|---|---|---|---|---|
+| Ring Race | 218.88 ± 2.69 | 218.99 ± 2.57 | 25.67 / 11.25 | 31.73 / 21.67 | 100/0/4/6 |
+| Breach | 182.75 ± 11.39 | 193.42 ± 11.94 | 0 / 0.5 | 115.23 / 71.22 | -17/15/7/40 |
+| Anchorage | 71.92 ± 14.55 | 73 ± 15.56 | 39.33 / 24.92 | 21.05 / 14.72 | 70/76/75/58 |
+| Broadside | 50.13 ± 1.51 | 48.7 ± 1.49 | 63.5 / 38.42 | 21.16 / 18.6 | 4/3/10/9 |
+
+### Found
+
+1. **Aiming true makes the guns land.** Gun hits on rival hulls rise in every game (Broadside 64 against 38, the Ring
+   Race 26 against 11), and the guns kill 30–60% more prisms (Breach 115 a minute against 71). The AI gunners aim as
+   before; their shots used to slew off the line.
+2. **Points move within noise** in mirror matches, as with every gun change so far: both crews gain the same.
+3. **The bomb seat is still worth the most in Breach** (40%); Anchorage stays where round 6 left it (72 ± 15).
+
+### Checked
+
+- `verify_lab.cjs` PASS; the sniper's pip scope and over-the-turret view, and the fast gun's rounds streaming to the
+  crosshair, looked at in seat screenshots.
+- `parity.cjs` PASS with 40 shot velocities (C# `OrcaCrewCore.ShotVelocity` against the page's `shotVel`) and a planted
+  `shotInherit` 1 -> 0 control caught.
+
+## 4a. Round 6 (2026-10-21): every seat an element, a scoped sniper, a pen, and bespoke crosshairs
 
 **Input this round** (Garrett):
 - "the space ability icon should display the number of missiles in the current seat. the sniper should be the space seat
@@ -228,7 +277,7 @@ the page as `ROUND6`. Seat values are Helm / Sniper / Fast gun / Bomb.
 - `parity.cjs` PASS with the pen: 400 scripted landings and 21 reaches, C# `OrcaPen` against the page, plus a planted
   `rapidPenSpacing` 5 -> 4.8 control caught.
 
-## 4a. Round 5 (2026-10-21): a gun on every seat, a missile per seat, and a shield that drops
+## 4b. Round 5 (2026-10-21): a gun on every seat, a missile per seat, and a shield that drops
 
 **Input this round** (Garrett):
 - "each gun seat should still have missile launcher (guided missile) and gun. getting the omnicrystal should give each
@@ -362,7 +411,7 @@ feature removed".
 - `verify_lab.cjs` PASS. Before baking, single race seeds were traced to tell an AI fault (the orbit) from a design
   finding.
 
-## 4b. Round 4 (2026-10-20): stabilized turrets on outriggers, and "4 seat"
+## 4c. Round 4 (2026-10-20): stabilized turrets on outriggers, and "4 seat"
 
 **Input this round** (Garrett): "stabilize the gunners guns as best you can. you can place them outside the vessel to do
 this. then bring this into unity", and "we can start referring to multiplayer vessels by their seats. this is a 4 seat
@@ -459,14 +508,14 @@ page's Scorecard tab (`ROUND4`).
    against 46%; in Breach 131 against 171. The race is still the helm's alone (seat value 100 / 0 / 0 / 0 within noise).
 4. **The shield's value is not resolved.** Round 3 measured +17 points of Broadside share; round 4's No shield control
    scores within one standard error of Round 4 in every game. Both rounds are within noise of each other, so the
-   designer's decision on the shield (§4c) stays open and needs a person at the helm, not more seeds.
+   designer's decision on the shield (§4d) stays open and needs a person at the helm, not more seeds.
 
 ### Checked
 
 - `verify_lab.cjs` PASS. Chase and turret screenshots read: the outrigger struts and pods show on the hull; the
   turret's view holds level while the helm turns under it.
 
-## 4c. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
+## 4d. Round 3 (2026-10-20): one helm, three gunner seats, flown missiles
 
 **Input this round** (Garrett, in substance; the decision log was empty):
 - The guns get a first-person camera. The skiff was glitchy, as if it controlled both at once.
@@ -597,7 +646,7 @@ rings); Breach and Anchorage prisms; Broadside your share of petal hits (%).
 - **What gives gunners a job in the race.**
 - **What a blast takes from a hull** (2 petals proposed).
 
-## 4d. Round 2 (2026-10-20): 3D with the game's chase camera (superseded)
+## 4e. Round 2 (2026-10-20): 3D with the game's chase camera (superseded)
 
 > **Superseded by the designer (2026-10-20)** by round 3 ("1 helm, 3 guns/skiffs ... we don't need other parts of
 > wildgate gameplay like the artifact"). The page is kept as `Docs/Studios/CrewOfFourLab.round2.html`.
@@ -716,7 +765,7 @@ game.
   first, or should charges be smaller and repeatable?
 - **What the other three crew see.** Only the helm's chase camera exists; a gunner's or a skiff pilot's own view is open.
 
-## 4e. Round 1 (2026-10-20): 2D top-down (superseded)
+## 4f. Round 1 (2026-10-20): 2D top-down (superseded)
 
 > **Superseded by the designer (2026-10-20):** "make it 3D with a chase camera like the game". The page is kept as
 > `Docs/Studios/CrewOfFourLab.round1.html` and its numbers are on the live page's Archive tab.

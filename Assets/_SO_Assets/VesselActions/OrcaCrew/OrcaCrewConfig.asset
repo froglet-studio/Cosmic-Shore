@@ -69,6 +69,7 @@ MonoBehaviour:
   maxMissiles: 4
   omniMissiles: 1
   gunsOn: 1
+  shotInherit: 1
   seatElements: 
   - 4
   - 3
@@ -117,6 +118,8 @@ MonoBehaviour:
   aiRetargetSeconds: 0.4
   turretFov: 75
   sniperScopeFov: 22
+  sniperCamBack: 12
+  sniperCamUp: 6
   fastGunCamBack: 14
   fastGunCamUp: 8
   bombCamBack: 22
@@ -202,11 +205,8 @@ MonoBehaviour:
   gunCooldownTemplate: '{seconds}s'
   gunHotText: overheated
   bombOutText: bomb out
-  scopeReadyText: READY
-  scopeCooldownTemplate: '{seconds} s'
   bombBurstText: BURST
   crosshairColor: {r: 0.95, g: 0.97, b: 0.98, a: 1}
   crosshairReadyColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}
   crosshairHotColor: {r: 1, g: 0.302, b: 0.427, a: 1}
   crosshairWarmColor: {r: 1, g: 0.655, b: 0, a: 1}
-  scopeSurroundColor: {r: 0, g: 0, b: 0, a: 0.82}
