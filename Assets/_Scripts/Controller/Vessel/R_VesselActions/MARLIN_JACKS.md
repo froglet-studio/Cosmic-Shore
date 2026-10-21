@@ -1,6 +1,6 @@
 # Marlin and Jacks (vessel class 22)
 
-A marlin (the Rhino's hull, its two sticks and its ramp) and two **jacks** that **herd the cell's real fauna**. Designed
+A marlin (its own model on the Rhino's flight rig: its two sticks and its ramp) and two **jacks** that **herd the cell's real fauna**. Designed
 in the Swarm Vessel Lab (`Docs/Studios/SWARM_VESSEL_LAB.md`, the "Shepherd" direction, artifact
 https://claude.ai/artifact/Q7BgQYrT9xq5kmNtqCudmw, open `#shepherd`). Named by Garrett on 2026-10-20 ("X and Ys", real
 clades: a marlin and its jacks).
@@ -17,6 +17,8 @@ Code:
 | Every number | `Data Containers/MarlinJacksConfigSO.cs`, `Assets/_SO_Assets/VesselActions/MarlinJacks/MarlinJacksConfig.asset` |
 | The four cards | `UI/Controller/MarlinJacksHUDController.cs`, `Resources/ElementalAbilityMaps/Marlin.asset` |
 | The herd's rule breaks (platform) | `Environment/FloraAndFauna/IFaunaHerd.cs`, read by `Fauna` |
+| The bodies: the marlin and two jacks drawn, swum and replicated; the owner's crew on other peers | `Controller/Vessel/Crew/MarlinCrewBodies.cs` |
+| The models | `Assets/_Models/Vessel Models/Marlin.fbx`, `Jack.fbx` (`/vessel-model`, `Tools/Build/vessel_model/specs/marlin.py`, `jack.py`; dossiers `Docs/VesselModels/Marlin.md`, `Jack.md`) |
 | The prefab and its registrations | `Tools/Build/author_marlin_assets.py` (`--check`, `--self-test`) |
 
 ## 1. What the player does
@@ -91,12 +93,35 @@ wanted velocity; the creature swims it with its own steering (`IFaunaLeash.TrySt
 own mouthful (`OrderedMeal`). The lab's lengths are about 2.5x the game's, so every length and speed is authored in lab
 units and multiplied by `labScale` (0.4).
 
-## 5. Follow-ups (not in the first port)
+## 5. Models and networking (Garrett, 2026-10-21: "lets give it some models and get it ready to ship")
 
-- **Networking the jacks.** The jacks, the decoy and the views are local to the machine that owns the hull (as the
-  Wrasse's seat was at first); the herd is steered wherever the creatures are simulated.
-- **A model.** The marlin flies the Rhino's mesh; the jacks are marks. `/vessel-model` builds hulls.
-- **Icons and the class card art** are the Rhino's.
-- **Camera settings** are the Rhino's (`RhinoCameraSettingsSO`).
+- **The marlin** is `Marlin.fbx`: a spear, a tall sail, sickle pectoral fins, a crescent tail and eight domain bars down
+  each flank (the striped marlin's). It is nested under the Rhino's fuselage part, so every turn `RhinoAnimation` gives the
+  hull carries it, and it is the ship geometry (the domain paint lands on it). The Rhino's rig stays in the prefab,
+  inactive: the puppetry still turns its bones, and the hull's five colliders are the Rhino's parts' own.
+  `MarlinCrewBodies` puppets it from the hull's measured motion on every peer: the tail beats with speed and bends out
+  of a turn, the fins follow the Rhino's front plates (`finFollow`), the sail folds back at boost and STANDS UP while the
+  marlin calls (the call is replicated, so rivals see the herd being called).
+- **The jacks** are two `Jack.fbx` (a deep body, a forked tail, domain scutes and a saddle on the back so the top-down
+  view finds them), drawn where the jacks run, facing the way they swim, the spine waving with their speed, scaled by
+  `jackModelScale` (2.5: 40 units long). The rings and dots stay as the local player's instruments.
+- **Networking.** The machine that owns the hull runs the jacks, the decoy and the call and publishes them on
+  `MarlinCrewBodies` (offsets from the hull, quantized to 0.25 u, owner-write NetworkVariables). Every other peer draws
+  them, and its executor HERDS with them (`MarlinJacksExecutor.FollowRemoteCrew`) instead of running its own AI jacks, so
+  the host, where the creatures are simulated, steers the herd with the client's real jacks and decoy.
+- **Own camera** (`MarlinCameraSettingsSO`, the Rhino's numbers at first) and **telemetry** (`DefaultVesselTelemetry` with
+  its stat channels wired, so the bootstrapper's unwired fallback does not run).
+- **The class card**, hangar preview, squad image and inactive icon are rendered from `Marlin.fbx`
+  (`render_cards.py Marlin`; `author_marlin_assets.py` owns the same guids). The ability row's four icons are the
+  marlin's (`Tools/Build/author_marlin_icons.py`: Danger Share, Breeding, Herding Ring, Herd Speed), over the Rhino's
+  sword placeholders the HUD variant draws.
+
+## 6. Follow-ups
+
+- **Danger stings on a client-owned marlin.** A contact is decided on the hull's owner (`ElementalTransfer.IsDecidedHere`)
+  while the herd is leashed on the host; whether the owner sees the creatures close enough to score is for the
+  host-client test (checklist step 10).
+- **Crystal hull fusion** still bakes the Rhino's hull shape (the four Marlin entries are the Rhino's) until a bake from
+  `Marlin.fbx` is made in the editor.
 - `element_ability_table.py Marlin` reads the Rhino's ForceFieldSkimmer for Space and the ramp for Time; the marlin's real
   bindings are in code (`MarlinJacksExecutor.Ring`, `MarlinJacksMath.SpeedMultiplier`).

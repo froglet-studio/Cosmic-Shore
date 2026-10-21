@@ -37,9 +37,10 @@ namespace CosmicShore.Gameplay
     /// Charge the share of DANGER creatures (0% at -5, 100% at 15), whose touch on a rival hull is a scored Strike that
     /// spends the creature (PvP is petals only).</para>
     ///
-    /// <para><b>Local only, as the Wrasse's seat is.</b> The herd is steered wherever the creatures are simulated (only that
-    /// peer can leash them), and the jacks, the decoy and the views are this machine's. Networking the jacks is a
-    /// follow-up (MARLIN_JACKS.md).</para>
+    /// <para><b>Networked through <see cref="MarlinCrewBodies"/>.</b> The jacks, the decoy and the call are run on the machine
+    /// that owns the hull and published there; every other peer draws them and herds with them
+    /// (<see cref="FollowRemoteCrew"/>), so the herd is steered wherever the creatures are simulated (only that peer can
+    /// leash them) by the owner's real jacks. The views and the marks are the owner's alone.</para>
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MarlinJacksExecutor : ShipActionExecutorBase, IFaunaHerd
@@ -110,6 +111,7 @@ namespace CosmicShore.Gameplay
         MarlinJacksAI _ai;
         MarlinJacksView _view;
         AnglerWorldMarks _marks;
+        MarlinCrewBodies _bodies;   // the drawn bodies, and the owner's crew on a peer that does not own the hull
 
         // the human's thumbs, mouse and sticks on the jacks
         readonly Dictionary<int, int> _pointerJack = new();   // touch id (-1 = the mouse) -> jack
@@ -155,6 +157,7 @@ namespace CosmicShore.Gameplay
             _ai = new MarlinJacksAI(System.Environment.TickCount);
             for (int k = 0; k < 2; k++) _jackDown[k] = _jackWasDown[k] = false;
             PlaceJacks();
+            _bodies = _status != null && _status.Transform ? _status.Transform.GetComponent<MarlinCrewBodies>() : null;
             if (!config)
                 CSDebug.LogError($"[MarlinJacks] {name}: no MarlinJacksConfig - the jacks cannot run and the herd cannot be " +
                                  "steered. Wire Assets/_SO_Assets/VesselActions/MarlinJacks/MarlinJacksConfig.asset.");
@@ -253,15 +256,23 @@ namespace CosmicShore.Gameplay
 
             PruneDead();
             UpdateBoard(dt);
-            if (IsLocalHuman) PollSwap();
-            else if (_humanRunsJacks) LeaveJackSeat();
-
             float ring = Ring;
-            if (_humanRunsJacks) ReadHumanJacks(dt, ring);
-            else StepAIJacks(dt, ring);
-            StepJacks(dt);
-            if (_hasDecoy) _decoy = OnPlane(_decoy);
-            if (_status.AutoPilotEnabled) StepAIMarlin();
+            if (FollowRemoteCrew())
+            {
+                // another machine owns the hull: its jacks, decoy and call (MarlinCrewBodies) herd here
+                if (_humanRunsJacks) LeaveJackSeat();
+            }
+            else
+            {
+                if (IsLocalHuman) PollSwap();
+                else if (_humanRunsJacks) LeaveJackSeat();
+
+                if (_humanRunsJacks) ReadHumanJacks(dt, ring);
+                else StepAIJacks(dt, ring);
+                StepJacks(dt);
+                if (_hasDecoy) _decoy = OnPlane(_decoy);
+                if (_status.AutoPilotEnabled) StepAIMarlin();
+            }
 
             EnsureFloor();
             Recruit(ring);
@@ -280,6 +291,26 @@ namespace CosmicShore.Gameplay
             }
             DrawMarks();
         }
+
+        /// <summary>
+        /// On a peer that does not own the hull, take the owner's jacks, decoy and call (published by
+        /// <see cref="MarlinCrewBodies"/>), so the herd - steered where the creatures are simulated, usually the host - is
+        /// herded by the jacks the owner's player is really running. False where this machine runs the crew itself.
+        /// </summary>
+        bool FollowRemoteCrew()
+        {
+            if (!_bodies || !_bodies.TryGetRemoteCrew(out var a, out var b, out bool decoy, out var at, out bool calling)) return false;
+            _jack[0] = OnPlane(a);
+            _jack[1] = OnPlane(b);
+            _hasDecoy = decoy;
+            if (decoy) _decoy = OnPlane(at);
+            if (calling) _callUntil = Time.time + RemoteCallHold;
+            else if (_callUntil > Time.time) _callUntil = Time.time;
+            return true;
+        }
+
+        // a replicated call stays on this long past the last frame that said so (the flag, not a timer, ends it)
+        const float RemoteCallHold = 0.5f;
 
         // ---- the board ----
 

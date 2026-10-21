@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Author Marlin and Jacks (the Rhino hull with two thumb-run jacks that herd real fauna) and register it, then prove it.
+"""Author Marlin and Jacks (a marlin on the Rhino's flight rig, with two thumb-run jacks that herd real fauna) and register it, then prove it.
 
     python3 Tools/Build/author_marlin_assets.py             # author what is missing, then check
     python3 Tools/Build/author_marlin_assets.py --check     # validate the SHIPPED assets, write nothing
@@ -25,17 +25,25 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/R_VesselActions/MAR
         - RhinoVesselHUDController becomes MarlinJacksHUDController, wired to the executor
         - its VesselImpactor on MarlinImpactorDataContainer: haptics, the danger debuff and the prism damage; the Rhino's
           plough and its surge / explosion crystals are the Rhino's alone
-      Everything else is the Rhino's: its hull, its two sticks, its ramp, its camera.
+        - THE BODIES (Garrett, 2026-10-21: "lets give it some models and get it ready to ship"): Marlin.fbx nested under the
+          Rhino's fuselage part (so RhinoAnimation's turns carry it) as the ship geometry, the Rhino's rig switched off (its
+          bones stay: the puppetry still turns them); two Jack.fbx under the root ('Jack A', 'Jack B'); MarlinCrewBodies on
+          the root draws, swims and replicates them and puppets the marlin (bodies_retrofit; /vessel-model specs
+          marlin.py and jack.py)
+        - the ability row's four icons (author_marlin_icons.py) over the Rhino's sword placeholders
+        - its own MarlinCameraSettingsSO (the Rhino's numbers at first) and DefaultVesselTelemetry with its stat channels
+      Everything else is the Rhino's: its colliders, its two sticks, its ramp.
       Unlike the clone, the bindings, the strip and the HUD swap are RETROFITS: applied to the committed prefab too.
     MarlinJacksConfig.asset and the three controls (Assets/_SO_Assets/VesselActions/MarlinJacks/);
-    SO_Class_Marlin ("Marlin and Jacks", the Rhino's icons, owned from the start) + its entry in SO_Classlist_All /
+    SO_Class_Marlin ("Marlin and Jacks", its card rendered from Marlin.fbx, owned from the start) + its entry in SO_Classlist_All /
     _Classes; one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and `DefaultNetworkPrefabs.asset`
     (the root GAMEOBJECT); Resources/ElementalAbilityMaps/Marlin.asset; and four CrystalHullFusionConfig entries (the
-    Rhino's: the marlin draws the Rhino's mesh). ToyVesselRoster.Default is CODE and is not written here.
+    Rhino's: they still bake the Rhino's hull shape until a marlin bake is made in the editor). ToyVesselRoster.Default is CODE and is not written here.
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md): it runs only while Marlin.prefab is absent, and
 `--check` validates the SHIPPED prefab's invariants. To re-author from scratch, delete Marlin.prefab and its .meta.
 """
+import hashlib
 import os
 import re
 import sys
@@ -72,6 +80,13 @@ PREFAB_GUID = "5d7f0a3c9e2b4f61a8c47e1b2d9f6a03"
 CLASS_GUID = "8a41c6e2f0d94b7c9e35a1d7c4b8e2f6"
 MAP_GUID = "c3e9a7f15b2d4e08a6f1d9c2b7e4a530"
 CONFIG_GUID = "e17b4c9a2d6f4835b0a9c3e1f7d2b648"
+# the marlin's own camera settings: the Rhino's numbers at first (the marlin is the Rhino's hull in flight), its own asset
+# so the team tunes the marlin's chase camera without moving the Rhino's
+CAMERA_DIR = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera")
+RHINO_CAMERA = os.path.join(CAMERA_DIR, "RhinoCameraSettingsSO.asset")
+CAMERA = os.path.join(CAMERA_DIR, "MarlinCameraSettingsSO.asset")
+RHINO_CAMERA_GUID = "6f9693afb46548dd83870cfb0b1ce939"
+CAMERA_GUID = "b84e1d7a3c2f4a9e8d5b6c0f1a3e7d29"
 CONTAINER_GUID = "9b2e6d4f1a7c4e3890d5b8a2c6f1e473"
 CONTROLS = [  # (asset name, MarlinJacksControl value, guid)
     ("MarlinCall", 0, "4f8a2c6e9b1d4a7380e5c2f9d6b1a734"),
@@ -212,6 +227,170 @@ def hud_retrofit(text: str) -> str:
     return head + "".join(out)
 
 
+# ----------------------------------------------------------------------------- the bodies (Garrett, 2026-10-21: "lets give it
+# some models and get it ready to ship"): Marlin.fbx and two Jack.fbx (/vessel-model, specs/marlin.py and specs/jack.py)
+MARLIN_FBX_GUID = "6d2b8e4f0a9c4e17b3f5a8c1d2e7b904"
+JACK_FBX_GUID = "3a8f1c6e2b5d4e79a0c4f7b1e9d2a658"
+RHINO_RIG_GUID = "350f1f00a1b1c4041b6339bbc7504694"
+RHINO_RIG_INSTANCE = "4710562938102847551"       # the Rhino's rig, nested under the fuselage part
+FUSE_TRANSFORM = "5169072473205323491"           # 'Rhino_Test (1)': the part RhinoAnimation turns as the body
+FUSE_GO = "5546161687949175897"                  # its GameObject: the ship geometry until the marlin
+MODEL_ROOT_GO = "919132149155446097"             # a model's root GameObject / Transform: constants of the importer
+MODEL_ROOT_TRANSFORM = "-8679921383154817045"
+MARLIN_INSTANCE_ID, MARLIN_TRANSFORM_ID, MARLIN_GO_ID = "2200000000000000011", "2200000000000000012", "2200000000000000013"
+JACK_IDS = (("Jack A", "2200000000000000021", "2200000000000000022"), ("Jack B", "2200000000000000031", "2200000000000000032"))
+BODIES_ID = "2200000000000000041"                # MarlinCrewBodies on the root
+# the ability row's four icons (author_marlin_icons.py), over the Rhino's sword placeholders the HUD variant draws
+HUD_INSTANCE = "2754590152818896375"            # RhinoHUDVariant nested in the hull
+HUD_VARIANT_GUID = "2656b477a4af7304180e65f2848a84b3"
+ICON_SPRITES = (("7720000000000003015", "c3a91e5d7b2f4c68a0e4d1b9f6c2a873"),   # ChargeIcon: Danger Share
+                ("7720000000000003025", "5e8b2d6a1f9c4b37a2d0e7c4b1f9a645"),   # MassIcon: Breeding
+                ("7720000000000003035", "9f1c4a7e3b6d4e82b5a0c8d2e7f1b396"),   # SpaceIcon: Herding Ring
+                ("7720000000000003045", "2b7d5f9a4c1e4a63b8f2d0e6a9c5b718"))   # TimeIcon: Herd Speed
+
+
+def icon_override(image_id: str, sprite_guid: str) -> str:
+    return (f"    - target: {{fileID: {image_id}, guid: {HUD_VARIANT_GUID},\n        type: 3}}\n      propertyPath: m_Sprite\n"
+            f"      value: \n      objectReference: {{fileID: 21300000, guid: {sprite_guid}, type: 3}}\n")
+
+
+def icons_retrofit(text: str) -> str:
+    """The HUD's four icons are the marlin's. Idempotent."""
+    m = re.search(r"--- !u!1001 &%s\nPrefabInstance:\n(?:.*\n)*?    m_Modifications:\n" % HUD_INSTANCE, text)
+    if not m:
+        return text
+    add = "".join(icon_override(i, g) for i, g in ICON_SPRITES if icon_override(i, g) not in text)
+    return text[:m.end()] + add + text[m.end():]
+
+
+TELEMETRY_ID = "2200000000000000051"             # DefaultVesselTelemetry on the root, its stat channels wired
+# the stat channels every vessel's telemetry fires (the Wrasse's: longest drift, max boost time, prisms damaged). Without the
+# component on the prefab VesselTelemetryBootstrapper adds one at runtime with these unwired, and warns.
+TELEMETRY_FIELDS = ("  longestDriftStat: {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}\n"
+                    "  maxBoostTimeStat: {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}\n"
+                    "  prismsDamagedStat: {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}\n"
+                    "  boostMultiplierThreshold: 1.5\n")
+MARLIN_MODEL_Z = "-2"                            # under the fuselage: the hull's five colliders still enclose the body
+RIG_OFF = (f"    - target: {{fileID: {MODEL_ROOT_GO}, guid: {RHINO_RIG_GUID},\n        type: 3}}\n"
+           "      propertyPath: m_IsActive\n      value: 0\n      objectReference: {fileID: 0}\n")
+# MarlinCrewBodies' serialized fields at the C# initializers, written once (the team tunes them in the inspector after)
+BODIES_FIELDS = (
+    "  marlinModelName: Marlin\n  replacedModelName: rhino_shapekey_with_animations\n  jackModelNames:\n  - Jack A\n"
+    "  - Jack B\n  jackModelScale: 2.5\n  jackModelEuler: {x: 0, y: 0, z: 0}\n  jackSwimHz: 1\n  jackSwimHzPer100: 0.8\n"
+    "  jackSwimDegrees: {x: 6, y: 12, z: 22}\n  jackSwimLagBeats: 0.18\n  jackFinFlapDegrees: 22\n  jackTurnRate: 8\n"
+    "  jackHeadingMinSpeed: 6\n  cruiseSpeed: 60\n  boostSpeed: 260\n  tailHz: {x: 0.6, y: 1.6}\n  tailDegrees: {x: 6, y: 14}\n"
+    "  turnBendDegrees: 20\n  fullYawRate: 110\n  finFollow: 0.6\n  sailCallDegrees: 14\n  sailBoostFoldDegrees: 40\n"
+    "  sailRate: 5\n  remoteSmoothing: 10\n")
+
+
+def model_instance(instance_id: str, transform_id: str, parent: str, fbx_guid: str, name: str, z: str = "0",
+                   go_id: str = None) -> str:
+    """A model nested in its own frame (the fleet's: nose +Z, up +Y) under `parent`, `z` along the parent's nose."""
+    mods = [(MODEL_ROOT_GO, "m_Name", name)] + [(MODEL_ROOT_TRANSFORM, k, v) for k, v in (
+        ("m_LocalPosition.x", "0"), ("m_LocalPosition.y", "0"), ("m_LocalPosition.z", z), ("m_LocalRotation.w", "1"),
+        ("m_LocalRotation.x", "0"), ("m_LocalRotation.y", "0"), ("m_LocalRotation.z", "0"),
+        ("m_LocalEulerAnglesHint.x", "0"), ("m_LocalEulerAnglesHint.y", "0"), ("m_LocalEulerAnglesHint.z", "0"))]
+    out = (f"--- !u!1001 &{instance_id}\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n"
+           f"  m_Modification:\n    serializedVersion: 3\n    m_TransformParent: {{fileID: {parent}}}\n"
+           "    m_Modifications:\n" +
+           "".join(f"    - target: {{fileID: {fid}, guid: {fbx_guid},\n        type: 3}}\n      propertyPath: {path}\n"
+                   f"      value: {v}\n      objectReference: {{fileID: 0}}\n" for fid, path, v in mods) +
+           "    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n"
+           f"  m_SourcePrefab: {{fileID: 100100000, guid: {fbx_guid}, type: 3}}\n"
+           f"--- !u!4 &{transform_id} stripped\nTransform:\n"
+           f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_TRANSFORM}, guid: {fbx_guid},\n    type: 3}}\n"
+           f"  m_PrefabInstance: {{fileID: {instance_id}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
+    if go_id:
+        out += (f"--- !u!1 &{go_id} stripped\nGameObject:\n"
+                f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_GO}, guid: {fbx_guid},\n    type: 3}}\n"
+                f"  m_PrefabInstance: {{fileID: {instance_id}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
+    return out
+
+
+def telemetry_block() -> str:
+    return (f"--- !u!114 &{TELEMETRY_ID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {ROOT_GO}}}\n"
+            f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {guid_of_script('DefaultVesselTelemetry')}, type: 3}}\n"
+            "  m_Name: \n  m_EditorClassIdentifier: \n" + TELEMETRY_FIELDS)
+
+
+def bodies_block(script_guid: str) -> str:
+    return (f"--- !u!114 &{BODIES_ID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {ROOT_GO}}}\n"
+            f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            "  m_Name: \n  m_EditorClassIdentifier: \n  ShowTopMostFoldoutHeaderGroup: 1\n" + BODIES_FIELDS)
+
+
+def add_children(text: str, transform_id: str, children) -> str:
+    m = re.search(r"(--- !u!4 &%s\nTransform:\n(?:.*\n)*?  m_Children:)( \[\])?\n((?:  - \{fileID: -?\d+\}\n)*)" % transform_id, text)
+    if not m:
+        return text
+    add = "".join(f"  - {{fileID: {t}}}\n" for t in children if f"  - {{fileID: {t}}}\n" not in m.group(3))
+    return text[:m.start()] + m.group(1) + "\n" + m.group(3) + add + text[m.end():]
+
+
+def bodies_retrofit(text: str) -> str:
+    """The marlin and the two jacks as models. Idempotent: every step looks before it writes."""
+    script_guid = guid_of_script("MarlinCrewBodies")
+    if f"--- !u!1001 &{MARLIN_INSTANCE_ID}\n" not in text:
+        text += model_instance(MARLIN_INSTANCE_ID, MARLIN_TRANSFORM_ID, FUSE_TRANSFORM, MARLIN_FBX_GUID, "Marlin",
+                               MARLIN_MODEL_Z, MARLIN_GO_ID)
+    for name, iid, tid in JACK_IDS:
+        if f"--- !u!1001 &{iid}\n" not in text:
+            text += model_instance(iid, tid, ROOT_TRANSFORM_ID, JACK_FBX_GUID, name)
+    if f"--- !u!114 &{BODIES_ID}\n" not in text:
+        text += bodies_block(script_guid)
+    if f"--- !u!114 &{TELEMETRY_ID}\n" not in text:
+        text += telemetry_block()
+    for cid in (BODIES_ID, TELEMETRY_ID):
+        m = component_list(text, ROOT_GO)
+        if m and f"{{fileID: {cid}}}" not in m.group(1):
+            text = text[:m.end(1)] + f"  - component: {{fileID: {cid}}}\n" + text[m.end(1):]
+    text = add_children(text, FUSE_TRANSFORM, [MARLIN_TRANSFORM_ID])
+    text = add_children(text, ROOT_TRANSFORM_ID, [tid for _, _, tid in JACK_IDS])
+    # the marlin is the drawn hull: the domain paint lands on it, and the Rhino's rig is switched off (its bones stay and
+    # the puppetry still turns them; the hull's colliders are the fuselage's and the plates' own)
+    text = text.replace(f"  _shipGeometries:\n  - {{fileID: {FUSE_GO}}}\n", f"  _shipGeometries:\n  - {{fileID: {MARLIN_GO_ID}}}\n")
+    m = re.search(r"--- !u!1001 &%s\nPrefabInstance:\n(?:.*\n)*?    m_Modifications:\n" % RHINO_RIG_INSTANCE, text)
+    if m and RIG_OFF not in text:
+        text = text[:m.end()] + RIG_OFF + text[m.end():]
+    return text
+
+
+def check_bodies(text: str):
+    errs = []
+
+    def want(cond, msg):
+        if not cond:
+            errs.append(msg)
+    for iid, parent, fbx, name in [(MARLIN_INSTANCE_ID, FUSE_TRANSFORM, MARLIN_FBX_GUID, "Marlin")] + \
+                                  [(iid, ROOT_TRANSFORM_ID, JACK_FBX_GUID, n) for n, iid, _ in JACK_IDS]:
+        inst = re.search(r"--- !u!1001 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % iid, text)
+        want(inst and f"m_SourcePrefab: {{fileID: 100100000, guid: {fbx}, type: 3}}" in inst.group(1)
+             and f"m_TransformParent: {{fileID: {parent}}}" in inst.group(1) and f"      value: {name}\n" in inst.group(1),
+             f"Marlin.prefab: '{name}' is not nested where MarlinCrewBodies finds it")
+    for tid, kids in ((FUSE_TRANSFORM, [MARLIN_TRANSFORM_ID]), (ROOT_TRANSFORM_ID, [t for _, _, t in JACK_IDS])):
+        t = re.search(r"--- !u!4 &%s\nTransform:\n((?:.*\n)*?)(?=--- !u!|\Z)" % tid, text)
+        want(t and all(f"  - {{fileID: {k}}}\n" in t.group(1) for k in kids), f"Marlin.prefab: transform {tid} does not list {kids}")
+    root = component_list(text, ROOT_GO)
+    want(root and f"{{fileID: {BODIES_ID}}}" in root.group(1), "Marlin.prefab: MarlinCrewBodies is not on the root")
+    tel = re.search(r"--- !u!114 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % TELEMETRY_ID, text)
+    want(root and f"{{fileID: {TELEMETRY_ID}}}" in root.group(1) and tel and TELEMETRY_FIELDS in tel.group(1),
+         "Marlin.prefab: no DefaultVesselTelemetry on the root with its stat channels (the bootstrapper's unwired fallback)")
+    body = re.search(r"--- !u!114 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % BODIES_ID, text)
+    want(body and f"guid: {guid_of_script('MarlinCrewBodies')}, type: 3" in body.group(1),
+         "Marlin.prefab: the MarlinCrewBodies document is missing or names another script (no one would see the jacks)")
+    want(f"  _shipGeometries:\n  - {{fileID: {MARLIN_GO_ID}}}\n" in text,
+         "Marlin.prefab: the ship geometry is not the marlin (the domain colour would paint the hidden Rhino)")
+    want(RIG_OFF in text, "Marlin.prefab: the Rhino's rig still draws (a Rhino inside the marlin)")
+    hud = re.search(r"--- !u!1001 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % HUD_INSTANCE, text)
+    for image_id, sprite in ICON_SPRITES:
+        want(hud and icon_override(image_id, sprite) in hud.group(1),
+             f"Marlin.prefab: the HUD icon {image_id} is not the marlin's {sprite} (the Rhino's sword placeholder shows)")
+    return errs
+
+
 def retrofit(text: str) -> str:
     """The marlin's buttons, no sword, its HUD and container, the executor. Idempotent."""
     text = BINDINGS.sub(lambda m: WANT_BINDINGS, text, count=1)
@@ -219,7 +398,10 @@ def retrofit(text: str) -> str:
     text = strip_rhino_kit(text)
     text = executor_retrofit(text)
     text = hud_retrofit(text)
-    return text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {CONTAINER_GUID},")
+    text = text.replace(f"guid: {DONOR_CONTAINER_GUID},", f"guid: {CONTAINER_GUID},")
+    text = text.replace(f"  settings: {{fileID: 11400000, guid: {RHINO_CAMERA_GUID}, type: 2}}",
+                        f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}")
+    return icons_retrofit(bodies_retrofit(text))
 
 
 def prefab_meta() -> str:
@@ -290,6 +472,30 @@ DESCRIPTION = ("  Description: A marlin and two jacks herd the cell's wildlife. 
 CREW = "  CrewNames:\n  - Marlin\n  - Jacks\n  CrewNameTemplate: '{0} and {1}'\n"
 
 
+# The class card, rendered from Marlin.fbx by Tools/Build/vessel_model/render_cards.py (2026-10-21), which names each new
+# PNG md5("cosmic-shore-card:" + its repo path); this generator writes the class asset too, so it names the same guids.
+def _model_card(rel):
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+
+
+CARD_ACTIVE = _model_card("Assets/_Graphics/CardImages/Marlin.png")
+CARD_FIELDS = {
+    "IconActive": CARD_ACTIVE,
+    "IconInactive": _model_card("Assets/_Graphics/CardImages/Marlin_Inactive.png"),
+    "CardSilohoutteActive": CARD_ACTIVE,
+    "CardSilohoutteInactive": _model_card("Assets/_Graphics/CardImages/Marlin_silhouette.png"),
+    "SquadImage": _model_card("Assets/_Graphics/CardImages/Marlin_large.png"),
+    "PreviewImage": _model_card("Assets/_Graphics/Design Assests/Hangar/Marlin_Hangar_Preview.png"),
+}
+
+
+def cards_retrofit(text: str) -> str:
+    """Point the class asset's six card fields at the Marlin's own renders (they were the Rhino's). Idempotent."""
+    for field, guid in CARD_FIELDS.items():
+        text = re.sub(r"(  %s: \{fileID: 21300000, guid: )[0-9a-f]{32}(,[^}]*\})" % field, r"\g<1>%s\2" % guid, text, count=1)
+    return text
+
+
 def class_asset(donor_class: str) -> str:
     text = replace_once(donor_class, "  m_Name: SO_Class_Rhino\n", "  m_Name: SO_Class_Marlin\n", "class m_Name")
     text = replace_once(text, f"  Class: {RHINO_CLASS_ID}\n", f"  Class: {MARLIN_CLASS_ID}\n", "class Class")
@@ -300,7 +506,7 @@ def class_asset(donor_class: str) -> str:
     text, n = re.subn(r"  isLocked: \d\n", "  isLocked: 0\n  ownedFromStart: 1\n", text, count=1)
     if n != 1:
         raise RuntimeError("donor drifted: the class isLocked line was not found")
-    return text
+    return cards_retrofit(text)
 
 
 # The four cards (Garrett, 2026-10-20). The words are authored data the team edits in the inspector; written once.
@@ -416,7 +622,9 @@ def check_prefab(text: str, script_guid: str):
     want(hud and f"  crew: {{fileID: {EXECUTOR_ID}}}\n" in hud.group(1), "Marlin.prefab: the HUD is not MarlinJacksHUDController on the executor")
     dangling = dangling_local_refs(text)
     want(not dangling, f"Marlin.prefab: dangling local fileID reference(s) {dangling[:5]}")
-    return errs
+    want(f"  settings: {{fileID: 11400000, guid: {CAMERA_GUID}, type: 2}}" in text and RHINO_CAMERA_GUID not in text,
+         "Marlin.prefab: the camera settings are not MarlinCameraSettingsSO (a tune would move the Rhino's camera)")
+    return errs + check_bodies(text)
 
 
 def check_assets(config: str, controls, container: str):
@@ -450,6 +658,9 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
     want(f"  Class: {MARLIN_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls and "  isLocked: 0\n" in cls,
          "SO_Class_Marlin: wrong class, locked, or not owned from the start")
     want(CREW in cls, "SO_Class_Marlin: the card does not name both subvessels (CrewNames Marlin, Jacks)")
+    for field, guid in CARD_FIELDS.items():
+        want(re.search(r"  %s: \{fileID: 21300000, guid: %s," % (field, guid), cls) is not None,
+             f"SO_Class_Marlin: {field} is not the Marlin's rendered card (render_cards.py Marlin)")
     want(f"  vesselClass: {MARLIN_CLASS_ID}\n" in kmap and "  m_Name: Marlin\n" in kmap, "ElementalAbilityMaps/Marlin: wrong class or name")
     want("Sword" not in kmap, "ElementalAbilityMaps/Marlin: still the Rhino's cards")
     marlin, rhino = fusion_entries(fusion, MARLIN_CLASS_ID), fusion_entries(fusion, RHINO_CLASS_ID)
@@ -469,11 +680,12 @@ def check_all():
         return ["Marlin.prefab (+ .meta) is missing: run Tools/Build/author_marlin_assets.py"]
     errs = [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Marlin.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid)
-    paths = [CLASS_ASSET, MAP, CONFIG, MARLIN_CONTAINER] + [control_path(n) for n, _, _ in CONTROLS]
+    paths = [CLASS_ASSET, MAP, CONFIG, MARLIN_CONTAINER, CAMERA] + [control_path(n) for n, _, _ in CONTROLS]
     for path in paths:
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
-    for path, guid in [(CLASS_ASSET, CLASS_GUID), (MAP, MAP_GUID), (CONFIG, CONFIG_GUID), (MARLIN_CONTAINER, CONTAINER_GUID)] + \
+    for path, guid in [(CLASS_ASSET, CLASS_GUID), (MAP, MAP_GUID), (CONFIG, CONFIG_GUID), (MARLIN_CONTAINER, CONTAINER_GUID),
+                       (CAMERA, CAMERA_GUID)] + \
                       [(control_path(n), g) for n, _, g in CONTROLS]:
         if guid_of(path + ".meta") != guid:
             errs.append(f"{os.path.relpath(path, ROOT)}.meta: guid is not the one the prefab names")
@@ -506,10 +718,18 @@ def author():
     for name, value, guid in CONTROLS:
         if not os.path.exists(control_path(name)):
             write(control_path(name), control_asset(action, name, value)); write(control_path(name) + ".meta", native_meta(guid))
+    if not os.path.exists(CAMERA):
+        write(CAMERA, replace_once(read(RHINO_CAMERA), "  m_Name: RhinoCameraSettingsSO\n", "  m_Name: MarlinCameraSettingsSO\n",
+                                   "camera m_Name"))
+        write(CAMERA + ".meta", native_meta(CAMERA_GUID))
     if not os.path.exists(MARLIN_CONTAINER):
         write(MARLIN_CONTAINER, container_asset()); write(MARLIN_CONTAINER + ".meta", native_meta(CONTAINER_GUID))
     if not os.path.exists(CLASS_ASSET):
         write(CLASS_ASSET, class_asset(read(DONOR_CLASS))); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
+    else:
+        old = read(CLASS_ASSET); new = cards_retrofit(old)
+        if new != old:
+            write(CLASS_ASSET, new)
     if not os.path.exists(MAP):
         write(MAP, build_map(read(DONOR_MAP))); write(MAP + ".meta", native_meta(MAP_GUID))
     for path, fn in [(CONTAINER, register_container), (NETWORK_PREFABS, register_network), (FUSION, register_fusion)] + \
@@ -538,6 +758,14 @@ def self_test():
     expect(check_prefab(good.replace(CONTAINER_GUID, DONOR_CONTAINER_GUID), script_guid), 1, "the Rhino's container")
     expect(check_prefab(read(DONOR).replace("  m_Name: Rhino\n", "  m_Name: Marlin\n"), script_guid), 3, "the Rhino untouched")
     expect(check_prefab(good + "  stray: {fileID: 987654321}\n", script_guid), 1, "a dangling local reference")
+    expect(check_prefab(good.replace(RIG_OFF, ""), script_guid), 1, "the Rhino's rig still drawn")
+    expect(check_prefab(good.replace(CAMERA_GUID, RHINO_CAMERA_GUID), script_guid), 1, "the Rhino's camera settings")
+    expect(check_prefab(good.replace(f"  - component: {{fileID: {TELEMETRY_ID}}}\n", ""), script_guid), 1, "no telemetry")
+    expect(check_prefab(good.replace(icon_override(*ICON_SPRITES[2]), ""), script_guid), 1, "the Rhino's Space icon")
+    expect(check_prefab(good.replace(f"  - component: {{fileID: {BODIES_ID}}}\n", ""), script_guid), 1, "no bodies component")
+    expect(check_prefab(good.replace(f"  _shipGeometries:\n  - {{fileID: {MARLIN_GO_ID}}}\n",
+                                     f"  _shipGeometries:\n  - {{fileID: {FUSE_GO}}}\n"), script_guid), 1, "the Rhino's ship geometry")
+    expect(check_prefab(good.replace("      value: Jack B\n", "      value: Jack\n"), script_guid), 1, "a misnamed jack")
     if retrofit(good) != good:
         fails.append("the retrofit is not idempotent")
     if DOC.search(good) is None:
@@ -558,6 +786,10 @@ def self_test():
     expect(check_registrations(container, read(NETWORK_PREFABS).replace(PREFAB_GUID, "x"), lists, cls, kmap, fusion), 1, "no network entry")
     expect(check_registrations(container, network, [(n, t.replace(CLASS_GUID, "x")) for n, t in lists], cls, kmap, fusion), 1, "no class list entry")
     expect(check_registrations(container, network, lists, cls.replace(CREW, ""), kmap, fusion), 1, "a card without its crew")
+    expect(check_registrations(container, network, lists, cls.replace(CARD_FIELDS["SquadImage"], "2286f04c9031ee84d8d935de1926f92a"), kmap,
+                              fusion), 1, "the Rhino's squad image")
+    if cards_retrofit(cls) != cls:
+        fails.append("the card retrofit is not idempotent")
     expect(check_registrations(container, network, lists, cls, read(DONOR_MAP), fusion), 1, "the Rhino's own map")
     expect(check_registrations(container, network, lists, cls, kmap, fusion.replace(f"  - vessel: {MARLIN_CLASS_ID}\n", "  - vessel: 99\n", 1)), 1, "a missing fusion entry")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:

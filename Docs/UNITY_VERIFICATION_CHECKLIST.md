@@ -12986,3 +12986,15 @@ session, so `/verify-unity` did not run.
    tilts and does not pan with it; it pans only when the herd drifts near the edge.
 8. Frenzy: in a cell that reaches Frenzy, wild grazers eat SHIELDED prisms (the shield goes with the prism); super-shielded
    prisms are never eaten; when the cell calms, they stop.
+9. (Round 3, Garrett: "lets give it some models and get it ready to ship") Reimport `Marlin.fbx` and `Jack.fbx` first.
+   The hull is a striped marlin (spear, tall sail, sickle fins, crescent tail), not a Rhino; no Rhino shows inside it; the
+   bars and sail take the domain colour. The tail beats faster with speed, the fins follow the Rhino's plates, the sail
+   folds back at boost and stands up while you call (A). Two striped jack fish swim where the jacks run, facing their
+   way, and the four element morphs move both models. The ability row shows the marlin's four icons (a fish with a bolt,
+   a fish with young, a ring with fish round it, a fish with speed lines), not the sword. The hull's five colliders
+   still cover the body (the spear may stick out ahead). The class card, hangar preview and squad image show the
+   marlin. Crystal hull fusion still bakes the Rhino's shape (re-bake from `Marlin.fbx` if it reads wrong).
+10. (Round 3, network) Host plus one client, the client on Marlin and Jacks: the host sees the client's two jacks swim
+   where the client runs them, and the sail rise on the client's call; the host's herd parts round the client's real
+   jacks and decoy (not an AI's). An AI marlin on the host shows the same on the client. Note on the PR whether a
+   client-owned marlin's danger stings score (contacts are decided on the owner).
