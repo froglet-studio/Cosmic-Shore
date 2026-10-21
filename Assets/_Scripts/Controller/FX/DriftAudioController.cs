@@ -165,10 +165,20 @@ namespace CosmicShore.Gameplay.Audio
             "When true, the drift loop's volume follows the slip angle: the " +
             "angle between Course (the direction the drift carries the vessel) " +
             "and the nose (the direction it returns to). Small slip = quiet, " +
-            "large slip = full volume. The release one-shot is not scaled. " +
+            "large slip = full volume. The release one-shot has its own switch " +
+            "below. " +
             "Off by default so other vessels' drift loops are unchanged; the " +
             "Squirrel turns it on.")]
         bool scaleVolumeBySlipAngle = false;
+
+        [SerializeField, Tooltip(
+            "When true, the release one-shot's volume follows the slip angle " +
+            "the drift ENDED at, on the same curve as the loop (the band and " +
+            "quiet volume below). The angle is the last one measured while " +
+            "drifting, so Grip snapping the momentum back onto the nose on " +
+            "the release frame cannot read as 0. Off by default; the Squirrel " +
+            "turns it on.")]
+        bool scaleReleaseBySlipAngle = false;
 
         [SerializeField, Range(0f, 90f), Tooltip(
             "Slip angle (degrees) at or below which the loop plays at " +
@@ -265,6 +275,7 @@ namespace CosmicShore.Gameplay.Audio
         DriftPhase _phase = DriftPhase.Idle;
         float _smoothedAmount;
         float _slipVolume = 1f;
+        float _lastDriftSlipDegrees;
         float _appliedVolume = -1f;
         float _releaseTimer;
         float _driftStartTime;
@@ -478,6 +489,7 @@ namespace CosmicShore.Gameplay.Audio
 
             // Snap the slip volume like the amount: the loop starts at the
             // slip it actually has (0 on a fresh drift, so it opens quiet).
+            _lastDriftSlipDegrees = SlipDegrees();
             _slipVolume = TargetSlipVolume();
             ApplySFXVolume();
 
@@ -512,6 +524,7 @@ namespace CosmicShore.Gameplay.Audio
             _smoothedAmount = Mathf.Lerp(_smoothedAmount, target, alpha);
             PushAmount(_smoothedAmount);
 
+            _lastDriftSlipDegrees = SlipDegrees();
             if (scaleVolumeBySlipAngle)
             {
                 float slipAlpha = slipVolumeSmoothing > 0f ? 1f - Mathf.Exp(-dt * slipVolumeSmoothing) : 1f;
@@ -531,7 +544,7 @@ namespace CosmicShore.Gameplay.Audio
         }
 
         float TargetSlipVolume() => scaleVolumeBySlipAngle
-            ? SlipVolume(SlipDegrees(), quietSlipDegrees, fullSlipDegrees, quietVolume01)
+            ? SlipVolume(_lastDriftSlipDegrees, quietSlipDegrees, fullSlipDegrees, quietVolume01)
             : 1f;
 
         /// <summary>
@@ -599,6 +612,8 @@ namespace CosmicShore.Gameplay.Audio
         void FireReleaseOneShot()
         {
             float volume = ResolveSFXVolume();
+            if (scaleReleaseBySlipAngle)
+                volume *= SlipVolume(_lastDriftSlipDegrees, quietSlipDegrees, fullSlipDegrees, quietVolume01);
 
             if (attachReleaseEventToShip)
                 FMODOneShotVolumeHelper.PlaySFXOneShotAttached(releaseEvent, gameObject, volume);

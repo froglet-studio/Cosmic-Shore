@@ -1330,6 +1330,7 @@ MonoBehaviour:
   releaseSmoothing: 20
   releaseHoldSeconds: 0.4
   scaleVolumeBySlipAngle: 1
+  scaleReleaseBySlipAngle: 1
   quietSlipDegrees: 0
   fullSlipDegrees: 180
   quietVolume01: 0.15

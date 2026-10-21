@@ -77,7 +77,8 @@ Toy Box > Vessel Changer → Squirrel:
 1. Run `DriftSlipVolumeTests` (4) in the Test Runner.
 2. Drift with the nose on the slide: the loop is quiet. Swing the nose further off the slide: it rises linearly,
    reaching the pre-change volume at 180 degrees (nose back along the slide); swing back: it falls, no flutter.
-3. Release one-shot unchanged. Dolphin drift sound unchanged.
+3. Release one-shot: quiet when the drift ends with the nose on the slide, louder the further off it ended (same
+   linear curve, angle taken on the last drifting frame). Dolphin drift and release sounds unchanged.
 
 | Knob | First pass |
 |---|---|
