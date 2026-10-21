@@ -1,0 +1,564 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-10-21 03:50:58 (next editor launch after the abnormal exit)
+session:        20261021-072021929  (pid 49024, Unity 6000.3.17f1)
+started:        2026-10-21T07:20:21.934Z UTC
+last heartbeat: 2026-10-21T07:48:12.441Z UTC
+last state:     EditMode
+main thread:    unresponsive for ~14s at the last heartbeat — likely a hang / freeze that was then killed
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261021-053649031
+started: 2026-10-21T05:36:49.032Z UTC
+unity:   6000.3.17f1
+pid:     49024
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[01:41:57.484] ---- entering play mode ----
+[01:42:01.688] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[01:42:02.398] ---- play mode running ----
+[01:45:21.891] ---- leaving play mode ----
+[01:45:31.934] ---- edit mode restored ----
+[01:47:00.604] ---- domain reload begins (script compilation / play-mode transition) ----
+[01:47:06.891] ---- domain reload complete — session re-adopted ----
+[01:48:47.630] ---- entering play mode ----
+[01:48:49.352] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tc[01:59:24.451] ---- domain reload begins (script compilation / play-mode transition) ----
+
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[01:48:49.855] ---- play mode running ----
+[01:49:34.612] [PlayMode] Error: [VesselImpactor] 'WrasseImpactorDataContainer'.VesselPrismEffects[4] is empty — that slot dispatches nothing and the rest of the list still runs. Assign the effect asset, or remove the slot. If the container already names an asset there, that asset FAILED TO LOAD: select it, and if it reports a script that cannot be loaded, Reimport it (an asset imported before its new script compiled stays broken until it is).
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000225ea50d45e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000225ea50d013 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000225ea50cccb (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[01:57:39.787] ---- leaving play mode ----
+[01:57:44.495] ---- edit mode restored ----
+[01:59:10.488] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:00:21.526] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261021-055936215.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:45:06.802] ---- domain reload begins (script compilation / play-mode transition) ----
+
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[01:59:45.249] ---- play mode running ----
+[02:03:46.899] ---- leaving play mode ----
+[02:03:51.399] ---- edit mode restored ----
+[02:44:51.752] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:45:57.886] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Star-Writer2\Logs\CrashDetector\HangDump-20261021-064512126.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[02:52:50.177] ---- domain reload begins (script compilation / play-mode transition) ----
+
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[02:45:42.270] ---- play mode running ----
+[02:47:07.880] ---- leaving play mode ----
+[02:47:11.548] ---- edit mode restored ----
+[02:47:42.214] ---- entering play mode ----
+[02:47:44.157] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[02:47:44.433] ---- play mode running ----
+[02:49:09.742] ---- leaving play mode ----
+[02:49:13.025] ---- edit mode restored ----
+[02:52:34.280] ---- domain reload begins (script compilation / play-mode transition) ----
+[02:58:55.125] ---- entering play mode ----
+[02:59:03.794] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tc[03:20:33.505] ---- domain reload begins (script compilation / play-mode transition) ----
+
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[02:59:04.340] ---- play mode running ----
+[03:00:01.101] [PlayMode] Error: [PrismClock] STRICT MODE: no companion render entity to stamp (cellSwapSuction) — clock-material animation rides the instanced render path (PrismRenderService), and no legacy fallback exists. DIAGNOSIS: ON · ents=6634 meshes=4 mats=9. Gameplay state is final (law-correct); the visual transition is skipped.
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91b331b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x00000225e794abde (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x00000225e794a793 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x00000225e794a44b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[03:04:46.405] ---- leaving play mode ----
+[03:04:56.383] ---- edit mode restored ----
+[03:20:14.572] ---- domain reload begins (script compilation / play-mode transition) ----
+[03:28:59.829] ---- entering play mode ----
+[03:29:03.506] [EditMode] Exception: CommandInvokationFailure: Unity Remote requirements check failed
+C:\Unity\6000.3.17f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe forward tcp:7201 tcp:7201
+
+Environment Variables:
+USERDOMAIN = GBOX
+ProgramFiles = C:\Program Files
+TMP = C:\Users\gradi\AppData\Local\Temp
+JetBrains Rider = C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin
+NVCUDASAMPLES_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+PROCESSOR_REVISION = a701
+ALLUSERSPROFILE = C:\ProgramData
+OS = Windows_NT
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_27188_ZUPWSDXNONAAWVSZ
+PROCESSOR_IDENTIFIER = Intel64 Family 6 Model 167 Stepping 1, GenuineIntel
+CUDA_PATH_V11_4 = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+CUDA_PATH = C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
+ProgramW6432 = C:\Program Files
+USERPROFILE = C:\Users\gradi
+CommonProgramFiles = C:\Program Files\Common Files
+MSMPI_BENCHMARKS = C:\Program Files\Microsoft MPI\Benchmarks\
+ComSpec = C:\Windows\system32\cmd.exe
+LOGONSERVER = \\GBOX
+MSMPI_BIN = C:\Program Files\Microsoft MPI\Bin\
+PUBLIC = C:\Users\Public
+SystemRoot = C:\Windows
+PSModulePath = C:\Program Files\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+NUMBER_OF_PROCESSORS = 16
+FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
+TEMP = C:\Users\gradi\AppData\Local\Temp
+Path = C:\Program Files\Microsoft MPI\Bin\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\libnvvp;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\Nsight Compute 2021.2.2\;C:\Program Files\Git\cmd;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\dotnet\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\Scripts\;C:\Users\gradi\AppData\Local\Programs\Python\Python310\;C:\Users\gradi\AppData\Local\Microsoft\WindowsApps;C:\Users\gradi\.dotnet\tools;C:\Users\gradi\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\gradi\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\JetBrains\JetBrains Rider 2025.2.4\bin;C:\Users\gradi\AppData\Local\GitHubDesktop\bin;C:\Users\gradi\AppData\Local\Unity\bin
+USERNAME = gradi
+COMPUTERNAME = GBOX
+PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
+NVTOOLSEXT_PATH = C:\Program Files\NVIDIA Corporation\NvToolsExt\
+SystemDrive = C:
+windir = C:\Windows
+PROCESSOR_ARCHITECTURE = AMD64
+FPS_BROWSER_USER_PROFILE_STRING = Default
+HOMEPATH = \Users\gradi
+CommonProgramFiles(x86) = C:\Program Files (x86)\Common Files
+APPDATA = C:\Users\gradi\AppData\Roaming
+OneDrive = C:\Users\gradi\OneDrive
+DriverData = C:\Windows\System32\Drivers\DriverData
+CommonProgramW6432 = C:\Program Files\Common Files
+ProgramFiles(x86) = C:\Program Files (x86)
+SESSIONNAME = Console
+NVCUDASAMPLES11_4_ROOT = C:\ProgramData\NVIDIA Corporation\CUDA Samples\v11.4
+LOCALAPPDATA = C:\Users\gradi\AppData\Local
+PROCESSOR_LEVEL = 6
+HOMEDRIVE = C:
+USERDOMAIN_ROAMINGPROFILE = GBOX
+ProgramData = C:\ProgramData
+
+
+stderr[
+adb.exe: no devices/emulators found
+]
+stdout[
+
+]
+exit code: 1
+        UnityEditor.Android.Command.WaitForProgramToRun (UnityEditor.Utils.Program p, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:212)
+        UnityEditor.Android.Command.Run (System.Diagnostics.ProcessStartInfo psi, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:159)
+        UnityEditor.Android.Command.Run (System.String command, System.String args, System.String workingdir, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg, System.Text.Encoding inputEncoding) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/Command.cs:117)
+        UnityEditor.Android.ADB.RunInternal (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:240)
+        UnityEditor.Android.ADB.Run (System.String[] command, UnityEditor.Android.Command+WaitingForProcessToExit waitingForProcessToExit, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:233)
+        UnityEditor.Android.ADB.Run (System.String[] command, System.String errorMsg) (at /home/bokken/build/output/unity/unity/PlatformDependent/AndroidPlayer/Editor/Managed/Android/ADB.cs:221)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        ...
+[03:29:04.020] ---- play mode running ----
+[03:46:48.136] ---- leaving play mode ----
+[03:46:52.593] ---- edit mode restored ----
+[03:48:13.598] [EditMode] Error: Force Quit pressed for Moving file failed: Moving C:/Users/gradi/source/repos/Star-Writer2/Temp/UnityTempFile-8ba5fcf806eee2240b901a3a1939e79f to C:/Users/gradi/source/repos/Star-Writer2/Assets/_Graphics/Fonts/ChakraPetch/ChakraPetch-SemiBold 
+SDF.asset: The system cannot find the path specified.
+
+        0x00007ff91b4c4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ff91ccff369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ff91ccffbee (Unity) Stacktrace::GetStacktrace
+        0x00007ff91b47587f (Unity) DebugStringToFile
+        0x00007ff91beb42c4 (Unity) RetriableOperation::RequestUserRetry<MoveReplaceFileOperation>
+        0x00007ff91beb36f9 (Unity) RetriableOperation::Perform<MoveReplaceFileOperation>
+        0x00007ff91beb87e7 (Unity) MoveReplaceFile
+        0x00007ff91beb88a4 (Unity) MoveReplaceFile
+        ...
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+[INFO ] [relay] log Shutdown: Initiating graceful shutdown: Dedicated client disconnected
+
