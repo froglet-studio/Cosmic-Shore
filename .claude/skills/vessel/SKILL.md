@@ -873,6 +873,12 @@ applies to new abilities, new resources on the meter list, and anything that add
     goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
     `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
     input strategy; a pitch never carries a sign of its own; `InputInversionTests`).
+    Three traps this cost (2026-10-21): **`BaseInputStrategy.ResetInput` clears `InputStatus.Idle`**, so a strategy that
+    re-tests `Idle` after resetting re-raises `IdleAction` every frame - track the edge in the strategy (`idlePressed`);
+    **the Input System starts every sensor disabled, and enabling one wakes every reader of it** (tilt enabling the
+    accelerometer would have woken a dormant 0.1 g FlipAction detector, so the detector was retired with it); and
+    **`AddComponent` runs `OnEnable` before a factory sets the fields `OnEnable` reads**, so a UI control that registers
+    a `FlightTouchClaims` region in `OnEnable` must register again at the end of its `Create`.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
