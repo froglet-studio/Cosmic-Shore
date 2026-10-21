@@ -811,7 +811,10 @@ applies to new abilities, new resources on the meter list, and anything that add
     rest in one frame - invisible on a pad (it rarely goes idle mid-turn), a "glitch" on mobile. The eased stick
     (`EasedLeftJoystickPosition`) does not help: `Idle()` never sees it. Keep `_yaw = Lerp(_yaw, yaw, 1 - Exp(-10 dt))`
     in the animation (Thresher, Shrike, Brittle Star do; Stoat and Angler did not, `Docs/REFACTOR_BACKLOG.md` S29).
-    Garrett's Thresher mobile run, 2026-10-19 (`cece/elegant-goldberg-eanwgx`).
+    Garrett's Thresher mobile run, 2026-10-19 (`cece/elegant-goldberg-eanwgx`). The Squirrel/Serpent's
+    `MantaAnimationContoller` snapped the other way, by writing `Idle()` at a different scale and sign than its
+    puppetry (`Pitch = currentPitch` against `-currentPitch * 2`; the Sparrow's controller halved the same way) -
+    `Idle()` and puppetry must share ONE setter (`WriteAnimatorPose`, 2026-10-21; S29 lists the audit).
 54. **Secondary motion (a tail, a cord, a fin) is driven by STATE, never by a clock - and must be frame-rate proof.**
     A sine "beat" is a wiggle the pilot did not cause; it reads as noise, and worse at 30 fps. The Thresher's tail
     (2026-10-19, `ThresherSwimMath`) is the shape: aim at something real (a point down its own chain), give each
@@ -839,6 +842,43 @@ applies to new abilities, new resources on the meter list, and anything that add
     RPC; `PerformShipControllerActionsReplicated` is the AI's path and skips the gates. And a touch that starts on
     such a control must be kept out of touch flight (`FlightTouchClaims`), or the same finger also steers and fires
     the one-thumb drift edges.
+
+57. **To move part of an ANIMATOR-driven hull from code, write in `LateUpdate` on top of the animated pose — and
+    undo your own write on any bone the Animator did not rewrite.** The Squirrel's model is an Animator
+    (`MantaAnimationContoller`, single-frame poses in blend trees), which rewrites bones between `Update` and
+    `LateUpdate`; anything written in `Update` is erased, and an absolute pose written in `LateUpdate` throws the
+    takes away. `DriftEngineSwivel` (2026-10-21) applies its swing to the animated pose in `LateUpdate`, records the
+    local pose it wrote, and at the next `LateUpdate` restores the animated pose on any bone still holding EXACTLY
+    that write (`Equals`, not `==`, which is approximate) — a bone no clip animates would otherwise compound the swing
+    every frame. Read every part's pivot and axis BEFORE writing any of them, since writing a parent bone moves its
+    children. A child (a jet on a bone) then rides the part with no code of its own. Two audio traps from the same
+    branch: **a state that ENDS this frame has usually already been undone by the time you read it** (the drift
+    release reads the slip angle off the last DRIFTING frame, because Grip rotates Course back onto the nose the
+    moment the drift lets go); and **a new behaviour on a component several hulls share defaults OFF in code and is
+    switched on in the one prefab that asked** (`DriftAudioController` also plays the Dolphin's drift).
+
+58. **Every vessel has a PHONE SCHEME, and a new one needs a row in `Tools/Build/author_touch_profiles.py`.** A phone
+    has no trigger depth, can never hold LT+RT (lifting the second thumb is "let go of everything"), and a thumb that
+    leaves its stick to reach a card fires that thumb's lift ability on the way (Garrett, 2026-10-21,
+    `Docs/Reports/MOBILE_VESSELS.md` §8). So each hull picks one: **ThumbLifts** (abilities on thumb lifts, cards show a
+    lift glyph and are not buttons) or **TotemButtons** (lifts raise nothing; cards plus `extraButtons` are the
+    controls, laid out round the right thumb in millimetres). Ask of every new ability: *how does a phone press it?*
+    A trigger-depth read needs a press fallback (`max(analog, held)`, the Thresher and Angler pattern) or a hold-time
+    ramp (the Stoat's `Hold01`); an LT+RT ability needs a both-thumbs-off form (`idlePullsBothTriggers`, the Rhino) or a
+    card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up. The gate:
+    `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
+    no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
+    erase read only trigger depth). Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
+    Two fleet rules ride with it (2026-10-21): **a human pilot's nose has no lag** - every transformer's RotateShip
+    goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
+    `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
+    input strategy; a pitch never carries a sign of its own; `InputInversionTests`).
+    Three traps this cost (2026-10-21): **`BaseInputStrategy.ResetInput` clears `InputStatus.Idle`**, so a strategy that
+    re-tests `Idle` after resetting re-raises `IdleAction` every frame - track the edge in the strategy (`idlePressed`);
+    **the Input System starts every sensor disabled, and enabling one wakes every reader of it** (tilt enabling the
+    accelerometer would have woken a dormant 0.1 g FlipAction detector, so the detector was retired with it); and
+    **`AddComponent` runs `OnEnable` before a factory sets the fields `OnEnable` reads**, so a UI control that registers
+    a `FlightTouchClaims` region in `OnEnable` must register again at the end of its `Create`.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

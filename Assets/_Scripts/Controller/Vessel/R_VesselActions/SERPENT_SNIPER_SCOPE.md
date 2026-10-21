@@ -130,6 +130,12 @@ of the world: it exists so a BINARY trigger (mouse, keyboard — 0 or 1) ramps i
 ships at **12/s**, up from 6: at 6 a full pull took ~167 ms to arrive, which on a pad reads as the
 scope moving on its own — the same complaint from the other end.
 
+**Touch opens at full zoom (2026-10-21, Garrett: "the serpent's scope should open to max zoom").** A
+phone has no trigger depth — `TouchInputStrategy` never writes `LeftTriggerAnalog` — so on touch the
+scope opened and sat unzoomed. When `ActiveInputDevice == Touch` the target is a full pull (1);
+`zoomResponse` still ramps it in, so it reads as raised, not snapped. Pad, mouse and keyboard are
+unchanged (`SniperScopeActionExecutor.ResolveZoomTarget`).
+
 Two terms were removed to get here, and both were defensible when written:
 
 - **The Steady-Eye stick bleed.** Below Space 5 the magnification eased back out as the pilot

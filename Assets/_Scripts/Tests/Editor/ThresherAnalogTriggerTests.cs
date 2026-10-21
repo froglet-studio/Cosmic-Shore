@@ -64,6 +64,12 @@ namespace CosmicShore.Tests
             {
                 var edge = S.AnalogTriggers(lt, rt, FullPull, LetGo, P, Last, Vector3.up, dt);
                 if (edge == ThresherTriggerEdge.LetGo) S.Release(Last);
+                Move(yawDegPerSec, dt);
+                return edge;
+            }
+            /// <summary>The move half of a frame (after the triggers).</summary>
+            public void Move(float yawDegPerSec, float dt = Dt)
+            {
                 F = Yaw(F, yawDegPerSec * dt);
                 float th = V + (Cruise - V) * 1.5f * dt;
                 R = S.Step(P, F * th, false, Cruise, dt);
@@ -71,7 +77,6 @@ namespace CosmicShore.Tests
                 V = R.ShipVelocity.magnitude;
                 P += R.ShipVelocity * dt;
                 Last = R.ShipVelocity;
-                return edge;
             }
             public void Fly(float seconds, float lt, float rt, float yaw = 0f, float dt = Dt)
             {
@@ -319,6 +324,179 @@ namespace CosmicShore.Tests
             Assert.AreEqual(ThresherMode.Pivot, g.S.Mode, "a full pull plants again without waiting for rest");
             Assert.IsFalse(g.S.LeftTriggerLetGo);
             Assert.IsFalse(g.S.OnLaunchLine, "a new plant ends the line");
+        }
+
+        // ---------------------------------------------------------------- on a phone (2026-10-21)
+        // Garrett: "the thresher's aimed launch should be both thumbs off and aimed with gyro". A phone's
+        // triggers are thumb LIFTS (right lift = Plant, left = Winch) and read as a full pull or none; both thumbs
+        // off a planted spin reads as both triggers full (ThresherTouchLaunch).
+
+        /// <summary>The shipped <c>spectateSpinRate</c> (rad/s): the spin the launch view needs.</summary>
+        const float SpectateSpinRate = 0.9f;
+        /// <summary>The shipped <c>launchBoost</c>.</summary>
+        const float LaunchBoost = 4.8f;
+
+        /// <summary>One frame of a phone pilot, as <c>ThresherExecutor.PollTriggers</c> reads it: the Plant lift as a
+        /// full pull or none, no winch, both through the touch hold. On the let-go edge an <paramref name="aim"/>
+        /// (the launch view up) ARMS the boosted launch, as <c>ThresherExecutor.LetGo</c> does; none lets go.</summary>
+        static ThresherTriggerEdge TouchFrame(Flight f, ref ThresherTouchLaunch touch, bool plantHeld,
+                                              out bool grip, Vector3 aim = default)
+        {
+            float lt = plantHeld ? 1f : 0f, rt = 0f;
+            touch.Apply(f.S.Mode, ref lt, ref rt);
+            var edge = f.S.AnalogTriggers(lt, rt, FullPull, LetGo, f.P, f.Last, Vector3.up, Dt);
+            if (edge == ThresherTriggerEdge.LetGo)
+            {
+                if (aim.sqrMagnitude > 0.5f) f.S.ArmLaunch(aim, LaunchBoost);
+                else f.S.Release(f.Last);
+            }
+            f.Move(0f);
+            grip = ThresherCameraFraming.LaunchViewGrip(true, f.S.IsBraking, lt, f.S.Rigidity, FullPull)
+                   && f.S.Mode == ThresherMode.Pivot
+                   && ThresherCameraFraming.SpinRate(f.S.LockSpeed, f.S.Extent) >= SpectateSpinRate;
+            return edge;
+        }
+
+        /// <summary>Tow, plant on the right-thumb lift (RT released: a slack chain) and spin for 2.5 s.</summary>
+        static Flight TouchPlanted(out ThresherTouchLaunch touch)
+        {
+            var f = new Flight(Analog()) { Grip = true };
+            touch = new ThresherTouchLaunch();
+            f.Fly(1f, 0f, 0f, 40f);
+            for (int i = 0; i < 150; i++) TouchFrame(f, ref touch, true, out _);
+            Assert.AreEqual(ThresherMode.Pivot, f.S.Mode, "the right-thumb lift plants");
+            return f;
+        }
+
+        /// <summary><see cref="TouchPlanted"/>, then the last thumb leaves the glass: the Plant release and then the
+        /// IdleAction press, back to back on one frame - the order TouchInputStrategy raises them in and every peer
+        /// replays them in. Flown until the launch view grips (at most 1 s).</summary>
+        static Flight TouchLaunchView(out ThresherTouchLaunch touch)
+        {
+            var f = TouchPlanted(out touch);
+            touch.PlantReleased();
+            touch.IdlePressed(f.S.Mode, f.S.LaunchArmed);
+            Assert.IsTrue(touch.Held, "both thumbs off a planted spin hold the plant");
+            for (int i = 0; i < 60; i++)
+            {
+                TouchFrame(f, ref touch, false, out bool grip);
+                Assert.AreEqual(ThresherMode.Pivot, f.S.Mode, $"frame {i}: the Plant release ahead of the idle press never lets the ball go");
+                if (grip) return f;
+            }
+            Assert.IsTrue(false, "both thumbs off never gripped the launch view within 1 s");
+            return f;
+        }
+
+        [Test]
+        public void Touch_APlantAlone_NeverGripsTheLaunchView()
+        {
+            // Why the aimed launch was unreachable on a phone: the Winch is the OTHER thumb's lift, so a plant is
+            // always held with the chain slack.
+            var f = TouchPlanted(out var touch);
+            for (int i = 0; i < 120; i++)
+            {
+                TouchFrame(f, ref touch, true, out bool grip);
+                Assert.IsFalse(grip, "a phone's plant alone holds RT released, so the chain is never rigid");
+            }
+        }
+
+        [Test]
+        public void Touch_BothThumbsOffAPlantedSpin_GripsTheLaunchView_AsBothTriggersFull()
+        {
+            var f = TouchLaunchView(out var touch);
+            Assert.GreaterOrEqual(f.S.Rigidity, FullPull, "RT reads a full pull: the chain went rigid at its slew");
+            Assert.IsFalse(f.S.IsBraking);
+            for (int i = 0; i < 120; i++)
+            {
+                TouchFrame(f, ref touch, false, out bool grip);
+                Assert.IsTrue(grip, $"frame {i}: the view holds while the thumbs stay off");
+            }
+        }
+
+        [Test]
+        public void Touch_AThumbBackDown_ArmsTheBoostedLaunch_WhichFliesTheCrosshair()
+        {
+            var f = TouchLaunchView(out var touch);
+            float orbit = f.S.LockSpeed;
+            touch.IdleReleased();
+            Vector3 aim = Vector3.right;
+            var edge = TouchFrame(f, ref touch, false, out _, aim);
+            Assert.AreEqual(ThresherTriggerEdge.LetGo, edge, "a thumb back on the glass is the pad's LT let-go");
+            Assert.IsTrue(f.S.LaunchArmed || f.R.Launched, "in the launch view the let-go arms the aimed launch");
+            for (int i = 0; i < 600 && !f.R.Launched; i++) TouchFrame(f, ref touch, false, out _, aim);
+            Assert.IsTrue(f.R.Launched, "the armed launch leaves at its point");
+            Assert.Less(AngleDeg(f.R.ShipVelocity, aim), 0.5f, "along the crosshair");
+            Assert.Greater(f.R.ShipVelocity.magnitude, orbit * 3f, "boosted (launchBoost x the orbit), as every aimed launch");
+            // One thumb flies on (no lift, so no trigger): the launch line holds the heading on the aim.
+            float worstDeg = 0f;
+            for (int k = 0; k < 90; k++) { TouchFrame(f, ref touch, false, out _); worstDeg = Mathf.Max(worstDeg, AngleDeg(f.Last, aim)); }
+            Assert.Less(worstDeg, 3f, "the heading stays on the aim");
+        }
+
+        [Test]
+        public void Touch_AThumbLandingBackWithNoIdle_LetsGoAfterOnePoll()
+        {
+            // The right thumb back on the glass (1 -> 2 thumbs) releases the Plant with no idle press: the one-poll
+            // grace waits for an idle press that never comes, then lets go on the orbit's tangent.
+            var f = TouchPlanted(out var touch);
+            touch.PlantReleased();
+            Assert.AreEqual(ThresherTriggerEdge.None, TouchFrame(f, ref touch, false, out _));
+            Assert.AreEqual(ThresherMode.Pivot, f.S.Mode, "one poll of grace");
+            Assert.AreEqual(ThresherTriggerEdge.LetGo, TouchFrame(f, ref touch, false, out _));
+            Assert.AreEqual(ThresherMode.Free, f.S.Mode);
+
+            // The grace never starts a stop: it holds only a ball that is already planted.
+            var g = new Flight(Analog());
+            var towing = new ThresherTouchLaunch();
+            g.Fly(1f, 0f, 0f, 40f);
+            towing.PlantReleased();
+            TouchFrame(g, ref towing, false, out _);
+            Assert.AreEqual(ThresherMode.Free, g.S.Mode);
+        }
+
+        [Test]
+        public void Touch_IdleOffTheTowOrAnArmedLaunch_HoldsNothing_AndAWindmillEndsTheHold()
+        {
+            // Both thumbs off while towing (or after the Winch lift alone) is tilt flight, not a plant.
+            var f = new Flight(Analog());
+            var touch = new ThresherTouchLaunch();
+            f.Fly(1f, 0f, 0f, 40f);
+            touch.IdlePressed(f.S.Mode, f.S.LaunchArmed);
+            Assert.IsFalse(touch.Held);
+            for (int i = 0; i < 60; i++) TouchFrame(f, ref touch, false, out _);
+            Assert.AreEqual(ThresherMode.Free, f.S.Mode, "an idle press never starts a stop");
+
+            // Lifting off again while an armed launch waits for its point changes nothing.
+            var g = TouchLaunchView(out var armed);
+            armed.IdleReleased();
+            TouchFrame(g, ref armed, false, out _, Vector3.right);
+            Assert.IsTrue(g.S.LaunchArmed);
+            armed.IdlePressed(g.S.Mode, g.S.LaunchArmed);
+            Assert.IsFalse(armed.Held, "an armed launch is not re-held");
+
+            // A plant that ends some other way (an omni crystal's windmill) ends the hold.
+            var h = TouchLaunchView(out var held);
+            h.S.StartWindmill(h.P, 2f);
+            float lt = 0f, rt = 0f;
+            held.Apply(h.S.Mode, ref lt, ref rt);
+            Assert.IsFalse(held.Held);
+            Assert.AreEqual(0f, lt);
+            Assert.AreEqual(0f, rt);
+        }
+
+        [Test]
+        public void Touch_WithNoPhoneEvents_TheDepthsPassThroughUntouched()
+        {
+            // Every other device never raises the touch map's IdleAction or a phone's PlantReleased: the hold is inert.
+            var touch = new ThresherTouchLaunch();
+            foreach (ThresherMode mode in System.Enum.GetValues(typeof(ThresherMode)))
+            foreach (float depth in new[] { 0f, 0.3f, 0.95f, 1f })
+            {
+                float lt = depth, rt = 1f - depth;
+                touch.Apply(mode, ref lt, ref rt);
+                Assert.AreEqual(depth, lt);
+                Assert.AreEqual(1f - depth, rt);
+            }
         }
 
         [Test]

@@ -384,10 +384,13 @@ namespace CosmicShore.Gameplay
             Vector2 rawStick = !idle && input != null ? input.LeftNormalizedJoystickPosition : Vector2.zero;
             Vector2 easedStick = !idle && input != null ? input.EasedLeftJoystickPosition : Vector2.zero;
 
-            // The vessel's REAL throttle (D-2): the analog right trigger, with the
+            // The vessel's REAL throttle (D-2): the analog right trigger (on a phone the
+            // set-and-hold slider, which an idle frame does not release), with the
             // transformer's own autopilot rule mirrored so AI wing cases ride swept.
             float throttle01 = status.AutoPilotEnabled ? 1f
-                : (!idle && input != null ? Mathf.Clamp01(input.RightTriggerAnalog) : 0f);
+                : (!idle || ScarabVesselTransformer.ThrottleIsSetAndHold(input))
+                    ? ScarabVesselTransformer.PilotThrottle01(input)
+                    : 0f;
 
             float topSpeed = _scarabTransformer ? _scarabTransformer.CurrentTopSpeed : fallbackTopSpeed;
             float speed01 = Mathf.Clamp01(status.Speed / Mathf.Max(1f, topSpeed * legTuckAtTopSpeedFraction));

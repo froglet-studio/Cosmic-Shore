@@ -1263,6 +1263,24 @@ trio, and the traps).
   its own: no auto-rotate, no idle re-roll, no "the cell has been up too long" reset. That would be
   the timed culler §0 rejects, wearing a new costume. Detail: `Docs/ECOSYSTEM.md §19`.
 
+- **NO PRISM MAY INTERPENETRATE ANOTHER holds for EVERY generated lay list, not only the species
+  fitted under it** (`Docs/ECOSYSTEM.md §62`). **It is held at AUTHORING time, inside each
+  generator, never by a runtime pass.** Garrett, 2026-10-20: *"we don't want to bloat our run time
+  load when this is a strictly editor time solvable problem ... don't reduce prism count. minimally
+  reduce scale so they are flush."* A prism is sized flush with the neighbours its own construction
+  knows (analytic indices, not a search). No prism is removed, and the draws stay the same (`JitDown`
+  where `Jit` would undo a fit). `Tools/Build/audit_prism_clipping.py` runs every shipped generator
+  at I1-I4 and reports clipping by family. The residuals are random scatter (Boneyard, Caldera,
+  Zephyr), the Gyroid's walk drift and two shapes under the 0.5 scale floor; each one is an open
+  decision (§62.4). **A cell's `PhaseThresholds` ride its laid VOLUME**: a generator change that
+  moves it re-measures the ladder in the same change. **A cell environment loads from its BAKE**
+  (§62.2b): a change to its generator, its prefab or `CellEnvironmentSpawnableBase` re-runs
+  `python3 Tools/Build/bake_prism_layouts.py` in the same change (`--check` is the gate), or the
+  world is generated live with a `[PrismLayoutBake]` warning. **Dynamic contact never does nothing**
+  (§62.6). A mover that touches a prism it cannot affect acknowledges the hit: own armoured mass
+  LIGHTS, and super-shielded mass jiggles. Still open: the Mandelbulb flora family gates an
+  interpenetration BOUND, not a zero (§62.5).
+
 **Protocol:** (1) restate which invariants the change touches + confirm none are violated;
 (2) confirm at genuine forks (AskUserQuestion); (3) implement surgically, config-driven; (4) state
 the collider-budget impact + exact in-editor verification. The `/ecology` skill encodes this.

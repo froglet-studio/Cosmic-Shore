@@ -199,6 +199,7 @@ python3 Tools/Build/check_using_directives.py
 python3 Tools/Build/check_gamelist_scenes.py
 python3 Tools/Build/author_preview_spawns.py --check
 python3 Tools/Build/render_card_backgrounds.py --check    # the card's background is its CURRENT arena
+python3 Tools/Build/bake_prism_layouts.py --check       # a CellEnvironmentSpawnableBase arena loads from its bake (ECOSYSTEM §62.2b)
 python3 Tools/Build/author_card_backgrounds.py --strict   # every live card wears its own
 ```
 

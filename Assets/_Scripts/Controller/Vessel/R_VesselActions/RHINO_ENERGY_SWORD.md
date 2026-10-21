@@ -87,7 +87,7 @@ ordinary cutting).
 ## The energize ritual (the supershield key)
 
 Hold the **lower/chop stance** — both triggers pulled (sum ≥ `stanceSumThreshold`, 1.5) and even
-(|difference| ≤ `stanceCenterEpsilon`, 0.4) — for `energizeHoldSeconds` (1 s):
+(|difference| ≤ `stanceCenterEpsilon`, 0.4) — for `energizeHoldSeconds` (1 s; 0.5 s for a human on a phone, `touchEnergizeRateMultiplier`):
 
 ```
 Idle ── stance held, energy ≥ cost, off cooldown ──► Charging (anticipation arcs, blade leans white)
@@ -125,9 +125,10 @@ tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
   the same way). The gesture is still the chop pose the player already knows; thresholds live
   on `RhinoShieldSwipeConfig.asset`.
 - **Binary inputs energize too:** DualMouse and keyboard write 0/1 mirrors, so both held =
-  sum 2. **Touch cannot energize**: `TouchInputStrategy` writes no trigger mirrors, so the
-  stance (which reads only the mirrors) never sees a pull; a future touch binding must write the
-  mirrors to join in. The event path's both-held synthesis (`diff 0, sum 2`) remains for the
+  sum 2. **Touch energizes by lifting both thumbs (2026-10-21, § On a phone below)**: with no
+  thumb on the glass `TouchInputStrategy` writes both mirrors 1 (`idlePullsBothTriggers`), the
+  same values two held triggers write. *(Until 2026-10-21 touch wrote no mirrors and could not
+  energize.)* The event path's both-held synthesis (`diff 0, sum 2`) remains for the
   POSE only, and since 2026-10-16 only for touch — every other device, on every peer, poses from
   the mirrors (`RHINO_SHIELD_SWIPE.md` § "Input paths"). *Until 2026-10-16:* AI never pulled
   triggers, so AI Rhinos never energized. Now `RhinoSwordAutopilot` (Rhino root) writes the
@@ -515,7 +516,7 @@ damage SOs and `PrismExplosion.prefab`'s speed band — see the swing-kinematics
 
 On `ShieldSkimmerScaleConfig.asset`: `baseScale` 30 (fallback; live base is the Space elemental
 scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
-`energizeHoldSeconds` 1 · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
+`energizeHoldSeconds` 1 · `touchEnergizeRateMultiplier` 2 (phone hold = 0.5 s) · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
 `liveWireUpgradeElement` Charge (the L5 that lets the stance re-light the tail) ·
 `crystalBurstFactorAtFullEnergy` 4 (the surge burst — the names predate the move) · `crystalBurstHoldSeconds` 2.5 · `crystalBurstGrowSpeed`
 600 · `crystalBurstReturnSpeed` 150 · `visibilityMultiplier` 1.2 · `restingBladeColor` white ·
@@ -600,11 +601,48 @@ which had no knobs, is deleted.)
     `sliceDestroyedPrisms` — the old explosion returns exactly.
 10. **Non-regression:** other vessels' skimmers unaffected (SwordState null; base skimmer
     crackle still the red sphere look); keyboard/DualMouse (binary mirrors) can energize by
-    holding both swipe controls; **touch cannot** (it writes no trigger mirrors — expected, not
-    a bug, until a touch binding writes them). (This step used to read
+    holding both swipe controls; **touch energizes by lifting both thumbs** (2026-10-21, § On a
+    phone). (This step used to read
     *"Sparrow full-auto still shrinks the Rhino sword's max (`ApplyMaxSizeDebuff`)"* — that
     effect and that method were removed in Sep 2026 with the control-theft tier, so the
     blade's max is now always its authored length: `Docs/ELEMENTAL_ECONOMY.md §9`.)
+
+## On a phone (2026-10-21)
+
+Garrett, 2026-10-21: *"The rhino can energize by lifting both thumbs off the phone. we can compensate
+for lack of control by having it go quicker."*
+
+| Pad | Phone |
+| --- | --- |
+| LT = swing left | lift the **right** thumb (the left flies on) = swing left |
+| RT = swing right | lift the **left** thumb = swing right |
+| both triggers held (the chop stance) = energize | lift **both** thumbs = the chop stance = energize, **twice as fast** |
+
+- **The swing.** `Rhino.prefab` `_touchActionOverrides`: `LeftStickAction (2)` → `RhinoShieldSwipeLeftAction`
+  (`4ff8e060…`), `RightStickAction (1)` → `RhinoShieldSwipeRightAction` (`b92a3e13…`) - the pad override's own
+  pair. On touch `ShieldSwipeActionExecutor.TryReadTriggers` returns false, so these press/release events drive the
+  swing (full stance, rate-limited by `swipeOutSeconds` / `returnSeconds`), on every peer (the press replicates with
+  its device byte).
+- **The energize.** With no thumb down the profile flag `idlePullsBothTriggers` writes
+  `InputStatus.LeftTriggerAnalog` and `RightTriggerAnalog` = 1 every frame (0 the frame a thumb lands). The stance
+  (`FeedSwordStance` → `MirrorsInStance`) has never had a device gate - it reads the replicated mirrors on every
+  device - so it counts, and the owner's `UpdateEnergize` charges and ignites exactly as for two held triggers.
+  The event-driven POSE now drops into the centred chop (`diff 0, sum 2`) whenever `MirrorsInStance` is true, so the
+  blade is down on every peer exactly while the stance counts (before, the touch pose stayed raised).
+- **Quicker.** `ShieldSkimmerScaleConfigSO.touchEnergizeRateMultiplier` (authored **2** in
+  `ShieldSkimmerScaleConfig.asset`) divides `energizeHoldSeconds` for a HUMAN on touch
+  (`ShieldSkimmerScaleDriver.IsHumanTouchPilot`: replicated device is Touch, not an AI, not on autopilot): 1 s → 0.5 s
+  with no steering before the blade lights. Tail, cooldown and cost are unchanged (once lit the pilot puts the thumbs
+  back and flies; the tail runs while they steer).
+- **Deterministic across peers.** The ignition is decided on the vessel's OWNER and replicated through
+  `RhinoSwordNetworkRelay` (phase), as for every device; replicas mirror the phase. The charge ramp a replica draws
+  (`Charge01`, FX only) uses the same shortened hold because it reads the replicated device.
+- **A swing in progress when the second thumb lifts**: `TouchInputStrategy` releases the lift's stick event first
+  (`StopStickEffects`), so `EndSwipe` drops the stance, then writes the mirrors - the blade travels from the swing to
+  the centred chop at the binary rate. The swing's recovery timer starts on that release as usual; the chop axis is
+  never gated by it. Both mirrors rise on the same frame, which the combo detector reads as a chord, never a combo.
+- **Not on a phone**: combos (they need trigger taps; a touch swing is an event, not a mirror) and analog part-pulls.
+  An AI Rhino is unaffected (its `RhinoSwordAutopilot` writes the mirrors; pad timing).
 
 ## Follow-ups
 
