@@ -68,7 +68,12 @@ namespace CosmicShore.Gameplay
 
             var gGo = new GameObject("Board", typeof(RectTransform));
             gGo.transform.SetParent(_root.transform, false);
-            Stretch((RectTransform)gGo.transform);
+            var gRt = (RectTransform)gGo.transform;
+            Stretch(gRt);
+            // The mesh is built in canvas pixels from the bottom-left corner (the layout's frame, and the labels'), so the
+            // graphic's own origin must be that corner: at the default centre pivot the whole board drew half a screen up
+            // and right - the small view half off the top, the Ratel's big board entirely off screen (Garrett, 2026-10-21).
+            gRt.pivot = Vector2.zero;
             _graphic = gGo.AddComponent<HoneyguideBoardGraphic>();
             _graphic.raycastTarget = false;
             _graphic.View = this;
