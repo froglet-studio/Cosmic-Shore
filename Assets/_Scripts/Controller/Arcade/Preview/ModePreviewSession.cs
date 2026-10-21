@@ -674,6 +674,7 @@ namespace CosmicShore.Gameplay
                 var player = gameData?.LocalPlayer;
                 if (player != null && Alive(player.Vessel))
                 {
+                    CrewSeat.ReturnHumansToHull(player.Vessel);   // a crew seat must not keep reading input after the exit
                     player.InputController?.SetPause(true);
                     player.Vessel.ToggleAIPilot(true);
                 }
@@ -1246,6 +1247,7 @@ namespace CosmicShore.Gameplay
             var player = gameData?.LocalPlayer;
             if (player == null || !Alive(player.Vessel)) return;
 
+            if (demo) CrewSeat.ReturnHumansToHull(player.Vessel);   // the ghost flies the hull, not a crew seat's human
             player.InputController?.SetPause(demo);
             player.Vessel.ToggleAIPilot(demo);
         }

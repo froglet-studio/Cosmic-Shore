@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
     /// crew is a follow-up (ORCA_CREW.md), as it is for the Wrasse.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class OrcaCrew : MonoBehaviour, ICrewTriggers
+    public sealed class OrcaCrew : MonoBehaviour, ICrewTriggers, IHullParkAware
     {
         public const int Helm = 0, Seats = 4;
 
@@ -368,6 +368,14 @@ namespace CosmicShore.Gameplay
             bool quick = Time.unscaledTime - _twoFingerAt < 0.35f;
             _twoFingerAt = -1f;
             return quick;
+        }
+
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (_humanSeat == Helm) return;
+            _weTookHull = false;   // the autopilot is the parker's now: SetHumanSeat(Helm) must not stop it
+            SetHumanSeat(Helm);
         }
 
         void SetHumanSeat(int seat)

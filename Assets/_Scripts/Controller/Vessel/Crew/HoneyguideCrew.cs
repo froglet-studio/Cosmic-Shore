@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
     /// hull. Networking the Ratel seat is a follow-up (HONEYGUIDE.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed partial class HoneyguideCrew : MonoBehaviour
+    public sealed partial class HoneyguideCrew : MonoBehaviour, IHullParkAware
     {
         [Header("Config")]
         [Tooltip("Every number, card and word of the Honeyguide and Ratel (HoneyguideConfig.asset, written from the lab by " +
@@ -161,6 +161,14 @@ namespace CosmicShore.Gameplay
             if (dir == 0 || Time.unscaledTime < _swapReadyAt) return;
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
             SetHumanEngineers(!_humanEngineers);
+        }
+
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (!_humanEngineers) return;
+            _weTookHull = false;   // the autopilot is the parker's now: SetHumanEngineers(false) must not stop it
+            SetHumanEngineers(false);
         }
 
         void SetHumanEngineers(bool engineer)
