@@ -1884,3 +1884,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
+
+### T-20261021-90a6 · open · test · Crew vessels
+- **Task:** Android dev build, branch cece/compassionate-rubin-baeyvi: (1) Toybox > Vessel Changer > Honeyguide and Ratel, swap to the Ratel: hold a finger still on a prism ~0.5 s and it is deleted (1 AP); a drag that leaves the cell still moves it; the Fly button left of the big board swaps back to flying. (2) Fly the Wrasse kite seat, go back to the app shell (HOME): touching or using a pad in the menu must not steer the kite or swap seats; re-enter freestyle and you are seated where you were. Repeat (2) for the Orca gunner, the Ratel, the Pistol and the Marlin jacks.
+- **Done when:** Both steps pass on a phone, or the failure is filed as a dev task
+- **Who can take it:** Garrett (found the bugs) or Yash (offered: playtests)
+- **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
+- **See:** 29315a060, 77ead5f41
+
+### T-20261021-2bb3 · open · test · Vessels on a phone
+- **Task:** Reproduce 'the vessel selector UI broke on mobile' (Garrett's Android playtest, 2026-10-21): say which screen (Toybox Vessel Changer matrix, its Toy window, the Hangar, the HUD after a swap), send a screenshot and adb logcat -s Unity. Quick check: connect a pad - if the problem goes away, it is the phone ability-row layout (TouchControlsHud) not re-laying after a swap.
+- **Done when:** The screen and a screenshot/log are on this task, so a session can fix the root cause
+- **Who can take it:** Garrett (saw it) or Yash
+- **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
+- **See:** PR for cece/compassionate-rubin-baeyvi
