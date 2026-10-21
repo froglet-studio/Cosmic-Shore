@@ -12944,3 +12944,19 @@ files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
    every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
    like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
    crosshair was up when LT was let go.
+
+## 🔴 2026-10-21 — App shell pad buttons: Select toggles freestyle, Start opens Settings (`claude/project-thread-i9ydba`) - NOT EDITOR-VERIFIED
+
+Garrett's remap. `ScreenSwitcher` toggles freestyle on Select / View (was Y) and opens Settings on Start (was X).
+`OverviewGesture` (freestyle exit, in-game overview, spectator close) moved from Start to Select with it, and so did
+`ModePreviewWindow`'s focus release, so Start on Home never fights a focused preview. The screenshot capture moved
+off Select to a right-stick click (R3). `/verify-unity` was not run (no editor; the reference compile could not run:
+no .NET in the container).
+
+1. **Home with a pad:** Select flies into the cell. After the 3 s cooldown, Select brings you back. Y and X do
+   nothing on Home.
+2. **Start on Home** opens Settings once. Start does nothing while a window is open or in freestyle.
+3. **A game scene:** Select opens the overview (Volume / Pause). Start no longer does.
+4. **A mode preview with focus:** Select releases it; Start does not open Settings underneath.
+5. **Screenshot:** clicking the right stick in flight takes a capture; Select does not.
+6. **Spectating:** Select leaves.

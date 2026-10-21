@@ -192,11 +192,11 @@ namespace CosmicShore.UI
         [SerializeField] private float hubSlideSeconds = 0.32f;
 
         [Header("Gamepad Freestyle Toggle")]
-        [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition, and " +
+        [Tooltip("Crystal click handler that toggles freestyle mode. The pad's Select / View button invokes ToggleTransition, and " +
                  "RequestExitFreestyle leaves freestyle through it. Found in the scene at Awake when left empty (there is " +
-                 "one per menu scene): Menu_Main shipped it empty, so Y on Home did nothing.")]
+                 "one per menu scene): Menu_Main shipped it empty, so the pad toggle on Home did nothing.")]
         [SerializeField] private MenuCrystalClickHandler crystalClickHandler;
-        [Tooltip("Seconds after a freestyle transition completes before Y can toggle again.")]
+        [Tooltip("Seconds after a freestyle transition completes before Select can toggle again.")]
         [SerializeField] private float freestyleToggleCooldown = 3f;
 
         // The strip (this rect) slides inside its viewport by anchoredPosition, one viewport width
@@ -790,15 +790,17 @@ namespace CosmicShore.UI
 
             // A guided path (MenuGuide) leaves the pad exactly one way forward - the spotlit
             // control, pressed with A through the EventSystem - plus Settings. Freestyle and
-            // screen paging are other places to go, so they stand down; X-for-Settings and
+            // screen paging are other places to go, so they stand down; Start-for-Settings and
             // A-for-the-Arcade below are the path's own controls and stay.
             bool guided = MenuGuide.IsActive;
 
-            // Y (buttonNorth) toggles freestyle from any state - checked before
-            // the freestyle early-return so it works as both enter and exit.
-            // A cooldown prevents accidental rapid toggling after each transition.
+            // Select / View toggles freestyle from any state - checked before
+            // the freestyle early-return so it works as both enter and exit (Garrett, 2026-10-21:
+            // it was Y, which flight can use). In freestyle it is also the overview gesture
+            // (OverviewGesture, answered by MenuMiniGameHUD); ToggleTransition ignores the second
+            // call while the first transition runs. A cooldown prevents rapid toggling.
             if (crystalClickHandler && !guided
-                && Gamepad.current.buttonNorth.wasPressedThisFrame
+                && Gamepad.current.selectButton.wasPressedThisFrame
                 && Time.unscaledTime >= _freestyleToggleCooldownUntil
                 && !HasActiveModal
                 && ScreenIsActive(MenuScreens.HOME))
@@ -832,7 +834,8 @@ namespace CosmicShore.UI
                     return;
                 }
 
-                if (Gamepad.current.buttonWest.wasPressedThisFrame)
+                // Start opens Settings from the app shell (Garrett, 2026-10-21: it was X).
+                if (Gamepad.current.startButton.wasPressedThisFrame)
                 {
                     OpenModalByType(ModalWindows.SETTINGS);
                     return;

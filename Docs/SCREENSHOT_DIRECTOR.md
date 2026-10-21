@@ -1,6 +1,6 @@
 # The screenshot director
 
-Press **0** — the number row's zero — (or the pad's **Select / View / Share**) in flight. A UI-free photograph of your
+Press **0** — the number row's zero — (or click the pad's **right stick**, R3; Select became the app shell toggle on 2026-10-21) in flight. A UI-free photograph of your
 vessel lands in your clone's own `Recordings/` folder, shot from a camera angle drawn at random
 from a library of capture concepts. No setup, no scene wiring, no pause.
 
