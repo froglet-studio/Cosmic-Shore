@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
@@ -79,6 +80,26 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Asset_GivesEachElementItsOwnShadeOfLime()
+        {
+            // Garrett, 2026-10-21: four lime shades of distinct hue, saturation and value, written by
+            // Tools/Build/kite_mote_colors.py (whose --check holds them to the boundary and the tetrahedron)
+            var c = Load();
+            var seen = new HashSet<Color>();
+            for (int e = 0; e < 4; e++)
+            {
+                var col = c.ElementColor(e, Color.clear);
+                Assert.AreEqual(1f, col.a, $"element {e} has no colour: run Tools/Build/kite_mote_colors.py");
+                Assert.GreaterOrEqual(col.g, col.r, $"element {e} is not lime (green leads)");
+                Assert.Greater(col.g, col.b, $"element {e} is not lime (green leads)");
+                Color.RGBToHSV(col, out _, out float sat, out float val);
+                Assert.Greater(sat, 0.3f, $"element {e} is too grey for lime (grey is Blue's)");
+                Assert.Greater(val, 0.7f, $"element {e} is too dark for lime");
+                Assert.IsTrue(seen.Add(col), $"element {e} repeats another element's colour");
+            }
+        }
+
+        [Test]
         public void Asset_CarriesTheScreenLayout()
         {
             var c = Load();
@@ -90,7 +111,9 @@ namespace CosmicShore.Tests
             // round 8: the hand line above the totems, the kite off the bottom, the pilot's larger stand-in
             Assert.AreEqual(0.012f, c.HandLineGap, 1e-6f);
             Assert.AreEqual(0.2f, c.HandLineFallback, 1e-6f);
-            Assert.AreEqual(40f, c.OffscreenOverhang, "Tools/Build/author_wrasse_run_assets.py sizes the race clamp to it");
+            Assert.AreEqual(10f, c.HandEdgeMargin, "round 8b: a small margin inside the screen's sides and top");
+            Assert.Less(c.HandEdgeMargin, 0.5f * c.ToSettings().SlingRope, "significantly less than the cord");
+            Assert.AreEqual(240f, c.KiteOffscreenReach, "Tools/Build/author_wrasse_run_assets.py sizes the race clamp to it");
             Assert.AreEqual(2.5f, c.PilotKiteScale, 1e-6f);
         }
 

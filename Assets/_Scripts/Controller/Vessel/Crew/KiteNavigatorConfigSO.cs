@@ -215,12 +215,22 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 0.1f)] float handLineGap = 0.012f;
         [Tooltip("The line's height (a fraction of the screen) when the HUD has no ability cards to sit above.")]
         [SerializeField, Range(0f, 0.5f)] float handLineFallback = 0.2f;
-        [Tooltip("How far (u) the kite can fly past the bottom of the kite view, off the screen (\"allow the wrasse to " +
-                 "extend across that line and off the screen\").")]
-        [SerializeField, Min(0f)] float offscreenOverhang = 40f;
+        [Tooltip("How far inside the screen's sides and top the hand stops (u), significantly less than the cord (Garrett, " +
+                 "2026-10-21: \"the mouse should be limited by a small margin significantly less than the cord length\"). " +
+                 "Its bottom is the hand line.")]
+        [SerializeField, Min(0f)] float handEdgeMargin = 10f;
+        [Tooltip("How far past any edge of the screen the kite may fly (u) before a safety wall stops it. The cord is what " +
+                 "holds it (\"the wrasse should only be limited by the tether\"): from a hand inside the screen it never " +
+                 "reaches this; only a long fling does.")]
+        [SerializeField, Min(0f)] float kiteOffscreenReach = 240f;
         [Tooltip("A mote's flower radius in the kite view (u). The petals sit in it in the totem's own proportions (the " +
                  "element flower above each ability card).")]
         [SerializeField, Min(0.5f)] float moteSize = 4.5f;
+        [Tooltip("Each element's mote colour, sRGB, in the HUD's order (Charge, Mass, Space, Time): four shades of LIME, the " +
+                 "corners of the largest tetrahedron of distinct hue, saturation and value inside lime's boundary against " +
+                 "Jade, Ruby, Gold, Blue (neutral) and Fire (danger) (Garrett, 2026-10-21). WRITTEN by " +
+                 "Tools/Build/kite_mote_colors.py, which derives them from the live palette; --check fails if they drift.")]
+        [SerializeField] Color[] elementColors = new Color[4];
 
         [Header("Mote flowers (five petals, each moving like its element; rounds 4e-4f)")]
         [Tooltip("Space: the flower spins this many degrees a second, without pausing.")]
@@ -312,8 +322,13 @@ namespace CosmicShore.Gameplay
         public float CordAlpha => cordAlpha;
         public float HandLineGap => handLineGap;
         public float HandLineFallback => handLineFallback;
-        public float OffscreenOverhang => offscreenOverhang;
+        public float HandEdgeMargin => handEdgeMargin;
+        public float KiteOffscreenReach => kiteOffscreenReach;
         public float PilotKiteScale => pilotKiteScale;
+        /// <summary>The mote colour of element index <paramref name="e"/> (Element - 1); <paramref name="fallback"/> when
+        /// the asset carries none (a config authored before 2026-10-21).</summary>
+        public Color ElementColor(int e, Color fallback) =>
+            elementColors != null && e >= 0 && e < elementColors.Length && elementColors[e].a > 0f ? elementColors[e] : fallback;
         public float HeadingAlignDistance => headingAlignDistance;
         public float ViewMargin => viewMargin;
         public float MoteSize => moteSize;

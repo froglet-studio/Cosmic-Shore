@@ -138,6 +138,45 @@ render_cards.py Squirrel Rhino Thresher --compare out.jpg --candidates before.js
 
 `before.json` holds the old values in the candidates format, `{label: {role: {rim, face, mult}}}`.
 
+## 5b. Lime's four shades: the Wrasse's lasso elements (Garrett, 2026-10-21)
+
+> "make all four of the lasso elements different hues, saturations and values within the lime green color family
+> (lime). make a 3d boundary that defines the space as distinct from jade, ruby, gold, blue (neutral), and fire (danger).
+> form the largest tetrahedron within that space that makes four distinct values within that boundary and assign them
+> to each element."
+
+`Tools/Build/kite_mote_colors.py` derives them from the live palette. It writes them into `KiteNavigatorConfig.asset`
+(`elementColors`) and the Wrasse Lasso Lab (`LIME_E`), and `--check` fails if either drifts.
+
+- **The space** is OKLab: L is the value, and the angle and radius of (a, b) are the hue and the saturation. A distance
+  there is a visible difference; about 0.02 is just noticeable.
+- **The boundary** contains every sRGB colour at least 0.05 nearer a lime anchor than any anchor of another family. The
+  anchors are what the game already draws:
+  - Lime: the CTA signal, BrightCTA / the HUD's lime, and the kite's lime.
+  - Jade, Ruby, Gold: each domain's UI and signal colours.
+  - Blue: the Blue domain, the HUD's blue, the hull body and glass, and every grey (this page's rule 1: grey is Blue's).
+  - Fire: the danger signal, the HUD's fire, and the engine ember.
+
+  The region is small. Its value runs 0.73–0.97, its chroma 0.14–0.29 and its hue 104–154°. Jade's teal takes the dark
+  greens (the "dark olive is not lime" finding, `Docs/PALETTE.md` §2.5), and the grey axis takes the pale ones.
+- **The tetrahedron** has the largest OKLab volume among those whose four corners differ pairwise by at least 0.03 in
+  value, in saturation and in hue. Without that rule, the largest one puts two corners at one hue (#00ff00 and #a5ff95,
+  142° and 141°). 0.03 (1.5 just-noticeable differences) is the most the region allows: inside it, value, saturation and
+  hue move together. The distinct one keeps 90% of the unconstrained volume.
+- **The assignment** reads each corner: Mass is the lowest value (weight), Charge the highest (the spark), and of the
+  other two Space is the cooler hue (toward Jade) and Time the warmer.
+
+| element | colour | sRGB | L (value) | chroma | hue |
+|---|---|---|---|---|---|
+| Charge | `#ffff00` | (1, 1, 0) | 0.968 | 0.211 | 110° |
+| Mass | `#a1c417` | (0.631, 0.769, 0.092) | 0.767 | 0.181 | 122° |
+| Space | `#00ff00` | (0, 1, 0) | 0.866 | 0.295 | 142° |
+| Time | `#c0fb93` | (0.754, 0.984, 0.578) | 0.925 | 0.146 | 133° |
+
+The motes in the kite view and the pilot's faint mote dots wear them. The kite's tail, the saved-boost dots and every
+other call to action keep the palette's one lime. Charge's corner is pure yellow, where Lime meets Gold, but still 0.05
+nearer lime. If it reads too yellow, a larger margin against Gold alone pulls it in; rerun the tool and the check.
+
 ## 6. Open: decisions and checks owed
 
 - **Jade's and Ruby's hues: deferred** (Garrett, 2026-10-18: "we'll address the jade and ruby hues later").

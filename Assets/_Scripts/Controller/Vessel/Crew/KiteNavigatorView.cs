@@ -49,8 +49,10 @@ namespace CosmicShore.Gameplay
         static readonly Color Plasma = new(0.42f, 0.72f, 1f, 1f);   // the Charge crystal's blue plasma
         readonly Material _plasmaMat;
         readonly Mesh _tailMesh, _loopMesh, _cordMesh;
-        readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat;
+        readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _ringMat, _goldMat;
         readonly Material _tailMat, _loopMat, _cordMat;
+        // each element's mote, in its own shade of lime (KiteNavigatorConfig.elementColors), and its faint pilot-view dot
+        readonly Material[] _moteMats = new Material[4], _moteFaintMats = new Material[4];
         readonly List<Vector3> _verts = new();
         readonly List<Color> _colors = new();
         readonly List<int> _tris = new();
@@ -108,7 +110,12 @@ namespace CosmicShore.Gameplay
             _kiteChargedMat = Unlit(unlit, Gold);
             _kiteFaintMat = Unlit(unlit, new Color(1f, 1f, 1f, cfg.PilotKiteAlpha));
             _limeMat = Unlit(unlit, Lime);
-            _limeFaintMat = Unlit(unlit, new Color(Lime.r, Lime.g, Lime.b, cfg.PilotDotAlpha));
+            for (int e = 0; e < 4; e++)
+            {
+                var c = cfg.ElementColor(e, Lime);
+                _moteMats[e] = Unlit(unlit, new Color(c.r, c.g, c.b, 1f));
+                _moteFaintMats[e] = Unlit(unlit, new Color(c.r, c.g, c.b, cfg.PilotDotAlpha));
+            }
             _ringMat = Unlit(unlit, new Color(1f, 1f, 1f, 0.85f));
             _goldMat = Unlit(unlit, Gold);
             _plasmaMat = Unlit(unlit, Plasma);
@@ -185,8 +192,10 @@ namespace CosmicShore.Gameplay
             RestorePilot();
             if (_root) Object.Destroy(_root);
             foreach (var o in _petals) if (o) Object.Destroy(o);
+            foreach (var o in _moteMats) if (o) Object.Destroy(o);
+            foreach (var o in _moteFaintMats) if (o) Object.Destroy(o);
             foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh, _cordMesh, _tailMat, _loopMat, _cordMat,
-                                             _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _limeFaintMat, _ringMat, _goldMat, _plasmaMat })
+                                             _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _ringMat, _goldMat, _plasmaMat })
                 if (o) Object.Destroy(o);
         }
 
@@ -372,7 +381,7 @@ namespace CosmicShore.Gameplay
                 if (!KiteNavigatorCore.InBounds(s, mote.X, mote.Z)) continue;
                 var pos = _nav.BoardToWorld(mote.X, mote.Z);
                 Flower(mote.Element, mote.X, mote.Z, mote.Spin, lift - 0.2f, ms, basis, now, kite);
-                if (pilot) Add(_limeFaintMat, _dotMesh, pilot, Matrix4x4.TRS(pos, PilotFacing(pilot, pos), Vector3.one * cfg.PilotDotSize));
+                if (pilot) Add(_moteFaintMats[mote.Element], _dotMesh, pilot, Matrix4x4.TRS(pos, PilotFacing(pilot, pos), Vector3.one * cfg.PilotDotSize));
             }
 
             // the pilot's saved boosts, a dot each round the hull in the kite view
@@ -479,7 +488,7 @@ namespace CosmicShore.Gameplay
                 var rot = basis * Quaternion.Euler(0f, deg, 0f);   // the petal's local +Z (tip) points along dir
                 var m = Matrix4x4.TRS(centre + dir * out1, rot, new Vector3(scale * width, 1f, scale));
                 _flowerPetals[i] = m;
-                Add(_limeMat, _petals[element], cam, m);
+                Add(_moteMats[element], _petals[element], cam, m);
             }
 
             if (element == 0) PlasmaBolt(now / cfg.ChargeBoltLapSeconds + phase, radius, basis, cam);

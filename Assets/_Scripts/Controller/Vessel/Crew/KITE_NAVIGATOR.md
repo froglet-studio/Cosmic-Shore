@@ -258,11 +258,18 @@ Gates this round:
 | Asked | In the game |
 |---|---|
 | "pick a nice horizontal line just above the ability totems and don't let the cursor travel below that line" | The **hand line** sits `handLineGap` (1.2% of the screen) above the top of the HUD's ability cards. `AbilityLockupView.TryGetCardsScreenRect` gives the cards' screen rect, read live, so the line follows the HUD's layout and the screen's shape. With no cards it sits at `handLineFallback` (20%). While the human navigates, the hand (a thumb, the cursor, the stick's point) is clamped to the line or above (`KiteNavigator.TryHandFloor`). A full stick lean now spans the screen above the line, not the whole screen. |
-| "but allow the wrasse to extend across that line and off the screen" | The kite's bounds run `offscreenOverhang` (40 u) past the bottom edge: the rectangle's centre drops 20 u and it grows 20 u deeper, so the top edge does not move. The kite swings across the line on its rope and off the bottom of the screen. Wrasse Run's clamp is 4000, sized to that far corner. |
+| "but allow the wrasse to extend across that line and off the screen" | (Superseded by round 8b, below: the kite may now pass every edge, held only by the cord.) The first cut ran the bottom edge 40 u past the screen (`offscreenOverhang`). |
 | "to the left of the totem fill the space below that line with the grouper's view and don't let that view go above that line" | While navigating, the pilot camera's rect runs from the screen's lower-left margin to the cards' left edge and up to the hand line, each less `viewMargin`. A tap or click that starts in it is still the swap's. With no cards to fit beside, it falls back to the old square. While piloting, the kite's small view is unchanged. |
 | "The grouper can keep a larger representative view of the wrasse" | The pilot view's faint kite stays drawn even when the Wrasse model draws, at `pilotKiteScale` (2.5) × the kite's radius. |
 
 Also fixed: `KiteNavigatorConfigTests` still asserted the board frame was `Eased` after round 7 set `Heading`, so it would have failed in the Editor. It now asserts `Heading` and pins the round-7 and round-8 screen numbers.
+
+## Round 8b and 9: only the cord holds the Wrasse; four limes (Garrett, 2026-10-21)
+
+| Asked | In the game |
+|---|---|
+| "the edges of the screen on the sides and top are still backwards with the mouse able to go past where it should and the wrasse not able to go where it should. the wrasse should only be limited by the tether. the mouse should be limited by a small margin significantly less than the cord length." | The screen's rectangle (`_s`) is no longer a wall for the kite. It stays the board's CONTENT (mote spawns, prism and rival queries, the AI's plans), and the kite flies `FlightSettings()`: that rectangle plus `kiteOffscreenReach` (240 u) on every side. The cord holds the kite; only a long fling meets the far wall. Round 8's bottom-only `offscreenOverhang` is gone. While the human navigates, the hand is clamped to `TryHandRect`: `handEdgeMargin` (10 u, under a quarter of the 42 u cord) inside the screen's sides and top, with the hand line as its bottom. A stick spans that whole rectangle, the way the mouse does. Wrasse Run's clamp is 5200, sized to the kite's far corner (~890 u out). |
+| "make all four of the lasso elements different hues, saturations and values within the lime green color family" ... "the largest tetrahedron within that space" | Each element's motes (kite view) and faint dots (pilot view) wear their own lime, `KiteNavigatorConfig.elementColors`: Charge `#ffff00`, Mass `#a1c417`, Space `#00ff00`, Time `#c0fb93`. They are derived and checked by `Tools/Build/kite_mote_colors.py`; the boundary, the tetrahedron and the assignment are in `Docs/VesselModels/COLOR.md` §5b. The tail and the saved-boost dots keep the palette's lime. The Wrasse Lasso Lab draws the same four (`LIME_E`). |
 
 ## Seats: the swap is the arena's
 

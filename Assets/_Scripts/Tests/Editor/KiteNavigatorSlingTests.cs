@@ -183,18 +183,27 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Screen_TheOverhang_LetsTheKitePastTheBottomEdge_NotTheTop()
+        public void Screen_TheKitesFlightBounds_ReachPastEveryEdge()
         {
-            // round 8 (KiteNavigator.ScreenSettings): the bottom edge runs offscreenOverhang past the screen
+            // round 8b (KiteNavigator.FlightSettings, Garrett 2026-10-21: "the wrasse should only be limited by the tether"):
+            // the kite flies the screen's rectangle plus kiteOffscreenReach on every side
             var s = Screen();
-            float o = 40f, top = s.HalfDepth * KiteNavigatorCore.RimFraction;
-            s.HalfDepth += 0.5f * o;
-            s.BoundsCentreZ = -0.5f * o;
-            var low = KiteNavigatorCore.OnBoard(s, 0f, -1e4f);
-            var high = KiteNavigatorCore.OnBoard(s, 0f, 1e4f);
-            Assert.Less(low.Z, -(160f * 1.352f), "the kite reaches below the screen's bottom edge");
-            Assert.LessOrEqual(high.Z, 160f * 1.352f, "the top edge stays on the screen");
-            Assert.Greater(high.Z, top - o, "the top edge moved by no more than the overhang's share");
+            const float reach = 240f;
+            float edgeX = 160f * 1.352f * 16f / 9f, edgeZ = 160f * 1.352f;
+            s.HalfWidth += reach;
+            s.HalfDepth += reach;
+            foreach (var (x, z) in new[] { (1e4f, 0f), (-1e4f, 0f), (0f, 1e4f), (0f, -1e4f) })
+            {
+                var p = KiteNavigatorCore.OnBoard(s, x, z);
+                Assert.Greater(MathF.Max(MathF.Abs(p.X) - edgeX, MathF.Abs(p.Z) - edgeZ), 100f, $"toward ({x}, {z}) the kite stops on the screen");
+            }
+
+            // a kite slung at the side edge sails past it
+            var k = Kite();
+            k.Reset(new KiteVec(edgeX - 20f, 0f));
+            k.Velocity = new KiteVec(s.SlingMaxSpeed, 0f);
+            for (int i = 0; i < 20; i++) k.Sling(s, 0f, 0f, false, Dt);
+            Assert.Greater(k.Position.X, edgeX + 50f, "the screen's edge walled the kite in");
         }
 
         [Test]
