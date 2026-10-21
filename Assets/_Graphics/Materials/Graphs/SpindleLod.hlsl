@@ -107,10 +107,14 @@ SpindleLodView SpindleLod_View(float girth)
     // stretches. The thinner of the two cross-section scales is the one that goes sub-pixel first.
     v.scaleXY = max(min(length(float3(m._m00, m._m10, m._m20)), length(float3(m._m01, m._m11, m._m21))), 1e-6);
     float dist = max(length(origin - _WorldSpaceCameraPos.xyz), 1e-3);
+    // abs(): URP renders into an intermediate texture on D3D, Metal and Vulkan and FLIPS the
+    // projection's y there, so _m11 is negative. A negative width once read as "infinitely thin",
+    // which held every strand at the 32x inflation cap - the limbs ballooned between 184 and 316
+    // units as the hold ramped in, and shrank back below it (Garrett, 2026-10-21, the Lattice).
     if (unity_OrthoParams.w > 0.5)
-        v.pxPerUnit = _ScreenParams.y / max(2.0 * unity_OrthoParams.y, 1e-6);
+        v.pxPerUnit = _ScreenParams.y / max(2.0 * abs(unity_OrthoParams.y), 1e-6);
     else
-        v.pxPerUnit = _ScreenParams.y * 0.5 * UNITY_MATRIX_P._m11 / dist;
+        v.pxPerUnit = _ScreenParams.y * 0.5 * abs(UNITY_MATRIX_P._m11) / dist;
     if (SpindleLod_Overt())
     {
         v.metric = IncorporealDepth_Norm(origin);

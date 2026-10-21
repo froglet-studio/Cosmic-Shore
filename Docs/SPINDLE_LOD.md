@@ -294,6 +294,17 @@ the LOD itself: the lace closing between 184 and 316 units, the width hold, the 
 If that still reads as "the effect", it is the LOD's own look; `threadGlow` 1 removes the glow-up, and the
 covert style replaces the whole ramp with a quiet convergence.
 
+**The ballooning limbs were a bug, not an amplitude (Garrett, after round 6: "the spindles on the lattice
+flora are still blowing up to very large proportions as I approach them from afar. They get very large, very
+quick, and then small again").** The width hold measured pixels per unit from `UNITY_MATRIX_P._m11`. URP
+renders into an intermediate texture on D3D, Metal and Vulkan and flips the projection's y there, so `_m11`
+is negative: the strand's on-screen width read as negative, the guard read that as infinitely thin, and every
+strand was held at the 32x inflation cap. The hold ramps in with the opening (184 -> 316 units) and is off
+below it, so the limbs swelled to ~32x their thickness across that band and snapped back closer in -
+in every style, since round 1. Fixed with `abs()` (the orthographic branch too); the harness now checks a
+flipped projection draws the same width, and removing the `abs()` is a caught mutant (27). Neither the
+harness nor Amoebius had a flipped projection, which is why neither saw it.
+
 The numbers in §7.2b - §7.2d are earlier rounds'; the table below is round 5's ladder (unchanged).
 
 | tier | overt range (norm, ~units) | mesh | draws |

@@ -173,6 +173,15 @@ int main() {
         float fade = 1.f - smoothstep(fs, fe, m);
         CHECK(std::fabs(al - 0.85f * fade / k) < 1e-5f, "at %g girths coverage alpha %g != %g", m, al, 0.85f * fade / k);
     }
+    { // URP's flipped projection (rendering into a texture on D3D / Metal / Vulkan: _m11 < 0) draws the
+      // same width - it once read as a negative width and held every strand at the 32x cap
+        place(700 * G, 1.f);
+        float kUp = SpindleLod_Inflate(SpindleLod_View(G), R);
+        UNITY_MATRIX_P._m11 = -UNITY_MATRIX_P._m11;
+        float kFlip = SpindleLod_Inflate(SpindleLod_View(G), R);
+        UNITY_MATRIX_P._m11 = -UNITY_MATRIX_P._m11;
+        CHECK(std::fabs(kUp - kFlip) < 1e-5f && kUp < 32.f, "a flipped projection inflates %g, an upright one %g", kFlip, kUp);
+    }
     { // a scaled-up limb is the same picture at the same girth count
         place(700 * G * 3.f, 3.f);
         SpindleLodView v3 = SpindleLod_View(G);
@@ -538,6 +547,8 @@ def self_test():
                                          "return SpindleLod_Ramp(_SpindleLodBands.x, _SpindleLodBands.y * 1.5, metric);"),
         "overt lace closes off the opening schedule": ("Color = SpindleLod_Pulse(lerp(LaceColor, threadColor, v.progress), UV.x, Phase, Clock, Strength);",
                                                        "Color = SpindleLod_Pulse(lerp(LaceColor, threadColor, saturate(v.metric)), UV.x, Phase, Clock, Strength);"),
+        "a flipped projection reads as a negative width": ("v.pxPerUnit = _ScreenParams.y * 0.5 * abs(UNITY_MATRIX_P._m11) / dist;",
+                                                           "v.pxPerUnit = _ScreenParams.y * 0.5 * UNITY_MATRIX_P._m11 / dist;"),
         "coverage not paid": ("float coverage = 1.0 / SpindleLod_Hold(v, strandRadius);", "float coverage = 1.0;"),
         "girth guard dropped": ("    if (!(Girth > 0.0)) return;\n    SpindleLodView v = SpindleLod_View(Girth);\n    float inflate",
                                 "    SpindleLodView v = SpindleLod_View(Girth);\n    float inflate"),
