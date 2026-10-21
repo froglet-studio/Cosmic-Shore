@@ -169,6 +169,8 @@ The rows are in order of how much of the fleet they unblock.
 - The black-hole lens needs a mobile tier first (§4).
 
 **D7. Face-button abilities with no card (Angler Squad and Recall).**
+
+*Resolved 2026-10-21 by removal: the Angler's school is two groups the throw alternates, so there is no squad pick or recall to bind (`ANGLER.md` §1m).*
 - The four-card row is LOCKED, so Button3 and Button4 have no tap target on a phone.
 - Options: make the squad label over the Mass card tappable to cycle the squad, or a long-press on the Mass card for
   Recall.
@@ -304,7 +306,7 @@ touch scheme in `Docs/ABILITY_LOCKUP.md` "On a phone".
 | Manta: "fly ultra fast when you lift both thumbs and then steer with the gyro" | Both thumbs off = Soar at full throttle (720 u/s), steered by tilt. |
 | Rhino: "energize by lifting both thumbs ... go quicker" | Both thumbs off pulls both trigger mirrors (energize); the touch energize is twice as fast. A single lift now swings that side's blade (the pad's mapping). |
 | "The stoat should join the mobile fleet" | Touch bindings mirror the pad; Space card, Dipole Right and Hold discs, Mode card. |
-| Angler: "work with 1 thumb controls ... while painting or erasing" | Paint and erase now work from the held Space and Charge cards (a press counts as a full pull); squad and recall discs. |
+| Angler: "work with 1 thumb controls ... while painting or erasing" | Paint and erase now work from the held Space and Charge cards (a press counts as a full pull); squad and recall discs (both retired 2026-10-21, `ANGLER.md` §1m: the four cards are the whole cluster). |
 | "the serpent's scope should open to max zoom" | Full zoom on touch; the Scope card latches (tap on, tap off) so the Charge card can shoot. |
 | "the shrike's zoom should be a toggle button on mobile" | Zoom disc toggles; Trigger disc fires the mode. |
 | "the thresher's aimed launch should be both thumbs off and aimed with gyro" | Planted, lift the other thumb too: the launch view comes up, tilt aims the crosshair, a thumb back launches. |

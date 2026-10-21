@@ -54,7 +54,6 @@ MonoBehaviour:
   massPrismsPerFrame: 40
   timeBoostSeconds: 1.5
   timeBoostCap: 30
-  boostCooldownSeconds: 2
   chargePetals: 1
   chargeCap: 30
   stealCooldown: 1
