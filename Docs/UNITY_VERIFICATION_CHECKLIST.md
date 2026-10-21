@@ -12776,3 +12776,21 @@ Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.
 2. Press A: the ball takes your plain domain colour; whip it red into a rival trail - blasts. Press A: lit again.
 3. Swap to another hull and back to the Thresher: it is in Mass Mode again.
 4. Thresher Time with an AI Thresher: the AI's ball is lit and never explodes (the AI never presses A).
+
+## 🔴 2026-10-21 — Thresher launch view: aim from where you pointed, grip-sag grace, the shot follows the crosshair (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
+
+Garrett: the both-triggers launch view entered and left with camera jank, each entry needed realigning, and a
+release with RT held "doesn't always shoot me at the cross hair". `THRESHER.md` §5a has the cause and the numbers.
+Changed: `ThresherChainSolver` (launch line + LT let-go latch), `ThresherExecutor` (aim seeded from the pre-plant
+camera facing and kept through the plant; `spectateDropSeconds` grace), `ThresherConfigSO` + `ThresherConfig.asset`
+(`spectateDropSeconds: 0.25`), the plant lab's JS port, `ThresherAnalogTriggerTests` (+3). Chain harness 69/69 (the
+new tests fail on the old solver: 177° off the aim); lab parity PASS with negative controls; `verify_lab.cjs` PASS;
+`unity_refcompile` player: 0 project errors (editor: the 3 known `AuthenticationServiceFacade` errors, none in changed
+files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
+1. Toy Box > Vessel Changer → Thresher, gamepad. Fly at a landmark, LT full, RT full: the launch view's crosshair sits
+   in line with the landmark, no realigning.
+2. In the view, let either trigger sag for an instant: the view holds (no camera re-ease). Ease RT off and hold it off
+   ~1/2 s: the view drops; pull it back: it returns on the same aim.
+3. Ease LT only to about 3/4 with RT still full: the ship leaves at the launch point straight down the crosshair, the
+   ball hauled behind; it is not swung back round the ball. Repeat with LT snapped off and with RT released.
+4. Right after a launch, squeeze LT halfway: no brake until LT has come back near rest; a full squeeze plants at once.

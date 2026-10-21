@@ -131,6 +131,7 @@ MonoBehaviour:
   spectateSpinRate: 0.9
   spectateEngageSeconds: 0.1
   spectateReleaseFraction: 0.75
+  spectateDropSeconds: 0.25
   aimElevationDegrees: 0
   aimCameraDistance: 0
   spectateEnterSeconds: 0.9

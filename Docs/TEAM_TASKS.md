@@ -1204,3 +1204,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Yash (offered) can run the Editor steps; Garrett decides whether AI Threshers should stay in Mass Mode
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §2b
+
+### T-20261021-7967 · open · test · Thresher
+- **Task:** Fly the Thresher launch view on cece/youthful-johnson-hccyzf with a gamepad: the crosshair starts on what you pointed at when you planted, a brief trigger sag no longer drops the view, and a release with RT held flies straight down the crosshair
+- **Done when:** All four steps of the 2026-10-21 Thresher launch-view entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
+- **Who can take it:** Garrett (owner's feel on the launch); Yash (offered) can run the Editor steps
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a
