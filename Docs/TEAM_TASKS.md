@@ -1548,3 +1548,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith (the Amoebius engine); Yash (offered)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
 - **See:** Port/src/CosmicShore.Player (--scene Menu_Main); ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial
+
+### T-20261021-fa97 · open · test · performance
+- **Task:** Measure the new Medium / Low quality presets on an older phone (Mali-G52 / Adreno 610 class): F7 diag GPU ms at High, Medium, Low in the same scene, and run the editor steps (sky stops animating on Medium; AA off, 80% render scale, softer bloom, no cytoplasm on Low)
+- **Done when:** GPU ms recorded for all three presets on one older phone, and QualityPresetCutsTests green in the editor
+- **Who can take it:** Yash (editor + phone test); Garrett to judge the look
+- **Added:** 2026-10-21 by Garrett (`cece/tender-sagan-98e0ix`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Medium / Low / Very Low presets cut GPU work); Docs/PLATFORM_UNIFICATION.md §3.10
+
+### T-20261021-b133 · open · decision · performance
+- **Task:** Decide which preset an older MobileLow phone starts on: first-run auto-detect still picks Very Low with 4x MSAA (Round 8); a hand pick of Low / Very Low now writes AA Off
+- **Done when:** PlatformProfile_MobileLow.asset's first-run antiAliasing set to the chosen value (or kept), and §3.10 'Known limits' updated
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by Garrett (`cece/tender-sagan-98e0ix`)
+- **See:** Docs/PLATFORM_UNIFICATION.md §3.10

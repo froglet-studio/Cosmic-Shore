@@ -65,6 +65,33 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Medium / Low / Very Low presets cut GPU work (`cece/tender-sagan-98e0ix`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
+
+Garrett: phones are GPU-bound, so the lower presets must shed GPU work (`Docs/PLATFORM_UNIFICATION.md` §3.10). The
+table is `Resources/QualityPresetCuts.asset`, read through `GraphicsCuts`. `/verify-unity` was unavailable (no
+Editor, no `unity` binary). What ran: the headless reference compile (player config OK; editor config: the new
+test file compiles, and its 3 errors are in `AuthenticationServiceFacade.cs`, which is red on bleeding-edge
+too), `check_console_logging.py`, `check_conditional_compilation.py`.
+
+Editor:
+1. Edit-mode tests: `QualityPresetCutsTests` and `DeviceTierTests` all green.
+2. Play Menu_Main, Settings > Performance > Quality **Medium**: the sky stops drifting and twinkling (the baked
+   panorama) and nothing else changes. Back to **High**: the animated sky returns, with no restart.
+3. **Low**: the AA dropdown reads Off, render scale drops to 80% with Linear, the glow gets softer and wider (bloom at
+   quarter resolution). The Frame Debugger shows the camera target as LDR (HDR off). Back to High: HDR is on again,
+   and bloom is back at half resolution.
+4. Low, then change AA by hand: the preset reads Custom, and the sky stays baked (Custom keeps Low's cuts). Restart
+   Play: still Custom, still baked.
+5. Low, restart Play, enter a cell: no cytoplasm motes; the membrane is visibly thinner (642 capsules).
+6. Stop Play: `URP_Asset.asset` shows no diff (HDR, MSAA, render scale restored).
+
+On an older phone (Mali-G52 / Adreno 610 class), development build, F7 `diag` in the same scene at High, Medium and
+Low (restart between): GPU ms should fall at each step. Record the numbers in the commit or `Docs/perf/phone/`.
+
+First-pass values (all fields on the asset): Medium: baked sky, wormhole view 0.75. Low: AA Off, render scale ≤ 80%,
+HDR off, bloom at quarter resolution with 3 levels, membrane level 3, no cytoplasm, wormhole view 0.5. Very Low: Low,
+with render scale ≤ 70%.
+
 ### 🔴 Phone controls for the whole fleet, idle parity, arena swap tiles (`cece/admiring-hamilton-gyzzh8`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
 
 Garrett's decisions after the mobile audit (`Docs/Reports/MOBILE_VESSELS.md` §8; the touch scheme in

@@ -545,6 +545,62 @@ production iOS id, ARM64-only Android, and bring the two Gradle commits across.
   `.github/workflows/` holds `unity-ci.yml`, `bleeding-edge-guard.yml`, `ios-testflight.yml` and
   the Amoebius ones. `Docs/BUILD_AND_DELIVERY.md` §10 is the current picture.
 
+### 3.10 Quality presets cut GPU work (2026-10-21)
+
+**Why.** Garrett, 2026-10-21: "we are very GPU bottlenecked on mobile ... we need to create the medium
+and low setting to also shift some of that burden off the GPU", aimed at older phones. Until this
+change, picking a preset in Settings changed only Unity's `QualitySettings` level (lod bias, particle
+raycast budget, texture mips on Very Low). URP's shadows are already off on `URP_Asset.asset`, so a
+preset pick changed almost nothing a phone GPU pays for. The procedural sky, the AA pass, HDR, bloom,
+render scale and the transparent overdraw stayed the same on Low as on Ultra. Only the MobileLow
+TIER (§3.5) cut them, and only on the devices classified as MobileLow.
+
+**What each preset cuts** (`Assets/Resources/QualityPresetCuts.asset`, `QualityPresetCutsSO`; every
+number is a field there):
+
+| Preset | Written when picked (the player can change it after) | Render cuts while in effect |
+|---|---|---|
+| **Ultra / Very High / High** | nothing | nothing - render as before |
+| **Medium** | nothing | **baked sky** (the HyperSea sky's nebulae, dust and stars stop drifting and twinkling; one texture sample per pixel instead of ~20 noise octaves and two Voronoi searches); wormhole exact view at **0.75** of the camera's resolution |
+| **Low** | **AA Off**; render scale at most **80%** (Linear upscale) | everything Medium cuts, plus: **HDR off**; bloom built at **quarter** resolution with at most **3** pyramid levels; membrane at **642** capsules (level 3); **no cytoplasm motes**; wormhole view at **0.5** |
+| **Very Low** | **AA Off**; render scale at most **70%** | the same as Low |
+
+**How it is wired.**
+- `GraphicsCuts` (`_Scripts/System/Platform/`) is the one reader: it merges the device tier's cuts
+  (`PlatformProfile.Current`) with the preset's. A flag is on if either asks, and a cap is the tighter
+  of the two, so a preset never undoes a MobileLow cut. `CapsuleMembrane`, `SnowChanger`,
+  `WormholeView`, `PlatformRenderApplier` and `GraphicsSettingsApplier` read it instead of the profile.
+- `GraphicsSettingsApplier.ApplyQuality` pushes the preset in force (`GraphicsCuts.SetPreset`) and then
+  applies the live cuts: HDR (now restored to the URP asset's authored value when a cut is lifted,
+  instead of "only ever off"), bloom (`PostProcessCuts`: one global runtime volume at priority 1000
+  that overrides ONLY bloom's `downscale` and `maxIterations`, so each scene's threshold, intensity and
+  tint still apply and no profile asset is written), and the sky (`PlatformRenderApplier.ApplySkybox`,
+  which now also puts the authored sky back when a preset that baked it is lifted).
+- **Custom keeps the cuts.** A hand change to AA, render scale, upscaler or texture quality makes the
+  preset Custom; `GraphicsSettingsData.BasePreset` remembers the preset it started from, and
+  `EffectivePreset` keeps that preset's render cuts in force. It is persisted (`gfx.BasePreset`); a
+  snapshot saved before it existed takes the saved preset, or Unity's running quality level if the saved
+  preset was Custom.
+- **"Written when picked"** is `PresetCuts.ApplyPickTo`, called from `DisplayGraphicsSettings.SetQualityPreset`.
+  It only lowers render scale (never raises it), and the settings panel re-reads the AA and upscaler
+  dropdowns after a pick.
+- Live on a change: sky, HDR, bloom, AA, render scale. Read when an object wakes: membrane, cytoplasm,
+  and the wormhole view's cap (read per frame). The panel already shows "some changes apply after a restart".
+
+**Known limits.**
+- Picking a preset ABOVE Low does not put AA or render scale back. The player sets them, or presses
+  Auto-Detect. High+ rows write nothing, so desktop players who pick High keep their settings exactly.
+- First-run auto-detect is unchanged: MobileLow still recommends Very Low with **4x MSAA** (Garrett's
+  Round 8: with HDR off it fits tile memory), and the render cuts of Very Low apply on top. Only a hand
+  pick of Very Low or Low writes AA Off. Which one a MobileLow phone should start on is Garrett's call.
+- Only the HyperSea sky has a bake (`bakedSkies`). Other procedural skies would need their own
+  `bake_static_skybox.py` output and a row.
+- Panini projection stays on every preset (it is part of the speed tunnel's look, §3.5).
+
+**Tests:** `QualityPresetCutsTests` (edit mode): the shipped table, every lower preset cutting at least
+as much as the one above, High+ cutting nothing, the pick writes, Custom keeping its base, and the
+asset not holding the 4096x2048 bake resident.
+
 ---
 
 ## 4. Step plan

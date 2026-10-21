@@ -164,20 +164,8 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>The skybox this tier draws in place of <paramref name="authored"/>, or null to keep
         /// it. Loads the replacement on first use (Resources caches it after that).</summary>
-        public Material SkyboxReplacementFor(Material authored)
-        {
-            if (!authored || skyboxReplacements == null) return null;
-            foreach (var entry in skyboxReplacements)
-            {
-                if (entry.Authored != authored || string.IsNullOrEmpty(entry.ReplacementResource)) continue;
-                var replacement = Resources.Load<Material>(entry.ReplacementResource);
-                if (!replacement)
-                    CSDebug.LogWarning($"[PlatformProfile] {name}: skybox replacement " +
-                                       $"'{entry.ReplacementResource}' is not a Material under a Resources folder.");
-                return replacement;
-            }
-            return null;
-        }
+        public Material SkyboxReplacementFor(Material authored) =>
+            SkyboxReplacement.Find(skyboxReplacements, authored, name);
 
         /// <summary>
         /// A race-wide trail budget shared by every vessel in a match: each keeps
@@ -273,6 +261,24 @@ namespace CosmicShore.ScriptableObjects
 
             public Material Authored => authored;
             public string ReplacementResource => replacementResource;
+
+            /// <summary>The replacement <paramref name="entries"/> name for <paramref name="authored"/>,
+            /// loaded on first use (Resources caches it after that), or null when none does.
+            /// <paramref name="owner"/> names the asset in the warning for a bad path.</summary>
+            public static Material Find(SkyboxReplacement[] entries, Material authored, string owner)
+            {
+                if (!authored || entries == null) return null;
+                foreach (var entry in entries)
+                {
+                    if (entry.Authored != authored || string.IsNullOrEmpty(entry.ReplacementResource)) continue;
+                    var replacement = Resources.Load<Material>(entry.ReplacementResource);
+                    if (!replacement)
+                        CSDebug.LogWarning($"[PlatformProfile] {owner}: skybox replacement " +
+                                           $"'{entry.ReplacementResource}' is not a Material under a Resources folder.");
+                    return replacement;
+                }
+                return null;
+            }
         }
     }
 
