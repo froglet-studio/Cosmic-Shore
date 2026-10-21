@@ -54,8 +54,6 @@ MonoBehaviour:
   wattSpeedPerLevel: 0.3
   wattReach: 14
   wattCone: 30
-  thrusterDashes: 4
-  dashDistance: 20
   detangleCount: 3
   noodleCount: 5
   noodlePush: 12
@@ -67,16 +65,193 @@ MonoBehaviour:
   hammerCount: 3
   ciliaBonus: 3
   chronoRewind: 5
-  maxStoredJumps: 3
+  peckAction: {fileID: 11400000, guid: 0b7f3c1e5a2d4e6f8a9b1c2d3e4f5a6b, type: 2}
+  peckRange: 45
+  flitDistance: 18
+  flitSeconds: 0.15
+  flitCooldown: 2
+  activeSeconds: 20
+  activeLevelGain: 0.25
+  upgrades:
+  - effect: 8
+    trigger: 0
+    use: 0
+    cooldown: 1
+    reach: 90
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 21
+    trigger: 0
+    use: 0
+    cooldown: 2.5
+    reach: 120
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 31
+    trigger: 0
+    use: 0
+    cooldown: 1.2
+    reach: 22
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 16
+    trigger: 0
+    use: 0
+    cooldown: 9
+    reach: 50
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 20
+    trigger: 0
+    use: 1
+    cooldown: 0
+    reach: 55
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 6
+    trigger: 0
+    use: 2
+    cooldown: 0.8
+    reach: 40
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 13
+    trigger: 1
+    use: 0
+    cooldown: 1.8
+    reach: 50
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 7
+    trigger: 1
+    use: 0
+    cooldown: 0.4
+    reach: 20
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 38
+    trigger: 1
+    use: 0
+    cooldown: 3
+    reach: 60
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 34
+    trigger: 1
+    use: 0
+    cooldown: 2.5
+    reach: 30
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 35
+    trigger: 1
+    use: 0
+    cooldown: 4
+    reach: 300
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 30
+    trigger: 1
+    use: 0
+    cooldown: 3
+    reach: 60
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - effect: 39
+    trigger: 1
+    use: 0
+    cooldown: 4
+    reach: 40
+    sfx:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  lassoCone: 30
+  lassoReelSpeed: 220
+  lassoReelSeconds: 1.2
+  lassoBurst: 10
+  lanceWidth: 4
+  lanceLaneStart: 25
+  grenadeThrow: 55
+  grenadeFuse: 0.6
+  droneSeconds: 8
+  droneZapsPerSecond: 3
+  harmonizerCone: 20
+  harmonizerPerSecond: 8
+  fugacityMinRadius: 12
+  fugacityFullCharge: 1.2
+  fugacityBoostEach: 0.05
+  fugacityBoostCap: 1.5
+  eyeletSeconds: 0.25
+  thrusterSeconds: 0.12
   jumpCone: 35
   jumpMinDistance: 8
-  blinkDistance: 60
-  portalsHop: 30
   portalsEmptyRadius: 12
-  rosenReach: 300
-  ftlReach: 60
   monteHops: 3
-  monteReach: 40
+  aiTriggerThink: 0.3
   engineerLevel: 2
   engineerSkills:
   - think: 1.6
@@ -117,8 +292,15 @@ MonoBehaviour:
   madeToastTemplate: '{name} {level}: {text}'
   abilityToastTemplate: 'The Ratel''s new ability, {name}: {text}'
   cardDetailTemplate: "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close"
-  jumpCardTemplate: 'Jump x{count}'
-  dashCardTemplate: 'Dash x{count}'
+  upgradeToastTemplate: '{name} {level} on {trigger}: {text}'
+  triggerNames:
+  - RT
+  - LT
+  basePowerNames:
+  - Peck
+  - Flit
+  triggerChipTemplate: '{trigger} {power}'
+  upgradePowerTemplate: '{name} {level} {seconds}s'
   noJumpTarget: 'No jump target'
   patterns:
   - name: 'Juggernaut Plow'
@@ -155,20 +337,20 @@ MonoBehaviour:
     family: 1
     shape: S2,0 M3,0 M1,1 C0,2 M0,3
     effect: 6
-    effectText: 'Both triggers fire 5% faster a level for every prism within 40 u (up to +50% a level).'
-    parked: 1
+    effectText: 'Hold RT to charge, let go to discharge: every hostile prism within 12 to 40 u (by charge) shatters, and each gives 0.05 s of boost (up to 1.5 s).'
+    parked: 0
   - name: 'Thruster Swarm'
     family: 1
     shape: C2,0 M3,0 M1,1 S0,2
     effect: 7
-    effectText: 'Your next 4 boost presses each throw the hull 20 u ahead.'
+    effectText: 'LT: a quick 20 u thrust, again every 0.4 s, shattering what it crosses.'
     parked: 0
   - name: 'Hard Light Lasso'
     family: 1
     shape: S1,0 M2,0 M0,1 C1,1
     effect: 8
-    effectText: 'Each Bolt hit pulls you 6 u a level toward it.'
-    parked: 1
+    effectText: 'RT: a rope of light hooks the nearest hostile prism ahead (90 u, 30 degrees) and reels you to it at speed. It and every hostile prism within 10 u shatter when you arrive.'
+    parked: 0
   - name: 'Big Red Button'
     family: 1
     shape: M2,0 M0,1 C1,1 S0,2
@@ -197,8 +379,8 @@ MonoBehaviour:
     family: 1
     shape: M2,0 M0,1 S1,1 C0,2 M1,2
     effect: 13
-    effectText: 'Shots pass through 2 more hostile prisms a level.'
-    parked: 1
+    effectText: 'LT: jet 50 u ahead in a quarter of a second, shattering every hostile prism on the way.'
+    parked: 0
   - name: 'Reality Detangler'
     family: 2
     shape: C2,0 C0,1 S1,1 M0,2
@@ -215,8 +397,8 @@ MonoBehaviour:
     family: 2
     shape: C2,0 C0,1 M1,1 S0,2 C1,2
     effect: 16
-    effectText: 'A drone shoots the nearest hostile prism within 60 u, twice a second a level.'
-    parked: 1
+    effectText: 'RT: launch a drone that circles you for 8 s and zaps the nearest hostile prism within 50 u three times a second.'
+    parked: 0
   - name: 'Zero Point Amplifier'
     family: 2
     shape: S2,0 C1,1 M0,2 C0,3
@@ -239,14 +421,14 @@ MonoBehaviour:
     family: 2
     shape: M2,0 C1,1 S0,2 C0,3
     effect: 20
-    effectText: 'Shots turn hostile prisms to your newest charge''s domain instead of destroying them.'
-    parked: 1
+    effectText: 'Hold RT: a beam turns hostile prisms in a narrow cone up to 55 u ahead to your newest charge''s domain, 8 a second: new slip lanes.'
+    parked: 0
   - name: 'Genesis Lance'
     family: 2
     shape: C2,0 C0,1 S1,1 M0,2 C1,2
     effect: 21
-    effectText: 'Bolt shots that miss plant a prism of your newest charge''s domain where they stop: fire ahead to build a slip lane.'
-    parked: 1
+    effectText: 'RT: throw a lance 120 u straight ahead. It shatters every hostile prism on its line and leaves a trail of your newest charge''s domain along it: fly on and slip.'
+    parked: 0
   - name: 'Universal Translator'
     family: 2
     shape: C2,0 C0,1 M1,1 S0,2
@@ -299,14 +481,14 @@ MonoBehaviour:
     family: 3
     shape: C2,0 S1,1 M0,2 S0,3
     effect: 30
-    effectText: 'Jump: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain.'
+    effectText: 'LT: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain.'
     parked: 0
   - name: 'Little Bang Grenade'
     family: 3
     shape: M2,0 S1,1 C0,2 S0,3
     effect: 31
-    effectText: 'A hit destroys hostile prisms around it (4 u + 3 u a level).'
-    parked: 1
+    effectText: 'RT: lob a grenade 55 u ahead. It bursts 0.6 s later and shatters every hostile prism within 22 u.'
+    parked: 0
   - name: 'Vorticity Module'
     family: 3
     shape: C3,0 S4,0 S2,1 S0,2 M1,2
@@ -323,20 +505,20 @@ MonoBehaviour:
     family: 3
     shape: S2,0 S0,1 C1,1 M0,2 S1,2
     effect: 34
-    effectText: 'Jump 30 u ahead; land in empty space and you jump 30 u again.'
+    effectText: 'LT: teleport 30 u ahead; land in empty space and you go 30 u again.'
     parked: 0
   - name: 'Rosen Bridge'
     family: 3
     shape: C3,0 S2,1 S0,2 M1,2 S1,3
     effect: 35
-    effectText: 'Jump to the farthest prism of your newest charge''s domain within 300 u and 35 degrees of your nose.'
+    effectText: 'LT: teleport to the farthest prism of your newest charge''s domain within 300 u and 35 degrees of your nose.'
     parked: 0
   - name: 'Frame Dragger'
     family: 3
     shape: C1,0 S2,0 S0,1 M1,1
     effect: 36
     effectText: 'Your trail is laid in your newest charge''s domain: a slip lane behind you.'
-    parked: 1
+    parked: 0
   - name: 'Void Jumper'
     family: 3
     shape: M3,0 S2,1 S0,2 C1,2 S1,3
@@ -347,13 +529,13 @@ MonoBehaviour:
     family: 3
     shape: S2,0 S0,1 M1,1 C0,2
     effect: 38
-    effectText: 'Jump 60 u ahead.'
+    effectText: 'LT: blink 60 u ahead.'
     parked: 0
   - name: 'Monte Cannon'
     family: 3
     shape: S3,0 C2,1 M1,2 S0,3
     effect: 39
-    effectText: 'Jump: three hops, each swapping places with the farthest prism ahead within 40 u.'
+    effectText: 'LT: three hops, each to the farthest prism ahead within 40 u.'
     parked: 0
   engines:
   - label: '2020-22 player board'
@@ -435,6 +617,20 @@ MonoBehaviour:
       Data4: 0
     Path: 
   jumpSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  flitSfx:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  upgradeSfx:
     Guid:
       Data1: 0
       Data2: 0

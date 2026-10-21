@@ -70,9 +70,33 @@ namespace CosmicShore.Gameplay
         public HoneyguideEffect effect;
         [Tooltip("What the effect does, as the player reads it on the card.")]
         [TextArea] public string effectText;
-        [Tooltip("Never drawn. The trigger effects are parked until the Honeyguide's triggers take upgrades in the game " +
-                 "(HONEYGUIDE.md).")]
+        [Tooltip("Never drawn (a card can be parked while its effect is reworked; lab round 6 parks none).")]
         public bool parked;
+    }
+
+    /// <summary>How a trigger upgrade is used: one button, no combos (lab round 5: "not so hard to use like a dolphin combo").</summary>
+    public enum HoneyguideTriggerUse
+    {
+        Press = 0,    // each press is one use, then the cooldown
+        Hold = 1,     // it works while the trigger is held
+        Charge = 2,   // hold to charge, let go to use it
+    }
+
+    /// <summary>One trigger upgrade (the lab's <c>ACTIVES</c>): the card that grants it, the trigger it takes over (0 RT, the
+    /// attack; 1 LT, the move), how it is used, its cooldown and its reach at level I.</summary>
+    [Serializable]
+    public sealed class HoneyguideUpgrade
+    {
+        public HoneyguideEffect effect;
+        [Tooltip("0 RT (always an attack), 1 LT (always a move). Garrett 2026-10-21.")]
+        [Range(0, 1)] public int trigger;
+        public HoneyguideTriggerUse use;
+        [Tooltip("Seconds between uses.")]
+        [Min(0f)] public float cooldown;
+        [Tooltip("Its reach at level I (u); a repeat grows it by activeLevelGain a level.")]
+        [Min(0f)] public float reach;
+        [Tooltip("Plays on each use. Ship empty; an unwired slot is a visible TODO.")]
+        public EventReference sfx;
     }
 
     /// <summary>A designed engine (Appendix B): its printed rows, top first, M / C / S a port of that colour.</summary>
@@ -109,7 +133,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Every number, table and word of the Honeyguide and Ratel (Honeyguide Lab round 4; <c>Docs/Studios/HONEYGUIDE_LAB.md</c>,
+    /// Every number, table and word of the Honeyguide and Ratel (Honeyguide Lab round 6; <c>Docs/Studios/HONEYGUIDE_LAB.md</c>,
     /// <c>HONEYGUIDE.md</c> beside this file). The lab is the record: each field names the lab key it came from, and
     /// <c>Tools/Build/author_honeyguide_assets.py --check</c> holds the shipped asset to the page. Read by
     /// <see cref="HoneyguideCrew"/>.
@@ -206,10 +230,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float wattReach = 14f;
         [Tooltip("...with the heading within this many degrees of its axis.")]
         [SerializeField, Range(5f, 90f)] float wattCone = 30f;
-        [Tooltip("Thruster Swarm: dashes stored.")]
-        [SerializeField, Min(1)] int thrusterDashes = 4;
-        [Tooltip("Thruster Swarm: each dash throws the hull this far ahead (u).")]
-        [SerializeField, Min(1f)] float dashDistance = 20f;
         [Tooltip("Reality Detangler: prisms touched that turn the newest charge's domain.")]
         [SerializeField, Min(1)] int detangleCount = 3;
         [Tooltip("Noodley Appendages: hostile prisms pushed aside.")]
@@ -233,27 +253,70 @@ namespace CosmicShore.Gameplay
         [Tooltip("Chrono-Compressor: seconds the spin bar winds back.")]
         [SerializeField, Min(0f)] float chronoRewind = 5f;
 
-        [Header("Stored jumps (the Slip card reads Jump)")]
-        [Tooltip("lab: most jumps stored.")]
-        [SerializeField, Min(1)] int maxStoredJumps = 3;
+        [Header("The triggers (lab round 6: RT Peck and LT Flit, taken over by the upgrade cards)")]
+        [Tooltip("RT's base power, Peck: a weak shot while held, through the hull's own gun (HoneyguidePeckAction.asset, a " +
+                 "FullAutoActionSO with the lab's peckRate and peckRange).")]
+        [SerializeField] ShipActionSO peckAction;
+        [Tooltip("lab peckRange: how far a Peck flies (u). The AI pecks at a hostile prism this close ahead.")]
+        [SerializeField, Min(1f)] float peckRange = 45f;
+        [Tooltip("lab flitDistance: LT's base power, Flit, throws the hull this far ahead (u).")]
+        [SerializeField, Min(1f)] float flitDistance = 18f;
+        [Tooltip("lab: the seconds a Flit takes.")]
+        [SerializeField, Min(0.02f)] float flitSeconds = 0.15f;
+        [Tooltip("lab flitCooldown: seconds between Flits.")]
+        [SerializeField, Min(0f)] float flitCooldown = 2f;
+        [Tooltip("lab activeSeconds: how long an upgrade holds its trigger before the base power comes back. A repeat refreshes it.")]
+        [SerializeField, Min(1f)] float activeSeconds = 20f;
+        [Tooltip("lab activeLevelGain: a repeat of the same upgrade grows its reach this much a level (to passiveMaxLevel).")]
+        [SerializeField, Min(0f)] float activeLevelGain = 0.25f;
+        [Tooltip("The thirteen upgrades (lab ACTIVES), one per upgrade card.")]
+        [SerializeField] List<HoneyguideUpgrade> upgrades = new();
+        [Tooltip("Hard Light Lasso: the target must be within this many degrees of the nose.")]
+        [SerializeField, Range(5f, 90f)] float lassoCone = 30f;
+        [Tooltip("Hard Light Lasso: the reel's speed (u/s; the hull's own when faster).")]
+        [SerializeField, Min(1f)] float lassoReelSpeed = 220f;
+        [Tooltip("Hard Light Lasso: the longest a reel lasts (s).")]
+        [SerializeField, Min(0.1f)] float lassoReelSeconds = 1.2f;
+        [Tooltip("Hard Light Lasso: on arrival, hostile prisms this close shatter (u, at level I).")]
+        [SerializeField, Min(0f)] float lassoBurst = 10f;
+        [Tooltip("Genesis Lance: hostile prisms this close to its line shatter (u).")]
+        [SerializeField, Min(0.5f)] float lanceWidth = 4f;
+        [Tooltip("Genesis Lance: its lane starts this far ahead (u); the lane's prisms are condenserSpacing apart.")]
+        [SerializeField, Min(0f)] float lanceLaneStart = 25f;
+        [Tooltip("Little Bang Grenade: lobbed this far ahead (u).")]
+        [SerializeField, Min(1f)] float grenadeThrow = 55f;
+        [Tooltip("Little Bang Grenade: seconds until it bursts.")]
+        [SerializeField, Min(0f)] float grenadeFuse = 0.6f;
+        [Tooltip("Sepia Drone: seconds it circles.")]
+        [SerializeField, Min(0.5f)] float droneSeconds = 8f;
+        [Tooltip("Sepia Drone: zaps a second.")]
+        [SerializeField, Min(0.1f)] float droneZapsPerSecond = 3f;
+        [Tooltip("Particle Harmonizer: the beam's cone (degrees either side of the nose).")]
+        [SerializeField, Range(5f, 90f)] float harmonizerCone = 20f;
+        [Tooltip("Particle Harmonizer: prisms turned a second while held.")]
+        [SerializeField, Min(0.5f)] float harmonizerPerSecond = 8f;
+        [Tooltip("Fugacity Discharger: the burst's radius with no charge (u); a full charge reaches the upgrade's reach.")]
+        [SerializeField, Min(0f)] float fugacityMinRadius = 12f;
+        [Tooltip("Fugacity Discharger: seconds of hold for a full charge.")]
+        [SerializeField, Min(0.1f)] float fugacityFullCharge = 1.2f;
+        [Tooltip("Fugacity Discharger: boost seconds for each prism it shatters...")]
+        [SerializeField, Min(0f)] float fugacityBoostEach = 0.05f;
+        [Tooltip("...up to this many.")]
+        [SerializeField, Min(0f)] float fugacityBoostCap = 1.5f;
+        [Tooltip("Hexapod Eyelet Jet: the seconds the jet takes.")]
+        [SerializeField, Min(0.02f)] float eyeletSeconds = 0.25f;
+        [Tooltip("Thruster Swarm: the seconds a thrust takes.")]
+        [SerializeField, Min(0.02f)] float thrusterSeconds = 0.12f;
         [Tooltip("Rosen Bridge, FTL Chromatool, Monte Cannon: a target must be within this many degrees of the nose.")]
         [SerializeField, Range(5f, 90f)] float jumpCone = 35f;
         [Tooltip("lab: a jump target must be at least this far away (u).")]
         [SerializeField, Min(0f)] float jumpMinDistance = 8f;
-        [Tooltip("Blink Drive: jump distance (u).")]
-        [SerializeField, Min(1f)] float blinkDistance = 60f;
-        [Tooltip("All Terrain Portals: jump distance (u); landing in empty space jumps it again.")]
-        [SerializeField, Min(1f)] float portalsHop = 30f;
-        [Tooltip("All Terrain Portals: no prism within this of the landing is empty space (u).")]
+        [Tooltip("All Terrain Portals: no prism within this of the landing is empty space, and it goes again (u).")]
         [SerializeField, Min(1f)] float portalsEmptyRadius = 12f;
-        [Tooltip("Rosen Bridge: the farthest prism of the newest charge's domain within this distance (u).")]
-        [SerializeField, Min(10f)] float rosenReach = 300f;
-        [Tooltip("FTL Chromatool: the nearest prism ahead within this distance (u).")]
-        [SerializeField, Min(1f)] float ftlReach = 60f;
         [Tooltip("Monte Cannon: hops.")]
         [SerializeField, Min(1)] int monteHops = 3;
-        [Tooltip("Monte Cannon: each hop's farthest prism within this distance (u).")]
-        [SerializeField, Min(1f)] float monteReach = 40f;
+        [Tooltip("The AI pilot's look at its triggers, every this many seconds.")]
+        [SerializeField, Min(0.05f)] float aiTriggerThink = 0.3f;
 
         [Header("Crew AI")]
         [Tooltip("The Ratel AI's level when the human flies.")]
@@ -297,11 +360,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("A right-clicked card's details on the board. Tokens: {name}, {text}, {uses} (made so far), {max} (made before " +
                  "it is replaced).")]
         [SerializeField] string cardDetailTemplate = "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close";
-        [Tooltip("The Slip card while jumps are stored. Tokens: {count}.")]
-        [SerializeField] string jumpCardTemplate = "Jump x{count}";
-        [Tooltip("The Slip card while dashes are stored. Tokens: {count}.")]
-        [SerializeField] string dashCardTemplate = "Dash x{count}";
-        [Tooltip("Shown when a stored jump finds no target.")]
+        [Tooltip("The toast when a card puts an upgrade on a trigger. Tokens: {name}, {level} (empty at I), {trigger}, {text}.")]
+        [SerializeField] string upgradeToastTemplate = "{name} {level} on {trigger}: {text}";
+        [Tooltip("The triggers' names (RT, LT).")]
+        [SerializeField] string[] triggerNames = { "RT", "LT" };
+        [Tooltip("The base powers' names (RT, LT).")]
+        [SerializeField] string[] basePowerNames = { "Peck", "Flit" };
+        [Tooltip("One trigger on the chip beside the small board. Tokens: {trigger}, {power}.")]
+        [SerializeField] string triggerChipTemplate = "{trigger} {power}";
+        [Tooltip("{power} while an upgrade holds the trigger. Tokens: {name}, {level} (empty at I), {seconds} (left).")]
+        [SerializeField] string upgradePowerTemplate = "{name} {level} {seconds}s";
+        [Tooltip("Shown when a jump upgrade finds no target.")]
         [SerializeField] string noJumpTarget = "No jump target";
         [Tooltip("The patterns' tabletop cards, in card order (39). Parked cards are never drawn.")]
         [SerializeField] List<HoneyguidePattern> patterns = new();
@@ -314,6 +383,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference patternMadeSfx;
         [SerializeField] EventReference slipSfx;
         [SerializeField] EventReference jumpSfx;
+        [SerializeField] EventReference flitSfx;
+        [SerializeField] EventReference upgradeSfx;
         [SerializeField] EventReference spinSfx;
         [SerializeField] EventReference revealSfx;
 
@@ -348,8 +419,6 @@ namespace CosmicShore.Gameplay
         public float WattSpeedPerLevel => wattSpeedPerLevel;
         public float WattReach => wattReach;
         public float WattCone => wattCone;
-        public int ThrusterDashes => thrusterDashes;
-        public float DashDistance => dashDistance;
         public int DetangleCount => detangleCount;
         public int NoodleCount => noodleCount;
         public float NoodlePush => noodlePush;
@@ -361,16 +430,37 @@ namespace CosmicShore.Gameplay
         public int HammerCount => hammerCount;
         public int CiliaBonus => ciliaBonus;
         public float ChronoRewind => chronoRewind;
-        public int MaxStoredJumps => maxStoredJumps;
+        public ShipActionSO PeckAction => peckAction;
+        public float PeckRange => peckRange;
+        public float FlitDistance => flitDistance;
+        public float FlitSeconds => flitSeconds;
+        public float FlitCooldown => flitCooldown;
+        public float ActiveSeconds => activeSeconds;
+        public float ActiveLevelGain => activeLevelGain;
+        public IReadOnlyList<HoneyguideUpgrade> Upgrades => upgrades;
+        public float LassoCone => lassoCone;
+        public float LassoReelSpeed => lassoReelSpeed;
+        public float LassoReelSeconds => lassoReelSeconds;
+        public float LassoBurst => lassoBurst;
+        public float LanceWidth => lanceWidth;
+        public float LanceLaneStart => lanceLaneStart;
+        public float GrenadeThrow => grenadeThrow;
+        public float GrenadeFuse => grenadeFuse;
+        public float DroneSeconds => droneSeconds;
+        public float DroneZapsPerSecond => droneZapsPerSecond;
+        public float HarmonizerCone => harmonizerCone;
+        public float HarmonizerPerSecond => harmonizerPerSecond;
+        public float FugacityMinRadius => fugacityMinRadius;
+        public float FugacityFullCharge => fugacityFullCharge;
+        public float FugacityBoostEach => fugacityBoostEach;
+        public float FugacityBoostCap => fugacityBoostCap;
+        public float EyeletSeconds => eyeletSeconds;
+        public float ThrusterSeconds => thrusterSeconds;
         public float JumpCone => jumpCone;
         public float JumpMinDistance => jumpMinDistance;
-        public float BlinkDistance => blinkDistance;
-        public float PortalsHop => portalsHop;
         public float PortalsEmptyRadius => portalsEmptyRadius;
-        public float RosenReach => rosenReach;
-        public float FtlReach => ftlReach;
         public int MonteHops => monteHops;
-        public float MonteReach => monteReach;
+        public float AITriggerThink => aiTriggerThink;
         public HoneyguideEngineerSkill EngineerSkill => engineerSkills is { Length: > 0 }
             ? engineerSkills[Mathf.Clamp((int)engineerLevel, 0, engineerSkills.Length - 1)] : new HoneyguideEngineerSkill();
         public bool AICrewEngineers => aiCrewEngineers;
@@ -390,14 +480,17 @@ namespace CosmicShore.Gameplay
         public float ZipLift => zipLift;
         public float ZipExitBoost => zipExitBoost;
         public int UsesPerPattern => usesPerPattern;
-        public string JumpCardTemplate => jumpCardTemplate;
-        public string DashCardTemplate => dashCardTemplate;
+        public string UpgradeToastTemplate => upgradeToastTemplate;
+        public string TriggerChipTemplate => triggerChipTemplate;
+        public string UpgradePowerTemplate => upgradePowerTemplate;
         public string NoJumpTarget => noJumpTarget;
         public IReadOnlyList<HoneyguidePattern> Patterns => patterns;
         public IReadOnlyList<HoneyguideEngine> Engines => engines;
         public EventReference PatternMadeSfx => patternMadeSfx;
         public EventReference SlipSfx => slipSfx;
         public EventReference JumpSfx => jumpSfx;
+        public EventReference FlitSfx => flitSfx;
+        public EventReference UpgradeSfx => upgradeSfx;
         public EventReference SpinSfx => spinSfx;
         public EventReference RevealSfx => revealSfx;
         public GameDataSO GameData => gameData;
@@ -407,6 +500,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Colour 1-3's name, or empty.</summary>
         public string ColourName(int colour) => colourNames != null && colour >= 1 && colour <= colourNames.Length ? colourNames[colour - 1] : "";
+
+        /// <summary>Trigger k's name (0 RT, 1 LT), or empty.</summary>
+        public string TriggerName(int k) => triggerNames != null && k >= 0 && k < triggerNames.Length ? triggerNames[k] : "";
+
+        /// <summary>Trigger k's base power's name (0 Peck, 1 Flit), or empty.</summary>
+        public string BasePowerName(int k) => basePowerNames != null && k >= 0 && k < basePowerNames.Length ? basePowerNames[k] : "";
+
+        /// <summary>The upgrade a card grants, or null (the card is not a trigger upgrade).</summary>
+        public HoneyguideUpgrade UpgradeFor(HoneyguideEffect effect)
+        {
+            if (upgrades != null) foreach (var u in upgrades) if (u != null && u.effect == effect) return u;
+            return null;
+        }
 
         /// <summary>A Dynamo colour's domain: 1 Ruby, 2 Jade, 3 Gold.</summary>
         public static Domains DomainOf(int colour) => colour switch { 1 => Domains.Ruby, 2 => Domains.Jade, 3 => Domains.Gold, _ => Domains.Blue };

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e69e441921845c0809b6c506eee66e0, type: 3}
+  m_Name: HoneyguidePeckAction
+  m_EditorClassIdentifier: 
+  ammoIndex: 0
+  ammoCost: 0
+  inherit: 0
+  projectileScale: 1
+  firingRate: 2.5
+  projectileTime: 0.3
+  firingPattern: 0
+  energy: 0
+  speedValue: 236
+  growthFactorAtRestingMass: 1
+  growthFactorAtFullMass: 1
+  spread:
+    onsetSeconds: 5
+    growthDegreesPerSecond: 0
+    maxHalfAngleDegrees: 0
+    plateauSeconds: 5
+    blowoutGrowthDegreesPerSecond: 1.2
+    blowoutMaxMultiplier: 5
+    collapsePlateauSeconds: 5
+    collapseGrowthDegreesPerSecond: 6
+    collapseMaxMultiplier: 5
+    coolingRateMultiplier: 5
+    rangeAtFullSpread: 0.25
+    distributionBias: 0.5
+    hapticFloor01: 0.15
+    hapticIntervalAtRest: 0.1
+    hapticIntervalAtMaxSpread: 0.045

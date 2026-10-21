@@ -15,13 +15,17 @@ namespace CosmicShore.Gameplay
     /// (a zero-length <see cref="IVessel.SetPose"/>, which seeds its rotation and momentum), and <c>zipExitBoost</c> carries the
     /// speed out. The crew runs only on the machine that flies the hull, which writes the transform as the transformer does,
     /// so every other machine sees the ride through the hull's own replication.</para>
+    ///
+    /// <para>The triggers ride the same rail (lab round 6): Flit, Hexapod Eyelet Jet and Thruster Swarm are a straight ride
+    /// ahead at a fixed speed, and the Hard Light Lasso reels the hull to the prism it hooked. Those that plough shatter the
+    /// hostile prisms the hull crosses; the lasso shatters what is near where it arrives.</para>
     /// </summary>
     public sealed partial class HoneyguideCrew
     {
         readonly List<Vector3> _zipPath = new();
         int _zipNext;
-        float _zipSpeed;
-        bool _zipping, _zipTookTransformer;
+        float _zipSpeed, _rideTopSpeed, _rideRamp, _rideExitBoost, _rideLeft, _rideArriveBurst;
+        bool _zipping, _zipTookTransformer, _ridePlow;
         Vector3 _zipUp, _zipExitHeading;
 
         /// <summary>True while the hull rides a slip.</summary>
@@ -41,9 +45,49 @@ namespace CosmicShore.Gameplay
                 if (i == landIndex) break;
             }
             AddZipPoint(landing);
+            StartRide(exitHeading, Mathf.Max(_status != null ? _status.Speed : 0f, 1f), _cfg.ZipSpeed,
+                      _cfg.ZipSpeed / Mathf.Max(0.01f, _cfg.ZipRamp), _cfg.ZipExitBoost, false, 0f, float.MaxValue);
+        }
+
+        /// <summary>A straight ride `distance` ahead in `seconds` (Flit, Eyelet Jet, Thruster Swarm). `plow` shatters the
+        /// hostile prisms it crosses.</summary>
+        void BeginJet(float distance, float seconds, bool plow)
+        {
+            var t = _vessel.Transform;
+            _zipUp = t.up;
+            _zipPath.Clear();
+            _zipPath.Add(t.position);
+            AddZipPoint(t.position + t.forward * distance);
+            float speed = distance / Mathf.Max(0.02f, seconds);
+            StartRide(t.forward, speed, speed, 0f, 0f, plow, 0f, seconds * 2f);
+        }
+
+        /// <summary>The Hard Light Lasso's reel: to `at`, ploughing, then a burst of `burst` u where it arrives.</summary>
+        void BeginReel(Vector3 at, float burst)
+        {
+            var t = _vessel.Transform;
+            var heading = at - t.position;
+            if (heading.sqrMagnitude < 1e-4f) return;
+            _zipUp = t.up;
+            _zipPath.Clear();
+            _zipPath.Add(t.position);
+            AddZipPoint(at);
+            float speed = Mathf.Max(_status != null ? _status.Speed : 0f, _cfg.LassoReelSpeed);
+            StartRide(heading.normalized, speed, speed, 0f, 0f, true, burst, _cfg.LassoReelSeconds);
+        }
+
+        void StartRide(Vector3 exitHeading, float speed, float topSpeed, float ramp, float exitBoost, bool plow, float arriveBurst,
+                       float maxSeconds)
+        {
             _zipExitHeading = exitHeading;
             _zipNext = 1;
-            _zipSpeed = Mathf.Max(_status != null ? _status.Speed : 0f, 1f);
+            _zipSpeed = speed;
+            _rideTopSpeed = topSpeed;
+            _rideRamp = ramp;
+            _rideExitBoost = exitBoost;
+            _ridePlow = plow;
+            _rideArriveBurst = arriveBurst;
+            _rideLeft = maxSeconds;
 
             var tr = _status?.VesselTransformer;
             _zipTookTransformer = tr && tr.IsActive;
@@ -61,8 +105,8 @@ namespace CosmicShore.Gameplay
         {
             if (!_zipping) return false;
             var t = _vessel.Transform;
-            float ramp = _cfg.ZipSpeed / Mathf.Max(0.01f, _cfg.ZipRamp);
-            _zipSpeed = Mathf.MoveTowards(_zipSpeed, _cfg.ZipSpeed, ramp * dt);
+            _zipSpeed = Mathf.MoveTowards(_zipSpeed, _rideTopSpeed, _rideRamp * dt);
+            _rideLeft -= dt;
 
             Vector3 pos = t.position, tangent = _zipExitHeading;
             float move = _zipSpeed * dt;
@@ -82,8 +126,10 @@ namespace CosmicShore.Gameplay
             var rot = Quaternion.Slerp(t.rotation, want, 1f - Mathf.Exp(-_cfg.ZipTurnRate * dt));
             t.SetPositionAndRotation(pos, rot);
             if (_status != null) _status.blockRotation = rot;   // the trail it lays follows the ride, as the transformer's does
+            if (_ridePlow) Shatter(pos, _cfg.ContactRadius);
 
-            if (_zipNext < _zipPath.Count) return true;
+            if (_zipNext < _zipPath.Count && _rideLeft > 0f) return true;
+            if (_rideArriveBurst > 0f) Shatter(pos, _rideArriveBurst);
             EndZip(true);
             return false;
         }
@@ -99,7 +145,7 @@ namespace CosmicShore.Gameplay
             var t = _vessel.Transform;
             var up = Vector3.ProjectOnPlane(t.up, _zipExitHeading).sqrMagnitude > 1e-6f ? t.up : Vector3.up;
             _vessel.SetPose(new Pose(t.position, Quaternion.LookRotation(_zipExitHeading, up)));
-            GiveBoost(_cfg.ZipExitBoost);
+            GiveBoost(_rideExitBoost);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Which is big.</b> Playing the Ratel: the board fills <c>engineerRect</c> and takes the pointer (drag a prism, tap
     /// a port, tap a lit card; tap the AP row to change the free prism's colour). Flying: the board is the small read-only
-    /// view in <c>pilotRect</c>; a double tap on it swaps seats, and a Jump chip above it spends a stored jump on touch.</para>
+    /// view in <c>pilotRect</c>; a double tap on it swaps seats, and a chip above it shows what RT and LT do now.</para>
     /// </summary>
     sealed class HoneyguideDynamoView
     {
@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
         Vector2 _pointerAt = new(-1f, -1f);
         int _detailSlot = -1;   // the card whose details are open (a right-click), or -1
         float _lastSmallTap = -99f;
-        bool _smallDoubleTap, _chipTap;
+        bool _smallDoubleTap;
 
         internal HoneyguideDynamoView(HoneyguideCrew crew)
         {
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
             _revealTitle = MakeText("RevealTitle", Ability, FontStyles.Bold, TextAlignmentOptions.Center);
             _revealText = MakeText("RevealText", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
             _detail = MakeText("CardDetail", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
-            _chip = MakeText("JumpChip", Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+            _chip = MakeText("TriggerChip", Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
             for (int k = 0; k < 3; k++)
             {
                 _slotNames[k] = MakeText("Slot" + k, new Color(0.91f, 0.93f, 0.95f, 1f), FontStyles.Bold, TextAlignmentOptions.TopLeft);
@@ -165,7 +165,7 @@ namespace CosmicShore.Gameplay
             float gap = 6f * ui, sw = (_rect.width - 2f * pad - gap * 2f) / 3f;
             for (int k = 0; k < 3; k++) _slots[k] = new Rect(_rect.x + pad + k * (sw + gap), _rect.y + pad / 2f, sw, slotsH);
             _apRect = new Rect(_rect.x, _rect.yMax - 28f * ui, Mathf.Max(80f * ui, _rect.width * 0.45f), 28f * ui);
-            _chipRect = _small ? new Rect(_rect.x, _rect.yMax + 6f * ui, _rect.width, 40f * ui) : default;
+            _chipRect = _small ? new Rect(_rect.x, _rect.yMax + 6f * ui, _rect.width, 52f * ui) : default;
         }
 
         internal Vector2 CellPx(int i) =>
@@ -233,9 +233,23 @@ namespace CosmicShore.Gameplay
             }
             Place(_detail, DetailRect(ui), fs * 1.15f, detail);
 
+            // the triggers, beside the small board while the human flies: RT and LT, each its base power or the upgrade on it
             string chip = "";
-            if (_small && _crew.Jumps.Count > 0) chip = TemplateText.Fill(cfg.JumpCardTemplate, "count", _crew.Jumps.Count.ToString());
-            else if (_small && _crew.Dashes > 0) chip = TemplateText.Fill(cfg.DashCardTemplate, "count", _crew.Dashes.ToString());
+            ChipUpgraded = false;
+            if (_small)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    var u = _crew.Upgrades[k];
+                    ChipUpgraded |= u != null;
+                    string power = u == null ? cfg.BasePowerName(k)
+                        : TemplateText.Fill(cfg.UpgradePowerTemplate, "name", u.Name, "level", u.Level > 1 ? HoneyguideCrew.Roman(u.Level) : "",
+                                            "seconds", Mathf.CeilToInt(Mathf.Max(0f, u.Left)).ToString());
+                    string line = TemplateText.Fill(cfg.TriggerChipTemplate, "trigger", cfg.TriggerName(k), "power", power);
+                    if (line.Length == 0) continue;
+                    chip = chip.Length > 0 ? chip + "\n" + line : line;
+                }
+            }
             Place(_chip, _chipRect, fs, chip);
             ChipShown = chip.Length > 0;
 
@@ -244,6 +258,9 @@ namespace CosmicShore.Gameplay
         }
 
         internal bool ChipShown { get; private set; }
+
+        /// <summary>True while an upgrade holds either trigger (the chip lights up).</summary>
+        internal bool ChipUpgraded { get; private set; }
 
         Rect DetailRect(float ui) => new(_rect.x + _rect.width * 0.1f, _cy - _size * 3.5f, _rect.width * 0.8f, _size * 7f);
 
@@ -275,11 +292,10 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        // Flying: a double tap on the small board swaps seats; a tap on the Jump chip spends a stored jump.
+        // Flying: a double tap on the small board swaps seats.
         void ReadSmallViewTaps()
         {
             if (!TryPointer(out var at, out bool pressed, out _, out _) || !pressed) return;
-            if (ChipShown && _chipRect.Contains(at)) { _chipTap = true; return; }
             if (!_rect.Contains(at)) return;
             if (Time.unscaledTime - _lastSmallTap < 0.35f) { _smallDoubleTap = true; _lastSmallTap = -99f; }
             else _lastSmallTap = Time.unscaledTime;
@@ -289,13 +305,6 @@ namespace CosmicShore.Gameplay
         {
             bool d = _smallDoubleTap;
             _smallDoubleTap = false;
-            return d;
-        }
-
-        internal bool JumpChipTapped()
-        {
-            bool d = _chipTap;
-            _chipTap = false;
             return d;
         }
 
@@ -497,8 +506,9 @@ namespace CosmicShore.Gameplay
 
             if (ChipShown)
             {
-                HoneyguideMesh.Quad(vh, _chipRect, new Color(1f, 0.655f, 0f, 0.35f));
-                HoneyguideMesh.Outline(vh, _chipRect, 2f, new Color(1f, 0.655f, 0f, 1f));
+                float lit = ChipUpgraded ? 1f : 0.35f;
+                HoneyguideMesh.Quad(vh, _chipRect, new Color(1f, 0.655f, 0f, 0.35f * lit));
+                HoneyguideMesh.Outline(vh, _chipRect, 2f, new Color(1f, 0.655f, 0f, lit));
             }
         }
 

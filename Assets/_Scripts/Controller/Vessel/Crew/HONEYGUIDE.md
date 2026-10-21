@@ -3,10 +3,10 @@
 A two-seat crew vessel on the Sparrow's hull: `VesselClassType.Honeyguide = 21`. It carries *Slipstream*, the tabletop game
 Garrett and friends designed and played from 2019 to 2022. The design was made and decided in the Honeyguide Lab
 (`Docs/Studios/HoneyguideLab.html`, write-up `Docs/Studios/HONEYGUIDE_LAB.md`, pattern list
-`Docs/Studios/HONEYGUIDE_PATTERNS.md`). The lab is the record. This port is its clone in the game, as of lab round 4.
+`Docs/Studios/HONEYGUIDE_PATTERNS.md`). The lab is the record. This port is its clone in the game, as of lab round 6.
 
-- **The Honeyguide** flies the hull. It uses the Sparrow's airframe, its numbers and its two triggers (the guns). Its Time
-  ability is the **Slip**. Touch a 1-D trail of a domain the battery holds, with the nose within `aimCone` (45°) of the
+- **The Honeyguide** flies the hull. It uses the Sparrow's airframe and numbers. Its two triggers are its own (round 6,
+  below), and its ride is the **Slip**. Touch a 1-D trail of a domain the battery holds, with the nose within `aimCone` (45°) of the
   prism's long axis either way. The hull then **zips** along the trail to the end it points at (`HoneyguideCrew.Zip.cs`:
   `zipSpeed` 480 u/s, ridden `zipLift` above the prisms, `zipExitBoost` out; Garrett 2026-10-21: "not teleport ... a
   satisfying zip over"). That end is clipped to `slipReach`, and the hull leaves `exitOffset` past it, aligned with the
@@ -35,8 +35,8 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
      empty cell.
    - The Ratel's ability (at the start and each new one) and every pattern made are announced in the game's toast, top
      right under Settings (`ToastNotificationAPI`), worded for both seats.
-5. Stored jumps (Blink, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) and Thruster dashes are used with
-   **R**, pad **Y**, or a tap on the chip by the small board.
+5. **RT** pecks and **LT** flits. When the Ratel makes an upgrade card, the toast says which trigger it took, and the chip
+   above the small board shows it with the seconds it has left.
 
 ## Where things are
 
@@ -46,6 +46,10 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
 | Every number, card and word | `HoneyguideConfigSO.cs`, `Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset` |
 | Seats, swap, Ratel AI, events | `HoneyguideCrew.cs` |
 | Slip, card effects, jumps | `HoneyguideCrew.Pilot.cs` |
+| The ride (slips, Flit, the jets, the lasso's reel) | `HoneyguideCrew.Zip.cs` |
+| RT Peck, LT Flit, the 13 upgrades, the AI's triggers | `HoneyguideCrew.Triggers.cs` |
+| The input's two triggers (the prefab maps RightStickAction and LeftStickAction to them) | `HoneyguideTriggerActionSO.cs`, `HoneyguideRTAction.asset`, `HoneyguideLTAction.asset` |
+| Peck (the hull's own gun at 2.5 shots a second, 45 u) | `HoneyguidePeckAction.asset` (a `FullAutoActionSO`) |
 | The board (runtime overlay canvas, touch and mouse) | `HoneyguideDynamoView.cs` |
 | Prefab, class, map, registrations, config from the lab | `Tools/Build/author_honeyguide_assets.py` (`--check`, `--self-test`) |
 | Edit-mode tests (golden from the lab's core) | `Assets/_Scripts/Tests/Editor/HoneyguideTests.cs` |
@@ -56,30 +60,55 @@ All 39 cards keep their tabletop names. Each card's effect is the lab's conversi
 text the player reads is the `effectText` field on each card in the config. Timed effects last `passiveSeconds`, and a
 repeat raises their level up to `passiveMaxLevel`.
 
-**Parked (8):**
-- Fugacity Discharger
-- Hard Light Lasso
-- Eyelet Jet
-- Sepia Drone
-- Particle Harmonizer
-- Genesis Lance
-- Little Bang Grenade
-- Frame Dragger
+No card is parked. Thirteen of them are **trigger upgrades**, below.
 
-These change what the triggers' shots do, or what domain the trail is laid in. The Sparrow's guns do not take upgrades
-yet, so these cards are never drawn. Each has a `parked` checkbox in the config. Untick it once its effect is built.
+## The triggers (lab round 6)
+
+Garrett, 2026-10-21: "the right trigger should always be a weak attack power that gets upgraded sometimes. the left
+should be a movement power that works similar. the 39 patterns should still be unique."
+
+- **RT Peck**: a weak shot while held, through the hull's own gun (`peckAction`, 2.5 a second, 45 u, no spray).
+- **LT Flit**: a short throw 18 u ahead, every 2 s.
+- An **upgrade card** takes its trigger over for `activeSeconds` (20 s), then the base power comes back. The same card
+  again refreshes it and grows its reach by `activeLevelGain` a level, up to III. Another card on the same trigger
+  replaces it. The `upgrades` table on the config is the lab's `ACTIVES`, held to it by `author_honeyguide_assets.py`.
+
+| Card | Trigger | Use | What it does |
+|---|---|---|---|
+| Hard Light Lasso | RT | press | Hooks the nearest hostile prism ahead (90 u, 30°) and reels the hull in, ploughing; a burst where it arrives |
+| Genesis Lance | RT | press | Shatters the line 120 u ahead and lays a lane of the newest charge's domain along it |
+| Little Bang Grenade | RT | press | Lobbed 55 u ahead; bursts 0.6 s later (22 u) |
+| Sepia Drone | RT | press | Zaps the nearest hostile prism within 50 u three times a second, for 8 s |
+| Particle Harmonizer | RT | hold | Turns hostile prisms in a 20° cone to the newest charge's domain, 8 a second |
+| Fugacity Discharger | RT | charge | Let go: shatters hostile prisms within 12 to 40 u by charge; 0.05 s of boost each (up to 1.5 s) |
+| Hexapod Eyelet Jet | LT | press | A 50 u jet in a quarter of a second, ploughing |
+| Thruster Swarm | LT | press | A quick 20 u thrust, again every 0.4 s, ploughing |
+| Blink Drive | LT | press | Blinks 60 u ahead |
+| All Terrain Portals | LT | press | 30 u ahead; landing in empty space goes 30 u again |
+| Rosen Bridge | LT | press | To the farthest prism of the newest charge's domain within 300 u and 35° |
+| FTL Chromatool | LT | press | Swaps with the nearest prism ahead within 60 u; it becomes a charge |
+| Monte Cannon | LT | press | Three hops, each to the farthest prism ahead within 40 u |
+
+While an AI flies the hull (an AI crew, or you on the Ratel's seat) the crew presses the triggers itself, input-only: the
+lab's `activeWanted`, with "ahead" standing in for the lab's destination (freestyle has none).
 
 ## Choices made in the port (not in the lab)
 
-- **The triggers are the Sparrow's guns.** The lab's Bolt and Burst stand-ins are not built.
+- **Peck is the Sparrow's gun** at the lab's rate and range, so it is the real networked projectile.
+- **The jets, Flit and the lasso's reel are rides** on the slip's rail (the transformer stands down for the ride), not
+  teleports; the jumps (Blink, Portals, Rosen, FTL, Monte) are `SetPose`, as in the lab.
 - **A boost effect fires at once** (`IsBoosting` for its seconds, capped at `boostCap`).
-- **Dashes use the jump input.**
-- **The AI takes a stored jump after 0.6 s.**
+- **Fractal Frame** recolours the hull's own trail prisms as the prism controller lays them (`OnBlockSpawned`).
+- **The Space card is the Slip**, and at Space 5 Pecks pierce (the gun's own Space upgrade). The Time card is the Sparrow's
+  Afterburner, unchanged.
+- **No new visual effects yet.** A shattered prism shows the game's own break; the lance's lane and the harmonizer's
+  recolour show as prisms. The grenade, drone, lasso rope and lance beam have no effect of their own (a team task).
 - **Local only, as the Wrasse's seat is.** The Dynamo, its AI and the effects run on the machine that flies the hull.
   Another player sees the hull fly, slip and lay prisms, but not the board. Networking the Ratel seat is a follow-up.
-- **FMOD:** `patternMadeSfx`, `slipSfx`, `jumpSfx`, `spinSfx` and `revealSfx` ship empty, to be wired by the audio owner.
-- **Effect numbers the lab keeps in code** (for example `dashDistance` 20, `noodleCount` 5 and `etiReach` 40) are fields
-  on the config, set to the lab's values.
+- **FMOD:** `patternMadeSfx`, `slipSfx`, `jumpSfx`, `flitSfx`, `upgradeSfx`, `spinSfx`, `revealSfx` and each upgrade's
+  `sfx` ship empty, to be wired by the audio owner.
+- **Effect numbers the lab keeps in code** (for example `lassoReelSpeed` 220, `noodleCount` 5 and `etiReach` 40) are
+  fields on the config, set to the lab's values.
 
 ## Not verified in the Editor
 

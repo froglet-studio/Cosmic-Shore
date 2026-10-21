@@ -9,7 +9,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Honeyguide and Ratel in Unity (HONEYGUIDE.md). The lab (<c>Docs/Studios/HoneyguideLab.html</c>, round 4) is the
+    /// The Honeyguide and Ratel in Unity (HONEYGUIDE.md). The lab (<c>Docs/Studios/HoneyguideLab.html</c>, round 6) is the
     /// record: <c>Tools/Build/dynamo_lab/parity.cjs</c> holds <see cref="DynamoCore"/> to the page step by step, and
     /// <c>Tools/Build/author_honeyguide_assets.py --check</c> holds the shipped tables to it. These tests pin what only Unity
     /// can see: the asset loads into the core the lab plays, and the hull the Vessel Changer offers carries the seat.
@@ -27,7 +27,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Config_CarriesTheLabsRound4Rules()
+        public void Config_CarriesTheLabsRound6Rules()
         {
             var c = Load();
             var s = c.ToSettings();
@@ -38,12 +38,64 @@ namespace CosmicShore.Tests
             Assert.AreEqual(2.0, s.RevealPorts, 1e-9);
             Assert.AreEqual(45f, c.AimCone, "Garrett 2026-10-21: the nose within 45 degrees of the prism's axis");
             Assert.AreEqual(39, c.Patterns.Count, "the 39 tabletop cards");
-            Assert.AreEqual(8, c.Patterns.Count(p => p.parked), "the trigger-upgrade cards stay parked until the triggers take upgrades");
+            Assert.AreEqual(0, c.Patterns.Count(p => p.parked), "round 6 parks no card: the trigger cards are the upgrades");
             Assert.AreEqual(4, c.Engines.Count, "the four designed engines");
             Assert.AreEqual(48, s.PortSets.Count, "the three-fold colour-symmetric port sets the lab draws from");
             Assert.IsTrue(c.Patterns.All(p => p.effect != HoneyguideEffect.None && !string.IsNullOrEmpty(p.effectText)),
                 "every card carries its own effect and its words");
             Assert.IsNotNull(c.GameData);
+        }
+
+        [Test]
+        public void Triggers_ArePeckAndFlit_UpgradedByThirteenCards()
+        {
+            // Garrett 2026-10-21: "the right trigger should always be a weak attack power that gets upgraded sometimes. the
+            // left should be a movement power that works similar. the 39 patterns should still be unique."
+            var c = Load();
+            Assert.AreEqual(13, c.Upgrades.Count, "the lab's ACTIVES");
+            Assert.AreEqual(6, c.Upgrades.Count(u => u.trigger == 0), "six attack upgrades take RT");
+            Assert.AreEqual(7, c.Upgrades.Count(u => u.trigger == 1), "seven move upgrades take LT");
+            Assert.AreEqual(13, c.Upgrades.Select(u => u.effect).Distinct().Count(), "one upgrade per card");
+            foreach (var u in c.Upgrades)
+                Assert.AreEqual(1, c.Patterns.Count(p => p.effect == u.effect), $"{u.effect} is exactly one card's effect");
+            Assert.AreEqual(39, c.Patterns.Select(p => p.effect).Distinct().Count(), "the 39 patterns are still unique");
+            Assert.AreEqual(20f, c.ActiveSeconds, "an upgrade holds its trigger 20 s");
+            Assert.AreEqual(HoneyguideTriggerUse.Hold, c.UpgradeFor(HoneyguideEffect.Harmonizer).use);
+            Assert.AreEqual(HoneyguideTriggerUse.Charge, c.UpgradeFor(HoneyguideEffect.Fugacity).use);
+            Assert.IsNull(c.UpgradeFor(HoneyguideEffect.Plow), "a passive card is not an upgrade");
+
+            var peck = c.PeckAction as FullAutoActionSO;
+            Assert.IsNotNull(peck, "RT's Peck is a FullAutoActionSO through the hull's own gun");
+            Assert.AreEqual(2.5f, peck.FiringRate, 1e-4f, "lab peckRate");
+            float range = peck.ResolveSpeed(null) * 2f * peck.ProjectileTime / Mathf.PI;
+            Assert.AreEqual(c.PeckRange, range, 0.5f, "lab peckRange: range = speed x 2T / pi");
+            Assert.IsFalse(peck.Spread.Enabled, "a Peck does not spray");
+        }
+
+        [Test]
+        public void HoneyguideHull_MapsRTAndLTToItsOwnTriggers_AndTheAIPilotFiresNoSparrowGun()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            Assert.IsNotNull(prefab);
+            var found = new System.Collections.Generic.Dictionary<int, ShipActionSO>();
+            foreach (var mb in prefab.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (!mb) continue;
+                var list = new SerializedObject(mb).FindProperty("_inputEventShipActions");
+                if (list == null) continue;
+                for (int i = 0; i < list.arraySize; i++)
+                {
+                    var e = list.GetArrayElementAtIndex(i);
+                    var actions = e.FindPropertyRelative("ShipActions");
+                    if (actions.arraySize > 0) found[e.FindPropertyRelative("InputEvent").intValue] = actions.GetArrayElementAtIndex(0).objectReferenceValue as ShipActionSO;
+                }
+            }
+            Assert.IsTrue(found.TryGetValue((int)InputEvents.RightStickAction, out var rt) && rt is HoneyguideTriggerActionSO { Trigger: 0 },
+                "RT is not the Honeyguide's trigger 0 (Peck and the attack upgrades)");
+            Assert.IsTrue(found.TryGetValue((int)InputEvents.LeftStickAction, out var lt) && lt is HoneyguideTriggerActionSO { Trigger: 1 },
+                "LT is not the Honeyguide's trigger 1 (Flit and the move upgrades)");
+            Assert.IsFalse(found.ContainsKey((int)InputEvents.Button1Action), "the Sparrow's turret-stance toggle is gone");
+            Assert.IsTrue(found.ContainsKey((int)InputEvents.Button2Action), "the boost stays");
         }
 
         [Test]

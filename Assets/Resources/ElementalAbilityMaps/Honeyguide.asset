@@ -14,64 +14,39 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   vesselClass: 21
   entries:
-  - Element: 3
-    AbilityLabel: Pulsefire Cannons
-    AbilityDescription: Full-auto cannons. Space extends their range dramatically
-      - short at rest, unchanged at full overcharge. At level 5 shots pierce through
-      prisms - both bullets and turret-stance prism rounds.
+  - Element: 1
+    AbilityLabel: 'Peck'
+    AbilityDescription: 'Hold RT for a weak shot, two and a half a second, out to 45 u. When the Ratel makes an attack card (Hard Light Lasso, Genesis Lance, Little Bang Grenade, Sepia Drone, Particle Harmonizer, Fugacity Discharger) RT is that card''s for 20 s, then Peck comes back.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Piercing Bullets
-    UpgradeDescription: Shots pierce through prisms instead of being destroyed on
-      first impact - bullets and turret-stance prism rounds alike. SPACE owns REACH;
-      the armour on fired prisms is MASS 5.
-  - Element: 4
-    AbilityLabel: Afterburner
-    AbilityDescription: Hold to boost indefinitely - there is no heat and no meter.
-      Boosting at full stick deflection performs one strafing roll per press (base,
-      no unlock). Time raises the boost speed; at level 5 boosting also makes you
-      immune to elemental debuffs.
-    Input: 7
-    UnlockLevel: 5
-    RelockBelowLevel: 4
-    LatchPolicy: 0
-    UpgradeLabel: Elemental Ward
-    UpgradeDescription: While boosting, elemental debuffs cannot land - danger prisms
-      and skimmer overtakes leave your levels untouched. Buffs still apply.
+    UpgradeLabel: 
+    UpgradeDescription: 
   - Element: 2
-    AbilityLabel: Turret Stance
-    AbilityDescription: 'Stop and fire prisms instead of bullets - the same shot in
-      every way, except you watch a prism fly and it stays wherever the bullet would
-      have died. Mass is the SUBSTANCE of what you fire: it stretches the fired prisms
-      AND swells every round as it travels (3x over its flight at rest, 6x at level
-      10), so the hit volume grows with the visual. At level 5 fired prisms arrive
-      shielded.'
-    Input: 6
-    UnlockLevel: 5
-    RelockBelowLevel: 4
-    LatchPolicy: 0
-    UpgradeLabel: Shielded Prisms
-    UpgradeDescription: 'Prisms fired in the turret stance arrive shielded - one-hit
-      ablative octahedron armor, with a wider hit sphere to match. Briefly lived at
-      Space 5 (2026-08 round 4) and was returned here by design sign-off: MASS owns
-      the substance of what you fire, SPACE owns its reach.'
-  - Element: 1
-    AbilityLabel: Skyburst Rockets
-    AbilityDescription: Rockets stocked by DESTROYING MASS - every hostile prism
-      you break puts a little back in the rack, so the arena is the ammunition.
-      They carry a proximity fuze and go off near an enemy or a creature rather
-      than only on contact, throwing two blasts - the old one that tears prisms
-      apart and lays new ones, and a wider warhead that debuffs pilots and kills
-      wildlife. Charge widens the prism blast (authored on the skyburst effect
-      assets); at level 5 both explosions spare your own domain.
+    AbilityLabel: 'Flit'
+    AbilityDescription: 'Press LT for a short thrust 18 u ahead, every 2 s. When the Ratel makes a move card (Hexapod Eyelet Jet, Thruster Swarm, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) LT is that card''s for 20 s, then Flit comes back.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Domain-Safe Skybursts
-    UpgradeDescription: Skyburst explosions no longer destroy your own domain's
-      prisms - and the warhead no longer kills your own domain's wildlife or
-      debuffs your own pilots, since both halves of the detonation read one
-      friendly-fire decision.
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: 'Slip'
+    AbilityDescription: 'Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the charge is spent. The Ratel charges the battery by making patterns on the Dynamo.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Piercing Pecks'
+    UpgradeDescription: 'Pecks pierce through prisms instead of stopping at the first.'
+  - Element: 4
+    AbilityLabel: 'Afterburner'
+    AbilityDescription: 'Hold to boost indefinitely - there is no heat and no meter. Boosting at full stick deflection performs one strafing roll per press (base, no unlock). Time raises the boost speed; at level 5 boosting also makes you immune to elemental debuffs.'
+    Input: 7
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 'Elemental Ward'
+    UpgradeDescription: 'While boosting, elemental debuffs cannot land - danger prisms and skimmer overtakes leave your levels untouched. Buffs still apply.'

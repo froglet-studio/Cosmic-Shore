@@ -4,15 +4,15 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Honeyguide's half of the crew: the Slip, the pattern effects (the lab's <c>applyEffect</c>, <c>contacts</c>,
-    /// <c>slip</c>, <c>jumpLanding</c>, <c>doJump</c> and <c>stepPassives</c>), boost and the stored jumps. Everything the
-    /// lab does on a flat disc is done here in the hull's own 3D space, through <see cref="PrismSpatialIndex"/> (never physics)
-    /// and <see cref="IVessel.SetPose"/> for the jumps; a slip is a zip along the trail (<c>HoneyguideCrew.Zip.cs</c>).
+    /// <c>slip</c>, <c>jumpLanding</c> and <c>stepPassives</c>) and boost; the triggers and their upgrades are
+    /// <c>HoneyguideCrew.Triggers.cs</c>. Everything the lab does on a flat disc is done here in the hull's own 3D space,
+    /// through <see cref="PrismSpatialIndex"/> (never physics) and <see cref="IVessel.SetPose"/> for the jumps; a slip is a
+    /// ride along the trail (<c>HoneyguideCrew.Zip.cs</c>).
     /// </summary>
     public sealed partial class HoneyguideCrew
     {
@@ -25,18 +25,16 @@ namespace CosmicShore.Gameplay
         }
 
         // what each timed effect adds a level (the lab's EFFECTS[k].mech); lvl(k) is the sum over every running effect
-        enum Mech { Plow = 0, Magnet = 1, Skip = 2, Agile = 3, Watt = 4, Gravity = 5, Void = 6, Count = 7 }
+        enum Mech { Plow = 0, Magnet = 1, Skip = 2, Agile = 3, Watt = 4, Gravity = 5, Void = 6, Wake = 7, Count = 8 }
 
         internal readonly List<Passive> Passives = new();
         readonly int[] _mech = new int[(int)Mech.Count];
-        internal readonly List<HoneyguideEffect> Jumps = new();
         float _boostE;
         bool _boosting;
-        internal int Dashes { get; private set; }
         int _sail, _recolour, _noodles;
         Domains? _lastSkip;
         Trail _ignoreTrail;
-        float _ignoreT, _aiJumpAt;
+        float _ignoreT;
         int _lastMade = -1, _lastRetired = -1;
         float _baseYaw, _basePitch;
         bool _turnScaled;
@@ -52,21 +50,22 @@ namespace CosmicShore.Gameplay
         {
             Passives.Clear();
             System.Array.Clear(_mech, 0, _mech.Length);
-            Jumps.Clear();
             _boostE = 0f;
             _boosting = false;
-            Dashes = _sail = _recolour = _noodles = 0;
+            _sail = _recolour = _noodles = 0;
             _lastSkip = null;
             _ignoreTrail = null;
             _ignoreT = 0f;
             _lastMade = _lastRetired = -1;
             _turnScaled = false;
+            ResetTriggers();
         }
 
         void EndPilotSide()
         {
             if (_boosting && _status != null) _status.IsBoosting = false;
             _boosting = false;
+            EndTriggers();
             EndZip(false);
             RestoreTurn();
         }
@@ -75,10 +74,11 @@ namespace CosmicShore.Gameplay
         {
             StepPassives(dt);
             StepBoost(dt);
-            if (StepZip(dt)) return;   // on the rail: no contacts, no jumps until it lands
+            bool riding = StepZip(dt);
+            StepTriggers(dt, riding);   // the triggers are read on the rail too (a held Peck keeps firing; a press waits)
+            if (riding) return;   // on the rail: no contacts until it lands
             StepWatt();
             Contacts(dt);
-            StepJumpInput();
         }
 
         // ------------------------------------------------------------------ timed effects
@@ -109,17 +109,23 @@ namespace CosmicShore.Gameplay
                     case HoneyguideEffect.Watt: _mech[(int)Mech.Watt] += p.Level; break;
                     case HoneyguideEffect.Gravity: _mech[(int)Mech.Magnet] += p.Level; _mech[(int)Mech.Gravity] += p.Level; break;
                     case HoneyguideEffect.VoidJumper: _mech[(int)Mech.Void] += p.Level; break;
+                    case HoneyguideEffect.Frame: _mech[(int)Mech.Wake] += p.Level; break;
                 }
             ApplyTurn();
         }
 
         static bool IsTimed(HoneyguideEffect e) => e is HoneyguideEffect.Plow or HoneyguideEffect.Dock or HoneyguideEffect.Skipper
             or HoneyguideEffect.Eigen or HoneyguideEffect.Watt or HoneyguideEffect.Gravity or HoneyguideEffect.VoidJumper
-            or HoneyguideEffect.Fugacity or HoneyguideEffect.Lasso or HoneyguideEffect.Eyelet or HoneyguideEffect.Sepia
-            or HoneyguideEffect.Harmonizer or HoneyguideEffect.Lance or HoneyguideEffect.LittleBang or HoneyguideEffect.Frame;
+            or HoneyguideEffect.Frame;
 
-        static bool IsJump(HoneyguideEffect e) => e is HoneyguideEffect.Ftl or HoneyguideEffect.Portals or HoneyguideEffect.Rosen
-            or HoneyguideEffect.Blink or HoneyguideEffect.Monte;
+        // Fractal Frame: while it runs, the trail the hull lays is the newest charge's domain - a slip lane behind it
+        // (the lab's 'wake'). The prism controller's own spawn event, so every lay rule (gaps, warp, mass) stays its own.
+        void OnTrailPrismLaid(Prism prism)
+        {
+            if (Lvl(Mech.Wake) == 0 || !prism) return;
+            int newest = NewestColour();
+            if (newest != 0) prism.ChangeTeam(HoneyguideConfigSO.DomainOf(newest));
+        }
 
         // Eigen Booster: the hull turns faster a level. The transformer's own turn scalers, scaled while it runs and put back
         // the moment it ends (or the seat unbinds).
@@ -307,6 +313,15 @@ namespace CosmicShore.Gameplay
             var pat = pats[pid];
             var key = pat.effect;
             int lv = 0;
+            var upgrade = _cfg.UpgradeFor(key);
+            if (upgrade != null)   // a trigger upgrade: it takes RT or LT over for activeSeconds (lab round 6)
+            {
+                int level = GrantUpgrade(key, upgrade, pat.name);
+                if (depth == 0)
+                    Toast(TemplateText.Fill(_cfg.UpgradeToastTemplate, "name", pat.name, "level", level > 1 ? Roman(level) : "",
+                                            "trigger", _cfg.TriggerName(upgrade.trigger), "text", pat.effectText));
+                return;
+            }
             if (IsTimed(key))
             {
                 int i = Passives.FindIndex(p => p.Effect == key);
@@ -316,22 +331,15 @@ namespace CosmicShore.Gameplay
                 lv = level;
                 RecomputeMech();
             }
-            if (IsJump(key))
-            {
-                if (Jumps.Count >= _cfg.MaxStoredJumps) Jumps.RemoveAt(0);
-                Jumps.Add(key);
-                _aiJumpAt = Time.time + 0.6f;
-            }
             switch (key)
             {
                 case HoneyguideEffect.Plow: GiveBoost(_cfg.PlowBoost); break;
                 case HoneyguideEffect.Amanita: _core.BoardEffect(_s, DynamoBoardEffect.Burn, 1); GiveBoost(_cfg.AmanitaBoost); break;
                 case HoneyguideEffect.Plankter: _sail = Mathf.Min(_cfg.MaxSails, _sail + 1); break;
-                case HoneyguideEffect.Thruster: Dashes += _cfg.ThrusterDashes; _aiJumpAt = Time.time + 0.6f; break;
                 case HoneyguideEffect.BigRed: GiveBoost(_cfg.BigRedBoostEach * _core.BoardEffect(_s, DynamoBoardEffect.Purge, colour)); break;
                 case HoneyguideEffect.Saddle: GiveBoost(_cfg.SaddleBoostEach * _core.BoardEffect(_s, DynamoBoardEffect.Drain, 0)); break;
                 case HoneyguideEffect.Detangler: _recolour += _cfg.DetangleCount; break;
-                case HoneyguideEffect.Condenser: LayLane(NewestColour()); break;
+                case HoneyguideEffect.Condenser: LayLane(NewestColour(), _cfg.CondenserAhead, _cfg.CondenserCount); break;
                 case HoneyguideEffect.ZeroPoint:
                 {
                     var others = new List<int>();
@@ -373,7 +381,7 @@ namespace CosmicShore.Gameplay
             ToastNotificationAPI.Show(line);
         }
 
-        static string Roman(int n) => n switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", _ => n.ToString() };
+        internal static string Roman(int n) => n switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", _ => n.ToString() };
 
         // Mystic Eti: a charge for each domain with a trail within etiReach of the hull.
         void ChargeNearbyDomains()
@@ -387,8 +395,9 @@ namespace CosmicShore.Gameplay
             for (int c = 1; c <= 3; c++) if ((seen & (1 << c)) != 0) _core.BoardEffect(_s, DynamoBoardEffect.Charge, c);
         }
 
-        // Epitaxial Condenser: a lane of the newest charge's domain laid ahead - a 1-D trail of its own, so it is a slip lane.
-        void LayLane(int colour)
+        // Epitaxial Condenser (and the Genesis Lance's lane): `count` prisms of the newest charge's domain laid from `ahead` on,
+        // condenserSpacing apart - a 1-D trail of its own, so it is a slip lane.
+        void LayLane(int colour, float ahead, int count)
         {
             var spawner = _status.VesselPrismController;
             var channel = spawner ? spawner.PrismSpawnChannel : null;
@@ -398,13 +407,13 @@ namespace CosmicShore.Gameplay
             var rot = Quaternion.LookRotation(t.forward, t.up);
             var scale = spawner.TrailBaseScale;
             var lane = new Trail();
-            for (int k = 0; k < _cfg.CondenserCount; k++)
+            for (int k = 0; k < count; k++)
             {
                 var ret = channel.RaiseEvent(new PrismEventData
                 {
                     ownDomain = domain,
                     Rotation = rot,
-                    SpawnPosition = t.position + t.forward * (_cfg.CondenserAhead + k * _cfg.CondenserSpacing),
+                    SpawnPosition = t.position + t.forward * (ahead + k * _cfg.CondenserSpacing),
                     Scale = scale,
                     PrismType = spawner.SpawnPrismType,
                 });
@@ -418,47 +427,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ------------------------------------------------------------------ stored jumps
+        // ------------------------------------------------------------------ the jump upgrades (LT)
 
-        // The Slip card's jump: R or pad Y for the human pilot (or a tap on the Jump chip); the AI takes each one shortly
-        // after it is stored, as the lab's does when it lands closer to its goal (freestyle has no goal, so ahead is closer).
-        void StepJumpInput()
+        // Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool and Monte Cannon: a jump to where JumpLanding puts
+        // the hull. False (and nothing happens) when it finds no target.
+        bool DoJump(HoneyguideEffect kind, float reach)
         {
-            if (Jumps.Count == 0 && Dashes == 0) return;
-            bool want;
-            if (_aiCrew || _humanEngineers) want = Time.time >= _aiJumpAt;
-            else
-            {
-                var kb = Keyboard.current;
-                var pad = Gamepad.current;
-                want = (kb != null && kb.rKey.wasPressedThisFrame) || (pad != null && pad.buttonNorth.wasPressedThisFrame)
-                       || (_view != null && _view.JumpChipTapped());
-            }
-            if (!want) return;
-            _aiJumpAt = Time.time + 0.6f;
-            if (Jumps.Count > 0) DoJump();
-            else Dash();
-        }
-
-        // Thruster Swarm: a dash throws the hull straight ahead.
-        void Dash()
-        {
-            if (Dashes <= 0) return;
-            Dashes--;
-            var t = _vessel.Transform;
-            _vessel.SetPose(new Pose(t.position + t.forward * _cfg.DashDistance, t.rotation));
-            Play(_cfg.JumpSfx);
-        }
-
-        void DoJump()
-        {
-            var kind = Jumps[0];
-            Jumps.RemoveAt(0);
-            if (!JumpLanding(kind, out var at, out var taken))
-            {
-                Toast(_cfg.NoJumpTarget);
-                return;
-            }
+            if (!JumpLanding(kind, reach, out var at, out var taken)) return false;
             if (taken)   // FTL Chromatool: the prism swapped with becomes a charge of its domain
             {
                 int c = HoneyguideConfigSO.ColourOf(taken.Domain);
@@ -467,10 +442,11 @@ namespace CosmicShore.Gameplay
             }
             _vessel.SetPose(new Pose(at, _vessel.Transform.rotation));
             Play(_cfg.JumpSfx);
+            return true;
         }
 
-        // Where a stored jump lands (the lab's jumpLanding, in the hull's 3D space).
-        bool JumpLanding(HoneyguideEffect kind, out Vector3 at, out Prism taken)
+        // Where a jump upgrade lands (the lab's jumpLanding, in the hull's 3D space); `reach` is the upgrade's at its level.
+        bool JumpLanding(HoneyguideEffect kind, float reach, out Vector3 at, out Prism taken)
         {
             taken = null;
             var t = _vessel.Transform;
@@ -482,23 +458,23 @@ namespace CosmicShore.Gameplay
             switch (kind)
             {
                 case HoneyguideEffect.Blink:
-                    at = pos + fwd * _cfg.BlinkDistance;
+                    at = pos + fwd * reach;
                     return true;
                 case HoneyguideEffect.Portals:
-                    at = pos + fwd * _cfg.PortalsHop;
-                    if (!indexed || index.QuerySphere(at, _cfg.PortalsEmptyRadius, _query) == 0) at += fwd * _cfg.PortalsHop;
+                    at = pos + fwd * reach;
+                    if (!indexed || index.QuerySphere(at, _cfg.PortalsEmptyRadius, _query) == 0) at += fwd * reach;
                     return true;
                 case HoneyguideEffect.Rosen:
                 {
                     int newest = NewestColour();
                     if (newest == 0 || !indexed) return false;
                     var dom = HoneyguideConfigSO.DomainOf(newest);
-                    index.QuerySphere(pos, _cfg.RosenReach, _query);
+                    index.QuerySphere(pos, reach, _query);
                     float best = -1f;
                     foreach (var p in _query)
                     {
                         if (!p || p.destroyed || p.Domain != dom || IsOwn(p)) continue;
-                        float d = Ahead(p.transform.position, pos, fwd, _cfg.RosenReach, cone);
+                        float d = Ahead(p.transform.position, pos, fwd, reach, cone);
                         if (d > best) { best = d; at = p.transform.position; }
                     }
                     return best > 0f;
@@ -506,12 +482,12 @@ namespace CosmicShore.Gameplay
                 case HoneyguideEffect.Ftl:
                 {
                     if (!indexed) return false;
-                    index.QuerySphere(pos, _cfg.FtlReach, _query);
+                    index.QuerySphere(pos, reach, _query);
                     float best = float.MaxValue;
                     foreach (var p in _query)
                     {
                         if (!p || p.destroyed || IsOwn(p)) continue;
-                        float d = Ahead(p.transform.position, pos, fwd, _cfg.FtlReach, cone);
+                        float d = Ahead(p.transform.position, pos, fwd, reach, cone);
                         if (d > 0f && d < best) { best = d; taken = p; }
                     }
                     if (!taken) return false;
@@ -525,13 +501,13 @@ namespace CosmicShore.Gameplay
                     int hops = 0;
                     for (int k = 0; k < _cfg.MonteHops; k++)
                     {
-                        index.QuerySphere(from, _cfg.MonteReach, _query);
+                        index.QuerySphere(from, reach, _query);
                         float best = -1f;
                         var next = from;
                         foreach (var p in _query)
                         {
                             if (!p || p.destroyed || IsOwn(p)) continue;
-                            float d = Ahead(p.transform.position, from, fwd, _cfg.MonteReach, cone);
+                            float d = Ahead(p.transform.position, from, fwd, reach, cone);
                             if (d > best) { best = d; next = p.transform.position; }
                         }
                         if (best <= 0f) break;

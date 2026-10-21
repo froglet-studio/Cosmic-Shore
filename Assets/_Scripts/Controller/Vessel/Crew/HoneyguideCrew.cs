@@ -10,13 +10,13 @@ using UnityEngine.InputSystem;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Honeyguide and Ratel: two seats, one hull (Honeyguide Lab round 4, <c>Docs/Studios/HONEYGUIDE_LAB.md</c>;
-    /// <c>HONEYGUIDE.md</c> beside this file). The <b>Honeyguide</b> flies the hull (the Sparrow's airframe and triggers). The
+    /// The Honeyguide and Ratel: two seats, one hull (Honeyguide Lab round 6, <c>Docs/Studios/HONEYGUIDE_LAB.md</c>;
+    /// <c>HONEYGUIDE.md</c> beside this file). The <b>Honeyguide</b> flies the hull (the Sparrow's airframe) with two triggers:
+    /// RT Peck and LT Flit, each taken over for a while by the upgrade cards (<c>HoneyguideCrew.Triggers.cs</c>). The
     /// <b>Ratel</b> plays the <b>Dynamo</b>, the hex puzzle in <see cref="DynamoCore"/>: a made pattern sends one of its prisms,
     /// drawn at random, to the battery, where its domain is a <b>slip charge</b>, and fires that tabletop card's own effect.
-    /// The <b>Slip</b> is the Honeyguide's Time ability: touch a 1-D trail of a domain the battery holds with the nose within
-    /// <c>aimCone</c> of the prism's long axis, and the hull jumps (<see cref="IVessel.SetPose"/>) to the end of the trail it
-    /// points at.
+    /// The <b>Slip</b>: touch a 1-D trail of a domain the battery holds with the nose within <c>aimCone</c> of the prism's long
+    /// axis, and the hull rides it to the end of the trail it points at (<c>HoneyguideCrew.Zip.cs</c>).
     ///
     /// <para><b>Seats.</b> The swap is the arena's gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, keys 1 / 2) or
     /// a double tap on the small board. Whichever seat is empty is played by an AI: the hull's own <c>AIPilot</c>, or the
@@ -50,6 +50,7 @@ namespace CosmicShore.Gameplay
         bool _humanEngineers, _weTookHull, _aiCrew;
         float _swapReadyAt;
         HoneyguideDynamoView _view;
+        VesselPrismController _laidBy;
         readonly List<DynamoEvent> _events = new();
 
         // match-clock stamps the view animates from (unscaled-free: Time.time)
@@ -100,6 +101,9 @@ namespace CosmicShore.Gameplay
             _think = 0f;
             _humanEngineers = _weTookHull = false;
             ResetPilotSide();
+            _execs = null;
+            _laidBy = _status?.VesselPrismController;
+            if (_laidBy) _laidBy.OnBlockSpawned += OnTrailPrismLaid;
             SpinAt = PortsAt = AbilityAt = -99f;
             for (int k = 0; k < RetiredAt.Length; k++) RetiredAt[k] = -99f;
             // the view, the swap and the static handle belong to the local pilot's seat; an AI crew draws nothing
@@ -116,6 +120,8 @@ namespace CosmicShore.Gameplay
             if (_vessel == null) return;
             if (_humanEngineers) SetHumanEngineers(false);
             EndPilotSide();
+            if (_laidBy) _laidBy.OnBlockSpawned -= OnTrailPrismLaid;
+            _laidBy = null;
             _view?.Dispose();
             _view = null;
             _vessel = null; _status = null; _player = null; _core = null;
@@ -162,6 +168,7 @@ namespace CosmicShore.Gameplay
             if (_humanEngineers == engineer) return;
             _humanEngineers = engineer;
             _memo.Key = "";
+            EndTriggers();   // a press held across the swap belongs to neither seat
 
             // The hull's own AI flies while the human plays the Ratel; its flight input is paused so the pointer and the
             // sticks belong to the board - the Wrasse's order. Coming back restores both, in the opposite order. Only an
