@@ -13620,7 +13620,7 @@ files. `author_marlin_assets.py --check` and `--self-test` pass, the vessel gate
 session, so `/verify-unity` did not run.
 1. Toy Box > Vessel Changer → Marlin and Jacks: the Rhino hull spawns, flies on two sticks, the ramp boosts on full
    throttle. Two gold jack marks and dotted rings sit behind it; the small view in the lower left shows the board.
-2. Fly near wildlife: creatures inside a ring join and are pushed out of it. With no wildlife near, a herd of 12 blooms
+2. Fly near wildlife: creatures inside a ring join and are pushed out of it. With no wildlife near, a herd of 12 (30 since round 4, step 13) blooms
    in behind the hull within ~3 s.
 3. D-pad right (or 1 / 2, or double-tap the small view): the jacks' view takes the screen. Drag a thumb: the nearest jack
    runs under it and the herd parts round its ring. Lift: an orange decoy stays there. Swap back, pull the trigger or
@@ -13629,7 +13629,7 @@ session, so `/verify-unity` did not run.
 5. Raise Charge to 15: red dots on every creature; touch a rival with the herd: a Strike, the creature dies. Space 5:
    the herd eats shielded prisms. Mass 5: clusters of your prisms appear in the herd every 6 s. Time 5: X drops a decoy
    under the marlin.
-6. Let the herd go hungry: it never falls below 12.
+6. Let the herd go hungry: it never falls below 12 (30 since round 4).
 7. (Round 2, Garrett: "the jacks view needs post processing for bloom at least" and "the marlin makes the jacks player
    sick") On the jacks' seat, the view blooms like the game camera. Let the AI marlin roll, loop and boost: the view barely
    tilts and does not pan with it; it pans only when the herd drifts near the edge.
@@ -13647,3 +13647,37 @@ session, so `/verify-unity` did not run.
    where the client runs them, and the sail rise on the client's call; the host's herd parts round the client's real
    jacks and decoy (not an AI's). An AI marlin on the host shows the same on the client. Note on the PR whether a
    client-owned marlin's danger stings score (contacts are decided on the owner).
+11. (Round 4, `cece/sharp-faraday-gq7m65`, Garrett: "jacks camera should be zoomed out enough that on a full size
+   mobile device an above average sized thumb barely covers the smallest jack repulsion radius") On a full-size phone
+   (6.7-inch), take the jacks' seat at Space -5 or less and rest a big thumb on a jack: the thumb just covers its dotted
+   ring. The view shows about 1.6x more of the board than before; the ring is the same size in the world. Tune it with
+   `thumbCover` (lower zooms out) and `phoneShortMm` on `MarlinJacksConfig`.
+12. (Round 4, "make the dots that form the radius much more subtle to the marlin") Fly the marlin: the rings round the
+   jacks, the decoy and the marlin are faint and sparse in the main view (24 small dots at a fifth of the alpha); the
+   small jacks' view in the corner still shows them full. Swap seats: the jacks' view keeps them full. Tune with
+   `pilotRing*` on the executor.
+13. (Round 4, "make the swarm way bigger") With no wildlife near, a herd of 30 blooms in within ~4 s; it grows to 150
+   with recruits and births. Watch the frame time with a full herd (the herd's step is O(n^2) over its members).
+14. (Round 4, "distinguish them by giving their spindles a slight hue shift in your domain. do the same thing for other
+   tamer classes like the angler") Herded creatures' spindles lean toward your domain's hue (Jade: a little greener;
+   Gold: toward violet-magenta from the blue spindles, the short way round); wild creatures beside them keep their own
+   colour, and their body prisms keep the cell's. Change domain in the Toybox and recruit again: the lean follows the
+   new domain. Let a creature go (turn end): its colour returns. A herded creature that dies withers in its marked
+   colour. The Angler's tamed school wears the same mark. Host plus one client: the client sees the host's herd marked,
+   and a client joining mid-herd sees it marked. Spindle draw calls do not rise beyond one batch per mark (the marks
+   are shared materials). Two builds must both be protocol 11 to join.
+
+## 🔴 2026-10-21 — Dying limbs become cytoplasm shards (`cece/awesome-faraday-7fsppt`) - NOT EDITOR-VERIFIED
+
+Files: `Cytoplasm/SnowChanger.cs` (`AddMorphedShard`, `CondenseTick`, growable shard list), `FloraAndFauna/Spindle.cs`
+(`MorphIntoShard`), `Cell.cs` (`Cytoplasm`). Design: `Docs/ECOSYSTEM.md` §63. The headless reference compile passes
+(player config, 0 errors in project code). No `unity` CLI in the session, so `/verify-unity` did not run.
+Team task: T-20261021-6fa4.
+
+1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: each limb fades
+   while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the order the limbs go. No
+   limb pops out and no shard pops in.
+2. Kill a creature with spindles (a tadpole): each body limb leaves a shard too.
+3. Console stays clean. The `renderers` line still shows the snow as one instanced family.
+4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` limbs have made one; after that limbs
+   only fade.

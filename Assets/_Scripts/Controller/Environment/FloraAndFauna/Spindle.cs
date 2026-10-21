@@ -102,6 +102,7 @@ namespace CosmicShore.Gameplay
         // would hand a prism a phase its own limb is not using.
         float _swayPhase;
         bool _swayPhaseResolved;
+        int _phaseBucket;
 
         // ── Distance LOD (SpindleLodSystem, Docs/SPINDLE_LOD.md) ─────────────────────────────
         // One handle per renderer the system took: a limb drawing a mesh the LOD profile knows is
@@ -230,15 +231,16 @@ namespace CosmicShore.Gameplay
             // spindle stays SRP-batchable — no per-renderer MaterialPropertyBlock. Capture each
             // base material once so pooled reuse never layers variants-on-variants, and bucket
             // EVERY part off the spindle root's position so a multi-part spindle sways as one.
+            _phaseBucket = PhaseBucket(transform.position);
             for (int i = 0; i < _renderers.Length; i++)
             {
                 var partRenderer = _renderers[i];
                 if (!partRenderer) continue;
                 if (_phaseBaseMaterials[i] == null) _phaseBaseMaterials[i] = partRenderer.sharedMaterial;
-                _phaseVariants[i] = GetPhaseVariant(_phaseBaseMaterials[i], transform.position);
+                _phaseVariants[i] = GetPhaseVariant(LeanedMaterial(_phaseBaseMaterials[i]), _phaseBucket);
                 if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
             }
-            _swayPhase = PhaseForBucket(PhaseBucket(transform.position));
+            _swayPhase = PhaseForBucket(_phaseBucket);
             _swayPhaseResolved = true;
             // Any prism already bound to this limb finished creating before Start ran, so
             // its own creation stamp found no phase to ride. Stamp them now — the values
@@ -302,7 +304,7 @@ namespace CosmicShore.Gameplay
         // A shared material identical to baseMat but with a fixed _Phase, bucketed by world
         // position: same bucket -> same material -> one SRP batch. Created lazily and cached
         // per base material, so the total is bounded by the distinct spindle materials in play.
-        static Material GetPhaseVariant(Material baseMat, Vector3 worldPos)
+        static Material GetPhaseVariant(Material baseMat, int bucket)
         {
             if (baseMat == null) return null;
 
@@ -320,7 +322,7 @@ namespace CosmicShore.Gameplay
                 PhaseVariants[baseMat] = variants;
             }
 
-            return variants[PhaseBucket(worldPos)];
+            return variants[bucket];
         }
 
         /// Cheap position hash -> stable per-spindle bucket that scatters neighbours. Shared
@@ -334,6 +336,87 @@ namespace CosmicShore.Gameplay
         }
 
         static float PhaseForBucket(int bucket) => bucket / (float)PhaseVariantCount * Mathf.PI * 2f;
+
+        // ── Hue lean: a holder's mark on a tamed creature (Fauna.ApplyLeashMark) ─────────────────────
+        // Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your domain". The
+        // limb's colours lean toward a target hue; nothing else about it changes. Like the phase variants it is a SHARED
+        // material per (base material, target, lean), minted under the phase variants and handed to the LOD as the near
+        // material, so a marked limb still batches with every other limb wearing the same mark.
+
+        static readonly int[] LeanColorIDs =
+        {
+            Shader.PropertyToID("_BrightColor"), Shader.PropertyToID("_DullColor"),   // SpindleGraph, SpindleDepthGraph
+            Shader.PropertyToID("_Color1"), Shader.PropertyToID("_Color2"),           // AnimatedSpindleGraph
+            Shader.PropertyToID("_BaseColor"), Shader.PropertyToID("_Color"),         // a creature's imported body
+        };
+        static readonly Dictionary<(Material, int, byte), Material> LeanedMaterials = new();   // (base, target RGBA, lean)
+
+        Color _leanTarget;   // as given (HDR kept: clamping a bright colour to 8 bits can turn its hue)
+        int _leanKey;        // the target as 8-bit RGBA, the cache key
+        byte _lean;          // 0..255 of the way toward the target's hue; 0 = the limb's own colours
+
+        /// <summary>
+        /// Lean this limb's colours toward <paramref name="target"/>'s hue by <paramref name="lean"/> (0..1 of the way
+        /// round the hue circle, the short way; saturation, value and HDR intensity kept). 0 restores its own colours.
+        /// Presentation only. Safe before Start: Start mints the leaned material.
+        /// </summary>
+        public void SetHueLean(Color target, float lean)
+        {
+            byte amount = (byte)Mathf.RoundToInt(Mathf.Clamp01(lean) * 255f);
+            Color32 rgba = amount > 0 ? (Color32)target : default;
+            int key = rgba.r << 24 | rgba.g << 16 | rgba.b << 8 | rgba.a;
+            if (amount == _lean && key == _leanKey) return;
+            _lean = amount;
+            _leanTarget = target;
+            _leanKey = key;
+            if (!_started || dying || isPermanentlyWithered) return;
+            RemintVariants();
+        }
+
+        /// <summary>Put each renderer back on its (re-leaned) phase variant, through the LOD if it holds the renderer.</summary>
+        void RemintVariants()
+        {
+            bool lod = _lodHandles != null;
+            if (lod) UnregisterLod(true);
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                var partRenderer = _renderers[i];
+                if (!partRenderer || !_phaseBaseMaterials[i]) continue;
+                _phaseVariants[i] = GetPhaseVariant(LeanedMaterial(_phaseBaseMaterials[i]), _phaseBucket);
+                if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
+            }
+            if (lod) RegisterLod();
+        }
+
+        Material LeanedMaterial(Material baseMat)
+        {
+            if (!baseMat || _lean == 0) return baseMat;
+            var key = (baseMat, _leanKey, _lean);
+            if (LeanedMaterials.TryGetValue(key, out var leaned) && leaned) return leaned;
+            leaned = new Material(baseMat) { name = $"{baseMat.name}_Lean{_leanKey:X8}" };
+            float amount = _lean / 255f;
+            for (int i = 0; i < LeanColorIDs.Length; i++)
+                if (leaned.HasProperty(LeanColorIDs[i]))
+                    leaned.SetColor(LeanColorIDs[i], LeanHue(leaned.GetColor(LeanColorIDs[i]), _leanTarget, amount));
+            LeanedMaterials[key] = leaned;
+            return leaned;
+        }
+
+        /// <summary>
+        /// <paramref name="color"/> with its hue turned <paramref name="lean"/> of the way toward
+        /// <paramref name="target"/>'s, the short way round. Saturation, value (HDR included) and alpha are kept, so a
+        /// grey stays grey and a grey target (no hue) changes nothing.
+        /// </summary>
+        public static Color LeanHue(Color color, Color target, float lean)
+        {
+            Color.RGBToHSV(target, out float th, out float ts, out _);
+            if (ts < 0.05f || lean <= 0f) return color;
+            Color.RGBToHSV(color, out float h, out float s, out float v);
+            float turn = Mathf.DeltaAngle(h * 360f, th * 360f) / 360f;
+            var leaned = Color.HSVToRGB(Mathf.Repeat(h + turn * Mathf.Clamp01(lean), 1f), s, v, true);
+            leaned.a = color.a;
+            return leaned;
+        }
 
         /// <summary>The transform whose OBJECT SPACE the sway actually happens in. This is
         /// the RENDERER's, not the spindle root's: `SpindleSway` shears `PositionOS`, and
@@ -582,7 +665,34 @@ namespace CosmicShore.Gameplay
 
         void StampEvaporate(float delay)
         {
-            StampDeathFade(PrismClock.Now + delay, DeathFadeDuration, DeathDirectionEvaporate, OnEvaporateSettled);
+            // One start time for both: the shard grows exactly while the limb fades.
+            float start = PrismClock.Now + delay;
+            StampDeathFade(start, DeathFadeDuration, DeathDirectionEvaporate, OnEvaporateSettled);
+            MorphIntoShard(start);
+        }
+
+        /// <summary>
+        /// A withering or dying limb becomes a shard of its cell's cytoplasm (Garrett, 2026-10-21;
+        /// Docs/ECOSYSTEM.md, "A dying limb becomes a cytoplasm shard"): the shard joins the
+        /// SnowChanger's shard list where the limb stood and condenses on the limb's own fade
+        /// clock, so the limb fades as the shard grows and an ordered wither stays ordered. Every
+        /// death of a spindle runs through <see cref="StampEvaporate"/> exactly once (both callers
+        /// latch <c>dying</c>), so a limb makes at most one shard. No cell, a satellite (no
+        /// cytoplasm), or a full field: the limb evaporates as it always did.
+        /// </summary>
+        void MorphIntoShard(float startTime)
+        {
+            if (!gameObject.scene.isLoaded) return;
+
+            // The limb's middle, not its root: a limb is posed from its root along its forward.
+            // Local bounds read the same whether or not the LOD has the renderer switched off.
+            Vector3 at = transform.position;
+            if (RenderedObject)
+                at = RenderedObject.transform.TransformPoint(RenderedObject.localBounds.center);
+
+            var cell = Cell.FindCellContaining(at);
+            if (cell && cell.Cytoplasm)
+                cell.Cytoplasm.AddMorphedShard(at, transform.rotation, startTime, DeathFadeDuration);
         }
 
         void StampDeathFade(float startTime, float duration, float direction, Action onSettle)

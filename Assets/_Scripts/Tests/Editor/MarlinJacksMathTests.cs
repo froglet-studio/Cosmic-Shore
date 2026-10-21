@@ -26,6 +26,22 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void JacksView_ZoomsOutUntilABigThumbBarelyCoversTheSmallestRing()
+        {
+            // Garrett, 2026-10-21: "zoomed out enough that on a full size mobile device an above average sized thumb barely
+            // covers the smallest jack repulsion radius". The shipped floor (159.9 u), a 22 mm thumb, 0.9 cover, a 71 mm phone.
+            float floor = MarlinJacksMath.FloorUnits(22f, 1.25f, 720f);
+            float span = MarlinJacksMath.ThumbViewSpan(floor, 22f, 0.9f, 71f);
+            Assert.AreEqual(2f * floor * 71f / (22f * 0.9f), span, Eps);
+            // the ring's diameter on that phone's screen is the cover times the thumb
+            Assert.AreEqual(22f * 0.9f, 2f * floor / span * 71f, Eps);
+            // wider than the lab's 720 u view (where the ring was 1.25 thumbs on a smaller phone): the view zoomed out
+            Assert.Greater(span, 720f);
+            // a lower cover zooms out further; the ring's world size is the caller's and does not move
+            Assert.Greater(MarlinJacksMath.ThumbViewSpan(floor, 22f, 0.7f, 71f), span);
+        }
+
+        [Test]
         public void Ring_IsTheFloorAtSpaceMinus5_AndNeverBelowIt()
         {
             Assert.AreEqual(100f, MarlinJacksMath.Ring(100f, -5f), Eps);

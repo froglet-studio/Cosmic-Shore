@@ -61,7 +61,10 @@ trio, and the traps).
   pinned it to the race leader until its fauna were removed; `Cell.SetModeControlOverride`
   survives as the platform capability) — but the spawn colour is still
   exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
-  cell can never hold two fauna colours at once. A mode may also PEN a cell's fauna
+  cell can never hold two fauna colours at once. (A tamed creature's MARK is not a second fauna
+  colour: its spindles lean a little toward its tamer's domain hue so a player can tell their herd
+  or school from the wild (Garrett, 2026-10-21, `IFaunaLeash.TryGetLeashMark`), while its domain,
+  body prisms and diet stay the cell's.) A mode may also PEN a cell's fauna
   (`Cell.FaunaContainmentRadius` = the OUTER wall, `Cell.FaunaExclusionRadius` = the INNER one —
   together a cell-level annulus a mode can open and close while the match runs; Astro League holds
   its cleanup crew outside the court and drops the inner wall when the cell's own volume ladder
@@ -232,6 +235,12 @@ trio, and the traps).
   unauthored `RenderedObject` from its own children, skipping anything under a `Prism` or a
   `Crystal` — *when a serialized reference cannot be authored headlessly, ask whether it needs
   to be authored at all*. `Docs/ECOSYSTEM.md §46`.
+- **A DYING LIMB BECOMES A CYTOPLASM SHARD** (Garrett, 2026-10-21). Every spindle that withers
+  or dies leaves one new shard in its cell's `SnowChanger` field, condensing on the limb's own
+  fade clock (`Spindle.MorphIntoShard` -> `SnowChanger.AddMorphedShard`), so an ordered wither
+  stays ordered and nothing pops. Shards carry no mass and no collider. `maxMorphedShards` is a
+  performance backstop: past it a limb only evaporates, and a shard is never culled to make
+  room. `Docs/ECOSYSTEM.md §63`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
   **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the

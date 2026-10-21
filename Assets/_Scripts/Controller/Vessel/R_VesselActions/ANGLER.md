@@ -280,21 +280,28 @@ squad thrown at them; hold the Charge card to erase and to lock on a rival; Squa
 
 ## 2. What a leash is (and is not)
 
-`IFaunaLeash` (`Controller/Environment/FloraAndFauna/IFaunaLeash.cs`) is **behaviour only**.
+`IFaunaLeash` (`Controller/Environment/FloraAndFauna/IFaunaLeash.cs`) is **behaviour only**, plus one mark.
 
 - **What a leash can change:**
   - **Where the creature swims:** `TrySteer` returns a goal, a speed and a turn rate.
   - **Which edible prism its next mouthful faces:** `OrderedMeal`.
+  - **The mark it wears** (Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your
+    domain. do the same thing for other tamer classes like the angler"): `TryGetLeashMark`. Its spindles lean
+    `tameHueLean` (0.35) of the way round the hue circle toward the Angler's domain hue (`Fauna.ApplyLeashMark`,
+    `Spindle.SetHueLean`: a shared material per mark, so the school still batches). The mark replicates to puppets
+    (`FaunaNetworkSync._netLeashMark`, protocol 11), comes off when the creature is let go, and stays on through its
+    wither.
 - **What it cannot change:**
   - Every ordered prism is re-checked against the creature's own diet. The creature eats it with its own mouthful rule (`LightFauna`/`Boid` `UpdateFeeding`).
   - The starvation clock keeps running.
-  - The heart, the body prisms and the colour all stay the creature's own.
+  - The heart, the body prisms and the domain colour all stay the creature's own; only the spindles' hue leans.
 - **Who can be leashed:**
   - Only herbivores (`Fauna.CanBeLeashed`). A `Boid` can be leashed only if it is also a forager.
   - A creature can be leashed only by the peer that simulates it (`IsSimAuthority`), and never while it is dying. `Die()` and `OnDestroy()` call `DropLeash()` first.
 
 **Tamed creatures keep the cell's fauna colour.** A cell never holds two fauna colours (LOCKED,
-`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`). So "my squad" is a leash relationship, not a change of team.
+`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`). So "my squad" is a leash relationship, not a change of team. The mark is
+how a player tells it apart: a lean of the spindles' hue, not a domain.
 
 The creature-side hooks:
 

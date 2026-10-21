@@ -889,6 +889,15 @@ applies to new abilities, new resources on the meter list, and anything that add
     to the light bank (`PublishLight(sourceId, LitVolume.Sphere(...), ...)`); and **a bank light gates to ONE domain**,
     so a blast that spares its own domain publishes one light per domain it breaks (each fielded rival from
     `GameDataSO.RequestedDomainCount`, plus neutral Blue), never one ungated light that also lights the pilot's own mass.
+60. **A vessel with TWO views draws its marks per camera, or the second view inherits the first's** (Marlin and Jacks,
+    `cece/sharp-faraday-gq7m65`, 2026-10-21: "make the dots that form the radius much more subtle to the marlin").
+    `AnglerWorldMarks` billboards toward the camera given to `Begin`, and `Graphics.RenderMeshInstanced` with no
+    `RenderParams.camera` draws in EVERY camera. So one set faced at the pilot's camera also shows, edge-on and at the
+    pilot's strength, in the crew's top-down view, and a per-view look (full in one, faint in the other) is impossible.
+    Keep one `AnglerWorldMarks` per view and call `Begin(cam, onlyThisCamera: true)` on each. And a vessel whose view is
+    sized for a THUMB (a touch-run crew) frames it from a reference phone (`MarlinJacksMath.ThumbViewSpan`), the same
+    span on every device, keeping the gameplay length (the ring) independent of the view: a span the ring is derived
+    from cannot be zoomed without changing the game.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

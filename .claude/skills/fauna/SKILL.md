@@ -131,6 +131,19 @@ genuinely differs, in which case it gets its own material on the same graph, the
 material: `Spindle` mints eight phase-variant clones at runtime, copying the colour at mint
 time, so the paint is only correct if `ThemeManager.Awake` happens to beat the first spindle.
 
+**To recolour a LIVE creature's spindles, go through `Spindle.SetHueLean`, never the renderer**
+(`cece/sharp-faraday-gq7m65`, 2026-10-21, the tamer's mark). A limb's renderer holds a PHASE
+VARIANT, and once `SpindleLodSystem` has registered it, the LOD owns that renderer's material
+(near, depth or tier). A `sharedMaterial` swap or an MPB is either undone by the LOD's next tier
+change or knocks the limb out of the SRP batch. `SetHueLean` mints a shared leaned clone of the
+captured BASE material (cached per base, target and lean), takes the phase variant of that at
+the limb's CACHED bucket (`_phaseBucket`; re-hashing the current position would desync its
+prisms' stamped sway), and re-registers with the LOD, which copies the new near material into
+its tiers. A creature-wide wrapper is `Fauna.ApplyLeashMark`; any holder of a leash marks its
+creatures through `IFaunaLeash.TryGetLeashMark`, replicated by `FaunaNetworkSync._netLeashMark`.
+The hue lean keeps saturation and HDR value: build the target from the domain's HDR colour, not
+a `Color32`, because clamping a bright colour to 8 bits can turn its hue.
+
 **A CREATURE'S BODY PRISMS SWAY WITH IT, and that is where a new species gets it wrong.**
 `PrismSway` stamps a health prism with its limb's own shear field
 (`Docs/ECOSYSTEM.md §47`), but it only reaches a prism whose **PARENT carries the Spindle** —

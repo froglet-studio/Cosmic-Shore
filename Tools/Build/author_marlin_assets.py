@@ -420,9 +420,9 @@ def so_header(script_guid: str, name: str) -> str:
 def config_asset(script_guid: str) -> str:
     """MarlinJacksConfigSO at its C# initializers (the lab's shipped values); the team tunes it in the inspector after."""
     return so_header(script_guid, "MarlinJacksConfig") + (
-        "  labScale: 0.4\n  thumbMm: 22\n  thumbMargin: 1.25\n  viewSpan: 1800\n  camSlack: 0.45\n  planePull: 1.6\n"
-        "  separation: 58\n  neighbourRadius: 160\n  grazeSense: 130\n  minHerd: 12\n  herdCap: 60\n  floorBirthSeconds: 0.25\n"
-        f"  companionFauna: {{fileID: 11400000, guid: {COMPANION_FAUNA_GUID}, type: 2}}\n"
+        "  labScale: 0.4\n  thumbMm: 22\n  thumbMargin: 1.25\n  viewSpan: 1800\n" + THUMB_VIEW_FIELDS + "  camSlack: 0.45\n  planePull: 1.6\n"
+        "  separation: 58\n  neighbourRadius: 160\n  grazeSense: 130\n  minHerd: 30\n  herdCap: 150\n  floorBirthSeconds: 0.12\n"
+        f"  companionFauna: {{fileID: 11400000, guid: {COMPANION_FAUNA_GUID}, type: 2}}\n" + HERD_MARK_FIELDS +
         "  dogSpeed: 520\n  padDogSpeed: 1\n  aiNoise: 0.15\n  callTime: 2.5\n  callCooldown: 20\n  decoyCooldown: 4\n"
         "  teleportGuard: 0.6\n  pooEvery: 6\n  pooCount: 7\n  pooSpread: 22\n  pooPrismScale: {x: 2, y: 2, z: 5}\n"
         "  attackRange: 200\n  contactReach: 8\n  strikeCooldown: 1.2\n  pipSize: 0.32\n  viewMargin: 0.02\n  viewDepth: 600\n"
@@ -438,11 +438,23 @@ STABILITY_FIELDS = ("  jackSeatPlaneEase: 0.25\n  pilotSeatPlaneEase: 3\n  jackS
                     "  viewPanEase: 1.2\n")
 
 
+# The jacks' view framed by the thumb (Garrett, 2026-10-21: "zoomed out enough that on a full size mobile device an above
+# average sized thumb barely covers the smallest jack repulsion radius") and the herd's mark ("a slight hue shift in your
+# domain"). Added once, like the stability fields.
+THUMB_VIEW_FIELDS = "  phoneShortMm: 71\n  thumbCover: 0.9\n"
+HERD_MARK_FIELDS = "  herdHueLean: 0.35\n"
+
+
 def config_retrofit(text: str) -> str:
-    """The stability fields after viewDepth, once. Idempotent."""
-    if "  jackSeatPlaneEase:" in text:
-        return text
-    return re.sub(r"^(  viewDepth: .*\n)", lambda m: m.group(1) + STABILITY_FIELDS, text, count=1, flags=re.M)
+    """The stability fields after viewDepth, the thumb view's after viewSpan, the herd's mark after companionFauna; each
+    once. Idempotent."""
+    if "  jackSeatPlaneEase:" not in text:
+        text = re.sub(r"^(  viewDepth: .*\n)", lambda m: m.group(1) + STABILITY_FIELDS, text, count=1, flags=re.M)
+    if "  phoneShortMm:" not in text:
+        text = re.sub(r"^(  viewSpan: .*\n)", lambda m: m.group(1) + THUMB_VIEW_FIELDS, text, count=1, flags=re.M)
+    if "  herdHueLean:" not in text:
+        text = re.sub(r"^(  companionFauna: .*\n)", lambda m: m.group(1) + HERD_MARK_FIELDS, text, count=1, flags=re.M)
+    return text
 
 
 def control_asset(script_guid: str, name: str, value: int) -> str:
@@ -633,6 +645,10 @@ def check_assets(config: str, controls, container: str):
         errs.append("MarlinJacksConfig.asset: does not name MarlinJacksConfigSO")
     if "  jackSeatPlaneEase:" not in config or "  viewPanEase:" not in config:
         errs.append("MarlinJacksConfig.asset: no jacks'-seat stability fields (run the tool)")
+    if "  phoneShortMm:" not in config or "  thumbCover:" not in config:
+        errs.append("MarlinJacksConfig.asset: no thumb-framed view fields (run the tool)")
+    if "  herdHueLean:" not in config:
+        errs.append("MarlinJacksConfig.asset: no herd mark field (run the tool)")
     action = guid_of_script("MarlinJacksActionSO")
     for name, value, text in controls:
         if f"guid: {action}, type: 3" not in text or f"  control: {value}\n" not in text:
@@ -774,8 +790,12 @@ def self_test():
     cfg, cont = config_asset(guid_of_script("MarlinJacksConfigSO")), container_asset()
     expect(check_assets(cfg, controls, cont), 0, "fresh assets pass")
     expect(check_assets(cfg.replace("  jackSeatPlaneEase: 0.25\n", ""), controls, cont), 1, "no stability fields")
+    expect(check_assets(cfg.replace(THUMB_VIEW_FIELDS, ""), controls, cont), 1, "no thumb-framed view fields")
+    expect(check_assets(cfg.replace(HERD_MARK_FIELDS, ""), controls, cont), 1, "no herd mark field")
     if config_retrofit(cfg) != cfg or "jackSeatPlaneEase" not in config_retrofit(cfg.replace(STABILITY_FIELDS, "")):
         fails.append("the config retrofit is not idempotent or does not add the stability fields")
+    if config_retrofit(cfg.replace(THUMB_VIEW_FIELDS, "").replace(HERD_MARK_FIELDS, "")) != cfg:
+        fails.append("the config retrofit does not put the thumb view and herd mark fields back where the C# declares them")
     expect(check_assets(cfg, [(n, v, t.replace("  control: ", "  control: 9")) for n, v, t in controls], cont), 1, "a wrong control")
     expect(check_assets(cfg, controls, cont.replace(CONTAINER_PRISM[1], "0" * 32)), 1, "a missing effect")
     container, network, fusion = register_container(read(CONTAINER)), register_network(read(NETWORK_PREFABS)), register_fusion(read(FUSION))

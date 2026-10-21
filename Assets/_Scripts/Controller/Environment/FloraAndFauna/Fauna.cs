@@ -151,7 +151,9 @@ namespace CosmicShore.Gameplay
         // leashed, a creature steers where its holder says and eats only the prism its holder orders, re-checked by its
         // OWN edibility rule and eaten by its OWN mouthful. Behaviour only: nothing is spawned, killed or recoloured, the
         // starvation clock keeps running, and the cell's pens still clamp every goal (Goal's setter). One holder at a
-        // time; only the peer that SIMULATES the creature can leash it (a puppet's pose is replicated).
+        // time; only the peer that SIMULATES the creature can leash it (a puppet's pose is replicated). Its one visual is
+        // the holder's MARK (IFaunaLeash.TryGetLeashMark): the spindles lean toward the holder's domain hue, replicated
+        // to puppets by FaunaNetworkSync; its domain, body prisms and diet are untouched.
 
         /// <summary>The holder steering this creature, or null when it is wild.</summary>
         public IFaunaLeash Leash { get; private set; }
@@ -179,16 +181,53 @@ namespace CosmicShore.Gameplay
                 var previous = Leash;
                 Leash = holder;
                 previous.Released(this);
+                ShowLeashMark();
                 return true;
             }
             Leash = holder;
+            ShowLeashMark();
             return true;
         }
 
         /// <summary>Let go (a no-op unless <paramref name="holder"/> holds it). The holder's own release, so it is not told.</summary>
         public void Unleash(IFaunaLeash holder)
         {
-            if (ReferenceEquals(Leash, holder)) Leash = null;
+            if (!ReferenceEquals(Leash, holder)) return;
+            Leash = null;
+            if (!_diedThisLife) ShowLeashMark();
+        }
+
+        /// <summary>
+        /// Wear the holder's mark, or none when wild, and publish it to the puppets. On the simulating peer. A dying
+        /// creature keeps the mark it died in, so its wither does not change colour (<see cref="DropLeash"/> leaves it).
+        /// </summary>
+        void ShowLeashMark()
+        {
+            Domains markDomain = default;
+            float lean = 0f;
+            if (Leash == null || !Leash.TryGetLeashMark(out markDomain, out lean)) lean = 0f;
+            ApplyLeashMark(markDomain, lean);
+            var sync = NetSync;
+            if (sync) sync.PublishLeashMark(markDomain, lean);
+        }
+
+        static readonly List<Spindle> s_markSpindles = new();
+
+        /// <summary>
+        /// The leash's mark (Garrett, 2026-10-21: "distinguish them by giving their spindles a slight hue shift in your
+        /// domain"): every spindle's colours lean <paramref name="lean"/> of the way toward <paramref name="markDomain"/>'s
+        /// prism hue; 0 takes the mark off. Presentation only. Called by the leash on the simulating peer and by
+        /// <see cref="FaunaNetworkSync"/> on a puppet.
+        /// </summary>
+        public void ApplyLeashMark(Domains markDomain, float lean)
+        {
+            var colors = PrismLit.ColorSet;
+            Color hue = default;
+            bool on = lean > 0f && colors && colors.TryGetPrismKindColors(markDomain, PrismKind.Plain, out hue, out _);
+            GetComponentsInChildren(true, s_markSpindles);
+            for (int i = 0; i < s_markSpindles.Count; i++)
+                if (s_markSpindles[i]) s_markSpindles[i].SetHueLean(hue, on ? lean : 0f);
+            s_markSpindles.Clear();
         }
 
         /// <summary>The creature's own release: it is dying or being destroyed. The holder is told so it drops it.</summary>
