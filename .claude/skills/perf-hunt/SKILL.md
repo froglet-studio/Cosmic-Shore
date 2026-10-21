@@ -100,6 +100,13 @@ where they disagree (`Docs/claude/PLUGINS_AND_CONNECTORS.md`). Before writing co
   `burst` console command and `prof`'s managed-job rows prove it. A job that runs managed costs 10-20x.
 - **Render: sharedMaterial + MaterialPropertyBlock**, never `renderer.material`; instanced path for anything numerous;
   transparent overdraw is the phone GPU's cost (spindles, snow), not the prism count (`Docs/PERFORMANCE_OPTIMIZATION.md` §3.6).
+- **A GPU cut for weaker hardware goes through `GraphicsCuts`, never a new per-feature switch.** It merges the device
+  tier (`PlatformProfileSO`) with the quality preset (`Resources/QualityPresetCuts.asset`): add the field to both and
+  read the merged value. Until 2026-10-21 a preset pick changed only Unity's `QualitySettings` level, and URP ignores
+  most of that (its shadows were already off), so "Low" drew the same pixels as Ultra on a phone. Check what a preset
+  REALLY changes before tuning it (`Docs/PLATFORM_UNIFICATION.md` §3.10). **Never cut a functional visual to zero:** the
+  cytoplasm shards look cosmetic, but they point at the crystal, so they are thinned (`cytoplasmDensity`, floor 0.1),
+  not removed (Garrett, 2026-10-21). Ask what a visual TELLS the player before a cut removes it.
 - **Physics: the collider budget** (ECOSYSTEM rule: ≤ ~1,500 active colliders per cell; `PrismColliderLodManager`); no
   `OverlapSphere` allocation forms; triggers only where a contact matters.
 - **Work in the right phase and at the right rate.** Spread sweeps over frames (the collider-LOD sweep spikes 15.9 ms

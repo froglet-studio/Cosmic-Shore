@@ -25,11 +25,14 @@ six bells). Keep that vocabulary - the game's HUD icons, docs and players know i
 1. **Body first**: `forms.fuselage(stations=[(t, w, h_top, h_bottom, n_top, n_bottom, dy)])` -
    a superellipse loft; `n` 2 = round, 3-4 = boxy, different top/bottom = flat belly + domed
    back. Six to eight stations is plenty; the shape lives in the numbers, not the count.
-2. **Appendages rooted INSIDE the body**: wings (`forms.wing`: airfoil loft, sweep, dihedral,
-   twist, taper), fans of `plate(feather(...))`, fins (`plate(blade(...))`), pods
-   (`lathe` profiles with a collar step and a sunk mouth), tendrils (`tube_along`). A part's
-   root sits 0.1-0.3 units inside its neighbour: nothing floats, ever.
-3. **Struts** wherever a pod or fan hangs off the body (`tube_along`, 0.05-0.15 radius).
+2. **Appendages FLOAT beside the body** (SKILL 0.5, Garrett 2026-10-21): wings (`forms.wing`: airfoil
+   loft, sweep, dihedral, twist, taper), fans of `plate(feather(...))`, fins (`plate(blade(...))`), pods
+   (`lathe` profiles with a collar step and a sunk mouth), guns. Each is its own closed shell on its own
+   bone, 0.5-6.5 % of the diagonal clear of its neighbours (the Manta's wings 3.4-6.5 %, the Squirrel's
+   wing pieces 0.9-1.2 %), its facing edge parallel to the edge across the gap, on an axis it shares with
+   the core. Plates inside one part may sit on 0.1-0.2 % hairline seams (the Sparrow's wing).
+3. **No struts, roots or fillets.** A chain of floating plates (the Sparrow's wing pieces, the Squirrel's
+   tail chevrons) carries the eye from the core to a far part instead; the code can swing the chain.
 4. **Mirror** the right side into the left with `forms.mirror_part` (winding repaired) and
    name the twin by the rig's convention (`.L/.R`, `.l/.r`).
 5. **Paint** by rule, not by hand: `paint(obj, slot, lambda c, n, i: ...)` on face centre,
@@ -59,8 +62,9 @@ leading edges, the tail), not the belly.
 
 ## 4. The critique loop (what to look for on the sheet, in order)
 
-1. **Connectivity** - every part grows out of another. Floating pills kill a model before
-   anything else is judged (Squirrel v1).
+1. **The assembly** - every major part floats clear on its own bone across an even gap, aligned with
+   its neighbours, so the hull reads as one hovering assembly (`assembly_report.py --floating`). Welded
+   parts fail it; so do off-axis pills scattered round a body (Squirrel v1).
 2. **Silhouette from `chase`** - can you name the vessel from the shape alone at that size?
 3. **The domain band** - one strong band of team colour the eye finds in a tenth of a second
    (26% of the Squirrel's faces; 20% of the Dolphin's). Not confetti, not a blob.

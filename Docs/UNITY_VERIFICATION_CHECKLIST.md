@@ -65,6 +65,225 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Orca round 9: rocket missiles with a faceted plume, the bomb's blast lit in the world (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21, after flying round 8: "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb
+should not have a ring that says burst. it should use a lit state to show what it will destroy." Design: `ORCA_CREW.md`
+("The missiles and the bomb's lit blast"); lab round 8 (`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). `/verify-unity` did not
+run: no Unity Editor or `unity` CLI in this session. What did run: the reference compile (player: no project errors;
+editor: no errors in changed files), 22 core tests under .NET, `parity.cjs`, `author_orca_assets.py --check` /
+`--self-test` (the config re-seeded, guid kept), the console-logging, conditional-compilation, using-directive and
+canvas-renderer gates. Affects PrismLit's bank (a new producer, up to three slots while a bomb is out).
+
+**Verify in editor** (the Orca in the Toybox Vessel Changer; take each gunner seat):
+1. **Missile (any gunner seat, F / right click).** The missile is the skyburst rocket, nose forward, not a cone. Its
+   motor flares on launch then flickers in the domain colour, and lights nearby prisms. Steer hard left and right: the
+   body banks into each turn. Behind it a lit, faceted tube trail swells from the nozzle and tapers away over ~3 s,
+   and stays where the missile flew after it bursts. The missile's own chase camera is not inside its trail.
+2. **Bomb (key 4).** No ring and no "BURST" text: only a chevron with two ticks, dimmed while a bomb is out. With a bomb
+   out, the prisms inside its blast that are not yours glow in your colour as it flies, and your own trail inside the
+   blast does not. Burst it: the glow fades out at once. Swap seats with a bomb out: the glow goes.
+3. Fly 2 minutes with all seats firing: no console errors, no frame hitch when three missiles fly at once (each trail
+   rebuilds a mesh of at most ~2,300 vertices a frame).
+
+**First-pass numbers:** `missileLength` 7, `missileTrailSeconds` 3, `missileTrailWidth` 1.4, `missileTrailSpacing` 6,
+`missileBankDeg` 45, `missileIgnitionSeconds` 0.15, `missileLightIntensity` 3 / range 30, `bombLitStrength` 1.
+
+---
+
+### 🔴 Orca round 8: the turret rest-pose fix, the hovering-assembly model, jets on its engine mouths (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21, after flying round 7: the minigun's model sat at an odd angle to its shot, and the new models were not
+the hovering assemblies the original vessels are. `/verify-unity` did not run. What did run: the reference compile, the
+model gates (three readers, `--check`), `assembly_report.py --floating` on the Orca's major parts, `author_orca_assets.py
+--check`. Affects `VesselJet` (an additive `Remount`), and the `/vessel-model` skill's rules.
+
+**Verify in editor** (re-import `Orca.fbx` first):
+1. **Turret alignment.** Spawn the Orca with an AI crew, let the gunners fight, then take seat 3 (the minigun): its
+   barrels point exactly along the stream of rounds to the crosshair. Same in seats 2 and 4, and after leaving and
+   re-taking a seat.
+2. **The assembly.** From the helm's chase view: the fin, the outrigger plates, the engines and the turrets float clear
+   of the hull with even gaps; through a hard turn the outrigger plates swing out as one chain to the turrets; every
+   part bobs gently; the engines lean into the turn.
+3. **Jets.** The plumes come out of the model's two engine mouths, pointing backward, and colour with the domain.
+4. Clean console (no `[VesselJet] ... wants to mount on bone` error, no NRE from `OrcaHullRig`).
+
+---
+
+### 🔴 Orca round 7: shots fly down the aim; the sniper's pip scope always open; model, crosshair and shot on one line (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21, after flying round 6: the sniper should keep the Serpent's pip scope open instead of zooming the
+whole camera, and the fast gun's and the bomb's turrets and crosshairs did not shoot where they aimed. Design:
+`ORCA_CREW.md` (round 7); lab round 7 (`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). `/verify-unity` did not run. What did run:
+the reference compile (player: no project errors), parity (with 40 shot velocities and a planted control), 22 core tests
+under .NET, `author_orca_assets.py --check` / `--self-test`, the gate battery. Affects the Serpent's
+`SniperScopeOverlay`: a second `Tick` overload; the Serpent's own path is unchanged.
+
+**Verify in editor** (the Orca in the Toybox Vessel Changer; fly the helm fast, boosting, then take each gunner seat):
+1. **Fast gun (key 3).** Hold Fire while the hull turns and boosts: the rounds leave the barrel tips and fly **straight
+   through the nib crosshair**, not sideways in the direction of flight. The pen's line draws where the crosshair sweeps.
+2. **Bomb (key 4).** The bomb leaves the drum's mouth and flies through the centre of the dashed ring.
+3. **Sniper (key 2).** The view is normal, over the turret (not zoomed). The Serpent's petal-shaped pip scope is open in
+   the upper left the whole time, showing what the barrel points at, with its cone reticle and recharge ring; the same
+   reticle sits over the main view. Fire: the beam leaves the barrel tip and passes through both reticles.
+4. **Missiles** leave each turret's missile tube.
+5. Fly the **Serpent** and hold the left trigger: its scope works exactly as before.
+
+---
+
+### 🔴 Orca round 6: seats are elements, an always-scoped sniper, a one-at-a-time bomb, the fast gun's pen, over-the-turret views and bespoke crosshairs (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21. Design: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md` (round 6, "The pen", "The views and
+the crosshairs"); lab round 6 (`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). No Unity Editor or `unity` CLI in the session, so
+`/verify-unity` did not run. What did run:
+- the reference compile (player: no project errors; editor: none in changed files);
+- the lab parity gate, now with 400 pen landings and a planted pen control;
+- `author_orca_assets.py --check` / `--self-test`;
+- 21 core tests under .NET (four new pen tests);
+- the static gate battery.
+
+**Verify in editor** (Toybox Vessel Changer, the Orca):
+1. **Seat icons.** At the helm the **Time** card is lit. Keys 2 / 3 / 4 light **Space** / **Mass** / **Charge** instead.
+   Each gunner card shows its own seat's missile count. Space's veil is the sniper's 12 s; Mass's is the fast gun's
+   heat (full while overheated); Charge has none.
+2. **Sniper (key 2).** The view is **always scoped** (narrow, ~22°). A dark surround, cross wires, a small ring (the
+   cone) and a lime ring round the eyepiece. Fire: the ring turns red and refills over 12 s, the label counts down, then
+   says READY.
+3. **Fast gun (key 3).** The view sits **behind and above the turret**; the rounds stream away from the eye. The
+   crosshair is a slanted nib with a dot; a lime tip shows when the next round is a pen round; an amber arc fills with
+   heat. Hold Fire and sweep slowly: a **clean line of thin prisms** draws itself about 120 u out, one every 5 u, each
+   along the line. Hold still: no pile of prisms. Release and pause: at most one slanted dot.
+4. **Bomb (key 4).** The view sits farther back. A dashed lime ring (the blast's size) with a chevron. Fire throws a bomb;
+   an amber ring pulses round it with BURST. Fire again bursts it; then the next press throws another at once (no
+   cooldown). Our hull is never pushed.
+5. AI bomb gunners burst their own bombs (they do not sit with a bomb out forever).
+6. **The model.** Let `Orca.fbx` import, then run `FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs`,
+   `Audit Vessel Construction` and `Audit Vessel Tails and Jets`. In play: the Orca model draws (no Sparrow inside it),
+   in the domain colour on its armour plates; each element's morph shows as it levels. The three turrets swing to their
+   seat's aim (watch from the helm while the AI gunners fight), and rounds, bombs and the sniper's beam leave from the
+   barrel tips. Expected misfits to note, not fail: the jets, hit box and chase camera are still the Sparrow's
+   (T-20261021-8afe).
+7. Clean console: no NRE from `OrcaCrew` / `OrcaCrewView` / `OrcaHullRig` / `OrcaCrosshairGraphic`, no pool errors.
+
+---
+
+### 🔴 Orca round 5: a gun per gunner seat, a missile magazine per seat, a shield that drops; crew cameras get post-processing (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21. Design: `Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md` ("The three guns"); lab round 5
+(`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). No Unity Editor or `unity` CLI in the session, so `/verify-unity` did not run.
+What did run:
+- the reference compile (player: no project errors; editor: none in changed files);
+- the lab parity gate (now with 1500 fast-gun steps);
+- `author_orca_assets.py --check` / `--self-test`;
+- 17 core tests under .NET;
+- the static gate battery.
+
+Affects Garrett's crew vessels (the Wrasse's kite camera).
+
+**Verify in editor:**
+1. **Post-processing.** Fly the **Wrasse** and take the kite seat (2). The kite view now has bloom and the game's
+   colour, as the pilot view does. Fly the **Orca** and take seat 2: the turret and missile views have bloom too.
+2. **Shield.** At the Orca's helm, the left trigger (or E, pad B) raises a ring of **white super-shielded** prisms that
+   ride with the hull, open ahead.
+   - About 4 s later each turns red (a **danger prism**) where it stands, and stays about 20 s, then goes.
+   - A rival's missile or rounds burst on the carried ring without breaking it.
+   - No prisms are left behind after a seat change or a Vessel Changer swap away from the Orca.
+3. **Sniper (seat 2 key, gunner 1).** Fire (left click / Space / RT) draws a long domain-coloured beam.
+   - Every hostile prism in its thin cone dies, including a super-shielded one (try a Skim Race track wall).
+   - A rival hull in the cone sheds crystals.
+   - The seat line shows a 12 s countdown.
+4. **Fast gun (key 3, gunner 2).** Hold Fire: Sparrow rounds stream at 30/s and break hostile prisms. Our own trail
+   and shield are spared.
+   - After ~6 s the seat line says "overheated"; firing stops for ~5 s.
+5. **Bomb (key 4, gunner 3).** Fire throws a red spiked bomb that cruises.
+   - Fire again bursts it, as does a hostile prism or a rival hull. It also bursts on its own after 4 s.
+   - **Our own hull is never pushed.**
+6. **Missiles per seat.** Missile (right click / F / A) launches one of that seat's missiles; the Charge card shows
+   the seat's count (all three seats' at the helm).
+   - Fly a missile through an omni crystal: every seat gains one, up to 4.
+7. Clean console in play mode: no NRE from `OrcaCrew`, and no pool errors from `OrcaFastGun` / `OrcaBombGun`.
+
+---
+
+### 🔴 The Orca, the 4-seat vessel: helm, three stabilized gunner turrets, flown missiles (`cece/happy-noether-m54hz6`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+`VesselClassType.Orca = 20`, card "Orca · 4 seat" (`Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md`). No Unity
+Editor or `unity` CLI was available in the session, so `/verify-unity` did not run. What did run:
+- the Unity reference compile (player config: no project errors; editor config: no errors in changed files);
+- the lab parity gate (`node Tools/Build/orca_crew_lab/parity.cjs`);
+- `author_orca_assets.py --check` and `--self-test`;
+- the 14 core tests under .NET.
+
+Affects Garrett's crew vessels: the Wrasse's card now reads "Wrasse and Grouper · 2 seat" (`SO_Vessel.SeatCount`).
+
+**Verify in editor:**
+1. The project compiles; `OrcaCrewCoreTests`, `EnumIntegrityTests`, `KiteNavigatorConfigTests`,
+   `CrystalHullFusionConfigTests` and `ToyVesselRosterCoverageTests` pass in the Test Runner.
+2. Toybox → Vessel Changer: an **Orca · 4 seat** station is offered. Fly it: a Sparrow body with three pods on struts
+   (one above, two on side booms), in your domain colour, lit and faceted.
+3. Helm:
+   - It flies on two sticks.
+   - Right trigger / right Shift boosts and the Time card's veil fills as the tank empties, then refills.
+   - Left trigger / left Shift rings the hull in danger prisms with the front open; they ride with the hull for ~4 s,
+     then go. The Mass card flashes, then shows its recharge.
+   - Meanwhile the AI gunners launch missiles: darts fly from the pods, burst on prisms or rivals, and the Charge card's
+     count drops.
+4. Press **2**:
+   - You look out of the top turret, with the chase view as a square in the lower left. The seat line at the top reads
+     "Gunner 1 · N missiles · 1-4 to change seat".
+   - Mouse / stick aims. With the AI flying hard turns, the aim stays on its point and the horizon drifts back slowly
+     (no whipping).
+5. Release (Space / left click / A):
+   - A missile launches and the camera rides behind it. W A S D / stick steers it.
+   - Release again bursts it. Otherwise it bursts on contact, or after 5 s.
+   - A burst destroys hostile prisms; on a rival hull it scores a hit.
+6. Fly a missile through an **omni** crystal: the count rises by 3 (max 12). Through an elemental crystal: the hull's
+   petal for it grows.
+7. Press **1**: the helm is back, flight input works, the cursor is unlocked.
+8. Touch (phone build): a two-finger tap steps seats; a tap in a gunner seat releases; a drag aims or steers.
+9. Clean console in play mode (no NRE from `OrcaCrew` / `OrcaCrewView` / `OrcaHUDController`), and no shield prisms left
+   behind after a seat change or a Vessel Changer swap.
+
+**First-pass tuning** (the lab's, in `OrcaCrewConfig.asset`; tune in the lab and re-seed):
+
+| Field | Value | Note |
+|---|---|---|
+| hull Pitch/Yaw/Roll | 44 / 44 / 16.5 | the lab's 0.55 × the Sparrow's; the roll will likely feel slow (the Wrasse went to 120) |
+| missileSpeed / missileTurn | 180 u/s / 150 °/s | × 1 → 1.4 with Charge |
+| blastRadius | 30 → 46 u (Space) | |
+| magazine | 6 at start, 12 max, +3 per omni | |
+| shield | 144 prisms, 50–70 u, open 45°, 4 → 6.1 s (Mass), 9 s recharge | |
+
+---
+
+### 🔴 Medium / Low / Very Low presets cut GPU work (`cece/tender-sagan-98e0ix`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
+
+Garrett: phones are GPU-bound, so the lower presets must shed GPU work (`Docs/PLATFORM_UNIFICATION.md` §3.10). The
+table is `Resources/QualityPresetCuts.asset`, read through `GraphicsCuts`. `/verify-unity` was unavailable (no
+Editor, no `unity` binary). What ran: the headless reference compile (player config OK; editor config: the new
+test file compiles, and its 3 errors are in `AuthenticationServiceFacade.cs`, which is red on bleeding-edge
+too), `check_console_logging.py`, `check_conditional_compilation.py`.
+
+Editor:
+1. Edit-mode tests: `QualityPresetCutsTests` and `DeviceTierTests` all green.
+2. Play Menu_Main, Settings > Performance > Quality **Medium**: the sky stops drifting and twinkling (the baked
+   panorama) and nothing else changes. Back to **High**: the animated sky returns, with no restart.
+3. **Low**: the AA dropdown reads Off, render scale drops to 80% with Linear, the glow gets softer and wider (bloom at
+   quarter resolution). The Frame Debugger shows the camera target as LDR (HDR off). Back to High: HDR is on again,
+   and bloom is back at half resolution.
+4. Low, then change AA by hand: the preset reads Custom, and the sky stays baked (Custom keeps Low's cuts). Restart
+   Play: still Custom, still baked.
+5. Low, restart Play, enter a cell: the cytoplasm shards are sparser (a quarter) but still there and still point at
+   the crystal; the membrane is visibly thinner (642 capsules). Same on a simulated MobileLow tier and the Web profile.
+6. Stop Play: `URP_Asset.asset` shows no diff (HDR, MSAA, render scale restored).
+
+On an older phone (Mali-G52 / Adreno 610 class), development build, F7 `diag` in the same scene at High, Medium and
+Low (restart between): GPU ms should fall at each step. Record the numbers in the commit or `Docs/perf/phone/`.
+
+First-pass values (all fields on the asset): Medium: baked sky, wormhole view 0.75. Low: AA Off, render scale ≤ 80%,
+HDR off, bloom at quarter resolution with 3 levels, membrane level 3, a quarter of the cytoplasm shards, wormhole view 0.5. Very Low: Low,
+with render scale ≤ 70%.
+
 ### 🔴 Phone controls for the whole fleet, idle parity, arena swap tiles (`cece/admiring-hamilton-gyzzh8`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
 
 Garrett's decisions after the mobile audit (`Docs/Reports/MOBILE_VESSELS.md` §8; the touch scheme in

@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
             VesselClassType.Urchin, VesselClassType.Scarab, VesselClassType.Butterfly,
             VesselClassType.Grizzly, VesselClassType.Thresher, VesselClassType.Stoat,
             VesselClassType.BrittleStar, VesselClassType.Shrike, VesselClassType.Angler,
-            VesselClassType.Wrasse, VesselClassType.Starling, VesselClassType.Marlin,
+            VesselClassType.Wrasse, VesselClassType.Orca, VesselClassType.Starling, VesselClassType.Marlin,
         };
 
         /// <summary>

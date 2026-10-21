@@ -118,6 +118,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.Unlit` and its comment; `KITE_NAVIGATOR.md` "Round 4b".
 - Promoted: no
 
+### L-GEN-19 — Trace a few runs' state every ten seconds before reading any aggregate
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the first scorecard looked plausible (Gate Run points 81, 62 boardings, 8 cast-offs). A 10-second state trace of one run showed the crew's skiff holding the Artifact from 20 s to the 180 s limit, chasing its old boarding target instead of flying home, and rival boarders re-boarding a fully drained hull every second. Both bugs had produced numbers that looked like a strong boarding meta.
+- Do instead: before the first aggregate, dump `state()` every 10 s for a few seeds of each game and read it; a value pinned for a whole run (a carrier that never docks, a level stuck at its floor) is a behaviour bug, not a balance finding.
+- Evidence: `CrewOfFourLab.html` `skiffAI` (the early return for `sk.art`, the drained-victim recall); `CREW_OF_FOUR_LAB.md` §4 Found 9.
+- Promoted: no
+
 ## STU — browser studios (Stoat Flight Studio, Vessel Studio)
 
 ### L-STU-1 — A lab's scripted input exposed a real game bug: the sling read the latest trigger sample, not the squeeze
@@ -811,6 +818,67 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: Garrett picked "the pull plus the 2d edge" as "very strong". In the lab the 2D edge is painted into the frame BEFORE the WebGL shards copy it, so the pull drags the edge and every facet refracts it. The game drew the same edge as a Screen Space Overlay canvas, AFTER the camera, on top of the shards. Every per-pixel function was under a parity gate and matched, but the game would still have shown a different, flatter picture: an unwarped red frame over the distortion. Nothing measured the order the layers were composited in.
 - Do instead: when a lab composites several layers, write the order down (which layer samples which) and port it as a structure. Here the edge became pass 2 of the game's own perimeter pass, drawn before the copy, and the order is pinned by a test on the shader's pass indices. A per-function parity gate cannot see a layering difference: check it by reading the lab's render loop beside the game's pass list.
 - Evidence: `SilencePerimeterPass.RecordRenderGraph` (edge, then copy, then warp and shards); `SilencePerimeterTests.TheShaderDeclaresItsPassesInTheOrderThePassDrawsThem`; `Docs/Studios/SILENCE_VIGNETTE_LAB.md` round 4.
+
+### L-STU-118 — In a multi-team lab, step the teams in a rotating order: a fixed order decides the ties
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: every crew was stepped in the order of the `crews` array, so crew 0 (the player's) moved, picked up and blasted first in every step. In mirror Breach matches the Corsair won 85% over 20 seeds: two skiff charges in one fortress core, and the first blast processed took the prisms both reached. With the crews (and the blasts) taking turns going first each step, the same run read 25%, and the other mirror matches moved by 15-30 points too.
+- Do instead: in any lab with several teams or crews, rotate the step order (`order = crews.slice(step % n).concat(crews.slice(0, step % n))`) for movement, pickups and area effects, and run a 20-seed mirror match as a fairness check before quoting win rates. A mirror match that is not near 50% is a stepping bug until shown otherwise.
+- Evidence: `CrewOfFourLab.html` `simStep` (the `order` array) and `stepBlasts`; `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 Found 8.
+- Promoted: no
+
+### L-STU-135 — A "seat value" column needs a floor under its denominator, and a won-or-lost game needs more seeds
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: seat value (points lost when one station is left empty, as % of the full crew's points) read −1319% and −2164% in Gate Run, where points are 100+ for an escape and a few for a loss, so a 3-seed base of 6-11 points turned one lucky escape into thousands of percent. Rookie share read 2344% the same way.
+- Do instead: divide by max(|points|, a per-game scale) (`POINT_SCALE`), give a binary-outcome game more seeds (12 against 6), print the standard error beside every points column, and say in the write-up which seat values sit inside the noise.
+- Evidence: `CrewOfFourLab.html` `POINT_SCALE`, `scoreOpts`; `CREW_OF_FOUR_LAB.md` §4 "Noise".
+- Promoted: no
+
+### L-STU-120 — Taking a lab from 2D to 3D: shrink the arena by volume, and hide the prisms between the chase camera and the hull
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`, round 2) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the round-1 2D model went to a 3D sphere at the same 420 u radius. Encounter rates collapsed (the ball holds about 560 times the disc's area in volume): Anchorage crews never met (0 hits in 90 s) and a Core waited the whole match. Separately, the chase camera at the Sparrow's followOffset (0, 10, −50) sat inside the hull's own trail, so trail prisms streamed into the lens and filled the screen.
+- Do instead: when a lab gains a dimension, re-measure the encounter columns before anything else and shrink the arena (here to the game cell's 320 u) or raise densities; give AI a reason to go where the others are (an Anchorage raid phase). Under a chase camera, skip drawing prisms inside a corridor from the camera to the hull, as the game's `PrismOcclusionCorridor` does (`Docs/PRISM_ANIMATION.md` §4.7).
+- Evidence: `CrewOfFourLab.html` `SHIPPED.arenaR`, `helmAI` (Anchorage raid), `draw3d` (the corridor test); `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 round 2, Found 6.
+- Promoted: no
+
+### L-STU-121 — A respawn that keeps re-rolling a crystal's kind lets the uncollected kind crowd the sought one out
+- Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`, round 3) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: each respawned crystal rolled omni with probability 0.25. The AI collected omni crystals (they refill missiles) and ignored elemental ones, so elemental crystals sat in their slots forever and never respawned, and within a minute the arena held 13-14 crystals and 0 omni. The magazine read "empty 92% of the match" and looked like an economy-tuning problem; the fix was a slot that keeps its kind (`newCrystal(w, omni)`), after which the same settings read 69-80% and the tuned ones 31-42%.
+- Do instead: when pickups of several kinds share respawn slots, give each slot a fixed kind (or respawn on a timer whether collected or not), and dump the live counts by kind in a trace before tuning the economy around a scarcity the spawner caused.
+- Evidence: `CrewOfFourLab.html` `newCrystal`, `buildWorld` (`nOmni`); `Docs/Studios/CREW_OF_FOUR_LAB.md` §4 round 3, "What changed".
+- Promoted: no
+
+### L-STU-122 — A shared resource drained by AI teammates starves the human seat; reserve some for the person
+- Lab: Crew of Four Lab (round 3) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: the three gunner seats share one magazine. In a scripted run the human's first Release did nothing because the two AI gunners had spent the last missiles in the same second; every human gunner would meet that. A Release pressed during the 0.6 s reload was also silently lost.
+- Do instead: in any lab where AI crewmates share a pool with a person, make the AI leave a reserve for each human seat (a dial, `aiReserve`, so the designer can turn it off) and buffer a person's button press briefly across a cooldown. Test the human seat through the real key path, not only by setting the input object.
+- Evidence: `CrewOfFourLab.html` `runCrew` (`reserve`, `t.queued`); the round-3 write-up's "What changed".
+- Promoted: no
+
+### L-STU-123 — Stabilize a mounted camera in world space, then measure the sway nobody asked for
+- Lab: Crew of Four Lab (round 4) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened: turrets aimed in the hull's local frame swung every gunner's view at the helm's turn rate (47–54 °/s). Moving the aim to a world-space direction the gunner turns, holding each turret's own horizon and easing it toward the hull's up over 3 s, and mounting the turrets on outriggers whose position follows a lagged copy of the hull's frame cut that to 3–6 °/s. The first sway metric also counted the AI gunner's own aiming, so it barely moved. And a 3-seed run showed a large points gain (Anchorage 126 against 54) that 12 seeds erased.
+- Do instead: for any camera or weapon mounted on a moving body, keep the aim in world space and let only the seat's own input turn it; hold the horizon and ease it, never lock it; let the mount position lag on a smoothed frame. Measure "sway" as the view's rotation minus the rotation the seat's own input commanded, and keep the hull-locked version as a control preset. Check any points gain from a feel change at 12 seeds before reporting it: an AI does not feel sway, so a feel fix should leave AI points unchanged.
+- Evidence: `CrewOfFourLab.html` `turretDir`, `mountPos`, `followFrame`, the `swayDegS` score; `CREW_OF_FOUR_LAB.md` §4.
+- Promoted: no
+
+### L-STU-124 — Porting a lab: write element factors as the game's channel, lift inline rules into named functions, and measure small angles with atan2
+- Lab: Crew of Four Lab (graduation as the Orca) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
+- What happened:
+  - The lab scaled four numbers as `1 + k × level / 15`, while the game's element channel is `ElementalFloat`
+    (`LerpUnclamped(Min, Max, level / 10)`). Porting the factor as code would have left `element_ability_table.py` reading
+    "NO SCALING" on two of the hull's four elements.
+  - Three rules lived inline in the lab's step function (the horizon hold, the shield's shape, the missile step), so a
+    parity harness had nothing to call.
+  - The C# sway readout returned 0 every step: `acos(dot)` of a one-step turn rounds to zero in float32 (the page is
+    float64).
+- Do instead:
+  - A lab factor of that shape IS an `ElementalFloat`: Min = base, Max = base × (1 + 2k/3). Port it as one, and have
+    the parity gate check Min and Max against the page's SHIPPED base and k.
+  - Before porting, lift every rule the harness must hold into a named pure function, expose them on
+    `window.__lab.parity`, and prove a batch is byte-identical before and after.
+  - Measure angles in a float port with `atan2(|a × b|, a · b)`, never `acos(a · b)`.
+- Evidence: `OrcaCrewConfigSO.cs` (`boostRefill`, `shieldSeconds`, `blastRadius`, `missileScale`); `CrewOfFourLab.html`
+  `holdHorizon` / `shieldDirs` / `flyMissile`; `OrcaTurret.HoldHorizon`; `Tools/Build/orca_crew_lab/parity.cjs`.
 - Promoted: no
 
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
@@ -1373,3 +1441,65 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorJuice.cs` (`KiteJuiceFrame`, `KiteJuiceSettings`); `juice_sheet.sh [out.png] [pilot]`;
   `KITE_NAVIGATOR.md` round 10.
 - Promoted: no
+
+### L-STU-136 — A drawing mechanic must write where the aim's sweep matches the stroke's spacing
+- Lab: Crew of Four Lab, round 6 (the Orca's fast gun "writes prisms like a pen") · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the first pen laid a prism where each pen round's flight ended, 387 u out. A turret slewing at its
+  normal rate moved that point about 100 u between pen rounds, against a 5 u stroke spacing. Every landing lifted the pen,
+  so the "calligraphy" was a scatter of loose sticks, each pointing along the aim. Moving the paper to 120 u turned the
+  same sweep into one stroke: 20 prisms, every gap exactly 5.0 u. A first screenshot also showed a radial fan of sticks,
+  which looked like the pen; it was a rival's dropped shield (danger prisms laid along rays).
+- Do instead:
+  - For anything the player draws with an aimed weapon, compute the landing point's speed: the aim's angular rate times
+    the distance. Set the distance (the paper) so that speed between samples is about one spacing.
+  - Hold the first point of a stroke until the second says which way the stroke runs. Otherwise every stroke starts
+    with a prism pointing at the shooter.
+  - Measure a stroke from the world (gaps and turn angles between consecutive marks under a scripted sweep), not from a
+    screenshot, before judging it. Name what each shape in a screenshot is before blaming the new feature.
+- Evidence: `CrewOfFourLab.html` `penLay`, `penLanding`, `SHIPPED.rapidPenReach`; C# `OrcaPen` held to it by
+  `Tools/Build/orca_crew_lab/parity.cjs` (400 landings); `CREW_OF_FOUR_LAB.md` §4 round 6.
+- Promoted: no
+
+### L-STU-137 — A turret on a moving hull must not hand its shots the hull's whole velocity
+- Lab: Crew of Four Lab, round 7 (the Orca, after Garrett flew round 6 in Unity) · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the lab and the game both launched a turret's round at `aim × speed + hull velocity`, the rule a
+  forward-firing gun gets away with. On a turret that fires sideways from a hull flying 50–175 u/s, with rounds at
+  135, every shot slewed far off the barrel and the crosshair in the direction of flight. The lab's scorecard never
+  showed it, because the AI hit what it hit and nobody watched a crosshair. The owner saw it in the first flight: "not
+  shooting where they were aiming". A frame-old muzzle (the shot fired in `Update` before the hull moved, posed in
+  `LateUpdate` after) added up to 3 u more.
+- Do instead:
+  - Give an aimed shot only the hull velocity ALONG its aim: `aim × (speed + max(0, aim · hullVelocity))`. It flies
+    exactly down the aimed line, still outruns its hull forward, and never slows below its own speed astern.
+  - Make the barrel, the crosshair and the shot one line: pose the turret the moment it fires, fire after the hull has
+    moved that frame, spawn at the drawn barrel tip, and project the crosshair from that tip along the aim.
+  - In a lab with aimed weapons, add a check a scorecard cannot make: draw (or measure) the shot's path against the
+    crosshair while the hull flies fast and turns.
+- Evidence: `CrewOfFourLab.html` `shotVel`, `SHIPPED.shotInherit`, the Round 6 shots control (gun hull hits 38 → 64 in
+  Broadside with the fix); C# `OrcaCrewCore.ShotVelocity` held to it by `parity.cjs`; `OrcaHullRig.PoseSeat`;
+  `CREW_OF_FOUR_LAB.md` §4 round 7.
+- Promoted: no
+
+### L-STU-132 — Show a world fact on the world, and check every new world effect against the flat rule before drawing it
+- Lab: Crew of Four Lab, round 8 (the Orca, after Garrett flew round 7 in Unity) · Branch: `cece/happy-noether-m54hz6` · Date: 2026-10-21
+- What happened: the bomb seat showed "what a press would catch" as a dashed screen ring round the live bomb with
+  "BURST" over it. The owner: "the bomb should not have a ring that says burst. it should use a lit state to show what
+  it will destroy. always go for the 3d in world solution over the 2d flat text solution." The first redraw of the
+  missiles then gave them an additive ribbon trail (and the game the fleet's `TrailRenderer`), which the LOCKED
+  "nothing in the world looks flat" rule names by shape. Two more traps on the way: PrismLit's aimed channel is
+  cone-only, so a sphere published there is read as a cone; and lighting "every prism in the sphere" lit the gunner's
+  own mass, which the blast spares, so the light said the wrong thing.
+- Do instead:
+  - For any "what will this hit / what state is it in" readout, first ask which world channel can carry it (PrismLit
+    for mass about to be acted on, morphs and petals for a hull, a faceted lit volume for an effect). Draw it there,
+    in the lab's 3D view first. Keep the screen for the aim mark only.
+  - Light exactly what the action will do: gate a light to the domains it breaks (one bank light per domain), never the
+    whole volume.
+  - Before drawing a trail, a beam or a marker, read the flat rule's list. A plume tube that is thin at the source
+    also keeps a chase camera out of its own trail.
+  - Check a look by rendering the same frame with the effect on and off (`__lab.still(eye, look)` from a scripted
+    search), not by finding it in a busy seat screenshot.
+- Evidence: `CrewOfFourLab.html` `bombLight`, `missileView`, `tube`, `MLOOK`, `__lab.still`; C# `OrcaCrewView.LightBomb`,
+  `OrcaMissileVisual`; `Docs/claude/SHADERS_AND_PERFORMANCE.md` "In the world, not on the screen"; `CREW_OF_FOUR_LAB.md`
+  §4 round 8.
+- Promoted: yes (the LOCKED rule in `SHADERS_AND_PERFORMANCE.md`)
