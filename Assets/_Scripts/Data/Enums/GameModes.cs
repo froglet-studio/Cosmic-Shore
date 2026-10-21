@@ -319,8 +319,15 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/THRESHERTIME.md.
         ThresherTime = 66,
 
+        // WrasseRun (68): the Wrasse and Grouper's circuit race - Thresher Time's shape (a lapped gate
+        // circuit on the shared HeadlongCircuit solver) where a ring counts only when the WRASSE (the
+        // navigator's kite) threads it: the Grouper flies the plane through the next ring, the kite swings
+        // through its mouth, and Time loops save the boosts that reach the next one. 67 is SerpentCharge's
+        // on an in-flight branch. See _Scripts/Controller/Arcade/WRASSERUN.md.
+        WrasseRun = 68,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 62) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
+        // 63) in the same commit, and take the next free ID -- 7, 28, 29, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

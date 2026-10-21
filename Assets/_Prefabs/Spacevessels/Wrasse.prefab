@@ -322,6 +322,7 @@ GameObject:
   - component: {fileID: -2940056991898874084}
   - component: {fileID: 3901220300008001}
   - component: {fileID: 5137264980016000019}
+  - component: {fileID: 7319000000000000021}
   m_Layer: 0
   m_Name: Wrasse
   m_TagString: Player_Ship
@@ -354,6 +355,8 @@ Transform:
   - {fileID: 1004589972253982722}
   - {fileID: 1004589972253982732}
   - {fileID: 1004589972253982734}
+  - {fileID: 7319000000000000002}
+  - {fileID: 7319000000000000012}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2386735669300085014
@@ -795,7 +798,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipGeometries:
-  - {fileID: 2864103291091619125}
+  - {fileID: 7319000000000000003}
   _domainMaterialSlot: 1
   _domainReplacesMaterials: []
 --- !u!114 &1427785718439944555
@@ -1810,6 +1813,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4853044355858455827}
     m_Modifications:
+    - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -9092842337901520449, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
       propertyPath: m_Layer
@@ -2910,3 +2918,191 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 71805f184cdc41f9b24ecba240f477c8, type: 2}
+--- !u!1001 &7319000000000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4853044355858455827}
+    m_Modifications:
+    - target: {fileID: 919132149155446097, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_Name
+      value: Grouper
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e8c932601ef7e35b1f3017557298424c, type: 3}
+--- !u!4 &7319000000000000002 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e8c932601ef7e35b1f3017557298424c,
+    type: 3}
+  m_PrefabInstance: {fileID: 7319000000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &7319000000000000003 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: e8c932601ef7e35b1f3017557298424c,
+    type: 3}
+  m_PrefabInstance: {fileID: 7319000000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7319000000000000011
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4853044355858455827}
+    m_Modifications:
+    - target: {fileID: 919132149155446097, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_Name
+      value: WrasseKite
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c56064d56acc061a124729744a5966fa, type: 3}
+--- !u!4 &7319000000000000012 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c56064d56acc061a124729744a5966fa,
+    type: 3}
+  m_PrefabInstance: {fileID: 7319000000000000011}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7319000000000000021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a3e5c19d0b44f6e9b2c8d1f4e6a0b73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  kiteModelName: WrasseKite
+  grouperModelName: Grouper
+  kiteModelEuler: {x: 0, y: 0, z: 0}
+  kiteModelScale: 1
+  swimHz: 1.2
+  swimHzPer100: 1.4
+  swimDegrees: {x: 8, y: 14, z: 24}
+  swimLagBeats: 0.18
+  finFlapDegrees: 28
+  swimTurnBendDegrees: 18
+  grouperCruiseSpeed: 60
+  grouperBoostSpeed: 260
+  grouperTailHz: {x: 0.6, y: 1.4}
+  grouperTailDegrees: {x: 7, y: 16}
+  grouperTurnBendDegrees: 22
+  grouperFullYawRate: 110
+  grouperFinScullDegrees: 14
+  grouperFinBankDegrees: 26
+  grouperJawDegrees: 24
+  grouperDorsalDegrees: 30
+  remoteSmoothing: 14

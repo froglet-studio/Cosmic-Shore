@@ -686,7 +686,7 @@ Flow (status text goes to the splash's status line):
 - ⚠ **ArkLink and PortLink are still present and tappable even though their screens are disabled** — the tap silently does nothing. No greying-out logic was found; whether they look distinct is UNVERIFIED (the icon-swap treats all five identically).
 - The whole NavBar hides (CanvasGroup alpha 0) during freestyle flight.
 
-Gamepad, on HOME only: **A** opens Arcade, **X** opens Settings, **Y** toggles freestyle flight (3s cooldown). **L1/R1** (triggers) page the filmstrip anywhere.
+Gamepad, on HOME only: **A** opens Arcade, **Start** opens Settings, **Select / View** toggles freestyle flight (3s cooldown; Garrett moved these off X and Y on 2026-10-21). **L1/R1** (triggers) page the filmstrip anywhere.
 
 ## 2.4 HOME screen
 

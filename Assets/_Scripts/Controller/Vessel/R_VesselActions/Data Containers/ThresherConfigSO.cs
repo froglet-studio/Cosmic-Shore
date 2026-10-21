@@ -178,6 +178,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Re-attach once the spin falls below this fraction of spectateSpinRate (or the plant " +
                  "is released). Below 1 so a spin hovering at the threshold does not flap.")]
         [SerializeField, Range(0f, 1f)] float spectateReleaseFraction = 0.75f;
+        [Tooltip("The launch view rides out a slackened RT or a slowed spin shorter than this (seconds) before it " +
+                 "drops; it still drops at once when the plant ends. A trigger held 'at 100%' sags for a tenth of a " +
+                 "second now and then, and each sag used to drop the view and bring it back with the camera re-eased.")]
+        [SerializeField, Min(0f)] float spectateDropSeconds = 0.25f;
         [Tooltip("The launch camera follows behind the launch point ON the trajectory, raised this far above it " +
                  "(degrees). 0 (shipped) = no height offset: the trajectory is the screen centre, drawn as a crosshair.")]
         [SerializeField, Range(0f, 85f)] float aimElevationDegrees = 0f;
@@ -221,8 +225,9 @@ namespace CosmicShore.Gameplay
                  "fast spin then stops harder, a bigger cap is smoother but the exit drifts more.")]
         [SerializeField, Range(1f, 90f)] float releaseSpinDownMaxDegrees = 30f;
         [Tooltip("When a spin hands the camera to the launch view, keep the camera's own turn and glide it to a stop " +
-                 "over this long (seconds); the aim is where the glide ends. 0 = the old entry, which starts from a " +
-                 "still pose and stops a camera turning at up to cameraMaxFollowTurnRate in one frame.")]
+                 "over this long (seconds) as it eases into the view. 0 = the old entry, which starts from a still pose " +
+                 "and stops a camera turning at up to cameraMaxFollowTurnRate in one frame. It moves only the camera's " +
+                 "start pose: the aim is what the pilot was pointing at when the plant began.")]
         [SerializeField, Min(0f)] float spectateCarrySeconds = 0f;
         [Tooltip("The chase camera's follow frame may change its turn RATE at most this fast (deg/s^2), on top of the " +
                  "cameraMaxFollowTurnRate cap, so it eases into and out of a turn instead of starting and stopping it " +
@@ -334,6 +339,7 @@ namespace CosmicShore.Gameplay
         public float SpectateSpinRate => spectateSpinRate;
         public float SpectateEngageSeconds => spectateEngageSeconds;
         public float SpectateReleaseFraction => spectateReleaseFraction;
+        public float SpectateDropSeconds => spectateDropSeconds;
         public float AimElevationDegrees => aimElevationDegrees;
         public float AimCameraDistance => aimCameraDistance;
         public float SightWideFieldOfView => sightWideFieldOfView;

@@ -13,7 +13,8 @@ namespace CosmicShore.Gameplay
     /// release = reel in fast (the crack).</item>
     /// <item><see cref="ThresherControl.Plant"/> (left trigger): hold = plant the ball and swing round
     /// it; release = fly off, the ball yanked after you.</item>
-    /// <item><see cref="ThresherControl.MassMode"/> (A): each PRESS toggles Mass Mode; the release
+    /// <item><see cref="ThresherControl.MassMode"/> (A): each PRESS toggles Mass Mode (the hull spawns
+    /// in it); the release
     /// does nothing (rule 37: a press-and-forget toggle must ignore the release, or an AI's
     /// zero-length press would toggle it straight back).</item>
     /// </list>
