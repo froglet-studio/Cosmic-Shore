@@ -1393,6 +1393,10 @@ unchanged); 53/53 stand-in tests.
 time - bleeding-edge's new first-time guided path ("Your first race is waiting. Open the Arcade.", `MenuSpotlight`)
 dims and blocks the Toybox and the menu crystal on the test profile. The run itself logged zero crew exceptions with
 the seat idle, so the shared seat, layout and render code is compile-verified only (both seats).
+**Superseded in part (2026-10-21):** merging bleeding-edge again withdrew the Wrasse half. `KiteNavigator` is
+bleeding-edge's (its own crew pieces, no `ICrewSeat`), and its move onto `ICrewSeat` is step 2 of the work order in
+`KITE_NAVIGATOR.md`. Check the **Goby** half of every step below; the Wrasse's station still reads **Wrasse and Grouper**
+(`CrewNames` is on bleeding-edge too), but its view and swap are bleeding-edge's own, not these shared pieces.
 
 1. **Toybox ▸ Vessel Changer:** the stations read **Goby and Pistol** and **Wrasse and Grouper**; so do the hangar card,
    its detail and abilities views and the arcade launch panel for either.

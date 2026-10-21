@@ -602,13 +602,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
 - **Done:** 2026-10-21, Decided by Garrett, 2026-10-21: "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc." Two human seats on any mix of phones and PCs: the hull is owned by the pilot seat's machine, the navigator seat is simulated on its holder's machine and sends its decided effects through a server-checked relay; the seat consumes the swap gesture on a crew hull (seats first, then the team ring). Plan and work order: KITE_NAVIGATOR.md "Two humans, two seats (plan, 2026-10-21)".
 
-### T-20261017-efca · done · dev · Crew vessels
+### T-20261017-efca · open · dev · Crew vessels
 - **Task:** When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule.
 - **Done when:** A duo-vessel entry seats the kite on a hull with no editor menu
 - **Who can take it:** Garrett (duo-vessel owner)
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; .claude/skills/duo-vessel/SKILL.md on cece/sharp-tesla-j0kd7z
-- **Done:** 2026-10-18, Done on cece/sharp-tesla-j0kd7z (2026-10-18): the Wrasse is the duo-vessel skill's second design, and both crew seats (KiteNavigator, GobyPistolDuo) implement ICrewSeat and share CrewSeat (wake, PilotSwapGesture swap, AI hand-over), CrewPictureInPicture and CrewViewRender; check_crew_vessels.py holds every crew hull to the card / roster / container rules. The Wrasse already reaches the game from the Toybox Vessel Changer; a mode carrying a crew hull is the networking decision (T-20261017-b06e).
+- **Reopened:** 2026-10-21 by a Claude session (`cece/sharp-tesla-j0kd7z`): the 2026-10-18 close was withdrawn when that branch merged bleeding-edge again (bleeding-edge's `KiteNavigator` has its own crew pieces). Step 2 of `KITE_NAVIGATOR.md`'s "Two humans, two seats" work order does it once the branch lands. The earlier note said: 2026-10-18, Done on cece/sharp-tesla-j0kd7z (2026-10-18): the Wrasse is the duo-vessel skill's second design, and both crew seats (KiteNavigator, GobyPistolDuo) implement ICrewSeat and share CrewSeat (wake, PilotSwapGesture swap, AI hand-over), CrewPictureInPicture and CrewViewRender; check_crew_vessels.py holds every crew hull to the card / roster / container rules. The Wrasse already reaches the game from the Toybox Vessel Changer; a mode carrying a crew hull is the networking decision (T-20261017-b06e).
 
 ### T-20261017-3cbe · open · content · Crew vessels
 - **Task:** Author FMOD events for the Kite Navigator's eight empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal, fauna struck.

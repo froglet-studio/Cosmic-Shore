@@ -401,7 +401,9 @@ the line it settled.
   `CrewPictureInPicture` (the Pistol's view moved from a lower-RIGHT inset to the Wrasse's lower-left square, and
   taking the Pistol now lifts the Goby's view into that square); `CrewViewRender` (the side camera's render measures
   prism depth from the Pistol's plane and re-aims the game's occlusion corridor at the Pistol, so a foreground prism
-  in front of it DITHERS - the round-before's "skip it" concession is gone); draws for the side camera only
+  in front of it DITHERS - the round-before's "skip it" concession is gone) [2026-10-21: the Wrasse half of this
+  unification was withdrawn in the next bleeding-edge merge; the Wrasse joins at KITE_NAVIGATOR.md's work order,
+  step 2]; draws for the side camera only
   (`RenderParams.camera`); `check_crew_vessels.py` and `CrewVesselTests`. The Wrasse's behaviour is unchanged (its
   code now calls the same pieces). **[read] for Garrett:** the Goby still shows the Squirrel's HUD while the Wrasse
   has one that reads its seat; a Goby HUD that reads the Pistol (launch charge, snap, ghost) is the next consistency
@@ -477,4 +479,8 @@ the line it settled.
     path run into depth? Is the 1050 u view with the parallax camera right for a real-world view, or should it be
     orthographic like the Wrasse's kite? The trail's fine zigzag (round 12's hills) now reads as real 3D hills; keep it?
   **Unity is further behind**: the tangent plane, its five numbers (`--unmapped`) and the depth look are lab-only until
-  Garrett has played it.
+  Garrett has played it. Follow-ups that hang on his verdict: (1) the clone regenerates `GobyPistolMathTests.cs` from
+  the lab's goldens (`goby_pistol_goldens.cjs` then `goby_pistol_goldens_to_tests.py`); today it encodes v11's numbers
+  and a fresh generation differs only by round 12's tuned values; (2) if the tangent plane is kept, the unroll and warp
+  machinery (lab: `ribMap*`, `classify`, `warpBox`, the Settled unroll; Unity: `PistolRibbon`'s maps, `PistolWarp`) has
+  no reader left and can be retired in the same clone.

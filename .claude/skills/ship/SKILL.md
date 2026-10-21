@@ -346,6 +346,13 @@ run the `/reorient` skill first and act on its verdict before shipping.
   For each name that still exists (`git ls-remote origin refs/heads/<name>`), run
   `git fetch --depth=50 origin <name>` and then
   `git log --oneline origin/<base>..FETCH_HEAD -- <your changed files>`.
+- **Taking THEIR side of a file your branch refactored voids your branch's PROSE about that refactor, and nothing
+  conflicts there.** `cece/sharp-tesla-j0kd7z` moved the Wrasse's `KiteNavigator` onto a shared `ICrewSeat`; the next
+  base merge (2026-10-21) took bleeding-edge's `KiteNavigator` wholesale because it had grown its own crew system. The
+  code was right after that. Five claims that the Wrasse ran on the shared pieces were still in the docs: a CLOSED team
+  task, a verification-checklist entry, the project overview row, a report and the brief. A closed task is the worst of
+  them, because nobody re-reads a done row. After any take-theirs on a file your branch changed, grep your branch's diff
+  for the file's types (`git diff <merge-base>..HEAD -- '*.md' | grep <Type>`) and correct or reopen each claim.
 - **An add/add conflict on a `.meta` is two GUIDs for one asset path, and taking one side wholesale
   orphans every reference to the other.** Two branches each created `RampBoostAIPolicySO.cs` and
   `RhinoAIBoostPolicy.asset` (2026-10-17, `cece/relaxed-hopper-r62hbd` against bleeding-edge), so
