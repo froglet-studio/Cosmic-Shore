@@ -260,6 +260,37 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ShippedProfile_CarriesTheSyntheticWire()
+        {
+            // The switch rings' cable (Docs/SPINDLE_LOD.md section 9): one synthetic set whose mid tier IS
+            // its near mesh (the near tier already draws on SpindleWireGraph), and the wire template.
+            var shipped = AssetDatabase.LoadAssetAtPath<SpindleLodProfileSO>("Assets/Resources/SpindleLodProfile.asset");
+            Assert.IsNotNull(shipped);
+            var wire = shipped.SyntheticSet;
+            Assert.IsNotNull(wire, "no synthetic mesh set - run Tools/Build/author_spindle_lod_meshes.py");
+            Assert.AreSame(wire.source, wire.mid, "the wire's mid tier must be its near mesh");
+            Assert.AreNotSame(wire.source, wire.low);
+            Assert.IsTrue(wire.MatchesImport(out string why), why);
+            Assert.IsNotNull(shipped.wireTemplate, "wireTemplate is unset");
+            foreach (var property in new[] { "_SpindleLodGirth", "_SpindleLodStrand", "_SpindleLodStrength", "_DullColor", "_Distance" })
+                Assert.IsTrue(shipped.wireTemplate.HasProperty(property), $"SpindleWire.mat's shader has no {property}");
+            int synthetic = 0;
+            foreach (var set in shipped.meshSets) if (set.synthetic) synthetic++;
+            Assert.AreEqual(1, synthetic, "exactly one synthetic set");
+        }
+
+        [Test]
+        public void SyntheticWire_IsNeverCulled()
+        {
+            // A switch is a signal you fly toward: past the cull a ring stays the thread (which on
+            // SpindleWireGraph never fades); a limb leaves.
+            Assert.AreEqual(Tier.Min, SpindleLodSystem.Kept(Tier.Culled, synthetic: true));
+            Assert.AreEqual(Tier.Culled, SpindleLodSystem.Kept(Tier.Culled, synthetic: false));
+            foreach (Tier t in System.Enum.GetValues(typeof(Tier)))
+                if (t != Tier.Culled) Assert.AreEqual(t, SpindleLodSystem.Kept(t, synthetic: true));
+        }
+
+        [Test]
         public void BodyReach_IsAHalfOctaveCeiling()
         {
             // Bodies of a size share a depth material: reach rounds UP to the next power of sqrt(2), so a

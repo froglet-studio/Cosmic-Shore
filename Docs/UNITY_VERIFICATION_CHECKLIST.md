@@ -12789,6 +12789,12 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
 10b. (The width-hold fix) Approach a Lattice plant from ~1,000 units: its limbs never swell - at 184 - 316
    units they stay the braid's own thickness (at most ~2.6x a strand's width far out, where that is ~1 px).
    Before the fix they ballooned to ~32x there and snapped back closer in.
+12. (Synthetic wire, Docs/SPINDLE_LOD.md section 9) `SpindleWireGraph` imports without magenta. Any toybox toy,
+   race gate or Scarab switch: up close the ring is a clean three-strand cable in its signal colour, solid,
+   no lace, not swaying; flying away it turns to spindle lace from ~184 units, back to a solid ring by
+   ~700, a thin glowing ring past ~1,000, and it is still there at 3,000+. A Domain Changer slot flipping
+   domain repaints it with no pop. EditMode `ShippedProfile_CarriesTheSyntheticWire` and
+   `SyntheticWire_IsNeverCulled` pass. In edit mode (or with `lodEnabled` off) rings are the old prisms.
 11. (Round 5) Fly away from a Lattice plant: fully open 316 - 474 units (a Charge plant's tips ~2.7 units out,
    others ~0.8), settled back onto a single line by ~700 with no visible step, then still a thin line through
    ~1,000 (72-tri braid) and ~1,000 - 1,500 (12-tri thread, glowing up then fading), gone past ~1,500. A shark

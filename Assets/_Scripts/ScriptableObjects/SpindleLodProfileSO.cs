@@ -125,8 +125,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("SpindleLodFar.mat: SpindleMaterial on SpindleLodFarGraph, instancing on. A build-variant anchor; runtime LOD materials are cloned from it.")]
         public Material farTemplate;
 
-        [Tooltip("SpindleDepth.mat: SpindleMaterial on SpindleDepthGraph. A build-variant anchor; the creatures' depth materials and the switch rings' are cloned from it.")]
+        [Tooltip("SpindleDepth.mat: SpindleMaterial on SpindleDepthGraph. A build-variant anchor; the creatures' depth materials are cloned from it.")]
         public Material depthTemplate;
+
+        [Tooltip("SpindleWire.mat: SpindleMaterial on SpindleWireGraph. A build-variant anchor; every tier of a SYNTHETIC mesh set (the switch rings' wire) is cloned from it.")]
+        public Material wireTemplate;
 
         [Tooltip("One entry per spindle mesh that has LOD meshes.")]
         public List<MeshSet> meshSets = new();
@@ -150,6 +153,8 @@ namespace CosmicShore.ScriptableObjects
             public Vector3 expectedSourceCenter;
             [Tooltip("The source mesh's bounds extent as the generator predicts Unity imports it.")]
             public Vector3 expectedSourceExtent;
+            [Tooltip("A SYNTHETIC wire (the switch rings, Docs/SPINDLE_LOD.md section 9): every tier draws on SpindleWireGraph (wireTemplate) - solid up close, a spindle's lace while open - and it is never culled.")]
+            public bool synthetic;
 
             /// <summary>
             /// True when the imported source mesh is the one the LOD meshes were built against.
@@ -194,6 +199,17 @@ namespace CosmicShore.ScriptableObjects
             return why == null;
         }
 
+        /// <summary>The synthetic wire's mesh set (the switch rings), or null when the profile has none.</summary>
+        public MeshSet SyntheticSet
+        {
+            get
+            {
+                for (int i = 0; i < meshSets.Count; i++)
+                    if (meshSets[i] != null && meshSets[i].synthetic) return meshSets[i];
+                return null;
+            }
+        }
+
         /// <summary>A limb's overt strength: Charge lifeforms part hardest.</summary>
         public float StrengthFor(bool charge) => charge ? chargeStrength : otherStrength;
 
@@ -201,6 +217,7 @@ namespace CosmicShore.ScriptableObjects
         {
             if (!BandsAreSane(out why)) return false;
             if (!midTemplate || !farTemplate) why = "a template material is missing";
+            else if (SyntheticSet != null && !wireTemplate) why = "a synthetic mesh set has no wireTemplate";
             return why == null;
         }
 

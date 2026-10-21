@@ -33,7 +33,11 @@ overt depth effect onto every spindle-material surface that is NOT the braid - t
 (form 0, bloom) and the switch rings (form 1, facets) - with three per-material floats,
 `_SpindleLodStrength`, `_SpindleDepthReach` and `_SpindleDepthForm` (all 0 by default = pass-through).
 
-TEMPLATE MATERIALS (SpindleLodMid.mat / SpindleLodFar.mat / SpindleDepth.mat) exist for the BUILD, not for looks: a
+SpindleWireGraph (Docs/SPINDLE_LOD.md §9) is the fourth: the mid graph's construction with SpindleWireSurface
+in place of SpindleLodSurface - the synthetic wire of the switch rings, solid up close and settled, the
+spindle's lace while the effect is open. It draws every tier of the wire's mesh set.
+
+TEMPLATE MATERIALS (SpindleLodMid.mat / SpindleLodFar.mat / SpindleDepth.mat / SpindleWire.mat) exist for the BUILD, not for looks: a
 material created only at runtime does not stop the build from stripping the shader variants it
 needs (`_ALPHATEST_ON`, `_SURFACE_TYPE_TRANSPARENT` are shader_feature keywords on a graph with
 material override, and instancing variants are stripped unless some material asset enables them).
@@ -84,6 +88,7 @@ TIERS = {
     "mid": dict(graph="SpindleLodMidGraph", material="SpindleLodMid"),
     "far": dict(graph="SpindleLodFarGraph", material="SpindleLodFar"),
     "depth": dict(graph="SpindleDepthGraph", material="SpindleDepth"),
+    "wire": dict(graph="SpindleWireGraph", material="SpindleWire"),
 }
 for t in TIERS.values():
     t["graph_guid"] = guid_for(t["graph"])
@@ -129,6 +134,7 @@ DEPTH_GLOW_SLOTS = [
     (7, "Phase", "v1", False), (8, "Clock", "v1", False), (9, "OutColor", "v3", True), (10, "OutAlpha", "v1", True),
 ]
 FUNCTIONS = {"SpindleLodVertex": VERTEX_SLOTS, "SpindleLodSurface": SURFACE_SLOTS, "SpindleLodThread": THREAD_SLOTS,
+             "SpindleWireSurface": SURFACE_SLOTS,
              "SpindleDepthVertex": DEPTH_VERTEX_SLOTS, "SpindleDepthGlow": DEPTH_GLOW_SLOTS}
 
 
@@ -137,7 +143,8 @@ def vertex_fn(tier):
 
 
 def fragment_fn(tier):
-    return {"mid": "SpindleLodSurface", "far": "SpindleLodThread", "depth": "SpindleDepthGlow"}[tier]
+    return {"mid": "SpindleLodSurface", "far": "SpindleLodThread", "depth": "SpindleDepthGlow",
+            "wire": "SpindleWireSurface"}[tier]
 
 
 def _oid(seed):
@@ -315,8 +322,8 @@ def build(tier):
     graph["m_Edges"].remove(base_edge)
     graph["m_Edges"].remove(alpha_edge)
 
-    if tier == "mid":
-        scf = add(_cf(death, donor_v1, donor_v3, "SpindleLodSurface", seed, fx + 460.0, fy))
+    if tier in ("mid", "wire"):
+        scf = add(_cf(death, donor_v1, donor_v3, fragment_fn(tier), seed, fx + 460.0, fy))
         feeds = [((base_edge["m_OutputSlot"]["m_Node"]["m_Id"], base_edge["m_OutputSlot"]["m_SlotId"]), 0),
                  ((alpha_edge["m_OutputSlot"]["m_Node"]["m_Id"], alpha_edge["m_OutputSlot"]["m_SlotId"]), 1),
                  ((dpn["m_ObjectId"], 0), 2), ((bpn["m_ObjectId"], 0), 3),

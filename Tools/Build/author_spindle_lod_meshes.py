@@ -40,6 +40,18 @@ WHAT THIS WRITES (Assets/_Models/Spindles/):
                           carrying the strand's taper (root, belly, tip: thin - thick - thin), 12
                           triangles. TEXCOORD1 = 0 (already converged), TEXCOORD2 = the radial arm.
 
+  SpindleWireRing.asset        THE SYNTHETIC WIRE (Docs/SPINDLE_LOD.md section 9): a switch ring built as a
+                               machined three-strand cable - hexagonal strands of constant radius, a
+                               regular 24-turn twist, closed round a unit ring (radius 0.5 in x/y,
+                               axis z, the RingMesh convention ToyFactory scales by diameter) - with
+                               the braid's own channels, so every LOD behaviour applies to it. Its
+                               UV0 u runs 1 -> 5 round the ring (>= 1 everywhere: the fan's
+                               root weight is 1, so the whole cable unravels rather than a root
+                               holding), and each strand's SPLAY points out from the cable's axis.
+                               144 segments x 3 strands x 6 sides, 5,184 triangles; also its mid tier.
+  SpindleWireRingLow.asset     the same cable at 48 segments, drawn only once fully converged.
+  SpindleWireRingThread.asset  one hexagonal tube on the cable's axis, what the cable converges to.
+
 and the MEASURED block of `Assets/Resources/SpindleLodProfile.asset` (the source mesh, the two LOD
 meshes, the braid girth, the reference strand radius and the source mesh's expected bounds). The
 tuning half of that asset (bands, look) is the designer's: this script writes it only when the
@@ -111,6 +123,23 @@ SCRIPT_GUID = guid_for("SpindleLodProfileSO")
 MID_TEMPLATE_GUID = guid_for("SpindleLodMid")
 FAR_TEMPLATE_GUID = guid_for("SpindleLodFar")
 DEPTH_TEMPLATE_GUID = guid_for("SpindleDepth")
+WIRE_TEMPLATE_GUID = guid_for("SpindleWire")
+
+# The synthetic wire (the switch rings).
+WIRE_NAME = "SpindleWireRing"
+WIRE_LOW_NAME = "SpindleWireRingLow"
+WIRE_THREAD_NAME = "SpindleWireRingThread"
+WIRE_GUID = guid_for(WIRE_NAME)
+WIRE_LOW_GUID = guid_for(WIRE_LOW_NAME)
+WIRE_THREAD_GUID = guid_for(WIRE_THREAD_NAME)
+WIRE_RING_RADIUS = 0.5        # the unit ring ToyFactory scales by the switch's diameter
+WIRE_HELIX = 0.022            # each strand's centre, off the cable's axis
+WIRE_STRAND = 0.016           # each strand's (hexagonal) radius: cable radius 0.038 ~ RingMesh's 0.04 tube
+WIRE_SIDES = 6
+WIRE_TWISTS = 24              # whole turns of the lay round the ring (an integer, so the loop closes)
+WIRE_SEGMENTS = 144           # six per turn
+WIRE_LOW_SEGMENTS = 48
+WIRE_WRAPS = 4.0              # spindle lengths of u round the ring (the lace's scale, the wave's path)
 
 
 # --------------------------------------------------------------------------------------------
@@ -311,6 +340,100 @@ def build_far(m):
 
 
 # --------------------------------------------------------------------------------------------
+# The synthetic wire (the switch rings)
+# --------------------------------------------------------------------------------------------
+
+def _wire_frame(theta):
+    """The cable's axis point on the ring, its outward radial and the ring's axis (the cross-section plane)."""
+    c, s = math.cos(theta), math.sin(theta)
+    return (WIRE_RING_RADIUS * c, WIRE_RING_RADIUS * s, 0.0), (c, s, 0.0), (0.0, 0.0, 1.0)
+
+
+def _wire_point(centre, out, up, angle, r):
+    return _add(centre, _add(_scale(out, r * math.cos(angle)), _scale(up, r * math.sin(angle))))
+
+
+def build_wire(segments=WIRE_SEGMENTS, strands=STRANDS):
+    """The cable: `strands` hexagonal strands laid round the axis at a constant twist (strands=0: the
+    single converged tube on the axis). The hexagons keep a FIXED orientation in the cross-section
+    plane rather than rolling with the lay, so the converged strands coincide exactly and any
+    decimation of the converged cable is the same tube."""
+    out = {"v": [], "t": []}
+    sides = [2.0 * math.pi * j / WIRE_SIDES for j in range(WIRE_SIDES + 1)]
+    for s in range(max(strands, 1)):
+        for i in range(segments):
+            ring = []
+            for k in (i, i + 1):
+                theta = 2.0 * math.pi * k / segments
+                axis, outward, up = _wire_frame(theta)
+                if strands:
+                    lay = 2.0 * math.pi * s / strands + WIRE_TWISTS * theta
+                    centre = _wire_point(axis, outward, up, lay, WIRE_HELIX)
+                    splay = _norm(_sub(centre, axis))
+                else:
+                    centre, splay = axis, (0.0, 0.0, 0.0)
+                u = 1.0 + WIRE_WRAPS * k / segments
+                ring.append((centre, axis, outward, up, splay, u))
+            for j in range(WIRE_SIDES):
+                corners = []
+                for (centre, axis, outward, up, splay, u), side in ((ring[0], j), (ring[0], j + 1), (ring[1], j + 1), (ring[1], j)):
+                    p = _wire_point(centre, outward, up, sides[side], WIRE_STRAND)
+                    corners.append([p, None, (u, side / WIRE_SIDES), _sub(axis, centre), _sub(p, centre), splay])
+                # A flat facet (machined): one normal per quad, pointing out of its strand.
+                n = _norm(_cross(_sub(corners[1][0], corners[0][0]), _sub(corners[3][0], corners[0][0])))
+                mid = _scale(_add(_add(corners[0][4], corners[1][4]), _add(corners[2][4], corners[3][4])), 0.25)
+                if _dot(n, mid) < 0.0:
+                    n = _scale(n, -1.0)
+                _emit_quad(out, [(c[0], n, c[2], c[3], c[4], c[5]) for c in corners])
+    return out
+
+
+def wire_measure(near):
+    lo = [min(v[0][k] for v in near["v"]) for k in range(3)]
+    hi = [max(v[0][k] for v in near["v"]) for k in range(3)]
+    return dict(girth=2.0 * (WIRE_HELIX + WIRE_STRAND), r_ref=WIRE_STRAND, lo=lo, hi=hi)
+
+
+def validate_wire(near, low, thread):
+    errs = []
+    want = {"near": (near, WIRE_SEGMENTS * STRANDS), "low": (low, WIRE_LOW_SEGMENTS * STRANDS),
+            "thread": (thread, WIRE_LOW_SEGMENTS)}
+    for name, (mesh, tubes) in want.items():
+        if len(mesh["t"]) != tubes * WIRE_SIDES * 2:
+            errs.append(f"wire {name}: {len(mesh['t'])} triangles")
+        if len(mesh["v"]) > 65535:
+            errs.append(f"wire {name}: {len(mesh['v'])} vertices overflow a 16-bit index buffer")
+        for tri in mesh["t"]:
+            p = [mesh["v"][i][0] for i in tri]
+            n = _add(_add(mesh["v"][tri[0]][1], mesh["v"][tri[1]][1]), mesh["v"][tri[2]][1])
+            if _dot(_cross(_sub(p[1], p[0]), _sub(p[2], p[0])), n) <= 0.0:
+                errs.append(f"wire {name}: a triangle faces away from its own normals")
+                break
+        for p, _n, uv, to_axis, radial, splay in mesh["v"]:
+            # The geomorph's contract, as for the braid: strand centre + to_axis is the cable's axis
+            # (on the ring, in its plane), and every corner sits a strand radius off its centre.
+            target = _add(_sub(p, radial), to_axis)
+            if abs(math.hypot(target[0], target[1]) - WIRE_RING_RADIUS) > 1e-6 or abs(target[2]) > 1e-6:
+                errs.append(f"wire {name}: a vertex's convergence target is off the cable's axis")
+                break
+            if abs(_len(radial) - WIRE_STRAND) > 1e-6:
+                errs.append(f"wire {name}: a corner is not a strand radius off its centre")
+                break
+            if uv[0] < 1.0 - 1e-9:
+                errs.append(f"wire {name}: u < 1 - the fan's root weight would pin part of the ring")
+                break
+            if name != "thread" and abs(_len(splay) - 1.0) > 1e-6:
+                errs.append(f"wire {name}: a strand's splay is not a unit direction")
+                break
+    # The loop closes: the last segment's far end is the first segment's near end.
+    first = near["v"][0][0]
+    closing = [v[0] for v in near["v"] if _len(_sub(v[0], first)) < 1e-6]
+    if len(closing) < 2:
+        errs.append("wire near: the cable does not close on itself (the twist count must be whole)")
+    return errs
+
+
+# --------------------------------------------------------------------------------------------
 # Unity Mesh .asset text (the donor-clone layout author_omni_crystal_triangles.py proved)
 # --------------------------------------------------------------------------------------------
 
@@ -436,31 +559,48 @@ MonoBehaviour:
 """
 
 
-def measured_block(m):
+def _set_block(source, mid, low, far, m, synthetic):
     lo, hi = m["lo"], m["hi"]
     ctr = [(lo[k] + hi[k]) / 2 for k in range(3)]
     ext = [(hi[k] - lo[k]) / 2 for k in range(3)]
     return (
-        f"  midTemplate: {{fileID: 2100000, guid: {MID_TEMPLATE_GUID}, type: 2}}\n"
-        f"  farTemplate: {{fileID: 2100000, guid: {FAR_TEMPLATE_GUID}, type: 2}}\n"
-        f"  depthTemplate: {{fileID: 2100000, guid: {DEPTH_TEMPLATE_GUID}, type: 2}}\n"
-        "  meshSets:\n"
-        f"  - source: {{fileID: {SOURCE_MESH_FILE_ID}, guid: {FBX_GUID}, type: 3}}\n"
-        f"    mid: {{fileID: 4300000, guid: {MID_GUID}, type: 2}}\n"
-        f"    low: {{fileID: 4300000, guid: {LOW_GUID}, type: 2}}\n"
-        f"    far: {{fileID: 4300000, guid: {FAR_GUID}, type: 2}}\n"
+        f"  - source: {source}\n"
+        f"    mid: {mid}\n"
+        f"    low: {low}\n"
+        f"    far: {far}\n"
         f"    girth: {fmt(m['girth'])}\n"
         f"    strandRadius: {fmt(m['r_ref'])}\n"
         f"    expectedSourceCenter: {{x: {fmt(ctr[0])}, y: {fmt(ctr[1])}, z: {fmt(ctr[2])}}}\n"
         f"    expectedSourceExtent: {{x: {fmt(ext[0])}, y: {fmt(ext[1])}, z: {fmt(ext[2])}}}\n"
+        f"    synthetic: {1 if synthetic else 0}\n"
+    )
+
+
+def _asset_ref(guid):
+    return f"{{fileID: 4300000, guid: {guid}, type: 2}}"
+
+
+def measured_block(m, wire):
+    return (
+        f"  midTemplate: {{fileID: 2100000, guid: {MID_TEMPLATE_GUID}, type: 2}}\n"
+        f"  farTemplate: {{fileID: 2100000, guid: {FAR_TEMPLATE_GUID}, type: 2}}\n"
+        f"  depthTemplate: {{fileID: 2100000, guid: {DEPTH_TEMPLATE_GUID}, type: 2}}\n"
+        f"  wireTemplate: {{fileID: 2100000, guid: {WIRE_TEMPLATE_GUID}, type: 2}}\n"
+        "  meshSets:\n"
+        + _set_block(f"{{fileID: {SOURCE_MESH_FILE_ID}, guid: {FBX_GUID}, type: 3}}", _asset_ref(MID_GUID),
+                     _asset_ref(LOW_GUID), _asset_ref(FAR_GUID), m, False)
+        # The wire's mid tier IS its near mesh: the near tier already draws on SpindleWireGraph, so
+        # the near -> mid swap changes nothing at all.
+        + _set_block(_asset_ref(WIRE_GUID), _asset_ref(WIRE_GUID), _asset_ref(WIRE_LOW_GUID),
+                     _asset_ref(WIRE_THREAD_GUID), wire, True)
     )
 
 
 MEASURED_RE = re.compile(r"  midTemplate: .*\n(?:  [a-zA-Z]\w*Template: .*\n)*  meshSets:\n(?:  - .*\n|    .*\n)*")
 
 
-def profile_text(existing, m):
-    block = measured_block(m)
+def profile_text(existing, m, wire):
+    block = measured_block(m, wire)
     if existing is None:
         return PROFILE_HEAD.format(script=SCRIPT_GUID) + block
     if MEASURED_RE.search(existing):
@@ -537,6 +677,9 @@ def report(m, mid, far):
           f"({m['dec_err'] * px_per_unit_at_1 / 0.5 / m['girth']:.0f} girths) on the reference display")
     print(f"thickest strand ({thick:.3f}) is one pixel at {thick * px_per_unit_at_1:.0f} units "
           f"({thick * px_per_unit_at_1 / m['girth']:.0f} girths); the whole braid at {m['girth'] * px_per_unit_at_1:.0f} units")
+    print(f"synthetic wire ring: {WIRE_SEGMENTS * STRANDS * WIRE_SIDES * 2} tris -> low {WIRE_LOW_SEGMENTS * STRANDS * WIRE_SIDES * 2} "
+          f"-> thread {WIRE_LOW_SEGMENTS * WIRE_SIDES * 2}; cable girth {2.0 * (WIRE_HELIX + WIRE_STRAND):.3f}, strand radius {WIRE_STRAND} "
+          f"(unit ring: x the switch's diameter in the world)")
 
 
 def outputs():
@@ -547,6 +690,10 @@ def outputs():
     far = build_far(m)
     errs = validate(pos, quads, m, mid, far)
     errs += [e.replace("mid:", "low:") for e in validate_braid(pos, low, LOW_RINGS)]
+    wire = build_wire()
+    wire_low = build_wire(WIRE_LOW_SEGMENTS)
+    wire_thread = build_wire(WIRE_LOW_SEGMENTS, strands=0)
+    errs += validate_wire(wire, wire_low, wire_thread)
     profile_path = os.path.join(REPO, PROFILE)
     existing = open(profile_path).read() if os.path.exists(profile_path) else None
     files = {
@@ -557,7 +704,13 @@ def outputs():
         f"{OUT_DIR}/{LOW_NAME}.asset.meta": MESH_META.format(guid=LOW_GUID),
         f"{OUT_DIR}/{FAR_NAME}.asset": mesh_text(far, FAR_NAME),
         f"{OUT_DIR}/{FAR_NAME}.asset.meta": MESH_META.format(guid=FAR_GUID),
-        PROFILE: profile_text(existing, m),
+        f"{OUT_DIR}/{WIRE_NAME}.asset": mesh_text(wire, WIRE_NAME),
+        f"{OUT_DIR}/{WIRE_NAME}.asset.meta": MESH_META.format(guid=WIRE_GUID),
+        f"{OUT_DIR}/{WIRE_LOW_NAME}.asset": mesh_text(wire_low, WIRE_LOW_NAME),
+        f"{OUT_DIR}/{WIRE_LOW_NAME}.asset.meta": MESH_META.format(guid=WIRE_LOW_GUID),
+        f"{OUT_DIR}/{WIRE_THREAD_NAME}.asset": mesh_text(wire_thread, WIRE_THREAD_NAME),
+        f"{OUT_DIR}/{WIRE_THREAD_NAME}.asset.meta": MESH_META.format(guid=WIRE_THREAD_GUID),
+        PROFILE: profile_text(existing, m, wire_measure(wire)),
     }
     if existing is None:
         files[PROFILE + ".meta"] = PROFILE_META.format(guid=PROFILE_GUID)
@@ -595,10 +748,22 @@ def self_test():
     bent["axis_off"] = 0.05
     failures += not any("left the z axis" in e for e in validate(pos, quads, bent, mid, far))
     # 5. The profile's measured block is replaced in place and the tuning half survives.
-    tuned = profile_text(None, m).replace("nearEndGirths: 100", "nearEndGirths: 99")
-    again = profile_text(tuned, m)
-    failures += "nearEndGirths: 99" not in again or again.count("meshSets:") != 1
-    print("self-test:", "OK (5 negative controls fire)" if failures == 0 else f"FAILED ({failures})")
+    wire = build_wire()
+    wm = wire_measure(wire)
+    tuned = profile_text(None, m, wm).replace("nearEndGirths: 100", "nearEndGirths: 99")
+    again = profile_text(tuned, m, wm)
+    failures += "nearEndGirths: 99" not in again or again.count("meshSets:") != 1 or again.count("synthetic: 1") != 1
+    # 6. The wire: a convergence target off the axis, a pinned root (u < 1) and a flipped facet are caught.
+    low, thread = build_wire(WIRE_LOW_SEGMENTS), build_wire(WIRE_LOW_SEGMENTS, strands=0)
+    assert not validate_wire(wire, low, thread), "the shipped wire must validate"
+    w0 = wire["v"][0]
+    bad = {"v": [(w0[0], w0[1], w0[2], _add(w0[3], (0.01, 0.0, 0.0)), w0[4], w0[5])] + wire["v"][1:], "t": wire["t"]}
+    failures += not any("off the cable's axis" in e for e in validate_wire(bad, low, thread))
+    bad = {"v": [(w0[0], w0[1], (0.5, w0[2][1]), w0[3], w0[4], w0[5])] + wire["v"][1:], "t": wire["t"]}
+    failures += not any("u < 1" in e for e in validate_wire(bad, low, thread))
+    bad = {"v": wire["v"], "t": [(t[0], t[2], t[1]) if i == 0 else t for i, t in enumerate(wire["t"])]}
+    failures += not any("faces away" in e for e in validate_wire(bad, low, thread))
+    print("self-test:", "OK (8 negative controls fire)" if failures == 0 else f"FAILED ({failures})")
     return 1 if failures else 0
 
 

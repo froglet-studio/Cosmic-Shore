@@ -60,6 +60,11 @@ namespace CosmicShore.Gameplay
     /// pass. It is handed a <b>depth material</b> instead: its own look on SpindleDepthGraph, which
     /// blooms it outward from its pivot on the same ramp, recede and wave, at its element's strength.
     /// It keeps that material at every distance (the effect is zero up close) until it unregisters.
+    ///
+    /// SYNTHETIC WIRES (Docs/SPINDLE_LOD.md section 9). The switch rings are a machined cable with the
+    /// braid's channels (a mesh set flagged synthetic): tiered like a limb, but every tier draws on
+    /// SpindleWireGraph - solid up close, a spindle's lace while the effect is open - and a ring is
+    /// never culled, because a switch is a signal you fly toward.
     /// </summary>
     public sealed class SpindleLodSystem : MonoBehaviour
     {
@@ -196,14 +201,14 @@ namespace CosmicShore.Gameplay
         SpindleLodProfileSO.Style _style;
         TierBounds _bounds;
         readonly Dictionary<Mesh, int> _setOfMesh = new();
-        readonly Dictionary<(int, Material, bool), TierMaterials> _materials = new();
+        readonly Dictionary<(int, Material, float), TierMaterials> _materials = new();
         readonly List<Material> _ownedMaterials = new();
         readonly List<Entry> _entries = new(1024);
         readonly List<Handle> _pending = new(1024);
         readonly List<Handle> _dead = new();
         readonly List<FarBatch> _batches = new();
         readonly List<Body> _bodies = new();
-        readonly Dictionary<(Material, bool, float), Material> _bodyMaterials = new();
+        readonly Dictionary<(Material, float, float), Material> _bodyMaterials = new();
 
         // The pass's per-limb columns, parallel to _entries and to _transforms' order. Plain
         // persistent arrays grown by hand rather than NativeLists: the pass WRITES _lastPose in
@@ -230,10 +235,27 @@ namespace CosmicShore.Gameplay
             if (!renderer || !nearMaterial || s_unavailable) return null;
             var system = EnsureInstance();
             if (!system) return null;
+            float strength = system._profile.StrengthFor(charge);
             if (renderer.TryGetComponent(out MeshFilter filter) && filter.sharedMesh &&
                 system._setOfMesh.TryGetValue(filter.sharedMesh, out int set))
-                return system.Add(renderer, filter, set, nearMaterial, fading, charge);
-            return system.AddBody(renderer, nearMaterial, charge);
+                return system.Add(renderer, filter, set, nearMaterial, fading, strength);
+            return system.AddBody(renderer, nearMaterial, strength);
+        }
+
+        /// <summary>
+        /// Registers a SWITCH RING drawing the synthetic wire (<c>SpindleLodProfileSO.SyntheticSet</c>)
+        /// at <c>switchRingStrength</c>. <paramref name="nearMaterial"/> is the ring's own material on
+        /// SpindleWireGraph. Null when the ring's mesh is not the wire or the system cannot run.
+        /// </summary>
+        public static Handle RegisterSwitchRing(Renderer renderer, Material nearMaterial)
+        {
+            if (!renderer || !nearMaterial || s_unavailable || !Application.isPlaying) return null;
+            var system = EnsureInstance();
+            if (!system) return null;
+            if (!renderer.TryGetComponent(out MeshFilter filter) || !filter.sharedMesh ||
+                !system._setOfMesh.TryGetValue(filter.sharedMesh, out int set) || !system._profile.meshSets[set].synthetic)
+                return null;
+            return system.Add(renderer, filter, set, nearMaterial, false, system._profile.switchRingStrength);
         }
 
         /// <summary>
@@ -339,6 +361,10 @@ namespace CosmicShore.Gameplay
             {
                 var set = profile.meshSets[s];
                 if (set == null) continue;
+                // The synthetic wire's tiers all draw on SpindleWireGraph; without it the rings stay
+                // whatever ToyFactory gave them (it checks the same template before building a wire).
+                if (set.synthetic && (!profile.wireTemplate || !profile.wireTemplate.shader || !profile.wireTemplate.shader.isSupported))
+                    continue;
                 if (!set.MatchesImport(out string why))
                 {
                     // A real fault, so it is loud: the LOD meshes no longer line up with the
@@ -483,7 +509,7 @@ namespace CosmicShore.Gameplay
             _tier = tier;
         }
 
-        Handle Add(Renderer renderer, MeshFilter filter, int set, Material nearMaterial, bool fading, bool charge)
+        Handle Add(Renderer renderer, MeshFilter filter, int set, Material nearMaterial, bool fading, float strength)
         {
             int i = _entries.Count;
             if (i >= _lastPose.Length) Grow(_lastPose.Length * 2);
@@ -494,7 +520,7 @@ namespace CosmicShore.Gameplay
                 renderer = renderer,
                 filter = filter,
                 set = set,
-                materials = MaterialsFor(set, nearMaterial, charge),
+                materials = MaterialsFor(set, nearMaterial, strength),
                 tier = Tier.Near,
                 fading = fading,
                 batchSlot = -1,
@@ -540,20 +566,20 @@ namespace CosmicShore.Gameplay
 
         // ── Bodies (Docs/SPINDLE_LOD.md §8) ─────────────────────────────────────────────────────
 
-        Handle AddBody(Renderer renderer, Material near, bool charge)
+        Handle AddBody(Renderer renderer, Material near, float strength)
         {
             if (!_profile.depthOnBodies || !_profile.depthTemplate || !IsSpindleShaded(near)) return null;
             if (!_profile.depthTemplate.shader || !_profile.depthTemplate.shader.isSupported) return null;
 
             float reach = ReachBucket(ReachOf(renderer));
-            var depth = BodyMaterialFor(near, charge, reach);
+            var depth = BodyMaterialFor(near, strength, reach);
             var handle = new Handle { owner = this, index = _bodies.Count, body = true };
             _bodies.Add(new Body { handle = handle, renderer = renderer, near = near, depth = depth });
             renderer.sharedMaterial = depth;
             // The bloom moves the surface up to its travel off the mesh, in the vertex shader where
             // culling cannot see it: without room in the bounds a creature just off screen would
             // lose the parts that bloomed into view.
-            ExpandLocalBounds(renderer, IncorporealDepth.BloomTravel(_profile.StrengthFor(charge), reach));
+            ExpandLocalBounds(renderer, IncorporealDepth.BloomTravel(strength, reach));
             return handle;
         }
 
@@ -607,15 +633,15 @@ namespace CosmicShore.Gameplay
         internal static float ReachBucket(float reach) =>
             Mathf.Pow(2f, Mathf.Ceil(Mathf.Log(Mathf.Max(reach, 1f), 2f) * 2f) / 2f);
 
-        Material BodyMaterialFor(Material near, bool charge, float reach)
+        Material BodyMaterialFor(Material near, float strength, float reach)
         {
-            var key = (near, charge, reach);
+            var key = (near, strength, reach);
             if (_bodyMaterials.TryGetValue(key, out var m) && m) return m;
             // The body's own look - every property, keyword and the render queue - on the depth graph,
             // which carries SpindleGraph's blackboard verbatim.
-            m = new Material(_profile.depthTemplate) { name = near.name + (charge ? "_Depth_Charge" : "_Depth") };
+            m = new Material(_profile.depthTemplate) { name = near.name + "_Depth" };
             m.CopyPropertiesFromMaterial(near);
-            m.SetFloat(StrengthId, _profile.StrengthFor(charge));
+            m.SetFloat(StrengthId, strength);
             m.SetFloat(ReachId, reach);
             m.SetFloat(FormId, 0f);
             m.renderQueue = near.renderQueue;
@@ -639,23 +665,25 @@ namespace CosmicShore.Gameplay
 
         // ── Materials ───────────────────────────────────────────────────────────────────────────
 
-        TierMaterials MaterialsFor(int set, Material near, bool charge)
+        TierMaterials MaterialsFor(int set, Material near, float strength)
         {
-            if (_materials.TryGetValue((set, near, charge), out var m) && m.mid && m.far) return m;
+            if (_materials.TryGetValue((set, near, strength), out var m) && m.mid && m.far) return m;
             var ms = _profile.meshSets[set];
-            float strength = _profile.StrengthFor(charge);
-            string suffix = charge ? "_Charge" : "";
+            // A synthetic wire draws every tier on SpindleWireGraph: it never trades its solid look for
+            // the plain thread's fade.
+            var midTemplate = ms.synthetic ? _profile.wireTemplate : _profile.midTemplate;
+            var farTemplate = ms.synthetic ? _profile.wireTemplate : _profile.farTemplate;
             m = new TierMaterials
             {
                 near = near,
                 strength = strength,
-                mid = Derive(_profile.midTemplate, near, ms, "_LodMid" + suffix, instanced: false, strength),
-                far = Derive(_profile.farTemplate, near, ms, "_LodFar" + suffix, instanced: true, strength),
+                mid = Derive(midTemplate, near, ms, "_LodMid", instanced: false, strength),
+                far = Derive(farTemplate, near, ms, "_LodFar", instanced: true, strength),
             };
             m.farBatch = NewBatch(set, Tier.Far, m);
             m.lowBatch = NewBatch(set, Tier.Low, m);
             m.minBatch = NewBatch(set, Tier.Min, m);
-            _materials[(set, near, charge)] = m;
+            _materials[(set, near, strength)] = m;
             return m;
         }
 
@@ -759,7 +787,7 @@ namespace CosmicShore.Gameplay
                         continue;
                     }
                     bool still = moved[i] == 0;
-                    var want = (Tier)desired[i];
+                    var want = Kept((Tier)desired[i], _profile.meshSets[e.set].synthetic);
                     bool wantBatch = batchFar && IsFarFamily(want) && still && e.stillOnce && !e.fading;
 
                     if (e.stillOnce != still)
@@ -814,8 +842,12 @@ namespace CosmicShore.Gameplay
         Tier Classify(int i, Vector3 camPos)
         {
             float metric = ClassifyJob.Metric(_lastPose[i], camPos, _girth[i], _bounds.overt, _bounds.sqrDistance);
-            return (Tier)ClassifyJob.TierFor(metric, _tier[i], _bounds);
+            return Kept((Tier)ClassifyJob.TierFor(metric, _tier[i], _bounds), _profile.meshSets[_entries[i].set].synthetic);
         }
+
+        /// <summary>A synthetic wire (a switch ring) is never culled: past the cull it stays the thread,
+        /// which on SpindleWireGraph never fades.</summary>
+        internal static Tier Kept(Tier tier, bool synthetic) => synthetic && tier == Tier.Culled ? Tier.Min : tier;
 
         /// <summary>The far -> culled boundary, set so its INWARD edge (bound x keep) is exactly
         /// farFadeEnd: a thread is only ever switched back on where its alpha is still zero, and

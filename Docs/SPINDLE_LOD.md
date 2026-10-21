@@ -338,7 +338,7 @@ that fits what the surface is made of.
 | surface | form | why |
 |---|---|---|
 | snow shards | `IncorporealDepthOpen` (per face, prism-exact) | faceted solids with a few big split-normal faces |
-| toy switch rings | `IncorporealDepthOpen` | the ring's segments are faceted - **wired, §8** |
+| toy switch rings | the synthetic wire: `SpindleLodVertex` on a machined cable | **§9** (§8.3's facet form is retired for them) |
 | membrane | `IncorporealDepthPart` along each panel's outward direction | parting panels, not shredding triangles |
 | nucleus | `IncorporealDepthPart` per shell | the same |
 | spindles | `IncorporealDepthPart` along each strand's splay, root-anchored | §7.2 |
@@ -407,7 +407,9 @@ in world units whatever the object's scale.
   creature's spindles - which name no `LifeForm` - get their element too. That also fixed the tadpole:
   a Charge tadpole's braid was being parted at the non-Charge strength.
 
-### 8.3 The switch rings
+### 8.3 The switch rings (superseded by §9 the same day)
+
+*The rings are now the synthetic wire of §9; this records the facet form they wore first.*
 
 `ToyFactory.AddSwitchRing` (every toy root, matrix station, Domain Changer slot, painting gate, race gate,
 Scarab switch, Astro League goal) now draws the ring on `SpindleDepthGraph` in the FACETS form: from
@@ -449,3 +451,94 @@ before this change.
   the bounds centre instead. A root bone far from the body's middle blooms the body away from it.
 - Amoebius draws `SpindleDepthGraph` untranslated until its GLSL library carries the two functions
   (T-20261020-1fd6): there the creatures and rings fall back to the engine's generic draw.
+
+## 9. The synthetic wire: the switch rings
+
+Garrett, 2026-10-21: *"Make a synthetic spindle geometry that is more like a wire instead of a root. Use this
+for the switch rings in a similar LOD fashion, so these look like synthetic constructs up close, but spindles
+from afar."*
+
+### 9.1 The geometry
+
+`Tools/Build/author_spindle_lod_meshes.py` builds it beside the braid's LOD meshes (`build_wire`): a machined
+THREE-STRAND CABLE closed round a unit ring (radius 0.5 in x/y, axis z - `RingMesh`'s convention, scaled by
+the switch's diameter). Where the bonita braid is a root - strands that taper thin-thick-thin, spread and pinch
+- the wire is regular: hexagonal strands of constant radius (0.016), laid 0.022 off the cable's axis at a
+constant twist (24 whole turns round the ring), flat-faceted, cable radius 0.038 (the old ring tube was 0.04).
+It carries the braid's own channels, so the LOD's vertex code applies to it unchanged:
+
+| channel | the wire |
+|---|---|
+| UV0 | u runs 1 -> 5 round the ring (`WIRE_WRAPS` spindle lengths; >= 1 everywhere, so the fan's root weight is 1 and the WHOLE cable unravels rather than a root holding), v round the strand |
+| TEXCOORD1 | strand centre -> the cable's axis (the convergence) |
+| TEXCOORD2 | the corner's arm off its strand centre (the width hold) |
+| TEXCOORD3 | the strand's SPLAY: out from the cable's axis (the fan: the lay loosens) |
+
+The hexagons keep a fixed orientation in the cross-section plane (they do not roll with the lay), so the three
+converged strands coincide exactly and any decimation of the converged cable is the same tube.
+
+| mesh | | triangles |
+|---|---|---|
+| `SpindleWireRing` | 144 segments x 3 strands x 6 sides; the near AND mid tier | 5,184 |
+| `SpindleWireRingLow` | 48 segments, drawn only once fully converged | 1,728 |
+| `SpindleWireRingThread` | one hexagonal tube on the cable's axis | 576 |
+
+It is the profile's second mesh set, flagged `synthetic`. The generator validates every vertex's convergence
+target on the cable's axis, every corner a strand radius off its centre, u >= 1, unit splays, winding against
+the normals, the closed loop and 16-bit indices (`--self-test`: 8 negative controls).
+
+### 9.2 The look: `SpindleWireGraph`
+
+Generated from SpindleGraph by `wire_spindle_lod.py` (the fourth graph): the mid graph's construction with
+`SpindleWireSurface` in place of `SpindleLodSurface`. It runs the plant's story the other way round:
+
+- **at rest** - up close, and again once settled far away - the thread's solid, faceted, lit-by-facing look:
+  a synthetic construct, no lace at all;
+- **while the effect is open** (the prisms' ramp from 184 units, the peak to 474, the recede to 700) the
+  spindle's own lace (SpindleGraph's chain), in proportion to how open it is: a spindle from afar;
+- **it never fades** (`SpindleLod_ThreadLook(..., fades: false)`), and its tier is **never culled**
+  (`SpindleLodSystem.Kept`): a switch is a signal you fly toward.
+
+### 9.3 The tiers
+
+| distance | the ring | mesh |
+|---|---|---|
+| 0 - 184 u | a machined cable, solid | 5,184 |
+| 184 - 316 u | turning to spindle lace; the lay loosens (strength) | 5,184 |
+| 316 - 474 u | the peak: lace, wave, pulse | 5,184 |
+| 474 - 700 u | settling back: strands draw onto the axis, the solid look returns | 5,184 |
+| 700 - 1,000 u | a settled, solid ring | 1,728 |
+| beyond 1,000 u | the glowing thread, held >= 1.25 px, never culled | 576 |
+
+The near -> mid swap changes nothing (same mesh, same graph, same values); the 5,184 -> 1,728 and -> 576 swaps
+come only once the strands have fully converged, where every tier draws the same tube.
+
+### 9.4 The pieces
+
+- `ToyFactory.AddSwitchRing` builds the ring on the wire mesh with a NEAR material per signal colour
+  (`wireTemplate` + the signal as the body colour, its rim 37% toward white, the wire's girth and strand,
+  `switchRingStrength`, `switchRingDistance`, `switchRingSway`), and adds `SwitchRingLod`, which registers it
+  (`SpindleLodSystem.RegisterSwitchRing`) and hands mesh and material back on disable, repaint or destroy.
+  `RepaintSwitchRing` rebinds it on the new colour. Outside Play, without the profile or with `lodEnabled`
+  off, the ring is the signal's prism ring as before.
+- `SpindleLodSystem`: strength is passed explicitly (limbs by element, rings by `switchRingStrength`); a
+  synthetic set's mid and far tiers derive from `wireTemplate`; `Kept` keeps it out of the cull. Rings spin
+  (`ToyIdleSpin`), so they always draw through their own renderer, never the instanced batch.
+- `verify_spindle_lod.py` W block: solid up close, exactly the lace at the peak, solid and still drawn far
+  past the limbs' fade, never lace in the covert style (mutants: the ring fades, never turns to lace, is lace
+  up close). `SpindleLodTests`: `ShippedProfile_CarriesTheSyntheticWire`, `SyntheticWire_IsNeverCulled`.
+- `render_spindle_lod_preview.py OUT --wire [--strength S]`: the ring at eight stops (the lace shows as the
+  solid look: no Voronoi in HLSL here).
+
+Amoebius, Garland, headless, the last of six samples: 920 registered (910 limbs as before plus the menu's
+**10 switch rings** as wire rings), 889 instanced, 49 bodies, the same 38 distinct log messages.
+
+### 9.5 Not verified
+
+- No Unity editor has imported `SpindleWireGraph` or drawn a wire ring. If it imports magenta every ring shows
+  it: untick `lodEnabled` (the rings fall back to prisms).
+- At the shipped `switchRingStrength` (0.005) the lay barely loosens; the spindle read from afar is the lace,
+  the wave's pulse (`pulseGlow`, 0.02 now) and the glowing thread. Raise `switchRingStrength` to see the
+  cable unravel (the preview uses 0.35).
+- Amoebius draws `SpindleWireGraph` untranslated until T-20261020-1fd6 maps it.
+

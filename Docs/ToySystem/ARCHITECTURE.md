@@ -1169,18 +1169,16 @@ and is gone: that toy is a switch now.)*
 > switch speaks the language of the world it acts on. The one channel left free to carry meaning is
 > *which prism's colour it wears*, and that channel is `ToySwitchSignal`.
 
-**The ring is drawn as a SPINDLE (Garrett, 2026-10-21: "replace the switch rings with a spindle
-material that has this effect").** `ToyFactory.SwitchRingMaterial` paints the ring on
-`SpindleDepthGraph` - the lace of the sea's incorporeal parts - in the signal's colour (body = the
-signal colour, rim = it 37% toward white, as `SpindleMaterial` pairs them), in the FACETS form: from
-afar each flat facet of the ring opens along its own normal, prism-exact, on the prisms' own depth
-ramp, a wave and its light pulse run round the ring, and it settles back with distance
-(`Docs/SPINDLE_LOD.md` §8). The tuning is on `Resources/SpindleLodProfile`: `switchRingStrength`
-(0.05, ~0.76 units at the peak), `switchRingDistance` (the lace's fade, ~14,000 units, so a ring you
-fly toward stays readable) and `switchRingSway` (0: a ring is a trigger volume and does not sway).
-Where the graph cannot run (no profile, `lodEnabled` off, edit mode) the ring is the signal's prism,
-as before. Hubs and cones beside a ring stay prisms. The ring mesh carries UVs for the lace (u runs
-`RingLaceWraps` = 4 spindle lengths round the ring, v round the tube).
+**The ring is a SYNTHETIC WIRE (Garrett, 2026-10-21: "a synthetic spindle geometry that is more like a wire
+... synthetic constructs up close, but spindles from afar").** `ToyFactory.AddSwitchRing` builds it as a
+machined three-strand cable (`Assets/_Models/Spindles/SpindleWireRing`) on `SpindleWireGraph`, in the
+signal's colour (body = the signal colour, rim = it 37% toward white), and `SwitchRingLod` hands it to the
+spindle LOD: solid and machined up close, turning to a spindle's lace while the prisms' depth effect is open
+(184 - 700 units), settling back into a solid ring and then a glowing thread that never fades or is culled
+(`Docs/SPINDLE_LOD.md` §9). Tuning on `Resources/SpindleLodProfile`: `switchRingStrength` (how far the lay
+loosens), `switchRingDistance` (the lace's fade, ~14,000 units) and `switchRingSway` (0). Outside Play,
+without the profile or with `lodEnabled` off, the ring is the signal's prism, as before. Hubs and cones
+beside a ring stay prisms.
 
 | Signal | Painted as | Says | Wearers |
 |---|---|---|---|

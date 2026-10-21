@@ -2,7 +2,11 @@
 """
 Render what the spindle LOD DRAWS, offline, from the shipped shader code (asset-surgery 4.5c).
 
-    python3 Tools/Shaders/render_spindle_lod_preview.py OUT_DIR [--style overt|covert] [--strength 0.7]
+    python3 Tools/Shaders/render_spindle_lod_preview.py OUT_DIR [--style overt|covert] [--strength 0.7] [--wire]
+
+--wire draws the SYNTHETIC WIRE instead (Docs/SPINDLE_LOD.md section 9): one switch ring of radius 20, its
+three meshes from author_spindle_lod_meshes.build_wire, no sway, its thread never fading. The lace is a
+Shader Graph node with no HLSL here, so the wire's lace phase shows as its solid look: judge the shape.
 
 Writes OUT_DIR/spindle_lod_<style>_sheet.png (a star of limbs, like one lattice node, at five points
 of the prisms' depth ramp) and OUT_DIR/spindle_lod_<style>_alive.gif (the fully opened star over two
@@ -84,7 +88,8 @@ int main() {
             float3 nw = normalize(mk3(M[0]*n.x + M[1]*n.y + M[2]*n.z, M[4]*n.x + M[5]*n.y + M[6]*n.z, M[8]*n.x + M[9]*n.y + M[10]*n.z));
             float3 view = normalize(mk3(_WorldSpaceCameraPos.x, _WorldSpaceCameraPos.y, _WorldSpaceCameraPos.z) - w);
             float3 c; float a;
-            SpindleLodThread_float(mk3(%DULL%), mk3(%BRIGHT%), 0.f, nw, view, uv, %GIRTH%f, %STRAND%f, strength, phase, clock, c, a);
+            SpindleLod_ThreadLook(mk3(%DULL%), mk3(%BRIGHT%), 0.f, nw, view, SpindleLod_View(%GIRTH%f), %STRAND%f, %FADES%, c, a);
+            c = SpindleLod_Pulse(c, uv.x, phase, clock, strength);
             std::printf("%g %g %g %g %g %g %g\n", w.x, w.y, w.z, c.x, c.y, c.z, a);
         }
     }
@@ -93,7 +98,7 @@ int main() {
 '''
 
 
-def build_program(td):
+def build_program(td, wire=False):
     clang = shutil.which("clang++") or shutil.which("clang")
     if not clang:
         sys.exit("clang is required (it compiles the shipped shader code)")
@@ -105,9 +110,11 @@ def build_program(td):
     shim = shim.replace('#include "spindle_lod_extract.hlsl"', '#include "spindle_lod_extract.hlsl"\nstatic float3 sin(float3 v) { return mk3(std::sin(v.x), std::sin(v.y), std::sin(v.z)); }\n#include "SpindleSway.hlsl"')
     pos, quads = A.read_braid()
     m = A.measure(pos)
-    prog = (PROGRAM.replace("%DX%", repr(DANGER[0])).replace("%DY%", repr(DANGER[1])).replace("%DZ%", repr(DANGER[2]))
+    if wire:
+        m = dict(A.wire_measure(A.build_wire()))
+    prog = (PROGRAM.replace("%FADES%", "false" if wire else "true").replace("%DX%", repr(DANGER[0])).replace("%DY%", repr(DANGER[1])).replace("%DZ%", repr(DANGER[2]))
             .replace("%SQR%", repr(SQR)).replace("%RS%", repr(RECEDE[0])).replace("%RE%", repr(RECEDE[1])).replace("%GIRTH%", repr(m["girth"])).replace("%STRAND%", repr(m["r_ref"]))
-            .replace("%SWAYA%", repr(SWAY_AMPLITUDE)).replace("%SWAYF%", repr(SWAY_FREQUENCY))
+            .replace("%SWAYA%", repr(0.0 if wire else SWAY_AMPLITUDE)).replace("%SWAYF%", repr(SWAY_FREQUENCY))
             .replace("%DULL%", ", ".join(f"{c}f" for c in DULL)).replace("%BRIGHT%", ", ".join(f"{c}f" for c in BRIGHT)))
     src = os.path.join(td, "preview.cpp")
     open(src, "w").write(shim + prog)
@@ -115,7 +122,11 @@ def build_program(td):
     r = subprocess.run([clang, "-x", "c++", "-std=c++17", "-O2", "-w", "-I", td, src, "-o", exe, "-lm"], capture_output=True, text=True)
     if r.returncode != 0:
         sys.exit(r.stderr)
-    meshes = {"mid": A.build_mid(pos, quads, m), "low": A.build_mid(pos, quads, m, A.LOW_RINGS), "thread": A.build_far(m)}
+    if wire:
+        meshes = {"mid": A.build_wire(), "low": A.build_wire(A.WIRE_LOW_SEGMENTS),
+                  "thread": A.build_wire(A.WIRE_LOW_SEGMENTS, strands=0)}
+    else:
+        meshes = {"mid": A.build_mid(pos, quads, m), "low": A.build_mid(pos, quads, m, A.LOW_RINGS), "thread": A.build_far(m)}
     return exe, meshes
 
 
@@ -205,10 +216,12 @@ def tier_mesh(meshes, style, n):
     if style != "overt":
         return ("mid", meshes["mid"]) if n < 420 else ("thread", meshes["thread"])
     if n < RECEDE[1] / KEEP:
-        return ("braid 144", meshes["mid"])
-    if n < THREAD_START:
-        return ("braid 72", meshes["low"])
-    return ("thread 12", meshes["thread"])
+        key = "mid"
+    elif n < THREAD_START:
+        key = "low"
+    else:
+        key = "thread"
+    return (f"{len(meshes[key]['t'])} tris", meshes[key])
 
 
 def main():
@@ -217,13 +230,27 @@ def main():
     out = sys.argv[1]
     style = sys.argv[sys.argv.index("--style") + 1] if "--style" in sys.argv else "overt"
     strength = float(sys.argv[sys.argv.index("--strength") + 1]) if "--strength" in sys.argv else 1.0
-    tag = f"{style}_{int(round(strength * 100))}" if style == "overt" else style
+    wire = "--wire" in sys.argv
+    tag = f"{style}_{int(round(strength * 1000))}" if style == "overt" else style
+    if wire:
+        tag = "wire_" + tag
     os.makedirs(out, exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
-        exe, meshes = build_program(td)
-        mats = limb_matrices()
+        exe, meshes = build_program(td, wire)
+        if wire:
+            # one ring of radius 20 (scale = its diameter), tilted toward the camera
+            tilt = math.radians(55.0)
+            rot = np.array([[1, 0, 0, 0], [0, math.cos(tilt), -math.sin(tilt), 0],
+                            [0, math.sin(tilt), math.cos(tilt), 0], [0, 0, 0, 1]], float)
+            mats = [(rot @ np.diag([40.0, 40.0, 40.0, 1.0]), 0.0)]
+        else:
+            mats = limb_matrices()
         t0 = min((s + 7) / (s * g + 7) for s, g in zip(DANGER, (50, 35, 20)))
-        if style == "overt":
+        if wire:
+            stops = [(0.15, "synthetic"), (0.6, "unravelling"), (1.0, "fully open"), (2.25, "peak ends"),
+                     (3.4, "settling back"), (7.0, "settled: low"), (12.0, "the thread"), (50.0, "never culled")]
+            dist_of = lambda n: math.sqrt(n * SQR)
+        elif style == "overt":
             stops = [(0.15, "at rest"), (0.6, "opening"), (1.0, "fully open"), (2.25, "peak ends"),
                      (3.4, "settling back"), (7.0, "settled: braid 72"), (12.0, "the thread"), (19.0, "thread fading")]
             dist_of = lambda n: math.sqrt(n * SQR)
@@ -238,7 +265,7 @@ def main():
             nv = len(mesh["v"])
             # top row: the SHAPE, framed to the star, the width hold off so the form reads
             v = run(exe, mesh, style, dist_of(n), 0.0, mats, minpx=0.0, strength=strength)
-            frames.append(label(raster(v, mesh["t"], len(mats), nv, fov_fit=55),
+            frames.append(label(raster(v, mesh["t"], len(mats), nv, fov_fit=55, cam_dist=120.0 if wire else 60.0),
                                 f"{unit} {n:g} (~{dist_of(n):.0f} u): {text} [{name}]"))
             # bottom row: what a 1080p, 60-degree screen shows at that distance, hold on (true size)
             v = run(exe, mesh, style, dist_of(n), 0.0, mats, minpx=1.25, strength=strength)
@@ -253,9 +280,11 @@ def main():
         anim = []
         n_alive = 2.0 if style == "overt" else 1200
         name, mesh = tier_mesh(meshes, style, n_alive)
-        for k in range(20):
-            v = run(exe, mesh, style, dist_of(n_alive), k * 0.1, mats, minpx=0.0, strength=strength)
-            anim.append(label(raster(v, mesh["t"], len(mats), len(mesh["v"]), fov_fit=55), f"t = {k * 0.1:.1f} s, at the peak"))
+        for k in range(8 if wire else 20):
+            t = k * (0.25 if wire else 0.1)
+            v = run(exe, mesh, style, dist_of(n_alive), t, mats, minpx=0.0, strength=strength)
+            anim.append(label(raster(v, mesh["t"], len(mats), len(mesh["v"]), fov_fit=55, cam_dist=120.0 if wire else 60.0),
+                              f"t = {t:.2f} s, at the peak"))
         gif_path = os.path.join(out, f"spindle_lod_{tag}_alive.gif")
         anim[0].save(gif_path, save_all=True, append_images=anim[1:], duration=100, loop=0)
         print(sheet_path)
