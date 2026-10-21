@@ -496,8 +496,19 @@ Generated from SpindleGraph by `wire_spindle_lod.py` (the fourth graph): the mid
   a synthetic construct, no lace at all;
 - **while the effect is open** (the prisms' ramp from 184 units, the peak to 474, the recede to 700) the
   spindle's own lace (SpindleGraph's chain), in proportion to how open it is: a spindle from afar;
-- **it never fades** (`SpindleLod_ThreadLook(..., fades: false)`), and its tier is **never culled**
-  (`SpindleLodSystem.Kept`): a switch is a signal you fly toward.
+- **it never fades** and does not glow up with distance (`SpindleLod_ThreadLook(..., synthetic: true)`), and
+  its tier is **never culled** (`SpindleLodSystem.Kept`): a switch is a signal you fly toward.
+
+**Its facets must READ (Garrett, after the first look in Unity: "they were all very flat at all distances
+because they were so bright that they flattened as their features were all washed out").** The first cut
+painted the ring between its signal colour and that colour 37% toward white - both ends bright, on an unlit
+shader under bloom - so every facet landed in one bright band and the twist, the strands and the facets
+vanished. Now the ring is the prism rings' own pairing: a DARK body at `switchRingDarkShare` (0.18) of the
+signal and the BRIGHT signal itself (`switchRingRimWhiten` 0), with the wire's own facet shading
+(`switchRingShadeBase` 0, `switchRingShadeFacet` 1, published in `_SpindleLodLook2.zw`) spanning the whole
+range: an edge-on facet is the dark body, a facet square to the camera is the signal colour, ~5.5x
+brighter. The plant threads keep their own shading (`threadBase` / `threadFacet` / `threadGlow`). The
+harness holds it (W5; a wire shaded like the thread is a caught mutant).
 
 ### 9.3 The tiers
 
@@ -516,7 +527,7 @@ come only once the strands have fully converged, where every tier draws the same
 ### 9.4 The pieces
 
 - `ToyFactory.AddSwitchRing` builds the ring on the wire mesh with a NEAR material per signal colour
-  (`wireTemplate` + the signal as the body colour, its rim 37% toward white, the wire's girth and strand,
+  (`wireTemplate`, dark at `switchRingDarkShare` of the signal, bright at the signal, the wire's girth and strand,
   `switchRingStrength`, `switchRingDistance`, `switchRingSway`), and adds `SwitchRingLod`, which registers it
   (`SpindleLodSystem.RegisterSwitchRing`) and hands mesh and material back on disable, repaint or destroy.
   `RepaintSwitchRing` rebinds it on the new colour. Outside Play, without the profile or with `lodEnabled`

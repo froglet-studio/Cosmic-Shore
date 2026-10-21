@@ -503,7 +503,7 @@ int main() {
             };
             auto solidAt = [&](float n, float3& c, float& al) {
                 place(std::sqrt(n * SQR), 40.f);
-                SpindleLod_ThreadLook(dull, bright, 0.f, nrm, view, SpindleLod_View(WG), WR, false, c, al);
+                SpindleLod_ThreadLook(dull, bright, 0.f, nrm, view, SpindleLod_View(WG), WR, true, c, al);
             };
             float3 wc, sc; float wa, sa;
             // W1. up close: the solid, faceted thread look - a synthetic construct, no lace at all
@@ -520,6 +520,20 @@ int main() {
             float3 tc; float ta;
             SpindleLodThread_float(dull, bright, 0.f, nrm, view, wuv, WG, WR, 0.01f, 0.f, 0.f, tc, ta);
             CHECK(ta == 0.f, "a limb's thread should be gone where the wire still draws");
+            // W5. its facets READ: dark edge-on, the signal colour square on (the shipped shade 0 / 1 and a
+            //     body at 0.18 of the signal) - a wire between two bright colours washed flat in the game
+            {
+                const float4 savedLook2 = _SpindleLodLook2;
+                _SpindleLodLook2.z = 0.f; _SpindleLodLook2.w = 1.f;
+                const float3 sig = mk3(0.4f, 0.5f, 1.f), body = sig * 0.18f;
+                place(std::sqrt(0.1f * SQR), 40.f);
+                float3 on, edge; float aon, aedge;
+                SpindleLod_ThreadLook(body, sig, 0.f, mk3(0, 0, -1), mk3(0, 0, -1), SpindleLod_View(WG), WR, true, on, aon);
+                SpindleLod_ThreadLook(body, sig, 0.f, mk3(1, 0, 0), mk3(0, 0, -1), SpindleLod_View(WG), WR, true, edge, aedge);
+                CHECK(length(on - sig) < 1e-5f && length(edge - body) < 1e-5f, "the wire's facets do not span dark to bright");
+                CHECK(on.z > 4.f * edge.z, "the wire's facets read %g against %g: too flat", on.z, edge.z);
+                _SpindleLodLook2 = savedLook2;
+            }
             // W4. covert: never the lace
             globals(0, 1, 16, 36, minPx, 0.f);
             wireAt(2.f, wc, wa); solidAt(2.f, sc, sa);
@@ -589,15 +603,15 @@ def self_test():
                                 "    SpindleLodView v = SpindleLod_View(Girth);\n    float inflate"),
         "width hold not ramped on the transformation": ("return lerp(1.0, SpindleLod_Inflate(v, strandRadius), v.progress);",
                                                         "return SpindleLod_Inflate(v, strandRadius);"),
-        "far fade never reaches zero": ("if (fades) farFade = 1.0 - SpindleLod_Ramp(", "if (fades) farFade = 1.02 - SpindleLod_Ramp("),
+        "far fade never reaches zero": ("if (!synthetic) farFade = 1.0 - SpindleLod_Ramp(", "if (!synthetic) farFade = 1.02 - SpindleLod_Ramp("),
+        "the wire shades like the thread (washes flat)": ("float facet = synthetic ? _SpindleLodLook2.w : _SpindleLodLook.z;", "float facet = _SpindleLodLook.z;"),
         "a body's bloom reads its normal (tears seams)": (
             "        IncorporealDepthBloom_float(PositionOS, Reach, Phase, Clock, Strength, Out, openness);",
             "        IncorporealDepthOpen_float(PositionOS, NormalOS, UV.x, Phase, Clock, Strength, Out, openness);"),
         "the depth graph ignores the style": ("    Out = PositionOS;\n#if !defined(SHADERGRAPH_PREVIEW)\n    if (!SpindleLod_Overt()) return;\n    float openness;",
                                               "    Out = PositionOS;\n#if !defined(SHADERGRAPH_PREVIEW)\n    float openness;"),
         "the ring's facet form is ignored": ("    if (Form > 0.5)\n        IncorporealDepthOpen_float", "    if (Form > 1.5)\n        IncorporealDepthOpen_float"),
-        "the ring fades with the limbs": ("SpindleLod_ThreadLook(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, false, wireColor, wireAlpha);",
-                                          "SpindleLod_ThreadLook(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, true, wireColor, wireAlpha);"),
+        "the ring fades with the limbs": ("    if (!synthetic) farFade = 1.0 - SpindleLod_Ramp(", "    farFade = 1.0 - SpindleLod_Ramp("),
         "the ring never turns to lace": ("float lace = SpindleLod_Overt() ? IncorporealDepth_Openness(v.metric, _IncorporealSpread.xyz) : 0.0;",
                                          "float lace = 0.0;"),
         "the ring is lace up close": ("float lace = SpindleLod_Overt() ? IncorporealDepth_Openness(v.metric, _IncorporealSpread.xyz) : 0.0;",

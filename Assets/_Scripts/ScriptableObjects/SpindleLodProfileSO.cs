@@ -118,6 +118,18 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("SpindleGraph's sway amplitude on the switch rings. 0: a ring is a trigger volume drawn at its own radius, and a swaying ring would draw it somewhere it is not.")]
         [Min(0f)] public float switchRingSway = 0f;
 
+        [Tooltip("The ring's DARK colour (its body, what an edge-on facet shows) as a share of its signal colour. Low keeps the machined facets readable: a ring between two bright colours washes flat (the prism rings used 0.22).")]
+        [Range(0f, 1f)] public float switchRingDarkShare = 0.18f;
+
+        [Tooltip("How far the ring's BRIGHT colour (a facet square to the camera) sits from its signal colour toward white. 0 = the signal colour itself.")]
+        [Range(0f, 1f)] public float switchRingRimWhiten = 0f;
+
+        [Tooltip("The synthetic wire's facet shading: where a facet edge-on to the camera sits between dark (0) and bright (1).")]
+        [Range(0f, 1f)] public float switchRingShadeBase = 0f;
+
+        [Tooltip("The synthetic wire's facet shading: how far a facet square to the camera brightens past switchRingShadeBase (base + facet x facing^2). 1 = the full dark-to-bright range across the cable's facets.")]
+        [Range(0f, 1f)] public float switchRingShadeFacet = 1f;
+
         [Header("Measured (owned by Tools/Build/author_spindle_lod_meshes.py - do not hand-edit)")]
         [Tooltip("SpindleLodMid.mat: SpindleMaterial on SpindleLodMidGraph. A build-variant anchor; runtime LOD materials are cloned from it.")]
         public Material midTemplate;

@@ -37,6 +37,10 @@ MonoBehaviour:
   switchRingStrength: 0.005
   switchRingDistance: 200000000
   switchRingSway: 0
+  switchRingDarkShare: 0.18
+  switchRingRimWhiten: 0
+  switchRingShadeBase: 0
+  switchRingShadeFacet: 1
   midTemplate: {fileID: 2100000, guid: 20a1e347c703b74989b4c9e9c90e94e4, type: 2}
   farTemplate: {fileID: 2100000, guid: e504df112b682b68f8997daade6a4fbe, type: 2}
   depthTemplate: {fileID: 2100000, guid: 9241f93012c8e673e853d04c59dd7811, type: 2}

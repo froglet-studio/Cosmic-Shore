@@ -556,6 +556,10 @@ MonoBehaviour:
   switchRingStrength: 0.005
   switchRingDistance: 200000000
   switchRingSway: 0
+  switchRingDarkShare: 0.18
+  switchRingRimWhiten: 0
+  switchRingShadeBase: 0
+  switchRingShadeFacet: 1
 """
 
 

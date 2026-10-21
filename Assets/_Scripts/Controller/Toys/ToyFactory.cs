@@ -451,11 +451,6 @@ namespace CosmicShore.Gameplay
         // materials), so a ring the LOD hands back always has its material.
         static readonly System.Collections.Generic.Dictionary<int, Material> s_wireRingMaterials = new();
 
-        // A spindle's rim colour sits this far from its body colour toward white - measured off
-        // SpindleMaterial.mat, whose bright (0.37, 0.40, 0.96) is its dull (0, 0.03, 1) 37% of the
-        // way to white - so a ring's signal colour stays its body, with the spindle's own rim.
-        const float SpindleRimWhiten = 0.37f;
-
         static readonly int DullColorId = Shader.PropertyToID("_DullColor");
         static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
         static readonly int SpindleGirthId = Shader.PropertyToID("_SpindleLodGirth");
@@ -466,7 +461,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The synthetic wire's NEAR material for a signal colour - <c>SpindleLodProfileSO.wireTemplate</c>
-        /// (SpindleMaterial on SpindleWireGraph) with the signal as its body colour, the wire's measured
+        /// (SpindleMaterial on SpindleWireGraph), DARK at <c>switchRingDarkShare</c> of the signal and BRIGHT
+        /// at the signal itself (<c>switchRingRimWhiten</c> toward white), so its facets read; the wire's measured
         /// girth and strand radius, <c>switchRingStrength</c>, no sway and its lace kept out to
         /// <c>switchRingDistance</c> - and the wire mesh it draws. Null outside Play or wherever the
         /// spindle LOD cannot run, and the caller keeps the prism ring.
@@ -489,8 +485,11 @@ namespace CosmicShore.Gameplay
 
             var body = new Color(signal.r, signal.g, signal.b, 1f);
             var mat = new Material(template) { name = $"SwitchRingWire_{ColorUtility.ToHtmlStringRGB(body)}" };
-            mat.SetColor(DullColorId, body);
-            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, SpindleRimWhiten));
+            // Dark body, bright facets: the prism rings' own pairing (dark = rim x 0.22). Both ends near
+            // the signal colour washed every facet into one flat band.
+            float dark = profile.switchRingDarkShare;
+            mat.SetColor(DullColorId, new Color(body.r * dark, body.g * dark, body.b * dark, 1f));
+            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, profile.switchRingRimWhiten));
             mat.SetFloat(SpindleGirthId, set.girth);
             mat.SetFloat(SpindleStrandId, set.strandRadius);
             mat.SetFloat(SpindleStrengthId, profile.switchRingStrength);

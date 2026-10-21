@@ -12791,7 +12791,8 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
    Before the fix they ballooned to ~32x there and snapped back closer in.
 12. (Synthetic wire, Docs/SPINDLE_LOD.md section 9) `SpindleWireGraph` imports without magenta. Any toybox toy,
    race gate or Scarab switch: up close the ring is a clean three-strand cable in its signal colour, solid,
-   no lace, not swaying; flying away it turns to spindle lace from ~184 units, back to a solid ring by
+   no lace, not swaying, its twist and facets clearly visible (dark sides, signal-bright faces - not one flat
+   bright band); flying away it turns to spindle lace from ~184 units, back to a solid ring by
    ~700, a thin glowing ring past ~1,000, and it is still there at 3,000+. A Domain Changer slot flipping
    domain repaints it with no pop. EditMode `ShippedProfile_CarriesTheSyntheticWire` and
    `SyntheticWire_IsNeverCulled` pass. In edit mode (or with `lodEnabled` off) rings are the old prisms.

@@ -42,6 +42,10 @@ import author_spindle_lod_meshes as A  # noqa: E402
 GRAPHS = os.path.join(REPO, "Assets", "_Graphics", "Materials", "Graphs")
 DULL = (0.0, 0.027586222, 1.0)
 BRIGHT = (0.36976376, 0.39671606, 0.9559748)
+# A neutral (Blue) switch ring: the signal colour as BRIGHT, 0.18 of it as DULL (switchRingDarkShare), and its
+# facet shading base 0 / gain 1 (switchRingShadeBase / switchRingShadeFacet).
+WIRE_BRIGHT = (0.40, 0.50, 1.00)
+WIRE_DULL = tuple(0.18 * c for c in WIRE_BRIGHT)
 SWAY_AMPLITUDE, SWAY_FREQUENCY = 0.1625, 1.4     # GyroidSpindleMaterial
 DANGER = (0.09, 0.29, 0.8)
 RECEDE = (2.25, 4.9)            # Resources/IncorporealDepth
@@ -66,7 +70,7 @@ int main() {
     if (style > 0.5f) { _SpindleLodBands = float4{%RS%f, %RE%f, 15.625f, 22.5f}; }
     else { _SpindleLodBands = float4{110, 386.4f, 1300, 1900}; }
     _SpindleLodLook = float4{minpx, 0.35f, 0.55f, 1.35f};
-    _SpindleLodLook2 = float4{0.85f, style, 0, 0};
+    _SpindleLodLook2 = float4{0.85f, style, %SHADEBASE%f, %SHADEFACET%f};
     std::vector<float> vd(nv * 17);
     for (int i = 0; i < nv * 17; i++) if (std::scanf("%f", &vd[i]) != 1) return 2;
     for (int l = 0; l < nl; l++) {
@@ -88,7 +92,7 @@ int main() {
             float3 nw = normalize(mk3(M[0]*n.x + M[1]*n.y + M[2]*n.z, M[4]*n.x + M[5]*n.y + M[6]*n.z, M[8]*n.x + M[9]*n.y + M[10]*n.z));
             float3 view = normalize(mk3(_WorldSpaceCameraPos.x, _WorldSpaceCameraPos.y, _WorldSpaceCameraPos.z) - w);
             float3 c; float a;
-            SpindleLod_ThreadLook(mk3(%DULL%), mk3(%BRIGHT%), 0.f, nw, view, SpindleLod_View(%GIRTH%f), %STRAND%f, %FADES%, c, a);
+            SpindleLod_ThreadLook(mk3(%DULL%), mk3(%BRIGHT%), 0.f, nw, view, SpindleLod_View(%GIRTH%f), %STRAND%f, %SYNTHETIC%, c, a);
             c = SpindleLod_Pulse(c, uv.x, phase, clock, strength);
             std::printf("%g %g %g %g %g %g %g\n", w.x, w.y, w.z, c.x, c.y, c.z, a);
         }
@@ -112,10 +116,11 @@ def build_program(td, wire=False):
     m = A.measure(pos)
     if wire:
         m = dict(A.wire_measure(A.build_wire()))
-    prog = (PROGRAM.replace("%FADES%", "false" if wire else "true").replace("%DX%", repr(DANGER[0])).replace("%DY%", repr(DANGER[1])).replace("%DZ%", repr(DANGER[2]))
+    dull, bright = (WIRE_DULL, WIRE_BRIGHT) if wire else (DULL, BRIGHT)
+    prog = (PROGRAM.replace("%SYNTHETIC%", "true" if wire else "false").replace("%SHADEBASE%", "0.0").replace("%SHADEFACET%", "1.0").replace("%DX%", repr(DANGER[0])).replace("%DY%", repr(DANGER[1])).replace("%DZ%", repr(DANGER[2]))
             .replace("%SQR%", repr(SQR)).replace("%RS%", repr(RECEDE[0])).replace("%RE%", repr(RECEDE[1])).replace("%GIRTH%", repr(m["girth"])).replace("%STRAND%", repr(m["r_ref"]))
             .replace("%SWAYA%", repr(0.0 if wire else SWAY_AMPLITUDE)).replace("%SWAYF%", repr(SWAY_FREQUENCY))
-            .replace("%DULL%", ", ".join(f"{c}f" for c in DULL)).replace("%BRIGHT%", ", ".join(f"{c}f" for c in BRIGHT)))
+            .replace("%DULL%", ", ".join(f"{c}f" for c in dull)).replace("%BRIGHT%", ", ".join(f"{c}f" for c in bright)))
     src = os.path.join(td, "preview.cpp")
     open(src, "w").write(shim + prog)
     exe = os.path.join(td, "preview")

@@ -1172,7 +1172,8 @@ and is gone: that toy is a switch now.)*
 **The ring is a SYNTHETIC WIRE (Garrett, 2026-10-21: "a synthetic spindle geometry that is more like a wire
 ... synthetic constructs up close, but spindles from afar").** `ToyFactory.AddSwitchRing` builds it as a
 machined three-strand cable (`Assets/_Models/Spindles/SpindleWireRing`) on `SpindleWireGraph`, in the
-signal's colour (body = the signal colour, rim = it 37% toward white), and `SwitchRingLod` hands it to the
+signal's colour (a dark body at `switchRingDarkShare` of the signal, facets square to the camera in the
+signal colour itself, so the machined facets read), and `SwitchRingLod` hands it to the
 spindle LOD: solid and machined up close, turning to a spindle's lace while the prisms' depth effect is open
 (184 - 700 units), settling back into a solid ring and then a glowing thread that never fades or is culled
 (`Docs/SPINDLE_LOD.md` §9). Tuning on `Resources/SpindleLodProfile`: `switchRingStrength` (how far the lay

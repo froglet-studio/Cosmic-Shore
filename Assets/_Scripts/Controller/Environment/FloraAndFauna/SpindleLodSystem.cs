@@ -393,7 +393,7 @@ namespace CosmicShore.Gameplay
                 ? new Vector4(recede.x, recede.y, p.overtFadeStartNorm, p.overtFadeEndNorm)
                 : new Vector4(p.convergeStartGirths, p.ConvergeEndGirths, p.farFadeStartGirths, p.farFadeEndGirths));
             Shader.SetGlobalVector(LookId, new Vector4(p.minThreadPixels, p.threadBase, p.threadFacet, p.threadGlow));
-            Shader.SetGlobalVector(Look2Id, new Vector4(p.threadAlpha, overt ? 1f : 0f, 0f, 0f));
+            Shader.SetGlobalVector(Look2Id, new Vector4(p.threadAlpha, overt ? 1f : 0f, p.switchRingShadeBase, p.switchRingShadeFacet));
             _bounds = BoundsFor(p, overt, IncorporealDepth.Spread, recede);
         }
 

@@ -37,7 +37,8 @@
 // _PrismDepthPlane, so no graph carries them as material properties):
 //   _SpindleLodBands  x convergeStart, y convergeEnd, z farFadeStart, w farFadeEnd   (girths)
 //   _SpindleLodLook   x minThreadPixels, y threadBase, z threadFacet, w threadGlow
-//   _SpindleLodLook2  x threadAlpha, y STYLE (0 covert, 1 overt)
+//   _SpindleLodLook2  x threadAlpha, y STYLE (0 covert, 1 overt), z/w the SYNTHETIC wire's facet shading
+//                     (base, facet gain: switchRingShadeBase / switchRingShadeFacet)
 //
 // TWO STYLES, ONE SET OF MESHES (SpindleLodProfileSO.style):
 //   COVERT  the LOD hides itself. Bands in GIRTHS; the strands converge into one thread and the
@@ -156,22 +157,28 @@ float SpindleLod_Hold(SpindleLodView v, float strandRadius)
 // The transformed look: a faceted strand lit by how squarely each facet faces the camera, brighter
 // toward threadGlow as it recedes, its alpha paid down by the coverage the width hold added; in the
 // overt style, the travelling pulse rides on top.
-// fades: false for a SYNTHETIC wire (the switch rings), which is a signal and never leaves.
+// synthetic: the SYNTHETIC wire (the switch rings) - a signal, so it never fades and does not glow up
+// with distance, and a machined surface, so its facets carry their own, stronger shading (Look2.zw): dark
+// edge-on, the signal colour square on. A wire shaded like the thread, between two bright colours, washed
+// every facet into one flat band (Garrett, 2026-10-21: "very flat at all distances ... so bright that
+// they flattened").
 void SpindleLod_ThreadLook(float3 dull, float3 bright, float deathState, float3 normalWS, float3 viewWS,
-    SpindleLodView v, float strandRadius, bool fades, out float3 color, out float alpha)
+    SpindleLodView v, float strandRadius, bool synthetic, out float3 color, out float alpha)
 {
     float3 n = normalize(normalWS);
     float3 e = normalize(viewWS);
     float facing = saturate(abs(dot(n, e)));
-    float t = saturate(_SpindleLodLook.y + _SpindleLodLook.z * facing * facing);
+    float base = synthetic ? _SpindleLodLook2.z : _SpindleLodLook.y;
+    float facet = synthetic ? _SpindleLodLook2.w : _SpindleLodLook.z;
+    float t = saturate(base + facet * facing * facing);
     float recede = SpindleLod_Ramp(_SpindleLodBands.y, _SpindleLodBands.z, v.metric);
-    float glow = lerp(1.0, max(_SpindleLodLook.w, 0.0), recede);
+    float glow = synthetic ? 1.0 : lerp(1.0, max(_SpindleLodLook.w, 0.0), recede);
     color = lerp(dull, bright, t) * glow;
 
     float coverage = 1.0 / SpindleLod_Hold(v, strandRadius);
     float life = 1.0 - smoothstep(0.0, 1.0, saturate(deathState));
     float farFade = 1.0;
-    if (fades) farFade = 1.0 - SpindleLod_Ramp(_SpindleLodBands.z, _SpindleLodBands.w, v.metric);
+    if (!synthetic) farFade = 1.0 - SpindleLod_Ramp(_SpindleLodBands.z, _SpindleLodBands.w, v.metric);
     float threadAlpha = _SpindleLodLook2.x > 0.0 ? _SpindleLodLook2.x : 1.0;
     alpha = threadAlpha * coverage * life * farFade;
 }
@@ -179,7 +186,7 @@ void SpindleLod_ThreadLook(float3 dull, float3 bright, float deathState, float3 
 void SpindleLod_Thread(float3 dull, float3 bright, float deathState, float3 normalWS, float3 viewWS,
     SpindleLodView v, float strandRadius, out float3 color, out float alpha)
 {
-    SpindleLod_ThreadLook(dull, bright, deathState, normalWS, viewWS, v, strandRadius, true, color, alpha);
+    SpindleLod_ThreadLook(dull, bright, deathState, normalWS, viewWS, v, strandRadius, false, color, alpha);
 }
 
 // The overt style's pulse on any colour (zero in the covert style, while the braid is closed, and once
@@ -290,7 +297,7 @@ void SpindleWireSurface_float(float3 LaceColor, float LaceAlpha, float3 Dull, fl
     SpindleLodView v = SpindleLod_View(Girth);
     float3 wireColor;
     float wireAlpha;
-    SpindleLod_ThreadLook(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, false, wireColor, wireAlpha);
+    SpindleLod_ThreadLook(Dull, Bright, DeathState, NormalWS, ViewWS, v, StrandRadius, true, wireColor, wireAlpha);
     float lace = SpindleLod_Overt() ? IncorporealDepth_Openness(v.metric, _IncorporealSpread.xyz) : 0.0;
     Color = SpindleLod_Pulse(lerp(wireColor, LaceColor, lace), UV.x, Phase, Clock, Strength);
     Alpha = lerp(wireAlpha, LaceAlpha, lace);
