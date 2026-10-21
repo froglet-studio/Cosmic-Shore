@@ -12786,6 +12786,9 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
    from afar with a pulse running round it, and it stays readable far away. EditMode
    `ShippedProfile_CarriesTheDepthTemplate`, `BodyReach_IsAHalfOctaveCeiling`,
    `BloomTravel_IsTheDangerFaceCappedByReach` and `ToySwitchVocabularyTests` pass.
+10b. (The width-hold fix) Approach a Lattice plant from ~1,000 units: its limbs never swell - at 184 - 316
+   units they stay the braid's own thickness (at most ~2.6x a strand's width far out, where that is ~1 px).
+   Before the fix they ballooned to ~32x there and snapped back closer in.
 11. (Round 5) Fly away from a Lattice plant: fully open 316 - 474 units (a Charge plant's tips ~2.7 units out,
    others ~0.8), settled back onto a single line by ~700 with no visible step, then still a thin line through
    ~1,000 (72-tri braid) and ~1,000 - 1,500 (12-tri thread, glowing up then fading), gone past ~1,500. A shark
