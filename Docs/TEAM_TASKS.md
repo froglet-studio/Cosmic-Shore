@@ -1180,6 +1180,48 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
+### T-20261020-86b5 · open · test · Performance
+- **Task:** Open cece/gallant-keller-6mr1u4 in Unity: let SpindleLodMidGraph / SpindleLodFarGraph import (no magenta), run the EditMode test SpindleLodTests (ShippedProfile_IsSaneAndMeasured checks the LOD meshes against the braid Unity imported), then Play Menu_Main > Cell Selector > Lattice and fly in and out of a plant: no pop as limbs cross ~140 / ~590 / ~2,660 units, and the HUD console 'renderers' line shows far limbs as instanced. If a graph imports magenta, untick lodEnabled on Resources/SpindleLodProfile and report it.
+- **Done when:** Both graphs import clean, SpindleLodTests pass, and a fly-through shows no visible swap
+- **Who can take it:** Garrett (the look), Yash (offered), anyone with the Unity Editor
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §5
+
+### T-20261020-fb02 · open · test · Performance
+- **Task:** Spindle LOD A/B in Unity Release: S2 Lattice (Cell Selector > Lattice, 8 min, auto-capture) once with Resources/SpindleLodProfile lodEnabled ON and once OFF; compare CPU/GPU ms, draws, and the renderers census (the capture's spindle LOD line).
+- **Done when:** Two S2 captures on the bugledger branch, the delta written into Docs/PERFORMANCE_OPTIMIZATION.md L1
+- **Who can take it:** Yash (offered), Andrew, anyone with the Unity Editor
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §4-5; T-20261015-56dd
+
+### T-20261020-09fe · open · decision · Performance
+- **Task:** Pick the spindle LOD style and tune it in Unity. Resources/SpindleLodProfile > style: OVERT (default; the braid fans open on the prisms' own depth ramp, as far as danger prisms' faces travel, with a wave running root to tip - tune it on Resources/IncorporealDepth: strength 1, recedeStart/End 2.25/4.9 norm (~474/700 u), flowAmplitude 0.35, flowWaves 1.5, flowSpeed 0.6, pulseGlow 0.02 (round 6; was 0.8); and on SpindleLodProfile: chargeStrength 0.01, otherStrength 0.005 (round 6: deliberately negligible), overtThreadStart 10 norm (~1,000 u), overtFadeStart/End 15.625/22.5 norm, ~1,250/1,500 units) or COVERT (the braid converges into a thread nobody notices; threadGlow 1.35, minThreadPixels 1.25, farFadeStart/End 1300/1900 girths). The style switches live in Play. Preview without Unity: python3 Tools/Shaders/render_spindle_lod_preview.py OUT --style overt|covert [--strength 0.01].
+- **Done when:** One style is chosen, its values play-tuned, and the decision noted in Docs/SPINDLE_LOD.md §7
+- **Who can take it:** Garrett (spindles, product look)
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §2 'The far look'
+
+### T-20261020-1fd6 · open · dev · Amoebius
+- **Task:** Amoebius: draw the spindle LOD graphs. Port SpindleLodVertex_float, SpindleLodSurface_float and SpindleLodThread_float (Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl) and the shared IncorporealDepth.hlsl it includes (IncorporealDepthOpen/Part/Glow - the depth effect every incorporeal part will share) into the engine's GLSL custom-function library, declare the globals _SpindleLodBands/_SpindleLodLook/_SpindleLodLook2/_IncorporealSpread/_IncorporealFlow/_IncorporealRecede, and map the SpindleLodMidGraph / SpindleLodFarGraph / SpindleDepthGraph / SpindleWireGraph guids to the Spindle family in MaterialFamilies.ByGuid. (2026-10-21: SpindleDepthGraph is new - SpindleDepthVertex_float / SpindleDepthGlow_float and IncorporealDepthBloom - and every creature body and every SWITCH RING now draws with it, so until this lands the rings and creatures fall back to the generic draw in Amoebius.) Also: Graphics.RenderMeshInstanced records instanceData without honouring startInstance (a chunked call redraws the first chunk), NativeList.AsArray copies instead of aliasing, and Vector4 has no [] indexer (Unity's does).
+- **Done when:** A Menu_Main run under xvfb draws mid and far spindles with no untranslated-shader warning
+- **Who can take it:** Shombith (the Amoebius engine)
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §5; Port/src/CosmicShore.Content/Shaders/ShaderGraphCompiler.cs EmitCustomFunction
+
+### T-20261020-3b39 · open · decision · Ecology
+- **Task:** Give the rest of the HyperSea's incorporeal parts the spindles' depth effect (Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl, tuned on Resources/IncorporealDepth, published by Utility/IncorporealDepth): snow shards (SnowGraph, drawn instanced by SnowChanger), the cell membrane and the nucleus. (The toy switch rings are DONE, 2026-10-21: a synthetic wire tiered by the spindle LOD on SpindleWireGraph, Docs/SPINDLE_LOD.md section 9; SpindleDepthGraph's facet form, which they wore first, is now unused and waits on the snow shards - section 10 row 1. A part with no channels to read can use the IncorporealDepthBloom form.) Per surface: per-FACE form (IncorporealDepthOpen, prism-exact; needs split normals - shards, switches) or per-PART form (IncorporealDepthPart along a direction - membrane panels, nucleus shells), a Strength, and IncorporealDepthGlow in the fragment. Decide the order and who owns each graph, then wire them (each is a wire_*.py splice like Tools/Shaders/wire_spindle_lod.py).
+- **Done when:** Each chosen surface opens on the prisms' ramp with the shared wave, verified in Unity
+- **Who can take it:** Garrett (decides; membrane/nucleus owner), Yash (snow shards, L6), the toy-system owner (switches)
+- **Added:** 2026-10-20 by Garrett's session (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md §7.4
+
+### T-20261021-b7a8 · open · test · Ecology
+- **Task:** Fly at the creatures and switch rings in Unity: a shark, brittlestar, worm or quadfish now blooms outward from its heart on the prisms' depth ramp (a Charge one harder), and every switch ring is the SYNTHETIC WIRE (Docs/SPINDLE_LOD.md section 9): a machined three-strand cable up close that turns to spindle lace 184 - 700 units out, then a solid ring and a glowing thread that is never culled (SpindleWireGraph). Check the graph imports (no magenta), the bloom reads as alive rather than as a swelling, no creature tears at a seam, and race / toybox rings stay readable far away. Tune on Resources/SpindleLodProfile (depthOnBodies, switchRingStrength, switchRingDistance, switchRingSway) and Resources/IncorporealDepth.
+- **Done when:** Creatures and rings seen in Play with the graph importing cleanly; the bloom and ring look kept, retuned or switched off, and the call noted in Docs/SPINDLE_LOD.md section 8
+- **Who can take it:** Garrett (spindles, toys, product look); Yash can do the import check and screenshots
+- **Added:** 2026-10-21 by Garrett's session (cece/gallant-keller-6mr1u4) (`cece/gallant-keller-6mr1u4`)
+- **See:** Docs/SPINDLE_LOD.md section 8; Docs/UNITY_VERIFICATION_CHECKLIST.md spindle LOD step 10
+
 ### T-20261020-1ffa · open · test · vessels
 - **Task:** Editor-verify SILENCE (cece/sleepy-shannon-9qk646): run SILENCE.md §8 steps 1-6 (step 6: the onset shake and the danger vignette) - a pilot who took a scored hit (no petals needed) has their hits deflect off rival prisms with a wobble for the hit's worth (a Strike 3.2 s, a rocket 4-8 s), take and score nothing, kill no lifeform and lay no new danger, while every ability and control still works (Thresher flail on both triggers, Sparrow guns and turret prisms); MPPM host+client agree on the window
 - **Done when:** All six steps observed in the editor, including the MPPM step, with any mismatch filed as a dev task

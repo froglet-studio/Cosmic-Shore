@@ -13009,6 +13009,62 @@ compile clean; Amoebius builds.
    against `Assets/_SO_Assets/Audio/Soundtrack.asset`.
 4. Arena: every card's hull chips show the vessel icons, no white squares.
 
+## 🔴 2026-10-20 — Spindle distance LOD (`cece/gallant-keller-6mr1u4`) - NOT EDITOR-VERIFIED
+
+Docs/SPINDLE_LOD.md. New `SpindleLodSystem`, `SpindleLodProfileSO` (+ `Resources/SpindleLodProfile.asset`),
+`SpindleLodMidGraph` / `SpindleLodFarGraph` (generated from SpindleGraph, which is untouched), `SpindleLod.hlsl`,
+`SpindleLodMid.mat` / `SpindleLodFar.mat`, `Assets/_Models/Spindles/` meshes; changed `Spindle.cs`, `DiagnosticsHUD`,
+`EcosystemPerfProbe`. The Unity CLI (`/verify-unity`) was not available in the session: reference compile clean
+(player, player-dev; editor: the 3 known errors only), Amoebius builds and runs it (Garland: 865 of 910 limbs instanced),
+the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
+1. Open the project: `SpindleLodMidGraph` and `SpindleLodFarGraph` import with no error and preview without magenta.
+2. Test Runner > EditMode > `SpindleLodTests`: all pass (`ShippedProfile_IsSaneAndMeasured` proves the LOD meshes match
+   the braid Unity imported; if it fails, run `python3 Tools/Build/author_spindle_lod_meshes.py --report` and report).
+3. Play Menu_Main > Cell Selector > Lattice. Fly slowly away from a plant: past ~140 units the braid keeps its lace;
+   from ~150 to ~540 the three strands draw together into one thread; past ~590 a thin glowing thread; gone by ~2,660.
+   No frame shows a jump. Fly back in: the same in reverse.
+4. HUD console `renderers`: the line ends with `spindle LOD: N limbs - near · mid · far own + instanced · culled`, most
+   of a grown forest under "instanced".
+5. A plant that dies far away still withers outside-in (its limbs leave the instanced batch for their fade).
+6. `Resources/SpindleLodProfile` > untick `lodEnabled` in Play: every limb returns to the authored braid at once.
+7. (Round 2) Fly the vessel through the Lattice (Cell Selector > Lattice): no plant shows straight "star" threads
+   and braids at the same time (the camera fix). With `style` OVERT (default): limbs within ~180 units are the plain
+   braid; from ~180 to ~316 their strands fan open from the root as the prisms' faces part; beyond, fully fanned and
+   rippling root to tip, a glow riding the ripple; gone by ~1,900. Switch `style` to COVERT in Play: everything
+   returns to the braid and re-tiers within a fraction of a second. EditMode `SpindleLodTests` (now 9 tests,
+   including the overt lockstep and `ShippedIncorporealDepth_ReadsTheDangerPrism`) all pass.
+8. (Round 3) In the Lattice, a CHARGE plant's limbs fan clearly wider than a Mass/Space/Time plant's (~10 vs ~3 units
+   at ~400 units away). Fly AWAY from a plant past ~470 units: the fan eases closed over a long stretch (no point where
+   it jumps) and by ~1,300 units each limb is a single thin glowing thread, fading out by ~2,500. The HUD console
+   `renderers` line splits the far limbs into braid / low / thread.
+9. (Round 4) Step 8 with the round-4 numbers: a CHARGE plant fans ~5 units, every other ~1.5 (half of round 3);
+   flying away, the fan closes over twice the distance - still settling at ~1,300 units, a thread by ~2,050, faded
+   out by ~3,150. `SpindleLodTests.ChargeLimbsPartHardest` asserts 0.35 / 0.1.
+10. (Round 5, Docs/SPINDLE_LOD.md section 8) `SpindleDepthGraph` imports with no error and previews without
+   magenta. In Play, find a shark (Menu_Main / Blob cell) or brittlestar: from ~200 units out it blooms
+   outward from its middle with a pulse running out to its fins/arms, widest around ~450 units, settling
+   back by ~700 (round 5); nothing tears at a seam; the HUD console `renderers` line ends `· bodies N` with N > 0.
+   Any toybox toy, race gate or Scarab switch: the ring is spindle lace in its signal colour (Domain
+   Changer slots in their domain colour, Switchback's next gate lime), it does not sway, its facets open
+   from afar with a pulse running round it, and it stays readable far away. EditMode
+   `ShippedProfile_CarriesTheDepthTemplate`, `BodyReach_IsAHalfOctaveCeiling`,
+   `BloomTravel_IsTheDangerFaceCappedByReach` and `ToySwitchVocabularyTests` pass.
+10b. (The width-hold fix) Approach a Lattice plant from ~1,000 units: its limbs never swell - at 184 - 316
+   units they stay the braid's own thickness (at most ~2.6x a strand's width far out, where that is ~1 px).
+   Before the fix they ballooned to ~32x there and snapped back closer in.
+12. (Synthetic wire, Docs/SPINDLE_LOD.md section 9) `SpindleWireGraph` imports without magenta. Any toybox toy,
+   race gate or Scarab switch: up close the ring is a clean three-strand cable in its signal colour, solid,
+   no lace, not swaying, its twist and facets clearly visible (dark sides, signal-bright faces - not one flat
+   bright band); flying away it turns to spindle lace from ~184 units, back to a solid ring by
+   ~700, a thin glowing ring past ~1,000, and it is still there at 3,000+. A Domain Changer slot flipping
+   domain repaints it with no pop. EditMode `ShippedProfile_CarriesTheSyntheticWire` and
+   `SyntheticWire_IsNeverCulled` pass. In edit mode (or with `lodEnabled` off) rings are the old prisms.
+11. (Round 5) Fly away from a Lattice plant: fully open 316 - 474 units (a Charge plant's tips ~2.7 units out,
+   others ~0.8), settled back onto a single line by ~700 with no visible step, then still a thin line through
+   ~1,000 (72-tri braid) and ~1,000 - 1,500 (12-tri thread, glowing up then fading), gone past ~1,500. A shark
+   or brittlestar fades out over the same ~1,250 - 1,500; a switch ring settles back by ~700 and stays visible.
+   The `renderers` line splits the far limbs into braid / low / thread.
+
 ## 🔴 2026-10-20 — The Starlings, vessel class 21 (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
 
 No Unity CLI in the session. `R_VesselActions/STARLING.md`. New: `StarlingRules`, `StarlingSwarmExecutor`, `StarlingVesselTransformer`,
