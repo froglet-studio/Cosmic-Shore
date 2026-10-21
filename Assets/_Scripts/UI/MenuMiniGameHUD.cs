@@ -174,7 +174,7 @@ namespace CosmicShore.UI
         // UI
         // ---------------------------------------------------------
 
-        // While flying freestyle, ESCAPE or the pad's START returns you to the appshell - the
+        // While flying freestyle, ESCAPE or the pad's SELECT returns you to the appshell - the
         // counterpart to the on-screen Volume/Pause button, and the same one gesture the game
         // scenes use (OverviewGesture, asked by MiniGameHUD too, so the two cannot drift).
         //

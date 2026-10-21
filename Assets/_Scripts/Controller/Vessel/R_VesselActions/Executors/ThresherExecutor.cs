@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
     /// an explosion even below smash speed (and a smash's own explosion spends it), its diameter
     /// growing with the bank.
     ///
-    /// <b>Mass Mode</b> (A, a toggle). The bank is never released: the ball STEALS the rival prisms
+    /// <b>Mass Mode</b> (A, a toggle; the hull SPAWNS in it - Garrett, 2026-10-21). The bank is never released: the ball STEALS the rival prisms
     /// it touches (each steal banks <c>energyPerSteal</c>), SHIELDS its own domain's, lays a trail
     /// of its own prisms behind it, and makes no explosion at any speed. Leave Mass Mode and the
     /// next rival hit spends everything it banked.
@@ -70,7 +70,9 @@ namespace CosmicShore.Gameplay
     /// <c>R_VesselActionHandler</c>, so every peer runs the same chain from the same inputs; a peer
     /// can disagree on a marginal hit by a frame of drift.
     /// </summary>
-    public sealed class ThresherExecutor : ShipActionExecutorBase, IRingThreadProbe
+    // ISwitchThreadProbe: the ball threads race rings AND trips the Toybox's toys (Garrett, 2026-10-20: "lets flip things so
+    // the wrasse does not activate toys, but the thresher flail does").
+    public sealed class ThresherExecutor : ShipActionExecutorBase, ISwitchThreadProbe
     {
         [Tooltip("Every Thresher dial: chain physics, elements, explosion, chain cut, feel, look.")]
         [SerializeField] ThresherConfigSO config;
@@ -174,8 +176,6 @@ namespace CosmicShore.Gameplay
         public ThresherMode Mode => _solver?.Mode ?? ThresherMode.Free;
         /// <summary>True while a MULTIPLAYER hit-stop is holding this hull and its ball still.</summary>
         public bool IsVesselFrozen => Time.unscaledTime < _freezeUntilUnscaled;
-        /// <summary>Releasing the right trigger now would crack the ball past smash speed.</summary>
-        public bool IsReady { get; private set; }
         public float BallSpeed => _solver?.BallSpeed ?? 0f;
         public Vector3 BallPosition => _solver?.BallPosition ?? transform.position;
 
@@ -229,16 +229,13 @@ namespace CosmicShore.Gameplay
                 return cap > 1f ? Mathf.Clamp01((EnergyScale(_energy) - 1f) / (cap - 1f)) : 0f;
             }
         }
-        /// <summary>A release NOW would barely wait: the ship reaches the launch point within
-        /// <c>launchCueSeconds</c>. The crosshair's lime cue only - every aimed launch takes the same boost.</summary>
-        public bool IsLaunchImminent { get; private set; }
         /// <summary>The local pilot is spectating a planted spin and the sticks aim the release, not the orbit.</summary>
         public bool IsAiming => _spectating;
         /// <summary>
         /// The launch view is up: a planted orbit spinning at <c>spectateSpinRate</c> or faster for
         /// <c>spectateEngageSeconds</c>, with (analog) LT and the chain's rigidity at a full pull; it
-        /// drops when the plant ends, the spin falls under <c>spectateReleaseFraction</c> of the
-        /// threshold, or (analog, unarmed) the chain slackens. Simulated in <see cref="StepChain"/> on
+        /// drops at once when the plant ends, and after <c>spectateDropSeconds</c> of the spin under
+        /// <c>spectateReleaseFraction</c> of the threshold or (analog, unarmed) a slackened chain. Simulated in <see cref="StepChain"/> on
         /// EVERY peer from the chain's own state, so the trail it pauses agrees across machines; the
         /// local pilot's camera (<see cref="UpdateCamera"/>) switches to the crosshair on exactly this
         /// edge, so crosshair on == trail off.
@@ -246,8 +243,9 @@ namespace CosmicShore.Gameplay
         public bool LaunchViewUp { get; private set; }
         /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>
         public Color BallColorNow => _shownValid ? _shownHue : config && _solver != null ? BallColor(out _) : Color.white;
-        /// <summary>The READY lime (LINEAR).</summary>
-        public Color ReadyColorNow => config ? ReadyColor() : Color.green;
+        /// <summary>The palette's CTA lime (LINEAR): the HUD's energy gauge fills toward it. Nothing on the
+        /// vessel itself wears it (Garrett, 2026-10-20: the crack and the launch timing are left to feel).</summary>
+        public Color CtaColorNow => config ? CtaColor() : Color.green;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -262,7 +260,7 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
-            _massMode = false;
+            _massMode = true;   // the default (Garrett, 2026-10-21): A leaves it for the breaking ball
             _energy = 0f;
             _releaseDirection = null;
             _trailOwed = 0f;
@@ -484,22 +482,14 @@ namespace CosmicShore.Gameplay
             PublishAcknowledged();
 
             UpdateLaunchView(dt);
-            IsLaunchImminent = _spectating && config && _solver.Mode == ThresherMode.Pivot &&
-                               _solver.SecondsToLaunchPoint(shipPosition, _aimDir) <= config.LaunchCueSeconds;
-
             UpdateCombo(dt);
-            // READY: tightening the chain now (analog: pulling RT to rigid; digital: releasing it) would crack
-            // the ball past smash speed - both reel the ball in to rest length by spin conservation.
-            bool ready = _settings.Analog ? _solver.Rigidity < (config ? config.FullPull : 0.97f) : _payOut;
-            IsReady = ready && _solver.Mode == ThresherMode.Free &&
-                      _solver.PredictReelCrackSpeed(shipPosition, result.ShipVelocity)
-                          >= _settings.SmashSpeed * (config ? config.ReadyMargin : 1f);
             return result.ShipVelocity;
         }
 
         // ------------------------------------------------------------------ the launch view
 
         float _launchViewQualifyTime;   // how long the spin has qualified (the engage delay)
+        float _launchViewDropTime;      // how long a drop condition has held while up (the drop grace)
         bool _trailPenHeld;             // this executor holds the hull's trail pen up
 
         /// <summary>
@@ -524,8 +514,19 @@ namespace CosmicShore.Gameplay
                 // LT does not bob the camera toward the vantage and straight back down.
                 bool qualifies = IsPivoting && bothFull && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate;
                 _launchViewQualifyTime = qualifies ? _launchViewQualifyTime + dt : 0f;
-                if (!up && qualifies && _launchViewQualifyTime >= config.SpectateEngageSeconds) up = true;
-                else if (up && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction || slackened)) up = false;
+                if (!up)
+                {
+                    _launchViewDropTime = 0f;
+                    if (qualifies && _launchViewQualifyTime >= config.SpectateEngageSeconds) up = true;
+                }
+                else if (!IsPivoting) up = false;
+                else if (spin < config.SpectateSpinRate * config.SpectateReleaseFraction || slackened)
+                {
+                    // Ride out a sag: a trigger held "at 100%" dips under letGoBelow for a frame or two.
+                    _launchViewDropTime += dt;
+                    if (_launchViewDropTime >= config.SpectateDropSeconds) up = false;
+                }
+                else _launchViewDropTime = 0f;
             }
             LaunchViewUp = up;
             HoldTrailPen(up);
@@ -536,6 +537,7 @@ namespace CosmicShore.Gameplay
         {
             LaunchViewUp = false;
             _launchViewQualifyTime = 0f;
+            _launchViewDropTime = 0f;
             HoldTrailPen(false);
         }
 
@@ -1145,6 +1147,11 @@ namespace CosmicShore.Gameplay
         bool _exiting;
         // The AIM while spectating: where a release sends the ship, and the aim camera's "above".
         Vector3 _aimDir, _aimUp;
+        // What the pilot was pointing at: the chase camera's facing on the last frame before the plant. The
+        // plant's first launch view starts its aim from it; _aimHeld keeps the aim for the rest of the plant,
+        // so a view that drops and comes back resumes where the pilot had aimed it.
+        Vector3 _pointedDir;
+        bool _aimHeld;
         // The camera's pose last frame (its turn rate at the spectate cut) and the carried turn rate (rad/s).
         Quaternion _lastCamRotation = Quaternion.identity;
         float _carryRate;
@@ -1214,6 +1221,12 @@ namespace CosmicShore.Gameplay
             _cam.MaxFollowTurnRate = config.CameraMaxFollowTurnRate;
             _cam.MaxFollowAngularAcceleration = config.CameraMaxFollowAngularAcceleration;
 
+            if (!IsPivoting)
+            {
+                _pointedDir = _cam.transform.forward;
+                _aimHeld = false;
+            }
+
             // Spectate: on the launch view's own edges (LaunchViewUp, simulated in StepChain), so the
             // crosshair comes on exactly when the trail goes off.
             bool analog = _settings.Analog;
@@ -1266,7 +1279,7 @@ namespace CosmicShore.Gameplay
             ShowVantage(_easeFromPos, fromRot, eye, look, _camEase);
             _lastCamRotation = _cam.transform.rotation;
 
-            // The launch sight: the crosshair (lime while a release would barely wait) and the Time-petal
+            // The launch sight: the crosshair (one colour; the release timing is left to feel) and the Time-petal
             // zoom window down the same trajectory, zoomed by LT's depth alone. (Analog triggers: LT is at a
             // full pull whenever this view is up, so its depth cannot zoom; the window stays wide.)
             float zoomDepth = analog ? 0f : (input != null ? input.LeftTriggerAnalog : 0f);
@@ -1276,13 +1289,16 @@ namespace CosmicShore.Gameplay
             if (!_sight) _sight = ThresherLaunchSight.Create(name);
             _sight.Tick(launch, _aimDir, _aimUp,
                 Mathf.Lerp(config.SightWideFieldOfView, config.SightZoomFieldOfView, _sightZoom01),
-                IsLaunchImminent ? ReadyColor().gamma : new Color(1f, 1f, 1f, 0.9f));
+                new Color(1f, 1f, 1f, 0.9f));
         }
 
-        /// <summary>Start aiming at the moment of detaching: the aim starts as the way the camera
-        /// was facing laid into the orbit plane (so the launch camera looks the way the chase camera
-        /// did), and the aim's "above" is the orbit's axis on the camera's own side, so the launch
-        /// camera rises over the orbit rather than dropping under it.</summary>
+        /// <summary>Start aiming at the moment of detaching. The aim is what the pilot was POINTING AT when
+        /// the plant began (<c>_pointedDir</c>), or, when the view comes back within the same plant,
+        /// the aim it had (Garrett, 2026-10-21: "entering requires realigning to what I was pointing at") -
+        /// laid into the orbit plane either way. It used to start from wherever the spinning chase camera
+        /// happened to face, carried further round by its turn, so every entry pointed somewhere new. The
+        /// aim's "above" is the orbit's axis on the camera's own side, so the launch camera rises over the
+        /// orbit rather than dropping under it.</summary>
         void BeginSpectate(Vector3 shipPosition, float dt)
         {
             Vector3 pivot = _solver.Pivot;
@@ -1292,15 +1308,18 @@ namespace CosmicShore.Gameplay
             normal.Normalize();
             if (Vector3.Dot(normal, _cam.transform.position - pivot) < 0f) normal = -normal;
 
-            Vector3 aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+            // (a pointed direction within ~13 degrees of the orbit's axis has no clear launch point: fall back)
+            Vector3 want = _aimHeld ? _aimDir : _pointedDir;
+            Vector3 aim = Vector3.ProjectOnPlane(want, normal);
+            if (aim.sqrMagnitude < 0.05f) aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
             if (aim.sqrMagnitude < 1e-6f) aim = _lastShipVelocity;
             if (aim.sqrMagnitude < 1e-6f) return;
 
             _aimDir = aim.normalized;
             _aimUp = normal;
-            // The carried turn: the camera's own turn rate about the orbit's axis, read off last frame's pose.
-            // The aim (and so the vantage) is where a turn at that rate gliding to a stop over
-            // spectateCarrySeconds ends - half the rate x the time further round.
+            _aimHeld = true;
+            // The carried turn: the camera's own turn rate about the orbit's axis, read off last frame's pose;
+            // the ease's start pose keeps turning at it and glides to a stop over spectateCarrySeconds.
             _carryRate = 0f;
             if (config.SpectateCarrySeconds > 0f && dt > 0f)
             {
@@ -1308,7 +1327,6 @@ namespace CosmicShore.Gameplay
                 Vector3 now = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
                 if (was.sqrMagnitude > 1e-6f && now.sqrMagnitude > 1e-6f)
                     _carryRate = Vector3.SignedAngle(was, now, normal) * Mathf.Deg2Rad / dt;
-                _aimDir = Quaternion.AngleAxis(_carryRate * config.SpectateCarrySeconds * 0.5f * Mathf.Rad2Deg, normal) * _aimDir;
             }
             _sightZoom01 = 0f;
             CaptureEaseStart();
@@ -1432,7 +1450,7 @@ namespace CosmicShore.Gameplay
             return c.a > 0f ? c : config.FallbackDangerColor;
         }
 
-        Color ReadyColor()
+        Color CtaColor()
         {
             var palette = Palette;
             if (!palette) return config.FallbackReadyColor;
@@ -1476,10 +1494,11 @@ namespace CosmicShore.Gameplay
         void BallShade(out Color body, out Color rim)
         {
             BallShadeForState(out body, out rim);
-            // The bank: the rim leans toward the CTA lime as the chain's kills charge the next
-            // explosion, so a charged ball is legible before it hits anything.
+            // The bank: the rim burns toward white as the chain's kills charge the next explosion, so a
+            // charged ball reads as explosive before it hits anything - in its own hue, never the HUD's lime.
             float e = Energy01;
-            if (e > 0f) rim = Color.Lerp(rim, WithMaxChannel(ReadyColor(), config.BallRimHot), e * config.EnergyRimTint);
+            if (e > 0f) rim = Color.Lerp(rim, new Color(config.BallRimHot, config.BallRimHot, config.BallRimHot, 1f),
+                                         e * config.EnergyRimTint);
         }
 
         void BallShadeForState(out Color body, out Color rim)
@@ -1507,17 +1526,13 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The chain tube's two colours: an iron body (<c>chainColor</c>), and a rim in the
-        /// ball's hue — dim while slack, brighter while taut (the state in which it cuts) — that
-        /// turns the palette's CTA lime while READY. A target: the drawn colour eases to it.</summary>
+        /// ball's hue — dim while slack, brighter while taut (the state in which it cuts). There is
+        /// no READY cue: when a tightening will crack past smash speed is left to feel. A target:
+        /// the drawn colour eases to it.</summary>
         void ChainShade(out Color body, out Color rim)
         {
             body = config.ChainColor;
             body.a = 1f;
-            if (IsReady)
-            {
-                rim = WithMaxChannel(ReadyColor(), config.ChainRimReady);
-                return;
-            }
             bool taut = _solver.Mode == ThresherMode.Pivot || _solver.IsTaut;
             rim = WithMaxChannel(BallColor(out _), taut ? config.ChainRimTaut : config.ChainRimSlack);
         }
@@ -1545,7 +1560,7 @@ namespace CosmicShore.Gameplay
         MaterialPropertyBlock _chainMpb;
 
         // The colours actually DRAWN. Every state change (domain -> red at smash, slack -> taut,
-        // -> READY lime) is a quick ease to the new colour (colorBlendRate), never a cut or a
+        // charged rim) is a quick ease to the new colour (colorBlendRate), never a cut or a
         // flicker: the change is the signal, and a strobe read as noise.
         bool _shownValid;
         Color _shownHue, _shownBody, _shownRim, _shownChainRim;
@@ -1825,7 +1840,7 @@ namespace CosmicShore.Gameplay
                 if (_ballRenderers[i]) _ballRenderers[i].SetPropertyBlock(_mpb);
 
             // Chain: the gameplay links, drawn as a fresnel tube at the width that CUTS. Iron body;
-            // the rim takes the ball's hue, brighter while taut (it is slicing), lime at READY.
+            // the rim takes the ball's hue, brighter while taut (it is slicing).
             _chain.startWidth = _chain.endWidth = 2f * config.ChainCutRadius;
             _chainMpb.Clear();
             _chainMpb.SetColor(DarkColorId, chainBody);

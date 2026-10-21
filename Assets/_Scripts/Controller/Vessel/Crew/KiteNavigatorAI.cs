@@ -25,6 +25,12 @@ namespace CosmicShore.Gameplay
     /// aim exactly as it reads a human's (the input-only rule, <c>/vessel-ai</c>). Each think it charges a ram when the kite
     /// holds power and a rival is in reach, else plans a loop round the fattest one-element cluster, else pops the nearest
     /// hostile prism. Difficulty changes the thumb's speed, reaction, aim noise and judgement, never the kite.
+    ///
+    /// <para><b>Two controls, one judgement</b> (Garrett, 2026-10-20: "the gamepad and AI should be consistent with mouse and
+    /// touch"). With <see cref="Control"/> Follow the aim is a point the kite flies to (the lab's navAI). With Sling the aim
+    /// is the HAND holding the kite's rope (the Wrasse Lasso Lab's sling pilot, <c>aiInput</c> case 'sling'): a loop is
+    /// whirled with a small hand circle that leads the kite a quarter turn round the cluster, and a target (a ring, a
+    /// rival, a prism) is reached by pulling the hand past it so the rope drags the kite through.</para>
     /// </summary>
     public sealed class KiteNavigatorAI
     {
@@ -46,6 +52,26 @@ namespace CosmicShore.Gameplay
         public bool Down;
         public Skill Level = Skill.Hard;
 
+        /// <summary>A goal the kite must reach before anything else - a race ring lit for this pilot that lies on the board
+        /// (Wrasse Run). Off by default, so the signed-off navigator is unchanged.</summary>
+        public bool HasGoal;
+        public KiteVec Goal, GoalVelocity;
+        /// <summary>A loop's value is multiplied by this for its element (0 Charge, 1 Mass, 2 Space, 3 Time). All 1 is the
+        /// lab's planLoop; a race raises Time, whose loops save the pilot's boosts.</summary>
+        public readonly float[] ElementWeight = { 1f, 1f, 1f, 1f };
+
+        /// <summary>How the aim holds the kite: Follow (the aim is where the kite flies) or Sling (the aim is the hand on
+        /// the rope; drive the kite with <see cref="KiteNavigatorCore.Sling"/>).</summary>
+        public KiteControl Control = KiteControl.Follow;
+        /// <summary>Sling: the rope's length (u), and the radius of the whirling hand circle as a share of it (the lab's
+        /// 0.25).</summary>
+        public float SlingRope = 42f, SlingLead = 0.25f;
+        /// <summary>Sling: a target is reached by pulling the hand this many rope lengths past it (the lab's 0.6).</summary>
+        public const float SlingPullThrough = 0.6f;
+
+        // the sling's loop: the cluster's centre and drift when it was planned, and which way the kite is going round
+        float _lcx, _lcz, _lvx, _lvz, _planT, _sense = 1f;
+
         readonly Random _rng;
         readonly List<KiteVec> _pts = new();
         readonly List<int> _cand = new();
@@ -59,7 +85,33 @@ namespace CosmicShore.Gameplay
 
         public void Reset(KiteVec at)
         {
-            Aim = at; Down = false; _plan = PlanKind.None; _thinkT = 0f; _t = 0f;
+            Aim = at; Down = false; _plan = PlanKind.None; _thinkT = 0f; _t = 0f; _sense = 1f;
+        }
+
+        /// <summary>The kite closed a loop. A sling's loop plan is done (a Follow plan walks its own points to the end).</summary>
+        public void OnLoopClosed()
+        {
+            if (Control == KiteControl.Sling && _plan == PlanKind.Loop) _plan = PlanKind.None;
+        }
+
+        // Sling: pull the hand past the target along the kite's line to it, so the rope drags the kite through (the lab's
+        // ram, used for every point target here)
+        void SlingThrough(in KiteSettings s, KiteNavigatorCore kite, float gx, float gz, float dt)
+        {
+            float dx = gx - kite.Position.X, dz = gz - kite.Position.Z, d = MathF.Max(1e-3f, MathF.Sqrt(dx * dx + dz * dz));
+            float pull = SlingRope * SlingPullThrough;
+            MoveAim(s, gx + dx / d * pull, gz + dz / d * pull, dt);
+        }
+
+        // Sling: whirl the kite round (cx, cz) - the hand a quarter turn AHEAD of the kite on a small circle, so the rope
+        // pulls it forward round the cluster (the lab's sling pilot, line for line)
+        void SlingWhirl(in KiteSettings s, KiteNavigatorCore kite, float cx, float cz, float vx, float vz, float dt)
+        {
+            float rx = kite.Position.X - cx, rz = kite.Position.Z - cz, d = MathF.Max(1e-3f, MathF.Sqrt(rx * rx + rz * rz));
+            float cr = rx * (kite.Velocity.Z - vz) - rz * (kite.Velocity.X - vx);
+            if (MathF.Abs(cr) > 50f * d) _sense = cr >= 0f ? 1f : -1f;
+            float h = SlingRope * SlingLead;
+            MoveAim(s, cx - _sense * rz / d * h, cz + _sense * rx / d * h, dt);
         }
 
         float Gauss()
@@ -93,6 +145,16 @@ namespace CosmicShore.Gameplay
             _t += dt;
             if (idle) { Down = false; return; }
             _thinkT -= dt;
+            if (HasGoal)
+            {
+                // a ring first: the thumb flies the kite onto it, led by how the ring drifts across the board
+                float lead = Dist(Goal.X, Goal.Z, kite.Position) / s.KiteSpeed * P.Lead;
+                if (Control == KiteControl.Sling) SlingThrough(s, kite, Goal.X + GoalVelocity.X * lead, Goal.Z + GoalVelocity.Z * lead, dt);
+                else MoveAim(s, Goal.X + GoalVelocity.X * lead, Goal.Z + GoalVelocity.Z * lead, dt);
+                Down = true;
+                _plan = PlanKind.None;
+                return;
+            }
             if (_plan != PlanKind.None && (_t > _until || (_plan == PlanKind.Loop && _ptIndex >= _pts.Count))) _plan = PlanKind.None;
 
             if (_thinkT <= 0f)
@@ -131,6 +193,12 @@ namespace CosmicShore.Gameplay
                     return;
                 case PlanKind.Loop:
                 {
+                    if (Control == KiteControl.Sling)
+                    {
+                        float since = _t - _planT;
+                        SlingWhirl(s, kite, _lcx + _lvx * since, _lcz + _lvz * since, _lvx, _lvz, dt);
+                        break;
+                    }
                     var q = _pts[Math.Min(_ptIndex, _pts.Count - 1)];
                     if (MoveAim(s, q.X, q.Z, dt) < 0.04f * s.BoardRadius) _ptIndex++;
                     break;
@@ -141,7 +209,8 @@ namespace CosmicShore.Gameplay
                     if (i < 0 || charge < 1f) { _plan = PlanKind.None; break; }
                     var r = rivals[i];
                     float lead = Dist(r.X, r.Z, kite.Position) / s.KiteSpeed * P.Lead;
-                    MoveAim(s, r.X + r.VX * lead, r.Z + r.VZ * lead, dt);
+                    if (Control == KiteControl.Sling) SlingThrough(s, kite, r.X + r.VX * lead, r.Z + r.VZ * lead, dt);
+                    else MoveAim(s, r.X + r.VX * lead, r.Z + r.VZ * lead, dt);
                     break;
                 }
                 case PlanKind.Pop:
@@ -150,7 +219,8 @@ namespace CosmicShore.Gameplay
                     if (i < 0) { _plan = PlanKind.None; break; }
                     var p = prisms[i];
                     float lead = Dist(p.X, p.Z, kite.Position) / s.KiteSpeed * P.Lead;
-                    MoveAim(s, p.X + p.VX * lead, p.Z + p.VZ * lead, dt);
+                    if (Control == KiteControl.Sling) SlingThrough(s, kite, p.X + p.VX * lead, p.Z + p.VZ * lead, dt);
+                    else MoveAim(s, p.X + p.VX * lead, p.Z + p.VZ * lead, dt);
                     break;
                 }
             }
@@ -173,7 +243,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < motes.Count; i++)
             {
                 var m = motes[i];
-                if (!KiteNavigatorCore.InDisc(s, m.X, m.Z)) continue;
+                if (!KiteNavigatorCore.InBounds(s, m.X, m.Z)) continue;
                 if ((float)_rng.NextDouble() < P.ReachAware && !m.Touchable) continue;
                 _cand.Add(i);
             }
@@ -192,7 +262,7 @@ namespace CosmicShore.Gameplay
                 }
                 int kinds = (counts[0] > 0 ? 1 : 0) + (counts[1] > 0 ? 1 : 0) + (counts[2] > 0 ? 1 : 0) + (counts[3] > 0 ? 1 : 0);
                 if (kinds > 1 && (float)_rng.NextDouble() < P.Purity) continue;      // a careful navigator loops one element only
-                float v = MathF.Pow(growth, counts[a.Element] - 1) * (kinds > 1 ? 0.3f : 1f);
+                float v = MathF.Pow(growth, counts[a.Element] - 1) * (kinds > 1 ? 0.3f : 1f) * ElementWeight[a.Element];
                 if (a.Element == 0 && !anyRival) v *= 0.2f;                          // Charge with nobody to ram
                 cx /= k; cz /= k;
                 v /= 1f + Dist(cx, cz, kite.Position) / R;                            // nearer is better
@@ -211,6 +281,10 @@ namespace CosmicShore.Gameplay
                 _pts.Add(KiteNavigatorCore.OnBoard(s, c0x + MathF.Cos(ang) * rr, c0z + MathF.Sin(ang) * rr));
             }
             _plan = PlanKind.Loop; _ptIndex = 0; _until = _t + lapT + 2f;
+            // the sling whirls round the cluster itself, drifting with it, until a loop closes (OnLoopClosed) or the
+            // time runs out: a whirl takes a few laps to spin up from a standing kite
+            _lcx = bcx; _lcz = bcz; _lvx = bm.VX; _lvz = bm.VZ; _planT = _t;
+            if (Control == KiteControl.Sling) _until = _t + 4f;
             return true;
         }
     }
