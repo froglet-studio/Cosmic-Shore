@@ -1634,3 +1634,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-21 by Garrett (`cece/tender-sagan-98e0ix`)
 - **See:** Docs/PLATFORM_UNIFICATION.md §3.10
+
+### T-20261021-113a · open · test · webgl
+- **Task:** Look at the browser Toybox on the Low preset after the GPU-cut change: Low now turns HDR off and builds bloom at quarter resolution in the browser too (the Web profile had kept HDR on), and the cytoplasm shards are a quarter instead of none
+- **Done when:** The browser Toybox looks right on Low (glow, crystals, shards), or the Web profile is moved to a different preset / given its own HDR choice
+- **Who can take it:** Shombith (owns the Web profile); Yash could run the browser build
+- **Added:** 2026-10-21 by Garrett (`cece/tender-sagan-98e0ix`)
+- **See:** Docs/PLATFORM_UNIFICATION.md §3.10; Docs/WEBGL_TOYBOX.md 'Web profile'

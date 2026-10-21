@@ -165,7 +165,7 @@ The vessels' `_touchActionOverrides` are unchanged in net; touch and pad bind th
 |---|---|
 | Vessels lay **no trail**, except freestyle (pen waits while the cell holds > 10,000 prisms), the Wanderway tether, and Skim Race / Joust with a **FIFO cap** (oldest prism consumed past 2,000 / 1,200 per vessel, shared per seat) | `TrailsDisabled`, `CappedTrailActive` → **MobileLow, §3.6** (menu + freestyle + the race cap; not "trails off everywhere") |
 | ~~Cell life (flora/fauna spawners, flora growth) paused except in the home world (Garland)~~ **decided: not ported** | `CellLifeRuns` |
-| No cytoplasm motes in any cell | `SnowChanger.Initialize`, `Enabled` → **MobileLow, §3.6** |
+| No cytoplasm motes in any cell | `SnowChanger.Initialize`, `Enabled` → **MobileLow, §3.6** (since §3.10: thinned to a quarter, never removed - the shards point at the crystal) |
 | ~~Toybox: Wander (no Ark), domain changer, element charger, vessel changer~~ **decided: not ported** | `LightToysOnly` |
 | Vessel changer roster narrowed to Squirrel + Butterfly | `ShipsVessel` → **not ported** (a feature removal, §3.6) |
 | Wanderway belt 30,000 → 1,200 resident prisms, no lifeforms | `Wander_WithoutArk.asset` — **shared, ungated** → **MobileLow override, §3.6** |
@@ -568,10 +568,12 @@ number is a field there):
 **How it is wired.**
 - `GraphicsCuts` (`_Scripts/System/Platform/`) is the one reader: it merges the device tier's cuts
   (`PlatformProfile.Current`) with the preset's. A flag is on if either asks, and a cap is the tighter
-  of the two, so a preset never undoes a MobileLow cut. **Cytoplasm shards are thinned, never removed**: they
-  point at the cell's crystal (Garrett, 2026-10-21), so `cytoplasmDensity` (tier and preset) is a fraction
-  with a floor of `GraphicsCuts.MinCytoplasmDensity` (0.1); the old `disableCytoplasm` flag is gone. `CapsuleMembrane`, `SnowChanger`,
-  `WormholeView`, `PlatformRenderApplier` and `GraphicsSettingsApplier` read it instead of the profile.
+  of the two, so a preset never undoes a MobileLow cut. `CapsuleMembrane`, `SnowChanger`, `WormholeView`,
+  `PlatformRenderApplier` and `GraphicsSettingsApplier` read it instead of the profile.
+- **Cytoplasm shards are thinned, never removed.** They point at the cell's crystal (Garrett, 2026-10-21),
+  so `cytoplasmDensity` (on the tier profiles and the preset rows) is a fraction, with a floor of
+  `GraphicsCuts.MinCytoplasmDensity` (0.1) that no tier or preset can go under. The old `disableCytoplasm`
+  flag is gone; MobileLow and Web keep a quarter.
 - `GraphicsSettingsApplier.ApplyQuality` pushes the preset in force (`GraphicsCuts.SetPreset`) and then
   applies the live cuts: HDR (now restored to the URP asset's authored value when a cut is lifted,
   instead of "only ever off"), bloom (`PostProcessCuts`: one global runtime volume at priority 1000

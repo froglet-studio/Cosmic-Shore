@@ -66,7 +66,7 @@ which is `#if false`).
   nested `enum Placement` in the editor-only `CrystalFlipWaveBenchmarkWindow.cs:42` (2026-10-08).
   A permanently red gate stops being read.
 
-## 1. Quick wins — S (39)
+## 1. Quick wins — S (42)
 
 | # | Refactor | Kind | Evidence | Notes |
 |---|---|---|---|---|
@@ -109,6 +109,9 @@ which is `#if false`).
 | S37 | The dual mouse's throttle is the X spread (`XDiff = (left.x - right.x + 2) / 4`), inverted against the pad and touch | Consistency | `DualMouseInputStrategy.cs` ~:231 | Added 2026-10-21, reported not changed: the Invert Y pass left it because a throttle direction is a feel call. Garrett's call |
 | S38 | A toggle card's latch (Shrike zoom on a phone) survives `InputStatus.ClearAll`, so a respawn or pilot swap can leave the HUD showing ON with the action released | Honesty | `AbilityCardPress.SetToggle` keeps its own `_latched`; `TouchControlsHud` re-asserts only on press | Added 2026-10-21. Clear the latch on the vessel-changed / reset path the HUD already hears |
 | S39 | AI vessels on a phone host resolve the touch override map | Honesty | `R_VesselActionHandler` picks `_touchActionOverrides` by the DEVICE of the press, and an AI writes presses with the host's device | Added 2026-10-21. Harmless today (the overrides' actions match the shared ones for Dolphin/Manta/Rhino idle), but an AI Dolphin on a phone host gets the lift-combined Echo + drift; carry `InputDevice.AI` or gate the override on `!IsAutopilot` |
+| S40 | A doubled `/// <summary>` in `GameSettingsPanelController`: the credits row's doc block (`</summary>` at ~:694) runs straight into `EnsureCreditsRow`'s own `<summary>` | Honesty | Python scan for `</summary>` followed by `/// <summary>` over the file: one hit, present at merge base `9419e3a1` (`git show 9419e3a1:<file>`, ~:692) | Added 2026-10-21 by `cece/tender-sagan-98e0ix` (walked past, not this branch's). Decide whether the first block belongs to a method above or is superseded, then move or delete it |
+| S41 | Picking a preset ABOVE Low does not restore the AA and render scale Low wrote | Consistency | `PresetCuts.ApplyPickTo` only writes on rows that set AA / cap render scale; High+ rows write nothing (`QualityPresetCuts.asset`) | Added 2026-10-21, debt this branch created on purpose (desktop players picking High keep their settings). Fix only if players report it: give High+ rows the first-run recommendation (`SettingsAutoDetector.RecommendAntiAliasing`) as their pick |
+| S42 | `SkimRaceBenchmarkRunner` sets `QualitySettings.SetQualityLevel` directly, so a benchmark sweep measures each preset WITHOUT its GPU cuts (sky, HDR, bloom, AA, render scale) | Honesty | `SkimRaceBenchmarkRunner.cs` ~:90 and ~:98; the cuts apply only through `DisplayGraphicsSettings.SetQualityPreset` → `GraphicsSettingsApplier.ApplyQuality` (`GraphicsCuts.SetPreset`) | Added 2026-10-21. Route the sweep through `SetQualityPreset` / `ApplySnapshot` (restoring the snapshot after), or the benchmark under-reports what Medium and Low save |
 
 ## 2. Bounded — M (20)
 
