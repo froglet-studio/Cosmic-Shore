@@ -83,11 +83,11 @@ namespace CosmicShore.ScriptableObjects
         [Min(1.02f)] public float overtFadeEndNorm = 22.5f;
 
         [Header("Overt strength (share of the danger prisms' spread, Resources/IncorporealDepth)")]
-        [Tooltip("OVERT: how far a CHARGE lifeform's limbs fan open, as a share of the danger prisms' face travel (0.175 = a tip travels ~2.7 units at the peak).")]
-        [Range(0f, 2f)] public float chargeStrength = 0.175f;
+        [Tooltip("OVERT: how far a CHARGE lifeform's limbs fan open, as a share of the danger prisms' face travel (0.01 = a tip travels ~0.15 units at the peak: round 6's deliberately negligible sanity setting).")]
+        [Range(0f, 2f)] public float chargeStrength = 0.01f;
 
-        [Tooltip("OVERT: how far every other lifeform's limbs fan open (Mass, Space, Time, Omni and none). 0.05 = ~0.76 units at the peak.")]
-        [Range(0f, 2f)] public float otherStrength = 0.05f;
+        [Tooltip("OVERT: how far every other lifeform's limbs fan open (Mass, Space, Time, Omni and none). 0.005 = ~0.08 units at the peak (round 6's negligible sanity setting).")]
+        [Range(0f, 2f)] public float otherStrength = 0.005f;
 
         [Header("The thread's look")]
         [Tooltip("The narrowest a thread is ever DRAWN, in screen pixels. Thinner geometry rasterises as broken, sparkling dots; past this width the thread is drawn wider and its alpha pays for the difference (coverage), so it reads as a continuous line of the right brightness.")]
@@ -109,8 +109,8 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("OVERT: every spindle-material renderer that is NOT the braid - a creature's own model (the shark, brittlestar, worm and quadfish) - wears the same depth effect, blooming outward from its pivot (its element sets its strength, as for a limb). Off: those keep their authored material.")]
         public bool depthOnBodies = true;
 
-        [Tooltip("OVERT: how far a switch ring's facets open, as a share of the danger prisms' face travel (0.05 = ~0.76 units at the peak, the same as a non-Charge limb). Rings are drawn in SpindleDepthGraph (ToyFactory.AddSwitchRing).")]
-        [Range(0f, 2f)] public float switchRingStrength = 0.05f;
+        [Tooltip("OVERT: how far a switch ring's facets open, as a share of the danger prisms' face travel (0.005 = ~0.08 units at the peak, the same as a non-Charge limb). Rings are drawn in SpindleDepthGraph (ToyFactory.AddSwitchRing).")]
+        [Range(0f, 2f)] public float switchRingStrength = 0.005f;
 
         [Tooltip("SpindleGraph's _Distance on the switch rings: the squared distance its lace fades out by. A branch fades by 2,000,000 (~1,400 units); a switch is a signal you fly toward, so 200,000,000 keeps it readable ~14,000 units out.")]
         [Min(1f)] public float switchRingDistance = 200000000f;

@@ -340,7 +340,7 @@ int main() {
         // ... and past the peak the lace stays closed (progress 1) while it recedes
         CHECK(std::fabs(v.progress - 1.f) < 1e-5f, "the lace came back on the far side");
         // R3. Strength: at the peak a limb's tip travels Strength x the danger face's 15.2 units
-        for (float S : {0.175f, 0.05f}) {
+        for (float S : {0.01f, 0.005f, 0.175f}) {
             place(std::sqrt(2.f * SQR), 1.f);
             SpindleLodView vp = SpindleLod_View(G);
             float3 tip;

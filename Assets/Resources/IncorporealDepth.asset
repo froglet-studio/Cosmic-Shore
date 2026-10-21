@@ -19,4 +19,4 @@ MonoBehaviour:
   flowAmplitude: 0.35
   flowWaves: 1.5
   flowSpeed: 0.6
-  pulseGlow: 0.8
+  pulseGlow: 0.02

@@ -45,8 +45,8 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Crests per second, travelling toward the end of the flow coordinate (a spindle's tip: away from its crystal).")]
         [Range(0f, 4f)] public float flowSpeed = 0.6f;
 
-        [Tooltip("Brightness added on a crest of a fully open part (0 = no pulse of light).")]
-        [Range(0f, 3f)] public float pulseGlow = 0.8f;
+        [Tooltip("Brightness added on a crest of a fully open part (0 = no pulse of light). NOT scaled by a part's strength: it follows how far open the part is on the ramp, not how far it moved. 0.02 = round 6's negligible sanity setting (was 0.8: up to 80% brighter on a crest).")]
+        [Range(0f, 3f)] public float pulseGlow = 0.02f;
 
         static readonly int SpreadId = Shader.PropertyToID("_Spread");
         static readonly int SqrDistanceId = Shader.PropertyToID("_SqrDistance");

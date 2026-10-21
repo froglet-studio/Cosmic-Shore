@@ -270,7 +270,31 @@ half for both the base and charge. Then apply these effects to all spindles."*
 Amoebius, Garland, the last of six samples: 910 limbs - braid 168, low 298, thread 444, 889 instanced, 49 bodies
 (round 4: braid 24, low 886, thread 0).
 
-The numbers in §7.2b and §7.2c are earlier rounds'; the table below is round 5's.
+### 7.2e Round 6: the sanity check - every amplitude, and which ones strength reaches
+
+Garrett: *"Something isn't right, we are not talking about the same amplitude. Do a sanity check and bring
+it down to absurd level, so the effect is negligible."* Rounds 3-5 cut `chargeStrength` / `otherStrength`,
+which scale ONE thing: how far the strands (a body, a ring's facets) MOVE. Five other visible parts of
+the overt look never read strength:
+
+| what you see | knob | scales with strength? |
+|---|---|---|
+| strands fan / body blooms / ring facets open | `chargeStrength`, `otherStrength`, `switchRingStrength` | yes |
+| the fan breathing with the wave | `IncorporealDepth.flowAmplitude` (a fraction of the opening) | yes, through the opening |
+| a pulse of LIGHT riding the crest, up to +80% | `IncorporealDepth.pulseGlow` (was 0.8) | **no** - follows the ramp's openness |
+| the lace closing into smooth thread shading, 184 -> 316 units | none (the LOD: the far tiers have no lace) | **no** |
+| strands held >= 1.25 px wide, alpha paying for it | `minThreadPixels` | **no** |
+| the thread glowing up to 1.35x, ~700 -> 1,250 units | `threadGlow` | **no** |
+
+So halving strength twice left the pulse, the lace change and the glow exactly as strong - the effect
+Garrett was looking at. Round 6 sets the two amplitudes that are THE EFFECT to negligible:
+`chargeStrength` **0.01** (~0.15 units of travel at the peak), `otherStrength` **0.005** (~0.08),
+`switchRingStrength` **0.005**, and `pulseGlow` **0.02** (2% brighter on a crest). What is left visible is
+the LOD itself: the lace closing between 184 and 316 units, the width hold, the far glow-up and the fade.
+If that still reads as "the effect", it is the LOD's own look; `threadGlow` 1 removes the glow-up, and the
+covert style replaces the whole ramp with a quiet convergence.
+
+The numbers in §7.2b - §7.2d are earlier rounds'; the table below is round 5's ladder (unchanged).
 
 | tier | overt range (norm, ~units) | mesh | draws |
 |---|---|---|---|

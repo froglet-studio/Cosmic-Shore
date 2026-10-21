@@ -422,15 +422,15 @@ MonoBehaviour:
   overtThreadStartNorm: 10
   overtFadeStartNorm: 15.625
   overtFadeEndNorm: 22.5
-  chargeStrength: 0.175
-  otherStrength: 0.05
+  chargeStrength: 0.01
+  otherStrength: 0.005
   minThreadPixels: 1.25
   threadBase: 0.35
   threadFacet: 0.55
   threadGlow: 1.35
   threadAlpha: 0.85
   depthOnBodies: 1
-  switchRingStrength: 0.05
+  switchRingStrength: 0.005
   switchRingDistance: 200000000
   switchRingSway: 0
 """

@@ -187,8 +187,8 @@ namespace CosmicShore.Tests
         public void ChargeLimbsPartHardest()
         {
             var p = Profile();
-            Assert.AreEqual(0.175f, p.StrengthFor(true), 1e-6f);
-            Assert.AreEqual(0.05f, p.StrengthFor(false), 1e-6f);
+            Assert.AreEqual(0.01f, p.StrengthFor(true), 1e-6f);
+            Assert.AreEqual(0.005f, p.StrengthFor(false), 1e-6f);
             Assert.Greater(p.StrengthFor(true), p.StrengthFor(false));
             Object.DestroyImmediate(p);
         }
