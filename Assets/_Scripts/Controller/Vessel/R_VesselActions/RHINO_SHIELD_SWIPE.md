@@ -83,8 +83,10 @@ do not copy it (follow-up below).
   itself is evaluated from the replicated trigger mirrors, not from these events, so
   every peer reaches the same verdict — see `RHINO_ENERGY_SWORD.md`). *(This also used to
   say keyboard was "unaffected" — no pose at all; keyboard now poses from its binary
-  mirrors, above.)* A future mobile binding gets the event path for free — but because touch
-  writes no mirrors it gets the POSE only, never the energize stance.
+  mirrors, above.)* Since 2026-10-21 a phone has that binding: `_touchActionOverrides` binds the
+  same two assets to the thumb lifts (lift the right thumb = LT, the left = RT), and with both thumbs
+  off `TouchInputStrategy` writes both mirrors 1, which is the energize stance - the event pose then
+  shows the centred chop while `MirrorsInStance` holds (`RHINO_ENERGY_SWORD.md` § On a phone).
 
 ## Files
 

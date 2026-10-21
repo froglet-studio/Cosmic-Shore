@@ -25,13 +25,19 @@ namespace CosmicShore.UI
         /// Show a toast notification with the given message.
         /// Ensures the manager and container exist before dispatching.
         /// </summary>
-        public static void Show(string message)
+        public static void Show(string message) => Show(message, ToastKind.None);
+
+        /// <summary>
+        /// Show a toast with the glyph for <paramref name="kind"/>: a lock for a refusal, a check for a
+        /// success, the danger diamond for an error, a crystal for a goal.
+        /// </summary>
+        public static void Show(string message, ToastKind kind)
         {
             EnsureManagerExists();
 
             if (ToastNotificationManager.Instance != null)
             {
-                ToastNotificationManager.Instance.Show(message);
+                ToastNotificationManager.Instance.Show(message, kind);
                 return;
             }
 

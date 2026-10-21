@@ -8,11 +8,6 @@ using UnityEngine;
 
 namespace UnityEngine
 {
-    public enum RuntimeInitializeLoadType { SubsystemRegistration = 4 }
-    public class RuntimeInitializeOnLoadMethodAttribute : AttrBase
-    {
-        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { }
-    }
     public class Sprite : Object { }
 }
 
@@ -28,6 +23,8 @@ namespace CosmicShore.Gameplay
     public class Prism : MonoBehaviour { public PrismProperties prismProperties; public Domains Domain => default; }
     public class PrismProperties { public bool IsDangerous; public float DangerWeight = 1f; }
     public class SnowChanger : MonoBehaviour { }
+    // Assets/_Scripts/ScriptableObjects/WarpFieldSO.cs (CellConfigDataSO's warp field slot)
+    public class WarpFieldSO : ScriptableObject { }
     public class CellModifier : ScriptableObject { }
     public class SpawnableBase : MonoBehaviour { }
     public class Cell : MonoBehaviour { public CosmicShore.Utility.CellConfigDataSO Config; }

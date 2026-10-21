@@ -36,8 +36,9 @@ PREFAB = pathlib.Path("Assets/_Prefabs/UI Elements/Profile.prefab")
 SCREEN_SWITCHER = "4216411968520269688"          # ScreenSwitcher component, on GameObject "Screens"
 SURVIVOR        = "8675064058193410727"          # PlayerDataSelectModal / ProfileIconSelectView
 RETIRED         = "2899345459383930630"          # ProfileModal
-OPENERS         = ["291271916486792912",         # ShowPopupButton  (ProfileScreen / AvatarDisplay)
-                   "1431731438122436423"]        # OnlineIndicator  (HomeScreen / Main_Menu_Panel / AvatarIcon)
+# ShowPopupButton (291271916486792912, ProfileScreen / AvatarDisplay) was an opener too; the style-B
+# Profile screen (author_menu_profile.py) deleted it - its avatar and Change avatar call the window.
+OPENERS         = ["1431731438122436423"]        # OnlineIndicator  (HomeScreen / Main_Menu_Panel / AvatarIcon)
 SCENE_CLOSE     = "2899345458740611223"          # ProfileModal's own CloseButton
 PREFAB_CLOSE    = "6960199310942333857"          # Profile.prefab's CloseButton
 PREFAB_ICON     = "6960199312717497857"          # Profile.prefab's ProfileIconButton
@@ -132,7 +133,14 @@ def retarget_opener(listing):
 
 
 def already_done():
-    return METHOD in SCENE.read_text(encoding="utf-8")
+    """The retirement is a fact about the MODALS: the survivor holds PROFILE (3) and the retired one is
+    out of the switcher's list. It used to be read off an opener's method name, which made the check
+    fail the day the Home restyle (author_menu_home.py) took the stray profile call off the online
+    lamp - the lamp asks Go offline?, it was never a profile opener."""
+    text = SCENE.read_text(encoding="utf-8")
+    docs = {m.group(1): m.group(2) for m in re.finditer(r"^--- !u!\d+ &(-?\d+)\n(.*?)(?=^--- |\Z)", text, re.M | re.S)}
+    survivor, switcher = docs.get(SURVIVOR, ""), docs.get(SCREEN_SWITCHER, "")
+    return bool(re.search(r"^\s*ModalType: 3$", survivor, re.M)) and f"  - {{fileID: {RETIRED}}}\n" not in switcher
 
 
 def main():

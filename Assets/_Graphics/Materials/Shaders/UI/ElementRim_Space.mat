@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ElementRim_Space
+  m_Shader: {fileID: 4800000, guid: 231d55b2b7a461dd9681bb96f99d1460, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BaseLevel: 0.45
+    - _Breathe: 0
+    - _BreatheSeconds: 1.8
+    - _ColorMask: 15
+    - _Linear: 0
+    - _Omni: 0
+    - _Speed: 0.12
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _Tail: 0.22
+    - _UseUIAlphaClip: 0
+    m_Colors:
+    - _ChargeColor: {r: 1, g: 0.827451, b: 0.3019608, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _ElementColor: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
+    - _MassColor: {r: 0.4980392, g: 0.6588236, b: 1, a: 1}
+    - _SpaceColor: {r: 0.6901961, g: 0.4862745, b: 1, a: 1}
+    - _TimeColor: {r: 0.372549, g: 0.9411765, b: 0.7843137, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -13,8 +13,8 @@ WHAT IT MAKES (`R_VesselActions/STOAT.md`)
           InScenePlacedSourceGlobalObjectIdHash cleared - a disk copy keeps the donor's hash and
           Netcode then keys two prefabs on one entry (Tools/Build/check_network_prefab_hashes.py)
         - the gamepad bindings replaced: LT (InputEvents 2) -> StoatSlingLeftAction,
-          RT (1) -> StoatSlingRightAction, X (6) -> StoatHoldAction; touch overrides cleared
-          (no touch design yet - the Gibbon's call, recorded in STOAT.md)
+          RT (1) -> StoatSlingRightAction, X (6) -> StoatHoldAction; the touch overrides carry the
+          same entries since 2026-10-21 (the Stoat joined the mobile fleet, STOAT.md "On a phone")
         - StoatSlingExecutor + ToggleTranslationModeActionExecutor added on the ShipActions
           object and in the ActionExecutorRegistry, the stop executor wired to the hull's own
           VesselPrismController and the fleet's shared stationaryModeChanged / OnMiniGameTurnEnd
@@ -254,11 +254,12 @@ def executor_blocks(prism_controller_id: str) -> str:
 
 def bindings() -> str:
     """The SHIPPED bindings (stage 6): each trigger carries BOTH its dipole and its orbit asset - the mode
-    switch decides which one acts (StoatModeExecutor; each executor stands aside outside its mode) - X the
-    hold, B the Mass / Time switch."""
-    return (
-        "  _touchActionOverrides: []\n"
-        "  _gamepadActionOverrides:\n"
+    switch decides which one acts (StoatModeExecutor; each executor stands aside outside its mode) - A the
+    hold, B the Mass / Time switch. The SAME four entries on a phone (the owner, 2026-10-21: "the stoat
+    should join the mobile fleet"; STOAT.md "On a phone"): the Space card presses LT, the extra buttons
+    "Dipole Right" and "Hold" press RT and A, the Mass card presses B (Tools/Build/author_touch_profiles.py).
+    A touch press carries no trigger depth, so both executors squeeze by hold time there (StoatSlingMath.Hold01)."""
+    entries = (
         "  - InputEvent: 2\n"
         "    ShipActions:\n"
         f"    - {{fileID: 11400000, guid: {DIPOLE_LEFT}, type: 2}}\n"
@@ -274,6 +275,7 @@ def bindings() -> str:
         "    ShipActions:\n"
         f"    - {{fileID: 11400000, guid: {MODE_ACTION}, type: 2}}\n"
     )
+    return "  _touchActionOverrides:\n" + entries + "  _gamepadActionOverrides:\n" + entries
 
 
 def build_clone(donor: str) -> str:
@@ -1669,7 +1671,7 @@ def check(files: "dict[str, str]") -> "list[str]":
         if dm:
             want(dm.group(1) != net.group(1), "GlobalObjectIdHash still equals the Squirrel's - Netcode would key both on one entry")
 
-    want(bindings() in prefab, "gamepad bindings are not LT->dipole+orbit left, RT->dipole+orbit right, X->hold, B->mode (touch cleared)")
+    want(bindings() in prefab, "gamepad bindings are not LT->dipole+orbit left, RT->dipole+orbit right, A->hold, B->mode (the touch overrides the same four)")
     want(f"  - component: {{fileID: {DIPOLE_EXECUTOR_ID}}}\n" in prefab, "StoatDipoleExecutor is not on the ShipActions object")
     want(f"  - component: {{fileID: {PATHFINDER_EXECUTOR_ID}}}\n" in prefab, "StoatPathfinderExecutor is not on the ShipActions object")
     want(dipole_executor_blocks() in prefab, "the dipole / pathfinder executor documents are not authored as expected (StoatDipoleConfig)")

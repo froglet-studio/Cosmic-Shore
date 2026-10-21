@@ -30,7 +30,7 @@ namespace CosmicShore.UI
     public class DailyActivityCard : MonoBehaviour
     {
         [Header("Labels (all optional)")]
-        [SerializeField, Tooltip("Heading - 'TODAY'S ACTIVITY'. Taken from the config asset.")]
+        [SerializeField, Tooltip("Heading - 'Today's activity'. Taken from the config asset.")]
         TMP_Text titleText;
 
         [SerializeField, Tooltip("Today's activity, e.g. 'Rainbow' - the leaf's own name.")]
@@ -49,6 +49,17 @@ namespace CosmicShore.UI
 
         [SerializeField, Tooltip("Shown only once today's activity has been started and paid for.")]
         GameObject claimedBadge;
+
+        [Header("Style-B (all optional)")]
+        [SerializeField, Tooltip("The countdown alone, '7h 12m' (the style-B card prints 'Ends in' beside it). " +
+                                 "Wire it with Reward Text and leave Status Text empty.")]
+        TMP_Text countdownText;
+
+        [SerializeField, Tooltip("The reward chip: 'Try it +10', 'Try it', or 'Done' once claimed.")]
+        TMP_Text rewardText;
+
+        [SerializeField, Tooltip("The offering toy's codex portrait. Hidden when it has none.")]
+        Image portrait;
 
         ToyboxModal _modal;
         Button _button;
@@ -92,7 +103,7 @@ namespace CosmicShore.UI
         void Redraw()
         {
             var config = ToyboxDailyActivityConfigSO.Instance;
-            SetText(titleText, config != null ? config.ActivityTitle : "TODAY'S ACTIVITY");
+            SetText(titleText, config != null ? config.ActivityTitle : "Today's activity");
 
             var pick = DailyToyActivity.Today;
 
@@ -104,6 +115,9 @@ namespace CosmicShore.UI
                 SetText(activityText, "UNAVAILABLE");
                 SetText(toyText, "");
                 SetText(statusText, "NO ACTIVITY RIGHT NOW");
+                SetText(countdownText, "--");
+                SetText(rewardText, "Unavailable");
+                if (portrait) portrait.enabled = false;
                 if (claimedBadge) claimedBadge.SetActive(false);
                 if (_button) _button.interactable = false;
                 return;
@@ -125,6 +139,15 @@ namespace CosmicShore.UI
                                  : $"{countdown} LEFT");
 
             if (claimedBadge) claimedBadge.SetActive(claimed);
+
+            SetText(countdownText, countdown);
+            SetText(rewardText, claimed ? "Done" : reward > 0 ? $"Try it +{reward}" : "Try it");
+            if (portrait)
+            {
+                var art = ToyPortraitLibrary.Portrait(pick.Surface.ShellDefinition);
+                if (portrait.sprite != art) portrait.sprite = art;
+                portrait.enabled = art;
+            }
 
             if (accentFill)
             {

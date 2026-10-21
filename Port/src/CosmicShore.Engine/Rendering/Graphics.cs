@@ -18,8 +18,7 @@ namespace CosmicShore.Engine
         public int layer;
         /// <summary>Per-draw property overrides (UnityEngine.RenderParams.matProps).</summary>
         public MaterialPropertyBlock matProps;
-        /// <summary>The one camera that draws this submission (UnityEngine.RenderParams.camera); null = every camera.
-        /// The crew seats' second views draw their marks for their own camera only.</summary>
+        /// <summary>Original contract: draw for this camera only. Recorded; the headless submission ignores it.</summary>
         public Camera camera;
 
         public RenderParams(Material material)
@@ -154,13 +153,10 @@ namespace CosmicShore.Engine
             Debug.LogWarning($"[port] Graphics.RenderMeshPrimitives ('{mesh.name}', material '{rparams.material?.name}') is not drawn: procedural instancing from GPU buffers has no Amoebius backend yet.");
         }
 
-        /// <summary>Original signature: one instance of one submesh at <paramref name="objectToWorld"/> (a material need not
-        /// enable instancing). Headless: recorded as a one-instance submission.</summary>
-        public static void RenderMesh(in RenderParams rparams, Mesh mesh, int submeshIndex, CosmicShore.Engine.Matrix4x4 objectToWorld, CosmicShore.Engine.Matrix4x4? prevObjectToWorld = null)
-        {
-            if (mesh is null) return;
-            RenderMeshInstanced(rparams, mesh, submeshIndex, new[] { objectToWorld }, 1);
-        }
+        /// <summary>Original signature: one mesh at one pose. Recorded as a single-instance submission.</summary>
+        public static void RenderMesh(in RenderParams rparams, Mesh mesh, int submeshIndex,
+            CosmicShore.Engine.Matrix4x4 objectToWorld, CosmicShore.Engine.Matrix4x4? prevObjectToWorld = null)
+            => RenderMeshInstanced(rparams, mesh, submeshIndex, new[] { objectToWorld }, 1);
 
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,
             CosmicShore.Engine.Matrix4x4[] instanceData, int instanceCount = -1, int startInstance = 0)

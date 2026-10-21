@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
             VesselClassType.Grizzly, VesselClassType.Thresher, VesselClassType.Stoat,
             VesselClassType.Goby,
             VesselClassType.BrittleStar, VesselClassType.Shrike, VesselClassType.Angler,
-            VesselClassType.Wrasse,
+            VesselClassType.Wrasse, VesselClassType.Orca, VesselClassType.Starling, VesselClassType.Marlin,
         };
 
         /// <summary>

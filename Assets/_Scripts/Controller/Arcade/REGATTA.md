@@ -113,6 +113,17 @@ an inside lane on one corner is the outside lane on another and the three lanes 
 laid down each lane's own **closed** `Trail` (a loop has no ends to launch off — an Urchin that
 stays on rides the whole race), `PrismscapeDimension.Trail`.
 
+**The rails are flush, not overlapping (2026-10-20, Docs/ECOSYSTEM.md §49.10).** Each prism looks
+down the chord to its successor, so on a bend two 6 u-wide boxes met at an angle and crossed at
+their inner corners: every consecutive pair on every lane clipped (worst 0.55 u). Each prism's
+LENGTH is now fitted at authoring time to its two neighbours (`RegattaCourse.FlushRailLengths`:
+the longest length a pair can share and only touch, separated on the plane normal to their
+chord - closed form, a few dot products per prism). The 6 u cross-section (the catch window), the
+count and every pose are unchanged; the median prism keeps 99% of its 8 u, the worst 93%, and the
+rails' volume drops 0.9-1.4% (517,194 / 580,342 / 627,530 / 625,649 at intensities 1-4, measured
+by `Tools/Build/regatta_course_harness/run.sh` into `railVolume`). The cell's volume ladder prices
+that measured volume (`author_regatta_assets.py`), never count x 288.
+
 **The seed lives on the arena.** `SpawnableRegattaRails` (one prefab variant per intensity) lays
 the rails from its own seed, and `RegattaController.BuildCourse` re-derives the SAME gates from
 the same pure call off the cell's *expected* config — Skein's pattern — so rails and rings

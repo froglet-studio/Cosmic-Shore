@@ -191,6 +191,27 @@ config's old `projectileTime` (the 3 s "throw") is retired.
 
 Mouse buttons and the shift keys report no analog value, so every desktop bomb is full size.
 
+### On a phone (2026-10-21)
+
+The Grizzly flies the **TotemButtons** scheme (`Tools/Build/author_touch_profiles.py`,
+`Resources/TouchControlProfiles.asset`): lifting a thumb raises nothing, any single thumb steers,
+and the controls are on screen round the right thumb. The prefab has no touch overrides, so each
+button reaches the shared bindings in the table above.
+
+| Button | Raises | Does |
+|---|---|---|
+| Dig In card / Rush card | `Button1Action` (A) / `Button2Action` (B) | Dig In, Rush |
+| Weapon Systems card | `FlipAction` (RB) | cycle weapon |
+| Charged Cannon card (held) | `Button3Action` (X) | charged cannon / sniper / claw |
+| **Bomb** buttons, two (held, primary) | `LeftStickAction` (LT) / `RightStickAction` (RT) | the left and right bomb |
+
+A bomb button's press and release are the trigger's, so the whole cycle runs from it: press arms,
+release fires, the next press freezes the flying bomb, its release detonates. A phone writes no
+trigger depth (`Left/RightTriggerAnalog` stay 0), so `ConsumePressure` reads every press as full and
+**every phone bomb is full size** — the desktop's rule. When the pool cannot buy a full bomb,
+`AffordableSize` shrinks it to what the ammo buys, as it does for a full pull on a pad. A size dialled
+by pressure has no phone equivalent.
+
 ## Multiplayer
 
 Every peer simulates, as the cannon does: presses and releases are replayed to every peer

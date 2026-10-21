@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
@@ -31,7 +32,8 @@ namespace CosmicShore.Tests
             var c = Load();
             Assert.AreEqual(160f, c.BoardRadius);
             Assert.AreEqual(0.3f, c.Anchor, 1e-6f);
-            Assert.AreEqual(KiteBoardFrame.Eased, c.Frame);
+            Assert.AreEqual(KiteBoardFrame.Heading, c.Frame, "round 7: a yaw in place does not drag the board");
+            Assert.AreEqual(220f, c.HeadingAlignDistance);
             Assert.AreEqual(3f, c.EaseRate);
             Assert.AreEqual(40f, c.ReachY);
             Assert.AreEqual(8f, c.KiteRadius);
@@ -78,6 +80,53 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Asset_GivesEachElementItsOwnShadeOfLime()
+        {
+            // Garrett, 2026-10-21: four lime shades of distinct hue, saturation and value, written by
+            // Tools/Build/kite_mote_colors.py (whose --check holds them to the boundary and the tetrahedron)
+            var c = Load();
+            var seen = new HashSet<Color>();
+            for (int e = 0; e < 4; e++)
+            {
+                var col = c.ElementColor(e, Color.clear);
+                Assert.AreEqual(1f, col.a, $"element {e} has no colour: run Tools/Build/kite_mote_colors.py");
+                // "it has to have green in the yellow and yellow in the green. it can not have any blue or orange at all"
+                Assert.AreEqual(0f, col.b, $"element {e} has blue in it");
+                Assert.Greater(col.g, col.r, $"element {e} has orange in it (red leads green)");
+                float share = col.r / col.g;
+                Assert.That(share, Is.InRange(0.249f, 0.751f), $"element {e}: red is {share:F2} of green, not a quarter to three quarters (yellow in the green, green in the yellow)");
+                Color.RGBToHSV(col, out _, out float sat, out float val);
+                Assert.Greater(sat, 0.3f, $"element {e} is too grey for lime (grey is Blue's)");
+                Assert.Greater(val, 0.7f, $"element {e} is too dark for lime");
+                Assert.IsTrue(seen.Add(col), $"element {e} repeats another element's colour");
+            }
+        }
+
+        [Test]
+        public void Asset_CarriesTheScreenLayout()
+        {
+            var c = Load();
+            // round 7 (Garrett, 2026-10-20): the whole screen, zoomed out 30%, the cord drawn
+            Assert.IsTrue(c.WholeScreen);
+            Assert.AreEqual(1.352f, c.ViewScale, 1e-6f, "1.04 x 1.3");
+            Assert.AreEqual(0.6f, c.CordWidth, 1e-6f);
+            Assert.AreEqual(0.75f, c.CordAlpha, 1e-6f);
+            // round 8: the hand line above the totems, the kite off the bottom, the pilot's larger stand-in
+            Assert.AreEqual(0.012f, c.HandLineGap, 1e-6f);
+            Assert.AreEqual(0.2f, c.HandLineFallback, 1e-6f);
+            Assert.AreEqual(10f, c.HandEdgeMargin, "round 8b: a small margin inside the screen's sides and top");
+            Assert.Less(c.HandEdgeMargin, 0.5f * c.ToSettings().SlingRope, "significantly less than the cord");
+            Assert.AreEqual(240f, c.KiteOffscreenReach, "Tools/Build/author_wrasse_run_assets.py sizes the race clamp to it");
+            Assert.AreEqual(2.5f, c.PilotKiteScale, 1e-6f);
+            // round 10: the juice (KiteNavigatorJuice); massMorphSeconds is also when a Mass loop's prisms are laid
+            Assert.AreEqual(0.95f, c.FizzleSeconds, 1e-6f);
+            Assert.AreEqual(1.1f, c.SpaceRideSeconds, 1e-6f);
+            Assert.AreEqual(0.75f, c.MassMorphSeconds, 1e-6f);
+            Assert.AreEqual(0.7f, c.TimeFlightSeconds, 1e-6f);
+            Assert.AreEqual(0.55f, c.ChargeFlightSeconds, 1e-6f);
+        }
+
+        [Test]
         public void Settings_AreTheNumbersTheParityHarnessHoldsTheCoreTo()
         {
             var s = Load().ToSettings();
@@ -85,7 +134,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0.3f, s.Anchor, 1e-6f);
             Assert.AreEqual(320f, s.KiteSpeed);
             Assert.AreEqual(12f, s.KiteAccel);
-            Assert.AreEqual(2.4f, s.TailLength, 1e-6f, "round 3's 1.6 + 50% (Garrett, 2026-10-18)");
+            Assert.AreEqual(4.8f, s.TailLength, 1e-6f, "round 3's 1.6 + 50% (Garrett, 2026-10-18), doubled (2026-10-20)");
         }
 
         [Test]
@@ -120,7 +169,8 @@ namespace CosmicShore.Tests
             var cls = AssetDatabase.LoadAssetAtPath<SO_Vessel>("Assets/_SO_Assets/Classes/SO_Class_Wrasse.asset");
             Assert.IsNotNull(cls);
             Assert.AreEqual("Wrasse", cls.Name, "Name stays the vessel's key (the hangar's cloud unlocks)");
-            Assert.AreEqual("Wrasse and Grouper", cls.CardName);
+            Assert.AreEqual(2, cls.SeatCount, "a multiplayer vessel is named by its seats (Garrett, 2026-10-20)");
+            Assert.AreEqual("Wrasse and Grouper \u00b7 2 seat", cls.CardName);
 
             var solo = ScriptableObject.CreateInstance<SO_Vessel>();
             solo.Name = "Sparrow";

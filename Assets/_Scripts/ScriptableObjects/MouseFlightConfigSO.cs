@@ -126,6 +126,14 @@ namespace CosmicShore.ScriptableObjects
                  "is making a claim it does not mean.")]
         [SerializeField] Color widgetColor = new Color(1f, 1f, 1f, 1f);
 
+        [Header("Dual mouse (Windows)")]
+        [Tooltip("Start the Windows raw-input reader that dual-mouse flight needs (two physical " +
+                 "mice, one per hand). OFF by default because Windows lets a process register " +
+                 "mouse raw input to ONE window: turning this on takes mouse MOVEMENT away from " +
+                 "Unity, so the one-thumb mouse scheme reads zero delta while the buttons still " +
+                 "fire. Read when an InputController initializes, not live.")]
+        [SerializeField] bool dualMouseRawInput;
+
         public float StickUnitsPerPixel => Mathf.Max(0.0001f, stickUnitsPerPixel);
         public float SpringPerSecond => Mathf.Max(0f, springPerSecond);
         public float DeadZone => Mathf.Clamp(deadZone, 0.001f, 0.25f);
@@ -141,6 +149,7 @@ namespace CosmicShore.ScriptableObjects
         public bool ShowWidget => showWidget;
         public float WidgetScreenFraction => Mathf.Clamp(widgetScreenFraction, 0.03f, 0.35f);
         public Color WidgetColor => widgetColor;
+        public bool DualMouseRawInput => dualMouseRawInput;
 
         /// <summary>Mouse travel, in pixels, from centre to hard over.</summary>
         public float PixelsToFullDeflection => 1f / StickUnitsPerPixel;

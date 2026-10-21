@@ -14,7 +14,6 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
-using UnityEngine.InputSystem;
 
 namespace CosmicShore.UI
 {
@@ -57,6 +56,10 @@ namespace CosmicShore.UI
                  "hull. Leave empty and a generated card is laid out over this modal on first use.")]
         [SerializeField] private VesselInfoPopup vesselInfoPopup;
 
+        [Tooltip("The authored card to instantiate over this modal when no in-scene card is wired (style B: " +
+                 "VesselInfoCard.prefab). Leave both empty and a generated card stands in.")]
+        [SerializeField] private VesselInfoPopup vesselInfoPopupPrefab;
+
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
 
@@ -68,6 +71,12 @@ namespace CosmicShore.UI
 
         [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
+
+        [SerializeField, Tooltip("Rebuild the preview's arena when the intensity row changes. Off (the owner, 2026-10-17: " +
+                                 "\"the cell should not change for the preview\"): the preview keeps the card's lowest " +
+                                 "intensity cell, so moving the row never stands a new world - a multi-second cell build " +
+                                 "and a hitch on every press. The match itself still launches at the chosen intensity.")]
+        private bool previewFollowsIntensity;
 
         [Header("Maelstrom")]
         [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +
@@ -90,15 +99,6 @@ namespace CosmicShore.UI
 
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
-
-        // D-pad navigation over the panel's own rows: 0=intensity, 1=AI difficulty (only on a card
-        // that offers it - MoveDpadFocusRow steps over it elsewhere), 2=player count, 3=domain count.
-        int _dpadFocusRow;
-        const int DpadRowIntensity = 0;
-        const int DpadRowAIDifficulty = 1;
-        const int DpadRowPlayerCount = 2;
-        const int DpadRowDomainCount = 3;
-        const int DpadRowCount = 4;
 
         // Hard cap on the number of players/domains the game supports
         const int MaxSupportedPlayers = 12;
@@ -161,10 +161,6 @@ namespace CosmicShore.UI
 
         IReadOnlyList<DomainInfoData> ActiveDomainTiles =>
             _activePanel ? _activePanel.DomainTiles : NoDomainTiles;
-
-        Button ActiveStartButton => _activePanel ? _activePanel.StartButton : null;
-
-        GameObject ActiveWaitingLabel => _activePanel ? _activePanel.WaitingForOthersLabel : null;
 
         ModePreviewWindow ActivePreviewWindow => _activePanel ? _activePanel.PreviewWindow : null;
 
@@ -312,99 +308,8 @@ namespace CosmicShore.UI
             ReconcileClientLobby();
             TickArenaHullClaim();
 
-            var pad = Gamepad.current;
-            if (pad == null) return;
-            if (IsClientMode) return;
-
-            // While the preview window holds focus the pad belongs to the VESSEL - the d-pad
-            // and A button must not silently drive the intensity rows behind the game the
-            // player is flying. Same gate the base applies to its B-to-close.
-            if (ModePreviewWindow.AnyHasFocus) return;
-
-            // The panel IS the config surface, so the d-pad only drives the rows the player can
-            // actually see.
-            if (!_activePanel || !_activePanel.gameObject.activeInHierarchy) return;
-
-            if (pad.dpad.up.wasPressedThisFrame)
-                MoveDpadFocusRow(-1);
-            else if (pad.dpad.down.wasPressedThisFrame)
-                MoveDpadFocusRow(1);
-            else if (pad.dpad.left.wasPressedThisFrame)
-                HandleDpadHorizontal(-1);
-            else if (pad.dpad.right.wasPressedThisFrame)
-                HandleDpadHorizontal(1);
-        }
-
-        void MoveDpadFocusRow(int direction)
-        {
-            int next = Mathf.Clamp(_dpadFocusRow + direction, 0, DpadRowCount - 1);
-
-            // The difficulty row exists only on a card that offers it. Elsewhere step straight over
-            // it, so a pad behaves on every other card exactly as it did before the row existed
-            // rather than parking focus on a row nobody can see.
-            if (next == DpadRowAIDifficulty && !OffersAIDifficulty)
-                next = Mathf.Clamp(next + (direction < 0 ? -1 : 1), 0, DpadRowCount - 1);
-
-            _dpadFocusRow = next;
-        }
-
-        void HandleDpadHorizontal(int direction)
-        {
-            switch (_dpadFocusRow)
-            {
-                case DpadRowIntensity:
-                    CycleIntensity(direction);
-                    break;
-                case DpadRowAIDifficulty:
-                    CycleAIDifficulty(direction);
-                    break;
-                case DpadRowPlayerCount:
-                    if (pcStepper)
-                    {
-                        if (direction > 0) pcStepper.Increment();
-                        else pcStepper.Decrement();
-                    }
-                    break;
-                case DpadRowDomainCount:
-                    if (dcStepper)
-                    {
-                        if (direction > 0) dcStepper.Increment();
-                        else dcStepper.Decrement();
-                    }
-                    break;
-            }
-        }
-
-        void CycleIntensity(int direction)
-        {
-            if (config == null) return;
-
-            var row = ActiveIntensityButtons;
-
-            int currentIdx = -1;
-            for (int i = 0; i < row.Count; i++)
-            {
-                if (row[i] && row[i].Intensity == config.Intensity)
-                {
-                    currentIdx = i;
-                    break;
-                }
-            }
-
-            int nextIdx = currentIdx;
-            while (true)
-            {
-                nextIdx += direction;
-                if (nextIdx < 0 || nextIdx >= row.Count) return;
-                var btn = row[nextIdx];
-                if (!btn) continue;
-                var uiBtn = btn.GetComponent<Button>();
-                if (uiBtn && uiBtn.enabled)
-                {
-                    btn.Select();
-                    return;
-                }
-            }
+            // The pad moves focus through the EventSystem like any other screen: the configure tree
+            // is plain Selectables (intensity nodes, domain tiles, each domain's + AI, Start).
         }
 
         #endregion
@@ -572,8 +477,6 @@ namespace CosmicShore.UI
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
-
-            _dpadFocusRow = DpadRowIntensity;
 
             // One panel means there is no separate Confirm step for the host to press, so the
             // config is committed here: that is the call that publishes the domain count, resets
@@ -768,9 +671,10 @@ namespace CosmicShore.UI
 
             foreach (var tile in _activePanel.DomainTiles)
             {
-                if (!tile || !tile.Button) continue;
+                if (!tile) continue;
                 var captured = tile.Domain;
-                tile.Button.onClick.AddListener(() => HandleDomainSelected(captured));
+                if (tile.Button) tile.Button.onClick.AddListener(() => HandleDomainSelected(captured));
+                if (tile.AddAIButton) tile.AddAIButton.onClick.AddListener(() => AddAiToDomain(captured));
             }
 
             if (_activePanel.StartButton)
@@ -778,6 +682,12 @@ namespace CosmicShore.UI
 
             if (_activePanel.LeaderboardButton)
                 _activePanel.LeaderboardButton.onClick.AddListener(_activePanel.RequestLeaderboard);
+
+            // The star is wired HERE, by the one modal that knows the open card. A persistent call
+            // on the panel prefab could only name the window it sits in - and the Arena and
+            // Maelstrom windows each carry a modal COPY that has no card, so their stars did nothing.
+            if (_activePanel.Favorite && _activePanel.Favorite.TryGetComponent(out Button star))
+                star.onClick.AddListener(ToggleFavorite);
 
             _activePanel.OnKickAIRequested += HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged += HandleAddAIModeChanged;
@@ -788,6 +698,7 @@ namespace CosmicShore.UI
             {
                 arena.OnVesselCycleRequested   += HandleVesselCycleRequested;
                 arena.OnVesselConfirmRequested += HandleVesselConfirmRequested;
+                arena.OnVesselPickRequested    += HandleVesselPickRequested;
             }
 
             _activePanelWired = true;
@@ -808,7 +719,9 @@ namespace CosmicShore.UI
 
             foreach (var tile in _activePanel.DomainTiles)
             {
-                if (tile && tile.Button) tile.Button.onClick.RemoveAllListeners();
+                if (!tile) continue;
+                if (tile.Button) tile.Button.onClick.RemoveAllListeners();
+                if (tile.AddAIButton) tile.AddAIButton.onClick.RemoveAllListeners();
             }
 
             if (_activePanel.StartButton)
@@ -816,6 +729,9 @@ namespace CosmicShore.UI
 
             if (_activePanel.LeaderboardButton)
                 _activePanel.LeaderboardButton.onClick.RemoveListener(_activePanel.RequestLeaderboard);
+
+            if (_activePanel.Favorite && _activePanel.Favorite.TryGetComponent(out Button star))
+                star.onClick.RemoveListener(ToggleFavorite);
 
             _activePanel.OnKickAIRequested -= HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged -= HandleAddAIModeChanged;
@@ -826,6 +742,7 @@ namespace CosmicShore.UI
             {
                 arena.OnVesselCycleRequested   -= HandleVesselCycleRequested;
                 arena.OnVesselConfirmRequested -= HandleVesselConfirmRequested;
+                arena.OnVesselPickRequested    -= HandleVesselPickRequested;
             }
 
             _activePanelWired = false;
@@ -967,6 +884,10 @@ namespace CosmicShore.UI
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
+            // A weekly challenge seats exactly what the challenge names. Each domain's + AI is hidden
+            // there, but the button's click is public wiring - refuse here rather than trust that.
+            if (_weeklyChallengeLocked) return;
+
             // Placements stack ON TOP of the humans. Every AI already in the lobby is itself a
             // placement (the card's minimum is placed, not auto-filled), so a min-2 card played
             // solo already holds one placed bot and a tap adds the THIRD seat.
@@ -1098,6 +1019,13 @@ namespace CosmicShore.UI
                                        _readyCount, _localPlayerReady, !IsClientMode,
                                        _addAiArmed && !IsClientMode && !_weeklyChallengeLocked);
 
+            // The seat line ("2 of 4") and each domain's open seat. A weekly challenge pins the seat
+            // count, so it never shows an open seat; elsewhere every domain offers one while the
+            // house has room, and only the host may fill it with an AI.
+            int ceiling = MatchSeatCeiling;
+            int spare = _weeklyChallengeLocked ? 0 : Mathf.Max(0, ceiling - total);
+            _activePanel.SetSeatSummary(total, ceiling, spare, !IsClientMode && !_localPlayerReady);
+
             RefreshAIPreviewChips(total - humans);
         }
 
@@ -1141,6 +1069,9 @@ namespace CosmicShore.UI
         /// it the hull the mode locks to. The window is the affordance - there is no separate
         /// button, because the thing you click to play is the thing the game plays in.
         /// </summary>
+        int PreviewIntensity(SO_ArcadeGame game) =>
+            previewFollowsIntensity && config != null ? config.Intensity : Mathf.Max(1, game ? game.MinIntensity : 1);
+
         void ArmPreviewForGame(SO_ArcadeGame game, ModePreviewDefinitionSO definition)
         {
             var window = ActivePreviewWindow;
@@ -1167,7 +1098,7 @@ namespace CosmicShore.UI
             session.SetDrillNames(game ? game.DisplayName : null, ResolveModeVesselName(game));
             session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
                                   ResolveModeVessel(game),
-                                  config != null ? config.Intensity : 1,
+                                  PreviewIntensity(game),
                                   sparringPartner: game && game.MinPlayersAllowed >= 2);
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
@@ -1564,13 +1495,16 @@ namespace CosmicShore.UI
 
                 // Lock intensities the player hasn't unlocked — and, during the quest-graph
                 // funnel, every intensity except the forced one (FTUE first orientation).
-                if (active)
+                // A weekly challenge's pinned level is never drawn locked: the challenge names it,
+                // so it is the one level this card is certainly playing.
+                if (active && !_weeklyChallengeLocked)
                 {
                     bool unlocked = progressionService == null
                                     || progressionService.IsIntensityUnlocked(game.Mode, level);
                     if (QuestArcadeConstraints.IsIntensityBlocked(game.Mode, level))
                         unlocked = false;
                     button.SetLocked(!unlocked);
+                    if (!unlocked) button.SetLockedGoal(LockedIntensityGoal(game, level));
                 }
 
                 button.SetSelected(active && level == config.Intensity);
@@ -1702,6 +1636,22 @@ namespace CosmicShore.UI
                 ? _availableShips[_availableShipIndex]
                 : null;
             arena.ShowVessel(ship, _availableShips.Count > 1, _vesselConfirmed);
+            arena.ShowHullStrip(_availableShips, _availableShipIndex,
+                                v => IsHullHeldByOtherPilot(v.Class), _vesselConfirmed);
+        }
+
+        /// <summary>A tap on the hull strip: show that hull, unless the pick is already made, a claim
+        /// is in flight, or another pilot holds it (the tile refuses that tap itself).</summary>
+        void HandleVesselPickRequested(int index)
+        {
+            if (_vesselConfirmed || ArenaHullClaimPending) return;
+            if (index < 0 || index >= _availableShips.Count || index == _availableShipIndex) return;
+            if (IsHullHeldByOtherPilot(_availableShips[index].Class)) return;
+
+            _availableShipIndex = index;
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            SetSelectedShipInternal(_availableShips[_availableShipIndex]);
+            RefreshVesselPicker();
         }
 
         void HandleVesselCycleRequested(int direction)
@@ -1899,7 +1849,7 @@ namespace CosmicShore.UI
 
             if (RequiresVesselConfirmation && !_vesselConfirmed)
             {
-                _activePanel.SetStartAvailable(false, "SELECT A VESSEL");
+                _activePanel.SetStartAvailable(false, "Claim a hull to start.");
                 return;
             }
 
@@ -1925,8 +1875,8 @@ namespace CosmicShore.UI
             _activePanel.SetStartAvailable(canStart,
                 canStart ? null
                 : service != null && service.CompletedThisWeek
-                    ? "COMPLETED - BEAT YOUR TIME TOMORROW"
-                    : "PLAYED TODAY - COME BACK TOMORROW");
+                    ? "Completed - beat your time tomorrow."
+                    : "Played today - come back tomorrow.");
         }
 
         #endregion
@@ -2276,7 +2226,9 @@ namespace CosmicShore.UI
 
             var chip = Instantiate(chipPrefab, startTile.AvatarStripTransform);
             Sprite sprite = dataService != null ? dataService.GetAvatarSprite(p.NetAvatarId.Value) : null;
-            chip.Set(sprite, p.OwnerClientId == localId);
+            bool isLocal = p.OwnerClientId == localId;
+            chip.Set(sprite, isLocal);
+            chip.SetLabel(p.Name, SeatRole(isLocal, p.OwnerClientId == NetworkManager.ServerClientId));
             _playerChips[p] = chip;
 
             // Hook for future domain changes - closure captures the player so we know
@@ -2387,6 +2339,7 @@ namespace CosmicShore.UI
 
                 var seat = Instantiate(chipPrefab, tile.AvatarStripTransform);
                 seat.Set(dataService != null ? dataService.GetRandomAvatarSprite() : null, false);
+                seat.SetLabel(AiSeatName(i, domain, humanDomains), "AI");
 
                 // The ✕ lives ON the chip - this strip IS the roster the player looks at. Only a
                 // placed bot is kickable (on the host every bot is placed - a balanced chip here is
@@ -2401,6 +2354,25 @@ namespace CosmicShore.UI
                 DrawAiSeatHull(seat, ordinal, domain, placedChip, humanDomains, localDomain);
                 _aiChips.Add(seat);
             }
+        }
+
+        /// <summary>A seat row's role line: "You / Host", "You", "Host" or "Pilot".</summary>
+        static string SeatRole(bool isLocal, bool isHost) =>
+            isLocal ? (isHost ? "You / Host" : "You") : (isHost ? "Host" : "Pilot");
+
+        /// <summary>
+        /// What an AI seat row is called: the hull it will fly when that is already decided (an
+        /// opponent's pinned hull, an ally's pick), otherwise just "AI pilot". A bot has no profile,
+        /// so its hull is the only name it has.
+        /// </summary>
+        string AiSeatName(int ordinal, Domains domain, ICollection<Domains> humanDomains)
+        {
+            SO_Vessel hull = null;
+            if (AIHullSeating.IsOpponentSeat(OpponentHull, domain, humanDomains))
+                hull = CardVessel(OpponentHull);
+            else if (AllyHullPickerAvailable && config != null)
+                hull = CardVessel(config.AIVesselAt(ordinal));
+            return hull && !string.IsNullOrEmpty(hull.Name) ? hull.Name : "AI pilot";
         }
 
         #region Ally hull picker
@@ -2457,8 +2429,10 @@ namespace CosmicShore.UI
         void ShowVesselInfo(SO_Vessel vessel, string seatLabel)
         {
             if (!vesselInfoPopup)
-                vesselInfoPopup = VesselInfoPopup.Build((RectTransform)transform,
-                    selectedGameDescription ? selectedGameDescription.font : null);
+                vesselInfoPopup = vesselInfoPopupPrefab
+                    ? Instantiate(vesselInfoPopupPrefab, transform, false)
+                    : VesselInfoPopup.Build((RectTransform)transform,
+                        selectedGameDescription ? selectedGameDescription.font : null);
             vesselInfoPopup.Show(vessel, seatLabel);
         }
 
@@ -2690,17 +2664,34 @@ namespace CosmicShore.UI
 
             if (_selectedGame == null) return;
 
+            // The refusal: the Denied sting, the node shakes once (a no-op on a button without a
+            // KitShake), and the toast says what earns the level.
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.Denied);
+            var row = ActiveIntensityButtons;
+            if (intensity >= 1 && intensity <= row.Count && row[intensity - 1])
+                KitShake.Play(row[intensity - 1].gameObject);
+
+            ToastNotificationAPI.Show(LockedIntensityGoal(_selectedGame, intensity), ToastKind.Goal);
+        }
+
+        /// <summary>
+        /// What earns <paramref name="level"/> on <paramref name="game"/> - one answer for the node's
+        /// goal line and the refusal toast, so the two can never disagree. Levels 3 and 4 carry their
+        /// quest's own copy; a level the quest graph is holding back (the first-flight funnel) says so;
+        /// anything else is the plain "play the level below" rule the defaults spell out.
+        /// </summary>
+        string LockedIntensityGoal(SO_ArcadeGame game, int level)
+        {
+            if (game && QuestArcadeConstraints.IsIntensityBlocked(game.Mode, level))
+                return "Not open on this mission yet.";
+
             var service = GameModeProgressionService.Instance;
-            if (service == null) return;
-
-            var quest = service.GetQuestForMode(_selectedGame.Mode);
-            if (quest == null) return;
-
-            string goalDescription = intensity == 3
-                ? quest.Intensity3GoalDescription
-                : quest.Intensity4GoalDescription;
-
-            ToastNotificationAPI.Show(goalDescription);
+            var quest = service != null && game ? service.GetQuestForMode(game.Mode) : null;
+            string authored = quest == null ? null
+                : level == 3 ? quest.Intensity3GoalDescription
+                : level == 4 ? quest.Intensity4GoalDescription
+                : null;
+            return string.IsNullOrEmpty(authored) ? $"Play Intensity {level - 1} to unlock" : authored;
         }
 
         #endregion
@@ -2848,10 +2839,7 @@ namespace CosmicShore.UI
 
             // Show "Waiting for others..." and hide the Start button
             _localPlayerReady = true;
-            if (ActiveStartButton)
-                ActiveStartButton.gameObject.SetActive(false);
-            if (ActiveWaitingLabel)
-                ActiveWaitingLabel.SetActive(true);
+            if (_activePanel) _activePanel.SetReadyUpState(true);
             RefreshRoster();
 
             // Tell the server this player is ready
@@ -3459,10 +3447,7 @@ namespace CosmicShore.UI
         {
             _localPlayerReady = false;
             _readyCount = 0;
-            if (ActiveStartButton)
-                ActiveStartButton.gameObject.SetActive(true);
-            if (ActiveWaitingLabel)
-                ActiveWaitingLabel.SetActive(false);
+            if (_activePanel) _activePanel.SetReadyUpState(false);
         }
 
         #endregion

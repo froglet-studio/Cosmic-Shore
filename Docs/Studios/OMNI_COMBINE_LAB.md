@@ -273,7 +273,7 @@ ends close on the omni.
 | `OmniCombineData.json` | `Assets/_SO_Assets/Environment/OmniCombine/` | The lab's data block in Unity's axes and a JsonUtility schema (`Tools/Build/author_omni_combine_asset.py`, `--check`, `--self-test` 8/8) |
 | `OmniCombineConfigSO` / `OmniCombineConfig.asset` | `Controller/Environment/Crystals/`, same folder | The data, the materials, and the per-play RANGES (`Tools/Build/author_elemental_converter.py`) |
 | `OmniCombinePlayer` | `Controller/Environment/Crystals/` | Builds the meshes and writes them every frame |
-| `ElementalConverterView` | `Assets/_Scripts/UI/Elements/` | The Ark screen: an off-screen stage, a hand-stepped camera (screen-pixel × 2 supersampling, 4× MSAA, SMAA), the picture, the title and CONVERT |
+| `ElementalConverterView` | `Assets/_Scripts/UI/Elements/` | The Ark screen: an off-screen stage, a hand-stepped camera (screen-pixel × 2 supersampling, 4× MSAA, SMAA) and the picture; since 2026-10-15 it drives the style-B overlay `ArkView.prefab` (title band, recipe panel, converter bar, CONVERT - `Docs/MENU_REDESIGN_B.md` section 16) and builds the first cut's title and button only when no overlay is wired |
 
 **Separate, slow, and never the same twice.** The game's defaults differ from the lab's in one way: the
 next crystal sets off as the last one lands (stagger 0.95 to 1.05 of the flight), so each animation plays on

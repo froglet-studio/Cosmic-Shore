@@ -121,6 +121,8 @@ namespace CosmicShore.Gameplay
         protected virtual int LayCapacity => 40000;
         protected abstract void BuildEnvironment();
         protected virtual bool AdmitsAuthoredPrismScale => false;
+        // CellEnvironmentSpawnableBase.BakesLayout: the rail worlds override it false (PrismLayoutBake).
+        protected virtual bool BakesLayout => true;
         protected abstract int BuildParameterHash();
 
         protected void Emit(Vector3 pos, Quaternion rot, Vector3 scale, Domains dom, PrismKind kind = PrismKind.Plain)

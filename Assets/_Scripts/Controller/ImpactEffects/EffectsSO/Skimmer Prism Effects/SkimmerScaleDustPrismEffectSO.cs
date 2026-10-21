@@ -139,7 +139,11 @@ namespace CosmicShore.Gameplay
             switch (Pick(Unit(h, 2), growWeight, dangerWeight, shieldWeight))
             {
                 case 0: Grow(prism, h); return ScaleDustOutcome.Grown;
-                case 1: prism.MakeDangerous(); return ScaleDustOutcome.Dangerous;
+                case 1:
+                    // A silenced Butterfly turns nothing dangerous (VesselSilence): the danger roll
+                    // grows the prism instead, so the dust still tends.
+                    if (VesselSilence.SuppressesDanger(status.PlayerName)) { Grow(prism, h); return ScaleDustOutcome.Grown; }
+                    prism.MakeDangerous(); return ScaleDustOutcome.Dangerous;
                 default: prism.ActivateShield(); return ScaleDustOutcome.Shielded;
             }
         }
@@ -147,6 +151,12 @@ namespace CosmicShore.Gameplay
         ScaleDustOutcome Blight(PrismImpactor impactee, Prism prism, IVesselStatus status, uint h,
                                 Vector3 destroyVelocity)
         {
+            // A silenced Butterfly's dust blights nothing (VesselSilence): the prism deflects, as a
+            // super-shielded one does, whatever was rolled - the shrink included, which no Damage
+            // call could refuse.
+            if (prism.DeflectsSilenced(status.PlayerName, destroyVelocity.magnitude))
+                return ScaleDustOutcome.Deflected;
+
             // An invulnerable prism only ever deflects, whatever was rolled.
             if (prism.prismProperties.IsSuperShielded)
             {

@@ -184,6 +184,7 @@ namespace CosmicShore.Gameplay
             // Before AbortHard, which early-returns when already Idle. Forfeited, not restored:
             // the scene is going away and the next loader owns the pause state.
             ForfeitMenuPauseRestore();
+            RestoreNavigation();
             // Never create GameObjects while the scene closes, and never raise into subscribers
             // that are being destroyed alongside us.
             AbortHard(strikeWorld: false, notify: false);
@@ -561,13 +562,39 @@ namespace CosmicShore.Gameplay
             // The pad flies the ship, so it must stop driving the UI at the same time. The
             // EventSystem half; direct device polls (the modal's B-to-close) check
             // ModePreviewWindow.AnyHasFocus instead.
-            if (EventSystem.current)
-            {
-                _navigationWasEnabled = EventSystem.current.sendNavigationEvents;
-                EventSystem.current.sendNavigationEvents = false;
-            }
+            TakeNavigation();
 
-            _window?.GrantFocus();
+            _window?.GrantFocus(player.Vessel.VesselStatus != null &&
+                                player.Vessel.VesselStatus.IsSingleStickControls);
+        }
+
+        // ── EventSystem navigation (the pad flies the ship, so it stops driving the UI) ──────
+
+        // Recorded once, on the FIRST hand-over, and given back exactly once. It used to be re-read on
+        // every grant and given back only on a focus release: a second grant saved the already-off
+        // value, so the release turned navigation OFF for good, and a preview ended by Stop, a launch
+        // or teardown without a release never gave it back at all. Either way every modal after it
+        // refused to open (ModalWindowManager: "sendNavigationEvents has been leaked"), and with the
+        // Arcade and Toy Box windows refusing, no vessel could be launched (2026-10-19 play test).
+        bool _navigationTaken;
+
+        void TakeNavigation()
+        {
+            var events = EventSystem.current;
+            if (!events) return;
+            if (!_navigationTaken)
+            {
+                _navigationWasEnabled = events.sendNavigationEvents;
+                _navigationTaken = true;
+            }
+            events.sendNavigationEvents = false;
+        }
+
+        void RestoreNavigation()
+        {
+            if (!_navigationTaken) return;
+            _navigationTaken = false;
+            if (EventSystem.current) EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
         }
 
         // The menu behind this window runs PAUSED (ScreenSwitcher pauses on every non-HOME
@@ -631,8 +658,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void HandleFocusReleased()
         {
-            if (EventSystem.current)
-                EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+            RestoreNavigation();
 
             RestoreMenuPause();
 
@@ -726,6 +752,7 @@ namespace CosmicShore.Gameplay
             StrikeGateCourse();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
+            RestoreNavigation();              // and when no window held focus (detached first), still give the pad back
 
             StopAsync(mode, outcome).Forget();
         }
@@ -844,6 +871,7 @@ namespace CosmicShore.Gameplay
             // Both callers of AbortHard - the launch and OnDestroy - are LEAVING the menu, so
             // the lift is forfeited here, never restored.
             ForfeitMenuPauseRestore();
+            RestoreNavigation();
 
             CameraManager.Instance?.EndWindowedPlayerCamera();
             RestoreAITarget();

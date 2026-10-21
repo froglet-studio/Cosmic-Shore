@@ -32,13 +32,50 @@ namespace CosmicShore.UI
         [Header("Avatar Strip")]
         [Tooltip("Container under which the modal reparents DomainAvatarChips for " +
                  "each player currently picking this domain. Modal owns the chip lifecycle.")]
-        [SerializeField] private HorizontalLayoutGroup avatarStrip;
+        [SerializeField] private HorizontalOrVerticalLayoutGroup avatarStrip;
+
+        [Header("Add AI (optional)")]
+        [Tooltip("Places one AI on THIS domain (host only). The modal wires its click and shows it only " +
+                 "while the match has a spare seat. Leave empty on a tile with no per-domain Add AI.")]
+        [SerializeField] private Button addAiButton;
 
         public Domains Domain => domain;
         public Button Button => button;
+        public Button AddAIButton => addAiButton;
         public Transform AvatarStripTransform => avatarStrip ? avatarStrip.transform : null;
 
+        /// <summary>Whether this is the local player's domain, as last set by the modal.</summary>
+        public bool IsSelected { get; private set; }
+
+        /// <summary>Whether the tile takes taps, as last set by the modal.</summary>
+        public bool IsInteractable { get; private set; } = true;
+
         public void SetSelected(bool selected)
+        {
+            IsSelected = selected;
+            DrawSelected(selected);
+        }
+
+        public void SetInteractable(bool interactable)
+        {
+            IsInteractable = interactable;
+            if (button) button.interactable = interactable;
+            DrawInteractable(interactable);
+        }
+
+        /// <summary>
+        /// The domain's open seat: <paramref name="open"/> while the match can still seat someone
+        /// here, and <paramref name="canAddAI"/> while the local player may fill it with an AI (the
+        /// host, outside a weekly challenge). A tile without an open-seat row shows only the button.
+        /// </summary>
+        public virtual void SetOpenSeat(bool open, bool canAddAI)
+        {
+            if (addAiButton) addAiButton.gameObject.SetActive(open && canAddAI);
+        }
+
+        // ── Drawing hooks (the style-B tile, KitDomainTile, overrides both) ─────────────
+
+        protected virtual void DrawSelected(bool selected)
         {
             if (backgroundImage)
                 backgroundImage.sprite = selected ? selectedSprite : unselectedSprite;
@@ -47,9 +84,8 @@ namespace CosmicShore.UI
                 labelText.color = selected ? selectedTextColor : unselectedTextColor;
         }
 
-        public void SetInteractable(bool interactable)
+        protected virtual void DrawInteractable(bool interactable)
         {
-            if (button) button.interactable = interactable;
             if (backgroundImage)
             {
                 var c = backgroundImage.color;

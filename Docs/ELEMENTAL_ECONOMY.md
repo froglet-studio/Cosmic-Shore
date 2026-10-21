@@ -15,6 +15,10 @@ exactly one of three places:
 | **Eject** | nobody yet: they are knocked out of the hull as free-for-all crystals | ranged — guns, rockets, blasts, the Serpent's rifle; and a rival threading a Butterfly's wormhole (the toll, left on the mouth's surface — `Docs/WORMHOLES.md` §5) | yes |
 | **Burn** | nobody, ever — destroyed | a **hostile danger prism**, and nothing else | **no — this is the sink** |
 
+**And every scored hit SILENCES its victim (Oct 2026).** For a time proportional to what the hit is
+worth, whether or not they had petals to lose, nothing the victim's abilities do can harm another pilot's vessel, fauna or prisms, and they lay
+no new danger: §10 and `Docs/ElementalAbilitySystem/SILENCE.md`.
+
 So elements circulate. Inside a match, lifeform reproduction and spawning are the only **source**,
 a hostile danger prism is the only **sink**, and everything in between is pilots trading the same
 material back and forth. (Two freestyle TOYS also mint petals - the Wanderway's crystals and the
@@ -560,3 +564,34 @@ control-theft calls, which moved from the must-NOT list to the must list when th
 The `Vessel Prism Effects/` family stays outside the gate for the reason above — it is the arena
 (the bounce off mass, the danger prism's slow and burn) — so the gate never has to know which hull
 laid the prism. Since 2026-10-17 that family holds no input mute either.
+
+---
+
+## 10. SILENCE: a scored hit also buys a window (Oct 2026)
+
+Garrett, 2026-10-20: taking a rival's elements was *"a good deterrent, but it is not protection"*: a
+pilot with fewer petals could still strip you back, steal your prisms or break the health prisms of
+your ark. So every **scored hit** now silences its victim for what it is worth - its points at ten to
+the petal, on four elements, times `secondsPerPetal` (1 s): a bullet 0.4 s, a Strike 3.2 s, a
+shockwave 4 s - added to what is left, capped at 8 s (`Resources/VesselSilenceConfig.asset`). It
+silences by WORTH, not by the petals that came loose, because the pot starts empty (§2.1): the first
+cut silenced only for settled petals, and a Dog Fight between fresh pilots silenced nobody (Garrett's
+call, 2026-10-20). While silenced, every ability still works and every control
+answers, but nothing the pilot does can harm another pilot's vessel, fauna or prisms, and a prism they
+lay or turn dangerous comes out plain. Danger prisms already standing keep their danger, and a burn
+never silences.
+
+**It is not a third tier for §9 to forbid.** It moves nothing and mutes no input: the victim flies,
+presses and builds their own mass exactly as before. What it removes is the HARM of their abilities,
+and it rides on the scored hit itself, never on a separate one.
+
+It is decided where the hit is admitted (`CombatHitDrain.TryAdmit`, on the attacker's owner), so a
+warded pilot is never silenced and a hit silences once however many peers replay it. The decider
+sends the extension to every peer (`NetworkVesselImpactor.PublishSilence`), because prism damage is
+simulated on every peer. A silenced attacker is refused at `TryAdmit` and inside every
+`ElementalTransfer` entry point, so the one-to-one between a scored hit and a petal theft holds.
+
+Everything else (the full table of gates, what the player sees, the HUD gap, and **the balancing plan**
+that sets these numbers: each hull's AI plateau in its Charge arcade game, then in Broadside (the Charge arena game),
+until every hull plateaus at the same score) is in `Docs/ElementalAbilitySystem/SILENCE.md`. Harness
+block T11 proves the hit-and-transfer half (`bash Tools/Build/elemental_transfer_harness/run.sh`).

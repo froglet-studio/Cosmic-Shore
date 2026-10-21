@@ -39,9 +39,11 @@ Regatta (`.claude/hooks/team_tasks_nudge.py`, "tasks waiting on a person").
    reused instead of instantiated. Measuring it showed the cost was the crystal-to-ring morph rebuilding the whole
    crystal mesh each collect; that is cached now. Skim Race impactor allocation 5.53 -> 3.41 KB/frame in Amoebius, back
    under its baseline. The damage blasts are not pooled (their hit ledgers assume a fresh instance).
-3. **Spindles: nothing to build yet** (T-20261015-641c closed). A grown Lattice holds ~2.9k spindles today, not ~40k,
-   and none are under a pixel, so a size LOD hides nothing. A Unity S2 capture (T-20261015-56dd) shows whether a
-   bigger change is still worth it. Snow (lever L6) is drawn instanced now, ~4.2k renderers fewer, same density.
+3. **Spindles: an LOD is built, waiting on Unity** (2026-10-20, Garrett's ask, `cece/gallant-keller-6mr1u4`,
+   `Docs/SPINDLE_LOD.md`). The 10-17 size LOD hid nothing because it measured a limb's bounding sphere; a spindle is
+   a wire and goes sub-pixel by THICKNESS. Three tiers (the untouched braid; the braid converging into one thread;
+   the thread alone, drawn instanced while still). Needs a first look in Unity and an S2 A/B with the profile's
+   `lodEnabled` on and off. Snow (lever L6) is drawn instanced now, ~4.2k renderers fewer, same density.
 4. **Switch on the daily performance check** (T-20261015-f106). GitHub runs the scheduled workflow only from the
    default branch; it is merged into `bleeding-edge` now, so it needs one manual run to confirm its artifacts.
 

@@ -5,6 +5,7 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.UI
@@ -102,7 +103,7 @@ namespace CosmicShore.UI
         /// leaves the drift's bare plate at the far end. Between them the band would have a hole
         /// in it.</para>
         public static readonly CoreAbility[] CoreAbilityDisplayOrder =
-            { CoreAbility.Drift, CoreAbility.OmniCrystal };
+            { CoreAbility.Drift, CoreAbility.Objective, CoreAbility.OmniCrystal };
 
         [Header("Button highlights")] public List<HighlightBinding> highlights = new();
 
@@ -280,6 +281,13 @@ namespace CosmicShore.UI
         {
             var lockups = ResolveAbilityLockups();
             if (lockups) lockups.SetAbilityControlBinding(element, pad, key);
+        }
+
+        /// <summary>Who a tapped ability card presses for (<see cref="AbilityCardPress"/>).</summary>
+        public void SetAbilityPressSource(IInputStatus input, R_VesselActionHandler actions)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetPressSource(input, actions);
         }
 
         /// <summary>Which device the control chips should speak for.</summary>

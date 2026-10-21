@@ -721,6 +721,10 @@ namespace CosmicShore.Gameplay
 
         bool HasAction(InputEvents inputEvent) => TryResolveActions(inputEvent, CurrentDevice(), out _);
 
+        /// <summary>True when a press of <paramref name="inputEvent"/> would run actions on the device the
+        /// pilot is holding now - how an on-screen ability card picks which of its control's events to raise.</summary>
+        public bool ResolvesOnActiveDevice(InputEvents inputEvent) => HasAction(inputEvent);
+
         void OnButtonPressed(InputEvents ie)
         {
             if (vesselStatus.AutoPilotEnabled)

@@ -26,7 +26,8 @@ namespace CosmicShore.Gameplay
     /// <para><b>Detection is the match's, verbatim in shape</b>: one segment test per frame against
     /// the pilot's NEXT ring only (<see cref="RaceGateRing.CrossedMouth"/>), a teleport threads
     /// nothing (<c>VesselTransformer.TeleportCount</c>, compared rather than measured), and an
-    /// implausibly long step is a respawn rather than a flight. A finished race starts again from
+    /// implausibly long step is a respawn rather than a flight. A hull with a second threading body
+    /// (<see cref="IRingThreadProbe"/>: the Thresher's ball) threads with either. A finished race starts again from
     /// gate 0 - a preview is a place you keep flying, so the course is a loop you can practise.</para>
     ///
     /// <para>Mass is untouched: rings are markers (one renderer each, zero colliders), and they
@@ -111,6 +112,8 @@ namespace CosmicShore.Gameplay
         Vector3 _lastPosition;
         bool _hasLastPosition;
         int _lastTeleports;
+        // The pilot's second threading body (IRingThreadProbe: the Thresher's ball) threads a ring too.
+        readonly RingThreadProbeSample _probe = new();
 
         int _raceThreaded;      // threadings in the CURRENT race - wraps to 0 at the finish
         int _litRing = -1;
@@ -192,6 +195,7 @@ namespace CosmicShore.Gameplay
         {
             _pilot = pilot;
             _hasLastPosition = false;
+            _probe.Forget();
             if (pilot != null) ResetRace();
         }
 
@@ -237,6 +241,10 @@ namespace CosmicShore.Gameplay
 
             Vector3 cur = t.position;
             int teleports = TeleportCountOf(_pilot);
+            // Unscaled, like the rest of the preview: the menu is free to touch timeScale.
+            float maxStep = MaxPlausibleSpeed * Mathf.Max(Time.unscaledDeltaTime, Time.deltaTime) * 2f + 5f;
+            // Sampled every frame, ahead of every skip below, so the probe's next segment is one frame long.
+            bool probeFlew = _probe.Advance(_pilot, maxStep * maxStep, out var probePrev, out var probeCur);
             if (!_hasLastPosition)
             {
                 _lastPosition = cur;
@@ -251,15 +259,14 @@ namespace CosmicShore.Gameplay
             // A jump threads nothing on the line between its ends (see GateRaceController).
             if (teleports != _lastTeleports) { _lastTeleports = teleports; return; }
 
-            // Unscaled, like the rest of the preview: the menu is free to touch timeScale.
-            float maxStep = MaxPlausibleSpeed * Mathf.Max(Time.unscaledDeltaTime, Time.deltaTime) * 2f + 5f;
             if ((cur - prev).sqrMagnitude > maxStep * maxStep) return;
 
             int ringIndex = _source.RingIndexFor(_raceThreaded, _rings.Count, _intensity);
             if (ringIndex < 0 || ringIndex >= _rings.Count) return;
 
             var ring = _rings[ringIndex];
-            if (!ring || !ring.CrossedMouth(prev, cur)) return;
+            if (!ring) return;
+            if (!ring.CrossedMouth(prev, cur) && !(probeFlew && ring.CrossedMouth(probePrev, probeCur))) return;
 
             _raceThreaded++;
             Threaded++;

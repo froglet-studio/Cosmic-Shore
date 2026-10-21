@@ -55,7 +55,7 @@ one-Player-one-Vessel assumption. Do not start A without Garrett's call.
 
 | Piece | File | What it owns |
 |---|---|---|
-| `ICrewSeat` | `Controller/Vessel/Crew/CrewSeat.cs` | What makes a hull a crew hull: a component on its root with `SeatName` and `HumanInSeat`. `KiteNavigator` (Wrasse) and `GobyPistolDuo` (Goby) implement it |
+| `ICrewSeat` | `Controller/Vessel/Crew/CrewSeat.cs` | What makes a hull a crew hull: a component on its root with `SeatName` and `HumanInSeat`. `GobyPistolDuo` (Goby) implements it; `KiteNavigator` (Wrasse) joins in KITE_NAVIGATOR.md's work order, step 2 |
 | `CrewSeat` | same | The wake rule (`ShouldWake`), the swap (`PollSwap`: `PilotSwapGesture`, `PilotSwap.CooldownSeconds`), the hand-over (`HandHullToAI` / `GiveHullBack`, `SetFlightInputPaused` through the player's `InputController`) |
 | `CrewPictureInPicture` | `Controller/Vessel/Crew/CrewViews.cs` | The two views' layout: the seat's view a lower-left square while the human flies the hull; full screen, with the pilot camera (`CameraManager.ViewCamera`) in the square, while the human is in the seat; the pilot camera's rect and depth restored |
 | `CrewViewRender` | same | A seat camera's look, for its render only: `PrismDepthPlane` (depth from the seat's plane) and `PrismOcclusionCorridor.BeginViewOverride` (the dither corridor re-aimed), restored in `endCameraRendering` |

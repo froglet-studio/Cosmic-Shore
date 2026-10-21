@@ -52,7 +52,8 @@ public static class TraceDriver
                 if (st.TryGetProperty("plant", out var pl) && pl.GetBoolean()) solver.Plant();
                 if (st.TryGetProperty("release", out var rl) && rl.GetBoolean()) solver.Release(last);
                 if (st.TryGetProperty("arm", out var arm))
-                    solver.ArmLaunch(new Vector3(arm[0].GetSingle(), arm[1].GetSingle(), arm[2].GetSingle()));
+                    solver.ArmLaunch(new Vector3(arm[0].GetSingle(), arm[1].GetSingle(), arm[2].GetSingle()),
+                                     st.TryGetProperty("boost", out var boost) ? boost.GetSingle() : 1f);
                 if (st.TryGetProperty("lead", out var lead)) solver.LaunchLeadRadians = lead.GetSingle();
                 float lt = st.TryGetProperty("lt", out var ltp) ? ltp.GetSingle() : 0f;
                 float rt = st.TryGetProperty("rt", out var rtp) ? rtp.GetSingle() : 0f;

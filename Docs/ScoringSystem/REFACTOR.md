@@ -331,3 +331,11 @@ when the stat-row surface itself changes.
   no per-player entry. Debt this sweep CREATED: when the legacy scorers retire (the Cellular
   Duel is their last live consumer), delete both; until then, a new legacy scorer must pick one
   mode explicitly. Blocking question: does Duel move onto a `ScoringRuleSO`?
+- **(2026-10-18, Rev 8 scoreboard) The scoreboard parses `ScoreResult.Secondary` for a number.**
+  `ScoreboardLadder.Shares` reads the leading integer of the secondary line ("12 Crystals") to draw each pilot's share
+  of the team's count - a heuristic recovering a fact the producing rule had and threw away when it formatted the line.
+  Measured: `grep -n "TryLeadingNumber" Assets/_Scripts/UI/ScoreboardLadder.cs`. A rule whose secondary line does not
+  start with a number simply draws no share line (safe, tested in `ScoreboardLadderTests`), but a rule whose line
+  starts with an unrelated number would draw a wrong one. Inconsistency, not incompleteness: give `ScoreResult` a
+  numeric `SecondaryValue` (or `float.NaN` for none) filled where the rule builds the line, and have the ladder read
+  that. Debt this branch CREATED (claude/new-session-76hnyc).

@@ -805,7 +805,7 @@ namespace CosmicShore.Gameplay
         bool IsEdiblePrism(Prism prism)
         {
             if (!prism || prism.destroyed) return false;
-            if (IsShieldedMass(prism)) return false;
+            if (IsInedibleShield(prism)) return false;
             if (prism is HealthPrism hp)
             {
                 if (!hp.LifeForm) return false;

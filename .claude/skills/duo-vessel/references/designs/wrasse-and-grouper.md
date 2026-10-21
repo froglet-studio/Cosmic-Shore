@@ -11,7 +11,7 @@ Vessel Lab (`Docs/Studios/CrewVesselLab.html`, write-up `Docs/Studios/CREW_VESSE
 |---|---|
 | Subvessels | the **Grouper** (the hull: the Sparrow without its guns, missiles and buttons, two thumbs) and the **Wrasse** (the seat: a kite on the hull's x-z plane, flown with one thumb, no click) |
 | Card | `SO_Class_Wrasse`: `CrewNames` Wrasse, Grouper → "Wrasse and Grouper"; `Name` Wrasse |
-| Seat | `KiteNavigator` (`ICrewSeat`, `SeatName` "Wrasse"), wired to `KiteNavigatorConfig.asset` |
+| Seat | `KiteNavigator`, wired to `KiteNavigatorConfig.asset`; it implements `ICrewSeat` (`SeatName` "Wrasse") once KITE_NAVIGATOR.md's work order step 2 lands |
 | What one makes for the other | the kite's loops feed the pilot: Space blasts, Mass clusters, saved Time boosts (spent on the pilot's trigger), Charge rams; its head picks hostile prisms off round the hull |
 | Swap, wake, hand-over | `CrewSeat` (the arena's gesture; the hull's `AIPilot` flies it while the human navigates; `KiteNavigatorAI` flies the kite otherwise) |
 | Views | `CrewPictureInPicture`; the kite camera looks straight down the hull's up axis, orthographic, `viewDepth` 400 u either side of the plane |

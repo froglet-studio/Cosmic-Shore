@@ -11,12 +11,12 @@ namespace CosmicShore.Tests
     /// Every crew vessel keeps the one notion of a crew vessel (.claude/skills/duo-vessel/SKILL.md, "One notion of a crew
     /// vessel"): one hull class that carries ONE seat (an <see cref="ICrewSeat"/>), a card that names both subvessels
     /// (SO_Vessel.CrewNames joined by CrewNameTemplate) while Name stays the one-word key, and a place on the Vessel
-    /// Changer's roster. Tools/Build/check_crew_vessels.py holds the same from the files, with negative controls.
+    /// Changer's roster. Tools/Build/check_crew_vessels.py holds the same from the files, with negative controls. The Wrasse
+    /// and the Marlin join when their seats move onto ICrewSeat (KITE_NAVIGATOR.md, "Two humans, two seats", step 2).
     /// </summary>
     public class CrewVesselTests
     {
         [TestCase(VesselClassType.Goby, "Goby", "Goby and Pistol", "Pistol")]
-        [TestCase(VesselClassType.Wrasse, "Wrasse", "Wrasse and Grouper", "Wrasse")]
         public void CrewHull_CarriesOneSeat_AndItsCardNamesBoth(VesselClassType type, string hull, string card, string seat)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Prefabs/Spacevessels/{hull}.prefab");

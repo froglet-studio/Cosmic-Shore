@@ -66,11 +66,13 @@ namespace CosmicShore.Tests
             Assert.True(scene.ById.Values.OfType<TMP_Text>().Count() > 300);
             // The holder never leaks into the scene.
             Assert.DoesNotContain(loop.Scene.GetRootGameObjects(), g => g.name.StartsWith("__content"));
-            // Prefab-instance override landed: the AvatarStrip instance was renamed + resized.
-            var strip = scene.ById.Values.OfType<GameObject>().First(g => g.name == "AvatarStrip");
-            var rt = (RectTransform)strip.transform;
-            Assert.Equal(240.00002f, rt.sizeDelta.x, 3);
-            Assert.Equal(-74.4f, rt.anchoredPosition.y, 3);
+            // Prefab-instance override landed: the SettingsModal prefab's root is 0 x 0 at the origin, and Menu_Main's
+            // instance overrides it to the full 1920 width, a hair off zero in y. (It was the AvatarStrip until the
+            // style-B menu replaced that strip, 2026-10.)
+            var modal = scene.ById.Values.OfType<GameObject>().First(g => g.name == "SettingsModal");
+            var rt = (RectTransform)modal.transform;
+            Assert.Equal(1920.0001f, rt.sizeDelta.x, 3);
+            Assert.Equal(0.00055695f, rt.anchoredPosition.y, 6);
         }
     }
 }

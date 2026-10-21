@@ -2,8 +2,10 @@
 """check_crew_vessels.py - every CREW vessel keeps the one notion of a crew vessel.
 
 A crew vessel is one hull class whose prefab carries a second seat: a component that implements ICrewSeat
-(Assets/_Scripts/Controller/Vessel/Crew/CrewSeat.cs). Today: the Wrasse (KiteNavigator, card "Wrasse and Grouper") and
-the Goby (GobyPistolDuo, card "Goby and Pistol"). The contract is .claude/skills/duo-vessel/SKILL.md "One notion of a
+(Assets/_Scripts/Controller/Vessel/Crew/CrewSeat.cs). Today: the Goby (GobyPistolDuo, card "Goby and Pistol"). The
+Wrasse ("Wrasse and Grouper") and the Marlin ("Marlin and Jacks") name a crew but their seats (bleeding-edge's
+KiteNavigator, MarlinCrewBodies) move onto ICrewSeat in KITE_NAVIGATOR.md's "Two humans, two seats" work order, step 2;
+until then they are PENDING below, and the gate fails the day one of them carries a seat so the entry is removed. The contract is .claude/skills/duo-vessel/SKILL.md "One notion of a
 crew vessel"; this gate holds the parts of it a file can show:
 
     seat      every hull prefab under Assets/_Prefabs/Spacevessels/ whose components include an ICrewSeat script is a
@@ -13,7 +15,8 @@ crew vessel"; this gate holds the parts of it a file can show:
               Name stays the one-word key (the hangar's unlocks are keyed by it)
     name      the seat's SeatName is one of the subvessels its card names (CrewNames)
     reach     it is in ToyVesselRoster.Default (the Vessel Changer offers it) and the Vessel Prefab Container
-    only      a class that names a crew has a hull that carries a seat (no card claims two subvessels it lacks)
+    only      a class that names a crew has a hull that carries a seat (no card claims two subvessels it lacks),
+              except the PENDING classes, whose seat is planned and named there
 
     python3 Tools/Build/check_crew_vessels.py              # the shipped set
     python3 Tools/Build/check_crew_vessels.py --self-test  # each check fires on a broken copy (negative controls)
@@ -31,6 +34,13 @@ CLASSES = os.path.join(ROOT, "Assets", "_SO_Assets", "Classes")
 CONTAINER = os.path.join(ROOT, "Assets", "_SO_Assets", "Vessel Prefab Container.asset")
 ROSTER = os.path.join(SCRIPTS, "Controller", "Toys", "ToyVesselRoster.cs")
 ENUM = os.path.join(SCRIPTS, "Data", "Enums", "VesselClassType.cs")
+
+# Classes that name a crew whose seat is not on ICrewSeat yet, and where that move is planned (Garrett's and Yash's
+# crew work on bleeding-edge: never re-home their seats from this gate).
+PENDING = {
+    "Wrasse": "KiteNavigator joins ICrewSeat: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md, work order step 2",
+    "Marlin": "MarlinCrewBodies joins ICrewSeat with the Wrasse (the same work order)",
+}
 
 
 def read(path):
@@ -88,7 +98,7 @@ def crew_names(text):
     return names, template
 
 
-def check(prefabs, classes, seats, roster, members, container):
+def check(prefabs, classes, seats, roster, members, container, pending=PENDING):
     """prefabs: {file: text}; classes: {id: (file, text)}; seats: {guid: (name, SeatName)}. Returns (errors, crew hulls)."""
     errs, hulls = [], []
     by_value = {v: k for k, v in members.items()}
@@ -129,7 +139,10 @@ def check(prefabs, classes, seats, roster, members, container):
             errs.append(f"Vessel Prefab Container: no entry for {f}")
     for vid, (f, text) in sorted(classes.items()):
         names, _ = crew_names(text)
-        if len(names) >= 2 and vid not in crew_ids:
+        pend = by_value.get(vid) in pending
+        if len(names) >= 2 and vid in crew_ids and pend:
+            errs.append(f"{f}: {by_value[vid]} carries a crew seat now; remove it from PENDING in check_crew_vessels.py")
+        if len(names) >= 2 and vid not in crew_ids and not pend:
             errs.append(f"{f}: names a crew ({' and '.join(names[:2])}) but no hull of class {vid} carries a crew seat")
     return errs, hulls
 
@@ -143,7 +156,7 @@ def self_test():
     prefabs, classes, seats, roster, members, container = load()
     errs, hulls = check(prefabs, classes, seats, roster, members, container)
     assert not errs, errs
-    assert len(hulls) >= 2, f"expected the Wrasse and the Goby, found {hulls}"
+    assert hulls, "expected the Goby"
     fails = 0
 
     def expect(label, **broken):
@@ -165,11 +178,12 @@ def self_test():
     expect("out of the container", container=container.replace(guid_of(os.path.join(VESSELS, hull_file)), "0" * 32))
     seat_guid = next(iter(seats))
     expect("a card with no seat", prefabs={k: v.replace(seat_guid, "f" * 32) for k, v in prefabs.items()})
+    expect("a pending crew with no seat", pending={})
     expect("a seat its card does not name", seats={g: (n, "Nobody") for g, (n, _) in seats.items()})
     expect("two seats", prefabs={**prefabs, hull_file: prefabs[hull_file] + f"\n  m_Script: {{fileID: 11500000, guid: {seat_guid}, type: 3}}\n"})
     if fails:
         sys.exit(1)
-    print(f"check_crew_vessels self-test: ok ({len(hulls)} crew hulls; 8 negative controls fire)")
+    print(f"check_crew_vessels self-test: ok ({len(hulls)} crew hulls; 9 negative controls fire)")
 
 
 def main(argv):
@@ -181,7 +195,8 @@ def main(argv):
     if errs:
         print(f"check_crew_vessels: {len(errs)} problem(s)")
         return 1
-    print("check_crew_vessels: ok - " + ", ".join(f"{n} ({s})" for n, s in hulls))
+    print("check_crew_vessels: ok - " + ", ".join(f"{n} ({s})" for n, s in hulls)
+          + "; pending: " + "; ".join(f"{k} ({v})" for k, v in PENDING.items()))
     return 0
 
 

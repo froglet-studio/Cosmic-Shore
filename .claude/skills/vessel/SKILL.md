@@ -805,6 +805,90 @@ applies to new abilities, new resources on the meter list, and anything that add
       bound to the gesture is human-only until an `AIBoostPolicySO` presses it; and an ability posed
       by TRIGGERS is human-only until something writes the trigger mirrors for the autopilot
       (`RhinoSwordAutopilot`). Ask of every new ability: what presses it when the pilot is a bot?
+53. **On a PHONE, lifting the thumb is an instant `Idle()`: ease every stick term INSIDE the animation.**
+    `TouchInputStrategy` sets `InputStatus.Idle = true` the frame the last thumb leaves the glass, and
+    `VesselAnimation.Update` then calls `Idle()` INSTEAD of `PerformShipPuppetry`. An animation whose `Idle()` is
+    `Drive(0f, 0f)` and whose pose takes the raw stick (`yaw * bankDegrees`) snaps a full-stick bank or tail swing to
+    rest in one frame - invisible on a pad (it rarely goes idle mid-turn), a "glitch" on mobile. The eased stick
+    (`EasedLeftJoystickPosition`) does not help: `Idle()` never sees it. Keep `_yaw = Lerp(_yaw, yaw, 1 - Exp(-10 dt))`
+    in the animation (Thresher, Shrike, Brittle Star do; Stoat and Angler did not, `Docs/REFACTOR_BACKLOG.md` S29).
+    Garrett's Thresher mobile run, 2026-10-19 (`cece/elegant-goldberg-eanwgx`). The Squirrel/Serpent's
+    `MantaAnimationContoller` snapped the other way, by writing `Idle()` at a different scale and sign than its
+    puppetry (`Pitch = currentPitch` against `-currentPitch * 2`; the Sparrow's controller halved the same way) -
+    `Idle()` and puppetry must share ONE setter (`WriteAnimatorPose`, 2026-10-21; S29 lists the audit).
+54. **Secondary motion (a tail, a cord, a fin) is driven by STATE, never by a clock - and must be frame-rate proof.**
+    A sine "beat" is a wiggle the pilot did not cause; it reads as noise, and worse at 30 fps. The Thresher's tail
+    (2026-10-19, `ThresherSwimMath`) is the shape: aim at something real (a point down its own chain), give each
+    joint a damped spring (stiffer at the root, softer at the tip, damping under 1 for a sway), drag it by the
+    hull's OWN rotation delta (read off the vessel root, not the banking hull the animation itself writes), and
+    integrate in fixed sub-steps (<= 1/120 s) with a clamped frame, so the pure math can be tested at 30 and 144 fps
+    for the same pose. Two traps on the way: a target that can swing to DEAD AHEAD flips sides through 180 deg -
+    fade its weight out before it gets there; and a `Mathf.Sign(local.x)` of a body towed on the centreline
+    flickers every frame - hold the side until the body is clearly across (|x| > 0.2 |d|).
+
+55. **A shader you only `Shader.Find` is not in the phone build - and the ability works in the Editor.** The
+    Wrasse's kite, tail and motes drew nothing on an Android development build (2026-10-19): `KiteNavigatorView`
+    found URP/Unlit by name, nothing in the project referenced it, so the build stripped it, `Shader.Find` returned
+    null, and the fallback (Sprites/Default without instancing) made `RenderMeshInstanced` throw every frame. The
+    Editor has every shader, so no editor playtest can show this. Ship the shader through a REFERENCED material
+    (`Resources/KiteNavigatorUnlit.mat`: transparent, `m_EnableInstancingVariants: 1`, the keywords the code sets)
+    and tint copies of it. Two consequences: that material now puts URP/Unlit in every build with only ITS variants,
+    so the 12 other runtime `Shader.Find("Universal Render Pipeline/Unlit")` callers start finding the shader and
+    run on the nearest kept variant (T-20261019-41bb); and a failed lookup must log an error, because "the effect
+    is simply not there" is the only symptom otherwise. `/asset-surgery` records the particle-shader twin.
+56. **Raise a UI press on the pilot's `InputStatus`, never on the action handler.** Every on-screen control that
+    fires an ability (`AbilityCardPress`, 2026-10-19) calls `InputStatus.OnButtonPressed.Raise` / `OnButtonReleased`,
+    the channel every input strategy uses, so it inherits the autopilot / mute / suppression gates, the device byte
+    the press replicates with, and the card highlight. `PerformShipControllerActions` is local-only and skips the
+    RPC; `PerformShipControllerActionsReplicated` is the AI's path and skips the gates. And a touch that starts on
+    such a control must be kept out of touch flight (`FlightTouchClaims`), or the same finger also steers and fires
+    the one-thumb drift edges.
+
+57. **To move part of an ANIMATOR-driven hull from code, write in `LateUpdate` on top of the animated pose — and
+    undo your own write on any bone the Animator did not rewrite.** The Squirrel's model is an Animator
+    (`MantaAnimationContoller`, single-frame poses in blend trees), which rewrites bones between `Update` and
+    `LateUpdate`; anything written in `Update` is erased, and an absolute pose written in `LateUpdate` throws the
+    takes away. `DriftEngineSwivel` (2026-10-21) applies its swing to the animated pose in `LateUpdate`, records the
+    local pose it wrote, and at the next `LateUpdate` restores the animated pose on any bone still holding EXACTLY
+    that write (`Equals`, not `==`, which is approximate) — a bone no clip animates would otherwise compound the swing
+    every frame. Read every part's pivot and axis BEFORE writing any of them, since writing a parent bone moves its
+    children. A child (a jet on a bone) then rides the part with no code of its own. Two audio traps from the same
+    branch: **a state that ENDS this frame has usually already been undone by the time you read it** (the drift
+    release reads the slip angle off the last DRIFTING frame, because Grip rotates Course back onto the nose the
+    moment the drift lets go); and **a new behaviour on a component several hulls share defaults OFF in code and is
+    switched on in the one prefab that asked** (`DriftAudioController` also plays the Dolphin's drift).
+
+58. **Every vessel has a PHONE SCHEME, and a new one needs a row in `Tools/Build/author_touch_profiles.py`.** A phone
+    has no trigger depth, can never hold LT+RT (lifting the second thumb is "let go of everything"), and a thumb that
+    leaves its stick to reach a card fires that thumb's lift ability on the way (Garrett, 2026-10-21,
+    `Docs/Reports/MOBILE_VESSELS.md` §8). So each hull picks one: **ThumbLifts** (abilities on thumb lifts, cards show a
+    lift glyph and are not buttons) or **TotemButtons** (lifts raise nothing; cards plus `extraButtons` are the
+    controls, laid out round the right thumb in millimetres). Ask of every new ability: *how does a phone press it?*
+    A trigger-depth read needs a press fallback (`max(analog, held)`, the Thresher and Angler pattern) or a hold-time
+    ramp (the Stoat's `Hold01`); an LT+RT ability needs a both-thumbs-off form (`idlePullsBothTriggers`, the Rhino) or a
+    card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up. The gate:
+    `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
+    no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
+    erase read only trigger depth). Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
+    Two fleet rules ride with it (2026-10-21): **a human pilot's nose has no lag** - every transformer's RotateShip
+    goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
+    `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every
+    input strategy; a pitch never carries a sign of its own; `InputInversionTests`).
+    Three traps this cost (2026-10-21): **`BaseInputStrategy.ResetInput` clears `InputStatus.Idle`**, so a strategy that
+    re-tests `Idle` after resetting re-raises `IdleAction` every frame - track the edge in the strategy (`idlePressed`);
+    **the Input System starts every sensor disabled, and enabling one wakes every reader of it** (tilt enabling the
+    accelerometer would have woken a dormant 0.1 g FlipAction detector, so the detector was retired with it); and
+    **`AddComponent` runs `OnEnable` before a factory sets the fields `OnEnable` reads**, so a UI control that registers
+    a `FlightTouchClaims` region in `OnEnable` must register again at the end of its `Create`.
+
+59. **Show what an ability will hit IN THE WORLD, and light exactly what it will break** (Garrett, 2026-10-21: "always go
+    for the 3d in world solution over the 2d flat text solution"; LOCKED in `Docs/claude/SHADERS_AND_PERFORMANCE.md`).
+    A pending blast, a target or a range is shown on the mass itself through PrismLit (`Docs/LIT.md`), not as a screen
+    ring or a word. Two traps the Orca's bomb seat paid for (`OrcaCrewView.LightBomb`): **`PrismLit.PublishAimed` is
+    CONE-ONLY** (it is the Echo Sight's channel; a sphere published there is read as a cone), so any other shape goes
+    to the light bank (`PublishLight(sourceId, LitVolume.Sphere(...), ...)`); and **a bank light gates to ONE domain**,
+    so a blast that spares its own domain publishes one light per domain it breaks (each fielded rival from
+    `GameDataSO.RequestedDomainCount`, plus neutral Blue), never one ungated light that also lights the pilot's own mass.
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 

@@ -95,8 +95,11 @@ from-scratch builds, kept for their part vocabulary, not loadable by `build.py`.
 2. **Fleet convention for a new vessel** (`FLEET_CONVENTION.md` 1-4): preset `zup`, nodes `mesh` /
    `rig`, root bone `hull`, slots Domain / Body / Window / Engine, shapes Charge / Mass / Space /
    Time at 4-12% travel, a new guid, a `.meta` that remaps all four slots.
-3. **Build the parts so the colour follows the anatomy** (radial grids from a wing root, rings
-   keyed to where a pattern band sits), with relief IN the surface rather than floating on it.
+3. **Build a HOVERING ASSEMBLY** (SKILL 0.5): a core plus distinct parts, each a closed shell on its
+   own bone, floating 0.5-6.5 % of the diagonal clear; list them in the spec and gate them with
+   `assembly_report.py <fbx> --floating <parts>` (exit 1 on a welded or a drifting part). Build the parts
+   so the colour follows the anatomy (radial grids from a wing root, rings keyed to where a pattern band
+   sits), with relief IN each part's surface (a vein, a panel line) rather than a loose sliver on it.
 4. **Measure the look against the fleet**: `style_metrics.py --fleet <ours.fbx>` prints the artist
    hulls' band (smooth / hard edges, slot shares, domain regions and width, density). It is
    INFORMATIVE: the withdrawn from-scratch hulls sat inside the band too, so it cannot pass a hull;

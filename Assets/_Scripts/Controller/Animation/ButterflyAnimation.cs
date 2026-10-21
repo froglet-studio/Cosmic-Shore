@@ -66,6 +66,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] float turnAsymmetry = 34f;
         [Tooltip("Degrees both wings sweep back along the hull at full pitch-up.")]
         [SerializeField] float pitchSweep = 18f;
+        [Tooltip("How fast the stick terms (turn asymmetry, pitch sweep) ease to the stick, per second. Keeps a " +
+                 "touch lifting off the screen from snapping a full-stick wing pose level in one frame.")]
+        [SerializeField, Min(0.1f)] float stickEaseRate = 10f;
 
         [Header("Spread (the Mass ability)")]
         [Tooltip("Degrees the wings hold ABOVE the hinge plane while the Mass spread is held — " +
@@ -109,6 +112,7 @@ namespace CosmicShore.Gameplay
         float _foldTarget;
         float _spreadBlend;        // 0 = normal beat, 1 = wings held wide
         float _spreadTarget;
+        float _pitchEased, _yawEased;  // the stick, eased here: Idle() never sees the input layer's eased stick
 
         // ---- procedural element morphs -----------------------------------------------------
         // This hull is generated, not an FBX, so its element morphs are the baked geometry deltas
@@ -193,6 +197,14 @@ namespace CosmicShore.Gameplay
             // Fold blend, framerate-independent and symmetric in both directions.
             float foldStep = Time.deltaTime / Mathf.Max(0.01f, foldBlendSeconds);
             _foldBlend = Mathf.MoveTowards(_foldBlend, _foldTarget, foldStep);
+
+            // The stick terms ease here, not in the input layer: on a phone lifting the thumb is an instant
+            // Idle() (DriveWings(0, 0)), and a raw stick would snap the wings level in one frame (vessel rule 53).
+            float ks = 1f - Mathf.Exp(-stickEaseRate * Time.deltaTime);
+            _pitchEased = Mathf.Lerp(_pitchEased, pitch, ks);
+            _yawEased = Mathf.Lerp(_yawEased, yaw, ks);
+            pitch = _pitchEased;
+            yaw = _yawEased;
 
             float spreadStep = Time.deltaTime / Mathf.Max(0.01f, spreadBlendSeconds);
             _spreadBlend = Mathf.MoveTowards(_spreadBlend, _spreadTarget, spreadStep);
@@ -361,6 +373,7 @@ namespace CosmicShore.Gameplay
             _foldBlend = 0f;
             _spreadTarget = 0f;
             _spreadBlend = 0f;
+            _pitchEased = _yawEased = 0f;
         }
     }
 }

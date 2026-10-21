@@ -30,3 +30,10 @@ UnityEngine.UI|UnityEngine.UI.Graphic|OnPopulateMesh|family
 UnityEngine.UI|UnityEngine.UI.Image|OnPopulateMesh|family
 UnityEngine.UI|UnityEngine.UI.RawImage|OnPopulateMesh|family
 UnityEngine.UI|UnityEngine.UI.Text|OnPopulateMesh|family
+# uGUI: Selectable's lifecycle and state hook are `protected` (`protected override void Awake()`,
+# `protected override void OnDisable()`, `protected virtual void DoStateTransition(SelectionState,
+# bool)` in com.unity.ugui's Selectable.cs). No package subclasses Selectable, so they cannot be
+# learned; the style-B kit's KitSelectableBase (a Button subclass) overrides all three.
+UnityEngine.UI|UnityEngine.UI.Selectable|Awake|family
+UnityEngine.UI|UnityEngine.UI.Selectable|OnDisable|family
+UnityEngine.UI|UnityEngine.UI.Selectable|DoStateTransition|family

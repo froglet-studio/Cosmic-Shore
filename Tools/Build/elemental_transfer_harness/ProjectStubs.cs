@@ -54,6 +54,9 @@ namespace CosmicShore.Gameplay
             ElementalDebuffSources source = ElementalDebuffSources.Other) { }
         public bool AdjustLevel(Element element, float amount) => false;
         public float SpawnedAt => float.NegativeInfinity;
+        // The ward, settable so the driver can raise one.
+        public ElementalDebuffSources Ward;
+        public bool IsImmuneTo(ElementalDebuffSources source) => (Ward & source) != 0;
     }
 
     // Assets/_Scripts/Controller/Vessel/IVesselStatus.cs
@@ -65,5 +68,7 @@ namespace CosmicShore.Gameplay
         ResourceSystem ResourceSystem { get; }
         Vector3 Course { get; set; }
         float Speed { get; set; }
+        bool IsImmuneToElementalDebuff(ElementalDebuffSources source) =>
+            this.ResourceSystem && this.ResourceSystem.IsImmuneTo(source);
     }
 }
