@@ -34,8 +34,10 @@ namespace CosmicShore.Gameplay
             public int Shape;    // ShapeCrystal or ShapeSlab
             public int Count;    // shards in the ring
             public int Seed;     // the arrangement
-            public float Size;   // shard length, x the screen's height
-            public float Reach;  // how far in from the edge at full silence, x half the height
+            public float Size;   // shard length with little silence left, x the screen's height
+            public float Reach;  // how far a centre may sink in from the edge with little silence left, x half the height
+            public float DeepSize;   // shard length at full depth (the most seconds of silence)
+            public float DeepReach;  // sink at full depth
             public float Spin;   // radians a second about the long axis
             public float PullDrift; // radians a second the pull wanders around the screen
         }
@@ -86,10 +88,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Shard <paramref name="i"/>'s pose for a silence at <paramref name="weight"/> (0 none: the
-        /// shard is not drawn, 1 full: grown in), a hit flare <paramref name="pulse"/> (sinks it inward), at
+        /// shard is not drawn, 1 full: grown in), a depth <paramref name="deepen"/> (how much silence is left:
+        /// 0 the thin band, 1 the deepest - Garrett, 2026-10-21: "the more seconds of silence the deeper it goes
+        /// in and bleeds back out as the seconds drain"), a hit flare <paramref name="pulse"/> (sinks it inward), at
         /// <paramref name="time"/> seconds, on a screen of width / height <paramref name="aspect"/> seen
         /// through a vertical field of view of <paramref name="fovDeg"/>.</summary>
-        public static Pose Layout(int i, in Settings s, float weight, float pulse, float time, float aspect, float fovDeg)
+        public static Pose Layout(int i, in Settings s, float weight, float deepen, float pulse, float time, float aspect, float fovDeg)
         {
             int n = Mathf.Max(1, s.Count);
             float theta = 2f * Mathf.PI * (i + 0.9f * (Rand(s.Seed, i, 0) - 0.5f)) / n;
@@ -101,8 +105,10 @@ namespace CosmicShore.Gameplay
             float presence = Smooth(Clamp01(Clamp01(weight) * 1.35f - 0.35f * Rand(s.Seed, i, 2)));
             // The maw: on the pull's side the shards grow longer and sink deeper, so the mouth wanders with the pull.
             float toward = 0.5f + 0.5f * Mathf.Cos(theta - PullAngle(s, time)), maw = toward * toward;
-            float len = s.Size * 2f * h * (0.5f + Rand(s.Seed, i, 3)) * (0.25f + 0.75f * presence) * (0.55f + 0.9f * maw);
-            float sink = h * presence * (s.Reach * (Rand(s.Seed, i, 13) + 0.8f * maw) + 0.15f * Mathf.Max(0f, pulse) * (0.5f + Rand(s.Seed, i, 4)));
+            float dd = Clamp01(deepen);
+            float size = s.Size + (s.DeepSize - s.Size) * dd, reach = s.Reach + (s.DeepReach - s.Reach) * dd;
+            float len = size * 2f * h * (0.5f + Rand(s.Seed, i, 3)) * (0.25f + 0.75f * presence) * (0.55f + 0.9f * maw);
+            float sink = h * presence * (reach * (Rand(s.Seed, i, 13) + 0.8f * maw) + 0.15f * Mathf.Max(0f, pulse) * (0.5f + Rand(s.Seed, i, 4)));
             float sway = 0.05f * h * Mathf.Sin(time * (0.6f + Rand(s.Seed, i, 5)) + Rand(s.Seed, i, 6) * 6.2831855f);
             float along = edge - sink;
             float px = cx * along - cy * sway, py = cy * along + cx * sway;

@@ -21,7 +21,57 @@ The question: what should the danger-coloured edge look like so that a silenced 
 
 Each column is averaged over seeds 1 to 3 at full strength, measured at the breath's peak. Breathing is not scored and is judged by eye.
 
-## Round 3 (2026-10-21): the pull
+## Round 4 (2026-10-21): a thin pull + edge that deepens with the seconds
+
+**What changed.** Garrett: "the pull plus the 2d edge is very strong effect. lets try that on relatively thin edge around screen with high resolution. the more seconds of silence the deeper it goes in and bleeds back out as the seconds drain."
+- **Depth.**
+  - Depth = seconds of silence left / `depthFullSeconds` (8). It follows within `depthFollowSeconds` (0.25 s).
+  - The perimeter's shard length and sink move from their thin values (`perimeterSize` 0.1, `perimeterReach` 0.03) to `perimeterDeepSize` 0.38 and `perimeterDeepReach` 0.22.
+  - The edge's inner boundary moves from `vignetteInner` 0.93 to `vignetteDeepInner` 0.6.
+  - New stage button: *Silence 8 s*, to go fully deep and watch it bleed out.
+- **Thin and high resolution.**
+  - 160 small shards.
+  - The edge is a frame hugging the screen's border: faceted with 4 sides, a 0.07 feather and a 0.015 rim line.
+  - A first cut kept the round-1 soft ellipse at 0.9. Even "thin" then covered half the screen with flat red, because the ellipse loads the corners and sides.
+- **The game draws the edge where the lab does.** In the lab the edge was always drawn into the frame before the shards copy it, so the pull drags it and the facets refract it. That is the look Garrett called "very strong". The game drew it as a UI overlay on top. It now draws it in the perimeter's own pass (pass 2), before the copy, working the mask out per pixel, so it is sharp at any thickness and moves continuously. The overlay is used only when the perimeter is off.
+- **Looks.** Round 3 is kept ("the pull, no edge", and "pull + 2D edge" with its soft oval). New: Hairline (very thin, very deep) and Soft oval edge.
+
+**Scorecard.** Scored at FULL depth: the most a look ever covers. Produced by `runBatch` and re-run by `verify_lab.cjs` on this commit.
+
+| Look | Edge · space | Edge · bright | Edge · danger | Centre | Red · space |
+|---|---|---|---|---|---|
+| Off (control) | 0 | 0 | 0 | 0 | 0 |
+| Round 0: URP red multiply | 2.78 | 5.01 | 2.92 | 0.62 | 0.045 |
+| Round 1: 2D edge (overtuned) | 45.1 | 30.6 | 44.34 | 1.59 | 0.797 |
+| **Shipped: thin pull + edge, deepens with silence** | **42.18** | 29.78 | 41.9 | **1.7** | 0.724 |
+| Round 3: the pull, no edge | 10.15 | 7.92 | 11.81 | 0.07 | 0.127 |
+| Round 3: pull + 2D edge | 28.32 | 20.44 | 28.61 | 0.07 | 0.449 |
+| Hairline (very thin, very deep) | 42.84 | 30.27 | 42.51 | 4.38 | 0.738 |
+| Soft oval edge | 42.46 | 30 | 42.14 | 1.92 | 0.729 |
+
+- At full depth the shipped look reads as strongly as round 1's overtuned frame.
+- With little silence left, it is a thin band (screenshots). The scorecard does not measure that state.
+- Round 1's row is unchanged (45.1), so the archived look is reproduced exactly.
+
+**Checked.**
+- `verify_lab.cjs` passes. Screenshots were looked at at depth 0.3 and 0.95 (space) and 0.8 (bright).
+- `bash Tools/Build/silence_vignette_parity/run.sh` passes:
+  - 38 cases and 21694 values; the worst difference is 1e-5;
+  - all 51 asset fields equal;
+  - eight planted controls are each caught, including "depth ignored".
+- `python3 Tools/Shaders/verify_silence_perimeter.py` passes:
+  - all three passes compile;
+  - the edge pass's mask, lifted out of the HLSL and run as C++, matches the lab's twin on 3750 points (worst 4e-6);
+  - a doubled feather is caught.
+- `SilencePerimeterTests` adds `MoreSilenceGoesDeeper` and pins the edge pass's index. It was not run here (no Unity). Its claims were checked against the twin:
+  - at full depth, every shard is as deep as or deeper than at the thin band;
+  - the band sinks 7.4 times further and grows 3.8 times longer;
+  - the thin band's centres sit at 0.93 to 1.04 of the half-screen.
+- The elemental harness passes, the unity reference compile is OK, and the Amoebius player builds.
+
+**Decision needed (designer).** The thin band's thickness, the full depth, and how many seconds reach it.
+
+## Round 3 (2026-10-21): the pull, superseded by round 4
 
 **What changed.** Garrett's feedback on round 2: "more overlap, show only half the faceted object that is poking into the screen. there should be so much overlap, and distortions, and it should be high enough resolution that it isn't recognizable as any one effect. it doesn't read as crystals coming in from the edge it read reality trying to pull you somewhere you don't want to be."
 - **Half-buried:** each shard's centre sits on the screen's edge, so half of it is beyond. `perimeterReach` is now how far a centre may sink in. The shards grow in rather than sliding in from outside.

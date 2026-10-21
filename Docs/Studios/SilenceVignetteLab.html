@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  SILENCE VIGNETTE LAB — a /labmaker browser lab (round 3: the pull, a dense half-buried 3D perimeter).
+  SILENCE VIGNETTE LAB — a /labmaker browser lab (round 4: a thin pull + edge that deepens with the seconds of silence).
   Question: what should the silenced pilot's danger-coloured screen edge look like, so it is noticed for
   sure and still fits the game (Docs/ElementalAbilitySystem/SILENCE.md §5)?
   The mask is a line-for-line twin of Assets/_Scripts/Controller/FX/SilenceVignetteMask.cs (between the
@@ -116,6 +116,7 @@
       <button class="btn" id="hitBullet" type="button">Bullet hit</button>
       <button class="btn" id="hitRocket" type="button">Rocket hit</button>
       <button class="btn" id="silence4" type="button">Silence 4 s</button>
+      <button class="btn" id="silence8" type="button">Silence 8 s</button>
       <button class="btn" id="autoRival" type="button">Rival firing</button>
       <button class="btn" id="hold" type="button">Hold full</button>
     </div>
@@ -129,22 +130,23 @@
   const $ = (id) => document.getElementById(id);
 
   // ================= (1) LAB meta + the shipped numbers =================
-  const LAB = { name: 'Silence Vignette Lab', branch: 'cece/sleepy-shannon-9qk646', round: 3, doc: 'Docs/Studios/SILENCE_VIGNETTE_LAB.md' };
+  const LAB = { name: 'Silence Vignette Lab', branch: 'cece/sleepy-shannon-9qk646', round: 4, doc: 'Docs/Studios/SILENCE_VIGNETTE_LAB.md' };
   // Every key is a VesselSilenceConfigSO field, read off Assets/Resources/VesselSilenceConfig.asset
   // (the "overtuned" first cut of the overlay, 2026-10-21). Lab-only knobs carry the lab* prefix.
   const SHIPPED = {
-    vignetteIntensity: 0,         // VesselSilenceConfigSO.vignetteIntensity (the 2D edge: off since round 2, "instead of a 2d effect")
+    vignetteIntensity: 0.6,       // VesselSilenceConfigSO.vignetteIntensity (the 2D edge, drawn UNDER the shards so the pull drags it)
     vignetteColorStrength: 1,     // .vignetteColorStrength (black .. the palette's danger colour)
     vignetteDarken: 0,            // .vignetteDarken (URP Vignette, black, under the colour; off with the 2D edge)
     vignetteSmoothness: 0.55,     // .vignetteSmoothness (that darkening's URP smoothness)
-    vignetteStyle: 0,             // .vignetteStyle (0 Soft, 1 Faceted)
-    vignetteFacets: 10,           // .vignetteFacets
-    vignetteInner: 0.55,          // .vignetteInner
-    vignetteFeather: 0.5,         // .vignetteFeather
-    vignetteRoundness: 0.25,      // .vignetteRoundness
+    vignetteStyle: 1,             // .vignetteStyle (0 Soft, 1 Faceted; 4 facets = a frame that hugs the screen's border)
+    vignetteFacets: 4,            // .vignetteFacets
+    vignetteInner: 0.93,          // .vignetteInner (where the edge starts with little silence left: a thin band)
+    vignetteFeather: 0.07,        // .vignetteFeather
+    vignetteRoundness: 0,         // .vignetteRoundness
+    vignetteDeepInner: 0.6,       // .vignetteDeepInner (where the edge starts at full depth)
     vignetteFill: 1,              // .vignetteFill
-    vignetteRimStrength: 0.35,    // .vignetteRimStrength
-    vignetteRimWidth: 0.04,       // .vignetteRimWidth
+    vignetteRimStrength: 0.3,     // .vignetteRimStrength
+    vignetteRimWidth: 0.015,      // .vignetteRimWidth
     vignetteBreatheDepth: 0.25,   // .vignetteBreatheDepth
     vignetteBreatheHz: 0.8,       // .vignetteBreatheHz
     vignetteHitPulse: 0.35,       // .vignetteHitPulse
@@ -155,14 +157,18 @@
     onsetShakeSeconds: 0.35,      // .onsetShakeSeconds
     hitShakeIntensity: 0.2,       // .hitShakeIntensity
     hitShakeSeconds: 0.15,        // .hitShakeSeconds
+    depthFullSeconds: 8,          // .depthFullSeconds (seconds of silence left that reach full depth)
+    depthFollowSeconds: 0.25,     // .depthFollowSeconds (how fast depth catches up, 0 -> 1)
     secondsPerPetal: 1,           // .secondsPerPetal
     maxSeconds: 8,                // .maxSeconds
     perimeterAmount: 1,           // .perimeterAmount (the 3D perimeter: 0 off .. 1 full)
     perimeterShape: 0,            // .perimeterShape (0 crystal shards, 1 prism slabs)
-    perimeterCount: 110,          // .perimeterCount
+    perimeterCount: 160,          // .perimeterCount
     perimeterSeed: 7,             // .perimeterSeed
-    perimeterSize: 0.34,          // .perimeterSize (shard length, x the screen's height)
-    perimeterReach: 0.12,         // .perimeterReach (how far a shard's centre may sink in from the edge, x half the height)
+    perimeterSize: 0.1,           // .perimeterSize (shard length with little silence left, x the screen's height)
+    perimeterReach: 0.03,         // .perimeterReach (how far a centre may sink with little silence left, x half the height)
+    perimeterDeepSize: 0.38,      // .perimeterDeepSize (shard length at full depth)
+    perimeterDeepReach: 0.22,     // .perimeterDeepReach (sink at full depth)
     perimeterSpin: 0.35,          // .perimeterSpin (radians a second)
     perimeterRefraction: 0.14,    // .perimeterRefraction
     perimeterTwist: 0.9,          // .perimeterTwist
@@ -198,8 +204,10 @@
     ['Perimeter', 'perimeterShape',       0, 1, 1,    'Shape (0 crystal, 1 prism slab)', 'Crystal: pointed shards. Prism slab: broken pieces of a trail, the prisms\' own boxes.'],
     ['Perimeter', 'perimeterCount',       4, 160, 1,  'Shards', 'How many shards ring the screen. Many, so they overlap in layers and no one of them reads as a crystal.'],
     ['Perimeter', 'perimeterSeed',        1, 99, 1,   'Arrangement', 'Reshuffles where the shards sit and how each is cut.'],
-    ['Perimeter', 'perimeterSize',     0.05, 0.6, 0.01, 'Size', 'Shard length, as a share of the screen\'s height.'],
-    ['Perimeter', 'perimeterReach',       0, 0.6, 0.01, 'Sink', 'Each shard\'s centre sits on the screen\'s edge, half of it beyond; this is how far in a centre may sink (share of half the height).'],
+    ['Perimeter', 'perimeterSize',     0.02, 0.6, 0.01, 'Size (thin)', 'Shard length with little silence left, as a share of the screen\'s height.'],
+    ['Perimeter', 'perimeterDeepSize', 0.02, 0.8, 0.01, 'Size (deep)', 'Shard length at full depth: the more seconds of silence, the longer they grow.'],
+    ['Perimeter', 'perimeterDeepReach',   0, 0.6, 0.01, 'Sink (deep)', 'How far in a shard\'s centre may sink at full depth.'],
+    ['Perimeter', 'perimeterReach',       0, 0.6, 0.01, 'Sink (thin)', 'Each shard\'s centre sits on the screen\'s edge, half of it beyond; this is how far in a centre may sink (share of half the height).'],
     ['Perimeter', 'perimeterSpin',        0, 3, 0.05, 'Spin', 'How fast each shard turns about its long axis (radians a second).'],
     ['Perimeter', 'perimeterRefraction',  0, 0.3, 0.005, 'Refraction', 'How far each facet bends the frame it shows (by the facet\'s normal).'],
     ['Perimeter', 'perimeterTwist',       0, 1, 0.01, 'Twist', 'How much each shard turns and scales the reality it shows.'],
@@ -222,7 +230,8 @@
     ['Edge',   'vignetteSmoothness',  0.01, 1, 0.01, 'Darken smoothness', 'URP smoothness of that darkening.'],
     ['Shape',  'vignetteStyle',          0, 1, 1,    'Style (0 soft, 1 faceted)', 'Soft: a smooth ellipse. Faceted: a polygonal window, the prisms\' language.'],
     ['Shape',  'vignetteFacets',         3, 16, 1,   'Facets', 'Sides of the faceted window.'],
-    ['Shape',  'vignetteInner',          0, 1.5, 0.01, 'Starts at', '0 = the centre of the screen, 1 = the top and bottom edges.'],
+    ['Shape',  'vignetteInner',          0, 1.5, 0.01, 'Starts at (thin)', 'Where the edge starts with little silence left: 0 = the centre of the screen, 1 = the top and bottom edges.'],
+    ['Shape',  'vignetteDeepInner',      0, 1.5, 0.01, 'Starts at (deep)', 'Where the edge starts at full depth: it moves in with the seconds of silence and bleeds back out as they drain.'],
     ['Shape',  'vignetteFeather',        0, 1.5, 0.01, 'Feather', 'How far the edge takes to reach full strength.'],
     ['Shape',  'vignetteRoundness',      0, 1, 0.01, 'Roundness', '0 = the screen\'s own ellipse; 1 = a circle in pixels (reaches the top and bottom first).'],
     ['Shape',  'vignetteFill',           0, 1, 0.01, 'Fill', 'Opacity of the outer fill. 0 leaves only the rim line.'],
@@ -239,6 +248,8 @@
     ['Motion', 'hitShakeIntensity',      0, 1, 0.01, 'Hit shake', 'A lighter shake on each further hit.'],
     ['Motion', 'hitShakeSeconds',        0, 1, 0.01, 'Hit shake (s)', 'Its decay time.'],
     ['Silence', 'secondsPerPetal',       0, 3, 0.05, 'Seconds per petal', 'A hit silences for its worth: points / 10 x 4 elements x this.'],
+    ['Silence', 'depthFullSeconds',      0.5, 15, 0.5, 'Full depth at (s)', 'Seconds of silence left that reach full depth. Fewer seconds, shallower.'],
+    ['Silence', 'depthFollowSeconds',    0, 2, 0.05, 'Depth follow (s)', 'How fast depth catches up with the seconds (0 to full).'],
     ['Silence', 'maxSeconds',            0, 15, 0.5, 'Ceiling (s)', 'The most silence one pilot carries.'],
     ['Silence', 'labHitsPerSecond',      0.1, 4, 0.1, 'Rival hit rate (lab)', 'Hits a second the stand-in rival lands while "Rival firing" is on.'],
   ];
@@ -319,7 +330,8 @@
     // Shard i's pose in the camera's own space (+x right, +y up, +z forward, as Unity's camera transform): its
     // centre ON the screen's edge (half of it pokes in, half is beyond), sunk a little inward, and its three axes
     // scaled by its length (the geometry is one unit long along +y). It grows in as the silence lands.
-    function layout(i, s, weight, pulse, time, aspect, fovDeg) {
+    // deepen 0..1 = how much silence is left (SilenceScreenFeedback): 0 the thin band, 1 the deepest.
+    function layout(i, s, weight, deepen, pulse, time, aspect, fovDeg) {
       const n = Math.max(1, s.count);
       const r = (k) => rand(s.seed, i, k);
       const theta = 2 * Math.PI * (i + 0.9 * (r(0) - 0.5)) / n;
@@ -331,8 +343,10 @@
       const presence = smooth(clamp01(clamp01(weight) * 1.35 - 0.35 * r(2)));
       // The maw: on the pull's side the shards grow longer and sink deeper, so the mouth wanders with the pull.
       const toward = 0.5 + 0.5 * Math.cos(theta - pullAngle(s, time)), maw = toward * toward;
-      const len = s.size * 2 * h * (0.5 + r(3)) * (0.25 + 0.75 * presence) * (0.55 + 0.9 * maw);
-      const sink = h * presence * (s.reach * (r(13) + 0.8 * maw) + 0.15 * Math.max(0, pulse) * (0.5 + r(4)));
+      const dd = clamp01(deepen);
+      const size = s.size + (s.deepSize - s.size) * dd, reach = s.reach + (s.deepReach - s.reach) * dd;
+      const len = size * 2 * h * (0.5 + r(3)) * (0.25 + 0.75 * presence) * (0.55 + 0.9 * maw);
+      const sink = h * presence * (reach * (r(13) + 0.8 * maw) + 0.15 * Math.max(0, pulse) * (0.5 + r(4)));
       const sway = 0.05 * h * Math.sin(time * (0.6 + r(5)) + r(6) * 6.2831855);
       const along = edge - sink;
       const px = cx * along - cy * sway, py = cy * along + cx * sway;
@@ -414,7 +428,8 @@
   // The perimeter's settings, from the lab's (VesselSilenceConfigSO.PerimeterSettings).
   function perimOf(p) {
     return { shape: Math.round(p.perimeterShape), count: Math.round(p.perimeterCount), seed: Math.round(p.perimeterSeed),
-      size: p.perimeterSize, reach: p.perimeterReach, spin: p.perimeterSpin, pullDrift: p.perimeterPullDrift };
+      size: p.perimeterSize, reach: p.perimeterReach, spin: p.perimeterSpin, pullDrift: p.perimeterPullDrift,
+      deepSize: p.perimeterDeepSize, deepReach: p.perimeterDeepReach };
   }
 
   // ---- the 3D perimeter, drawn in WebGL2 the way SilencePerimeterPass draws it in the game: copy the frame, warp
@@ -561,7 +576,7 @@ void main() {
       buildMeshes(s);
       const proj = perspective(LAB_FOV, aspect, 0.1, 50);
       const poses = [];
-      for (let i = 0; i < s.count; i++) poses.push(PERIM.layout(i, s, st.drive, pulse, st.t, aspect, LAB_FOV));
+      for (let i = 0; i < s.count; i++) poses.push(PERIM.layout(i, s, st.drive, st.depth, pulse, st.t, aspect, LAB_FOV));
       const order = poses.map((q, i) => i).sort((a, b) => poses[b].position[2] - poses[a].position[2]);
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.frontFace(gl.CW);   // the camera's +z is mirrored into GL's -z
@@ -594,8 +609,12 @@ void main() {
   }
 
   // The shape the mask reads, from the lab's settings (VesselSilenceConfigSO.VignetteShape).
-  function shapeOf(p) {
-    return { style: Math.round(p.vignetteStyle), facets: Math.round(p.vignetteFacets), inner: p.vignetteInner,
+  // depth 0..1 moves the edge's inner boundary from vignetteInner (thin) to vignetteDeepInner. The game works it
+  // out per pixel in SilencePerimeter.shader (continuous); the lab re-bakes its mask in 1/48 steps.
+  const quantDepth = (d) => Math.round(Math.max(0, Math.min(1, d || 0)) * 48) / 48;
+  function shapeOf(p, depth) {
+    const d = quantDepth(depth);
+    return { style: Math.round(p.vignetteStyle), facets: Math.round(p.vignetteFacets), inner: p.vignetteInner + (p.vignetteDeepInner - p.vignetteInner) * d,
       feather: p.vignetteFeather, roundness: p.vignetteRoundness, fill: p.vignetteFill,
       rimStrength: p.vignetteRimStrength, rimWidth: p.vignetteRimWidth };
   }
@@ -615,7 +634,7 @@ void main() {
   let world = null, seed = 7;
   function reset(s) {
     if (s != null) seed = s >>> 0;
-    world = { t: 0, rnd: mulberry32(seed), left: 0, weight: 0, pulse: 0, shakeLeft: 0, shakeDur: 0, shakeAmp: 0,
+    world = { t: 0, rnd: mulberry32(seed), left: 0, weight: 0, depth: 0, pulse: 0, shakeLeft: 0, shakeDur: 0, shakeAmp: 0,
               hits: 0, onsets: 0, nextHit: 0, auto: world ? world.auto : true, hold: world ? world.hold : false, flashes: [] };
     world.nextHit = 0.6;
   }
@@ -651,6 +670,10 @@ void main() {
     const secs = silenced ? P.vignetteFadeInSeconds : P.vignetteFadeOutSeconds;
     const target = silenced ? 1 : 0;
     w.weight = secs > 0 ? (w.weight < target ? Math.min(target, w.weight + dt / secs) : Math.max(target, w.weight - dt / secs)) : target;
+    // Depth follows the seconds of silence left: deeper with every second added, bleeding back out as they drain.
+    const depthTarget = P.depthFullSeconds > 0 ? Math.min(1, w.left / P.depthFullSeconds) : 0;
+    const depthStep = P.depthFollowSeconds > 0 ? dt / P.depthFollowSeconds : 1;
+    w.depth = w.depth < depthTarget ? Math.min(depthTarget, w.depth + depthStep) : Math.max(depthTarget, w.depth - depthStep);
     w.pulse = P.vignetteHitPulseSeconds > 0 ? w.pulse * Math.exp(-dt / P.vignetteHitPulseSeconds) : 0;
     if (w.weight <= 0.0001) w.pulse = 0;
     w.shakeLeft = Math.max(0, w.shakeLeft - dt);
@@ -714,8 +737,8 @@ void main() {
   // ---- the overlay: the same product the game draws (baked mask x danger colour x opacity) ----
   const maskCanvas = document.createElement('canvas'), maskCtx = maskCanvas.getContext('2d');
   let maskKey = '';
-  function bakeMask(aspect, p) {
-    const s = shapeOf(p), key = JSON.stringify(s) + '|' + aspect.toFixed(3) + '|' + p.vignetteColorStrength;
+  function bakeMask(aspect, p, depth) {
+    const s = shapeOf(p, depth), key = JSON.stringify(s) + '|' + aspect.toFixed(3) + '|' + p.vignetteColorStrength;
     if (key === maskKey) return;
     maskKey = key;
     const W = 256, H = Math.max(16, Math.min(512, Math.round(W / Math.max(0.1, aspect))));   // SilenceScreenFeedback.EnsureOverlay
@@ -768,7 +791,7 @@ void main() {
     if (drive > 0.0001) {
       drawDarken(ctx, w, h, P.vignetteDarken * drive, P.vignetteSmoothness, [0, 0, 0]);
       if (P.vignetteIntensity > 0) {   // SilenceScreenFeedback: no 2D edge at strength 0, not even the hit flare
-        bakeMask(w / h, P);
+        bakeMask(w / h, P, W.depth);
         const b = MASK.breathe(W.t, P.vignetteBreatheDepth, P.vignetteBreatheHz);
         ctx.save(); ctx.globalAlpha = MASK.opacity(1, drive, P.vignetteIntensity, b, W.pulse * drive); ctx.imageSmoothingEnabled = true;
         ctx.drawImage(maskCanvas, 0, 0, w, h); ctx.restore();
@@ -776,8 +799,8 @@ void main() {
     }
     const perimOn = P.perimeterAmount > 0 && stagePerim.ok;
     glCanvas.hidden = !perimOn;
-    if (perimOn) stagePerim.draw(canvas, w, h, P, { t: W.t, drive, pulse: W.pulse });
-    $('hud').textContent = 'silenced ' + W.left.toFixed(1) + ' s   edge ' + drive.toFixed(2) + '   flare ' + W.pulse.toFixed(2)
+    if (perimOn) stagePerim.draw(canvas, w, h, P, { t: W.t, drive, depth: W.depth, pulse: W.pulse });
+    $('hud').textContent = 'silenced ' + W.left.toFixed(1) + ' s   depth ' + W.depth.toFixed(2) + '   edge ' + drive.toFixed(2) + '   flare ' + W.pulse.toFixed(2)
       + '\nhits ' + W.hits + '   onsets ' + W.onsets + '   scene ' + BACKDROPS.find((x) => x.key === backdrop).name + (paused ? '   [paused]' : '')
       + (P.perimeterAmount > 0 && !stagePerim.ok ? '\n3D perimeter unavailable here (' + stagePerim.why + ')' : '');
     $('hud').style.whiteSpace = 'pre';
@@ -816,9 +839,10 @@ void main() {
   }
   const frameCanvas = document.createElement('canvas'); frameCanvas.width = SW; frameCanvas.height = SH;
   const frameCtx = frameCanvas.getContext('2d');
+  const SCORE_DEPTH = 1;   // scored at full depth: the most a look ever covers
   const scorePerim = makePerimeter(Object.assign(document.createElement('canvas'), { width: SW, height: SH }));
   function compositeScore(p, legacy, kind, sd) {
-    const src = backdropPixels(kind, sd), aspect = SW / SH, s = shapeOf(p), col = edgeColour(p);
+    const src = backdropPixels(kind, sd), aspect = SW / SH, s = shapeOf(p, SCORE_DEPTH), col = edgeColour(p);
     const op = MASK.opacity(1, 1, p.vignetteIntensity, 1, 0);
     // A perimeter look: the 2D composite of the whole frame goes through the same WebGL passes the stage draws
     // (t = 0, full silence, no flare), and the measure reads what comes back.
@@ -831,7 +855,7 @@ void main() {
         img.data[i] = Math.round(c[0] * 255); img.data[i + 1] = Math.round(c[1] * 255); img.data[i + 2] = Math.round(c[2] * 255); img.data[i + 3] = 255;
       }
       frameCtx.putImageData(img, 0, 0);
-      scorePerim.draw(frameCanvas, SW, SH, p, { t: 0, drive: 1, pulse: 0 });
+      scorePerim.draw(frameCanvas, SW, SH, p, { t: 0, drive: 1, depth: SCORE_DEPTH, pulse: 0 });
       out = scorePerim.read(SW, SH);
     }
     let edgeSum = 0, edgeN = 0, midSum = 0, midN = 0, redSum = 0;
@@ -853,20 +877,26 @@ void main() {
   // Baselines first: the effect OFF (a negative control: every column must read 0) and Round 0 (URP red, the
   // cut Garrett could not see - the yardstick must score it near the just-noticeable difference on open space, or it is not measuring sight).
   // Round 1's shipped 2D edge (overtuned) - superseded by the perimeter on 2026-10-21 ("instead of a 2d effect").
-  const R1_EDGE = { vignetteIntensity: 0.75, vignetteDarken: 0.3, perimeterAmount: 0 };
+  const R1_EDGE = { vignetteIntensity: 0.75, vignetteDarken: 0.3, perimeterAmount: 0, vignetteStyle: 0, vignetteFacets: 10, vignetteRoundness: 0.25,
+    vignetteInner: 0.55, vignetteDeepInner: 0.55, vignetteFeather: 0.5, vignetteRimStrength: 0.35, vignetteRimWidth: 0.04 };
+  // Round 3's shipped look (the pull, no 2D edge, no deepening), kept to compare.
+  const R3_PULL = { vignetteIntensity: 0, perimeterCount: 110, perimeterSize: 0.34, perimeterDeepSize: 0.34, perimeterReach: 0.12, perimeterDeepReach: 0.12 };
   const OFF = { vignetteIntensity: 0, vignetteDarken: 0, vignetteRimStrength: 0, perimeterAmount: 0 };
   const VARIANTS = [
     { name: 'Off (control)', v: OFF },
     { name: 'Round 0: URP red multiply', v: OFF, legacy: { intensity: 0.26, smoothness: 0.55, color: [0.75, 0, 0] } },
     { name: 'Round 1: 2D edge (overtuned)', v: R1_EDGE },
-    { name: 'Shipped: the pull (round 3)', v: {} },
-    { name: 'Undertow (strong pull)', v: { perimeterPull: 0.18, perimeterPullDrift: 0.25, perimeterWarp: 0.12, perimeterTwist: 1 } },
-    { name: 'Shattered mirror', v: { perimeterCount: 150, perimeterSize: 0.28, perimeterRefraction: 0.22, perimeterTwist: 1, perimeterEdgeGlow: 0.35, perimeterTint: 0.15 } },
-    { name: 'Broken trail (prism slabs)', v: { perimeterShape: 1, perimeterCount: 90, perimeterSize: 0.3, perimeterSpin: 0.6 } },
-    { name: 'Negative space (inverted)', v: { perimeterInvert: 1, perimeterFill: 0.05, perimeterTint: 0.5 } },
-    { name: 'Tear (warp + glitch)', v: { perimeterWarp: 0.14, perimeterGlitch: 0.15, perimeterAberration: 0.03 } },
-    { name: 'Round 2: crystals from the edge', v: { perimeterTipFade: 0, perimeterStreak: 0, perimeterCount: 22, perimeterSize: 0.26, perimeterReach: 0.26, perimeterSpin: 0.5, perimeterRefraction: 0.06, perimeterTwist: 0.5, perimeterAberration: 0.006, perimeterTint: 0.15, perimeterRimGlow: 1.2, perimeterEdgeGlow: 0.8, perimeterFill: 0.4, perimeterOpacity: 0.9, perimeterWarp: 0.03, perimeterGlitch: 0.05, perimeterPull: 0 } },
-    { name: 'Pull + 2D edge', v: { vignetteIntensity: 0.4, vignetteInner: 0.7 } },
+    { name: 'Shipped: thin pull + edge, deepens with silence', v: {} },
+    { name: 'Round 3: the pull, no edge', v: R3_PULL },
+    { name: 'Undertow (strong pull)', v: { ...R3_PULL, perimeterPull: 0.18, perimeterPullDrift: 0.25, perimeterWarp: 0.12, perimeterTwist: 1 } },
+    { name: 'Shattered mirror', v: { ...R3_PULL, perimeterCount: 150, perimeterSize: 0.28, perimeterRefraction: 0.22, perimeterTwist: 1, perimeterEdgeGlow: 0.35, perimeterTint: 0.15 } },
+    { name: 'Broken trail (prism slabs)', v: { ...R3_PULL, perimeterShape: 1, perimeterCount: 90, perimeterSize: 0.3, perimeterSpin: 0.6 } },
+    { name: 'Negative space (inverted)', v: { ...R3_PULL, perimeterInvert: 1, perimeterFill: 0.05, perimeterTint: 0.5 } },
+    { name: 'Tear (warp + glitch)', v: { ...R3_PULL, perimeterWarp: 0.14, perimeterGlitch: 0.15, perimeterAberration: 0.03 } },
+    { name: 'Round 2: crystals from the edge', v: { vignetteIntensity: 0, perimeterDeepSize: 0.26, perimeterDeepReach: 0.26, perimeterTipFade: 0, perimeterStreak: 0, perimeterCount: 22, perimeterSize: 0.26, perimeterReach: 0.26, perimeterSpin: 0.5, perimeterRefraction: 0.06, perimeterTwist: 0.5, perimeterAberration: 0.006, perimeterTint: 0.15, perimeterRimGlow: 1.2, perimeterEdgeGlow: 0.8, perimeterFill: 0.4, perimeterOpacity: 0.9, perimeterWarp: 0.03, perimeterGlitch: 0.05, perimeterPull: 0 } },
+    { name: 'Round 3: pull + 2D edge', v: { ...R3_PULL, vignetteIntensity: 0.4, vignetteStyle: 0, vignetteFacets: 10, vignetteRoundness: 0.25, vignetteInner: 0.7, vignetteDeepInner: 0.7, vignetteFeather: 0.5, vignetteRimStrength: 0.35, vignetteRimWidth: 0.04 } },
+    { name: 'Hairline (very thin, very deep)', v: { vignetteInner: 0.975, vignetteFeather: 0.04, perimeterSize: 0.06, perimeterReach: 0.01, perimeterDeepSize: 0.45, perimeterDeepReach: 0.28, vignetteDeepInner: 0.45 } },
+    { name: 'Soft oval edge', v: { vignetteStyle: 0, vignetteRoundness: 0.25, vignetteInner: 0.95, vignetteFeather: 0.15, vignetteDeepInner: 0.6 } },
     { name: 'Yours (current settings)', v: null },
     // Archive: round 1's 2D looks, one click away (not scored).
     { name: 'Ember (subtle)', archive: true, v: Object.assign({}, R1_EDGE, { vignetteIntensity: 0.45, vignetteInner: 0.7, vignetteFeather: 0.45, vignetteRimStrength: 0, vignetteDarken: 0.2 }) },
@@ -1056,7 +1086,9 @@ void main() {
   $('resetAll').onclick = () => applyPreset({});
   $('hitBullet').onclick = () => hit('bullet');
   $('hitRocket').onclick = () => hit('shockwave');
-  $('silence4').onclick = () => { const onset = world.weight <= 0.0001; world.left = Math.min(P.maxSeconds || 4, Math.max(world.left, 4)); if (onset) { world.onsets++; shake(P.onsetShakeIntensity, P.onsetShakeSeconds); } };
+  function silenceFor(seconds) { const onset = world.weight <= 0.0001; world.left = Math.min(P.maxSeconds || seconds, Math.max(world.left, seconds)); if (onset) { world.onsets++; shake(P.onsetShakeIntensity, P.onsetShakeSeconds); } }
+  $('silence4').onclick = () => silenceFor(4);
+  $('silence8').onclick = () => silenceFor(8);
   function syncToggles() { $('autoRival').classList.toggle('on', world.auto); $('hold').classList.toggle('on', world.hold); }
   $('autoRival').onclick = () => { world.auto = !world.auto; syncToggles(); };
   $('hold').onclick = () => { world.hold = !world.hold; syncToggles(); };
@@ -1078,7 +1110,7 @@ void main() {
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { dt = dt || 1 / 60; n = n || 1; for (let i = 0; i < n; i++) simStep(dt); resize(); render(); },
     reset, score, runBatch, setParam, record, hit,
-    state: () => ({ t: world.t, seed, left: world.left, weight: world.weight, pulse: world.pulse, hits: world.hits, onsets: world.onsets, backdrop }),
+    state: () => ({ t: world.t, seed, left: world.left, weight: world.weight, depth: world.depth, pulse: world.pulse, hits: world.hits, onsets: world.onsets, backdrop }),
   };
 })();
 </script>

@@ -1228,7 +1228,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/Studios/SILENCE_VIGNETTE_LAB.md
 
 ### T-20261021-2973 · open · test · vessels
-- **Task:** Editor-check the silence 3D perimeter (cece/sleepy-shannon-9qk646): in Dog Fight or with 'silence test' in the console, a thick band of half-buried, overlapping shards fills the screen edge, every facet showing the world bent and dragged toward a point that wanders around the edge; hits sink and glitch them; they fade when the silence ends; no magenta, nothing on other cameras or other players' screens; 'silence' reports 'perimeter drawing 110 shards on <camera>'. Note the frame cost on a phone (one camera-colour copy while silenced)
+- **Task:** Editor-check the silence 3D perimeter (cece/sleepy-shannon-9qk646): in Dog Fight or with 'silence test' in the console, a thin band of half-buried shards over a thin danger frame hugs the screen border, dragged toward a point that wanders around the edge; 'silence test 8' sends it deep and it bleeds back out as the seconds drain; hits sink and glitch it; it fades when the silence ends; no magenta, nothing on other cameras or other players' screens; 'silence' reports 'perimeter drawing 160 shards on <camera>' and the depth. Note the frame cost on a phone (one camera-colour copy while silenced)
 - **Done when:** seen working in the editor and on one phone build, or the failures are filed
 - **Who can take it:** Garrett (owner's eye), Yash (offered)
 - **Added:** 2026-10-21 by Garrett's session (cece/sleepy-shannon-9qk646) (`cece/sleepy-shannon-9qk646`)

@@ -6,7 +6,9 @@
 // markers); the shards' layout, geometry and the pull point are SilencePerimeter.cs, the twin the lab's parity
 // gate measures. Tools/Shaders/verify_silence_perimeter.py compiles both passes.
 //
-// HOW IT DRAWS. SilencePerimeterPass.cs, after URP has drawn the TRANSPARENTS, copies the camera colour
+// HOW IT DRAWS. SilencePerimeterPass.cs, after URP has drawn the TRANSPARENTS, first lays the 2D danger edge
+// into the frame (pass 2: SilenceVignetteMask worked out per pixel, so it is sharp at any thickness and
+// follows the seconds of silence continuously), then copies the camera colour
 // (_SilenceSceneColor), draws pass 0 (the warp: the frame near the edges swirls, ripples and is dragged toward
 // the pull) as one full-screen triangle from that copy, then pass 1: EVERY shard in one mesh, built far to near
 // on the CPU each frame, each shard's centre on screen, random and opacity riding in TEXCOORD1. The shards are
@@ -48,6 +50,47 @@ Shader "CosmicShore/SilencePerimeter"
         }
 
         float Hash1(float n) { return frac(sin(n) * 43758.5453); }
+
+        // Set once per camera, for pass 2 (VesselSilenceConfigSO.VignetteShapeAt(depth)):
+        float4 _SPEdgeShape;   // x style (0 soft, 1 faceted), y facets, z inner, w feather
+        float4 _SPEdgeShape2;  // x roundness, y fill, z rim strength, w rim width
+        float4 _SPEdgeColor;   // rgb the edge's colour, a its opacity (weight x strength x breathing + the hit flare)
+
+        // SilenceVignetteMask.Distance and .Alpha, line for line (that C# is held to the lab by
+        // Tools/Build/silence_vignette_parity).
+        float SilenceRepeat(float t, float length) { return t - floor(t / length) * length; }
+
+        float SilenceSmoothStep(float a, float b, float x)
+        {
+            if (b <= a) return x >= a ? 1.0 : 0.0;
+            float t = saturate((x - a) / (b - a));
+            return t * t * (3.0 - 2.0 * t);
+        }
+
+        float SilenceMaskDistance(float u, float v, float aspect)
+        {
+            float x = (u - 0.5) * 2.0 * lerp(1.0, max(0.01, aspect), saturate(_SPEdgeShape2.x));
+            float y = (v - 0.5) * 2.0;
+            float r = sqrt(x * x + y * y);
+            int facets = (int)round(_SPEdgeShape.y);
+            if (round(_SPEdgeShape.x) != 1.0 || facets < 3) return r;
+            float seg = 2.0 * PI / facets;
+            float start = PI * 0.5 - seg * 0.5;
+            float a = SilenceRepeat(atan2(y, x) - start, seg) - seg * 0.5;
+            return r * cos(a);
+        }
+
+        float SilenceMaskAlpha(float u, float v, float aspect)
+        {
+            float inner = _SPEdgeShape.z, feather = _SPEdgeShape.w;
+            float rimStrength = _SPEdgeShape2.z, rimWidth = _SPEdgeShape2.w;
+            float d = SilenceMaskDistance(u, v, aspect);
+            float fill = SilenceSmoothStep(inner, inner + max(0.0, feather), d) * saturate(_SPEdgeShape2.y);
+            float rim = 0.0;
+            if (rimStrength > 0.0 && rimWidth > 0.0)
+                rim = saturate(1.0 - abs(d - inner) / rimWidth) * saturate(rimStrength);
+            return saturate(fill + rim);
+        }
         ENDHLSL
 
         // 0: the warp — the whole frame from the copy, swirled, rippled and pulled near the edges.
@@ -197,6 +240,41 @@ Shader "CosmicShore/SilencePerimeter"
                 float facetAlpha = uAlpha * (0.6 + 0.4 * Hash1(dot(n, float3(12.9898, 78.233, 37.719)) * 9.0))
                                  * (1.0 - uTipFade * smoothstep(-0.1, 0.5, vAlong));
                 return half4(col * facetAlpha, facetAlpha);
+            }
+            ENDHLSL
+        }
+
+        // 2: the 2D danger edge, laid into the frame BEFORE the copy, so the pull drags it and the facets refract it.
+        Pass
+        {
+            Name "SilenceEdge"
+            Tags { "LightMode" = "SilenceEdge" }
+
+            ZWrite Off
+            ZTest Always
+            Cull Off
+            Blend SrcAlpha OneMinusSrcAlpha
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex EdgeVert
+            #pragma fragment EdgeFrag
+
+            struct EdgeAttributes { uint vertexID : SV_VertexID; };
+            struct EdgeVaryings { float4 positionCS : SV_POSITION; };
+
+            EdgeVaryings EdgeVert(EdgeAttributes input)
+            {
+                EdgeVaryings output;
+                output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
+                return output;
+            }
+
+            half4 EdgeFrag(EdgeVaryings input) : SV_Target
+            {
+                float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
+                float aspect = _ScreenParams.x / _ScreenParams.y;
+                return half4(_SPEdgeColor.rgb, SilenceMaskAlpha(uv.x, uv.y, aspect) * saturate(_SPEdgeColor.a));
             }
             ENDHLSL
         }

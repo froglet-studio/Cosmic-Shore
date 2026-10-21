@@ -55,6 +55,7 @@ namespace CosmicShore.Gameplay
 
         string _watchedPilot;
         float _weight;
+        float _depth;   // how much silence is left, 0 (the thin band) .. 1 (the deepest)
         float _pulse;
         bool _pushed;
 
@@ -127,6 +128,12 @@ namespace CosmicShore.Gameplay
                 ? Mathf.MoveTowards(_weight, target, Time.unscaledDeltaTime / seconds)
                 : target;
 
+            // Depth follows the seconds left: deeper with every second a hit adds, bleeding back out as they drain.
+            float depthTarget = Mathf.Clamp01(VesselSilence.RemainingSeconds(_watchedPilot) / Mathf.Max(0.1f, config.DepthFullSeconds));
+            _depth = config.DepthFollowSeconds > 0f
+                ? Mathf.MoveTowards(_depth, depthTarget, Time.unscaledDeltaTime / config.DepthFollowSeconds)
+                : depthTarget;
+
             float decay = config.VignetteHitPulseSeconds;
             _pulse = decay > 0f ? _pulse * Mathf.Exp(-Time.unscaledDeltaTime / decay) : 0f;
 
@@ -143,18 +150,21 @@ namespace CosmicShore.Gameplay
 
         void Push(float weight, VesselSilenceConfigSO config)
         {
-            PushPerimeter(weight, config);
+            // The 2D edge's colour and opacity this frame (Opacity with a mask of 1 - the shape multiplies in).
+            float breathe = SilenceVignetteMask.Breathe(Time.unscaledTime, config.VignetteBreatheDepth,
+                                                        config.VignetteBreatheHz);
+            var edgeColor = VignetteColor(config);
+            edgeColor.a = config.VignetteIntensity > 0f
+                ? SilenceVignetteMask.Opacity(1f, weight, config.VignetteIntensity, breathe, _pulse * weight)
+                : 0f;
 
-            // The 2D edge: none at all at strength 0 (the default since the perimeter), not even the hit flare.
-            if (config.VignetteIntensity > 0f)
+            // With the perimeter drawing, the edge goes into its pass (under the shards, before the copy);
+            // otherwise it is the overlay below. None at all at strength 0, not even the hit flare.
+            bool perimeter = PushPerimeter(weight, config, edgeColor);
+            if (!perimeter && config.VignetteIntensity > 0f)
             {
                 EnsureOverlay(config);
-                float breathe = SilenceVignetteMask.Breathe(Time.unscaledTime, config.VignetteBreatheDepth,
-                                                            config.VignetteBreatheHz);
-                // The mask texture carries the shape; the image's alpha is everything else (Opacity with
-                // a mask of 1 - the texture multiplies the shape back in).
-                var c = VignetteColor(config);
-                c.a = SilenceVignetteMask.Opacity(1f, weight, config.VignetteIntensity, breathe, _pulse * weight);
+                var c = edgeColor;
                 if (_edge)
                 {
                     _edge.color = c;
@@ -174,6 +184,7 @@ namespace CosmicShore.Gameplay
             if (!_pushed) return;
             _pushed = false;
             _weight = 0f;
+            _depth = 0f;
             _pulse = 0f;
             SilencePerimeterPass.Current = default;
             if (_edge) _edge.gameObject.SetActive(false);
@@ -183,17 +194,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Hands this frame's perimeter to <see cref="SilencePerimeterPass"/>: the local pilot's camera, the
-        /// shard meshes (rebuilt only when the arrangement changes), the silence's eased weight, the hit
-        /// flare and the look. With amount 0 or no shader, nothing is drawn.
+        /// shard facets (cut only when the arrangement changes), the silence's eased weight and depth, the hit
+        /// flare, the look and the 2D edge. With amount 0 or no shader, nothing is drawn and this returns false.
         /// </summary>
-        void PushPerimeter(float weight, VesselSilenceConfigSO config)
+        bool PushPerimeter(float weight, VesselSilenceConfigSO config, Color edgeColor)
         {
             var settings = config.PerimeterSettings;
             var camera = PilotCamera();
             if (config.PerimeterAmount <= 0f || settings.Count <= 0 || !camera || !EnsurePerimeterMaterial(config))
             {
                 SilencePerimeterPass.Current = default;
-                return;
+                return false;
             }
             EnsureShards(settings);
             SilencePerimeterPass.Current = new SilencePerimeterPass.Frame
@@ -204,6 +215,7 @@ namespace CosmicShore.Gameplay
                 Shards = _shards,
                 Settings = settings,
                 Drive = weight,
+                Depth = _depth,
                 Pulse = _pulse * weight,
                 Time = Time.unscaledTime,
                 Amount = config.PerimeterAmount,
@@ -216,7 +228,10 @@ namespace CosmicShore.Gameplay
                 Look = new Vector4(config.PerimeterRefraction, config.PerimeterTwist, config.PerimeterAberration, config.PerimeterTint),
                 Look2 = new Vector4(config.PerimeterRimGlow, config.PerimeterEdgeGlow, config.PerimeterFill, config.PerimeterInvert),
                 Danger = DangerColor(config),
+                EdgeShape = config.VignetteShapeAt(_depth),
+                EdgeColor = edgeColor,
             };
+            return true;
         }
 
         bool EnsurePerimeterMaterial(VesselSilenceConfigSO config)
@@ -293,7 +308,7 @@ namespace CosmicShore.Gameplay
             _canvas.sortingOrder = config.VignetteSortingOrder;
 
             float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
-            var shape = config.VignetteShape;
+            var shape = config.VignetteShapeAt(Mathf.Round(_depth * 48f) / 48f);
             if (_mask && Mathf.Abs(aspect - _maskAspect) < 0.01f && SameShape(shape, _maskShape)) return;
 
             const int width = 256;
@@ -382,6 +397,7 @@ namespace CosmicShore.Gameplay
             var post = PostProcessingManager.Instance;
             sb.Append("silence: post-processing ").Append(post ? "found" : "missing (no darkening)")
               .Append(" | edge weight ").Append(s_instance ? s_instance._weight.ToString("0.00") : "-")
+              .Append(", depth ").Append(s_instance ? s_instance._depth.ToString("0.00") : "-")
               .Append(", perimeter ").Append(SilencePerimeterPass.Current.Active
                   ? $"drawing {SilencePerimeterPass.Current.Settings.Count} shards on {SilencePerimeterPass.Current.Camera.name}"
                   : s_instance && s_instance._warnedNoShader ? "cannot draw (no shader)" : "idle")

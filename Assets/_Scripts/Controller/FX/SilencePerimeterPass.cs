@@ -8,7 +8,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Draws the silence perimeter (Docs/ElementalAbilitySystem/SILENCE.md §5) on the silenced pilot's own
-    /// camera: after URP has drawn the TRANSPARENTS, copy the camera's colour, draw the warp (pass 0 of
+    /// camera: after URP has drawn the TRANSPARENTS, lay the 2D danger edge into the frame (pass 2, worked out
+    /// per pixel at this frame's depth), copy the camera's colour, draw the warp (pass 0 of
     /// <c>SilencePerimeter.shader</c>) as one full-screen triangle from that copy, then every shard (pass 1) in
     /// ONE mesh: the shards are posed for this camera (<see cref="SilencePerimeter.Layout"/>), sorted far to
     /// near, and their facets written into a dynamic mesh each frame, so 100-plus overlapping shards cost one
@@ -29,6 +30,7 @@ namespace CosmicShore.Gameplay
         /// (<c>SilencePerimeterTests.TheShaderDeclaresItsPassesInTheOrderThePassDrawsThem</c> pins it).</summary>
         public const int WarpPass = 0;
         public const int ShardPass = 1;
+        public const int EdgePass = 2;
 
         static readonly int SceneColorId = Shader.PropertyToID("_SilenceSceneColor");
         static readonly int LookId = Shader.PropertyToID("_SPLook");
@@ -37,6 +39,9 @@ namespace CosmicShore.Gameplay
         static readonly int Look4Id = Shader.PropertyToID("_SPLook4");
         static readonly int PullId = Shader.PropertyToID("_SPPull");
         static readonly int DangerId = Shader.PropertyToID("_SPDanger");
+        static readonly int EdgeShapeId = Shader.PropertyToID("_SPEdgeShape");
+        static readonly int EdgeShape2Id = Shader.PropertyToID("_SPEdgeShape2");
+        static readonly int EdgeColorId = Shader.PropertyToID("_SPEdgeColor");
 
         /// <summary>One shard's facets in its own space (SilencePerimeter.Geometry), kept for the session.</summary>
         internal sealed class ShardGeometry
@@ -56,6 +61,7 @@ namespace CosmicShore.Gameplay
             public ShardGeometry[] Shards;
             public SilencePerimeter.Settings Settings;
             public float Drive;      // the silence's eased weight 0..1
+            public float Depth;      // how much silence is left, 0 (the thin band) .. 1 (the deepest)
             public float Pulse;      // the hit flare, already x Drive
             public float Time;       // unscaled seconds
             public float Amount;     // VesselSilenceConfigSO.PerimeterAmount
@@ -68,6 +74,8 @@ namespace CosmicShore.Gameplay
             public Vector4 Look;     // refraction, twist, aberration, tint
             public Vector4 Look2;    // rim glow, edge lines, fill, invert
             public Color Danger;
+            public SilenceVignetteMask.Shape EdgeShape;   // VesselSilenceConfigSO.VignetteShapeAt(Depth)
+            public Color EdgeColor;                       // a = the edge's opacity; 0 = no edge
         }
 
         internal static Frame Current;
@@ -87,6 +95,12 @@ namespace CosmicShore.Gameplay
         class CopyData
         {
             public TextureHandle source;
+        }
+
+        class EdgeData
+        {
+            public Material material;
+            public readonly MaterialPropertyBlock block = new();
         }
 
         class DrawData
@@ -127,6 +141,22 @@ namespace CosmicShore.Gameplay
             var f = Current;
             if (cam == null || cam.orthographic || !f.Active || f.Material == null || f.Shards == null) return;
             TextureHandle colour = resources.activeColorTexture;
+
+            // 0. The 2D danger edge, laid into the frame first, so the pull drags it and the facets refract it.
+            if (f.EdgeColor.a > 0f)
+            {
+                using var builder = renderGraph.AddRasterRenderPass<EdgeData>("Silence edge", out var data, profilingSampler);
+                data.material = f.Material;
+                var e = f.EdgeShape;
+                data.block.Clear();
+                data.block.SetVector(EdgeShapeId, new Vector4(e.Style, e.Facets, e.Inner, e.Feather));
+                data.block.SetVector(EdgeShape2Id, new Vector4(e.Roundness, e.Fill, e.RimStrength, e.RimWidth));
+                data.block.SetColor(EdgeColorId, f.EdgeColor);
+                builder.SetRenderAttachment(colour, 0, AccessFlags.Write);
+                builder.AllowPassCulling(false);
+                builder.SetRenderFunc((EdgeData d, RasterGraphContext ctx) =>
+                    ctx.cmd.DrawProcedural(Matrix4x4.identity, d.material, EdgePass, MeshTopology.Triangles, 3, 1, d.block));
+            }
 
             // 1. The scene as drawn so far — opaques, skybox AND transparents — resolved, single-sample.
             var desc = renderGraph.GetTextureDesc(colour);
@@ -182,7 +212,7 @@ namespace CosmicShore.Gameplay
             int n = Mathf.Min(f.Settings.Count, Mathf.Min(f.Shards.Length, SilencePerimeter.MaxShards));
             for (int i = 0; i < n; i++)
             {
-                s_poses[i] = SilencePerimeter.Layout(i, f.Settings, f.Drive, f.Pulse, f.Time, cam.aspect, cam.fieldOfView);
+                s_poses[i] = SilencePerimeter.Layout(i, f.Settings, f.Drive, f.Depth, f.Pulse, f.Time, cam.aspect, cam.fieldOfView);
                 s_order[i] = i;
             }
             // Far to near (insertion sort: nearly ordered frame to frame).

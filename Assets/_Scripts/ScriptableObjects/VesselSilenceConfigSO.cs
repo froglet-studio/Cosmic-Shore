@@ -44,6 +44,18 @@ namespace CosmicShore.ScriptableObjects
                  "laid plain instead. Danger prisms already standing keep their danger.")]
         [SerializeField] bool suppressDangerProduction = true;
 
+        [Header("Depth - the more seconds of silence, the deeper it goes")]
+        [Tooltip("Seconds of silence left that reach FULL depth (Garrett, 2026-10-21: \"the more seconds of silence " +
+                 "the deeper it goes in and bleeds back out as the seconds drain\"). With fewer seconds left the " +
+                 "perimeter and the edge sit shallower, down to their thin band.")]
+        [Min(0.1f)]
+        [SerializeField] float depthFullSeconds = 8f;
+
+        [Tooltip("How fast depth catches up with the seconds left, 0 to full, in seconds. Small, so a hit's " +
+                 "seconds push it in at once; the drain is followed as it happens.")]
+        [Min(0f)]
+        [SerializeField] float depthFollowSeconds = 0.25f;
+
         [Header("Feedback - the silenced pilot's own screen")]
         [Tooltip("Camera shake when a silence BEGINS. Between the Thresher's lightest crack (0.35) " +
                  "and the Serpent's shot (0.6): felt, not a blow. 0.18 was tried first and read as " +
@@ -79,21 +91,29 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("How many shards ring the screen: many, so they overlap in layers and no one of them reads as a " +
                  "crystal (Garrett, 2026-10-21: \"there should be so much overlap, and distortions\").")]
         [Range(4, 160)]
-        [SerializeField] int perimeterCount = 110;
+        [SerializeField] int perimeterCount = 160;
 
         [Tooltip("The arrangement: reshuffles where the shards sit and how each is cut.")]
         [Range(1, 99)]
         [SerializeField] int perimeterSeed = 7;
 
-        [Tooltip("Shard length, as a share of the screen's height.")]
-        [Range(0.05f, 0.6f)]
-        [SerializeField] float perimeterSize = 0.34f;
+        [Tooltip("Shard length with little silence left (the thin band), as a share of the screen's height.")]
+        [Range(0.02f, 0.6f)]
+        [SerializeField] float perimeterSize = 0.1f;
+
+        [Tooltip("Shard length at full depth: the more seconds of silence, the longer they grow.")]
+        [Range(0.02f, 0.8f)]
+        [SerializeField] float perimeterDeepSize = 0.38f;
 
         [Tooltip("Each shard's centre sits ON the screen's edge, half of it beyond (Garrett: \"show only half the " +
                  "faceted object that is poking into the screen\"); this is how far in a centre may sink, as a share " +
                  "of half the height. The pull's side sinks further.")]
         [Range(0f, 0.6f)]
-        [SerializeField] float perimeterReach = 0.12f;
+        [SerializeField] float perimeterReach = 0.03f;
+
+        [Tooltip("How far in a shard's centre may sink at full depth.")]
+        [Range(0f, 0.6f)]
+        [SerializeField] float perimeterDeepReach = 0.22f;
 
         [Tooltip("How fast each shard turns about its long axis, radians a second.")]
         [Range(0f, 3f)]
@@ -167,34 +187,42 @@ namespace CosmicShore.ScriptableObjects
                  "(a warning names this field once).")]
         [SerializeField] Shader perimeterShader;
 
-        [Header("Vignette - a danger-coloured 2D edge drawn OVER the frame (off since the perimeter)")]
+        [Header("Edge - a danger-coloured 2D edge under the perimeter's shards")]
         [Tooltip("Peak opacity of the danger-coloured 2D edge while silenced. It is an overlay that ADDS " +
                  "the colour (URP's Vignette multiplies, so on near-black space a red one is invisible - " +
-                 "the first cut was). Round 1 shipped it at 0.75; the 3D perimeter replaced it. " +
+                 "the first cut was). With the perimeter on, it is drawn into the frame BEFORE the shards copy it, " +
+                 "so the pull drags it and the facets refract it (Garrett liked \"the pull plus the 2d edge\"). " +
                  "0 = no edge at all, not even the hit flare.")]
         [Range(0f, 1f)]
-        [SerializeField] float vignetteIntensity = 0f;
+        [SerializeField] float vignetteIntensity = 0.6f;
 
-        [Tooltip("0 = Soft (a smooth ellipse), 1 = Faceted (a polygonal window, the prisms' language).")]
+        [Tooltip("0 = Soft (a smooth ellipse), 1 = Faceted (a polygonal window, the prisms' language). Faceted with " +
+                 "4 sides is a frame that hugs the screen's border.")]
         [Range(0, 1)]
-        [SerializeField] int vignetteStyle = 0;
+        [SerializeField] int vignetteStyle = 1;
 
         [Tooltip("Sides of the Faceted window.")]
         [Range(3, 16)]
-        [SerializeField] int vignetteFacets = 10;
+        [SerializeField] int vignetteFacets = 4;
 
-        [Tooltip("Where the edge starts: 0 = the centre of the screen, 1 = the top and bottom edges.")]
+        [Tooltip("Where the edge starts with little silence left (the thin band): 0 = the centre of the screen, " +
+                 "1 = the top and bottom edges.")]
         [Range(0f, 1.5f)]
-        [SerializeField] float vignetteInner = 0.55f;
+        [SerializeField] float vignetteInner = 0.93f;
+
+        [Tooltip("Where the edge starts at full depth: it moves in with the seconds of silence and bleeds back " +
+                 "out as they drain.")]
+        [Range(0f, 1.5f)]
+        [SerializeField] float vignetteDeepInner = 0.6f;
 
         [Tooltip("How far the edge takes to rise from nothing to full, in the same units.")]
         [Range(0f, 1.5f)]
-        [SerializeField] float vignetteFeather = 0.5f;
+        [SerializeField] float vignetteFeather = 0.07f;
 
         [Tooltip("0 = the edge follows the screen's own shape (an ellipse), 1 = a circle in pixels " +
                  "(reaches the top and bottom before the sides).")]
         [Range(0f, 1f)]
-        [SerializeField] float vignetteRoundness = 0.25f;
+        [SerializeField] float vignetteRoundness = 0f;
 
         [Tooltip("Opacity of the outer fill, relative to the peak. 0 leaves only the rim line.")]
         [Range(0f, 1f)]
@@ -202,11 +230,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Opacity of a bright line traced along the edge's inner boundary. 0 = no line.")]
         [Range(0f, 1f)]
-        [SerializeField] float vignetteRimStrength = 0.35f;
+        [SerializeField] float vignetteRimStrength = 0.3f;
 
         [Tooltip("Half-width of that line, in the same distance units.")]
         [Range(0f, 0.3f)]
-        [SerializeField] float vignetteRimWidth = 0.04f;
+        [SerializeField] float vignetteRimWidth = 0.015f;
 
         [Tooltip("How much of the palette's danger colour the edge carries: 1 is the full danger " +
                  "signal colour (the rim every danger prism wears), 0 is black.")]
@@ -263,6 +291,8 @@ namespace CosmicShore.ScriptableObjects
         public float OnsetShakeSeconds => onsetShakeSeconds;
         public float HitShakeIntensity => hitShakeIntensity;
         public float HitShakeSeconds => hitShakeSeconds;
+        public float DepthFullSeconds => depthFullSeconds;
+        public float DepthFollowSeconds => depthFollowSeconds;
         public float PerimeterAmount => perimeterAmount;
         public float PerimeterRefraction => perimeterRefraction;
         public float PerimeterTwist => perimeterTwist;
@@ -302,14 +332,20 @@ namespace CosmicShore.ScriptableObjects
             Reach = perimeterReach,
             Spin = perimeterSpin,
             PullDrift = perimeterPullDrift,
+            DeepSize = perimeterDeepSize,
+            DeepReach = perimeterDeepReach,
         };
 
-        /// <summary>The mask's shape, as <see cref="CosmicShore.Gameplay.SilenceVignetteMask"/> takes it.</summary>
-        public CosmicShore.Gameplay.SilenceVignetteMask.Shape VignetteShape => new()
+        /// <summary>The mask's shape at the thin band (no depth).</summary>
+        public CosmicShore.Gameplay.SilenceVignetteMask.Shape VignetteShape => VignetteShapeAt(0f);
+
+        /// <summary>The mask's shape at a depth 0..1: the inner boundary moves from the thin band
+        /// (<c>vignetteInner</c>) to <c>vignetteDeepInner</c>.</summary>
+        public CosmicShore.Gameplay.SilenceVignetteMask.Shape VignetteShapeAt(float depth) => new()
         {
             Style = vignetteStyle,
             Facets = vignetteFacets,
-            Inner = vignetteInner,
+            Inner = Mathf.Lerp(vignetteInner, vignetteDeepInner, depth),
             Feather = vignetteFeather,
             Roundness = vignetteRoundness,
             Fill = vignetteFill,

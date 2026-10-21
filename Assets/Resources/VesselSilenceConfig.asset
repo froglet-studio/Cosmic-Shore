@@ -16,16 +16,20 @@ MonoBehaviour:
   maxSeconds: 8
   silencingSources: 14
   suppressDangerProduction: 1
+  depthFullSeconds: 8
+  depthFollowSeconds: 0.25
   onsetShakeIntensity: 0.45
   onsetShakeSeconds: 0.35
   hitShakeIntensity: 0.2
   hitShakeSeconds: 0.15
   perimeterAmount: 1
   perimeterShape: 0
-  perimeterCount: 110
+  perimeterCount: 160
   perimeterSeed: 7
-  perimeterSize: 0.34
-  perimeterReach: 0.12
+  perimeterSize: 0.1
+  perimeterDeepSize: 0.38
+  perimeterReach: 0.03
+  perimeterDeepReach: 0.22
   perimeterSpin: 0.35
   perimeterRefraction: 0.14
   perimeterTwist: 0.9
@@ -43,15 +47,16 @@ MonoBehaviour:
   perimeterTipFade: 0.85
   perimeterPullDrift: 0.12
   perimeterShader: {fileID: 4800000, guid: b7392ddcfaa64f5186fdd1a7e0150004, type: 3}
-  vignetteIntensity: 0
-  vignetteStyle: 0
-  vignetteFacets: 10
-  vignetteInner: 0.55
-  vignetteFeather: 0.5
-  vignetteRoundness: 0.25
+  vignetteIntensity: 0.6
+  vignetteStyle: 1
+  vignetteFacets: 4
+  vignetteInner: 0.93
+  vignetteDeepInner: 0.6
+  vignetteFeather: 0.07
+  vignetteRoundness: 0
   vignetteFill: 1
-  vignetteRimStrength: 0.35
-  vignetteRimWidth: 0.04
+  vignetteRimStrength: 0.3
+  vignetteRimWidth: 0.015
   vignetteColorStrength: 1
   fallbackDangerColor: {r: 1, g: 0.12, b: 0.08, a: 1}
   vignetteBreatheDepth: 0.25
