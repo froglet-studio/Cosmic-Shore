@@ -35,7 +35,7 @@ MonoBehaviour:
   - Element: 2
     AbilityLabel: 'Danger Shield'
     AbilityDescription: 'The helm rings the hull in super-shielded prisms, open ahead, on the left trigger; they ride with the hull, then drop where they are as danger prisms. Mass carries the ring longer. The card shows its recharge.'
-    Input: 0
+    Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -44,7 +44,7 @@ MonoBehaviour:
   - Element: 4
     AbilityLabel: 'Boost Tank'
     AbilityDescription: 'The helm boosts on the right trigger while the tank lasts; it refills on its own, faster with Time. The card shows the tank.'
-    Input: 0
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

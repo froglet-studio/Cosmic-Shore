@@ -24,7 +24,7 @@ ASSET = "Assets/Resources/TouchControlProfiles.asset"
 SCRIPT_META = "Assets/_Scripts/Controller/IO/TouchControls/TouchControlProfileLibrarySO.cs.meta"
 
 VESSEL = dict(Manta=1, Dolphin=2, Rhino=3, Urchin=4, Grizzly=5, Squirrel=6, Serpent=7, Shrike=10, Sparrow=11,
-              Scarab=12, Butterfly=13, Thresher=14, Stoat=15, BrittleStar=16, Angler=17)
+              Scarab=12, Butterfly=13, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Wrasse=19, Orca=20, Honeyguide=23)
 INPUT = dict(RightStick=1, LeftStick=2, Flip=3, Idle=4, A=6, B=7, X=8, Y=14)
 ELEMENT = dict(none=0, Charge=1, Mass=2, Space=3, Time=4)
 SCHEME = dict(ThumbLifts=0, TotemButtons=1)
@@ -75,6 +75,14 @@ PROFILES = [
     # is a button, so a lift waits 0.12 s and is dropped if the finger lands on it.
     profile("Thresher", "ThumbLifts", liftDefer=0.12, tiltSteer=True,
             glyphs=[("Time", "LiftRightThumb"), ("Space", "LiftLeftThumb")]),
+    # The crew hulls read their triggers through CrewTriggerActionSO / HoneyguideTriggerActionSO (RT = RightStickAction,
+    # LT = LeftStickAction), so a lift is the trigger. The Wrasse's pilot (the Grouper) spends its saved boosts on RT: lift
+    # the left thumb and fly on with the right ("The grouper can not use boost on mobile", Garrett, 2026-10-21).
+    profile("Wrasse", "ThumbLifts", glyphs=[("Time", "LiftLeftThumb")]),
+    # The Orca's helm: RT boosts while the tank lasts, LT raises the shield.
+    profile("Orca", "ThumbLifts", glyphs=[("Time", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
+    # The Honeyguide's RT Peck and LT Flit; its Time card (B, the boost) is a button.
+    profile("Honeyguide", "ThumbLifts", glyphs=[("Charge", "LiftLeftThumb"), ("Mass", "LiftRightThumb")]),
 
     # ---- Totem buttons: no thumb-lift abilities; cards (and extras) round the right thumb.
     profile("Urchin", "TotemButtons"),
@@ -205,12 +213,33 @@ def map_inputs(vessel):
     return out
 
 
+# What a thumb lift raises (TouchInputStrategy): the "only" event at once and, while the other thumb flies on, that thumb's
+# stick event - lifting the LEFT thumb is OnlyRightStickAction + RightStickAction (the pad's RT), the right thumb LT's pair.
+LIFT_RAISES = {"LiftLeftThumb": [{11, INPUT["RightStick"]}], "LiftRightThumb": [{12, INPUT["LeftStick"]}],
+               "LiftEitherThumb": [{11, INPUT["RightStick"]}, {12, INPUT["LeftStick"]}]}
+
+
+def lift_errors(vessel, glyphs, bound):
+    """A card whose glyph names a thumb lift must have that lift press something on the hull (a ThumbLifts hull)."""
+    errors = []
+    for element, glyph in glyphs:
+        for raised in LIFT_RAISES.get(glyph, []):
+            if not raised & bound:
+                errors.append("%s: the %s card shows %s, but no input that lift raises %s is bound"
+                              % (vessel, element, glyph, sorted(raised)))
+    return errors
+
+
 def binding_errors():
-    """Every button a phone shows on a TotemButtons hull must press something bound on that hull."""
+    """Every button a phone shows on a TotemButtons hull must press something bound on that hull, and every thumb lift a
+    ThumbLifts hull's card names must too (the Wrasse's boost read the analog trigger, which no phone writes, and its card
+    named no control: "The grouper can not use boost on mobile", Garrett, 2026-10-21)."""
     errors = []
     names = {v: k for k, v in VESSEL.items()}
     for p in PROFILES:
         if p["scheme"] != SCHEME["TotemButtons"]:
+            vessel = names[p["vessel"]]
+            errors += lift_errors(vessel, p["glyphs"] + p["coreGlyphs"], bound_inputs(vessel))
             continue
         vessel = names[p["vessel"]]
         bound = bound_inputs(vessel)

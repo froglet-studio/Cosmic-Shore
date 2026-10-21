@@ -338,6 +338,28 @@ First-pass values (all fields on the asset): Medium: baked sky, wormhole view 0.
 HDR off, bloom at quarter resolution with 3 levels, membrane level 3, a quarter of the cytoplasm shards, wormhole view 0.5. Very Low: Low,
 with render scale ≤ 70%.
 
+### 🔴 Crew hulls' triggers on every device: the Grouper's boost, the Orca's helm (`ccr-e2247aad-06cnzl`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
+
+Garrett: "The grouper can not use boost on mobile. Fix this oversight and others." The Wrasse's and the Orca's seats read
+`InputStatus`'s analog triggers, which no phone writes. Both now take RT / LT from input bindings
+(`CrewTriggerActionSO`, `Common Vessel Action/CrewTriggerRT|LT.asset`): `KiteNavigator.SetTrigger`, `OrcaCrew.SetTrigger`.
+Offline proof only: the headless reference compile, `author_wrasse_assets.py` / `author_orca_assets.py` /
+`author_touch_profiles.py` `--check` and `--self-test`. No Unity CLI in the session.
+
+In the Editor (Toybox > Vessel Changer):
+1. **Wrasse and Grouper**, pad: wait for the Time card to count a saved boost, hold RT: the Grouper boosts; held, the
+   boosts chain with the 2 s cooldown between. Right Shift on the keyboard does the same. The Time card shows RT.
+2. Press 2 (the Wrasse), then 1 back: no boost is stuck on, and RT still boosts.
+3. **Orca**, pad: RT boosts while the tank lasts; LT (and left Shift, E, pad B) raises the shield once per pull.
+4. Console: no errors from `CrewTriggerActionSO`, `KiteNavigator` or `OrcaCrew`.
+
+On a phone (development build; task `T-20261021-723e`):
+5. Grouper: lift the LEFT thumb and steer with the right: it boosts; the Time card shows the lift-left glyph and is not
+   a button. Both thumbs off does NOT boost.
+6. Orca helm: lift the left thumb to boost, the right thumb to shield. The Boost Tank and Danger Shield cards show
+   the lift glyphs.
+7. Honeyguide: the Charge and Mass cards show the lift glyphs (Peck and Flit fired by lift before this change too).
+
 ### 🔴 Phone controls for the whole fleet, idle parity, arena swap tiles (`cece/admiring-hamilton-gyzzh8`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
 
 Garrett's decisions after the mobile audit (`Docs/Reports/MOBILE_VESSELS.md` §8; the touch scheme in

@@ -869,7 +869,15 @@ applies to new abilities, new resources on the meter list, and anything that add
     card; tilt (`tiltRollOnOneThumb`, `tiltSteersWhileIdle`) stands in for the axis a lifted thumb gave up. The gate:
     `author_touch_profiles.py --check` fails when a TotemButtons hull shows a card or button whose input resolves to
     no action on touch (it caught the Stoat, whose only bindings were the pad overrides, and the Angler, whose paint and
-    erase read only trigger depth). Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
+    erase read only trigger depth), and a ThumbLifts card whose lift glyph names a lift nothing is bound to. **A
+    component that reads a trigger itself (a crew seat, an executor) is the same question with no card to catch it:**
+    the Wrasse's and the Orca's seats read only `RightTriggerAnalog` / `LeftTriggerAnalog`, so a phone pilot had no
+    boost and no shield until the triggers became bindings (`CrewTriggerActionSO`, 2026-10-21: "The grouper can not use
+    boost on mobile"). **Bind the stick events, not the "only" ones:** a lift raises OnlyRight/OnlyLeftStickAction at
+    once AND `RightStickAction` / `LeftStickAction` for the thumb that flies on (`TouchInputStrategy.HandleRightStick`),
+    the pair a pad raises, so one shared `RightStickAction` binding already reaches a phone (the Dolphin, Rhino and
+    Honeyguide work that way); a touch override on 11 / 12 is only for an ability that must differ on a phone.
+    Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
     Two fleet rules ride with it (2026-10-21): **a human pilot's nose has no lag** - every transformer's RotateShip
     goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
     `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every

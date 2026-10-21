@@ -16,8 +16,12 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
           (a disk copy keeps the donor's hash and Netcode then keys two prefabs on one entry)
         - KiteNavigator on the root, wired to KiteNavigatorConfig.asset
-        - NO BUTTONS: the Sparrow's ability bindings are emptied (Garrett, 2026-10-18: "the pilot should be a one thumb flyer
-          that has no buttons"); the navigator's saved Time boosts are spent on the pilot's trigger (KiteNavigator)
+        - ONE TRIGGER: the Sparrow's ability bindings are replaced by RightStickAction -> CrewTriggerRT (Garrett, 2026-10-18:
+          "the pilot should be a one thumb flyer that has no buttons" - "use the trigger on gamepad"); the navigator's
+          saved Time boosts are spent on RT (KiteNavigator.SetTrigger). A pad's RT, right Shift and a phone's left-thumb
+          lift all raise RightStickAction, so the boost works on every device (2026-10-21: "The grouper can not use boost
+          on mobile"; it used to read InputStatus.RightTriggerAnalog, which no phone writes). The Time card names RT
+          (Input 1); the other three cards stay passive (Input 0)
         - TWO THUMBS: the Sparrow's SingleStickVesselTransformer becomes its base, VesselTransformer (Garrett, round 4d:
           "lets go back to two thumb flying for the pilot so it can choose the fly in a way that brings more mass into
           plane for the kite"); the subclass adds no serialized field, so the swap is the script guid alone
@@ -29,7 +33,7 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR
           (SPARROW_SUBTREES), the missile rearm, the barrel roll, the Omni ward and the Time-L5 immunity
           (SPARROW_COMPONENTS), the AI's ability cycle (AIPilot.abilities: the gun and missile actions it fired whenever the
           autopilot flew - i.e. whenever the human was on the kite; its boost policy stays wired, as check_vessel_shared_channels
-          requires, and is inert with no boost binding); the Sparrow's gun telemetry
+          requires, and is inert: it drives a BoostActionSO, which the hull does not bind); the Sparrow's gun telemetry
           becomes DefaultVesselTelemetry. Every local reference into a removed part is dropped, and --check holds the prefab
           to having no dangling local fileID
         - TWO BODIES (round 7; Garrett, 2026-10-20: "give the wrasse and grouper proper 3d vessels with animations etc." -
@@ -39,10 +43,11 @@ WHAT IT MAKES (the design: Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR
           off (its bones, jets, colliders and Animator stay: the hull still flies on them); WrasseCrewBodies on the root
           places, swims and replicates the Wrasse and puppets the Grouper (bodies_retrofit)
       Everything else is the Sparrow's: the lab flew the Sparrow's numbers, and the hull is the pilot's half.
-      Unlike the clone, the no-buttons and container edits are RETROFITS: applied to the committed prefab too, idempotently.
+      Unlike the clone, the binding and container edits are RETROFITS: applied to the committed prefab too, idempotently.
     SO_Class_Wrasse (the Sparrow's icons and abilities, owned from the start) + its entry in SO_Classlist_All / _Classes;
     one entry each in `Vessel Prefab Container.asset` (the root TRANSFORM) and `DefaultNetworkPrefabs.asset` (the root
-    GAMEOBJECT); Resources/ElementalAbilityMaps/Wrasse.asset (the Sparrow's map, unchanged but for its name and class);
+    GAMEOBJECT); Resources/ElementalAbilityMaps/Wrasse.asset (the Wrasse's four cards, MAP_INPUTS); the crew trigger actions
+    CrewTriggerRT / CrewTriggerLT (Common Vessel Action, shared with author_orca_assets.py);
     and four CrystalHullFusionConfig entries (the Sparrow's: the Wrasse draws the Sparrow's mesh so its bakes apply).
     The toybox roster (ToyVesselRoster.Default) is CODE and is not written here (vessel skill rule 40).
 
@@ -79,6 +84,17 @@ WRASSE_CONTAINER = os.path.join(CONTAINERS, "WrasseImpactorDataContainer.asset")
 OMNI_EFFECT = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Vessel Crystal Effects", "KiteOmniCrystalEffect.asset")
 OMNI_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "ImpactEffects", "EffectsSO", "Vessel Crystal Effects",
                                 "KiteOmniCrystalEffectSO.cs.meta")
+# The crew hulls' triggers (CrewTriggerActionSO): one shared, stateless asset per trigger, sent to the seat on the hull.
+CREW_TRIGGER_SCRIPT_META = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Vessel", "Crew", "CrewTriggerActionSO.cs.meta")
+COMMON_ACTIONS = os.path.join(ROOT, "Assets", "_SO_Assets", "VesselActions", "Common Vessel Action")
+CREW_RT = os.path.join(COMMON_ACTIONS, "CrewTriggerRT.asset")
+CREW_LT = os.path.join(COMMON_ACTIONS, "CrewTriggerLT.asset")
+CREW_RT_GUID = "fc5e219bd3ed49f4b8a4414c06c4e836"
+CREW_LT_GUID = "faa23ae712ea4dfa8079891caf4586d8"
+# InputEvents RT and LT. A pad's triggers and the keyboard's shifts raise them, and so does a phone: a thumb lift raises the
+# "only" event at once and, while the other thumb flies on, that thumb's stick event (TouchInputStrategy.HandleRightStick:
+# lifting the LEFT thumb is RightStickAction), so one shared binding serves every device, as on the Dolphin and the Rhino.
+RIGHT_STICK_ACTION, LEFT_STICK_ACTION = 1, 2
 
 # 16 is BrittleStar (bleeding-edge) and the Goby (cece/sharp-tesla-j0kd7z), 17 the Angler (cece/zealous-feynman-po8k8d);
 # 18 is left for the Goby, which has to move off 16 when it merges. Checked across every origin branch 2026-10-17.
@@ -143,6 +159,74 @@ def build_clone(donor: str, script_guid: str, config_guid: str) -> str:
 
 
 BINDINGS = re.compile(r"(  _inputEventShipActions:)\n(?:  [- ] .*\n)+")
+ANY_BINDINGS = re.compile(r"  _inputEventShipActions:(?: \[\])?\n(?:  [- ] .*\n)*")
+
+
+def crew_bindings(pairs) -> str:
+    """The hull's `_inputEventShipActions` block: each (InputEvent, action asset guid) one entry, in order; [] when empty."""
+    if not pairs:
+        return "  _inputEventShipActions: []\n"
+    return "  _inputEventShipActions:\n" + "".join(
+        f"  - InputEvent: {ie}\n    ShipActions:\n    - {{fileID: 11400000, guid: {guid}, type: 2}}\n" for ie, guid in pairs)
+
+
+def bindings_of(text: str) -> str:
+    """The hull's `_inputEventShipActions` block as written (empty when there is none)."""
+    m = ANY_BINDINGS.search(text)
+    return m.group(0) if m else ""
+
+
+def set_bindings(text: str, block: str) -> str:
+    """Replace the hull's shared input bindings with `block`. Idempotent."""
+    return ANY_BINDINGS.sub(lambda m: block, text, count=1)
+
+
+# RT spends the navigator's saved boosts (on a phone: lift the left thumb); nothing else is bound (the pilot has no buttons).
+WRASSE_BINDINGS = crew_bindings([(RIGHT_STICK_ACTION, CREW_RT_GUID)])
+
+
+def crew_trigger_asset(script_guid: str, name: str, k: int) -> str:
+    return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
+            "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
+            "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
+            f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            f"  m_Name: {name}\n  m_EditorClassIdentifier: \n  trigger: {k}\n")
+
+
+CREW_TRIGGERS = ((CREW_RT, CREW_RT_GUID, "CrewTriggerRT", 0), (CREW_LT, CREW_LT_GUID, "CrewTriggerLT", 1))
+
+
+def author_crew_triggers():
+    script_guid = guid_of(CREW_TRIGGER_SCRIPT_META)
+    for path, guid, name, k in CREW_TRIGGERS:
+        if not os.path.exists(path):
+            write(path, crew_trigger_asset(script_guid, name, k)); write(path + ".meta", native_meta(guid))
+
+
+def check_crew_triggers():
+    errs = []
+    script_guid = guid_of(CREW_TRIGGER_SCRIPT_META)
+    for path, guid, name, k in CREW_TRIGGERS:
+        rel = os.path.relpath(path, ROOT)
+        if not os.path.exists(path) or not os.path.exists(path + ".meta"):
+            errs.append(f"{rel} (+ .meta) is missing: run Tools/Build/author_wrasse_assets.py")
+            continue
+        if guid_of(path + ".meta") != guid:
+            errs.append(f"{rel}.meta: guid is not the one the crew hulls bind")
+        if read(path) != crew_trigger_asset(script_guid, name, k):
+            errs.append(f"{rel}: not CrewTriggerActionSO trigger {k}")
+    return errs
+
+
+def map_inputs(kmap: str) -> dict:
+    """Element -> Input of an ElementalAbilityMap's entries."""
+    return {int(e): int(i) for e, i in re.findall(r"^  - Element: (\d+)\n(?:    .*\n)*?    Input: (-?\d+)\n", kmap, re.M)}
+
+
+def set_map_inputs(kmap: str, inputs: dict) -> str:
+    """Every entry's Input is inputs[element], 0 (passive) for an element not named. Idempotent."""
+    return re.sub(r"^(  - Element: (\d+)\n(?:    .*\n)*?    Input: )-?\d+\n",
+                  lambda m: f"{m.group(1)}{inputs.get(int(m.group(2)), 0)}\n", kmap, flags=re.M)
 
 SPARROW_SUBTREES = ["FullAutoBlockActionExecutor", "FullAutoActionExecutor", "SkyBurstMissileActionExecutor", "ExhaustBarrage",
                     "GunSprayAccuracy"]
@@ -386,8 +470,8 @@ def check_bodies(text: str, script_guid: str):
 
 
 def retrofit(text: str) -> str:
-    """No buttons, and the Wrasse's own impactor container. Idempotent: run on the clone and on the committed prefab."""
-    text = BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
+    """RT alone, and the Wrasse's own impactor container. Idempotent: run on the clone and on the committed prefab."""
+    text = set_bindings(text, WRASSE_BINDINGS)
     text = strip_sparrow_kit(text)
     text = hud_retrofit(text)
     text = text.replace(f"guid: {SINGLE_STICK_TRANSFORMER_GUID},", f"guid: {TWO_STICK_TRANSFORMER_GUID},")
@@ -487,8 +571,11 @@ def register_network(text: str) -> str:
 
 
 # The Wrasse's own cards (Garrett, 2026-10-18 round 4d: the icons show the navigator's loops). Input 0 is
-# FullSpeedStraightAction, the fleet's "passive, no button" value, so no Sparrow button chip is drawn. The words are
-# authored data the team edits in the inspector; this tool writes them once and then only holds the inputs at 0.
+# FullSpeedStraightAction, the fleet's "passive, no button" value, so no button chip is drawn; the Time card names RT
+# (RightStickAction), the trigger that spends its saved boosts, so a pad shows RT on it and a phone the left-thumb lift
+# (author_touch_profiles.py). The words are authored data the team edits in the inspector; this tool writes them once and
+# then only holds the inputs (MAP_INPUTS).
+MAP_INPUTS = {4: RIGHT_STICK_ACTION}
 WRASSE_MAP_ENTRIES = [
     (3, "Space Blast", "The kite closes a loop of Space motes and a blast goes off where it closed; a bigger loop, a "
         "bigger blast. The card counts what the last blast destroyed.",
@@ -513,7 +600,7 @@ def map_entries() -> str:
     out = "  entries:\n"
     for element, label, desc, up_label, up_desc in WRASSE_MAP_ENTRIES:
         out += (f"  - Element: {element}\n    AbilityLabel: {yaml_str(label)}\n    AbilityDescription: {yaml_str(desc)}\n"
-                f"    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
+                f"    Input: {MAP_INPUTS.get(element, 0)}\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
                 f"    UpgradeLabel: {yaml_str(up_label)}\n    UpgradeDescription: {yaml_str(up_desc)}\n")
     return out
 
@@ -525,10 +612,11 @@ def build_map(donor_map: str) -> str:
 
 
 def map_retrofit(text: str) -> str:
-    """The Sparrow's cards become the Wrasse's once (the words are then the team's); every input is held at 0. Idempotent."""
+    """The Sparrow's cards become the Wrasse's once (the words are then the team's); the inputs are held at MAP_INPUTS.
+    Idempotent."""
     if "AbilityLabel: Pulsefire Cannons" in text:
         text = text[:text.index("  entries:\n")] + map_entries()
-    return re.sub(r"^    Input: -?\d+\n", "    Input: 0\n", text, flags=re.M)
+    return set_map_inputs(text, MAP_INPUTS)
 
 
 def fusion_entries(text: str, vessel: int):
@@ -570,7 +658,9 @@ def check_prefab(text: str, script_guid: str, config_guid: str):
     want(seat and f"guid: {script_guid}" in seat.group(1), "Wrasse.prefab: the KiteNavigator document is missing or names another script")
     want(seat and f"  config: {{fileID: 11400000, guid: {config_guid}, type: 2}}" in seat.group(1),
          "Wrasse.prefab: KiteNavigator.config is not KiteNavigatorConfig.asset (a null config never seats the navigator)")
-    want("  _inputEventShipActions: []\n" in text, "Wrasse.prefab: the hull still binds buttons (the pilot has none)")
+    want(bindings_of(text) == WRASSE_BINDINGS,
+         "Wrasse.prefab: the hull's bindings are not RightStickAction -> CrewTriggerRT alone (the pilot's boost is RT, and on "
+         "a phone the left-thumb lift; nothing else is bound)")
     want(f"guid: {TWO_STICK_TRANSFORMER_GUID}, type: 3" in text and SINGLE_STICK_TRANSFORMER_GUID not in text,
          "Wrasse.prefab: the hull is not on the two-stick VesselTransformer (the pilot flies with two thumbs)")
     want(f"guid: {WRASSE_CONTAINER_GUID}," in text and f"guid: {DONOR_CONTAINER_GUID}," not in text,
@@ -617,9 +707,9 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
          "SO_Class_Wrasse: wrong class, locked, or not owned from the start")
     want(CREW in cls, "SO_Class_Wrasse: the card does not name both subvessels (CrewNames Wrasse, Grouper)")
     want(f"  vesselClass: {WRASSE_CLASS_ID}\n" in kmap and "  m_Name: Wrasse\n" in kmap, "ElementalAbilityMaps/Wrasse: wrong class or name")
-    inputs = re.findall(r"^    Input: (-?\d+)\n", kmap, re.M)
-    want(len(inputs) == 4 and set(inputs) == {"0"},
-         f"ElementalAbilityMaps/Wrasse: inputs {inputs} (the Wrasse has no buttons: every card is passive, Input 0)")
+    inputs = map_inputs(kmap)
+    want(inputs == {e: MAP_INPUTS.get(e, 0) for e in (1, 2, 3, 4)},
+         f"ElementalAbilityMaps/Wrasse: inputs {inputs} (Time names RT, Input {RIGHT_STICK_ACTION}; the others are passive, Input 0)")
     want("Pulsefire" not in kmap and "Skyburst" not in kmap, "ElementalAbilityMaps/Wrasse: still the Sparrow's cards")
     kite, sparrow = fusion_entries(fusion, WRASSE_CLASS_ID), fusion_entries(fusion, SPARROW_CLASS_ID)
     want(len(kite) == 4, f"CrystalHullFusionConfig: {len(kite)} Wrasse entries, not 4 (CrystalHullFusionConfigTests needs one per element)")
@@ -654,6 +744,7 @@ def check_all():
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
     errs += check_container(read(WRASSE_CONTAINER), read(OMNI_EFFECT), guid_of(OMNI_SCRIPT_META))
+    errs += check_crew_triggers()
     errs += check_registrations(read(CONTAINER), read(NETWORK_PREFABS),
                                 [(os.path.basename(p), read(p)) for p in CLASS_LISTS],
                                 read(CLASS_ASSET), read(MAP), read(FUSION))
@@ -662,6 +753,7 @@ def check_all():
 
 def author():
     script_guid, config_guid = guid_of(SEAT_SCRIPT_META), guid_of(CONFIG_META)
+    author_crew_triggers()
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR), script_guid, config_guid))
         write(PREFAB + ".meta", prefab_meta())
@@ -705,7 +797,11 @@ def self_test():
     expect(check_prefab(re.sub(r"(  GlobalObjectIdHash: )\d+", r"\g<1>1124080984", good, count=1), script_guid, config_guid), 1, "the donor's hash")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {SEAT_ID}}}\n", ""), script_guid, config_guid), 1, "the seat off the root")
     expect(check_prefab(good.replace(f"guid: {config_guid}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid, config_guid), 1, "the seat's config unwired")
-    expect(check_prefab(good.replace("  _inputEventShipActions: []\n", "  _inputEventShipActions:\n  - InputEvent: 1\n    ShipActions: []\n"), script_guid, config_guid), 1, "a button bound")
+    expect(check_prefab(good.replace(WRASSE_BINDINGS, "  _inputEventShipActions: []\n"), script_guid, config_guid), 1, "RT unbound (no boost on any device)")
+    expect(check_prefab(good.replace(WRASSE_BINDINGS, crew_bindings([(RIGHT_STICK_ACTION, CREW_RT_GUID), (7, CREW_LT_GUID)])), script_guid, config_guid), 1, "a button bound")
+    expect(check_prefab(good.replace(WRASSE_BINDINGS, crew_bindings([(RIGHT_STICK_ACTION, CREW_LT_GUID)])), script_guid, config_guid), 1, "RT on the LT asset")
+    if set_bindings(good, WRASSE_BINDINGS) != good:
+        fails.append("the binding retrofit is not idempotent")
     expect(check_prefab(good.replace(WRASSE_CONTAINER_GUID, DONOR_CONTAINER_GUID), script_guid, config_guid), 1, "the Sparrow's container")
     expect(check_prefab(good.replace(guid_of_script("WrasseHUDController"), guid_of_script("SparrowHUDController")), script_guid, config_guid), 1, "the Sparrow's HUD controller")
     expect(check_prefab(good.replace(TWO_STICK_TRANSFORMER_GUID, SINGLE_STICK_TRANSFORMER_GUID), script_guid, config_guid), 1, "the one-thumb transformer")
@@ -747,6 +843,7 @@ def self_test():
     expect(check_registrations(container, network, lists, cls, kmap, fusion.replace(f"  - vessel: {WRASSE_CLASS_ID}\n", "  - vessel: 99\n", 1)), 1, "a missing fusion entry")
     expect(check_registrations(container, network, lists, cls, read(DONOR_MAP), fusion), 1, "the Sparrow's own map")
     expect(check_registrations(container, network, lists, cls, kmap.replace("    Input: 0\n", "    Input: 7\n", 1), fusion), 1, "a card with a button")
+    expect(check_registrations(container, network, lists, cls, set_map_inputs(kmap, {}), fusion), 1, "the Time card naming no trigger")
     if map_retrofit(kmap) != kmap:
         fails.append("the map retrofit is not idempotent")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:

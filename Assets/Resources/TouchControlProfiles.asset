@@ -125,6 +125,58 @@ MonoBehaviour:
     - element: 3
       glyph: 1
     coreGlyphs: []
+  - vessel: 19
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 4
+      glyph: 1
+    coreGlyphs: []
+  - vessel: 20
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 4
+      glyph: 1
+    - element: 2
+      glyph: 2
+    coreGlyphs: []
+  - vessel: 23
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
+    - element: 1
+      glyph: 1
+    - element: 2
+      glyph: 2
+    coreGlyphs: []
   - vessel: 4
     scheme: 1
     liftDeferSeconds: 0

@@ -1870,3 +1870,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (Wrasse owner), anyone with the Editor
 - **Added:** 2026-10-21 by Garrett's session (/ship of claude/honeyguide-ratel) (`claude/honeyguide-ratel`)
 - **See:** .claude/skills/vessel-model/references/LESSONS.md lesson 50
+
+### T-20261021-723e · open · test · Crew vessels
+- **Task:** Phone playtest of the crew hulls' triggers (Android dev build): Toybox > Vessel Changer > Wrasse and Grouper - fly the Grouper with two thumbs, let the AI Wrasse save a Time boost (the Time card counts it), then lift the LEFT thumb and keep steering with the right: the hull boosts, holding the thumb up chains boosts, and the Time card shows the lift-left glyph. Then the Orca helm: lift the left thumb to boost (tank drains), lift the right thumb to raise the shield. Then the Honeyguide: its Charge / Mass cards show the lift glyphs. Also on a pad: RT boosts the Grouper and the Orca, LT shields the Orca.
+- **Done when:** Each step behaves as written on a phone and on a pad; any miss is filed as a dev task with what happened
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md 'The phone boost'; ORCA_CREW.md follow-ups
+
+### T-20261021-2d13 · open · dev · Crew vessels
+- **Task:** The Goby & Pistol has no touch path: GobyPistolDuo reads the Goby's primer and flares from keys 3 / 4 and the pad's D-pad up / down only, and the Pistol's dive and launch from the mouse, keyboard and pad (no Touchscreen read anywhere in Crew/GobyPistol). On a phone neither seat's abilities can be used. Give them touch controls (cards that name inputs bound on the hull, as the Wrasse and Orca now do with CrewTriggerActionSO, or the Goby's own touch overrides) in the Goby's next round.
+- **Done when:** On a phone, the Goby can fire its primer and flares and the Pistol can dive and launch; author_touch_profiles.py has a Goby row whose glyphs/buttons resolve
+- **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
+- **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
