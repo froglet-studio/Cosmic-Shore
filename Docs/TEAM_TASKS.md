@@ -1282,3 +1282,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner, the launch feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
+
+### T-20261021-18a1 · open · test · vessels
+- **Task:** Fly Marlin and Jacks in the editor (UNITY_VERIFICATION_CHECKLIST 2026-10-21, steps 1-7) and the Frenzy shield-food rule
+- **Done when:** Every step of the checklist entry passes, or each failure is written up on the PR
+- **Who can take it:** Garrett or Yash
+- **Added:** 2026-10-21 by Garrett's session (`claude/project-thread-xrej29`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md
+
+### T-20261021-1844 · open · content · vessels
+- **Task:** Give Marlin and Jacks its own model, icons and card art (it wears the Rhino's)
+- **Done when:** The marlin hull and jacks have /vessel-model bodies and the class card has its own icons
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by Garrett's session (`claude/project-thread-xrej29`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/MARLIN_JACKS.md §5

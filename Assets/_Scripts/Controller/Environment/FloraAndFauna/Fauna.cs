@@ -311,7 +311,7 @@ namespace CosmicShore.Gameplay
         float _surrenderedMeal;
 
         /// <summary>True once metabolism has burned this creature's stomach to zero (never with starvationSeconds 0), unless
-        /// its leash holder SUSTAINS it (<see cref="IFaunaLeash.Sustains"/>: the Angler's keeper, the one fenced exception).</summary>
+        /// its leash holder SUSTAINS it (<see cref="IFaunaLeash.Sustains"/>: the Angler's keeper and a herd's floor, the fenced exceptions).</summary>
         protected bool IsStarving => _stomachLive && _stomach.IsEmpty(Time.time) && !(Leash != null && Leash.Sustains(this));
 
         /// <summary>The stomach's current contents in prism volume (0 before the creature comes alive).</summary>
@@ -530,8 +530,12 @@ namespace CosmicShore.Gameplay
             // The cap is the CELL's, not the config's: a biome that scales its population
             // (SpawnProfileSO.FaunaPopulationScale) has to scale what reproduction may fill to,
             // or the seeder and the food web would be working to two different ceilings.
+            // A herd's holder scales the feeds a birth takes (IFaunaHerd: Marlin and Jacks' Mass element).
+            int feedsPerOffspring = Leash is IFaunaHerd herd
+                ? Mathf.Max(1, Mathf.RoundToInt(cfg.FeedsPerOffspring * Mathf.Max(0f, herd.FeedsPerOffspringScale(this))))
+                : cfg.FeedsPerOffspring;
             if (!FaunaReproductionRules.ShouldBirth(
-                    _feedsSinceBirth, cfg.FeedsPerOffspring,
+                    _feedsSinceBirth, feedsPerOffspring,
                     Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
                     host.GetLiveFaunaCount(cfg), host.ResolveFaunaCap(cfg)))
                 return;
@@ -546,11 +550,13 @@ namespace CosmicShore.Gameplay
                 // overshoot the performance backstop.
                 if (host.IsFaunaAtCap(cfg))
                     break;
-                SpawnOffspring(host, cfg);
+                var child = SpawnOffspring(host, cfg);
+                // A herded creature's offspring is born into the herd (IFaunaHerd.Born).
+                if (child && Leash is IFaunaHerd herdHolder) herdHolder.Born(this, child);
             }
         }
 
-        void SpawnOffspring(Cell host, FaunaConfigurationSO cfg)
+        Fauna SpawnOffspring(Cell host, FaunaConfigurationSO cfg)
         {
             Vector3 pos = transform.position + Random.insideUnitSphere * OffspringSpawnJitter;
             var child = Instantiate(cfg.FaunaPrefab, pos, Quaternion.identity);
@@ -569,6 +575,7 @@ namespace CosmicShore.Gameplay
             // AFTER AssignLineage: the lineage bind is what settles this child's element, and
             // the spawn payload carries that identity to every peer.
             FaunaNetworkSync.ServerSpawn(child);
+            return child;
         }
 
         protected virtual void OnDestroy()
@@ -776,6 +783,27 @@ namespace CosmicShore.Gameplay
         {
             var properties = prism ? prism.prismProperties : null;
             return properties != null && (properties.IsShielded || properties.IsSuperShielded);
+        }
+
+        /// <summary>
+        /// The shield half of THIS creature's diet: true when <paramref name="prism"/> carries a shield it may not eat
+        /// through. Every grazer's edibility predicate routes through here (not <see cref="IsShieldedMass"/>), so the two
+        /// exceptions apply everywhere at once:
+        /// <list type="bullet">
+        /// <item>its cell is in a <b>Frenzy</b> (<see cref="Cell.ShieldedMassIsFood"/>; the designer, 2026-10-21: "in general
+        /// shielded prisms should be food during a frenzy when the cell has too many prism");</item>
+        /// <item>its herd's holder lets it eat shields (<see cref="IFaunaHerd.EatsShields"/>: Marlin and Jacks at Space 5).</item>
+        /// </list>
+        /// Super-shielded mass is never food. A shielded prism that is food is eaten whole: the grazer consumes it with
+        /// <c>devastate</c> (<see cref="Prism.Consume"/> otherwise only sheds the shield).
+        /// </summary>
+        protected bool IsInedibleShield(Prism prism)
+        {
+            if (!IsShieldedMass(prism)) return false;
+            if (prism.prismProperties.IsSuperShielded) return true;
+            var c = cell;
+            if (c && c.ShieldedMassIsFood) return false;
+            return !(Leash is IFaunaHerd herd && herd.EatsShields(this));
         }
 
         /// <summary>

@@ -12960,3 +12960,26 @@ no .NET in the container).
 4. **A mode preview with focus:** Select releases it; Start does not open Settings underneath.
 5. **Screenshot:** clicking the right stick in flight takes a capture; Select does not.
 6. **Spectating:** Select leaves.
+
+## 🔴 2026-10-21 — Marlin and Jacks (vessel 22) and shielded prisms as Frenzy food (`claude/project-thread-xrej29`) - NOT EDITOR-VERIFIED
+
+Garrett: "these are a special swarm that can be upgraded to break rules and should only starve down to a minimum size
+and break other rules if need be. in general shielded prisms should be food during a frenzy when the cell has too many
+prism. lets bring this into unity". Design: `R_VesselActions/MARLIN_JACKS.md`; platform: `Docs/ECOSYSTEM.md` §61.8.
+`unity_refcompile` player: 0 project errors; editor: the 3 known `AuthenticationServiceFacade` errors, none in changed
+files. `author_marlin_assets.py --check` and `--self-test` pass, the vessel gates pass. No editor or `unity` CLI in the
+session, so `/verify-unity` did not run.
+1. Toy Box > Vessel Changer → Marlin and Jacks: the Rhino hull spawns, flies on two sticks, the ramp boosts on full
+   throttle. Two gold jack marks and dotted rings sit behind it; the small view in the lower left shows the board.
+2. Fly near wildlife: creatures inside a ring join and are pushed out of it. With no wildlife near, a herd of 12 blooms
+   in behind the hull within ~3 s.
+3. D-pad right (or 1 / 2, or double-tap the small view): the jacks' view takes the screen. Drag a thumb: the nearest jack
+   runs under it and the herd parts round its ring. Lift: an orange decoy stays there. Swap back, pull the trigger or
+   lift a thumb: the marlin teleports to the decoy.
+4. Press A: the herd streams to the marlin for 2.5 s; the Time card veils for 20 s.
+5. Raise Charge to 15: red dots on every creature; touch a rival with the herd: a Strike, the creature dies. Space 5:
+   the herd eats shielded prisms. Mass 5: clusters of your prisms appear in the herd every 6 s. Time 5: X drops a decoy
+   under the marlin.
+6. Let the herd go hungry: it never falls below 12.
+7. Frenzy: in a cell that reaches Frenzy, wild grazers eat SHIELDED prisms (the shield goes with the prism); super-shielded
+   prisms are never eaten; when the cell calms, they stop.

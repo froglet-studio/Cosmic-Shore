@@ -32,17 +32,30 @@ trio, and the traps).
   - only starvation is waived: predation, jousts and lost body prisms still kill it.
 
   It is an exception, never a precedent (`Docs/ECOSYSTEM.md` §0, §61.4).
+  **The second sign-off (the designer, 2026-10-21): a HERD's floor.** Marlin and Jacks' herd is
+  "a special swarm that can be upgraded to break rules and should only starve down to a minimum
+  size". Its holder sustains its first `minHerd` creatures (in join order) and an empty herd has
+  that many born to it, through the platform's one fauna spawn seam in the cell's colour. The same
+  fence: one reader (`IFaunaLeash.Sustains`), one implementer (`MarlinJacksExecutor`, through
+  `IFaunaHerd`), only starvation waived. Every other rule a herd may break is a method on
+  `IFaunaHerd` with one reader in `Fauna` (`R_VesselActions/MARLIN_JACKS.md` §3).
 - **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color**. Never
   cross-domain / prey-weighted / per-domain-biased spawning. The herbivore DIET is spatial in
   nucleus cells (see "Volume is the spine" below): outside the nucleus they graze **any**
   domain's mass voraciously; inside they eat **nothing**. Cells without a nucleus keep the
-  legacy opposing-mass diet. **Shielded and super-shielded mass is never food, in any cell** —
-  `Prism.Consume` is a no-op on super-shielded mass and only sheds the shield on shielded mass,
-  so targeting one is a feed-hold the creature can never finish. Every herbivore edibility
-  predicate routes through `Fauna.IsShieldedMass`; do not write a grazer that tests shield state
-  itself. Shielded mass is likewise **not a steering target** — it is excluded from the cell's
+  legacy opposing-mass diet. **Super-shielded mass is never food, in any cell; shielded mass is
+  food only during a FRENZY** (the designer, 2026-10-21: "in general shielded prisms should be food
+  during a frenzy when the cell has too many prism") — a cell in `CellPhase.Frenzy` has too much
+  mass, so its fauna may eat its armour too, and a herd whose holder's upgrade allows it
+  (`IFaunaHerd.EatsShields`, Marlin and Jacks' Space level 5) eats it anywhere. Outside those, a
+  shielded prism is off the menu, because `Prism.Consume` only sheds its shield: a grazer that
+  eats one consumes it with `devastate: true`, and super-shielded mass ignores even that. Every
+  herbivore edibility predicate routes through `Fauna.IsInedibleShield` (the cell's half is
+  `Cell.IsInedibleShield` / `Cell.ShieldedMassIsFood`); do not write a grazer that tests shield
+  state itself. Shielded mass is likewise **not a steering target** — it is excluded from the cell's
   targeting grids (`Cell.AddBlock`, re-filed on any shield transition by
-  `Cell.NotifyBlockShieldStateChanged`), because "fauna must never be led to mass they cannot
+  `Cell.NotifyBlockShieldStateChanged`, and every shielded prism re-filed when the cell enters or
+  leaves a Frenzy), because "fauna must never be led to mass they cannot
   eat" is one rule, not two. (`Docs/ECOSYSTEM.md §16`, `§22`.)
   A mode may redefine what "controls" a cell — Brood Rush makes it the nucleus claim (Cleave
   pinned it to the race leader until its fauna were removed; `Cell.SetModeControlOverride`

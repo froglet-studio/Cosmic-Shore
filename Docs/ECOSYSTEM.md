@@ -11700,3 +11700,16 @@ cracks the shield off (`Prism.DeactivateShields`, the same call a vessel's impac
   - It reads; it changes nothing. The diet is still the creature's (§61.2): a holder can only skip a prism the creature would refuse, never make one edible.
   - Without it a leashed creature was ordered to a prism its diet refused (its own domain in a cell with no nucleus, the nucleus claim, outside its pen) and hovered there for good. That is the "the fauna don't always listen" the designer saw.
   - The Angler's `PickTarget` is its one caller. A shielded prism stays a candidate: only Space 5 paints one, and the squad cracks the shield (§61.5).
+
+### 61.8 The herd, and shields in a Frenzy (2026-10-21)
+
+The designer, 2026-10-21: "these are a special swarm that can be upgraded to break rules and should only starve down to a minimum size and break other rules if need be. in general shielded prisms should be food during a frenzy when the cell has too many prism."
+
+- **A HERD is a leash whose creatures may break rules** (`IFaunaHerd : IFaunaLeash`; Marlin and Jacks, `R_VesselActions/MARLIN_JACKS.md`). Every break is one method with one reader in `Fauna`, so the exceptions stay fenced:
+  - `Sustains` (the second sign-off after the keeper, §61.4): the herd's first `minHerd` creatures do not starve, and an empty herd has that many born to it. Predation and jousts still kill.
+  - `EatsShields`: shielded (never super-shielded) mass is food for the herd (Marlin and Jacks' Space level 5).
+  - `FeedsPerOffspringScale`: the holder scales the feeds a birth takes (Marlin and Jacks' Mass).
+  - `Born`: a herded creature's offspring joins the herd.
+- **Shielded mass is food during a FRENZY**, for every grazer: `Cell.ShieldedMassIsFood` is `phase == CellPhase.Frenzy` (the phase a cell enters when it holds too much mass). `Cell.IsInedibleShield` drives the targeting grids, and every shielded prism is re-filed on the Frenzy edge (`SyncShieldFoodFiling`), so a Frenzy steers fauna onto shields and the Calm that follows takes them off again. Super-shielded mass is never food.
+- **One predicate.** `Fauna.IsInedibleShield(prism)` replaced `IsShieldedMass` in every grazer's edibility test (`Boid`, `LightFauna`, `WormFauna`, `SubstrateFauna`, `NcaCreatureFauna`, `SwarmFauna`). `IsShieldedMass` stays the fact ("is this armoured"), now read only to pass `devastate: true` to `Prism.Consume`, so an edible shield is eaten with its prism instead of shed. `ThreatGrove` keeps the strict rule.
+- §16.2 still holds where it was written: outside a Frenzy, with no herd upgrade, a shielded prism is not food and is not a target.
