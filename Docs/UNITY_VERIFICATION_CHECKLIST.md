@@ -65,6 +65,60 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Honeyguide and Ratel: round 6 triggers and its own hull model (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "Get everything including models etc. Together so we are ready to /ship". Lab round 6 in the game: RT **Peck**
+(`HoneyguidePeckAction.asset`, the Sparrow's full-auto at 2.5/s, 45 u, no spread) and LT **Flit**, each taken over for
+20 s by the 13 upgrade cards (`HoneyguideCrew.Triggers.cs`, `HoneyguideTriggerActionSO`). The hull now draws its own model,
+`Honeyguide.fbx` (`Docs/VesselModels/Honeyguide.md`): nested under the root, the domain paint on it, the Sparrow's mesh off,
+`HoneyguideBody` posing its bones; the class card is rendered from it (`render_cards.py Honeyguide`). The four fusion entries
+are bake-free. The class is now `VesselClassType.Honeyguide = 23` (21 went to the Starling on bleeding-edge). `/verify-unity` was unavailable (no Editor, no `unity` binary); the headless editor reference compile shows
+only the 3 errors already on bleeding-edge (0 in changed files). Green: `author_honeyguide_assets.py --check` /
+`--self-test`, `build.py specs/honeyguide.py --check`, `render_cards.py Honeyguide --check`, console-logging and
+conditional-compilation gates.
+
+1. Vessel Changer → Honeyguide and Ratel: the hull is the bird scout (swept wings, fanned tail, hex turret), in your domain
+   colour on the saddle and wing panels, with NO Sparrow inside it. No console errors on the swap.
+2. Element pickups morph it: Charge juts the beak, Mass swells the body, Space stretches the wings, Time sweeps them back.
+3. The wings bank into turns and flare when you brake; the tail steers; the turret turns a sixth when the Dynamo spins.
+   Boost lights the hull's engines (`HoneyguideBody` hands the flare to the drawn mesh).
+4. RT pecks (short-range bolts); LT flits (a short ride). Make an upgrade card: the toast names the trigger it took and the
+   chip counts down 20 s; a repeat raises its level. The AI Honeyguide uses its triggers.
+5. `HoneyguideTests` (incl. `HoneyguideHull_DrawsItsOwnModel_…`, `Triggers_ArePeckAndFlit_…`) pass in the Test Runner.
+6. Run **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** for vessel 23 (until then the fusion solves at
+   runtime), and check the crystal lands on the new hull.
+
+### 🔴 Honeyguide and Ratel: the lab's round 4 in the game (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "lets play it in unity". This adds a new hull class, `VesselClassType.Honeyguide` (21 then, 23 since the bleeding-edge merge that gave 21 to the Starling; the Sparrow hull plus the
+Ratel's Dynamo seat; `Controller/Vessel/Crew/HONEYGUIDE.md`). The C# (`DynamoCore`, `HoneyguideConfigSO`, `HoneyguideCrew`,
+`HoneyguideCrew.Pilot`, `HoneyguideDynamoView`) and every asset (`Honeyguide.prefab`, `HoneyguideConfig.asset`,
+`SO_Class_Honeyguide`, `ElementalAbilityMaps/Honeyguide`, the container, network, class-list and fusion entries) were written
+from the lab by `Tools/Build/author_honeyguide_assets.py`. `/verify-unity` was unavailable (no Editor, no `unity`
+binary). The headless reference compile is clean on the player config; the editor config shows only the 3 errors that
+are already on bleeding-edge. Also green: the Dynamo parity gate (16,824 steps, AI included),
+`author_honeyguide_assets.py --check` / `--self-test` and the three vessel gates.
+
+Toy Box > Vessel Changer → **Honeyguide and Ratel**:
+1. The station's card reads "Honeyguide and Ratel", and the swap spawns a Sparrow-bodied hull with no console errors.
+   The small Dynamo board shows at the left, and the AI Ratel makes patterns on it (cards light, flash and count uses;
+   the battery fills).
+2. Fly along a trail of a domain the battery holds, with the nose within 45° of it: the hull jumps to the trail's far end
+   and a charge is spent. A 2-D bed of prisms never slips. Your own fresh trail does not slip you.
+3. D-pad left / right (or 1 / 2, or a double tap on the small board): the board fills the right half, the AIPilot flies,
+   and touch or mouse plays the Ratel. Drag a prism to move it, tap a port to inject, tap a lit card to make it.
+   Swap back: flight input returns.
+4. Every 15 s the bar across the top empties and the ports turn 60°. After 4 patterns, the clock stops, the new ability
+   is shown (about 3.5 s) and then the new ports (about 2 s).
+5. Blink Drive / Rosen Bridge / Monte Cannon made: the Jump chip appears; R or pad Y jumps. FTL swaps with a prism ahead.
+6. The `HoneyguideConfig` asset shows no missing-field warnings after a reimport; `HoneyguideTests` and
+   `EnumIntegrityTests` pass in the Test Runner.
+7. Round of 2026-10-21 (`e41f4d494` and after): the small board sits at the left; after a swap the board covers the
+   centre. A slip zips along the trail (no jump cut) and leaves boosted. Toasts (top right, under Settings) name the
+   Ratel's ability and each pattern made. Right-click a card: its details; right-click a prism: deleted, 1 AP. A free
+   prism shows on the cursor in its domain.
+8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
+   with the AI Ratel on several AI hulls (`aiCrewEngineers`).
 ### 🔴 Orca round 9: rocket missiles with a faceted plume, the bomb's blast lit in the world (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21, after flying round 8: "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb
@@ -13578,6 +13632,14 @@ files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
    every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
    like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
    crosshair was up when LT was let go.
+
+## 🔴 2026-10-20 — Honeyguide Dynamo core (`claude/honeyguide-ratel`) - NOT EDITOR-VERIFIED
+
+Docs/Studios/HONEYGUIDE_LAB.md. Added `Assets/_Scripts/Controller/Vessel/Crew/DynamoCore.cs` (engine-free, no
+MonoBehaviour, nothing references it yet). Compiled headlessly with Roslyn on .NET 8 and held step for step to the lab's
+core by `Tools/Build/dynamo_lab/parity.cjs` (PASS, four planted controls caught). `/verify-unity` could not run here.
+1. Open the project: the Console shows no compile error or warning from `DynamoCore.cs`.
+2. Nothing else to check until the Honeyguide is ported (phase 2): no scene, prefab or enum member uses it.
 
 ## 🔴 2026-10-21 — The Starlings: objective card, zoom/roll, card details (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
 

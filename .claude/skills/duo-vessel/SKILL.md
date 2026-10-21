@@ -18,11 +18,11 @@ duo teaches something new, it is added here (§8), so the skill grows with each 
 ## One notion of a crew vessel (both shipped ones keep it; read before touching either)
 
 > **Where the crews stand (2026-10-21, after merging bleeding-edge).** Only the Goby's seat is on `ICrewSeat` today.
-> Bleeding-edge grew its own crew pieces for the Wrasse, the Orca and the Marlin (`KiteNavigator` without `ICrewSeat`,
+> Bleeding-edge grew its own crew pieces for the Wrasse, the Orca, the Marlin and the Honeyguide (`KiteNavigator` without `ICrewSeat`,
 > `WrasseCrewBodies`, `OrcaCrew`, `MarlinCrewBodies`, `CrewSeatChoice`), so this branch's move of the Wrasse onto
 > `ICrewSeat` was withdrawn in the merge in favour of theirs. Their plan takes it from here:
 > `Controller/Vessel/Crew/KITE_NAVIGATOR.md` "Two humans, two seats", step 2 (Garrett with Yash). The Wrasse row below
-> is that target; `check_crew_vessels.py` lists the Wrasse and the Marlin as PENDING until then.
+> is that target; `check_crew_vessels.py` lists the Wrasse, the Marlin and the Honeyguide as PENDING until then.
 
 **Words.** The code says **crew vessel** (`Controller/Vessel/Crew/`, `SO_Vessel.CrewNames`, `ICrewSeat`); this skill
 was written first and says **duo vessel**. They are the same thing. "Multiplayer vessel" in a request means this too.

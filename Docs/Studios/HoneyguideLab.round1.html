@@ -1,0 +1,1634 @@
+<!doctype html>
+<!--
+  Honeyguide Lab - a /labmaker browser studio for the Honeyguide and Ratel, the two-seat crew vessel that carries
+  Slipstream (Garrett's 2019-22 tabletop game). The Ratel (Engineer seat) plays a hex pattern-building puzzle, the
+  Dynamo; activating a pattern pulls one muton into the battery, and that muton's domain becomes a slip charge for the
+  Honeyguide (Pilot seat). Touching a trail of a held domain teleports the hull to the end of that trail it points at.
+  Source of truth: this file. Write-up: Docs/Studios/HONEYGUIDE_LAB.md. The script block id="dynamo-core" is the
+  engine-free core; Tools/Build/dynamo_lab/parity.cjs reads it from this file and holds it to the shipped C#
+  (Assets/_Scripts/Controller/Vessel/Crew/DynamoCore.cs). Verify: node .claude/skills/labmaker/verify_lab.cjs <this file>
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Honeyguide Lab</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --panel: #ffffff; --ink: #172028; --muted: #59646f; --line: #d8dee4;
+    --accent: #b97a00; --warn: #b4560b; --ok: #1f7a43; --changed: #0b7f99;
+    --f-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --f-mono: ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1216; --panel: #141b21; --ink: #e4eaef; --muted: #93a0ab; --line: #26313a;
+      --accent: #ffb21f; --warn: #f0a050; --ok: #5cc98a; --changed: #6cc8e0; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1216; --panel: #141b21; --ink: #e4eaef; --muted: #93a0ab; --line: #26313a;
+    --accent: #ffb21f; --warn: #f0a050; --ok: #5cc98a; --changed: #6cc8e0; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--f-ui); overflow: hidden; }
+  #app { display: grid; height: 100%; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: auto minmax(0, 1fr) 220px; grid-template-areas: "head head" "stage dock" "bottom dock"; }
+  header { grid-area: head; display: flex; gap: 8px 10px; align-items: center; padding: 7px max(16px, env(safe-area-inset-right, 0px)) 7px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 15px; margin: 0; }
+  header .meta { color: var(--muted); }
+  header .spacer { flex: 1; }
+  #diff { color: var(--changed); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-right: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 4px 10px; font: inherit; cursor: pointer; }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #111; }
+  #stageWrap { grid-area: stage; position: relative; min-height: 0; background: #04070a; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #stage { width: 100%; height: 100%; display: block; }
+  #toast { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: rgba(10,20,26,.92); color: #fff6e0; border: 1px solid #ffa700; border-radius: 6px; padding: 5px 12px; font: 12px var(--f-mono); pointer-events: none; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }
+  #dock { grid-area: dock; border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px 16px; }
+  #bottom { grid-area: bottom; border-top: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 8px 16px; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tabs button, .btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+  .tabs button[aria-selected="true"], .btn.primary { background: var(--accent); color: #111; border-color: var(--accent); }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row { display: grid; grid-template-columns: 1fr 64px; gap: 2px 8px; margin: 8px 0; }
+  .row label { display: flex; gap: 6px; align-items: baseline; }
+  .row label .key { color: var(--muted); font: 11px var(--f-mono); }
+  .row input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .row output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row output.changed { color: var(--changed); text-decoration: underline; }
+  .row .tip { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .field { display: grid; gap: 4px; margin: 10px 0; }
+  .field > span { color: var(--muted); font-size: 12px; }
+  .check { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-weight: 600; font-size: 12px; cursor: help; }
+  .tablewrap { overflow-x: auto; }
+  .best { font-weight: 700; color: var(--ok); }
+  .hint { color: var(--muted); font-size: 12px; }
+  .status-ok { color: var(--ok); } .status-warn { color: var(--warn); }
+  textarea, select, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  ul.plain { margin: 4px 0; padding-left: 18px; }
+  ul.plain li { margin: 2px 0; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; margin: 6px 0; }
+  .card b { display: block; }
+  .card .fam { font: 11px var(--f-mono); }
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    #app { display: block; height: auto; }
+    #stageWrap { height: 86vh; height: var(--stageH, 86svh); min-height: 520px; }
+    header { gap: 6px; padding-top: 5px; padding-bottom: 5px; }
+    header h1 { font-size: 14px; }
+    header .btn, .seg button { padding: 3px 8px; }
+    #dock, #bottom { border: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    header .meta#platform { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 id="title"></h1>
+    <span class="meta" id="meta"></span>
+    <span id="diff"></span>
+    <span class="spacer"></span>
+    <span class="seg" id="seatSeg" role="group" aria-label="Your seat">
+      <button data-you="eng" title="You play the Ratel (the Engineer's Dynamo); an AI flies">Engineer</button><button data-you="fly" title="You fly the Honeyguide; an AI plays the Dynamo">Fly</button><button data-you="watch" title="Two AIs">Watch</button><button data-you="couch" title="Two people: keyboard flies, mouse or touch plays the Dynamo">Couch</button>
+    </span>
+    <button class="btn" id="swapBtn" title="Swap seats with your squad mate (D-pad left/right, 1 / 2, or double-tap the small view)">Swap</button>
+    <span class="meta" id="platform"></span>
+    <button class="btn" id="pause">Pause</button>
+    <button class="btn" id="restart">Restart</button>
+    <button class="btn" id="resetAll">Shipped</button>
+  </header>
+  <div id="stageWrap"><canvas id="stage"></canvas><div id="toast" hidden></div></div>
+  <aside id="dock"><div class="tabs" id="dockTabs" role="tablist"></div><div id="dockBody"></div></aside>
+  <section id="bottom"><div class="tabs" id="bottomTabs" role="tablist"></div><div id="bottomBody"></div></section>
+</div>
+<script id="dynamo-core">
+/* DynamoCore - the Ratel's hex puzzle (the Engineer seat of the Honeyguide), engine-free.
+ * Inputs are seat inputs and a clock; nothing here draws, reads a device or knows about hulls. The game's
+ * Assets/_Scripts/Controller/Vessel/Crew/DynamoCore.cs is this file ported line for line, and
+ * Tools/Build/dynamo_lab/parity.cjs holds the two to each other input by input. Change both, or the gate fails.
+ * Colours: 0 empty, 1 Mass, 2 Charge, 3 Space-Time (which DOMAIN a colour is, is the lab's table, not the core's).
+ * Grid: a radius-3 hexagon of 37 pointy-top cells in axial (q, r), r running DOWN, (0,0) the centre. */
+(function (root) {
+  'use strict';
+  const RADIUS = 3;
+  const DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];   // E NE NW W SW SE
+  const Q = [], R = [], LUT = new Array(49).fill(-1);
+  for (let r = -RADIUS; r <= RADIUS; r++) for (let q = Math.max(-RADIUS, -r - RADIUS); q <= Math.min(RADIUS, -r + RADIUS); q++) { LUT[(q + 3) * 7 + (r + 3)] = Q.length; Q.push(q); R.push(r); }
+  const N = Q.length;
+  function idx(q, r) { if (q < -3 || q > 3 || r < -3 || r > 3) return -1; return LUT[(q + 3) * 7 + (r + 3)]; }
+  const CENTRE = idx(0, 0);
+  function ringOf(i) { return Math.max(Math.abs(Q[i]), Math.abs(R[i]), Math.abs(Q[i] + R[i])); }
+  // Each ring clockwise on screen, from its top-left cell (0, -k): E, SE, SW, W, NW, NE legs of k steps.
+  const RINGS = [[CENTRE]], RING_POS = new Array(N).fill(0);
+  for (let k = 1; k <= RADIUS; k++) {
+    const ring = []; let q = 0, r = -k;
+    for (const d of [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]]) for (let s = 0; s < k; s++) { ring.push(idx(q, r)); q += d[0]; r += d[1]; }
+    RINGS.push(ring);
+  }
+  for (let k = 1; k <= RADIUS; k++) RINGS[k].forEach((c, p) => { RING_POS[c] = p; });
+  const NEIGH = [];
+  for (let i = 0; i < N; i++) { const n = []; for (const d of DIRS) { const j = idx(Q[i] + d[0], R[i] + d[1]); if (j >= 0) n.push(j); } NEIGH.push(n); }
+  function stepClockwise(i) { const k = ringOf(i); if (k === 0) return i; const ring = RINGS[k]; return ring[(RING_POS[i] + 1) % ring.length]; }
+  function rot60(i) { return idx(-R[i], Q[i] + R[i]); }   // 60 degrees clockwise about the centre
+  function isNeighbour(a, b) { return NEIGH[a].indexOf(b) >= 0; }
+
+  // Pattern shapes: cells [[q, r, colour]] in the card's own orientation; offsets kept relative to cell 0.
+  function shapes(cells, allowRotated) {
+    const out = [];
+    let cur = cells.map((c) => [c[0], c[1], c[2]]);
+    for (let k = 0; k < (allowRotated ? 6 : 1); k++) {
+      out.push(cur.map((c) => [c[0] - cur[0][0], c[1] - cur[0][1], c[2]]));
+      cur = cur.map((c) => [-c[1], c[0] + c[1], c[2]]);
+    }
+    return out;
+  }
+
+  function rng(st) {   // mulberry32 over the state's own stream, so a replay of the same inputs draws the same cards
+    let a = st.rng | 0; a = a + 0x6D2B79F5 | 0; st.rng = a;
+    let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+
+  function create(S, seed) {
+    const st = {
+      cells: new Array(N).fill(0), ports: S.ports.map((p) => [p[0], p[1]]), ap: S.apPerTick < S.apBank ? S.apPerTick : S.apBank, bonusAp: 0,
+      clock: 0, ticks: 0, battery: [], slots: S.loadout.slice(), pick: null, freePlace: 0, offer: null,
+      rng: seed | 0, wasted: 0, events: [], shapes: S.patterns.map((p) => shapes(p.cells, S.allowRotatedMatches)),
+    };
+    if (S.startFilled) for (const p of st.ports) st.cells[p[0]] = p[1];
+    return st;
+  }
+
+  function portAt(st, cell) { for (const p of st.ports) if (p[0] === cell) return p[1]; return 0; }
+
+  // The cells of the first placement of pattern `pid` that the board shows, or null. Placement order: rotation, then
+  // the anchor cell in index order (deterministic, so both seats and both languages agree which copy fired).
+  function match(st, S, pid) {
+    const sh = st.shapes[pid];
+    for (let k = 0; k < sh.length; k++) {
+      const shape = sh[k];
+      for (let a = 0; a < N; a++) {
+        const cells = [];
+        let ok = true;
+        for (let c = 0; c < shape.length; c++) {
+          const i = idx(Q[a] + shape[c][0], R[a] + shape[c][1]);
+          if (i < 0) { ok = false; break; }
+          if (st.cells[i] === shape[c][2] || (S.centreWild && i === CENTRE)) cells.push(i);
+          else { ok = false; break; }
+        }
+        if (ok) return cells;
+      }
+    }
+    return null;
+  }
+
+  function spendAp(st, n) {
+    if (st.ap + st.bonusAp < n) return false;
+    const fromAp = st.ap < n ? st.ap : n;
+    st.ap -= fromAp; st.bonusAp -= n - fromAp;
+    return true;
+  }
+
+  function charge(st, S, colour) {
+    if (S.batteryCap < 1) return;
+    if (st.battery.length >= S.batteryCap) { const old = st.battery.shift(); st.events.push({ k: 'replaced', colour: old }); }
+    st.battery.push(colour);
+    st.events.push({ k: 'charge', colour });
+  }
+
+  function pickCell(st, S, cell, auto) {
+    const pk = st.pick, pat = S.patterns[pk.pid];
+    const colour = st.cells[cell];
+    st.cells[cell] = 0;
+    st.pick = null;
+    st.events.push({ k: 'pick', slot: pk.slot, pid: pk.pid, cell, colour, auto });
+    charge(st, S, colour);
+    if (pat.effect === 'bigred') {   // destroy every other muton of the picked colour
+      let n = 0;
+      for (let i = 0; i < N; i++) if (st.cells[i] === colour) { st.cells[i] = 0; n++; }
+      st.events.push({ k: 'destroyed', colour, n });
+    } else if (pat.effect === 'amanita') {   // burn one more muton of the pattern
+      for (const c of pk.cells) if (c !== cell && st.cells[c] !== 0) { st.events.push({ k: 'burned', cell: c, colour: st.cells[c] }); st.cells[c] = 0; break; }
+    }
+  }
+
+  // One seat input. Returns true when it was legal and applied; an illegal input changes nothing.
+  function apply(st, S, inp) {
+    switch (inp.k) {
+      case 'tinker': {
+        if (st.pick || inp.from < 0 || inp.from >= N || inp.to < 0 || inp.to >= N) return false;
+        if (st.cells[inp.from] === 0 || st.cells[inp.to] !== 0 || !isNeighbour(inp.from, inp.to)) return false;
+        if (!spendAp(st, 1)) return false;
+        st.cells[inp.to] = st.cells[inp.from]; st.cells[inp.from] = 0;
+        st.events.push({ k: 'tinker', from: inp.from, to: inp.to });
+        return true;
+      }
+      case 'refuel': {
+        if (st.pick || inp.cell < 0 || inp.cell >= N || st.cells[inp.cell] !== 0) return false;
+        if (st.freePlace > 0 && inp.colour >= 1 && inp.colour <= 3) {   // a 5D Printer placement: any empty cell, any colour
+          st.freePlace--; st.cells[inp.cell] = inp.colour;
+          st.events.push({ k: 'place', cell: inp.cell, colour: inp.colour });
+          return true;
+        }
+        const pc = portAt(st, inp.cell);
+        if (pc === 0 || !spendAp(st, 1)) return false;
+        st.cells[inp.cell] = pc;
+        st.events.push({ k: 'refuel', cell: inp.cell, colour: pc });
+        return true;
+      }
+      case 'activate': {
+        if (st.pick || inp.slot < 0 || inp.slot >= st.slots.length || st.slots[inp.slot] < 0) return false;
+        const pid = st.slots[inp.slot], cells = match(st, S, pid);
+        if (!cells || st.ap + st.bonusAp < 1) return false;
+        spendAp(st, 1);
+        const pat = S.patterns[pid];
+        st.events.push({ k: 'ability', slot: inp.slot, pid, effect: pat.effect });
+        if (pat.effect === 'chrono') st.bonusAp = st.bonusAp + 1 > S.bonusApCap ? S.bonusApCap : st.bonusAp + 1;
+        else if (pat.effect === 'printer') st.freePlace += 2;
+        else if (pat.effect === 'anode') { charge(st, S, 1); charge(st, S, 2); charge(st, S, 3); }
+        const live = cells.filter((c) => st.cells[c] !== 0);
+        if (live.length) st.pick = { slot: inp.slot, pid, cells: live, timer: S.pickTimeout };
+        return true;
+      }
+      case 'pick': {
+        if (!st.pick || st.pick.cells.indexOf(inp.cell) < 0 || st.cells[inp.cell] === 0) return false;
+        pickCell(st, S, inp.cell, false);
+        return true;
+      }
+      case 'research': {
+        if (st.pick || st.offer || inp.family < 1 || inp.family > 3) return false;
+        const cand = [];
+        for (let p = 0; p < S.patterns.length; p++) if (S.patterns[p].family === inp.family && st.slots.indexOf(p) < 0) cand.push(p);
+        if (!cand.length || !spendAp(st, S.researchCost)) return false;
+        const offer = [];
+        for (let k = 0; k < 3 && cand.length; k++) { const j = Math.floor(rng(st) * cand.length); offer.push(cand.splice(j, 1)[0]); }
+        st.offer = offer;
+        st.events.push({ k: 'offer', family: inp.family, offer: offer.slice() });
+        return true;
+      }
+      case 'keep': {
+        if (!st.offer || inp.choice < 0 || inp.choice >= st.offer.length || inp.slot < 0 || inp.slot >= st.slots.length) return false;
+        st.slots[inp.slot] = st.offer[inp.choice];
+        st.events.push({ k: 'keep', slot: inp.slot, pid: st.offer[inp.choice] });
+        st.offer = null;
+        return true;
+      }
+      case 'discard': {
+        if (!st.offer) return false;
+        st.offer = null;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // The battery is shared with the pilot: a slip spends one charge of its colour.
+  function spend(st, colour) { const i = st.battery.indexOf(colour); if (i < 0) return false; st.battery.splice(i, 1); return true; }
+  function drainAll(st) { const n = st.battery.length; st.battery.length = 0; return n; }
+
+  function tick(st, S) {
+    if (S.rotateWholeEngine) {
+      const next = new Array(N).fill(0);
+      for (let i = 0; i < N; i++) next[rot60(i)] = st.cells[i];
+      st.cells = next;
+      for (const p of st.ports) p[0] = rot60(p[0]);
+      if (st.pick) st.pick.cells = st.pick.cells.map(rot60);
+    } else {
+      for (const p of st.ports) p[0] = stepClockwise(p[0]);
+    }
+    const before = st.ap, cap = S.apBank;
+    st.ap = before + S.apPerTick > cap ? (before > cap ? before : cap) : before + S.apPerTick;
+    st.wasted += before + S.apPerTick - st.ap;
+    st.ticks++;
+    st.events.push({ k: 'tick', n: st.ticks });
+  }
+
+  // The clock: seconds of match time (the lab scales it by the hull's Time level before it gets here).
+  function advance(st, S, dt) {
+    if (st.pick) {
+      st.pick.timer -= dt;
+      if (st.pick.timer <= 0) {
+        const fam = S.patterns[st.pick.pid].family;
+        let cell = st.pick.cells[0];
+        for (const c of st.pick.cells) if (st.cells[c] === fam) { cell = c; break; }
+        pickCell(st, S, cell, true);
+      }
+    }
+    st.clock += dt;
+    while (st.clock >= S.tickSeconds) { st.clock -= S.tickSeconds; tick(st, S); }
+  }
+
+  function nextPorts(st, S) { return st.ports.map((p) => [S.rotateWholeEngine ? rot60(p[0]) : stepClockwise(p[0]), p[1]]); }
+  function built(st, S) { return st.slots.map((pid) => (pid >= 0 ? match(st, S, pid) : null)); }
+  function clone(st) {
+    return { cells: st.cells.slice(), ports: st.ports.map((p) => [p[0], p[1]]), ap: st.ap, bonusAp: st.bonusAp, clock: st.clock, ticks: st.ticks,
+      battery: st.battery.slice(), slots: st.slots.slice(), pick: st.pick ? { slot: st.pick.slot, pid: st.pick.pid, cells: st.pick.cells.slice(), timer: st.pick.timer } : null,
+      freePlace: st.freePlace, offer: st.offer ? st.offer.slice() : null, rng: st.rng, wasted: st.wasted, events: [], shapes: st.shapes };
+  }
+  // A compact, exact digest of everything the parity gate compares.
+  function digest(st) {
+    return st.cells.join('') + '|' + st.ports.map((p) => p[0] + ':' + p[1]).join(',') + '|' + st.ap + '+' + st.bonusAp + '|' + st.battery.join('') +
+      '|' + st.slots.join(',') + '|' + (st.pick ? st.pick.slot + ':' + st.pick.cells.join('.') : '-') + '|' + st.freePlace + '|' + (st.offer ? st.offer.join('.') : '-') +
+      '|' + st.ticks + '|' + st.wasted + '|' + (st.rng >>> 0);
+  }
+
+
+  // ---- The Engineer AI: input-only. It returns ONE input (or null) from the state it sees; the caller paces it. ----
+  // colourScore[c] (c = 1..3) is how much the pilot can use a charge of colour c right now (the lab scores trails of that
+  // colour's domain within slip reach and ahead of the hull). Difficulty changes belief and pace, never the rules.
+  function placementCost(st, S, pid, k, a, locked) {
+    const shape = st.shapes[pid][k], cells = [], need = [];
+    for (let c = 0; c < shape.length; c++) {
+      const i = idx(Q[a] + shape[c][0], R[a] + shape[c][1]);
+      if (i < 0) return null;
+      cells.push(i); need.push(shape[c][2]);
+    }
+    let total = 0;
+    const fixes = [];
+    for (let c = 0; c < cells.length; c++) {
+      const i = cells[c], want = need[c];
+      if (st.cells[i] === want || (S.centreWild && i === CENTRE)) continue;
+      const fix = cellFix(st, i, want, cells, locked);
+      if (!fix) return null;
+      total += fix.cost; fixes.push(fix);
+    }
+    return { pid, cells, total, fixes };
+  }
+  // The cheapest way to put a muton of colour `want` on cell i, and that way's first input.
+  function cellFix(st, i, want, inPlacement, locked) {
+    let extra = 0, clear = null;
+    if (st.cells[i] !== 0) {   // a wrong muton sits there: move it aside first
+      extra = 1;
+      for (const n of NEIGH[i]) if (st.cells[n] === 0 && inPlacement.indexOf(n) < 0) { clear = { k: 'tinker', from: i, to: n }; break; }
+      if (!clear) for (const n of NEIGH[i]) if (st.cells[n] === 0) { clear = { k: 'tinker', from: i, to: n }; break; }
+      if (!clear) return null;
+    }
+    // distance from i through empty cells (i itself counts as empty once cleared)
+    const dist = new Array(N).fill(-1), queue = [i]; dist[i] = 0;
+    for (let h = 0; h < queue.length; h++) { const u = queue[h]; for (const v of NEIGH[u]) if (dist[v] < 0 && st.cells[v] === 0) { dist[v] = dist[u] + 1; queue.push(v); } }
+    let best = null;
+    const pc = portAt(st, i);
+    if (pc === want) best = { cost: 1, first: { k: 'refuel', cell: i } };
+    for (let m = 0; m < N; m++) {
+      if (st.cells[m] !== want || m === i || locked[m]) continue;
+      let bn = -1;
+      for (const n of NEIGH[m]) if (dist[n] >= 0 && (bn < 0 || dist[n] < dist[bn])) bn = n;
+      if (bn < 0) continue;
+      const cost = dist[bn] + 1;
+      if (!best || cost < best.cost) best = { cost, first: { k: 'tinker', from: m, to: bn } };
+    }
+    for (const p of st.ports) {
+      if (p[1] !== want || p[0] === i || dist[p[0]] < 0) continue;
+      const cost = 1 + dist[p[0]];
+      if (!best || cost < best.cost) best = { cost, first: { k: 'refuel', cell: p[0] } };
+    }
+    if (!best) return null;
+    return { cost: best.cost + extra, first: clear || best.first };
+  }
+  function bestPlacements(st, S, top) {
+    const out = [];
+    for (let s = 0; s < st.slots.length; s++) {
+      const pid = st.slots[s];
+      if (pid < 0) continue;
+      for (let k = 0; k < st.shapes[pid].length; k++) for (let a = 0; a < N; a++) {
+        const locked = new Array(N).fill(false), shape = st.shapes[pid][k];
+        let inBoard = true;
+        for (const c of shape) { const i = idx(Q[a] + c[0], R[a] + c[1]); if (i < 0) { inBoard = false; break; } if (st.cells[i] === c[2]) locked[i] = true; }
+        if (!inBoard) continue;
+        const pl = placementCost(st, S, pid, k, a, locked);
+        if (pl) out.push(pl);
+      }
+    }
+    out.sort((x, y) => x.total - y.total || x.pid - y.pid);
+    return out.slice(0, top);
+  }
+  function legalInputs(st, S) {
+    const out = [];
+    for (let i = 0; i < N; i++) if (st.cells[i] !== 0) for (const n of NEIGH[i]) if (st.cells[n] === 0) out.push({ k: 'tinker', from: i, to: n });
+    for (const p of st.ports) if (st.cells[p[0]] === 0) out.push({ k: 'refuel', cell: p[0] });
+    return out;
+  }
+  function aiPick(st, S, colourScore, noise, rnd) {
+    let best = -1, bestV = -1e9;
+    for (const c of st.pick.cells) {
+      const v = (colourScore[st.cells[c]] || 0) + (noise > 0 ? (rnd() - 0.5) * 2 * noise : 0);
+      if (v > bestV) { bestV = v; best = c; }
+    }
+    return { k: 'pick', cell: best };
+  }
+  // prm: { top, blunder, noise }. top = how many placements it weighs (1 = the cheapest only), blunder = chance of a
+  // random legal move, noise = how blurred its read of colourScore is.
+  function aiPlan(st, S, prm, colourScore, rnd) {
+    if (st.pick) return aiPick(st, S, colourScore, prm.noise, rnd);
+    if (st.offer) return { k: 'discard' };
+    if (st.ap + st.bonusAp < 1 && st.freePlace < 1) return null;
+    for (let s = 0; s < st.slots.length; s++) if (st.slots[s] >= 0 && match(st, S, st.slots[s])) return { k: 'activate', slot: s };
+    if (st.ap + st.bonusAp < 1) return null;
+    if (prm.blunder > 0 && rnd() < prm.blunder) { const all = legalInputs(st, S); if (all.length) return all[Math.floor(rnd() * all.length)]; }
+    const pls = bestPlacements(st, S, Math.max(1, prm.top));
+    if (!pls.length) return null;
+    const pl = pls[prm.top > 1 ? Math.floor(rnd() * pls.length) : 0];
+    let fix = null;
+    for (const f of pl.fixes) if (!fix || f.cost < fix.cost) fix = f;
+    return fix ? fix.first : null;
+  }
+
+  // ---- The Slip: "the end you are closer to pointing at" (pure; points are [x, y, z], oldest first) ----
+  function sub3(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function dot3(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function len3(a) { return Math.sqrt(dot3(a, a)); }
+  function norm3(a) { const l = len3(a); return l > 1e-9 ? [a[0] / l, a[1] / l, a[2] / l] : [0, 0, 0]; }
+  function slipDestination(pts, contact, pos, fwd, reach, exitOffset) {
+    const n = pts.length;
+    if (n < 2) return null;
+    const d0 = dot3(fwd, norm3(sub3(pts[0], pos))), d1 = dot3(fwd, norm3(sub3(pts[n - 1], pos)));
+    const end = d1 >= d0 ? 1 : 0, step = end === 1 ? 1 : -1;
+    let at = end === 1 ? n - 1 : 0, clipped = false;
+    if (len3(sub3(pts[at], pos)) > reach) {
+      clipped = true; at = contact;
+      for (let j = contact; j >= 0 && j < n; j += step) if (len3(sub3(pts[j], pos)) <= reach) at = j;
+    }
+    const prev = at - step >= 0 && at - step < n ? at - step : at + step;
+    let heading = norm3(sub3(pts[at], pts[prev]));
+    if (prev === at + step) heading = [-heading[0], -heading[1], -heading[2]];
+    const p = pts[at];
+    return { end, index: at, clipped, heading, point: [p[0] + heading[0] * exitOffset, p[1] + heading[1] * exitOffset, p[2] + heading[2] * exitOffset] };
+  }
+
+  root.DynamoCore = { N, Q, R, CENTRE, NEIGH, RINGS, DIRS, idx, ringOf, stepClockwise, rot60, isNeighbour, shapes, create, apply, advance, tick, match, built,
+    spend, drainAll, nextPorts, clone, digest, portAt, slipDestination, aiPlan, bestPlacements, legalInputs };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const D = window.DynamoCore;
+
+  // ================= (1) LAB meta + the shipped numbers =================
+  // A READER of the shipped numbers. The pilot hull is the Sparrow (the donor airframe, as the Wrasse's is); the Dynamo
+  // and Slip numbers are the brief's defaults (Honeyguide prompt §3), marked "proposal": nothing in the game has them yet.
+  const LAB = { name: 'Honeyguide Lab', branch: 'claude/honeyguide-ratel', round: 1, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
+  const SHIPPED = {
+    // The Honeyguide's airframe: the Sparrow (Assets/_Prefabs/Spacevessels/Sparrow.prefab), as in the Crew Vessel Lab
+    minSpeed: 10,          // VesselTransformer.DefaultMinimumSpeed
+    throttleScaler: 25,    // VesselTransformer.DefaultThrottleScaler (cruise 35 u/s)
+    boostMul: 5,           // VesselStatus.boostMultiplier on the throttle term (135 u/s while boosting)
+    yawRate: 80,           // VesselTransformer.YawScaler (deg/s)
+    hullRadius: 3,         // lab: hull contact radius (u)
+    prismL: 5,             // VesselPrismController BaseScale.z (a prism's length, u)
+    wavelength: 7,         // VesselPrismController initialWavelength: one prism per 7 u flown
+    hitSlow: 0.5,          // lab: VesselChangeSpeedByPrismEffectSO stand-in (speed lost for 1 s on a hostile prism)
+    selfGrace: 1,          // SelfTrailContactConfig.hullGraceSeconds (Assets/Resources/SelfTrailContactConfig.asset)
+    // The arena (lab)
+    arenaRadius: 420,      // lab: a flat disc standing in for the cell
+    others: 3,             // lab: AI hulls laying Ruby, Gold and Jade trails
+    trailCap: 110,         // lab: prisms kept per hull (the game conserves mass; the lab recycles the oldest)
+    destRadius: 25,        // lab: reach a destination ring by passing within this (u)
+    destMin: 280,          // lab: a new destination spawns at least this far away (u)
+    // The Dynamo (the brief's defaults; DynamoConfigSO does not exist yet)
+    tickSeconds: 8,        // proposal: seconds per Dynamo tick (ports rotate, AP refills)
+    apPerTick: 3,          // proposal: action points each tick
+    apBank: 3,             // proposal: most AP held
+    bonusApCap: 1,         // proposal: Chrono-Compressor's stored action (card: "Limit 1")
+    batteryCap: 3,         // proposal: battery charges held (board: "LIMIT 3 MUTONS")
+    pickTimeout: 4,        // proposal: seconds to choose the battery muton before the Dynamo picks one of the family colour
+    researchCost: 2,       // proposal: AP for a mid-match Research
+    // The Slip
+    minSlipTrailLength: 6, // proposal: shortest trail (prisms) a slip rides
+    slipReach: 400,        // proposal: farthest a slip lands from the contact (u); Space scales it in the game
+    exitOffset: 8,         // proposal: land this far past the trail's end, outward (u)
+    slipGrace: 1,          // proposal: seconds the trail just ridden is ignored (no re-slip on landing)
+    aimCone: 45,           // lab proposal: aim-gated arming's half-angle (deg): a trail end must be this close to the nose
+    // Pattern abilities (the starter 12; proposals)
+    boostPerPoint: 0.5,    // proposal: boost seconds per Slipstream "move 1" point (Amanita 6, Big Red 2/muton, Dragon Saddle 3/charge)
+    blinkDist: 60,         // proposal: Blink Drive's forward jump (u)
+    dashDist: 24,          // proposal: one Thruster Swarm dash (u)
+    rosenReach: 300,       // proposal: Rosen Bridge's reach (u)
+    monteReach: 120,       // proposal: Monte Cannon's swap reach (u)
+    detanglerCount: 3,     // card: Reality Detangler recolours 3
+    condenserPrisms: 6,    // proposal: Epitaxial Condenser's chain (the card's 5 raised to the slip minimum, so it can be ridden)
+    tokenLife: 12,         // proposal: seconds a dash or swap token waits for the pilot's button
+    // Seats
+    swapCooldown: 0.75,    // PilotSwap.CooldownSeconds
+    swapOrient: 1,         // lab: a human proxy's seconds to find their bearings after a swap
+  };
+  const SPEC = [
+    ['Dynamo', 'tickSeconds', 3, 20, 0.5, 'Tick (s)', 'Every tick the injection ports rotate one step clockwise and the AP refill. Time scales it in the game.'],
+    ['Dynamo', 'apPerTick', 1, 6, 1, 'AP per tick', 'Action points the Engineer gets each tick (Tinker, Refuel, Activate cost 1).'],
+    ['Dynamo', 'apBank', 1, 9, 1, 'AP bank', 'Most AP held. Above this a tick\'s AP are wasted (the idle column counts them).'],
+    ['Dynamo', 'batteryCap', 1, 12, 1, 'Battery', 'Slip charges held. A new charge replaces the oldest when full. Mass scales it in the game.'],
+    ['Dynamo', 'pickTimeout', 1, 10, 0.5, 'Pick time (s)', 'After an activation, time to choose the battery muton before the Dynamo picks the family colour.'],
+    ['Dynamo', 'researchCost', 0, 3, 1, 'Research cost (AP)', 'Draw 3 cards of one family, keep 1 in a slot.'],
+    ['Slip', 'minSlipTrailLength', 2, 30, 1, 'Shortest trail (prisms)', 'A trail shorter than this cannot be ridden.'],
+    ['Slip', 'slipReach', 80, 900, 10, 'Reach (u)', 'Farthest a slip lands from where you touched. Beyond it you land on the farthest block within reach.'],
+    ['Slip', 'exitOffset', 0, 40, 1, 'Exit past the end (u)', 'How far past the trail\'s end you land, along its outward heading.'],
+    ['Slip', 'slipGrace', 0, 3, 0.1, 'Grace after a slip (s)', 'The trail just ridden is ignored this long, so landing does not slip again.'],
+    ['Slip', 'aimCone', 10, 90, 5, 'Aim cone (deg)', 'Aim-gated arming only: a trail end must be within this angle of the nose to slip.'],
+    ['Abilities', 'boostPerPoint', 0.1, 2, 0.1, 'Boost s per point', 'Seconds of boost per Slipstream "move 1" point.'],
+    ['Abilities', 'blinkDist', 10, 200, 5, 'Blink Drive (u)', 'Forward jump.'],
+    ['Abilities', 'dashDist', 5, 80, 1, 'Thruster dash (u)', 'One of four dashes.'],
+    ['Abilities', 'rosenReach', 50, 600, 10, 'Rosen Bridge reach (u)', 'Teleport to the farthest prism of the picked domain in the aim cone within this.'],
+    ['Abilities', 'monteReach', 30, 300, 10, 'Monte Cannon reach (u)', 'Swap places with a prism ahead within this.'],
+    ['Abilities', 'condenserPrisms', 2, 20, 1, 'Condenser chain', 'Prisms the Epitaxial Condenser lays ahead.'],
+    ['Abilities', 'tokenLife', 2, 30, 1, 'Token life (s)', 'How long a dash or swap waits for the pilot\'s button.'],
+    ['Pilot', 'minSpeed', 0, 40, 1, 'Minimum speed (u/s)', 'Sparrow DefaultMinimumSpeed.'],
+    ['Pilot', 'throttleScaler', 5, 80, 1, 'Throttle scaler (u/s)', 'Sparrow DefaultThrottleScaler.'],
+    ['Pilot', 'boostMul', 1, 8, 0.5, 'Boost x', 'Sparrow boostMultiplier on the throttle term.'],
+    ['Pilot', 'yawRate', 30, 200, 5, 'Yaw (deg/s)', 'Sparrow YawScaler.'],
+    ['Pilot', 'hitSlow', 0, 0.9, 0.05, 'Hostile-prism slow', 'Speed lost for a second on a hostile prism.'],
+    ['Pilot', 'selfGrace', 0, 3, 0.1, 'Own-trail grace (s)', 'SelfTrailContactConfig.hullGraceSeconds: your own fresh prisms are ignored this long.'],
+    ['Arena', 'arenaRadius', 250, 800, 10, 'Arena radius (u)', 'The disc standing in for the cell.'],
+    ['Arena', 'others', 0, 6, 1, 'Other hulls', 'AI hulls laying trails (Ruby, Gold, Jade, then repeating). Restart to apply.'],
+    ['Arena', 'trailCap', 20, 300, 10, 'Trail length (prisms)', 'Prisms kept per hull; the oldest is recycled.'],
+    ['Arena', 'destRadius', 10, 60, 1, 'Destination ring (u)', 'Pass within this to reach a destination.'],
+    ['Arena', 'destMin', 100, 600, 10, 'Destination distance (u)', 'A new destination spawns at least this far away.'],
+    ['Arena', 'wavelength', 2, 20, 0.5, 'Prism spacing (u)', 'Sparrow initialWavelength.'],
+    ['Seats', 'swapCooldown', 0, 3, 0.05, 'Swap cooldown (s)', 'PilotSwap.CooldownSeconds.'],
+    ['Seats', 'swapOrient', 0, 4, 0.1, 'Human re-orient (s)', 'Scorecard proxy only.'],
+  ];
+
+  // Domains: the game's palette (Docs/Studios/VesselStudio/studio-domains.js, read from OriginalColorSetSO.asset)
+  const DOM = { jade: { name: 'Jade', color: '#13fff2' }, ruby: { name: 'Ruby', color: '#ff00f9' }, gold: { name: 'Gold', color: '#ffa700' } };
+  const OUR_DOMAIN = 'jade';
+  const COLOUR_NAME = ['', 'Mass', 'Charge', 'Space-Time'];
+  const COLOUR_LETTER = ['', 'M', 'C', 'S'];
+  // Muton colour -> domain: a table, not code (brief §3.2). "ownM": the hull's own domain is always Mass.
+  const DOMAIN_MAPS = {
+    mcs: { label: 'M→Ruby, C→Jade, S→Gold (the brief)', map: ['', 'ruby', 'jade', 'gold'] },
+    ownM: { label: 'Own domain is always M (M→Jade, C→Ruby, S→Gold)', map: ['', 'jade', 'ruby', 'gold'] },
+  };
+
+  // ================= The pattern library: the 39 Slipstream upgrade cards (2022 print), shapes as printed =================
+  // [name, family (1 M, 2 C, 3 S), shape 'Xq,r ...', text, effect key or '' (no Cosmic Shore effect yet), parked?]
+  const CARDS = [
+    ['Juggernaut Plow', 1, 'C2,0 M1,1 S0,2 M0,3', 'Boost 4, pushing any ships or mutons one space out of the way.', ''],
+    ['Singularity Dock', 1, 'S3,0 M2,1 M0,2 C1,2 M1,3', 'Move your ship up to 6 spaces and end adjacent to a Muton or ship.', ''],
+    ['Amanita Furnace', 1, 'C3,0 M2,1 M0,2 S1,2 M1,3', 'Destroy 1 Muton in your Engine and Boost up to 6.', 'amanita'],
+    ['Plankter Sail', 1, 'M3,0 M1,1 S2,1 C1,2 M0,3', 'Slip up to 4 spaces then propel. (You do not need mutons in your battery to take this action)', ''],
+    ['Anomaly Skipper', 1, 'M3,0 S2,1 C1,2 M0,3', 'Move up to 5 spaces, each movement must change what color space your ship is in', ''],
+    ['Fugacity Discharger', 1, 'S2,0 M3,0 M1,1 C0,2 M0,3', 'Move 2 for each Muton and Ship in your sector.', ''],
+    ['Thruster Swarm', 1, 'C2,0 M3,0 M1,1 S0,2', 'Move your ship or map mutons 1 space 4 times', 'thruster'],
+    ['Hard Light Lasso', 1, 'S1,0 M2,0 M0,1 C1,1', 'Move one muton on the map, You may then move your ship up to 3 spaces closer to that muton.', ''],
+    ['Big Red Button', 1, 'M2,0 M0,1 C1,1 S0,2', 'Destroy any mutons of 1 color in your engine then move 2 spaces for each muton destroyed.', 'bigred'],
+    ['Eigen Booster', 1, 'M2,0 M0,1 C1,1 S0,2 M1,2', 'Make up to 3 diagonal movements.', ''],
+    ['Dragon Saddle', 1, 'M2,0 M0,1 S1,1 C0,2', 'Drain any number of mutons and boost 3 per muton', 'saddle'],
+    ['Wattslider', 1, 'S3,0 M4,0 M2,1 M0,2 C1,2', 'Freely move diagonally, while maintaining distance to a muton or ship.', ''],
+    ['Eyelet Jet', 1, 'M2,0 M0,1 S1,1 C0,2 M1,2', 'Move 3 for each direction you can not propel.', ''],
+    ['Reality Detangler', 2, 'C2,0 C0,1 S1,1 M0,2', 'Change the color of any 3 Mutons.', 'detangler'],
+    ['Epitaxial Condenser', 2, 'M1,0 C2,0 C0,1 S1,1', 'Create a 5 muton chain of the same color by placing 4 mutons.', 'condenser'],
+    ['Sepia Drone', 2, 'C2,0 C0,1 M1,1 S0,2 C1,2', 'Draw two ship cards and attach either to Sepia Drone.', '', true],
+    ['Zero Point Amplifier', 2, 'S2,0 C1,1 M0,2 C0,3', 'Activate one of your other upgrades and drain a muton.', ''],
+    ['Noodley Appendages', 2, 'C3,0 C1,1 M2,1 S1,2 C0,3', 'Freely move up to 5 mutons in adjacent sectors.', ''],
+    ['Triplesynth', 2, 'M3,0 C2,1 C0,2 S1,2 C1,3', 'Create a connected group of each color Muton in your engine.', ''],
+    ['Particle Harmonizer', 2, 'M2,0 C1,1 S0,2 C0,3', 'Create a connected group of 3 Mutons anywhere on the map.', ''],
+    ['Genesis Lance', 2, 'C2,0 C0,1 S1,1 M0,2 C1,2', 'Create 2 mutons in a nearby sector.', ''],
+    ['Universal Translator', 2, 'C2,0 C0,1 M1,1 S0,2', 'Move a muton from anywhere to anywhere. You may then change its color.', ''],
+    ['Anode Ray', 2, 'M3,0 C4,0 C2,1 C0,2 S1,2', 'Create 3 mutons in your battery', 'anode'],
+    ['5D Printer', 2, 'S3,0 C2,1 C0,2 M1,2 C1,3', 'Create 2 Mutons in your Engine.', 'printer'],
+    ['Square-Peg Hammer', 2, 'C3,0 M2,1 S1,2 C0,3', 'Create 3 mutons in nearby void spaces', ''],
+    ['Reactor Cilia', 2, 'S2,0 C3,0 C1,1 M0,2 C0,3', 'Store 3 / Take a bonus action in your engine phase whenever you remove a Muton from this card. (Limit 6)', ''],
+    ['Chrono-Compressor', 3, 'S2,0 S0,1 C1,1 M0,2', 'Store 1. / In your Pilot phase, remove Mutons from this card as a free action, take a bonus action whenever you remove a Muton. (Limit 1 Muton)', 'chrono'],
+    ['Meta Machine', 3, 'M2,0 S3,0 S1,1 C0,2 S0,3', 'Activate a face up card in any upgrade discard pile.', '', true],
+    ['Mystic Eti', 3, 'S3,0 S1,1 C2,1 M1,2 S0,3', 'Create an stable sector, charging any overlapped mutons. Place any number of mutons from your battery onto the new tile.', '', true],
+    ['FTL Chromatool', 3, 'C2,0 S1,1 M0,2 S0,3', 'Swap with a muton up to 4 spaces away, and place that muton on this upgrade / As a free action you may remove a muton of each color to teleport adjacent to a void in an adjacent sector', ''],
+    ['Little Bang Grenade', 3, 'M2,0 S1,1 C0,2 S0,3', 'Create a new sector along any edge of the board -- and -- You may teleport 4 into the new sector if able', '', true],
+    ['Vorticity Module', 3, 'C3,0 S4,0 S2,1 S0,2 M1,2', 'Rotate a sector tile.', '', true],
+    ['Gravity Engine', 3, 'S2,0 S0,1 M1,1 C0,2 S1,2', 'Drag a sector 2 and boost into it', ''],
+    ['All Terrain Portals', 3, 'S2,0 S0,1 C1,1 M0,2 S1,2', 'Teleport 2. If you jumped void space you may teleport 2 again.', ''],
+    ['Rosen Bridge', 3, 'C3,0 S2,1 S0,2 M1,2 S1,3', 'Teleport your ship to a matching color space in the same sector.', 'rosen'],
+    ['Frame Dragger', 3, 'C1,0 S2,0 S0,1 M1,1', 'Drag sector tiles up to 3 spaces.', '', true],
+    ['Void Jumper', 3, 'M3,0 S2,1 S0,2 C1,2 S1,3', 'Orbit a void', '', true],
+    ['Blink Drive', 3, 'S2,0 S0,1 M1,1 C0,2', 'Teleport 3 spaces.', 'blink'],
+    ['Monte Cannon', 3, 'S3,0 C2,1 M1,2 S0,3', 'Swap with a ship or muton up to 3 spaces away. / Use this ability up to 3 times per activation.', 'monte'],
+  ];
+  const EFFECT_TEXT = {
+    amanita: 'Burns 1 more muton of the pattern; the pilot gets a 6-point boost burst.',
+    bigred: 'Destroys every other muton of the picked colour; the pilot gets 2 points of boost per muton.',
+    saddle: 'Drains the whole battery into boost: 3 points per charge.',
+    thruster: 'Four short dashes on the pilot\'s button.',
+    detangler: 'The next 3 prisms the hull touches turn the picked domain: new slip paths.',
+    condenser: 'Lays a chain of the picked domain ahead: a short trail anyone can ride.',
+    anode: '+1 charge of each colour in the battery.',
+    printer: 'Two free mutons, any colour, on any empty cell.',
+    chrono: 'Banks 1 extra Engineer action.',
+    blink: 'The hull jumps forward.',
+    rosen: 'Teleport to the farthest prism of the picked domain in the aim cone.',
+    monte: 'Three swaps with a prism ahead, on the pilot\'s button.',
+  };
+  const PATTERNS = CARDS.map((c) => ({ name: c[0], family: c[1], text: c[3], effect: c[4], parked: !!c[5],
+    cells: c[2].split(' ').map((t) => { const col = { M: 1, C: 2, S: 3 }[t[0]]; const [q, r] = t.slice(1).split(',').map(Number); return [q, r, col]; }) }));
+  const byName = (n) => PATTERNS.findIndex((p) => p.name === n);
+  const LOADOUTS = {
+    starter: { label: 'Starter: Amanita Furnace, Reality Detangler, Blink Drive', cards: ['Amanita Furnace', 'Reality Detangler', 'Blink Drive'] },
+    boost: { label: 'Mass: Amanita Furnace, Big Red Button, Dragon Saddle', cards: ['Amanita Furnace', 'Big Red Button', 'Dragon Saddle'] },
+    trails: { label: 'Charge: Reality Detangler, Epitaxial Condenser, Thruster Swarm', cards: ['Reality Detangler', 'Epitaxial Condenser', 'Thruster Swarm'] },
+    engine: { label: 'Engineer: Chrono-Compressor, 5D Printer, Anode Ray', cards: ['Chrono-Compressor', '5D Printer', 'Anode Ray'] },
+    space: { label: 'Space-Time: Blink Drive, Rosen Bridge, Monte Cannon', cards: ['Blink Drive', 'Rosen Bridge', 'Monte Cannon'] },
+  };
+
+  // ================= Engines (the Dynamo's port layouts, Appendix B; axial, r down) =================
+  function parseEngine(rows) {
+    const ports = [];
+    rows.forEach((row, ri) => {
+      const r = ri - 3, toks = row.trim().split(/\s+/), q0 = Math.max(-3, -3 - r);
+      toks.forEach((t, k) => { const col = { M: 1, C: 2, S: 3 }[t]; if (col) ports.push([D.idx(q0 + k, r), col]); });
+    });
+    return ports;
+  }
+  const ENGINES = {
+    board2021: { label: '2020-22 player board (ring 2, M C C C S M M M C S S S)', ports: parseEngine(['. . . .', '. M C C .', '. S . . C .', '. S . . . S .', '. S . . M .', '. C M M .', '. . . .']) },
+    heimdall: { label: 'Heimdall-13 (Mar 2020, ring 2)', ports: parseEngine(['. . . .', '. S S S .', '. C . . M .', '. M . X . C .', '. M . . C .', '. M S C .', '. . . .']) },
+    claw: { label: 'Claw that rends the sky (Mar 2020, scattered arms)', ports: parseEngine(['. M . .', '. M . . .', '. M . . S .', '. . S X . S .', '. . . M . S', 'C C C . .', '. . . .']) },
+    coop: { label: 'Apr 2021 co-op engine (scattered)', ports: parseEngine(['C . . .', '. . C . .', '. C . M S .', '. . S . . . S', '. M . C S .', '. . M . .', 'M . . .']) },
+  };
+
+  const OPT_SHIPPED = { rotate: 'ports', patterns: 'fixed', arming: 'hold', exit: 'align', domainMap: 'mcs', engine: 'board2021', loadout: 'starter', eject: false, centreWild: false, slip: true };
+  const OPT_LABELS = {
+    rotate: { ports: 'Ports rotate one step a tick; mutons stay (the brief)', engine: 'The whole engine turns 60 degrees a tick, mutons included' },
+    patterns: { fixed: 'Patterns orientation-fixed, as printed (the brief)', rotatable: 'Patterns match in any of 6 rotations' },
+    arming: { hold: 'Hold to arm: F, the arm pad or LT (lab candidate: round 1, Found 1)', always: 'Always armed when a matching charge is held (the brief\'s default)', aim: 'Aim-gated: slips only when a trail end is inside the nose cone (lab proposal)' },
+    exit: { align: 'Exit aligned to the trail (the brief)', keep: 'Exit keeps your facing' },
+  };
+
+  const LS = 'lab:' + LAB.name + ':r1:';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const P = Object.assign({}, SHIPPED, lsGet('P', {}));
+  for (const k of Object.keys(P)) if (!(k in SHIPPED)) delete P[k];
+  const OPT = Object.assign({}, OPT_SHIPPED, lsGet('opt', {}));
+  for (const k of Object.keys(OPT)) if (!(k in OPT_SHIPPED)) delete OPT[k];
+
+  // ================= helpers =================
+  function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const hypot2 = (x, z) => Math.sqrt(x * x + z * z);
+  const wrapAng = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+  function gauss(r) { const u = Math.max(1e-9, r()), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  // Difficulty changes belief and pace, never the stick or the rules (/vessel-ai).
+  const PSKILL = {   // the Honeyguide's pilot AI
+    easy: { think: 0.6, steerNoise: 0.35, sees: 140, minGain: 90, avoid: 0.3 },
+    medium: { think: 0.3, steerNoise: 0.15, sees: 240, minGain: 50, avoid: 0.7 },
+    hard: { think: 0.15, steerNoise: 0.04, sees: 360, minGain: 30, avoid: 1 },
+  };
+  const ESKILL = {   // the Ratel's engineer AI
+    easy: { think: 1.6, top: 4, blunder: 0.25, noise: 400 },
+    medium: { think: 0.9, top: 2, blunder: 0.08, noise: 80 },
+    hard: { think: 0.45, top: 1, blunder: 0, noise: 5 },
+  };
+
+  // ================= THE MODEL: the arena =================
+  function dynamoSettings(cfg) {
+    const o = cfg.opts;
+    return {
+      tickSeconds: cfg.P.tickSeconds, apPerTick: cfg.P.apPerTick, apBank: cfg.P.apBank, bonusApCap: cfg.P.bonusApCap, batteryCap: cfg.P.batteryCap,
+      pickTimeout: cfg.P.pickTimeout, researchCost: cfg.P.researchCost, rotateWholeEngine: o.rotate === 'engine', allowRotatedMatches: o.patterns === 'rotatable',
+      centreWild: !!o.centreWild, startFilled: true, ports: ENGINES[o.engine].ports, patterns: PATTERNS, loadout: LOADOUTS[o.loadout].cards.map(byName),
+    };
+  }
+  const OTHER_DOMAINS = ['ruby', 'gold', 'jade'];
+  function makeHull(id, dom, x, z, h, honey) {
+    return { id, dom, x, z, h, speed: 0, boostE: 0, slowT: 0, honey, trail: null, dist: 0, tokens: [], recolour: 0, recolourDom: null, ignoreTrail: -1, ignoreT: 0, roam: null, flash: 0 };
+  }
+  function makeWorld(seed, cfg) {
+    const rng = mulberry32(seed), Pw = cfg.P;
+    const w = {
+      t: 0, seed, cfg, P: Pw, rng, rngAI: mulberry32(seed ^ 0x9e3779b9), rngE: mulberry32(seed ^ 0x51ed27), rngP: mulberry32(seed ^ 0x2545f491),
+      hulls: [], trails: [], nextTrail: 1, S: dynamoSettings(cfg), dyn: null, dest: null,
+      seats: { pilot: Object.assign({ think: 0, cmd: { steer: 0, boost: false, button: false, arm: false }, goal: null }, cfg.pilot), eng: Object.assign({ think: 0 }, cfg.eng) },
+      swapT: 0, orientT: 0, effects: [], log: [],
+      m: { dests: 0, slips: 0, slipDist: 0, slipGain: 0, badSlips: 0, aimed: 0, aimedGain: 0, patterns: 0, charges: 0, used: 0, saddled: 0, emptyT: 0, apGiven: 0, hits: 0, abilities: 0, swaps: 0, clipped: 0 },
+    };
+    w.dyn = D.create(w.S, seed);
+    w.hulls.push(makeHull(0, OUR_DOMAIN, 0, 0, -Math.PI / 2, true));
+    for (let i = 0; i < Pw.others; i++) {
+      const a = rng() * Math.PI * 2, r = Pw.arenaRadius * (0.3 + 0.5 * rng());
+      w.hulls.push(makeHull(i + 1, OTHER_DOMAINS[i % 3], Math.cos(a) * r, Math.sin(a) * r, rng() * Math.PI * 2, false));
+    }
+    // a head start: every other hull has already flown a while, so trails exist from the first second
+    for (let k = 0; k < 360; k++) for (const hl of w.hulls) if (!hl.honey) { rivalStep(w, hl, 1 / 15); }
+    w.dest = spawnDest(w);
+    w.legStart = hypot2(w.dest.x, w.dest.z);
+    return w;
+  }
+  function spawnDest(w) {
+    const h = w.hulls[0], R = w.P.arenaRadius - 40;
+    for (let k = 0; k < 40; k++) {
+      const a = w.rng() * Math.PI * 2, r = R * Math.sqrt(w.rng());
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (hypot2(x - h.x, z - h.z) >= w.P.destMin || k === 39) return { x, z, born: w.t };
+    }
+    return { x: 0, z: 0, born: w.t };
+  }
+  function newTrail(w, hull, dom) { const t = { id: w.nextTrail++, owner: hull ? hull.id : -1, dom, pts: [], doms: [], born: [] }; w.trails.push(t); if (hull) hull.trail = t; return t; }
+  function hullPrismCount(w, id) { let n = 0; for (const t of w.trails) if (t.owner === id) n += t.pts.length; return n; }
+  function layPrism(w, hull) {
+    if (!hull.trail) newTrail(w, hull, hull.dom);
+    const t = hull.trail;
+    t.pts.push([hull.x - Math.cos(hull.h) * 4, 0, hull.z - Math.sin(hull.h) * 4]); t.doms.push(hull.dom); t.born.push(w.t);
+    if (hullPrismCount(w, hull.id) > w.P.trailCap) {   // recycle the oldest prism of this hull
+      const old = w.trails.find((x) => x.owner === hull.id && x.pts.length);
+      if (old) { old.pts.shift(); old.doms.shift(); old.born.shift(); }
+    }
+    if (w.trails.length > 60) w.trails = w.trails.filter((x) => x.pts.length > 0 || x === hull.trail);
+  }
+  function moveHull(w, hull, steer, boost, dt) {
+    const Pw = w.P;
+    hull.h = wrapAng(hull.h + clamp(steer, -1, 1) * Pw.yawRate * Math.PI / 180 * dt);
+    const boosting = boost && hull.boostE > 0;
+    if (boosting) hull.boostE = Math.max(0, hull.boostE - dt);
+    let v = Pw.minSpeed + Pw.throttleScaler * (boosting ? Pw.boostMul : 1);
+    if (hull.slowT > 0) { hull.slowT -= dt; v *= 1 - Pw.hitSlow; }
+    hull.speed = v; hull.boosting = boosting;
+    hull.x += Math.cos(hull.h) * v * dt; hull.z += Math.sin(hull.h) * v * dt;
+    const r = hypot2(hull.x, hull.z);
+    if (r > Pw.arenaRadius) { hull.x *= Pw.arenaRadius / r; hull.z *= Pw.arenaRadius / r; }   // the membrane
+    hull.dist += v * dt;
+    while (hull.dist >= Pw.wavelength) { hull.dist -= Pw.wavelength; layPrism(w, hull); }
+  }
+  // Teleport (the game's IVessel.SetPose: TeleportContinuity cuts the ribbon, so the hull starts a new trail)
+  function setPose(w, hull, x, z, h) {
+    const r = hypot2(x, z);
+    if (r > w.P.arenaRadius) { x *= w.P.arenaRadius / r; z *= w.P.arenaRadius / r; }
+    hull.x = x; hull.z = z; if (h != null) hull.h = h;
+    hull.trail = null; hull.dist = 0;
+  }
+  function rivalStep(w, hl, dt) {
+    if (!hl.roam || hypot2(hl.roam[0] - hl.x, hl.roam[1] - hl.z) < 30) { const a = w.rng() * Math.PI * 2, r = (w.P.arenaRadius - 30) * Math.sqrt(w.rng()); hl.roam = [Math.cos(a) * r, Math.sin(a) * r]; }
+    const want = Math.atan2(hl.roam[1] - hl.z, hl.roam[0] - hl.x), err = wrapAng(want - hl.h);
+    moveHull(w, hl, clamp(err * 2.2, -1, 1), false, dt);
+  }
+
+  // What colour a battery charge is, as a domain; which charges the hull holds.
+  const domOf = (w, colour) => DOMAIN_MAPS[w.cfg.opts.domainMap].map[colour];
+  function heldDomains(w) { const s = new Set(); for (const c of w.dyn.battery) s.add(domOf(w, c)); return s; }
+  function colourFor(w, dom) { const m = DOMAIN_MAPS[w.cfg.opts.domainMap].map; for (let c = 1; c <= 3; c++) if (m[c] === dom) return c; return 0; }
+
+  // The slip planner both AIs use: the best gain toward the destination from riding a trail of domain `dom`.
+  function slipGain(w, hull, dom, sees) {
+    const Pw = w.P, dest = w.dest, before = hypot2(dest.x - hull.x, dest.z - hull.z);
+    let best = null;
+    for (const t of w.trails) {
+      if (t.pts.length < Pw.minSlipTrailLength || (t.id === hull.ignoreTrail && hull.ignoreT > 0)) continue;
+      const pts = t.pts, step = Math.max(1, Math.floor(pts.length / 12));
+      for (let i = 0; i < pts.length; i += step) {
+        if (t.doms[i] !== dom) continue;
+        const dx = pts[i][0] - hull.x, dz = pts[i][2] - hull.z, d = hypot2(dx, dz);
+        if (d > sees || d < 8) continue;
+        const fwd = [dx / d, 0, dz / d], land = D.slipDestination(pts, i, [pts[i][0], 0, pts[i][2]], fwd, Pw.slipReach, Pw.exitOffset);
+        if (!land) continue;
+        const gain = before - (d + hypot2(dest.x - land.point[0], dest.z - land.point[2]));
+        if (!best || gain > best.gain) best = { gain, x: pts[i][0], z: pts[i][2], trail: t.id, land };
+      }
+    }
+    return best;
+  }
+  // The Engineer AI's read of the world: how useful a charge of each colour is to the pilot right now.
+  function colourScores(w) {
+    const hull = w.hulls[0], held = heldDomains(w), out = [0, 0, 0, 0];
+    for (let c = 1; c <= 3; c++) {
+      const dom = domOf(w, c), g = slipGain(w, hull, dom, w.P.slipReach * 0.9);
+      out[c] = (g ? Math.max(0, g.gain) : 0) - (held.has(dom) ? 60 : 0);
+    }
+    return out;
+  }
+
+  // ---- the Honeyguide's contacts: the Slip, recolouring, hostile prisms ----
+  function contacts(w, hull, armed, dt) {
+    const Pw = w.P, rr = Pw.hullRadius + Pw.prismL * 0.5, rr2 = rr * rr;
+    if (hull.ignoreT > 0) hull.ignoreT -= dt;
+    for (const t of w.trails) {
+      const pts = t.pts;
+      for (let i = 0; i < pts.length; i++) {
+        const dx = pts[i][0] - hull.x, dz = pts[i][2] - hull.z;
+        if (dx * dx + dz * dz > rr2) continue;
+        if (t.owner === hull.id && w.t - t.born[i] < Pw.selfGrace) continue;   // SELF_TRAIL_CONTACT.md
+        if (t.id === hull.ignoreTrail && hull.ignoreT > 0) continue;
+        if (hull.recolour > 0 && t.doms[i] !== hull.recolourDom) {   // Reality Detangler
+          t.doms[i] = hull.recolourDom; hull.recolour--; w.effects.push({ k: 'ring', x: pts[i][0], z: pts[i][2], col: DOM[hull.recolourDom].color, t: 0.6 });
+          continue;
+        }
+        const dom = t.doms[i], c = colourFor(w, dom);
+        if (w.cfg.opts.slip && armed && pts.length >= Pw.minSlipTrailLength && c && w.dyn.battery.indexOf(c) >= 0 && aimOk(w, hull, t)) { slip(w, hull, t, i, c); return; }
+        if (dom !== hull.dom && hull.slowT <= 0) { hull.slowT = 1; w.m.hits++; }
+      }
+    }
+  }
+  // Aim-gated arming: the end the slip would take must lie inside the nose cone, so brushing a trail sideways does nothing.
+  function aimOk(w, hull, t) {
+    if (w.cfg.opts.arming !== 'aim') return true;
+    const f = [Math.cos(hull.h), Math.sin(hull.h)], n = t.pts.length, cone = Math.cos(w.P.aimCone * Math.PI / 180);
+    for (const e of [t.pts[0], t.pts[n - 1]]) { const dx = e[0] - hull.x, dz = e[2] - hull.z, d = hypot2(dx, dz); if (d > 1e-6 && (dx * f[0] + dz * f[1]) / d >= cone) return true; }
+    return false;
+  }
+  function slip(w, hull, t, i, colour) {
+    const Pw = w.P, fwd = [Math.cos(hull.h), 0, Math.sin(hull.h)];
+    const land = D.slipDestination(t.pts, i, [hull.x, 0, hull.z], fwd, Pw.slipReach, Pw.exitOffset);
+    if (!land) return;
+    D.spend(w.dyn, colour);
+    w.m.used++;
+    let ejected = 0;
+    if (w.cfg.opts.eject) while (D.spend(w.dyn, colour)) ejected++;
+    if (ejected) {   // "you can eject as many mutons as you burn": lay that many prisms of the domain at the entry point
+      const e = newTrail(w, null, domOf(w, colour));
+      for (let k = 0; k < ejected; k++) { e.pts.push([hull.x + Math.cos(hull.h + 1.57) * (k - ejected / 2) * 5, 0, hull.z + Math.sin(hull.h + 1.57) * (k - ejected / 2) * 5]); e.doms.push(e.dom); e.born.push(w.t); }
+    }
+    const x0 = hull.x, z0 = hull.z, d = hypot2(land.point[0] - x0, land.point[2] - z0);
+    const gain = hypot2(w.dest.x - x0, w.dest.z - z0) - hypot2(w.dest.x - land.point[0], w.dest.z - land.point[2]);
+    w.m.slipGain += gain; if (gain < 0) w.m.badSlips++;
+    const ps = w.seats.pilot; if (ps.goal && ps.goal.slip) { w.m.aimed++; w.m.aimedGain += gain; }
+    const h = w.cfg.opts.exit === 'align' ? Math.atan2(land.heading[2], land.heading[0]) : hull.h;
+    setPose(w, hull, land.point[0], land.point[2], h);
+    hull.ignoreTrail = t.id; hull.ignoreT = Pw.slipGrace;
+    w.m.slips++; w.m.slipDist += d; if (land.clipped) w.m.clipped++;
+    w.effects.push({ k: 'slip', x0, z0, x1: hull.x, z1: hull.z, col: DOM[t.doms[i]].color, t: 0.9 });
+    w.log.push({ t: w.t, k: 'slip', d });
+  }
+
+  // ---- pattern abilities, on the Dynamo's events ----
+  function onDynamoEvent(w, e) {
+    const hull = w.hulls[0], Pw = w.P;
+    if (e.k === 'ability') {
+      w.m.patterns++; w.m.abilities++;
+      const eff = PATTERNS[e.pid].effect;
+      w.effects.push({ k: 'banner', text: PATTERNS[e.pid].name, col: DOM[domOf(w, PATTERNS[e.pid].family)].color, t: 1.6 });
+      if (eff === 'amanita') hull.boostE += 6 * Pw.boostPerPoint;
+      else if (eff === 'thruster') for (let k = 0; k < 4; k++) hull.tokens.push({ k: 'dash', t: Pw.tokenLife });
+      else if (eff === 'monte') for (let k = 0; k < 3; k++) hull.tokens.push({ k: 'swap', t: Pw.tokenLife });
+      else if (eff === 'blink') { setPose(w, hull, hull.x + Math.cos(hull.h) * Pw.blinkDist, hull.z + Math.sin(hull.h) * Pw.blinkDist, null); w.effects.push({ k: 'ring', x: hull.x, z: hull.z, col: '#ffa700', t: 0.6 }); }
+    } else if (e.k === 'charge') { w.m.charges++; }
+    else if (e.k === 'destroyed') hull.boostE += 2 * e.n * Pw.boostPerPoint;
+    else if (e.k === 'pick') {
+      const eff = PATTERNS[e.pid].effect, dom = domOf(w, e.colour);
+      if (eff === 'saddle') { const n = D.drainAll(w.dyn); w.m.saddled += n; hull.boostE += 3 * n * Pw.boostPerPoint; }
+      else if (eff === 'detangler') { hull.recolour = Pw.detanglerCount; hull.recolourDom = dom; }
+      else if (eff === 'condenser') {
+        const t = newTrail(w, null, dom);
+        for (let k = 0; k < Pw.condenserPrisms; k++) { const s = 30 + k * Pw.wavelength; t.pts.push([hull.x + Math.cos(hull.h) * s, 0, hull.z + Math.sin(hull.h) * s]); t.doms.push(dom); t.born.push(w.t); }
+      } else if (eff === 'rosen') {
+        let best = null;
+        for (const t of w.trails) for (let i = 0; i < t.pts.length; i++) {
+          if (t.doms[i] !== dom) continue;
+          const dx = t.pts[i][0] - hull.x, dz = t.pts[i][2] - hull.z, d = hypot2(dx, dz);
+          if (d > Pw.rosenReach || d < 10 || Math.abs(wrapAng(Math.atan2(dz, dx) - hull.h)) > 35 * Math.PI / 180) continue;
+          if (!best || d > best.d) best = { d, x: t.pts[i][0], z: t.pts[i][2] };
+        }
+        if (best) { w.effects.push({ k: 'slip', x0: hull.x, z0: hull.z, x1: best.x, z1: best.z, col: DOM[dom].color, t: 0.7 }); setPose(w, hull, best.x, best.z, null); }
+      }
+    } else if (e.k === 'tick') w.m.apGiven += w.P.apPerTick;
+  }
+  function pressButton(w, hull) {
+    const tok = hull.tokens.shift();
+    if (!tok) return;
+    const Pw = w.P;
+    if (tok.k === 'dash') setPose(w, hull, hull.x + Math.cos(hull.h) * Pw.dashDist, hull.z + Math.sin(hull.h) * Pw.dashDist, null);
+    else if (tok.k === 'swap') {
+      let best = null;
+      for (const t of w.trails) for (let i = 0; i < t.pts.length; i++) {
+        const dx = t.pts[i][0] - hull.x, dz = t.pts[i][2] - hull.z, d = hypot2(dx, dz);
+        if (d > Pw.monteReach || d < 10 || Math.abs(wrapAng(Math.atan2(dz, dx) - hull.h)) > 35 * Math.PI / 180) continue;
+        if (!best || d > best.d) best = { d, t, i };
+      }
+      if (best) { const p = best.t.pts[best.i], x0 = hull.x, z0 = hull.z; setPose(w, hull, p[0], p[2], null); best.t.pts[best.i] = [x0, 0, z0]; }
+    }
+  }
+
+  // ---- the Honeyguide's pilot AI: input-only (steer, boost, button, arm) ----
+  function pilotAI(w, seat, dt) {
+    const hull = w.hulls[0], S = PSKILL[seat.skill], cmd = seat.cmd;
+    seat.think -= dt;
+    if (seat.think <= 0) {
+      seat.think = S.think;
+      let goal = { x: w.dest.x, z: w.dest.z, slip: false };
+      if (w.cfg.opts.slip) {
+        let best = null;
+        for (const dom of heldDomains(w)) { const g = slipGain(w, hull, dom, S.sees); if (g && (!best || g.gain > best.gain)) best = g; }
+        if (best && best.gain > S.minGain) goal = { x: best.x, z: best.z, slip: true };
+      }
+      seat.goal = goal;
+      seat.noise = gauss(w.rngP) * S.steerNoise;
+    }
+    const goal = seat.goal || { x: w.dest.x, z: w.dest.z };
+    let want = Math.atan2(goal.z - hull.z, goal.x - hull.x);
+    // avoid a hostile prism straight ahead unless we are about to slip on it
+    if (!goal.slip && w.rngP() < S.avoid) {
+      const held = heldDomains(w);
+      for (const t of w.trails) {
+        if (t.owner === hull.id) continue;
+        for (let i = 0; i < t.pts.length; i += 2) {
+          // hostile prisms slow the hull; under always-armed, a held domain's trail is a slip it did not ask for
+          const unwanted = held.has(t.doms[i]) ? (w.cfg.opts.slip && w.cfg.opts.arming !== 'hold' && t.pts.length >= w.P.minSlipTrailLength) : t.doms[i] !== hull.dom;
+          if (!unwanted) continue;
+          const dx = t.pts[i][0] - hull.x, dz = t.pts[i][2] - hull.z, d = hypot2(dx, dz);
+          if (d > 30) continue;
+          const rel = wrapAng(Math.atan2(dz, dx) - hull.h);
+          if (Math.abs(rel) < 0.35) { want = hull.h - Math.sign(rel || 1) * 1.2; i = t.pts.length; }
+        }
+      }
+    }
+    const err = wrapAng(want - hull.h) + (seat.noise || 0);
+    cmd.steer = clamp(err * 2.5, -1, 1);
+    cmd.boost = hull.boostE > 0 && Math.abs(err) < 0.45;
+    cmd.button = hull.tokens.length > 0 && Math.abs(wrapAng(Math.atan2(w.dest.z - hull.z, w.dest.x - hull.x) - hull.h)) < 0.35;
+    cmd.arm = !!(seat.goal && seat.goal.slip);
+  }
+  function engineerAI(w, seat, dt) {
+    seat.think -= dt;
+    if (seat.think > 0) return;
+    const S = ESKILL[seat.skill];
+    seat.think = S.think;
+    const inp = D.aiPlan(w.dyn, w.S, S, colourScores(w), w.rngE);
+    if (inp) D.apply(w.dyn, w.S, inp);
+  }
+
+  // ---- one step of the whole world. `live` carries the human inputs (null in the batch) ----
+  function simStepWorld(w, dt, live) {
+    const hull = w.hulls[0], seats = w.seats;
+    if (w.swapT > 0) w.swapT -= dt;
+    if (w.orientT > 0) w.orientT -= dt;
+    // the pilot seat
+    let cmd;
+    if (seats.pilot.who === 'ai') { pilotAI(w, seats.pilot, dt); cmd = seats.pilot.cmd; }
+    else if (seats.pilot.who === 'human' && live) cmd = live.pilot;
+    else cmd = { steer: 0, boost: false, button: false, arm: false };
+    if (w.orientT > 0 && seats.pilot.who !== 'human') cmd = { steer: 0, boost: false, button: false, arm: cmd.arm };
+    moveHull(w, hull, cmd.steer, cmd.boost, dt);
+    for (const tk of hull.tokens) tk.t -= dt;
+    hull.tokens = hull.tokens.filter((tk) => tk.t > 0);
+    if (cmd.button) { if (!w.btnHeld) pressButton(w, hull); w.btnHeld = true; } else w.btnHeld = false;
+    contacts(w, hull, w.cfg.opts.arming === 'always' || cmd.arm, dt);
+    for (let i = 1; i < w.hulls.length; i++) rivalStep(w, w.hulls[i], dt);
+    // the engineer seat
+    if (seats.eng.who === 'ai' && !(w.orientT > 0)) engineerAI(w, seats.eng, dt);
+    else if (seats.eng.who === 'human' && live) for (const inp of live.eng.splice(0)) D.apply(w.dyn, w.S, inp);
+    D.advance(w.dyn, w.S, dt);
+    for (const e of w.dyn.events.splice(0)) onDynamoEvent(w, e);
+    if (!w.dyn.battery.length) w.m.emptyT += dt;
+    // the race
+    if (hypot2(w.dest.x - hull.x, w.dest.z - hull.z) < w.P.destRadius) { w.m.dests++; w.effects.push({ k: 'ring', x: w.dest.x, z: w.dest.z, col: '#ffffff', t: 0.8 }); w.dest = spawnDest(w); w.legStart = hypot2(w.dest.x - hull.x, w.dest.z - hull.z); }
+    for (const fx of w.effects) fx.t -= dt;
+    if (w.effects.length > 40 || w.effects.some((fx) => fx.t <= 0)) w.effects = w.effects.filter((fx) => fx.t > 0).slice(-40);
+    w.t += dt;
+  }
+  function swapSeats(w) {
+    if (w.swapT > 0) return false;
+    const a = w.seats.pilot, b = w.seats.eng;
+    [a.who, b.who] = [b.who, a.who]; [a.skill, b.skill] = [b.skill, a.skill];
+    w.swapT = w.P.swapCooldown; w.m.swaps++;
+    if (a.who === 'human' || b.who === 'human') w.orientT = 0; else w.orientT = w.P.swapOrient;
+    return true;
+  }
+
+  // ================= score: one number per column the lab exists to decide =================
+  function score(w) {
+    const min = w.t / 60, m = w.m;
+    return {
+      t: +w.t.toFixed(2), destsPerMin: +((m.dests + clamp(1 - hypot2(w.dest.x - w.hulls[0].x, w.dest.z - w.hulls[0].z) / Math.max(1, w.legStart), -1, 1)) / min).toFixed(2),
+      slipGain: m.slips ? +(m.slipGain / m.slips).toFixed(1) : 0, badSlips: m.slips ? +(100 * m.badSlips / m.slips).toFixed(0) : 0, aimed: m.slips ? +(100 * m.aimed / m.slips).toFixed(0) : 0, aimedGain: m.aimed ? +(m.aimedGain / m.aimed).toFixed(1) : 0, slipsPerMin: +(m.slips / min).toFixed(2), meanSlip: m.slips ? +(m.slipDist / m.slips).toFixed(1) : 0,
+      patternsPerMin: +(m.patterns / min).toFixed(2), engIdle: m.apGiven ? +(100 * w.dyn.wasted / (m.apGiven + w.S.apPerTick)).toFixed(1) : 0,
+      waiting: +(100 * m.emptyT / Math.max(1e-9, w.t)).toFixed(1), hitRate: m.charges ? +(100 * m.used / m.charges).toFixed(1) : 0,
+      chargesPerMin: +(m.charges / min).toFixed(2), clipped: m.slips ? +(100 * m.clipped / m.slips).toFixed(0) : 0, hitsPerMin: +(m.hits / min).toFixed(2),
+    };
+  }
+  function cfgFrom(opts, pilotSkill, engWho, engSkill, extraP) {
+    return { P: Object.assign({}, P, extraP || {}), opts: Object.assign({}, OPT, opts || {}), pilot: { who: 'ai', skill: pilotSkill }, eng: { who: engWho, skill: engSkill } };
+  }
+  function runOne(cfg, s, seconds, dt) { const w = makeWorld(s, cfg); const n = Math.round(seconds / dt); for (let i = 0; i < n; i++) simStepWorld(w, dt, null); return score(w); }
+  const VARIANTS = [
+    { name: 'Solo (no Engineer)', eng: 'none', opts: {} },
+    { name: 'Candidate', opts: {}, skills: true },
+    { name: 'Slip off (abilities only)', opts: { slip: false } },
+    { name: 'Whole engine turns', opts: { rotate: 'engine' } },
+    { name: 'Rotatable patterns', opts: { patterns: 'rotatable' } },
+    { name: 'Exit keeps facing', opts: { exit: 'keep' } },
+    { name: 'Always armed (the brief)', opts: { arming: 'always' } },
+    { name: 'Aim-gated arming', opts: { arming: 'aim' } },
+    { name: 'Tick 6 s', opts: {}, P: { tickSeconds: 6 } },
+    { name: 'Tick 12 s', opts: {}, P: { tickSeconds: 12 } },
+    { name: 'Battery 6', opts: {}, P: { batteryCap: 6 } },
+    { name: 'Own domain is M', opts: { domainMap: 'ownM' } },
+    { name: 'Heimdall-13 engine', opts: { engine: 'heimdall' } },
+    { name: 'Claw engine', opts: { engine: 'claw' } },
+    { name: 'Co-op engine', opts: { engine: 'coop' } },
+    { name: 'Loadout: Mass (boost)', opts: { loadout: 'boost' } },
+    { name: 'Loadout: Space-Time', opts: { loadout: 'space' } },
+    { name: 'Loadout: Engineer', opts: { loadout: 'engine' } },
+    { name: 'Loadout: Charge (trails)', opts: { loadout: 'trails' } },
+  ];
+  const COLS = [
+    ['destsPerMin', 'Legs/min', 'Race legs a minute: destinations reached, plus the share of the last leg flown. Higher is better.'],
+    ['lift', 'Lift %', 'Dest/min against the solo hull (no Engineer, no battery).'],
+    ['slipsPerMin', 'Slips/min', 'Slips ridden a minute.'],
+    ['meanSlip', 'Mean slip (u)', 'Mean distance a slip carried the hull.'],
+    ['slipGain', 'Slip gain (u)', 'Mean distance a slip took off the way to the destination (negative: it carried the hull away).'],
+    ['badSlips', 'Bad slips %', 'Slips that left the hull farther from the destination.'],
+    ['aimed', 'Aimed %', 'Slips the pilot was steering for (the rest were brushes with a trail).'],
+    ['aimedGain', 'Aimed gain (u)', 'Mean gain of the slips the pilot steered for.'],
+    ['clipped', 'Clipped %', 'Slips the reach cap cut short.'],
+    ['patternsPerMin', 'Patterns/min', 'Patterns activated a minute.'],
+    ['engIdle', 'Eng idle %', 'AP the Engineer let go to waste (the bank was full at a tick).'],
+    ['waiting', 'Waiting %', 'Time the battery held no charge: the pilot waiting for a charge.'],
+    ['hitRate', 'Hit rate %', 'Charges that were slipped on, of all charges made: the Engineer\'s domain choice.'],
+    ['chargesPerMin', 'Charges/min', 'Charges put in the battery a minute.'],
+    ['hitsPerMin', 'Hostile hits/min', 'Hostile prisms hit (each slows the hull for a second).'],
+  ];
+  function runBatch(opts) {
+    opts = opts || {};
+    const seeds = opts.seeds || [1, 2, 3, 4, 5, 6], seconds = opts.seconds || 120, dt = opts.dt || 1 / 30, rows = [];
+    const avg = (list) => { const o = {}; for (const k of Object.keys(list[0])) o[k] = +(list.reduce((s, r) => s + r[k], 0) / list.length).toFixed(2); return o; };
+    const se = (list, k) => { const m = list.reduce((s, r) => s + r[k], 0) / list.length; return +(Math.sqrt(list.reduce((s, r) => s + (r[k] - m) * (r[k] - m), 0) / Math.max(1, list.length - 1)) / Math.sqrt(list.length)).toFixed(2); };
+    let solo = 0;
+    for (const v of (opts.variants || VARIANTS)) {
+      const engs = v.eng === 'none' ? [['none', 'hard']] : v.skills ? [['ai', 'hard'], ['ai', 'easy'], ['idle', 'hard']] : [['ai', 'hard']];
+      for (const [who, skill] of engs) {
+        const list = seeds.map((s) => runOne(cfgFrom(Object.assign({}, v.opts, who === 'none' ? { slip: false } : {}), 'hard', who === 'ai' ? 'ai' : 'none', skill, v.P), s, seconds, dt));
+        const row = Object.assign({ variant: v.name + (v.skills ? (who === 'idle' ? ' · idle Engineer' : ' · ' + skill + ' Engineer') : ''), se: se(list, 'destsPerMin') }, avg(list));
+        if (v.eng === 'none') solo = row.destsPerMin;
+        row.lift = solo ? +(100 * (row.destsPerMin - solo) / solo).toFixed(1) : 0;
+        rows.push(row);
+      }
+    }
+    return rows;
+  }
+
+  // ================= platform: answered once =================
+  function detectPlatform() {
+    const host = window.__labHost || {}, ua = navigator.userAgent || '';
+    const mobileUA = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const coarseOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+    return { shell: host.shell || 'web', device: host.device || ((mobileUA || coarseOnly) ? 'phone' : 'pc') };
+  }
+  const PLATFORM = detectPlatform();
+  $('platform').textContent = (PLATFORM.shell === 'web' ? 'Web' : PLATFORM.shell) + ' · ' + (PLATFORM.device === 'phone' ? 'Phone' : 'PC');
+
+  // ================= the live world and its crew =================
+  let seed = 7, world = null, paused = false;
+  const crew = { you: lsGet('you', PLATFORM.device === 'phone' ? 'eng' : 'eng'), mate: lsGet('mate', 'hard') };
+  function liveCfg() {
+    const you = crew.you, mate = crew.mate;
+    const pilot = you === 'fly' || you === 'couch' ? { who: 'human', skill: 'hard' } : { who: 'ai', skill: mate };
+    const eng = you === 'eng' || you === 'couch' ? { who: 'human', skill: 'hard' } : { who: 'ai', skill: mate };
+    return { P: Object.assign({}, P), opts: Object.assign({}, OPT), pilot, eng };
+  }
+  function reset(s) { if (s != null) seed = s >>> 0; world = makeWorld(seed, liveCfg()); ui.drag = null; }
+  function applyCrew() { const c = liveCfg(); Object.assign(world.seats.pilot, c.pilot); Object.assign(world.seats.eng, c.eng); world.cfg.pilot = c.pilot; world.cfg.eng = c.eng; }
+
+  // ================= human inputs =================
+  const keys = new Set();
+  const live = { pilot: { steer: 0, boost: false, button: false, arm: false }, eng: [] };
+  addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    keys.add(e.code);
+    if (e.code === 'Digit1' || e.code === 'Digit2') requestSwap('key');
+    if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
+  });
+  addEventListener('keyup', (e) => keys.delete(e.code));
+  let padPrev = { l: false, r: false };
+  function pollPad() {
+    let pads = [];
+    try { pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : []; } catch (e) { pads = []; }   // the viewer may block it
+    const p = pads[0];
+    if (!p) return null;
+    const l = !!(p.buttons[14] && p.buttons[14].pressed), r = !!(p.buttons[15] && p.buttons[15].pressed);
+    if ((l && !padPrev.l) || (r && !padPrev.r)) requestSwap('pad');
+    padPrev = { l, r };
+    return { steer: Math.abs(p.axes[0]) > 0.15 ? p.axes[0] : 0, boost: !!(p.buttons[7] && p.buttons[7].value > 0.3) || !!(p.buttons[0] && p.buttons[0].pressed), button: !!(p.buttons[2] && p.buttons[2].pressed), arm: !!(p.buttons[6] && p.buttons[6].value > 0.3) };
+  }
+  function livePilot() {
+    const pad = pollPad();
+    let steer = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
+    let boost = keys.has('KeyW') || keys.has('ArrowUp') || keys.has('Space'), button = keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('KeyE'), arm = keys.has('KeyF');
+    if (pad) { if (pad.steer) steer = pad.steer; boost = boost || pad.boost; button = button || pad.button; arm = arm || pad.arm; }
+    if (ui.steerTouch && world) {   // a finger on the flight view: the hull turns toward it
+      const hull = world.hulls[0], want = Math.atan2(ui.steerTouch.z - hull.z, ui.steerTouch.x - hull.x);
+      steer = clamp(wrapAng(want - hull.h) * 2.5, -1, 1);
+      boost = boost || ui.steerTouch.two;
+    }
+    if (ui.padBtn) button = true;
+    if (ui.padArm) arm = true;
+    live.pilot = { steer, boost, button, arm };
+  }
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; ui.toastT = 1.8; }
+  function requestSwap(how) {
+    if (!world) return;
+    if (crew.you === 'watch' || crew.you === 'couch') { toast('Swap needs one human seat (Engineer or Fly)'); return; }
+    if (!swapSeats(world)) { toast('Swap cooling down'); return; }
+    crew.you = crew.you === 'eng' ? 'fly' : 'eng'; lsSet('you', crew.you); paintSeatSeg();
+    toast(crew.you === 'eng' ? 'You play the Ratel (Engineer); the AI flies' : 'You fly the Honeyguide; the AI plays the Dynamo');
+  }
+
+  // ================= drawing =================
+  const canvas = $('stage'), ctx = canvas.getContext('2d');
+  const ui = { drag: null, hover: -1, toastT: 0, layout: null, steerTouch: null, padBtn: false, padArm: false, research: false, offerPick: -1, freeColour: 0, lastPipTap: 0 };
+  const MUTON_INK = { 1: '#2a0029', 2: '#003b38', 3: '#3d2600' };
+  function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+  function computeLayout(W, H) {
+    const portrait = H > W * 1.05, you = crew.you;
+    let arena, dyn, pip = null;
+    if (!portrait) { const aw = Math.round(W * 0.56); arena = { x: 0, y: 0, w: aw, h: H }; dyn = { x: aw, y: 0, w: W - aw, h: H }; }
+    else if (you === 'fly') { arena = { x: 0, y: 0, w: W, h: H }; const pw = Math.round(W * 0.46), ph = Math.round(pw * 1.15); dyn = { x: W - pw - 8, y: H - ph - 8, w: pw, h: ph }; pip = 'dyn'; }
+    else { const ah = Math.round(H * 0.32); arena = { x: 0, y: 0, w: W, h: ah }; dyn = { x: 0, y: ah, w: W, h: H - ah }; }
+    return { arena, dyn, pip, portrait };
+  }
+  // the Dynamo panel's geometry: board, battery strip, slot cards
+  function dynLayout(L) {
+    const pad = 6, top = 30, slotsH = Math.max(60, Math.min(110, L.h * 0.18));
+    const bw = L.w - 2 * pad, bh = L.h - top - slotsH - 2 * pad;
+    const size = Math.max(6, Math.min(bw / (7 * Math.sqrt(3)), bh / 11));
+    const cx = L.x + L.w / 2, cy = L.y + top + pad + bh / 2;
+    return { size, cx, cy, top: L.y, slots: { x: L.x + pad, y: L.y + L.h - slotsH - pad / 2, w: L.w - 2 * pad, h: slotsH }, L };
+  }
+  function cellPx(G, i) { return [G.cx + G.size * Math.sqrt(3) * (D.Q[i] + D.R[i] / 2), G.cy + G.size * 1.5 * D.R[i]]; }
+  function pxCell(G, x, y) {
+    const fq = ((x - G.cx) * Math.sqrt(3) / 3 - (y - G.cy) / 3) / G.size, fr = (y - G.cy) * 2 / 3 / G.size, fs = -fq - fr;
+    let q = Math.round(fq), r = Math.round(fr); const s = Math.round(fs);
+    const dq = Math.abs(q - fq), dr = Math.abs(r - fr), ds = Math.abs(s - fs);
+    if (dq > dr && dq > ds) q = -r - s; else if (dr > ds) r = -q - s;
+    return D.idx(q, r);
+  }
+  function hexPath(x, y, s) { ctx.beginPath(); for (let k = 0; k < 6; k++) { const a = Math.PI / 180 * (60 * k - 30); ctx.lineTo(x + s * Math.cos(a), y + s * Math.sin(a)); } ctx.closePath(); }
+  function slotRects(G) { const S = G.slots, n = world.dyn.slots.length, gap = 6, w = (S.w - gap * (n - 1)) / n; return world.dyn.slots.map((_, k) => ({ x: S.x + k * (w + gap), y: S.y, w, h: S.h })); }
+  function colourOf(c) { return DOM[domOf(world, c)].color; }
+
+  function drawDynamo(L, small) {
+    const w = world, st = w.dyn, G = dynLayout(L);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(L.x, L.y, L.w, L.h); ctx.clip();
+    ctx.fillStyle = '#0b0d12'; ctx.fillRect(L.x, L.y, L.w, L.h);
+    ctx.strokeStyle = '#2a3340'; ctx.lineWidth = 1; ctx.strokeRect(L.x + 0.5, L.y + 0.5, L.w - 1, L.h - 1);
+    // header strip: AP pips, battery pips, the tick
+    const fs = Math.max(10, Math.min(14, L.w / 30));
+    ctx.font = '600 ' + fs + 'px system-ui, sans-serif'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#d9c9a3';
+    ctx.fillText(small ? 'Ratel' : 'Ratel · Dynamo', L.x + 10, L.y + 17);
+    const apX = L.x + 18 + ctx.measureText(small ? 'Ratel' : 'Ratel · Dynamo').width;
+    for (let k = 0; k < Math.max(w.S.apBank, st.ap) + st.bonusAp; k++) { ctx.beginPath(); ctx.arc(apX + k * 13, L.y + 17, 4.5, 0, 7); ctx.fillStyle = k < st.ap + st.bonusAp ? (k >= st.ap ? '#ffe28a' : '#ffb21f') : '#3a3326'; ctx.fill(); }
+    const bx = L.x + L.w - 12 - w.S.batteryCap * 20;
+    ctx.fillStyle = '#8a96a6'; ctx.textAlign = 'right'; ctx.fillText('battery', bx - 6, L.y + 17); ctx.textAlign = 'left';
+    for (let k = 0; k < w.S.batteryCap; k++) {
+      const c = st.battery[k], x = bx + k * 20 + 8;
+      ctx.beginPath(); ctx.arc(x, L.y + 17, 7, 0, 7);
+      if (c) { ctx.fillStyle = colourOf(c); ctx.fill(); } else { ctx.strokeStyle = '#3c4654'; ctx.lineWidth = 1.5; ctx.stroke(); }
+    }
+    ui.batteryRect = { x: bx, y: L.y + 4, w: w.S.batteryCap * 20 + 8, h: 26 };
+    // countdown arc around the board
+    const R = G.size * 4.25, frac = st.clock / w.S.tickSeconds;
+    ctx.beginPath(); ctx.arc(G.cx, G.cy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - frac)); ctx.strokeStyle = frac > 0.75 ? '#ffb21f' : '#4a5566'; ctx.lineWidth = 3; ctx.stroke();
+    const builtCells = new Set(); const built = D.built(st, w.S);
+    built.forEach((b) => { if (b) for (const c of b) builtCells.add(c); });
+    const pickSet = new Set(st.pick ? st.pick.cells : []), next = D.nextPorts(st, w.S), pulse = 0.5 + 0.5 * Math.sin(w.t * 6);
+    for (let i = 0; i < D.N; i++) {
+      const [x, y] = cellPx(G, i), pc = D.portAt(st, i);
+      hexPath(x, y, G.size * 0.95);
+      ctx.fillStyle = i === D.CENTRE && w.cfg.opts.centreWild ? '#2b2735' : '#161b23'; ctx.fill();
+      if (pc) { ctx.strokeStyle = hexA(colourOf(pc), 0.9); ctx.lineWidth = Math.max(2, G.size * 0.12); ctx.stroke(); }
+      else { ctx.strokeStyle = '#26303c'; ctx.lineWidth = 1; ctx.stroke(); }
+    }
+    for (const p of next) { const [x, y] = cellPx(G, p[0]); ctx.beginPath(); ctx.arc(x + G.size * 0.55, y - G.size * 0.45, Math.max(2, G.size * 0.1), 0, 7); ctx.fillStyle = hexA(colourOf(p[1]), 0.75); ctx.fill(); }
+    for (let i = 0; i < D.N; i++) {
+      const c = st.cells[i]; if (!c) continue;
+      if (ui.drag && ui.drag.from === i) continue;
+      const [x, y] = cellPx(G, i);
+      drawMuton(x, y, G.size * 0.62, c, builtCells.has(i) ? pulse : 0, pickSet.has(i));
+    }
+    if (ui.drag && st.cells[ui.drag.from]) { drawMuton(ui.drag.x, ui.drag.y, G.size * 0.7, st.cells[ui.drag.from], 0, false); }
+    if (st.pick) {
+      ctx.fillStyle = '#fff3cf'; ctx.font = '600 ' + fs + 'px system-ui, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('Pick the muton for the battery (' + Math.max(0, st.pick.timer).toFixed(1) + ' s)', G.cx, G.cy + G.size * 5.05); ctx.textAlign = 'left';
+    } else if (st.freePlace > 0) {
+      ctx.fillStyle = '#fff3cf'; ctx.textAlign = 'center'; ctx.fillText(st.freePlace + ' free muton' + (st.freePlace > 1 ? 's' : '') + ': tap an empty cell (colour ' + COLOUR_LETTER[ui.freeColour || 1] + ', tap the AP row to change)', G.cx, G.cy + G.size * 5.05); ctx.textAlign = 'left';
+    }
+    // the slot cards
+    const rects = slotRects(G);
+    rects.forEach((r, k) => {
+      const pid = st.slots[k], pat = PATTERNS[pid], lit = !!built[k];
+      ctx.fillStyle = lit ? hexA(colourOf(pat.family), 0.22 + 0.2 * pulse) : '#131820'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.strokeStyle = lit ? colourOf(pat.family) : '#2a3340'; ctx.lineWidth = lit ? 2 : 1; ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+      const tfs = Math.max(9, Math.min(12, r.w / 11));
+      ctx.font = '600 ' + tfs + 'px system-ui, sans-serif'; ctx.fillStyle = '#e8edf3'; ctx.fillText(fitText(pat.name, r.w - 8), r.x + 5, r.y + tfs);
+      // mini shape
+      const s = Math.min(r.w / 12, (r.h - tfs - 8) / 6.5), ox = r.x + r.w / 2, oy = r.y + tfs + 6 + (r.h - tfs - 8) / 2;
+      let mq = 0, mr = 0; for (const c of pat.cells) { mq += c[0] + c[1] / 2; mr += c[1]; } mq /= pat.cells.length; mr /= pat.cells.length;
+      for (const c of pat.cells) { const x = ox + s * Math.sqrt(3) * (c[0] + c[1] / 2 - mq), y = oy + s * 1.5 * (c[1] - mr); hexPath(x, y, s * 0.92); ctx.fillStyle = colourOf(c[2]); ctx.fill(); }
+      if (lit && !st.pick) { ctx.fillStyle = '#fff'; ctx.font = '700 ' + tfs + 'px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.fillText('TAP', r.x + r.w - 5, r.y + r.h - 6); ctx.textAlign = 'left'; }
+    });
+    ui.dynG = G; ui.slotRects = rects;
+    if (ui.research) drawResearch(L);
+    ctx.restore();
+  }
+  function fitText(t, w) { if (ctx.measureText(t).width <= w) return t; while (t.length > 3 && ctx.measureText(t + '…').width > w) t = t.slice(0, -1); return t + '…'; }
+  function drawMuton(x, y, r, c, glow, pick) {
+    if (glow) { ctx.beginPath(); ctx.arc(x, y, r * (1.15 + 0.2 * glow), 0, 7); ctx.fillStyle = hexA(colourOf(c), 0.25 + 0.25 * glow); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = colourOf(c); ctx.fill();
+    if (pick) { ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke(); }
+    ctx.fillStyle = MUTON_INK[c]; ctx.font = '700 ' + Math.round(r * 0.95) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(COLOUR_LETTER[c], x, y + 1); ctx.textAlign = 'left';
+  }
+  // the Research overlay: pick a family, then a card and a slot
+  function drawResearch(L) {
+    const st = world.dyn, x = L.x + 10, y = L.y + 36, w = L.w - 20, h = L.h - 46;
+    ctx.fillStyle = 'rgba(8,10,14,.94)'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#ffb21f'; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.font = '600 13px system-ui, sans-serif'; ctx.fillStyle = '#fff3cf'; ctx.textBaseline = 'middle';
+    ui.researchHits = [];
+    if (!st.offer) {
+      ctx.fillText('Research (' + world.S.researchCost + ' AP): draw 3 cards of one family', x + 10, y + 18);
+      for (let f = 1; f <= 3; f++) { const r = { x: x + 10, y: y + 34 + (f - 1) * 52, w: w - 20, h: 44 }; ctx.fillStyle = hexA(colourOf(f), 0.25); ctx.fillRect(r.x, r.y, r.w, r.h); ctx.fillStyle = '#fff'; ctx.fillText(COLOUR_NAME[f] + ' (' + DOM[domOf(world, f)].name + ')', r.x + 10, r.y + 22); ui.researchHits.push({ r, k: 'family', f }); }
+      const r = { x: x + 10, y: y + h - 44, w: w - 20, h: 36 }; ctx.fillStyle = '#222a35'; ctx.fillRect(r.x, r.y, r.w, r.h); ctx.fillStyle = '#ccd'; ctx.fillText('Close', r.x + 10, r.y + 18); ui.researchHits.push({ r, k: 'close' });
+      return;
+    }
+    ctx.fillText(ui.offerPick < 0 ? 'Keep one: tap a card' : 'Now tap the slot it replaces', x + 10, y + 18);
+    st.offer.forEach((pid, k) => {
+      const r = { x: x + 10, y: y + 34 + k * 56, w: w - 20, h: 50 }, pat = PATTERNS[pid];
+      ctx.fillStyle = k === ui.offerPick ? hexA(colourOf(pat.family), 0.45) : '#18202b'; ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.fillStyle = '#fff'; ctx.font = '600 12px system-ui, sans-serif'; ctx.fillText(pat.name + (pat.effect ? '' : ' (no effect yet)'), r.x + 8, r.y + 14);
+      ctx.fillStyle = '#9aa7b6'; ctx.font = '11px system-ui, sans-serif'; ctx.fillText(fitText(pat.effect ? EFFECT_TEXT[pat.effect] : pat.text, r.w - 16), r.x + 8, r.y + 34);
+      ui.researchHits.push({ r, k: 'offer', i: k });
+    });
+    if (ui.offerPick >= 0) world.dyn.slots.forEach((pid, k) => { const r = { x: x + 10 + k * (w - 20) / 3, y: y + h - 44, w: (w - 20) / 3 - 6, h: 36 }; ctx.fillStyle = '#2a3442'; ctx.fillRect(r.x, r.y, r.w, r.h); ctx.fillStyle = '#fff'; ctx.font = '11px system-ui, sans-serif'; ctx.fillText(fitText('→ ' + PATTERNS[pid].name, r.w - 8), r.x + 4, r.y + 18); ui.researchHits.push({ r, k: 'slot', i: k }); });
+  }
+  function drawArena(L, small) {
+    const w = world, hull = w.hulls[0], view = small ? 380 : 300;
+    const sc = Math.min(L.w, L.h) / (2 * view), ox = L.x + L.w / 2 - hull.x * sc, oy = L.y + L.h / 2 - hull.z * sc;
+    const X = (x) => ox + x * sc, Y = (z) => oy + z * sc;
+    ctx.save(); ctx.beginPath(); ctx.rect(L.x, L.y, L.w, L.h); ctx.clip();
+    ctx.fillStyle = '#05080c'; ctx.fillRect(L.x, L.y, L.w, L.h);
+    // grid + membrane
+    ctx.strokeStyle = '#0e151d'; ctx.lineWidth = 1;
+    for (let g = -800; g <= 800; g += 100) { ctx.beginPath(); ctx.moveTo(X(g), Y(-800)); ctx.lineTo(X(g), Y(800)); ctx.moveTo(X(-800), Y(g)); ctx.lineTo(X(800), Y(g)); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(X(0), Y(0), w.P.arenaRadius * sc, 0, 7); ctx.strokeStyle = '#27405a'; ctx.lineWidth = 2; ctx.stroke();
+    // slip reach, faint
+    if (w.dyn.battery.length) { ctx.beginPath(); ctx.arc(X(hull.x), Y(hull.z), w.P.slipReach * sc, 0, 7); ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.stroke(); }
+    const held = heldDomains(w), ps = Math.max(1.6, w.P.prismL * 0.45 * sc);
+    for (const t of w.trails) {
+      const n = t.pts.length; if (!n) continue;
+      for (let i = 0; i < n; i++) {
+        const dcol = DOM[t.doms[i]].color, ride = held.has(t.doms[i]) && n >= w.P.minSlipTrailLength;
+        ctx.fillStyle = ride ? dcol : hexA(dcol, 0.55);
+        const p = t.pts[i]; ctx.fillRect(X(p[0]) - ps, Y(p[2]) - ps, ps * 2, ps * 2);
+      }
+      if (n >= w.P.minSlipTrailLength && held.has(t.doms[n - 1])) {   // a rideable trail shows its two ends
+        for (const e of [t.pts[0], t.pts[n - 1]]) { ctx.beginPath(); ctx.arc(X(e[0]), Y(e[2]), ps * 2.6, 0, 7); ctx.strokeStyle = DOM[t.doms[n - 1]].color; ctx.lineWidth = 1.5; ctx.stroke(); }
+      }
+    }
+    // destination
+    const dp = 0.6 + 0.4 * Math.sin(w.t * 4);
+    ctx.beginPath(); ctx.arc(X(w.dest.x), Y(w.dest.z), w.P.destRadius * sc, 0, 7); ctx.strokeStyle = 'rgba(255,255,255,' + dp + ')'; ctx.lineWidth = 2.5; ctx.stroke();
+    const ddx = w.dest.x - hull.x, ddz = w.dest.z - hull.z, dd = hypot2(ddx, ddz);
+    if (dd * sc > Math.min(L.w, L.h) / 2 - 16) { const a = Math.atan2(ddz, ddx), r = Math.min(L.w, L.h) / 2 - 18; const cx = L.x + L.w / 2 + Math.cos(a) * r, cy = L.y + L.h / 2 + Math.sin(a) * r; ctx.save(); ctx.translate(cx, cy); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-6, -7); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill(); ctx.restore(); }
+    // effects
+    for (const fx of w.effects) {
+      const a = clamp(fx.t, 0, 1);
+      if (fx.k === 'slip') { ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(X(fx.x0), Y(fx.z0)); ctx.lineTo(X(fx.x1), Y(fx.z1)); ctx.strokeStyle = hexA(fx.col, a); ctx.lineWidth = 2.5; ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X(fx.x1), Y(fx.z1), 14 * (1.3 - a), 0, 7); ctx.stroke(); }
+      else if (fx.k === 'ring') { ctx.beginPath(); ctx.arc(X(fx.x), Y(fx.z), 22 * (1.4 - a), 0, 7); ctx.strokeStyle = hexA(fx.col, a); ctx.lineWidth = 2; ctx.stroke(); }
+    }
+    // hulls
+    for (const hl of w.hulls) {
+      const s = hl.honey ? 9 : 7;
+      ctx.save(); ctx.translate(X(hl.x), Y(hl.z)); ctx.rotate(hl.h);
+      ctx.beginPath(); ctx.moveTo(s * 1.4, 0); ctx.lineTo(-s, -s * 0.8); ctx.lineTo(-s * 0.5, 0); ctx.lineTo(-s, s * 0.8); ctx.closePath();
+      ctx.fillStyle = hl.honey ? '#ffffff' : DOM[hl.dom].color; ctx.fill();
+      if (hl.honey) { ctx.strokeStyle = DOM[hl.dom].color; ctx.lineWidth = 2; ctx.stroke(); if (hl.boosting) { ctx.beginPath(); ctx.moveTo(-s, 0); ctx.lineTo(-s * 2.4, 0); ctx.strokeStyle = '#ffb21f'; ctx.lineWidth = 3; ctx.stroke(); } }
+      ctx.restore();
+    }
+    // HUD: battery pips + boost + tokens + score
+    const fs = Math.max(10, Math.min(13, L.w / 34));
+    ctx.font = '600 ' + fs + 'px system-ui, sans-serif'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#e8edf3';
+    ctx.fillText(small ? 'Honeyguide' : 'Honeyguide · ' + w.m.dests + ' destinations · ' + w.m.slips + ' slips', L.x + 10, L.y + 16);
+    for (let k = 0; k < w.S.batteryCap; k++) { const c = w.dyn.battery[k], x = L.x + 16 + k * 18, y = L.y + 36; ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); if (c) { ctx.fillStyle = colourOf(c); ctx.fill(); } else { ctx.strokeStyle = '#3c4654'; ctx.lineWidth = 1.5; ctx.stroke(); } }
+    let hx = L.x + 16 + w.S.batteryCap * 18 + 6;
+    if (hull.boostE > 0) { ctx.fillStyle = '#ffb21f'; ctx.fillText('boost ' + hull.boostE.toFixed(1) + ' s', hx, L.y + 36); hx += 74; }
+    if (hull.tokens.length) { ctx.fillStyle = '#9fe'; ctx.fillText(hull.tokens.length + ' ' + hull.tokens[0].k + (hull.tokens.length > 1 ? 'es' : ''), hx, L.y + 36); hx += 70; }
+    if (hull.recolour) { ctx.fillStyle = DOM[hull.recolourDom].color; ctx.fillText('recolour ×' + hull.recolour, hx, L.y + 36); }
+    for (const fx of w.effects) if (fx.k === 'banner') { ctx.globalAlpha = clamp(fx.t, 0, 1); ctx.fillStyle = fx.col; ctx.font = '700 ' + (fs + 3) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(fx.text, L.x + L.w / 2, L.y + L.h - 22); ctx.textAlign = 'left'; ctx.globalAlpha = 1; break; }
+    // touch controls for a human pilot: the button pad and the arm pad
+    ui.btnRect = null; ui.armRect = null;
+    if (world.seats.pilot.who === 'human' && !small) {
+      const r = { x: L.x + 12, y: L.y + L.h - 64, w: 56, h: 52 }; ctx.fillStyle = hull.tokens.length ? 'rgba(160,255,238,.25)' : 'rgba(255,255,255,.06)'; ctx.fillRect(r.x, r.y, r.w, r.h); ctx.fillStyle = '#cfe'; ctx.font = '600 11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('button', r.x + r.w / 2, r.y + r.h / 2); ctx.textAlign = 'left'; ui.btnRect = r;
+      if (w.cfg.opts.arming === 'hold') { const a = { x: L.x + 76, y: L.y + L.h - 64, w: 56, h: 52 }; ctx.fillStyle = ui.padArm ? 'rgba(255,178,31,.4)' : 'rgba(255,255,255,.06)'; ctx.fillRect(a.x, a.y, a.w, a.h); ctx.fillStyle = '#fd9'; ctx.textAlign = 'center'; ctx.fillText('arm', a.x + a.w / 2, a.y + a.h / 2); ctx.textAlign = 'left'; ui.armRect = a; }
+    }
+    ui.arenaView = { L, sc, ox, oy };
+    ctx.restore();
+  }
+  function seatTag(L, text) { ctx.font = '600 11px system-ui, sans-serif'; ctx.fillStyle = 'rgba(0,0,0,.55)'; const tw = ctx.measureText(text).width + 12; ctx.fillRect(L.x + L.w - tw - 6, L.y + L.h - 22, tw, 17); ctx.fillStyle = '#ddd'; ctx.textBaseline = 'middle'; ctx.fillText(text, L.x + L.w - tw, L.y + L.h - 13); }
+  function whoText(seat) { return seat.who === 'human' ? 'you' : seat.who === 'ai' ? 'AI ' + seat.skill : 'empty'; }
+  function render() {
+    const W = canvas.width, H = canvas.height, dpr = W / Math.max(1, canvas.getBoundingClientRect().width);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const Wc = W / dpr, Hc = H / dpr, L = computeLayout(Wc, Hc);
+    ui.layout = L;
+    drawArena(L.arena, false);
+    drawDynamo(L.dyn, L.pip === 'dyn');
+    seatTag(L.arena, 'Pilot: ' + whoText(world.seats.pilot) + ' · Engineer: ' + whoText(world.seats.eng));
+    if (ui.toastT > 0) { ui.toastT -= 1 / 60; if (ui.toastT <= 0) $('toast').hidden = true; }
+  }
+
+  // ================= pointer: the Engineer's thumb and the pilot's finger =================
+  const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  function pt(ev) { const r = canvas.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function engInput(inp) { if (world.seats.eng.who !== 'human') return false; live.eng.push(inp); return true; }
+  function pathTinkers(from, to) {   // a drag across several cells: one Tinker per step, along empty cells
+    const st = world.dyn, prev = new Array(D.N).fill(-2), q = [from]; prev[from] = -1;
+    for (let h = 0; h < q.length; h++) { const u = q[h]; for (const v of D.NEIGH[u]) if (prev[v] === -2 && st.cells[v] === 0) { prev[v] = u; q.push(v); } }
+    if (prev[to] === -2) return [];
+    const path = []; for (let c = to; c !== from; c = prev[c]) path.push(c);
+    path.reverse(); const out = []; let at = from;
+    for (const c of path) { out.push({ k: 'tinker', from: at, to: c }); at = c; }
+    return out.slice(0, world.dyn.ap + world.dyn.bonusAp);
+  }
+  let pointers = new Map(), fsTried = false;
+  function tryFullscreen() { if (fsTried || PLATFORM.device !== 'phone') return; fsTried = true; try { const r = document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* refused */ } }
+  canvas.addEventListener('pointerdown', (ev) => {
+    tryFullscreen();
+    const [x, y] = pt(ev), L = ui.layout; if (!L || !world) return;
+    pointers.set(ev.pointerId, { x, y });
+    canvas.setPointerCapture(ev.pointerId);
+    // the small view: double-tap swaps
+    if (L.pip === 'dyn' && inRect(L.dyn, x, y)) { const now = performance.now(); if (now - ui.lastPipTap < 350) requestSwap('tap'); ui.lastPipTap = now; return; }
+    if (inRect(L.dyn, x, y)) {
+      if (crew.you === 'fly' || crew.you === 'watch') { if (crew.you === 'watch') return; }
+      if (world.seats.eng.who !== 'human' && crew.you !== 'fly') return;
+      if (world.seats.eng.who !== 'human') return;
+      engDown(x, y);
+      return;
+    }
+    if (inRect(ui.btnRect, x, y)) { ui.padBtn = true; return; }
+    if (inRect(ui.armRect, x, y)) { ui.padArm = true; return; }
+    if (inRect(L.arena, x, y) && world.seats.pilot.who === 'human') setSteer();
+  });
+  function setSteer() {
+    const V = ui.arenaView; let px = null;
+    for (const [, p] of pointers) if (inRect(V.L, p.x, p.y) && !inRect(ui.btnRect, p.x, p.y) && !inRect(ui.armRect, p.x, p.y)) { px = p; break; }
+    if (!px) { ui.steerTouch = null; return; }
+    let n = 0; for (const [, p] of pointers) if (inRect(V.L, p.x, p.y) && !inRect(ui.btnRect, p.x, p.y) && !inRect(ui.armRect, p.x, p.y)) n++;
+    ui.steerTouch = { x: (px.x - V.ox) / V.sc, z: (px.y - V.oy) / V.sc, two: n >= 2 };
+  }
+  function engDown(x, y) {
+    const st = world.dyn, G = ui.dynG;
+    if (ui.research) {
+      for (const h of ui.researchHits || []) if (inRect(h.r, x, y)) {
+        if (h.k === 'close') { ui.research = false; }
+        else if (h.k === 'family') { engInput({ k: 'research', family: h.f }); ui.offerPick = -1; }
+        else if (h.k === 'offer') ui.offerPick = h.i;
+        else if (h.k === 'slot' && ui.offerPick >= 0) { engInput({ k: 'keep', choice: ui.offerPick, slot: h.i }); ui.research = false; ui.offerPick = -1; }
+      }
+      return;
+    }
+    if (inRect(ui.batteryRect, x, y) || (y < G.L.y + 34 && x < G.L.x + G.L.w * 0.5)) { if (st.freePlace > 0) ui.freeColour = (ui.freeColour % 3) + 1; else ui.research = true; return; }
+    for (let k = 0; k < (ui.slotRects || []).length; k++) if (inRect(ui.slotRects[k], x, y)) { engInput({ k: 'activate', slot: k }); return; }
+    const c = pxCell(G, x, y);
+    if (c < 0) return;
+    if (st.pick) { if (st.pick.cells.indexOf(c) >= 0) engInput({ k: 'pick', cell: c }); return; }
+    if (st.cells[c]) { ui.drag = { from: c, x, y, sx: x, sy: y }; return; }
+    if (st.freePlace > 0) { engInput({ k: 'refuel', cell: c, colour: ui.freeColour || 1 }); return; }
+    if (D.portAt(st, c)) engInput({ k: 'refuel', cell: c });
+  }
+  canvas.addEventListener('pointermove', (ev) => {
+    const [x, y] = pt(ev);
+    if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x, y });
+    if (ui.drag) { ui.drag.x = x; ui.drag.y = y; }
+    else if (world && world.seats.pilot.who === 'human' && ui.steerTouch) setSteer();
+  });
+  function up(ev) {
+    const [x, y] = pt(ev);
+    pointers.delete(ev.pointerId);
+    if (ui.drag) {
+      const d = ui.drag; ui.drag = null;
+      if (world.dyn.pick && world.dyn.pick.cells.indexOf(d.from) >= 0) { engInput({ k: 'pick', cell: d.from }); return; }
+      const to = pxCell(ui.dynG, x, y);
+      if (to >= 0 && to !== d.from && world.dyn.cells[to] === 0) for (const inp of pathTinkers(d.from, to)) engInput(inp);
+    }
+    ui.padBtn = false; ui.padArm = false;
+    if (world && world.seats.pilot.who === 'human') setSteer();
+  }
+  canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointercancel', up);
+
+  // ================= dock: settings, options, crew =================
+  const outputs = {};
+  function fmt(v, step) { const dec = step < 1 ? Math.min(3, String(step).split('.')[1].length) : 0; return Number(v).toFixed(dec); }
+  function diffOnly() { const o = {}; for (const k of Object.keys(SHIPPED)) if (Math.abs(P[k] - SHIPPED[k]) > 1e-9) o[k] = P[k]; return o; }
+  function optDiff() { const o = {}; for (const k in OPT_SHIPPED) if (OPT[k] !== OPT_SHIPPED[k]) o[k] = OPT[k]; return o; }
+  function refreshDiff() {
+    const n = Object.keys(diffOnly()).length + Object.keys(optDiff()).length;
+    $('diff').textContent = n ? n + ' setting' + (n > 1 ? 's differ' : ' differs') + ' from the candidate' : 'candidate settings';
+    for (const [, key, , , step] of SPEC) { const o = outputs[key]; if (!o || !o.out.isConnected) continue; o.out.textContent = fmt(P[key], step); o.out.classList.toggle('changed', Math.abs(P[key] - SHIPPED[key]) > 1e-9); o.out.title = 'shipped ' + SHIPPED[key] + ' · yours ' + P[key]; }
+  }
+  const RESTART_KEYS = ['others', 'arenaRadius', 'tickSeconds', 'apPerTick', 'apBank', 'batteryCap', 'pickTimeout', 'researchCost', 'bonusApCap'];
+  function setParam(key, v) { P[key] = v; lsSet('P', diffOnly()); if (RESTART_KEYS.includes(key)) reset(); else if (world) world.P[key] = v; refreshDiff(); }
+  function setOpt(key, v) { OPT[key] = v; lsSet('opt', OPT); reset(); refreshDiff(); }
+  function makeTabs(barId, bodyId, tabs, storeKey) {
+    const bar = $(barId), body = $(bodyId), sel = lsGet(storeKey, tabs[0].name);
+    function show(name) { for (const b of bar.children) b.setAttribute('aria-selected', String(b.dataset.name === name)); body.replaceChildren(tabs.find((t) => t.name === name).build()); lsSet(storeKey, name); }
+    for (const t of tabs) { const b = document.createElement('button'); b.textContent = t.name; b.dataset.name = t.name; b.setAttribute('role', 'tab'); b.onclick = () => show(t.name); bar.appendChild(b); }
+    show(tabs.some((t) => t.name === sel) ? sel : tabs[0].name);
+  }
+  function sliderGroup(group) {
+    const box = document.createElement('div');
+    for (const [g, key, lo, hi, step, label, tip] of SPEC) {
+      if (g !== group) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = '<label><span></span><span class="key"></span></label><output></output><input type="range"><div class="tip"></div>';
+      row.querySelector('label span').textContent = label; row.querySelector('.key').textContent = key; row.querySelector('.tip').textContent = tip;
+      const inp = row.querySelector('input'); Object.assign(inp, { min: lo, max: hi, step, value: P[key] });
+      inp.oninput = () => setParam(key, parseFloat(inp.value));
+      outputs[key] = { out: row.querySelector('output'), inp };
+      box.appendChild(row);
+    }
+    queueMicrotask(refreshDiff);
+    return box;
+  }
+  function selectField(label, key, choices, tip) {
+    const f = document.createElement('label'); f.className = 'field';
+    f.innerHTML = '<span></span><select></select>'; f.firstChild.textContent = label;
+    const s = f.querySelector('select');
+    for (const [v, t] of Object.entries(choices)) { const o = document.createElement('option'); o.value = v; o.textContent = t; s.appendChild(o); }
+    s.value = OPT[key]; s.onchange = () => setOpt(key, s.value); if (tip) f.title = tip;
+    return f;
+  }
+  function checkField(label, key) { const f = document.createElement('label'); f.className = 'check'; f.innerHTML = '<input type="checkbox"><span></span>'; f.lastChild.textContent = label; const c = f.firstChild; c.checked = !!OPT[key]; c.onchange = () => setOpt(key, c.checked); return f; }
+  function rulesPanel() {
+    const box = document.createElement('div');
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'The open questions (brief §5). The first choice in each list is the lab\'s candidate (the brief\'s default, except slip arming: see the write-up). Changing one restarts the match.'; box.appendChild(p);
+    box.appendChild(selectField('1. What rotates each tick', 'rotate', OPT_LABELS.rotate));
+    box.appendChild(selectField('2. Pattern orientation', 'patterns', OPT_LABELS.patterns));
+    box.appendChild(selectField('3. Slip arming', 'arming', OPT_LABELS.arming));
+    box.appendChild(selectField('4. Slip exit facing', 'exit', OPT_LABELS.exit));
+    box.appendChild(selectField('5. Muton colour → domain', 'domainMap', Object.fromEntries(Object.entries(DOMAIN_MAPS).map(([k, v]) => [k, v.label]))));
+    box.appendChild(selectField('8. Loadout at launch (3 slots)', 'loadout', Object.fromEntries(Object.entries(LOADOUTS).map(([k, v]) => [k, v.label]))));
+    box.appendChild(selectField('9. Engine variant', 'engine', Object.fromEntries(Object.entries(ENGINES).map(([k, v]) => [k, v.label]))));
+    box.appendChild(checkField('Eject: a slip burns every charge of its colour and lays that many prisms at the entry (2021 rule)', 'eject'));
+    box.appendChild(checkField('Shade (Charge L5 idea): the centre cell is wild', 'centreWild'));
+    box.appendChild(checkField('The Slip is on (off = the abilities-only control)', 'slip'));
+    const q = document.createElement('p'); q.className = 'hint'; q.textContent = 'Question 6 (tick, AP, battery) is on the Dynamo tab; question 7 (Research) is the Research cost there plus the battery-row tap in the Dynamo.'; box.appendChild(q);
+    return box;
+  }
+  function crewPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint">Your seat is in the header. Swap with the D-pad left/right, the 1 / 2 keys, the Swap button, or by double-tapping the small view on a phone. The AI squad mate takes whichever seat is empty and keeps its skill.</p>';
+    const f = document.createElement('label'); f.className = 'field'; f.innerHTML = '<span>Your squad mate (the AI in the other seat)</span><select><option value="easy">AI Easy</option><option value="medium">AI Medium</option><option value="hard">AI Hard</option></select>';
+    const s = f.querySelector('select'); s.value = crew.mate; s.onchange = () => { crew.mate = s.value; lsSet('mate', crew.mate); applyCrew(); };
+    box.appendChild(f);
+    const h = document.createElement('div'); h.className = 'hint';
+    h.innerHTML = '<b>Engineer (Ratel):</b> drag a muton to move it (one AP per cell). Tap an empty coloured port to Refuel. A slot card lights when its pattern is on the board: tap it, then tap one of the outlined mutons. That muton goes to the battery, and its colour is the domain the pilot can slip through. Tap the left of the AP row to Research.<br><b>Pilot (Honeyguide):</b> A/D or ←/→ steer, W/Space boost (when an ability gave boost), Shift or E fires a dash or swap token, F arms (hold-to-arm rule only). On touch, hold a finger on the flight view and the hull turns toward it; two fingers boost. Fly into a trail of a domain you hold and you slip to the end you point at.';
+    box.appendChild(h);
+    return box;
+  }
+  const groups = [...new Set(SPEC.map((r) => r[0]))];
+  makeTabs('dockTabs', 'dockBody', [{ name: 'Rules', build: rulesPanel }, { name: 'Crew', build: crewPanel }].concat(groups.map((g) => ({ name: g, build: () => sliderGroup(g) }))), LS + 'dock');
+
+  // ================= the decision log =================
+  let db = null, me = '', remote = [], localLog = lsGet('log', []);
+  function snapshot() { return { round: LAB.round, seed, you: crew.you, mate: crew.mate, options: Object.assign({}, OPT), optionsChanged: optDiff(), changed: diffOnly(), score: world ? score(world) : null }; }
+  async function record(topic, choice, note) {
+    const doc = { topic, choice, note: note || '', createdAt: Date.now(), by: me, settings: snapshot() };
+    if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
+    localLog.push(doc); lsSet('log', localLog); return 'local';
+  }
+  const TOPICS = ['Sign-off', 'Rotation', 'Pattern orientation', 'Slip arming', 'Slip exit', 'Domain map', 'Tick / AP / battery', 'Research', 'Starter set', 'Engine variant', 'Tuning', 'Other idea'];
+  function currentChoice(topic) {
+    const o = OPT;
+    switch (topic) {
+      case 'Rotation': return OPT_LABELS.rotate[o.rotate];
+      case 'Pattern orientation': return OPT_LABELS.patterns[o.patterns];
+      case 'Slip arming': return OPT_LABELS.arming[o.arming];
+      case 'Slip exit': return OPT_LABELS.exit[o.exit];
+      case 'Domain map': return DOMAIN_MAPS[o.domainMap].label;
+      case 'Tick / AP / battery': return 'Tick ' + P.tickSeconds + ' s, ' + P.apPerTick + ' AP (bank ' + P.apBank + '), battery ' + P.batteryCap;
+      case 'Research': return 'Research costs ' + P.researchCost + ' AP; loadout of 3 at launch';
+      case 'Starter set': return LOADOUTS[o.loadout].label;
+      case 'Engine variant': return ENGINES[o.engine].label;
+      case 'Sign-off': return 'This is fun: build the Honeyguide and Ratel in Unity with these settings.';
+      default: return 'Settings: ' + JSON.stringify(Object.assign({}, diffOnly(), optDiff()));
+    }
+  }
+  function logPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p class="hint" id="logStatus"></p><label class="field"><span>Topic</span><select id="logTopic"></select></label><label class="field"><span>Your decision</span><textarea id="logChoice" rows="2"></textarea></label><p><button class="btn primary" id="logSave">Record decision</button> <button class="btn" id="logCopy">Copy log</button></p><div class="tablewrap"><table id="logTable"></table></div>';
+    const sel = box.querySelector('#logTopic'); for (const t of TOPICS) { const o = document.createElement('option'); o.textContent = t; sel.appendChild(o); }
+    const status = box.querySelector('#logStatus');
+    status.textContent = db ? 'Shared log: saved with the lab, read by Claude at the start of the next round.' : 'Kept in this browser (Copy log to send it).';
+    status.className = db ? 'status-ok' : 'status-warn';
+    const fill = () => { box.querySelector('#logChoice').value = currentChoice(sel.value); };
+    sel.onchange = fill; fill();
+    box.querySelector('#logSave').onclick = async () => { const where = await record(sel.value, box.querySelector('#logChoice').value); status.textContent = where === 'shared' ? 'Recorded in the shared log.' : 'Recorded in this browser.'; renderLog(box); };
+    box.querySelector('#logCopy').onclick = () => { const t = remote.concat(localLog).map((d) => new Date(d.createdAt).toISOString() + ' · ' + d.topic + ': ' + d.choice + ' ' + JSON.stringify(d.settings)).join('\n'); try { navigator.clipboard && navigator.clipboard.writeText(t); } catch (e) { /* no clipboard */ } };
+    renderLog(box);
+    return box;
+  }
+  function renderLog(box) {
+    const t = (box || document).querySelector('#logTable'); if (!t) return;
+    const rows = remote.concat(localLog).sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    t.innerHTML = '<tr><th>When</th><th>Topic</th><th>Decision</th></tr>';
+    for (const d of rows) { const tr = document.createElement('tr'); for (const v of [new Date(d.createdAt).toLocaleString(), d.topic, d.choice]) { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); } t.appendChild(tr); }
+  }
+  (async function connect() {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    try { db = await c.use('db'); } catch (e) { db = null; }
+    try { const u = await c.use('user'); if (u) me = (await u.id()) || ''; } catch (e) { me = ''; }
+    if (!db) return;
+    try {
+      db.collection('decisions').orderBy('createdAt', 'desc').limit(300).onSnapshot((snap) => { remote = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); renderLog(); }, () => { db = null; });
+      for (const d of localLog.splice(0)) { try { await db.collection('decisions').add(d); } catch (e) { localLog.push(d); } }
+      lsSet('log', localLog);
+    } catch (e) { db = null; }
+  })();
+
+  // ================= scorecard, cards, about =================
+  let lastRows = null;
+  function scorecardPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p><button class="btn primary" id="runBatch">Score every variant</button> <span class="hint">Headless: 6 seeds × 120 s at 30 Hz, AI Hard pilot. The candidate also runs with an Easy and an idle Engineer. Hover a column for what it measures.</span></p><div class="tablewrap"><table id="scoreTable"></table></div>';
+    const t = box.querySelector('#scoreTable');
+    const paint = (rows) => {
+      t.innerHTML = '';
+      const hr = document.createElement('tr'); for (const [k, name, tip] of [['variant', 'Variant', 'Each row: 6 seeds × 120 s.']].concat(COLS, [['se', '± SE', 'Standard error of Dest/min over the seeds.']])) { const th = document.createElement('th'); th.textContent = name; th.title = tip; th.dataset.k = k; hr.appendChild(th); } t.appendChild(hr);
+      const best = {}; for (const [k] of COLS) best[k] = Math.max(...rows.map((r) => r[k]));
+      for (const r of rows) { const tr = document.createElement('tr'); const td0 = document.createElement('td'); td0.textContent = r.variant; tr.appendChild(td0); for (const [k] of COLS) { const td = document.createElement('td'); td.textContent = r[k]; if (k === 'destsPerMin' && r[k] === best[k]) td.className = 'best'; tr.appendChild(td); } const tdse = document.createElement('td'); tdse.textContent = r.se; tr.appendChild(tdse); t.appendChild(tr); }
+    };
+    if (lastRows) paint(lastRows);
+    box.querySelector('#runBatch').onclick = () => { const b = box.querySelector('#runBatch'); b.textContent = 'Scoring…'; setTimeout(() => { lastRows = runBatch(); paint(lastRows); b.textContent = 'Score every variant'; }, 30); };
+    return box;
+  }
+  function cardsPanel() {
+    const box = document.createElement('div');
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'All 39 Slipstream upgrade cards (2022 print) with their printed shapes. Twelve have a Cosmic Shore effect (a proposal); the rest fire with no effect yet, and the seven about sector tiles, planets or initiative are parked until Garrett re-themes them.'; box.appendChild(p);
+    const grid = document.createElement('div'); grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px';
+    PATTERNS.forEach((pat) => {
+      const c = document.createElement('div'); c.className = 'card';
+      const b = document.createElement('b'); b.textContent = pat.name; c.appendChild(b);
+      const f = document.createElement('span'); f.className = 'fam'; f.style.color = DOM[DOMAIN_MAPS[OPT.domainMap].map[pat.family]].color; f.textContent = COLOUR_NAME[pat.family] + ' · ' + pat.cells.length + ' cells · ' + pat.cells.map((x) => COLOUR_LETTER[x[2]] + '(' + x[0] + ',' + x[1] + ')').join(' '); c.appendChild(f);
+      const t = document.createElement('div'); t.className = 'hint'; t.textContent = '“' + pat.text + '”'; c.appendChild(t);
+      const e = document.createElement('div'); e.textContent = pat.effect ? 'Cosmic Shore: ' + EFFECT_TEXT[pat.effect] : pat.parked ? 'Parked (sector tiles, planets or initiative have no equivalent)' : 'No Cosmic Shore effect yet.'; e.style.fontSize = '12px'; c.appendChild(e);
+      grid.appendChild(c);
+    });
+    box.appendChild(grid);
+    return box;
+  }
+  function aboutPanel() {
+    const box = document.createElement('div');
+    box.innerHTML = '<p id="aboutHead"></p>' +
+      '<p><b>The question.</b> Is the handoff fun? The Ratel (Engineer) builds patterns on a hex Dynamo whose injection ports rotate every tick; activating a pattern pulls one muton of the Engineer\'s choice into the battery; that muton\'s domain is a slip charge, and when the Honeyguide (Pilot) touches a trail of that domain it teleports to the end of the trail it points at. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
+      '<p><b>What this lab does NOT model.</b></p><ul class="plain">' +
+      '<li>The world is a flat 2D disc, not the 3D cell; trails are lines of dots with no shapes, shields or lighting, and the other hulls only lay trails (no prisms of flora, fauna or the cell).</li>' +
+      '<li>The race (reach the next destination ring) is the lab\'s yardstick for "a slip shortened the route"; no game mode is modelled.</li>' +
+      '<li>A hostile prism only slows the hull for a second; no crystals, no elements, no petals, no rival vessels to fight. PvP is petals only in the game and none of the twelve effects touch a rival.</li>' +
+      '<li>Trails never loop and have no holes (IsLoop and IsRidable are not exercised); a teleport simply starts a new trail.</li>' +
+      '<li>Time, Space, Mass and Charge scaling (tick rate, slip reach, battery size, effect potency) and the L5 upgrades are fixed numbers here.</li>' +
+      '<li>Twelve cards have an effect; the other 27 fire with none. Effects are proposals sized in "Slipstream points".</li>' +
+      '<li>Two players on one device only; no networking. A real thumb tires and misses; the AIs only have speed, noise and reaction time.</li></ul>';
+    box.querySelector('#aboutHead').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
+    return box;
+  }
+  makeTabs('bottomTabs', 'bottomBody', [{ name: 'Decisions', build: logPanel }, { name: 'Scorecard', build: scorecardPanel }, { name: 'Cards', build: cardsPanel }, { name: 'About', build: aboutPanel }], LS + 'bottom');
+
+  // ================= header =================
+  $('title').textContent = 'Honeyguide and Ratel'; $('meta').textContent = 'lab round ' + LAB.round;
+  function paintSeatSeg() { for (const b of $('seatSeg').children) b.setAttribute('aria-pressed', String(b.dataset.you === crew.you)); }
+  for (const b of $('seatSeg').children) b.onclick = () => { crew.you = b.dataset.you; lsSet('you', crew.you); applyCrew(); paintSeatSeg(); };
+  paintSeatSeg();
+  $('swapBtn').onclick = () => requestSwap('button');
+  $('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+  $('restart').onclick = () => reset();
+  $('resetAll').onclick = () => { Object.assign(P, SHIPPED); Object.assign(OPT, OPT_SHIPPED); lsSet('P', {}); lsSet('opt', OPT); for (const k in outputs) if (outputs[k].inp.isConnected) outputs[k].inp.value = P[k]; reset(); refreshDiff(); };
+
+  // ================= sizing + loop (with a manual clock for recorders) =================
+  function fitStage() { if (innerWidth > 900) return; const h = Math.max(520, innerHeight - document.querySelector('header').offsetHeight); document.documentElement.style.setProperty('--stageH', h + 'px'); }
+  fitStage(); addEventListener('resize', fitStage);
+  function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } }
+  addEventListener('resize', resize);
+  let manualClock = false, last = performance.now(), acc = 0;
+  const DT = 1 / 60;
+  function frame(now) {
+    const el = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
+    if (!manualClock) {
+      resize();
+      if (!paused) { acc += el; livePilot(); while (acc >= DT) { simStepWorld(world, DT, live); acc -= DT; } }
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  reset(); resize(); refreshDiff(); render(); requestAnimationFrame(frame);
+
+  // ================= the test surface =================
+  window.__lab = {
+    LAB, SHIPPED, SPEC, P, OPT, PLATFORM, VARIANTS, PATTERNS, ENGINES, core: D,
+    set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
+    tick(dt, n) { dt = dt || DT; n = n || 1; for (let i = 0; i < n; i++) { livePilot(); simStepWorld(world, dt, live); } resize(); render(); },
+    reset, score: () => score(world), runBatch, setParam, setOpt, record, swap: () => requestSwap('hook'),
+    setSeat: (you) => { crew.you = you; applyCrew(); paintSeatSeg(); },
+    engInput: (inp) => engInput(inp),
+    cellPx: (i) => (ui.dynG ? cellPx(ui.dynG, i) : null), slotRect: (k) => (ui.slotRects ? ui.slotRects[k] : null), hexSize: () => (ui.dynG ? ui.dynG.size : 0),
+    state: () => ({ t: world.t, seed, digest: D.digest(world.dyn), battery: world.dyn.battery.slice(), hull: { x: world.hulls[0].x, z: world.hulls[0].z, h: world.hulls[0].h }, m: Object.assign({}, world.m), seats: { pilot: world.seats.pilot.who, eng: world.seats.eng.who } }),
+  };
+  window.__honeyguideLab = window.__lab;
+})();
+</script>
+</body>
+</html>

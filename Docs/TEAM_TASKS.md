@@ -1687,6 +1687,48 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
 
+### T-20261021-2574 · open · test · Crew vessels
+- **Task:** Playtest the Honeyguide and Ratel in the Unity Editor: Toybox Vessel Changer station, then the 7 steps of its checklist entry. It has only been compiled headlessly.
+- **Done when:** the steps in Docs/UNITY_VERIFICATION_CHECKLIST.md 'Honeyguide and Ratel' pass and HoneyguideTests is green
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-1b13 · open · content · Crew vessels
+- **Task:** Author FMOD events for the Honeyguide's five empty EventReference slots on HoneyguideConfig.asset: pattern made, slip, jump, spin, reveal.
+- **Done when:** all five slots are wired
+- **Who can take it:** anyone who does audio
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-f05e · open · decision · Crew vessels
+- **Task:** Decide how the Ratel seat goes online (today the Dynamo, its AI and the effects run on the hull's local machine). (Round 6 parks no card: the trigger cards are the upgrades of Peck and Flit.)
+- **Done when:** Garrett picks a networking plan and a plan for the parked cards
+- **Who can take it:** Garrett with Yash (multiplayer)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-2dd0 · open · test · Crew vessels
+- **Task:** Playtest the Honeyguide's round 6 triggers and its new hull model in the Unity Editor: the 6 steps of its round-6 checklist entry (Peck/Flit, upgrades, the model's paint, morphs and puppetry).
+- **Done when:** The round-6 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or its failures are filed.
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/VesselModels/Honeyguide.md
+
+### T-20261021-2d1a · open · setup · Crew vessels
+- **Task:** Bake the Honeyguide's crystal hull fusions (vessel 23) with FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions, now that it draws Honeyguide.fbx; commit the four bakes.
+- **Done when:** CrystalHullFusionConfig's four vessel-21 entries name bakes and CrystalHullFusionBakeTests passes without an inconclusive for them.
+- **Who can take it:** anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Docs/VesselModels/Honeyguide.md
+
+### T-20261021-7e6f · open · content · Crew vessels
+- **Task:** Give the Honeyguide's upgrade effects their own visuals: the grenade, the drone, the lasso rope and the lance beam show no effect of their own yet; and wire the two new empty FMOD slots (flitSfx, upgradeSfx) and each upgrade's sfx.
+- **Done when:** Each of the four effects reads on screen and the slots play a sound.
+- **Who can take it:** Garrett (owner), anyone who does VFX or audio
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
 ### T-20261021-18a1 · open · test · vessels
 - **Task:** Fly Marlin and Jacks in the editor (UNITY_VERIFICATION_CHECKLIST 2026-10-21, steps 1-10: the models and the host-client crew included) and the Frenzy shield-food rule
 - **Done when:** Every step of the checklist entry passes, or each failure is written up on the PR
@@ -1821,3 +1863,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (the look and feel); Yash (offered: editor, phone and host-client steps)
 - **Added:** 2026-10-21 by Garrett (`cece/sharp-faraday-gq7m65`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md (Marlin and Jacks, steps 11-14); R_VesselActions/MARLIN_JACKS.md
+
+### T-20261021-362a · open · setup · Crew vessels
+- **Task:** The Wrasse draws Grouper.fbx but keeps the Sparrow's four crystal-fusion bakes (vessel 19 in CrystalHullFusionConfig) and its VesselAnimation flare still names the hidden Sparrow mesh, so boost lights nothing. Apply the Honeyguide's two fixes (drop the copied bakes, hand the flare to the drawn mesh) or re-bake in the editor.
+- **Done when:** Wrasse fusion entries name Grouper bakes or none, and boost lights the Grouper.
+- **Who can take it:** Garrett (Wrasse owner), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (/ship of claude/honeyguide-ratel) (`claude/honeyguide-ratel`)
+- **See:** .claude/skills/vessel-model/references/LESSONS.md lesson 50
