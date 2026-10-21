@@ -301,16 +301,16 @@ namespace CosmicShore.Tests
         public void BigFamily_RaisesTheCapAndTheProtectedMinimum_ByTheLabsBaselines()
         {
             var rules = new StarlingRules(Config());
-            Assert.AreEqual(40, rules.CapNow);
-            Assert.AreEqual(6, rules.MinNow);
+            Assert.AreEqual(200, rules.CapNow);
+            Assert.AreEqual(30, rules.MinNow);
             rules.DealHand();
             rules.Pick(Element.Mass);
-            Assert.AreEqual(46, rules.CapNow, "level 1: cap 46 - 40 = +6");
-            Assert.AreEqual(6, rules.MinNow, "level 1: minimum 6 - 6 = +0");
+            Assert.AreEqual(206, rules.CapNow, "level 1: cap 200 + (46 - 40) = +6");
+            Assert.AreEqual(30, rules.MinNow, "level 1: minimum 30 + (6 - 6) = +0");
             for (int i = 0; i < 4; i++) { rules.DealHand(); rules.Pick(Element.Mass); }
             Assert.AreEqual(5, rules.Level(StarlingCardIds.BigFamily));
-            Assert.AreEqual(70, rules.CapNow, "level 5: 46 + 24 = 70");
-            Assert.AreEqual(8, rules.MinNow, "level 5: 6 + 2 = 8");
+            Assert.AreEqual(230, rules.CapNow, "level 5: 200 + (70 - 40) = 230");
+            Assert.AreEqual(32, rules.MinNow, "level 5: 30 + (8 - 6) = 32");
         }
 
         [Test]
@@ -419,6 +419,38 @@ namespace CosmicShore.Tests
             press.Begin(Element.Mass, 0f, false);
             Assert.IsFalse(press.End(Element.Time));
             Assert.IsTrue(press.End(Element.Mass));
+        }
+
+        [Test]
+        public void OpenDetails_TurnToAnotherElement_AndPickNothing()
+        {
+            var press = new StarlingPickPress();
+            press.Begin(Element.Mass, 0f, false);
+            press.Tick(0.5f, false, 0.45f);
+            Assert.AreEqual(Element.Mass, press.Details);
+
+            press.Begin(Element.Charge, 0.6f, false);
+            Assert.AreEqual(Element.Charge, press.Details, "another button pressed while the details are open turns them");
+            Assert.IsFalse(press.End(Element.Charge), "browsing picks nothing");
+            Assert.AreEqual(Element.Mass, press.Details, "the details return to the button still held");
+
+            press.Begin(Element.Time, 0.7f, false);
+            Assert.IsFalse(press.End(Element.Mass));
+            Assert.AreEqual(Element.Time, press.Details, "the details stay open while any pick button is down");
+            Assert.IsFalse(press.End(Element.Time));
+            Assert.AreEqual(Element.None, press.Details, "they close with the last button");
+
+            press.Begin(Element.Space, 1f, false);
+            Assert.IsTrue(press.End(Element.Space), "after browsing, a quick press picks again");
+        }
+
+        [Test]
+        public void CameraRoll_TurnsTheWorld_TheWayFlightRolls()
+        {
+            Assert.AreEqual(-1f, StarlingPilotControls.StickRoll(1f, 0.12f), 1e-6f, "the camera rolls against y-diff");
+            Assert.AreEqual(0f, StarlingPilotControls.StickRoll(0.05f, 0.12f), 1e-6f);
+            Assert.AreEqual(-90f, StarlingPilotControls.SpinRoll(1f, 0f, 0f, 1f), 1e-3f,
+                "a counter-clockwise spin rolls the camera clockwise, so the world turns with the fingers");
         }
     }
 }

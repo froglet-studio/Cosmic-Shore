@@ -93,6 +93,9 @@ MISSILE_MATERIAL_REFS = ["{fileID: 2236194519873700097, guid: 98d8cb0114a1ad04e9
                          "{fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}",
                          "{fileID: 2100000, guid: f5a1f1d453134cc4193ba1adbdd49d7a, type: 2}"]
 COMBAT_HIT_GUID = "45fb43a0cddb5cc3cc4dc448df994152"   # Event_CombatHitStats.asset (the scoreboard's channel)
+# the gunner seats' phone buttons: Tools/Build/touch_glyph_art.py keys every icon's guid by its file name
+TOUCH_FIRE_ICON_REF = "{fileID: 21300000, guid: 191541c7648260cd1a1207a1a287eedf, type: 3}"      # TouchIcon_Fire.png
+TOUCH_MISSILE_ICON_REF = "{fileID: 21300000, guid: 77e8ca07a5f9255848e2a102857f9d0b, type: 3}"   # TouchIcon_Missile.png
 
 
 # ----------------------------------------------------------------------------- the prefab
@@ -381,11 +384,9 @@ def config_asset(script_guid: str) -> str:
     text += f"  gameData: {{fileID: 11400000, guid: {GAME_DATA_GUID}, type: 2}}\n"
     text += f"  onCombatHitLanded: {{fileID: 11400000, guid: {COMBAT_HIT_GUID}, type: 2}}\n"
     text += "".join(empty_event(s) for s in SOUNDS)
-    text += '  seatLineTemplate: "{seat}  \\xB7  {gun}  \\xB7  {count} missiles  \\xB7  1-4 to change seat"\n'
-    text += "  seatNames:\n  - Helm\n  - Sniper\n  - Fast gun\n  - Bomb\n"
-    text += "  gunNames:\n  - \n  - Sniper\n  - Fast gun\n  - Bomb\n"
-    text += "  gunLineTemplate: '{name} {state}'\n  gunReadyText: ready\n  gunCooldownTemplate: '{seconds}s'\n"
-    text += "  gunHotText: overheated\n  bombOutText: bomb out\n"
+    # a gunner seat's two phone buttons (the right thumb); their captions ship blank (the icons say it)
+    text += f"  fireButtonIcon: {TOUCH_FIRE_ICON_REF}\n  missileButtonIcon: {TOUCH_MISSILE_ICON_REF}\n"
+    text += "  fireButtonLabel: \n  missileButtonLabel: \n"
     text += "  crosshairColor: {r: 0.95, g: 0.97, b: 0.98, a: 1}\n  crosshairReadyColor: {r: 0.6156863, g: 1, b: 0.18039216, a: 1}\n"
     text += "  crosshairHotColor: {r: 1, g: 0.302, b: 0.427, a: 1}\n  crosshairWarmColor: {r: 1, g: 0.655, b: 0, a: 1}\n"
     return text
@@ -591,6 +592,9 @@ def check_assets(config: str, container: str, effect: str, material: str, config
     want(f"guid: {GAME_DATA_GUID}" in config, "OrcaCrewConfig.asset: gameData is unwired (no rival hulls for the gunners or the missiles)")
     want(AOE_GRIZZLY_REF in config, "OrcaCrewConfig.asset: bombExplosions is not AOEGrizzlyExplosion.prefab (a bomb would burst into nothing)")
     want(f"guid: {COMBAT_HIT_GUID}" in config, "OrcaCrewConfig.asset: onCombatHitLanded is unwired (sniper hits would not score)")
+    want(f"fireButtonIcon: {TOUCH_FIRE_ICON_REF}" in config and f"missileButtonIcon: {TOUCH_MISSILE_ICON_REF}" in config,
+         "OrcaCrewConfig.asset: a gunner's phone Fire or Missile icon is unwired (a blank button on a phone)")
+    want("seatLineTemplate" not in config, "OrcaCrewConfig.asset: still carries the retired seat line")
     want(f"  - {{fileID: 11400000, guid: {OMNI_EFFECT_GUID}, type: 2}}\n" in container.split("  vesselElementalCrystalEffects:")[0],
          "OrcaImpactorDataContainer: OrcaOmniCrystalEffect is not in its omni (vesselCrystalEffects) list")
     want(W.SPARROW_WARD_EFFECT_GUID not in container, "OrcaImpactorDataContainer: still carries the Sparrow's Omni ward")

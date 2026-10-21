@@ -67,10 +67,15 @@ namespace CosmicShore.UI
         [SerializeField] string detailsStatTemplate = "{label}: {value}{unit}";
         [Tooltip("The card's next jolt above the level you hold. Tokens: {level} {text}.")]
         [SerializeField] string detailsMilestoneTemplate = "At Lv {level}: {text}";
-        [Tooltip("With no hand dealt: one line per card you hold of the element. Tokens: {name} {level}.")]
-        [SerializeField] string detailsHeldTemplate = "{name}  Lv {level}";
+        [Tooltip("With no hand dealt: the heading of each card you hold of the element, followed by its text, its numbers at " +
+                 "the held level (detailsStatTemplate) and the jolts it has reached. Tokens: {name} {level}.")]
+        [SerializeField] string detailsHeldTemplate = "<b>{name}</b>  Lv {level}";
+        [Tooltip("With no hand dealt: a jolt a held card has reached, under its numbers. Tokens: {level} {text}.")]
+        [SerializeField] string detailsReachedTemplate = "Since Lv {level}: {text}";
         [Tooltip("With no hand dealt and nothing held of the element.")]
         [SerializeField] string detailsNothingHeld = "Nothing held yet";
+        [Tooltip("The last line of the card: how to turn to another element while the details are open.")]
+        [SerializeField] string detailsBrowseHint = "<i>Press another element to see its cards</i>";
         [Tooltip("Font size of the card's name.")]
         [SerializeField, Min(6f)] float detailsTitleFontSize = 40f;
         [Tooltip("Font size of the card's level.")]
@@ -126,7 +131,9 @@ namespace CosmicShore.UI
         public string DetailsStatTemplate => detailsStatTemplate;
         public string DetailsMilestoneTemplate => detailsMilestoneTemplate;
         public string DetailsHeldTemplate => detailsHeldTemplate;
+        public string DetailsReachedTemplate => detailsReachedTemplate;
         public string DetailsNothingHeld => detailsNothingHeld;
+        public string DetailsBrowseHint => detailsBrowseHint;
 
         /// <summary>The authored name of phase <paramref name="index"/>; empty when none is authored.</summary>
         public string PhaseName(int index) => phaseNames != null && index >= 0 && index < phaseNames.Length ? phaseNames[index] : string.Empty;

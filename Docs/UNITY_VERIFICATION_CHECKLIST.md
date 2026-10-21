@@ -119,6 +119,27 @@ Toy Box > Vessel Changer → **Honeyguide and Ratel**:
    prism shows on the cursor in its domain.
 8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
    with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+### 🔴 Orca gunner buttons: Fire and Missile under the right thumb, the seat line retired (`cece/fervent-goodall-8cihle`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire missiles. it does these with the right
+thumb and aims with the left. it has all the info it needs now. it no longer needs the ui breaking top row of text, unique
+to that vessel." Design: `ORCA_CREW.md` ("Two buttons per gunner, no seat line"). `/verify-unity` did not run: no Unity
+Editor or `unity` CLI in this session. What did run: the reference compile (player: no errors in project code), `parity.cjs`, `author_orca_assets.py --check` /
+`--self-test` (with a negative control on the new icon check), `touch_glyph_art.py --check`,
+`author_touch_profiles.py --check`, the console-logging and conditional-compilation gates. Affects the fleet's
+`TouchButtonView` (a sink and a tint setter, both additive) and `TouchControlsHud` (its layout settings and units-per-pixel
+made public static, no behaviour change).
+
+**Verify in editor** (the Orca in the Toybox Vessel Changer):
+1. **Desktop.** Take a gunner seat (2, 3, 4): no line of text across the top of the HUD in any seat. The four cards still
+   light the seat, veil the gun's recharge and count the seat's missiles. No phone buttons on a desktop.
+2. **Pad.** In a gunner seat, X fires the gun (RT still does), A launches a missile and bursts it; the left stick aims.
+3. **Phone (Android dev build, no pad)** — `T-20261021-876d`: in a gunner seat two buttons sit round the right thumb,
+   Fire (the seat's colour) and Missile (a rocket). The left thumb's drag aims while the right holds Fire. Missile
+   launches; the left thumb steers it; Missile bursts it; Fire hides while it flies. A thumb on a button while the left
+   aims never swaps seats; a two-finger tap elsewhere still does. On the helm the buttons are gone. Connect a pad: they
+   hide.
+
 ### 🔴 Orca round 9: rocket missiles with a faceted plume, the bomb's blast lit in the world (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21, after flying round 8: "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb
@@ -13620,6 +13641,22 @@ prefab container and `DefaultNetworkPrefabs`. Reference compile clean; `author_s
    petal hits only. The swarm never drops below 6.
 6. Console: no errors and no per-frame logs while the Starlings flies.
 
+## 🔴 2026-10-21 — The Starlings round 3: a murmuration, browsable ability details, flight-sense camera (`cece/quirky-gates-skplxp`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. Changed `StarlingRules` (`StarlingPickPress` browsing, `StarlingPilotControls.StickRoll` /
+`SpinRoll`), `StarlingVesselTransformer`, `StarlingSwarmExecutor` (separation grid), `StarlingHUDController`,
+`StarlingHUDView`, `StarlingConfig.asset` (start 120, cap 200, minimum 30), `SO_Class_Starling` (Name: Starlings).
+Reference compile: 0 errors in changed files; `author_starling_assets.py --check` OK; `starling_rules_parity/run.sh`
+19/19, `--self-test` fires.
+1. Test Runner: `StarlingRulesTests` pass.
+2. Toybox > Vessel Changer > Starlings (the card reads "Starlings"): about 120 starlings roam as one murmuration.
+3. Pad: y-diff rolls the world the way flight rolls a hull. Phone: a two-finger spin turns the world with the fingers,
+   and two thumbs keep turning the view while they pinch.
+4. Pick a few cards, then with no hand dealt hold A: every Mass card held shows its name, level, text, numbers and reached
+   jolts. While holding, press B / X / Y: the card turns to Time / Charge / Space and nothing is picked; letting go of
+   all buttons closes it, and a quick press afterwards picks again.
+5. Profiler: the swarm executor's Update and the member renderers at 120-200 members (team task T-20261021-d6dc).
+
 ## 🔴 2026-10-21 — The Thresher spawns in Mass Mode (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
 
 Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.Initialize` now sets `_massMode = true`
@@ -13762,10 +13799,11 @@ Files: `Cytoplasm/SnowChanger.cs` (`AddMorphedShard`, `CondenseTick`, growable s
 (player config, 0 errors in project code). No `unity` CLI in the session, so `/verify-unity` did not run.
 Team task: T-20261021-6fa4.
 
-1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: each limb fades
+1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: every fifth
+   limb (`SnowChanger.limbsPerMorphedShard`, toned down from every limb on 2026-10-21) fades
    while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the order the limbs go. No
    limb pops out and no shard pops in.
-2. Kill a creature with spindles (a tadpole): each body limb leaves a shard too.
+2. Kill a creature with spindles (a tadpole): its body limbs leave shards too, one per five.
 3. Console stays clean. The `renderers` line still shows the snow as one instanced family.
-4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` limbs have made one; after that limbs
+4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` (800 x 0.25 = 200) limbs have made one; after that limbs
    only fade.

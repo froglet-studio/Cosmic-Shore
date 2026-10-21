@@ -16,10 +16,15 @@ namespace CosmicShore.UI
     /// replicates with its device like the control it stands in for (vessel rule 56). A touch that starts
     /// on it never flies (<see cref="FlightTouchClaims"/>); an AIM button's drag is the right stick while it
     /// is held (<see cref="FlightTouchClaims.AddAim"/>).</para>
+    ///
+    /// <para>A seat that reads its buttons itself binds a SINK instead (<see cref="Bind(System.Action{bool})"/>):
+    /// the Orca's gunner Fire and Missile, whose hull the AI flies while a person aims, so an InputStatus press
+    /// would be dropped by the autopilot gate.</para>
     /// </summary>
     public class TouchButtonView : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
         IInputStatus _input;
+        System.Action<bool> _sink;
         TouchExtraButton _definition;
         RectTransform _region;
         Image _plate;
@@ -90,13 +95,29 @@ namespace CosmicShore.UI
         /// <summary>Who the button presses for.</summary>
         public void Bind(IInputStatus input)
         {
-            if (_holding && _input != input) Release();
+            if (_holding && (_input != input || _sink != null)) Release();
             _input = input;
+            _sink = null;
+        }
+
+        /// <summary>Presses <paramref name="sink"/> (true down, false up) instead of an InputStatus.</summary>
+        public void Bind(System.Action<bool> sink)
+        {
+            if (_holding && _sink != sink) Release();
+            _sink = sink;
+            _input = null;
+        }
+
+        /// <summary>Recolours the plate and rim (a seat change).</summary>
+        public void SetTint(Color tint)
+        {
+            _tint = tint;
+            Paint();
         }
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            if (_definition == null || _input == null || !isActiveAndEnabled) return;
+            if (_definition == null || (_input == null && _sink == null) || !isActiveAndEnabled) return;
             if (_definition.behaviour == TouchButtonBehaviour.Toggle && _holding)
             {
                 Release();
@@ -105,7 +126,8 @@ namespace CosmicShore.UI
             if (_holding) return;
             _holding = true;
             _pointerId = eventData.pointerId;
-            _input.OnButtonPressed.Raise(_definition.input);
+            if (_sink != null) _sink(true);
+            else _input.OnButtonPressed.Raise(_definition.input);
             Paint();
         }
 
@@ -135,7 +157,8 @@ namespace CosmicShore.UI
         {
             if (!_holding) return;
             _holding = false;
-            _input?.OnButtonReleased.Raise(_definition.input);
+            if (_sink != null) _sink(false);
+            else _input?.OnButtonReleased.Raise(_definition.input);
             Paint();
         }
 
