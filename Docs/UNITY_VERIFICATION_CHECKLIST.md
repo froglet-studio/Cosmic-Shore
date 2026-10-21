@@ -13762,10 +13762,11 @@ Files: `Cytoplasm/SnowChanger.cs` (`AddMorphedShard`, `CondenseTick`, growable s
 (player config, 0 errors in project code). No `unity` CLI in the session, so `/verify-unity` did not run.
 Team task: T-20261021-6fa4.
 
-1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: each limb fades
+1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: every fifth
+   limb (`SnowChanger.limbsPerMorphedShard`, toned down from every limb on 2026-10-21) fades
    while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the order the limbs go. No
    limb pops out and no shard pops in.
-2. Kill a creature with spindles (a tadpole): each body limb leaves a shard too.
+2. Kill a creature with spindles (a tadpole): its body limbs leave shards too, one per five.
 3. Console stays clean. The `renderers` line still shows the snow as one instanced family.
-4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` limbs have made one; after that limbs
+4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` (800 x 0.25 = 200) limbs have made one; after that limbs
    only fade.

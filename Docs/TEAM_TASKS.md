@@ -1851,7 +1851,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/PLATFORM_UNIFICATION.md §3.10; Docs/WEBGL_TOYBOX.md 'Web profile'
 
 ### T-20261021-6fa4 · open · test · Ecology
-- **Task:** Dying limbs become shards (Docs/ECOSYSTEM.md section 63, branch cece/awesome-faraday-7fsppt): Play Menu_Main (or any freestyle cell with flora), joust or starve a plant, and watch its spindles. Each limb should fade while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the same outside-in order the limbs go. No limb pops out and no shard pops in. Then check the Console is clean and the Renderer census still shows the snow as one instanced family. On a Low preset fewer limbs should leave shards once the cap (SnowChanger.maxMorphedShards x 0.25) is reached.
+- **Task:** Dying limbs become shards (Docs/ECOSYSTEM.md section 63, branch cece/awesome-faraday-7fsppt): Play Menu_Main (or any freestyle cell with flora), joust or starve a plant, and watch its spindles. Every fifth limb (SnowChanger.limbsPerMorphedShard = 5, toned down 2026-10-21) should fade while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the same outside-in order the limbs go. No limb pops out and no shard pops in. Then check the Console is clean and the Renderer census still shows the snow as one instanced family. On a Low preset fewer limbs should leave shards once the cap (SnowChanger.maxMorphedShards x 0.25) is reached.
 - **Done when:** Seen in Unity: limbs condense into shards in order, no pop, no errors; or the failure is written here and a dev task added
 - **Who can take it:** Garrett (the look), Yash (offered)
 - **Added:** 2026-10-21 by a Claude session (`cece/awesome-faraday-7fsppt`)
