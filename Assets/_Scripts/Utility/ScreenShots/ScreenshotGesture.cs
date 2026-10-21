@@ -3,8 +3,8 @@ using UnityEngine.InputSystem;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// "Take a photograph." <b>0</b> (the number row's zero), or the pad's
-    /// <b>Select / View / Share</b> button.
+    /// "Take a photograph." <b>0</b> (the number row's zero), or a click of the pad's
+    /// <b>right stick</b> (R3).
     ///
     /// <para>One predicate in one place, the same shape as <c>OverviewGesture</c>, so the binding
     /// can never drift between the places that ask.</para>
@@ -26,8 +26,9 @@ namespace CosmicShore.Utility
     /// hands' resting clusters is one you cannot fat-finger mid-manoeuvre — and it leaves the
     /// flight scheme untouched, which is what a photograph of that flight needs. The digits are
     /// entirely unclaimed: <c>0</c>-<c>9</c> are read by nothing in <c>_Scripts</c>. On the pad,
-    /// Select is the only face/system button no vessel ability or menu gesture claims (Start is
-    /// the overview).</para>
+    /// the capture was Select until 2026-10-21, when Select became the overview / app shell
+    /// toggle and Start became Settings; the stick clicks are the only pad buttons nothing else
+    /// reads, and R3 sits off the face buttons flight uses.</para>
     ///
     /// <para>General rule this records: <b>a key is only "free" against the keys some OTHER
     /// system is reading, and an input scheme that consumes raw <c>Keyboard.current</c> reads
@@ -41,7 +42,7 @@ namespace CosmicShore.Utility
             if (keyboard != null && keyboard.digit0Key.wasPressedThisFrame) return true;
 
             var pad = Gamepad.current;
-            return pad != null && pad.selectButton.wasPressedThisFrame;
+            return pad != null && pad.rightStickButton.wasPressedThisFrame;
         }
     }
 }
