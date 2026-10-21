@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(20, values.Length,
+            Assert.AreEqual(22, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 

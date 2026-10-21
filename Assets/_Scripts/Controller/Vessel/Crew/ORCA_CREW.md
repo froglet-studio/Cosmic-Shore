@@ -4,10 +4,16 @@ The Orca (`VesselClassType.Orca = 20`, card **Orca · 4 seat**) is a multiplayer
 One **helm** flies it and three **gunners** fight from it. The seats are always full: a person takes one, and an AI
 flies each of the others (Garrett, 2026-10-20: "this vessel always has 4 players (AI if not people)").
 
-The design is the Crew of Four Lab, rounds 3 to 7: `Docs/Studios/CrewOfFourLab.html`, written up in
+The design is the Crew of Four Lab, rounds 3 to 8: `Docs/Studios/CrewOfFourLab.html`, written up in
 `Docs/Studios/CREW_OF_FOUR_LAB.md` (artifact https://claude.ai/artifact/UaJcpaXzgkza2eHSQCZwmb). Garrett asked for
 the port on 2026-10-20: "stabilize the gunners guns as best you can. you can place them outside the vessel to do this.
 then bring this into unity".
+
+**Status: a stub (Garrett, 2026-10-21: "this is a good stub of a vessel").** It flies from the Toybox Vessel Changer
+with all four seats, its three guns, per-seat missiles, the helm's shield, its own hovering-assembly model, the
+missiles' look and the bomb's lit blast. It has not been opened in the Unity editor: every round's steps are in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Orca round 5" to "Orca round 9"). What a full vessel still needs is the
+Follow-ups list at the end: networking, level-5 upgrades, sounds, a prefab fitted to the model, its own HUD art.
 
 **Seats, not names.** "We can start referring to multiplayer vessels by their seats. this is a 4 seat vessel. that lets
 players know it supports four players or brings in 4 AI" (Garrett, 2026-10-20). Two new `SO_Vessel` fields carry this:
@@ -328,7 +334,6 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   lit; marking it needs a vessel highlight of its own (`BlastVolume` is cone-only today).
 - **The missile's look and the bomb's light are the local machine's.** The look follows the crew's own missiles, so it
   goes wherever the crew runs (see Networking).
-
 - **Networking.** The crew runs on one machine: the local person's hull, or an AI hull on the authority. Missiles, the
   shield's poses and the AI gunners are that machine's. The burst is an `AOEExplosion` spawned there only, and prism
   destruction does not replicate. A second human on another machine needs the seats replicated, plus a decision on
@@ -337,7 +342,8 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   the design-approval gate).
 - **Sounds:** all eight `EventReference` slots ship empty: launch, burst, shield, omni refill, empty magazine, sniper
   shot, bomb throw, bomb burst. (The fast gun's rounds and the bomb carry their prefabs' own sounds, if any.)
-- **Touch:** a finger down fires the gun and a double tap launches a missile. On the bomb seat, the first tap of a
+- **Touch:** the Orca has no phone-scheme row in `Tools/Build/author_touch_profiles.py` (vessel skill rule 58), like the
+  Wrasse and the Starlings: the crew reads touch itself. A finger down fires the gun and a double tap launches a missile. On the bomb seat, the first tap of a
   double tap also throws (or bursts) a bomb. This needs a phone playtest; the cleaner shape is a card tap, which needs the hull to
   bind an action to the card's input (`R_VesselActionHandler.HasAction`).
 - **Super-shielded prisms are 3× their box** (`/vessel` 4.x): the carried shell's 144 prisms look denser and wider
@@ -356,5 +362,5 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   that card to name an input AND the hull to bind an action to it (`AbilityCardPress` presses only bound inputs).
 - **The duo-vessel system** (`cece/sharp-tesla-j0kd7z`, `/duo-vessel`) moves seat swapping into `CrewSeat`. Fold the
   Orca's seats into it when it lands.
-- **`EnumIntegrityTests` count:** the Goby (`cece/sharp-tesla-j0kd7z`, 18) also raises the member count to 20. Whichever
-  branch lands second makes it 21.
+- **`EnumIntegrityTests` count:** 22 after the merge with the Starling (21). bleeding-edge itself asserted 19 against 21
+  members, so the test was red before this branch. The Goby (`cece/sharp-tesla-j0kd7z`, 18) makes it 23 when it lands.
