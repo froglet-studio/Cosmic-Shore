@@ -507,6 +507,8 @@ untouched by the six-seat cards.
 rear view). Left/1 = previous, right/2 = next, round a ring of the pilot's own hull plus every AI
 teammate's, ordered by vessel NetworkObjectId so every peer walks it identically
 (`PilotSwap.TryPickRingTarget`). Human teammates' hulls are never in the ring.
+The same two targets are drawn in the in-game top bar and are tappable there, which is the
+swap control on a phone (`PilotSwapIndicator`, 2026-10-21, `Docs/GAME_MODE_TOPBAR.md` §2.7).
 
 It is the **Cellular Duel vessel swap generalised** (`IPlayer.ChangeVessel` + `IVessel.ChangePlayer`),
 not a respawn: nothing is spawned or destroyed, the two Players EXCHANGE live hulls, so rule 2

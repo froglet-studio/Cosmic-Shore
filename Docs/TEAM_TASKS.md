@@ -520,6 +520,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Docs/Studios/BRITTLE_STAR.md 5.4; Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 1 and 3.5
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** the phone half of the Charge Mode question is settled: turning the phone no longer raises FlipAction (DeviceOrientationHandler), and on a phone Charge Mode is its card (Garrett's six-button layout, BRITTLE_STAR.md §1 'On a phone'). Still Garrett's: the starting spare ring, Overdrive, and whether Charge Mode stays on RB / E for pad and keyboard.
 
 ### T-20261016-5ed6 · open · dev · Brittle Star
 - **Task:** Replicate the Brittle Star's analog RT depth (two bytes a frame) so remote copies fire, heat, overheat (and lay the danger trail) and stiffen the Charge cords at the owner's real pull; today a remote copy reads a press as a full pull, so its heat state can differ by peer (vessel rule 48). The Thresher has the same gap.
@@ -592,12 +593,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
 
-### T-20261017-b06e · open · decision · Crew vessels
+### T-20261017-b06e · done · decision · Crew vessels
 - **Task:** Decide how the Kite Navigator seat goes online: today the board, motes, AI and every effect run on the hull's local human's machine. A second human on another machine needs the seat replicated, and a choice of which machine decides pops, blasts, Mass clusters, boost and steals (vessel rule 48). Also decide the arena case: the seat's swap uses PilotSwapGesture, which in an arena match also asks the arena to swap hulls while the human flies.
 - **Done when:** A written plan in KITE_NAVIGATOR.md that names the deciding machine per effect and the gesture owner in arenas
 - **Who can take it:** Garrett with Yash (party / multiplayer)
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
+- **Done:** 2026-10-21, Decided by Garrett, 2026-10-21: "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc." Two human seats on any mix of phones and PCs: the hull is owned by the pilot seat's machine, the navigator seat is simulated on its holder's machine and sends its decided effects through a server-checked relay; the seat consumes the swap gesture on a crew hull (seats first, then the team ring). Plan and work order: KITE_NAVIGATOR.md "Two humans, two seats (plan, 2026-10-21)".
 
 ### T-20261017-efca · open · dev · Crew vessels
 - **Task:** When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule.
@@ -1162,6 +1164,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Yash (offered) to check on a phone
 - **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** KITE_NAVIGATOR.md Round 5; Assets/Resources/KiteNavigatorUnlit.mat
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** GrizzlyClawConeVisual done: it copies Resources/KiteNavigatorUnlit.mat (set additive), falls back to Shader.Find, and with neither logs one error and draws no cone instead of throwing. BrittleStarExecutor (cord fallback) and ShrikeExecutor (missile trail) already return null rather than throw, but still need the referenced material to draw on a phone.
 
 ### T-20261019-6778 · open · test · preview
 - **Task:** Find what makes the cursor briefly reappear during one-thumb mouse flight in the Breakwater microgame window (Sparrow). Control is no longer lost, but Caleb saw the cursor pop out for a moment and suspects a particular screen position triggers it.
@@ -1379,6 +1382,53 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
 - **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
 
+### T-20261021-2d87 · done · dev · vessels
+- **Task:** Phone movement bugs: the Urchin flies full reverse whenever no thumb is on the glass (GunVesselTransformer.ReadThrottle reads XDiff 0 as -1; return 0 while InputStatus.Idle), and the Scarab never thrusts on touch (ScarabVesselTransformer.ReadThrottle01 reads only RightTriggerAnalog; treat Touch && !Idle like autopilot as a stopgap)
+- **Done when:** On an Android build the Urchin stops (not reverses) when both thumbs lift, and the Scarab flies in Scarab Scramble
+- **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 1-2
+- **Done:** 2026-10-21, Done on cece/admiring-hamilton-gyzzh8: idle parity (both thumbs off reads XDiff 0.5) stops the Urchin reversing; the Scarab reads the touch throttle slider. Phone check is in the new phone-controls test task.
+
+### T-20261021-985e · done · dev · vessels
+- **Task:** Touch card fixes: (a) a card whose input does not resolve on touch must not be pressable or claim the touch (AbilityLockupView.SetSlotPressInput vs AbilityCardPress.TryResolveInput); (b) R_VesselActionHandler.StartPressedActions ignores a press of an input already held (a lift + a card started toggles twice)
+- **Done when:** Rhino sword, Stoat and Angler Space/Charge cards no longer eat right-thumb touches; the Butterfly Dust card toggles once when the left thumb is also lifted
+- **Who can take it:** Garrett (touch input), any session
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 3-4
+- **Done:** 2026-10-21, Done: AbilityCardPress.RefreshPressable - a card that presses nothing on the device neither presses nor claims. The double start cannot arise any more (lift cards are not buttons on ThumbLifts hulls; lifts raise nothing on TotemButtons hulls).
+
+### T-20261021-bb9f · done · dev · vessels
+- **Task:** Touch feel pass: fix the Squirrel/Serpent idle snap (MantaAnimationContoller Idle writes +p,x against puppetry's -2p,2x), ease the stick in StoatAnimation, AnglerAnimation and ButterflyAnimation (rule 53), set touchNoseResponse 9 on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip, and honour Invert Y on touch
+- **Done when:** On a phone, lifting the last thumb eases every hull to rest and the dual-stick hulls answer the thumb without the 0.67 s nose lag
+- **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 5-7, 14
+- **Done:** 2026-10-21, Idle snaps fixed (Squirrel, Serpent, Sparrow, Stoat, Angler, Butterfly). The touch nose response and Invert Y on touch were not part of Garrett's list: moved to a new dev task.
+
+### T-20261021-9708 · done · decision · vessels
+- **Task:** Mobile vessel decisions D1-D12: lift-to-reach-a-card fires abilities (grace window recommended), card size/placement on touch, gesture hints, two-trigger abilities (Rhino sword, Manta Soar, Shrike, Thresher launch), no trigger depth (hold-time ramp as fleet standard?), Stoat on phones, Angler Squad/Recall with no card, Scarab throttle, Butterfly re-grip Fold, Wrasse on two phones, Termite/Falcon retire, retire phone-flip FlipAction
+- **Done when:** Each D row in the report carries a decision (or 'later') and the follow-up dev rows exist
+- **Who can take it:** Garrett (vessel owner); Shombith for D2/D3 (UI)
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §3
+- **Done:** 2026-10-21, Garrett decided 2026-10-21 (MOBILE_VESSELS.md section 8) and it was built. D9 (Butterfly re-grip Fold), D10 (Wrasse on two phones) and D11 (Termite/Falcon) remain: moved to a new decision task.
+
+### T-20261021-d476 · open · test · vessels
+- **Task:** First phone captures of the vessels with a second render or full-screen pass: Stoat dropping a dipole (black-hole lens), Wrasse in either seat, Thresher launch view, Serpent scoped, Brittle Star at full fire, Butterfly by a wormhole; plus the D1 check (move the right thumb to a card on Grizzly, Sparrow, Squirrel) and a ruler on a card
+- **Done when:** One Profiler capture per hull is on the perf record and the D1/D2 observations are written into MOBILE_VESSELS.md §6
+- **Who can take it:** Yash (offered, phone tests), Garrett
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §4, §6
+
+### T-20261021-4a95 · open · docs · vessels
+- **Task:** Correct the mobile doc drift found by the audit: BRITTLE_STAR F1 and SCARAB §3.1/§15 (cards reach face buttons since 9718a382), BRITTLE_STAR:35 + T-20261016-3e80 (phone flip does nothing), ABILITY_LOCKUP:346-348, SQUIRREL_DRIFT:519, BUTTERFLY_FOLD ghost, InputEvents.cs comments, InputHintBindingMap Button2 key, REFACTOR_BACKLOG S29 scope, T-20261019-41bb list, T-20261016-5ed6 (depth does replicate)
+- **Done when:** Each listed line matches the code
+- **Who can take it:** any session; Yash (offered)
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §5
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** fixed BRITTLE_STAR F1 and :35 (plus R2's flip line), SCARAB §3.1 / §3.2 / §15 item 9 (new §3.11 'On a phone'), and annotated T-20261016-3e80. The rest of the list is open.
+
 ### T-20261021-6632 · open · test · Squirrel
 - **Task:** Fly the Squirrel's new drift animation: while drifting the four engine pods swing onto the travel direction, parallel with the jets, jets still seated in the pods; check the pods against the wing slats past ~30 degrees of aim
 - **Done when:** SQUIRREL_DRIFT.md section 12 steps 1-6 pass in Toy Box > Vessel Changer > Squirrel, and the clipping question has an answer (fine, or a driftOffset value)
@@ -1413,6 +1463,49 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner, the launch feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
+
+### T-20261021-8190 · open · test · In-game UI / arena pilot swap
+- **Task:** Play an arena match (Brood Rush or Broadside) with 2+ AI teammates on PC, pad and a phone: the pilot-swap tiles sit between the goal stack and the score bar (16:9, 4:3, notched phone), tapping a tile swaps hulls and does not also steer, keycaps read 1/2 on keyboard and nothing on a phone
+- **Done when:** Tiles placed in the gap on all three aspects, a tap swaps without steering, keycaps follow the device
+- **Who can take it:** Yash, or Shombith (GameCanvas top bar)
+- **Added:** 2026-10-21 by Garrett (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/GAME_MODE_TOPBAR.md §2.7
+
+### T-20261021-64ee · open · content · In-game UI / control glyphs
+- **Task:** Author PadDpadLeft / PadDpadRight entries (padLabel or padGlyph) in Assets/Resources/ControlGlyphSet.asset so the pilot-swap tiles show a D-pad keycap on a pad
+- **Done when:** A pad player sees a D-pad chip under each pilot-swap tile
+- **Who can take it:** Shombith (UI art) or Yash
+- **Added:** 2026-10-21 by Garrett (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/GAME_MODE_TOPBAR.md §2.7
+
+### T-20261021-9fd3 · open · test · vessels
+- **Task:** Phone-test the fleet's new touch controls on an Android development build of cece/admiring-hamilton-gyzzh8: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' steps 4-15 (Urchin let-go, Scarab slider/juke, Brittle Star aim discs, Dolphin lift-either + tilt roll, Manta tilt soar, Rhino both-off energize, Thresher tilt launch, Stoat, Angler paint, Serpent/Shrike zoom, idle easing, arena swap tiles, no flip toggle)
+- **Done when:** Each step passes on a phone, or each failure is filed as a dev task; tilt signs and button sizes judged by hand
+- **Who can take it:** Garrett (asked for it; owner's feel), Yash (offered, phone tests)
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 8
+
+### T-20261021-1716 · open · decision · vessels
+- **Task:** Remaining mobile decisions after 2026-10-21: D9 Butterfly - should a quick right-thumb re-grip (under ~0.35 s) fold? D10 Wrasse - which machine owns the seat's effects when the two seats are two phones? D11 Termite and Falcon - retire or design?
+- **Done when:** Each has a decision or 'later' recorded in MOBILE_VESSELS.md section 8
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 3 and 8
+
+### T-20261021-cb48 · done · dev · vessels
+- **Task:** Touch feel leftovers: set touchNoseResponse on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip (the Angler's 9 is ignored there); honour Invert Y / Invert Throttle in TouchInputStrategy.Reparameterize and the one-thumb Pitch()
+- **Done when:** Dual-stick hulls answer the thumb without the 0.67 s nose lag on a phone; the invert settings change touch flight
+- **Who can take it:** any session (Garrett's vessels); Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 2 rows 7 and 14
+- **Done:** 2026-10-21, Done wider than the task (Garrett: 'get rid of all steering lag, and inconsistent y-inversions that are not left to the settings'): no nose lag for any human pilot on any device/hull (NoseFollowFraction), touchNoseResponse retired; one Invert Y rule in every strategy (ApplyInvertSettings), touch reads both invert settings. MOBILE_VESSELS.md section 8, second round.
+
+### T-20261021-aa19 · open · dev · Crew vessels
+- **Task:** Build two human seats on the Wrasse and Grouper (Garrett, 2026-10-21: "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc"), in the plan's order: (1) prism parity for one human online - pops, Space blasts and Mass clusters (seeded) applied on every peer, which today happen only on the Wrasse's machine; (2) land cece/sharp-tesla-j0kd7z and put the seat on ICrewSeat; (3) seat occupancy on the Player (CrewSeatOccupancy, RequestSeat_ServerRpc, PilotSwap.TryValidateSeatServer, offers between two humans, AI fills an empty seat); (4) the navigator seat simulated on its holder's machine, boosts and rams sent to the hull owner; (5) one owner for the swap gesture on a crew hull (seats first, then the arena ring); (6) seat stations in the Vessel Changer and two party members on one crew hull.
+- **Done when:** In MPPM with two players, and then on a phone plus a PC, each human picks a seat and an offer swaps them, a leaver's seat falls to the AI, pops / blasts / Mass clusters match on both screens, saved boosts reach the pilot, a ram steals once, and in an arena match 1 / 2 / the D-pad move seats without also swapping hulls.
+- **Who can take it:** Yash (multiplayer) with Garrett; builds on cece/sharp-tesla-j0kd7z's CrewSeat
+- **Added:** 2026-10-21 by Claude (cece/admiring-hamilton-gyzzh8) (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Two humans, two seats)
 
 ### T-20261021-a2b3 · open · dev · Performance
 - **Task:** Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resumed every frame only to yield again. Under the menu veil the budget is a fixed 512 completions a frame. Measured in the second Orrery capture: 34,770 completions at 0.07 ms each (2.5 s of real work), metered over ~68+ frames. Measure first (the third capture, T-20261021-a96c, shows the settle with the grow-in snapped). If the creation queue is then the floor, replace the polling with one queue the gate drains on a time slice, so a waiting prism costs nothing per frame

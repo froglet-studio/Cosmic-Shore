@@ -22,6 +22,7 @@ MonoBehaviour:
   crystalBurstReturnSpeed: 150
   energizeCostFraction: 0.1
   energizeHoldSeconds: 1
+  touchEnergizeRateMultiplier: 2
   energizedTailSeconds: 5
   energizeCooldownSeconds: 5
   liveWireUpgradeElement: 1

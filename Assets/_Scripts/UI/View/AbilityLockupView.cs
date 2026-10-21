@@ -83,6 +83,21 @@ namespace CosmicShore.UI
             public bool HasTint;        // rev 3: the card wears its element's colour
             public Color Tint;
             public AbilityCardPress Press;   // a tap on the card presses its ability
+            public RectTransform Host;       // what the row positions (the card hangs off it)
+            public int Index;                // its row slot, for RestoreRowLayout
+            public int Count;
+            public Image TouchGlyph;         // the thumb-lift glyph a phone draws in the chip socket
+        }
+
+        /// <summary>One card, as the phone controls (<c>TouchControlsHud</c>) see it.</summary>
+        public struct CardInfo
+        {
+            public bool IsCore;
+            public Element Element;
+            public CoreAbility Core;
+            public RectTransform Host;
+            public AbilityCardPress Press;
+            public bool Locked;
         }
 
         /// <summary>One drifting colour blob of the rev 3 lava lamp, behind a card's icon.</summary>
@@ -230,6 +245,86 @@ namespace CosmicShore.UI
             => _slots.TryGetValue(element, out var slot) && slot.Locked;
 
         // ---------------------------------------------------------------
+        // Phone controls (TouchControlsHud, Docs/Reports/MOBILE_VESSELS.md)
+        // ---------------------------------------------------------------
+
+        /// <summary>Every card of the row, elemental then non-elemental.</summary>
+        public void GetCards(List<CardInfo> into)
+        {
+            into.Clear();
+            foreach (var pair in _slots)
+                into.Add(new CardInfo { Element = pair.Key, Host = pair.Value.Host, Press = pair.Value.Press,
+                                        Locked = pair.Value.Locked });
+            foreach (var pair in _coreSlots)
+                into.Add(new CardInfo { IsCore = true, Core = pair.Key, Host = pair.Value.Host,
+                                        Press = pair.Value.Press, Locked = pair.Value.Locked });
+        }
+
+        /// <summary>The row the cards hang off (bottom-right of the HUD root).</summary>
+        public RectTransform Row => transform.Find("AbilityLockupRow") as RectTransform;
+
+        /// <summary>A card's width in canvas units, at host scale 1.</summary>
+        public float CardWidth => ResolveStyle() ? style.plateWidth : 104f;
+
+        /// <summary>A full totem's height (element plate, gap, ability plate) in canvas units.</summary>
+        public float CardHeight => ResolveStyle() ? style.PlateHeight : 182f;
+
+        /// <summary>How far above its host's centre a full totem's centre sits, in canvas units at scale 1.</summary>
+        public float CardCentreAboveHost => ResolveStyle() ? style.CardCenterOffsetY : 47f;
+
+        /// <summary>A colour for a button that is not an element's (the drift colour).</summary>
+        public Color NeutralColour => ResolveStyle() ? style.driftColour : Color.white;
+
+        public Color ColourFor(Element element) => ResolveStyle() ? style.ColourFor(element) : Color.white;
+
+        /// <summary>Puts every card back where the fleet row puts it, at scale 1 - undoing a phone layout.</summary>
+        public void RestoreRowLayout()
+        {
+            var row = Row;
+            if (!row || !ResolveStyle()) return;
+            foreach (var slot in _slots.Values)
+                if (slot.Host) PlaceHost(row, slot.Host, slot.Index, slot.Count);
+            foreach (var slot in _coreSlots.Values)
+                if (slot.Host) PlaceHost(row, slot.Host, slot.Index, slot.Count);
+        }
+
+        /// <summary>The touch gesture a card's ability is on, drawn in its chip socket. Null clears it.</summary>
+        public void SetTouchGlyph(Element element, Sprite glyph)
+        {
+            if (_slots.TryGetValue(element, out var slot)) SetSlotTouchGlyph(slot, glyph);
+        }
+
+        /// <summary>The same for a non-elemental card (the Squirrel's drift).</summary>
+        public void SetCoreTouchGlyph(CoreAbility ability, Sprite glyph)
+        {
+            if (_coreSlots.TryGetValue(ability, out var slot)) SetSlotTouchGlyph(slot, glyph);
+        }
+
+        void SetSlotTouchGlyph(Slot slot, Sprite glyph)
+        {
+            if (!slot.ChipSocket) return;
+            if (!glyph)
+            {
+                if (slot.TouchGlyph) slot.TouchGlyph.enabled = false;
+                return;
+            }
+            if (!slot.TouchGlyph)
+            {
+                slot.TouchGlyph = ResolveChildImage(slot.ChipSocket, "TouchGlyph", null);
+                var rt = slot.TouchGlyph.rectTransform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                float side = style.chipHeight * 1.8f;
+                rt.sizeDelta = new Vector2(side, side);
+                slot.TouchGlyph.preserveAspect = true;
+                slot.TouchGlyph.raycastTarget = false;
+            }
+            slot.TouchGlyph.sprite = glyph;
+            slot.TouchGlyph.color = slot.HasTint ? slot.Tint : Color.white;
+            slot.TouchGlyph.enabled = true;
+        }
+
+        // ---------------------------------------------------------------
         // Build
         // ---------------------------------------------------------------
 
@@ -306,6 +401,9 @@ namespace CosmicShore.UI
                 var slot = BuildSlot($"AbilityLockup_{ability}", host, hasIcon ? icon : null,
                                      Element.None, emblem, emblemSprite);
                 if (slot == null) continue;
+                slot.Host = host;
+                slot.Index = -(coreOrder.Length - i);
+                slot.Count = order.Length;
 
                 if (hasIcon)
                 {
@@ -334,6 +432,9 @@ namespace CosmicShore.UI
                 var slot = BuildSlot($"AbilityLockup_{element}", host, hasIcon ? icon : null, element,
                                      emblem: null, emblemSprite: null);
                 if (slot == null) continue;
+                slot.Host = host;
+                slot.Index = i;
+                slot.Count = order.Length;
 
                 if (hasIcon) NormaliseIcon(icon.rectTransform);
 

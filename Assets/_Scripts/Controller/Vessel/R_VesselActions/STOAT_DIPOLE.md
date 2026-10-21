@@ -372,7 +372,8 @@ holes overlap on screen, the black shadow is drawn over the white core, exactly 
 sideways = the triggers' difference (the black hole on the deeper side), lengthways = their sum (the black hole
 nearer), mirrored about the laid middle. What differed was a KEY: the studio squeezes a key to 0.5 at once
 (`dpKeySqueeze`), Unity ramped it 0 → 1 over 1.5 s, so on keys the poles sat on top of each other first and then
-opened wider than the studio's (200 u, not 70). `keySqueeze` 0.5 is the studio's.
+opened wider than the studio's (200 u, not 70). `keySqueeze` 0.5 is the studio's. A phone's held button is a key too (2026-10-21,
+`STOAT.md` §4a): no trigger depth on glass, so a touch pair opens at `keySqueeze` the same way.
 
 **The path is in the scene.** `StoatPathfinderWorldDots`: camera-facing discs every `worldDotSpacing` (3 u: denser
 than the studio's 2D line) along the 3D path, `worldDotSize` 0.7 u, never under `worldDotMinPixels` 2.5 px. They

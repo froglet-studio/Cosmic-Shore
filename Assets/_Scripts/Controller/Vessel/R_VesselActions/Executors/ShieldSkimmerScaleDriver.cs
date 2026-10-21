@@ -28,7 +28,8 @@ namespace CosmicShore.Gameplay
     ///
     /// ENERGIZE — the supershield key. Holding the both-triggers lower/chop stance
     /// (<see cref="SetInStance"/>, fed by <see cref="ShieldSwipeActionExecutor"/>) for
-    /// <c>EnergizeHoldSeconds</c> spends the cost and ignites the blade: while
+    /// <c>EnergizeHoldSeconds</c> (divided by <c>touchEnergizeRateMultiplier</c> for a human on a phone)
+    /// spends the cost and ignites the blade: while
     /// <see cref="IsEnergized"/> the damage effect POPS super-shielded prisms instead of
     /// binding. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
     /// <c>EnergizeCooldownSeconds</c> locks re-charging. The tail runs out once started - taking
@@ -150,8 +151,30 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Charge progress 0..1 while Charging (0 otherwise).</summary>
         public float Charge01 => _energize == RhinoSwordEnergizePhase.Charging && config != null
-            ? Mathf.Clamp01((Time.time - _chargeStart) / config.EnergizeHoldSeconds)
+            ? Mathf.Clamp01((Time.time - _chargeStart) / EnergizeHoldSeconds)
             : 0f;
+
+        /// <summary>The stance hold that ignites THIS blade: the config's, shortened by its touch rate for a
+        /// human on a phone (Garrett 2026-10-21: a phone pilot energizes by lifting both thumbs, which also
+        /// lets go of the steering, "so we can compensate for lack of control by having it go quicker").
+        /// Read from the REPLICATED device, so a replica's charge ramp (FX) runs the owner's clock; the
+        /// ignition itself is decided on the owner and mirrored through the relay.</summary>
+        float EnergizeHoldSeconds => config.EnergizeHoldSecondsFor(IsHumanTouchPilot);
+
+        /// <summary>A human flies this Rhino on a phone. AI and autopilot keep the pad's timing (an AI's
+        /// input status can read Touch, the enum's zero, without any thumb on any glass).</summary>
+        bool IsHumanTouchPilot
+        {
+            get
+            {
+                var status = _skimmer ? _skimmer.VesselStatus : null;
+                if (status?.Player == null) return false;
+                var input = status.InputStatus;
+                if (input == null || input.ActiveInputDevice != InputDeviceType.Touch) return false;
+                if (status.IsInitializedAsAI) return false;
+                return status.AIPilot == null || !status.AIPilot.AutoPilotEnabled;
+            }
+        }
 
         /// <summary>The sword's own Skimmer (blade root), for the components that share its GameObject.</summary>
         public Skimmer Skimmer => _skimmer;
@@ -327,7 +350,7 @@ namespace CosmicShore.Gameplay
                 case RhinoSwordEnergizePhase.Charging:
                     if (!_inStance || GetShield01() < cost)
                         SetEnergizePhase(RhinoSwordEnergizePhase.Idle, now);
-                    else if (now - _chargeStart >= config.EnergizeHoldSeconds)
+                    else if (now - _chargeStart >= EnergizeHoldSeconds)
                     {
                         SetShield01(GetShield01() - cost); // ignition spends the fraction
                         SetEnergizePhase(RhinoSwordEnergizePhase.Energized, now);

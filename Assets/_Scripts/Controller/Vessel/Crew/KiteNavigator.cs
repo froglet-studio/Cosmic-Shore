@@ -18,10 +18,11 @@ namespace CosmicShore.Gameplay
     /// prisms, Time hands the pilot boost, Charge powers the kite so its next ram steals that many petals (a scored
     /// Strike, <c>CombatHitDrain.TryAdmit</c>). Motes are the navigator's own and are drawn only on its board.
     ///
-    /// <para><b>Seats.</b> The swap is the arena's gesture (<see cref="PilotSwapGesture"/>: D-pad left / right, keys 1 / 2).
-    /// It moves the local human between the hull and the kite; whichever seat is empty is flown by an AI squad mate - the
-    /// hull's own <c>AIPilot</c>, or <see cref="KiteNavigatorAI"/>, which drives the kite only through an aim point, as a
-    /// thumb does.</para>
+    /// <para><b>Seats.</b> Keys 1 / 2 pick the hull (the Grouper) or the kite (the Wrasse); the D-pad (the arena's
+    /// <see cref="PilotSwapGesture"/>) and a double tap on the small view step to the other seat. The pick is remembered per
+    /// hull class (<see cref="CrewSeatChoice"/>), so the person starts in the seat they last chose. Whichever seat is empty
+    /// is flown by an AI squad mate - the hull's own <c>AIPilot</c>, or <see cref="KiteNavigatorAI"/>, which drives the
+    /// kite only through an aim point, as a thumb does.</para>
     ///
     /// <para><b>Local only.</b> Everything here runs on the machine of the hull's local human: the board, the motes and
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
@@ -122,6 +123,10 @@ namespace CosmicShore.Gameplay
         readonly HashSet<Prism> _blastCounted = new();
         float _blastWatchUntil;
         bool _humanNavigates, _weTookHull, _down, _boosting, _clickOnPip;
+        // the seat the person last picked (CrewSeatChoice) is still to be taken on this bind
+        bool _seatChoicePending;
+        // a phone's "both thumbs lifted" boost is armed once a thumb has touched in the pilot seat (see PilotWantsBoost)
+        bool _idleArmed;
         // this frame's aim is a thumb or a mouse holding the kite's rope (KiteControl.Sling), not a point it flies to
         bool _sling;
         // the kite as a SWITCH THREADER (IRingThreadProbe): bumped whenever the kite is re-placed rather than flown, so a
@@ -270,7 +275,8 @@ namespace CosmicShore.Gameplay
             _ai.Reset(_kite.Position);
             _aim = _kite.Position;
             _snapped = false;
-            _humanNavigates = _weTookHull = _down = _boosting = false;
+            _humanNavigates = _weTookHull = _down = _boosting = _idleArmed = false;
+            _seatChoicePending = !_aiCrew;
             Motes.Clear(); Loops.Clear(); DropBursts(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
             _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _boostReadyAt = 0f; _omniPending = 0;
             // the views, the swap and the static handle belong to the local pilot's seat; an AI crew draws nothing
@@ -352,7 +358,11 @@ namespace CosmicShore.Gameplay
             if (_vessel == null) { _aiCrew = aiCrew; Bind(vessel); }
             float dt = Time.deltaTime;
 
-            if (!_aiCrew) PollSwap();
+            if (!_aiCrew)
+            {
+                PollSwap();
+                ApplySeatChoice();
+            }
             if (dt <= 0f) return;
 
             _s = ScreenSettings();
@@ -393,13 +403,40 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ seats
 
+        // Keys PICK a seat - 1 the hull (the Grouper), 2 the kite (the Wrasse) - and the D-pad and a double tap on the small
+        // view STEP to the other one (Garrett, 2026-10-21: "players can select, change seats etc. both can be played on
+        // mobile or pc"; the Orca's keys 1-4 pick its seats the same way). Picking the seat you are in does nothing and
+        // spends no cooldown. Every pick is remembered (CrewSeatChoice), so the next bind starts there.
         void PollSwap()
         {
-            int dir = PilotSwapGesture.DirectionThisFrame();
-            if (dir == 0 && PipDoubleTapped()) dir = 1;
-            if (dir == 0 || Time.unscaledTime < _swapReadyAt) return;
+            // read every frame: the double tap tracks presses and releases across frames
+            bool pipDoubleTap = PipDoubleTapped();
+            var keyboard = Keyboard.current;
+            int want;
+            if (keyboard != null && keyboard.digit1Key.wasPressedThisFrame) want = 0;
+            else if (keyboard != null && keyboard.digit2Key.wasPressedThisFrame) want = 1;
+            else if (pipDoubleTap || PilotSwapGesture.DirectionThisFrame() != 0) want = _humanNavigates ? 0 : 1;
+            else return;
+
+            bool navigate = want == 1;
+            if (navigate == _humanNavigates || Time.unscaledTime < _swapReadyAt) return;
             _swapReadyAt = Time.unscaledTime + PilotSwap.CooldownSeconds;
-            SetHumanNavigates(!_humanNavigates);
+            _seatChoicePending = false;
+            SetHumanNavigates(navigate);
+            if (_status != null) CrewSeatChoice.Set(_status.VesselType, want);
+        }
+
+        // The seat last picked on this hull class is taken once the hull is really the person's: flown by them (not parked
+        // on its AI by a menu or the Vessel Changer's hand-over, which ShouldRun already waits out) with live input (not a
+        // countdown, a modal or the pause menu), so taking the seat never fights whatever holds the hull at a bind.
+        void ApplySeatChoice()
+        {
+            if (!_seatChoicePending) return;
+            if (_humanNavigates) { _seatChoicePending = false; return; }
+            var input = _player?.InputStatus;
+            if (_status == null || _status.AutoPilotEnabled || input == null || input.Paused || PauseSystem.Paused) return;
+            _seatChoicePending = false;
+            if (CrewSeatChoice.Get(_status.VesselType) == 1) SetHumanNavigates(true);
         }
 
         // A double tap on the small view swaps seats - the touch swap (Garrett, 2026-10-19: "when I double tap the pip
@@ -480,6 +517,7 @@ namespace CosmicShore.Gameplay
             {
                 if (_weTookHull && UnityLiveness.Alive(_vessel.Transform)) _vessel.ToggleAIPilot(false);
                 _weTookHull = false;
+                _idleArmed = false;
                 SetFlightInputPaused(false);
                 _ai.Reset(_kite.Position);
             }
@@ -812,8 +850,10 @@ namespace CosmicShore.Gameplay
                     // a lifted thumb lets go of the rope: the kite flies free (Sling), or coasts (Follow)
                     _sling = _cfg.Control == KiteControl.Sling;
                     if (!touching) { _down = false; return; }
-                    // a tap on the small view is the seat swap, not an aim
-                    if (_view.PipContains(touchscreen.primaryTouch.startPosition.ReadValue(), true)) { _down = false; return; }
+                    // a tap on the small view is the seat swap, not an aim; a touch that starts on a control which owns it (a
+                    // pressable card, the arena's swap tiles: FlightTouchClaims) is that control's, as it is for flight
+                    var start = touchscreen.primaryTouch.startPosition.ReadValue();
+                    if (_view.PipContains(start, true) || FlightTouchClaims.Claims(start)) { _down = false; return; }
                     var at = touchscreen.primaryTouch.position.ReadValue();
                     if (!_sling) at.y += ThumbOffsetPixels();
                     _aim = _view.ScreenToBoard(at);
@@ -1231,11 +1271,18 @@ namespace CosmicShore.Gameplay
             return d >= _cfg.AIBoostRingDistance && Vector3.Dot(_vessel.Transform.forward, to / Mathf.Max(1e-3f, d)) > 0.7f;
         }
 
+        // On a phone, both thumbs off the glass (Idle) is the trigger only once a thumb has touched in the pilot seat: the
+        // touch strategy reads Idle on every frame with no thumb down, including the frames right after a double tap on the
+        // small view brought the person back to the hull, and before a newly bound hull is first touched. Neither is a pilot
+        // letting go to boost, so neither spends a saved boost. Since 2026-10-21 an idle phone reads the pad's released
+        // sticks (XDiff 0.5, TouchInputStrategy.ResetInput), so the boost multiplies cruise instead of the old 0 (which left
+        // a "boost" at the minimum speed).
         bool PilotWantsBoost()
         {
             var input = _player?.InputStatus;
             if (input == null) return false;
-            return input.RightTriggerAnalog > 0.5f || input.Idle;
+            if (!input.Idle) _idleArmed = true;
+            return input.RightTriggerAnalog > 0.5f || (input.Idle && _idleArmed);
         }
 
         // The hull's level-5 upgrade in an element: the fleet's replicated gate (the Wrasse's ElementalAbilityMap lists all four

@@ -47,6 +47,22 @@ the hit box, jets and engine flash are still the Sparrow's (`T-20261020-a9f5`).
   the blast, Mass blocks morph into the prisms, Time streaks onto the Grouper, and Charge orbits onto the Wrasse.
 - Not editor-verified: `T-20261020-8dbc`, `T-20261021-3d24`, `T-20261021-d063`.
 
+**2026-10-21, two seats, either device (decided by Garrett):** "wrasse and grouper, are two seats. players can select,
+change seats etc. both can be played on mobile or pc." This closes `T-20261017-b06e`, and it replaces the audit line
+that one phone runs one human plus an AI.
+- **Today, one human:** keys 1 / 2 pick the Grouper or the Wrasse, and the D-pad or a double tap on the small view
+  steps to the other seat. The pick is remembered per hull class (`CrewSeatChoice`).
+- **The phone boost:** lifting both thumbs now really speeds the Grouper up (idle reads a released pad, 72.5 against
+  35 u/s at a full spread). It is spent only after a thumb has touched in the pilot seat.
+- **The online plan:** `KITE_NAVIGATOR.md` "Two humans, two seats (plan, 2026-10-21)":
+  - the hull is owned by the pilot seat's machine;
+  - the Wrasse is simulated on its holder's machine, which sends each decided effect through a server-checked relay;
+  - the seat owns the swap gesture on a crew hull: seats first, then the arena's ring;
+  - the work order is on the board as `T-20261021-aa19` (Yash with Garrett, on `cece/sharp-tesla-j0kd7z`'s
+    `CrewSeat`).
+- **A gap it fixes first:** pops, blasts and Mass clusters happen only on the Wrasse's own machine today, even with one
+  human online.
+
 ## 2. Try it
 
 **The browser lab:** [Crew Vessel Lab](https://claude.ai/artifact/JtQptDHQhNdC2CxPmspfct). Private to Garrett until
@@ -100,9 +116,8 @@ runs on one machine. Each is explained in `Assets/_Scripts/Controller/Vessel/Cre
 - **Fly it in the editor** (`T-20261018-5c29`; Yash can run the editor pass). Let the shaders re-import, check the pilot
   view's prisms look unchanged, then follow the Kite Navigator entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
   `T-20261017-aca2` is the original playtest task.
-- **Decide how the seat goes online** (`T-20261017-b06e`, Garrett with Yash):
-  - which machine decides each effect;
-  - who owns the swap gesture in an arena match.
+- **Build the two human seats** (`T-20261021-aa19`, Yash with Garrett). The decision (`T-20261017-b06e`) was made on
+  2026-10-21: two seats, either device. The plan is in `KITE_NAVIGATOR.md`.
 - **Register the seat as a duo design** when your duo-vessel branch (`cece/sharp-tesla-j0kd7z`) lands
   (`T-20261017-efca`, Garrett). The Goby there still uses enum value 16 and has to move; 18 is left for it.
 - **Card icons:** the Wrasse still shows the Sparrow's four ability icons (`T-20261018-8ff7`).
