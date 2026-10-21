@@ -10,7 +10,8 @@ namespace CosmicShore.ScriptableObjects
     /// bandwidth on a tile GPU), so a lower preset has to draw fewer and cheaper pixels, not just
     /// simulate less: Medium drops the costs nobody misses (the animated procedural sky becomes its
     /// one-sample bake, the wormhole's extra camera renders smaller), and Low goes after the heavy
-    /// hitters (anti-aliasing, render scale, HDR, bloom resolution, transparent overdraw).
+    /// hitters (anti-aliasing, render scale, HDR, bloom resolution, transparent overdraw - thinned,
+    /// never removed, where the transparent things are functional like the cytoplasm shards).
     ///
     /// Each row has two halves:
     /// <list type="bullet">
@@ -106,9 +107,10 @@ namespace CosmicShore.ScriptableObjects
                  "gameplay camera's (a second camera rendering the world). 1 = no cap.")]
         [SerializeField, Range(0.1f, 1f)] float offscreenViewMaxRenderScale = 1f;
 
-        [Tooltip("Cells spawn no cytoplasm motes (~300 transparent objects per cell: overdraw). " +
-                 "Cosmetic only. Read when a cell starts.")]
-        [SerializeField] bool disableCytoplasm;
+        [Tooltip("Fraction of a cell's cytoplasm shards spawned (1 = all): fewer transparent shards, " +
+                 "less overdraw. The shards are FUNCTIONAL - they point at the cell's crystal - so a " +
+                 "preset thins them and never removes them. Read when a cell starts.")]
+        [SerializeField, Range(GraphicsCuts.MinCytoplasmDensity, 1f)] float cytoplasmDensity = 1f;
 
         public QualityPresetSetting Preset => preset;
         public bool SetsAntiAliasing => setsAntiAliasing;
@@ -121,7 +123,7 @@ namespace CosmicShore.ScriptableObjects
         public int BloomMaxIterations => bloomMaxIterations;
         public int MembraneMaxSubdivisions => membraneMaxSubdivisions;
         public float OffscreenViewMaxRenderScale => offscreenViewMaxRenderScale;
-        public bool DisableCytoplasm => disableCytoplasm;
+        public float CytoplasmDensity => cytoplasmDensity;
 
         /// <summary>True when this row changes bloom at all.</summary>
         public bool CutsBloom => bloomAtQuarterResolution || bloomMaxIterations > 0;

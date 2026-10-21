@@ -67,13 +67,6 @@ namespace CosmicShore.Gameplay
 
         public void Initialize()
         {
-            // A device tier or quality preset may go without the mote field (GraphicsCuts:
-            // MobileLow, the Low preset): ~300 transparent objects per cell and the reorient sweep
-            // over all of them. Cosmetic only - not mass, not lifeforms.
-            // Docs/PLATFORM_UNIFICATION.md §3.6, §3.10.
-            if (GraphicsCuts.DisableCytoplasm)
-                return;
-
             if (!cellData.TryGetLocalCrystal(out Crystal crystal))
                 return;
 
@@ -89,7 +82,11 @@ namespace CosmicShore.Gameplay
 
             // Uniform density throughout the full sphere (0 → membrane)
             float sphereVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR);
-            int shardCount = Mathf.Max(1, Mathf.RoundToInt(sphereVolume / cellVolume));
+            // A device tier or quality preset may THIN the field (GraphicsCuts.CytoplasmDensity:
+            // MobileLow, the Low preset): fewer transparent shards to draw and reorient. Never to
+            // zero - the shards point at the crystal, so they are how a pilot finds it.
+            // Docs/PLATFORM_UNIFICATION.md §3.6, §3.10.
+            int shardCount = Mathf.Max(1, Mathf.RoundToInt(sphereVolume / cellVolume * GraphicsCuts.CytoplasmDensity));
             float outerR3 = outerR * outerR * outerR;
 
             _instanced = TryBeginInstanced(shardCount, outerR);

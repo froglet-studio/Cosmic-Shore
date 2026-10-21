@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -119,9 +120,10 @@ namespace CosmicShore.ScriptableObjects
                  "score change.")]
         [SerializeField] bool quietScoreGlow;
 
-        [Tooltip("Cells spawn no cytoplasm motes on this tier (~300 transparent mote objects per " +
-                 "cell). Cosmetic only: not mass, not lifeforms.")]
-        [SerializeField] bool disableCytoplasm;
+        [Tooltip("Fraction of a cell's cytoplasm shards spawned on this tier (1 = all). The shards " +
+                 "are FUNCTIONAL - they point at the cell's crystal - so a tier thins them and never " +
+                 "removes them: the floor is " + nameof(GraphicsCuts) + ".MinCytoplasmDensity.")]
+        [SerializeField, Range(GraphicsCuts.MinCytoplasmDensity, 1f)] float cytoplasmDensity = 1f;
 
         [Header("Content: Wanderway (applied at runtime on this tier)")]
         [Tooltip("Overrides on the Wanderway belt's budget, applied to the config WanderToy builds " +
@@ -159,7 +161,8 @@ namespace CosmicShore.ScriptableObjects
 
         public bool DeactivateMenuWhileFlying => deactivateMenuWhileFlying;
         public bool QuietScoreGlow => quietScoreGlow;
-        public bool DisableCytoplasm => disableCytoplasm;
+        /// <summary>Fraction of each cell's cytoplasm shards spawned on this tier (1 = all).</summary>
+        public float CytoplasmDensity => cytoplasmDensity;
         public WanderwayBudget Wanderway => wanderwayBudget;
 
         /// <summary>The skybox this tier draws in place of <paramref name="authored"/>, or null to keep

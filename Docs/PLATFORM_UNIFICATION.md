@@ -375,7 +375,7 @@ so Windows and iOS run exactly what bleeding-edge ran. MobileLow carries Garrett
 | **Freestyle trail waits above 10,000 cell prisms**, resumes at 9,700 | `freestyleCellPrismBudget` / `Resume` → the same handler, once a second, per cell with hysteresis. Never during a Wanderway run (`WanderwayRun.AnyRunning`): the tether needs a trail - re-evaluated the frame a run or preview starts or stops, not a second later. A spawner that waits is the sanctioned lever, not an exception | same numbers, checked inside the spawn loop |
 | **Menu screens and nav bar DEACTIVATED while flying** | `deactivateMenuWhileFlying` → `ScreenSwitcher`: on the enter blend's end it switches off every active screen root EXCEPT HOME, and the nav bar, and switches exactly those back on at the start of the exit, before the fade-in. HOME stays live because it carries listeners a flight must not silence (ship review): the party-invite popup subscribes in `OnEnable`, and `HomeScreen` subscribes to profile changes in `Start` but drops them in `OnDisable`. `FlipUI` re-applies the last phone flip when re-enabled | HOME + nav bar in flight, plus every non-HOME screen disabled for the whole session (not ported: those screens are features). Garrett's build was offline, so it had no invites to miss |
 | **HUD domain glow rests instead of breathing** | `quietScoreGlow` → `DomainScorePanel.ArmGlow`; the score-change punch still plays | same |
-| **No cytoplasm motes** | `disableCytoplasm` → `SnowChanger.Initialize` | same |
+| **A quarter of the cytoplasm shards** (was: none) | `cytoplasmDensity: 0.25` → `SnowChanger.Initialize` scales the shard count, through `GraphicsCuts.CytoplasmDensity`. The shards point at the cell's crystal, so they are a navigation cue: a tier thins them and never removes them (Garrett, 2026-10-21; floor `GraphicsCuts.MinCytoplasmDensity` = 0.1). The Web profile is 0.25 too | removed every mote |
 | **Wanderway belt 30,000 → 1,200 resident prisms, no lifeform scenes, 4 ahead, 2 crystals, 2 arrivals at once** | `wanderwayBudget` → `WanderToy.Configure` writes it onto the BUILT `ConveyorConfig`; the settings asset is untouched. `MaxConcurrentArrivals` moved from a constant onto `ConveyorConfig` (default 3) for it | edited the shared `Wander_WithoutArk.asset` and the constant, so every platform got the small belt |
 
 **Not ported, and why:**
@@ -562,13 +562,15 @@ number is a field there):
 |---|---|---|
 | **Ultra / Very High / High** | nothing | nothing - render as before |
 | **Medium** | nothing | **baked sky** (the HyperSea sky's nebulae, dust and stars stop drifting and twinkling; one texture sample per pixel instead of ~20 noise octaves and two Voronoi searches); wormhole exact view at **0.75** of the camera's resolution |
-| **Low** | **AA Off**; render scale at most **80%** (Linear upscale) | everything Medium cuts, plus: **HDR off**; bloom built at **quarter** resolution with at most **3** pyramid levels; membrane at **642** capsules (level 3); **no cytoplasm motes**; wormhole view at **0.5** |
+| **Low** | **AA Off**; render scale at most **80%** (Linear upscale) | everything Medium cuts, plus: **HDR off**; bloom built at **quarter** resolution with at most **3** pyramid levels; membrane at **642** capsules (level 3); **a quarter of the cytoplasm shards**; wormhole view at **0.5** |
 | **Very Low** | **AA Off**; render scale at most **70%** | the same as Low |
 
 **How it is wired.**
 - `GraphicsCuts` (`_Scripts/System/Platform/`) is the one reader: it merges the device tier's cuts
   (`PlatformProfile.Current`) with the preset's. A flag is on if either asks, and a cap is the tighter
-  of the two, so a preset never undoes a MobileLow cut. `CapsuleMembrane`, `SnowChanger`,
+  of the two, so a preset never undoes a MobileLow cut. **Cytoplasm shards are thinned, never removed**: they
+  point at the cell's crystal (Garrett, 2026-10-21), so `cytoplasmDensity` (tier and preset) is a fraction
+  with a floor of `GraphicsCuts.MinCytoplasmDensity` (0.1); the old `disableCytoplasm` flag is gone. `CapsuleMembrane`, `SnowChanger`,
   `WormholeView`, `PlatformRenderApplier` and `GraphicsSettingsApplier` read it instead of the profile.
 - `GraphicsSettingsApplier.ApplyQuality` pushes the preset in force (`GraphicsCuts.SetPreset`) and then
   applies the live cuts: HDR (now restored to the URP asset's authored value when a cut is lifted,

@@ -57,7 +57,8 @@ namespace CosmicShore.Tests
             Assert.Less(row.MaxRenderScalePercent, 100);
             Assert.IsTrue(row.DisableHdr);
             Assert.IsTrue(row.CutsBloom);
-            Assert.IsTrue(row.DisableCytoplasm);
+            Assert.Less(row.CytoplasmDensity, 1f, "cytoplasm thinned");
+            Assert.GreaterOrEqual(row.CytoplasmDensity, GraphicsCuts.MinCytoplasmDensity, "cytoplasm kept");
             Assert.GreaterOrEqual(row.MembraneMaxSubdivisions, 0);
             Assert.Less(row.OffscreenViewMaxRenderScale, 1f);
         }
@@ -73,7 +74,7 @@ namespace CosmicShore.Tests
                 Assert.LessOrEqual(lower.OffscreenViewMaxRenderScale, upper.OffscreenViewMaxRenderScale, $"{p} wormhole view");
                 Assert.IsTrue(lower.BakedSky || !upper.BakedSky, $"{p} sky");
                 Assert.IsTrue(lower.DisableHdr || !upper.DisableHdr, $"{p} HDR");
-                Assert.IsTrue(lower.DisableCytoplasm || !upper.DisableCytoplasm, $"{p} cytoplasm");
+                Assert.LessOrEqual(lower.CytoplasmDensity, upper.CytoplasmDensity, $"{p} cytoplasm");
             }
         }
 
@@ -90,7 +91,7 @@ namespace CosmicShore.Tests
             Assert.IsFalse(row.CutsBloom);
             Assert.AreEqual(-1, row.MembraneMaxSubdivisions);
             Assert.AreEqual(1f, row.OffscreenViewMaxRenderScale);
-            Assert.IsFalse(row.DisableCytoplasm);
+            Assert.AreEqual(1f, row.CytoplasmDensity);
 
             var data = new GraphicsSettingsData { AntiAliasing = AntiAliasingSetting.MSAA4x, RenderScalePercent = 100 };
             row.ApplyPickTo(data);
@@ -154,6 +155,17 @@ namespace CosmicShore.Tests
 
             data.QualityPreset = QualityPresetSetting.Medium;
             Assert.AreEqual(QualityPresetSetting.Medium, data.EffectivePreset);
+        }
+
+        [Test]
+        public void CytoplasmShards_AreThinned_NeverRemoved()
+        {
+            // The shards point at the crystal: no tier or preset combination may leave a cell without them.
+            Assert.AreEqual(1f, GraphicsCuts.LowerDensity(1f, 1f));
+            Assert.AreEqual(0.25f, GraphicsCuts.LowerDensity(1f, 0.25f));
+            Assert.AreEqual(0.25f, GraphicsCuts.LowerDensity(0.25f, 0.5f));
+            Assert.AreEqual(GraphicsCuts.MinCytoplasmDensity, GraphicsCuts.LowerDensity(0f, 1f));
+            Assert.Greater(GraphicsCuts.MinCytoplasmDensity, 0f);
         }
 
         [Test]

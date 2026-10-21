@@ -70,14 +70,24 @@ namespace CosmicShore.Core
             }
         }
 
-        public static bool DisableCytoplasm
+        /// <summary>The fewest cytoplasm shards any cut may leave, as a fraction of a cell's full field.
+        /// The shards point at the cell's crystal, so they are a navigation cue: thinned, never removed.</summary>
+        public const float MinCytoplasmDensity = 0.1f;
+
+        /// <summary>Fraction of each cell's cytoplasm shards spawned: the lower of the tier's and the
+        /// preset's, never below <see cref="MinCytoplasmDensity"/>.</summary>
+        public static float CytoplasmDensity
         {
             get
             {
                 var profile = PlatformProfile.Current;
-                return (profile && profile.DisableCytoplasm) || (Current?.DisableCytoplasm ?? false);
+                return LowerDensity(profile ? profile.CytoplasmDensity : 1f, Current?.CytoplasmDensity ?? 1f);
             }
         }
+
+        /// <summary>The lower of two densities, clamped to [<see cref="MinCytoplasmDensity"/>, 1].</summary>
+        public static float LowerDensity(float a, float b) =>
+            Mathf.Clamp(Mathf.Min(a, b), MinCytoplasmDensity, 1f);
 
         /// <summary>Highest CapsuleMembrane subdivision level drawn; -1 = no cap.</summary>
         public static int MembraneMaxSubdivisions

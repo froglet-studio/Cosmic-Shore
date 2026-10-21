@@ -82,14 +82,15 @@ Editor:
    and bloom is back at half resolution.
 4. Low, then change AA by hand: the preset reads Custom, and the sky stays baked (Custom keeps Low's cuts). Restart
    Play: still Custom, still baked.
-5. Low, restart Play, enter a cell: no cytoplasm motes; the membrane is visibly thinner (642 capsules).
+5. Low, restart Play, enter a cell: the cytoplasm shards are sparser (a quarter) but still there and still point at
+   the crystal; the membrane is visibly thinner (642 capsules). Same on a simulated MobileLow tier and the Web profile.
 6. Stop Play: `URP_Asset.asset` shows no diff (HDR, MSAA, render scale restored).
 
 On an older phone (Mali-G52 / Adreno 610 class), development build, F7 `diag` in the same scene at High, Medium and
 Low (restart between): GPU ms should fall at each step. Record the numbers in the commit or `Docs/perf/phone/`.
 
 First-pass values (all fields on the asset): Medium: baked sky, wormhole view 0.75. Low: AA Off, render scale ≤ 80%,
-HDR off, bloom at quarter resolution with 3 levels, membrane level 3, no cytoplasm, wormhole view 0.5. Very Low: Low,
+HDR off, bloom at quarter resolution with 3 levels, membrane level 3, a quarter of the cytoplasm shards, wormhole view 0.5. Very Low: Low,
 with render scale ≤ 70%.
 
 ### 🔴 Phone controls for the whole fleet, idle parity, arena swap tiles (`cece/admiring-hamilton-gyzzh8`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
