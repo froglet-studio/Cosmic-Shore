@@ -1534,6 +1534,15 @@ namespace CosmicShore.Gameplay
             => radius > 1e-3f ? orbitSpeed / radius : 0f;
 
         /// <summary>
+        /// The launch view's GRIP (<c>ThresherExecutor.UpdateLaunchView</c>): with the digital triggers a held
+        /// plant is enough; with analog triggers only the ball STOPPED and both triggers at a full pull - LT's
+        /// depth and the chain's rigidity (RT after its slew) at <paramref name="fullPull"/>. On a phone both
+        /// thumbs off a planted spin reads as exactly that (<see cref="ThresherTouchLaunch"/>).
+        /// </summary>
+        public static bool LaunchViewGrip(bool analog, bool braking, float leftDepth, float rigidity, float fullPull)
+            => !analog || (!braking && leftDepth >= fullPull && rigidity >= fullPull);
+
+        /// <summary>
         /// The LAUNCH camera of a spectated orbit: it follows behind the launch point ON the launch
         /// trajectory — <paramref name="distance"/> back along −<paramref name="aim"/>, raised
         /// <paramref name="elevationDegrees"/> toward <paramref name="aimUp"/> (0 ships: no height

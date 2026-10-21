@@ -922,6 +922,9 @@ MonoBehaviour:
   - InputEvent: 11
     ShipActions:
     - {fileID: 11400000, guid: 9e0e236a487d47b08beb798a6d83bc9f, type: 2}
+  - InputEvent: 4
+    ShipActions:
+    - {fileID: 11400000, guid: f1c477af65d44d70b140b0693cd68ef2, type: 2}
   _gamepadActionOverrides:
   - InputEvent: 2
     ShipActions:

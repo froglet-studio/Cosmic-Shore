@@ -115,6 +115,8 @@ namespace CosmicShore.Gameplay
         float _ltDepth, _rtDepth;
         bool _launchedThisStep;
         int _lastPollFrame = -1;
+        // A phone: both thumbs off a planted spin read as both triggers full (the aimed launch, ThresherTouchLaunch).
+        ThresherTouchLaunch _touchLaunch;
         bool _massMode;
         float _energy;
         /// <summary>The launch direction the AIM camera chose for the pending plant release, taken
@@ -235,7 +237,8 @@ namespace CosmicShore.Gameplay
         /// <c>spectateReleaseFraction</c> of the threshold or (analog, unarmed) a slackened chain. Simulated in <see cref="StepChain"/> on
         /// EVERY peer from the chain's own state, so the trail it pauses agrees across machines; the
         /// local pilot's camera (<see cref="UpdateCamera"/>) switches to the crosshair on exactly this
-        /// edge, so crosshair on == trail off.
+        /// edge, so crosshair on == trail off. On a phone both thumbs off a planted spin read as both
+        /// triggers full (<see cref="ThresherTouchLaunch"/>, from replayed press events every peer has).
         /// </summary>
         public bool LaunchViewUp { get; private set; }
         /// <summary>The ball's colour this frame (LINEAR; a UI consumer converts with .gamma).</summary>
@@ -257,6 +260,7 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
+            _touchLaunch.Clear();
             _massMode = true;   // the default (Garrett, 2026-10-21): A leaves it for the breaking ball
             _energy = 0f;
             _releaseDirection = null;
@@ -326,9 +330,34 @@ namespace CosmicShore.Gameplay
         {
             if (_solver == null) return;
             _plantHeld = false;
-            if (_settings.Analog) return;   // PollTriggers lets go when LT falls below letGoBelow
+            if (_settings.Analog)
+            {
+                // PollTriggers lets go when LT falls below letGoBelow. On a phone the release may be the last thumb
+                // leaving the glass, whose IdleAction press follows on the same frame: give it one poll to arrive.
+                if (IsTouchPilot) _touchLaunch.PlantReleased();
+                return;
+            }
             LetGo();
         }
+
+        /// <summary>
+        /// A PHONE's IdleAction press (the Thresher's touch map only): the last thumb left the glass. Off a planted
+        /// spin it holds the plant and reads both triggers full, so the launch view comes up as on a pad with both
+        /// triggers pulled, aimed by tilting the phone (<see cref="ThresherTouchLaunch"/>, which documents why the
+        /// Plant release that precedes this press on the same frame never lets the ball go).
+        /// </summary>
+        public void BeginTouchLaunchHold()
+        {
+            if (_solver == null) return;
+            _touchLaunch.IdlePressed(_solver.Mode, _solver.LaunchArmed);
+        }
+
+        /// <summary>IdleAction released - a thumb is back on the glass: the next poll lets go, which in the launch
+        /// view ARMS the aimed launch along the crosshair (<see cref="LetGo"/>), exactly as the pad's LT let-go.</summary>
+        public void EndTouchLaunchHold() => _touchLaunch.IdleReleased();
+
+        /// <summary>The pilot flies this hull on a phone (the replicated device, so every peer reads the same).</summary>
+        bool IsTouchPilot => _status?.InputStatus != null && _status.InputStatus.ActiveInputDevice == InputDeviceType.Touch;
 
         /// <summary>
         /// ANALOG TRIGGERS, once per frame before the hull moves (<see cref="ThresherVesselTransformer"/>; the
@@ -349,6 +378,8 @@ namespace CosmicShore.Gameplay
             float rt = input != null ? input.RightTriggerAnalog : 0f;
             _ltDepth = lt > 1e-3f ? Mathf.Clamp01(lt) : (_plantHeld ? 1f : 0f);
             _rtDepth = rt > 1e-3f ? Mathf.Clamp01(rt) : (_payOut ? 1f : 0f);
+            // A phone: both thumbs off a planted spin read as both triggers full (never set off a phone).
+            _touchLaunch.Apply(_solver.Mode, ref _ltDepth, ref _rtDepth);
             float full = config ? config.FullPull : 0.97f, letGo = config ? config.LetGoBelow : 0.9f;
             var edge = _solver.AnalogTriggers(_ltDepth, _rtDepth, full, letGo, shipPosition, _lastShipVelocity, shipUp, dt);
             if (edge == ThresherTriggerEdge.LetGo) LetGo();
@@ -417,6 +448,7 @@ namespace CosmicShore.Gameplay
             if (_solver != null && (_plantHeld || _solver.LaunchArmed || _solver.Mode == ThresherMode.Pivot || _solver.Mode == ThresherMode.Skidding))
                 _solver.Release(_lastShipVelocity);
             _plantHeld = false;
+            _touchLaunch.Clear();
             _ltDepth = 0f; _rtDepth = 0f;
             _releaseDirection = null;
             _freezeUntilUnscaled = 0f;
@@ -502,7 +534,8 @@ namespace CosmicShore.Gameplay
                 // full pull (RT read as the chain's slew-limited rigidity) - and RT eased below letGoBelow
                 // drops it unless a launch is armed.
                 bool analog = _settings.Analog;
-                bool bothFull = !analog || (!_solver.IsBraking && _ltDepth >= config.FullPull && _solver.Rigidity >= config.FullPull);
+                // (On a phone, both thumbs off a planted spin read as both triggers full: ThresherTouchLaunch.)
+                bool bothFull = ThresherCameraFraming.LaunchViewGrip(analog, _solver.IsBraking, _ltDepth, _solver.Rigidity, config.FullPull);
                 bool slackened = analog && !_solver.LaunchArmed && _solver.Rigidity < config.LetGoBelow;
                 // Up only once the spin has held over the threshold for spectateEngageSeconds, so a tap of
                 // LT does not bob the camera toward the vantage and straight back down.
@@ -1172,7 +1205,8 @@ namespace CosmicShore.Gameplay
             }
 
             // AIM. The sticks turn the launch direction in screen terms (right is right, the hull's
-            // pitch sign up/down) until a release ARMS it; then the point is chosen and held.
+            // pitch sign up/down) until a release ARMS it; then the point is chosen and held. On a phone
+            // (both thumbs off, ThresherTouchLaunch) the tilt virtual thumb writes these same XSum / YSum.
             var input = _status.InputStatus;
             if (input != null && !_solver.LaunchArmed)
                 ThresherCameraFraming.TurnAim(ref _aimDir, ref _aimUp, input.XSum, input.YSum,

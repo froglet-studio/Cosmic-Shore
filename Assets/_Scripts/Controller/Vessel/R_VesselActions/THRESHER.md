@@ -33,7 +33,8 @@ from the Thresher Plant Lab round 2, `Docs/Studios/THRESHER_PLANT_LAB.md`; physi
 | **Both at a full pull, planted** | The camera switches to the launch view (§5a) — only then. Easing RT below `letGoBelow` for `spectateDropSeconds` 0.25 hands it back (a shorter sag is ridden out). |
 
 A device with no analog trigger channel (touch, the one-thumb mouse) and every remote replica read a
-press as a FULL pull and a release as none (`ThresherExecutor.PollTriggers`). With `analogTriggers` off the
+press as a FULL pull and a release as none (`ThresherExecutor.PollTriggers`). On a phone, both thumbs off a
+planted spin read as both triggers full (§1 "On a phone", 2026-10-21). With `analogTriggers` off the
 digital table below is the behaviour (the class defaults, which `ThresherChainSolverTests` pins).
 
 The digital controls (until 2026-10-13; `analogTriggers` off):
@@ -54,6 +55,52 @@ trigger; the keyboard and mouse strategies write 0 or 1), falling back to the ed
 Mass Mode is `Button1Action`, which the gamepad strategy fires from `buttonSouth` (A on an Xbox
 pad; the enum's own comment says "X" and is stale) and the keyboard from Space; it lives in the
 SHARED map (`_inputEventShipActions`), so every device resolves it the same way.
+
+### On a phone (2026-10-21)
+
+Garrett, 2026-10-21: "the thresher's aimed launch should be both thumbs off and aimed with gyro". A phone's
+triggers are thumb LIFTS (`TouchControlProfile` ThumbLifts, `Resources/TouchControlProfiles.asset`), read as a
+full pull or none, and a phone can never hold both: lifting the second thumb lets go of the first. So the pad's
+"both triggers full during a spin" was unreachable, and with it the launch view and the aimed launch. Now:
+
+| Thumbs | Event | What it does |
+|---|---|---|
+| Both down | the sticks | Two-thumb flight. |
+| **Lift the RIGHT thumb** | `OnlyLeftStickAction` (12) → Plant | LT at a full pull: the ball stops and you swing round it. RT is released, so the chain is slack and the launch view never comes up on a plant alone. |
+| **Lift the LEFT thumb** | `OnlyRightStickAction` (11) → Winch | RT at a full pull: the chain rigid. |
+| **Both off while planted** | `IdleAction` (4) press → `ThresherTouchLaunchAction` | Read as **both triggers full**: the plant holds, the chain pulls rigid at its slew (~0.5 s, reeling the ship in and spinning it up), and once the spin qualifies the **launch view** comes up exactly as on a pad (§5a). **Tilt the phone to aim the crosshair**: turning it like a wheel swings the launch point round the circle, tipping it pitches the aim and the orbit with it. Tilt neutral is how you held the phone when the last thumb lifted. |
+| **A thumb back on the glass** | `IdleAction` release | The pad's LT let-go: in the launch view it **arms the aimed launch** (it leaves from the crosshair's point at `launchBoost` ×4.8 and flies the launch line, §5a); with no launch view up it lets go on the orbit's tangent at once. |
+| Both off while towing, or after the Winch lift alone | `IdleAction` press | Tilt flight only; nothing is planted. |
+| **Mass Mode** | its card | Toggle (§2b). Because the card is a button, a lift waits `liftDeferSeconds` 0.12 s and is dropped if the finger lands on the card. |
+
+- **How the tilt aims.** The profile's `tiltSteersWhileIdle` makes the tilt a virtual thumb with no thumb on the
+  glass, written into the inputs exactly as one mirrored thumb (`XSum` = yaw from the wheel-turn, `YSum` = pitch
+  from the tip). The launch view's aim reads those same `XSum` / `YSum` (`ThresherCameraFraming.TurnAim`), so the
+  tilt reaches the crosshair with no code of its own; tilting before the view is up leans the orbit at
+  `pivotSteer` as a stick would.
+- **The ordering, and why the spin survives it.** When the last thumb leaves the glass, `TouchInputStrategy`
+  raises, on one frame and in this order, the RELEASE of the lift's event (Plant → `ThresherExecutor.EndPlant`:
+  1 → 0 lets go of everything) and then the PRESS of `IdleAction`. Both go through the one ordered press/release
+  path (`R_VesselActionHandler`: owner → server → every peer, the owner's own copy included), so every peer runs
+  them back to back. With analog triggers `EndPlant` only lowers the held flag and the let-go waits for the next
+  trigger poll, so when the idle press runs the ball is still planted: `ThresherTouchLaunch` holds, and that poll
+  reads LT and RT at a full pull instead of letting go. The spin, the chain and the ball never see the release.
+  A phone's Plant release also starts a **one-poll grace** (a planted ball's LT reads full for one more poll) in
+  case the two events ever land a frame apart; it costs a phone's plain release (a thumb landing back) one frame.
+- **Every peer decides it the same way** (vessel rule 48): from the replayed press and release events, the
+  replicated input device (`InputStatus.ActiveInputDevice`, read for the grace) and the chain's own mode - never
+  from the local touch count or the camera. `IdleAction` is bound in the prefab's TOUCH override map only, so a
+  pad, keyboard or mouse never reaches the hold: their path is unchanged.
+- **Analog triggers only.** With `analogTriggers` off, `EndPlant` lets go at once, so the idle press finds the ball
+  free and nothing is held (the digital Thresher keeps its old phone controls).
+- **Code**: `Controller/Vessel/ThresherTouchLaunch.cs` (pure: the hold, the grace, the ordering argument),
+  `ThresherExecutor.BeginTouchLaunchHold` / `EndTouchLaunchHold` / `PollTriggers`, `ThresherActionSO`
+  `TouchLaunch` (3), `_SO_Assets/VesselActions/Thresher/ThresherTouchLaunchAction.asset` bound to `IdleAction` in
+  `Thresher.prefab`'s `_touchActionOverrides`. The launch view's grip is one predicate,
+  `ThresherCameraFraming.LaunchViewGrip`. Six tests in `ThresherAnalogTriggerTests` (`Touch_*`) fly it with the real
+  solver; four mutations of the hold (no RT, no grace, a grace that stops a free ball, an armed launch re-held)
+  each fail one.
+- **Not yet flown on a phone** (In-editor verification P1).
 
 ## 2. What the ball and the chain do to prisms
 
@@ -460,7 +507,9 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
   2026-10-21 the carry moves only the ease's start pose; the aim is what the pilot was pointing at (above). The follow frame also limits its angular ACCELERATION to
   `cameraMaxFollowAngularAcceleration` 1 500 °/s² (`CustomCameraController.MaxFollowAngularAcceleration`,
   default 0 for every other vessel). LT is at a full pull whenever the launch view is up, so its depth can
-  no longer zoom the Time-petal sight: with analog triggers the sight stays wide (§9).
+  no longer zoom the Time-petal sight: with analog triggers the sight stays wide (§9). **On a phone**
+  (2026-10-21) both thumbs off a planted spin are the full pull, the tilt aims, and a thumb back down launches
+  (§1 "On a phone").
 - **The camera seam** (`CustomCameraController.Spectate` / `SpectateBlendSeconds` /
   `SpectateView`): applied as a BLEND over the settled follow pose, before shake and the portal
   carry; the follow pose is kept separately while blended so the chase smoothing never chases the
@@ -672,7 +721,7 @@ is the fix.
 | `R_VesselActions/Data Containers/ThresherActionSO.cs` / `ThresherConfigSO.cs` | Trigger routing; every dial |
 | `UI/Controller/ThresherHUDController.cs`, `UI/View/ThresherHUDView.cs` | HUD pair |
 | `_Prefabs/Spacevessels/Thresher.prefab`, `_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab` | Hull (born a Squirrel clone; its own shark hull since 2026-10-13), HUD |
-| `_SO_Assets/VesselActions/Thresher/*.asset` | Config, Winch, Plant and Mass Mode actions |
+| `_SO_Assets/VesselActions/Thresher/*.asset` | Config, Winch, Plant, Mass Mode and (phone) Touch Launch actions |
 | `_SO_Assets/Effects/Effect Containers/{Vessel,Skimmer}Containers/Thresher*.asset`, `Skimmer Prism Effects/ThresherSkimmerBoostPrismEffect.asset` | Forked containers (§3) |
 | `Resources/ElementalAbilityMaps/Thresher.asset`, `_SO_Assets/Classes/SO_Class_Thresher.asset`, `_SO_Assets/Camera/ThresherCameraSettingsSO.asset` | Map, class, camera |
 | `_Graphics/Icons/AbilityIcons/Thresher/`, `_Graphics/CardImages/Thresher*.png` | Ability icons (art pass); class card icons |
@@ -682,7 +731,8 @@ is the fix.
 | `_SO_Assets/VesselActions/Thresher/ThresherMassModeAction.asset` | `ThresherActionSO` `control: MassMode`, bound to `Button1Action` in the prefab's shared map (§2b) |
 | `_Graphics/Materials/Shaders/ThresherBallFresnelShader.shader`, `_Graphics/Materials/ThresherBallMaterial.mat` | The ball's fresnel look (§5) |
 | `_Graphics/Materials/Shaders/ThresherChainFresnelShader.shader`, `_Graphics/Materials/ThresherChainMaterial.mat` | The chain's fresnel tube (§5) |
-| `Tests/Editor/ThresherAnalogTriggerTests.cs` | 10 tests on the analog path (partial pull never plants, full-pull stop with no single-frame stop, let-go mid-stop keeps the ball's speed, slack vs rigid reach, reel-in spins up, slew, ambiguous plant swept over 80 turn patterns, 30 fps stability, armed launch with/without a lead, analog off is inert); run offline by the chain harness too |
+| `Tests/Editor/ThresherAnalogTriggerTests.cs` | 20 tests on the analog path (partial pull never plants, full-pull stop with no single-frame stop, let-go mid-stop keeps the ball's speed, slack vs rigid reach, reel-in spins up, slew, ambiguous plant swept over 80 turn patterns, 30 fps stability, armed launch with/without a lead, the launch line, analog off is inert, and six `Touch_*` on the phone's both-thumbs-off launch, §1); run offline by the chain harness too |
+| `Controller/Vessel/ThresherTouchLaunch.cs`, `_SO_Assets/VesselActions/Thresher/ThresherTouchLaunchAction.asset` | The phone's aimed launch (2026-10-21, §1 "On a phone"): both thumbs off a planted spin read as both triggers full; the action is `ThresherActionSO` `TouchLaunch`, bound to `IdleAction` in the prefab's touch map only |
 | `Docs/Studios/ThresherPlantLab.html`, `Docs/Studios/THRESHER_PLANT_LAB.md`, `Tools/Build/thresher_plant_lab/` | The lab the analog triggers graduated from, and `parity.cjs` (lab ↔ C# frame parity on both paths, asset ↔ lab preset) |
 | `Tests/Editor/ThresherChainSolverTests.cs`, `Tools/Build/thresher_chain_harness/` | 56 tests (solver, planted steering, hook-on, windmill, chain smoothing, camera framing, reach envelope, launch camera on the trajectory, sight zoom, armed + boosted launch, steered plane, magnet); offline runner + feel table. `Tests/Editor/TimePetalGeometryTests.cs`: the traced Time petal |
 
@@ -725,6 +775,12 @@ Registered in `Vessel Prefab Container`, `DefaultNetworkPrefabs` (own `GlobalObj
   still arrive through the authoritative path). Untested in MPPM.
 - **The sight window is a second full render of the arena** at 30 Hz (`ScopePipView`), as the
   Serpent's is, but only while a spin is spectated by the local pilot.
+- **The phone's aimed launch (2026-10-21) is not yet flown on a phone.** Its hold is decided on every peer from the
+  replayed Plant release and IdleAction press (in that order on one frame, §1 "On a phone"); if a peer ever
+  receives them more than one poll apart it lets its copy of the ball go while the owner holds it (the same
+  remote-ball gap as the aimed launch below). The tilt's neutral is the phone's pose when the last thumb lifted,
+  so a pilot who lifts with the phone already tipped aims from there. The Time-petal sight does not zoom on a
+  phone either (LT reads a full pull).
 - **The aimed launch is decided on the OWNER.** The aim, the steered plane and the armed launch are
   the local pilot's camera state and do not replicate. The hull's pose does, but a remote peer runs
   the plain release the moment LT comes up, so its copy of the ball is let go while the replicated
@@ -807,6 +863,20 @@ A11. **The shot follows the crosshair** (2026-10-21): in the launch view, ease L
     keep RT fully pulled — the ship leaves at the launch point and flies straight down the crosshair's line,
     hauling the ball behind it; it is not swung back round the ball. Repeat with LT snapped off, and with RT
     released: the same line. Then squeeze LT halfway: no brake until LT has come back near rest first.
+
+**On a phone (2026-10-21, §1 "On a phone"; never flown on a phone):**
+
+P1. **Both thumbs off, aimed by tilt.** Toy Box > Vessel Changer → Thresher on a phone (or Unity Remote). Fly
+    with two thumbs, lift the RIGHT thumb - the ball stops and you swing round it; no crosshair (the chain is
+    slack). Now lift the LEFT thumb too: the spin does NOT end - the chain draws in, the spin speeds up, and within
+    about a second the camera glides into the launch view with the white crosshair, aimed at what you were flying
+    toward. Hold the phone still: the crosshair holds. Turn the phone like a wheel: the launch point slides round
+    the circle; tip it forward and back: the aim and the orbit pitch with it. Put ONE thumb back on the glass: the
+    ship leaves from the crosshair's point, boosted (far faster than a plain release), straight down the
+    crosshair's line, and the camera glides back behind it. Then: lift the right thumb and put it straight back
+    (no second lift) - a plain release on the tangent, no launch view; lift the LEFT thumb alone and then the right
+    - tilt flight, nothing planted; tap the Mass Mode card - it toggles and does not plant. A pad and a keyboard fly
+    exactly as A1-A11 describe.
 
 1. **Toy Box > Vessel Changer → Thresher.** The hull swaps in with a ball 22 u behind on a chain, in
    front of the camera; the HUD shows the four Thresher icons (Wrecking Ball · Mass Mode · Winch ·
