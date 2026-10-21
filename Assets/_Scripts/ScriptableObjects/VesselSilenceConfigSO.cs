@@ -45,15 +45,25 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] bool suppressDangerProduction = true;
 
         [Header("Feedback - the silenced pilot's own screen")]
-        [Tooltip("Camera shake at the ONSET of a silence (not on every extension). Kept well under " +
-                 "the fleet's hit shakes (the Serpent's shot is 0.6, the Thresher's lightest crack " +
-                 "0.35) - a nudge that says something happened to you, not a blow. 0 = none.")]
+        [Tooltip("Camera shake when a silence BEGINS. Between the Thresher's lightest crack (0.35) " +
+                 "and the Serpent's shot (0.6): felt, not a blow. 0.18 was tried first and read as " +
+                 "nothing at all in a Dog Fight playtest (Garrett, 2026-10-21). 0 = none.")]
         [Min(0f)]
-        [SerializeField] float onsetShakeIntensity = 0.18f;
+        [SerializeField] float onsetShakeIntensity = 0.45f;
 
         [Tooltip("How long the onset shake decays over.")]
         [Min(0f)]
-        [SerializeField] float onsetShakeSeconds = 0.3f;
+        [SerializeField] float onsetShakeSeconds = 0.35f;
+
+        [Tooltip("A lighter shake on every further hit that EXTENDS a live silence, so each hit " +
+                 "you take is felt, not only the first. A stronger shake already playing is kept " +
+                 "(CustomCameraController.Shake). 0 = only the onset shakes.")]
+        [Min(0f)]
+        [SerializeField] float hitShakeIntensity = 0.2f;
+
+        [Tooltip("How long each per-hit shake decays over.")]
+        [Min(0f)]
+        [SerializeField] float hitShakeSeconds = 0.15f;
 
         [Tooltip("Peak strength of the danger-coloured vignette while silenced (URP Vignette " +
                  "intensity). Subtle on purpose: it sits at the screen's edge for the whole " +
@@ -88,6 +98,8 @@ namespace CosmicShore.ScriptableObjects
         public bool SuppressDangerProduction => suppressDangerProduction;
         public float OnsetShakeIntensity => onsetShakeIntensity;
         public float OnsetShakeSeconds => onsetShakeSeconds;
+        public float HitShakeIntensity => hitShakeIntensity;
+        public float HitShakeSeconds => hitShakeSeconds;
         public float VignetteIntensity => vignetteIntensity;
         public float VignetteSmoothness => vignetteSmoothness;
         public float VignetteColorStrength => vignetteColorStrength;

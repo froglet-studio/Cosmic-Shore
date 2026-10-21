@@ -16,8 +16,10 @@ MonoBehaviour:
   maxSeconds: 8
   silencingSources: 14
   suppressDangerProduction: 1
-  onsetShakeIntensity: 0.18
-  onsetShakeSeconds: 0.3
+  onsetShakeIntensity: 0.45
+  onsetShakeSeconds: 0.35
+  hitShakeIntensity: 0.2
+  hitShakeSeconds: 0.15
   vignetteIntensity: 0.26
   vignetteSmoothness: 0.55
   vignetteColorStrength: 0.75

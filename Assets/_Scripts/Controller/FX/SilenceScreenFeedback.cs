@@ -61,12 +61,15 @@ namespace CosmicShore.Gameplay
         {
             if (!IsLocalHumanPilot(status)) return;
 
-            // Onset = this screen was not already showing a silence. An extension of a live window
-            // (or a new silence landing while the last one is still draining) only keeps the
-            // vignette up; it does not shake again.
+            // Onset = this screen was not already showing a silence: the stronger shake. Every
+            // further hit that extends the window (or lands while the last one is still draining)
+            // gets the lighter per-hit shake, so each hit is felt and not only the first - in a
+            // Dog Fight the AI's rounds keep one window open for the whole fight.
+            var config = VesselSilence.Settings;
             bool onset = _weight <= 0.0001f;
             _watchedPilot = status.PlayerName;
-            if (onset) ShakeCamera(VesselSilence.Settings);
+            if (onset) ShakeCamera(config.OnsetShakeIntensity, config.OnsetShakeSeconds);
+            else ShakeCamera(config.HitShakeIntensity, config.HitShakeSeconds);
         }
 
         void Update()
@@ -120,12 +123,12 @@ namespace CosmicShore.Gameplay
             return c;
         }
 
-        static void ShakeCamera(VesselSilenceConfigSO config)
+        static void ShakeCamera(float intensity, float seconds)
         {
-            if (config.OnsetShakeIntensity <= 0f || config.OnsetShakeSeconds <= 0f) return;
+            if (intensity <= 0f || seconds <= 0f) return;
             if (CameraManager.Instance != null &&
                 CameraManager.Instance.GetActiveController() is CustomCameraController cam)
-                cam.Shake(config.OnsetShakeIntensity, config.OnsetShakeSeconds);
+                cam.Shake(intensity, seconds);
         }
 
         /// <summary>

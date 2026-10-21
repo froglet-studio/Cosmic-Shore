@@ -129,8 +129,12 @@ Thresher's red ball still breaks its own trail and an explosion still shields it
   camera shake on the onset and ... a subtle danger colored vignette that fits the game's aesthetics to
   signal the silenced state on all vessels"). `SilenceScreenFeedback` (`Controller/FX/`) gives the
   local human pilot, on every hull:
-  - a **very subtle onset shake** (`CustomCameraController.Shake`, 0.18 for 0.3 s; the Serpent's shot
-    is 0.6, the Thresher's lightest crack 0.35). Only at the onset, not when a live window is extended;
+  - an **onset shake** (`CustomCameraController.Shake`, 0.45 for 0.35 s; between the Thresher's
+    lightest crack, 0.35, and the Serpent's shot, 0.6) when a silence begins, and a lighter **per-hit
+    shake** (0.2 for 0.15 s) on every further hit that extends it, so each hit is felt. The first cut
+    shook once at 0.18 and never again: Garrett's second Dog Fight run (2026-10-21) "felt nothing from
+    the enemy Sparrow hits", because the AI's rounds kept ONE window open for the whole fight and
+    0.18 world units at chase distance is under a degree;
   - a **subtle danger-coloured vignette** for the whole window: the gameplay post-processing profile's
     own Vignette override, driven through `PostProcessingManager.SetSilenceVignette` (the speed
     tunnel's home/offset shape, so the profile is exactly restored after). Its colour is the active
@@ -259,8 +263,8 @@ In the editor (no petals needed - any scored hit silences):
 4. Kill a lifeform while silenced (joust, Stoat ripple): it lives. After the window: it dies.
 5. MPPM host + client: silence the client's pilot from the host; on BOTH windows the client's shots
    deflect for the same window (within a frame or two), and the client's flowers agree.
-6. Silence a human pilot (any hull; `silence test` in the console does it without a fight): one small camera nudge as it lands (no shake again while it is
-   extended), a soft danger-red edge on the screen for the window, draining over about half a second
+6. Silence a human pilot (any hull; `silence test` in the console does it without a fight): a camera
+   shake as it lands, a lighter one on every further hit while it lasts, a soft danger-red edge on the screen for the window, draining over about half a second
    when it ends. An AI or a rival being silenced shows nothing on your screen. Tune it on
    `VesselSilenceConfig.asset` > *Feedback*. In Dog Fight, the first AI hit on you should start it;
    `silence` in the console then shows the hits decided against you and the windows that began.
