@@ -119,6 +119,27 @@ Toy Box > Vessel Changer → **Honeyguide and Ratel**:
    prism shows on the cursor in its domain.
 8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
    with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+### 🔴 Orca gunner buttons: Fire and Missile under the right thumb, the seat line retired (`cece/fervent-goodall-8cihle`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire missiles. it does these with the right
+thumb and aims with the left. it has all the info it needs now. it no longer needs the ui breaking top row of text, unique
+to that vessel." Design: `ORCA_CREW.md` ("Two buttons per gunner, no seat line"). `/verify-unity` did not run: no Unity
+Editor or `unity` CLI in this session. What did run: the reference compile (player: no errors in project code), `parity.cjs`, `author_orca_assets.py --check` /
+`--self-test` (with a negative control on the new icon check), `touch_glyph_art.py --check`,
+`author_touch_profiles.py --check`, the console-logging and conditional-compilation gates. Affects the fleet's
+`TouchButtonView` (a sink and a tint setter, both additive) and `TouchControlsHud` (its layout settings and units-per-pixel
+made public static, no behaviour change).
+
+**Verify in editor** (the Orca in the Toybox Vessel Changer):
+1. **Desktop.** Take a gunner seat (2, 3, 4): no line of text across the top of the HUD in any seat. The four cards still
+   light the seat, veil the gun's recharge and count the seat's missiles. No phone buttons on a desktop.
+2. **Pad.** In a gunner seat, X fires the gun (RT still does), A launches a missile and bursts it; the left stick aims.
+3. **Phone (Android dev build, no pad)** — `T-20261021-876d`: in a gunner seat two buttons sit round the right thumb,
+   Fire (the seat's colour) and Missile (a rocket). The left thumb's drag aims while the right holds Fire. Missile
+   launches; the left thumb steers it; Missile bursts it; Fire hides while it flies. A thumb on a button while the left
+   aims never swaps seats; a two-finger tap elsewhere still does. On the helm the buttons are gone. Connect a pad: they
+   hide.
+
 ### 🔴 Orca round 9: rocket missiles with a faceted plume, the bomb's blast lit in the world (`cece/happy-noether-m54hz6`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21, after flying round 8: "increase the fidelity on the fly by wire missiles. they feel cheap. the bomb

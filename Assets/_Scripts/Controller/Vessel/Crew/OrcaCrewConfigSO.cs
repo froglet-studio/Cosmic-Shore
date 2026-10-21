@@ -232,20 +232,15 @@ namespace CosmicShore.Gameplay
         [SerializeField] EventReference bombThrowSound;
         [SerializeField] EventReference bombBurstSound;
 
-        [Header("Text (player-facing; a blank field shows nothing)")]
-        [Tooltip("The seat line on screen while you hold a seat. Tokens: {seat} the seat's name, {gun} its gun's name and state, {count} its missiles.")]
-        [SerializeField] string seatLineTemplate = "{seat}  ·  {gun}  ·  {count} missiles  ·  1-4 to change seat";
-        [Tooltip("The seats' names, helm first.")]
-        [SerializeField] string[] seatNames = { "Helm", "Sniper", "Fast gun", "Bomb" };
-        [Tooltip("The guns' names, by seat (the helm's is unused).")]
-        [SerializeField] string[] gunNames = { "", "Sniper", "Fast gun", "Bomb" };
-        [Tooltip("{gun} for a gun: {name} and {state}.")]
-        [SerializeField] string gunLineTemplate = "{name} {state}";
-        [Tooltip("A gun's states: ready, cooling down ({seconds}), overheated, and a bomb in flight.")]
-        [SerializeField] string gunReadyText = "ready";
-        [SerializeField] string gunCooldownTemplate = "{seconds}s";
-        [SerializeField] string gunHotText = "overheated";
-        [SerializeField] string bombOutText = "bomb out";
+        [Header("Gunner buttons on a phone (the right thumb fires, the left thumb aims)")]
+        [Tooltip("The Fire button's icon: the seat's gun, held to fire. Wears the seat's element colour.")]
+        [SerializeField] Sprite fireButtonIcon;
+        [Tooltip("The Missile button's icon: launches one of the seat's missiles, and bursts the one in flight.")]
+        [SerializeField] Sprite missileButtonIcon;
+        [Tooltip("Player-facing caption under the Fire button. Empty shows none.")]
+        [SerializeField] string fireButtonLabel = "";
+        [Tooltip("Player-facing caption under the Missile button. Empty shows none.")]
+        [SerializeField] string missileButtonLabel = "";
 
         [Header("Crosshairs (round 6: each weapon's own; drawn as UI, flat by design)")]
         [Tooltip("A crosshair's lines.")]
@@ -318,12 +313,10 @@ namespace CosmicShore.Gameplay
         public EventReference SniperShotSound => sniperShotSound;
         public EventReference BombThrowSound => bombThrowSound;
         public EventReference BombBurstSound => bombBurstSound;
-        public string GunName(int seat) => gunNames != null && seat >= 0 && seat < gunNames.Length ? gunNames[seat] : string.Empty;
-        public string GunLineTemplate => gunLineTemplate;
-        public string GunReadyText => gunReadyText;
-        public string GunCooldownTemplate => gunCooldownTemplate;
-        public string GunHotText => gunHotText;
-        public string BombOutText => bombOutText;
+        public Sprite FireButtonIcon => fireButtonIcon;
+        public Sprite MissileButtonIcon => missileButtonIcon;
+        public string FireButtonLabel => fireButtonLabel;
+        public string MissileButtonLabel => missileButtonLabel;
         public int AiSkill => aiSkill;
         public float AiRetargetSeconds => aiRetargetSeconds;
         public float TurretFov => turretFov;
@@ -336,7 +329,6 @@ namespace CosmicShore.Gameplay
         public EventReference ShieldRaiseSound => shieldRaiseSound;
         public EventReference OmniRefillSound => omniRefillSound;
         public EventReference EmptyMagazineSound => emptyMagazineSound;
-        public string SeatLineTemplate => seatLineTemplate;
         /// <summary>The element a seat owns (its ability icon); Time for the helm when unset.</summary>
         public Element SeatElement(int seat) => seatElements != null && seat >= 0 && seat < seatElements.Length ? seatElements[seat]
             : seat switch { 1 => Element.Space, 2 => Element.Mass, 3 => Element.Charge, _ => Element.Time };
@@ -372,8 +364,6 @@ namespace CosmicShore.Gameplay
         public Color CrosshairReadyColor => crosshairReadyColor;
         public Color CrosshairHotColor => crosshairHotColor;
         public Color CrosshairWarmColor => crosshairWarmColor;
-
-        public string SeatName(int seat) => seatNames != null && seat >= 0 && seat < seatNames.Length ? seatNames[seat] : string.Empty;
 
         /// <summary>The core's numbers, as a plain struct.</summary>
         public OrcaCrewSettings ToSettings() => new()

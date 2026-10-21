@@ -878,6 +878,12 @@ applies to new abilities, new resources on the meter list, and anything that add
     the pair a pad raises, so one shared `RightStickAction` binding already reaches a phone (the Dolphin, Rhino and
     Honeyguide work that way); a touch override on 11 / 12 is only for an ability that must differ on a phone.
     Run `Tools/Build/touch_controls_harness/run.sh` after touching the layout or tilt.
+    **A seat whose hull the AI flies cannot take its phone buttons through `InputStatus`**: while a person aims a crew
+    turret the hull is under autopilot and `R_VesselActionHandler` drops the press. Bind the `TouchButtonView` to a
+    sink instead (`Bind(Action<bool>)`, the Orca's gunner Fire / Missile, `OrcaHUDController`), lay it out with
+    `TouchButtonLayout` + `TouchControlsHud.LayoutSettings`, and have the aiming finger skip any touch that STARTED on a
+    claimed region (`FlightTouchClaims.Claims(startPosition)`), or the thumb on the button also aims and also counts as
+    half of a two-finger gesture (2026-10-21).
     Two fleet rules ride with it (2026-10-21): **a human pilot's nose has no lag** - every transformer's RotateShip
     goes through `VesselTransformer.NoseFollowFraction` (never write `LERP_AMOUNT * dt` into a new override; read
     `NoseFollowRate` to predict a hull) - and **Invert Y is the setting's alone** (`ApplyInvertSettings` in every

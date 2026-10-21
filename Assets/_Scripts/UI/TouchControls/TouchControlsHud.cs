@@ -242,7 +242,7 @@ namespace CosmicShore.UI
             float dpi = Screen.dpi > 1f ? Screen.dpi : FallbackDpi;
             var screen = new Vector2(Screen.width, Screen.height);
             var safe = Screen.safeArea;
-            var layout = TouchButtonLayout.Arrange(_aspects, screen, safe, dpi, Settings());
+            var layout = TouchButtonLayout.Arrange(_aspects, screen, safe, dpi, LayoutSettings(_library));
 
             float unitsPerPixel = UnitsPerPixel(row, cam);
             float buttonUnits = layout.ButtonWidthPixels * unitsPerPixel;
@@ -274,15 +274,17 @@ namespace CosmicShore.UI
             _laidOut = true;
         }
 
-        TouchButtonLayout.Settings Settings() => _library
+        /// <summary>The library's button sizes and corner box (the shipped defaults without one). Shared with the
+        /// buttons a seat lays out itself (<c>OrcaHUDController</c>).</summary>
+        public static TouchButtonLayout.Settings LayoutSettings(TouchControlProfileLibrarySO library) => library
             ? new TouchButtonLayout.Settings
             {
-                ButtonMillimetres = _library.ButtonMillimetres,
-                GapMillimetres = _library.ButtonGapMillimetres,
-                InnerArcMillimetres = _library.InnerArcMillimetres,
-                ArcSpacingMillimetres = _library.ArcSpacingMillimetres,
-                MaxHeightFraction = _library.MaxHeightFraction,
-                MaxWidthFraction = _library.MaxWidthFraction,
+                ButtonMillimetres = library.ButtonMillimetres,
+                GapMillimetres = library.ButtonGapMillimetres,
+                InnerArcMillimetres = library.InnerArcMillimetres,
+                ArcSpacingMillimetres = library.ArcSpacingMillimetres,
+                MaxHeightFraction = library.MaxHeightFraction,
+                MaxWidthFraction = library.MaxWidthFraction,
             }
             : new TouchButtonLayout.Settings
             {
@@ -360,7 +362,7 @@ namespace CosmicShore.UI
 
         /// <summary>Canvas units under <paramref name="rect"/> per screen pixel, measured rather than assumed
         /// (overlay, camera and scaled canvases all answer it the same way).</summary>
-        static float UnitsPerPixel(RectTransform rect, Camera cam)
+        public static float UnitsPerPixel(RectTransform rect, Camera cam)
         {
             const float probe = 100f;
             var origin = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);

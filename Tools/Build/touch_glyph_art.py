@@ -7,7 +7,7 @@
 Thumb-lift glyphs name the touch gesture a card's ability is on (Docs/Reports/MOBILE_VESSELS.md):
 a landscape phone with two thumbs at its bottom corners; a lifted thumb is hollow with an arrow up.
 The button icons are for TouchControlProfile.extraButtons (fire, ring, zoom, drift, bomb, squad,
-recall, hold, dipole) and the disc and rim every button is drawn on. GUIDs are derived from the file name, so a re-run never re-keys an asset.
+recall, hold, dipole, missile) and the disc and rim every button is drawn on. GUIDs are derived from the file name, so a re-run never re-keys an asset.
 """
 import hashlib
 import io
@@ -274,6 +274,21 @@ def i_dipole(d):
         line(d, pts, 6)
 
 
+def i_missile(d):
+    # a rocket climbing up and to the right: body, nose cone, two swept fins at the tail, its plume behind
+    k = math.sqrt(0.5)
+    dx, dy, px, py = k, -k, k, k               # along the body, and across it
+    ax, ay, bx, by = 78, 178, 166, 90          # tail and the nose's base
+    def at(t, u):
+        return (s(ax + dx * t + px * u), s(ay + dy * t + py * u))
+    line(d, [(ax, ay), (bx, by)], 34)
+    d.polygon([at(124, -17), at(124, 17), at(168, 0)], fill=(W, W, W, 255))
+    for side in (-1, 1):
+        d.polygon([at(4, side * 14), at(44, side * 14), at(-8, side * 46)], fill=(W, W, W, 255))
+    for i, r in ((1, 11), (2, 8), (3, 5)):
+        circle(d, ax - dx * 24 * i, ay - dy * 24 * i, r)
+
+
 def i_disc(d):
     circle(d, 128, 128, 122)
 
@@ -299,6 +314,7 @@ ART = {
     "TouchIcon_Recall": i_recall,
     "TouchIcon_Hold": i_hold,
     "TouchIcon_Dipole": i_dipole,
+    "TouchIcon_Missile": i_missile,
 }
 
 
