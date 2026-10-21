@@ -169,6 +169,8 @@ The rows are in order of how much of the fleet they unblock.
 - The black-hole lens needs a mobile tier first (§4).
 
 **D7. Face-button abilities with no card (Angler Squad and Recall).**
+
+*Resolved 2026-10-21 by removal: the Angler's school is two groups the throw alternates, so there is no squad pick or recall to bind (`ANGLER.md` §1m).*
 - The four-card row is LOCKED, so Button3 and Button4 have no tap target on a phone.
 - Options: make the squad label over the Mass card tappable to cycle the squad, or a long-press on the Mass card for
   Recall.

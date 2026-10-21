@@ -1919,3 +1919,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-21 by a Claude session (`cece/quirky-gates-skplxp`)
 - **See:** Docs/Studios/SwarmCardVessel/cards.json
+
+### T-20261021-2f67 · open · test · Angler
+- **Task:** Fly the Angler's round 8 (two groups take turns; no squad pick, recall or boost) in the editor and on a phone: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Angler round 8', steps 1-6.
+- **Done when:** All six steps pass, or the failures are filed as dev tasks
+- **Who can take it:** Yash (offered), Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md §1m
+
+### T-20261021-e29a · open · dev · Angler
+- **Task:** Bring the Angler Command Lab (Docs/Studios/AnglerCommandLab.html) to round 8: drop the squad pick and recall, split the school into two groups that throws and dashes alternate, re-run parity and verify_lab.cjs, republish.
+- **Done when:** The lab models two alternating groups and verify_lab.cjs passes
+- **Who can take it:** any session; Garrett to sign off
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md §1m
