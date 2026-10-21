@@ -346,16 +346,21 @@ VIEW_WORDS = ("  phaseNames:\n  - Omnicrystal\n  - Elemental crystals\n  - Oppos
               "  cardLevelTemplate: 'Lv {level}'\n"
               "  heldTemplate: '{level}'\n"
               "  objectiveIcons:\n" +
-              "".join(f"  - {{fileID: 21300000, guid: {I.guid_for(icon)}, type: 3}}\n" for icon in I.OBJECTIVE_ICONS) +
+              "".join(f"  - {{fileID: 21300000, guid: {g}, type: 3}}\n"
+                      for g in (I.OMNI_SPRITE_GUID, *(I.guid_for(icon) for icon in I.OBJECTIVE_ICONS))) +
               "  objectiveSpentColor: {r: 1, g: 1, b: 1, a: 0.22}\n"
-              "  detailsTitleTemplate: '{name}  Lv {level}'\n"
+              "  detailsTitleTemplate: '{name}'\n"
+              "  detailsLevelTemplate: 'Level {level}'\n"
               "  detailsStatTemplate: '{label}: {value}{unit}'\n"
               "  detailsMilestoneTemplate: 'At Lv {level}: {text}'\n"
               "  detailsHeldTemplate: '{name}  Lv {level}'\n"
               "  detailsNothingHeld: Nothing held yet\n"
-              "  detailsFontSize: 20\n"
-              "  detailsBacking: {r: 0.04, g: 0.06, b: 0.12, a: 0.88}\n"
-              "  detailsWidth: 520\n"
+              "  detailsTitleFontSize: 40\n"
+              "  detailsLevelFontSize: 26\n"
+              "  detailsFontSize: 22\n"
+              "  detailsBacking: {r: 0.03, g: 0.05, b: 0.12, a: 0.95}\n"
+              "  detailsWidth: 600\n"
+              "  detailsGlyphSize: 120\n"
               "  cardFontSize: 18\n"
               "  headerFontSize: 24\n"
               "  idleIconColor: {r: 1, g: 1, b: 1, a: 0.35}\n")

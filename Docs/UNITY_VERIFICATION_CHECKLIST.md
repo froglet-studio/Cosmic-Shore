@@ -12976,6 +12976,9 @@ pack against the elemental row). Reference compile clean (player; editor: the 3 
 3. Pad: both sticks the same way turn the view; spread the sticks apart (x) to zoom in, squeeze to zoom out; one stick up
    and the other down rolls the camera. A resting pad does not drift. Zoom stops at near/far limits.
 4. Phone: one thumb turns the view; pinch zooms with the fingers; two-finger spin rolls with the fingers.
-5. When a hand is dealt: tap A/B/X/Y picks on release. Hold a trigger and press a pick, or hold a pick ~0.5 s: a panel
-   shows the card's name, level, text, numbers and next jolt; letting go picks nothing. Long-press a card on a phone: same.
+5. When a hand is dealt: tap A/B/X/Y picks on release. Hold a trigger and press a pick, or hold a pick ~0.5 s: a LARGE
+   card in the middle of the screen shows the element glyph, the card's name, level, text, numbers and next jolt; letting
+   go hides it and picks nothing. Long-press a card on a phone: same. (Round 3, 2026-10-21: it was a panel above the
+   header that never showed on Garrett's screen.)
+7. The objective glyphs: the game's omnicrystal icon, the four petals as a flower, the crosshair, prism blocks with an X.
 6. Swap to another vessel after zooming: its camera is back at its own distance.

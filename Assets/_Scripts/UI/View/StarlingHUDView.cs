@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,7 +20,7 @@ namespace CosmicShore.UI
     /// <para><b>The objective card</b> (<see cref="CoreAbility.Objective"/>, directly left of the omnicrystal's): the phase's
     /// target as a glyph (<see cref="objectiveIcons"/>, in the cycle's order), which DRAINS from the top as the phase timer
     /// runs out over a faint copy of itself. <b>The card details</b> (a trigger held while a pick is pressed, or a long
-    /// press): a panel above the header, its lines filled from the templates below.</para>
+    /// press): a large card in the middle of the screen, its words filled from the templates below.</para>
     ///
     /// <para>Each gauge (one filled Image per card) is what you hold of that element out of the 15 a card can reach, and
     /// turns READY while the hand offers that card. Colour here is a GAUGE channel; the upgrade lives on the lockup's
@@ -57,9 +58,11 @@ namespace CosmicShore.UI
         [Tooltip("The drained part of the objective glyph (its alpha is how faint it shows).")]
         [SerializeField] Color objectiveSpentColor = new(1f, 1f, 1f, 0.22f);
 
-        [Header("Card details (a trigger held while picking, or a long press)")]
-        [Tooltip("The first line: the card and the level it arrives at. Tokens: {name} {level}.")]
-        [SerializeField] string detailsTitleTemplate = "{name}  Lv {level}";
+        [Header("Card details: a large card in the middle of the screen (a trigger held while picking, or a long press)")]
+        [Tooltip("The card's name, large. Tokens: {name}.")]
+        [SerializeField] string detailsTitleTemplate = "{name}";
+        [Tooltip("Under the name: the level the card arrives at. Tokens: {level}.")]
+        [SerializeField] string detailsLevelTemplate = "Level {level}";
         [Tooltip("One line per number on the card, at that level. Tokens: {label} {value} {unit}.")]
         [SerializeField] string detailsStatTemplate = "{label}: {value}{unit}";
         [Tooltip("The card's next jolt above the level you hold. Tokens: {level} {text}.")]
@@ -68,12 +71,18 @@ namespace CosmicShore.UI
         [SerializeField] string detailsHeldTemplate = "{name}  Lv {level}";
         [Tooltip("With no hand dealt and nothing held of the element.")]
         [SerializeField] string detailsNothingHeld = "Nothing held yet";
-        [Tooltip("Font size of the card details.")]
-        [SerializeField, Min(6f)] float detailsFontSize = 20f;
-        [Tooltip("The details panel's backing.")]
-        [SerializeField] Color detailsBacking = new(0.04f, 0.06f, 0.12f, 0.88f);
-        [Tooltip("The details panel's width (canvas units).")]
-        [SerializeField, Min(100f)] float detailsWidth = 520f;
+        [Tooltip("Font size of the card's name.")]
+        [SerializeField, Min(6f)] float detailsTitleFontSize = 40f;
+        [Tooltip("Font size of the card's level.")]
+        [SerializeField, Min(6f)] float detailsLevelFontSize = 26f;
+        [Tooltip("Font size of the card's text, numbers and next jolt.")]
+        [SerializeField, Min(6f)] float detailsFontSize = 22f;
+        [Tooltip("The card's face.")]
+        [SerializeField] Color detailsBacking = new(0.03f, 0.05f, 0.12f, 0.95f);
+        [Tooltip("The card's width (canvas units); its height fits its words.")]
+        [SerializeField, Min(100f)] float detailsWidth = 600f;
+        [Tooltip("The element glyph's size at the top of the card (canvas units).")]
+        [SerializeField, Min(16f)] float detailsGlyphSize = 120f;
 
         [Header("Look")]
         [Tooltip("Font size of the card names and levels.")]
@@ -91,13 +100,16 @@ namespace CosmicShore.UI
 
         const string HeaderName = "StarlingHeader";
         const string ObjectiveHostName = "StarlingObjectiveButton";
-        const string DetailsName = "StarlingDetails";
+        const string DetailsName = "StarlingCardDetails";
         const float ObjectiveIconSize = 80f;
         Image _objectiveSpent, _objectiveFill;
         int _objectiveShown = -1;
         RectTransform _details;
-        TextMeshProUGUI _detailsText;
+        Image _detailsGlyph, _detailsRule;
+        Outline _detailsEdge;
+        TextMeshProUGUI _detailsTitle, _detailsLevel, _detailsText;
         string _detailsShown;
+        AbilityLockupStyleSO _style;
         TextMeshProUGUI _phase, _swarm;
         readonly TextMeshProUGUI[] _names = new TextMeshProUGUI[4];
         readonly TextMeshProUGUI[] _levels = new TextMeshProUGUI[4];
@@ -110,6 +122,7 @@ namespace CosmicShore.UI
         public string CardLevelTemplate => cardLevelTemplate;
         public string HeldTemplate => heldTemplate;
         public string DetailsTitleTemplate => detailsTitleTemplate;
+        public string DetailsLevelTemplate => detailsLevelTemplate;
         public string DetailsStatTemplate => detailsStatTemplate;
         public string DetailsMilestoneTemplate => detailsMilestoneTemplate;
         public string DetailsHeldTemplate => detailsHeldTemplate;
@@ -224,47 +237,109 @@ namespace CosmicShore.UI
             _objectiveFill.fillAmount = Mathf.Clamp01(remaining01);
         }
 
-        /// <summary>The card details panel, already filled; empty hides it.</summary>
-        public void SetDetails(string text)
+        /// <summary>
+        /// The card details: a large card in the middle of the screen with <paramref name="element"/>'s glyph and colour, the
+        /// card's name and level and its body (text, numbers, next jolt), all already filled. <see cref="Element.None"/> hides it.
+        /// </summary>
+        public void SetDetails(Element element, string title, string level, string body)
         {
-            text ??= string.Empty;
-            if (text == _detailsShown) return;
-            _detailsShown = text;
+            string key = element == Element.None ? string.Empty : $"{element}|{title}|{level}|{body}";
+            if (key == _detailsShown) return;
+            _detailsShown = key;
             if (!_details) BuildDetails();
             if (!_details) return;
-            _details.gameObject.SetActive(text.Length > 0);
-            _detailsText.text = text;
+            bool show = element != Element.None;
+            _details.gameObject.SetActive(show);
+            if (!show) return;
+
+            _details.SetAsLastSibling();   // over the rest of the HUD
+            Color accent = Accent(element);
+            _detailsEdge.effectColor = accent;
+            _detailsRule.color = accent;
+            _detailsGlyph.sprite = TryGetAbilityIcon(element, out var icon) && icon ? icon.sprite : null;
+            _detailsGlyph.enabled = _detailsGlyph.sprite;
+            _detailsGlyph.color = accent;
+            _detailsTitle.text = title ?? string.Empty;
+            _detailsLevel.text = level ?? string.Empty;
+            _detailsLevel.color = accent;
+            _detailsText.text = body ?? string.Empty;
         }
 
+        Color Accent(Element element)
+        {
+            if (!_style) _style = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
+            return _style ? _style.ColourFor(element) : Color.white;
+        }
+
+        /// <summary>Builds the card on the ROOT canvas, centred, so no HUD layout can push it off screen. Idempotent by name.</summary>
         void BuildDetails()
         {
-            _details = transform.Find(DetailsName) as RectTransform;
+            var canvas = GetComponentInParent<Canvas>();
+            var root = canvas ? canvas.rootCanvas.transform as RectTransform : transform as RectTransform;
+            if (!root) return;
+            _details = root.Find(DetailsName) as RectTransform;
             if (!_details)
             {
                 _details = new GameObject(DetailsName, typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
-                _details.SetParent(transform, false);
+                _details.SetParent(root, false);
             }
-            _details.anchorMin = _details.anchorMax = new Vector2(1f, 1f);
-            _details.pivot = new Vector2(1f, 0f);
-            _details.anchoredPosition = new Vector2(0f, 72f);   // above the header (64 tall)
-            if (_details.TryGetComponent<Image>(out var backing))
+            _details.anchorMin = _details.anchorMax = _details.pivot = new Vector2(0.5f, 0.5f);
+            _details.anchoredPosition = Vector2.zero;
+            _details.sizeDelta = new Vector2(detailsWidth, _details.sizeDelta.y);
+            if (_details.TryGetComponent<Image>(out var face))
             {
-                backing.color = detailsBacking;
-                backing.raycastTarget = false;
+                face.color = detailsBacking;
+                face.raycastTarget = false;
             }
+            if (!_details.TryGetComponent(out _detailsEdge)) _detailsEdge = _details.gameObject.AddComponent<Outline>();
+            _detailsEdge.effectDistance = new Vector2(4f, -4f);
             if (!_details.TryGetComponent<ContentSizeFitter>(out var fitter)) fitter = _details.gameObject.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             if (!_details.TryGetComponent<VerticalLayoutGroup>(out var layout)) layout = _details.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(16, 16, 12, 12);
+            layout.padding = new RectOffset(32, 32, 28, 32);
+            layout.spacing = 10f;
+            layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlWidth = layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
-            _details.sizeDelta = new Vector2(detailsWidth, _details.sizeDelta.y);
-            _detailsText = ResolveGeneratedChild<TextMeshProUGUI>(_details, "StarlingDetailsText");
-            _detailsText.fontSize = detailsFontSize;
-            _detailsText.alignment = TextAlignmentOptions.TopLeft;
-            _detailsText.enableWordWrapping = true;
-            _detailsText.raycastTarget = false;
+
+            _detailsGlyph = ResolveGeneratedChild<Image>(_details, "Glyph");
+            _detailsGlyph.preserveAspect = true;
+            _detailsGlyph.raycastTarget = false;
+            Size(_detailsGlyph.gameObject, detailsGlyphSize);
+            _detailsTitle = DetailsLabel("Title", detailsTitleFontSize, TextAlignmentOptions.Center, FontStyles.Bold);
+            _detailsLevel = DetailsLabel("Level", detailsLevelFontSize, TextAlignmentOptions.Center, FontStyles.Normal);
+            _detailsRule = ResolveGeneratedChild<Image>(_details, "Rule");
+            _detailsRule.raycastTarget = false;
+            Size(_detailsRule.gameObject, 3f);
+            _detailsText = DetailsLabel("Body", detailsFontSize, TextAlignmentOptions.TopLeft, FontStyles.Normal);
             _details.gameObject.SetActive(false);
+        }
+
+        TextMeshProUGUI DetailsLabel(string name, float size, TextAlignmentOptions align, FontStyles style)
+        {
+            var text = ResolveGeneratedChild<TextMeshProUGUI>(_details, name);
+            text.fontSize = size;
+            text.fontStyle = style;
+            text.alignment = align;
+            text.enableWordWrapping = true;
+            text.overflowMode = TextOverflowModes.Overflow;
+            text.raycastTarget = false;
+            text.text = string.Empty;
+            return text;
+        }
+
+        static void Size(GameObject go, float height)
+        {
+            if (!go.TryGetComponent<LayoutElement>(out var element)) element = go.AddComponent<LayoutElement>();
+            element.minHeight = element.preferredHeight = height;
+        }
+
+        protected override void OnDestroy()
+        {
+            // The card lives on the root canvas, outside this view, so it goes with the view.
+            if (_details) Destroy(_details.gameObject);
+            base.OnDestroy();
         }
 
         TextMeshProUGUI Label(RectTransform parent, string name, float size, Vector2 anchor, Vector2 offset, TextAlignmentOptions align)

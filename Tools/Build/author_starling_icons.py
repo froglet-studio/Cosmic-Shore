@@ -11,8 +11,9 @@ element (R_VesselActions/STARLING.md), so each icon is a CARD with its element's
 
   Charge  a lightning bolt      Mass  a prism (hexagon)      Space  a ring round a black hole      Time  an hourglass
 
-and the objective card (left of the omnicrystal's) draws the phase's target with no card frame: a faceted gem (Omnicrystal),
-three shards (Elemental crystals), a crosshair on a hull (Opposing vessels), a wall of prism blocks (Opposing mass).
+and the objective card (left of the omnicrystal's) draws the phase's target with no card frame: the four element petals as
+one flower (Elemental crystals), a crosshair on a hull (Opposing vessels), prism blocks cut into triangles by an X of
+negative space (Opposing mass). The Omnicrystal phase uses the game's own omnicrystal icon.
 
 The card images (SO_Class_Starling) are rendered from the model by Tools/Build/vessel_model/render_cards.py, not here.
 Deterministic guids (starling_icon_ids.py); each .meta is the house sprite meta with the guid swapped. --check compares pixels
@@ -79,20 +80,38 @@ def time(d):
     poly(d, [(54, 40), (74, 40), (64, 58)], fill=0)   # the sand has run out of the top
 
 
-# ---- the objective card (the core card left of the omnicrystal's): what the swarm is going for in this phase, no card frame
+# ---- the objective card (the core card left of the omnicrystal's): what the swarm is going for in this phase, no card frame.
+# The Omnicrystal phase uses the game's own omnicrystal icon (ElementIcons/OmniCrystal_Active.png), so it is not drawn here.
+# Garrett, 2026-10-21: "the prisms should have an x through them with negative space because mass (prisms) is made of
+# triangles ... you can put all four element petals together for elemental crystals, and your vessel one wasn't too bad."
 
-def obj_omni(d):
-    """Omnicrystal: a big faceted gem."""
-    poly(d, [(64, 14), (102, 52), (64, 114), (26, 52)])
-    for a, b in (((26, 52), (102, 52)), ((48, 52), (64, 114)), ((80, 52), (64, 114)), ((48, 52), (64, 14)), ((80, 52), (64, 14))):
-        line(d, [a, b], 3.5, fill=0)
+PETALS = os.path.join(ROOT, "Assets", "Resources", "ElementPetals")
 
 
 def obj_crystals(d):
-    """Elemental crystals: a cluster of three shards."""
-    poly(d, [(64, 16), (80, 48), (72, 104), (56, 104), (48, 48)])
-    poly(d, [(34, 46), (46, 66), (42, 106), (30, 106), (24, 66)])
-    poly(d, [(94, 46), (104, 66), (98, 106), (86, 106), (82, 66)])
+    """Elemental crystals: the four element petals (ElementPetals/*_petal.png, the element flowers' own) as one flower,
+    tips in, clockwise from the top in the fleet's order: Charge, Mass, Space, Time."""
+    canvas = d._image
+    size = SIZE * K
+    for k, name in enumerate(("charge", "mass", "space", "time")):
+        petal = Image.open(os.path.join(PETALS, name + "_petal.png")).convert("RGBA").getchannel("A")
+        petal = petal.crop(petal.getbbox())
+        h = int(size * 0.42)
+        w = max(1, int(petal.width * h / petal.height))
+        petal = petal.resize((w, h), Image.LANCZOS)
+        # the source petal points DOWN; on the top it points at the centre as it is, then 90 degrees per step clockwise
+        petal = petal.rotate(-90 * k, resample=Image.BICUBIC, expand=True)
+        gap = size * 0.035
+        cx, cy = size / 2, size / 2
+        if k == 0:
+            x, y = cx - petal.width / 2, cy - gap - petal.height
+        elif k == 1:
+            x, y = cx + gap, cy - petal.height / 2
+        elif k == 2:
+            x, y = cx - petal.width / 2, cy + gap
+        else:
+            x, y = cx - gap - petal.width, cy - petal.height / 2
+        canvas.paste(255, (int(round(x)), int(round(y))), petal)
 
 
 def obj_vessels(d):
@@ -104,15 +123,17 @@ def obj_vessels(d):
 
 
 def obj_mass(d):
-    """Opposing mass: a wall of prism blocks."""
-    for (x, y) in ((28, 80), (64, 80), (100, 80), (46, 48), (82, 48), (64, 16)):
-        poly(d, [(x - 16, y), (x + 16, y), (x + 16, y + 28), (x - 16, y + 28)])
-        line(d, [(x - 16, y + 9), (x + 16, y + 9)], 3.0, fill=0)
+    """Opposing mass: three prism blocks, each cut by an X of negative space into its four triangles (a prism is made of
+    triangles)."""
+    for (x, y, half) in ((38, 88, 22), (90, 88, 22), (64, 38, 22)):
+        poly(d, [(x - half, y - half), (x + half, y - half), (x + half, y + half), (x - half, y + half)])
+        line(d, [(x - half, y - half), (x + half, y + half)], 5.0, fill=0)
+        line(d, [(x + half, y - half), (x - half, y + half)], 5.0, fill=0)
 
 
 DRAW = dict(zip(("Starling_Charge.png", "Starling_Mass.png", "Starling_Space.png", "Starling_Time.png",
-                 "Starling_ObjOmni.png", "Starling_ObjCrystals.png", "Starling_ObjVessels.png", "Starling_ObjMass.png"),
-                (charge, mass, space, time, obj_omni, obj_crystals, obj_vessels, obj_mass)))
+                 "Starling_ObjCrystals.png", "Starling_ObjVessels.png", "Starling_ObjMass.png"),
+                (charge, mass, space, time, obj_crystals, obj_vessels, obj_mass)))
 
 
 def render(draw_fn):

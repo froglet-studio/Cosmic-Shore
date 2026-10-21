@@ -104,13 +104,15 @@ namespace CosmicShore.UI
             if (element == _detailsShown && level == _detailsLevel) return;
             _detailsShown = element;
             _detailsLevel = level;
-            if (element == Element.None) { view.SetDetails(string.Empty); return; }
+            if (element == Element.None) { view.SetDetails(Element.None, null, null, null); return; }
 
             _lines.Clear();
+            string title, levelLine;
             if (!card.IsEmpty)
             {
                 var c = card.Card;
-                Line(TemplateText.Fill(view.DetailsTitleTemplate, "name", c.DisplayName, "level", Num(card.Level)));
+                title = TemplateText.Fill(view.DetailsTitleTemplate, "name", c.DisplayName);
+                levelLine = TemplateText.Fill(view.DetailsLevelTemplate, "level", Num(card.Level));
                 Line(c.Text);
                 foreach (var stat in c.Stats)
                     Line(TemplateText.Fill(view.DetailsStatTemplate, "label", stat.Label, "value", StatValue(stat, card.Level),
@@ -123,17 +125,22 @@ namespace CosmicShore.UI
                     break;
                 }
             }
-            else if (starlings.Config && starlings.Config.Deck)
+            else
             {
-                starlings.Config.Deck.Wired(element, _scratch);
-                foreach (var c in _scratch)
+                // No hand: the cards held of this element, under the element's glyph.
+                title = levelLine = string.Empty;
+                if (starlings.Config && starlings.Config.Deck)
                 {
-                    int held = rules.Level(c.Id);
-                    if (held > 0) Line(TemplateText.Fill(view.DetailsHeldTemplate, "name", c.DisplayName, "level", Num(held)));
+                    starlings.Config.Deck.Wired(element, _scratch);
+                    foreach (var c in _scratch)
+                    {
+                        int held = rules.Level(c.Id);
+                        if (held > 0) Line(TemplateText.Fill(view.DetailsHeldTemplate, "name", c.DisplayName, "level", Num(held)));
+                    }
                 }
                 if (_lines.Length == 0) Line(view.DetailsNothingHeld);
             }
-            view.SetDetails(_lines.ToString());
+            view.SetDetails(element, title, levelLine, _lines.ToString());
         }
 
         void Line(string text)

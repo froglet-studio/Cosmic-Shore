@@ -78,17 +78,21 @@ phase and its seconds left, and the swarm's size. Every word is an authored fiel
 templates; tokens `{name}` `{level}` `{phase}` `{seconds}` `{count}` `{cap}`); the card names are the deck's.
 
 **The objective card** (2026-10-21) sits directly left of the omnicrystal's card: a core card,
-`CoreAbility.Objective`, with no control chip. Its glyph is the phase's target (`objectiveIcons`, drawn by
-`author_starling_icons.py`: a faceted gem, three shards, a crosshair on a hull, a wall of prism blocks), and it **drains
+`CoreAbility.Objective`, with no control chip. Its glyph is the phase's target (`objectiveIcons`): the game's own omnicrystal icon,
+the four element petals as one flower (Elemental crystals), a crosshair on a hull (Opposing vessels), and prism blocks
+cut into triangles by an X of negative space (Opposing mass; a prism is made of triangles). The last three are drawn by
+`author_starling_icons.py` (Garrett's notes, 2026-10-21), and it **drains
 from the top** as the phase timer runs out, over a faint copy of itself (`objectiveSpentColor`). The lockup packs the
 core cards it draws against the elemental row, so a hull with the objective and the omnicrystal card shows no gap, and
 the Squirrel's drift and omni cards sit where they always did.
 
-**The card details** (a trigger held while picking, or a long press) open a panel above the header: the hand's card of
-that element with the level it arrives at, its text, each number at that level, and its next jolt above the level you
-hold. With no hand dealt it lists the cards you hold of that element. Every line is an authored template on the view
-(`detailsTitleTemplate`, `detailsStatTemplate`, `detailsMilestoneTemplate`, `detailsHeldTemplate`,
-`detailsNothingHeld`); the card words are the deck's.
+**The card details** (a trigger held while picking, or a long press) show a **large card in the middle of the screen**
+(on the root canvas, so no HUD layout can push it off screen; round 2 placed a panel above the header and Garrett did not
+see it): the element's glyph in its colour, the card's name large, the level it arrives at, then its text, each number
+at that level, and its next jolt above the level you hold. With no hand dealt it lists the cards you hold of that
+element. Every line is an authored template on the view (`detailsTitleTemplate`, `detailsLevelTemplate`,
+`detailsStatTemplate`, `detailsMilestoneTemplate`, `detailsHeldTemplate`, `detailsNothingHeld`); the card words are the
+deck's.
 
 ## 6. Files
 
