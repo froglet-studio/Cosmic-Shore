@@ -103,6 +103,8 @@ Grouper · 2 seat".
     a second.
   - The fast gun and the bomb look **over their turret**; every gun has a **bespoke crosshair** (scope, nib, blast ring).
   - Lab cost: the no-cooldown bomb doubles the hits both ways, and Anchorage falls to 73 (from 120).
+  - **Its own hull model** (`Orca.fbx`, `/vessel-model`): an orca-inspired spaceship with three bespoke turrets the crew
+    aims (`OrcaHullRig`). Jets, hit box and chase camera are still the Sparrow's and need fitting.
   - Same status: compiled and parity-checked, not flown in the editor.
 - **Round 5 (2026-10-21).**
   - Each gunner seat has **its own gun**: gunner 1 the Serpent's sniper (12 s cooldown; every hostile prism in a thin

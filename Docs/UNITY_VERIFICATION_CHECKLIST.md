@@ -91,7 +91,13 @@ the crosshairs"); lab round 6 (`Docs/Studios/CREW_OF_FOUR_LAB.md` §4). No Unity
    an amber ring pulses round it with BURST. Fire again bursts it; then the next press throws another at once (no
    cooldown). Our hull is never pushed.
 5. AI bomb gunners burst their own bombs (they do not sit with a bomb out forever).
-6. Clean console: no NRE from `OrcaCrew` / `OrcaCrewView` / `OrcaCrosshairGraphic`, no pool errors.
+6. **The model.** Let `Orca.fbx` import, then run `FrogletTools > Vessels > Audits > Audit Vessel Elemental Morphs`,
+   `Audit Vessel Construction` and `Audit Vessel Tails and Jets`. In play: the Orca model draws (no Sparrow inside it),
+   in the domain colour on its armour plates; each element's morph shows as it levels. The three turrets swing to their
+   seat's aim (watch from the helm while the AI gunners fight), and rounds, bombs and the sniper's beam leave from the
+   barrel tips. Expected misfits to note, not fail: the jets, hit box and chase camera are still the Sparrow's
+   (T-20261021-8afe).
+7. Clean console: no NRE from `OrcaCrew` / `OrcaCrewView` / `OrcaHullRig` / `OrcaCrosshairGraphic`, no pool errors.
 
 ---
 

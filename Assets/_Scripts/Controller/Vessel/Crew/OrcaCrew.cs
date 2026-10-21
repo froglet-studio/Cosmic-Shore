@@ -725,19 +725,21 @@ namespace CosmicShore.Gameplay
         {
             if (_gunCd[s] > 0f) _gunCd[s] -= dt;
             Vector3 mount = U(OrcaCrewCore.MountPosition(N(transform.position), _pod, s, _s.HullRadius));
+            Vector3 muzzleTip = default;
+            bool fromBarrel = _view != null && _view.Rig.TryMuzzle(s, out muzzleTip);   // the model's barrel tip, when it draws one
             Vector3 aim = U(_turrets[s].Aim);
             switch (s)
             {
                 case SniperSeat:
-                    if ((hold || edge) && _gunCd[s] <= 0f) { Snipe(mount, aim); _gunCd[s] = _cfg.SniperCooldown; }
+                    if ((hold || edge) && _gunCd[s] <= 0f) { Snipe(fromBarrel ? muzzleTip : mount, aim); _gunCd[s] = _cfg.SniperCooldown; }
                     break;
                 case FastGunSeat:
                     int n = _fast.Step(hold, dt, _cfg.FastGunRate, _cfg.FastGunHeatSeconds, _cfg.FastGunCoolSeconds);
-                    for (int k = 0; k < n && k < 4; k++) FireRound(mount, aim);   // a hitch never discharges as a burst (vessel rule 17)
+                    for (int k = 0; k < n && k < 4; k++) FireRound(fromBarrel ? muzzleTip - aim * 3f : mount, aim);   // a hitch never discharges as a burst (vessel rule 17)
                     break;
                 case BombSeat:
                     if (_bomb) { if (human ? edge : AIBurstsBomb()) DetonateBomb(); }
-                    else if (human ? edge : hold) ThrowBomb(mount, aim);
+                    else if (human ? edge : hold) ThrowBomb(fromBarrel ? muzzleTip - aim * 4f : mount, aim);
                     break;
             }
         }

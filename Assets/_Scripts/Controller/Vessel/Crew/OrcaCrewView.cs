@@ -18,8 +18,9 @@ namespace CosmicShore.Gameplay
     /// view does, so the gunner always sees where the helm is taking them.</item>
     /// <item><b>The crosshairs</b> (round 6): each weapon's own (<see cref="OrcaCrosshairGraphic"/>: a scope, a pen nib, a
     /// blast ring), on a screen-space canvas under the HUD, placed where the gun's line meets the view.</item>
-    /// <item><b>The crew in the world.</b> Each turret is a faceted pod on an outrigger strut and each flown missile a
-    /// faceted dart, in the hull's domain colour on a LIT material (nothing in the world looks flat: LOCKED,
+    /// <item><b>The crew in the world.</b> With the Orca model (<see cref="OrcaHullRig"/>) its own three turrets are aimed
+    /// and stood at their lagged mounts. Without it, each turret is a faceted pod on an outrigger strut. Each flown
+    /// missile is a faceted dart, in the hull's domain colour on a LIT material (nothing in the world looks flat: LOCKED,
     /// <c>Docs/claude/SHADERS_AND_PERFORMANCE.md</c>). Drawn with <c>Graphics.RenderMesh</c>, so the crew owns no
     /// GameObjects.</item>
     /// </list>
@@ -40,6 +41,8 @@ namespace CosmicShore.Gameplay
         Canvas _crossCanvas;
         int _crossKey = int.MinValue;
         Camera _pilot;
+        /// <summary>The model's turrets, when the hull draws the Orca model (else the view draws pods).</summary>
+        public OrcaHullRig Rig { get; }
         Rect _pilotRect;
         float _pilotDepth;
         bool _pilotLifted;
@@ -58,6 +61,7 @@ namespace CosmicShore.Gameplay
             _octa ??= Octahedron();
             _box ??= Box();
             (_crosshair, _crossLabel) = CrosshairCanvas(_root.transform, out _crossCanvas);
+            Rig = new OrcaHullRig(crew.Hull);
         }
 
         // A screen-space canvas under the HUD (the GameCanvas sorts at 1) holding the crosshair and its one word.
@@ -166,6 +170,7 @@ namespace CosmicShore.Gameplay
                 var aim = OrcaCrew.U(t.Aim);
                 up = OrcaCrew.U(t.Up);
                 var mount = OrcaCrew.U(OrcaCrewCore.MountPosition(OrcaCrew.N(hull.position), _crew.Pod, humanSeat, cfg.HullRadius));
+                if (guns && humanSeat == OrcaCrew.SniperSeat && Rig.TryMuzzle(humanSeat, out var muzzle)) mount = muzzle;   // the scope sees past its own barrel
                 if (guns && humanSeat != OrcaCrew.SniperSeat)
                 {
                     // over the turret (round 6): behind and above it, looking at the gun's line gunCamAim out, where the
@@ -308,6 +313,7 @@ namespace CosmicShore.Gameplay
                 receiveShadows = true,
                 worldBounds = new Bounds(hull.position, Vector3.one * 100000f),
             };
+            if (Rig.Bound) Rig.Pose(_crew);
             float pod = PodSize(cfg);
             var hullPos = hull.position;
             var podFrame = _crew.Pod;
@@ -317,7 +323,11 @@ namespace CosmicShore.Gameplay
                 var mount = OrcaCrew.U(OrcaCrewCore.MountPosition(OrcaCrew.N(hullPos), podFrame, s, cfg.HullRadius));
                 var t = _crew.TurretOf(s);
                 var aim = Quaternion.LookRotation(OrcaCrew.U(t.Aim), OrcaCrew.U(t.Up));
-                if (s == _scopedSeat) continue;   // the scoped sniper does not draw its own pod over its eyepiece
+                var m = _crew.MissileOf(s);
+                if (m != null)
+                    Graphics.RenderMesh(rp, _octa, 0, Matrix4x4.TRS(OrcaCrew.U(m.Position),
+                        Quaternion.LookRotation(OrcaCrew.U(m.Frame.F), OrcaCrew.U(m.Frame.U)), new Vector3(1.4f, 1.4f, 5f)));
+                if (Rig.Bound || s == _scopedSeat) continue;   // the model draws its own turrets; the scoped sniper hides its pod
                 // each gun reads at a glance (round 5): the sniper long and thin, the fast gun middling, the bomb short and fat
                 var podScale = s == OrcaCrew.SniperSeat ? new Vector3(pod * 0.8f, pod * 0.8f, pod * 3.2f)
                     : s == OrcaCrew.BombSeat ? new Vector3(pod * 1.4f, pod * 1.4f, pod * 1.3f)
@@ -329,10 +339,6 @@ namespace CosmicShore.Gameplay
                 if (span.sqrMagnitude > 0.01f)
                     Graphics.RenderMesh(rp, _box, 0, Matrix4x4.TRS((root + mount) * 0.5f, Quaternion.LookRotation(span, rot * Vector3.up),
                         new Vector3(pod * 0.35f, pod * 0.35f, span.magnitude)));
-                var m = _crew.MissileOf(s);
-                if (m != null)
-                    Graphics.RenderMesh(rp, _octa, 0, Matrix4x4.TRS(OrcaCrew.U(m.Position),
-                        Quaternion.LookRotation(OrcaCrew.U(m.Frame.F), OrcaCrew.U(m.Frame.U)), new Vector3(1.4f, 1.4f, 5f)));
             }
         }
 

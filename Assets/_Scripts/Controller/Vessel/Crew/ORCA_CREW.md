@@ -38,6 +38,8 @@ players know it supports four players or brings in 4 AI" (Garrett, 2026-10-20). 
 - **Better gunner views**: the fast gun and the bomb look **over their turret** (behind and above it, at the gun's line
   180 u out), so the rounds stream away instead of filling the eye.
 - **Bespoke crosshairs**: a scope, a pen nib, a blast ring (`OrcaCrosshairGraphic`).
+- **Its own hull** ("use the vessel modeling tools and really step up the vessel"): `Orca.fbx`, built by `/vessel-model`
+  (see *The model* below). It replaces the drawn Sparrow and the faceted pods.
 
 **Unverified:** nothing has been flown in the Unity Editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the team
 task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see Follow-ups).
@@ -110,6 +112,26 @@ does a **two-finger tap** on a touch screen. While the person holds a gunner sea
 - **The AI helm** raises the shield when a rival Orca's missile closes on the hull.
 - The default skill is **Hard** (`aiSkill`).
 
+## The model (round 6)
+
+`Assets/_Models/Vessel Models/Orca.fbx`, built by `/vessel-model` from `Tools/Build/vessel_model/specs/orca.py` (dossier
+`Docs/VesselModels/Orca.md`, contact sheets `Docs/VesselModels/sheets/orca_after.jpg` and `orca_turrets.jpg`). A
+spaceship inspired by the killer whale: a deep gunmetal hull with domain armour plates (the orca's saddle and flank
+pattern), the eye patches as sensor lenses, the tall dorsal fin as the sniper's pylon, the pectoral fins as the two
+outrigger wings, the flukes as the engine section with two glowing throats. 49 × 24 × 36 u, 17,536 triangles.
+- **Three bespoke turrets**, each a YAW / PITCH / MUZZLE bone chain at exactly the code's mounts
+  (`OrcaCrewCore.Mounts` × `hullRadius`): the sniper a long railgun with coil rings and a scope, the fast gun a
+  six-barrel rotary "pen", the bomb a fat mortar drum. Each also carries a missile tube.
+- **Four element morphs**: Charge 4.6% (the turrets swell), Mass 4.0% (the hull bulks), Space 9.3% (the barrels and
+  flukes reach), Time 7.3% (the nose sharpens, the wings sweep). Slots: Domain, Body, Window, Engine.
+- **Nested by `author_orca_assets.py`** (`model_retrofit`, the Grouper's pattern) under the root as `Orca`: it is the
+  ship geometry the domain paints (`_shipGeometries`, slot 0), and the Sparrow's mesh is switched off. The Sparrow's
+  bones, jets, colliders and Animator stay, so the hull still flies on them.
+- **`OrcaHullRig`** finds the turret bones by name. Every frame it stands each turret at its lagged mount and points it
+  along its seat's stabilized aim, relative to the bone's rest. Rounds, bombs and the sniper's beam leave from the
+  barrel's tip; the scope looks from it. Without the bones the view draws its faceted pods, so the crew never depends on
+  the art.
+
 ## How the guns are stabilized (lab round 4)
 
 The order matters: each step removes what the one before leaves (`CREW_OF_FOUR_LAB.md` §4b).
@@ -175,6 +197,8 @@ the explosion's effect are the game's.
 | `OrcaCrewConfigSO.cs` | Every number; each tooltip names its lab key. Asset: `Assets/_SO_Assets/VesselActions/OrcaCrew/OrcaCrewConfig.asset`. |
 | `OrcaCrew.cs` | The crew on the hull. The seats and the swap. The helm's boost tank and shield: laid super-shielded with `BoostRingBuilder.LayOne`, posed every frame by the prism mover contract, re-themed to danger at the drop, retired by the pooled-prism identity test. The gunners' input and AI, the three guns (the bomb with no cooldown and the AI's burst; the pen's queued landings, laid with `BoostRingBuilder.LayOne`), the missiles' contacts, crystal collection and bursts. Readers for the HUD: `SeatElement`, `SeatVeil01`, `BurstAt`, `MissilesAt`, `PenReady`. |
 | `OrcaCrewView.cs` | The gunner's camera (the scoped sniper, the over-the-turret fast gun and bomb, the missile) and the crosshair canvas (with the game camera's post-processing, `OffscreenCameraSetup.AdoptGameCameraImage`), the picture-in-picture chase view, and the faceted lit pods, struts and missiles (`Graphics.RenderMesh`, `Resources/OrcaCrewLit.mat`). Each gun's pod has its own shape. |
+| `OrcaHullRig.cs` | The model's three turrets aimed by the crew (found by bone name, posed relative to rest, stood at the lagged mounts); their barrel tips are where the guns fire from. |
+| `Assets/_Models/Vessel Models/Orca.fbx`, `Tools/Build/vessel_model/specs/orca.py` | The hull model and its spec (`build.py specs/orca.py --check` is its drift gate). |
 | `UI/View/OrcaCrosshairGraphic.cs` | The bespoke crosshairs as generated uGUI geometry (scope, nib, bomb ring, missile ring), feathered and haloed. |
 | `UI/Controller/OrcaHUDController.cs` | The four cards are the four seats (round 6): the person's seat's card is lit (re-asserted every frame), each card's veil is its seat's recharge, each gunner card counts its own seat's missiles, and a card flashes when its seat's missile or bomb bursts (Time also when the shield goes up). Plus the seat line (`seatLineTemplate`: the seat, its gun and state, its missiles; rebuilt only when one changes). |
 | `ImpactEffects/.../OrcaOmniCrystalEffectSO.cs` | An Omni crystal gives every seat a missile (asset `OrcaOmniCrystalEffect`, in `OrcaImpactorDataContainer`). |
@@ -255,6 +279,12 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   than the danger shell they become. If it reads as too solid, shrink `shieldBlockScale` (a lab dial).
 - **The HUD is the Sparrow's view under an Orca controller**, as the Wrasse's was. A prefab variant with the crew's four
   icons would replace the Sparrow's art (the seats are elements now, so each card could carry its gun's own art).
+- **Fit the hit box, jets, skimmer and chase camera to the model.** They are still the Sparrow's, sized for a 12 u hull;
+  the Orca is 36 u long and 49 u across. The jets burn inside the hull (the model's engine mouths are bones
+  `jet.L.mouth` / `jet.R.mouth` at z -14.75), and the convention puts the chase camera ~113 u back, against the lab's 50
+  (a lab dial, `camBack`). The Grouper has the same task (`T-20261020-a9f5`).
+- **Space moves the barrel tips** (the sniper's 6.1 u at full Space) but the muzzle bones stay at rest, so at high Space a
+  round leaves from inside the longer barrel. `BrittleStarHullModel.ReadMouthTravel` reads that offset if it matters.
 - **Anchorage scores lower in round 6** (73 ± 16 against round 5's 119.5 ± 7.6, 12 seeds): the no-cooldown bomb trades
   about twice the hits both ways, and every crew's blasts break the other's trail. Mass-game balance is a lab question.
 - **The shield on a touch screen:** the left trigger has no touch equivalent yet. A tap on the Mass card would need

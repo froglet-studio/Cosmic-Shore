@@ -205,15 +205,98 @@ def gun_retrofit(text: str) -> str:
             + gun_docs(BOMB_GO, BOMB_TF, BOMB_GUN, BOMB_FACTORY, BOMB_POOL, "OrcaBombGun", GRIZZLY_BOMB_REF, 2, 4, 5))
 
 
+# ----------------------------------------------------------------------------- the Orca model (round 6)
+# Orca.fbx (Tools/Build/vessel_model/specs/orca.py, /vessel-model) nested under the root as "Orca", the Grouper's pattern
+# (author_wrasse_assets.py on cece/loving-fermat-ntdnbu, round 7): it becomes the ship geometry the domain paints, and the
+# Sparrow's mesh is switched off; its bones, jets, colliders and Animator stay, so the hull still flies on them.
+# OrcaHullRig finds the model by that name and aims its three turrets.
+ORCA_FBX = os.path.join(ROOT, "Assets", "_Models", "Vessel Models", "Orca.fbx")
+ORCA_FBX_GUID = "9b34bfdd14c8462c8bc138b3938820a2"
+SPARROW_FBX_GUID = "151e3f0352963624abf4da579618e66d"
+SPARROW_INSTANCE_ID = "3134011750752858212"      # the Sparrow model nested under the root
+SPARROW_SMR_SOURCE = "2692722512241470911"       # its SkinnedMeshRenderer, in the FBX
+SPARROW_MODEL_GO = "2864103291091619125"         # its root GameObject (stripped): the ship geometry until round 6
+MODEL_ROOT_GO = "919132149155446097"             # a model's root GameObject / Transform: constants of the importer
+MODEL_ROOT_TRANSFORM = "-8679921383154817045"
+ORCA_MODEL_INSTANCE, ORCA_MODEL_TF, ORCA_MODEL_GO = "6420517381209347201", "6420517381209347202", "6420517381209347203"
+ORCA_DOMAIN_SLOT = 0                             # Orca.fbx's slot order puts Domain first (FLEET_CONVENTION)
+SPARROW_SMR_OFF = (f"    - target: {{fileID: {SPARROW_SMR_SOURCE}, guid: {SPARROW_FBX_GUID},\n        type: 3}}\n"
+                   "      propertyPath: m_Enabled\n      value: 0\n      objectReference: {fileID: 0}\n")
+
+
+def model_instance(instance_id: str, transform_id: str, fbx_guid: str, name: str, go_id: str) -> str:
+    """A model nested under the root in its own frame (the fleet's: nose +Z, up +Y, where the Sparrow's sits)."""
+    mods = [(MODEL_ROOT_GO, "m_Name", name)] + [(MODEL_ROOT_TRANSFORM, k, v) for k, v in (
+        ("m_LocalPosition.x", "0"), ("m_LocalPosition.y", "0"), ("m_LocalPosition.z", "0"), ("m_LocalRotation.w", "1"),
+        ("m_LocalRotation.x", "0"), ("m_LocalRotation.y", "0"), ("m_LocalRotation.z", "0"),
+        ("m_LocalEulerAnglesHint.x", "0"), ("m_LocalEulerAnglesHint.y", "0"), ("m_LocalEulerAnglesHint.z", "0"))]
+    return (f"--- !u!1001 &{instance_id}\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n"
+            f"  m_Modification:\n    serializedVersion: 3\n    m_TransformParent: {{fileID: {ROOT_TRANSFORM_ID}}}\n"
+            "    m_Modifications:\n" +
+            "".join(f"    - target: {{fileID: {fid}, guid: {fbx_guid},\n        type: 3}}\n      propertyPath: {path}\n"
+                    f"      value: {v}\n      objectReference: {{fileID: 0}}\n" for fid, path, v in mods) +
+            "    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n"
+            f"  m_SourcePrefab: {{fileID: 100100000, guid: {fbx_guid}, type: 3}}\n"
+            f"--- !u!4 &{transform_id} stripped\nTransform:\n"
+            f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_TRANSFORM}, guid: {fbx_guid},\n    type: 3}}\n"
+            f"  m_PrefabInstance: {{fileID: {instance_id}}}\n  m_PrefabAsset: {{fileID: 0}}\n"
+            f"--- !u!1 &{go_id} stripped\nGameObject:\n"
+            f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_GO}, guid: {fbx_guid},\n    type: 3}}\n"
+            f"  m_PrefabInstance: {{fileID: {instance_id}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
+
+
+def model_retrofit(text: str) -> str:
+    """Round 6: the Orca model under the root, painted as the ship, the Sparrow's mesh off. Idempotent; stands down while
+    the model is not built (the retrofit then leaves the Sparrow drawing, as before)."""
+    if not os.path.exists(ORCA_FBX):
+        return text
+    if f"--- !u!1001 &{ORCA_MODEL_INSTANCE}\n" not in text:
+        if not text.endswith("\n"):
+            text += "\n"
+        text += model_instance(ORCA_MODEL_INSTANCE, ORCA_MODEL_TF, ORCA_FBX_GUID, OrcaModelName, ORCA_MODEL_GO)
+    m = re.search(r"(--- !u!4 &%s\nTransform:\n(?:.*\n)*?  m_Children:\n)((?:  - \{fileID: -?\d+\}\n)*)" % ROOT_TRANSFORM_ID, text)
+    if m and f"  - {{fileID: {ORCA_MODEL_TF}}}\n" not in m.group(2):
+        text = text[:m.end(2)] + f"  - {{fileID: {ORCA_MODEL_TF}}}\n" + text[m.end(2):]
+    text = re.sub(r"  _shipGeometries:\n  - \{fileID: %s\}\n  _domainMaterialSlot: \d+\n" % SPARROW_MODEL_GO,
+                  f"  _shipGeometries:\n  - {{fileID: {ORCA_MODEL_GO}}}\n  _domainMaterialSlot: {ORCA_DOMAIN_SLOT}\n", text)
+    m = re.search(r"--- !u!1001 &%s\nPrefabInstance:\n(?:.*\n)*?    m_Modifications:\n" % SPARROW_INSTANCE_ID, text)
+    if m and SPARROW_SMR_OFF not in text:
+        text = text[:m.end()] + SPARROW_SMR_OFF + text[m.end():]
+    return text
+
+
+OrcaModelName = "Orca"   # OrcaHullRig.ModelName
+
+
+def check_model(text: str):
+    if not os.path.exists(ORCA_FBX):
+        return []
+    errs = []
+    def want(cond, msg):
+        if not cond:
+            errs.append(msg)
+    inst = re.search(r"--- !u!1001 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % ORCA_MODEL_INSTANCE, text)
+    want(inst and f"m_SourcePrefab: {{fileID: 100100000, guid: {ORCA_FBX_GUID}, type: 3}}" in inst.group(1)
+         and f"m_TransformParent: {{fileID: {ROOT_TRANSFORM_ID}}}" in inst.group(1) and f"      value: {OrcaModelName}\n" in inst.group(1),
+         f"Orca.prefab: Orca.fbx is not nested under the root as '{OrcaModelName}' (OrcaHullRig finds it by that name)")
+    root_t = re.search(r"--- !u!4 &%s\nTransform:\n((?:.*\n)*?)(?=--- !u!|\Z)" % ROOT_TRANSFORM_ID, text)
+    want(root_t and f"  - {{fileID: {ORCA_MODEL_TF}}}\n" in root_t.group(1), "Orca.prefab: the root's children do not list the Orca model")
+    want(f"  _shipGeometries:\n  - {{fileID: {ORCA_MODEL_GO}}}\n  _domainMaterialSlot: {ORCA_DOMAIN_SLOT}\n" in text,
+         "Orca.prefab: the ship geometry is not the Orca model (the domain colour would paint the hidden Sparrow)")
+    want(SPARROW_SMR_OFF in text, "Orca.prefab: the Sparrow's mesh still draws (a Sparrow inside the Orca)")
+    return errs
+
+
 def retrofit(text: str) -> str:
-    """No buttons, no Sparrow kit, two thumbs, the lab's hull, the Orca HUD and container, the round-5 guns. Idempotent."""
+    """No buttons, no Sparrow kit, two thumbs, the lab's hull, the Orca HUD and container, the round-5 guns, the round-6
+    model. Idempotent."""
     text = W.BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
     text = W.strip_sparrow_kit(text)
     text = hud_retrofit(text)
     text = text.replace(f"guid: {W.SINGLE_STICK_TRANSFORMER_GUID},", f"guid: {W.TWO_STICK_TRANSFORMER_GUID},")
     text = tuning_retrofit(text)
     text = text.replace(f"guid: {W.DONOR_CONTAINER_GUID},", f"guid: {ORCA_CONTAINER_GUID},")
-    return gun_retrofit(text) if f"--- !u!114 &{SEAT_ID}\n" in text else text
+    return model_retrofit(gun_retrofit(text)) if f"--- !u!114 &{SEAT_ID}\n" in text else text
 
 
 def prefab_meta() -> str:
@@ -531,6 +614,7 @@ def check_all():
         return ["Orca.prefab (+ .meta) is missing: run Tools/Build/author_orca_assets.py"]
     errs += [] if W.guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Orca.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid)
+    errs += check_model(read(PREFAB))
     for path in (CLASS_ASSET, MAP, CONFIG, ORCA_CONTAINER, OMNI_EFFECT, LIT_MAT, CONFIG_DIR):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
@@ -591,6 +675,12 @@ def self_test():
         if not ((len(errs) == 0) if n_min == 0 else (len(errs) >= n_min)):
             fails.append(f"{what}: {errs}")
     expect(check_prefab(good, script_guid), 0, "a fresh clone passes")
+    if os.path.exists(ORCA_FBX):   # round 6: the model's nesting (stands down with the retrofit while the model is unbuilt)
+        modeled = retrofit(good)
+        expect(check_model(modeled), 0, "the nested model passes")
+        expect(check_model(modeled.replace(SPARROW_SMR_OFF, "")), 1, "the Sparrow's mesh left drawing")
+        expect(check_model(modeled.replace(f"  - {{fileID: {ORCA_MODEL_GO}}}\n", f"  - {{fileID: {SPARROW_MODEL_GO}}}\n")), 1, "the domain painting the hidden Sparrow")
+        expect(check_model(modeled.replace(f"      value: {OrcaModelName}\n", "      value: Orca.fbx\n")), 1, "the model renamed (the rig would not find it)")
     expect(check_prefab(good.replace(f"  vesselType: {ORCA_CLASS_ID}\n", f"  vesselType: {SPARROW_CLASS_ID}\n"), script_guid), 1, "the Sparrow's vesselType")
     expect(check_prefab(re.sub(r"(  GlobalObjectIdHash: )\d+", r"\g<1>1124080984", good, count=1), script_guid), 1, "the donor's hash")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {SEAT_ID}}}\n", ""), script_guid), 1, "the crew off the root")

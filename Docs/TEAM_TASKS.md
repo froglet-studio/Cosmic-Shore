@@ -1226,3 +1226,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner), Yash (offered)
 - **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 6'; Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md
+
+### T-20261021-8afe · open · dev · Crew vessels
+- **Task:** Fit the Orca prefab to its new model (Orca.fbx, 36 u long, 49 u across): the hit box, skimmer, jets (move them to the model's jet.L.mouth / jet.R.mouth, z -14.75) and flare are still the Sparrow's, sized for a 12 u hull; decide the chase camera distance (the convention says ~113 u back, the lab's camBack is 50: change it in the lab first).
+- **Done when:** The jets burn from the model's engine mouths, the hit box covers the hull and wings, and the chase camera distance is decided in the lab and on the prefab.
+- **Who can take it:** Garrett (owner, the feel), Yash (offered)
+- **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Follow-ups'; Docs/VesselModels/Orca.md
