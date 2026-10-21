@@ -118,6 +118,11 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.Unlit` and its comment; `KITE_NAVIGATOR.md` "Round 4b".
 - Promoted: no
 
+### L-GEN-18 — When dotnet-install is blocked, build the SDK from api.nuget.org packages
+- Lab: Honeyguide Lab → the Dynamo C# parity gate · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: the cloud proxy refused builds.dotnet.microsoft.com and www.nuget.org (403), so the parity gate had no compiler. api.nuget.org/v3-flatcontainer was open, and its packages carry everything a headless compile needs.
+- Do instead: assemble `~/.dotnet` from the flat-container packages (the runtime pack, `Microsoft.NETCore.App.Ref` and `Microsoft.Net.Compilers.Toolset` for csc) and compile with csc against the reference pack. The Kite and Dynamo parity gates both pass on that layout. Details in `Docs/Studios/HONEYGUIDE_LAB.md` "Port notes".
+- Evidence: `Tools/Build/dynamo_lab/trace.sh`.
 ### L-GEN-19 — Trace a few runs' state every ten seconds before reading any aggregate
 - Lab: Crew of Four Lab (`Docs/Studios/CrewOfFourLab.html`) · Branch: `cece/happy-noether-m54hz6` · By: a Claude Code session for Garrett · Date: 2026-10-20
 - What happened: the first scorecard looked plausible (Gate Run points 81, 62 boardings, 8 cast-offs). A 10-second state trace of one run showed the crew's skiff holding the Artifact from 20 s to the 180 s limit, chasing its old boarding target instead of flying home, and rival boarders re-boarding a fully drained hull every second. Both bugs had produced numbers that looked like a strong boarding meta.
@@ -792,6 +797,25 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `KiteNavigatorView.PetalCentreOut` / `PetalScale`; `KITE_NAVIGATOR.md` "Round 4f" table.
 - Promoted: no
 
+### L-STU-114 — Score each event's signed gain toward the goal; a coarse race column hides the mechanic
+- Lab: Honeyguide Lab · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: the first scorecard counted whole destinations per minute. Slips (teleports along a trail) moved the hull a long way, but most runs reached the same whole number of destinations, so every variant read alike and the always-armed brief looked harmless. Counting the share of the last leg flown and recording each slip's signed gain toward the destination showed always-armed lifting the race 2% with 32% of slips going the wrong way, against 25% for hold-to-arm.
+- Do instead: when a mechanic acts in discrete events, score every event's signed contribution to the goal (and the share that went backwards), and make the race column continuous (partial legs), before reading any variant.
+- Evidence: `HoneyguideLab.html` score columns `slipGain`, `badSlips`, `destsPerMin`; `HONEYGUIDE_LAB.md` Found 1.
+- Promoted: no
+
+### L-STU-115 — An ordering control is only caught by a scenario where the order matters
+- Lab: Honeyguide Lab → the Dynamo C# parity gate · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-20
+- What happened: a planted control reversed the placement scan in the C# core. Every scenario still matched, because the shipped patterns never offered two legal placements at once. Adding synthetic tiny patterns (two or three cells, many legal placements) made the control fire.
+- Do instead: for each planted control, name the scenario that makes it observable; if none exists, build one (a synthetic input that forces the ambiguity) rather than calling the control a pass.
+- Evidence: `Tools/Build/dynamo_lab/parity.cjs` variant 2 (synthetic patterns) and the reversed-scan plant.
+- Promoted: no
+
+### L-STU-116 — A greedy puzzle AI must lock in help that is about to move, and keep its plan
+- Lab: Honeyguide Lab round 2 · Branch: `claude/honeyguide-ratel` · By: session_01UEczCm2LP2GYLZnaMNw6vC · Date: 2026-10-21
+- What happened: round 2 let an empty injection port count as a prism. The Ratel AI (cheapest placement first) leaned on those ports, the spin turned them away before it could finish, and it made patterns 35% slower with the help than without (4.8 against 7.4 a minute). With few prisms on the board it also flipped between two equally cheap placements and moved the same prism back and forth (38 reversals in one seed).
+- Do instead: when a plan uses something that expires (a port before the spin, a buff before its timer), cost it as permanent only if the plan finishes in time; otherwise spend the action that makes it permanent. Keep the placement being built until another is clearly cheaper. Measure a rule that "should help" with the AI before reading its scorecard row.
+- Evidence: `HoneyguideLab.html` `placementCost` (`onPorts`, `durable`) and `aiPlan(..., memo)`; `HONEYGUIDE_LAB.md` round 2 Found 4.
 ### L-STU-125 — URP's Vignette multiplies: a coloured vignette over dark space is invisible, and a lab yardstick must score that cut near zero
 - Lab: Silence Vignette Lab (`Docs/Studios/SilenceVignetteLab.html`) · Branch: `cece/sleepy-shannon-9qk646` · By: session_01PEp87yJAmoDHUn7QvRdtkg · Date: 2026-10-21
 - What happened: the silence feedback's first cut drove the gameplay profile's URP Vignette in the palette's danger colour (intensity 0.26). Garrett played Dog Fight twice and never saw it. URP's `ApplyVignette` lerps the frame toward `frame × colour`, so red can only darken, and the arena's sky is (0, 0, 0.1): red times near-black is near-black. The driver was proven to reach weight 1.0 in Amoebius, so "the code runs" said nothing about "the player sees it". The lab's scorecard (OKLab ΔE ×100 over the edge band, 480×270, seeds 1-3) reads that cut at 2.8 on open space, about the just-noticeable difference, against 45 for an alpha-blended overlay at 0.75.
@@ -1440,6 +1464,22 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
   draws nothing, so it is also a gate.
 - Evidence: `KiteNavigatorJuice.cs` (`KiteJuiceFrame`, `KiteJuiceSettings`); `juice_sheet.sh [out.png] [pilot]`;
   `KITE_NAVIGATOR.md` round 10.
+- Promoted: no
+
+### L-STU-131 — Measure how often a reward is ON THE BUTTON, not only whether it helps
+- Lab: Honeyguide Lab round 5 (timed actives) · Branch: `claude/honeyguide-ratel` · By: Claude session for Garrett · Date: 2026-10-21
+- What happened: the first build dealt an active only when one of the seven weapon cards was made (7 of 39). Each active
+  measured well alone, but an "Active up %" column showed a button held an active 23-27% of the time, about one a minute.
+  Garrett's ask ("new ones come") was not met, and no lift column would have said so. Dealing a random active on every
+  pattern took the buttons to 85% and the race from +51% to +68%.
+- A second check came from the rookie row: a pilot that presses whatever is ready scored the same as the skilled AI. That
+  backs "not so hard to use". The first skilled AI was too picky and scored BELOW the rookie, and the gap pointed at the
+  AI's thresholds, not at the design.
+- Do instead:
+  - For any granted, timed ability, add columns for its presence (the share of time it is available) and its uses a
+    minute beside the lift.
+  - Run a rookie pilot next to the skilled one. If the rookie wins, fix the skilled AI before reading any number.
+- Evidence: `Docs/Studios/HONEYGUIDE_LAB.md` round 5 scorecard; `activeUp`, `usesPerMin`, PSKILL `actSense`.
 - Promoted: no
 
 ### L-STU-136 — A drawing mechanic must write where the aim's sweep matches the stroke's spacing
