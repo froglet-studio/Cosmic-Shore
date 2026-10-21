@@ -57,7 +57,7 @@ namespace CosmicShore.Gameplay
     /// an explosion even below smash speed (and a smash's own explosion spends it), its diameter
     /// growing with the bank.
     ///
-    /// <b>Mass Mode</b> (A, a toggle). The bank is never released: the ball STEALS the rival prisms
+    /// <b>Mass Mode</b> (A, a toggle; the hull SPAWNS in it - Garrett, 2026-10-21). The bank is never released: the ball STEALS the rival prisms
     /// it touches (each steal banks <c>energyPerSteal</c>), SHIELDS its own domain's, lays a trail
     /// of its own prisms behind it, and makes no explosion at any speed. Leave Mass Mode and the
     /// next rival hit spends everything it banked.
@@ -231,8 +231,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The launch view is up: a planted orbit spinning at <c>spectateSpinRate</c> or faster for
         /// <c>spectateEngageSeconds</c>, with (analog) LT and the chain's rigidity at a full pull; it
-        /// drops when the plant ends, the spin falls under <c>spectateReleaseFraction</c> of the
-        /// threshold, or (analog, unarmed) the chain slackens. Simulated in <see cref="StepChain"/> on
+        /// drops at once when the plant ends, and after <c>spectateDropSeconds</c> of the spin under
+        /// <c>spectateReleaseFraction</c> of the threshold or (analog, unarmed) a slackened chain. Simulated in <see cref="StepChain"/> on
         /// EVERY peer from the chain's own state, so the trail it pauses agrees across machines; the
         /// local pilot's camera (<see cref="UpdateCamera"/>) switches to the crosshair on exactly this
         /// edge, so crosshair on == trail off.
@@ -257,7 +257,7 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
-            _massMode = false;
+            _massMode = true;   // the default (Garrett, 2026-10-21): A leaves it for the breaking ball
             _energy = 0f;
             _releaseDirection = null;
             _trailOwed = 0f;
@@ -483,6 +483,7 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------ the launch view
 
         float _launchViewQualifyTime;   // how long the spin has qualified (the engage delay)
+        float _launchViewDropTime;      // how long a drop condition has held while up (the drop grace)
         bool _trailPenHeld;             // this executor holds the hull's trail pen up
 
         /// <summary>
@@ -507,8 +508,19 @@ namespace CosmicShore.Gameplay
                 // LT does not bob the camera toward the vantage and straight back down.
                 bool qualifies = IsPivoting && bothFull && config.SpectateSpinRate > 0f && spin >= config.SpectateSpinRate;
                 _launchViewQualifyTime = qualifies ? _launchViewQualifyTime + dt : 0f;
-                if (!up && qualifies && _launchViewQualifyTime >= config.SpectateEngageSeconds) up = true;
-                else if (up && (!IsPivoting || spin < config.SpectateSpinRate * config.SpectateReleaseFraction || slackened)) up = false;
+                if (!up)
+                {
+                    _launchViewDropTime = 0f;
+                    if (qualifies && _launchViewQualifyTime >= config.SpectateEngageSeconds) up = true;
+                }
+                else if (!IsPivoting) up = false;
+                else if (spin < config.SpectateSpinRate * config.SpectateReleaseFraction || slackened)
+                {
+                    // Ride out a sag: a trigger held "at 100%" dips under letGoBelow for a frame or two.
+                    _launchViewDropTime += dt;
+                    if (_launchViewDropTime >= config.SpectateDropSeconds) up = false;
+                }
+                else _launchViewDropTime = 0f;
             }
             LaunchViewUp = up;
             HoldTrailPen(up);
@@ -519,6 +531,7 @@ namespace CosmicShore.Gameplay
         {
             LaunchViewUp = false;
             _launchViewQualifyTime = 0f;
+            _launchViewDropTime = 0f;
             HoldTrailPen(false);
         }
 
@@ -1063,6 +1076,11 @@ namespace CosmicShore.Gameplay
         bool _exiting;
         // The AIM while spectating: where a release sends the ship, and the aim camera's "above".
         Vector3 _aimDir, _aimUp;
+        // What the pilot was pointing at: the chase camera's facing on the last frame before the plant. The
+        // plant's first launch view starts its aim from it; _aimHeld keeps the aim for the rest of the plant,
+        // so a view that drops and comes back resumes where the pilot had aimed it.
+        Vector3 _pointedDir;
+        bool _aimHeld;
         // The camera's pose last frame (its turn rate at the spectate cut) and the carried turn rate (rad/s).
         Quaternion _lastCamRotation = Quaternion.identity;
         float _carryRate;
@@ -1132,6 +1150,12 @@ namespace CosmicShore.Gameplay
             _cam.MaxFollowTurnRate = config.CameraMaxFollowTurnRate;
             _cam.MaxFollowAngularAcceleration = config.CameraMaxFollowAngularAcceleration;
 
+            if (!IsPivoting)
+            {
+                _pointedDir = _cam.transform.forward;
+                _aimHeld = false;
+            }
+
             // Spectate: on the launch view's own edges (LaunchViewUp, simulated in StepChain), so the
             // crosshair comes on exactly when the trail goes off.
             bool analog = _settings.Analog;
@@ -1197,10 +1221,13 @@ namespace CosmicShore.Gameplay
                 new Color(1f, 1f, 1f, 0.9f));
         }
 
-        /// <summary>Start aiming at the moment of detaching: the aim starts as the way the camera
-        /// was facing laid into the orbit plane (so the launch camera looks the way the chase camera
-        /// did), and the aim's "above" is the orbit's axis on the camera's own side, so the launch
-        /// camera rises over the orbit rather than dropping under it.</summary>
+        /// <summary>Start aiming at the moment of detaching. The aim is what the pilot was POINTING AT when
+        /// the plant began (<c>_pointedDir</c>), or, when the view comes back within the same plant,
+        /// the aim it had (Garrett, 2026-10-21: "entering requires realigning to what I was pointing at") -
+        /// laid into the orbit plane either way. It used to start from wherever the spinning chase camera
+        /// happened to face, carried further round by its turn, so every entry pointed somewhere new. The
+        /// aim's "above" is the orbit's axis on the camera's own side, so the launch camera rises over the
+        /// orbit rather than dropping under it.</summary>
         void BeginSpectate(Vector3 shipPosition, float dt)
         {
             Vector3 pivot = _solver.Pivot;
@@ -1210,15 +1237,18 @@ namespace CosmicShore.Gameplay
             normal.Normalize();
             if (Vector3.Dot(normal, _cam.transform.position - pivot) < 0f) normal = -normal;
 
-            Vector3 aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
+            // (a pointed direction within ~13 degrees of the orbit's axis has no clear launch point: fall back)
+            Vector3 want = _aimHeld ? _aimDir : _pointedDir;
+            Vector3 aim = Vector3.ProjectOnPlane(want, normal);
+            if (aim.sqrMagnitude < 0.05f) aim = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
             if (aim.sqrMagnitude < 1e-6f) aim = _lastShipVelocity;
             if (aim.sqrMagnitude < 1e-6f) return;
 
             _aimDir = aim.normalized;
             _aimUp = normal;
-            // The carried turn: the camera's own turn rate about the orbit's axis, read off last frame's pose.
-            // The aim (and so the vantage) is where a turn at that rate gliding to a stop over
-            // spectateCarrySeconds ends - half the rate x the time further round.
+            _aimHeld = true;
+            // The carried turn: the camera's own turn rate about the orbit's axis, read off last frame's pose;
+            // the ease's start pose keeps turning at it and glides to a stop over spectateCarrySeconds.
             _carryRate = 0f;
             if (config.SpectateCarrySeconds > 0f && dt > 0f)
             {
@@ -1226,7 +1256,6 @@ namespace CosmicShore.Gameplay
                 Vector3 now = Vector3.ProjectOnPlane(_cam.transform.forward, normal);
                 if (was.sqrMagnitude > 1e-6f && now.sqrMagnitude > 1e-6f)
                     _carryRate = Vector3.SignedAngle(was, now, normal) * Mathf.Deg2Rad / dt;
-                _aimDir = Quaternion.AngleAxis(_carryRate * config.SpectateCarrySeconds * 0.5f * Mathf.Rad2Deg, normal) * _aimDir;
             }
             _sightZoom01 = 0f;
             CaptureEaseStart();

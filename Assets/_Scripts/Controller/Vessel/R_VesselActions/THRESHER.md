@@ -6,7 +6,8 @@ tail; a thresher is also what a flail is). A small, nimble two-stick ship towing
 ball on a chain. Turn hard and the ball whips round; wind the chain out and let it reel in, and the
 ball cracks red-hot through everything. The **chain slices**, the **ball is always destructive**,
 and prisms are **binary** — there is no partial damage anywhere. The chain's kills **charge** the
-ball's next explosion; **A** switches to **Mass Mode**, where the ball builds instead of breaking;
+ball's next explosion; the hull **spawns in Mass Mode**, where the ball builds instead of breaking,
+and **A** toggles it off to break and back on to build;
 an **omni crystal** windmills the ball round the ship (§2a–2c, added 2026-10-13). Since the
 own-vessel pass (2026-10-13, `cece/dazzling-hypatia-nmdhle`) it flies its **own hull** — a faceted
 thresher shark whose long scythe of a tail hangs along the chain like its last links and cracks like a whip — tows a faceted
@@ -29,7 +30,7 @@ from the Thresher Plant Lab round 2, `Docs/Studios/THRESHER_PLANT_LAB.md`; physi
 | **LT depth** (Plant) | A **brake**. A partial pull slows the ball and swings the ship round it like a sliding anchor (the deeper, the more of the chain's pull the ship feels). Only a **full pull** (`fullPull` 0.97) stops the ball, along an S-curve of whatever speed is left, and the ship hooks onto the orbit round it from that moment. |
 | **LT eased below `letGoBelow`** (0.9) | Let go: fly off along the tangent, or (launch view up) arm the aimed launch — exactly the old LT-up. A ball let go while still stopping keeps its own speed. |
 | **RT depth** (Winch) | The chain's **rigidity**, flipped from the old winch: **released = slack** (a soft bungee the turns and the spin carry the ball, or a planted ship, out on), **pulled = rigid**. Tightening reels the ball in and spins it up by angular momentum — the old crack — at most `rigiditySlew` 2/s of the trigger's travel per second. There is no READY cue: when a tightening will crack past smash speed is left to feel (Garrett, 2026-10-20). |
-| **Both at a full pull, planted** | The camera switches to the launch view (§5a) — only then. Easing RT below `letGoBelow` hands it back. |
+| **Both at a full pull, planted** | The camera switches to the launch view (§5a) — only then. Easing RT below `letGoBelow` for `spectateDropSeconds` 0.25 hands it back (a shorter sag is ridden out). |
 
 A device with no analog trigger channel (touch, the one-thumb mouse) and every remote replica read a
 press as a FULL pull and a release as none (`ThresherExecutor.PollTriggers`). With `analogTriggers` off the
@@ -116,6 +117,10 @@ Own-domain bounces never spend it.
 
 ## 2b. Mass Mode (A, toggle) — the ball builds instead of breaking
 
+**The default** (Garrett, 2026-10-21): every Thresher spawns in Mass Mode (`ThresherExecutor.Initialize`,
+which also runs on a vessel swap), so a fresh hull builds until its pilot presses A. The AI pilots never
+press A, so an autopiloted Thresher stays in Mass Mode.
+
 | Ball touches… | Mass Mode does | Speed cost |
 |---|---|---|
 | a **rival** prism | **steals** it (`Prism.Steal` — a shielded rival sheds its shield first and changes hands on the next touch; super-shielded refuses), banking `energyPerSteal` 0.5 | none |
@@ -133,7 +138,7 @@ Own-domain bounces never spend it.
   identity-testable. A planted ball does not move and lays nothing.
 - The chain still slices in Mass Mode, and its kills still bank.
 - The ball wears its domain's **lit** colour in Mass Mode (it never shows red: it does not smash).
-- Leave Mass Mode (A again) and the next rival hit spends everything banked.
+- Leave Mass Mode (A) and the next rival hit spends everything banked.
 
 ## 2c. Windmill — an omni crystal
 
@@ -360,8 +365,11 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     (`aimCameraDistance` 0 = the camera settings' follow offset, 55 u) with **no height offset**
     (`aimElevationDegrees` 0), looking along the aim, up = the orbit's axis
     (`ThresherCameraFraming.LaunchCameraPosition`). The orbit is seen edge-on and the ship sweeps
-    through the launch point in front of the lens every lap. The aim starts as the way the chase
-    camera was facing, laid into the orbit plane, so the view direction carries across the cut.
+    through the launch point in front of the lens every lap. **The aim starts as what you were pointing
+    at** (2026-10-21, Garrett: "entering requires realigning to what I was pointing at"): the chase
+    camera's facing on the last frame before the plant, laid into the orbit plane. A view that drops and
+    comes back within the same plant resumes the aim it had. (It used to start from wherever the spinning
+    chase camera faced at the cut, carried further round by its turn, so every entry pointed somewhere new.)
   - **The sticks aim, and the whole spin turns with the camera.** `ThresherCameraFraming.TurnAim`:
     stick X swings the aim at `aimYawRate` 180 °/s — the launch point slides round the circle and the
     camera swings with it; stick Y pitches aim and axis together at `aimPitchRate` 120 °/s (the hull's
@@ -401,8 +409,38 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
     yanked along the aim; the transformer faces the hull along it (`TryConsumeReleaseDirection`) and
     grip puts the momentum on the nose. Re-pressing LT while armed does not cancel it (re-releasing
     re-arms with the same aim).
+  - **The launch flies the crosshair's line** (2026-10-21, Garrett: "if I release the ball and keep the
+    tension it doesn't always shoot me at the cross hair"). The ball is left at the old pivot (`yank` 0),
+    so the chain used to swing the ship back round it: the launch fires as LT passes `letGoBelow`, with
+    the trigger still most of the way down, and that depth read as a partial pull made the ball a
+    sliding anchor taking ~85% of a rigid chain's pull. Measured on the shipped solver, RT held and LT
+    at 0.85: the heading went **177°** off the aim within 1.5 s (LT at 0.5: 14°). Two rules in
+    `ThresherChainSolver`, both held by `ThresherAnalogTriggerTests` and ported to the plant lab:
+    **the line** (`OnLaunchLine`, `KeepOnLine`), in two phases: until the hauled ball trails within
+    `LaunchLineTrailDegrees` 10° of straight behind, the chain pulls the ball and not the ship; after
+    that it pulls as usual but only ALONG the ship's own line of flight (it can slow the ship, never
+    turn or reverse it; the stick and the release wind-down still turn it), until the ball has settled
+    into the tow (trailing, the ship no faster than `MaxBallSpeed`, the ball not closing on it) or
+    `LaunchLineMaxSeconds` 3 have passed, or a new plant. And **the let-go latch** (`LeftTriggerLetGo`):
+    LT's depth brakes and anchors nothing until the trigger eases back under `LaunchReleaseRestDepth`
+    0.2, while a full pull still plants at once.
+    **The second phase is round 2 of the fix** (Garrett flew round 1: "better, still getting launch at
+    180 sometimes"). Off a Time-raised spin (×1.75) the boosted launch leaves at ~1 300 u/s against the
+    ball's 479 u/s cap: a rigid chain brakes the ship from 1 263 to its 42 u/s floor in 0.45 s, the ball
+    overtakes it and swings across, and a line that let go when the ball first trailed left the ship
+    **55°** off (30° with the along-line rule but the early end). Measured at the shipped dials, chain
+    harness stand-in pilot with grip: every LT depth, RT rigid or slack, normal or Time-raised spin,
+    stays within **1.9°** of the aim. Where the "180" came from is a measured guess, not a repro: the
+    in-editor pilot has a real hull and grip, so a case this model misses can remain.
+    **Known feel cost, not a fault** (a decision for the owner): with RT held the rigid chain spends the
+    ×4.8 launch boost in under half a second and the ball overtakes and leads the ship at rest length
+    (it decelerates with the ship); with RT released the slack chain swings the ball round like a
+    pendulum. Both now leave the ship's line alone.
   - It re-attaches once the ship has launched, or if the spin falls under `spectateReleaseFraction`
-    0.75 of the threshold (an armed launch still fires at its point). At the shipped dials every orbit
+    0.75 of the threshold, or (analog) RT slackens under `letGoBelow`, for `spectateDropSeconds` 0.25
+    (an armed launch still fires at its point). The grace is 2026-10-21's: a trigger held "at 100%"
+    sags under 0.9 for a tenth of a second now and then, and each sag dropped the view and brought it
+    back re-eased, which read as the view flickering in and out. At the shipped dials every orbit
     at its cap spectates (reeled in at cruise 3.2 rad/s, let out at its cap 1.1); only a let-out orbit
     hooked on at the crawl floor (0.3 rad/s) is ridden until it spins up. Below the threshold the old
     behaviour stands: the sticks lean the orbit at `pivotSteer` and LT releases on the tangent at once.
@@ -418,8 +456,8 @@ the speed tunnel's (vessel rule 21) and is only READ. Dials in `ThresherConfigSO
 - **Analog triggers** (shipped 2026-10-13): the camera switches only with the ball STOPPED and LT and the
   chain's rigidity both at `fullPull`; RT eased below `letGoBelow` hands it back unless a launch is armed.
   The entry keeps the camera's own turn and glides it to a stop over `spectateCarrySeconds` 0.35 (the old
-  entry eased from a still pose, so a camera turning at up to 240 °/s stopped turning in one frame); the aim
-  is where the glide ends. The follow frame also limits its angular ACCELERATION to
+  entry eased from a still pose, so a camera turning at up to 240 °/s stopped turning in one frame). Since
+  2026-10-21 the carry moves only the ease's start pose; the aim is what the pilot was pointing at (above). The follow frame also limits its angular ACCELERATION to
   `cameraMaxFollowAngularAcceleration` 1 500 °/s² (`CustomCameraController.MaxFollowAngularAcceleration`,
   default 0 for every other vessel). LT is at a full pull whenever the launch view is up, so its depth can
   no longer zoom the Time-petal sight: with analog triggers the sight stays wide (§9).
@@ -760,10 +798,20 @@ A5. **Let go**: ease LT below ~90% — the ship leaves smoothly (the hull eases 
 A6. **Keyboard / touch**: Q / Left Shift / the LT button plant as a full pull; RT released means SLACK.
 A7. **Other vessels' cameras** are unchanged (`MaxFollowAngularAcceleration` stays 0 for them).
 A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); scoring agrees.
+A9. **Aim from where you pointed** (2026-10-21): fly at a landmark, plant (LT full), pull RT full — the launch
+    view's crosshair sits on (or in line with) that landmark, no realigning. Aim away with the sticks, ease RT
+    off for a moment and back: the view stays (or, after a longer ease, comes back) on the aim you set.
+A10. **Grip sag**: in the launch view, let either trigger sag a little for an instant — the view holds, no
+    camera re-ease.
+A11. **The shot follows the crosshair** (2026-10-21): in the launch view, ease LT off only to about 3/4 and
+    keep RT fully pulled — the ship leaves at the launch point and flies straight down the crosshair's line,
+    hauling the ball behind it; it is not swung back round the ball. Repeat with LT snapped off, and with RT
+    released: the same line. Then squeeze LT halfway: no brake until LT has come back near rest first.
 
 1. **Toy Box > Vessel Changer → Thresher.** The hull swaps in with a ball 22 u behind on a chain, in
    front of the camera; the HUD shows the four Thresher icons (Wrecking Ball · Mass Mode · Winch ·
-   Plant) and petal bars. Console clean.
+   Plant) and petal bars. Console clean. The ball wears your **lit** colour: it spawns in Mass Mode (§2b).
+   **Press A once** to leave it before steps 2-5; step 6 covers Mass Mode itself.
 2. **Slow ball**: tow gently into a RIVAL trail — prisms are destroyed, no explosion, the ball is in
    your domain colour. Into your OWN older trail — the ball bounces off, nothing breaks.
 3. **Whip**: hold RT ~1 s, turn hard ~1 s, snap back briefly, release. No lime on the chain;
@@ -775,13 +823,13 @@ A8. **MPPM**: a guest sees the host's ball stop at the press (expected, §7); sc
 5. **Chain energy**: slice a few rival prisms — the ball's rim burns toward white and the SPACE card's gauge
    fills. Tow the slow ball into a rival prism — it explodes, bigger the more you sliced; rim and
    gauge empty. Bounce off your own trail — no blast, nothing spent.
-6. **Mass Mode** (A): the ball turns your lit colour. Through a rival trail: prisms flip to your
+6. **Mass Mode** (A, back on): the ball turns your lit colour. Through a rival trail: prisms flip to your
    domain (no blasts, even red-hot); through your own: shields; it lays a trail of your prisms. Press
-   A again, hit a rival prism: one big blast.
+   A again, hit a rival prism: one big blast. Swap to another hull and back: the Thresher is in Mass Mode again.
 7. **Plant and spin** (LT): from straight flight with the ball behind, the ship swings wide and
    curves onto the orbit (no snap, no stall); RT up winds in and spins faster.
 8. **Launch view**: once it spins, the camera glides (~0.9 s, no wobble) to sit level behind a point
-   on the circle, looking along the launch path; a white crosshair at screen centre (it never turns lime). Stick X slides the point round the circle; stick Y tilts the whole
+   on the circle, looking along the launch path **toward what you were pointing at when you planted**; a white crosshair at screen centre (it never turns lime). Stick X slides the point round the circle; stick Y tilts the whole
    orbit with the camera. Hold RT: the point stays on the ship's own circle. **The hull lays no trail
    while the crosshair is up** — no ring of your prisms round the orbit — and laying resumes the
    moment you launch (or the view drops).
@@ -819,6 +867,25 @@ slack), then `smashSpeed`, `explosionDiameter`, then `crack` / `reelSpinCap`. Ca
 `massTrailSpacing` (trail density). Windmill: `windmillSeconds`, `windmillSpeed`.
 
 ## Follow-ups
+
+### Refactor rows (2026-10-21 launch-view ship pass, `cece/youthful-johnson-hccyzf` — rows only)
+
+- **The launch line's three numbers are solver constants, not dials (debt CREATED).**
+  `LaunchLineTrailDegrees` 10, `LaunchLineMaxSeconds` 3 and `LaunchReleaseRestDepth` 0.2 are `const`s in
+  `ThresherChainSolver`, because a `ThresherDials` field would also need a lab dial and a row in parity.cjs's
+  "20 analog dials" asset check. That is fine while they are bounds, not feel. If anyone tunes one, it becomes a
+  dial: add the field to `ThresherDials` and the asset, add it to the lab's `SHIPPED`/`analogDials`, and parity's
+  dial count goes to 23. Measure first: `bash Tools/Build/thresher_chain_harness/run.sh` (the `AimedLaunch_*` rows).
+- **The lab's own vessel arms with boost 1; the game arms with `launchBoost` 4.8 (debt WALKED PAST).**
+  `ThresherPlantLab.html` `armLaunch(..., boost)` takes the boost since 2026-10-21, but the page's vessel
+  (`s.armLaunch(this.cam.aim, this.Q.perfectWindowSeconds, 1)`) and its "Perfect Release" window predate the
+  2026-10-13 rule that every aimed launch takes the boost, so the page FLIES a different launch than it gates.
+  That is incompleteness of a lab (a report), not an inconsistency in the game. Fix when the lab next runs a round:
+  `grep -n "perfectWindow\|armLaunch(" Docs/Studios/ThresherPlantLab.html`.
+- **A remote replica never arms (debt made VISIBLE).** `LetGo` arms only while `_spectating`, which is
+  camera-side and local-pilot-only, so a guest's copy of a host's aimed launch leaves on the tangent at once and
+  never flies the line. The plant's pre-existing §7 exposure, now bigger, because the owner's launch is held on its
+  line for up to 3 s. Measure in MPPM: host aims, guest watches the host's ball and hull for the first 3 s.
 
 ### Refactor rows (2026-10-14 crosshair-trail + launch-boost ship pass, `cece/relaxed-dijkstra-g6ix3x` — rows only)
 
