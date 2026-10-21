@@ -1,93 +1,81 @@
-# Honeyguide patterns, abilities and passives
+# Honeyguide patterns and abilities
 
-Lab round 3, 2026-10-21. Source of truth: `Docs/Studios/HoneyguideLab.html` on `claude/honeyguide-ratel` (the lab's Patterns tab draws every shape). This is the list the Unity port copies.
+Lab round 4, 2026-10-21. Source of truth: `Docs/Studios/HoneyguideLab.html` on `claude/honeyguide-ratel` (the lab's Patterns tab draws every shape). This is the list the Unity port copies.
 
 ## How a pattern works
 
 - The Dynamo is a hex board of 37 cells (radius 3). The Ratel moves and injects prisms to build the shapes on the three cards it holds.
 - A shape matches in any of its six rotations. With the Mirror ability, mirror images match too.
 - An empty injection port counts as a prism of its colour, but every match needs at least one real prism.
-- Making a pattern costs 1 AP. One of its real prisms, drawn at random, goes to the battery as a slip charge of its domain. The pilot gets the card's passive.
+- Making a pattern costs 1 AP. One of its real prisms, drawn at random, goes to the battery as a slip charge of its domain, and the pattern fires its own effect.
 - A pattern made for the third time is replaced by a random one. Every 4 patterns the Ratel gets a new random ability and a new port pattern. The spin clock stops for that: 3.5 s to read the ability, then 2 s to see the new ports, then the clock restarts.
 - The port pattern turns 60° clockwise every 15 s, shown as a shrinking bar across the top. Each spin gives 3 AP (bank 3). The battery holds 3.
 
 **Colours:** R = Ruby, J = Jade, G = Gold. The tabletop print's M, C and S map to R, J and G. **Cells** are axial hex coordinates (q, r), the same as `DynamoCore`: E is (+1, 0) and SE is (0, +1). Shapes are listed as printed; their position on the board does not matter.
 
-**Pattern names** are the tabletop upgrade-card names. Each family hands out its passives in card order, so the pattern-to-passive table is a proposal.
+**Pattern names** are the tabletop upgrade-card names (Garrett, 2026-10-21: keep them). Each pattern's effect is converted from its card: from the card's text where it has a real-time reading, otherwise from its name. Mutons in the card text are now prisms.
 
-## Ruby family (13): passives for the triggers
+## How the effects work
 
-| # | Pattern | Prisms (R / J / G) | Passive | Cells (colour q,r) |
-|---|---|---|---|---|
-| 1 | **Juggernaut Plow** | 4 (2 / 1 / 1) | Rapid Fire | J 2,0 · R 1,1 · G 0,2 · R 0,3 |
-| 2 | **Singularity Dock** | 5 (3 / 1 / 1) | Piercing | G 3,0 · R 2,1 · R 0,2 · J 1,2 · R 1,3 |
-| 3 | **Amanita Furnace** | 5 (3 / 1 / 1) | Scatter | J 3,0 · R 2,1 · R 0,2 · G 1,2 · R 1,3 |
-| 4 | **Plankter Sail** | 5 (3 / 1 / 1) | Long Barrel | R 3,0 · R 1,1 · G 2,1 · J 1,2 · R 0,3 |
-| 5 | **Anomaly Skipper** | 4 (2 / 1 / 1) | Seeker | R 3,0 · G 2,1 · J 1,2 · R 0,3 |
-| 6 | **Fugacity Discharger** | 5 (3 / 1 / 1) | Blast | G 2,0 · R 3,0 · R 1,1 · J 0,2 · R 0,3 |
-| 7 | **Thruster Swarm** | 4 (2 / 1 / 1) | Rapid Fire | J 2,0 · R 3,0 · R 1,1 · G 0,2 |
-| 8 | **Hard Light Lasso** | 4 (2 / 1 / 1) | Piercing | G 1,0 · R 2,0 · R 0,1 · J 1,1 |
-| 9 | **Big Red Button** | 4 (2 / 1 / 1) | Scatter | R 2,0 · R 0,1 · J 1,1 · G 0,2 |
-| 10 | **Eigen Booster** | 5 (3 / 1 / 1) | Long Barrel | R 2,0 · R 0,1 · J 1,1 · G 0,2 · R 1,2 |
-| 11 | **Dragon Saddle** | 4 (2 / 1 / 1) | Seeker | R 2,0 · R 0,1 · G 1,1 · J 0,2 |
-| 12 | **Wattslider** | 5 (3 / 1 / 1) | Blast | G 3,0 · R 4,0 · R 2,1 · R 0,2 · J 1,2 |
-| 13 | **Eyelet Jet** | 5 (3 / 1 / 1) | Rapid Fire | R 2,0 · R 0,1 · G 1,1 · J 0,2 · R 1,2 |
+- **Timed, stacks**: the effect lasts 20 s. Making the pattern again refreshes it and raises its level, up to III.
+- **Once**: the effect happens when the pattern is made.
+- **Stored jump**: the jump waits on the Slip card, which reads *Jump* and names it. Tap the card (R on a keyboard, Y on a pad) to take it. Up to 3 are stored; the oldest goes first. Every jump is a teleport through `SetPose`.
+- **Seat** says who an effect helps. *Ratel* effects change the Dynamo itself.
+- **Lift alone** is the race speed when every pattern fires that one effect, against patterns that fire nothing. It is measured with the AI pilot and AI Ratel over 12 seeds × 180 s, with an SE of about ±3%, so a difference under about 6% is noise. Zero Point Amplifier and Meta Machine copy other effects, so they have no number of their own.
 
-## Jade family (13): passives for the hull (and Magnet for the slip)
+## Ruby family (13)
 
-| # | Pattern | Prisms (R / J / G) | Passive | Cells (colour q,r) |
-|---|---|---|---|---|
-| 14 | **Reality Detangler** | 4 (1 / 2 / 1) | Overdrive | J 2,0 · J 0,1 · G 1,1 · R 0,2 |
-| 15 | **Epitaxial Condenser** | 4 (1 / 2 / 1) | Shield | R 1,0 · J 2,0 · J 0,1 · G 1,1 |
-| 16 | **Sepia Drone** | 5 (1 / 3 / 1) | Agile | J 2,0 · J 0,1 · R 1,1 · G 0,2 · J 1,2 |
-| 17 | **Zero Point Amplifier** | 4 (1 / 2 / 1) | Afterburner | G 2,0 · J 1,1 · R 0,2 · J 0,3 |
-| 18 | **Noodley Appendages** | 5 (1 / 3 / 1) | Magnet | J 3,0 · J 1,1 · R 2,1 · G 1,2 · J 0,3 |
-| 19 | **Triplesynth** | 5 (1 / 3 / 1) | Overdrive | R 3,0 · J 2,1 · J 0,2 · G 1,2 · J 1,3 |
-| 20 | **Particle Harmonizer** | 4 (1 / 2 / 1) | Shield | R 2,0 · J 1,1 · G 0,2 · J 0,3 |
-| 21 | **Genesis Lance** | 5 (1 / 3 / 1) | Agile | J 2,0 · J 0,1 · G 1,1 · R 0,2 · J 1,2 |
-| 22 | **Universal Translator** | 4 (1 / 2 / 1) | Afterburner | J 2,0 · J 0,1 · R 1,1 · G 0,2 |
-| 23 | **Anode Ray** | 5 (1 / 3 / 1) | Magnet | R 3,0 · J 4,0 · J 2,1 · J 0,2 · G 1,2 |
-| 24 | **5D Printer** | 5 (1 / 3 / 1) | Overdrive | G 3,0 · J 2,1 · J 0,2 · R 1,2 · J 1,3 |
-| 25 | **Square-Peg Hammer** | 4 (1 / 2 / 1) | Shield | J 3,0 · R 2,1 · G 1,2 · J 0,3 |
-| 26 | **Reactor Cilia** | 5 (1 / 3 / 1) | Agile | G 2,0 · J 3,0 · J 1,1 · R 0,2 · J 0,3 |
+| # | Pattern | Tabletop card | Effect now | Kind | Seat | Lift alone |
+|---|---|---|---|---|---|---|
+| 1 | **Juggernaut Plow** | Boost 4, pushing any ships or prisms one space out of the way. | Plough through hostile prisms: they break on contact and do not slow you. +1 s of boost now. | Timed, stacks | Hull | +22% |
+| 2 | **Singularity Dock** | Move your ship up to 6 spaces and end adjacent to a prism or ship. | Slips catch trails 6 u farther away a level: the dock pulls you in. | Timed, stacks | Slip | +1% |
+| 3 | **Amanita Furnace** | Destroy 1 prism in your Engine and Boost up to 6. | Burns one more prism on the Dynamo for 3 s of boost. | Once | Hull | +34% |
+| 4 | **Plankter Sail** | Slip up to 4 spaces then propel. (You do not need prisms in your battery to take this action) | Your next slip needs no charge and rides a trail of any domain, at half reach, then 1 s of boost. | Once | Slip | +2% |
+| 5 | **Anomaly Skipper** | Move up to 5 spaces, each movement must change what color space your ship is in | Touching a prism of a different domain from the last gives 0.4 s of boost a level. | Timed, stacks | Hull | +17% |
+| 6 | **Fugacity Discharger** | Move 2 for each prism and Ship in your sector. | Both triggers fire 5% faster a level for every prism within 40 u (up to +50% a level). | Timed, stacks | Triggers | -2% |
+| 7 | **Thruster Swarm** | Move your ship or map prisms 1 space 4 times | Your next 4 boost presses each throw the hull 20 u ahead. | Once | Hull | +6% |
+| 8 | **Hard Light Lasso** | Move one prism on the map, You may then move your ship up to 3 spaces closer to that prism. | Each Bolt hit pulls you 6 u a level toward it. | Timed, stacks | Triggers | +3% |
+| 9 | **Big Red Button** | Destroy any prisms of 1 color in your engine then move 2 spaces for each prism destroyed. | Destroys every other Dynamo prism of the battery prism's colour; 0.5 s of boost for each. | Once | Hull | +2% |
+| 10 | **Eigen Booster** | Make up to 3 diagonal movements. | Turn 60% faster a level. | Timed, stacks | Hull | +12% |
+| 11 | **Dragon Saddle** | Drain any number of prisms and boost 3 per prism | Drains the whole battery into boost: 1.5 s for each charge. | Once | Hull | +22% |
+| 12 | **Wattslider** | Freely move diagonally, while maintaining distance to a prism or ship. | Flying alongside a trail (within 14 u, heading within 30 degrees of it): +30% speed a level. | Timed, stacks | Hull | +2% |
+| 13 | **Eyelet Jet** | Move 3 for each direction you can not propel. | Shots pass through 2 more hostile prisms a level. | Timed, stacks | Triggers | -4% |
 
-## Gold family (13): passives for the slip (and Chroma Rounds for the triggers)
+## Jade family (13)
 
-| # | Pattern | Prisms (R / J / G) | Passive | Cells (colour q,r) |
-|---|---|---|---|---|
-| 27 | **Chrono-Compressor** | 4 (1 / 1 / 2) | Long Slip | G 2,0 · G 0,1 · J 1,1 · R 0,2 |
-| 28 | **Meta Machine** | 5 (1 / 1 / 3) | Echo | R 2,0 · G 3,0 · G 1,1 · J 0,2 · G 0,3 |
-| 29 | **Mystic Eti** | 5 (1 / 1 / 3) | Wake | G 3,0 · G 1,1 · J 2,1 · R 1,2 · G 0,3 |
-| 30 | **FTL Chromatool** | 4 (1 / 1 / 2) | Chroma Rounds | J 2,0 · G 1,1 · R 0,2 · G 0,3 |
-| 31 | **Little Bang Grenade** | 4 (1 / 1 / 2) | Long Slip | R 2,0 · G 1,1 · J 0,2 · G 0,3 |
-| 32 | **Vorticity Module** | 5 (1 / 1 / 3) | Echo | J 3,0 · G 4,0 · G 2,1 · G 0,2 · R 1,2 |
-| 33 | **Gravity Engine** | 5 (1 / 1 / 3) | Wake | G 2,0 · G 0,1 · R 1,1 · J 0,2 · G 1,2 |
-| 34 | **All Terrain Portals** | 5 (1 / 1 / 3) | Chroma Rounds | G 2,0 · G 0,1 · J 1,1 · R 0,2 · G 1,2 |
-| 35 | **Rosen Bridge** | 5 (1 / 1 / 3) | Long Slip | J 3,0 · G 2,1 · G 0,2 · R 1,2 · G 1,3 |
-| 36 | **Frame Dragger** | 4 (1 / 1 / 2) | Echo | J 1,0 · G 2,0 · G 0,1 · R 1,1 |
-| 37 | **Void Jumper** | 5 (1 / 1 / 3) | Wake | R 3,0 · G 2,1 · G 0,2 · J 1,2 · G 1,3 |
-| 38 | **Blink Drive** | 4 (1 / 1 / 2) | Chroma Rounds | G 2,0 · G 0,1 · R 1,1 · J 0,2 |
-| 39 | **Monte Cannon** | 4 (1 / 1 / 2) | Long Slip | G 3,0 · J 2,1 · R 1,2 · G 0,3 |
+| # | Pattern | Tabletop card | Effect now | Kind | Seat | Lift alone |
+|---|---|---|---|---|---|---|
+| 14 | **Reality Detangler** | Change the color of any 3 prisms. | The next 3 prisms you touch turn your newest charge's domain: new slip lanes, and they do not slow you. | Once | Slip | -4% |
+| 15 | **Epitaxial Condenser** | Create a 5 prism chain of the same color by placing 4 prisms. | Lays a 6-prism trail of your newest charge's domain ahead of you. | Once | Slip | -8% |
+| 16 | **Sepia Drone** | Draw two ship cards and attach either to Sepia Drone. | A drone shoots the nearest hostile prism within 60 u, twice a second a level. | Timed, stacks | Triggers | +1% |
+| 17 | **Zero Point Amplifier** | Activate one of your other upgrades and drain a prism. | Fires the effect of another pattern in the Ratel's hand, and drains your oldest charge into 1.5 s of boost. | Once | Ratel | copies another |
+| 18 | **Noodley Appendages** | Freely move up to 5 prisms in adjacent sectors. | The next 5 hostile prisms in your path are pushed aside instead of hitting you. | Once | Hull | -1% |
+| 19 | **Triplesynth** | Create a connected group of each color prism in your engine. | Places a touching Ruby, Jade and Gold prism on empty Dynamo cells. | Once | Ratel | -3% |
+| 20 | **Particle Harmonizer** | Create a connected group of 3 prisms anywhere on the map. | Shots turn hostile prisms to your newest charge's domain instead of destroying them. | Timed, stacks | Triggers | -4% |
+| 21 | **Genesis Lance** | Create 2 prisms in a nearby sector. | Bolt shots that miss plant a prism of your newest charge's domain where they stop: fire ahead to build a slip lane. | Timed, stacks | Triggers | -11% |
+| 22 | **Universal Translator** | Move a prism from anywhere to anywhere. You may then change its color. | The Ratel gets a free prism of any colour: tap an empty cell. | Once | Ratel | -5% |
+| 23 | **Anode Ray** | Create 3 prisms in your battery | +1 charge of each colour. | Once | Slip | +2% |
+| 24 | **5D Printer** | Create 2 prisms in your Engine. | The Ratel gets 2 free prisms of any colour. | Once | Ratel | -4% |
+| 25 | **Square-Peg Hammer** | Create 3 prisms in nearby void spaces | Drops 3 prisms of random colours on empty Dynamo cells. | Once | Ratel | -2% |
+| 26 | **Reactor Cilia** | Store 3 / Take a bonus action in your engine phase whenever you remove a prism from this card. (Limit 6) | The Ratel banks 3 extra AP. | Once | Ratel | -2% |
 
-## The passives (all proposals)
+## Gold family (13)
 
-| Passive | Seat it upgrades | What it does (per level, stacks to III, 20 s) | Given by |
-|---|---|---|---|
-| **Rapid Fire** | triggers | Both triggers fire 50% faster a level. | Juggernaut Plow, Thruster Swarm, Eyelet Jet |
-| **Piercing** | triggers | Each shot passes through 1 more prism a level. | Singularity Dock, Hard Light Lasso |
-| **Scatter** | triggers | Bolt adds 2 side shots and Burst 2 pellets a level. | Amanita Furnace, Big Red Button |
-| **Long Barrel** | triggers | Shots fly 40% farther and faster a level. | Plankter Sail, Eigen Booster |
-| **Seeker** | triggers | Shots curve toward hostile prisms ahead. | Anomaly Skipper, Dragon Saddle |
-| **Blast** | triggers | A hit destroys hostile prisms around it (4 u + 3 u a level). | Fugacity Discharger, Wattslider |
-| **Overdrive** | hull | +15% speed a level. | Reality Detangler, Triplesynth, 5D Printer |
-| **Shield** | hull | Hostile prisms slow you 40% less a level. | Epitaxial Condenser, Particle Harmonizer, Square-Peg Hammer |
-| **Agile** | hull | Turn 30% faster a level. | Sepia Drone, Genesis Lance, Reactor Cilia |
-| **Afterburner** | hull | Boost refills 0.4 s a second a level. | Zero Point Amplifier, Universal Translator |
-| **Magnet** | slip | Slips catch trails 3 u farther away a level. | Noodley Appendages, Anode Ray |
-| **Long Slip** | slip | Slip reach +35% a level. | Chrono-Compressor, Little Bang Grenade, Rosen Bridge, Monte Cannon |
-| **Echo** | slip | The next slip keeps its charge (one a level). | Meta Machine, Vorticity Module, Frame Dragger |
-| **Wake** | slip | Your trail is laid in your newest charge's domain: a slip lane behind you. | Mystic Eti, Gravity Engine, Void Jumper |
-| **Chroma Rounds** | triggers | Shots turn hostile prisms to your newest charge's domain instead of destroying them. | FTL Chromatool, All Terrain Portals, Blink Drive |
+| # | Pattern | Tabletop card | Effect now | Kind | Seat | Lift alone |
+|---|---|---|---|---|---|---|
+| 27 | **Chrono-Compressor** | Store 1. / In your Pilot phase, remove prisms from this card as a free action, take a bonus action whenever you remove a prism. (Limit 1 prism) | The Ratel banks 1 extra AP and the spin bar winds back 5 s. | Once | Ratel | -3% |
+| 28 | **Meta Machine** | Activate a face up card in any upgrade discard pile. | Fires the effect of the last pattern replaced (or else the last other pattern made). | Once | Ratel | copies another |
+| 29 | **Mystic Eti** | Create an stable sector, charging any overlapped prisms. Place any number of prisms from your battery onto the new tile. | +1 charge for each domain with a trail within 40 u of you. | Once | Slip | -4% |
+| 30 | **FTL Chromatool** | Swap with a prism up to 4 spaces away, and place that prism on this upgrade / As a free action you may remove a prism of each color to teleport adjacent to a void in an adjacent sector | Jump: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain. | Stored jump | Slip | -6% |
+| 31 | **Little Bang Grenade** | Create a new sector along any edge of the board -- and -- You may teleport 4 into the new sector if able | A hit destroys hostile prisms around it (4 u + 3 u a level). | Timed, stacks | Triggers | -3% |
+| 32 | **Vorticity Module** | Rotate a sector tile. | The injection ports turn back 60 degrees and the spin bar refills. | Once | Ratel | -4% |
+| 33 | **Gravity Engine** | Drag a sector 2 and boost into it | Slips catch trails 3 u farther away and end with 1 s of boost, a level. | Timed, stacks | Slip | +29% |
+| 34 | **All Terrain Portals** | Teleport 2. If you jumped void space you may teleport 2 again. | Jump 30 u ahead; land in empty space and you jump 30 u again. | Stored jump | Slip | +5% |
+| 35 | **Rosen Bridge** | Teleport your ship to a matching color space in the same sector. | Jump to the farthest prism of your newest charge's domain within 300 u and 35 degrees of your nose. | Stored jump | Slip | +2% |
+| 36 | **Frame Dragger** | Drag sector tiles up to 3 spaces. | Your trail is laid in your newest charge's domain: a slip lane behind you. | Timed, stacks | Slip | -5% |
+| 37 | **Void Jumper** | Orbit a void | Slip on trails of any domain (each slip spends your oldest charge). | Timed, stacks | Slip | -6% |
+| 38 | **Blink Drive** | Teleport 3 spaces. | Jump 60 u ahead. | Stored jump | Slip | +3% |
+| 39 | **Monte Cannon** | Swap with a ship or prism up to 3 spaces away. / Use this ability up to 3 times per activation. | Jump: three hops, each swapping places with the farthest prism ahead within 40 u. | Stored jump | Slip | -1% |
 
 ## The Ratel's abilities (one held at a time; proposals)
 
@@ -161,6 +149,7 @@ These are the four designed engines. Every one is three-fold colour symmetric: a
 
 ## Open for the port
 
-- Should the patterns keep the tabletop card names, or get new names?
-- The passive numbers and the pattern-to-passive table are proposals.
-- With the 15 s spin and 3 AP per spin, the AI Ratel makes 4.1 patterns a minute (it made 6.6 with the 8 s spin). The lift to the race is unchanged at about +25%.
+- [ ] The effects and their numbers are proposals. Play them and mark the ones to change.
+- [ ] Boost is worth more than slips in the lab. Amanita Furnace (+34%) and Dragon Saddle (+22%) turn charges into boost and beat every slip effect. The lab's boost is the Sparrow's: 5× the throttle term.
+- [ ] Three effects lay or plant trails ahead of the hull: Epitaxial Condenser, Genesis Lance and Reality Detangler. The AI pilot dodges those trails instead of riding them, so their measured lift (−11% to −4%) undersells them. A person should judge these.
+- [ ] AP per spin: with the 15 s spin and 3 AP, the AI Ratel makes about 4.5 patterns a minute. With 6 AP it makes 7.5, and the lift rises from +11% to +23%.

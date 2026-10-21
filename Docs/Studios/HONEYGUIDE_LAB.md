@@ -5,7 +5,7 @@ tabletop game Garrett and friends designed and played from 2019 to 2022). The qu
 
 > Is the handoff fun? The **Ratel** (the Engineer seat) plays a hex pattern-building puzzle, the **Dynamo**, whose
 > injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery,
-> where its domain is a slip charge, and gives the **Honeyguide** (the Pilot seat) a temporary passive upgrade. The
+> where its domain is a slip charge, and fires that tabletop card's own effect for the **Honeyguide** (the Pilot seat). The
 > Honeyguide flies with two triggers, and its Time ability is the **Slip**: touch a trail of a domain you hold with the
 > nose near the trail's line, and the hull jumps to the end of the trail it is pointing at.
 
@@ -45,6 +45,50 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
   would land.
 - **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
   the passive each gives.
+
+## Round 4 (2026-10-21): every pattern has its own card's effect
+
+Garrett: "Keep the tabletop names and try to make abilities that convert from the old, are inspired by the name, etc."
+The 15 generic passives are gone. Each of the 39 patterns now has its own effect, in `EFFECTS` and `CARD_EFFECTS`. An
+effect is converted from the card's text where that text has a real-time reading, and from the card's name otherwise.
+The full table, with each card's text, the effect and its measured lift, is `HONEYGUIDE_PATTERNS.md`.
+
+- **Three kinds.** A *timed* effect lasts `passiveSeconds` (20 s), and a repeat raises its level to III. A *once*
+  effect happens when the pattern is made. A *stored jump* waits on the Slip card, which then reads Jump. The card
+  stores up to 3 jumps, and the R key or pad Y takes one. Jumps teleport through `setPose`.
+- **Ratel-side effects** change the Dynamo through the core's new `boardEffect(st, S, kind, arg)`. Its kinds are burn,
+  purge, free, bonus, rewind, unspin, trio, scatter, charge, drain and drainOne. They run on the core's seeded stream,
+  so the C# port can match them.
+- **The effect fires on the `pick` event**, when the battery prism is taken. Big Red Button uses that prism's colour.
+- **The AI pilot** takes a stored jump when it lands at least 20 u closer to the destination. It taps boost for each
+  Thruster Swarm dash and fires ahead while Genesis Lance runs. It plans slips over any domain while Void Jumper or a
+  Plankter Sail allows it.
+- The slot cards and the HUD chips show the pattern's name. The Patterns tab gives each effect's text. `opts.only`
+  forces one effect for every pattern, which is how the per-effect lifts were measured.
+
+### Scorecard (round 4, 24 seeds × 180 s, hard pilot AI)
+
+| Variant | Legs/min | Lift |
+|---|---|---|
+| Solo | 4.49 ± 0.06 | 0 |
+| **Candidate** (hard Ratel) | 4.99 ± 0.12 | +11% |
+| Pattern effects off (slip only) | 4.53 ± 0.11 | +1% |
+| Slip off (effects only) | 4.92 ± 0.11 | +10% |
+| Spin 15 s, 6 AP | 5.54 ± 0.13 | +23% |
+| Hold to arm | 5.37 ± 0.11 | +20% |
+
+### Found (round 4)
+
+1. The card effects together lift the race +10%. The round 3 generic passives gave +24%. The generic set was all speed,
+   fire rate and reach, so every pattern helped. Most card effects do something narrower.
+2. Boost carries the race. Amanita Furnace (+34% alone), Gravity Engine (+29%), Dragon Saddle and Juggernaut Plow (+22%)
+   and Anomaly Skipper (+17%) all pay out in boost or in not being slowed. In the lab, a second of boost is worth more
+   than a slip.
+3. Ratel-side effects (free prisms, AP, Triplesynth, Vorticity) measure as noise. They speed the Dynamo only a little
+   at 3 AP a spin.
+4. The AI cannot use Epitaxial Condenser, Genesis Lance or Reality Detangler. It dodges the lanes they lay (−11% to
+   −4%), so a person has to judge those three.
+5. Doubling AP to 6 a spin lifts the race from +11% to +23%. The 15 s spin is what slows the effects down.
 
 ## Round 3 (2026-10-21): Garrett's second set of notes
 

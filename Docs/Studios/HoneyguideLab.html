@@ -1,9 +1,9 @@
 <!doctype html>
 <!--
-  Honeyguide Lab (round 2) - a /labmaker browser studio for the Honeyguide and Ratel, the two-seat crew vessel built
+  Honeyguide Lab (round 4) - a /labmaker browser studio for the Honeyguide and Ratel, the two-seat crew vessel built
   from Slipstream (Garrett's 2019-22 tabletop game). The Ratel (Engineer seat) plays a hex pattern-building puzzle, the
   Dynamo; making a pattern pulls one prism into the battery (its domain is a slip charge) and gives the Honeyguide
-  (Pilot seat) a passive upgrade. The Slip is the pilot's Time ability: touching a 1-D trail of a held domain with the
+  (Pilot seat) the effect of that tabletop card. The Slip is the pilot's Time ability: touching a 1-D trail of a held domain with the
   nose near its axis teleports the hull to the end of that trail it points at. Round 1 is HoneyguideLab.round1.html.
   Source of truth: this file. Write-up: Docs/Studios/HONEYGUIDE_LAB.md. The script block id="dynamo-core" is the
   engine-free core; DynamoCore.cs is still the round 1 port (parity.cjs holds it to HoneyguideLab.round1.html). Verify: node .claude/skills/labmaker/verify_lab.cjs <this file>
@@ -295,6 +295,34 @@
     return false;
   }
 
+  // A pattern's effect on the Dynamo itself (the Ratel-side cards). Returns how many prisms or charges it touched.
+  function boardEffect(st, S, kind, arg) {
+    const empty = () => { const out = []; for (let i = 0; i < N; i++) if (st.cells[i] === 0) out.push(i); return out; };
+    let n = 0;
+    switch (kind) {
+      case 'burn': for (let k = 0; k < arg; k++) { const full = []; for (let i = 0; i < N; i++) if (st.cells[i] !== 0) full.push(i); if (!full.length) break; st.cells[full[Math.floor(rng(st) * full.length)]] = 0; n++; } break;
+      case 'purge': for (let i = 0; i < N; i++) if (st.cells[i] === arg) { st.cells[i] = 0; n++; } break;
+      case 'free': st.freePlace += arg; n = arg; break;
+      case 'bonus': st.bonusAp += arg; n = arg; break;
+      case 'rewind': st.clock = st.clock > arg ? st.clock - arg : 0; break;
+      case 'unspin': for (const p of st.ports) for (let k = 0; k < 5; k++) p[0] = rot60(p[0]); st.clock = 0; break;
+      case 'trio': {   // a Ruby, a Jade and a Gold prism on three empty cells that touch each other
+        const tris = [];
+        for (const a of empty()) for (const b of NEIGH[a]) if (b > a && st.cells[b] === 0) for (const c of NEIGH[b]) if (c > b && st.cells[c] === 0 && isNeighbour(a, c)) tris.push([a, b, c]);
+        if (!tris.length) break;
+        const t = tris[Math.floor(rng(st) * tris.length)], first = 1 + Math.floor(rng(st) * 3);
+        for (let k = 0; k < 3; k++) st.cells[t[k]] = 1 + (first - 1 + k) % 3;
+        n = 3; break;
+      }
+      case 'scatter': for (let k = 0; k < arg; k++) { const e = empty().filter((i) => portAt(st, i) === 0), pool = e.length ? e : empty(); if (!pool.length) break; st.cells[pool[Math.floor(rng(st) * pool.length)]] = 1 + Math.floor(rng(st) * 3); n++; } break;
+      case 'charge': charge(st, S, arg); n = 1; break;
+      case 'drain': n = st.battery.length; st.battery.length = 0; break;
+      case 'drainOne': if (st.battery.length) { st.battery.shift(); n = 1; } break;
+    }
+    st.events.push({ k: 'effect', kind, n });
+    return n;
+  }
+
   // The battery is shared with the pilot: a slip spends one charge of its colour.
   function spend(st, colour) { const i = st.battery.indexOf(colour); if (i < 0) return false; st.battery.splice(i, 1); return true; }
 
@@ -476,7 +504,7 @@
   }
 
   root.DynamoCore = { N, Q, R, CENTRE, NEIGH, DIRS, ABILITIES, idx, ringOf, rot60, isNeighbour, shapes, create, apply, advance, tick, match, built, shows,
-    spend, nextPorts, digest, portAt, batteryCap, reach, slipDestination, aiPlan, bestPlacements, legalInputs };
+    spend, nextPorts, digest, portAt, batteryCap, boardEffect, reach, slipDestination, aiPlan, bestPlacements, legalInputs };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
@@ -488,7 +516,7 @@
   // ================= (1) LAB meta + the shipped numbers =================
   // A READER of the shipped numbers. The pilot hull is the Sparrow (the donor airframe, as the Wrasse's is); the Dynamo,
   // Slip, weapon and passive numbers are proposals: nothing in the game has them yet.
-  const LAB = { name: 'Honeyguide Lab', branch: 'claude/honeyguide-ratel', round: 3, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
+  const LAB = { name: 'Honeyguide Lab', branch: 'claude/honeyguide-ratel', round: 4, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
   const SHIPPED = {
     // The Honeyguide's airframe: the Sparrow (Assets/_Prefabs/Spacevessels/Sparrow.prefab), as in the Crew Vessel Lab
     minSpeed: 10,          // VesselTransformer.DefaultMinimumSpeed
@@ -535,7 +563,7 @@
     burstSpread: 40,       // proposal: LT Burst fan (deg)
     burstRange: 60,        // proposal: LT Burst range (u)
     burstSpeed: 140,       // proposal: LT Burst pellet speed (u/s)
-    // The passives a pattern grants the pilot
+    // A pattern's timed effect (each card's own effect: the EFFECTS table)
     passiveSeconds: 20,    // proposal: how long a pattern's passive lasts (a repeat refreshes it and raises its level)
     passiveMaxLevel: 3,    // proposal: highest level a passive stacks to
     // Seats
@@ -606,26 +634,56 @@
     refund: ['Refund', 'Each pattern made banks 1 extra AP (hold 2).'],
   };
 
-  // The passives a pattern grants the pilot's hull: temporary, a repeat refreshes and raises the level.
-  const PASSIVES = {
-    rapid: { name: 'Rapid Fire', kind: 'weapon', text: 'Both triggers fire 50% faster a level.' },
-    pierce: { name: 'Piercing', kind: 'weapon', text: 'Each shot passes through 1 more prism a level.' },
-    scatter: { name: 'Scatter', kind: 'weapon', text: 'Bolt adds 2 side shots and Burst 2 pellets a level.' },
-    range: { name: 'Long Barrel', kind: 'weapon', text: 'Shots fly 40% farther and faster a level.' },
-    seeker: { name: 'Seeker', kind: 'weapon', text: 'Shots curve toward hostile prisms ahead.' },
-    blast: { name: 'Blast', kind: 'weapon', text: 'A hit destroys hostile prisms around it (4 u + 3 u a level).' },
-    overdrive: { name: 'Overdrive', kind: 'hull', text: '+15% speed a level.' },
-    shield: { name: 'Shield', kind: 'hull', text: 'Hostile prisms slow you 40% less a level.' },
-    agile: { name: 'Agile', kind: 'hull', text: 'Turn 30% faster a level.' },
-    afterburner: { name: 'Afterburner', kind: 'hull', text: 'Boost refills 0.4 s a second a level.' },
-    magnet: { name: 'Magnet', kind: 'slip', text: 'Slips catch trails 3 u farther away a level.' },
-    longSlip: { name: 'Long Slip', kind: 'slip', text: 'Slip reach +35% a level.' },
-    echo: { name: 'Echo', kind: 'slip', text: 'The next slip keeps its charge (one a level).' },
-    wake: { name: 'Wake', kind: 'slip', text: 'Your trail is laid in your newest charge\'s domain: a slip lane behind you.' },
-    chroma: { name: 'Chroma Rounds', kind: 'weapon', text: 'Shots turn hostile prisms to your newest charge\'s domain instead of destroying them.' },
+  // Every pattern's own effect, converted from its tabletop card (its text, or its name where the text has no real-time
+  // reading). Garrett 2026-10-21: keep the tabletop names; make abilities that convert from the old.
+  // seat: who it helps (triggers / hull / slip / ratel). time: a timed effect lasts passiveSeconds and a repeat raises its
+  // level (to passiveMaxLevel); mech is what each level adds. No time: it happens once, when the pattern is made.
+  const EFFECTS = {
+    plow: { seat: 'hull', time: true, mech: { plow: 1 }, text: 'Plough through hostile prisms: they break on contact and do not slow you. +1 s of boost now.' },
+    dock: { seat: 'slip', time: true, mech: { magnet: 2 }, text: 'Slips catch trails 6 u farther away a level: the dock pulls you in.' },
+    amanita: { seat: 'hull', text: 'Burns one more prism on the Dynamo for 3 s of boost.' },
+    plankter: { seat: 'slip', text: 'Your next slip needs no charge and rides a trail of any domain, at half reach, then 1 s of boost.' },
+    skipper: { seat: 'hull', time: true, mech: { skip: 1 }, text: 'Touching a prism of a different domain from the last gives 0.4 s of boost a level.' },
+    fugacity: { seat: 'triggers', time: true, mech: { fugacity: 1 }, text: 'Both triggers fire 5% faster a level for every prism within 40 u (up to +50% a level).' },
+    thruster: { seat: 'hull', text: 'Your next 4 boost presses each throw the hull 20 u ahead.' },
+    lasso: { seat: 'triggers', time: true, mech: { lasso: 1 }, text: 'Each Bolt hit pulls you 6 u a level toward it.' },
+    bigred: { seat: 'hull', text: 'Destroys every other Dynamo prism of the battery prism\'s colour; 0.5 s of boost for each.' },
+    eigen: { seat: 'hull', time: true, mech: { agile: 2 }, text: 'Turn 60% faster a level.' },
+    saddle: { seat: 'hull', text: 'Drains the whole battery into boost: 1.5 s for each charge.' },
+    watt: { seat: 'hull', time: true, mech: { watt: 1 }, text: 'Flying alongside a trail (within 14 u, heading within 30 degrees of it): +30% speed a level.' },
+    eyelet: { seat: 'triggers', time: true, mech: { pierce: 2 }, text: 'Shots pass through 2 more hostile prisms a level.' },
+    detangler: { seat: 'slip', text: 'The next 3 prisms you touch turn your newest charge\'s domain: new slip lanes, and they do not slow you.' },
+    condenser: { seat: 'slip', text: 'Lays a 6-prism trail of your newest charge\'s domain ahead of you.' },
+    sepia: { seat: 'triggers', time: true, mech: { drone: 1 }, text: 'A drone shoots the nearest hostile prism within 60 u, twice a second a level.' },
+    zeropoint: { seat: 'ratel', text: 'Fires the effect of another pattern in the Ratel\'s hand, and drains your oldest charge into 1.5 s of boost.' },
+    noodley: { seat: 'hull', text: 'The next 5 hostile prisms in your path are pushed aside instead of hitting you.' },
+    triplesynth: { seat: 'ratel', text: 'Places a touching Ruby, Jade and Gold prism on empty Dynamo cells.' },
+    harmonizer: { seat: 'triggers', time: true, mech: { chroma: 1 }, text: 'Shots turn hostile prisms to your newest charge\'s domain instead of destroying them.' },
+    lance: { seat: 'triggers', time: true, mech: { lance: 1 }, text: 'Bolt shots that miss plant a prism of your newest charge\'s domain where they stop: fire ahead to build a slip lane.' },
+    translator: { seat: 'ratel', text: 'The Ratel gets a free prism of any colour: tap an empty cell.' },
+    anode: { seat: 'slip', text: '+1 charge of each colour.' },
+    printer5d: { seat: 'ratel', text: 'The Ratel gets 2 free prisms of any colour.' },
+    hammer: { seat: 'ratel', text: 'Drops 3 prisms of random colours on empty Dynamo cells.' },
+    cilia: { seat: 'ratel', text: 'The Ratel banks 3 extra AP.' },
+    chrono: { seat: 'ratel', text: 'The Ratel banks 1 extra AP and the spin bar winds back 5 s.' },
+    meta: { seat: 'ratel', text: 'Fires the effect of the last pattern replaced (or else the last other pattern made).' },
+    eti: { seat: 'slip', text: '+1 charge for each domain with a trail within 40 u of you.' },
+    ftl: { seat: 'slip', jump: true, text: 'Jump: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain.' },
+    littlebang: { seat: 'triggers', time: true, mech: { blast: 1 }, text: 'A hit destroys hostile prisms around it (4 u + 3 u a level).' },
+    vorticity: { seat: 'ratel', text: 'The injection ports turn back 60 degrees and the spin bar refills.' },
+    gravity: { seat: 'slip', time: true, mech: { magnet: 1, gravity: 1 }, text: 'Slips catch trails 3 u farther away and end with 1 s of boost, a level.' },
+    portals: { seat: 'slip', jump: true, text: 'Jump 30 u ahead; land in empty space and you jump 30 u again.' },
+    rosen: { seat: 'slip', jump: true, text: 'Jump to the farthest prism of your newest charge\'s domain within 300 u and 35 degrees of your nose.' },
+    frame: { seat: 'slip', time: true, mech: { wake: 1 }, text: 'Your trail is laid in your newest charge\'s domain: a slip lane behind you.' },
+    voidjumper: { seat: 'slip', time: true, mech: { void: 1 }, text: 'Slip on trails of any domain (each slip spends your oldest charge).' },
+    blink: { seat: 'slip', jump: true, text: 'Jump 60 u ahead.' },
+    monte: { seat: 'slip', jump: true, text: 'Jump: three hops, each swapping places with the farthest prism ahead within 40 u.' },
   };
-  // A pattern's family picks the passive table; the card's place in its family picks the row (a table, not code).
-  const FAMILY_PASSIVES = { 1: ['rapid', 'pierce', 'scatter', 'range', 'seeker', 'blast'], 2: ['overdrive', 'shield', 'agile', 'afterburner', 'magnet'], 3: ['longSlip', 'echo', 'wake', 'chroma'] };
+  // The effect each card carries, in card order (the CARDS table below).
+  const CARD_EFFECTS = ['plow', 'dock', 'amanita', 'plankter', 'skipper', 'fugacity', 'thruster', 'lasso', 'bigred', 'eigen', 'saddle', 'watt', 'eyelet',
+    'detangler', 'condenser', 'sepia', 'zeropoint', 'noodley', 'triplesynth', 'harmonizer', 'lance', 'translator', 'anode', 'printer5d', 'hammer', 'cilia',
+    'chrono', 'meta', 'eti', 'ftl', 'littlebang', 'vorticity', 'gravity', 'portals', 'rosen', 'frame', 'voidjumper', 'blink', 'monte'];
+  const SEAT_COL = { triggers: 'ruby', hull: 'jade', slip: 'gold', ratel: 'gold' };
 
   // ================= The pattern library: the 39 Slipstream upgrade cards (2022 print), shapes as printed =================
   // [name, family (1, 2, 3), shape 'Xq,r ...' (X = the printed M / C / S, read as Ruby / Jade / Gold), card text, -, -]
@@ -670,12 +728,11 @@
     ['Blink Drive', 3, 'S2,0 S0,1 M1,1 C0,2', 'Teleport 3 spaces.', 'blink'],
     ['Monte Cannon', 3, 'S3,0 C2,1 M1,2 S0,3', 'Swap with a ship or muton up to 3 spaces away. / Use this ability up to 3 times per activation.', 'monte'],
   ];
-  const famCount = { 1: 0, 2: 0, 3: 0 };
-  const PATTERNS = CARDS.map((c) => {
-    const list = FAMILY_PASSIVES[c[1]], passive = list[famCount[c[1]]++ % list.length];
-    return { name: c[0], family: c[1], text: c[3], passive, parked: false,
+  const PATTERNS = CARDS.map((c, k) => {
+    return { name: c[0], family: c[1], text: c[3], effect: CARD_EFFECTS[k], parked: false,
       cells: c[2].split(' ').map((t) => { const col = { M: 1, C: 2, S: 3 }[t[0]]; const [q, r] = t.slice(1).split(',').map(Number); return [q, r, col]; }) };
   });
+  const EFFECT_NAME = Object.fromEntries(PATTERNS.map((p) => [p.effect, p.name]));
 
   // ================= Port patterns: the four designed engines (Appendix B), turned and recoloured =================
   // Garrett 2026-10-21: only three-fold colour-symmetric patterns (a 120 degree turn maps the ports onto the ports, each
@@ -721,7 +778,7 @@
     exit: { align: 'Exit aligned to the trail (the brief)', keep: 'Exit keeps your facing' },
   };
 
-  const LS = 'lab:' + LAB.name + ':r3:';
+  const LS = 'lab:' + LAB.name + ':r4:';
   const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
   const P = Object.assign({}, SHIPPED, lsGet('P', {}));
@@ -760,7 +817,8 @@
   }
   const OTHER_DOMAINS = ['ruby', 'gold', 'jade'];
   function makeHull(id, dom, x, z, h, honey) {
-    return { id, dom, x, z, h, speed: 0, boostE: 0, slowT: 0, honey, trail: null, dist: 0, ignoreTrail: -1, ignoreT: 0, roam: null, pass: {}, cdR: 0, cdL: 0, boosting: false };
+    return { id, dom, x, z, h, speed: 0, boostE: 0, slowT: 0, honey, trail: null, dist: 0, ignoreTrail: -1, ignoreT: 0, roam: null, pass: {}, mech: {}, cdR: 0, cdL: 0, boosting: false,
+      jumps: [], dashes: 0, sail: 0, recolour: 0, noodles: 0, lastSkip: null, droneCd: 0, boostWas: false, jumpWas: false, lance: null };
   }
   function makeWorld(seed, cfg) {
     const rng = mulberry32(seed), Pw = cfg.P;
@@ -769,7 +827,7 @@
       hulls: [], trails: [], nextTrail: 1, S: dynamoSettings(cfg), dyn: null, dest: null, shots: [], grid: new Map(), gone: new Set(), patchT: 0,
       seats: { pilot: Object.assign({ think: 0, cmd: { steer: 0, boost: false, lt: false, rt: false, arm: false }, goal: null }, cfg.pilot), eng: Object.assign({ think: 0 }, cfg.eng) },
       swapT: 0, orientT: 0, effects: [], log: [],
-      m: { dests: 0, slips: 0, slipDist: 0, slipGain: 0, badSlips: 0, aimed: 0, aimedGain: 0, patterns: 0, charges: 0, used: 0, emptyT: 0, apGiven: 0, hits: 0, kills: 0, turned: 0, passT: 0, swaps: 0, clipped: 0, shuffles: 0, retired: 0, freeSlips: 0 },
+      m: { dests: 0, slips: 0, slipDist: 0, slipGain: 0, badSlips: 0, aimed: 0, aimedGain: 0, patterns: 0, charges: 0, used: 0, emptyT: 0, apGiven: 0, hits: 0, kills: 0, turned: 0, passT: 0, swaps: 0, clipped: 0, shuffles: 0, retired: 0, freeSlips: 0, jumps: 0 },
     };
     w.dyn = D.create(w.S, seed);
     w.hulls.push(makeHull(0, OUR_DOMAIN, 0, 0, -Math.PI / 2, true));
@@ -805,7 +863,13 @@
   }
   function newTrail(w, hull, dom) { const t = { id: w.nextTrail++, owner: hull ? hull.id : -1, kind: 'trail', dom, pts: [], doms: [], born: [] }; w.trails.push(t); if (hull) hull.trail = t; return t; }
   function hullPrismCount(w, id) { let n = 0; for (const t of w.trails) if (t.owner === id) n += t.pts.length; return n; }
-  const lvl = (hull, k) => (hull.pass[k] ? hull.pass[k].lvl : 0);
+  // What the timed effects add up to: lvl(hull, 'magnet') is the sum over every running effect of its level times its weight.
+  const lvl = (hull, k) => hull.mech[k] || 0;
+  function recomputeMech(hull) {
+    const m = {};
+    for (const k of Object.keys(hull.pass)) for (const [mk, v] of Object.entries(EFFECTS[k].mech || {})) m[mk] = (m[mk] || 0) + v * hull.pass[k].lvl;
+    hull.mech = m;
+  }
   function newestDomain(w) { const b = w.dyn.battery; return b.length ? COLOUR_DOM[b[b.length - 1]] : null; }
   function layPrism(w, hull) {
     if (!hull.trail) newTrail(w, hull, hull.dom);
@@ -820,10 +884,21 @@
   function moveHull(w, hull, steer, boost, dt) {
     const Pw = w.P;
     hull.h = wrapAng(hull.h + clamp(steer, -1, 1) * Pw.yawRate * (1 + 0.3 * lvl(hull, 'agile')) * Math.PI / 180 * dt);
+    if (boost && !hull.boostWas && hull.dashes > 0) {   // Thruster Swarm: a boost press throws the hull ahead
+      hull.dashes--; const x0 = hull.x, z0 = hull.z;
+      setPose(w, hull, hull.x + Math.cos(hull.h) * 20, hull.z + Math.sin(hull.h) * 20, null);
+      w.effects.push({ k: 'slip', x0, z0, x1: hull.x, z1: hull.z, col: DOM.jade.color, t: 0.5 });
+    }
+    hull.boostWas = !!boost;
     const boosting = boost && hull.boostE > 0;
     if (boosting) hull.boostE = Math.max(0, hull.boostE - dt);
-    let v = (Pw.minSpeed + Pw.throttleScaler * (boosting ? Pw.boostMul : 1)) * (1 + 0.15 * lvl(hull, 'overdrive'));
-    if (hull.slowT > 0) { hull.slowT -= dt; v *= 1 - Pw.hitSlow * Math.max(0, 1 - 0.4 * lvl(hull, 'shield')); }
+    let v = Pw.minSpeed + Pw.throttleScaler * (boosting ? Pw.boostMul : 1);
+    if (lvl(hull, 'watt') && w.grid.size) {   // Wattslider: alongside a trail, heading within 30 degrees of it
+      let along = false; const c30 = Math.cos(Math.PI / 6);
+      near(w, hull.x, hull.z, 14, (t, i) => { if (t.owner === hull.id || t.kind !== 'trail') return true; const ax = axisOf(t, i); if (Math.abs(Math.cos(hull.h) * ax[0] + Math.sin(hull.h) * ax[1]) >= c30) { along = true; return false; } return true; });
+      if (along) v *= 1 + 0.3 * lvl(hull, 'watt');
+    }
+    if (hull.slowT > 0) { hull.slowT -= dt; v *= 1 - Pw.hitSlow; }
     hull.speed = v; hull.boosting = boosting;
     hull.x += Math.cos(hull.h) * v * dt; hull.z += Math.sin(hull.h) * v * dt;
     const r = hypot2(hull.x, hull.z);
@@ -888,7 +963,12 @@
   const domOf = (w, colour) => COLOUR_DOM[colour];
   function heldDomains(w) { const s = new Set(); for (const c of w.dyn.battery) s.add(COLOUR_DOM[c]); return s; }
   const colourFor = (w, dom) => COLOUR_DOM.indexOf(dom);
-  const slipReach = (w, hull) => w.P.slipReach * (1 + 0.35 * lvl(hull, 'longSlip'));
+  const slipReach = (w, hull) => w.P.slipReach * (hull.sail > 0 && !w.dyn.battery.length ? 0.5 : 1);
+  // The domains a slip can ride now: those the battery holds, or any while Void Jumper runs or a Plankter Sail is set.
+  function slipDomains(w, hull) {
+    if ((lvl(hull, 'void') && w.dyn.battery.length) || hull.sail > 0) return new Set(['ruby', 'jade', 'gold']);
+    return heldDomains(w);
+  }
 
   // The slip planner both AIs use: the best gain toward the destination from riding a trail of domain `dom`, entering
   // along the prism's axis (the arming rule), from an approach point `lead` u back along it.
@@ -928,15 +1008,27 @@
 
   // ---- the Honeyguide's contacts: the Slip and hostile prisms ----
   function contacts(w, hull, armHeld, dt) {
-    const Pw = w.P, rr = Pw.hullRadius + Pw.prismL * 0.5, catchR = rr + 3 * lvl(hull, 'magnet');
+    const Pw = w.P, rr = Pw.hullRadius + Pw.prismL * 0.5, catchR = Math.max(rr + 3 * lvl(hull, 'magnet'), hull.noodles > 0 ? rr + 6 : 0);
     if (hull.ignoreT > 0) hull.ignoreT -= dt;
     let slipTo = null, hit = false;
+    const doms = slipDomains(w, hull), newest = newestDomain(w);
     near(w, hull.x, hull.z, catchR, (t, i, d2) => {
       if (t.owner === hull.id && w.t - t.born[i] < Pw.selfGrace) return true;   // SELF_TRAIL_CONTACT.md
       if (t.id === hull.ignoreTrail && hull.ignoreT > 0) return true;
+      if (w.gone.has(t.id + ':' + i)) return true;
       const dom = t.doms[i], c = colourFor(w, dom);
-      if (!slipTo && w.cfg.opts.slip && t.kind === 'trail' && t.pts.length >= Pw.minSlipTrailLength && c && w.dyn.battery.indexOf(c) >= 0 && armed(w, hull, t, i, armHeld)) slipTo = { t, i, c };
-      if (d2 <= rr * rr && dom !== hull.dom && t.owner !== hull.id) hit = true;
+      if (!slipTo && w.cfg.opts.slip && t.kind === 'trail' && t.pts.length >= Pw.minSlipTrailLength && c && doms.has(dom) && armed(w, hull, t, i, armHeld)) slipTo = { t, i, c };
+      const touch = d2 <= rr * rr, hostile = dom !== hull.dom && t.owner !== hull.id;
+      if (touch && t.owner !== hull.id && lvl(hull, 'skip') && dom !== hull.lastSkip) { if (hull.lastSkip) hull.boostE = Math.min(6, hull.boostE + 0.4 * lvl(hull, 'skip')); hull.lastSkip = dom; }   // Anomaly Skipper
+      if (!hostile) return true;
+      if (hull.noodles > 0 && !(slipTo && slipTo.t === t)) {   // Noodley Appendages: push it off the nose
+        const p = t.pts[i], side = Math.sign(wrapAng(Math.atan2(p[2] - hull.z, p[0] - hull.x) - hull.h)) || 1, a = hull.h + side * Math.PI / 2;
+        p[0] += Math.cos(a) * 12; p[2] += Math.sin(a) * 12; hull.noodles--; return true;
+      }
+      if (!touch) return true;
+      if (hull.recolour > 0 && newest && dom !== newest) { t.doms[i] = newest; hull.recolour--; w.m.turned++; return true; }   // Reality Detangler
+      if (lvl(hull, 'plow')) { w.gone.add(t.id + ':' + i); w.m.kills++; return true; }   // Juggernaut Plow
+      hit = true;
       return true;
     });
     if (slipTo) { slip(w, hull, slipTo.t, slipTo.i, slipTo.c); return; }
@@ -952,8 +1044,11 @@
     const Pw = w.P, fwd = [Math.cos(hull.h), 0, Math.sin(hull.h)];
     const land = D.slipDestination(t.pts, i, [hull.x, 0, hull.z], fwd, slipReach(w, hull), Pw.exitOffset);
     if (!land) return;
-    if (lvl(hull, 'echo')) { const e = hull.pass.echo; e.lvl--; if (e.lvl <= 0) delete hull.pass.echo; w.m.freeSlips++; }
-    else D.spend(w.dyn, colour);
+    if (w.dyn.battery.indexOf(colour) >= 0) D.spend(w.dyn, colour);
+    else if (hull.sail > 0) { hull.sail--; hull.boostE = Math.min(6, hull.boostE + 1); w.m.freeSlips++; }   // Plankter Sail
+    else if (lvl(hull, 'void') && w.dyn.battery.length) w.dyn.battery.shift();   // Void Jumper: any domain, the oldest charge
+    else return;
+    if (lvl(hull, 'gravity')) hull.boostE = Math.min(6, hull.boostE + lvl(hull, 'gravity'));
     w.m.used++;
     const x0 = hull.x, z0 = hull.z, d = hypot2(land.point[0] - x0, land.point[2] - z0);
     const gain = hypot2(w.dest.x - x0, w.dest.z - z0) - hypot2(w.dest.x - land.point[0], w.dest.z - land.point[2]);
@@ -967,11 +1062,13 @@
     w.log.push({ t: w.t, k: 'slip', d });
   }
 
-  // ---- the two triggers (RT Bolt, LT Burst): every passive of the weapon kind shapes both ----
+  // ---- the two triggers (RT Bolt, LT Burst): the trigger-seat effects shape both ----
   function fire(w, hull, which) {
-    const Pw = w.P, rate = (which === 'rt' ? Pw.boltRate : Pw.burstRate) * (1 + 0.5 * lvl(hull, 'rapid'));
     const cd = which === 'rt' ? 'cdR' : 'cdL';
     if (hull[cd] > 0) return;
+    const Pw = w.P;
+    let rate = which === 'rt' ? Pw.boltRate : Pw.burstRate;
+    if (lvl(hull, 'fugacity')) { let n = 0; near(w, hull.x, hull.z, 40, () => { n++; return n < 10; }); rate *= 1 + 0.05 * n * lvl(hull, 'fugacity'); }   // Fugacity Discharger
     hull[cd] = 1 / rate;
     const rg = 1 + 0.4 * lvl(hull, 'range'), sc = lvl(hull, 'scatter');
     const speed = (which === 'rt' ? Pw.boltSpeed : Pw.burstSpeed) * rg, life = (which === 'rt' ? Pw.boltRange : Pw.burstRange) * rg / speed;
@@ -980,7 +1077,7 @@
     else { const n = Math.max(1, Math.round(Pw.burstPellets) + 2 * sc), f = Pw.burstSpread; for (let k = 0; k < n; k++) angs.push(n === 1 ? 0 : -f / 2 + f * k / (n - 1)); }
     for (const a of angs) {
       const h = hull.h + a * Math.PI / 180;
-      w.shots.push({ x: hull.x + Math.cos(hull.h) * 4, z: hull.z + Math.sin(hull.h) * 4, vx: Math.cos(h) * speed, vz: Math.sin(h) * speed, life, pierce: lvl(hull, 'pierce'), kind: which });
+      w.shots.push({ x: hull.x + Math.cos(hull.h) * 4, z: hull.z + Math.sin(hull.h) * 4, vx: Math.cos(h) * speed, vz: Math.sin(h) * speed, life, pierce: lvl(hull, 'pierce'), kind: which, hit: false });
     }
   }
   function stepShots(w, hull, dt) {
@@ -995,11 +1092,26 @@
       s.x += s.vx * dt; s.z += s.vz * dt; s.life -= dt;
       near(w, s.x, s.z, 3, (t, i) => {
         if (s.life <= 0 || !hostile(t, i)) return true;
+        s.hit = true;
+        if (s.kind === 'rt' && lvl(hull, 'lasso')) {   // Hard Light Lasso: the hit pulls the hull toward it
+          const p = t.pts[i], dx = p[0] - hull.x, dz = p[2] - hull.z, d = hypot2(dx, dz), k = Math.min(d, 6 * lvl(hull, 'lasso')) / Math.max(1e-6, d);
+          hull.x += dx * k; hull.z += dz * k;
+        }
         if (chroma) { t.doms[i] = chroma; w.m.turned++; }
         else { w.gone.add(t.id + ':' + i); w.m.kills++; if (blastR) near(w, t.pts[i][0], t.pts[i][2], blastR, (t2, i2) => { if (hostile(t2, i2)) { w.gone.add(t2.id + ':' + i2); w.m.kills++; } return true; }); }
         if (s.pierce-- <= 0) { s.life = 0; return false; }
         return true;
       });
+    }
+    // Genesis Lance: a Bolt that ends without a hit plants a prism of the newest domain; plants in a row make a trail
+    const lanceDom = lvl(hull, 'lance') ? newestDomain(w) : null;
+    if (lanceDom) for (const s of w.shots) {
+      if (s.life > 0 || s.hit || s.kind !== 'rt') continue;
+      let t = hull.lance && w.trails.includes(hull.lance) && hull.lance.dom === lanceDom ? hull.lance : null;
+      const last = t && t.pts.length ? t.pts[t.pts.length - 1] : null, d = last ? hypot2(last[0] - s.x, last[2] - s.z) : 1e9;
+      if (d < 0.5 * w.P.wavelength) continue;   // too close to the last plant
+      if (!t || d > 2 * w.P.wavelength || t.pts.length >= 30) { t = { id: w.nextTrail++, owner: -3, kind: 'trail', dom: lanceDom, pts: [], doms: [], born: [] }; w.trails.push(t); hull.lance = t; }
+      t.pts.push([s.x, 0, s.z]); t.doms.push(lanceDom); t.born.push(w.t);
     }
     w.shots = w.shots.filter((s) => s.life > 0);
   }
@@ -1027,29 +1139,131 @@
     w.gone.clear();
   }
 
-  // ---- what a made pattern does: the pilot's hull gains its passive ----
+  // ---- what a made pattern does: its own effect (the EFFECTS table) ----
   function onDynamoEvent(w, e) {
     const hull = w.hulls[0], Pw = w.P;
-    if (e.k === 'ability') {
-      w.m.patterns++;
-      const pat = PATTERNS[e.pid], key = pat.passive;
-      if (w.cfg.opts.passives) {
-        const cur = hull.pass[key];
-        hull.pass[key] = { lvl: Math.min(Pw.passiveMaxLevel, (cur ? cur.lvl : 0) + 1), t: Pw.passiveSeconds };
-        w.effects.push({ k: 'banner', text: PASSIVES[key].name + ' ' + roman(hull.pass[key].lvl), col: DOM[COLOUR_DOM[pat.family]].color, t: 1.6 });
-      }
+    if (e.k === 'ability') w.m.patterns++;
+    else if (e.k === 'pick') {   // the battery prism is taken: the pattern's effect happens now
+      if (w.cfg.opts.passives) applyEffect(w, e.pid, e.colour, 0);
+      w.lastMade = e.pid;
     } else if (e.k === 'charge') w.m.charges++;
     else if (e.k === 'tick') { w.m.apGiven += e.ap; w.spinAt = w.t; }
     else if (e.k === 'shuffle') { w.m.shuffles++; w.abilityAt = w.t; }
     else if (e.k === 'ports') w.shuffleAt = w.t;
-    else if (e.k === 'retire') { w.m.retired++; w.effects.push({ k: 'retire', slot: e.slot, t: 1.0 }); }
+    else if (e.k === 'retire') { w.m.retired++; w.lastRetired = e.old; w.effects.push({ k: 'retire', slot: e.slot, t: 1.0 }); }
+  }
+  // A made pattern's effect. `colour` is the battery prism it took; depth stops Zero Point and Meta Machine looping.
+  function applyEffect(w, pid, colour, depth) {
+    const hull = w.hulls[0], Pw = w.P, pat = PATTERNS[pid], key = w.cfg.opts.only || pat.effect, ef = EFFECTS[key], st = w.dyn, S = w.S, newest = newestDomain(w);
+    const boost = (sec) => { hull.boostE = Math.min(6, hull.boostE + sec); };
+    let lv = 0;
+    if (ef.time) {
+      const cur = hull.pass[key];
+      hull.pass[key] = { lvl: Math.min(Pw.passiveMaxLevel, (cur ? cur.lvl : 0) + 1), t: Pw.passiveSeconds };
+      lv = hull.pass[key].lvl; recomputeMech(hull);
+    }
+    if (ef.jump) { if (hull.jumps.length >= 3) hull.jumps.shift(); hull.jumps.push(key); }
+    switch (key) {
+      case 'plow': boost(1); break;
+      case 'amanita': D.boardEffect(st, S, 'burn', 1); boost(3); break;
+      case 'plankter': hull.sail = Math.min(3, hull.sail + 1); break;
+      case 'thruster': hull.dashes += 4; break;
+      case 'bigred': boost(0.5 * D.boardEffect(st, S, 'purge', colour)); break;
+      case 'saddle': boost(1.5 * D.boardEffect(st, S, 'drain', 0)); break;
+      case 'detangler': hull.recolour += 3; break;
+      case 'condenser': {
+        const dom = newest || hull.dom, t = { id: w.nextTrail++, owner: -3, kind: 'trail', dom, pts: [], doms: [], born: [] };
+        for (let k = 0; k < 6; k++) { const d = 30 + k * Pw.wavelength; t.pts.push([hull.x + Math.cos(hull.h) * d, 0, hull.z + Math.sin(hull.h) * d]); t.doms.push(dom); t.born.push(w.t); }
+        w.trails.push(t); break;
+      }
+      case 'zeropoint': {
+        const others = st.slots.filter((p) => p >= 0 && PATTERNS[p].effect !== 'zeropoint' && PATTERNS[p].effect !== 'meta');
+        if (depth < 1 && others.length) applyEffect(w, others[Math.floor(w.rngE() * others.length)], colour, depth + 1);
+        boost(1.5 * D.boardEffect(st, S, 'drainOne', 0)); break;
+      }
+      case 'noodley': hull.noodles += 5; break;
+      case 'triplesynth': D.boardEffect(st, S, 'trio', 0); break;
+      case 'translator': D.boardEffect(st, S, 'free', 1); break;
+      case 'anode': for (let c = 1; c <= 3; c++) D.boardEffect(st, S, 'charge', c); break;
+      case 'printer5d': D.boardEffect(st, S, 'free', 2); break;
+      case 'hammer': D.boardEffect(st, S, 'scatter', 3); break;
+      case 'cilia': D.boardEffect(st, S, 'bonus', 3); break;
+      case 'chrono': D.boardEffect(st, S, 'bonus', 1); D.boardEffect(st, S, 'rewind', 5); break;
+      case 'meta': {
+        const back = w.lastRetired != null && PATTERNS[w.lastRetired].effect !== 'meta' ? w.lastRetired : w.lastMade != null && w.lastMade !== pid ? w.lastMade : null;
+        if (depth < 1 && back != null && PATTERNS[back].effect !== 'zeropoint') applyEffect(w, back, colour, depth + 1);
+        break;
+      }
+      case 'eti': {
+        const seen = new Set();
+        near(w, hull.x, hull.z, 40, (t, i) => { if (t.kind === 'trail' && t.owner !== hull.id) seen.add(t.doms[i]); return true; });
+        for (const d of seen) D.boardEffect(st, S, 'charge', colourFor(w, d));
+        break;
+      }
+      case 'vorticity': D.boardEffect(st, S, 'unspin', 0); w.spinAt = w.t - 99; break;
+    }
+    w.effects.push({ k: 'banner', text: pat.name + (lv ? ' ' + roman(lv) : ''), col: DOM[SEAT_COL[ef.seat]].color, t: 1.6 });
+  }
+  // A stored jump (the Slip card, or R): where it would land, and doing it. Teleports go through setPose.
+  function jumpLanding(w, hull, kind) {
+    const f0 = Math.cos(hull.h), f1 = Math.sin(hull.h), ahead = (x, z, maxD, cone) => { const dx = x - hull.x, dz = z - hull.z, d = hypot2(dx, dz); return d > 8 && d <= maxD && (dx * f0 + dz * f1) / d >= Math.cos(cone * Math.PI / 180) ? d : -1; };
+    if (kind === 'blink') return { x: hull.x + f0 * 60, z: hull.z + f1 * 60 };
+    if (kind === 'portals') {
+      let x = hull.x + f0 * 30, z = hull.z + f1 * 30, any = false;
+      near(w, x, z, 12, () => { any = true; return false; });
+      if (!any) { x += f0 * 30; z += f1 * 30; }
+      return { x, z };
+    }
+    if (kind === 'rosen') {
+      const dom = newestDomain(w); if (!dom) return null;
+      let best = null, bd = -1;
+      for (const t of w.trails) for (let i = 0; i < t.pts.length; i++) { if (t.doms[i] !== dom || t.owner === hull.id) continue; const d = ahead(t.pts[i][0], t.pts[i][2], 300, 35); if (d > bd) { bd = d; best = t.pts[i]; } }
+      return best ? { x: best[0], z: best[2] } : null;
+    }
+    if (kind === 'ftl') {
+      let best = null, bd = 1e9;
+      near(w, hull.x, hull.z, 60, (t, i) => { if (t.owner === hull.id) return true; const d = ahead(t.pts[i][0], t.pts[i][2], 60, 35); if (d > 0 && d < bd) { bd = d; best = { t, i }; } return true; });
+      return best ? { x: best.t.pts[best.i][0], z: best.t.pts[best.i][2], t: best.t, i: best.i } : null;
+    }
+    if (kind === 'monte') {
+      let x = hull.x, z = hull.z, hops = 0;
+      for (let k = 0; k < 3; k++) {
+        let best = null, bd = -1;
+        near(w, x, z, 40, (t, i) => { if (t.owner === hull.id) return true; const p = t.pts[i], dx = p[0] - x, dz = p[2] - z, d = hypot2(dx, dz); if (d > 8 && (dx * f0 + dz * f1) / d >= Math.cos(35 * Math.PI / 180) && d > bd) { bd = d; best = p; } return true; });
+        if (!best) break;
+        x = best[0]; z = best[2]; hops++;
+      }
+      return hops ? { x, z } : null;
+    }
+    return null;
+  }
+  function doJump(w, hull) {
+    if (!hull.jumps.length) return false;
+    const kind = hull.jumps[0], land = jumpLanding(w, hull, kind);
+    hull.jumps.shift();
+    if (!land) { w.effects.push({ k: 'banner', text: 'No jump target', col: '#8a96a6', t: 1.0 }); return false; }
+    const x0 = hull.x, z0 = hull.z;
+    if (land.t) { const c = colourFor(w, land.t.doms[land.i]); if (c) D.boardEffect(w.dyn, w.S, 'charge', c); w.gone.add(land.t.id + ':' + land.i); }   // FTL Chromatool
+    setPose(w, hull, land.x, land.z, null);
+    w.m.jumps++;
+    w.effects.push({ k: 'slip', x0, z0, x1: hull.x, z1: hull.z, col: DOM.gold.color, t: 0.9 });
+    return true;
   }
   const roman = (n) => ['', 'I', 'II', 'III', 'IV', 'V'][n] || String(n);
   function stepPassives(w, hull, dt) {
-    let n = 0;
-    for (const k of Object.keys(hull.pass)) { const p = hull.pass[k]; p.t -= dt; if (p.t <= 0) delete hull.pass[k]; else n++; }
+    let n = 0, gone = false;
+    for (const k of Object.keys(hull.pass)) { const p = hull.pass[k]; p.t -= dt; if (p.t <= 0) { delete hull.pass[k]; gone = true; } else n++; }
+    if (gone) recomputeMech(hull);
     w.m.passT += n * dt;
-    if (lvl(hull, 'afterburner')) hull.boostE = Math.min(6, hull.boostE + 0.4 * lvl(hull, 'afterburner') * dt);
+    if (lvl(hull, 'drone')) {   // Sepia Drone: a bolt at the nearest hostile prism within 60 u
+      hull.droneCd -= dt;
+      if (hull.droneCd <= 0) {
+        hull.droneCd = 0.5 / lvl(hull, 'drone');
+        let best = null, bd = 1e9;
+        near(w, hull.x, hull.z, 60, (t, i, d2) => { if (t.owner === hull.id || t.doms[i] === hull.dom || heldDomains(w).has(t.doms[i])) return true; if (d2 < bd) { bd = d2; best = t.pts[i]; } return true; });
+        if (best) { const a = Math.atan2(best[2] - hull.z, best[0] - hull.x), sp = w.P.boltSpeed; w.shots.push({ x: hull.x, z: hull.z, vx: Math.cos(a) * sp, vz: Math.sin(a) * sp, life: 60 / sp + 0.05, pierce: 0, kind: 'drone', hit: false }); }
+      }
+    }
   }
 
   // ---- the Honeyguide's pilot AI: input-only (steer, boost, the two triggers, arm for the hold-to-arm comparison) ----
@@ -1073,13 +1287,13 @@
       let goal = { x: w.dest.x, z: w.dest.z, slip: false };
       if (w.cfg.opts.slip) {
         let best = null;
-        for (const dom of heldDomains(w)) { const g = slipGain(w, hull, dom, S.sees); if (g && (!best || g.gain > best.gain)) best = g; }
+        for (const dom of slipDomains(w, hull)) { const g = slipGain(w, hull, dom, S.sees); if (g && (!best || g.gain > best.gain)) best = g; }
         if (best && best.gain > S.minGain) goal = { x: best.x, z: best.z, fx: best.fx, fz: best.fz, axis: best.axis, slip: true };
       }
       seat.goal = goal;
       seat.noise = gauss(w.rngP) * S.steerNoise;
       const wantFire = w.cfg.opts.weapons && w.rngP() < S.trigger;
-      seat.fireR = wantFire && targetsAhead(w, hull, w.P.boltRange, 6) > 0;
+      seat.fireR = wantFire && (targetsAhead(w, hull, w.P.boltRange, 6) > 0 || lvl(hull, 'lance') > 0);   // with Genesis Lance it fires ahead to plant a lane
       seat.fireL = wantFire && targetsAhead(w, hull, w.P.burstRange, w.P.burstSpread / 2) > 1;
     }
     const goal = seat.goal || { x: w.dest.x, z: w.dest.z };
@@ -1097,7 +1311,7 @@
       const held = heldDomains(w), f0 = Math.cos(hull.h), f1 = Math.sin(hull.h);
       near(w, hull.x + f0 * 15, hull.z + f1 * 15, 16, (t, i) => {
         if (t.owner === hull.id) return true;
-        const unwanted = held.has(t.doms[i]) ? (!goal.slip && w.cfg.opts.slip && t.kind === 'trail' && t.pts.length >= w.P.minSlipTrailLength && armed(w, hull, t, i, false)) : (t.doms[i] !== hull.dom && !lvl(hull, 'shield'));
+        const unwanted = held.has(t.doms[i]) ? (!goal.slip && w.cfg.opts.slip && t.kind === 'trail' && t.pts.length >= w.P.minSlipTrailLength && armed(w, hull, t, i, false)) : (t.doms[i] !== hull.dom && !lvl(hull, 'plow'));
         if (!unwanted) return true;
         const p = t.pts[i], rel = wrapAng(Math.atan2(p[2] - hull.z, p[0] - hull.x) - hull.h);
         if (Math.abs(rel) < 0.35) { want = hull.h - Math.sign(rel || 1) * 1.2; return false; }
@@ -1107,8 +1321,12 @@
     const err = wrapAng(want - hull.h) + (seat.noise || 0);
     cmd.steer = clamp(err * 2.5, -1, 1);
     cmd.boost = hull.boostE > 0 && Math.abs(err) < 0.45;
+    if (hull.dashes > 0 && Math.abs(err) < 0.2) cmd.boost = !hull.boostWas;   // Thruster Swarm: tap boost for each dash
     cmd.rt = !!seat.fireR; cmd.lt = !!seat.fireL;
     cmd.arm = !!(seat.goal && seat.goal.slip);
+    // a stored jump: take it when it lands at least 20 u closer to the destination
+    cmd.jump = false;
+    if (hull.jumps.length) { const land = jumpLanding(w, hull, hull.jumps[0]); const d0 = hypot2(w.dest.x - hull.x, w.dest.z - hull.z); if (!land || d0 - hypot2(w.dest.x - land.x, w.dest.z - land.z) > 20) cmd.jump = !hull.jumpWas; }
   }
   function engineerAI(w, seat, dt) {
     seat.think -= dt;
@@ -1134,9 +1352,11 @@
     let cmd;
     if (seats.pilot.who === 'ai') { pilotAI(w, seats.pilot, dt); cmd = seats.pilot.cmd; }
     else if (seats.pilot.who === 'human' && live) cmd = live.pilot;
-    else cmd = { steer: 0, boost: false, lt: false, rt: false, arm: false };
-    if (w.orientT > 0 && seats.pilot.who !== 'human') cmd = { steer: 0, boost: false, lt: false, rt: false, arm: cmd.arm };
+    else cmd = { steer: 0, boost: false, lt: false, rt: false, arm: false, jump: false };
+    if (w.orientT > 0 && seats.pilot.who !== 'human') cmd = { steer: 0, boost: false, lt: false, rt: false, arm: cmd.arm, jump: false };
     moveHull(w, hull, cmd.steer, cmd.boost, dt);
+    if (cmd.jump && !hull.jumpWas) doJump(w, hull);
+    hull.jumpWas = !!cmd.jump;
     stepPassives(w, hull, dt);
     hull.cdR -= dt; hull.cdL -= dt;
     if (w.cfg.opts.weapons || seats.pilot.who === 'human') { if (cmd.rt) fire(w, hull, 'rt'); if (cmd.lt) fire(w, hull, 'lt'); }
@@ -1183,8 +1403,8 @@
   const VARIANTS = [
     { name: 'Solo (no Engineer)', eng: 'none', opts: {} },
     { name: 'Candidate', opts: {}, skills: true },
-    { name: 'Passives off (slip only)', opts: { passives: false } },
-    { name: 'Slip off (passives only)', opts: { slip: false } },
+    { name: 'Pattern effects off (slip only)', opts: { passives: false } },
+    { name: 'Slip off (effects only)', opts: { slip: false } },
     { name: 'Triggers never fired', opts: { weapons: false } },
     { name: 'Ports do not count', opts: { portsCount: false } },
     { name: 'Patterns never replaced', opts: { replace: false } },
@@ -1199,13 +1419,13 @@
   ];
   const COLS = [
     ['destsPerMin', 'Legs/min', 'Race legs a minute: destinations reached, plus the share of the last leg flown. Higher is better.'],
-    ['lift', 'Lift %', 'Legs/min against the solo hull (no Engineer, no battery, no passives).'],
+    ['lift', 'Lift %', 'Legs/min against the solo hull (no Engineer, no battery, no pattern effects).'],
     ['slipsPerMin', 'Slips/min', 'Slips ridden a minute.'],
     ['slipGain', 'Slip gain (u)', 'Mean distance a slip took off the way to the destination (negative: it carried the hull away).'],
     ['badSlips', 'Bad slips %', 'Slips that left the hull farther from the destination.'],
     ['aimed', 'Aimed %', 'Slips the pilot was steering for (the rest were brushes with a trail).'],
     ['patternsPerMin', 'Patterns/min', 'Patterns made a minute.'],
-    ['passivesUp', 'Passives up', 'Mean number of passives the hull carries at once.'],
+    ['passivesUp', 'Effects up', 'Mean number of timed effects the hull carries at once.'],
     ['killsPerMin', 'Kills/min', 'Hostile prisms the two triggers destroyed a minute.'],
     ['hitsPerMin', 'Hostile hits/min', 'Hostile prisms flown into (each slows the hull for a second).'],
     ['engIdle', 'Eng idle %', 'AP the Ratel let go to waste (the bank was full at a spin).'],
@@ -1257,7 +1477,7 @@
 
   // ================= human inputs =================
   const keys = new Set();
-  const live = { pilot: { steer: 0, boost: false, lt: false, rt: false, arm: false }, eng: [] };
+  const live = { pilot: { steer: 0, boost: false, lt: false, rt: false, arm: false, jump: false }, eng: [] };
   addEventListener('keydown', (e) => {
     if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     keys.add(e.code);
@@ -1275,13 +1495,14 @@
     if ((l && !padPrev.l) || (r && !padPrev.r)) requestSwap('pad');
     padPrev = { l, r };
     const b = (k, v) => !!(p.buttons[k] && (v ? p.buttons[k].value > v : p.buttons[k].pressed));
-    return { steer: Math.abs(p.axes[0]) > 0.15 ? p.axes[0] : 0, boost: b(0), lt: b(6, 0.3), rt: b(7, 0.3), arm: b(4) };
+    return { steer: Math.abs(p.axes[0]) > 0.15 ? p.axes[0] : 0, boost: b(0), lt: b(6, 0.3), rt: b(7, 0.3), arm: b(4), jump: b(3) };
   }
   function livePilot() {
     const pad = pollPad();
     let steer = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
     let boost = keys.has('KeyW') || keys.has('ArrowUp') || keys.has('Space'), lt = keys.has('KeyQ') || keys.has('KeyJ'), rt = keys.has('KeyE') || keys.has('KeyK'), arm = keys.has('KeyF');
-    if (pad) { if (pad.steer) steer = pad.steer; boost = boost || pad.boost; lt = lt || pad.lt; rt = rt || pad.rt; arm = arm || pad.arm; }
+    let jump = keys.has('KeyR');
+    if (pad) { if (pad.steer) steer = pad.steer; boost = boost || pad.boost; lt = lt || pad.lt; rt = rt || pad.rt; arm = arm || pad.arm; jump = jump || pad.jump; }
     if (ui.steerTouch && world) {   // a finger on the flight view: the hull turns toward it
       const hull = world.hulls[0], want = Math.atan2(ui.steerTouch.z - hull.z, ui.steerTouch.x - hull.x);
       steer = clamp(wrapAng(want - hull.h) * 2.5, -1, 1);
@@ -1290,7 +1511,8 @@
     if (ui.cardDown.rt) rt = true;
     if (ui.cardDown.lt) lt = true;
     if (ui.cardDown.boost) boost = true;
-    live.pilot = { steer, boost, lt, rt, arm };
+    if (ui.cardDown.slip) jump = true;
+    live.pilot = { steer, boost, lt, rt, arm, jump };
   }
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; ui.toastT = 1.8; }
   function requestSwap(how) {
@@ -1407,7 +1629,7 @@
       if (st.freePlace > 0 && !rv) ctx.fillText(fitText('Printer: ' + st.freePlace + ' free prism' + (st.freePlace > 1 ? 's' : '') + ', tap an empty cell (' + DOM[COLOUR_DOM[ui.freeColour || 1]].name + '; tap the AP row to change)', L.w - 16), G.cx, y);
       ctx.textAlign = 'left';
     }
-    // the slot cards: the pilot's passive, the pattern, its uses
+    // the slot cards: the pattern's name, its shape, its uses
     const rects = slotRects(G);
     rects.forEach((r, k) => {
       const pid = st.slots[k]; if (pid < 0) return;
@@ -1417,7 +1639,7 @@
       ctx.strokeStyle = lit ? fam : hexA(fam, 0.45); ctx.lineWidth = lit ? 2 : 1; ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
       const tfs = Math.max(9, Math.min(12, r.w / 10));
       ctx.font = '600 ' + tfs + 'px system-ui, sans-serif'; ctx.fillStyle = '#e8edf3';
-      if (!small) ctx.fillText(fitText(PASSIVES[pat.passive].name, r.w - 8), r.x + 5, r.y + tfs);
+      if (!small) ctx.fillText(fitText(pat.name, r.w - 8), r.x + 5, r.y + tfs);
       // uses: one pip per make before the pattern is replaced
       const U = w.S.usesPerPattern;
       if (U > 0 && !small) for (let u = 0; u < U; u++) { ctx.beginPath(); ctx.arc(r.x + r.w - 7 - (U - 1 - u) * 8, r.y + r.h - 7, 2.6, 0, 7); ctx.fillStyle = u < st.uses[k] ? '#ffb21f' : '#3a4250'; ctx.fill(); }
@@ -1536,16 +1758,16 @@
       }
       ctx.restore();
     }
-    // HUD: title, passive chips, the four ability cards (Charge Bolt, Mass Burst, Space Boost, Time Slip)
+    // HUD: title, timed-effect chips, the four ability cards (Charge Bolt, Mass Burst, Space Boost, Time Slip)
     const fs = Math.max(10, Math.min(13, L.w / 34)), compact = L.h < 330;
     ctx.font = '600 ' + fs + 'px system-ui, sans-serif'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#e8edf3';
     ctx.fillText('Honeyguide · ' + w.m.dests + ' destinations · ' + w.m.slips + ' slips · ' + w.m.kills + ' kills', L.x + 10, L.y + 14);
     let cx = L.x + 10, cy = L.y + 32;
     ctx.font = '600 11px system-ui, sans-serif';
     for (const k of Object.keys(hull.pass)) {
-      const p = hull.pass[k], txt = PASSIVES[k].name + ' ' + roman(p.lvl) + ' ' + Math.ceil(p.t), tw = ctx.measureText(txt).width + 12;
+      const p = hull.pass[k], txt = EFFECT_NAME[k] + ' ' + roman(p.lvl) + ' ' + Math.ceil(p.t), tw = ctx.measureText(txt).width + 12;
       if (cx + tw > L.x + L.w - 8) { cx = L.x + 10; cy += 18; }
-      const col = PASSIVES[k].kind === 'weapon' ? DOM.ruby.color : PASSIVES[k].kind === 'hull' ? DOM.jade.color : DOM.gold.color;
+      const col = DOM[SEAT_COL[EFFECTS[k].seat]].color;
       ctx.fillStyle = hexA(col, 0.18); ctx.fillRect(cx, cy - 8, tw, 16); ctx.fillStyle = col; ctx.fillRect(cx, cy - 8, 2, 16);
       ctx.fillStyle = '#e8edf3'; ctx.fillText(txt, cx + 6, cy); cx += tw + 4;
     }
@@ -1555,7 +1777,7 @@
       { key: 'rt', el: 'charge', name: 'Bolt', chip: 'RT' },
       { key: 'lt', el: 'mass', name: 'Burst', chip: 'LT' },
       { key: 'boost', el: 'space', name: 'Boost', chip: hull.boostE > 0 ? hull.boostE.toFixed(1) + ' s' : '—' },
-      { key: 'slip', el: 'time', name: 'Slip', chip: 'auto' },
+      { key: 'slip', el: 'time', name: hull.jumps.length ? 'Jump' : 'Slip', chip: 'auto' },
     ];
     ui.cardRects = [];
     cards.forEach((c, k) => {
@@ -1563,10 +1785,11 @@
       ctx.fillStyle = down ? hexA(col, 0.45) : 'rgba(12,16,22,.82)'; ctx.fillRect(r.x, r.y, r.w, r.h);
       ctx.fillStyle = col; ctx.fillRect(r.x, r.y, r.w, 3);
       ctx.fillStyle = '#e8edf3'; ctx.font = '600 ' + (compact ? 10 : 12) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(c.name, r.x + r.w / 2, r.y + (compact ? 13 : 18));
-      if (c.key === 'slip') { const b = w.dyn.battery, n = Math.max(1, b.length); for (let j = 0; j < b.length; j++) { ctx.beginPath(); ctx.arc(r.x + r.w / 2 + (j - (n - 1) / 2) * 11, r.y + r.h - (compact ? 10 : 15), 4, 0, 7); ctx.fillStyle = colourOf(b[j]); ctx.fill(); } if (!b.length) { ctx.fillStyle = '#6b7684'; ctx.font = '10px system-ui, sans-serif'; ctx.fillText('no charge', r.x + r.w / 2, r.y + r.h - (compact ? 10 : 15)); } }
+      if (c.key === 'slip' && hull.jumps.length) { ctx.fillStyle = '#ffd27a'; ctx.font = (compact ? 9 : 10) + 'px system-ui, sans-serif'; ctx.fillText(fitText(EFFECT_NAME[hull.jumps[0]], r.w - 4) + (hull.jumps.length > 1 ? ' +' + (hull.jumps.length - 1) : ''), r.x + r.w / 2, r.y + r.h - (compact ? 10 : 15)); }
+      else if (c.key === 'slip') { const b = w.dyn.battery, n = Math.max(1, b.length); for (let j = 0; j < b.length; j++) { ctx.beginPath(); ctx.arc(r.x + r.w / 2 + (j - (n - 1) / 2) * 11, r.y + r.h - (compact ? 10 : 15), 4, 0, 7); ctx.fillStyle = colourOf(b[j]); ctx.fill(); } if (!b.length) { ctx.fillStyle = '#6b7684'; ctx.font = '10px system-ui, sans-serif'; ctx.fillText('no charge', r.x + r.w / 2, r.y + r.h - (compact ? 10 : 15)); } }
       else { ctx.fillStyle = '#8a96a6'; ctx.font = (compact ? 9 : 10) + 'px system-ui, sans-serif'; ctx.fillText(c.chip, r.x + r.w / 2, r.y + r.h - (compact ? 10 : 15)); }
       ctx.textAlign = 'left';
-      if (human && c.key !== 'slip') ui.cardRects.push({ r, key: c.key });
+      if (human && (c.key !== 'slip' || hull.jumps.length)) ui.cardRects.push({ r, key: c.key });
     });
     ui.arenaView = { L, sc, ox, oy };
     ctx.restore();
@@ -1705,7 +1928,7 @@
     box.appendChild(checkField('Patterns match in any of six rotations', 'rotatable'));
     box.appendChild(checkField('A pattern made for the third time is replaced by a random one', 'replace'));
     box.appendChild(checkField('Every 4 patterns: a new Ratel ability and a new port pattern', 'shuffle'));
-    box.appendChild(checkField('Every pattern gives the pilot a passive', 'passives'));
+    box.appendChild(checkField('Every pattern fires its own effect (from its tabletop card)', 'passives'));
     box.appendChild(checkField('The AI pilot uses its triggers', 'weapons'));
     box.appendChild(checkField('The Slip is on', 'slip'));
     box.appendChild(checkField('Show domain letters (R J G) on the Dynamo', 'letters'));
@@ -1718,7 +1941,7 @@
     const s = f.querySelector('select'); s.value = crew.mate; s.onchange = () => { crew.mate = s.value; lsSet('mate', crew.mate); applyCrew(); };
     box.appendChild(f);
     const h = document.createElement('div'); h.className = 'hint';
-    h.innerHTML = '<b>Ratel (Engineer):</b> drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but a pattern needs at least one real prism. When a card lights, tap it (1 AP): one of its real prisms, drawn at random, goes to the battery, and its domain is a slip charge. The ports turn 60 degrees every spin; the bar across the top shrinks until the next one. Every 4 patterns the clock stops: first your new ability is shown, then the new ports, then the bar starts again. Each card shows the passive the pilot gets; its pips count the makes before it is replaced. Your ability is under the AP row; it changes, with the ports, every 4 patterns.<br><b>Pilot (Honeyguide):</b> A/D or ←/→ steer; E or K fires the Bolt (RT), Q or J the Burst (LT); W or Space boosts when you have boost. On touch, hold a finger on the flight view and the hull turns toward it (two fingers boost); the four cards bottom right are buttons. The Slip is your Time ability: fly onto a trail of a domain you hold, nose within 45 degrees of its line, and you jump to the end you point at. The dashed line shows where it would take you.';
+    h.innerHTML = '<b>Ratel (Engineer):</b> drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but a pattern needs at least one real prism. When a card lights, tap it (1 AP): one of its real prisms, drawn at random, goes to the battery, and its domain is a slip charge. The ports turn 60 degrees every spin; the bar across the top shrinks until the next one. Every 4 patterns the clock stops: first your new ability is shown, then the new ports, then the bar starts again. Each card is a tabletop upgrade with its own effect (the Patterns tab lists them); its pips count the makes before it is replaced. Your ability is under the AP row; it changes, with the ports, every 4 patterns.<br><b>Pilot (Honeyguide):</b> A/D or ←/→ steer; E or K fires the Bolt (RT), Q or J the Burst (LT); W or Space boosts when you have boost. On touch, hold a finger on the flight view and the hull turns toward it (two fingers boost); the four cards bottom right are buttons. The Slip is your Time ability: fly onto a trail of a domain you hold, nose within 45 degrees of its line, and you jump to the end you point at. The dashed line shows where it would take you. Jump patterns (Blink Drive, Rosen Bridge and others) store a jump on the Slip card: tap it, or press R.';
     box.appendChild(h);
     return box;
   }
@@ -1733,7 +1956,7 @@
     if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
     localLog.push(doc); lsSet('log', localLog); return 'local';
   }
-  const TOPICS = ['Sign-off', 'Slip arming', 'The spin', 'Ports count as prisms', 'Ratel abilities', 'Pattern replacement', 'Passives', 'The two triggers', 'Tick / AP / battery', 'Tuning', 'Other idea'];
+  const TOPICS = ['Sign-off', 'Slip arming', 'The spin', 'Ports count as prisms', 'Ratel abilities', 'Pattern replacement', 'Pattern effects', 'The two triggers', 'Tick / AP / battery', 'Tuning', 'Other idea'];
   function currentChoice(topic) {
     const o = OPT;
     switch (topic) {
@@ -1742,7 +1965,7 @@
       case 'Ports count as prisms': return o.portsCount ? 'An empty port counts as a prism; a real prism must still be in the pattern' : 'Ports do not count';
       case 'Ratel abilities': return o.ability === 'random' ? 'Random, redrawn with the ports every ' + P.patternsPerShuffle + ' patterns; the clock stops ' + P.revealAbility + ' s to show the ability, then ' + P.revealPorts + ' s for the ports' : 'Always ' + ABILITY_TEXT[o.ability][0];
       case 'Pattern replacement': return o.replace ? 'Replaced after ' + P.usesPerPattern + ' makes' : 'Never replaced';
-      case 'Passives': return 'Each pattern gives a passive for ' + P.passiveSeconds + ' s, stacking to level ' + P.passiveMaxLevel;
+      case 'Pattern effects': return 'Each pattern fires its own effect, converted from its tabletop card; timed ones last ' + P.passiveSeconds + ' s and stack to level ' + P.passiveMaxLevel + '; jumps are stored on the Slip card';
       case 'The two triggers': return 'RT Bolt ' + P.boltRate + '/s, ' + P.boltRange + ' u; LT Burst ' + P.burstRate + '/s, ' + P.burstPellets + ' pellets, ' + P.burstRange + ' u';
       case 'Tick / AP / battery': return 'Spin ' + P.tickSeconds + ' s, ' + P.apPerTick + ' AP (bank ' + P.apBank + '), battery ' + P.batteryCap;
       case 'Sign-off': return 'This is fun: build the Honeyguide and Ratel in Unity with these settings.';
@@ -1800,13 +2023,13 @@
   }
   function cardsPanel() {
     const box = document.createElement('div');
-    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'All 39 patterns (the Slipstream upgrade cards, 2022 print) and the passive each gives the pilot. Ruby-family patterns upgrade the triggers, Jade-family the hull, Gold-family the slip. The Ratel draws 3 at random; a pattern made 3 times is replaced.'; box.appendChild(p);
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'All 39 patterns: the tabletop upgrade cards (2022 print) under their own names, each with an effect converted from its card. The Ratel draws 3 at random; a pattern made 3 times is replaced.'; box.appendChild(p);
     const grid = document.createElement('div'); grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px';
     PATTERNS.forEach((pat) => {
       const c = document.createElement('div'); c.className = 'card';
-      const b = document.createElement('b'); b.textContent = PASSIVES[pat.passive].name + ' · ' + pat.name; c.appendChild(b);
+      const b = document.createElement('b'); b.textContent = pat.name; c.appendChild(b);
       const f = document.createElement('span'); f.className = 'fam'; f.style.color = DOM[COLOUR_DOM[pat.family]].color; f.textContent = DOM[COLOUR_DOM[pat.family]].name + ' family · ' + pat.cells.length + ' cells · ' + pat.cells.map((x) => COLOUR_LETTER[x[2]] + '(' + x[0] + ',' + x[1] + ')').join(' '); c.appendChild(f);
-      const e = document.createElement('div'); e.textContent = PASSIVES[pat.passive].text; e.style.fontSize = '12px'; c.appendChild(e);
+      const e = document.createElement('div'); e.textContent = EFFECTS[pat.effect].text + (EFFECTS[pat.effect].time ? ' (' + P.passiveSeconds + ' s; a repeat raises its level)' : ''); e.style.fontSize = '12px'; c.appendChild(e);
       grid.appendChild(c);
     });
     box.appendChild(grid);
@@ -1815,12 +2038,12 @@
   function aboutPanel() {
     const box = document.createElement('div');
     box.innerHTML = '<p id="aboutHead"></p>' +
-      '<p><b>The question.</b> Is the handoff fun? The Ratel builds patterns on a hex Dynamo whose injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery (a slip charge in its domain) and gives the Honeyguide a passive upgrade. The Honeyguide flies the Sparrow hull with two triggers, and its Time ability is the Slip: touch a trail of a domain you hold, nose within 45 degrees of the trail\'s line, and jump to the end you point at. Round 3 plays Garrett\'s rules from his first two sessions: three-fold colour-symmetric port patterns only, a 15 s spin shown as a shrinking bar, the new ability and then the new ports revealed while the clock stands still, and a random battery prism. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
+      '<p><b>The question.</b> Is the handoff fun? The Ratel builds patterns on a hex Dynamo whose injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery (a slip charge in its domain) and fires the card\'s own effect. The Honeyguide flies the Sparrow hull with two triggers, and its Time ability is the Slip: touch a trail of a domain you hold, nose within 45 degrees of the trail\'s line, and jump to the end you point at. Round 4 keeps round 3 (symmetric port engines, a 15 s spin shown as a shrinking bar, the reveal pause, a random battery prism) and gives every pattern its tabletop card\'s own effect. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
       '<p><b>What this lab does NOT model.</b></p><ul class="plain">' +
       '<li>The world is a flat 2D disc, not the 3D cell. A prism\'s z axis is its trail\'s direction in the plane; "1-D" is measured locally (at most two neighbours within 1.5 prism spacings), so a crossing of two trails is 2-D where they cross. The 2-D beds stand in for walls, flora and the cell\'s structures.</li>' +
       '<li>The race (reach the next destination ring) is the lab\'s yardstick; no game mode is modelled. Kills count hostile prisms destroyed; nothing scores them.</li>' +
       '<li>The triggers only destroy or recolour prisms. No rival vessels to fight (PvP is petals only in the game), no ammo, heat or element costs.</li>' +
-      '<li>Passive numbers, the Ratel\'s abilities and the pattern-to-passive table are proposals. Time, Space, Mass and Charge scaling and the L5 upgrades are fixed numbers here.</li>' +
+      '<li>The pattern effects and their numbers, and the Ratel\'s abilities, are proposals. Time, Space, Mass and Charge scaling and the L5 upgrades are fixed numbers here.</li>' +
       '<li>Two players on one device only; no networking. A real thumb tires and misses; the AIs only have speed, noise and reaction time.</li></ul>' +
       '<p class="hint">Round 1 (the brief\'s rules, hold-to-arm) is kept at Docs/Studios/HoneyguideLab.round1.html.</p>';
     box.querySelector('#aboutHead').textContent = LAB.name + ' · round ' + LAB.round + ' · ' + LAB.branch + ' · write-up: ' + LAB.doc;
@@ -1858,7 +2081,8 @@
 
   // ================= the test surface =================
   window.__lab = {
-    LAB, SHIPPED, SPEC, P, OPT, PLATFORM, VARIANTS, PATTERNS, PASSIVES, PORT_SETS, core: D,
+    LAB, SHIPPED, SPEC, P, OPT, PLATFORM, VARIANTS, PATTERNS, EFFECTS, PORT_SETS, core: D,
+    effect: (pid) => applyEffect(world, pid, world.dyn.battery.length ? world.dyn.battery[world.dyn.battery.length - 1] : 1, 0),
     portCheck: () => Object.fromEntries(Object.entries(ENGINES).map(([k, e]) => [k, symmetricPorts(e.ports)])),
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
     tick(dt, n) { dt = dt || DT; n = n || 1; for (let i = 0; i < n; i++) { livePilot(); simStepWorld(world, dt, live); } resize(); render(); },
