@@ -393,6 +393,10 @@ namespace CosmicShore.Gameplay
 
         SnowChanger spawnedCytoplasm;
 
+        /// <summary>This cell's cytoplasm (its drifting shard field), or null: a satellite, a config with
+        /// no cytoplasm, or before the bootstrap spawned it. Dying spindles add their shards to it.</summary>
+        public SnowChanger Cytoplasm => spawnedCytoplasm;
+
         // ---------------------------------------------------------------------
         // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
         // use this to find their containing cell - they have no scene identity

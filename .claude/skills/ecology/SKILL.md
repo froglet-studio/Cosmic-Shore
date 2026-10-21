@@ -258,6 +258,14 @@ what the carve-out silently broke — see the traps below.
   couplings (and suspends `CheckForLife`, so handing a spindle's prisms away doesn't evaporate it
   out of turn). Detach body prisms BEFORE withering spindles — a body prism is parented to a
   spindle, so the wither would destroy the mass you meant to conserve. `Docs/ECOSYSTEM.md §26.3`.
+- **A per-LIMB death hook belongs in `Spindle.StampEvaporate`, and only deaths that FADE reach it.**
+  `CheckForLife` and `ForceWither` (every ordered wither, starvation, the joust, `LightFauna`'s
+  wither) both latch `dying` and then stamp the evaporate, so a hook there fires exactly once per
+  limb, on the limb's own fade start (`i * interval` included) — the dying-limb-to-shard morph
+  (`Docs/ECOSYSTEM.md` §63) rides it. A limb that is simply DESTROYED (scene unload, a husk pulled
+  by a manager) goes through `OnDestroy` instead and never fades, so it gets no hook — which is
+  correct, because nothing visible dies there. Hand the hook the SAME start time the fade got (one
+  local), or the morph and the fade drift apart under an ordered wither.
 - **Order an ordered wither off the spindle TREE, never off distance — and the tree must exist.**
   Every standing spindle and prism of a lifeform keeps a path of standing spindles to its crystal,
   with the crystal joust's heart-outward unravel as the ONE sanctioned exception. Use
