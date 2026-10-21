@@ -160,6 +160,16 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float selfGrace = 1f;
         [Tooltip("lab 'exit: align': the hull lands facing along the trail's outward heading (off: it keeps its facing).")]
         [SerializeField] bool exitAligned = true;
+        [Tooltip("A slip is a ride, not a teleport (Garrett 2026-10-21): the hull zips along the trail at this speed (u/s).")]
+        [SerializeField, Min(10f)] float zipSpeed = 480f;
+        [Tooltip("Seconds the zip takes to reach zipSpeed from the hull's own speed.")]
+        [SerializeField, Min(0f)] float zipRamp = 0.15f;
+        [Tooltip("How quickly the hull turns onto each leg of the trail while zipping (1/s; higher is snappier).")]
+        [SerializeField, Min(0.5f)] float zipTurnRate = 14f;
+        [Tooltip("The zip rides this far off the trail's prisms, on the hull's up side (u).")]
+        [SerializeField, Min(0f)] float zipLift = 3f;
+        [Tooltip("Seconds of boost the hull carries out of a zip.")]
+        [SerializeField, Min(0f)] float zipExitBoost = 0.75f;
 
         [Header("Pattern effects (lab applyEffect)")]
         [Tooltip("lab passiveSeconds: how long a timed effect lasts; a repeat refreshes it and raises its level.")]
@@ -259,8 +269,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool aiCrewEngineers = true;
 
         [Header("The Ratel's view")]
-        [Tooltip("The board's rect while the human plays the Ratel (fractions of the screen: x, y, width, height).")]
-        [SerializeField] Rect engineerRect = new(0.5f, 0.04f, 0.48f, 0.92f);
+        [Tooltip("The board's rect while the human plays the Ratel (fractions of the screen: x, y, width, height). Garrett 2026-10-21: it covers the centre of the screen.")]
+        [SerializeField] Rect engineerRect = new(0.18f, 0.04f, 0.64f, 0.92f);
         [Tooltip("The board's rect while the human flies (the small view; a double tap on it swaps seats).")]
         [SerializeField] Rect pilotRect = new(0.01f, 0.30f, 0.20f, 0.42f);
         [Tooltip("The colours of Ruby, Jade and Gold prisms and ports (the game's palette, studio-domains.js).")]
@@ -273,14 +283,20 @@ namespace CosmicShore.Gameplay
         [SerializeField] string[] colourNames = { "Ruby", "Jade", "Gold" };
         [Tooltip("On a lit card. Tokens: none.")]
         [SerializeField] string tapToMake = "TAP";
-        [Tooltip("The free-prism line. Tokens: {count}, {colour}.")]
-        [SerializeField] string freePrismTemplate = "{count} free: tap an empty cell ({colour}; tap the AP row to change)";
+        [Tooltip("The free-prism line. Tokens: {count}, {colour} (the domain of the prism on the cursor, placed first).")]
+        [SerializeField] string freePrismTemplate = "{count} free ({colour} on your cursor): tap an empty cell";
         [Tooltip("The reveal card's heading for a new ability. Tokens: {name}.")]
         [SerializeField] string revealAbilityTemplate = "New ability: {name}";
         [Tooltip("The reveal's second step.")]
         [SerializeField] string revealPortsLine = "New injection ports";
-        [Tooltip("The banner when a pattern is made. Tokens: {name}, {level} (empty for a one-off).")]
-        [SerializeField] string madeBannerTemplate = "{name} {level}";
+        [Tooltip("The toast when a pattern is made (the game's toast, top right under Settings). Tokens: {name}, {level} (empty for " +
+                 "a one-off), {text} (the card's effect).")]
+        [SerializeField] string madeToastTemplate = "{name} {level}: {text}";
+        [Tooltip("The toast when the Ratel draws a new ability; it tells both seats what it does. Tokens: {name}, {text}.")]
+        [SerializeField] string abilityToastTemplate = "The Ratel's new ability, {name}: {text}";
+        [Tooltip("A right-clicked card's details on the board. Tokens: {name}, {text}, {uses} (made so far), {max} (made before " +
+                 "it is replaced).")]
+        [SerializeField] string cardDetailTemplate = "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close";
         [Tooltip("The Slip card while jumps are stored. Tokens: {count}.")]
         [SerializeField] string jumpCardTemplate = "Jump x{count}";
         [Tooltip("The Slip card while dashes are stored. Tokens: {count}.")]
@@ -365,7 +381,15 @@ namespace CosmicShore.Gameplay
         public string FreePrismTemplate => freePrismTemplate;
         public string RevealAbilityTemplate => revealAbilityTemplate;
         public string RevealPortsLine => revealPortsLine;
-        public string MadeBannerTemplate => madeBannerTemplate;
+        public string MadeToastTemplate => madeToastTemplate;
+        public string AbilityToastTemplate => abilityToastTemplate;
+        public string CardDetailTemplate => cardDetailTemplate;
+        public float ZipSpeed => zipSpeed;
+        public float ZipRamp => zipRamp;
+        public float ZipTurnRate => zipTurnRate;
+        public float ZipLift => zipLift;
+        public float ZipExitBoost => zipExitBoost;
+        public int UsesPerPattern => usesPerPattern;
         public string JumpCardTemplate => jumpCardTemplate;
         public string DashCardTemplate => dashCardTemplate;
         public string NoJumpTarget => noJumpTarget;

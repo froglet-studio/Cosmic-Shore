@@ -147,12 +147,14 @@ def cs_defaults(cs: str):
         elif t == "HoneyguideAILevel":
             v = {"Easy": "0", "Medium": "1", "Hard": "2"}[v.split(".")[-1]]
         elif t == "string":
-            v = yaml_str(js_unescape(v[1:-1]))
+            v = yaml_str(js_unescape(v[1:-1].replace("\\n", "\n")))
         out.append((name, t, v))
     return out
 
 
 def yaml_str(text: str) -> str:
+    if "\n" in text:   # a single-quoted YAML scalar folds a line break into a space
+        return '"' + text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
     return "'" + text.replace("'", "''") + "'"
 
 
@@ -180,7 +182,7 @@ def config_asset(lab, cs: str, script_guid: str) -> str:
             text += "  engineerSkills:\n" + "".join(f"  - think: {num(str(th))}\n    top: {top}\n    blunder: {num(str(b))}\n"
                                                    for th, top, b in lab["eskill"])
         if name == "aiCrewEngineers":
-            text += ("  engineerRect:\n    serializedVersion: 2\n    x: 0.5\n    y: 0.04\n    width: 0.48\n    height: 0.92\n"
+            text += ("  engineerRect:\n    serializedVersion: 2\n    x: 0.18\n    y: 0.04\n    width: 0.64\n    height: 0.92\n"
                      "  pilotRect:\n    serializedVersion: 2\n    x: 0.01\n    y: 0.3\n    width: 0.2\n    height: 0.42\n"
                      "  colours:\n  - {r: 1, g: 0, b: 0.976, a: 1}\n  - {r: 0.075, g: 1, b: 0.949, a: 1}\n  - {r: 1, g: 0.655, b: 0, a: 1}\n")
         if name == "ratelLabel":

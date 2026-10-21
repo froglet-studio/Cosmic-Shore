@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using FMODUnity;
 using UnityEngine;
@@ -106,6 +107,8 @@ namespace CosmicShore.Gameplay
             if (_active && _active != this) Destroy(_active);
             _active = this;
             _view = new HoneyguideDynamoView(this);
+            var ab = _cfg.AbilityText(_core.Ability);   // the ability the Ratel starts with, for both seats
+            if (ab != null) Toast(TemplateText.Fill(_cfg.AbilityToastTemplate, "name", ab.name, "text", ab.text));
         }
 
         void Unbind()
@@ -231,6 +234,8 @@ namespace CosmicShore.Gameplay
                 case DynamoEventKind.Shuffle:
                     AbilityAt = Time.time;
                     Play(_cfg.RevealSfx);
+                    var ab = _cfg.AbilityText(e.Ability);   // both seats read what the Ratel's new ability does
+                    if (ab != null) Toast(TemplateText.Fill(_cfg.AbilityToastTemplate, "name", ab.name, "text", ab.text));
                     break;
                 case DynamoEventKind.Ports:
                     PortsAt = Time.time;

@@ -171,16 +171,20 @@
   function create(S, seed) {
     const st = {
       cells: new Array(N).fill(0), ports: [], portSet: -1, ap: S.apPerTick < S.apBank ? S.apPerTick : S.apBank, bonusAp: 0,
-      clock: 0, ticks: 0, battery: [], slots: [], uses: [], made: 0, reveal: null, freePlace: 0, ability: '',
+      clock: 0, ticks: 0, battery: [], slots: [], uses: [], made: 0, reveal: null, free: [], ability: '',
       rng: seed | 0, wasted: 0, events: [], shapes: S.patterns.map((p) => shapes(p.cells, S.allowRotatedMatches)),
     };
     for (let k = 0; k < S.slotCount; k++) { st.slots.push(S.loadout && S.loadout[k] != null ? S.loadout[k] : drawPattern(st, S)); st.uses.push(0); }
     setPorts(st, S, S.firstPortSet != null ? S.firstPortSet : Math.floor(rng(st) * S.portSets.length));
     st.ability = S.fixedAbility || ABILITIES[Math.floor(rng(st) * ABILITIES.length)];
-    if (st.ability === 'printer') st.freePlace = 1;
+    if (st.ability === 'printer') grantFree(st, 1);
     if (S.startFilled) for (const p of st.ports) st.cells[p[0]] = p[1];
     return st;
   }
+
+  // Free prisms (the Printer ability, Universal Translator, 5D Printer) each come with a random domain, drawn when granted
+  // (Garrett 2026-10-21: "a random domain and it should follow the cursor"). The Ratel places the first one held.
+  function grantFree(st, n) { for (let k = 0; k < n; k++) st.free.push(1 + Math.floor(rng(st) * 3)); }
 
   function portAt(st, cell) { for (const p of st.ports) if (p[0] === cell) return p[1]; return 0; }
   // What a cell counts as for completing a pattern: its prism, or (empty) its port's colour.
@@ -255,8 +259,9 @@
       }
       case 'refuel': {
         if (inp.cell < 0 || inp.cell >= N || st.cells[inp.cell] !== 0) return false;
-        if (st.freePlace > 0 && inp.colour >= 1 && inp.colour <= 3) {   // the Printer: any empty cell, any colour, no AP
-          st.freePlace--; st.cells[inp.cell] = inp.colour;
+        if (st.free.length && inp.colour >= 1 && inp.colour <= 3) {   // a free prism: any empty cell, its own domain, no AP
+          if (inp.colour !== st.free[0]) return false;
+          st.free.shift(); st.cells[inp.cell] = inp.colour;
           st.events.push({ k: 'place', cell: inp.cell, colour: inp.colour });
           return true;
         }
@@ -264,6 +269,12 @@
         if (pc === 0 || !spendAp(st, 1)) return false;
         st.cells[inp.cell] = pc;
         st.events.push({ k: 'refuel', cell: inp.cell, colour: pc });
+        return true;
+      }
+      case 'remove': {   // Garrett 2026-10-21: right-click a prism to delete it, for 1 AP
+        if (inp.cell < 0 || inp.cell >= N || st.cells[inp.cell] === 0 || !spendAp(st, 1)) return false;
+        const colour = st.cells[inp.cell]; st.cells[inp.cell] = 0;
+        st.events.push({ k: 'remove', cell: inp.cell, colour });
         return true;
       }
       case 'activate': {
@@ -283,7 +294,7 @@
         }
         if (S.patternsPerShuffle > 0 && st.made % S.patternsPerShuffle === 0) {   // a new ability, then a new port pattern
           if (!S.fixedAbility) { const k = pickOther(st, ABILITIES.length, ABILITIES.indexOf(st.ability)); st.ability = ABILITIES[k]; }
-          if (st.ability === 'printer' && st.freePlace < 1) st.freePlace = 1;
+          if (st.ability === 'printer' && st.free.length < 1) grantFree(st, 1);
           const next = S.portSets.length > 1 ? pickOther(st, S.portSets.length, st.portSet) : st.portSet;
           st.events.push({ k: 'shuffle', ability: st.ability, portSet: next });
           st.reveal = { stage: 1, t: S.revealAbility, portSet: next };
@@ -302,7 +313,7 @@
     switch (kind) {
       case 'burn': for (let k = 0; k < arg; k++) { const full = []; for (let i = 0; i < N; i++) if (st.cells[i] !== 0) full.push(i); if (!full.length) break; st.cells[full[Math.floor(rng(st) * full.length)]] = 0; n++; } break;
       case 'purge': for (let i = 0; i < N; i++) if (st.cells[i] === arg) { st.cells[i] = 0; n++; } break;
-      case 'free': st.freePlace += arg; n = arg; break;
+      case 'free': grantFree(st, arg); n = arg; break;
       case 'bonus': st.bonusAp += arg; n = arg; break;
       case 'rewind': st.clock = st.clock > arg ? st.clock - arg : 0; break;
       case 'unspin': for (const p of st.ports) for (let k = 0; k < 5; k++) p[0] = rot60(p[0]); st.clock = 0; break;
@@ -333,7 +344,7 @@
     const before = st.ap;
     st.ap = before + gain > cap ? (before > cap ? before : cap) : before + gain;
     st.wasted += before + gain - st.ap;
-    if (st.ability === 'printer' && st.freePlace < 2) st.freePlace++;
+    if (st.ability === 'printer' && st.free.length < 2) grantFree(st, 1);
     st.ticks++;
     st.events.push({ k: 'tick', n: st.ticks, ap: gain });
   }
@@ -366,7 +377,7 @@
   function built(st, S) { return st.slots.map((pid) => (pid >= 0 ? match(st, S, pid) : null)); }
   function digest(st) {
     return st.cells.join('') + '|' + st.ports.map((p) => p[0] + ':' + p[1]).join(',') + '|' + st.ap + '+' + st.bonusAp + '|' + st.battery.join('') +
-      '|' + st.slots.join(',') + '/' + st.uses.join(',') + '|' + (st.reveal ? st.reveal.stage + ':' + st.reveal.portSet : '-') + '|' + st.freePlace + '|' + st.ability +
+      '|' + st.slots.join(',') + '/' + st.uses.join(',') + '|' + (st.reveal ? st.reveal.stage + ':' + st.reveal.portSet : '-') + '|' + st.free.join('') + '|' + st.ability +
       '|' + st.ticks + '|' + st.made + '|' + st.wasted + '|' + (st.rng >>> 0);
   }
 
@@ -412,7 +423,7 @@
       if (!clear) return null;
       if (S.portsCount && portAt(st, i) === want) return { cost: 1, first: clear };   // cleared, the port shows the colour
     }
-    if (st.freePlace > 0 && st.cells[i] === 0) return { cost: 0.5, first: { k: 'refuel', cell: i, colour: want } };
+    if (st.free.length && st.free[0] === want && st.cells[i] === 0) return { cost: 0.5, first: { k: 'refuel', cell: i, colour: want } };
     const dist = new Array(N).fill(-1), queue = [i]; dist[i] = 0;
     for (let h = 0; h < queue.length; h++) { const u = queue[h]; for (const v of NEIGH[u]) if (dist[v] < 0 && st.cells[v] === 0) { dist[v] = dist[u] + 1; queue.push(v); } }
     const long = st.ability === 'longReach';
@@ -465,9 +476,9 @@
   function aiPlan(st, S, prm, colourScore, rnd, memo) {
     if (st.reveal) return null;
     const free = st.ability === 'freeFire';
-    if (st.ap + st.bonusAp < 1 && st.freePlace < 1 && !free) return null;
+    if (st.ap + st.bonusAp < 1 && st.free.length < 1 && !free) return null;
     if (free || st.ap + st.bonusAp >= 1) for (let s = 0; s < st.slots.length; s++) if (st.slots[s] >= 0 && match(st, S, st.slots[s])) return { k: 'activate', slot: s };
-    if (st.ap + st.bonusAp < 1 && st.freePlace < 1) return null;
+    if (st.ap + st.bonusAp < 1 && st.free.length < 1) return null;
     if (prm.blunder > 0 && rnd() < prm.blunder) { const all = legalInputs(st); if (all.length) return all[Math.floor(rnd() * all.length)]; }
     const all = bestPlacements(st, S, 0);
     if (!all.length) return null;
@@ -625,7 +636,7 @@
   const ABILITY_TEXT = {
     overclock: ['Overclock', '+1 AP every spin; the bank holds 1 more.'],
     longReach: ['Long Reach', 'Drag a prism to any empty cell you can reach through empty cells, for 1 AP.'],
-    printer: ['Printer', 'A free prism of any colour every spin (hold 2): tap an empty cell.'],
+    printer: ['Printer', 'A free prism of a random domain every spin (hold 2): it rides your cursor; tap an empty cell.'],
     swap: ['Swap', 'Drag a prism onto a neighbouring prism to swap them, for 1 AP.'],
     freeFire: ['Free Fire', 'Making a pattern costs no AP.'],
     wildCore: ['Wild Core', 'The centre cell counts as any colour.'],
@@ -660,9 +671,9 @@
     triplesynth: { seat: 'ratel', text: 'Places a touching Ruby, Jade and Gold prism on empty Dynamo cells.' },
     harmonizer: { seat: 'triggers', time: true, mech: { chroma: 1 }, text: 'Shots turn hostile prisms to your newest charge\'s domain instead of destroying them.' },
     lance: { seat: 'triggers', time: true, mech: { lance: 1 }, text: 'Bolt shots that miss plant a prism of your newest charge\'s domain where they stop: fire ahead to build a slip lane.' },
-    translator: { seat: 'ratel', text: 'The Ratel gets a free prism of any colour: tap an empty cell.' },
+    translator: { seat: 'ratel', text: 'The Ratel gets a free prism of a random domain: tap an empty cell.' },
     anode: { seat: 'slip', text: '+1 charge of each colour.' },
-    printer5d: { seat: 'ratel', text: 'The Ratel gets 2 free prisms of any colour.' },
+    printer5d: { seat: 'ratel', text: 'The Ratel gets 2 free prisms of random domains.' },
     hammer: { seat: 'ratel', text: 'Drops 3 prisms of random colours on empty Dynamo cells.' },
     cilia: { seat: 'ratel', text: 'The Ratel banks 3 extra AP.' },
     chrono: { seat: 'ratel', text: 'The Ratel banks 1 extra AP and the spin bar winds back 5 s.' },
@@ -1626,7 +1637,7 @@
     if (!small) {
       ctx.fillStyle = '#fff3cf'; ctx.font = '600 ' + fs + 'px system-ui, sans-serif'; ctx.textAlign = 'center';
       const y = G.cy + G.size * 5.05;
-      if (st.freePlace > 0 && !rv) ctx.fillText(fitText('Printer: ' + st.freePlace + ' free prism' + (st.freePlace > 1 ? 's' : '') + ', tap an empty cell (' + DOM[COLOUR_DOM[ui.freeColour || 1]].name + '; tap the AP row to change)', L.w - 16), G.cx, y);
+      if (st.free.length && !rv) ctx.fillText(fitText(st.free.length + ' free prism' + (st.free.length > 1 ? 's' : '') + ' (' + DOM[COLOUR_DOM[st.free[0]]].name + ' next): tap an empty cell', L.w - 16), G.cx, y);
       ctx.textAlign = 'left';
     }
     // the slot cards: the pattern's name, its shape, its uses
@@ -1830,7 +1841,11 @@
     const [x, y] = pt(ev), L = ui.layout; if (!L || !world) return;
     canvas.setPointerCapture(ev.pointerId);
     if (L.pip === 'dyn' && inRect(L.dyn, x, y)) { const now = performance.now(); if (now - ui.lastPipTap < 350) requestSwap('tap'); ui.lastPipTap = now; return; }
-    if (inRect(L.dyn, x, y)) { if (world.seats.eng.who === 'human') engDown(x, y); return; }
+    if (inRect(L.dyn, x, y)) {
+      if (world.seats.eng.who !== 'human') return;
+      if (ev.button === 2) { const c = pxCell(ui.dynG, x, y); if (c >= 0 && world.dyn.cells[c]) engInput({ k: 'remove', cell: c }); return; }   // delete a prism, 1 AP
+      engDown(x, y); return;
+    }
     const card = cardAt(x, y);
     pointers.set(ev.pointerId, { x, y, card });
     if (card) { ui.cardDown[card] = true; return; }
@@ -1843,15 +1858,15 @@
   }
   function engDown(x, y) {
     const st = world.dyn, G = ui.dynG;
-    if (inRect(ui.apRect, x, y)) { ui.freeColour = ((ui.freeColour || 1) % 3) + 1; return; }
     for (let k = 0; k < (ui.slotRects || []).length; k++) if (inRect(ui.slotRects[k], x, y)) { engInput({ k: 'activate', slot: k }); return; }
     const c = pxCell(G, x, y);
     if (c < 0) return;
     if (st.reveal) return;
     if (st.cells[c]) { ui.drag = { from: c, x, y }; return; }
-    if (st.freePlace > 0) { engInput({ k: 'refuel', cell: c, colour: ui.freeColour || 1 }); return; }
+    if (st.free.length) { engInput({ k: 'refuel', cell: c, colour: st.free[0] }); return; }
     if (D.portAt(st, c)) engInput({ k: 'refuel', cell: c });
   }
+  canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
   canvas.addEventListener('pointermove', (ev) => {
     const [x, y] = pt(ev);
     const p = pointers.get(ev.pointerId); if (p) { p.x = x; p.y = y; }

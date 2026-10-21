@@ -54,7 +54,7 @@ namespace CosmicShore.Tests
             var s = Load().ToSettings();
             var core = new DynamoCore(s, 777);
             var memo = new DynamoCore.AIMemo();
-            Assert.AreEqual("0000032200100200100010010030023300000|5:3,6:2,7:2,10:1,13:2,16:1,20:1,23:1,26:3,29:2,30:3,31:3|3+0||27,1,8/0,0,0|-|0|wildCore|0|0|0|567895250",
+            Assert.AreEqual("0000032200100200100010010030023300000|5:3,6:2,7:2,10:1,13:2,16:1,20:1,23:1,26:3,29:2,30:3,31:3|3+0||27,1,8/0,0,0|-||wildCore|0|0|0|567895250",
                 core.Digest());
             int made = 0;
             for (int k = 0; k < 400; k++)
@@ -70,7 +70,7 @@ namespace CosmicShore.Tests
                 core.Events.Clear();
             }
             Assert.AreEqual(8, made, "patterns the AI Ratel made");
-            Assert.AreEqual("0000000010001200020000000100000300000|9:3,16:3,23:3,11:1,6:2,24:2,7:2,19:3,8:2,35:1,31:1,26:1|0+0|123|27,3,36/1,1,0|1:44|0|overclock|6|8|0|440012856",
+            Assert.AreEqual("0000000010001200020000000100000300000|9:3,16:3,23:3,11:1,6:2,24:2,7:2,19:3,8:2,35:1,31:1,26:1|0+0|123|27,3,36/1,1,0|1:44||overclock|6|8|0|440012856",
                 core.Digest());
         }
 

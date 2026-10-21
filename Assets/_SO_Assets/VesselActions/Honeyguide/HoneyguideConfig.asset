@@ -32,6 +32,11 @@ MonoBehaviour:
   contactRadius: 5.5
   selfGrace: 1
   exitAligned: 1
+  zipSpeed: 480
+  zipRamp: 0.15
+  zipTurnRate: 14
+  zipLift: 3
+  zipExitBoost: 0.75
   passiveSeconds: 20
   passiveMaxLevel: 3
   boostCap: 6
@@ -86,9 +91,9 @@ MonoBehaviour:
   aiCrewEngineers: 1
   engineerRect:
     serializedVersion: 2
-    x: 0.5
+    x: 0.18
     y: 0.04
-    width: 0.48
+    width: 0.64
     height: 0.92
   pilotRect:
     serializedVersion: 2
@@ -106,10 +111,12 @@ MonoBehaviour:
   - Jade
   - Gold
   tapToMake: 'TAP'
-  freePrismTemplate: '{count} free: tap an empty cell ({colour}; tap the AP row to change)'
+  freePrismTemplate: '{count} free ({colour} on your cursor): tap an empty cell'
   revealAbilityTemplate: 'New ability: {name}'
   revealPortsLine: 'New injection ports'
-  madeBannerTemplate: '{name} {level}'
+  madeToastTemplate: '{name} {level}: {text}'
+  abilityToastTemplate: 'The Ratel''s new ability, {name}: {text}'
+  cardDetailTemplate: "{name}\n{text}\nMade {uses} of {max}\n\nClick anywhere to close"
   jumpCardTemplate: 'Jump x{count}'
   dashCardTemplate: 'Dash x{count}'
   noJumpTarget: 'No jump target'
@@ -244,7 +251,7 @@ MonoBehaviour:
     family: 2
     shape: C2,0 C0,1 M1,1 S0,2
     effect: 22
-    effectText: 'The Ratel gets a free prism of any colour: tap an empty cell.'
+    effectText: 'The Ratel gets a free prism of a random domain: tap an empty cell.'
     parked: 0
   - name: 'Anode Ray'
     family: 2
@@ -256,7 +263,7 @@ MonoBehaviour:
     family: 2
     shape: S3,0 C2,1 C0,2 M1,2 C1,3
     effect: 24
-    effectText: 'The Ratel gets 2 free prisms of any colour.'
+    effectText: 'The Ratel gets 2 free prisms of random domains.'
     parked: 0
   - name: 'Square-Peg Hammer'
     family: 2
@@ -394,7 +401,7 @@ MonoBehaviour:
     text: 'Drag a prism to any empty cell you can reach through empty cells, for 1 AP.'
   - ability: 2
     name: 'Printer'
-    text: 'A free prism of any colour every spin (hold 2): tap an empty cell.'
+    text: 'A free prism of a random domain every spin (hold 2): it rides your cursor; tap an empty cell.'
   - ability: 3
     name: 'Swap'
     text: 'Drag a prism onto a neighbouring prism to swap them, for 1 AP.'

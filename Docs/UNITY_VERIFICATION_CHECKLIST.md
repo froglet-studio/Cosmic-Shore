@@ -90,7 +90,11 @@ Toy Box > Vessel Changer → **Honeyguide and Ratel**:
 5. Blink Drive / Rosen Bridge / Monte Cannon made: the Jump chip appears; R or pad Y jumps. FTL swaps with a prism ahead.
 6. The `HoneyguideConfig` asset shows no missing-field warnings after a reimport; `HoneyguideTests` and
    `EnumIntegrityTests` pass in the Test Runner.
-7. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
+7. Round of 2026-10-21 (`e41f4d494` and after): the small board sits at the left; after a swap the board covers the
+   centre. A slip zips along the trail (no jump cut) and leaves boosted. Toasts (top right, under Settings) name the
+   Ratel's ability and each pattern made. Right-click a card: its details; right-click a prism: deleted, 1 AP. A free
+   prism shows on the cursor in its domain.
+8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
    with the AI Ratel on several AI hulls (`aiCrewEngineers`).
 
 ### 🔴 Thresher: no lime on the chain, the crosshair or the ball (`cece/tender-hamilton-qcd1hi`, 2026-10-20) — NOT EDITOR-VERIFIED

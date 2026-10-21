@@ -16,7 +16,7 @@ public static class TraceDriver
     static readonly string[] EffectKeys = { "burn", "purge", "free", "bonus", "rewind", "unspin", "trio", "scatter", "charge", "drain", "drainOne" };
     static readonly Dictionary<string, DynamoInputKind> Kinds = new()
     {
-        ["tinker"] = DynamoInputKind.Tinker, ["refuel"] = DynamoInputKind.Refuel, ["activate"] = DynamoInputKind.Activate,
+        ["tinker"] = DynamoInputKind.Tinker, ["refuel"] = DynamoInputKind.Refuel, ["activate"] = DynamoInputKind.Activate, ["remove"] = DynamoInputKind.Remove,
     };
 
     static int Int(JsonElement o, string k) => o.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
@@ -37,6 +37,7 @@ public static class TraceDriver
         DynamoEventKind.Resume => "r",
         DynamoEventKind.Effect => $"F{EffectKeys[(int)e.Effect]}:{e.Count}",
         DynamoEventKind.Tick => $"t{e.Count}:{e.Ap}",
+        DynamoEventKind.Remove => $"D{e.Cell}:{e.Colour}",
         _ => "?",
     };
 
@@ -108,7 +109,7 @@ public static class TraceDriver
                 if (pre != null) evs.Insert(0, "\"" + pre + "\"");
                 sb.Append(",{\"ok\":").Append(ok ? "true" : "false").Append(",\"d\":\"").Append(core.Digest()).Append("\",\"e\":[");
                 sb.Append(string.Join(",", evs));
-                sb.Append("]}");
+                sb.Append("],\"b\":\"").Append(string.Join("/", core.Built(s).Select(c => c == null ? "-" : string.Join(".", c)))).Append("\"}");
                 core.Events.Clear();
             }
             sb.Append(']');

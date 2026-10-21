@@ -7,9 +7,10 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
 
 - **The Honeyguide** flies the hull. It uses the Sparrow's airframe, its numbers and its two triggers (the guns). Its Time
   ability is the **Slip**. Touch a 1-D trail of a domain the battery holds, with the nose within `aimCone` (45°) of the
-  prism's long axis either way. The hull then jumps (`IVessel.SetPose`) to the end of the trail it points at. That end is
-  clipped to `slipReach`, and the hull lands `exitOffset` past it, aligned with the trail. The slip spends that domain's
-  charge.
+  prism's long axis either way. The hull then **zips** along the trail to the end it points at (`HoneyguideCrew.Zip.cs`:
+  `zipSpeed` 480 u/s, ridden `zipLift` above the prisms, `zipExitBoost` out; Garrett 2026-10-21: "not teleport ... a
+  satisfying zip over"). That end is clipped to `slipReach`, and the hull leaves `exitOffset` past it, aligned with the
+  trail. The slip spends that domain's charge.
 - **The Ratel** plays the **Dynamo**, a hex puzzle (`DynamoCore`):
   - Every 15 s (a shrinking bar across the top) the injection ports turn 60° and the AP refill.
   - The Ratel moves prisms, injects at ports and makes patterns. Each costs 1 AP.
@@ -25,11 +26,15 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
 3. Press **D-pad left / right** or **1 / 2**, or double-tap the small board, to swap seats. The AI takes the empty seat:
    - the hull's own `AIPilot` flies while you play the Ratel;
    - the Ratel AI (the lab's `aiPlan`, input-only, Hard by default) plays while you fly.
-4. To play the Ratel:
+4. To play the Ratel (the board covers the centre of the screen):
    - Drag a prism along empty cells to move it (1 AP a step).
    - Tap a port to inject its colour (1 AP).
    - Tap a lit card to make its pattern (1 AP).
-   - Free prisms (Printer, Translator, 5D Printer): tap an empty cell. Tap the AP row to change the colour.
+   - Right-click a prism to delete it (1 AP). Right-click a card to read its details; any click closes them.
+   - Free prisms (Printer, Translator, 5D Printer) each come in a random domain and ride the cursor until placed: click an
+     empty cell.
+   - The Ratel's ability (at the start and each new one) and every pattern made are announced in the game's toast, top
+     right under Settings (`ToastNotificationAPI`), worded for both seats.
 5. Stored jumps (Blink, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) and Thruster dashes are used with
    **R**, pad **Y**, or a tap on the chip by the small board.
 

@@ -66,10 +66,12 @@ namespace CosmicShore.Gameplay
         Tinker = 0,
         Refuel = 1,
         Activate = 2,
+        Remove = 3,
     }
 
     /// <summary>One Engineer input. A human's tap and the AI's choice are the same value. <see cref="Colour"/> on a Refuel
-    /// spends a free placement (the Printer, the 5D Printer) on any empty cell.</summary>
+    /// spends the first free prism held (<see cref="DynamoCore.Free"/>; it must name that prism's domain) on any empty cell.
+    /// A Remove deletes the prism on <see cref="Cell"/> for 1 AP (a right-click).</summary>
     public struct DynamoInput
     {
         public DynamoInputKind Kind;
@@ -78,6 +80,7 @@ namespace CosmicShore.Gameplay
         public static DynamoInput Tinker(int from, int to) => new() { Kind = DynamoInputKind.Tinker, From = from, To = to };
         public static DynamoInput Refuel(int cell, int colour = 0) => new() { Kind = DynamoInputKind.Refuel, Cell = cell, Colour = colour };
         public static DynamoInput Activate(int slot) => new() { Kind = DynamoInputKind.Activate, Slot = slot };
+        public static DynamoInput Remove(int cell) => new() { Kind = DynamoInputKind.Remove, Cell = cell };
     }
 
     public enum DynamoEventKind
@@ -95,6 +98,7 @@ namespace CosmicShore.Gameplay
         Resume = 10,
         Effect = 11,
         Tick = 12,
+        Remove = 13,
     }
 
     public struct DynamoEvent
@@ -294,7 +298,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Each port as (cell, colour); the cells turn on every spin.</summary>
         public int[][] Ports = new int[0][];
         public int PortSet = -1;
-        public int Ap, BonusAp, Ticks, Made, Wasted, FreePlace;
+        public int Ap, BonusAp, Ticks, Made, Wasted;
+        /// <summary>The free prisms held, first to place first: each one's domain (1 Ruby, 2 Jade, 3 Gold), drawn when granted.</summary>
+        public readonly List<int> Free = new();
+        public int FreePlace => Free.Count;
         public double Clock;
         public readonly List<int> Battery = new();
         public int[] Slots, Uses;
@@ -316,8 +323,15 @@ namespace CosmicShore.Gameplay
             for (int k = 0; k < s.SlotCount; k++) Slots[k] = s.Loadout != null && k < s.Loadout.Length ? s.Loadout[k] : DrawPattern(s);
             SetPorts(s, s.FirstPortSet >= 0 ? s.FirstPortSet : (int)Math.Floor(NextRandom() * s.PortSets.Count));
             Ability = s.FixedAbility >= 0 ? (DynamoAbility)s.FixedAbility : (DynamoAbility)(int)Math.Floor(NextRandom() * AbilityCount);
-            if (Ability == DynamoAbility.Printer) FreePlace = 1;
+            if (Ability == DynamoAbility.Printer) GrantFree(1);
             if (s.StartFilled) foreach (var p in Ports) Cells[p[0]] = p[1];
+        }
+
+        /// <summary>Free prisms (the Printer ability, Universal Translator, 5D Printer) each come with a random domain, drawn when
+        /// granted (Garrett 2026-10-21: "a random domain and it should follow the cursor").</summary>
+        void GrantFree(int n)
+        {
+            for (int k = 0; k < n; k++) Free.Add(1 + (int)Math.Floor(NextRandom() * 3));
         }
 
         /// <summary>mulberry32 over the state's own stream, so a replay of the same inputs draws the same cards.</summary>
@@ -497,9 +511,10 @@ namespace CosmicShore.Gameplay
                 case DynamoInputKind.Refuel:
                 {
                     if (!InBoard(inp.Cell) || Cells[inp.Cell] != 0) return false;
-                    if (FreePlace > 0 && inp.Colour >= 1 && inp.Colour <= 3)   // the Printer: any empty cell, any colour, no AP
+                    if (Free.Count > 0 && inp.Colour >= 1 && inp.Colour <= 3)   // a free prism: any empty cell, its own domain, no AP
                     {
-                        FreePlace--;
+                        if (inp.Colour != Free[0]) return false;
+                        Free.RemoveAt(0);
                         Cells[inp.Cell] = inp.Colour;
                         Events.Add(new DynamoEvent { Kind = DynamoEventKind.Place, Cell = inp.Cell, Colour = inp.Colour });
                         return true;
@@ -508,6 +523,14 @@ namespace CosmicShore.Gameplay
                     if (pc == 0 || !SpendAp(1)) return false;
                     Cells[inp.Cell] = pc;
                     Events.Add(new DynamoEvent { Kind = DynamoEventKind.Refuel, Cell = inp.Cell, Colour = pc });
+                    return true;
+                }
+                case DynamoInputKind.Remove:   // Garrett 2026-10-21: right-click a prism to delete it, for 1 AP
+                {
+                    if (!InBoard(inp.Cell) || Cells[inp.Cell] == 0 || !SpendAp(1)) return false;
+                    int colour = Cells[inp.Cell];
+                    Cells[inp.Cell] = 0;
+                    Events.Add(new DynamoEvent { Kind = DynamoEventKind.Remove, Cell = inp.Cell, Colour = colour });
                     return true;
                 }
                 case DynamoInputKind.Activate:
@@ -534,7 +557,7 @@ namespace CosmicShore.Gameplay
                     if (s.PatternsPerShuffle > 0 && Made % s.PatternsPerShuffle == 0)   // a new ability, then a new port pattern
                     {
                         if (s.FixedAbility < 0) Ability = (DynamoAbility)PickOther(AbilityCount, (int)Ability);
-                        if (Ability == DynamoAbility.Printer && FreePlace < 1) FreePlace = 1;
+                        if (Ability == DynamoAbility.Printer && Free.Count < 1) GrantFree(1);
                         int next = s.PortSets.Count > 1 ? PickOther(s.PortSets.Count, PortSet) : PortSet;
                         Events.Add(new DynamoEvent { Kind = DynamoEventKind.Shuffle, Ability = Ability, PortSet = next });
                         RevealState = new Reveal { Stage = 1, T = s.RevealAbility, PortSet = next };
@@ -573,7 +596,7 @@ namespace CosmicShore.Gameplay
                 case DynamoBoardEffect.Purge:
                     for (int i = 0; i < CellCount; i++) if (Cells[i] == arg) { Cells[i] = 0; n++; }
                     break;
-                case DynamoBoardEffect.Free: FreePlace += arg; n = arg; break;
+                case DynamoBoardEffect.Free: GrantFree(arg); n = arg; break;
                 case DynamoBoardEffect.Bonus: BonusAp += arg; n = arg; break;
                 case DynamoBoardEffect.Rewind: Clock = Clock > arg ? Clock - arg : 0; break;
                 case DynamoBoardEffect.Unspin:
@@ -635,7 +658,7 @@ namespace CosmicShore.Gameplay
             int before = Ap;
             Ap = before + gain > cap ? (before > cap ? before : cap) : before + gain;
             Wasted += before + gain - Ap;
-            if (Ability == DynamoAbility.Printer && FreePlace < 2) FreePlace++;
+            if (Ability == DynamoAbility.Printer && Free.Count < 2) GrantFree(1);
             Ticks++;
             Events.Add(new DynamoEvent { Kind = DynamoEventKind.Tick, Count = Ticks, Ap = gain });
         }
@@ -686,7 +709,8 @@ namespace CosmicShore.Gameplay
             foreach (int b in Battery) sb.Append(b);
             sb.Append('|').Append(string.Join(",", Slots)).Append('/').Append(string.Join(",", Uses)).Append('|');
             sb.Append(RevealState != null ? RevealState.Stage + ":" + RevealState.PortSet : "-").Append('|');
-            sb.Append(FreePlace).Append('|').Append(AbilityKeys[(int)Ability]).Append('|');
+            foreach (int c in Free) sb.Append(c);
+            sb.Append('|').Append(AbilityKeys[(int)Ability]).Append('|');
             sb.Append(Ticks).Append('|').Append(Made).Append('|').Append(Wasted).Append('|').Append(unchecked((uint)Rng));
             return sb.ToString();
         }
@@ -774,7 +798,7 @@ namespace CosmicShore.Gameplay
                 if (clear == null) return null;
                 if (s.PortsCount && PortAt(i) == want) return new Fix { Cost = 1, First = clear.Value };   // cleared, the port shows the colour
             }
-            if (FreePlace > 0 && Cells[i] == 0) return new Fix { Cost = 0.5, First = DynamoInput.Refuel(i, want) };
+            if (Free.Count > 0 && Free[0] == want && Cells[i] == 0) return new Fix { Cost = 0.5, First = DynamoInput.Refuel(i, want) };
             var dist = new int[CellCount];
             for (int k = 0; k < CellCount; k++) dist[k] = -1;
             var queue = new List<int> { i };
@@ -855,11 +879,11 @@ namespace CosmicShore.Gameplay
         {
             if (RevealState != null) return null;
             bool free = Ability == DynamoAbility.FreeFire;
-            if (Ap + BonusAp < 1 && FreePlace < 1 && !free) return null;
+            if (Ap + BonusAp < 1 && Free.Count < 1 && !free) return null;
             if (free || Ap + BonusAp >= 1)
                 for (int sl = 0; sl < Slots.Length; sl++)
                     if (Slots[sl] >= 0 && Match(s, Slots[sl]) != null) return DynamoInput.Activate(sl);
-            if (Ap + BonusAp < 1 && FreePlace < 1) return null;
+            if (Ap + BonusAp < 1 && Free.Count < 1) return null;
             if (prm.Blunder > 0 && rnd() < prm.Blunder)
             {
                 var legal = LegalInputs();

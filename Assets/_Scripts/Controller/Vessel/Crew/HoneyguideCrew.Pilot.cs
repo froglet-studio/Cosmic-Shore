@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// The Honeyguide's half of the crew: the Slip, the pattern effects (the lab's <c>applyEffect</c>, <c>contacts</c>,
     /// <c>slip</c>, <c>jumpLanding</c>, <c>doJump</c> and <c>stepPassives</c>), boost and the stored jumps. Everything the
     /// lab does on a flat disc is done here in the hull's own 3D space, through <see cref="PrismSpatialIndex"/> (never physics)
-    /// and <see cref="IVessel.SetPose"/> (never a transform write).
+    /// and <see cref="IVessel.SetPose"/> for the jumps; a slip is a zip along the trail (<c>HoneyguideCrew.Zip.cs</c>).
     /// </summary>
     public sealed partial class HoneyguideCrew
     {
@@ -45,9 +45,6 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Seconds of boost the pattern effects have given and the hull has not yet spent.</summary>
         public float BoostSeconds => _boostE;
-        /// <summary>The banner the view shows (a pattern's name and level), and when it was raised.</summary>
-        internal string Banner { get; private set; } = "";
-        internal float BannerAt { get; private set; } = -99f;
 
         int Lvl(Mech m) => _mech[(int)m];
 
@@ -64,14 +61,13 @@ namespace CosmicShore.Gameplay
             _ignoreT = 0f;
             _lastMade = _lastRetired = -1;
             _turnScaled = false;
-            Banner = "";
-            BannerAt = -99f;
         }
 
         void EndPilotSide()
         {
             if (_boosting && _status != null) _status.IsBoosting = false;
             _boosting = false;
+            EndZip(false);
             RestoreTurn();
         }
 
@@ -79,6 +75,7 @@ namespace CosmicShore.Gameplay
         {
             StepPassives(dt);
             StepBoost(dt);
+            if (StepZip(dt)) return;   // on the rail: no contacts, no jumps until it lands
             StepWatt();
             Contacts(dt);
             StepJumpInput();
@@ -292,7 +289,9 @@ namespace CosmicShore.Gameplay
             var heading = _cfg.ExitAligned ? new Vector3((float)l.Heading.X, (float)l.Heading.Y, (float)l.Heading.Z) : fwd;
             if (heading.sqrMagnitude < 1e-6f) heading = fwd;
             var point = new Vector3((float)l.Point.X, (float)l.Point.Y, (float)l.Point.Z);
-            _vessel.SetPose(new Pose(point, Quaternion.LookRotation(heading, Vector3.ProjectOnPlane(t.up, heading).sqrMagnitude > 1e-6f ? t.up : Vector3.up)));
+            // Not a teleport: the hull zips along the trail to the landing (Garrett 2026-10-21: "a satisfying zip over so they
+            // keep some continuity and are not denied the joy of fast travel"). HoneyguideCrew.Zip.cs.
+            BeginZip(contactIndex, l.Index, point, heading);
             _ignoreTrail = trail;
             _ignoreT = _cfg.SlipGrace;
             Play(_cfg.SlipSfx);
@@ -363,8 +362,15 @@ namespace CosmicShore.Gameplay
                 case HoneyguideEffect.Eti: ChargeNearbyDomains(); break;
                 case HoneyguideEffect.Vorticity: _core.BoardEffect(_s, DynamoBoardEffect.Unspin, 0); break;
             }
-            Banner = TemplateText.Fill(_cfg.MadeBannerTemplate, "name", pat.name, "level", lv > 0 ? Roman(lv) : "");
-            BannerAt = Time.time;
+            if (depth == 0)
+                Toast(TemplateText.Fill(_cfg.MadeToastTemplate, "name", pat.name, "level", lv > 0 ? Roman(lv) : "", "text", pat.effectText));
+        }
+
+        // The game's toast (top right, under Settings: ToastNotificationAPI), for the seat on this screen. An AI crew is silent.
+        void Toast(string line)
+        {
+            if (_aiCrew || string.IsNullOrEmpty(line)) return;
+            ToastNotificationAPI.Show(line);
         }
 
         static string Roman(int n) => n switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", _ => n.ToString() };
@@ -450,8 +456,7 @@ namespace CosmicShore.Gameplay
             Jumps.RemoveAt(0);
             if (!JumpLanding(kind, out var at, out var taken))
             {
-                Banner = _cfg.NoJumpTarget;
-                BannerAt = Time.time;
+                Toast(_cfg.NoJumpTarget);
                 return;
             }
             if (taken)   // FTL Chromatool: the prism swapped with becomes a charge of its domain

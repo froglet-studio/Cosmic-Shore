@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
         readonly HoneyguideCrew _crew;
         readonly GameObject _root;
         readonly HoneyguideBoardGraphic _graphic;
-        readonly TMP_Text _seat, _abilityName, _abilityText, _free, _revealTitle, _revealText, _banner, _chip;
+        readonly TMP_Text _seat, _abilityName, _abilityText, _free, _revealTitle, _revealText, _detail, _chip;
         readonly TMP_Text[] _slotNames = new TMP_Text[3], _slotTaps = new TMP_Text[3];
 
         // this frame's layout, in canvas pixels (y up)
@@ -52,7 +52,8 @@ namespace CosmicShore.Gameplay
         // the thumb
         int _dragFrom = -1;
         Vector2 _dragAt;
-        int _freeColour = 1;
+        Vector2 _pointerAt = new(-1f, -1f);
+        int _detailSlot = -1;   // the card whose details are open (a right-click), or -1
         float _lastSmallTap = -99f;
         bool _smallDoubleTap, _chipTap;
 
@@ -84,7 +85,7 @@ namespace CosmicShore.Gameplay
             _free = MakeText("Free", Cream, FontStyles.Bold, TextAlignmentOptions.Center);
             _revealTitle = MakeText("RevealTitle", Ability, FontStyles.Bold, TextAlignmentOptions.Center);
             _revealText = MakeText("RevealText", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
-            _banner = MakeText("Banner", Cream, FontStyles.Bold, TextAlignmentOptions.Center);
+            _detail = MakeText("CardDetail", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
             _chip = MakeText("JumpChip", Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
             for (int k = 0; k < 3; k++)
             {
@@ -199,7 +200,7 @@ namespace CosmicShore.Gameplay
                   _small || ab == null ? "" : ab.text);
 
             string free = !_small && core.FreePlace > 0 && core.RevealState == null
-                ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(_freeColour)) : "";
+                ? TemplateText.Fill(cfg.FreePrismTemplate, "count", core.FreePlace.ToString(), "colour", cfg.ColourName(core.Free[0])) : "";
             Place(_free, new Rect(_rect.x + 8f * ui, _cy - _size * 5.6f, _rect.width - 16f * ui, 20f * ui), fs * 0.85f, free);
 
             var built = core.Built(_crew.Settings);
@@ -221,8 +222,16 @@ namespace CosmicShore.Gameplay
             Place(_revealTitle, new Rect(_rect.x + 10f * ui, _cy + _size * 0.6f, _rect.width - 20f * ui, 30f * ui), (_small ? 0.75f : 1.25f) * fs, title);
             Place(_revealText, new Rect(_rect.x + 18f * ui, _cy - _size * 2.2f, _rect.width - 36f * ui, _size * 2.6f), fs, body);
 
-            bool bannerOn = Time.time - _crew.BannerAt < 1.6f;
-            Place(_banner, new Rect(Screen.width * 0.25f, Screen.height * 0.82f, Screen.width * 0.5f, 40f * ui), 26f * ui, bannerOn ? _crew.Banner : "");
+            // a right-clicked card's details, over the board
+            if (_small || rv != null || _detailSlot >= core.Slots.Length || (_detailSlot >= 0 && core.Slots[_detailSlot] < 0)) _detailSlot = -1;
+            string detail = "";
+            if (_detailSlot >= 0 && core.Slots[_detailSlot] < cfg.Patterns.Count)
+            {
+                var pat = cfg.Patterns[core.Slots[_detailSlot]];
+                detail = TemplateText.Fill(cfg.CardDetailTemplate, "name", pat.name, "text", pat.effectText,
+                                           "uses", core.Uses[_detailSlot].ToString(), "max", cfg.UsesPerPattern.ToString());
+            }
+            Place(_detail, DetailRect(ui), fs * 1.15f, detail);
 
             string chip = "";
             if (_small && _crew.Jumps.Count > 0) chip = TemplateText.Fill(cfg.JumpCardTemplate, "count", _crew.Jumps.Count.ToString());
@@ -235,6 +244,8 @@ namespace CosmicShore.Gameplay
         }
 
         internal bool ChipShown { get; private set; }
+
+        Rect DetailRect(float ui) => new(_rect.x + _rect.width * 0.1f, _cy - _size * 3.5f, _rect.width * 0.8f, _size * 7f);
 
         // ------------------------------------------------------------------ the pointer
 
@@ -294,7 +305,12 @@ namespace CosmicShore.Gameplay
         internal void ReadEngineerInput(DynamoCore core, DynamoSettings s)
         {
             if (_small || !TryPointer(out var at, out bool pressed, out bool released, out bool held)) return;
+            _pointerAt = at;
             if (_dragFrom >= 0) _dragAt = at;
+            var mouse = Mouse.current;
+            bool secondary = mouse != null && mouse.rightButton.wasPressedThisFrame;
+            if ((pressed || secondary) && _detailSlot >= 0) { _detailSlot = -1; return; }   // any click closes the card details
+            if (secondary && _rect.Contains(at)) { Secondary(core, at); return; }
             if (pressed && _rect.Contains(at)) Down(core, at);
             if (released && _dragFrom >= 0)
             {
@@ -310,14 +326,22 @@ namespace CosmicShore.Gameplay
             if (!held && !released) _dragFrom = -1;
         }
 
+        // Right-click (Garrett 2026-10-21): a card opens its details; a prism is deleted, for 1 AP.
+        void Secondary(DynamoCore core, Vector2 at)
+        {
+            _dragFrom = -1;
+            for (int k = 0; k < 3; k++) if (_slots[k].Contains(at)) { if (k < core.Slots.Length && core.Slots[k] >= 0) _detailSlot = k; return; }
+            int c = PxCell(at);
+            if (c >= 0 && core.Cells[c] != 0) _crew.EngineerInput(DynamoInput.Remove(c));
+        }
+
         void Down(DynamoCore core, Vector2 at)
         {
-            if (_apRect.Contains(at)) { _freeColour = _freeColour % 3 + 1; return; }
             for (int k = 0; k < 3; k++) if (_slots[k].Contains(at)) { _crew.EngineerInput(DynamoInput.Activate(k)); return; }
             int c = PxCell(at);
             if (c < 0 || core.RevealState != null) return;
             if (core.Cells[c] != 0) { _dragFrom = c; _dragAt = at; return; }
-            if (core.FreePlace > 0) { _crew.EngineerInput(DynamoInput.Refuel(c, _freeColour)); return; }
+            if (core.FreePlace > 0) { _crew.EngineerInput(DynamoInput.Refuel(c, core.Free[0])); return; }
             if (core.PortAt(c) != 0) _crew.EngineerInput(DynamoInput.Refuel(c));
         }
 
@@ -421,6 +445,13 @@ namespace CosmicShore.Gameplay
                 Prism(vh, CellPx(i), _size * 0.62f, cfg.ColourOf(c), builtCells.Contains(i) ? pulse : 0f);
             }
             if (_dragFrom >= 0 && core.Cells[_dragFrom] != 0) Prism(vh, _dragAt, _size * 0.7f, cfg.ColourOf(core.Cells[_dragFrom]), 0f);
+            // a free prism rides the cursor in its own domain, so the Ratel sees it is back and what it is (Garrett 2026-10-21)
+            else if (!_small && core.FreePlace > 0 && rv == null && _detailSlot < 0 && _rect.Contains(_pointerAt))
+            {
+                Prism(vh, _pointerAt + new Vector2(_size * 0.55f, -_size * 0.55f), _size * 0.55f, cfg.ColourOf(core.Free[0]), pulse);
+                for (int k = 1; k < core.FreePlace; k++)   // the ones after it, small, beside it
+                    HoneyguideMesh.Hex(vh, _pointerAt + new Vector2(_size * (0.95f + 0.45f * k), -_size * 0.95f), _size * 0.22f, 0f, cfg.ColourOf(core.Free[k]));
+            }
 
             // the three cards: lit when the board shows the pattern; the shape; one pip per make before it is replaced
             for (int k = 0; k < 3 && k < core.Slots.Length; k++)
@@ -454,6 +485,14 @@ namespace CosmicShore.Gameplay
                 float total = rv.Stage == 1 ? (float)s.RevealAbility : (float)s.RevealPorts, prog = total > 0f ? Mathf.Clamp01((float)rv.T / total) : 0f;
                 if (rv.Stage == 1) HoneyguideMesh.Quad(vh, new Rect(_rect.x, _slots[0].yMax, _rect.width, _rect.height - _slots[0].height - barH), new Color(0f, 0f, 0f, 0.6f));
                 HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), Ability);
+            }
+
+            if (_detailSlot >= 0)
+            {
+                var d = DetailRect(ui);
+                HoneyguideMesh.Quad(vh, new Rect(_rect.x, _slots[0].yMax, _rect.width, _rect.height - _slots[0].height - barH), new Color(0f, 0f, 0f, 0.6f));
+                HoneyguideMesh.Quad(vh, d, Card);
+                HoneyguideMesh.Outline(vh, d, 2f, cfg.ColourOf(cfg.Patterns[core.Slots[_detailSlot]].family));
             }
 
             if (ChipShown)
