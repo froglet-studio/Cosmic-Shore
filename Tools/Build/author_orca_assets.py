@@ -16,8 +16,12 @@ WHAT IT MAKES
         - the root GameObject and VesselStatus renamed, `vesselType: 20` (VesselClassType.Orca)
         - a FRESH Netcode GlobalObjectIdHash for this guid, InScenePlacedSourceGlobalObjectIdHash cleared
         - OrcaCrew on the root, wired to OrcaCrewConfig.asset
-        - NO SPARROW KIT and NO BUTTONS (author_wrasse_assets.strip_sparrow_kit): the helm's boost and shield are the
-          crew's (OrcaCrew reads the triggers), the gunners' missiles are the crew's
+        - NO SPARROW KIT (author_wrasse_assets.strip_sparrow_kit) and only the TRIGGERS bound: RightStickAction ->
+          CrewTriggerRT (the helm's boost) and LeftStickAction -> CrewTriggerLT (its shield), sent to OrcaCrew.SetTrigger.
+          Those are the events a pad's triggers, the keyboard's shifts AND a phone's thumb lifts raise; the helm used to read
+          InputStatus's analog triggers, which no phone writes (2026-10-21), so a phone's helm could neither boost nor
+          shield (a phone's left-thumb lift raises RightStickAction, the right-thumb lift LeftStickAction). The gunners'
+          missiles are the crew's
         - TWO THUMBS: the Sparrow's SingleStickVesselTransformer becomes its base VesselTransformer (Garrett, 2026-10-20:
           "the helm should be a two thumb flyer")
         - the lab's hull: the Sparrow's speed x hullSpeedMul (0.85) and its turn rates x hullTurnMul (0.55), written ONCE
@@ -29,8 +33,8 @@ WHAT IT MAKES
     OrcaOmniCrystalEffect.asset, OrcaImpactorDataContainer.asset, Resources/OrcaCrewLit.mat (the crew's lit material,
     so URP/Lit ships in a player build), SO_Class_Orca (SeatCount 4: its card reads "Orca · 4 seat") + its entry in
     SO_Classlist_All / _Classes, one entry each in `Vessel Prefab Container.asset` (root TRANSFORM) and
-    `DefaultNetworkPrefabs.asset` (root GAMEOBJECT), Resources/ElementalAbilityMaps/Orca.asset (the crew's four cards,
-    every input 0) and four CrystalHullFusionConfig entries (the Sparrow's: the Orca draws the Sparrow's mesh).
+    `DefaultNetworkPrefabs.asset` (root GAMEOBJECT), Resources/ElementalAbilityMaps/Orca.asset (the crew's four cards;
+    Boost Tank names RT and Danger Shield LT, MAP_INPUTS) and four CrystalHullFusionConfig entries (the Sparrow's: the Orca draws the Sparrow's mesh).
     ToyVesselRoster.Default and EnumIntegrityTests are CODE and are not written here (vessel skill rule 40).
 
 THE CLONE IS A SPENT ONE-SHOT ONCE THE PREFAB IS COMMITTED (CLAUDE.md): it runs only while Orca.prefab is absent, and
@@ -295,7 +299,7 @@ def check_model(text: str):
 def retrofit(text: str) -> str:
     """No buttons, no Sparrow kit, two thumbs, the lab's hull, the Orca HUD and container, the round-5 guns, the round-6
     model. Idempotent."""
-    text = W.BINDINGS.sub(lambda m: m.group(1) + " []\n", text, count=1)
+    text = W.set_bindings(text, ORCA_BINDINGS)
     text = W.strip_sparrow_kit(text)
     text = hud_retrofit(text)
     text = text.replace(f"guid: {W.SINGLE_STICK_TRANSFORMER_GUID},", f"guid: {W.TWO_STICK_TRANSFORMER_GUID},")
@@ -478,8 +482,12 @@ def register_network(text: str) -> str:
                    "    OverridingTargetPrefab: {fileID: 0}\n")
 
 
-# The crew's own cards. Input 0 (no button chip): the helm's boost and shield are on the triggers and the gunners'
-# Release is the crew's. No level-5 upgrades: none is designed yet (vessel skill §3, the design-approval gate), so every
+# The helm's two triggers (CrewTriggerActionSO -> OrcaCrew.SetTrigger): RT boosts, LT raises the shield.
+ORCA_BINDINGS = W.crew_bindings([(W.RIGHT_STICK_ACTION, W.CREW_RT_GUID), (W.LEFT_STICK_ACTION, W.CREW_LT_GUID)])
+
+# The crew's own cards. Boost Tank names RT and Danger Shield LT, the helm's triggers, so a pad shows its trigger on them
+# and a phone the thumb lift (author_touch_profiles.py); the other two are passive (Input 0): the gunners' Release is the
+# crew's. No level-5 upgrades: none is designed yet (vessel skill §3, the design-approval gate), so every
 # UpgradeLabel is empty. The words are authored data the team edits; written once.
 ORCA_MAP_ENTRIES = [
     (1, "Flown Missiles", "Each gunner launches missiles from its own magazine and flies them by hand; Charge makes them "
@@ -492,13 +500,14 @@ ORCA_MAP_ENTRIES = [
     (4, "Boost Tank", "The helm boosts on the right trigger while the tank lasts; it refills on its own, faster with "
         "Time. The card shows the tank."),
 ]
+MAP_INPUTS = {4: W.RIGHT_STICK_ACTION, 2: W.LEFT_STICK_ACTION}
 
 
 def map_entries() -> str:
     out = "  entries:\n"
     for element, label, desc in ORCA_MAP_ENTRIES:
         out += (f"  - Element: {element}\n    AbilityLabel: {W.yaml_str(label)}\n    AbilityDescription: {W.yaml_str(desc)}\n"
-                f"    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
+                f"    Input: {MAP_INPUTS.get(element, 0)}\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
                 f"    UpgradeLabel: \n    UpgradeDescription: \n")
     return out
 
@@ -543,7 +552,10 @@ def check_prefab(text: str, script_guid: str):
     want(seat and f"guid: {script_guid}" in seat.group(1), "Orca.prefab: the OrcaCrew document is missing or names another script")
     want(seat and f"  config: {{fileID: 11400000, guid: {CONFIG_GUID}, type: 2}}" in seat.group(1),
          "Orca.prefab: OrcaCrew.config is not OrcaCrewConfig.asset (a null config never seats the crew)")
-    want("  _inputEventShipActions: []\n" in text, "Orca.prefab: the hull still binds buttons (the crew owns the triggers)")
+    want(W.bindings_of(text) == ORCA_BINDINGS,
+         "Orca.prefab: the hull's bindings are not RT -> CrewTriggerRT and LT -> CrewTriggerLT alone (the helm's boost and "
+         "shield)")
+
     want(f"guid: {W.TWO_STICK_TRANSFORMER_GUID}, type: 3" in text and W.SINGLE_STICK_TRANSFORMER_GUID not in text,
          "Orca.prefab: the hull is not on the two-stick VesselTransformer (the helm flies with two thumbs)")
     want(f"guid: {ORCA_CONTAINER_GUID}," in text and f"guid: {W.DONOR_CONTAINER_GUID}," not in text,
@@ -603,8 +615,9 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
          "SO_Class_Orca: wrong class, locked, or not owned from the start")
     want(SEATS in cls, "SO_Class_Orca: SeatCount is not 4 (its card must say it seats four)")
     want(f"  vesselClass: {ORCA_CLASS_ID}\n" in kmap and "  m_Name: Orca\n" in kmap, "ElementalAbilityMaps/Orca: wrong class or name")
-    inputs = re.findall(r"^    Input: (-?\d+)\n", kmap, re.M)
-    want(len(inputs) == 4 and set(inputs) == {"0"}, f"ElementalAbilityMaps/Orca: inputs {inputs} (every card is passive, Input 0)")
+    inputs = W.map_inputs(kmap)
+    want(inputs == {e: MAP_INPUTS.get(e, 0) for e in (1, 2, 3, 4)},
+         f"ElementalAbilityMaps/Orca: inputs {inputs} (Boost Tank names RT, Danger Shield LT; the others are passive, Input 0)")
     want("Pulsefire" not in kmap and "Skyburst" not in kmap, "ElementalAbilityMaps/Orca: still the Sparrow's cards")
     orca, sparrow = W.fusion_entries(fusion, ORCA_CLASS_ID), W.fusion_entries(fusion, SPARROW_CLASS_ID)
     want(len(orca) == 4, f"CrystalHullFusionConfig: {len(orca)} Orca entries, not 4 (CrystalHullFusionConfigTests needs one per element)")
@@ -633,6 +646,7 @@ def check_all():
             errs.append(f"{os.path.relpath(path, ROOT)}.meta: guid is not the one the prefab and registrations name")
     errs += check_assets(read(CONFIG), read(ORCA_CONTAINER), read(OMNI_EFFECT), read(LIT_MAT),
                          W.guid_of(CONFIG_SCRIPT_META), W.guid_of(OMNI_SCRIPT_META))
+    errs += W.check_crew_triggers()
     errs += check_registrations(read(W.CONTAINER), read(W.NETWORK_PREFABS),
                                 [(os.path.basename(p), read(p)) for p in W.CLASS_LISTS],
                                 read(CLASS_ASSET), read(MAP), read(W.FUSION))
@@ -668,6 +682,11 @@ def author():
         write(CLASS_ASSET, class_asset(read(W.DONOR_CLASS))); write(CLASS_ASSET + ".meta", W.native_meta(CLASS_GUID))
     if not os.path.exists(MAP):
         write(MAP, build_map(read(W.DONOR_MAP))); write(MAP + ".meta", W.native_meta(MAP_GUID))
+    else:                            # the words are the team's; only the inputs are held
+        old = read(MAP); new = W.set_map_inputs(old, MAP_INPUTS)
+        if new != old:
+            write(MAP, new)
+    W.author_crew_triggers()
     for path, fn in [(W.CONTAINER, register_container), (W.NETWORK_PREFABS, register_network), (W.FUSION, register_fusion)] + \
                     [(p, register_class_list) for p in W.CLASS_LISTS]:
         old = read(path); new = fn(old)
@@ -694,7 +713,9 @@ def self_test():
     expect(check_prefab(re.sub(r"(  GlobalObjectIdHash: )\d+", r"\g<1>1124080984", good, count=1), script_guid), 1, "the donor's hash")
     expect(check_prefab(good.replace(f"  - component: {{fileID: {SEAT_ID}}}\n", ""), script_guid), 1, "the crew off the root")
     expect(check_prefab(good.replace(f"guid: {CONFIG_GUID}, type: 2", "guid: 00000000000000000000000000000000, type: 2"), script_guid), 1, "the crew's config unwired")
-    expect(check_prefab(good.replace("  _inputEventShipActions: []\n", "  _inputEventShipActions:\n  - InputEvent: 1\n    ShipActions: []\n"), script_guid), 1, "a button bound")
+    expect(check_prefab(good.replace(ORCA_BINDINGS, "  _inputEventShipActions: []\n"), script_guid), 1, "the triggers unbound (no boost or shield on any device)")
+    expect(check_prefab(good.replace(ORCA_BINDINGS, ORCA_BINDINGS + "  - InputEvent: 7\n    ShipActions: []\n"), script_guid), 1, "a button bound")
+    expect(check_prefab(good.replace(W.CREW_LT_GUID, W.CREW_RT_GUID), script_guid), 1, "LT on the RT asset")
     expect(check_prefab(good.replace(ORCA_CONTAINER_GUID, W.DONOR_CONTAINER_GUID), script_guid), 1, "the Sparrow's container")
     expect(check_prefab(good.replace(W.guid_of_script("OrcaHUDController"), W.guid_of_script("SparrowHUDController")), script_guid), 1, "the Sparrow's HUD controller")
     expect(check_prefab(good.replace(W.TWO_STICK_TRANSFORMER_GUID, W.SINGLE_STICK_TRANSFORMER_GUID), script_guid), 1, "the one-thumb transformer")
@@ -733,6 +754,7 @@ def self_test():
     expect(check_registrations(container, network, lists, cls, kmap, fusion.replace(f"  - vessel: {ORCA_CLASS_ID}\n", "  - vessel: 99\n", 1)), 1, "a missing fusion entry")
     expect(check_registrations(container, network, lists, cls, read(W.DONOR_MAP), fusion), 1, "the Sparrow's own map")
     expect(check_registrations(container, network, lists, cls, kmap.replace("    Input: 0\n", "    Input: 7\n", 1), fusion), 1, "a card with a button")
+    expect(check_registrations(container, network, lists, cls, W.set_map_inputs(kmap, {}), fusion), 1, "the trigger cards naming no trigger")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:
         fails.append("registration is not idempotent")
     for f in fails:

@@ -52,8 +52,10 @@ change seats etc. both can be played on mobile or pc." This closes `T-20261017-b
 that one phone runs one human plus an AI.
 - **Today, one human:** keys 1 / 2 pick the Grouper or the Wrasse, and the D-pad or a double tap on the small view
   steps to the other seat. The pick is remembered per hull class (`CrewSeatChoice`).
-- **The phone boost:** lifting both thumbs now really speeds the Grouper up (idle reads a released pad, 72.5 against
-  35 u/s at a full spread). It is spent only after a thumb has touched in the pilot seat.
+- **The phone boost:** ~~lifting both thumbs~~ (superseded the same day: Garrett, "The grouper can not use boost on
+  mobile"). The Grouper boosts on RT on every device: the pad's trigger, right Shift, or on a phone **lifting the left
+  thumb** while the right flies on; the Time card shows that glyph. The Orca's helm had the same gap (boost and shield
+  read only the analog triggers) and is fixed the same way. `KITE_NAVIGATOR.md` "The phone boost". Not flown on a phone.
 - **The online plan:** `KITE_NAVIGATOR.md` "Two humans, two seats (plan, 2026-10-21)":
   - the hull is owned by the pilot seat's machine;
   - the Wrasse is simulated on its holder's machine, which sends each decided effect through a server-checked relay;

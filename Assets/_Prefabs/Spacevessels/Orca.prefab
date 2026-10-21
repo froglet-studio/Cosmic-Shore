@@ -776,7 +776,13 @@ MonoBehaviour:
   NetEchoSightShape:
     m_InternalValue: {x: 0, y: 0, z: 0}
   _executors: {fileID: 5466809915974853214}
-  _inputEventShipActions: []
+  _inputEventShipActions:
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 11400000, guid: fc5e219bd3ed49f4b8a4414c06c4e836, type: 2}
+  - InputEvent: 2
+    ShipActions:
+    - {fileID: 11400000, guid: faa23ae712ea4dfa8079891caf4586d8, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []

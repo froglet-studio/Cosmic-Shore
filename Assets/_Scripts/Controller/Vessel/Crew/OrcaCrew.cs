@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
     /// crew is a follow-up (ORCA_CREW.md), as it is for the Wrasse.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class OrcaCrew : MonoBehaviour
+    public sealed class OrcaCrew : MonoBehaviour, ICrewTriggers
     {
         public const int Helm = 0, Seats = 4;
 
@@ -76,6 +76,8 @@ namespace CosmicShore.Gameplay
 
         int _humanSeat = Helm;
         bool _weTookHull, _boosting, _shieldTriggerHeld;
+        // the hull's triggers as CrewTriggerActionSO reports them (a pad's, the keyboard's shifts, a phone's thumb lifts)
+        bool _rtHeld, _ltHeld;
         float _swapReadyAt, _tank, _shieldEndsAt, _shieldReadyAt, _twoFingerAt = -1f;
         CursorLockMode _cursorBefore;
         bool _cursorLocked;
@@ -264,7 +266,7 @@ namespace CosmicShore.Gameplay
             if (bombGun) bombGun.Initialize(_status);
             _tank = _cfg.BoostTank;
             _humanSeat = Helm;
-            _weTookHull = _boosting = _shieldTriggerHeld = false;
+            _weTookHull = _boosting = _shieldTriggerHeld = _rtHeld = _ltHeld = false;
             _shieldEndsAt = _shieldReadyAt = 0f;
             _crystalTakenAt.Clear();
             if (!Live.Contains(this)) Live.Add(this);
@@ -372,6 +374,8 @@ namespace CosmicShore.Gameplay
         {
             int was = _humanSeat;
             _humanSeat = seat;
+            // a release made while the AI flies the hull never arrives (R_VesselActionHandler ignores input under autopilot)
+            _rtHeld = _ltHeld = false;
             if (was == Helm && seat != Helm)
             {
                 SetFlightInputPaused(true);
@@ -423,14 +427,11 @@ namespace CosmicShore.Gameplay
             bool wantBoost = false, shieldEdge = false;
             if (HumanAt(Helm))
             {
-                var input = _player?.InputStatus;
-                if (input != null)
-                {
-                    wantBoost = input.RightTriggerAnalog > 0.5f;
-                    bool held = input.LeftTriggerAnalog > 0.5f;
-                    shieldEdge = held && !_shieldTriggerHeld;
-                    _shieldTriggerHeld = held;
-                }
+                // RT boosts, LT raises the shield, read from the trigger action rather than InputStatus's analog triggers,
+                // which no phone writes: on a phone the helm lifts the left thumb to boost and the right to shield
+                wantBoost = _rtHeld;
+                shieldEdge = _ltHeld && !_shieldTriggerHeld;
+                _shieldTriggerHeld = _ltHeld;
                 // the lab's other shield keys: E, and the pad's B
                 shieldEdge |= (Keyboard.current?.eKey.wasPressedThisFrame ?? false) || (Gamepad.current?.buttonEast.wasPressedThisFrame ?? false);
             }
@@ -451,6 +452,14 @@ namespace CosmicShore.Gameplay
 
             if (_shield.Count > 0 && Time.time >= _shieldEndsAt) EndCarry();
             if (shieldEdge && Time.time >= _shieldReadyAt) RaiseShield();
+        }
+
+        /// <summary>The hull's trigger, pressed or released (<see cref="CrewTriggerActionSO"/>): RT the helm's boost, LT
+        /// its shield.</summary>
+        public void SetTrigger(int trigger, bool down)
+        {
+            if (trigger == 0) _rtHeld = down;
+            else _ltHeld = down;
         }
 
         void StopBoost()

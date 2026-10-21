@@ -8,8 +8,8 @@ it**; see "Round 4" below. The rounds after 3 are not in the lab yet (task `T-20
 
 **Where it stands (after round 6, 2026-10-20)**, in one place; the rounds below say why each part is the way it is:
 - **The Grouper (pilot):** the Sparrow's hull with its guns, missiles and buttons removed, flown on two sticks
-  (`VesselTransformer`; pitch / yaw 100, roll 120). The right trigger (right Shift; both thumbs lifted on a phone)
-  spends a boost the Wrasse saved.
+  (`VesselTransformer`; pitch / yaw 100, roll 120). The right trigger (right Shift; on a phone, lift the left thumb
+  and fly on with the right) spends a boost the Wrasse saved; the Time card names it ("The phone boost", below).
 - **The Wrasse (navigator):** a kite on the hull's x-z plane, held on an invisible rope by EVERY input (**the Sling**,
   round 6): a thumb (drag and it trails, small circles whirl it round in big ones, lift to let it fly), the mouse and
   a thumbstick (hands that never let go; the stick places the hand on the board) and the AI squad mate. Its head
@@ -70,7 +70,7 @@ they are not game crystals.
 | Every element lime, told apart by its petal shape | Motes are lime, each drawn in its element's petal outline from the HUD (`ElementPetalGeometry.Outline`: Mass a triangle, Space a kite, Time a diamond, Charge a five-sided gem). |
 | The kite follows the mouse or thumbstick; no click | Mouse: the kite flies to the cursor. Stick: it flies the way the stick leans, as fast as it leans (circle the stick, the kite circles). Touch: to a point 21 mm above the thumb. The last-used device leads. |
 | The pilot is a one-thumb flyer with no buttons | No buttons: every ability binding is removed. Round 4d moved the hull back to two thumbs (below). |
-| The pilot controls the boost: the trigger on a gamepad (round 4b) | `InputStatus.RightTriggerAnalog` > 0.5: the pad's right trigger, or right Shift on the keyboard. On a touch screen, with no trigger, lifting both thumbs (the touch strategy's `Idle`). Round 4d made the Time gift discrete saved boosts (below). (Round 4 boosted on a centred stick, which fired by itself whenever the pilot flew straight.) |
+| The pilot controls the boost: the trigger on a gamepad (round 4b) | RT: the hull binds `RightStickAction` to `CrewTriggerRT` (`CrewTriggerActionSO` → `KiteNavigator.SetTrigger`), raised by the pad's right trigger, right Shift, and a phone's left-thumb lift. Round 4d made the Time gift discrete saved boosts (below). (Round 4 boosted on a centred stick, which fired by itself whenever the pilot flew straight. Until 2026-10-21 the seat read `InputStatus.RightTriggerAnalog`, which no phone writes, and a phone boosted on both thumbs off: "The phone boost", below.) |
 | The ship's petals set how often each element comes | weight = `moteBaseWeight` (1) + `moteWeightPerLevel` (1) × the hull's level in it. |
 | Charge works on fauna | A charged head kills a creature it passes through (`Fauna.Jousted`, sim authority only), for `faunaChargeCost` (1). The AI rams creatures too. |
 | Mass clusters shielded at Mass L5 | `prismProperties.IsShielded` before `Initialize`, as the Thresher's armoured trail. |
@@ -291,6 +291,31 @@ quarter to three quarters of green (an HSV hue of 75–105°). The four are now:
 All four are 0.02 apart (one just-noticeable difference) in value, saturation and hue, the most the blue-free sheet
 allows. `Docs/VesselModels/COLOR.md` §5b has the numbers.
 
+## The phone boost (Garrett, 2026-10-21)
+
+"The grouper can not use boost on mobile. Fix this oversight and others."
+
+- **Why.** The seat read `InputStatus.RightTriggerAnalog`, which only a pad and the keyboard write. A phone was left
+  with "both thumbs off" (the touch strategy's `Idle`), which let go of the steering for every boost and was named on
+  no card, so a phone pilot had no boost to find.
+- **Now RT is an input binding, as on every other hull.** `Wrasse.prefab` binds `RightStickAction` to `CrewTriggerRT`
+  (`CrewTriggerActionSO`, trigger 0), which calls `KiteNavigator.SetTrigger`. A pad's RT, right Shift and a phone's
+  left-thumb lift all raise `RightStickAction` (a lift raises `OnlyRightStickAction` at once and `RightStickAction` for
+  the thumb that flies on, the pair a pad raises), so it is one path through `R_VesselActionHandler` on every device.
+  Holding chains boosts, with the cooldown between them, as a held trigger does. Both thumbs off no longer boosts (a
+  released pad does not either).
+- **The card names it.** The Wrasse map's Time card has `Input: 1` (RT), so a pad shows RT on it and a phone the
+  lift-left-thumb glyph (`TouchControlProfiles`' new Wrasse row, ThumbLifts). The other three cards stay passive.
+- **A held trigger is let go on a seat change**: the handler drops every release while the AI flies the hull, so
+  `SetHumanNavigates` clears it.
+- **The same gap on the Orca's helm** (boost on RT, shield on LT, both read from the analog triggers) is closed the same
+  way: `ORCA_CREW.md`.
+- **Known:** lifting the left thumb to double-tap the small view starts a boost if one is saved. Outside a race the AI,
+  which takes the hull on that swap, spends saved boosts at once anyway.
+- **Held to it:** `author_wrasse_assets.py --check` (the binding, the card input, the shared trigger assets; the
+  self-test plants an unbound RT, an extra button, RT on the LT asset and a Time card naming nothing) and
+  `author_touch_profiles.py --check` (a card that shows a lift must have that lift bound).
+
 ## Round 10: the juice, and a steady small view (Garrett, 2026-10-21)
 
 "when playing a the wrasse the pip view of the grouper sometimes resizes into and out of its designated region." The
@@ -366,15 +391,13 @@ two humans is an offer both accept, and a human who leaves falls to the AI on th
 | | Keyboard + mouse | Gamepad | Phone |
 |---|---|---|---|
 | Pick / change seat | 1 Grouper, 2 Wrasse | D-pad steps | double tap the small view |
-| Grouper | WASD + P ; L ' (`KeyboardInputStrategy`); right Shift boosts | two sticks; right trigger boosts | two thumbs (no profile row: ThumbLifts, no extras); lift both to boost |
+| Grouper | WASD + P ; L ' (`KeyboardInputStrategy`); right Shift boosts | two sticks; right trigger boosts | two thumbs (profile row: ThumbLifts); lift the left thumb to boost, the Time card shows its glyph |
 | Wrasse | the mouse is the hand; a held click lets go | the left stick places the hand; a held trigger lets go | the first thumb is the hand; lifting it lets go |
 | While on the Wrasse | flight input paused (`InputController.SetPause`), the hull's `AIPilot` flies | same | same; the paused touch strategy lets go of IdleAction |
 
-The phone boost works since the idle-parity change: both thumbs off read XDiff 0.5, so a boost runs at 0.5 × 25 × 5 + 10
-= 72.5 u/s, against 35 at a full thumb spread. Before it, idle read XDiff 0, and a "boost" held the hull at its minimum
-of 10. The seat reads the `Idle` STATE, not the once-only IdleAction press; the Wrasse binds no IdleAction. A boost
-counts only after a thumb has touched in the pilot seat (`_idleArmed`), so the frames after a double tap back to the
-Grouper spend nothing. The Wrasse's cards press nothing, so they claim no touches (`AbilityCardPress`), and the hand stops
+The phone boost is the left-thumb lift since 2026-10-21 ("The phone boost", below); the both-thumbs-off boost this
+paragraph used to describe is gone. The Wrasse's cards press nothing on a phone (the Time card's input is a thumb lift,
+so `TouchControlsHud` makes it a glyph, not a button), so they claim no touches (`AbilityCardPress`), and the hand stops
 at the line above them. The kite reads the raw primary touch (flight input is paused), so a touch that starts on a
 control that owns it (`FlightTouchClaims`: a pressable card, the arena's swap tiles) is now skipped, as flight skips it.
 
@@ -487,8 +510,8 @@ every effect crosses the network as a decision, never as device input.
 
 1. Open the Toybox (menu freestyle) and fly into the **Vessel Changer**. Fly the **Wrasse and Grouper** station.
 2. You fly the hull, a Sparrow body, with two thumbs (both sticks, or the keyboard) and no buttons. The kite view is a
-   small square in the lower left, with the AI flying the kite. Pull the right trigger (right Shift; lift both thumbs on a
-   phone) to spend a boost a Time loop saved. The Time card counts them, the Charge card counts the kite's rams, the
+   small square in the lower left, with the AI flying the kite. Pull the right trigger (right Shift; on a phone lift the
+   left thumb and keep flying with the right) to spend a boost a Time loop saved. The Time card counts them, the Charge card counts the kite's rams, the
    Space card counts what the last blast destroyed, and the Mass card flashes when a cluster lands.
 3. Press **2**, or D-pad right, to take the kite. The kite view fills the screen and your hull's view shrinks to the
    same small square in the lower left. Move the mouse or lean the stick; the kite follows. Loop motes of one petal shape.

@@ -82,7 +82,7 @@ task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see 
 
 | Seat | What it does | Controls |
 |---|---|---|
-| **Helm** (1) | Flies the hull with two thumbs: the Sparrow's hull on its base `VesselTransformer`, at the lab's share of the Sparrow's numbers (below). **Boost**: held on the right trigger while a tank lasts; the tank refills by itself. **Shield**: 144 prisms (`DangerHemisphereConfig`'s 12 × 12) stand on a 50–70 u shell round the hull, with the forward cone left open so the helm can see and fly out. It works in two phases (round 5): (1) **carried**, the prisms ride with the hull as **super-shielded** prisms for `shieldSeconds` (4 s × Mass), a wall that only a sniper breaks; (2) **dropped**, each turns into a **danger prism where it stands** (`PrismKinds.Retheme`) and stays for `shieldLinger` (20 s). | Two sticks (or the keyboard); right trigger / right Shift to boost; left trigger / left Shift, E or pad B to shield |
+| **Helm** (1) | Flies the hull with two thumbs: the Sparrow's hull on its base `VesselTransformer`, at the lab's share of the Sparrow's numbers (below). **Boost**: held on the right trigger while a tank lasts; the tank refills by itself. **Shield**: 144 prisms (`DangerHemisphereConfig`'s 12 × 12) stand on a 50–70 u shell round the hull, with the forward cone left open so the helm can see and fly out. It works in two phases (round 5): (1) **carried**, the prisms ride with the hull as **super-shielded** prisms for `shieldSeconds` (4 s × Mass), a wall that only a sniper breaks; (2) **dropped**, each turns into a **danger prism where it stands** (`PrismKinds.Retheme`) and stays for `shieldLinger` (20 s). | Two sticks (or the keyboard); right trigger / right Shift to boost; left trigger / left Shift, E or pad B to shield. On a phone: lift the left thumb to boost (held while the tank lasts), the right thumb to shield |
 | **Sniper, Fast gun, Bomb** (2–4) | Each gunner has a turret on an outrigger: the sniper (Space) on a dorsal mast, the fast gun (Mass) on the port boom and the bomb (Charge) on the starboard boom. The turrets are **gyro-stabilized** (lab round 4). Each seat has **a gun** (the table below) **and its own magazine** of missiles: 2 to start, 4 at most, and an omni crystal gives every seat one (`OrcaOmniCrystalEffectSO`). **Missile** launches one and hands the gunner its controls; the gunner flies it with one thumb. It bursts on contact, after 5 s, or on a second Missile press. A burst is the game's `AOEExplosion`, which spares our domain; its own vessel effect (`VesselCombatHitByMissileBlast`) takes a rival hull's petals and scores the hit. A missile **collects crystals** it flies through for the hull: elemental crystals through the hull's skimmer, as a hull contact does, and omni crystals through the race ring's sweep entry. | Turret: mouse look (the cursor locks), a pad's sticks, or W A S D. **Fire** (the gun): left mouse, Space, RT, or a finger down. **Missile**: right mouse, F, A, or a double tap. In flight: the left stick, W A S D, the mouse, or a drag; Missile again (or a tap) bursts it |
 
 ### The three guns (round 5; round 6 made each an element)
@@ -281,8 +281,8 @@ the explosion's effect are the game's.
 **In the Toybox:**
 1. Open the Toybox (menu freestyle) and fly into the **Vessel Changer**. Fly the **Orca · 4 seat** station.
 2. You hold the **helm**. Fly with two thumbs.
-   - The right trigger (right Shift) boosts until the Time card's tank runs dry.
-   - The left trigger (left Shift, E, pad B) rings the hull in white super-shielded prisms, open ahead. After ~4 s they
+   - The right trigger (right Shift; on a phone, lift the left thumb) boosts until the Time card's tank runs dry.
+   - The left trigger (left Shift, E, pad B; on a phone, lift the right thumb) rings the hull in white super-shielded prisms, open ahead. After ~4 s they
      turn into danger prisms where they stand and stay ~20 s. The Mass card shows the recharge.
    - Three AI gunners fire their guns and missiles at whatever is near.
 3. Press **2**, **3** or **4** (or the D-pad) to take a gunner seat. You look out of the turret, the hull's view drops
@@ -358,8 +358,12 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   round leaves from inside the longer barrel. `BrittleStarHullModel.ReadMouthTravel` reads that offset if it matters.
 - **Anchorage scores lower in round 6** (73 ± 16 against round 5's 119.5 ± 7.6, 12 seeds): the no-cooldown bomb trades
   about twice the hits both ways, and every crew's blasts break the other's trail. Mass-game balance is a lab question.
-- **The shield on a touch screen:** the left trigger has no touch equivalent yet. A tap on the Mass card would need
-  that card to name an input AND the hull to bind an action to it (`AbilityCardPress` presses only bound inputs).
+- ~~**The shield on a touch screen**~~ **closed 2026-10-21** (with the boost, which had the same gap): the helm read
+  `InputStatus`'s analog triggers, which no phone writes. The hull now binds `RightStickAction` → `CrewTriggerRT` and
+  `LeftStickAction` → `CrewTriggerLT` (`CrewTriggerActionSO` → `OrcaCrew.SetTrigger`), the events a pad's triggers, the
+  keyboard's shifts and a phone's thumb lifts all raise; the Boost Tank card names RT and Danger Shield LT, and
+  `TouchControlProfiles`' Orca row shows the lift glyphs on them. `author_orca_assets.py --check` holds the bindings and
+  the card inputs (KITE_NAVIGATOR.md "The phone boost" has the why). Not flown on a phone.
 - **The duo-vessel system** (`cece/sharp-tesla-j0kd7z`, `/duo-vessel`) moves seat swapping into `CrewSeat`. Fold the
   Orca's seats into it when it lands.
 - **`EnumIntegrityTests` count:** 23 after the merges with the Starling (21) and the Marlin (22). bleeding-edge itself asserted 19 against 21
