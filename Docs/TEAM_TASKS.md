@@ -1303,3 +1303,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett with Yash (multiplayer)
 - **Added:** 2026-10-21 by Garrett (Claude session) (`claude/honeyguide-ratel`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md
+
+### T-20261021-2dd0 · open · test · Crew vessels
+- **Task:** Playtest the Honeyguide's round 6 triggers and its new hull model in the Unity Editor: the 6 steps of its round-6 checklist entry (Peck/Flit, upgrades, the model's paint, morphs and puppetry).
+- **Done when:** The round-6 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md is ticked or its failures are filed.
+- **Who can take it:** Yash (offered), anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md, Docs/VesselModels/Honeyguide.md
+
+### T-20261021-2d1a · open · setup · Crew vessels
+- **Task:** Bake the Honeyguide's crystal hull fusions (vessel 21) with FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions, now that it draws Honeyguide.fbx; commit the four bakes.
+- **Done when:** CrystalHullFusionConfig's four vessel-21 entries name bakes and CrystalHullFusionBakeTests passes without an inconclusive for them.
+- **Who can take it:** anyone with the Editor
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Docs/VesselModels/Honeyguide.md
+
+### T-20261021-7e6f · open · content · Crew vessels
+- **Task:** Give the Honeyguide's upgrade effects their own visuals: the grenade, the drone, the lasso rope and the lance beam show no effect of their own yet; and wire the two new empty FMOD slots (flitSfx, upgradeSfx) and each upgrade's sfx.
+- **Done when:** Each of the four effects reads on screen and the slots play a sound.
+- **Who can take it:** Garrett (owner), anyone who does VFX or audio
+- **Added:** 2026-10-21 by Garrett's session (`claude/honeyguide-ratel`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md

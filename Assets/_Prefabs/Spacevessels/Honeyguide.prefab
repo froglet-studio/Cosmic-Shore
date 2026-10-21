@@ -968,6 +968,7 @@ GameObject:
   - component: {fileID: 8279817603024118170}
   - component: {fileID: 8279817603024118171}
   - component: {fileID: 2121000000000000021}
+  - component: {fileID: 2121000000000000044}
   m_Layer: 0
   m_Name: Honeyguide
   m_TagString: Player_Ship
@@ -1000,6 +1001,7 @@ Transform:
   - {fileID: 1004589972253982722}
   - {fileID: 1004589972253982732}
   - {fileID: 1004589972253982734}
+  - {fileID: 2121000000000000042}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2386735669300085014
@@ -1453,7 +1455,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shipGeometries:
-  - {fileID: 2864103291091619125}
+  - {fileID: 2121000000000000043}
   _domainMaterialSlot: 1
   _domainReplacesMaterials: []
 --- !u!114 &1427785718439944555
@@ -2655,6 +2657,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4853044355858455827}
     m_Modifications:
+    - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -9092842337901520449, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
       propertyPath: m_Layer
@@ -3755,3 +3762,108 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: f39120e072fe4d5e9de0ca6e6180d575, type: 2}
+--- !u!1001 &2121000000000000041
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4853044355858455827}
+    m_Modifications:
+    - target: {fileID: 919132149155446097, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_Name
+      value: Honeyguide
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b, type: 3}
+--- !u!4 &2121000000000000042 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+    type: 3}
+  m_PrefabInstance: {fileID: 2121000000000000041}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2121000000000000043 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b,
+    type: 3}
+  m_PrefabInstance: {fileID: 2121000000000000041}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2121000000000000044
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c471e4db2d074e94b76914b0036132e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modelName: Honeyguide
+  cruiseSpeed: 60
+  fullYawRate: 110
+  fullPitchRate: 90
+  fullFlareDeceleration: 120
+  wingBankDegrees: 22
+  wingFlareDegrees: 30
+  wingBeatDegrees: 10
+  wingBeatHz: 1.6
+  tailSteerDegrees: 14
+  tailLiftDegrees: 16
+  turretStepDegrees: 60
+  smoothing: 8

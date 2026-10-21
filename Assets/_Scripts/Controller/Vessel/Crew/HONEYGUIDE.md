@@ -52,6 +52,8 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
 | Peck (the hull's own gun at 2.5 shots a second, 45 u) | `HoneyguidePeckAction.asset` (a `FullAutoActionSO`) |
 | The board (runtime overlay canvas, touch and mouse) | `HoneyguideDynamoView.cs` |
 | Prefab, class, map, registrations, config from the lab | `Tools/Build/author_honeyguide_assets.py` (`--check`, `--self-test`) |
+| The hull model (its own, built by `/vessel-model`) | `Assets/_Models/Vessel Models/Honeyguide.fbx`, `Tools/Build/vessel_model/specs/honeyguide.py`, `Docs/VesselModels/Honeyguide.md` |
+| The model's puppetry (wings, tail, turret, from measured motion) | `HoneyguideBody.cs` |
 | Edit-mode tests (golden from the lab's core) | `Assets/_Scripts/Tests/Editor/HoneyguideTests.cs` |
 
 ## The cards
@@ -109,6 +111,16 @@ lab's `activeWanted`, with "ahead" standing in for the lab's destination (freest
   `sfx` ship empty, to be wired by the audio owner.
 - **Effect numbers the lab keeps in code** (for example `lassoReelSpeed` 220, `noodleCount` 5 and `etiReach` 40) are
   fields on the config, set to the lab's values.
+
+## The hull
+
+The hull draws its own model, `Honeyguide.fbx` (`Docs/VesselModels/Honeyguide.md`): a bird scout with swept wings, a fanned
+tail, a sensor beak and the Ratel's hex turret. It sits where the Sparrow's model sat and carries the domain paint; the
+Sparrow's mesh is switched off, but its bones, jets, colliders and Animator stay, so it still flies the Sparrow's airframe.
+`HoneyguideBody` poses the bones from the hull's measured motion, so every peer sees the same. Element morphs (Charge,
+Mass, Space, Time) are driven by the hull's `VesselAnimation`. The class card, inactive icon, silhouette, squad image and
+hangar preview are renders of the model (`render_cards.py Honeyguide`). The crystal fusion's four entries are bake-free
+until the editor's baker is run.
 
 ## Not verified in the Editor
 

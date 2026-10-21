@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Honeyguide and Ratel: round 6 triggers and its own hull model (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "Get everything including models etc. Together so we are ready to /ship". Lab round 6 in the game: RT **Peck**
+(`HoneyguidePeckAction.asset`, the Sparrow's full-auto at 2.5/s, 45 u, no spread) and LT **Flit**, each taken over for
+20 s by the 13 upgrade cards (`HoneyguideCrew.Triggers.cs`, `HoneyguideTriggerActionSO`). The hull now draws its own model,
+`Honeyguide.fbx` (`Docs/VesselModels/Honeyguide.md`): nested under the root, the domain paint on it, the Sparrow's mesh off,
+`HoneyguideBody` posing its bones; the class card is rendered from it (`render_cards.py Honeyguide`). The four fusion entries
+are bake-free. `/verify-unity` was unavailable (no Editor, no `unity` binary); the headless editor reference compile shows
+only the 3 errors already on bleeding-edge (0 in changed files). Green: `author_honeyguide_assets.py --check` /
+`--self-test`, `build.py specs/honeyguide.py --check`, `render_cards.py Honeyguide --check`, console-logging and
+conditional-compilation gates.
+
+1. Vessel Changer → Honeyguide and Ratel: the hull is the bird scout (swept wings, fanned tail, hex turret), in your domain
+   colour on the saddle and wing panels, with NO Sparrow inside it. No console errors on the swap.
+2. Element pickups morph it: Charge juts the beak, Mass swells the body, Space stretches the wings, Time sweeps them back.
+3. The wings bank into turns and flare when you brake; the tail steers; the turret turns a sixth when the Dynamo spins.
+   Boost lights the hull's engines (`HoneyguideBody` hands the flare to the drawn mesh).
+4. RT pecks (short-range bolts); LT flits (a short ride). Make an upgrade card: the toast names the trigger it took and the
+   chip counts down 20 s; a repeat raises its level. The AI Honeyguide uses its triggers.
+5. `HoneyguideTests` (incl. `HoneyguideHull_DrawsItsOwnModel_…`, `Triggers_ArePeckAndFlit_…`) pass in the Test Runner.
+6. Run **FrogletTools > Vessels > Wiring > Bake Crystal Hull Fusions** for vessel 21 (until then the fusion solves at
+   runtime), and check the crystal lands on the new hull.
+
 ### 🔴 Honeyguide and Ratel: the lab's round 4 in the game (`claude/honeyguide-ratel`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett: "lets play it in unity". This adds a new hull class, `VesselClassType.Honeyguide = 21` (the Sparrow hull plus the

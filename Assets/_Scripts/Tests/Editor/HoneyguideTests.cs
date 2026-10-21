@@ -141,6 +141,30 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void HoneyguideHull_DrawsItsOwnModel_WithFourElementMorphs_AndTheBonesItsBodyPoses()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            Assert.IsNotNull(prefab);
+            Assert.IsTrue(prefab.TryGetComponent(out HoneyguideBody _), "the Honeyguide's root carries no HoneyguideBody");
+            var model = prefab.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "Honeyguide" && t != prefab.transform);
+            Assert.IsNotNull(model, "Honeyguide.fbx is not nested under the hull as 'Honeyguide'");
+            var smr = model.GetComponentInChildren<SkinnedMeshRenderer>(true);
+            Assert.IsTrue(smr && smr.enabled && smr.sharedMesh, "the Honeyguide model has no drawn skinned mesh");
+            foreach (var shape in new[] { "Charge", "Mass", "Space", "Time" })
+                Assert.GreaterOrEqual(smr.sharedMesh.GetBlendShapeIndex(shape), 0, $"the model has no {shape} morph");
+            var bones = model.GetComponentsInChildren<Transform>(true).Select(t => t.name).ToList();
+            foreach (var bone in new[] { "hull", "beak", "ratel", "wing.L", "wing.R", "tail" })
+                CollectionAssert.Contains(bones, bone, $"the model has no {bone} bone (HoneyguideBody finds bones by name)");
+            var drawn = prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(r => r.enabled).ToList();
+            Assert.AreEqual(1, drawn.Count, "a second skinned mesh still draws (the Sparrow inside the Honeyguide)");
+            Assert.IsTrue(prefab.TryGetComponent(out VesselCustomization custom));
+            var geometries = new SerializedObject(custom).FindProperty("_shipGeometries");
+            Assert.AreEqual(1, geometries.arraySize);
+            Assert.AreEqual(model.gameObject, geometries.GetArrayElementAtIndex(0).objectReferenceValue,
+                "the domain paint does not land on the Honeyguide model");
+        }
+
+        [Test]
         public void HoneyguideCard_NamesBothSeats()
         {
             var cls = AssetDatabase.LoadAssetAtPath<SO_Vessel>("Assets/_SO_Assets/Classes/SO_Class_Honeyguide.asset");

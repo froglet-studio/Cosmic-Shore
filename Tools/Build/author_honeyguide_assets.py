@@ -37,6 +37,7 @@ the asset - the lab is the record for those - and leaves the numbers to the team
 To re-author from scratch, delete the file and its .meta and run again.
 """
 import os
+import hashlib
 import re
 import sys
 
@@ -386,6 +387,28 @@ DESCRIPTION = ("  Description: Two seats, one hull, like the honeyguide bird and
 CREW = "  CrewNames:\n  - Honeyguide\n  - Ratel\n  CrewNameTemplate: '{0} and {1}'\n"
 
 
+# The card set, rendered from Honeyguide.fbx by Tools/Build/vessel_model/render_cards.py, which names a new PNG
+# md5("cosmic-shore-card:" + its repo path): this generator computes the same guids, so its write never reverts the wiring.
+def _model_card(rel):
+    return hashlib.md5(("cosmic-shore-card:" + rel).encode()).hexdigest()
+CARD_ICON = _model_card("Assets/_Graphics/CardImages/Honeyguide.png")
+CARD_FIELDS = {
+    "IconActive": CARD_ICON,
+    "IconInactive": _model_card("Assets/_Graphics/CardImages/Honeyguide_Inactive.png"),
+    "PreviewImage": _model_card("Assets/_Graphics/Design Assests/Hangar/Honeyguide_Hangar_Preview.png"),
+    "SquadImage": _model_card("Assets/_Graphics/CardImages/Honeyguide_large.png"),
+    "CardSilohoutteActive": CARD_ICON,
+    "CardSilohoutteInactive": _model_card("Assets/_Graphics/CardImages/Honeyguide_silhouette.png"),
+}
+
+
+def card_retrofit(text: str) -> str:
+    """The class asset's six card images are the model's renders (not the Sparrow's). Idempotent."""
+    for field, guid in CARD_FIELDS.items():
+        text = re.sub(r"(  %s: \{fileID: 21300000, guid: )[0-9a-f]{32}(, type: 3\})" % field, lambda m: m.group(1) + guid + m.group(2), text)
+    return text
+
+
 def class_asset(donor_class: str) -> str:
     text = replace_once(donor_class, "  m_Name: SO_Class_Sparrow\n", "  m_Name: SO_Class_Honeyguide\n", "class m_Name")
     text = replace_once(text, f"  Class: {SPARROW_CLASS_ID}\n", f"  Class: {HONEYGUIDE_CLASS_ID}\n", "class Class")
@@ -396,7 +419,7 @@ def class_asset(donor_class: str) -> str:
     text, n = re.subn(r"  isLocked: \d\n", "  isLocked: 0\n  ownedFromStart: 1\n", text, count=1)
     if n != 1:
         raise RuntimeError("donor drifted: the class isLocked line was not found")
-    return text
+    return card_retrofit(text)
 
 
 def register_class_list(text: str) -> str:
@@ -504,7 +527,7 @@ def fusion_entries(text: str, vessel: int):
 
 def register_fusion(text: str) -> str:
     if fusion_entries(text, HONEYGUIDE_CLASS_ID):
-        return text
+        return unbake_fusion(text)
     donor = fusion_entries(text, SPARROW_CLASS_ID)
     if len(donor) != 4:
         raise RuntimeError(f"CrystalHullFusionConfig: expected 4 Sparrow entries, found {len(donor)}")
@@ -512,8 +535,118 @@ def register_fusion(text: str) -> str:
     for m in re.finditer(r"  - vessel: \d+\n(?:    .*\n)+", text):
         last = m
     added = "".join(e.replace(f"  - vessel: {SPARROW_CLASS_ID}\n", f"  - vessel: {HONEYGUIDE_CLASS_ID}\n", 1) for e in donor)
-    return text[:last.end()] + added + text[last.end():]
+    return unbake_fusion(text[:last.end()] + added + text[last.end():])
 
+
+def sparrow_bakes(text: str):
+    return set(re.findall(r"  - vessel: %d\n    element: \d+\n    bake: (\{[^}]*\})\n" % SPARROW_CLASS_ID, text)) - {"{fileID: 0}"}
+
+
+def unbake_fusion(text: str) -> str:
+    """No Honeyguide entry keeps a SPARROW bake: those were of the Sparrow's mesh, and the hull now draws Honeyguide.fbx,
+    so the fusion solves on a worker (CRYSTAL_HULL_FUSION.md) until the editor's baker writes the Honeyguide's own (which
+    this keeps). Idempotent."""
+    bakes = sparrow_bakes(text)
+    return re.sub(r"(  - vessel: %d\n    element: \d+\n    bake: )(\{[^}]*\})\n" % HONEYGUIDE_CLASS_ID,
+                  lambda m: m.group(1) + ("{fileID: 0}" if m.group(2) in bakes else m.group(2)) + "\n", text)
+
+
+
+# ----------------------------------------------------------------------------- the hull model (Honeyguide.fbx)
+# The Honeyguide's own model (Tools/Build/vessel_model/specs/honeyguide.py) nested under the root, the Wrasse's pattern
+# (author_wrasse_assets.bodies_retrofit): it is the ship geometry, the Sparrow's mesh is switched off (its bones, jets,
+# colliders and Animator stay - the hull still flies on them), and HoneyguideBody puppets its bones by name.
+MODEL_FBX = os.path.join(ROOT, "Assets", "_Models", "Vessel Models", "Honeyguide.fbx")
+MODEL_FBX_GUID = "4f1c2a9e7b3d4e5f8a6b0c1d2e3f4a5b"
+SPARROW_FBX_GUID = "151e3f0352963624abf4da579618e66d"
+SPARROW_INSTANCE_ID = "3134011750752858212"      # the Sparrow model nested under the root
+SPARROW_SMR_SOURCE = "2692722512241470911"       # its SkinnedMeshRenderer, in the FBX
+SPARROW_MODEL_GO = "2864103291091619125"         # its root GameObject (stripped): the ship geometry until the model
+MODEL_ROOT_GO = "919132149155446097"             # a model's root GameObject / Transform: constants of the importer
+MODEL_ROOT_TRANSFORM = "-8679921383154817045"
+MODEL_INSTANCE_ID = "2121000000000000041"
+MODEL_TRANSFORM_ID = "2121000000000000042"
+MODEL_GO_ID = "2121000000000000043"
+BODY_ID = "2121000000000000044"                  # HoneyguideBody on the root
+BODY_SCRIPT_META = os.path.join(CREW_DIR, "HoneyguideBody.cs.meta")
+# HoneyguideBody's serialized fields at the C# initializers, written once (the team tunes them in the inspector after)
+BODY_FIELDS = (
+    "  modelName: Honeyguide\n  cruiseSpeed: 60\n  fullYawRate: 110\n  fullPitchRate: 90\n  fullFlareDeceleration: 120\n"
+    "  wingBankDegrees: 22\n  wingFlareDegrees: 30\n  wingBeatDegrees: 10\n  wingBeatHz: 1.6\n  tailSteerDegrees: 14\n"
+    "  tailLiftDegrees: 16\n  turretStepDegrees: 60\n  smoothing: 8\n")
+SPARROW_SMR_OFF = (f"    - target: {{fileID: {SPARROW_SMR_SOURCE}, guid: {SPARROW_FBX_GUID},\n        type: 3}}\n"
+                   "      propertyPath: m_Enabled\n      value: 0\n      objectReference: {fileID: 0}\n")
+
+
+def model_instance() -> str:
+    """Honeyguide.fbx nested under the root in its own frame (the fleet's: nose +Z, up +Y, where the Sparrow's sits)."""
+    mods = [(MODEL_ROOT_GO, "m_Name", "Honeyguide")] + [(MODEL_ROOT_TRANSFORM, k, v) for k, v in (
+        ("m_LocalPosition.x", "0"), ("m_LocalPosition.y", "0"), ("m_LocalPosition.z", "0"), ("m_LocalRotation.w", "1"),
+        ("m_LocalRotation.x", "0"), ("m_LocalRotation.y", "0"), ("m_LocalRotation.z", "0"),
+        ("m_LocalEulerAnglesHint.x", "0"), ("m_LocalEulerAnglesHint.y", "0"), ("m_LocalEulerAnglesHint.z", "0"))]
+    return (f"--- !u!1001 &{MODEL_INSTANCE_ID}\nPrefabInstance:\n  m_ObjectHideFlags: 0\n  serializedVersion: 2\n"
+            f"  m_Modification:\n    serializedVersion: 3\n    m_TransformParent: {{fileID: {ROOT_TRANSFORM_ID}}}\n"
+            "    m_Modifications:\n" +
+            "".join(f"    - target: {{fileID: {fid}, guid: {MODEL_FBX_GUID},\n        type: 3}}\n      propertyPath: {path}\n"
+                    f"      value: {v}\n      objectReference: {{fileID: 0}}\n" for fid, path, v in mods) +
+            "    m_RemovedComponents: []\n    m_RemovedGameObjects: []\n    m_AddedGameObjects: []\n    m_AddedComponents: []\n"
+            f"  m_SourcePrefab: {{fileID: 100100000, guid: {MODEL_FBX_GUID}, type: 3}}\n"
+            f"--- !u!4 &{MODEL_TRANSFORM_ID} stripped\nTransform:\n"
+            f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_TRANSFORM}, guid: {MODEL_FBX_GUID},\n    type: 3}}\n"
+            f"  m_PrefabInstance: {{fileID: {MODEL_INSTANCE_ID}}}\n  m_PrefabAsset: {{fileID: 0}}\n"
+            f"--- !u!1 &{MODEL_GO_ID} stripped\nGameObject:\n"
+            f"  m_CorrespondingSourceObject: {{fileID: {MODEL_ROOT_GO}, guid: {MODEL_FBX_GUID},\n    type: 3}}\n"
+            f"  m_PrefabInstance: {{fileID: {MODEL_INSTANCE_ID}}}\n  m_PrefabAsset: {{fileID: 0}}\n")
+
+
+def body_block(script_guid: str) -> str:
+    return (f"--- !u!114 &{BODY_ID}\nMonoBehaviour:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {{fileID: 0}}\n"
+            f"  m_PrefabInstance: {{fileID: 0}}\n  m_PrefabAsset: {{fileID: 0}}\n  m_GameObject: {{fileID: {ROOT_GO}}}\n"
+            f"  m_Enabled: 1\n  m_EditorHideFlags: 0\n  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}\n"
+            "  m_Name: \n  m_EditorClassIdentifier: \n" + BODY_FIELDS)
+
+
+def model_retrofit(text: str, script_guid: str) -> str:
+    """The Honeyguide as its own model. Idempotent: every step looks before it writes."""
+    if f"--- !u!1001 &{MODEL_INSTANCE_ID}\n" not in text:
+        text += model_instance()
+    if f"--- !u!114 &{BODY_ID}\n" not in text:
+        text += body_block(script_guid)
+    m = re.search(r"(--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n(?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
+    if m and f"  - component: {{fileID: {BODY_ID}}}\n" not in m.group(1):
+        text = text[:m.end(1)] + f"  - component: {{fileID: {BODY_ID}}}\n" + text[m.end(1):]
+    m = re.search(r"(--- !u!4 &%s\nTransform:\n(?:.*\n)*?  m_Children:\n(?:  - \{fileID: -?\d+\}\n)*)" % ROOT_TRANSFORM_ID, text)
+    if m and f"  - {{fileID: {MODEL_TRANSFORM_ID}}}\n" not in m.group(1):
+        text = text[:m.end(1)] + f"  - {{fileID: {MODEL_TRANSFORM_ID}}}\n" + text[m.end(1):]
+    # the model is the drawn hull: the domain paint lands on it (slot 0 of a skinned mesh), the Sparrow's mesh is off
+    text = text.replace(f"  _shipGeometries:\n  - {{fileID: {SPARROW_MODEL_GO}}}\n", f"  _shipGeometries:\n  - {{fileID: {MODEL_GO_ID}}}\n")
+    m = re.search(r"--- !u!1001 &%s\nPrefabInstance:\n(?:.*\n)*?    m_Modifications:\n" % SPARROW_INSTANCE_ID, text)
+    if m and SPARROW_SMR_OFF not in text:
+        text = text[:m.end()] + SPARROW_SMR_OFF + text[m.end():]
+    return text
+
+
+def check_model(text: str, script_guid: str):
+    errs = []
+    def want(cond, msg):
+        if not cond:
+            errs.append(msg)
+    inst = re.search(r"--- !u!1001 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % MODEL_INSTANCE_ID, text)
+    want(inst and f"m_SourcePrefab: {{fileID: 100100000, guid: {MODEL_FBX_GUID}, type: 3}}" in inst.group(1)
+         and f"m_TransformParent: {{fileID: {ROOT_TRANSFORM_ID}}}" in inst.group(1) and "      value: Honeyguide\n" in inst.group(1),
+         "Honeyguide.prefab: Honeyguide.fbx is not nested under the root as 'Honeyguide' (HoneyguideBody finds it by that name)")
+    root_t = re.search(r"--- !u!4 &%s\nTransform:\n((?:.*\n)*?)(?=--- !u!|\Z)" % ROOT_TRANSFORM_ID, text)
+    want(root_t and f"  - {{fileID: {MODEL_TRANSFORM_ID}}}\n" in root_t.group(1),
+         "Honeyguide.prefab: the root's children do not list the model")
+    root = re.search(r"--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n((?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
+    want(root and f"{{fileID: {BODY_ID}}}" in root.group(1), "Honeyguide.prefab: HoneyguideBody is not on the root's component list")
+    body = re.search(r"--- !u!114 &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % BODY_ID, text)
+    want(body and f"guid: {script_guid}, type: 3" in body.group(1),
+         "Honeyguide.prefab: the HoneyguideBody document is missing or names another script")
+    want(f"  _shipGeometries:\n  - {{fileID: {MODEL_GO_ID}}}\n" in text,
+         "Honeyguide.prefab: the ship geometry is not the model (the domain colour would paint the hidden Sparrow)")
+    want(SPARROW_SMR_OFF in text, "Honeyguide.prefab: the Sparrow's mesh still draws (a Sparrow inside the Honeyguide)")
+    return errs
 
 # ----------------------------------------------------------------------------- checks
 def check_prefab(text: str, script_guid: str):
@@ -558,13 +691,18 @@ def check_registrations(container: str, network: str, lists, cls: str, kmap: str
     want(f"  Class: {HONEYGUIDE_CLASS_ID}\n" in cls and "  ownedFromStart: 1\n" in cls and "  isLocked: 0\n" in cls,
          "SO_Class_Honeyguide: wrong class, locked, or not owned from the start")
     want(CREW in cls, "SO_Class_Honeyguide: the card does not name both seats (CrewNames Honeyguide, Ratel)")
+    for field, guid in CARD_FIELDS.items():
+        want(f"  {field}: {{fileID: 21300000, guid: {guid}, type: 3}}\n" in cls,
+             f"SO_Class_Honeyguide: {field} is not the model's render (run render_cards.py Honeyguide, then this tool)")
     want(f"  vesselClass: {HONEYGUIDE_CLASS_ID}\n" in kmap and "  m_Name: Honeyguide\n" in kmap,
          "ElementalAbilityMaps/Honeyguide: wrong class or name")
     want(kmap == build_map(read(DONOR_MAP)), "ElementalAbilityMaps/Honeyguide: its cards are not MAP_ENTRIES (Peck, Flit, Slip, Afterburner)")
     hg, sparrow = fusion_entries(fusion, HONEYGUIDE_CLASS_ID), fusion_entries(fusion, SPARROW_CLASS_ID)
     want(len(hg) == 4, f"CrystalHullFusionConfig: {len(hg)} Honeyguide entries, not 4 (CrystalHullFusionConfigTests needs one per element)")
-    want([e.split("\n", 1)[1] for e in hg] == [e.split("\n", 1)[1] for e in sparrow],
-         "CrystalHullFusionConfig: the Honeyguide's entries are not the Sparrow's (it draws the Sparrow's mesh)")
+    nobake = lambda e: re.sub(r"    bake: \{[^}]*\}\n", "", e.split("\n", 1)[1])
+    want([nobake(e) for e in hg] == [nobake(e) for e in sparrow], "CrystalHullFusionConfig: the Honeyguide's timings are not the Sparrow's")
+    want(not any(b in "".join(hg) for b in sparrow_bakes(fusion)),
+         "CrystalHullFusionConfig: a Honeyguide entry keeps a Sparrow-mesh bake (it lands the crystal off Honeyguide.fbx)")
     return errs
 
 
@@ -579,6 +717,10 @@ def check_all():
         return ["Honeyguide.prefab (+ .meta) is missing: run Tools/Build/author_honeyguide_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Honeyguide.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB), script_guid)
+    if not os.path.exists(MODEL_FBX) or not os.path.exists(MODEL_FBX + ".meta") or guid_of(MODEL_FBX + ".meta") != MODEL_FBX_GUID:
+        errs.append("Honeyguide.fbx (+ .meta, guid MODEL_FBX_GUID) is missing: run Tools/Build/vessel_model/build.py "
+                    "Tools/Build/vessel_model/specs/honeyguide.py")
+    errs += check_model(read(PREFAB), guid_of(BODY_SCRIPT_META))
     for path in (CLASS_ASSET, MAP, CONFIG):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
             return errs + [f"{os.path.relpath(path, ROOT)} (+ .meta) is missing: run the tool"]
@@ -601,7 +743,7 @@ def author():
     if not os.path.exists(PREFAB):   # the spent one-shots stand down once committed
         write(PREFAB, build_clone(read(DONOR), script_guid))
         write(PREFAB + ".meta", prefab_meta())
-    old = read(PREFAB); new = retarget_triggers(old)   # not a one-shot: the shipped prefab is held to it
+    old = read(PREFAB); new = model_retrofit(retarget_triggers(old), guid_of(BODY_SCRIPT_META))   # not one-shots: held to them
     if new != old:
         write(PREFAB, new)
     if not os.path.isdir(CONFIG_DIR):
@@ -612,6 +754,9 @@ def author():
         write(CONFIG + ".meta", native_meta(CONFIG_GUID))
     if not os.path.exists(CLASS_ASSET):
         write(CLASS_ASSET, class_asset(read(DONOR_CLASS))); write(CLASS_ASSET + ".meta", native_meta(CLASS_GUID))
+    old = read(CLASS_ASSET); new = card_retrofit(old)
+    if new != old:
+        write(CLASS_ASSET, new)
     if not os.path.exists(MAP) or read(MAP) != build_map(read(DONOR_MAP)):   # the cards are this tool's
         write(MAP, build_map(read(DONOR_MAP)))
         if not os.path.exists(MAP + ".meta"):
@@ -647,6 +792,18 @@ def self_test():
     expect(check_prefab(good.replace(RT_GUID, SPARROW_TRIGGER_GUIDS[0], 1), script_guid), 2, "RT back on the Sparrow's fire")
     if retarget_triggers(good) != good:
         fails.append("retarget_triggers is not idempotent")
+    bg = guid_of(BODY_SCRIPT_META)
+    modelled = model_retrofit(good, bg)
+    expect(check_model(modelled, bg), 0, "a retrofitted clone passes")
+    expect(check_model(good, bg), 4, "the Sparrow's own mesh")
+    expect(check_model(modelled.replace(SPARROW_SMR_OFF, ""), bg), 1, "the Sparrow's mesh left on")
+    expect(check_model(modelled.replace(f"  _shipGeometries:\n  - {{fileID: {MODEL_GO_ID}}}\n",
+                                        f"  _shipGeometries:\n  - {{fileID: {SPARROW_MODEL_GO}}}\n"), bg), 1, "the paint on the Sparrow")
+    expect(check_model(modelled.replace("      value: Honeyguide\n", "      value: Sparrow\n"), bg), 1, "the model renamed")
+    expect(check_model(modelled.replace(f"  - component: {{fileID: {BODY_ID}}}\n", ""), bg), 1, "HoneyguideBody off the root")
+    if model_retrofit(modelled, bg) != modelled:
+        fails.append("model_retrofit is not idempotent")
+    expect(check_prefab(modelled, script_guid), 0, "a retrofitted clone still passes the prefab checks")
     tg = guid_of(TRIGGER_SCRIPT_META)
     peck, rt, lt = peck_asset(read(DONOR_PECK)), trigger_asset(tg, "HoneyguideRTAction", 0), trigger_asset(tg, "HoneyguideLTAction", 1)
     expect(check_actions(peck, rt, lt, tg), 0, "fresh trigger actions pass")
@@ -690,6 +847,12 @@ def self_test():
     expect(check_registrations(container, network, lists, cls.replace(CREW, ""), kmap, fusion), 1, "a card without its crew names")
     expect(check_registrations(container, network, lists, cls, kmap, fusion.replace(f"  - vessel: {HONEYGUIDE_CLASS_ID}\n", "  - vessel: 99\n", 1)), 1, "a missing fusion entry")
     expect(check_registrations(container, network, lists, cls, read(DONOR_MAP), fusion), 1, "the Sparrow's own map")
+    expect(check_registrations(container, network, lists, cls.replace(CARD_FIELDS["SquadImage"], "0" * 32), kmap, fusion), 1,
+           "a card image back on the Sparrow's")
+    sp_bake = re.search(r"  - vessel: %d\n    element: \d+\n    bake: (\{[^}]*\})\n" % SPARROW_CLASS_ID, fusion).group(1)
+    expect(check_registrations(container, network, lists, cls, kmap,
+                               re.sub(r"(  - vessel: %d\n    element: \d+\n    bake: )\{fileID: 0\}" % HONEYGUIDE_CLASS_ID,
+                                      lambda m: m.group(1) + sp_bake, fusion, count=1)), 1, "a Sparrow-mesh bake on the Honeyguide")
     expect(check_registrations(container, network, lists, cls, kmap.replace("AbilityLabel: 'Peck'", "AbilityLabel: 'Pulsefire'"), fusion), 1,
            "a card renamed")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:

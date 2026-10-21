@@ -32,6 +32,7 @@ How every vessel is coloured (the colour language, the shared materials' scheme,
 | Shrike | (none; `SHRIKE.md` section 2) | `Shrike.fbx` (new), replacing `ShrikeHullBuilder` | the same | `specs/shrike.py` |
 | Grouper | [Grouper.md](Grouper.md) | `Grouper.fbx` (new, 2026-10-20), the Wrasse's carrier hull, drawn by `Wrasse.prefab` in place of the Sparrow's model | the same | `specs/grouper.py` |
 | Wrasse Kite | [WrasseKite.md](WrasseKite.md) | `WrasseKite.fbx` (new, 2026-10-20), the navigator's kite, drawn where the kite flies (`WrasseCrewBodies`) | the same | `specs/wrassekite.py` |
+| Honeyguide | [Honeyguide.md](Honeyguide.md) | `Honeyguide.fbx` (new, 2026-10-21), the Honeyguide and Ratel's hull, drawn by `Honeyguide.prefab` in place of the Sparrow's model and puppeted by `HoneyguideBody` | the same | `specs/honeyguide.py` |
 | Rhino | [Rhino.md](Rhino.md) | `Rhino_Test.fbx` (part-per-mesh placeholder) | `rhino_shapekey_with_animations.fbx`, the rig-swap target, with four REAL morphs | `specs/rhino.py` |
 
 **2026-10-18, withdrawn after the owner's Editor test:** the rebuilt Sparrow flew backwards, the Urchin did not
