@@ -252,4 +252,46 @@ void SpindleLodThread_float(float3 Dull, float3 Bright, float DeathState, float3
     Color = SpindleLod_Pulse(Color, UV.x, Phase, Clock, Strength);
 }
 
+// =============================================================================================
+// SpindleDepthGraph: the OVERT effect on a spindle-material surface that is NOT the braid
+// (Docs/SPINDLE_LOD.md §8). SpindleGraph's lace, sway and death clock untouched, with the shared
+// depth effect spliced in before the sway and its pulse on the colour. No LOD meshes and no tiers:
+// these surfaces are few, and most of them move.
+//
+//   Form 0  BLOOM (creatures: the shark, brittlestar, worm and quadfish models, skinned or not).
+//           Outward from the object's pivot by position alone (IncorporealDepthBloom), reaching the
+//           full travel at Reach world units (_SpindleDepthReach, measured per renderer by
+//           SpindleLodSystem from its bounds); the wave runs heart -> extremities.
+//   Form 1  FACETS (the switch rings). Prism-exact: every flat facet opens along its own normal
+//           (IncorporealDepthOpen), and the wave runs along UV.x, round the ring.
+//
+// Covert style (or no system running): a pass-through, so the graph draws SpindleGraph exactly.
+// Strength 0 (the template's default, any material nobody tuned) is a pass-through too.
+// =============================================================================================
+void SpindleDepthVertex_float(float3 PositionOS, float3 NormalOS, float3 UV, float Reach, float Form,
+    float Strength, float Phase, float Clock, out float3 Out)
+{
+    Out = PositionOS;
+#if !defined(SHADERGRAPH_PREVIEW)
+    if (!SpindleLod_Overt()) return;
+    float openness;
+    if (Form > 0.5)
+        IncorporealDepthOpen_float(PositionOS, NormalOS, UV.x, Phase, Clock, Strength, Out, openness);
+    else
+        IncorporealDepthBloom_float(PositionOS, Reach, Phase, Clock, Strength, Out, openness);
+#endif
+}
+
+void SpindleDepthGlow_float(float3 Color, float3 PositionWS, float3 UV, float Reach, float Form, float Strength,
+    float Phase, float Clock, out float3 Out)
+{
+    Out = Color;
+#if !defined(SHADERGRAPH_PREVIEW)
+    if (!SpindleLod_Overt()) return;
+    float pulse = Form > 0.5 ? IncorporealDepth_Pulse(UV.x, Phase, Clock, Strength)
+                             : IncorporealDepth_BloomPulse(PositionWS, Reach, Phase, Clock, Strength);
+    Out = Color * (1.0 + pulse);
+#endif
+}
+
 #endif

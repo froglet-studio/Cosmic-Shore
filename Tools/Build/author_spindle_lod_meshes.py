@@ -110,6 +110,7 @@ SCRIPT_GUID = guid_for("SpindleLodProfileSO")
 # The template materials are authored by Tools/Shaders/wire_spindle_lod.py; same guid namespace.
 MID_TEMPLATE_GUID = guid_for("SpindleLodMid")
 FAR_TEMPLATE_GUID = guid_for("SpindleLodFar")
+DEPTH_TEMPLATE_GUID = guid_for("SpindleDepth")
 
 
 # --------------------------------------------------------------------------------------------
@@ -427,6 +428,10 @@ MonoBehaviour:
   threadFacet: 0.55
   threadGlow: 1.35
   threadAlpha: 0.85
+  depthOnBodies: 1
+  switchRingStrength: 0.1
+  switchRingDistance: 200000000
+  switchRingSway: 0
 """
 
 
@@ -437,6 +442,7 @@ def measured_block(m):
     return (
         f"  midTemplate: {{fileID: 2100000, guid: {MID_TEMPLATE_GUID}, type: 2}}\n"
         f"  farTemplate: {{fileID: 2100000, guid: {FAR_TEMPLATE_GUID}, type: 2}}\n"
+        f"  depthTemplate: {{fileID: 2100000, guid: {DEPTH_TEMPLATE_GUID}, type: 2}}\n"
         "  meshSets:\n"
         f"  - source: {{fileID: {SOURCE_MESH_FILE_ID}, guid: {FBX_GUID}, type: 3}}\n"
         f"    mid: {{fileID: 4300000, guid: {MID_GUID}, type: 2}}\n"

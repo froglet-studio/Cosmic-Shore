@@ -277,12 +277,114 @@ that fits what the surface is made of.
 | surface | form | why |
 |---|---|---|
 | snow shards | `IncorporealDepthOpen` (per face, prism-exact) | faceted solids with a few big split-normal faces |
-| toy switch rings | `IncorporealDepthOpen` | the ring's segments are faceted |
+| toy switch rings | `IncorporealDepthOpen` | the ring's segments are faceted - **wired, §8** |
 | membrane | `IncorporealDepthPart` along each panel's outward direction | parting panels, not shredding triangles |
 | nucleus | `IncorporealDepthPart` per shell | the same |
 | spindles | `IncorporealDepthPart` along each strand's splay, root-anchored | §7.2 |
+| creatures' own models | `IncorporealDepthBloom`, by position alone | §8 |
 
 Then `IncorporealDepthGlow` in the fragment and a per-surface Strength. The ramp, the tier and the wave are global
 (`Utility/IncorporealDepth.Publish`), so every part opens at the same distances, as hard as danger mass, with one
-wave, which is the connection between the incorporeal parts. Nothing but the spindles is wired yet
-(T-20261020-3b39).
+wave, which is the connection between the incorporeal parts. The spindles, the creatures' models and
+the switch rings are wired (§8); the shards, membrane and nucleus are not yet (T-20261020-3b39).
+
+## 8. Beyond the braid: every spindle, and the switch rings
+
+Garrett, 2026-10-21: *"Let's also apply this to all spindles including fauna like sharks. Let's also
+replace the switch rings with a spindle material that has this effect."*
+
+### 8.1 What was not covered, measured
+
+The LOD and its effect took only renderers drawing the flora braid (`BezierCurve.001` in `bonita.fbx`):
+every flora branch and the tadpole. Every other SpindleGraph wearer that a `Spindle` drives draws its
+own model, and none of them had the effect:
+
+| creature | prefab | model | renderers |
+|---|---|---|---|
+| shark | `MassSharkFauna` | `Shark_model.fbx` (body + two wings) | 3 skinned |
+| brittlestar | `MassBrittlestarFauna` | `Brittlestar_Export.fbx` (body + arms) | 11 skinned |
+| worm | `WormHead/Body/TailSegment` | `wormhead.fbx` / `wormbody.fbx` | 1-2 static each |
+| quadfish | `QuadFish` | `mediumfish.fbx` | 1 static |
+
+They have nothing in common the braid's channels could be baked against: the shark is one lattice
+skin, the worm four swept strands, the fish two, the brittlestar a body and five tubes, and their UVs
+are ordinary unwraps (u does not run root to tip). And their UV seams and hard edges SPLIT vertices,
+so any displacement read off a vertex attribute (its normal, its UV) moves the two copies of a seam
+apart and tears the surface. Membranes and the Sparrow's exhaust also wear SpindleGraph but are not
+spindles; they are untouched.
+
+### 8.2 The bloom (creatures)
+
+`IncorporealDepthBloom` (`IncorporealDepth.hlsl`): every point moves OUTWARD from the object's pivot,
+by a function of its POSITION ALONE, so it can never tear a mesh. It is the braid's fan with the
+creature's heart for the root: anchored at the pivot, a point's travel grows linearly with its radius
+and reaches the full travel (the danger face's 15.2 world units x strength) at the body's REACH; the
+wave runs heart -> extremities along the same radius, and its pulse of light rides the crest. Same
+ramp, same recede, same strength by element (a Charge shark blooms 0.35, every other creature 0.1),
+in world units whatever the object's scale.
+
+- **Reach** is measured per renderer when it registers (`SpindleLodSystem.ReachOf`: the bounds'
+  farthest corner from the pivot, rounded up to a half-octave so bodies of a size share a material).
+  A skinned body is drawn about its ROOT BONE, so that is its pivot; a static one, its transform.
+- **It never folds.** A wave that pushes a crest harder than the trough ahead of it can overtake it and
+  turn the surface inside out. The travel is capped at 0.8 / q of the reach (q = 2 pi x waves x the
+  wave's amplitude), which keeps the displaced radius's derivative at least 0.2, and never more than
+  30% of the reach (a body blooms; it does not double). The harness sweeps it (no fold, at three
+  clocks and a body small enough for the cap to bite).
+- **The pulse is where the geometry is.** The fragment stage sees only displaced positions, so
+  `IncorporealDepth_BloomRestRadius` inverts the bloom (Newton, from the no-wave guess; the bloom is
+  monotone by the cap) and the pulse is read at the rest radius - within 1e-3 of the vertex stage's
+  crest, measured.
+- **No tiers, no LOD meshes.** These bodies are few and most of them move (a creature's body would lag
+  its creature in an instanced batch). `SpindleLodSystem.Register` takes a renderer whose mesh it has
+  no LOD for as a BODY: it swaps in a depth material (the body's own material, every property and
+  keyword, on `SpindleDepthGraph`, with `_SpindleLodStrength` / `_SpindleDepthReach` /
+  `_SpindleDepthForm` 0), grows its culling bounds by the bloom's travel, and hands the authored material
+  back when it unregisters. Only materials on SpindleGraph's blackboard are taken (a body on another
+  shader keeps it). `SpindleLodProfileSO.depthOnBodies` switches it off.
+- **The element** is read off whatever lifeform the spindle belongs to (`ILifeFormEntity`), so a
+  creature's spindles - which name no `LifeForm` - get their element too. That also fixed the tadpole:
+  a Charge tadpole's braid was being parted at the non-Charge strength.
+
+### 8.3 The switch rings
+
+`ToyFactory.AddSwitchRing` (every toy root, matrix station, Domain Changer slot, painting gate, race gate,
+Scarab switch, Astro League goal) now draws the ring on `SpindleDepthGraph` in the FACETS form: from
+afar each of the ring's 72 flat facets opens along its own normal, prism-exact
+(`IncorporealDepthOpen`), on the same ramp, recede and wave, and the wave and its pulse run ROUND the
+ring (u, which `RingMesh` now carries: `RingLaceWraps` = 4 spindle lengths round, v round the tube).
+The switch vocabulary is unchanged: the signal still picks the colour (`ToySwitchSignal`), which
+becomes the spindle's body colour, with its rim 37% toward white as `SpindleMaterial` pairs them.
+
+| profile field | value | why |
+|---|---|---|
+| `switchRingStrength` | 0.1 | ~1.5 units at the peak, as a non-Charge limb |
+| `switchRingDistance` | 200,000,000 | SpindleGraph's `_Distance` (the lace's fade): a branch fades by ~1,400 units, a ring you fly toward stays readable to ~14,000 |
+| `switchRingSway` | 0 | a ring is a trigger volume drawn at its own radius; a swaying ring would draw it where it is not |
+
+Where the graph cannot run (no profile, `lodEnabled` off, an unsupported shader, edit mode) the ring
+is the signal's prism, exactly as before. Hubs and cones beside a ring stay prisms.
+
+### 8.4 The pieces
+
+| piece | what it is |
+|---|---|
+| `SpindleDepthGraph.shadergraph` / `SpindleDepth.mat` | Generated FROM SpindleGraph by `Tools/Shaders/wire_spindle_lod.py` (the third graph it writes; `--check` holds it): `SpindleDepthVertex` before the sway, `SpindleDepthGlow` on the lace colour, alpha untouched. The template is referenced by the profile (`depthTemplate`) so the build keeps its variants. |
+| `SpindleDepthVertex_float` / `SpindleDepthGlow_float` (`SpindleLod.hlsl`) | Form 0 bloom, form 1 facets; a pass-through in the covert style and at strength 0. |
+| `IncorporealDepthBloom_float`, `IncorporealDepth_BloomPulse` (`IncorporealDepth.hlsl`) | The bloom form, shareable by any incorporeal part with no channels to read. |
+| `SpindleLodSystem` bodies | `AddBody` / `RemoveBody`, `ReachOf`, `ReachBucket`, `BodyMaterialFor`; `EnsureRunning` (Play only) for the rings. The `renderers` line ends `· bodies N`. |
+| `Tools/Shaders/render_spindle_depth_preview.py` | The offline preview of a creature (`--body shark|brittlestar|worm|fish`) or the ring (`--body ring`) at seven stops and alive at the peak. |
+| `verify_spindle_lod.py` B / F blocks | Pass-through, pivot anchored, world units under non-uniform scale, the seam test, no fold, the inverse, the pulse on the crest, form 1 == the prism-exact opening with flat facets. 24 mutants, all caught. |
+
+Amoebius, Garland, headless, the last of six samples: 910 limbs as before (889 instanced) and **49 bodies**
+(the cell's sharks, brittlestars, worms and quadfish), with the same 38 distinct log messages as the run
+before this change.
+
+### 8.5 Not verified
+
+- No Unity editor has imported `SpindleDepthGraph` or seen a creature or ring in it. If it imports
+  magenta, every creature and ring shows it: untick `depthOnBodies` (creatures) or `lodEnabled` (both).
+- The skinned bodies' pivot is their root bone, which is how Unity draws them; the preview blooms about
+  the bounds centre instead. A root bone far from the body's middle blooms the body away from it.
+- Amoebius draws `SpindleDepthGraph` untranslated until its GLSL library carries the two functions
+  (T-20261020-1fd6): there the creatures and rings fall back to the engine's generic draw.

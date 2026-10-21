@@ -35,8 +35,9 @@ detection. On top of that base the `Toy` class adds:
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
 - **A switch ring** — every toy is drawn inside one continuous ring, square across your flight
-  path, **at the radius of its own trigger collider**, in the **prism shader**. The ring is the
-  affordance: thread it and something fires, and *which prism it is painted as* says what.
+  path, **at the radius of its own trigger collider**, drawn as a **spindle** in the colour of a
+  prism (since 2026-10-21). The ring is the affordance: thread it and something fires, and *which
+  prism's colour it wears* says what.
   See "The switch" below — there are no exemptions left.
 - **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
   has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
@@ -1164,9 +1165,22 @@ and is gone: that toy is a switch now.)*
 
 #### What a switch's SHADER says
 
-> **Every switch is drawn in the PRISM shader**, the same material family the painted trail wears
-> — so a switch is made of the same stuff as the world it acts on. The one channel left free to
-> carry meaning is *which prism it is painted as*, and that channel is `ToySwitchSignal`.
+> **Every switch wears a PRISM's colour**, the material family the painted trail wears — so a
+> switch speaks the language of the world it acts on. The one channel left free to carry meaning is
+> *which prism's colour it wears*, and that channel is `ToySwitchSignal`.
+
+**The ring is drawn as a SPINDLE (Garrett, 2026-10-21: "replace the switch rings with a spindle
+material that has this effect").** `ToyFactory.SwitchRingMaterial` paints the ring on
+`SpindleDepthGraph` - the lace of the sea's incorporeal parts - in the signal's colour (body = the
+signal colour, rim = it 37% toward white, as `SpindleMaterial` pairs them), in the FACETS form: from
+afar each flat facet of the ring opens along its own normal, prism-exact, on the prisms' own depth
+ramp, a wave and its light pulse run round the ring, and it settles back with distance
+(`Docs/SPINDLE_LOD.md` §8). The tuning is on `Resources/SpindleLodProfile`: `switchRingStrength`
+(0.1, ~1.5 units at the peak), `switchRingDistance` (the lace's fade, ~14,000 units, so a ring you
+fly toward stays readable) and `switchRingSway` (0: a ring is a trigger volume and does not sway).
+Where the graph cannot run (no profile, `lodEnabled` off, edit mode) the ring is the signal's prism,
+as before. Hubs and cones beside a ring stay prisms. The ring mesh carries UVs for the lace (u runs
+`RingLaceWraps` = 4 spindle lengths round the ring, v round the tube).
 
 | Signal | Painted as | Says | Wearers |
 |---|---|---|---|

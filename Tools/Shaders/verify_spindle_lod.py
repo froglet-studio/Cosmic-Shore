@@ -347,6 +347,125 @@ int main() {
             CHECK(std::fabs(length(tip - held) - 15.2f * S) < 1e-3f, "strength %g: the tip fanned %g, not %g", S, length(tip - held), 15.2f * S);
         }
     }
+
+    // ── BEYOND THE BRAID (SpindleDepthGraph, Docs/SPINDLE_LOD.md section 8) ─────────────────────
+    // B. BLOOM (form 0): a creature's own model blooms outward from its pivot by position alone.
+    {
+        auto pose = [](float sx, float sy, float sz, float dist) {
+            g_model = f4x4{sx,0,0,0, 0,sy,0,0, 0,0,sz,0, 0,0,0,1};
+            _WorldSpaceCameraPos = float4{0, 0, -dist, 0};
+        };
+        auto worldOf = [](float3 p) { return mul(to3x3(g_model), p); };
+        const float reach = 40.f;
+        const float peak = std::sqrt(2.f * SQR);                 // past the over-distance, before the recede
+        const float3 p0 = mk3(3.f, -2.f, 5.f);
+        float3 o; float3 o2;
+        // B1. pass-through: covert style, strength 0, closed up close, and settled back far away
+        globals(0, 1, 16, 36, minPx, 0.f);
+        pose(1, 1, 1, peak);
+        SpindleDepthVertex_float(p0, nrmOS, uvf, reach, 0.f, 0.35f, 0.f, 0.f, o);
+        CHECK(length(o - p0) == 0.f, "covert: a body bloomed");
+        globals(0, 1, 16, 36, minPx, 1.f);
+        SpindleDepthVertex_float(p0, nrmOS, uvf, reach, 0.f, 0.f, 0.f, 0.f, o);
+        CHECK(length(o - p0) < 1e-6f, "strength 0: a body bloomed %g", length(o - p0));
+        pose(1, 1, 1, std::sqrt(0.2f * SQR));
+        SpindleDepthVertex_float(p0, nrmOS, uvf, reach, 0.f, 0.35f, 1.f, 2.f, o);
+        CHECK(length(o - p0) < 1e-6f, "closed up close: a body bloomed %g", length(o - p0));
+        pose(1, 1, 1, std::sqrt(45.f * SQR));
+        SpindleDepthVertex_float(p0, nrmOS, uvf, reach, 0.f, 0.35f, 1.f, 2.f, o);
+        CHECK(length(o - p0) < 1e-5f, "settled back: a body is still bloomed %g", length(o - p0));
+        // B2. at the peak, with the wave at rest (flow amplitude 0): the pivot stays, a point at or past
+        //     Reach travels exactly the danger face's 15.2 x strength in WORLD units straight out from
+        //     the pivot, and a point inside travels in proportion to its radius (a fan, root to tip) -
+        //     whatever the object's scale.
+        _IncorporealFlow = float4{0.f, 1.5f, 0.6f, 0.8f};
+        for (float3 sc : {mk3(1, 1, 1), mk3(2.f, 3.f, 0.5f)}) {
+            pose(sc.x, sc.y, sc.z, peak);
+            SpindleDepthVertex_float(mk3(0, 0, 0), nrmOS, uvf, reach, 0.f, 0.35f, 0.f, 0.f, o);
+            CHECK(length(o) < 1e-6f, "the pivot moved");
+            for (float rr : {10.f, 20.f, 40.f, 90.f}) {
+                float3 dirW = normalize(mk3(0.3f, -0.5f, 0.8f));
+                float3 pW = dirW * rr;
+                float3 pO = mk3(pW.x / sc.x, pW.y / sc.y, pW.z / sc.z);
+                SpindleDepthVertex_float(pO, nrmOS, uvf, reach, 0.f, 0.35f, 0.f, 0.f, o);
+                float3 dW = worldOf(o) - pW;
+                float want = 15.2f * 0.35f * std::min(rr / reach, 1.f);
+                CHECK(std::fabs(length(dW) - want) < 1e-3f, "scale (%g,%g,%g) r %g: bloomed %g world units, not %g", sc.x, sc.y, sc.z, rr, length(dW), want);
+                CHECK(length(normalize(dW) - dirW) < 1e-4f, "a body bloomed off its radial");
+            }
+        }
+        _IncorporealFlow = float4{0.35f, 1.5f, 0.6f, 0.8f};
+        // B3. by POSITION ALONE: two copies of a seam vertex (different normal, different UV) land
+        //     on the same point at every distance and clock - the bloom never tears a mesh.
+        for (float n : {0.5f, 1.f, 2.f, 9.f}) {
+            pose(1, 1, 1, std::sqrt(n * SQR));
+            SpindleDepthVertex_float(p0, nrmOS, uvf, reach, 0.f, 0.35f, 0.7f, 1.9f, o);
+            SpindleDepthVertex_float(p0, mk3(0, 1, 0), mk3(0.91f, 0.1f, 0.f), reach, 0.f, 0.35f, 0.7f, 1.9f, o2);
+            CHECK(length(o - o2) == 0.f, "norm %g: a seam's two copies bloomed %g apart", n, length(o - o2));
+        }
+        // B4. it never folds and B5. it inverts: over a full sweep of radius, clocks and a body so
+        //     small that the travel cap bites, the displaced radius strictly increases, and the
+        //     fragment's inverse returns the rest radius.
+        for (float rch : {4.f, 40.f}) {
+            for (float clk : {0.f, 0.37f, 1.1f}) {
+                pose(1, 1, 1, peak);
+                float3 sp3 = _IncorporealSpread.xyz * 0.35f;
+                float nrm2 = IncorporealDepth_Norm(IncorporealDepth_Origin());
+                float3 opn = IncorporealDepth_Opening(nrm2, sp3) * IncorporealDepth_Recede(nrm2);
+                float opns = IncorporealDepth_Openness(nrm2, sp3);
+                float amt = IncorporealDepth_BloomAmount(opn, rch, opns);
+                float prevRd = -1.f, worstInv = 0.f;
+                for (float rr = 0.f; rr < 3.f * rch; rr += rch * 0.002f) {
+                    float rd, drd;
+                    IncorporealDepth_BloomRadius(rr, amt, rch, opns, 0.4f, clk, rd, drd);
+                    CHECK(rd > prevRd, "reach %g clock %g: the bloom folds at r %g", rch, clk, rr);
+                    prevRd = rd;
+                    float back = IncorporealDepth_BloomRestRadius(rd, amt, rch, opns, 0.4f, clk);
+                    worstInv = std::max(worstInv, std::fabs(back - rr));
+                }
+                CHECK(worstInv < 1e-3f * rch, "reach %g clock %g: the inverse misses by %g", rch, clk, worstInv);
+            }
+        }
+        // B6. the pulse rides the crest the VERTEX stage put there: at a displaced world position the
+        //     glow is the pulse of that point's REST radius.
+        {
+            pose(1, 1, 1, peak);
+            const float rch = 12.f, S = 0.35f, ph = 0.4f, clk = 0.9f;
+            float3 sp3 = _IncorporealSpread.xyz * S;
+            float nrm2 = IncorporealDepth_Norm(IncorporealDepth_Origin());
+            float opns = IncorporealDepth_Openness(nrm2, sp3);
+            float worst = 0.f;
+            for (float rr = 0.5f; rr < 2.f * rch; rr += 0.37f) {
+                float3 pO = normalize(mk3(0.2f, 0.9f, -0.4f)) * rr;
+                SpindleDepthVertex_float(pO, nrmOS, uvf, rch, 0.f, S, ph, clk, o);
+                float3 g;
+                SpindleDepthGlow_float(mk3(1, 1, 1), worldOf(o), uvf, rch, 0.f, S, ph, clk, g);
+                float crest = saturate(IncorporealDepth_Wave(rr / rch, ph, clk));
+                float want = 1.f + 0.8f * opns * crest * crest;
+                worst = std::max(worst, std::fabs(g.x - want));
+            }
+            CHECK(worst < 1e-3f, "the bloom's pulse is off the vertex stage's crest by %g", worst);
+        }
+        // B7. alive: once bloomed, the clock moves the body
+        pose(1, 1, 1, peak);
+        SpindleDepthVertex_float(p0, nrmOS, uvf, reach, 0.f, 0.35f, 0.f, 0.f, o);
+        SpindleDepthVertex_float(p0, nrmOS, uvf, reach, 0.f, 0.35f, 0.f, 0.4f, o2);
+        CHECK(length(o - o2) > 0.01f, "a bloomed body is still: the wave moved it %g", length(o - o2));
+
+        // F. FACETS (form 1, the switch rings): prism-exact, each flat facet along its own normal.
+        pose(40.f, 40.f, 40.f, peak);
+        const float3 fn = normalize(mk3(0.f, 0.8f, 0.6f));
+        float3 want; float wop;
+        SpindleDepthVertex_float(p0 / 40.f, fn, uvf, 0.f, 1.f, 0.1f, 0.2f, 0.3f, o);
+        IncorporealDepthOpen_float(p0 / 40.f, fn, uvf.x, 0.2f, 0.3f, 0.1f, want, wop);
+        CHECK(length(o - want) < 1e-6f && length(o - p0 / 40.f) > 1e-4f, "form 1 is not the prism-exact facet opening");
+        // a facet's corners move together (same normal, same flow coordinate): the facet stays flat
+        SpindleDepthVertex_float(p0 / 40.f + mk3(0.01f, 0, 0), fn, uvf, 0.f, 1.f, 0.1f, 0.2f, 0.3f, o2);
+        CHECK(length((o2 - o) - mk3(0.01f, 0, 0)) < 1e-6f, "a ring facet sheared");
+        float3 g; SpindleDepthGlow_float(mk3(1, 1, 1), worldOf(o), uvf, 0.f, 1.f, 0.1f, 0.2f, 0.3f, g);
+        CHECK(std::fabs(g.x - (1.f + IncorporealDepth_Pulse(uvf.x, 0.2f, 0.3f, 0.1f))) < 1e-6f, "form 1's pulse is not along u");
+    }
+
     _IncorporealRecede = float4{0, 0, 0, 0};
     // O7. nothing published (all-zero globals) = a no-op, never a NaN
     _IncorporealSpread = float4{0, 0, 0, 0};
@@ -407,6 +526,12 @@ def self_test():
         "width hold not ramped on the transformation": ("return lerp(1.0, SpindleLod_Inflate(v, strandRadius), v.progress);",
                                                         "return SpindleLod_Inflate(v, strandRadius);"),
         "far fade never reaches zero": ("float farFade = 1.0 - SpindleLod_Ramp(", "float farFade = 1.02 - SpindleLod_Ramp("),
+        "a body's bloom reads its normal (tears seams)": (
+            "        IncorporealDepthBloom_float(PositionOS, Reach, Phase, Clock, Strength, Out, openness);",
+            "        IncorporealDepthOpen_float(PositionOS, NormalOS, UV.x, Phase, Clock, Strength, Out, openness);"),
+        "the depth graph ignores the style": ("    Out = PositionOS;\n#if !defined(SHADERGRAPH_PREVIEW)\n    if (!SpindleLod_Overt()) return;\n    float openness;",
+                                              "    Out = PositionOS;\n#if !defined(SHADERGRAPH_PREVIEW)\n    float openness;"),
+        "the ring's facet form is ignored": ("    if (Form > 0.5)\n        IncorporealDepthOpen_float", "    if (Form > 1.5)\n        IncorporealDepthOpen_float"),
     }
     failures = 0
     for name, (old, new) in mutants.items():
@@ -421,7 +546,17 @@ def self_test():
         "ramp not the prisms' (norm doubled)": ("return dot(d, d) / max(_IncorporealSpread.w, 1.0);",
                                                 "return 2.0 * dot(d, d) / max(_IncorporealSpread.w, 1.0);"),
         # (A wave left running while closed is NOT a mutant: a closed part has zero opening for it to move.)
-        "the wave does not travel": ("_IncorporealFlow.z * clock) + phase);", "0.0 * clock) + phase);"),
+        "the wave does not travel": ("_IncorporealFlow.z * clock) + phase;", "0.0 * clock) + phase;"),
+        "the bloom's fold cap is gone": ("return min(max(opening.x, max(opening.y, opening.z)), share * reach);",
+                                         "return max(opening.x, max(opening.y, opening.z));"),
+        "the bloom's cap ignores the wave": ("float share = min(INCORPOREAL_DEPTH_BLOOM_MAX_SHARE, (1.0 - INCORPOREAL_DEPTH_BLOOM_MIN_SLOPE) / max(q, 1e-6));",
+                                             "float share = INCORPOREAL_DEPTH_BLOOM_MAX_SHARE;"),
+        "the bloom is not anchored at the pivot": ("rd = r + amount * flow * r / reach;", "rd = r + amount * flow;"),
+        "the bloom's pulse reads the displaced radius": (
+            "float r = IncorporealDepth_BloomRestRadius(length(PositionWS - origin), amount, reach, openness, Phase, Clock);",
+            "float r = length(PositionWS - origin);"),
+        "the bloom ignores the object's scale": ("float r = length(mul((float3x3)GetObjectToWorldMatrix(), PositionOS));",
+                                                 "float r = length(PositionOS);"),
         "the recede is ignored by a part": ("    float3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);\n    Openness = IncorporealDepth_Openness(norm, spread);\n    if (!(dirLen",
                                             "    float3 opening = IncorporealDepth_Opening(norm, spread);\n    Openness = IncorporealDepth_Openness(norm, spread);\n    if (!(dirLen"),
         "the recede steps (no ease)": ("return 1.0 - smoothstep(sqrt(a), sqrt(b), sqrt(max(norm, 0.0)));", "return norm > 0.5 * (a + b) ? 0.0 : 1.0;"),

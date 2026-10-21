@@ -12777,3 +12777,12 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
 9. (Round 4) Step 8 with the round-4 numbers: a CHARGE plant fans ~5 units, every other ~1.5 (half of round 3);
    flying away, the fan closes over twice the distance - still settling at ~1,300 units, a thread by ~2,050, faded
    out by ~3,150. `SpindleLodTests.ChargeLimbsPartHardest` asserts 0.35 / 0.1.
+10. (Round 5, Docs/SPINDLE_LOD.md section 8) `SpindleDepthGraph` imports with no error and previews without
+   magenta. In Play, find a shark (Menu_Main / Blob cell) or brittlestar: from ~200 units out it blooms
+   outward from its middle with a pulse running out to its fins/arms, widest around ~450 units, settling
+   back by ~2,000; nothing tears at a seam; the HUD console `renderers` line ends `· bodies N` with N > 0.
+   Any toybox toy, race gate or Scarab switch: the ring is spindle lace in its signal colour (Domain
+   Changer slots in their domain colour, Switchback's next gate lime), it does not sway, its facets open
+   from afar with a pulse running round it, and it stays readable far away. EditMode
+   `ShippedProfile_CarriesTheDepthTemplate`, `BodyReach_IsAHalfOctaveCeiling`,
+   `BloomTravel_IsTheDangerFaceCappedByReach` and `ToySwitchVocabularyTests` pass.

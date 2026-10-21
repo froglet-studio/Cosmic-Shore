@@ -54,6 +54,12 @@ namespace CosmicShore.Gameplay
     /// Spindle keeps owning life and death: a fading limb (condense at birth, evaporate at death) is
     /// never batched, because its fade is a per-renderer MaterialPropertyBlock stamp
     /// (<see cref="SetFading"/>), and the ordered wither and tree links never see this system.
+    ///
+    /// BODIES (Docs/SPINDLE_LOD.md §8). A spindle renderer that is NOT the braid - a creature's own
+    /// model, the shark's, the brittlestar's, the worm's - has no LOD meshes, so it never enters the
+    /// pass. It is handed a <b>depth material</b> instead: its own look on SpindleDepthGraph, which
+    /// blooms it outward from its pivot on the same ramp, recede and wave, at its element's strength.
+    /// It keeps that material at every distance (the effect is zero up close) until it unregisters.
     /// </summary>
     public sealed class SpindleLodSystem : MonoBehaviour
     {
@@ -68,7 +74,17 @@ namespace CosmicShore.Gameplay
         {
             internal int index = -1;
             internal SpindleLodSystem owner;
+            internal bool body;          // indexes _bodies, not _entries
             public bool IsRegistered => owner != null && index >= 0;
+        }
+
+        /// <summary>A registered body: a spindle renderer that wears a depth material and no tiers.</summary>
+        struct Body
+        {
+            public Handle handle;
+            public Renderer renderer;
+            public Material near;
+            public Material depth;
         }
 
         sealed class TierMaterials
@@ -121,6 +137,16 @@ namespace CosmicShore.Gameplay
         static readonly int GirthId = Shader.PropertyToID("_SpindleLodGirth");
         static readonly int StrandId = Shader.PropertyToID("_SpindleLodStrand");
         static readonly int StrengthId = Shader.PropertyToID("_SpindleLodStrength");
+        static readonly int ReachId = Shader.PropertyToID("_SpindleDepthReach");
+        static readonly int FormId = Shader.PropertyToID("_SpindleDepthForm");
+
+        // What makes a material SpindleGraph's (or a graph generated from it): a body on any other
+        // shader keeps it, because SpindleDepthGraph would draw it as a spindle.
+        static readonly int[] SpindleSignature =
+        {
+            Shader.PropertyToID("_CellDensity"), Shader.PropertyToID("_SwayAmplitude"),
+            Shader.PropertyToID("_DullColor"), Shader.PropertyToID("_PrismClock"),
+        };
 
         // SpindleGraph's own exposed blackboard, which both LOD graphs carry verbatim (they are
         // generated from it by Tools/Shaders/wire_spindle_lod.py): copied from each limb's phase
@@ -151,6 +177,7 @@ namespace CosmicShore.Gameplay
         public static int FarRendererCount { get; private set; }
         public static int FarBatchedCount { get; private set; }
         public static int CulledCount { get; private set; }
+        public static int BodyCount => s_instance ? s_instance._bodies.Count : 0;
 
         /// <summary>The same line as a property, for a probe that reads static members (Amoebius's eval).</summary>
         public static string Summary => Describe();
@@ -159,7 +186,7 @@ namespace CosmicShore.Gameplay
         public static string Describe() => s_instance
             ? $"spindle LOD ({(s_instance.Overt ? "overt" : "covert")}): {RegisteredCount:N0} limbs - near {NearCount:N0} · mid {MidCount:N0} · " +
               $"braid {s_tierCount[(int)Tier.Far]:N0} · low {s_tierCount[(int)Tier.Low]:N0} · thread {s_tierCount[(int)Tier.Min]:N0} " +
-              $"({FarBatchedCount:N0} of the far ones instanced) · culled {CulledCount:N0}"
+              $"({FarBatchedCount:N0} of the far ones instanced) · culled {CulledCount:N0} · bodies {BodyCount:N0}"
             : "spindle LOD: off";
 
         // Limbs per tier, batched or not (the far family's split for Describe).
@@ -175,6 +202,8 @@ namespace CosmicShore.Gameplay
         readonly List<Handle> _pending = new(1024);
         readonly List<Handle> _dead = new();
         readonly List<FarBatch> _batches = new();
+        readonly List<Body> _bodies = new();
+        readonly Dictionary<(Material, bool, float), Material> _bodyMaterials = new();
 
         // The pass's per-limb columns, parallel to _entries and to _transforms' order. Plain
         // persistent arrays grown by hand rather than NativeLists: the pass WRITES _lastPose in
@@ -190,19 +219,30 @@ namespace CosmicShore.Gameplay
         // ── Registration (Spindle) ──────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Registers <paramref name="renderer"/> if it draws a mesh the profile has LOD meshes for.
-        /// <paramref name="nearMaterial"/> is what the limb draws up close (its phase variant); the
-        /// LOD clones are derived from it. Returns null when the limb is not LOD-managed, which is
-        /// the ordinary answer for a creature's own body mesh - a probe, so it never logs.
+        /// Registers <paramref name="renderer"/>: as a tiered LOD limb if it draws a mesh the profile
+        /// has LOD meshes for, otherwise as a BODY (a creature's own spindle-material model) that
+        /// wears a depth material. <paramref name="nearMaterial"/> is what it draws up close (its
+        /// phase variant); every clone is derived from it. Returns null when neither applies (no
+        /// profile, a body on another shader, bodies switched off) - a probe, so it never logs.
         /// </summary>
         public static Handle Register(Renderer renderer, Material nearMaterial, bool fading, bool charge)
         {
             if (!renderer || !nearMaterial || s_unavailable) return null;
-            if (!renderer.TryGetComponent(out MeshFilter filter) || !filter.sharedMesh) return null;
             var system = EnsureInstance();
-            if (!system || !system._setOfMesh.TryGetValue(filter.sharedMesh, out int set)) return null;
-            return system.Add(renderer, filter, set, nearMaterial, fading, charge);
+            if (!system) return null;
+            if (renderer.TryGetComponent(out MeshFilter filter) && filter.sharedMesh &&
+                system._setOfMesh.TryGetValue(filter.sharedMesh, out int set))
+                return system.Add(renderer, filter, set, nearMaterial, fading, charge);
+            return system.AddBody(renderer, nearMaterial, charge);
         }
+
+        /// <summary>
+        /// Starts the system if the profile allows it, so the shared depth globals are published for
+        /// a surface that is not a spindle at all (the switch rings). False when it cannot run - and
+        /// outside Play, where the system (a DontDestroyOnLoad object) cannot exist: an edit-mode
+        /// test that builds a ring keeps the prism ring.
+        /// </summary>
+        public static bool EnsureRunning() => !s_unavailable && Application.isPlaying && EnsureInstance();
 
         /// <summary>
         /// Returns the limb to its authored mesh and near material and forgets it. With
@@ -212,7 +252,8 @@ namespace CosmicShore.Gameplay
         public static void Unregister(Handle handle, bool restore)
         {
             if (handle == null || !handle.IsRegistered) return;
-            handle.owner.Remove(handle.index, restore);
+            if (handle.body) handle.owner.RemoveBody(handle.index, restore);
+            else handle.owner.Remove(handle.index, restore);
         }
 
         /// <summary>
@@ -221,7 +262,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static void SetFading(Handle handle, bool fading)
         {
-            if (handle == null || !handle.IsRegistered) return;
+            // A body draws through its own renderer always, so its fade stamp needs nothing here.
+            if (handle == null || !handle.IsRegistered || handle.body) return;
             var system = handle.owner;
             int i = handle.index;
             var e = system._entries[i];
@@ -236,6 +278,7 @@ namespace CosmicShore.Gameplay
         public static Material CurrentMaterial(Handle handle)
         {
             if (handle == null || !handle.IsRegistered) return null;
+            if (handle.body) return handle.owner._bodies[handle.index].depth;
             var e = handle.owner._entries[handle.index];
             return MaterialFor(e.materials, e.tier);
         }
@@ -493,6 +536,105 @@ namespace CosmicShore.Gameplay
             e.handle.owner = null;
         }
 
+        // ── Bodies (Docs/SPINDLE_LOD.md §8) ─────────────────────────────────────────────────────
+
+        Handle AddBody(Renderer renderer, Material near, bool charge)
+        {
+            if (!_profile.depthOnBodies || !_profile.depthTemplate || !IsSpindleShaded(near)) return null;
+            if (!_profile.depthTemplate.shader || !_profile.depthTemplate.shader.isSupported) return null;
+
+            float reach = ReachBucket(ReachOf(renderer));
+            var depth = BodyMaterialFor(near, charge, reach);
+            var handle = new Handle { owner = this, index = _bodies.Count, body = true };
+            _bodies.Add(new Body { handle = handle, renderer = renderer, near = near, depth = depth });
+            renderer.sharedMaterial = depth;
+            // The bloom moves the surface up to its travel off the mesh, in the vertex shader where
+            // culling cannot see it: without room in the bounds a creature just off screen would
+            // lose the parts that bloomed into view.
+            ExpandLocalBounds(renderer, IncorporealDepth.BloomTravel(_profile.StrengthFor(charge), reach));
+            return handle;
+        }
+
+        void RemoveBody(int i, bool restore)
+        {
+            var b = _bodies[i];
+            if (restore && b.renderer && b.near)
+            {
+                b.renderer.sharedMaterial = b.near;
+                b.renderer.ResetLocalBounds();
+            }
+            int last = _bodies.Count - 1;
+            if (i != last)
+            {
+                var moved = _bodies[last];
+                _bodies[i] = moved;
+                moved.handle.index = i;
+            }
+            _bodies.RemoveAt(last);
+            b.handle.index = -1;
+            b.handle.owner = null;
+        }
+
+        static bool IsSpindleShaded(Material m)
+        {
+            for (int i = 0; i < SpindleSignature.Length; i++)
+                if (!m.HasProperty(SpindleSignature[i])) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// How far the body reaches from the pivot it is drawn about, in world units: the bounds'
+        /// farthest corner. A skinned body is drawn about its ROOT BONE, so that is the pivot.
+        /// </summary>
+        static float ReachOf(Renderer renderer)
+        {
+            Transform pivot = renderer is SkinnedMeshRenderer skinned && skinned.rootBone ? skinned.rootBone : renderer.transform;
+            var b = renderer.bounds;
+            Vector3 p = pivot.position;
+            float reach = 0f;
+            for (int c = 0; c < 8; c++)
+            {
+                var corner = new Vector3((c & 1) == 0 ? b.min.x : b.max.x, (c & 2) == 0 ? b.min.y : b.max.y,
+                                         (c & 4) == 0 ? b.min.z : b.max.z);
+                reach = Mathf.Max(reach, (corner - p).magnitude);
+            }
+            return reach;
+        }
+
+        /// <summary>Reach rounded up to a half-octave (x1.41), so bodies of a size share a material.</summary>
+        internal static float ReachBucket(float reach) =>
+            Mathf.Pow(2f, Mathf.Ceil(Mathf.Log(Mathf.Max(reach, 1f), 2f) * 2f) / 2f);
+
+        Material BodyMaterialFor(Material near, bool charge, float reach)
+        {
+            var key = (near, charge, reach);
+            if (_bodyMaterials.TryGetValue(key, out var m) && m) return m;
+            // The body's own look - every property, keyword and the render queue - on the depth graph,
+            // which carries SpindleGraph's blackboard verbatim.
+            m = new Material(_profile.depthTemplate) { name = near.name + (charge ? "_Depth_Charge" : "_Depth") };
+            m.CopyPropertiesFromMaterial(near);
+            m.SetFloat(StrengthId, _profile.StrengthFor(charge));
+            m.SetFloat(ReachId, reach);
+            m.SetFloat(FormId, 0f);
+            m.renderQueue = near.renderQueue;
+            _ownedMaterials.Add(m);
+            _bodyMaterials[key] = m;
+            return m;
+        }
+
+        /// <summary>Grow a renderer's local bounds by <paramref name="travel"/> world units each way.</summary>
+        internal static void ExpandLocalBounds(Renderer renderer, float travel)
+        {
+            if (!(travel > 0f)) return;
+            Transform space = renderer is SkinnedMeshRenderer skinned && skinned.rootBone ? skinned.rootBone : renderer.transform;
+            Vector3 s = space.lossyScale;
+            var b = renderer.localBounds;
+            b.Expand(new Vector3(2f * travel / Mathf.Max(Mathf.Abs(s.x), 1e-4f),
+                                 2f * travel / Mathf.Max(Mathf.Abs(s.y), 1e-4f),
+                                 2f * travel / Mathf.Max(Mathf.Abs(s.z), 1e-4f)));
+            renderer.localBounds = b;
+        }
+
         // ── Materials ───────────────────────────────────────────────────────────────────────────
 
         TierMaterials MaterialsFor(int set, Material near, bool charge)
@@ -561,10 +703,13 @@ namespace CosmicShore.Gameplay
 
             if (_profile.style != _style) Restyle();
 
-            if (Time.unscaledTime >= _nextTickAt && _entries.Count > 0)
+            if (Time.unscaledTime >= _nextTickAt)
             {
                 _nextTickAt = Time.unscaledTime + _profile.tickIntervalSeconds;
-                Tick();
+                // Bodies and switch rings read only the globals, so they are kept current even
+                // when no limb is registered.
+                if (_entries.Count > 0) Tick();
+                else PublishGlobals();
             }
             Drain();
         }
@@ -851,6 +996,7 @@ namespace CosmicShore.Gameplay
         void RestoreAllAndRetire()
         {
             for (int i = _entries.Count - 1; i >= 0; i--) Remove(i, restore: true);
+            for (int i = _bodies.Count - 1; i >= 0; i--) RemoveBody(i, restore: true);
             s_unavailable = true;
             Destroy(gameObject);
         }
@@ -866,6 +1012,14 @@ namespace CosmicShore.Gameplay
                 h.owner = null;
             }
             _entries.Clear();
+            for (int i = 0; i < _bodies.Count; i++)
+            {
+                var h = _bodies[i].handle;
+                h.index = -1;
+                h.owner = null;
+            }
+            _bodies.Clear();
+            _bodyMaterials.Clear();
             _batches.Clear();
             if (_transforms.isCreated) _transforms.Dispose();
             if (_lastPose.IsCreated) _lastPose.Dispose();

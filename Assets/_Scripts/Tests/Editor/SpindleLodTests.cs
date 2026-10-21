@@ -234,6 +234,54 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(set.MatchesImport(out string mismatch),
                     $"the LOD meshes no longer match the imported braid: {mismatch}");
         }
+
+        [Test]
+        public void ShippedProfile_CarriesTheDepthTemplate()
+        {
+            // The creatures' bodies and the switch rings are cloned from it (Docs/SPINDLE_LOD.md section 8):
+            // SpindleMaterial on SpindleDepthGraph, its three depth floats at their pass-through 0.
+            var shipped = AssetDatabase.LoadAssetAtPath<SpindleLodProfileSO>("Assets/Resources/SpindleLodProfile.asset");
+            Assert.IsNotNull(shipped);
+            var template = shipped.depthTemplate;
+            Assert.IsNotNull(template, "depthTemplate is unset - run Tools/Build/author_spindle_lod_meshes.py");
+            foreach (var property in new[] { "_SpindleLodStrength", "_SpindleDepthReach", "_SpindleDepthForm" })
+            {
+                Assert.IsTrue(template.HasProperty(property), $"SpindleDepth.mat's shader has no {property}");
+                Assert.AreEqual(0f, template.GetFloat(property), $"{property} must default to the pass-through 0");
+            }
+            foreach (var property in new[] { "_DullColor", "_BrightColor", "_CellDensity", "_SwayAmplitude", "_PrismClock" })
+                Assert.IsTrue(template.HasProperty(property), $"SpindleDepthGraph lost SpindleGraph's {property}");
+            Assert.That(shipped.switchRingStrength, Is.InRange(0f, 2f));
+            Assert.Greater(shipped.switchRingDistance, 2000000f, "a switch ring's lace must outlast a branch's");
+        }
+
+        [Test]
+        public void BodyReach_IsAHalfOctaveCeiling()
+        {
+            // Bodies of a size share a depth material: reach rounds UP to the next power of sqrt(2), so a
+            // body never blooms its extremities short of the full travel.
+            float prev = 0f;
+            for (float r = 0.5f; r < 300f; r *= 1.07f)
+            {
+                float b = SpindleLodSystem.ReachBucket(r);
+                Assert.GreaterOrEqual(b, Mathf.Max(r, 1f) - 1e-3f, $"reach {r} rounded down to {b}");
+                Assert.LessOrEqual(b, Mathf.Max(r, 1f) * 1.4143f, $"reach {r} rounded up past half an octave to {b}");
+                Assert.GreaterOrEqual(b, prev, "the bucket is not monotone");
+                prev = b;
+            }
+        }
+
+        [Test]
+        public void BloomTravel_IsTheDangerFaceCappedByReach()
+        {
+            // The culling allowance for a bloomed body: the danger face's 15.2 x strength, never more than
+            // the bloom's cap (a share of the reach), plus the wave's breathing.
+            IncorporealDepth.Publish();
+            var flow = IncorporealDepthSO.Instance ? IncorporealDepthSO.Instance.Flow : Vector4.zero;
+            float breathe = 1f + Mathf.Max(flow.x, 0f);
+            Assert.AreEqual(IncorporealDepth.MaxOpening * 0.35f, IncorporealDepth.BloomTravel(0.35f, 1000f), 1e-3f);
+            Assert.AreEqual(IncorporealDepth.BloomMaxShare * 4f * breathe, IncorporealDepth.BloomTravel(0.35f, 4f), 1e-4f);
+        }
     }
 }
 #endif

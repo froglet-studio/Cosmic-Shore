@@ -26,7 +26,13 @@ Both add two exposed per-material floats, `_SpindleLodGirth` and `_SpindleLodStr
 pass-through), which SpindleLodSystem copies onto each runtime LOD material from the measured
 profile. The bands and look are GLOBALS declared in SpindleLod.hlsl, not graph properties.
 
-TEMPLATE MATERIALS (SpindleLodMid.mat / SpindleLodFar.mat) exist for the BUILD, not for looks: a
+SpindleDepthGraph (Docs/SPINDLE_LOD.md §8) is the third: SpindleGraph + SpindleDepthVertex between Position
+and SpindleSway + SpindleDepthGlow between the lace colour and BaseColor (alpha untouched). It carries the
+overt depth effect onto every spindle-material surface that is NOT the braid - the creatures' own models
+(form 0, bloom) and the switch rings (form 1, facets) - with three per-material floats,
+`_SpindleLodStrength`, `_SpindleDepthReach` and `_SpindleDepthForm` (all 0 by default = pass-through).
+
+TEMPLATE MATERIALS (SpindleLodMid.mat / SpindleLodFar.mat / SpindleDepth.mat) exist for the BUILD, not for looks: a
 material created only at runtime does not stop the build from stripping the shader variants it
 needs (`_ALPHATEST_ON`, `_SURFACE_TYPE_TRANSPARENT` are shader_feature keywords on a graph with
 material override, and instancing variants are stripped unless some material asset enables them).
@@ -76,13 +82,20 @@ INCORPOREAL_GUID = guid_for("IncorporealDepth.hlsl")
 TIERS = {
     "mid": dict(graph="SpindleLodMidGraph", material="SpindleLodMid"),
     "far": dict(graph="SpindleLodFarGraph", material="SpindleLodFar"),
+    "depth": dict(graph="SpindleDepthGraph", material="SpindleDepth"),
 }
 for t in TIERS.values():
     t["graph_guid"] = guid_for(t["graph"])
     t["material_guid"] = guid_for(t["material"])
 
-NEW_PROPS = [("SpindleLodGirth", "_SpindleLodGirth"), ("SpindleLodStrand", "_SpindleLodStrand"),
+LOD_PROPS = [("SpindleLodGirth", "_SpindleLodGirth"), ("SpindleLodStrand", "_SpindleLodStrand"),
              ("SpindleLodStrength", "_SpindleLodStrength")]
+DEPTH_PROPS = [("SpindleLodStrength", "_SpindleLodStrength"), ("SpindleDepthReach", "_SpindleDepthReach"),
+               ("SpindleDepthForm", "_SpindleDepthForm")]
+
+
+def props_for(tier):
+    return DEPTH_PROPS if tier == "depth" else LOD_PROPS
 
 # (slot id, name, kind, is_output) - order IS the HLSL signature.
 VERTEX_SLOTS = [
@@ -104,7 +117,26 @@ THREAD_SLOTS = [
     (6, "Girth", "v1", False), (7, "StrandRadius", "v1", False), (8, "Strength", "v1", False),
     (9, "Phase", "v1", False), (10, "Clock", "v1", False), (11, "Color", "v3", True), (12, "Alpha", "v1", True),
 ]
-FUNCTIONS = {"SpindleLodVertex": VERTEX_SLOTS, "SpindleLodSurface": SURFACE_SLOTS, "SpindleLodThread": THREAD_SLOTS}
+DEPTH_VERTEX_SLOTS = [
+    (0, "PositionOS", "v3", False), (1, "NormalOS", "v3", False), (2, "UV", "v3", False),
+    (3, "Reach", "v1", False), (4, "Form", "v1", False), (5, "Strength", "v1", False),
+    (6, "Phase", "v1", False), (7, "Clock", "v1", False), (8, "Out", "v3", True),
+]
+DEPTH_GLOW_SLOTS = [
+    (0, "Color", "v3", False), (1, "PositionWS", "v3", False), (2, "UV", "v3", False),
+    (3, "Reach", "v1", False), (4, "Form", "v1", False), (5, "Strength", "v1", False),
+    (6, "Phase", "v1", False), (7, "Clock", "v1", False), (8, "Out", "v3", True),
+]
+FUNCTIONS = {"SpindleLodVertex": VERTEX_SLOTS, "SpindleLodSurface": SURFACE_SLOTS, "SpindleLodThread": THREAD_SLOTS,
+             "SpindleDepthVertex": DEPTH_VERTEX_SLOTS, "SpindleDepthGlow": DEPTH_GLOW_SLOTS}
+
+
+def vertex_fn(tier):
+    return "SpindleDepthVertex" if tier == "depth" else "SpindleLodVertex"
+
+
+def fragment_fn(tier):
+    return {"mid": "SpindleLodSurface", "far": "SpindleLodThread", "depth": "SpindleDepthGlow"}[tier]
 
 
 def _oid(seed):
@@ -187,7 +219,8 @@ def build(tier):
     idx = index(docs)
     seed = TIERS[tier]["graph"]
 
-    assert find_cf(docs, "SpindleLodVertex") is None, "SpindleGraph itself carries the LOD splice - it must not"
+    assert find_cf(docs, "SpindleLodVertex") is None and find_cf(docs, "SpindleDepthVertex") is None, \
+        "SpindleGraph itself carries a spindle LOD / depth splice - it must not"
     sway = find_cf(docs, "SpindleSway")
     death = find_cf(docs, "PrismDeathClock")
     assert sway is not None and death is not None, "SpindleGraph lost its sway or death clock"
@@ -219,7 +252,7 @@ def build(tier):
         return node
 
     prop_oids = {}
-    for name, reference in NEW_PROPS:
+    for name, reference in props_for(tier):
         p = make_exposed_float(phase, name, reference, 0.0)
         p["m_ObjectId"] = _oid(f"{seed}/prop/{name}")
         p["m_Guid"] = {"m_GuidSerialized": str(uuid.UUID(_oid(f"{seed}/propguid/{name}")))}
@@ -233,6 +266,10 @@ def build(tier):
     uv1 = add(_simple_node(uv_docs, "UVNode", f"{seed}/uv1", bx, by, m_OutputChannel=1))
     uv2 = add(_simple_node(uv_docs, "UVNode", f"{seed}/uv2", bx, by + 140.0, m_OutputChannel=2))
     uv3 = add(_simple_node(uv_docs, "UVNode", f"{seed}/uv3", bx, by + 600.0, m_OutputChannel=3))
+
+    if tier == "depth":
+        return _build_depth(docs, graph, idx, seed, add, new_docs, prop_oids, phase_pn, donor_v1, donor_v3,
+                            pos_node, pos_edge, sway, death, phase, clock, uv_docs)
 
     def lod_props(x, y, tag):
         g = add(_property_node(phase_pn, donor_v1, prop_oids["SpindleLodGirth"], "SpindleLodGirth", f"{seed}/{tag}/girth", x, y))
@@ -302,6 +339,55 @@ def build(tier):
     return docs
 
 
+def _build_depth(docs, graph, idx, seed, add, new_docs, prop_oids, phase_pn, donor_v1, donor_v3,
+                 pos_node, pos_edge, sway, death, phase, clock, uv_docs):
+    """SpindleGraph + SpindleDepthVertex before the sway + SpindleDepthGlow on the lace colour."""
+    bx, by = -3300.0, 1900.0
+
+    def depth_props(x, y, tag):
+        return [add(_property_node(phase_pn, donor_v1, prop_oids[name], name, f"{seed}/{tag}/{name}", x, y + 60.0 * k))
+                for k, (name, _ref) in enumerate(DEPTH_PROPS)]
+
+    normal_docs = load_docs(os.path.join(REPO, NORMAL_DONOR))
+    nrm_os = add(_simple_node(normal_docs, "NormalVectorNode", f"{seed}/normalOS", bx, by - 300.0, m_Space=SPACE_OBJECT))
+    uv0 = add(_simple_node(uv_docs, "UVNode", f"{seed}/uv0", bx, by - 160.0, m_OutputChannel=0))
+    vk, vreach, vform = depth_props(bx, by + 300.0, "v")
+    vphase = add(_property_node(phase_pn, donor_v1, phase["m_ObjectId"], "Phase", f"{seed}/v/phase", bx, by + 420.0))
+    vclock = add(_property_node(phase_pn, donor_v1, clock["m_ObjectId"], "PrismClock", f"{seed}/v/clock", bx, by + 480.0))
+    vcf = add(_cf(death, donor_v1, donor_v3, "SpindleDepthVertex", seed, bx + 420.0, by + 60.0))
+
+    # Position -> SpindleDepthVertex -> SpindleSway.PositionOS (the old direct edge is replaced).
+    graph["m_Edges"].remove(pos_edge)
+    for src, slot in ((pos_node, 0), (nrm_os, 1), (uv0, 2), (vreach, 3), (vform, 4), (vk, 5),
+                      (vphase, 6), (vclock, 7)):
+        graph["m_Edges"].append(edge(src["m_ObjectId"], 0, vcf["m_ObjectId"], slot))
+    graph["m_Edges"].append(edge(vcf["m_ObjectId"], 8, sway["m_ObjectId"], 0))
+
+    # Fragment: the lace colour -> SpindleDepthGlow -> BaseColor. Alpha is SpindleGraph's own.
+    fx, fy = -3300.0, 2600.0
+    pos_ws = add(_simple_node(docs, "PositionNode", f"{seed}/positionWS", fx, fy, m_Space=SPACE_WORLD))
+    fuv0 = add(_simple_node(uv_docs, "UVNode", f"{seed}/fuv0", fx, fy + 140.0, m_OutputChannel=0))
+    fk, freach, fform = depth_props(fx, fy + 300.0, "f")
+    fphase = add(_property_node(phase_pn, donor_v1, phase["m_ObjectId"], "Phase", f"{seed}/f/phase", fx, fy + 500.0))
+    fclock = add(_property_node(phase_pn, donor_v1, clock["m_ObjectId"], "PrismClock", f"{seed}/f/clock", fx, fy + 560.0))
+    base_block = _block(docs, "SurfaceDescription.BaseColor")
+    base_slot = _block_slot(idx, base_block)
+    base_edge = _feeder(graph, base_block["m_ObjectId"], base_slot)
+    assert base_edge, "SpindleGraph's BaseColor block is unfed"
+    graph["m_Edges"].remove(base_edge)
+    gcf = add(_cf(death, donor_v1, donor_v3, "SpindleDepthGlow", seed, fx + 460.0, fy))
+    feeds = [((base_edge["m_OutputSlot"]["m_Node"]["m_Id"], base_edge["m_OutputSlot"]["m_SlotId"]), 0),
+             ((pos_ws["m_ObjectId"], 0), 1), ((fuv0["m_ObjectId"], 0), 2), ((freach["m_ObjectId"], 0), 3),
+             ((fform["m_ObjectId"], 0), 4), ((fk["m_ObjectId"], 0), 5), ((fphase["m_ObjectId"], 0), 6),
+             ((fclock["m_ObjectId"], 0), 7)]
+    for (src, src_slot), dst_slot in feeds:
+        graph["m_Edges"].append(edge(src, src_slot, gcf["m_ObjectId"], dst_slot))
+    graph["m_Edges"].append(edge(gcf["m_ObjectId"], 8, base_block["m_ObjectId"], base_slot))
+
+    docs.extend(new_docs)
+    return docs
+
+
 def validate(docs, tier):
     errs = []
     idx = index(docs)
@@ -336,7 +422,7 @@ def validate(docs, tier):
     if not acyclic(graph):
         errs.append("edge cycle (the graph would import magenta)")
 
-    fns = ["SpindleLodVertex", "SpindleLodSurface" if tier == "mid" else "SpindleLodThread"]
+    fns = [vertex_fn(tier), fragment_fn(tier)]
     for fn in fns:
         cf = find_cf(docs, fn)
         if cf is None:
@@ -351,8 +437,11 @@ def validate(docs, tier):
         for sid, name, _k, out in FUNCTIONS[fn]:
             if not out and feeders.get((cf["m_ObjectId"], sid)) != 1:
                 errs.append(f"{fn}.{name} is unfed")
-    # The blocks read the LOD function, and SpindleSway reads the converged position.
-    for block_name, out_name in (("SurfaceDescription.BaseColor", "Color"), ("SurfaceDescription.Alpha", "Alpha")):
+    # The blocks read the LOD function, and SpindleSway reads the converged position. The depth
+    # graph's glow feeds BaseColor only; its Alpha stays SpindleGraph's lace.
+    blocks = (("SurfaceDescription.BaseColor", "Out"),) if tier == "depth" else \
+        (("SurfaceDescription.BaseColor", "Color"), ("SurfaceDescription.Alpha", "Alpha"))
+    for block_name, out_name in blocks:
         block = find_node(docs, block_name, "BlockNode")
         e = _feeder(graph, block["m_ObjectId"], _block_slot(idx, block))
         src = idx.get(e["m_OutputSlot"]["m_Node"]["m_Id"]) if e else None
@@ -360,9 +449,9 @@ def validate(docs, tier):
             errs.append(f"{block_name} is not fed by {fns[1]}.{out_name}")
     sway = find_cf(docs, "SpindleSway")
     e = _feeder(graph, sway["m_ObjectId"], 0)
-    if not e or idx[e["m_OutputSlot"]["m_Node"]["m_Id"]].get("m_FunctionName") != "SpindleLodVertex":
-        errs.append("SpindleSway.PositionOS is not fed by SpindleLodVertex")
-    for _name, reference in NEW_PROPS:
+    if not e or idx[e["m_OutputSlot"]["m_Node"]["m_Id"]].get("m_FunctionName") != fns[0]:
+        errs.append(f"SpindleSway.PositionOS is not fed by {fns[0]}")
+    for _name, reference in props_for(tier):
         p = find_property(docs, reference)
         if p is None or p["m_DefaultReferenceName"] != reference or p["m_Value"] != 0.0 or p["overrideHLSLDeclaration"]:
             errs.append(f"{reference} must be an exposed UnityPerMaterial float defaulting to 0")
@@ -429,11 +518,14 @@ def material_text(tier):
     # Add the two LOD floats in Unity's sorted position (m_Floats is alphabetical).
     floats = re.search(r"    m_Floats:\n((?:    - .*\n)+)", text)
     rows = floats.group(1).splitlines(keepends=True)
-    for _n, reference in NEW_PROPS:
+    for _n, reference in props_for(tier):
         rows.append(f"    - {reference}: 0\n")
     rows.sort(key=lambda r: r.strip()[2:].split(":")[0])
     text = text[:floats.start(1)] + "".join(rows) + text[floats.end(1):]
     assert "m_EnableInstancingVariants: 1" in text, "the far template must enable instancing variants"
+    if tier == "depth":
+        # The creatures and rings draw through their own renderers, never instanced.
+        text = text.replace("m_EnableInstancingVariants: 1", "m_EnableInstancingVariants: 0", 1)
     return text
 
 
@@ -471,11 +563,11 @@ def self_test():
         # 3. a slot renamed away from the HLSL signature must be caught
         broken = copy.deepcopy(docs)
         bidx = index(broken)
-        cf = find_cf(broken, "SpindleLodVertex")
+        cf = find_cf(broken, vertex_fn(tier))
         bidx[cf["m_Slots"][1]["m_Id"]]["m_DisplayName"] = "Wrong"
         failures += not any("signature" in e for e in validate(broken, tier))
         del graph
-    print("self-test:", "OK (6 negative controls fire)" if failures == 0 else f"FAILED ({failures})")
+    print("self-test:", f"OK ({3 * len(TIERS)} negative controls fire)" if failures == 0 else f"FAILED ({failures})")
     return 1 if failures else 0
 
 

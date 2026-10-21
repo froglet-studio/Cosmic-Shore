@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -197,6 +198,10 @@ namespace CosmicShore.Gameplay
         /// flat-shaded facets, hard edges like the crystal cone. Every quad owns its four
         /// vertices so RecalculateNormals keeps the facets crisp. Scale by ring diameter -
         /// tube thickness rides along (8% of the radius), so big rings read chunkier.
+        ///
+        /// <para>UV0 is the spindle convention (Docs/SPINDLE_LOD.md §8): u runs ALONG the ring,
+        /// <see cref="RingLaceWraps"/> times round it, v round the tube. The switch ring is drawn in
+        /// SpindleDepthGraph, whose lace is a Voronoi over UV0 and whose wave travels along u.</para>
         /// </summary>
         static Mesh RingMesh
         {
@@ -208,6 +213,7 @@ namespace CosmicShore.Gameplay
                 const float R = 0.5f, r = 0.04f;
 
                 var verts = new Vector3[major * minor * 4];
+                var uvs = new Vector2[major * minor * 4];
                 var tris = new int[major * minor * 6];
                 int v = 0, t = 0;
                 for (int i = 0; i < major; i++)
@@ -225,17 +231,19 @@ namespace CosmicShore.Gameplay
                             r * Mathf.Sin(phi));
 
                         int b = v;
-                        verts[v++] = P(t0, p0); // b+0
-                        verts[v++] = P(t1, p0); // b+1
-                        verts[v++] = P(t1, p1); // b+2
-                        verts[v++] = P(t0, p1); // b+3
+                        float u0 = i / (float)major * RingLaceWraps, u1 = (i + 1) / (float)major * RingLaceWraps;
+                        float w0 = j / (float)minor, w1 = (j + 1) / (float)minor;
+                        uvs[v] = new Vector2(u0, w0); verts[v++] = P(t0, p0); // b+0
+                        uvs[v] = new Vector2(u1, w0); verts[v++] = P(t1, p0); // b+1
+                        uvs[v] = new Vector2(u1, w1); verts[v++] = P(t1, p1); // b+2
+                        uvs[v] = new Vector2(u0, w1); verts[v++] = P(t0, p1); // b+3
                         // Outward-facing winding (verified against the analytic torus normal).
                         tris[t++] = b; tris[t++] = b + 1; tris[t++] = b + 2;
                         tris[t++] = b; tris[t++] = b + 2; tris[t++] = b + 3;
                     }
                 }
 
-                s_ringMesh = new Mesh { name = "ToyLowPolyRing", vertices = verts, triangles = tris };
+                s_ringMesh = new Mesh { name = "ToyLowPolyRing", vertices = verts, uv = uvs, triangles = tris };
                 s_ringMesh.RecalculateNormals();
                 s_ringMesh.RecalculateBounds();
                 return s_ringMesh;
@@ -282,6 +290,12 @@ namespace CosmicShore.Gameplay
         public const float RingTubeFraction = 0.08f;
 
         /// <summary>
+        /// How many spindle lengths the ring's u runs round it: the lace's scale along the ring, and
+        /// the ring's flow coordinate (the depth effect's wave and pulse travel along u).
+        /// </summary>
+        public const float RingLaceWraps = 4f;
+
+        /// <summary>
         /// Widest a switch ring may be, as a fraction of the spacing between it and its
         /// neighbour. A station's TRIGGER can legitimately overrun half that gap (the vessel
         /// changer's does, and the domain changer's slots do on a small placement circle), but
@@ -299,10 +313,13 @@ namespace CosmicShore.Gameplay
 
         // ── What a switch's SHADER says ──────────────────────────────────────
         //
-        // EVERY switch is drawn in the PRISM shader - the same material family the painted trail
-        // wears - so the ring is made of the same stuff as the world it acts on, and the one
-        // channel left free to carry meaning is WHICH prism it is painted as. That channel is
-        // `ToySwitchSignal`:
+        // A switch's COLOUR comes from the prism the signal names - the same material family the
+        // painted trail wears - and the one channel free to carry meaning is WHICH prism's colour
+        // it wears. The RING itself is drawn as a SPINDLE (Garrett, 2026-10-21: "replace the switch
+        // rings with a spindle material that has this effect"): SpindleDepthGraph, the lace of the
+        // sea's incorporeal parts, whose facets open on the prisms' own depth ramp and settle back,
+        // with a wave and its pulse running round the ring (Docs/SPINDLE_LOD.md §8). Hubs and
+        // cones beside a ring stay prisms. The colour channel is `ToySwitchSignal`:
         //
         //     Domain  -> that domain's plain prism material. RESERVED: in the toybox, a switch
         //                wearing a playable domain's colour is one that HANDS you that domain
@@ -396,8 +413,22 @@ namespace CosmicShore.Gameplay
         {
             if (radius <= 0.01f) return null;
             var ring = AddRingBody(parent, radius, SwitchColor(theme, signal, domain),
-                                   SwitchMaterial(theme, signal, domain));
+                                   SwitchRingMaterial(theme, signal, domain));
             ring.name = "SwitchRing";
+            // The facets open off the mesh in the vertex shader, where culling cannot see them. In
+            // the ring's own units (its scale is its diameter), not through its lossy scale: a
+            // parent mid-bloom is near zero, and that would size the bounds for ever.
+            var profile = SpindleLodProfileSO.Instance;
+            if (profile && ring.TryGetComponent(out MeshRenderer renderer))
+            {
+                float travel = IncorporealDepth.MaxOpening * profile.switchRingStrength / (radius * 2f);
+                if (travel > 0f)
+                {
+                    var bounds = RingMesh.bounds;
+                    bounds.Expand(2f * travel);
+                    renderer.localBounds = bounds;
+                }
+            }
             return ring;
         }
 
@@ -411,7 +442,67 @@ namespace CosmicShore.Gameplay
         {
             if (!ring || !ring.TryGetComponent(out MeshRenderer renderer)) return;
             ApplyBodyMaterial(renderer, SwitchColor(theme, signal, domain),
-                              SwitchMaterial(theme, signal, domain));
+                              SwitchRingMaterial(theme, signal, domain));
+        }
+
+        /// <summary>
+        /// What a switch RING is drawn in: a spindle on SpindleDepthGraph wearing the signal's
+        /// colour (<see cref="SpindleRingMaterial"/>), or - where the spindle depth graph cannot run
+        /// (no profile, LOD off, an unsupported shader) - the signal's prism, as before.
+        /// </summary>
+        public static Material SwitchRingMaterial(ThemeManagerDataContainerSO theme, ToySwitchSignal signal,
+            Domains domain)
+        {
+            var spindle = SpindleRingMaterial(SwitchColor(theme, signal, domain));
+            return spindle ? spindle : SwitchMaterial(theme, signal, domain);
+        }
+
+        // Switch-ring spindle materials, one per signal colour, so a course of rings is one
+        // material and a repaint swaps a reference. Nothing mutates these after creation, and
+        // they are never destroyed (the same lifetime as the prism-minted switch materials).
+        static readonly System.Collections.Generic.Dictionary<int, Material> s_spindleRingMaterials = new();
+
+        // A spindle's rim colour sits this far from its body colour toward white - measured off
+        // SpindleMaterial.mat, whose bright (0.37, 0.40, 0.96) is its dull (0, 0.03, 1) 37% of the
+        // way to white - so a ring's signal colour stays its body, with the spindle's own rim.
+        const float SpindleRimWhiten = 0.37f;
+
+        static readonly int DullColorId = Shader.PropertyToID("_DullColor");
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int SpindleStrengthId = Shader.PropertyToID("_SpindleLodStrength");
+        static readonly int SpindleFormId = Shader.PropertyToID("_SpindleDepthForm");
+        static readonly int SpindleDistanceId = Shader.PropertyToID("_Distance");
+        static readonly int SpindleSwayId = Shader.PropertyToID("_SwayAmplitude");
+
+        /// <summary>
+        /// A switch ring's spindle material for a signal colour: <c>SpindleLodProfileSO.depthTemplate</c>
+        /// (SpindleMaterial on SpindleDepthGraph) in the FACETS form - each flat facet of the ring
+        /// opens along its own normal, prism-exact - at <c>switchRingStrength</c>, without sway, and
+        /// with its lace kept out to <c>switchRingDistance</c>. Null when the graph cannot run here.
+        /// </summary>
+        static Material SpindleRingMaterial(Color signal)
+        {
+            var profile = SpindleLodProfileSO.Instance;
+            if (!profile || !profile.lodEnabled || !profile.depthTemplate) return null;
+            var template = profile.depthTemplate;
+            if (!template.shader || !template.shader.isSupported) return null;
+            // The ring reads the depth effect's globals, which the system publishes.
+            if (!SpindleLodSystem.EnsureRunning()) return null;
+
+            Color32 c = signal;
+            int key = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+            if (s_spindleRingMaterials.TryGetValue(key, out var cached) && cached) return cached;
+
+            var body = new Color(signal.r, signal.g, signal.b, 1f);
+            var mat = new Material(template) { name = $"SwitchRingSpindle_{ColorUtility.ToHtmlStringRGB(body)}" };
+            mat.SetColor(DullColorId, body);
+            mat.SetColor(BrightColorId, Color.Lerp(body, Color.white, SpindleRimWhiten));
+            mat.SetFloat(SpindleStrengthId, profile.switchRingStrength);
+            mat.SetFloat(SpindleFormId, 1f);
+            mat.SetFloat(SpindleDistanceId, profile.switchRingDistance);
+            mat.SetFloat(SpindleSwayId, profile.switchRingSway);
+            s_spindleRingMaterials[key] = mat;
+            return mat;
         }
 
         /// <summary>Switch ring radius for a matrix station, clamped by <see cref="MaxRingSpacingFraction"/>.</summary>

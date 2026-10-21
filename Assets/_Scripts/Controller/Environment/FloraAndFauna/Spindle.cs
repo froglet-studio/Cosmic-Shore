@@ -104,9 +104,10 @@ namespace CosmicShore.Gameplay
         bool _swayPhaseResolved;
 
         // ── Distance LOD (SpindleLodSystem, Docs/SPINDLE_LOD.md) ─────────────────────────────
-        // One handle per renderer that draws a mesh the LOD profile knows (null where it does not,
-        // e.g. a creature's own body mesh; the whole array is null when none does). The system
-        // owns that renderer's mesh, material and enabled flag while the handle is registered;
+        // One handle per renderer the system took: a limb drawing a mesh the LOD profile knows is
+        // tiered, and a creature's own spindle-material body wears a depth material (null where
+        // neither applies; the whole array is null when none does). The system owns that
+        // renderer's material (and a limb's mesh and enabled flag) while the handle is registered;
         // this class keeps owning life and death, and hands the renderer back before either.
         SpindleLodSystem.Handle[] _lodHandles;
         bool _started;
@@ -264,7 +265,10 @@ namespace CosmicShore.Gameplay
         {
             CacheRenderers();
             // A Charge lifeform's limbs part hardest in the overt style (SpindleLodProfileSO.chargeStrength).
-            bool charge = LifeForm && LifeForm.Element == CosmicShore.Data.Element.Charge;
+            // A flora limb names its LifeForm; a creature's spindles do not (the shark's, the
+            // tadpole's), so the element is read off whatever lifeform this spindle is part of.
+            ILifeFormEntity lifeform = LifeForm ? LifeForm : GetComponentInParent<ILifeFormEntity>();
+            bool charge = lifeform != null && lifeform.Element == CosmicShore.Data.Element.Charge;
             SpindleLodSystem.Handle[] handles = null;
             for (int i = 0; i < _renderers.Length; i++)
             {

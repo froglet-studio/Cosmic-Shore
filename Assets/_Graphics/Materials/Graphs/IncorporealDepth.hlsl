@@ -45,8 +45,11 @@
 //   IncorporealDepthPart_float - per PART, rigidly along a direction you supply, by the prisms'
 //       farthest face travel. For something made of strands or panels: a spindle (its strands), a
 //       membrane (its panels, outward), the nucleus (its shells).
-// then IncorporealDepthGlow_float in the fragment, and a Strength to scale the shared spread for that
-// surface. Nothing else: the ramp, the tier and the wave are shared.
+//   IncorporealDepthBloom_float - per OBJECT, outward from its pivot, by POSITION ALONE. For a
+//       surface whose parts no channel names - a creature's own model, skinned or not - where any
+//       per-vertex attribute would tear it at its seams.
+// then IncorporealDepthGlow_float (or IncorporealDepth_BloomPulse) in the fragment, and a Strength to
+// scale the shared spread for that surface. Nothing else: the ramp, the tier and the wave are shared.
 
 float4 _IncorporealSpread;
 float4 _IncorporealFlow;
@@ -98,10 +101,17 @@ float IncorporealDepth_Openness(float norm, float3 spread)
     return IncorporealDepth_RampOpenness(norm, spread) * IncorporealDepth_Recede(norm);
 }
 
+// The travelling wave's phase angle along the flow coordinate (one definition: the bloom also takes
+// its derivative).
+float IncorporealDepth_WaveArg(float flowCoord, float phase, float clock)
+{
+    return INCORPOREAL_DEPTH_TAU * (_IncorporealFlow.y * flowCoord - _IncorporealFlow.z * clock) + phase;
+}
+
 // The travelling wave: +1 crest .. -1 trough, moving toward +flowCoord.
 float IncorporealDepth_Wave(float flowCoord, float phase, float clock)
 {
-    return sin(INCORPOREAL_DEPTH_TAU * (_IncorporealFlow.y * flowCoord - _IncorporealFlow.z * clock) + phase);
+    return sin(IncorporealDepth_WaveArg(flowCoord, phase, clock));
 }
 
 float3 IncorporealDepth_ObjectScale()
@@ -172,6 +182,112 @@ void IncorporealDepthPart_float(float3 PositionOS, float3 DirectionOS, float Flo
     // stretches that direction, so a lattice limb scaled 6x along its length parts no further.
     float worldLen = length(mul((float3x3)GetObjectToWorldMatrix(), DirectionOS));
     Out = PositionOS + DirectionOS * (amount * flow / max(worldLen, 1e-6));
+#endif
+}
+
+// ---------------------------------------------------------------------------------------------
+// Vertex stage, BLOOM form. A creature's own model has no parts this file can name: its strands
+// are not laid along a UV, and its UV seams and hard edges SPLIT vertices, so anything read off a
+// vertex (its normal, its UV) would move the two copies of a seam apart and tear the surface. So
+// the bloom is a function of POSITION ALONE: every point moves outward from the object's pivot,
+// anchored there and reaching the prisms' farthest face travel at Reach world units out (a limb's
+// fan, root to tip, with the creature's heart for the root), and the wave runs heart ->
+// extremities along that same radius. In world units whatever the object's scale.
+//
+// The travel is capped as a share of Reach. The wave makes the radial stretch vary along the
+// radius, and a crest that pushes harder than the trough ahead of it can overtake it and fold the
+// surface through itself. With q = 2 pi x waves x the wave's amplitude (the steepest the wave's
+// share of the travel changes per unit of r / Reach), the displaced radius's derivative is at least
+// 1 - (travel / Reach) x q, inside Reach and out; capping travel / Reach at 0.8 / q keeps it >= 0.2,
+// so the bloom never folds and can be inverted (BloomRestRadius). Never more than
+// INCORPOREAL_DEPTH_BLOOM_MAX_SHARE of Reach either: a body may bloom, not double in size.
+// ---------------------------------------------------------------------------------------------
+#define INCORPOREAL_DEPTH_BLOOM_MAX_SHARE 0.3
+#define INCORPOREAL_DEPTH_BLOOM_MIN_SLOPE 0.2
+
+float IncorporealDepth_BloomAmount(float3 opening, float reach, float openness)
+{
+    float q = INCORPOREAL_DEPTH_TAU * max(_IncorporealFlow.y, 0.0) * max(_IncorporealFlow.x, 0.0) * openness;
+    float share = min(INCORPOREAL_DEPTH_BLOOM_MAX_SHARE, (1.0 - INCORPOREAL_DEPTH_BLOOM_MIN_SLOPE) / max(q, 1e-6));
+    return min(max(opening.x, max(opening.y, opening.z)), share * reach);
+}
+
+// The displaced radius of a point at rest radius r (and its derivative): r stretched by the
+// travel, linearly out to Reach (the fan's root-to-tip weight), by the full travel beyond it.
+void IncorporealDepth_BloomRadius(float r, float amount, float reach, float openness, float phase, float clock,
+    out float rd, out float drd)
+{
+    float k = INCORPOREAL_DEPTH_TAU * _IncorporealFlow.y / reach;   // d(arg)/dr
+    float arg = IncorporealDepth_WaveArg(r / reach, phase, clock);
+    float a = _IncorporealFlow.x * openness;
+    float flow = 1.0 + a * sin(arg);
+    float dflow = a * cos(arg) * k;
+    if (r < reach)
+    {
+        rd = r + amount * flow * r / reach;
+        drd = 1.0 + amount * (flow + r * dflow) / reach;
+    }
+    else
+    {
+        rd = r + amount * flow;
+        drd = 1.0 + amount * dflow;
+    }
+}
+
+// The inverse: the rest radius of a point the bloom moved to rdisplaced. The fragment stage sees
+// only displaced positions, and the pulse must ride the crest the vertex stage put there.
+// The bloom is monotone (the cap above), so Newton converges from the no-wave guess.
+float IncorporealDepth_BloomRestRadius(float rdisplaced, float amount, float reach, float openness,
+    float phase, float clock)
+{
+    float r = rdisplaced / (1.0 + amount / max(rdisplaced, reach));
+    for (int i = 0; i < 4; i++)
+    {
+        float rd, drd;
+        IncorporealDepth_BloomRadius(r, amount, reach, openness, phase, clock, rd, drd);
+        r = max(r - (rd - rdisplaced) / max(drd, INCORPOREAL_DEPTH_BLOOM_MIN_SLOPE), 0.0);
+    }
+    return r;
+}
+
+void IncorporealDepthBloom_float(float3 PositionOS, float Reach, float Phase, float Clock, float Strength,
+    out float3 Out, out float Openness)
+{
+    Out = PositionOS;
+    Openness = 0.0;
+#if !defined(SHADERGRAPH_PREVIEW)
+    float3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
+    float norm = IncorporealDepth_Norm(IncorporealDepth_Origin());
+    float3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);
+    Openness = IncorporealDepth_Openness(norm, spread);
+    float reach = max(Reach, 1e-3);
+    float amount = IncorporealDepth_BloomAmount(opening, reach, Openness);
+    // The pivot is the object origin, so a point's world offset from it is the matrix applied to
+    // its object position, and scaling the object position scales that offset along itself: the
+    // world displacement is radial from the pivot whatever the object's scale.
+    float r = length(mul((float3x3)GetObjectToWorldMatrix(), PositionOS));
+    float rd, drd;
+    IncorporealDepth_BloomRadius(r, amount, reach, Openness, Phase, Clock, rd, drd);
+    Out = r > 1e-6 ? PositionOS * (rd / r) : PositionOS;
+#endif
+}
+
+// The bloom's pulse at a DISPLACED world position: the crest the vertex stage moved there.
+float IncorporealDepth_BloomPulse(float3 PositionWS, float Reach, float Phase, float Clock, float Strength)
+{
+#if defined(SHADERGRAPH_PREVIEW)
+    return 0.0;
+#else
+    float3 spread = _IncorporealSpread.xyz * max(Strength, 0.0);
+    float3 origin = IncorporealDepth_Origin();
+    float norm = IncorporealDepth_Norm(origin);
+    float3 opening = IncorporealDepth_Opening(norm, spread) * IncorporealDepth_Recede(norm);
+    float openness = IncorporealDepth_Openness(norm, spread);
+    float reach = max(Reach, 1e-3);
+    float amount = IncorporealDepth_BloomAmount(opening, reach, openness);
+    float r = IncorporealDepth_BloomRestRadius(length(PositionWS - origin), amount, reach, openness, Phase, Clock);
+    float crest = saturate(IncorporealDepth_Wave(r / reach, Phase, Clock));
+    return max(_IncorporealFlow.w, 0.0) * openness * crest * crest;
 #endif
 }
 

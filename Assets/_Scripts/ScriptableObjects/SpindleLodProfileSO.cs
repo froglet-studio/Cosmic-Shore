@@ -102,12 +102,28 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The converged thread's opacity before coverage and fades.")]
         [Range(0.05f, 1f)] public float threadAlpha = 0.85f;
 
+        [Header("Beyond the braid (SpindleDepthGraph, Docs/SPINDLE_LOD.md §8)")]
+        [Tooltip("OVERT: every spindle-material renderer that is NOT the braid - a creature's own model (the shark, brittlestar, worm and quadfish) - wears the same depth effect, blooming outward from its pivot (its element sets its strength, as for a limb). Off: those keep their authored material.")]
+        public bool depthOnBodies = true;
+
+        [Tooltip("OVERT: how far a switch ring's facets open, as a share of the danger prisms' face travel (0.1 = ~1.5 units at the peak, the same as a non-Charge limb). Rings are drawn in SpindleDepthGraph (ToyFactory.AddSwitchRing).")]
+        [Range(0f, 2f)] public float switchRingStrength = 0.1f;
+
+        [Tooltip("SpindleGraph's _Distance on the switch rings: the squared distance its lace fades out by. A branch fades by 2,000,000 (~1,400 units); a switch is a signal you fly toward, so 200,000,000 keeps it readable ~14,000 units out.")]
+        [Min(1f)] public float switchRingDistance = 200000000f;
+
+        [Tooltip("SpindleGraph's sway amplitude on the switch rings. 0: a ring is a trigger volume drawn at its own radius, and a swaying ring would draw it somewhere it is not.")]
+        [Min(0f)] public float switchRingSway = 0f;
+
         [Header("Measured (owned by Tools/Build/author_spindle_lod_meshes.py - do not hand-edit)")]
         [Tooltip("SpindleLodMid.mat: SpindleMaterial on SpindleLodMidGraph. A build-variant anchor; runtime LOD materials are cloned from it.")]
         public Material midTemplate;
 
         [Tooltip("SpindleLodFar.mat: SpindleMaterial on SpindleLodFarGraph, instancing on. A build-variant anchor; runtime LOD materials are cloned from it.")]
         public Material farTemplate;
+
+        [Tooltip("SpindleDepth.mat: SpindleMaterial on SpindleDepthGraph. A build-variant anchor; the creatures' depth materials and the switch rings' are cloned from it.")]
+        public Material depthTemplate;
 
         [Tooltip("One entry per spindle mesh that has LOD meshes.")]
         public List<MeshSet> meshSets = new();

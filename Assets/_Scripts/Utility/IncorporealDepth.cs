@@ -26,6 +26,19 @@ namespace CosmicShore.Utility
         /// normalised squared distance; zero when nothing is published (never recedes).</summary>
         public static Vector4 Recede { get; private set; }
 
+        /// <summary>The bloom form's cap on a body's travel, as a share of its reach: the HLSL's
+        /// INCORPOREAL_DEPTH_BLOOM_MAX_SHARE, below which the wave can never fold the surface.</summary>
+        public const float BloomMaxShare = 0.3f;
+
+        static float s_fullOpening;
+        static float s_flowAmplitude;
+
+        /// <summary>The farthest a bloomed body of this <paramref name="strength"/> and
+        /// <paramref name="reach"/> moves any point, in world units, including the wave's breathing:
+        /// IncorporealDepthBloom's own cap, for its culling volume.</summary>
+        public static float BloomTravel(float strength, float reach) =>
+            Mathf.Min(s_fullOpening * Mathf.Max(strength, 0f), BloomMaxShare * reach) * (1f + s_flowAmplitude);
+
         public static void Publish()
         {
             var config = IncorporealDepthSO.Instance;
@@ -36,7 +49,9 @@ namespace CosmicShore.Utility
             Recede = recede;
             // The prism rule's full opening beyond rest: spread x (50, 35, 20) - spread, per axis.
             var full = new Vector3(spread.x * 49f, spread.y * 34f, spread.z * 19f);
-            MaxOpening = Mathf.Max(full.x, Mathf.Max(full.y, full.z)) * (1f + Mathf.Max(flow.x, 0f));
+            s_fullOpening = Mathf.Max(full.x, Mathf.Max(full.y, full.z));
+            s_flowAmplitude = Mathf.Max(flow.x, 0f);
+            MaxOpening = s_fullOpening * (1f + s_flowAmplitude);
             Shader.SetGlobalVector(SpreadId, spread);
             Shader.SetGlobalVector(FlowId, flow);
             Shader.SetGlobalVector(RecedeId, recede);
@@ -66,6 +81,8 @@ namespace CosmicShore.Utility
             Spread = Vector4.zero;
             Recede = Vector4.zero;
             MaxOpening = 0f;
+            s_fullOpening = 0f;
+            s_flowAmplitude = 0f;
         }
     }
 }

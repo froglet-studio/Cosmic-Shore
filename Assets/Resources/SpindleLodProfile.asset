@@ -32,8 +32,13 @@ MonoBehaviour:
   threadFacet: 0.55
   threadGlow: 1.35
   threadAlpha: 0.85
+  depthOnBodies: 1
+  switchRingStrength: 0.1
+  switchRingDistance: 200000000
+  switchRingSway: 0
   midTemplate: {fileID: 2100000, guid: 20a1e347c703b74989b4c9e9c90e94e4, type: 2}
   farTemplate: {fileID: 2100000, guid: e504df112b682b68f8997daade6a4fbe, type: 2}
+  depthTemplate: {fileID: 2100000, guid: 9241f93012c8e673e853d04c59dd7811, type: 2}
   meshSets:
   - source: {fileID: 1825875415147931077, guid: c9a0b575455114844a1b087dd889626e, type: 3}
     mid: {fileID: 4300000, guid: c1aecf9c0373a5b17d09bdbd0936b107, type: 2}
