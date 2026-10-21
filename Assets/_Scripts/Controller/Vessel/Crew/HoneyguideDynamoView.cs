@@ -14,7 +14,8 @@ namespace CosmicShore.Gameplay
     /// spin bar and the three pattern cards; TextMeshPro labels carry the config's words.
     ///
     /// <para><b>Which is big.</b> Playing the Ratel: the board fills <c>engineerRect</c> and takes the pointer (drag a prism, tap
-    /// a port, tap a lit card; tap the AP row to change the free prism's colour). Flying: the board is the small read-only
+    /// a port, tap a lit card; tap the AP row to change the free prism's colour; right-click a prism, or on a phone hold it,
+    /// to delete it; the Fly button left of the board swaps back to flying). Flying: the board is the small read-only
     /// view in <c>pilotRect</c>; a double tap on it swaps seats, and a chip above it shows what RT and LT do now.</para>
     /// </summary>
     sealed class HoneyguideDynamoView
@@ -40,11 +41,11 @@ namespace CosmicShore.Gameplay
         readonly HoneyguideCrew _crew;
         readonly GameObject _root;
         readonly HoneyguideBoardGraphic _graphic;
-        readonly TMP_Text _seat, _abilityName, _abilityText, _free, _revealTitle, _revealText, _detail, _chip;
+        readonly TMP_Text _seat, _abilityName, _abilityText, _free, _revealTitle, _revealText, _detail, _chip, _fly;
         readonly TMP_Text[] _slotNames = new TMP_Text[3], _slotTaps = new TMP_Text[3];
 
         // this frame's layout, in canvas pixels (y up)
-        Rect _rect, _apRect, _chipRect;
+        Rect _rect, _apRect, _chipRect, _flyRect;
         readonly Rect[] _slots = new Rect[3];
         float _size, _cx, _cy;
         bool _small;
@@ -56,6 +57,10 @@ namespace CosmicShore.Gameplay
         int _detailSlot = -1;   // the card whose details are open (a right-click), or -1
         float _lastSmallTap = -99f;
         bool _smallDoubleTap;
+        bool _flyTapped;        // the Fly button beside the big board (the phone's way back to flying)
+        float _pressAt = -1f;   // touch: when the finger went down on a prism, for the long-press delete
+        int _pressCell = -1;
+        bool _longFired;
 
         internal HoneyguideDynamoView(HoneyguideCrew crew)
         {
@@ -87,6 +92,7 @@ namespace CosmicShore.Gameplay
             _revealText = MakeText("RevealText", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
             _detail = MakeText("CardDetail", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
             _chip = MakeText("TriggerChip", Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
+            _fly = MakeText("FlyButton", Cream, FontStyles.Bold, TextAlignmentOptions.Center);
             for (int k = 0; k < 3; k++)
             {
                 _slotNames[k] = MakeText("Slot" + k, new Color(0.91f, 0.93f, 0.95f, 1f), FontStyles.Bold, TextAlignmentOptions.TopLeft);
@@ -145,6 +151,7 @@ namespace CosmicShore.Gameplay
         internal Rect SlotRect(int k) => _slots[k];
         internal Rect ApRect => _apRect;
         internal Rect ChipRect => _chipRect;
+        internal Rect FlyRect => _flyRect;
         internal int DragFrom => _dragFrom;
         internal Vector2 DragAt => _dragAt;
         internal HoneyguideCrew Crew => _crew;
@@ -166,6 +173,9 @@ namespace CosmicShore.Gameplay
             for (int k = 0; k < 3; k++) _slots[k] = new Rect(_rect.x + pad + k * (sw + gap), _rect.y + pad / 2f, sw, slotsH);
             _apRect = new Rect(_rect.x, _rect.yMax - 28f * ui, Mathf.Max(80f * ui, _rect.width * 0.45f), 28f * ui);
             _chipRect = _small ? new Rect(_rect.x, _rect.yMax + 6f * ui, _rect.width, 52f * ui) : default;
+            // The Fly button: a thumb-sized square just left of the big board, at its top (no scaler on this canvas: pixels).
+            float mm = Screen.dpi > 0f ? Screen.dpi / 25.4f : 6f, bs = Mathf.Max(44f * ui, _crew.Config.FlyButtonMillimetres * mm);
+            _flyRect = _small ? default : new Rect(Mathf.Max(4f * ui, _rect.x - bs - 8f * ui), _rect.yMax - bs, bs, bs);
         }
 
         internal Vector2 CellPx(int i) =>
@@ -251,6 +261,7 @@ namespace CosmicShore.Gameplay
                 }
             }
             Place(_chip, _chipRect, fs, chip);
+            Place(_fly, _flyRect, fs * 1.1f, _small ? "" : cfg.FlyButtonLabel);
             ChipShown = chip.Length > 0;
 
             if (_small) ReadSmallViewTaps();
@@ -266,10 +277,13 @@ namespace CosmicShore.Gameplay
 
         // ------------------------------------------------------------------ the pointer
 
-        static bool TryPointer(out Vector2 at, out bool pressed, out bool released, out bool held)
+        static bool TryPointer(out Vector2 at, out bool pressed, out bool released, out bool held) =>
+            TryPointer(out at, out pressed, out released, out held, out _);
+
+        static bool TryPointer(out Vector2 at, out bool pressed, out bool released, out bool held, out bool touch)
         {
             at = default;
-            pressed = released = held = false;
+            pressed = released = held = touch = false;
             var ts = Touchscreen.current;
             if (ts != null)
             {
@@ -280,6 +294,7 @@ namespace CosmicShore.Gameplay
                     pressed = t.press.wasPressedThisFrame;
                     released = t.press.wasReleasedThisFrame;
                     held = t.press.isPressed;
+                    touch = true;
                     return true;
                 }
             }
@@ -301,10 +316,12 @@ namespace CosmicShore.Gameplay
             else _lastSmallTap = Time.unscaledTime;
         }
 
+        /// <summary>True once after a seat swap was asked for on the board: a double tap on the small view while flying, or the
+        /// Fly button beside the big board while playing the Ratel (a phone has no D-pad and no 1 / 2 keys).</summary>
         internal bool SmallViewDoubleTapped()
         {
-            bool d = _smallDoubleTap;
-            _smallDoubleTap = false;
+            bool d = _smallDoubleTap || _flyTapped;
+            _smallDoubleTap = _flyTapped = false;
             return d;
         }
 
@@ -313,14 +330,28 @@ namespace CosmicShore.Gameplay
         // Playing the Ratel: the lab's engDown / up. Layout is last frame's (the board does not move between frames).
         internal void ReadEngineerInput(DynamoCore core, DynamoSettings s)
         {
-            if (_small || !TryPointer(out var at, out bool pressed, out bool released, out bool held)) return;
+            if (_small || !TryPointer(out var at, out bool pressed, out bool released, out bool held, out bool touch)) return;
             _pointerAt = at;
             if (_dragFrom >= 0) _dragAt = at;
             var mouse = Mouse.current;
             bool secondary = mouse != null && mouse.rightButton.wasPressedThisFrame;
             if ((pressed || secondary) && _detailSlot >= 0) { _detailSlot = -1; return; }   // any click closes the card details
+            if (pressed && _flyRect.Contains(at)) { _flyTapped = true; return; }            // back to flying
             if (secondary && _rect.Contains(at)) { Secondary(core, at); return; }
-            if (pressed && _rect.Contains(at)) Down(core, at);
+            if (pressed && _rect.Contains(at))
+            {
+                Down(core, at);
+                _pressCell = touch ? _dragFrom : -1;   // only a finger on a prism can long-press (a mouse has its right button)
+                _pressAt = Time.unscaledTime;
+                _longFired = false;
+            }
+            // Touch: holding a prism still is the phone's right-click - it deletes the prism (1 AP) and drops the drag.
+            if (held && !_longFired && _pressCell >= 0 && Time.unscaledTime - _pressAt >= _crew.Config.LongPressSeconds)
+            {
+                _longFired = true;
+                if (PxCell(at) == _pressCell) Secondary(core, at);
+                else _pressCell = -1;   // the finger has already left the cell: it is a drag
+            }
             if (released && _dragFrom >= 0)
             {
                 int from = _dragFrom;
@@ -333,9 +364,11 @@ namespace CosmicShore.Gameplay
                 }
             }
             if (!held && !released) _dragFrom = -1;
+            if (!held) _pressCell = -1;
         }
 
-        // Right-click (Garrett 2026-10-21): a card opens its details; a prism is deleted, for 1 AP.
+        // Right-click (Garrett 2026-10-21): a card opens its details; a prism is deleted, for 1 AP. On a phone a long press on a
+        // prism comes here too.
         void Secondary(DynamoCore core, Vector2 at)
         {
             _dragFrom = -1;
@@ -509,6 +542,13 @@ namespace CosmicShore.Gameplay
                 float lit = ChipUpgraded ? 1f : 0.35f;
                 HoneyguideMesh.Quad(vh, _chipRect, new Color(1f, 0.655f, 0f, 0.35f * lit));
                 HoneyguideMesh.Outline(vh, _chipRect, 2f, new Color(1f, 0.655f, 0f, lit));
+            }
+
+            // the Fly button beside the big board
+            if (!_small && _flyRect.width > 2f)
+            {
+                HoneyguideMesh.Quad(vh, _flyRect, Panel);
+                HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
             }
         }
 

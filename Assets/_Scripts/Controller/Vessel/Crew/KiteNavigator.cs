@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// the AI are per-viewer, and the effects are this machine's. Networking the seat is a follow-up (KITE_NAVIGATOR.md).</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers
+    public sealed class KiteNavigator : MonoBehaviour, IRingThreadProbe, ICrewTriggers, IHullParkAware
     {
         internal struct Mote
         {
@@ -492,6 +492,14 @@ namespace CosmicShore.Gameplay
             _pipLastTapAt = doubled ? -99f : now;
             _pipLastTapPos = _pipPressPos;
             return doubled;
+        }
+
+        /// <inheritdoc cref="IHullParkAware.ReturnHumanToHull"/>
+        public void ReturnHumanToHull()
+        {
+            if (!_humanNavigates) return;
+            _weTookHull = false;   // the autopilot is the parker's now: SetHumanNavigates(false) must not stop it
+            SetHumanNavigates(false);
         }
 
         void SetHumanNavigates(bool navigate)

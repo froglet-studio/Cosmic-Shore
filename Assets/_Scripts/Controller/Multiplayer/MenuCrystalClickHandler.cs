@@ -238,6 +238,9 @@ namespace CosmicShore.Gameplay
             var ct = _cts.Token;
             var player = gameData.LocalPlayer;
 
+            // a crew seat (the Wrasse, the Ratel, a gunner, the Pistol, the jacks) gives its human back first, or it keeps
+            // reading the touchscreen and pad under the menu (it took the hull itself, so this park looks like its own)
+            CrewSeat.ReturnHumansToHull(player.Vessel);
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 

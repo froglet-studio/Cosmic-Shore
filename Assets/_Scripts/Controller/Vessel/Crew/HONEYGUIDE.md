@@ -24,14 +24,15 @@ Garrett and friends designed and played from 2019 to 2022. The design was made a
 
 1. Open the Toybox and use the **Vessel Changer**. Pick **Honeyguide and Ratel**.
 2. Fly it. Ram trails of the domains the battery holds, with the nose along the trail, to slip.
-3. Press **D-pad left / right** or **1 / 2**, or double-tap the small board, to swap seats. The AI takes the empty seat:
+3. Press **D-pad left / right** or **1 / 2**, double-tap the small board, or tap **Fly** (left of the Ratel's big board) to swap seats. The AI takes the empty seat:
    - the hull's own `AIPilot` flies while you play the Ratel;
    - the Ratel AI (the lab's `aiPlan`, input-only, Hard by default) plays while you fly.
 4. To play the Ratel (the board covers the centre of the screen):
    - Drag a prism along empty cells to move it (1 AP a step).
    - Tap a port to inject its colour (1 AP).
    - Tap a lit card to make its pattern (1 AP).
-   - Right-click a prism to delete it (1 AP). Right-click a card to read its details; any click closes them.
+   - Right-click a prism to delete it (1 AP); on a phone, hold the prism still (`longPressSeconds`, 0.45 s). Right-click a card to
+     read its details; any click closes them (a phone cannot open card details yet).
    - Free prisms (Printer, Translator, 5D Printer) each come in a random domain and ride the cursor until placed: click an
      empty cell.
    - The Ratel's ability (at the start and each new one) and every pattern made are announced in the game's toast, top

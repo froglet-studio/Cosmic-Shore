@@ -1899,6 +1899,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
 
+### T-20261021-90a6 · open · test · Crew vessels
+- **Task:** Android dev build, branch cece/compassionate-rubin-baeyvi: (1) Toybox > Vessel Changer > Honeyguide and Ratel, swap to the Ratel: hold a finger still on a prism ~0.5 s and it is deleted (1 AP); a drag that leaves the cell still moves it; the Fly button left of the big board swaps back to flying. (2) Fly the Wrasse kite seat, go back to the app shell (HOME): touching or using a pad in the menu must not steer the kite or swap seats; re-enter freestyle and you are seated where you were. Repeat (2) for the Orca gunner, the Ratel, the Pistol and the Marlin jacks.
+- **Done when:** Both steps pass on a phone, or the failure is filed as a dev task
+- **Who can take it:** Garrett (found the bugs) or Yash (offered: playtests)
+- **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
+- **See:** 29315a060, 77ead5f41
+
+### T-20261021-2bb3 · open · test · Vessels on a phone
+- **Task:** Reproduce 'the vessel selector UI broke on mobile' (Garrett's Android playtest, 2026-10-21): say which screen (Toybox Vessel Changer matrix, its Toy window, the Hangar, the HUD after a swap), send a screenshot and adb logcat -s Unity. Quick check: connect a pad - if the problem goes away, it is the phone ability-row layout (TouchControlsHud) not re-laying after a swap.
+- **Done when:** The screen and a screenshot/log are on this task, so a session can fix the root cause
+- **Who can take it:** Garrett (saw it) or Yash
+- **Added:** 2026-10-21 by a Claude session (`cece/compassionate-rubin-baeyvi`)
+- **See:** PR for cece/compassionate-rubin-baeyvi
+
 ### T-20261021-227a · open · test · Starling vessel
 - **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer on branch cece/quirky-gates-skplxp: the 120-member murmuration reads as one, the camera roll turns the world the way flight rolls (pad y-diff and phone spin), two thumbs keep turning the view while pinching, holding a pick with no hand lists each held card with its text, numbers and reached jolts, and pressing another pick while the details are open browses to that element
 - **Done when:** Each item passes in Play mode, or the failures are reported
@@ -1933,3 +1947,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/ANGLER.md §1m
+
+### T-20261021-876d · open · test · Crew vessels
+- **Task:** Phone playtest of the Orca gunner buttons (Android dev build, no pad): Toybox > Vessel Changer > Orca · 4 seat, two-finger tap (or the D-pad) to a gunner seat. Two buttons sit round the right thumb: Fire (seat colour) and Missile (rocket icon); the top line of seat text is gone. Left-thumb drag aims the turret while the right thumb holds Fire; Missile launches, the left thumb steers it, Missile again bursts it, and Fire hides while it flies. A thumb resting on a button while the left aims never swaps seats. On the bomb seat Fire throws, Fire again bursts. Buttons hide on the helm and when a pad connects. On a pad: X or RT fires, A launches/bursts, left stick aims.
+- **Done when:** Each step behaves as written on a phone and a pad; buttons sit inside the safe area and don't cover the ability row; any miss is filed as a dev task
+- **Who can take it:** Yash (offered) or Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/fervent-goodall-8cihle`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md 'Two buttons per gunner'; Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca gunner buttons'
