@@ -760,7 +760,6 @@ MonoBehaviour:
   RollScaler: 52
   RotationThrottleScaler: 0
   restrictedTurnMultiplier: 3
-  touchNoseResponse: 9
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -972,7 +971,21 @@ MonoBehaviour:
   _executors: {fileID: 9105512684531825410}
   _inputEventShipActions: []
   _resourceEventClassActions: []
-  _touchActionOverrides: []
+  _touchActionOverrides:
+  - InputEvent: 2
+    ShipActions:
+    - {fileID: 11400000, guid: 9eacf723b796418caecfe237336b9985, type: 2}
+    - {fileID: 11400000, guid: 5c382e0def5b45d7b1230d75e8be082b, type: 2}
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 11400000, guid: 62ce60a32bef4c70b42fd1f7cd9896ff, type: 2}
+    - {fileID: 11400000, guid: 012d65baf31c49c496d38975eba8c0be, type: 2}
+  - InputEvent: 6
+    ShipActions:
+    - {fileID: 11400000, guid: 9b50ea11259b4b1aa750eea7f1d7f781, type: 2}
+  - InputEvent: 7
+    ShipActions:
+    - {fileID: 11400000, guid: f05e7ded817a4670bb78832c9c879566, type: 2}
   _gamepadActionOverrides:
   - InputEvent: 2
     ShipActions:

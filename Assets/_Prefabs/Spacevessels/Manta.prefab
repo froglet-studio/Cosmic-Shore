@@ -2139,7 +2139,10 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   _resourceEventClassActions: []
-  _touchActionOverrides: []
+  _touchActionOverrides:
+  - InputEvent: 4
+    ShipActions:
+    - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   _gamepadActionOverrides:
   - InputEvent: 11
     ShipActions:

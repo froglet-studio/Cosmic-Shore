@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.ECS;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -107,17 +108,21 @@ namespace CosmicShore.Gameplay
                 clones[filled++] = reused;
             }
 
+            LoadInsights.Count("Prisms reused from the environment pool", filled);
             bool batchedFailed = false;
             int shortfall = count - filled;
             if (shortfall > 0 && useBatchedInstantiate)
             {
                 try
                 {
+                    LoadInsights.Count("Prisms cloned by InstantiateAsync", shortfall);
+                    long insightT0 = LoadInsights.AccumulateStart();
                     var op = UnityEngine.Object.InstantiateAsync(prefab, shortfall, parent);
                     float waitStart = Time.unscaledTime;
                     while (!op.isDone)
                     {
                         await UniTask.Yield(PlayerLoopTiming.Update);
+                        LoadInsights.Count("Frames an async clone batch waited to integrate");
                         if (!parent) return (null, batchedFailed);
                         if (Time.unscaledTime - waitStart > stallSeconds)
                         {
@@ -130,6 +135,7 @@ namespace CosmicShore.Gameplay
                         }
                     }
 
+                    LoadInsights.AccumulateSample("Prism clone: InstantiateAsync batch, call to integrated (wall time)", insightT0);
                     var result = op.Result;
                     if (result != null)
                     {

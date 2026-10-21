@@ -59,6 +59,17 @@ python3 Tools/Build/perf_capture_report.py <capture.json> # one capture, judged 
   lands on their `bugledger/<user>` branch). Say that in one line. Never ask for pasted JSON when the pipe exists;
   accept a paste when they offer one.
 
+- **A load is not a frame: capture it with Load Time Insights**, and a Cell Selector world swap now records like a
+  game launch (arm Record Insight Mode in FrogletTools > Performance > Performance Benchmark > Load Time Insights,
+  then swap). Read its hot-path rows against the span that holds them before blaming the per-item work. The Orrery
+  swap's lay span was 16.1 s while the prism work inside it summed to 0.8 s: the lay awaited one async clone batch per
+  frame, so it was frame-bound, and the fix was the batch and the integration slice, not the per-prism code
+  (`Docs/ECOSYSTEM.md` §62.2b, 2026-10-21). **Measure the split before you promise a speed-up**: the same session had
+  baked the worlds' layouts and expected the load to feel faster, but generation was 22 ms of that 21 s swap.
+- **A covered screen can hide a WAIT, not only work.** After the lay was fixed, most of the settle was each prism's
+  grow-in bloom (3.7-4.6 s at `growthRate` 0.5) playing out behind an opaque veil. Ask whether a stage is CPU or a
+  clock waiting on an animation nobody can see.
+
 ## 2. Rank by measured cost, then pick with the record
 
 1. Rank what the sweep shows by **ms per frame** (CPU busy, then the diag markers, then the Profiler's top self time)

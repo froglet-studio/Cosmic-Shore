@@ -1135,6 +1135,13 @@ adds **no collider**: the toy's own trigger sphere remains the entire interactio
 > *threader-agnostic*: a **vessel** threads a toy, a **ball** threads a Scarab switch or an Astro
 > League goal. Same shape, same promise.
 
+**A second body threads toys too (2026-10-20).** A hull's `ISwitchThreadProbe` - the Thresher's ball, the flail
+(`ThresherExecutor`) - fires a toy when its segment passes through the toy's trigger sphere: `Toy.Update` samples the
+LOCAL hull's probe every frame and activates through the same deferred path a hull's trigger entry uses; the toy
+re-arms only once the hull AND the probe are clear of the exit radius. It is an opt-in interface over
+`IRingThreadProbe`, so a probe that only threads race rings (the Wrasse's kite) does not fire toys (Garrett: "lets
+flip things so the wrasse does not activate toys, but the thresher flail does").
+
 Before this pass the toybox taught it inconsistently — the painting's stroke gates and milestones
 were rings, but a toy root was a tinted sphere with a name floating over it and an invisible 42-unit
 trigger, so "how do I use this thing?" was answered by flying at it and finding out. Now **every

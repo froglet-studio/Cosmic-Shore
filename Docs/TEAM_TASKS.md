@@ -520,6 +520,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett
 - **Added:** 2026-10-16 by Claude session cece/beautiful-knuth-j3atgk (`cece/beautiful-knuth-j3atgk`)
 - **See:** Docs/Studios/BRITTLE_STAR.md 5.4; Assets/_Scripts/Controller/Vessel/R_VesselActions/BRITTLE_STAR.md 1 and 3.5
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** the phone half of the Charge Mode question is settled: turning the phone no longer raises FlipAction (DeviceOrientationHandler), and on a phone Charge Mode is its card (Garrett's six-button layout, BRITTLE_STAR.md §1 'On a phone'). Still Garrett's: the starting spare ring, Overdrive, and whether Charge Mode stays on RB / E for pad and keyboard.
 
 ### T-20261016-5ed6 · open · dev · Brittle Star
 - **Task:** Replicate the Brittle Star's analog RT depth (two bytes a frame) so remote copies fire, heat, overheat (and lay the danger trail) and stiffen the Charge cords at the owner's real pull; today a remote copy reads a press as a full pull, so its heat state can differ by peer (vessel rule 48). The Thresher has the same gap.
@@ -592,12 +593,13 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-17 by a Claude session (`cece/dreamy-pascal-7xxx1m`)
 - **See:** .claude/skills/ship/SKILL.md section 2 (inserting a member above a method)
 
-### T-20261017-b06e · open · decision · Crew vessels
+### T-20261017-b06e · done · decision · Crew vessels
 - **Task:** Decide how the Kite Navigator seat goes online: today the board, motes, AI and every effect run on the hull's local human's machine. A second human on another machine needs the seat replicated, and a choice of which machine decides pops, blasts, Mass clusters, boost and steals (vessel rule 48). Also decide the arena case: the seat's swap uses PilotSwapGesture, which in an arena match also asks the arena to swap hulls while the human flies.
 - **Done when:** A written plan in KITE_NAVIGATOR.md that names the deciding machine per effect and the gesture owner in arenas
 - **Who can take it:** Garrett with Yash (party / multiplayer)
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
+- **Done:** 2026-10-21, Decided by Garrett, 2026-10-21: "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc." Two human seats on any mix of phones and PCs: the hull is owned by the pilot seat's machine, the navigator seat is simulated on its holder's machine and sends its decided effects through a server-checked relay; the seat consumes the swap gesture on a crew hull (seats first, then the team ring). Plan and work order: KITE_NAVIGATOR.md "Two humans, two seats (plan, 2026-10-21)".
 
 ### T-20261017-efca · open · dev · Crew vessels
 - **Task:** When the duo-vessel system (cece/sharp-tesla-j0kd7z) reaches bleeding-edge, register the Kite Navigator as a duo design so a hull can carry it from a mode or a menu, not only from the play-mode FrogletTools menu; keep its one swap (PilotSwapGesture) and its AI-in-every-empty-seat rule.
@@ -1162,6 +1164,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** any session; Yash (offered) to check on a phone
 - **Added:** 2026-10-19 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** KITE_NAVIGATOR.md Round 5; Assets/Resources/KiteNavigatorUnlit.mat
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** GrizzlyClawConeVisual done: it copies Resources/KiteNavigatorUnlit.mat (set additive), falls back to Shader.Find, and with neither logs one error and draws no cone instead of throwing. BrittleStarExecutor (cord fallback) and ShrikeExecutor (missile trail) already return null rather than throw, but still need the referenced material to draw on a phone.
 
 ### T-20261019-6778 · open · test · preview
 - **Task:** Find what makes the cursor briefly reappear during one-thumb mouse flight in the Breakwater microgame window (Sparrow). Control is no longer lost, but Caleb saw the cursor pop out for a moment and suspects a particular screen position triggers it.
@@ -1218,3 +1221,386 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (spindles, toys, product look); Yash can do the import check and screenshots
 - **Added:** 2026-10-21 by Garrett's session (cece/gallant-keller-6mr1u4) (`cece/gallant-keller-6mr1u4`)
 - **See:** Docs/SPINDLE_LOD.md section 8; Docs/UNITY_VERIFICATION_CHECKLIST.md spindle LOD step 10
+
+### T-20261020-26a6 · open · test · Starling vessel
+- **Task:** Fly the Starlings (class 21) from the Toybox Vessel Changer and run its edit-mode tests; branch claude/project-thread-ytyab2
+- **Done when:** Every step of the Starlings entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or the failures are reported
+- **Who can take it:** Garrett or Yash
+- **Added:** 2026-10-20 by a Claude session (`claude/project-thread-ytyab2`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+
+### T-20261020-4e20 · open · decision · Starling vessel
+- **Task:** Decide the Starlings' L5 upgrades and Starling-specific crystal fusion entries (now none, and the Angler's copied)
+- **Done when:** ElementalAbilityMaps/Starling.asset and the fusion config carry the decided entries
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by a Claude session (`claude/project-thread-ytyab2`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/STARLING.md
+
+### T-20261020-74d8 · open · test · ecology
+- **Task:** Fly the freestyle cells (Orrery, Yggdra, Daedala, Caldera, Geode, Zephyr, Ourobor, Hesperides) and Scurry's Atlantis after the generator fixes. Their prisms are now sized flush with their neighbours at authoring time, and every prism is kept. Look for any prism inside another and for gaps that read as broken structure. The Orrery keeps 35% of its volume, Yggdra 63% and Daedala 66%. Also time the veiled build against bleeding-edge: the worlds now load from baked layouts (T-20261020-ad7e), so each should build faster than before, not slower
+- **Done when:** Each world shows no interpenetrating prisms, still reads as its own shape, and its build time is within a second of bleeding-edge on PC (note the phone number too)
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2; Tools/Build/audit_prism_clipping.py -v
+
+### T-20261020-fa54 · open · test · arcade
+- **Task:** Play Joust, Cleave I1-I4, Breakwater, Regatta, Skein, Dog Fight and Wildlife Liberation after the generator fixes. Joust's torus knot is now three separate parallel rails; before, it was one tube with three colours threaded through each other. Rail prisms are fitted to their pitch, and Breakwater's three plug rakes sit one bar apart along the axis. In Cleave I1 (Panes), 1,221 mullions slid along their own rail, 344 of them by more than 20 u
+- **Done when:** No clipping prisms in any arena; rails still read as continuous to skim; Breakwater's plug still blocks; Panes still reads as panes; each cell reaches Restless after the same amount of play it did before
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2-62.3
+
+### T-20261020-2529 · open · decision · ecology
+- **Task:** Decide whether the Mandelbulb flora family (FractalFoliage, Coral Bloom, Watershed, Apollonia) is held to no-clip: its claim lets crossing ribbons overlap by design and its gates allow 8-66% of touching pairs to interpenetrate
+- **Done when:** Either a /flora change gives MandelbulbFlora.Claim an oriented-box test and re-measures its gates to a zero, or the exception is written into Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.5; Tools/Build/measure_mandelbulb_flora.py
+
+### T-20261020-a3c2 · done · decision · card-art
+- **Task:** Card-art renders draw what a generator emits, not what PrismClearance lays (indistinguishable at card size today). Decide whether the card harness should apply the pass
+- **Done when:** Either card_art_harness applies PrismClearance as prism_clip_audit/Audit.cs Hook does, or a note in the /cardart skill says why it does not
+- **Who can take it:** Caleb
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Tools/Build/prism_clip_audit/Audit.cs (ClipAudit.Hook); Tools/Build/card_art_harness/PlatformShim.cs
+- **Done:** 2026-10-20, Moot: the runtime PrismClearance pass was removed (Garrett, 2026-10-20: fix clipping at authoring time). The card art draws what the generators emit, which is now what the game lays.
+
+### T-20261020-2cee · open · test · Thresher
+- **Task:** Thresher cord on own shielded mass: in Mass Mode shield some of your own trail with the ball, then drag the cord (taut and slack) and the ball back through it. The shielded prisms must light in your domain colour while the cord is in them and fade out after; a super-shielded rival prism the cord crosses must jiggle. Nothing else changes (no damage, no steal)
+- **Done when:** No contact between the cord or ball and a prism reads as a clip: own armoured mass lights, super-shielded rival mass jiggles, on PC and phone
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/LIT.md (Contact acknowledgement row); ThresherExecutor.PublishAcknowledged
+- **Progress:** 2026-10-21, Garrett: the cord on own shielded mass lights up (PC). Still to see: a super-shielded rival prism jiggling under the cord, and the same on a phone
+
+### T-20261020-8fd0 · open · decision · Vessels
+- **Task:** Dynamic contact never does nothing - the remaining silent pass-throughs: own-domain mass a friendly-fire-off round flies through (Urchin spikes, explodable/energised spikes), the Serpent sniper through own mass and through super-shielded mass below Charge 5, the Kite navigator head through own mass, Butterfly dust on own super-shielded mass, and the own-fresh-trail grace window (every hull and skimmer, ~1 s). Decide which should light (risk: always-on lights crowd the 8 LIT slots)
+- **Done when:** Each listed case either acknowledges the contact (LIT or jiggle) or has a recorded reason in Docs/LIT.md
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/LIT.md (Contact acknowledgement section, 'Still open')
+
+### T-20261020-b391 · open · decision · ecology
+- **Task:** Boneyard 1-4 (Dog Fight, Salvo, Dustup, Broadside, Grizzly Charge) still lays 277 / 674 / 1,285 / 2,392 clipping pairs, all from random scatter: rubble on rubble and hulks scattered into each other. No size fit parts a random overlap. The options are a placement retry (redraw a scattered piece that lands in another, which moves every later draw and so every prism), accepting scatter as the one exception, or a neighbourhood pass at authoring time
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4 and, if a fix is chosen, the audit reads 0 for the Boneyards
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; audit_prism_clipping.py -v
+
+### T-20261020-c358 · open · decision · ecology
+- **Task:** Gyroid (Joust I4, Crystal Capture) still lays 1,233 clipping pairs (2 coincident) after the per-block-type length fix. Those are walk drift: the random walk revisits near-duplicate sites that only a neighbourhood search finds. The search was tried and cost +53 ms at load, so it was dropped. Choose between: accept the residual, pay the search, or add a site-hash dedupe to the walk (it changes the lay)
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; SpawnableGyroid.cs
+
+### T-20261020-c71f · open · decision · ecology
+- **Task:** Batman AOE spawner (363 pairs) and the stress-test Pumpkin (36,538 pairs) clip only because their flush size sits under the prism prefab's 0.5 scale floor, which grows them back. The fix is either to let them admit their authored scale (AdmitsAuthoredPrismScale, as the Orrery and Ourobor now do), to space their strokes wider (this changes their look), or to leave them. Pumpkin is a stress test and is not shipped
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4 and the audit agrees
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; PrismScaleAnimator min scale
+
+### T-20261020-7b07 · open · decision · ecology
+- **Task:** Zephyr (6,692 pairs: rivers converging on one streamline, plus hash-scattered clouds, discs and rain) and Caldera (5,097: hash-scattered flank shards, vent discs and basins) are the residual clipping in the freestyle cells. Same choice as the Boneyard scatter: a placement retry, an authoring-time neighbourhood pass, or accept
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; Zephyr/Caldera in audit_prism_clipping.py -v
+
+### T-20261020-086a · open · decision · arcade
+- **Task:** Cleave I1 (Panes): panes 0, 4 and 7 meet along three lines within 3 degrees, so their mullions lay inside each other for ~500 u. Keeping every prism meant sliding 1,221 members along their own rail, 344 by more than 20 u (max 499). Changing one PaneSpecs normal by a few degrees would remove the near-collinear meeting and most of the slides. It is a gameplay call because it moves a wall
+- **Done when:** Either a pane normal is changed and the Cleave thresholds are regenerated, or the slides are accepted in CLEAVE.md
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2 (Panes); SpawnableCleavePanes PaneSpecs
+
+### T-20261020-8f9d · done · decision · ecology
+- **Task:** Accept or reject the authoring-time load cost of the flush fits, measured per build in the .NET 8 harness (IL2CPP on a phone will be slower). Atlantis +90 ms (~0.45 s total), Yggdra +50 ms, Caldera 14 -> 40 ms, Zephyr 12.5 -> 20 ms, Hesperides 3.7 -> 13 ms, Daedala and Geode 6.6 -> 13 ms, Cleave +0.4 to +3 ms; the Orrery and Ourobor are unmeasured. The fits run inside the generator once per build, which is not a runtime pass. Baking the fitted lays into an asset would make the cost zero
+- **Done when:** A choice is recorded; if baking is chosen, a task exists for it
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.3
+- **Done:** 2026-10-20, 2026-10-20, Garrett chose baking ("bake the fitted layouts into assets so load cost is zero"). Done on cece/relaxed-hopper-ns2hdu: the 22 cell-environment prefabs load from offline bakes; live generation measured 3.8-289 ms per world (1.09 s across all 22) becomes 0.2-3.4 ms of decoding (22 ms in all). Hand test: the new PrismLayoutBakeTests task. See Docs/ECOSYSTEM.md §62.2b
+
+### T-20261020-ad7e · open · test · ecology
+- **Task:** The cell environments now load from offline-baked layouts (Assets/Resources/PrismLayouts, made by Tools/Build/bake_prism_layouts.py) instead of generating while the game loads. In the Unity Editor: run the EditMode tests PrismLayoutBakeTests (4 tests). The first two prove what only Unity can: every baked prefab, as Unity loads it, finds its bake, and each bake is the layout Unity's own math generates (the test log prints the worst position, scale and rotation difference per world). Then enter Menu_Main freestyle and swap through the Cell Selector worlds, and play Dog Fight and Cleave I1: the console must show no [PrismLayoutBake] warning, and each world must look as it did before
+- **Done when:** PrismLayoutBakeTests pass in the Editor; no [PrismLayoutBake] warning in Menu_Main, Dog Fight or Cleave; each world looks as it did before. (The bake removes only generation, 0.1-0.3 s on the heaviest worlds and ~0.1 s on the Orrery, so a swap is not expected to feel much faster; T-20261021-ffcf measures where a swap's time goes)
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b; Assets/_Scripts/Tests/Editor/PrismLayoutBakeTests.cs
+
+### T-20261021-ffcf · done · test · ecology
+- **Task:** Measure where a world swap's time goes. In the Editor open FrogletTools > Performance > Performance Benchmark, tab Load Time Insights, and arm Record Insight Mode. Enter Play in Menu_Main and use the Cell Selector to swap to the Orrery (then Atlantis, if you can). Each swap now records like a game load: spans for the suction, the release of the old world, the layout bake, the streamed lay and the settle (creation + grow-in), ending when the veil lifts. Press Copy on the report and paste it into a Claude session
+- **Done when:** A Load Time Insights report of an Orrery swap is pasted into a session, which names the stage that dominates and fixes that stage
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (What the bake does NOT speed up); Cell.SwapCellConfigRoutine
+- **Done:** 2026-10-21, 2026-10-21, Garrett's capture: Orrery swap 21.3 s, streamed lay 16.1 s of it with 0.8 s of per-prism work (frame-bound: one 256-prism async clone batch per frame). Fixed on cece/relaxed-hopper-ns2hdu: 2,048-prism batches and a raised integration slice while the gate holds; the re-capture is the next test task on this board
+
+### T-20261021-8321 · done · test · ecology
+- **Task:** Re-capture the Orrery swap after the lay fix, exactly as before: Load Time Insights armed, Menu_Main, Cell Selector to the Orrery, Copy the report into a session. The last capture was 21.3 s (lay 16.1 s, settle 2.8 s, release 1.4 s). The lay now clones 2,048 prisms per batch behind the veil, so it should drop by several seconds. Watch for: the settle growing (creation still completes 512 per frame), and the new rows for the clone wait, reused vs new prisms, creation completions, the trail return, and prisms with no render entity at suction. Also say whether the world looks right after the veil lifts
+- **Done when:** A new Orrery swap report is in a session; the lay span is clearly shorter than 16.1 s and the world looks as before; the next stage to fix is named from it
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (Measured); PrismTrailBuilder.LoadGateCloneBatchSize
+- **Done:** 2026-10-21, 2026-10-21, Garrett's second capture: Orrery swap 21.3 -> 13.9 s (lay 16.1 -> 5.7 s). The settle grew to 5.8 s, mostly the last prisms' invisible grow-in (3.7-4.6 s at growthRate 0.5) behind the opaque menu veil; now snapped there (PrismTrailBuilder.LoadGateCovered). Re-capture is the next ecology test task
+
+### T-20261021-a96c · open · test · ecology
+- **Task:** Third Orrery swap capture, same steps (Load Time Insights armed, Menu_Main, Cell Selector to the Orrery, Copy the report into a session). The last one was 13.9 s: settle 5.8 s, lay 5.7 s, release 1.1 s, suction 0.9 s. Behind the menu veil the grow-in is now settled the moment each prism's creation completes, so the settle should drop by about 4 s. Check by eye that when the veil lifts the Orrery is whole, with nothing still blooming, popping or missing. Then play one arcade game and check its connecting screen still shows the arena growing in (that path must not snap)
+- **Done when:** A third report is in a session with the settle well under 5.8 s; the Orrery looks right as the veil lifts; an arcade game's connecting preview still blooms
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (Second capture); PrismTrailBuilder.LoadGateCovered
+
+### T-20261020-bbc3 · done · decision · crew-vessels
+- **Task:** Play the Wrasse Lasso Lab on a phone and pick the kite's phone control: the shipped Follow, Sling (thumb on a tether), Plant (the Thresher's anchor), Hook (curled flick) or Well (gravity); also keep or drop snap-shut loops. Round 1's scorecard picks Plant (29 mm of thumb per loop against Follow's 147, 3.3 motes per loop).
+- **Done when:** A 'Which control goes to Unity' entry is in the lab's Decisions tab (shared log)
+- **Who can take it:** Garrett (Wrasse owner); Yash can play it and record a second opinion
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** https://claude.ai/artifact/T5EBvmTvFw4KNRMQtwXDQb, Docs/Studios/WRASSE_LASSO_LAB.md
+- **Done:** 2026-10-20, Garrett picked the Sling (2026-10-20: 'Sling is excellent. bring it to unity'); ported as KiteNavigatorCore.Sling on cece/loving-fermat-ntdnbu. Snap-shut loops stay open.
+
+### T-20261020-1187 · open · test · crew-vessels
+- **Task:** Play the Wrasse's new Sling control in the Unity Editor and on a phone: Toybox > Vessel Changer > Wrasse, swap to the kite (double-tap the small view or press 2), then drag (the kite trails on a rope), make small circles (it whirls round in big ones and closes loops) and lift (it flies free). Also: the pad's stick places the rope's hand on the board; swinging the kite through a Toybox toy fires nothing, while the Thresher's ball (the flail) swung through one fires it once.
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Wrasse's Sling, switches, and Wrasse Run' steps 1-4 pass, with any feel notes (rope length, stiffness, drag) recorded
+- **Who can take it:** Garrett (feel sign-off, phone); Yash (offered) for the Editor pass
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md round 6
+
+### T-20261020-ec68 · open · test · crew-vessels
+- **Task:** Play Wrasse Run (GameModes 68) in the Editor: the Arcade card, a 2-player launch, the hull alone not counting, the kite collecting rings (AI navigating and you navigating), Time boosts, AI crews (two AIs: the hull's pilot and a kite navigator) slinging through their rings and finishing, and Thresher Time's ball still threading.
+- **Done when:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Wrasse's Sling, switches, and Wrasse Run' steps 5-10 pass
+- **Who can take it:** Yash (offered; editor tests), Garrett (sign-off); Caleb or Andrew for a QA run
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Arcade/WRASSERUN.md §7
+
+### T-20261020-24a4 · open · decision · crew-vessels
+- **Task:** Wrasse Run tuning after a first play: race length (16 = two laps of eight), how far rings lift out of the lap's plane (60-180 u), the Time mote bonus (2) and the AI's Time preference (3), and the AI Grouper's boost rule (spend while the next ring is 180 u or more ahead).
+- **Done when:** The numbers are kept or changed in author_wrasse_run_assets.py / WrasseRunCourse.cs / KiteNavigatorConfig.asset, and the AI boost rule is kept or changed
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by a Claude session (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Arcade/WRASSERUN.md §5, KITE_NAVIGATOR.md Follow-ups
+
+### T-20261020-d09f · open · test · Crew vessels
+- **Task:** Round 7 of the Wrasse on cece/loving-fermat-ntdnbu: reimport Grouper.fbx and WrasseKite.fbx, open Wrasse.prefab, then fly it - the Grouper and Wrasse bodies and their puppetry, the whole-screen kite, the 30% zoom centred on the Grouper, yaw in place, the drawn cord, let go by lift / held click / held trigger, top speed 364 and the doubled lasso, and two machines seeing each other's Wrasse
+- **Done when:** Every step of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is written down
+- **Who can take it:** Yash (offered) runs the Editor pass; Garrett judges the feel
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 7)
+
+### T-20261020-a9f5 · open · dev · Crew vessels
+- **Task:** Fit the Wrasse hull's parts to the Grouper model: a hit box sized to Docs/VesselModels/Grouper.md (it is still the Sparrow's flat 10.3 x 0.46 x 4.4 box, the Grouper is 5.6 u tall), the two jets re-homed to the engine mouths (+-0.78, -0.30, -2.62), FlareEngine pointed at the Grouper's Engine slot, and the Wrasse's CrystalHullFusion bakes re-baked on the Grouper mesh
+- **Done when:** The Grouper's collisions, plumes, engine flash and crystal fusion all sit on the Grouper in play
+- **Who can take it:** Yash (offered) or anyone with the Editor; Garrett signs off the fit
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Follow-ups)
+
+### T-20261020-8dbc · open · test · Crew vessels
+- **Task:** Round 8 of the Wrasse on cece/loving-fermat-ntdnbu: on the kite, the hand stops at a line just above the ability cards while the kite swings past it and off the bottom; the Grouper's view fills the box left of the cards and below the line; the Grouper's view keeps a larger faint Wrasse stand-in. Check a phone and a wide monitor
+- **Done when:** Steps 12 and 13 of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or each failure is written down
+- **Who can take it:** Garrett (feel); Yash (offered) can run it
+- **Added:** 2026-10-20 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8)
+
+### T-20261021-3d24 · open · test · Crew vessels
+- **Task:** Rounds 8b and 9 of the Wrasse on cece/loving-fermat-ntdnbu: the hand stops a small margin inside the screen's sides and top while the Wrasse swings past every edge on its cord; the four lasso elements' motes are four green-yellows with no blue or orange (Charge #a0ff00, Mass #5ec600, Space #40ff00, Time #9bcf00); say if any two are hard to tell apart in play
+- **Done when:** Steps 14 and 15 of the round-7 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, or each failure is written down
+- **Who can take it:** Garrett (feel and colour call); Yash (offered) can run it
+- **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Docs/VesselModels/COLOR.md 5b; Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8b and 9)
+
+### T-20261021-d063 · open · test · Crew vessels
+- **Task:** Round 10 of the Wrasse on cece/loving-fermat-ntdnbu: the juice. No effect rings; each loop's motes become its effect (fizzle sputters out grey, Space explodes with the blast, Mass blocks morph into the prisms, Time streaks onto the Grouper, Charge orbits onto the Wrasse); the lasso cinches; the Grouper's small view no longer pumps in and out of its box
+- **Done when:** The round-10 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is written down with what to change
+- **Who can take it:** Garrett (feel: is it bespoke, unique, dynamic and polished?); Yash (offered) can run it
+- **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 10); bash Tools/Build/kite_navigator_lab/juice_sheet.sh
+
+### T-20261020-3bfe · open · test · vessels
+- **Task:** Fly the Sparrow (Toybox Vessel Changer or any mode): flying, the camera sits level directly behind the hull; press the turret/MASS stance and it eases up to the old elevated view; leave the stance (press again, or a turn end) and it drops back. Check the Serpent and the Stoat cameras are unchanged in and out of their stance.
+- **Done when:** All three behave as described in Play mode, or the failure is noted with the camera height seen
+- **Who can take it:** Yash or Garrett
+- **Added:** 2026-10-20 by a Claude session (`cece/youthful-johnson-7c8xh2`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md
+
+### T-20261020-41eb · open · test · Thresher
+- **Task:** Fly the Thresher on cece/tender-hamilton-qcd1hi (Editor and phone): the chain never turns lime, the launch crosshair stays white the whole lap, and a charged ball's rim burns toward white (not lime) as the Space gauge fills
+- **Done when:** All four steps of the 2026-10-20 'no lime' entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass, and the charged ball reads as explosive (energyRimTint tuned if not)
+- **Who can take it:** Garrett (owner's eye on how the charged ball reads); Yash (offered) can run the Editor steps
+- **Added:** 2026-10-20 by a Claude session (`cece/tender-hamilton-qcd1hi`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b; Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261020-13f4 · open · test · Menu_Main
+- **Task:** Play-test Toy Box Navigate's new stand-off: open the Toy Box, pick a toy (e.g. the Vessel Changer), press Navigate - the vessel should land about 3x further from the switch than before (7.2 ring radii), facing it, with time to steer around it instead of flying into it; repeat once while already flying
+- **Done when:** Navigate lands well clear of the switch from both the menu and mid-freestyle, and the toy still sits ahead on arrival
+- **Who can take it:** Garrett (asked for it) or Yash
+- **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
+- **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
+
+### T-20261021-2d87 · done · dev · vessels
+- **Task:** Phone movement bugs: the Urchin flies full reverse whenever no thumb is on the glass (GunVesselTransformer.ReadThrottle reads XDiff 0 as -1; return 0 while InputStatus.Idle), and the Scarab never thrusts on touch (ScarabVesselTransformer.ReadThrottle01 reads only RightTriggerAnalog; treat Touch && !Idle like autopilot as a stopgap)
+- **Done when:** On an Android build the Urchin stops (not reverses) when both thumbs lift, and the Scarab flies in Scarab Scramble
+- **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 1-2
+- **Done:** 2026-10-21, Done on cece/admiring-hamilton-gyzzh8: idle parity (both thumbs off reads XDiff 0.5) stops the Urchin reversing; the Scarab reads the touch throttle slider. Phone check is in the new phone-controls test task.
+
+### T-20261021-985e · done · dev · vessels
+- **Task:** Touch card fixes: (a) a card whose input does not resolve on touch must not be pressable or claim the touch (AbilityLockupView.SetSlotPressInput vs AbilityCardPress.TryResolveInput); (b) R_VesselActionHandler.StartPressedActions ignores a press of an input already held (a lift + a card started toggles twice)
+- **Done when:** Rhino sword, Stoat and Angler Space/Charge cards no longer eat right-thumb touches; the Butterfly Dust card toggles once when the left thumb is also lifted
+- **Who can take it:** Garrett (touch input), any session
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 3-4
+- **Done:** 2026-10-21, Done: AbilityCardPress.RefreshPressable - a card that presses nothing on the device neither presses nor claims. The double start cannot arise any more (lift cards are not buttons on ThumbLifts hulls; lifts raise nothing on TotemButtons hulls).
+
+### T-20261021-bb9f · done · dev · vessels
+- **Task:** Touch feel pass: fix the Squirrel/Serpent idle snap (MantaAnimationContoller Idle writes +p,x against puppetry's -2p,2x), ease the stick in StoatAnimation, AnglerAnimation and ButterflyAnimation (rule 53), set touchNoseResponse 9 on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip, and honour Invert Y on touch
+- **Done when:** On a phone, lifting the last thumb eases every hull to rest and the dual-stick hulls answer the thumb without the 0.67 s nose lag
+- **Who can take it:** Garrett (vessels), any session; Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §2 rows 5-7, 14
+- **Done:** 2026-10-21, Idle snaps fixed (Squirrel, Serpent, Sparrow, Stoat, Angler, Butterfly). The touch nose response and Invert Y on touch were not part of Garrett's list: moved to a new dev task.
+
+### T-20261021-9708 · done · decision · vessels
+- **Task:** Mobile vessel decisions D1-D12: lift-to-reach-a-card fires abilities (grace window recommended), card size/placement on touch, gesture hints, two-trigger abilities (Rhino sword, Manta Soar, Shrike, Thresher launch), no trigger depth (hold-time ramp as fleet standard?), Stoat on phones, Angler Squad/Recall with no card, Scarab throttle, Butterfly re-grip Fold, Wrasse on two phones, Termite/Falcon retire, retire phone-flip FlipAction
+- **Done when:** Each D row in the report carries a decision (or 'later') and the follow-up dev rows exist
+- **Who can take it:** Garrett (vessel owner); Shombith for D2/D3 (UI)
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §3
+- **Done:** 2026-10-21, Garrett decided 2026-10-21 (MOBILE_VESSELS.md section 8) and it was built. D9 (Butterfly re-grip Fold), D10 (Wrasse on two phones) and D11 (Termite/Falcon) remain: moved to a new decision task.
+
+### T-20261021-d476 · open · test · vessels
+- **Task:** First phone captures of the vessels with a second render or full-screen pass: Stoat dropping a dipole (black-hole lens), Wrasse in either seat, Thresher launch view, Serpent scoped, Brittle Star at full fire, Butterfly by a wormhole; plus the D1 check (move the right thumb to a card on Grizzly, Sparrow, Squirrel) and a ruler on a card
+- **Done when:** One Profiler capture per hull is on the perf record and the D1/D2 observations are written into MOBILE_VESSELS.md §6
+- **Who can take it:** Yash (offered, phone tests), Garrett
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §4, §6
+
+### T-20261021-4a95 · open · docs · vessels
+- **Task:** Correct the mobile doc drift found by the audit: BRITTLE_STAR F1 and SCARAB §3.1/§15 (cards reach face buttons since 9718a382), BRITTLE_STAR:35 + T-20261016-3e80 (phone flip does nothing), ABILITY_LOCKUP:346-348, SQUIRREL_DRIFT:519, BUTTERFLY_FOLD ghost, InputEvents.cs comments, InputHintBindingMap Button2 key, REFACTOR_BACKLOG S29 scope, T-20261019-41bb list, T-20261016-5ed6 (depth does replicate)
+- **Done when:** Each listed line matches the code
+- **Who can take it:** any session; Yash (offered)
+- **Added:** 2026-10-21 by audit session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md §5
+- **Progress (2026-10-21, cece/admiring-hamilton-gyzzh8):** fixed BRITTLE_STAR F1 and :35 (plus R2's flip line), SCARAB §3.1 / §3.2 / §15 item 9 (new §3.11 'On a phone'), and annotated T-20261016-3e80. The rest of the list is open.
+
+### T-20261021-6632 · open · test · Squirrel
+- **Task:** Fly the Squirrel's new drift animation: while drifting the four engine pods swing onto the travel direction, parallel with the jets, jets still seated in the pods; check the pods against the wing slats past ~30 degrees of aim
+- **Done when:** SQUIRREL_DRIFT.md section 12 steps 1-6 pass in Toy Box > Vessel Changer > Squirrel, and the clipping question has an answer (fine, or a driftOffset value)
+- **Who can take it:** Garrett (Squirrel / vessel feel); Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#12
+
+### T-20261021-9843 · open · test · Squirrel
+- **Task:** Listen to the Squirrel's drift loop: quiet on a shallow slide, rising linearly to the pre-change volume at 180 degrees of slip; the release one-shot follows the angle the drift ended at; run DriftSlipVolumeTests
+- **Done when:** SQUIRREL_DRIFT.md section 13 steps 1-5 pass, or quietVolume01 / fullSlipDegrees retuned by ear
+- **Who can take it:** Garrett (Squirrel feel); Yash (offered)
+- **Added:** 2026-10-21 by a Claude session (`cece/eloquent-pasteur-fes2ni`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md#13
+
+### T-20261021-edc0 · open · test · Thresher
+- **Task:** Fly the Thresher on cece/youthful-johnson-hccyzf: it spawns in Mass Mode (lit ball, steals rival prisms, lays a trail, no blasts); A leaves it and the ball breaks again; a vessel swap back puts it in Mass Mode; AI Threshers in Thresher Time stay in Mass Mode
+- **Done when:** All four steps of the 2026-10-21 Thresher Mass Mode entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
+- **Who can take it:** Yash (offered) can run the Editor steps; Garrett decides whether AI Threshers should stay in Mass Mode
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §2b
+
+### T-20261021-7967 · open · test · Thresher
+- **Task:** Fly the Thresher launch view on cece/youthful-johnson-hccyzf with a gamepad: the crosshair starts on what you pointed at when you planted, a brief trigger sag no longer drops the view, and a release with RT held flies straight down the crosshair
+- **Done when:** All five steps (step 5 is round 2's Time-raised launch) of the 2026-10-21 Thresher launch-view entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
+- **Who can take it:** Garrett (owner's feel on the launch); Yash (offered) can run the Editor steps
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a
+
+### T-20261021-49d3 · open · decision · Thresher
+- **Task:** Decide whether an aimed Thresher launch should keep its x4.8 boost when RT is held: the rigid chain now spends it in under half a second (1 263 to 42 u/s at a Time-raised spin), the ball overtakes and leads the ship; with RT released the boost carries. The heading holds either way since 2026-10-21
+- **Done when:** Garrett picks: keep (the pilot chose a rigid chain), or let the launch line also hold the ship's speed until the ball can follow; recorded in THRESHER.md §5a
+- **Who can take it:** Garrett (owner, the launch feel)
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
+
+### T-20261021-8190 · open · test · In-game UI / arena pilot swap
+- **Task:** Play an arena match (Brood Rush or Broadside) with 2+ AI teammates on PC, pad and a phone: the pilot-swap tiles sit between the goal stack and the score bar (16:9, 4:3, notched phone), tapping a tile swaps hulls and does not also steer, keycaps read 1/2 on keyboard and nothing on a phone
+- **Done when:** Tiles placed in the gap on all three aspects, a tap swaps without steering, keycaps follow the device
+- **Who can take it:** Yash, or Shombith (GameCanvas top bar)
+- **Added:** 2026-10-21 by Garrett (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/GAME_MODE_TOPBAR.md §2.7
+
+### T-20261021-64ee · open · content · In-game UI / control glyphs
+- **Task:** Author PadDpadLeft / PadDpadRight entries (padLabel or padGlyph) in Assets/Resources/ControlGlyphSet.asset so the pilot-swap tiles show a D-pad keycap on a pad
+- **Done when:** A pad player sees a D-pad chip under each pilot-swap tile
+- **Who can take it:** Shombith (UI art) or Yash
+- **Added:** 2026-10-21 by Garrett (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/GAME_MODE_TOPBAR.md §2.7
+
+### T-20261021-9fd3 · open · test · vessels
+- **Task:** Phone-test the fleet's new touch controls on an Android development build of cece/admiring-hamilton-gyzzh8: Docs/UNITY_VERIFICATION_CHECKLIST.md 'Phone controls for the whole fleet' steps 4-15 (Urchin let-go, Scarab slider/juke, Brittle Star aim discs, Dolphin lift-either + tilt roll, Manta tilt soar, Rhino both-off energize, Thresher tilt launch, Stoat, Angler paint, Serpent/Shrike zoom, idle easing, arena swap tiles, no flip toggle)
+- **Done when:** Each step passes on a phone, or each failure is filed as a dev task; tilt signs and button sizes judged by hand
+- **Who can take it:** Garrett (asked for it; owner's feel), Yash (offered, phone tests)
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 8
+
+### T-20261021-1716 · open · decision · vessels
+- **Task:** Remaining mobile decisions after 2026-10-21: D9 Butterfly - should a quick right-thumb re-grip (under ~0.35 s) fold? D10 Wrasse - which machine owns the seat's effects when the two seats are two phones? D11 Termite and Falcon - retire or design?
+- **Done when:** Each has a decision or 'later' recorded in MOBILE_VESSELS.md section 8
+- **Who can take it:** Garrett
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 3 and 8
+
+### T-20261021-cb48 · done · dev · vessels
+- **Task:** Touch feel leftovers: set touchNoseResponse on Dolphin, Manta, Rhino, Urchin and route it through SingleStickVesselTransformer.RotateShip (the Angler's 9 is ignored there); honour Invert Y / Invert Throttle in TouchInputStrategy.Reparameterize and the one-thumb Pitch()
+- **Done when:** Dual-stick hulls answer the thumb without the 0.67 s nose lag on a phone; the invert settings change touch flight
+- **Who can take it:** any session (Garrett's vessels); Yash (offered) to check on a phone
+- **Added:** 2026-10-21 by Garrett's session (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Docs/Reports/MOBILE_VESSELS.md section 2 rows 7 and 14
+- **Done:** 2026-10-21, Done wider than the task (Garrett: 'get rid of all steering lag, and inconsistent y-inversions that are not left to the settings'): no nose lag for any human pilot on any device/hull (NoseFollowFraction), touchNoseResponse retired; one Invert Y rule in every strategy (ApplyInvertSettings), touch reads both invert settings. MOBILE_VESSELS.md section 8, second round.
+
+### T-20261021-aa19 · open · dev · Crew vessels
+- **Task:** Build two human seats on the Wrasse and Grouper (Garrett, 2026-10-21: "wrasse and grouper, are two seats. players can select, change seats etc. both can be played on mobile or pc"), in the plan's order: (1) prism parity for one human online - pops, Space blasts and Mass clusters (seeded) applied on every peer, which today happen only on the Wrasse's machine; (2) land cece/sharp-tesla-j0kd7z and put the seat on ICrewSeat; (3) seat occupancy on the Player (CrewSeatOccupancy, RequestSeat_ServerRpc, PilotSwap.TryValidateSeatServer, offers between two humans, AI fills an empty seat); (4) the navigator seat simulated on its holder's machine, boosts and rams sent to the hull owner; (5) one owner for the swap gesture on a crew hull (seats first, then the arena ring); (6) seat stations in the Vessel Changer and two party members on one crew hull.
+- **Done when:** In MPPM with two players, and then on a phone plus a PC, each human picks a seat and an offer swaps them, a leaver's seat falls to the AI, pops / blasts / Mass clusters match on both screens, saved boosts reach the pilot, a ram steals once, and in an arena match 1 / 2 / the D-pad move seats without also swapping hulls.
+- **Who can take it:** Yash (multiplayer) with Garrett; builds on cece/sharp-tesla-j0kd7z's CrewSeat
+- **Added:** 2026-10-21 by Claude (cece/admiring-hamilton-gyzzh8) (`cece/admiring-hamilton-gyzzh8`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Two humans, two seats)
+
+### T-20261021-a2b3 · open · dev · Performance
+- **Task:** Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resumed every frame only to yield again. Under the menu veil the budget is a fixed 512 completions a frame. Measured in the second Orrery capture: 34,770 completions at 0.07 ms each (2.5 s of real work), metered over ~68+ frames. Measure first (the third capture, T-20261021-a96c, shows the settle with the grow-in snapped). If the creation queue is then the floor, replace the polling with one queue the gate drains on a time slice, so a waiting prism costs nothing per frame
+- **Done when:** A capture shows the creation queue's share of a swap, and if it is the floor, a change that drains it from one queue on a time slice lands with a before/after capture
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b; Prism.CreateBlockCoroutine; Prism.MaxCreationCompletionsPerFrame / LoadGateCreationCompletionsPerFrame
+
+### T-20261021-a743 · open · dev · Performance
+- **Task:** A Cell Selector swap releases the old world at a fixed 500 prisms a frame (Cell.ReleaseRetiredWorld). That took 1.1-1.4 s in both Orrery captures, for only 4,259 Garland prisms plus the pilot's trail, because the frames are slow, not the work. The world is already suctioned to a point, so nothing is visible. Make it a time slice (e.g. 8-16 ms a frame) instead of a count, and measure with a Load Time Insights capture
+- **Done when:** The release span in a swap capture is clearly under 1.1 s, with no long frame (over 100 ms) during it
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Cell.ReleaseRetiredWorld (PrismsPerFrame = 500); Docs/ECOSYSTEM.md §62.2b
+
+### T-20261021-e916 · open · dev · Performance
+- **Task:** Both Orrery captures logged '[PrismClock] STRICT MODE: no companion render entity to stamp (cellSwapSuction)': some prisms of the retiring world have no render entity, so they snap away instead of suctioning (a continuity pop). The new Load Time Insights counter 'Suction: prisms with no render entity' says how many. Find which prisms they are (flora? not yet created?) and give them the suction. Also, StampSuctionToward builds PrismRenderService.StatusLine() for every such prism before the warn-once check discards it: pass it only on the first warning
+- **Done when:** A swap capture shows 0 for the counter and no STRICT MODE cellSwapSuction error
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Prism.StampSuctionToward; PrismClockDiagnostics.WarnNoRenderEntity; the 'Suction: prisms with no render entity' counter
+
+### T-20261021-4a44 · open · dev · card-art
+- **Task:** The card-art harness stubs PaintingStrokeToolkit.CurlNoise, so every world shaped by curl noise (Atlantis' kelp and currents, Yggdra's veils, Zephyr's rivers) is drawn from straightened geometry. Zephyr measured 52,917 prisms stubbed vs 36,069 real. The clip audit already compiles the real CurlNoise into its own copy of the shim (run.sh). Do the same in the card harness, re-render the cards that change (Scurry at least), and render_card_backgrounds --check
+- **Done when:** The card harness uses the real CurlNoise, render_card_backgrounds --check passes, and the re-rendered cards are committed
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21); Caleb owns the card-art harness
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Tools/Build/prism_clip_audit/run.sh (the real CurlNoise injection); Tools/Build/card_art_harness/PlatformShim.cs
+
+### T-20261021-00b7 · open · decision · ecology
+- **Task:** The 22 cell-environment layout bakes are 22.3 MB on disk, about 13 MB in a compressed build (exact float32, ~40 bytes a prism; dedupe buys almost nothing). Keep all 22, keep only the six heaviest (Atlantis, Ourobor, Yggdra, Caldera, Daedala, Geode: ~10 MB raw for ~85% of the generation saving), or quantize (about half the size, but a quantized rotation can reopen a flush contact, so it would need the clip audit run on the decoded lays)
+- **Done when:** A choice is recorded here; if it is not 'keep all', bake_prism_layouts.py implements it and --check passes
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (The cost is size); Tools/Build/prism_layout_bakes.json
+
+### T-20261021-aa08 · open · dev · Amoebius
+- **Task:** In Amoebius, booting straight into Menu_Main (--scene Menu_Main, no Bootstrap) throws a NullReferenceException in ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial on the first laid prism. That kills the environment lay after its first clone batch (Garland lays 2,048 of 4,259 prisms), so a headless Menu_Main run cannot check a whole world build. Either inject the theme manager on a direct scene entry or document the Bootstrap requirement in the player's --scene help
+- **Done when:** A headless --scene Menu_Main run lays the whole Garland (4,259 prisms under Environment/Cell/SpawnableGarland), or the requirement is documented
+- **Who can take it:** Shombith (the Amoebius engine); Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Port/src/CosmicShore.Player (--scene Menu_Main); ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial

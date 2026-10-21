@@ -135,8 +135,10 @@ namespace CosmicShore.UI
         [Header("Arrival")]
         [SerializeField, Min(1f), Tooltip("How far in front of the toy the vessel arrives, as a " +
                  "multiple of the toy's own switch-ring radius. Must be > 1 or the player spawns " +
-                 "INSIDE the ring and trips the toy on the first frame.")]
-        float arrivalDistanceFactor = 2.4f;
+                 "INSIDE the ring and trips the toy on the first frame. Kept well clear (7.2, three " +
+                 "times the old 2.4): the player already chose in this window and usually just wants " +
+                 "to fly freestyle, so they need room to steer AROUND the switch, not into it.")]
+        float arrivalDistanceFactor = 7.2f;
 
         [SerializeField, Min(1f), Tooltip("Seconds to wait for the freestyle transition to " +
                  "finish before giving up on a variant that only means something in flight.")]

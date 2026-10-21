@@ -65,6 +65,125 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Phone controls for the whole fleet, idle parity, arena swap tiles (`cece/admiring-hamilton-gyzzh8`, 2026-10-21) — NOT EDITOR-VERIFIED, NOT PHONE-VERIFIED
+
+Garrett's decisions after the mobile audit (`Docs/Reports/MOBILE_VESSELS.md` §8; the touch scheme in
+`Docs/ABILITY_LOCKUP.md` "On a phone"). Every hull has a row in `Resources/TouchControlProfiles`
+(`Tools/Build/author_touch_profiles.py`): ThumbLifts hulls keep their lifts and show lift glyphs; TotemButtons hulls
+press only cards and extra buttons laid out round the right thumb. Idle parity (both thumbs off = a released pad),
+tilt (gravity sensor), the arena pilot-swap tiles, the idle-animation fixes. `/verify-unity` was unavailable (no Editor,
+no `unity` binary); the headless reference compile (player + editor configs), the static gates,
+`touch_controls_harness`, `thresher_chain_harness`, `peer_press_harness` and every touched `author_*_assets --check` ran
+green (commit messages carry the results).
+
+Editor (Device Simulator, a phone model selected - it reports a touch-first device):
+1. Toy Box > Vessel Changer, each hull: the HUD builds with no console error. A TotemButtons hull (Sparrow, Grizzly,
+   Brittle Star) shows its cards and discs in an arc in the bottom-right, the passive cards small along the bottom edge;
+   a ThumbLifts hull (Squirrel, Dolphin) keeps the row and shows a thumb glyph under each lift card.
+2. Connect a pad (or leave Device Simulator): the row returns to the fleet layout, keycaps return, the discs hide.
+3. Edit-mode tests: `TouchControlsTests`, `PilotSwapIndicatorTests`, `ScarabTouchThrottleTests`, the six
+   `ThresherAnalogTriggerTests.Touch_*`, `StoatSlingTests` all green.
+
+On an Android development build (the real test - tilt, millimetre sizes and thumbs cannot be simulated):
+4. Urchin: let go of the glass - it holds course at half throttle, it does NOT back away.
+5. Scarab: the slider on the right sets speed and holds it; Drift button; Switch card; a second right-hand touch jukes,
+   the steering thumb never does.
+6. Brittle Star: six buttons reachable with the right thumb; drag from the held Fire disc aims while firing; a touch
+   elsewhere on the right aims without firing; a hard turn no longer splays the guns.
+7. Dolphin: lift either thumb - drift, charge and Echo together; turn the phone like a wheel - it rolls.
+8. Manta: lift both thumbs - flat-out soar (720 u/s), steered by tilt; a thumb back ends it; nothing soars on the
+   start line before the first touch.
+9. Rhino: a lift swings that side's blade; both thumbs off drops the blade into the chop and ignites in ~0.5 s.
+10. Thresher: right lift plants; then the left lift too - the launch view comes up, tilt aims the crosshair, a thumb
+    back down launches along it. The Mass Mode card toggles without planting.
+11. Stoat: the Space card lays a pair, Dipole Right and Hold buttons, the Mode card. Angler: hold the Space card with
+    the right thumb while the left flies - it paints, release throws; the Charge card erases; Squad and Recall buttons.
+12. Serpent: tap the Scope card - full zoom, latched; tap the Charge card to shoot; tap the Scope card again to drop it.
+    Shrike: the Zoom disc toggles the eyepiece; the Trigger disc fires the mode.
+13. Every hull: lift the last thumb mid-turn - the pose eases back, it never snaps (Squirrel and Serpent especially).
+14. Arena (Brood Rush or Broadside, 2+ AI teammates): the swap tiles sit between the goal stack and the score bar; a
+    tap swaps hulls and does not steer.
+15. Turn the phone upside down mid-flight: nothing toggles (orientation no longer raises FlipAction).
+16. No steering lag, every device (pad, keyboard, mouse, phone), every hull: the nose answers the stick the same frame and
+    stops when it centres - no swing after the input. AI hulls still fly as before.
+17. Invert Y in Settings: on a pad, the keyboard and a phone, flip it and fly a two-stick hull (Squirrel) and a one-thumb
+    hull (Sparrow): both invert; with it off, a push up pitches both the same way. On a phone, tipping the top edge away
+    pitches like a pushed-up thumb (Manta soar, Thresher launch aim).
+18. Scarab with Time 5: flick up on the throttle slider - Snap Dash, and the slider stays where it was set.
+19. Wrasse and Grouper (one human): keys 1 / 2 PICK the Grouper / the Wrasse (no longer toggle); the D-pad and the
+    phone's double tap on the small view change seat; the pick is remembered across a Vessel Changer swap and a
+    respawn. On a phone, lifting both thumbs as the Grouper speeds it up (a saved boost), and a double tap back to the
+    Grouper spends none. In an arena, keys 1 / 2 and the D-pad change seat only; the top-bar tiles swap hulls.
+
+First-pass tuning (`Resources/TouchControlProfiles`): buttons 10 mm (floor 7 mm), gap 1.5 mm, inner arc 22 mm, arc step
+12 mm, corner box 36 % x 55 %; tilt full scale 25°, dead zone 2.5°, smoothing 12/s, forward tilt dives; slider 9 x 32 mm;
+Thresher lift delay 0.12 s; Rhino touch energize x2 (`ShieldSkimmerScaleConfig.touchEnergizeRateMultiplier`).
+
+### 🔴 Squirrel: drift loop volume follows the slip angle (`cece/eloquent-pasteur-fes2ni`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "modify the amplitude of the squirrel's drift sound effect based on the difference between the drift angle
+and the return angle, so small angle is quiet, large angle is what we hear now." `DriftAudioController` scales the
+looping `event:/SFX/Drift` by the angle between Course and the nose (`R_VesselActions/SQUIRREL_DRIFT.md` §13); on for
+the Squirrel only. `/verify-unity` was unavailable; the headless reference compile ran (player OK; editor config: the
+new `DriftSlipVolumeTests` compiles, 3 unrelated pre-existing errors in `AuthenticationServiceFacade.cs`).
+
+Toy Box > Vessel Changer → Squirrel:
+1. Run `DriftSlipVolumeTests` (4) in the Test Runner.
+2. Drift with the nose on the slide: the loop is quiet. Swing the nose further off the slide: it rises linearly,
+   reaching the pre-change volume at 180 degrees (nose back along the slide); swing back: it falls, no flutter.
+3. Release one-shot: quiet when the drift ends with the nose on the slide, louder the further off it ended (same
+   linear curve, angle taken on the last drifting frame). Dolphin drift and release sounds unchanged.
+
+| Knob | First pass |
+|---|---|
+| `quietSlipDegrees` / `fullSlipDegrees` | 0 / 180 (linear) |
+| `quietVolume01` | 0.15 |
+| `slipVolumeSmoothing` | 10 /s |
+
+### 🔴 Squirrel: engine pods swing onto Course while drifting (`cece/eloquent-pasteur-fes2ni`, 2026-10-21) — NOT EDITOR-VERIFIED
+
+Garrett: "the squirrel should have a drift animation similar to the dolphin's ... it would be nice if the model
+engines also aligned so they were parallel with the jets and the jets remained coming out the back of the rotated
+engines." New `DriftEngineSwivel` on the Squirrel root (`R_VesselActions/SQUIRREL_DRIFT.md` §12): after the
+Animator, each of the four pods turns about its centre until its jet's flight axis (`DriftJet.FlightAxis`) lies on
+Course; the jets ride their pod bones, so they stay seated. `/verify-unity` was unavailable (no Editor, no `unity`
+binary); the headless reference compile ran (result in the commit message).
+
+Toy Box > Vessel Changer → Squirrel:
+1. Hold LT into a hard drift and aim well off the slide: all four pods lie along the travel direction, parallel with
+   their plumes, plumes leaving from the same spot on each pod. Hull, wings, crest and tail keep aiming with the nose.
+2. Release: pods ease back with the plumes, no snap. Fly without drifting: the pods animate exactly as before.
+3. Aim fully backwards mid-drift: pods hold their swing, no flicker.
+4. Beyond ~30 degrees of aim the pods pass within ~0.01 u of the wing slats (measured on the FBX). If that reads as
+   clipping, try `engines[].driftOffset` outward on the front pods (x -0.4 on L, +0.4 on R) and report the back pods.
+5. Console clean (no `could not find engine bone(s)` warning).
+
+| Knob | First pass |
+|---|---|
+| `swivelRate` | 3.7 /s (the jets' own ease at 60 fps) |
+| `maxSwivelDegreesPerSecond` | 360 |
+| `engines[].driftOffset` | 0 on all four pods |
+
+### 🔴 Thresher: no lime on the chain, the crosshair or the ball (`cece/tender-hamilton-qcd1hi`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+Garrett: "remove the lime from the chain and the crosshair. we can let players get a feel for that. the lime on the
+ball isn't necessary either because the information is on the icon. the ball should still indicate its explosiveness
+but not with lime." `R_VesselActions/THRESHER.md` §3, §4, §5a, §5b. Removed: the chain's READY rim
+(`IsReady`, `chainRimReady`, `readyMargin`, `ThresherChainSolver.PredictReelCrackSpeed`) and the crosshair's timing
+cue (`IsLaunchImminent`, `launchCueSeconds`). The banked-energy rim now burns toward WHITE in the ball's own hue
+(`energyRimTint` 0.6 at a full bank). The Space card's energy gauge still fills toward lime; it is the only lime left.
+Also supersedes the "lime" steps of the older Thresher entries below. `/verify-unity` was unavailable (no Editor, no
+`unity` binary); the headless reference compile ran (result in the commit message).
+
+Toy Box > Vessel Changer → Thresher:
+1. Whip (hold RT, turn hard, release): the chain's rim is the ball's hue, dim slack and brighter taut. It never turns lime.
+2. Plant and spin until the launch view comes up: the crosshair stays white the whole lap, including just before
+   the launch point. A release still leaves boosted (×4.8).
+3. Slice rival prisms with the chain: the ball's rim brightens toward white as the Space gauge fills. A charged ball
+   looks clearly hotter than an uncharged one. Hit a rival prism: the blast spends the bank, and the rim and gauge
+   ease back. If the white reads too weakly (or like the red-hot ball's white rim), raise or lower `energyRimTint`.
+4. Console clean; the `ThresherConfig` asset shows no missing-field warnings after a reimport.
+
 ### 🔴 Tutorial off, Spectate label, configure preview visible, opaque configure veil (`claude/new-session-76hnyc`, 2026-10-15) — NOT EDITOR-VERIFIED
 
 Section 29 of `Docs/MENU_REDESIGN_B.md`. Affects Yash's FTUE quest and Lesson (switched off in data).
@@ -1634,6 +1753,150 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 **First-pass tuning** comes from the lab's `SHIPPED` block, and the lab is where it changes (`ANGLER.md` §5).
 
 ---
+
+### 🔴 The Wrasse's juice: every effect is its motes' petals, no rings; a steady small view (`cece/loving-fermat-ntdnbu`, 2026-10-21, round 10) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 10):
+- `KiteNavigatorJuice` (new) and `KiteBurst` (new) replace every flat effect ring.
+- The lasso cinches shut.
+- The Mass prisms are laid as the morphing blocks arrive (0.75 s later than before).
+- The Grouper's small view latches the totems' layout at rest.
+
+**Checked headless:**
+- `unity_refcompile`: player 0 errors; editor 0 errors in changed files.
+- `KiteNavigatorJuiceTests` 4/4 out of editor (NUnit shim); two planted defects fail them.
+- `juice_sheet.sh` renders every effect from above and from the chase camera, and the sheets were looked at.
+
+**Verify:**
+1. **Steady small view** - on the Wrasse, press and upgrade cards, swap seats and resize the window. The Grouper's
+   view stays in its box left of the totems and below the line, and never pumps.
+2. **Fizzle** - lasso two elements together: no ring and no outline. The motes sputter, go grey, droop and flicker out.
+3. **Space** - lasso Space motes: they spiral into the centre, a white-hot star flares as the blast goes off, and white
+   shards and petals fly out evenly and cool to lime.
+4. **Mass** - lasso Mass motes: each petal folds into a block, and the blocks rise and fly into the cluster's places,
+   becoming the prisms. The prisms appear as the blocks land; no prism shows before its block.
+5. **Time** - lasso Time motes: streaks spiral onto the Grouper (watch from the Grouper's view too) and land as glints.
+   The saved-boost dots appear when they land.
+6. **Charge** - lasso Charge motes: the petals home onto the Wrasse, orbit it and turn gold. The pips and the kite's gold
+   appear when they arrive.
+7. **Pops and steals** - the head popping a prism bursts white shards; a ram that steals streams gold into the Wrasse; an
+   Omni crystal blooms its four clusters open.
+8. **Frame time** - a big Mass loop (64 blocks) and a wall of pops cost nothing visible (`prof`).
+
+### 🔴 The Wrasse and Grouper get real bodies; the kite flies the whole screen (`cece/loving-fermat-ntdnbu`, 2026-10-20, round 7) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 7):
+- **Two models** from `/vessel-model`, `Grouper.fbx` and `WrasseKite.fbx` (dossiers in `Docs/VesselModels/`), nested
+  in `Wrasse.prefab` by `author_wrasse_assets.py`:
+  - The Grouper is the ship geometry. The Sparrow's mesh renderer is off; its bones, jets, colliders and Animator stay.
+  - `WrasseCrewBodies` (a NetworkBehaviour on the root) animates both. It replicates the Wrasse's pose, so every peer
+    sees it.
+- **The kite:**
+  - `slingMaxSpeed` 520 → 364, `tailLength` 2.4 → 4.8.
+  - It flies the whole kite view (`wholeScreen`).
+  - The view is zoomed out 30% (`viewScale` 1.352) and centred on the hull.
+  - The board turns to the hull's heading over ~220 u flown (`KiteBoardFrame.Heading`), so a yaw in place does not drag
+    the motes.
+  - The cord is drawn while held.
+  - Holding a mouse button or a trigger lets go; lifting a thumb still does.
+- Wrasse Run's detection clamp is 2400 → 3800.
+
+**Checked headless:**
+- `unity_refcompile`: the player config has 0 errors in project code. The editor config has 0 errors in changed files;
+  its 3 are on bleeding-edge.
+- `sling_parity.cjs` PASS, worst 0.006 × tolerance, all controls caught.
+  - Its tow scenario's hand swing moved 60 → 64 u, off a 41.97 u knife edge of the 42 u rope that float and double
+    resolve differently.
+- `parity.cjs` PASS.
+- `verify_lab.cjs` PASS on both labs.
+- Offline NUnit shim: 34/34, including 3 new whole-screen tests.
+- `author_wrasse_assets.py --check` OK and `--self-test` ok (6 new negative controls for the bodies).
+- `author_wrasse_run_assets.py --check` OK.
+- `build.py grouper|wrassekite --check` OK. The three readers agree, and the contact sheets were looked at.
+
+**Verify:**
+1. **Import** - both FBXs import with four slots (Domain, Body, Window, Engine) and four shape keys. The Wrasse prefab
+   shows `Grouper` and `WrasseKite` under the root, with no missing references.
+2. **The Grouper** - Toybox, Vessel Changer, the Wrasse:
+   - The hull is the Grouper in your domain colour; no Sparrow shows through.
+   - Its tail beats faster with speed and bends OUT of a turn.
+   - The jaw opens and the dorsal rises when you boost.
+   - Each element upgrade morphs it.
+3. **The Wrasse** - the kite view shows the Wrasse model, not a flat diamond. It swims faster when slung fast and points
+   where it flies. The chase camera sees it too.
+4. **Whole screen** - the kite reaches every edge and corner of the kite view and bounces off each edge.
+5. **Zoom and centre** - the kite view is ~30% wider than before, with the Grouper in its centre.
+6. **Yaw in place** - yaw the Grouper on the spot: the board, the motes and the kite stay put. Fly a few hundred units
+   on a new heading: the view eases round to it.
+7. **The cord** - while you hold the kite, a thin line runs from your thumb, cursor or stick hand to the kite. It is
+   gone when you let go.
+8. **Let go and grab** - each of these flings the kite and hides the cord: lifting the thumb, holding left or right
+   click, holding either trigger. Touching down or releasing grabs it again.
+9. **Speed and lasso** - the kite's top speed feels ~70% of before. Loops can be about twice as big before the tail
+   trims.
+10. **Two machines** - host and client both fly Wrasses: each sees the other's Grouper and Wrasse. A host's AI Wrasse's
+    kite is seen on the client.
+11. **Feel** - tune the `WrasseCrewBodies` numbers in the inspector (swim, tail, jaw, dorsal, fins). Flip a sign if a
+    part moves the wrong way.
+12. **Round 8, the hand line** - on the kite: drag, move the cursor or lean the stick toward the ability cards. The hand
+    (where the cord starts) stops just above them, and the kite still swings across that line and off the bottom of the
+    screen.
+13. **Round 8, the Grouper's corner** - on the kite, the Grouper's view fills the box left of the ability cards, below
+    the line, and never rises above it. Double-tap it to swap. In it, the Wrasse has a large faint stand-in. Try a phone
+    and a wide monitor: the box follows the cards.
+14. **Round 8b, only the cord** - on the kite, with the mouse, a thumb and a stick: the hand stops ~10 u inside the
+    screen's sides and top (and at the line at the bottom), and the Wrasse swings past every edge on its cord. Fling it
+    off the side: it flies on and stops by drag; grab again and the cord pulls it back.
+15. **Round 9b, four green-yellows** - the kite view's motes are four limes with no blue or orange in them: Charge
+    bright yellow-green `#a0ff00`, Mass deep green `#5ec600`, Space green with a little yellow `#40ff00`, and Time
+    chartreuse `#9bcf00`. The pilot's faint dots match. None reads as Jade, Gold or the neutral blue, the four are told
+    apart, and the tail and saved-boost dots are still the CTA lime.
+
+### 🔴 The Wrasse's Sling, AI crews, the flail's toys, and Wrasse Run (68) (`cece/loving-fermat-ntdnbu`, 2026-10-20) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 6, `_Scripts/Controller/Arcade/WRASSERUN.md`):
+- **The Sling** (Garrett: "Sling is excellent. bring it to unity"; "the gamepad and AI should be consistent with mouse
+  and touch"): every input holds the Wrasse's kite on an invisible 42 u rope (`KiteNavigatorCore.Sling`,
+  `KiteNavigatorConfig.control` = Sling and the `sling*` fields): a thumb, the mouse, a thumbstick (the hand placed
+  on the board, `slingStickReach` 0.6) and the AI squad mate (`KiteNavigatorAI.Control`).
+- **Race rings:** the kite is the hull's `IRingThreadProbe` - it threads every gate race's rings, the Skim Race's
+  and a preview course's. It does NOT trip toys; the **Thresher's ball does** (`ThresherExecutor` is the
+  `ISwitchThreadProbe`, `Toy.Update`).
+- **AI crews are two AIs:** an AI Wrasse this machine simulates seats its kite (`KiteNavigator.ShouldRun`, `IsAICrew`),
+  flown by the navigator AI; the hull's `AIPilot` flies the Grouper and spends saved boosts on the straights.
+- **Wrasse Run** (`GameModes.WrasseRun = 68`): a ring counts only when the kite threads it
+  (`GateRaceController.HullThreadsWhileProbeLive`); Time motes come more often and the AI kite prefers Time loops and
+  flies through the hull's next ring (`GateRaceController.TryGetNextRing`). Every asset by `Tools/Build/author_wrasse_run_assets.py`;
+  card art `CardBackgrounds/WrasseRun.png` (`/cardart` COURSE tier).
+
+**Checked headless:** `unity_refcompile` player config 0 errors in project code; editor config 0 errors in changed
+files (its 3 are on bleeding-edge). `sling_parity.cjs` PASS (C# vs the lab page, 3 controls caught) and `parity.cjs`
+PASS. `KiteNavigatorSlingTests`, `WrasseRunCourseTests` and `KiteNavigatorCoreTests` RUN out of editor (a scratch NUnit
+shim): 31/31 - including the AI on the Sling whirling a loop and dragging the kite through a goal - and planted
+defects fail them (two sling defects fail three; a lagging hand and an AI that ignores its goal fail one each). `author_wrasse_run_assets.py --check` OK (and caught a
+planted edit); the arcade gates and `render_card_backgrounds.py --check` / `author_card_backgrounds.py --strict` pass.
+
+**Verify:**
+1. **Compiles; tests** - Test Runner: `KiteNavigatorSlingTests` (6), `WrasseRunCourseTests` (11 with cases),
+   `KiteNavigatorCoreTests`, `KiteNavigatorConfigTests`, `EnumIntegrityTests` (63 modes).
+2. **Sling on a phone** - Toybox, Vessel Changer, the Wrasse; swap to the kite (double-tap the small view). Drag: the
+   kite trails your thumb on a rope. Small circles: it whirls round in big ones and closes loops. Lift: it flies free
+   and slows. Feel: rope length (`slingRope`), stiffness, drag.
+3. **Sling with a mouse and a pad** - the kite trails the cursor without a click; circling the cursor whirls it. A
+   pad's left stick places the hand on the board (centred = the board's centre): circling the stick whirls the kite.
+   With the hull on its AI and you on the kite, the AI squad mate's kite (when you swap back) also whirls on a rope.
+4. **Toys** - in the Toybox, swing the Wrasse's kite through a toy's ring: nothing fires. Fly the Thresher and swing the
+   ball through a toy's ring: it fires once, and again only after both the hull and the ball have left it.
+5. **Wrasse Run card** - Menu → Arcade: **Wrasse Run**, its course render; the launch panel pins the Wrasse.
+6. **Wrasse Run, the hull alone** - fly the Grouper through the lit ring: no credit.
+7. **Wrasse Run, the kite** - with the AI navigating, bring the lit ring onto the kite's board: the AI flies the kite
+   through it and it counts; the goal row reads 1/16. Swap to the kite and sling it through the next one: it counts once.
+8. **Time is the fuel** - in the race more motes are Time diamonds; a Time loop banks boosts on the Time card; the right
+   trigger (both thumbs lifted on a phone) spends one.
+9. **AI crews** - add AI Wrasses (host): each one's kite slings through its rings (its hull flying through alone does not
+   count) and loops Time motes; its hull boosts on the straights; they finish the race.
+10. **Regressions** - Thresher Time's ball still threads its rings; Headlong / Redline / Skim Race unchanged; Toybox toys
+    still fire for every other hull.
 
 ### 🔴 Kite Navigator on the Wrasse ("Wrasse and Grouper"): the Kite & Tail crew seat on the local hull (`cece/compassionate-babbage-gc13io`, 2026-10-17) — NOT EDITOR-VERIFIED
 
@@ -12801,3 +13064,92 @@ the shipped HLSL compiled and checked by `Tools/Shaders/verify_spindle_lod.py`.
    ~1,000 (72-tri braid) and ~1,000 - 1,500 (12-tri thread, glowing up then fading), gone past ~1,500. A shark
    or brittlestar fades out over the same ~1,250 - 1,500; a switch ring settles back by ~700 and stays visible.
    The `renderers` line splits the far limbs into braid / low / thread.
+
+## 🔴 2026-10-20 — The Starlings, vessel class 21 (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. `R_VesselActions/STARLING.md`. New: `StarlingRules`, `StarlingSwarmExecutor`, `StarlingVesselTransformer`,
+`StarlingAnimation`, `StarlingActionSO`, `StarlingConfigSO`, `StarlingCardDeckSO`, `StarlingHUDView`, `StarlingHUDController`, `Starling.prefab`,
+`StarlingHUDVariant.prefab`, `Starling.fbx`; changed `VesselClassType` (Starling = 21), `ToyVesselRoster`, the class lists, the
+prefab container and `DefaultNetworkPrefabs`. Reference compile clean; `author_starling_assets.py --check` OK;
+`starling_rules_parity/run.sh --self-test` 10/10.
+1. Let Unity import: `Starling.fbx` imports with four blend shapes (Charge, Mass, Space, Time); no missing-script or
+   missing-reference warnings on `Starling.prefab` or `StarlingHUDVariant.prefab`.
+2. Test Runner: `StarlingRulesTests`, `EnumIntegrityTests` and the Toybox roster coverage tests pass.
+3. Toybox (freestyle) > Vessel Changer > Starling: about 24 starlings appear and roam; the carrier hull is hidden; the left
+   stick turns the view and it stops when let go.
+4. Watch a cycle: the phase line counts down Omnicrystal 30 s, Elemental crystals, Opposing vessels, Opposing mass. When
+   the Omnicrystal phase ends four cards show names and levels over the ability row; A/B/X/Y pick Mass/Time/Charge/Space,
+   and the picked element's gauge rises.
+5. The starlings collect crystals (score and elements move) and bite rival-domain prisms; with an AI rival, nips land as
+   petal hits only. The swarm never drops below 6.
+6. Console: no errors and no per-frame logs while the Starlings flies.
+
+## 🔴 2026-10-21 — The Thresher spawns in Mass Mode (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
+
+Garrett: "the default mode for thresher should be mass mode." `ThresherExecutor.Initialize` now sets `_massMode = true`
+(it ran `false`); A still toggles. No editor or `unity` CLI in the session, so `/verify-unity` did not run.
+`THRESHER.md` §2b and its hand tests updated.
+1. Toy Box > Vessel Changer → Thresher: the ball wears your **lit** colour at once. Tow it through a rival trail:
+   prisms flip to your domain, no blasts; it lays a trail of your prisms.
+2. Press A: the ball takes your plain domain colour; whip it red into a rival trail - blasts. Press A: lit again.
+3. Swap to another hull and back to the Thresher: it is in Mass Mode again.
+4. Thresher Time with an AI Thresher: the AI's ball is lit and never explodes (the AI never presses A).
+
+## 🔴 2026-10-21 — Thresher launch view: aim from where you pointed, grip-sag grace, the shot follows the crosshair (`cece/youthful-johnson-hccyzf`) - NOT EDITOR-VERIFIED
+
+Garrett: the both-triggers launch view entered and left with camera jank, each entry needed realigning, and a
+release with RT held "doesn't always shoot me at the cross hair". `THRESHER.md` §5a has the cause and the numbers.
+Changed: `ThresherChainSolver` (launch line + LT let-go latch), `ThresherExecutor` (aim seeded from the pre-plant
+camera facing and kept through the plant; `spectateDropSeconds` grace), `ThresherConfigSO` + `ThresherConfig.asset`
+(`spectateDropSeconds: 0.25`), the plant lab's JS port, `ThresherAnalogTriggerTests` (+5 over two rounds). Chain harness
+70/70 (the new tests fail on the old solver: 177° off the aim, 55° on the round-1 solver at a Time-raised spin); lab
+parity PASS (10 scenarios) with negative controls; `verify_lab.cjs` PASS;
+`unity_refcompile` player: 0 project errors (editor: the 3 known `AuthenticationServiceFacade` errors, none in changed
+files). No editor or `unity` CLI in the session, so `/verify-unity` did not run.
+1. Toy Box > Vessel Changer → Thresher, gamepad. Fly at a landmark, LT full, RT full: the launch view's crosshair sits
+   in line with the landmark, no realigning.
+2. In the view, let either trigger sag for an instant: the view holds (no camera re-ease). Ease RT off and hold it off
+   ~1/2 s: the view drops; pull it back: it returns on the same aim.
+3. Ease LT only to about 3/4 with RT still full: the ship leaves at the launch point straight down the crosshair, the
+   ball hauled behind; it is not swung back round the ball. Repeat with LT snapped off and with RT released.
+4. Right after a launch, squeeze LT halfway: no brake until LT has come back near rest; a full squeeze plants at once.
+5. (Round 2, Garrett: "still getting launch at 180 sometimes") Raise TIME (crystals or the element tools), plant until
+   the spin is at its fastest, launch with RT held, then again with RT released: the ship flies the crosshair's line
+   every time. With RT held it slows hard and the ball overtakes and leads; with RT released the ball swings round
+   like a pendulum. Neither may turn the ship. If a 180 still happens, note the Time level, RT, and whether the
+   crosshair was up when LT was let go.
+
+## 🔴 2026-10-21 — The Starlings: objective card, zoom/roll, card details (`claude/project-thread-ytyab2`) - NOT EDITOR-VERIFIED
+
+No Unity CLI in the session. `R_VesselActions/STARLING.md` §1 and §5. Changed `StarlingVesselTransformer`, `StarlingSwarmExecutor`,
+`StarlingActionSO`, `StarlingRules` (`StarlingPilotControls`, `StarlingPickPress`), `StarlingConfigSO`, `StarlingHUDView`,
+`StarlingHUDController`, `CoreAbility` (`Objective = 3`), `VesselHUDView.CoreAbilityDisplayOrder`, `AbilityLockupView` (core cards
+pack against the elemental row). Reference compile clean (player; editor: the 3 known errors only); rules harness 17/17.
+1. Toybox > Vessel Changer > Starlings: a card LEFT of the omnicrystal card shows a gem in the Omnicrystal phase, and it
+   drains from the top as the phase counts down. The glyph changes each phase (shards, crosshair, blocks).
+2. Squirrel and any other hull: the ability row looks exactly as before (the drift and omni cards in the same places).
+3. Pad: both sticks the same way turn the view; spread the sticks apart (x) to zoom in, squeeze to zoom out; one stick up
+   and the other down rolls the camera. A resting pad does not drift. Zoom stops at near/far limits.
+4. Phone: one thumb turns the view; pinch zooms with the fingers; two-finger spin rolls with the fingers.
+5. When a hand is dealt: tap A/B/X/Y picks on release. Hold a trigger and press a pick, or hold a pick ~0.5 s: a LARGE
+   card in the middle of the screen shows the element glyph, the card's name, level, text, numbers and next jolt; letting
+   go hides it and picks nothing. Long-press a card on a phone: same. (Round 3, 2026-10-21: it was a panel above the
+   header that never showed on Garrett's screen.)
+6. Swap to another vessel after zooming: its camera is back at its own distance.
+7. The objective glyphs: the game's omnicrystal icon, the four petals as a flower, the crosshair, prism blocks with an X.
+
+## 🔴 2026-10-21 — App shell pad buttons: Select toggles freestyle, Start opens Settings (`claude/project-thread-i9ydba`) - NOT EDITOR-VERIFIED
+
+Garrett's remap. `ScreenSwitcher` toggles freestyle on Select / View (was Y) and opens Settings on Start (was X).
+`OverviewGesture` (freestyle exit, in-game overview, spectator close) moved from Start to Select with it, and so did
+`ModePreviewWindow`'s focus release, so Start on Home never fights a focused preview. The screenshot capture moved
+off Select to a right-stick click (R3). `/verify-unity` was not run (no editor; the reference compile could not run:
+no .NET in the container).
+
+1. **Home with a pad:** Select flies into the cell. After the 3 s cooldown, Select brings you back. Y and X do
+   nothing on Home.
+2. **Start on Home** opens Settings once. Start does nothing while a window is open or in freestyle.
+3. **A game scene:** Select opens the overview (Volume / Pause). Start no longer does.
+4. **A mode preview with focus:** Select releases it; Start does not open Settings underneath.
+5. **Screenshot:** clicking the right stick in flight takes a capture; Select does not.
+6. **Spectating:** Select leaves.

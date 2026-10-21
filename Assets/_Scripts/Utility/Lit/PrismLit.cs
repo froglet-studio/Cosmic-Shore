@@ -15,7 +15,7 @@ namespace CosmicShore.Utility
     /// <c>PrismDestructionSight.hlsl</c>, once per prism, off a handful of shader globals this
     /// class writes once per frame.
     ///
-    /// <para><b>Producers.</b> FOUR today, each saying the same sentence at a different moment in
+    /// <para><b>Producers.</b> FIVE today, each saying the same sentence at a different moment in
     /// a force's life — pending, armed, live, resolved:</para>
     /// <list type="bullet">
     ///   <item><b>Echo Sight</b> (Dolphin, Charge) — the volume its next crystal blast WOULD
@@ -32,6 +32,9 @@ namespace CosmicShore.Utility
     ///   blackout, a targeting-grid churn, and one shield SFX per prism). It covers EVERY shape,
     ///   because every blast that spares its own domain has a passthrough to express — the
     ///   Scarab's swept plate lights through the same call as the Dolphin's cone.</item>
+    ///   <item><b>Contact acknowledgement</b> (Thresher cord and ball) — own mass the cord passed
+    ///   through and had nothing left to do to (it was already shielded). Dynamic contact never
+    ///   does nothing; without a light it reads as a clip. <c>ThresherExecutor.PublishAcknowledged</c>.</item>
     /// </list>
     ///
     /// <para><b>A skim field was built as a fourth and CUT on a look call</b>, and the two reasons

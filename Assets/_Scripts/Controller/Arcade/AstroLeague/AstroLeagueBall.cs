@@ -1350,6 +1350,7 @@ namespace CosmicShore.Gameplay
 
             _scanInRange.Clear();
             float eatenMass = 0f;
+            bool acknowledgedOwn = false;
 
             for (int s = 0; s < samples; s++)
             {
@@ -1368,7 +1369,13 @@ namespace CosmicShore.Gameplay
                     // is downgraded, and the ball paid for it.
                     if (prism.prismProperties.IsSuperShielded)
                     {
-                        if (!destroyedBySuperShielded) continue;
+                        // Passing through untouched still answers: the deflection jiggle, the
+                        // same as every other hit on super-shielded mass (Docs/LIT.md).
+                        if (!destroyedBySuperShielded)
+                        {
+                            prism.AbsorbSuperShieldHit(ballVel.magnitude);
+                            continue;
+                        }
                         prism.DeactivateShields();
                         _dieAfterScan = true;   // never despawn mid-scan; drained below
                         continue;
@@ -1381,7 +1388,10 @@ namespace CosmicShore.Gameplay
 
                     if (same)
                     {
+                        // Own mass is shielded; mass that already is gets LIT instead, so the ball
+                        // never reads as clipping through armour it had nothing left to do to.
                         if (!shielded) prism.ActivateShield();
+                        else acknowledgedOwn = true;
                     }
                     else if (shielded)
                     {
@@ -1415,6 +1425,11 @@ namespace CosmicShore.Gameplay
                     }
                 }
             }
+
+            // DYNAMIC CONTACT NEVER DOES NOTHING (Docs/LIT.md): own armoured mass the ball is passing
+            // through is lit in the ball's colour for as long as it is inside, then fades.
+            if (acknowledgedOwn)
+                PrismLit.PublishLight(GetInstanceID(), LitVolume.Sphere(to, radius), 1f, ballDomain, ownDomainOnly: true);
 
             // Drop "just-popped" protection for prisms that left range, so a later visit can eat them.
             for (int i = _shieldPoppedThisVisit.Count - 1; i >= 0; i--)

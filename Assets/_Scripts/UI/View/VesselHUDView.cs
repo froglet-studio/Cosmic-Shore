@@ -103,7 +103,7 @@ namespace CosmicShore.UI
         /// leaves the drift's bare plate at the far end. Between them the band would have a hole
         /// in it.</para>
         public static readonly CoreAbility[] CoreAbilityDisplayOrder =
-            { CoreAbility.Drift, CoreAbility.OmniCrystal };
+            { CoreAbility.Drift, CoreAbility.Objective, CoreAbility.OmniCrystal };
 
         [Header("Button highlights")] public List<HighlightBinding> highlights = new();
 

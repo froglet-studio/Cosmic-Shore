@@ -30,10 +30,35 @@ the fleet's one-thumb model (`SingleStickVesselTransformer`, via `BrittleStarVes
 | Aim | **right stick** | P ; L ' (no aim on the mouse scheme) | Direction turns the ring (brings a turret round; turns the five guns or cords with it); deflection moves the guns / cords in and out |
 | Ring Detonation | **LT** | Left Shift / RMB | Throw the ring — only with a spare ring in stock |
 
-Bindings are in the **shared** list (`_inputEventShipActions`), the Sparrow's shape, so touch reaches RT and Ring
-Detonation through its own trigger gestures. Charge Mode is on `FlipAction` (InputEvents 3: RB / E), the only free face
-control the input layer raises; on touch that event comes from turning the phone (`DeviceOrientationHandler`), so a
-landscape flip toggles Charge Mode there. Touch has no face buttons for the other three modes (follow-up F1).
+Bindings are in the **shared** list (`_inputEventShipActions`), the Sparrow's shape; touch has no overrides. Charge Mode
+is on `FlipAction` (InputEvents 3: RB / E), the only free face control the input layer raised when it shipped. Turning
+the phone no longer raises it (2026-10-21, `DeviceOrientationHandler`): on a phone every control is an on-screen button
+(next section).
+
+### On a phone (2026-10-21, Garrett: "it will need all four totems and two fire buttons, so 6 buttons ... The fire button can become the right joystick once held. and it can be rotated without firing by touching down elsewhere")
+
+The Brittle Star flies the **TotemButtons** scheme (`Tools/Build/author_touch_profiles.py`, `Resources/TouchControlProfiles.asset`):
+lifting a thumb raises nothing, and six buttons sit round the right thumb.
+
+| Button | Raises | What it does |
+|---|---|---|
+| Speed Mode card (Time) | `Button1Action` (A) | Select Speed Mode (tap again: Cruise) |
+| Creation Mode card (Mass) | `Button2Action` (B) | Select Creation Mode |
+| Space Mode card (Space) | `Button3Action` (X) | Select Space Mode |
+| Charge Mode card (Charge) | `FlipAction` (RB) | Select Charge Mode |
+| **Fire** (extra, primary) | `RightStickAction` (RT), held, **aims while held** | Fires while the finger is down; dragging that finger from where it landed is the right stick, so it turns the ring and moves the guns / cords in and out as it fires |
+| **Ring** (extra, primary) | `LeftStickAction` (LT), held, **aims while held** | Throws the ring on the press (it flies along the nose, not the aim); dragging the held finger then turns the ring without firing |
+
+- **Steering** is the left thumb (or any single thumb). With one flight thumb the touch strategy writes the right stick
+  as zero on a single-stick hull, so a hard turn no longer turns the ring or splays the guns (it used to mirror the
+  steering thumb onto the right stick).
+- **Aiming without firing**: put a second finger down on the right side of the glass. It is the right stick, measured
+  from where it landed (`TouchInputStrategy`, two flight touches). `BrittleStarExecutor.AimStick` reads
+  `RightNormalizedJoystickPosition`, which the held aim button's drag also writes, so both reach the same aim.
+- **RT depth**: a phone has no analog trigger (`RightTriggerAnalog` stays 0), and `TriggerDepth` reads a press with no
+  depth as a full pull, so Fire is always the full rate and the Charge cords are always sabers while it is held.
+  Whips (released cords) are what Charge Mode shows with Fire up.
+- **Not reachable on a phone**: a partial trigger pull (see above); everything else is.
 
 Modes are **exclusive**: one at a time, or **Cruise** (none). All four need the mounted ring (off only for the half
 second the ring regrows after a throw).
@@ -487,9 +512,9 @@ None of that is a play test. In order:
 
 ## Follow-ups
 
-- **F1 — touch controls for the modes.** Touch raises no face-button events, so Speed / Creation / Destruction are
-  unreachable on touch (the Stoat has the same gap). The document's touch design — drag on the shoot button to aim and
-  spread — needs an on-screen control.
+- **F1 — touch controls for the modes: DONE** (2026-10-21). The ability cards became buttons (`AbilityCardPress`), and
+  the phone profile adds a Fire and a Ring button whose drag aims (§1, "On a phone"). Left to test on a phone: the six
+  buttons' reach round the right thumb, and that a hard turn on the steering thumb leaves the ring and guns still.
 - **F2 — level-5 upgrades** (§5): Garrett's call.
 - **F3 — persona AI**: the document gives each element a persona (Fabricator builds, Rolling Thunder destroys clumps,
   Hunter chases pilots, Zephyr chases crystals into enemy zones). Today one autopilot serves all four.
@@ -516,8 +541,8 @@ None of that is a play test. In order:
   `git mv` the control asset (its guid survives); then `author_brittlestar_assets.py --check` and the HUD audit.
 - **R2 — a gap this branch walked past (fleet input layer).** `InputEvents` has no fourth face-button event: the gamepad
   raises A / B / X (`Button1-3Action`) and RB (`FlipAction`) only (`GamepadInputStrategy.ProcessButtonInput`), so a
-  vessel that needs a fourth mode control must borrow `FlipAction` — which `DeviceOrientationHandler` also raises when a
-  phone is turned. Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
+  vessel that needs a fourth mode control must borrow `FlipAction` (`DeviceOrientationHandler` raised it when a phone
+  was turned until 2026-10-21; it no longer does). Measure before acting: which vessels bind `FlipAction` today (`grep -l "InputEvent: 3" Assets/_Prefabs/Spacevessels/*.prefab`),
   and whether a `Button4Action` (Y / a key / an on-screen button) is wanted fleet-wide (measured 2026-10-16: the
   Brittle Star and the Grizzly bind it). Owner: the input layer.
 - **R3 — an inconsistency this branch walked past (the trails' width).** The fleet spawner lays a single, gapless

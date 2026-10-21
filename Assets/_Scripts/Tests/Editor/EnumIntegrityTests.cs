@@ -57,6 +57,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.BrittleStar, 16)]
         [TestCase(VesselClassType.Angler, 17)]
         [TestCase(VesselClassType.Wrasse, 19)]
+        [TestCase(VesselClassType.Starling, 21)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -166,8 +167,10 @@ namespace CosmicShore.Tests
             // retired; both IDs stay reserved. 59 -> 60 the same day: Slingshot (64), the Stoat's.
             // 60 -> 61 on 2026-10-09: Warpline (65), the Stoat's time race.
             // 61 -> 62 on 2026-10-13: ThresherTime (66), the Thresher's circuit race.
+            // 62 -> 63 on 2026-10-20: WrasseRun (68), the Wrasse and Grouper's race (67 is SerpentCharge's,
+            // in flight on another branch: when it lands this becomes 64).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(62, values.Length,
+            Assert.AreEqual(63, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -208,6 +211,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Slingshot, 64)]
         [TestCase(GameModes.Warpline, 65)]
         [TestCase(GameModes.ThresherTime, 66)]
+        [TestCase(GameModes.WrasseRun, 68)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,
