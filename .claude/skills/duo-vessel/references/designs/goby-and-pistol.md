@@ -484,3 +484,9 @@ the line it settled.
   and a fresh generation differs only by round 12's tuned values; (2) if the tangent plane is kept, the unroll and warp
   machinery (lab: `ribMap*`, `classify`, `warpBox`, the Settled unroll; Unity: `PistolRibbon`'s maps, `PistolWarp`) has
   no reader left and can be retired in the same clone.
+- 2026-10-21, **the Pistol's marks go into the world** (v14 of the prototype). Garrett's LOCKED rule of the same day
+  ("always go for the 3d in world solution over the 2d flat text solution", `Docs/claude/SHADERS_AND_PERFORMANCE.md`)
+  answers T-20261018-7c2d: the rings round primed, hot and held prisms and the ghost cue are now tints and pulses on the
+  prisms themselves; an aimed fling lights the prisms it will break (its landing ring is gone; the dotted arc stays as
+  the aim mark); a falling Pistol lights the trail tile under it (the contact dot is gone); flares are small lit
+  volumes. **Unity still draws the rings** (`PistolWarp`, `PistolWorldMesh`) until the clone ports this.

@@ -1948,7 +1948,7 @@
   const PRISM_HALF = [prismMesh.geometry.parameters.width / 2, prismMesh.geometry.parameters.height / 2, prismMesh.geometry.parameters.depth / 2];   // the 3D view's box, the same prism
   const PRISM_HALF_DIAG = Math.hypot(PRISM_HALF[0], PRISM_HALF[1], PRISM_HALF[2]);
   const PC8 = [], PX8 = [], RG8 = []; for (let i = 0; i < 8; i++) { PC8.push(V(0, 0, 0)); PX8.push(V(0, 0, 0)); RG8.push(V(0, 0, 0)); }
-  const PCB = V(0, 0, 0), PCT = V(0, 0, 0), PAX = V(0, 0, 0), PAY = V(0, 0, 0), PAZ = V(0, 0, 0), cTmp = [0, 0, 0, 1], cMark = [0, 0, 0, 1], BX = {};
+  const PCB = V(0, 0, 0), PCT = V(0, 0, 0), PAX = V(0, 0, 0), PAY = V(0, 0, 0), PAZ = V(0, 0, 0), cTmp = [0, 0, 0, 1], BX = {};
   const C_PRIMED4 = [0xb9 / 255, 0x8b / 255, 1, 1], C_HOT4 = [1, 0x6a / 255, 0x2a / 255, 1], C_HELD4 = [0x9f / 255, 0xe8 / 255, 1, 1], C_BLACK = [0, 0, 0, 1];   // the lab's own marks (drawWorld3D, the vortex's tori)
   const setC = (o, r, g, b, a) => { o[0] = r; o[1] = g; o[2] = b; o[3] = a; return o; };
   const tintC = (o, t, k) => { for (let i = 0; i < 4; i++) o[i] += (t[i] - o[i]) * k; return o; };   // Color.Lerp, all four channels
@@ -1995,20 +1995,21 @@
     }
     if (!drawn) rigidCorners(centre, PAX, PAY, PAZ, F.T, F.U, F.R, PX8);
     flipDepth(PX8);
-    // its own colour (what the 3D view draws it in), then the lab's marks
+    // its own colour (what the 3D view draws it in), then its STATE, lit on the prism itself (LOCKED, Garrett 2026-10-21:
+    // "always go for the 3d in world solution over the 2d flat text solution"; SHADERS_AND_PERFORMANCE.md "In the world,
+    // not on the screen"): primed, hot, held by a ring, about to be broken by the fling being aimed, or a friendly block
+    // the ghost would pass - each tints and pulses the prism, on the solid pass, where the rings round it used to be
     const c = cTmp, kc = kcol[W.kind[i]]; setC(c, kc.r, kc.g, kc.b, 1);
     const primed = v.primed, hot = W.hot[i] > W.t;
     if (W.kind[i] === 0 && !primed) tintC(c, C_HOT4, 0.25 + 0.15 * Math.sin(now * 3 + i));   // flora is hot by default: it glows (drawWorld3D: the 3D view's own look)
+    if (primed) tintC(c, C_PRIMED4, 0.6 + 0.25 * Math.sin(now * 6));
+    else if (hot) tintC(c, C_HOT4, 0.55 + 0.25 * Math.sin(now * 9));
+    if (W.capt[i]) tintC(c, C_HELD4, 0.6);
+    if (W.kind[i] === 3 && W.t >= p.ghostAt && Math.abs(v.d) <= P.pVision && v.x - p.x > 0 && v.x - p.x < 60 && Math.abs(v.h - p.y) < 25) tintC(c, C_HELD4, 0.3 + 0.2 * Math.sin(now * 8));   // the ghost cue (the AI's own condition)
+    if (AIM_N && Math.abs(v.d) <= band && aimHits(v.x, v.h)) tintC(c, C_WHITE4, 0.55 + 0.2 * Math.sin(now * 10));   // what the fling being aimed will break
     c[3] = 1;
     if (plane) depthBox(PX8, c, v.dU, band);   // the 2.5D look: sharp on the plane, parting and fading out of it
-    else PW.addBox(PX8, c, 0, 0, 0, true);   // the prism as the 3D view draws it: its own colour, lit, opaque - no fog, no tint, no glass
-    // the marks (the lab's own) are RINGS about the prism, unlit, pulsing; the prism keeps its look
-    const mx = v.x, mh = v.h, md = -z.d;
-    if (primed) PW.addRing(mx, mh, md, 0, 0, 1, hd + 1.5, 0.5, 24, 4, alphaC(cMark, C_PRIMED4, 0.55 + 0.3 * Math.sin(now * 6)), 1, false);
-    else if (hot) PW.addRing(mx, mh, md, 0, 0, 1, hd + 1.5, 0.5, 24, 4, alphaC(cMark, C_HOT4, 0.5 + 0.3 * Math.sin(now * 9)), 1, false);
-    if (W.capt[i]) PW.addRing(mx, mh, md, 0, 0, 1, hd + 2.5, 0.6, 24, 4, alphaC(cMark, C_HELD4, 0.7), 1, false);
-    // the ghost cue: a friendly prism the Pistol is about to run into while its ghost is ready (the AI's own condition)
-    if (W.kind[i] === 3 && W.t >= p.ghostAt && Math.abs(v.d) <= P.pVision && v.x - p.x > 0 && v.x - p.x < 60 && Math.abs(v.h - p.y) < 25) PW.addRing(mx, mh, md, 0, 0, 1, hd + 1, 0.35, 20, 4, alphaC(cMark, C_HELD4, 0.25 * (0.5 + 0.5 * Math.sin(now * 8))), 1, false);
+    else PW.addBox(PX8, c, 0, 0, 0, true);   // the prism as the 3D view draws it: its own colour, lit, opaque - no fog, no glass
   }
   // ---- the ground (GobyPistolDuo.DrawGround): the line through the hinge hills, downslopes warm, and the trail's tiles rigid on it at their own depth ----
   const GXS = new Float32Array(GN), GYS = new Float32Array(GN), GCS = new Float32Array(GN * 4), C_DIVE = [1, 0x8a / 255, 0x3d / 255, 1];
@@ -2023,7 +2024,12 @@
     const k = 0.7 * s; setC(cDepth, c[0] + (DEPTH_FOG[0] - c[0]) * k, c[1] + (DEPTH_FOG[1] - c[1]) * k, c[2] + (DEPTH_FOG[2] - c[2]) * k, 1);
     PW.addPartedBox(xhd8, cDepth, 1.4 * s, true);
   }
-  const BU2 = V(0, 0, 0), BF2 = V(0, 0, 0), TILE_C = V(0, 0, 0);
+  const TILE_C = V(0, 0, 0), cLand = [0, 0, 0, 1];
+  // an airborne Pistol's landing, shown on the trail itself: the tile under it brightens toward the domain's colour as it falls
+  function landTint(W, x) {
+    const p = W.p; if (!p || p.grounded || Math.abs(x - p.x) > 12) return blockCol;
+    const k = 0.7 * (1 - clamp(Math.abs(p.y - groundAt(W, p.x)) / 300, 0, 1)); for (let j = 0; j < 3; j++) cLand[j] = blockCol[j] + (domCol[j] - blockCol[j]) * k; return cLand;
+  }
   function drawGround(W, Wd, xLo, xHi) {
     const xa = Math.max(cpX(W, 0), SC.x - Wd * 0.6), xb = Math.min(W.gx, SC.x + Wd * 0.6);
     if (xb > xa) {
@@ -2043,7 +2049,7 @@
         const a = b.hinge ? b.sign * P.tAngle * DEG : 0, u = a ? vrot(b.u, b.r, a) : b.u, f = a ? vrot(b.f, b.r, a) : b.f, sx = BH[0] * (b.hinge ? 1.5 : 1);
         BAX.x = b.r.x * sx; BAX.y = b.r.y * sx; BAX.z = b.r.z * sx; BAY.x = u.x * BH[1]; BAY.y = u.y * BH[1]; BAY.z = u.z * BH[1]; BAZ.x = -f.x * BH[2]; BAZ.y = -f.y * BH[2]; BAZ.z = -f.z * BH[2];
         TILE_C.x = m.x; TILE_C.y = m.h; TILE_C.z = m.d;
-        rigidCorners(TILE_C, BAX, BAY, BAZ, pl.X, pl.Y, pl.R, PX8); flipDepth(PX8); depthBox(PX8, blockCol, -m.d, band); nb++;
+        rigidCorners(TILE_C, BAX, BAY, BAZ, pl.X, pl.Y, pl.R, PX8); flipDepth(PX8); depthBox(PX8, landTint(W, m.x), -m.d, band); nb++;
       }
       return;
     }
@@ -2055,12 +2061,12 @@
       const sx = BH[0] * (b.hinge ? 1.5 : 1);
       BAX.x = b.r.x * sx; BAX.y = b.r.y * sx; BAX.z = b.r.z * sx; BAY.x = b.u.x * BH[1]; BAY.y = b.u.y * BH[1]; BAY.z = b.u.z * BH[1]; BAZ.x = -b.f.x * BH[2]; BAZ.y = -b.f.y * BH[2]; BAZ.z = -b.f.z * BH[2];
       tileCorners(m.x, y, slope, m.d, BAX, BAY, BAZ, F.T, F.U, F.R, PX8, tilt); flipDepth(PX8);
-      PW.addBox(PX8, blockCol, 0, 0, 0, true); nb++;
+      PW.addBox(PX8, landTint(W, m.x), 0, 0, 0, true); nb++;
     }
   }
   // ---- the Pistol, its trail, the contact marker, the rings, the flares, the aim (GobyPistolDuo.DrawActors) ----
-  const cBody = [0, 0, 0, 1], cA = [0, 0, 0, 1], cB = [0, 0, 0, 1], C_RING = [159 / 255, 232 / 255, 1, 1], C_FLARE = [1, 230 / 255, 128 / 255, 1], C_FLARE_BACK = [1, 200 / 255, 90 / 255, 140 / 255], C_AIM = [1, 1, 1, 230 / 255], C_EYE = [1, 250 / 255, 230 / 255, 1], C_EYE_FREE = [1, 220 / 255, 90 / 255, 1];
-  const FV = V(0, 0, 0);
+  const cBody = [0, 0, 0, 1], cA = [0, 0, 0, 1], cB = [0, 0, 0, 1], C_RING = [159 / 255, 232 / 255, 1, 1], C_FLARE = [1, 230 / 255, 128 / 255, 1], C_AIM = [1, 1, 1, 230 / 255], C_EYE = [1, 250 / 255, 230 / 255, 1], C_EYE_FREE = [1, 220 / 255, 90 / 255, 1];
+  const FV = V(0, 0, 0), FRF = {};
   function drawActors(W, xLo, xHi) {
     const p = W.p, half = P.pVision + 4, r = P.pBodyR, ghost = W.t < p.ghostUntil, spin = 2 * W.t;
     const body = setC(cBody, 1, 138 / 255, 61 / 255, ghost ? 90 / 255 : 1), solid = !ghost;
@@ -2072,7 +2078,7 @@
     PW.addDisc(p.x - lx * half, p.y - ly * half, -half + 0.05, r, VIEW_SIDES, body, tintC(alphaC(cA, body, body[3]), C_BLACK, 0.25), 0.1, spin, solid);
     PW.addDisc(p.x - lx * half, p.y - ly * half, -half - 0.3, r * 0.42, 12, p.freeBoom ? C_EYE_FREE : C_EYE, alphaC(cA, body, 1), 1, 0, solid);   // the eye goes gold with the crystal's free Snap (lab-only)
     // the contact marker while airborne: where the Pistol would meet the ground, fading with its height
-    if (!p.grounded) { const gy = groundAt(W, p.x); PW.addDot(p.x, gy, 0, 1.3 * zf, 0.25 * zf, alphaC(cA, domCol, 0.6 * (1 - clamp(Math.abs(p.y - gy) / 300, 0, 1))), 1, 0, false); }
+    // (where it will land is lit on the trail itself: drawGround, the tile under it)
     // vortex rings, mapped into the Pistol's world with their axis unrolled (its R component into the screen: the section note)
     for (const v of W.vortices) {
       const m = viewMapFast(W, v.c, xLo, xHi, true, MPR); if (!m.ok) continue;
@@ -2081,17 +2087,26 @@
     }
     for (const F of W.flares) {
       const m = viewMapFast(W, F.p, xLo, xHi, true, MPR); if (!m.ok) continue;
-      PW.addDot(m.x, m.h, -m.d, 2.5, 2.5, C_FLARE, 1, 0, true);
-      FV.x = F.p.x - F.v.x * 0.05; FV.y = F.p.y - F.v.y * 0.05; FV.z = F.p.z - F.v.z * 0.05;
-      const b = viewMapFast(W, FV, xLo, xHi, true, MPB); if (b.ok) PW.addDot(b.x, b.h, -b.d, 1.5, 1.5, C_FLARE_BACK, 1, 0, false);
+      // a flare is a small lit volume stretched along its flight (nothing in the world looks flat)
+      const Fr = viewFrameAt(W, m.x, FRF), fd = vnorm(F.v), fs = vnorm(vcross(fd, Math.abs(fd.y) < 0.9 ? V(0, 1, 0) : V(1, 0, 0))), fu = vcross(fd, fs);
+      FV.x = m.x; FV.y = m.h; FV.z = m.d;
+      rigidCorners(FV, vscl(fd, 3), vscl(fs, 1.1), vscl(fu, 1.1), Fr.T, Fr.U, Fr.R, PX8); flipDepth(PX8); PW.addBox(PX8, C_FLARE, 0, 0, 0, true);
     }
     // the launch aim: yours while you drag (or hold RT); the AI's is the Show-AI-thinking line on the HUD canvas
     const aim = aimNow(W); if (!aim) return;
     const lv = launchVel(P, aim.dx, aim.dy), G = gravDir(P), gx = P.pGravity * G.x, gy = P.pGravity * G.y, dotR = 0.55 * P.pViewWidth / 460;
     for (let s = 0; s <= 1.0001; s += 0.08) { const tt = s * lv.T; PW.addDot(p.x + lv.vx * tt + 0.5 * gx * tt * tt, p.y + lv.vy * tt - 0.5 * gy * tt * tt, 0, 2 * dotR, 2 * dotR, C_AIM, 1, 0, false); }
-    PW.addRing(p.x + lv.dx, p.y + lv.dy, 0, 0, 0, 1, 5 * dotR * 2, 0.5 * dotR * 2, 16, 4, C_AIM, 1, false);
+    // (no ring where it lands: what it will break is lit instead, drawPrism)
   }
   const eW = new THREE.Euler(), PV = new THREE.Vector3();
+  // the fling being aimed, sampled once a frame: the prisms within the Pistol's body of its flight light up (drawPrism)
+  const AIM_X = new Float32Array(16), AIM_H = new Float32Array(16), C_WHITE4 = [1, 1, 1, 1]; let AIM_N = 0;
+  function sampleAim(W) {
+    AIM_N = 0; const aim = aimNow(W), p = W.p; if (!aim || !p) return;
+    const lv = launchVel(P, aim.dx, aim.dy), G = gravDir(P), gx = P.pGravity * G.x, gy = P.pGravity * G.y;
+    for (let k = 0; k < 16; k++) { const tt = k / 15 * lv.T; AIM_X[k] = p.x + lv.vx * tt + 0.5 * gx * tt * tt; AIM_H[k] = p.y + lv.vy * tt - 0.5 * gy * tt * tt; AIM_N++; }
+  }
+  function aimHits(x, h) { const r = P.pBodyR + 3; for (let k = 0; k < AIM_N; k++) if (Math.abs(AIM_X[k] - x) <= r + 6 && Math.hypot(AIM_X[k] - x, AIM_H[k] - h) <= r + 4) return true; return false; }
   function renderSide3D(W, now) {
     const p = W.p, w = side3d.clientWidth, h = side3d.clientHeight; if (!p || !w || !h || r2.noWebGL) return;
     const Wd = P.pViewWidth, aspect = Math.max(0.2, w / h), D = Math.max(20, P.pParallax), cy = SC.y - SC.lift;
@@ -2111,6 +2126,7 @@
     const xLo = SC.x - 2 * Wd, xHi = SC.x + 2 * Wd, band = P.pVision + 4;
     const kSpan = Math.max(2, ribIdx(W.rb, xHi) - ribIdx(W.rb, xLo));
     barsThisFrame = 0;
+    sampleAim(W);
     for (const v of vis2d) drawPrism(W, v, now, D, band, xLo, xHi, kSpan);
     drawGround(W, Wd, xLo, xHi);
     drawActors(W, xLo, xHi);
