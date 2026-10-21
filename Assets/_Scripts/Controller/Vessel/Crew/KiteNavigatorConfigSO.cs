@@ -232,6 +232,24 @@ namespace CosmicShore.Gameplay
                  "Tools/Build/kite_mote_colors.py, which derives them from the live palette; --check fails if they drift.")]
         [SerializeField] Color[] elementColors = new Color[4];
 
+        [Header("Juice: each loop's motes become its effect (round 10; Garrett, 2026-10-21)")]
+        [Tooltip("A fizzle (a loop of more than one element): how long its motes sputter, grey out, droop and flicker away. " +
+                 "No ring (\"when more than one is lassoed it should fizzle with no ring\").")]
+        [SerializeField, Range(0.2f, 3f)] float fizzleSeconds = 0.95f;
+        [Tooltip("Space: after the blast's 0.2 s fuse (the petals implode to its centre), how long they ride its shockwave " +
+                 "out (\"space symbols should explode with explosion\").")]
+        [SerializeField, Range(0.2f, 3f)] float spaceRideSeconds = 1.1f;
+        [Tooltip("Mass: how long the petals take to fold into blocks and fly into the prisms they become (\"mass symbols " +
+                 "should look like they are morphing into the 3d mass\"). The cluster's prisms are LAID when the blocks " +
+                 "arrive, so this is also the Mass loop's delay.")]
+        [SerializeField, Range(0f, 2f)] float massMorphSeconds = 0.75f;
+        [Tooltip("Time: how long the petals take to spiral onto the Grouper (\"time should morph on to the grouper\"). The " +
+                 "saved boosts show on the board when they land.")]
+        [SerializeField, Range(0.2f, 2f)] float timeFlightSeconds = 0.7f;
+        [Tooltip("Charge: how long the petals take to home onto the Wrasse and fall into orbit as its charge pips (\"charge " +
+                 "should morph onto the wrasse\"). The pips show when they arrive.")]
+        [SerializeField, Range(0.2f, 2f)] float chargeFlightSeconds = 0.55f;
+
         [Header("Mote flowers (five petals, each moving like its element; rounds 4e-4f)")]
         [Tooltip("Space: the flower spins this many degrees a second, without pausing.")]
         [SerializeField, Min(0f)] float spaceSpinDegreesPerSecond = 150f;
@@ -323,6 +341,11 @@ namespace CosmicShore.Gameplay
         public float HandLineGap => handLineGap;
         public float HandLineFallback => handLineFallback;
         public float HandEdgeMargin => handEdgeMargin;
+        public float FizzleSeconds => fizzleSeconds;
+        public float SpaceRideSeconds => spaceRideSeconds;
+        public float MassMorphSeconds => massMorphSeconds;
+        public float TimeFlightSeconds => timeFlightSeconds;
+        public float ChargeFlightSeconds => chargeFlightSeconds;
         public float KiteOffscreenReach => kiteOffscreenReach;
         public float PilotKiteScale => pilotKiteScale;
         /// <summary>The mote colour of element index <paramref name="e"/> (Element - 1); <paramref name="fallback"/> when

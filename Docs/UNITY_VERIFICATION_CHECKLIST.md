@@ -1635,6 +1635,35 @@ authoring session, so `/verify-unity` did NOT run. Headless proof:
 
 ---
 
+### 🔴 The Wrasse's juice: every effect is its motes' petals, no rings; a steady small view (`cece/loving-fermat-ntdnbu`, 2026-10-21, round 10) — NOT EDITOR-VERIFIED
+
+**What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 10):
+- `KiteNavigatorJuice` (new) and `KiteBurst` (new) replace every flat effect ring.
+- The lasso cinches shut.
+- The Mass prisms are laid as the morphing blocks arrive (0.75 s later than before).
+- The Grouper's small view latches the totems' layout at rest.
+
+**Checked headless:**
+- `unity_refcompile`: player 0 errors; editor 0 errors in changed files.
+- `KiteNavigatorJuiceTests` 4/4 out of editor (NUnit shim); two planted defects fail them.
+- `juice_sheet.sh` renders every effect from above and from the chase camera, and the sheets were looked at.
+
+**Verify:**
+1. **Steady small view** - on the Wrasse, press and upgrade cards, swap seats and resize the window. The Grouper's
+   view stays in its box left of the totems and below the line, and never pumps.
+2. **Fizzle** - lasso two elements together: no ring and no outline. The motes sputter, go grey, droop and flicker out.
+3. **Space** - lasso Space motes: they spiral into the centre, a white-hot star flares as the blast goes off, and white
+   shards and petals fly out evenly and cool to lime.
+4. **Mass** - lasso Mass motes: each petal folds into a block, and the blocks rise and fly into the cluster's places,
+   becoming the prisms. The prisms appear as the blocks land; no prism shows before its block.
+5. **Time** - lasso Time motes: streaks spiral onto the Grouper (watch from the Grouper's view too) and land as glints.
+   The saved-boost dots appear when they land.
+6. **Charge** - lasso Charge motes: the petals home onto the Wrasse, orbit it and turn gold. The pips and the kite's gold
+   appear when they arrive.
+7. **Pops and steals** - the head popping a prism bursts white shards; a ram that steals streams gold into the Wrasse; an
+   Omni crystal blooms its four clusters open.
+8. **Frame time** - a big Mass loop (64 blocks) and a wall of pops cost nothing visible (`prof`).
+
 ### 🔴 The Wrasse and Grouper get real bodies; the kite flies the whole screen (`cece/loving-fermat-ntdnbu`, 2026-10-20, round 7) — NOT EDITOR-VERIFIED
 
 **What landed** (`Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md` round 7):

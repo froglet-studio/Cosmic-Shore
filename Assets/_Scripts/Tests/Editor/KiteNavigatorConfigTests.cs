@@ -118,6 +118,12 @@ namespace CosmicShore.Tests
             Assert.Less(c.HandEdgeMargin, 0.5f * c.ToSettings().SlingRope, "significantly less than the cord");
             Assert.AreEqual(240f, c.KiteOffscreenReach, "Tools/Build/author_wrasse_run_assets.py sizes the race clamp to it");
             Assert.AreEqual(2.5f, c.PilotKiteScale, 1e-6f);
+            // round 10: the juice (KiteNavigatorJuice); massMorphSeconds is also when a Mass loop's prisms are laid
+            Assert.AreEqual(0.95f, c.FizzleSeconds, 1e-6f);
+            Assert.AreEqual(1.1f, c.SpaceRideSeconds, 1e-6f);
+            Assert.AreEqual(0.75f, c.MassMorphSeconds, 1e-6f);
+            Assert.AreEqual(0.7f, c.TimeFlightSeconds, 1e-6f);
+            Assert.AreEqual(0.55f, c.ChargeFlightSeconds, 1e-6f);
         }
 
         [Test]

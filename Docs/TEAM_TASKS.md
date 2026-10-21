@@ -1233,3 +1233,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (feel and colour call); Yash (offered) can run it
 - **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
 - **See:** Docs/VesselModels/COLOR.md 5b; Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 8b and 9)
+
+### T-20261021-d063 · open · test · Crew vessels
+- **Task:** Round 10 of the Wrasse on cece/loving-fermat-ntdnbu: the juice. No effect rings; each loop's motes become its effect (fizzle sputters out grey, Space explodes with the blast, Mass blocks morph into the prisms, Time streaks onto the Grouper, Charge orbits onto the Wrasse); the lasso cinches; the Grouper's small view no longer pumps in and out of its box
+- **Done when:** The round-10 entry in Docs/UNITY_VERIFICATION_CHECKLIST.md passes, or each failure is written down with what to change
+- **Who can take it:** Garrett (feel: is it bespoke, unique, dynamic and polished?); Yash (offered) can run it
+- **Added:** 2026-10-21 by Claude for Garrett (`cece/loving-fermat-ntdnbu`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md (Round 10); bash Tools/Build/kite_navigator_lab/juice_sheet.sh

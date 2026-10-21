@@ -287,6 +287,50 @@ quarter to three quarters of green (an HSV hue of 75–105°). The four are now:
 All four are 0.02 apart (one just-noticeable difference) in value, saturation and hue, the most the blue-free sheet
 allows. `Docs/VesselModels/COLOR.md` §5b has the numbers.
 
+## Round 10: the juice, and a steady small view (Garrett, 2026-10-21)
+
+"when playing a the wrasse the pip view of the grouper sometimes resizes into and out of its designated region." The
+box came from the totem cards' live screen rect. That rect moved with every card press or upgrade tween, and dropped to
+the fallback square on any frame the cards could not be read.
+- `AbilityLockupView.TryGetCardsScreenRect` now measures each card AT REST, leaving out its own scale and rotation.
+- `KiteNavigatorView.LatchCards` takes a new measurement only once it has held for 0.5 s (or the screen changed), and a
+  failed read keeps the last good layout.
+
+"lets loose as many of the flat ring effects as we can and juice up each effect. when more than one is lassoed it should
+fizzle with no ring. space symbols should explode with explosion. mass symbols should look like they are morphing into
+the 3d mass. time should morph on to the grouper. charge should morph onto the wrasse. this should be the juice. it
+should be bespoke, unique, dynamic, and polished."
+
+Every flat ring is gone: the Space blast ring, the pop, Mass, Time, Charge and steal rings, and the fizzle ring.
+- **The lasso:** it cinches shut on what it caught: its outline is drawn in to the centre and thins over 0.4 s. A fizzle
+  has no outline at all.
+- **The motes become the effect:** the seat raises a `KiteBurst` (pooled, no allocation per pop) carrying the lassoed
+  motes. `KiteNavigatorJuice` spawns each mote's five petals exactly where its flower drew them, then:
+
+| Effect | The juice |
+|---|---|
+| Fizzle (more than one element) | The petals sputter in place, drain to grey, wilt and droop down the view, flickering out (`fizzleSeconds` 0.95). |
+| Space | The petals spiral into the centre through the blast's 0.2 s fuse. As the real AOEExplosion fires, a white-hot five-petal star flares at the core, and 18 white shards and the petals leave on the evenly spread spokes of one radial burst. They ride the shock front (plus a kick out of the detonation), streaking and cooling back to Space's lime as they fade (`spaceRideSeconds` 1.1). |
+| Mass | Each petal folds into its mote as a lit block appears. Each block (one per prism, up to 64) then rises out of the plane on an arc, grows to the prism's (2, 2, 5) with an overshoot, turns into the prism's attitude and lands in its exact place, flashing white. The seat lays the real prisms as the blocks arrive (`massMorphSeconds` 0.75, which is now also the Mass loop's delay). |
+| Time | The petals wait in place for a stagger, then spiral onto the Grouper as accelerating streaks, lifting a little out of the plane so they read from the chase camera. They land on points over its hull as glinting chips that flash and fade (`timeFlightSeconds` 0.7). The saved-boost dots on the board show when they land. |
+| Charge | The petals home onto the Wrasse on curved paths, swing into orbit at the charge pips' radius, and warm from lime to the pips' gold as they settle (`chargeFlightSeconds` 0.55). The pips and the kite's gold show when they arrive. |
+| Pop | A popped prism bursts into six white shards that streak out and fade. |
+| Steal / creature struck | Gold shards stream from the rival into the Wrasse. |
+| Omni drop | Each new cluster blooms open, its petals bursting out unevenly and fading. |
+
+How it draws: one vertex-coloured mesh per camera per frame, so every bit has its own colour, fade and flash. In the
+kite view the petals lie flat just under the lens. In the pilot view they face the camera, and the Mass blocks are
+shaded per face, so both read in 3D.
+
+How it was checked:
+- `KiteNavigatorJuice` reads a `KiteJuiceFrame` snapshot and `KiteJuiceSettings`, never the seat itself.
+- `Tools/Build/kite_navigator_lab/juice_sheet.sh [out.png] [pilot]` compiles the shipped file outside Unity and renders
+  every effect as a contact sheet, from above or from the chase camera. It fails on a non-finite vertex or an effect
+  that draws nothing.
+- `KiteNavigatorJuiceTests` (4 tests) check that every effect draws, stays finite and ends; that the Mass blocks are gone
+  when the prisms take over; that a fizzle is petals only; and that the charge and boosts wait for their petals. Planted
+  defects fail them.
+
 ## Seats: the swap is the arena's
 
 The swap uses the arena's pilot-swap gesture (`PilotSwapGesture`: D-pad left / right, keys 1 / 2), with
@@ -310,6 +354,7 @@ always flies the empty seat:
 | `KiteNavigator.cs` | The seat on the hull: board frame, motes, prism and rival shadows, thumb, head contacts, effects, swap. |
 | `Assets/_Prefabs/Spacevessels/Wrasse.prefab`, `Tools/Build/author_wrasse_assets.py` | The Wrasse hull (the Sparrow plus this seat) and the tool that authors and registers it. |
 | `WrasseCrewBodies.cs` | The two bodies (round 7): places, swims and replicates the Wrasse model where the kite flies; puppets the Grouper from the hull's measured motion. Finds both models and their bones by name. |
+| `KiteNavigatorJuice.cs`, `KiteBurst.cs` | The juice (round 10): every loop, pop, steal and Omni drop as a `KiteBurst`, its motes' petals choreographed per effect. Rendered offline by `Tools/Build/kite_navigator_lab/juice_sheet.sh`. |
 | `KiteNavigatorView.cs` | The two views: the kite camera, the picture-in-picture swap, every kite, tail, mote and ring draw (the game's renderer, `Graphics.RenderMeshInstanced`). |
 | `UI/Controller/WrasseHUDController.cs` | The four ability cards read the seat: saved boosts, charges, the last blast, the Mass flash. |
 | `Utility/PrismDepthPlane.cs`, `_Graphics/Materials/Graphs/PrismDepthPlane.hlsl` | Prism depth from a plane, for one camera's render (the kite view). |
@@ -409,6 +454,7 @@ node Tools/Build/kite_navigator_lab/parity.cjs        # core vs page, asset vs p
 bash Tools/Build/unity_refcompile/run.sh              # the player compile
 python3 Tools/Build/author_wrasse_assets.py --check     # the hull: no Sparrow kit, two sticks, the Wrasse HUD, the map, both bodies
 node Tools/Build/kite_navigator_lab/sling_parity.cjs  # the Sling vs the Wrasse Lasso Lab, asset vs page
+bash Tools/Build/kite_navigator_lab/juice_sheet.sh out.png [pilot]   # every effect's juice, rendered; fails on NaN or an empty effect
 python3 Tools/Build/vessel_model/build.py grouper --check && python3 Tools/Build/vessel_model/build.py wrassekite --check
 python3 Tools/Shaders/verify_swarm_member_pose.py     # the swarm members' spread with the depth-plane include
 ```

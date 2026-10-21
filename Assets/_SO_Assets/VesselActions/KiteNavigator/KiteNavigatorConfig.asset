@@ -81,6 +81,11 @@ MonoBehaviour:
   - {r: 0.3682, g: 0.7764, b: 0, a: 1}
   - {r: 0.25, g: 1, b: 0, a: 1}
   - {r: 0.6094, g: 0.8125, b: 0, a: 1}
+  fizzleSeconds: 0.95
+  spaceRideSeconds: 1.1
+  massMorphSeconds: 0.75
+  timeFlightSeconds: 0.7
+  chargeFlightSeconds: 0.55
   spaceSpinDegreesPerSecond: 150
   massPulse: 0.72
   massPetalsOut: 2

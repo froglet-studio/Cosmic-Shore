@@ -61,18 +61,17 @@ namespace CosmicShore.Gameplay
             public float X, Z, Y;
         }
 
-        internal enum FxKind { Loop = 0, Fizzle = 1, Pop = 2, Space = 3, Mass = 4, Time = 5, Charge = 6, Steal = 7 }
-
-        internal struct Fx
+        // A closed loop's outline: the lasso cinching shut (KiteNavigatorView). A fizzled loop draws none.
+        internal struct LoopFx
         {
-            public FxKind Kind;
-            public float X, Z, T0, MaxScale;
+            public float X, Z, T0;
             public KiteVec[] Loop;
         }
 
-        // AOEExplosion.prefab's authored timing, used only to draw the blast's ring on the board
+        // AOEExplosion.prefab's authored timing: the blast's fuse and run (the view's Space juice rides it)
         internal const float BlastDelay = 0.2f, BlastDuration = 3f;
-        const float FxLife = 1.4f;
+        const float LoopFxLife = 0.45f;
+        const int MaxPendingBursts = 48;
         const float PrismHalfWidth = 1f;          // the Sparrow's 2 u trail prism
         const float RamReach = 4f;                // a hull's shadow is this much wider than a point
         const int MaxPrismShadows = 900;
@@ -103,7 +102,11 @@ namespace CosmicShore.Gameplay
         internal readonly List<PrismShadow> Prisms = new();
         internal readonly List<RivalShadow> Rivals = new();
         internal readonly List<FaunaShadow> Creatures = new();
-        internal readonly List<Fx> Effects = new();
+        internal readonly List<LoopFx> Loops = new();
+        internal readonly List<KiteBurst> Bursts = new();          // drained by the view each frame (Recycle)
+        readonly Stack<KiteBurst> _burstPool = new();
+        readonly List<KiteBurstMote> _lassoed = new();
+        float _massLayAt;
         readonly List<Prism> _query = new();
         readonly List<KiteMote> _aiMotes = new();
         readonly List<KiteTarget> _aiPrisms = new();
@@ -160,6 +163,8 @@ namespace CosmicShore.Gameplay
         /// the hand, to the kite (Garrett, 2026-10-20: "make the wrasse cord visible to the wrasse player").</summary>
         internal bool CordHeld => _sling && _down;
         internal Vector3 BoardRight => _r;
+        /// <summary>The Grouper's transform while seated (the Time juice lands on it).</summary>
+        internal Transform HullTransform => _vessel != null && UnityLiveness.Alive(_vessel.Transform) ? _vessel.Transform : null;
         internal Vector3 BoardForward => _f;
         internal Vector3 BoardUp => _u;
 
@@ -266,7 +271,7 @@ namespace CosmicShore.Gameplay
             _aim = _kite.Position;
             _snapped = false;
             _humanNavigates = _weTookHull = _down = _boosting = false;
-            Motes.Clear(); Effects.Clear(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
+            Motes.Clear(); Loops.Clear(); DropBursts(); _massQueue.Clear(); _lastRam.Clear(); Prisms.Clear(); Rivals.Clear();
             _charge = 0f; _savedBoosts = 0; _lastBlastDestroyed = 0; _blastWatch.Clear(); _blastCounted.Clear(); _massFlashAt = -99f; _boostReadyAt = 0f; _omniPending = 0;
             // the views, the swap and the static handle belong to the local pilot's seat; an AI crew draws nothing
             if (_aiCrew) return;
@@ -594,7 +599,8 @@ namespace CosmicShore.Gameplay
                         float x = cx + Gauss() * _cfg.MoteSpread * 0.6f, z = cz + Gauss() * _cfg.MoteSpread * 0.6f;
                         Motes.Add(new Mote { World = BoardToWorld(x, z), X = x, Z = z, Y = 0f, Has = true, Element = e, Spin = (float)_rng.NextDouble() * 360f });
                     }
-                    AddFx(FxKind.Pop, cx, cz);
+                    var bloom = NewBurst(KiteBurstKind.Bloom, cx, cz);
+                    if (bloom != null) bloom.Element = e;
                 }
             }
 
@@ -929,8 +935,9 @@ namespace CosmicShore.Gameplay
             {
                 if (!p.Hostile || !Touchable(p.Y) || !p.Prism || p.Prism.destroyed) continue;
                 if (KiteNavigatorCore.DistanceToSegmentSq(p.X, p.Z, prev, at) > h2) continue;
+                var pop = NewBurst(KiteBurstKind.Pop, p.X, p.Z);
+                if (pop != null) pop.World = p.Prism.transform.position;
                 p.Prism.Damage(impact, own, name);
-                AddFx(FxKind.Pop, p.X, p.Z);
                 Play(_cfg.PrismPoppedSfx, p.Prism.transform.position);
             }
 
@@ -949,7 +956,8 @@ namespace CosmicShore.Gameplay
                 if (KiteNavigatorCore.DistanceToSegmentSq(c.X, c.Z, prev, at) > rr) continue;
                 if (!c.Fauna.Jousted(name)) continue;
                 _charge = Mathf.Max(0f, _charge - _cfg.FaunaChargeCost);
-                AddFx(FxKind.Steal, c.X, c.Z);
+                var struck = NewBurst(KiteBurstKind.Steal, c.X, c.Z);
+                if (struck != null) struck.World = c.Fauna.transform.position;
                 Play(_cfg.FaunaStruckSfx, c.Fauna.transform.position);
             }
         }
@@ -996,7 +1004,7 @@ namespace CosmicShore.Gameplay
                 HitClass = CombatHitClass.Strike,
                 SupersededRank = supersededRank,
             });
-            AddFx(FxKind.Steal, rival.X, rival.Z);
+            NewBurst(KiteBurstKind.Steal, rival.X, rival.Z);
             Play(_cfg.StealSfx, BoardToWorld(rival.X, rival.Z));
         }
 
@@ -1006,23 +1014,31 @@ namespace CosmicShore.Gameplay
         {
             _ai.OnLoopClosed();
             var centre = KiteNavigatorCore.Centroid(poly);
-            Effects.Add(new Fx { Kind = FxKind.Loop, X = centre.X, Z = centre.Z, T0 = Time.time, Loop = poly.ToArray() });
 
             int charge = 0, mass = 0, space = 0, time = 0, inside = 0;
+            _lassoed.Clear();
             for (int i = Motes.Count - 1; i >= 0; i--)
             {
                 var m = Motes[i];
                 if (!Touchable(m.Y) || !KiteNavigatorCore.PointInPolygon(m.X, m.Z, poly)) continue;
                 switch (m.Element) { case 0: charge++; break; case 1: mass++; break; case 2: space++; break; default: time++; break; }
+                _lassoed.Add(new KiteBurstMote { X = m.X, Z = m.Z, Spin = m.Spin, Element = m.Element });
                 Motes.RemoveAt(i);
                 inside++;
             }
-            if (inside == 0) return;
 
             var at = BoardToWorld(centre.X, centre.Z);
-            if (!KiteNavigatorCore.ResolveLoop(charge, mass, space, time, _cfg.MixedLoops, out int element, out int n))
+            bool fired = KiteNavigatorCore.ResolveLoop(charge, mass, space, time, _cfg.MixedLoops, out int element, out int n);
+            // the lasso cinches shut on what it caught; a fizzle shows no outline at all, its motes sputter out instead
+            if (inside == 0 || fired)
+                Loops.Add(new LoopFx { X = centre.X, Z = centre.Z, T0 = Time.time, Loop = poly.ToArray() });
+            if (inside == 0) return;
+
+            var burst = NewBurst(fired ? (KiteBurstKind)(element switch { 2 => 1, 1 => 2, 3 => 3, _ => 4 }) : KiteBurstKind.Fizzle,
+                                 centre.X, centre.Z);
+            if (burst != null) burst.Motes.AddRange(_lassoed);
+            if (!fired)
             {
-                AddFx(FxKind.Fizzle, centre.X, centre.Z);
                 Play(_cfg.LoopFizzledSfx, at);
                 return;
             }
@@ -1030,18 +1046,18 @@ namespace CosmicShore.Gameplay
             Play(_cfg.LoopClosedSfx, at);
             switch (element)
             {
-                case 2: FireSpace(n, centre, at); break;
-                case 1: FireMass(n, centre, at); break;
-                case 3: FireTime(n, centre, at); break;
-                default: FireCharge(n, centre, at); break;
+                case 2: FireSpace(n, at, burst); break;
+                case 1: FireMass(n, at, burst); break;
+                case 3: FireTime(n, at); break;
+                default: FireCharge(n, at); break;
             }
         }
 
         // SPACE: an AOEExplosion at the loop's centre, on the plane, sparing our own domain
-        void FireSpace(int n, KiteVec c, Vector3 at)
+        void FireSpace(int n, Vector3 at, KiteBurst burst)
         {
             float maxScale = KiteNavigatorCore.Grow(_cfg.SpaceMaxScale, n, _cfg.Growth, _cfg.SpaceMaxScaleCap);
-            Effects.Add(new Fx { Kind = FxKind.Space, X = c.X, Z = c.Z, T0 = Time.time, MaxScale = maxScale });
+            if (burst != null) burst.MaxScale = maxScale;
             WatchBlast(at, 0.5f * maxScale);
 
             var prefabs = _cfg.SpaceExplosions;
@@ -1113,8 +1129,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // MASS: a cluster of our domain's prisms at the loop's centre, laid over a few frames
-        void FireMass(int n, KiteVec c, Vector3 at)
+        // MASS: a cluster of our domain's prisms at the loop's centre, laid over a few frames once the lassoed motes have
+        // morphed into them (massMorphSeconds: the view flies each mote's petals, as blocks, into these very places)
+        void FireMass(int n, Vector3 at, KiteBurst burst)
         {
             int count = Mathf.RoundToInt(KiteNavigatorCore.Grow(_cfg.MassPrisms, n, _cfg.Growth, _cfg.MassPrismCap));
             float rad = Mathf.Max(4f, 2.6f * Mathf.Pow(count, 1f / 3f) * (_cfg.MassPrismScale.z / 5f));
@@ -1122,9 +1139,11 @@ namespace CosmicShore.Gameplay
             {
                 var dir = RandomUnit();
                 float d = rad * Mathf.Pow((float)_rng.NextDouble(), 1f / 3f);
-                _massQueue.Enqueue((at + dir * d, Quaternion.LookRotation(RandomUnit(), RandomUnit())));
+                var place = (at + dir * d, Quaternion.LookRotation(RandomUnit(), RandomUnit()));
+                _massQueue.Enqueue(place);
+                burst?.Targets.Add(place);
             }
-            AddFx(FxKind.Mass, c.X, c.Z);
+            _massLayAt = Time.time + _cfg.MassMorphSeconds;
             _massFlashAt = Time.time;
             Play(_cfg.MassClusterSfx, at);
         }
@@ -1137,7 +1156,7 @@ namespace CosmicShore.Gameplay
 
         void LayMassQueue()
         {
-            if (_massQueue.Count == 0) return;
+            if (_massQueue.Count == 0 || Time.time < _massLayAt) return;
             var spawner = _status.VesselPrismController;
             var channel = spawner ? spawner.PrismSpawnChannel : null;
             if (!channel) { _massQueue.Clear(); return; }
@@ -1169,11 +1188,10 @@ namespace CosmicShore.Gameplay
 
         // TIME: boosts saved for the pilot. A loop of n motes saves growth^(n-1) boosts of timeBoostSeconds each - the lab's
         // timeBoost x growth^(n-1) seconds, in whole boosts the pilot spends one at a time (the Time icon counts them)
-        void FireTime(int n, KiteVec c, Vector3 at)
+        void FireTime(int n, Vector3 at)
         {
             int boosts = Mathf.Max(1, Mathf.RoundToInt(KiteNavigatorCore.Grow(1f, n, _cfg.Growth, MaxSavedBoosts)));
             _savedBoosts = Mathf.Min(MaxSavedBoosts, _savedBoosts + boosts);
-            AddFx(FxKind.Time, c.X, c.Z);
             Play(_cfg.TimeBoostSfx, at);
         }
 
@@ -1237,30 +1255,47 @@ namespace CosmicShore.Gameplay
         }
 
         // CHARGE: kite power, spent by the next ram on a rival
-        void FireCharge(int n, KiteVec c, Vector3 at)
+        void FireCharge(int n, Vector3 at)
         {
             float add = KiteNavigatorCore.Grow(_cfg.ChargePetals, n, _cfg.Growth, _cfg.ChargeCap);
             _charge = Mathf.Min(_cfg.ChargeCap, _charge + add);
-            AddFx(FxKind.Charge, c.X, c.Z);
             Play(_cfg.ChargeSfx, at);
         }
 
         // ------------------------------------------------------------------ feedback
 
-        void AddFx(FxKind kind, float x, float z)
+        // A burst for the view, from the pool (no allocation per pop). Null past MaxPendingBursts: a frame that pops a wall of
+        // prisms shows the first of them.
+        KiteBurst NewBurst(KiteBurstKind kind, float x, float z)
         {
-            if (Effects.Count < 64) Effects.Add(new Fx { Kind = kind, X = x, Z = z, T0 = Time.time });
+            if (Bursts.Count >= MaxPendingBursts) return null;
+            var b = _burstPool.Count > 0 ? _burstPool.Pop() : new KiteBurst();
+            b.Kind = kind; b.Element = 0; b.X = x; b.Z = z; b.T0 = Time.time; b.MaxScale = 0f;
+            b.World = BoardToWorld(x, z);
+            Bursts.Add(b);
+            return b;
+        }
+
+        /// <summary>The view hands a burst back once it has spawned its juice.</summary>
+        internal void Recycle(KiteBurst b)
+        {
+            b.Motes.Clear();
+            b.Targets.Clear();
+            _burstPool.Push(b);
+        }
+
+        void DropBursts()
+        {
+            foreach (var b in Bursts) Recycle(b);
+            Bursts.Clear();
         }
 
         void PruneEffects()
         {
             float now = Time.time;
-            for (int i = Effects.Count - 1; i >= 0; i--)
-            {
-                var fx = Effects[i];
-                float life = fx.Kind == FxKind.Space ? BlastDelay + BlastDuration + 0.6f : FxLife;
-                if (now - fx.T0 > life) Effects.RemoveAt(i);
-            }
+            for (int i = Loops.Count - 1; i >= 0; i--)
+                if (now - Loops[i].T0 > LoopFxLife) Loops.RemoveAt(i);
+            if (_view == null) DropBursts();   // nobody draws them (an AI crew has no view)
         }
 
         static void Play(EventReference evt, Vector3 at)

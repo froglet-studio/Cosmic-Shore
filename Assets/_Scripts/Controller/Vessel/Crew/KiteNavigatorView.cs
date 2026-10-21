@@ -43,14 +43,15 @@ namespace CosmicShore.Gameplay
         readonly KiteNavigator _nav;
         readonly GameObject _root;
         readonly Camera _cam;
-        readonly Mesh _kiteMesh, _dotMesh, _ringMesh;
+        readonly Mesh _kiteMesh, _dotMesh;
         readonly Mesh[] _petals = new Mesh[4];
         readonly Vector3[][] _outlines = new Vector3[4][];   // each petal's outline in its mesh's own space
         static readonly Color Plasma = new(0.42f, 0.72f, 1f, 1f);   // the Charge crystal's blue plasma
         readonly Material _plasmaMat;
-        readonly Mesh _tailMesh, _loopMesh, _cordMesh;
-        readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _ringMat, _goldMat;
-        readonly Material _tailMat, _loopMat, _cordMat;
+        readonly Mesh _tailMesh, _loopMesh, _cordMesh, _juiceKiteMesh, _juicePilotMesh;
+        readonly Material _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _goldMat;
+        readonly Material _tailMat, _loopMat, _cordMat, _juiceMat;
+        readonly KiteNavigatorJuice _juice;
         // each element's mote, in its own shade of lime (KiteNavigatorConfig.elementColors), and its faint pilot-view dot
         readonly Material[] _moteMats = new Material[4], _moteFaintMats = new Material[4];
         readonly List<Vector3> _verts = new();
@@ -61,6 +62,13 @@ namespace CosmicShore.Gameplay
         Camera _pilot;
         AbilityLockupView _lockup;
         float _lockupRetryAt, _line01;
+        // the cards' rect the layout uses: a new measurement replaces it only once it has held for CardsSettleSeconds (or
+        // the screen changed), and a failed one keeps it, so the pilot's view never pumps in and out of its box
+        Rect _cards, _cardsPending;
+        bool _haveCards;
+        float _cardsPendingSince;
+        Vector2Int _cardsScreen;
+        const float CardsSettleSeconds = 0.5f, CardsSamePixels = 2f;
         Rect _pilotRect;
         float _pilotDepth;
         bool _pilotLifted;
@@ -86,7 +94,6 @@ namespace CosmicShore.Gameplay
 
             _kiteMesh = BuildKite();
             _dotMesh = BuildDisc(1f, 12);
-            _ringMesh = BuildRing(1f, 0.08f, 48);
             for (int e = 0; e < 4; e++)
             {
                 _petals[e] = BuildPetal((Element)(e + 1));
@@ -98,6 +105,11 @@ namespace CosmicShore.Gameplay
             _tailMesh.MarkDynamic();
             _loopMesh = new Mesh { name = "KiteLoops" };
             _loopMesh.MarkDynamic();
+            _juiceKiteMesh = new Mesh { name = "KiteJuice" };
+            _juiceKiteMesh.MarkDynamic();
+            _juicePilotMesh = new Mesh { name = "KiteJuicePilot" };
+            _juicePilotMesh.MarkDynamic();
+            _juice = new KiteNavigatorJuice(_outlines, PetalCentreOut, PetalScale);
             _cordMesh = new Mesh { name = "KiteCord" };
             _cordMesh.MarkDynamic();
 
@@ -105,6 +117,7 @@ namespace CosmicShore.Gameplay
             var unlit = LoadUnlitTemplate();
             _tailMat = VertexColoured(Lime);
             _loopMat = VertexColoured(new Color(1f, 1f, 1f, 0.85f));
+            _juiceMat = VertexColoured(Color.white);
             _cordMat = VertexColoured(new Color(1f, 1f, 1f, cfg.CordAlpha));
             _kiteMat = Unlit(unlit, KiteWhite);
             _kiteChargedMat = Unlit(unlit, Gold);
@@ -116,7 +129,6 @@ namespace CosmicShore.Gameplay
                 _moteMats[e] = Unlit(unlit, new Color(c.r, c.g, c.b, 1f));
                 _moteFaintMats[e] = Unlit(unlit, new Color(c.r, c.g, c.b, cfg.PilotDotAlpha));
             }
-            _ringMat = Unlit(unlit, new Color(1f, 1f, 1f, 0.85f));
             _goldMat = Unlit(unlit, Gold);
             _plasmaMat = Unlit(unlit, Plasma);
             _plasmaMat.renderQueue += 1;                     // the bolt over the lime petals
@@ -194,8 +206,9 @@ namespace CosmicShore.Gameplay
             foreach (var o in _petals) if (o) Object.Destroy(o);
             foreach (var o in _moteMats) if (o) Object.Destroy(o);
             foreach (var o in _moteFaintMats) if (o) Object.Destroy(o);
-            foreach (var o in new Object[] { _kiteMesh, _dotMesh, _ringMesh, _tailMesh, _loopMesh, _cordMesh, _tailMat, _loopMat, _cordMat,
-                                             _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _ringMat, _goldMat, _plasmaMat })
+            foreach (var o in new Object[] { _kiteMesh, _dotMesh, _tailMesh, _loopMesh, _cordMesh, _juiceKiteMesh, _juicePilotMesh, _tailMat,
+                                             _loopMat, _cordMat, _juiceMat, _kiteMat, _kiteChargedMat, _kiteFaintMat, _limeMat, _goldMat,
+                                             _plasmaMat })
                 if (o) Object.Destroy(o);
         }
 
@@ -269,10 +282,32 @@ namespace CosmicShore.Gameplay
                 foreach (var l in _nav.GetComponentsInChildren<AbilityLockupView>(true))
                     if (l.isActiveAndEnabled) { _lockup = l; break; }
             }
-            if (!_lockup || Screen.width <= 0 || Screen.height <= 0 || !_lockup.TryGetCardsScreenRect(out var cards)) return -1f;
-            _line01 = Mathf.Clamp01(cards.yMax / Screen.height + cfg.HandLineGap);
-            return Mathf.Clamp01(cards.xMin / Screen.width);
+            if (Screen.width <= 0 || Screen.height <= 0) return -1f;
+            if (_lockup && _lockup.TryGetCardsScreenRect(out var measured)) LatchCards(measured);
+            if (!_haveCards) return -1f;
+            _line01 = Mathf.Clamp01(_cards.yMax / Screen.height + cfg.HandLineGap);
+            return Mathf.Clamp01(_cards.xMin / Screen.width);
         }
+
+        void LatchCards(Rect measured)
+        {
+            var screen = new Vector2Int(Screen.width, Screen.height);
+            float now = Time.unscaledTime;
+            if (!_haveCards || screen != _cardsScreen)
+            {
+                _cards = _cardsPending = measured;
+                _cardsScreen = screen;
+                _haveCards = true;
+                return;
+            }
+            if (SameRect(measured, _cards)) { _cardsPending = _cards; return; }
+            if (!SameRect(measured, _cardsPending)) { _cardsPending = measured; _cardsPendingSince = now; return; }
+            if (now - _cardsPendingSince >= CardsSettleSeconds) _cards = _cardsPending;
+        }
+
+        static bool SameRect(Rect a, Rect b) =>
+            Mathf.Abs(a.xMin - b.xMin) <= CardsSamePixels && Mathf.Abs(a.xMax - b.xMax) <= CardsSamePixels &&
+            Mathf.Abs(a.yMin - b.yMin) <= CardsSamePixels && Mathf.Abs(a.yMax - b.yMax) <= CardsSamePixels;
 
         bool _corridorOverridden, _planePublished;
 
@@ -348,6 +383,12 @@ namespace CosmicShore.Gameplay
             Camera kite = _cam, pilot = _pilot;
             float lift = cfg.ViewDepth - 2f;   // just under the lens: in front of every prism the view sees
             float now = Time.time;
+            var juiceFrame = JuiceFrame(now, pilot);
+            var juiceSettings = JuiceSettings();
+            _juice.Drain(_nav.Bursts, _recycle ??= _nav.Recycle, juiceFrame, juiceSettings);
+            // the charge and the saved boosts show once the petals carrying them have arrived (KiteNavigatorJuice)
+            float charge = _juice.ShownCharge(_nav.Charge, now);
+            int boosts = _juice.ShownBoosts(_nav.SavedBoosts, now);
 
             // the kite: pointed along its flight, gold while charged; faint for the pilot
             var kv = _nav.Kite.Velocity;
@@ -357,7 +398,7 @@ namespace CosmicShore.Gameplay
             float kr = cfg.KiteRadius;
             // a crew body draws the Wrasse as a model everyone sees (WrasseCrewBodies); the flat kite is the fallback
             if (!_nav.BodyDrawsKite)
-                Add(_nav.Charge >= 1f ? _kiteChargedMat : _kiteMat, _kiteMesh, kite,
+                Add(charge >= 1f ? _kiteChargedMat : _kiteMat, _kiteMesh, kite,
                     Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z) + _nav.BoardUp * lift, kiteRot, Vector3.one * kr));
             // the pilot keeps a larger, faint stand-in for the Wrasse, model or not (Garrett, 2026-10-20: "The grouper can keep
             // a larger representative view of the wrasse")
@@ -366,7 +407,7 @@ namespace CosmicShore.Gameplay
                     Matrix4x4.TRS(_nav.BoardToWorld(at.X, at.Z), kiteRot, Vector3.one * kr * cfg.PilotKiteScale));
 
             // charge pips round the kite
-            int pips = Mathf.Min(12, Mathf.FloorToInt(_nav.Charge));
+            int pips = Mathf.Min(12, Mathf.FloorToInt(charge));
             for (int i = 0; i < pips; i++)
             {
                 float a = i / 12f * Mathf.PI * 2f;
@@ -385,7 +426,7 @@ namespace CosmicShore.Gameplay
             }
 
             // the pilot's saved boosts, a dot each round the hull in the kite view
-            int bd = Mathf.Min(24, _nav.SavedBoosts);
+            int bd = Mathf.Min(24, boosts);
             for (int i = 0; i < bd; i++)
             {
                 float a = Mathf.PI * 0.5f + i / 24f * Mathf.PI * 2f;
@@ -393,30 +434,63 @@ namespace CosmicShore.Gameplay
                 Add(_limeMat, _dotMesh, kite, Matrix4x4.TRS(p, basis, Vector3.one * 0.7f));
             }
 
-            // effect rings
-            foreach (var fx in _nav.Effects)
-            {
-                float t = now - fx.T0;
-                var c = _nav.BoardToWorld(fx.X, fx.Z) + _nav.BoardUp * lift;
-                float r = fx.Kind switch
-                {
-                    KiteNavigator.FxKind.Space => KiteNavigatorCore.BlastRadius(fx.MaxScale, t, KiteNavigator.BlastDelay, KiteNavigator.BlastDuration),
-                    KiteNavigator.FxKind.Pop => 2f + t * 18f,
-                    KiteNavigator.FxKind.Loop => 0f,
-                    _ => 5f + t * 30f,
-                };
-                if (r < 0.5f) continue;
-                Add(fx.Kind is KiteNavigator.FxKind.Charge or KiteNavigator.FxKind.Steal ? _goldMat : _ringMat, _ringMesh, kite,
-                    Matrix4x4.TRS(c, basis, Vector3.one * r));
-            }
-
+            // no effect rings: every effect is its motes' own petals, choreographed (KiteNavigatorJuice)
             BuildTail(lift);
             BuildLoops(lift, now);
             BuildCord(lift);
+            _juice.Build(juiceFrame, juiceSettings);
+            FillJuice(_juiceKiteMesh, 0);
+            FillJuice(_juicePilotMesh, 1);
             Flush();
             DrawDynamic(_tailMesh, _tailMat, kite);
             DrawDynamic(_loopMesh, _loopMat, kite);
             DrawDynamic(_cordMesh, _cordMat, kite);
+            DrawDynamic(_juiceKiteMesh, _juiceMat, kite);
+            DrawDynamic(_juicePilotMesh, _juiceMat, pilot);
+        }
+
+        System.Action<KiteBurst> _recycle;
+        readonly Color[] _juiceColours = new Color[4];
+
+        // the board, the bodies and the pilot's camera, for the juice (KiteNavigatorJuice reads no engine object)
+        KiteJuiceFrame JuiceFrame(float now, Camera pilot)
+        {
+            var at = _nav.Kite.Position;
+            var hull = _nav.HullTransform;
+            return new KiteJuiceFrame
+            {
+                Now = now, ViewDepth = _nav.Config.ViewDepth,
+                Origin = _nav.BoardToWorld(0f, 0f), Up = _nav.BoardUp, Right = _nav.BoardRight, Forward = _nav.BoardForward,
+                Kite = _nav.BoardToWorld(at.X, at.Z),
+                HasHull = hull, HullPosition = hull ? hull.position : default, HullRotation = hull ? hull.rotation : Quaternion.identity,
+                HasPilot = pilot, PilotPosition = pilot ? pilot.transform.position : default, PilotUp = pilot ? pilot.transform.up : Vector3.up,
+            };
+        }
+
+        KiteJuiceSettings JuiceSettings()
+        {
+            var cfg = _nav.Config;
+            for (int e = 0; e < 4; e++) _juiceColours[e] = cfg.ElementColor(e, Lime);
+            return new KiteJuiceSettings
+            {
+                MoteSize = cfg.MoteSize, SpaceSpinDegreesPerSecond = cfg.SpaceSpinDegreesPerSecond, KiteRadius = cfg.KiteRadius,
+                MoteSpread = cfg.MoteSpread, FizzleSeconds = cfg.FizzleSeconds, SpaceRideSeconds = cfg.SpaceRideSeconds,
+                MassMorphSeconds = cfg.MassMorphSeconds, TimeFlightSeconds = cfg.TimeFlightSeconds,
+                ChargeFlightSeconds = cfg.ChargeFlightSeconds, MassPrismScale = cfg.MassPrismScale,
+                PetalCount = ElementalBarsConfigSO.PetalCount, PetalSpacing = ElementalBarsConfigSO.PetalSpacing,
+                Elements = _juiceColours,
+            };
+        }
+
+        void FillJuice(Mesh mesh, int view)
+        {
+            mesh.Clear();
+            var verts = _juice.Vertices(view);
+            if (verts.Count == 0) return;
+            mesh.SetVertices(verts);
+            mesh.SetColors(_juice.Colors(view));
+            mesh.SetTriangles(_juice.Triangles(view), 0);
+            mesh.RecalculateBounds();
         }
 
         // the rope, hand to kite, while it is held (Garrett, 2026-10-20: "make the wrasse cord visible to the wrasse player");
@@ -445,8 +519,8 @@ namespace CosmicShore.Gameplay
         // sprite the size of the whole flower, turned 72 degrees per petal): where the petal's centre sits out from the
         // flower's centre, and the scale of its outline mesh (whose longer side spans 2), both in flower radii. Traced from
         // each sprite's alpha bounds (>= 0.5), so the kite's motes keep the totem's sizes, shapes and spacing (round 4f).
-        static readonly float[] PetalCentreOut = { 0.445f, 0.395f, 0.461f, 0.461f };   // Charge, Mass, Space, Time
-        static readonly float[] PetalScale = { 0.367f, 0.453f, 0.383f, 0.383f };
+        internal static readonly float[] PetalCentreOut = { 0.445f, 0.395f, 0.461f, 0.461f };   // Charge, Mass, Space, Time
+        internal static readonly float[] PetalScale = { 0.367f, 0.453f, 0.383f, 0.383f };
         readonly Matrix4x4[] _flowerPetals = new Matrix4x4[ElementalBarsConfigSO.PetalCount];
 
         // A mote: five petals of its element's shape, laid out as the totem lays them, each moving like its element.
@@ -573,17 +647,23 @@ namespace CosmicShore.Gameplay
             Fill(_tailMesh);
         }
 
-        // every loop closed in the last moments, its outline fading
+        // every loop closed in the last moments: the lasso CINCHES shut on what it caught, drawn in toward its centre and
+        // thinning as it goes (no ring left behind). A fizzled loop has no entry: its motes sputter out instead.
         void BuildLoops(float lift, float now)
         {
             _verts.Clear(); _colors.Clear(); _tris.Clear();
-            float w = _nav.Config.TailWidth * 0.4f;
-            foreach (var fx in _nav.Effects)
+            float w = _nav.Config.TailWidth * 0.5f;
+            foreach (var fx in _nav.Loops)
             {
-                if (fx.Kind != KiteNavigator.FxKind.Loop || fx.Loop is not { Length: > 2 }) continue;
-                float life = Mathf.Clamp01(1f - (now - fx.T0) / 1.4f);
+                if (fx.Loop is not { Length: > 2 }) continue;
+                float u = Mathf.Clamp01((now - fx.T0) / 0.4f), pull = u * u * u, alpha = 1f - u * u;
+                var c = new KiteVec(fx.X, fx.Z);
                 for (int i = 0; i < fx.Loop.Length; i++)
-                    Segment(fx.Loop[i], fx.Loop[(i + 1) % fx.Loop.Length], w, life, lift);
+                {
+                    KiteVec a = fx.Loop[i], b = fx.Loop[(i + 1) % fx.Loop.Length];
+                    Segment(new KiteVec(a.X + (c.X - a.X) * pull, a.Z + (c.Z - a.Z) * pull),
+                            new KiteVec(b.X + (c.X - b.X) * pull, b.Z + (c.Z - b.Z) * pull), w * (1f - 0.6f * u), alpha, lift);
+                }
             }
             Fill(_loopMesh);
         }
@@ -633,22 +713,6 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i <= seg; i++) { float a = i / (float)seg * Mathf.PI * 2f; v.Add(new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r)); }
             for (int i = 1; i <= seg; i++) { t.Add(0); t.Add(i); t.Add(i + 1); }
             var m = new Mesh { name = "KiteDot" };
-            m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateBounds();
-            return m;
-        }
-
-        static Mesh BuildRing(float r, float width, int seg)
-        {
-            var v = new List<Vector3>();
-            var t = new List<int>();
-            for (int i = 0; i <= seg; i++)
-            {
-                float a = i / (float)seg * Mathf.PI * 2f, c = Mathf.Cos(a), s = Mathf.Sin(a);
-                v.Add(new Vector3(c * (r - width), 0f, s * (r - width)));
-                v.Add(new Vector3(c * r, 0f, s * r));
-            }
-            for (int i = 0; i < seg; i++) { int k = i * 2; t.Add(k); t.Add(k + 1); t.Add(k + 3); t.Add(k); t.Add(k + 3); t.Add(k + 2); }
-            var m = new Mesh { name = "KiteRing" };
             m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateBounds();
             return m;
         }
