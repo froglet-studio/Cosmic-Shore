@@ -173,12 +173,12 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField, Range(0f, 90f), Tooltip(
             "Slip angle (degrees) at or below which the loop plays at " +
             "quietVolume01. A drift starts at 0, so this is how it opens.")]
-        float quietSlipDegrees = 5f;
+        float quietSlipDegrees = 0f;
 
         [SerializeField, Range(1f, 180f), Tooltip(
             "Slip angle (degrees) at or above which the loop plays at full " +
             "volume (1 = the volume it had before slip scaling existed).")]
-        float fullSlipDegrees = 45f;
+        float fullSlipDegrees = 180f;
 
         [SerializeField, Range(0f, 1f), Tooltip(
             "Volume multiplier at a small slip angle. 0 = silent.")]
@@ -537,14 +537,13 @@ namespace CosmicShore.Gameplay.Audio
         /// <summary>
         /// Volume multiplier for a slip angle: <paramref name="quietVolume"/>
         /// at or below <paramref name="quietDegrees"/>, 1 at or above
-        /// <paramref name="fullDegrees"/>, eased (smoothstep) in between.
+        /// <paramref name="fullDegrees"/>, linear in between.
         /// </summary>
         public static float SlipVolume(float slipDegrees, float quietDegrees, float fullDegrees, float quietVolume)
         {
             float t = fullDegrees > quietDegrees
                 ? Mathf.Clamp01((slipDegrees - quietDegrees) / (fullDegrees - quietDegrees))
                 : (slipDegrees >= fullDegrees ? 1f : 0f);
-            t = t * t * (3f - 2f * t);
             return Mathf.Lerp(Mathf.Clamp01(quietVolume), 1f, t);
         }
 

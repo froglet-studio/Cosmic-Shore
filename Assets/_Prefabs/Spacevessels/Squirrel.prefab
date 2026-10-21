@@ -1330,8 +1330,8 @@ MonoBehaviour:
   releaseSmoothing: 20
   releaseHoldSeconds: 0.4
   scaleVolumeBySlipAngle: 1
-  quietSlipDegrees: 5
-  fullSlipDegrees: 45
+  quietSlipDegrees: 0
+  fullSlipDegrees: 180
   quietVolume01: 0.15
   slipVolumeSmoothing: 10
   onlyAudibleToController: 1

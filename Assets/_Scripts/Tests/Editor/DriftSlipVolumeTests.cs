@@ -11,7 +11,7 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class DriftSlipVolumeTests
     {
-        const float Quiet = 5f, Full = 45f, QuietVolume = 0.15f;
+        const float Quiet = 0f, Full = 180f, QuietVolume = 0.15f;
 
         static float V(float degrees) => DriftAudioController.SlipVolume(degrees, Quiet, Full, QuietVolume);
 
@@ -26,8 +26,7 @@ namespace CosmicShore.Tests
         public void LargeSlip_IsTheUnscaledVolume()
         {
             Assert.AreEqual(1f, V(Full), 1e-6f);
-            Assert.AreEqual(1f, V(90f), 1e-6f);
-            Assert.AreEqual(1f, V(180f), 1e-6f);
+            Assert.AreEqual(1f, V(200f), 1e-6f);
         }
 
         [Test]
@@ -40,8 +39,14 @@ namespace CosmicShore.Tests
                 Assert.GreaterOrEqual(v, previous - 1e-6f, $"volume fell at {d} degrees");
                 previous = v;
             }
-            Assert.Greater(V(25f), QuietVolume);
-            Assert.Less(V(25f), 1f);
+        }
+
+        [Test]
+        public void Volume_IsLinearInSlip()
+        {
+            Assert.AreEqual(QuietVolume + (1f - QuietVolume) * 0.25f, V(45f), 1e-5f);
+            Assert.AreEqual(QuietVolume + (1f - QuietVolume) * 0.5f, V(90f), 1e-5f);
+            Assert.AreEqual(QuietVolume + (1f - QuietVolume) * 0.75f, V(135f), 1e-5f);
         }
 
         [Test]

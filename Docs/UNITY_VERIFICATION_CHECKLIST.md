@@ -75,13 +75,13 @@ new `DriftSlipVolumeTests` compiles, 3 unrelated pre-existing errors in `Authent
 
 Toy Box > Vessel Changer → Squirrel:
 1. Run `DriftSlipVolumeTests` (4) in the Test Runner.
-2. Drift with the nose on the slide: the loop is quiet. Swing the nose 45 degrees or more off the slide: it rises
-   smoothly to today's volume; swing back: it falls, no flutter.
+2. Drift with the nose on the slide: the loop is quiet. Swing the nose further off the slide: it rises linearly,
+   reaching the pre-change volume at 180 degrees (nose back along the slide); swing back: it falls, no flutter.
 3. Release one-shot unchanged. Dolphin drift sound unchanged.
 
 | Knob | First pass |
 |---|---|
-| `quietSlipDegrees` / `fullSlipDegrees` | 5 / 45 |
+| `quietSlipDegrees` / `fullSlipDegrees` | 0 / 180 (linear) |
 | `quietVolume01` | 0.15 |
 | `slipVolumeSmoothing` | 10 /s |
 
