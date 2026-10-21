@@ -577,3 +577,5 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     `export.verify` fails a hull of our own whose first take moves a bone (`--check` compares `first_take`). The artist
     files keep their order (the Animator or the code drives every bone they have, and the gates prove they reproduce).
     General rule: **a file's default pose is an output.** Gate it like the takes and morphs.
+    (The Unity side is inferred from the symptom: all 14 hulls rest in their first take. The reimport check in
+    `Docs/UNITY_VERIFICATION_CHECKLIST.md` confirms it; if a hull still leans, capture rest from the bind poses in code.)
