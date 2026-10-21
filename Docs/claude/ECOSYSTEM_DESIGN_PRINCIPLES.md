@@ -232,6 +232,12 @@ trio, and the traps).
   unauthored `RenderedObject` from its own children, skipping anything under a `Prism` or a
   `Crystal` — *when a serialized reference cannot be authored headlessly, ask whether it needs
   to be authored at all*. `Docs/ECOSYSTEM.md §46`.
+- **A DYING LIMB BECOMES A CYTOPLASM SHARD** (Garrett, 2026-10-21). Every spindle that withers
+  or dies leaves one new shard in its cell's `SnowChanger` field, condensing on the limb's own
+  fade clock (`Spindle.MorphIntoShard` -> `SnowChanger.AddMorphedShard`), so an ordered wither
+  stays ordered and nothing pops. Shards carry no mass and no collider. `maxMorphedShards` is a
+  performance backstop: past it a limb only evaporates, and a shard is never culled to make
+  room. `Docs/ECOSYSTEM.md §63`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
   **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the

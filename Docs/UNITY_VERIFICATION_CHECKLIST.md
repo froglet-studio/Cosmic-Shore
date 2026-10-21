@@ -13410,3 +13410,18 @@ session, so `/verify-unity` did not run.
    where the client runs them, and the sail rise on the client's call; the host's herd parts round the client's real
    jacks and decoy (not an AI's). An AI marlin on the host shows the same on the client. Note on the PR whether a
    client-owned marlin's danger stings score (contacts are decided on the owner).
+
+## 🔴 2026-10-21 — Dying limbs become cytoplasm shards (`cece/awesome-faraday-7fsppt`) - NOT EDITOR-VERIFIED
+
+Files: `Cytoplasm/SnowChanger.cs` (`AddMorphedShard`, `CondenseTick`, growable shard list), `FloraAndFauna/Spindle.cs`
+(`MorphIntoShard`), `Cell.cs` (`Cytoplasm`). Design: `Docs/ECOSYSTEM.md` §63. The headless reference compile passes
+(player config, 0 errors in project code). No `unity` CLI in the session, so `/verify-unity` did not run.
+Team task: T-20261021-6fa4.
+
+1. Play Menu_Main (or any freestyle cell with flora). Joust or starve a plant and watch its spindles: each limb fades
+   while a new cytoplasm shard grows where it stood and turns to point at the crystal, in the order the limbs go. No
+   limb pops out and no shard pops in.
+2. Kill a creature with spindles (a tadpole): each body limb leaves a shard too.
+3. Console stays clean. The `renderers` line still shows the snow as one instanced family.
+4. Low preset: shards still appear, until `SnowChanger.maxMorphedShards x 0.25` limbs have made one; after that limbs
+   only fade.
