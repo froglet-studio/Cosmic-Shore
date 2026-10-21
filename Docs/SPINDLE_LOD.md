@@ -6,9 +6,10 @@ the LOD hides itself) and **OVERT** (§7, the default: the LOD IS the effect, in
 depth ramp, through the shared `IncorporealDepth.hlsl`; the current ladder and amplitudes are §7.2d - §7.2e). The
 same effect reaches the creatures' own models (§8), and the switch rings are a synthetic wire tiered by the same
 system (§9). Compiled (Unity reference compile, Amoebius), the shader contracts proven by compiling the shipped
-HLSL (31 mutants caught), the runtime run in Amoebius, the look previewed offline (§7.3). Garrett has played the
-lattice spindles and the wire rings in Unity (round 6 - the wire's shading); the four graphs' import and a
-frame-time A/B are still the hand checks (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, spindle LOD steps).
+HLSL (31 mutants caught), the runtime run in Amoebius, the look previewed offline (§7.3). Garrett has looked at the
+lattice spindles and the first cut of the wire rings in Unity; the wire's shading fix (§9.2), the width-hold fix
+and a frame-time A/B have not been seen in the editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, spindle LOD
+steps 10b - 12).
 
 **Round 1's play bug, fixed.** Garrett, Lattice cell, in flight: one gyroid showed its limbs' near AND far forms
 at once (the far thread as bright straight "stars" through every prism, braids around them). Cause: the system
