@@ -583,6 +583,31 @@ namespace CosmicShore.Gameplay
         void StampEvaporate(float delay)
         {
             StampDeathFade(PrismClock.Now + delay, DeathFadeDuration, DeathDirectionEvaporate, OnEvaporateSettled);
+            MorphIntoShard(PrismClock.Now + delay);
+        }
+
+        /// <summary>
+        /// A withering or dying limb becomes a shard of its cell's cytoplasm (Garrett, 2026-10-21;
+        /// Docs/ECOSYSTEM.md, "A dying limb becomes a cytoplasm shard"): the shard joins the
+        /// SnowChanger's shard list where the limb stood and condenses on the limb's own fade
+        /// clock, so the limb fades as the shard grows and an ordered wither stays ordered. Every
+        /// death of a spindle runs through <see cref="StampEvaporate"/> exactly once (both callers
+        /// latch <c>dying</c>), so a limb makes at most one shard. No cell, a satellite (no
+        /// cytoplasm), or a full field: the limb evaporates as it always did.
+        /// </summary>
+        void MorphIntoShard(float startTime)
+        {
+            if (!gameObject.scene.isLoaded) return;
+
+            // The limb's middle, not its root: a limb is posed from its root along its forward.
+            // Local bounds read the same whether or not the LOD has the renderer switched off.
+            Vector3 at = transform.position;
+            if (RenderedObject)
+                at = RenderedObject.transform.TransformPoint(RenderedObject.localBounds.center);
+
+            var cell = Cell.FindCellContaining(at);
+            if (cell && cell.Cytoplasm)
+                cell.Cytoplasm.AddMorphedShard(at, transform.rotation, startTime, DeathFadeDuration);
         }
 
         void StampDeathFade(float startTime, float duration, float direction, Action onSettle)

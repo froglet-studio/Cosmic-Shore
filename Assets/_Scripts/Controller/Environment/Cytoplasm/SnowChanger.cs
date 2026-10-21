@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Utility;
 using Unity.Profiling;
@@ -29,7 +30,17 @@ namespace CosmicShore.Gameplay
                  "spreads it invisibly over a few frames (shards drift slowly by design).")]
         [SerializeField] int shardsPerFrame = 128;
 
-        GameObject[] shards;
+        [Header("Limbs Into Shards")]
+        [Tooltip("Most shards the cell's dying spindles may add to the field. A withering or dying " +
+                 "limb condenses into a new shard where it stood (Spindle.StampEvaporate -> " +
+                 "AddMorphedShard), so the field fills with the ecology's history. Scaled by the " +
+                 "cytoplasm density the device tier / quality preset allows, like the field itself. " +
+                 "Past it a limb evaporates exactly as it always did. A performance backstop, not a " +
+                 "look knob: each shard is one more instance to draw and reorient.")]
+        [SerializeField] int maxMorphedShards = 4000;
+
+        // A List, not an array: dying limbs append to it (AddMorphedShard).
+        List<GameObject> shards;
 
         // ── Instanced path (2026-10-16, lever L6) ──────────────────────────────────────
         // A shard prefab that is ONE mesh on ONE renderer with no children (shard.prefab) is drawn as one
@@ -42,6 +53,9 @@ namespace CosmicShore.Gameplay
         Quaternion[] _shardRot;
         Vector3[] _shardScale;     // the shard's localScale, as the GameObject path would set it
         Matrix4x4[] _matrices;
+        // Live shards in the arrays above. The arrays are CAPACITY and grow by doubling as limbs
+        // become shards, so _count, never Length, is the shard count.
+        int _count;
         Mesh _mesh;
         Material _instancedMaterial; // a runtime copy with GPU instancing on; the asset is untouched
         RenderParams _renderParams;
@@ -54,6 +68,22 @@ namespace CosmicShore.Gameplay
         // Reorientation cursor: index of the next shard to process, or >= shards.Length
         // when idle. OnCellItemsUpdated only rewinds the cursor; Update does the work.
         int _reorientCursor = int.MaxValue;
+
+        // ── Shards condensing out of dying limbs ──────────────────────────────────────────
+        // A shard a limb became grows from nothing to its law scale while the limb's own fade
+        // runs, turning from the limb's heading to the crystal (continuity of existence: the
+        // limb never pops out, the shard never pops in). Only these few shards are touched per
+        // frame; a settled one is an ordinary shard and leaves the list.
+        struct Condensing
+        {
+            public int Index;
+            public float StartTime;
+            public float Duration;
+            public Quaternion From;
+        }
+
+        readonly List<Condensing> _condensing = new();
+        int _morphedShards;
 
         void OnEnable()
         {
@@ -69,6 +99,9 @@ namespace CosmicShore.Gameplay
         {
             if (!cellData.TryGetLocalCrystal(out Crystal crystal))
                 return;
+
+            _condensing.Clear();
+            _morphedShards = 0;
 
             if (cellData.Cell != null)
             {
@@ -90,7 +123,7 @@ namespace CosmicShore.Gameplay
             float outerR3 = outerR * outerR * outerR;
 
             _instanced = TryBeginInstanced(shardCount, outerR);
-            if (!_instanced) shards = new GameObject[shardCount];
+            if (!_instanced) shards = new List<GameObject>(shardCount);
             for (int i = 0; i < shardCount; i++)
             {
                 float r = Mathf.Pow(Random.Range(0f, outerR3), 1f / 3f);
@@ -103,6 +136,7 @@ namespace CosmicShore.Gameplay
                     _shardRot[i] = snow.transform.rotation;
                     _shardScale[i] = Vector3.one * nodeScaler;
                     WriteMatrix(i);
+                    _count++;
                     continue;
                 }
 
@@ -113,7 +147,7 @@ namespace CosmicShore.Gameplay
                     r * sinTheta * Mathf.Sin(phi),
                     r * cosTheta);
 
-                shards[i] = tempSnow;
+                shards.Add(tempSnow);
             }
 
             ChangeSnowOrientation();
@@ -128,16 +162,111 @@ namespace CosmicShore.Gameplay
             _reorientCursor = 0;
         }
 
-        int ShardCount => _instanced ? _shardPos.Length : shards?.Length ?? 0;
+        int ShardCount => _instanced ? _count : shards?.Count ?? 0;
+
+        /// <summary>Most shards dying limbs may still add: <see cref="maxMorphedShards"/> thinned by the
+        /// same cytoplasm density as the field (Docs/PLATFORM_UNIFICATION.md §3.10).</summary>
+        int MorphedShardCap => Mathf.FloorToInt(maxMorphedShards * GraphicsCuts.CytoplasmDensity + 0.5f);
+
+        /// <summary>
+        /// A dying spindle becomes a shard of this cytoplasm (Docs/ECOSYSTEM.md, "A dying limb
+        /// becomes a cytoplasm shard"). The shard joins the shard list at <paramref name="position"/>,
+        /// starts at zero scale facing <paramref name="limbRotation"/>, and condenses to an ordinary
+        /// shard (its law scale, facing the crystal) over <paramref name="duration"/> seconds from
+        /// <paramref name="startTime"/> (a <see cref="PrismClock"/> time: the limb's own fade start,
+        /// so an ordered wither stays ordered). Returns false, adding nothing, once the field holds
+        /// <see cref="maxMorphedShards"/> limb shards or before <see cref="Initialize"/> built it.
+        /// </summary>
+        public bool AddMorphedShard(Vector3 position, Quaternion limbRotation, float startTime, float duration)
+        {
+            if (_morphedShards >= MorphedShardCap) return false;
+            if (!_instanced && shards == null) return false;
+
+            int index;
+            if (_instanced)
+            {
+                index = _count;
+                if (index == _matrices.Length) GrowInstancedCapacity();
+                _shardPos[index] = position;
+                _shardRot[index] = limbRotation;
+                _shardScale[index] = Vector3.zero;
+                WriteMatrix(index);
+                _count++;
+            }
+            else
+            {
+                GameObject shard = Instantiate(snow, transform, true);
+                shard.transform.SetPositionAndRotation(position, limbRotation);
+                shard.transform.localScale = Vector3.zero;
+                index = shards.Count;
+                shards.Add(shard);
+            }
+
+            _morphedShards++;
+            _condensing.Add(new Condensing { Index = index, StartTime = startTime, Duration = Mathf.Max(0.01f, duration), From = limbRotation });
+            return true;
+        }
+
+        void GrowInstancedCapacity()
+        {
+            int capacity = Mathf.Max(16, _matrices.Length * 2);
+            System.Array.Resize(ref _shardPos, capacity);
+            System.Array.Resize(ref _shardRot, capacity);
+            System.Array.Resize(ref _shardScale, capacity);
+            System.Array.Resize(ref _matrices, capacity);
+        }
 
         void Update()
         {
             if (ShardCount > 0 && _reorientCursor < ShardCount) ReorientSlice();
+            // After the slice: a condensing shard the slice just set to its full law scale is
+            // brought back to where its condense has reached, in the same frame.
+            if (_condensing.Count > 0) CondenseTick();
             if (_instanced)
                 using (s_submit.Auto())
                     // In calls of 1023, the per-call instance limit NcaCreatureFauna's fallback draw keeps to.
-                    for (int start = 0; start < _matrices.Length; start += 1023)
-                        Graphics.RenderMeshInstanced(_renderParams, _mesh, 0, _matrices, Mathf.Min(1023, _matrices.Length - start), start);
+                    for (int start = 0; start < _count; start += 1023)
+                        Graphics.RenderMeshInstanced(_renderParams, _mesh, 0, _matrices, Mathf.Min(1023, _count - start), start);
+        }
+
+        void CondenseTick()
+        {
+            cellData.TryGetLocalCrystal(out Crystal crystal);
+            float now = PrismClock.Now;
+            for (int c = _condensing.Count - 1; c >= 0; c--)
+            {
+                var condensing = _condensing[c];
+                float t = Mathf.Clamp01((now - condensing.StartTime) / condensing.Duration);
+                float k = t * t * (3f - 2f * t);
+
+                Vector3 position;
+                Transform shard = null;
+                if (_instanced) position = _shardPos[condensing.Index];
+                else
+                {
+                    var go = shards[condensing.Index];
+                    if (!go) { _condensing.RemoveAt(c); continue; }
+                    shard = go.transform;
+                    position = shard.position;
+                }
+
+                ShardLaw(position, crystal, condensing.From, out Quaternion lawRotation, out Vector3 lawScale);
+                Quaternion rotation = Quaternion.Slerp(condensing.From, lawRotation, k);
+                Vector3 scale = lawScale * k;
+                if (_instanced)
+                {
+                    _shardRot[condensing.Index] = rotation;
+                    _shardScale[condensing.Index] = scale;
+                    WriteMatrix(condensing.Index);
+                }
+                else
+                {
+                    shard.rotation = rotation;
+                    shard.localScale = scale;
+                }
+
+                if (t >= 1f) _condensing.RemoveAt(c);
+            }
         }
 
         void OnDestroy()
@@ -171,6 +300,7 @@ namespace CosmicShore.Gameplay
             _shardRot = new Quaternion[count];
             _shardScale = new Vector3[count];
             _matrices = new Matrix4x4[count];
+            _count = 0;
             return true;
         }
 
@@ -234,29 +364,37 @@ namespace CosmicShore.Gameplay
         /// <summary>The GameObject path's per-shard law (LookAt the crystal, else face the axis), on arrays.</summary>
         void ReorientInstanced(Crystal crystal, int start, int end)
         {
-            float nodeScalerOverThree = nodeScaler / 3;
-            Vector3 axisN = targetAxis.normalized;
             for (int i = start; i < end; i++)
             {
-                Vector3 p = _shardPos[i];
-                float normalizedDistance;
-                if (crystal)
-                {
-                    Vector3 to = crystal.transform.position - p;
-                    normalizedDistance = Mathf.Clamp(to.magnitude, 0, membraneRadius) / membraneRadius;
-                    if (SafeLookRotation.TryGet(to, out var rot, this, logError: false)) _shardRot[i] = rot;
-                }
-                else
-                {
-                    var reject = p - (Vector3.Dot(p, axisN) * axisN);
-                    normalizedDistance = Mathf.Clamp(reject.magnitude, 0, membraneRadius) / membraneRadius;
-                    Vector3 dir = lookAt ? -reject.normalized : targetAxis;
-                    if (SafeLookRotation.TryGet(dir, out var rot, this, logError: false)) _shardRot[i] = rot;
-                }
-                _shardScale[i] = Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +
-                                 Vector3.one * (normalizedDistance * nodeScalerOverThree + nodeSize);
+                ShardLaw(_shardPos[i], crystal, _shardRot[i], out _shardRot[i], out _shardScale[i]);
                 WriteMatrix(i);
             }
+        }
+
+        /// <summary>Where a shard at <paramref name="p"/> points and how big it is: LookAt the crystal (else
+        /// face the axis), stretched by its distance. <paramref name="rotation"/> keeps
+        /// <paramref name="current"/> where no heading can be derived.</summary>
+        void ShardLaw(Vector3 p, Crystal crystal, Quaternion current, out Quaternion rotation, out Vector3 scale)
+        {
+            rotation = current;
+            float normalizedDistance;
+            if (crystal)
+            {
+                Vector3 to = crystal.transform.position - p;
+                normalizedDistance = Mathf.Clamp(to.magnitude, 0, membraneRadius) / membraneRadius;
+                if (SafeLookRotation.TryGet(to, out var rot, this, logError: false)) rotation = rot;
+            }
+            else
+            {
+                Vector3 axisN = targetAxis.normalized;
+                var reject = p - (Vector3.Dot(p, axisN) * axisN);
+                normalizedDistance = Mathf.Clamp(reject.magnitude, 0, membraneRadius) / membraneRadius;
+                Vector3 dir = lookAt ? -reject.normalized : targetAxis;
+                if (SafeLookRotation.TryGet(dir, out var rot, this, logError: false)) rotation = rot;
+            }
+            float nodeScalerOverThree = nodeScaler / 3;
+            scale = Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +
+                    Vector3.one * (normalizedDistance * nodeScalerOverThree + nodeSize);
         }
 
         public void SetOrigin(Vector3 o) => origin = o;

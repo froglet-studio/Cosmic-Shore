@@ -12057,3 +12057,60 @@ Offline, measured on this branch:
 **Nothing has been run in the Unity editor.** The hand tests are T-20261020-74d8 (freestyle cells
 and Atlantis), T-20261020-fa54 (arcade arenas), T-20261020-2cee (the Thresher acknowledgement) and
 T-20261020-ad7e (the bakes: `PrismLayoutBakeTests`, no `[PrismLayoutBake]` warning in play).
+
+## 63. A dying limb becomes a cytoplasm shard (Oct 2026)
+
+Garrett, 2026-10-21: *"when spindles wither or die lets have them instead morph into a new shard that
+gets added to the shard list."* Until now a spindle's death fade (`Spindle.StampEvaporate`, the
+`_DeathStartTime` stamp on `SpindleGraph`) ended in nothing. Now every limb that withers or dies leaves
+one new shard in its cell's cytoplasm, the `SnowChanger` field whose shards point at the crystal.
+
+### 63.1 How it works
+
+- **One call per death.** `Spindle.StampEvaporate` is the one place both deaths reach: `CheckForLife`
+  (the limb lost its last prism and child) and `ForceWither` (starvation, the ordered withers of §26,
+  the joust). Both latch `dying` first, so a limb makes at most one shard. After stamping its fade,
+  the limb calls `MorphIntoShard`, which finds the cell around the limb's middle
+  (`Cell.FindCellContaining`, at a lifecycle point, never per frame) and hands the shard to
+  `Cell.Cytoplasm.AddMorphedShard`.
+- **The shard condenses on the limb's own clock.** It joins the shard list where the limb's middle was,
+  at zero scale and facing along the limb. Over the limb's fade (`DeathFadeDuration`, 1 s, starting at the
+  same `PrismClock` time, so the `i * interval` offsets of an ordered wither stay outside-in or
+  heart-outward) it grows to its law scale and turns toward the crystal. The limb fades as the shard
+  grows, so nothing pops (continuity of existence). After that it is an ordinary shard and is
+  reoriented with the rest whenever the cell's items change.
+- **The shard list grows.** On the instanced path (the shipped `shard.prefab`, lever L6) the position,
+  rotation, scale and matrix arrays are now a capacity that doubles, and `_count` is the shard count.
+  On the GameObject path `shards` is a `List<GameObject>`. The reorient slice and the instanced draw
+  read the count, so a new shard is drawn and reoriented like the field's own. Only shards that are
+  still condensing are touched every frame (`SnowChanger.CondenseTick`), so the cost is a handful per
+  dying plant.
+- **A backstop, not a lifespan.** `SnowChanger.maxMorphedShards` (4000 by default, about the size of a
+  cell's own field) is the most shards limbs may add. It is thinned by `GraphicsCuts.CytoplasmDensity` like
+  the field (§3.10 of `Docs/PLATFORM_UNIFICATION.md`: a quarter on Low / Very Low / MobileLow / Web).
+  Past it a limb just evaporates, as before. No shard is ever removed to make room: that would be an
+  imposed death.
+- **Where nothing happens.** There is no cell around the limb (a hangar or a toy outside every
+  membrane). The cell is a satellite (no cytoplasm). The config has no `CytoplasmPrefab`. The cytoplasm
+  has not been built yet. The scene is unloading. In all of these the limb evaporates exactly as it did.
+
+### 63.2 The invariants, checked one by one
+
+- **Continuity of existence:** the limb's fade and the shard's growth run on the same start time and the
+  same duration.
+- **Mass conservation:** a spindle is not mass (it holds none of `LiveVolume`) and a shard is not a prism,
+  so no volume is made or lost. Body and health prisms keep their own paths (§26.2's skeleton, the
+  wither-to-crystal) untouched.
+- **No imposed death:** nothing new dies on a clock, and shards are never culled.
+- **Collider budget: zero.** A shard has no collider (the instanced path refuses a prefab with anything
+  but Transform + MeshFilter + MeshRenderer), so active colliders per cell are unchanged.
+- **The crystal invariant:** untouched. The heart still drops as before.
+
+### 63.3 Not done, and not seen
+
+- **Nothing has been run in the Unity editor.** The hand test is on the team board (Ecology, "dying
+  limbs become shards").
+- Amoebius's own `Port/` copy of `SnowChanger` and `Spindle` is the engine's to follow (Shombith). It was
+  not changed here.
+- The shard condenses by scale and turn, not by shape: it does not start as the limb's silhouette. A
+  silhouette morph would need the snow graph to fade per instance.
