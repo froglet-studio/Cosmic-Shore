@@ -49,8 +49,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <b>The chain slices and shields</b>, taut or slack. Every rival prism its links touch is
     /// <see cref="Prism.Slice"/>d along the plane the chain is sweeping, with debris at the touching
-    /// link's own velocity, and every prism of its OWN domain it touches is shielded. A shielded rival
-    /// loses its shield to the first cut and dies to the next; super-shielded mass refuses.
+    /// link's own velocity, and every prism of its OWN domain it touches is shielded (or LIT, when it
+    /// already is: a contact that does nothing reads as a clip). A shielded rival loses its shield to
+    /// the first cut and dies to the next; super-shielded mass refuses with its deflection jiggle.
     ///
     /// <b>The chain's kills charge the ball.</b> Every prism the chain slices banks
     /// <c>energyPerSlice</c> in the ball; the ball's next hit on a RIVAL prism releases the bank as
@@ -423,6 +424,8 @@ namespace CosmicShore.Gameplay
             _releaseDirection = null;
             _freezeUntilUnscaled = 0f;
             _cts?.Cancel();
+            _ackAny = false;
+            PrismLit.ClearLight(GetInstanceID());
             ClearLaunchView();
             ReleaseCamera();
             SetVisualsActive(false);
@@ -476,6 +479,7 @@ namespace CosmicShore.Gameplay
             _links.Step(shipPosition + result.ShipVelocity * dt, _solver.BallPosition, _solver.Length,
                         iterations: ThresherChainLinks.IterationsFor(_links.Count - 1));
             CutWithChain(dt);
+            PublishAcknowledged();
 
             UpdateLaunchView(dt);
             UpdateCombo(dt);
@@ -623,7 +627,15 @@ namespace CosmicShore.Gameplay
                 if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                 _touchingNext.Add(prism);
-                if (_touching.Contains(prism)) continue;   // one hit per contact
+                if (_touching.Contains(prism))
+                {
+                    // One HIT per contact - but own armour the Mass Mode ball is still inside stays
+                    // lit for as long as it is inside, as the chain's does (PublishAcknowledged).
+                    if (_massMode && prism.Domain == own && prism.prismProperties is { } held &&
+                        (held.IsShielded || held.IsSuperShielded))
+                        Acknowledge(prism);
+                    continue;
+                }
 
                 Vector3 at = from + ab * _hits[i].t;
                 float speed = _solver.BallSpeed;
@@ -707,18 +719,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Mass Mode's touch: shield own-domain mass (once — an already armoured prism is
-        /// left alone), steal rival mass (a shielded rival sheds its shield first and changes hands
-        /// on the next touch, the fleet's steal rule; super-shielded mass refuses).</summary>
+        /// lit instead), steal rival mass (a shielded rival sheds its shield first and changes hands
+        /// on the next touch, the fleet's steal rule; super-shielded mass refuses with its jiggle).</summary>
         void MassModeTouch(Prism prism, bool ownDomain, Vector3 at)
         {
             var props = prism.prismProperties;
             if (ownDomain)
             {
-                if (props == null || props.IsShielded || props.IsSuperShielded) return;
-                prism.ActivateShield();
+                // Already armoured: nothing to build, so the touch is acknowledged (lit) rather
+                // than passing through in silence.
+                if (props == null || props.IsShielded || props.IsSuperShielded) Acknowledge(prism);
+                else prism.ActivateShield();
                 return;
             }
-            if (props != null && props.IsSuperShielded) return;
+            if (prism.AbsorbSuperShieldHit(_solver.BallSpeed)) return;   // refuses; the jiggle says so
             prism.Steal(_status.PlayerName, _status.Domain);
             if (prism.Domain == _status.Domain) Bank(config ? config.EnergyPerSteal : 0f);
             PlayAt(crushEvent, at);
@@ -957,11 +971,6 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _candidates[i];
                     if (!prism || prism.destroyed || _cutThisFrame.Contains(prism)) continue;
-                    var props = prism.prismProperties;
-                    bool ownDomain = prism.Domain == own;
-                    // Nothing to do to armoured own mass, or to a super-shielded rival.
-                    if (ownDomain && (props == null || props.IsShielded || props.IsSuperShielded)) continue;
-                    if (!ownDomain && props != null && props.IsSuperShielded) continue;
                     if (SelfTrailContactConfigSO.SuppressesSkimContact(prism, _status)) continue;
 
                     Vector3 centre = prism.transform.position;
@@ -971,15 +980,28 @@ namespace CosmicShore.Gameplay
                     if ((centre - onChain).sqrMagnitude > contact * contact) continue;
 
                     _cutThisFrame.Add(prism);
-                    if (ownDomain)
-                    {
-                        prism.ActivateShield();
-                        continue;
-                    }
-
+                    var props = prism.prismProperties;
                     // The link's own velocity is the blade's: the chain point moves between the
                     // hull's velocity and the ball's (a lever arm), so the debris does too.
                     Vector3 v = Vector3.Lerp(_links.NodeVelocity(s, dt), _links.NodeVelocity(s + 1, dt), t);
+
+                    if (prism.Domain == own)
+                    {
+                        // Own mass the chain has nothing left to do to (already armoured) is LIT,
+                        // never passed through in silence: a contact that does nothing reads as the
+                        // cord clipping through the prism.
+                        if (props == null || props.IsShielded || props.IsSuperShielded) Acknowledge(prism);
+                        else prism.ActivateShield();
+                        continue;
+                    }
+                    if (props != null && props.IsSuperShielded)
+                    {
+                        // A super-shielded rival refuses the cut; the refusal is the fleet's
+                        // deflection jiggle, the same answer every other hit on it gets.
+                        prism.AbsorbSuperShieldHit(v.magnitude);
+                        continue;
+                    }
+
                     Vector3 cutNormal = Vector3.Cross(ab, v);
                     if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.Cross(ab, Vector3.up);
                     if (cutNormal.sqrMagnitude < 1e-8f) cutNormal = Vector3.right;
@@ -990,6 +1012,53 @@ namespace CosmicShore.Gameplay
                     PlayAt(sliceEvent, onChain);
                 }
             }
+        }
+
+        // ------------------------------------------------------------------ acknowledgement
+
+        // The own-domain prisms this step touched and could do nothing to, as the span from the
+        // first to the last of them plus the widest reach - see PublishAcknowledged.
+        bool _ackAny;
+        Vector3 _ackFrom, _ackTo;
+        float _ackRadius;
+
+        /// <summary>Record an own-domain prism the ball or the chain touched with no mechanical
+        /// effect, for this step's light.</summary>
+        void Acknowledge(Prism prism)
+        {
+            Vector3 centre = prism.transform.position;
+            float reach = 0.5f * prism.transform.lossyScale.magnitude;
+            if (!_ackAny)
+            {
+                _ackAny = true;
+                _ackFrom = centre;
+                _ackRadius = 0f;
+            }
+            _ackTo = centre;
+            _ackRadius = Mathf.Max(_ackRadius, reach);
+        }
+
+        /// <summary>
+        /// DYNAMIC CONTACT NEVER DOES NOTHING. When the chain or the ball passes through mass of the
+        /// pilot's own domain that it has nothing left to do to (the mass is already shielded), the
+        /// prisms enter the LIT state - the pass-through light a blast that spares its own mass
+        /// already uses (<see cref="PrismLit"/>, Docs/LIT.md) - so the player sees the hit
+        /// acknowledged instead of the cord clipping through. One light per Thresher, a cylinder
+        /// over the span of this step's touches, gated to the pilot's own domain. Reported every
+        /// step the contact lasts; once it ends the bank fades it over its afterglow, so it never
+        /// pops off. Pure photons: nothing reads it to decide an outcome.
+        /// </summary>
+        void PublishAcknowledged()
+        {
+            if (!_ackAny) return;
+            _ackAny = false;
+            Vector3 span = _ackTo - _ackFrom;
+            float length = span.magnitude;
+            var volume = length < 1e-3f
+                ? LitVolume.Sphere(_ackFrom, _ackRadius)
+                : LitVolume.Cylinder(_ackFrom - span / length * _ackRadius, span / length,
+                                     length + 2f * _ackRadius, _ackRadius, false);
+            PrismLit.PublishLight(GetInstanceID(), volume, 1f, PilotDomain(), ownDomainOnly: true);
         }
 
         // ------------------------------------------------------------------ feedback

@@ -1177,6 +1177,123 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-19 by Garrett's session (`cece/elegant-goldberg-eanwgx`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5b
 
+### T-20261020-74d8 · open · test · ecology
+- **Task:** Fly the freestyle cells (Orrery, Yggdra, Daedala, Caldera, Geode, Zephyr, Ourobor, Hesperides) and Scurry's Atlantis after the generator fixes. Their prisms are now sized flush with their neighbours at authoring time, and every prism is kept. Look for any prism inside another and for gaps that read as broken structure. The Orrery keeps 35% of its volume, Yggdra 63% and Daedala 66%. Also time the veiled build against bleeding-edge: the worlds now load from baked layouts (T-20261020-ad7e), so each should build faster than before, not slower
+- **Done when:** Each world shows no interpenetrating prisms, still reads as its own shape, and its build time is within a second of bleeding-edge on PC (note the phone number too)
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2; Tools/Build/audit_prism_clipping.py -v
+
+### T-20261020-fa54 · open · test · arcade
+- **Task:** Play Joust, Cleave I1-I4, Breakwater, Regatta, Skein, Dog Fight and Wildlife Liberation after the generator fixes. Joust's torus knot is now three separate parallel rails; before, it was one tube with three colours threaded through each other. Rail prisms are fitted to their pitch, and Breakwater's three plug rakes sit one bar apart along the axis. In Cleave I1 (Panes), 1,221 mullions slid along their own rail, 344 of them by more than 20 u
+- **Done when:** No clipping prisms in any arena; rails still read as continuous to skim; Breakwater's plug still blocks; Panes still reads as panes; each cell reaches Restless after the same amount of play it did before
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2-62.3
+
+### T-20261020-2529 · open · decision · ecology
+- **Task:** Decide whether the Mandelbulb flora family (FractalFoliage, Coral Bloom, Watershed, Apollonia) is held to no-clip: its claim lets crossing ribbons overlap by design and its gates allow 8-66% of touching pairs to interpenetrate
+- **Done when:** Either a /flora change gives MandelbulbFlora.Claim an oriented-box test and re-measures its gates to a zero, or the exception is written into Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.5; Tools/Build/measure_mandelbulb_flora.py
+
+### T-20261020-a3c2 · done · decision · card-art
+- **Task:** Card-art renders draw what a generator emits, not what PrismClearance lays (indistinguishable at card size today). Decide whether the card harness should apply the pass
+- **Done when:** Either card_art_harness applies PrismClearance as prism_clip_audit/Audit.cs Hook does, or a note in the /cardart skill says why it does not
+- **Who can take it:** Caleb
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Tools/Build/prism_clip_audit/Audit.cs (ClipAudit.Hook); Tools/Build/card_art_harness/PlatformShim.cs
+- **Done:** 2026-10-20, Moot: the runtime PrismClearance pass was removed (Garrett, 2026-10-20: fix clipping at authoring time). The card art draws what the generators emit, which is now what the game lays.
+
+### T-20261020-2cee · open · test · Thresher
+- **Task:** Thresher cord on own shielded mass: in Mass Mode shield some of your own trail with the ball, then drag the cord (taut and slack) and the ball back through it. The shielded prisms must light in your domain colour while the cord is in them and fade out after; a super-shielded rival prism the cord crosses must jiggle. Nothing else changes (no damage, no steal)
+- **Done when:** No contact between the cord or ball and a prism reads as a clip: own armoured mass lights, super-shielded rival mass jiggles, on PC and phone
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/LIT.md (Contact acknowledgement row); ThresherExecutor.PublishAcknowledged
+- **Progress:** 2026-10-21, Garrett: the cord on own shielded mass lights up (PC). Still to see: a super-shielded rival prism jiggling under the cord, and the same on a phone
+
+### T-20261020-8fd0 · open · decision · Vessels
+- **Task:** Dynamic contact never does nothing - the remaining silent pass-throughs: own-domain mass a friendly-fire-off round flies through (Urchin spikes, explodable/energised spikes), the Serpent sniper through own mass and through super-shielded mass below Charge 5, the Kite navigator head through own mass, Butterfly dust on own super-shielded mass, and the own-fresh-trail grace window (every hull and skimmer, ~1 s). Decide which should light (risk: always-on lights crowd the 8 LIT slots)
+- **Done when:** Each listed case either acknowledges the contact (LIT or jiggle) or has a recorded reason in Docs/LIT.md
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/LIT.md (Contact acknowledgement section, 'Still open')
+
+### T-20261020-b391 · open · decision · ecology
+- **Task:** Boneyard 1-4 (Dog Fight, Salvo, Dustup, Broadside, Grizzly Charge) still lays 277 / 674 / 1,285 / 2,392 clipping pairs, all from random scatter: rubble on rubble and hulks scattered into each other. No size fit parts a random overlap. The options are a placement retry (redraw a scattered piece that lands in another, which moves every later draw and so every prism), accepting scatter as the one exception, or a neighbourhood pass at authoring time
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4 and, if a fix is chosen, the audit reads 0 for the Boneyards
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; audit_prism_clipping.py -v
+
+### T-20261020-c358 · open · decision · ecology
+- **Task:** Gyroid (Joust I4, Crystal Capture) still lays 1,233 clipping pairs (2 coincident) after the per-block-type length fix. Those are walk drift: the random walk revisits near-duplicate sites that only a neighbourhood search finds. The search was tried and cost +53 ms at load, so it was dropped. Choose between: accept the residual, pay the search, or add a site-hash dedupe to the walk (it changes the lay)
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; SpawnableGyroid.cs
+
+### T-20261020-c71f · open · decision · ecology
+- **Task:** Batman AOE spawner (363 pairs) and the stress-test Pumpkin (36,538 pairs) clip only because their flush size sits under the prism prefab's 0.5 scale floor, which grows them back. The fix is either to let them admit their authored scale (AdmitsAuthoredPrismScale, as the Orrery and Ourobor now do), to space their strokes wider (this changes their look), or to leave them. Pumpkin is a stress test and is not shipped
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4 and the audit agrees
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; PrismScaleAnimator min scale
+
+### T-20261020-7b07 · open · decision · ecology
+- **Task:** Zephyr (6,692 pairs: rivers converging on one streamline, plus hash-scattered clouds, discs and rain) and Caldera (5,097: hash-scattered flank shards, vent discs and basins) are the residual clipping in the freestyle cells. Same choice as the Boneyard scatter: a placement retry, an authoring-time neighbourhood pass, or accept
+- **Done when:** A choice is recorded in Docs/ECOSYSTEM.md §62.4
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.4; Zephyr/Caldera in audit_prism_clipping.py -v
+
+### T-20261020-086a · open · decision · arcade
+- **Task:** Cleave I1 (Panes): panes 0, 4 and 7 meet along three lines within 3 degrees, so their mullions lay inside each other for ~500 u. Keeping every prism meant sliding 1,221 members along their own rail, 344 by more than 20 u (max 499). Changing one PaneSpecs normal by a few degrees would remove the near-collinear meeting and most of the slides. It is a gameplay call because it moves a wall
+- **Done when:** Either a pane normal is changed and the Cleave thresholds are regenerated, or the slides are accepted in CLEAVE.md
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2 (Panes); SpawnableCleavePanes PaneSpecs
+
+### T-20261020-8f9d · done · decision · ecology
+- **Task:** Accept or reject the authoring-time load cost of the flush fits, measured per build in the .NET 8 harness (IL2CPP on a phone will be slower). Atlantis +90 ms (~0.45 s total), Yggdra +50 ms, Caldera 14 -> 40 ms, Zephyr 12.5 -> 20 ms, Hesperides 3.7 -> 13 ms, Daedala and Geode 6.6 -> 13 ms, Cleave +0.4 to +3 ms; the Orrery and Ourobor are unmeasured. The fits run inside the generator once per build, which is not a runtime pass. Baking the fitted lays into an asset would make the cost zero
+- **Done when:** A choice is recorded; if baking is chosen, a task exists for it
+- **Who can take it:** Garrett
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.3
+- **Done:** 2026-10-20, 2026-10-20, Garrett chose baking ("bake the fitted layouts into assets so load cost is zero"). Done on cece/relaxed-hopper-ns2hdu: the 22 cell-environment prefabs load from offline bakes; live generation measured 3.8-289 ms per world (1.09 s across all 22) becomes 0.2-3.4 ms of decoding (22 ms in all). Hand test: the new PrismLayoutBakeTests task. See Docs/ECOSYSTEM.md §62.2b
+
+### T-20261020-ad7e · open · test · ecology
+- **Task:** The cell environments now load from offline-baked layouts (Assets/Resources/PrismLayouts, made by Tools/Build/bake_prism_layouts.py) instead of generating while the game loads. In the Unity Editor: run the EditMode tests PrismLayoutBakeTests (4 tests). The first two prove what only Unity can: every baked prefab, as Unity loads it, finds its bake, and each bake is the layout Unity's own math generates (the test log prints the worst position, scale and rotation difference per world). Then enter Menu_Main freestyle and swap through the Cell Selector worlds, and play Dog Fight and Cleave I1: the console must show no [PrismLayoutBake] warning, and each world must look as it did before
+- **Done when:** PrismLayoutBakeTests pass in the Editor; no [PrismLayoutBake] warning in Menu_Main, Dog Fight or Cleave; each world looks as it did before. (The bake removes only generation, 0.1-0.3 s on the heaviest worlds and ~0.1 s on the Orrery, so a swap is not expected to feel much faster; T-20261021-ffcf measures where a swap's time goes)
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-20 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b; Assets/_Scripts/Tests/Editor/PrismLayoutBakeTests.cs
+
+### T-20261021-ffcf · done · test · ecology
+- **Task:** Measure where a world swap's time goes. In the Editor open FrogletTools > Performance > Performance Benchmark, tab Load Time Insights, and arm Record Insight Mode. Enter Play in Menu_Main and use the Cell Selector to swap to the Orrery (then Atlantis, if you can). Each swap now records like a game load: spans for the suction, the release of the old world, the layout bake, the streamed lay and the settle (creation + grow-in), ending when the veil lifts. Press Copy on the report and paste it into a Claude session
+- **Done when:** A Load Time Insights report of an Orrery swap is pasted into a session, which names the stage that dominates and fixes that stage
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (What the bake does NOT speed up); Cell.SwapCellConfigRoutine
+- **Done:** 2026-10-21, 2026-10-21, Garrett's capture: Orrery swap 21.3 s, streamed lay 16.1 s of it with 0.8 s of per-prism work (frame-bound: one 256-prism async clone batch per frame). Fixed on cece/relaxed-hopper-ns2hdu: 2,048-prism batches and a raised integration slice while the gate holds; the re-capture is the next test task on this board
+
+### T-20261021-8321 · done · test · ecology
+- **Task:** Re-capture the Orrery swap after the lay fix, exactly as before: Load Time Insights armed, Menu_Main, Cell Selector to the Orrery, Copy the report into a session. The last capture was 21.3 s (lay 16.1 s, settle 2.8 s, release 1.4 s). The lay now clones 2,048 prisms per batch behind the veil, so it should drop by several seconds. Watch for: the settle growing (creation still completes 512 per frame), and the new rows for the clone wait, reused vs new prisms, creation completions, the trail return, and prisms with no render entity at suction. Also say whether the world looks right after the veil lifts
+- **Done when:** A new Orrery swap report is in a session; the lay span is clearly shorter than 16.1 s and the world looks as before; the next stage to fix is named from it
+- **Who can take it:** Garrett, or Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (Measured); PrismTrailBuilder.LoadGateCloneBatchSize
+- **Done:** 2026-10-21, 2026-10-21, Garrett's second capture: Orrery swap 21.3 -> 13.9 s (lay 16.1 -> 5.7 s). The settle grew to 5.8 s, mostly the last prisms' invisible grow-in (3.7-4.6 s at growthRate 0.5) behind the opaque menu veil; now snapped there (PrismTrailBuilder.LoadGateCovered). Re-capture is the next ecology test task
+
+### T-20261021-a96c · open · test · ecology
+- **Task:** Third Orrery swap capture, same steps (Load Time Insights armed, Menu_Main, Cell Selector to the Orrery, Copy the report into a session). The last one was 13.9 s: settle 5.8 s, lay 5.7 s, release 1.1 s, suction 0.9 s. Behind the menu veil the grow-in is now settled the moment each prism's creation completes, so the settle should drop by about 4 s. Check by eye that when the veil lifts the Orrery is whole, with nothing still blooming, popping or missing. Then play one arcade game and check its connecting screen still shows the arena growing in (that path must not snap)
+- **Done when:** A third report is in a session with the settle well under 5.8 s; the Orrery looks right as the veil lifts; an arcade game's connecting preview still blooms
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (Second capture); PrismTrailBuilder.LoadGateCovered
+
 ### T-20261020-bbc3 · done · decision · crew-vessels
 - **Task:** Play the Wrasse Lasso Lab on a phone and pick the kite's phone control: the shipped Follow, Sling (thumb on a tether), Plant (the Thresher's anchor), Hook (curled flick) or Well (gravity); also keep or drop snap-shut loops. Round 1's scorecard picks Plant (29 mm of thumb per loop against Follow's 147, 3.3 motes per loop).
 - **Done when:** A 'Which control goes to Unity' entry is in the lab's Decisions tab (shared log)
@@ -1282,3 +1399,45 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner, the launch feel)
 - **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
 - **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
+
+### T-20261021-a2b3 · open · dev · Performance
+- **Task:** Prism creation is per-prism polling. Every laid prism starts its own CreateBlockCoroutine, and while the per-frame budget is spent, each waiting prism is resumed every frame only to yield again. Under the menu veil the budget is a fixed 512 completions a frame. Measured in the second Orrery capture: 34,770 completions at 0.07 ms each (2.5 s of real work), metered over ~68+ frames. Measure first (the third capture, T-20261021-a96c, shows the settle with the grow-in snapped). If the creation queue is then the floor, replace the polling with one queue the gate drains on a time slice, so a waiting prism costs nothing per frame
+- **Done when:** A capture shows the creation queue's share of a swap, and if it is the floor, a change that drains it from one queue on a time slice lands with a before/after capture
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b; Prism.CreateBlockCoroutine; Prism.MaxCreationCompletionsPerFrame / LoadGateCreationCompletionsPerFrame
+
+### T-20261021-a743 · open · dev · Performance
+- **Task:** A Cell Selector swap releases the old world at a fixed 500 prisms a frame (Cell.ReleaseRetiredWorld). That took 1.1-1.4 s in both Orrery captures, for only 4,259 Garland prisms plus the pilot's trail, because the frames are slow, not the work. The world is already suctioned to a point, so nothing is visible. Make it a time slice (e.g. 8-16 ms a frame) instead of a count, and measure with a Load Time Insights capture
+- **Done when:** The release span in a swap capture is clearly under 1.1 s, with no long frame (over 100 ms) during it
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Cell.ReleaseRetiredWorld (PrismsPerFrame = 500); Docs/ECOSYSTEM.md §62.2b
+
+### T-20261021-e916 · open · dev · Performance
+- **Task:** Both Orrery captures logged '[PrismClock] STRICT MODE: no companion render entity to stamp (cellSwapSuction)': some prisms of the retiring world have no render entity, so they snap away instead of suctioning (a continuity pop). The new Load Time Insights counter 'Suction: prisms with no render entity' says how many. Find which prisms they are (flora? not yet created?) and give them the suction. Also, StampSuctionToward builds PrismRenderService.StatusLine() for every such prism before the warn-once check discards it: pass it only on the first warning
+- **Done when:** A swap capture shows 0 for the counter and no STRICT MODE cellSwapSuction error
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Prism.StampSuctionToward; PrismClockDiagnostics.WarnNoRenderEntity; the 'Suction: prisms with no render entity' counter
+
+### T-20261021-4a44 · open · dev · card-art
+- **Task:** The card-art harness stubs PaintingStrokeToolkit.CurlNoise, so every world shaped by curl noise (Atlantis' kelp and currents, Yggdra's veils, Zephyr's rivers) is drawn from straightened geometry. Zephyr measured 52,917 prisms stubbed vs 36,069 real. The clip audit already compiles the real CurlNoise into its own copy of the shim (run.sh). Do the same in the card harness, re-render the cards that change (Scurry at least), and render_card_backgrounds --check
+- **Done when:** The card harness uses the real CurlNoise, render_card_backgrounds --check passes, and the re-rendered cards are committed
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21); Caleb owns the card-art harness
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Tools/Build/prism_clip_audit/run.sh (the real CurlNoise injection); Tools/Build/card_art_harness/PlatformShim.cs
+
+### T-20261021-00b7 · open · decision · ecology
+- **Task:** The 22 cell-environment layout bakes are 22.3 MB on disk, about 13 MB in a compressed build (exact float32, ~40 bytes a prism; dedupe buys almost nothing). Keep all 22, keep only the six heaviest (Atlantis, Ourobor, Yggdra, Caldera, Daedala, Geode: ~10 MB raw for ~85% of the generation saving), or quantize (about half the size, but a quantized rotation can reopen a flush contact, so it would need the clip audit run on the decoded lays)
+- **Done when:** A choice is recorded here; if it is not 'keep all', bake_prism_layouts.py implements it and --check passes
+- **Who can take it:** Yash (handed over by Garrett, 2026-10-21). It is a gameplay call in Garrett's area: record the choice here and tell him
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Docs/ECOSYSTEM.md §62.2b (The cost is size); Tools/Build/prism_layout_bakes.json
+
+### T-20261021-aa08 · open · dev · Amoebius
+- **Task:** In Amoebius, booting straight into Menu_Main (--scene Menu_Main, no Bootstrap) throws a NullReferenceException in ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial on the first laid prism. That kills the environment lay after its first clone batch (Garland lays 2,048 of 4,259 prisms), so a headless Menu_Main run cannot check a whole world build. Either inject the theme manager on a direct scene entry or document the Bootstrap requirement in the player's --scene help
+- **Done when:** A headless --scene Menu_Main run lays the whole Garland (4,259 prisms under Environment/Cell/SpawnableGarland), or the requirement is documented
+- **Who can take it:** Shombith (the Amoebius engine); Yash (offered)
+- **Added:** 2026-10-21 by Garrett (Claude session) (`cece/relaxed-hopper-ns2hdu`)
+- **See:** Port/src/CosmicShore.Player (--scene Menu_Main); ThemeManagerDataContainerSO.GetTeamTransparentBlockMaterial

@@ -313,7 +313,27 @@ since a ring is centred on ONE rail and *"which rail am I on"* has to have an an
 tightest same-shell separation **64.7 u** at N=9 against **18 u** of combined reach — **46.7 u
 clear** — and the shell gap 65 u likewise. `prove_shield_clearance` asserts all three (lane-to-lane,
 shell-to-shell, and that a gate mouth clears its own rail's armour), and fires when broken.
-Consecutive armoured prisms *along* a rail do interpenetrate; that is one rail, and it is fine.
+Consecutive armoured prisms *along* a rail meet the way their boxes do: the octahedron is the
+shield's look, and the boxes underneath are flush (below).
+
+**The boxes are FLUSH - no rail prism interpenetrates another (2026-10-20, Docs/ECOSYSTEM.md
+§49.10).** Before this, consecutive prisms along a rail crossed (14% of pairs: a node is dropped
+every 8 u of accumulated *sub*-chord, so on a bend the straight chord is a little under 8, and two
+6 u-wide boxes looking down their central differences cross at their inner corners), and at each
+strand's **seam** - its last rail ends on its last node, its first rail starts on node 0, and the
+strand is closed - the last node landed anywhere from 0 to 8 u short of the first; one seam per
+prefab was a duplicate, centres 0.07-1.2 u apart. `SkeinCourse.FitFlush` now fits every prism's
+LENGTH at authoring time: the nominal 8 u where it fits, else the longest length both of a
+neighbouring pair can share (the plane normal to the chord between their centres separates them,
+closed form), the tighter side kept; the seam pairs are fitted like any other pair. The 6 u
+cross-section - the catch window of section 7 - is never touched, the count and every pose are
+unchanged, except that a seam node that landed on its strand's first node is slid back along the
+chord the least that leaves both prisms 0.6 u (`SeamMinLength`, above the prefab's 0.5 u floor).
+Measured on the shipped prefabs: 512-865 clipping pairs per intensity -> **0**
+(`Tools/Build/audit_prism_clipping.py SpawnableSkein`), volume down **0.24-0.28%**.
+`skein_budget.prove_rails_flush` holds it on the model with the full 15-axis test, and its
+negative control (`FLUSH_MARGIN` 0.998 -> 1.05) fires; the cell's volume ladder prices the fitted
+volume, never count x 288.
 
 **Volume is 1.55–3.07 M**, against Drumfire's 1.37 M and Hijack's 0.15–0.54 M. That is the direct
 price of the tunnelling-safe prism: `(6,6,8)` is **288 per prism against `(3,3,6)`'s 54 — 5.33×,

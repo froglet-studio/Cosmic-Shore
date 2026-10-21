@@ -945,6 +945,124 @@ namespace CosmicShore.Gameplay
             public List<Vector3[]> Positions;
             public List<Quaternion[]> Rotations;
             public int PrismCount;
+
+            /// <summary>Parallel to <see cref="Rails"/>: the rail that continues this one across its
+            /// strand's SEAM (the strand is a closed loop sampled from arc 0, so its last node sits
+            /// just short of its first), or -1. The seam is the only place two rails abut - every
+            /// other rail end is a break with a 600 u hole after it - so it is the only place one
+            /// rail's prism has a neighbour on ANOTHER rail to be flush with.</summary>
+            public List<int> SeamNext, SeamPrev;
+        }
+
+        /// <summary>The length a seam prism is given when its strand's last node landed ON the
+        /// first: room above the prism prefab's 0.5 u floor (PrismScaleAnimator clamps every axis
+        /// into [0.5, 100]), which would otherwise grow it back into its neighbour.</summary>
+        public const float SeamMinLength = 0.6f;
+
+        /// <summary>How far under exact contact a fitted rail prism stops: a hair, so float noise in
+        /// the poses can never flip two touching faces into a clip.</summary>
+        public const float FlushMargin = 0.998f;
+
+        /// <summary>
+        /// Fit the cable FLUSH (Docs/ECOSYSTEM.md 49.10): the length each prism of each rail is laid
+        /// at, so neighbouring prisms TOUCH and never interpenetrate - the prism's own length
+        /// (<paramref name="prismScale"/>.z) wherever it fits, else the longest length both of a
+        /// neighbouring pair can share (<see cref="FlushPairLength"/>) on each side, the tighter
+        /// kept. The neighbours are the rail's own plus, at a strand's seam, the abutting rail's end
+        /// prism (<see cref="SkeinBuild.SeamNext"/>). The cross-section is never touched: it is the
+        /// catch window the Urchin's trigger sample needs (SKEIN.md 7).
+        ///
+        /// <para>Why the cable needs it though the node pitch IS the length: a node is dropped every
+        /// 8 u of accumulated SUB-chord, so the straight chord between two nodes on a bend is a
+        /// little under 8, and each prism looks down the central difference, so on a bend two 6
+        /// u-wide boxes meet at an angle and cross at their inner corners - and at a seam the last
+        /// node lands anywhere from 0 to 8 u short of the first.</para>
+        ///
+        /// <para><b>The one pose it moves</b>: a seam whose last node landed ON the first (the
+        /// sampler stepping past arc L onto arc 0 - a duplicate, centres 0.07-1.2 u apart on the
+        /// shipped prefabs) is a placement no length can fix, since two boxes sharing a centre
+        /// always cross. That node slides straight back along the chord from the first by the
+        /// smallest amount that leaves both prisms <see cref="SeamMinLength"/>. Along that line
+        /// the chord's direction is fixed, so the distance needed is closed form. Every other pose
+        /// is laid exactly where it was. A few dot products per prism, at authoring time; nothing
+        /// at load.</para>
+        /// </summary>
+        public static List<float[]> FitFlush(SkeinBuild b, Vector3 prismScale)
+        {
+            float w = prismScale.x, h = prismScale.y;
+            for (int i = 0; i < b.Rails.Count; i++)
+            {
+                int j = b.SeamNext[i];
+                if (j < 0) continue;
+                var last = b.Positions[i];
+                int e = last.Length - 1;
+                Vector3 first = b.Positions[j][0];
+                Quaternion rl = b.Rotations[i][e], rf = b.Rotations[j][0];
+                if (FlushMargin * FlushPairLength(last[e], rl, first, rf, w, h) >= SeamMinLength) continue;
+
+                Vector3 away = last[e] - first;
+                if (away.sqrMagnitude < 1e-8f) away = e > 0 ? last[e - 1] - first : rl * Vector3.back;
+                Vector3 n = away.normalized;
+                float lateral = 0.5f * w * (Mathf.Abs(Vector3.Dot(rl * Vector3.right, n)) + Mathf.Abs(Vector3.Dot(rf * Vector3.right, n)))
+                              + 0.5f * h * (Mathf.Abs(Vector3.Dot(rl * Vector3.up, n)) + Mathf.Abs(Vector3.Dot(rf * Vector3.up, n)));
+                float along = Mathf.Abs(Vector3.Dot(rl * Vector3.forward, n)) + Mathf.Abs(Vector3.Dot(rf * Vector3.forward, n));
+                last[e] = first + n * (lateral + along * 0.5f * SeamMinLength / FlushMargin * 1.0001f);
+            }
+
+            var all = new List<float[]>(b.Rails.Count);
+            for (int rail = 0; rail < b.Rails.Count; rail++)
+            {
+                var pos = b.Positions[rail];
+                var rot = b.Rotations[rail];
+                int n = pos.Length;
+                var lengths = new float[n];
+                for (int k = 0; k < n; k++) lengths[k] = prismScale.z;
+                for (int k = 0; k + 1 < n; k++)
+                {
+                    float l = FlushMargin * FlushPairLength(pos[k], rot[k], pos[k + 1], rot[k + 1], w, h);
+                    lengths[k] = Mathf.Min(lengths[k], l);
+                    lengths[k + 1] = Mathf.Min(lengths[k + 1], l);
+                }
+                int prev = b.SeamPrev[rail], next = b.SeamNext[rail];
+                if (n > 0 && prev >= 0)
+                {
+                    var pp = b.Positions[prev]; var pr = b.Rotations[prev];
+                    lengths[0] = Mathf.Min(lengths[0], FlushMargin * FlushPairLength(
+                        pp[pp.Length - 1], pr[pr.Length - 1], pos[0], rot[0], w, h));
+                }
+                if (n > 0 && next >= 0)
+                    lengths[n - 1] = Mathf.Min(lengths[n - 1], FlushMargin * FlushPairLength(
+                        pos[n - 1], rot[n - 1], b.Positions[next][0], b.Rotations[next][0], w, h));
+                all.Add(lengths);
+            }
+            return all;
+        }
+
+        /// <summary>
+        /// The longest length two neighbouring prisms (same <paramref name="width"/> x
+        /// <paramref name="height"/> cross-section, +z down the rail) can BOTH take and still only
+        /// touch. It separates them on the plane normal to the chord between their centres: each
+        /// box's reach along the chord is <c>half-length |z.n| + half-width |x.n| + half-height
+        /// |y.n|</c>, and the two reaches may sum to the chord's length and no more. Closed form;
+        /// for a pair laid down a curve the chord is the separating axis, so it agrees with the
+        /// full 15-axis test. +Infinity when no length can make them meet, 0 when their
+        /// cross-sections already cross. skein_budget.py's flush_pair_length mirrors it.
+        /// </summary>
+        public static float FlushPairLength(Vector3 pa, Quaternion ra, Vector3 pb, Quaternion rb,
+                                            float width, float height)
+        {
+            Vector3 d = pb - pa;
+            float dist = d.magnitude;
+            if (dist < 1e-5f) return 0f;
+            Vector3 n = d / dist;
+            float lateral = 0.5f * width * (Mathf.Abs(Vector3.Dot(ra * Vector3.right, n))
+                                          + Mathf.Abs(Vector3.Dot(rb * Vector3.right, n)))
+                          + 0.5f * height * (Mathf.Abs(Vector3.Dot(ra * Vector3.up, n))
+                                           + Mathf.Abs(Vector3.Dot(rb * Vector3.up, n)));
+            float along = Mathf.Abs(Vector3.Dot(ra * Vector3.forward, n))
+                        + Mathf.Abs(Vector3.Dot(rb * Vector3.forward, n));
+            if (along < 1e-5f) return float.PositiveInfinity;
+            return 2f * Mathf.Max(0f, dist - lateral) / along;
         }
 
         /// <summary>Build the cable and every prism pose in it. Null when the walk could not lay a
@@ -1001,6 +1119,26 @@ namespace CosmicShore.Gameplay
                 b.Positions.Add(pos);
                 b.Rotations.Add(rot);
                 b.PrismCount += n;
+            }
+
+            // The strand SEAMS: a strand's last rail ends on its last node and its first rail
+            // starts on node 0, and the strand is closed, so the two abut. Linked so the lay can
+            // fit those two end prisms flush with each other like any consecutive pair
+            // (FitFlush).
+            b.SeamNext = new List<int>(laid.Count);
+            b.SeamPrev = new List<int>(laid.Count);
+            for (int i = 0; i < laid.Count; i++) { b.SeamNext.Add(-1); b.SeamPrev.Add(-1); }
+            for (int i = 0; i < laid.Count; i++)
+            {
+                if (laid[i].End != strands[laid[i].Strand].N - 1) continue;
+                for (int j = 0; j < laid.Count; j++)
+                {
+                    // j == i is a strand laid as ONE rail end to end: it abuts itself.
+                    if (laid[j].Strand != laid[i].Strand || laid[j].Start != 0) continue;
+                    b.SeamNext[i] = j;
+                    b.SeamPrev[j] = i;
+                    break;
+                }
             }
 
             b.Gates = WalkGates(spine, strands, breaks, seed, s);

@@ -423,10 +423,24 @@ match). Intensity 4 came back to the Boneyard and the ladder was widened to **3.
 
 | intensity | density | hulks | spires | frames | overpasses | prisms | volume | danger | step |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 0.55 | 4 | 6 | 3 | 2 | **9,043** | 601,491 | 43 | — |
-| 2 | 0.90 | 8 | 12 | 5 | 4 | **16,100** | 1,074,639 | 81 | +78 % |
-| 3 | 1.30 | 13 | 19 | 8 | 7 | **24,807** | 1,652,305 | 139 | +54 % |
-| 4 | 1.75 | 19 | 27 | 11 | 10 | **34,654** | 2,314,319 | 203 | +40 % |
+| 1 | 0.55 | 4 | 6 | 3 | 2 | **9,043** | 567,876 | 43 | — |
+| 2 | 0.90 | 8 | 12 | 5 | 4 | **16,100** | 1,017,021 | 81 | +78 % |
+| 3 | 1.30 | 13 | 19 | 8 | 7 | **24,807** | 1,551,495 | 139 | +54 % |
+| 4 | 1.75 | 19 | 27 | 11 | 10 | **34,654** | 2,105,292 | 203 | +40 % |
+
+The volume is the LAID volume since the flush pass (2026-10-20, no prism may interpenetrate
+another, `Docs/ECOSYSTEM.md` §49.10): every structure now sizes its prisms from its own geometry
+at authoring time - hull plates and rib links keep to their wedge of the ring and their station,
+the ribs sit just under the skin instead of in it, girder corners and brace landings step off the
+joint they used to sit on, a crust plate gives up footprint to its phyllotaxis neighbours, the
+overpass deck to its neighbours on the arc. Counts, positions (bar the girder ends that sat on a
+shared joint, and the rib rings), rotations, kinds and domains are unchanged; the volume fell
+5.7 / 5.0 / 5.8 / 8.7 % at intensities 1-4, and `boneyard_budget.py` prices it prism by prism.
+What is NOT flush yet, and why, is in the clip audit's own report
+(`Tools/Build/audit_prism_clipping.py SpawnableBoneyard -v`): the rubble (a random scatter) and the
+places where two independently scattered structures - or a structure and the crust it rests on -
+occupy the same space. Neither has a neighbour the generator knows, so neither can be sized flush
+without a search at load or a new scatter rule (the owner's call).
 
 **Intensity 2 is byte-for-byte where it was.** The arena was tuned at that level, so the other
 three moved around it rather than the whole ladder shifting.

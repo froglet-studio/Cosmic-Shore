@@ -82,9 +82,10 @@ ball is always red now.)
   while taut): the 24 verlet links are GAMEPLAY (`ThresherChainLinks`, stepped in the chain step on
   every peer). Every **rival** prism a link touches is `Prism.Slice`d along the plane the chain is
   sweeping, debris at that link's own velocity, and each kill banks energy (§2a); every
-  **own-domain** prism it touches is **shielded** (`ActivateShield`, untimed; already-armoured mass
-  is left alone). A shielded rival loses its shield to the first cut and dies to the next; a
-  super-shielded one refuses. (Space L5 Reaper Chain, which used to gate slack and shielded cuts,
+  **own-domain** prism it touches is **shielded** (`ActivateShield`, untimed). Already-armoured own
+  mass is **LIT** instead (2026-10-20, `Docs/LIT.md`: the cord used to pass through it with no
+  response, which read as a clip). A shielded rival loses its shield to the first cut and dies to
+  the next; a super-shielded one refuses with its deflection jiggle. (Space L5 Reaper Chain, which used to gate slack and shielded cuts,
   was retired 2026-10-13 — both are the base now; rule 26.)
 - **Enemy vessels — petals only** (the LOCKED PvP rule, `Docs/claude/IMPACT_EFFECTS_AND_AUDIO.md`).
   The ball's swept path and every chain link reach an enemy hull within `vesselHitRadius` 4 u (plus
@@ -124,7 +125,7 @@ press A, so an autopiloted Thresher stays in Mass Mode.
 | Ball touches… | Mass Mode does | Speed cost |
 |---|---|---|
 | a **rival** prism | **steals** it (`Prism.Steal` — a shielded rival sheds its shield first and changes hands on the next touch; super-shielded refuses), banking `energyPerSteal` 0.5 | none |
-| an **own-domain** prism | **shields** it (`ActivateShield`, untimed; an already-armoured prism is left alone) | none |
+| an **own-domain** prism | **shields** it (`ActivateShield`, untimed; an already-armoured prism is LIT, `Docs/LIT.md`) | none |
 | anything, at any speed | **never explodes** and never destroys — the bank is held, not spent | — |
 
 - **The ball lays a trail**: one prism of the pilot's domain per `massTrailSpacing` 6 u of the

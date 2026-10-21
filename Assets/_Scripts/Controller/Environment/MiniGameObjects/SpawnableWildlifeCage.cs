@@ -231,6 +231,65 @@ namespace CosmicShore.Gameplay
         const float BarThickness = 4.2f;
         const float PostSize = 7.5f;        // joints / cube corner posts - the cage's anchors
 
+        // ── Flush: no prism of the cage passes through another ───────────────
+        //
+        // NO PRISM MAY INTERPENETRATE ANOTHER (Docs/ECOSYSTEM.md §49.10), held here at authoring
+        // time by sizing each bar from the geometry it already has - no pass at load. Measured by
+        // Tools/Build/audit_prism_clipping.py before this: 2,596 (intensity 1) to 7,786
+        // (intensity 4) pairs, in three places, every one at a JOINT or on a short run:
+        //
+        //   1. A run shorter than a bar: n = round(len / 34) bars split the run evenly, so a
+        //      run's step can be ~23-28u against a 26u bar that Jit grows to 31u. A bar is now
+        //      no longer than the gap to its neighbours' centres on the run (measured along the
+        //      run, so the sphere projection - which bunches the bars toward a run's ends - is
+        //      priced), which is face to face.
+        //   2. The end bars ran into the POST at their joint. An end bar now stops where the
+        //      post's own extent along the run ends (Joints.Clearance), so the rail meets the post
+        //      face to face rather than through it. That is the post as actually DRAWN: the
+        //      shell's jitter is drawn up front, in exactly the order the lay always consumed it
+        //      (ShellJitter), so a bar knows the size of the post it meets.
+        //   3. At a joint with no post (a box face's interior crossings), or where the post is
+        //      smaller than the bars' fan, the end bars of two runs met inside each other. They
+        //      now stand off the joint by as much as two bars at the joint's narrowest angle need.
+        //
+        // The boxed cages' posts are big against their rail step (a 14.25u corner block on a
+        // 19.2u step at intensity 4's core), so a post is ALSO capped (PostHalfCap): never so big
+        // that the shortest bar beside it could not be laid at the prism floor. Every prism keeps
+        // its draw, its position and its rotation; only the bar lengths (and, where the box is
+        // that tight, a post) shrink. Tools/Build/wildlife_cage_budget.py mirrors every number.
+
+        /// <summary>The prism prefab's per-axis scale floor (PrismScaleAnimator.minScale): an axis
+        /// sized under it is grown back to it at lay time, so no flush size may go below it.</summary>
+        const float PrismFloor = 0.5f;
+
+        /// <summary><see cref="Jit"/>'s amount for every bar and post: one factor in [0.8, 1.2).</summary>
+        const float CageJitter = 0.2f;
+
+        /// <summary>The widest a bar's half cross-section can be drawn - the jitter's top. A joint
+        /// is cleared against the thickest bar that could meet it.</summary>
+        const float BarHalfThickMax = BarThickness * (1f + CageJitter) * 0.5f;
+
+        /// <summary>
+        /// How far an end bar stands off a GEODESIC joint so that it clears every other bar of
+        /// that joint: two bars of half-width w whose runs leave a joint at angle a clear each
+        /// other once both start w·cot(a/2) out. The narrowest angle between two runs at any
+        /// joint of any shipped frequency is 54.6° (frequency 3; 56-58° above it), taken as 54°,
+        /// with 10% for the two bars' small roll and lift differences on the sphere.
+        /// </summary>
+        static readonly float GeodesicJointClear =
+            BarHalfThickMax / Mathf.Tan(27f * Mathf.Deg2Rad) * 1.1f;
+
+        /// <summary>
+        /// The same for a BOX joint, where every pair of runs meets at 90°: a bar whose cross-section
+        /// is rolled up to 45° about its run (its up is its radial, not the face normal) is at most
+        /// w·√2 wide, and two square runs clear once each starts that far out. 2% margin.
+        /// </summary>
+        static readonly float BoxJointClear = BarHalfThickMax * Mathf.Sqrt(2f) * 1.02f;
+
+        /// <summary>A flush size is aimed a hair under exact contact, so a touching pair stays a
+        /// touching pair through float rounding.</summary>
+        const float FlushMargin = 0.995f;
+
         /// <summary>
         /// Every Nth bar prism of the CORE cage is laid as a danger trap. Only the core: the
         /// innermost room holds the biggest, hardest creatures, and salting its walls is what
@@ -290,6 +349,19 @@ namespace CosmicShore.Gameplay
             else
                 BuildBoxedFrame(radius, plan.Frequency, segments, nodes);
 
+            // The shortest distance from any end bar's centre to its joint, over the shell - the
+            // room the tightest post has to share with the bar beside it (PostHalfCap).
+            float halfStepMin = float.MaxValue;
+            for (int i = 0; i < segments.Count; i++)
+            {
+                float len = (segments[i].b - segments[i].a).magnitude;
+                if (len < 0.001f) continue;
+                halfStepMin = Mathf.Min(halfStepMin, 0.5f * len / BarsOn(len));
+            }
+
+            ShellJitter(segments, nodes);
+            var joints = new Joints(plan.Form, halfStepMin, nodes, _postAt, _postK);
+
             // One walking counter across the whole shell so the danger traps spread around the
             // cage instead of clustering on whichever run happens to be laid first.
             int barIndex = 0;
@@ -297,7 +369,7 @@ namespace CosmicShore.Gameplay
             {
                 var (a, b) = segments[i];
                 LayBar(a, b, plan.Form == CageForm.Geodesic ? radius : 0f,
-                    BarDoms[i % BarDoms.Length], isCore, ref barIndex);
+                    BarDoms[i % BarDoms.Length], isCore, joints, ref barIndex);
             }
 
             // Nodes: the chunky knuckles where bars meet. On a box these are the RING POSTS -
@@ -307,10 +379,125 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < nodes.Count; i++)
             {
                 var n = nodes[i];
-                float size = PostSize * n.SizeScale;
-                Emit(n.Position,
-                    SpawnPoint.LookRotation(n.Position.sqrMagnitude > 0.001f ? n.Position.normalized : Vector3.forward, Vector3.up),
-                    Jit(new Vector3(size, size, size)), BarDoms[i % BarDoms.Length]);
+                // The jittered post, never bigger than the shell leaves it room for (a cube stays
+                // a cube: the cap is uniform).
+                float edge = joints.PostEdge(i);
+                Emit(n.Position, PostRotation(n.Position), new Vector3(edge, edge, edge),
+                    BarDoms[i % BarDoms.Length]);
+            }
+        }
+
+        // The shell's jitter, drawn up front (see ShellJitter). Reused across shells and builds.
+        readonly List<float> _barK = new(8192);
+        readonly List<float> _postK = new(2048);
+        readonly Dictionary<long, int> _postAt = new(2048);
+        int _barDraw;
+
+        /// <summary>
+        /// Draw the whole shell's jitter BEFORE laying it, in exactly the order the lay has always
+        /// consumed it - one factor per bar, run by run, then one per post - so every prism keeps
+        /// the very draw it had, while an end bar can be sized against the post it actually meets
+        /// (that post's draw comes after every bar's). Also keys each post by its joint, the same
+        /// quantized key the frame dedupe already uses.
+        /// </summary>
+        void ShellJitter(List<(Vector3 a, Vector3 b)> segments, List<CageNode> nodes)
+        {
+            _barK.Clear();
+            _postK.Clear();
+            _postAt.Clear();
+            _barDraw = 0;
+            for (int i = 0; i < segments.Count; i++)
+            {
+                float len = (segments[i].b - segments[i].a).magnitude;
+                if (len < 0.001f) continue;                       // LayBar lays nothing on it
+                for (int b = BarsOn(len); b > 0; b--) _barK.Add(1f + RangeF(-CageJitter, CageJitter));
+            }
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                _postK.Add(1f + RangeF(-CageJitter, CageJitter));
+                _postAt[Key(nodes[i].Position)] = i;
+            }
+        }
+
+        /// <summary><see cref="Jit"/> with its factor already drawn: the same per-axis floor.</summary>
+        static Vector3 Jittered(Vector3 s, float k) =>
+            new(Mathf.Max(PrismFloor, s.x * k), Mathf.Max(PrismFloor, s.y * k), Mathf.Max(PrismFloor, s.z * k));
+
+        /// <summary>Bars on a run of <paramref name="len"/> - the one count expression, shared by
+        /// <see cref="LayBar"/> and the shell's half-step scan.</summary>
+        static int BarsOn(float len) => Mathf.Max(1, Mathf.RoundToInt(len / BarStep));
+
+        /// <summary>A post's pose: its local Z along the joint's radial.</summary>
+        static Quaternion PostRotation(Vector3 p) =>
+            SpawnPoint.LookRotation(p.sqrMagnitude > 0.001f ? p.normalized : Vector3.forward, Vector3.up);
+
+        /// <summary>A cube's half-extent along <paramref name="dir"/> per unit of half-size.</summary>
+        static float CubeSupport(Quaternion rot, Vector3 dir) =>
+            Mathf.Abs(Vector3.Dot(rot * Vector3.right, dir)) +
+            Mathf.Abs(Vector3.Dot(rot * Vector3.up, dir)) +
+            Mathf.Abs(Vector3.Dot(rot * Vector3.forward, dir));
+
+        /// <summary>
+        /// What one shell's joints need: the post at each joint and how big it is laid, and how
+        /// far an end bar stands off its joint (<see cref="Clearance"/>). Arithmetic on the
+        /// joint's position and the shell's own draws - nothing kept per prism.
+        /// </summary>
+        readonly struct Joints
+        {
+            readonly CageForm _form;
+            readonly float _halfStepMin;   // see BuildShell
+            readonly List<CageNode> _nodes;
+            readonly Dictionary<long, int> _postAt;
+            readonly List<float> _postK;
+
+            public Joints(CageForm form, float halfStepMin, List<CageNode> nodes,
+                Dictionary<long, int> postAt, List<float> postK)
+            {
+                _form = form;
+                _halfStepMin = halfStepMin;
+                _nodes = nodes;
+                _postAt = postAt;
+                _postK = postK;
+            }
+
+            /// <summary>
+            /// The largest half-size a post posed at <paramref name="rot"/> may take: small enough
+            /// that, along every run that can meet it, the shortest end bar of the shell still has
+            /// room for the prism floor beside it. A box's runs are the three world axes, so its
+            /// post's reach along them is the exact bound; a geodesic's runs lie anywhere in the
+            /// tangent plane, so the cube's worst reach (√3) bounds it - and never bites there
+            /// (a 4.5u post against a ≥13.9u half-step). It bites only on the tight boxes, where a
+            /// 1.9x corner block would otherwise swallow the bar beside it whole.
+            /// </summary>
+            float PostHalfCap(Quaternion rot)
+            {
+                float reach;
+                if (_form == CageForm.Geodesic) reach = Mathf.Sqrt(3f);
+                else
+                    reach = Mathf.Max(CubeSupport(rot, Vector3.right),
+                            Mathf.Max(CubeSupport(rot, Vector3.up), CubeSupport(rot, Vector3.forward)));
+                return (_halfStepMin - PrismFloor * 0.5f) * FlushMargin / reach;
+            }
+
+            /// <summary>Edge of post <paramref name="node"/> as laid: its jittered size, capped.</summary>
+            public float PostEdge(int node)
+            {
+                var n = _nodes[node];
+                float drawn = Jittered(Vector3.one * (PostSize * n.SizeScale), _postK[node]).x;
+                return Mathf.Min(drawn, 2f * PostHalfCap(PostRotation(n.Position)));
+            }
+
+            /// <summary>
+            /// How far along <paramref name="dir"/> (pointing from the joint into the run) an end
+            /// bar's near face must stand from the joint at <paramref name="joint"/>: past the
+            /// post's own extent along the run, and far enough out that the joint's other bars
+            /// clear it. A box face's interior crossings carry no post.
+            /// </summary>
+            public float Clearance(Vector3 joint, Vector3 dir)
+            {
+                float clear = _form == CageForm.Geodesic ? GeodesicJointClear : BoxJointClear;
+                if (!_postAt.TryGetValue(Key(joint), out int node)) return clear;
+                return Mathf.Max(clear, 0.5f * PostEdge(node) * CubeSupport(PostRotation(joint), dir));
             }
         }
 
@@ -327,28 +514,54 @@ namespace CosmicShore.Gameplay
         /// the sphere so a geodesic bar follows the shell's curvature instead of chording inside
         /// it; 0 keeps the run straight, which is what a box's flat faces want.
         /// </summary>
-        void LayBar(Vector3 from, Vector3 to, float projectRadius, Domains dom, bool coreShell, ref int barIndex)
+        void LayBar(Vector3 from, Vector3 to, float projectRadius, Domains dom, bool coreShell,
+            in Joints joints, ref int barIndex)
         {
             Vector3 along = to - from;
             float len = along.magnitude;
             if (len < 0.001f) return;
+            Vector3 dir = along / len;
 
-            int n = Mathf.Max(1, Mathf.RoundToInt(len / BarStep));
+            // Flush (see the constants above): each bar is no longer than the gap to its
+            // neighbours' centres along the run, and an end bar also stops short of its joint.
+            float clearFrom = joints.Clearance(from, dir);
+            float clearTo = joints.Clearance(to, -dir);
+
+            int n = BarsOn(len);
+            float sPrev = 0f;
+            Vector3 pos = BarCentre(from, to, 0.5f / n, projectRadius);
+            float s = Vector3.Dot(pos - from, dir);
             for (int i = 0; i < n; i++)
             {
-                float u = (i + 0.5f) / n;
-                Vector3 pos = Vector3.Lerp(from, to, u);
-                if (projectRadius > 0f) pos = pos.normalized * projectRadius;
+                // Centre of the next bar on the run, measured along it (the run's end for the last).
+                Vector3 next = i + 1 < n ? BarCentre(from, to, (i + 1.5f) / n, projectRadius) : to;
+                float sNext = i + 1 < n ? Vector3.Dot(next - from, dir) : len;
+
+                float room = i == 0 ? 2f * (s - clearFrom) : s - sPrev;
+                room = Mathf.Min(room, i == n - 1 ? 2f * (len - s - clearTo) : sNext - s);
 
                 // Danger traps live only in the core cage - see DangerEveryNthCoreBar.
                 bool danger = coreShell && (barIndex % DangerEveryNthCoreBar == 0);
                 barIndex++;
 
                 Vector3 up = pos.sqrMagnitude > 0.001f ? pos.normalized : Vector3.up;
-                Emit(pos, SpawnPoint.LookRotation(along, up),
-                    Jit(new Vector3(BarThickness, BarThickness, BarLength)), dom,
+                var size = Jittered(new Vector3(BarThickness, BarThickness, BarLength), _barK[_barDraw++]);
+                size.z = Mathf.Max(PrismFloor, Mathf.Min(size.z, room * FlushMargin));
+                Emit(pos, SpawnPoint.LookRotation(along, up), size, dom,
                     danger ? PrismKind.Danger : PrismKind.Plain);
+
+                sPrev = s;
+                s = sNext;
+                pos = next;
             }
+        }
+
+        /// <summary>Where a bar at fraction <paramref name="u"/> of a run is laid: on the chord,
+        /// pushed back onto the sphere for a geodesic run (see <see cref="LayBar"/>).</summary>
+        static Vector3 BarCentre(Vector3 from, Vector3 to, float u, float projectRadius)
+        {
+            Vector3 pos = Vector3.Lerp(from, to, u);
+            return projectRadius > 0f ? pos.normalized * projectRadius : pos;
         }
 
         // ── Geodesic frame (subdivided icosahedron) ──────────────────────────
