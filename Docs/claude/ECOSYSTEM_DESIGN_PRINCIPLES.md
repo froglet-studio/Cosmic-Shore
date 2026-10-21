@@ -236,7 +236,8 @@ trio, and the traps).
   `Crystal` — *when a serialized reference cannot be authored headlessly, ask whether it needs
   to be authored at all*. `Docs/ECOSYSTEM.md §46`.
 - **A DYING LIMB BECOMES A CYTOPLASM SHARD** (Garrett, 2026-10-21). Every spindle that withers
-  or dies leaves one new shard in its cell's `SnowChanger` field, condensing on the limb's own
+  or dies may leave a new shard in its cell's `SnowChanger` field (every fifth limb,
+  `limbsPerMorphedShard`; Garrett toned it down by a factor 5 the same day), condensing on the limb's own
   fade clock (`Spindle.MorphIntoShard` -> `SnowChanger.AddMorphedShard`), so an ordered wither
   stays ordered and nothing pops. Shards carry no mass and no collider. `maxMorphedShards` is a
   performance backstop: past it a limb only evaporates, and a shard is never culled to make
