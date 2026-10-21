@@ -196,6 +196,38 @@ def strip_shape_curves(path):
     return len(doomed)
 
 
+def lead_with_take(path, take):
+    """
+    Make `take` ('<Armature>|<action>') the file's FIRST animation stack and its Takes 'Current', in place.
+    Unity imports a model's default pose (the bone Transforms every prefab instance starts from, and the rest
+    every code-puppetry driver captures) from the first take of the file when 'Current' is empty, which is what
+    Blender writes; Blender writes its actions in NAME order, so a hull whose takes sort `bankleft` first
+    imported banked left (the Shrike, 2026-10-21). Only the order changes: no object, id or connection does.
+    """
+    nodes, version, footer = F.read(path)
+    top = {n.name: n for n in nodes}
+    objects, takes_node = top["Objects"], top.get("Takes")
+    want = take.encode()
+
+    def stack_name(o):
+        return o.props[1][1].split(b"\x00")[0] if len(o.props) > 1 else b""
+    stacks = [o for o in objects.children if o.name == "AnimationStack"]
+    lead = [o for o in stacks if stack_name(o) == want]
+    if not lead:
+        raise RuntimeError("lead_with_take: %s has no take %r (has %s)" % (path, take, [stack_name(o).decode() for o in stacks]))
+    ordered = iter(lead + [o for o in stacks if o is not lead[0]])
+    objects.children = [next(ordered) if o.name == "AnimationStack" else o for o in objects.children]
+    if takes_node is not None:
+        tk = [c for c in takes_node.children if c.name == "Take"]
+        first = [c for c in tk if c.props and c.props[0][1] == want]
+        ordered = iter(first + [c for c in tk if not first or c is not first[0]])
+        takes_node.children = [next(ordered) if c.name == "Take" else c for c in takes_node.children]
+        cur = takes_node.first("Current")
+        if cur is not None:
+            cur.props = [("S", want)]
+    F.write(path, nodes, version, footer)
+
+
 # -------------------------------------------------------------------- verification
 
 class VerifyError(AssertionError):
@@ -420,6 +452,14 @@ def verify(path, spec):
             missing = [b for b in bones_named if b not in moving]
             if missing:
                 failures.append("take %r was authored to move %s but the file does not move %s" % (take_name, bones_named, missing))
+    # the FIRST take is the default pose Unity imports (lead_with_take): on a hull of our own it must be the rest.
+    # An artist file keeps its own order (its drivers were tuned against it, and the gates prove it reproduced)
+    if r["takes"] and not spec.get("artist_path"):
+        first = r["takes"][0]
+        if first["nodes_that_move"]:
+            failures.append("the file's first take %r moves %s; Unity imports the model's default pose from the first take, so "
+                            "the hull would rest in it (author takes.rest_take and lead with it)" % (
+                                first["name"], sorted(first["moving_detail"])[:6]))
     for nm, want in (spec.get("material_colours_ref") or {}).items():
         got = next((m.get("diffuse") for m in r["materials"] if m["name"] == nm), None)
         if got is None or want is None:
@@ -612,6 +652,8 @@ def export_and_verify(path, objects, spec, strip=True):
     try:
         export_fbx(tmp, objects, preset=spec.get("preset", "zup"))
         removed = strip_shape_curves(tmp) if strip else 0
+        if spec.get("lead_take"):
+            lead_with_take(tmp, spec["lead_take"])
         rep = verify(tmp, spec)
     except Exception:
         if os.path.exists(tmp):
