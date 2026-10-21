@@ -1047,7 +1047,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **See:** Docs/ElementalAbilitySystem/BACKLOG.md '[gate false positive] check_vessel_on_vessel_motion.py'
 
 ### T-20261018-3247 · open · dev · Crew vessels
-- **Task:** Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (2 s cooldown, none at Time L5); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish.
+- **Task:** Bring the Crew Vessel Lab up to the Wrasse's rounds 4-4f, which were directed in Unity on 2026-10-18 (KITE_NAVIGATOR.md "Where it stands"). They cover: the kite view and the pilot view swapping (the small view lower left); the kite following the mouse or stick with no click; a two-stick pilot who spends saved Time boosts on the right trigger (no cooldown since 2026-10-21; Time L5 is an open slot); lime five-petal motes in the totem's proportions, each moving like its element; mote frequency weighted by the hull's petals; Charge rams on fauna; Eject below Charge L5 and Steal at it; shielded Mass clusters at Mass L5; Space L5 blasts through shields and super shields; the Omni crystal's burst of motes; and out-of-plane prisms seen with depth from the plane. Then re-run parity.cjs and verify_lab.cjs and republish.
 - **Done when:** The lab's SHIPPED block and scorecard carry round 4 and parity.cjs still passes
 - **Who can take it:** any session; Garrett to sign off
 - **Added:** 2026-10-18 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
@@ -1884,3 +1884,17 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (the Goby's owner) with the session driving the Goby lab
 - **Added:** 2026-10-21 by a Claude session (`ccr-e2247aad-06cnzl`)
 - **See:** Docs/Reports/MOBILE_VESSELS.md section 8 'Third round'; Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs GobyAbilities / HumanPistol
+
+### T-20261021-5d4e · open · decision · Crew vessels
+- **Task:** Pick the Wrasse's Time L5 upgrade: its old one (No Cooldown) is gone with the Grouper's boost cooldown, so the Time card's L5 slot is open (blank in ElementalAbilityMaps/Wrasse.asset).
+- **Done when:** Time L5 names an upgrade and KiteNavigator gates it with Upgraded(Element.Time)
+- **Who can take it:** Garrett (owner)
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
+
+### T-20261021-308e · open · test · Crew vessels
+- **Task:** Fly the Wrasse and hold the Grouper's boost trigger (RT, right Shift, or the phone's left-thumb lift) with several saved boosts: they chain back to back with no gap, and the Time card shows no cooldown veil.
+- **Done when:** Saved boosts chain with no wait in the editor and on a phone
+- **Who can take it:** Yash (offered), Garrett
+- **Added:** 2026-10-21 by a Claude session (`cece/wizardly-ride-0c1axn`)
+- **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md
