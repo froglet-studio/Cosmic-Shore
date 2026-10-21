@@ -195,8 +195,6 @@ namespace CosmicShore.ScriptableObjects
         /// far thread only ever replaces a fully converged braid.</summary>
         public float ConvergeEndGirths => midEndGirths * (1f - hysteresis);
 
-        /// <summary>The bands are in the order the tiers need them. A profile that is not falls
-        /// back to the authored braid everywhere rather than drawing a tier out of its range.</summary>
         /// <summary>The overt ladder against the shared recede: the peak must hold past the far tier's
         /// band, the 72-triangle braid only take over once the recede has ended, the thread only once
         /// that braid's band is behind it, and the fade only once the thread has taken over.</summary>
@@ -225,6 +223,8 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>A limb's overt strength: Charge lifeforms part hardest.</summary>
         public float StrengthFor(bool charge) => charge ? chargeStrength : otherStrength;
 
+        /// <summary>The bands are in the order the tiers need them. A profile that is not falls
+        /// back to the authored braid everywhere rather than drawing a tier out of its range.</summary>
         public bool IsSane(out string why)
         {
             if (!BandsAreSane(out why)) return false;

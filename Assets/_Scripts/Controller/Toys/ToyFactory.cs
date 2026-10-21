@@ -197,10 +197,6 @@ namespace CosmicShore.Gameplay
         /// flat-shaded facets, hard edges like the crystal cone. Every quad owns its four
         /// vertices so RecalculateNormals keeps the facets crisp. Scale by ring diameter -
         /// tube thickness rides along (8% of the radius), so big rings read chunkier.
-        ///
-        /// <para>UV0 is the spindle convention (Docs/SPINDLE_LOD.md §8): u runs ALONG the ring,
-        /// <see cref="RingLaceWraps"/> times round it, v round the tube. The switch ring is drawn in
-        /// SpindleDepthGraph, whose lace is a Voronoi over UV0 and whose wave travels along u.</para>
         /// </summary>
         static Mesh RingMesh
         {
@@ -212,7 +208,6 @@ namespace CosmicShore.Gameplay
                 const float R = 0.5f, r = 0.04f;
 
                 var verts = new Vector3[major * minor * 4];
-                var uvs = new Vector2[major * minor * 4];
                 var tris = new int[major * minor * 6];
                 int v = 0, t = 0;
                 for (int i = 0; i < major; i++)
@@ -230,19 +225,17 @@ namespace CosmicShore.Gameplay
                             r * Mathf.Sin(phi));
 
                         int b = v;
-                        float u0 = i / (float)major * RingLaceWraps, u1 = (i + 1) / (float)major * RingLaceWraps;
-                        float w0 = j / (float)minor, w1 = (j + 1) / (float)minor;
-                        uvs[v] = new Vector2(u0, w0); verts[v++] = P(t0, p0); // b+0
-                        uvs[v] = new Vector2(u1, w0); verts[v++] = P(t1, p0); // b+1
-                        uvs[v] = new Vector2(u1, w1); verts[v++] = P(t1, p1); // b+2
-                        uvs[v] = new Vector2(u0, w1); verts[v++] = P(t0, p1); // b+3
+                        verts[v++] = P(t0, p0); // b+0
+                        verts[v++] = P(t1, p0); // b+1
+                        verts[v++] = P(t1, p1); // b+2
+                        verts[v++] = P(t0, p1); // b+3
                         // Outward-facing winding (verified against the analytic torus normal).
                         tris[t++] = b; tris[t++] = b + 1; tris[t++] = b + 2;
                         tris[t++] = b; tris[t++] = b + 2; tris[t++] = b + 3;
                     }
                 }
 
-                s_ringMesh = new Mesh { name = "ToyLowPolyRing", vertices = verts, uv = uvs, triangles = tris };
+                s_ringMesh = new Mesh { name = "ToyLowPolyRing", vertices = verts, triangles = tris };
                 s_ringMesh.RecalculateNormals();
                 s_ringMesh.RecalculateBounds();
                 return s_ringMesh;
@@ -287,12 +280,6 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Ring tube radius as a fraction of ring radius (<see cref="RingMesh"/>: r/R = 0.04/0.5).</summary>
         public const float RingTubeFraction = 0.08f;
-
-        /// <summary>
-        /// How many spindle lengths the ring's u runs round it: the lace's scale along the ring, and
-        /// the ring's flow coordinate (the depth effect's wave and pulse travel along u).
-        /// </summary>
-        public const float RingLaceWraps = 4f;
 
         /// <summary>
         /// Widest a switch ring may be, as a fraction of the spacing between it and its

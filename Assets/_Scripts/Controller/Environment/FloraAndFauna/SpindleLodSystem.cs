@@ -651,7 +651,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Grow a renderer's local bounds by <paramref name="travel"/> world units each way.</summary>
-        internal static void ExpandLocalBounds(Renderer renderer, float travel)
+        static void ExpandLocalBounds(Renderer renderer, float travel)
         {
             if (!(travel > 0f)) return;
             Transform space = renderer is SkinnedMeshRenderer skinned && skinned.rootBone ? skinned.rootBone : renderer.transform;

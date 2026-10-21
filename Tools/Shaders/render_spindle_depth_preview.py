@@ -2,18 +2,18 @@
 """
 Render what SpindleDepthGraph DRAWS, offline, from the shipped shader code (Docs/SPINDLE_LOD.md §8).
 
-    python3 Tools/Shaders/render_spindle_depth_preview.py OUT_DIR [--body shark|brittlestar|worm|fish|ring]
+    python3 Tools/Shaders/render_spindle_depth_preview.py OUT_DIR [--body shark|brittlestar|worm|fish]
                                                           [--strength S] [--reach R]
 
 Writes OUT_DIR/spindle_depth_<body>_<strength>_sheet.png (the body at seven points of the prisms' depth
 ramp, from rest through the peak to settled back) and OUT_DIR/spindle_depth_<body>_<strength>_alive.gif
-(the body at its peak over two seconds, the wave travelling heart -> extremities, or round a ring).
+(the body at its peak over two seconds, the wave travelling heart -> extremities).
 
 The VERTICES are the game's: SpindleLod.hlsl + IncorporealDepth.hlsl compiled by clang (the substitutions
 in verify_spindle_lod.py). A creature is its real model (the FBX the prefab draws), BLOOM form, posed
 about its bounds centre (the game blooms a skinned body about its root bone, a static one about its
-pivot) and scaled so its farthest point is --reach world units out. The ring is ToyFactory.RingMesh
-rebuilt here (12 x 6 flat facets, the same UVs), FACETS form, at a 20-unit radius. Lines are drawn in the
+pivot) and scaled so its farthest point is --reach world units out. (The switch rings are the synthetic
+wire now, previewed by render_spindle_lod_preview.py --wire.) Lines are drawn in the
 material's dull colour brightened by the shipped pulse (SpindleDepthGlow_float); the lace's Voronoi is a
 Shader Graph node with no HLSL here. Judge SHAPE and MOTION, not grading.
 """
@@ -45,7 +45,6 @@ RECEDE = (2.25, 4.9)            # Resources/IncorporealDepth
 FLOW = (0.35, 1.5, 0.6, 0.8)
 SQR = 100000.0
 DULL = (0.0, 0.027586222, 1.0)   # SpindleMaterial
-RING_RADIUS = 20.0
 STOPS = [(0.15, "at rest"), (0.6, "opening"), (2.0, "the peak"), (3.4, "settling back"), (4.9, "settled"),
          (15.625, "fading"), (19.0, "nearly gone")]
 
@@ -130,31 +129,6 @@ def read_body(name):
     return v, sorted(edges)
 
 
-def ring_mesh():
-    """ToyFactory.RingMesh: a unit torus, 12 x 6 flat facets, every quad its own four vertices, UVs
-    u = RingLaceWraps (4) along the ring, v round the tube."""
-    major, minor, R, r, wraps = 12, 6, 0.5, 0.04, 4.0
-
-    def P(t, p):
-        return np.array([math.cos(t) * (R + r * math.cos(p)), math.sin(t) * (R + r * math.cos(p)), r * math.sin(p)])
-
-    verts, normals, uvs, quads = [], [], [], []
-    for i in range(major):
-        t0, t1 = 2 * math.pi * i / major, 2 * math.pi * (i + 1) / major
-        for j in range(minor):
-            p0, p1 = 2 * math.pi * j / minor, 2 * math.pi * (j + 1) / minor
-            q = [P(t0, p0), P(t1, p0), P(t1, p1), P(t0, p1)]
-            nrm = np.cross(q[1] - q[0], q[2] - q[0])
-            nrm /= np.linalg.norm(nrm)
-            b = len(verts)
-            for k, (pt, (u, w)) in enumerate(zip(q, ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1)))):
-                verts.append(pt)
-                normals.append(nrm)
-                uvs.append((u / major * wraps, w / minor))
-            quads.append([b, b + 1, b + 2, b + 3])
-    return np.array(verts), np.array(normals), np.array(uvs), quads
-
-
 def run(exe, form, strength, reach, dist, clock, scale, verts, normals, uvs):
     lines = [f"{form} {strength} {reach} {dist} {clock} {scale[0]} {scale[1]} {scale[2]} {len(verts)}"]
     for p, n, uv in zip(verts, normals, uvs):
@@ -187,22 +161,6 @@ def draw_lines(out, edges, size, extent):
     return im
 
 
-def draw_facets(out, normals, quads, size, extent):
-    im = Image.new("RGB", (size, size), (5, 3, 20))
-    d = ImageDraw.Draw(im)
-    p = project(out[:, :3], size, extent)
-    view = np.array([0.0, 0.0, -1.0])
-    order = sorted(quads, key=lambda q: -p[q, 2].mean())
-    for q in order:
-        n = normals[q[0]]
-        facing = abs(float(np.dot(n, view)))
-        g = out[q, 3].mean()
-        shade = (0.35 + 0.55 * facing * facing) * g
-        c = tuple(int(255 * min(1.0, DULL[k] * shade + 0.15 * shade)) for k in range(3))
-        d.polygon([(p[i, 0], p[i, 1]) for i in q], fill=c)
-    return im
-
-
 def label(im, text):
     ImageDraw.Draw(im).text((6, 5), text, fill=(220, 220, 255))
     return im
@@ -211,32 +169,26 @@ def label(im, text):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out")
-    ap.add_argument("--body", default="shark", choices=sorted(BODIES) + ["ring"])
+    ap.add_argument("--body", default="shark", choices=sorted(BODIES))
     ap.add_argument("--strength", type=float, default=None)
     ap.add_argument("--reach", type=float, default=24.0)
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
-    ring = a.body == "ring"
     strength = a.strength if a.strength is not None else 0.1
     with tempfile.TemporaryDirectory() as td:
         exe = build_program(td)
-        if ring:
-            verts, normals, uvs, quads = ring_mesh()
-            scale = (2 * RING_RADIUS,) * 3
-            form, reach, extent = 1, 0.0, RING_RADIUS * 1.25
-        else:
-            verts, edges = read_body(a.body)
-            far = float(np.linalg.norm(verts, axis=1).max())
-            k = a.reach / far
-            scale = (k, k, k)
-            normals = np.zeros_like(verts)
-            uvs = np.zeros((len(verts), 2))
-            form, reach, extent = 0, a.reach, a.reach * 1.25
+        verts, edges = read_body(a.body)
+        far = float(np.linalg.norm(verts, axis=1).max())
+        k = a.reach / far
+        scale = (k, k, k)
+        normals = np.zeros_like(verts)
+        uvs = np.zeros((len(verts), 2))
+        form, reach, extent = 0, a.reach, a.reach * 1.25
         frames = []
         for n, what in STOPS:
             dist = math.sqrt(n * SQR)
             out = run(exe, form, strength, reach, dist, 0.0, scale, verts, normals, uvs)
-            im = draw_facets(out, normals, quads, 300, extent) if ring else draw_lines(out, edges, 300, extent)
+            im = draw_lines(out, edges, 300, extent)
             frames.append(label(im, f"norm {n:g} (~{dist:,.0f} u): {what}"))
         sheet = Image.new("RGB", (300 * len(frames), 300))
         for i, f in enumerate(frames):
@@ -247,7 +199,7 @@ def main():
         gif = []
         for t in range(24):
             out = run(exe, form, strength, reach, math.sqrt(2.0 * SQR), t / 12.0, scale, verts, normals, uvs)
-            im = draw_facets(out, normals, quads, 360, extent) if ring else draw_lines(out, edges, 360, extent)
+            im = draw_lines(out, edges, 360, extent)
             gif.append(label(im, f"{a.body}, strength {strength:g}, the peak"))
         gif_path = os.path.join(a.out, f"{tag}_alive.gif")
         gif[0].save(gif_path, save_all=True, append_images=gif[1:], duration=83, loop=0)

@@ -1,11 +1,14 @@
 # Spindle LOD — the braid, the drawing-together, the thread
 
-**Owner:** Garrett (spindles, ecology look). **Status (2026-10-20, round 2):** built on `cece/gallant-keller-6mr1u4`.
-Two styles on one set of meshes (`SpindleLodProfileSO.style`, live-switchable): **COVERT** (§2, the first round:
-the LOD hides itself) and **OVERT** (§7, the default since round 2: the LOD IS the effect, in lockstep with the
-prisms' own depth ramp, through the shared `IncorporealDepth.hlsl`). Compiled (Unity reference compile, Amoebius),
-the shader contracts proven by compiling the shipped HLSL (12 mutants caught), the runtime run in Amoebius, the look
-previewed offline from the shipped shader code (§7.3). The graphs have still not been through Unity's importer.
+**Owner:** Garrett (spindles, ecology look, toys). **Status (2026-10-21, shipped from `cece/gallant-keller-6mr1u4`):**
+two styles on one set of meshes (`SpindleLodProfileSO.style`, live-switchable): **COVERT** (§2, the first round:
+the LOD hides itself) and **OVERT** (§7, the default: the LOD IS the effect, in lockstep with the prisms' own
+depth ramp, through the shared `IncorporealDepth.hlsl`; the current ladder and amplitudes are §7.2d - §7.2e). The
+same effect reaches the creatures' own models (§8), and the switch rings are a synthetic wire tiered by the same
+system (§9). Compiled (Unity reference compile, Amoebius), the shader contracts proven by compiling the shipped
+HLSL (31 mutants caught), the runtime run in Amoebius, the look previewed offline (§7.3). Garrett has played the
+lattice spindles and the wire rings in Unity (round 6 - the wire's shading); the four graphs' import and a
+frame-time A/B are still the hand checks (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, spindle LOD steps).
 
 **Round 1's play bug, fixed.** Garrett, Lattice cell, in flight: one gyroid showed its limbs' near AND far forms
 at once (the far thread as bright straight "stars" through every prism, braids around them). Cause: the system
@@ -415,7 +418,7 @@ in world units whatever the object's scale.
 Scarab switch, Astro League goal) now draws the ring on `SpindleDepthGraph` in the FACETS form: from
 afar each of the ring's 72 flat facets opens along its own normal, prism-exact
 (`IncorporealDepthOpen`), on the same ramp, recede and wave, and the wave and its pulse run ROUND the
-ring (u, which `RingMesh` now carries: `RingLaceWraps` = 4 spindle lengths round, v round the tube).
+ring (u, which `RingMesh` carried for it then; the UVs went with the facet form when the rings became the wire).
 The switch vocabulary is unchanged: the signal still picks the colour (`ToySwitchSignal`), which
 becomes the spindle's body colour, with its rim 37% toward white as `SpindleMaterial` pairs them.
 
@@ -436,7 +439,7 @@ is the signal's prism, exactly as before. Hubs and cones beside a ring stay pris
 | `SpindleDepthVertex_float` / `SpindleDepthGlow_float` (`SpindleLod.hlsl`) | Form 0 bloom, form 1 facets; a pass-through in the covert style and at strength 0. |
 | `IncorporealDepthBloom_float`, `IncorporealDepth_BloomPulse` (`IncorporealDepth.hlsl`) | The bloom form, shareable by any incorporeal part with no channels to read. |
 | `SpindleLodSystem` bodies | `AddBody` / `RemoveBody`, `ReachOf`, `ReachBucket`, `BodyMaterialFor`; `EnsureRunning` (Play only) for the rings. The `renderers` line ends `· bodies N`. |
-| `Tools/Shaders/render_spindle_depth_preview.py` | The offline preview of a creature (`--body shark|brittlestar|worm|fish`) or the ring (`--body ring`) at seven stops and alive at the peak. |
+| `Tools/Shaders/render_spindle_depth_preview.py` | The offline preview of a creature (`--body shark|brittlestar|worm|fish`) at seven stops and alive at the peak. |
 | `verify_spindle_lod.py` B / F blocks | Pass-through, pivot anchored, world units under non-uniform scale, the seam test, no fold, the inverse, the pulse on the crest, form 1 == the prism-exact opening with flat facets. 24 mutants, all caught. |
 
 Amoebius, Garland, headless, the last of six samples: 910 limbs as before (889 instanced) and **49 bodies**
@@ -552,4 +555,25 @@ Amoebius, Garland, headless, the last of six samples: 920 registered (910 limbs 
   the wave's pulse (`pulseGlow`, 0.02 now) and the glowing thread. Raise `switchRingStrength` to see the
   cable unravel (the preview uses 0.35).
 - Amoebius draws `SpindleWireGraph` untranslated until T-20261020-1fd6 maps it.
+
+## 10. Open rows (seen while shipping; not fixed on this branch)
+
+Each is a measurement, not a guess; take them as separate changes.
+
+1. **`SpindleDepthGraph` form 1 (facets) has no wearer.** The switch rings wore it for one round (§8.3)
+   and moved to the wire (§9). `SpindleDepthVertex_float` / `SpindleDepthGlow_float` still branch on it and
+   the harness still proves it (`verify_spindle_lod.py` F block). Measure: `grep -rn "_SpindleDepthForm"
+   Assets/_Scripts` returns only the body path writing 0. Decide with T-20261020-3b39: the snow shards are
+   the faceted surface it was designed for (keep and wire them), or delete the branch and its checks.
+2. **The `renderers` / `[ECOSIM]` line counts switch rings as limbs.** Amoebius, Garland: 920 registered
+   where 910 are limbs and 10 are the menu's rings (§9.4). `SpindleLodSystem.Describe` has a `bodies` count
+   but no `rings` count, so a ring-heavy scene (a race course) reads as a forest. Split the count by
+   `MeshSet.synthetic`.
+3. **The wire's triangle cost on a race course is unmeasured.** 5,184 triangles within ~730 units of each
+   ring, 576 beyond ~1,000; a 40-gate course entirely inside 730 units would draw ~207k. Needs a race
+   capture (`Docs/PERFORMANCE_OPTIMIZATION.md` row "Switch rings as a synthetic wire").
+4. **`SpindleLodProfileSO` now configures three surfaces** - limbs (bands, look, strengths), bodies
+   (`depthOnBodies`) and rings (seven `switchRing*` fields) - in one asset under one owner. Measure the
+   field count before splitting (`grep -c "public " Assets/_Scripts/ScriptableObjects/SpindleLodProfileSO.cs`);
+   a `SwitchRingLookSO` is the natural seam if the ring look grows again.
 

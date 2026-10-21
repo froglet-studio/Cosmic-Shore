@@ -556,7 +556,20 @@ author_<cell>_cell.py           # a cell built FROM a species; grows it to size 
   renderer is OFF and the limb is drawn instanced. Pose and stretch a spindle BEFORE its `Start` (every
   species already does), and change a limb's look through its material asset or `Spindle`, never by
   writing `sharedMaterial`/`enabled`/`sharedMesh` on the renderer. A new spindle MESH gets no LOD until
-  `Tools/Build/author_spindle_lod_meshes.py` measures it.
+  `Tools/Build/author_spindle_lod_meshes.py` measures it; a spindle renderer whose mesh is not the braid
+  (a creature's own model) is taken as a BODY and wears a depth material instead (§8 of that doc).
+* **"Strength" is not the whole effect - know which amplitude you are tuning.** The overt spindle
+  look has six visible parts, and the strength knobs (`chargeStrength`, `otherStrength`,
+  `switchRingStrength`) scale only ONE of them, how far the strands MOVE. The pulse on the wave
+  (`pulseGlow`), the lace closing into thread shading, the width hold and the far glow-up
+  (`threadGlow`) follow the ramp's openness, not the strength. Three rounds halved "the amplitude"
+  while the part Garrett was looking at stayed the same (`Docs/SPINDLE_LOD.md` §7.2e has the table).
+  When asked to change "how strong it is", name which part you are changing.
+* **On an UNLIT spindle graph, a surface shaded between two bright colours washes flat.** The first
+  synthetic switch ring used the signal colour and that colour toward white, and in Unity the facets,
+  twist and strands vanished into one bright band. Use a dark body and the bright colour on the facets
+  (the prism rings' own `dark = rim x 0.22`), and give the facets the full range
+  (`switchRingShadeBase` 0 / `switchRingShadeFacet` 1).
 * **`Flora.TryPreviewGrowth` must not touch `UnityEngine.Random`** — it is a pure preview and
   must not advance a sequence the simulation is drawing from. Seed a `System.Random`.
 

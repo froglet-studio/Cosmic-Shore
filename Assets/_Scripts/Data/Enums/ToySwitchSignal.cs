@@ -6,8 +6,8 @@ namespace CosmicShore.Data
     /// <para>A switch is a ring you thread, and threading it activates something
     /// (CLAUDE.md, "Switch"). Every switch wears a <b>prism's colour</b> - the material family
     /// the painted trail wears - so the one channel left to carry meaning is WHICH prism's colour
-    /// it wears. That channel is this enum. (The ring itself is drawn as a spindle in that colour,
-    /// <c>ToyFactory.SwitchRingMaterial</c>, Docs/SPINDLE_LOD.md §8.)</para>
+    /// it wears. That channel is this enum. (The ring itself is a synthetic wire in that colour,
+    /// <c>SwitchRingLod</c>, Docs/SPINDLE_LOD.md §9.)</para>
     ///
     /// <para><b>The reservation:</b> a switch wearing a playable DOMAIN's colour is reserved -
     /// inside the freestyle toybox it means <i>threading me makes your trail that domain</i>, and
