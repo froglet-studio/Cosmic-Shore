@@ -91,12 +91,25 @@ def render(pre, tasks):
     return pre + "\n\n" + "\n\n".join(t.markdown() for t in tasks) + "\n"
 
 
+# git's conflict markers (diff3's base marker included). Every branch appends to the end of the board, so two branches
+# that each add a task conflict there, and a half-resolved merge still PARSES - each side's tasks are well formed - so
+# the field checks alone passed a board with the markers in it (measured 2026-10-18, twice on one branch).
+CONFLICT = re.compile(r"^(<{7}|\|{7}|>{7})( |$)|^={7}$")
+
+
+def conflict_lines(text):
+    """(line number, line) of every unresolved merge conflict marker in the board."""
+    return [(n, line) for n, line in enumerate(text.split("\n"), 1) if CONFLICT.match(line)]
+
+
 def errors(text):
+    markers = [f"line {n}: unresolved merge conflict marker {line[:40]!r} (keep both sides' tasks, then delete the markers)"
+               for n, line in conflict_lines(text)]
     try:
         _, tasks = parse(text)
     except ValueError as e:
-        return [str(e)]
-    out, seen = [], set()
+        return markers + [str(e)]
+    out, seen = markers, set()
     for t in tasks:
         if t.id in seen:
             out.append(f"{t.id}: id used twice")
@@ -349,7 +362,10 @@ def self_test():
     for broken, what in ((t2.replace("- **Done when:** It draws.\n", ""), "a missing field"),
                          (t2 + "\n" + t2.split(MARK)[1].strip() + "\n", "a duplicate id"),
                          (t2.replace(" · test · ", " · testing · "), "an unknown kind"),
-                         (t2.replace(MARK, ""), "a missing marker")):
+                         (t2.replace(MARK, ""), "a missing marker"),
+                         (t2.replace("### ", "<<<<<<< HEAD\n### ", 1) + "=======\n>>>>>>> origin/bleeding-edge\n", "a conflict block"),
+                         (t2 + ">>>>>>> origin/bleeding-edge\n", "a lone closing conflict marker"),
+                         (t2 + "|||||||\n", "a diff3 base marker")):
         if not errors(broken):
             bad.append(f"--check missed {what}")
     tk = parse(t4)[1]   # tasks[0] (a) done, tasks[1] (b) open
@@ -372,6 +388,13 @@ def self_test():
                          "o/r", "main")
     if not any(x[1] == a and "taken" in x[2].get("labels", []) for x in acts3):
         bad.append(f"taking a task did not label its issue: {acts3}")
+    if errors(t2 + "\n=========\n") or errors(t2 + "\nSee <<<<<<< in the merge notes.\n"):
+        bad.append("--check called a line that is not a conflict marker one")
+    try:
+        save(t2 + "=======\n", path=os.devnull)
+        bad.append("save wrote a board with a conflict marker in it")
+    except SystemExit:
+        pass
     if os.path.exists(BOARD):
         shipped = errors(load())
         if shipped:

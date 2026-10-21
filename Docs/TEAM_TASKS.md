@@ -31,7 +31,8 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Kinds:** `test` (run something and report pass or fail), `dev` (code), `content` (words, tips, art),
   `setup` (a dashboard, a service, a key), `decision` (the owner or the core four decide), `docs`.
 - Ids are `T-<date>-<hash>`, never "the next number", so two branches cannot collide. If two branches both
-  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board.
+  append a task, git conflicts at the end of the file: keep both. `team_tasks.py --check` validates the board, and fails on
+  any conflict marker left in it (a half-resolved merge still parses, so it used to pass).
 - QA's own failures stay in `Docs/QA/DEV_TASKS.md` (written by `/qa-backlog`); vessel and AI test scripts stay
   in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. A task here may point at either.
 
@@ -607,6 +608,7 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (duo-vessel owner)
 - **Added:** 2026-10-17 by Claude (cece/compassionate-babbage-gc13io) (`cece/compassionate-babbage-gc13io`)
 - **See:** Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md; .claude/skills/duo-vessel/SKILL.md on cece/sharp-tesla-j0kd7z
+- **Reopened:** 2026-10-21 by a Claude session (`cece/sharp-tesla-j0kd7z`): the 2026-10-18 close was withdrawn when that branch merged bleeding-edge again (bleeding-edge's `KiteNavigator` has its own crew pieces). Step 2 of `KITE_NAVIGATOR.md`'s "Two humans, two seats" work order does it once the branch lands. The earlier note said: 2026-10-18, Done on cece/sharp-tesla-j0kd7z (2026-10-18): the Wrasse is the duo-vessel skill's second design, and both crew seats (KiteNavigator, GobyPistolDuo) implement ICrewSeat and share CrewSeat (wake, PilotSwapGesture swap, AI hand-over), CrewPictureInPicture and CrewViewRender; check_crew_vessels.py holds every crew hull to the card / roster / container rules. The Wrasse already reaches the game from the Toybox Vessel Changer; a mode carrying a crew hull is the networking decision (T-20261017-b06e).
 
 ### T-20261017-3cbe · open · content · Crew vessels
 - **Task:** Author FMOD events for the Kite Navigator's eight empty EventReference slots on KiteNavigatorConfig.asset: loop closed, loop fizzled, prism popped, Mass cluster, Time boost, Charge, steal, fauna struck.
@@ -1080,6 +1082,21 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Added:** 2026-10-18 by a Claude session (`cece/charming-wright-4ayoce`)
 - **See:** Docs/ANDROID_BUILD.md §8, Assets/_Scripts/Utility/DevDiagnostics.cs
 
+### T-20261018-8b32 · open · test · Crew vessels
+- **Task:** Fly the Goby and Pistol (VesselClassType 18) in the Unity Editor on the shared crew pieces (cece/sharp-tesla-j0kd7z, 2026-10-18; the Wrasse half was withdrawn on 2026-10-21, so the Wrasse is checked only for its card name), from the Toybox Vessel Changer. Check the six steps of Docs/UNITY_VERIFICATION_CHECKLIST.md 'One notion of a crew vessel': both cards name both subvessels, the seat view is a lower-left square while flying the hull and swaps with the pilot view on 2 / 1, the Pistol's foreground dithers instead of vanishing, and the Wrasse behaves exactly as before. Then the three steps of 'The Goby's vortex ring and flares are lit faceted volumes' (the ring shaded and faceted in both views, the flares lit, nothing pink).
+- **Done when:** Both crew vessels flown in the editor, the checklist entry marked green or its failures filed
+- **Who can take it:** Yash (offered), Garrett (sign-off), anyone with the Editor
+- **Added:** 2026-10-18 by a Claude session (`cece/sharp-tesla-j0kd7z`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md
+
+### T-20261018-7c2d · done · decision · Crew vessels
+- **Task:** Decide whether the Pistol's view keeps its flat marks (primed/hot/held rings round prisms, the aim ring and line, the contact dot, the pops) as the view's own markings, or makes them lit volumes like the vortex ring
+- **Done when:** Garrett's call is recorded in .claude/skills/duo-vessel/references/designs/goby-and-pistol.md (decisions log) and, if they stay flat, as an owner's-call exception under 'Nothing in the world looks flat' in Docs/claude/SHADERS_AND_PERFORMANCE.md
+- **Who can take it:** Garrett (the rule's and the vessel's owner)
+- **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
+- **See:** .claude/skills/duo-vessel/references/designs/goby-and-pistol.md; Docs/claude/SHADERS_AND_PERFORMANCE.md
+- **Done:** 2026-10-21, Answered by Garrett's LOCKED rule of 2026-10-21 (SHADERS_AND_PERFORMANCE.md 'In the world, not on the screen'): no flat marks. The lab (v14 of the prototype) lights primed / hot / held / ghost-cue prisms and what an aimed fling will break on the prisms themselves, lights the trail tile under a falling Pistol instead of the contact dot, and draws flares as small lit volumes; the aim's dotted arc stays as the aim mark. Unity's PistolWarp still draws the rings until the clone (T-20261018-675f).
+
 ### T-20261018-2c7e · open · dev · Vessel models
 - **Task:** Work the nine follow-ups the ship review of the vessel-model branch left (Docs/VesselModels/README.md 'Follow-ups from the ship review'): one Editor check (BakeMesh scale), the Shrike beam origin under the Space morph, a Thresher pectoral sign question, two latent Rhino/VesselCustomization nits, two deletion proposals (GhostAction, the six procedural hull builders: check Amoebius first) and two per-spawn/per-frame perf trims.
 - **Done when:** each row is fixed, filed or answered in the README's table
@@ -1093,6 +1110,20 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Shombith; Yash (offered)
 - **Added:** 2026-10-18 by a Claude session (`claude/new-session-76hnyc`)
 - **See:** Docs/MENU_REDESIGN_B.md §56 play-test round, §58
+
+### T-20261018-0201 · open · test · Crew vessels
+- **Task:** Import and fly the Goby's own hull (Goby.fbx, built by /vessel-model on the Squirrel's rig) in the Unity Editor: the audits, the crystal-hull-fusion bake, a Toybox flight and the cards, per Docs/UNITY_VERIFICATION_CHECKLIST.md 'The Goby flies its own hull'
+- **Done when:** the checklist entry's six steps are green, or each failure is filed; Garrett has said whether it reads as the Goby
+- **Who can take it:** Yash (offered), Garrett (sign-off: the owner's flight is the bar), anyone with the Editor
+- **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
+- **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md; Docs/VesselModels/sheets/goby_after.jpg
+
+### T-20261018-675f · open · decision · Crew vessels
+- **Task:** Play the Goby and Pistol lab's round 13 (prototype v14: the Pistol as a 2.5D character on a plane tangent to the Goby's path, no warp, the camera turning as little as it can; round 12's slingshot, tiny Pistol, lean toward the Goby and real hull kept) on phone and PC, answer the round's three [open] questions, then say whether to clone it into Unity
+- **Done when:** Garrett's verdict is in the goby-and-pistol.md decisions log; on a yes, /artifact-to-unity clones the 10 drifted numbers and ports the lean, the slingshot, the tangent-plane view with its depth look (or whichever unroll he picks) and the in-world marks that replace PistolWarp's rings (the LOCKED 'In the world, not on the screen' rule), and studio_to_unity.py --vessel goby --check is back to 0 drift
+- **Who can take it:** Garrett (the call); any session for the clone
+- **Added:** 2026-10-18 by Claude session on cece/sharp-tesla-j0kd7z (`cece/sharp-tesla-j0kd7z`)
+- **See:** https://claude.ai/artifact/6hGNJz2AKFYY5gHvYJa9Up; .claude/skills/duo-vessel/references/designs/goby-and-pistol.md
 
 ### T-20261018-fde3 · open · dev · Quick fixes
 - **Task:** Re-apply five small fixes stranded on old branches, in one PR into bleeding-edge: Time crystal sounds through muted SFX (c30040ec96), recycled shielded prisms play the shield-off effect in Microscene (bbb47c111b, + the Port copy), the /ab-test skill (691cd25d6e), the detect-competing-changes skill (7380381338), the session-branch triage tool (13834d5584); plus two stale doc rows (BRANCH_PARTS_STATUS A/C/M landed, ECOSYSTEM_MASTERPLAN Phase B item 6 done)

@@ -43,6 +43,7 @@ touching before editing; read all of it when creating or completing a vessel.
 | Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
 | The MODEL itself: the FBX hull, its armature, element shape keys, puppetry takes, material slots; "the procedural model looks terrible" | — | **`/vessel-model`** (the Squirrel passed the owner's Editor test on 2026-10-18 by keeping the artist's hull and takes and adding the framework on top; its section 4 is the loop) (`.claude/skills/vessel-model/SKILL.md`): Blender-as-a-module specs under `Tools/Build/vessel_model/specs/`, verified and rendered before an in-place write; dossiers in `Docs/VesselModels/` |
 | Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
+| A **duo vessel** (two craft in one squad slot, D-pad / phone-flip swap between halves) | — | **`/duo-vessel`** skill (contract, code anchors, one brief per duo) |
 | Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
 | Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
 

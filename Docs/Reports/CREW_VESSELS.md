@@ -178,8 +178,11 @@ Grouper · 2 seat".
   `T-20261017-aca2` is the original playtest task.
 - **Build the two human seats** (`T-20261021-aa19`, Yash with Garrett). The decision (`T-20261017-b06e`) was made on
   2026-10-21: two seats, either device. The plan is in `KITE_NAVIGATOR.md`.
-- **Register the seat as a duo design** when your duo-vessel branch (`cece/sharp-tesla-j0kd7z`) lands
-  (`T-20261017-efca`, Garrett). The Goby there still uses enum value 16 and has to move; 18 is left for it.
+- **Register the seat as a duo design** (`T-20261017-efca`, open again). `cece/sharp-tesla-j0kd7z` moved the Goby to 18,
+  its card reads "Goby and Pistol", and the Goby runs on the shared crew pieces (`ICrewSeat`, `CrewSeat`,
+  `CrewPictureInPicture`, `CrewViewRender`, `check_crew_vessels.py`). That branch's move of the Wrasse onto them was
+  withdrawn when it merged bleeding-edge again (2026-10-21): the Wrasse joins at step 2 of `KITE_NAVIGATOR.md`'s work
+  order, after the branch lands.
 - **Card icons:** the Wrasse still shows the Sparrow's four ability icons (`T-20261018-8ff7`).
 - **Sounds:** eight empty FMOD slots (`T-20261017-3cbe`).
 - **Catch the lab up** to rounds 4-4f (`T-20261018-3247`).
