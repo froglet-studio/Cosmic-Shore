@@ -1197,3 +1197,24 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (asked for it) or Yash
 - **Added:** 2026-10-20 by a Claude session (`cece/dreamy-hypatia-eni0w5`)
 - **See:** Assets/_Scripts/UI/Modals/ToyConfigureModal.cs arrivalDistanceFactor
+
+### T-20261021-edc0 · open · test · Thresher
+- **Task:** Fly the Thresher on cece/youthful-johnson-hccyzf: it spawns in Mass Mode (lit ball, steals rival prisms, lays a trail, no blasts); A leaves it and the ball breaks again; a vessel swap back puts it in Mass Mode; AI Threshers in Thresher Time stay in Mass Mode
+- **Done when:** All four steps of the 2026-10-21 Thresher Mass Mode entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
+- **Who can take it:** Yash (offered) can run the Editor steps; Garrett decides whether AI Threshers should stay in Mass Mode
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §2b
+
+### T-20261021-7967 · open · test · Thresher
+- **Task:** Fly the Thresher launch view on cece/youthful-johnson-hccyzf with a gamepad: the crosshair starts on what you pointed at when you planted, a brief trigger sag no longer drops the view, and a release with RT held flies straight down the crosshair
+- **Done when:** All five steps (step 5 is round 2's Time-raised launch) of the 2026-10-21 Thresher launch-view entry in Docs/UNITY_VERIFICATION_CHECKLIST.md pass in the Editor
+- **Who can take it:** Garrett (owner's feel on the launch); Yash (offered) can run the Editor steps
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a
+
+### T-20261021-49d3 · open · decision · Thresher
+- **Task:** Decide whether an aimed Thresher launch should keep its x4.8 boost when RT is held: the rigid chain now spends it in under half a second (1 263 to 42 u/s at a Time-raised spin), the ball overtakes and leads the ship; with RT released the boost carries. The heading holds either way since 2026-10-21
+- **Done when:** Garrett picks: keep (the pilot chose a rigid chain), or let the launch line also hold the ship's speed until the ball can follow; recorded in THRESHER.md §5a
+- **Who can take it:** Garrett (owner, the launch feel)
+- **Added:** 2026-10-21 by a Claude session (`cece/youthful-johnson-hccyzf`)
+- **See:** Assets/_Scripts/Controller/Vessel/R_VesselActions/THRESHER.md §5a 'Known feel cost'
