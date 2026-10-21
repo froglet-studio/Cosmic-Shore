@@ -48,7 +48,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] int courseSeed;
 
         [Tooltip("Prism scale, laid with +z down the rail. Skein's (6,6,8): the 6 u cross-section " +
-                 "is the attach catch window the Urchin's 0.04 s trigger sample needs at 300 u/s.")]
+                 "is the attach catch window the Urchin's 0.04 s trigger sample needs at 300 u/s. " +
+                 "z is the NOMINAL length: each prism is laid at the length that keeps it flush " +
+                 "with its two neighbours (RegattaCourse.FlushRailLengths) - 8 u on a straight, " +
+                 "a little less where a bend would cross two boxes' inner corners.")]
         [SerializeField] Vector3 prismScale = new(6f, 6f, 8f);
 
         [Tooltip("Distance of each lane from the spine. Must clear the tightest mouth by a prism.")]
@@ -58,8 +61,9 @@ namespace CosmicShore.Gameplay
                  "the lanes equal in length.")]
         [SerializeField, Min(0f)] float laneTwistTurnsPerLap = 1f;
 
-        [Tooltip("Nominal centre-to-centre prism spacing along a lane; equals the prism's length " +
-                 "for a continuous ribbon.")]
+        [Tooltip("Nominal centre-to-centre prism spacing along a lane; equals the prism's nominal " +
+                 "length, and the per-prism fit trims each length to its real neighbours, so the " +
+                 "ribbon is continuous and flush rather than overlapping.")]
         [SerializeField, Min(1f)] float prismSpacing = 8f;
 
         readonly List<RaceGate> _gates = new();
@@ -92,6 +96,10 @@ namespace CosmicShore.Gameplay
 
         protected override int DefaultSeed => RegattaCourse.DefaultSeed;
 
+        /// <summary>Never baked (PrismLayoutBake): its lay is split into trails by build state the
+        /// bake does not carry, and its fit is closed-form and cheap.</summary>
+        protected override bool BakesLayout => false;
+
         protected override int LayCapacity => 8192;
 
         protected override void BuildEnvironment()
@@ -110,9 +118,13 @@ namespace CosmicShore.Gameplay
                 var rot = layout.LaneRotations[lane];
                 var dom = RegattaCourse.LaneDomains[lane % RegattaCourse.LaneDomains.Length];
 
+                // Flush, not overlapping (Docs/ECOSYSTEM.md 49.10): each prism's length is fitted
+                // to its two neighbours at authoring time - the cross-section stays the catch
+                // window, only the length on a bend gives way. Same count, same poses.
+                var len = RegattaCourse.FlushRailLengths(pos, rot, prismScale);
                 int start = _cachedLays.Count;
                 for (int k = 0; k < pos.Length; k++)
-                    Emit(pos[k], rot[k], prismScale, dom, PrismKind.SuperShielded);
+                    Emit(pos[k], rot[k], new Vector3(prismScale.x, prismScale.y, len[k]), dom, PrismKind.SuperShielded);
                 _laneLayStart.Add(start);
                 _laneLayCount.Add(_cachedLays.Count - start);
             }
@@ -186,6 +198,6 @@ namespace CosmicShore.Gameplay
 
         protected override int BuildParameterHash() =>
             System.HashCode.Combine(courseIntensity, courseSeed, prismScale, laneOffset,
-                                    laneTwistTurnsPerLap, prismSpacing, /* layout revision */ 1);
+                                    laneTwistTurnsPerLap, prismSpacing, /* layout revision */ 2);
     }
 }

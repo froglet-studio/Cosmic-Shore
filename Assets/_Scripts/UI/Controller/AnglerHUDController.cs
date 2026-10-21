@@ -21,6 +21,9 @@ namespace CosmicShore.UI
         [SerializeField] AnglerCommandExecutor angler;
         [Tooltip("How fast the Lure card eases on and off (1/s).")]
         [SerializeField, Min(0f)] float lureEaseRate = 6f;
+        [Tooltip("The Squad card's label while one kind is picked (X). Tokens: {squad} the kind's name, {count} how many of it " +
+                 "the school holds. Empty shows nothing. The whole school (no kind picked) shows no label.")]
+        [SerializeField] string squadLabelTemplate = "{squad} x{count}";
 
         bool _isLocalPilotHud;
         float _lure01;
@@ -57,7 +60,7 @@ namespace CosmicShore.UI
             {
                 _squadCount = squad;
                 _squadName = squad >= 0 ? angler.SquadName : null;
-                view.SetSquad(squad >= 0 ? $"{_squadName} x{squad}" : "");
+                view.SetSquad(squad >= 0 ? TemplateText.Fill(squadLabelTemplate, "squad", _squadName, "count", squad.ToString()) : "");
             }
             view.SetSpace(angler.Hunting / school, angler.Painting && angler.PaintedCount > 0);
             view.SetFloraSeeds(angler.FloraSeedCount);

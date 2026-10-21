@@ -498,7 +498,9 @@ the same pass that gives them real art, when "where is the engine" has an answer
   objects (root GameObject, Transform, TrailRenderer, `VesselTail`), so no instance carried a
   modification or a removal targeting a deleted child.
 - **`DriftJet`** on the Squirrel's four jets aims them along the drift course. It is a
-  Squirrel-specific extra, not part of the standard, and nothing else uses it.
+  Squirrel-specific extra, not part of the standard, and nothing else uses it. Since 2026-10-21
+  `DriftEngineSwivel` turns the engine pods the jets are mounted in onto the same Course, so pod and
+  plume stay parallel (`R_VesselActions/SQUIRREL_DRIFT.md` §12).
 - **The missile's tail width fraction (0.4) is derived, not play-tested** — like every vessel's
   `widthScale`. It is one float on `SkyBurstProjectile.prefab`'s `Projectile`. Check it at Mass 15,
   where the ribbon is 5.79 u wide behind a 63 u missile.

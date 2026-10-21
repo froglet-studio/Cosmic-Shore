@@ -20,7 +20,9 @@ namespace CosmicShore.Gameplay
     /// <para><b>Channels.</b> This writes the bones' rotations, the bulb's scale and the hull transform's scale; the
     /// element morphs are the model's blend shapes (Charge / Mass / Space / Time), which the base class drives by name.
     /// Every bone is posed from its REST in the hull transform's frame, so its imported rest orientation never enters.
-    /// Poses are written directly (the eases are explicit), never through the base's lerp helpers.</para>
+    /// Poses are written directly (the eases are explicit), never through the base's lerp helpers. The stick terms
+    /// are eased here (<c>stickEaseRate</c>), and <c>Idle()</c> drives the same eased path to rest: on a phone lifting
+    /// the thumb is an instant <c>Idle()</c> (vessel skill rule 53).</para>
     /// </summary>
     public class AnglerAnimation : VesselAnimation
     {
@@ -38,6 +40,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] float turnTailDegrees = 18f;
         [Tooltip("The caudal's swing as a multiple of the boom's.")]
         [SerializeField, Min(0f)] float caudalFollow = 1.6f;
+        [Tooltip("How fast the stick terms (tail swing, stabiliser lift) ease to the stick, per second. Keeps a touch " +
+                 "lifting off the screen from snapping a full-stick swing straight in one frame.")]
+        [SerializeField, Min(0.1f)] float stickEaseRate = 10f;
 
         [Header("Stabilisers and mast")]
         [Tooltip("Degrees the stabilisers lift with a full pitch stick (both tips together).")]
@@ -63,6 +68,7 @@ namespace CosmicShore.Gameplay
         Vector3 _escaScale;
         AnglerCommandExecutor _angler;
         float _phase, _lure01;
+        float _pitchEased, _yawEased;    // the stick, eased here: Idle() never sees the input layer's eased stick
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -152,8 +158,11 @@ namespace CosmicShore.Gameplay
             float dt = Time.deltaTime;
             _phase += Mathf.PI * 2f * swimRate * dt;
             if (_phase > Mathf.PI * 64f) _phase -= Mathf.PI * 64f;
-            pitch = Mathf.Clamp(pitch, -1f, 1f);
-            yaw = Mathf.Clamp(yaw, -1f, 1f);
+            float ks = 1f - Mathf.Exp(-stickEaseRate * dt);
+            _pitchEased = Mathf.Lerp(_pitchEased, Mathf.Clamp(pitch, -1f, 1f), ks);
+            _yawEased = Mathf.Lerp(_yawEased, Mathf.Clamp(yaw, -1f, 1f), ks);
+            pitch = _pitchEased;
+            yaw = _yawEased;
 
             // The tide: near a horizon the drawn hull is stretched along its length, volume kept (the stand-in's rule).
             float stretch = Mathf.Exp(BlackHoleWarp.VesselLogStretch(transform.position, out _));
@@ -194,6 +203,7 @@ namespace CosmicShore.Gameplay
             if (_caudal) _caudal.localRotation = _caudalLocal;
             if (_esca) _esca.localScale = _escaScale;
             _lure01 = 0f;
+            _pitchEased = _yawEased = 0f;
         }
 
         // A pooled or swapped-away vessel must not carry a mid-swim pose into its next life.

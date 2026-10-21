@@ -825,3 +825,31 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
   `SourceVessel == victim` early return, or a reasoned allow-list entry with a negative control),
   never the effect. Until then the gate shows red on every branch. *(tool)*
 - 5.2 (Rhino Time playtest) stays open, above.
+
+## From the silence branch (`cece/sleepy-shannon-9qk646`, 2026-10-21)
+
+Rows only, from `/ship` §3.6. Each one names what was measured and what is still to be measured.
+
+- **[debt this branch created] Two fallback paths for a look nobody ships.**
+  - The silence feedback still carries round 1's 2D path for when the perimeter is off: `SilenceScreenFeedback.EnsureOverlay` with its ScreenSpaceOverlay canvas and a CPU-baked mask texture, which re-bakes in 1/48 depth steps.
+  - It also still carries URP's black darkening, `PostProcessingManager.SetSilenceVignette`.
+  - Measured on the shipped asset: `perimeterAmount` 1, so the overlay never runs, and `vignetteDarken` 0, so the darkening never runs.
+  - Blocking question for Garrett: do low-end phones need a perimeter-off fallback (the perimeter needs a camera-colour copy and `shader.isSupported`)? If not, retire both paths and the `vignetteDarken`/`vignetteSmoothness` fields. If yes, keep them and say so in `SILENCE.md` §5.
+- **[debt this branch created] The perimeter's per-frame CPU mesh rebuild is not measured on a phone.**
+  - While silenced, `SilencePerimeterPass.Fill` re-poses up to 160 shards and rewrites one dynamic mesh: 36 to 60 facets each, at most about 28,800 vertices (counted from `SilencePerimeter.Geometry`).
+  - It also adds a full-screen colour copy, the same one `BlackHoleLensPass` makes.
+  - Measure it on a phone build with the `prof` overlay during `silence test 8` before tuning `perimeterCount` down (`/perf-hunt`).
+  - If it is costly, the fix is posing on the GPU: per-shard pose rows in a buffer, the static geometry uploaded once.
+- **[debt this branch created] Only one of the shader's three passes is held to the lab.**
+  - `Tools/Shaders/verify_silence_perimeter.py` runs the edge pass's HLSL mask as C++ against the lab's twin: 3750 points, worst 4e-6.
+  - The warp and shard passes are ported line for line from the lab's GLSL, but only compile-checked.
+  - A `verify_black_hole_lens.py`-style pixel parity (HLSL and GLSL both translated to C++) would cover them.
+- **[walked past] Amoebius does not build on bleeding-edge.** `TouchTilt.cs` (from `f9c8d70aba`, the flight branch) uses `GravitySensor`, which the engine's Unity shim lacks: CS0103 at lines 29 and 77. It reproduces on a clean bleeding-edge worktree (2026-10-21). It is not this branch's to fix (`Port/` is Shombith's). The fix is a shim stub, or keeping the `GravitySensor` read out of the Amoebius variant (`Docs/CONDITIONAL_COMPILATION.md`, "The Amoebius variant").
+- **[made visible] New vessels bring new harm paths, and nothing flags an ungated one.**
+  - The merge of bleeding-edge brought the Starlings' shield bite, a direct `DeactivateShields` on a rival's prism that ignored silence. It was found only by diffing the call sites before and after the merge, and is fixed in the merge commit.
+  - Branches in flight that add vessels: `claude/project-thread-xrej29` (Marlin), `claude/honeyguide-ratel`, and `grizzly-v3` (plasma claw). Each must route pilot harm through `Prism.Damage`/`Steal`/`Consume`/`Vanish` (gated inside) or ask `DeflectsSilenced` before a direct `DeactivateShields`.
+  - A text gate was measured and NOT built. Of 24 `DeactivateShields(` sites on 2026-10-21:
+    - 9 act for a pilot and are gated;
+    - 2 of those 9 are gated further up the method than a 14-line window sees (Astro League ball, Rhino skimmer);
+    - the rest act for nobody: flora, fauna, managers and spawners.
+  - So a window rule cries wolf. The sound version tags the pilot-harm sites (an attribute or a `// silence-gated:` marker) and gates the TAGGED set.

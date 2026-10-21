@@ -19,11 +19,11 @@ namespace CosmicShore.UI
     /// for the ball's next blast (<c>ThresherExecutor.EnergyRadius01</c>: empty = a plain blast,
     /// full = the bank has bought the whole <c>energyMaxDiameterScale</c>). It eases from iron to
     /// the palette's lime as it fills (<c>colorBlendRate</c>) and empties the moment a blast spends
-    /// it. (Until 2026-10-13 this card showed how far the chain was let out; the READY cue now
-    /// lives on the chain alone.)</item>
+    /// it. This gauge is the only place the lime shows: the chain's READY cue and the crosshair's
+    /// timing cue were removed on 2026-10-20, left to feel.</item>
     /// </list>
     /// Mass (the A toggle) and Time (a hold) are states with nothing a pilot waits on, so they get no gauge;
-    /// Mass Mode and the chain's banked energy read on the ball itself (lit colour; a lime-leaning rim).
+    /// Mass Mode and the chain's banked energy read on the ball itself (lit colour; a rim burning toward white).
     /// Colour here is a GAUGE channel; the upgrade lives on the lockup's card, so this view only
     /// re-anchors its captured rest scales in <see cref="SetAbilityUpgraded"/>.
     /// </summary>

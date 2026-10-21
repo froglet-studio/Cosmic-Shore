@@ -2,6 +2,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
@@ -14,6 +15,10 @@ namespace CosmicShore.Gameplay
         Locked = 1,
         /// <summary>The board stays level and turns only with heading (a comparison, not the design).</summary>
         Level = 2,
+        /// <summary>The board tilts with the hull's bank and pitch (as Eased), but turns to the hull's HEADING only as the
+        /// hull travels: a yaw in place turns the Grouper on the screen and leaves the board, its motes and the kite where
+        /// they are; over a medium distance the view comes round behind it (Garrett, 2026-10-20).</summary>
+        Heading = 3,
     }
 
     /// <summary>Where the navigator's motes live.</summary>
@@ -39,8 +44,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(10f)] float boardRadius = 160f;
         [Tooltip("lab anchor: the board's centre sits this many board radii AHEAD of the hull, so more of it is ahead.")]
         [SerializeField, Range(0f, 0.7f)] float anchor = 0.3f;
-        [Tooltip("How the board follows the hull. Eased is the signed-off frame.")]
-        [SerializeField] KiteBoardFrame frame = KiteBoardFrame.Eased;
+        [Tooltip("How the board follows the hull. Heading (2026-10-20): it tilts with the hull but turns to its heading only " +
+                 "as the hull travels, so a yaw turns the Grouper in place instead of dragging the motes round. Eased was " +
+                 "the signed-off frame before it.")]
+        [SerializeField] KiteBoardFrame frame = KiteBoardFrame.Heading;
+        [Tooltip("Heading frame: the board turns to the hull's heading by 63% (one e-fold) for every this many units the hull " +
+                 "flies (Garrett: \"slowly move toward the groupers so it aligns after medium distances\"). Standing still or " +
+                 "turning in place never turns it. The kite keeps its place on the board, so the turn never moves it on screen.")]
+        [SerializeField, Min(1f)] float headingAlignDistance = 220f;
         [Tooltip("lab easeRate: Eased frame, how fast the board follows a bank or pitch (1/s).")]
         [SerializeField, Min(0.1f)] float easeRate = 3f;
         [Tooltip("lab reachY: anything within this of the plane (u) can be touched; further away it is out of reach (still seen).")]
@@ -54,8 +65,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("lab kiteAccel: how fast the kite reaches the speed it is asked for (1/s).")]
         [SerializeField, Min(0.1f)] float kiteAccel = 12f;
         [Tooltip("lab tailLen: the tail's length in board radii. Cross it to close a loop. 1.0 is too short to circle a cluster. " +
-                 "2.4 = the signed-off 1.6 + 50% (Garrett, 2026-10-18).")]
-        [SerializeField, Range(0.4f, 4f)] float tailLength = 2.4f;
+                 "2.4 = the signed-off 1.6 + 50% (Garrett, 2026-10-18); 4.8 = doubled (Garrett, 2026-10-20: \"double the max " +
+                 "length of the lasso\"). One lap must fit in it: a loop is at most tail / 2 pi across the radius.")]
+        [SerializeField, Range(0.4f, 8f)] float tailLength = 4.8f;
         [Tooltip("lab thumbOffset (80 CSS px on a phone): on a touch screen the kite aims this far ABOVE the thumb, in millimetres " +
                  "of glass, so the thumb never covers the kite or what is coming.")]
         [SerializeField, Range(0f, 40f)] float thumbOffsetMillimetres = 21f;
@@ -64,6 +76,44 @@ namespace CosmicShore.Gameplay
         [Tooltip("A thumbstick leaning less than this is centred: the kite hovers. The kite follows the stick's lean, the " +
                  "mouse or the thumb; nothing is clicked.")]
         [SerializeField, Range(0f, 0.5f)] float stickDeadzone = 0.15f;
+
+        [Header("Sling: the thumb holds the kite on an invisible rope (Wrasse Lasso Lab round 1)")]
+        [Tooltip("How EVERY input holds the kite - a thumb, the mouse, a thumbstick and the AI squad mate alike (Garrett, " +
+                 "2026-10-20: \"the gamepad and AI should be consistent with mouse and touch\"). Sling (\"Sling is excellent. " +
+                 "bring it to unity\"): the input is a hand on a rope; drag and the kite trails, small circles whirl it round in " +
+                 "big ones, lift the thumb to let it fly (a mouse and a stick never let go). Follow: the kite flies to a point " +
+                 "above the thumb, the cursor, or the way the stick leans (round 3).")]
+        [FormerlySerializedAs("pointerControl")]
+        [SerializeField] KiteControl control = KiteControl.Sling;
+        [Tooltip("lab slRope: the rope's length (u). One lap must fit in the tail (2 pi x rope < tail length x board radius), " +
+                 "so above ~55 u no orbit can close a loop (Wrasse Lasso Lab, Found 1).")]
+        [SerializeField, Range(10f, 120f)] float slingRope = 42f;
+        [Tooltip("lab slStiff: how hard a stretched rope pulls back (1/s²). Low: a bungee. High: a chain.")]
+        [SerializeField, Range(20f, 800f)] float slingStiffness = 260f;
+        [Tooltip("lab slDamp: damping of the rope's stretch, measured against the moving thumb (1/s).")]
+        [SerializeField, Range(0f, 30f)] float slingDamping = 5f;
+        [Tooltip("lab slDrag: speed lost per second while the thumb holds the rope (1/s). Low: a whirl keeps going on its own.")]
+        [SerializeField, Range(0f, 4f)] float slingDrag = 0.35f;
+        [Tooltip("lab slFreeDrag: after the thumb lets go, how fast the free kite slows (1/s).")]
+        [SerializeField, Range(0f, 8f)] float slingFreeDrag = 0.9f;
+        [Tooltip("lab slMaxSpeed: the slung kite's top speed (u/s). 364 = 70% of the lab's 520 (Garrett, 2026-10-20: " +
+                 "\"slow down the max speed of the wrasse to 70% of current\").")]
+        [SerializeField, Range(100f, 1200f)] float slingMaxSpeed = 364f;
+        [Tooltip("Sling on a thumbstick: the stick is the hand's place on the board, as a mouse is - centred is the board's " +
+                 "centre, a full lean this many board radii out. Circle the stick and the hand circles; small circles whirl " +
+                 "the kite.")]
+        [SerializeField, Range(0.1f, 1f)] float slingStickReach = 0.6f;
+        [Tooltip("Sling, the AI squad mate: the radius of its whirling hand circle as a share of the rope (the Wrasse " +
+                 "Lasso Lab's sling pilot, 0.25). The hand leads the kite a quarter turn round the cluster.")]
+        [SerializeField, Range(0.05f, 1f)] float aiSlingLead = 0.25f;
+
+        [Header("Races: the Wrasse collects the rings (Wrasse Run, 2026-10-20)")]
+        [Tooltip("While a gate race has lit a ring for this pilot, Time motes come this much more often (added to their " +
+                 "weight; base 1 + 1 per petal), among the others: a Time loop saves the boosts that reach the next ring.")]
+        [SerializeField, Range(0f, 8f)] float raceTimeMoteBonus = 2f;
+        [Tooltip("While a gate race has lit a ring, the AI squad mate values a Time loop this many times a loop of another " +
+                 "element the same size. 1 = no preference.")]
+        [SerializeField, Range(1f, 8f)] float raceTimeLoopPreference = 3f;
 
         [Header("Motes (navigator only)")]
         [Tooltip("Where the motes live. Board is the signed-off home.")]
@@ -119,6 +169,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScriptableEventCombatHitStats onCombatHitLanded;
 
         [Header("AI squad mate (flies the kite while you fly the hull)")]
+        [Tooltip("An AI-flown Wrasse (an AI crew this machine simulates) is flown by TWO AIs: the hull's AIPilot flies the " +
+                 "Grouper and decides when to spend a saved boost, and a navigator AI flies the Wrasse's kite (Garrett, " +
+                 "2026-10-20). Off: an AI hull seats no kite and threads rings with the hull.")]
+        [SerializeField] bool aiCrewNavigates = true;
+        [Tooltip("An AI Grouper spends a saved boost while the next race ring is at least this far (u) and roughly ahead; " +
+                 "outside a race it spends them as they come.")]
+        [SerializeField, Min(0f)] float aiBoostRingDistance = 180f;
         [Tooltip("The navigator AI's skill: thumb speed, reaction, aim noise and judgement (never the kite itself).")]
         [SerializeField] KiteNavigatorAI.Skill aiSkill = KiteNavigatorAI.Skill.Hard;
 
@@ -136,9 +193,62 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.15f, 0.6f)] float pipSize = 0.32f;
         [Tooltip("The small view's gap from the screen's edges, as a fraction of the screen height.")]
         [SerializeField, Range(0f, 0.1f)] float viewMargin = 0.015f;
+        [Tooltip("The kite view's half height in board radii. 1.04 framed the board; 1.352 = 30% further out (Garrett, " +
+                 "2026-10-20: \"zoom out 30% more and center the grouper in the wrasses camera\"). The view is centred on the " +
+                 "hull.")]
+        [SerializeField, Range(0.5f, 3f)] float viewScale = 1.352f;
+        [Tooltip("The kite flies the whole kite view - a rectangle the screen's shape, viewScale board radii high - instead of " +
+                 "the round board (Garrett, 2026-10-20: \"Let the wrasse travel the whole screen space\").")]
+        [SerializeField] bool wholeScreen = true;
+        [Tooltip("The rope from the hand (a thumb, the cursor, the stick's point, the AI's hand) to the kite, drawn in the kite " +
+                 "view while it is held (Garrett: \"make the wrasse cord visible to the wrasse player\"). Its width, as a share " +
+                 "of the tail's.")]
+        [SerializeField, Range(0.1f, 2f)] float cordWidth = 0.6f;
+        [Tooltip("How visible the cord is (alpha).")]
+        [SerializeField, Range(0f, 1f)] float cordAlpha = 0.75f;
+
+        [Header("The hand line (round 8; Garrett, 2026-10-20)")]
+        [Tooltip("\"pick a nice horizontal line just above the ability totems and don't let the cursor travel below that " +
+                 "line\": the line sits this far above the top of the ability cards, as a fraction of the screen height. " +
+                 "The hand (a thumb, the cursor, the stick's point, the AI's hand) never goes below it; the kite still " +
+                 "swings across it. Below it, left of the cards, is the pilot's view while navigating.")]
+        [SerializeField, Range(0f, 0.1f)] float handLineGap = 0.012f;
+        [Tooltip("The line's height (a fraction of the screen) when the HUD has no ability cards to sit above.")]
+        [SerializeField, Range(0f, 0.5f)] float handLineFallback = 0.2f;
+        [Tooltip("How far inside the screen's sides and top the hand stops (u), significantly less than the cord (Garrett, " +
+                 "2026-10-21: \"the mouse should be limited by a small margin significantly less than the cord length\"). " +
+                 "Its bottom is the hand line.")]
+        [SerializeField, Min(0f)] float handEdgeMargin = 10f;
+        [Tooltip("How far past any edge of the screen the kite may fly (u) before a safety wall stops it. The cord is what " +
+                 "holds it (\"the wrasse should only be limited by the tether\"): from a hand inside the screen it never " +
+                 "reaches this; only a long fling does.")]
+        [SerializeField, Min(0f)] float kiteOffscreenReach = 240f;
         [Tooltip("A mote's flower radius in the kite view (u). The petals sit in it in the totem's own proportions (the " +
                  "element flower above each ability card).")]
         [SerializeField, Min(0.5f)] float moteSize = 4.5f;
+        [Tooltip("Each element's mote colour, sRGB, in the HUD's order (Charge, Mass, Space, Time): four shades of LIME, the " +
+                 "corners of the largest tetrahedron of distinct hue, saturation and value inside lime's boundary against " +
+                 "Jade, Ruby, Gold, Blue (neutral) and Fire (danger) (Garrett, 2026-10-21). WRITTEN by " +
+                 "Tools/Build/kite_mote_colors.py, which derives them from the live palette; --check fails if they drift.")]
+        [SerializeField] Color[] elementColors = new Color[4];
+
+        [Header("Juice: each loop's motes become its effect (round 10; Garrett, 2026-10-21)")]
+        [Tooltip("A fizzle (a loop of more than one element): how long its motes sputter, grey out, droop and flicker away. " +
+                 "No ring (\"when more than one is lassoed it should fizzle with no ring\").")]
+        [SerializeField, Range(0.2f, 3f)] float fizzleSeconds = 0.95f;
+        [Tooltip("Space: after the blast's 0.2 s fuse (the petals implode to its centre), how long they ride its shockwave " +
+                 "out (\"space symbols should explode with explosion\").")]
+        [SerializeField, Range(0.2f, 3f)] float spaceRideSeconds = 1.1f;
+        [Tooltip("Mass: how long the petals take to fold into blocks and fly into the prisms they become (\"mass symbols " +
+                 "should look like they are morphing into the 3d mass\"). The cluster's prisms are LAID when the blocks " +
+                 "arrive, so this is also the Mass loop's delay.")]
+        [SerializeField, Range(0f, 2f)] float massMorphSeconds = 0.75f;
+        [Tooltip("Time: how long the petals take to spiral onto the Grouper (\"time should morph on to the grouper\"). The " +
+                 "saved boosts show on the board when they land.")]
+        [SerializeField, Range(0.2f, 2f)] float timeFlightSeconds = 0.7f;
+        [Tooltip("Charge: how long the petals take to home onto the Wrasse and fall into orbit as its charge pips (\"charge " +
+                 "should morph onto the wrasse\"). The pips show when they arrive.")]
+        [SerializeField, Range(0.2f, 2f)] float chargeFlightSeconds = 0.55f;
 
         [Header("Mote flowers (five petals, each moving like its element; rounds 4e-4f)")]
         [Tooltip("Space: the flower spins this many degrees a second, without pausing.")]
@@ -160,6 +270,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.2f)] float tailWidth = 1.4f;
         [Tooltip("How visible the kite is to the pilot: a faint, see-through kite (0 = hidden).")]
         [SerializeField, Range(0f, 1f)] float pilotKiteAlpha = 0.22f;
+        [Tooltip("The pilot's stand-in for the Wrasse: a faint kite this many times the kite's radius, drawn in the pilot's " +
+                 "view even when the Wrasse's model draws, so the Grouper keeps a larger representative view of the Wrasse.")]
+        [SerializeField, Range(1f, 6f)] float pilotKiteScale = 2.5f;
         [Tooltip("How visible the motes are to the pilot: faint lime dots (0 = hidden).")]
         [SerializeField, Range(0f, 1f)] float pilotDotAlpha = 0.35f;
         [Tooltip("The size of a mote's dot in the pilot's view (u).")]
@@ -208,12 +321,38 @@ namespace CosmicShore.Gameplay
         public float ThumbOffsetMillimetres => thumbOffsetMillimetres;
         public bool OffsetMouse => offsetMouse;
         public float StickDeadzone => stickDeadzone;
+        public KiteControl Control => control;
+        public float SlingStickReach => slingStickReach;
+        public float AISlingLead => aiSlingLead;
+        public bool AICrewNavigates => aiCrewNavigates;
+        public float AIBoostRingDistance => aiBoostRingDistance;
+        public float RaceTimeMoteBonus => raceTimeMoteBonus;
+        public float RaceTimeLoopPreference => raceTimeLoopPreference;
         public float MoteBaseWeight => moteBaseWeight;
         public float MoteWeightPerLevel => moteWeightPerLevel;
         public float BoostCooldownSeconds => boostCooldownSeconds;
         public int OmniMotesPerElement => omniMotesPerElement;
         public float OmniClusterRadius => omniClusterRadius;
         public float PipSize => pipSize;
+        public float ViewScale => viewScale;
+        public bool WholeScreen => wholeScreen;
+        public float CordWidth => cordWidth;
+        public float CordAlpha => cordAlpha;
+        public float HandLineGap => handLineGap;
+        public float HandLineFallback => handLineFallback;
+        public float HandEdgeMargin => handEdgeMargin;
+        public float FizzleSeconds => fizzleSeconds;
+        public float SpaceRideSeconds => spaceRideSeconds;
+        public float MassMorphSeconds => massMorphSeconds;
+        public float TimeFlightSeconds => timeFlightSeconds;
+        public float ChargeFlightSeconds => chargeFlightSeconds;
+        public float KiteOffscreenReach => kiteOffscreenReach;
+        public float PilotKiteScale => pilotKiteScale;
+        /// <summary>The mote colour of element index <paramref name="e"/> (Element - 1); <paramref name="fallback"/> when
+        /// the asset carries none (a config authored before 2026-10-21).</summary>
+        public Color ElementColor(int e, Color fallback) =>
+            elementColors != null && e >= 0 && e < elementColors.Length && elementColors[e].a > 0f ? elementColors[e] : fallback;
+        public float HeadingAlignDistance => headingAlignDistance;
         public float ViewMargin => viewMargin;
         public float MoteSize => moteSize;
         public float SpaceSpinDegreesPerSecond => spaceSpinDegreesPerSecond;
@@ -266,6 +405,8 @@ namespace CosmicShore.Gameplay
         public KiteSettings ToSettings() => new()
         {
             BoardRadius = boardRadius, Anchor = anchor, KiteSpeed = kiteSpeed, KiteAccel = kiteAccel, TailLength = tailLength,
+            SlingRope = slingRope, SlingStiffness = slingStiffness, SlingDamping = slingDamping,
+            SlingDrag = slingDrag, SlingFreeDrag = slingFreeDrag, SlingMaxSpeed = slingMaxSpeed,
         };
     }
 }

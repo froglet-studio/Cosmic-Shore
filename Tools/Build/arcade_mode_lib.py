@@ -90,6 +90,9 @@ VESSELS = {
     "Grizzly":  "312ea06c4539cdc46b027615a590c94b",
     "Stoat":    "cc163188820f4e7a985561bc609da2e0",
     "Thresher": "8e4f2a9c1b3d4e6f7a8b9c0d1e2f3a4b",
+    # The Wrasse joined with Wrasse Run (2026-10-20): the Sparrow hull with the Kite Navigator seat
+    # (KITE_NAVIGATOR.md); its AIPilot races the hull, and a ring is collected by the local kite.
+    "Wrasse":   "db96e34a6c3b4cb1b498f0529f765db1",
 }
 
 # VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
@@ -97,7 +100,7 @@ VESSELS = {
 VESSEL_CLASS_ID = {
     "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
     "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
-    "Butterfly": 13, "Thresher": 14, "Stoat": 15,
+    "Butterfly": 13, "Thresher": 14, "Stoat": 15, "Wrasse": 19,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──

@@ -912,8 +912,14 @@ namespace CosmicShore.Gameplay
                     if (!prism || prism.destroyed) continue;
                     if (_dock == DockKind.Block && prism == _dockPrism) continue;
                     if (_dock == DockKind.Nest && IsNestBlock(prism, out var nest) && nest == _dockNest) continue;
-                    if (!ShrikeRules.LanceBreaks(prism.prismProperties is { IsSuperShielded: true }, pierce)) continue;
                     if (!RayHits(prism, o, f, r, len, out _)) continue;
+                    // A lance that cannot pierce super-shielded mass still meets it: the deflection
+                    // jiggle, never a beam passing through armour in silence (Docs/LIT.md).
+                    if (!ShrikeRules.LanceBreaks(prism.prismProperties is { IsSuperShielded: true }, pierce))
+                    {
+                        prism.AbsorbSuperShieldHit(config.LanceDebrisSpeed);
+                        continue;
+                    }
                     BreakPrism(prism, f * config.LanceDebrisSpeed, devastate: true);
                     hit = true;
                 }
@@ -942,6 +948,8 @@ namespace CosmicShore.Gameplay
         /// <c>devastate</c> stops the prism restoring its armour instead of dying.</summary>
         void BreakPrism(Prism prism, Vector3 impact, bool devastate)
         {
+            // A silenced Shrike breaks nothing it does not own (VesselSilence) - asked before the shield drop.
+            if (prism.DeflectsSilenced(_status.PlayerName, impact.magnitude)) return;
             if (prism.prismProperties is { IsSuperShielded: true })
             {
                 prism.DeactivateShields(impact);

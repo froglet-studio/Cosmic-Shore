@@ -308,7 +308,7 @@ namespace CosmicShore.Gameplay
             if (!Live(h, out var p)) return;
             var s = _slots[h];
             if (string.IsNullOrEmpty(s.PrevPlayer)) return;
-            p.Steal(s.PrevPlayer, s.PrevDomain, false);
+            p.ReturnTo(s.PrevPlayer, s.PrevDomain);   // a give-back, which silence does not refuse
         }
 
         public void Reclaim(int h, int vesselId)
