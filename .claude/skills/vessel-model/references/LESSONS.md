@@ -85,7 +85,8 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
     the shipped takes drop the tail tip 1.1-1.4 units for pitch and whip it 2.2 units for yaw
     (dossier 3.5). 14-degree curls were invisible; 26-30 degrees read.
 
-12. **Nothing floats; then overlap.** Squirrel v1 (pods and feathers as separate pills) was
+12. **Nothing floats; then overlap.** *(Superseded 2026-10-21, LESSONS 49: the fleet is a hovering assembly; v1
+    failed as off-axis pills, not as floating parts.)* Squirrel v1 (pods and feathers as separate pills) was
     worse than the shipped model on connectivity alone. v2 added forearm/leg struts, a tail
     spine and roots inside the deck; v3 widened the six feathers (0.5-0.6 chord, 6-34 degree
     sweep) so they overlap into one wing; v4 turned thin V chevrons into thick crescent bands.
@@ -508,3 +509,25 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       YAML documents) needed a per-object merge, and `/asset-surgery` already had one, with its five assertions
       and `Tools/Build/merge_unity_scene.py`. Rebuilding it skipped two of those assertions (byte-exact
       round-trip, every addition survives) until the review ran them. They then found one trimmed blank line.
+
+49. **A vessel is a hovering assembly; "nothing floats" was a misreading (2026-10-21).** Garrett flew the first Orca and
+    said the original vessels "are based largely around the idea of free floating parts that are associated and animated
+    together but clearly distinct parts of a hovering assembly", and that this "will also help keep the guns associated
+    with the vessel but not have to worry about mating planar surfaces". Measured (`assembly_report.py --fleet`, gap to
+    the nearest other part as % of the diagonal): the Manta floats 7 / 7 parts (wings 3.4-6.5 %), the Dolphin its wings
+    (5.7 %) and jaws (1.2 %), the Squirrel 28 / 39 (wing pieces 0.9-1.2 %), the Serpent 22 / 27 (tail spikes 0.7 %), the
+    Sparrow its tail segments (0.8-1.1 %) and shells (0.4-0.5 %) with 0.1-0.2 % seams between wing plates. The first
+    Orca floated 1 / 22 parts (median 0.12 %): mated wing panels ran from the hull to the turrets. Every from-scratch
+    hull of 2026-10-17..21 was built under rule 12 and welds its parts the same way.
+    - **The rule:** a core plus distinct closed shells on their own bones, 0.5-6.5 % clear, edges parallel across the
+      gap, aligned on shared axes, animated together. No struts, roots or fillets; a chain of floating plates carries
+      the eye to a far part.
+    - **Why rule 12 was wrong:** Squirrel v1 failed because its parts were shapeless pills scattered off-axis. The
+      lesson drawn was "connect everything", and nobody measured the artist files, which were floating assemblies all
+      along. Measure the references before writing a rule about them.
+    - **The gate:** `assembly_report.py <fbx> --floating <parts>` (exit 1 under 0.4 % or over 10 %), watched failing on
+      the first Orca's six major parts; `--self-test` holds a welded, a floating and a detached control.
+    - **Code side:** the floating parts give the code something to animate. The Orca's `OrcaHullRig` swings the
+      outrigger plates as a chain between the hull and the lagged turret frame, bobs every part on its own phase and
+      leans the engines into turns. And a rig must read REST from the skin's bind poses, never from the bones as found:
+      a crew that re-bound to a hull it had already posed took an aimed turret as rest and drew it off its aim for good.

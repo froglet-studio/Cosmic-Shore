@@ -26,6 +26,14 @@ is the measured state of today's prefabs (what an in-place write must still keep
    and Scarab wrap donors, the Goby nests the Squirrel's FBX (section 9), and B2 / B9 want hundreds of vessels from presets and dice; rule 1.1 forbids the cheap case. The
    alternative: the generator writes one file per vessel FROM its spec, the spec being the recipe's hull section (section 8). Until decided, rule 1.1 stands.
 
+## 0.5 The hovering assembly (Garrett, 2026-10-21)
+
+A vessel is a core plus distinct parts that float clear of it, each on its own bone and animated together (SKILL 0.5,
+measured band there). Rule for a new hull: every wing, fin, engine pod, gun and tail segment is its own closed shell
+0.5-6.5 % of the diagonal clear of its neighbours; plates within a part may sit on 0.1-0.2 % seams; nothing is welded,
+strutted or filleted on. The parts' bones are named for the code that moves them (section 2), and the gate is
+`assembly_report.py --floating` (section 10, gate 12).
+
 ## 1. One file, one frame
 
 1. **One file per vessel**, `Assets/_Models/Vessel Models/<Vessel>.fbx`, binary FBX **7400**, holding the one skinned mesh, the one armature, the four element shapes and every
@@ -262,6 +270,9 @@ Needs a gate (none of these fails today):
    `.mouth` bone at (0,0,0); fusion bakes fresh.
 10. Driver side: one pitch sign at the dispatch, roll +1 = bank left, no touch-only `Idle` path (rule 5.5); or driver (a) lands.
 11. Derived art: silhouette, previews, studio thumbnail and the web form newer than the model (rule 7).
+12. The hovering assembly (section 0.5): `assembly_report.py <fbx> --floating <the spec's floating parts>` exits 1 when a part
+    touches a neighbour (under 0.4 % of the diagonal) or drifts off (over 10 %). A tool today (`--self-test` holds its
+    controls; the first Orca fails it on six parts), not yet wired into `export.verify`.
 
 Every new gate is watched failing on a negative control before its green counts (CLAUDE.md's generator rule; `Docs/VESSEL_CONSTRUCTION.md:1187` is the measure-not-label rule, not
 this one).

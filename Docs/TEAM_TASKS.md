@@ -1240,3 +1240,10 @@ Shombith, Garrett, Caleb, Andrew and anyone else: take what fits, and add your o
 - **Who can take it:** Garrett (owner), Yash (offered)
 - **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
 - **See:** Docs/UNITY_VERIFICATION_CHECKLIST.md 'Orca round 7'
+
+### T-20261021-ab48 · open · dev · Vessel models
+- **Task:** Rebuild the from-scratch hulls as HOVERING ASSEMBLIES (Garrett 2026-10-21: the original vessels are 'free floating parts that are associated and animated together but clearly distinct parts of a hovering assembly'; vessel-model SKILL 0.5, LESSONS 49). Measured with Tools/Build/vessel_model/assembly_report.py (parts that float >= 0.4% of the diagonal): Butterfly 0/5, Thresher 0/8, Brittle Star 0/37, Scarab 3/16, Stoat 4/15, Shrike 3/10, Angler 5/8 (Grouper and WrasseKite on cece/loving-fermat-ntdnbu not measured here); the artist hulls float most of theirs (Manta 7/7, Squirrel 28/39, Serpent 22/27). One hull per round per the skill's loop, Garrett flies each. This also answers item (1) of T-20261018-2070 (Scarab: floating parts, not connected modules).
+- **Done when:** Each listed hull passes assembly_report.py --floating with its major parts named in its spec, and Garrett has flown it.
+- **Who can take it:** Garrett (judges each hull), the session that built it, Yash (offered: editor checks)
+- **Added:** 2026-10-21 by Claude session cece/happy-noether-m54hz6 (`cece/happy-noether-m54hz6`)
+- **See:** .claude/skills/vessel-model/SKILL.md 0.5; .claude/skills/vessel-model/references/LESSONS.md 49

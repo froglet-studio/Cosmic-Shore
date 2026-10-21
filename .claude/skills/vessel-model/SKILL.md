@@ -31,7 +31,7 @@ existing vessel is `rig.import_shipped_model` (the artist's mesh, groups, shape 
 and colours, exactly as the game draws them) + the framework on top: the parked pose baked
 into the rest, missing or weak morphs authored or strengthened on the artist's topology,
 the artist's takes kept (`takes.retarget_from`) and proven part by part against the artist file
-(`take_parity.py`, on by default in verify), parts connected where they float, every gate.
+(`take_parity.py`, on by default in verify), the hovering assembly kept (section 0.5), every gate.
 The Squirrel is the worked example (`specs/squirrel.py`); the from-scratch specs live in
 `specs/experimental/` and never write in place. **One vessel per round**: build it, let the
 owner fly it, fold what he says into this skill, then the next. Never rewrite several live
@@ -68,12 +68,45 @@ such quirk is a legacy binding with a named migration step, never a rule.
 A vessel model is judged from the chase camera (17-250 units behind, 60 degree FOV) at
 250 pixels wide. What reads there is SILHOUETTE, the DOMAIN band, the engine mouths and the
 cockpit glass; what does not read is anything under 2% of the hull's length. A model meets
-the bar when it is CONNECTED (no floating parts), has a clean silhouette with crisp
+the bar when it is a HOVERING ASSEMBLY (section 0.5: distinct parts on their own bones, floating clear across even,
+deliberate gaps, aligned and animated together), has a clean silhouette with crisp
 hard-surface detail (bevels, sunken panels, collars), a strong domain layout, morphs a pilot
 can name (Space = reach, Time = speed, Charge = weapon, Mass = volume), poses that move the
-whole hull, and manifold topology (no n-gon star holes, no loose shells). Until a prefab is
+whole hull, and manifold topology (no n-gon star holes; each part one closed shell). Until a prefab is
 re-wired to the convention it must also land in that prefab with ZERO edits: same file, same
 names, same bone rest poses, same frame (section 2).
+
+## 0.5 A vessel is a HOVERING ASSEMBLY (Garrett, 2026-10-21 - this overrides the old "nothing floats")
+
+> Garrett, 2026-10-21, after flying the Orca: "the original vessels are based largely around the idea of free floating
+> parts that are associated and animated together but clearly distinct parts of a hovering assembly. this seems to not
+> be observed in the new models and needs correcting in how the vessel models are updated" - "this will also help keep
+> the guns associated with the vessel but not have to worry about mating planar surfaces".
+
+**Every vessel is a core plus distinct parts that float clear of it and of each other**, each on its own bone, aligned on
+shared axes, and animated TOGETHER (puppetry or takes). Wings, fins, tail segments, engine pods, shells and guns are
+separate closed shells across deliberate, even gaps; nothing is welded on with a strut, a root inside the body or a
+fillet. The gap is the design: it keeps a gun or an engine visibly part of the ship without mating surfaces, and it lets
+each part move (hover, swing, lean, recoil) without tearing a seam.
+
+**Measured on the artist hulls** (`assembly_report.py --fleet`, gap to the nearest other part, % of the mesh diagonal):
+| hull | parts that float | the gaps |
+|---|---|---|
+| Manta | 7 / 7 | wings 3.4-6.5 %, chassis 5.2 % |
+| Dolphin | the wings and jaws | wings 5.7 %, jaws 1.2-1.3 % (the jet rings nest at 0.03-0.08 %) |
+| Squirrel | 28 / 39 | wing pieces 0.9-1.2 %, front engine tips 0.9 %, back engine frames 0.45 % |
+| Serpent | 22 / 27 | tail spikes 0.7 %, bottom tails 0.45 % |
+| Sparrow | 14 / 47 | tail segments 0.8-1.1 %, shells 0.4-0.5 %, wing plates as 0.1-0.2 % hairline seams |
+
+So: **major parts (wings, fins, engine pods, guns, tail segments) float 0.5-6.5 % clear; plates within one part may sit
+on 0.1-0.2 % hairline seams.** Every hull built from scratch before 2026-10-21 (Butterfly, Thresher, Scarab, Stoat,
+Angler, Brittle Star, Shrike, Grouper, the Wrasse's kite, the first Orca) was built to the opposite rule and welds its
+parts (the first Orca: 1 / 22 parts float, median gap 0.12 %).
+
+**The gate:** a new hull's spec names its floating parts, and `assembly_report.py <fbx> --floating <parts>` fails when
+one touches a neighbour (under 0.4 %) or drifts off (over 10 %). It is watched failing on the first Orca. Squirrel v1's
+lesson still holds, read correctly: its parts failed because they were shapeless PILLS scattered off-axis, not because
+they floated (LESSONS 12, 49).
 
 ## 1. Read before you touch
 
@@ -213,8 +246,11 @@ What "beats the shipped model" has meant on each hull, so the next one knows the
 
 ## 5. Modelling rules that keep being relearned
 
-- **Nothing floats.** A pod needs a strut; a feather needs a root inside the deck; a chevron
-  tail needs a spine. v1 of the Squirrel failed on exactly this and nothing else mattered.
+- **A hovering assembly, never a welded one** (section 0.5, Garrett 2026-10-21). A pod, a wing, a fin, an engine and
+  a gun each float as their own closed shell on their own bone, 0.5-6.5 % of the diagonal clear of their neighbours,
+  facing them with parallel edges on shared axes, so the gap reads as designed. No struts, no roots buried in the deck,
+  no fillets. (This replaces "nothing floats", a misreading of Squirrel v1, whose separate parts failed as off-axis
+  PILLS: the shipped Squirrel is 39 parts and 28 of them float.)
 - **Model in the Blender import frame of the shipped file**: nose -Y, up +Z, pilot's left +X
   (Squirrel, Dolphin, Sparrow); the Serpent's file is identity-exported, so its head points
   +Y. `part_map.py` prints the frame with every part's bounds - copy its numbers.

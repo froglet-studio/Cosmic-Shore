@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
             _octa ??= Octahedron();
             _box ??= Box();
             (_crosshair, _crossLabel) = CrosshairCanvas(_root.transform, out _crossCanvas);
-            Rig = new OrcaHullRig(crew.Hull);
+            Rig = new OrcaHullRig(crew.Hull, crew.Config ? crew.Config.HullRadius : 9f);
         }
 
         // A screen-space canvas under the HUD (the GameCanvas sorts at 1) holding the crosshair and its one word.
@@ -103,6 +103,7 @@ namespace CosmicShore.Gameplay
         public void Dispose()
         {
             RestorePilot();
+            Rig?.Restore();   // the next crew to bind this hull finds its turrets at rest
             if (_scope) Object.Destroy(_scope.gameObject);
             if (_root) Object.Destroy(_root);
             if (_mat) Object.Destroy(_mat);
