@@ -6,7 +6,7 @@ tabletop game Garrett and friends designed and played from 2019 to 2022). The qu
 > Is the handoff fun? The **Ratel** (the Engineer seat) plays a hex pattern-building puzzle, the **Dynamo**, whose
 > injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery,
 > where its domain is a slip charge, and fires that tabletop card's own effect for the **Honeyguide** (the Pilot seat). The
-> Honeyguide flies with no guns (round 5): weapon abilities land on its open buttons, time out and are replaced. Its Time ability is the **Slip**: touch a trail of a domain you hold with the
+> Honeyguide is not a Sparrow (round 6): RT is always Peck, a weak attack, and LT always Flit, a short move; upgrade cards take a trigger over for a while. Its Time ability is the **Slip**: touch a trail of a domain you hold with the
 > nose near the trail's line, and the hull jumps to the end of the trail it is pointing at.
 
 **The acceptance gate for phase 1:** Garrett plays the Engineer on a phone and records *Sign-off* ("this is fun") on
@@ -17,7 +17,7 @@ the Decisions tab. The Unity port (phase 2) starts only after that.
 - **Live page:** https://claude.ai/artifact/4B7oZwb5aYxFJR7XKyWx7v (private to the owner until shared; decisions recorded
   there land in the shared log Claude reads at the start of each round).
 - **Round 1** (the brief's rules) is kept as `Docs/Studios/HoneyguideLab.round1.html`.
-- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 5).
+- **Verify:** `node .claude/skills/labmaker/verify_lab.cjs Docs/Studios/HoneyguideLab.html` (PASS, round 6).
 - **Parity:** `node Tools/Build/dynamo_lab/parity.cjs` holds `DynamoCore.cs` to the **round 4** core, the Engineer AI
   included (PASS 2026-10-21: 16,824 steps over 24 rule sets, 1,501 AI moves chosen alike, 48 port sets, 400 slips).
 - **In Unity (phase 2, started 2026-10-21 on Garrett's "lets play it in unity"):** `VesselClassType.Honeyguide = 21`,
@@ -40,13 +40,100 @@ mate, decision log, platform detection) is the Crew Vessel Lab's, rebuilt around
   ports turn 60 degrees every spin; the countdown is top right, and in the last 1.5 s rings show where they will land.
   Each card names the passive the pilot gets, and its pips count the makes before it is replaced. Your ability is under
   the AP row and changes, with the port pattern, every 4 patterns.
-- **The Honeyguide (Pilot).** A/D or ←/→ steer; W or Space boosts when you have boost. An active on RT is used with E or
-  K, one on LT with Q or J (round 5). On touch, hold a finger on the flight view and the hull turns toward it (two
+- **The Honeyguide (Pilot).** A/D or ←/→ steer; W or Space boosts when you have boost. RT (E or K) is Peck or its upgrade, LT
+  (Q or J) is Flit or its upgrade (round 6). On touch, hold a finger on the flight view and the hull turns toward it (two
   fingers boost); the four cards bottom right (RT, LT, Boost, Slip) are the buttons. The Slip arms itself: a grey wedge on the nose
   shows the 45-degree cone, it lights in the trail's colour when a slip is armed, and a dashed line shows where it
   would land.
 - **Rules tab:** Garrett's round 2 rules, each a box you can turn off (a control). **Patterns tab:** all 39 patterns and
   the passive each gives.
+
+## Round 6 (2026-10-21): RT always attacks, LT always moves, and every card is its own
+
+Garrett, after round 5: "the right trigger should always be a weak attack power that gets upgraded sometimes. the left
+should be a movement power that works similar. the 39 patterns should still be unique. and grant some temporary fun in
+the form of actives and passives."
+
+### What changed
+
+- **RT is always Peck**, a weak attack: one shot while held, 2.5 a second, 45 u. **LT is always Flit**, a short move: an
+  18 u hop every 2 s. Both are hull-intrinsic, so the solo hull has them too.
+- **Thirteen cards upgrade a trigger** for `activeSeconds` (20 s). Then Peck or Flit comes back. The same card again
+  refreshes the upgrade and raises its level; a different upgrade for the same trigger replaces it.
+  - **RT (attack), the six from round 5:** Hard Light Lasso, Genesis Lance, Little Bang Grenade, Sepia Drone, Particle
+    Harmonizer (hold), Fugacity Discharger (hold, let go).
+  - **LT (move), seven:**
+    - Eyelet Jet (50 u, ploughing).
+    - Thruster Swarm (a 20 u thrust every 0.4 s, ploughing).
+    - Five that used to be stored jumps on the Slip card: Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool
+      and Monte Cannon. These press LT; they have cooldowns of 2.5 to 4 s.
+- **Every card is its own.** The round 5 random deal is gone; it is kept as a control. The other 26 cards keep their
+  round 4 timed passives and one-off effects. The Slip card no longer stores jumps.
+- **The pilot AI** pecks at a hostile prism dead ahead. It flits when the destination is ahead. It takes a move upgrade
+  when the landing is 20 u closer to the destination, and uses the attack upgrades as in round 5.
+- **Page.**
+  - A Triggers slider tab: Peck, Flit and the upgrade life.
+  - Round 4's gun sliders moved to "Guns (r4)".
+  - The HUD cards read Peck / Flit or the upgrade's name, with its time bar and cooldown.
+  - `__lab.made(seeds, seconds)` counts which cards the crew makes.
+  - The localStorage prefix is `r6`.
+- **The Dynamo core did not change.** Parity still PASSES.
+
+### Scorecard (round 6, 24 seeds × 180 s, hard pilot)
+
+The solo hull now has Peck and Flit, so solo is 4.40, not round 5's 3.06. The row with nothing on the triggers is the
+old baseline.
+
+| Variant | Legs/min | An upgrade on a trigger % | Upgrades/min | Uses/min | Shattered/min |
+|---|---|---|---|---|---|
+| Solo (Peck and Flit, no Ratel) | 4.40 ± 0.16 | 0 | 0 | 0 | 11 |
+| **Candidate** (hard Ratel) | **5.21 ± 0.12** | 34 | 1.53 | 6.0 | 21 |
+| Candidate, rookie pilot | 5.06 ± 0.13 | 34 | 1.53 | 8.5 | 17 |
+| Candidate, easy Ratel | 5.19 ± 0.12 | 27 | 1.04 | 5.6 | 21 |
+| No upgrades (Peck and Flit only) | 4.98 ± 0.13 | 0 | 0 | 0 | 10 |
+| Upgrades only, no Peck or Flit | 4.73 ± 0.15 | 34 | 1.53 | 5.8 | 16 |
+| Nothing on the triggers | 4.05 ± 0.17 | 0 | 0 | 0 | 3 |
+| Round 4: the guns | 5.03 ± 0.13 | 0 | 0 | 0 | 46 |
+| Round 5: every pattern also deals an upgrade | 5.51 ± 0.24 | 85 | 4.63 | 19.3 | 42 |
+| Upgrades last 10 s | 5.04 ± 0.10 | 20 | 1.53 | 4.3 | 18 |
+| Upgrades last 40 s | 5.23 ± 0.14 | 49 | 1.53 | 8.8 | 33 |
+
+**Each move upgrade alone** (12 seeds × 180 s, dealt on every pattern; Peck and Flit only is 5.11 on these seeds):
+
+| Thruster Swarm | Eyelet Jet | All Terrain Portals | Rosen Bridge | Blink Drive | Monte Cannon | FTL Chromatool |
+|---|---|---|---|---|---|---|
+| 6.42 | 6.26 | 6.16 | 5.93 | 5.76 | 5.09 | 5.05 |
+
+**How often each upgrade comes up.** These are the cards the hard crew made over 24 seeds × 180 s (374 makes):
+- Attack upgrades, 68 makes: Lasso 17, Grenade 15, Harmonizer 13, Discharger 9, Lance 7, Drone 7.
+- Move upgrades, 37 makes: Eyelet 10, Monte 9, FTL 6, Thruster 4, Portals 3, Blink 3, Rosen 2.
+
+### Checked
+
+- `verify_lab.cjs`: PASS.
+- `parity.cjs`: PASS, all nine controls caught.
+- I looked at the desktop screenshot: the HUD reads Peck / Flit / Boost / Slip.
+
+### Found (round 6)
+
+1. **Flit is worth a lot.** Peck and Flit alone lift the race from 4.05 to 4.98 (+23%). With the upgrades on top, the
+   candidate reaches 5.21 (+29%). That is above round 4's guns (5.03).
+2. **"Upgraded sometimes" is what it measures.** An upgrade holds a trigger 34% of the time, about 1.5 a minute. Round
+   5's random deal had one up 85% of the time and scored a little higher (5.51). Keeping every card unique costs about
+   0.3 legs a minute.
+3. **Move upgrades are rarer than attack upgrades** (37 makes against 68). Five of the seven are Gold-family cards,
+   whose shapes are harder to make.
+4. **The base powers matter more than the upgrades in the race.** Without Peck and Flit, the upgrades alone give 4.73.
+   Without the upgrades, Peck and Flit give 4.98.
+5. **A rookie pilot is close to the skilled one** (5.06 against 5.21): the triggers are still easy to use.
+6. **Three upgrades do little alone.** Monte Cannon and FTL Chromatool are about zero; they need prisms ahead, and the
+   AI seldom has a target lined up. The round 5 finding stands for the Drone and the Lance.
+
+### Decisions needed (Garrett), on the Decisions tab
+
+1. **Peck and Flit numbers.** Peck is 2.5/s over 45 u; Flit is 18 u every 2 s.
+2. **Should move upgrades come up more often?** For example, by weighting the Gold-family cards in the Ratel's draw.
+3. **Sign-off,** then port round 6 to Unity.
 
 ## Round 5 (2026-10-21): timed actives on the open buttons, no guns
 

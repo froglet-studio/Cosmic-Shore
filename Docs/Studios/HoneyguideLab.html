@@ -527,7 +527,7 @@
   // ================= (1) LAB meta + the shipped numbers =================
   // A READER of the shipped numbers. The pilot hull is the Sparrow (the donor airframe, as the Wrasse's is); the Dynamo,
   // Slip, weapon and passive numbers are proposals: nothing in the game has them yet.
-  const LAB = { name: 'Honeyguide Lab', branch: 'claude/honeyguide-ratel', round: 5, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
+  const LAB = { name: 'Honeyguide Lab', branch: 'claude/honeyguide-ratel', round: 6, doc: 'Docs/Studios/HONEYGUIDE_LAB.md' };
   const SHIPPED = {
     // The Honeyguide's airframe: the Sparrow (Assets/_Prefabs/Spacevessels/Sparrow.prefab), as in the Crew Vessel Lab
     minSpeed: 10,          // VesselTransformer.DefaultMinimumSpeed
@@ -568,7 +568,14 @@
     // The actives (round 5, Garrett 2026-10-21: "fun abilities that are not so hard to use ... we can stick an ability on an
     // open button. and the abilities time out and then go away. and new ones come"). The guns are gone: LT and RT are the
     // open buttons, and each weapon card's active lands on one.
-    activeSlots: 2,        // proposal: open buttons an active can land on (RT, then LT)
+    // Round 6 (Garrett 2026-10-21): "the right trigger should always be a weak attack power that gets upgraded sometimes.
+    // the left should be a movement power that works similar". Peck (RT) and Flit (LT) are the base powers; an upgrade
+    // card takes its trigger over for activeSeconds, then the base power comes back.
+    peckRate: 2.5,         // proposal: RT Peck shots a second (a weak attack)
+    peckSpeed: 150,        // proposal: Peck shot speed (u/s)
+    peckRange: 45,         // proposal: how far a Peck flies (u)
+    flitDistance: 18,      // proposal: LT Flit, a short hop ahead (u)
+    flitCooldown: 2,       // proposal: seconds between Flits
     activeSeconds: 20,     // proposal: how long an active stays on its button before it goes away
     activeLevelGain: 0.25, // proposal: a repeat of the same active refreshes it and grows its reach this much a level
     // Round 4's two triggers: kept only for the "round 4 guns" control (opts.guns); the candidate has no guns
@@ -603,9 +610,13 @@
     ['Slip', 'slipGrace', 0, 3, 0.1, 'Grace after a slip (s)', 'The trail just ridden is ignored this long, so landing does not slip again.'],
     ['Slip', 'aimCone', 10, 90, 5, 'Arming cone (deg)', 'The slip arms when the nose is within this angle of the touched prism\'s long axis, either way.'],
     ['Slip', 'lineLink', 1, 3, 0.1, '1-D test (spacings)', 'A prism with more than two others within this many prism spacings is part of a 2-D prismscape and never arms a slip.'],
-    ['Actives', 'activeSlots', 1, 3, 1, 'Open buttons', 'Buttons an active can land on (RT, LT, then the pad\'s RB). When all are full a new active replaces the one with least time left.'],
-    ['Actives', 'activeSeconds', 5, 60, 1, 'Active lasts (s)', 'How long an active stays on its button before it goes away. A repeat refreshes it.'],
-    ['Actives', 'activeLevelGain', 0, 1, 0.05, 'Reach per level', 'A repeat of the same active raises its level; each level grows its reach this much.'],
+    ['Triggers', 'peckRate', 0.5, 8, 0.5, 'Peck rate (/s)', 'RT\'s base power, a weak attack: shots a second while held.'],
+    ['Triggers', 'peckSpeed', 40, 300, 10, 'Peck speed (u/s)', 'Peck shot speed.'],
+    ['Triggers', 'peckRange', 15, 120, 5, 'Peck range (u)', 'How far a Peck flies.'],
+    ['Triggers', 'flitDistance', 5, 60, 1, 'Flit (u)', 'LT\'s base power, a short hop ahead.'],
+    ['Triggers', 'flitCooldown', 0.25, 6, 0.25, 'Flit cooldown (s)', 'Seconds between Flits.'],
+    ['Triggers', 'activeSeconds', 5, 60, 1, 'Upgrade lasts (s)', 'How long an upgrade card holds its trigger before the base power comes back. A repeat refreshes it.'],
+    ['Triggers', 'activeLevelGain', 0, 1, 0.05, 'Reach per level', 'A repeat of the same active raises its level; each level grows its reach this much.'],
     ['Guns (r4)', 'boltRate', 1, 15, 0.5, 'Bolt rate (/s)', 'Round 4 control only: RT shots a second.'],
     ['Guns (r4)', 'boltSpeed', 40, 400, 10, 'Bolt speed (u/s)', 'RT: shot speed.'],
     ['Guns (r4)', 'boltRange', 30, 300, 5, 'Bolt range (u)', 'RT: how far a shot flies.'],
@@ -654,19 +665,27 @@
     refund: ['Refund', 'Each pattern made banks 1 extra AP (hold 2).'],
   };
 
-  // The actives (round 5): each weapon card puts an ability on an open button (RT, LT) for activeSeconds, then it goes
-  // away. Garrett 2026-10-21: "not so hard to use like a dolphin combo but fun like a rhino sword but a different weapon".
-  // One button each, no combos: press, hold, or hold and let go. reach is in u at level I; a repeat grows it by
-  // activeLevelGain a level. cd is the seconds between uses while the active is on its button.
+  // The trigger upgrades (round 6). RT is always an attack and LT always a move (Garrett 2026-10-21); the base powers are
+  // Peck and Flit (SHIPPED). An upgrade card takes its trigger over for activeSeconds, then the base power comes back.
+  // One button each, no combos (round 5: "not so hard to use like a dolphin combo but fun like a rhino sword"): press,
+  // hold, or hold and let go. btn 0 = RT (attack), 1 = LT (move). reach is in u at level I; a repeat refreshes the upgrade
+  // and grows its reach by activeLevelGain a level. cd is the seconds between uses.
   const ACTIVES = {
-    lasso: { use: 'press', cd: 1.0, reach: 90, text: 'Press: a rope of light hooks the nearest hostile prism ahead (90 u, 30 degrees) and reels you to it at speed. It and every hostile prism within 10 u shatter when you arrive.' },
-    lance: { use: 'press', cd: 2.5, reach: 120, text: 'Press: throw a lance 120 u straight ahead. It shatters every hostile prism on its line and leaves a trail of your newest charge\'s domain along it: fly on and slip.' },
-    littlebang: { use: 'press', cd: 1.2, reach: 22, text: 'Press: lob a grenade 55 u ahead. It bursts 0.6 s later and shatters every hostile prism within 22 u.' },
-    eyelet: { use: 'press', cd: 1.8, reach: 50, text: 'Press: jet 50 u ahead in a quarter of a second, shattering every hostile prism on the way.' },
-    sepia: { use: 'press', cd: 9, reach: 50, text: 'Press: launch a drone that circles you for 8 s and zaps the nearest hostile prism within 50 u three times a second.' },
-    harmonizer: { use: 'hold', cd: 0, reach: 55, text: 'Hold: a beam turns hostile prisms in a narrow cone up to 55 u ahead to your newest charge\'s domain, 8 a second: new slip lanes.' },
-    fugacity: { use: 'charge', cd: 0.8, reach: 40, text: 'Hold to charge, let go to discharge: every hostile prism within 12 to 40 u (by charge) shatters, and each gives 0.05 s of boost (up to 1.5 s).' },
+    lasso: { btn: 0, use: 'press', cd: 1.0, reach: 90, text: 'RT: a rope of light hooks the nearest hostile prism ahead (90 u, 30 degrees) and reels you to it at speed. It and every hostile prism within 10 u shatter when you arrive.' },
+    lance: { btn: 0, use: 'press', cd: 2.5, reach: 120, text: 'RT: throw a lance 120 u straight ahead. It shatters every hostile prism on its line and leaves a trail of your newest charge\'s domain along it: fly on and slip.' },
+    littlebang: { btn: 0, use: 'press', cd: 1.2, reach: 22, text: 'RT: lob a grenade 55 u ahead. It bursts 0.6 s later and shatters every hostile prism within 22 u.' },
+    sepia: { btn: 0, use: 'press', cd: 9, reach: 50, text: 'RT: launch a drone that circles you for 8 s and zaps the nearest hostile prism within 50 u three times a second.' },
+    harmonizer: { btn: 0, use: 'hold', cd: 0, reach: 55, text: 'Hold RT: a beam turns hostile prisms in a narrow cone up to 55 u ahead to your newest charge\'s domain, 8 a second: new slip lanes.' },
+    fugacity: { btn: 0, use: 'charge', cd: 0.8, reach: 40, text: 'Hold RT to charge, let go to discharge: every hostile prism within 12 to 40 u (by charge) shatters, and each gives 0.05 s of boost (up to 1.5 s).' },
+    eyelet: { btn: 1, use: 'press', cd: 1.8, reach: 50, text: 'LT: jet 50 u ahead in a quarter of a second, shattering every hostile prism on the way.' },
+    thruster: { btn: 1, use: 'press', cd: 0.4, reach: 20, text: 'LT: a quick 20 u thrust, again every 0.4 s, shattering what it crosses.' },
+    blink: { btn: 1, use: 'press', cd: 3, reach: 60, text: 'LT: blink 60 u ahead.' },
+    portals: { btn: 1, use: 'press', cd: 2.5, reach: 30, text: 'LT: teleport 30 u ahead; land in empty space and you go 30 u again.' },
+    rosen: { btn: 1, use: 'press', cd: 4, reach: 300, text: 'LT: teleport to the farthest prism of your newest charge\'s domain within 300 u and 35 degrees of your nose.' },
+    ftl: { btn: 1, use: 'press', cd: 3, reach: 60, text: 'LT: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain.' },
+    monte: { btn: 1, use: 'press', cd: 4, reach: 40, text: 'LT: three hops, each to the farthest prism ahead within 40 u.' },
   };
+  const JUMP_KEYS = ['blink', 'portals', 'rosen', 'ftl', 'monte'];
   const ACTIVE_KEYS = Object.keys(ACTIVES);
   // Every pattern's own effect, converted from its tabletop card (its text, or its name where the text has no real-time
   // reading). Garrett 2026-10-21: keep the tabletop names; make abilities that convert from the old.
@@ -679,7 +698,7 @@
     plankter: { seat: 'slip', text: 'Your next slip needs no charge and rides a trail of any domain, at half reach, then 1 s of boost.' },
     skipper: { seat: 'hull', time: true, mech: { skip: 1 }, text: 'Touching a prism of a different domain from the last gives 0.4 s of boost a level.' },
     fugacity: { seat: 'active', active: true, text: ACTIVES.fugacity.text },
-    thruster: { seat: 'hull', text: 'Your next 4 boost presses each throw the hull 20 u ahead.' },
+    thruster: { seat: 'active', active: true, text: ACTIVES.thruster.text },
     lasso: { seat: 'active', active: true, text: ACTIVES.lasso.text },
     bigred: { seat: 'hull', text: 'Destroys every other Dynamo prism of the battery prism\'s colour; 0.5 s of boost for each.' },
     eigen: { seat: 'hull', time: true, mech: { agile: 2 }, text: 'Turn 60% faster a level.' },
@@ -702,20 +721,27 @@
     chrono: { seat: 'ratel', text: 'The Ratel banks 1 extra AP and the spin bar winds back 5 s.' },
     meta: { seat: 'ratel', text: 'Fires the effect of the last pattern replaced (or else the last other pattern made).' },
     eti: { seat: 'slip', text: '+1 charge for each domain with a trail within 40 u of you.' },
-    ftl: { seat: 'slip', jump: true, text: 'Jump: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain.' },
+    ftl: { seat: 'active', active: true, text: ACTIVES.ftl.text },
     littlebang: { seat: 'active', active: true, text: ACTIVES.littlebang.text },
     vorticity: { seat: 'ratel', text: 'The injection ports turn back 60 degrees and the spin bar refills.' },
     gravity: { seat: 'slip', time: true, mech: { magnet: 1, gravity: 1 }, text: 'Slips catch trails 3 u farther away and end with 1 s of boost, a level.' },
-    portals: { seat: 'slip', jump: true, text: 'Jump 30 u ahead; land in empty space and you jump 30 u again.' },
-    rosen: { seat: 'slip', jump: true, text: 'Jump to the farthest prism of your newest charge\'s domain within 300 u and 35 degrees of your nose.' },
+    portals: { seat: 'active', active: true, text: ACTIVES.portals.text },
+    rosen: { seat: 'active', active: true, text: ACTIVES.rosen.text },
     frame: { seat: 'slip', time: true, mech: { wake: 1 }, text: 'Your trail is laid in your newest charge\'s domain: a slip lane behind you.' },
     voidjumper: { seat: 'slip', time: true, mech: { void: 1 }, text: 'Slip on trails of any domain (each slip spends your oldest charge).' },
+    blink: { seat: 'active', active: true, text: ACTIVES.blink.text },
+    monte: { seat: 'active', active: true, text: ACTIVES.monte.text },
+  };
+  // Round 4's versions of the thirteen upgrade cards: seven changed what the guns' shots did, five stored a jump on the
+  // Slip card, Thruster Swarm threw the hull on boost presses. They are trigger upgrades now (ACTIVES); the controls
+  // with opts.actives off still run these, so the scorecard can compare.
+  const EFFECTS_R4 = {
+    thruster: { seat: 'hull', text: 'Your next 4 boost presses each throw the hull 20 u ahead.' },
+    ftl: { seat: 'slip', jump: true, text: 'Jump: swap places with the nearest prism ahead within 60 u; it becomes a charge of its domain.' },
+    portals: { seat: 'slip', jump: true, text: 'Jump 30 u ahead; land in empty space and you jump 30 u again.' },
+    rosen: { seat: 'slip', jump: true, text: 'Jump to the farthest prism of your newest charge\'s domain within 300 u and 35 degrees of your nose.' },
     blink: { seat: 'slip', jump: true, text: 'Jump 60 u ahead.' },
     monte: { seat: 'slip', jump: true, text: 'Jump: three hops, each swapping places with the farthest prism ahead within 40 u.' },
-  };
-  // Round 4's trigger upgrades: these seven cards changed what the guns' shots did. With the guns gone they are actives
-  // (ACTIVES); the round 4 control (opts.actives off) still runs them, so the scorecard can compare.
-  const EFFECTS_R4 = {
     fugacity: { seat: 'triggers', time: true, mech: { fugacity: 1 }, text: 'Both triggers fire 5% faster a level for every prism within 40 u (up to +50% a level).' },
     lasso: { seat: 'triggers', time: true, mech: { lasso: 1 }, text: 'Each Bolt hit pulls you 6 u a level toward it.' },
     eyelet: { seat: 'triggers', time: true, mech: { pierce: 2 }, text: 'Shots pass through 2 more hostile prisms a level.' },
@@ -817,14 +843,14 @@
     return out;
   })();
 
-  const OPT_SHIPPED = { arming: 'axis', exit: 'align', portsCount: true, rotatable: true, replace: true, shuffle: true, passives: true, actives: true, guns: false, deal: 'every', slip: true, ability: 'random', letters: false };
+  const OPT_SHIPPED = { arming: 'axis', exit: 'align', portsCount: true, rotatable: true, replace: true, shuffle: true, passives: true, base: true, actives: true, guns: false, deal: 'cards', slip: true, ability: 'random', letters: false };
   const OPT_LABELS = {
     arming: { axis: 'Nose within the cone of a 1-D trail prism\'s axis (Garrett, round 2)', hold: 'Hold to arm (round 1 candidate)', always: 'Always armed (the brief)' },
     exit: { align: 'Exit aligned to the trail (the brief)', keep: 'Exit keeps your facing' },
-    deal: { cards: 'Only the seven weapon cards put an active on a button', every: 'Every pattern made also deals a random active' },
+    deal: { cards: 'Only the thirteen upgrade cards upgrade a trigger (every card unique)', every: 'Every pattern made also deals a random upgrade (round 5)' },
   };
 
-  const LS = 'lab:' + LAB.name + ':r5:';
+  const LS = 'lab:' + LAB.name + ':r6:';
   const lsGet = (k, d) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) { /* private window */ } };
   const P = Object.assign({}, SHIPPED, lsGet('P', {}));
@@ -865,16 +891,16 @@
   function makeHull(id, dom, x, z, h, honey) {
     return { id, dom, x, z, h, speed: 0, boostE: 0, slowT: 0, honey, trail: null, dist: 0, ignoreTrail: -1, ignoreT: 0, roam: null, pass: {}, mech: {}, cdR: 0, cdL: 0, boosting: false,
       jumps: [], dashes: 0, sail: 0, recolour: 0, noodles: 0, lastSkip: null, droneCd: 0, boostWas: false, jumpWas: false, lance: null,
-      act: [null, null, null], btnWas: [false, false, false], reel: null, jet: 0, drone: 0, harmAcc: 0, harmOn: false, fug: 0 };
+      act: [null, null], btnWas: [false, false], reel: null, jet: 0, jetPlow: false, flitCd: 0, drone: 0, harmAcc: 0, harmOn: false, fug: 0 };
   }
   function makeWorld(seed, cfg) {
     const rng = mulberry32(seed), Pw = cfg.P;
     const w = {
       t: 0, seed, cfg, P: Pw, rng, rngAI: mulberry32(seed ^ 0x9e3779b9), rngE: mulberry32(seed ^ 0x51ed27), rngP: mulberry32(seed ^ 0x2545f491), rngA: mulberry32(seed ^ 0x7f4a7c15), bombs: [],
       hulls: [], trails: [], nextTrail: 1, S: dynamoSettings(cfg), dyn: null, dest: null, shots: [], grid: new Map(), gone: new Set(), patchT: 0,
-      seats: { pilot: Object.assign({ think: 0, cmd: { steer: 0, boost: false, lt: false, rt: false, rb: false, arm: false }, goal: null, want: [false, false, false] }, cfg.pilot), eng: Object.assign({ think: 0 }, cfg.eng) },
+      seats: { pilot: Object.assign({ think: 0, cmd: { steer: 0, boost: false, lt: false, rt: false, arm: false }, goal: null, want: [false, false], base: [false, false] }, cfg.pilot), eng: Object.assign({ think: 0 }, cfg.eng) },
       swapT: 0, orientT: 0, effects: [], log: [],
-      m: { dests: 0, slips: 0, slipDist: 0, slipGain: 0, badSlips: 0, aimed: 0, aimedGain: 0, patterns: 0, charges: 0, used: 0, emptyT: 0, apGiven: 0, hits: 0, kills: 0, turned: 0, passT: 0, swaps: 0, clipped: 0, shuffles: 0, retired: 0, freeSlips: 0, jumps: 0, activesGot: 0, activeUses: 0, activeT: 0 },
+      m: { dests: 0, slips: 0, slipDist: 0, slipGain: 0, badSlips: 0, aimed: 0, aimedGain: 0, patterns: 0, charges: 0, used: 0, emptyT: 0, apGiven: 0, hits: 0, kills: 0, turned: 0, passT: 0, swaps: 0, clipped: 0, shuffles: 0, retired: 0, freeSlips: 0, jumps: 0, activesGot: 0, activeUses: 0, activeT: 0, flits: 0, made: {} },
     };
     w.dyn = D.create(w.S, seed);
     w.hulls.push(makeHull(0, OUR_DOMAIN, 0, 0, -Math.PI / 2, true));
@@ -1076,7 +1102,7 @@
       }
       if (!touch) return true;
       if (hull.recolour > 0 && newest && dom !== newest) { t.doms[i] = newest; hull.recolour--; w.m.turned++; return true; }   // Reality Detangler
-      if (lvl(hull, 'plow') || hull.jet > 0 || hull.reel) { w.gone.add(t.id + ':' + i); w.m.kills++; return true; }   // Juggernaut Plow; an Eyelet Jet or a lasso reel shatters what it crosses
+      if (lvl(hull, 'plow') || (hull.jet > 0 && hull.jetPlow) || hull.reel) { w.gone.add(t.id + ':' + i); w.m.kills++; return true; }   // Juggernaut Plow; an Eyelet Jet or a lasso reel shatters what it crosses
       hit = true;
       return true;
     });
@@ -1113,9 +1139,15 @@
 
   // ---- the two triggers (RT Bolt, LT Burst): the trigger-seat effects shape both ----
   function fire(w, hull, which) {
-    const cd = which === 'rt' ? 'cdR' : 'cdL';
+    const cd = which === 'lt' ? 'cdL' : 'cdR';
     if (hull[cd] > 0) return;
     const Pw = w.P;
+    if (which === 'peck') {   // RT's base power: one weak shot
+      if (hull.cdR > 0) return;
+      hull.cdR = 1 / Pw.peckRate;
+      w.shots.push({ x: hull.x + Math.cos(hull.h) * 4, z: hull.z + Math.sin(hull.h) * 4, vx: Math.cos(hull.h) * Pw.peckSpeed, vz: Math.sin(hull.h) * Pw.peckSpeed, life: Pw.peckRange / Pw.peckSpeed, pierce: 0, kind: 'peck', hit: false });
+      return;
+    }
     let rate = which === 'rt' ? Pw.boltRate : Pw.burstRate;
     if (lvl(hull, 'fugacity')) { let n = 0; near(w, hull.x, hull.z, 40, () => { n++; return n < 10; }); rate *= 1 + 0.05 * n * lvl(hull, 'fugacity'); }   // Fugacity Discharger
     hull[cd] = 1 / rate;
@@ -1193,6 +1225,7 @@
     const hull = w.hulls[0], Pw = w.P;
     if (e.k === 'ability') w.m.patterns++;
     else if (e.k === 'pick') {   // the battery prism is taken: the pattern's effect happens now
+      w.m.made[PATTERNS[e.pid].effect] = (w.m.made[PATTERNS[e.pid].effect] || 0) + 1;
       if (w.cfg.opts.passives) applyEffect(w, e.pid, e.colour, 0);
       w.lastMade = e.pid;
     } else if (e.k === 'charge') w.m.charges++;
@@ -1289,10 +1322,12 @@
     }
     return null;
   }
-  function doJump(w, hull) {
+  function doJump(w, hull) {   // a stored jump (round 4's control)
     if (!hull.jumps.length) return false;
-    const kind = hull.jumps[0], land = jumpLanding(w, hull, kind);
-    hull.jumps.shift();
+    return jumpTo(w, hull, hull.jumps.shift());
+  }
+  function jumpTo(w, hull, kind) {
+    const land = jumpLanding(w, hull, kind);
     if (!land) { w.effects.push({ k: 'banner', text: 'No jump target', col: '#8a96a6', t: 1.0 }); return false; }
     const x0 = hull.x, z0 = hull.z;
     if (land.t) { const c = colourFor(w, land.t.doms[land.i]); if (c) D.boardEffect(w.dyn, w.S, 'charge', c); w.gone.add(land.t.id + ':' + land.i); }   // FTL Chromatool
@@ -1318,22 +1353,16 @@
     }
   }
 
-  // ---- the actives (round 5): an ability on an open button for activeSeconds, then it goes away ----
-  const BUTTONS = ['rt', 'lt', 'rb'];
-  const BUTTON_NAME = ['RT', 'LT', 'RB'];
+  // ---- the triggers (round 6): RT Peck and LT Flit, each taken over by an upgrade card for activeSeconds ----
+  const BUTTONS = ['rt', 'lt'];
+  const BUTTON_NAME = ['RT', 'LT'];
+  const BASE_NAME = ['Peck', 'Flit'];
   const actMul = (w, a) => 1 + w.P.activeLevelGain * (a.lvl - 1);
-  // A new active: the same one again refreshes it and raises its level; else the first open button; else it replaces the
-  // one with the least time left.
+  // An upgrade takes its own trigger: the same one again refreshes it and raises its level; another replaces it.
   function grantActive(w, hull, key) {
-    const n = Math.round(w.P.activeSlots), Pw = w.P;
-    let k = -1;
-    for (let j = 0; j < n; j++) if (hull.act[j] && hull.act[j].key === key) k = j;
-    if (k >= 0) { const a = hull.act[k]; a.lvl = Math.min(Pw.passiveMaxLevel, a.lvl + 1); a.t = Pw.activeSeconds; }
-    else {
-      for (let j = 0; j < n && k < 0; j++) if (!hull.act[j]) k = j;
-      if (k < 0) { k = 0; for (let j = 1; j < n; j++) if (hull.act[j].t < hull.act[k].t) k = j; }
-      hull.act[k] = { key, lvl: 1, t: Pw.activeSeconds, cd: 0, charge: 0 };
-    }
+    const Pw = w.P, k = ACTIVES[key].btn, cur = hull.act[k];
+    if (cur && cur.key === key) { cur.lvl = Math.min(Pw.passiveMaxLevel, cur.lvl + 1); cur.t = Pw.activeSeconds; }
+    else hull.act[k] = { key, lvl: 1, t: Pw.activeSeconds, cd: 0, charge: 0 };
     w.m.activesGot++;
     const a = hull.act[k];
     w.effects.push({ k: 'banner', text: EFFECT_NAME[key] + (a.lvl > 1 ? ' ' + roman(a.lvl) : '') + ' on ' + BUTTON_NAME[k], col: DOM.ruby.color, t: 1.8 });
@@ -1385,7 +1414,9 @@
         break;
       }
       case 'littlebang': w.bombs.push({ x0: hull.x, z0: hull.z, x: hull.x + f0 * 55, z: hull.z + f1 * 55, t: 0.6, r: def.reach * mul }); break;
-      case 'eyelet': hull.jet = 0.25; hull.jetSpeed = def.reach * mul / 0.25; w.effects.push({ k: 'beam', x0: hull.x, z0: hull.z, x1: hull.x + f0 * def.reach * mul, z1: hull.z + f1 * def.reach * mul, col, t: 0.4 }); break;
+      case 'eyelet': hull.jet = 0.25; hull.jetSpeed = def.reach * mul / 0.25; hull.jetPlow = true; w.effects.push({ k: 'beam', x0: hull.x, z0: hull.z, x1: hull.x + f0 * def.reach * mul, z1: hull.z + f1 * def.reach * mul, col, t: 0.4 }); break;
+      case 'thruster': hull.jet = 0.12; hull.jetSpeed = def.reach * mul / 0.12; hull.jetPlow = true; break;
+      case 'blink': case 'portals': case 'rosen': case 'ftl': case 'monte': if (!jumpTo(w, hull, a.key)) a.cd = 0.25; break;
       case 'sepia': hull.drone = 8; hull.droneCd = 0; hull.droneR = def.reach * mul; break;
       case 'fugacity': {
         const r = (12 + (def.reach - 12) * clamp(a.charge / 1.2, 0, 1)) * mul, n = shatter(w, hull, hull.x, hull.z, r);
@@ -1398,13 +1429,18 @@
   }
   // Every step: the buttons, the timers, and what a running active does.
   function stepActives(w, hull, cmd, dt) {
-    const n = Math.round(w.P.activeSlots);
     let any = false;
     hull.harmOn = false;
-    for (let k = 0; k < 3; k++) {
-      const down = !!cmd[BUTTONS[k]], was = hull.btnWas[k], a = k < n ? hull.act[k] : null;
+    hull.flitCd -= dt;
+    for (let k = 0; k < 2; k++) {
+      const down = !!cmd[BUTTONS[k]], was = hull.btnWas[k], a = hull.act[k];
       hull.btnWas[k] = down;
-      if (!a) { if (k >= n) hull.act[k] = null; continue; }
+      if (!a) {   // the base power: RT Peck while held, LT Flit on a press
+        if (!w.cfg.opts.base) continue;
+        if (k === 0 && down) fire(w, hull, 'peck');
+        if (k === 1 && down && !was && hull.flitCd <= 0) { hull.flitCd = w.P.flitCooldown; hull.jet = 0.15; hull.jetSpeed = w.P.flitDistance / 0.15; hull.jetPlow = false; w.m.flits++; }
+        continue;
+      }
       any = true;
       a.t -= dt; a.cd -= dt;
       const def = ACTIVES[a.key];
@@ -1464,12 +1500,14 @@
   function activeWanted(w, hull, a) {
     const def = ACTIVES[a.key], mul = actMul(w, a), dest = w.dest, dd = hypot2(dest.x - hull.x, dest.z - hull.z);
     const toDest = Math.abs(wrapAng(Math.atan2(dest.z - hull.z, dest.x - hull.x) - hull.h)) * 180 / Math.PI;
-    if (a.t < 2 && ACTIVES[a.key].use === 'press' && a.key !== 'lance') return true;   // about to go: use it rather than lose it
+    if (a.t < 2 && ACTIVES[a.key].use === 'press' && ACTIVES[a.key].btn === 0 && a.key !== 'lance') return true;   // about to go: use it rather than lose it
     switch (a.key) {
       case 'lasso': { const tg = hostileAhead(w, hull, def.reach * mul, 30); if (!tg || tg.d < 25) return false; const off = Math.abs(wrapAng(Math.atan2(tg.z - hull.z, tg.x - hull.x) - Math.atan2(dest.z - hull.z, dest.x - hull.x))) * 180 / Math.PI; return off < 60 && tg.d < dd; }
       case 'lance': return !!newestDomain(w) && toDest < 20 && dd > 90;
       case 'littlebang': return countHostile(w, hull, hull.x + Math.cos(hull.h) * 55, hull.z + Math.sin(hull.h) * 55, def.reach * mul) >= 2;
       case 'eyelet': return toDest < 25 && dd > 60;
+      case 'thruster': return toDest < 20 && dd > 30;
+      case 'blink': case 'portals': case 'rosen': case 'ftl': case 'monte': { const land = jumpLanding(w, hull, a.key); return !!land && dd - hypot2(dest.x - land.x, dest.z - land.z) > 20; }
       case 'sepia': return countHostile(w, hull, hull.x, hull.z, def.reach * mul) >= 1;
       case 'harmonizer': { const nd = newestDomain(w); if (!nd) return false; const tg = hostileAhead(w, hull, def.reach * mul, 20); return !!tg && tg.t.kind === 'trail' && tg.t.doms[tg.i] !== nd; }
       case 'fugacity': return a.charge > 0 ? a.charge < 1.0 : countHostile(w, hull, hull.x, hull.z, 30 * mul) >= 3;
@@ -1505,7 +1543,11 @@
       seat.noise = gauss(w.rngP) * S.steerNoise;
       const wantFire = w.cfg.opts.guns && w.rngP() < S.trigger;
       // the actives on its buttons: a skilled pilot judges the moment; a rookie often just presses what is ready
-      for (let k = 0; k < 3; k++) { const a = hull.act[k]; seat.want[k] = !!a && (w.rngP() < S.actSense ? activeWanted(w, hull, a) : w.rngP() < 0.25); }
+      for (let k = 0; k < 2; k++) { const a = hull.act[k]; seat.want[k] = !!a && (w.rngP() < S.actSense ? activeWanted(w, hull, a) : w.rngP() < 0.25); }
+      // the base powers: Peck at a hostile prism dead ahead; Flit when the destination is ahead
+      const dd = hypot2(w.dest.x - hull.x, w.dest.z - hull.z), toDest = Math.abs(wrapAng(Math.atan2(w.dest.z - hull.z, w.dest.x - hull.x) - hull.h));
+      seat.base[0] = w.cfg.opts.base && w.rngP() < S.trigger && targetsAhead(w, hull, w.P.peckRange, 8) > 0;
+      seat.base[1] = w.cfg.opts.base && (w.rngP() < S.actSense ? toDest < 0.26 && dd > 40 : w.rngP() < 0.25);
       seat.fireR = wantFire && (targetsAhead(w, hull, w.P.boltRange, 6) > 0 || lvl(hull, 'lance') > 0);   // with Genesis Lance it fires ahead to plant a lane
       seat.fireL = wantFire && targetsAhead(w, hull, w.P.burstRange, w.P.burstSpread / 2) > 1;
     }
@@ -1535,8 +1577,10 @@
     cmd.steer = clamp(err * 2.5, -1, 1);
     cmd.boost = hull.boostE > 0 && Math.abs(err) < 0.45;
     if (hull.dashes > 0 && Math.abs(err) < 0.2) cmd.boost = !hull.boostWas;   // Thruster Swarm: tap boost for each dash
-    cmd.rt = !!seat.fireR; cmd.lt = !!seat.fireL; cmd.rb = false;
-    for (let k = 0; k < 3; k++) {
+    cmd.rt = !!seat.fireR; cmd.lt = !!seat.fireL;
+    if (!hull.act[0] && seat.base[0]) cmd.rt = true;
+    if (!hull.act[1] && seat.base[1]) cmd.lt = hull.flitCd <= 0 && !hull.btnWas[1];
+    for (let k = 0; k < 2; k++) {
       const a = hull.act[k]; if (!a) continue;
       const use = ACTIVES[a.key].use, b = BUTTONS[k];
       if (use === 'press') cmd[b] = seat.want[k] && a.cd <= 0 && !hull.btnWas[k];   // a press: one step down, then up
@@ -1572,8 +1616,8 @@
     let cmd;
     if (seats.pilot.who === 'ai') { pilotAI(w, seats.pilot, dt); cmd = seats.pilot.cmd; }
     else if (seats.pilot.who === 'human' && live) cmd = live.pilot;
-    else cmd = { steer: 0, boost: false, lt: false, rt: false, rb: false, arm: false, jump: false };
-    if (w.orientT > 0 && seats.pilot.who !== 'human') cmd = { steer: 0, boost: false, lt: false, rt: false, rb: false, arm: cmd.arm, jump: false };
+    else cmd = { steer: 0, boost: false, lt: false, rt: false, arm: false, jump: false };
+    if (w.orientT > 0 && seats.pilot.who !== 'human') cmd = { steer: 0, boost: false, lt: false, rt: false, arm: cmd.arm, jump: false };
     moveHull(w, hull, cmd.steer, cmd.boost, dt);
     if (cmd.jump && !hull.jumpWas) doJump(w, hull);
     hull.jumpWas = !!cmd.jump;
@@ -1626,12 +1670,13 @@
     { name: 'Candidate', opts: {}, skills: true },
     { name: 'Pattern effects off (slip only)', opts: { passives: false } },
     { name: 'Slip off (effects only)', opts: { slip: false } },
-    { name: 'Actives off (no guns either)', opts: { actives: false } },
-    { name: 'Round 4: the guns, no actives', opts: { actives: false, guns: true } },
-    { name: 'Only the 7 weapon cards deal an active', opts: { deal: 'cards' } },
-    { name: 'One open button', opts: {}, P: { activeSlots: 1 } },
-    { name: 'Actives last 10 s', opts: {}, P: { activeSeconds: 10 } },
-    { name: 'Actives last 40 s', opts: {}, P: { activeSeconds: 40 } },
+    { name: 'No upgrades (Peck and Flit only)', opts: { actives: false } },
+    { name: 'Nothing on the triggers', opts: { actives: false, base: false } },
+    { name: 'Upgrades only, no Peck or Flit', opts: { base: false } },
+    { name: 'Round 4: the guns, no upgrades', opts: { actives: false, base: false, guns: true } },
+    { name: 'Round 5: every pattern also deals an upgrade', opts: { deal: 'every' } },
+    { name: 'Upgrades last 10 s', opts: {}, P: { activeSeconds: 10 } },
+    { name: 'Upgrades last 40 s', opts: {}, P: { activeSeconds: 40 } },
     { name: 'Ports do not count', opts: { portsCount: false } },
     { name: 'Patterns never replaced', opts: { replace: false } },
     { name: 'No new ability or ports', opts: { shuffle: false } },
@@ -1706,7 +1751,7 @@
 
   // ================= human inputs =================
   const keys = new Set();
-  const live = { pilot: { steer: 0, boost: false, lt: false, rt: false, rb: false, arm: false, jump: false }, eng: [] };
+  const live = { pilot: { steer: 0, boost: false, lt: false, rt: false, arm: false, jump: false }, eng: [] };
   addEventListener('keydown', (e) => {
     if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     keys.add(e.code);
@@ -1724,14 +1769,14 @@
     if ((l && !padPrev.l) || (r && !padPrev.r)) requestSwap('pad');
     padPrev = { l, r };
     const b = (k, v) => !!(p.buttons[k] && (v ? p.buttons[k].value > v : p.buttons[k].pressed));
-    return { steer: Math.abs(p.axes[0]) > 0.15 ? p.axes[0] : 0, boost: b(0), lt: b(6, 0.3), rt: b(7, 0.3), rb: b(5), arm: b(4), jump: b(3) };
+    return { steer: Math.abs(p.axes[0]) > 0.15 ? p.axes[0] : 0, boost: b(0), lt: b(6, 0.3), rt: b(7, 0.3), arm: b(4), jump: b(3) };
   }
   function livePilot() {
     const pad = pollPad();
     let steer = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
-    let boost = keys.has('KeyW') || keys.has('ArrowUp') || keys.has('Space'), lt = keys.has('KeyQ') || keys.has('KeyJ'), rt = keys.has('KeyE') || keys.has('KeyK'), rb = keys.has('KeyL'), arm = keys.has('KeyF');
+    let boost = keys.has('KeyW') || keys.has('ArrowUp') || keys.has('Space'), lt = keys.has('KeyQ') || keys.has('KeyJ'), rt = keys.has('KeyE') || keys.has('KeyK'), arm = keys.has('KeyF');
     let jump = keys.has('KeyR');
-    if (pad) { if (pad.steer) steer = pad.steer; boost = boost || pad.boost; lt = lt || pad.lt; rt = rt || pad.rt; rb = rb || pad.rb; arm = arm || pad.arm; jump = jump || pad.jump; }
+    if (pad) { if (pad.steer) steer = pad.steer; boost = boost || pad.boost; lt = lt || pad.lt; rt = rt || pad.rt; arm = arm || pad.arm; jump = jump || pad.jump; }
     if (ui.steerTouch && world) {   // a finger on the flight view: the hull turns toward it
       const hull = world.hulls[0], want = Math.atan2(ui.steerTouch.z - hull.z, ui.steerTouch.x - hull.x);
       steer = clamp(wrapAng(want - hull.h) * 2.5, -1, 1);
@@ -1739,10 +1784,9 @@
     }
     if (ui.cardDown.rt) rt = true;
     if (ui.cardDown.lt) lt = true;
-    if (ui.cardDown.rb) rb = true;
     if (ui.cardDown.boost) boost = true;
     if (ui.cardDown.slip) jump = true;
-    live.pilot = { steer, boost, lt, rt, rb, arm, jump };
+    live.pilot = { steer, boost, lt, rt, arm, jump };
   }
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; ui.toastT = 1.8; }
   function requestSwap(how) {
@@ -1970,7 +2014,7 @@
     if (pv) { ctx.setLineDash([3, 5]); ctx.beginPath(); ctx.moveTo(X(pv.p[0]), Y(pv.p[2])); ctx.lineTo(X(pv.land.point[0]), Y(pv.land.point[2])); ctx.strokeStyle = hexA(pv.col, 0.7); ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X(pv.land.point[0]), Y(pv.land.point[2]), 8, 0, 7); ctx.stroke(); }
     // shots
     ctx.lineWidth = 2;
-    for (const s of w.shots) { const sp = hypot2(s.vx, s.vz) || 1; ctx.beginPath(); ctx.moveTo(X(s.x), Y(s.z)); ctx.lineTo(X(s.x - s.vx / sp * 5), Y(s.z - s.vz / sp * 5)); ctx.strokeStyle = s.kind === 'rt' ? ELEMENT_COL.charge : ELEMENT_COL.mass; ctx.stroke(); }
+    for (const s of w.shots) { const sp = hypot2(s.vx, s.vz) || 1; ctx.beginPath(); ctx.moveTo(X(s.x), Y(s.z)); ctx.lineTo(X(s.x - s.vx / sp * 5), Y(s.z - s.vz / sp * 5)); ctx.strokeStyle = s.kind === 'rt' || s.kind === 'peck' ? ELEMENT_COL.charge : ELEMENT_COL.mass; ctx.stroke(); }
     for (const fx of w.effects) {
       const a = clamp(fx.t, 0, 1);
       if (fx.k === 'slip') { ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(X(fx.x0), Y(fx.z0)); ctx.lineTo(X(fx.x1), Y(fx.z1)); ctx.strokeStyle = hexA(fx.col, a); ctx.lineWidth = 2.5; ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X(fx.x1), Y(fx.z1), 14 * (1.3 - a), 0, 7); ctx.stroke(); }
@@ -2010,14 +2054,14 @@
       ctx.fillStyle = '#e8edf3'; ctx.fillText(txt, cx + 6, cy); cx += tw + 4;
     }
     for (const fx of w.effects) if (fx.k === 'banner') { ctx.globalAlpha = clamp(fx.t, 0, 1); ctx.fillStyle = fx.col; ctx.font = '700 ' + (fs + 3) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(fx.text, L.x + L.w / 2, L.y + L.h * 0.3); ctx.textAlign = 'left'; ctx.globalAlpha = 1; break; }
-    // The open buttons first (an active, its time running out along the bottom; round 4's guns in that control), then
-    // Boost and the Slip.
-    const nAct = Math.round(w.P.activeSlots), nCards = nAct + 2, human = world.seats.pilot.who === 'human';
+    // The triggers first (RT Peck and LT Flit, or the upgrade holding each, its time running out along the bottom; round 4's
+    // guns in that control), then Boost and the Slip.
+    const nAct = 2, nCards = nAct + 2, human = world.seats.pilot.who === 'human';
     const cw = compact ? 44 : Math.min(76, (L.w - 24) / (nCards + 0.4)), ch = compact ? 36 : 56;
     const cards = [];
     for (let k = 0; k < nAct; k++) {
-      const a = hull.act[k], gun = w.cfg.opts.guns && k < 2 ? (k === 0 ? 'Bolt' : 'Burst') : '';
-      cards.push({ key: BUTTONS[k], el: k === 0 ? 'charge' : 'mass', name: a ? EFFECT_NAME[a.key].split(' ').pop() : gun || 'open', chip: BUTTON_NAME[k], act: a });
+      const a = hull.act[k], gun = w.cfg.opts.guns ? (k === 0 ? 'Bolt' : 'Burst') : w.cfg.opts.base ? BASE_NAME[k] : '';
+      cards.push({ key: BUTTONS[k], el: k === 0 ? 'charge' : 'mass', name: a ? EFFECT_NAME[a.key].split(' ').pop() : gun || '—', chip: BUTTON_NAME[k], act: a });
     }
     cards.push({ key: 'boost', el: 'space', name: 'Boost', chip: hull.boostE > 0 ? hull.boostE.toFixed(1) + ' s' : '—' });
     cards.push({ key: 'slip', el: 'time', name: hull.jumps.length ? 'Jump' : 'Slip', chip: 'auto' });
@@ -2032,13 +2076,13 @@
         if (c.act.cd > 0) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(r.x, r.y + 3, r.w, (r.h - 6) * clamp(c.act.cd / Math.max(0.01, ACTIVES[c.act.key].cd), 0, 1)); }
         for (let j = 0; j < c.act.lvl; j++) { ctx.beginPath(); ctx.arc(r.x + 6 + j * 6, r.y + 9, 2, 0, 7); ctx.fillStyle = '#ffd27a'; ctx.fill(); }
         if (c.act.charge > 0) { ctx.fillStyle = hexA(col, 0.5); ctx.fillRect(r.x, r.y + r.h - 8, r.w * c.act.charge / 1.2, 4); }
-      }
+      } else if (c.key === 'lt' && w.cfg.opts.base && hull.flitCd > 0) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(r.x, r.y + 3, r.w, (r.h - 6) * clamp(hull.flitCd / w.P.flitCooldown, 0, 1)); }
       ctx.fillStyle = '#e8edf3'; ctx.font = '600 ' + (compact ? 10 : 12) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(c.name, r.x + r.w / 2, r.y + (compact ? 13 : 18));
       if (c.key === 'slip' && hull.jumps.length) { ctx.fillStyle = '#ffd27a'; ctx.font = (compact ? 9 : 10) + 'px system-ui, sans-serif'; ctx.fillText(fitText(EFFECT_NAME[hull.jumps[0]], r.w - 4) + (hull.jumps.length > 1 ? ' +' + (hull.jumps.length - 1) : ''), r.x + r.w / 2, r.y + r.h - (compact ? 10 : 15)); }
       else if (c.key === 'slip') { const b = w.dyn.battery, n = Math.max(1, b.length); for (let j = 0; j < b.length; j++) { ctx.beginPath(); ctx.arc(r.x + r.w / 2 + (j - (n - 1) / 2) * 11, r.y + r.h - (compact ? 10 : 15), 4, 0, 7); ctx.fillStyle = colourOf(b[j]); ctx.fill(); } if (!b.length) { ctx.fillStyle = '#6b7684'; ctx.font = '10px system-ui, sans-serif'; ctx.fillText('no charge', r.x + r.w / 2, r.y + r.h - (compact ? 10 : 15)); } }
       else { ctx.fillStyle = '#8a96a6'; ctx.font = (compact ? 9 : 10) + 'px system-ui, sans-serif'; ctx.fillText(c.chip, r.x + r.w / 2, r.y + r.h - (compact ? 10 : 15)); }
       ctx.textAlign = 'left';
-      if (human && (c.key !== 'slip' || hull.jumps.length) && (c.act || c.key === 'boost' || c.key === 'slip' || (w.cfg.opts.guns && k < 2))) ui.cardRects.push({ r, key: c.key });
+      if (human && (c.key !== 'slip' || hull.jumps.length) && (c.act || c.key === 'boost' || c.key === 'slip' || (k < 2 && (w.cfg.opts.guns || w.cfg.opts.base)))) ui.cardRects.push({ r, key: c.key });
     });
     ui.arenaView = { L, sc, ox, oy };
     ctx.restore();
@@ -2173,7 +2217,7 @@
   function checkField(label, key) { const f = document.createElement('label'); f.className = 'check'; f.innerHTML = '<input type="checkbox"><span></span>'; f.lastChild.textContent = label; const c = f.firstChild; c.checked = !!OPT[key]; c.onchange = () => setOpt(key, c.checked); return f; }
   function rulesPanel() {
     const box = document.createElement('div');
-    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Every box below starts on the round 5 candidate (Garrett\'s rules from rounds 2 to 5). Turning one off is a control the scorecard measures. Changing one restarts the match.'; box.appendChild(p);
+    const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Every box below starts on the round 6 candidate (Garrett\'s rules from rounds 2 to 6). Turning one off is a control the scorecard measures. Changing one restarts the match.'; box.appendChild(p);
     box.appendChild(selectField('Slip arming', 'arming', OPT_LABELS.arming));
     box.appendChild(selectField('Slip exit facing', 'exit', OPT_LABELS.exit));
     box.appendChild(selectField('Ratel ability', 'ability', Object.assign({ random: 'Random, redrawn every few patterns (Garrett)' }, Object.fromEntries(Object.entries(ABILITY_TEXT).map(([k, v]) => [k, 'Always ' + v[0] + ': ' + v[1]])))));
@@ -2182,9 +2226,10 @@
     box.appendChild(checkField('A pattern made for the third time is replaced by a random one', 'replace'));
     box.appendChild(checkField('Every 4 patterns: a new Ratel ability and a new port pattern', 'shuffle'));
     box.appendChild(checkField('Every pattern fires its own effect (from its tabletop card)', 'passives'));
-    box.appendChild(checkField('Weapon cards put an active on an open button (round 5)', 'actives'));
-    box.appendChild(selectField('Which patterns deal an active', 'deal', OPT_LABELS.deal));
-    box.appendChild(checkField('Round 4\'s guns on LT / RT (a control; an active on the button wins)', 'guns'));
+    box.appendChild(checkField('RT is always Peck (a weak attack) and LT always Flit (a short move) (round 6)', 'base'));
+    box.appendChild(checkField('Upgrade cards take a trigger over for a while (rounds 5 and 6)', 'actives'));
+    box.appendChild(selectField('Which patterns upgrade a trigger', 'deal', OPT_LABELS.deal));
+    box.appendChild(checkField('Round 4\'s guns on LT / RT (a control; an upgrade on the trigger wins)', 'guns'));
     box.appendChild(checkField('The Slip is on', 'slip'));
     box.appendChild(checkField('Show domain letters (R J G) on the Dynamo', 'letters'));
     return box;
@@ -2196,7 +2241,7 @@
     const s = f.querySelector('select'); s.value = crew.mate; s.onchange = () => { crew.mate = s.value; lsSet('mate', crew.mate); applyCrew(); };
     box.appendChild(f);
     const h = document.createElement('div'); h.className = 'hint';
-    h.innerHTML = '<b>Ratel (Engineer):</b> drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but a pattern needs at least one real prism. When a card lights, tap it (1 AP): one of its real prisms, drawn at random, goes to the battery, and its domain is a slip charge. The ports turn 60 degrees every spin; the bar across the top shrinks until the next one. Every 4 patterns the clock stops: first your new ability is shown, then the new ports, then the bar starts again. Each card is a tabletop upgrade with its own effect (the Patterns tab lists them); its pips count the makes before it is replaced. Your ability is under the AP row; it changes, with the ports, every 4 patterns.<br><b>Pilot (Honeyguide):</b> A/D or ←/→ steer; W or Space boosts when you have boost. There are no guns. When the Ratel makes a weapon card (Hard Light Lasso, Genesis Lance, Little Bang Grenade, Eyelet Jet, Sepia Drone, Particle Harmonizer, Fugacity Discharger) its active lands on an open button: E or K (RT), then Q or J (LT). It stays 20 s, its time running out along the card\'s bottom edge, then goes away; the next one takes the button. Most are one press; the Harmonizer is held; the Discharger is held to charge and let go. On touch, hold a finger on the flight view and the hull turns toward it (two fingers boost); the four cards bottom right are buttons. The Slip is your Time ability: fly onto a trail of a domain you hold, nose within 45 degrees of its line, and you jump to the end you point at. The dashed line shows where it would take you. Jump patterns (Blink Drive, Rosen Bridge and others) store a jump on the Slip card: tap it, or press R.';
+    h.innerHTML = '<b>Ratel (Engineer):</b> drag a prism to move it (1 AP a cell). Tap an empty injection port to inject a prism of its colour (1 AP). An empty port already counts as a prism of its colour in a pattern, but a pattern needs at least one real prism. When a card lights, tap it (1 AP): one of its real prisms, drawn at random, goes to the battery, and its domain is a slip charge. The ports turn 60 degrees every spin; the bar across the top shrinks until the next one. Every 4 patterns the clock stops: first your new ability is shown, then the new ports, then the bar starts again. Each card is a tabletop upgrade with its own effect (the Patterns tab lists them); its pips count the makes before it is replaced. Your ability is under the AP row; it changes, with the ports, every 4 patterns.<br><b>Pilot (Honeyguide):</b> A/D or ←/→ steer; W or Space boosts when you have boost. RT (E or K) is always an attack: Peck, a weak shot, while held. LT (Q or J) is always a move: Flit, a short hop, every 2 s. Thirteen of the 39 cards upgrade a trigger for 20 s, its time running out along the card\'s bottom edge, then Peck or Flit comes back. Attack upgrades: Hard Light Lasso, Genesis Lance, Little Bang Grenade, Sepia Drone, Particle Harmonizer (hold), Fugacity Discharger (hold, let go). Move upgrades: Eyelet Jet, Thruster Swarm, Blink Drive, All Terrain Portals, Rosen Bridge, FTL Chromatool, Monte Cannon. The other 26 cards each give their own timed passive or one-off effect. On touch, hold a finger on the flight view and the hull turns toward it (two fingers boost); the four cards bottom right are buttons. The Slip is your Time ability: fly onto a trail of a domain you hold, nose within 45 degrees of its line, and you jump to the end you point at. The dashed line shows where it would take you.';
     box.appendChild(h);
     return box;
   }
@@ -2211,7 +2256,7 @@
     if (db) { try { await db.collection('decisions').add(doc); return 'shared'; } catch (e) { /* fall through */ } }
     localLog.push(doc); lsSet('log', localLog); return 'local';
   }
-  const TOPICS = ['Sign-off', 'The actives', 'Slip arming', 'The spin', 'Ports count as prisms', 'Ratel abilities', 'Pattern replacement', 'Pattern effects', 'Tick / AP / battery', 'Tuning', 'Other idea'];
+  const TOPICS = ['Sign-off', 'The triggers', 'Slip arming', 'The spin', 'Ports count as prisms', 'Ratel abilities', 'Pattern replacement', 'Pattern effects', 'Tick / AP / battery', 'Tuning', 'Other idea'];
   function currentChoice(topic) {
     const o = OPT;
     switch (topic) {
@@ -2220,8 +2265,8 @@
       case 'Ports count as prisms': return o.portsCount ? 'An empty port counts as a prism; a real prism must still be in the pattern' : 'Ports do not count';
       case 'Ratel abilities': return o.ability === 'random' ? 'Random, redrawn with the ports every ' + P.patternsPerShuffle + ' patterns; the clock stops ' + P.revealAbility + ' s to show the ability, then ' + P.revealPorts + ' s for the ports' : 'Always ' + ABILITY_TEXT[o.ability][0];
       case 'Pattern replacement': return o.replace ? 'Replaced after ' + P.usesPerPattern + ' makes' : 'Never replaced';
-      case 'Pattern effects': return 'Each pattern fires its own effect, converted from its tabletop card; timed ones last ' + P.passiveSeconds + ' s and stack to level ' + P.passiveMaxLevel + '; jumps are stored on the Slip card';
-      case 'The actives': return o.actives ? 'No guns. ' + OPT_LABELS.deal[o.deal] + '; ' + P.activeSlots + ' open button' + (P.activeSlots > 1 ? 's' : '') + '; each active lasts ' + P.activeSeconds + ' s' : o.guns ? 'Round 4: the guns, no actives' : 'No actives, no guns';
+      case 'Pattern effects': return 'Each pattern fires its own effect, converted from its tabletop card; timed ones last ' + P.passiveSeconds + ' s and stack to level ' + P.passiveMaxLevel + '; the thirteen upgrade cards take over RT or LT for ' + P.activeSeconds + ' s';
+      case 'The triggers': return (o.base ? 'RT Peck (' + P.peckRate + '/s, ' + P.peckRange + ' u), LT Flit (' + P.flitDistance + ' u every ' + P.flitCooldown + ' s). ' : 'No base powers. ') + (o.actives ? OPT_LABELS.deal[o.deal] + '; an upgrade holds its trigger ' + P.activeSeconds + ' s' : o.guns ? 'Round 4: the guns' : 'No upgrades');
       case 'Tick / AP / battery': return 'Spin ' + P.tickSeconds + ' s, ' + P.apPerTick + ' AP (bank ' + P.apBank + '), battery ' + P.batteryCap;
       case 'Sign-off': return 'This is fun: build the Honeyguide and Ratel in Unity with these settings.';
       default: return 'Settings: ' + JSON.stringify(Object.assign({}, diffOnly(), optDiff()));
@@ -2284,7 +2329,7 @@
       const c = document.createElement('div'); c.className = 'card';
       const b = document.createElement('b'); b.textContent = pat.name; c.appendChild(b);
       const f = document.createElement('span'); f.className = 'fam'; f.style.color = DOM[COLOUR_DOM[pat.family]].color; f.textContent = DOM[COLOUR_DOM[pat.family]].name + ' family · ' + pat.cells.length + ' cells · ' + pat.cells.map((x) => COLOUR_LETTER[x[2]] + '(' + x[0] + ',' + x[1] + ')').join(' '); c.appendChild(f);
-      const ef = EFFECTS[pat.effect], e = document.createElement('div'); e.textContent = (ef.active ? 'Active, on an open button for ' + P.activeSeconds + ' s. ' : '') + ef.text + (ef.time ? ' (' + P.passiveSeconds + ' s; a repeat raises its level)' : ''); e.style.fontSize = '12px'; c.appendChild(e);
+      const ef = EFFECTS[pat.effect], e = document.createElement('div'); e.textContent = (ef.active ? (ACTIVES[pat.effect].btn ? 'Move upgrade' : 'Attack upgrade') + ' for ' + P.activeSeconds + ' s. ' : '') + ef.text + (ef.time ? ' (' + P.passiveSeconds + ' s; a repeat raises its level)' : ''); e.style.fontSize = '12px'; c.appendChild(e);
       grid.appendChild(c);
     });
     box.appendChild(grid);
@@ -2293,11 +2338,11 @@
   function aboutPanel() {
     const box = document.createElement('div');
     box.innerHTML = '<p id="aboutHead"></p>' +
-      '<p><b>The question.</b> Is the handoff fun? The Ratel builds patterns on a hex Dynamo whose injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery (a slip charge in its domain) and fires the card\'s own effect. The Honeyguide flies with no guns. Its Time ability is the Slip: touch a trail of a domain you hold, nose within 45 degrees of the trail\'s line, and ride it to the end you point at. Round 5 (Garrett: "fun abilities that are not so hard to use ... stick an ability on an open button ... the abilities time out and then go away. and new ones come") turns the seven weapon cards into actives. Each lands on an open button (RT, then LT) for 20 s and is used with one press, a hold, or a hold and let go; then it goes away and the next one takes the button. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
+      '<p><b>The question.</b> Is the handoff fun? The Ratel builds patterns on a hex Dynamo whose injection ports turn 60 degrees every spin. Making a pattern sends one of its prisms, drawn at random, to the battery (a slip charge in its domain) and fires the card\'s own effect. The Honeyguide is not a Sparrow: RT is always Peck (a weak attack) and LT always Flit (a short move). Its Time ability is the Slip: touch a trail of a domain you hold, nose within 45 degrees of the trail\'s line, and ride it to the end you point at. Round 6 (Garrett: "the right trigger should always be a weak attack power that gets upgraded sometimes. the left should be a movement power that works similar. the 39 patterns should still be unique") gives every card its own effect: six attack upgrades take RT for 20 s, seven move upgrades take LT for 20 s, and the other 26 are timed passives or one-off effects. Sign off on a phone, as the Engineer, on the Decisions tab ("this is fun").</p>' +
       '<p><b>What this lab does NOT model.</b></p><ul class="plain">' +
       '<li>The world is a flat 2D disc, not the 3D cell. A prism\'s z axis is its trail\'s direction in the plane; "1-D" is measured locally (at most two neighbours within 1.5 prism spacings), so a crossing of two trails is 2-D where they cross. The 2-D beds stand in for walls, flora and the cell\'s structures.</li>' +
       '<li>The race (reach the next destination ring) is the lab\'s yardstick; no game mode is modelled. Kills count hostile prisms destroyed; nothing scores them.</li>' +
-      '<li>The actives only shatter, recolour or lay prisms, in 2D. No rival vessels to fight (PvP is petals only in the game), no aiming in 3D, no camera, sound or VFX beyond the lab\'s lines and rings, and no element costs. Their reaches, cooldowns and the 20 s life are proposals.</li>' +
+      '<li>Peck, Flit and the upgrades only shatter, recolour or lay prisms, or move the hull, in 2D. No rival vessels to fight (PvP is petals only in the game), no aiming in 3D, no camera, sound or VFX beyond the lab\'s lines and rings, and no element costs. Their reaches, cooldowns and the 20 s life are proposals.</li>' +
       '<li>A shattered prism is simply gone. In the game a prism is cut, ploughed or scattered by its own rules, and the mass goes somewhere.</li>' +
       '<li>The pattern effects and their numbers, and the Ratel\'s abilities, are proposals. Time, Space, Mass and Charge scaling and the L5 upgrades are fixed numbers here.</li>' +
       '<li>Two players on one device only; no networking. A real thumb tires and misses; the AIs only have speed, noise and reaction time.</li></ul>' +
@@ -2339,6 +2384,8 @@
   window.__lab = {
     LAB, SHIPPED, SPEC, P, OPT, PLATFORM, VARIANTS, PATTERNS, EFFECTS, PORT_SETS, core: D,
     grant: (key) => grantActive(world, world.hulls[0], key), ACTIVES,
+    // which cards the hard crew makes: { effect: makes } summed over seeds (headless)
+    made: (seeds, seconds) => { const out = {}; for (const sd of seeds || [1, 2, 3, 4, 5, 6]) { const w = makeWorld(sd, cfgFrom({}, 'hard', 'ai', 'hard')); for (let i = 0; i < Math.round((seconds || 120) * 30); i++) simStepWorld(w, 1 / 30, null); for (const [k, v] of Object.entries(w.m.made)) out[k] = (out[k] || 0) + v; } return out; },
     effect: (pid) => applyEffect(world, pid, world.dyn.battery.length ? world.dyn.battery[world.dyn.battery.length - 1] : 1, 0),
     portCheck: () => Object.fromEntries(Object.entries(ENGINES).map(([k, e]) => [k, symmetricPorts(e.ports)])),
     set manualClock(v) { manualClock = !!v; }, get manualClock() { return manualClock; },
