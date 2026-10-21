@@ -120,6 +120,10 @@ namespace CosmicShore.Gameplay
                  "its sword the way two held triggers do on a pad.")]
         public bool idlePullsBothTriggers;
 
+        [Tooltip("With no thumb on the glass, the throttle reads FULL instead of a released pad's neutral - " +
+                 "the Manta's soar is flat out (\"fly ultra fast when you lift both thumbs\").")]
+        public bool idleFullThrottle;
+
         [Header("Totem buttons")]
         [Tooltip("Cards whose press latches: a tap presses, the next tap releases (the Serpent's scope).")]
         public List<Element> toggleElements = new();

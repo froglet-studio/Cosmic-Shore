@@ -338,6 +338,8 @@ namespace CosmicShore.Gameplay
                 inputStatus.XDiff = 0.5f;
             }
 
+            if (Profile.idleFullThrottle) inputStatus.XDiff = 1f;
+
             if (Profile.idlePullsBothTriggers)
             {
                 inputStatus.LeftTriggerAnalog = 1f;

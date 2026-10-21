@@ -19,6 +19,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons: []
@@ -36,6 +37,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 1
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons: []
@@ -53,6 +55,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 1
     idlePullsBothTriggers: 0
+    idleFullThrottle: 1
     toggleElements: []
     displayOnlyElements: []
     extraButtons: []
@@ -70,6 +73,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 1
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons: []
@@ -91,6 +95,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons: []
@@ -108,6 +113,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 1
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons: []
@@ -125,6 +131,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons: []
@@ -138,6 +145,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons: []
@@ -151,6 +159,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements:
     - 3
     displayOnlyElements: []
@@ -165,6 +174,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons:
@@ -192,6 +202,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements:
     - 4
@@ -213,6 +224,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons:
@@ -240,6 +252,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons:
@@ -267,6 +280,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons:
@@ -294,6 +308,7 @@ MonoBehaviour:
     tiltRollOnOneThumb: 0
     tiltSteersWhileIdle: 0
     idlePullsBothTriggers: 0
+    idleFullThrottle: 0
     toggleElements: []
     displayOnlyElements: []
     extraButtons:

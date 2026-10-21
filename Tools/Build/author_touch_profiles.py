@@ -48,7 +48,7 @@ def button(inp, icon, behaviour=HOLD, aims=False, primary=False, tint="none"):
 
 def profile(vessel, scheme, **kw):
     p = dict(vessel=VESSEL[vessel], scheme=SCHEME[scheme], liftDefer=0, tiltRoll=False, tiltSteer=False,
-             idleTriggers=False, toggles=[], displayOnly=[], extras=[], slider=False, sliderStart=0.5,
+             idleTriggers=False, idleFull=False, toggles=[], displayOnly=[], extras=[], slider=False, sliderStart=0.5,
              glyphs=[], coreGlyphs=[])
     p.update(kw)
     return p
@@ -62,7 +62,8 @@ PROFILES = [
     profile("Dolphin", "ThumbLifts", tiltRoll=True,
             glyphs=[("Charge", "LiftEitherThumb"), ("Time", "LiftEitherThumb")]),
     # Yastri on either lift; both thumbs off soars (IdleAction -> the boost) steered by tilt.
-    profile("Manta", "ThumbLifts", tiltSteer=True,
+    # Flat out: the throttle reads full with no thumb down (720 u/s, the pad's full soar).
+    profile("Manta", "ThumbLifts", tiltSteer=True, idleFull=True,
             glyphs=[("Mass", "LiftEitherThumb"), ("Time", "LiftBothThumbs")]),
     # A lift swings that side's blade; both thumbs off energizes (both triggers fully pulled).
     profile("Rhino", "ThumbLifts", idleTriggers=True,
@@ -115,7 +116,7 @@ def render_button(b):
 def render_profile(p):
     out = "vessel: %d\nscheme: %d\nliftDeferSeconds: %s\ntiltRollOnOneThumb: %d\ntiltSteersWhileIdle: %d\n" % (
         p["vessel"], p["scheme"], p["liftDefer"], int(p["tiltRoll"]), int(p["tiltSteer"]))
-    out += "idlePullsBothTriggers: %d\n" % int(p["idleTriggers"])
+    out += "idlePullsBothTriggers: %d\nidleFullThrottle: %d\n" % (int(p["idleTriggers"]), int(p["idleFull"]))
     out += "toggleElements:" + yaml_list([ELEMENT[e] for e in p["toggles"]], 0, str).rstrip("\n") + "\n"
     out += "displayOnlyElements:" + yaml_list([ELEMENT[e] for e in p["displayOnly"]], 0, str).rstrip("\n") + "\n"
     out += "extraButtons:" + yaml_list(p["extras"], 0, render_button).rstrip("\n") + "\n"
